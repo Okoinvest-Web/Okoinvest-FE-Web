@@ -1,0 +1,330 @@
+import Link from "next/link";
+import type { Metadata } from "next";
+
+import { Tabelle, Zeile, Zelle, ZelleMitZusatz } from "@/components/tabelle";
+import {
+  Hinweis,
+  Kennzahl,
+  Kennzahlenleiste,
+  LeerZustand,
+  Seitenkopf,
+  Status,
+  Tafel,
+} from "@/components/ui";
+import { ladeAnlagen } from "@/lib/daten/monitoring";
+import {
+  ladeBefehle,
+  ladeSteuerKennzahlen,
+  ladeSteuerwerte,
+} from "@/lib/daten/steuerung";
+import { formatDatumZeit, formatZahl } from "@/lib/format";
+import {
+  PARAMETER,
+  parameterDerGruppe,
+  type ParameterGruppe,
+} from "@/lib/sicherheit/regelgrenzen";
+import { aktuelleRechte } from "@/lib/session";
+import { requireRecht } from "@/lib/session";
+
+import { ParameterFeld, type FeldDefinition } from "./parameter-feld";
+
+export const metadata: Metadata = { title: "Steuerung" };
+
+/**
+ * Die Gruppen in der Reihenfolge, in der jemand sie braucht.
+ *
+ * Zuerst das, was täglich eingestellt wird, zuletzt das, was
+ * niemand ändern darf. Die gesperrten Werte ans Ende zu stellen ist
+ * kein Verstecken - sie stehen vollständig da, nur nicht im Weg.
+ */
+const GRUPPEN: {
+  schluessel: ParameterGruppe;
+  titel: string;
+  einleitung: string;
+}[] = [
+  {
+    schluessel: "eigenverbrauch",
+    titel: "Eigenverbrauch",
+    einleitung:
+      "Wie viel der eigenen Erzeugung im Betrieb bleiben soll. Jede selbst verbrauchte Kilowattstunde spart den vollen Arbeitspreis; eingespeist bringt sie nur die Vergütung.",
+  },
+  {
+    schluessel: "speicher",
+    titel: "Speicher",
+    einleitung:
+      "Die Strategie bestimmt, wofür der Speicher zuerst da ist. Lastspitzenkappung senkt den Leistungspreis, der sich am höchsten Viertelstundenwert eines ganzen Jahres bemisst – das ist meist der größere Hebel als der Handel.",
+  },
+  {
+    schluessel: "boerse",
+    titel: "Börsenpreissteuerung",
+    einleitung:
+      "Richtet Laden und Entladen nach den Day-Ahead-Preisen aus. Zu beachten: Auf jede aus dem Netz bezogene Kilowattstunde kommt das Netzentgelt – eine Preisdifferenz von zehn Cent ist damit noch kein Geschäft.",
+  },
+  {
+    schluessel: "laden",
+    titel: "Ladeinfrastruktur",
+    einleitung:
+      "Lastmanagement und Vorrang der Ladepunkte. Ein dynamisches Management verteilt die verfügbare Anschlussleistung laufend neu, statt jedem Punkt einen festen Anteil zu geben.",
+  },
+  {
+    schluessel: "einspeiseregelung",
+    titel: "Einspeisung",
+    einleitung:
+      "Was am Übergabepunkt ins Netz geht. Diese Werte sind mit dem Netzbetreiber vereinbart.",
+  },
+  {
+    schluessel: "netzschutz",
+    titel: "Netz- und Anlagenschutz",
+    einleitung:
+      "Die Schutzeinstellungen nach TOR Erzeuger. Sie sind im Steuerrechner versiegelt und lassen sich weder hier noch am Bedienfeld ändern.",
+  },
+];
+
+function befehlTon(status: string) {
+  switch (status) {
+    case "Bestätigt":
+      return "gut" as const;
+    case "Übertragen":
+    case "Angenommen":
+      return "akzent" as const;
+    case "Abgelehnt":
+      return "kritisch" as const;
+    default:
+      return "ernst" as const;
+  }
+}
+
+export default async function SteuerungSeite({
+  searchParams,
+}: {
+  searchParams: Promise<{ anlage?: string }>;
+}) {
+  await requireRecht("steuerung.lesen");
+
+  const rechte = await aktuelleRechte();
+  const darfSchreiben = rechte.has("steuerung.schreiben");
+
+  const { anlage: gewaehlt } = await searchParams;
+
+  const anlagen = ladeAnlagen();
+  const anlage = anlagen.find((a) => a.id === gewaehlt) ?? anlagen[0];
+
+  if (!anlage) {
+    return (
+      <div className="space-y-5">
+        <Seitenkopf titel="Steuerung" />
+        <Tafel>
+          <LeerZustand text="Es sind keine Anlagen hinterlegt." />
+        </Tafel>
+      </div>
+    );
+  }
+
+  const werte = ladeSteuerwerte(anlage.id);
+  const befehle = ladeBefehle(anlage.id, 20);
+  const kennzahlen = ladeSteuerKennzahlen(anlage.id);
+
+  const offene = befehle.filter(
+    (b) => b.status === "Übertragen" || b.status === "Angenommen",
+  );
+
+  /** Baut die Anzeige eines Parameters aus Katalog und gespeichertem Wert. */
+  function feld(schluessel: string): FeldDefinition | null {
+    const p = PARAMETER.find((x) => x.schluessel === schluessel);
+    if (!p) return null;
+
+    const gespeichert = werte.get(schluessel);
+
+    return {
+      schluessel: p.schluessel,
+      bezeichnung: p.bezeichnung,
+      einheit: p.einheit,
+      gesperrt: p.gesperrt,
+      grundlage: p.grundlage,
+      hinweis: p.hinweis,
+      min: p.min,
+      max: p.max,
+      optionen: p.optionen ? [...p.optionen] : undefined,
+      aktuellerWert:
+        gespeichert?.wert ??
+        (p.optionen ? p.optionen[0] : String(p.min ?? 0)),
+      gesetztVon: gespeichert?.geaendert_von ?? null,
+      gesetztAm: gespeichert?.geaendert_am ?? null,
+    };
+  }
+
+  return (
+    <div className="space-y-5">
+      <Seitenkopf
+        titel="Steuerung"
+        hinweis={`${anlage.bezeichnung} · ${formatZahl(anlage.leistung_kwp, 1)} kWp`}
+        aktion={
+          <div className="flex flex-wrap gap-1.5">
+            {anlagen.map((a) => (
+              <Link
+                key={a.id}
+                href={`/portal/steuerung?anlage=${a.id}`}
+                className="rounded-sm border px-3 py-1.5 text-[0.75rem] font-medium transition-colors duration-300"
+                style={{
+                  borderColor:
+                    a.id === anlage.id ? "transparent" : "var(--linie)",
+                  background:
+                    a.id === anlage.id ? "var(--akzent-flaeche)" : undefined,
+                  color:
+                    a.id === anlage.id
+                      ? "var(--akzent-text)"
+                      : "var(--t-leise)",
+                }}
+              >
+                {a.bezeichnung}
+              </Link>
+            ))}
+          </div>
+        }
+      />
+
+      {offene.length > 0 && (
+        <Hinweis ton="akzent" titel={`${offene.length} Befehl${offene.length > 1 ? "e" : ""} unterwegs`}>
+          {offene.map((b) => b.bezeichnung).join(", ")}. Ein Befehl gilt erst
+          als wirksam, wenn die Anlage ihn bestätigt hat – bis dahin zeigt
+          das Portal den Sollwert, die Anlage aber noch den alten.
+        </Hinweis>
+      )}
+
+      {!darfSchreiben && (
+        <Hinweis ton="neutral" titel="Nur Ansicht">
+          Ihre Rolle erlaubt das Ansehen der Steuerung, nicht das Ändern.
+          Werte lassen sich hier vollständig einsehen, aber nicht setzen.
+        </Hinweis>
+      )}
+
+      <Kennzahlenleiste>
+        <Kennzahl
+          label="Selbst gesetzt"
+          wert={formatZahl(kennzahlen.gesetzt, 0)}
+          hinweis={`von ${kennzahlen.einstellbar} einstellbaren`}
+          akzent={kennzahlen.gesetzt > 0}
+        />
+        <Kennzahl
+          label="Versiegelt"
+          wert={formatZahl(kennzahlen.gesperrt, 0)}
+          hinweis="nur lesbar, nach TOR Erzeuger"
+        />
+        <Kennzahl
+          label="Unterwegs"
+          wert={formatZahl(kennzahlen.offen, 0)}
+          hinweis={
+            kennzahlen.offen > 0 ? "noch nicht bestätigt" : "alles bestätigt"
+          }
+        />
+        <Kennzahl
+          label="Zuletzt geändert"
+          wert={
+            kennzahlen.zuletzt
+              ? formatDatumZeit(kennzahlen.zuletzt).split(",")[0]
+              : "–"
+          }
+          hinweis={
+            kennzahlen.abgelehnt > 0
+              ? `${kennzahlen.abgelehnt} Versuche abgelehnt`
+              : "keine Ablehnungen"
+          }
+        />
+      </Kennzahlenleiste>
+
+      {/* ---------------- Parametergruppen ---------------- */}
+      {GRUPPEN.map((gruppe) => {
+        const felder = parameterDerGruppe(gruppe.schluessel)
+          .map((p) => feld(p.schluessel))
+          .filter((f): f is FeldDefinition => f !== null);
+
+        if (felder.length === 0) return null;
+
+        return (
+          <Tafel
+            key={gruppe.schluessel}
+            titel={gruppe.titel}
+            hinweis={
+              felder.every((f) => f.gesperrt)
+                ? "vereinbart mit dem Netzbetreiber"
+                : `${felder.filter((f) => !f.gesperrt).length} einstellbar`
+            }
+          >
+            <p className="t-mikro mb-4 max-w-3xl leading-relaxed">
+              {gruppe.einleitung}
+            </p>
+
+            <div className="a-staffel grid grid-cols-1 gap-3 lg:grid-cols-2">
+              {felder.map((f) => (
+                <ParameterFeld
+                  key={f.schluessel}
+                  feld={f}
+                  anlage={anlage.id}
+                  darfSchreiben={darfSchreiben}
+                />
+              ))}
+            </div>
+          </Tafel>
+        );
+      })}
+
+      {/* ---------------- Befehlsprotokoll ---------------- */}
+      <Tafel
+        titel="Befehle"
+        hinweis="Was an die Anlage ging – auch das Abgelehnte"
+        dicht
+        fusszeile={
+          <p className="t-mikro leading-relaxed">
+            Ein Befehl durchläuft dieselben Zustände wie im Betrieb:
+            angenommen, übertragen, bestätigt. Die Bestätigung kommt von
+            der Anlage, nicht vom Portal – deshalb steht sie erst da, wenn
+            der Steuerrechner sie über den Tunnel gemeldet hat. Abgelehnte
+            Versuche bleiben stehen: Sie sind für einen Nachweis nach NIS 2
+            aufschlussreicher als die erfolgreichen.
+          </p>
+        }
+      >
+        {befehle.length === 0 ? (
+          <div className="p-5">
+            <LeerZustand
+              text="Für diese Anlage wurde noch nichts gesteuert."
+              hinweis="Sobald ein Wert gesetzt wird, erscheint hier der Befehl mit seinem Zustand."
+            />
+          </div>
+        ) : (
+          <Tabelle
+            spalten={[
+              { titel: "Parameter" },
+              { titel: "Vorher", zahl: true, schmalAusblenden: true },
+              { titel: "Nachher", zahl: true },
+              { titel: "Benutzer", schmalAusblenden: true },
+              { titel: "Zustand" },
+            ]}
+            mindestbreite="54rem"
+          >
+            {befehle.map((b) => (
+              <Zeile key={b.id} hervorgehoben={b.status === "Abgelehnt"}>
+                <ZelleMitZusatz
+                  haupt={b.bezeichnung}
+                  zusatz={`${formatDatumZeit(b.erstellt_am)}${b.begruendung ? ` · ${b.begruendung}` : ""}`}
+                />
+                <Zelle zahl leise schmalAusblenden>
+                  {b.wert_vorher ?? "–"}
+                </Zelle>
+                <Zelle zahl>
+                  {b.wert_nachher ?? "Werkseinstellung"}
+                </Zelle>
+                <Zelle leise schmalAusblenden>
+                  {b.benutzer ?? "–"}
+                </Zelle>
+                <Zelle>
+                  <Status ton={befehlTon(b.status)}>{b.status}</Status>
+                </Zelle>
+              </Zeile>
+            ))}
+          </Tabelle>
+        )}
+      </Tafel>
+    </div>
+  );
+}

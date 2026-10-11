@@ -1,0 +1,349 @@
+import type { Metadata } from "next";
+
+import { Tabelle, Zeile, Zelle, ZelleMitZusatz } from "@/components/tabelle";
+import {
+  Hinweis,
+  Kennzahl,
+  Kennzahlenleiste,
+  LeerZustand,
+  Seitenkopf,
+  Status,
+  Tafel,
+} from "@/components/ui";
+import {
+  REGELUNGEN,
+  betroffenheit,
+  tageBis,
+  wirksamkeit,
+  type Regelung,
+} from "@/lib/at/elwg";
+import {
+  ladeAnlagenlagen,
+  letzterLastgangtag,
+} from "@/lib/daten/regulierung";
+import { formatDatum, formatGeld, formatZahl } from "@/lib/format";
+import { requireRecht } from "@/lib/session";
+
+export const metadata: Metadata = { title: "Regulierung" };
+
+/**
+ * Was das neue Elektrizitätswirtschaftsgesetz für diesen Betrieb bedeutet.
+ *
+ * Der Unterschied zu jedem Newsletter: Hier steht nicht, was im Gesetz
+ * steht, sondern was es diese Anlagen kostet – gerechnet über ein
+ * volles Jahr echter Viertelstundenwerte. Die Spitzenkappung trifft
+ * ausschließlich die Mittagsstunden im Sommer; wer sie aus einem
+ * Monatsmittel hochrechnet, liegt um ein Vielfaches daneben.
+ *
+ * Und was sich nicht beziffern lässt, wird nicht beziffert. Eine
+ * Auskunft, die eine unsichere Zahl als sicher ausgibt, führt zu einer
+ * Investitionsentscheidung – sie ist schlimmer als gar keine.
+ */
+
+function belastbarkeitsTon(regelung: Regelung) {
+  switch (regelung.belastbarkeit) {
+    case "gesetzestext":
+      return "gut" as const;
+    case "verordnung offen":
+      return "hinweis" as const;
+    default:
+      return "ernst" as const;
+  }
+}
+
+function belastbarkeitsText(regelung: Regelung): string {
+  switch (regelung.belastbarkeit) {
+    case "gesetzestext":
+      return "im Gesetz";
+    case "verordnung offen":
+      return "Verordnung offen";
+    default:
+      return "Quellen uneinheitlich";
+  }
+}
+
+export default async function RegulierungSeite() {
+  await requireRecht("monitoring.lesen");
+
+  const stichtag = letzterLastgangtag() ?? "2026-01-01";
+  const lagen = ladeAnlagenlagen();
+
+  const ausgewertet = lagen.map((lage) => ({
+    lage,
+    posten: betroffenheit(lage, lage.verguetungCtKwh),
+  }));
+
+  const summeJahr = ausgewertet.reduce(
+    (summe, a) =>
+      summe + a.posten.reduce((s, p) => s + (p.euroJahr ?? 0), 0),
+    0,
+  );
+
+  const einspeisung = lagen.reduce((s, l) => s + l.einspeisungKwhJahr, 0);
+  const betroffen = ausgewertet.filter((a) =>
+    a.posten.some((p) => (p.euroJahr ?? 0) > 0),
+  ).length;
+
+  const naechste = [...REGELUNGEN]
+    .filter((r) => wirksamkeit(r, stichtag) === "kommt")
+    .sort((a, b) => a.ab.localeCompare(b.ab))[0];
+
+  return (
+    <div className="space-y-5">
+      <Seitenkopf
+        titel="Regulierung"
+        hinweis={`Elektrizitätswirtschaftsgesetz · Stand der Daten ${formatDatum(stichtag)}`}
+      />
+
+      {naechste && (
+        <Hinweis
+          ton="hinweis"
+          titel={`Nächster Stichtag in ${formatZahl(tageBis(naechste, stichtag), 0)} Tagen`}
+        >
+          {naechste.titel} – ab {formatDatum(naechste.ab)}. {naechste.inhalt}
+        </Hinweis>
+      )}
+
+      <Kennzahlenleiste>
+        <Kennzahl
+          label="Zusätzliche Kosten"
+          wert={formatGeld(summeJahr)}
+          hinweis="je Jahr, über alle Anlagen"
+          ton={summeJahr > 0 ? "ernst" : undefined}
+        />
+        <Kennzahl
+          label="Betroffene Anlagen"
+          wert={`${betroffen} von ${lagen.length}`}
+          hinweis="mit bezifferbarer Belastung"
+        />
+        <Kennzahl
+          label="Eingespeist"
+          wert={formatZahl(einspeisung / 1000, 0)}
+          einheit="MWh"
+          hinweis="Grundlage der Beitragsrechnung"
+        />
+        <Kennzahl
+          label="Stichtage offen"
+          wert={formatZahl(
+            REGELUNGEN.filter((r) => wirksamkeit(r, stichtag) === "kommt")
+              .length,
+            0,
+          )}
+          hinweis={`von ${REGELUNGEN.length} Regelungen`}
+        />
+      </Kennzahlenleiste>
+
+      {/* ---------------- Je Anlage ---------------- */}
+      <Tafel
+        titel="Was es je Anlage kostet"
+        hinweis="Gerechnet über die tatsächlichen Viertelstundenwerte"
+        fusszeile={
+          <p className="t-mikro leading-relaxed">
+            Der Versorgungsinfrastrukturbeitrag steht im Gesetz als
+            Höchstsatz; die tatsächliche Höhe legt eine Verordnung fest. Die
+            Spitzenkappung ist eine Obergrenze – gekappt wird nur bei
+            drohender Netzüberlastung, nicht immer. Beide Zahlen sind
+            deshalb als das zu lesen, was sie sind: der schlechteste Fall,
+            nicht die Erwartung.
+          </p>
+        }
+      >
+        {ausgewertet.length === 0 ? (
+          <LeerZustand text="Es sind keine Anlagen mit Lastgangdaten hinterlegt." />
+        ) : (
+          <div className="a-staffel space-y-4">
+            {ausgewertet.map(({ lage, posten }) => (
+              <div
+                key={lage.id}
+                className="rounded-sm border p-4"
+                style={{ borderColor: "var(--linie)" }}
+              >
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <span className="min-w-0">
+                    <span
+                      className="block text-[0.9375rem] font-semibold"
+                      style={{ color: "var(--t-stark)" }}
+                    >
+                      {lage.bezeichnung}
+                    </span>
+                    <span className="t-mikro">
+                      {formatZahl(lage.kwp, 1)} kWp · Einspeiseleistung{" "}
+                      {formatZahl(lage.einspeiseleistungKw, 0)} kW ={" "}
+                      {formatZahl(
+                        (lage.einspeiseleistungKw / lage.kwp) * 100,
+                        0,
+                      )}{" "}
+                      Prozent der Modulleistung
+                    </span>
+                  </span>
+
+                  <span className="zahl shrink-0 text-[1.0625rem] font-semibold">
+                    {formatGeld(
+                      posten.reduce((s, p) => s + (p.euroJahr ?? 0), 0),
+                    )}
+                    <span className="t-mikro ml-1 font-normal">je Jahr</span>
+                  </span>
+                </div>
+
+                <ul className="mt-3 space-y-2.5">
+                  {posten.map((p) => (
+                    <li key={p.schluessel}>
+                      <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+                        <span className="text-[0.8125rem] font-medium">
+                          {p.titel}
+                          <span className="t-mikro ml-1.5 font-normal">
+                            ab {formatDatum(p.ab)}
+                          </span>
+                        </span>
+                        <span className="zahl t-mikro">
+                          {p.euroJahr === null
+                            ? "nicht bezifferbar"
+                            : p.euroJahr === 0
+                              ? "keine Belastung"
+                              : formatGeld(p.euroJahr)}
+                        </span>
+                      </div>
+                      <p className="t-mikro leading-relaxed">
+                        {p.begruendung}
+                      </p>
+                      {p.handlung && (
+                        <p
+                          className="t-mikro mt-1.5 rounded-sm px-3 py-2 leading-relaxed"
+                          style={{ background: "var(--f-vertieft)" }}
+                        >
+                          <span className="t-etikett mr-1.5">Zu tun</span>
+                          {p.handlung}
+                        </p>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        )}
+      </Tafel>
+
+      {/* ---------------- Der Fahrplan ---------------- */}
+      <Tafel
+        titel="Stichtage"
+        hinweis="Was wann wirkt"
+        dicht
+        fusszeile={
+          <p className="t-mikro leading-relaxed">
+            Jede Zeile trägt ihre Quelle und wie belastbar sie ist. Wo
+            Entwurf und Fassung auseinandergehen – etwa bei der Freigrenze
+            des Netzanschlussentgelts, für die sich 7 und 15 kW finden –,
+            steht das hier und wird nicht weggerundet. Dies ist keine
+            Rechtsberatung; für eine verbindliche Auskunft ist die
+            Rechtsvertretung zuständig.
+          </p>
+        }
+      >
+        <Tabelle
+          spalten={[
+            { titel: "Regelung" },
+            { titel: "Ab", schmalAusblenden: true },
+            { titel: "Belastbarkeit", schmalAusblenden: true },
+            { titel: "Zustand" },
+          ]}
+          mindestbreite="58rem"
+        >
+          {[...REGELUNGEN]
+            .sort((a, b) => a.ab.localeCompare(b.ab))
+            .map((r) => (
+              <Zeile key={r.schluessel}>
+                <Zelle>
+                  <span className="block" style={{ color: "var(--t-stark)" }}>
+                    {r.titel}
+                  </span>
+                  <span className="t-mikro block leading-relaxed">
+                    {r.inhalt}
+                  </span>
+                  <span
+                    className="t-mikro mt-1.5 block rounded-sm px-3 py-2 leading-relaxed"
+                    style={{ background: "var(--f-vertieft)" }}
+                  >
+                    <span className="t-etikett mr-1.5">Zu tun</span>
+                    {r.handlung}
+                  </span>
+                </Zelle>
+                <Zelle leise schmalAusblenden>
+                  {formatDatum(r.ab)}
+                </Zelle>
+                <Zelle leise schmalAusblenden>
+                  <Status ton={belastbarkeitsTon(r)} punkt={false}>
+                    {belastbarkeitsText(r)}
+                  </Status>
+                  <span className="t-mikro mt-1 block">{r.quelle}</span>
+                </Zelle>
+                <Zelle>
+                  <Status
+                    ton={wirksamkeit(r, stichtag) === "gilt" ? "gut" : "hinweis"}
+                  >
+                    {wirksamkeit(r, stichtag) === "gilt"
+                      ? "in Kraft"
+                      : `in ${formatZahl(tageBis(r, stichtag), 0)} Tagen`}
+                  </Status>
+                </Zelle>
+              </Zeile>
+            ))}
+        </Tabelle>
+      </Tafel>
+
+      {/* ---------------- Einordnung ---------------- */}
+      <Tafel titel="Woher die Zahlen kommen">
+        <Tabelle
+          spalten={[{ titel: "Größe" }, { titel: "Herkunft" }]}
+          mindestbreite="44rem"
+        >
+          <Zeile>
+            <ZelleMitZusatz
+              haupt="Eingespeiste Energie"
+              zusatz="Grundlage des Versorgungsinfrastrukturbeitrags"
+            />
+            <Zelle leise>
+              Viertelstundenwerte aus dem Lastgang, Richtung Einspeisung,
+              Qualität „gemessen“ – nicht aus dem Wechselrichter, weil der
+              vor dem Zähler misst.
+            </Zelle>
+          </Zeile>
+          <Zeile>
+            <ZelleMitZusatz
+              haupt="Netzwirksame Einspeiseleistung"
+              zusatz="Entscheidet über die Freigrenze"
+            />
+            <Zelle leise>
+              Die vereinbarte Einspeisegrenze aus dem Netzzugangsvertrag,
+              ersatzweise die Summe der Wechselrichterleistung. Die
+              Modulleistung ist es ausdrücklich nicht.
+            </Zelle>
+          </Zeile>
+          <Zeile>
+            <ZelleMitZusatz
+              haupt="Kappungsgrenze"
+              zusatz="70 Prozent der Modulleistung"
+            />
+            <Zelle leise>
+              Aus dem Gesetz. Verglichen wird gegen die tatsächliche
+              Einspeiseleistung je Viertelstunde – Energie je Viertelstunde
+              mal vier, denn die Grenze ist eine Leistungsgrenze.
+            </Zelle>
+          </Zeile>
+          <Zeile>
+            <ZelleMitZusatz
+              haupt="Bewertung in Geld"
+              zusatz="Einspeisevergütung, nicht Arbeitspreis"
+            />
+            <Zelle leise>
+              Was nicht eingespeist werden darf, wäre zur
+              Einspeisevergütung gegangen – das ist der untere Rand. Bleibt
+              die Energie im Betrieb, ist sie den Arbeitspreis wert, also
+              das Zwei- bis Dreifache.
+            </Zelle>
+          </Zeile>
+        </Tabelle>
+      </Tafel>
+    </div>
+  );
+}

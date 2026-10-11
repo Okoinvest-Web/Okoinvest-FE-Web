@@ -1,0 +1,203 @@
+<script setup lang="ts">
+/** Mängel-, Baufortschritts- und Protokollauswertung (FA-092 bis FA-096). */
+import { computed, onMounted, ref } from 'vue'
+
+import AppIcon from '@/components/AppIcon.vue'
+import { baudoku } from '@/lib/api'
+import { datum, zahl } from '@/lib/format'
+import { useStammdaten } from '@/stores/stammdaten'
+
+const stammdaten = useStammdaten()
+
+interface Verteilung {
+  label: string
+  wert: number
+}
+
+const mangel = ref<{
+  gesamt: number
+  ueberfaellig: number
+  nach_anlage: Verteilung[]
+  nach_kategorie: Verteilung[]
+  nach_schweregrad: Verteilung[]
+  nach_zustaendigem: Verteilung[]
+} | null>(null)
+
+const fortschritt = ref<
+  { anlage: string; anlage_name: string; berichte: number; stunden: number; fortschritt: number; letzter_bericht: string }[]
+>([])
+
+const statistik = ref<{ jahr: number; bewertungen: Verteilung[]; gesamt: number } | null>(null)
+const laedt = ref(true)
+
+const MONATE = ['Jän', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez']
+const jeMonat = ref<{ monat: number; werte: Record<string, number> }[]>([])
+
+const maxMonat = computed(() =>
+  Math.max(1, ...jeMonat.value.map((m) => Object.values(m.werte).reduce((a, b) => a + b, 0))),
+)
+
+function anlagenName(name: string) {
+  return stammdaten.anlage(name)?.anlage_name ?? name
+}
+
+function balkenBreite(wert: number, maximum: number) {
+  return `${Math.max(3, (wert / Math.max(1, maximum)) * 100)}%`
+}
+
+onMounted(async () => {
+  try {
+    const [m, f, s] = await Promise.allSettled([
+      baudoku.mangelDashboard(),
+      baudoku.baufortschritt(90),
+      baudoku.protokollStatistik(),
+    ])
+    if (m.status === 'fulfilled') mangel.value = m.value as typeof mangel.value
+    if (f.status === 'fulfilled') fortschritt.value = f.value as typeof fortschritt.value
+    if (s.status === 'fulfilled') {
+      const daten = s.value as { jahr: number; bewertungen: Verteilung[]; gesamt: number; je_monat: typeof jeMonat.value }
+      statistik.value = daten
+      jeMonat.value = daten.je_monat
+    }
+  } finally {
+    laedt.value = false
+  }
+})
+</script>
+
+<template>
+  <div class="space-y-6">
+    <p v-if="laedt" class="py-8 text-center text-sm text-slate-500">Auswertungen werden geladen …</p>
+
+    <!-- Mängel -->
+    <section v-if="mangel" class="space-y-3">
+      <h2 class="flex items-center gap-2 text-lg font-bold">
+        <AppIcon name="mangel" :groesse="20" class="text-warnung" /> Mängel
+      </h2>
+
+      <div class="grid grid-cols-2 gap-3 tablet:grid-cols-4">
+        <div class="karte p-4">
+          <div class="text-3xl font-bold tabular-nums">{{ mangel.gesamt }}</div>
+          <div class="text-sm text-slate-500">offen gesamt</div>
+        </div>
+        <div class="karte p-4">
+          <div class="text-3xl font-bold tabular-nums text-fehler">{{ mangel.ueberfaellig }}</div>
+          <div class="text-sm text-slate-500">überfällig</div>
+        </div>
+        <div v-for="grad in mangel.nach_schweregrad" :key="grad.label" class="karte p-4">
+          <div class="text-3xl font-bold tabular-nums">{{ grad.wert }}</div>
+          <div class="text-sm text-slate-500">Grad {{ grad.label }}</div>
+        </div>
+      </div>
+
+      <div class="grid gap-3 tablet:grid-cols-2">
+        <div class="karte p-4">
+          <h3 class="mb-3 text-sm font-semibold">Nach Anlage</h3>
+          <ul class="space-y-2">
+            <li v-for="eintrag in mangel.nach_anlage" :key="eintrag.label">
+              <div class="mb-0.5 flex justify-between text-xs">
+                <span class="truncate">{{ anlagenName(eintrag.label) }}</span>
+                <span class="font-semibold tabular-nums">{{ eintrag.wert }}</span>
+              </div>
+              <div class="h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                <div class="h-full rounded-full bg-warnung"
+                     :style="{ width: balkenBreite(eintrag.wert, mangel.nach_anlage[0]?.wert ?? 1) }" />
+              </div>
+            </li>
+          </ul>
+        </div>
+
+        <div class="karte p-4">
+          <h3 class="mb-3 text-sm font-semibold">Nach Kategorie</h3>
+          <ul class="space-y-2">
+            <li v-for="eintrag in mangel.nach_kategorie" :key="eintrag.label">
+              <div class="mb-0.5 flex justify-between text-xs">
+                <span class="truncate">{{ eintrag.label }}</span>
+                <span class="font-semibold tabular-nums">{{ eintrag.wert }}</span>
+              </div>
+              <div class="h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                <div class="h-full rounded-full bg-sky-500"
+                     :style="{ width: balkenBreite(eintrag.wert, mangel.nach_kategorie[0]?.wert ?? 1) }" />
+              </div>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Baufortschritt -->
+    <section v-if="fortschritt.length" class="space-y-3">
+      <h2 class="flex items-center gap-2 text-lg font-bold">
+        <AppIcon name="bericht" :groesse="20" class="text-marke-600" /> Baufortschritt
+      </h2>
+      <ul class="space-y-2">
+        <li v-for="baustelle in fortschritt" :key="baustelle.anlage" class="karte p-4">
+          <div class="flex items-center gap-3">
+            <div class="min-w-0 flex-1">
+              <div class="truncate font-semibold">{{ baustelle.anlage_name }}</div>
+              <div class="text-xs text-slate-500">
+                {{ baustelle.berichte }} Berichte · {{ zahl(baustelle.stunden, 'h') }} ·
+                zuletzt {{ datum(baustelle.letzter_bericht) }}
+              </div>
+            </div>
+            <div class="text-xl font-bold tabular-nums">{{ Math.round(baustelle.fortschritt) }} %</div>
+          </div>
+          <div class="mt-2 h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+            <div class="h-full rounded-full bg-marke-500" :style="{ width: `${baustelle.fortschritt}%` }" />
+          </div>
+        </li>
+      </ul>
+    </section>
+
+    <!-- Protokolle -->
+    <section v-if="statistik" class="space-y-3">
+      <h2 class="flex items-center gap-2 text-lg font-bold">
+        <AppIcon name="protokoll" :groesse="20" class="text-sky-600" />
+        Protokolle {{ statistik.jahr }}
+        <span class="text-sm font-normal text-slate-400">{{ statistik.gesamt }} abgeschlossen</span>
+      </h2>
+
+      <div class="karte p-4">
+        <div class="flex h-32 items-end gap-1.5">
+          <div v-for="eintrag in jeMonat" :key="eintrag.monat" class="flex flex-1 flex-col items-center gap-1">
+            <div
+              class="w-full rounded-t bg-sky-500/80"
+              :style="{
+                height: `${
+                  (Object.values(eintrag.werte).reduce((a, b) => a + b, 0) / maxMonat) * 100
+                }%`,
+              }"
+              :title="`${Object.values(eintrag.werte).reduce((a, b) => a + b, 0)} Protokolle`"
+            />
+            <span class="text-[10px] text-slate-400">{{ MONATE[eintrag.monat - 1] }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="karte p-4">
+        <h3 class="mb-3 text-sm font-semibold">Gesamtbewertungen</h3>
+        <ul class="space-y-2">
+          <li v-for="eintrag in statistik.bewertungen" :key="eintrag.label">
+            <div class="mb-0.5 flex justify-between text-xs">
+              <span>{{ eintrag.label }}</span>
+              <span class="font-semibold tabular-nums">{{ eintrag.wert }}</span>
+            </div>
+            <div class="h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+              <div
+                class="h-full rounded-full"
+                :class="
+                  eintrag.label === 'Bestanden'
+                    ? 'bg-ok'
+                    : eintrag.label === 'Nicht bestanden'
+                      ? 'bg-fehler'
+                      : 'bg-warnung'
+                "
+                :style="{ width: balkenBreite(eintrag.wert, statistik.gesamt) }"
+              />
+            </div>
+          </li>
+        </ul>
+      </div>
+    </section>
+  </div>
+</template>

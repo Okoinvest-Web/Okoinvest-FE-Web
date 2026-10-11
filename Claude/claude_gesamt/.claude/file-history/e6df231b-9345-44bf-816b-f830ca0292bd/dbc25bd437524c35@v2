@@ -1,0 +1,342 @@
+/**
+ * Offline-Sync-Motor (Kapitel 7.4, NFA-010 bis NFA-015).
+ *
+ * 1. Online-Erkennung: `navigator.onLine` plus eigener Heartbeat, weil der
+ *    Browser im Baustellen-WLAN „online“ meldet, obwohl der Server fehlt.
+ * 2. Fotos zuerst: Ein Dokument wird erst übertragen, wenn seine Bilder liegen.
+ * 3. Dokumente in Batches; jede Operation trägt ihre lokale UUID (idempotent).
+ * 4. Konflikt → Serverfassung gewinnt, lokale Fassung landet in `konflikte`.
+ */
+
+import { ApiFehler, baudoku } from './api'
+import {
+  db,
+  einreihen,
+  type Dokumenttyp,
+  type FotoEintrag,
+  type WarteschlangeEintrag,
+} from './db'
+import { alsDataUrl } from './foto'
+
+export const CLIENT_VERSION = '0.1.0'
+const HEARTBEAT_MS = 30_000
+const MAX_VERSUCHE = 5
+
+export interface SyncErgebnis {
+  uebertragen: number
+  fehler: number
+  konflikte: number
+  fotos: number
+  meldung: string
+}
+
+export type SyncZustand = 'online' | 'offline' | 'syncing' | 'fehler'
+
+type Beobachter = (zustand: SyncZustand, ergebnis?: SyncErgebnis) => void
+
+const beobachter = new Set<Beobachter>()
+let laeuft = false
+let letzterHeartbeat = 0
+let serverErreichbar = navigator.onLine
+
+export function beobachten(rueckruf: Beobachter): () => void {
+  beobachter.add(rueckruf)
+  return () => beobachter.delete(rueckruf)
+}
+
+function melden(zustand: SyncZustand, ergebnis?: SyncErgebnis) {
+  beobachter.forEach((rueckruf) => rueckruf(zustand, ergebnis))
+}
+
+/**
+ * Prüft die echte Erreichbarkeit des Servers.
+ * `navigator.onLine` allein genügt nicht (Captive Portal, WLAN ohne Uplink).
+ */
+export async function istOnline(erzwingen = false): Promise<boolean> {
+  if (!navigator.onLine) {
+    serverErreichbar = false
+    return false
+  }
+  const jetzt = Date.now()
+  if (!erzwingen && jetzt - letzterHeartbeat < HEARTBEAT_MS) return serverErreichbar
+
+  letzterHeartbeat = jetzt
+  try {
+    await baudoku.syncStatus()
+    serverErreichbar = true
+  } catch (fehler) {
+    serverErreichbar = !(fehler instanceof ApiFehler && fehler.istNetzfehler)
+  }
+  return serverErreichbar
+}
+
+// ---------------------------------------------------------------------------
+// Fotos
+// ---------------------------------------------------------------------------
+
+/** Lädt alle noch nicht übertragenen Fotos hoch (älteste zuerst). */
+export async function fotosHochladen(): Promise<number> {
+  const offene = (await db.fotos.filter((f) => !f.file_url).toArray()).sort((a, b) =>
+    a.aufgenommen_am.localeCompare(b.aufgenommen_am),
+  )
+
+  let erledigt = 0
+  for (const foto of offene) {
+    try {
+      const antwort = (await baudoku.fotoHochladen({
+        dateiname: foto.dateiname,
+        inhalt_base64: await alsDataUrl(foto.blob),
+        lokale_id: foto.lokale_id,
+      })) as { file_url: string }
+      await db.fotos.update(foto.lokale_id, { file_url: antwort.file_url })
+      await fotoReferenzenAktualisieren(foto, antwort.file_url)
+      erledigt += 1
+    } catch (fehler) {
+      if (fehler instanceof ApiFehler && fehler.istNetzfehler) break
+      // Inhaltliche Fehler (z. B. zu groß) dürfen die Schlange nicht blockieren.
+      console.warn('Foto konnte nicht hochgeladen werden:', foto.lokale_id, fehler)
+      await db.fotos.update(foto.lokale_id, { beschriftung: foto.beschriftung })
+    }
+  }
+  return erledigt
+}
+
+/** Ersetzt die lokale Blob-Referenz in Protokollen/Mängeln durch die Server-URL. */
+async function fotoReferenzenAktualisieren(foto: FotoEintrag, fileUrl: string): Promise<void> {
+  const ersetzeIn = (liste?: { lokale_id?: string; bild?: string }[]) => {
+    let geaendert = false
+    for (const eintrag of liste ?? []) {
+      if (eintrag.lokale_id === foto.lokale_id && eintrag.bild !== fileUrl) {
+        eintrag.bild = fileUrl
+        geaendert = true
+      }
+    }
+    return geaendert
+  }
+
+  for (const protokoll of await db.protokolle.toArray()) {
+    let geaendert = false
+    for (const zeile of protokoll.ergebnisse ?? []) geaendert = ersetzeIn(zeile.fotos) || geaendert
+    if (geaendert) await db.protokolle.put(protokoll)
+  }
+
+  for (const mangel of await db.maengel.toArray()) {
+    const geaendert = ersetzeIn(mangel.fotos) || ersetzeIn(mangel.erledigt_fotos)
+    if (geaendert) await db.maengel.put(mangel)
+  }
+
+  for (const bericht of await db.berichte.toArray()) {
+    if (ersetzeIn(bericht.fotos)) await db.berichte.put(bericht)
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Dokumente
+// ---------------------------------------------------------------------------
+
+interface PushAntwort {
+  ergebnisse: {
+    lokale_id: string
+    ergebnis: 'Erfolg' | 'Konflikt' | 'Fehler'
+    name?: string
+    modified?: string
+    meldung?: string
+    server_dokument?: Record<string, unknown>
+  }[]
+  server_zeit: string
+}
+
+async function batchSenden(eintraege: WarteschlangeEintrag[]) {
+  const antwort = (await baudoku.push(
+    eintraege.map((eintrag) => ({
+      lokale_id: eintrag.lokale_id,
+      doctype: eintrag.doctype,
+      aktion: eintrag.aktion,
+      daten: eintrag.daten,
+      basis_modified: eintrag.basis_modified,
+    })),
+    CLIENT_VERSION,
+  )) as PushAntwort
+
+  let erfolge = 0
+  let konflikte = 0
+  let fehler = 0
+
+  for (const ergebnis of antwort.ergebnisse) {
+    const eintrag = eintraege.find((e) => e.lokale_id === ergebnis.lokale_id)
+    if (!eintrag?.id) continue
+
+    if (ergebnis.ergebnis === 'Erfolg') {
+      await db.warteschlange.delete(eintrag.id)
+      await lokalenDatensatzAktualisieren(eintrag.doctype, eintrag.lokale_id, {
+        name: ergebnis.name,
+        modified: ergebnis.modified,
+      })
+      erfolge += 1
+    } else if (ergebnis.ergebnis === 'Konflikt') {
+      // Server gewinnt: lokale Fassung sichern, Serverstand übernehmen.
+      await db.konflikte.add({
+        lokale_id: eintrag.lokale_id,
+        doctype: eintrag.doctype,
+        lokale_fassung: eintrag.daten,
+        server_fassung: ergebnis.server_dokument ?? {},
+        erkannt_am: new Date().toISOString(),
+        gesichtet: 0,
+      })
+      await db.warteschlange.delete(eintrag.id)
+      if (ergebnis.server_dokument) {
+        await serverFassungUebernehmen(eintrag.doctype, eintrag.lokale_id, ergebnis.server_dokument)
+      }
+      konflikte += 1
+    } else {
+      const versuche = eintrag.versuche + 1
+      if (versuche >= MAX_VERSUCHE) {
+        await db.warteschlange.update(eintrag.id, {
+          versuche,
+          letzter_fehler: `Nach ${MAX_VERSUCHE} Versuchen aufgegeben: ${ergebnis.meldung ?? ''}`,
+        })
+      } else {
+        await db.warteschlange.update(eintrag.id, { versuche, letzter_fehler: ergebnis.meldung })
+      }
+      fehler += 1
+    }
+  }
+
+  return { erfolge, konflikte, fehler }
+}
+
+async function tabelle(doctype: Dokumenttyp) {
+  if (doctype === 'Pruefprotokoll') return db.protokolle
+  if (doctype === 'Mangel') return db.maengel
+  return db.berichte
+}
+
+async function lokalenDatensatzAktualisieren(
+  doctype: Dokumenttyp,
+  lokale_id: string,
+  felder: Record<string, unknown>,
+): Promise<void> {
+  const t = await tabelle(doctype)
+  const vorhanden = await t.get(lokale_id)
+  if (!vorhanden) return
+  await t.put({ ...vorhanden, ...felder } as never)
+}
+
+async function serverFassungUebernehmen(
+  doctype: Dokumenttyp,
+  lokale_id: string,
+  serverDokument: Record<string, unknown>,
+): Promise<void> {
+  const t = await tabelle(doctype)
+  await t.put({ ...serverDokument, lokale_id } as never)
+}
+
+// ---------------------------------------------------------------------------
+// Hauptlauf
+// ---------------------------------------------------------------------------
+
+/** Überträgt Fotos und Warteschlange. Mehrfachaufrufe laufen nicht parallel. */
+export async function synchronisieren(): Promise<SyncErgebnis> {
+  if (laeuft) return { uebertragen: 0, fehler: 0, konflikte: 0, fotos: 0, meldung: 'Sync läuft bereits.' }
+
+  if (!(await istOnline(true))) {
+    melden('offline')
+    return { uebertragen: 0, fehler: 0, konflikte: 0, fotos: 0, meldung: 'Offline – wird später übertragen.' }
+  }
+
+  laeuft = true
+  melden('syncing')
+  let fotos = 0
+  let uebertragen = 0
+  let konflikte = 0
+  let fehler = 0
+
+  try {
+    fotos = await fotosHochladen()
+
+    const batchGroesse = 25
+    let rest = await db.warteschlange.filter((e) => e.versuche < MAX_VERSUCHE).toArray()
+    while (rest.length) {
+      const batch = rest.slice(0, batchGroesse)
+      const ergebnis = await batchSenden(batch)
+      uebertragen += ergebnis.erfolge
+      konflikte += ergebnis.konflikte
+      fehler += ergebnis.fehler
+      rest = rest.slice(batchGroesse)
+    }
+
+    const ergebnis: SyncErgebnis = {
+      uebertragen,
+      fehler,
+      konflikte,
+      fotos,
+      meldung: zusammenfassung(uebertragen, fotos, konflikte, fehler),
+    }
+    melden(fehler || konflikte ? 'fehler' : 'online', ergebnis)
+    return ergebnis
+  } catch (ausnahme) {
+    const netz = ausnahme instanceof ApiFehler && ausnahme.istNetzfehler
+    const ergebnis: SyncErgebnis = {
+      uebertragen,
+      fehler: fehler + 1,
+      konflikte,
+      fotos,
+      meldung: netz ? 'Verbindung abgebrochen – Sync wird fortgesetzt.' : String((ausnahme as Error).message),
+    }
+    melden(netz ? 'offline' : 'fehler', ergebnis)
+    return ergebnis
+  } finally {
+    laeuft = false
+  }
+}
+
+function zusammenfassung(uebertragen: number, fotos: number, konflikte: number, fehler: number): string {
+  if (!uebertragen && !fotos && !konflikte && !fehler) return 'Alles aktuell.'
+  const teile: string[] = []
+  if (uebertragen) teile.push(`${uebertragen} Dokument${uebertragen === 1 ? '' : 'e'}`)
+  if (fotos) teile.push(`${fotos} Foto${fotos === 1 ? '' : 's'}`)
+  let text = teile.length ? `${teile.join(' und ')} übertragen.` : ''
+  if (konflikte) text += ` ${konflikte} Konflikt${konflikte === 1 ? '' : 'e'} – Serverstand übernommen.`
+  if (fehler) text += ` ${fehler} Fehler.`
+  return text.trim()
+}
+
+/** Speichert lokal und reiht für den nächsten Sync ein; überträgt sofort, wenn online. */
+export async function speichernUndSynchronisieren(
+  doctype: Dokumenttyp,
+  lokale_id: string,
+  dokument: Record<string, unknown>,
+  aktion: 'create' | 'update' = 'update',
+): Promise<void> {
+  const t = await tabelle(doctype)
+  await t.put({ ...dokument, lokale_id } as never)
+  await einreihen(doctype, lokale_id, dokument, aktion, dokument.modified as string | undefined)
+  if (await istOnline()) void synchronisieren()
+}
+
+let intervall: ReturnType<typeof setInterval> | undefined
+
+/** Startet Hintergrund-Sync bei Verbindungswechsel und alle fünf Minuten. */
+export function autoSyncStarten(): () => void {
+  const beiOnline = () => {
+    void istOnline(true).then((online) => {
+      melden(online ? 'online' : 'offline')
+      if (online) void synchronisieren()
+    })
+  }
+  const beiOffline = () => melden('offline')
+
+  window.addEventListener('online', beiOnline)
+  window.addEventListener('offline', beiOffline)
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') beiOnline()
+  })
+  intervall = setInterval(() => void synchronisieren(), 5 * 60_000)
+  beiOnline()
+
+  return () => {
+    window.removeEventListener('online', beiOnline)
+    window.removeEventListener('offline', beiOffline)
+    if (intervall) clearInterval(intervall)
+  }
+}

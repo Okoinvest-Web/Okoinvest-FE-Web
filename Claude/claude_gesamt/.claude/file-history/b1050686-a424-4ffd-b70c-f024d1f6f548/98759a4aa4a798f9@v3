@@ -1,0 +1,1212 @@
+import "server-only";
+
+import { alle, db, imBlock, schreibe, skalar } from "./verbindung.ts";
+import { messStempel, tagesSchluessel, verschiebeTage } from "../datum.ts";
+import { startwertAus, zufallsfolge } from "../demo/generator.ts";
+import { sonnenposition } from "../pv/sonnenstand.ts";
+import { erwarteteLeistung } from "../pv/kennzahlen.ts";
+
+/**
+ * Technischer Datenbestand: Wechselrichter, Stränge, Sensorik.
+ *
+ * Bewusst mit eingebauten Fehlerbildern, weil sich nur daran zeigen
+ * lässt, ob die Überwachung taugt:
+ *
+ *   - ein Strang mit zunehmender Verschattung durch Bewuchs
+ *   - ein Wechselrichter, der an einem Tag komplett ausfällt
+ *   - regelmäßige Abregelung bei knapper Auslegung
+ *   - ein Kommunikationsabbruch über Nacht
+ *   - ein Morgenschatten durch ein Nachbargebäude, täglich zur
+ *     gleichen Stunde und danach vollständige Erholung
+ *   - eine zunehmende Verschmutzung, die ein Regentag zurücksetzt
+ *
+ * Die letzten beiden sind hinzugekommen, damit sich die
+ * Ursachenzuordnung in `pv/befund.ts` überhaupt zeigen lässt: Ein
+ * Bestand, in dem jeder Tag unauffällig ist, beweist nur, dass die
+ * Auswertung nichts meldet.
+ *
+ * Ein Demonstrationsdatensatz ohne Fehler zeigt nur, dass die
+ * Oberfläche grün darstellen kann.
+ */
+
+/** Detaildaten nur für die jüngste Zeit - sonst wächst die Ablage unnötig. */
+const TAGE_DETAIL = 60;
+
+interface WrVorlage {
+  id: string;
+  anlageId: string;
+  bezeichnung: string;
+  hersteller: string;
+  modell: string;
+  seriennummer: string;
+  firmware: string;
+  nennleistungKw: number;
+  modulleistungKwp: number;
+  ip: string;
+  straenge: number;
+  /** Eingebautes Fehlerbild. */
+  stoerung?: "ausfall" | "abregelung" | "morgenschatten";
+}
+
+/**
+ * Sägewerk Amstetten, 1240,5 kWp auf vier Dachflächen.
+ *
+ * Zehn baugleiche Geräte zu je 124,05 kWp. Gleich große Einheiten sind
+ * bei Hallendächern der Regelfall und machen den Vergleich der Geräte
+ * untereinander erst aussagekräftig: Was ein Gerät weniger liefert als
+ * seine Nachbarn, liegt an ihm und nicht an der Auslegung.
+ */
+const SAEGEWERK_FELDER = [
+  "Halle Ost",
+  "Halle Ost",
+  "Halle West",
+  "Halle West",
+  "Lagerplatz",
+  "Lagerplatz",
+  "Schnittholzlager",
+  "Schnittholzlager",
+  "Trocknungshalle",
+  "Trocknungshalle",
+];
+
+const SAEGEWERK: WrVorlage[] = SAEGEWERK_FELDER.map((feld, i) => ({
+  id: `WR-${String(5 + i).padStart(4, "0")}`,
+  anlageId: "ANL-0002",
+  bezeichnung: `WR ${i + 1} ${feld}`,
+  hersteller: "Fronius",
+  modell: "Tauro ECO 100-3-P",
+  seriennummer: `FR-TAU-23-${44711 + i}`,
+  firmware: "1.18.7-1",
+  nennleistungKw: 100,
+  modulleistungKwp: 124.05,
+  ip: `10.43.10.${11 + i}`,
+  straenge: 5,
+  // Das dritte Gerät fällt an einem Tag vollständig aus.
+  stoerung: i === 2 ? ("ausfall" as const) : undefined,
+}));
+
+const WECHSELRICHTER: WrVorlage[] = [
+  // --- Produktionshalle St. Pölten, 749,7 kWp ---
+  {
+    id: "WR-0001",
+    anlageId: "ANL-0001",
+    bezeichnung: "WR 1 Nordfeld",
+    hersteller: "SMA",
+    modell: "Sunny Highpower PEAK3 SHP 150-20",
+    seriennummer: "3009847712",
+    firmware: "3.12.14.R",
+    nennleistungKw: 150,
+    modulleistungKwp: 187.4,
+    ip: "10.42.10.11",
+    straenge: 6,
+  },
+  {
+    id: "WR-0002",
+    anlageId: "ANL-0001",
+    bezeichnung: "WR 2 Nordfeld",
+    hersteller: "SMA",
+    modell: "Sunny Highpower PEAK3 SHP 150-20",
+    seriennummer: "3009847713",
+    firmware: "3.12.14.R",
+    nennleistungKw: 150,
+    modulleistungKwp: 187.4,
+    ip: "10.42.10.12",
+    straenge: 6,
+  },
+  {
+    id: "WR-0003",
+    anlageId: "ANL-0001",
+    bezeichnung: "WR 3 Südfeld",
+    hersteller: "SMA",
+    modell: "Sunny Highpower PEAK3 SHP 150-20",
+    seriennummer: "3009847714",
+    firmware: "3.12.14.R",
+    nennleistungKw: 150,
+    modulleistungKwp: 187.4,
+    ip: "10.42.10.13",
+    straenge: 6,
+    // Knapp ausgelegt: regelt an klaren Sommertagen zur Mittagszeit ab.
+    stoerung: "abregelung",
+  },
+  {
+    id: "WR-0004",
+    anlageId: "ANL-0001",
+    bezeichnung: "WR 4 Südfeld",
+    hersteller: "SMA",
+    modell: "Sunny Highpower PEAK3 SHP 150-20",
+    seriennummer: "3009847715",
+    firmware: "3.12.14.R",
+    nennleistungKw: 150,
+    modulleistungKwp: 187.5,
+    ip: "10.42.10.14",
+    straenge: 6,
+  },
+
+  ...SAEGEWERK,
+
+  // --- Lagerhalle Krems, 312,4 kWp ---
+  {
+    id: "WR-0015",
+    anlageId: "ANL-0003",
+    bezeichnung: "WR 1",
+    hersteller: "SMA",
+    modell: "Sunny Tripower CORE2",
+    seriennummer: "3007712283",
+    firmware: "3.10.09.R",
+    nennleistungKw: 110,
+    modulleistungKwp: 156.2,
+    ip: "10.44.10.11",
+    straenge: 4,
+  },
+  {
+    id: "WR-0016",
+    anlageId: "ANL-0003",
+    bezeichnung: "WR 2",
+    hersteller: "SMA",
+    modell: "Sunny Tripower CORE2",
+    seriennummer: "3007712284",
+    firmware: "3.10.09.R",
+    nennleistungKw: 110,
+    modulleistungKwp: 156.2,
+    ip: "10.44.10.12",
+    straenge: 4,
+  },
+
+  // --- Bürogebäude St. Pölten, 98,6 kWp ---
+  {
+    id: "WR-0017",
+    anlageId: "ANL-0004",
+    bezeichnung: "WR Dach",
+    hersteller: "Fronius",
+    modell: "Symo GEN24 30.0 Plus",
+    seriennummer: "FR-SYM-20-8821",
+    firmware: "1.31.7-1",
+    nennleistungKw: 90,
+    modulleistungKwp: 98.6,
+    ip: "10.46.10.11",
+    straenge: 4,
+    // Das Nachbargebäude wirft bis neun Uhr einen Schatten.
+    stoerung: "morgenschatten",
+  },
+
+  // --- Carport Krems, 186,3 kWp ---
+  {
+    id: "WR-0018",
+    anlageId: "ANL-0005",
+    bezeichnung: "WR Carport",
+    hersteller: "Huawei",
+    modell: "SUN2000-100KTL-M2",
+    seriennummer: "HW-2405-77213",
+    firmware: "V300R001C00SPC130",
+    nennleistungKw: 100,
+    modulleistungKwp: 186.3,
+    ip: "10.45.10.11",
+    straenge: 6,
+  },
+];
+
+/**
+ * Der Strang mit fortschreitender Verschattung.
+ *
+ * Bewuchs wächst langsam - die Abweichung nimmt über Wochen zu. Genau
+ * solche schleichenden Verluste bleiben ohne Strangvergleich
+ * unentdeckt, weil die Anlage insgesamt noch plausibel aussieht.
+ */
+const VERSCHATTETER_STRANG = "STR-0028";
+
+/** Tag des Wechselrichterausfalls, relativ zu heute. */
+const AUSFALL_VOR_TAGEN = 12;
+
+/** Tag des Kommunikationsabbruchs, relativ zu heute. */
+const ABBRUCH_VOR_TAGEN = 26;
+
+/**
+ * Morgenschatten durch das Nachbargebäude.
+ *
+ * Zwischen 07:00 und 09:00 Ortszeit liegt ein Teil des Feldes im
+ * Schatten; danach erholt sich die Anlage vollständig. Genau diese
+ * Signatur - scharfer Einbruch, Erholung, jeden Tag zur selben
+ * Stunde - unterscheidet einen Schatten von einem Defekt.
+ */
+const SCHATTEN_VON_MINUTE = 7 * 60;
+const SCHATTEN_BIS_MINUTE = 9 * 60;
+const SCHATTEN_RESTANTEIL = 0.32;
+
+/**
+ * Verschmutzung auf dem Carport.
+ *
+ * Ein Carport an einer Zufahrt bekommt Staub und Bremsabrieb ab. Die
+ * Ausbeute sinkt langsam, bis ein kräftiger Regen sie zurücksetzt.
+ * Der Sprung nach oben ist das einzige Merkmal, das Verschmutzung von
+ * Alterung unterscheidet - ohne ihn wird jahrelang abgeschrieben,
+ * was sich waschen ließe.
+ */
+const VERSCHMUTZTE_ANLAGE = "ANL-0005";
+/**
+ * Tage mit kräftigem Regen, rückwärts gezählt von heute.
+ *
+ * Zwei davon, weil erst die Wiederholung das Muster erkennbar macht:
+ * ein einzelner Sprung könnte auch ein Messfehler sein.
+ */
+const REGENTAGE = [9, 34];
+/** Verlust je Tag ohne Regen, als Anteil der Leistung. */
+const VERSCHMUTZUNG_JE_TAG = 0.004;
+const VERSCHMUTZUNG_HOECHSTENS = 0.11;
+
+/**
+ * Wie stark die Verschmutzung an einem Tag bremst.
+ *
+ * Gezählt wird ab dem letzten Regen. Vor dem Regen liegen die Module
+ * seit Beginn des Datenbestands ungewaschen da, danach beginnt die
+ * Zählung von vorn.
+ */
+function verschmutzung(anlageId: string, tagVonHeute: number): number {
+  if (anlageId !== VERSCHMUTZTE_ANLAGE) return 0;
+
+  // Der letzte Regen vor diesem Tag: Die Tageszählung läuft rückwärts,
+  // ein Regen "vor 34 Tagen" liegt also vor jedem Tag mit kleinerer
+  // Zahl. Gibt es keinen, zählt der Beginn des Datenbestands.
+  const letzterRegen = REGENTAGE.filter((r) => r > tagVonHeute).sort(
+    (a, b) => a - b,
+  )[0];
+
+  const tageSeitRegen =
+    letzterRegen === undefined
+      ? TAGE_DETAIL - tagVonHeute
+      : letzterRegen - tagVonHeute;
+
+  return Math.min(
+    VERSCHMUTZUNG_HOECHSTENS,
+    tageSeitRegen * VERSCHMUTZUNG_JE_TAG,
+  );
+}
+
+export interface TechnikErgebnis {
+  wechselrichter: number;
+  straenge: number;
+  wrMesswerte: number;
+  strangMesswerte: number;
+  sensorMesswerte: number;
+  alarme: number;
+  abnahmen: number;
+  wartungstermine: number;
+  dauerMs: number;
+}
+
+
+/**
+ * Abnahmeprotokolle je Anlage.
+ *
+ * Gemessen wird an einem Tag mit brauchbarer Einstrahlung, und die
+ * Werte streuen so, wie sie es an einem echten Dach tun: ein Prozent
+ * Messunsicherheit, nicht Null.
+ *
+ * Zwei eingebaute Befunde, weil sich nur an ihnen zeigt, ob die
+ * Pruefung taugt:
+ *
+ * - Der Lagerhalle fehlt ein Modul in einem Strang. Das ist der
+ *   haeufigste Fehler bei der Erstinbetriebnahme und aus der
+ *   Leerlaufspannung direkt ablesbar.
+ * - Beim Carport wurde mit zu geringer Pruefspannung isoliert
+ *   gemessen. Der Wert sieht gut aus und ist wertlos.
+ */
+function befuelleAbnahmen(): number {
+  const anlagen = alle<{
+    id: string;
+    bezeichnung: string;
+    inbetriebnahme: string | null;
+  }>("SELECT id, bezeichnung, inbetriebnahme FROM anlage ORDER BY id");
+
+  let anzahl = 0;
+
+  for (const anlage of anlagen) {
+    const zufall = zufallsfolge(startwertAus(`${anlage.id}-abnahme`));
+
+    const straenge = alle<{
+      id: string;
+      bezeichnung: string;
+      modul_anzahl: number;
+      wechselrichter_id: string;
+      wechselrichter: string;
+    }>(
+      `SELECT s.id, s.bezeichnung, s.modul_anzahl, s.wechselrichter_id,
+              w.bezeichnung AS wechselrichter
+         FROM strang s
+         JOIN wechselrichter w ON w.id = s.wechselrichter_id
+        WHERE w.anlage_id = ?
+        ORDER BY s.wechselrichter_id, s.id`,
+      anlage.id,
+    );
+
+    if (straenge.length === 0) continue;
+
+    const abnahmeId = `ABN-${anlage.id.slice(4)}`;
+    const geprueft = anlage.inbetriebnahme ?? "2024-05-14";
+
+    // Messbedingungen: ein klarer Vormittag im Mai.
+    const einstrahlung = anlage.id === "ANL-0003" ? 320 : 780 + zufall() * 120;
+    const modultemperatur = 18 + zufall() * 8;
+
+    schreibe(
+      `INSERT INTO abnahme
+         (id, anlage_id, geprueft_am, pruefer, pruefstelle, systemspannung_v,
+          einstrahlung, modultemperatur, rcd_ausloesung_ms, rcd_bemessung_ma,
+          netzschutz_geprueft, inselschutz_geprueft, bemerkung)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 1, ?)`,
+      abnahmeId,
+      anlage.id,
+      geprueft,
+      "Ing. M. Hofbauer",
+      "Ökovolt Technik, akkreditierte Prüfstelle",
+      1000,
+      Number(einstrahlung.toFixed(0)),
+      Number(modultemperatur.toFixed(1)),
+      Number((18 + zufall() * 12).toFixed(0)),
+      30,
+      anlage.id === "ANL-0003"
+        ? "Strommessung wegen Bewölkung nicht verwertbar, Nachmessung vereinbart."
+        : null,
+    );
+
+    for (const [i, strang] of straenge.entries()) {
+      /*
+       * Module in Reihe, nicht Module am Strang.
+       *
+       * Im Anlagenstamm steht, wie viele Module an einem Strang
+       * haengen; das sind bei einem grossen Feld auch siebzig. In
+       * Reihe koennen es keine siebzig sein: Bei 41 Volt je Modul
+       * waeren das 2850 Volt und damit weit ueber der zulaessigen
+       * Systemspannung von 1000 Volt. Tatsaechlich haengen mehrere
+       * Reihen parallel - fuer die Messung zaehlt die Reihe.
+       */
+      const REIHE = 20;
+      const parallel = Math.max(
+        1,
+        Math.round((strang.modul_anzahl > 0 ? strang.modul_anzahl : REIHE) / REIHE),
+      );
+
+      const inReihe = REIHE;
+      const uocModul = 41.3;
+      // Parallel geschaltete Reihen addieren ihren Strom.
+      const iscModul = 13.9 * parallel;
+
+      // Der Erwartungswert bei den Messbedingungen.
+      const sollUoc =
+        inReihe * uocModul * (1 - 0.0029 * (modultemperatur - 25));
+      const sollIsc = iscModul * (einstrahlung / 1000);
+
+      /*
+       * Ein nicht durchgesteckter Verbinder in der Lagerhalle.
+       *
+       * Drei Module der Reihe haengen nicht mit - der haeufigste
+       * Befund einer Erstabnahme. Gegen das Datenblatt allein ist das
+       * eine Abweichung von fuenfzehn Prozent; gegen die
+       * Nachbarstraenge faellt es sofort auf, und genau dafuer gibt
+       * es den Strangvergleich.
+       */
+      const fehlendeModule = anlage.id === "ANL-0003" && i === 0 ? 3 : 0;
+
+      const gemesseneUoc =
+        fehlendeModule > 0
+          ? (sollUoc / inReihe) * (inReihe - fehlendeModule)
+          : sollUoc * (0.995 + zufall() * 0.01);
+
+      schreibe(
+        `INSERT INTO abnahme_strang
+           (id, abnahme_id, strang_id, bezeichnung, module, uoc_modul_v,
+            isc_modul_a, gemessene_uoc_v, gemessener_isc_a, isolation_mohm,
+            pruefspannung_v, schutzleiter_ohm, polaritaet_richtig)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
+        `${abnahmeId}-S${String(i + 1).padStart(2, "0")}`,
+        abnahmeId,
+        strang.id,
+        // Der Strangname allein wiederholt sich je Wechselrichter.
+        `${strang.wechselrichter} · ${strang.bezeichnung}`,
+        inReihe,
+        uocModul,
+        iscModul,
+        Number(gemesseneUoc.toFixed(1)),
+        Number((sollIsc * (0.98 + zufall() * 0.04)).toFixed(2)),
+        Number((12 + zufall() * 40).toFixed(1)),
+        // Beim Carport wurde mit der falschen Stufe gemessen.
+        anlage.id === "ANL-0005" ? 500 : 1000,
+        Number((0.12 + zufall() * 0.35).toFixed(2)),
+      );
+    }
+
+    anzahl += 1;
+  }
+
+  return anzahl;
+}
+
+/**
+ * Wartungsprofile und Prüftermine je Anlage.
+ *
+ * Der Bestand ist bewusst uneinheitlich, weil er in einem Betrieb
+ * dieser Größe uneinheitlich ist:
+ *
+ * - Das Bürogebäude ist gering beansprucht und darf nach ESV zehn
+ *   Jahre laufen - die Anlage sieht deshalb "überfällig" aus, wenn
+ *   man nur auf das Datum schaut, und ist es nicht.
+ * - Am Sägewerk gilt ein verkürzter Abstand: Holzstaub. Die Frist
+ *   steht dort deshalb auf drei Jahre und nicht auf fünf.
+ * - Beim Carport fehlt die Prüfung der entkuppelnden Schutz-
+ *   einrichtung. Das ist der Fall, der einen Netzzugang kostet, und
+ *   er soll auf der Oberfläche zu sehen sein.
+ * - Zur Lagerhalle ist zur Thermografie nichts abgelegt. Nicht
+ *   "in Ordnung", sondern unbekannt.
+ */
+function befuelleWartung(): number {
+  const anlagen = alle<{ id: string; inbetriebnahme: string | null }>(
+    "SELECT id, inbetriebnahme FROM anlage ORDER BY id",
+  );
+
+  const profile: Record<
+    string,
+    { umgebung: string; klasse: number | null; kritisch: number; bemerkung?: string }
+  > = {
+    "ANL-0001": { umgebung: "normal", klasse: 3, kritisch: 0 },
+    "ANL-0002": {
+      umgebung: "explosionsgefaehrdet",
+      klasse: 2,
+      kritisch: 1,
+      bemerkung:
+        "Holzstaub in der Späneabsaugung: Bereich nach ESV verkürzt geprüft, Blitzschutz als kritisches System geführt.",
+    },
+    "ANL-0003": { umgebung: "normal", klasse: 3, kritisch: 0 },
+    "ANL-0004": {
+      umgebung: "gering",
+      klasse: 4,
+      kritisch: 0,
+      bemerkung: "Reines Bürogebäude, keine Fertigung.",
+    },
+    "ANL-0005": { umgebung: "normal", klasse: 4, kritisch: 0 },
+  };
+
+  // Monate zurück, gerechnet von heute. `null` heißt: nichts abgelegt.
+  const termine: Record<string, Record<string, number | null>> = {
+    "ANL-0001": {
+      "esv-anlage": 26,
+      "pv-anlagenpruefung": 14,
+      // Schutzklasse 3, also 24 Monate: in einem Monat fällig.
+      "blitzschutz-sicht": 23,
+      "blitzschutz-umfassend": 23,
+      "na-schutz": 30,
+      "wechselrichter-wartung": 7,
+      thermografie: 15,
+      modulreinigung: 19,
+    },
+    "ANL-0002": {
+      // Verkürzter Abstand von 36 Monaten, letzte Prüfung 40 Monate
+      // her: seit vier Monaten überfällig.
+      "esv-anlage": 40,
+      "pv-anlagenpruefung": 9,
+      "blitzschutz-sicht": 8,
+      "blitzschutz-umfassend": 8,
+      "na-schutz": 22,
+      "wechselrichter-wartung": 4,
+      thermografie: 11,
+      modulreinigung: 26,
+    },
+    "ANL-0003": {
+      "esv-anlage": 41,
+      // 24 Monate Abstand: in einem Monat fällig.
+      "pv-anlagenpruefung": 23,
+      "blitzschutz-sicht": 21,
+      "blitzschutz-umfassend": 44,
+      "na-schutz": 41,
+      "wechselrichter-wartung": 10,
+      thermografie: null,
+      modulreinigung: 27,
+    },
+    "ANL-0004": {
+      // Zehn Jahre Abstand: trotz 71 Monaten nicht fällig.
+      "esv-anlage": 71,
+      "pv-anlagenpruefung": 17,
+      "blitzschutz-sicht": 16,
+      "blitzschutz-umfassend": 30,
+      "na-schutz": 33,
+      "wechselrichter-wartung": 9,
+      thermografie: 20,
+      modulreinigung: 14,
+    },
+    "ANL-0005": {
+      "esv-anlage": 19,
+      "pv-anlagenpruefung": 20,
+      "blitzschutz-sicht": 22,
+      "blitzschutz-umfassend": 46,
+      // Nie geprüft - der Fall, der den Netzzugang kostet.
+      "na-schutz": null,
+      "wechselrichter-wartung": 6,
+      thermografie: 18,
+      modulreinigung: 8,
+    },
+  };
+
+  const pruefer: Record<string, string> = {
+    "esv-anlage": "Ing. M. Hofbauer, Ökovolt Technik",
+    "pv-anlagenpruefung": "Ing. M. Hofbauer, Ökovolt Technik",
+    "blitzschutz-sicht": "Blitzschutzbau Hofer GmbH",
+    "blitzschutz-umfassend": "Blitzschutzbau Hofer GmbH",
+    "na-schutz": "Ökovolt Technik, Protokoll an Netz NÖ",
+    "wechselrichter-wartung": "Werkskundendienst",
+    thermografie: "TÜV Austria, Thermografie",
+    modulreinigung: "Fassaden- und Anlagenreinigung Prem",
+  };
+
+  let anzahl = 0;
+
+  for (const anlage of anlagen) {
+    const profil = profile[anlage.id];
+    if (!profil) continue;
+
+    schreibe(
+      `INSERT INTO wartungsprofil
+         (anlage_id, umgebung, blitzschutzklasse, kritisch, bemerkung)
+       VALUES (?, ?, ?, ?, ?)`,
+      anlage.id,
+      profil.umgebung,
+      profil.klasse,
+      profil.kritisch,
+      profil.bemerkung ?? null,
+    );
+
+    const eintraege = termine[anlage.id] ?? {};
+
+    for (const [regel, monate] of Object.entries(eintraege)) {
+      const letzte =
+        monate === null
+          ? null
+          : (() => {
+              const d = new Date();
+              d.setHours(0, 0, 0, 0);
+              d.setMonth(d.getMonth() - monate);
+              return tagesSchluessel(d);
+            })();
+
+      schreibe(
+        `INSERT INTO wartungstermin
+           (id, anlage_id, regel, letzte_pruefung, intervall_monate, pruefer,
+            protokoll, befund, bemerkung)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `WAR-${anlage.id.slice(4)}-${regel}`,
+        anlage.id,
+        regel,
+        letzte,
+        // Am Sägewerk schreibt die Behörde drei Jahre vor.
+        anlage.id === "ANL-0002" && regel === "esv-anlage" ? 36 : null,
+        letzte ? pruefer[regel] : null,
+        letzte ? `PRO-${anlage.id.slice(4)}-${regel.toUpperCase()}` : null,
+        letzte ? "ohne Beanstandung" : null,
+        monate === null
+          ? "Zu dieser Prüfung ist nichts abgelegt."
+          : null,
+      );
+
+      anzahl += 1;
+    }
+  }
+
+  return anzahl;
+}
+
+export function befuelleTechnik(erzwingen = false): TechnikErgebnis {
+  const start = Date.now();
+
+  const vorhanden = skalar<number>("SELECT COUNT(*) FROM wechselrichter") ?? 0;
+  if (vorhanden > 0 && !erzwingen) {
+    return {
+      wechselrichter: 0,
+      straenge: 0,
+      abnahmen: 0,
+      wrMesswerte: 0,
+      strangMesswerte: 0,
+      sensorMesswerte: 0,
+      alarme: 0,
+      wartungstermine: 0,
+      dauerMs: 0,
+    };
+  }
+
+  const anlagen = holeAnlagen();
+  const heute = new Date();
+  heute.setHours(0, 0, 0, 0);
+  const beginn = verschiebeTage(heute, -TAGE_DETAIL + 1);
+
+  const zaehler = {
+    straenge: 0,
+    wrMesswerte: 0,
+    strangMesswerte: 0,
+    sensorMesswerte: 0,
+    alarme: 0,
+    abnahmen: 0,
+    wartungstermine: 0,
+  };
+
+  imBlock(() => {
+    if (erzwingen) {
+      for (const tabelle of [
+        "alarm",
+        "alarmregel",
+        "strang_messwert",
+        "wartungstermin",
+        "wartungsprofil",
+        "abnahme_strang",
+        "abnahme",
+        "wr_messwert",
+        "sensor_messwert",
+        "strang",
+        "wechselrichter",
+        "verguetung",
+        "betriebskosten",
+      ]) {
+        schreibe(`DELETE FROM ${tabelle}`);
+      }
+    }
+
+    // --- Wechselrichter und Stränge ---
+    let strangNummer = 0;
+
+    for (const wr of WECHSELRICHTER) {
+      schreibe(
+        `INSERT INTO wechselrichter
+           (id, anlage_id, bezeichnung, hersteller, modell, seriennummer,
+            firmware, nennleistung_kw, modulleistung_kwp, eingebaut_am,
+            garantie_bis, ip_adresse)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?,
+                 (SELECT inbetriebnahme FROM anlage WHERE id = ?),
+                 date((SELECT inbetriebnahme FROM anlage WHERE id = ?), '+10 years'),
+                 ?)`,
+        wr.id,
+        wr.anlageId,
+        wr.bezeichnung,
+        wr.hersteller,
+        wr.modell,
+        wr.seriennummer,
+        wr.firmware,
+        wr.nennleistungKw,
+        wr.modulleistungKwp,
+        wr.anlageId,
+        wr.anlageId,
+        wr.ip,
+      );
+
+      const anlage = anlagen.get(wr.anlageId);
+      const kwpJeStrang = wr.modulleistungKwp / wr.straenge;
+
+      for (let i = 1; i <= wr.straenge; i++) {
+        strangNummer += 1;
+        const strangId = `STR-${String(strangNummer).padStart(4, "0")}`;
+
+        schreibe(
+          `INSERT INTO strang
+             (id, wechselrichter_id, bezeichnung, tracker, modul_anzahl,
+              leistung_kwp, ausrichtung, neigung)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          strangId,
+          wr.id,
+          `Strang ${i}`,
+          Math.ceil(i / 2),
+          Math.round(kwpJeStrang / 0.565),
+          Number(kwpJeStrang.toFixed(2)),
+          anlage?.ausrichtung ?? "Süd",
+          anlage?.neigung ?? 15,
+        );
+        zaehler.straenge += 1;
+      }
+    }
+
+    const guete = strangGuete();
+
+    // --- Messwerte ---
+    const sensorEinfuegen = db().prepare(
+      `INSERT OR REPLACE INTO sensor_messwert
+         (anlage_id, zeitpunkt, einstrahlung_w_m2, modultemperatur,
+          umgebungstemperatur, windgeschwindigkeit)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+    );
+
+    const wrEinfuegen = db().prepare(
+      `INSERT OR REPLACE INTO wr_messwert
+         (wechselrichter_id, zeitpunkt, leistung_kw, dc_leistung_kw,
+          temperatur, zustand)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+    );
+
+    const strangEinfuegen = db().prepare(
+      `INSERT OR REPLACE INTO strang_messwert
+         (strang_id, zeitpunkt, strom_a, spannung_v)
+       VALUES (?, ?, ?, ?)`,
+    );
+
+    const straengeJeWr = holeStraenge();
+
+    for (let tag = 0; tag < TAGE_DETAIL; tag++) {
+      const datum = verschiebeTage(beginn, tag);
+      const tagVonHeute = TAGE_DETAIL - 1 - tag;
+
+      for (const [anlageId, anlage] of anlagen) {
+        const zufall = zufallsfolge(
+          startwertAus(`${anlageId}-technik-${tagesSchluessel(datum)}`),
+        );
+        const bewoelkung = Math.pow(zufall(), 2) * 0.85;
+
+        for (let viertel = 0; viertel < 96; viertel++) {
+          const zeit = new Date(datum);
+          zeit.setHours(0, viertel * 15, 0, 0);
+          const stempel = messStempel(zeit);
+
+          const sonne = sonnenposition(zeit, anlage.breite, anlage.laenge);
+
+          // --- Sensorik ---
+          const klarSicht = Math.max(0, Math.sin((sonne.hoehe * Math.PI) / 180));
+          const einstrahlung =
+            sonne.hoehe <= 0
+              ? 0
+              : Math.max(
+                  0,
+                  1050 * klarSicht * (1 - bewoelkung * (0.4 + 0.45 * zufall())),
+                );
+
+          const umgebung =
+            8 + 14 * klarSicht + 6 * Math.sin((tag / 60) * Math.PI) + zufall() * 3;
+          // Module werden deutlich wärmer als die Umgebung.
+          const modultemperatur = umgebung + (einstrahlung / 1000) * 28;
+
+          sensorEinfuegen.run(
+            anlageId,
+            stempel,
+            Number(einstrahlung.toFixed(1)),
+            Number(modultemperatur.toFixed(1)),
+            Number(umgebung.toFixed(1)),
+            Number((1 + zufall() * 5).toFixed(1)),
+          );
+          zaehler.sensorMesswerte += 1;
+
+          // --- Wechselrichter und Stränge ---
+          for (const wr of WECHSELRICHTER.filter((w) => w.anlageId === anlageId)) {
+            const moeglich = erwarteteLeistung(
+              wr.modulleistungKwp,
+              einstrahlung,
+              modultemperatur,
+              0.86,
+            );
+
+            let leistung = moeglich;
+            let zustand = "Normal";
+
+            // Eingebaute Fehlerbilder.
+            if (wr.stoerung === "ausfall" && tagVonHeute === AUSFALL_VOR_TAGEN) {
+              leistung = 0;
+              zustand = einstrahlung > 50 ? "Stoerung" : "Aus";
+            } else if (wr.stoerung === "abregelung" && moeglich > wr.nennleistungKw) {
+              leistung = wr.nennleistungKw;
+              zustand = "Abgeregelt";
+            } else if (wr.stoerung === "morgenschatten") {
+              const minute = zeit.getHours() * 60 + zeit.getMinutes();
+              if (
+                minute >= SCHATTEN_VON_MINUTE &&
+                minute < SCHATTEN_BIS_MINUTE
+              ) {
+                leistung = moeglich * SCHATTEN_RESTANTEIL;
+              }
+            }
+
+            // Schmutz auf dem Glas wirkt auf die ganze Anlage.
+            leistung *= 1 - verschmutzung(anlageId, tagVonHeute);
+
+            const dcLeistung = leistung > 0 ? leistung / 0.98 : 0;
+            const wrTemperatur =
+              umgebung + (leistung / Math.max(1, wr.nennleistungKw)) * 32;
+
+            wrEinfuegen.run(
+              wr.id,
+              stempel,
+              Number(leistung.toFixed(2)),
+              Number(dcLeistung.toFixed(2)),
+              Number(wrTemperatur.toFixed(1)),
+              zustand,
+            );
+            zaehler.wrMesswerte += 1;
+
+            // Strangströme: gleichmäßige Aufteilung mit leichter Streuung.
+            const straenge = straengeJeWr.get(wr.id) ?? [];
+            for (const strang of straenge) {
+              const anteil = strang.leistung_kwp / wr.modulleistungKwp;
+              // Rund 620 V Strangspannung im Betrieb.
+              const spannung = einstrahlung > 20 ? 600 + zufall() * 40 : 0;
+              let strom =
+                spannung > 0 ? (leistung * anteil * 1000) / spannung : 0;
+
+              // Dauerhafte Güte des Strangs - siehe strangGuete().
+              strom *= guete.get(strang.id) ?? 1;
+
+              // Messrauschen. Anders als die Güte mittelt es sich über
+              // längere Zeiträume heraus und verschiebt den Vergleich
+              // deshalb nicht.
+              strom *= 0.995 + zufall() * 0.01;
+
+              // Fortschreitende Verschattung an einem Strang.
+              if (strang.id === VERSCHATTETER_STRANG) {
+                const fortschritt = Math.min(1, tag / TAGE_DETAIL);
+                strom *= 1 - 0.28 * fortschritt;
+              }
+
+              strangEinfuegen.run(
+                strang.id,
+                stempel,
+                Number(Math.max(0, strom).toFixed(2)),
+                Number(spannung.toFixed(1)),
+              );
+              zaehler.strangMesswerte += 1;
+            }
+          }
+        }
+      }
+    }
+
+    befuelleRegeln();
+    zaehler.alarme = befuelleAlarme(heute);
+    zaehler.abnahmen = befuelleAbnahmen();
+    zaehler.wartungstermine = befuelleWartung();
+    befuelleWirtschaft();
+  });
+
+  return {
+    wechselrichter: WECHSELRICHTER.length,
+    ...zaehler,
+    dauerMs: Date.now() - start,
+  };
+}
+
+interface AnlagenZeile {
+  id: string;
+  bezeichnung: string;
+  leistung_kwp: number;
+  latitude: number;
+  longitude: number;
+  ausrichtung: string | null;
+  neigung: number | null;
+}
+
+
+/**
+ * Dauerhafte Güte je Strang, rund plus/minus zwei Prozent.
+ *
+ * Stränge derselben Anlage liefern nie exakt gleich viel: Module
+ * streuen innerhalb ihrer Leistungstoleranz, Leitungswege sind
+ * unterschiedlich lang, Dachflächen verschmutzen ungleichmäßig. Dieser
+ * Unterschied ist dauerhaft - er mittelt sich über Wochen nicht heraus.
+ *
+ * Reines Rauschen je Messwert wäre hier falsch: Über dreißig Tage
+ * gemittelt ergäbe es für jeden Strang exakt null Prozent Abweichung.
+ * Ein Strangvergleich, in dem alles genau null ist, zeigt weder, dass
+ * die Auswertung funktioniert, noch wo die Grenze zum Auffälligen liegt.
+ */
+function strangGuete(): Map<string, number> {
+  const karte = new Map<string, number>();
+
+  const zeilen = db().prepare("SELECT id FROM strang").all() as unknown as {
+    id: string;
+  }[];
+
+  for (const z of zeilen) {
+    // Aus der Kennung abgeleitet: bei gleichem Bestand gleiches Ergebnis.
+    const wert = zufallsfolge(startwertAus(`guete:${z.id}`))();
+    karte.set(z.id, 0.98 + wert * 0.04);
+  }
+
+  return karte;
+}
+
+function holeAnlagen(): Map<
+  string,
+  { bezeichnung: string; kwp: number; breite: number; laenge: number; ausrichtung: string | null; neigung: number | null }
+> {
+  const zeilen = db()
+    .prepare(
+      `SELECT id, bezeichnung, leistung_kwp, latitude, longitude, ausrichtung, neigung
+         FROM anlage`,
+    )
+    .all() as unknown as AnlagenZeile[];
+
+  const karte = new Map<
+    string,
+    { bezeichnung: string; kwp: number; breite: number; laenge: number; ausrichtung: string | null; neigung: number | null }
+  >();
+
+  for (const z of zeilen) {
+    karte.set(z.id, {
+      bezeichnung: z.bezeichnung,
+      kwp: z.leistung_kwp,
+      breite: z.latitude ?? 48.2,
+      laenge: z.longitude ?? 15.6,
+      ausrichtung: z.ausrichtung,
+      neigung: z.neigung,
+    });
+  }
+
+  return karte;
+}
+
+function holeStraenge(): Map<
+  string,
+  { id: string; leistung_kwp: number }[]
+> {
+  const zeilen = db()
+    .prepare("SELECT id, wechselrichter_id, leistung_kwp FROM strang")
+    .all() as unknown as {
+    id: string;
+    wechselrichter_id: string;
+    leistung_kwp: number;
+  }[];
+
+  const karte = new Map<string, { id: string; leistung_kwp: number }[]>();
+  for (const z of zeilen) {
+    const liste = karte.get(z.wechselrichter_id) ?? [];
+    liste.push({ id: z.id, leistung_kwp: z.leistung_kwp });
+    karte.set(z.wechselrichter_id, liste);
+  }
+  return karte;
+}
+
+function befuelleRegeln(): void {
+  const regeln: [string, string, string, string, number, number, number, number, string][] =
+    [
+      ["REG-0001", "Kein Ertrag trotz Einstrahlung", "Nullertrag", "Kritisch", 0, 45, 1, 150,
+        "Die Anlage liefert nichts, obwohl die Einstrahlung Ertrag zulassen würde."],
+      ["REG-0002", "Minderertrag über 25 Prozent", "Minderertrag", "Hoch", 25, 120, 1, 300,
+        "Die Leistung liegt dauerhaft unter dem Erwartungswert aus Einstrahlung und Modultemperatur."],
+      ["REG-0003", "Strangabweichung über 10 Prozent", "Strangabweichung", "Mittel", 10, 180, 1, 400,
+        "Ein Strang liefert weniger als die Vergleichsstränge am selben Wechselrichter."],
+      ["REG-0004", "Wechselrichter gestört", "Wechselrichterstoerung", "Hoch", 0, 30, 1, 100,
+        "Ein Wechselrichter meldet Störung oder ist abgeschaltet."],
+      ["REG-0005", "Keine Datenverbindung", "Kommunikation", "Mittel", 0, 120, 0, 0,
+        "Von der Anlage kommen keine Messwerte an. Gilt auch nachts."],
+      ["REG-0006", "Übertemperatur Wechselrichter", "Temperatur", "Niedrig", 70, 60, 1, 200,
+        "Anhaltende Übertemperatur führt zur Leistungsreduktion und verkürzt die Lebensdauer."],
+      ["REG-0007", "Abregelung", "Abregelung", "Info", 0, 60, 1, 600,
+        "Der Wechselrichter begrenzt die Leistung. Bei häufigem Auftreten Auslegung prüfen."],
+    ];
+
+  for (const [id, bez, art, grad, schwelle, dauer, tags, minE, text] of regeln) {
+    schreibe(
+      `INSERT INTO alarmregel
+         (id, bezeichnung, art, schweregrad, schwellwert, dauer_minuten,
+          nur_tagsueber, min_einstrahlung, beschreibung)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      id, bez, art, grad, schwelle, dauer, tags, minE, text,
+    );
+  }
+}
+
+/**
+ * Legt die Alarme an, die zu den eingebauten Fehlerbildern gehören.
+ *
+ * Im Regelbetrieb entstünden sie aus der laufenden Auswertung; hier
+ * werden sie passend zu den erzeugten Messwerten gesetzt, damit
+ * Meldung und Datenlage zusammenpassen.
+ */
+function befuelleAlarme(heute: Date): number {
+  const ausfallTag = verschiebeTage(heute, -AUSFALL_VOR_TAGEN);
+  const abbruchTag = verschiebeTage(heute, -ABBRUCH_VOR_TAGEN);
+
+  // Bezeichnungen aus dem Bestand holen statt sie hinzuschreiben: Sonst
+  // spricht die Meldung von einem anderen Strang als dem, auf den sie
+  // zeigt - und wer ihr folgt, steht vor dem falschen Gerät.
+  const betroffen = db()
+    .prepare(
+      `SELECT s.bezeichnung AS strang, wr.bezeichnung AS wr
+         FROM strang s
+         JOIN wechselrichter wr ON wr.id = s.wechselrichter_id
+        WHERE s.id = ?`,
+    )
+    .get(VERSCHATTETER_STRANG) as unknown as
+    | { strang: string; wr: string }
+    | undefined;
+
+  const strangName = betroffen?.strang ?? "Strang";
+  const wrName = betroffen?.wr ?? "Wechselrichter";
+
+  const alarme: {
+    id: string;
+    regel: string;
+    anlage: string;
+    wr?: string;
+    strang?: string;
+    art: string;
+    grad: string;
+    titel: string;
+    text: string;
+    ist: number;
+    soll: number;
+    status: string;
+    ausfallKwh: number;
+    ausfallEur: number;
+    von: Date;
+    bis: Date | null;
+  }[] = [
+    {
+      id: "ALM-0001",
+      regel: "REG-0003",
+      anlage: "ANL-0002",
+      strang: VERSCHATTETER_STRANG,
+      art: "Strangabweichung",
+      grad: "Mittel",
+      titel: `Strangabweichung: ${strangName}`,
+      text:
+        `${strangName} an ${wrName} liefert rund 22 Prozent weniger als die ` +
+        "übrigen Stränge desselben Geräts. Die Abweichung nimmt seit mehreren " +
+        "Wochen zu – das Muster spricht für Bewuchs, nicht für einen " +
+        "plötzlichen Defekt.",
+      ist: 5.9,
+      soll: 7.6,
+      status: "Offen",
+      ausfallKwh: 640,
+      ausfallEur: 76.8,
+      von: verschiebeTage(heute, -21),
+      bis: null,
+    },
+    {
+      id: "ALM-0002",
+      regel: "REG-0004",
+      anlage: "ANL-0002",
+      wr: "WR-0007",
+      art: "Wechselrichterstoerung",
+      grad: "Hoch",
+      titel: "Wechselrichterstörung: WR 3 Halle West",
+      text:
+        "WR 3 Halle West meldete Störung und speiste den ganzen Tag nicht ein. Nach dem Wiedereinschalten läuft das Gerät normal; die Ursache ist offen.",
+      ist: 0,
+      soll: 86.4,
+      status: "Behoben",
+      ausfallKwh: 712,
+      ausfallEur: 85.4,
+      von: new Date(ausfallTag.getTime() + 6 * 3600000),
+      bis: new Date(ausfallTag.getTime() + 19 * 3600000),
+    },
+    {
+      id: "ALM-0003",
+      regel: "REG-0005",
+      anlage: "ANL-0004",
+      art: "Kommunikation",
+      grad: "Mittel",
+      titel: "Keine Daten empfangen",
+      text:
+        "Der Datenlogger war nach einem Stromausfall nicht erreichbar. Die Messwerte wurden nach dem Neustart vollständig nachgeladen.",
+      ist: 0,
+      soll: 0,
+      status: "Behoben",
+      ausfallKwh: 0,
+      ausfallEur: 0,
+      von: new Date(abbruchTag.getTime() + 22 * 3600000),
+      bis: new Date(abbruchTag.getTime() + 31 * 3600000),
+    },
+    {
+      id: "ALM-0004",
+      regel: "REG-0007",
+      anlage: "ANL-0001",
+      wr: "WR-0003",
+      art: "Abregelung",
+      grad: "Info",
+      titel: "Abregelung: WR 3 Südfeld",
+      text:
+        "WR 3 Südfeld erreicht an klaren Tagen die Nennleistung und begrenzt. Bei einem Auslegungsfaktor von 1,25 ist das erwartbar; die abgeregelte Menge liegt im Jahresmittel unter einem Prozent.",
+      ist: 150,
+      soll: 163.2,
+      status: "Quittiert",
+      ausfallKwh: 184,
+      ausfallEur: 22.1,
+      von: verschiebeTage(heute, -4),
+      bis: null,
+    },
+    {
+      id: "ALM-0005",
+      regel: "REG-0006",
+      anlage: "ANL-0003",
+      wr: "WR-0016",
+      art: "Temperatur",
+      grad: "Niedrig",
+      titel: "Übertemperatur: WR 2",
+      text:
+        "Die Innentemperatur lag über mehrere Stunden bei 74 Grad. Der Lüftungsweg sollte bei der nächsten Begehung geprüft werden.",
+      ist: 74,
+      soll: 70,
+      status: "Offen",
+      ausfallKwh: 0,
+      ausfallEur: 0,
+      von: verschiebeTage(heute, -2),
+      bis: null,
+    },
+  ];
+
+  for (const a of alarme) {
+    schreibe(
+      `INSERT INTO alarm
+         (id, regel_id, anlage_id, wechselrichter_id, strang_id, art,
+          schweregrad, titel, beschreibung, ist_wert, soll_wert, status,
+          ausfall_kwh, ausfall_eur, ausgeloest_am, beendet_am,
+          quittiert_am, quittiert_von)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      a.id,
+      a.regel,
+      a.anlage,
+      a.wr ?? null,
+      a.strang ?? null,
+      a.art,
+      a.grad,
+      a.titel,
+      a.text,
+      a.ist,
+      a.soll,
+      a.status,
+      a.ausfallKwh,
+      a.ausfallEur,
+      a.von.toISOString(),
+      a.bis ? a.bis.toISOString() : null,
+      a.status === "Quittiert" ? new Date().toISOString() : null,
+      a.status === "Quittiert" ? "m.hofbauer@steiner-holzbau.at" : null,
+    );
+  }
+
+  return alarme.length;
+}
+
+function befuelleWirtschaft(): void {
+  // Vergütung je Anlage. Die Sätze entsprechen der Größenordnung
+  // österreichischer Marktprämien- und Direktvermarktungsmodelle.
+  const saetze: [string, string, string, number, string][] = [
+    ["VG-0001", "ANL-0001", "Marktpraemie", 8.4, "OeMAG, Zuschlag 2022"],
+    ["VG-0002", "ANL-0001", "Eigenverbrauch", 21.8, "Ersparter Netzbezug"],
+    ["VG-0003", "ANL-0002", "Direktvermarktung", 7.9, "Direktvermarkter, Marktwert Solar"],
+    ["VG-0004", "ANL-0002", "Eigenverbrauch", 21.8, "Ersparter Netzbezug"],
+    ["VG-0005", "ANL-0003", "Einspeisetarif", 9.6, "Tarif aus Förderzusage 2021"],
+    ["VG-0006", "ANL-0004", "Gemeinschaft", 12.0, "Gutschrift Energiegemeinschaft"],
+    ["VG-0007", "ANL-0005", "Eigenverbrauch", 21.8, "Ladeinfrastruktur"],
+  ];
+
+  for (const [id, anlage, art, ct, text] of saetze) {
+    schreibe(
+      `INSERT INTO verguetung (id, anlage_id, art, ct_kwh, gueltig_von, bemerkung)
+       VALUES (?, ?, ?, ?, date('now','-3 years'), ?)`,
+      id, anlage, art, ct, text,
+    );
+  }
+
+  const kosten: [string, string, string, number, string][] = [
+    ["BK-0001", "ANL-0001", "Betriebsführung", 4200, "Wartungsvertrag, jährlich"],
+    ["BK-0002", "ANL-0001", "Versicherung", 1850, "Elektronikversicherung"],
+    ["BK-0003", "ANL-0002", "Betriebsführung", 6800, "Wartungsvertrag, jährlich"],
+    ["BK-0004", "ANL-0002", "Versicherung", 2900, "Elektronikversicherung"],
+    ["BK-0005", "ANL-0003", "Betriebsführung", 2100, "Wartungsvertrag, jährlich"],
+  ];
+
+  for (const [id, anlage, art, betrag, text] of kosten) {
+    schreibe(
+      `INSERT INTO betriebskosten (id, anlage_id, art, betrag_jahr, bemerkung)
+       VALUES (?, ?, ?, ?, ?)`,
+      id, anlage, art, betrag, text,
+    );
+  }
+}

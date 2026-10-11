@@ -1,0 +1,55 @@
+import Link from "next/link";
+import { Suspense } from "react";
+import { db } from "@/lib/data";
+import { date, PRIORITY_LABEL } from "@/lib/format";
+import { Badge, Empty, PageHeader } from "@/components/ui";
+import { ListToolbar } from "@/components/ListToolbar";
+import { ToDoCheck } from "@/components/interactive";
+import { ToDoForm } from "@/components/forms";
+
+export const metadata = { title: "Aufgaben" };
+
+const STATUS_LABEL = { Open: "Offen", Closed: "Erledigt", Cancelled: "Abgebrochen" };
+
+export default async function ToDosPage({ searchParams }: PageProps<"/todos">) {
+  const sp = await searchParams;
+  const status = typeof sp.status === "string" ? sp.status : undefined;
+  const todos = await db().listToDos({ search: typeof sp.q === "string" ? sp.q : undefined, filters: { status } });
+
+  const refHref = (type?: string, name?: string) =>
+    !name ? null : type === "Lead" ? `/leads/${encodeURIComponent(name)}` : type === "Opportunity" ? `/opportunities/${encodeURIComponent(name)}` : null;
+
+  return (
+    <>
+      <PageHeader title="Aufgaben" />
+      <ToDoForm />
+      <Suspense>
+        <ListToolbar statuses={["Open", "Closed", "Cancelled"]} labels={STATUS_LABEL} count={todos.length} />
+      </Suspense>
+      {todos.length === 0 ? (
+        <Empty>Keine Aufgaben gefunden.</Empty>
+      ) : (
+        <ul className="divide-y divide-gray-100">
+          {todos.map((t) => {
+            const href = refHref(t.reference_type, t.reference_name);
+            const done = t.status === "Closed";
+            return (
+              <li key={t.name} className="flex items-center gap-3 px-5 py-2.5 hover:bg-gray-50">
+                <ToDoCheck name={t.name} done={done} />
+                <span className={`min-w-0 flex-1 truncate ${done ? "text-gray-400 line-through" : "text-gray-900"}`}>{t.description}</span>
+                {href && (
+                  <Link href={href} className="text-xs text-gray-500 hover:text-gray-900">
+                    {t.reference_type} · {t.reference_name}
+                  </Link>
+                )}
+                <Badge value={t.priority} label={PRIORITY_LABEL[t.priority]} />
+                <span className="w-40 truncate text-right text-xs text-gray-500">{t.allocated_to}</span>
+                <span className="w-24 text-right text-xs text-gray-500">{date(t.date)}</span>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </>
+  );
+}

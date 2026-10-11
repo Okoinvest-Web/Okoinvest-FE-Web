@@ -1,0 +1,54 @@
+"use client";
+
+import { useSyncExternalStore } from "react";
+
+/**
+ * Die Uhr des Leitstands.
+ *
+ * Sie ist kein Schmuck. In einem Betrieb, in dem Viertelstundenwerte
+ * gemessen, Fristen gezählt und Meldungen eskaliert werden, ist die
+ * erste Frage bei jeder Zahl: von wann ist die? Eine sichtbare Uhr
+ * beantwortet sie, ohne dass jemand in die Ecke des Betriebssystems
+ * schaut - und sie zeigt nebenbei, dass die Anzeige lebt.
+ *
+ * Zwei Fallen stecken darin, und beide sind hier umgangen:
+ *
+ * 1. *Serverzeit gegen Browserzeit.* Der Server rendert zu einem
+ *    anderen Zeitpunkt als der Browser. Wer beide dasselbe anzeigen
+ *    lässt, bekommt eine Abweichungswarnung beim Hydrieren. Deshalb
+ *    liefert der Server bewusst einen Platzhalter.
+ * 2. *Zustand im Effekt.* Ein `setState` im Rumpf eines Effekts
+ *    stößt eine zweite Renderrunde an. `useSyncExternalStore` ist
+ *    dafür gebaut: Die Uhr ist eine äußere Quelle, kein Zustand der
+ *    Komponente.
+ */
+
+function abonniere(melde: () => void): () => void {
+  const kennung = window.setInterval(melde, 1000);
+  return () => window.clearInterval(kennung);
+}
+
+function jetzt(): string {
+  const d = new Date();
+  const zwei = (n: number) => String(n).padStart(2, "0");
+  return `${zwei(d.getHours())}:${zwei(d.getMinutes())}:${zwei(d.getSeconds())}`;
+}
+
+/** Auf dem Server gibt es keine Uhrzeit des Betrachters. */
+function aufDemServer(): null {
+  return null;
+}
+
+export function Uhr() {
+  const zeit = useSyncExternalStore(abonniere, jetzt, aufDemServer);
+
+  return (
+    <span
+      className="zahl hidden text-[0.8125rem] tabular-nums sm:inline"
+      style={{ color: "var(--t-normal)" }}
+      aria-label="Aktuelle Uhrzeit"
+    >
+      {zeit ?? "--:--:--"}
+    </span>
+  );
+}

@@ -1,0 +1,292 @@
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+
+import {
+  bewerteTermin,
+  blitzschutzFristen,
+  ESV_INTERVALL,
+  fasseWartungZusammen,
+  findeFrist,
+  FRISTEN,
+  LEISTUNG_JE_REGEL,
+  naechsteFaelligkeit,
+  planeWartung,
+  VORLAUF_TAGE,
+  type Pruefstand,
+} from "./wartung.ts";
+
+const HEUTE = new Date(2026, 8, 14);
+
+function stand(
+  schluessel: string,
+  letzte: string | null,
+  monate?: number,
+): Pruefstand {
+  return {
+    schluessel,
+    letzte: letzte ? new Date(letzte) : null,
+    ...(monate === undefined ? {} : { monate }),
+  };
+}
+
+describe("Fristen nach ESV", () => {
+  it("setzt den Regelfall auf fünf Jahre", () => {
+    assert.equal(ESV_INTERVALL.normal, 60);
+  });
+
+  it("verlängert bei geringer Beanspruchung auf zehn Jahre", () => {
+    assert.equal(ESV_INTERVALL.gering, 120);
+  });
+
+  it("verkürzt im Ex-Bereich und auf Baustellen", () => {
+    assert.equal(ESV_INTERVALL.explosionsgefaehrdet, 36);
+    assert.equal(ESV_INTERVALL.baustelle, 12);
+    assert.equal(ESV_INTERVALL.untertage, 6);
+  });
+});
+
+describe("Fristen des Blitzschutzes", () => {
+  it("prüft Schutzklasse I und II häufiger als III und IV", () => {
+    assert.deepEqual(blitzschutzFristen(1), { sicht: 12, umfassend: 24 });
+    assert.deepEqual(blitzschutzFristen(2), { sicht: 12, umfassend: 24 });
+    assert.deepEqual(blitzschutzFristen(3), { sicht: 24, umfassend: 48 });
+    assert.deepEqual(blitzschutzFristen(4), { sicht: 24, umfassend: 48 });
+  });
+
+  it("prüft ein kritisches System jährlich, unabhängig von der Klasse", () => {
+    assert.deepEqual(blitzschutzFristen(4, true), { sicht: 12, umfassend: 12 });
+  });
+});
+
+describe("Nächste Fälligkeit", () => {
+  it("rechnet in Kalendermonaten", () => {
+    const f = naechsteFaelligkeit(new Date(2024, 4, 14), 60);
+
+    assert.equal(f.getFullYear(), 2029);
+    assert.equal(f.getMonth(), 4);
+    assert.equal(f.getDate(), 14);
+  });
+
+  it("verschiebt sich nicht über Schaltjahre", () => {
+    // 1826 Tage wären es mit zwei Schaltjahren - der Kalendertag
+    // bleibt derselbe.
+    const f = naechsteFaelligkeit(new Date(2024, 1, 29), 12);
+
+    assert.equal(f.getMonth(), 1);
+    assert.equal(f.getDate(), 28);
+  });
+
+  it("fällt auf den Monatsletzten zurück, statt zu überlaufen", () => {
+    // 31. Mai plus ein Monat ist der 30. Juni, nicht der 1. Juli.
+    const f = naechsteFaelligkeit(new Date(2026, 4, 31), 1);
+
+    assert.equal(f.getMonth(), 5);
+    assert.equal(f.getDate(), 30);
+  });
+});
+
+describe("Termin beurteilen", () => {
+  it("führt einen weit entfernten Termin als erledigt", () => {
+    const b = bewerteTermin(new Date(2025, 8, 1), 60, HEUTE);
+
+    assert.equal(b.stand, "erledigt");
+    assert.ok(b.tage > VORLAUF_TAGE);
+  });
+
+  it("meldet einen Termin im Vorlauf als anstehend", () => {
+    const b = bewerteTermin(new Date(2024, 9, 1), 24, HEUTE);
+
+    assert.equal(b.stand, "steht_an");
+    assert.ok(b.tage >= 0 && b.tage <= VORLAUF_TAGE);
+  });
+
+  it("meldet einen abgelaufenen Termin als überfällig", () => {
+    const b = bewerteTermin(new Date(2020, 0, 15), 60, HEUTE);
+
+    assert.equal(b.stand, "ueberfaellig");
+    assert.ok(b.tage < 0);
+  });
+
+  it("gilt am Tag des Ablaufs noch nicht als versäumt", () => {
+    // Fällig genau heute: Der Tag gehört noch dazu.
+    const b = bewerteTermin(new Date(2024, 8, 14), 24, HEUTE);
+
+    assert.equal(b.tage, 0);
+    assert.equal(b.stand, "steht_an");
+  });
+
+  it("führt eine Anlage ohne Nachweis als unbekannt, nicht als erledigt", () => {
+    const b = bewerteTermin(null, 60, HEUTE);
+
+    assert.equal(b.stand, "unbekannt");
+    assert.equal(b.faellig, null);
+  });
+
+  it("kommt mit einem ungültigen Datum zurecht", () => {
+    assert.equal(bewerteTermin(new Date("Unsinn"), 60, HEUTE).stand, "unbekannt");
+  });
+});
+
+describe("Wartungsplan", () => {
+  it("führt jede Regel des Katalogs", () => {
+    const plan = planeWartung([], HEUTE);
+
+    assert.equal(plan.length, FRISTEN.length);
+  });
+
+  it("stellt Überfälliges nach vorn", () => {
+    const plan = planeWartung(
+      [
+        stand("esv-anlage", "2019-03-01"),
+        stand("wechselrichter-wartung", "2026-08-01"),
+      ],
+      HEUTE,
+    );
+
+    assert.equal(plan[0]!.regel.schluessel, "esv-anlage");
+    assert.equal(plan[0]!.befund.stand, "ueberfaellig");
+  });
+
+  it("reiht eine überfällige Vorschrift vor eine überfällige Empfehlung", () => {
+    const plan = planeWartung(
+      [stand("thermografie", "2020-01-01"), stand("esv-anlage", "2019-01-01")],
+      HEUTE,
+    );
+
+    assert.equal(plan[0]!.regel.art, "vorschrift");
+    assert.equal(plan[1]!.regel.art, "empfehlung");
+  });
+
+  it("nimmt bei geringer Beanspruchung den längeren ESV-Abstand", () => {
+    const kurz = planeWartung([stand("esv-anlage", "2018-01-10")], HEUTE, "normal");
+    const lang = planeWartung([stand("esv-anlage", "2018-01-10")], HEUTE, "gering");
+
+    assert.equal(
+      kurz.find((p) => p.regel.schluessel === "esv-anlage")!.befund.stand,
+      "ueberfaellig",
+    );
+    assert.equal(
+      lang.find((p) => p.regel.schluessel === "esv-anlage")!.befund.stand,
+      "erledigt",
+    );
+  });
+
+  it("lässt sich je Anlage übersteuern und sagt es", () => {
+    // Ein Bescheid schreibt drei statt fünf Jahre vor.
+    const plan = planeWartung([stand("esv-anlage", "2022-06-01", 36)], HEUTE);
+    const posten = plan.find((p) => p.regel.schluessel === "esv-anlage")!;
+
+    assert.equal(posten.monate, 36);
+    assert.equal(posten.abweichend, true);
+    assert.equal(posten.befund.stand, "ueberfaellig");
+  });
+
+  it("führt den Tag der letzten Prüfung mit", () => {
+    // Die Anzeige soll ihn nicht aus der Fälligkeit zurückrechnen
+    // müssen - das ginge bei Monatsenden daneben.
+    const plan = planeWartung([stand("thermografie", "2025-06-30")], HEUTE);
+    const posten = plan.find((p) => p.regel.schluessel === "thermografie")!;
+
+    assert.equal(posten.letzte?.getMonth(), 5);
+    assert.equal(posten.letzte?.getDate(), 30);
+    assert.equal(
+      plan.find((p) => p.regel.schluessel === "esv-anlage")!.letzte,
+      null,
+    );
+  });
+
+  it("markiert den Katalogwert nicht als abweichend", () => {
+    const plan = planeWartung([stand("thermografie", "2025-06-01")], HEUTE);
+    const posten = plan.find((p) => p.regel.schluessel === "thermografie")!;
+
+    assert.equal(posten.abweichend, false);
+  });
+
+  it("führt eine Anlage ohne jede Ablage als unbekannt, nicht als gut", () => {
+    const plan = planeWartung([], HEUTE);
+
+    assert.ok(plan.every((p) => p.befund.stand === "unbekannt"));
+  });
+});
+
+describe("Zusammenfassung", () => {
+  it("nennt das Versäumte zuerst und zählt die Pflichten", () => {
+    const satz = fasseWartungZusammen(
+      planeWartung(
+        [
+          stand("esv-anlage", "2018-01-01"),
+          stand("thermografie", "2020-01-01"),
+          stand("na-schutz", "2015-01-01"),
+          stand("pv-anlagenpruefung", "2026-01-01"),
+          stand("blitzschutz-sicht", "2026-01-01"),
+          stand("blitzschutz-umfassend", "2026-01-01"),
+          stand("wechselrichter-wartung", "2026-06-01"),
+          stand("modulreinigung", "2026-01-01"),
+        ],
+        HEUTE,
+      ),
+    );
+
+    assert.match(satz, /3 Prüfungen sind überfällig, davon 2 verpflichtend/);
+  });
+
+  it("sagt es, wenn nichts abgelegt ist", () => {
+    assert.match(fasseWartungZusammen(planeWartung([], HEUTE)), /nichts abgelegt/);
+  });
+
+  it("nennt den nächsten Termin, wenn nichts versäumt ist", () => {
+    const plan = planeWartung(
+      FRISTEN.map((f) =>
+        stand(
+          f.schluessel,
+          f.schluessel === "wechselrichter-wartung" ? "2025-10-01" : "2026-09-01",
+        ),
+      ),
+      HEUTE,
+    );
+
+    assert.match(fasseWartungZusammen(plan), /stehen an, die nächste in \d+ Tagen/);
+  });
+
+  it("meldet Ruhe, wenn alles frisch geprüft ist", () => {
+    const plan = planeWartung(
+      FRISTEN.map((f) => stand(f.schluessel, "2026-09-01")),
+      HEUTE,
+    );
+
+    assert.equal(fasseWartungZusammen(plan), "Alle Prüfungen sind aktuell.");
+  });
+});
+
+describe("Katalog", () => {
+  it("nennt zu jeder Frist Grundlage, Inhalt und Folge", () => {
+    for (const f of FRISTEN) {
+      assert.ok(f.grundlage.length > 4, f.schluessel);
+      assert.ok(f.inhalt.length > 20, f.schluessel);
+      assert.ok(f.folge.length > 20, f.schluessel);
+      assert.ok(f.monate > 0, f.schluessel);
+    }
+  });
+
+  it("vergibt jeden Schlüssel nur einmal", () => {
+    const schluessel = FRISTEN.map((f) => f.schluessel);
+    assert.equal(new Set(schluessel).size, schluessel.length);
+  });
+
+  it("verweist nur auf Fristen, die es gibt", () => {
+    for (const schluessel of Object.keys(LEISTUNG_JE_REGEL)) {
+      assert.ok(findeFrist(schluessel), schluessel);
+    }
+  });
+
+  it("bietet die ESV-Prüfung nicht als Katalogleistung an", () => {
+    // Sie gehört zu einer konzessionierten Elektrofachkraft und wird
+    // nicht pauschal verkauft.
+    assert.equal(LEISTUNG_JE_REGEL["esv-anlage"], undefined);
+  });
+
+  it("findet eine Frist über ihren Schlüssel", () => {
+    assert.equal(findeFrist("na-schutz")?.art, "vertrag");
+    assert.equal(findeFrist("gibtsnicht"), undefined);
+  });
+});

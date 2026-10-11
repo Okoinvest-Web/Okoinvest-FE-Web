@@ -1,0 +1,352 @@
+"""
+Pressearchiv – Lesefassungen, Übersicht und Prüfsummen
+======================================================
+Aufruf:  python uebersicht.py quellen_wksta_salzburg-ag.json
+
+Erzeugt:
+  <Beitrag>/LESEFASSUNG.pdf         schön gesetzte Lesefassung (Text, Bild, Quellenangaben)
+  <Beitrag>/meta.json               aktualisiert (SHA-256 aller Dateien)
+  <Thema>/00_UEBERSICHT.html        Pressespiegel / Chronik mit Links zu allen Dateien
+  <Thema>/00_UEBERSICHT.pdf         Pressespiegel als PDF
+  <Thema>/00_UEBERSICHT.csv         Tabelle für Excel
+  <Thema>/PRUEFSUMMEN_SHA256.txt    Prüfsummen aller Dateien (Unveränderbarkeitsnachweis)
+"""
+import csv
+import hashlib
+import html
+import json
+import re
+import sys
+from datetime import datetime
+from pathlib import Path
+
+import requests
+from playwright.sync_api import sync_playwright
+
+BASIS = Path(__file__).resolve().parent.parent
+MONATE = ["Jänner", "Februar", "März", "April", "Mai", "Juni", "Juli",
+          "August", "September", "Oktober", "November", "Dezember"]
+MUELL = re.compile(r"(bevorzugte Google-Quelle|^\s*-?\s*\*\*Mehr zum Thema|Lesen Sie auch|"
+                   r"^Lesedauer|^- Anzeige -|^Anzeige$|^\s*#\s*$)", re.I)
+
+
+def autor_sauber(autor, medium):
+    """Entfernt Seitennamen/Kürzel aus dem Autorenfeld (z. B. 'Nachrichten At', 'Red')."""
+    if not autor:
+        return "Redaktion"
+    kurz = medium.split(" (")[0].lower()
+    teile = [t.strip() for t in autor.split(";")]
+    teile = [t for t in teile if t and t.lower() not in (kurz, "red", "salzburg", "orf 2")
+             and not re.search(r"(at|com|de)$", t.lower()) and t.lower() not in medium.lower()]
+    return ", ".join(teile) or "Redaktion"
+
+
+def datum_lang(iso):
+    try:
+        d = datetime.fromisoformat(iso[:10])
+        return f"{d.day}. {MONATE[d.month - 1]} {d.year}"
+    except Exception:
+        return iso or "unbekannt"
+
+
+def sha256(p):
+    h = hashlib.sha256()
+    with open(p, "rb") as f:
+        for c in iter(lambda: f.read(1 << 20), b""):
+            h.update(c)
+    return h.hexdigest()
+
+
+def groesse(n):
+    for e in ("B", "KB", "MB", "GB"):
+        if n < 1024:
+            return f"{n:.0f} {e}"
+        n /= 1024
+    return f"{n:.1f} TB"
+
+
+def md_zu_html(md):
+    """Minimaler Markdown-Konverter für Artikeltexte."""
+    teile, liste = [], False
+    for zeile in md.splitlines():
+        z = zeile.strip()
+        if not z or MUELL.search(z):
+            if liste:
+                teile.append("</ul>"); liste = False
+            continue
+        z = html.escape(z)
+        z = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", z)
+        z = re.sub(r"(?<!\*)\*(?!\*)(.+?)\*", r"<em>\1</em>", z)
+        if z.startswith("#"):
+            teile.append(f"<h3>{z.lstrip('#').strip()}</h3>")
+        elif z.startswith("- "):
+            if not liste:
+                teile.append("<ul>"); liste = True
+            teile.append(f"<li>{z[2:]}</li>")
+        else:
+            teile.append(f"<p>{z}</p>")
+    if liste:
+        teile.append("</ul>")
+    return "\n".join(teile)
+
+
+def artikeltext(ordner, titel):
+    p = ordner / "artikel.md"
+    if not p.exists():
+        return ""
+    t = p.read_text(encoding="utf-8").split("\n---\n", 1)[-1]
+    # doppelte Überschriften / Titelzeilen entfernen
+    zeilen = [z for z in t.splitlines()
+              if z.strip().lstrip("#").strip() != (titel or "").strip()]
+    # doppelte Absätze entfernen
+    gesehen, rein = set(), []
+    for z in zeilen:
+        k = z.strip()
+        if k and k in gesehen:
+            continue
+        gesehen.add(k); rein.append(z)
+    return "\n".join(rein)
+
+
+def vtt_text(vtt, von=None, bis=None):
+    """Untertitel (.vtt) in Fließtext mit Zeitmarken umwandeln."""
+    bloecke = re.split(r"\n\s*\n", vtt.read_text(encoding="utf-8"))
+    aus, letzte_marke = [], -60
+    for b in bloecke:
+        m = re.search(r"(\d\d:\d\d:\d\d)\.\d+ -->", b)
+        if not m:
+            continue
+        t = m.group(1)
+        if von and t < von or bis and t > bis:
+            continue
+        text = " ".join(l.strip() for l in b.splitlines()[b.splitlines().index(
+            next(l for l in b.splitlines() if "-->" in l)) + 1:] if l.strip())
+        text = re.sub(r"<[^>]+>", "", text)
+        s = sum(int(x) * f for x, f in zip(t.split(":"), (3600, 60, 1)))
+        if s - letzte_marke >= 30:
+            aus.append(f"\n[{t}] "); letzte_marke = s
+        aus.append(text + " ")
+    return "".join(aus).strip()
+
+
+def bild_holen(ordner, meta):
+    ziel = ordner / "bild.jpg"
+    if ziel.exists():
+        return ziel
+    for kand in sorted(ordner.glob("video/*.jpg")):
+        return kand
+    oh = ordner / "original.html"
+    if not oh.exists():
+        return None
+    m = re.search(r'<meta[^>]+property="og:image"[^>]+content="([^"]+)"', oh.read_text(encoding="utf-8")) \
+        or re.search(r'<meta[^>]+content="([^"]+)"[^>]+property="og:image"', oh.read_text(encoding="utf-8"))
+    if not m:
+        return None
+    try:
+        r = requests.get(html.unescape(m.group(1)), timeout=30,
+                         headers={"User-Agent": "Mozilla/5.0"})
+        if r.ok and r.headers.get("content-type", "").startswith("image"):
+            ziel.write_bytes(r.content)
+            return ziel
+    except Exception:
+        pass
+    return None
+
+
+STIL = """
+@import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&family=Inter:wght@400;500;600&display=swap');
+@page { size: A4; margin: 22mm 20mm 20mm 20mm; }
+:root { --akzent:#8a1c1c; --grau:#5b5b5b; --linie:#d9d4cc; --papier:#ffffff; }
+* { box-sizing:border-box; }
+body { font-family:'Source Serif 4', Georgia, serif; color:#1d1d1d; background:var(--papier);
+       font-size:11.2pt; line-height:1.6; margin:0; }
+.kopf { font-family:Inter, Arial, sans-serif; font-size:8pt; letter-spacing:.14em; text-transform:uppercase;
+        color:var(--grau); display:flex; justify-content:space-between; border-bottom:1.5px solid var(--akzent);
+        padding-bottom:6px; margin-bottom:22px; }
+.kopf b { color:var(--akzent); }
+.rubrik { font-family:Inter, Arial, sans-serif; font-size:9pt; font-weight:600; color:var(--akzent);
+          text-transform:uppercase; letter-spacing:.08em; margin:0 0 6px; }
+h1 { font-size:25pt; line-height:1.15; margin:0 0 12px; font-weight:700; }
+.zeile { font-family:Inter, Arial, sans-serif; font-size:9pt; color:var(--grau); margin-bottom:18px; }
+.zeile span+span:before { content:"·"; margin:0 8px; }
+figure { margin:0 0 18px; } figure img { width:100%; max-height:95mm; object-fit:cover; border-radius:2px; }
+figcaption { font-family:Inter, Arial, sans-serif; font-size:7.5pt; color:var(--grau); margin-top:4px; }
+.lead { font-size:13pt; font-weight:600; line-height:1.45; margin:0 0 16px; }
+.text p { margin:0 0 10px; text-align:justify; hyphens:auto; }
+.text h3 { font-size:13pt; margin:18px 0 6px; }
+.text ul { padding-left:18px; }
+.transkript p { white-space:pre-line; text-align:left; }
+.hinweis { font-family:Inter, Arial, sans-serif; font-size:8.5pt; background:#f4ecdf; border-left:3px solid var(--akzent);
+           padding:8px 12px; margin:14px 0 18px; }
+.quelle { margin-top:26px; border-top:1px solid var(--linie); padding-top:10px; font-family:Inter, Arial, sans-serif;
+          font-size:7.8pt; color:var(--grau); display:grid; grid-template-columns:110px 1fr; gap:3px 10px;
+          break-inside:avoid; }
+.quelle a { color:var(--grau); word-break:break-all; }
+"""
+
+
+def lesefassung_html(e, meta, ordner, bild):
+    titel = meta.get("titel") or e.get("titel") or ""
+    lead = meta.get("beschreibung") or ""
+    hinweis = e.get("hinweis", "")
+    koerper = ""
+    vtts = sorted(ordner.glob("video/*.vtt"))
+    txts = sorted(ordner.glob("audio/*Transkript*.txt"))
+    if vtts:
+        a = e.get("ausschnitt", {})
+        koerper = ("<h3>Transkript (ORF-Untertitel)</h3><div class='transkript'><p>"
+                   + html.escape(vtt_text(vtts[0], a.get("von"), a.get("bis"))) + "</p></div>")
+    elif txts:
+        a = e.get("ausschnitt", {})
+        zeilen = txts[0].read_text(encoding="utf-8").splitlines()[2:]
+        if a:
+            zeilen = [z for z in zeilen
+                      if re.match(r"\[(\d+:\d\d:\d\d)", z)
+                      and a["von"] <= re.match(r"\[(\d+:\d\d:\d\d)", z).group(1).rjust(8, "0") <= a["bis"]]
+        koerper = ("<h3>Transkript (automatisch erstellt, ungeprüft)</h3><div class='transkript'><p>"
+                   + html.escape("\n".join(zeilen)) + "</p></div>")
+    else:
+        text = artikeltext(ordner, titel)
+        if lead and lead[:60] in text:
+            lead = ""
+        koerper = md_zu_html(text)
+    bild_html = (f"<figure><img src='{bild.as_uri()}'><figcaption>Bild: aus dem Originalbeitrag "
+                 f"({html.escape(e['medium'])})</figcaption></figure>") if bild else ""
+    q = [("Medium", e["medium"]), ("Art", e.get("art", "")),
+         ("Erschienen", datum_lang(meta.get("datum") or e.get("datum"))),
+         ("Autor", autor_sauber(meta.get("autor"), e["medium"])),
+         ("Quelle", f"<a href='{html.escape(e['url'])}'>{html.escape(e['url'])}</a>"),
+         ("Archiviert", (meta.get("abruf") or "")[:16].replace("T", ", ") + " Uhr")]
+    return f"""<!doctype html><html lang="de"><head><meta charset="utf-8"><title>{html.escape(titel)}</title>
+<style>{STIL}</style></head><body>
+<div class="kopf"><span><b>Pressearchiv</b> · WKStA / Salzburg AG</span><span>{html.escape(e['medium'].split(' (')[0])}</span></div>
+<p class="rubrik">{html.escape(e.get('art', ''))} · {datum_lang(meta.get('datum') or e.get('datum'))}</p>
+<h1>{html.escape(titel)}</h1>
+<div class="zeile"><span>{html.escape(e['medium'])}</span><span>{html.escape(autor_sauber(meta.get('autor'), e['medium']))}</span></div>
+{bild_html}
+{f"<p class='lead'>{html.escape(lead)}</p>" if lead else ""}
+{f"<div class='hinweis'><b>Archivhinweis:</b> {html.escape(hinweis)}</div>" if hinweis else ""}
+<div class="text">{koerper}</div>
+<div class="quelle">{''.join(f'<b>{k}</b><span>{v}</span>' for k, v in q)}</div>
+</body></html>"""
+
+
+UEB_STIL = STIL + """
+@page { size: A4; margin: 16mm 14mm; }
+body { font-size:10pt; }
+.wrap { max-width: 960px; margin: 0 auto; padding: 32px 16px; }
+@media print { .wrap { padding:0; } }
+.titel h1 { font-size:28pt; margin-bottom:4px; }
+.titel p { font-family:Inter, Arial, sans-serif; color:var(--grau); margin:0 0 6px; }
+.zusammenfassung { background:#f4ecdf; padding:14px 18px; border-left:3px solid var(--akzent); margin:20px 0 28px; }
+.tag { font-family:Inter, Arial, sans-serif; font-weight:600; color:var(--akzent); font-size:10pt;
+       text-transform:uppercase; letter-spacing:.08em; border-bottom:1px solid var(--linie); padding:18px 0 4px; }
+.karte { display:grid; grid-template-columns: 150px 1fr; gap:16px; padding:14px 0; border-bottom:1px solid var(--linie);
+         break-inside:avoid; }
+.karte img { width:150px; height:96px; object-fit:cover; border-radius:2px; background:#eee; }
+.karte h2 { font-size:13.5pt; margin:2px 0 4px; line-height:1.25; }
+.karte .med { font-family:Inter, Arial, sans-serif; font-size:8.5pt; color:var(--grau); }
+.karte .med b { color:#1d1d1d; }
+.karte p { margin:4px 0; font-size:9.5pt; }
+.dateien { font-family:Inter, Arial, sans-serif; font-size:8.3pt; }
+.dateien a { color:var(--akzent); text-decoration:none; margin-right:10px; white-space:nowrap; }
+.warn { font-family:Inter, Arial, sans-serif; font-size:8.3pt; color:#7a4b00; }
+.fuss { font-family:Inter, Arial, sans-serif; font-size:8pt; color:var(--grau); margin-top:24px; }
+@media (max-width:600px){ .karte{grid-template-columns:1fr} .karte img{width:100%;height:160px} }
+"""
+
+
+def main():
+    quellen = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+    thema = BASIS / quellen[0]["ordner"].split("/")[0]
+    eintraege = []
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        page = browser.new_page()
+        for e in quellen:
+            ordner = BASIS / e["ordner"]
+            mp = ordner / "meta.json"
+            meta = json.loads(mp.read_text(encoding="utf-8")) if mp.exists() else dict(e)
+            meta.update({k: e[k] for k in ("titel", "datum", "hinweis", "ausschnitt") if e.get(k)})
+            bild = bild_holen(ordner, meta)
+            (ordner / "_lesefassung.html").write_text(lesefassung_html(e, meta, ordner, bild), encoding="utf-8")
+            page.goto((ordner / "_lesefassung.html").as_uri(), wait_until="networkidle")
+            page.pdf(path=str(ordner / "LESEFASSUNG.pdf"), format="A4", print_background=True,
+                     display_header_footer=True, header_template="<span></span>",
+                     footer_template="<div style='font-size:7pt;width:100%;text-align:center;color:#888;"
+                                     "font-family:Arial'>Seite <span class='pageNumber'></span> / "
+                                     "<span class='totalPages'></span></div>")
+            (ordner / "_lesefassung.html").unlink()
+            meta["sha256"] = {str(f.relative_to(ordner)).replace("\\", "/"): sha256(f)
+                              for f in sorted(ordner.rglob("*")) if f.is_file() and f.name != "meta.json"}
+            mp.write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
+            eintraege.append((e, meta, ordner, bild))
+            print("ok", e["id"])
+
+        eintraege.sort(key=lambda x: (x[1].get("kategorie") != "Berichterstattung", x[1].get("datum") or ""))
+        # ---- CSV
+        with open(thema / "00_UEBERSICHT.csv", "w", encoding="utf-8-sig", newline="") as f:
+            w = csv.writer(f, delimiter=";")
+            w.writerow(["Datum", "Medium", "Art", "Titel", "Autor", "Kategorie", "URL", "Ordner",
+                        "Archiviert am", "Hinweis"])
+            for e, m, o, _ in eintraege:
+                w.writerow([m.get("datum"), e["medium"], e.get("art"), m.get("titel"), autor_sauber(m.get("autor"), e["medium"]),
+                            e.get("kategorie"), e["url"], str(o.relative_to(thema)),
+                            (m.get("abruf") or "")[:19], e.get("hinweis", "")])
+        # ---- HTML-Übersicht
+        karten, letzter_tag = [], None
+        for e, m, o, bild in eintraege:
+            tag = ("Hintergrund" if e.get("kategorie") == "Hintergrund"
+                   else datum_lang(m.get("datum")))
+            if tag != letzter_tag:
+                karten.append(f"<div class='tag'>{tag}</div>"); letzter_tag = tag
+            rel = lambda f: str(f.relative_to(thema)).replace("\\", "/")
+            links = [("Lesefassung", o / "LESEFASSUNG.pdf"), ("Original-PDF", o / "artikel.pdf"),
+                     ("Screenshot", o / "screenshot.png"), ("Original-HTML", o / "original.html")]
+            links += [("▶ " + f.stem[:40], f) for f in sorted(o.glob("*/*.mp4")) + sorted(o.glob("*/*.mp3"))]
+            lk = " ".join(f"<a href='{html.escape(rel(f))}'>{n}</a>" for n, f in links if f.exists())
+            img = f"<img src='{html.escape(rel(bild))}'>" if bild else "<img>"
+            beschr = m.get("beschreibung") or ""
+            karten.append(f"""<div class='karte'>{img}<div>
+<div class='med'><b>{html.escape(e['medium'])}</b> · {html.escape(e.get('art', ''))} · {datum_lang(m.get('datum'))}</div>
+<h2>{html.escape(m.get('titel') or '')}</h2>
+{f"<p>{html.escape(beschr[:300])}</p>" if beschr else ""}
+{f"<div class='warn'>Hinweis: {html.escape(e['hinweis'])}</div>" if e.get('hinweis') else ""}
+<div class='dateien'>{lk} <a href='{html.escape(e['url'])}'>Online-Quelle ↗</a></div></div></div>""")
+        n_bericht = sum(1 for e, *_ in eintraege if e.get("kategorie") == "Berichterstattung")
+        heute = datetime.now()
+        doc = f"""<!doctype html><html lang="de"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1"><title>Pressespiegel WKStA – Salzburg AG</title>
+<style>{UEB_STIL}</style></head><body><div class="wrap">
+<div class="kopf"><span><b>Pressearchiv</b> · Pressespiegel</span><span>Stand {heute.day}. {MONATE[heute.month-1]} {heute.year}</span></div>
+<div class="titel"><p class="rubrik">Causa Photovoltaik-Auftrag / Ökovolt</p>
+<h1>WKStA-Ermittlungen gegen die Salzburg AG</h1>
+<p>{n_bericht} Beiträge der Berichterstattung · {len(eintraege) - n_bericht} Hintergrundbeitrag · Text, Original, Video &amp; Audio</p></div>
+<div class="zusammenfassung"><b>Worum es geht:</b> Die Wirtschafts- und Korruptionsstaatsanwaltschaft (WKStA)
+ermittelt wegen des Verdachts des schweren Betrugs gegen die Salzburg AG und eine natürliche Person. Anlass ist eine
+Anzeige der Ökovolt Solartechnik GmbH (Ostermiething, OÖ), die sich 2020 nach eigener Darstellung auf Zusage der
+Salzburg AG aus der Ausschreibung für PV-Anlagen auf Hofer-Filialdächern zurückzog; der Auftrag ging dann über eine
+Tochter der Salzburg AG an einen Mitbewerber. Ökovolt macht über 20 Mio. Euro Schaden geltend. Die Salzburg AG
+(seit 2021 zu 49&nbsp;% an Ökovolt beteiligt) weist die Vorwürfe zurück und spricht von einem Gesellschafterstreit.
+Es gilt die Unschuldsvermutung.</div>
+{''.join(karten)}
+<div class="fuss">Jeder Beitrag liegt in einem eigenen Ordner: LESEFASSUNG.pdf (lesefreundlich), artikel.pdf und
+screenshot.png (Originalansicht), original.html (Quellcode), artikel.md (Text), meta.json (Metadaten) sowie
+video/ bzw. audio/. Die Datei PRUEFSUMMEN_SHA256.txt belegt den unveränderten Zustand aller Dateien.</div>
+</div></body></html>"""
+        (thema / "00_UEBERSICHT.html").write_text(doc, encoding="utf-8")
+        page.goto((thema / "00_UEBERSICHT.html").as_uri(), wait_until="networkidle")
+        page.pdf(path=str(thema / "00_UEBERSICHT.pdf"), format="A4", print_background=True)
+        browser.close()
+    # ---- Prüfsummen
+    zeilen = [f"# SHA-256-Prüfsummen – erstellt {datetime.now().isoformat(timespec='seconds')}",
+              "# Prüfen (PowerShell):  Get-FileHash -Algorithm SHA256 <Datei>", ""]
+    for f in sorted(thema.rglob("*")):
+        if f.is_file() and f.name != "PRUEFSUMMEN_SHA256.txt":
+            zeilen.append(f"{sha256(f)}  {groesse(f.stat().st_size):>8}  {f.relative_to(thema)}")
+    (thema / "PRUEFSUMMEN_SHA256.txt").write_text("\n".join(zeilen) + "\n", encoding="utf-8")
+    print("Übersicht fertig:", thema / "00_UEBERSICHT.html")
+
+
+if __name__ == "__main__":
+    main()

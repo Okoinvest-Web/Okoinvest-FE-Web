@@ -1,0 +1,207 @@
+"use client";
+
+import { useRouter, useSearchParams } from "next/navigation";
+import { useState, type FormEvent } from "react";
+
+import { STATUS_FARBEN } from "@/components/ui";
+import type { DemoKonto } from "@/lib/demo/modus";
+
+export function LoginForm({
+  demoKonten,
+  demoPasswort,
+}: {
+  demoKonten: DemoKonto[];
+  demoPasswort: string;
+}) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const [email, setEmail] = useState("");
+  const [passwort, setPasswort] = useState("");
+  const [fehler, setFehler] = useState<string | null>(null);
+  const [laeuft, setLaeuft] = useState(false);
+
+  async function anmelden(email: string, passwort: string) {
+    setFehler(null);
+    setLaeuft(true);
+
+    try {
+      const antwort = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ usr: email, pwd: passwort }),
+      });
+
+      if (!antwort.ok) {
+        const inhalt = (await antwort.json().catch(() => null)) as {
+          error?: string;
+        } | null;
+        setFehler(inhalt?.error ?? "Anmeldung fehlgeschlagen.");
+        return;
+      }
+
+      // Ziel aus dem Proxy-Redirect uebernehmen, sonst aufs Dashboard.
+      const weiter = searchParams.get("weiter");
+      router.replace(weiter?.startsWith("/portal") ? weiter : "/portal");
+      router.refresh();
+    } catch {
+      setFehler("Verbindung zum Server fehlgeschlagen.");
+    } finally {
+      setLaeuft(false);
+    }
+  }
+
+  function absenden(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    void anmelden(email, passwort);
+  }
+
+  return (
+    <div className="space-y-6">
+      <form onSubmit={absenden} className="space-y-4">
+        <Feld
+          id="usr"
+          label="E-Mail-Adresse"
+          typ="email"
+          autoComplete="username"
+          wert={email}
+          onChange={setEmail}
+        />
+        <Feld
+          id="pwd"
+          label="Passwort"
+          typ="password"
+          autoComplete="current-password"
+          wert={passwort}
+          onChange={setPasswort}
+        />
+
+        {fehler && (
+          <p
+            role="alert"
+            className="a-einblenden rounded-sm px-3 py-2 text-[0.8125rem]"
+            style={{
+              background: STATUS_FARBEN.kritisch.flaeche,
+              color: STATUS_FARBEN.kritisch.text,
+            }}
+          >
+            {fehler}
+          </p>
+        )}
+
+        <button
+          type="submit"
+          disabled={laeuft}
+          className="knopf knopf-voll w-full py-2.5"
+        >
+          {laeuft ? "Anmelden …" : "Anmelden"}
+        </button>
+      </form>
+
+      {demoKonten.length > 0 && (
+        <div>
+          <div className="mb-3 flex items-center gap-3">
+            <span
+              className="h-px flex-1"
+              style={{ background: "var(--linie)" }}
+            />
+            <span className="t-etikett">Demo-Zugänge</span>
+            <span
+              className="h-px flex-1"
+              style={{ background: "var(--linie)" }}
+            />
+          </div>
+
+          <ul className="space-y-2">
+            {demoKonten.map((konto) => (
+              <li key={konto.email}>
+                <button
+                  type="button"
+                  disabled={laeuft}
+                  onClick={() => {
+                    setEmail(konto.email);
+                    setPasswort(demoPasswort);
+                    void anmelden(konto.email, demoPasswort);
+                  }}
+                  className="w-full border px-3.5 py-2.5 text-left transition-colors duration-300 hover:border-transparent disabled:opacity-60"
+                  style={{
+                    borderColor: "var(--linie)",
+                    borderRadius: "var(--radius-kachel)",
+                  }}
+                >
+                  <span className="flex items-center justify-between gap-2">
+                    <span
+                      className="text-[0.8125rem] font-semibold"
+                      style={{ color: "var(--t-stark)" }}
+                    >
+                      {konto.name}
+                    </span>
+                    <span
+                      className="rounded-sm px-2 py-0.5 text-[0.6875rem] font-medium"
+                      style={{
+                        background: "var(--f-belegt)",
+                        color: "var(--t-leise)",
+                      }}
+                    >
+                      {konto.rollenBezeichnung}
+                    </span>
+                  </span>
+                  <span className="t-mikro mt-0.5 block">
+                    {konto.beschreibung}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+
+          <p className="t-mikro mt-3 text-center">
+            Alle Demo-Zugänge verwenden das Passwort{" "}
+            <code
+              className="rounded px-1.5 py-0.5 font-mono"
+              style={{
+                background: "var(--f-belegt)",
+                color: "var(--t-normal)",
+              }}
+            >
+              {demoPasswort}
+            </code>
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Feld({
+  id,
+  label,
+  typ,
+  autoComplete,
+  wert,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  typ: string;
+  autoComplete: string;
+  wert: string;
+  onChange: (wert: string) => void;
+}) {
+  return (
+    <div>
+      <label htmlFor={id} className="t-etikett block">
+        {label}
+      </label>
+      <input
+        id={id}
+        name={id}
+        type={typ}
+        autoComplete={autoComplete}
+        required
+        value={wert}
+        onChange={(e) => onChange(e.target.value)}
+        className="feld mt-1.5"
+      />
+    </div>
+  );
+}

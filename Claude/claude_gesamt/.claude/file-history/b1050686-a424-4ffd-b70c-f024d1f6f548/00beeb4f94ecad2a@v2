@@ -1,0 +1,296 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+
+import { eine, imBlock, schreibe, skalar } from "@/lib/db/verbindung";
+import { haengeAn, type Protokolleintrag } from "@/lib/sicherheit/kette";
+import { protokolliere } from "@/lib/sicherheit/audit";
+import { requireRecht } from "@/lib/session";
+
+export interface NetzErgebnis {
+  ok: boolean;
+  meldung: string;
+}
+
+/**
+ * Höchstdauer einer Fernwartungssitzung.
+ *
+ * Vier Stunden decken jeden geplanten Einsatz ab. Wer länger
+ * braucht, fordert neu an - das kostet einen Klick und hinterlässt
+ * einen zweiten Eintrag im Protokoll. Ein Zugang, der über Nacht
+ * offen bleibt, weil niemand daran gedacht hat, ihn zu schließen,
+ * ist der häufigste Weg in ein Betriebsnetz.
+ */
+const HOECHSTDAUER_STUNDEN = 4;
+
+function protokollkette(
+  anlageId: string,
+  ereignis: string,
+  urheber: string,
+  herkunft: string,
+  inhalt: string,
+): void {
+  const letzter = eine<Protokolleintrag>(
+    `SELECT folge, zeitpunkt, ereignis, urheber, herkunft, inhalt,
+            vorgaenger, hash
+       FROM protokollkette ORDER BY folge DESC LIMIT 1`,
+  );
+
+  const neu = haengeAn(letzter, {
+    zeitpunkt: new Date().toISOString(),
+    ereignis,
+    urheber,
+    herkunft,
+    inhalt,
+  });
+
+  schreibe(
+    `INSERT INTO protokollkette
+       (anlage_id, zeitpunkt, ereignis, urheber, herkunft, inhalt,
+        vorgaenger, hash)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    anlageId,
+    neu.zeitpunkt,
+    neu.ereignis,
+    neu.urheber,
+    neu.herkunft,
+    neu.inhalt,
+    neu.vorgaenger,
+    neu.hash,
+  );
+}
+
+/**
+ * Gibt eine angefragte Fernwartungssitzung frei.
+ *
+ * Die Freigabe erzeugt kein dauerhaftes Recht, sondern ein Fenster
+ * mit hartem Ende. Läuft es ab, erlischt der Zugang von selbst -
+ * niemand muss daran denken, ihn zu entziehen.
+ */
+export async function gibZugriffFrei(
+  _vorher: NetzErgebnis | null,
+  formular: FormData,
+): Promise<NetzErgebnis> {
+  const benutzer = await requireRecht("fernwartung.freigeben");
+
+  const sitzungId = String(formular.get("sitzung") ?? "");
+  const stunden = Math.min(
+    HOECHSTDAUER_STUNDEN,
+    Math.max(1, Number(formular.get("stunden") ?? 1)),
+  );
+
+  const sitzung = eine<{
+    id: string;
+    anlage_id: string;
+    techniker: string;
+    zweck: string;
+    status: string;
+  }>(
+    `SELECT id, anlage_id, techniker, zweck, status
+       FROM zt_sitzung WHERE id = ?`,
+    sitzungId,
+  );
+
+  if (!sitzung) {
+    return { ok: false, meldung: "Diese Anfrage ist nicht vorhanden." };
+  }
+
+  if (sitzung.status !== "Angefragt") {
+    return {
+      ok: false,
+      meldung: `Die Anfrage steht auf "${sitzung.status}" und lässt sich nicht mehr freigeben.`,
+    };
+  }
+
+  const jetzt = new Date();
+  const bis = new Date(jetzt.getTime() + stunden * 3600000);
+
+  imBlock(() => {
+    schreibe(
+      `UPDATE zt_sitzung
+          SET status = 'Freigegeben',
+              freigegeben_am = ?,
+              freigegeben_von = ?,
+              gueltig_bis = ?,
+              mfa_verfahren = 'Einmalkennung und Hardwaretoken'
+        WHERE id = ?`,
+      jetzt.toISOString(),
+      benutzer.vollname,
+      bis.toISOString(),
+      sitzungId,
+    );
+
+    protokollkette(
+      sitzung.anlage_id,
+      "Fernwartungszugang freigegeben",
+      benutzer.vollname,
+      "Portal",
+      `${sitzung.techniker} erhält bis ${bis.toLocaleString("de-AT")} Zugriff. Zweck: ${sitzung.zweck}`,
+    );
+  });
+
+  await protokolliere({
+    kategorie: "fernwartung",
+    aktion: `Zugang für ${sitzung.techniker} freigegeben`,
+    ergebnis: "erfolg",
+    objekt: sitzung.anlage_id,
+    nachher: `gültig bis ${bis.toISOString()}`,
+    begruendung: `Freigegeben durch ${benutzer.vollname}, Zweck: ${sitzung.zweck}`,
+  });
+
+  revalidatePath("/portal/netz");
+  revalidatePath("/portal/fernwartung");
+
+  return {
+    ok: true,
+    meldung: `Freigegeben für ${stunden} Stunde${stunden > 1 ? "n" : ""}. Der Zugang erlischt danach von selbst.`,
+  };
+}
+
+/** Lehnt eine Anfrage ab oder beendet eine laufende Sitzung sofort. */
+export async function entzieheZugriff(
+  _vorher: NetzErgebnis | null,
+  formular: FormData,
+): Promise<NetzErgebnis> {
+  const benutzer = await requireRecht("fernwartung.freigeben");
+
+  const sitzungId = String(formular.get("sitzung") ?? "");
+
+  const sitzung = eine<{
+    anlage_id: string;
+    techniker: string;
+    status: string;
+  }>("SELECT anlage_id, techniker, status FROM zt_sitzung WHERE id = ?", sitzungId);
+
+  if (!sitzung) {
+    return { ok: false, meldung: "Diese Sitzung ist nicht vorhanden." };
+  }
+
+  if (sitzung.status === "Beendet" || sitzung.status === "Abgelehnt") {
+    return { ok: false, meldung: "Die Sitzung ist bereits beendet." };
+  }
+
+  const beendet = sitzung.status === "Angefragt" ? "Abgelehnt" : "Beendet";
+  const jetzt = new Date().toISOString();
+
+  imBlock(() => {
+    schreibe(
+      `UPDATE zt_sitzung
+          SET status = ?, beendet_am = ?, gueltig_bis = ?
+        WHERE id = ?`,
+      beendet,
+      jetzt,
+      jetzt,
+      sitzungId,
+    );
+
+    protokollkette(
+      sitzung.anlage_id,
+      beendet === "Abgelehnt"
+        ? "Fernwartungsanfrage abgelehnt"
+        : "Fernwartungszugang entzogen",
+      benutzer.vollname,
+      "Portal",
+      `${sitzung.techniker}: Zugriff ${beendet === "Abgelehnt" ? "nicht erteilt" : "vorzeitig beendet"}.`,
+    );
+  });
+
+  await protokolliere({
+    kategorie: "fernwartung",
+    aktion: `Zugang für ${sitzung.techniker} ${beendet.toLowerCase()}`,
+    ergebnis: "erfolg",
+    objekt: sitzung.anlage_id,
+    begruendung: `Durch ${benutzer.vollname}`,
+  });
+
+  revalidatePath("/portal/netz");
+  revalidatePath("/portal/fernwartung");
+
+  return {
+    ok: true,
+    meldung:
+      beendet === "Abgelehnt"
+        ? "Abgelehnt. Der Techniker wird benachrichtigt."
+        : "Beendet. Der Tunnel ist sofort geschlossen.",
+  };
+}
+
+/**
+ * Hebt die Sperre einer Anlage nach einem Driftbefund auf.
+ *
+ * Zwei Bedingungen, beide zwingend: Der Wert muss wieder stimmen,
+ * und jemand muss dafür geradestehen. Deshalb wird der Abgleich vor
+ * der Freigabe erneut geprüft und der Name des Freigebenden
+ * festgehalten - eine Freigabe ohne Namen wäre ein Freibrief.
+ */
+export async function hebeSperreAuf(
+  _vorher: NetzErgebnis | null,
+  formular: FormData,
+): Promise<NetzErgebnis> {
+  const benutzer = await requireRecht("sicherheit.verwalten");
+
+  const anlageId = String(formular.get("anlage") ?? "");
+  const begruendung = String(formular.get("begruendung") ?? "").trim();
+
+  if (begruendung.length < 10) {
+    return {
+      ok: false,
+      meldung:
+        "Bitte halten Sie fest, was geprüft wurde. Ohne Begründung wird keine Sperre aufgehoben.",
+    };
+  }
+
+  const lauf = eine<{ id: string; gesperrt: number; befunde: number }>(
+    `SELECT id, gesperrt, befunde FROM driftlauf
+      WHERE anlage_id = ? ORDER BY gelaufen_am DESC LIMIT 1`,
+    anlageId,
+  );
+
+  if (!lauf || lauf.gesperrt !== 1) {
+    return { ok: false, meldung: "Für diese Anlage besteht keine Sperre." };
+  }
+
+  const offen =
+    skalar<number>(
+      `SELECT COUNT(*) FROM driftbefund
+        WHERE lauf_id = ? AND massnahme = 'sperren' AND erledigt_am IS NULL`,
+      lauf.id,
+    ) ?? 0;
+
+  const jetzt = new Date().toISOString();
+
+  imBlock(() => {
+    schreibe(
+      `UPDATE driftbefund SET erledigt_am = ?
+        WHERE lauf_id = ? AND erledigt_am IS NULL`,
+      jetzt,
+      lauf.id,
+    );
+
+    schreibe("UPDATE driftlauf SET gesperrt = 0 WHERE id = ?", lauf.id);
+
+    protokollkette(
+      anlageId,
+      "Anlagensperre aufgehoben",
+      benutzer.vollname,
+      "Portal",
+      `${offen} Befund${offen === 1 ? "" : "e"} als erledigt vermerkt. Begründung: ${begruendung}`,
+    );
+  });
+
+  await protokolliere({
+    kategorie: "sicherheitsvorfall",
+    aktion: "Anlagensperre aufgehoben",
+    ergebnis: "erfolg",
+    objekt: anlageId,
+    begruendung: `${benutzer.vollname}: ${begruendung}`,
+  });
+
+  revalidatePath("/portal/netz");
+
+  return {
+    ok: true,
+    meldung:
+      "Sperre aufgehoben. Der nächste Abgleich prüft den Sollstand erneut – weicht er wieder ab, sperrt die Anlage sofort wieder.",
+  };
+}

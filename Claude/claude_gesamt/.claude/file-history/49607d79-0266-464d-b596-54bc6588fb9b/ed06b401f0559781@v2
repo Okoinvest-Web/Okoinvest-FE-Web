@@ -1,0 +1,67 @@
+<template>
+  <div>
+    <PageHeader title="Grundrisse" :subtitle="untertitel">
+      <template #actions>
+        <FormControl v-model="standort" type="select" :options="planOptionen" />
+      </template>
+    </PageHeader>
+
+    <div class="p-6">
+      <p v-if="plan.loading" class="text-sm text-ink-gray-5">Wird geladen …</p>
+      <ErrorMessage v-else-if="plan.error" :message="plan.error" />
+
+      <FloorPlan v-else-if="plan.data" :plan="plan.data" @select="oeffne" />
+
+      <p class="mt-3 text-xs text-ink-gray-4">
+        Vereinfachte Geometrie aus dem Datenmodell, kein hinterlegter Bauplan.
+        Sie reicht, um Dosen, Racks und Access Points im Raum zu verorten – ein
+        Techniker im Serverraum sieht damit, welche Dose wohin gepatcht ist.
+        Echte Grundrisse als Anhang setzen die Dateiablage des Backends voraus.
+      </p>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
+import { ErrorMessage, FormControl, createResource } from 'frappe-ui'
+import PageHeader from '@/components/PageHeader.vue'
+import FloorPlan from '@/components/FloorPlan.vue'
+
+const router = useRouter()
+const standort = ref('SITE-0004')
+
+const plaene = createResource({ url: 'netops.api.netsvc.floor_plan_list', auto: true })
+
+const plan = createResource({
+  url: 'netops.api.netsvc.floor_plan',
+  makeParams: () => ({ site: standort.value }),
+  auto: true,
+})
+
+watch(standort, () => plan.fetch())
+
+const planOptionen = computed(() =>
+  (plaene.data || []).map((p) => ({ label: p.plan_name, value: p.site })),
+)
+
+const untertitel = computed(() => {
+  const d = plan.data
+  if (!d) return ''
+  const dosen = d.items.filter((i) => i.kind === 'outlet')
+  return (
+    d.site_name + ' · ' + dosen.length + ' Dosen, davon ' +
+    dosen.filter((i) => i.connected).length + ' gepatcht'
+  )
+})
+
+function oeffne(punkt) {
+  if (punkt.kind === 'ap' && punkt.ref) router.push('/devices/' + punkt.ref)
+  if (punkt.kind === 'rack') router.push('/racks')
+  if (punkt.kind === 'screen' && punkt.ref) {
+    router.push('/screen/' + punkt.ref.replace('screen', ''))
+  }
+  if (punkt.kind === 'outlet' && punkt.peer_device) router.push('/devices/' + punkt.peer_device)
+}
+</script>

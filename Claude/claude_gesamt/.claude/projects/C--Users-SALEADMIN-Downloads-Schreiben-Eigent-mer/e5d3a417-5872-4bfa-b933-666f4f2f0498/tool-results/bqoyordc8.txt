@@ -1,0 +1,578 @@
+# KNOWLEDGE: Eskalationsschreiben ÖKOVOLT → Eigentümer & Aufsichtsrat der Salzburg AG
+
+Stand: 19.09.2026 · Bearbeiter: Benjamin (Benny) Höfler, Deputy Chief Compliance Officer / Head of IT & Risk Management, ÖKOVOLT
+Zweck dieser Datei: Vollständiger Arbeitsstand zum Import in ein anderes Claude-Projekt. Enthält Ziel, Faktenbasis mit Quellen, rechtliche Leitplanken, getroffene Entscheidungen, offene Punkte und die konsolidierte Endfassung des Schreibens.
+
+---
+
+## 0. Arbeitsanweisung für Claude (bei Weiterarbeit)
+
+- Sprache: Deutsch. Stil des Users: knapp, direktiv; erwartet autonome Umsetzung, ehrliche Fehlermeldung, rechtlich belastbare Texte ohne unnötiges Hedging.
+- **Keine Tatsachen erfinden.** Alles in `[eckigen Klammern]` ist Platzhalter und darf nur mit belegten Angaben des Users befüllt werden.
+- Jede Tatsachenbehauptung im Schreiben muss einer Quelle zugeordnet sein (Gericht, Grant Thornton, Gutachten, Urkunde, Schreiben, benannte Zeugen). Wertungen als Wertungen kennzeichnen („wir halten … für“, „wir verstehen … als“).
+- **Presse kommt im Schreiben nicht vor** und darf von ÖKOVOLT-Seite weder angedroht noch angedeutet werden (siehe Abschnitt 3).
+- Tonaufnahmen: Existenz und Prüfung erwähnen, **Inhalte nicht zitieren und nicht beilegen**; Zitate stützen sich auf Zeugenwahrnehmung (siehe Abschnitt 3).
+
+---
+
+## 1. Ziel und Strategie
+
+**Ziel:** Die Eigentümer der Salzburg AG (Land Salzburg, Stadt Salzburg, Energie AG Oberösterreich) sollen eingreifen: Vertrauensentzug durch die Hauptversammlung → Abberufung der Vorstände MMag. Michael Baminger und DI Herwig Struber, MSc durch den Aufsichtsrat → interimistischer Vorstand → sofortige Schadensregulierung per Vergleich.
+
+**Strategische Grundentscheidungen (getroffen im Verlauf):**
+1. **Absender: GF Andreas Wegscheider**, nicht Benny Höfler. Grund: Benny ist im Verfahren LG Ried 1 Cg 33/25p als Zeuge namhaft gemacht; ein von ihm gezeichnetes Eskalationsschreiben würde zur Erschütterung seiner Glaubwürdigkeit (Befangenheit) verwendet.
+2. **Adressaten gemeinsam:** LH Edtstadler, Bürgermeister Stadt Salzburg, Vorstand Energie AG OÖ, AR-Vorsitz und AR-Mitglieder der Salzburg AG. Hebel ist die persönliche AR-Haftung (§ 99 AktG): ab Zugang des Schreibens liegt Kenntnis vor.
+3. **Wirkmechanismus:** Nicht Lautstärke, sondern Unangreifbarkeit. Das Schreiben soll jede Veröffentlichung überstehen – deshalb Quelle zu jeder Tatsache, Unschuldsvermutung, keine Kopplung an Drohungen.
+4. **Angebot zur Beweiseinsicht** statt bloßer Forderung – nimmt der Gegenseite das Nötigungsnarrativ.
+5. **Rechtsweg für „Entlassung“:** Vorstand ist weisungsfrei (§ 70 AktG). Eigentümer handeln über Hauptversammlung (Vertrauensentzug = wichtiger Grund nach § 75 Abs 4 AktG, sofern nicht offenbar unsachlich) und Aufsichtsrat (Abberufung).
+6. **Anwaltsfreigabe:** Endfassung vor Versand durch CERHA HEMPEL (Vertretung ÖKOVOLT in 1 Cg 33/25p) prüfen lassen.
+
+**Erwartete Reaktion der Gegenseite (Einschätzung):** Weiterleitung an Vorstand/AR mit Bitte um Stellungnahme (Feder: DORDA); Verweis auf anhängige Verfahren und § 70 AktG; Versuch, ein Erpressungs-/Nötigungsnarrativ aufzubauen; Frage nach der Entstehung der Tonaufnahmen (§ 120 StGB); Angriff auf die 146-Mio.-Zahl, falls nicht belegt; Angriff auf Zeugen-Glaubwürdigkeit. Edtstadler wird als Ex-WKStA-Juristin besonders vermeiden, als Eingriff in laufende Verfahren zu erscheinen. Wirksamster Hebel: persönliche Haftung der AR-Mitglieder und unterschiedliche Interessen der drei Eigentümer.
+
+---
+
+## 2. Faktenbasis mit Quellen
+
+### 2.1 Beteiligte
+
+| Person / Stelle | Rolle |
+|---|---|
+| Mag. Karoline Edtstadler | Landeshauptfrau Salzburg seit 02.07.2025 (ÖVP); zuvor u. a. ab 01.01.2015 Oberstaatsanwältin der WKStA (Quelle: Lebenslauf Land Salzburg). **Offen: ob sie AR-Vorsitzende der Salzburg AG ist** (traditionell war der LH AR-Vorsitzender, zuletzt Haslauer). |
+| MMag. Michael Baminger | Vorstandssprecher Salzburg AG |
+| DI Herwig Struber, MSc | Vorstand Salzburg AG |
+| Eigentümer Salzburg AG | Land Salzburg ca. 42,56 %, Stadt Salzburg ca. 31,31 %, Energie AG OÖ ca. 26,13 % |
+| Andreas Wegscheider | GF ÖKOVOLT Solartechnik GmbH (Stellung wieder unbestritten) |
+| Friedrich Schiefer | ehem. Co-GF ÖKOVOLT; laut Ankündigung GF der one2zero GmbH |
+| one2zero GmbH | 100-%-Tochter der Salzburg AG |
+| Tobias Wiener | Empfänger der „Hofer Kalkulationen“ (27.11.2024) |
+| Mag. Angelika Gradl | kündigte am 28.12.2024 per E-Mail an, dass Schiefer GF der one2zero wird |
+| Mag. Karl Pfisterer | Mitarbeiter der Salzburg AG, dem Vorstand unterstellt; am 10.10.2025 „bestellt“ |
+| Dr. Bernhard Rieder, Mag. Alexander Karl | Rechtsanwälte DORDA (Vertretung Salzburg AG); Rieder führte am 10.10.2025 den Vorsitz |
+| Dr. Nicole Scharl | damals Konzipientin DORDA |
+| Mag. Michael Thaller | Notarsubstitut (Notar Ing. Mag. Volker Reifenberger); verweigerte am 10.10.2025 die Beurkundung |
+| Dr. Philip Ranft | öffentlicher Notar, Seekirchen; Einbringung Firmenbuchanmeldung 13.10.2025 (unterfertigt Substitut Mag. Sebastian Frank) |
+| Univ.-Prof. Dr. Friedrich Rüffler | nach Kenntnisstand erst Mitwirkender (Überzeugung Notar Ranft), dann Gutachter für die Gegenseite |
+| MMag. Stefan Zajic | Vertreter der 51-%-Mehrheitsgesellschafterin am 10.10.2025 |
+| Susanne Messmer | Gesellschafterin, 60 J., Mutter zweier Kinder; Adressatin einer Drohung |
+| Grant Thornton Austria | forensische Untersuchung „Projekt SILICIUM“ |
+| CERHA HEMPEL | Vertretung ÖKOVOLT in 1 Cg 33/25p (vorher Dr. Bernhard Kettl) |
+| Manuel Thaler | Ansprechpartner für Vergleichsgespräche (ÖKOVOLT-Seite) |
+
+### 2.2 Gesellschaftsstruktur
+- ÖKOVOLT Solartechnik GmbH (Österreich, FN 375708 m, Ostermiething). Salzburg AG erwarb 49 % (Kaufvertrag 18.10.2021): Kaufpreis EUR 10 Mio. + variabler Teil (Earn-out) max. EUR 5 Mio. Gesellschaftsvertrag: Präsenzquorum 75 % des Stammkapitals; GF-Bestellung/-Abberufung nach Pkt 6.6 o) mit 75 %.
+- EY-Bewertung vom 30.04.2021 (von Salzburg AG beauftragt): objektiviert TEUR 28.497; subjektiv TEUR 30.675.
+- ÖKOVOLT GmbH Solartechnik (Deutschland, HRB 14166, AG Memmingen): **Einziehung der Geschäftsanteile der Salzburg AG beschlossen und im Handelsregister vollzogen.** Endgültige Wirksamkeit im Hauptsacheverfahren noch nicht entschieden (LG Memmingen 1 HK O 1771/25).
+
+### 2.3 OLG München (KORREKT darstellen!)
+**Nicht behaupten**, das OLG habe „die Einziehung bestätigt“ oder „den Verbleib für unzumutbar erklärt“ – das ist falsch.
+Korrekt: Salzburg AG hat drei Verfahren angestrengt, um die Einziehung aufzuhalten, und alle in zwei Instanzen verloren:
+
+| OLG München | Erstinstanz LG Memmingen | Gegenstand | Ergebnis |
+|---|---|---|---|
+| 14 U 3746/25 e | 1 HK O 1437/25 | Unterlassung, Komplex Wirtschaftsspionage | Salzburg AG unterlegen |
+| 14 U 3748/25 e | 1 HK O 1568/25 | Unterlassung, Komplex Beschlussfassung Österreich | Salzburg AG unterlegen |
+| 14 U 295/26 e | 1 HK O 1932/25 | einstweilige Verfügung, beide Komplexe | Salzburg AG unterlegen |
+
+- Urteile 21.05.2026; Gehörsrügen (§ 321a ZPO) mit Beschlüssen vom 18.06.2026 zurückgewiesen; Anträge auf einstweilige Einstellung der Zwangsvollstreckung (§ 707 ZPO) zurückgewiesen; Kosten jeweils Salzburg AG. Senat: VRiOLG Weder, RiOLG Igloffstein, RiOLG Hermann.
+- OLG = in der deutschen ordentlichen Gerichtsbarkeit **zweithöchste Instanz**, unmittelbar unter dem BGH. (Nicht „zweithöchstes Gericht Deutschlands“ schreiben.)
+- Wörtliches Zitat (OLG München, Beschluss 18.06.2026, 14 U 3748/25 e, S. 4):
+  > „Die Klägerin hat durch ihre Separat-Versammlung, die sie nach Erscheinen der gegnerischen Mehrheitsgruppe im Flüsterton fortsetzte, das vorgesehene Verfahren der Beschlussfassung ausgehebelt und kann dies nicht mit einem — unterstellten — vorangegangenen Fehlverhalten des Geschäftsführers der Beklagten rechtfertigen.“
+- Weitere Aussage (ebd., S. 3, paraphrasiert): Es sei nicht erkennbar, welchen Grund die Mehrheit gehabt haben sollte, es auf unwirksame Beschlüsse anzulegen, wo sie ihren Willen mit ihrer Mehrheit in wirksamen Beschlüssen durchsetzen konnte.
+- Wertung zulässig als Wertung: „Wir halten es für einen in der Zweiten Republik beispiellosen Vorgang … Uns ist kein vergleichbarer Fall bekannt.“ (Nicht als Tatsache „noch nie“.)
+
+### 2.4 Mindestschaden Hofer
+- Entscheidung 1 HK O 1437/25 (S. 20): Schaden der ÖKOVOLT-Gruppe aus Auftragsvergabe Hofer **zumindest EUR 10,5 Mio. als unbestritten** ausgewiesen; Vergabe an one2zero GmbH **unter Verstoß gegen Ziffer 4.3 des Syndikatsvertrages**.
+- Zusätzlich ca. EUR 230.000 entgangener Gewinn, Vorgang Quehenberger (Impuls Immobilien GmbH).
+- Vergabe ohne Ausschreibung; one2zero hatte nach Kenntnisstand zum Zeitpunkt keine Gewerbeberechtigung.
+
+### 2.5 Grant Thornton – Projekt SILICIUM
+- Zwischenbericht 16.03.2026; Abschlussbericht 02.07.2026. Auftrag ergebnisoffen; bestätigt und erweitert interne Compliance-Feststellungen.
+- Chronologie laut Zwischenbericht:
+  - 21.04.2023: BMD-Finanzdaten „FIB_1_202301_ÖKOVO.fib“ mit Betreff „Test“ an friedrich.schiefer@gmx.at
+  - ab 11/2024: Schiefer nimmt an Management-Meetings der one2zero teil
+  - 27.11.2024: Schiefer übermittelt „Hofer Kalkulationen“ an Tobias Wiener
+  - 28.12.2024: E-Mail Mag. Gradl mit Tagesordnung kündigt Schiefer als GF der one2zero an; am selben Tag Übertragung Ordner „B_CONTROLLING“ (4,28 GB: Kalkulationen, Margen, Kundenanalysen, BMD-Exporte) auf Schiefers Laptop
+  - danach: Tausende Dateien gelöscht, 2.262 rekonstruiert, 147 verschlüsselt
+- Aus früherem Entwurf (**mit Abschlussbericht abgleichen!**): ca. 338.000 Dateien / knapp 500 GB auf externen Datenträger; gezielte Zugriffe. 7.500+ ausgedruckte Seiten stammen aus der **internen** Untersuchung (so kennzeichnen).
+
+### 2.6 Der 10.10.2025 und 13.10.2025
+- 10.10.2025 (Fr): Separat-Versammlung der Salzburg AG (49 %) in Ostermiething, Vorsitz/Verlesung/Unterschrift Dr. Rieder (DORDA). Protokoll stellt Beschlussfähigkeit fest, obwohl 75 % erforderlich. Beschlossen: Abberufung Wegscheider, Bestellung Pfisterer. Dauer ca. 13 Minuten für ca. 20 TOPs.
+- Notarsubstitut Mag. Thaller (Ankunft 15:47) verweigerte die Beurkundung; nach Kenntnisstand ausdrücklicher Hinweis auf Rechtswidrigkeit. Danach ordnungsgemäße GV mit 100 % Stammkapital, von Thaller protokolliert, Dauer > 2 Stunden.
+- Vor dem Gelände: nach Wahrnehmung eigener Leute Drohkulisse gegenüber Belegschaft; ÖGB-Vertreter anwesend.
+- 13.10.2025 (Mo): Firmenbuchanmeldung LG Ried 16 Fr 5567/25 f, Einschreiter Pfisterer „als einziger Geschäftsführer“, eingebracht über Notar Dr. Ranft (Substitut Mag. Frank). Anmeldung räumt ein: Salzburg AG = Minderheitsgesellschafterin (49 %); Pkt 10 begründet 75-%-Mehrheit mit „einstimmig“; Pkt 18.1 stützt Formerfordernis auf bloße Unterschriftsbeglaubigung (statt Beurkundung).
+- LG Ried Beschluss 15.10.2025: 14 Tage Äußerungsfrist, sonst Vollzug.
+- Nach Kenntnisstand: Notar Ranft sagte vor BG Mattighofen (2 C 547/25 y, Ri Mag. Christina Keldorfer; anwesend RA Dr. Kettl) aus, die Anmeldung nicht selbst verfasst zu haben (Verfasser: Dr. Rieder) und trotz erheblicher Zweifel eingebracht zu haben. Protokoll: **beizuschaffen/prüfen**.
+- 17.10.2025: Schreiben Dr. Rieder unter Verwendung des Protokolls.
+
+### 2.7 Disziplinarverfahren DORDA (KORREKTER STAND lt. User)
+- Angezeigt: Kanzlei DORDA und handelnde Anwälte.
+- **Eingestellt:** gegen die Kanzlei als solche und gegen Dr. Nicole Scharl (damals Konzipientin).
+- **Anhängig:** gegen Dr. Bernhard Rieder und Mag. Alexander Karl (RAK Wien). Aktenzeichen und genauen Verfahrensstand (Kammeranwalt / Disziplinarrat) **einsetzen**.
+- Achtung: Der Nachtrag zur Disziplinaranzeige beginnt mit dem Satz, das Verfahren sei „gegen sämtliche Angezeigte beendet“ worden – im Schreiben den Stand daher exakt und mit AZ angeben.
+- Unschuldsvermutung ausdrücklich anführen. Wertungen aus dem Kammerschriftsatz („Lüge in Urkundenform“ etc.) **nicht** in das Eigentümerschreiben übernehmen.
+
+### 2.8 Causa Pfisterer
+- Salzburg-AG-Mitarbeiter, dem Vorstand unterstellt; nach 10.10.2025 als GF eingesetzt.
+- Weisung an Compliance: keine Korrespondenz mit Behörden, Gerichten, Kammern, Notaren, RA ohne Genehmigung – ausdrücklich betroffen Notariatskammer Salzburg und LG Ried.
+- Danach verloren Compliance-Verantwortlicher und Leiter Rechtsabteilung ihre Funktionen. Nach Kenntnisstand auf Veranlassung des Salzburg-AG-Vorstandes.
+- **Prüfen:** Stammt die Weisung aus der AT- oder DE-Gesellschaft?
+
+### 2.9 Äußerungen des Vorstandes („Köpfe rollen“ u. a.)
+Alle nur mit Datum, Sprecher, Anlass, Zeugen (nicht Partei) verwenden; „wörtlich“ nur, wenn Zeugen exakten Wortlaut bestätigen, sonst „sinngemäß“.
+- „Aufklärung darf keine stattfinden, sonst müssen Köpfe rollen“ – **Sprecher, Datum, Anlass, Zeugen offen**.
+- Baminger auf Erläuterung der Schadenspositionen: „Jetzt habe ich es verstanden.“ – Widerspruch zum Schreiben vom 11.09.2026 (Forderung angeblich nicht nachvollziehbar erläutert). Datum/Zeugen offen.
+- Aussagen Baminger vom 20.12.2024 und Aussagen Struber „bei uns im Keller“ – Inhalt/Zeugen offen.
+- Drohung gegenüber Susanne Messmer: sie werde die Auseinandersetzung „auch privat finanziell zu spüren bekommen“ – Sprecher/Datum/Zeugen offen; **Zustimmung Messmer zur Namensnennung einholen**.
+- Angekündigte Vergeltungsmaßnahmen gegen Mitarbeiter; verdeckte Androhung neuerlicher Abberufung Wegscheiders; Hinweis auf Prozesskosten als Druckmittel (Fundstelle im Schreiben vom 11.09.2026 prüfen).
+- Compliance Officer hatte den Vorstand früher ausdrücklich auf Haftungsrisiken im dreistelligen Millionenbereich und Verbandsgeldbußen hingewiesen.
+
+### 2.10 Tonaufnahmen
+- Einschlägige Aufnahmen, in denen sich betroffene Personen selbst äußern. Audioforensisch geprüft (Gutachter, Datum, exakte Ergebnisformulierung **einsetzen**); Hashwerte gesichert.
+- Nicht beilegen, nicht zitieren; Übergabe an AR / unabhängige Prüfer / Gerichte / Behörden angeboten.
+
+### 2.11 Vergleich
+- Vorstand lehnte mit Schreiben vom 11.09.2026 den zuletzt verhandelten Vergleichsvorschlag ab.
+- **Widerspruch klären:** Eskalationsentwürfe nennen Vergleichsangebot EUR 46 Mio.; Antwortschreiben Wegscheider spricht von „den angebotenen EUR 30 Mio.“ (bezifferter Gesamtschaden „wesentlich über EUR 30 Mio.“). Welcher Betrag wurde am 11.09. abgelehnt?
+- Zwei umfassende Schadensgutachten existieren (Baminger bekannt).
+- Weitere Rechtsgutachten: Hon.-Prof. Dr. Nowotny, Univ.-Prof. Dr. Schopper (Kernaussagen offen); Hon.-Prof. Dr. Gitschthaler angefragt.
+
+### 2.12 Zahlen Salzburg AG (aus beim Firmenbuch eingereichten Abschlüssen, lt. Nachtrag)
+- Konzernbilanzsumme ca. EUR 2,478 Mrd.; Konzern-Jahresüberschuss EUR 121,2 Mio. (2024), EUR 129,4 Mio. (2025); Ausschüttung EUR 66 Mio.
+- Salzburg AG unterliegt der Kontrolle des Landesrechnungshofes.
+- Nach Kenntnisstand: Risiken weder im Jahresabschluss noch im Lagebericht 2025 abgebildet; Anteile an der DE-Gesellschaft weiterhin ausgewiesen.
+- Exposition: ca. EUR 46 Mio. bezifferter Schaden + bis zu EUR 100 Mio. weiteres Risiko = bis ca. EUR 146 Mio. (> Jahresüberschuss 2025). **Nur verwenden, wenn Anlage Risikoaufstellung die 100 Mio. belastbar herleitet**; sonst auf 46 Mio. zurückfallen und Jahresgewinn-Vergleich streichen.
+
+### 2.13 Weitere Verfahren (Kontext)
+LG Ried 32 Cg 15/26w; LG Ried 1 Cg 33/25p (Salzburg AG vs. ÖKOVOLT, EUR 2.562.000, Benny Zeuge); LG Ried 33 Cg 96/25p; LG Salzburg 14 Cg 82/25h (UWG); StA Ried 3 St 287/25y (Fachaufsichtsbeschwerde OStA Linz); OGH 28 Bl 1/26v (Erneuerungsantrag analog § 363a StPO); LG Memmingen 1 HK O 1771/25 (Einziehung, Hauptsache); IFG-Kampagne „Operation QUARZ“. Gegenseite beraten von DORDA und Heuking.
+
+---
+
+## 3. Rechtliche Leitplanken
+
+| Risiko | Regel |
+|---|---|
+| Erpressung/Nötigung (§ 144, § 105 StGB) | Geldforderung/Vergleich nie mit Ankündigung von Strafanzeige, Medien oder Veröffentlichung koppeln. Keine Weitergabe an Presse durch ÖKOVOLT. |
+| § 120 Abs 2 StGB (Tonaufnahmen) | Aufnahmen und deren Inhalte keinem Dritten zugänglich machen, außer Gericht/Behörde/AR im Prüfrahmen. Zitate auf Zeugenwahrnehmung stützen. |
+| § 16 ABGB (Recht am eigenen Wort) | wie oben |
+| § 1330 ABGB / § 111 StGB | Jede Tatsache mit Quelle; „nach unserem Kenntnisstand“, wo keine Urkunde/kein Urteil vorliegt; Unschuldsvermutung; keine Namen ohne Belege (daher Sedlacek/Mülleger nur mit Fakten). |
+| Zeugenstellung Benny | Schreiben von Wegscheider zeichnen lassen. |
+
+**Aktienrechtliche Argumentation:**
+- § 70 AktG: Vorstand weisungsfrei → Eigentümer handeln über HV/AR.
+- § 75 Abs 4 AktG: Vertrauensentzug der HV = wichtiger Grund, sofern nicht offenbar unsachlich.
+- § 84 Abs 1a AktG (Business Judgment Rule): Schutz nur ohne sachfremde Interessen und mit angemessener Information → Ablehnung des Vergleichs durch selbst betroffene Vorstände ist nicht geschützt, voller Sorgfaltsmaßstab. Beratung durch Anwälte, gegen die selbst ein Disziplinarverfahren zu diesen Vorgängen läuft, ist keine angemessene, von Eigeninteressen freie Informationsgrundlage. „Köpfe rollen“ = Interessenkonflikt in eigenen Worten.
+- § 84 Abs 2 AktG: persönliche Haftung Vorstand.
+- § 84 Abs 4 AktG: Verzicht/Vergleich über Ersatzansprüche gegen Vorstand erst nach 5 Jahren und mit HV-Zustimmung.
+- § 95 AktG: Überwachung/Beweissicherung durch AR. § 97 AktG: AR vertritt Gesellschaft gegenüber Vorstand. § 99 AktG: Haftung AR-Mitglieder.
+- HinweisgeberInnenschutzgesetz: Maßnahmen gegen Compliance/Rechtsabteilung als mögliche Vergeltungsmaßnahmen – als „gesondert zu prüfen“ formulieren (Anwendungsbereich nicht abschließend geklärt).
+- Deutsches Recht: Einziehung aus wichtigem Grund setzt Unzumutbarkeit des Verbleibs voraus; OLG München sieht Einziehung/Ausschluss als besonders gravierenden Eingriff mit hohen Anforderungen.
+
+---
+
+## 4. Offene Punkte vor Versand (Checkliste)
+
+1. OLG-Urteile/Beschlüsse als Anlagen; Zitate mit Seiten/Rz. final prüfen.
+2. Vergleichsbetrag 46 vs. 30 Mio. klären.
+3. Ist LH Edtstadler AR-Vorsitzende? → Variante in Abschnitt XV aktivieren.
+4. Disziplinarverfahren Rieder/Karl: AZ und Stand.
+5. Grant-Thornton-Zahlen (338.000 Dateien / ~500 GB) mit Abschlussbericht abgleichen.
+6. „Köpfe rollen“: Sprecher, Datum, Anlass, Zeugen, wörtlich/sinngemäß.
+7. 20.12.2024 / „Keller“-Aussagen: Inhalt, Zeugen.
+8. Messmer: Wortlaut, Sprecher, Datum, Zeugen, Zustimmung zur Namensnennung.
+9. „Jetzt habe ich es verstanden“: Datum, Zeugen.
+10. Audioforensisches Gutachten: Name, Datum, exakte Ergebnisformulierung.
+11. Protokoll BG Mattighofen 2 C 547/25 y (Ranft) – vorhanden? Wenn ja, „nach unserem Kenntnisstand“ streichen.
+12. Pfisterer-Weisung: AT- oder DE-Gesellschaft?
+13. Anlage Risikoaufstellung (100 Mio.) belastbar? Sonst Passage + Jahresgewinn-Vergleich streichen.
+14. Kernaussagen Nowotny/Schopper – ggf. als Anlage/Satz aufnehmen.
+15. Causa Sedlacek und Causa Mülleger: Fakten mit Belegen liefern (bisher keine vorhanden).
+16. Name Bürgermeister, AR-Vorsitz, Datum, Rückmeldefrist.
+17. Freigabe durch CERHA HEMPEL.
+18. Optional: Wahrnehmungsbestätigungen der Zeugen als Anlage.
+
+---
+
+## 5. KONSOLIDIERTE ENDFASSUNG DES SCHREIBENS
+
+---
+
+**ÖKOVOLT Solartechnik GmbH**
+Gewerbegebiet 10, 5121 Ostermiething
+
+**VERTRAULICH – PERSÖNLICH**
+
+An
+Frau Landeshauptfrau Mag. Karoline Edtstadler, Land Salzburg
+Herrn Bürgermeister **[Name]**, Stadt Salzburg
+den Vorstand der Energie AG Oberösterreich
+den Vorsitzenden des Aufsichtsrates der Salzburg AG für Energie, Verkehr und Telekommunikation, **[Name]**, und die Mitglieder des Aufsichtsrates
+
+Ostermiething, **[Datum]**
+
+**Betreff: Salzburg AG / ÖKOVOLT – Entscheidungen des Oberlandesgerichts München, abgeschlossene forensische Untersuchung, gerichtlich festgestellter Mindestschaden, audioforensisch geprüfte Tonaufnahmen, Ablehnung des Vergleichs vom 11.09.2026 – Ersuchen um unverzügliches Eingreifen der Eigentümer und des Aufsichtsrates**
+
+Sehr geehrte Frau Landeshauptfrau,
+sehr geehrter Herr Bürgermeister,
+sehr geehrte Vorstände der Energie AG Oberösterreich,
+sehr geehrter Herr Vorsitzender, sehr geehrte Mitglieder des Aufsichtsrates,
+
+ich wende mich als Geschäftsführer der ÖKOVOLT Solartechnik GmbH an Sie als Eigentümervertreter und als Kontrollorgan der Salzburg AG. Die Salzburg AG hat im Oktober 2021 49 % an unserer Gesellschaft erworben. Ihre Geschäftsanteile an der deutschen Schwestergesellschaft ÖKOVOLT GmbH Solartechnik wurden eingezogen; die Einziehung ist im Handelsregister vollzogen.
+
+Ich wende mich an Sie, weil der Vorstand der Salzburg AG mit Schreiben vom 11. September 2026 den zuletzt verhandelten Vergleich abgelehnt hat. Damit hat er eine Entscheidung getroffen, deren Gegenstand wesentlich sein eigenes Handeln ist. Über den weiteren Weg können nach unserer Überzeugung nur noch Sie entscheiden.
+
+---
+
+### Der Kernbefund
+
+Jeder der folgenden Punkte ist durch Anlagen belegt. Keiner beruht auf einer bloßen Behauptung der ÖKOVOLT.
+
+1. **Das Oberlandesgericht München** hat die Salzburg AG in drei Verfahren und zwei Instanzen mit ihrem Versuch scheitern lassen, den Entzug ihrer Beteiligung aufzuhalten. In den Gründen hat der Senat ihr Vorgehen als Aushebelung des Beschlussverfahrens qualifiziert.
+2. **Ein Mindestschaden ist gerichtlich festgehalten.** In der Entscheidung 1 HK O 1437/25 ist ein Schaden der ÖKOVOLT-Gruppe von zumindest EUR 10,5 Mio. als unbestritten ausgewiesen.
+3. **Die forensische Untersuchung ist abgeschlossen.** Grant Thornton Austria hat die internen Compliance-Feststellungen bestätigt und teilweise erweitert.
+4. **Die Beteiligten sind in eigenen Worten dokumentiert.** Es liegen Tonaufnahmen vor, in denen sich die betroffenen Personen selbst äußern; ihre Unverändertheit ist audioforensisch bestätigt.
+5. **Der 10. Oktober 2025:** Eine Generalversammlung, bei der 49 % des Stammkapitals anwesend waren, wurde als beschlussfähig protokolliert, obwohl der Gesellschaftsvertrag 75 % verlangt. Der anwesende Notar verweigerte die Beurkundung. Gegen die handelnden Anwälte ist ein Disziplinarverfahren anhängig.
+6. **Die Kontrollfunktionen wurden ausgeschaltet.** Compliance-Funktion und Rechtsabteilung der ÖKOVOLT wurden durch einen Mitarbeiter der Salzburg AG in ihrer Arbeit beschränkt und anschließend personell entfernt.
+7. **Der Vorstand hat die Verhinderung der Aufklärung selbst ausgesprochen.** Nach der Wahrnehmung von Zeugen wurde erklärt, Aufklärung dürfe nicht stattfinden, weil sonst Köpfe rollen müssten.
+8. **Der Vorstand hat in eigener Sache entschieden.** Er hat ein Vergleichsangebot abgelehnt, obwohl die Salzburg AG einer möglichen Gesamtexposition von bis zu rund EUR 146 Mio. ausgesetzt ist, mehr als ihr gesamter Konzern-Jahresüberschuss 2025.
+
+---
+
+### I. Die Entscheidungen des Oberlandesgerichts München
+
+Nach den Vorgängen vom 10. Oktober 2025 wurde in der deutschen ÖKOVOLT GmbH Solartechnik (HRB 14166, Amtsgericht Memmingen) die Einziehung der Geschäftsanteile der Salzburg AG beschlossen.
+
+Die Salzburg AG hat daraufhin drei Verfahren vor dem Landgericht Memmingen eingeleitet, um dies zu verhindern. Sie ist in allen drei Verfahren unterlegen, in erster und in zweiter Instanz:
+
+- **OLG München, 14 U 3746/25 e** – Unterlassung, Komplex Wirtschaftsspionage (LG Memmingen 1 HK O 1437/25)
+- **OLG München, 14 U 3748/25 e** – Unterlassung, Komplex Beschlussfassung Österreich (1 HK O 1568/25)
+- **OLG München, 14 U 295/26 e** – einstweilige Verfügung, beide Komplexe (1 HK O 1932/25)
+
+Die Urteile ergingen am 21. Mai 2026. Die Gehörsrügen der Salzburg AG wurden mit Beschlüssen vom 18. Juni 2026 zurückgewiesen, ebenso ihre Anträge auf einstweilige Einstellung der Zwangsvollstreckung. Die Kosten trägt jeweils die Salzburg AG (**Anlagen ./1 bis ./3**). Das Oberlandesgericht ist in der deutschen ordentlichen Gerichtsbarkeit die zweithöchste Instanz, unmittelbar unterhalb des Bundesgerichtshofs.
+
+Zum 10. Oktober 2025 hat der Senat wörtlich ausgesprochen:
+
+> „Die Klägerin hat durch ihre Separat-Versammlung, die sie nach Erscheinen der gegnerischen Mehrheitsgruppe im Flüsterton fortsetzte, das vorgesehene Verfahren der Beschlussfassung ausgehebelt und kann dies nicht mit einem – unterstellten – vorangegangenen Fehlverhalten des Geschäftsführers der Beklagten rechtfertigen.“
+> *(OLG München, Beschluss vom 18.06.2026, 14 U 3748/25 e, S. 4)*
+
+Die „Klägerin“ ist die Salzburg AG.
+
+Der Senat hat sich auch mit der Rechtfertigung der Salzburg AG befasst, sie habe eine „Gegenversammlung“ der Mehrheit befürchtet. Er hielt fest, es sei nicht erkennbar, welchen Grund die Mehrheitsgesellschafter gehabt haben sollten, es auf unwirksame Beschlüsse anzulegen, wo sie ihren Willen aufgrund ihrer Mehrheit in wirksamen Beschlüssen durchsetzen konnten (ebd., S. 3).
+
+Über die endgültige Wirksamkeit der Einziehung wird im Hauptsacheverfahren entschieden. Fest steht: Die Einziehung ist im Handelsregister vollzogen, die Salzburg AG hat jeden Versuch, sie aufzuhalten, in zwei Instanzen und im Rügeverfahren verloren, und ein Obergericht hat ihr Vorgehen in den Gründen so beschrieben, wie oben zitiert.
+
+Wir halten es für einen in der Zweiten Republik beispiellosen Vorgang, dass einem Energieversorger in öffentlicher Hand eine Beteiligung wegen seines eigenen Verhaltens entzogen wird und er vor einem Obergericht damit scheitert, dies aufzuhalten. Uns ist kein vergleichbarer Fall bekannt.
+
+Diese Verfahren hat der amtierende Vorstand geführt, mit den von ihm beauftragten Kanzleien, bis in die letzte Instanz, auf Kosten der Salzburg AG.
+
+---
+
+### II. Warum dies kein Gesellschafterstreit ist
+
+In den vergangenen Monaten wurde Ihnen diese Angelegenheit vermutlich als gewöhnlicher Gesellschafterstreit dargestellt. In einem Gesellschafterstreit stehen Behauptungen gegen Behauptungen.
+
+Diese Stufe ist überschritten. Ein Gesellschafterstreit erklärt nicht,
+- warum ein Obergericht das Vorgehen der Salzburg AG als Aushebelung des Beschlussverfahrens qualifiziert;
+- wie ein gerichtlich festgehaltener Mindestschaden von EUR 10,5 Mio. entstanden ist;
+- warum vertrauliche Finanzdaten an eine private E-Mail-Adresse gingen und Kalkulationen an die Tochtergesellschaft der Salzburg AG;
+- warum ein Notar die Beurkundung verweigerte;
+- warum Compliance und Rechtsabteilung, die diese Vorgänge aufgearbeitet haben, anschließend ihre Funktionen verloren;
+- warum erklärt wurde, Aufklärung dürfe nicht stattfinden, weil sonst Köpfe rollen müssten.
+
+---
+
+### III. Die unabhängige forensische Untersuchung
+
+Die Vorgänge wurden zunächst innerhalb der Compliance-Funktion der ÖKOVOLT untersucht. Weil schon diese interne Untersuchung eine erhebliche Dichte an Auffälligkeiten ergab, haben wir sie einer unabhängigen Überprüfung unterzogen. Grant Thornton Austria wurde mit einer forensischen Untersuchung beauftragt (Projekt SILICIUM). Der Auftrag war ausdrücklich ergebnisoffen: Er sollte die internen Feststellungen überprüfen und sie widerlegen, wenn sie unzutreffend gewesen wären.
+
+Über Monate wurden Datenträger forensisch gesichert, Zugriffe und Datenbewegungen anhand von Zeitstempeln und Protokolldaten rekonstruiert und Zeugen strukturiert befragt. Es liegen der Zwischenbericht vom 16. März 2026 und der Abschlussbericht vom 2. Juli 2026 vor (**Anlagen ./4 und ./5**). Die internen Feststellungen wurden nicht entkräftet. Sie wurden bestätigt und um Sachverhalte ergänzt, die intern nicht erkennbar gewesen waren.
+
+Der Zwischenbericht dokumentiert unter anderem folgende Abfolge:
+
+- **21. April 2023:** Vertrauliche BMD-Finanzdaten („FIB_1_202301_ÖKOVO.fib“) werden unter dem Betreff „Test“ an eine private E-Mail-Adresse von Friedrich Schiefer versandt.
+- **Ab November 2024:** Friedrich Schiefer nimmt an Management-Meetings der one2zero GmbH teil, der hundertprozentigen Tochtergesellschaft der Salzburg AG.
+- **27. November 2024:** Schiefer übermittelt „Hofer Kalkulationen“ an Tobias Wiener.
+- **28. Dezember 2024:** In einer E-Mail mit der Tagesordnung zur Gesellschafterversammlung wird angekündigt, dass Schiefer Geschäftsführer der one2zero GmbH wird. Noch am selben Tag überträgt Schiefer den Ordner „B_CONTROLLING“ auf seinen Laptop: 4,28 GB mit Kalkulationen, Margen, Kundenanalysen und BMD-Exporten.
+- **Danach:** Tausende Dateien werden gelöscht. 2.262 davon konnten rekonstruiert werden. 147 Dateien werden verschlüsselt.
+
+---
+
+### IV. Causa Hofer / one2zero
+
+Die ÖKOVOLT hatte das Photovoltaikprojekt Hofer über einen langen Zeitraum bis zur Umsetzungsreife entwickelt. Im Vorfeld der Ausschreibung wurde sie nach der vorliegenden Dokumentation dazu bewegt, nicht selbst teilzunehmen, unter der Zusage, dass die Errichtung dennoch bei ihr verbleiben werde. Im Vertrauen darauf stellte sie der Salzburg AG umfangreiche technische und kalkulatorische Informationen zur Verfügung.
+
+Der Auftrag ging dann ohne Ausschreibung an die one2zero GmbH, die hundertprozentige Tochter der Salzburg AG. Nach unserem Kenntnisstand verfügte diese zu diesem Zeitpunkt über keine Gewerbeberechtigung.
+
+In der Entscheidung 1 HK O 1437/25 ist der daraus entstandene Schaden mit zumindest EUR 10,5 Mio. als unbestritten ausgewiesen. Die Vergabe verstieß nach dieser Entscheidung gegen Ziffer 4.3 des Syndikatsvertrages (**Anlage ./6**). Hinzu kommt ein entgangener Gewinn von rund EUR 230.000 im Vorgang Quehenberger.
+
+Unabhängig zu klären ist, wer die Zusage erteilt hat, wer die abweichende Vergabe entschieden hat, ob die Kalkulationen der ÖKOVOLT, die Herr Schiefer am 27. November 2024 übermittelte, dabei verwendet wurden, und wer bei der Salzburg AG wusste, dass ihre Tochtergesellschaft einen Auftrag übernahm, den das Beteiligungsunternehmen entwickelt hatte.
+
+---
+
+### V. Causa Schiefer
+
+Nach den forensischen Feststellungen wurden in den Wochen vor dem Ausscheiden des vormaligen Geschäftsführers Friedrich Schiefer rund **[338.000 Dateien / nahezu 500 GB – mit Abschlussbericht abgleichen]** auf einen externen Datenträger übertragen, darunter Controlling-, Kalkulations- und Bilanzdaten. Auf diese Daten wurde gezielt zugegriffen (**Anlage ./5**). Nach der internen Dokumentation wurden zudem mehr als 7.500 Seiten Unternehmensunterlagen ausgedruckt.
+
+Die Abfolge in Abschnitt III zeigt den Zusammenhang: Teilnahme an Management-Meetings der Tochter der Salzburg AG, Übermittlung der Hofer-Kalkulationen an die one2zero, Ankündigung als deren Geschäftsführer, am selben Tag Übertragung der Controlling-Daten, danach Löschungen und Verschlüsselungen.
+
+Unabhängig zu klären ist, wer bei der Salzburg AG die Einbindung Herrn Schiefers in die one2zero veranlasst hat, wann die Entscheidungsträger davon Kenntnis hatten und ob die Salzburg AG oder ihre Tochter aus diesen Daten Vorteile gezogen hat.
+
+---
+
+### VI. Causa DORDA – der 10. Oktober 2025
+
+Am 10. Oktober 2025 wurde in Ostermiething eine Generalversammlung der ÖKOVOLT Solartechnik GmbH abgehalten. Den Vorsitz der von der Salzburg AG betriebenen Versammlung führte Dr. Bernhard Rieder, Partner der Kanzlei DORDA, die die Salzburg AG vertritt. Er verlas das Protokoll und unterzeichnete es.
+
+Der Gesellschaftsvertrag verlangt für die Beschlussfähigkeit die Anwesenheit von 75 % des Stammkapitals. Die Salzburg AG hält 49 %; das hält sie in der späteren Firmenbuchanmeldung selbst fest, in der sie sich als Minderheitsgesellschafterin bezeichnet. Das Protokoll hält dennoch die Beschlussfähigkeit fest. Beschlossen wurden die Abberufung des Geschäftsführers Andreas Wegscheider und die Bestellung von Mag. Karl Pfisterer.
+
+Das Oberlandesgericht München hat diese Versammlung als „Separat-Versammlung“ bezeichnet, die „im Flüsterton“ fortgesetzt wurde, und als Aushebelung des Beschlussverfahrens qualifiziert (Abschnitt I).
+
+Der für die Versammlung geladene Notarsubstitut Mag. Michael Thaller verweigerte die Beurkundung des Protokolls. Nach unserem Kenntnisstand wies er dabei ausdrücklich auf die Rechtswidrigkeit des Vorgehens hin. Unmittelbar danach wurde in Anwesenheit von 100 % des Stammkapitals eine ordnungsgemäße Generalversammlung abgehalten und von ihm protokolliert. Sie dauerte über zwei Stunden. Die Versammlung der Salzburg AG hatte für dieselben Tagesordnungspunkte dreizehn Minuten benötigt (**Anlage ./7**).
+
+Gegen die beiden an der Versammlung vom 10. Oktober 2025 und an der Firmenbuchanmeldung vom 13. Oktober 2025 handelnden Rechtsanwälte der Kanzlei DORDA, Dr. Bernhard Rieder und Mag. Alexander Karl, ist bei der Rechtsanwaltskammer Wien ein Disziplinarverfahren anhängig **[Aktenzeichen / Verfahrensstand]**. Das Verfahren gegen die Kanzlei als solche sowie gegen eine damals als Konzipientin tätige Mitarbeiterin wurde eingestellt; gegen die handelnden Anwälte wird es fortgeführt. Für sie gilt die Unschuldsvermutung.
+
+Dieselbe Kanzlei vertritt die Salzburg AG bis heute in den Verfahren gegen die ÖKOVOLT. Die beiden Anwälte, gegen die das Disziplinarverfahren geführt wird, beraten damit den Vorstand in einer Angelegenheit, in der ihr eigenes Handeln Gegenstand der Beurteilung durch das Oberlandesgericht München und eines berufsrechtlichen Verfahrens ist.
+
+Der Aufsichtsrat muss sich deshalb fragen: Kann eine Rechtsvertretung, deren handelnde Anwälte selbst berufsrechtlich für ihr Vorgehen am 10. und 13. Oktober 2025 einzustehen haben, den Vorstand unabhängig darüber beraten, wie mit diesen Vorgängen umzugehen ist? Und kann der Vorstand sich auf diese Beratung stützen, wenn er einen Vergleich ablehnt?
+
+---
+
+### VII. Causa Ranft – der zweite Notar
+
+Nachdem der erste Notar die Beurkundung verweigert hatte, wurde am Montag, dem 13. Oktober 2025, beim Landesgericht Ried im Innkreis eine Firmenbuchanmeldung eingebracht (16 Fr 5567/25 f), mit der die Abberufung von Andreas Wegscheider und die Bestellung von Mag. Pfisterer eingetragen werden sollten. Sie wurde über das Notariat Dr. Philip Ranft in Seekirchen am Wallersee eingebracht (**Anlage ./8**).
+
+Nach unserem Kenntnisstand hat Notar Dr. Ranft vor dem Bezirksgericht Mattighofen (2 C 547/25 y) ausgesagt, dass er diese Anmeldung nicht selbst verfasst hat, sondern dass sie von Dr. Rieder verfasst wurde, und dass er sie eingebracht hat, obwohl er erhebliche Zweifel hatte. **[Protokoll beilegen, falls vorhanden: Anlage ./9]**
+
+Was der erste Notar als Inhalt zu beurkunden abgelehnt hatte, wurde beim zweiten Notariat nur noch als Unterschrift beglaubigt, und die Anmeldung stützte die Erfüllung des Formerfordernisses auf genau diese Beglaubigung. Die erreichte 75-%-Mehrheit begründet die Anmeldung damit, dass die Beschlüsse „einstimmig“ gefasst worden seien – mit den Stimmen der 49 %, die im Raum waren.
+
+---
+
+### VIII. Causa Pfisterer
+
+Mag. Karl Pfisterer ist Mitarbeiter der Salzburg AG und dem Vorstand der Salzburg AG unterstellt. Er wurde in der Versammlung vom 10. Oktober 2025 zum Geschäftsführer bestellt und trat am 13. Oktober 2025 in der Firmenbuchanmeldung als „einziger Geschäftsführer“ der ÖKOVOLT Solartechnik GmbH auf.
+
+In dieser Funktion untersagte er der Compliance-Funktion, ohne seine Genehmigung mit Behörden, Gerichten, Kammern, Notaren oder Rechtsanwälten zu korrespondieren – ausdrücklich betroffen war die Kommunikation mit der Notariatskammer Salzburg und dem Landesgericht Ried im Innkreis, also mit jenen Stellen, die über die Vorgänge vom 10. und 13. Oktober 2025 zu befinden hatten. In der Folge verloren der Compliance-Verantwortliche und der Leiter der Rechtsabteilung ihre Funktionen (**Anlage ./10**). Nach unserem Kenntnisstand geschah dies auf Veranlassung des Vorstandes der Salzburg AG.
+
+Damit entstand folgende Lage: Ein Mitarbeiter der Salzburg AG, eingesetzt auf Grundlage einer Versammlung, die ein Obergericht als Aushebelung des Beschlussverfahrens beurteilt, beschränkt und entfernt die Hinweisgeber, die das Verhalten der Salzburg AG aufklären. Die Geschäftsführung von Andreas Wegscheider ist inzwischen wiederhergestellt, seine Stellung ist unbestritten.
+
+---
+
+### IX. Causa „Köpfe rollen“ – die eigenen Worte des Vorstandes
+
+Die bisher dargestellten Vorgänge könnten für sich genommen noch als Folge von Fehleinschätzungen gedeutet werden. Die folgenden Äußerungen schließen diese Deutung aus. Sie zeigen, dass die Verhinderung der Aufklärung nicht die Folge, sondern das Ziel war.
+
+**1. „Aufklärung darf keine stattfinden, sonst müssen Köpfe rollen.“**
+
+Am **[Datum]** äußerte **[Person, Funktion]** anlässlich **[Anlass / Ort]** in Anwesenheit von **[Zeugen]** **[wörtlich / sinngemäß]**:
+
+> „**[exakter Wortlaut]**“
+
+Diese Äußerung stammt von einem Organ eines Unternehmens in öffentlicher Hand. Sie betrifft die Aufklärung von Vorgängen, für die dieses Organ selbst Verantwortung trägt. Sie sagt nicht, dass die Vorwürfe unbegründet seien. Sie sagt, dass ihre Aufklärung Konsequenzen für Personen hätte und deshalb unterbleiben müsse.
+
+Das ist die Beschreibung eines Interessenkonflikts in den Worten des Betroffenen selbst. Jede nachfolgende Entscheidung dieses Vorstandes in dieser Angelegenheit, einschließlich der Ablehnung des Vergleichs am 11. September 2026, ist an dieser Äußerung zu messen.
+
+**2. „Jetzt habe ich es verstanden.“**
+
+In den Vergleichsgesprächen am **[Datum]** wurden die einzelnen Schadenspositionen und ihre Berechnungsgrundlagen im Detail erläutert. Der Vorstandssprecher MMag. Michael Baminger reagierte darauf in Anwesenheit von **[Zeugen]** mit den Worten: „Jetzt habe ich es verstanden.“
+
+Im Schreiben vom 11. September 2026 behauptet der Vorstand, die Forderung sei der Höhe nach nicht nachvollziehbar erläutert worden. Beide Aussagen können nicht gleichzeitig zutreffen. Der Aufsichtsrat hat zu klären, welche davon die tatsächliche Informationslage des Vorstandes wiedergibt, als er über den Vergleich entschied.
+
+**3. Die Äußerungen vom 20. Dezember 2024 und „im Keller“**
+
+Am 20. Dezember 2024 äußerte sich MMag. Michael Baminger in Anwesenheit von **[Zeugen]** wie folgt: **[Wortlaut / Kern]**. Bei einer weiteren Gelegenheit am **[Datum]** äußerte sich DI Herwig Struber in den Räumlichkeiten der ÖKOVOLT in Anwesenheit von **[Zeugen]**: **[Wortlaut / Kern]**.
+
+Diese Äußerungen fallen in jene Wochen, in denen nach den forensischen Feststellungen die Hofer-Kalkulationen an die one2zero übermittelt, Herr Schiefer als deren Geschäftsführer angekündigt und die Controlling-Daten übertragen wurden (Abschnitt III). Der zeitliche Zusammenhang lässt sich nicht mit Zufall erklären.
+
+**4. Die Drohung gegenüber einer Gesellschafterin**
+
+Am **[Datum]** wurde der Gesellschafterin Susanne Messmer durch **[Person]** in Anwesenheit von **[Zeugen]** bedeutet, sie werde die Auseinandersetzung **[„auch privat finanziell zu spüren bekommen“ – exakten Wortlaut einsetzen]**.
+
+Frau Messmer ist 60 Jahre alt und Mutter zweier Kinder. Sie ist an den hier dargestellten Vorgängen in keiner Weise beteiligt. Die Äußerung stammt von einem Vertreter eines Unternehmens in öffentlicher Hand. Wir verstehen sie als Drohung. Sie ist geeignet, Gesellschafter von der Wahrnehmung ihrer Rechte abzuhalten.
+
+**5. Druck auf Hinweisgeber und Mitarbeiter**
+
+Die Äußerungen fügen sich in ein durchgehendes Muster:
+- Gegenüber Mitarbeiterinnen und Mitarbeitern der ÖKOVOLT wurden Vergeltungsmaßnahmen angekündigt: **[wer, wann, Zeugen]**.
+- Gegenüber dem Geschäftsführer wurde eine neuerliche Abberufung in Aussicht gestellt und auf die Kosten langwieriger Verfahren hingewiesen **[Fundstelle: Schreiben vom 11.09.2026 – prüfen]**.
+- Am 10. Oktober 2025 wurde vor den Grundstücksgrenzen der ÖKOVOLT gegenüber der Belegschaft eine Drohkulisse aufgebaut; anwesende Vertreter des Österreichischen Gewerkschaftsbundes haben dies selbst wahrgenommen.
+- Der Compliance-Verantwortliche und der Leiter der Rechtsabteilung wurden anschließend entfernt (Abschnitt VIII).
+
+Einzeln betrachtet mag jede dieser Äußerungen erklärbar erscheinen. Zusammen mit dem Satz, dass Aufklärung nicht stattfinden dürfe, weil sonst Köpfe rollen müssten, ergeben sie ein anderes Bild. Es zeigt keinen Vorstand, der Vorwürfe prüft. Es zeigt einen Vorstand, der ihre Prüfung verhindert.
+
+Ob die Maßnahmen gegen den Compliance-Verantwortlichen und den Leiter der Rechtsabteilung zudem unzulässige Vergeltungsmaßnahmen gegen Hinweisgeber im Sinne des HinweisgeberInnenschutzgesetzes darstellen, ist gesondert zu prüfen.
+
+---
+
+### X. Causa Sedlacek
+
+**[Nur mit belegten Tatsachen befüllen. Aufbau: Wer ist die Person und in welcher Funktion für/bei der Salzburg AG? Was ist wann geschehen (Datum, Beleg/Anlage)? Was ist gerichtlich oder forensisch festgestellt, was ist Kenntnisstand? Welche Frage muss die Salzburg AG klären lassen?]**
+
+---
+
+### XI. Causa Mülleger
+
+**[Gleicher Aufbau wie X.]**
+
+---
+
+### XII. Die Tonaufnahmen
+
+Neben den forensisch gesicherten Daten und den Zeugenaussagen liegen Tonaufnahmen vor. Darin äußern sich die betroffenen Personen selbst, mit ihrer eigenen Stimme, zu den maßgeblichen Vorgängen. Sie betreffen **[Gegenstand]** aus dem Zeitraum **[Zeitraum]**.
+
+Die Aufnahmen wurden durch **[Name / Institut]** audioforensisch untersucht. Nach dem Gutachten vom **[Datum]** sind sie unverändert. **[Formulierung des Gutachtens übernehmen.]** Die Originaldateien sind durch Hashwerte gesichert (**Anlage ./11**, Gutachten ohne Aufnahmen).
+
+Gegen eine Datei, die man selbst nie gesehen hat, kann man sich mit Interpretationen verteidigen. Gegen die eigene Stimme, deren unveränderte Aufzeichnung gutachterlich bestätigt ist, nicht.
+
+Die Aufnahmen liegen diesem Schreiben nicht bei. Sie stehen dem Aufsichtsrat, einer von ihm beauftragten unabhängigen Prüfinstanz sowie Gerichten und Behörden vollständig und unverändert zur Verfügung.
+
+---
+
+### XIII. Die Ablehnung des Vergleichs – eine Entscheidung in eigener Sache
+
+Die ÖKOVOLT hat einen Vergleich über **[EUR 46 Mio. / EUR 30 Mio. – prüfen]** zur Bereinigung sämtlicher wechselseitiger Ansprüche angeboten (**Anlage ./12**). Die Schadenspositionen wurden detailliert aufgeschlüsselt; zwei umfassende Schadensgutachten liegen vor. Der Vorstand, MMag. Michael Baminger und DI Herwig Struber, MSc, hat den Vergleich mit Schreiben vom 11. September 2026 abgelehnt (**Anlage ./13**).
+
+Über das Angebot haben genau jene Vorstandsmitglieder entschieden, unter deren Führung die Salzburg AG die Verfahren vor dem Oberlandesgericht München geführt und verloren hat, deren Tochtergesellschaft den Hofer-Auftrag übernahm und deren Mitarbeiter die Hinweisgeber entfernte. Jeder Vergleich hätte zwangsläufig auch die Frage berührt, wie dieses Handeln zu bewerten ist.
+
+Das Aktienrecht zieht hier eine klare Grenze:
+
+- **§ 84 Abs 1a AktG:** Unternehmerische Entscheidungen sind nur geschützt, wenn sich der Vorstand nicht von sachfremden Interessen leiten lässt und auf Grundlage angemessener Information handelt. Eine Entscheidung, bei der das Eigeninteresse an der Nichtfeststellung eigener Pflichtverletzungen mitläuft, genießt diesen Schutz nicht.
+
+  Dass dieses Eigeninteresse nicht bloß theoretisch besteht, zeigt die Äußerung, Aufklärung dürfe nicht stattfinden, weil sonst Köpfe rollen müssten (Abschnitt IX). Ein Vorstand, der so denkt, kann über einen Vergleich, der diese Aufklärung beenden würde, nicht frei von sachfremden Interessen entscheiden.
+
+  Das gilt umso mehr, als sich der Vorstand dabei auf die Beratung durch eine Rechtsvertretung stützt, deren handelnde Anwälte selbst Gegenstand eines Disziplinarverfahrens zu genau diesen Vorgängen sind. Eine solche Beratung kann keine angemessene, von Eigeninteressen freie Informationsgrundlage bilden.
+- **§ 84 Abs 2 AktG:** Jeder weitere Euro an Prozesskosten, Zinsen und Risikozuwachs, der aus dieser Entscheidung folgt, ist eine Frage der persönlichen Haftung der handelnden Vorstandsmitglieder.
+- **§ 99 AktG:** Dieselbe Frage stellt sich für jedes Aufsichtsratsmitglied, das diese Linie in Kenntnis der hier dargelegten Beweislage weiter mitträgt. Mit Zugang dieses Schreibens liegt diese Kenntnis vor.
+
+Der gemeinsame Compliance Officer hat den Vorstand bereits früher ausdrücklich auf Haftungsrisiken im dreistelligen Millionenbereich und auf mögliche Verbandsgeldbußen hingewiesen. Nach unserem Kenntnisstand sind diese Risiken weder im Jahresabschluss noch im Lagebericht 2025 der Salzburg AG abgebildet; die Anteile an der deutschen Gesellschaft werden weiterhin ausgewiesen. Ob diese Darstellung zutreffend ist, wird der Aufsichtsrat mit dem Abschlussprüfer zu klären haben.
+
+---
+
+### XIV. Die wirtschaftliche Dimension
+
+Die Salzburg AG hat für ihre 49-%-Beteiligung im Oktober 2021 einen Kaufpreis von EUR 10 Mio. zuzüglich eines variablen Kaufpreisteils von höchstens EUR 5 Mio. bezahlt. Das von ihr selbst beauftragte Bewertungsgutachten von Ernst & Young bewertete das Unternehmen mit rund EUR 28,5 Mio. (objektiviert).
+
+Dem stehen heute ein bezifferter Schadenskomplex von rund EUR 46 Mio. und weitere Haftungs-, Verfahrens- und mögliche Sanktionsrisiken von bis zu EUR 100 Mio. gegenüber (Herleitung in **Anlage ./14**). Die Beträge sind zu unterscheiden: Die rund EUR 46 Mio. sind der bezifferte Schaden, die bis zu EUR 100 Mio. ein Risiko, kein eingetretener Schaden.
+
+Die Größenordnung bleibt dieselbe: Eine Beteiligung, die höchstens EUR 15 Mio. gekostet hat, hat eine mögliche Gesamtexposition von bis zu rund EUR 146 Mio. erzeugt. Das ist mehr als der gesamte Konzern-Jahresüberschuss der Salzburg AG 2025 von EUR 129,4 Mio. und mehr als das Doppelte der Ausschüttung von EUR 66 Mio., die das Land Salzburg, die Stadt Salzburg und die Energie AG Oberösterreich erhalten haben.
+
+Die Salzburg AG unterliegt der Kontrolle des Landesrechnungshofes. Bei dieser Größenordnung ist Nichtstun selbst eine Entscheidung, und eine, die sich später nicht mehr mit Unkenntnis begründen lässt.
+
+---
+
+### XV. An Sie persönlich, Frau Landeshauptfrau
+
+Gestatten Sie mir eine Anmerkung, die ich bewusst an Sie persönlich richte.
+
+**[Variante, falls LH Edtstadler Vorsitzende des Aufsichtsrates ist: „Sie tragen in dieser Angelegenheit eine doppelte Verantwortung: als Vertreterin des größten Eigentümers und als Vorsitzende des Aufsichtsrates, der nach § 95 AktG den Vorstand zu überwachen hat.“]**
+
+Sie waren vor Ihrer politischen Laufbahn Oberstaatsanwältin bei der Wirtschafts- und Korruptionsstaatsanwaltschaft. Sie wissen aus eigener beruflicher Erfahrung,
+- was es bedeutet, wenn ein Obergericht das Vorgehen einer Partei als Aushebelung eines gesetzlichen Verfahrens beschreibt;
+- was es bedeutet, wenn ein Notar die Beurkundung verweigert und danach ein zweiter Notar gefunden wird;
+- dass eine forensische Rekonstruktion von Datenbewegungen nicht dadurch an Gewicht verliert, dass die Betroffenen sie bestreiten;
+- welches Gewicht es hat, wenn zu den objektiven Spuren die eigenen, aufgezeichneten Worte der Beteiligten hinzukommen;
+- was es bedeutet, wenn ein Beteiligter selbst ausspricht, dass Aufklärung unterbleiben muss, weil sonst Köpfe rollen würden – in jedem Ermittlungsverfahren wäre das der Satz, um den sich alles dreht;
+- wie Verfahren verlaufen, in denen Verantwortliche angesichts solcher Befunde auf Zeit spielen und Gegengutachten beauftragen.
+
+Die Befunde bleiben. Was sich ändert, ist allein die Lage derjenigen, die in Kenntnis dieser Befunde nicht gehandelt haben.
+
+Es geht nicht mehr um Interpretationen und nicht um günstige Rechtsauslegungen. Es geht um Tatsachen, die gerichtlich festgehalten, forensisch gesichert und durch die eigenen Worte der Beteiligten unterlegt sind. Wer sie heute noch bestreitet, gewinnt dadurch nur Zeit, und diese Zeit bezahlen die Salzburg AG und ihre Eigentümer.
+
+Ich bitte Sie nicht, meiner Darstellung zu glauben. Ich bitte Sie, diese Unterlagen so zu lesen, wie Sie sie als Oberstaatsanwältin der WKStA gelesen hätten.
+
+---
+
+### XVI. Wer kontrolliert die Kontrolle?
+
+- Wer entscheidet derzeit, welche Daten der Salzburg AG zu diesen Vorgängen gesichert und vorgelegt werden?
+- Wer entscheidet, welche Kanzlei die Salzburg AG berät, wenn deren handelnde Anwälte selbst an den Vorgängen beteiligt waren?
+- Wer entscheidet, welche Gutachten beauftragt werden, und von wem?
+- Wer entscheidet, ob Ansprüche gegen Organmitglieder überhaupt geprüft werden?
+- Wer entscheidet, ob ein Vergleich geschlossen wird?
+
+Wenn die Antwort lautet, dass diese Entscheidungen von jenen getroffen werden, deren eigenes Verhalten Gegenstand der Urteile und der Untersuchung ist, dann besteht ein strukturelles Governance-Problem.
+
+Ein Gutachten kann eine Gerichtsentscheidung nicht aufheben. Eine anwaltliche Stellungnahme kann eine forensisch gesicherte Datenbewegung nicht ungeschehen machen. Keine Erklärung kann eine aufgezeichnete Äußerung zurücknehmen. Keine Rechtsmeinung kann bewirken, dass 49 den Wert 75 erreicht.
+
+Und wie soll ein Vorstand, der erklärt hat, dass Aufklärung nicht stattfinden darf, weil sonst Köpfe rollen müssen, diese Aufklärung selbst leiten?
+
+---
+
+### XVII. Was die Eigentümer und der Aufsichtsrat jetzt tun müssen
+
+Der Vorstand einer Aktiengesellschaft ist weisungsfrei (§ 70 AktG). Die Eigentümer handeln über die Hauptversammlung und den Aufsichtsrat. Wir ersuchen um folgende Schritte:
+
+1. **Vertrauensentzug durch die Hauptversammlung** gegenüber MMag. Michael Baminger und DI Herwig Struber, MSc. Er ist nach § 75 Abs 4 AktG ein wichtiger Grund für die Abberufung, sofern er nicht offenbar unsachlich ist. Nach den Entscheidungen des Oberlandesgerichts München, einem gerichtlich festgestellten Mindestschaden, einer abgeschlossenen forensischen Untersuchung und den dokumentierten Äußerungen des Vorstandes ist er das Gegenteil von unsachlich.
+2. **Abberufung durch den Aufsichtsrat** und Bestellung eines interimistischen Vorstandes, der mit keinem der untersuchten Vorgänge befasst war.
+3. **Sofortige Schadensregulierung.** Der neue Vorstand möge auf Basis des vorliegenden Angebots unverzüglich in Vergleichsverhandlungen eintreten, bevor aus dem Risiko realisierte Belastungen werden.
+4. **Unabhängige Rechtsvertretung** durch eine Kanzlei, deren Mitglieder an den Vorgängen vom 10. und 13. Oktober 2025 nicht beteiligt waren und gegen die kein damit zusammenhängendes berufsrechtliches Verfahren anhängig ist.
+5. **Beweissicherung durch den Aufsichtsrat** (§ 95 AktG) für alle Unterlagen zu Hofer/one2zero, Schiefer, der Beteiligungsführung und dem 10./13. Oktober 2025, einschließlich der Kommunikation mit den beauftragten Kanzleien und mit Mag. Pfisterer. Löschroutinen sind auszusetzen.
+6. **Unabhängige Prüfung der Organhaftung** durch den Aufsichtsrat (§§ 84, 97 AktG). Ein Verzicht oder Vergleich über solche Ansprüche ist nach § 84 Abs 4 AktG erst nach fünf Jahren und nur mit Zustimmung der Hauptversammlung möglich.
+7. **Überprüfung des Jahresabschlusses 2025** mit dem Abschlussprüfer hinsichtlich Beteiligungsansatz und Risikoberichterstattung.
+8. **Offenlegung** gegenüber dem Aufsichtsrat, welche Gutachten und Mandate zu diesen Vorgängen vergeben wurden, von wem, mit welcher Fragestellung und zu welchem Honorar.
+
+Wir ersuchen um Mitteilung bis zum **[Datum]**, welche dieser Schritte eingeleitet wurden.
+
+---
+
+### XVIII. Unser Angebot
+
+Wir bieten den Eigentümervertretern, dem Aufsichtsrat und deren Rechtsvertretern an, sämtliche Beweismittel in einem gemeinsamen Termin vollständig einzusehen: die Entscheidungen des Oberlandesgerichts München, die forensischen Rohdaten und Berichte, die notariellen Protokolle, die Tonaufnahmen samt Hashwerten und das audioforensische Gutachten.
+
+Wir verlangen nicht, dass einzelne Personen vor Abschluss einer unabhängigen Prüfung schuldig gesprochen werden. Die Feststellung strafrechtlicher Verantwortlichkeit obliegt allein den Gerichten, und für alle Betroffenen gilt die Unschuldsvermutung. Wir verlangen aber, dass niemand die Untersuchung seines eigenen möglichen Fehlverhaltens kontrolliert und dass niemand über einen Vergleich entscheidet, dessen eigentlicher Gegenstand die eigene Verantwortung ist.
+
+---
+
+### XIX. Schluss
+
+Die zentrale Frage lautet nicht, wer einen Gesellschafterstreit gewinnt. Sie lautet: Wer trägt die Verantwortung dafür, dass ein Energieversorger in öffentlicher Hand vor einem Obergericht damit gescheitert ist, den Entzug seiner Beteiligung aufzuhalten, einen gerichtlich festgehaltenen Mindestschaden verursacht hat und einer Exposition ausgesetzt ist, die seinen gesamten Jahresgewinn übersteigt? Und warum sollen gerade diejenigen, deren Handeln diese Frage aufwirft, weiterhin darüber entscheiden, wie mit ihr umgegangen wird?
+
+- Ein Obergericht hat entschieden.
+- Ein Mindestschaden ist festgehalten.
+- Die forensische Untersuchung ist abgeschlossen.
+- Die Aufnahmen sind geprüft.
+- Der Vorstand hat selbst gesagt, warum er nicht aufklären will.
+- Ein Vergleichsangebot liegt auf dem Tisch.
+
+Was fehlt, ist allein die Entscheidung der Eigentümer.
+
+Das eigentliche Risiko liegt heute nicht mehr in dem, was bereits geschehen ist. Es liegt in dem, was geschieht, wenn trotz dieser Erkenntnisse niemand eingreift.
+
+Mit freundlichen Grüßen
+
+Andreas Wegscheider
+Geschäftsführer, ÖKOVOLT Solartechnik GmbH
+
+---
+
+### Anlagen
+
+- ./1–./3 OLG München, Urteile vom 21.05.2026 und Beschlüsse vom 18.06.2026 (14 U 3746/25 e, 14 U 3748/25 e, 14 U 295/26 e)
+- ./4 Grant Thornton, Projekt SILICIUM, Zwischenbericht vom 16.03.2026
+- ./5 Grant Thornton, Projekt SILICIUM, Abschlussbericht vom 02.07.2026
+- ./6 Entscheidung 1 HK O 1437/25
+- ./7 Protokolle der Generalversammlungen vom 10.10.2025 (Separat-Versammlung und notarielles Protokoll Mag. Thaller)
+- ./8 Firmenbuchanmeldung vom 13.10.2025, 16 Fr 5567/25 f
+- ./9 Verhandlungsprotokoll BG Mattighofen, 2 C 547/25 y **[falls vorhanden]**
+- ./10 Weisung Mag. Pfisterer; Dokumentation der personellen Maßnahmen
+- ./11 Audioforensisches Gutachten **[Name]** vom **[Datum]** (ohne Aufnahmen)
+- ./12 Vergleichsangebot
+- ./13 Schreiben des Vorstandes der Salzburg AG vom 11.09.2026
+- ./14 Schadens- und Risikoaufstellung
+- ./15 Wahrnehmungsbestätigungen der Zeugen zu Abschnitt IX **[optional]**
+
+---
+
+## 6. Entwicklungsverlauf (Kurzprotokoll der Entscheidungen)
+
+1. Ausgangstext (externer Entwurf): lange, rhetorisch wiederholende Eskalationsschrift, gezeichnet Benjamin Höfler; 46 Mio. + 100 Mio. Risiko.
+2. Ergänzt: Edtstadler-Passage (Ex-WKStA) – Name korrigiert (nicht „Eckstadler“).
+3. Ergänzt: Tonaufnahmen – bewusst nicht beilegen/zitieren (§ 120 Abs 2 StGB, § 16 ABGB); audioforensische Prüfung erwähnt.
+4. Reaktionsanalyse → Umbau: Absender Wegscheider, Adressat AR + Eigentümer, Anlagenkonvolut, Einsichtsangebot, keine Presse.
+5. Kurzfassung (zu kurz) → Langfassung mit aktienrechtlicher Würdigung.
+6. OLG München ergänzt; **Korrektur:** OLG hat Einziehung nicht bestätigt, sondern Salzburg AG in drei Verfahren mit Versuch des Aufhaltens scheitern lassen (Hauptsache offen).
+7. Causae DORDA, Ranft, Pfisterer eingebaut (Quellen: Nachtrag Disziplinaranzeige, Antwortschreiben Wegscheider). Sedlacek, Mülleger: keine Fakten vorhanden → Platzhalter.
+8. **Korrektur Disziplinarstand:** eingestellt nur gegen Kanzlei und Konzipientin Scharl; anhängig gegen Rieder und Karl.
+9. Causa „Köpfe rollen“ inkl. „Jetzt habe ich es verstanden“, 20.12.2024/Keller, Messmer-Drohung, Druck auf Hinweisgeber eingebaut; Zitate auf Zeugenwahrnehmung gestützt.
+
+## 7. Quelldokumente (im Ursprungschat hochgeladen)
+- `Antwortschreiben_Adreas_Wegscheider__5_.docx` – Antwort Wegscheider auf Schreiben der Vorstände vom 11.09.2026 (Du-Form, „Lieber Michael, lieber Herwig“); Quelle für GT-Chronologie, one2zero-Tochterstatus, Messmer, Pfisterer-Einschaltung, „Jetzt habe ich es verstanden“, Jahresabschluss 2025, 30-Mio.-Angabe.
+- `Nachtrag_Disziplinaranzeige_Rieder_Karl.docx` – Nachtrag/neuerliche Disziplinaranzeige an RAK Wien gegen Rieder und Karl (Anzeiger: Benjamin Höfler); Quelle für OLG-Verfahren und -Zitate, Quorum 49/75, Notarskette Thaller/Ranft, Rüffler-Doppelrolle, Firmenbuchanmeldung 13.10.2025, Kennzahlen Salzburg AG.

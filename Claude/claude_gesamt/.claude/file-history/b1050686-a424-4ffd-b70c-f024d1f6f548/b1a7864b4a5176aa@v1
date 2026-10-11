@@ -1,0 +1,124 @@
+# Kundenportal Photovoltaik
+
+Kundenportal für Photovoltaikanlagen. Next.js als Frontend, **Frappe Framework als Backend** —
+alle Daten liegen in Frappe-DocTypes, diese App hält keine eigene Datenbank.
+
+## Architektur
+
+```
+Browser  ──►  Next.js (Server)  ──►  Frappe REST API
+             hält die Session         DocTypes, Rechte,
+             im httpOnly-Cookie       Geschäftslogik
+```
+
+Der Browser spricht **nie** direkt mit Frappe. Der Next.js-Server hält die Frappe-Session
+(`sid`) in einem httpOnly-Cookie und reicht sie serverseitig weiter. Das umgeht CORS- und
+SameSite-Probleme und hält das Session-Token aus dem Client-JavaScript heraus.
+
+## Einrichtung
+
+1. **Frappe-URL eintragen** in `.env.local`:
+
+   ```
+   FRAPPE_URL=http://localhost:8000
+   ```
+
+2. **DocTypes in Frappe anlegen** (siehe unten).
+
+3. **Starten:**
+
+   ```
+   npm run dev     # Entwicklung, http://localhost:3000
+   npm run build   # Produktionsbuild
+   npm run lint    # ESLint
+   ```
+
+## Benötigte DocTypes
+
+Die Zuordnung steht zentral in [`src/lib/doctypes.ts`](src/lib/doctypes.ts). Weicht Ihr
+Frappe-Schema ab, passen Sie **nur diese Datei** an — der Rest der App bleibt unverändert.
+
+| Schlüssel  | DocType         | Herkunft         |
+| ---------- | --------------- | ---------------- |
+| `kunde`    | `Customer`      | ERPNext Standard |
+| `rechnung` | `Sales Invoice` | ERPNext Standard |
+| `dokument` | `File`          | Frappe Standard  |
+| `anlage`   | `PV Anlage`     | **Custom**       |
+| `ertrag`   | `PV Ertrag`     | **Custom**       |
+| `stoerung` | `PV Stoerung`   | **Custom**       |
+
+### PV Anlage
+
+| Feld              | Typ      | Hinweis                                       |
+| ----------------- | -------- | --------------------------------------------- |
+| `anlagen_name`    | Data     | Anzeigename                                   |
+| `kunde`           | Link     | → Customer                                    |
+| `standort`        | Data     |                                               |
+| `leistung_kwp`    | Float    | Nennleistung in kWp                           |
+| `inbetriebnahme`  | Date     |                                               |
+| `status`          | Select   | `Aktiv`, `In Bau`, `Gestoert`, `Ausser Betrieb` |
+| `modul_typ`       | Data     |                                               |
+| `wechselrichter`  | Data     |                                               |
+| `speicher_kwh`    | Float    |                                               |
+
+### PV Ertrag
+
+| Feld                 | Typ   | Hinweis      |
+| -------------------- | ----- | ------------ |
+| `anlage`             | Link  | → PV Anlage  |
+| `datum`              | Date  |              |
+| `ertrag_kwh`         | Float |              |
+| `eigenverbrauch_kwh` | Float |              |
+| `einspeisung_kwh`    | Float |              |
+
+### PV Stoerung
+
+| Feld           | Typ        | Hinweis                                    |
+| -------------- | ---------- | ------------------------------------------ |
+| `betreff`      | Data       |                                            |
+| `anlage`       | Link       | → PV Anlage, optional                      |
+| `status`       | Select     | `Offen`, `In Bearbeitung`, `Geschlossen`   |
+| `prioritaet`   | Select     | `Niedrig`, `Mittel`, `Hoch`                |
+| `beschreibung` | Small Text |                                            |
+| `gemeldet_am`  | Date       |                                            |
+
+## Berechtigungen — wichtig
+
+Die App filtert Daten **nicht** nach Kunde. Das ist Absicht: Frappe wendet die Berechtigungen
+des angemeldeten Benutzers serverseitig an. Ein Filter im Frontend wäre nur Kosmetik und
+ließe sich umgehen.
+
+Richten Sie die Zuordnung in Frappe ein:
+
+1. Rolle `Kunde` anlegen und den Portal-DocTypes zuweisen (nur Lesen; `PV Stoerung`
+   zusätzlich Schreiben).
+2. Pro Portalbenutzer eine **User Permission** auf den passenden `Customer`-Datensatz setzen.
+3. In `PV Anlage` das Feld `kunde` als Link auf `Customer` führen, damit die User Permission
+   greift.
+
+Ohne Schritt 2 sieht jeder angemeldete Benutzer alle Anlagen.
+
+## Projektstruktur
+
+```
+src/
+├── proxy.ts                  Schützt /portal (Next.js 16 Middleware)
+├── lib/
+│   ├── frappe.ts             REST-Client, Fehlerbehandlung, Session-Weitergabe
+│   ├── doctypes.ts           DocType-Namen, Typen, CRUD-Helfer
+│   ├── portal-daten.ts       Fachliche Abfragen fürs Portal
+│   ├── session.ts            Angemeldeter Benutzer, requireUser()
+│   ├── format.ts             de-DE-Formatierung für Zahlen, Energie, Geld, Datum
+│   └── fehler.ts             Frappe-Fehler in verständliche Meldungen
+├── components/               Karten, Kennzahlen, Tabellen, Navigation
+└── app/
+    ├── login/                Anmeldung
+    ├── api/auth/             Login- und Logout-Route (Session-Proxy)
+    └── portal/               Übersicht, Anlagen, Rechnungen, Dokumente, Störungen
+```
+
+## Service-Account
+
+Für serverseitige Aufrufe ohne Benutzersession (Cronjobs, Webhooks) können
+`FRAPPE_API_KEY` und `FRAPPE_API_SECRET` gesetzt und Aufrufe mit
+`{ asServiceAccount: true }` abgesetzt werden.

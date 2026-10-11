@@ -1,0 +1,179 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useActionState, useEffect, useState } from "react";
+
+import { IconRechnen } from "@/components/icon";
+import { Hinweis } from "@/components/ui";
+
+import { laufAnlegen, type Rueckmeldung } from "./aktionen";
+
+/**
+ * Neuen Abrechnungslauf anlegen.
+ *
+ * Die Vorgaben stehen bewusst im Formular und nicht in einer
+ * Einstellungsmaske: Preis und Gutschrift koennen sich je Zeitraum
+ * unterscheiden, und der Lauf haelt fest, mit welchen Werten er
+ * gerechnet wurde. Nachtraeglich geaenderte Stammdaten duerfen einen
+ * bereits erzeugten Beleg nicht verändern.
+ */
+export function LaufFormular({
+  gemeinschaftId,
+  standardModell,
+  moeglicheZeitraeume,
+}: {
+  gemeinschaftId: string;
+  standardModell: string;
+  moeglicheZeitraeume: { jahr: number; quartal: number; label: string }[];
+}) {
+  const router = useRouter();
+  const [offen, setOffen] = useState(false);
+  const [ergebnis, aktion, laeuft] = useActionState<Rueckmeldung | null, FormData>(
+    laufAnlegen,
+    null,
+  );
+
+  // Nach erfolgreichem Lauf zur Detailansicht wechseln.
+  useEffect(() => {
+    if (ergebnis?.ok && ergebnis.laufId) {
+      router.push(`/portal/gemeinschaft/abrechnung/${ergebnis.laufId}`);
+    }
+  }, [ergebnis, router]);
+
+  if (!offen) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOffen(true)}
+        className="knopf knopf-voll"
+        disabled={moeglicheZeitraeume.length === 0}
+      >
+        <IconRechnen groesse={15} />
+        Abrechnung starten
+      </button>
+    );
+  }
+
+  return (
+    <form
+      action={aktion}
+      className="rounded-xl border p-4"
+      style={{ borderColor: "var(--linie)", background: "var(--f-vertieft)" }}
+    >
+      <input type="hidden" name="gemeinschaft" value={gemeinschaftId} />
+
+      <p className="t-abschnitt mb-3">Abrechnungszeitraum</p>
+
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <label className="block">
+          <span className="t-mikro mb-1 block">Quartal</span>
+          <ZeitraumWahl zeitraeume={moeglicheZeitraeume} />
+        </label>
+
+        <label className="block">
+          <span className="t-mikro mb-1 block">Aufteilungsmodell</span>
+          <select name="modell" className="feld" defaultValue={standardModell}>
+            <option value="Dynamisch">Dynamisch – nach Bedarf</option>
+            <option value="Statisch">Statisch – nach festen Anteilen</option>
+          </select>
+        </label>
+
+        <label className="block">
+          <span className="t-mikro mb-1 block">Umsatzsteuer</span>
+          <select name="ust" className="feld" defaultValue="20">
+            <option value="20">20 % (Normalsatz)</option>
+            <option value="13">13 %</option>
+            <option value="10">10 %</option>
+            <option value="0">0 % (Kleinunternehmer)</option>
+          </select>
+        </label>
+
+        <label className="block">
+          <span className="t-mikro mb-1 block">Bezugspreis Verbraucher</span>
+          <span className="flex items-center gap-2">
+            <input
+              name="preis"
+              type="number"
+              step="0.1"
+              min="0"
+              max="100"
+              defaultValue="15.0"
+              className="feld zahl"
+              required
+            />
+            <span className="t-mikro shrink-0">ct/kWh</span>
+          </span>
+        </label>
+
+        <label className="block">
+          <span className="t-mikro mb-1 block">Gutschrift Erzeuger</span>
+          <span className="flex items-center gap-2">
+            <input
+              name="erzeuger"
+              type="number"
+              step="0.1"
+              min="0"
+              max="100"
+              defaultValue="12.0"
+              className="feld zahl"
+              required
+            />
+            <span className="t-mikro shrink-0">ct/kWh</span>
+          </span>
+        </label>
+      </div>
+
+      <p className="t-mikro mt-2.5">
+        Die Differenz zwischen Bezugspreis und Gutschrift deckt den Betrieb der
+        Gemeinschaft. Beide Werte werden im Lauf festgehalten – spätere
+        Änderungen wirken nicht rückwirkend.
+      </p>
+
+      {ergebnis && !ergebnis.ok && (
+        <div className="mt-3">
+          <Hinweis ton="kritisch">{ergebnis.meldung}</Hinweis>
+        </div>
+      )}
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        <button type="submit" className="knopf knopf-voll" disabled={laeuft}>
+          {laeuft ? "Wird gerechnet …" : "Rechnen"}
+        </button>
+        <button
+          type="button"
+          className="knopf knopf-rand"
+          onClick={() => setOffen(false)}
+        >
+          Abbrechen
+        </button>
+      </div>
+    </form>
+  );
+}
+
+function ZeitraumWahl({
+  zeitraeume,
+}: {
+  zeitraeume: { jahr: number; quartal: number; label: string }[];
+}) {
+  const [gewaehlt, setGewaehlt] = useState(0);
+  const eintrag = zeitraeume[gewaehlt] ?? zeitraeume[0];
+
+  return (
+    <>
+      <select
+        className="feld"
+        value={gewaehlt}
+        onChange={(e) => setGewaehlt(Number(e.target.value))}
+      >
+        {zeitraeume.map((z, i) => (
+          <option key={z.label} value={i}>
+            {z.label}
+          </option>
+        ))}
+      </select>
+      <input type="hidden" name="jahr" value={eintrag?.jahr ?? ""} />
+      <input type="hidden" name="quartal" value={eintrag?.quartal ?? ""} />
+    </>
+  );
+}

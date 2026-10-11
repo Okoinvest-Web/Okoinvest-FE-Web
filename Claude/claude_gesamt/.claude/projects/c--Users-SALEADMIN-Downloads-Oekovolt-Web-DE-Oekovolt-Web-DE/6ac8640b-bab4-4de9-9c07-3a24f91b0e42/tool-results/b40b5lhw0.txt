@@ -1,0 +1,481 @@
+// src/lib/plattform/eg/modell.js
+//
+// Gemeinsames Datenmodell des Moduls Energiegemeinschaften (AT: EEG lokal/regional, BEG, GEA, P2P, Eigenversorgung nach
+// ElWG §§ 65–72, EAG § 79). Schnittstellenvertrag aller Arbeitspakete WP1–WP6: docs/EG-SCHNITTSTELLEN.md.
+// Fachliche Grundlage: docs/EG-FACHKONZEPT.md, Abschnitt 3 (Datenmodell), 3.8 (Zustandsautomat Teilnahme), 5 (Rollen).
+//
+// Regeln für alle Pakete:
+//  - Diese Datei enthält NUR Konstanten und JSDoc-Typen (keine Logik, keine Importe). Eigentümer: WP1. Änderungen über
+//    einen Patch-Abschnitt in docs/eg/<paket>.md, WP1 übernimmt.
+//  - Python-Spiegel: Backend-Import/oekoinvest_app/oekoinvest_app/plattform/eg_modell.py (Werte identisch; geprüft in
+//    plattform/tests/test_eg_stamm_kern.py per Node-Export).
+//  - Feldnamen in JS camelCase, in Frappe snake_case (Abbildung: Abschnitt „Feldnamen“ in docs/EG-SCHNITTSTELLEN.md).
+//  - Alle Entitäten tragen id, erstelltAm, erstelltVon, geaendertAm, geaendertVon; Frappe zusätzlich track_changes.
+//  - (zu bestätigen) markiert Werte aus Entwürfen bzw. Sekundärquellen (siehe Fachkonzept, Abschnitt 9).
+//
+// Client- und serverseitig nutzbar (keine Node-Importe, kein „@/“).
+
+export const EG_MODELL_VERSION = 1;
+export const STAND = "2026-10-01";
+
+// ---------------------------------------------------------------- Kennungen (Präfix-JJ-XXXXXX, wie backend/demo/hilfen.js neueId)
+
+/** Präfixe je Entität und zuständiges Arbeitspaket. Frappe: PRAEFIX in plattform/kern.py (je DocType-Controller registriert). */
+export const EG_PRAEFIX = {
+  gemeinschaft: { praefix: "EGG", doctype: "Plattform EG Gemeinschaft", wp: "WP1" },
+  organ: { praefix: "EGO", doctype: "Plattform EG Organ", wp: "WP1" },
+  mitglied: { praefix: "EMG", doctype: "Plattform EG Mitglied", wp: "WP1" },
+  zaehlpunkt: { praefix: "EZP", doctype: "Plattform EG Zaehlpunkt", wp: "WP1" },
+  teilnahme: { praefix: "ETN", doctype: "Plattform EG ZP Teilnahme", wp: "WP1" }, // „Plattform EG Teilnahme“ ist der Prototyp (alt)
+  anlage: { praefix: "EAN", doctype: "Plattform EG Anlage", wp: "WP1" },
+  tarif: { praefix: "ETF", doctype: "Plattform EG Tarif", wp: "WP1" },
+  verteilschluessel: { praefix: "EVS", doctype: "Plattform EG Verteilschluessel", wp: "WP1" },
+  netzbetreiber: { praefix: "ENB", doctype: "Plattform EG Netzbetreiber", wp: "WP1" },
+  netzentgeltRegel: { praefix: "ENR", doctype: "Plattform EG Netzentgelt Regel", wp: "WP1" },
+  edaProzess: { praefix: "EDP", doctype: "Plattform EG EDA Prozess", wp: "WP2" },
+  edaNachricht: { praefix: "EDN", doctype: "Plattform EG EDA Nachricht", wp: "WP2" },
+  messreihe: { praefix: "EMR", doctype: "Plattform EG Messreihe", wp: "WP3" },
+  messmonat: { praefix: "EMM", doctype: "Plattform EG Messmonat", wp: "WP3" },
+  simulation: { praefix: "ESI", doctype: "Plattform EG Simulation", wp: "WP3" },
+  periode: { praefix: "EPR", doctype: "Plattform EG Periode", wp: "WP4" },
+  beleg: { praefix: "EBL", doctype: "Plattform EG Beleg", wp: "WP4" },
+  zahlung: { praefix: "EZA", doctype: "Plattform EG Zahlung", wp: "WP4" },
+  buchung: { praefix: "EBU", doctype: "Plattform EG Buchung", wp: "WP4" },
+  gruendungsauftrag: { praefix: "EGA", doctype: "Plattform EG Gruendungsauftrag", wp: "WP5" },
+  import: { praefix: "EIM", doctype: "Plattform EG Import", wp: "WP5" },
+  foerdercheck: { praefix: "EFC", doctype: "Plattform EG Foerdercheck", wp: "WP5" },
+  interesse: { praefix: "EIN", doctype: "Plattform EG Interesse", wp: "WP6" },
+};
+
+// ---------------------------------------------------------------- Gemeinschaft (Fachkonzept 3.4)
+
+/** Modell der gemeinsamen Energienutzung (getrennt vom Zonelevel gespeichert, Fachkonzept 1.3) */
+export const EG_MODELLE = {
+  eeg: { label: "Erneuerbare-Energie-Gemeinschaft (EEG)", kurz: "EEG", quelle: "ElWG § 66; EAG § 79 Abs. 1, 2, 4", marktpartnerPraefix: "RC", gemeinschaftsIdKennung: "RC", rechtsperson: true },
+  beg: { label: "Bürgerenergiegemeinschaft (BEG)", kurz: "BEG", quelle: "ElWG § 67", marktpartnerPraefix: "CC", gemeinschaftsIdKennung: "CC", rechtsperson: true },
+  gea: { label: "Gemeinschaftliche Erzeugungsanlage (GEA)", kurz: "GEA", quelle: "ElWG §§ 68, 70 Abs. 6 Z 1", marktpartnerPraefix: "GC", gemeinschaftsIdKennung: "GC", rechtsperson: false },
+  p2p: { label: "Peer-to-Peer-Vertrag (P2P)", kurz: "P2P", quelle: "ElWG § 68 Abs. 1", marktpartnerPraefix: "", gemeinschaftsIdKennung: "", rechtsperson: false }, // Präfixe (zu bestätigen)
+  eigenversorgung: { label: "Eigenversorgung an anderem Standort", kurz: "EV", quelle: "ElWG § 65 Abs. 2", marktpartnerPraefix: "", gemeinschaftsIdKennung: "", rechtsperson: false }, // Präfixe (zu bestätigen)
+};
+
+/** Zonelevel / Nahebereich (ebUtilities-Konzept 04/2026 (zu bestätigen)); `phase`: ab welcher Marktprozess-Phase verfügbar */
+export const ZONELEVEL = {
+  1: { label: "Hauptleitung", feld: "ID Anschlussobjekt", modelle: ["gea", "eigenversorgung", "p2p", "beg"], phase: 1, netzebenen: [7] },
+  2: { label: "Standortbereich", feld: "ID Anschlussobjekt (zwei Anschlüsse)", modelle: ["gea", "eigenversorgung", "p2p", "beg"], phase: 2, netzebenen: [7] },
+  3: { label: "Lokalbereich (Niederspannung bis Trafostation)", feld: "ID der Trafostation", modelle: ["eigenversorgung", "p2p", "eeg", "beg"], phase: 1, netzebenen: [6, 7] },
+  4: { label: "Regionalbereich, ein Netzgebiet", feld: "ID des Umspannwerks", modelle: ["eigenversorgung", "p2p", "eeg", "beg"], phase: 1, netzebenen: [4, 5, 6, 7] },
+  5: { label: "Regionalbereich, mehrere Netzgebiete", feld: "ID des Umspannwerks", modelle: ["eigenversorgung", "p2p", "eeg", "beg"], phase: 2, netzebenen: [4, 5, 6, 7] },
+  6: { label: "Keine Verbindung, ein Netzgebiet", feld: "NONE", modelle: ["eigenversorgung", "p2p", "beg"], phase: 1, netzebenen: [3, 4, 5, 6, 7] },
+  7: { label: "Keine Verbindung, mehrere Netzgebiete", feld: "NONE", modelle: ["eigenversorgung", "p2p", "beg"], phase: 2, netzebenen: [3, 4, 5, 6, 7] },
+};
+/** Termine der Marktprozess-Phasen (zu bestätigen) */
+export const MARKTPHASEN = { 1: "2026-10-05", 2: "2027-04-05", 3: "2027-10-04", 4: "2028-04-01" };
+
+export const RECHTSFORMEN = {
+  verein: { label: "Verein", register: "zvr", quelle: "VerG 2002" },
+  egen: { label: "Genossenschaft (eGen)", register: "fn", quelle: "GenG" },
+  gmbh: { label: "GmbH", register: "fn", quelle: "GmbHG" },
+  og_kg: { label: "Personengesellschaft (OG/KG)", register: "fn", quelle: "UGB" },
+  keine: { label: "Keine eigene Rechtsperson (GEA/P2P)", register: "", quelle: "ElWG § 68" },
+};
+
+export const VERTEILMODELLE = {
+  dynamisch: { label: "Dynamisch", text: "Aufteilung je Viertelstunde im Verhältnis zum Verbrauch; ab 05.10.2026 für Neuaktivierungen der Regelfall (zu bestätigen)." },
+  statisch: { label: "Statisch", text: "Fester Aufteilungsschlüssel je Verbrauchszählpunkt; nicht genutzte Anteile gelten als Überschuss. Nur noch für Bestandsgemeinschaften." },
+};
+export const EDA_ANBINDUNGEN = {
+  anwenderportal: { label: "EDA-Anwenderportal", text: "kostenlos bis 50 Zählpunkte je Marktteilnehmer (zu bestätigen)" },
+  email: { label: "E-Mail-Anbindung", text: "bis ca. 200 Zählpunkte" },
+  kep: { label: "KEP (Kommunikationsendpunkt)", text: "unbegrenzt, EDA-Plattformvertrag" },
+};
+export const UST_STATUS = {
+  kleinunternehmer: { label: "Kleinunternehmer (§ 6 Abs. 1 Z 27 UStG)" },
+  regelbesteuert: { label: "Regelbesteuert (Option U 12, 5 Jahre bindend)" },
+};
+export const ABRECHNUNGSRHYTHMEN = { monat: "Monatlich", quartal: "Quartalsweise", jahr: "Jährlich" };
+
+/** Lebenszyklus der Gemeinschaft (Fachkonzept 3.4); `naechste` = erlaubte Folgezustände (Prüfung: eg/status.js) */
+export const GEMEINSCHAFT_STATUS = {
+  interesse: { label: "Interesse", ton: "neutral", naechste: ["machbarkeit", "in_gruendung", "aufgeloest"] },
+  machbarkeit: { label: "Machbarkeit", ton: "info", naechste: ["in_gruendung", "aufgeloest"] },
+  in_gruendung: { label: "In Gründung", ton: "warn", naechste: ["rechtsperson", "vertrag_nb", "in_aufloesung"] },
+  rechtsperson: { label: "Rechtsperson (ZVR/FN)", ton: "warn", naechste: ["marktpartner", "in_aufloesung"] },
+  marktpartner: { label: "Marktpartner (ebUtilities)", ton: "warn", naechste: ["vertrag_nb", "in_aufloesung"] },
+  vertrag_nb: { label: "Vertrag mit dem Netzbetreiber", ton: "warn", naechste: ["eda_bereit", "in_aufloesung"] },
+  eda_bereit: { label: "EDA-bereit", ton: "info", naechste: ["aktiv", "in_aufloesung"] },
+  aktiv: { label: "Aktiv", ton: "ok", naechste: ["aufnahmestopp", "in_aufloesung", "umgewandelt"] },
+  aufnahmestopp: { label: "Aufnahmestopp", ton: "neutral", naechste: ["aktiv", "in_aufloesung", "umgewandelt"] },
+  in_aufloesung: { label: "In Auflösung", ton: "warn", naechste: ["aufgeloest"] },
+  aufgeloest: { label: "Aufgelöst", ton: "neutral", naechste: [] },
+  umgewandelt: { label: "Umgewandelt (Nachfolger)", ton: "neutral", naechste: [] },
+};
+/** Zustände, in denen Zählpunkte zugeordnet sein können bzw. Abrechnung läuft */
+export const GEMEINSCHAFT_IN_BETRIEB = ["aktiv", "aufnahmestopp", "in_aufloesung"];
+
+// ---------------------------------------------------------------- Organ (Fachkonzept 3.5) und Teamrollen je Gemeinschaft
+
+export const ORGAN_FUNKTIONEN = {
+  obmann: { label: "Obmann / Obfrau", teamrolle: "vorstand", leitung: true },
+  obmann_stv: { label: "Obmann-Stellvertretung", teamrolle: "vorstand", leitung: true },
+  vorstand: { label: "Vorstand", teamrolle: "vorstand", leitung: true },
+  geschaeftsfuehrer: { label: "Geschäftsführung", teamrolle: "vorstand", leitung: true },
+  kassier: { label: "Kassier/in", teamrolle: "kassier", leitung: true },
+  schriftfuehrer: { label: "Schriftführer/in", teamrolle: "schriftfuehrer", leitung: true },
+  rechnungspruefer: { label: "Rechnungsprüfer/in", teamrolle: "rechnungspruefer", leitung: false },
+  aufsichtsrat: { label: "Aufsichtsrat", teamrolle: "rechnungspruefer", leitung: false },
+};
+
+/**
+ * Kontext-Rollen je Gemeinschaft (Fachkonzept 5). Vergabe: Organ-Einträge (vorstand, kassier, schriftfuehrer,
+ * rechnungspruefer), Mitglied-Eintrag mit Bezug zum Konto (mitglied, gemeinde), Interesse (interessent), Backoffice mit
+ * Bereich „eg“ und aktivem Dienstleistungsvertrag (organisator) bzw. Gründungsauftrag (gruendung). Matrix: eg/rechte.js.
+ */
+export const EG_TEAMROLLEN = {
+  interessent: { label: "Interessent/in", art: "extern" },
+  mitglied: { label: "Mitglied", art: "mitglied" },
+  gemeinde: { label: "Gemeinde (Mitglied)", art: "mitglied" },
+  vorstand: { label: "Obmann / Vorstand", art: "organ" },
+  kassier: { label: "Kassier/in", art: "organ" },
+  schriftfuehrer: { label: "Schriftführung", art: "organ" },
+  rechnungspruefer: { label: "Rechnungsprüfung", art: "organ" },
+  organisator: { label: "ÖkoInvest-Betriebsführung (Organisator)", art: "backoffice" },
+  gruendung: { label: "ÖkoInvest-Gründungsberatung", art: "backoffice" },
+};
+
+// ---------------------------------------------------------------- Mitglied (Fachkonzept 3.6)
+
+export const MITGLIED_ARTEN = {
+  privat: { label: "Privatperson", eeg: true, beg: true },
+  landwirt: { label: "Landwirt/in", eeg: true, beg: true },
+  kmu: { label: "Unternehmen (KMU)", eeg: true, beg: true },
+  grossunternehmen: { label: "Großunternehmen", eeg: false, beg: true }, // ElWG § 6 Abs. 1 Z 61 – in der EEG unzulässig
+  gemeinde: { label: "Gemeinde / Gebietskörperschaft", eeg: true, beg: true },
+  oeffentlich: { label: "Sonstige juristische Person öffentlichen Rechts", eeg: true, beg: true },
+  verein: { label: "Verein / sonstige juristische Person", eeg: true, beg: true },
+};
+/** Großunternehmen (ElWG § 6 Abs. 1 Z 61): ≥ 250 Mitarbeitende ODER (Umsatz > 50 Mio. € UND Bilanzsumme > 43 Mio. €) (Auslegung zu bestätigen) */
+export const GROSSUNTERNEHMEN = { mitarbeiter: 250, umsatzMioEur: 50, bilanzMioEur: 43 };
+export const MAX_LEISTUNG_JE_ZP_KW = 6000; // BEG/P2P: Großunternehmen max. 6 MW je Zählpunkt (ElWG § 67)
+
+export const STEUERSTATUS_ERZEUGER = {
+  nicht_unternehmerisch: { label: "Nicht unternehmerisch (unentgeltlich)" },
+  kleinunternehmer: { label: "Kleinunternehmer" },
+  pauschalierter_landwirt: { label: "Pauschalierter Landwirt (§ 22 UStG, 13 %)" },
+  regelbesteuert: { label: "Regelbesteuert (Reverse Charge)", uidPflicht: true },
+  gemeinde_bga: { label: "Gemeinde mit Betrieb gewerblicher Art", uidPflicht: true },
+};
+export const RECHNUNGSWEGE = { portal: "Portal", email: "E-Mail", post: "Post" };
+
+export const MITGLIED_STATUS = {
+  interessent: { label: "Interessent", ton: "neutral", naechste: ["antrag", "abgelehnt"] },
+  antrag: { label: "Antrag gestellt", ton: "info", naechste: ["geprueft", "abgelehnt"] },
+  geprueft: { label: "Geprüft", ton: "info", naechste: ["aufgenommen", "abgelehnt"] },
+  aufgenommen: { label: "Aufgenommen", ton: "warn", naechste: ["aktiv", "gekuendigt", "ausgeschlossen"] },
+  aktiv: { label: "Aktiv", ton: "ok", naechste: ["gekuendigt", "ausgeschlossen"] },
+  gekuendigt: { label: "Gekündigt", ton: "warn", naechste: ["ausgeschieden", "aktiv"] },
+  ausgeschieden: { label: "Ausgeschieden", ton: "neutral", naechste: [] },
+  abgelehnt: { label: "Abgelehnt", ton: "neutral", naechste: [] },
+  ausgeschlossen: { label: "Ausgeschlossen", ton: "neutral", naechste: ["ausgeschieden"] },
+};
+export const MITGLIED_AKTIV = ["aufgenommen", "aktiv", "gekuendigt"];
+
+// ---------------------------------------------------------------- Zählpunkt (3.7) und Teilnahme (3.8)
+
+export const ZP_RICHTUNGEN = { verbrauch: { label: "Verbrauch", eda: "CONSUMPTION" }, erzeugung: { label: "Erzeugung", eda: "GENERATION" } };
+export const SMART_METER = { ja: "Smart Meter (Viertelstundenwerte)", nein: "kein Smart Meter", unbekannt: "unbekannt" };
+export const NETZEBENEN = { 3: "Netzebene 3 (Hochspannung)", 4: "Netzebene 4 (Umspannung HS/MS)", 5: "Netzebene 5 (Mittelspannung)", 6: "Netzebene 6 (Umspannung MS/NS)", 7: "Netzebene 7 (Niederspannung)" };
+export const ZP_LAENGE = 33;
+export const MAX_TEILNAHMEN_JE_ZP = 5; // ElWG § 71 Abs. 5
+export const TF_MIN = 1;
+export const TF_MAX = 100;
+export const TF_AENDERUNGEN_JE_TAG = 1; // bis 01.04.2028, danach mehrmals täglich (zu bestätigen)
+export const ZUSTIMMUNG_FRIST_TAGE = 30; // HA II; Marktanalyse nennt 10 Werktage (Altregel) (zu bestätigen)
+export const CONSENT_MIGRATION = "Migration"; // Altzuordnungen vor dem 03.10.2022 (HA II 7.2)
+
+/**
+ * Zustandsautomat Teilnahme (Spiegel der EDA-Prozesse, Fachkonzept 3.8). Schreiben NUR über
+ * eg/status.js teilnahmeUebergang() bzw. die Backend-Operation egTeilnahmeUebergang (WP2 ruft sie auf).
+ * `ereignisse`: { ereignis: zielstatus }.
+ */
+export const TEILNAHME_STATUS = {
+  entwurf: { label: "Entwurf", ton: "neutral", ereignisse: { senden: "angefragt", verwerfen: "verworfen" } },
+  angefragt: { label: "Beim Netzbetreiber angefragt", ton: "info", ereignisse: { anforderung_econ: "zustimmung_offen", ablehnung_econ: "abgelehnt", fehler: "entwurf" } },
+  zustimmung_offen: { label: "Zustimmung des Mitglieds offen", ton: "warn", ereignisse: { zustimmung_econ: "zugestimmt", frist_abgelaufen: "abgelaufen", ablehnung_econ: "abgelehnt" } },
+  zugestimmt: { label: "Zugestimmt", ton: "info", ereignisse: { antwort_econ: "wartet_technik", abschluss_econ: "aktiv" } },
+  wartet_technik: { label: "Wartet auf Technik (z. B. Smart Meter)", ton: "warn", ereignisse: { abschluss_econ: "aktiv", ablehnung_econ: "abgelehnt" } },
+  aktiv: { label: "Aktiv", ton: "ok", ereignisse: { tf_geaendert: "aktiv", cm_rev_sp: "abmeldung_angefragt", cm_rev_cus: "beendet", cm_rev_imp: "beendet" } },
+  abmeldung_angefragt: { label: "Abmeldung angefragt", ton: "warn", ereignisse: { abmeldung_ok: "beendet", abmeldung_abgelehnt: "aktiv" } },
+  beendet: { label: "Beendet", ton: "neutral", ereignisse: {} },
+  abgelehnt: { label: "Abgelehnt", ton: "neutral", ereignisse: { erneut: "entwurf" } },
+  abgelaufen: { label: "Zustimmungsfrist abgelaufen", ton: "neutral", ereignisse: { erneut: "entwurf" } },
+  verworfen: { label: "Verworfen", ton: "neutral", ereignisse: {} },
+};
+/** Teilnahmen, die für Σ TF ≤ 100 und „max. 5“ zählen (aktive und geplante, Fachkonzept 3.8) */
+export const TEILNAHME_ZAEHLT = ["entwurf", "angefragt", "zustimmung_offen", "zugestimmt", "wartet_technik", "aktiv", "abmeldung_angefragt"];
+/** Beendigungsgründe (`beendetGrund`) */
+export const TEILNAHME_ENDE_GRUENDE = { abmeldung: "Abmeldung (CM_REV_SP)", widerruf: "Widerruf des Mitglieds (CM_REV_CUS)", implizit: "Auszug / vertragsloser Zustand (CM_REV_IMP)", korrektur: "Dokumentierte Korrektur (Organisator)" };
+
+// ---------------------------------------------------------------- Anlage (3.9), Tarif (3.10), Verteilschlüssel (3.11)
+
+export const ANLAGE_ARTEN = { pv: "Photovoltaik", wind: "Wind", wasser: "Wasserkraft", biomasse: "Biomasse", speicher: "Speicher", verbrauch: "Verbrauchsanlage" };
+export const ANLAGE_ERZEUGEND = ["pv", "wind", "wasser", "biomasse"];
+export const NUTZUNGSMODELLE = { ueberschuss: "Überschusseinspeisung", volleinspeisung: "Volleinspeisung", pacht: "Pacht durch die Gemeinschaft", eigenanlage_eg: "Eigene Anlage der Gemeinschaft" };
+export const FOERDERUNGEN = { keine: "keine", investzuschuss: "EAG-Investitionszuschuss", marktpraemie: "EAG-Marktprämie", beides: "Investitionszuschuss und Marktprämie" };
+/** § 69 ElWG: Lieferantenpflichten ab Erzeugungsleistung über 100 kW (Haushalte: über 30 kW) */
+export const LIEFERANTENPFLICHT_KW = { allgemein: 100, haushalt: 30 };
+
+export const TARIF_STATUS = { entwurf: "Entwurf", beschlossen: "Beschlossen", aktiv: "Gültig", abgeloest: "Abgelöst" };
+export const TARIF_BESCHLUSS = { gv: "Generalversammlung", vorstand: "Vorstand", organisator: "Organisator (Vollmacht)" };
+export const WOCHENTAGE = { mo: "Mo", di: "Di", mi: "Mi", do: "Do", fr: "Fr", sa: "Sa", so: "So" };
+
+// ---------------------------------------------------------------- Netzbetreiber (3.2) und Netzentgelt-Regel (3.3)
+
+export const VERTRAGSWEGE = { email: "E-Mail", portal: "Portal", formular: "Online-Formular", post: "Post / Vorlage" };
+export const REGEL_BEZUG = { modell: "nach Modell (bis 31.12.2026)", zonelevel: "nach Zonelevel (ab 01.01.2027)" };
+export const REGEL_STATUS = { gesichert: "gesichert (Primärquelle)", entwurf: "Entwurf / Arbeitshypothese", platzhalter: "Platzhalter (Arbeitshypothese, Wert offen)" };
+
+// ---------------------------------------------------------------- Größen der Energiedaten (WP3, Fachkonzept 3.12)
+
+export const MESS_GROESSEN = {
+  verbrauch_gemessen: { label: "Verbrauch laut Messung", richtung: "verbrauch" },
+  verbrauch_tf: { label: "Verbrauch × Teilnahmefaktor", richtung: "verbrauch" },
+  anteil_erzeugung: { label: "Anteil an der Erzeugung", richtung: "verbrauch" },
+  eigendeckung: { label: "Eigendeckung", richtung: "verbrauch" },
+  eigendeckung_ee: { label: "Eigendeckung aus Erneuerbaren (BEG)", richtung: "verbrauch" },
+  erzeugung_gemessen: { label: "Erzeugung laut Messung", richtung: "erzeugung" },
+  erzeugung_tf: { label: "Erzeugung × Teilnahmefaktor", richtung: "erzeugung" },
+  restueberschuss: { label: "Restüberschuss", richtung: "erzeugung" },
+};
+export const MESS_QUALITAET = { L1: "Echtwert", L2: "belastbarer Ersatzwert", L3: "nicht belastbar (nicht abrechenbar)" };
+
+// ---------------------------------------------------------------- Ereignisse zwischen den Paketen (Fassade backend/eg.js)
+
+/** Ereignis → empfangende Backend-Operation. Senden: egEreignisSenden(n, name, payload) in backend/eg.js. */
+export const EG_EREIGNISSE = {
+  "eg.energiedaten.empfangen": { von: "WP2", an: "WP3", operation: "enEnergiedatenEmpfangen", text: "CR_MSG/DATEN_CRMSG je Zählpunkt (Payload siehe EgEnergiedatenPayload)" },
+  "eg.teilnahme.geaendert": { von: "WP1", an: ["WP3", "WP4", "WP6"], operation: null, text: "Statuswechsel einer Teilnahme (nur Protokoll/Benachrichtigung, keine Pflicht-Empfänger)" },
+  "eg.gemeinschaft.eda_bereit": { von: "WP5", an: "WP2", operation: "edaGemeinschaftBereit", text: "Gründung abgeschlossen – EDA-Erstanmeldung kann starten" },
+  "eg.periode.freigegeben": { von: "WP4", an: "WP6", operation: null, text: "Belege einer Periode stehen im Mitgliedsportal" },
+  "eg.import.uebernommen": { von: "WP5", an: "WP2", operation: "edaPodlistAnfordern", text: "Nach dem Wechsel-Import EC_PODLIST anfordern (Abgleich)" },
+};
+
+// ---------------------------------------------------------------- JSDoc-Typen (Ausgabe der Backend-Operationen, camelCase)
+
+/**
+ * @typedef {Object} EgMeta
+ * @property {string} id
+ * @property {string} erstelltAm ISO-Zeitpunkt
+ * @property {string|null} erstelltVon Konto-ID
+ * @property {string} geaendertAm
+ * @property {string|null} geaendertVon
+ * @property {boolean} [demo]
+ */
+
+/**
+ * @typedef {EgMeta & Object} EgGemeinschaft
+ * @property {string} name
+ * @property {string} kurzname
+ * @property {"eeg"|"beg"|"gea"|"p2p"|"eigenversorgung"} modell
+ * @property {1|2|3|4|5|6|7} zonelevel
+ * @property {string} nahebereichRef Trafostations-/UW-ID bzw. Anschlussobjekt
+ * @property {"verein"|"egen"|"gmbh"|"og_kg"|"keine"} rechtsform
+ * @property {string} zvrZahl
+ * @property {string} firmenbuchnummer
+ * @property {{strasse:string, plz:string, ort:string}} sitzAdresse
+ * @property {string} email
+ * @property {string} telefon
+ * @property {string} uid
+ * @property {string} steuernummer
+ * @property {string} finanzamt
+ * @property {"kleinunternehmer"|"regelbesteuert"} ustStatus
+ * @property {string} ustOptionSeit Datum (U 12)
+ * @property {string} iban
+ * @property {string} bic
+ * @property {string} creditorId SEPA-Gläubiger-ID
+ * @property {string[]} netzbetreiber Netzbetreiber-IDs (ENB-…); BEG und Zonelevel 5/7: mehrere
+ * @property {string} marktpartnerId z. B. RC100015
+ * @property {string} gemeinschaftsId 33 Zeichen (eg/stamm.js gemeinschaftsIdPruefen)
+ * @property {"dynamisch"|"statisch"} verteilmodell
+ * @property {string|null} vorgaengerId
+ * @property {string|null} nachfolgerId
+ * @property {"anwenderportal"|"email"|"kep"} edaAnbindung
+ * @property {string|null} organisatorOrgId Organisation (ÖkoInvest)
+ * @property {string} organisatorAngezeigtAm
+ * @property {{aktiv:boolean, paket:string, seit:string, avvAm:string}} dienstleistung Dienstleistungs- und AV-Vertrag (Voraussetzung Rolle organisator)
+ * @property {"monat"|"quartal"|"jahr"} abrechnungsrhythmus
+ * @property {string} statutenVersion
+ * @property {string} betreibervertragDatum
+ * @property {string} status Schlüssel aus GEMEINSCHAFT_STATUS
+ * @property {string} gruendungsauftragId WP5
+ * @property {{erzeugungsleistungKw:number, lieferantenpflichten:boolean, mitgliederAktiv:number, zaehlpunkteAktiv:number}} [kennzahlen] berechnet (eg/stamm.js kennzahlen)
+ */
+
+/**
+ * @typedef {EgMeta & Object} EgOrgan
+ * @property {string} gemeinschaftId
+ * @property {string|null} kontoId Konto der Person (Portalzugang); ohne Konto nur Stammdatum
+ * @property {string} name Anzeigename (wenn ohne Konto)
+ * @property {string} funktion Schlüssel aus ORGAN_FUNKTIONEN
+ * @property {string} von
+ * @property {string} bis
+ * @property {string} gewaehltIn GV-Kennung (WP5)
+ * @property {boolean} zeichnungsberechtigt
+ * @property {"aktiv"|"beendet"} status
+ */
+
+/**
+ * @typedef {EgMeta & Object} EgMitglied
+ * @property {string} gemeinschaftId
+ * @property {string|null} kontoId Bezug zum Konto (auch Konten mit Rolle landwirt, unternehmen, kommune …)
+ * @property {number} mitgliedsnummer fortlaufend je Gemeinschaft
+ * @property {string} art Schlüssel aus MITGLIED_ARTEN
+ * @property {{vorname:string, nachname:string, firma:string, strasse:string, plz:string, ort:string, email:string, telefon:string}} person
+ * @property {{mitarbeiter:number|null, umsatzMioEur:number|null, bilanzMioEur:number|null, nachweis:string}} unternehmensgroesse
+ * @property {string} steuerstatusErzeuger Schlüssel aus STEUERSTATUS_ERZEUGER
+ * @property {string} uid
+ * @property {boolean} schutzbeduerftig § 68 Abs. 6
+ * @property {string} iban
+ * @property {{referenz:string, datum:string, status:"aktiv"|"widerrufen"|""}} sepaMandat
+ * @property {"portal"|"email"|"post"} rechnungsweg
+ * @property {"monat"|"quartal"|"jahr"|""} abrechnungsrhythmus
+ * @property {{art:string, dokumentId:string, version:string, am:string}[]} vertraege
+ * @property {string} beitrittAm
+ * @property {string} austrittZum
+ * @property {string} status Schlüssel aus MITGLIED_STATUS
+ */
+
+/**
+ * @typedef {EgMeta & Object} EgZaehlpunkt
+ * @property {string} zaehlpunktnummer 33 Zeichen ohne Leerzeichen
+ * @property {string} netzbetreiberId abgeleitet aus Ziffern 3–8 (ENB-…), "" wenn unbekannt
+ * @property {string} nbNummer Ziffern 3–8
+ * @property {string} plz Ziffern 9–13 (AT: 0 + 4-stellige PLZ, 00000 erlaubt)
+ * @property {"verbrauch"|"erzeugung"} richtung
+ * @property {string|null} anlageId
+ * @property {string|null} inhaberKontoId kann vom Mitglied abweichen
+ * @property {string} inhaberName
+ * @property {"ja"|"nein"|"unbekannt"} smartMeter
+ * @property {boolean} qhAktiv Viertelstundenwerte freigeschaltet
+ * @property {string} nahebereichRef
+ * @property {string} auskunftAm
+ * @property {4|5|6|7|null} netzebene
+ * @property {string} lieferant
+ * @property {string} energieabnehmer
+ */
+
+/**
+ * @typedef {EgMeta & Object} EgTeilnahme
+ * @property {string} zaehlpunktId
+ * @property {string} gemeinschaftId
+ * @property {string} mitgliedId
+ * @property {number} teilnahmefaktor ganzzahlig 1–100
+ * @property {number|null} aufteilungsschluesselPct nur statisch, 1 Nachkommastelle
+ * @property {string} consentId
+ * @property {string} gueltigAb Aktivierungsdatum (ABSCHLUSS_ECON)
+ * @property {string} gueltigBis letzter Zuordnungstag
+ * @property {{gueltigAb:string, tf:number, prozessId:string}[]} tfHistorie
+ * @property {string} status Schlüssel aus TEILNAHME_STATUS
+ * @property {string} beendetGrund Schlüssel aus TEILNAHME_ENDE_GRUENDE
+ * @property {string} responsecode letzter EDA-Responsecode (WP2)
+ * @property {string} fristBis Zustimmungsfrist (zustimmung_offen)
+ * @property {{am:string, von:string, nach:string, ereignis:string, prozessId:string, text:string, vonKonto:string|null}[]} verlauf
+ */
+
+/**
+ * @typedef {EgMeta & Object} EgAnlage
+ * @property {string} gemeinschaftId
+ * @property {string} bezeichnung
+ * @property {string} art Schlüssel aus ANLAGE_ARTEN
+ * @property {number|null} engpassleistungKw
+ * @property {number|null} kwp
+ * @property {number|null} ausrichtung Grad (0 = Süd, −90 Ost, 90 West)
+ * @property {number|null} neigung Grad
+ * @property {{lat:number|null, lon:number|null, adresse:string}} standort
+ * @property {string|null} eigentuemerMitgliedId
+ * @property {string} betreiber
+ * @property {string} betriebsfuehrung
+ * @property {string} nutzungsmodell Schlüssel aus NUTZUNGSMODELLE
+ * @property {string} foerderung Schlüssel aus FOERDERUNGEN
+ * @property {string} inbetriebnahme
+ * @property {boolean} hknRegistriert
+ * @property {number|null} speicherKwh
+ * @property {string} speicherLadequelle
+ * @property {string} iotQuelle Verweis auf ÖKOVOLT-Monitoring (Anlagen-ID)
+ * @property {boolean} haushalt Erzeuger ist Haushalt (§ 69-Schwelle 30 kW)
+ * @property {"geplant"|"aktiv"|"stillgelegt"} status
+ */
+
+/**
+ * @typedef {EgMeta & Object} EgTarif
+ * @property {string} gemeinschaftId
+ * @property {string} bezeichnung
+ * @property {string} gueltigAb
+ * @property {string} gueltigBis
+ * @property {{art:"gv"|"vorstand"|"organisator", datum:string, referenz:string}} beschluss
+ * @property {number} bezugspreisCt netto, bis 4 Nachkommastellen
+ * @property {number} einspeisepreisCt netto
+ * @property {{id:string, label:string, tage:string[], von:string, bis:string, monate:number[], bezugspreisCt:number|null, einspeisepreisCt:number|null}[]} zeitfenster
+ * @property {number} grundgebuehrMonat
+ * @property {number} zaehlpunktgebuehrMonat
+ * @property {number} einmalgebuehrBeitritt
+ * @property {number} mitgliedsbeitragJahr
+ * @property {{bezugspreisCt:number|null, kontingentPct:number|null}} sozialtarif
+ * @property {{mitgliedId:string, bezugspreisCt:number|null, einspeisepreisCt:number|null, grund:string}[]} individuell
+ * @property {string} status Schlüssel aus TARIF_STATUS
+ */
+
+/**
+ * @typedef {EgMeta & Object} EgVerteilschluessel
+ * @property {string} gemeinschaftId
+ * @property {string} gueltigAb
+ * @property {{teilnahmeId:string, pct:number}[]} positionen
+ * @property {number} summePct berechnet; Warnung ≠ 100 (Netzbetreiber normiert erst über 100 %)
+ * @property {string} edaProzessId EC_PRT_CHANGE (WP2)
+ * @property {"entwurf"|"gesendet"|"gueltig"} status
+ */
+
+/**
+ * @typedef {Object} EgNetzbetreiber
+ * @property {string} id ENB-<nbNummer> bzw. ENB-<kurz>
+ * @property {string} nbNummer Ziffern 3–8 der Zählpunktnummer, "" wenn nicht öffentlich belegt
+ * @property {"gesichert"|"zu_bestaetigen"|"offen"} nbNummerStatus
+ * @property {string} name
+ * @property {string} kurzname
+ * @property {string[]} bundesland Kürzel W, N, O, S, T, V, K, St, B
+ * @property {string} marktpartnerId EDA-Adresse (AT + nbNummer) (zu bestätigen)
+ * @property {"email"|"portal"|"formular"|"post"} vertragsweg
+ * @property {string} kontaktEmail
+ * @property {string} portalUrl
+ * @property {string} formularUrl
+ * @property {string[]} plzListe
+ * @property {{gueltigAb:string, netzebene:number, ctKwh:number}[]} netzentgeltAp
+ * @property {string} besonderheiten
+ * @property {string} quelle
+ */
+
+/**
+ * @typedef {Object} EgNetzentgeltRegel
+ * @property {string} id
+ * @property {string} gueltigAb
+ * @property {string} gueltigBis "" = offen
+ * @property {"modell"|"zonelevel"} bezug
+ * @property {string[]} modelle bei bezug = modell
+ * @property {number[]} zonelevel bei bezug = zonelevel
+ * @property {number[]} netzebenen
+ * @property {number|null} reduktionPct null = Platzhalter (Wert offen)
+ * @property {string[]} abgabenBefreitModelle Modelle mit Befreiung von Elektrizitätsabgabe + Erneuerbaren-Förderbeitrag (EEG, GEA)
+ * @property {string} quelleUrl
+ * @property {string} quelle
+ * @property {"gesichert"|"entwurf"|"platzhalter"} status
+ */
+
+/**
+ * @typedef {Object} EgEnergiedatenPayload Ereignis eg.energiedaten.empfangen (WP2 → WP3)
+ * @property {string} gemeinschaftId
+ * @property {string} zaehlpunktnummer
+ * @property {string} nachrichtId EDA-Nachricht (EDN-…)
+ * @property {string} messageId
+ * @property {string} von ISO-Zeitpunkt UTC
+ * @property {string} bis
+ * @property {{groesse:string, werte:number[], qualitaet:string[]}[]} reihen je Größe 15-min-Werte (kWh)
+ */

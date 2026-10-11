@@ -1,0 +1,122 @@
+import { expect, test, type Page } from '@playwright/test'
+
+/**
+ * Feldablauf aus Kapitel 6.2 und Offline-Verhalten (AK-02, AK-04).
+ *
+ * Läuft gegen den Demo-Modus: keine Bench, keine Datenbank. Geprüft wird das,
+ * was der Techniker tatsächlich tut — nicht einzelne Funktionen.
+ */
+
+/** Wartet, bis die App den Ladebildschirm verlassen hat. */
+async function appOeffnen(page: Page, pfad = '/baudoku') {
+  await page.goto(pfad)
+  await expect(page.getByText('Baudoku wird geladen')).toBeHidden({ timeout: 20_000 })
+}
+
+test.describe('Dashboard', () => {
+  test('zeigt Kennzahlen und offene Aufgaben', async ({ page }) => {
+    await appOeffnen(page)
+
+    await expect(page.getByRole('heading', { name: /Servus/ })).toBeVisible()
+    await expect(page.getByText('Offene Mängel')).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Meine Mängel' })).toBeVisible()
+  })
+})
+
+test.describe('Anlagen', () => {
+  test('Suche filtert die Liste und steht in der Adresszeile', async ({ page }) => {
+    await appOeffnen(page, '/baudoku/anlagen')
+
+    await page.getByPlaceholder('Anlage, Kunde oder Ort').fill('Aumayr')
+    await expect(page.getByRole('heading', { name: 'Aumayr GmbH Dachanlage' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Ladepark Autohaus Reiter' })).toBeHidden()
+
+    // Filter muss ein Neuladen überstehen und als Link teilbar sein
+    await expect(page).toHaveURL(/suche=Aumayr/)
+    await page.reload()
+    await expect(page.getByPlaceholder('Anlage, Kunde oder Ort')).toHaveValue('Aumayr')
+  })
+
+  test('Anlagendetail zeigt Messwertverlauf und Komponenten', async ({ page }) => {
+    await appOeffnen(page, '/baudoku/anlagen/ANL-2026-00001')
+
+    await expect(page.getByRole('heading', { name: 'Aumayr GmbH Dachanlage' })).toBeVisible()
+
+    await page.getByRole('button', { name: /Messwerte/ }).click()
+    await expect(page.getByText('Isolationswiderstand je String')).toBeVisible()
+    await expect(page.getByRole('img', { name: /Messwertverlauf/ })).toBeVisible()
+
+    await page.getByRole('button', { name: /Komponenten/ }).click()
+    await expect(page.getByText('SE-2024-88213')).toBeVisible()
+  })
+})
+
+test.describe('Prüfprotokoll (AK-02)', () => {
+  test('lässt sich starten, ausfüllen und unterbrechen', async ({ page }) => {
+    await appOeffnen(page, '/baudoku/protokolle/neu')
+
+    // Schritt 1: Anlage
+    await page.getByRole('button', { name: /Aumayr GmbH Dachanlage/ }).click()
+
+    // Schritt 2: Vorlage
+    await expect(page.getByRole('heading', { name: 'Vorlage wählen' })).toBeVisible()
+    await page.getByRole('button', { name: /DC-Wartungscheckliste/ }).click()
+
+    // Schritt 3: Kopfdaten und Start
+    await expect(page.getByRole('heading', { name: 'Kopfdaten' })).toBeVisible()
+    await page.getByRole('button', { name: 'Protokoll starten' }).click()
+
+    // Ausführung: erster Prüfpunkt der Vorlage
+    await expect(page).toHaveURL(/\/protokolle\/[0-9a-f-]+\/ausfuehren/, { timeout: 20_000 })
+    await expect(page.getByRole('heading', { name: 'Ort der Anlage' })).toBeVisible()
+    await expect(page.getByText('Prüfpunkt 1 von')).toBeVisible()
+
+    await page.getByPlaceholder('Beobachtung eintragen').fill('Ostermiething, Halle Nord')
+    await page.getByRole('button', { name: 'Weiter', exact: true }).click()
+
+    // Fortschritt muss sich bewegt haben
+    await expect(page.getByText('Prüfpunkt 2 von')).toBeVisible()
+
+    // Unterbrechen — der Zwischenstand gehört auf das Dashboard
+    await page.getByRole('button', { name: 'Unterbrechen' }).click()
+    const angefangen = page.locator('section').filter({ hasText: 'Angefangene Protokolle' })
+    await expect(angefangen.getByText('Aumayr GmbH Dachanlage')).toBeVisible()
+    await expect(angefangen.getByRole('link')).toHaveAttribute('href', /ausfuehren$/)
+  })
+
+  test('warnt bei unplausiblem Messwert', async ({ page }) => {
+    await appOeffnen(page, '/baudoku/protokolle/neu')
+    await page.getByRole('button', { name: /Aumayr GmbH Dachanlage/ }).click()
+    await page.getByRole('button', { name: /DC-Wartungscheckliste/ }).click()
+    await page.getByRole('button', { name: 'Protokoll starten' }).click()
+    await expect(page).toHaveURL(/ausfuehren/, { timeout: 20_000 })
+
+    // Zum Drehmoment-Prüfpunkt springen (zulässig 8 bis 30 Nm)
+    await page.getByRole('button', { name: /Abschnitte öffnen/ }).click()
+    await page.getByRole('button', { name: /Unterkonstruktion/ }).click()
+    await page.getByRole('button', { name: 'Weiter', exact: true }).click()
+
+    await expect(page.getByRole('heading', { name: /Drehmoment/ })).toBeVisible()
+    await page.getByPlaceholder('0').fill('2')
+
+    // Deutlich unter dem Minimum: Fehler, nicht nur Warnung
+    await expect(page.getByText(/unter Minimum/)).toBeVisible()
+    await expect(page.getByText('Messwert bewusst übernehmen')).toBeVisible()
+  })
+})
+
+test.describe('Mangelerfassung', () => {
+  test('legt einen Mangel an und zeigt ihn in der Liste', async ({ page }) => {
+    await appOeffnen(page, '/baudoku/maengel/neu')
+
+    await page.getByRole('button', { name: /Anlage wählen/ }).click()
+    await page.getByRole('button', { name: /Aumayr GmbH Dachanlage/ }).click()
+
+    await page.getByPlaceholder('Kurz und eindeutig').fill('E2E Testmangel')
+    await page.getByPlaceholder('Was wurde festgestellt').fill('Beim Testlauf erfasst.')
+    await page.getByRole('button', { name: 'Speichern' }).click()
+
+    await expect(page).toHaveURL(/\/maengel$/)
+    await expect(page.getByText('E2E Testmangel')).toBeVisible()
+  })
+})

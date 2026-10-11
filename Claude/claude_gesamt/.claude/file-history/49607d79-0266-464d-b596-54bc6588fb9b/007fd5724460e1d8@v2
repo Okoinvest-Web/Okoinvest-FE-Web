@@ -1,0 +1,175 @@
+<template>
+  <div v-if="dossier" class="grid grid-cols-1 gap-6 xl:grid-cols-2">
+    <!-- Dokumente -->
+    <section class="rounded-lg border border-outline-gray-2 bg-surface-white">
+      <h3 class="border-b border-outline-gray-2 px-4 py-2.5 text-base font-medium text-ink-gray-8">
+        Dokumente <span class="text-ink-gray-4">{{ dossier.documents.length }}</span>
+      </h3>
+      <RouterLink
+        v-for="dokument in dossier.documents"
+        :key="dokument.name"
+        to="/documents"
+        class="flex items-center justify-between border-b border-outline-gray-2 px-4 py-2.5 last:border-b-0 hover:bg-surface-gray-1"
+      >
+        <span class="min-w-0">
+          <span class="block truncate text-base text-ink-gray-8">{{ dokument.title }}</span>
+          <span class="block text-sm text-ink-gray-5">Version {{ dokument.version }}</span>
+        </span>
+        <Badge :theme="dokument.approval_state === 'approved' ? 'green' : 'orange'">
+          {{ dokument.approval_state === 'approved' ? 'Freigegeben' : 'In Arbeit' }}
+        </Badge>
+      </RouterLink>
+      <p v-if="!dossier.documents.length" class="px-4 py-6 text-sm text-ink-gray-5">
+        Kein Dokument verknüpft.
+      </p>
+    </section>
+
+    <!-- Zugangsverweise -->
+    <section class="rounded-lg border border-outline-gray-2 bg-surface-white">
+      <h3 class="border-b border-outline-gray-2 px-4 py-2.5 text-base font-medium text-ink-gray-8">
+        Zugänge <span class="text-ink-gray-4">{{ dossier.access_references.length }}</span>
+      </h3>
+      <div
+        v-for="verweis in dossier.access_references"
+        :key="verweis.name"
+        class="flex items-center justify-between gap-3 border-b border-outline-gray-2 px-4 py-2.5 last:border-b-0"
+      >
+        <span class="min-w-0">
+          <span class="block truncate text-base text-ink-gray-8">{{ verweis.label }}</span>
+          <span class="block truncate font-mono text-sm text-ink-gray-5">
+            {{ verweis.passbolt_url }}
+          </span>
+        </span>
+        <Badge theme="gray">{{ ZUGANG[verweis.access_kind] || verweis.access_kind }}</Badge>
+      </div>
+      <p v-if="!dossier.access_references.length" class="px-4 py-6 text-sm text-ink-gray-5">
+        Kein Zugangsverweis hinterlegt.
+      </p>
+      <p class="border-t border-outline-gray-2 px-4 py-2 text-xs text-ink-gray-4">
+        Nur Verweise auf Passbolt – Kennwörter liegen nie in dieser Datenbank.
+      </p>
+    </section>
+
+    <!-- Offene Punkte: Alarme, Schwachstellen, Drift -->
+    <section class="rounded-lg border border-outline-gray-2 bg-surface-white">
+      <h3 class="border-b border-outline-gray-2 px-4 py-2.5 text-base font-medium text-ink-gray-8">
+        Offene Punkte <span class="text-ink-gray-4">{{ offenePunkte.length }}</span>
+      </h3>
+      <RouterLink
+        v-for="(punkt, i) in offenePunkte"
+        :key="i"
+        :to="punkt.to"
+        class="flex items-center justify-between gap-3 border-b border-outline-gray-2 px-4 py-2.5 last:border-b-0 hover:bg-surface-gray-1"
+      >
+        <span class="min-w-0">
+          <span class="block truncate text-base text-ink-gray-8">{{ punkt.titel }}</span>
+          <span class="block truncate text-sm text-ink-gray-5">{{ punkt.untertitel }}</span>
+        </span>
+        <StatusDot :level="punkt.level" :text="punkt.art" klein />
+      </RouterLink>
+      <p v-if="!offenePunkte.length" class="px-4 py-6 text-sm text-ink-gray-5">
+        Nichts offen.
+      </p>
+    </section>
+
+    <!-- Beziehungen -->
+    <section class="rounded-lg border border-outline-gray-2 bg-surface-white">
+      <h3 class="border-b border-outline-gray-2 px-4 py-2.5 text-base font-medium text-ink-gray-8">
+        Beziehungen
+        <span class="text-ink-gray-4">
+          {{ dossier.relations_out.length + dossier.relations_in.length }}
+        </span>
+      </h3>
+      <div
+        v-for="(beziehung, i) in beziehungen"
+        :key="i"
+        class="flex items-center justify-between gap-3 border-b border-outline-gray-2 px-4 py-2.5 last:border-b-0"
+      >
+        <span class="text-base text-ink-gray-8">
+          {{ beziehung.richtung === 'out' ? 'Dieses Gerät' : beziehung.name }}
+          <span class="mx-1 text-ink-gray-5">{{ BEZIEHUNG[beziehung.relation_type] || beziehung.relation_type }}</span>
+          {{ beziehung.richtung === 'out' ? beziehung.name : 'dieses Gerät' }}
+        </span>
+        <Badge theme="gray">{{ doctypeLabel(beziehung.type) }}</Badge>
+      </div>
+      <div
+        v-for="lauf in dossier.checklists"
+        :key="lauf.name"
+        class="flex items-center justify-between gap-3 border-b border-outline-gray-2 px-4 py-2.5 last:border-b-0"
+      >
+        <span class="text-base text-ink-gray-8">Checkliste: {{ lauf.template }}</span>
+        <Badge :theme="lauf.run_state === 'done' ? 'green' : 'orange'">
+          {{ lauf.run_state === 'done' ? 'Abgeschlossen' : 'Offen' }}
+        </Badge>
+      </div>
+      <p
+        v-if="!beziehungen.length && !dossier.checklists.length"
+        class="px-4 py-6 text-sm text-ink-gray-5"
+      >
+        Keine Beziehung erfasst.
+      </p>
+    </section>
+  </div>
+</template>
+
+<script setup>
+import { computed } from 'vue'
+import { Badge } from 'frappe-ui'
+import StatusDot from '@/components/StatusDot.vue'
+import { doctypeLabel } from '@/labels'
+
+const props = defineProps({
+  dossier: { type: Object, default: null },
+})
+
+const ZUGANG = { web_ui: 'Weboberfläche', ssh: 'SSH', api_token: 'API-Token' }
+const ALARM_ZUSTAND = { new: 'neu', ack: 'angenommen', closed: 'geschlossen' }
+const BEZIEHUNG = {
+  documents: 'dokumentiert',
+  depends_on: 'hängt ab von',
+  runs_on: 'läuft auf',
+  replaces: 'ersetzt',
+}
+
+/**
+ * Alarme, Schwachstellen und Drift in einer Liste – aus Sicht eines
+ * Technikers ist das dieselbe Frage: was ist an diesem Gerät offen?
+ */
+const offenePunkte = computed(() => {
+  const d = props.dossier
+  if (!d) return []
+
+  return [
+    ...d.alerts.map((a) => ({
+      titel: a.title,
+      untertitel: 'Alarm · ' + (ALARM_ZUSTAND[a.alert_state] || a.alert_state),
+      art: a.severity === 'critical' ? 'kritisch' : 'Alarm',
+      level: a.severity === 'critical' ? 'critical' : 'warning',
+      to: '/alerts',
+    })),
+    ...d.vulnerabilities.map((v) => ({
+      titel: v.cve + ' · ' + v.title,
+      untertitel: 'CVSS ' + v.cvss + (v.kev ? ' · aktiv ausgenutzt' : ''),
+      art: v.kev ? 'KEV' : 'Schwachstelle',
+      level: v.kev || v.cvss >= 9 ? 'critical' : 'warning',
+      to: '/vulnerabilities',
+    })),
+    ...d.drift.map((dr) => ({
+      titel: dr.field + ': ' + (dr.soll_value || '–') + ' → ' + (dr.ist_value || '–'),
+      untertitel: 'Soll weicht vom Ist ab',
+      art: 'Drift',
+      level: 'warning',
+      to: '/drift',
+    })),
+  ]
+})
+
+const beziehungen = computed(() => {
+  const d = props.dossier
+  if (!d) return []
+  return [
+    ...d.relations_out.map((r) => ({ ...r, richtung: 'out' })),
+    ...d.relations_in.map((r) => ({ ...r, richtung: 'in' })),
+  ]
+})
+</script>

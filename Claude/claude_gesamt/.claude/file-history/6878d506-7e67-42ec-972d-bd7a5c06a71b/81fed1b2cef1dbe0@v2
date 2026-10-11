@@ -1,0 +1,182 @@
+import { notFound } from "next/navigation";
+import { requireUser } from "@/lib/auth";
+import { db } from "@/lib/data";
+import { longDate, money, personName } from "@/lib/format";
+import { parsePv } from "@/lib/insights";
+import { calcPv, cumulative, pvDefaults, pvFromParams, YEARS, YIELD } from "@/lib/pv";
+import { LogoMark } from "@/components/ui";
+import { PrintButton } from "@/components/PrintButton";
+
+export const metadata = { title: "Kundenblatt" };
+
+const fmt = (n: number, d = 0) => new Intl.NumberFormat("de-DE", { maximumFractionDigits: d }).format(n);
+
+// Druckfertige Wirtschaftlichkeits-Übersicht für den Kunden (A4, eine Seite)
+export default async function Kundenblatt({ params, searchParams }: PageProps<"/kundenblatt/[type]/[name]">) {
+  const user = await requireUser();
+  const { type, name: raw } = await params;
+  const name = decodeURIComponent(raw);
+  const sp = await searchParams;
+
+  let customer = "";
+  let detail = "";
+  let project = "";
+  let owner: string | undefined;
+  let amount: number | undefined;
+  if (type === "chance") {
+    const opp = await db().getOpportunity(name);
+    if (!opp) notFound();
+    customer = opp.customer_name ?? opp.party_name;
+    project = opp.title ?? "";
+    owner = opp.opportunity_owner;
+    amount = opp.opportunity_amount;
+  } else if (type === "lead") {
+    const lead = await db().getLead(name);
+    if (!lead) notFound();
+    customer = lead.lead_name;
+    detail = [lead.company_name, lead.territory].filter(Boolean).join(" · ");
+    owner = lead.lead_owner;
+  } else notFound();
+
+  const guess = parsePv(project);
+  const input = pvFromParams(sp, pvDefaults(guess.kwp, guess.storage, amount));
+  const r = calcPv(input);
+  const series = cumulative(input);
+  const breakEven = series.findIndex((v) => v >= 0);
+  const max = Math.max(...series.map(Math.abs), 1);
+
+  const facts = [
+    { l: "Anlagengröße", v: `${fmt(input.kwp, 1)} kWp` },
+    { l: "Stromspeicher", v: input.storage ? `${fmt(input.storage, 1)} kWh` : "ohne" },
+    { l: "Jahresertrag", v: `${fmt(r.prod)} kWh` },
+    { l: "Autarkiegrad", v: `${fmt(r.autarky * 100)} %` },
+    { l: "Ersparnis pro Jahr", v: money(r.saving), strong: true },
+    { l: "Amortisation", v: Number.isFinite(r.payback) ? `${fmt(r.payback, 1)} Jahre` : "–", strong: true },
+    { l: `Überschuss nach ${YEARS} Jahren`, v: money(r.over20), strong: true },
+    { l: "CO₂-Einsparung", v: `${fmt(r.co2, 1)} t / Jahr` },
+  ];
+
+  return (
+    <div className="min-h-full bg-gray-100 py-8 print:bg-white print:py-0">
+      <style>{`@page { size: A4; margin: 14mm; } @media print { html, body { background: #fff; } }`}</style>
+
+      <div className="mx-auto mb-4 flex max-w-[210mm] justify-end gap-2 px-4 print:hidden">
+        <PrintButton />
+      </div>
+
+      <article className="mx-auto max-w-[210mm] bg-white px-12 py-10 text-[13px] text-gray-900 shadow-sm print:max-w-none print:p-0 print:shadow-none">
+        {/* Kopf */}
+        <header className="flex items-start justify-between border-b border-gray-200 pb-6">
+          <div className="flex items-center gap-3">
+            <LogoMark className="size-10" />
+            <div>
+              <div className="text-[17px] font-semibold tracking-[-0.01em]">Ökovolt Solartechnik</div>
+              <div className="text-gray-500">Ihr Dach. Ihr Kraftwerk.</div>
+            </div>
+          </div>
+          <div className="text-right text-[12px] text-gray-500">
+            <div className="font-medium text-gray-900">Wirtschaftlichkeits-Übersicht</div>
+            <div>{longDate()}</div>
+          </div>
+        </header>
+
+        <section className="mt-7">
+          <div className="text-[12px] text-gray-500">Erstellt für</div>
+          <h1 className="mt-0.5 text-[24px] font-semibold tracking-[-0.02em]">{customer}</h1>
+          {(project || detail) && <p className="mt-0.5 text-gray-600">{project || detail}</p>}
+        </section>
+
+        {/* Kennzahlen */}
+        <section className="mt-7 grid grid-cols-4 gap-px overflow-hidden rounded-lg border border-gray-200 bg-gray-200">
+          {facts.map((f) => (
+            <div key={f.l} className="bg-white px-4 py-3.5">
+              <div className="text-[11px] text-gray-500">{f.l}</div>
+              <div className={`tnum mt-1 text-[17px] font-semibold tracking-[-0.01em] ${f.strong ? "text-brand-700" : ""}`}>{f.v}</div>
+            </div>
+          ))}
+        </section>
+
+        {/* Verlauf: kumulierter Überschuss */}
+        <section className="mt-8">
+          <div className="flex items-baseline justify-between">
+            <h2 className="font-semibold">Kumulierte Wirtschaftlichkeit über {YEARS} Jahre</h2>
+            <span className="text-[12px] text-gray-500">
+              {breakEven > 0 ? (
+                <>
+                  Anlage hat sich im <strong className="font-semibold text-gray-900">{breakEven}. Jahr</strong> bezahlt gemacht
+                </>
+              ) : (
+                "Innerhalb von 20 Jahren nicht amortisiert"
+              )}
+            </span>
+          </div>
+          <div className="mt-4 flex h-44 items-stretch gap-[3px]" role="img" aria-label="Kumulierter Überschuss je Jahr">
+            {series.map((v, y) => (
+              <div key={y} className="flex flex-1 flex-col" title={`Jahr ${y}: ${money(v)}`}>
+                {/* obere Hälfte: positiv, untere Hälfte: negativ – Nulllinie in der Mitte */}
+                <div className="flex flex-1 items-end">
+                  {v > 0 && <div className="w-full rounded-t-[3px] bg-brand-500" style={{ height: `${(v / max) * 100}%` }} />}
+                </div>
+                <div className="h-px bg-gray-400" />
+                <div className="flex flex-1 items-start">
+                  {v < 0 && <div className="w-full rounded-b-[3px] bg-gray-300" style={{ height: `${(-v / max) * 100}%` }} />}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-1.5 flex justify-between text-[11px] text-gray-400">
+            <span>Jahr 0</span>
+            <span>Jahr 10</span>
+            <span>Jahr {YEARS}</span>
+          </div>
+          <div className="mt-2 flex gap-4 text-[11px] text-gray-500">
+            <span className="flex items-center gap-1.5">
+              <span className="size-2 rounded-sm bg-gray-300" /> noch nicht amortisiert
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="size-2 rounded-sm bg-brand-500" /> Überschuss
+            </span>
+          </div>
+        </section>
+
+        {/* Annahmen */}
+        <section className="mt-8 grid grid-cols-2 gap-8">
+          <div>
+            <h2 className="font-semibold">Annahmen</h2>
+            <dl className="mt-2 divide-y divide-gray-100">
+              {[
+                ["Jahresverbrauch", `${fmt(input.use)} kWh`],
+                ["Strompreis", `${fmt(input.price, 2)} ct/kWh`],
+                ["Einspeisevergütung", `${fmt(input.feed, 2)} ct/kWh`],
+                ["Investition (brutto)", money(input.invest)],
+                ["Spezifischer Ertrag", `${fmt(YIELD)} kWh/kWp`],
+                ["Eigenverbrauch", `${fmt(r.self)} kWh (${fmt(r.selfShare * 100)} %)`],
+                ["Einspeisung", `${fmt(r.exported)} kWh`],
+              ].map(([k, v]) => (
+                <div key={k} className="flex justify-between py-1.5">
+                  <dt className="text-gray-500">{k}</dt>
+                  <dd className="tnum">{v}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+          <div>
+            <h2 className="font-semibold">Ihr Ansprechpartner</h2>
+            <p className="mt-2 leading-relaxed text-gray-700">
+              {personName(owner ?? user.user) || user.fullName}
+              <br />
+              {owner ?? user.user}
+            </p>
+            <p className="mt-6 text-[11px] leading-relaxed text-gray-500">
+              Diese Übersicht ist eine Überschlagsrechnung mit Richtwerten für Süddeutschland. Sie ersetzt keine Ertragsprognose und kein
+              verbindliches Angebot. Nicht berücksichtigt sind Strompreissteigerungen, Degradation der Module, Wartungskosten und
+              Förderungen. Das verbindliche Angebot erhalten Sie nach der Vor-Ort-Besichtigung.
+            </p>
+          </div>
+        </section>
+
+        <footer className="mt-10 border-t border-gray-200 pt-4 text-[11px] text-gray-400">Ökovolt Solartechnik · Planung, Montage und Netzanmeldung aus einer Hand</footer>
+      </article>
+    </div>
+  );
+}

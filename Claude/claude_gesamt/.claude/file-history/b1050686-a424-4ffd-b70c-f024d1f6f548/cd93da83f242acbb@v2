@@ -1,0 +1,291 @@
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+
+import {
+  alsZeitpunkt201,
+  alsZeitpunkt303,
+  baueMscons,
+  entmaskiere,
+  fasseMsconsZusammen,
+  maskiere,
+  pruefeMscons,
+  zerlegeSegmente,
+  type Nachrichtenkopf,
+  type Zaehlpunktreihe,
+} from "./mscons.ts";
+
+/**
+ * Die Empfangsstelle weist eine fehlerhafte Übertragung als Ganzes ab
+ * und meldet das am nächsten Werktag. Bis dahin fehlen die Werte, und
+ * die Abrechnung wartet.
+ */
+
+const KOPF: Nachrichtenkopf = {
+  uebertragung: "UEB-0001",
+  nachricht: "1",
+  dokument: "MSC-2026-09-0001",
+  erstelltAm: new Date(Date.UTC(2026, 8, 14, 8, 30)),
+  versatzMinuten: 120,
+  absender: { kennung: "9900000000001", schema: "9", name: "Ökovolt" },
+  empfaenger: { kennung: "9900000000002", schema: "9" },
+};
+
+function reihe(anzahl = 2): Zaehlpunktreihe {
+  const werte = Array.from({ length: anzahl }, (_, i) => ({
+    von: new Date(Date.UTC(2026, 8, 1, i * 0.25)),
+    bis: new Date(Date.UTC(2026, 8, 1, (i + 1) * 0.25)),
+    wertKwh: 17.742 + i,
+    gemessen: true,
+  }));
+
+  return {
+    zaehlpunkt: "AT2000000310000100000000000012345",
+    obis: "1-1:1.29.0",
+    werte,
+  };
+}
+
+describe("Maskierung", () => {
+  it("schützt die Trennzeichen", () => {
+    assert.equal(maskiere("a+b"), "a?+b");
+    assert.equal(maskiere("a:b"), "a?:b");
+    assert.equal(maskiere("a'b"), "a?'b");
+  });
+
+  it("maskiert das Freigabezeichen zuerst", () => {
+    // Sonst maskiert man die eigene Maskierung ein zweites Mal.
+    assert.equal(maskiere("a?b"), "a??b");
+    // Ein Fragezeichen *und* ein Plus: beide werden maskiert, das
+    // Fragezeichen zu "??" und das Plus zu "?+".
+    assert.equal(maskiere("a?+b"), "a???+b");
+  });
+
+  it("macht sich rückgängig", () => {
+    for (const wert of ["a+b", "a:b", "a'b", "a?b", "Meier & Söhne'", "??++"]) {
+      assert.equal(entmaskiere(maskiere(wert)), wert, wert);
+    }
+  });
+
+  it("lässt harmlosen Text unverändert", () => {
+    assert.equal(maskiere("AT2000000310000100000000000012345"), "AT2000000310000100000000000012345");
+  });
+});
+
+describe("Segmente zerlegen", () => {
+  it("trennt an den Segmentenden", () => {
+    assert.deepEqual(zerlegeSegmente("ABC+1'DEF+2'"), ["ABC+1", "DEF+2"]);
+  });
+
+  it("trennt nicht an einem maskierten Segmentende", () => {
+    // Im deutschsprachigen Raum kommt reichlich ein Apostroph vor.
+    const segmente = zerlegeSegmente("NAD+MS+O?'Brien'UNS+D'");
+
+    assert.equal(segmente.length, 2);
+    assert.equal(segmente[0], "NAD+MS+O?'Brien");
+  });
+
+  it("übergeht Zeilenumbrüche", () => {
+    assert.deepEqual(zerlegeSegmente("ABC'\nDEF'\n"), ["ABC", "DEF"]);
+  });
+});
+
+describe("Zeitstempel", () => {
+  it("schreibt Format 303 mit Zonenversatz", () => {
+    // 08:30 UTC sind 10:30 in Wien im Sommer.
+    assert.equal(
+      alsZeitpunkt303(new Date(Date.UTC(2026, 8, 14, 8, 30)), 120),
+      "202609141030+02",
+    );
+  });
+
+  it("schreibt im Winter den kleineren Versatz", () => {
+    assert.equal(
+      alsZeitpunkt303(new Date(Date.UTC(2026, 0, 14, 8, 30)), 60),
+      "202601140930+01",
+    );
+  });
+
+  it("schreibt Format 201 für den Übertragungskopf", () => {
+    assert.equal(
+      alsZeitpunkt201(new Date(Date.UTC(2026, 8, 14, 8, 30)), 120),
+      "260914:1030",
+    );
+  });
+});
+
+describe("Nachricht bauen", () => {
+  it("beginnt mit UNA und endet mit UNZ", () => {
+    const zeilen = baueMscons(KOPF, [reihe()]).split("\n");
+
+    assert.ok(zeilen[0]!.startsWith("UNA"));
+    assert.ok(zeilen[zeilen.length - 1]!.startsWith("UNZ"));
+  });
+
+  it("gibt die Dienstzeichen in UNA bekannt", () => {
+    const nachricht = baueMscons(KOPF, [reihe()]);
+
+    assert.match(nachricht, /^UNA:\+\.\? '/);
+  });
+
+  it("hält UNA bei genau neun Zeichen", () => {
+    // UNA trägt sein Segmentende selbst. Ein zweites erzeugt ein
+    // leeres Segment.
+    const erste = baueMscons(KOPF, [reihe()]).split("\n")[0]!;
+
+    assert.equal(erste.length, 9);
+    assert.equal(erste, "UNA:+.? '");
+  });
+
+  it("schreibt Mengen mit Punkt, nicht mit Komma", () => {
+    const nachricht = baueMscons(KOPF, [reihe(1)]);
+
+    assert.match(nachricht, /QTY\+220:17\.742:KWH/);
+  });
+
+  it("kennzeichnet einen Ersatzwert anders als einen Messwert", () => {
+    const mitErsatz = reihe(1);
+    mitErsatz.werte[0]!.gemessen = false;
+
+    assert.match(baueMscons(KOPF, [mitErsatz]), /QTY\+67:/);
+  });
+
+  it("führt Beginn und Ende jedes Intervalls", () => {
+    const nachricht = baueMscons(KOPF, [reihe(1)]);
+
+    assert.match(nachricht, /DTM\+163:/);
+    assert.match(nachricht, /DTM\+164:/);
+  });
+
+  it("nennt den Zählpunkt in LOC", () => {
+    assert.match(
+      baueMscons(KOPF, [reihe()]),
+      /LOC\+172\+AT2000000310000100000000000012345/,
+    );
+  });
+
+  it("überträgt mehrere Zählpunkte in einer Nachricht", () => {
+    const zweiter = reihe(1);
+    zweiter.zaehlpunkt = "AT2000000310000100000000000054321";
+
+    const nachricht = baueMscons(KOPF, [reihe(1), zweiter]);
+
+    assert.equal((nachricht.match(/LOC\+172/g) ?? []).length, 2);
+    assert.equal((nachricht.match(/UNH\+/g) ?? []).length, 1);
+  });
+});
+
+describe("Prüfung", () => {
+  it("lässt eine saubere Nachricht durch", () => {
+    const p = pruefeMscons(baueMscons(KOPF, [reihe(4)]));
+
+    assert.ok(p.gueltig, p.beanstandungen.join(" | "));
+    assert.equal(p.werte, 4);
+  });
+
+  it("zählt die Segmente so, wie UNT sie nennt", () => {
+    const nachricht = baueMscons(KOPF, [reihe(3)]);
+    const p = pruefeMscons(nachricht);
+
+    const unt = nachricht.split("\n").find((z) => z.startsWith("UNT"))!;
+    assert.equal(Number(unt.split("+")[1]), p.segmente);
+  });
+
+  it("findet einen falschen Segmentzähler", () => {
+    // Der haeufigste Grund fuer eine Rueckweisung.
+    const verfaelscht = baueMscons(KOPF, [reihe(2)]).replace(
+      /UNT\+\d+/,
+      "UNT+99",
+    );
+
+    const p = pruefeMscons(verfaelscht);
+    assert.equal(p.gueltig, false);
+    assert.match(p.beanstandungen.join(" "), /UNT nennt 99/);
+  });
+
+  it("findet eine abweichende Übertragungsreferenz", () => {
+    const verfaelscht = baueMscons(KOPF, [reihe(1)]).replace(
+      "UNZ+1+UEB-0001",
+      "UNZ+1+UEB-0002",
+    );
+
+    const p = pruefeMscons(verfaelscht);
+    assert.equal(p.gueltig, false);
+    assert.match(p.beanstandungen.join(" "), /Übertragungsreferenz/);
+  });
+
+  it("findet eine abweichende Nachrichtenreferenz", () => {
+    const verfaelscht = baueMscons(KOPF, [reihe(1)]).replace(/UNT\+(\d+)\+1/, "UNT+$1+2");
+
+    const p = pruefeMscons(verfaelscht);
+    assert.equal(p.gueltig, false);
+    assert.match(p.beanstandungen.join(" "), /Nachrichtenreferenz/);
+  });
+
+  it("beanstandet einen Zählpunkt falscher Länge", () => {
+    const kurz = reihe(1);
+    kurz.zaehlpunkt = "AT001000";
+
+    const p = pruefeMscons(baueMscons(KOPF, [kurz]));
+    assert.equal(p.gueltig, false);
+    assert.match(p.beanstandungen.join(" "), /vorgeschrieben sind 33/);
+  });
+
+  it("beanstandet eine fehlende Nachricht", () => {
+    const p = pruefeMscons("UNB+UNOC:3+A:9+B:9+260914:1030+REF'UNZ+1+REF'");
+
+    assert.equal(p.gueltig, false);
+    assert.match(p.beanstandungen.join(" "), /UNH fehlt/);
+  });
+
+  it("summiert die übertragenen Mengen", () => {
+    const p = pruefeMscons(baueMscons(KOPF, [reihe(3)]));
+
+    // 17,742 + 18,742 + 19,742
+    assert.equal(p.summeKwh, 56.226);
+  });
+
+  it("findet ein Zeichen, das der Zeichensatz nicht führt", () => {
+    // Ein Gedankenstrich aus einer Textverarbeitung. Er sieht harmlos
+    // aus und ist in ISO 8859-1 nicht enthalten.
+    const falsch = baueMscons(KOPF, [reihe(1)]).replace(
+      "MSC-2026-09-0001",
+      "MSC–2026",
+    );
+
+    const p = pruefeMscons(falsch);
+    assert.equal(p.gueltig, false);
+    assert.match(p.beanstandungen.join(" "), /ISO 8859-1/);
+  });
+
+  it("lässt Umlaute zu, die der Zeichensatz führt", () => {
+    const mitUmlaut = baueMscons(
+      { ...KOPF, dokument: "MSC-Grünstrom" },
+      [reihe(1)],
+    );
+
+    assert.equal(pruefeMscons(mitUmlaut).gueltig, true);
+  });
+
+  it("erkennt ein Komma als Dezimaltrenner", () => {
+    const falsch = baueMscons(KOPF, [reihe(1)]).replace("17.742", "17,742");
+
+    const p = pruefeMscons(falsch);
+    assert.equal(p.gueltig, false);
+    assert.match(p.beanstandungen.join(" "), /Punkt, nicht das Komma/);
+  });
+});
+
+describe("Zusammenfassung", () => {
+  it("nennt Werte, Menge und Segmente", () => {
+    const p = pruefeMscons(baueMscons(KOPF, [reihe(2)]));
+
+    assert.match(fasseMsconsZusammen(p), /2 Messwerte/);
+    assert.match(fasseMsconsZusammen(p), /Segmenten/);
+  });
+
+  it("sagt bei Beanstandungen, dass nichts erzeugt wurde", () => {
+    const p = pruefeMscons("Unsinn");
+
+    assert.match(fasseMsconsZusammen(p), /nicht erzeugt/);
+  });
+});

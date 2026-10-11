@@ -1,0 +1,292 @@
+import { beforeEach, describe, expect, it } from 'vitest'
+import { mockRequest, resetMockData } from '@/api/mock/server.js'
+import { seedAuditLog } from '@/api/mock/seed-audit.js'
+
+const ruf = (url, params) => mockRequest({ url, params })
+
+beforeEach(() => {
+  resetMockData()
+  seedAuditLog()
+})
+
+describe('netops.api.services.impact_analysis', () => {
+  it('nennt die Dienste, die beim Ausfall eines Hosts wegbrechen', async () => {
+    const ergebnis = await ruf('netops.api.services.impact_analysis', {
+      object_type: 'Network Device',
+      object_name: 'SRV-PVE-01',
+    })
+
+    const dienste = ergebnis.impacted_services.map((s) => s.service_key).sort()
+    expect(dienste).toEqual(['bmd', 'erp', 'scada'])
+    expect(ergebnis.highest_criticality).toBe('critical')
+    expect(ergebnis.impacted_users).toBeGreaterThan(0)
+  })
+
+  it('folgt der Kette über mehrere Ebenen', async () => {
+    // NAS-TN-01 trägt die Datasets, auf denen fast alle VMs liegen.
+    const ergebnis = await ruf('netops.api.services.impact_analysis', {
+      object_type: 'Network Device',
+      object_name: 'NAS-TN-01',
+    })
+
+    const dienste = ergebnis.impacted_services.map((s) => s.service_key)
+    expect(dienste).toContain('erp')
+    expect(dienste).toContain('directory')
+    // Über das Verzeichnis hängt auch die Mail daran.
+    expect(dienste).toContain('mail')
+  })
+
+  it('zählt betroffene Benutzer über alle Dienste', async () => {
+    const ergebnis = await ruf('netops.api.services.impact_analysis', {
+      object_type: 'Provider Link',
+      object_name: 'WAN 1',
+    })
+    const summe = ergebnis.impacted_services.reduce((s, d) => s + d.user_count, 0)
+    expect(ergebnis.impacted_users).toBe(summe)
+  })
+
+  it('liefert für jedes betroffene Objekt den Weg dorthin', async () => {
+    const ergebnis = await ruf('netops.api.services.impact_analysis', {
+      object_type: 'Network Device',
+      object_name: 'SW-CORE-01',
+    })
+    const ueberHost = ergebnis.impacted.find((k) => k.name === 'vm/101')
+    expect(ueberHost.path.map((p) => p.name)).toContain('SRV-PVE-01')
+    expect(ueberHost.distance).toBeGreaterThan(1)
+  })
+
+  it('zeigt umgekehrt, wovon ein Dienst abhängt', async () => {
+    const ergebnis = await ruf('netops.api.services.impact_analysis', {
+      object_type: 'Business Service',
+      object_name: 'erp',
+    })
+    const namen = ergebnis.depends_on.map((d) => d.name)
+    expect(namen).toContain('vm/101')
+    expect(namen).toContain('SRV-PVE-01')
+    expect(namen).toContain('SW-CORE-01')
+    expect(namen).toContain('FW-OS-01')
+    expect(namen).toContain('WAN 1')
+    expect(ergebnis.impacted_services).toHaveLength(0)
+  })
+
+  it('erkennt Objekte ohne Alternativweg', async () => {
+    const ergebnis = await ruf('netops.api.services.impact_analysis', {
+      object_type: 'Business Service',
+      object_name: 'erp',
+    })
+    // SW-CORE-01 hängt nur an FW-OS-01 – kein zweiter Weg nach aussen.
+    expect(ergebnis.single_points.map((p) => p.name)).toContain('SW-CORE-01')
+    // FW-OS-01 hat zwei Providerleitungen und ist damit kein Einzelpfad.
+    expect(ergebnis.single_points.map((p) => p.name)).not.toContain('FW-OS-01')
+  })
+
+  it('läuft nicht in eine Schleife', async () => {
+    // Der Graph enthält Ketten über mehrere Ebenen; jeder Knoten darf nur
+    // einmal auftauchen.
+    const ergebnis = await ruf('netops.api.services.impact_analysis', {
+      object_type: 'Network Device',
+      object_name: 'NAS-TN-01',
+    })
+    const ids = ergebnis.impacted.map((k) => k.type + '/' + k.name)
+    expect(new Set(ids).size).toBe(ids.length)
+  })
+
+  it('verlangt Typ und Namen', async () => {
+    await expect(
+      ruf('netops.api.services.impact_analysis', { object_type: 'Network Device' }),
+    ).rejects.toThrow(/erforderlich/)
+  })
+})
+
+describe('netops.api.services.service_list', () => {
+  it('sortiert nach Kritikalität', async () => {
+    const liste = await ruf('netops.api.services.service_list', {})
+    expect(liste[0].criticality).toBe('critical')
+    expect(liste[liste.length - 1].criticality).toBe('low')
+  })
+
+  it('verknüpft Dienst und Sicherung über den Schlüssel, nicht den Namen', async () => {
+    // Fruehere Fassung suchte ueber den Anzeigenamen. Dienste wie
+    // "BMD Buchhaltung" (Sicherung heisst "BMD") galten dadurch faelschlich
+    // als ungesichert.
+    const liste = await ruf('netops.api.services.service_list', {})
+    for (const dienst of liste) {
+      expect(dienst.backup_object, dienst.service_key).toBeTruthy()
+    }
+    expect(liste.find((d) => d.service_key === 'directory').backup_verify).toBe('failed')
+    expect(liste.find((d) => d.service_key === 'bmd').backup_verify).toBe('ok')
+    expect(liste.find((d) => d.service_key === 'web-de').backup_verify).toBe('none')
+  })
+
+  it('führt die Geräte der Kette', async () => {
+    const liste = await ruf('netops.api.services.service_list', {})
+    const erp = liste.find((d) => d.service_key === 'erp')
+    expect(erp.devices).toContain('SRV-PVE-01')
+    expect(erp.provider_links).toContain('WAN 1')
+  })
+})
+
+describe('netops.api.firewall.communication_matrix', () => {
+  it('bildet Regeln auf Zonenpaare ab', async () => {
+    const matrix = await ruf('netops.api.firewall.communication_matrix', {})
+    const internetZuDmz = matrix.cells.find(
+      (z) => z.from_zone === 'internet' && z.to_zone === 'dmz',
+    )
+    expect(internetZuDmz).toBeTruthy()
+    expect(internetZuDmz.services).toContain('tcp/443')
+  })
+
+  it('fasst mehrere Regeln in einer Zelle zusammen', async () => {
+    const matrix = await ruf('netops.api.firewall.communication_matrix', {})
+    const intern = matrix.cells.find((z) => z.from_zone === 'internal' && z.to_zone === 'internal')
+    expect(intern.rules.length).toBeGreaterThan(1)
+    expect(intern.hit_count).toBe(intern.rules.reduce((s, r) => s + r.hit_count, 0))
+  })
+
+  it('markiert eine Zelle als unbegründet, sobald eine Regel darin keine Begründung hat', async () => {
+    const matrix = await ruf('netops.api.firewall.communication_matrix', {})
+    expect(matrix.summary.undocumented_pairs).toBeGreaterThan(0)
+    const unbegruendet = matrix.cells.filter((z) => z.undocumented)
+    expect(unbegruendet.every((z) => z.rules.some((r) => !r.justification))).toBe(true)
+  })
+
+  it('zeigt standardmäßig nur Erlaubnisregeln', async () => {
+    const nurErlaubt = await ruf('netops.api.firewall.communication_matrix', {})
+    const mitDeny = await ruf('netops.api.firewall.communication_matrix', { include_deny: true })
+    expect(nurErlaubt.cells.every((z) => !z.has_deny)).toBe(true)
+    expect(mitDeny.summary.rules).toBeGreaterThan(nurErlaubt.summary.rules)
+  })
+
+  it('lässt sich auf eine Ebene einschränken', async () => {
+    const perimeter = await ruf('netops.api.firewall.communication_matrix', {
+      firewall: 'FW-OS-01',
+    })
+    expect(perimeter.cells.every((z) => z.rules.every((r) => r.firewall === 'FW-OS-01'))).toBe(true)
+  })
+
+  it('führt Regeln ohne zugeordnetes Netz nicht als echte Zone', async () => {
+    const matrix = await ruf('netops.api.firewall.communication_matrix', {})
+    // Alle Netze der Regelwerke sind im IPAM erfasst – nichts fällt durch.
+    expect(matrix.cells.some((z) => z.from_zone === 'unzugeordnet')).toBe(false)
+    expect(matrix.cells.some((z) => z.to_zone === 'unzugeordnet')).toBe(false)
+  })
+})
+
+describe('netops.api.virt', () => {
+  it('warnt bei einem Cluster ohne sicheres Quorum', async () => {
+    const cluster = await ruf('netops.api.virt.cluster_overview', {})
+    const linz = cluster.find((c) => c.cluster_name === 'pve-linz')
+    expect(linz.quorum_risk).toBe(true)
+    expect(linz.level).toBe('warning')
+    expect(linz.reason).toMatch(/Quorum/)
+  })
+
+  it('verteilt die Gäste auf die Knoten', async () => {
+    const cluster = await ruf('netops.api.virt.cluster_overview', {})
+    const linz = cluster.find((c) => c.cluster_name === 'pve-linz')
+    const summe = linz.nodes.reduce((s, n) => s + n.vm_count, 0)
+    expect(summe).toBe(linz.vm_total)
+    expect(linz.vm_running).toBeLessThan(linz.vm_total)
+  })
+
+  it('meldet eine laufende VM ohne Sicherung als kritisch', async () => {
+    const vms = await ruf('netops.api.virt.vm_list', {})
+    const graylog = vms.find((v) => v.vm_name === 'graylog')
+    expect(graylog.vm_state).toBe('running')
+    expect(graylog.backup_object).toBeNull()
+    expect(graylog.level).toBe('critical')
+    expect(graylog.reason).toMatch(/ohne Sicherung/)
+  })
+
+  it('übernimmt den Verify-Zustand aus der Backup-Ampel', async () => {
+    const vms = await ruf('netops.api.virt.vm_list', {})
+    const dc = vms.find((v) => v.vm_name === 'dc01')
+    expect(dc.backup_verify).toBe('failed')
+    expect(dc.level).toBe('critical')
+  })
+
+  it('löst das VLAN eines Gastes auf', async () => {
+    const vms = await ruf('netops.api.virt.vm_list', {})
+    const erp = vms.find((v) => v.vm_name === 'erp01')
+    expect(erp.vlan_label).toContain('SERVER')
+    expect(erp.security_zone).toBe('internal')
+  })
+
+  it('bewertet einen degradierten Pool als kritisch', async () => {
+    const speicher = await ruf('netops.api.virt.storage_overview', {})
+    const fast = speicher.pools.find((p) => p.pool_name === 'fast')
+    expect(fast.level).toBe('critical')
+    expect(fast.reasons.join(' ')).toMatch(/DEGRADED/)
+    expect(fast.reasons.join(' ')).toMatch(/ausgefallen/)
+  })
+
+  it('meldet ein Dataset ohne Replikation', async () => {
+    const speicher = await ruf('netops.api.virt.storage_overview', {})
+    const archiv = speicher.datasets.find((d) => d.dataset_path === 'tank/archiv')
+    expect(archiv.level).toBe('warning')
+    expect(archiv.reasons.join(' ')).toMatch(/Replikation/)
+    expect(speicher.summary.without_replication).toBe(1)
+  })
+
+  it('filtert Gäste nach Host', async () => {
+    const auf01 = await ruf('netops.api.virt.vm_list', { host: 'SRV-PVE-01' })
+    expect(auf01.every((v) => v.host === 'SRV-PVE-01')).toBe(true)
+    expect(auf01.length).toBeGreaterThan(0)
+  })
+})
+
+describe('netops.api.mail', () => {
+  it('bewertet eine Stufe mit veralteten Signaturen und voller Warteschlange', async () => {
+    const uebersicht = await ruf('netops.api.mail.mail_overview', {})
+    const pmg2 = uebersicht.gateways.find((g) => g.gateway_name === 'PMG-02')
+    expect(pmg2.level).toBe('critical')
+    expect(pmg2.reasons.join(' ')).toMatch(/Warteschlange/)
+    expect(pmg2.reasons.join(' ')).toMatch(/ClamAV/)
+  })
+
+  it('sortiert die Kaskade nach Stufe', async () => {
+    const gateways = await ruf('netops.api.mail.gateway_status', {})
+    expect(gateways.map((g) => g.stage)).toEqual([1, 2, 3])
+  })
+
+  it('zählt, was die Kaskade durchgelassen hat', async () => {
+    const uebersicht = await ruf('netops.api.mail.mail_overview', {})
+    // Fehlalarme zählen nicht als Durchrutscher.
+    const echt = uebersicht.incidents.filter(
+      (v) => v.passed_gateway && v.classification !== 'false_positive',
+    )
+    expect(uebersicht.summary.passed_gateway).toBe(echt.length)
+    expect(uebersicht.summary.passed_gateway).toBeGreaterThan(0)
+  })
+
+  it('rechnet die Reaktionszeit je Vorfall', async () => {
+    const vorfaelle = await ruf('netops.api.mail.mail_incidents', {})
+    const behoben = vorfaelle.find((v) => v.mitigated)
+    expect(behoben.response_minutes).toBeGreaterThanOrEqual(0)
+    const offen = vorfaelle.find((v) => !v.mitigated)
+    expect(offen.response_minutes).toBeNull()
+  })
+
+  it('prüft SPF, DKIM und DMARC gegen das Soll', async () => {
+    const domains = await ruf('netops.api.mail.domain_check', {})
+    const at = domains.find((d) => d.domain_name === 'oekovolt.test')
+    const de = domains.find((d) => d.domain_name === 'oekovolt-de.test')
+
+    expect(at.findings).toEqual([])
+    expect(at.level).toBe('ok')
+
+    expect(de.findings).toHaveLength(3)
+    // DMARC auf p=none schützt nicht – das ist mehr als eine Abweichung.
+    expect(de.level).toBe('critical')
+  })
+
+  it('summiert das Mailvolumen über die Tage', async () => {
+    const fluss = await ruf('netops.api.mail.flow_stats', {})
+    expect(fluss.days).toHaveLength(7)
+    expect(fluss.totals.total).toBe(fluss.days.reduce((s, t) => s + t.total, 0))
+    expect(fluss.totals.spam_pct).toBeGreaterThan(0)
+    // Die Tage stehen in aufsteigender Reihenfolge.
+    const tage = fluss.days.map((t) => t.day)
+    expect(tage).toEqual([...tage].sort())
+  })
+})

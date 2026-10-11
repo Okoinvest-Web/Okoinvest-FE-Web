@@ -1,0 +1,453 @@
+/**
+ * MSCONS - Messdaten als EDIFACT-Nachricht.
+ *
+ * Der Weg, auf dem Viertelstundenwerte zwischen Netzbetreiber,
+ * Lieferant und Energiegemeinschaft wandern. In Österreich läuft der
+ * Datenaustausch über EDA überwiegend in XML nach den Schemata von
+ * ebUtilities; MSCONS bleibt daneben für Marktpartner in Gebrauch,
+ * die aus dem deutschen Markt kommen oder ältere Systeme betreiben.
+ * Wer mit beiden zu tun hat, braucht beides.
+ *
+ * EDIFACT ist ein Format aus einer Zeit, in der jedes Byte Geld
+ * kostete, und das merkt man ihm an. Drei Dinge gehen dabei fast
+ * immer schief:
+ *
+ * 1. *Die Trennzeichen im Text.* Ein Zählpunkt oder ein Name mit
+ *    einem Doppelpunkt zerlegt die Nachricht an der falschen Stelle.
+ *    Dagegen gibt es das Freigabezeichen "?" - und wer es vergisst,
+ *    erzeugt eine Datei, die der Empfänger anders liest, als sie
+ *    gemeint war. Nicht kaputt, sondern falsch: der schlimmere Fall.
+ * 2. *Die Segmentzähler.* UNT nennt die Zahl der Segmente von UNH bis
+ *    UNT einschließlich, UNZ die Zahl der Nachrichten. Stimmen sie
+ *    nicht, weist die Empfangsstelle die ganze Übertragung ab.
+ * 3. *Die Referenzen.* Die Nummer in UNZ muss die aus UNB sein, die in
+ *    UNT die aus UNH. Das prüft jeder Empfänger, und es ist der
+ *    häufigste Grund für eine Rückweisung.
+ *
+ * Deshalb baut diese Datei die Nachricht nicht nur, sondern zählt und
+ * prüft sie auch - vor dem Versand, nicht danach.
+ */
+
+import { alsKomma } from "../zahl.ts";
+
+/* ------------------------------------------------------------------ */
+/* Trennzeichen                                                        */
+/* ------------------------------------------------------------------ */
+
+/** Die Dienstzeichen, wie sie UNA bekanntgibt. */
+export const TRENNZEICHEN = {
+  /** Trennt Bestandteile innerhalb eines Datenelements. */
+  bestandteil: ":",
+  /** Trennt Datenelemente. */
+  element: "+",
+  /** Dezimalzeichen. In EDIFACT der Punkt, nicht das Komma. */
+  dezimal: ".",
+  /** Hebt die Sonderbedeutung des folgenden Zeichens auf. */
+  freigabe: "?",
+  /** Schließt ein Segment ab. */
+  segment: "'",
+} as const;
+
+/**
+ * Maskiert die Zeichen, die sonst die Nachricht zerlegen.
+ *
+ * Das Freigabezeichen selbst zuerst - sonst maskiert man die eigene
+ * Maskierung ein zweites Mal und verdoppelt sie.
+ */
+export function maskiere(wert: string): string {
+  return wert
+    .replaceAll(TRENNZEICHEN.freigabe, "??")
+    .replaceAll(TRENNZEICHEN.element, "?+")
+    .replaceAll(TRENNZEICHEN.bestandteil, "?:")
+    .replaceAll(TRENNZEICHEN.segment, "?'");
+}
+
+/** Macht eine Maskierung rückgängig - für die Prüfung. */
+export function entmaskiere(wert: string): string {
+  let ergebnis = "";
+  for (let i = 0; i < wert.length; i += 1) {
+    if (wert[i] === TRENNZEICHEN.freigabe && i + 1 < wert.length) {
+      ergebnis += wert[i + 1];
+      i += 1;
+    } else {
+      ergebnis += wert[i];
+    }
+  }
+  return ergebnis;
+}
+
+/**
+ * Zerlegt eine Nachricht in Segmente.
+ *
+ * Ein maskiertes Segmentende zählt nicht als Ende. Wer einfach an
+ * jedem Apostroph trennt, zerschneidet jeden Namen, in dem einer
+ * vorkommt - und im deutschsprachigen Raum kommt reichlich einer vor.
+ */
+export function zerlegeSegmente(nachricht: string): string[] {
+  const segmente: string[] = [];
+  let aktuell = "";
+
+  for (let i = 0; i < nachricht.length; i += 1) {
+    const zeichen = nachricht[i]!;
+
+    if (zeichen === TRENNZEICHEN.freigabe && i + 1 < nachricht.length) {
+      aktuell += zeichen + nachricht[i + 1];
+      i += 1;
+      continue;
+    }
+
+    if (zeichen === TRENNZEICHEN.segment) {
+      if (aktuell.trim()) segmente.push(aktuell.trim());
+      aktuell = "";
+      continue;
+    }
+
+    aktuell += zeichen;
+  }
+
+  if (aktuell.trim()) segmente.push(aktuell.trim());
+  return segmente;
+}
+
+/* ------------------------------------------------------------------ */
+/* Zeitstempel                                                         */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Zeitpunkt im Format 303: CCYYMMDDHHMM gefolgt vom Zonenversatz.
+ *
+ * Der Versatz gehört dazu und ist nicht weglassbar. Ohne ihn ist in
+ * der Nacht der Zeitumstellung nicht entscheidbar, welche der beiden
+ * Stunden von zwei bis drei gemeint ist - und genau dort entstehen
+ * die Abrechnungsdifferenzen, die niemand mehr aufklären kann.
+ */
+export function alsZeitpunkt303(zeitpunkt: Date, versatzMinuten: number): string {
+  const z = (n: number, stellen = 2) => String(n).padStart(stellen, "0");
+
+  const ort = new Date(zeitpunkt.getTime() + versatzMinuten * 60000);
+  const stunden = z(Math.floor(Math.abs(versatzMinuten) / 60));
+
+  return (
+    `${ort.getUTCFullYear()}${z(ort.getUTCMonth() + 1)}${z(ort.getUTCDate())}` +
+    `${z(ort.getUTCHours())}${z(ort.getUTCMinutes())}` +
+    `${versatzMinuten >= 0 ? "+" : "-"}${stunden}`
+  );
+}
+
+/** Kurzform für UNB: JJMMTT:HHMM. */
+export function alsZeitpunkt201(zeitpunkt: Date, versatzMinuten: number): string {
+  const z = (n: number) => String(n).padStart(2, "0");
+  const ort = new Date(zeitpunkt.getTime() + versatzMinuten * 60000);
+
+  return (
+    `${z(ort.getUTCFullYear() % 100)}${z(ort.getUTCMonth() + 1)}${z(ort.getUTCDate())}` +
+    `:${z(ort.getUTCHours())}${z(ort.getUTCMinutes())}`
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Nachricht bauen                                                     */
+/* ------------------------------------------------------------------ */
+
+export interface Marktpartner {
+  /** Kennung, meist eine EIC- oder GLN-Nummer. */
+  kennung: string;
+  /** Kennungsschema: 9 = GLN, 305 = EIC, 293 = DVGW. */
+  schema: string;
+  name?: string;
+}
+
+export interface Messwert {
+  /** Beginn der Viertelstunde. */
+  von: Date;
+  /** Ende der Viertelstunde. */
+  bis: Date;
+  /** Wert in kWh. */
+  wertKwh: number;
+  /**
+   * Güte des Werts: 220 = gemessen, 67 = geschätzt.
+   *
+   * Sie wird mitgeschickt, weil ein Ersatzwert nachträglich berichtigt
+   * werden kann. Wer ihn wie einen Messwert behandelt, rechnet eine
+   * Abrechnung auf einer Zahl auf, die sich noch ändert.
+   */
+  gemessen: boolean;
+}
+
+export interface Zaehlpunktreihe {
+  /** Zählpunktbezeichnung, 33 Stellen. */
+  zaehlpunkt: string;
+  /** OBIS-Kennzahl, etwa "1-1:1.29.0" für Wirkarbeit Bezug. */
+  obis: string;
+  werte: Messwert[];
+}
+
+export interface Nachrichtenkopf {
+  /** Laufende Nummer der Übertragung beim Absender. */
+  uebertragung: string;
+  /** Laufende Nummer der Nachricht innerhalb der Übertragung. */
+  nachricht: string;
+  /** Belegnummer. */
+  dokument: string;
+  erstelltAm: Date;
+  /** Zonenversatz in Minuten, für Österreich 60 oder 120. */
+  versatzMinuten: number;
+  absender: Marktpartner;
+  empfaenger: Marktpartner;
+}
+
+/**
+ * Baut eine MSCONS-Nachricht.
+ *
+ * Zurück kommt die vollständige Übertragung von UNA bis UNZ, mit
+ * einem Segment je Zeile. Zeilenumbrüche sind in EDIFACT bedeutungslos
+ * und dürfen dort stehen - sie machen eine Nachricht lesbar, und eine
+ * Nachricht, die jemand lesen kann, lässt sich im Streitfall prüfen.
+ */
+export function baueMscons(
+  kopf: Nachrichtenkopf,
+  reihen: Zaehlpunktreihe[],
+): string {
+  const e = TRENNZEICHEN.element;
+  const b = TRENNZEICHEN.bestandteil;
+  const m = maskiere;
+
+  const nutzsegmente: string[] = [];
+
+  nutzsegmente.push(`UNH${e}${m(kopf.nachricht)}${e}MSCONS${b}D${b}04B${b}UN${b}2.3`);
+  // 7 = Verbrauchsdatenmeldung.
+  nutzsegmente.push(`BGM${e}7${e}${m(kopf.dokument)}${e}9`);
+  // 137 = Erstellungszeitpunkt.
+  nutzsegmente.push(
+    `DTM${e}137${b}${alsZeitpunkt303(kopf.erstelltAm, kopf.versatzMinuten)}${b}303`,
+  );
+  // MS = Absender, MR = Empfänger.
+  nutzsegmente.push(
+    `NAD${e}MS${e}${m(kopf.absender.kennung)}${b}${b}${m(kopf.absender.schema)}`,
+  );
+  nutzsegmente.push(
+    `NAD${e}MR${e}${m(kopf.empfaenger.kennung)}${b}${b}${m(kopf.empfaenger.schema)}`,
+  );
+  // UNS trennt Kopf- von Positionsteil.
+  nutzsegmente.push(`UNS${e}D`);
+
+  for (const reihe of reihen) {
+    nutzsegmente.push(`NAD${e}DP`);
+    // 172 = Zählpunkt.
+    nutzsegmente.push(`LOC${e}172${e}${m(reihe.zaehlpunkt)}`);
+
+    for (const [i, wert] of reihe.werte.entries()) {
+      nutzsegmente.push(`LIN${e}${i + 1}`);
+      // 5 = Produktkennung des Herausgebers, hier die OBIS-Kennzahl.
+      nutzsegmente.push(`PIA${e}5${e}${m(reihe.obis)}${b}SRW`);
+      nutzsegmente.push(
+        `QTY${e}${wert.gemessen ? "220" : "67"}${b}${wert.wertKwh.toFixed(3)}${b}KWH`,
+      );
+      // 163 = Beginn, 164 = Ende des Zeitraums.
+      nutzsegmente.push(
+        `DTM${e}163${b}${alsZeitpunkt303(wert.von, kopf.versatzMinuten)}${b}303`,
+      );
+      nutzsegmente.push(
+        `DTM${e}164${b}${alsZeitpunkt303(wert.bis, kopf.versatzMinuten)}${b}303`,
+      );
+    }
+  }
+
+  // UNT zählt sich selbst mit.
+  nutzsegmente.push(`UNT${e}${nutzsegmente.length + 1}${e}${m(kopf.nachricht)}`);
+
+  // UNA ist genau neun Zeichen lang und trägt sein Segmentende
+  // bereits selbst: Es ist das sechste der bekanntgegebenen
+  // Dienstzeichen. Wer hier noch eines anhängt, erzeugt ein leeres
+  // Segment - mancher Empfänger übergeht es, ein anderer zählt es mit
+  // und findet dann einen falschen Segmentzähler.
+  const una = `UNA${b}${e}${TRENNZEICHEN.dezimal}${TRENNZEICHEN.freigabe} ${TRENNZEICHEN.segment}`;
+
+  const unb =
+    `UNB${e}UNOC${b}3` +
+    `${e}${m(kopf.absender.kennung)}${b}${m(kopf.absender.schema)}` +
+    `${e}${m(kopf.empfaenger.kennung)}${b}${m(kopf.empfaenger.schema)}` +
+    `${e}${alsZeitpunkt201(kopf.erstelltAm, kopf.versatzMinuten)}` +
+    `${e}${m(kopf.uebertragung)}`;
+
+  const unz = `UNZ${e}1${e}${m(kopf.uebertragung)}`;
+
+  const rest = [unb, ...nutzsegmente, unz].map(
+    (segment) => segment + TRENNZEICHEN.segment,
+  );
+
+  return [una, ...rest].join("\n");
+}
+
+/**
+ * Zeichen, die der in UNB angekündigte Zeichensatz nicht führt.
+ *
+ * UNOC ist ISO 8859-1. Ein Zeichen darüber hinaus - ein Gedankenstrich
+ * aus einer Textverarbeitung, ein tschechisches Š in einem Firmennamen -
+ * überlebt die Umwandlung nicht: Es wird stillschweigend zu einem
+ * anderen Zeichen oder zu einem Fragezeichen, und ein Fragezeichen ist
+ * in EDIFACT das Freigabezeichen. Aus einem Schönheitsfehler wird so
+ * eine Nachricht, die der Empfänger anders zerlegt.
+ */
+export function unzulaessigeZeichen(nachricht: string): string[] {
+  const treffer = new Set<string>();
+  for (const zeichen of nachricht) {
+    if (zeichen.codePointAt(0)! > 0xff) treffer.add(zeichen);
+  }
+  return [...treffer];
+}
+
+/* ------------------------------------------------------------------ */
+/* Prüfen                                                              */
+/* ------------------------------------------------------------------ */
+
+export interface MsconsPruefung {
+  gueltig: boolean;
+  beanstandungen: string[];
+  /** Zahl der Nutzsegmente von UNH bis UNT. */
+  segmente: number;
+  /** Zahl der übertragenen Messwerte. */
+  werte: number;
+  /** Summe aller Mengen in kWh. */
+  summeKwh: number;
+}
+
+/**
+ * Prüft eine MSCONS-Nachricht, bevor sie das Haus verlässt.
+ *
+ * Die Empfangsstelle weist eine fehlerhafte Übertragung als Ganzes ab
+ * und meldet das am nächsten Werktag. Bis dahin fehlen die Werte, und
+ * die Abrechnung wartet.
+ */
+export function pruefeMscons(nachricht: string): MsconsPruefung {
+  const beanstandungen: string[] = [];
+  const segmente = zerlegeSegmente(nachricht).filter(
+    (s) => !s.startsWith("UNA"),
+  );
+
+  const kennung = (s: string) => s.slice(0, 3);
+  const teile = (s: string) => s.split(TRENNZEICHEN.element);
+
+  const unb = segmente.find((s) => kennung(s) === "UNB");
+  const unz = segmente.find((s) => kennung(s) === "UNZ");
+  const unh = segmente.find((s) => kennung(s) === "UNH");
+  const unt = segmente.find((s) => kennung(s) === "UNT");
+
+  if (!unb) beanstandungen.push("Der Übertragungskopf UNB fehlt.");
+  if (!unz) beanstandungen.push("Das Übertragungsende UNZ fehlt.");
+  if (!unh) beanstandungen.push("Der Nachrichtenkopf UNH fehlt.");
+  if (!unt) beanstandungen.push("Das Nachrichtenende UNT fehlt.");
+
+  /* ---------- Referenzen ---------- */
+
+  if (unb && unz) {
+    const ausUnb = teile(unb)[5];
+    const ausUnz = teile(unz)[2];
+
+    if (ausUnb !== ausUnz) {
+      beanstandungen.push(
+        `Die Übertragungsreferenz stimmt nicht überein: UNB nennt "${ausUnb}", UNZ nennt "${ausUnz}".`,
+      );
+    }
+  }
+
+  if (unh && unt) {
+    const ausUnh = teile(unh)[1];
+    const ausUnt = teile(unt)[2];
+
+    if (ausUnh !== ausUnt) {
+      beanstandungen.push(
+        `Die Nachrichtenreferenz stimmt nicht überein: UNH nennt "${ausUnh}", UNT nennt "${ausUnt}".`,
+      );
+    }
+  }
+
+  /* ---------- Segmentzähler ---------- */
+
+  const vonUnh = segmente.findIndex((s) => kennung(s) === "UNH");
+  const bisUnt = segmente.findIndex((s) => kennung(s) === "UNT");
+  const nutzsegmente = vonUnh >= 0 && bisUnt >= 0 ? bisUnt - vonUnh + 1 : 0;
+
+  if (unt) {
+    const genannt = Number(teile(unt)[1]);
+    if (genannt !== nutzsegmente) {
+      beanstandungen.push(
+        `UNT nennt ${genannt} Segmente, gezählt wurden ${nutzsegmente}. Die Empfangsstelle weist die Übertragung damit ab.`,
+      );
+    }
+  }
+
+  if (unz) {
+    const genannt = Number(teile(unz)[1]);
+    const nachrichten = segmente.filter((s) => kennung(s) === "UNH").length;
+    if (genannt !== nachrichten) {
+      beanstandungen.push(
+        `UNZ nennt ${genannt} Nachrichten, enthalten sind ${nachrichten}.`,
+      );
+    }
+  }
+
+  /* ---------- Zählpunkte ---------- */
+
+  for (const segment of segmente.filter((s) => kennung(s) === "LOC")) {
+    const wert = entmaskiere(teile(segment)[2] ?? "");
+    if (wert.length !== 33) {
+      beanstandungen.push(
+        `Die Zählpunktbezeichnung "${wert}" hat ${wert.length} Stellen, vorgeschrieben sind 33.`,
+      );
+    }
+  }
+
+  /* ---------- Zeichensatz ---------- */
+
+  const fremd = unzulaessigeZeichen(nachricht);
+  if (fremd.length > 0) {
+    beanstandungen.push(
+      `Die Nachricht enthält Zeichen außerhalb von ISO 8859-1: ${fremd.join(" ")}. Der Zeichensatz UNOC führt sie nicht.`,
+    );
+  }
+
+  /* ---------- Mengen ---------- */
+
+  const mengen = segmente
+    .filter((s) => kennung(s) === "QTY")
+    .map((s) => {
+      const feld = teile(s)[1] ?? "";
+      const bestandteile = feld.split(TRENNZEICHEN.bestandteil);
+      return {
+        art: bestandteile[0] ?? "",
+        wert: Number(bestandteile[1]),
+      };
+    });
+
+  for (const menge of mengen) {
+    if (!Number.isFinite(menge.wert)) {
+      beanstandungen.push(
+        "Eine Menge ist keine Zahl. In EDIFACT ist der Dezimaltrenner der Punkt, nicht das Komma.",
+      );
+      break;
+    }
+  }
+
+  const summe = mengen.reduce(
+    (s, menge) => s + (Number.isFinite(menge.wert) ? menge.wert : 0),
+    0,
+  );
+
+  return {
+    gueltig: beanstandungen.length === 0,
+    beanstandungen,
+    segmente: nutzsegmente,
+    werte: mengen.length,
+    summeKwh: Math.round(summe * 1000) / 1000,
+  };
+}
+
+/** Kurzfassung für die Anzeige. */
+export function fasseMsconsZusammen(pruefung: MsconsPruefung): string {
+  if (!pruefung.gueltig) {
+    return `${pruefung.beanstandungen.length} Beanstandungen – die Nachricht wurde nicht erzeugt.`;
+  }
+
+  return `${pruefung.werte} Messwerte über ${alsKomma(pruefung.summeKwh, 3)} kWh in ${pruefung.segmente} Segmenten.`;
+}

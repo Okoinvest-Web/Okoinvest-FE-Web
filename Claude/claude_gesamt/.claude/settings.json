@@ -1,0 +1,18 @@
+{
+  "model": "claude-fable-5",
+  "extraKnownMarketplaces": {
+    "claude-plugins-official": {
+      "source": {
+        "source": "git",
+        "url": "https://github.com/anthropics/claude-plugins-official.git"
+      }
+    }
+  },
+  "modelSettings": {
+    "claude-fable-5": {
+      "effortLevel": "medium"
+    }
+  },
+  "inputNeededNotifEnabled": true,
+  "agentPushNotifEnabled": true
+}

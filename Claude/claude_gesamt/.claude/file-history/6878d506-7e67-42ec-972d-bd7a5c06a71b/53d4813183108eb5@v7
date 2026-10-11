@@ -1,0 +1,181 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { db } from "@/lib/data";
+import { date, daysUntil, LEAD_STATUS_LABEL, money, personName, STAGE_LABEL } from "@/lib/format";
+import { dealHealth, parsePv } from "@/lib/insights";
+import { Avatar, Badge, Field, PageHeader, Progress, Tabs } from "@/components/ui";
+import { ToDoForm } from "@/components/forms";
+import { HealthDot, NextSteps } from "@/components/Insights";
+import { PvCalculator } from "@/components/PvCalculator";
+import { Timeline } from "@/components/Timeline";
+import { TodoList } from "@/components/TodoList";
+import { InlineField, OutcomeActions, StageStepper } from "@/components/editing";
+import { updateOpportunityFieldAction } from "@/lib/actions";
+import { CircleCheck, CircleX } from "lucide-react";
+
+export async function generateMetadata({ params }: PageProps<"/opportunities/[name]">) {
+  const opp = await db().getOpportunity(decodeURIComponent((await params).name));
+  return { title: opp?.title ?? "Chance" };
+}
+
+export default async function OpportunityPage({ params, searchParams }: PageProps<"/opportunities/[name]">) {
+  const opp = await db().getOpportunity(decodeURIComponent((await params).name));
+  if (!opp) notFound();
+  const tab = (await searchParams).tab;
+  const todos = await db().listToDos({ filters: { reference_name: opp.name } });
+
+  const partyHref = opp.opportunity_from === "Lead" ? `/leads/${encodeURIComponent(opp.party_name)}` : `/customers/${encodeURIComponent(opp.party_name)}`;
+  const weighted = (opp.opportunity_amount * opp.probability) / 100;
+  const health = dealHealth(opp, todos);
+  const pv = parsePv(opp.title);
+  const isOpen = opp.status === "Open" || opp.status === "Quotation";
+  const base = `/opportunities/${encodeURIComponent(opp.name)}`;
+  const active = typeof tab === "string" && ["rechner", "aktivitaet"].includes(tab) ? tab : "aufgaben";
+  const days = daysUntil(opp.expected_closing);
+  const edit = (field: string) => updateOpportunityFieldAction.bind(null, opp.name, field);
+
+  return (
+    <>
+      <PageHeader title={opp.title ?? opp.name} crumbs={[{ href: "/opportunities", label: "Chancen" }]} actions={
+          <>
+            <Badge value={opp.status} label={LEAD_STATUS_LABEL[opp.status]} />
+            <OutcomeActions name={opp.name} status={opp.status} />
+          </>
+        }
+      />
+      <div className="grid grid-cols-1 min-h-0 flex-1 xl:grid-cols-[1fr_320px]">
+        <div className="min-w-0 px-4 py-6 sm:px-8 sm:py-7">
+          {/* Datensatzkopf */}
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div className="min-w-0">
+              <h2 className="text-[22px] font-semibold tracking-[-0.02em] text-gray-900">{opp.title ?? opp.name}</h2>
+              <p className="mt-0.5 text-gray-500">
+                <Link href={partyHref} className="text-gray-700 hover:underline">
+                  {opp.customer_name ?? opp.party_name}
+                </Link>
+                {opp.opportunity_owner && <> · betreut von {personName(opp.opportunity_owner)}</>}
+              </p>
+            </div>
+            <div className="text-right">
+              <div className="tnum text-[26px] font-semibold leading-none tracking-[-0.02em] text-gray-900">{money(opp.opportunity_amount, opp.currency)}</div>
+              <div className="tnum mt-1.5 text-[12px] text-gray-500">gewichtet {money(weighted, opp.currency)}</div>
+            </div>
+          </div>
+
+          {/* Phasenleiste – Klick setzt die Phase */}
+          <div className="mt-7">
+            <StageStepper name={opp.name} stage={opp.sales_stage} disabled={!isOpen} />
+          </div>
+
+          {opp.status === "Converted" && (
+            <div className="mt-6 flex items-center gap-3 rounded-lg border border-brand-200 bg-brand-50 px-4 py-3 text-brand-800">
+              <CircleCheck className="size-4" />
+              <span>
+                <strong className="font-semibold">Gewonnen</strong> am {date(opp.modified)} · {money(opp.opportunity_amount, opp.currency)}
+              </span>
+            </div>
+          )}
+          {opp.status === "Lost" && (
+            <div className="mt-6 flex items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-gray-700">
+              <CircleX className="size-4 text-rose-500" />
+              <span>
+                <strong className="font-semibold">Verloren</strong> am {date(opp.modified)}
+                {opp.order_lost_reason && <> · Grund: {opp.order_lost_reason}</>}
+              </span>
+            </div>
+          )}
+
+          {isOpen && health.hints.length > 0 && (
+            <div className="mt-7">
+              <NextSteps hints={health.hints} title="Deal-Check" />
+            </div>
+          )}
+
+          <div className="mt-6">
+            <Tabs
+              base={base}
+              active={active}
+              tabs={[
+                { id: "aufgaben", label: "Aufgaben", count: todos.filter((t) => t.status === "Open").length },
+                { id: "rechner", label: "PV-Rechner" },
+                { id: "aktivitaet", label: "Aktivität" },
+              ]}
+            />
+          </div>
+
+          <div className="pt-6">
+            {active === "aufgaben" && (
+              <div className="grid grid-cols-1 gap-4">
+                <ToDoForm referenceType="Opportunity" referenceName={opp.name} compact />
+                <div className="overflow-hidden rounded-lg border border-gray-200">
+                  <TodoList todos={todos} empty="Noch kein nächster Schritt geplant." />
+                </div>
+              </div>
+            )}
+            {active === "rechner" && <PvCalculator kwp={pv.kwp} storage={pv.storage} invest={opp.opportunity_amount} sheetHref={`/kundenblatt/chance/${encodeURIComponent(opp.name)}`} />}
+            {active === "aktivitaet" && <Timeline doctype="Opportunity" name={opp.name} />}
+          </div>
+        </div>
+
+        {/* Eigenschaften */}
+        <aside className="border-t border-gray-150 bg-gray-25 px-6 py-7 xl:border-l xl:border-t-0">
+          <div className="mb-2 text-[12px] font-medium text-gray-500">Eigenschaften</div>
+          <dl>
+            <Field label="Zustand">{isOpen ? <HealthDot h={health} /> : <Badge value={opp.status} label={LEAD_STATUS_LABEL[opp.status]} />}</Field>
+            <Field label="Phase">{STAGE_LABEL[opp.sales_stage] ?? opp.sales_stage}</Field>
+            <Field label="Auftragswert">
+              <InlineField
+                value={String(opp.opportunity_amount)}
+                display={<span className="tnum">{money(opp.opportunity_amount, opp.currency)}</span>}
+                action={edit("opportunity_amount")}
+              />
+            </Field>
+            <Field label="Wahrscheinl.">
+              <InlineField
+                type="number"
+                value={String(opp.probability)}
+                display={
+                  <span className="flex items-center gap-2">
+                    <Progress value={opp.probability} className="w-16" />
+                    <span className="tnum">{opp.probability} %</span>
+                  </span>
+                }
+                action={edit("probability")}
+              />
+            </Field>
+            <Field label="Abschluss">
+              <InlineField
+                type="date"
+                value={opp.expected_closing?.slice(0, 10) ?? ""}
+                display={
+                  <>
+                    {date(opp.expected_closing)}
+                    {isOpen && days !== undefined && <span className={`ml-1.5 text-[12px] ${days < 0 ? "text-rose-600" : "text-gray-400"}`}>{days < 0 ? `${-days} T über` : `in ${days} T`}</span>}
+                  </>
+                }
+                action={edit("expected_closing")}
+              />
+            </Field>
+            <Field label={opp.opportunity_from === "Lead" ? "Lead" : "Kunde"}>
+              <Link href={partyHref} className="hover:underline">
+                {opp.customer_name ?? opp.party_name}
+              </Link>
+            </Field>
+            <Field label="Berater">
+              {opp.opportunity_owner && (
+                <span className="flex items-center gap-2">
+                  <Avatar name={opp.opportunity_owner} size="xs" /> {personName(opp.opportunity_owner)}
+                </span>
+              )}
+            </Field>
+            <Field label="Angelegt">{date(opp.creation)}</Field>
+            <Field label="Geändert">{date(opp.modified)}</Field>
+            <Field label="ID">
+              <span className="font-mono text-[12px] text-gray-500">{opp.name}</span>
+            </Field>
+          </dl>
+        </aside>
+      </div>
+    </>
+  );
+}

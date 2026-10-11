@@ -1,0 +1,324 @@
+=== eeg-ausschreibung-freiflaeche
+title: "EEG-Ausschreibung Freifläche: Termine, Zuschläge und Regeln
+`durchschnittlicher Zuschlagswert, Gebotstermin ${LETZTE.termin}
+` },
+`Der mengengewichtete Zuschlagswert lag zuletzt bei **${fmtCt(LETZTE.schnitt, 2)}** (Gebotstermin ${LETZTE.termin}), der Höchstwert bei ${fmtCt(LETZTE.hoechstwert, 2)}. Seit 2024 bewegen sich die Durchschnittswerte grob zwischen 4,7 und 5,1 ct/kWh.
+`,
+`Gebote sind nur auf zulässigen Flächen möglich: u. a. versiegelte und Konversionsflächen, **Randstreifen bis ${RANDSTREIFEN_M} m** an Autobahnen und Schienenwegen, benachteiligte Gebiete (je nach Land) und besondere Solaranlagen wie Agri-PV.
+`,
+`Bieter hinterlegen **${SICHERHEIT_EUR_KW} €/kW** Sicherheit (${SICHERHEIT_BPLAN_EUR_KW} €/kW mit beschlossenem B-Plan). Wer nicht baut, zahlt eine Pönale in derselben Größenordnung.
+`,
+titel: "Wie funktioniert die EEG-Ausschreibung für Freiflächen?
+text: "**In der EEG-Ausschreibung bieten Projektierer auf den anzulegenden Wert in Cent je Kilowattstunde; die günstigsten Gebote erhalten einen Zuschlag, bis das ausgeschriebene Volumen erreicht ist.** Jedes Gebot wird mit seinem eigenen Wert bezuschlagt („pay as bid“). Der Zuschlag sichert für 20 J
+text: "Die [Ausschreibung](/wissen/lexikon#ausschreibung-eeg) für „Solaranlagen des ersten Segments“ umfasst Freiflächenanlagen und Anlagen auf sonstigen baulichen Anlagen. Dachanlagen laufen im zweiten Segment mit eigenen Terminen. Teilnehmen müssen alle Freiflächenanlagen, die eine Marktprämie w
+titel: "Gebotstermine
+text: "1. März, 1. Juli, 1. Dezember – dreimal im Jahr, jeweils mit eigenem Volumen.
+titel: "Voraussetzung
+text: "Mindestens ein Aufstellungsbeschluss für den Bebauungsplan, dazu Sicherheit und Gebühr.
+titel: "Ergebnis
+text: "Zuschlag mit eigenem Gebotswert als anzulegender Wert für 20 Jahre ab Inbetriebnahme.
+text: "Wie ein Projekt überhaupt bis zum Aufstellungsbeschluss kommt, beschreibt der Ratgeber [Solarpark-Genehmigung und Bebauungsplan](/ratgeber/solarpark-genehmigung-bebauungsplan).
+titel: "Gebotstermine und Ergebnisse 2025/2026
+`**Die Runden sind seit Jahren überzeichnet, die Zuschlagswerte bleiben stabil knapp unter 5 ct/kWh.** Zum Gebotstermin ${LETZTE.termin} gingen ${fmt(LETZTE.gebote)} MW Gebote für ${fmt(LETZTE.volumen)} MW Volumen ein. Die Zuschläge lagen zwischen ${fmtCt(LETZTE.min, 2)} und ${fmtCt(LETZTE.max, 2)}.
+`,
+`${fmt(r.volumen)} MW
+`,
+`${fmt(r.gebote)} MW
+`,
+`${fmt(r.zuschlag)} MW
+`,
+`${fmt(r.min, 2)}–${fmt(r.max, 2)} ct
+`,
+`${fmt(r.schnitt, 2)} ct
+`,
+`${fmt(r.hoechstwert, 2)} ct
+`,
+`Der **Höchstwert** begrenzt, was geboten werden darf. 2025 lag er bei 6,80 ct/kWh, 2026 bei ${fmt(RUNDEN[3].hoechstwert, 2)} bzw. ${fmt(LETZTE.hoechstwert, 2)} ct/kWh. Nach Angaben der Bundesnetzagentur ergibt er sich inzwischen aus dem Durchschnitt der höchsten bezuschlagten Gebote der vorangegangenen drei Runden zuzüglich eines gesetzlichen Aufschlags. Regional dominieren Bayern, Baden-Württ
+`,
+titel: "Unsere Rechenannahme
+`In den Rechnern dieser Website setzen wir für Freiflächenanlagen einen [Zuschlagswert](/wissen/lexikon#zuschlagswert) von ${fmtCt(ERLOESE.eegFreiflaecheCt)} an – das entspricht dem Mittel der letzten Runden. Für ein konkretes Gebot zählen Standort, Kosten und Wettbewerb am jeweiligen Termin.
+`,
+titel: "Welche Flächen sind in der Ausschreibung zulässig?
+text: "**Nicht jede Fläche darf an der Ausschreibung teilnehmen: § 37 EEG legt eine abschließende Flächenkulisse fest.** Ackerland ist nur in benachteiligten Gebieten oder als besondere Solaranlage zulässig – und auch das nur, soweit das jeweilige Land nichts anderes regelt.
+`bis ${RANDSTREIFEN_M} m an Autobahnen und Schienenwegen, gemessen vom äußeren Fahrbahnrand
+`],
+`Quelle: § 37 EEG (gesetze-im-internet.de). Nach § 37 Abs. 4 EEG sind Gebote auf Ackerflächen unzulässig, sobald Freiflächenanlagen mit mehr als ${ACKER_DECKEL_GW} GW (Zubau ab 2023) in Betrieb sind; ab 2031 gilt eine höhere Schwelle.
+`,
+text: "Benachteiligte Gebiete und Länderöffnungsklausel
+`[Benachteiligte Gebiete](/wissen/lexikon#benachteiligte-gebiete) sind landwirtschaftlich ertragsschwächere Regionen nach EU-Abgrenzung. Seit dem Solarpaket I sind sie grundsätzlich geöffnet; die Länder können sie nach § 37c EEG per Verordnung wieder schließen – etwa sobald Solaranlagen mehr als ${fmt(LAENDER_QUOTE * 100)} % der landwirtschaftlich genutzten Fläche belegen, oder für Lands
+`,
+text: "Besondere Solaranlagen
+text: "[Besondere Solaranlagen](/wissen/lexikon#besondere-solaranlagen) wie Agri-PV nach DIN SPEC 91434, Parkplatz-PV oder Anlagen auf wiedervernässten Moorböden sind in der Ausschreibung zugelassen. Das Solarpaket I sieht für sie eine eigene Unterausschreibung mit höherem Höchstwert und einem Bonus f
+titel: "Sicherheiten, Fristen und Pönalen
+`**Wer bietet, hinterlegt ${SICHERHEIT_EUR_KW} € je Kilowatt Gebotsleistung als Sicherheit – mit beschlossenem Bebauungsplan nur ${SICHERHEIT_BPLAN_EUR_KW} €/kW (§ 37a EEG).** Die frühere Aufteilung in Erst- und Zweitsicherheit gibt es im ersten Segment nicht mehr; es ist eine einzige Sicherheit. Hinzu kommt eine Gebühr von ${fmtEur(GEBUEHR_EUR)} je Gebot.
+`,
+`Antrag auf Zahlungsberechtigung erst nach 18 Monaten: Zuschlagswert minus ${fmt(ABSCHLAG_CT, 1)} ct/kWh
+`, "§ 54 Abs. 1 EEG"],
+`Anlage nicht auf den im Gebot genannten Flurstücken: minus ${fmt(ABSCHLAG_CT, 1)} ct/kWh
+`, "§ 54 Abs. 2 EEG"],
+`Werden mehr als 5 % der Gebotsmenge entwertet: ${SICHERHEIT_EUR_KW} €/kW (bzw. ${SICHERHEIT_BPLAN_EUR_KW} €/kW) für die entwertete Menge
+`, "§ 55 Abs. 2 EEG"],
+`Für ein 10-MWp-Projekt heißt das: ${fmtEur(SICHERHEIT)} Sicherheit bei Gebot mit Aufstellungsbeschluss, ${fmtEur(SICHERHEIT_BPLAN)} mit beschlossenem B-Plan. Der Abschlag von ${fmt(ABSCHLAG_CT, 1)} ct/kWh klingt klein, kostet bei rund ${fmt(MWH)} MWh Jahresertrag aber etwa **${fmtEur(VERLUST_ABSCHLAG)} pro Jahr** – über 20 Jahre abgezinst mit ${fmt(FINANZIERUNG.diskont * 100, 1)} % rund ${fmt
+`,
+titel: "Marktprämie, anzulegender Wert und negative Preise
+text: "**Der Zuschlagswert ist kein fester Tarif, sondern der anzulegende Wert: Die Marktprämie gleicht nur die Differenz zwischen diesem Wert und dem monatlichen Marktwert Solar aus.** Den Strom verkauft ein Direktvermarkter an der Börse. Liegt der Marktwert Solar über dem anzulegenden Wert, entfällt 
+text: "Die Prämie berechnet sich monatlich aus dem [anzulegenden Wert](/wissen/lexikon#anzulegender-wert) minus dem [Marktwert Solar](/wissen/lexikon#marktwert-solar). Weil Solaranlagen alle gleichzeitig produzieren, liegt ihr Marktwert meist unter dem Durchschnittspreis – die sogenannte [Capture Rate](
+titel: "§ 51 EEG: keine Förderung bei negativen Preisen
+text: "Für Zeiträume, in denen der Spotmarktpreis negativ ist, verringert sich der anzulegende Wert auf null (§ 51 Abs. 1 EEG). Für Neuanlagen gilt das seit dem Solarspitzengesetz für jede negative Viertelstunde. Als Ausgleich verlängert sich der Förderzeitraum nach § 51a EEG; bei Solaranlagen wird
+text: "Die EU-Strommarktreform sieht für neue Förderregelungen künftig grundsätzlich zweiseitige Differenzverträge vor, bei denen Mehrerlöse über dem anzulegenden Wert zurückfließen. Wie und ab wann Deutschland das im EEG umsetzt, sollten Sie vor jeder Investitionsentscheidung aktuell prüfen.
+titel: "Alternativen: PPA, Merchant und die Kombination
+`**Die Ausschreibung ist nicht der einzige Weg: Ein Stromliefervertrag (PPA) oder der reine Marktverkauf sind echte Alternativen – oft auch als Kombination.** Wir rechnen für Solar-PPA mit ${fmt(ERLOESE.ppaCt.min, 1)} bis ${fmt(ERLOESE.ppaCt.max, 1)} ct/kWh und nach Förderende konservativ mit ${fmtCt(ERLOESE.merchantCt)} Marktwert.
+`,
+`~${fmt(ERLOESE.eegFreiflaecheCt, 1)} als Untergrenze
+`, 
+`${fmt(ERLOESE.ppaCt.min, 1)}–${fmt(ERLOESE.ppaCt.max, 1)} fest
+`, 
+`~${fmt(ERLOESE.merchantCt, 1)}, schwankend
+`],
+`Viele Projekte kombinieren: Ein Teil des Parks geht mit Zuschlag in die Marktprämie, ein anderer Teil liefert per [PPA](/ratgeber/ppa-fuer-unternehmen) an ein Unternehmen – zum Beispiel über den [Reststrom-Pool](/reststrom). Flächen außerhalb der Kulisse, etwa Äcker außerhalb benachteiligter Gebiete, sind ohnehin nur über PPA oder Merchant realisierbar. Unabhängig vom Vermarktungsweg kan
+`,
+titel: "EEG, PPA oder Merchant – was trägt Ihr Projekt?
+text: "Leistung, Region, Kosten und Erlösweg eingeben und Rendite, Kapitalwert und Cashflow vergleichen.
+=== ppa-fuer-unternehmen
+`${fmt(n, 1)} ct/kWh
+`;
+title: "PPA für Unternehmen: Grünstrom direkt vom Solarpark beziehen
+`${fmt(DENA_PPA.solar.min)}–${fmt(DENA_PPA.solar.max)} €/MWh
+`, text: "Solar-PPA, 10 Jahre, indikativ 2025 (dena)" },
+`Solar-PPAs mit 10 Jahren Laufzeit lagen 2025 laut dena-Marktanalyse indikativ bei **${fmt(DENA_PPA.solar.min)}–${fmt(DENA_PPA.solar.max)} €/MWh** (3,5–4,5 ct/kWh) auf Erzeugerebene. Für Abnehmer kommen Kosten für Strukturierung und Ausgleich hinzu.
+`,
+`Produzierendes Gewerbe zahlt seit 1. Januar 2026 dauerhaft nur noch **${fmt(STROM.stromsteuerProduzierend, 2)} ct/kWh Stromsteuer** statt ${fmt(STROMSTEUER_REGEL, 2)} ct (über den Entlastungsantrag).
+`,
+titel: "Was ist ein PPA – und für wen lohnt es sich?
+text: "**Ein [PPA](/wissen/lexikon#ppa) ist ein langfristiger Stromliefervertrag zwischen einem Unternehmen und dem Betreiber einer Erneuerbare-Energien-Anlage, der den Strompreis für einen Teil des Verbrauchs über viele Jahre festschreibt.** Unternehmen sichern sich damit gegen steigende Großhandelspre
+text: "Ob sich ein PPA lohnt, hängt weniger vom Preis pro Kilowattstunde ab als von drei Fragen: Passt das Erzeugungsprofil zu Ihrem Verbrauch? Ist die abgenommene Menge groß genug, dass sich Vertragsaufwand und Strukturierung verteilen? Und wie viel Preisrisiko möchten Sie über zehn Jahre fest binden?
+`${fmt(DENA_PPA.solar.min)}–${fmt(DENA_PPA.solar.max)} €/MWh
+`,
+titel: "indikativer Solar-PPA-Preis 2025, 10 Jahre, pay-as-produced
+`Onshore-Wind lag bei ${fmt(DENA_PPA.onshore.min)}–${fmt(DENA_PPA.onshore.max)} €/MWh. Quelle: dena / Marktoffensive Erneuerbare Energien, PPA-Marktanalyse 2025. Aktuelle Preise veröffentlicht Pexapark.
+`,
+titel: "Die PPA-Modelle im Überblick
+text: "**PPAs unterscheiden sich in drei Dimensionen: wo die Anlage steht (on-site oder off-site), ob Strom physisch geliefert oder nur finanziell abgerechnet wird, und in welchem Profil geliefert wird.** Daraus ergeben sich sehr unterschiedliche Verträge.
+text: "Pay-as-produced, Baseload oder Profil
+text: "Beim **Pay-as-produced**-PPA nehmen Sie jede erzeugte Kilowattstunde zum Festpreis ab – egal, wann sie anfällt. Das ist die günstigste Struktur, lässt aber das Profilrisiko beim Abnehmer: An sonnigen Mittagen kommt mehr Strom, als Sie brauchen, abends fehlt er. Beim **Baseload**-PPA liefert der
+`Die Laufzeiten werden kürzer: Laut dena-Analyse schlossen Unternehmen 2025 vermehrt PPAs unter fünf Jahren ab, und die Zahl der PPA- und FPA-Abschlüsse in Deutschland sank von ${DENA_ANZAHL_PPA[2024]} auf ${DENA_ANZAHL_PPA[2025]}. Neue Solarparks ohne EEG-Zuschlag brauchen für die Finanzierung aber meist 10 Jahre oder mehr.
+`,
+titel: "Was kostet ein PPA – und was spart es?
+`**Der PPA-Preis ersetzt nur die Beschaffungskomponente Ihres Strompreises – Netzentgelte, Umlagen und Steuern bleiben.** Von rund ${ctFmt(GESAMT)} netto, die ein Mittelständler 2026 nach unserer Aufschlüsselung zahlt, entfallen etwa ${ctFmt(BESCHAFFUNG)} auf Beschaffung und Vertrieb. Nur dieser Teil lässt sich durch ein PPA beeinflussen.
+`,
+`Grobe Aufteilung auf Basis der BDEW-Strompreisanalyse und eigener Einschätzung. Für produzierendes Gewerbe sinkt die Stromsteuer nach Entlastung auf ${fmt(STROM.stromsteuerProduzierend, 2)} ct/kWh.
+`,
+`**Rechenbeispiel:** Ein Betrieb verbraucht ${fmt(VERBRAUCH_KWH / 1000)} MWh im Jahr und deckt ${fmtPct(PPA_ANTEIL, 0)} davon (${fmt(PPA_KWH / 1000)} MWh) über ein Solar-PPA – typisch sind ${fmtPct(STROM.ppaDeckungsanteil.min, 0)} bis ${fmtPct(STROM.ppaDeckungsanteil.max, 0)}, weil Solarstrom nur tagsüber anfällt. Die Tabelle zeigt die rechnerische Differenz zur Beschaffungskomponente von ${ct
+`,
+`Rechnerischer Beschaffungsvorteil bei ${fmt(PPA_KWH / 1000)} MWh PPA-Menge pro Jahr
+`,
+`Die PPA-Preise in unseren Rechnern (${ctFmt(ERLOESE.ppaCt.min)} bis ${ctFmt(ERLOESE.ppaCt.max)}) liegen bewusst über den dena-Werten auf Erzeugerebene, weil kleinere Abnahmemengen und Lieferung über einen Versorger Aufschläge verursachen. Den eigenen Fall rechnen Sie mit dem [Reststrom-Rechner](/rechner/reststrom).
+`,
+titel: "Was kostet Ihr Reststrom – und was ließe sich sparen?
+text: "Verbrauch, Eigenerzeugung und Branche eingeben: Der Rechner zeigt die Preisbestandteile und das Potenzial eines gebündelten Einkaufs.
+titel: "Risiken, die beim Abnehmer bleiben
+titel: "Profilrisiko
+text: "Solarstrom kommt zur Mittagszeit, wenn er ohnehin billig ist. 2025 fiel laut dena knapp ein Viertel der Solarerzeugung in Stunden mit negativen Preisen. Überschüsse müssen Sie verkaufen, Lücken zukaufen – die sinkende [Capture Rate](/wissen/lexikon#capture-rate) trifft bei Pay-as-produced den 
+titel: "Volumenrisiko
+text: "Ein schlechtes Solarjahr liefert weniger, eine Produktionsdrosselung im eigenen Betrieb senkt den Bedarf. Mindest- und Höchstmengen sowie Regeln für negative Preisstunden gehören in den Vertrag.
+titel: "Preisrisiko
+text: "Fällt der Großhandelspreis unter den PPA-Preis, zahlen Sie über Jahre mehr als der Markt. Ein PPA ist eine Absicherung, keine garantierte Ersparnis.
+titel: "Kreditrisiko
+text: "Der Erzeuger will wissen, ob Sie zehn Jahre zahlen können – oft werden Sicherheiten oder Bürgschaften verlangt. Umgekehrt sollten Sie prüfen, ob die Anlage tatsächlich gebaut wird.
+text: "Bilanzkreis und Ausgleichsenergie
+text: "Physisch gelieferter Strom muss viertelstundengenau in einen Bilanzkreis eingeplant werden. Weicht die Erzeugung von der Prognose ab, fällt Ausgleichsenergie an. Die meisten Mittelständler haben keinen eigenen Bilanzkreis; diese Aufgabe übernimmt beim Sleeved-PPA ein Versorger, der den PPA-Strom 
+titel: "Herkunftsnachweise und Stromsteuer
+text: "**Grünstrom aus einem PPA lässt sich nur mit Herkunftsnachweisen belegen – und die gibt es in Deutschland ausschließlich für Strom, der keine EEG-Förderung erhält.** Das Umweltbundesamt führt das Herkunftsnachweisregister und verhindert so die Doppelvermarktung. Für Nachhaltigkeitsberichte
+titel: "Rechtslage Stromsteuer (Deutschland, Stand September 2026)
+`Der Regelsatz beträgt ${fmt(STROMSTEUER_REGEL, 2)} ct/kWh. Unternehmen des produzierenden Gewerbes sowie der Land- und Forstwirtschaft werden seit 1. Januar 2026 dauerhaft auf den EU-Mindestsatz von ${fmt(STROM.stromsteuerProduzierend, 2)} ct/kWh entlastet, sofern sie mehr als ${fmt(STROMSTEUER_MINDESTVERBRAUCH_MWH, 1)} MWh im Jahr verbrauchen (Beschluss des Bundestags vom 13.11.2025; Entlastung 
+`,
+`Für ein produzierendes Unternehmen mit ${fmt(VERBRAUCH_KWH / 1000)} MWh Verbrauch macht die Entlastung rund ${fmtEur(STEUER_ERSPARNIS)} pro Jahr aus – unabhängig davon, ob ein PPA abgeschlossen wird. In **Österreich** werden Herkunftsnachweise über die E-Control abgewickelt, und statt der Stromsteuer gilt die Elektrizitätsabgabe mit eigenen Sätzen. In der **Schweiz** stellt Pronovo die Her
+`,
+titel: "Zu klein für ein PPA? Gebündelt einkaufen
+text: "**Ein eigenes Off-site-PPA lohnt sich in der Regel erst ab Abnahmemengen, bei denen Vertragsverhandlung, Bonitätsprüfung und Strukturierung im Verhältnis zur Ersparnis stehen – für viele Mittelständler ist das nicht der Fall.** Eine Alternative ist die Bündelung: Mehrere Unternehmen kaufen i
+text: "Genau dafür ist der [Reststrom-Pool](/reststrom) gedacht: Unternehmen, denen die ÖKOVOLT Gruppe Photovoltaik und Speicher baut, brauchen trotzdem Strom aus dem Netz – nachts, im Winter und bei Lastspitzen. Diesen Reststrom bündelt ÖkoInvest über ihr [virtuelles Kraftwerk](/virtuelles-kraftwer
+`${fmt(h.ct.min, 1)}–${fmt(h.ct.max, 1)} ct/kWh
+`]),
+`${fmt(POOL_MIN, 1)}–${fmt(POOL_MAX, 1)} ct/kWh
+`],
+text: "Wer lieber lokal teilt als bündelt, findet im Ratgeber [Energy Sharing und Energiegemeinschaften](/ratgeber/energy-sharing-energiegemeinschaften) die Modelle in Deutschland, Österreich und der Schweiz. Wie ein virtuelles Kraftwerk Erzeuger, Speicher und Verbraucher verbindet, erklärt der Ratgeber
+titel: "Vorgehen: So bereiten Sie ein PPA vor
+`Die dena-Marktanalyse nennt für 2025 indikativ ${fmt(DENA_PPA.solar.min)}–${fmt(DENA_PPA.solar.max)} €/MWh für 10-jährige Solar-PPAs (pay-as-produced) auf Erzeugerebene. Für Abnehmer im Mittelstand kommen Aufschläge für Lieferung, Profil und Ausgleich hinzu; aktuelle Marktpreise veröffentlicht Pexapark.
+`,
+`Ja, aber nur noch ${fmt(STROM.stromsteuerProduzierend, 2)} ct/kWh nach Entlastung – ab einem Jahresverbrauch von ${fmt(STROMSTEUER_MINDESTVERBRAUCH_MWH, 1)} MWh und auf Antrag beim Hauptzollamt. Die Regelung gilt seit 1. Januar 2026 dauerhaft.
+`,
+titel: "Reststrom-Pool
+text: "Gebündelter Stromeinkauf für Unternehmen.
+titel: "Reststrom-Rechner
+text: "Preisbestandteile und Sparpotenzial für Ihren Verbrauch.
+titel: "Virtuelles Kraftwerk
+text: "Wie Erzeugung, Speicher und Verbrauch zusammen vermarktet werden.
+titel: "Großspeicher-Erlöse
+text: "Warum Speicher Solar-PPAs wertvoller machen.
+titel: "dena / Marktoffensive Erneuerbare Energien – PPA-Marktanalyse 2025
+titel: "pv magazine – Pexapark records 12 European PPAs for 724 MW in January 2026
+titel: "Deutscher Bundestag – Stromsteuersenkung für Produzenten und Landwirte verstetigt
+titel: "Stromsteuergesetz – § 9 StromStG Steuerbefreiungen
+titel: "Umweltbundesamt – Was ist ein Herkunftsnachweis?
+=== virtuelles-kraftwerk
+`${fmt(kwh / 1000)} MWh
+`;
+`${fmt(h.ct.min, 1)}–${fmt(h.ct.max, 1)} ct/kWh
+`;
+title: "Virtuelles Kraftwerk erklärt: Aufbau, Vermarktung und Nutzen
+`ab ${GRENZE_KW} kW
+`, text: "Direktvermarktung und Redispatch 2.0 sind für neue Anlagen Pflicht" },
+`Neue Erneuerbaren-Anlagen ab **${GRENZE_KW} kW** müssen ihren Strom in der Regel direkt vermarkten und sind in **Redispatch 2.0** eingebunden. Das VKW übernimmt Prognose, Fahrplan, Fernsteuerung und Datenmeldungen.
+`,
+`Geld verdient wird am **Day-Ahead- und Intraday-Markt**, mit **Regelenergie** (Mindestgebot meist ${REGELENERGIE_MIN_MW} MW – nur im Pool für kleine Einheiten erreichbar) und durch das Verschieben von Strom mit Speichern und flexiblen Lasten.
+`,
+`Für Unternehmen senkt der Verbund die Beschaffungskosten: Im Beispiel dieses Artikels spart ein Betrieb mit ${fmt(BSP.verbrauchMwh)} MWh Verbrauch und neuer PV rund **${eurR(R.gesamt.eurMin)} bis ${eurR(R.gesamt.eurMax)} im Jahr** beim Reststrom – Orientierung, kein Angebot.
+`,
+titel: "Was ist ein virtuelles Kraftwerk?
+text: "**Ein virtuelles Kraftwerk ist ein Verbund aus vielen kleinen und mittleren Erzeugungsanlagen, Speichern und steuerbaren Verbrauchern, die über Software und Fernsteuerung gemeinsam geplant, vermarktet und gesteuert werden.** Physisch bleibt jede Anlage an ihrem Standort. „Virtuell“ ist nur das 
+text: "Der Grund ist einfach: Ein einzelner Solarpark mit 5 MWp ist für den Großhandel zu klein, zu wetterabhängig und zu schlecht prognostizierbar. Im Verbund gleichen sich Prognosefehler aus, Speicher fangen Spitzen ab, und die Menge reicht für Märkte, die ein Einzelbetreiber nicht erreicht. Wie das
+`${fmt(VKW_BEISPIEL.mw)} MW
+`,
+titel: "vernetzte Leistung eines der großen europäischen virtuellen Kraftwerke
+`Next Kraftwerke meldete ${VKW_BEISPIEL.jahr} über ${fmt(VKW_BEISPIEL.anlagen)} vernetzte Anlagen mit mehr als ${fmt(VKW_BEISPIEL.mw)} MW Leistung – ein Beispiel für die Größenordnung, die solche Verbünde erreichen.
+`,
+titel: "Die Bestandteile eines virtuellen Kraftwerks
+text: "**Ein virtuelles Kraftwerk besteht aus drei Ebenen: den Anlagen, der Kommunikation dorthin und der Leitwarte mit Prognose und Handel.** Erst das Zusammenspiel macht den Verbund wertvoll – Erzeugung ohne Abnehmer ist Börsenrisiko, Verbrauch ohne eigene Erzeugung ist Preisrisiko.
+`Nach § 10b EEG 2023 müssen direktvermarktete Anlagen mit mehr als ${FERNSTEUER_KW} kW so ausgestattet sein, dass der Direktvermarkter die Ist-Einspeisung abrufen und die Leistung ferngesteuert regeln kann. Ab 2028 kann das nach Einbau eines intelligenten Messsystems über das Smart-Meter-Gateway erfolgen.
+`,
+`Besonders wertvoll sind **Speicher**. Ein Batteriespeicher erreicht im Großmaßstab einen Wirkungsgrad um ${fmt(SPEICHER.wirkungsgrad * 100)} % und rund ${fmt(SPEICHER.zyklenProJahr)} Vollzyklen im Jahr – er ist das Werkzeug, mit dem der Verbund Mittagsüberschüsse in den Abend trägt. Mehr zu Erlösen und Investition steht im Ratgeber [Großspeicher-Erlöse](/ratgeber/grossspeicher-erloese) u
+`,
+titel: "Wie verdient ein virtuelles Kraftwerk Geld?
+text: "**Ein virtuelles Kraftwerk kombiniert mehrere Vermarktungswege: Direktvermarktung mit Marktprämie oder per PPA, den Handel am Day-Ahead- und Intraday-Markt, Regelenergie und die Mitwirkung am Redispatch.** Welche Wege eine Anlage nutzen kann, hängt von Größe, Technik und Förderstatus ab.
+`Pflicht für neue Anlagen ab ${GRENZE_KW} kW
+`, "Börsenerlös plus Prämie, abzüglich Vermarktungsentgelt"],
+`präqualifizierte Einheiten, Mindestgebot meist ${REGELENERGIE_MIN_MW} MW im Pool
+`, "Leistungs- und Arbeitspreis; vor allem für Speicher"],
+`Anlagen ab ${GRENZE_KW} kW und fernsteuerbare Anlagen
+`, "Pflichtprozess; finanzieller bzw. bilanzieller Ausgleich"],
+text: "Direktvermarktung und negative Preise
+text: "Seit dem Solarspitzengesetz (Februar 2025) erhalten neue geförderte Anlagen in Viertelstunden mit **negativen Börsenpreisen keine Marktprämie** mehr; die entgangene Förderung wird nach Ende des 20-jährigen Förderzeitraums anteilig nachgeholt. Für den Verbund heißt das: In diesen Viertelstund
+text: "Regelenergie im Pool
+`Übertragungsnetzbetreiber beschaffen Regelreserve in drei Qualitäten: Primärregelleistung (FCR), Sekundärregelleistung (aFRR) und Minutenreserve (mFRR). Das Mindestgebot liegt in der Regel bei ${REGELENERGIE_MIN_MW} MW, und jede Einheit muss präqualifiziert sein. Ein einzelner Gewerbespeicher erreicht das kaum – im Pool eines VKW können mehrere Einheiten gemeinsam anbieten. Details erklär
+`,
+text: "Redispatch 2.0
+`Seit 1. Oktober 2021 sind alle Erzeugungs- und Speicheranlagen ab ${GRENZE_KW} kW sowie jederzeit fernsteuerbare Anlagen in das Engpassmanagement der Netzbetreiber nach §§ 13, 13a und 14 EnWG einbezogen. Das bringt Stammdaten-, Planungsdaten- und Nichtverfügbarkeitsmeldungen mit sich. Ein VKW übernimmt diese Prozesse gebündelt – für Betreiber mehrerer Parks eine spürbare Entlastung. Mehr 
+`,
+titel: "Flexibilität: Warum verschiebbare Last bares Geld ist
+text: "**Strom kostet nicht jede Viertelstunde gleich viel: Mittags drückt Solarstrom die Börsenpreise, abends steigen sie wieder.** Wer Verbrauch in günstige Viertelstunden legt oder Speicher gezielt lädt und entlädt, senkt seine Kosten – ohne weniger Strom zu verbrauchen.
+titel: "Lastverschiebung
+text: "Kühlung vorziehen, Druckluftspeicher füllen, Ladevorgänge von Flotten in die Mittagsstunden legen. Oft reichen Verschiebungen von ein bis drei Stunden.
+titel: "Speicher-Arbitrage
+text: "Laden bei niedrigen, Entladen bei hohen Preisen. Der Hebel steigt mit der Preisdifferenz zwischen Mittag und Abend. Siehe [Arbitrage](/wissen/lexikon#arbitrage).
+titel: "Spitzenkappung
+text: "Speicher und steuerbare Lasten senken Lastspitzen – relevant für Betriebe, deren Netzentgelt einen Leistungspreis enthält.
+titel: "Abregeln statt draufzahlen
+text: "Bei negativen Preisen regelt der Verbund Erzeugung ab oder lädt Speicher. Das schützt Erlöse von Parks in der Direktvermarktung.
+text: "**Rahmenbedingungen, die nur teilweise relevant sind:** Nach § 14a EnWG erhalten steuerbare Verbrauchseinrichtungen im Niederspannungsnetz – etwa Wärmepumpen, Wallboxen und Speicher – reduzierte Netzentgelte, seit April 2025 auch als zeitvariables Netzentgelt (Modul 3). Für die meisten Mittel
+titel: "Was haben Anlagenbetreiber und Mittelstand davon?
+text: "Für Betreiber von Solarparks und Speichern
+text: "Für mittelständische Unternehmen
+text: "Auch ein Betrieb mit eigener Photovoltaik und Speicher bezieht einen großen Teil seines Stroms weiterhin aus dem Netz – nachts, im Winter, in Spitzen. Dieser **Reststrom** wird meist per Einzelvertrag zu einem Stichtag eingekauft. Der Ansatz von ÖkoInvest: Unternehmen, denen die ÖKOVOLT Gruppe 
+`Spannen je kWh Reststrom, vorsichtige Einschätzung ÖkoInvest, Stand ${STAND}. Der tatsächliche Effekt hängt von Lastprofil, Menge, Vertragslaufzeit und Marktlage ab; die Hebel addieren sich nicht beliebig.
+`,
+titel: "Rechenbeispiel: Mittelständler mit neuer PV im Pool
+`**Ein Zweischichtbetrieb mit ${fmt(BSP.verbrauchMwh)} MWh Jahresverbrauch und einer neuen ${fmt(BSP.pvKwp)}-kWp-Dachanlage bezieht trotz PV noch rund ${mwh(R.reststromKwh)} Reststrom aus dem Netz.** Wir rechnen mit einem Gesamtpreis von ${fmtCt(PREIS_CT, 0)} netto, davon ${fmtCt(R.fixSumme)} nicht beeinflussbare Bestandteile (Netz, Umlagen, Konzessionsabgabe, Stromsteuer).
+`,
+`Beispiel: ${fmt(BSP.verbrauchMwh)} MWh Verbrauch, Zweischicht, ${fmt(BSP.pvKwp)} kWp PV (Rechenkern des Reststrom-Rechners)
+`,
+`${ct2(hebel("buendelung").ctMin)} – ${ct2(hebel("buendelung").ctMax)}
+`],
+`${ct2(hebel("ppa").ctMin)} – ${ct2(hebel("ppa").ctMax)}
+`],
+`${ct2(hebel("flex").ctMin)} – ${ct2(hebel("flex").ctMax)}
+`],
+`${eurR(R.gesamt.eurMin)} – ${eurR(R.gesamt.eurMax)}
+`],
+`Berechnet mit denselben Annahmen wie der Reststrom-Rechner (Stand ${STAND}). Der PPA-Hebel fällt kleiner aus, weil die eigene PV die Tagesstunden bereits teilweise deckt. Die Stromsteuer-Entlastung ist keine Leistung des Pools, sondern ein Antrag beim Hauptzollamt. Orientierung, kein Angebot.
+`,
+`Die Stromsteuer für Unternehmen des produzierenden Gewerbes sowie der Land- und Forstwirtschaft liegt seit 1. Januar 2026 dauerhaft beim EU-Mindestsatz von ${fmtCt(STROM.stromsteuerProduzierend, 2)} statt ${fmtCt(STROM.bestandteile.find((b) => b.id === "stromsteuer").ct, 2)} – in diesem Beispiel ein Effekt in ähnlicher Größenordnung wie der Pool. Beides lässt sich kombinieren. Details zur S
+`,
+titel: "Rechnen Sie Ihr eigenes Lastprofil durch
+text: "Verbrauch, Tarif, Schichtmodell und PV eingeben: Der Reststrom-Rechner zeigt die Spanne je Hebel und die Stromsteuer-Entlastung.
+titel: "Grenzen und typische Missverständnisse
+=== energy-sharing-energiegemeinschaften
+`${fmt(n * 100)} %
+`;
+title: "Energy Sharing und Energiegemeinschaften: DE, AT und CH im Vergleich
+`ab ${ENWG_42C.start}
+`, text: "Energy Sharing nach § 42c EnWG in Deutschland" },
+`**Deutschland:** Energy Sharing nach § 42c EnWG gilt seit dem **${ENWG_42C.start}** innerhalb des Bilanzierungsgebiets eines Verteilnetzbetreibers, ab dem **${ENWG_42C.erweiterung}** auch im direkt angrenzenden Gebiet derselben Regelzone. Netzentgelte, Umlagen und Steuern fallen auf geteilten Strom in voller Höhe an.
+`,
+`**Österreich:** Rund **${fmt(AT_ZAEHLPUNKTE)} Zählpunkte** nehmen laut Koordinationsstelle an über ${fmt(AT_MODELLE)} Modellen der gemeinsamen Energienutzung teil (Stand September 2026). Lokale Erneuerbare-Energie-Gemeinschaften sparen bisher ${pct(AT_EEG_REDUKTION.lokal)} des Netznutzungs-Arbeitspreises; mit dem ElWG gelten ab 1. Oktober 2026 neue Regeln.
+`,
+`**Schweiz:** Seit 1. Januar 2026 gibt es die **lokale Elektrizitätsgemeinschaft (LEG)** innerhalb einer Gemeinde – mit ${pct(CH_LEG.eineEbene)} Abschlag auf den Netznutzungstarif (${pct(CH_LEG.mehrereEbenen)} bei mehreren Netzebenen). ZEV und vZEV bleiben die Lösung am Gebäude bzw. Netzanschlusspunkt.
+`,
+titel: "Was ist Energy Sharing – und was ist eine Energiegemeinschaft?
+text: "**Energy Sharing bedeutet, dass Strom aus einer Erneuerbaren-Anlage über das öffentliche Netz an Nachbarn, Mitglieder oder Betriebe in der Nähe geliefert und viertelstundengenau mit deren Verbrauch verrechnet wird – ohne dass der Betreiber zum klassischen Energieversorger werden muss.** Eine En
+text: "Die EU hat beides mit der Erneuerbare-Energien-Richtlinie (RED II) und der Strombinnenmarkt-Richtlinie vorgegeben. Umgesetzt wurde es sehr unterschiedlich: Österreich hat seit 2021 einen breiten Rahmen mit Netzentgeltrabatten, die Schweiz setzt auf Eigenverbrauchsgemeinschaften und seit 2026 auf di
+titel: "Deutschland: Energy Sharing nach § 42c EnWG
+`**Der Paragraf ist Ende 2025 in Kraft getreten; die Verteilnetzbetreiber müssen die gemeinsame Nutzung seit dem ${ENWG_42C.start} ermöglichen.** Zunächst müssen alle Beteiligten im selben Bilanzierungsgebiet liegen, ab dem ${ENWG_42C.erweiterung} darf auch in ein unmittelbar angrenzendes Bilanzierungsgebiet derselben Regelzone geteilt werden.
+`,
+text: "Wer darf mitmachen?
+text: "Messung, Reststrom, Lieferantenpflichten
+text: "An jeder belieferten Verbrauchsstelle muss der Bezug per **Zählerstandsgangmessung oder viertelstündlicher Leistungsmessung** erfasst werden – praktisch heißt das in der Regel: intelligentes Messsystem (Smart Meter). Der Betreiber muss seine Abnehmer darauf hinweisen, dass die Anlage ihren Beda
+`Für kleine Anlagen gibt es Erleichterungen: Bis ${ENWG_42C.grenzeHaushaltKw} kW (bei Haushaltskunden) bzw. ${ENWG_42C.grenzeMehrparteienKw} kW (bei Mehrparteienhäusern) entfallen verschiedene Lieferantenpflichten, etwa zur Rechnungsgestaltung und Stromkennzeichnung. Größere Projekte tragen die Pflichten eines Stromlieferanten weitgehend selbst oder über einen Dienstleister.
+`,
+titel: "Der entscheidende Unterschied zu Österreich und der Schweiz
+text: "In Deutschland werden **Netzentgelte, Umlagen, Abgaben und Steuern auf geteilten Strom in voller Höhe** fällig. Anders als bei der österreichischen EEG oder der Schweizer LEG gibt es keinen Rabatt dafür, dass der Strom nur wenige hundert Meter weit fließt. Der wirtschaftliche Vorteil entsteht a
+text: "Bürgerenergiegesellschaft und Genossenschaft
+text: "Unabhängig vom Energy Sharing kennt das EEG die **Bürgerenergiegesellschaft** (§ 3 Nr. 15 EEG 2023): mindestens 50 natürliche Personen als stimmberechtigte Mitglieder, mindestens 75 % der Stimmrechte bei Menschen, die im Umkreis von 50 km um die Anlage gemeldet sind, und kein Mitglied mit mehr a
+titel: "Österreich: EEG, BEG und gemeinsame Energienutzung nach dem ElWG
+`**Österreich hat den am weitesten entwickelten Rahmen im DACH-Raum: Laut Österreichischer Koordinationsstelle für Energiegemeinschaften gab es im September 2026 rund ${fmt(AT_ZAEHLPUNKTE)} teilnehmende Zählpunkte in mehr als ${fmt(AT_MODELLE)} Modellen.** Allein im Netzgebiet der Netz Niederösterreich waren es im September 2026 über 100.000 Zählpunkte.
+`,
+text: "Die Modelle
+`**Erneuerbare-Energie-Gemeinschaft ([EEG](/wissen/lexikon#eeg-gemeinschaft))**: Erzeugung ausschließlich erneuerbar, lokal (gemeinsames Niederspannungsnetz) oder regional (Mittelspannung). Nur die EEG spart zusätzlich den **Erneuerbaren-Förderbeitrag und die Elektrizitätsabgabe** auf den gemeinschaftlich bezogenen Strom. Große Unternehmen dürfen nicht Mitglied sein.
+`,
+`**Bürgerenergiegemeinschaft ([BEG](/wissen/lexikon#buergerenergiegemeinschaft))**: auch nicht erneuerbare Erzeugung möglich, österreichweit tätig. Netzentgeltrabatte gab es bisher nicht; mit dem ElWG sollen lokale und regionale BEG ab 2027 ebenfalls reduzierte Netzentgelte erhalten.
+`,
+text: "Was sich mit dem ElWG ändert
+`Das neue Elektrizitätswirtschaftsgesetz (ElWG) regelt die „Bürgerenergie“ in den §§ 65 bis 72 neu; diese Bestimmungen gelten ab **1. Oktober 2026**. Ab 5. Oktober 2026 lassen sich die neuen Modelle zunächst nur mit Zählpunkten desselben Netzbetreibers umsetzen, netzbetreiberübergreifend bzw. österreichweit voraussichtlich ab April 2027. Die reduzierten Netzentgelte für die neuen Forme
+`,
+`**Mehrfachteilnahme:** Ein Zählpunkt kann an bis zu ${AT_MEHRFACH} Modellen gleichzeitig teilnehmen, gesteuert über Teilnahmefaktoren (in Summe höchstens 100 %). Große Unternehmen dürfen mit Anlagen bis ${AT_GROSS_MW} MW an BEG und P2P teilnehmen; diese Obergrenze lässt sich nicht durch Aufteilung auf mehrere Gemeinschaften umgehen. Einen Überblick über Freiflächenprojekte in Österreich 
+`,
+titel: "Schweiz: ZEV, vZEV und die lokale Elektrizitätsgemeinschaft
+`**Die Schweiz kennt drei Stufen: den Zusammenschluss zum Eigenverbrauch (ZEV) am eigenen Grundstück, den virtuellen ZEV (vZEV) seit 2025 und die lokale Elektrizitätsgemeinschaft (LEG) seit 1. Januar 2026.**
+`,
+`**[ZEV](/wissen/lexikon#zev):** Eigentümer und Mieter nutzen Strom aus einer Anlage am Ort gemeinsam, gegenüber dem Netzbetreiber tritt der ZEV als ein Endverbraucher auf. Die Produktionsleistung muss mindestens ${pct(CH_ZEV_MIN)} der Anschlussleistung betragen.
+`,
+`**[LEG](/wissen/lexikon#leg):** Teilnehmer innerhalb derselben Gemeinde, am selben Verteilnetz und auf derselben Spannungsebene teilen Strom über das öffentliche Netz. Die Produktionsleistung muss mindestens ${pct(CH_LEG.minProduktion)} der Anschlussleistung aller Teilnehmer erreichen. Auf den intern bezogenen Strom gilt ein Abschlag von ${pct(CH_LEG.eineEbene)} auf den Netznutzungstarif, bei Nu
+`,
+text: "Der LEG-Abschlag gilt nicht für Systemdienstleistungen, Stromreserve, den Netzzuschlag und öffentliche Abgaben. Eine LEG braucht einen Vertreter gegenüber dem Netzbetreiber und muss rund drei Monate vorher angemeldet werden. Wie die Rahmenbedingungen für größere Solaranlagen in der Schweiz aus
+titel: "DACH-Vergleich auf einen Blick
+`Gemeinsame Stromnutzung über das öffentliche Netz in Deutschland, Österreich und der Schweiz, Stand ${STAND}
+`,
+`${ENWG_42C.start}
+`, "EEG/BEG seit 2021; ElWG-Regeln ab 1.10.2026", "ZEV seit 2018, vZEV 2025, LEG 1.1.2026"],
+`Bilanzierungsgebiet eines VNB; ab ${ENWG_42C.erweiterung} auch angrenzendes Gebiet
+`, "Lokal (Niederspannung), regional (Mittelspannung), BEG österreichweit", "LEG: gleiche Gemeinde, Netzbetreiber und Netzebene"],
+`EEG lokal ${pct(AT_EEG_REDUKTION.lokal)}, regional ${pct(AT_EEG_REDUKTION.regionalNe67)}–${pct(AT_EEG_REDUKTION.regionalNe45)} (Arbeitspreis, bis 2026)
+`, 
+`LEG ${pct(CH_LEG.eineEbene)} bzw. ${pct(CH_LEG.mehrereEbenen)}
+`],
+titel: "Rechenbeispiel: Was bringt Energy Sharing einem Betrieb in Deutschland?
+`**Weil in Deutschland nur der Energiepreis verhandelbar ist, bleibt der Vorteil überschaubar.** Nehmen wir einen Handwerksbetrieb mit ${fmt(VERBRAUCH_KWH)} kWh Jahresverbrauch, der ${pct(SHARING_ANTEIL)} davon – ${fmt(GETEILT_KWH)} kWh – aus einer Solaranlage in der Nachbarschaft bezieht. Der gewerbliche Strompreis setzt sich nach unseren Orientierungswerten aus rund ${fmtCt(GESAMT_CT)} zusam
+`,
+`${fmt(VERBRAUCH_KWH)} kWh
+`],
+`${fmt(GETEILT_KWH)} kWh (${pct(SHARING_ANTEIL)})
+`],
+`${fmtCt(FIX_CT)} – unverändert
+`],
+`Der Preis für geteilten Strom ist eine Annahme für das Beispiel, kein Marktwert. Strompreisbestandteile: Orientierungswerte ÖkoInvest, Stand ${STAND}. Kosten für Messung, Abrechnung und Verwaltung sind nicht abgezogen.
+`,
+`Rund ${fmtEur(ERSPARNIS_EUR)} im Jahr – vor Kosten für Messstellenbetrieb und Abrechnungsdienstleister. Für Privathaushalte und Vereine kann das Modell trotzdem attraktiv sein, weil es um regionale Identität, Beteiligung und die Nutzung von Überschüssen geht. Für Betriebe liegt der größere Hebel meist beim **Reststrom**: Die übrigen ${pct(1 - SHARING_ANTEIL)} des Verbrauchs werden weite
+`,
+titel: "Was kostet Ihr Reststrom – und was ließe sich bündeln?
+text: "Verbrauch und Tarif eingeben: Der Rechner zeigt die Strompreisbestandteile und das Potenzial eines gebündelten Einkaufs.
+titel: "Grenzen und typische Fehler
+text: "Die Regeln sind in allen drei Ländern 2025 bis 2027 im Umbruch. Prüfen Sie den Stand kurz vor der Gründung beim Netzbetreiber bzw. bei der Koordinationsstelle und lassen Sie Satzung, Verträge und steuerliche Fragen fachlich begleiten.
+titel: "So gründen Sie eine Energiegemeinschaft
+text: "Einen Überblick, wie ÖkoInvest Gemeinschaften und Kommunen bei regionalen Projekten unterstützt, finden Sie auf den Seiten [Energiegemeinschaften](/energiegemeinschaften) und [Kommunen](/kommunen).
+`Seit dem ${ENWG_42C.start}. Ab diesem Tag müssen Verteilnetzbetreiber Energy Sharing nach § 42c EnWG innerhalb ihres Bilanzierungsgebiets ermöglichen. Ab dem ${ENWG_42C.erweiterung} ist auch das Teilen in ein direkt angrenzendes Bilanzierungsgebiet derselben Regelzone erlaubt.
+`,
+`Mitglieder einer lokalen EEG zahlen bisher ${pct(AT_EEG_REDUKTION.lokal)} weniger Netznutzungs-Arbeitspreis auf den Gemeinschaftsstrom, regionale EEG ${pct(AT_EEG_REDUKTION.regionalNe67)} (Netzebene 6/7) bzw. ${pct(AT_EEG_REDUKTION.regionalNe45)} (Netzebene 4/5). Dazu entfallen Erneuerbaren-Förderbeitrag und Elektrizitätsabgabe. Ab 2027 legt die novellierte SNE-VO die Sätze neu fest.

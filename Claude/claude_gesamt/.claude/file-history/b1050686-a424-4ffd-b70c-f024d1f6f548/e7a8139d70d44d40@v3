@@ -1,0 +1,287 @@
+import type { Metadata } from "next";
+
+import { Tabelle, Zeile, Zelle } from "@/components/tabelle";
+import {
+  Balken,
+  Tafel,
+  Kennzahl,
+  LeerZustand,
+  Seitenkopf,
+  Status,
+} from "@/components/ui";
+import { formatDatum, formatProzent, formatZahl } from "@/lib/format";
+import {
+  ladeAnlagen,
+  ladeAnlagendoku,
+  ladePruefbefunde,
+} from "@/lib/portal-daten";
+import { requireRecht } from "@/lib/session";
+
+export const metadata: Metadata = { title: "Dokumentation" };
+
+/**
+ * Normen, die fuer die Dokumentation einer netzgekoppelten
+ * Photovoltaikanlage in Oesterreich massgeblich sind.
+ */
+const NORMEN = [
+  {
+    nummer: "ÖVE/ÖNORM E 8001-4-712",
+    titel: "Errichtung und Betrieb von Photovoltaikanlagen",
+    zweck:
+      "Planung, Errichtung und Überwachung netzgekoppelter Anlagen, einschließlich der selbsttätigen Trennstelle.",
+  },
+  {
+    nummer: "ÖVE/ÖNORM EN 62446-1",
+    titel: "Prüfung, Dokumentation und Instandhaltung",
+    zweck:
+      "Mindestumfang der Systemdokumentation, Erst- und wiederkehrende Prüfung mit Prüfprotokoll.",
+  },
+  {
+    nummer: "ÖVE/ÖNORM E 8101",
+    titel: "Elektrische Niederspannungsanlagen",
+    zweck:
+      "Grundlegende Errichtungsbestimmungen, Teil 7-712 behandelt Photovoltaik-Stromversorgungssysteme.",
+  },
+  {
+    nummer: "TOR Erzeuger",
+    titel: "Technische und organisatorische Regeln",
+    zweck:
+      "Anforderungen an Erzeugungsanlagen je Typ A bis D, insbesondere Netz- und Anlagenschutz.",
+  },
+  {
+    nummer: "ÖVE/ÖNORM EN 62305",
+    titel: "Blitzschutz",
+    zweck: "Blitz- und Überspannungsschutzkonzept für die Anlage.",
+  },
+  {
+    nummer: "TRVB E 133",
+    titel: "Brandschutztechnische Anforderungen",
+    zweck:
+      "Kennzeichnung, Trennstellen und Zugänglichkeit für die Feuerwehr im Einsatzfall.",
+  },
+];
+
+function befundTon(befund: string | undefined) {
+  switch (befund) {
+    case "Mängelfrei":
+      return "gut" as const;
+    case "Geringe Mängel":
+      return "hinweis" as const;
+    case "Schwere Mängel":
+      return "kritisch" as const;
+    default:
+      return "neutral" as const;
+  }
+}
+
+export default async function DokumentationSeite() {
+  await requireRecht("anlagen.lesen");
+
+  const [anlagen, doku, befunde] = await Promise.all([
+    ladeAnlagen(),
+    ladeAnlagendoku(),
+    ladePruefbefunde(),
+  ]);
+
+  const pflicht = doku.filter((d) => d.pflicht === 1);
+  const pflichtVorhanden = pflicht.filter((d) => d.vorhanden === 1);
+  const vollstaendigkeit =
+    pflicht.length > 0 ? (pflichtVorhanden.length / pflicht.length) * 100 : 0;
+
+  const fehlend = doku.filter((d) => d.vorhanden !== 1);
+
+  const heute = new Date();
+  const naechstePruefung = [...befunde]
+    .filter((b) => b.naechste_pruefung)
+    .sort((a, b) => (a.naechste_pruefung! < b.naechste_pruefung! ? -1 : 1))[0];
+
+  const anlagenName = (name: string | undefined) =>
+    anlagen.find((a) => a.name === name)?.anlagen_name ?? name;
+
+  return (
+    <div className="space-y-6">
+      <Seitenkopf
+        titel="Anlagendokumentation"
+        hinweis="Vollständigkeit nach ÖVE/ÖNORM und TOR Erzeuger"
+      />
+
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Kennzahl
+          label="Pflichtdokumente"
+          wert={`${pflichtVorhanden.length}/${pflicht.length}`}
+          hinweis="vorhanden und geprüft"
+        />
+        <Kennzahl
+          label="Vollständigkeit"
+          wert={formatProzent(vollstaendigkeit, 0)}
+        />
+        <Kennzahl
+          label="Fehlende Unterlagen"
+          wert={formatZahl(fehlend.length, 0)}
+        />
+        <Kennzahl
+          label="Nächste Prüfung"
+          wert={
+            naechstePruefung
+              ? formatDatum(naechstePruefung.naechste_pruefung)
+              : "–"
+          }
+          hinweis={
+            naechstePruefung
+              ? anlagenName(naechstePruefung.anlage)
+              : "keine terminisiert"
+          }
+        />
+      </div>
+
+      {fehlend.length > 0 && (
+        <Tafel titel="Offene Punkte">
+          <ul className="space-y-2">
+            {fehlend.map((eintrag) => (
+              <li
+                key={eintrag.name}
+                className="flex flex-wrap items-start justify-between gap-2 rounded-lg bg-slate-50 px-3 py-2.5 dark:bg-slate-800/50"
+              >
+                <span className="min-w-0">
+                  <span className="block text-sm font-medium">
+                    {eintrag.kapitel}
+                  </span>
+                  <span className="block text-xs text-slate-500 dark:text-slate-400">
+                    {eintrag.norm} · {anlagenName(eintrag.anlage)}
+                  </span>
+                  {eintrag.bemerkung && (
+                    <span className="mt-1 block text-xs text-slate-600 dark:text-slate-300">
+                      {eintrag.bemerkung}
+                    </span>
+                  )}
+                </span>
+                <Status ton={eintrag.pflicht === 1 ? "ernst" : "hinweis"}>
+                  {eintrag.pflicht === 1 ? "Pflicht" : "Empfohlen"}
+                </Status>
+              </li>
+            ))}
+          </ul>
+        </Tafel>
+      )}
+
+      <Tafel
+        titel="Dokumentenverzeichnis"
+        hinweis={`Für ${anlagenName(doku[0]?.anlage) ?? "die Anlage"}`}
+      >
+        <div className="mb-5">
+          <Balken
+            label="Pflichtdokumente vorhanden"
+            anteil={vollstaendigkeit}
+            wertText={`${pflichtVorhanden.length} von ${pflicht.length}`}
+          />
+        </div>
+
+        {doku.length === 0 ? (
+          <LeerZustand text="Für diese Anlage ist noch kein Dokumentenverzeichnis angelegt." />
+        ) : (
+          <Tabelle
+            spalten={[{ titel: "Kapitel" }, { titel: "Norm" }, { titel: "Erfordernis" }, { titel: "Geprüft" }, { titel: "Status" }]}
+          >
+            {doku.map((eintrag) => (
+              <Zeile
+                key={eintrag.name}
+                hervorgehoben={eintrag.pflicht === 1 && eintrag.vorhanden !== 1}
+              >
+                <Zelle>
+                  <span className="font-medium">{eintrag.kapitel}</span>
+                  {eintrag.geprueft_von && (
+                    <span className="block text-xs text-slate-500 dark:text-slate-400">
+                      {eintrag.geprueft_von}
+                    </span>
+                  )}
+                </Zelle>
+                <Zelle leise>
+                  <span className="text-xs">{eintrag.norm}</span>
+                </Zelle>
+                <Zelle leise>
+                  {eintrag.pflicht === 1 ? "Pflicht" : "Empfohlen"}
+                </Zelle>
+                <Zelle leise>
+                  {eintrag.geprueft_am ? formatDatum(eintrag.geprueft_am) : "–"}
+                </Zelle>
+                <Zelle>
+                  <Status ton={eintrag.vorhanden === 1 ? "gut" : "ernst"}>
+                    {eintrag.vorhanden === 1 ? "Vorhanden" : "Fehlt"}
+                  </Status>
+                </Zelle>
+              </Zeile>
+            ))}
+          </Tabelle>
+        )}
+      </Tafel>
+
+      <Tafel
+        titel="Prüfbefunde"
+        hinweis="Erst- und wiederkehrende Prüfungen nach ÖVE/ÖNORM EN 62446-1"
+      >
+        <Tabelle
+          spalten={[{ titel: "Anlage" }, { titel: "Art" }, { titel: "Geprüft am" }, { titel: "Prüfer" }, { titel: "Nächste Prüfung" }, { titel: "Befund" }]}
+        >
+          {befunde.map((befund) => {
+            const faellig =
+              befund.naechste_pruefung &&
+              new Date(befund.naechste_pruefung) < heute;
+
+            return (
+              <Zeile key={befund.name} hervorgehoben={Boolean(faellig)}>
+                <Zelle>{anlagenName(befund.anlage)}</Zelle>
+                <Zelle leise>{befund.art ?? "–"}</Zelle>
+                <Zelle leise>{formatDatum(befund.geprueft_am)}</Zelle>
+                <Zelle leise>{befund.pruefer ?? "–"}</Zelle>
+                <Zelle>
+                  <span
+                    className={
+                      faellig ? "font-medium text-rose-700 dark:text-rose-400" : ""
+                    }
+                  >
+                    {formatDatum(befund.naechste_pruefung)}
+                  </span>
+                </Zelle>
+                <Zelle>
+                  <Status ton={befundTon(befund.befund)}>
+                    {befund.befund ?? "–"}
+                  </Status>
+                </Zelle>
+              </Zeile>
+            );
+          })}
+        </Tabelle>
+      </Tafel>
+
+      <Tafel
+        titel="Maßgebliche Normen"
+        hinweis="Welche Regelwerke für Ihre Anlagen gelten"
+      >
+        <div className="grid gap-3 md:grid-cols-2">
+          {NORMEN.map((norm) => (
+            <div
+              key={norm.nummer}
+              className="rounded-lg border border-slate-200 p-3.5 dark:border-slate-800"
+            >
+              <p className="font-mono text-xs font-medium text-emerald-700 dark:text-emerald-400">
+                {norm.nummer}
+              </p>
+              <p className="mt-1 text-sm font-medium text-slate-900 dark:text-slate-100">
+                {norm.titel}
+              </p>
+              <p className="mt-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+                {norm.zweck}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        <p className="mt-4 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+          Die Aufstellung nennt die für die Dokumentation wesentlichen
+          Regelwerke. Maßgeblich ist stets die zum Errichtungszeitpunkt gültige
+          Fassung sowie der Netzzugangsvertrag Ihres Netzbetreibers.
+        </p>
+      </Tafel>
+    </div>
+  );
+}

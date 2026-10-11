@@ -1,0 +1,236 @@
+<template>
+  <div>
+    <PageHeader :title="daten.data?.employee.employee_name || id" :subtitle="untertitel">
+      <template #actions>
+        <Button @click="$router.push('/people')">Zur Liste</Button>
+      </template>
+    </PageHeader>
+
+    <ErrorState
+      v-if="daten.error"
+      class="m-6"
+      :error="daten.error"
+      titel="Person nicht abrufbar"
+      :on-retry="() => daten.fetch()"
+    />
+
+    <div v-else-if="daten.data" class="p-6">
+      <div class="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <StatCard
+          v-for="kachel in kacheln"
+          :key="kachel.label"
+          :label="kachel.label"
+          :wert="kachel.wert"
+          :hinweis="kachel.hinweis"
+          :level="kachel.level"
+        />
+      </div>
+
+      <!-- Austrittsprüfung als Vorschau, auch bei aktiven Personen -->
+      <section
+        v-if="pruefung.data && !pruefung.data.summary.clear"
+        class="mb-8 rounded-lg border border-outline-gray-2 bg-surface-white p-4"
+      >
+        <h2 class="mb-1 text-base font-semibold text-ink-gray-8">
+          {{
+            pruefung.data.already_left ? 'Offen seit dem Austritt' : 'Beim Austritt zu erledigen'
+          }}
+        </h2>
+        <p class="mb-3 text-sm text-ink-gray-6">
+          {{
+            pruefung.data.already_left
+              ? 'Diese Punkte sind nach dem Austritt liegen geblieben.'
+              : 'Vorschau – so sähe die Liste heute aus.'
+          }}
+        </p>
+        <div class="space-y-2">
+          <div
+            v-for="(punkt, i) in pruefung.data.items"
+            :key="i"
+            class="flex flex-wrap items-start gap-3 rounded border border-outline-gray-2 px-3 py-2"
+          >
+            <StatusDot :level="punkt.level" :text="ART[punkt.kind] || punkt.kind" klein />
+            <div class="min-w-0 flex-1">
+              <p class="text-sm font-medium text-ink-gray-9">{{ punkt.title }}</p>
+              <p class="text-sm text-ink-gray-6">{{ punkt.detail }}</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="mb-8">
+        <h2 class="mb-3 text-base font-semibold text-ink-gray-8">
+          Ausstattung ({{ daten.data.assets.length }})
+        </h2>
+        <DataTable
+          :columns="geraeteSpalten"
+          :rows="daten.data.assets"
+          empty-text="Keine Gegenstände zugeordnet."
+          :on-row-click="(zeile) => $router.push('/inventory/' + zeile.asset_tag)"
+        >
+          <template #zelle-asset_tag="{ zeile }">
+            <span class="font-mono text-sm text-ink-gray-9">{{ zeile.asset_tag }}</span>
+          </template>
+          <template #zelle-purchase_price_cents="{ zeile }">
+            {{ euro(zeile.purchase_price_cents) }}
+          </template>
+          <template #zelle-issued_on="{ zeile }">
+            {{ String(zeile.issued_on || '').slice(0, 10) || '–' }}
+          </template>
+          <template #zelle-befund="{ zeile }">
+            <StatusDot v-if="zeile.overdue" level="critical" text="Rückgabe überfällig" klein />
+            <StatusDot v-else-if="zeile.due_on" level="ok" :text="'bis ' + zeile.due_on" klein />
+            <span v-else class="text-sm text-ink-gray-5">unbefristet</span>
+          </template>
+        </DataTable>
+      </section>
+
+      <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
+        <section>
+          <h2 class="mb-3 text-base font-semibold text-ink-gray-8">Konten</h2>
+          <DataTable
+            :columns="kontoSpalten"
+            :rows="daten.data.accounts"
+            empty-text="Kein Konto verknüpft."
+          >
+            <template #zelle-privileged="{ zeile }">
+              <StatusDot v-if="zeile.privileged" level="warning" text="privilegiert" klein />
+              <span v-else class="text-sm text-ink-gray-5">Standard</span>
+            </template>
+            <template #zelle-mfa_kind="{ zeile }">
+              <StatusDot
+                v-if="zeile.mfa_kind === 'none'"
+                level="critical"
+                text="kein zweiter Faktor"
+                klein
+              />
+              <span v-else class="text-sm">{{ zeile.mfa_kind }}</span>
+            </template>
+            <template #zelle-enabled="{ zeile }">
+              <StatusDot
+                :level="zeile.enabled ? 'ok' : 'neutral'"
+                :text="zeile.enabled ? 'aktiv' : 'gesperrt'"
+                klein
+              />
+            </template>
+          </DataTable>
+        </section>
+
+        <section>
+          <h2 class="mb-3 text-base font-semibold text-ink-gray-8">Frühere Ausgaben</h2>
+          <DataTable
+            :columns="frueherSpalten"
+            :rows="daten.data.past_assignments"
+            empty-text="Nichts zurückgegeben."
+          >
+            <template #zelle-issued_on="{ zeile }">
+              {{ String(zeile.issued_on).slice(0, 10) }}
+            </template>
+            <template #zelle-returned_on="{ zeile }">
+              {{ String(zeile.returned_on).slice(0, 10) }}
+            </template>
+          </DataTable>
+        </section>
+      </div>
+
+      <p class="mt-6 text-xs text-ink-gray-4">
+        Stammdaten aus Frappe HR. Zugangsverweise zeigen nur auf den Passbolt-Eintrag – Geheimnisse
+        stehen weder hier noch in der API (CLAUDE.md Abschnitt 3).
+      </p>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed, watch } from 'vue'
+import { useRoute } from 'vue-router'
+import { Button, createResource } from 'frappe-ui'
+import PageHeader from '@/components/PageHeader.vue'
+import DataTable from '@/components/DataTable.vue'
+import StatCard from '@/components/StatCard.vue'
+import StatusDot from '@/components/StatusDot.vue'
+import ErrorState from '@/components/ErrorState.vue'
+import { euro } from '@/viz'
+
+const ART = {
+  asset_return: 'Gerät',
+  account_disable: 'Konto',
+  license_seat: 'Lizenz',
+  access_reference: 'Zugang',
+  reservation: 'Reservierung',
+}
+const STATUS = { Active: 'Aktiv', Inactive: 'Inaktiv', Suspended: 'Gesperrt', Left: 'Ausgetreten' }
+
+const route = useRoute()
+const id = computed(() => route.params.id)
+
+const daten = createResource({
+  url: 'netops.api.personal.employee_equipment',
+  makeParams: () => ({ employee: id.value }),
+  auto: true,
+})
+
+const pruefung = createResource({
+  url: 'netops.api.personal.offboarding_check',
+  makeParams: () => ({ employee: id.value }),
+  auto: true,
+})
+
+watch(id, () => {
+  daten.fetch()
+  pruefung.fetch()
+})
+
+const untertitel = computed(() => {
+  const e = daten.data?.employee
+  if (!e) return ''
+  return [e.designation, e.department, STATUS[e.status] || e.status].filter(Boolean).join(' · ')
+})
+
+const kacheln = computed(() => {
+  const z = daten.data?.summary
+  const e = daten.data?.employee
+  if (!z) return []
+  return [
+    { label: 'Gegenstände', wert: z.asset_count, level: 'neutral' },
+    { label: 'Anschaffungswert', wert: euro(z.asset_value_cents), level: 'neutral' },
+    {
+      label: 'Überfällig',
+      wert: z.overdue_count,
+      hinweis: z.overdue_count ? 'Rückgabe fällig' : 'keine',
+      level: z.overdue_count ? 'critical' : 'ok',
+    },
+    {
+      label: 'Konten',
+      wert: z.account_count,
+      hinweis: z.privileged_accounts ? z.privileged_accounts + ' privilegiert' : null,
+      level: e?.status !== 'Active' && z.account_count ? 'critical' : 'neutral',
+    },
+  ]
+})
+
+const geraeteSpalten = [
+  { key: 'asset_tag', label: 'Nummer', width: '130px' },
+  { key: 'asset_name', label: 'Gegenstand', width: '260px' },
+  { key: 'category', label: 'Kategorie', muted: true, width: '150px' },
+  { key: 'serial', label: 'Seriennummer', mono: true, muted: true, width: '160px' },
+  { key: 'purchase_price_cents', label: 'Wert', align: 'right', numeric: true, width: '120px' },
+  { key: 'issued_on', label: 'Ausgegeben', numeric: true, muted: true, width: '130px' },
+  { key: 'befund', label: 'Frist', width: '180px' },
+]
+
+const kontoSpalten = [
+  { key: 'account_name', label: 'Konto', mono: true, width: '240px' },
+  { key: 'system', label: 'System', muted: true, width: '110px' },
+  { key: 'privileged', label: 'Rechte', width: '140px' },
+  { key: 'mfa_kind', label: 'Zweiter Faktor', width: '180px' },
+  { key: 'enabled', label: 'Stand', width: '130px' },
+]
+
+const frueherSpalten = [
+  { key: 'asset_name', label: 'Gegenstand' },
+  { key: 'issued_on', label: 'Von', numeric: true, muted: true, width: '120px' },
+  { key: 'returned_on', label: 'Bis', numeric: true, muted: true, width: '120px' },
+  { key: 'condition_in', label: 'Zustand bei Rückgabe', muted: true, width: '200px' },
+]
+</script>

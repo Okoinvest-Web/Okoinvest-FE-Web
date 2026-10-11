@@ -1,0 +1,154 @@
+import Link from "next/link";
+import type { Metadata } from "next";
+
+import { Sparkline } from "@/components/diagramme/sparkline";
+import { Tabelle, Zeile, Zelle } from "@/components/tabelle";
+import { Karte, Kennzahl, LeerZustand, Seitenkopf, Status } from "@/components/ui";
+import {
+  gesamtLeistung,
+  gesamtSpeicher,
+  imZeitraum,
+  letzteTage,
+  summiere,
+  tagesReihe,
+} from "@/lib/auswertung";
+import { kuerzeZaehlpunkt } from "@/lib/at/zaehlpunkt";
+import { ENERGIE_FARBEN } from "@/lib/farben";
+import { formatDatum, formatEnergie, formatZahl } from "@/lib/format";
+import { ladeAnlagen, ladeErtraege } from "@/lib/portal-daten";
+import { requireRecht } from "@/lib/session";
+
+import { statusTon } from "../page";
+
+export const metadata: Metadata = { title: "Anlagen" };
+
+export default async function AnlagenSeite() {
+  await requireRecht("anlagen.lesen");
+
+  const [anlagen, ertraege] = await Promise.all([
+    ladeAnlagen(),
+    ladeErtraege(undefined, 400),
+  ]);
+
+  const dreissig = letzteTage(30);
+  const jahr = letzteTage(365);
+
+  const summeJahr = summiere(ertraege.filter((e) => imZeitraum(e, jahr)));
+  const leistung = gesamtLeistung(anlagen);
+  const spezifisch = leistung > 0 ? summeJahr.erzeugung / leistung : 0;
+
+  const jahresErtrag = formatEnergie(summeJahr.erzeugung);
+
+  return (
+    <div className="space-y-6">
+      <Seitenkopf
+        titel="Anlagen"
+        beschreibung="Alle Photovoltaikanlagen Ihres Unternehmens"
+      />
+
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Kennzahl label="Anlagen" wert={formatZahl(anlagen.length, 0)} />
+        <Kennzahl
+          label="Installierte Leistung"
+          wert={formatZahl(leistung, 1)}
+          einheit="kWp"
+          verzoegerung={60}
+        />
+        <Kennzahl
+          label="Speicherkapazität"
+          wert={formatZahl(gesamtSpeicher(anlagen), 0)}
+          einheit="kWh"
+          verzoegerung={120}
+        />
+        <Kennzahl
+          label="Ertrag 12 Monate"
+          wert={jahresErtrag.wert}
+          einheit={jahresErtrag.einheit}
+          hinweis={`${formatZahl(spezifisch, 0)} kWh/kWp spezifisch`}
+          farbe={ENERGIE_FARBEN.erzeugung}
+          verzoegerung={180}
+        />
+      </div>
+
+      <Karte>
+        {anlagen.length === 0 ? (
+          <LeerZustand text="Es sind keine Anlagen hinterlegt." />
+        ) : (
+          <Tabelle
+            spalten={[
+              "Anlage",
+              "Zählpunkt",
+              "Leistung",
+              "30 Tage",
+              "Verlauf",
+              "Status",
+            ]}
+            rechts={[2, 3]}
+          >
+            {anlagen.map((anlage) => {
+              const eigene = ertraege.filter((e) => e.anlage === anlage.name);
+              const summe = summiere(
+                eigene.filter((e) => imZeitraum(e, dreissig)),
+              );
+              const wert = formatEnergie(summe.erzeugung);
+
+              return (
+                <Zeile key={anlage.name}>
+                  <Zelle>
+                    <Link
+                      href={`/portal/anlagen/${encodeURIComponent(anlage.name)}`}
+                      className="font-medium text-emerald-700 hover:underline dark:text-emerald-400"
+                    >
+                      {anlage.anlagen_name}
+                    </Link>
+                    <span className="block text-xs text-slate-500 dark:text-slate-400">
+                      {anlage.ort} · seit {formatDatum(anlage.inbetriebnahme)}
+                    </span>
+                  </Zelle>
+
+                  <Zelle gedaempft>
+                    <span className="font-mono text-xs">
+                      {anlage.zaehlpunkt
+                        ? kuerzeZaehlpunkt(anlage.zaehlpunkt)
+                        : "–"}
+                    </span>
+                    <span className="block text-xs">
+                      Netzebene {anlage.netzebene ?? "–"} · TOR{" "}
+                      {anlage.tor_typ ?? "–"}
+                    </span>
+                  </Zelle>
+
+                  <Zelle zahl>
+                    {formatZahl(anlage.leistung_kwp, 1)}
+                    <span className="text-xs text-slate-400"> kWp</span>
+                  </Zelle>
+
+                  <Zelle zahl>
+                    {wert.wert}
+                    <span className="text-xs text-slate-400"> {wert.einheit}</span>
+                  </Zelle>
+
+                  <Zelle>
+                    <Sparkline
+                      werte={tagesReihe(eigene, 30)}
+                      farbe={ENERGIE_FARBEN.erzeugung}
+                      breite={96}
+                      hoehe={28}
+                      beschreibung={`Ertragsverlauf ${anlage.anlagen_name}`}
+                    />
+                  </Zelle>
+
+                  <Zelle>
+                    <Status ton={statusTon(anlage.status)}>
+                      {anlage.status ?? "Unbekannt"}
+                    </Status>
+                  </Zelle>
+                </Zeile>
+              );
+            })}
+          </Tabelle>
+        )}
+      </Karte>
+    </div>
+  );
+}

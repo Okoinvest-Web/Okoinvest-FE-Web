@@ -1,0 +1,137 @@
+"""Einrichtung nach `bench install-app` bzw. `bench migrate`."""
+
+from __future__ import annotations
+
+import frappe
+
+from oekovolt_baudoku.setup.vorlagen import standardvorlagen_anlegen
+
+ROLLEN = [
+	("Baudoku Techniker", 0),
+	("Baudoku Bauleiter", 0),
+	("Baudoku Projektleiter", 0),
+	("Baudoku Admin", 0),
+	("Baudoku Subunternehmer", 1),
+	("Baudoku Kunde", 1),
+]
+
+SCHWEREGRADE = [
+	{"code": "A", "bezeichnung": "kritisch", "farbe": "#dc2626", "sla_tage": 3,
+	 "blockiert_abnahme": 1, "sortierung": 1},
+	{"code": "B", "bezeichnung": "wesentlich", "farbe": "#f59e0b", "sla_tage": 14,
+	 "blockiert_abnahme": 1, "sortierung": 2},
+	{"code": "C", "bezeichnung": "geringfuegig", "farbe": "#0284c7", "sla_tage": 30,
+	 "blockiert_abnahme": 0, "sortierung": 3},
+]
+
+KATEGORIEN = [
+	("Modul", "Module", "#0ea5e9"),
+	("Unterkonstruktion", "Unterkonstruktion", "#8b5cf6"),
+	("DC-Verkabelung", "DC-Kabel", "#f97316"),
+	("AC-Verkabelung", "AC-Kabel", "#eab308"),
+	("Wechselrichter", "Wechselrichter", "#10b981"),
+	("Batteriespeicher", "Speicher", "#14b8a6"),
+	("Wallbox / Ladestation", "Wallbox", "#6366f1"),
+	("Erdung und Blitzschutz", "Erdung", "#64748b"),
+	("Dokumentation", "Dokumentation", "#94a3b8"),
+	("Sonstiges", "Sonstiges", "#a3a3a3"),
+]
+
+PDF_PROFILE = [
+	{"profil_name": "OEKOVOLT Pruefprotokoll", "dokumenttyp": "Pruefprotokoll",
+	 "print_format": "Pruefprotokoll OEKOVOLT", "ist_standard": 1},
+	{"profil_name": "OEKOVOLT Tagesbericht", "dokumenttyp": "Tagesbericht",
+	 "print_format": "Tagesbericht OEKOVOLT", "ist_standard": 1},
+]
+
+
+def after_install():
+	rollen_anlegen()
+	schweregrade_anlegen()
+	kategorien_anlegen()
+	pdf_profile_anlegen()
+	einstellungen_initialisieren()
+	angelegt = standardvorlagen_anlegen()
+	frappe.db.commit()
+
+	print("\nOEKOVOLT Baudoku eingerichtet.")
+	for zeile in angelegt:
+		print(f"  Vorlage angelegt - {zeile}")
+	print("  Frontend bauen:  bench build --app oekovolt_baudoku")
+	print("  App oeffnen:     <site>/baudoku\n")
+
+
+def after_migrate():
+	"""Idempotente Nacharbeiten nach jedem Migrationslauf."""
+	rollen_anlegen()
+	schweregrade_anlegen()
+	kategorien_anlegen()
+	einstellungen_initialisieren()
+	frappe.db.commit()
+
+
+def rollen_anlegen():
+	for rolle, nur_desk_sperren in ROLLEN:
+		if frappe.db.exists("Role", rolle):
+			continue
+		frappe.get_doc({
+			"doctype": "Role",
+			"role_name": rolle,
+			"desk_access": 0 if nur_desk_sperren else 1,
+			"is_custom": 1,
+		}).insert(ignore_permissions=True)
+
+
+def schweregrade_anlegen():
+	for grad in SCHWEREGRADE:
+		if frappe.db.exists("Mangel Schweregrad", grad["code"]):
+			continue
+		frappe.get_doc({"doctype": "Mangel Schweregrad", **grad}).insert(ignore_permissions=True)
+
+
+def kategorien_anlegen():
+	for name, bereich, farbe in KATEGORIEN:
+		if frappe.db.exists("Mangelkategorie", name):
+			continue
+		frappe.get_doc({
+			"doctype": "Mangelkategorie",
+			"kategorie_name": name,
+			"bereich": bereich,
+			"farbe": farbe,
+			"aktiv": 1,
+		}).insert(ignore_permissions=True)
+
+
+def pdf_profile_anlegen():
+	for profil in PDF_PROFILE:
+		if frappe.db.exists("PDF Protokollprofil", profil["profil_name"]):
+			continue
+		if profil.get("print_format") and not frappe.db.exists("Print Format", profil["print_format"]):
+			profil = {**profil, "print_format": None}
+		frappe.get_doc({"doctype": "PDF Protokollprofil", **profil}).insert(ignore_permissions=True)
+
+
+def einstellungen_initialisieren():
+	settings = frappe.get_single("Baudoku Settings")
+	if settings.riso_pro_modul_kohm:
+		return
+	settings.update({
+		"riso_pro_modul_kohm": 40,
+		"riso_minimum_kohm": 1000,
+		"uoc_toleranz_prozent": 10,
+		"isc_toleranz_prozent": 15,
+		"uebersteuerung_erlaubt": 1,
+		"todo_erzeugen": 1,
+		"mail_bei_neuem_mangel": 1,
+		"mail_bei_ueberfaellig": 1,
+		"nachweisfoto_pflicht": 1,
+		"eskalation_an": "Baudoku Projektleiter" if frappe.db.exists("Role", "Baudoku Projektleiter") else None,
+		"max_foto_mb": 2,
+		"foto_max_kante_px": 2048,
+		"foto_hash": 1,
+		"sync_batch_groesse": 25,
+		"offline_puffer_mb": 100,
+		"vorlagen_cache_tage": 30,
+		"pdf_an_projekt_anhaengen": 1,
+	})
+	settings.save(ignore_permissions=True)

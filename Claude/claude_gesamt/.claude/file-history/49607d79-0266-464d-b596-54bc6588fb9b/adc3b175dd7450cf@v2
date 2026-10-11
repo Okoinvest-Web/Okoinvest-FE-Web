@@ -1,0 +1,24 @@
+<template>
+  <dl
+    class="divide-y divide-outline-gray-2 overflow-hidden rounded-lg border border-outline-gray-2 bg-surface-white"
+  >
+    <div v-for="zeile in rows" :key="zeile.feld" class="flex gap-4 px-4 py-2.5">
+      <dt class="w-40 shrink-0 text-base text-ink-gray-5">{{ fieldLabel(zeile.feld) }}</dt>
+      <dd class="min-w-0 flex-1 break-words text-base text-ink-gray-8">
+        <span v-if="zeile.wert === null || zeile.wert === undefined || zeile.wert === ''" class="text-ink-gray-4">
+          –
+        </span>
+        <span v-else>{{ zeile.wert }}</span>
+      </dd>
+    </div>
+  </dl>
+</template>
+
+<script setup>
+import { fieldLabel } from '@/labels'
+
+defineProps({
+  /** @type {{feld: string, wert: any}[]} */
+  rows: { type: Array, required: true },
+})
+</script>

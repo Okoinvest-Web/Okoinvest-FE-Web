@@ -1,0 +1,150 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { db } from "@/lib/data";
+import { OPPORTUNITY_STAGES } from "@/lib/types";
+import { date, daysUntil, LEAD_STATUS_LABEL, money, personName, STAGE_LABEL } from "@/lib/format";
+import { dealHealth, parsePv } from "@/lib/insights";
+import { Avatar, Badge, Field, PageHeader, Progress, Tabs } from "@/components/ui";
+import { ToDoForm } from "@/components/forms";
+import { HealthDot, NextSteps } from "@/components/Insights";
+import { PvCalculator } from "@/components/PvCalculator";
+import { Timeline } from "@/components/Timeline";
+import { TodoList } from "@/components/TodoList";
+
+export async function generateMetadata({ params }: PageProps<"/opportunities/[name]">) {
+  const opp = await db().getOpportunity(decodeURIComponent((await params).name));
+  return { title: opp?.title ?? "Chance" };
+}
+
+export default async function OpportunityPage({ params, searchParams }: PageProps<"/opportunities/[name]">) {
+  const opp = await db().getOpportunity(decodeURIComponent((await params).name));
+  if (!opp) notFound();
+  const tab = (await searchParams).tab;
+  const todos = await db().listToDos({ filters: { reference_name: opp.name } });
+
+  const partyHref = opp.opportunity_from === "Lead" ? `/leads/${encodeURIComponent(opp.party_name)}` : `/customers/${encodeURIComponent(opp.party_name)}`;
+  const stageIdx = OPPORTUNITY_STAGES.indexOf(opp.sales_stage as (typeof OPPORTUNITY_STAGES)[number]);
+  const weighted = (opp.opportunity_amount * opp.probability) / 100;
+  const health = dealHealth(opp, todos);
+  const pv = parsePv(opp.title);
+  const isOpen = opp.status === "Open" || opp.status === "Quotation";
+  const base = `/opportunities/${encodeURIComponent(opp.name)}`;
+  const active = typeof tab === "string" && ["rechner", "aktivitaet"].includes(tab) ? tab : "aufgaben";
+  const days = daysUntil(opp.expected_closing);
+
+  return (
+    <>
+      <PageHeader title={opp.title ?? opp.name} crumbs={[{ href: "/opportunities", label: "Chancen" }]} actions={<Badge value={opp.status} label={LEAD_STATUS_LABEL[opp.status]} />} />
+      <div className="grid min-h-0 flex-1 xl:grid-cols-[1fr_320px]">
+        <div className="min-w-0 px-8 py-7">
+          {/* Datensatzkopf */}
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div className="min-w-0">
+              <h2 className="text-[22px] font-semibold tracking-[-0.02em] text-gray-900">{opp.title ?? opp.name}</h2>
+              <p className="mt-0.5 text-gray-500">
+                <Link href={partyHref} className="text-gray-700 hover:underline">
+                  {opp.customer_name ?? opp.party_name}
+                </Link>
+                {opp.opportunity_owner && <> · betreut von {personName(opp.opportunity_owner)}</>}
+              </p>
+            </div>
+            <div className="text-right">
+              <div className="tnum text-[26px] font-semibold leading-none tracking-[-0.02em] text-gray-900">{money(opp.opportunity_amount, opp.currency)}</div>
+              <div className="tnum mt-1.5 text-[12px] text-gray-500">gewichtet {money(weighted, opp.currency)}</div>
+            </div>
+          </div>
+
+          {/* Phasenleiste */}
+          <ol className="mt-7 grid grid-cols-5 gap-1.5">
+            {OPPORTUNITY_STAGES.map((s, i) => {
+              const reached = i <= stageIdx;
+              const current = i === stageIdx;
+              return (
+                <li key={s}>
+                  <div className={`h-1.5 rounded-full ${reached ? "bg-brand-600" : "bg-gray-150"}`} />
+                  <div className={`mt-2 truncate text-[12px] ${current ? "font-semibold text-gray-900" : reached ? "text-gray-700" : "text-gray-400"}`}>
+                    {i + 1}. {STAGE_LABEL[s]}
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
+
+          {isOpen && health.hints.length > 0 && (
+            <div className="mt-7">
+              <NextSteps hints={health.hints} title="Deal-Check" />
+            </div>
+          )}
+
+          <div className="mt-6">
+            <Tabs
+              base={base}
+              active={active}
+              tabs={[
+                { id: "aufgaben", label: "Aufgaben", count: todos.filter((t) => t.status === "Open").length },
+                { id: "rechner", label: "PV-Rechner" },
+                { id: "aktivitaet", label: "Aktivität" },
+              ]}
+            />
+          </div>
+
+          <div className="pt-6">
+            {active === "aufgaben" && (
+              <div className="grid gap-4">
+                <ToDoForm referenceType="Opportunity" referenceName={opp.name} compact />
+                <div className="overflow-hidden rounded-lg border border-gray-200">
+                  <TodoList todos={todos} empty="Noch kein nächster Schritt geplant." />
+                </div>
+              </div>
+            )}
+            {active === "rechner" && <PvCalculator kwp={pv.kwp} storage={pv.storage} invest={opp.opportunity_amount} />}
+            {active === "aktivitaet" && <Timeline doctype="Opportunity" name={opp.name} />}
+          </div>
+        </div>
+
+        {/* Eigenschaften */}
+        <aside className="border-t border-gray-150 bg-gray-25 px-6 py-7 xl:border-l xl:border-t-0">
+          <div className="mb-2 text-[12px] font-medium text-gray-500">Eigenschaften</div>
+          <dl>
+            <Field label="Zustand">{isOpen ? <HealthDot h={health} /> : <Badge value={opp.status} label={LEAD_STATUS_LABEL[opp.status]} />}</Field>
+            <Field label="Phase">{STAGE_LABEL[opp.sales_stage] ?? opp.sales_stage}</Field>
+            <Field label="Auftragswert">
+              <span className="tnum">{money(opp.opportunity_amount, opp.currency)}</span>
+            </Field>
+            <Field label="Wahrscheinl.">
+              <span className="flex items-center gap-2">
+                <Progress value={opp.probability} className="w-16" />
+                <span className="tnum">{opp.probability} %</span>
+              </span>
+            </Field>
+            <Field label="Abschluss">
+              {opp.expected_closing && (
+                <>
+                  {date(opp.expected_closing)}
+                  {days !== undefined && <span className={`ml-1.5 text-[12px] ${days < 0 ? "text-rose-600" : "text-gray-400"}`}>{days < 0 ? `${-days} T über` : `in ${days} T`}</span>}
+                </>
+              )}
+            </Field>
+            <Field label={opp.opportunity_from === "Lead" ? "Lead" : "Kunde"}>
+              <Link href={partyHref} className="hover:underline">
+                {opp.customer_name ?? opp.party_name}
+              </Link>
+            </Field>
+            <Field label="Berater">
+              {opp.opportunity_owner && (
+                <span className="flex items-center gap-2">
+                  <Avatar name={opp.opportunity_owner} size="xs" /> {personName(opp.opportunity_owner)}
+                </span>
+              )}
+            </Field>
+            <Field label="Angelegt">{date(opp.creation)}</Field>
+            <Field label="Geändert">{date(opp.modified)}</Field>
+            <Field label="ID">
+              <span className="font-mono text-[12px] text-gray-500">{opp.name}</span>
+            </Field>
+          </dl>
+        </aside>
+      </div>
+    </>
+  );
+}

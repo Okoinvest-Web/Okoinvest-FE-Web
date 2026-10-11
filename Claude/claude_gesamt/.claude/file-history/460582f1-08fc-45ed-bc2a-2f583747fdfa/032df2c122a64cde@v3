@@ -1,0 +1,89 @@
+import re
+from docx import Document
+from docx.shared import Pt, RGBColor, Cm
+
+OUT = "INTERN_Antworten_Journalistenfragen.docx"
+ACCENT = RGBColor(0x1F, 0x4E, 0x3D)
+PH = RGBColor(0xC0, 0x00, 0x00)
+RED = RGBColor(0xB0, 0x00, 0x00)
+
+doc = Document()
+s = doc.sections[0]
+s.left_margin = s.right_margin = Cm(2.2)
+s.top_margin = s.bottom_margin = Cm(1.6)
+doc.styles["Normal"].font.name = "Calibri"
+doc.styles["Normal"].font.size = Pt(10.5)
+
+
+def add(p, text, bold=False, color=None, size=None, italic=False):
+    for part in re.split(r"(\[[^\]]+\])", text):
+        if not part:
+            continue
+        r = p.add_run(part)
+        r.bold, r.italic = bold, italic
+        if size:
+            r.font.size = Pt(size)
+        if part.startswith("["):
+            r.font.color.rgb, r.bold = PH, True
+        elif color:
+            r.font.color.rgb = color
+    return p
+
+
+add(doc.add_paragraph(), "INTERN – NICHT WEITERGEBEN", bold=True, color=RED, size=10)
+add(doc.add_paragraph(), "Antworten auf erwartbare Journalistenfragen", bold=True, color=ACCENT, size=17)
+add(doc.add_paragraph(), "Grundregel: Kurz antworten, dann mit „Entscheidend ist …“ zurück zur Dachbotschaft: „Partner auf "
+    "dem Papier – Konkurrent am selben Tag.“ Nie über das WKStA-Verfahren spekulieren, nie Personen namentlich angreifen, "
+    "nie Beträge aus Vergleichsgesprächen nennen.", italic=True)
+
+qa = [
+    ("„Die Salzburg AG sagt, es ist ein Gesellschafterstreit.“",
+     "Das Oberlandesgericht München hat das Vorgehen der Salzburg AG bei der Generalversammlung treuwidrig genannt. "
+     "Treuwidrig ist kein Streit, das ist ein Befund. Entscheidend ist: Am selben Tag, an dem sie uns zusagte, Wettbewerb "
+     "zu vermeiden, hat sie ihre eigene Konkurrenz gegründet."),
+    ("„Im Syndikatsvertrag steht, dass die Salzburg AG keinem Wettbewerbsverbot unterliegt.“",
+     "Richtig. Es gab etwas Stärkeres: die schriftliche Zusage, Wettbewerbssituationen zu vermeiden und uns als bevorzugten "
+     "Partner heranzuziehen. Das Oberlandesgericht hat festgehalten, dass wir dieses Verhalten auch ohne Wettbewerbsverbot "
+     "nicht hinnehmen müssen."),
+    ("„Das waren doch nur Eilverfahren.“",
+     "Die Salzburg AG hat alle drei verloren, und ihre Rügen wurden abgewiesen. Wir sehen der Hauptverhandlung mit Zuversicht entgegen."),
+    ("„Die Staatsanwaltschaft Ried hat das Verfahren gegen den früheren Geschäftsführer eingestellt.“",
+     "Das Oberlandesgericht München hat den Sachverhalt im Zivilverfahren anders gewürdigt. Zu Strafverfahren äußern wir "
+     "uns nicht; es gilt die Unschuldsvermutung."),
+    ("„Sie haben 17 Personen angezeigt, die WKStA hat das meiste nicht verfolgt.“",
+     "Das Landesgericht für Strafsachen Wien hat der WKStA aufgetragen, zum Hofer-Sachverhalt Ermittlungen einzuleiten. "
+     "Zum Verfahren sagen wir nichts. Unsere öffentlichen Aussagen stützen sich auf Verträge, Register und Urteile."),
+    ("„Es geht Ihnen doch nur um viel Geld.“",
+     "Es geht darum, dass ein Landesunternehmen einem heimischen Betrieb, dem es Partnerschaft zugesagt hatte, einen "
+     "Auftrag weggenommen hat. Über den Schaden entscheiden Gerichte, nicht Presseaussendungen."),
+    ("„Der Auslöser war Ihre Weigerung, das Nominierungsrecht der Salzburg AG anzuerkennen.“",
+     "Das Oberlandesgericht hat sich mit dem Verhalten des von der Salzburg AG nominierten Geschäftsführers befasst. "
+     "Das Ergebnis kennen Sie."),
+    ("„Sollten Vorstand oder Aufsichtsrat zurücktreten?“",
+     "Das entscheiden die Eigentümer. Wir erwarten keine Entschuldigung, sondern eine unabhängige Prüfung. Wer sie "
+     "anordnet, zeigt Verantwortung."),
+    ("„Wer ist beschuldigt?“",
+     "Dazu sagen wir nichts. Es läuft ein Ermittlungsverfahren, und es gilt die Unschuldsvermutung."),
+    ("„Hat die Salzburg AG vor Gericht etwas eingeräumt?“",
+     "Wir verweisen auf die Urteile des Oberlandesgerichts München, die wir Ihnen gern zur Verfügung stellen. "
+     "[Nur wenn das Protokoll LG Memmingen 19.11.2025 es wörtlich trägt, konkreter werden.]"),
+]
+for q, a in qa:
+    p = doc.add_paragraph()
+    p.paragraph_format.space_before = Pt(6)
+    p.paragraph_format.space_after = Pt(1)
+    add(p, "Frage: ", bold=True, color=ACCENT)
+    add(p, q, bold=True)
+    p = doc.add_paragraph()
+    p.paragraph_format.left_indent = Cm(0.5)
+    add(p, "Antwort: ", bold=True, color=ACCENT)
+    add(p, a)
+
+add(doc.add_paragraph(), "\nDie drei Sätze, die in jedem Gespräch fallen sollen:", bold=True, color=ACCENT)
+for line in ["„Partner auf dem Papier – Konkurrent am selben Tag.“",
+             "„Dreimal vor dem Oberlandesgericht verloren – treuwidrig ist kein Streit, das ist ein Befund.“",
+             "„Wer nichts zu verbergen hat, klärt auf.“"]:
+    add(doc.add_paragraph(style="List Bullet"), line, bold=True)
+
+doc.save(OUT)
+print("ok")

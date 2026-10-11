@@ -1,0 +1,475 @@
+/**
+ * DocTypes für Betrieb, Firewall-Ebenen, Security, Dokumentation und Leitstand.
+ *
+ * Gleiche Regeln wie in fixtures.js: englische Namen, deutsche Oberfläche,
+ * ausschliesslich erfundene Testdaten, keine Geheimnisse. `Access Reference`
+ * enthält nur Verweise auf Passbolt - nie ein Passwort (CLAUDE.md 4 und 6.4).
+ */
+import { defineDoctype } from './db.js'
+import { stundenVersetzt, tageVersetzt } from './zeit.js'
+
+const AT = 'TEN-0001'
+const DE = 'TEN-0002'
+
+// --- Firewall-Ebenen (Fachkonzept 2.4) -------------------------------------
+
+defineDoctype('Firewall Instance', {
+  naming: (doc) => doc.instance_name,
+  titleField: 'instance_name',
+  fields: ['instance_name', 'device', 'layer', 'path_order', 'vendor', 'rule_count', 'scope_prefixes'],
+  seed: [
+    {
+      instance_name: 'FW-OS-01',
+      device: 'FW-OS-01',
+      layer: 'perimeter',
+      path_order: 1,
+      vendor: 'OPNsense',
+      // Der Perimeter liegt in jedem Pfad.
+      scope_prefixes: ['0.0.0.0/0'],
+      tenant: AT,
+      description: 'Perimeter. Nur Lesezugriff – Änderungen ausschließlich manuell.',
+    },
+    {
+      instance_name: 'FW-NS-INT',
+      device: null,
+      layer: 'internal',
+      path_order: 2,
+      vendor: 'NethSecurity',
+      // Liegt nur zwischen Client-, Server- und Managementnetz.
+      scope_prefixes: ['10.10.10.0/24', '10.10.20.0/24', '10.10.30.0/23'],
+      tenant: AT,
+      description: 'Interne Ebene zwischen Client- und Servernetzen.',
+    },
+    {
+      instance_name: 'FW-HOST-PVE',
+      device: 'SRV-PVE-01',
+      layer: 'host',
+      path_order: 3,
+      vendor: 'nftables',
+      // Nur Verkehr, der am Hypervisor selbst ankommt.
+      scope_prefixes: ['10.10.20.0/24'],
+      tenant: AT,
+      description: 'Hostfirewall der Virtualisierung.',
+    },
+  ],
+})
+
+/**
+ * Regeln in normalisierter Form (Fachkonzept 2.4): Quelle, Ziel, Dienst,
+ * Aktion, Reihenfolge – Aliase sind bereits aufgelöst.
+ * `justification`, `responsible`, `ticket` und `review_date` sind fachliche
+ * Pflichtfelder; fehlen sie, meldet die Regel-Hygiene das.
+ */
+defineDoctype('Firewall Rule', {
+  naming: (doc, i) => 'FWR-' + String(i).padStart(5, '0'),
+  titleField: 'rule_name',
+  fields: [
+    'firewall', 'rule_index', 'rule_name', 'action', 'direction', 'interface',
+    'source_prefix', 'destination_prefix', 'protocol', 'port_from', 'port_to',
+    'enabled', 'justification', 'responsible', 'ticket', 'review_date', 'hit_count',
+  ],
+  seed: [
+    // Perimeter
+    { firewall: 'FW-OS-01', rule_index: 10, rule_name: 'Internet → DMZ Web', action: 'allow', direction: 'in', interface: 'igb0', source_prefix: '0.0.0.0/0', destination_prefix: '10.10.70.0/24', protocol: 'tcp', port_from: 443, port_to: 443, enabled: 1, justification: 'Öffentliche Webdienste', responsible: 'benny.hoefler@oekovolt.test', ticket: 'TCK-1001', review_date: tageVersetzt(120), hit_count: 184203, tenant: AT },
+    { firewall: 'FW-OS-01', rule_index: 20, rule_name: 'Management → alle', action: 'allow', direction: 'in', interface: 'ix0', source_prefix: '10.10.10.0/24', destination_prefix: '0.0.0.0/0', protocol: 'any', port_from: 0, port_to: 65535, enabled: 1, justification: 'Administration aus dem Managementnetz', responsible: 'benny.hoefler@oekovolt.test', ticket: 'TCK-1002', review_date: tageVersetzt(-40), hit_count: 92311, tenant: AT, description: 'Review überfällig.' },
+    { firewall: 'FW-OS-01', rule_index: 30, rule_name: 'Clients → Server', action: 'allow', direction: 'in', interface: 'ix0', source_prefix: '10.10.30.0/23', destination_prefix: '10.10.20.0/24', protocol: 'tcp', port_from: 1, port_to: 65535, enabled: 1, justification: 'Arbeitsplätze auf Serverdienste', responsible: 'benny.hoefler@oekovolt.test', ticket: 'TCK-1003', review_date: tageVersetzt(200), hit_count: 4410293, tenant: AT },
+    { firewall: 'FW-OS-01', rule_index: 40, rule_name: 'Clients → OT (gesperrt)', action: 'deny', direction: 'in', interface: 'ix0', source_prefix: '10.10.30.0/23', destination_prefix: '10.100.0.0/16', protocol: 'any', port_from: 0, port_to: 65535, enabled: 1, justification: 'OT-Trennung nach NIS2', responsible: 'benny.hoefler@oekovolt.test', ticket: 'TCK-1004', review_date: tageVersetzt(300), hit_count: 2041, tenant: AT },
+    { firewall: 'FW-OS-01', rule_index: 50, rule_name: 'Altlast Testnetz', action: 'allow', direction: 'in', interface: 'ix0', source_prefix: '10.10.150.0/24', destination_prefix: '0.0.0.0/0', protocol: 'any', port_from: 0, port_to: 65535, enabled: 1, justification: '', responsible: '', ticket: '', review_date: null, hit_count: 0, tenant: AT, description: 'Ohne Begründung, ohne Treffer – Kandidat zum Abräumen.' },
+    { firewall: 'FW-OS-01', rule_index: 60, rule_name: 'Leitstand → SOC', action: 'allow', direction: 'in', interface: 'ix0', source_prefix: '10.10.90.0/24', destination_prefix: '10.10.80.0/24', protocol: 'tcp', port_from: 443, port_to: 443, enabled: 1, justification: 'Anzeigegeräte lesen die Plattform', responsible: 'benny.hoefler@oekovolt.test', ticket: 'TCK-1010', review_date: tageVersetzt(90), hit_count: 88120, tenant: AT },
+    { firewall: 'FW-OS-01', rule_index: 70, rule_name: 'Alles verwerfen', action: 'deny', direction: 'in', interface: 'any', source_prefix: '0.0.0.0/0', destination_prefix: '0.0.0.0/0', protocol: 'any', port_from: 0, port_to: 65535, enabled: 1, justification: 'Grundregel', responsible: 'benny.hoefler@oekovolt.test', ticket: 'TCK-1000', review_date: tageVersetzt(365), hit_count: 771002, tenant: AT },
+
+    // Interne Ebene
+    { firewall: 'FW-NS-INT', rule_index: 10, rule_name: 'Clients → Server SMB', action: 'allow', direction: 'in', interface: 'lan', source_prefix: '10.10.30.0/23', destination_prefix: '10.10.20.0/24', protocol: 'tcp', port_from: 445, port_to: 445, enabled: 1, justification: 'Dateifreigaben', responsible: 'benny.hoefler@oekovolt.test', ticket: 'TCK-2001', review_date: tageVersetzt(150), hit_count: 330122, tenant: AT },
+    { firewall: 'FW-NS-INT', rule_index: 20, rule_name: 'Clients → Server HTTPS', action: 'allow', direction: 'in', interface: 'lan', source_prefix: '10.10.30.0/23', destination_prefix: '10.10.20.0/24', protocol: 'tcp', port_from: 443, port_to: 443, enabled: 1, justification: 'ERP und Intranet', responsible: 'benny.hoefler@oekovolt.test', ticket: 'TCK-2002', review_date: tageVersetzt(150), hit_count: 1220331, tenant: AT },
+    { firewall: 'FW-NS-INT', rule_index: 30, rule_name: 'Management → Server', action: 'allow', direction: 'in', interface: 'lan', source_prefix: '10.10.10.0/24', destination_prefix: '10.10.20.0/24', protocol: 'any', port_from: 0, port_to: 65535, enabled: 1, justification: 'Administration', responsible: 'benny.hoefler@oekovolt.test', ticket: 'TCK-2003', review_date: tageVersetzt(60), hit_count: 51122, tenant: AT },
+    { firewall: 'FW-NS-INT', rule_index: 40, rule_name: 'Alles verwerfen', action: 'deny', direction: 'in', interface: 'any', source_prefix: '0.0.0.0/0', destination_prefix: '0.0.0.0/0', protocol: 'any', port_from: 0, port_to: 65535, enabled: 1, justification: 'Grundregel', responsible: 'benny.hoefler@oekovolt.test', ticket: 'TCK-2000', review_date: tageVersetzt(365), hit_count: 20331, tenant: AT },
+
+    // Hostebene
+    { firewall: 'FW-HOST-PVE', rule_index: 10, rule_name: 'Server-Netz → Hypervisor API', action: 'allow', direction: 'in', interface: 'vmbr0', source_prefix: '10.10.20.0/24', destination_prefix: '10.10.20.0/24', protocol: 'tcp', port_from: 8006, port_to: 8006, enabled: 1, justification: 'Proxmox-Oberfläche', responsible: 'benny.hoefler@oekovolt.test', ticket: 'TCK-3001', review_date: tageVersetzt(80), hit_count: 4102, tenant: AT },
+    { firewall: 'FW-HOST-PVE', rule_index: 20, rule_name: 'Management → SSH', action: 'allow', direction: 'in', interface: 'vmbr0', source_prefix: '10.10.10.0/24', destination_prefix: '10.10.20.0/24', protocol: 'tcp', port_from: 22, port_to: 22, enabled: 1, justification: 'Wartungszugang', responsible: 'benny.hoefler@oekovolt.test', ticket: 'TCK-3002', review_date: tageVersetzt(45), hit_count: 812, tenant: AT },
+    { firewall: 'FW-HOST-PVE', rule_index: 25, rule_name: 'Clients → ERP', action: 'allow', direction: 'in', interface: 'vmbr0', source_prefix: '10.10.30.0/23', destination_prefix: '10.10.20.0/24', protocol: 'tcp', port_from: 443, port_to: 443, enabled: 1, justification: 'Arbeitsplätze auf ERPNext', responsible: 'benny.hoefler@oekovolt.test', ticket: 'TCK-3003', review_date: tageVersetzt(120), hit_count: 998221, tenant: AT },
+    { firewall: 'FW-HOST-PVE', rule_index: 30, rule_name: 'Alles verwerfen', action: 'deny', direction: 'in', interface: 'any', source_prefix: '0.0.0.0/0', destination_prefix: '0.0.0.0/0', protocol: 'any', port_from: 0, port_to: 65535, enabled: 1, justification: 'Grundregel', responsible: 'benny.hoefler@oekovolt.test', ticket: 'TCK-3000', review_date: tageVersetzt(365), hit_count: 9912, tenant: AT },
+  ],
+})
+
+// --- Konnektoren und Drift (Fachkonzept 2.10, Kap. 5) ----------------------
+
+defineDoctype('Connector', {
+  naming: (doc) => doc.connector_name,
+  titleField: 'connector_name',
+  fields: ['connector_name', 'kind', 'target', 'enabled', 'read_only', 'interval_minutes', 'last_run', 'last_status', 'api_version'],
+  seed: [
+    { connector_name: 'opnsense-fw-os-01', kind: 'opnsense', target: 'FW-OS-01', enabled: 1, read_only: 1, interval_minutes: 15, last_run: stundenVersetzt(-0.3), last_status: 'ok', api_version: '24.7', tenant: AT, description: 'Nur Lese-Token. Schreibzugriff auf den Perimeter ist ausgeschlossen.' },
+    { connector_name: 'proxmox-ve-cluster', kind: 'proxmox-ve', target: 'SRV-PVE-01', enabled: 1, read_only: 1, interval_minutes: 10, last_run: stundenVersetzt(-0.1), last_status: 'ok', api_version: '8.2', tenant: AT },
+    { connector_name: 'pbs-srv-pbs-01', kind: 'pbs', target: 'SRV-PBS-01', enabled: 1, read_only: 1, interval_minutes: 30, last_run: stundenVersetzt(-1.2), last_status: 'warning', api_version: '3.2', tenant: AT, description: 'Token ohne Lösch- und Prune-Rechte.' },
+    { connector_name: 'truenas-nas-tn-01', kind: 'truenas', target: 'NAS-TN-01', enabled: 0, read_only: 1, interval_minutes: 60, last_run: null, last_status: 'disabled', api_version: '24.04', tenant: AT, description: 'Noch nicht freigeschaltet.' },
+  ],
+})
+
+defineDoctype('Connector Run', {
+  naming: (doc, i) => 'RUN-' + String(i).padStart(6, '0'),
+  titleField: 'connector',
+  fields: ['connector', 'started', 'finished', 'run_status', 'objects_read', 'findings', 'duration_ms', 'message'],
+  seed: [
+    { connector: 'opnsense-fw-os-01', started: stundenVersetzt(-0.3), finished: stundenVersetzt(-0.29), run_status: 'ok', objects_read: 214, findings: 2, duration_ms: 1840, message: '', tenant: AT },
+    { connector: 'opnsense-fw-os-01', started: stundenVersetzt(-0.55), finished: stundenVersetzt(-0.54), run_status: 'ok', objects_read: 214, findings: 2, duration_ms: 1755, message: '', tenant: AT },
+    { connector: 'proxmox-ve-cluster', started: stundenVersetzt(-0.1), finished: stundenVersetzt(-0.09), run_status: 'ok', objects_read: 46, findings: 1, duration_ms: 910, message: '', tenant: AT },
+    { connector: 'pbs-srv-pbs-01', started: stundenVersetzt(-1.2), finished: stundenVersetzt(-1.19), run_status: 'warning', objects_read: 18, findings: 3, duration_ms: 2210, message: 'Ein Verify-Auftrag ohne Ergebnis', tenant: AT },
+    { connector: 'pbs-srv-pbs-01', started: stundenVersetzt(-1.7), finished: stundenVersetzt(-1.69), run_status: 'ok', objects_read: 18, findings: 2, duration_ms: 2010, message: '', tenant: AT },
+  ],
+})
+
+defineDoctype('Raw Snapshot', {
+  naming: (doc, i) => 'SNAP-' + String(i).padStart(6, '0'),
+  titleField: 'connector',
+  fields: ['connector', 'run', 'captured', 'payload_hash', 'size_bytes', 'format'],
+  seed: [
+    { connector: 'opnsense-fw-os-01', run: 'RUN-000001', captured: stundenVersetzt(-0.3), payload_hash: 'e2b1c0a9f4d3', size_bytes: 184322, format: 'json', tenant: AT },
+    { connector: 'proxmox-ve-cluster', run: 'RUN-000003', captured: stundenVersetzt(-0.1), payload_hash: '77ac1d5e9b02', size_bytes: 40211, format: 'json', tenant: AT },
+    { connector: 'pbs-srv-pbs-01', run: 'RUN-000004', captured: stundenVersetzt(-1.2), payload_hash: '5f0e77bb2c18', size_bytes: 22190, format: 'json', tenant: AT },
+  ],
+})
+
+/**
+ * Soll/Ist-Abweichungen. Der Konnektor schreibt nie ins Soll - er erzeugt
+ * genau diese Einträge (CLAUDE.md Abschnitt 5).
+ */
+defineDoctype('Drift Finding', {
+  naming: (doc, i) => 'DRIFT-' + String(i).padStart(5, '0'),
+  titleField: 'field',
+  fields: ['connector', 'object_type', 'object_name', 'field', 'soll_value', 'ist_value', 'finding_kind', 'state', 'detected', 'resolved'],
+  seed: [
+    { connector: 'opnsense-fw-os-01', object_type: 'Network Device', object_name: 'FW-OS-01', field: 'firmware', soll_value: 'OPNsense 24.7.11', ist_value: 'OPNsense 24.7.12', finding_kind: 'changed', state: 'open', detected: stundenVersetzt(-0.3), tenant: AT },
+    { connector: 'opnsense-fw-os-01', object_type: 'IP Address', object_name: '10.10.30.44/24', field: 'existence', soll_value: '', ist_value: 'DHCP-Lease aktiv', finding_kind: 'unknown_object', state: 'open', detected: stundenVersetzt(-0.3), tenant: AT, description: 'Gerät im Clientnetz, das nicht dokumentiert ist.' },
+    { connector: 'proxmox-ve-cluster', object_type: 'Device Interface', object_name: 'IF-SRV-PVE-01-03', field: 'enabled', soll_value: '1', ist_value: '0', finding_kind: 'changed', state: 'open', detected: stundenVersetzt(-0.1), tenant: AT },
+    { connector: 'pbs-srv-pbs-01', object_type: 'Network Device', object_name: 'SRV-PBS-01', field: 'firmware', soll_value: 'PBS 3.2', ist_value: 'PBS 3.2.7', finding_kind: 'changed', state: 'accepted', detected: stundenVersetzt(-26), resolved: stundenVersetzt(-24), tenant: AT },
+    { connector: 'opnsense-fw-os-01', object_type: 'Network Device', object_name: 'SW-ACC-PA-01', field: 'existence', soll_value: 'dokumentiert', ist_value: 'nicht erreichbar', finding_kind: 'missing', state: 'rejected', detected: stundenVersetzt(-50), resolved: stundenVersetzt(-48), tenant: DE, description: 'Standort war im Umbau – kein Handlungsbedarf.' },
+  ],
+})
+
+// --- Alarme (Fachkonzept 2.8) ----------------------------------------------
+
+defineDoctype('Alert', {
+  naming: (doc, i) => 'ALR-' + String(i).padStart(6, '0'),
+  titleField: 'title',
+  fields: ['title', 'source', 'severity', 'object_type', 'object_name', 'alert_state', 'first_seen', 'last_seen', 'occurrences', 'mitre_technique', 'assignee'],
+  seed: [
+    { title: 'Mehrfach fehlgeschlagene Anmeldung', source: 'wazuh', severity: 'high', object_type: 'Network Device', object_name: 'SRV-PVE-01', alert_state: 'new', first_seen: stundenVersetzt(-2), last_seen: stundenVersetzt(-0.2), occurrences: 47, mitre_technique: 'T1110 Brute Force', tenant: AT },
+    { title: 'Blockierte Verbindung aus bekanntem Botnetz', source: 'crowdsec', severity: 'medium', object_type: 'Network Device', object_name: 'FW-OS-01', alert_state: 'ack', first_seen: stundenVersetzt(-8), last_seen: stundenVersetzt(-0.5), occurrences: 331, mitre_technique: 'T1595 Active Scanning', assignee: 'benny.hoefler@oekovolt.test', tenant: AT },
+    { title: 'Backup-Verify fehlgeschlagen', source: 'pbs', severity: 'critical', object_type: 'Network Device', object_name: 'SRV-PBS-01', alert_state: 'new', first_seen: stundenVersetzt(-1.2), last_seen: stundenVersetzt(-1.2), occurrences: 1, tenant: AT },
+    { title: 'Phishing im Postfach entfernt', source: 'ironscales', severity: 'high', object_type: 'Tenant', object_name: 'TEN-0001', alert_state: 'ack', first_seen: stundenVersetzt(-20), last_seen: stundenVersetzt(-19), occurrences: 4, mitre_technique: 'T1566 Phishing', assignee: 'benny.hoefler@oekovolt.test', tenant: AT },
+    { title: 'Signaturen veraltet', source: 'pmg', severity: 'medium', object_type: 'Tenant', object_name: 'TEN-0001', alert_state: 'closed', first_seen: stundenVersetzt(-70), last_seen: stundenVersetzt(-68), occurrences: 1, tenant: AT },
+    { title: 'Switchport unerwartet abgeschaltet', source: 'zabbix', severity: 'low', object_type: 'Network Device', object_name: 'SW-CORE-01', alert_state: 'new', first_seen: stundenVersetzt(-4), last_seen: stundenVersetzt(-4), occurrences: 1, tenant: AT },
+    { title: 'Ungewöhnlicher Datenabfluss', source: 'zenarmor', severity: 'high', object_type: 'Network Device', object_name: 'FW-OS-01', alert_state: 'new', first_seen: stundenVersetzt(-0.8), last_seen: stundenVersetzt(-0.6), occurrences: 12, mitre_technique: 'T1048 Exfiltration', tenant: AT },
+    { title: 'Agent offline', source: 'gravityzone', severity: 'medium', object_type: 'Network Device', object_name: 'SW-ACC-PA-01', alert_state: 'new', first_seen: stundenVersetzt(-30), last_seen: stundenVersetzt(-0.4), occurrences: 8, tenant: DE },
+  ],
+})
+
+// --- Backup (Fachkonzept 2.5) ----------------------------------------------
+
+defineDoctype('Backup Datastore', {
+  naming: (doc) => doc.datastore_name,
+  titleField: 'datastore_name',
+  fields: ['datastore_name', 'server', 'used_pct', 'total_tb', 'growth_gb_per_day', 'namespaces'],
+  seed: [
+    { datastore_name: 'ds-main', server: 'SRV-PBS-01', used_pct: 63.4, total_tb: 40, growth_gb_per_day: 42, namespaces: 3, tenant: AT },
+    { datastore_name: 'ds-offsite', server: 'SRV-PBS-01', used_pct: 84.1, total_tb: 20, growth_gb_per_day: 18, namespaces: 1, tenant: AT, description: 'Offsite-Ziel. Über 80 % – Erweiterung planen.' },
+  ],
+})
+
+/**
+ * Sicherungsstand je Dienst. Ein Backup gilt erst als gültig, wenn es
+ * verifiziert ist (Fachkonzept 2.5) - deshalb ist `verify_status` Pflichtfeld
+ * der Ampel und nicht nur Beiwerk.
+ */
+defineDoctype('Backup Object', {
+  naming: (doc) => doc.backup_object,
+  titleField: 'backup_object',
+  fields: ['backup_object', 'service', 'datastore', 'last_backup', 'last_verify', 'verify_status', 'protected', 'size_gb', 'offsite_age_hours'],
+  seed: [
+    { backup_object: 'vm/101-erp', service: 'ERPNext', datastore: 'ds-main', last_backup: stundenVersetzt(-6), last_verify: stundenVersetzt(-6), verify_status: 'ok', protected: 1, size_gb: 420, offsite_age_hours: 12, tenant: AT },
+    { backup_object: 'vm/102-bmd', service: 'BMD', datastore: 'ds-main', last_backup: stundenVersetzt(-7), last_verify: stundenVersetzt(-7), verify_status: 'ok', protected: 1, size_gb: 260, offsite_age_hours: 12, tenant: AT },
+    { backup_object: 'vm/103-dc01', service: 'Verzeichnisdienst', datastore: 'ds-main', last_backup: stundenVersetzt(-5), last_verify: stundenVersetzt(-30), verify_status: 'failed', protected: 0, size_gb: 90, offsite_age_hours: 30, tenant: AT, description: 'Verify fehlgeschlagen – Backup gilt als ungültig.' },
+    { backup_object: 'vm/104-mail', service: 'Mailrelay', datastore: 'ds-main', last_backup: stundenVersetzt(-40), last_verify: stundenVersetzt(-40), verify_status: 'ok', protected: 0, size_gb: 55, offsite_age_hours: 40, tenant: AT, description: 'Älter als 24 Stunden.' },
+    { backup_object: 'ct/201-monitoring', service: 'Zabbix', datastore: 'ds-main', last_backup: stundenVersetzt(-9), last_verify: stundenVersetzt(-9), verify_status: 'ok', protected: 0, size_gb: 30, offsite_age_hours: 200, tenant: AT, description: 'Kein aktueller Offsite-Stand.' },
+    { backup_object: 'vm/105-scada', service: 'SCADA', datastore: 'ds-offsite', last_backup: stundenVersetzt(-3), last_verify: stundenVersetzt(-3), verify_status: 'ok', protected: 1, size_gb: 180, offsite_age_hours: 8, tenant: AT },
+    { backup_object: 'vm/301-web-de', service: 'Website DE', datastore: 'ds-main', last_backup: null, last_verify: null, verify_status: 'none', protected: 0, size_gb: 0, offsite_age_hours: null, tenant: DE, description: 'Noch nie gesichert.' },
+  ],
+})
+
+// --- Security (Fachkonzept 2.13) -------------------------------------------
+
+defineDoctype('Vulnerability', {
+  naming: (doc, i) => 'VUL-' + String(i).padStart(5, '0'),
+  titleField: 'cve',
+  fields: ['cve', 'title', 'object_type', 'object_name', 'cvss', 'epss', 'kev', 'source', 'vuln_state', 'detected', 'due_date', 'fixed_date'],
+  seed: [
+    { cve: 'CVE-2026-1001', title: 'Authentifizierungsumgehung in der Weboberfläche', object_type: 'Network Device', object_name: 'FW-OS-01', cvss: 9.8, epss: 0.72, kev: 1, source: 'greenbone', vuln_state: 'open', detected: tageVersetzt(-1), due_date: tageVersetzt(2), tenant: AT },
+    { cve: 'CVE-2026-1042', title: 'Rechteausweitung im Kernel', object_type: 'Network Device', object_name: 'SRV-PVE-01', cvss: 8.1, epss: 0.21, kev: 0, source: 'wazuh', vuln_state: 'open', detected: tageVersetzt(-4), due_date: tageVersetzt(3), tenant: AT },
+    { cve: 'CVE-2026-0880', title: 'Veraltete TLS-Bibliothek', object_type: 'Network Device', object_name: 'SRV-PVE-02', cvss: 7.5, epss: 0.08, kev: 0, source: 'patchmon', vuln_state: 'open', detected: tageVersetzt(-12), due_date: tageVersetzt(18), tenant: AT },
+    { cve: 'CVE-2025-9912', title: 'Denial of Service im Switch-Webserver', object_type: 'Network Device', object_name: 'SW-ACC-PA-01', cvss: 6.5, epss: 0.03, kev: 0, source: 'greenbone', vuln_state: 'open', detected: tageVersetzt(-40), due_date: tageVersetzt(-10), tenant: DE, description: 'Frist überschritten.' },
+    { cve: 'CVE-2025-7710', title: 'Cross-Site-Scripting in der Verwaltung', object_type: 'Network Device', object_name: 'NAS-TN-01', cvss: 5.4, epss: 0.01, kev: 0, source: 'greenbone', vuln_state: 'fixed', detected: tageVersetzt(-60), due_date: tageVersetzt(-30), fixed_date: tageVersetzt(-35), tenant: AT },
+    { cve: 'CVE-2025-5501', title: 'Informationsleck im SNMP-Dienst', object_type: 'Network Device', object_name: 'SW-CORE-01', cvss: 4.3, epss: 0.02, kev: 0, source: 'greenbone', vuln_state: 'accepted_risk', detected: tageVersetzt(-90), due_date: tageVersetzt(-60), tenant: AT, description: 'Ausnahme bis Firmwarewechsel, begründet und befristet.' },
+  ],
+})
+
+defineDoctype('Incident', {
+  naming: (doc, i) => 'INC-' + String(i).padStart(5, '0'),
+  titleField: 'title',
+  fields: ['title', 'severity', 'incident_state', 'opened', 'closed', 'reporter', 'affected_objects', 'nis2_early_warning_due', 'nis2_report_due', 'gdpr_due', 'summary'],
+  seed: [
+    {
+      title: 'Verdächtige Anmeldeversuche auf Hypervisor',
+      severity: 'high',
+      incident_state: 'analysis',
+      opened: stundenVersetzt(-3),
+      reporter: 'benny.hoefler@oekovolt.test',
+      affected_objects: 'SRV-PVE-01',
+      nis2_early_warning_due: stundenVersetzt(21),
+      nis2_report_due: stundenVersetzt(69),
+      tenant: AT,
+      summary: 'Wazuh meldet 47 fehlgeschlagene Anmeldungen aus dem Clientnetz.',
+    },
+    {
+      title: 'Phishingwelle an Buchhaltung',
+      severity: 'medium',
+      incident_state: 'contained',
+      opened: stundenVersetzt(-20),
+      reporter: 'benny.hoefler@oekovolt.test',
+      affected_objects: 'TEN-0001',
+      nis2_early_warning_due: stundenVersetzt(4),
+      nis2_report_due: stundenVersetzt(52),
+      gdpr_due: stundenVersetzt(52),
+      tenant: AT,
+      summary: 'Vier Postfächer betroffen, Nachrichten durch IRONSCALES entfernt.',
+    },
+    {
+      title: 'Ausfall Standortanbindung Passau',
+      severity: 'low',
+      incident_state: 'closed',
+      opened: stundenVersetzt(-200),
+      closed: stundenVersetzt(-190),
+      reporter: 'benny.hoefler@oekovolt.test',
+      affected_objects: 'SW-ACC-PA-01',
+      tenant: DE,
+      summary: 'Providerstörung, kein Sicherheitsvorfall.',
+    },
+  ],
+})
+
+// --- Dokumentation (Fachkonzept 2.6) ---------------------------------------
+
+defineDoctype('NetOps Document', {
+  naming: (doc, i) => 'DOC-' + String(i).padStart(5, '0'),
+  titleField: 'title',
+  fields: ['title', 'document_type', 'content', 'version', 'approval_state', 'approved_by', 'approved_on', 'review_date'],
+  seed: [
+    { title: 'Netzplan Zentrale Linz', document_type: 'network_plan', content: 'Segmentierung nach VLAN-Matrix, 18 Segmente. Perimeter FW-OS-01, interne Ebene FW-NS-INT.', version: 4, approval_state: 'approved', approved_by: 'benny.hoefler@oekovolt.test', approved_on: tageVersetzt(-30), review_date: tageVersetzt(150), tenant: AT },
+    { title: 'Runbook: Switch tauschen', document_type: 'runbook', content: 'Konfiguration sichern, Ports dokumentieren, Ersatzgerät vorbereiten, Umbau im Wartungsfenster.', version: 2, approval_state: 'approved', approved_by: 'benny.hoefler@oekovolt.test', approved_on: tageVersetzt(-80), review_date: tageVersetzt(100), tenant: AT },
+    { title: 'Notfallplan Ransomware', document_type: 'emergency_plan', content: 'Isolierung, Beweissicherung, Wiederanlauf aus unveränderbarem Backup, Meldefristen NIS2 und DSGVO.', version: 3, approval_state: 'approved', approved_by: 'benny.hoefler@oekovolt.test', approved_on: tageVersetzt(-12), review_date: tageVersetzt(-5), tenant: AT, description: 'Review überfällig.' },
+    { title: 'SOP: Firewallregel beantragen', document_type: 'sop', content: 'Antrag mit Begründung, Ticket, Risikobewertung, Freigabe im Vier-Augen-Prinzip, Umsetzung am Perimeter ausschließlich manuell.', version: 1, approval_state: 'review', review_date: tageVersetzt(40), tenant: AT },
+    { title: 'Wartungsprotokoll Rack A.01-R1', document_type: 'maintenance_log', content: 'Lüfterreinigung, Sichtprüfung Verkabelung, Kontrolle der Beschriftung.', version: 1, approval_state: 'draft', tenant: AT },
+    { title: 'Konfigurationsstand FW-OS-01', document_type: 'config_state', content: 'Stand nach Firmwarewechsel 24.7.11. Regelwerk 7 Regeln, davon eine ohne Begründung.', version: 7, approval_state: 'approved', approved_by: 'benny.hoefler@oekovolt.test', approved_on: tageVersetzt(-3), review_date: tageVersetzt(87), tenant: AT },
+  ],
+})
+
+/** Beziehungen zwischen beliebigen Objekten (Fachkonzept 2.6). */
+defineDoctype('Object Relation', {
+  naming: (doc, i) => 'REL-' + String(i).padStart(5, '0'),
+  titleField: 'relation_type',
+  fields: ['from_type', 'from_name', 'to_type', 'to_name', 'relation_type'],
+  seed: [
+    { from_type: 'NetOps Document', from_name: 'DOC-00001', to_type: 'Site', to_name: 'SITE-0001', relation_type: 'documents', tenant: AT },
+    { from_type: 'NetOps Document', from_name: 'DOC-00006', to_type: 'Network Device', to_name: 'FW-OS-01', relation_type: 'documents', tenant: AT },
+    { from_type: 'NetOps Document', from_name: 'DOC-00002', to_type: 'Device Role', to_name: 'Access Switch', relation_type: 'documents', tenant: AT },
+    { from_type: 'NetOps Document', from_name: 'DOC-00005', to_type: 'Rack', to_name: 'RACK-0001', relation_type: 'documents', tenant: AT },
+    { from_type: 'Network Device', from_name: 'SRV-PVE-01', to_type: 'Network Device', to_name: 'NAS-TN-01', relation_type: 'depends_on', tenant: AT },
+    { from_type: 'Network Device', from_name: 'SRV-PVE-02', to_type: 'Network Device', to_name: 'NAS-TN-01', relation_type: 'depends_on', tenant: AT },
+    { from_type: 'Backup Object', from_name: 'vm/101-erp', to_type: 'Network Device', to_name: 'SRV-PVE-01', relation_type: 'runs_on', tenant: AT },
+  ],
+})
+
+defineDoctype('Checklist Template', {
+  naming: (doc) => doc.template_name,
+  titleField: 'template_name',
+  fields: ['template_name', 'applies_to', 'items'],
+  seed: [
+    {
+      template_name: 'Gerät in Betrieb nehmen',
+      applies_to: 'Network Device',
+      items: [
+        { label: 'Seriennummer und Asset-Nr. erfasst', required: 1 },
+        { label: 'Rack und Höheneinheit dokumentiert', required: 1 },
+        { label: 'Management-IP vergeben und im IPAM eingetragen', required: 1 },
+        { label: 'Zugangsdaten in Passbolt hinterlegt, Verweis gesetzt', required: 1 },
+        { label: 'Firmware auf freigegebenem Stand', required: 1 },
+        { label: 'Monitoring und Wazuh-Agent aktiv', required: 0 },
+        { label: 'Verkabelung mit Label erfasst', required: 1 },
+      ],
+      tenant: AT,
+    },
+    {
+      template_name: 'Mitarbeiter offboarden',
+      applies_to: 'Tenant',
+      items: [
+        { label: 'Konto in Keycloak gesperrt', required: 1 },
+        { label: 'FIDO2-Token eingezogen', required: 1 },
+        { label: 'Postfach übergeben', required: 1 },
+        { label: 'VPN-Zugang entzogen', required: 1 },
+        { label: 'Hardware zurückgenommen', required: 0 },
+      ],
+      tenant: AT,
+    },
+    {
+      template_name: 'Firmware-Update durchführen',
+      applies_to: 'Network Device',
+      items: [
+        { label: 'Konfiguration gesichert', required: 1 },
+        { label: 'Wartungsfenster abgestimmt', required: 1 },
+        { label: 'Rückfallplan dokumentiert', required: 1 },
+        { label: 'Update eingespielt', required: 1 },
+        { label: 'Funktionsprüfung bestanden', required: 1 },
+        { label: 'Konfigurationsstand aktualisiert', required: 0 },
+      ],
+      tenant: AT,
+    },
+  ],
+})
+
+defineDoctype('Checklist Run', {
+  naming: (doc, i) => 'CHK-' + String(i).padStart(5, '0'),
+  titleField: 'template',
+  fields: ['template', 'object_type', 'object_name', 'run_state', 'started', 'finished', 'performed_by', 'items'],
+  seed: [
+    {
+      template: 'Gerät in Betrieb nehmen',
+      object_type: 'Network Device',
+      object_name: 'SW-ACC-PA-01',
+      run_state: 'open',
+      started: tageVersetzt(-2),
+      performed_by: 'benny.hoefler@oekovolt.test',
+      items: [
+        { label: 'Seriennummer und Asset-Nr. erfasst', required: 1, done: 1 },
+        { label: 'Rack und Höheneinheit dokumentiert', required: 1, done: 0 },
+        { label: 'Management-IP vergeben und im IPAM eingetragen', required: 1, done: 1 },
+        { label: 'Zugangsdaten in Passbolt hinterlegt, Verweis gesetzt', required: 1, done: 0 },
+        { label: 'Firmware auf freigegebenem Stand', required: 1, done: 0 },
+        { label: 'Monitoring und Wazuh-Agent aktiv', required: 0, done: 0 },
+        { label: 'Verkabelung mit Label erfasst', required: 1, done: 0 },
+      ],
+      tenant: DE,
+    },
+    {
+      template: 'Firmware-Update durchführen',
+      object_type: 'Network Device',
+      object_name: 'FW-OS-01',
+      run_state: 'done',
+      started: tageVersetzt(-4),
+      finished: tageVersetzt(-3),
+      performed_by: 'benny.hoefler@oekovolt.test',
+      items: [
+        { label: 'Konfiguration gesichert', required: 1, done: 1 },
+        { label: 'Wartungsfenster abgestimmt', required: 1, done: 1 },
+        { label: 'Rückfallplan dokumentiert', required: 1, done: 1 },
+        { label: 'Update eingespielt', required: 1, done: 1 },
+        { label: 'Funktionsprüfung bestanden', required: 1, done: 1 },
+        { label: 'Konfigurationsstand aktualisiert', required: 0, done: 1 },
+      ],
+      tenant: AT,
+    },
+  ],
+})
+
+defineDoctype('Contract', {
+  naming: (doc, i) => 'CON-' + String(i).padStart(5, '0'),
+  titleField: 'contract_name',
+  fields: ['contract_name', 'provider', 'start_date', 'end_date', 'notice_period_days', 'cost_per_year', 'auto_renew'],
+  seed: [
+    { contract_name: 'Internetanbindung WAN 1', provider: 'Magenta', start_date: tageVersetzt(-700), end_date: tageVersetzt(30), notice_period_days: 90, cost_per_year: 7200, auto_renew: 1, tenant: AT, description: 'Kündigungsfrist bereits verstrichen – verlängert sich automatisch.' },
+    { contract_name: 'Internetanbindung WAN 2', provider: 'Energie AG', start_date: tageVersetzt(-400), end_date: tageVersetzt(330), notice_period_days: 60, cost_per_year: 5400, auto_renew: 1, tenant: AT },
+    { contract_name: 'Hardwaresupport Server', provider: 'Dell', start_date: tageVersetzt(-1100), end_date: tageVersetzt(120), notice_period_days: 30, cost_per_year: 3100, auto_renew: 0, tenant: AT },
+    { contract_name: 'E-Mail-Sicherheit', provider: 'IRONSCALES', start_date: tageVersetzt(-200), end_date: tageVersetzt(165), notice_period_days: 30, cost_per_year: 4800, auto_renew: 1, tenant: AT },
+    { contract_name: 'Standortanbindung Passau', provider: 'Telekom', start_date: tageVersetzt(-300), end_date: tageVersetzt(65), notice_period_days: 90, cost_per_year: 3600, auto_renew: 1, tenant: DE, description: 'Frist läuft in Kürze ab.' },
+  ],
+})
+
+defineDoctype('License', {
+  naming: (doc, i) => 'LIC-' + String(i).padStart(5, '0'),
+  titleField: 'license_name',
+  fields: ['license_name', 'product', 'seats', 'expiry_date', 'assigned_to'],
+  seed: [
+    { license_name: 'Microsoft 365 Business Premium', product: 'M365', seats: 85, expiry_date: tageVersetzt(210), assigned_to: 'TEN-0001', tenant: AT },
+    { license_name: 'Bitdefender GravityZone', product: 'GravityZone', seats: 120, expiry_date: tageVersetzt(45), assigned_to: 'TEN-0001', tenant: AT },
+    { license_name: 'Proxmox Subscription', product: 'Proxmox VE', seats: 2, expiry_date: tageVersetzt(20), assigned_to: 'SRV-PVE-01', tenant: AT, description: 'Läuft demnächst ab.' },
+    { license_name: 'Greenbone Enterprise Feed', product: 'Greenbone', seats: 1, expiry_date: tageVersetzt(-8), assigned_to: 'TEN-0001', tenant: AT, description: 'Abgelaufen – derzeit Community Feed.' },
+  ],
+})
+
+/**
+ * Verweis auf einen Passbolt-Eintrag. Enthält bewusst nur Bezeichnung,
+ * ID und URL - niemals ein Geheimnis (CLAUDE.md Abschnitt 6.4).
+ */
+defineDoctype('Access Reference', {
+  naming: (doc, i) => 'ACC-' + String(i).padStart(5, '0'),
+  titleField: 'label',
+  fields: ['label', 'passbolt_id', 'passbolt_url', 'object_type', 'object_name', 'access_kind'],
+  seed: [
+    { label: 'FW-OS-01 Weboberfläche', passbolt_id: '0000-test-fw', passbolt_url: 'passbolt://res/0000-test-fw', object_type: 'Network Device', object_name: 'FW-OS-01', access_kind: 'web_ui', tenant: AT },
+    { label: 'SRV-PVE-01 root', passbolt_id: '0000-test-pve', passbolt_url: 'passbolt://res/0000-test-pve', object_type: 'Network Device', object_name: 'SRV-PVE-01', access_kind: 'ssh', tenant: AT },
+    { label: 'PBS API-Token (nur lesen)', passbolt_id: '0000-test-pbs', passbolt_url: 'passbolt://res/0000-test-pbs', object_type: 'Connector', object_name: 'pbs-srv-pbs-01', access_kind: 'api_token', tenant: AT },
+    { label: 'NAS-TN-01 Verwaltung', passbolt_id: '0000-test-nas', passbolt_url: 'passbolt://res/0000-test-nas', object_type: 'Network Device', object_name: 'NAS-TN-01', access_kind: 'web_ui', tenant: AT },
+  ],
+})
+
+// --- Leitstand (Fachkonzept 2.16) ------------------------------------------
+
+defineDoctype('Screen', {
+  naming: (doc) => 'screen' + doc.screen_no,
+  titleField: 'screen_title',
+  fields: ['screen_no', 'screen_title', 'tiles'],
+  seed: [
+    { screen_no: 1, screen_title: 'Gesamtlage', tiles: ['sites', 'critical_alerts', 'incidents', 'connectors'], tenant: AT },
+    { screen_no: 2, screen_title: 'Netzwerk-Topologie', tiles: ['topology', 'uplinks'], tenant: AT },
+    { screen_no: 3, screen_title: 'Firewall-Ebenen', tiles: ['blocks_by_layer', 'top_sources'], tenant: AT },
+    { screen_no: 4, screen_title: 'SIEM-Alarme', tiles: ['alert_feed', 'mitre'], tenant: AT },
+    { screen_no: 5, screen_title: 'E-Mail-Sicherheit', tiles: ['mail_flow', 'quarantine'], tenant: AT },
+    { screen_no: 6, screen_title: 'Server & Virtualisierung', tiles: ['hypervisors', 'storage'], tenant: AT },
+    { screen_no: 7, screen_title: 'Backup & Resilienz', tiles: ['backup_traffic_light', 'datastores'], tenant: AT },
+    { screen_no: 8, screen_title: 'Schwachstellen', tiles: ['vuln_by_severity', 'kev'], tenant: AT },
+    { screen_no: 9, screen_title: 'Externe Angriffsfläche', tiles: ['exposure', 'threat_intel'], tenant: AT },
+    { screen_no: 10, screen_title: 'Wachhund & Deception', tiles: ['watchdog', 'honeypot'], tenant: AT },
+  ],
+})
+
+/**
+ * Freigabe-Ablauf für die Anzeigegeräte (Fachkonzept 2.16).
+ *
+ * Achtung bei der Portierung: Der Mock bildet nur den Ablauf ab. Die
+ * eigentliche Absicherung - Subnetzprüfung, Ratenbegrenzung, gerätegebundenes
+ * HttpOnly-Cookie, FIDO2-Step-up - gehört zwingend ins Backend.
+ */
+defineDoctype('Screen Pairing Request', {
+  naming: (doc, i) => 'PAIR-' + String(i).padStart(5, '0'),
+  titleField: 'code',
+  fields: ['screen', 'code', 'client_ip', 'user_agent', 'pairing_state', 'requested', 'expires', 'approved_by', 'approved_on', 'revoked_on', 'last_heartbeat'],
+  seed: [
+    { screen: 'screen1', code: 'K7M-4QX', client_ip: '10.10.90.11', user_agent: 'Chromium Kiosk 131', pairing_state: 'approved', requested: stundenVersetzt(-200), expires: null, approved_by: 'benny.hoefler@oekovolt.test', approved_on: stundenVersetzt(-200), last_heartbeat: stundenVersetzt(-0.02), tenant: AT },
+    { screen: 'screen7', code: 'B3T-9PL', client_ip: '10.10.90.12', user_agent: 'Chromium Kiosk 131', pairing_state: 'approved', requested: stundenVersetzt(-96), expires: null, approved_by: 'benny.hoefler@oekovolt.test', approved_on: stundenVersetzt(-96), last_heartbeat: stundenVersetzt(-0.3), tenant: AT },
+    { screen: 'screen4', code: 'R5X-2WD', client_ip: '10.10.90.13', user_agent: 'Chromium Kiosk 131', pairing_state: 'pending', requested: stundenVersetzt(-0.03), expires: stundenVersetzt(0.05), tenant: AT },
+    { screen: 'screen2', code: 'Q8N-1HV', client_ip: '10.10.30.77', user_agent: 'Firefox 142', pairing_state: 'rejected', requested: stundenVersetzt(-30), expires: stundenVersetzt(-29.9), tenant: AT, description: 'Anfrage kam nicht aus dem Leitstand-VLAN.' },
+    { screen: 'screen3', code: 'Z2K-6MS', client_ip: '10.10.90.14', user_agent: 'Chromium Kiosk 130', pairing_state: 'revoked', requested: stundenVersetzt(-400), approved_by: 'benny.hoefler@oekovolt.test', approved_on: stundenVersetzt(-400), revoked_on: stundenVersetzt(-20), tenant: AT },
+  ],
+})
+
+// --- Audit (CLAUDE.md Abschnitt 4) -----------------------------------------
+
+/**
+ * Append-only. Der Mock-Server verweigert set_value und delete für diesen
+ * DocType; die Einträge entstehen beim Seeden und bei jedem Schreibvorgang.
+ */
+defineDoctype('Audit Entry', {
+  naming: (doc, i) => 'AUD-' + String(i).padStart(6, '0'),
+  titleField: 'action',
+  fields: ['timestamp', 'user', 'action', 'object_type', 'object_name', 'payload_hash', 'prev_hash', 'entry_hash'],
+  seed: [],
+})

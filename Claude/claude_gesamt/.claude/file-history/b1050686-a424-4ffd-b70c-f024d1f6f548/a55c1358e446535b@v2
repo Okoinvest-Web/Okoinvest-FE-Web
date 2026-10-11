@@ -1,0 +1,450 @@
+import Link from "next/link";
+import type { Metadata } from "next";
+
+import { IconPfeilLinks } from "@/components/icon";
+import { Tabelle, Zeile, Zelle } from "@/components/tabelle";
+import {
+  Hinweis,
+  Kennzahl,
+  Kennzahlenleiste,
+  LeerZustand,
+  Seitenkopf,
+  Status,
+  Tafel,
+} from "@/components/ui";
+import { istFeiertag } from "@/lib/at/feiertage";
+import {
+  alsDienstplan,
+  ladeBenachrichtigungen,
+  ladeBereitschaft,
+  ladeMeldewegKennzahlen,
+  ladeZustellungen,
+} from "@/lib/daten/melden";
+import { formatDatumZeit, formatZahl } from "@/lib/format";
+import {
+  hatDienst,
+  KANALPLAENE,
+  planeZustellung,
+  pruefeEskalation,
+  werHatDienst,
+  type Dringlichkeit,
+} from "@/lib/melden/eskalation";
+import { hatRecht } from "@/lib/sicherheit/rollen";
+import { requireRecht } from "@/lib/session";
+import { mehrzahl } from "@/lib/zahl";
+
+import { Bestaetigung } from "./bestaetigung";
+
+export const metadata: Metadata = { title: "Alarmierung" };
+
+/**
+ * Wer wird wann erreicht - und was geschieht, wenn niemand reagiert.
+ *
+ * Die Seite beantwortet drei Fragen, die sonst niemand beantworten
+ * kann, bevor es darauf ankommt:
+ *
+ * 1. Wer hat jetzt Dienst? Nicht laut Plan, sondern für diesen
+ *    Zeitpunkt gerechnet - einschließlich Feiertag.
+ * 2. Was passiert mit einer Meldung, die niemand bestätigt? Die
+ *    nächste Stufe steht mit Minutenangabe da, nicht als Versprechen.
+ * 3. Ist die letzte Meldung tatsächlich angekommen? Je Weg, mit
+ *    Fehlern - eine Push-Nachricht im Funkloch sieht sonst aus wie
+ *    eine gelesene.
+ */
+
+const WOCHENTAGE = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
+
+function tageText(wochentage: string): string {
+  if (wochentage === "1234567") return "täglich";
+  if (wochentage === "12345") return "Mo–Fr";
+
+  return [...wochentage]
+    .map((z) => WOCHENTAGE[Number(z) - 1] ?? z)
+    .join(", ");
+}
+
+function zeitText(von: number, bis: number): string {
+  if (von === 0 && bis === 24) return "rund um die Uhr";
+  return `${String(von).padStart(2, "0")}:00–${String(bis).padStart(2, "0")}:00`;
+}
+
+function dringlichkeitTon(d: string) {
+  switch (d) {
+    case "Kritisch":
+      return "kritisch" as const;
+    case "Hoch":
+      return "ernst" as const;
+    case "Mittel":
+      return "hinweis" as const;
+    default:
+      return "neutral" as const;
+  }
+}
+
+function zustellTon(status: string) {
+  switch (status) {
+    case "Gelesen":
+      return "gut" as const;
+    case "Zugestellt":
+      return "akzent" as const;
+    case "Fehler":
+      return "kritisch" as const;
+    default:
+      return "neutral" as const;
+  }
+}
+
+export default async function MeldewegeSeite() {
+  const benutzer = await requireRecht("monitoring.lesen");
+  const darfBestaetigen = hatRecht([benutzer.rolle], "anlagen.bearbeiten");
+
+  const jetzt = new Date();
+
+  const bereitschaft = ladeBereitschaft();
+  const plan = alsDienstplan(bereitschaft);
+  const meldungen = ladeBenachrichtigungen(12);
+  const zustellungen = ladeZustellungen();
+  const kennzahlen = ladeMeldewegKennzahlen();
+
+  const imDienst = werHatDienst(plan, jetzt);
+  const feiertag = istFeiertag(jetzt);
+
+  const zustellungJe = new Map<string, typeof zustellungen>();
+  for (const z of zustellungen) {
+    zustellungJe.set(z.benachrichtigung_id, [
+      ...(zustellungJe.get(z.benachrichtigung_id) ?? []),
+      z,
+    ]);
+  }
+
+  return (
+    <div className="space-y-5">
+      <Seitenkopf
+        titel="Alarmierung"
+        hinweis="Dienstplan, Zustellwege und Eskalation"
+        zurueck={
+          <Link
+            href="/portal/alarme"
+            className="t-leise inline-flex items-center gap-1.5 hover:underline"
+          >
+            <IconPfeilLinks groesse={14} />
+            Meldungen
+          </Link>
+        }
+      />
+
+      {imDienst.length === 0 && (
+        <Hinweis ton="kritisch" titel="Zu dieser Stunde hat niemand Dienst">
+          Eine Meldung, die jetzt entsteht, erreicht niemanden. Der Dienstplan
+          hat eine Lücke – am wahrscheinlichsten am Wochenende oder zwischen
+          zwei Schichten.
+        </Hinweis>
+      )}
+
+      {feiertag && (
+        <Hinweis ton="hinweis" titel={`Heute ist ${feiertag}`}>
+          Einträge ohne Feiertagsdienst sind heute nicht besetzt. Gerufen wird,
+          wer ausdrücklich auch an Feiertagen Dienst hat.
+        </Hinweis>
+      )}
+
+      <Kennzahlenleiste>
+        <Kennzahl
+          label="Unbestätigt"
+          wert={String(kennzahlen.offen)}
+          hinweis="warten auf einen Menschen"
+          akzent={kennzahlen.offen > 0}
+        />
+        <Kennzahl
+          label="Eskaliert"
+          wert={String(kennzahlen.eskaliert)}
+          hinweis="an die nächste Stufe gegangen"
+        />
+        <Kennzahl
+          label="Mittlere Bestätigung"
+          wert={
+            kennzahlen.bestaetigungMinuten === null
+              ? "–"
+              : formatZahl(kennzahlen.bestaetigungMinuten, 0)
+          }
+          einheit="min"
+          hinweis="vom Entstehen bis zur Quittung"
+        />
+        <Kennzahl
+          label="Fehlgeschlagene Zustellungen"
+          wert={String(kennzahlen.fehlversuche)}
+          hinweis="Weg nicht erreichbar"
+        />
+      </Kennzahlenleiste>
+
+      {/* ---------------- Wer jetzt Dienst hat ---------------- */}
+      <Tafel
+        titel="Wer jetzt Dienst hat"
+        hinweis={`Stand ${formatDatumZeit(jetzt)}`}
+      >
+        {imDienst.length === 0 ? (
+          <LeerZustand
+            text="Zu dieser Stunde ist niemand eingeteilt."
+            hinweis="Eine Meldung ginge an alle Diensthabenden – und damit an niemanden."
+          />
+        ) : (
+          <ul className="space-y-2">
+            {imDienst.map((eintrag) => (
+              <li
+                key={eintrag.id}
+                className="flex flex-wrap items-start justify-between gap-3 rounded-lg px-3.5 py-2.5"
+                style={{ background: "var(--f-vertieft)" }}
+              >
+                <div className="min-w-0">
+                  <p
+                    className="text-[0.875rem] font-medium"
+                    style={{ color: "var(--t-stark)" }}
+                  >
+                    {eintrag.empfaenger}
+                  </p>
+                  <p className="t-mikro">
+                    {eintrag.bezeichnung}
+                    {eintrag.rolle ? ` · ${eintrag.rolle}` : ""} ·{" "}
+                    {zeitText(eintrag.vonStunde, eintrag.bisStunde)}
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <Status ton="neutral" punkt={false}>
+                    Stufe {eintrag.stufe}
+                  </Status>
+                  <Status ton="akzent" punkt={false}>
+                    {eintrag.kanal}
+                  </Status>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <p className="t-mikro mt-3 leading-relaxed">
+          Gerufen wird zuerst Stufe 1. Bleibt die Bestätigung aus, kommt Stufe 2
+          dazu, danach der Notdienst. Hat auf einer Stufe niemand Dienst, geht
+          die Meldung an alle Diensthabenden – eine Lücke im Plan darf keine
+          Meldung verschlucken.
+        </p>
+      </Tafel>
+
+      {/* ---------------- Dienstplan ---------------- */}
+      <Tafel titel="Dienstplan" hinweis="Alle Einträge, auch die heute ruhenden" dicht>
+        <Tabelle
+          spalten={[
+            { titel: "Eintrag" },
+            { titel: "Tage", schmalAusblenden: true },
+            { titel: "Zeit", schmalAusblenden: true },
+            { titel: "Stufe", zahl: true },
+            { titel: "Weg" },
+            { titel: "Eskalation", zahl: true, schmalAusblenden: true },
+            { titel: "Jetzt" },
+          ]}
+          mindestbreite="58rem"
+        >
+          {bereitschaft.map((eintrag) => {
+            const kern = plan.find((p) => p.id === eintrag.id);
+            const aktiv = kern ? hatDienst(kern, jetzt) : false;
+
+            return (
+              <Zeile key={eintrag.id} gedaempft={eintrag.aktiv !== 1}>
+                <Zelle>
+                  <span className="block" style={{ color: "var(--t-stark)" }}>
+                    {eintrag.bezeichnung}
+                  </span>
+                  <span className="t-mikro block">
+                    {eintrag.empfaenger}
+                    {eintrag.rolle ? ` · ${eintrag.rolle}` : ""}
+                  </span>
+                </Zelle>
+                <Zelle leise schmalAusblenden>
+                  {tageText(eintrag.wochentage)}
+                  {eintrag.auch_feiertags === 1 && (
+                    <span className="t-mikro block">auch feiertags</span>
+                  )}
+                </Zelle>
+                <Zelle leise schmalAusblenden>
+                  {zeitText(eintrag.von_stunde, eintrag.bis_stunde)}
+                </Zelle>
+                <Zelle zahl>{eintrag.stufe}</Zelle>
+                <Zelle>
+                  <Status ton="neutral" punkt={false}>
+                    {eintrag.kanal}
+                  </Status>
+                </Zelle>
+                <Zelle zahl leise schmalAusblenden>
+                  nach {eintrag.eskalation_nach_min} min
+                </Zelle>
+                <Zelle>
+                  {aktiv ? (
+                    <Status ton="gut">im Dienst</Status>
+                  ) : (
+                    <Status ton="neutral">ruht</Status>
+                  )}
+                </Zelle>
+              </Zeile>
+            );
+          })}
+        </Tabelle>
+      </Tafel>
+
+      {/* ---------------- Meldungen und Zustellung ---------------- */}
+      <Tafel
+        titel="Letzte Meldungen"
+        hinweis="Jeder Zustellversuch einzeln – zugestellt ist nicht gelesen"
+      >
+        {meldungen.length === 0 ? (
+          <LeerZustand text="Es wurde noch nichts alarmiert." />
+        ) : (
+          <ul className="space-y-4">
+            {meldungen.map((m) => {
+              const wege = zustellungJe.get(m.id) ?? [];
+
+              const entscheidung = pruefeEskalation(
+                {
+                  id: m.id,
+                  dringlichkeit: m.dringlichkeit,
+                  erzeugtAm: new Date(m.erzeugt_am),
+                  bestaetigtAm: m.bestaetigt_am
+                    ? new Date(m.bestaetigt_am)
+                    : null,
+                  stufe: m.stufe,
+                },
+                jetzt,
+              );
+
+              const naechste = m.bestaetigt_am
+                ? []
+                : planeZustellung(
+                    {
+                      id: m.id,
+                      dringlichkeit: m.dringlichkeit,
+                      erzeugtAm: new Date(m.erzeugt_am),
+                      bestaetigtAm: null,
+                      stufe: entscheidung.neueStufe,
+                    },
+                    plan,
+                    jetzt,
+                  );
+
+              return (
+                <li key={m.id}>
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p
+                        className="text-[0.875rem] font-semibold"
+                        style={{ color: "var(--t-stark)" }}
+                      >
+                        {m.betreff}
+                      </p>
+                      <p className="t-mikro">
+                        {m.quelle}
+                        {m.anlage ? ` · ${m.anlage}` : ""} ·{" "}
+                        {formatDatumZeit(m.erzeugt_am)} · Stufe {m.stufe}
+                      </p>
+                    </div>
+                    <Status ton={dringlichkeitTon(m.dringlichkeit)}>
+                      {m.dringlichkeit}
+                    </Status>
+                  </div>
+
+                  <p
+                    className="mt-1 text-[0.8125rem] leading-relaxed"
+                    style={{ color: "var(--t-normal)" }}
+                  >
+                    {m.text}
+                  </p>
+
+                  <p className="t-mikro mt-1 leading-relaxed">
+                    {m.bestaetigt_am
+                      ? `Bestätigt von ${m.bestaetigt_von} um ${formatDatumZeit(m.bestaetigt_am)}. Damit endet die Eskalation.`
+                      : entscheidung.begruendung}
+                  </p>
+
+                  {wege.length > 0 && (
+                    <ul className="mt-2 space-y-1">
+                      {wege.map((z) => (
+                        <li
+                          key={z.id}
+                          className="flex flex-wrap items-center justify-between gap-2 rounded-md px-2.5 py-1.5"
+                          style={{ background: "var(--f-vertieft)" }}
+                        >
+                          <span className="t-mikro min-w-0">
+                            Stufe {z.stufe} · {z.kanal} an {z.empfaenger} ·{" "}
+                            {formatDatumZeit(z.versucht_am)}
+                            {z.fehler ? ` · ${z.fehler}` : ""}
+                          </span>
+                          <Status ton={zustellTon(z.status)} punkt={false}>
+                            {z.status}
+                          </Status>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+
+                  {darfBestaetigen && !m.bestaetigt_am && (
+                    <Bestaetigung meldung={m.id} />
+                  )}
+
+                  {naechste.length > 0 && (
+                    <p className="t-mikro mt-1.5 leading-relaxed">
+                      Als Nächstes:{" "}
+                      {mehrzahl(naechste.length, "Zustellung", "Zustellungen")}{" "}
+                      auf Stufe {entscheidung.neueStufe} –{" "}
+                      {[...new Set(naechste.map((n) => n.kanal))].join(", ")} an{" "}
+                      {[...new Set(naechste.map((n) => n.empfaenger))].join(", ")}.
+                    </p>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </Tafel>
+
+      {/* ---------------- Kanalpläne ---------------- */}
+      <Tafel
+        titel="Wege je Dringlichkeit"
+        hinweis="Welche Kanäle wann bedient werden"
+      >
+        <div className="space-y-3">
+          {(["Kritisch", "Hoch", "Mittel", "Niedrig"] as Dringlichkeit[]).map(
+            (grad) => {
+              const kanalplan = KANALPLAENE[grad];
+
+              return (
+                <div
+                  key={grad}
+                  className="rounded-lg px-3.5 py-3"
+                  style={{ background: "var(--f-vertieft)" }}
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <Status ton={dringlichkeitTon(grad)}>{grad}</Status>
+                    <span className="t-mikro">
+                      nächste Stufe nach {kanalplan.fristMinuten} Minuten ohne
+                      Bestätigung
+                    </span>
+                  </div>
+
+                  <p className="t-mikro mt-1.5 leading-relaxed">
+                    Sofort: {kanalplan.sofort.join(", ")} · Stufe 2:{" "}
+                    {kanalplan.stufe2.join(", ")} · Stufe 3:{" "}
+                    {kanalplan.stufe3.join(", ")}
+                  </p>
+
+                  <p
+                    className="mt-1 text-[0.8125rem] leading-relaxed"
+                    style={{ color: "var(--t-normal)" }}
+                  >
+                    {kanalplan.begruendung}
+                  </p>
+                </div>
+              );
+            },
+          )}
+        </div>
+      </Tafel>
+    </div>
+  );
+}

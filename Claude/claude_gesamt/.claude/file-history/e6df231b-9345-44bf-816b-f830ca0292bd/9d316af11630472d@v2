@@ -1,0 +1,169 @@
+<script setup lang="ts">
+/**
+ * Fotos aufnehmen, verwalten und beschriften (FA-034, NFA-013, NFA-024).
+ *
+ * Die Bilder werden komprimiert, mit Zeitstempel und GPS versehen und lokal
+ * abgelegt; der Upload passiert später über die Sync-Warteschlange.
+ */
+import { onBeforeUnmount, ref } from 'vue'
+
+import AppIcon from '@/components/AppIcon.vue'
+import { dateigroesse, datumZeit } from '@/lib/format'
+import { dateienWaehlen, fotoErfassen, vorschauUrl } from '@/lib/foto'
+import type { Foto } from '@/lib/typen'
+import { useStammdaten } from '@/stores/stammdaten'
+import { useUi } from '@/stores/ui'
+
+const props = withDefaults(
+  defineProps<{
+    modelValue: Foto[]
+    pflicht?: boolean
+    max?: number
+    gehoertZu?: string
+    titel?: string
+  }>(),
+  { pflicht: false, max: 12, gehoertZu: undefined, titel: 'Fotos' },
+)
+
+const emit = defineEmits<{ (e: 'update:modelValue', fotos: Foto[]): void }>()
+
+const stammdaten = useStammdaten()
+const ui = useUi()
+const arbeitet = ref(false)
+const vorschauen = new Map<string, string>()
+
+function vorschau(foto: Foto): string {
+  if (foto.vorschau) return foto.vorschau
+  return foto.bild
+}
+
+async function aufnehmen(kamera: boolean) {
+  const dateien = await dateienWaehlen(kamera, !kamera)
+  if (!dateien.length) return
+
+  arbeitet.value = true
+  try {
+    const neue: Foto[] = []
+    for (const datei of dateien.slice(0, props.max - props.modelValue.length)) {
+      const eintrag = await fotoErfassen(datei, {
+        maxKantePx: stammdaten.einstellungen.foto_max_kante_px,
+        maxMb: stammdaten.einstellungen.max_foto_mb,
+        gehoertZu: props.gehoertZu,
+      })
+      const url = vorschauUrl(eintrag)
+      vorschauen.set(eintrag.lokale_id, url)
+      neue.push({
+        // `bild` trägt bis zum Upload die lokale ID; der Sync ersetzt sie durch die Server-URL.
+        bild: eintrag.lokale_id,
+        lokale_id: eintrag.lokale_id,
+        aufgenommen_am: eintrag.aufgenommen_am,
+        gps_lat: eintrag.gps_lat,
+        gps_lng: eintrag.gps_lng,
+        hash: eintrag.hash,
+        vorschau: url,
+      })
+      ui.toast(`Foto aufgenommen (${dateigroesse(eintrag.groesse)})`, 'erfolg', 2000)
+    }
+    emit('update:modelValue', [...props.modelValue, ...neue])
+  } catch (fehler) {
+    ui.fehler(`Foto konnte nicht verarbeitet werden: ${(fehler as Error).message}`)
+  } finally {
+    arbeitet.value = false
+  }
+}
+
+function entfernen(index: number) {
+  const kopie = [...props.modelValue]
+  const [entfernt] = kopie.splice(index, 1)
+  const url = vorschauen.get(entfernt.lokale_id ?? '')
+  if (url) {
+    URL.revokeObjectURL(url)
+    vorschauen.delete(entfernt.lokale_id!)
+  }
+  emit('update:modelValue', kopie)
+}
+
+function beschriften(index: number, text: string) {
+  const kopie = [...props.modelValue]
+  kopie[index] = { ...kopie[index], beschriftung: text }
+  emit('update:modelValue', kopie)
+}
+
+onBeforeUnmount(() => {
+  vorschauen.forEach((url) => URL.revokeObjectURL(url))
+  vorschauen.clear()
+})
+</script>
+
+<template>
+  <div>
+    <div class="mb-2 flex items-center justify-between">
+      <span class="beschriftung mb-0">
+        {{ titel }}
+        <span v-if="pflicht" class="text-fehler">*</span>
+        <span class="ml-1 text-xs font-normal text-slate-400">{{ modelValue.length }}/{{ max }}</span>
+      </span>
+      <div class="flex gap-2">
+        <button
+          class="knopf-sekundaer px-3 text-sm"
+          type="button"
+          :disabled="arbeitet || modelValue.length >= max"
+          @click="aufnehmen(true)"
+        >
+          <AppIcon name="kamera" :groesse="18" /> Kamera
+        </button>
+        <button
+          class="knopf-geist px-3 text-sm"
+          type="button"
+          :disabled="arbeitet || modelValue.length >= max"
+          @click="aufnehmen(false)"
+        >
+          Galerie
+        </button>
+      </div>
+    </div>
+
+    <p
+      v-if="pflicht && !modelValue.length"
+      class="mb-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:bg-amber-900/30 dark:text-amber-200"
+    >
+      Für diesen Prüfpunkt ist mindestens ein Foto erforderlich.
+    </p>
+
+    <div v-if="modelValue.length" class="grid grid-cols-2 gap-3 tablet:grid-cols-3">
+      <figure v-for="(foto, i) in modelValue" :key="foto.lokale_id ?? foto.bild" class="karte overflow-hidden">
+        <div class="relative aspect-[4/3] bg-slate-100 dark:bg-slate-800">
+          <img :src="vorschau(foto)" alt="" class="h-full w-full object-cover" loading="lazy" />
+          <button
+            class="absolute right-1.5 top-1.5 rounded-full bg-black/60 p-1.5 text-white"
+            type="button"
+            aria-label="Foto entfernen"
+            @click="entfernen(i)"
+          >
+            <AppIcon name="kreuz" :groesse="16" />
+          </button>
+          <span
+            v-if="!foto.bild.startsWith('/')"
+            class="absolute bottom-1.5 left-1.5 rounded bg-black/60 px-1.5 py-0.5 text-[10px] text-white"
+          >
+            noch lokal
+          </span>
+        </div>
+        <figcaption class="p-2">
+          <input
+            :value="foto.beschriftung"
+            class="w-full rounded border-0 bg-transparent p-0 text-xs placeholder:text-slate-400 focus:ring-0"
+            placeholder="Beschriftung …"
+            @change="beschriften(i, ($event.target as HTMLInputElement).value)"
+          />
+          <div class="mt-1 flex items-center gap-2 text-[10px] text-slate-400">
+            <span>{{ datumZeit(foto.aufgenommen_am) }}</span>
+            <span v-if="foto.gps_lat" title="GPS erfasst">· GPS</span>
+          </div>
+        </figcaption>
+      </figure>
+    </div>
+
+    <div v-if="arbeitet" class="mt-2 text-sm text-slate-500">Foto wird komprimiert …</div>
+  </div>
+</template>

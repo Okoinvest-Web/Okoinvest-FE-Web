@@ -1,0 +1,135 @@
+<template>
+  <div>
+    <PageHeader title="Checklisten" :subtitle="untertitel" />
+
+    <div class="p-6">
+      <div class="grid grid-cols-1 gap-4 xl:grid-cols-2">
+        <article
+          v-for="lauf in laeufe.data || []"
+          :key="lauf.name"
+          class="rounded-lg border border-outline-gray-2 bg-surface-white p-4"
+        >
+          <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <p class="text-base font-medium text-ink-gray-9">{{ lauf.template }}</p>
+              <p class="mt-0.5 text-sm text-ink-gray-6">
+                {{ lauf.object_name }}
+                <span class="text-ink-gray-4">· {{ lauf.object_type }}</span>
+              </p>
+            </div>
+            <Badge :theme="lauf.run_state === 'done' ? 'green' : 'orange'">
+              {{ lauf.run_state === 'done' ? 'Abgeschlossen' : 'Offen' }}
+            </Badge>
+          </div>
+
+          <!-- Fortschritt als Größenordnung, Wert daneben -->
+          <div class="mt-3 flex items-center gap-2">
+            <div class="h-2.5 flex-1" style="background: var(--viz-neutral-soft)">
+              <div
+                class="h-full"
+                :style="{
+                  width: lauf.progress + '%',
+                  background: lauf.can_finish ? 'var(--viz-good)' : 'var(--viz-seq-400)',
+                  borderTopRightRadius: '4px',
+                  borderBottomRightRadius: '4px',
+                }"
+              />
+            </div>
+            <span class="w-24 shrink-0 text-right text-sm tabular-nums text-ink-gray-7">
+              {{ lauf.done_items }} / {{ lauf.total_items }}
+            </span>
+          </div>
+
+          <ul class="mt-3 space-y-1.5">
+            <li v-for="(punkt, i) in lauf.items" :key="i" class="flex items-start gap-2 text-sm">
+              <span
+                class="mt-0.5 flex size-4 shrink-0 items-center justify-center rounded border text-[10px]"
+                :class="
+                  punkt.done
+                    ? 'border-transparent text-white'
+                    : 'border-outline-gray-3 text-transparent'
+                "
+                :style="punkt.done ? { background: 'var(--viz-good)' } : undefined"
+              >
+                ✓
+              </span>
+              <span :class="punkt.done ? 'text-ink-gray-5 line-through' : 'text-ink-gray-8'">
+                {{ punkt.label }}
+              </span>
+              <span v-if="punkt.required && !punkt.done" class="text-ink-gray-4">Pflicht</span>
+            </li>
+          </ul>
+
+          <p v-if="!lauf.can_finish" class="mt-3 border-t border-outline-gray-2 pt-3">
+            <StatusDot
+              level="warning"
+              :text="'Abschluss blockiert: ' + lauf.blocking_items.length + ' Pflichtpunkte offen'"
+              klein
+            />
+          </p>
+          <p v-else-if="lauf.run_state !== 'done'" class="mt-3 border-t border-outline-gray-2 pt-3">
+            <StatusDot level="ok" text="Alle Pflichtpunkte erledigt – Abschluss möglich" klein />
+          </p>
+        </article>
+      </div>
+
+      <p v-if="laeufe.loading" class="py-8 text-center text-sm text-ink-gray-5">Wird geladen …</p>
+      <p v-else-if="!(laeufe.data || []).length" class="py-8 text-center text-sm text-ink-gray-5">
+        Keine Checkliste erfasst.
+      </p>
+
+      <section class="mt-8">
+        <h2 class="mb-3 text-base font-semibold text-ink-gray-8">Vorlagen</h2>
+        <DataTable
+          tabellen-id="ChecklistView"
+          :columns="vorlagenSpalten"
+          :rows="vorlagen.data || []"
+          :loading="vorlagen.loading"
+        >
+          <template #zelle-anzahl="{ zeile }">
+            {{ (zeile.items || []).length }} Punkte,
+            {{ (zeile.items || []).filter((p) => p.required).length }} davon Pflicht
+          </template>
+        </DataTable>
+      </section>
+
+      <p class="mt-6 text-xs text-ink-gray-4">
+        Pflichtpunkte blockieren den Abschluss (Fachkonzept 2.6). Das Abhaken selbst schreibt hier
+        noch nicht zurück – dafür braucht es den Checklist-Run als schreibenden Vorgang im Backend.
+      </p>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed } from 'vue'
+import { Badge, createResource } from 'frappe-ui'
+import PageHeader from '@/components/PageHeader.vue'
+import DataTable from '@/components/DataTable.vue'
+import StatusDot from '@/components/StatusDot.vue'
+
+const laeufe = createResource({ url: 'netops.api.docs.checklist_runs', auto: true })
+
+const vorlagen = createResource({
+  url: 'frappe.client.get_list',
+  params: {
+    doctype: 'Checklist Template',
+    fields: ['name', 'template_name', 'applies_to', 'items'],
+    limit_page_length: 0,
+  },
+  auto: true,
+})
+
+const vorlagenSpalten = [
+  { key: 'template_name', label: 'Vorlage', width: '320px' },
+  { key: 'applies_to', label: 'Gilt für', muted: true, width: '220px' },
+  { key: 'anzahl', label: 'Umfang' },
+]
+
+const untertitel = computed(() => {
+  const liste = laeufe.data || []
+  return (
+    liste.length + ' Durchläufe · ' + liste.filter((l) => l.run_state !== 'done').length + ' offen'
+  )
+})
+</script>

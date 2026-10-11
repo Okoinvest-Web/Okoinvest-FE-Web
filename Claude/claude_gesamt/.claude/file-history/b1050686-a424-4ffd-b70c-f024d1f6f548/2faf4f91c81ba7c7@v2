@@ -1,0 +1,237 @@
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+
+import {
+  REGELUNGEN,
+  SPITZENKAPPUNG_ANTEIL,
+  VIB_CT_KWH,
+  VIB_FREIGRENZE_KW,
+  betroffenheit,
+  spitzenkappung,
+  tageBis,
+  versorgungsbeitrag,
+  wirksamkeit,
+  type Anlagenlage,
+} from "./elwg.ts";
+
+/**
+ * Eine Regulierungsauskunft, die falsch rechnet, ist schlimmer als
+ * keine: Sie führt zu einer Investitionsentscheidung. Deshalb wird
+ * hier vor allem geprüft, dass nichts beziffert wird, was sich nicht
+ * beziffern lässt.
+ */
+
+function lage(teil: Partial<Anlagenlage> = {}): Anlagenlage {
+  return {
+    bezeichnung: "Produktionshalle",
+    kwp: 100,
+    einspeiseleistungKw: 70,
+    einspeisungKwhJahr: 40000,
+    ...teil,
+  };
+}
+
+describe("Versorgungsinfrastrukturbeitrag", () => {
+  it("rechnet den Höchstsatz auf die Einspeisung", () => {
+    const b = versorgungsbeitrag(lage({ einspeisungKwhJahr: 40000 }));
+
+    // 40.000 kWh mal 0,05 Cent sind 20 Euro.
+    assert.equal(b.euroJahr, 20);
+  });
+
+  it("befreit kleine Einspeiser", () => {
+    const b = versorgungsbeitrag(lage({ einspeiseleistungKw: 15 }));
+
+    assert.equal(b.euroJahr, 0);
+    assert.match(b.begruendung, /Freigrenze/);
+  });
+
+  it("prüft die Leistung, nicht die Modulfläche", () => {
+    // 30 kWp mit auf 15 kW begrenzter Einspeisung bleibt befreit.
+    const b = versorgungsbeitrag(
+      lage({ kwp: 30, einspeiseleistungKw: 15, einspeisungKwhJahr: 12000 }),
+    );
+
+    assert.equal(b.euroJahr, 0);
+  });
+
+  it("nimmt die Freigrenze als Obergrenze, nicht als Schwelle darüber", () => {
+    const gerade = versorgungsbeitrag(
+      lage({ einspeiseleistungKw: VIB_FREIGRENZE_KW }),
+    );
+    const knappDarueber = versorgungsbeitrag(
+      lage({ einspeiseleistungKw: VIB_FREIGRENZE_KW + 0.1 }),
+    );
+
+    assert.equal(gerade.euroJahr, 0);
+    assert.ok((knappDarueber.euroJahr ?? 0) > 0);
+  });
+
+  it("nennt den Satz mit Komma", () => {
+    const b = versorgungsbeitrag(lage());
+
+    assert.match(b.begruendung, new RegExp(String(VIB_CT_KWH).replace(".", ",")));
+  });
+});
+
+describe("Spitzenkappung", () => {
+  it("beziffert nichts ohne Messwerte", () => {
+    // Eine geschätzte Kappung ist gegenüber dem Netzbetreiber wertlos.
+    const b = spitzenkappung(lage(), 7.9);
+
+    assert.equal(b.euroJahr, null);
+    assert.equal(b.kwhJahr, null);
+  });
+
+  it("rechnet über die tatsächlichen Viertelstunden", () => {
+    // Grenze bei 70 kW. Vier Viertelstunden zu 90 kW ergeben
+    // 4 mal 20 kW mal 0,25 h = 20 kWh über der Grenze.
+    const b = spitzenkappung(
+      lage({ einspeisungViertelstunden: [90, 90, 90, 90] }),
+      10,
+    );
+
+    assert.equal(b.kwhJahr, 20);
+    assert.equal(b.euroJahr, 2);
+  });
+
+  it("zählt nur, was über der Grenze liegt", () => {
+    const b = spitzenkappung(
+      lage({ einspeisungViertelstunden: [10, 20, 30, 69.9] }),
+      10,
+    );
+
+    assert.equal(b.kwhJahr, 0);
+  });
+
+  it("sagt ausdrücklich, dass die Regelung nicht greift", () => {
+    const b = spitzenkappung(
+      lage({ einspeisungViertelstunden: [10, 20, 30] }),
+      10,
+    );
+
+    assert.match(b.begruendung, /ändert die Regelung nichts/);
+    assert.equal(b.handlung, "");
+  });
+
+  it("nennt den Abstand zur Grenze", () => {
+    // Grenze 70 kW, Spitze 30 kW: 40 kW Luft.
+    const b = spitzenkappung(
+      lage({ einspeisungViertelstunden: [10, 20, 30] }),
+      10,
+    );
+
+    assert.match(b.begruendung, /höchstens 30 kW/);
+    assert.match(b.begruendung, /Abstand: 40 kW/);
+  });
+
+  it("warnt, wenn der Abstand knapp ist", () => {
+    // Grenze 70 kW, Spitze 65 kW - fünf Kilowatt Luft.
+    const b = spitzenkappung(
+      lage({ einspeisungViertelstunden: [65] }),
+      10,
+    );
+
+    assert.match(b.handlung, /Erweiterung/);
+  });
+
+  it("nennt die Zahl als Obergrenze, nicht als Erwartung", () => {
+    const b = spitzenkappung(
+      lage({ einspeisungViertelstunden: Array(100).fill(95) }),
+      7.9,
+    );
+
+    assert.match(b.begruendung, /höchstens/);
+    assert.match(b.begruendung, /nicht immer/);
+  });
+
+  it("legt die Grenze bei 70 Prozent der Modulleistung", () => {
+    assert.equal(SPITZENKAPPUNG_ANTEIL, 0.7);
+
+    // Grenze bei 200 kWp: 140 kW. Zwanzig Viertelstunden zu 160 kW
+    // ergeben 20 mal 20 kW mal 0,25 h = 100 kWh darueber.
+    const b = spitzenkappung(
+      lage({ kwp: 200, einspeisungViertelstunden: Array(20).fill(160) }),
+      10,
+    );
+
+    assert.equal(b.kwhJahr, 100);
+    assert.match(b.begruendung, /140 kW/);
+  });
+
+  it("meldet eine Winzigkeit nicht als Kappung", () => {
+    // Eine Kilowattstunde im Jahr ist keine Meldung wert - und eine
+    // Liste voller Nullbetraege liest niemand zweimal.
+    const b = spitzenkappung(
+      lage({ kwp: 200, einspeisungViertelstunden: [141, 139] }),
+      10,
+    );
+
+    assert.equal(b.kwhJahr, 0);
+    assert.match(b.begruendung, /ändert die Regelung nichts/);
+  });
+});
+
+describe("Zusammenstellung", () => {
+  it("sortiert nach Betrag", () => {
+    const liste = betroffenheit(
+      lage({ einspeisungViertelstunden: Array(400).fill(95) }),
+      7.9,
+    );
+
+    const betraege = liste.map((b) => b.euroJahr ?? -1);
+    assert.deepEqual(betraege, [...betraege].sort((a, b) => b - a));
+  });
+
+  it("liefert zu jeder Regelung einen Eintrag", () => {
+    assert.equal(betroffenheit(lage(), 7.9).length, 2);
+  });
+});
+
+describe("Zeitliche Staffelung", () => {
+  it("unterscheidet, was gilt, von dem, was kommt", () => {
+    const vib = REGELUNGEN.find((r) => r.schluessel === "vib")!;
+    const anschluss = REGELUNGEN.find((r) => r.schluessel === "netzanschluss")!;
+
+    assert.equal(wirksamkeit(vib, "2026-09-14"), "kommt");
+    assert.equal(wirksamkeit(anschluss, "2026-09-14"), "gilt");
+  });
+
+  it("zählt die Tage bis zum Stichtag", () => {
+    const vib = REGELUNGEN.find((r) => r.schluessel === "vib")!;
+
+    assert.equal(tageBis(vib, "2026-12-31"), 1);
+    assert.equal(tageBis(vib, "2027-01-01"), 0);
+    assert.ok(tageBis(vib, "2027-02-01") < 0);
+  });
+});
+
+describe("Belastbarkeit", () => {
+  it("kennzeichnet jede Regelung", () => {
+    for (const r of REGELUNGEN) {
+      assert.ok(r.belastbarkeit, r.schluessel);
+      assert.ok(r.quelle.length > 5, r.schluessel);
+    }
+  });
+
+  it("gibt die uneinheitliche Freigrenze als solche aus", () => {
+    // Zwischen Entwurf und Fassung finden sich 7 und 15 kW. Ein
+    // Portal, das eine unsichere Zahl als sicher ausgibt, ist
+    // schlimmer als eines, das schweigt.
+    const anschluss = REGELUNGEN.find((r) => r.schluessel === "netzanschluss")!;
+
+    assert.equal(anschluss.belastbarkeit, "quellen uneinheitlich");
+    assert.match(anschluss.quelle, /7 kW/);
+  });
+
+  it("nennt zu jeder Regelung eine Handlung", () => {
+    for (const r of REGELUNGEN) {
+      assert.ok(r.handlung.length > 20, r.schluessel);
+    }
+  });
+
+  it("führt die Stichtage in aufsteigender Reihenfolge", () => {
+    const tage = REGELUNGEN.map((r) => r.ab);
+    assert.ok(tage.every((t) => /^\d{4}-\d{2}-\d{2}$/.test(t)));
+  });
+});

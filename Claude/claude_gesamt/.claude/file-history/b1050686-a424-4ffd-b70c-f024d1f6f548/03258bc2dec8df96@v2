@@ -1,0 +1,150 @@
+-- ====================================================================
+-- Markt, Speichervermarktung und Flexibilitaet
+--
+-- Ein Industriespeicher verdient sein Geld an drei Stellen: Er kappt
+-- Lastspitzen, er verschiebt Eigenverbrauch, und er handelt an der
+-- Boerse. Die drei Ziele widersprechen einander - wer mittags fuer den
+-- Abendhandel volllaedt, hat den Speicher nicht mehr, wenn um 14 Uhr
+-- die Lastspitze kommt.
+--
+-- Deshalb wird jeder Fahrplan mit seiner Begruendung abgelegt: Fuer
+-- jede Viertelstunde ist festgehalten, welche Stufe sie belegt hat.
+-- ====================================================================
+
+-- --------------------------------------------------------------------
+-- Boersenpreise
+--
+-- Day-Ahead-Preise der EPEX Spot AT in Viertelstundenaufloesung.
+-- Negative Preise sind zulaessig und kommen regelmaessig vor.
+-- --------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS marktpreis (
+  zeitpunkt     TEXT NOT NULL,
+  markt         TEXT NOT NULL DEFAULT 'EPEX_AT_DA'
+                  CHECK (markt IN ('EPEX_AT_DA','EPEX_AT_ID','Ausgleich')),
+  preis_eur_mwh REAL NOT NULL,
+  -- Wann der Preis veroeffentlicht wurde. Ein Fahrplan darf sich nur
+  -- auf Preise stuetzen, die zum Zeitpunkt der Planung vorlagen.
+  veroeffentlicht_am TEXT,
+  PRIMARY KEY (markt, zeitpunkt)
+) WITHOUT ROWID;
+
+CREATE INDEX IF NOT EXISTS idx_marktpreis_zeit ON marktpreis(zeitpunkt);
+
+-- --------------------------------------------------------------------
+-- Speicher
+--
+-- Die technischen Grenzen und die kaufmaennischen Annahmen. Die
+-- Zykluskosten sind der wichtigste Posten: Ohne sie handelt der
+-- Speicher jede Preisdifferenz ueber null mit und verbraucht Zyklen,
+-- die mehr kosten als der Gewinn.
+-- --------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS speicher (
+  id                 TEXT PRIMARY KEY,
+  anlage_id          TEXT NOT NULL REFERENCES anlage(id),
+  bezeichnung        TEXT NOT NULL,
+  hersteller         TEXT,
+  modell             TEXT,
+  kapazitaet_kwh     REAL NOT NULL,
+  ladeleistung_kw    REAL NOT NULL,
+  entladeleistung_kw REAL NOT NULL,
+  wirkungsgrad_laden REAL NOT NULL DEFAULT 0.95,
+  wirkungsgrad_entladen REAL NOT NULL DEFAULT 0.95,
+  -- Anteil der Kapazitaet, der fuer den Notstromfall reserviert
+  -- bleibt. Vom Kunden einstellbar - er liegt hinter dem Zaehlpunkt.
+  notstrom_reserve   REAL NOT NULL DEFAULT 0.1,
+  zykluskosten_eur_kwh REAL NOT NULL DEFAULT 0.02,
+  -- Garantierte Zyklen und bisher verbrauchte, fuer die Restwertfrage.
+  zyklen_garantie    INTEGER,
+  zyklen_verbraucht  REAL NOT NULL DEFAULT 0,
+  inbetriebnahme     TEXT,
+  status             TEXT NOT NULL DEFAULT 'Aktiv'
+);
+
+CREATE INDEX IF NOT EXISTS idx_speicher_anlage ON speicher(anlage_id);
+
+-- Kaufmaennische Randbedingungen des Netzanschlusses.
+CREATE TABLE IF NOT EXISTS netzanschluss (
+  anlage_id            TEXT PRIMARY KEY REFERENCES anlage(id),
+  bezugsgrenze_kw      REAL NOT NULL,
+  -- Zielwert fuer die Lastspitzenkappung. Liegt ueblicherweise unter
+  -- der Anschlussleistung: Der Leistungspreis richtet sich nach der
+  -- hoechsten gemessenen Viertelstunde, nicht nach der Vereinbarung.
+  spitzenziel_kw       REAL NOT NULL,
+  einspeisegrenze_kw   REAL NOT NULL,
+  arbeitspreis_ct_kwh  REAL NOT NULL,
+  einspeiseverguetung_ct_kwh REAL NOT NULL,
+  leistungspreis_eur_kw_monat REAL NOT NULL DEFAULT 0,
+  -- Hoechste Viertelstunde des laufenden Abrechnungszeitraums.
+  spitze_bisher_kw     REAL NOT NULL DEFAULT 0,
+  spitze_bisher_am     TEXT
+);
+
+-- --------------------------------------------------------------------
+-- Fahrplaene
+-- --------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS fahrplan (
+  id             TEXT PRIMARY KEY,
+  speicher_id    TEXT NOT NULL REFERENCES speicher(id),
+  tag            TEXT NOT NULL,
+  status         TEXT NOT NULL DEFAULT 'Entwurf'
+                   CHECK (status IN ('Entwurf','Freigegeben','Gefahren','Verworfen')),
+  -- Ergebnis der Optimierung, je Stufe.
+  eigenverbrauch_eur REAL NOT NULL DEFAULT 0,
+  handel_eur     REAL NOT NULL DEFAULT 0,
+  spitzenkappung_eur REAL NOT NULL DEFAULT 0,
+  zykluskosten_eur REAL NOT NULL DEFAULT 0,
+  gesamt_eur     REAL NOT NULL DEFAULT 0,
+  spitze_ohne_kw REAL,
+  spitze_mit_kw  REAL,
+  durchsatz_kwh  REAL NOT NULL DEFAULT 0,
+  vollzyklen     REAL NOT NULL DEFAULT 0,
+  gerechnet_am   TEXT NOT NULL,
+  freigegeben_am TEXT,
+  freigegeben_von TEXT,
+  UNIQUE (speicher_id, tag)
+);
+
+CREATE TABLE IF NOT EXISTS fahrplan_schritt (
+  fahrplan_id    TEXT NOT NULL REFERENCES fahrplan(id) ON DELETE CASCADE,
+  zeitpunkt      TEXT NOT NULL,
+  preis_eur_mwh  REAL NOT NULL,
+  erzeugung_kwh  REAL NOT NULL DEFAULT 0,
+  verbrauch_kwh  REAL NOT NULL DEFAULT 0,
+  laden_kwh      REAL NOT NULL DEFAULT 0,
+  entladen_kwh   REAL NOT NULL DEFAULT 0,
+  netzbezug_kwh  REAL NOT NULL DEFAULT 0,
+  einspeisung_kwh REAL NOT NULL DEFAULT 0,
+  ladestand_kwh  REAL NOT NULL DEFAULT 0,
+  -- Welche Stufe dieses Intervall belegt hat. Im Streitfall die
+  -- entscheidende Angabe.
+  belegung       TEXT NOT NULL DEFAULT 'ruht',
+  ergebnis_eur   REAL NOT NULL DEFAULT 0,
+  PRIMARY KEY (fahrplan_id, zeitpunkt)
+) WITHOUT ROWID;
+
+-- --------------------------------------------------------------------
+-- Praequalifizierte Regelleistung
+--
+-- Wird Leistung fuer Primaer- oder Sekundaerregelung vorgehalten,
+-- steht sie dem Handel nicht mehr zur Verfuegung. Das gehoert
+-- mitgefuehrt, sonst verplant der Fahrplan Leistung zweimal.
+-- --------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS regelleistung (
+  id            TEXT PRIMARY KEY,
+  speicher_id   TEXT NOT NULL REFERENCES speicher(id),
+  produkt       TEXT NOT NULL CHECK (produkt IN ('FCR','aFRR_pos','aFRR_neg','mFRR')),
+  von           TEXT NOT NULL,
+  bis           TEXT NOT NULL,
+  leistung_kw   REAL NOT NULL,
+  -- Leistungspreis der Ausschreibung.
+  preis_eur_mw_h REAL,
+  status        TEXT NOT NULL DEFAULT 'Bezuschlagt'
+                  CHECK (status IN ('Angeboten','Bezuschlagt','Abgerufen','Abgelaufen'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_regelleistung_speicher
+  ON regelleistung(speicher_id, von);

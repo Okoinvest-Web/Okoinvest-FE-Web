@@ -1,0 +1,118 @@
+/**
+ * Cybersecurity-Zentrum: Schwachstellen und Vorfälle (Fachkonzept 2.13).
+ *
+ * Die Behebungsfristen stammen aus dem Fachkonzept:
+ *   aktiv ausgenutzt (KEV) 72 h · kritisch 7 Tage · hoch 30 Tage
+ * Der Risikowert kombiniert CVSS, aktive Ausnutzung und EPSS - eine
+ * mittelschwere, aber aktiv ausgenutzte Lücke schlägt eine schwere ohne
+ * bekannte Ausnutzung.
+ */
+import { table } from '../db.js'
+import { heute, parse } from '../zeit.js'
+
+export const FRISTEN_TAGE = { kev: 3, critical: 7, high: 30, medium: 90, low: 180 }
+
+/** Einstufung nach CVSS, wie in den gängigen Bewertungsskalen. */
+export function stufe(cvss) {
+  if (cvss >= 9) return 'critical'
+  if (cvss >= 7) return 'high'
+  if (cvss >= 4) return 'medium'
+  return 'low'
+}
+
+/**
+ * Risikowert 0–100. Bewusst einfach und nachvollziehbar gehalten:
+ * CVSS ist die Basis, aktive Ausnutzung und Ausnutzungswahrscheinlichkeit
+ * heben an. Die genaue Formel gehört später ins Backend.
+ */
+export function risikowert(v) {
+  const basis = (Number(v.cvss) || 0) * 8
+  const kevZuschlag = v.kev ? 25 : 0
+  const epssZuschlag = (Number(v.epss) || 0) * 15
+  return Math.min(100, Math.round(basis + kevZuschlag + epssZuschlag))
+}
+
+export function vulnerability_list({ state = null, tenant = null, only_overdue = false } = {}) {
+  const heuteDatum = heute()
+
+  let liste = table('Vulnerability')
+  if (state) liste = liste.filter((v) => v.vuln_state === state)
+  if (tenant) liste = liste.filter((v) => v.tenant === tenant)
+
+  const aufbereitet = liste.map((v) => {
+    const offen = v.vuln_state === 'open'
+    const ueberfaellig = offen && v.due_date && v.due_date < heuteDatum
+    const resttage = v.due_date
+      ? Math.round((parse(v.due_date + ' 00:00:00').getTime() - Date.now()) / 86400000)
+      : null
+
+    return {
+      ...v,
+      severity: stufe(v.cvss),
+      risk_score: risikowert(v),
+      overdue: !!ueberfaellig,
+      days_left: resttage,
+      // Frist aus dem Fachkonzept, nicht aus dem Bauch.
+      sla_days: v.kev ? FRISTEN_TAGE.kev : FRISTEN_TAGE[stufe(v.cvss)],
+    }
+  })
+
+  const gefiltert = only_overdue ? aufbereitet.filter((v) => v.overdue) : aufbereitet
+
+  return gefiltert.sort((a, b) => b.risk_score - a.risk_score || a.cve.localeCompare(b.cve))
+}
+
+const VORFALL_RANG = { critical: 0, high: 1, medium: 2, low: 3 }
+
+export function incident_list({ state = null, tenant = null } = {}) {
+  let liste = table('Incident')
+  if (state) liste = liste.filter((i) => i.incident_state === state)
+  if (tenant) liste = liste.filter((i) => i.tenant === tenant)
+
+  const jetzt = Date.now()
+
+  return [...liste]
+    .map((i) => {
+      const offen = i.incident_state !== 'closed'
+      const frist = (wert) =>
+        wert && offen && parse(wert) ? Math.round((parse(wert).getTime() - jetzt) / 3600000) : null
+
+      return {
+        ...i,
+        open: offen,
+        // Meldefristen-Assistent (Fachkonzept 2.13): NIS2 24 h / 72 h, DSGVO 72 h
+        hours_to_early_warning: frist(i.nis2_early_warning_due),
+        hours_to_report: frist(i.nis2_report_due),
+        hours_to_gdpr: frist(i.gdpr_due),
+      }
+    })
+    .sort(
+      (a, b) =>
+        Number(b.open) - Number(a.open) ||
+        (VORFALL_RANG[a.severity] ?? 9) - (VORFALL_RANG[b.severity] ?? 9) ||
+        (a.opened < b.opened ? 1 : -1),
+    )
+}
+
+/** Security-Kennzahlen für Lagebild und Leitstand. */
+export function security_overview({ tenant = null } = {}) {
+  const schwachstellen = vulnerability_list({ tenant })
+  const offen = schwachstellen.filter((v) => v.vuln_state === 'open')
+  const vorfaelle = incident_list({ tenant })
+
+  return {
+    vulnerabilities_open: offen.length,
+    vulnerabilities_critical: offen.filter((v) => v.severity === 'critical').length,
+    vulnerabilities_kev: offen.filter((v) => v.kev).length,
+    vulnerabilities_overdue: offen.filter((v) => v.overdue).length,
+    highest_risk: offen.length ? offen[0] : null,
+    incidents_open: vorfaelle.filter((i) => i.open).length,
+    incidents_total: vorfaelle.length,
+    // Nächste ablaufende Meldefrist über alle offenen Vorfälle.
+    next_deadline_hours: vorfaelle
+      .filter((i) => i.open)
+      .flatMap((i) => [i.hours_to_early_warning, i.hours_to_report, i.hours_to_gdpr])
+      .filter((h) => h !== null && h !== undefined)
+      .sort((a, b) => a - b)[0] ?? null,
+  }
+}

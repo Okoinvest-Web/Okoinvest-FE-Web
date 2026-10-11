@@ -1,0 +1,98 @@
+import Link from "next/link";
+import type { ReactNode } from "react";
+
+/**
+ * Die Seite, die niemand sehen soll.
+ *
+ * Ein Fehlerbild ist die einzige Stelle, an der eine Software mit
+ * jemandem spricht, der gerade nicht weiterkommt. Deshalb steht hier
+ * kein "Oops" und kein Zahnrad, sondern drei Dinge:
+ *
+ * 1. Was geschehen ist, in einem Satz und ohne Schuldzuweisung.
+ * 2. Was jetzt hilft - ein Knopf, der wirklich etwas tut, nicht nur
+ *    ein Link auf die Startseite.
+ * 3. Die Kennung des Vorfalls. Ohne sie beginnt jedes Gespräch mit
+ *    dem Support bei null, und der Fehler ist in den Protokollen
+ *    nicht auffindbar.
+ *
+ * Bewusst ohne Farbe aus dem Warnsystem: Ein rot leuchtender Kasten
+ * über die halbe Seite macht einen Aussetzer größer, als er ist.
+ */
+export function Stoerbild({
+  titel,
+  text,
+  kennung,
+  aktion,
+  zurueck = { pfad: "/portal", text: "Zur Übersicht" },
+}: {
+  titel: string;
+  text: ReactNode;
+  /** Fehlerkennung für die Rückfrage beim Support. */
+  kennung?: string;
+  /** Zusätzlicher Knopf, etwa zum erneuten Versuch. */
+  aktion?: ReactNode;
+  zurueck?: { pfad: string; text: string } | null;
+}) {
+  return (
+    <div className="a-erscheinen mx-auto flex min-h-[60vh] max-w-lg flex-col items-center justify-center px-4 text-center">
+      <div
+        aria-hidden
+        className="mb-6 flex h-12 w-12 items-center justify-center rounded-2xl"
+        style={{
+          background: "var(--f-belegt)",
+          color: "var(--t-leise)",
+        }}
+      >
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <path
+            d="M12 8.4v4.8M12 16.4h.01"
+            stroke="currentColor"
+            strokeWidth="1.9"
+            strokeLinecap="round"
+          />
+          <circle
+            cx="12"
+            cy="12"
+            r="8.6"
+            stroke="currentColor"
+            strokeWidth="1.6"
+          />
+        </svg>
+      </div>
+
+      <h1
+        className="text-[1.25rem] font-semibold tracking-tight"
+        style={{ color: "var(--t-stark)", fontFamily: "var(--font-manrope)" }}
+      >
+        {titel}
+      </h1>
+
+      <div
+        className="mt-2 text-[0.9375rem] leading-relaxed text-balance"
+        style={{ color: "var(--t-normal)" }}
+      >
+        {text}
+      </div>
+
+      {(aktion || zurueck) && (
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
+          {aktion}
+          {zurueck && (
+            <Link href={zurueck.pfad} className="knopf knopf-rand">
+              {zurueck.text}
+            </Link>
+          )}
+        </div>
+      )}
+
+      {kennung && (
+        <p className="t-mikro mt-6">
+          Kennung des Vorfalls:{" "}
+          <span className="font-mono" style={{ color: "var(--t-normal)" }}>
+            {kennung}
+          </span>
+        </p>
+      )}
+    </div>
+  );
+}

@@ -1,0 +1,227 @@
+import pathlib
+
+ROOT = pathlib.Path(r"C:\Users\SALEADMIN\Documents\Servicetechniker APP")
+
+
+def patch(pfad, paare):
+    p = ROOT / pfad
+    s = p.read_text(encoding="utf-8")
+    for alt, neu in paare:
+        if alt not in s:
+            raise SystemExit("NICHT GEFUNDEN in %s:\n---\n%s\n---" % (pfad, alt[:300]))
+        s = s.replace(alt, neu, 1)
+    p.write_text(s, encoding="utf-8")
+    print("ok", pfad)
+
+
+PORTAL_ABSCHNITT = """---
+
+## Subunternehmerportal
+
+Subunternehmer sind vertraglich zur Nutzung verpflichtet. Sie arbeiten in
+derselben App, sehen aber eine eigene Oberfläche — und **nur, was ihnen zugeteilt
+ist**: kein Anlagenverzeichnis, keine fremden Aufträge, keine Preise. Die
+Einschränkung liegt nicht in der Navigation, sondern in
+`api/berechtigung.py` und in den Filtern von `api/subunternehmer.py`.
+
+Zugänge gibt es zwei Arten: ein **Firmenkonto** (als `Portal User` am `Supplier`)
+und **Konten für Poliere** (als `Subunternehmer Mitarbeiter` mit hinterlegtem
+Benutzer). Der Polier stempelt für seine ganze Kolonne, das Firmenkonto sieht
+alles Eigene.
+
+### Was der Subunternehmer kann
+
+| Funktion | Ansicht | Bemerkung |
+|---|---|---|
+| Aufträge sehen, annehmen, Fortschritt melden, fertigmelden | `PortalAuftraegeView`, `PortalAuftragView` | Termin, Aufgabe und Frist gibt ÖKOVOLT vor |
+| Kalender: wann, wo, welche Aufgabe | `PortalAuftraegeView` (4 Wochen) | gelb = Frist läuft ab, rot = überschritten |
+| Ein- und ausstempeln, Pause | `StempelUhr` | eine große Fläche je Aktion |
+| Tägliche Personalmeldung | `PortalPersonalmeldungView` | nur bei Drittstaatsangehörigen |
+| Material **anfordern** | `PortalMaterialView` | keine Bestellung — ÖKOVOLT stellt das Material |
+| Behinderung, Bedenken, Mehrkosten melden | `PortalMeldungView` | Formalkategorien nach ÖNORM B 2110 |
+| Eigene Arbeitszeiten einsehen | `PortalZeitenView` | Stand der Freigabe, Beanstandungen |
+
+Was er **nicht** kann, ist ebenso festgelegt: Termine ändern, abnehmen,
+stornieren, Material bestellen. Dafür gibt es keine Schaltfläche — und der
+Server ließe es auch über den Sync-Weg nicht zu (`statuswechsel_pruefen()` in
+`validate()`, nicht nur in den whitelisted Methoden).
+
+### Mangel → sofort offener Auftrag
+
+Der häufigste Ablauf auf der Baustelle: Der Bauleiter geht durch, findet etwas,
+und der Verursacher soll es noch in derselben Woche beheben. Aus dem
+Mangelformular heraus erteilt der Bauleiter deshalb direkt einen Auftrag
+(`auftrag_aus_mangel`): Schweregrad wird zur Priorität, die Mangelfrist zur
+Auftragsfrist, die Fotos gehen mit. Der Auftrag liegt binnen Sekunden im Portal
+des Subunternehmers.
+
+### Fristen
+
+`fristen_nachziehen()` läuft täglich und bewertet Warnung und Verzug neu — ohne
+diesen Lauf bliebe ein Auftrag, den niemand anfasst, auf dem Stand des letzten
+Speicherns. Die Vorwarnzeit steht in den Baudoku Settings
+(`fristwarnung_tage`, Standard **3**). Im Portal steht dann nicht „Frist
+16.09.2026", sondern „noch 3 Tage" — und in Rot, sobald sie überschritten ist.
+
+### Zeiterfassung: GPS, Unveränderlichkeit, Freigabe
+
+Die Stempelungen dienen drei Zwecken zugleich: Abrechnungsgrundlage,
+Anwesenheitsnachweis und Arbeitszeitaufzeichnung der Subunternehmer-Mitarbeiter.
+Entsprechend sind sie **unveränderlich**: `Stempelung` lässt sich nach dem
+Anlegen nicht mehr bearbeiten und nicht löschen; eine Korrektur entwertet den
+alten Eintrag (`ungueltig`) und legt einen neuen mit Begründung an.
+
+Der Standort wird **nur im Augenblick des Stempelns** abgefragt, nie laufend —
+eine Bewegungsspur entsteht nicht (DSGVO, Art. 5 Abs. 1 lit. c). Liegt der Punkt
+außerhalb des Geofence (`geofence_radius_m`, Standard 300 m), wird die
+Stempelung **gekennzeichnet, nicht abgelehnt**. Fehlt GPS ganz, ebenso: In einer
+Halle gibt es keinen Empfang, und der Arbeitsbeginn darf daran nicht scheitern.
+Wer es strenger will, setzt `geofence_erzwingen`.
+
+Aus den Stempelungen leitet `Arbeitstag` Beginn, Ende, Pausen und Arbeitszeit ab
+und prüft gegen die Grenzwerte in den Settings:
+
+| Einstellung | Standard | Bedeutung |
+|---|---|---|
+| `azg_tag_minuten` | 600 | Tageshöchstarbeitszeit |
+| `azg_woche_minuten` | 3000 | Wochenhöchstarbeitszeit |
+| `pause_ab_minuten` | 360 | ab dieser Arbeitszeit ist eine Ruhepause fällig |
+| `pause_mindestens_minuten` | 30 | Mindestdauer der Ruhepause |
+
+> Die Standardwerte folgen dem AZG in seiner Grundform. Kollektivvertrag,
+> Gleitzeit- und Durchrechnungsregelungen können davon abweichen — **vor dem
+> Produktivbetrieb arbeitsrechtlich prüfen** und in den Settings anpassen. Die
+> App wertet aus und kennzeichnet; sie sperrt nicht.
+
+Auffällige Tage sind im `ZeitfreigabeView` des Bauleiters hervorgehoben, aber
+nicht gesperrt: Die Bewertung bleibt beim Menschen, die Kennzeichnung soll nur
+verhindern, dass sie ungeprüft durchlaufen. Erst die Freigabe macht aus einer
+Stempelung eine Abrechnungsgrundlage.
+
+### Personalmeldung — nur bei Drittstaatsangehörigen
+
+`Subunternehmer Mitarbeiter` leitet aus der Staatsangehörigkeit ab, ob jemand
+Drittstaatsangehöriger ist (EU/EWR/CH → nein). Beschäftigt eine Firma
+mindestens eine solche Person, ist die tägliche Meldung Pflicht
+(`personalmeldung_pflicht_drittstaat`); bei rein inländischen Kolonnen
+erscheint sie gar nicht erst.
+
+Die Meldung geht der Arbeit voraus: **Wer nicht gemeldet ist, kann nicht
+eingestempelt werden.** Ablaufende Ausweise und Bewilligungen meldet
+`ablaufende_nachweise_pruefen()` täglich, bevor sie bei einer Kontrolle
+auffallen.
+
+### ÖNORM B 2110
+
+`Bauvertragsmeldung` bildet die förmlichen Erklärungen des Auftragnehmers ab:
+
+| Art | Wirkung |
+|---|---|
+| Behinderungsanzeige | unverzüglich zu erstatten; Verzögerung wird in Stunden festgehalten |
+| Bedenkenanmeldung (Warnpflicht) | unverzüglich; dokumentiert die Enthaftung |
+| Mehrkostenankündigung dem Grunde nach | Anspruch bleibt gewahrt |
+| Leistungsänderung / Sonstiges | Nachweis im Schriftverkehr |
+
+Zeitpunkt des Eintritts und Zeitpunkt der Meldung erfasst der Server selbst
+(`gemeldet_am`), nicht der Meldende; nach der Entscheidung ist der Vorgang
+gesperrt. Anerkannte Behinderungen verlängern die Auftragsfrist über
+`frist_verlaengern()`. Damit ist im Streitfall belegbar, **wann** gemeldet
+wurde — worauf es bei „unverzüglich" allein ankommt.
+
+---
+"""
+
+patch(
+    "README.md",
+    [
+        (
+            "├── baudoku/doctype/       19 Doctypes (Datenmodell, Kapitel 3)",
+            "├── baudoku/doctype/       30 Doctypes (Datenmodell Kapitel 3 + Subunternehmerportal)",
+        ),
+        (
+            "├── api/                   REST-Endpunkte: sync, protokoll, dashboard, pdf, berechtigung",
+            "├── api/                   REST-Endpunkte: sync, protokoll, dashboard, pdf,\n│                          berechtigung, komponenten, mangel, subunternehmer",
+        ),
+        (
+            "├── utils/                 Plausibilitätsprüfung (IEC 62446-1), Jinja-Helfer",
+            "├── utils/                 Plausibilität (IEC 62446-1), Arbeitszeit, Geofence, Jinja",
+        ),
+        (
+            "├── src/components/        Prüfpunktkarte, Signaturpad, Fotoaufnahme, Karte, Messdaten\n└── src/views/             17 Ansichten (Dashboard bis Vorlageneditor)",
+            "├── src/components/        Prüfpunktkarte, Signaturpad, Fotoaufnahme, Karte, Stempeluhr\n└── src/views/             25 Ansichten (ÖKOVOLT-Oberfläche und Subunternehmerportal)",
+        ),
+        (
+            """→ http://localhost:8080 — die App läuft mit Demodaten (5 Anlagen, 4 Vorlagen,
+Mängel, Tagesberichte). Auch per `?demo=1` an der URL aktivierbar.""",
+            """→ http://localhost:8080 — die App läuft mit Demodaten (5 Anlagen, 4 Vorlagen,
+Mängel, Tagesberichte). Auch per `?demo=1` an der URL aktivierbar.
+
+Das **Subunternehmerportal** zeigt `?rolle=subu`:
+
+```
+http://localhost:8080/baudoku/portal?rolle=subu
+```
+
+→ Rolle Polier einer Firma mit vier Mann, davon zwei aus einem Drittstaat, drei
+laufenden Aufträgen (einer in Verzug, einer mit Fristwarnung) und offener
+Personalmeldung.""",
+        ),
+        (
+            """| Doctype | Zweck |
+|---|---|
+| `PV Anlage` | Prüfobjekt: Anlage, Baustelle, Standort, Moduldaten |
+| `Checklistenvorlage` | Vorlage mit Sektionen und Prüfpunkten, revisioniert |
+| `Pruefprotokoll` | ausgefüllte Checkliste inkl. Messdaten und Unterschriften |
+| `Mangel` | Mangel mit Schweregrad, Frist, Fotos, Nachweis |
+| `Tagesbericht` | Bauleiter- und Subunternehmerbericht mit Genehmigung |""",
+            """| Doctype | Zweck |
+|---|---|
+| `PV Anlage` | Prüfobjekt: Anlage, Baustelle, Standort, Moduldaten |
+| `Checklistenvorlage` | Vorlage mit Sektionen und Prüfpunkten, revisioniert |
+| `Pruefprotokoll` | ausgefüllte Checkliste inkl. Messdaten und Unterschriften |
+| `Mangel` | Mangel mit Schweregrad, Frist, Fotos, Nachweis |
+| `Tagesbericht` | Bauleiter- und Subunternehmerbericht mit Genehmigung |
+
+Subunternehmerportal:
+
+| Doctype | Zweck |
+|---|---|
+| `Subunternehmerauftrag` | zugeteilter Auftrag mit Termin, Aufgabe, Frist, Herkunft |
+| `Subunternehmer Mitarbeiter` | Person mit Ausweis, Bewilligung, Drittstaatskennzeichen |
+| `Stempelung` | einzelnes Zeitereignis mit Standort — unveränderlich |
+| `Arbeitstag` | daraus abgeleiteter Tag mit AZG-Prüfung und Freigabe |
+| `Personalmeldung` | tägliche Meldung der eingesetzten Personen |
+| `Materialanforderung` | Anforderung an ÖKOVOLT, wird zum ERPNext `Material Request` |
+| `Bauvertragsmeldung` | Behinderung, Bedenken, Mehrkosten nach ÖNORM B 2110 |""",
+        ),
+        (
+            """| Subunternehmer | nur eigene Berichte und Mängel (kein Desk-Zugang) |
+| Kunde | abgeschlossene Protokolle der eigenen Anlagen, lesend |""",
+            """| Subunternehmer | Portal: nur eigene Aufträge, Zeiten, Meldungen (kein Desk-Zugang) |
+| Polier | wie Subunternehmer, zusätzlich: für die eigene Kolonne stempeln und melden |
+| Kunde | abgeschlossene Protokolle der eigenen Anlagen, lesend |""",
+        ),
+        (
+            """* **Feldablauf** gegen den Dev-Server im Demo-Modus, auf Tablet-, Smartphone-
+  und Desktop-Profil (AK-02).""",
+            """* **Feldablauf und Portal** gegen den Dev-Server im Demo-Modus, auf Tablet-,
+  Smartphone- und Desktop-Profil (AK-02). Das Portal wird als Polier
+  durchgespielt: Personal melden, stempeln, Auftrag annehmen und fertigmelden,
+  Fristwarnung ablesen — und die Gegenprobe, dass das Anlagenverzeichnis nicht
+  erreichbar ist.""",
+        ),
+        (
+            """* Die Performancekriterien NFA-030/032/033 sind Messungen auf dem Referenzgerät
+  und noch nicht belegt.""",
+            """* Die Performancekriterien NFA-030/032/033 sind Messungen auf dem Referenzgerät
+  und noch nicht belegt.
+* Die App ist noch nie gegen eine laufende Bench gelaufen. Die
+  Frappe-Integrationstests sind geschrieben, aber nicht ausgeführt.
+* Die AZG-Grenzwerte sind Standardwerte und **vor dem Produktivbetrieb
+  arbeitsrechtlich zu prüfen** (Kollektivvertrag, Gleitzeit, Durchrechnung).
+* Das Portal ist online-gebunden: Stempelung und Auftragsrückmeldung brauchen
+  Verbindung. Der Offline-Puffer deckt bisher nur die ÖKOVOLT-Seite ab.""",
+        ),
+        ("## Bekannte Grenzen", PORTAL_ABSCHNITT + "\n## Bekannte Grenzen"),
+    ],
+)

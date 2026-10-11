@@ -1,0 +1,199 @@
+import "server-only";
+
+import { alle, eine } from "../db/verbindung.ts";
+import { DEMO_KUNDE } from "../demo/stammdaten.ts";
+import type { Einreicher, Lastschrift } from "../finanzen/sepa.ts";
+
+/**
+ * Was eingezogen werden kann und was schon eingezogen wurde.
+ *
+ * Eingezogen wird, was offen ist und wofür ein Mandat vorliegt. Beides
+ * muss zutreffen: Ein offener Beleg ohne Mandat ist eine Forderung,
+ * die überwiesen werden muss, kein Einzug - und eine Lastschrift ohne
+ * Mandat holt sich der Zahler binnen acht Wochen zurück, ohne Angabe
+ * von Gründen.
+ */
+
+export interface EinzugsZeile extends Lastschrift {
+  belegId: string;
+  kundeId: string | null;
+  nummer: string;
+  faelligSeit: string;
+}
+
+export interface NichtEinziehbar {
+  belegId: string;
+  nummer: string;
+  zahler: string;
+  betragEur: number;
+  grund: string;
+}
+
+export interface Einzugslage {
+  einziehbar: EinzugsZeile[];
+  nichtEinziehbar: NichtEinziehbar[];
+  summeEur: number;
+}
+
+/**
+ * Der Einreicher: das eigene Unternehmen.
+ *
+ * Die Gläubiger-Identifikationsnummer wird in Österreich von der
+ * Oesterreichischen Nationalbank vergeben und steht auf jedem Mandat.
+ * Ohne sie nimmt keine Bank einen Sammler an.
+ */
+export function ladeEinreicher(): Einreicher {
+  return {
+    name: DEMO_KUNDE.firma,
+    iban: "AT611904300234573201",
+    bic: "GIBAATWWXXX",
+    glaeubigerId: "AT12ZZZ00000000001",
+  };
+}
+
+/**
+ * Offene Belege mit ihrer Einziehbarkeit.
+ *
+ * Gutschriften bleiben außen vor: Sie werden überwiesen, nicht
+ * eingezogen. Eine Lastschrift über einen negativen Betrag gibt es
+ * nicht, und eine mit vertauschtem Vorzeichen wäre ein Einzug beim
+ * Falschen.
+ */
+export function ladeEinzugslage(): Einzugslage {
+  const zeilen = alle<{
+    id: string;
+    nummer: string;
+    art: string;
+    brutto: number;
+    zeitraum_von: string;
+    ausgestellt_am: string;
+    kunde_id: string | null;
+    firma: string | null;
+    iban: string | null;
+    bic: string | null;
+    mandat: string | null;
+    mandat_vom: string | null;
+    mandat_sequenz: string | null;
+    bereits: number;
+  }>(
+    `SELECT b.id, b.nummer, b.art, b.brutto, b.zeitraum_von, b.ausgestellt_am,
+            b.kunde_id, k.firma, k.iban, k.bic, k.mandat, k.mandat_vom,
+            k.mandat_sequenz,
+            (SELECT COUNT(*) FROM lastschriftposten p
+               JOIN lastschriftlauf l ON l.id = p.lauf_id
+              WHERE p.beleg_id = b.id AND l.status <> 'Storniert') AS bereits
+       FROM beleg b
+       LEFT JOIN kunde k ON k.id = b.kunde_id
+      WHERE b.status = 'Offen'
+      ORDER BY b.ausgestellt_am, b.nummer`,
+  );
+
+  const einziehbar: EinzugsZeile[] = [];
+  const nichtEinziehbar: NichtEinziehbar[] = [];
+
+  for (const z of zeilen) {
+    const zahler = z.firma ?? z.kunde_id ?? "unbekannt";
+
+    const grund =
+      z.bereits > 0
+        ? "Steht bereits in einem Lastschriftlauf."
+        : z.art === "Gutschrift"
+          ? "Gutschrift - wird überwiesen, nicht eingezogen."
+          : z.brutto <= 0
+            ? "Betrag ist null oder negativ."
+            : !z.kunde_id
+              ? "Dem Beleg ist kein Kunde zugeordnet."
+              : !z.iban
+                ? "Für diesen Kunden ist keine Bankverbindung hinterlegt."
+                : !z.mandat || !z.mandat_vom
+                  ? "Es liegt kein unterschriebenes Lastschriftmandat vor."
+                  : null;
+
+    if (grund) {
+      nichtEinziehbar.push({
+        belegId: z.id,
+        nummer: z.nummer,
+        zahler,
+        betragEur: z.brutto,
+        grund,
+      });
+      continue;
+    }
+
+    einziehbar.push({
+      belegId: z.id,
+      kundeId: z.kunde_id,
+      nummer: z.nummer,
+      faelligSeit: z.ausgestellt_am,
+      endeZuEnde: z.nummer,
+      zahler,
+      iban: z.iban!,
+      bic: z.bic ?? undefined,
+      betragEur: z.brutto,
+      mandat: z.mandat!,
+      mandatVom: z.mandat_vom!,
+      sequenz: (z.mandat_sequenz ?? "FRST") as Lastschrift["sequenz"],
+      verwendungszweck: `Energiegemeinschaft, Rechnung ${z.nummer}`,
+    });
+  }
+
+  return {
+    einziehbar,
+    nichtEinziehbar,
+    summeEur:
+      Math.round(einziehbar.reduce((s, z) => s + z.betragEur, 0) * 100) / 100,
+  };
+}
+
+export interface LastschriftLaufZeile {
+  id: string;
+  bezeichnung: string;
+  nachricht_id: string;
+  erstellt_am: string;
+  erstellt_von: string | null;
+  faellig_am: string;
+  anzahl: number;
+  summe_eur: number;
+  status: string;
+  eingereicht_am: string | null;
+}
+
+export function ladeLastschriftlaeufe(grenze = 12): LastschriftLaufZeile[] {
+  return alle<LastschriftLaufZeile>(
+    `SELECT id, bezeichnung, nachricht_id, erstellt_am, erstellt_von,
+            faellig_am, anzahl, summe_eur, status, eingereicht_am
+       FROM lastschriftlauf
+      ORDER BY erstellt_am DESC LIMIT ?`,
+    grenze,
+  );
+}
+
+export function ladeLastschriftlauf(
+  id: string,
+): (LastschriftLaufZeile & { datei: string | null }) | null {
+  return eine<LastschriftLaufZeile & { datei: string | null }>(
+    "SELECT * FROM lastschriftlauf WHERE id = ?",
+    id,
+  );
+}
+
+export interface PostenZeile {
+  ende_zu_ende: string;
+  iban: string;
+  mandat: string;
+  sequenz: string;
+  betrag_eur: number;
+  firma: string | null;
+}
+
+export function ladePosten(laufId: string): PostenZeile[] {
+  return alle<PostenZeile>(
+    `SELECT p.ende_zu_ende, p.iban, p.mandat, p.sequenz, p.betrag_eur,
+            k.firma
+       FROM lastschriftposten p
+       LEFT JOIN kunde k ON k.id = p.kunde_id
+      WHERE p.lauf_id = ?
+      ORDER BY p.ende_zu_ende`,
+    laufId,
+  );
+}

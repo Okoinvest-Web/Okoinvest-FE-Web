@@ -1,0 +1,497 @@
+     1	// src/lib/plattform/backend/demo/finanzen-kern.js
+     2	//
+     3	// Kern der Finanzen im Demo-Backend (ohne Rechteprüfung – die Operationen in finanzen.js prüfen vorher):
+     4	// Datenbestand db.finanzen, KYC-Anbindung für Auszahlungen, Rechnungsempfänger, Belege (Gutschrift/Rechnung) mit
+     5	// fortlaufender Nummer, Klärfälle und der Abrechnungslauf (Pacht, Contracting, Provision).
+     6	// Referenz für Frappe: Backend-Import/oekoinvest_app/oekoinvest_app/plattform/finanzen/abrechnung.py
+     7	
+     8	import * as v from "../../validierung";
+     9	import * as F from "../../finanzen/index.js";
+    10	import { intern } from "../demo";
+    11	import { jetzt, neueId } from "./hilfen";
+    12	import { kycFallFuer, kycFreigabeDb } from "./kycRegeln"; // KYC/KYB-Team: Freigabe „auszahlung“ (Gating) und Bankverbindung
+    13	import { backofficeEreignis } from "./backoffice";
+    14	
+    15	const { benachrichtigen, protokoll, nutzerById, nameVon } = intern;
+    16	
+    17	/** Technischer Nutzer für Lesezugriffe auf Anlagen-Stammdaten während eines Laufs (nie nach außen gegeben) */
+    18	export const SYSTEM_FINANZEN = Object.freeze({ id: "SYSTEM-FINANZEN", rollen: ["admin"], backofficeRollen: ["leitung"], aktiv: true, vorname: "Abrechnungslauf", nachname: "" });
+    19	
+    20	/** Schema der Demo-Sammlung db.finanzen – bei Änderung wird NUR diese Sammlung neu befüllt */
+    21	export const FIN_SCHEMA = 3; // 3: Aussteller = Eigentümergesellschaft (Gesellschaftsverzeichnis)
+    22	
+    23	export function leer() {
+    24	  return {
+    25	    v: FIN_SCHEMA,
+    26	    einstellungen: {},
+    27	    vpi: F.INDEX_STARTWERTE.map(([reihe, jahr, wert]) => ({ reihe, jahr, wert, quelle: "Beispielwert (Demo) – mit amtlicher Veröffentlichung abgleichen", geaendertAm: null })),
+    28	    pachtvertraege: [],
+    29	    belege: [],
+    30	    klaerfaelle: [],
+    31	    laeufe: [],
+    32	    zahlungslaeufe: [],
+    33	    nummernkreise: {},
+    34	    kycDemo: {},
+    35	    assets: [],
+    36	    kostentraeger: [],
+    37	    kosten: [],
+    38	  };
+    39	}
+    40	
+    41	const adresseText = (a) => {
+    42	  if (!a) return "";
+    43	  if (typeof a === "string") return v.text(a, 200);
+    44	  return [a.strasse, [a.plz, a.ort].filter(Boolean).join(" "), a.land].filter(Boolean).join(", ");
+    45	};
+    46	
+    47	// ================================================================ Einstellungen (Aussteller, Auftraggeber SEPA)
+    48	
+    49	/**
+    50	 * Stammdaten des Ausstellers und SEPA-Auftraggebers. Betrieb: Frappe „Plattform Finanzen Einstellungen“.
+    51	 * Demo: Umgebungsvariablen FINANZEN_UID, FINANZEN_IBAN, FINANZEN_BIC; ohne Angabe eine offensichtliche Beispiel-IBAN.
+    52	 */
+    53	export function einstellungen(db) {
+    54	  const e = db.finanzen?.einstellungen || {};
+    55	  return {
+    56	    firma: {
+    57	      name: "ÖkoInvest GmbH",
+    58	      anschrift: "Gewerbegebiet 10, 5121 Ostermiething, Österreich",
+    59	      land: "AT",
+    60	      firmenbuch: "FN 541505g, LG Ried im Innkreis",
+    61	      uid: e.uid ?? process.env.FINANZEN_UID ?? "",
+    62	    },
+    63	    auftraggeber: {
+    64	      name: "ÖkoInvest GmbH",
+    65	      iban: e.iban || process.env.FINANZEN_IBAN || "AT611904300234573201",
+    66	      bic: e.bic || process.env.FINANZEN_BIC || "",
+    67	      beispiel: !(e.iban || process.env.FINANZEN_IBAN),
+    68	    },
+    69	    zahlungszielTage: Number(e.zahlungszielTage ?? 14),
+    70	    vorlaufTage: Number(e.vorlaufTage ?? 14),
+    71	    erpnext: { aktiv: false, modus: "Demo-/Eigenbetrieb", hinweis: "ERPNext ist in der Demo nicht angebunden – Belege entstehen als Plattform-Abrechnungen. Im Betrieb mit ERPNext werden Purchase/Sales Invoices erzeugt." },
+    72	  };
+    73	}
+    74	
+    75	// ================================================================ Gesellschaften (Eigentümergesellschaft / SPV)
+    76	//
+    77	// Contracting-Anlagen gehören der ÖkoInvest GmbH oder einer Projektgesellschaft (SPV). Rechnungsaussteller der
+    78	// Contracting-Rechnung ist die Eigentümergesellschaft der Anlage, Pächter (und damit Aussteller der Gutschrift und
+    79	// SEPA-Auftraggeber) die Gesellschaft des Pachtvertrags. Stammdaten liefert das Gesellschaftsverzeichnis (Team A2);
+    80	// das Feld an der Anlage pflegt die Fachprüfung (Team B). Beides wird hier TOLERANT gelesen – ohne Angaben gilt die
+    81	// ÖkoInvest GmbH. Alle Belege, Aktivierungen und Zahlungsläufe tragen `gesellschaftId` (Auswertung je Gesellschaft,
+    82	// später Bankfinanzierung/DSCR je SPV).
+    83	
+    84	export const OEKOINVEST_ID = "OEKOINVEST";
+    85	
+    86	/** Einträge des Gesellschaftsverzeichnisses (Team Dienste: db.dienste.gesellschaften; tolerant auch db.gesellschaften) */
+    87	function verzeichnis(db) {
+    88	  if (Array.isArray(db.dienste?.gesellschaften)) return db.dienste.gesellschaften;
+    89	  const g = db.gesellschaften;
+    90	  return Array.isArray(g) ? g : Array.isArray(g?.liste) ? g.liste : Array.isArray(g?.gesellschaften) ? g.gesellschaften : [];
+    91	}
+    92	const istOekoInvest = (g) => !!g && (g.name || g.firma) === "ÖkoInvest GmbH";
+    93	
+    94	/** Alle bekannten Gesellschaften (ÖkoInvest GmbH + Verzeichnis) */
+    95	export function gesellschaftenListe(db) {
+    96	  const liste = [gesellschaftFuer(db, OEKOINVEST_ID), ...verzeichnis(db).filter((g) => g?.id && !istOekoInvest(g) && g.status !== "aufgeloest").map((g) => gesellschaftFuer(db, g.id))];
+    97	  for (const a of db.anlagen?.anlagen || []) {
+    98	    const g = anlageGesellschaft(db, a);
+    99	    if (!liste.some((x) => x.id === g.id)) liste.push(g);
+   100	  }
+   101	  return liste;
+   102	}
+   103	
+   104	/** Stammdaten einer Gesellschaft für Belege und SEPA: {id, name, anschrift, land, uid, firmenbuch, iban, bic, erpnextCompany, spv} */
+   105	export function gesellschaftFuer(db, id) {
+   106	  const e = einstellungen(db);
+   107	  // Nur Name bekannt (Feld „Eigentümergesellschaft“ der Anlage, noch ohne Verzeichnis-Eintrag): Anschrift/UID fehlen → Pflichtangaben-Warnung
+   108	  if (String(id || "").startsWith("NAME:")) {
+   109	    const name = String(id).slice(5);
+   110	    return { id, name, anschrift: "", land: "", uid: "", firmenbuch: "", iban: "", bic: "", beispielIban: false, erpnextCompany: name, spv: true, bekannt: true, nurName: true };
+   111	  }
+   112	  const eintrag = id && id !== OEKOINVEST_ID ? verzeichnis(db).find((x) => x.id === id) : null;
+   113	  if (istOekoInvest(eintrag)) id = OEKOINVEST_ID; // ÖkoInvest GmbH steht auch im Verzeichnis – Stammdaten aus den Finanzeinstellungen
+   114	  if (!id || id === OEKOINVEST_ID) return { id: OEKOINVEST_ID, name: e.firma.name, anschrift: e.firma.anschrift, land: e.firma.land, uid: e.firma.uid, firmenbuch: e.firma.firmenbuch, iban: e.auftraggeber.iban, bic: e.auftraggeber.bic, beispielIban: e.auftraggeber.beispiel, erpnextCompany: "ÖkoInvest GmbH", spv: false, bekannt: true };
+   115	  const g = eintrag || {};
+   116	  const bank = g.bank || g.bankverbindung || {};
+   117	  return {
+   118	    id, name: g.name || g.firma || g.titel || id, anschrift: adresseText(g.anschrift || g.sitz || g.adresse) || "", land: g.land || g.sitzLand || "",
+   119	    uid: g.uid || g.uidNummer || "", firmenbuch: [g.firmenbuch || g.registernummer || g.fn, g.gericht].filter(Boolean).join(", "),
+   120	    iban: g.iban || bank.iban || "", bic: g.bic || bank.bic || "", beispielIban: false, erpnextCompany: g.erpCompany || g.erpnextCompany || g.company || g.name || "", spv: true, bekannt: !!g.id,
+   121	  };
+   122	}
+   123	
+   124	/**
+   125	 * Eigentümergesellschaft einer Anlage. Felder der Fachprüfung: `eigentuemer` (Name, Standard „ÖkoInvest GmbH“) und
+   126	 * `eigentuemerId` (Kennung im Gesellschaftsverzeichnis, folgt). Reihenfolge: Verzeichnis-Eintrag → Name → ÖkoInvest GmbH.
+   127	 */
+   128	export function anlageGesellschaft(db, a) {
+   129	  if (!a) return gesellschaftFuer(db, OEKOINVEST_ID);
+   130	  const roh = a.eigentuemerId ?? a.eigentuemerGesellschaftId ?? a.gesellschaftId ?? null;
+   131	  const id = (typeof roh === "object" ? roh?.id : roh) || null;
+   132	  const name = (typeof a.eigentuemer === "string" ? a.eigentuemer : a.eigentuemer?.name || "").trim();
+   133	  const standard = !name || name === "ÖkoInvest GmbH";
+   134	  if (id && id !== OEKOINVEST_ID) {
+   135	    const g = gesellschaftFuer(db, id);
+   136	    if (g.bekannt) return g;
+   137	    if (standard) return g;
+   138	  }
+   139	  if (standard) return gesellschaftFuer(db, OEKOINVEST_ID);
+   140	  // Name ohne Kennung: Eintrag gleichen Namens im Verzeichnis (Anschrift, UID), sonst nur der Name (Pflichtangaben-Warnung)
+   141	  const treffer = verzeichnis(db).find((x) => (x.name || x.firma) === name && x.status !== "aufgeloest");
+   142	  return treffer ? gesellschaftFuer(db, treffer.id) : gesellschaftFuer(db, `NAME:${name}`);
+   143	}
+   144	export const anlageGesellschaftId = (db, a) => anlageGesellschaft(db, a).id;
+   145	
+   146	/** Stromabnehmer (Rechnungsempfänger Contracting): eigenes Feld der Fachprüfung, sonst Kunde/Organisation der Anlage */
+   147	export function stromabnehmerVon(roh, a) {
+   148	  const s = roh?.stromabnehmer;
+   149	  const id = typeof s === "string" ? s : s?.id || null;
+   150	  const kontoId = roh?.stromabnehmerId || roh?.stromabnehmerKontoId || s?.kontoId || (id && id.startsWith("U-") ? id : null);
+   151	  const organisationId = roh?.stromabnehmerOrganisationId || s?.organisationId || (id && id.startsWith("O-") ? id : null);
+   152	  if (kontoId || organisationId) return { kontoId: kontoId || null, organisationId: organisationId || null, quelle: "stromabnehmer" };
+   153	  return { kontoId: a?.kunde?.id || roh?.kundeId || null, organisationId: a?.organisation?.id || roh?.organisationId || null, quelle: "kunde" };
+   154	}
+   155	
+   156	// ================================================================ KYC (Auszahlung) und Rechnungsempfänger
+   157	
+   158	/**
+   159	 * Freigabe einer Auszahlung an ein Konto (Pacht-Gutschrift) – verbindlich über das KYC-Modul: kycFreigabeDb(db, "auszahlung",
+   160	 * {kontoId, flaecheId}) (= kycFreigabe/kycSperre des KYC-Teams: Verifizierung + geprüfte IBAN + Eigentumsnachweis der Fläche;
+   161	 * Geltung nach PLATTFORM_KYC_GATING bzw. Compliance-Einstellung – in der Entwicklung nur Pilot-Konten). Zusätzlich gilt immer:
+   162	 * Die Empfänger-IBAN stammt ausschließlich aus der Verifizierung – ohne gültige IBAN keine Auszahlung.
+   163	 * Nur wenn das KYC-Modul in dieser Demo-Datenbank (noch) keine Daten hat, gelten die Demo-Stammdaten db.finanzen.kycDemo.
+   164	 */
+   165	export function kycAuszahlung(db, { kontoId, organisationId = null, flaecheId = null }) {
+   166	  if (db.kyc) {
+   167	    const fr = kycFreigabeDb(db, "auszahlung", { kontoId, organisationId, flaecheId });
+   168	    const bank = kycFallFuer(db, { kontoId, organisationId })?.bank || {};
+   169	    const gruende = [...fr.gruende];
+   170	    if (!F.ibanPruefen(bank.iban)) gruende.push(bank.iban ? "Die IBAN der Bankverbindung ist ungültig." : "In der Verifizierung ist keine Bankverbindung hinterlegt – ohne IBAN keine Auszahlung.");
+   171	    return { quelle: "kyc", aktiv: fr.aktiv !== false, status: fr.status, verifiziert: fr.status === "verifiziert", ok: gruende.length === 0, gruende, iban: bank.iban || "", bic: bank.bic || "", kontoinhaber: bank.kontoinhaber || "" };
+   172	  }
+   173	  const d = db.finanzen?.kycDemo?.[kontoId];
+   174	  const gruende = [];
+   175	  if (!d || d.status !== "verifiziert") gruende.push("Die Verifizierung ist nicht abgeschlossen.");
+   176	  if (!d?.iban || !d?.bankGeprueft) gruende.push("Es fehlt eine geprüfte Bankverbindung (IBAN, Kontoinhaber = verifizierte Person/Firma).");
+   177	  else if (!F.ibanPruefen(d.iban)) gruende.push("Die IBAN der geprüften Bankverbindung ist ungültig.");
+   178	  if (flaecheId && d?.status === "verifiziert" && !(d.eigentum || []).includes(flaecheId)) gruende.push("Für diese Fläche liegt kein geprüfter Eigentumsnachweis vor.");
+   179	  return { quelle: "demo", status: d?.status || "offen", verifiziert: d?.status === "verifiziert", ok: gruende.length === 0, gruende, iban: d?.iban || "", bic: d?.bic || "", kontoinhaber: d?.kontoinhaber || "" };
+   180	}
+   181	
+   182	/** Rechnungsempfänger bzw. Gutschriftsempfänger (Name, Anschrift, Land, UID) – aus KYC, sonst aus dem Konto */
+   183	export function parteiFuer(db, { kontoId = null, organisationId = null }) {
+   184	  const u = kontoId ? nutzerById(db, kontoId) : null;
+   185	  const org = organisationId ? (db.organisationen || []).find((o) => o.id === organisationId) : null;
+   186	  const fall = db.kyc ? kycFallFuer(db, { kontoId, organisationId }) : null;
+   187	  const demo = kontoId ? db.finanzen?.kycDemo?.[kontoId] : null;
+   188	  const firma = fall?.firma?.name || org?.name || demo?.firma || u?.firma || "";
+   189	  const person = u ? nameVon(db, u.id) : "";
+   190	  return {
+   191	    name: firma || person || "–",
+   192	    zuHaenden: firma && person ? person : "",
+   193	    anschrift: adresseText(fall?.firma?.anschrift || fall?.firma?.sitz || fall?.person?.anschrift || fall?.anschrift || demo?.anschrift) || "",
+   194	    land: fall?.firma?.land || fall?.person?.land || demo?.land || org?.land || "",
+   195	    uid: fall?.firma?.uid || fall?.steuer?.uid || demo?.uid || "",
+   196	    email: u?.email || "",
+   197	    kleinunternehmer: !!demo?.kleinunternehmer,
+   198	  };
+   199	}
+   200	
+   201	// ================================================================ Belege
+   202	
+   203	function naechsteNummer(db, kreis, jahr) {
+   204	  const k = (db.finanzen.nummernkreise[kreis] ||= {});
+   205	  k[jahr] = (k[jahr] || 0) + 1;
+   206	  return `${kreis}-${jahr}-${String(k[jahr]).padStart(5, "0")}`;
+   207	}
+   208	
+   209	const aktiverBeleg = (db, schluessel) => db.finanzen.belege.find((b) => b.schluessel === schluessel && b.status !== "storniert");
+   210	
+   211	function klaerfallSchliessen(db, schluessel, text) {
+   212	  for (const k of db.finanzen.klaerfaelle.filter((x) => x.schluessel === schluessel && x.status === "offen")) {
+   213	    k.status = "erledigt";
+   214	    k.erledigtAm = jetzt();
+   215	    k.kommentar = text;
+   216	  }
+   217	}
+   218	
+   219	/** Klärfall anlegen bzw. offenen Klärfall zum selben Schlüssel aktualisieren */
+   220	export function klaerfallMelden(db, { art, schluessel, bezug, bezugText, gruende, laufId }) {
+   221	  const offen = db.finanzen.klaerfaelle.find((k) => k.schluessel === schluessel && k.status === "offen");
+   222	  if (offen) {
+   223	    Object.assign(offen, { gruende, zuletztAm: jetzt(), anzahl: (offen.anzahl || 1) + 1, laufId });
+   224	    return { klaerfall: offen, neu: false };
+   225	  }
+   226	  const k = { id: neueId("KL"), art, schluessel, bezug, bezugText, gruende, status: "offen", erstelltAm: jetzt(), zuletztAm: jetzt(), anzahl: 1, laufId, kommentar: "", verlauf: [] };
+   227	  db.finanzen.klaerfaelle.push(k);
+   228	  return { klaerfall: k, neu: true };
+   229	}
+   230	
+   231	const TITEL = { pacht: "Gutschrift – Pachtabrechnung", contracting: "Rechnung – Contracting-Strom", provision: "Rechnung – Vermittlungsprovision" };
+   232	
+   233	/** Beleg erzeugen (bzw. im Trockenlauf nur berechnen) */
+   234	export function belegAnlegen(db, n, e, { trockenlauf = false, melden = true, heute = F.heute(), erstelltAm = null } = {}) {
+   235	  const art = F.ABRECHNUNG_ARTEN[e.art];
+   236	  const netto = F.summe(e.positionen, "betrag");
+   237	  const steuer = F.steuerBerechnen(netto, e.steuerVorlage);
+   238	  const ges = gesellschaftFuer(db, e.gesellschaftId);
+   239	  const beleg = {
+   240	    id: trockenlauf ? null : neueId("AR"),
+   241	    nummer: trockenlauf ? "(Vorschau)" : naechsteNummer(db, art.kreis, F.jahrVon(heute)),
+   242	    art: e.art,
+   243	    beleg: e.art === "pacht" ? "gutschrift" : "rechnung",
+   244	    titel: TITEL[e.art],
+   245	    empfaengerId: e.empfaengerId || null,
+   246	    organisationId: e.organisationId || null,
+   247	    partei: e.partei,
+   248	    // Gutschrift: ausstellende Gesellschaft = Pächter; Rechnung: leistende Gesellschaft (Contracting: Eigentümergesellschaft)
+   249	    gesellschaftId: ges.id,
+   250	    aussteller: { name: ges.name, anschrift: ges.anschrift, land: ges.land, uid: ges.uid, firmenbuch: ges.firmenbuch },
+   251	    bezug: e.bezug,
+   252	    bezugText: e.bezugText,
+   253	    schluessel: e.schluessel,
+   254	    zeitraum: e.zeitraum,
+   255	    rechnungsdatum: heute,
+   256	    faelligAm: e.faelligAm,
+   257	    positionen: e.positionen,
+   258	    netto,
+   259	    steuer: { vorlage: steuer.vorlage, label: steuer.label, satz: steuer.satz, art: steuer.art, betrag: steuer.betrag, text: steuer.text, rechtsgrundlage: steuer.rechtsgrundlage },
+   260	    brutto: steuer.brutto,
+   261	    waehrung: "EUR",
+   262	    erklaerung: e.erklaerung || [],
+   263	    zaehlerstaende: e.zaehlerstaende || [],
+   264	    hinweise: e.hinweise || [],
+   265	    kennzahlen: e.kennzahlen || {},
+   266	    status: "offen",
+   267	    bezahltAm: null,
+   268	    zahlungslaufId: null,
+   269	    mahnungen: [],
+   270	    erpnext: { doctype: art.erpnext, name: null },
+   271	    laufId: e.laufId || null,
+   272	    erstelltAm: erstelltAm || jetzt(),
+   273	    erstelltVon: n?.id || null,
+   274	  };
+   275	  beleg.pflichtFehlt = F.pflichtangabenPruefen({ ...beleg, empfaenger: beleg.partei });
+   276	  if (trockenlauf) return beleg;
+   277	  db.finanzen.belege.push(beleg);
+   278	  klaerfallSchliessen(db, e.schluessel, `Beleg ${beleg.nummer} erzeugt.`);
+   279	  protokoll(db, n?.id === SYSTEM_FINANZEN.id ? null : n, "abrechnung_erzeugt", "abrechnung", beleg.id, `${art.label} ${beleg.nummer}: ${F.euro(beleg.brutto)} (${e.bezugText})`);
+   280	  if (melden) belegMelden(db, beleg, "neu");
+   281	  return beleg;
+   282	}
+   283	
+   284	/** Benachrichtigung an Empfänger (Konto bzw. Organisationsinhaber) – Glocke + E-Mail ohne Beträge */
+   285	export function belegMelden(db, b, ereignis) {
+   286	  const empfaenger = new Set();
+   287	  if (b.empfaengerId) empfaenger.add(b.empfaengerId);
+   288	  if (!b.empfaengerId && b.organisationId) for (const m of (db.mitgliedschaften || []).filter((x) => x.organisationId === b.organisationId && ["inhaber", "admin"].includes(x.rolle))) empfaenger.add(m.nutzerId);
+   289	  const label = F.ABRECHNUNG_ARTEN[b.art].label;
+   290	  const texte = {
+   291	    neu: { titel: `${b.beleg === "gutschrift" ? "Neue Gutschrift" : "Neue Rechnung"} ${b.nummer}`, text: `${label} für ${F.datumDe(b.zeitraum.von)} – ${F.datumDe(b.zeitraum.bis)} liegt im Portal bereit.`, betreff: "Neue Abrechnung im Portal – ÖkoInvest", mail: "Für Sie liegt eine neue Abrechnung im Portal von ÖkoInvest bereit. PDF und Details finden Sie unter „Abrechnungen“." },
+   292	    bezahlt: b.beleg === "gutschrift"
+   293	      ? { titel: `Auszahlung ${b.nummer} ausgeführt`, text: `Die Pacht für ${F.datumDe(b.zeitraum.von)} – ${F.datumDe(b.zeitraum.bis)} wurde überwiesen.`, betreff: "Pachtzahlung ausgeführt – ÖkoInvest", mail: "Eine Pachtzahlung wurde ausgeführt. Details finden Sie im Portal unter „Abrechnungen“." }
+   294	      : { titel: `Zahlung zu ${b.nummer} eingegangen`, text: "Vielen Dank – die Zahlung ist verbucht.", betreff: "Zahlung eingegangen – ÖkoInvest", mail: "Ihre Zahlung ist bei uns eingegangen. Details finden Sie im Portal unter „Abrechnungen“." },
+   295	    erinnerung: { titel: `Zahlungserinnerung ${b.nummer}`, text: `Die Rechnung war am ${F.datumDe(b.faelligAm)} fällig.`, betreff: "Zahlungserinnerung – ÖkoInvest", mail: "Zu einer Rechnung im Portal von ÖkoInvest ist noch keine Zahlung eingegangen. Details finden Sie unter „Abrechnungen“." },
+   296	  }[ereignis];
+   297	  if (!texte) return;
+   298	  for (const id of empfaenger) {
+   299	    const u = nutzerById(db, id);
+   300	    if (u) benachrichtigen(db, u, { art: "abrechnung", titel: texte.titel, text: texte.text, link: "/portal/abrechnungen", objektArt: "abrechnung", objektId: b.id }, { mailBetreff: texte.betreff, mailText: texte.mail });
+   301	  }
+   302	}
+   303	
+   304	// ================================================================ Provision ↔ Rechnung
+   305	
+   306	/** Provisionsstatus aus dem Zahlungsstatus der Rechnung nachziehen (offen → in_rechnung → bezahlt) */
+   307	export function provisionNachziehen(db, n, b) {
+   308	  if (b.art !== "provision") return;
+   309	  const pv = db.provisionen.find((p) => p.id === b.bezug?.provisionId);
+   310	  if (!pv || pv.status === "storniert") return;
+   311	  const ziel = F.provisionStatusAusRechnung(b);
+   312	  const reihenfolge = ["offen", "in_rechnung", "bezahlt"];
+   313	  if (reihenfolge.indexOf(ziel) <= reihenfolge.indexOf(pv.status)) return;
+   314	  const von = pv.status;
+   315	  pv.status = ziel;
+   316	  pv.statusVerlauf = pv.statusVerlauf || [];
+   317	  pv.statusVerlauf.push({ status: ziel, am: jetzt(), vonId: n?.id && n.id !== SYSTEM_FINANZEN.id ? n.id : null, vonRolle: "system", kommentar: ziel === "bezahlt" ? `Zahlung zu Rechnung ${b.nummer} verbucht.` : `Rechnung ${b.nummer} gestellt.` });
+   318	  pv.rechnung = { id: b.id, nummer: b.nummer, faelligAm: b.faelligAm };
+   319	  protokoll(db, n?.id === SYSTEM_FINANZEN.id ? null : n, "status", "provision", pv.id, `${von} → ${ziel} (Rechnung ${b.nummer})`);
+   320	  backofficeEreignis(db, { typ: "status", art: "provision", objekt: pv, von, nach: ziel }); // Automationen
+   321	}
+   322	
+   323	// ================================================================ Abrechnungslauf
+   324	
+   325	/** Pachtvertrag → Parameter der Fälligkeitsberechnung */
+   326	export function vertragFuerFaelligkeit(db, pt) {
+   327	  return { ...pt, vorlaufTage: pt.vorlaufTage ?? einstellungen(db).vorlaufTage, zahlungszielTage: pt.zahlungszielTage ?? einstellungen(db).zahlungszielTage };
+   328	}
+   329	
+   330	/** Steuervorlage eines Pachtvertrags (eigene Wahl oder Vorschlag nach Land/Option/Kleinunternehmer) */
+   331	export function pachtSteuerVorlage(pt) {
+   332	  return pt.steuervorlage && F.STEUERVORLAGEN[pt.steuervorlage] ? pt.steuervorlage : F.steuerVorschlag("pacht", pt.land, { option: !!pt.steuerOption, kleinunternehmer: !!pt.kleinunternehmer }).vorlage;
+   333	}
+   334	
+   335	/**
+   336	 * Gesperrte Auszahlung sichtbar machen: je Eigentümer und Vertrag ein Klärfall „KYC unvollständig“ (nicht stillschweigend
+   337	 * überspringen); ist die Freigabe inzwischen erteilt, wird der Klärfall geschlossen.
+   338	 */
+   339	export function kycKlaerfall(db, lauf, pt, partei, kyc, trocken = false) {
+   340	  const schluessel = `KYC:${pt.eigentuemerId}:${pt.id}`;
+   341	  if (kyc.ok) {
+   342	    if (!trocken) klaerfallSchliessenKyc(db, schluessel);
+   343	    return;
+   344	  }
+   345	  const e = { art: "pacht", schluessel, bezug: { pachtvertragId: pt.id, kontoId: pt.eigentuemerId }, bezugText: `Auszahlung an ${partei?.name || pt.eigentuemerId} (${pt.bezeichnung})`, gruende: [`KYC unvollständig: ${kyc.gruende.join(" ")}`] };
+   346	  if (trocken) return;
+   347	  const vorher = db.finanzen.klaerfaelle.find((k) => k.schluessel === schluessel && k.status === "offen");
+   348	  if (vorher && vorher.laufId === lauf.id) return;
+   349	  const { klaerfall, neu } = klaerfallMelden(db, { ...e, laufId: lauf.id });
+   350	  lauf.klaerfaelle.push({ id: klaerfall.id, art: "pacht", bezugText: e.bezugText, gruende: e.gruende, neu });
+   351	}
+   352	
+   353	export function klaerfallSchliessenKyc(db, schluessel, text = "KYC-Freigabe für Auszahlungen erteilt.") {
+   354	  for (const k of db.finanzen.klaerfaelle.filter((x) => x.schluessel === schluessel && x.status === "offen")) Object.assign(k, { status: "erledigt", erledigtAm: jetzt(), kommentar: text });
+   355	}
+   356	
+   357	/**
+   358	 * Lauf ausführen (innerhalb einer Schreibtransaktion).
+   359	 * opt: { art: pacht|contracting|provision|alle, stichtag, monat (Contracting), trockenlauf, vertragIds[], anlageIds[], vorab: { anlagen: {id: {anlage, vertrag, messpunkte, zeilen}} }, melden }
+   360	 */
+   361	export function laufAusfuehren(db, n, opt) {
+   362	  const art = opt.art || "alle";
+   363	  const stichtag = opt.stichtag || F.heute();
+   364	  const monat = opt.monat || F.vormonat(stichtag.slice(0, 7));
+   365	  const trocken = !!opt.trockenlauf;
+   366	  const lauf = { id: trocken ? null : neueId("LA"), art, stichtag, monat, trockenlauf: trocken, am: jetzt(), vonId: n?.id && n.id !== SYSTEM_FINANZEN.id ? n.id : null, vonName: n?.id === SYSTEM_FINANZEN.id ? "Scheduler" : nameVon(db, n?.id) || "", erzeugt: [], klaerfaelle: [], vorhanden: 0, uebersprungen: 0 };
+   367	  const erzeugen = (e) => {
+   368	    const b = belegAnlegen(db, n, { ...e, laufId: lauf.id }, { trockenlauf: trocken, melden: opt.melden !== false, heute: opt.rechnungsdatum || F.heute() });
+   369	    lauf.erzeugt.push({ id: b.id, nummer: b.nummer, art: b.art, empfaenger: b.partei?.name, zeitraum: b.zeitraum, netto: b.netto, brutto: b.brutto, bezugText: b.bezugText });
+   370	    return b;
+   371	  };
+   372	  const klaeren = (e) => {
+   373	    if (trocken) {
+   374	      lauf.klaerfaelle.push({ id: null, art: e.art, bezugText: e.bezugText, gruende: e.gruende, neu: true });
+   375	      return;
+   376	    }
+   377	    const { klaerfall, neu } = klaerfallMelden(db, { ...e, laufId: lauf.id });
+   378	    lauf.klaerfaelle.push({ id: klaerfall.id, art: e.art, bezugText: e.bezugText, gruende: e.gruende, neu });
+   379	  };
+   380	  const anlagen = opt.vorab?.anlagen || {};
+   381	
+   382	  // ---------------------------------------------------------------- Pacht
+   383	  if (art === "pacht" || art === "alle") {
+   384	    for (const pt of db.finanzen.pachtvertraege) {
+   385	      if (!["aktiv", "gekuendigt"].includes(pt.status)) continue;
+   386	      if (opt.vertragIds?.length && !opt.vertragIds.includes(pt.id)) continue;
+   387	      const eigentuemer = nutzerById(db, pt.eigentuemerId);
+   388	      for (const f of F.abzurechnen(vertragFuerFaelligkeit(db, pt), stichtag)) {
+   389	        if (aktiverBeleg(db, f.schluessel)) {
+   390	          lauf.vorhanden++;
+   391	          continue;
+   392	        }
+   393	        const bezugText = `${pt.bezeichnung} (${pt.id}) ${F.datumDe(f.von)} – ${F.datumDe(f.bis)}`;
+   394	        let ertrag = { kwh: null, fehlt: [] };
+   395	        if (pt.modell === "umsatz" && f.phase === "pacht") {
+   396	          const a = anlagen[pt.anlageId];
+   397	          ertrag = a ? F.ertragAusMonatswerten(a.zeilen, a.messpunkte, f.von, f.bis) : { kwh: null, fehlt: ["keine Anlage/Monatswerte verknüpft"] };
+   398	        }
+   399	        const r = F.pachtPositionen(pt, f, { indexTabelle: db.finanzen.vpi, ertragKwh: ertrag.kwh, ertragFehlt: ertrag.fehlt });
+   400	        if (r.klaerung || !eigentuemer) {
+   401	          klaeren({ art: "pacht", schluessel: f.schluessel, bezug: { pachtvertragId: pt.id }, bezugText, gruende: [r.klaerung || "Eigentümer-Konto nicht gefunden."] });
+   402	          continue;
+   403	        }
+   404	        if (!(r.netto > 0)) {
+   405	          lauf.uebersprungen++;
+   406	          continue;
+   407	        }
+   408	        const partei = parteiFuer(db, { kontoId: pt.eigentuemerId });
+   409	        const kyc = kycAuszahlung(db, { kontoId: pt.eigentuemerId, flaecheId: pt.flaecheId || null });
+   410	        kycKlaerfall(db, lauf, pt, partei, kyc, trocken);
+   411	        const pachtGesellschaft = pt.gesellschaftId || (pt.anlageId && anlagen[pt.anlageId] ? anlageGesellschaftId(db, anlagen[pt.anlageId].roh || anlagen[pt.anlageId].anlage) : OEKOINVEST_ID);
+   412	        erzeugen({
+   413	          art: "pacht", gesellschaftId: pachtGesellschaft, empfaengerId: pt.eigentuemerId, partei, schluessel: f.schluessel,
+   414	          bezug: { pachtvertragId: pt.id, flaecheId: pt.flaecheId || null, anlageId: pt.anlageId || null, phase: f.phase },
+   415	          bezugText, zeitraum: { von: f.von, bis: f.bis }, faelligAm: f.faelligAm, positionen: r.positionen, steuerVorlage: pachtSteuerVorlage(pt),
+   416	          erklaerung: r.erklaerung, kennzahlen: { ...r.basis, phase: f.phase, zahlweise: f.zahlweise },
+   417	          hinweise: kyc.ok ? [] : [`Auszahlung gesperrt: ${kyc.gruende.join(" ")}`],
+   418	        });
+   419	      }
+   420	    }
+   421	  }
+   422	
+   423	  // ---------------------------------------------------------------- Contracting (Monat)
+   424	  if (art === "contracting" || art === "alle") {
+   425	    const z = F.monatsZeitraum(monat);
+   426	    for (const [anlageId, a] of Object.entries(anlagen)) {
+   427	      if (!a.vertrag || a.vertrag.status !== "aktiv") continue;
+   428	      if (opt.anlageIds?.length && !opt.anlageIds.includes(anlageId)) continue;
+   429	      if (!a.vertrag.beginn || a.vertrag.beginn > z.bis) continue;
+   430	      const schluessel = `CV:${anlageId}:${monat}`;
+   431	      if (aktiverBeleg(db, schluessel)) {
+   432	        lauf.vorhanden++;
+   433	        continue;
+   434	      }
+   435	      const bezugText = `${a.anlage.name} (${anlageId}) ${monat.slice(5)}/${monat.slice(0, 4)}`;
+   436	      const r = F.contractingAbrechnen({ vertrag: a.vertrag, anlage: a.anlage, monat, messpunkte: a.messpunkte, zeilen: a.zeilen, indexTabelle: db.finanzen.vpi });
+   437	      const { kontoId, organisationId } = stromabnehmerVon(a.roh, a.anlage);
+   438	      const ges = anlageGesellschaft(db, a.roh || a.anlage);
+   439	      const gesellschaftId = ges.id;
+   440	      if (r.ok && !ges.bekannt) {
+   441	        klaeren({ art: "contracting", schluessel, bezug: { anlageId, monat }, bezugText, gruende: [`Eigentümergesellschaft ${gesellschaftId} nicht im Gesellschaftsverzeichnis – Rechnungsaussteller unklar.`] });
+   442	        continue;
+   443	      }
+   444	      if (!r.ok || (!kontoId && !organisationId)) {
+   445	        klaeren({ art: "contracting", schluessel, bezug: { anlageId, monat }, bezugText, gruende: r.ok ? ["Kein Rechnungsempfänger (Stromabnehmer bzw. Kunde/Organisation) an der Anlage."] : r.klaerung });
+   446	        continue;
+   447	      }
+   448	      erzeugen({
+   449	        art: "contracting", gesellschaftId, empfaengerId: kontoId, organisationId, partei: parteiFuer(db, { kontoId, organisationId }), schluessel,
+   450	        bezug: { anlageId, vertragId: a.vertrag.id || null, monat }, bezugText,
+   451	        zeitraum: z, faelligAm: F.plusTage(opt.rechnungsdatum || F.heute(), einstellungen(db).zahlungszielTage),
+   452	        positionen: r.positionen, steuerVorlage: a.vertrag.steuervorlage || F.steuerVorschlag("contracting", a.anlage.land).vorlage,
+   453	        zaehlerstaende: r.zaehlerstaende, hinweise: r.hinweise, kennzahlen: { gelieferteKwh: r.gelieferteKwh, arbeitspreisCt: r.arbeitspreisCt, monat, kwp: a.anlage.kwp },
+   454	        erklaerung: r.gelieferteKwh !== null ? [`Gelieferter PV-Strom = Erzeugung (geeichter Erzeugungszähler) abzüglich Einspeisung ins Netz. Grundlage: Zählerstand-Monatswerte des Messstellenbetreibers.`] : ["Abrechnung der monatlichen Grundgebühr laut Contracting-Vertrag."],
+   455	      });
+   456	    }
+   457	  }
+   458	
+   459	  // ---------------------------------------------------------------- Provision
+   460	  if (art === "provision" || art === "alle") {
+   461	    for (const pv of db.provisionen) {
+   462	      if (!["offen", "in_rechnung"].includes(pv.status)) continue;
+   463	      const schluessel = `PV:${pv.id}`;
+   464	      if (aktiverBeleg(db, schluessel)) {
+   465	        lauf.vorhanden++;
+   466	        continue;
+   467	      }
+   468	      const p = db.projekte.find((x) => x.id === pv.projektId);
+   469	      const bezugText = `Provision ${pv.id} – ${p?.titel || pv.projektId}`;
+   470	      if (!nutzerById(db, pv.anbieterId)) {
+   471	        klaeren({ art: "provision", schluessel, bezug: { provisionId: pv.id }, bezugText, gruende: ["Anbieter-Konto nicht gefunden."] });
+   472	        continue;
+   473	      }
+   474	      const partei = parteiFuer(db, { kontoId: pv.anbieterId, organisationId: p?.organisationId || null });
+   475	      const land = partei.land || p?.land || "AT";
+   476	      const vorschlag = F.steuerVorschlag("provision", land, { grundstuecksbezug: true });
+   477	      const b = erzeugen({
+   478	        art: "provision", gesellschaftId: OEKOINVEST_ID, empfaengerId: pv.anbieterId, organisationId: p?.organisationId || null, partei, schluessel,
+   479	        bezug: { provisionId: pv.id, projektId: pv.projektId }, bezugText,
+   480	        zeitraum: { von: String(pv.erstelltAm).slice(0, 10), bis: String(pv.erstelltAm).slice(0, 10) },
+   481	        faelligAm: F.plusTage(opt.rechnungsdatum || F.heute(), einstellungen(db).zahlungszielTage),
+   482	        positionen: F.provisionPositionen(pv, p?.titel || ""), steuerVorlage: vorschlag.vorlage,
+   483	        hinweise: partei.land ? vorschlag.hinweise : [...vorschlag.hinweise, "Sitz des Anbieters unbekannt – Land des Projekts verwendet."],
+   484	        erklaerung: [`Provision laut Provisionsvereinbarung: ${F.rund(pv.satz * 100, 2).toLocaleString("de-DE")} % des Kaufpreises, fällig bei Abschluss.`],
+   485	        kennzahlen: { kaufpreis: pv.kaufpreis, satz: pv.satz },
+   486	      });
+   487	      if (!trocken) provisionNachziehen(db, n, b);
+   488	    }
+   489	  }
+   490	
+   491	  if (!trocken) {
+   492	    db.finanzen.laeufe.unshift({ ...lauf, erzeugt: lauf.erzeugt.slice(0, 200) });
+   493	    db.finanzen.laeufe = db.finanzen.laeufe.slice(0, 100);
+   494	    protokoll(db, n?.id === SYSTEM_FINANZEN.id ? null : n, "abrechnungslauf", "finanzen", lauf.id, `Lauf ${F.LAUF_ARTEN[art]} zum ${F.datumDe(stichtag)}: ${lauf.erzeugt.length} Belege, ${lauf.klaerfaelle.length} Klärfälle`);
+   495	  }
+   496	  return lauf;
+   497	}

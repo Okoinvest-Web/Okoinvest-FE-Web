@@ -1,0 +1,59 @@
+// Dev-Server-Wächter: prüft alle 20 s, ob localhost:3100 antwortet, und startet den Server bei Absturz sofort neu.
+// Hängt der Server (Port offen, aber 3 Prüfungen in Folge ohne Antwort), wird er beendet und neu gestartet.
+// Schreibt seinen Zustand nach waechter.json (für das Dashboard) und ein Protokoll nach waechter.log.
+import { execSync, spawn } from "node:child_process";
+import { appendFileSync, writeFileSync } from "node:fs";
+
+const PROJEKT = "C:\\Users\\SALEADMIN\\Downloads\\Oekoinvest-Web";
+const PRUEF_URL = "http://localhost:3100/robots.txt";
+const DIR = { pfad: decodeURIComponent(new URL(".", import.meta.url).pathname).replace(/^\/([A-Za-z]:)/, "$1") };
+const status = { gestartet: new Date().toISOString(), letztePruefung: null, zustand: "unbekannt", neustarts: 0, letzterNeustart: null, fehlerInFolge: 0, antwortMs: null };
+
+const log = (t) => { const z = `${new Date().toLocaleString("de-AT")} ${t}`; console.log(z); appendFileSync(DIR.pfad + "waechter.log", z + "\n"); };
+const speichern = () => writeFileSync(DIR.pfad + "waechter.json", JSON.stringify(status, null, 2));
+
+function portPid() {
+  try {
+    const out = execSync('powershell -NoProfile -Command "(Get-NetTCPConnection -LocalPort 3100 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1).OwningProcess"', { encoding: "utf8" }).trim();
+    return out ? Number(out) : null;
+  } catch { return null; }
+}
+function starten() {
+  spawn("cmd.exe", ["/c", "start", '"OekoInvest Dev-Server"', "/min", "cmd", "/k", "npm.cmd run dev"], { cwd: PROJEKT, detached: true, stdio: "ignore" }).unref();
+  status.neustarts++; status.letzterNeustart = new Date().toISOString();
+  log("Dev-Server gestartet");
+}
+async function pruefen() {
+  const t0 = Date.now();
+  try {
+    const r = await fetch(PRUEF_URL, { signal: AbortSignal.timeout(60000) });
+    status.antwortMs = Date.now() - t0;
+    status.zustand = r.ok ? "läuft" : `antwortet mit ${r.status}`;
+    status.fehlerInFolge = 0;
+  } catch {
+    status.fehlerInFolge++;
+    status.antwortMs = null;
+    const pid = portPid();
+    if (!pid) {
+      status.zustand = "abgestürzt – Neustart";
+      log("Kein Prozess auf Port 3100 – Neustart");
+      starten();
+      await new Promise((r) => setTimeout(r, 60000));
+    } else if (status.fehlerInFolge >= 3) {
+      status.zustand = "hängt – wird neu gestartet";
+      log(`Server hängt (PID ${pid}) – beenden und neu starten`);
+      try { execSync(`taskkill /PID ${pid} /T /F`); } catch {}
+      await new Promise((r) => setTimeout(r, 3000));
+      starten();
+      status.fehlerInFolge = 0;
+      await new Promise((r) => setTimeout(r, 60000));
+    } else {
+      status.zustand = `keine Antwort (${status.fehlerInFolge}/3, kompiliert evtl.)`;
+    }
+  }
+  status.letztePruefung = new Date().toISOString();
+  speichern();
+}
+log("Wächter aktiv");
+speichern();
+for (;;) { await pruefen(); await new Promise((r) => setTimeout(r, 20000)); }

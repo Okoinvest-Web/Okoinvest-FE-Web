@@ -1,0 +1,297 @@
+import pathlib
+
+ROOT = pathlib.Path(r"C:\Users\SALEADMIN\Documents\Servicetechniker APP")
+
+
+def patch(pfad, paare):
+    p = ROOT / pfad
+    s = p.read_text(encoding="utf-8")
+    for alt, neu in paare:
+        if alt not in s:
+            raise SystemExit(f"NICHT GEFUNDEN in {pfad}:\n---\n{alt[:240]}\n---")
+        s = s.replace(alt, neu, 1)
+    p.write_text(s, encoding="utf-8")
+    print("ok", pfad)
+
+
+# ============================================================ Pruefprotokoll
+PP_VALIDATE_ALT = """	def validate(self):
+		self.vorlage_revision_festhalten()
+		self.plausibilitaet_pruefen()
+		self.fortschritt_berechnen()
+		self.dauer_berechnen()
+		self.gesamtbewertung_pruefen()
+		if self.wird_abgeschlossen():
+			self.abschluss_pruefen()
+			if not self.abschluss_datum:
+				self.abschluss_datum = now_datetime()
+"""
+
+PP_VALIDATE_NEU = """	def validate(self):
+		self.vorlage_revision_festhalten()
+		self.plausibilitaet_pruefen()
+		self.fortschritt_berechnen()
+		self.dauer_berechnen()
+		self.gesamtbewertung_pruefen()
+		if self.wechselt_zu("Abgeschlossen"):
+			self.abschluss_pruefen()
+			if not self.abschluss_datum:
+				self.abschluss_datum = now_datetime()
+		if self.wechselt_zu("Verifiziert"):
+			self.verifizierung_pruefen()
+"""
+
+PP_WIRD_ALT = """	def wird_abgeschlossen(self) -> bool:
+		\"\"\"Wechselt dieses Dokument gerade in den Status 'Abgeschlossen'?\"\"\"
+		if self.status != "Abgeschlossen":
+			return False
+		vorher = self.get_doc_before_save()
+		return not vorher or vorher.status != "Abgeschlossen\""""
+
+PP_WIRD_NEU = """	def wechselt_zu(self, status: str) -> bool:
+		\"\"\"Wechselt dieses Dokument gerade in den angegebenen Status?\"\"\"
+		if self.status != status:
+			return False
+		vorher = self.get_doc_before_save()
+		return not vorher or vorher.status != status
+
+	def wird_abgeschlossen(self) -> bool:
+		return self.wechselt_zu("Abgeschlossen")
+
+	def verifizierung_pruefen(self):
+		\"\"\"Verifizierung ist Bauleitern und Projektleitern vorbehalten (FA-041).
+
+		Die Pruefung gehoert in `validate` und nicht nur in `verifizieren()`:
+		Der Offline-Client schreibt den Status beim Sync direkt, und ohne diesen
+		Riegel koennte sich ein Techniker sein eigenes Protokoll abnehmen — das
+		Vier-Augen-Prinzip des Rollenkonzepts waere wirkungslos (AK-07).
+		\"\"\"
+		vorher = self.get_doc_before_save()
+		if vorher and vorher.status not in ("Abgeschlossen", "Verifiziert"):
+			frappe.throw(
+				_("Nur abgeschlossene Protokolle koennen verifiziert werden."),
+				title=_("Reihenfolge nicht zulaessig"),
+			)
+
+		if not VERIFIZIERER_ROLLEN & set(frappe.get_roles()):
+			frappe.throw(
+				_("Die Verifizierung ist Bauleitern und Projektleitern vorbehalten."),
+				frappe.PermissionError,
+			)
+
+		self.verifiziert_von = frappe.session.user
+		self.verifiziert_am = now_datetime()"""
+
+PP_KONST_ALT = """	schweregrad_code,
+)
+
+
+class Pruefprotokoll(Document):"""
+
+PP_VERIFIZIEREN_ALT = """	@frappe.whitelist()
+	def verifizieren(self):
+		\"\"\"Abgeschlossen -> Verifiziert durch Bauleiter/Projektleiter (FA-041).\"\"\"
+		if self.status != "Abgeschlossen":
+			frappe.throw(_("Nur abgeschlossene Protokolle koennen verifiziert werden."))
+
+		erlaubt = {"Baudoku Bauleiter", "Baudoku Projektleiter", "Baudoku Admin", "System Manager"}
+		if not erlaubt & set(frappe.get_roles()):
+			frappe.throw(_("Keine Berechtigung zur Verifizierung."), frappe.PermissionError)
+
+		self.status = "Verifiziert"
+		self.verifiziert_von = frappe.session.user
+		self.verifiziert_am = now_datetime()
+		self.save()
+		return self.name"""
+
+PP_VERIFIZIEREN_NEU = """	@frappe.whitelist()
+	def verifizieren(self):
+		\"\"\"Abgeschlossen -> Verifiziert (FA-041).
+
+		Berechtigung und Reihenfolge prueft `verifizierung_pruefen` in `validate`,
+		damit auch der Sync-Weg daran gebunden ist.
+		\"\"\"
+		self.status = "Verifiziert"
+		self.save()
+		return self.name"""
+
+patch(
+    "oekovolt_baudoku/baudoku/doctype/pruefprotokoll/pruefprotokoll.py",
+    [
+        (
+            PP_KONST_ALT,
+            """	schweregrad_code,
+)
+
+# Rollen, die ein Protokoll abnehmen duerfen (Kapitel 8 Rollenkonzept)
+VERIFIZIERER_ROLLEN = {
+	"Baudoku Bauleiter",
+	"Baudoku Projektleiter",
+	"Baudoku Admin",
+	"System Manager",
+}
+
+
+class Pruefprotokoll(Document):""",
+        ),
+        (PP_VALIDATE_ALT, PP_VALIDATE_NEU),
+        (PP_WIRD_ALT, PP_WIRD_NEU),
+        (PP_VERIFIZIEREN_ALT, PP_VERIFIZIEREN_NEU),
+    ],
+)
+
+# ============================================================== Tagesbericht
+TB_VALIDATE_ALT = """	def validate(self):
+		self.arbeitszeit_pruefen()
+		self.stunden_summieren()
+		self.fortschritt_ableiten()
+		self.doppelten_bericht_pruefen()"""
+
+TB_VALIDATE_NEU = """	def validate(self):
+		self.arbeitszeit_pruefen()
+		self.stunden_summieren()
+		self.fortschritt_ableiten()
+		self.doppelten_bericht_pruefen()
+		self.statuswechsel_pruefen()
+
+	def wechselt_zu(self, status: str) -> bool:
+		if self.status != status:
+			return False
+		vorher = self.get_doc_before_save()
+		return not vorher or vorher.status != status
+
+	def statuswechsel_pruefen(self):
+		\"\"\"Freigabe und Ablehnung sind Bauleitern vorbehalten (FA-074).
+
+		Wie beim Pruefprotokoll gehoert der Riegel in `validate`: Der Sync
+		schreibt den Status direkt, und ein Subunternehmer koennte sonst seinen
+		eigenen Bericht genehmigen.
+		\"\"\"
+		if self.wechselt_zu("Eingereicht"):
+			if not self.positionen:
+				frappe.throw(_("Der Bericht enthaelt keine Leistungspositionen."))
+			if not self.unterschriften:
+				frappe.throw(_("Die Unterschrift des Berichterstatters fehlt (FA-073)."))
+			if not self.eingereicht_am:
+				self.eingereicht_am = now_datetime()
+
+		if self.wechselt_zu("Genehmigt"):
+			self._freigabe_berechtigung()
+			vorher = self.get_doc_before_save()
+			if vorher and vorher.status != "Eingereicht":
+				frappe.throw(_("Nur eingereichte Berichte koennen genehmigt werden."))
+			self.genehmigt_von = frappe.session.user
+			self.genehmigt_am = now_datetime()
+			self.ablehnungsgrund = None
+
+		if self.wechselt_zu("Abgelehnt"):
+			self._freigabe_berechtigung()
+			if not self.ablehnungsgrund:
+				frappe.throw(_("Bitte einen Ablehnungsgrund angeben."))"""
+
+TB_EINREICHEN_ALT = """	@frappe.whitelist()
+	def einreichen(self):
+		\"\"\"Entwurf -> Eingereicht (FA-074).\"\"\"
+		if self.status != "Entwurf":
+			frappe.throw(_("Nur Entwuerfe koennen eingereicht werden."))
+		if not self.positionen:
+			frappe.throw(_("Der Bericht enthaelt keine Leistungspositionen."))
+		if not self.unterschriften:
+			frappe.throw(_("Die Unterschrift des Berichterstatters fehlt (FA-073)."))
+
+		self.status = "Eingereicht"
+		self.eingereicht_am = now_datetime()
+		self.save()
+		self.freigeber_benachrichtigen()
+		return self.name
+
+	@frappe.whitelist()
+	def genehmigen(self):
+		\"\"\"Eingereicht -> Genehmigt (FA-074).\"\"\"
+		self._freigabe_berechtigung()
+		if self.status != "Eingereicht":
+			frappe.throw(_("Nur eingereichte Berichte koennen genehmigt werden."))
+
+		self.status = "Genehmigt"
+		self.genehmigt_von = frappe.session.user
+		self.genehmigt_am = now_datetime()
+		self.ablehnungsgrund = None
+		self.save()
+		return self.name
+
+	@frappe.whitelist()
+	def ablehnen(self, grund: str):
+		\"\"\"Eingereicht -> Abgelehnt, zurueck an den Ersteller (FA-074).\"\"\"
+		self._freigabe_berechtigung()
+		if not grund:
+			frappe.throw(_("Bitte einen Ablehnungsgrund angeben."))
+
+		self.status = "Abgelehnt"
+		self.ablehnungsgrund = grund
+		self.save()"""
+
+TB_EINREICHEN_NEU = """	@frappe.whitelist()
+	def einreichen(self):
+		\"\"\"Entwurf -> Eingereicht (FA-074). Pruefungen in `statuswechsel_pruefen`.\"\"\"
+		if self.status not in ("Entwurf", "Abgelehnt"):
+			frappe.throw(_("Nur Entwuerfe koennen eingereicht werden."))
+
+		self.status = "Eingereicht"
+		self.save()
+		self.freigeber_benachrichtigen()
+		return self.name
+
+	@frappe.whitelist()
+	def genehmigen(self):
+		\"\"\"Eingereicht -> Genehmigt (FA-074). Pruefungen in `statuswechsel_pruefen`.\"\"\"
+		self.status = "Genehmigt"
+		self.save()
+		return self.name
+
+	@frappe.whitelist()
+	def ablehnen(self, grund: str):
+		\"\"\"Eingereicht -> Abgelehnt, zurueck an den Ersteller (FA-074).\"\"\"
+		self.status = "Abgelehnt"
+		self.ablehnungsgrund = grund
+		self.save()"""
+
+patch(
+    "oekovolt_baudoku/baudoku/doctype/tagesbericht/tagesbericht.py",
+    [(TB_VALIDATE_ALT, TB_VALIDATE_NEU), (TB_EINREICHEN_ALT, TB_EINREICHEN_NEU)],
+)
+
+# ======================================= Mangel: Verifizierung gleichermassen
+patch(
+    "oekovolt_baudoku/baudoku/doctype/mangel/mangel.py",
+    [
+        (
+            """		if self.status == "Verifiziert" and not self.verifiziert_am:
+			erlaubt = {"Baudoku Bauleiter", "Baudoku Projektleiter", "Baudoku Admin", "System Manager"}
+			if not erlaubt & set(frappe.get_roles()):
+				frappe.throw(_("Keine Berechtigung zur Verifizierung."), frappe.PermissionError)
+			self.verifiziert_von = frappe.session.user
+			self.verifiziert_am = now_datetime()""",
+            """		# Die Verifizierung eines Mangels ist die Qualitaetssicherung der Behebung
+		# und damit Bauleitern vorbehalten — auch auf dem Sync-Weg.
+		if self.status == "Verifiziert" and not self.verifiziert_am:
+			if not VERIFIZIERER_ROLLEN & set(frappe.get_roles()):
+				frappe.throw(
+					_("Die Verifizierung ist Bauleitern und Projektleitern vorbehalten."),
+					frappe.PermissionError,
+				)
+			self.verifiziert_von = frappe.session.user
+			self.verifiziert_am = now_datetime()""",
+        ),
+        (
+            """from frappe.utils import add_days, getdate, now_datetime, today""",
+            """from frappe.utils import add_days, getdate, now_datetime, today
+
+VERIFIZIERER_ROLLEN = {
+	"Baudoku Bauleiter",
+	"Baudoku Projektleiter",
+	"Baudoku Admin",
+	"System Manager",
+}""",
+        ),
+    ],
+)

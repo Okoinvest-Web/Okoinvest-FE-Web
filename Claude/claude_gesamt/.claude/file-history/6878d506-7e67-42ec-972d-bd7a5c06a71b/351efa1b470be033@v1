@@ -1,0 +1,63 @@
+import Link from "next/link";
+import { Plus } from "lucide-react";
+import { db } from "@/lib/data";
+import { OPPORTUNITY_STAGES } from "@/lib/types";
+import { LEAD_STATUS_LABEL, date, money, STAGE_LABEL } from "@/lib/format";
+import { Badge, ButtonLink, PageHeader, Table } from "@/components/ui";
+import { Kanban } from "@/components/Kanban";
+
+export const metadata = { title: "Chancen" };
+
+export default async function OpportunitiesPage({ searchParams }: PageProps<"/opportunities">) {
+  const view = (await searchParams).view === "list" ? "list" : "kanban";
+  const all = await db().listOpportunities();
+  const open = all.filter((o) => o.status === "Open" || o.status === "Quotation");
+
+  const tab = (v: string, label: string) => (
+    <Link
+      href={v === "kanban" ? "/opportunities" : "/opportunities?view=list"}
+      className={`rounded-md px-2.5 py-1 ${view === v ? "bg-white font-medium shadow-sm ring-1 ring-gray-200" : "text-gray-600 hover:text-gray-900"}`}
+    >
+      {label}
+    </Link>
+  );
+
+  return (
+    <>
+      <PageHeader title="Chancen" actions={
+          <>
+            <div className="flex gap-1 rounded-lg bg-gray-100 p-0.5">
+              {tab("kanban", "Kanban")}
+              {tab("list", "Liste")}
+            </div>
+            <ButtonLink href="/opportunities/new">
+              <Plus className="size-4" /> Neue Chance
+            </ButtonLink>
+          </>
+        } />
+      {view === "kanban" ? (
+        <Kanban stages={OPPORTUNITY_STAGES} items={open} />
+      ) : (
+        <Table head={["Titel", "Kunde / Lead", "Phase", "Status", "Betrag", "Wahrsch.", "Abschluss"]}>
+          {all.map((o) => (
+            <tr key={o.name} className="hover:bg-gray-50">
+              <td className="px-5 py-2">
+                <Link href={`/opportunities/${encodeURIComponent(o.name)}`} className="font-medium text-gray-900">
+                  {o.title ?? o.name}
+                </Link>
+              </td>
+              <td className="px-5 py-2 text-gray-700">{o.customer_name ?? o.party_name}</td>
+              <td className="px-5 py-2 text-gray-700">{STAGE_LABEL[o.sales_stage] ?? o.sales_stage}</td>
+              <td className="px-5 py-2">
+                <Badge value={o.status} label={LEAD_STATUS_LABEL[o.status]} />
+              </td>
+              <td className="px-5 py-2 text-right tabular-nums">{money(o.opportunity_amount, o.currency)}</td>
+              <td className="px-5 py-2 text-right tabular-nums">{o.probability} %</td>
+              <td className="whitespace-nowrap px-5 py-2 text-gray-500">{date(o.expected_closing)}</td>
+            </tr>
+          ))}
+        </Table>
+      )}
+    </>
+  );
+}

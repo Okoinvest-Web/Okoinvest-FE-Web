@@ -1,0 +1,84 @@
+      {/* ---------------- Freigabe zur Inbetriebnahme ---------------- */}
+      <Tafel
+        titel="Freigabe zur Inbetriebnahme"
+        hinweis="Was erfüllt sein muss, bevor ein Gerät in Betrieb geht"
+        fusszeile={
+          <p className="t-mikro leading-relaxed">
+            Die Punkte gelten nicht für jedes Gerät gleich: Ein Switch führt
+            keinen versiegelten Sollstand, und viele Industrie-Switches können
+            kein Secure Boot. Solche Punkte werden geführt, aber nicht als
+            verbindlich gewertet – rote Zeilen, die immer dastehen, liest
+            niemand.
+          </p>
+        }
+      >
+        <p className="t-mikro mb-3 leading-relaxed">
+          {fasseFreigabenZusammen(
+            freigaben.map((f) => ({ geraet: f.geraet, befund: f.befund })),
+          )}{" "}
+          Geprüft wird gegen Firmware-Mindeststand, Netzzone, Zertifikat,
+          versiegelten Sollstand, Protokollkette und die Art des Fernzugangs.
+        </p>
+
+        {offeneFreigaben.length === 0 ? (
+          <LeerZustand
+            text="Alle Geräte sind freigegeben."
+            hinweis="Sobald ein Zertifikat abläuft oder eine Firmware unter den Mindeststand fällt, steht das Gerät hier."
+          />
+        ) : (
+          <ul className="space-y-3">
+            {offeneFreigaben.map((f) => (
+              <li
+                key={f.geraet}
+                className="rounded-lg px-3.5 py-3"
+                style={{ background: "var(--f-vertieft)" }}
+              >
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p
+                      className="text-[0.875rem] font-medium"
+                      style={{ color: "var(--t-stark)" }}
+                    >
+                      {f.geraet} · {f.bezeichnung}
+                    </p>
+                    <p className="t-mikro">
+                      {f.rolle} · {f.anlage}
+                    </p>
+                  </div>
+                  <Status
+                    ton={f.befund.freigabe === "verweigert" ? "kritisch" : "hinweis"}
+                  >
+                    {f.befund.freigabe === "verweigert"
+                      ? "nicht freigegeben"
+                      : "Angaben fehlen"}
+                  </Status>
+                </div>
+
+                <ul className="mt-2 space-y-1.5">
+                  {f.befund.punkte
+                    .filter((p) => p.verbindlich && p.stand !== "erfuellt")
+                    .map((p) => (
+                      <li key={p.punkt.schluessel} className="leading-relaxed">
+                        <span
+                          className="text-[0.8125rem] font-medium"
+                          style={{ color: "var(--t-stark)" }}
+                        >
+                          {p.punkt.titel}
+                        </span>
+                        <span className="t-mikro"> · {p.punkt.grundlage}</span>
+                        <span
+                          className="block text-[0.8125rem]"
+                          style={{ color: "var(--t-normal)" }}
+                        >
+                          {p.befund}
+                        </span>
+                        <span className="t-mikro block">{p.punkt.folge}</span>
+                      </li>
+                    ))}
+                </ul>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Tafel>
+

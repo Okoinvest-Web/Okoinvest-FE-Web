@@ -1,0 +1,37 @@
+SALZ PRESSEARCHIV
+=================
+
+Aufbau
+------
+WKStA_Salzburg-AG\                     Thema: WKStA-Ermittlungen gegen die Salzburg AG (Causa Ökovolt / PV-Auftrag Hofer)
+  00_UEBERSICHT.html                   Pressespiegel zum Durchklicken (im Browser öffnen) – START HIER
+  00_UEBERSICHT.pdf                    derselbe Pressespiegel als PDF
+  00_UEBERSICHT.csv                    Tabelle aller Beiträge (öffnet in Excel)
+  PRUEFSUMMEN_SHA256.txt               Prüfsummen aller Dateien (Nachweis der Unverändertheit)
+  01_Berichterstattung\                ein Ordner pro Beitrag, benannt JJJJ-MM-TT_Medium_Titel
+  02_Hintergrund\                      ältere Beiträge zur Vorgeschichte
+
+In jedem Beitragsordner
+-----------------------
+  LESEFASSUNG.pdf    schön gesetzter Artikel mit Bild, Datum, Autor, Quelle, Archivzeitpunkt
+  artikel.pdf        Originalansicht der Webseite als PDF
+  screenshot.png     Ganzseiten-Screenshot der Originalseite
+  original.html      Quellcode der Seite zum Abrufzeitpunkt
+  artikel.md         reiner Text
+  meta.json          Metadaten (URL, Datum, Autor, Abrufzeit, SHA-256 jeder Datei)
+  video\ / audio\    Videos (MP4 + Untertitel + Vorschaubild) bzw. Radiobeiträge (MP3 + Transkript)
+
+Neue Beiträge ergänzen
+----------------------
+1. In _werkzeuge\quellen_wksta_salzburg-ag.json einen Eintrag hinzufügen (URL, Medium, Ordnername).
+2. PowerShell im Ordner "SALZ Pressearchiv":
+     python _werkzeuge\archivieren.py _werkzeuge\quellen_wksta_salzburg-ag.json --nur <id>
+     python _werkzeuge\uebersicht.py  _werkzeuge\quellen_wksta_salzburg-ag.json
+   (Für ein neues Thema einfach eine neue quellen_<thema>.json anlegen.)
+
+Hinweise
+--------
+- Bezahlartikel (SN+, derStandard PUR) sind nur als öffentlicher Anriss gesichert. Mit Abo den Artikel
+  im Browser öffnen, Strg+P -> "Als PDF speichern" und die Datei in den jeweiligen Ordner legen.
+- ORF-Mediathek (ORF ON) und Ö1-Radiothek löschen Sendungen nach Ablauf der Frist – darum lokal gesichert.
+- Alle Inhalte sind urheberrechtlich geschützt und nur für den internen Eigengebrauch archiviert.

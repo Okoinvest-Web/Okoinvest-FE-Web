@@ -1,0 +1,61 @@
+import { createRouter, createWebHistory } from 'vue-router'
+
+/* global __FRONTEND_ROUTE__ */
+
+const routes = [
+  {
+    path: '/',
+    name: 'Dashboard',
+    component: () => import('@/pages/Dashboard.vue'),
+    meta: { title: 'Lage' },
+  },
+  {
+    path: '/devices',
+    name: 'DeviceList',
+    component: () => import('@/pages/DeviceList.vue'),
+    meta: { title: 'Geräte' },
+  },
+  {
+    path: '/devices/:name',
+    name: 'DeviceDetail',
+    component: () => import('@/pages/DeviceDetail.vue'),
+    props: true,
+    meta: { title: 'Gerät' },
+  },
+  {
+    path: '/racks',
+    name: 'Racks',
+    component: () => import('@/pages/RackView.vue'),
+    meta: { title: 'Racks' },
+  },
+  {
+    path: '/topology',
+    name: 'Topology',
+    component: () => import('@/pages/TopologyView.vue'),
+    meta: { title: 'Topologie' },
+  },
+  {
+    path: '/ipam',
+    name: 'Ipam',
+    component: () => import('@/pages/IpamTree.vue'),
+    meta: { title: 'IPAM' },
+  },
+  {
+    path: '/:pathMatch(.*)*',
+    name: 'NotFound',
+    component: () => import('@/pages/NotFound.vue'),
+    meta: { title: 'Nicht gefunden' },
+  },
+]
+
+const router = createRouter({
+  // Wird in vite.config.js gesetzt: '/' im Dev-Server, '/netops' in Frappe.
+  history: createWebHistory(__FRONTEND_ROUTE__),
+  routes,
+})
+
+router.afterEach((to) => {
+  document.title = to.meta.title ? to.meta.title + ' · NetOps' : 'NetOps'
+})
+
+export default router

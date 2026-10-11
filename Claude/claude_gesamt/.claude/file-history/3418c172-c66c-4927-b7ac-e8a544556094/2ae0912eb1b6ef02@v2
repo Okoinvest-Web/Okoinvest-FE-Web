@@ -1,0 +1,53 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { db } from "@/lib/data";
+import { LEAD_STATUSES, OPPORTUNITY_STAGES, type LeadStatus } from "@/lib/types";
+
+// Serverseitige Prüfungen – das Formular im Browser wird nicht vertraut.
+
+export type FormState = { error?: string };
+
+export async function createLeadAction(_prev: FormState, form: FormData): Promise<FormState> {
+  const first_name = String(form.get("first_name") ?? "").trim();
+  const last_name = String(form.get("last_name") ?? "").trim();
+  const email_id = String(form.get("email_id") ?? "").trim();
+  const status = String(form.get("status") ?? "Lead") as LeadStatus;
+
+  if (!first_name) return { error: "Vorname ist ein Pflichtfeld." };
+  if (email_id && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email_id)) return { error: "E-Mail-Adresse ist ungültig." };
+  if (!LEAD_STATUSES.includes(status)) return { error: "Ungültiger Status." };
+
+  const lead = await db().createLead({
+    first_name,
+    last_name: last_name || undefined,
+    company_name: String(form.get("company_name") ?? "").trim() || undefined,
+    email_id: email_id || undefined,
+    mobile_no: String(form.get("mobile_no") ?? "").trim() || undefined,
+    source: String(form.get("source") ?? "").trim() || undefined,
+    status,
+  });
+  revalidatePath("/leads");
+  redirect(`/leads/${encodeURIComponent(lead.name)}`);
+}
+
+export async function setLeadStatusAction(name: string, status: string) {
+  if (!LEAD_STATUSES.includes(status as LeadStatus)) throw new Error("Ungültiger Status");
+  await db().setLeadStatus(name, status as LeadStatus);
+  revalidatePath("/leads");
+  revalidatePath(`/leads/${encodeURIComponent(name)}`);
+}
+
+export async function setOpportunityStageAction(name: string, stage: string) {
+  if (!(OPPORTUNITY_STAGES as readonly string[]).includes(stage)) throw new Error("Ungültige Phase");
+  await db().setOpportunityStage(name, stage);
+  revalidatePath("/opportunities");
+  revalidatePath("/");
+}
+
+export async function toggleToDoAction(name: string, done: boolean) {
+  await db().setToDoStatus(name, done ? "Closed" : "Open");
+  revalidatePath("/todos");
+  revalidatePath("/");
+}

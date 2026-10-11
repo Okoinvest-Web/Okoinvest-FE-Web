@@ -1,0 +1,236 @@
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+
+import {
+  LADEKONTIERUNG,
+  darfUebergebenWerden,
+  debitorenkonto,
+  stapelbezeichnung,
+  stapelkennung,
+  stelleStapelZusammen,
+  type Quellbeleg,
+} from "./stapellauf.ts";
+
+/**
+ * Der teuerste Fehler in dieser Anwendung ist ein doppelt gebuchter
+ * Umsatz. Er fällt nicht beim Einspielen auf, sondern erst bei der
+ * Umsatzsteuervoranmeldung - und dann ist er bereits gemeldet.
+ */
+
+function beleg(teil: Partial<Quellbeleg> = {}): Quellbeleg {
+  return {
+    id: "LB-0001",
+    nummer: "LAD-2026-06-0001",
+    quelle: "laden_b2b",
+    belegdatum: "2026-06-30",
+    netto: 237.74,
+    text: "Ladeabrechnung Fuhrpark",
+    partnerkonto: "20001",
+    kostenstelle: "Fuhrpark",
+    belegverweis: "LB-0001",
+    ...teil,
+  };
+}
+
+describe("Stapel zusammenstellen", () => {
+  it("kontiert jeden Beleg genau einmal", () => {
+    const entwurf = stelleStapelZusammen(
+      [
+        beleg({ nummer: "A-1", id: "1" }),
+        beleg({ nummer: "A-2", id: "2", netto: 100 }),
+      ],
+      new Set(),
+    );
+
+    assert.equal(entwurf.zeilen.length, 2);
+    assert.equal(entwurf.uebersprungen.length, 0);
+    assert.ok(entwurf.pruefung.gueltig);
+  });
+
+  it("überspringt, was schon übergeben wurde", () => {
+    const entwurf = stelleStapelZusammen(
+      [beleg({ nummer: "A-1" }), beleg({ nummer: "A-2", id: "2" })],
+      new Set(["A-1"]),
+    );
+
+    assert.equal(entwurf.zeilen.length, 1);
+    assert.equal(entwurf.zeilen[0]?.belegnummer, "A-2");
+    assert.equal(entwurf.uebersprungen.length, 1);
+    assert.match(entwurf.uebersprungen[0]!.grund, /früheren Stapel/);
+  });
+
+  it("bleibt gültig, wenn ein zweiter Lauf nur Nachzügler bucht", () => {
+    // Ein zweiter Lauf über denselben Monat ist kein Fehlerfall: Er
+    // soll das Nachgereichte mitnehmen, nicht am Gebuchten scheitern.
+    const entwurf = stelleStapelZusammen(
+      [beleg({ nummer: "A-1" }), beleg({ nummer: "A-2", id: "2" })],
+      new Set(["A-1"]),
+    );
+
+    assert.ok(entwurf.pruefung.gueltig);
+  });
+
+  it("fängt eine doppelte Nummer innerhalb eines Laufs ab", () => {
+    const entwurf = stelleStapelZusammen(
+      [beleg({ nummer: "A-1" }), beleg({ nummer: "A-1", id: "2" })],
+      new Set(),
+    );
+
+    assert.equal(entwurf.zeilen.length, 1);
+    assert.equal(entwurf.uebersprungen.length, 1);
+    assert.match(entwurf.uebersprungen[0]!.grund, /zweimal/);
+    // Übersprungen, nicht durchgelassen: Die Prüfung darf nicht
+    // anschlagen, weil die zweite Zeile gar nicht erst entsteht.
+    assert.ok(entwurf.pruefung.gueltig);
+  });
+
+  it("bucht nicht, was als nicht buchbar gekennzeichnet ist", () => {
+    const entwurf = stelleStapelZusammen(
+      [beleg({ nichtBuchbar: "Storniert - nie zur Zahlung gestellt." })],
+      new Set(),
+    );
+
+    assert.equal(entwurf.zeilen.length, 0);
+    assert.match(entwurf.uebersprungen[0]!.grund, /Storniert/);
+  });
+
+  it("bucht keinen Nullbetrag", () => {
+    const entwurf = stelleStapelZusammen([beleg({ netto: 0 })], new Set());
+
+    assert.equal(entwurf.zeilen.length, 0);
+    assert.match(entwurf.uebersprungen[0]!.grund, /null/);
+  });
+
+  it("meldet ein unlesbares Belegdatum, statt es zu raten", () => {
+    const entwurf = stelleStapelZusammen(
+      [beleg({ belegdatum: "30.06.2026" })],
+      new Set(),
+    );
+
+    assert.equal(entwurf.zeilen.length, 0);
+    assert.match(entwurf.uebersprungen[0]!.grund, /nicht lesbar/);
+  });
+
+  it("dreht die Buchungsrichtung bei einer Gutschrift", () => {
+    const entwurf = stelleStapelZusammen(
+      [beleg({ netto: -50, nummer: "G-1" })],
+      new Set(),
+    );
+
+    assert.equal(entwurf.zeilen[0]?.sollHaben, "H");
+    assert.equal(entwurf.zeilen[0]?.nettoEur, 50);
+  });
+
+  it("mindert die Summe um die Gutschrift", () => {
+    const entwurf = stelleStapelZusammen(
+      [
+        beleg({ nummer: "R-1", netto: 100 }),
+        beleg({ nummer: "G-1", id: "2", netto: -40 }),
+      ],
+      new Set(),
+    );
+
+    assert.equal(entwurf.summe.nettoEur, 60);
+    assert.equal(entwurf.summe.steuerEur, 12);
+    assert.equal(entwurf.summe.bruttoEur, 72);
+  });
+
+  it("trennt die Erlöse nach Quelle", () => {
+    const entwurf = stelleStapelZusammen(
+      [
+        beleg({ nummer: "R-1", quelle: "laden_b2b", netto: 100 }),
+        beleg({ nummer: "R-2", id: "2", quelle: "laden_adhoc", netto: 50 }),
+      ],
+      new Set(),
+    );
+
+    assert.equal(entwurf.summe.jeKonto.length, 2);
+    const konten = entwurf.summe.jeKonto.map((k) => k.konto).sort();
+    assert.deepEqual(konten, ["4100", "4110"]);
+  });
+
+  it("liefert einen leeren Entwurf ohne Belege", () => {
+    const entwurf = stelleStapelZusammen([], new Set());
+
+    assert.equal(entwurf.zeilen.length, 0);
+    assert.equal(entwurf.summe.nettoEur, 0);
+  });
+});
+
+describe("Freigabe zur Übergabe", () => {
+  it("lässt einen sauberen Stapel durch", () => {
+    const entwurf = stelleStapelZusammen([beleg()], new Set());
+    const pruefung = darfUebergebenWerden(entwurf.zeilen, new Set());
+
+    assert.ok(pruefung.gueltig);
+  });
+
+  it("verweigert einen leeren Stapel", () => {
+    const pruefung = darfUebergebenWerden([], new Set());
+
+    assert.equal(pruefung.gueltig, false);
+    assert.match(pruefung.beanstandungen.join(" "), /leer/);
+  });
+
+  it("verweigert, wenn ein Beleg zwischenzeitlich anderswo gebucht wurde", () => {
+    // Zwischen Erzeugen und Übergeben können Tage liegen. Genau in
+    // dieser Lücke entsteht der doppelt gebuchte Umsatz.
+    const entwurf = stelleStapelZusammen([beleg({ nummer: "A-1" })], new Set());
+    const pruefung = darfUebergebenWerden(entwurf.zeilen, new Set(["A-1"]));
+
+    assert.equal(pruefung.gueltig, false);
+    assert.match(pruefung.beanstandungen.join(" "), /zwischenzeitlich/);
+  });
+});
+
+describe("Benennung", () => {
+  it("nennt den Monat im Klartext", () => {
+    assert.equal(stapelbezeichnung(2026, 6), "Buchungsstapel Juni 2026");
+  });
+
+  it("verwendet die österreichische Schreibweise für Jänner", () => {
+    assert.equal(stapelbezeichnung(2026, 1), "Buchungsstapel Jänner 2026");
+  });
+
+  it("füllt die Monatszahl in der Kennung auf", () => {
+    assert.equal(stapelkennung(2026, 6), "BST-2026-06");
+    assert.equal(stapelkennung(2026, 12), "BST-2026-12");
+  });
+});
+
+describe("Kontierung der Ladebelege", () => {
+  it("bucht ein Firmenfahrzeug innerbetrieblich, nicht gegen einen Debitor", () => {
+    const k = LADEKONTIERUNG["Firmenfahrzeug"]!;
+
+    assert.equal(k.partnerkonto, "35000");
+    assert.equal(k.quelle, "laden_b2b");
+  });
+
+  it("trennt den Gast vom Firmenkunden", () => {
+    // AFIR verlangt den Ad-hoc-Umsatz getrennt ausweisbar.
+    assert.equal(LADEKONTIERUNG["Gast"]!.quelle, "laden_adhoc");
+    assert.equal(LADEKONTIERUNG["Mitarbeiter"]!.quelle, "laden_b2b");
+  });
+
+  it("führt den Roamingpartner auf einem eigenen Konto", () => {
+    assert.notEqual(
+      LADEKONTIERUNG["Fremdanbieter"]!.partnerkonto,
+      LADEKONTIERUNG["Gast"]!.partnerkonto,
+    );
+  });
+
+  it("kennt keine Kartenart, die es nicht gibt", () => {
+    assert.equal(LADEKONTIERUNG["Phantasie"], undefined);
+  });
+});
+
+describe("Debitorenkonto", () => {
+  it("leitet das Konto aus der Kundennummer ab", () => {
+    assert.equal(debitorenkonto("KD-0001"), "20001");
+    assert.equal(debitorenkonto("KD-0012"), "20012");
+  });
+
+  it("kommt auch ohne Praefix zurecht", () => {
+    assert.equal(debitorenkonto("7"), "20007");
+  });
+});

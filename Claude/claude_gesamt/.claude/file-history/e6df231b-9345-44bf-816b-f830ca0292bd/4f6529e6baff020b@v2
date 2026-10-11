@@ -1,0 +1,193 @@
+"""Auswertung der Stempelungen — Abrechnungsgrundlage und Arbeitszeitnachweis.
+
+Diese Rechnung darf nicht falsch sein: Aus ihr wird bezahlt, und sie ist der
+Nachweis gegenueber Kontrollen. Deshalb hier ausfuehrlicher getestet als der
+Rest, einschliesslich der unsauberen Faelle, die auf einer Baustelle vorkommen.
+"""
+
+from __future__ import annotations
+
+import pathlib
+import sys
+from datetime import datetime
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
+
+from oekovolt_baudoku.utils.arbeitszeit import (
+    AUS,
+    EIN,
+    PAUSE_BEGINN,
+    PAUSE_ENDE,
+    Ereignis,
+    Grenzwerte,
+    auswerten,
+    wochensumme_ueberschritten,
+)
+from oekovolt_baudoku.utils.geofence import entfernung_m, pruefe
+
+
+def e(richtung: str, uhrzeit: str) -> Ereignis:
+    stunde, minute = (int(teil) for teil in uhrzeit.split(":"))
+    return Ereignis(richtung=richtung, zeitpunkt=datetime(2026, 9, 15, stunde, minute))
+
+
+# --------------------------------------------------------------- Normalfall
+
+def test_einfacher_tag_ohne_pause():
+    a = auswerten([e(EIN, "07:00"), e(AUS, "12:00")])
+    assert a.anwesenheit_minuten == 300
+    assert a.pause_minuten == 0
+    assert a.arbeitszeit_minuten == 300
+    assert a.vollstaendig
+
+
+def test_tag_mit_pause():
+    a = auswerten([
+        e(EIN, "07:00"), e(PAUSE_BEGINN, "12:00"), e(PAUSE_ENDE, "12:30"), e(AUS, "16:30"),
+    ])
+    assert a.anwesenheit_minuten == 570
+    assert a.pause_minuten == 30
+    assert a.arbeitszeit_minuten == 540
+    assert a.arbeitszeit_stunden == 9.0
+    assert a.vollstaendig
+    assert a.pause_ausreichend
+
+
+def test_mehrere_ein_aus_paare():
+    """Materialfahrt zwischendurch — die Anwesenheit ist die Summe der Paare."""
+    a = auswerten([
+        e(EIN, "07:00"), e(AUS, "10:00"),
+        e(EIN, "13:00"), e(AUS, "17:00"),
+    ])
+    assert a.anwesenheit_minuten == 420
+    assert a.arbeitszeit_minuten == 420
+    assert a.vollstaendig
+    assert a.beginn.hour == 7
+    assert a.ende.hour == 17
+
+
+# ------------------------------------------------------------ Unsaubere Faelle
+
+def test_fehlendes_ausstempeln_macht_tag_unvollstaendig():
+    a = auswerten([e(EIN, "07:00")])
+    assert not a.vollstaendig
+    assert a.anwesenheit_minuten == 0
+    assert "Ausstempeln fehlt" in a.hinweis
+
+
+def test_ausstempeln_ohne_einstempeln_wird_gemeldet():
+    a = auswerten([e(AUS, "16:00")])
+    assert not a.vollstaendig
+    assert "ohne vorheriges Einstempeln" in a.hinweis
+
+
+def test_doppeltes_einstempeln_wird_gemeldet():
+    a = auswerten([e(EIN, "07:00"), e(EIN, "08:00"), e(AUS, "16:00")])
+    assert "Zweimal eingestempelt" in a.hinweis
+    # Die erste Einstempelung bleibt massgeblich, nicht die zweite.
+    assert a.anwesenheit_minuten == 540
+
+
+def test_ausstempeln_waehrend_laufender_pause():
+    a = auswerten([e(EIN, "07:00"), e(PAUSE_BEGINN, "11:30"), e(AUS, "12:00")])
+    assert a.pause_minuten == 30
+    assert a.anwesenheit_minuten == 300
+    assert a.arbeitszeit_minuten == 270
+
+
+def test_ereignisse_in_falscher_reihenfolge_werden_sortiert():
+    a = auswerten([e(AUS, "16:00"), e(EIN, "07:00")])
+    assert a.vollstaendig
+    assert a.arbeitszeit_minuten == 540
+
+
+def test_leerer_tag():
+    a = auswerten([])
+    assert not a.vollstaendig
+    assert a.arbeitszeit_minuten == 0
+
+
+# ------------------------------------------------------ Arbeitsrechtliche Pruefung
+
+def test_fehlende_pause_wird_beanstandet():
+    a = auswerten([e(EIN, "06:00"), e(AUS, "16:00")])
+    assert not a.pause_ausreichend
+    assert "Ruhepause" in a.hinweis
+
+
+def test_zu_kurze_pause_wird_beanstandet():
+    a = auswerten([
+        e(EIN, "06:00"), e(PAUSE_BEGINN, "12:00"), e(PAUSE_ENDE, "12:15"), e(AUS, "16:00"),
+    ])
+    assert a.pause_minuten == 15
+    assert not a.pause_ausreichend
+
+
+def test_kurzer_tag_braucht_keine_pause():
+    a = auswerten([e(EIN, "08:00"), e(AUS, "12:00")])
+    assert a.pause_ausreichend
+    assert not a.ueber_tagesgrenze
+
+
+def test_ueberschrittene_tagesgrenze():
+    a = auswerten([
+        e(EIN, "05:00"), e(PAUSE_BEGINN, "12:00"), e(PAUSE_ENDE, "12:30"), e(AUS, "16:30"),
+    ])
+    assert a.arbeitszeit_minuten == 660
+    assert a.ueber_tagesgrenze
+
+
+def test_grenzwerte_sind_konfigurierbar():
+    lockerer = Grenzwerte(tag_minuten=720)
+    a = auswerten([e(EIN, "05:00"), e(AUS, "16:00")], lockerer)
+    assert a.arbeitszeit_minuten == 660
+    assert not a.ueber_tagesgrenze
+
+
+def test_wochengrenze():
+    assert wochensumme_ueberschritten(3100) is True
+    assert wochensumme_ueberschritten(2900) is False
+
+
+# ----------------------------------------------------------------- Geofence
+
+def test_entfernung_gleicher_punkt_ist_null():
+    assert entfernung_m(48.0655, 12.8452, 48.0655, 12.8452) == 0
+
+
+def test_entfernung_stimmt_groessenordnung():
+    # Ostermiething nach St. Pantaleon, rund 6 km Luftlinie
+    meter = entfernung_m(48.0655, 12.8452, 48.0201, 12.9402)
+    assert 5_000 < meter < 9_000
+
+
+def test_stempelung_auf_der_baustelle():
+    ergebnis = pruefe(
+        gps_lat=48.0655, gps_lng=12.8452,
+        anlage_lat=48.0656, anlage_lng=12.8453, radius_m=300,
+    )
+    assert ergebnis.innerhalb
+    assert not ergebnis.ortung_verweigert
+    assert ergebnis.entfernung_m is not None and ergebnis.entfernung_m < 300
+
+
+def test_stempelung_ausserhalb_wird_erkannt():
+    ergebnis = pruefe(
+        gps_lat=48.0201, gps_lng=12.9402,
+        anlage_lat=48.0655, anlage_lng=12.8452, radius_m=300,
+    )
+    assert not ergebnis.innerhalb
+    assert "entfernt" in ergebnis.meldung
+
+
+def test_ohne_ortung_wird_gekennzeichnet_nicht_abgelehnt():
+    """In der Halle gibt es kein GPS — der Arbeitsbeginn darf daran nicht scheitern."""
+    ergebnis = pruefe(gps_lat=None, gps_lng=None, anlage_lat=48.0, anlage_lng=12.8)
+    assert ergebnis.ortung_verweigert
+    assert ergebnis.entfernung_m is None
+
+
+def test_baustelle_ohne_koordinaten_ist_kein_verstoss():
+    ergebnis = pruefe(gps_lat=48.0, gps_lng=12.8, anlage_lat=None, anlage_lng=None)
+    assert ergebnis.innerhalb
+    assert "nicht pruefbar" in ergebnis.meldung

@@ -1,0 +1,134 @@
+import "server-only";
+
+import { alle, eine } from "../db/verbindung.ts";
+import type { Anlagenlage } from "../at/elwg.ts";
+
+/**
+ * Die Anlagenlage für die Regulierungsrechnung.
+ *
+ * Gerechnet wird über ein volles Jahr echter Viertelstundenwerte aus
+ * dem Lastgang - nicht über eine Hochrechnung aus zwei Monaten. Der
+ * Unterschied ist nicht akademisch: Die Spitzenkappung trifft
+ * ausschließlich die Mittagsstunden im Sommer, und wer aus einem
+ * Septembermonat hochrechnet, unterschätzt sie um ein Vielfaches.
+ */
+
+export interface Anlagenlagedaten extends Anlagenlage {
+  id: string;
+  /** Vergütung je eingespeister Kilowattstunde, Cent. */
+  verguetungCtKwh: number;
+  /** Wie viele Tage der Lastgang abdeckt. */
+  tage: number;
+}
+
+/**
+ * Netzwirksame Einspeiseleistung.
+ *
+ * Maßgeblich ist, was am Übergabepunkt ankommen darf: die vereinbarte
+ * Einspeisegrenze, sonst die Summe der Wechselrichterleistung. Die
+ * Modulleistung ist es ausdrücklich nicht - eine Anlage mit 30 kWp
+ * und auf 15 kW begrenzter Einspeisung bleibt unter der Freigrenze.
+ */
+function einspeiseleistung(anlageId: string, kwp: number): number {
+  const netz = eine<{ einspeisegrenze_kw: number | null }>(
+    "SELECT einspeisegrenze_kw FROM netzanschluss WHERE anlage_id = ?",
+    anlageId,
+  );
+  if (netz?.einspeisegrenze_kw) return netz.einspeisegrenze_kw;
+
+  const wr = eine<{ summe: number | null }>(
+    `SELECT SUM(nennleistung_kw) AS summe FROM wechselrichter
+      WHERE anlage_id = ? AND aktiv = 1`,
+    anlageId,
+  );
+
+  return wr?.summe ?? kwp;
+}
+
+/**
+ * Alle Anlagen mit ihrem Einspeiselastgang.
+ *
+ * Die Viertelstundenwerte kommen als Leistung in kW zurück, nicht als
+ * Energie: Die Kappungsgrenze ist eine Leistungsgrenze, und der
+ * häufigste Fehler an dieser Stelle ist, 25 kWh je Viertelstunde mit
+ * 25 kW zu verwechseln - der Faktor vier entscheidet darüber, ob eine
+ * Anlage betroffen ist oder nicht.
+ */
+export function ladeAnlagenlagen(): Anlagenlagedaten[] {
+  const anlagen = alle<{
+    id: string;
+    bezeichnung: string;
+    leistung_kwp: number;
+  }>(
+    `SELECT id, bezeichnung, leistung_kwp FROM anlage
+      WHERE status <> 'Stillgelegt' ORDER BY leistung_kwp DESC`,
+  );
+
+  return anlagen.map((a) => {
+    const zaehlpunkt = eine<{ id: string }>(
+      "SELECT id FROM zaehlpunkt WHERE anlage_id = ? LIMIT 1",
+      a.id,
+    );
+
+    /*
+     * Genau ein Jahr, rückwärts vom jüngsten Messwert.
+     *
+     * Der Lastgang reicht weiter zurück - im Bestand sind es dreizehn
+     * Monate. Wer alles summiert und die Zahl "je Jahr" nennt, gibt
+     * eine um ein Zwölftel zu hohe Belastung aus. Das faellt bei
+     * fünfhundert Euro nicht auf und ist trotzdem falsch.
+     */
+    const werte = zaehlpunkt
+      ? alle<{ wert_kwh: number }>(
+          `SELECT wert_kwh FROM lastgang
+            WHERE zaehlpunkt_id = ?
+              AND richtung = 'Einspeisung'
+              AND zeitpunkt > (
+                SELECT datetime(MAX(zeitpunkt), '-365 days')
+                  FROM lastgang WHERE zaehlpunkt_id = ?
+              )
+            ORDER BY zeitpunkt`,
+          zaehlpunkt.id,
+          zaehlpunkt.id,
+        )
+      : [];
+
+    const verguetung = eine<{ einspeiseverguetung_ct_kwh: number | null }>(
+      `SELECT einspeiseverguetung_ct_kwh FROM netzanschluss
+        WHERE anlage_id = ?`,
+      a.id,
+    );
+
+    const summeKwh = werte.reduce((s, w) => s + w.wert_kwh, 0);
+
+    return {
+      id: a.id,
+      bezeichnung: a.bezeichnung,
+      kwp: a.leistung_kwp,
+      einspeiseleistungKw: einspeiseleistung(a.id, a.leistung_kwp),
+      einspeisungKwhJahr: summeKwh,
+      // Energie je Viertelstunde mal vier ergibt die mittlere Leistung
+      // in dieser Viertelstunde.
+      einspeisungViertelstunden: werte.map((w) => w.wert_kwh * 4),
+      verguetungCtKwh: verguetung?.einspeiseverguetung_ct_kwh ?? 7.9,
+      // Nicht aus der Zeilenzahl: Nachtstunden erzeugen keine
+      // Einspeisezeile, und aus 10.000 Zeilen wuerden sonst 104 Tage.
+      tage: 365,
+    };
+  });
+}
+
+/**
+ * Der letzte Tag, für den Lastgangdaten vorliegen.
+ *
+ * Er dient als Stichtag der Regulierungsübersicht. Der Tag von heute
+ * wäre falsch: Was zählt, ist der Stand der Daten, gegen den gerechnet
+ * wurde - und der kann älter sein.
+ */
+export function letzterLastgangtag(): string | null {
+  const zeile = eine<{ tag: string }>(
+    "SELECT MAX(date(zeitpunkt, '+2 hours')) AS tag FROM lastgang",
+  );
+
+  return zeile?.tag ?? null;
+}

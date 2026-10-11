@@ -1,0 +1,290 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import { db } from "@/lib/data";
+import { requireUser } from "@/lib/auth";
+import { SESSION_COOKIE, SESSION_MAX_AGE, signSession } from "@/lib/session-token";
+import { LEAD_SOURCES, LEAD_STATUSES, LOST_REASONS, OPPORTUNITY_STAGES, type LeadStatus, type LeadUpdate, type OpportunityUpdate, type ToDo } from "@/lib/types";
+import { parseAmount } from "@/lib/format";
+import { STAGE_PROB } from "@/lib/insights";
+
+// Server Actions sind öffentliche POST-Endpunkte: jede prüft Session und Eingaben selbst.
+
+export type FormState = { error?: string };
+
+const str = (form: FormData, key: string) => String(form.get(key) ?? "").trim();
+const opt = (form: FormData, key: string) => str(form, key) || undefined;
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+// ---------- Anmeldung ----------
+
+// Einfache Bremse gegen Passwort-Raten: 5 Fehlversuche je Benutzer in 5 Minuten
+const g = globalThis as unknown as { __loginFails?: Map<string, number[]> };
+const fails = (g.__loginFails ??= new Map());
+const WINDOW = 5 * 60_000;
+
+export async function loginAction(_prev: FormState, form: FormData): Promise<FormState> {
+  const usr = str(form, "usr").toLowerCase();
+  const pwd = String(form.get("pwd") ?? "");
+  if (!usr || !pwd) return { error: "Bitte Benutzer und Passwort eingeben." };
+
+  const recent = (fails.get(usr) ?? []).filter((t: number) => Date.now() - t < WINDOW);
+  if (recent.length >= 5) return { error: "Zu viele Fehlversuche. Bitte in einigen Minuten erneut versuchen." };
+
+  let user;
+  try {
+    user = await db().login(usr, pwd);
+  } catch {
+    return { error: "Anmeldedienst nicht erreichbar." };
+  }
+  if (!user) {
+    fails.set(usr, [...recent, Date.now()]);
+    return { error: "Benutzer oder Passwort falsch." };
+  }
+  fails.delete(usr);
+
+  (await cookies()).set(SESSION_COOKIE, await signSession(user), {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: SESSION_MAX_AGE,
+  });
+
+  // Nur interne Pfade zulassen (kein Open Redirect)
+  const next = str(form, "next");
+  redirect(next.startsWith("/") && !next.startsWith("//") ? next : "/");
+}
+
+export async function logoutAction() {
+  (await cookies()).delete(SESSION_COOKIE);
+  redirect("/login");
+}
+
+// ---------- Leads ----------
+
+export async function createLeadAction(_prev: FormState, form: FormData): Promise<FormState> {
+  await requireUser();
+  const first_name = str(form, "first_name");
+  const email_id = str(form, "email_id");
+  const status = (str(form, "status") || "Lead") as LeadStatus;
+
+  if (!first_name) return { error: "Vorname ist ein Pflichtfeld." };
+  if (email_id && !EMAIL.test(email_id)) return { error: "E-Mail-Adresse ist ungültig." };
+  if (!LEAD_STATUSES.includes(status)) return { error: "Ungültiger Status." };
+
+  const lead = await db().createLead({
+    first_name,
+    last_name: opt(form, "last_name"),
+    company_name: opt(form, "company_name"),
+    email_id: email_id || undefined,
+    mobile_no: opt(form, "mobile_no"),
+    source: opt(form, "source"),
+    status,
+  });
+  revalidatePath("/leads");
+  redirect(`/leads/${encodeURIComponent(lead.name)}`);
+}
+
+export async function updateLeadAction(name: string, _prev: FormState, form: FormData): Promise<FormState> {
+  await requireUser();
+  const first_name = str(form, "first_name");
+  const email_id = str(form, "email_id");
+  if (!first_name) return { error: "Vorname ist ein Pflichtfeld." };
+  if (email_id && !EMAIL.test(email_id)) return { error: "E-Mail-Adresse ist ungültig." };
+
+  await db().updateLead(name, {
+    first_name,
+    last_name: str(form, "last_name"),
+    company_name: str(form, "company_name"),
+    email_id,
+    mobile_no: str(form, "mobile_no"),
+    source: str(form, "source"),
+    territory: str(form, "territory"),
+    notes: str(form, "notes"),
+  });
+  revalidatePath("/leads");
+  redirect(`/leads/${encodeURIComponent(name)}`);
+}
+
+// Einzelnes Feld direkt im Eigenschaftenpanel ändern
+const LEAD_FIELDS = ["first_name", "last_name", "company_name", "email_id", "mobile_no", "source", "territory", "notes"];
+
+export async function updateLeadFieldAction(name: string, field: string, value: string): Promise<FormState> {
+  await requireUser();
+  const v = value.trim();
+  if (!LEAD_FIELDS.includes(field)) return { error: "Feld nicht änderbar." };
+  if (field === "first_name" && !v) return { error: "Vorname ist ein Pflichtfeld." };
+  if (field === "email_id" && v && !EMAIL.test(v)) return { error: "E-Mail-Adresse ist ungültig." };
+  if (field === "source" && v && !LEAD_SOURCES.includes(v)) return { error: "Ungültige Quelle." };
+  if (v.length > (field === "notes" ? 5000 : 140)) return { error: "Eingabe ist zu lang." };
+  if (!(await db().getLead(name))) return { error: "Lead nicht gefunden." };
+  await db().updateLead(name, { [field]: v } as LeadUpdate);
+  revalidatePath("/", "layout");
+  return {};
+}
+
+export async function setLeadStatusAction(name: string, status: string) {
+  await requireUser();
+  if (!LEAD_STATUSES.includes(status as LeadStatus)) throw new Error("Ungültiger Status");
+  await db().setLeadStatus(name, status as LeadStatus);
+  revalidatePath("/leads");
+  revalidatePath(`/leads/${encodeURIComponent(name)}`);
+}
+
+export async function convertLeadAction(name: string) {
+  await requireUser();
+  const lead = await db().getLead(name);
+  if (!lead) throw new Error("Lead nicht gefunden");
+  if (lead.status === "Converted") throw new Error("Lead ist bereits konvertiert");
+  const customer = await db().convertLead(name);
+  revalidatePath("/", "layout");
+  redirect(`/customers/${encodeURIComponent(customer.name)}`);
+}
+
+// ---------- Chancen ----------
+
+export async function createOpportunityAction(_prev: FormState, form: FormData): Promise<FormState> {
+  const user = await requireUser();
+  const opportunity_from = str(form, "opportunity_from");
+  const party_name = str(form, "party_name");
+  const title = str(form, "title");
+  const sales_stage = str(form, "sales_stage") || OPPORTUNITY_STAGES[0];
+  const amount = parseAmount(str(form, "opportunity_amount"));
+  const probability = Number(str(form, "probability") || "0");
+  const expected_closing = opt(form, "expected_closing");
+
+  if (opportunity_from !== "Lead" && opportunity_from !== "Customer") return { error: "Bitte Lead oder Kunde wählen." };
+  if (!party_name) return { error: "Bitte einen Lead bzw. Kunden auswählen." };
+  if (!title) return { error: "Titel ist ein Pflichtfeld." };
+  if (!(OPPORTUNITY_STAGES as readonly string[]).includes(sales_stage)) return { error: "Ungültige Phase." };
+  if (!Number.isFinite(amount) || amount < 0) return { error: "Betrag ist ungültig." };
+  if (!Number.isInteger(probability) || probability < 0 || probability > 100) return { error: "Wahrscheinlichkeit muss zwischen 0 und 100 liegen." };
+  if (expected_closing && !DATE.test(expected_closing)) return { error: "Datum ist ungültig." };
+
+  const exists = opportunity_from === "Lead" ? await db().getLead(party_name) : await db().getCustomer(party_name);
+  if (!exists) return { error: `${opportunity_from === "Lead" ? "Lead" : "Kunde"} nicht gefunden.` };
+
+  const opp = await db().createOpportunity(
+    { opportunity_from, party_name, title, sales_stage, opportunity_amount: amount, probability, expected_closing },
+    user.user,
+  );
+  revalidatePath("/", "layout");
+  redirect(`/opportunities/${encodeURIComponent(opp.name)}`);
+}
+
+export async function setOpportunityStageAction(name: string, stage: string) {
+  await requireUser();
+  const newIdx = OPPORTUNITY_STAGES.indexOf(stage as (typeof OPPORTUNITY_STAGES)[number]);
+  if (newIdx < 0) throw new Error("Ungültige Phase");
+  const opp = await db().getOpportunity(name);
+  if (!opp) throw new Error("Chance nicht gefunden");
+  const oldIdx = OPPORTUNITY_STAGES.indexOf(opp.sales_stage as (typeof OPPORTUNITY_STAGES)[number]);
+  // Wahrscheinlichkeit mitziehen, solange sie noch dem Standardwert der alten Phase entspricht
+  if (oldIdx >= 0 && opp.probability === STAGE_PROB[oldIdx]) {
+    await db().updateOpportunity(name, { sales_stage: stage, probability: STAGE_PROB[newIdx] });
+  } else {
+    await db().setOpportunityStage(name, stage);
+  }
+  revalidatePath("/", "layout");
+}
+
+// Einzelnes Feld direkt auf der Detailseite ändern
+export async function updateOpportunityFieldAction(name: string, field: string, value: string): Promise<FormState> {
+  await requireUser();
+  const v = value.trim();
+  const data: OpportunityUpdate = {};
+  switch (field) {
+    case "title":
+      if (!v || v.length > 140) return { error: "Titel fehlt oder ist zu lang." };
+      data.title = v;
+      break;
+    case "opportunity_amount": {
+      const n = parseAmount(v);
+      if (!Number.isFinite(n) || n < 0) return { error: "Betrag ist ungültig." };
+      data.opportunity_amount = n;
+      break;
+    }
+    case "probability": {
+      const n = Number(v.replace("%", "").trim());
+      if (!Number.isInteger(n) || n < 0 || n > 100) return { error: "Wahrscheinlichkeit muss zwischen 0 und 100 liegen." };
+      data.probability = n;
+      break;
+    }
+    case "expected_closing":
+      if (!DATE.test(v)) return { error: "Bitte ein gültiges Datum wählen." };
+      data.expected_closing = v;
+      break;
+    default:
+      return { error: "Feld nicht änderbar." };
+  }
+  if (!(await db().getOpportunity(name))) return { error: "Chance nicht gefunden." };
+  await db().updateOpportunity(name, data);
+  revalidatePath("/", "layout");
+  return {};
+}
+
+export async function setOpportunityOutcomeAction(name: string, outcome: "won" | "lost" | "open", reason?: string): Promise<FormState> {
+  await requireUser();
+  if (!["won", "lost", "open"].includes(outcome)) return { error: "Ungültiger Ausgang." };
+  if (outcome === "lost" && !(LOST_REASONS as readonly string[]).includes(reason ?? "")) return { error: "Bitte einen Grund wählen." };
+  if (!(await db().getOpportunity(name))) return { error: "Chance nicht gefunden." };
+  await db().setOpportunityOutcome(name, outcome, reason);
+  revalidatePath("/", "layout");
+  return {};
+}
+
+// ---------- Aufgaben ----------
+
+const REF_TYPES = ["Lead", "Opportunity", "Customer"];
+const PRIORITIES: ToDo["priority"][] = ["Low", "Medium", "High"];
+
+export async function createToDoAction(_prev: FormState, form: FormData): Promise<FormState> {
+  const user = await requireUser();
+  const description = str(form, "description");
+  const priority = (str(form, "priority") || "Medium") as ToDo["priority"];
+  const date = opt(form, "date");
+  const reference_type = opt(form, "reference_type");
+  const reference_name = opt(form, "reference_name");
+
+  if (!description) return { error: "Beschreibung fehlt." };
+  if (description.length > 500) return { error: "Beschreibung ist zu lang (max. 500 Zeichen)." };
+  if (!PRIORITIES.includes(priority)) return { error: "Ungültige Priorität." };
+  if (date && !DATE.test(date)) return { error: "Datum ist ungültig." };
+  if (reference_type && !REF_TYPES.includes(reference_type)) return { error: "Ungültiger Bezug." };
+
+  await db().createToDo({
+    description,
+    priority,
+    date,
+    allocated_to: opt(form, "allocated_to") ?? user.user,
+    reference_type: reference_name ? reference_type : undefined,
+    reference_name,
+  });
+  revalidatePath("/", "layout");
+  return {};
+}
+
+export async function toggleToDoAction(name: string, done: boolean) {
+  await requireUser();
+  await db().setToDoStatus(name, done ? "Closed" : "Open");
+  revalidatePath("/", "layout");
+}
+
+// ---------- Notizen ----------
+
+const NOTE_DOCTYPES = ["Lead", "Opportunity", "Customer"];
+
+export async function addNoteAction(doctype: string, name: string, _prev: FormState, form: FormData): Promise<FormState> {
+  const user = await requireUser();
+  if (!NOTE_DOCTYPES.includes(doctype)) return { error: "Ungültiger Bezug." };
+  const content = str(form, "content");
+  if (!content) return { error: "Notiz ist leer." };
+  if (content.length > 5000) return { error: "Notiz ist zu lang (max. 5000 Zeichen)." };
+  await db().addNote(doctype, name, content, user);
+  revalidatePath("/", "layout");
+  return {};
+}

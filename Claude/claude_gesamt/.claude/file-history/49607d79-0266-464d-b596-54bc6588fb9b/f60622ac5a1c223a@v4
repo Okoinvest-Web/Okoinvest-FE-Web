@@ -1,0 +1,332 @@
+<template>
+  <div>
+    <PageHeader :title="geraet?.hostname || name" :subtitle="untertitel">
+      <template #actions>
+        <Badge v-if="geraet" :theme="statusTheme(geraet.lifecycle_status)">
+          {{ valueLabel('lifecycle_status', geraet.lifecycle_status) }}
+        </Badge>
+        <Button @click="$router.push('/devices')">Zur Liste</Button>
+      </template>
+    </PageHeader>
+
+    <p v-if="detail.loading" class="p-6 text-sm text-ink-gray-5">Wird geladen …</p>
+    <ErrorMessage v-else-if="detail.error" class="p-6" :message="detail.error" />
+
+    <div v-else-if="geraet" class="p-6">
+      <div class="mb-4 flex gap-1 border-b border-outline-gray-2">
+        <button
+          v-for="tab in tabs"
+          :key="tab.key"
+          class="-mb-px border-b-2 px-3 py-2 text-base"
+          :class="
+            aktiverTab === tab.key
+              ? 'border-outline-gray-4 font-medium text-ink-gray-9'
+              : 'border-transparent text-ink-gray-6 hover:text-ink-gray-8'
+          "
+          @click="aktiverTab = tab.key"
+        >
+          {{ tab.label }}
+          <span v-if="tab.anzahl !== undefined" class="ml-1 text-sm text-ink-gray-4">
+            {{ tab.anzahl }}
+          </span>
+        </button>
+      </div>
+
+      <!-- Übersicht -->
+      <div v-if="aktiverTab === 'overview'" class="flex flex-wrap items-start gap-6">
+        <div class="grid min-w-[320px] flex-1 grid-cols-1 gap-6 xl:grid-cols-2">
+          <FieldTable :rows="stammdaten" />
+          <FieldTable :rows="einbau" />
+        </div>
+        <!-- Einbauort sofort sichtbar statt nur als HE-Zahl im Formular -->
+        <RackElevation
+          v-if="rackAnsicht.data"
+          :rack="rackAnsicht.data"
+          :hervorgehoben="name"
+          @select="$router.push('/devices/' + $event.name)"
+        />
+      </div>
+
+      <!-- Frontplatte -->
+      <div v-else-if="aktiverTab === 'panel'">
+        <PortPanel v-if="frontplatte.data" :panel="frontplatte.data" />
+      </div>
+
+      <!-- Dossier -->
+      <div v-else-if="aktiverTab === 'dossier'">
+        <ObjectDossier :dossier="dossier.data" />
+      </div>
+
+      <!-- Schnittstellen -->
+      <div v-else-if="aktiverTab === 'interfaces'">
+        <div class="overflow-hidden rounded-lg border border-outline-gray-2 bg-surface-white">
+          <table class="w-full text-left">
+            <thead class="border-b border-outline-gray-2 bg-surface-gray-1">
+              <tr class="text-sm text-ink-gray-6">
+                <th class="px-4 py-2 font-medium">{{ fieldLabel('interface_name') }}</th>
+                <th class="px-4 py-2 font-medium">{{ fieldLabel('mode') }}</th>
+                <th class="px-4 py-2 font-medium">{{ fieldLabel('untagged_vlan') }}</th>
+                <th class="px-4 py-2 font-medium">{{ fieldLabel('mac_address') }}</th>
+                <th class="px-4 py-2 font-medium">IP</th>
+                <th class="px-4 py-2 font-medium">{{ fieldLabel('label') }}</th>
+                <th class="px-4 py-2 font-medium">{{ fieldLabel('enabled') }}</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-outline-gray-2">
+              <tr v-for="schnittstelle in detail.data.interfaces" :key="schnittstelle.name">
+                <td class="px-4 py-2.5 text-base text-ink-gray-8">
+                  {{ schnittstelle.interface_name }}
+                  <span class="ml-1 text-sm text-ink-gray-4">{{ schnittstelle.speed_mbps }} Mbit/s</span>
+                </td>
+                <td class="px-4 py-2.5 text-base text-ink-gray-7">
+                  {{ valueLabel('mode', schnittstelle.mode) }}
+                </td>
+                <td class="px-4 py-2.5">
+                  <Badge v-if="schnittstelle.vlan_label" :theme="zoneTheme(schnittstelle.security_zone)">
+                    {{ schnittstelle.vlan_label }}
+                  </Badge>
+                  <span v-else class="text-ink-gray-4">–</span>
+                </td>
+                <td class="px-4 py-2.5 font-mono text-sm text-ink-gray-7">
+                  {{ schnittstelle.mac_address }}
+                </td>
+                <td class="px-4 py-2.5 text-base tabular-nums text-ink-gray-7">
+                  {{ schnittstelle.ip_addresses.join(', ') || '–' }}
+                </td>
+                <td class="px-4 py-2.5 text-base text-ink-gray-7">
+                  {{ schnittstelle.cable || '–' }}
+                </td>
+                <td class="px-4 py-2.5">
+                  <Badge :theme="schnittstelle.enabled ? 'green' : 'gray'">
+                    {{ schnittstelle.enabled ? 'Ja' : 'Nein' }}
+                  </Badge>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <p
+            v-if="!detail.data.interfaces.length"
+            class="px-4 py-8 text-center text-sm text-ink-gray-5"
+          >
+            Keine Schnittstellen erfasst.
+          </p>
+        </div>
+      </div>
+
+      <!-- VLANs -->
+      <div v-else-if="aktiverTab === 'vlans'" class="flex flex-wrap gap-2">
+        <div
+          v-for="vlan in detail.data.vlans"
+          :key="vlan.name"
+          class="rounded-lg border border-outline-gray-2 bg-surface-white p-4"
+        >
+          <p class="text-base font-medium text-ink-gray-9">
+            {{ vlan.vid }} · {{ vlan.vlan_name }}
+          </p>
+          <p class="mt-0.5 text-sm text-ink-gray-6">{{ vlan.description }}</p>
+          <Badge class="mt-2" :theme="zoneTheme(vlan.security_zone)">
+            {{ valueLabel('security_zone', vlan.security_zone) }}
+          </Badge>
+        </div>
+        <p v-if="!detail.data.vlans.length" class="py-8 text-sm text-ink-gray-5">
+          Diesem Gerät ist kein untagged VLAN zugeordnet.
+        </p>
+      </div>
+
+      <!-- IP-Adressen -->
+      <div v-else-if="aktiverTab === 'ips'">
+        <div class="overflow-hidden rounded-lg border border-outline-gray-2 bg-surface-white">
+          <table class="w-full text-left">
+            <thead class="border-b border-outline-gray-2 bg-surface-gray-1">
+              <tr class="text-sm text-ink-gray-6">
+                <th class="px-4 py-2 font-medium">{{ fieldLabel('address') }}</th>
+                <th class="px-4 py-2 font-medium">{{ fieldLabel('vrf') }}</th>
+                <th class="px-4 py-2 font-medium">{{ fieldLabel('dns_name') }}</th>
+                <th class="px-4 py-2 font-medium">{{ fieldLabel('address_role') }}</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-outline-gray-2">
+              <tr v-for="ip in detail.data.ip_addresses" :key="ip.name">
+                <td class="px-4 py-2.5 text-base tabular-nums text-ink-gray-8">{{ ip.address }}</td>
+                <td class="px-4 py-2.5 text-base text-ink-gray-7">{{ ip.vrf }}</td>
+                <td class="px-4 py-2.5 text-base text-ink-gray-7">{{ ip.dns_name || '–' }}</td>
+                <td class="px-4 py-2.5 text-base text-ink-gray-7">
+                  {{ valueLabel('address_role', ip.address_role) }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <p
+            v-if="!detail.data.ip_addresses.length"
+            class="px-4 py-8 text-center text-sm text-ink-gray-5"
+          >
+            Keine IP-Adressen zugeordnet.
+          </p>
+        </div>
+      </div>
+
+      <!-- Verkabelung -->
+      <div v-else-if="aktiverTab === 'cables'">
+        <div class="overflow-hidden rounded-lg border border-outline-gray-2 bg-surface-white">
+          <div
+            v-for="kabel in detail.data.cables"
+            :key="kabel.name"
+            class="flex items-center justify-between border-b border-outline-gray-2 px-4 py-3 last:border-b-0"
+          >
+            <div class="min-w-0">
+              <p class="text-base text-ink-gray-8">{{ kabel.label }}</p>
+              <p class="truncate text-sm text-ink-gray-5">
+                {{ kabel.a_endpoint }} ↔ {{ kabel.b_endpoint }}
+              </p>
+            </div>
+            <div class="flex shrink-0 items-center gap-2">
+              <Badge theme="gray">{{ kabel.cable_type }}</Badge>
+              <span class="text-sm text-ink-gray-5">{{ kabel.length_m }} m</span>
+            </div>
+          </div>
+          <p
+            v-if="!detail.data.cables.length"
+            class="px-4 py-8 text-center text-sm text-ink-gray-5"
+          >
+            Keine Verkabelung dokumentiert.
+          </p>
+        </div>
+        <p class="mt-3 text-xs text-ink-gray-4">
+          End-to-End-Trace über Patchfelder folgt mit der serverseitigen Methode
+          <code>trace_path(endpoint)</code>.
+        </p>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed, ref, watch } from 'vue'
+import { Badge, Button, ErrorMessage, createResource } from 'frappe-ui'
+import PageHeader from '@/components/PageHeader.vue'
+import FieldTable from '@/components/FieldTable.vue'
+import PortPanel from '@/components/PortPanel.vue'
+import RackElevation from '@/components/RackElevation.vue'
+import ObjectDossier from '@/components/ObjectDossier.vue'
+import { fieldLabel, statusTheme, valueLabel, zoneTheme } from '@/labels'
+
+const props = defineProps({
+  name: { type: String, required: true },
+})
+
+const aktiverTab = ref('overview')
+
+const detail = createResource({
+  url: 'netops.api.dcim.device_detail',
+  makeParams: () => ({ name: props.name }),
+  auto: true,
+})
+
+const frontplatte = createResource({
+  url: 'netops.api.dcim.device_front_panel',
+  makeParams: () => ({ name: props.name }),
+  auto: true,
+})
+
+// Alles, was sonst noch an diesem Gerät hängt: Dokumente, Zugangsverweise,
+// Alarme, Schwachstellen, Drift, Beziehungen (Fachkonzept 2.6).
+const dossier = createResource({
+  url: 'netops.api.docs.object_dossier',
+  makeParams: () => ({ object_type: 'Network Device', object_name: props.name }),
+  auto: true,
+})
+
+// Muss vor den Watches stehen: ein Watch mit `immediate` greift sofort zu.
+const geraet = computed(() => detail.data?.device || null)
+
+// Nur laden, wenn das Gerät überhaupt in einem Rack steckt.
+const rackAnsicht = createResource({
+  url: 'netops.api.dcim.rack_elevation',
+  makeParams: () => ({ name: geraet.value?.rack }),
+})
+
+watch(
+  () => props.name,
+  () => {
+    aktiverTab.value = 'overview'
+    detail.fetch()
+    frontplatte.fetch()
+    dossier.fetch()
+  },
+)
+
+watch(
+  () => geraet.value?.rack,
+  (rack) => {
+    if (rack) rackAnsicht.fetch()
+    else rackAnsicht.reset()
+  },
+  { immediate: true },
+)
+
+const untertitel = computed(() => {
+  const d = detail.data
+  if (!d) return ''
+  return [d.device_type?.name, d.site?.site_name].filter(Boolean).join(' · ')
+})
+
+const tabs = computed(() => [
+  { key: 'overview', label: 'Übersicht' },
+  ...(frontplatte.data?.has_layout
+    ? [{ key: 'panel', label: 'Frontplatte', anzahl: frontplatte.data.summary.total }]
+    : []),
+  { key: 'interfaces', label: 'Schnittstellen', anzahl: detail.data?.interfaces.length },
+  { key: 'vlans', label: 'VLANs', anzahl: detail.data?.vlans.length },
+  { key: 'ips', label: 'IP-Adressen', anzahl: detail.data?.ip_addresses.length },
+  { key: 'cables', label: 'Verkabelung', anzahl: detail.data?.cables.length },
+  { key: 'dossier', label: 'Dossier', anzahl: dossierAnzahl.value },
+])
+
+/** Wie viele Einträge das Dossier insgesamt führt. */
+const dossierAnzahl = computed(() => {
+  const d = dossier.data
+  if (!d) return undefined
+  return (
+    d.documents.length +
+    d.access_references.length +
+    d.alerts.length +
+    d.vulnerabilities.length +
+    d.drift.length +
+    d.relations_in.length +
+    d.relations_out.length +
+    d.checklists.length
+  )
+})
+
+const stammdaten = computed(() => {
+  const d = geraet.value
+  if (!d) return []
+  return [
+    ['hostname', d.hostname],
+    ['device_role', d.device_role],
+    ['device_type', d.device_type],
+    ['serial', d.serial],
+    ['asset_tag', d.asset_tag],
+    ['firmware', d.firmware],
+    ['responsible_user', d.responsible_user],
+    ['tenant', d.tenant],
+    ['description', d.description],
+  ].map(([feld, wert]) => ({ feld, wert }))
+})
+
+const einbau = computed(() => {
+  const d = geraet.value
+  if (!d) return []
+  return [
+    ['site', detail.data?.site?.site_name || d.site],
+    ['rack', detail.data?.rack?.rack_name || d.rack],
+    ['position_u', d.position_u],
+    ['rack_face', valueLabel('rack_face', d.rack_face)],
+    ['management_ip', d.management_ip],
+    ['warranty_end', d.warranty_end],
+    ['support_end', d.support_end],
+    ['lifecycle_status', valueLabel('lifecycle_status', d.lifecycle_status)],
+    ['passbolt_reference', d.passbolt_reference],
+  ].map(([feld, wert]) => ({ feld, wert }))
+})
+</script>

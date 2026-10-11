@@ -1,0 +1,612 @@
+/**
+ * Inventar: Bestand, Ausgabe, Abschreibung, Fristen.
+ *
+ * Wie überall im Mock liegt die Rechnung hier und nicht in den Komponenten.
+ * Beim Umstieg auf ein echtes Frappe wird daraus `netops/api/inventar.py` -
+ * und **jede** dieser Methoden braucht dort `frappe.has_permission` sowie
+ * einen Mandantenfilter. Der Mock prüft keine Rechte.
+ *
+ * Besonders hier: `Employee` ist ein Frappe-HR-DocType mit eigenem
+ * Berechtigungskonzept. Wer Inventar sehen darf, darf damit noch lange
+ * keine Personalstammdaten lesen. In Python gehört deshalb an jede Stelle,
+ * die einen Beschäftigtennamen ausgibt, eine bewusste Feldauswahl - nicht
+ * `frappe.get_doc('Employee', name)`.
+ */
+import { FrappeMockError, table } from '../db.js'
+import { heute, parse } from '../zeit.js'
+
+// --- Hilfen ----------------------------------------------------------------
+
+/** Tage zwischen heute und einem Datum. Negativ = liegt in der Vergangenheit. */
+export function tageBis(datum) {
+  if (!datum) return null
+  const ziel = parse(String(datum).slice(0, 10) + ' 12:00:00')
+  if (!ziel) return null
+  const jetztMittag = parse(heute() + ' 12:00:00')
+  return Math.round((ziel.getTime() - jetztMittag.getTime()) / 86400000)
+}
+
+/** Monate zwischen zwei Datumsangaben, auf ganze Monate abgerundet. */
+export function monateSeit(datum, bis = heute()) {
+  if (!datum) return 0
+  const von = parse(String(datum).slice(0, 10) + ' 12:00:00')
+  const zu = parse(String(bis).slice(0, 10) + ' 12:00:00')
+  if (!von || !zu) return 0
+  let monate = (zu.getFullYear() - von.getFullYear()) * 12 + (zu.getMonth() - von.getMonth())
+  if (zu.getDate() < von.getDate()) monate -= 1
+  return Math.max(0, monate)
+}
+
+function beschaeftigte() {
+  return new Map(table('Employee').map((e) => [e.name, e]))
+}
+
+function kategorien() {
+  return new Map(table('Asset Category').map((k) => [k.name, k]))
+}
+
+function standorte() {
+  return new Map(table('Site').map((s) => [s.name, s]))
+}
+
+/**
+ * Wie viele Monate wird abgeschrieben? Erst das Asset, dann die Kategorie.
+ * So lässt sich ein Einzelfall abweichen, ohne die Kategorie zu verbiegen.
+ */
+function nutzungsdauer(asset, kategorie) {
+  return asset.useful_life_months || kategorie?.useful_life_months || 0
+}
+
+// --- Abschreibung ----------------------------------------------------------
+
+/**
+ * Abschreibungsplan für ein Asset.
+ *
+ * Linear ist der Regelfall: Anschaffungswert minus Restwert, verteilt auf
+ * die Nutzungsdauer. Degressiv rechnet mit dem doppelten linearen Satz auf
+ * den Restbuchwert und wechselt auf linear, sobald das mehr bringt - so
+ * macht es das Steuerrecht, und so vermeidet man den Fall, dass degressiv
+ * den Restwert nie erreicht.
+ *
+ * Alles in Cent, damit keine Rundungsfehler durch Gleitkomma entstehen.
+ */
+export function depreciation_schedule({ asset = null } = {}) {
+  const doc = table('Asset').find((a) => a.name === asset)
+  if (!doc) {
+    throw new FrappeMockError(`DoesNotExistError: Asset ${asset} existiert nicht`, 404)
+  }
+
+  const kategorie = kategorien().get(doc.category)
+  const monate = nutzungsdauer(doc, kategorie)
+  const anschaffung = doc.purchase_price_cents || 0
+  const restwert = doc.salvage_value_cents || 0
+  const methode = doc.depreciation_method || 'linear'
+
+  if (!monate || !anschaffung || methode === 'none') {
+    return {
+      asset: doc.name,
+      method: methode,
+      months: monate,
+      purchase_price_cents: anschaffung,
+      salvage_value_cents: restwert,
+      book_value_cents: anschaffung,
+      depreciated_cents: 0,
+      months_elapsed: 0,
+      months_remaining: 0,
+      fully_depreciated: false,
+      rows: [],
+      reason: !anschaffung
+        ? 'Kein Anschaffungswert erfasst'
+        : !monate
+          ? 'Keine Nutzungsdauer hinterlegt'
+          : 'Keine Abschreibung vorgesehen',
+    }
+  }
+
+  const abzuschreiben = Math.max(0, anschaffung - restwert)
+  const jahre = Math.ceil(monate / 12)
+  const startJahr = Number(String(doc.purchase_date).slice(0, 4))
+  const linearProMonat = abzuschreiben / monate
+
+  const zeilen = []
+  let buchwert = anschaffung
+  let kumuliert = 0
+
+  for (let i = 0; i < jahre; i++) {
+    // Im ersten und letzten Jahr sind es selten volle zwölf Monate.
+    const bisher = i * 12
+    const monateImJahr = Math.min(12, monate - bisher)
+    if (monateImJahr <= 0) break
+
+    let betrag
+    if (methode === 'degressive') {
+      // Doppelter linearer Satz auf den Restbuchwert, anteilig auf die
+      // Monate dieses Jahres. Sobald linear mehr bringt, wird gewechselt -
+      // sonst nähert sich der Buchwert dem Restwert nur asymptotisch.
+      const degressiv = ((buchwert - restwert) * (2 / (monate / 12)) * monateImJahr) / 12
+      const linear = linearProMonat * monateImJahr
+      betrag = Math.max(degressiv, linear)
+    } else {
+      betrag = linearProMonat * monateImJahr
+    }
+
+    betrag = Math.round(Math.min(betrag, buchwert - restwert))
+    kumuliert += betrag
+    buchwert -= betrag
+
+    zeilen.push({
+      year: startJahr + i,
+      months: monateImJahr,
+      amount_cents: betrag,
+      accumulated_cents: kumuliert,
+      book_value_cents: buchwert,
+    })
+  }
+
+  const vergangen = Math.min(monate, monateSeit(doc.purchase_date))
+  const bisHeute = Math.round(
+    methode === 'degressive'
+      ? zeilenBisMonat(zeilen, vergangen, startJahr, doc.purchase_date)
+      : linearProMonat * vergangen,
+  )
+
+  return {
+    asset: doc.name,
+    asset_name: doc.asset_name,
+    method: methode,
+    months: monate,
+    purchase_date: doc.purchase_date,
+    purchase_price_cents: anschaffung,
+    salvage_value_cents: restwert,
+    depreciated_cents: bisHeute,
+    book_value_cents: Math.max(restwert, anschaffung - bisHeute),
+    months_elapsed: vergangen,
+    months_remaining: Math.max(0, monate - vergangen),
+    fully_depreciated: vergangen >= monate,
+    rows: zeilen,
+  }
+}
+
+/** Kumulierte Abschreibung bis zu einem Monat, quer über die Jahreszeilen. */
+function zeilenBisMonat(zeilen, monate, startJahr, kaufdatum) {
+  const startMonat = Number(String(kaufdatum).slice(5, 7)) - 1
+  let offen = monate
+  let summe = 0
+  for (const zeile of zeilen) {
+    const anteil = Math.min(offen, zeile.months)
+    if (anteil <= 0) break
+    summe += (zeile.amount_cents / zeile.months) * anteil
+    offen -= anteil
+  }
+  void startJahr
+  void startMonat
+  return summe
+}
+
+// --- Bestand ---------------------------------------------------------------
+
+const ZUSTAENDE = ['in_stock', 'issued', 'reserved', 'repair', 'retired', 'disposed']
+
+/**
+ * Bewertet ein Asset: Was ist daran gerade auffällig?
+ *
+ * Die Reihenfolge ist die Reihenfolge der Dringlichkeit. `level` folgt der
+ * Statuspalette, `reasons` trägt den Text - Farbe allein sagt nichts.
+ */
+function bewerte(asset, kategorie, halter, schaeden) {
+  const gruende = []
+  let stufe = null
+
+  const pruefungIn = tageBis(asset.next_inspection)
+  const garantieIn = tageBis(asset.warranty_until)
+
+  if (asset.asset_state === 'disposed') {
+    return {
+      level: 'neutral',
+      reasons: ['entsorgt'],
+      inspection_days: pruefungIn,
+      warranty_days: garantieIn,
+    }
+  }
+
+  // Ein Gerät bei jemandem, der nicht mehr da ist, ist der teuerste Befund
+  // einer Inventur - und der einzige, den man nicht durch Zählen findet.
+  if (asset.holder && halter && halter.status !== 'Active') {
+    gruende.push('Besitzer ist ausgetreten – Rückgabe offen')
+    stufe = 'critical'
+  }
+
+  if (pruefungIn !== null && pruefungIn < 0) {
+    gruende.push(`Prüfung seit ${Math.abs(pruefungIn)} Tagen überfällig`)
+    stufe = 'critical'
+  } else if (pruefungIn !== null && pruefungIn <= 30) {
+    gruende.push(`Prüfung in ${pruefungIn} Tagen fällig`)
+    stufe = stufe || 'warning'
+  }
+
+  const offenerSchaden = schaeden.find(
+    (s) => s.asset === asset.name && ['new', 'in_repair'].includes(s.damage_state),
+  )
+  if (offenerSchaden) {
+    gruende.push('Schaden offen: ' + offenerSchaden.summary)
+    stufe =
+      stufe === 'critical' ? stufe : offenerSchaden.severity === 'high' ? 'critical' : 'warning'
+  }
+
+  if (garantieIn !== null && garantieIn < 0) {
+    gruende.push(`Garantie seit ${Math.abs(garantieIn)} Tagen abgelaufen`)
+    stufe = stufe || 'warning'
+  } else if (garantieIn !== null && garantieIn <= 60) {
+    gruende.push(`Garantie endet in ${garantieIn} Tagen`)
+    stufe = stufe || 'warning'
+  }
+
+  if (asset.asset_state === 'issued' && !asset.holder) {
+    gruende.push('Als ausgegeben geführt, aber ohne Besitzer')
+    stufe = 'warning'
+  }
+
+  if (!asset.purchase_price_cents) {
+    gruende.push('Kein Anschaffungswert – nicht bewertbar')
+    stufe = stufe || 'warning'
+  }
+
+  void kategorie
+  return {
+    level: stufe || 'ok',
+    reasons: gruende,
+    inspection_days: pruefungIn,
+    warranty_days: garantieIn,
+  }
+}
+
+export function asset_list({
+  category = null,
+  asset_state = null,
+  site = null,
+  holder = null,
+  cost_center = null,
+  search = null,
+  tenant = null,
+} = {}) {
+  const mitarbeitende = beschaeftigte()
+  const kats = kategorien()
+  const orte = standorte()
+  const schaeden = table('Damage Report')
+
+  let liste = table('Asset')
+  if (category) liste = liste.filter((a) => a.category === category)
+  if (asset_state) liste = liste.filter((a) => a.asset_state === asset_state)
+  if (site) liste = liste.filter((a) => a.site === site)
+  if (holder) liste = liste.filter((a) => a.holder === holder)
+  if (cost_center) liste = liste.filter((a) => a.cost_center === cost_center)
+  if (tenant) liste = liste.filter((a) => a.tenant === tenant)
+
+  if (search) {
+    const text = String(search).trim().toLowerCase()
+    liste = liste.filter((a) =>
+      ['asset_tag', 'asset_name', 'serial', 'model', 'manufacturer'].some((f) =>
+        String(a[f] || '')
+          .toLowerCase()
+          .includes(text),
+      ),
+    )
+  }
+
+  return liste
+    .map((a) => {
+      const kategorie = kats.get(a.category)
+      const halter = a.holder ? mitarbeitende.get(a.holder) : null
+      const befund = bewerte(a, kategorie, halter, schaeden)
+      const plan = a.purchase_price_cents ? depreciation_schedule({ asset: a.name }) : null
+
+      return {
+        ...a,
+        holder_name: halter?.employee_name || null,
+        holder_active: halter ? halter.status === 'Active' : null,
+        site_name: orte.get(a.site)?.site_name || a.site,
+        category_requires_return: !!kategorie?.requires_return,
+        book_value_cents: plan ? plan.book_value_cents : null,
+        fully_depreciated: plan ? plan.fully_depreciated : null,
+        ...befund,
+      }
+    })
+    .sort(
+      (a, b) =>
+        STUFEN_RANG[b.level] - STUFEN_RANG[a.level] || a.asset_tag.localeCompare(b.asset_tag),
+    )
+}
+
+const STUFEN_RANG = { critical: 3, warning: 2, ok: 1, neutral: 0 }
+
+/**
+ * Kennzahlen über den Bestand.
+ *
+ * `book_value_cents` ist die Summe der Restbuchwerte - die Zahl, nach der
+ * die Buchhaltung fragt. `purchase_value_cents` daneben, weil der
+ * Unterschied zeigt, wie alt der Bestand ist.
+ */
+export function inventory_overview({ tenant = null } = {}) {
+  const liste = asset_list({ tenant })
+  const aktiv = liste.filter((a) => a.asset_state !== 'disposed')
+
+  const jeZustand = {}
+  for (const z of ZUSTAENDE) jeZustand[z] = 0
+  for (const a of liste) jeZustand[a.asset_state] = (jeZustand[a.asset_state] || 0) + 1
+
+  const jeKategorie = new Map()
+  for (const a of aktiv) {
+    const eintrag = jeKategorie.get(a.category) || {
+      category: a.category,
+      count: 0,
+      book_value_cents: 0,
+    }
+    eintrag.count += 1
+    eintrag.book_value_cents += a.book_value_cents || 0
+    jeKategorie.set(a.category, eintrag)
+  }
+
+  const jeKostenstelle = new Map()
+  for (const a of aktiv) {
+    const schluessel = a.cost_center || '(ohne Kostenstelle)'
+    const eintrag = jeKostenstelle.get(schluessel) || {
+      cost_center: schluessel,
+      count: 0,
+      purchase_value_cents: 0,
+      book_value_cents: 0,
+    }
+    eintrag.count += 1
+    eintrag.purchase_value_cents += a.purchase_price_cents || 0
+    eintrag.book_value_cents += a.book_value_cents || 0
+    jeKostenstelle.set(schluessel, eintrag)
+  }
+
+  return {
+    summary: {
+      total: liste.length,
+      active: aktiv.length,
+      by_state: jeZustand,
+      critical: liste.filter((a) => a.level === 'critical').length,
+      warning: liste.filter((a) => a.level === 'warning').length,
+      purchase_value_cents: aktiv.reduce((s, a) => s + (a.purchase_price_cents || 0), 0),
+      book_value_cents: aktiv.reduce((s, a) => s + (a.book_value_cents || 0), 0),
+      unassigned_value_cents: aktiv
+        .filter((a) => a.asset_state === 'in_stock')
+        .reduce((s, a) => s + (a.book_value_cents || 0), 0),
+      without_price: aktiv.filter((a) => !a.purchase_price_cents).length,
+    },
+    by_category: [...jeKategorie.values()].sort((a, b) => b.count - a.count),
+    by_cost_center: [...jeKostenstelle.values()].sort(
+      (a, b) => b.book_value_cents - a.book_value_cents,
+    ),
+    findings: liste.filter((a) => a.level === 'critical' || a.level === 'warning').slice(0, 25),
+  }
+}
+
+// --- Lebenslauf eines Assets ----------------------------------------------
+
+/**
+ * Alles zu einem Asset in einem Aufruf - Stammdaten, wer es wann hatte,
+ * Schäden, Inventurtreffer, Abschreibung, Entsorgung.
+ *
+ * Das ist die Ansicht, die Inventory ONE „Lebenslauf" nennt. Hier kommt
+ * zusätzlich die Verknüpfung zum technischen Gerät dazu: bei einem Switch
+ * steht neben der Inventarnummer auch, welche Ports belegt sind.
+ */
+export function asset_detail({ name = null } = {}) {
+  const doc = table('Asset').find((a) => a.name === name)
+  if (!doc) {
+    throw new FrappeMockError(`DoesNotExistError: Asset ${name} existiert nicht`, 404)
+  }
+
+  const mitarbeitende = beschaeftigte()
+  const kategorie = kategorien().get(doc.category)
+  const halter = doc.holder ? mitarbeitende.get(doc.holder) : null
+  const schaeden = table('Damage Report').filter((s) => s.asset === doc.name)
+
+  const ausgaben = table('Asset Assignment')
+    .filter((a) => a.asset === doc.name)
+    .map((a) => ({
+      ...a,
+      employee_name: mitarbeitende.get(a.employee)?.employee_name || a.employee,
+      employee_status: mitarbeitende.get(a.employee)?.status || null,
+      issued_by_name: mitarbeitende.get(a.issued_by)?.employee_name || a.issued_by,
+      open: !a.returned_on,
+      overdue: !a.returned_on && a.due_on ? tageBis(a.due_on) < 0 : false,
+      days_held: a.returned_on
+        ? Math.round((parse(a.returned_on).getTime() - parse(a.issued_on).getTime()) / 86400000)
+        : Math.abs(tageBis(String(a.issued_on).slice(0, 10))),
+    }))
+    .sort((a, b) => String(b.issued_on).localeCompare(String(a.issued_on)))
+
+  const reservierungen = table('Asset Reservation')
+    .filter((r) => r.asset === doc.name)
+    .map((r) => ({
+      ...r,
+      employee_name: mitarbeitende.get(r.employee)?.employee_name || r.employee,
+      upcoming: tageBis(r.from_date) >= 0,
+    }))
+    .sort((a, b) => String(a.from_date).localeCompare(String(b.from_date)))
+
+  const zaehlungen = table('Inventory Count Line')
+    .filter((z) => z.asset === doc.name)
+    .map((z) => ({
+      ...z,
+      scanned_by_name: mitarbeitende.get(z.scanned_by)?.employee_name || z.scanned_by,
+    }))
+
+  const entsorgung = table('Disposal Record').find((e) => e.asset === doc.name) || null
+
+  return {
+    ...doc,
+    holder_name: halter?.employee_name || null,
+    holder_status: halter?.status || null,
+    holder_department: halter?.department || null,
+    site_name: standorte().get(doc.site)?.site_name || doc.site,
+    category_detail: kategorie || null,
+    ...bewerte(doc, kategorie, halter, table('Damage Report')),
+    depreciation: depreciation_schedule({ asset: doc.name }),
+    assignments: ausgaben,
+    reservations: reservierungen,
+    damages: schaeden.sort((a, b) => String(b.reported_on).localeCompare(String(a.reported_on))),
+    count_lines: zaehlungen,
+    disposal: entsorgung,
+    label: label_payload({ assets: [doc.name] }).labels[0],
+  }
+}
+
+// --- Etiketten -------------------------------------------------------------
+
+/**
+ * Inhalt für QR-Code und Etikett.
+ *
+ * Der QR-Code enthält bewusst eine URL auf die eigene Instanz und NICHT
+ * die Seriennummer oder den Namen der besitzenden Person. Ein Etikett
+ * hängt sichtbar am Gerät; wer es fotografiert, soll daraus nichts über
+ * Menschen erfahren. Die Auflösung passiert erst nach der Anmeldung.
+ */
+export function label_payload({ assets = [], base_url = 'https://netops.oekovolt.test' } = {}) {
+  const alle = table('Asset')
+  const gewaehlt = assets.length ? alle.filter((a) => assets.includes(a.name)) : alle
+
+  return {
+    base_url,
+    labels: gewaehlt.map((a) => ({
+      asset: a.name,
+      asset_tag: a.asset_tag,
+      asset_name: a.asset_name,
+      qr_content: `${base_url}/netops/inventory/${encodeURIComponent(a.asset_tag)}`,
+      // Barcode-Alternative für Handscanner ohne Kamera: reine Ziffern des
+      // Inventarkürzels, Code 128 kann das direkt.
+      barcode_content: a.asset_tag,
+      line_1: a.asset_tag,
+      line_2: (a.asset_name || '').slice(0, 32),
+      line_3: [a.manufacturer, a.model].filter(Boolean).join(' ').slice(0, 32),
+    })),
+  }
+}
+
+// --- Fristen ---------------------------------------------------------------
+
+/**
+ * Alle Fristen an einem Ort: Garantie, Prüfung, Lizenz, Vertrag, Zertifikat.
+ *
+ * Das ist der Punkt, an dem NetOps mehr kann als eine reine
+ * Inventarsoftware - die Fristen aus Verträgen, Lizenzen und Zertifikaten
+ * liegen ohnehin schon im selben System. Eine Liste statt fünf.
+ */
+export function deadline_overview({ days = 90, tenant = null } = {}) {
+  const grenze = Number(days) || 90
+  const eintraege = []
+
+  const inFenster = (tage) => tage !== null && tage <= grenze
+
+  for (const a of table('Asset')) {
+    if (tenant && a.tenant !== tenant) continue
+    if (a.asset_state === 'disposed') continue
+
+    const garantie = tageBis(a.warranty_until)
+    if (inFenster(garantie)) {
+      eintraege.push({
+        kind: 'warranty',
+        kind_label: 'Garantie',
+        object_type: 'Asset',
+        object_name: a.name,
+        title: a.asset_name || a.asset_tag,
+        due_date: a.warranty_until,
+        days: garantie,
+        tenant: a.tenant,
+      })
+    }
+
+    const pruefung = tageBis(a.next_inspection)
+    if (inFenster(pruefung)) {
+      eintraege.push({
+        kind: 'inspection',
+        kind_label: 'Prüfung',
+        object_type: 'Asset',
+        object_name: a.name,
+        title: a.asset_name || a.asset_tag,
+        due_date: a.next_inspection,
+        days: pruefung,
+        tenant: a.tenant,
+      })
+    }
+  }
+
+  for (const l of table('License')) {
+    if (tenant && l.tenant !== tenant) continue
+    const tage = tageBis(l.expiry_date)
+    if (inFenster(tage)) {
+      eintraege.push({
+        kind: 'license',
+        kind_label: 'Lizenz',
+        object_type: 'License',
+        object_name: l.name,
+        title: l.license_name || l.product || l.name,
+        due_date: l.expiry_date,
+        days: tage,
+        tenant: l.tenant,
+      })
+    }
+  }
+
+  for (const v of table('Contract')) {
+    if (tenant && v.tenant !== tenant) continue
+    const ende = tageBis(v.end_date)
+    if (inFenster(ende)) {
+      eintraege.push({
+        kind: 'contract',
+        kind_label: 'Vertrag',
+        object_type: 'Contract',
+        object_name: v.name,
+        title: v.contract_name || v.name,
+        due_date: v.end_date,
+        days: ende,
+        tenant: v.tenant,
+      })
+    }
+  }
+
+  for (const z of table('Certificate Record')) {
+    if (tenant && z.tenant !== tenant) continue
+    const tage = tageBis(z.not_after)
+    if (inFenster(tage)) {
+      eintraege.push({
+        kind: 'certificate',
+        kind_label: 'Zertifikat',
+        object_type: 'Certificate Record',
+        object_name: z.name,
+        title: z.common_name || z.name,
+        due_date: z.not_after,
+        days: tage,
+        tenant: z.tenant,
+      })
+    }
+  }
+
+  const bewertet = eintraege.map((e) => ({
+    ...e,
+    level: e.days < 0 ? 'critical' : e.days <= 30 ? 'warning' : 'ok',
+    text:
+      e.days < 0
+        ? `seit ${Math.abs(e.days)} Tagen überfällig`
+        : e.days === 0
+          ? 'heute fällig'
+          : `in ${e.days} Tagen`,
+  }))
+
+  return {
+    days: grenze,
+    summary: {
+      total: bewertet.length,
+      overdue: bewertet.filter((e) => e.days < 0).length,
+      within_30: bewertet.filter((e) => e.days >= 0 && e.days <= 30).length,
+      by_kind: bewertet.reduce((acc, e) => {
+        acc[e.kind] = (acc[e.kind] || 0) + 1
+        return acc
+      }, {}),
+    },
+    entries: bewertet.sort((a, b) => a.days - b.days),
+  }
+}

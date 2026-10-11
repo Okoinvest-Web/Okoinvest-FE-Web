@@ -1,0 +1,453 @@
+# ÖKOVOLT NetOps – Vue-Frontend
+
+Vue-3-Frontend der Frappe-App `netops`. Es lässt sich **ohne laufendes
+Frappe-Backend** entwickeln: ein Mock im Browser beantwortet die Frappe-RPCs
+mit denselben Daten- und Fehlerformaten wie das echte Backend.
+
+Fachliche Grundlage: `CLAUDE.md` im Projektwurzelverzeichnis.
+
+## Loslegen
+
+```bash
+npm install
+npm run dev      # http://localhost:8080
+npm test         # 346 Tests auf Mock-, API- und Komponentenlogik
+npm run lint     # ESLint
+npm run check    # Lint, Format, Tests und Build in einem Zug
+```
+
+Es wird nichts weiter benötigt: keine Bench, kein Site, keine Datenbank.
+
+| Befehl               | Zweck                              |
+| -------------------- | ---------------------------------- |
+| `npm run dev`        | Entwicklungsserver mit Hot Reload  |
+| `npm run build`      | Produktionsbuild nach `dist/`      |
+| `npm run preview`    | Gebautes Ergebnis lokal ausliefern |
+| `npm test`           | Vitest-Suite einmal ausführen      |
+| `npm run test:watch` | Vitest im Beobachtungsmodus        |
+
+## Umfang
+
+48 Seiten, 90 Server-Methoden, 86 DocTypes. Jeder Eintrag in der Seitenleiste
+führt auf eine gebaute Seite.
+
+**Betrieb** – Lage mit Lagebild über alle Bereiche · Alarme · Drift und
+Konnektor-Status · Backup-Ampel · Dienste mit Auswirkungsanalyse · Changes mit
+Freigabe-Ablauf · Tickets mit SLA · Audit mit Hash-Ketten-Prüfung
+
+**DCIM** – Geräte (Detail mit Übersicht, Frontplatte, Schnittstellen, VLANs,
+IP-Adressen, Verkabelung, Dossier) · Racks · Verkabelung mit End-to-End-Trace ·
+Topologie · Virtualisierung und Speicher · Cloud und Zero Trust · Strompfad mit
+Redundanzprüfung · Grundrisse · Fernwartung
+
+**IPAM & Firewall** – Präfixe mit Auslastung · VLANs · Pfadanalyse über alle
+Firewall-Ebenen · Regelwerk mit Hygiene-Befunden · Kommunikationsmatrix aus den
+Regelwerken · Netzdienste (VPN, WLAN, DNS, Routen)
+
+**Dokumentation** – Dokumente · Checklisten mit Pflichtpunkten · Verträge und
+Lizenzen mit Kündigungsstichtag · NIS2-Compliance-Bericht
+
+**Security** – Schwachstellen mit Risikowert und Fristen · externe
+Angriffsfläche, Zertifikate, Threat Intel, Scan-Governance · Identitäten,
+MFA-Abdeckung, Token-Inventar · Vorfälle mit Meldefristen · E-Mail-Sicherheit ·
+Leitstand mit Freigabe-Ablauf und Screens `/screen/1` bis `/screen/10`
+
+### Querschnitt
+
+- **Mandantenwahl** in der Seitenleiste. Sie greift zentral im Fetcher
+  ([src/api/index.js](src/api/index.js)) – im echten Frappe macht das die
+  Rechteregel auf dem Server, nicht der Client. Ohne Backend ist das
+  ausdrücklich **keine** Sicherheitsmaßnahme.
+- **Dunkles Farbschema** über `data-theme`; frappe-ui und die Viz-Token
+  hängen beide daran.
+- **Globale Suche Strg+K** über IP, MAC, Hostname, Seriennummer, Asset-Nr.,
+  Kabel-Label, VLAN, Dose, Präfix, DNS-Name, Firewallregel, CVE, Alarm,
+  Dokument, Vertrag und Sicherung.
+
+### Was fehlt
+
+Alles Backendseitige: die Frappe-App selbst, DocTypes, Rollen und Rechte, die
+Konnektoren, der Scheduler, Schreibzugriff auf angebundene Systeme, der
+Offline-Export als Bench-Befehl und die serverseitige Absicherung des
+Leitstand-Ablaufs.
+
+Im Frontend fehlen bewusst: echte Grundrisse als hinterlegte Pläne (die
+Geometrie ist vereinfacht), logische und L3-Sicht der Topologie, die
+MeshCentral-Einbettung per SSO und die QR-Label-Ansicht für mobil.
+
+## Wie der Mock funktioniert
+
+frappe-ui schickt jede Abfrage durch eine austauschbare Funktion, den
+`resourceFetcher`. [src/api/index.js](src/api/index.js) entscheidet beim Start,
+welche das ist:
+
+```
+VITE_USE_MOCK=true   ->  src/api/mock/server.js   (Standard, kein Backend)
+VITE_USE_MOCK=false  ->  frappeRequest            (echtes Frappe über Vite-Proxy)
+```
+
+**Frappe-Standard** – `frappe.client.get_list` (beide Filterschreibweisen,
+Operatoren `= != > < >= <= like "not like" in "not in" between is`, `order_by`,
+Paginierung, Feldauswahl), `get_count`, `get`, `get_value`, `insert`,
+`set_value`, `delete`, `frappe.auth.get_logged_user`, `logout`.
+
+**NetOps-eigene Methoden** – gleiche Pfade wie später in Python:
+
+| Bereich | Methoden |
+| ------- | -------- |
+| `search` | `global_search` |
+| `dcim` | `device_list`, `device_detail`, `device_front_panel`, `dashboard_counters`, `rack_elevation`, `rack_list`, `topology`, `cable_list`, `trace_path` |
+| `ipam` | `prefix_tree`, `prefix_list`, `prefix_addresses`, `vlan_list` |
+| `firewall` | `path_analysis`, `rule_hygiene`, `firewall_rules`, `communication_matrix` |
+| `ops` | `connector_status`, `drift_list`, `set_drift_state`, `alert_list` |
+| `backup` | `backup_status` |
+| `virt` | `cluster_overview`, `vm_list`, `host_detail`, `storage_overview` |
+| `power` | `power_overview`, `power_impact` |
+| `services` | `service_list`, `service_chain`, `impact_analysis` |
+| `netsvc` | `network_services`, `floor_plan`, `floor_plan_list`, `ticket_list`, `remote_overview` |
+| `cloud` / `identity` / `exposure` | `cloud_overview`, `identity_overview`, `exposure_overview` |
+| `security` | `vulnerability_list`, `incident_list`, `security_overview` |
+| `mail` | `mail_overview`, `gateway_status`, `flow_stats`, `mail_incidents`, `domain_check` |
+| `docs` | `document_list`, `checklist_runs`, `contract_list`, `object_dossier` |
+| `change` / `compliance` | `change_list`, `set_change_state`, `compliance_report`, `compliance_summary` |
+| `screen` | `screen_list`, `screen_pairings`, `set_pairing_state`, `screen_data` |
+| `audit` | `verify_chain`, `audit_log` |
+
+Die Daten liegen im `localStorage` und überstehen einen Reload. Die Schaltfläche
+unten links in der Seitenleiste – oder `__mock.resetMockData()` in der
+Browser-Konsole – stellt den Ausgangszustand wieder her.
+`__mock.getRegisteredMethods()` listet alle registrierten Methoden.
+
+### Warum die Logik im Mock liegt und nicht in den Komponenten
+
+CLAUDE.md Abschnitt 3 verlangt: keine Geschäftslogik im Frontend. Suche,
+Pfadanalyse, Auslastung, Ampelbewertung und Aggregationen stehen deshalb in
+`src/api/mock/methods/` – das ist die Schicht, die später nach Python wandert.
+Die Vue-Komponenten rufen nur auf und stellen dar.
+
+**Bei der Portierung nicht vergessen:** Der Mock prüft **keine Rechte**. Jede
+Python-Entsprechung braucht eine explizite `frappe.has_permission`-Prüfung und
+einen Mandantenfilter (CLAUDE.md Abschnitt 3 und 7.2).
+
+## Audit-Hash-Kette
+
+`Audit Entry` ist append-only – der Mock-Server lehnt `set_value` und `delete`
+für diesen DocType ab, so wie es der Controller im echten Frappe tun muss.
+Jeder Schreibvorgang hängt einen Eintrag an; jeder Eintrag enthält den Hash
+seines Vorgängers (SHA-256 über Vorgängerhash und kanonischen Inhalt).
+`verify_chain()` läuft die Kette durch und nennt bei einem Bruch den Eintrag
+und den Grund – verändert oder entfernt.
+
+Im Audit steht nur der **Hash** der Nutzlast, nie die Nutzlast selbst. Ein Test
+prüft das, indem er einen sprechenden Wert anlegt und sicherstellt, dass er im
+Protokoll nicht auftaucht.
+
+Die SHA-256-Implementierung in [src/api/mock/sha256.js](src/api/mock/sha256.js)
+ist synchron, weil Web Crypto im Browser nur asynchron arbeitet und die Kette
+schon beim Seeden gebraucht wird. Sie ist gegen die FIPS-180-4-Testvektoren und
+gegen Nodes `crypto` geprüft.
+
+## Zeitstempel
+
+Alle Zeitstempel laufen über [src/api/mock/zeit.js](src/api/mock/zeit.js) und
+sind **lokale** Zeit im Frappe-Format `YYYY-MM-DD HH:MM:SS`.
+
+Das ist kein Detail: `toISOString()` liefert UTC, ein daraus gebauter naiver
+String wird von `new Date(...)` aber als Lokalzeit gelesen. In einer Zeitzone
+mit Versatz sieht ein gerade gelaufener Konnektor dadurch Stunden alt aus und
+ein eben erzeugter Bestätigungscode gilt sofort als abgelaufen. Ein
+Regressionstest hält das fest.
+
+## Datenmodell
+
+86 DocTypes, verteilt auf sieben Fixture-Dateien:
+
+| Datei | Inhalt |
+| ----- | ------ |
+| `fixtures.js` | Organisation, DCIM, IPAM |
+| `fixtures-ops.js` | Firewall, Konnektoren, Drift, Alarme, Backup, Security, Dokumentation, Leitstand, Audit |
+| `fixtures-platform.js` | Virtualisierung, Speicher, Geschäftsdienste, Providerleitungen, E-Mail, Abhängigkeitskette |
+| `fixtures-cloud.js` | Cloud, Zero Trust, Identitäten, Angriffsfläche, Change-Workflow, Compliance |
+| `fixtures-netsvc.js` | Strompfad, VPN, WLAN, DNS, Routen, Grundriss, Tickets, Fernwartung |
+
+DocType- und Feldnamen sind **englisch**, die Oberfläche ist **deutsch**. Die
+Zuordnung steht in [src/labels.js](src/labels.js) und wird später durch die
+Übersetzungsdateien der Frappe-App ersetzt. `defineDoctype()` erzwingt an jedem
+DocType die Pflichtfelder `tenant`, `status` und `description`; ein Test prüft
+das über alle DocTypes.
+
+Zwei bewusste Abweichungen von CLAUDE.md Abschnitt 4:
+
+- „Verantwortlicher (User)“ heißt hier `responsible_user`, nicht `owner` –
+  `owner` ist in Frappe ein Standardfeld und wäre kollidiert.
+- `Tenant` trägt selbst ein `tenant`-Feld (auf sich selbst zeigend), damit die
+  Regel „jeder DocType hat `tenant`“ ohne Sonderfall gilt.
+
+### Ports und Frontplatten
+
+Die Schnittstellen entstehen aus Portvorlagen je Gerätetyp
+([src/api/mock/portlayout.js](src/api/mock/portlayout.js)) – das Gegenstück zu
+den Interface-Vorlagen als Child Table am `Device Type`. In den Fixtures steht
+je Gerät nur, was vom Standard abweicht: belegtes VLAN, Modus, abgeschaltete
+Ports.
+
+### Testdaten
+
+Alle Seed-Daten sind frei erfunden (CLAUDE.md Abschnitt 6.1: keine
+Produktivdaten). Seriennummern beginnen mit `TEST-`, Domains enden auf `.test`,
+MAC-Adressen liegen im lokal verwalteten Bereich `02:…`, `passbolt_reference`
+enthält nur eine Referenz – nie ein Geheimnis.
+
+## Farbregeln der grafischen Ansichten
+
+**Farbe trägt Zustand, Text trägt Identität.** Die Tokens stehen in
+[src/index.css](src/index.css).
+
+Der Grund ist nachgerechnet, nicht Geschmack: Ein Farbschema über die sechs
+Schutzzonen fällt im All-Pairs-Test durch – Grün gegen Orange liegt bei ΔE 3,2
+unter Protanopie, Magenta gegen Orange bei ΔE 12,9 auch mit vollem Farbsehen
+(Grenzwert 15). Auf einer Frontplatte lässt sich jeder Port mit jedem anderen
+vergleichen, also gilt genau dieser strenge Maßstab.
+
+Daraus folgt:
+
+- Ports werden nach **Zustand** eingefärbt (belegt / frei / abgeschaltet) –
+  drei Werte aus der festen Statuspalette, jeder mit Beschriftung in der
+  Legende, der abgeschaltete zusätzlich mit Schrägstrich.
+- Das **VLAN steht als Zahl** am Port. Die VLAN-Ansicht hebt genau ein Netz
+  hervor statt alle einzufärben.
+- **Geräterollen** erscheinen als Text, nicht als Farbe.
+- **Auslastung** ist eine Größenordnung: eine Hue, hell nach dunkel. Über 70 %
+  bzw. 90 % kommt eine Statusfarbe dazu, immer mit dem Wort „hoch“ oder
+  „kritisch“.
+- **Bandbreite** in der Topologie steckt in der Strichstärke.
+- Die Komponente [StatusDot.vue](src/components/StatusDot.vue) setzt die Regel
+  strukturell durch: ein Farbpunkt ohne Text ist damit nicht formulierbar.
+
+## Inventar und Menschen
+
+NetOps dokumentierte zunächst nur Netze. Diese Hälfte verwaltet, was keine
+IP hat – und wer es in der Hand hält.
+
+**Bewusste Trennung im Datenmodell.** `Asset` ist das kaufmännische Objekt
+(Inventarnummer, Kaufpreis, Abschreibung, Besitz), `Network Device` bleibt
+das technische (Rolle, Schnittstellen, Management-IP). Ein Asset zeigt über
+`linked_device` auf ein Gerät. Alles in einen DocType zu pressen hieße, dass
+ein Bürostuhl eine Firmware bekommt und ein Switch eine Kostenstelle
+mitschleppt.
+
+**Menschen gehören nicht uns.** Beschäftigte, Abteilungen, Kostenstellen und
+Gesellschaften kommen aus **ERPNext und Frappe HR**
+([fixtures-erpnext.js](src/api/mock/fixtures-erpnext.js)). NetOps legt sie
+nicht an und ändert sie nicht – es verlinkt. Die Feldnamen sind die echten
+(`Employee.employee_name`, `Department` als `IT - ÖS`, Kostenstelle als
+`IT und Infrastruktur - ÖS`), damit der Umstieg auf eine laufende Instanz nur
+den Fetcher betrifft und nicht das Modell. Ein zweiter Personenstamm würde
+sofort auseinanderlaufen: wer austritt, tritt in HR aus, und ein Inventar mit
+eigener Personenliste zeigt Geräte bei jemandem, der nicht mehr da ist.
+
+Übernommen wird bewusst wenig: Name, Abteilung, Stellenbezeichnung,
+dienstliche Adresse, Status, Ein- und Austrittsdatum. Kein Geburtsdatum,
+keine Privatanschrift, kein Gehalt (Art. 5 Abs. 1 lit. c DSGVO). Ein Test
+hält diese Feldliste fest, damit sie nicht unbemerkt wächst.
+
+### Was die Seiten leisten
+
+| Seite | Inhalt |
+| ----- | ------ |
+| Bestand | Alle Gegenstände mit Restbuchwert, Zustand, Besitz und Befund |
+| Inventarobjekt | Stammdaten, Etikett, Abschreibungsplan, Lebenslauf, Schäden, Inventurtreffer, Entsorgungsnachweis |
+| Ausgabe | Ausgabe und Rücknahme per Scan, mit Schadensmeldung |
+| Inventur | Sollbestand einfrieren, zählen, Differenzen, Standorte übernehmen |
+| Reservierungen | Belegung über vier Wochen, Kollisionen, Schadensbearbeitung |
+| Verbrauchsmaterial | Bestand gegen Mindestbestand, Bewegungen buchen |
+| Fristen | Garantie, Prüfung, Lizenz, Vertrag und Zertifikat in **einer** Liste |
+| Etiketten | Druckbogen mit QR-Code in drei Größen |
+| Entsorgung | Nachweise mit Löschbeleg, Ausmusterungskandidaten |
+| Beschäftigte | Wer hat was, mit Konten und Zugängen |
+| Ein- und Austritt | Austrittsprüfung über alle Bereiche, Erstausstattung |
+
+### Regeln, die in der Methode stehen und nicht im Formular
+
+Eine Regel, die nur ein Formular kennt, gilt beim nächsten API-Aufruf nicht
+mehr. Deshalb liegen sie in [inventar-ops.js](src/api/mock/methods/inventar-ops.js):
+
+- **Ein Messgerät mit überfälliger Prüfung wird nicht ausgegeben** – auch
+  nicht mit `force`. Wer damit eine Anlage abnimmt, unterschreibt eine
+  Messung, die nicht gilt.
+- **Kein Gerät an eine ausgetretene Person**, keine doppelte Ausgabe, kein
+  Gerät mit offenem schwerem Schaden.
+- **Eine bestätigte Reservierung hat Vorrang.** Eine kollidierende
+  Reservierung wird zur Anfrage, nicht zur zweiten Bestätigung – das
+  entscheidet ein Mensch, nicht die Reihenfolge der Klicks.
+- **Ein beschädigt zurückgegebenes Gerät geht in Reparatur, nicht ins
+  Lager.** Sonst gibt es beim nächsten Griff jemand anderes weiter aus.
+- **Bestand wird nicht negativ**, und nur eine Korrektur darf eine negative
+  Menge tragen – sonst ließe sich eine Entnahme als Zugang tarnen.
+- **Ein Datenträger braucht zur Entsorgung Löschverfahren und
+  Bestätigungsdatum.** Art. 17 DSGVO verlangt den Nachweis der Löschung;
+  der Nachweis ist genau dieser Datensatz. Deshalb bleibt ein entsorgtes
+  Gerät im Bestand stehen, statt gelöscht zu werden.
+
+### Abschreibung
+
+Linear und degressiv, alles in ganzen Cent – Gleitkomma für Geld rechnet
+0,1 + 0,2 = 0,30000000000000004. Die Nutzungsdauer hängt an der Kategorie,
+nicht am einzelnen Gerät; eine Korrektur wirkt damit auf den ganzen Bestand.
+Degressiv wechselt auf linear, sobald das mehr bringt – sonst nähert sich
+der Buchwert dem Restwert nur asymptotisch.
+
+### QR-Codes und Scannen
+
+Der Code auf dem Etikett enthält eine Adresse auf die eigene Instanz, **nicht**
+die Seriennummer und nicht den Namen der besitzenden Person. Ein Etikett
+hängt sichtbar am Gerät; wer es fotografiert, soll daraus nichts über
+Menschen erfahren. Die Auflösung passiert erst nach der Anmeldung. Ein Test
+prüft das für jedes Etikett.
+
+Gescannt wird über `BarcodeDetector` (Chromium und Edge). Firefox und Safari
+haben ihn nicht – deshalb ist die Kamera eine Zugabe und kein Fundament: die
+Tastatureingabe steht immer oben und nimmt auch einen Handscanner entgegen,
+der den Code als Tastatur eintippt.
+
+### Was NetOps hier besser kann als eine reine Inventarsoftware
+
+Wenn jemand geht, lautet die Frage nie nur „welche Geräte fehlen". Sie
+lautet: welche Geräte, welche Konten, welche Zugänge, welche Lizenzen – und
+wer bestätigt das. Genau diese Daten liegen in NetOps ohnehin nebeneinander
+(`Asset`, `Identity Account`, `Access Reference`, `License`). Die
+Austrittsprüfung gibt daraus eine Checkliste mit Begründung je Punkt.
+
+Dasselbe bei den Fristen: Garantie und Prüftermine stehen im Inventar,
+Lizenzen, Verträge und Zertifikate in der Dokumentation. Eine Liste statt
+fünf.
+
+## Codequalität
+
+| Befehl | Zweck |
+| ------ | ----- |
+| `npm run lint` | ESLint mit `eslint-plugin-vue`; findet tote Importe, fehlende `:key`, verdeckte Namen |
+| `npm run format` | Prettier über den ganzen Baum |
+| `npm run check` | Lint, Formatprüfung, Tests und Build nacheinander – das vor jedem Merge |
+
+`npm audit` meldet vier moderate Befunde, alle aus fremden Abhängigkeiten:
+
+- **echarts** (XSS) kommt über `frappe-ui`. Behebbar nur durch Rückstufung auf
+  `frappe-ui@0.1.132` – ein Bruch der API. Die App bindet echarts nicht ein;
+  die Charts hier sind eigenes SVG.
+- **@vitest/mocker** (Path Traversal) betrifft die Testumgebung, nicht das
+  ausgelieferte Bündel.
+
+Beides ist bewusst offen gelassen und gehört vor dem Produktivgang entschieden –
+CLAUDE.md Abschnitt 6.7 verlangt `npm audit` vor jedem Merge, nicht dessen
+stillschweigende Umgehung.
+
+## Barrierefreiheit und schmale Schirme
+
+Nachgemessen im Browser (`scratchpad/audit.mjs` über CDP), nicht geschätzt:
+
+- **Telefon (390 px):** Die Seitenleiste wird zur Schublade hinter einer
+  Kopfzeile; der Inhalt bekommt die volle Breite. Kein waagrechter Seitenscroll.
+- **Tabellen** behalten auf schmalen Schirmen ihre Mindestbreite und scrollen
+  seitlich, statt jede Zelle in Silben zu brechen. Ein Randverlauf zeigt an,
+  dass in die Richtung noch etwas liegt, und verschwindet am Ende.
+- **Tastatur:** Der erste Tabulatorschritt trifft den Sprunglink „Zum Inhalt
+  springen“; jedes fokussierbare Element hat einen sichtbaren Rahmen
+  (`:focus-visible`, 2 px).
+- **Beschriftungen:** Kein Auswahlfeld ohne Label, keine Schaltfläche ohne
+  Text oder `aria-label`, genau eine `h1` je Seite.
+- **Fehler** erscheinen über [ErrorState.vue](src/components/ErrorState.vue) in
+  deutscher Sprache. Die rohe Ausnahme bleibt hinter „Technische Meldung“
+  erreichbar, steht aber nicht mehr als `DoesNotExistError: …` im Bild.
+
+## Umstieg auf ein echtes Frappe
+
+1. `VITE_USE_MOCK=false` in `.env` setzen, `VITE_FRAPPE_URL` auf die Site zeigen lassen.
+2. In [vite.config.js](vite.config.js) `build.outDir` auf `../netops/public/frontend`
+   ändern und die Plugin-Schalter `frappeProxy` / `jinjaBootData` / `buildConfig`
+   wieder einschalten.
+3. DocTypes im Backend so anlegen, dass Namen und Feldnamen zu den Fixtures passen.
+4. Die Methoden aus `src/api/mock/methods/` als whitelisted Python-Methoden
+   umsetzen – **mit** Rechteprüfung und Mandantenfilter.
+5. `src/labels.js` durch `netops/translations/de.csv` ersetzen.
+6. Den Leitstand-Ablauf serverseitig absichern (siehe Kopfkommentar in
+   `src/api/mock/methods/screens.js`).
+
+Der Anwendungscode ändert sich dabei nicht: Er nutzt ausschließlich
+`createResource` / `createListResource` / `createDocumentResource`.
+
+## Aufbau
+
+```
+src/
+  api/
+    index.js              Auswahl des Fetchers (Mock oder echtes Frappe)
+    mock/
+      server.js           Frappe-Standardmethoden, Audit-Anbindung, Fehlerformat
+      db.js               Dokumentspeicher, Pflichtfelder, Persistenz
+      query.js            Filter-, Sortier- und Feldauswahllogik
+      ip.js               IPv4-Rechnung
+      zeit.js             Zeitstempel im Frappe-Format, lokal
+      sha256.js           Synchrone SHA-256 für die Hash-Kette
+      portlayout.js       Portvorlagen je Gerätetyp
+      fixtures.js         Organisation, DCIM, IPAM
+      fixtures-ops.js     Firewall, Betrieb, Security, Doku, Leitstand
+      fixtures-erpnext.js FREMD: Company, Department, Cost Center,
+                          Designation, Employee, User (ERPNext/Frappe HR)
+      fixtures-inventar.js Asset, Kategorien, Ausgabe, Reservierung,
+                          Verbrauchsmaterial, Inventur, Schaden, Entsorgung
+      seed-audit.js       Erzeugt die Beispiel-Historie über die echte Kette
+      methods/            dcim, ipam, viz, firewall, ops, backup,
+                          security, infra, docs, screens, audit, search,
+                          inventar, inventar-ops, personal
+  components/             Layout, Suche, Frontplatte, Rack, Topologie,
+                          DataTable, StatCard, StatusDot, ErrorState,
+                          QrCode, CodeScanner, Dossier
+  pages/                  Eine Datei je Route
+  router/                 Routendefinition
+  stores/                 Pinia-Stores
+  labels.js               Deutsche Beschriftungen zu englischen Feldnamen
+  viz.js                  Gemeinsame Abbildung Wert → Stufe → Farbe,
+                          Fehlertexte; lag vorher als Kopie in elf Seiten
+tests/
+  doubles/frappe-ui.js    Testdouble; warum, steht in der Datei
+  *.test.js               Vitest-Suite
+```
+
+## Tests
+
+`bench run-tests --app netops` aus CLAUDE.md Abschnitt 3 lässt sich hier nicht
+ausführen – es gibt keine Bench. `npm test` tritt an seine Stelle:
+
+| Datei | Inhalt |
+| ----- | ------ |
+| `ip.test.js` | IPv4-Rechnung inklusive `/31`, `/32` und Adressen über 2^31 |
+| `zeit.test.js` | Zeitstempel erzeugen und lesen, Zeitzonen-Regression |
+| `frappe-rpc.test.js` | Filter, Sortierung, Paginierung, Schreiben, Fehlerformate, Pflichtfelder |
+| `netops-api.test.js` | Globale Suche, IPAM-Baum, Gerätedetail |
+| `viz.test.js` | Frontplatte, Rack, Topologie |
+| `audit.test.js` | SHA-256 gegen Testvektoren, Hash-Kette, Manipulationserkennung, append-only |
+| `firewall.test.js` | Pfadanalyse über alle Ebenen, Regel-Hygiene |
+| `ops.test.js` | Konnektoren, Drift, Backup-Ampel |
+| `security-docs.test.js` | Schwachstellen, Vorfälle, Dokumente, Verträge, Dossier |
+| `infra-screens.test.js` | Verkabelung, Trace, VLANs, Leitstand-Freigabe |
+| `platform.test.js` | Auswirkungsanalyse, Kommunikationsmatrix, Virtualisierung, E-Mail |
+| `cloud-change.test.js` | Cloud und Zero Trust, Identitäten, Angriffsfläche, Change-Ablauf, Compliance |
+| `power-netsvc.test.js` | Strompfad und Redundanz, VPN/WLAN/DNS/Routen, Grundriss, Tickets, Fernwartung |
+| `komponenten.test.js` | Die Bausteine am Schirm: StatCard, StatusDot, ErrorState, DataTable, PageHeader |
+| `inventar.test.js` | Abschreibung, Ausgaberegeln, Inventur, Entsorgung, Etiketten-Datensparsamkeit, Austrittsprüfung, Trennung zu Frappe HR |
+
+## Bekannte Grenzen des Mocks
+
+- Keine Berechtigungen, keine Rollen, keine serverseitigen Hooks
+- Keine Child-Tables; Link-Felder sind Zeichenketten ohne Integritätsprüfung
+- Kein Realtime (`socketio` ist in [src/main.js](src/main.js) abgeschaltet);
+  die Leitstand-Screens laden stattdessen alle 30 Sekunden nach
+- Kein IPv6
+- Frontplatten nur für Gerätetypen mit hinterlegter Portvorlage
+- Checklisten und Dokumente sind lesend – das Zurückschreiben braucht das Backend
+- Beschäftigte, Abteilungen und Kostenstellen sind hier ein Abbild zum Testen.
+  In Betrieb kommen sie aus ERPNext/Frappe HR und werden von dort gelesen,
+  nicht in NetOps gepflegt
+- Kein Excel-Import; die Erfassung läuft über Scan oder Eingabe
+- Kein E-Mail-Versand für Fristen – die Erinnerung ist die Fristenliste

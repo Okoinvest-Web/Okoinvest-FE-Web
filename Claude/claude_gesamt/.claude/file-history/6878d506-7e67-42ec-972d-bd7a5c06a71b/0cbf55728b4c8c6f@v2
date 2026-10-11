@@ -1,0 +1,16 @@
+"use client";
+
+import { Menu } from "lucide-react";
+
+// Öffnet die Navigation auf kleinen Bildschirmen (Seitenleiste hört auf "open-nav")
+export function MobileNavButton() {
+  return (
+    <button
+      onClick={() => window.dispatchEvent(new Event("open-nav"))}
+      aria-label="Navigation öffnen"
+      className="-ml-2 mr-1 rounded-md p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-900 lg:hidden"
+    >
+      <Menu className="size-4" />
+    </button>
+  );
+}

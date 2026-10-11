@@ -1,0 +1,235 @@
+<section class="hero">
+  <div class="wrap hero-in">
+    <div class="hero-grid">
+      <div>
+        <span class="kicker c">Ladeinfrastruktur</span>
+        <h1>Zwölf Autos gleichzeitig laden sprengt jeden <span class="gc">Netzanschluss</span>.</h1>
+        <p class="lede">Nicht die Wallbox ist teuer, sondern die Anschlussleistung dahinter. Der Flottenplaner zeigt, wie viel Leistung Sie wirklich brauchen und wie stark ein Lastmanagement die Spitze drückt.</p>
+        <div class="hero-acts">
+          <a class="btn btn-v" href="#tool">Flotte planen</a>
+          <a class="btn btn-o" href="#details">Technik &amp; Abrechnung</a>
+        </div>
+      </div>
+      <div class="chips">
+        <div class="chip c"><div><i>Verbrauch</i><p>Realistischer Ansatz für Pkw und leichte Nutzfahrzeuge</p></div><b>22<span class="unit">kWh/100km</span></b></div>
+        <div class="chip v"><div><i>Lastmanagement</i><p>Typische Reduktion der Anschlussspitze</p></div><b>−60–80<span class="unit">%</span></b></div>
+        <div class="chip s"><div><i>Ladefenster Nacht</i><p>Stunden Standzeit am Betriebsgelände</p></div><b>12<span class="unit">h</span></b></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="tool">
+  <div class="wrap">
+    <div class="sec-head">
+      <div><span class="kicker">Flottenplaner</span><h2>Der Ladetag Ihres Fuhrparks, Stunde für Stunde.</h2></div>
+      <p class="lede">Der Planer verteilt den Energiebedarf über das Standzeitfenster und vergleicht die Anschlussspitze mit und ohne Lastmanagement. Die Anschlussreserve legen Sie selbst fest.</p>
+    </div>
+
+    <div class="console glass chamf">
+      <div class="con-t"><span><span class="pulse"></span>Ladeplanung · Werktag</span><span id="stamp">Fenster: Nacht 18–06</span></div>
+      <div class="con-l">
+        <div class="field">
+          <div class="field-h"><label for="cars">Fahrzeuge</label><span class="field-v" id="v-cars">12</span></div>
+          <input id="cars" type="range" min="1" max="80" step="1" value="12">
+          <div class="scale"><span>1</span><span>80</span></div>
+        </div>
+        <div class="field">
+          <div class="field-h"><label for="km">Ø Tagesstrecke</label><span class="field-v" id="v-km">120<span class="unit">km</span></span></div>
+          <input id="km" type="range" min="20" max="400" step="10" value="120">
+          <div class="scale"><span>20</span><span>400 km</span></div>
+        </div>
+        <div class="field">
+          <span class="lbl" id="pl">Ladeleistung je Punkt</span>
+          <div class="seg c3" role="group" aria-labelledby="pl">
+            <button type="button" data-p="3.7" aria-pressed="false">3,7 kW</button>
+            <button type="button" data-p="11" aria-pressed="true">11 kW</button>
+            <button type="button" data-p="22" aria-pressed="false">22 kW</button>
+          </div>
+        </div>
+        <div class="field">
+          <span class="lbl" id="wl">Standzeitfenster</span>
+          <div class="seg c3" role="group" aria-labelledby="wl">
+            <button type="button" data-w="n" aria-pressed="true">Nacht</button>
+            <button type="button" data-w="t" aria-pressed="false">Tag</button>
+            <button type="button" data-w="g" aria-pressed="false">Gemischt</button>
+          </div>
+        </div>
+        <div class="field">
+          <div class="field-h"><label for="res">Anschlussreserve</label><span class="field-v" id="v-res">150<span class="unit">kW</span></span></div>
+          <input id="res" type="range" min="20" max="800" step="10" value="150">
+          <div class="scale"><span>20</span><span>800 kW</span></div>
+        </div>
+        <div class="field">
+          <div class="field-h"><label for="kwp">PV-Anlage</label><span class="field-v" id="v-kwp">200<span class="unit">kWp</span></span></div>
+          <input id="kwp" type="range" min="0" max="1200" step="10" value="200">
+          <div class="scale"><span>ohne</span><span>1.200 kWp</span></div>
+        </div>
+        <button class="sw" id="lm" type="button" aria-pressed="true">Lastmanagement<span class="tr"></span></button>
+        <details class="as">
+          <summary>Rechenannahmen</summary>
+          <ul>
+            <li>Verbrauch 22 kWh je 100 km, Ladeverlust 10 %</li>
+            <li>Ohne Lastmanagement stecken alle Fahrzeuge zu Fensterbeginn an</li>
+            <li>Mit Lastmanagement wird die Energie gleichmäßig über das Fenster verteilt</li>
+            <li>Strompreis 21 ct/kWh, PV-Strom mit 7 ct/kWh bewertet</li>
+            <li>Dieselvergleich 7,5 l/100 km bei 1,55 €/l</li>
+            <li>220 Einsatztage im Jahr</li>
+          </ul>
+        </details>
+      </div>
+
+      <div class="con-r">
+        <div class="stats">
+          <div class="stat c"><i>Energiebedarf</i><b id="o-en">—<span class="unit">kWh/Tag</span></b><small id="o-en2">—</small></div>
+          <div class="stat"><i>Ladepunkte nötig</i><b id="o-pts">—</b><small id="o-pts2">bei einem Punkt je Fahrzeug —</small></div>
+          <div class="stat"><i>Anschlussspitze</i><b id="o-pk">—<span class="unit">kW</span></b><small id="o-pk2">ohne Management —</small></div>
+          <div class="stat"><i>Reserve</i><b id="o-st">—</b><small id="o-st2">—</small></div>
+          <div class="stat s"><i>PV-Deckung</i><b id="o-pv">—<span class="unit">%</span></b><small id="o-pv2">—</small></div>
+          <div class="stat v"><i>Kosten je 100 km</i><b id="o-ct">—<span class="unit">€</span></b><small id="o-ct2">Diesel —</small></div>
+        </div>
+
+        <div class="panel dk">
+          <div class="panel-h"><h4>Ladeleistung über den Tag</h4><span id="c-note">—</span></div>
+          <svg id="ch" viewBox="0 0 760 240" role="img" aria-label="Ladeleistung über den Tag mit und ohne Lastmanagement"></svg>
+          <div class="legend">
+            <span><i style="background:#FF6B8A"></i>ohne Lastmanagement</span>
+            <span><i style="background:#8CE04B"></i>mit Lastmanagement</span>
+            <span><i style="background:#FFB43D;height:3px"></i>PV-Erzeugung</span>
+            <span><i style="background:#45E0FF;height:3px"></i>Anschlussreserve</span>
+          </div>
+        </div>
+        <p class="fine">Werktagsbetrachtung mit gleicher Tagesstrecke für alle Fahrzeuge. In der Detailplanung wird nach Fahrzeugklassen, Schichtplan und Ladeprioritäten differenziert.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="details">
+  <div class="wrap">
+    <div class="sec-head">
+      <div><span class="kicker s">Umsetzung</span><h2>Drei Dinge, die über die Kosten entscheiden.</h2></div>
+      <p class="lede">Die Hardware ist der kleinere Posten. Teuer wird es bei Netzverstärkung, Kabelwegen und einer Abrechnung, die im Betriebsalltag niemand pflegen will.</p>
+    </div>
+    <div class="cards">
+      <article class="card">
+        <span class="n">A — LEISTUNG</span>
+        <svg class="ic" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M17 3 8 18h6l-2 11 10-16h-6l1-10Z"/></svg>
+        <h3>Dynamisches Lastmanagement</h3>
+        <p>Der Regler misst am Hausanschluss und verteilt die freie Leistung auf die aktiven Ladepunkte. Produktion hat Vorrang, geladen wird mit dem, was übrig bleibt.</p>
+        <ul><li>Messung am Übergabepunkt</li><li>Priorisierung nach Abfahrtszeit</li><li>Einbindung von Speicher und PV</li></ul>
+      </article>
+      <article class="card">
+        <span class="n">B — INFRASTRUKTUR</span>
+        <svg class="ic" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="6" y="5" width="12" height="22"/><path d="M10 11h4M10 16h4M18 10h5v12a3 3 0 0 1-3 3"/></svg>
+        <h3>Leerverrohrung mitdenken</h3>
+        <p>Der teuerste Ladepunkt ist der, der zwei Jahre später nachgerüstet wird. Wer beim ersten Aufgraben ausreichend Leerrohre und Querschnitt legt, halbiert die Kosten der Erweiterung.</p>
+        <ul><li>Trassen für die Endausbaustufe</li><li>Verteiler mit Reserveplätzen</li><li>Fundamente für Doppelladepunkte</li></ul>
+      </article>
+      <article class="card">
+        <span class="n">C — ABRECHNUNG</span>
+        <svg class="ic" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="5" y="4" width="22" height="24"/><path d="M10 11h12M10 17h12M10 23h7"/></svg>
+        <h3>Eichrecht und Zuordnung</h3>
+        <p>Sobald Mitarbeitende oder Dritte laden, braucht es eine eichrechtskonforme Messung und eine saubere Zuordnung je Nutzer. Das entscheidet über Lohnverrechnung und Vorsteuerabzug.</p>
+        <ul><li>Eichrechtskonforme Ladepunkte</li><li>RFID oder App-Zuordnung</li><li>Export für die Lohnverrechnung</li></ul>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="faq">
+  <div class="wrap">
+    <div class="sec-head"><div><span class="kicker">Häufige Fragen</span><h2>Was bei der Ladeinfrastruktur gefragt wird.</h2></div></div>
+    <div class="faq">
+      <details class="qa" open><summary>Braucht jedes Fahrzeug einen eigenen Ladepunkt?</summary><p>Technisch nicht. Bei zwölf Stunden Standzeit und moderaten Tagesstrecken reicht oft ein Ladepunkt für zwei Fahrzeuge. Organisatorisch ist ein Punkt je Stellplatz trotzdem meist die bessere Lösung, weil niemand Autos umparken will. Der Rechner zeigt beide Zahlen.</p></details>
+      <details class="qa"><summary>Wann brauche ich eine Netzverstärkung?</summary><p>Wenn die Ladespitze zusammen mit der Betriebslast die vereinbarte Anschlussleistung übersteigt. Genau das verhindert das Lastmanagement. Erst wenn auch die verteilte Leistung nicht mehr in das Fenster passt, wird die Verstärkung unvermeidbar.</p></details>
+      <details class="qa"><summary>Lohnt sich Schnellladen am Betriebsgelände?</summary><p>Für den eigenen Fuhrpark selten. Gleichstromladen kostet ein Vielfaches und nutzt die lange Standzeit nicht aus. Sinnvoll ist es bei Kundenparkplätzen, im Werkverkehr mit kurzen Umläufen oder bei schweren Nutzfahrzeugen.</p></details>
+      <details class="qa"><summary>Wie viel vom Ladestrom kommt realistisch vom Dach?</summary><p>Das hängt am Standzeitfenster. Wer nachts lädt, kommt ohne Speicher kaum über zehn Prozent. Bei Fahrzeugen, die tagsüber am Gelände stehen, sind fünfzig Prozent und mehr erreichbar. Der Rechner bildet diesen Unterschied über die Überlappung mit der Erzeugungskurve ab.</p></details>
+    </div>
+  </div>
+</section>
+
+<script>
+(function(){
+"use strict";
+var $=function(i){return document.getElementById(i);},
+de=function(n,d){d=d||0;return Number(n).toLocaleString("de-AT",{minimumFractionDigits:d,maximumFractionDigits:d});};
+var PV=[0,0,0,0,.005,.02,.045,.07,.09,.105,.115,.12,.118,.105,.085,.06,.035,.015,.005,0,0,0,0,0];
+var sPV=PV.reduce(function(a,b){return a+b;},0);PV=PV.map(function(v){return v/sPV;});
+var WIN={n:{s:18,h:12,n:"Nacht 18–06"},t:{s:8,h:9,n:"Tag 08–17"},g:{s:6,h:16,n:"Gemischt 06–22"}};
+var pow=11,win="n",lm=true,PRICE=.21,PVCT=.07,DAYS=220;
+
+function render(){
+ var cars=+$("cars").value,km=+$("km").value,res=+$("res").value,kwp=+$("kwp").value;
+ var perCar=km*0.22/0.9,total=cars*perCar;
+ var w=WIN[win],dur=perCar/pow;
+ var noLm=new Array(24).fill(0),yesLm=new Array(24).fill(0),i,h;
+ for(i=0;i<Math.ceil(dur);i++){
+   h=(w.s+i)%24;
+   var frac=Math.min(1,dur-i);
+   noLm[h]+=cars*pow*frac;
+ }
+ var flat=total/w.h;
+ for(i=0;i<w.h;i++){h=(w.s+i)%24;yesLm[h]+=flat;}
+ var used=lm?yesLm:noLm;
+ var pk=Math.max.apply(null,used),pk0=Math.max.apply(null,noLm);
+ var ptsTech=Math.max(1,Math.ceil(total/(pow*w.h))),ptsFull=cars;
+ var pvArr=PV.map(function(v){return v*kwp*1030/365;});
+ var pvUse=0;for(i=0;i<24;i++)pvUse+=Math.min(used[i],pvArr[i]);
+ var pvShare=total>0?pvUse/total:0;
+ var ctKwh=PRICE*(1-pvShare)+PVCT*pvShare;
+ var per100=22/0.9*ctKwh;
+ var ok=pk<=res;
+
+ $("v-cars").textContent=de(cars);
+ $("v-km").innerHTML=de(km)+'<span class="unit">km</span>';
+ $("v-res").innerHTML=de(res)+'<span class="unit">kW</span>';
+ $("v-kwp").innerHTML=de(kwp)+'<span class="unit">kWp</span>';
+ $("stamp").textContent="Fenster: "+w.n;
+
+ $("o-en").innerHTML=de(Math.round(total))+'<span class="unit">kWh/Tag</span>';
+ $("o-en2").textContent=de(Math.round(total*DAYS/1000))+" MWh im Jahr";
+ $("o-pts").textContent=de(ptsTech);
+ $("o-pts2").textContent="je Fahrzeug ein Punkt: "+de(ptsFull);
+ $("o-pk").innerHTML=de(Math.round(pk))+'<span class="unit">kW</span>';
+ $("o-pk2").textContent="ohne Management "+de(Math.round(pk0))+" kW";
+ $("o-st").textContent=ok?"reicht":"zu klein";
+ $("o-st").parentNode.className="stat "+(ok?"v":"r");
+ $("o-st2").textContent=ok?de(Math.round(res-pk))+" kW frei":de(Math.round(pk-res))+" kW fehlen";
+ $("o-pv").innerHTML=de(Math.round(pvShare*100))+'<span class="unit">%</span>';
+ $("o-pv2").textContent=de(Math.round(pvUse))+" kWh direkt vom Dach";
+ $("o-ct").innerHTML=de(per100,2)+'<span class="unit">€</span>';
+ $("o-ct2").textContent="Diesel 11,63 €";
+ $("c-note").textContent=de(Math.round(total))+" kWh in "+w.h+" Stunden";
+
+ var W=760,H=240,L=54,R=14,T=16,B=30,pw=W-L-R,ph=H-T-B,cw=pw/24;
+ var mx=Math.max(pk0,pk,res,Math.max.apply(null,pvArr))*1.12||1;
+ var y=function(v){return T+ph*(1-v/mx);},s="",gv,gy;
+ for(i=0;i<=3;i++){gv=mx*i/3;gy=y(gv);
+  s+='<line x1="'+L+'" y1="'+gy.toFixed(1)+'" x2="'+(W-R)+'" y2="'+gy.toFixed(1)+'" stroke="rgba(150,180,220,.11)"/>';
+  s+='<text x="'+(L-7)+'" y="'+(gy+3.5).toFixed(1)+'" text-anchor="end" fill="#617595" font-family="JetBrains Mono, monospace" font-size="9.5">'+de(gv)+'</text>';}
+ for(i=0;i<24;i++){
+  if(noLm[i]>0.5){s+='<rect x="'+(L+i*cw+2).toFixed(1)+'" y="'+y(noLm[i]).toFixed(1)+'" width="'+(cw-4).toFixed(1)+'" height="'+(ph-(y(noLm[i])-T)).toFixed(1)+'" fill="#FF6B8A" opacity="'+(lm?".30":".92")+'"><title>'+i+':00 ohne Management '+de(Math.round(noLm[i]))+' kW</title></rect>';}
+  if(yesLm[i]>0.5){s+='<rect x="'+(L+i*cw+2).toFixed(1)+'" y="'+y(yesLm[i]).toFixed(1)+'" width="'+(cw-4).toFixed(1)+'" height="'+(ph-(y(yesLm[i])-T)).toFixed(1)+'" fill="#8CE04B" opacity="'+(lm?".92":".35")+'"><title>'+i+':00 mit Management '+de(Math.round(yesLm[i]))+' kW</title></rect>';}
+ }
+ var d="";for(i=0;i<24;i++)d+=(i?"L":"M")+(L+i*cw+cw/2).toFixed(1)+" "+y(pvArr[i]).toFixed(1)+" ";
+ s+='<path d="'+d+'" fill="none" stroke="#FFB43D" stroke-width="2" opacity=".9"/>';
+ s+='<line x1="'+L+'" y1="'+y(res).toFixed(1)+'" x2="'+(W-R)+'" y2="'+y(res).toFixed(1)+'" stroke="#45E0FF" stroke-width="1.5" stroke-dasharray="5 5"/>';
+ s+='<text x="'+(W-R)+'" y="'+(y(res)-6).toFixed(1)+'" text-anchor="end" fill="#45E0FF" font-family="JetBrains Mono, monospace" font-size="10">Reserve '+de(res)+' kW</text>';
+ [0,6,12,18,23].forEach(function(hh){s+='<text x="'+(L+hh*cw+cw/2).toFixed(1)+'" y="'+(H-9)+'" text-anchor="middle" fill="#617595" font-family="JetBrains Mono, monospace" font-size="9.5">'+hh+':00</text>';});
+ s+='<text x="'+(L-7)+'" y="'+(T-3)+'" text-anchor="end" fill="#617595" font-family="JetBrains Mono, monospace" font-size="9">kW</text>';
+ $("ch").innerHTML=s;
+}
+["cars","km","res","kwp"].forEach(function(i){$(i).addEventListener("input",render);});
+Array.prototype.forEach.call(document.querySelectorAll("[data-p]"),function(b){
+ b.addEventListener("click",function(){
+  Array.prototype.forEach.call(document.querySelectorAll("[data-p]"),function(o){o.setAttribute("aria-pressed","false");});
+  b.setAttribute("aria-pressed","true");pow=+b.dataset.p;render();});});
+Array.prototype.forEach.call(document.querySelectorAll("[data-w]"),function(b){
+ b.addEventListener("click",function(){
+  Array.prototype.forEach.call(document.querySelectorAll("[data-w]"),function(o){o.setAttribute("aria-pressed","false");});
+  b.setAttribute("aria-pressed","true");win=b.dataset.w;render();});});
+$("lm").addEventListener("click",function(){lm=!lm;this.setAttribute("aria-pressed",lm?"true":"false");render();});
+render();
+})();
+</script>

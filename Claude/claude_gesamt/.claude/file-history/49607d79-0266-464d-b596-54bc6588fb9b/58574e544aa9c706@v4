@@ -1,0 +1,222 @@
+<template>
+  <div>
+    <PageHeader title="Netzdienste" :subtitle="untertitel" />
+
+    <div class="p-6">
+      <div v-if="netz.data" class="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <StatCard
+          v-for="kachel in kacheln"
+          :key="kachel.label"
+          :label="kachel.label"
+          :wert="kachel.wert"
+          :hinweis="kachel.hinweis"
+          :level="kachel.level"
+        />
+      </div>
+
+      <section class="mb-8">
+        <h2 class="mb-3 text-base font-semibold text-ink-gray-8">VPN</h2>
+        <DataTable
+          tabellen-id="NetServicesView-1"
+          :columns="vpnSpalten"
+          :rows="netz.data?.tunnels || []"
+          :loading="netz.loading"
+        >
+          <template #zelle-tunnel_name="{ zeile }">
+            <span class="block font-medium text-ink-gray-9">{{ zeile.tunnel_name }}</span>
+            <span class="block font-mono text-sm text-ink-gray-5">{{ zeile.peer_endpoint }}</span>
+          </template>
+          <template #zelle-netze="{ zeile }">
+            <span class="block font-mono text-sm">{{ zeile.local_networks }}</span>
+            <span class="block font-mono text-sm text-ink-gray-5"
+              >↔ {{ zeile.remote_networks }}</span
+            >
+          </template>
+          <template #zelle-tunnel_state="{ zeile }">
+            <StatusDot
+              :level="zeile.tunnel_state === 'up' ? 'ok' : 'critical'"
+              :text="zeile.tunnel_state === 'up' ? 'verbunden' : 'getrennt'"
+              klein
+            />
+          </template>
+          <template #zelle-befund="{ zeile }">
+            <StatusDot v-if="!zeile.reasons.length" level="ok" text="in Ordnung" klein />
+            <ul v-else class="space-y-0.5">
+              <li v-for="grund in zeile.reasons" :key="grund" class="text-sm text-ink-gray-6">
+                {{ grund }}
+              </li>
+            </ul>
+          </template>
+        </DataTable>
+      </section>
+
+      <section class="mb-8">
+        <h2 class="mb-3 text-base font-semibold text-ink-gray-8">WLAN</h2>
+        <DataTable
+          tabellen-id="NetServicesView-2"
+          :columns="wlanSpalten"
+          :rows="netz.data?.wireless || []"
+        >
+          <template #zelle-ssid="{ zeile }">
+            <span class="font-medium text-ink-gray-9">{{ zeile.ssid }}</span>
+            <StatusDot v-if="zeile.hidden" class="ml-2" level="warning" text="versteckt" klein />
+          </template>
+          <template #zelle-vlan_label="{ zeile }">
+            <Badge v-if="zeile.security_zone" :theme="zoneTheme(zeile.security_zone)">
+              {{ zeile.vlan_label }}
+            </Badge>
+            <span v-else>{{ zeile.vlan_label }}</span>
+          </template>
+          <template #zelle-befund="{ zeile }">
+            <StatusDot v-if="!zeile.reasons.length" level="ok" text="in Ordnung" klein />
+            <ul v-else class="space-y-0.5">
+              <li v-for="grund in zeile.reasons" :key="grund" class="text-sm text-ink-gray-6">
+                {{ grund }}
+              </li>
+            </ul>
+          </template>
+        </DataTable>
+      </section>
+
+      <div class="grid grid-cols-1 gap-8 xl:grid-cols-2">
+        <section>
+          <h2 class="mb-3 text-base font-semibold text-ink-gray-8">DNS</h2>
+          <DataTable
+            tabellen-id="NetServicesView-3"
+            :columns="dnsSpalten"
+            :rows="netz.data?.dns || []"
+          >
+            <template #zelle-record_name="{ zeile }">
+              <span class="block font-mono text-sm text-ink-gray-9">{{ zeile.record_name }}</span>
+              <span class="block font-mono text-sm text-ink-gray-5">{{ zeile.value }}</span>
+            </template>
+            <template #zelle-zone_kind="{ zeile }">
+              <Badge :theme="zeile.zone_kind === 'internal' ? 'blue' : 'gray'">
+                {{ zeile.zone_kind === 'internal' ? 'intern' : 'extern' }}
+              </Badge>
+            </template>
+            <template #zelle-befund="{ zeile }">
+              <StatusDot v-if="!zeile.reasons.length" level="ok" text="passt zum IPAM" klein />
+              <StatusDot v-else level="warning" :text="zeile.reasons[0]" klein />
+            </template>
+          </DataTable>
+        </section>
+
+        <section>
+          <h2 class="mb-3 text-base font-semibold text-ink-gray-8">Routen</h2>
+          <DataTable
+            tabellen-id="NetServicesView-4"
+            :columns="routeSpalten"
+            :rows="netz.data?.routes || []"
+          >
+            <template #zelle-destination="{ zeile }">
+              <span class="block font-mono text-sm text-ink-gray-9">{{ zeile.destination }}</span>
+              <span class="block font-mono text-sm text-ink-gray-5">via {{ zeile.gateway }}</span>
+            </template>
+            <template #zelle-befund="{ zeile }">
+              <StatusDot v-if="!zeile.reasons.length" level="ok" text="aktiv" klein />
+              <StatusDot v-else level="critical" :text="zeile.reasons[0]" klein />
+            </template>
+          </DataTable>
+        </section>
+      </div>
+
+      <p class="mt-6 text-xs text-ink-gray-4">
+        Der DNS-Abgleich prüft interne A-Einträge gegen das IPAM: zeigt ein Name auf eine nicht
+        vergebene Adresse, ist es entweder eine Karteileiche oder ein Gerät, das niemand erfasst
+        hat. Eine Route über einen getrennten Tunnel führt ins Leere und steht deshalb als kritisch.
+      </p>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed } from 'vue'
+import { Badge, createResource } from 'frappe-ui'
+import PageHeader from '@/components/PageHeader.vue'
+import DataTable from '@/components/DataTable.vue'
+import StatCard from '@/components/StatCard.vue'
+import { zoneTheme } from '@/labels'
+
+const netz = createResource({ url: 'netops.api.netsvc.network_services', auto: true })
+
+const vpnSpalten = [
+  { key: 'tunnel_name', label: 'Tunnel', width: '250px' },
+  { key: 'tunnel_kind', label: 'Art', muted: true, width: '110px' },
+  { key: 'netze', label: 'Netze', width: '230px' },
+  { key: 'cipher', label: 'Verfahren', muted: true, width: '190px' },
+  { key: 'tunnel_state', label: 'Zustand', width: '130px' },
+  { key: 'befund', label: 'Befund' },
+]
+
+const wlanSpalten = [
+  { key: 'ssid', label: 'SSID', width: '250px' },
+  { key: 'auth_kind', label: 'Anmeldung', muted: true, width: '160px' },
+  { key: 'vlan_label', label: 'VLAN', width: '180px' },
+  { key: 'band', label: 'Band', muted: true, width: '90px' },
+  { key: 'client_count', label: 'Clients', align: 'right', numeric: true, width: '90px' },
+  { key: 'befund', label: 'Befund' },
+]
+
+const dnsSpalten = [
+  { key: 'record_name', label: 'Eintrag', width: '250px' },
+  { key: 'record_type', label: 'Typ', muted: true, width: '70px' },
+  { key: 'zone_kind', label: 'Zone', width: '100px' },
+  { key: 'befund', label: 'Abgleich' },
+]
+
+const routeSpalten = [
+  { key: 'destination', label: 'Ziel', width: '200px' },
+  { key: 'metric', label: 'Metrik', align: 'right', numeric: true, width: '80px' },
+  { key: 'vrf', label: 'VRF', muted: true, width: '80px' },
+  { key: 'befund', label: 'Zustand' },
+]
+
+const kacheln = computed(() => {
+  const z = netz.data?.summary
+  if (!z) return []
+  return [
+    {
+      label: 'Tunnel getrennt',
+      wert: z.tunnels_down,
+      level: 'critical',
+      hinweis: z.tunnels_down ? 'prüfen' : null,
+    },
+    {
+      label: 'Schwache Verfahren',
+      wert: z.weak_crypto,
+      level: 'warning',
+      hinweis: z.weak_crypto ? 'ersetzen' : null,
+    },
+    {
+      label: 'DNS ohne IPAM-Bezug',
+      wert: z.dns_mismatch,
+      level: 'warning',
+      hinweis: z.dns_mismatch ? 'aufräumen' : null,
+    },
+    {
+      label: 'Tote Routen',
+      wert: z.dead_routes,
+      level: 'critical',
+      hinweis: z.dead_routes ? 'führen ins Leere' : null,
+    },
+  ]
+})
+
+const untertitel = computed(() => {
+  const z = netz.data?.summary
+  if (!z) return ''
+  return (
+    z.tunnels +
+    ' Tunnel · ' +
+    z.ssids +
+    ' SSIDs mit ' +
+    z.wifi_clients +
+    ' Clients · ' +
+    z.dns_records +
+    ' DNS-Einträge · ' +
+    z.routes +
+    ' Routen'
+  )
+})
+</script>

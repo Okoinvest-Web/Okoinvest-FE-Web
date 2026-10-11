@@ -1,0 +1,343 @@
+<title>Antwortentwurf Vergleich</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root{
+  --paper:#F6F6F3; --sheet:#FFFFFF; --ink:#15181E; --ink-2:#3C434F; --muted:#6B7280;
+  --rule:#DCDCD6; --rule-2:#EBEBE6; --accent:#243E8C; --accent-soft:#E8ECF7;
+  --crit:#A4241C; --crit-soft:#F7E7E5; --warn:#7A5600; --warn-soft:#F8F0DC;
+  --ok:#18614A; --ok-soft:#E3F0EA;
+  --shadow:0 1px 2px rgba(21,24,30,.05),0 8px 24px -16px rgba(21,24,30,.18);
+  --serif:"Newsreader",Georgia,"Times New Roman",serif;
+  --sans:"IBM Plex Sans","Segoe UI",Helvetica,Arial,sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#111419; --sheet:#171B22; --ink:#E9EAEC; --ink-2:#B8BEC9; --muted:#8D95A3;
+    --rule:#2A303B; --rule-2:#222831; --accent:#9BB2F0; --accent-soft:#1C2435;
+    --crit:#F0918A; --crit-soft:#33201E; --warn:#E0BC6A; --warn-soft:#2E2718;
+    --ok:#7FC8AA; --ok-soft:#17271F;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px -18px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#111419; --sheet:#171B22; --ink:#E9EAEC; --ink-2:#B8BEC9; --muted:#8D95A3;
+  --rule:#2A303B; --rule-2:#222831; --accent:#9BB2F0; --accent-soft:#1C2435;
+  --crit:#F0918A; --crit-soft:#33201E; --warn:#E0BC6A; --warn-soft:#2E2718;
+  --ok:#7FC8AA; --ok-soft:#17271F;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px -18px rgba(0,0,0,.7);
+}
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.62;
+  -webkit-font-smoothing:antialiased}
+.wrap{max-width:820px;margin:0 auto;padding:40px 22px 96px}
+header{border-bottom:2px solid var(--ink);padding-bottom:22px;margin-bottom:30px}
+.kicker{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--crit);font-weight:600}
+.doc{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-top:6px}
+h1{font-family:var(--serif);font-weight:500;font-size:34px;line-height:1.12;margin:14px 0 8px}
+.sub{color:var(--ink-2);font-family:var(--serif);font-size:17px;line-height:1.5;margin:0}
+h2{font-family:var(--serif);font-weight:600;font-size:22px;margin:38px 0 12px;padding-top:16px;border-top:1px solid var(--rule)}
+h3{font-size:14px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin:26px 0 8px;font-weight:600}
+p{margin:0 0 12px}
+.note{background:var(--sheet);border:1px solid var(--rule);border-left:3px solid var(--accent);
+  border-radius:3px;padding:14px 16px;margin:16px 0;box-shadow:var(--shadow)}
+.note.crit{border-left-color:var(--crit);background:var(--crit-soft)}
+.note.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+.note.ok{border-left-color:var(--ok);background:var(--ok-soft)}
+.note .hd{font-weight:600;margin:0 0 6px;font-size:14px}
+.note p:last-child{margin-bottom:0}
+.letter{background:var(--sheet);border:1px solid var(--rule);border-radius:3px;padding:30px 34px;
+  margin:18px 0;box-shadow:var(--shadow);font-family:var(--serif);font-size:16px;line-height:1.7}
+.letter p{margin:0 0 14px}
+.letter .meta{font-family:var(--sans);font-size:12.5px;color:var(--muted);line-height:1.6;
+  border-bottom:1px solid var(--rule-2);padding-bottom:14px;margin-bottom:18px}
+.letter .betreff{font-family:var(--sans);font-weight:600;font-size:15px;color:var(--ink);margin-bottom:18px}
+.letter ol{margin:0 0 14px;padding-left:22px}
+.letter li{margin-bottom:10px}
+.letter .sig{margin-top:26px;font-family:var(--sans);font-size:13.5px;color:var(--ink-2)}
+table{width:100%;border-collapse:collapse;font-size:13.5px;margin:14px 0}
+th,td{text-align:left;vertical-align:top;padding:8px 10px;border-bottom:1px solid var(--rule-2)}
+th{font-family:var(--sans);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);
+  border-bottom:1px solid var(--rule)}
+td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tw{overflow-x:auto}
+.pill{display:inline-block;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;font-weight:600;
+  padding:2px 7px;border-radius:99px;margin-right:5px}
+.p-ok{background:var(--ok-soft);color:var(--ok)}
+.p-warn{background:var(--warn-soft);color:var(--warn)}
+.p-crit{background:var(--crit-soft);color:var(--crit)}
+.foot{margin-top:44px;padding-top:16px;border-top:1px solid var(--rule);font-size:12px;color:var(--muted)}
+</style>
+
+<div class="wrap">
+<header>
+  <div class="kicker">Vertraulich · Anwaltsprivileg</div>
+  <div class="doc">DOK-CB-05 · Entwurf v2 · Stand 13.09.2026</div>
+  <h1>Antwort auf das Vergleichsschreiben<br>der Salzburg AG vom 11.09.2026</h1>
+  <p class="sub">Entwurf zur anwaltlichen Überarbeitung und Freigabe. Nicht zur unmittelbaren
+  Versendung. Grundlage: DOK-CB-03 REV 3.3, Abschnitte 04, 13 und 18.</p>
+</header>
+
+<div class="note crit">
+  <p class="hd">Vor dem Lesen: fünf Festlegungen, die der Entwurf umsetzt</p>
+  <p><b>Erstens</b>, die Antwort geht über die Rechtsvertretung und nicht persönlich. Die Gegenseite hat
+  bewusst die Anwaltsebene umgangen und die Du-Form gewählt. Auf dieser Ebene zu antworten, bedeutet, auf
+  ihrem Platz zu spielen.</p>
+  <p><b>Zweitens</b>, es erfolgt keine Distanzierung vom eigenen Umfeld. Diese Forderung ist der einzige
+  echte Wunsch des Schreibens.</p>
+  <p><b>Drittens</b>, die bestellte Herleitung wird geliefert. Damit entfällt das einzige inhaltlich
+  vorgetragene Argument der Gegenseite.</p>
+  <p><b>Viertens</b>, das gewünschte Etikett wird angeboten: keine Abgeltung von Schadenersatz, sondern
+  Auseinandersetzung, Anteilsübertragung und Erfüllung des Earn-Out, ohne Anerkenntnis dem Grunde nach.</p>
+  <p><b>Fünftens</b>, es wird eine Frist gesetzt. Der Brief der Gegenseite arbeitet mit Zeit als Waffe.</p>
+</div>
+
+<h2>Der Entwurf</h2>
+
+<div class="letter">
+  <p class="meta">
+  CERHA HEMPEL Rechtsanwälte GmbH, Wien<br>
+  An: Salzburg AG für Energie, Verkehr und Telekommunikation, zu Handen des Vorstands,
+  Michael Baminger und Herwig Struber, sowie zu Handen der rechtsfreundlichen Vertretung DORDA
+  Rechtsanwälte GmbH<br>
+  Datum: [Datum] · Unser Zeichen: [Zeichen]
+  </p>
+
+  <p class="betreff">Betreff: Ökovolt Solartechnik GmbH, FN 375708 m, und ÖKOVOLT GmbH Solartechnik,
+  HRB 14166 — Ihr Schreiben vom 11.09.2026</p>
+
+  <p>Sehr geehrte Damen und Herren,</p>
+
+  <p>wir vertreten die Ökovolt Solartechnik GmbH, die ÖKOVOLT GmbH Solartechnik sowie Herrn Andreas
+  Wegscheider und Frau Susanne Messmer. Auf Ihr Schreiben vom 11.09.2026, unmittelbar an unsere
+  Mandantschaft gerichtet, antworten wir namens und auftrags.</p>
+
+  <p><b>1. Zur Form.</b> Wir ersuchen, den weiteren Schriftverkehr in dieser Angelegenheit
+  ausschließlich über die rechtsfreundlichen Vertretungen zu führen. Die unmittelbare Ansprache unserer
+  Mandanten unter Umgehung der Vertretung ist in einem Verfahrensstand mit elf anhängigen oder erledigten
+  Verfahren nicht zweckmäßig.</p>
+
+  <p><b>2. Zum einzigen inhaltlichen Einwand Ihres Schreibens.</b> Sie halten fest, es sei weder
+  nachvollziehbar dargelegt, wie sich die geltend gemachten Beträge berechnen, noch in welchem Verhältnis
+  sie zu den behaupteten Nachteilen stehen. Diesem Einwand tragen wir mit der beiliegenden Herleitung
+  Rechnung. Sie stützt sich auf drei voneinander unabhängige Methoden und ausschließlich auf Urkunden,
+  die entweder von der Salzburg AG selbst stammen oder öffentlich im Firmenbuch einsehbar sind.</p>
+
+  <ol>
+    <li><b>Plan gegen Ist beim Ergebnis.</b> Die von der Salzburg AG beauftragte Unternehmensbewertung
+    der Ernst &amp; Young Wirtschaftsprüfungsgesellschaft m.b.H. vom 30.04.2021 enthält auf Seite 22 eine
+    vollständige Ergebnisplanung der Ökovolt Solartechnik GmbH bis 2030 einschließlich aller geplanten
+    Kosten. Sie sieht Betriebsergebnisse von TEUR 3.148 für 2021, TEUR 3.193 für 2022, TEUR 3.356 für
+    2023 und TEUR 3.516 für 2024 vor. Tatsächlich erzielt wurden laut den offengelegten
+    Jahresabschlüssen TEUR 973, TEUR 546, TEUR 575 und TEUR 1.491. Der kumulierte Ergebnisausfall
+    2021 bis 2024 beträgt <b>EUR 9,63 Mio.</b> Die Zielerreichung liegt beim Ergebnis zwischen 17 und
+    42 Prozent, beim Umsatz zwischen 47 und 53 Prozent; der kumulierte Umsatzausfall 2021 bis 2023
+    beträgt EUR 46,58 Mio. Unter Fortschreibung auf 2025 und Ansatz des Barwerts für 2026 bis 2030
+    ergibt sich ein Ertragsschaden von EUR 17,7 bis 21,5 Mio. Die ewige Rente aus Ihrer eigenen Planung
+    bleibt dabei außer Ansatz.</li>
+
+    <li><b>Wertverlust am eigenen Bewertungsanker.</b> Dasselbe Gutachten bewertet beide Gesellschaften
+    zum 31.12.2020 objektiviert mit TEUR 28.497 und subjektiv mit TEUR 30.675. Eine dauerhafte
+    Ergebnisminderung in der festgestellten Größenordnung von 50 bis 70 Prozent führt zu einem
+    Wertverlust von EUR 14,2 bis 20,0 Mio.</li>
+
+    <li><b>Gerichtlich zugrunde gelegter Mindestschaden.</b> Der 14. Zivilsenat des Oberlandesgerichts
+    München hat in den Entscheidungen vom 21.05.2026, deren Bestand mit der Zurückweisung der
+    Gehörsrügen am 18.06.2026 feststeht, einen Schaden von mindestens EUR 10,5 Mio. zugrunde gelegt.</li>
+  </ol>
+
+  <p>Die drei Methoden bemessen denselben Nachteil und sind Alternativen, keine Summanden. Ihr
+  Zusammentreffen ist der Grund, aus dem wir die Bezifferung für sachlich nachvollziehbar halten. Der
+  Ansatz für den Ertragsschaden aus dem Errichtungsgeschäft beträgt danach EUR 14,2 Mio. im
+  konservativen und EUR 21,0 Mio. im oberen Szenario, nach unten abgesichert durch die gerichtliche
+  Feststellung.</p>
+
+  <p><b>3. Zur vertraglichen Grundlage.</b> Wir halten fest, worauf sich dieser Anspruch stützt, weil
+  Ihr Schreiben die Frage nicht anspricht. Nach Punkt 6.1 des Syndikatsvertrags unterliegt die
+  Salzburg AG keinem Wettbewerbsverbot. Darauf kommt es nicht an. Maßgeblich sind die positiven
+  Pflichten: Nach Punkt 4.1 ist gemeinsames Ziel die Sicherung von Marktanteilen am österreichischen und
+  deutschen Photovoltaikmarkt sowie die Vermeidung von Wettbewerbssituationen zwischen den
+  Syndikatspartnern und den Zielgesellschaften. Nach Punkt 4.2 soll die Projektabwicklung gemeinsam
+  erfolgen und sollen Ausschreibungen gemeinsam bearbeitet werden. Nach Punkt 4.3 zieht die Salzburg AG
+  die Zielgesellschaften als bevorzugte Partner bei eigenen Photovoltaikprojekten heran und wirkt auch
+  auf verbundene Unternehmen hin; im Gegenzug wurde ihr der vorrangige Zugriff auf 50 Prozent der
+  Errichtungskapazitäten zu Meistbegünstigungsbedingungen eingeräumt. Der Schlusssatz des Punktes 6.1
+  verpflichtet ausdrücklich <b>beide</b> Syndikatspartner, auf die Vermeidung von Wettbewerbssituationen
+  hinzuwirken.</p>
+
+  <p>Die Gründung einer eigenen Errichtungsgesellschaft am Tag des Anteilserwerbs und die Vergabe des
+  Auftrags der Hofer KG an diese Gesellschaft sind mit diesen Zusagen nicht vereinbar. Dass es sich dabei
+  nicht um eine nachträgliche Auslegung unserer Mandantschaft handelt, belegt Ihr eigenes
+  Bewertungsgutachten: Es kapitalisiert eine Synergie mit TEUR 1.579 und beschreibt sie mit den Worten,
+  der Vertrieb der Salzburg AG verkaufe Anlagen an eigene Bestands- und Neukunden, wodurch sich „das
+  Installationsvolumen in der Ökovolt AT“ erhöhe, und die Salzburg AG erhalte dafür
+  Handelsvertreterprovisionen. Für diese Arbeitsteilung haben Sie einen Kaufpreisaufschlag von
+  TEUR 2.645 gegenüber dem objektivierten Wert bezahlt.</p>
+
+  <p><b>4. Zur Reichweite der Auseinandersetzung.</b> Ihr Schreiben behandelt den Vorgang durchgehend als
+  „Gesellschafterstreitigkeit“. Diese Bezeichnung erfasst den Gegenstand nicht. Damit kein Missverständnis
+  entsteht, welche Ansprüche von einer Gesamtlösung erfasst sein müssten, führen wir die Komplexe
+  vollständig auf. Die Bezifferung unter Punkt 2 betrifft ausschließlich den ersten davon.</p>
+
+  <ol>
+    <li><b>Verdrängung aus dem Errichtungsgeschäft.</b> Verzicht der Ökovolt auf eigene Teilnahme an der
+    Ausschreibung der Hofer KG gegen Zusicherung der Auftragsabwicklung, anschließende Vergabe an die am
+    18.10.2021 gegründete one2zero GmbH und deren Weitervergabe. Urkundlich gestützt durch Ihre
+    Presseaussendung vom 05.07.2022, Ihren Geschäftsbericht 2024 und den Jahresabschluss 2024 der
+    one2zero GmbH. Anspruchsgrundlagen: Vertragsverletzung, Verletzung der gesellschaftsrechtlichen
+    Treuepflicht, Verstoß gegen das Wettbewerbsverbot des Syndikatsvertrags.</li>
+
+    <li><b>Abfluss von Geschäftsgeheimnissen und Unternehmensdaten.</b> Kopier-, Verschlüsselungs- und
+    Löschvorgänge durch den von Ihnen nominierten Geschäftsführer, forensisch festgestellt von zwei
+    allgemein beeideten und gerichtlich zertifizierten Sachverständigen der Grant Thornton Austria
+    Forensic GmbH, mit dokumentierten Hashwerten und lückenloser Beweismittelkette. Der 14. Zivilsenat
+    des Oberlandesgerichts München hat es in drei Parallelentscheidungen vom 21.05.2026 als glaubhaft
+    gemacht angesehen, dass die Nominierung dem Datenabzug diente und im Auftrag der Salzburg AG erfolgte.
+    Anspruchsgrundlagen: §§ 26a bis 26j UWG, insbesondere § 26e UWG, §§ 10 und 23 GeschGehG, §§ 303a und
+    303b StGB, §§ 122 und 123 StGB, jeweils in Verbindung mit dem Verbandsverantwortlichkeitsgesetz.
+    Gesondert geltend gemacht werden das angemessene Entgelt für die Nutzung nach § 26e UWG sowie der
+    Auskunfts- und Rechnungslegungsanspruch nach § 26e Abs 4 UWG, § 10 GeschGehG und Art. 8 der
+    Richtlinie 2004/48/EG.</li>
+
+    <li><b>Die Generalversammlung vom 10.10.2025.</b> Einberufung, Durchführung und Protokollierung einer
+    Generalversammlung mit Abberufung des Mehrheitsgesellschafters und Geschäftsführers auf Grundlage
+    eines Protokolls, dessen Beurkundung ein unbeteiligter Notar verweigert hat.
+    Anspruchsgrundlagen: Anfechtung und Nichtigkeit der Beschlüsse, § 41 GmbHG, sowie § 293 StGB.</li>
+
+    <li><b>Datenschutz.</b> Vorlage eines ungeschwärzten Strafurteils des Landesgerichts Innsbruck als
+    Beilage. Anspruchsgrundlage: Art. 82 DSGVO.</li>
+
+    <li><b>Maßnahmen gegen Hinweisgeber.</b> Beendigung der Dienstverhältnisse zweier Mitarbeiter nach
+    deren Meldung an Behörden sowie die Weisung vom 12.11.2025. Anspruchsgrundlagen:
+    HinweisgeberInnenschutzgesetz, insbesondere das Verbot von Vergeltungsmaßnahmen, sowie §§ 105 und 106
+    ArbVG.</li>
+
+    <li><b>Angaben gegenüber Behörden und in der Rechnungslegung.</b> Die Darstellung der Marktstellung
+    in der Zusammenschlussanmeldung vom 27.10.2021 im Verhältnis zum späteren Prozessvorbringen sowie die
+    Behandlung der deutschen Geschäftsanteile und des Gesellschafterstreits im Konzernabschluss 2025.</li>
+  </ol>
+
+  <p>Zu den Komplexen 2 bis 6 ist eine abschließende Bezifferung ohne die von uns begehrte Auskunft und
+  Rechnungslegung nicht möglich. Das ist kein Mangel unserer Darlegung, sondern die Folge dessen, dass
+  sich die maßgeblichen Zahlen in Ihrer Sphäre befinden. Wir haben die Auskunft mehrfach begehrt. Sie ist
+  bis heute nicht erteilt.</p>
+
+  <p><b>5. Zur Zusammensetzung des bezifferten Teilbetrags.</b> Neben den Ertragsschaden aus dem
+  Errichtungsgeschäft treten vier Positionen, die sich mit ihm nicht überschneiden.</p>
+
+  <ol>
+    <li><b>Dauerschaden aus Wartung und Betriebsführung, EUR 0,8 bis 2,4 Mio.</b> Ihre
+    Presseaussendung vom 05.07.2022 benennt die one2zero GmbH als verantwortlich für „die Errichtung, den
+    Betrieb und die Wartung der Anlagen“. Mit dem Errichtungsauftrag ist damit auch das gesamte
+    wiederkehrende Servicegeschäft über die gesamte Betriebsdauer von 25 bis 30 Jahren entzogen worden.
+    Diese Position ist ausdrücklich nicht doppelt gezählt: Die Ergebnisplanung Ihres Gutachtens enthält ab
+    2021 keine Service-Erlöse, sondern ausschließlich Errichtungsumsätze.</li>
+    <li><b>Earn-Out, EUR 5,0 Mio.</b> Ein vertraglicher Erfüllungsanspruch, kein Schadenersatz. Die
+    Bedingung, von der er abhing, ist durch die Verlagerung des Volumens vereitelt worden.</li>
+    <li><b>Wiederherstellungsaufwand, EUR 0,12 Mio.</b> Forensisch nachgewiesener, tatsächlich
+    angefallener Aufwand.</li>
+    <li><b>Immaterieller Schaden, EUR 1,5 bis 4,7 Mio.</b> Nach § 26e UWG und der Rechtsprechung des
+    Obersten Gerichtshofs zu 4 Ob 7/22m, der Höhe nach gemäß § 273 ZPO, angesetzt mit 10 bis 20 Prozent
+    des materiellen Schadens.</li>
+  </ol>
+
+  <p>Daraus ergibt sich für diesen Teil ein Korridor von <b>EUR 21,6 bis 33,2 Mio.</b> Jede Position ist
+  einzeln hergeleitet, einzeln belegt und trägt einen eigenen Rechtsgrund; die Aufstellung liegt bei. Die
+  in den Gesprächen genannte Größenordnung liegt innerhalb dieses Korridors.</p>
+
+  <p>Dass der Betrag den von Ihrem Gutachter ermittelten Unternehmenswert erreicht oder überschreitet, ist
+  kein Widerspruch. Der Earn-Out ist ein Erfüllungsanspruch und kein Wertbestandteil. Das Servicegeschäft
+  war in der Bewertung nicht abgebildet. Der immaterielle Schaden tritt nach § 26e UWG neben den
+  materiellen. Der Ertragsschaden selbst bleibt mit EUR 21,0 Mio. im oberen Szenario bei 74 Prozent des
+  objektivierten Unternehmenswerts und damit darunter.</p>
+
+  <p>Das angemessene Entgelt nach § 26e UWG für den Komplex 2 wird hilfsweise und nicht zusätzlich geltend
+  gemacht, da angemessenes Entgelt und entgangener Gewinn einander ausschließen. Die Ansprüche aus den
+  Komplexen 3 bis 6, die Verfahrenskosten aus elf Verfahren sowie ein eigenständiger Schaden der
+  ÖKOVOLT GmbH Solartechnik, die in Ihrem Gutachten mit TEUR 11.311 bewertet ist, sind in diesem Betrag
+  nicht enthalten und bleiben ausdrücklich vorbehalten.</p>
+
+  <p><b>6. Zur Rechtsnatur einer Einigung.</b> Sie halten fest, Gegenstand der Gespräche sei zu keinem
+  Zeitpunkt die Abgeltung behaupteter Schadenersatzansprüche gewesen, sondern ausschließlich die Frage,
+  zu welchen Bedingungen endgültiger Rechtsfrieden hergestellt werden kann. Wir nehmen das auf. Unsere Mandantschaft ist bereit, eine Gesamtlösung auf folgender Grundlage zu schließen, ohne Anerkenntnis
+  einer Rechtspflicht dem Grunde nach und ohne Präjudiz für die anhängigen Verfahren:</p>
+
+  <ol>
+    <li>Übertragung sämtlicher von der Salzburg AG gehaltener Geschäftsanteile an beiden Gesellschaften
+    gegen ein Auseinandersetzungsguthaben;</li>
+    <li>Erfüllung des vertraglich vereinbarten Earn-Out als eigener, nicht verrechenbarer Posten;</li>
+    <li>Ersatz der bisher angefallenen Verfahrens- und Vertretungskosten;</li>
+    <li>wechselseitige Generalbereinigung einschließlich Rücknahme sämtlicher gegen unsere Mandanten
+    gerichteten Verfahren und Schritte;</li>
+    <li>Zahlung in Teilbeträgen über mehrere Geschäftsjahre, besichert durch Bankgarantie.</li>
+  </ol>
+
+  <p>Diese Struktur trägt ausdrücklich dem von Ihnen vorgetragenen Umstand Rechnung, dass die Salzburg AG
+  als Unternehmen im öffentlichen Eigentum jede Lösung sachlich nachvollziehbar darstellen können muss.
+  Jede der genannten Komponenten trägt einen eigenen, im Abschluss darstellbaren Rechtsgrund. Über die
+  Höhe der einzelnen Komponenten und über die Zahlungsmodalitäten sind wir gesprächsbereit.</p>
+
+  <p><b>7. Zu Ihren Ausführungen über das Umfeld unseres Mandanten.</b> Eine Distanzierung, wie Sie sie
+  anregen, wird nicht erklärt. Unsere Mandanten lassen sich anwaltlich und fachlich beraten und werden
+  dies weiterhin tun. Die Verfolgung berechtigter Ansprüche und die Erstattung von Anzeigen bei
+  zuständigen Behörden sind zulässige Rechtsausübung und kein Verhandlungshindernis.</p>
+
+  <p><b>8. Zu Ihren Ausführungen betreffend Frau Messmer.</b> Sie halten fest, die Fortsetzung der
+  Auseinandersetzung werde auch Frau Messmer unmittelbar betreffen, und Sie bezeichnen den von Herrn
+  Wegscheider angesprochenen persönlichen Rückzug als nicht realistisch. Frau Messmer ist
+  Mitgesellschafterin und war am 28.05.2026 als Zeugin geladen. Wir nehmen diese Passage zur Kenntnis,
+  behalten uns deren Bewertung ausdrücklich vor und weisen darauf hin, dass sie Gegenstand der weiteren
+  Verfahren sein wird.</p>
+
+  <p><b>9. Frist.</b> Wir ersuchen um Stellungnahme zur beiliegenden Herleitung sowie um Mitteilung, ob
+  auf der unter Punkt 4 dargestellten Grundlage verhandelt wird, bis zum [Datum, zwei Wochen]. Nach
+  fruchtlosem Ablauf werden die Verfahren ohne weitere Vergleichsgespräche fortgesetzt und die
+  vorbereiteten Schritte gesetzt.</p>
+
+  <p>Mit freundlichen Grüßen</p>
+
+  <p class="sig">CERHA HEMPEL Rechtsanwälte GmbH<br>
+  Beilagen: Herleitung der Bezifferung · Gegenüberstellung der Ergebnisplanung mit den Jahresabschlüssen 2021 bis 2024 · Gegenüberstellung der Umsatzplanung mit den Jahresabschlüssen 2021 bis 2023 · Auszug aus der Unternehmensbewertung vom 30.04.2021, Seiten 11, 20 und 22 · Auszug aus dem Syndikatsvertrag, Punkte 4.1 bis 4.3 und 6.1</p>
+</div>
+
+<h2>Was der Entwurf bewusst nicht tut</h2>
+<div class="tw">
+<table>
+<thead><tr><th style="width:30%">Unterlassen</th><th>Grund</th></tr></thead>
+<tbody>
+<tr><td>Kein neues Angebot und keine Reduktion der Forderung</td><td>Der Entwurf nennt den Korridor von EUR 21,6 bis 33,2 Mio. als Ergebnis der Herleitung, macht aber kein neues Angebot. Die bisher genannte Größenordnung wird ausdrücklich als innerhalb des Korridors liegend bezeichnet und damit gehalten. Verhandelt wird über die Struktur der Zahlung, nicht über die Höhe.</td></tr>
+<tr><td>Keine Bezifferung der Komplexe 2 bis 6</td><td>Sie werden vollständig aufgezählt, mit Anspruchsgrundlage, und ausdrücklich vorbehalten. Eine Bezifferung ohne die begehrte Auskunft wäre angreifbar; die Aufzählung verhindert aber, dass eine Generalbereinigung sie unbeziffert miterledigt.</td></tr>
+<tr><td>Keine Erwiderung auf den Vorwurf der Eskalation</td><td>Eine Rechtfertigung bestätigt die Rahmung. Die Anzeigen werden in einem Satz als zulässige Rechtsausübung eingeordnet, mehr nicht.</td></tr>
+<tr><td>Kein Eingehen auf die Du-Form und die persönliche Ansprache</td><td>Die Verlagerung auf die Anwaltsebene erledigt das ohne Kommentar. Ein Satz dazu wäre eine Kränkung und damit ein Geschenk.</td></tr>
+<tr><td>Keine Drohung mit konkreten Eskalationsschritten</td><td>Die Fristsetzung genügt. Wer benennt, was er tun wird, gibt der Gegenseite Zeit zur Vorbereitung. Die Tonaufnahmen werden nicht erwähnt, siehe Abschnitt 16 des Dossiers.</td></tr>
+<tr><td>Kein Widerspruch gegen die Formel vom Rechtsfrieden</td><td>Im Gegenteil, die Formel wird übernommen. Sie ist das Etikett, unter dem die Gegenseite zahlen kann, ohne zu haften. Das kostet inhaltlich nichts und nimmt ihr die Begründung für ein Nein.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2>Zu prüfen vor der Freigabe</h2>
+<div class="tw">
+<table>
+<thead><tr><th style="width:6%"></th><th>Punkt</th><th>Status</th></tr></thead>
+<tbody>
+<tr><td><b>1</b></td><td>Vertretungsverhältnis für Frau Messmer klären. Der Entwurf nennt sie als Mandantin. Trifft das nicht zu, ist Punkt 6 umzuformulieren und ohne Vertretungsbehauptung zu führen.</td><td><span class="pill p-crit">offen</span></td></tr>
+<tr><td><b>2</b></td><td>Zuständigkeit für die deutsche Gesellschaft. Für die ÖKOVOLT GmbH Solartechnik ist zu entscheiden, ob die deutsche Vertretung mitzeichnet oder gesondert schreibt.</td><td><span class="pill p-warn">zu entscheiden</span></td></tr>
+<tr><td><b>3</b></td><td>Reflexschaden. Die Trennung zwischen Ansprüchen der Gesellschaften und eigenen Ansprüchen der Gesellschafter aus dem Syndikatsvertrag ist in der Beilage sauber zu führen, damit die Positionen nicht als unzulässig kumuliert angegriffen werden können.</td><td><span class="pill p-crit">wesentlich</span></td></tr>
+<tr><td><b>4</b></td><td>Verjährung. Vor Versendung ist zu prüfen, ob und für welche Positionen eine Hemmung oder Unterbrechung erforderlich ist. Der Brief enthält kein Anerkenntnis der Gegenseite und hemmt nichts.</td><td><span class="pill p-crit">fristrelevant</span></td></tr>
+<tr><td><b>5</b></td><td>Vertraulichkeit des EY-Gutachtens. Das Gutachten ist als Anlage AG 24 im Verfahren vorgelegt; die Verwendung im Vergleichsschriftverkehr ist mit dem Verfahrensstand abzugleichen.</td><td><span class="pill p-warn">zu prüfen</span></td></tr>
+<tr><td><b>6</b></td><td>Umsatzerlöse 2024 und 2025. Der Abschluss 2024 weist nur ein Rohergebnis aus. Die Fortschreibung in der Beilage ist als Schätzung zu kennzeichnen, sonst greift der Einwand der Gegenseite genau hier wieder an.</td><td><span class="pill p-warn">Beilage anpassen</span></td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="note">
+  <p class="hd">Vorbehalt</p>
+  <p>Dies ist ein Entwurf zur anwaltlichen Bearbeitung und keine Rechtsberatung. Formulierung, Adressat,
+  Fristlänge, Anspruchsgrundlagen und die Frage, welche Positionen überhaupt und in wessen Namen geltend
+  gemacht werden, sind von der berufenen Rechtsvertretung zu entscheiden. Die Zahlen stammen aus
+  DOK-CB-03 REV 3.3, Abschnitt 13.</p>
+</div>
+
+<p class="foot">DOK-CB-05 · Entwurf v2 · Stand 13.09.2026 · Vertraulich, Anwaltsprivileg ·
+gehört zu DOK-CB-03 Gesamtdossier REV 3.3</p>
+</div>

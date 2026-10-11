@@ -1,0 +1,62 @@
+import { chromium } from "playwright";
+
+const ZIEL = process.argv[2];
+
+const browser = await chromium.launch();
+const kontext = await browser.newContext({
+  viewport: { width: 1440, height: 1000 },
+  locale: "de-AT",
+  timezoneId: "Europe/Vienna",
+});
+await kontext.addCookies(
+  [
+    { name: "sid", value: "demo-session" },
+    { name: "frappe_user", value: "m.steiner@steiner-holzbau.at" },
+    { name: "frappe_full_name", value: "Markus Steiner" },
+    { name: "portal_rolle", value: "geschaeftsfuehrung" },
+  ].map((c) => ({ ...c, domain: "localhost", path: "/" })),
+);
+
+const seite = await kontext.newPage();
+seite.on("pageerror", (e) => console.log("Seitenfehler:", String(e).slice(0, 200)));
+
+await seite.goto("http://localhost:3000/portal/alarme", { waitUntil: "networkidle" });
+await seite.waitForTimeout(800);
+
+// Erste Regel oeffnen.
+const knoepfe = seite.getByRole("button", { name: "Schwelle stellen" });
+console.log("Formulare:", await knoepfe.count());
+await knoepfe.first().click();
+await seite.waitForTimeout(300);
+
+const schwelle = seite.locator('input[name="schwellwert"]').first();
+const vorher = await schwelle.inputValue();
+console.log("Schwelle vorher:", vorher);
+
+// 1. Unzulaessiger Wert - der Server muss ihn abweisen.
+await schwelle.fill("1");
+await seite.locator('input[name="dauer"]').first().fill("120");
+await seite.getByRole("button", { name: /Schwelle übernehmen/ }).first().click();
+await seite.waitForTimeout(1500);
+const fehlertext = await seite
+  .locator("form")
+  .first()
+  .innerText()
+  .then((t) => t.replace(/\s+/g, " ").slice(0, 400));
+console.log("Nach unzulässigem Wert:", fehlertext.includes("Messunsicherheit") ? "abgewiesen ✓" : "NICHT abgewiesen ✗");
+await seite.screenshot({ path: `${ZIEL}/regel-abgewiesen.png`, fullPage: false });
+
+// 2. Zulaessiger Wert.
+await schwelle.fill("18");
+await seite.getByRole("button", { name: /Schwelle übernehmen/ }).first().click();
+await seite.waitForTimeout(2000);
+const erfolgstext = await seite
+  .locator("form")
+  .first()
+  .innerText()
+  .then((t) => t.replace(/\s+/g, " ").slice(0, 400));
+console.log("Nach zulässigem Wert:", erfolgstext.includes("geändert durch") ? "übernommen ✓" : "NICHT übernommen ✗");
+console.log(" ", erfolgstext.slice(0, 220));
+await seite.screenshot({ path: `${ZIEL}/regel-uebernommen.png`, fullPage: false });
+
+await browser.close();

@@ -1,0 +1,161 @@
+"""Auswertung der Stempelungen zu einem Arbeitstag.
+
+Frei von Frappe-Abhaengigkeiten, damit die Rechnung ohne Bench pruefbar ist —
+sie ist Abrechnungsgrundlage und Arbeitszeitaufzeichnung zugleich und darf
+nicht falsch sein.
+
+Grundsatz: Stempelungen werden nie veraendert. Diese Auswertung liest sie und
+leitet daraus den Tag ab. Unvollstaendige Tage (fehlendes Ausstempeln) werden
+als solche gekennzeichnet und nicht geraten.
+
+Die Grenzwerte stammen aus `Baudoku Settings`; die Vorbelegungen orientieren
+sich am oesterreichischen Arbeitszeitgesetz und sind vor dem Produktivbetrieb
+arbeitsrechtlich zu bestaetigen.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from datetime import datetime
+
+EIN = "Ein"
+AUS = "Aus"
+PAUSE_BEGINN = "Pause Beginn"
+PAUSE_ENDE = "Pause Ende"
+
+
+@dataclass
+class Grenzwerte:
+	"""Konfiguration aus `Baudoku Settings` (Minuten)."""
+
+	tag_minuten: int = 600
+	woche_minuten: int = 3000
+	pause_ab_minuten: int = 360
+	pause_mindestens_minuten: int = 30
+
+
+@dataclass
+class Ereignis:
+	richtung: str
+	zeitpunkt: datetime
+
+
+@dataclass
+class Tagesauswertung:
+	beginn: datetime | None = None
+	ende: datetime | None = None
+	anwesenheit_minuten: int = 0
+	pause_minuten: int = 0
+	arbeitszeit_minuten: int = 0
+	vollstaendig: bool = False
+	pause_ausreichend: bool = True
+	ueber_tagesgrenze: bool = False
+	hinweise: list[str] = field(default_factory=list)
+
+	@property
+	def arbeitszeit_stunden(self) -> float:
+		return round(self.arbeitszeit_minuten / 60, 2)
+
+	@property
+	def hinweis(self) -> str:
+		return " | ".join(self.hinweise)
+
+
+def _minuten(von: datetime, bis: datetime) -> int:
+	return max(0, int((bis - von).total_seconds() // 60))
+
+
+def auswerten(ereignisse: list[Ereignis], grenzwerte: Grenzwerte | None = None) -> Tagesauswertung:
+	"""Rechnet die Stempelungen eines Tages zu Anwesenheit, Pause und Arbeitszeit.
+
+	Mehrfaches Ein- und Ausstempeln am selben Tag ist zulaessig — auf einer
+	Baustelle unterbricht man die Arbeit, faehrt Material holen und kommt
+	zurueck. Die Anwesenheit ist dann die Summe der Ein-Aus-Paare.
+	"""
+	gw = grenzwerte or Grenzwerte()
+	auswertung = Tagesauswertung()
+
+	sortiert = sorted(ereignisse, key=lambda e: e.zeitpunkt)
+	if not sortiert:
+		auswertung.hinweise.append("Keine Stempelungen vorhanden.")
+		return auswertung
+
+	auswertung.beginn = sortiert[0].zeitpunkt
+	auswertung.ende = sortiert[-1].zeitpunkt
+
+	offen_ein: datetime | None = None
+	offen_pause: datetime | None = None
+	paare = 0
+
+	for ereignis in sortiert:
+		if ereignis.richtung == EIN:
+			if offen_ein is not None:
+				auswertung.hinweise.append(
+					f"Zweimal eingestempelt ohne Ausstempeln ({ereignis.zeitpunkt:%H:%M})."
+				)
+			else:
+				offen_ein = ereignis.zeitpunkt
+
+		elif ereignis.richtung == AUS:
+			if offen_ein is None:
+				auswertung.hinweise.append(
+					f"Ausstempeln ohne vorheriges Einstempeln ({ereignis.zeitpunkt:%H:%M})."
+				)
+				continue
+			if offen_pause is not None:
+				# Ausstempeln waehrend einer laufenden Pause: Pause endet mit.
+				auswertung.pause_minuten += _minuten(offen_pause, ereignis.zeitpunkt)
+				offen_pause = None
+			auswertung.anwesenheit_minuten += _minuten(offen_ein, ereignis.zeitpunkt)
+			offen_ein = None
+			paare += 1
+
+		elif ereignis.richtung == PAUSE_BEGINN:
+			if offen_pause is None:
+				offen_pause = ereignis.zeitpunkt
+
+		elif ereignis.richtung == PAUSE_ENDE:
+			if offen_pause is None:
+				auswertung.hinweise.append(
+					f"Pausenende ohne Pausenbeginn ({ereignis.zeitpunkt:%H:%M})."
+				)
+				continue
+			auswertung.pause_minuten += _minuten(offen_pause, ereignis.zeitpunkt)
+			offen_pause = None
+
+	if offen_ein is not None:
+		auswertung.hinweise.append("Ausstempeln fehlt — der Tag ist unvollstaendig.")
+	if offen_pause is not None:
+		auswertung.hinweise.append("Pausenende fehlt.")
+
+	auswertung.vollstaendig = offen_ein is None and offen_pause is None and paare > 0
+	auswertung.arbeitszeit_minuten = max(
+		0, auswertung.anwesenheit_minuten - auswertung.pause_minuten
+	)
+
+	# --- Arbeitsrechtliche Hinweise -------------------------------------
+	if auswertung.arbeitszeit_minuten > gw.pause_ab_minuten:
+		if auswertung.pause_minuten < gw.pause_mindestens_minuten:
+			auswertung.pause_ausreichend = False
+			auswertung.hinweise.append(
+				f"Ruhepause unter {gw.pause_mindestens_minuten} min bei "
+				f"{auswertung.arbeitszeit_stunden:.2f} h Arbeitszeit."
+			)
+
+	if auswertung.arbeitszeit_minuten > gw.tag_minuten:
+		auswertung.ueber_tagesgrenze = True
+		auswertung.hinweise.append(
+			f"Arbeitszeit {auswertung.arbeitszeit_stunden:.2f} h ueber der Tagesgrenze "
+			f"von {gw.tag_minuten / 60:.0f} h."
+		)
+
+	if not auswertung.hinweise:
+		auswertung.hinweise.append("Ohne Beanstandung.")
+	return auswertung
+
+
+def wochensumme_ueberschritten(
+	minuten_der_woche: int, grenzwerte: Grenzwerte | None = None
+) -> bool:
+	gw = grenzwerte or Grenzwerte()
+	return minuten_der_woche > gw.woche_minuten

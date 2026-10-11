@@ -1,0 +1,121 @@
+import Link from "next/link";
+import type { Metadata } from "next";
+
+import { Card, Fehlerhinweis, Kennzahl, LeerZustand } from "@/components/ui";
+import { fehlerText } from "@/lib/fehler";
+import { formatEnergie, formatZahl } from "@/lib/format";
+import {
+  ladeAnlagen,
+  ladeDashboardZahlen,
+  type DashboardZahlen,
+} from "@/lib/portal-daten";
+import type { PvAnlage } from "@/lib/doctypes";
+import { requireUser } from "@/lib/session";
+
+export const metadata: Metadata = {
+  title: "Übersicht",
+};
+
+export default async function PortalUebersicht() {
+  const benutzer = await requireUser();
+
+  // Daten laden und Fehler abfangen, bevor JSX entsteht: Renderfehler
+  // wuerden ein try/catch ohnehin nicht erreichen.
+  let zahlen: DashboardZahlen;
+  let anlagen: PvAnlage[];
+
+  try {
+    [zahlen, anlagen] = await Promise.all([
+      ladeDashboardZahlen(),
+      ladeAnlagen(5),
+    ]);
+  } catch (error) {
+    return (
+      <div className="space-y-6">
+        <Kopf name={benutzer.vollname} />
+        <Fehlerhinweis meldung={fehlerText(error)} />
+      </div>
+    );
+  }
+
+  const ertrag = formatEnergie(zahlen.ertragLetzte30Tage);
+
+  return (
+    <div className="space-y-6">
+      <Kopf name={benutzer.vollname} />
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Kennzahl label="Anlagen" wert={formatZahl(zahlen.anlagen)} />
+        <Kennzahl
+          label="Gesamtleistung"
+          wert={formatZahl(zahlen.leistungKwp)}
+          einheit="kWp"
+        />
+        <Kennzahl
+          label="Ertrag"
+          wert={ertrag.wert}
+          einheit={ertrag.einheit}
+          hinweis="letzte 30 Tage"
+        />
+        <Kennzahl
+          label="Offene Störungen"
+          wert={formatZahl(zahlen.offeneStoerungen)}
+        />
+      </div>
+
+      <Card
+        title="Ihre Anlagen"
+        action={
+          <Link
+            href="/portal/anlagen"
+            className="text-sm text-emerald-700 hover:underline dark:text-emerald-400"
+          >
+            Alle anzeigen
+          </Link>
+        }
+      >
+        {anlagen.length === 0 ? (
+          <LeerZustand text="Für Ihr Konto sind noch keine Anlagen hinterlegt." />
+        ) : (
+          <ul className="divide-y divide-slate-100 dark:divide-slate-800">
+            {anlagen.map((anlage) => (
+              <li key={anlage.name}>
+                <Link
+                  href={`/portal/anlagen/${encodeURIComponent(anlage.name)}`}
+                  className="flex items-center justify-between gap-4 py-3 hover:opacity-70"
+                >
+                  <span>
+                    <span className="font-medium">
+                      {anlage.anlagen_name || anlage.name}
+                    </span>
+                    {anlage.standort && (
+                      <span className="block text-sm text-slate-500 dark:text-slate-400">
+                        {anlage.standort}
+                      </span>
+                    )}
+                  </span>
+                  <span className="text-sm whitespace-nowrap text-slate-500 tabular-nums dark:text-slate-400">
+                    {formatZahl(anlage.leistung_kwp)} kWp
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
+    </div>
+  );
+}
+
+function Kopf({ name }: { name: string }) {
+  return (
+    <div>
+      <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-50">
+        Willkommen, {name}
+      </h1>
+      <p className="mt-1 text-slate-500 dark:text-slate-400">
+        Überblick über Ihre Photovoltaikanlagen
+      </p>
+    </div>
+  );
+}

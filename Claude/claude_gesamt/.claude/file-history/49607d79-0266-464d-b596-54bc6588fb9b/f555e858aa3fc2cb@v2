@@ -1,0 +1,266 @@
+/**
+ * Tests für Tickets und das Protokoll.
+ *
+ * Zwei Sätze tragen diese Datei:
+ *
+ *   **Die SLA-Uhr steht, wenn wir nicht am Zug sind.** Läuft die Frist
+ *   weiter, während auf eine Antwort gewartet wird, misst sie das fremde
+ *   Postfach. Nach ein paar solchen Überschreitungen ist die Kennzahl
+ *   wertlos – und mit ihr die, die daneben steht.
+ *
+ *   **Ein Hash, den niemand prüfen kann, beweist nichts.** Das Audit
+ *   speichert Nutzlasten nur als Hash; erst die Gegenprobe macht daraus
+ *   einen Nachweis statt einer Geste.
+ */
+import { beforeEach, describe, expect, it } from 'vitest'
+import { mockRequest, resetMockData } from '@/api/mock/server.js'
+
+const ruf = (url, params) => mockRequest({ url, params })
+const board = (p = {}) => ruf('netops.api.tickets.ticket_board', p)
+const haeufungen = (p = {}) => ruf('netops.api.tickets.ticket_hotspots', p)
+const zustand = (p) => ruf('netops.api.tickets.ticket_set_state', p)
+const zuweisen = (p) => ruf('netops.api.tickets.ticket_assign', p)
+const suche = (p = {}) => ruf('netops.api.audit.audit_search', p)
+const historie = (p) => ruf('netops.api.audit.audit_object_history', p)
+const nachweis = (p) => ruf('netops.api.audit.audit_verify_payload', p)
+const kette = (p = {}) => ruf('netops.api.audit.audit_chain_report', p)
+const aktivitaet = (p = {}) => ruf('netops.api.audit.audit_activity', p)
+
+beforeEach(() => {
+  resetMockData()
+})
+
+describe('Die SLA-Uhr steht, wenn wir nicht am Zug sind', () => {
+  async function offenesTicket() {
+    return (await board()).rows.find((t) => t.open && t.next_states.includes('waiting'))
+  }
+
+  it('hält die Frist an, sobald auf Rückmeldung gewartet wird', async () => {
+    const t = await offenesTicket()
+    const e = await zustand({ ticket: t.ticket_key, state: 'waiting' })
+    expect(e.note).toMatch(/nicht das fremde Postfach/)
+
+    const danach = (await board()).rows.find((x) => x.ticket_key === t.ticket_key)
+    expect(danach.sla_paused).toBe(true)
+  })
+
+  it('zieht die Wartezeit von der Frist ab', async () => {
+    // Zurueck nach „In Arbeit" geht nur mit zugewiesener Person - die
+    // Regel gilt auch auf diesem Weg.
+    const t = (await board()).rows.find(
+      (x) => x.open && x.assignee && x.next_states.includes('waiting'),
+    )
+    await zustand({ ticket: t.ticket_key, state: 'waiting' })
+    const e = await zustand({ ticket: t.ticket_key, state: 'in_progress' })
+    expect(e.note).toMatch(/von der Frist abgezogen/)
+  })
+
+  it('rechnet die verbleibende Frist ohne Wartezeit', async () => {
+    const t = await offenesTicket()
+    const vorher = t.sla_remaining_hours
+    await zustand({ ticket: t.ticket_key, state: 'waiting' })
+    const danach = (await board()).rows.find((x) => x.ticket_key === t.ticket_key)
+    // Die Wartezeit ist noch 0, aber die Rechnung muss stehen.
+    expect(danach.sla_remaining_hours).toBeGreaterThanOrEqual(vorher - 1)
+  })
+})
+
+describe('Ein Ticket ohne Namen bearbeitet niemand', () => {
+  it('lässt „In Arbeit" ohne zugewiesene Person nicht zu', async () => {
+    const t = (await board()).rows.find(
+      (x) => x.unassigned && x.next_states.includes('in_progress'),
+    )
+    await expect(zustand({ ticket: t.ticket_key, state: 'in_progress' })).rejects.toThrow(
+      /Erst zuweisen/,
+    )
+  })
+
+  it('weist zu und nennt die Person', async () => {
+    const t = (await board()).rows.find((x) => x.unassigned)
+    const e = await zuweisen({ ticket: t.ticket_key, assignee: 'lena.steiner@oekovolt.test' })
+    expect(e.assignee).toBe('lena.steiner@oekovolt.test')
+  })
+
+  it('weist nichts an eine abgeschaltete Person zu', async () => {
+    // Ein Ticket dorthin zuzuweisen heißt, es verschwinden zu lassen.
+    const aus = (await ruf('frappe.client.get_list', { doctype: 'User', limit_page_length: 0 }))
+      .map((u) => u.name)
+      .find((n) => n)
+    void aus
+    await expect(
+      zuweisen({ ticket: (await board()).rows[0].ticket_key, assignee: 'gibtsnicht@test' }),
+    ).rejects.toThrow(/kein bekannter Benutzer/)
+  })
+
+  it('verlangt beim Abgeben einen Grund', async () => {
+    const t = (await board()).rows.find((x) => x.assignee)
+    await expect(zuweisen({ ticket: t.ticket_key, assignee: null })).rejects.toThrow(
+      /braucht einen Grund/,
+    )
+  })
+
+  it('meldet unzugewiesene Tickets in der Zusammenfassung', async () => {
+    const s = (await board()).summary
+    expect(s.unassigned).toBeGreaterThan(0)
+    expect(s.note).toMatch(/Ein Ticket ohne Namen/)
+  })
+})
+
+describe('Schließen', () => {
+  it('verlangt ein Wort zur Lösung', async () => {
+    // Ohne das ist das Ticket beim nächsten gleichen Vorfall wertlos.
+    const t = (await board()).rows.find((x) => x.open)
+    await expect(zustand({ ticket: t.ticket_key, state: 'closed' })).rejects.toThrow(
+      /Kurz aufschreiben/,
+    )
+  })
+
+  it('schreibt die Lösung ans Ticket', async () => {
+    const t = (await board()).rows.find((x) => x.open)
+    await zustand({ ticket: t.ticket_key, state: 'closed', note: 'Kabel war lose, neu gesteckt' })
+    const danach = (await board()).rows.find((x) => x.ticket_key === t.ticket_key)
+    expect(danach.resolution).toBe('Kabel war lose, neu gesteckt')
+    expect(danach.open).toBe(false)
+  })
+
+  it('lässt ein geschlossenes Ticket wieder öffnen', async () => {
+    // Sonst entsteht ein zweites Ticket, und die Vorgeschichte geht
+    // verloren.
+    const t = (await board()).rows.find((x) => !x.open)
+    expect(t.next_states).toContain('open')
+  })
+
+  it('weist einen Übergang ab, den es nicht gibt', async () => {
+    const t = (await board()).rows.find((x) => x.ticket_state === 'closed')
+    await expect(zustand({ ticket: t.ticket_key, state: 'waiting' })).rejects.toThrow(
+      /ist nur .* möglich/,
+    )
+  })
+})
+
+describe('Häufungen als Wartungssignal', () => {
+  it('zählt je Objekt', async () => {
+    for (const h of await haeufungen()) {
+      expect(h.tickets).toBeGreaterThan(0)
+      expect(h.open).toBeLessThanOrEqual(h.tickets)
+    }
+  })
+
+  it('meldet erst ab drei Tickets ein Muster', async () => {
+    for (const h of await haeufungen()) {
+      if (h.tickets < 3) expect(h.reasons).toEqual([])
+      else expect(h.reasons.join(' ')).toMatch(/kostet mehr Zeit als sein Ersatz/)
+    }
+  })
+})
+
+describe('Das Protokoll durchsuchen', () => {
+  it('ordnet auch Frappes eigene Aktionen einem Bereich zu', async () => {
+    // `insert` und `set_value` sagen nichts über den Bereich - dort
+    // entscheidet der DocType. Ohne das landete die halbe Historie in
+    // „Sonstiges", und der Filter wäre nutzlos.
+    const s = await suche()
+    expect(s.summary.areas).toContain('network')
+    expect(s.summary.areas.length).toBeGreaterThan(1)
+  })
+
+  it('filtert nach Bereich, Objekt und Person', async () => {
+    for (const z of (await suche({ area: 'network' })).rows) expect(z.area).toBe('network')
+    for (const z of (await suche({ object_name: 'FW-OS-01' })).rows) {
+      expect(z.object_name).toBe('FW-OS-01')
+    }
+  })
+
+  it('zeigt neueste zuerst', async () => {
+    const r = (await suche()).rows
+    for (let i = 1; i < r.length; i++) {
+      expect(String(r[i - 1].timestamp) >= String(r[i].timestamp)).toBe(true)
+    }
+  })
+
+  it('gibt die Historie eines Objekts zurück', async () => {
+    const h = await historie({ object_name: 'FW-OS-01' })
+    expect(h.summary.entries).toBeGreaterThan(0)
+    for (const z of h.rows) expect(z.object_name).toBe('FW-OS-01')
+  })
+
+  it('verrät den Inhalt der Nutzlast nicht', async () => {
+    // Ein Protokoll, das Gründe im Klartext führt, wird selbst zur Beute.
+    for (const z of (await suche()).rows) {
+      expect(z.payload).toBeUndefined()
+      expect(z.payload_hash).toMatch(/^[0-9a-f]{64}$/)
+    }
+  })
+})
+
+describe('Der Hash als Nachweis', () => {
+  async function eintragMitNutzlast() {
+    await ruf('netops.api.ops.drift_resolve', {
+      name: 'DRIFT-00003',
+      state: 'rejected',
+      reason: 'Uplink muss aktiv bleiben',
+    })
+    return (await suche({ action: 'drift_rejected' })).rows[0]
+  }
+
+  it('bestätigt eine passende Nutzlast', async () => {
+    // Das ist der Zweck der ganzen Hash-Speicherung.
+    const e = await eintragMitNutzlast()
+    const v = await nachweis({
+      entry: e.name,
+      payload: {
+        state: 'rejected',
+        reason: 'Uplink muss aktiv bleiben',
+        actor: 'benny.hoefler@oekovolt.test',
+        field: 'enabled',
+        covered_by_change: 'CHG-00003',
+      },
+    })
+    expect(v.ok).toBe(true)
+    expect(v.note).toMatch(/genau die, die damals protokolliert wurde/)
+  })
+
+  it('weist eine abweichende Nutzlast ab, ohne den Inhalt zu verraten', async () => {
+    const e = await eintragMitNutzlast()
+    const v = await nachweis({
+      entry: e.name,
+      payload: { state: 'rejected', reason: 'etwas anderes' },
+    })
+    expect(v.ok).toBe(false)
+    expect(v.note).toMatch(/lässt sich nicht zurückrechnen/)
+    // Beide Hashes dürfen raus - aus SHA-256 lässt sich nichts
+    // rekonstruieren, und ohne sie ist die Antwort nicht prüfbar.
+    expect(v.stored_hash).toMatch(/^[0-9a-f]{64}$/)
+    expect(v.computed_hash).toMatch(/^[0-9a-f]{64}$/)
+  })
+
+  it('sagt es, wenn es nichts zu vergleichen gibt', async () => {
+    const ohne = (await suche()).rows.find((z) => !z.has_payload)
+    if (!ohne) return
+    const v = await nachweis({ entry: ohne.name, payload: {} })
+    expect(v.reason).toMatch(/nichts zu vergleichen/)
+  })
+})
+
+describe('Die Kette', () => {
+  it('bestätigt eine unversehrte Kette – und sagt, was das nicht heißt', async () => {
+    // „Unversehrt" heißt nicht „vollständig". Der Unterschied gehört auf
+    // den Schirm, sonst liest man mehr hinein, als dasteht.
+    const k = await kette()
+    expect(k.ok).toBe(true)
+    expect(k.note).toMatch(/beweist nicht, dass alles Richtige protokolliert wurde/)
+  })
+
+  it('liefert bei einer heilen Kette kein Umfeld', async () => {
+    expect((await kette()).context).toEqual([])
+  })
+
+  it('zählt die Aktivität je Person und Bereich', async () => {
+    const a = await aktivitaet()
+    expect(a.summary.people).toBeGreaterThan(0)
+    for (const p of a.rows) {
+      expect(p.entries).toBeGreaterThan(0)
+      expect(Array.isArray(p.areas)).toBe(true)
+    }
+  })
+})

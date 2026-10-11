@@ -1,0 +1,245 @@
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+
+import {
+  KETTENANFANG,
+  eintragsHash,
+  haengeAn,
+  konfigurationsFingerabdruck,
+  pruefeKette,
+  type Protokolleintrag,
+} from "./kette.ts";
+
+/**
+ * Auf dieses Protokoll stützt sich der Nachweis gegenüber Behörde und
+ * Auditor. Wenn eine nachträgliche Änderung unentdeckt bleibt, ist der
+ * gesamte Nachweis wertlos - und niemand merkt es, bis er gebraucht
+ * wird.
+ */
+
+function kette(anzahl: number): Protokolleintrag[] {
+  const eintraege: Protokolleintrag[] = [];
+  let vorheriger: Protokolleintrag | null = null;
+
+  for (let i = 1; i <= anzahl; i++) {
+    vorheriger = haengeAn(vorheriger, {
+      zeitpunkt: `2026-09-15T08:0${i}:00.000Z`,
+      ereignis: `Ereignis ${i}`,
+      urheber: "drift-worker",
+      herkunft: "10.42.10.5",
+      inhalt: `Befund ${i}`,
+    });
+    eintraege.push(vorheriger);
+  }
+
+  return eintraege;
+}
+
+describe("konfigurationsFingerabdruck", () => {
+  it("liefert für denselben Satz denselben Wert", () => {
+    const a = konfigurationsFingerabdruck([
+      { schluessel: "wirkleistung_grenze", wert: 70 },
+      { schluessel: "parkregler_sollwert", wert: 525 },
+    ]);
+    const b = konfigurationsFingerabdruck([
+      { schluessel: "wirkleistung_grenze", wert: 70 },
+      { schluessel: "parkregler_sollwert", wert: 525 },
+    ]);
+
+    assert.equal(a, b);
+  });
+
+  it("ist von der Reihenfolge unabhängig", () => {
+    // Ein Gerät, das seine Register in anderer Reihenfolge liefert,
+    // hat deswegen keine andere Konfiguration.
+    const a = konfigurationsFingerabdruck([
+      { schluessel: "a", wert: 1 },
+      { schluessel: "b", wert: 2 },
+    ]);
+    const b = konfigurationsFingerabdruck([
+      { schluessel: "b", wert: 2 },
+      { schluessel: "a", wert: 1 },
+    ]);
+
+    assert.equal(a, b);
+  });
+
+  it("behandelt 70 und 70.0 als denselben Wert", () => {
+    // Sonst meldete die Drifterkennung eine Abweichung, nur weil der
+    // Wert einmal aus der Datenbank und einmal über Modbus kam.
+    assert.equal(
+      konfigurationsFingerabdruck([{ schluessel: "grenze", wert: 70 }]),
+      konfigurationsFingerabdruck([{ schluessel: "grenze", wert: 70.0 }]),
+    );
+  });
+
+  it("ändert sich bei der kleinsten Wertänderung", () => {
+    const vorher = konfigurationsFingerabdruck([
+      { schluessel: "frequenz_ueber_ab", wert: 51.5 },
+    ]);
+    const nachher = konfigurationsFingerabdruck([
+      { schluessel: "frequenz_ueber_ab", wert: 51.51 },
+    ]);
+
+    assert.notEqual(vorher, nachher);
+  });
+
+  it("unterscheidet verschobene Trennstellen", () => {
+    // Ohne eigenes Trennzeichen ergäbe {ab: "c"} denselben Hash wie
+    // {a: "bc"} - und eine Umbenennung bliebe unentdeckt.
+    const a = konfigurationsFingerabdruck([{ schluessel: "ab", wert: "c" }]);
+    const b = konfigurationsFingerabdruck([{ schluessel: "a", wert: "bc" }]);
+
+    assert.notEqual(a, b);
+  });
+
+  it("unterscheidet einen fehlenden von einem leeren Wert", () => {
+    const fehlt = konfigurationsFingerabdruck([
+      { schluessel: "x", wert: null },
+    ]);
+    const leer = konfigurationsFingerabdruck([{ schluessel: "x", wert: "" }]);
+
+    assert.notEqual(fehlt, leer);
+  });
+
+  it("liefert einen Hash fester Länge", () => {
+    const h = konfigurationsFingerabdruck([{ schluessel: "x", wert: 1 }]);
+    assert.equal(h.length, 64);
+    assert.match(h, /^[0-9a-f]{64}$/);
+  });
+});
+
+describe("haengeAn", () => {
+  it("beginnt beim Kettenanfang", () => {
+    const erster = haengeAn(null, {
+      zeitpunkt: "2026-09-15T08:00:00.000Z",
+      ereignis: "Start",
+      urheber: "system",
+      herkunft: "lokal",
+      inhalt: "",
+    });
+
+    assert.equal(erster.folge, 1);
+    assert.equal(erster.vorgaenger, KETTENANFANG);
+  });
+
+  it("zählt fort und verweist auf den Vorgänger", () => {
+    const e = kette(3);
+
+    assert.deepEqual(
+      e.map((x) => x.folge),
+      [1, 2, 3],
+    );
+    assert.equal(e[1].vorgaenger, e[0].hash);
+    assert.equal(e[2].vorgaenger, e[1].hash);
+  });
+
+  it("erzeugt für gleichen Inhalt an anderer Stelle einen anderen Hash", () => {
+    // Weil der Vorgängerhash mit einfließt. Sonst ließen sich Einträge
+    // umsortieren, ohne dass es auffällt.
+    const a = haengeAn(null, {
+      zeitpunkt: "2026-09-15T08:00:00.000Z",
+      ereignis: "gleich",
+      urheber: "u",
+      herkunft: "h",
+      inhalt: "i",
+    });
+    const b = haengeAn(a, {
+      zeitpunkt: "2026-09-15T08:00:00.000Z",
+      ereignis: "gleich",
+      urheber: "u",
+      herkunft: "h",
+      inhalt: "i",
+    });
+
+    assert.notEqual(a.hash, b.hash);
+  });
+});
+
+describe("pruefeKette", () => {
+  it("nimmt eine unveränderte Kette an", () => {
+    const p = pruefeKette(kette(5));
+
+    assert.equal(p.gueltig, true);
+    assert.equal(p.geprueft, 5);
+    assert.equal(p.bruchBei, null);
+  });
+
+  it("nimmt ein leeres Protokoll an", () => {
+    const p = pruefeKette([]);
+
+    assert.equal(p.gueltig, true);
+    assert.equal(p.geprueft, 0);
+  });
+
+  it("erkennt einen nachträglich geänderten Inhalt", () => {
+    const e = kette(5);
+    // Jemand schreibt den Befund um, lässt den Hash aber stehen.
+    e[2] = { ...e[2], inhalt: "harmlos" };
+
+    const p = pruefeKette(e);
+
+    assert.equal(p.gueltig, false);
+    assert.equal(p.fehler, "hash_falsch");
+    assert.equal(p.bruchBei, 3);
+  });
+
+  it("erkennt eine geänderte Herkunft", () => {
+    // Die Herkunft ist bei einem Vorfall die erste Frage. Wer sie
+    // ändert, muss auffallen.
+    const e = kette(4);
+    e[1] = { ...e[1], herkunft: "10.0.0.1" };
+
+    const p = pruefeKette(e);
+
+    assert.equal(p.gueltig, false);
+    assert.equal(p.fehler, "hash_falsch");
+    assert.equal(p.bruchBei, 2);
+  });
+
+  it("erkennt einen entfernten Eintrag in der Mitte", () => {
+    const e = kette(5);
+    e.splice(2, 1);
+
+    const p = pruefeKette(e);
+
+    assert.equal(p.gueltig, false);
+    assert.equal(p.fehler, "folge_falsch");
+    assert.equal(p.bruchBei, 4);
+  });
+
+  it("erkennt entfernte Einträge am Anfang", () => {
+    // Hashes und Verweise wären für sich stimmig - nur der Anfang
+    // verrät, dass etwas fehlt.
+    const e = kette(5).slice(2);
+
+    const p = pruefeKette(e);
+
+    assert.equal(p.gueltig, false);
+    assert.equal(p.fehler, "anfang_falsch");
+  });
+
+  it("erkennt einen ausgetauschten Eintrag mit neu gerechnetem Hash", () => {
+    // Wer den Hash mitrechnet, bricht den Verweis des nächsten
+    // Eintrags - genau dafür ist die Verkettung da.
+    const e = kette(5);
+    const ersetzt = { ...e[2], inhalt: "gefälscht" };
+    e[2] = { ...ersetzt, hash: eintragsHash(ersetzt) };
+
+    const p = pruefeKette(e);
+
+    assert.equal(p.gueltig, false);
+    assert.equal(p.fehler, "vorgaenger_falsch");
+    assert.equal(p.bruchBei, 4);
+  });
+
+  it("nennt die Bruchstelle im Klartext", () => {
+    const e = kette(3);
+    e[1] = { ...e[1], ereignis: "verändert" };
+
+    const p = pruefeKette(e);
+
+    assert.ok(p.begruendung.includes("2"));
+    assert.ok(p.begruendung.length > 20);
+  });
+});

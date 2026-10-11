@@ -1,0 +1,178 @@
+/**
+ * Lokaler Offline-Speicher (IndexedDB via Dexie) — NFA-011.
+ *
+ * Tabellen:
+ * - `stammdaten`  Key/Value-Cache aus `sync.bootstrap` (Anlagen, Vorlagen, Kategorien)
+ * - `protokolle`, `maengel`, `berichte`  Arbeitsdokumente, jeweils mit lokaler UUID
+ * - `warteschlange`  ausstehende Schreiboperationen für den nächsten Sync
+ * - `fotos`  Blobs, die noch hochgeladen werden müssen
+ * - `konflikte`  vom Server abgelehnte lokale Fassungen (Server gewinnt, Kapitel 7.4)
+ */
+
+import Dexie, { type Table } from 'dexie'
+
+import type { Mangel, Protokoll, Tagesbericht } from './typen'
+
+export type Dokumenttyp = 'Pruefprotokoll' | 'Mangel' | 'Tagesbericht'
+
+export interface WarteschlangeEintrag {
+  id?: number
+  lokale_id: string
+  doctype: Dokumenttyp
+  aktion: 'create' | 'update'
+  daten: Record<string, unknown>
+  basis_modified?: string
+  erstellt_am: string
+  versuche: number
+  letzter_fehler?: string
+}
+
+export interface FotoEintrag {
+  lokale_id: string
+  dateiname: string
+  blob: Blob
+  groesse: number
+  hash: string
+  aufgenommen_am: string
+  gps_lat?: number
+  gps_lng?: number
+  beschriftung?: string
+  /** Gesetzt, sobald der Server die Datei bestätigt hat. */
+  file_url?: string
+  gehoert_zu?: string
+  /** Fehlgeschlagene Uploadversuche; ab `MAX_FOTO_VERSUCHE` wird übersprungen. */
+  versuche?: number
+  letzter_fehler?: string
+}
+
+export interface KonfliktEintrag {
+  id?: number
+  lokale_id: string
+  doctype: Dokumenttyp
+  lokale_fassung: Record<string, unknown>
+  server_fassung: Record<string, unknown>
+  erkannt_am: string
+  gesichtet: 0 | 1
+}
+
+export interface StammdatenEintrag {
+  schluessel: string
+  wert: unknown
+  aktualisiert_am: string
+}
+
+class BaudokuDatenbank extends Dexie {
+  stammdaten!: Table<StammdatenEintrag, string>
+  protokolle!: Table<Protokoll, string>
+  maengel!: Table<Mangel, string>
+  berichte!: Table<Tagesbericht, string>
+  warteschlange!: Table<WarteschlangeEintrag, number>
+  fotos!: Table<FotoEintrag, string>
+  konflikte!: Table<KonfliktEintrag, number>
+
+  constructor() {
+    super('oekovolt-baudoku')
+    this.version(1).stores({
+      stammdaten: 'schluessel',
+      protokolle: 'lokale_id, name, anlage, status, pruef_datum, modified',
+      maengel: 'lokale_id, name, anlage, status, schweregrad, faellig_am',
+      berichte: 'lokale_id, name, anlage, datum, status',
+      warteschlange: '++id, lokale_id, doctype, erstellt_am',
+      fotos: 'lokale_id, gehoert_zu, file_url',
+      konflikte: '++id, lokale_id, gesichtet',
+    })
+  }
+}
+
+export const db = new BaudokuDatenbank()
+
+/** Lokale Tabelle zu einem synchronisierbaren Dokumenttyp. */
+export function tabelleFuer(doctype: Dokumenttyp) {
+  if (doctype === 'Pruefprotokoll') return db.protokolle
+  if (doctype === 'Mangel') return db.maengel
+  return db.berichte
+}
+
+/** RFC-4122-UUID, auch in Kontexten ohne `crypto.randomUUID` (älteres iOS). */
+export function neueId(): string {
+  const quelle = globalThis.crypto
+  if (typeof quelle?.randomUUID === 'function') return quelle.randomUUID()
+  const bytes = new Uint8Array(16)
+  quelle.getRandomValues(bytes)
+  bytes[6] = (bytes[6] & 0x0f) | 0x40
+  bytes[8] = (bytes[8] & 0x3f) | 0x80
+  const hex = [...bytes].map((b) => b.toString(16).padStart(2, '0'))
+  return `${hex.slice(0, 4).join('')}-${hex.slice(4, 6).join('')}-${hex.slice(6, 8).join('')}-${hex
+    .slice(8, 10)
+    .join('')}-${hex.slice(10).join('')}`
+}
+
+export async function stammdatenLesen<T>(schluessel: string): Promise<T | undefined> {
+  const eintrag = await db.stammdaten.get(schluessel)
+  return eintrag?.wert as T | undefined
+}
+
+export async function stammdatenSchreiben(schluessel: string, wert: unknown): Promise<void> {
+  await db.stammdaten.put({ schluessel, wert, aktualisiert_am: new Date().toISOString() })
+}
+
+/** Legt eine Schreiboperation in die Warteschlange (dedupliziert je Dokument). */
+export async function einreihen(
+  doctype: Dokumenttyp,
+  lokale_id: string,
+  daten: Record<string, unknown>,
+  aktion: 'create' | 'update' = 'update',
+  basis_modified?: string,
+): Promise<void> {
+  const vorhanden = await db.warteschlange.where('lokale_id').equals(lokale_id).first()
+  if (vorhanden?.id) {
+    // Noch nicht übertragen: die neueren Daten ersetzen den alten Stand,
+    // die ursprüngliche Aktion (create) bleibt erhalten.
+    await db.warteschlange.update(vorhanden.id, {
+      daten,
+      basis_modified: basis_modified ?? vorhanden.basis_modified,
+      versuche: 0,
+      letzter_fehler: undefined,
+    })
+    return
+  }
+  await db.warteschlange.add({
+    lokale_id,
+    doctype,
+    aktion,
+    daten,
+    basis_modified,
+    erstellt_am: new Date().toISOString(),
+    versuche: 0,
+  })
+}
+
+export async function warteschlangeGroesse(): Promise<number> {
+  return db.warteschlange.count()
+}
+
+/** Fotos, die dauerhaft scheitern — sichtbar in den Einstellungen. */
+export async function fehlgeschlageneFotos(maxVersuche: number): Promise<FotoEintrag[]> {
+  return db.fotos.filter((f) => !f.file_url && (f.versuche ?? 0) >= maxVersuche).toArray()
+}
+
+/** Belegter Fotopuffer in MB (Grenze aus den Einstellungen, Kapitel 7.4). */
+export async function fotoPufferMb(): Promise<number> {
+  const offene = await db.fotos.filter((f) => !f.file_url).toArray()
+  const bytes = offene.reduce((summe, foto) => summe + foto.groesse, 0)
+  return Math.round((bytes / 1024 / 1024) * 10) / 10
+}
+
+/** Räumt hochgeladene Fotos und alte Konflikte auf. */
+export async function aufraeumen(tageBehalten = 7): Promise<{ fotos: number; konflikte: number }> {
+  const grenze = new Date(Date.now() - tageBehalten * 86400_000).toISOString()
+  const fotos = await db.fotos
+    .filter((f) => Boolean(f.file_url) && f.aufgenommen_am < grenze)
+    .toArray()
+  await db.fotos.bulkDelete(fotos.map((f) => f.lokale_id))
+
+  const konflikte = await db.konflikte.filter((k) => k.gesichtet === 1 && k.erkannt_am < grenze).toArray()
+  await db.konflikte.bulkDelete(konflikte.map((k) => k.id!).filter(Boolean))
+
+  return { fotos: fotos.length, konflikte: konflikte.length }
+}

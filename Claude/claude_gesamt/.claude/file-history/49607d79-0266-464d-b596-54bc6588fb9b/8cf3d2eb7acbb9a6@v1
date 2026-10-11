@@ -1,0 +1,108 @@
+/**
+ * PLATZHALTER-DATENMODELL.
+ *
+ * Diese Doctypes sind geraten, damit die App von der ersten Minute an mit
+ * echten Listen, Detailseiten und Formularen laeuft. Sobald das tatsaechliche
+ * Datenmodell feststeht, wird nur diese Datei ersetzt - der Rest der App
+ * haengt allein an den Doctype-Namen und Feldnamen.
+ */
+import { defineDoctype } from './db.js'
+
+defineDoctype('Organisation', {
+  naming: (doc, index) => `ORG-${String(index).padStart(4, '0')}`,
+  fields: ['organisation_name', 'branche', 'ort', 'website', 'status'],
+  seed: [
+    {
+      organisation_name: 'Nordlicht Logistik GmbH',
+      branche: 'Logistik',
+      ort: 'Hamburg',
+      website: 'https://nordlicht-logistik.example',
+      status: 'Aktiv',
+    },
+    {
+      organisation_name: 'Adler Sicherheitsdienst',
+      branche: 'Sicherheit',
+      ort: 'Berlin',
+      website: 'https://adler-sicherheit.example',
+      status: 'Aktiv',
+    },
+    {
+      organisation_name: 'Rheinwerk Consulting',
+      branche: 'Beratung',
+      ort: 'Köln',
+      website: 'https://rheinwerk.example',
+      status: 'Archiviert',
+    },
+  ],
+})
+
+defineDoctype('Kontakt', {
+  naming: (doc, index) => `KON-${String(index).padStart(4, '0')}`,
+  fields: ['vorname', 'nachname', 'rolle', 'organisation', 'email', 'telefon', 'status'],
+  seed: [
+    {
+      vorname: 'Marlene',
+      nachname: 'Bergmann',
+      rolle: 'Geschäftsführung',
+      organisation: 'ORG-0001',
+      email: 'm.bergmann@nordlicht-logistik.example',
+      telefon: '+49 40 1234567',
+      status: 'Aktiv',
+    },
+    {
+      vorname: 'Tarek',
+      nachname: 'Özdemir',
+      rolle: 'Einsatzleitung',
+      organisation: 'ORG-0002',
+      email: 't.oezdemir@adler-sicherheit.example',
+      telefon: '+49 30 7654321',
+      status: 'Aktiv',
+    },
+    {
+      vorname: 'Johanna',
+      nachname: 'Krüger',
+      rolle: 'Senior Consultant',
+      organisation: 'ORG-0003',
+      email: 'j.krueger@rheinwerk.example',
+      telefon: '+49 221 998877',
+      status: 'Inaktiv',
+    },
+    {
+      vorname: 'Paul',
+      nachname: 'Wendt',
+      rolle: 'Disposition',
+      organisation: 'ORG-0001',
+      email: 'p.wendt@nordlicht-logistik.example',
+      telefon: '+49 40 1234568',
+      status: 'Aktiv',
+    },
+  ],
+})
+
+defineDoctype('Verbindung', {
+  naming: (doc, index) => `VER-${String(index).padStart(4, '0')}`,
+  fields: ['von_kontakt', 'zu_kontakt', 'art', 'staerke', 'notiz'],
+  seed: [
+    {
+      von_kontakt: 'KON-0001',
+      zu_kontakt: 'KON-0002',
+      art: 'Geschäftlich',
+      staerke: 3,
+      notiz: 'Gemeinsames Projekt Hafenlogistik',
+    },
+    {
+      von_kontakt: 'KON-0001',
+      zu_kontakt: 'KON-0004',
+      art: 'Kollegial',
+      staerke: 5,
+      notiz: 'Gleiche Organisation',
+    },
+    {
+      von_kontakt: 'KON-0002',
+      zu_kontakt: 'KON-0003',
+      art: 'Empfehlung',
+      staerke: 2,
+      notiz: '',
+    },
+  ],
+})

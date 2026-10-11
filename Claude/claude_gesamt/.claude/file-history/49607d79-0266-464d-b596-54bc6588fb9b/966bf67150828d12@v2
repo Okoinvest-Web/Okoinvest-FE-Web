@@ -1,0 +1,123 @@
+"""Ergaenzt den CHANGELOG um die vierte Ausbaustufe."""
+import io
+
+NEU = """# Änderungsverlauf
+
+## 2026-09-18 (4) – Fachkonzept weitgehend abgedeckt
+
+36 Seiten, 71 Server-Methoden, 67 DocTypes, 258 Tests.
+
+### Hinzugefügt
+
+**Dienste und Auswirkungsanalyse** (Fachkonzept 2.9)
+
+- Die Kette Geschäftsdienst → VM → Host → Switch → Firewall → Provider steht
+  als Beziehungsgraph im Datenmodell.
+- `impact_analysis` beantwortet beide Richtungen: „Was fällt aus, wenn X
+  ausfällt?" und „Wovon hängt X ab?" – mit Weg, Entfernung, betroffenen
+  Diensten und Benutzerzahl. Objekte ohne Alternativweg werden als
+  Einzelfehlerpunkt markiert.
+
+**Kommunikationsmatrix** (Fachkonzept 2.4)
+
+- Wird aus den Regelwerken erzeugt statt von Hand gepflegt. Zonen kommen über
+  das VLAN des jeweiligen Präfix; die Trefferzahl daneben zeigt, ob eine
+  erlaubte Verbindung auch genutzt wird.
+
+**Virtualisierung und Speicher** (Fachkonzept 2.5)
+
+- Cluster mit Knoten und Quorum-Bewertung, Gäste mit Backup-Bezug, Pools und
+  Datasets mit Gesundheit, Scrub-Alter und Replikation.
+
+**E-Mail-Sicherheit** (Fachkonzept 2.15)
+
+- PMG-Kaskade und IRONSCALES in einer Ansicht. Die aussagekräftige Zahl ist
+  nicht die Summe beider, sondern was die Kaskade durchgelassen hat.
+- SPF, DKIM und DMARC im Soll/Ist-Vergleich.
+
+**Cloud und Zero Trust** (Fachkonzept 2.14)
+
+- Hetzner-Server, Cloud-Firewallregeln und Cloudflare-Access-Anwendungen
+  zusammengeführt. Erst dadurch fällt auf, dass ein Server mit offenem Port 22
+  den Tunnel aushebelt.
+
+**Identitäten** (Fachkonzept 2.13)
+
+- MFA-Abdeckung als Kennzahl, Token-Inventar mit Ablauf und Rotation.
+  Notfallzugänge gelten bewusst nicht als auffällig.
+
+**Externe Angriffsfläche** (Fachkonzept 2.13)
+
+- Öffentliche Dienste gegen die dokumentierten Freigaben, Zertifikate aus dem
+  CT-Log gegen die DNS-Doku, IoC-Treffer und Scan-Governance. Ein aggressives
+  Scanprofil auf einem OT-Netz wird beanstandet.
+
+**Change-Workflow** (Fachkonzept 2.10)
+
+- Antrag → Prüfung → Freigabe → Umsetzung → Verifikation mit erzwungenen
+  Übergängen. Niemand gibt seinen eigenen Antrag frei; hohes Risiko verlangt
+  zwei verschiedene Freigebende. Jeder Wechsel landet in der Audit-Kette.
+
+**Compliance** (Fachkonzept 2.12)
+
+- NIS2-Bericht, der jeden Nachweis aus den vorhandenen Daten zieht. Was sich
+  nicht belegen lässt, steht als „nicht belegbar" da, nicht als erfüllt.
+
+**Strompfad** (Fachkonzept 2.2)
+
+- USV → PDU → Netzteil mit Redundanzprüfung und Ausfallsimulation. Zwei
+  Netzteile am selben Strang werden als fehlende Redundanz erkannt – der Fall,
+  den eine reine Zählung übersieht.
+
+**Netzdienste** (Fachkonzept 2.3)
+
+- VPN mit Handshake-Alter und Erkennung schwacher Verfahren, WLAN mit
+  VLAN-Bezug, DNS im Abgleich gegen das IPAM, Routen mit Erkennung toter Wege
+  über getrennte Tunnel.
+
+**Grundriss, Tickets, Fernwartung**
+
+- Vereinfachte Raumgeometrie mit Dosen, Racks, Access Points und Glaswand;
+  eine Dose zeigt, worauf sie gepatcht ist.
+- Tickets mit Objektbezug und SLA-Bewertung.
+- Agenten und Sitzungen der Fernwartung mit Ticketbezug, Aufzeichnung und
+  Step-up als Pflichtnachweis.
+
+**Querschnitt**
+
+- Mandantenwahl in der Seitenleiste, zentral im Fetcher – dort, wo im echten
+  Frappe die Rechteregel sitzt.
+- Dunkles Farbschema über `data-theme`, durchgängig bis in die Frontplatte.
+- Leitstand-Screens 3, 5, 6 und 9 mit echten Daten statt Platzhaltern.
+
+### Behoben
+
+- **Dienste galten als ungesichert, obwohl sie gesichert sind.** Die
+  Verknüpfung lief über den Anzeigenamen; „BMD Buchhaltung" fand die Sicherung
+  „BMD" nicht. Jetzt über einen Schlüssel, mit Regressionstest.
+- **Firewall-Regelwerke verwiesen auf Netze, die im IPAM fehlten** (DMZ,
+  SECSOC, LAB). Die Kommunikationsmatrix zeigte dadurch eine Spalte „ohne
+  Zone". Präfixe ergänzt; Video und Gebäudetechnik bleiben bewusst ohne Netz,
+  damit der Befund „VLAN dokumentiert, aber nicht ausgerollt" erhalten bleibt.
+- **Zwei Quelldateien enthielten ein NUL-Byte** als Trennzeichen im
+  Graph-Schlüssel. Das ist gültiges JavaScript, lässt aber jedes Werkzeug die
+  Datei für binär halten – grep und Diffs verhalten sich dann anders als
+  erwartet. Ersetzt durch `::`.
+- Leere Achse „ohne Zone" in der Kommunikationsmatrix, wenn sie nicht vorkommt.
+- Nackter Farbpunkt ohne Beschriftung in den Leitstand-Kacheln.
+
+### Bewusst nicht gemacht
+
+- Echte Grundrisse als hinterlegte Pläne – die Geometrie ist vereinfacht und
+  stammt aus dem Datenmodell.
+- Logische und L3-Sicht der Topologie, MeshCentral-Einbettung, QR-Label.
+- Power-Aktionen auf Cloud-Servern: sie verlangen FIDO2-Step-up, Ticketbezug
+  und Audit-Eintrag und damit ein Backend.
+
+"""
+
+pfad = "CHANGELOG.md"
+text = io.open(pfad, encoding="utf-8").read()
+text = text.replace("# Änderungsverlauf\n\n", NEU, 1)
+io.open(pfad, "w", encoding="utf-8").write(text)
+print("CHANGELOG aktualisiert")

@@ -1,0 +1,17 @@
+import io
+
+p = "werkzeuge/datenbank.mjs"
+s = io.open(p, encoding="utf-8").read()
+
+# Zeilenumbrueche innerhalb von Zeichenketten wieder in \n verwandeln.
+s = s.replace(
+    'console.log("Technikdaten bereits vorhanden - uebersprungen.\n");',
+    'console.log("Technikdaten bereits vorhanden - uebersprungen.' + chr(92) + 'n");',
+)
+s = s.replace(
+    "Alarme in ${(technik.dauerMs / 1000).toFixed(1)} s\n`,",
+    "Alarme in ${(technik.dauerMs / 1000).toFixed(1)} s" + chr(92) + "n`,",
+)
+
+io.open(p, "w", encoding="utf-8", newline="\n").write(s)
+print("repariert")

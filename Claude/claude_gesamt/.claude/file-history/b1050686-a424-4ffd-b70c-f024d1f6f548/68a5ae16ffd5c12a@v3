@@ -1,0 +1,390 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+
+import { IconPfeilLinks } from "@/components/icon";
+import { Tabelle, Summenzeile, Zeile, Zelle } from "@/components/tabelle";
+import {
+  Angabe,
+  Hinweis,
+  Kennzahl,
+  Kennzahlenleiste,
+  Seitenkopf,
+  Status,
+  Tafel,
+} from "@/components/ui";
+import { formatZaehlpunkt } from "@/lib/at/zaehlpunkt";
+import {
+  ladeBeleg,
+  ladeLauf,
+  ladeTagesAufteilung,
+  ladeViertelstunden,
+} from "@/lib/daten/eeg";
+import { NETZ_ARBEITSPREIS_CT } from "@/lib/eeg/abrechnung";
+import {
+  formatDatum,
+  formatEnergie,
+  formatGeld,
+  formatProzent,
+  formatZahl,
+  formatZeit,
+} from "@/lib/format";
+import { requireRecht } from "@/lib/session";
+
+/**
+ * Beleg mit vollstaendigem Nachweis.
+ *
+ * Der eigentliche Wert dieser Seite liegt unten: Die abgerechnete Menge
+ * ist bis auf den einzelnen Tag und von dort bis auf die Viertelstunde
+ * aufgeschluesselt. Genau das wird gebraucht, wenn ein Teilnehmer
+ * fragt, wie der Betrag zustande kommt - und genau das fehlt in den
+ * meisten Abrechnungen.
+ */
+export default async function BelegSeite({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ beleg: string }>;
+  searchParams: Promise<{ tag?: string }>;
+}) {
+  await requireRecht("gemeinschaft.lesen");
+
+  const { beleg: belegId } = await params;
+  const { tag: gewaehlterTag } = await searchParams;
+
+  const beleg = ladeBeleg(decodeURIComponent(belegId));
+  if (!beleg) notFound();
+
+  const lauf = ladeLauf(beleg.lauf_id);
+  const tage = ladeTagesAufteilung(beleg.lauf_id, beleg.zaehlpunkt_id);
+
+  const istRechnung = beleg.art === "Rechnung";
+  const tagesWert = (t: (typeof tage)[number]) =>
+    istRechnung ? t.bezogen : t.geliefert;
+
+  // Stärkster Tag als Bezugsgröße für die Balkenbreite.
+  const hoechster = Math.max(...tage.map(tagesWert), 1);
+
+  const viertelstunden = gewaehlterTag
+    ? ladeViertelstunden(beleg.lauf_id, beleg.zaehlpunkt_id, gewaehlterTag)
+    : [];
+
+  const menge = formatEnergie(beleg.menge_kwh);
+  const preis = istRechnung ? lauf?.preis_ct_kwh : lauf?.erzeuger_ct_kwh;
+
+  return (
+    <div className="space-y-5">
+      <Seitenkopf
+        titel={beleg.nummer}
+        hinweis={`${beleg.art} · ${beleg.firma ?? ""} · ${formatDatum(beleg.zeitraum_von)} bis ${formatDatum(new Date(new Date(beleg.zeitraum_bis).getTime() - 1))}`}
+        zurueck={
+          <Link
+            href={`/portal/gemeinschaft/abrechnung/${beleg.lauf_id}`}
+            className="t-leise inline-flex items-center gap-1.5 hover:underline"
+          >
+            <IconPfeilLinks groesse={14} />
+            Zurück zum Abrechnungslauf
+          </Link>
+        }
+        aktion={
+          <Status
+            ton={
+              beleg.status === "Storniert"
+                ? "neutral"
+                : beleg.status === "Bezahlt"
+                  ? "gut"
+                  : "hinweis"
+            }
+          >
+            {beleg.status}
+          </Status>
+        }
+      />
+
+      {beleg.status === "Storniert" && (
+        <Hinweis ton="kritisch" titel="Dieser Beleg wurde storniert">
+          Der zugehörige Abrechnungslauf ist storniert. Der Beleg bleibt zur
+          Nachvollziehbarkeit erhalten, ist aber nicht mehr gültig.
+        </Hinweis>
+      )}
+
+      <Kennzahlenleiste>
+        <Kennzahl
+          label={istRechnung ? "Bezogene Menge" : "Gelieferte Menge"}
+          wert={menge.wert}
+          einheit={menge.einheit}
+          akzent
+        />
+        <Kennzahl
+          label="Preis"
+          wert={formatZahl(preis, 2)}
+          einheit="ct/kWh"
+        />
+        <Kennzahl label="Netto" wert={formatGeld(beleg.netto)} />
+        <Kennzahl
+          label="Brutto"
+          wert={formatGeld(beleg.brutto)}
+          hinweis={`inkl. ${formatProzent(beleg.ust_satz, 0)} USt`}
+        />
+      </Kennzahlenleiste>
+
+      {/* ---------------- Belegkopf ---------------- */}
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+        <Tafel titel="Beleg">
+          <dl className="space-y-0.5">
+            <Angabe label="Belegnummer">
+              <span className="font-mono">{beleg.nummer}</span>
+            </Angabe>
+            <Angabe label="Art">{beleg.art}</Angabe>
+            <Angabe label="Ausgestellt am">
+              {formatDatum(beleg.ausgestellt_am)}
+            </Angabe>
+            <Angabe label="Leistungszeitraum">
+              {formatDatum(beleg.zeitraum_von)} –{" "}
+              {formatDatum(new Date(new Date(beleg.zeitraum_bis).getTime() - 1))}
+            </Angabe>
+          </dl>
+        </Tafel>
+
+        <Tafel titel="Empfänger und Zählpunkt">
+          <dl className="space-y-0.5">
+            <Angabe label="Mitglied">{beleg.firma ?? "–"}</Angabe>
+            <Angabe label="Zählpunkt">
+              <span className="font-mono text-[0.75rem]">
+                {formatZaehlpunkt(beleg.bezeichnung)}
+              </span>
+            </Angabe>
+          </dl>
+          <p className="t-mikro mt-3 leading-relaxed">
+            Abgerechnet wird je Zählpunkt, nicht je Unternehmen. Ein Mitglied
+            mit mehreren Zählpunkten erhält entsprechend mehrere Belege.
+          </p>
+        </Tafel>
+      </div>
+
+      {/* ---------------- Betragsermittlung ---------------- */}
+      <Tafel titel="Betragsermittlung" dicht>
+        <Tabelle
+          spalten={[
+            { titel: "Position" },
+            { titel: "Menge", zahl: true },
+            { titel: "Einzelpreis", zahl: true },
+            { titel: "Betrag", zahl: true },
+          ]}
+          mindestbreite="32rem"
+        >
+          <Zeile>
+            <Zelle>
+              {istRechnung
+                ? "Strombezug aus der Energiegemeinschaft"
+                : "Stromlieferung in die Energiegemeinschaft"}
+            </Zelle>
+            <Zelle zahl>
+              {formatZahl(beleg.menge_kwh, 3)}
+              <span className="t-mikro"> kWh</span>
+            </Zelle>
+            <Zelle zahl>
+              {formatZahl(preis, 2)}
+              <span className="t-mikro"> ct/kWh</span>
+            </Zelle>
+            <Zelle zahl>{formatGeld(beleg.netto)}</Zelle>
+          </Zeile>
+
+          <Zeile>
+            <Zelle leise>
+              Umsatzsteuer {formatProzent(beleg.ust_satz, 0)}
+            </Zelle>
+            <Zelle zahl leise>
+              –
+            </Zelle>
+            <Zelle zahl leise>
+              –
+            </Zelle>
+            <Zelle zahl leise>
+              {formatGeld(beleg.ust_betrag)}
+            </Zelle>
+          </Zeile>
+
+          <Summenzeile>
+            <Zelle>Rechnungsbetrag</Zelle>
+            <Zelle zahl>{null}</Zelle>
+            <Zelle zahl>{null}</Zelle>
+            <Zelle zahl>{formatGeld(beleg.brutto)}</Zelle>
+          </Summenzeile>
+        </Tabelle>
+
+        {beleg.netzentgelt_ersparnis > 0 && (
+          <div className="px-4 py-3">
+            <p className="t-mikro leading-relaxed">
+              <strong style={{ color: "var(--t-normal)" }}>
+                Nachrichtlich:
+              </strong>{" "}
+              Für die in der Gemeinschaft bezogene Menge entfallen{" "}
+              {formatGeld(beleg.netzentgelt_ersparnis)} des
+              Netznutzungsentgelts ({formatZahl(NETZ_ARBEITSPREIS_CT, 2)} ct/kWh
+              Arbeitspreis). Diese Ersparnis erscheint auf der Rechnung Ihres
+              Netzbetreibers, nicht auf diesem Beleg.
+            </p>
+          </div>
+        )}
+      </Tafel>
+
+      {/* ---------------- Nachweis je Tag ---------------- */}
+      <Tafel
+        titel="Nachweis je Tag"
+        hinweis={`${tage.length} Tage · Klicken Sie einen Tag an, um die Viertelstundenwerte zu sehen`}
+        dicht
+      >
+        <Tabelle
+          spalten={[
+            { titel: "Tag" },
+            { titel: istRechnung ? "Aus der Gemeinschaft" : "Geliefert", zahl: true },
+            { titel: "Verlauf" },
+            ...(istRechnung ? [{ titel: "Netzbezug", zahl: true, schmalAusblenden: true }] : []),
+          ]}
+          mindestbreite="34rem"
+        >
+          {tage.map((tag) => {
+            const wert = tagesWert(tag);
+            const aktiv = gewaehlterTag === tag.tag;
+
+            return (
+              <Zeile key={tag.tag} hervorgehoben={aktiv}>
+                <Zelle>
+                  <Link
+                    href={
+                      aktiv
+                        ? `/portal/gemeinschaft/belege/${beleg.id}`
+                        : `/portal/gemeinschaft/belege/${beleg.id}?tag=${tag.tag}`
+                    }
+                    className="hover:underline"
+                    style={{ color: aktiv ? "var(--akzent-text)" : undefined }}
+                  >
+                    {formatDatum(tag.tag)}
+                  </Link>
+                </Zelle>
+                <Zelle zahl>
+                  {formatZahl(wert, 1)}
+                  <span className="t-mikro"> kWh</span>
+                </Zelle>
+                <Zelle>
+                  <span
+                    className="block h-1.5 rounded-full"
+                    style={{
+                      width: `${Math.max(2, (wert / hoechster) * 100)}%`,
+                      maxWidth: "12rem",
+                      background: "var(--akzent)",
+                      opacity: aktiv ? 1 : 0.55,
+                    }}
+                    role="img"
+                    aria-label={`${formatZahl(wert, 1)} kWh`}
+                  />
+                </Zelle>
+                {istRechnung && (
+                  <Zelle zahl leise schmalAusblenden>
+                    {formatZahl(tag.rest_netz, 1)}
+                    <span className="t-mikro"> kWh</span>
+                  </Zelle>
+                )}
+              </Zeile>
+            );
+          })}
+
+          <Summenzeile>
+            <Zelle>Summe</Zelle>
+            <Zelle zahl>
+              {formatZahl(
+                tage.reduce((s, t) => s + tagesWert(t), 0),
+                1,
+              )}
+              <span className="t-mikro"> kWh</span>
+            </Zelle>
+            <Zelle>{null}</Zelle>
+            {istRechnung && (
+              <Zelle zahl schmalAusblenden>
+                {formatZahl(
+                  tage.reduce((s, t) => s + t.rest_netz, 0),
+                  1,
+                )}
+                <span className="t-mikro"> kWh</span>
+              </Zelle>
+            )}
+          </Summenzeile>
+        </Tabelle>
+      </Tafel>
+
+      {/* ---------------- Viertelstunden ---------------- */}
+      {gewaehlterTag && (
+        <Tafel
+          titel={`Viertelstundenwerte am ${formatDatum(gewaehlterTag)}`}
+          hinweis={`${viertelstunden.length} Werte · die Auflösung, in der abgerechnet wird`}
+          dicht
+          aktion={
+            <Link
+              href={`/portal/gemeinschaft/belege/${beleg.id}`}
+              className="knopf knopf-leise"
+            >
+              Schließen
+            </Link>
+          }
+        >
+          <Tabelle
+            spalten={[
+              { titel: "Uhrzeit" },
+              { titel: "Aus der Gemeinschaft", zahl: true },
+              { titel: "Geliefert", zahl: true, schmalAusblenden: true },
+              { titel: "Netzbezug", zahl: true },
+              { titel: "Verlauf" },
+            ]}
+            mindestbreite="36rem"
+          >
+            {viertelstunden.map((wert) => {
+              const anteil = istRechnung ? wert.bezogen : wert.geliefert;
+              const hoechsteViertel = Math.max(
+                ...viertelstunden.map((v) =>
+                  istRechnung ? v.bezogen : v.geliefert,
+                ),
+                0.001,
+              );
+
+              return (
+                <Zeile key={wert.zeitpunkt}>
+                  <Zelle>
+                    <span className="zahl">{formatZeit(wert.zeitpunkt)}</span>
+                  </Zelle>
+                  <Zelle zahl>{formatZahl(wert.bezogen, 3)}</Zelle>
+                  <Zelle zahl leise schmalAusblenden>
+                    {formatZahl(wert.geliefert, 3)}
+                  </Zelle>
+                  <Zelle zahl leise>
+                    {formatZahl(wert.rest_netz, 3)}
+                  </Zelle>
+                  <Zelle>
+                    <span
+                      className="block h-1 rounded-full"
+                      style={{
+                        width: `${Math.max(1, (anteil / hoechsteViertel) * 100)}%`,
+                        maxWidth: "8rem",
+                        background: "var(--akzent)",
+                        opacity: 0.7,
+                      }}
+                      aria-hidden
+                    />
+                  </Zelle>
+                </Zeile>
+              );
+            })}
+          </Tabelle>
+
+          <div className="px-4 py-3">
+            <p className="t-mikro leading-relaxed">
+              Alle Werte in kWh. Die Summe dieser Viertelstunden ergibt den
+              Tageswert, die Summe aller Tage die abgerechnete Menge. Zeitpunkte
+              werden in UTC gespeichert und hier in Ortszeit angezeigt – dadurch
+              bleiben auch die Tage der Zeitumstellung eindeutig.
+            </p>
+          </div>
+        </Tafel>
+      )}
+    </div>
+  );
+}

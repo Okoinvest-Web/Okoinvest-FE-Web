@@ -1,0 +1,247 @@
+<script setup lang="ts">
+/** Anlagenübersicht mit Suche, Filter und Umschalter Liste/Karte (FA-080 bis FA-083). */
+import { computed, ref } from 'vue'
+import { useRouter } from 'vue-router'
+
+import AnlagenKarte from '@/components/AnlagenKarte.vue'
+import AppIcon from '@/components/AppIcon.vue'
+import BasisDialog from '@/components/BasisDialog.vue'
+import CodeScanner from '@/components/CodeScanner.vue'
+import LeereListe from '@/components/LeereListe.vue'
+import StatusAbzeichen from '@/components/StatusAbzeichen.vue'
+import { useUrlFilter } from '@/composables/urlfilter'
+import { baudoku } from '@/lib/api'
+import { anlagenNameAusCode } from '@/lib/code'
+import { datum, zahl } from '@/lib/format'
+import { entfernung, positionEinmalig, type Position } from '@/lib/geo'
+import type { Anlage } from '@/lib/typen'
+import { useStammdaten } from '@/stores/stammdaten'
+import { useUi } from '@/stores/ui'
+
+const router = useRouter()
+const stammdaten = useStammdaten()
+const ui = useUi()
+
+const suche = ref('')
+const typ = ref('')
+const status = ref('')
+const ansicht = ref<'liste' | 'karte'>('liste')
+const scannerOffen = ref(false)
+
+useUrlFilter({ suche, typ, status })
+
+const standort = ref<Position | null>(null)
+const standortLaedt = ref(false)
+
+const gefiltert = computed(() => {
+  const treffer = stammdaten.anlagenSuche(suche.value, {
+    typ: typ.value || undefined,
+    status: status.value || undefined,
+  })
+  if (!standort.value) return treffer
+
+  // Nach Entfernung sortieren; Anlagen ohne Koordinaten ans Ende.
+  return [...treffer].sort((a, b) => (abstand(a) ?? Infinity) - (abstand(b) ?? Infinity))
+})
+
+/** Luftlinie zum aktuellen Standort in Metern. */
+function abstand(anlage: Anlage): number | null {
+  if (!standort.value || !anlage.gps_lat || !anlage.gps_lng) return null
+  return entfernung(standort.value, { lat: anlage.gps_lat, lng: anlage.gps_lng })
+}
+
+function abstandText(anlage: Anlage): string {
+  const meter = abstand(anlage)
+  if (meter === null) return ''
+  return meter < 1000 ? `${meter} m entfernt` : `${(meter / 1000).toFixed(1)} km entfernt`
+}
+
+/** Die Tagestour beginnt mit der naechstgelegenen Baustelle. */
+async function standortBestimmen() {
+  if (standort.value) {
+    standort.value = null
+    return
+  }
+  standortLaedt.value = true
+  try {
+    standort.value = await positionEinmalig()
+  } catch (fehler) {
+    ui.warnung((fehler as Error).message)
+  } finally {
+    standortLaedt.value = false
+  }
+}
+
+/**
+ * Ein gescannter Code ist entweder ein Anlagenaufkleber oder das Typenschild
+ * eines Geräts. Der zweite Fall ist der häufigere im Service: Ein defekter
+ * Wechselrichter liegt auf der Werkbank und niemand weiß, aus welcher Anlage
+ * er stammt.
+ */
+async function codeErkannt(code: string) {
+  scannerOffen.value = false
+  const name = anlagenNameAusCode(code)
+
+  if (name && stammdaten.anlage(name)) {
+    void router.push({ name: 'anlage-detail', params: { name } })
+    return
+  }
+
+  try {
+    const treffer = (await baudoku.seriennummerSuchen(code)) as {
+      anlage: { name: string; anlage_name: string }
+      komponente: { komponententyp: string }
+    } | null
+
+    if (treffer?.anlage) {
+      ui.erfolg(
+        `${treffer.komponente.komponententyp} ${code} gehört zu ${treffer.anlage.anlage_name}.`,
+      )
+      void router.push({ name: 'anlage-detail', params: { name: treffer.anlage.name } })
+      return
+    }
+  } catch {
+    // Offline lässt sich die Seriennummer nicht nachschlagen.
+  }
+
+  ui.warnung(
+    name
+      ? `Zu „${name}“ ist weder eine Anlage noch eine Seriennummer bekannt.`
+      : `Der Code „${code}“ gehört zu keiner bekannten Anlage oder Komponente.`,
+  )
+}
+
+function oeffnen(anlage: Anlage) {
+  void router.push({ name: 'anlage-detail', params: { name: anlage.name } })
+}
+</script>
+
+<template>
+  <div class="space-y-4">
+    <!-- Suche und Filter -->
+    <div class="flex flex-wrap items-center gap-2">
+      <div class="relative min-w-[200px] flex-1">
+        <AppIcon name="suche" :groesse="20" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+        <input v-model="suche" class="feld pl-10" type="search" placeholder="Anlage, Kunde oder Ort …" />
+      </div>
+      <select v-model="typ" class="feld w-auto">
+        <option value="">Alle Typen</option>
+        <option>PV</option>
+        <option>Batteriespeicher</option>
+        <option>Ladestation</option>
+        <option>Kombi</option>
+      </select>
+      <select v-model="status" class="feld w-auto">
+        <option value="">Alle Status</option>
+        <option>Geplant</option>
+        <option>In Bau</option>
+        <option>In Betrieb</option>
+        <option value="Ausser Betrieb">Außer Betrieb</option>
+      </select>
+      <button
+        class="tap flex items-center gap-1.5 rounded-xl border px-3 text-sm font-medium"
+        :class="
+          standort
+            ? 'border-marke-600 bg-marke-50 text-marke-700 dark:bg-marke-900/40 dark:text-marke-300'
+            : 'border-slate-300 dark:border-slate-700'
+        "
+        :disabled="standortLaedt"
+        :title="standort ? 'Sortierung nach Entfernung aufheben' : 'Nach Entfernung sortieren'"
+        @click="standortBestimmen"
+      >
+        <AppIcon name="karte" :groesse="18" />
+        {{ standortLaedt ? 'Ortung …' : 'In der Nähe' }}
+      </button>
+      <button class="knopf-sekundaer px-3" title="QR-Code scannen" @click="scannerOffen = true">
+        <AppIcon name="qr" :groesse="20" />
+      </button>
+      <div class="flex overflow-hidden rounded-xl border border-slate-300 dark:border-slate-700">
+        <button
+          class="tap px-3 text-sm font-medium"
+          :class="ansicht === 'liste' ? 'bg-marke-600 text-white' : ''"
+          @click="ansicht = 'liste'"
+        >
+          Liste
+        </button>
+        <button
+          class="tap px-3 text-sm font-medium"
+          :class="ansicht === 'karte' ? 'bg-marke-600 text-white' : ''"
+          @click="ansicht = 'karte'"
+        >
+          Karte
+        </button>
+      </div>
+    </div>
+
+    <p class="text-sm text-slate-500">
+      {{ gefiltert.length }} von {{ stammdaten.anlagen.length }} Anlagen
+      <span v-if="stammdaten.ausCache"> · Stand letzter Sync</span>
+    </p>
+
+    <AnlagenKarte v-if="ansicht === 'karte'" :anlagen="gefiltert" hoehe="65vh" @auswahl="oeffnen" />
+
+    <template v-else>
+      <LeereListe
+        v-if="!gefiltert.length"
+        symbol="anlage"
+        titel="Keine Anlage gefunden"
+        text="Passen Sie Suche und Filter an oder synchronisieren Sie die Stammdaten."
+      />
+
+      <ul v-else class="grid gap-3 tablet:grid-cols-2 desktop:grid-cols-3">
+        <li v-for="anlage in gefiltert" :key="anlage.name">
+          <RouterLink
+            :to="{ name: 'anlage-detail', params: { name: anlage.name } }"
+            class="karte flex h-full flex-col p-4 transition hover:shadow-md"
+          >
+            <div class="flex items-start gap-2">
+              <h3 class="flex-1 font-semibold leading-snug">{{ anlage.anlage_name }}</h3>
+              <StatusAbzeichen :wert="anlage.status" klein />
+            </div>
+            <p class="mt-1 text-sm text-slate-500">{{ anlage.customer }}</p>
+            <p class="text-xs text-slate-400">
+              {{ anlage.plz }} {{ anlage.ort }}
+              <span v-if="abstandText(anlage)" class="font-medium text-marke-600">
+                · {{ abstandText(anlage) }}
+              </span>
+            </p>
+
+            <dl class="mt-3 grid grid-cols-3 gap-2 text-center text-xs">
+              <div class="rounded-lg bg-slate-50 py-1.5 dark:bg-slate-800">
+                <dt class="text-slate-400">Leistung</dt>
+                <dd class="font-semibold tabular-nums">{{ zahl(anlage.kwp, 'kWp') }}</dd>
+              </div>
+              <div class="rounded-lg bg-slate-50 py-1.5 dark:bg-slate-800">
+                <dt class="text-slate-400">Typ</dt>
+                <dd class="font-semibold">{{ anlage.anlagen_typ }}</dd>
+              </div>
+              <div
+                class="rounded-lg py-1.5"
+                :class="anlage.offene_maengel ? 'bg-red-50 dark:bg-red-900/30' : 'bg-slate-50 dark:bg-slate-800'"
+              >
+                <dt class="text-slate-400">Mängel</dt>
+                <dd class="font-semibold tabular-nums" :class="anlage.offene_maengel ? 'text-fehler' : ''">
+                  {{ anlage.offene_maengel ?? 0 }}
+                </dd>
+              </div>
+            </dl>
+
+            <p class="mt-3 text-xs text-slate-400">
+              Letzte Prüfung {{ datum(anlage.letzte_pruefung) }}
+              <span v-if="anlage.naechste_wartung"> · nächste Wartung {{ datum(anlage.naechste_wartung) }}</span>
+            </p>
+          </RouterLink>
+        </li>
+      </ul>
+    </template>
+
+    <BasisDialog :offen="scannerOffen" titel="QR-Code scannen" @schliessen="scannerOffen = false">
+      <CodeScanner
+        :formate="['qr_code', 'code_128', 'code_39', 'data_matrix']"
+        hinweis="Anlagenaufkleber oder Typenschild scannen"
+        @erkannt="codeErkannt"
+        @abbrechen="scannerOffen = false"
+      />
+    </BasisDialog>
+  </div>
+</template>

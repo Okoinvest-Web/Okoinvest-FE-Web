@@ -1,0 +1,258 @@
+import type { Metadata } from "next";
+
+import { Tabelle, Zeile, Zelle } from "@/components/tabelle";
+import {
+  Tafel,
+  Kennzahl,
+  LeerZustand,
+  Seitenkopf,
+  Status,
+} from "@/components/ui";
+import { formatDatum, formatRelativ, formatZahl } from "@/lib/format";
+import {
+  ladeAnlagen,
+  ladeStoerungen,
+  ladeTickets,
+  ladeWartungen,
+} from "@/lib/portal-daten";
+import { requireRecht } from "@/lib/session";
+
+import { Meldeformular } from "./meldeformular";
+
+export const metadata: Metadata = { title: "Support" };
+
+function statusTon(status: string | undefined) {
+  switch (status) {
+    case "Offen":
+      return "ernst" as const;
+    case "In Bearbeitung":
+      return "hinweis" as const;
+    case "Warten auf Kunde":
+      return "hinweis" as const;
+    case "Geschlossen":
+      return "gut" as const;
+    default:
+      return "neutral" as const;
+  }
+}
+
+function prioritaetTon(prioritaet: string | undefined) {
+  switch (prioritaet) {
+    case "Kritisch":
+      return "kritisch" as const;
+    case "Hoch":
+      return "ernst" as const;
+    case "Mittel":
+      return "hinweis" as const;
+    default:
+      return "neutral" as const;
+  }
+}
+
+export default async function SupportSeite() {
+  await requireRecht("support.melden");
+
+  const [stoerungen, tickets, anlagen, wartungen] = await Promise.all([
+    ladeStoerungen(),
+    ladeTickets(),
+    ladeAnlagen(),
+    ladeWartungen(),
+  ]);
+
+  const offeneStoerungen = stoerungen.filter((s) => s.status !== "Geschlossen");
+  const offeneTickets = tickets.filter((t) => t.status !== "Geschlossen");
+  const ausfall = offeneStoerungen.reduce((s, x) => s + (x.ausfall_kwh ?? 0), 0);
+
+  const heute = new Date();
+  const anstehendeWartungen = wartungen
+    .filter((w) => !w.durchgefuehrt_am && w.faellig_am)
+    .sort((a, b) => (a.faellig_am! < b.faellig_am! ? -1 : 1));
+
+  const anlagenName = (name: string | undefined) =>
+    anlagen.find((a) => a.name === name)?.anlagen_name;
+
+  return (
+    <div className="space-y-6">
+      <Seitenkopf
+        titel="Support"
+        hinweis="Störungen melden und den Bearbeitungsstand verfolgen"
+      />
+
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Kennzahl
+          label="Offene Störungen"
+          wert={formatZahl(offeneStoerungen.length, 0)}
+        />
+        <Kennzahl
+          label="Offene Anfragen"
+          wert={formatZahl(offeneTickets.length, 0)}
+        />
+        <Kennzahl
+          label="Geschätzter Ertragsausfall"
+          wert={formatZahl(ausfall, 0)}
+          einheit="kWh"
+          hinweis="aus offenen Störungen"
+        />
+        <Kennzahl
+          label="Anstehende Wartungen"
+          wert={formatZahl(anstehendeWartungen.length, 0)}
+          hinweis={
+            anstehendeWartungen[0]
+              ? `nächste am ${formatDatum(anstehendeWartungen[0].faellig_am)}`
+              : undefined
+          }
+        />
+      </div>
+
+      <Tafel
+        titel="Störung melden"
+        hinweis="Je genauer die Angaben, desto schneller die Behebung"
+      >
+        <Meldeformular
+          anlagen={anlagen.map((a) => ({ name: a.name, label: a.anlagen_name }))}
+        />
+      </Tafel>
+
+      <Tafel titel="Störungen">
+        {stoerungen.length === 0 ? (
+          <LeerZustand text="Es wurden bisher keine Störungen gemeldet." />
+        ) : (
+          <Tabelle
+            spalten={[{ titel: "Meldung" }, { titel: "Anlage" }, { titel: "Gemeldet" }, { titel: "Ausfall", zahl: true }, { titel: "Dringlichkeit" }, { titel: "Status" }]}
+          >
+            {stoerungen.map((stoerung) => (
+              <Zeile
+                key={stoerung.name}
+                hervorgehoben={stoerung.prioritaet === "Kritisch"}
+              >
+                <Zelle>
+                  <span className="font-medium">{stoerung.betreff}</span>
+                  {stoerung.fehlercode && (
+                    <span className="block font-mono text-xs text-slate-500 dark:text-slate-400">
+                      Fehlercode {stoerung.fehlercode}
+                    </span>
+                  )}
+                  {stoerung.techniker && (
+                    <span className="block text-xs text-slate-500 dark:text-slate-400">
+                      Techniker: {stoerung.techniker}
+                    </span>
+                  )}
+                </Zelle>
+                <Zelle leise>
+                  {anlagenName(stoerung.anlage) ?? "–"}
+                </Zelle>
+                <Zelle leise>{formatDatum(stoerung.gemeldet_am)}</Zelle>
+                <Zelle zahl leise>
+                  {stoerung.ausfall_kwh
+                    ? `${formatZahl(stoerung.ausfall_kwh, 0)} kWh`
+                    : "–"}
+                </Zelle>
+                <Zelle>
+                  <Status ton={prioritaetTon(stoerung.prioritaet)}>
+                    {stoerung.prioritaet ?? "–"}
+                  </Status>
+                </Zelle>
+                <Zelle>
+                  <Status ton={statusTon(stoerung.status)}>
+                    {stoerung.status ?? "–"}
+                  </Status>
+                </Zelle>
+              </Zeile>
+            ))}
+          </Tabelle>
+        )}
+      </Tafel>
+
+      <Tafel titel="Anfragen" hinweis="Kaufmännische und organisatorische Themen">
+        {tickets.length === 0 ? (
+          <LeerZustand text="Es liegen keine Anfragen vor." />
+        ) : (
+          <Tabelle
+            spalten={[{ titel: "Anfrage" }, { titel: "Kategorie" }, { titel: "Eröffnet" }, { titel: "Reaktion bis" }, { titel: "Status" }]}
+          >
+            {tickets.map((ticket) => (
+              <Zeile key={ticket.name}>
+                <Zelle>
+                  <span className="font-medium">{ticket.betreff}</span>
+                  <span className="block font-mono text-xs text-slate-500 dark:text-slate-400">
+                    {ticket.name}
+                  </span>
+                </Zelle>
+                <Zelle leise>{ticket.kategorie ?? "–"}</Zelle>
+                <Zelle leise>{formatDatum(ticket.eroeffnet_am)}</Zelle>
+                <Zelle leise>
+                  {ticket.sla_reaktion_bis ? (
+                    <span
+                      className={
+                        new Date(ticket.sla_reaktion_bis) < heute &&
+                        ticket.status !== "Geschlossen"
+                          ? "font-medium text-rose-700 dark:text-rose-400"
+                          : ""
+                      }
+                    >
+                      {formatRelativ(ticket.sla_reaktion_bis)}
+                    </span>
+                  ) : (
+                    "–"
+                  )}
+                </Zelle>
+                <Zelle>
+                  <Status ton={statusTon(ticket.status)}>
+                    {ticket.status ?? "–"}
+                  </Status>
+                </Zelle>
+              </Zeile>
+            ))}
+          </Tabelle>
+        )}
+      </Tafel>
+
+      <Tafel titel="Wartungsplan">
+        {wartungen.length === 0 ? (
+          <LeerZustand text="Es sind keine Wartungen geplant." />
+        ) : (
+          <Tabelle spalten={[{ titel: "Anlage" }, { titel: "Art" }, { titel: "Fällig" }, { titel: "Durchgeführt" }, { titel: "Ergebnis" }]}>
+            {wartungen.map((wartung) => {
+              const ueberfaellig =
+                !wartung.durchgefuehrt_am &&
+                wartung.faellig_am &&
+                new Date(wartung.faellig_am) < heute;
+
+              return (
+                <Zeile key={wartung.name} hervorgehoben={Boolean(ueberfaellig)}>
+                  <Zelle>{anlagenName(wartung.anlage) ?? wartung.anlage}</Zelle>
+                  <Zelle leise>{wartung.art ?? "–"}</Zelle>
+                  <Zelle>
+                    <span
+                      className={
+                        ueberfaellig
+                          ? "font-medium text-rose-700 dark:text-rose-400"
+                          : ""
+                      }
+                    >
+                      {formatDatum(wartung.faellig_am)}
+                    </span>
+                  </Zelle>
+                  <Zelle leise>
+                    {wartung.durchgefuehrt_am
+                      ? formatDatum(wartung.durchgefuehrt_am)
+                      : "–"}
+                  </Zelle>
+                  <Zelle>
+                    {wartung.ergebnis ? (
+                      <Status ton="gut">{wartung.ergebnis}</Status>
+                    ) : (
+                      <Status ton={ueberfaellig ? "ernst" : "neutral"}>
+                        {ueberfaellig ? "Überfällig" : "Geplant"}
+                      </Status>
+                    )}
+                  </Zelle>
+                </Zeile>
+              );
+            })}
+          </Tabelle>
+        )}
+      </Tafel>
+    </div>
+  );
+}

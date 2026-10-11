@@ -1,0 +1,858 @@
+<title>ÖKOVOLT Leitstand</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,400..800&family=JetBrains+Mono:wght@400;500&family=Sora:wght@300;400;600&display=swap">
+<style>
+:root{
+  --void:#04070E; --deep:#070D18; --panel:#0A1220; --panel-2:#0D1729; --raise:#121E33;
+  --line:rgba(150,180,220,.13); --line-2:rgba(150,180,220,.26); --line-3:rgba(150,180,220,.42);
+  --ink:#EDF4FF; --ink-2:#9FB4CE; --muted:#617595;
+  --volt:#8CE04B; --volt-dim:#5C9E2C; --volt-glow:rgba(140,224,75,.30);
+  --solar:#FFB43D; --solar-dim:#B07620; --solar-glow:rgba(255,180,61,.26);
+  --cyan:#45E0FF; --cyan-dim:#2A8DA6; --cyan-glow:rgba(69,224,255,.24);
+  --f-d:"Archivo","Arial Narrow",system-ui,sans-serif;
+  --f-b:"Sora","Segoe UI",system-ui,sans-serif;
+  --f-m:"JetBrains Mono",ui-monospace,"Cascadia Mono",monospace;
+  --pad:clamp(18px,4.5vw,58px);
+  --cut:14px;
+}
+*,*::before,*::after{box-sizing:border-box}
+body{
+  background:var(--void);color:var(--ink);font-family:var(--f-b);font-weight:300;
+  font-size:16.5px;line-height:1.62;-webkit-font-smoothing:antialiased;overflow-x:hidden;
+}
+h1,h2,h3,h4{font-family:var(--f-d);font-weight:700;font-variation-settings:"wdth" 116;letter-spacing:-.02em;line-height:1.04;text-wrap:balance;margin:0}
+p{margin:0}
+a{color:inherit}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--volt);outline-offset:3px}
+.wrap{max-width:1300px;margin:0 auto;padding-inline:var(--pad)}
+.mono{font-family:var(--f-m);font-variant-numeric:tabular-nums}
+
+/* ---- shared motifs ---- */
+.chamf{clip-path:polygon(var(--cut) 0,100% 0,100% calc(100% - var(--cut)),calc(100% - var(--cut)) 100%,0 100%,0 var(--cut))}
+.glass{background:linear-gradient(160deg,rgba(18,30,51,.82),rgba(10,18,32,.92));border:1px solid var(--line)}
+.kicker{font-family:var(--f-m);font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--volt);display:inline-flex;align-items:center;gap:11px}
+.kicker::before{content:"";width:26px;height:1px;background:var(--volt);box-shadow:0 0 10px var(--volt-glow)}
+.kicker.c{color:var(--cyan)}.kicker.c::before{background:var(--cyan);box-shadow:0 0 10px var(--cyan-glow)}
+.lede{font-size:clamp(16.5px,1.35vw,19px);color:var(--ink-2);max-width:60ch}
+.unit{font-size:.44em;font-family:var(--f-m);font-weight:400;color:var(--muted);margin-left:5px;letter-spacing:0}
+
+/* ---- top bar ---- */
+.top{position:sticky;top:0;z-index:90;background:rgba(4,7,14,.78);backdrop-filter:blur(16px);border-bottom:1px solid var(--line)}
+.top-in{display:flex;align-items:center;gap:24px;height:70px}
+.brand{display:flex;align-items:center;gap:12px;text-decoration:none;flex:none}
+.mark{width:34px;height:34px;display:grid;place-items:center;background:linear-gradient(150deg,var(--volt),var(--volt-dim));--cut:9px;box-shadow:0 0 24px -4px var(--volt-glow)}
+.mark svg{width:17px;height:17px}
+.brand b{font-family:var(--f-d);font-weight:800;font-variation-settings:"wdth" 120;font-size:19px;letter-spacing:.04em;display:block;line-height:1}
+.brand small{font-family:var(--f-m);font-size:8.5px;letter-spacing:.3em;color:var(--muted);text-transform:uppercase;display:block;margin-top:3px}
+.nav{display:flex;gap:26px;margin-left:auto;font-family:var(--f-m);font-size:12px;letter-spacing:.1em;text-transform:uppercase}
+.nav a{text-decoration:none;color:var(--ink-2);position:relative;padding:4px 0}
+.nav a::after{content:"";position:absolute;left:0;bottom:-2px;width:0;height:1px;background:var(--volt);box-shadow:0 0 8px var(--volt-glow);transition:width .25s ease}
+.nav a:hover{color:var(--ink)}.nav a:hover::after{width:100%}
+.top-r{display:flex;align-items:center;gap:14px;flex:none;margin-left:auto}
+.nav ~ .top-r{margin-left:0}
+.tel{font-family:var(--f-m);font-size:12.5px;color:var(--ink-2);text-decoration:none;white-space:nowrap}
+.tel:hover{color:var(--volt)}
+.btn{--cut:11px;display:inline-flex;align-items:center;justify-content:center;gap:10px;padding:13px 22px;font-family:var(--f-m);font-size:12px;letter-spacing:.14em;text-transform:uppercase;text-decoration:none;cursor:pointer;border:1px solid transparent;background:none;transition:transform .16s ease,box-shadow .2s ease,background .2s ease,color .2s ease;clip-path:polygon(var(--cut) 0,100% 0,100% calc(100% - var(--cut)),calc(100% - var(--cut)) 100%,0 100%,0 var(--cut))}
+.btn-v{background:var(--volt);color:#06170A;font-weight:500;box-shadow:0 0 30px -8px var(--volt-glow)}
+.btn-v:hover{transform:translateY(-2px);box-shadow:0 0 44px -6px var(--volt-glow)}
+.btn-o{border-color:var(--line-2);color:var(--ink)}
+.btn-o:hover{border-color:var(--volt);color:var(--volt);transform:translateY(-2px)}
+.burger{display:none;width:38px;height:38px;border:1px solid var(--line-2);background:none;cursor:pointer;place-items:center;color:var(--ink)}
+@media(max-width:1120px){.nav,.tel{display:none}.burger{display:grid}}
+#mob{display:none;border-bottom:1px solid var(--line);background:var(--deep)}
+#mob.on{display:block}
+#mob a{display:block;padding:14px var(--pad);border-top:1px solid var(--line);text-decoration:none;font-family:var(--f-m);font-size:12.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-2)}
+
+/* ---- hero ---- */
+.hero{position:relative;border-bottom:1px solid var(--line);overflow:hidden;isolation:isolate}
+#field{position:absolute;inset:0;width:100%;height:100%;z-index:-2;display:block}
+.hero::after{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background:radial-gradient(120% 70% at 50% 105%,rgba(140,224,75,.13),transparent 58%),
+             radial-gradient(80% 55% at 88% 0%,rgba(69,224,255,.10),transparent 60%),
+             linear-gradient(to bottom,rgba(4,7,14,.86) 0%,rgba(4,7,14,.28) 42%,rgba(4,7,14,.92) 100%)}
+.hero-in{padding-block:clamp(56px,9vw,118px) clamp(34px,4vw,54px)}
+.hero-grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:clamp(26px,4vw,64px);align-items:end}
+@media(max-width:980px){.hero-grid{grid-template-columns:1fr}}
+h1{font-size:clamp(40px,6.6vw,92px);font-weight:800;font-variation-settings:"wdth" 122;letter-spacing:-.035em;line-height:.96;margin-block:22px 26px}
+h1 .gl{background:linear-gradient(96deg,var(--volt) 10%,var(--solar) 92%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero-acts{display:flex;flex-wrap:wrap;gap:13px;margin-top:30px}
+.hero-meta{display:flex;flex-wrap:wrap;gap:8px 22px;margin-top:26px;font-family:var(--f-m);font-size:11.5px;letter-spacing:.08em;color:var(--muted)}
+.hero-meta span{display:inline-flex;align-items:center;gap:8px}
+.hero-meta i{width:5px;height:5px;background:var(--volt);box-shadow:0 0 8px var(--volt-glow);display:block}
+
+/* telemetry panel */
+.tele{--cut:18px;padding:2px}
+.tele-h{display:flex;justify-content:space-between;align-items:center;padding:13px 18px;border-bottom:1px solid var(--line);font-family:var(--f-m);font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
+.pulse{width:7px;height:7px;background:var(--volt);border-radius:50%;box-shadow:0 0 0 0 var(--volt-glow);animation:pl 2.4s infinite;display:inline-block;margin-right:9px;vertical-align:middle}
+@keyframes pl{0%{box-shadow:0 0 0 0 rgba(140,224,75,.5)}70%{box-shadow:0 0 0 9px rgba(140,224,75,0)}100%{box-shadow:0 0 0 0 rgba(140,224,75,0)}}
+.tele-row{display:grid;grid-template-columns:1fr auto;gap:16px;align-items:center;padding:17px 18px;border-bottom:1px solid var(--line)}
+.tele-row:last-child{border-bottom:0}
+.tele-row i{font-style:normal;font-family:var(--f-m);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:6px}
+.tele-row p{font-size:13.5px;color:var(--ink-2);line-height:1.4}
+.tele-row b{font-family:var(--f-d);font-weight:800;font-variation-settings:"wdth" 118;font-size:clamp(28px,3.4vw,42px);letter-spacing:-.045em;font-variant-numeric:tabular-nums;line-height:1;text-align:right;white-space:nowrap}
+.tele-row:nth-child(2) b{color:var(--volt)}
+.tele-row:nth-child(3) b{color:var(--solar)}
+.tele-row:nth-child(4) b{color:var(--cyan)}
+
+/* client band */
+.band{border-bottom:1px solid var(--line);background:var(--deep);overflow:hidden}
+.band-in{display:flex;align-items:center;gap:clamp(14px,2.4vw,34px);padding-block:16px;flex-wrap:wrap}
+.band-in p{font-family:var(--f-m);font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
+.band-in span{font-family:var(--f-d);font-weight:600;font-variation-settings:"wdth" 112;font-size:15px;letter-spacing:.01em;color:var(--ink-2)}
+.band-in em{color:var(--line-2);font-style:normal}
+
+/* ---- section frame ---- */
+.sec{position:relative;border-bottom:1px solid var(--line);padding-block:clamp(56px,7.5vw,110px)}
+.sec-head{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:clamp(18px,4vw,58px);align-items:end;margin-bottom:clamp(30px,4vw,52px)}
+.sec-head h2{font-size:clamp(28px,3.9vw,50px);margin-top:16px}
+@media(max-width:880px){.sec-head{grid-template-columns:1fr}}
+.grid-bg{position:absolute;inset:0;z-index:-1;pointer-events:none;opacity:.5;
+  background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+  background-size:64px 64px;
+  -webkit-mask-image:radial-gradient(72% 58% at 50% 44%,#000,transparent 78%);
+  mask-image:radial-gradient(72% 58% at 50% 44%,#000,transparent 78%)}
+
+/* ---- console / configurator ---- */
+.console{--cut:22px;display:grid;grid-template-columns:340px minmax(0,1fr);position:relative}
+@media(max-width:1020px){.console{grid-template-columns:1fr}}
+.con-l{border-right:1px solid var(--line);padding:26px 24px;display:flex;flex-direction:column;gap:24px;background:rgba(7,13,24,.6)}
+@media(max-width:1020px){.con-l{border-right:0;border-bottom:1px solid var(--line)}}
+.con-r{padding:26px;display:flex;flex-direction:column;gap:22px;min-width:0}
+.con-t{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 18px;border-bottom:1px solid var(--line);grid-column:1/-1;font-family:var(--f-m);font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
+.field{display:flex;flex-direction:column;gap:10px}
+.field-h{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.field-h label{font-family:var(--f-m);font-size:10.5px;letter-spacing:.17em;text-transform:uppercase;color:var(--muted)}
+.field-v{font-family:var(--f-d);font-weight:700;font-variation-settings:"wdth" 114;font-size:22px;letter-spacing:-.035em;font-variant-numeric:tabular-nums;color:var(--ink)}
+.field-v .unit{font-size:11.5px;color:var(--muted)}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:20px;background:transparent;cursor:pointer;margin:0}
+input[type=range]::-webkit-slider-runnable-track{height:2px;background:var(--line-2)}
+input[type=range]::-moz-range-track{height:2px;background:var(--line-2)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;background:var(--volt);margin-top:-6px;box-shadow:0 0 14px var(--volt-glow);clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%)}
+input[type=range]::-moz-range-thumb{width:14px;height:14px;border:0;background:var(--volt);box-shadow:0 0 14px var(--volt-glow);clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%)}
+.scale{display:flex;justify-content:space-between;font-family:var(--f-m);font-size:10px;color:var(--muted)}
+.seg{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}
+.seg button{--cut:8px;background:rgba(18,30,51,.5);border:1px solid var(--line);padding:11px 8px;cursor:pointer;display:flex;align-items:center;gap:9px;font-family:var(--f-m);font-size:10.5px;letter-spacing:.06em;color:var(--ink-2);transition:all .18s ease;clip-path:polygon(var(--cut) 0,100% 0,100% calc(100% - var(--cut)),calc(100% - var(--cut)) 100%,0 100%,0 var(--cut))}
+.seg button svg{width:26px;height:15px;flex:none}
+.seg button:hover{border-color:var(--line-3);color:var(--ink)}
+.seg button[aria-pressed=true]{border-color:var(--volt);color:var(--volt);background:rgba(140,224,75,.09);box-shadow:inset 0 0 22px -12px var(--volt-glow)}
+
+/* readouts */
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+@media(max-width:760px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.stat{--cut:10px;border:1px solid var(--line);background:rgba(13,23,41,.55);padding:15px 16px 16px;position:relative;clip-path:polygon(var(--cut) 0,100% 0,100% calc(100% - var(--cut)),calc(100% - var(--cut)) 100%,0 100%,0 var(--cut))}
+.stat i{font-style:normal;font-family:var(--f-m);font-size:9.5px;letter-spacing:.17em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:9px}
+.stat b{font-family:var(--f-d);font-weight:800;font-variation-settings:"wdth" 116;font-size:clamp(24px,2.7vw,33px);letter-spacing:-.045em;font-variant-numeric:tabular-nums;line-height:1;display:block}
+.stat small{display:block;margin-top:8px;font-size:12px;color:var(--muted);line-height:1.4;font-family:var(--f-m)}
+.stat.v b{color:var(--volt)}.stat.s b{color:var(--solar)}.stat.c b{color:var(--cyan)}
+.stat.v{border-color:rgba(140,224,75,.3);box-shadow:inset 0 0 40px -26px var(--volt-glow)}
+
+.dual{display:grid;grid-template-columns:230px minmax(0,1fr);gap:12px}
+@media(max-width:860px){.dual{grid-template-columns:1fr}}
+.gauge{--cut:10px;border:1px solid var(--line);background:rgba(13,23,41,.55);padding:16px;display:flex;flex-direction:column;align-items:center;gap:6px;clip-path:polygon(var(--cut) 0,100% 0,100% calc(100% - var(--cut)),calc(100% - var(--cut)) 100%,0 100%,0 var(--cut))}
+.gauge h4{font-family:var(--f-m);font-weight:400;font-size:9.5px;letter-spacing:.17em;text-transform:uppercase;color:var(--muted);align-self:flex-start}
+.gauge svg{width:100%;max-width:172px;height:auto}
+.gauge p{font-family:var(--f-m);font-size:11.5px;color:var(--muted);text-align:center;line-height:1.45}
+.flow{--cut:10px;border:1px solid var(--line);background:rgba(7,13,24,.7);padding:10px;clip-path:polygon(var(--cut) 0,100% 0,100% calc(100% - var(--cut)),calc(100% - var(--cut)) 100%,0 100%,0 var(--cut))}
+.flow svg{width:100%;height:auto;display:block}
+
+.charts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media(max-width:900px){.charts{grid-template-columns:1fr}}
+.chart{--cut:10px;border:1px solid var(--line);background:rgba(13,23,41,.55);padding:16px 16px 12px;clip-path:polygon(var(--cut) 0,100% 0,100% calc(100% - var(--cut)),calc(100% - var(--cut)) 100%,0 100%,0 var(--cut))}
+.chart-h{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:16px}
+.chart-h h4{font-family:var(--f-m);font-weight:400;font-size:9.5px;letter-spacing:.17em;text-transform:uppercase;color:var(--muted)}
+.chart-h span{font-family:var(--f-m);font-size:11px;color:var(--ink-2)}
+.bars{display:grid;grid-template-columns:repeat(12,1fr);gap:4px;align-items:end;height:118px}
+.bar{position:relative;min-height:3px;background:linear-gradient(to top,var(--volt-dim),var(--volt));transition:height .4s cubic-bezier(.2,.8,.3,1);cursor:default}
+.bar:hover{background:var(--solar);box-shadow:0 0 18px var(--solar-glow)}
+.bar span{position:absolute;bottom:calc(100% + 9px);left:50%;transform:translateX(-50%);background:var(--raise);border:1px solid var(--line-2);color:var(--ink);font-family:var(--f-m);font-size:10.5px;padding:5px 8px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .14s;z-index:6}
+.bar:hover span,.bar:focus-visible span{opacity:1}
+.bar-x{display:grid;grid-template-columns:repeat(12,1fr);gap:4px;margin-top:8px;border-top:1px solid var(--line);padding-top:8px}
+.bar-x i{font-style:normal;font-family:var(--f-m);font-size:9.5px;color:var(--muted);text-align:center}
+#cash{width:100%;height:auto;display:block}
+details.as{border-top:1px solid var(--line);padding-top:14px}
+details.as summary{font-family:var(--f-m);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);cursor:pointer}
+details.as summary:hover{color:var(--volt)}
+details.as ul{margin:13px 0 0;padding-left:17px;font-family:var(--f-m);font-size:12px;color:var(--ink-2);line-height:1.7}
+
+/* ---- services ---- */
+.svcs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+@media(max-width:940px){.svcs{grid-template-columns:1fr}}
+.svc{--cut:16px;border:1px solid var(--line);background:linear-gradient(165deg,rgba(18,30,51,.7),rgba(8,14,26,.85));padding:28px 26px 30px;display:flex;flex-direction:column;gap:16px;transition:border-color .25s,transform .25s,box-shadow .25s;clip-path:polygon(var(--cut) 0,100% 0,100% calc(100% - var(--cut)),calc(100% - var(--cut)) 100%,0 100%,0 var(--cut))}
+.svc:hover{border-color:var(--line-3);transform:translateY(-4px);box-shadow:0 26px 50px -34px #000}
+.svc-n{font-family:var(--f-m);font-size:10.5px;letter-spacing:.2em;color:var(--muted)}
+.svc svg.ic{width:38px;height:38px;color:var(--volt)}
+.svc:nth-child(2) svg.ic{color:var(--solar)}
+.svc:nth-child(3) svg.ic{color:var(--cyan)}
+.svc h3{font-size:21px}
+.svc p{font-size:15px;color:var(--ink-2)}
+.svc ul{margin:auto 0 0;padding:16px 0 0;list-style:none;display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--line)}
+.svc li{font-family:var(--f-m);font-size:11.5px;color:var(--ink-2);display:flex;gap:10px;align-items:baseline;letter-spacing:.02em}
+.svc li::before{content:"▸";color:var(--volt);flex:none;font-size:10px}
+.svc:nth-child(2) li::before{color:var(--solar)}
+.svc:nth-child(3) li::before{color:var(--cyan)}
+
+/* ---- timeline ---- */
+.rail{position:relative;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;padding-top:42px}
+.rail::before{content:"";position:absolute;top:13px;left:0;right:0;height:1px;background:linear-gradient(90deg,var(--volt),var(--cyan))}
+@media(max-width:940px){.rail{grid-template-columns:1fr;padding-top:0;padding-left:26px}.rail::before{top:0;bottom:0;left:5px;right:auto;width:1px;height:auto;background:linear-gradient(180deg,var(--volt),var(--cyan))}}
+.node{position:relative;display:flex;flex-direction:column;gap:9px;padding-top:6px}
+@media(max-width:940px){.node{padding:14px 0 14px 22px}}
+.node::before{content:"";position:absolute;top:-35px;left:0;width:11px;height:11px;background:var(--void);border:2px solid var(--volt);box-shadow:0 0 14px var(--volt-glow);transform:rotate(45deg)}
+@media(max-width:940px){.node::before{top:20px;left:-22px}}
+.node-n{font-family:var(--f-m);font-size:10.5px;letter-spacing:.2em;color:var(--volt)}
+.node h3{font-size:17.5px}
+.node p{font-size:14px;color:var(--ink-2)}
+.node .t{font-family:var(--f-m);font-size:11px;color:var(--muted);border:1px solid var(--line);padding:3px 8px;align-self:flex-start;margin-top:2px}
+
+/* ---- references & table ---- */
+.refs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+@media(max-width:940px){.refs{grid-template-columns:1fr}}
+.ref{--cut:14px;border:1px solid var(--line);background:rgba(10,18,32,.7);padding:24px;display:flex;flex-direction:column;gap:14px;clip-path:polygon(var(--cut) 0,100% 0,100% calc(100% - var(--cut)),calc(100% - var(--cut)) 100%,0 100%,0 var(--cut))}
+.ref .br{font-family:var(--f-m);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--cyan)}
+.ref h3{font-size:18px}
+.ref dl{margin:0;display:grid;grid-template-columns:1fr auto;gap:10px 14px;font-size:13.5px;border-top:1px solid var(--line);padding-top:15px}
+.ref dt{color:var(--muted);font-family:var(--f-m);font-size:11.5px}
+.ref dd{margin:0;font-family:var(--f-m);text-align:right;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.ph{align-self:flex-start;font-family:var(--f-m);font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--solar);border:1px solid var(--solar-dim);padding:3px 8px}
+.tbl-s{overflow-x:auto}
+table.fd{width:100%;border-collapse:collapse;font-size:14.5px;min-width:620px}
+table.fd th{text-align:left;font-family:var(--f-m);font-size:9.5px;letter-spacing:.19em;text-transform:uppercase;color:var(--muted);font-weight:400;padding:0 16px 12px 0;border-bottom:1px solid var(--line-2)}
+table.fd td{padding:17px 16px 17px 0;border-bottom:1px solid var(--line);vertical-align:top;color:var(--ink-2)}
+table.fd td:first-child{color:var(--ink);font-family:var(--f-d);font-weight:600;font-variation-settings:"wdth" 112;width:24%}
+table.fd td:nth-child(2){font-family:var(--f-m);font-size:12.5px;color:var(--cyan);width:20%}
+
+/* ---- faq ---- */
+.faq{border-top:1px solid var(--line);max-width:940px}
+.qa{border-bottom:1px solid var(--line)}
+.qa summary{display:flex;justify-content:space-between;align-items:center;gap:22px;padding:21px 0;cursor:pointer;font-family:var(--f-d);font-weight:600;font-variation-settings:"wdth" 112;font-size:18px;letter-spacing:-.015em;list-style:none;transition:color .2s}
+.qa summary:hover{color:var(--volt)}
+.qa summary::-webkit-details-marker{display:none}
+.qa summary::after{content:"";width:11px;height:11px;border-right:1.5px solid var(--volt);border-bottom:1.5px solid var(--volt);transform:rotate(45deg) translateY(-3px);flex:none;transition:transform .25s}
+.qa[open] summary::after{transform:rotate(225deg) translateY(-3px)}
+.qa p{padding-bottom:22px;font-size:15px;color:var(--ink-2);max-width:74ch}
+
+/* ---- contact ---- */
+.cta{position:relative;border-bottom:1px solid var(--line);overflow:hidden}
+.cta::before{content:"";position:absolute;inset:0;z-index:-1;
+  background:radial-gradient(90% 120% at 12% 0%,rgba(69,224,255,.12),transparent 55%),
+             radial-gradient(80% 110% at 92% 100%,rgba(140,224,75,.14),transparent 58%),var(--deep)}
+.cta-in{display:grid;grid-template-columns:minmax(0,1fr) 430px;gap:clamp(26px,4vw,64px);padding-block:clamp(52px,7vw,96px);align-items:start}
+@media(max-width:980px){.cta-in{grid-template-columns:1fr}}
+.cta h2{font-size:clamp(30px,4.2vw,54px);margin-top:16px}
+.cta-l{color:var(--ink-2);font-size:17.5px;max-width:48ch;margin-top:20px}
+.cts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;margin-top:38px;padding-top:28px;border-top:1px solid var(--line)}
+.cts i{font-style:normal;font-family:var(--f-m);font-size:9.5px;letter-spacing:.19em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:9px}
+.cts a,.cts p{color:var(--ink);text-decoration:none;font-size:15px;line-height:1.55}
+.cts a:hover{color:var(--volt)}
+.form{--cut:18px;border:1px solid var(--line);background:linear-gradient(165deg,rgba(18,30,51,.85),rgba(8,14,26,.92));padding:26px;display:flex;flex-direction:column;gap:16px;clip-path:polygon(var(--cut) 0,100% 0,100% calc(100% - var(--cut)),calc(100% - var(--cut)) 100%,0 100%,0 var(--cut))}
+.form h3{font-size:19px}
+.lbl{font-family:var(--f-m);font-size:9.5px;letter-spacing:.19em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:8px}
+.form input,.form select{width:100%;background:rgba(4,7,14,.7);border:1px solid var(--line);padding:12px 13px;font-size:14.5px;font-family:var(--f-b)}
+.form input::placeholder{color:var(--muted)}
+.form input:focus,.form select:focus{border-color:var(--volt);outline:none;box-shadow:0 0 0 3px rgba(140,224,75,.1)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.fine{font-family:var(--f-m);font-size:11px;color:var(--muted);line-height:1.6}
+.sent{display:none;border:1px solid var(--volt-dim);background:rgba(140,224,75,.07);padding:15px;font-size:13.5px;color:var(--ink-2)}
+.sent.on{display:block}
+.sent b{display:block;color:var(--volt);font-family:var(--f-m);font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:8px}
+.sent code{font-family:var(--f-m);font-size:11.5px;display:block;margin-top:10px;color:var(--muted);line-height:1.7}
+
+/* ---- footer ---- */
+footer{padding-block:clamp(44px,5vw,66px) 24px;background:var(--void)}
+.fg{display:grid;grid-template-columns:1.5fr repeat(3,1fr);gap:clamp(20px,3vw,42px)}
+@media(max-width:880px){.fg{grid-template-columns:1fr 1fr}}
+.fg h4{font-family:var(--f-m);font-weight:400;font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:16px}
+.fg ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px}
+.fg a{text-decoration:none;color:var(--ink-2);font-size:14px}
+.fg a:hover{color:var(--volt)}
+.fa{font-size:14px;color:var(--ink-2);line-height:1.7;margin-top:18px;font-family:var(--f-m)}
+.fb{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-top:clamp(34px,4vw,52px);padding-top:22px;border-top:1px solid var(--line);font-family:var(--f-m);font-size:11px;color:var(--muted)}
+.fb a{text-decoration:none}.fb a:hover{color:var(--ink-2)}
+.dis{max-width:1300px;margin:0 auto;padding:0 var(--pad) 34px;font-family:var(--f-m);font-size:10.5px;line-height:1.8;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.001ms !important;transition-duration:.001ms !important}}
+</style>
+
+<header class="top">
+  <div class="wrap top-in">
+    <a class="brand" href="#top">
+      <span class="mark chamf"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M13.5 2 4 13.5h6L9.5 22 20 10.5h-6.5L13.5 2Z" fill="#06170A"/></svg></span>
+      <span><b>ÖKOVOLT</b><small>Solartechnik</small></span>
+    </a>
+    <nav class="nav" aria-label="Hauptnavigation">
+      <a href="#konfigurator">Konfigurator</a>
+      <a href="#leistungen">Leistungen</a>
+      <a href="#ablauf">Ablauf</a>
+      <a href="#referenzen">Referenzen</a>
+      <a href="#foerderung">Förderung</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+    <div class="top-r">
+      <a class="tel" href="tel:+43627871030">+43 6278 71030</a>
+      <a class="btn btn-v" href="#kontakt">Anfrage</a>
+      <button class="burger" id="burger" type="button" aria-label="Menü" aria-expanded="false">
+        <svg width="17" height="17" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+<div id="mob">
+  <a href="#konfigurator">Konfigurator</a><a href="#leistungen">Leistungen</a><a href="#ablauf">Ablauf</a>
+  <a href="#referenzen">Referenzen</a><a href="#foerderung">Förderung</a><a href="#faq">FAQ</a><a href="#kontakt">Kontakt</a>
+</div>
+
+<main id="top">
+<section class="hero">
+  <canvas id="field" aria-hidden="true"></canvas>
+  <div class="wrap hero-in">
+    <div class="hero-grid">
+      <div>
+        <span class="kicker">Gewerbe-Photovoltaik · Österreich</span>
+        <h1>Jedes Hallendach ist ein <span class="gl">Kraftwerk</span>, das noch nicht läuft.</h1>
+        <p class="lede">ÖKOVOLT plant, errichtet und betreibt Photovoltaikanlagen für Industrie, Produktion und Logistik. Lastganganalyse, Netzzutritt, Förderung, Direktvermarktung und Echtzeit-Monitoring aus einer Hand.</p>
+        <div class="hero-acts">
+          <a class="btn btn-v" href="#konfigurator">Anlage konfigurieren
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"/></svg></a>
+          <a class="btn btn-o" href="#referenzen">Referenzanlagen</a>
+        </div>
+        <div class="hero-meta">
+          <span><i></i>Standort Ostermiething</span>
+          <span><i></i>Montage österreichweit</span>
+          <span><i></i>Eigenes Serviceteam</span>
+        </div>
+      </div>
+
+      <div class="tele glass chamf">
+        <div class="tele-h"><span><span class="pulse"></span>Anlagenportfolio</span><span>Stand 2026</span></div>
+        <div class="tele-row"><div><i>Errichtete Anlagen</i><p>PV-Kraftwerke in Betrieb</p></div><b data-cnt="5000">5.000</b></div>
+        <div class="tele-row"><div><i>Installierte Leistung</i><p>Summe Generatorleistung</p></div><b data-cnt="340000">340.000<span class="unit">kWp</span></b></div>
+        <div class="tele-row"><div><i>Vermiedene Emissionen</i><p>über die Lebensdauer</p></div><b data-cnt="112000">112.000<span class="unit">t</span></b></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap band-in">
+    <p>Realisiert für</p>
+    <span>Alpla Werke Alwin Lehner</span><em>/</em>
+    <span>Andritz Fabrics and Rolls</span><em>/</em>
+    <span>Aumayr GmbH</span>
+  </div>
+</section>
+
+<!-- ===== KONFIGURATOR ===== -->
+<section class="sec" id="konfigurator">
+  <div class="grid-bg"></div>
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <span class="kicker">Anlagenkonfigurator</span>
+        <h2>Vier Regler. Die komplette Wirtschaftlichkeit.</h2>
+      </div>
+      <p class="lede">Anlagengröße, Jahresertrag, Eigenverbrauch, Amortisation und der Kapitalfluss über zwanzig Jahre. Gerechnet mit Einstrahlungswerten für Oberösterreich und Salzburg, alle Annahmen offengelegt.</p>
+    </div>
+
+    <div class="console glass chamf">
+      <div class="con-t"><span><span class="pulse"></span>Auslegung · Echtzeit</span><span id="stamp">Profil: Flachdach Ost-West</span></div>
+
+      <div class="con-l">
+        <div class="field">
+          <div class="field-h"><label for="area">Nutzbare Dachfläche</label><span class="field-v" id="v-area">1.800<span class="unit">m²</span></span></div>
+          <input id="area" type="range" min="200" max="20000" step="100" value="1800">
+          <div class="scale"><span>200</span><span>20.000 m²</span></div>
+        </div>
+        <div class="field">
+          <span class="lbl" id="rl">Dachform</span>
+          <div class="seg" role="group" aria-labelledby="rl">
+            <button type="button" data-roof="flach" aria-pressed="true"><svg viewBox="0 0 40 22" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M3 17h34"/><path d="M7 17V9l9-3v11M20 17V9l9-3v11"/></svg>Flachdach</button>
+            <button type="button" data-roof="pult" aria-pressed="false"><svg viewBox="0 0 40 22" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 18V11l32-7v14z"/></svg>Pultdach</button>
+            <button type="button" data-roof="sattel" aria-pressed="false"><svg viewBox="0 0 40 22" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 18 20 5l16 13z"/><path d="M20 5v13"/></svg>Satteldach</button>
+            <button type="button" data-roof="sonst" aria-pressed="false"><svg viewBox="0 0 40 22" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M3 18V9l9-4 9 4v9"/><path d="M23 18v-7h14v7z"/></svg>Sonstige</button>
+          </div>
+        </div>
+        <div class="field">
+          <div class="field-h"><label for="use">Jahresstromverbrauch</label><span class="field-v" id="v-use">620<span class="unit">MWh</span></span></div>
+          <input id="use" type="range" min="20" max="5000" step="10" value="620">
+          <div class="scale"><span>20</span><span>5.000 MWh</span></div>
+        </div>
+        <div class="field">
+          <div class="field-h"><label for="price">Strompreis netto</label><span class="field-v" id="v-price">21,0<span class="unit">ct/kWh</span></span></div>
+          <input id="price" type="range" min="8" max="40" step="0.5" value="21">
+          <div class="scale"><span>8</span><span>40 ct/kWh</span></div>
+        </div>
+        <details class="as">
+          <summary>Rechenannahmen</summary>
+          <ul>
+            <li>Spezifischer Ertrag 950–1.080 kWh/kWp je Dachform</li>
+            <li>Flächenbedarf 1,95 m²/kWp dachparallel, 2,6 m²/kWp aufgeständert</li>
+            <li>Investition 740–1.300 €/kWp, degressiv, ohne Förderung</li>
+            <li>Überschusserlös 6,0 ct/kWh in der Direktvermarktung</li>
+            <li>Kapitalfluss mit 2 % Strompreissteigerung und 0,5 % Degradation p.a.</li>
+            <li>Emissionsfaktor 227 g CO₂/kWh, Strommix Österreich</li>
+          </ul>
+        </details>
+      </div>
+
+      <div class="con-r">
+        <div class="stats">
+          <div class="stat"><i>Anlagengröße</i><b id="o-kwp">519<span class="unit">kWp</span></b><small id="o-mod">1.155 Module</small></div>
+          <div class="stat s"><i>Jahresertrag</i><b id="o-yield">535.000<span class="unit">kWh</span></b><small id="o-spec">1.030 kWh/kWp</small></div>
+          <div class="stat v"><i>Ersparnis p.a.</i><b id="o-save">70.400<span class="unit">€</span></b><small id="o-savesub">inkl. Einspeiseerlös</small></div>
+          <div class="stat"><i>Investition</i><b id="o-inv">415.000<span class="unit">€</span></b><small id="o-spez">800 €/kWp</small></div>
+          <div class="stat v"><i>Amortisation</i><b id="o-pay">5,9<span class="unit">Jahre</span></b><small>ohne Förderung gerechnet</small></div>
+          <div class="stat c"><i>CO₂ p.a.</i><b id="o-co2">121<span class="unit">t</span></b><small>Strommix Österreich</small></div>
+        </div>
+
+        <div class="dual">
+          <div class="gauge">
+            <h4>Eigenverbrauchsquote</h4>
+            <svg viewBox="0 0 200 150" role="img" aria-label="Eigenverbrauchsquote">
+              <path d="M25 132 A 78 78 0 1 1 175 132" fill="none" stroke="rgba(150,180,220,.16)" stroke-width="13" stroke-linecap="round"/>
+              <path id="g-arc" d="M25 132 A 78 78 0 1 1 175 132" fill="none" stroke="var(--volt)" stroke-width="13" stroke-linecap="round" stroke-dasharray="367" stroke-dashoffset="191" style="filter:drop-shadow(0 0 8px var(--volt-glow));transition:stroke-dashoffset .45s cubic-bezier(.2,.8,.3,1)"/>
+              <text id="g-val" x="100" y="112" text-anchor="middle" fill="var(--ink)" font-family="Archivo, sans-serif" font-weight="800" font-size="46" letter-spacing="-2">48%</text>
+              <text x="100" y="136" text-anchor="middle" fill="var(--muted)" font-family="JetBrains Mono, monospace" font-size="11">direkt genutzt</text>
+            </svg>
+            <p id="g-sub">deckt 41 % des Strombedarfs</p>
+          </div>
+
+          <div class="flow" aria-hidden="true">
+            <svg viewBox="0 0 700 250">
+              <g fill="none" stroke-linecap="round">
+                <path d="M148 125 H244" stroke="var(--solar-dim)" stroke-width="10" opacity=".3"/>
+                <path id="p1" d="M148 125 H244" stroke="var(--solar)" stroke-width="10" stroke-dasharray="8 20" style="filter:drop-shadow(0 0 6px var(--solar-glow))"/>
+                <path d="M334 112 C 394 112 404 64 460 64" stroke="var(--volt-dim)" stroke-width="10" opacity=".3"/>
+                <path id="p2" d="M334 112 C 394 112 404 64 460 64" stroke="var(--volt)" stroke-width="10" stroke-dasharray="8 20" style="filter:drop-shadow(0 0 6px var(--volt-glow))"/>
+                <path d="M334 140 C 394 140 404 192 460 192" stroke="var(--cyan-dim)" stroke-width="10" opacity=".3"/>
+                <path id="p3" d="M334 140 C 394 140 404 192 460 192" stroke="var(--cyan)" stroke-width="10" stroke-dasharray="8 20" style="filter:drop-shadow(0 0 6px var(--cyan-glow))"/>
+                <path id="p4" d="M552 158 V 106" stroke="var(--muted)" stroke-width="3" stroke-dasharray="5 9"/>
+              </g>
+              <g font-family="JetBrains Mono, monospace" font-size="11.5">
+                <rect x="18" y="94" width="130" height="62" fill="rgba(18,30,51,.9)" stroke="var(--line-2)"/>
+                <text x="83" y="120" text-anchor="middle" fill="var(--ink)">PV-Generator</text>
+                <text x="83" y="140" text-anchor="middle" fill="var(--solar)" id="f-kwp">519 kWp</text>
+                <rect x="244" y="98" width="90" height="54" fill="rgba(18,30,51,.9)" stroke="var(--line-2)"/>
+                <text x="289" y="120" text-anchor="middle" fill="var(--ink)" font-size="10.5">WECHSEL-</text>
+                <text x="289" y="136" text-anchor="middle" fill="var(--ink)" font-size="10.5">RICHTER</text>
+                <rect x="460" y="34" width="222" height="60" fill="rgba(140,224,75,.09)" stroke="var(--volt-dim)"/>
+                <text x="476" y="58" fill="var(--ink)">Eigenverbrauch Betrieb</text>
+                <text x="476" y="78" fill="var(--volt)" id="f-ev">255.000 kWh/a</text>
+                <rect x="460" y="158" width="222" height="60" fill="rgba(69,224,255,.07)" stroke="var(--cyan-dim)"/>
+                <text x="476" y="182" fill="var(--ink)">Einspeisung ins Netz</text>
+                <text x="476" y="202" fill="var(--cyan)" id="f-feed">280.000 kWh/a</text>
+                <text x="196" y="112" text-anchor="middle" fill="var(--muted)" font-size="10">DC</text>
+                <text x="596" y="132" text-anchor="middle" fill="var(--muted)" font-size="10" id="f-grid">Restbezug 365.000 kWh</text>
+              </g>
+            </svg>
+          </div>
+        </div>
+
+        <div class="charts">
+          <div class="chart">
+            <div class="chart-h"><h4>Monatlicher Ertrag</h4><span id="c-peak">Juli · 72.200 kWh</span></div>
+            <div class="bars" id="bars"></div>
+            <div class="bar-x" id="barsx"></div>
+          </div>
+          <div class="chart">
+            <div class="chart-h"><h4>Kapitalfluss 20 Jahre</h4><span id="c-net">Netto nach 20 J · +1,29 Mio €</span></div>
+            <svg id="cash" viewBox="0 0 420 176" role="img" aria-label="Kumulierter Kapitalfluss über 20 Jahre"></svg>
+          </div>
+        </div>
+
+        <p class="fine">Richtwerte nach den offengelegten Annahmen. Verbindliche Aussagen nach Lastganganalyse und Dachbegehung.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== LEISTUNGEN ===== -->
+<section class="sec" id="leistungen">
+  <div class="wrap">
+    <div class="sec-head">
+      <div><span class="kicker">Leistungen</span><h2>Planung, Errichtung und Betrieb aus einer Hand.</h2></div>
+      <p class="lede">Ein Ansprechpartner über die gesamte Anlagenlebensdauer, von der ersten Wirtschaftlichkeitsrechnung bis zur Entstörung im laufenden Betrieb.</p>
+    </div>
+    <div class="svcs">
+      <article class="svc">
+        <span class="svc-n">A — ERZEUGUNG</span>
+        <svg class="ic" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M3 26h26M7 26 10 9h12l3 17"/><path d="M8.6 18h14.8M11.6 9 10 26M18 9l2 17"/></svg>
+        <h3>Photovoltaik-Aufdachanlagen</h3>
+        <p>Ausgelegt nach Lastgang, nicht nach Dachfläche. Wir dimensionieren auf maximale Eigenverbrauchsquote, prüfen die Dachstatik und führen das Netzzutrittsverfahren.</p>
+        <ul><li>Lastganganalyse im 15-Minuten-Raster</li><li>Statiknachweis und Ballastierungsplan</li><li>Ost-West-Aufständerung oder dachparallel</li><li>Netzzutritt und Zählpunktabwicklung</li></ul>
+      </article>
+      <article class="svc">
+        <span class="svc-n">B — SPEICHERUNG</span>
+        <svg class="ic" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="5" y="8" width="22" height="18"/><path d="M10 5v3M22 5v3M11 20v-8l5 5 5-5v8"/></svg>
+        <h3>Speicher, Notstrom &amp; Lastmanagement</h3>
+        <p>Im Gewerbe rechnet sich der Speicher meist über die Lastspitze, nicht über die Nacht. Wir bewerten, ob ihn das Netzentgelt trägt oder eine Notstromumschaltung sinnvoller ist.</p>
+        <ul><li>Spitzenlastkappung und Netzentgelte</li><li>Notstrombox mit Netztrennstelle</li><li>Ladeinfrastruktur und Wärmepumpe</li><li>Dynamische Tarife, Direktvermarktung</li></ul>
+      </article>
+      <article class="svc">
+        <span class="svc-n">C — BETRIEB</span>
+        <svg class="ic" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 6v21h25"/><path d="M7 21l6-8 5 5 4-7 6 8"/><circle cx="26" cy="8" r="2.6"/></svg>
+        <h3>Service, Wartung &amp; Ökosys</h3>
+        <p>Jede Anlage läuft im Monitoring. Ökosys vergleicht Ist- und Sollertrag je String und meldet Abweichungen, bevor sie auf der Stromabrechnung sichtbar werden.</p>
+        <ul><li>Stringgenaue Ertragsüberwachung</li><li>Wiederkehrende Prüfung nach ÖVE/ÖNORM</li><li>Thermografie und Modultausch</li><li>Servicenetz in ganz Österreich</li></ul>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ===== ABLAUF ===== -->
+<section class="sec" id="ablauf">
+  <div class="grid-bg"></div>
+  <div class="wrap">
+    <div class="sec-head">
+      <div><span class="kicker c">Projektablauf</span><h2>Fünf Schritte bis zur ersten Kilowattstunde.</h2></div>
+      <p class="lede">Den Takt gibt nicht die Montage vor, sondern das Netzzutrittsverfahren. Deshalb starten wir es parallel zur Detailplanung.</p>
+    </div>
+    <div class="rail">
+      <div class="node"><span class="node-n">01</span><h3>Lastgang &amp; Dach</h3><p>Auswertung der Viertelstundenwerte, Prüfung von Dachaufbau, Statikreserve und Verschattung.</p><span class="t">1–2 Wochen</span></div>
+      <div class="node"><span class="node-n">02</span><h3>Konzept</h3><p>Auslegung, Ertragsprognose und Cashflow über 20 Jahre, mit und ohne Speichervariante.</p><span class="t">ca. 2 Wochen</span></div>
+      <div class="node"><span class="node-n">03</span><h3>Förderung &amp; Netz</h3><p>Antrag im Fördercall, Netzzutrittsantrag und Abstimmung mit dem Netzbetreiber.</p><span class="t">4–12 Wochen</span></div>
+      <div class="node"><span class="node-n">04</span><h3>Montage</h3><p>Unterkonstruktion, Module, Verkabelung, Wechselrichter. Betriebsunterbrechungen vorab abgestimmt.</p><span class="t">1–4 Wochen</span></div>
+      <div class="node"><span class="node-n">05</span><h3>Betrieb</h3><p>Abnahmeprüfung, Anmeldung des Einspeisezählpunkts, Einschulung, Aufschaltung auf Ökosys.</p><span class="t">laufend</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== REFERENZEN ===== -->
+<section class="sec" id="referenzen">
+  <div class="wrap">
+    <div class="sec-head">
+      <div><span class="kicker">Referenzen</span><h2>Anlagen im industriellen Dauerbetrieb.</h2></div>
+      <p class="lede">Drei Beispiele aus dem Portfolio. Die Anlagenkennzahlen sind in dieser Studie als Platzhalter markiert und vor der Veröffentlichung durch echte Projektdaten zu ersetzen.</p>
+    </div>
+    <div class="refs">
+      <article class="ref"><span class="br">Kunststoffverpackung</span><h3>Alpla Werke Alwin Lehner GmbH &amp; Co KG</h3><span class="ph">Platzhalterdaten</span>
+        <dl><dt>Generatorleistung</dt><dd>— kWp</dd><dt>Jahresertrag</dt><dd>— kWh</dd><dt>Eigenverbrauch</dt><dd>— %</dd><dt>Inbetriebnahme</dt><dd>—</dd></dl></article>
+      <article class="ref"><span class="br">Industrietechnik</span><h3>Andritz Fabrics and Rolls GmbH</h3><span class="ph">Platzhalterdaten</span>
+        <dl><dt>Generatorleistung</dt><dd>— kWp</dd><dt>Jahresertrag</dt><dd>— kWh</dd><dt>Eigenverbrauch</dt><dd>— %</dd><dt>Inbetriebnahme</dt><dd>—</dd></dl></article>
+      <article class="ref"><span class="br">Bau &amp; Transport</span><h3>Aumayr GmbH</h3><span class="ph">Platzhalterdaten</span>
+        <dl><dt>Generatorleistung</dt><dd>— kWp</dd><dt>Jahresertrag</dt><dd>— kWh</dd><dt>Eigenverbrauch</dt><dd>— %</dd><dt>Inbetriebnahme</dt><dd>—</dd></dl></article>
+    </div>
+  </div>
+</section>
+
+<!-- ===== FÖRDERUNG ===== -->
+<section class="sec" id="foerderung">
+  <div class="wrap">
+    <div class="sec-head">
+      <div><span class="kicker c">Förderlandschaft Österreich</span><h2>Welche Töpfe für Ihren Betrieb infrage kommen.</h2></div>
+      <p class="lede">Sätze und Fristen ändern sich mit jedem Call. Wir prüfen die aktuelle Lage bei der Angebotslegung und übernehmen die Antragstellung.</p>
+    </div>
+    <div class="tbl-s">
+      <table class="fd">
+        <thead><tr><th>Instrument</th><th>Ebene</th><th>Worauf es ankommt</th></tr></thead>
+        <tbody>
+          <tr><td>EAG-Investitionszuschuss</td><td>BUND</td><td>Vergabe über zeitlich begrenzte Fördercalls mit Leistungskategorien. Die Anlage darf vor der Antragstellung nicht in Bau gehen, der Zeitpunkt entscheidet.</td></tr>
+          <tr><td>Landesförderungen</td><td>LAND</td><td>Zusätzliche Zuschüsse, teils gezielt für Speicher oder Ladeinfrastruktur. Eine Kumulierung mit der Bundesförderung ist nicht immer zulässig.</td></tr>
+          <tr><td>Investitionsfreibetrag</td><td>STEUER</td><td>Erhöhter Satz für ökologische Investitionen. Wirkt über die Steuererklärung, nicht über einen Antrag, und setzt betriebliche Nutzung voraus.</td></tr>
+          <tr><td>Direktvermarktung</td><td>MARKT</td><td>Überschussstrom wird am Spotmarkt vermarktet statt zu einem fixen Abnahmepreis. Der Erlös folgt dem Marktpreis und schwankt über das Jahr.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ===== FAQ ===== -->
+<section class="sec" id="faq">
+  <div class="wrap">
+    <div class="sec-head"><div><span class="kicker">Häufige Fragen</span><h2>Was Betriebe vor der Entscheidung klären.</h2></div></div>
+    <div class="faq">
+      <details class="qa" open><summary>Wie lange dauert es von der Zusage bis zur Einspeisung?</summary><p>In der Regel drei bis sechs Monate. Die Montage selbst dauert je nach Größe ein bis vier Wochen. Den Takt gibt das Netzzutrittsverfahren vor, deshalb reichen wir den Antrag ein, sobald die Auslegung fixiert ist.</p></details>
+      <details class="qa"><summary>Hält mein Hallendach die zusätzliche Last aus?</summary><p>Das klärt ein Statiknachweis vor der Planung. Beim Flachdach kommt zur Modul- und Unterkonstruktionslast die Ballastierung gegen Windsog dazu. Wo die Reserve knapp ist, arbeiten wir mit leichteren Systemen oder belegen nur Teilbereiche.</p></details>
+      <details class="qa"><summary>Brauche ich einen Batteriespeicher?</summary><p>Im Gewerbe selten wegen der Nacht, häufig wegen der Lastspitze. Wenn Ihr Netzentgelt am Leistungspreis hängt, kann die Spitzenlastkappung den Speicher tragen. Die Entscheidung fällt am Lastgang, nicht an einer Faustregel.</p></details>
+      <details class="qa"><summary>Was passiert mit dem Strom, den wir nicht selbst verbrauchen?</summary><p>Er wird eingespeist und vermarktet. In der Direktvermarktung folgt der Erlös dem Spotpreis, der in ertragsstarken Mittagsstunden unter dem Jahresschnitt liegen kann. Deshalb rechnen wir den Überschuss konservativ.</p></details>
+      <details class="qa"><summary>Läuft die Anlage bei einem Netzausfall weiter?</summary><p>Nicht automatisch. Ein normaler Wechselrichter trennt sich bei Netzausfall ab. Für den Weiterbetrieb braucht es eine Notstromfunktion mit Netztrennstelle, die wir als Notstrombox mit automatischer Umschaltung ausführen.</p></details>
+      <details class="qa"><summary>Wie lange hält die Anlage und was fällt an Wartung an?</summary><p>Module sind auf 25 bis 30 Jahre ausgelegt, Wechselrichter erreichen meist 10 bis 15 Jahre. Laufend fallen die wiederkehrende Prüfung, die Sichtkontrolle der Unterkonstruktion und bei Bedarf eine Thermografie an.</p></details>
+    </div>
+  </div>
+</section>
+
+<!-- ===== KONTAKT ===== -->
+<section class="cta" id="kontakt">
+  <div class="wrap cta-in">
+    <div>
+      <span class="kicker">Kontakt</span>
+      <h2>Schicken Sie uns Ihr Dach. Sie bekommen Zahlen zurück.</h2>
+      <p class="cta-l">Sie erhalten eine erste Auslegung mit Ertragsprognose, Förderabschätzung und Amortisationsrechnung. Unverbindlich und ohne Vor-Ort-Termin.</p>
+      <div class="cts">
+        <div><i>Telefon</i><a href="tel:+43627871030">+43 6278 71030</a></div>
+        <div><i>E-Mail</i><a href="mailto:office@oekovolt.at">office@oekovolt.at</a></div>
+        <div><i>Standort</i><p>Gewerbegebiet 10<br>5121 Ostermiething, Österreich</p></div>
+        <div><i>Öffnungszeiten</i><p>Mo–Do 08:00–16:00<br>Fr 08:00–13:00</p></div>
+      </div>
+    </div>
+    <form class="form" id="form" novalidate>
+      <h3>Unverbindliche Anfrage</h3>
+      <div><label class="lbl" for="f-roof">Dachform</label><select id="f-roof"><option>Flachdach</option><option>Pultdach</option><option>Satteldach</option><option>Sonstige</option></select></div>
+      <div class="row2">
+        <div><label class="lbl" for="f-area">Dachfläche m²</label><input id="f-area" type="text" inputmode="numeric" placeholder="1800"></div>
+        <div><label class="lbl" for="f-use">Verbrauch MWh/a</label><input id="f-use" type="text" inputmode="numeric" placeholder="620"></div>
+      </div>
+      <div><label class="lbl" for="f-comp">Unternehmen</label><input id="f-comp" type="text" placeholder="Musterbetrieb GmbH"></div>
+      <div class="row2">
+        <div><label class="lbl" for="f-name">Ansprechpartner</label><input id="f-name" type="text" placeholder="Vor- und Nachname"></div>
+        <div><label class="lbl" for="f-mail">E-Mail</label><input id="f-mail" type="email" placeholder="name@betrieb.at"></div>
+      </div>
+      <button class="btn btn-v" type="submit">Auslegung anfordern</button>
+      <p class="fine">Rückmeldung innerhalb eines Werktags. Die Angaben werden ausschließlich zur Bearbeitung der Anfrage verwendet.</p>
+      <div class="sent" id="sent" role="status"></div>
+    </form>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="fg">
+      <div>
+        <a class="brand" href="#top"><span class="mark chamf"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M13.5 2 4 13.5h6L9.5 22 20 10.5h-6.5L13.5 2Z" fill="#06170A"/></svg></span><span><b>ÖKOVOLT</b><small>Solartechnik</small></span></a>
+        <p class="fa">Ökovolt Solartechnik GmbH<br>Gewerbegebiet 10<br>5121 Ostermiething, Österreich</p>
+      </div>
+      <div><h4>Leistungen</h4><ul><li><a href="#leistungen">Photovoltaik</a></li><li><a href="#leistungen">Stromspeicher</a></li><li><a href="#leistungen">Notstrom</a></li><li><a href="#leistungen">Wallbox &amp; Wärmepumpe</a></li><li><a href="#leistungen">Agri-Photovoltaik</a></li></ul></div>
+      <div><h4>Service</h4><ul><li><a href="#leistungen">Ökosys Monitoring</a></li><li><a href="#leistungen">Wartung</a></li><li><a href="#leistungen">Repowering</a></li><li><a href="#leistungen">Direktvermarktung</a></li><li><a href="#foerderung">Förderungen</a></li></ul></div>
+      <div><h4>Unternehmen</h4><ul><li><a href="#referenzen">Referenzen</a></li><li><a href="#kontakt">Kontakt</a></li><li><a href="#faq">FAQ</a></li><li><a href="#kontakt">Jobs</a></li><li><a href="#kontakt">Hinweisgebersystem</a></li></ul></div>
+    </div>
+    <div class="fb"><span>© 2026 Ökovolt Solartechnik GmbH</span><span><a href="#kontakt">Impressum</a> · <a href="#kontakt">Datenschutz</a> · <a href="#kontakt">AGB</a></span></div>
+  </div>
+</footer>
+<p class="dis">Designstudie. Inhalte und Portfoliokennzahlen stammen von oekovolt.com. Projektkennzahlen in den Referenzen sind als Platzhalter markiert. Der Konfigurator liefert Richtwerte nach den offengelegten Annahmen und ersetzt keine Anlagenplanung.</p>
+
+<script>
+(function(){
+"use strict";
+var RM=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+var $=function(i){return document.getElementById(i);};
+var de=function(n,d){d=d||0;return Number(n).toLocaleString("de-AT",{minimumFractionDigits:d,maximumFractionDigits:d});};
+
+/* ---------- mobile menu ---------- */
+var bg=$("burger"),mb=$("mob");
+bg.addEventListener("click",function(){var o=mb.classList.toggle("on");bg.setAttribute("aria-expanded",o?"true":"false");});
+mb.addEventListener("click",function(e){if(e.target.tagName==="A"){mb.classList.remove("on");bg.setAttribute("aria-expanded","false");}});
+
+/* ---------- hero canvas: receding module array ---------- */
+(function(){
+  var cv=$("field"),ctx=cv.getContext("2d"),W=0,H=0,dpr=Math.min(window.devicePixelRatio||1,2);
+  var COLS=26,ROWS=13;
+  function size(){
+    var r=cv.parentNode.getBoundingClientRect();
+    W=r.width;H=r.height;cv.width=W*dpr;cv.height=H*dpr;
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+  }
+  function proj(cx,cy){
+    var hz=H*0.40, vx=W*0.5;
+    var t=cy/ROWS, k=Math.pow(t,2.1);
+    var y=hz+(H-hz)*k;
+    var spread=0.06+2.05*k;
+    var x=vx+(cx-COLS/2)*(W/COLS)*spread;
+    return [x,y];
+  }
+  var t0=performance.now();
+  function frame(now){
+    var el=(now-t0)/1000;
+    ctx.clearRect(0,0,W,H);
+    /* horizon glow */
+    var g=ctx.createLinearGradient(0,H*0.24,0,H*0.52);
+    g.addColorStop(0,"rgba(69,224,255,0)");g.addColorStop(.55,"rgba(69,224,255,.10)");g.addColorStop(1,"rgba(140,224,75,.05)");
+    ctx.fillStyle=g;ctx.fillRect(0,H*0.24,W,H*0.30);
+    var sweep=((el*0.16)%1.35)-0.18;
+    for(var r=0;r<ROWS;r++){
+      for(var c=0;c<COLS;c++){
+        var a=proj(c,r),b=proj(c+1,r),d=proj(c+1,r+1),e=proj(c,r+1);
+        if(e[1]<H*0.40)continue;
+        var t=r/ROWS;
+        var dist=Math.abs(t-sweep);
+        var lit=Math.max(0,1-dist/0.20);
+        var base=0.045+0.10*t;
+        ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.lineTo(d[0],d[1]);ctx.lineTo(e[0],e[1]);ctx.closePath();
+        ctx.fillStyle="rgba(20,44,74,"+(base+lit*0.30).toFixed(3)+")";ctx.fill();
+        ctx.strokeStyle="rgba("+(lit>0.05?"140,224,75,":"90,140,190,")+(0.06+lit*0.55).toFixed(3)+")";
+        ctx.lineWidth=lit>0.05?1.1:0.7;ctx.stroke();
+      }
+    }
+    /* drifting photons */
+    for(var i=0;i<44;i++){
+      var s=(i*97)%1000/1000;
+      var px=((s*1.7+el*0.012*(0.4+s))%1)*W;
+      var py=H*0.10+((s*3.1+el*0.030*(0.3+s))%1)*H*0.34;
+      var al=0.10+0.34*Math.abs(Math.sin(el*0.6+i));
+      ctx.fillStyle="rgba(255,180,61,"+al.toFixed(3)+")";
+      ctx.fillRect(px,py,1.6,1.6);
+    }
+    if(!RM)raf=requestAnimationFrame(frame);
+  }
+  var raf;
+  window.addEventListener("resize",function(){size();if(RM)frame(performance.now());});
+  size();
+  if(RM){frame(performance.now());}else{raf=requestAnimationFrame(frame);}
+})();
+
+/* ---------- hero counters ---------- */
+if(!RM){
+  Array.prototype.forEach.call(document.querySelectorAll("[data-cnt]"),function(el){
+    var target=+el.dataset.cnt,unit=el.querySelector(".unit"),u=unit?unit.outerHTML:"",t0=performance.now();
+    function step(n){
+      var p=Math.min(1,(n-t0)/1100),e=1-Math.pow(1-p,3);
+      el.innerHTML=de(Math.round(target*(0.45+0.55*e)))+u;
+      if(p<1)requestAnimationFrame(step);else el.innerHTML=de(target)+u;
+    }
+    requestAnimationFrame(step);
+  });
+}
+
+/* ---------- configurator ---------- */
+var ROOF={
+  flach:{m2:2.6,use:.75,y:1030,l:"Flachdach Ost-West"},
+  pult:{m2:1.95,use:.80,y:1080,l:"Pultdach dachparallel"},
+  sattel:{m2:1.95,use:.70,y:1060,l:"Satteldach beidseitig"},
+  sonst:{m2:2.2,use:.60,y:950,l:"Sonderkonstruktion"}
+};
+var MONTH=[2.8,4.6,8.3,11.2,12.9,13.0,13.5,12.0,9.2,6.5,3.4,2.6];
+var MN=["J","F","M","A","M","J","J","A","S","O","N","D"];
+var MF=["Jänner","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
+var FEED=0.06,CO2F=0.227,MODW=0.45,ESC=0.02,DEG=0.005,YRS=20;
+var roof="flach",built=false;
+var eA=$("area"),eU=$("use"),eP=$("price");
+function cpk(k){return k<30?1300:k<100?1100:k<300?950:k<1000?820:740;}
+
+function build(){
+  var b=$("bars"),x=$("barsx");
+  for(var i=0;i<12;i++){
+    var d=document.createElement("div");d.className="bar";d.tabIndex=0;
+    var s=document.createElement("span");s.id="bt"+i;d.appendChild(s);b.appendChild(d);
+    var t=document.createElement("i");t.textContent=MN[i];x.appendChild(t);
+  }
+  built=true;
+}
+
+function cashflow(invest,save){
+  var pts=[],cum=-invest,i,s=save;
+  pts.push(cum);
+  for(i=1;i<=YRS;i++){ s=save*Math.pow(1+ESC,i-1)*Math.pow(1-DEG,i-1); cum+=s; pts.push(cum); }
+  return pts;
+}
+
+function drawCash(pts){
+  var svg=$("cash"),W=420,H=176,L=44,R=8,T=12,B=26;
+  var min=Math.min.apply(null,pts),max=Math.max.apply(null,pts);
+  var pad=(max-min)*0.12||1; min-=pad; max+=pad;
+  var px=function(i){return L+(W-L-R)*(i/YRS);};
+  var py=function(v){return T+(H-T-B)*(1-(v-min)/(max-min));};
+  var zero=py(0),d="",a="",i;
+  for(i=0;i<pts.length;i++){ d+=(i?"L":"M")+px(i).toFixed(1)+" "+py(pts[i]).toFixed(1)+" "; }
+  a="M"+px(0).toFixed(1)+" "+zero.toFixed(1)+" "+d.substring(1)+"L"+px(YRS).toFixed(1)+" "+zero.toFixed(1)+"Z";
+  /* break-even crossing */
+  var bx=null;
+  for(i=1;i<pts.length;i++){ if(pts[i-1]<0&&pts[i]>=0){ var f=(0-pts[i-1])/(pts[i]-pts[i-1]); bx=px(i-1)+(px(i)-px(i-1))*f; break; } }
+  var fmt=function(v){ return (v>=0?"+":"−")+de(Math.abs(v)/1000)+"k"; };
+  var s='<defs><linearGradient id="cg" x1="0" y1="0" x2="0" y2="1">'
+    +'<stop offset="0%" stop-color="#8CE04B" stop-opacity=".42"/><stop offset="100%" stop-color="#8CE04B" stop-opacity="0"/></linearGradient></defs>';
+  s+='<line x1="'+L+'" y1="'+zero.toFixed(1)+'" x2="'+(W-R)+'" y2="'+zero.toFixed(1)+'" stroke="rgba(150,180,220,.30)" stroke-width="1"/>';
+  s+='<path d="'+a+'" fill="url(#cg)"/>';
+  s+='<path d="'+d+'" fill="none" stroke="#8CE04B" stroke-width="2" stroke-linejoin="round"/>';
+  if(bx!==null){
+    s+='<line x1="'+bx.toFixed(1)+'" y1="'+T+'" x2="'+bx.toFixed(1)+'" y2="'+(H-B)+'" stroke="#FFB43D" stroke-width="1" stroke-dasharray="3 4"/>';
+    s+='<circle cx="'+bx.toFixed(1)+'" cy="'+zero.toFixed(1)+'" r="4" fill="#FFB43D"/>';
+    s+='<text x="'+Math.min(bx+7,W-92).toFixed(1)+'" y="'+(T+12)+'" fill="#FFB43D" font-family="JetBrains Mono, monospace" font-size="10">Break-even</text>';
+  }
+  s+='<circle cx="'+px(YRS).toFixed(1)+'" cy="'+py(pts[YRS]).toFixed(1)+'" r="3.5" fill="#8CE04B"/>';
+  s+='<text x="'+(L-6)+'" y="'+(zero+3.5).toFixed(1)+'" text-anchor="end" fill="rgba(159,180,206,.9)" font-family="JetBrains Mono, monospace" font-size="9.5">0 €</text>';
+  s+='<text x="'+(L-6)+'" y="'+(py(pts[YRS])+3.5).toFixed(1)+'" text-anchor="end" fill="#8CE04B" font-family="JetBrains Mono, monospace" font-size="9.5">'+fmt(pts[YRS])+'</text>';
+  s+='<text x="'+(L-6)+'" y="'+(py(pts[0])+3.5).toFixed(1)+'" text-anchor="end" fill="rgba(159,180,206,.75)" font-family="JetBrains Mono, monospace" font-size="9.5">'+fmt(pts[0])+'</text>';
+  s+='<text x="'+L+'" y="'+(H-8)+'" fill="rgba(97,117,149,1)" font-family="JetBrains Mono, monospace" font-size="9.5">Jahr 0</text>';
+  s+='<text x="'+(W-R)+'" y="'+(H-8)+'" text-anchor="end" fill="rgba(97,117,149,1)" font-family="JetBrains Mono, monospace" font-size="9.5">Jahr 20</text>';
+  svg.innerHTML=s;
+}
+
+function render(){
+  var r=ROOF[roof],area=+eA.value,useM=+eU.value,price=+eP.value/100,useK=useM*1000;
+  var kwp=Math.round(area*r.use/r.m2), yld=Math.round(kwp*r.y);
+  var ratio=useK>0?yld/useK:99;
+  var evq=Math.max(.12,Math.min(.95,.95*Math.exp(-0.8*ratio)));
+  var evK=Math.round(yld*evq), feed=yld-evK, rest=Math.max(0,useK-evK);
+  var save=Math.round(evK*price+feed*FEED), inv=Math.round(kwp*cpk(kwp));
+  var pay=save>0?inv/save:0, co2=Math.round(yld*CO2F/1000), cov=useK>0?Math.round(evK/useK*100):0;
+
+  $("v-area").innerHTML=de(area)+'<span class="unit">m²</span>';
+  $("v-use").innerHTML=de(useM)+'<span class="unit">MWh</span>';
+  $("v-price").innerHTML=de(price*100,1)+'<span class="unit">ct/kWh</span>';
+  $("stamp").textContent="Profil: "+r.l;
+
+  $("o-kwp").innerHTML=de(kwp)+'<span class="unit">kWp</span>';
+  $("o-mod").textContent=de(Math.round(kwp/MODW))+" Module";
+  $("o-yield").innerHTML=de(yld)+'<span class="unit">kWh</span>';
+  $("o-spec").textContent=de(r.y)+" kWh/kWp";
+  $("o-save").innerHTML=de(save)+'<span class="unit">€</span>';
+  $("o-savesub").textContent=de(Math.round(evK*price))+" € Strombezug vermieden";
+  $("o-inv").innerHTML=de(inv)+'<span class="unit">€</span>';
+  $("o-spez").textContent=de(cpk(kwp))+" €/kWp";
+  $("o-pay").innerHTML=de(pay,1)+'<span class="unit">Jahre</span>';
+  $("o-co2").innerHTML=de(co2)+'<span class="unit">t</span>';
+
+  var pct=Math.round(evq*100);
+  $("g-val").textContent=pct+"%";
+  $("g-arc").setAttribute("stroke-dashoffset",(367-367*evq*0.935).toFixed(1));
+  $("g-sub").textContent="deckt "+cov+" % des Strombedarfs";
+
+  $("f-kwp").textContent=de(kwp)+" kWp";
+  $("f-ev").textContent=de(evK)+" kWh/a";
+  $("f-feed").textContent=de(feed)+" kWh/a";
+  $("f-grid").textContent="Restbezug "+de(rest)+" kWh";
+  $("p2").setAttribute("stroke-width",(3+12*evq).toFixed(1));
+  $("p3").setAttribute("stroke-width",(3+12*(1-evq)).toFixed(1));
+
+  if(!built)build();
+  var bars=$("bars").children,mx=Math.max.apply(null,MONTH),i,pk=0,pi=0;
+  for(i=0;i<12;i++){
+    var v=Math.round(yld*MONTH[i]/100);
+    bars[i].style.height=(MONTH[i]/mx*100)+"%";
+    bars[i].setAttribute("aria-label",MF[i]+": "+de(v)+" kWh");
+    $("bt"+i).textContent=MF[i]+" · "+de(v)+" kWh";
+    if(v>pk){pk=v;pi=i;}
+  }
+  $("c-peak").textContent=MF[pi]+" · "+de(pk)+" kWh";
+
+  var cf=cashflow(inv,save);
+  drawCash(cf);
+  $("c-net").textContent="Netto nach 20 J · "+(cf[YRS]>=0?"+":"−")+de(Math.abs(cf[YRS])/1e6,2)+" Mio €";
+}
+
+[eA,eU,eP].forEach(function(el){el.addEventListener("input",render);});
+Array.prototype.forEach.call(document.querySelectorAll(".seg button"),function(b){
+  b.addEventListener("click",function(){
+    Array.prototype.forEach.call(document.querySelectorAll(".seg button"),function(o){o.setAttribute("aria-pressed","false");});
+    b.setAttribute("aria-pressed","true");roof=b.dataset.roof;render();
+  });
+});
+render();
+
+/* ---------- conduit animation ---------- */
+if(!RM){
+  var off=0;
+  setInterval(function(){
+    off=(off-1.4)%28;
+    ["p1","p2","p3"].forEach(function(id){$(id).setAttribute("stroke-dashoffset",off);});
+    $("p4").setAttribute("stroke-dashoffset",-off*0.5);
+  },42);
+}
+
+/* ---------- form ---------- */
+$("form").addEventListener("submit",function(e){
+  e.preventDefault();
+  var s=$("sent");s.className="sent on";
+  s.innerHTML="<b>Vorschau — nichts versendet</b>Dieses Formular ist in der Designstudie nicht angebunden. Für den Livebetrieb an CRM oder Postfach koppeln."
+    +"<code>Dachform: "+$("f-roof").value+"<br>Fläche: "+($("f-area").value||"—")+" m²<br>Verbrauch: "+($("f-use").value||"—")+" MWh/a<br>Unternehmen: "+($("f-comp").value||"—")+"</code>";
+});
+
+/* ---------- smooth anchors ---------- */
+document.querySelectorAll('a[href^="#"]').forEach(function(a){
+  a.addEventListener("click",function(e){
+    var t=document.querySelector(a.getAttribute("href"));
+    if(t){e.preventDefault();t.scrollIntoView({behavior:RM?"auto":"smooth",block:"start"});}
+  });
+});
+})();
+</script>

@@ -1,0 +1,643 @@
+// src/lib/marktdaten/monitor.js – Auswertung des Ausschreibungs-Monitors (Welle 3, Paket B9)
+//
+// Reine Funktionen über src/data/ausschreibungsmonitor.js – ohne React, ohne Next.js, damit Seite,
+// Download-Routen (CSV/JSON) und node:test dieselbe Logik nutzen.
+//
+// Ländertrennung: Jede Auswertung nimmt ein Land ("DE" | "AT" | "CH") oder null (= alle Länder,
+// jede Zeile mit Länderkennung). Werte verschiedener Länder werden nie verrechnet.
+// Relative Importe mit Dateiendung (node:test).
+
+import { MONITOR_ABRUF, MONITOR_LIZENZ, MONITOR_PRUEFER, MONITOR_QUELLEN, MONITOR_STAND, RUNDEN, SERIEN, TERMINE } from "../../data/ausschreibungsmonitor.js";
+
+export const MONITOR_LAENDER = Object.freeze(["DE", "AT", "CH"]);
+
+const iso = (heute) => (typeof heute === "string" ? heute.slice(0, 10) : heute.toISOString().slice(0, 10));
+const landOk = (land) => (land == null ? null : MONITOR_LAENDER.includes(land) ? land : undefined);
+
+/** Reihen eines Landes (null = alle, Reihenfolge DE, AT, CH). Unbekanntes Land → []. */
+export function serienFuer(land = null) {
+  const l = landOk(land);
+  if (l === undefined) return [];
+  return SERIEN.filter((s) => !l || s.land === l);
+}
+
+/** Reihe nach id (oder null). */
+export const serieNach = (id) => SERIEN.find((s) => s.id === id) || null;
+
+/** Runden einer Reihe, aufsteigend nach Gebotstermin. */
+export function rundenDer(id) {
+  return [...(RUNDEN[id] || [])].sort((a, b) => a.datum.localeCompare(b.datum));
+}
+
+/** Letzte Runde mit veröffentlichtem Ø-Zuschlagswert. */
+export function letzteRunde(id) {
+  const liste = rundenDer(id).filter((x) => x.mittel != null);
+  return liste.length ? liste[liste.length - 1] : null;
+}
+
+/** Überzeichnung = Gebotsmenge / Volumen (null, wenn eines davon nicht veröffentlicht ist). */
+export function ueberzeichnung(runde) {
+  if (!runde || runde.gebote == null || !runde.volumen) return null;
+  return runde.gebote / runde.volumen;
+}
+
+/**
+ * Jahreswerte einer Reihe: Anzahl Termine, Summen (nur veröffentlichte Werte) und mengengewichteter
+ * Ø-Zuschlagswert über die Runden mit Ø-Wert (eigene Berechnung).
+ */
+export function jahresWerte(id) {
+  const jahre = new Map();
+  for (const x of rundenDer(id)) {
+    const j = Number(x.datum.slice(0, 4));
+    const z = jahre.get(j) || { jahr: j, termine: 0, volumen: 0, zuschlag: 0, summeWert: 0, mengeMitWert: 0 };
+    z.termine += 1;
+    z.volumen += x.volumen || 0;
+    z.zuschlag += x.zuschlag || 0;
+    if (x.mittel != null && x.zuschlag > 0) {
+      z.summeWert += x.mittel * x.zuschlag;
+      z.mengeMitWert += x.zuschlag;
+    }
+    jahre.set(j, z);
+  }
+  return [...jahre.values()].map(({ summeWert, mengeMitWert, ...z }) => ({ ...z, mittel: mengeMitWert > 0 ? summeWert / mengeMitWert : null }));
+}
+
+const hatErgebnis = (termin) => (RUNDEN[termin.serie] || []).some((x) => x.datum === termin.datum);
+
+/**
+ * Termine je Stichtag:
+ *  laufend    Gebotsfenster offen (beginn ≤ heute ≤ datum)
+ *  kommend    Gebotstermin heute oder später (inkl. laufend), aufsteigend
+ *  ausstehend Gebotstermin vorbei, Ergebnis noch nicht veröffentlicht, absteigend
+ * @param {Date|string} heute
+ * @param {string|null} land
+ */
+export function termineAm(heute = new Date(), land = null) {
+  const h = iso(heute);
+  const ids = new Set(serienFuer(land).map((s) => s.id));
+  const liste = TERMINE.filter((x) => ids.has(x.serie) && !hatErgebnis(x));
+  const kommend = liste
+    .filter((x) => x.datum >= h)
+    .map((x) => ({ ...x, laufend: !!x.beginn && x.beginn <= h }))
+    .sort((a, b) => a.datum.localeCompare(b.datum) || a.serie.localeCompare(b.serie));
+  const ausstehend = liste.filter((x) => x.datum < h).sort((a, b) => b.datum.localeCompare(a.datum));
+  return { kommend, ausstehend };
+}
+
+/** Letzte Runden mit Ergebnis über alle Reihen eines Landes, absteigend (höchstens n). */
+export function letzteErgebnisse(land = null, n = 8) {
+  return serienFuer(land)
+    .flatMap((s) => rundenDer(s.id).map((x) => ({ ...x, serie: s.id, land: s.land, einheit: s.einheit })))
+    .sort((a, b) => b.datum.localeCompare(a.datum) || a.serie.localeCompare(b.serie))
+    .slice(0, n);
+}
+
+/** Quellen (Objekte mit id) einer Reihe bzw. aller Reihen eines Landes, ohne Doppelte. */
+export function quellenFuer(land = null) {
+  const ids = [...new Set(serienFuer(land).flatMap((s) => s.quellen))];
+  return ids.map((id) => ({ id, ...MONITOR_QUELLEN[id] }));
+}
+
+/* ------------------------------------------------------------------ */
+/* Export (CSV/JSON, CC BY 4.0)                                         */
+/* ------------------------------------------------------------------ */
+
+export const CSV_SPALTEN = Object.freeze([
+  "land",
+  "programm_id",
+  "programm",
+  "gebotstermin",
+  "einheit_zuschlagswert",
+  "volumen_mw",
+  "gebotsmenge_mw",
+  "zuschlagsmenge_mw",
+  "anzahl_gebote",
+  "anzahl_zuschlaege",
+  "zuschlagswert_mittel",
+  "zuschlagswert_min",
+  "zuschlagswert_max",
+  "hoechstwert",
+  "vorlaeufig",
+  "quelle_url",
+  "abruf",
+  "notiz",
+]);
+
+/** Flache Zeilen aller Runden (ein Land oder alle), aufsteigend je Reihe. */
+export function exportZeilen(land = null) {
+  return serienFuer(land).flatMap((s) =>
+    rundenDer(s.id).map((x) => ({
+      land: s.land,
+      programm_id: s.id,
+      programm: s.name,
+      gebotstermin: x.datum,
+      einheit_zuschlagswert: s.einheit,
+      volumen_mw: x.volumen,
+      gebotsmenge_mw: x.gebote,
+      zuschlagsmenge_mw: x.zuschlag,
+      anzahl_gebote: x.nGebote,
+      anzahl_zuschlaege: x.nZuschlaege,
+      zuschlagswert_mittel: x.mittel,
+      zuschlagswert_min: x.min,
+      zuschlagswert_max: x.max,
+      hoechstwert: x.hoechst,
+      vorlaeufig: x.vorlaeufig === true,
+      quelle_url: MONITOR_QUELLEN[x.quelle || s.quellen[0]].url,
+      abruf: MONITOR_ABRUF,
+      notiz: x.notiz || "",
+    }))
+  );
+}
+
+/** CSV-Zelle (RFC 4180): Zahlen mit Punkt, leere Zelle für null, Text in Anführungszeichen; Formel-Präfixe entschärft. */
+export function csvZelle(v) {
+  if (v === null || v === undefined) return "";
+  if (typeof v === "number") return Number.isFinite(v) ? String(v) : "";
+  if (typeof v === "boolean") return v ? "true" : "false";
+  let s = String(v);
+  if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
+  return `"${s.replace(/"/g, '""')}"`;
+}
+
+/** CSV (UTF-8, Komma, CRLF) aller Runden eines Landes bzw. aller Länder. */
+export function alsCsv(land = null) {
+  const zeilen = exportZeilen(land).map((z) => CSV_SPALTEN.map((k) => csvZelle(z[k])).join(","));
+  return [CSV_SPALTEN.join(","), ...zeilen].join("\r\n") + "\r\n";
+}
+
+/** JSON-Objekt mit Metadaten, Lizenz, Quellen, Reihen samt Runden und offenen Terminen. */
+export function alsJson(land = null, heute = new Date()) {
+  const { kommend, ausstehend } = termineAm(heute, land);
+  return {
+    titel: "Ausschreibungs-Monitor Photovoltaik DACH",
+    herausgeber: "ÖkoInvest GmbH",
+    lizenz: { name: MONITOR_LIZENZ.name, url: MONITOR_LIZENZ.url, hinweis: MONITOR_LIZENZ.hinweis },
+    namensnennung: "Quelle: ÖkoInvest Ausschreibungs-Monitor (CC BY 4.0) auf Basis von Bundesnetzagentur, EAG-Förderabwicklungsstelle und Pronovo",
+    stand: MONITOR_STAND,
+    abruf: MONITOR_ABRUF,
+    pruefung: MONITOR_PRUEFER,
+    land: land || "DACH",
+    hinweis: "Mengen in MW (Österreich: MWp). Zuschlagswerte in der Einheit der Reihe; Werte verschiedener Länder sind nicht vergleichbar. null = von der Stelle nicht veröffentlicht. Keine Anlage- oder Rechtsberatung, ohne Gewähr.",
+    quellen: quellenFuer(land).map(({ id, titel, url, stand }) => ({ id, titel, url, stand })),
+    reihen: serienFuer(land).map((s) => ({
+      id: s.id,
+      land: s.land,
+      programm: s.name,
+      stelle: s.stelle,
+      einheit: s.einheit,
+      zuschlagswert: s.wert,
+      quellen: s.quellen,
+      runden: rundenDer(s.id).map(({ notizEn, ...x }) => x),
+    })),
+    termine: { kommend: kommend.map(({ laufend, ...x }) => x), ergebnisAusstehend: ausstehend },
+  };
+}
+=== src/app/(stamm)/marktdaten/ausschreibungen/page.js
+// marktdaten/ausschreibungen/page.js – Ausschreibungs-Monitor DACH (Welle 3, Paket B9)
+//
+// Termine (kommend / Ergebnis ausstehend), letzte Runde je Programm, Zeitreihen und Downloads (CSV/JSON,
+// CC BY 4.0) für DE (Bundesnetzagentur: Solar erstes und zweites Segment, Innovation), AT (EAG-Marktprämie PV)
+// und CH (Pronovo: HEIV und GMP). Daten: src/data/ausschreibungsmonitor.js, Logik: src/lib/marktdaten/monitor.js.
+//
+// Ländermodell: /de, /at, /ch zeigen nur die Programme des Landes; die gemeinsame Seite alle mit Länderkennung
+// und Länderfilter. Sprachmodell: deutsche Texte direkt, englische in TEXTE.en.
+// noindex bis zur fachlichen Zweitprüfung (E6): Register src/lib/land/seiten.js (index: false) und robots unten.
+
+import { ArrowDown, Bell, Database, Download, ExternalLink, Scale } from "lucide-react";
+import Section from "@/components/ui/Section";
+import SectionHeading, { Eyebrow } from "@/components/ui/SectionHeading";
+import Breadcrumbs from "@/components/ui/Breadcrumbs";
+import Reveal from "@/components/ui/Reveal";
+import Querverweise from "@/components/Reusable/Querverweise";
+import AnfrageFormular from "@/components/Plattform/AnfrageFormular";
+import AusschreibungsMonitor from "@/components/Marktdaten/AusschreibungsMonitor";
+import JsonLd from "@/components/JsonLd";
+import { abs } from "@/data/site";
+import { MONITOR_ABRUF, MONITOR_LIZENZ, MONITOR_QUELLEN, MONITOR_STAND } from "@/data/ausschreibungsmonitor";
+import { quellenFuer, rundenDer, serienFuer, termineAm } from "@/lib/marktdaten/monitor";
+import { pfad } from "@/lib/land";
+import { seitenLand, seitenMetadata, spracheDerAnfrage } from "@/lib/land/seite";
+
+// Termine laufen ohne neuen Build ab: Seite höchstens stündlich neu erzeugen.
+export const revalidate = 3600;
+
+const PFAD = pfad("/marktdaten/ausschreibungen");
+const DATEI = "/marktdaten/ausschreibungen/daten";
+
+const metadata = {
+  title: "Ausschreibungs-Monitor Photovoltaik DACH | ÖkoInvest",
+  description: "Gebotstermine und Ergebnisse der PV-Ausschreibungen in Deutschland, Österreich und der Schweiz: Zuschlagswerte, Höchstwerte, Volumen – mit Quellen, als CSV und JSON.",
+  alternates: { canonical: abs(PFAD) },
+  // Fachliche Zweitprüfung (E6) ausstehend → nicht indexieren
+  robots: { index: false, follow: true },
+};
+
+const metadataEn = {
+  title: "Photovoltaic tender monitor DACH | ÖkoInvest",
+  description: "Bidding dates and results of PV tenders in Germany, Austria and Switzerland: award values, maximum values, volumes – with sources, as CSV and JSON.",
+};
+
+const LAND_NAME = { DE: "Deutschland", AT: "Österreich", CH: "Schweiz" };
+const LAND_NAME_EN = { DE: "Germany", AT: "Austria", CH: "Switzerland" };
+const STELLE_EN = { "EAG-Förderabwicklungsstelle": "EAG funding settlement agency" };
+
+const datumLang = (iso, en) => {
+  const m = en
+    ? ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+    : ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
+  const [j, mo, t] = iso.split("-").map(Number);
+  return en ? `${t} ${m[mo - 1]} ${j}` : `${t}. ${m[mo - 1]} ${j}`;
+};
+
+const TEXTE = {
+  de: {
+    wissen: "Wissen",
+    marktdaten: "Marktdaten",
+    seite: "Ausschreibungen",
+    eyebrow: (l) => (l ? `Marktdaten · Ausschreibungen ${LAND_NAME[l]}` : "Marktdaten · Ausschreibungen DACH"),
+    titel: (l) =>
+      l ? (
+        <>
+          Ausschreibungs-Monitor <span className="ov-text-gradient">{LAND_NAME[l]}</span>
+        </>
+      ) : (
+        <>
+          Ausschreibungs-Monitor <span className="ov-text-gradient">Deutschland, Österreich, Schweiz</span>
+        </>
+      ),
+    lead: {
+      gemeinsam: "Alle Gebotstermine und Ergebnisse der Photovoltaik-Ausschreibungen im DACH-Raum an einem Ort: Zuschlagswerte, Höchstwerte und Mengen je Runde, die nächsten Termine und die Rohdaten zum Herunterladen. Jedes Land mit eigener Reihe und Einheit.",
+      DE: "Die Ausschreibungen der Bundesnetzagentur für Solaranlagen des ersten und zweiten Segments und die Innovationsausschreibung: Zuschlagswerte, Höchstwerte und Mengen je Gebotstermin, die nächsten Termine laut EEG und die Rohdaten zum Herunterladen.",
+      AT: "Die Ausschreibungen der EAG-Marktprämie für Photovoltaik: Zuschlagswerte und Mengen je Gebotstermin laut Veröffentlichung der EAG-Förderabwicklungsstelle, die Gebotstermine 2026 und 2027 laut EAG-Marktprämienverordnung und die Rohdaten zum Herunterladen.",
+      CH: "Die PV-Auktionen von Pronovo für die hohe Einmalvergütung (HEIV) und die gleitende Marktprämie (GMP): Zuschlagswerte und Mengen je Runde laut Auktions-Cockpit, die laufende Runde und die Rohdaten zum Herunterladen.",
+    },
+    lead2: "Nur amtliche Veröffentlichungen, je Reihe mit Quelle und Abrufdatum. Was nicht veröffentlicht ist, bleibt leer – wir schätzen keine Werte.",
+    entwurf: "Entwurf · fachliche Prüfung",
+    zweit: (s) => `Datenstand ${s} · Zweitprüfung ausstehend · keine Anlageberatung`,
+    zuTerminen: "Zu den Terminen",
+    zuDaten: "Daten herunterladen",
+    monitorEyebrow: "Monitor",
+    monitorTitel: "Termine, Ergebnisse und Verlauf",
+    monitorLead: {
+      gemeinsam: "Zuschlagswerte sind je Land und Programm verschieden definiert (anzulegender Wert in ct/kWh, Einmalvergütung in CHF/kW, Vergütungssatz in Rp./kWh) und deshalb nicht direkt vergleichbar.",
+      DE: "Zuschlagswerte in ct/kWh: der anzulegende Wert, den ein Park 20 Jahre lang erhält. Erstes Segment, zweites Segment und Innovationsausschreibung sind getrennte Ausschreibungen mit eigenem Höchstwert.",
+      AT: "Zuschlagswerte in ct/kWh: der anzulegende Wert der EAG-Marktprämie laut Veröffentlichung der EAG-Förderabwicklungsstelle. Gebotsmengen werden nicht veröffentlicht.",
+      CH: "Zwei getrennte Auktionen mit eigenem Höchstwert: die hohe Einmalvergütung in CHF je kW Leistung und die gleitende Marktprämie in Rp./kWh für 20 Jahre. Die Werte sind laut Pronovo provisorisch.",
+    },
+    datenEyebrow: "Offene Daten",
+    datenTitel: "Download und Methodik",
+    datenLead: "Die Daten stehen unter CC BY 4.0: frei nutzbar, auch kommerziell, mit Namensnennung.",
+    csv: "CSV herunterladen",
+    json: "JSON herunterladen",
+    umfang: (l) => (l ? `Enthält nur die Reihen für ${LAND_NAME[l]}.` : "Enthält alle Reihen, jede Zeile mit Länderkennung (DE, AT, CH)."),
+    nennung: "Namensnennung zum Beispiel so:",
+    nennungText: (stellen) => `Quelle: ÖkoInvest Ausschreibungs-Monitor (CC BY 4.0) auf Basis von ${stellen}`,
+    lizenz: "Lizenz",
+    methodik: "Methodik",
+    methodikPunkte: {
+      alle: ["Werte unverändert aus den amtlichen Statistiken, Veröffentlichungen und Cockpits übernommen; Mengen in MW. Ø = mengengewichteter durchschnittlicher Zuschlagswert laut Quelle."],
+      DE: ["Innovationsausschreibung ab 2023 – frühere Runden mit fixer Marktprämie sind nicht vergleichbar. Termine laut EEG; Volumen und Höchstwert gibt die Bundesnetzagentur je Termin bekannt."],
+      AT: ["Mengen in MWp. Gebotsmengen veröffentlicht die EAG-Förderabwicklungsstelle nicht; Höchstpreise nennen wir nur, wo sie am Verordnungstext belegt sind (2026 und 2027). Volumen 2023 teils inklusive Übertrag."],
+      CH: ["Werte laut Pronovo provisorisch (allfällige Rechtsmittelverfahren). Termine für 2027 gibt Pronovo jeweils mindestens einen Monat im Voraus bekannt."],
+      ende: ["Termine ohne Ergebnis zeigen wir als „Ergebnis ausstehend“; Volumen und Höchstwerte künftiger Termine nur, wenn sie amtlich bekannt gegeben sind."],
+    },
+    quellen: "Quellen",
+    abruf: (a) => `abgerufen am ${a}`,
+    stand: "Stand",
+    fuss: "Keine Anlage-, Rechts- oder Förderberatung; alle Angaben ohne Gewähr. Es gilt die verlinkte Quelle in ihrer aktuellen Fassung.",
+    leadEyebrow: "Fristen-Erinnerung",
+    leadTitel: "Keinen Gebotstermin verpassen",
+    leadText: "Wir melden uns vor den nächsten Gebotsterminen und sobald neue Ergebnisse veröffentlicht sind. Kreuzen Sie dafür im Formular die E-Mail-Hinweise an; die Anmeldung bestätigen Sie per E-Mail. Mit einer Nachricht zu Ihrem Vorhaben prüfen wir auch, ob sich ein Gebot für Ihre Fläche oder Ihr Projekt lohnt.",
+    leadPunkte: ["Termine und Ergebnisse für Ihr Land", "Abmeldung jederzeit", "Rückruf nur, wenn Sie ihn wünschen"],
+    formTitel: "Fristen-Erinnerung anfordern",
+    formText: "Name und E-Mail genügen. Telefon nur, wenn Sie einen Rückruf möchten.",
+    formButton: "Erinnerung anfordern",
+    formErfolg: "Danke! Wir haben Ihre Anfrage erhalten. Falls Sie die E-Mail-Hinweise gewählt haben, bestätigen Sie die Anmeldung bitte über den Link in unserer E-Mail.",
+    querverweise: [
+      { href: "/marktdaten", titel: "Marktdaten Solar", text: "EEG-Zuschläge seit 2017, Marktwert Solar, Capture Rate und Zubau." },
+      { href: "/marktdaten/fristen", titel: "Fristen und Preisbestandteile", text: "Förder- und Gebotsfristen sowie Umlagen und Netzentgelte je Land." },
+      { href: "/rechner/solarpark", titel: "Solarpark-Renditerechner", text: "Rendite mit Zuschlagswert, PPA oder Marktwert rechnen." },
+      { href: "/projektboerse", titel: "Projektbörse", text: "Solarprojekte in allen Phasen finden oder anbieten." },
+    ],
+  },
+  en: {
+    wissen: "Knowledge",
+    marktdaten: "Market data",
+    seite: "Tenders",
+    eyebrow: (l) => (l ? `Market data · tenders ${LAND_NAME_EN[l]}` : "Market data · tenders DACH"),
+    titel: (l) =>
+      l ? (
+        <>
+          Tender monitor <span className="ov-text-gradient">{LAND_NAME_EN[l]}</span>
+        </>
+      ) : (
+        <>
+          Tender monitor <span className="ov-text-gradient">Germany, Austria, Switzerland</span>
+        </>
+      ),
+    lead: {
+      gemeinsam: "All bidding dates and results of the photovoltaic tenders in the DACH region in one place: award values, maximum values and volumes per round, the next dates and the raw data to download. Each country with its own series and unit.",
+      DE: "The Bundesnetzagentur (Federal Network Agency) tenders for solar installations of the first and second segment and the innovation tender: award values, maximum values and volumes per bidding date, the next dates under the EEG and the raw data to download.",
+      AT: "The tenders for the EAG market premium for photovoltaics: award values and volumes per bidding date as published by the EAG funding settlement agency, the bidding dates 2026 and 2027 under the EAG Market Premium Ordinance and the raw data to download.",
+      CH: "Pronovo’s PV auctions for the high one-off remuneration (HEIV) and the sliding market premium (GMP): award values and volumes per round as published in the auction cockpit, the current round and the raw data to download.",
+    },
+    lead2: "Official publications only, each series with source and retrieval date. Anything not published stays empty – we do not estimate values.",
+    entwurf: "Draft · specialist review",
+    zweit: (s) => `Data as of ${s} · second review pending · not investment advice`,
+    zuTerminen: "Go to the dates",
+    zuDaten: "Download data",
+    monitorEyebrow: "Monitor",
+    monitorTitel: "Dates, results and trends",
+    monitorLead: {
+      gemeinsam: "Award values are defined differently per country and programme (reference value in ct/kWh, one-off remuneration in CHF/kW, remuneration rate in Rp./kWh) and are therefore not directly comparable.",
+      DE: "Award values in ct/kWh: the reference value (anzulegender Wert) a park receives for 20 years. First segment, second segment and innovation tender are separate tenders, each with its own maximum value.",
+      AT: "Award values in ct/kWh: the reference value of the EAG market premium as published by the EAG funding settlement agency. Bid volumes are not published.",
+      CH: "Two separate auctions, each with its own maximum value: the high one-off remuneration in CHF per kW of capacity and the sliding market premium in Rp./kWh for 20 years. According to Pronovo, the values are provisional.",
+    },
+    datenEyebrow: "Open data",
+    datenTitel: "Download and methodology",
+    datenLead: "The data are licensed under CC BY 4.0: free to use, including commercially, with attribution.",
+    csv: "Download CSV",
+    json: "Download JSON",
+    umfang: (l) => (l ? `Contains only the series for ${LAND_NAME_EN[l]}.` : "Contains all series, each row with a country code (DE, AT, CH)."),
+    nennung: "Attribution, for example:",
+    nennungText: (stellen) => `Source: ÖkoInvest tender monitor (CC BY 4.0) based on ${stellen}`,
+    lizenz: "Licence",
+    methodik: "Methodology",
+    methodikPunkte: {
+      alle: ["Values taken unchanged from the official statistics, publications and cockpits; volumes in MW. Ø = volume-weighted average award value according to the source."],
+      DE: ["Innovation tender from 2023 – earlier rounds with a fixed market premium are not comparable. Dates under the EEG; the Bundesnetzagentur announces the volume and maximum value for each date."],
+      AT: ["Volumes in MWp. The EAG funding settlement agency does not publish bid volumes; we only state maximum prices where they are documented in the ordinance (2026 and 2027). Some 2023 volumes include carry-over."],
+      CH: ["Values provisional according to Pronovo (possible appeals). Pronovo announces the 2027 dates at least one month in advance."],
+      ende: ["Dates without a result are shown as “result pending”; volumes and maximum values of future dates only once they have been officially announced."],
+    },
+    quellen: "Sources",
+    abruf: (a) => `retrieved on ${a}`,
+    stand: "as of",
+    fuss: "No investment, legal or funding advice; all information without guarantee. The linked source in its current version is authoritative. Most sources are available in German only.",
+    leadEyebrow: "Deadline reminder",
+    leadTitel: "Never miss a bidding date",
+    leadText: "We get in touch before the next bidding dates and as soon as new results are published. To receive this, tick the e-mail alerts in the form; you confirm the subscription by e-mail. If you add a message about your project, we will also check whether a bid is worthwhile for your land or project.",
+    leadPunkte: ["Dates and results for your country", "Unsubscribe at any time", "Call-back only if you want one"],
+    formTitel: "Request a deadline reminder",
+    formText: "Name and e-mail are enough. Phone only if you would like a call-back.",
+    formButton: "Request reminder",
+    formErfolg: "Thank you! We have received your request. If you chose the e-mail alerts, please confirm the subscription via the link in our e-mail.",
+    querverweise: [
+      { titel: "Solar market data", text: "EEG awards since 2017, solar market value, capture rate and additions." },
+      { titel: "Deadlines and price components", text: "Funding and bidding deadlines and levies and network charges per country." },
+      { titel: "Solar park return calculator", text: "Calculate returns with award value, PPA or market value." },
+      { titel: "Project exchange", text: "Find or offer solar projects in all phases." },
+    ],
+  },
+};
+
+/** Dataset-JSON-LD (über das escapende JsonLd). */
+function datasetSchema(land, serien, url) {
+  const q = land ? `?land=${land}` : "";
+  const runden = serien.flatMap((s) => rundenDer(s.id));
+  const daten = runden.map((x) => x.datum).sort();
+  return {
+    "@context": "https://schema.org",
+    "@type": "Dataset",
+    "@id": `${url}#dataset`,
+    name: land ? `Ausschreibungs-Monitor Photovoltaik ${LAND_NAME[land]}` : "Ausschreibungs-Monitor Photovoltaik DACH",
+    description:
+      "Ergebnisse und Termine der Photovoltaik-Ausschreibungen je Gebotstermin (Volumen, Gebots- und Zuschlagsmenge, mengengewichteter, niedrigster und höchster Zuschlagswert, Höchstwert) aus amtlichen Veröffentlichungen: " +
+      serien.map((s) => `${s.name} (${s.land}, ${s.stelle})`).join("; ") +
+      ".",
+    url,
+    inLanguage: "de",
+    isAccessibleForFree: true,
+    license: MONITOR_LIZENZ.url,
+    creator: { "@type": "Organization", name: "ÖkoInvest GmbH", url: abs("/") },
+    publisher: { "@id": `${abs("/")}/#organization` },
+    isBasedOn: quellenFuer(land).map((x) => x.url),
+    spatialCoverage: (land ? [land] : ["DE", "AT", "CH"]).map((l) => ({ "@type": "Place", name: LAND_NAME[l] })),
+    temporalCoverage: `${daten[0]}/${daten[daten.length - 1]}`,
+    dateModified: MONITOR_STAND,
+    keywords: ["Ausschreibung", "Photovoltaik", "Zuschlagswert", "EEG", "EAG-Marktprämie", "Pronovo", "Einmalvergütung", "DACH"],
+    variableMeasured: [
+      { "@type": "PropertyValue", name: "Mengengewichteter durchschnittlicher Zuschlagswert", unitText: [...new Set(serien.map((s) => s.einheit))].join(", ") },
+      { "@type": "PropertyValue", name: "Ausgeschriebene Menge, Gebotsmenge, Zuschlagsmenge", unitText: "MW" },
+      { "@type": "PropertyValue", name: "Höchstwert je Gebotstermin", unitText: [...new Set(serien.map((s) => s.einheit))].join(", ") },
+    ],
+    distribution: [
+      { "@type": "DataDownload", encodingFormat: "text/csv", contentUrl: abs(`${DATEI}.csv${q}`) },
+      { "@type": "DataDownload", encodingFormat: "application/json", contentUrl: abs(`${DATEI}.json${q}`) },
+    ],
+  };
+}
+
+export default async function AusschreibungenSeite({ params }) {
+  const land = await seitenLand(params);
+  const sprache = spracheDerAnfrage();
+  const en = sprache === "en";
+  const t = TEXTE[sprache] || TEXTE.de;
+  const heute = new Date();
+  const serien = serienFuer(land);
+  const termine = termineAm(heute, land);
+  const quellen = quellenFuer(land);
+  const url = abs(pfad("/marktdaten/ausschreibungen", land, sprache));
+  const q = land ? `?land=${land}` : "";
+  const standText = datumLang(MONITOR_STAND, en);
+  const stellenListe = [...new Set(serien.map((s) => (en ? STELLE_EN[s.stelle] || s.stelle : s.stelle)))];
+  const stellen = stellenListe.length > 1 ? `${stellenListe.slice(0, -1).join(", ")} ${en ? "and" : "und"} ${stellenListe.at(-1)}` : stellenListe[0];
+  // Für den Browser: nur, was die Anzeige braucht (keine Funktionen), Runden je Reihe
+  const serienDaten = serien.map((s) => ({ ...s, runden: rundenDer(s.id) }));
+  const quellenDaten = Object.fromEntries(Object.entries(MONITOR_QUELLEN).map(([k, v]) => [k, { titel: v.titel, titelEn: v.titelEn, url: v.url }]));
+
+  return (
+    <>
+      <JsonLd daten={datasetSchema(land, serien, url)} />
+
+      <Section tone="sand" space="none" className="pb-14 pt-6 sm:pt-8 md:pb-20 md:pt-10">
+        <Breadcrumbs items={[{ name: t.wissen, href: "/ratgeber" }, { name: t.marktdaten, href: pfad("/marktdaten") }, { name: t.seite }]} className="mb-8 md:mb-12" />
+        <div className="max-w-3xl">
+          <Eyebrow>{t.eyebrow(land)}</Eyebrow>
+          <h1 className="ov-h1 mt-4 text-balance text-ink-900">{t.titel(land)}</h1>
+          <p className="ov-lead mt-5 text-pretty text-ink-600">{t.lead[land || "gemeinsam"]}</p>
+          <p className="mt-4 text-[15px] leading-relaxed text-ink-600">{t.lead2}</p>
+          <div className="mt-6 flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-sun-50 px-2.5 py-1 text-[12px] font-semibold text-sun-700 ring-1 ring-inset ring-sun-200">
+              <Scale aria-hidden="true" className="h-3.5 w-3.5" />
+              {t.entwurf}
+            </span>
+            <span className="text-[13px] text-ink-500">{t.zweit(standText)}</span>
+          </div>
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <a href="#monitor" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-ov-600 px-5 py-3 text-[14.5px] font-semibold text-white transition-colors hover:bg-ov-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-500 focus-visible:ring-offset-2">
+              <ArrowDown aria-hidden="true" className="h-4 w-4" />
+              {t.zuTerminen}
+            </a>
+            <a href="#daten" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 text-[14.5px] font-semibold text-ink-800 ring-1 ring-ink-200/70 transition-colors hover:text-navy-700 hover:ring-navy-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-500">
+              <Download aria-hidden="true" className="h-4 w-4" />
+              {t.zuDaten}
+            </a>
+          </div>
+        </div>
+      </Section>
+
+      <Section tone="white" space="lg" id="monitor" className="scroll-mt-24">
+        <SectionHeading eyebrow={t.monitorEyebrow} title={t.monitorTitel} lead={t.monitorLead[land || "gemeinsam"]} className="mb-10 md:mb-12" />
+        <AusschreibungsMonitor serien={serienDaten} termine={termine} quellen={quellenDaten} land={land} />
+      </Section>
+
+      <Section tone="sand" space="lg" id="daten" className="scroll-mt-24">
+        <div className="grid gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:gap-16">
+          <div>
+            <SectionHeading eyebrow={t.datenEyebrow} title={t.datenTitel} lead={t.datenLead} />
+            <Reveal className="mt-8 rounded-3xl bg-white p-6 ring-1 ring-ink-200/70 md:p-7">
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <a href={`${DATEI}.csv${q}`} download className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-ov-600 px-5 py-3 text-[14.5px] font-semibold text-white transition-colors hover:bg-ov-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-500 focus-visible:ring-offset-2">
+                  <Download aria-hidden="true" className="h-4 w-4" />
+                  {t.csv}
+                </a>
+                <a href={`${DATEI}.json${q}`} download className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 text-[14.5px] font-semibold text-ink-800 ring-1 ring-ink-200 transition-colors hover:text-navy-700 hover:ring-navy-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-500">
+                  <Download aria-hidden="true" className="h-4 w-4" />
+                  {t.json}
+                </a>
+              </div>
+              <p className="mt-4 text-[14px] leading-relaxed text-ink-600">{t.umfang(land)}</p>
+              <p className="mt-4 text-[14px] leading-relaxed text-ink-600">
+                {t.lizenz}:{" "}
+                <a href={MONITOR_LIZENZ.url} target="_blank" rel="noopener noreferrer license" className="font-medium text-ov-700 underline decoration-ov-300 underline-offset-2 hover:decoration-current">
+                  {MONITOR_LIZENZ.name}
+                  <ExternalLink aria-hidden="true" className="ml-1 inline h-3.5 w-3.5" />
+                </a>
+                . {en ? MONITOR_LIZENZ.hinweisEn : MONITOR_LIZENZ.hinweis}
+              </p>
+              <p className="mt-4 text-[13px] font-semibold text-ink-700">{t.nennung}</p>
+              <p className="mt-1 rounded-xl bg-sand-50 px-3 py-2 text-[13px] leading-relaxed text-ink-700 ring-1 ring-ink-200/60">{t.nennungText(stellen)}</p>
+            </Reveal>
+          </div>
+          <div className="space-y-8">
+            <Reveal className="rounded-3xl bg-white p-6 ring-1 ring-ink-200/70 md:p-7">
+              <h3 className="flex items-center gap-2 font-display text-[17px] font-bold text-ink-900">
+                <Database aria-hidden="true" className="h-4 w-4 text-ov-600" />
+                {t.methodik}
+              </h3>
+              <ul className="mt-4 list-disc space-y-2 pl-5 text-[14px] leading-relaxed text-ink-600 marker:text-ov-500">
+                {[...t.methodikPunkte.alle, ...(land ? t.methodikPunkte[land] : [...t.methodikPunkte.DE, ...t.methodikPunkte.AT, ...t.methodikPunkte.CH]), ...t.methodikPunkte.ende].map((p) => (
+                  <li key={p}>{p}</li>
+                ))}
+              </ul>
+              <h3 className="mt-6 font-display text-[17px] font-bold text-ink-900">{t.quellen}</h3>
+              <ul className="mt-3 space-y-3 text-[14px] leading-relaxed text-ink-600">
+                {quellen.map((x) => (
+                  <li key={x.id}>
+                    <a href={x.url} target="_blank" rel="noopener noreferrer" className="font-medium text-ov-700 underline decoration-ov-300 underline-offset-2 [overflow-wrap:anywhere] hover:decoration-current">
+                      {en ? x.titelEn : x.titel}
+                      <ExternalLink aria-hidden="true" className="ml-1 inline h-3.5 w-3.5" />
+                    </a>
+                    <span className="text-ink-500">
+                      {" "}
+                      · {t.stand} {x.stand}, {t.abruf(datumLang(MONITOR_ABRUF, en))}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-5 text-[13px] leading-relaxed text-ink-500">{t.fuss}</p>
+            </Reveal>
+          </div>
+        </div>
+      </Section>
+
+      <Section tone="white" space="lg" id="erinnerung" className="scroll-mt-24">
+        <div className="grid items-start gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:gap-16">
+          <div>
+            <SectionHeading eyebrow={t.leadEyebrow} title={t.leadTitel} lead={t.leadText} />
+            <ul className="mt-8 space-y-3 text-[15px] text-ink-700">
+              {t.leadPunkte.map((p) => (
+                <li key={p} className="flex items-center gap-3">
+                  <Bell aria-hidden="true" className="h-4 w-4 shrink-0 text-ov-600" />
+                  {p}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <Reveal>
+            <AnfrageFormular
+              typ="kontakt"
+              land={land || undefined}
+              daten={{ quelle: "marktdaten/ausschreibungen", anliegen: "fristen-erinnerung", ...(land ? { land } : {}) }}
+              felder={land ? ["firma", "telefon", "nachricht"] : ["firma", "land", "telefon", "nachricht"]}
+              titel={t.formTitel}
+              text={t.formText}
+              button={t.formButton}
+              erfolgText={t.formErfolg}
+            />
+          </Reveal>
+        </div>
+      </Section>
+
+      <Querverweise items={TEXTE.de.querverweise.map((v, i) => (en ? { ...v, ...TEXTE.en.querverweise[i] } : v))} />
+    </>
+  );
+}
+
+export const generateMetadata = seitenMetadata("/marktdaten/ausschreibungen", metadata, { en: metadataEn });
+=== src/app/(stamm)/marktdaten/ausschreibungen/daten.csv/route.js
+// GET /marktdaten/ausschreibungen/daten.csv[?land=DE|AT|CH] – Ausschreibungs-Monitor als CSV (CC BY 4.0)
+// Welle 3, Paket B9. Daten: src/data/ausschreibungsmonitor.js, Export: src/lib/marktdaten/monitor.js.
+// Ohne land: alle Länder, jede Zeile mit Länderkennung. Unbekanntes Land → 400.
+import { alsCsv, MONITOR_LAENDER } from "@/lib/marktdaten/monitor";
+
+export const revalidate = 3600;
+
+export function GET(request) {
+  const roh = new URL(request.url).searchParams.get("land");
+  const land = roh ? roh.toUpperCase() : null;
+  if (land && !MONITOR_LAENDER.includes(land)) return new Response("Unbekanntes Land (DE, AT oder CH).", { status: 400, headers: { "Content-Type": "text/plain; charset=utf-8" } });
+  const name = `oekoinvest-ausschreibungsmonitor-${(land || "dach").toLowerCase()}.csv`;
+  return new Response("﻿" + alsCsv(land), {
+    headers: {
+      "Content-Type": "text/csv; charset=utf-8",
+      "Content-Disposition": `attachment; filename="${name}"`,
+      "Cache-Control": "public, max-age=3600",
+      "X-Robots-Tag": "noindex",
+      Link: '<https://creativecommons.org/licenses/by/4.0/>; rel="license"',
+    },
+  });
+}
+=== src/app/(stamm)/marktdaten/ausschreibungen/daten.json/route.js
+// GET /marktdaten/ausschreibungen/daten.json[?land=DE|AT|CH] – Ausschreibungs-Monitor als JSON (CC BY 4.0)
+// Welle 3, Paket B9. Daten: src/data/ausschreibungsmonitor.js, Export: src/lib/marktdaten/monitor.js.
+// Ohne land: alle Länder (jede Reihe mit Länderkennung). Unbekanntes Land → 400.
+import { alsJson, MONITOR_LAENDER } from "@/lib/marktdaten/monitor";
+
+export const revalidate = 3600;
+
+export function GET(request) {
+  const roh = new URL(request.url).searchParams.get("land");
+  const land = roh ? roh.toUpperCase() : null;
+  if (land && !MONITOR_LAENDER.includes(land)) return Response.json({ fehler: "Unbekanntes Land (DE, AT oder CH)." }, { status: 400 });
+  return Response.json(alsJson(land, new Date()), {
+    headers: {
+      "Cache-Control": "public, max-age=3600",
+      "X-Robots-Tag": "noindex",
+      Link: '<https://creativecommons.org/licenses/by/4.0/>; rel="license"',
+    },
+  });
+}
+=== src/app/(laender)/[land]/marktdaten/ausschreibungen/page.js
+// Länderfassung von /marktdaten/ausschreibungen (/de, /at, /ch) – erzeugt mit scripts/landfassungen.mjs, nicht von Hand ändern.
+// Dieselbe Seite wie src/app/(stamm)/marktdaten/ausschreibungen/page.js; das Land kommt aus params.land.
+export { default, generateMetadata } from "@/app/(stamm)/marktdaten/ausschreibungen/page";
+export const revalidate = 3600;
+=== src/app/(en)/en/marktdaten/ausschreibungen/page.js
+// Englische Fassung von /marktdaten/ausschreibungen (/en) – erzeugt mit scripts/landfassungen.mjs, nicht von Hand ändern.
+// Dieselbe Seite wie src/app/(stamm)/marktdaten/ausschreibungen/page.js; Sprache "en" über params.sprache.
+import Seite, { generateMetadata as metadaten } from "@/app/(stamm)/marktdaten/ausschreibungen/page";
+import { englisch, englischeMetadaten } from "@/lib/sprache/route";
+export default englisch(Seite);
+export const generateMetadata = englischeMetadaten(metadaten);
+export const revalidate = 3600;
+=== src/app/(en)/en/[land]/marktdaten/ausschreibungen/page.js
+// Englische Fassung von /marktdaten/ausschreibungen (/en/de, /en/at, /en/ch) – erzeugt mit scripts/landfassungen.mjs, nicht von Hand ändern.
+// Dieselbe Seite wie src/app/(stamm)/marktdaten/ausschreibungen/page.js; Sprache "en" über params.sprache, das Land aus params.land.
+import Seite, { generateMetadata as metadaten } from "@/app/(stamm)/marktdaten/ausschreibungen/page";
+import { englisch, englischeMetadaten } from "@/lib/sprache/route";
+export default englisch(Seite);
+export const generateMetadata = englischeMetadaten(metadaten);
+export const revalidate = 3600;

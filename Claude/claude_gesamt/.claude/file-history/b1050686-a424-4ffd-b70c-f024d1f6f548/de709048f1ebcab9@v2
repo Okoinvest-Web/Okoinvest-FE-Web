@@ -1,0 +1,240 @@
+import io
+
+p = "src/lib/db/befuellen-laden.ts"
+s = io.open(p, encoding="utf-8").read()
+
+# --- Schluesselpaare je Ladepunkt -----------------------------------
+anker = "function erzeugeVorgaenge(): number {"
+helfer = '''/**
+ * Ein Schluesselpaar je eichrechtskonformem Ladepunkt.
+ *
+ * Im Betrieb erzeugt der Zaehler sein Paar selbst und gibt nur den
+ * oeffentlichen Teil heraus - der private verlaesst ihn nie. Genau
+ * darauf beruht der Nachweis: Ein Portal, das signieren koennte,
+ * koennte auch faelschen.
+ *
+ * Fuer den Demonstrationsbestand muss jemand die Rolle des Zaehlers
+ * uebernehmen. Das geschieht hier, einmal beim Befuellen; der private
+ * Teil wird nirgends abgelegt.
+ */
+function erzeugeZaehlerschluessel(): Map<
+  string,
+  { privat: string; oeffentlich: string }
+> {
+  const paare = new Map<string, { privat: string; oeffentlich: string }>();
+
+  for (const p of LADEPUNKTE) {
+    if (!p.eichrecht) continue;
+
+    const { privateKey, publicKey } = generateKeyPairSync("ec", {
+      namedCurve: "prime256v1",
+      publicKeyEncoding: { type: "spki", format: "pem" },
+      privateKeyEncoding: { type: "pkcs8", format: "pem" },
+    });
+
+    paare.set(p.id, { privat: privateKey, oeffentlich: publicKey });
+  }
+
+  return paare;
+}
+
+/**
+ * Zeitstempel in der Schreibweise des Open Charge Metering Format.
+ *
+ * Mit Komma als Dezimaltrenner der Sekunden, mit Zonenversatz und mit
+ * dem Synchronitaetskennzeichen dahinter. Das "S" steht fuer eine
+ * gegen eine Referenz gestellte Uhr - ohne das ist der Datensatz
+ * eichrechtlich wertlos, und deshalb steht es nicht nebenbei da.
+ */
+function ocmfZeit(zeitpunkt: Date, kennzeichen = "S"): string {
+  const z = (n: number, stellen = 2) => String(n).padStart(stellen, "0");
+  const versatz = -zeitpunkt.getTimezoneOffset();
+  const vorzeichen = versatz >= 0 ? "+" : "-";
+  const stunden = z(Math.floor(Math.abs(versatz) / 60));
+  const minuten = z(Math.abs(versatz) % 60);
+
+  return (
+    `${zeitpunkt.getFullYear()}-${z(zeitpunkt.getMonth() + 1)}-${z(zeitpunkt.getDate())}` +
+    `T${z(zeitpunkt.getHours())}:${z(zeitpunkt.getMinutes())}:${z(zeitpunkt.getSeconds())}` +
+    `,${z(zeitpunkt.getMilliseconds(), 3)}${vorzeichen}${stunden}${minuten} ${kennzeichen}`
+  );
+}
+
+/**
+ * Baut den signierten Messwert eines Ladevorgangs.
+ *
+ * Signiert wird der Nutzlastteil als Bytefolge - genau der, der
+ * uebertragen wird. Wer ihn vorher noch einmal durch JSON schickt,
+ * signiert etwas anderes, als spaeter geprueft wird.
+ */
+function baueOcmf(
+  angaben: {
+    ladepunkt: { id: string; evse: string; hersteller: string; modell: string };
+    transaktion: string;
+    karte: string | null;
+    beginn: Date;
+    ende: Date;
+    standStart: number;
+    standEnde: number;
+    zeitKennzeichen?: string;
+  },
+  privaterSchluessel: string,
+): string {
+  const nutzlast = {
+    FV: "1.0",
+    GI: `${angaben.ladepunkt.hersteller} ${angaben.ladepunkt.modell}`,
+    GS: angaben.ladepunkt.evse,
+    GV: "1.14.2",
+    PG: angaben.transaktion,
+    MV: "EMH metering",
+    MM: "eHZ-IW8E2A5L0EK2P",
+    MS: `SN-${angaben.ladepunkt.id.slice(3)}`,
+    IS: angaben.karte !== null,
+    IT: angaben.karte ? "ISO14443" : "NONE",
+    ID: angaben.karte ?? "",
+    RD: [
+      {
+        TM: ocmfZeit(angaben.beginn, angaben.zeitKennzeichen),
+        TX: "B",
+        RV: angaben.standStart,
+        RI: "1-b:1.8.0",
+        RU: "kWh",
+        RT: "B",
+        EF: "",
+        ST: "G",
+      },
+      {
+        TM: ocmfZeit(angaben.ende, angaben.zeitKennzeichen),
+        TX: "E",
+        RV: angaben.standEnde,
+        RI: "1-b:1.8.0",
+        RU: "kWh",
+        RT: "E",
+        EF: "",
+        ST: "G",
+      },
+    ],
+  };
+
+  const text = JSON.stringify(nutzlast);
+
+  const signierer = createSign("SHA256");
+  signierer.update(text, "utf8");
+  signierer.end();
+
+  const signatur = {
+    SA: "ECDSA-secp256r1-SHA256",
+    SE: "hex",
+    SM: "application/x-der",
+    SD: signierer.sign(privaterSchluessel).toString("hex"),
+  };
+
+  return `OCMF|${text}|${JSON.stringify(signatur)}`;
+}
+
+'''
+assert anker in s
+s = s.replace(anker, helfer + anker, 1)
+
+# --- Einfuegen der Vorgaenge um OCMF erweitern ----------------------
+s = s.replace('''  const einfuegen = db().prepare(
+    `INSERT INTO ladevorgang
+       (id, ladepunkt_id, karte_id, transaktion, beginn, ende, ladeende,
+        zaehler_start, zaehler_ende, energie_kwh, pv_kwh,
+        hoechstleistung_kw, status)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  );''',
+'''  const einfuegen = db().prepare(
+    `INSERT INTO ladevorgang
+       (id, ladepunkt_id, karte_id, transaktion, beginn, ende, ladeende,
+        zaehler_start, zaehler_ende, energie_kwh, pv_kwh,
+        hoechstleistung_kw, status, ocmf)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  );
+
+  const schluessel = erzeugeZaehlerschluessel();
+
+  // Der oeffentliche Teil kommt an den Ladepunkt; nur er wird abgelegt.
+  for (const [punktId, paar] of schluessel) {
+    schreibe(
+      "UPDATE ladepunkt SET zaehler_schluessel = ? WHERE id = ?",
+      paar.oeffentlich,
+      punktId,
+    );
+  }''', 1)
+
+s = s.replace('''      nummer += 1;
+      einfuegen.run(
+        `LV-${String(nummer).padStart(5, "0")}`,
+        punkt.id,
+        karte.id,
+        `TX-${String(100000 + nummer)}`,
+        messStempel(beginn),
+        messStempel(ende),
+        messStempel(ladeende),
+        start,
+        neu,
+        energie,
+        Number((energie * pvAnteil).toFixed(2)),
+        Number((leistung * (0.9 + zufall() * 0.1)).toFixed(1)),
+        "Beendet",
+      );''',
+'''      nummer += 1;
+      const transaktion = `TX-${String(100000 + nummer)}`;
+      const paar = schluessel.get(punkt.id);
+
+      /*
+       * Ein Vorgang mit unsynchronisierter Uhr.
+       *
+       * Es gibt ihn absichtlich: Ein Bestand, in dem jeder Datensatz
+       * verwertbar ist, zeigt nicht, ob die Pruefung taugt. Dieser
+       * hier sieht aus wie jeder andere und ist eichrechtlich
+       * wertlos - genau der Fall, den niemand von Hand findet.
+       */
+      const unsynchron = nummer === 7;
+
+      const ocmf = paar
+        ? baueOcmf(
+            {
+              ladepunkt: {
+                id: punkt.id,
+                evse: punkt.evse,
+                hersteller: punkt.hersteller,
+                modell: punkt.modell,
+              },
+              transaktion,
+              karte: karte.kennung,
+              beginn,
+              ende: ladeende,
+              standStart: start,
+              standEnde: neu,
+              zeitKennzeichen: unsynchron ? "I" : "S",
+            },
+            paar.privat,
+          )
+        : null;
+
+      einfuegen.run(
+        `LV-${String(nummer).padStart(5, "0")}`,
+        punkt.id,
+        karte.id,
+        transaktion,
+        messStempel(beginn),
+        messStempel(ende),
+        messStempel(ladeende),
+        start,
+        neu,
+        energie,
+        Number((energie * pvAnteil).toFixed(2)),
+        Number((leistung * (0.9 + zufall() * 0.1)).toFixed(1)),
+        "Beendet",
+        ocmf,
+      );''', 1)
+
+# --- Importe ---------------------------------------------------------
+zeile = s.split("\n")[0]
+s = s.replace('import "server-only";',
+              'import "server-only";\n\nimport { createSign, generateKeyPairSync } from "node:crypto";', 1)
+
+io.open(p, "w", encoding="utf-8").write(s)
+print("Befuellung erweitert")

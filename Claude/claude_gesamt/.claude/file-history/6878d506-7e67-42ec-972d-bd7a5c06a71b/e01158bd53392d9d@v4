@@ -1,0 +1,195 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { Mail, Pencil, Phone, Plus } from "lucide-react";
+import { db } from "@/lib/data";
+import { date, LEAD_STATUS_LABEL, money, personName, STAGE_LABEL } from "@/lib/format";
+import { leadHints, parsePv, scoreLead } from "@/lib/insights";
+import { Avatar, Badge, BTN, Field, PageHeader, Progress, Section, Tabs } from "@/components/ui";
+import { LeadStatusSelect } from "@/components/interactive";
+import { ConvertLeadButton, ToDoForm } from "@/components/forms";
+import { NextSteps, ScorePanel } from "@/components/Insights";
+import { PvCalculator } from "@/components/PvCalculator";
+import { Timeline } from "@/components/Timeline";
+import { TodoList } from "@/components/TodoList";
+
+export async function generateMetadata({ params }: PageProps<"/leads/[name]">) {
+  const lead = await db().getLead(decodeURIComponent((await params).name));
+  return { title: lead?.lead_name ?? "Lead" };
+}
+
+export default async function LeadPage({ params, searchParams }: PageProps<"/leads/[name]">) {
+  const name = decodeURIComponent((await params).name);
+  const tab = (await searchParams).tab;
+  const lead = await db().getLead(name);
+  if (!lead) notFound();
+
+  const [opps, todos] = await Promise.all([
+    db().listOpportunities({ filters: { party_name: lead.name } }),
+    db().listToDos({ filters: { reference_name: lead.name } }),
+  ]);
+  const score = scoreLead(lead);
+  const hints = leadHints(lead, opps, todos);
+  const pv = parsePv([lead.notes, ...opps.map((o) => o.title)].join(" "));
+  const base = `/leads/${encodeURIComponent(lead.name)}`;
+  const active = typeof tab === "string" && ["aufgaben", "rechner", "aktivitaet"].includes(tab) ? tab : "uebersicht";
+  const openTodos = todos.filter((t) => t.status === "Open").length;
+
+  return (
+    <>
+      <PageHeader
+        title={lead.lead_name}
+        crumbs={[{ href: "/leads", label: "Leads" }]}
+        actions={
+          <>
+            <LeadStatusSelect name={lead.name} status={lead.status} />
+            <Link href={`${base}/edit`} className={BTN.secondary}>
+              <Pencil /> Bearbeiten
+            </Link>
+            {lead.status !== "Converted" && <ConvertLeadButton name={lead.name} label={lead.lead_name} />}
+          </>
+        }
+      />
+      <div className="grid min-h-0 flex-1 xl:grid-cols-[1fr_320px]">
+        <div className="min-w-0 px-8 py-7">
+          {/* Datensatzkopf */}
+          <div className="flex flex-wrap items-center gap-4">
+            <Avatar name={lead.lead_name} size="lg" />
+            <div className="min-w-0 flex-1">
+              <h2 className="truncate text-[22px] font-semibold tracking-[-0.02em] text-gray-900">{lead.lead_name}</h2>
+              <p className="mt-0.5 truncate text-gray-500">
+                {[lead.company_name ?? "Privatkunde", lead.territory, lead.source && `über ${lead.source}`].filter(Boolean).join(" · ")}
+              </p>
+            </div>
+            <div className="flex gap-2">
+              {lead.email_id && (
+                <a href={`mailto:${lead.email_id}`} className={BTN.secondary}>
+                  <Mail /> E-Mail
+                </a>
+              )}
+              {lead.mobile_no && (
+                <a href={`tel:${lead.mobile_no.replace(/\s/g, "")}`} className={BTN.primary}>
+                  <Phone /> Anrufen
+                </a>
+              )}
+            </div>
+          </div>
+
+          {hints.length > 0 && (
+            <div className="mt-6">
+              <NextSteps hints={hints} />
+            </div>
+          )}
+
+          <div className="mt-6">
+            <Tabs
+              base={base}
+              active={active}
+              tabs={[
+                { id: "uebersicht", label: "Übersicht" },
+                { id: "aufgaben", label: "Aufgaben", count: openTodos },
+                { id: "rechner", label: "PV-Rechner" },
+                { id: "aktivitaet", label: "Aktivität" },
+              ]}
+            />
+          </div>
+
+          <div className="pt-6">
+            {active === "uebersicht" && (
+              <div className="grid gap-8">
+                <Section title="Bedarf">
+                  {lead.notes ? (
+                    <p className="max-w-3xl whitespace-pre-wrap leading-relaxed text-gray-700">{lead.notes}</p>
+                  ) : (
+                    <p className="text-gray-400">Noch nichts erfasst – Dachfläche, Verbrauch und Wünsche in „Bearbeiten“ ergänzen.</p>
+                  )}
+                </Section>
+
+                <Section
+                  title="Chancen"
+                  count={opps.length}
+                  action={
+                    <Link href={`/opportunities/new?from=Lead&party=${encodeURIComponent(lead.name)}`} className={BTN.ghost}>
+                      <Plus /> Neue Chance
+                    </Link>
+                  }
+                >
+                  {opps.length === 0 ? (
+                    <p className="text-gray-400">Noch keine Chance zu diesem Lead.</p>
+                  ) : (
+                    <ul className="divide-y divide-gray-100 rounded-lg border border-gray-200">
+                      {opps.map((o) => (
+                        <li key={o.name}>
+                          <Link href={`/opportunities/${encodeURIComponent(o.name)}`} className="flex h-14 items-center gap-4 px-4 transition-colors hover:bg-gray-50">
+                            <div className="min-w-0 flex-1">
+                              <div className="truncate font-medium text-gray-900">{o.title}</div>
+                              <div className="text-[12px] text-gray-500">
+                                {STAGE_LABEL[o.sales_stage]} · Abschluss {date(o.expected_closing)}
+                              </div>
+                            </div>
+                            <div className="hidden w-28 items-center gap-2 sm:flex">
+                              <Progress value={o.probability} className="flex-1" />
+                              <span className="tnum w-8 text-right text-[12px] text-gray-500">{o.probability} %</span>
+                            </div>
+                            <span className="tnum w-24 text-right font-medium text-gray-900">{money(o.opportunity_amount, o.currency)}</span>
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </Section>
+              </div>
+            )}
+
+            {active === "aufgaben" && (
+              <div className="grid gap-4">
+                <ToDoForm referenceType="Lead" referenceName={lead.name} compact />
+                <div className="overflow-hidden rounded-lg border border-gray-200">
+                  <TodoList todos={todos} />
+                </div>
+              </div>
+            )}
+
+            {active === "rechner" && <PvCalculator kwp={pv.kwp} storage={pv.storage} invest={opps[0]?.opportunity_amount} />}
+
+            {active === "aktivitaet" && <Timeline doctype="Lead" name={lead.name} />}
+          </div>
+        </div>
+
+        {/* Eigenschaften */}
+        <aside className="border-t border-gray-150 bg-gray-25 px-6 py-7 xl:border-l xl:border-t-0">
+          <ScorePanel s={score} />
+          <div className="my-6 h-px bg-gray-150" />
+          <div className="mb-2 text-[12px] font-medium text-gray-500">Eigenschaften</div>
+          <dl>
+            <Field label="Status">
+              <Badge value={lead.status} label={LEAD_STATUS_LABEL[lead.status]} />
+            </Field>
+            <Field label="E-Mail">
+              {lead.email_id && (
+                <a href={`mailto:${lead.email_id}`} className="hover:underline">
+                  {lead.email_id}
+                </a>
+              )}
+            </Field>
+            <Field label="Mobil">{lead.mobile_no}</Field>
+            <Field label="Firma">{lead.company_name}</Field>
+            <Field label="Quelle">{lead.source}</Field>
+            <Field label="Region">{lead.territory}</Field>
+            <Field label="Berater">
+              {lead.lead_owner && (
+                <span className="flex items-center gap-2">
+                  <Avatar name={lead.lead_owner} size="xs" /> {personName(lead.lead_owner)}
+                </span>
+              )}
+            </Field>
+            <Field label="Angelegt">{date(lead.creation)}</Field>
+            <Field label="Geändert">{date(lead.modified)}</Field>
+            <Field label="ID">
+              <span className="font-mono text-[12px] text-gray-500">{lead.name}</span>
+            </Field>
+          </dl>
+        </aside>
+      </div>
+    </>
+  );
+}

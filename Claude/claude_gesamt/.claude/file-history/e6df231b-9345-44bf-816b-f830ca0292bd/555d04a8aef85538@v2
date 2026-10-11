@@ -1,0 +1,117 @@
+"""PDF-Erzeugung fuer Protokolle und Tagesberichte (FA-090, FA-091, FA-103)."""
+
+from __future__ import annotations
+
+import frappe
+from frappe import _
+from frappe.utils.pdf import get_pdf
+
+STANDARD_FORMATE = {
+	"Pruefprotokoll": "Pruefprotokoll OEKOVOLT",
+	"Tagesbericht": "Tagesbericht OEKOVOLT",
+}
+
+
+def _print_format(doctype: str, profil: str | None = None) -> str:
+	if profil:
+		format_name = frappe.db.get_value("PDF Protokollprofil", profil, "print_format")
+		if format_name:
+			return format_name
+
+	standard = frappe.db.get_value(
+		"PDF Protokollprofil", {"dokumenttyp": doctype, "ist_standard": 1}, "print_format"
+	)
+	return standard or STANDARD_FORMATE.get(doctype) or "Standard"
+
+
+@frappe.whitelist()
+def erzeuge_pdf(doctype: str, docname: str, profil: str | None = None,
+                anhaengen: bool = True) -> dict:
+	"""Rendert das Dokument als PDF und haengt es an den Datensatz an."""
+	if doctype not in STANDARD_FORMATE:
+		frappe.throw(_("Fuer {0} ist kein PDF-Export definiert.").format(doctype))
+
+	doc = frappe.get_doc(doctype, docname)
+	doc.check_permission("print")
+
+	html = frappe.get_print(doctype, docname, print_format=_print_format(doctype, profil))
+	inhalt = get_pdf(html)
+	dateiname = f"{docname.replace('/', '-')}.pdf"
+
+	if not anhaengen:
+		frappe.local.response.filename = dateiname
+		frappe.local.response.filecontent = inhalt
+		frappe.local.response.type = "download"
+		return {}
+
+	# Vorherige Fassung ersetzen, damit nicht bei jedem Speichern eine Datei entsteht.
+	for alt in frappe.get_all("File", filters={
+		"attached_to_doctype": doctype, "attached_to_name": docname, "file_name": dateiname,
+	}, pluck="name"):
+		frappe.delete_doc("File", alt, ignore_permissions=True, force=True)
+
+	datei = frappe.get_doc({
+		"doctype": "File",
+		"file_name": dateiname,
+		"attached_to_doctype": doctype,
+		"attached_to_name": docname,
+		"content": inhalt,
+		"is_private": 1,
+	}).insert(ignore_permissions=True)
+
+	frappe.db.set_value(doctype, docname, "pdf_datei", datei.file_url, update_modified=False)
+	_an_projekt_anhaengen(doc, datei)
+
+	return {"file_url": datei.file_url, "file_name": dateiname}
+
+
+def _an_projekt_anhaengen(doc, datei):
+	"""Kopie des Protokolls am ERPNext-Projekt ablegen (Kapitel 7.1)."""
+	if not frappe.db.get_single_value("Baudoku Settings", "pdf_an_projekt_anhaengen"):
+		return
+	projekt = doc.get("project")
+	if not projekt or not frappe.db.exists("Project", projekt):
+		return
+
+	frappe.get_doc({
+		"doctype": "File",
+		"file_name": datei.file_name,
+		"attached_to_doctype": "Project",
+		"attached_to_name": projekt,
+		"file_url": datei.file_url,
+		"is_private": 1,
+	}).insert(ignore_permissions=True)
+
+
+def pdf_bei_abschluss(doc, method=None):
+	"""doc_event: PDF erzeugen, sobald ein Protokoll abgeschlossen wird."""
+	if doc.status not in ("Abgeschlossen", "Verifiziert"):
+		return
+	if doc.pdf_datei and not doc.has_value_changed("status"):
+		return
+	frappe.enqueue(
+		"oekovolt_baudoku.api.pdf.erzeuge_pdf",
+		queue="short", timeout=300, enqueue_after_commit=True,
+		doctype=doc.doctype, docname=doc.name,
+	)
+
+
+def pdf_bei_genehmigung(doc, method=None):
+	"""doc_event: PDF erzeugen, sobald ein Tagesbericht genehmigt wurde."""
+	if doc.status != "Genehmigt" or not doc.has_value_changed("status"):
+		return
+	frappe.enqueue(
+		"oekovolt_baudoku.api.pdf.erzeuge_pdf",
+		queue="short", timeout=300, enqueue_after_commit=True,
+		doctype=doc.doctype, docname=doc.name,
+	)
+
+
+@frappe.whitelist()
+def vorschau_html(vorlage: str) -> str:
+	"""Druckvorschau einer unausgefuellten Checkliste (FA-019)."""
+	doc = frappe.get_doc("Checklistenvorlage", vorlage)
+	doc.check_permission("read")
+	return frappe.render_template(
+		"oekovolt_baudoku/templates/vorlage_vorschau.html", {"vorlage": doc}
+	)

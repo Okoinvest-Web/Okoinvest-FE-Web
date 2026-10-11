@@ -1,0 +1,129 @@
+import pathlib
+
+ROOT = pathlib.Path(r"C:\Users\SALEADMIN\Documents\Servicetechniker APP")
+FE = ROOT / "frontend"
+
+
+def patch(pfad, paare, basis=ROOT):
+    p = basis / pfad
+    s = p.read_text(encoding="utf-8")
+    for alt, neu in paare:
+        if alt not in s:
+            raise SystemExit(f"NICHT GEFUNDEN in {pfad}:\n---\n{alt[:300]}\n---")
+        s = s.replace(alt, neu, 1)
+    p.write_text(s, encoding="utf-8")
+    print("ok", pfad)
+
+
+# ----------------------------------------------------- Scheduler für Garantien
+patch(
+    "oekovolt_baudoku/hooks.py",
+    [
+        (
+            """	"daily": [
+		"oekovolt_baudoku.baudoku.doctype.mangel.mangel.taeglich_eskalieren",
+		"oekovolt_baudoku.baudoku.doctype.tagesbericht.tagesbericht.erinnerung_fehlende_berichte",
+	],""",
+            """	"daily": [
+		"oekovolt_baudoku.baudoku.doctype.mangel.mangel.taeglich_eskalieren",
+		"oekovolt_baudoku.baudoku.doctype.tagesbericht.tagesbericht.erinnerung_fehlende_berichte",
+		"oekovolt_baudoku.api.komponenten.garantien_pruefen",
+	],""",
+        )
+    ],
+)
+
+# ------------------------------------------------------------- API-Kurznamen
+patch(
+    "src/lib/api.ts",
+    [
+        (
+            """  mangelSammelaktion:""",
+            """  komponentenListe: (anlage: string) =>
+    methode('oekovolt_baudoku.api.komponenten.liste', { anlage }, 'GET'),
+  komponentenErfassen: (anlage: string, eintraege: unknown[]) =>
+    methode('oekovolt_baudoku.api.komponenten.erfassen', { anlage, eintraege }),
+  komponenteEntfernen: (anlage: string, seriennummer: string) =>
+    methode('oekovolt_baudoku.api.komponenten.entfernen', { anlage, seriennummer }),
+  seriennummerSuchen: (seriennummer: string) =>
+    methode('oekovolt_baudoku.api.komponenten.suchen', { seriennummer }, 'GET'),
+
+  mangelSammelaktion:""",
+        )
+    ],
+    basis=FE,
+)
+
+# ------------------------------------------------------------------ Demodaten
+patch(
+    "src/lib/demo.ts",
+    [
+        (
+            """    case 'oekovolt_baudoku.api.mangel.zustaendige':""",
+            """    case 'oekovolt_baudoku.api.komponenten.liste':
+      return KOMPONENTEN[String(parameter.anlage)] ?? []
+
+    case 'oekovolt_baudoku.api.komponenten.erfassen': {
+      const anlage = String(parameter.anlage)
+      const neue = (parameter.eintraege as Record<string, string>[]) ?? []
+      const bestand = (KOMPONENTEN[anlage] ??= [])
+      const bekannt = new Set(bestand.map((k) => k.seriennummer))
+      const hinzugefuegt: string[] = []
+      for (const eintrag of neue) {
+        if (bekannt.has(eintrag.seriennummer)) continue
+        bestand.push({ ...eintrag, serial_no: null, eingebaut_am: tage(0) })
+        hinzugefuegt.push(eintrag.seriennummer)
+      }
+      return { hinzugefuegt, bereits_vorhanden: [], gesamt: bestand.length }
+    }
+
+    case 'oekovolt_baudoku.api.komponenten.entfernen': {
+      const anlage = String(parameter.anlage)
+      KOMPONENTEN[anlage] = (KOMPONENTEN[anlage] ?? []).filter(
+        (k) => k.seriennummer !== parameter.seriennummer,
+      )
+      return { gesamt: KOMPONENTEN[anlage].length }
+    }
+
+    case 'oekovolt_baudoku.api.komponenten.suchen': {
+      const gesucht = String(parameter.seriennummer).trim()
+      for (const [anlage, bestand] of Object.entries(KOMPONENTEN)) {
+        const treffer = bestand.find((k) => k.seriennummer === gesucht)
+        if (!treffer) continue
+        const daten = BOOTSTRAP.anlagen.find((a) => a.name === anlage)
+        return {
+          komponente: { ...treffer, parent: anlage },
+          anlage: daten
+            ? { name: daten.name, anlage_name: daten.anlage_name, customer: daten.customer,
+                ort: daten.ort, adresse: daten.adresse }
+            : null,
+        }
+      }
+      return null
+    }
+
+    case 'oekovolt_baudoku.api.mangel.zustaendige':""",
+        ),
+        (
+            """/** Beantwortet eine Servermethode aus den Demodaten. `undefined` = nicht abgedeckt. */""",
+            """/** Verbaute Komponenten je Anlage — im Demo-Modus veränderbar. */
+const KOMPONENTEN: Record<string, Record<string, string | null>[]> = {
+  'ANL-2026-00001': [
+    { komponententyp: 'Wechselrichter', seriennummer: 'SE-2024-88213', hersteller: 'SolarEdge',
+      position: 'Technikraum links', serial_no: null, eingebaut_am: tage(-1100), garantie_bis: tage(2500) },
+    { komponententyp: 'Wechselrichter', seriennummer: 'SE-2024-88214', hersteller: 'SolarEdge',
+      position: 'Technikraum rechts', serial_no: null, eingebaut_am: tage(-1100), garantie_bis: tage(2500) },
+    { komponententyp: 'Modul', seriennummer: 'JKM-555-0042117', hersteller: 'Jinko',
+      position: 'Feld B, Reihe 4, Pos. 7', serial_no: null, eingebaut_am: tage(-1100), garantie_bis: tage(40) },
+  ],
+  'ANL-2026-00004': [
+    { komponententyp: 'Wallbox', seriennummer: 'WB-KEBA-7714', hersteller: 'KEBA',
+      position: 'Stellplatz 3', serial_no: null, eingebaut_am: tage(-400), garantie_bis: tage(330) },
+  ],
+}
+
+/** Beantwortet eine Servermethode aus den Demodaten. `undefined` = nicht abgedeckt. */""",
+        ),
+    ],
+    basis=FE,
+)

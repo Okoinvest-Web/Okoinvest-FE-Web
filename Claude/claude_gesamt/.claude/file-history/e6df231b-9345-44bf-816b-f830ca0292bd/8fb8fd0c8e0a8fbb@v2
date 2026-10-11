@@ -1,0 +1,322 @@
+"""Integrationstests fuer Abschluss, Verifizierung und Sync-Weg.
+
+Diese Tests brauchen eine laufende Bench:
+
+    bench --site <site> run-tests --app oekovolt_baudoku
+
+Sie decken die Stellen ab, an denen ein Fehler Daten verfaelschen wuerde:
+die Abschlusspruefung, die Rollenbindung der Verifizierung und die Aufloesung
+der lokalen UUIDs beim Offline-Sync (AK-05, AK-07).
+"""
+
+from __future__ import annotations
+
+import json
+import uuid
+
+import frappe
+from frappe.tests.utils import FrappeTestCase
+
+from oekovolt_baudoku.api import sync
+
+
+def _kunde() -> str:
+	name = "Baudoku Testkunde"
+	if not frappe.db.exists("Customer", name):
+		frappe.get_doc({
+			"doctype": "Customer", "customer_name": name, "customer_type": "Company",
+		}).insert(ignore_permissions=True)
+	return name
+
+
+def _mitarbeiter() -> str:
+	vorhanden = frappe.db.get_value("Employee", {"employee_name": "Baudoku Testtechniker"}, "name")
+	if vorhanden:
+		return vorhanden
+	return frappe.get_doc({
+		"doctype": "Employee",
+		"first_name": "Baudoku",
+		"last_name": "Testtechniker",
+		"employee_name": "Baudoku Testtechniker",
+		"date_of_birth": "1990-01-01",
+		"date_of_joining": "2020-01-01",
+		"gender": "Other",
+		"status": "Active",
+	}).insert(ignore_permissions=True).name
+
+
+def _anlage() -> str:
+	vorhanden = frappe.db.get_value("PV Anlage", {"anlage_name": "Testanlage Sync"}, "name")
+	if vorhanden:
+		return vorhanden
+	return frappe.get_doc({
+		"doctype": "PV Anlage",
+		"anlage_name": "Testanlage Sync",
+		"anlagen_typ": "PV",
+		"status": "In Betrieb",
+		"customer": _kunde(),
+		"kwp": 10,
+		"adresse": "Teststrasse 1",
+		"modul_uoc": 41.5,
+		"modul_isc": 13.9,
+		"anzahl_strings": 2,
+	}).insert(ignore_permissions=True).name
+
+
+def _vorlage() -> str:
+	"""Vorlage mit einem Pflichtpunkt und einem bedingt sichtbaren Pflichtpunkt."""
+	vorhanden = frappe.db.get_value("Checklistenvorlage", {"titel": "Testvorlage Sync"}, "name")
+	if vorhanden:
+		return vorhanden
+
+	doc = frappe.get_doc({
+		"doctype": "Checklistenvorlage",
+		"titel": "Testvorlage Sync",
+		"vorlage_typ": "Wartung",
+		"anlagen_typ": "PV",
+		"status": "Entwurf",
+	})
+	sektion = doc.append("sektionen", {"sektion_name": "Pruefung", "sortierung": 10})
+	sektion.append("pruefpunkte", {
+		"nummer": "1.1", "titel": "Sichtpruefung", "feldtyp": "Bewertung", "pflichtfeld": 1,
+		"bewertungsoptionen": "in Ordnung|Mangel leicht|Mangel schwer",
+	})
+	sektion.append("pruefpunkte", {
+		"nummer": "1.2", "titel": "Nur bei schwerem Mangel", "feldtyp": "Text",
+		"pflichtfeld": 1, "sichtbar_wenn": "1.1 == Mangel schwer",
+	})
+	doc.insert(ignore_permissions=True)
+	doc.veroeffentlichen()
+	return doc.name
+
+
+def _protokoll(**felder):
+	from oekovolt_baudoku.api.protokoll import ergebniszeilen_anlegen
+
+	doc = frappe.new_doc("Pruefprotokoll")
+	doc.update({
+		"anlage": _anlage(),
+		"vorlage": _vorlage(),
+		"pruefer": _mitarbeiter(),
+		"status": "In Arbeit",
+		"pruef_datum": frappe.utils.now_datetime(),
+		**felder,
+	})
+	ergebniszeilen_anlegen(doc)
+	return doc
+
+
+def _unterschreiben(doc):
+	doc.append("unterschriften", {
+		"rolle": "Techniker",
+		"name_unterzeichner": "Testtechniker",
+		"signatur": "data:image/png;base64,iVBORw0KGgo=",
+		"unterzeichnet_am": frappe.utils.now_datetime(),
+	})
+
+
+class TestPruefprotokollAbschluss(FrappeTestCase):
+	def test_abschluss_ohne_pflichtangabe_wird_abgelehnt(self):
+		doc = _protokoll()
+		doc.insert(ignore_permissions=True)
+		_unterschreiben(doc)
+		doc.status = "Abgeschlossen"
+
+		with self.assertRaises(frappe.ValidationError):
+			doc.save()
+
+	def test_abschluss_ohne_unterschrift_wird_abgelehnt(self):
+		doc = _protokoll()
+		doc.insert(ignore_permissions=True)
+		doc.ergebnisse[0].bewertung = "in Ordnung"
+		doc.status = "Abgeschlossen"
+
+		with self.assertRaises(frappe.ValidationError):
+			doc.save()
+
+	def test_ausgeblendeter_pflichtpunkt_blockiert_nicht(self):
+		"""1.2 ist nur bei 'Mangel schwer' sichtbar — sonst darf er nicht fehlen."""
+		doc = _protokoll()
+		doc.insert(ignore_permissions=True)
+		doc.ergebnisse[0].bewertung = "in Ordnung"
+		_unterschreiben(doc)
+		doc.status = "Abgeschlossen"
+		doc.save()
+
+		self.assertEqual(doc.status, "Abgeschlossen")
+		self.assertTrue(doc.abschluss_datum)
+
+	def test_sichtbarer_pflichtpunkt_blockiert(self):
+		doc = _protokoll()
+		doc.insert(ignore_permissions=True)
+		doc.ergebnisse[0].bewertung = "Mangel schwer"
+		_unterschreiben(doc)
+		doc.status = "Abgeschlossen"
+
+		with self.assertRaises(frappe.ValidationError):
+			doc.save()
+
+	def test_mangelbewertung_erzeugt_mangel(self):
+		doc = _protokoll()
+		doc.insert(ignore_permissions=True)
+		doc.ergebnisse[0].bewertung = "Mangel schwer"
+		doc.ergebnisse[1].wert_text = "Glasbruch in Reihe 4"
+		_unterschreiben(doc)
+		doc.gesamtbewertung = "Nicht bestanden"
+		doc.status = "Abgeschlossen"
+		doc.save()
+
+		maengel = frappe.get_all("Mangel", filters={"pruefprotokoll": doc.name}, pluck="name")
+		self.assertEqual(len(maengel), 1)
+		self.assertEqual(frappe.db.get_value("Mangel", maengel[0], "schweregrad"), "A")
+
+	def test_bestanden_trotz_schwerem_mangel_wird_abgelehnt(self):
+		doc = _protokoll()
+		doc.insert(ignore_permissions=True)
+		doc.ergebnisse[0].bewertung = "Mangel schwer"
+		doc.gesamtbewertung = "Bestanden"
+
+		with self.assertRaises(frappe.ValidationError):
+			doc.save()
+
+
+class TestPruefprotokollVerifizierung(FrappeTestCase):
+	def test_techniker_darf_nicht_verifizieren(self):
+		"""Kernstueck des Vier-Augen-Prinzips — auch ueber den Sync-Weg (AK-07)."""
+		doc = _protokoll()
+		doc.insert(ignore_permissions=True)
+		doc.ergebnisse[0].bewertung = "in Ordnung"
+		_unterschreiben(doc)
+		doc.status = "Abgeschlossen"
+		doc.save()
+
+		benutzer = frappe.get_doc({
+			"doctype": "User",
+			"email": f"techniker-{uuid.uuid4().hex[:8]}@baudoku.test",
+			"first_name": "Nur",
+			"last_name": "Techniker",
+			"roles": [{"role": "Baudoku Techniker"}],
+		}).insert(ignore_permissions=True)
+
+		frappe.set_user(benutzer.name)
+		try:
+			doc.reload()
+			doc.status = "Verifiziert"
+			with self.assertRaises(frappe.PermissionError):
+				doc.save()
+		finally:
+			frappe.set_user("Administrator")
+
+
+class TestSyncVerweise(FrappeTestCase):
+	def test_push_ist_idempotent(self):
+		"""Ein wiederholter Upload nach Verbindungsabbruch darf nichts doppeln."""
+		lokale_id = str(uuid.uuid4())
+		nutzlast = {
+			"lokale_id": lokale_id,
+			"doctype": "Mangel",
+			"aktion": "create",
+			"daten": {
+				"titel": "Doppeltest",
+				"anlage": _anlage(),
+				"kategorie": frappe.db.get_value("Mangelkategorie", {}, "name"),
+				"schweregrad": "B",
+				"status": "Offen",
+				"beschreibung": "Test",
+				"gemeldet_am": frappe.utils.today(),
+			},
+		}
+
+		erste = sync.push(json.dumps([nutzlast]))
+		zweite = sync.push(json.dumps([nutzlast]))
+
+		self.assertEqual(erste["ergebnisse"][0]["ergebnis"], "Erfolg")
+		self.assertEqual(zweite["ergebnisse"][0]["ergebnis"], "Erfolg")
+		self.assertEqual(frappe.db.count("Mangel", {"lokale_id": lokale_id}), 1)
+
+	def test_mangel_wird_nachtraeglich_mit_protokoll_verknuepft(self):
+		"""AK-05: Die Reihenfolge der Uebertragung darf keine Rolle spielen."""
+		protokoll_id = str(uuid.uuid4())
+		mangel_id = str(uuid.uuid4())
+
+		# Der Mangel kommt zuerst an und kennt nur die lokale ID des Protokolls.
+		sync.push(json.dumps([{
+			"lokale_id": mangel_id,
+			"doctype": "Mangel",
+			"aktion": "create",
+			"daten": {
+				"titel": "Verweistest",
+				"anlage": _anlage(),
+				"kategorie": frappe.db.get_value("Mangelkategorie", {}, "name"),
+				"schweregrad": "B",
+				"status": "Offen",
+				"beschreibung": "Test",
+				"gemeldet_am": frappe.utils.today(),
+				"pruefprotokoll_lokal": protokoll_id,
+			},
+		}]))
+
+		mangel = frappe.db.get_value("Mangel", {"lokale_id": mangel_id}, ["name", "pruefprotokoll"],
+		                             as_dict=True)
+		self.assertFalse(mangel.pruefprotokoll, "Ohne Protokoll darf kein Link gesetzt sein")
+
+		# Danach das Protokoll — jetzt muss die Verknuepfung entstehen.
+		entwurf = _protokoll(lokale_id=protokoll_id)
+		entwurf.ergebnisse[0].bewertung = "in Ordnung"
+		entwurf.ergebnisse[0].mangel_lokal = mangel_id
+		sync.push(json.dumps([{
+			"lokale_id": protokoll_id,
+			"doctype": "Pruefprotokoll",
+			"aktion": "create",
+			"daten": entwurf.as_dict(),
+		}]))
+
+		protokoll_name = frappe.db.get_value("Pruefprotokoll", {"lokale_id": protokoll_id}, "name")
+		self.assertTrue(protokoll_name)
+		self.assertEqual(
+			frappe.db.get_value("Mangel", mangel.name, "pruefprotokoll"),
+			protokoll_name,
+			"Der Mangel muss nachtraeglich auf das Protokoll zeigen",
+		)
+
+	def test_konflikt_meldet_serverstand(self):
+		"""Aendert der Server sich zwischendurch, gewinnt er — und sagt es."""
+		lokale_id = str(uuid.uuid4())
+		daten = {
+			"titel": "Konflikttest",
+			"anlage": _anlage(),
+			"kategorie": frappe.db.get_value("Mangelkategorie", {}, "name"),
+			"schweregrad": "B",
+			"status": "Offen",
+			"beschreibung": "Erstfassung",
+			"gemeldet_am": frappe.utils.today(),
+		}
+		sync.push(json.dumps([{
+			"lokale_id": lokale_id, "doctype": "Mangel", "aktion": "create", "daten": daten,
+		}]))
+
+		name = frappe.db.get_value("Mangel", {"lokale_id": lokale_id}, "name")
+		veralteter_stand = frappe.db.get_value("Mangel", name, "modified")
+
+		# Serverseitige Aenderung nach dem Stand, den der Client kennt
+		frappe.db.set_value("Mangel", name, "beschreibung", "Serverfassung")
+		frappe.db.commit()
+
+		ergebnis = sync.push(json.dumps([{
+			"lokale_id": lokale_id,
+			"doctype": "Mangel",
+			"aktion": "update",
+			"basis_modified": str(veralteter_stand),
+			"daten": {**daten, "beschreibung": "Clientfassung"},
+		}]))
+
+		self.assertEqual(ergebnis["ergebnisse"][0]["ergebnis"], "Konflikt")
+		self.assertEqual(frappe.db.get_value("Mangel", name, "beschreibung"), "Serverfassung")
+
+	def test_client_kann_kein_link_feld_in_kindtabellen_setzen(self):
+		"""Der Client kennt dort nur UUIDs — die wuerden die Linkpruefung sprengen."""
+		bereinigt = sync._bereinige("Pruefprotokoll", {
+			"ergebnisse": [{"pruefpunkt_key": "a::1", "mangel": "irgendeine-uuid", "bewertung": "OK"}],
+		})
+		self.assertNotIn("mangel", bereinigt["ergebnisse"][0])
+		self.assertEqual(bereinigt["ergebnisse"][0]["bewertung"], "OK")

@@ -1,0 +1,214 @@
+import { fileURLToPath, URL } from 'node:url'
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  writeFileSync,
+} from 'node:fs'
+import { resolve } from 'node:path'
+
+import vue from '@vitejs/plugin-vue'
+import { defineConfig, type Plugin } from 'vite'
+import { VitePWA } from 'vite-plugin-pwa'
+
+/**
+ * Die App wird von Frappe unter `/baudoku` ausgeliefert. Die Assets liegen in
+ * `oekovolt_baudoku/public/frontend` und sind ueber `/assets/...` erreichbar.
+ * `bench build --app oekovolt_baudoku` ruft `yarn build` in diesem Ordner auf.
+ */
+const BASE = '/assets/oekovolt_baudoku/frontend/'
+
+/**
+ * Zielverzeichnis des Builds. Die E2E-Tests bauen mit `E2E_OUT` in einen
+ * eigenen Ordner, damit kein Demo-Build dort landet, wo der echte hingehört.
+ */
+const APP_DIR = process.env.E2E_OUT
+  ? resolve(__dirname, process.env.E2E_OUT)
+  : resolve(__dirname, '../oekovolt_baudoku')
+
+/**
+ * Verteilt das Build-Ergebnis an die Stellen, an denen Frappe es erwartet:
+ *
+ * - `www/baudoku.html` — die Einstiegsseite der SPA
+ * - `www/sw.js` und die Workbox-Laufzeit — der Service Worker **muss** im
+ *   Wurzelpfad liegen. Er kontrolliert nur Seiten unterhalb seines eigenen
+ *   Verzeichnisses; aus `/assets/oekovolt_baudoku/frontend/` heraus registriert
+ *   erreichte er die App unter `/baudoku` nie, und die Offline-Fähigkeit wäre
+ *   wirkungslos (NFA-010).
+ */
+function frappeWebsitePage(): Plugin {
+  return {
+    name: 'frappe-website-page',
+    apply: 'build',
+    // `post`: vite-plugin-pwa erzeugt den Service Worker ebenfalls in
+    // `closeBundle` — ohne diese Reihenfolge wäre er hier noch nicht vorhanden.
+    closeBundle: {
+      order: 'post',
+      sequential: true,
+      handler() {
+        const bundle = resolve(APP_DIR, 'public/frontend')
+        const www = resolve(APP_DIR, 'www')
+        if (!existsSync(resolve(bundle, 'index.html'))) return
+
+        mkdirSync(www, { recursive: true })
+        copyFileSync(resolve(bundle, 'index.html'), resolve(www, 'baudoku.html'))
+
+        // Die Workbox-Laufzeit lädt sw.js per importScripts relativ nach; ihr
+        // Name trägt einen Hash, deshalb aus dem Verzeichnis lesen.
+        const workboxDateien = readdirSync(bundle).filter((datei) =>
+          /^workbox-[\w-]+\.js$/.test(datei),
+        )
+        for (const datei of workboxDateien) {
+          copyFileSync(resolve(bundle, datei), resolve(www, datei))
+        }
+
+        // Ein paar Precache-Einträge (Icons, Web-App-Manifest) fügt
+        // vite-plugin-pwa erst nach allen Workbox-Hooks hinzu — sie bleiben
+        // relativ und würden vom Wurzelpfad aus ins Leere zeigen. Da die
+        // Installation des Workers bei einem einzigen fehlenden Eintrag
+        // komplett scheitert, werden sie hier absolut gesetzt.
+        const swQuelle = resolve(bundle, 'sw.js')
+        const wurzeldateien = [...workboxDateien]
+        if (existsSync(swQuelle)) {
+          const inhalt = readFileSync(swQuelle, 'utf8').replace(
+            /url:"(?!https?:|\/)([^"]+)"/g,
+            (_treffer, pfad: string) => `url:"${BASE}${pfad}"`,
+          )
+          writeFileSync(resolve(www, 'sw.js'), inhalt)
+          wurzeldateien.unshift('sw.js')
+        }
+
+        const kopiert = wurzeldateien.length
+          ? wurzeldateien.join(', ')
+          : '(kein Service Worker gefunden)'
+        // eslint-disable-next-line no-console
+        console.log(`\n  Nach www kopiert: baudoku.html, ${kopiert}\n`)
+      },
+    },
+  }
+}
+
+export default defineConfig(({ command }) => ({
+  base: command === 'build' ? BASE : '/',
+  plugins: [
+    vue(),
+    VitePWA({
+      registerType: 'prompt',
+      injectRegister: false,
+      includeAssets: ['favicon.svg', 'icon-192.svg', 'icon-512.svg'],
+      manifest: {
+        name: 'ÖKOVOLT Baudoku',
+        short_name: 'Baudoku',
+        description: 'Baustellendokumentation, Prüfprotokolle und Mängelmanagement',
+        lang: 'de-AT',
+        theme_color: '#0f172a',
+        background_color: '#f8fafc',
+        display: 'standalone',
+        orientation: 'any',
+        start_url: '/baudoku',
+        scope: '/baudoku',
+        icons: [
+          { src: 'icon-192.svg', sizes: '192x192', type: 'image/svg+xml', purpose: 'any' },
+          { src: 'icon-512.svg', sizes: '512x512', type: 'image/svg+xml', purpose: 'any maskable' },
+        ],
+        shortcuts: [
+          { name: 'Neues Protokoll', url: '/baudoku/protokolle/neu' },
+          { name: 'Neuer Mangel', url: '/baudoku/maengel/neu' },
+          { name: 'Neuer Tagesbericht', url: '/baudoku/tagesberichte/neu' },
+        ],
+      },
+      workbox: {
+        // App-Shell offline vorhalten (NFA-010)
+        globPatterns: ['**/*.{js,css,html,svg,woff2}'],
+        // Der Service Worker liegt im Wurzelpfad (siehe `frappeWebsitePage`),
+        // die Assets unter `/assets/...`. Relative Precache-Einträge würden
+        // gegen den Worker aufgelöst — also ins Leere — und die Installation
+        // scheitern lassen. `modifyURLPrefix` greift dabei nicht: Einige
+        // Einträge (Icons, Manifest) fügt das Plugin erst danach hinzu.
+        manifestTransforms: [
+          (eintraege) => ({
+            manifest: eintraege.map((eintrag) => ({
+              ...eintrag,
+              url: eintrag.url.startsWith('/') ? eintrag.url : `${BASE}${eintrag.url}`,
+            })),
+          }),
+        ],
+        // Muss auf einen *präcachten* Eintrag zeigen; `/baudoku` selbst wird von
+        // Frappe gerendert und liegt nicht im Cache.
+        navigateFallback: `${BASE}index.html`,
+        navigateFallbackDenylist: [/^\/api/, /^\/app/, /^\/assets\/frappe/, /^\/files/],
+        runtimeCaching: [
+          {
+            // Stammdaten: erst Netz, bei Ausfall Cache
+            urlPattern: /\/api\/method\/oekovolt_baudoku\.api\.sync\.bootstrap/,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'baudoku-bootstrap',
+              networkTimeoutSeconds: 5,
+              expiration: { maxEntries: 4, maxAgeSeconds: 60 * 60 * 24 * 30 },
+            },
+          },
+          {
+            // Fotos und Anhaenge: aus dem Cache, im Hintergrund erneuern
+            urlPattern: /\/(files|private\/files)\//,
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'baudoku-dateien',
+              expiration: { maxEntries: 400, maxAgeSeconds: 60 * 60 * 24 * 14 },
+            },
+          },
+          {
+            urlPattern: /^https:\/\/[a-c]\.tile\.openstreetmap\.org\//,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'osm-kacheln',
+              expiration: { maxEntries: 600, maxAgeSeconds: 60 * 60 * 24 * 30 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+        ],
+      },
+      // Im Dev-Server ist der Service Worker normalerweise aus — sonst kämpft
+      // man beim Entwickeln gegen den Cache. Für die E2E-Tests wird er gezielt
+      // eingeschaltet; ohne ihn lässt sich der Offlinebetrieb nicht prüfen (AK-04).
+      devOptions: { enabled: process.env.VITE_PWA_DEV === '1', type: 'module' },
+    }),
+    frappeWebsitePage(),
+  ],
+  resolve: {
+    alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
+  },
+  server: {
+    port: 8080,
+    // Im Dev-Modus laeuft die Bench unter :8000 und liefert Session-Cookies.
+    proxy: {
+      '^/(api|files|private|assets)': {
+        target: 'http://localhost:8000',
+        changeOrigin: false,
+        ws: true,
+      },
+    },
+  },
+  build: {
+    outDir: resolve(APP_DIR, 'public/frontend'),
+    emptyOutDir: true,
+    target: 'es2022',
+    sourcemap: true,
+    chunkSizeWarningLimit: 900,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['vue', 'vue-router', 'pinia'],
+          karte: ['leaflet'],
+          offline: ['dexie'],
+        },
+      },
+    },
+  },
+  test: {
+    environment: 'node',
+    include: ['src/**/*.test.ts'],
+  },
+}))

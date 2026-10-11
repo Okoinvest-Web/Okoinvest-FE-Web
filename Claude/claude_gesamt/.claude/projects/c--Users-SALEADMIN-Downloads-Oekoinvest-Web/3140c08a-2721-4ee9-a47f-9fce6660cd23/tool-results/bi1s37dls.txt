@@ -1,0 +1,533 @@
+import { ShieldCheck } from "lucide-react";
+
+import Section from "@/components/ui/Section";
+import SectionHeading from "@/components/ui/SectionHeading";
+import Faq from "@/components/ui/Faq";
+import CtaBand from "@/components/ui/CtaBand";
+import Button from "@/components/ui/Button";
+import Reveal from "@/components/ui/Reveal";
+import Querverweise from "@/components/Reusable/Querverweise";
+import Phasenmodell from "@/components/Investoren/Phasenmodell";
+import PipelineGrafik from "@/components/Investoren/PipelineGrafik";
+import DdCheckliste from "@/components/Investoren/DdCheckliste";
+import InvestorAnfrage from "@/components/Investoren/InvestorAnfrage";
+import Hero from "@/components/Investoren/Seite/Hero";
+import Fakten from "@/components/Investoren/Seite/Fakten";
+import Angebot from "@/components/Investoren/Seite/Angebot";
+import Ablauf from "@/components/Investoren/Seite/Ablauf";
+import Provision from "@/components/Investoren/Seite/Provision";
+import { abs, KENNZAHLEN, SITE, sprachAlternates } from "@/data/site";
+import { PHASEN, PROVISION, ERLOESE, STAND } from "@/lib/invest/markt";
+import { fmt } from "@/lib/rechner/annahmen";
+
+const PFAD = "/investoren";
+const TITEL = "Solarprojekte kaufen: Projektrechte & RTB | ÖkoInvest";
+const BESCHREIBUNG =
+  "Projektrechte, baureife Solarparks und Bestandsanlagen im DACH-Raum: Phasenmodell mit Preisen, Due-Diligence-Checkliste, Datenraum – für Investoren kostenfrei.";
+
+export const metadata = {
+  title: TITEL,
+  description: BESCHREIBUNG,
+  keywords: ["Solarpark kaufen", "Projektrechte Photovoltaik", "RTB Solarpark", "Solarprojekte Investor", "Bestandsanlage PV kaufen", "Co-Development Solar"],
+  alternates: sprachAlternates("/investoren", "/en/investors"),
+  openGraph: {
+    type: "website",
+    url: abs(PFAD),
+    siteName: "ÖkoInvest",
+    title: TITEL,
+    description: BESCHREIBUNG,
+    images: [{ url: abs("/img/investoren-vor-ort.jpg"), width: 1280, height: 852, alt: "Investoren bei der Besichtigung eines Solarparks" }],
+  },
+};
+
+const FAQ = [
+  {
+    q: "Was kostet mich die Plattform als Investor?",
+    a: `Nichts. Suchprofil, Exposés, NDA und Datenraum sind für Käufer kostenfrei. Wir finanzieren die Plattform über eine Erfolgsprovision, die der Verkäufer zahlt – ${PROVISION.verkaeufer.text}.`,
+  },
+  {
+    q: "Welche Projekte bieten Sie an?",
+    a: "Projekte aus der eigenen Entwicklung der ÖKOVOLT Gruppe und Projekte anderer Entwickler, die über die Projektbörse angeboten werden: Freiflächen- und Agri-PV, Parkplatz-PV und Großspeicher, in Deutschland, Österreich und der Schweiz – von der Flächensicherung bis zur Bestandsanlage. Jedes Projekt wird vor der Veröffentlichung auf Vollständigkeit der Kernunterlagen geprüft.",
+  },
+  {
+    q: "Wie viele baureife Projekte sind verfügbar?",
+    a: `Ehrlich: Die ÖKOVOLT Gruppe bringt rund ${KENNZAHLEN.entwicklungMwProJahr} MWp pro Jahr neu in die Entwicklung. Bis zur Baureife vergehen typischerweise zwei bis drei Jahre, manches Projekt scheitert am Netz oder an der Planung. Baureife Leistung entsteht also zeitversetzt. Wer früher einsteigt – etwa ab Netzzusage oder Aufstellungsbeschluss – hat mehr Auswahl und zahlt weniger, trägt aber mehr Risiko.`,
+  },
+  {
+    q: "Wie läuft der Zugang zu vertraulichen Unterlagen?",
+    a: "Öffentlich sehen Sie einen anonymen Exposé-Teaser mit Region, Größe, Phase und Eckdaten. Nach Registrierung und digitaler Vertraulichkeitsvereinbarung (NDA) erhalten Sie Zugriff auf den Datenraum mit Pachtverträgen, Planungsunterlagen, Netzzusage und Gutachten – jeder Zugriff wird protokolliert. Das vertrauliche Exposé als PDF enthält zusätzlich das Standard-Projektdatenblatt (Technik, Ertrag, Netz, Genehmigung, Vermarktung) mit seiner Vollständigkeit.",
+  },
+  {
+    q: "Bieten Sie Co-Development an?",
+    a: "Ja. Sie beteiligen sich früh an einem Projekt oder einer Pipeline und finanzieren die Entwicklungskosten mit; wir entwickeln bis zur Baureife. Üblich sind Meilensteinzahlungen und ein Vorkaufs- oder Übernahmerecht bei RTB. Die Konditionen vereinbaren wir je Projekt.",
+  },
+  {
+    q: "Kann ich auch mit kleineren Beträgen investieren?",
+    a: "Direkt in Projektrechte investieren in der Regel professionelle Investoren ab einigen Hunderttausend Euro. Bürger, Landwirte und Kleinanleger können sich über die Genossenschaft an Solarparks beteiligen – mit kleinen Anteilen und Mitbestimmung.",
+  },
+  {
+    q: "Mit welchen Erlösen rechnen Käufer heute?",
+    a: `In Deutschland mit dem Zuschlag aus der EEG-Ausschreibung (zuletzt ${ERLOESE.zuschlagsHistorie.map((z) => fmt(z.ct, 2)).join(", ")} ct/kWh im Durchschnitt der Gebotstermine 2025), mit PPA-Preisen grob zwischen ${fmt(ERLOESE.ppaCt.min, 1)} und ${fmt(ERLOESE.ppaCt.max, 1)} ct/kWh oder mit Kombinationen. In Österreich über die EAG-Marktprämie oder Investitionszuschüsse, in der Schweiz über die Einmalvergütung. Der Solarpark-Renditerechner zeigt die Wirkung auf IRR und DSCR.`,
+  },
+];
+
+export default function InvestorenSeite() {
+  const schema = {
+    "@context": "https://schema.org",
+    "@type": "Service",
+    name: "Vermittlung und Verkauf von Solarprojekten an Investoren",
+    serviceType: "Projektrechte, baureife Projekte und Bestandsanlagen (Photovoltaik, Speicher)",
+    provider: { "@id": `${SITE.url}/#organization` },
+    areaServed: ["DE", "AT", "CH"],
+    audience: { "@type": "BusinessAudience", audienceType: "Investoren, Fonds, Stadtwerke, Family Offices" },
+    url: abs(PFAD),
+    description: BESCHREIBUNG,
+    offers: { "@type": "Offer", price: "0", priceCurrency: "EUR", description: PROVISION.kaeufer.text },
+  };
+
+  return (
+    <div>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
+
+      <Hero />
+      <Fakten />
+      <Angebot />
+
+      {/* ---------------- Pipeline ---------------- */}
+      <Section tone="sand" space="lg">
+        <div className="grid grid-cols-1 gap-10 lg:grid-cols-[0.85fr_1.15fr] lg:items-center lg:gap-16">
+          <SectionHeading
+            eyebrow="Pipeline – ehrlich erklärt"
+            title={`Rund ${KENNZAHLEN.entwicklungMwProJahr} MWp pro Jahr neu in Entwicklung.`}
+            lead="Das ist Leistung, die jedes Jahr neu in die Projektentwicklung geht – nicht Leistung, die morgen baureif ist. Von der Flächensicherung bis RTB vergehen typischerweise zwei bis drei Jahre."
+          >
+            <ul className="mt-7 space-y-3 text-[15.5px] leading-relaxed text-ink-700">
+              {[
+                "Frühe Phasen: große Auswahl, niedriger Preis je kWp, höheres Risiko.",
+                "Ab Satzungsbeschluss: planbar, weniger Auswahl, höherer Preis.",
+                "Über die Börse kommen Projekte weiterer Entwickler dazu – mit derselben Prüfung.",
+              ].map((t) => (
+                <li key={t} className="flex gap-3">
+                  <span aria-hidden="true" className="mt-2.5 h-1.5 w-1.5 shrink-0 rounded-full bg-ov-500" />
+                  {t}
+                </li>
+              ))}
+            </ul>
+          </SectionHeading>
+          <Reveal className="min-w-0">
+            <PipelineGrafik />
+          </Reveal>
+        </div>
+      </Section>
+
+      {/* ---------------- Phasenmodell ---------------- */}
+      <Section tone="white" space="lg" id="phasen">
+        <div className="mb-12 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <SectionHeading eyebrow="Phasenmodell" title="Risiko und Preis je Entwicklungsphase." lead="Marktspannen für Projektrechte in €/kWp – als Orientierung für Ihr Suchprofil und Ihre Kalkulation." />
+          <Button href="/rechner/projektbewertung" variant="secondary" pfeil className="shrink-0 self-start lg:self-auto">
+            Projekt bewerten
+          </Button>
+        </div>
+        <Phasenmodell />
+      </Section>
+
+      {/* ---------------- Due Diligence ---------------- */}
+      <Section tone="sand" space="lg" id="due-diligence">
+        <SectionHeading
+          eyebrow="Due Diligence"
+          title="Die Checkliste, mit der wir jedes Projekt prüfen."
+          lead="Bevor ein Projekt in die Börse geht, prüfen wir die Kernunterlagen auf Vollständigkeit. Die vollständige Prüfung bleibt Ihre – diese Liste hilft dabei."
+          className="mb-10"
+        />
+        <DdCheckliste />
+        <p className="mt-6 text-[13px] leading-relaxed text-ink-500">
+          Orientierung, keine Rechts- oder Steuerberatung. Für Transaktionen empfehlen wir technische, rechtliche und steuerliche Berater – im Datenraum stellen wir alle Unterlagen dafür bereit.
+        </p>
+      </Section>
+
+      <Ablauf />
+      <Provision />
+
+      {/* ---------------- Registrierung & Formular ---------------- */}
+      <Section tone="navy" space="lg" id="suchprofil">
+        <div className="grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16">
+          <div>
+            <SectionHeading
+              dark
+              eyebrow="Suchprofil"
+              title="Sagen Sie uns, was Sie suchen."
+              lead="Kurzprofil senden – wir melden uns mit passenden Projekten. Oder direkt ein Konto anlegen: Dann sehen Sie Matches, NDAs und Datenräume im Portal."
+            />
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row lg:flex-col xl:flex-row">
+              <Button href="/registrieren?rolle=investor" variant="white" pfeil>
+                Als Investor registrieren
+              </Button>
+              <Button href="/login" variant="outlineLight">
+                Schon registriert? Anmelden
+              </Button>
+            </div>
+            <ul className="mt-10 space-y-3 border-t border-white/10 pt-8 text-[14.5px] text-white/75">
+              {["Kostenfrei und unverbindlich", "Vertraulich: Details erst nach NDA", `Stand der Marktangaben: ${STAND}`].map((t) => (
+                <li key={t} className="flex items-center gap-2.5">
+                  <ShieldCheck aria-hidden="true" className="h-4 w-4 shrink-0 text-ov-300" />
+                  {t}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="rounded-[2rem] bg-white/[0.04] p-6 ring-1 ring-white/10 md:p-8">
+            <InvestorAnfrage dunkel phasen={PHASEN.map((p) => ({ id: p.id, kurz: p.kurz }))} />
+          </div>
+        </div>
+      </Section>
+
+      {/* ---------------- FAQ ---------------- */}
+      <Section tone="sand" space="lg">
+        <div className="grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:gap-20">
+          <SectionHeading eyebrow="Häufige Fragen" title="Gut zu wissen für Investoren" lead="Weitere Fragen beantworten wir gern persönlich – nach Registrierung auch direkt im Portal." />
+          <Faq items={FAQ} />
+        </div>
+      </Section>
+
+      <Querverweise
+        items={[
+          { href: "/projektboerse", titel: "Projektbörse", text: "Aktuelle Projekte im DACH-Raum – Exposé-Teaser öffentlich, Details nach NDA." },
+          { href: "/rechner/solarpark", titel: "Solarpark-Renditerechner", text: "IRR, LCOE und DSCR über die gesamte Laufzeit durchrechnen." },
+          { href: "/bestandsanlagen", titel: "Bestandsanlagen", text: "Laufende Parks kaufen: Ertragswert, Restlaufzeit EEG, technische Due Diligence." },
+          { href: "/ratgeber/projektrechte-kaufen-due-diligence", titel: "Ratgeber Due Diligence", text: "Worauf es beim Kauf von Projektrechten im Detail ankommt." },
+        ]}
+      />
+
+      <CtaBand
+        eyebrow="Für Investoren kostenfrei"
+        title="Die richtigen Projekte, bevor sie jeder sieht."
+        text="Legen Sie Ihr Suchprofil an. Wir gleichen es mit neuen Projekten aus eigener Entwicklung und aus der Börse ab – mit geprüften Unterlagen und festem Ansprechpartner."
+        primary={{ label: "Als Investor registrieren", href: "/registrieren?rolle=investor" }}
+        secondary={{ label: "Zur Projektbörse", href: "/projektboerse" }}
+      />
+    </div>
+  );
+}
+// Hero der Seite /investoren
+// Aufbau: Eyebrow → Headline → Lead → Handlungen → Versprechen | Deal-Bühne (Exposé-Teaser + Match + Datenraum)
+import { ArrowRight, BellRing, Check, FileText, FolderLock, Lock, MapPin, Search, ShieldCheck, Sun } from "lucide-react";
+import Breadcrumbs from "@/components/ui/Breadcrumbs";
+import Button from "@/components/ui/Button";
+import { cn } from "@/components/ui/cn";
+import { PHASEN } from "@/lib/invest/markt";
+import { fmt } from "@/lib/rechner/annahmen";
+import { BeispielPlakette, Fenster } from "./teile";
+
+const VERSPRECHEN = ["Projektrechte bis Bestand", "Geprüfte Kernunterlagen", "Digitaler Datenraum nach NDA", "Für Käufer kostenfrei"];
+
+export default function Hero() {
+  return (
+    <section data-abschnitt="hero" aria-labelledby="hero-titel" className="ov-verlauf-nacht ov-noise relative isolate overflow-hidden text-white">
+      <div aria-hidden="true" className="ov-grid-bg absolute inset-0 -z-10 opacity-50" />
+      <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-px bg-gradient-to-r from-transparent via-ov-300/40 to-transparent" />
+      <div aria-hidden="true" className="pointer-events-none absolute -left-40 -top-40 -z-10 h-[520px] w-[520px] rounded-full bg-ov-500/20 blur-[120px]" />
+      <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-40 bg-gradient-to-b from-transparent to-navy-950/50" />
+
+      <div className="ov-container pb-24 pt-6 sm:pt-8 md:pb-32 md:pt-10">
+        <Breadcrumbs items={[{ name: "Für Investoren" }]} dark className="ov-hero-in mb-8 md:mb-12" />
+
+        <div className="grid items-center gap-y-14 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] lg:gap-x-12 xl:gap-x-16">
+          <div className="max-w-[36rem]">
+            <p className="ov-hero-in inline-flex items-center gap-2 rounded-full bg-white/[0.06] px-3.5 py-1.5 text-[12.5px] font-semibold uppercase tracking-[0.14em] text-ov-300 ring-1 ring-inset ring-white/15" style={{ "--ov-delay": "40ms" }}>
+              <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-ov-300" />
+              Für Investoren · DE · AT · CH
+            </p>
+
+            <h1 id="hero-titel" className="ov-h1 ov-hero-in mt-6 text-balance md:mt-8" style={{ "--ov-delay": "100ms" }}>
+              Solarprojekte kaufen&nbsp;– <span className="ov-text-gradient-light">in der Phase, die zu Ihnen passt.</span>
+            </h1>
+
+            <p className="ov-lead ov-hero-in mt-5 text-pretty text-white/75 md:mt-6" style={{ "--ov-delay": "180ms" }}>
+              Projektrechte ab der Flächensicherung, baureife Solarparks, Bestandsanlagen und Co-Development im DACH-Raum. Geprüfte Unterlagen, digitaler Datenraum&nbsp;– <span className="font-medium text-white">und für Käufer kostenfrei.</span>
+            </p>
+
+            <div className="ov-hero-in mt-8 flex flex-col gap-3 sm:flex-row sm:items-center md:mt-10" style={{ "--ov-delay": "260ms" }}>
+              <Button href="/registrieren?rolle=investor" size="lg" pfeil className="w-full sm:w-auto">Als Investor registrieren</Button>
+              <Button href="/projektboerse" size="lg" variant="outlineLight" icon={Search} className="w-full sm:w-auto">Zur Projektbörse</Button>
+            </div>
+            <p className="ov-hero-in mt-4 text-[13px] leading-relaxed text-white/70" style={{ "--ov-delay": "300ms" }}>
+              Oder ohne Konto: <a href="#suchprofil" className="rounded font-semibold text-white underline decoration-ov-300/70 underline-offset-4 transition-colors hover:decoration-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ov-300">Suchprofil senden</a>
+            </p>
+
+            <ul className="ov-hero-in mt-9 grid gap-x-6 gap-y-3 border-t border-white/10 pt-7 sm:grid-cols-2 md:mt-10" style={{ "--ov-delay": "360ms" }}>
+              {VERSPRECHEN.map((x, i) => (
+                <li key={x} className={cn("flex items-start gap-2.5 text-[14px] leading-snug text-white/85", i > 1 && "max-sm:hidden")}>
+                  <span aria-hidden="true" className="mt-px flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-ov-400/15 ring-1 ring-inset ring-ov-300/40">
+                    <Check className="h-2.5 w-2.5 text-ov-300" strokeWidth={3.5} />
+                  </span>
+                  {x}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <figure className="relative mx-auto w-full max-w-[620px] lg:mx-0 lg:max-w-none">
+            <div aria-hidden="true" className="pointer-events-none absolute -inset-x-8 -inset-y-12 -z-10 rounded-full bg-[radial-gradient(closest-side,rgba(140,186,88,0.22),transparent_70%)] blur-2xl" />
+            <DealBuehne />
+            <figcaption className="mt-8 text-center text-[12px] text-white/60 lg:mt-10">Beispielansicht mit fiktiven Werten</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ------------------------------------------------------------------ Deal-Bühne */
+
+const UNTERLAGEN = ["Pachtverträge", "Netzanschlusszusage", "Baurecht", "Ertragsgutachten"];
+
+function DealBuehne() {
+  const rtb = PHASEN.find((p) => p.id === "rtb");
+  const index = PHASEN.findIndex((p) => p.id === "rtb");
+  return (
+    <div
+      role="img"
+      aria-label="Beispiel eines anonymen Exposé-Teasers: baureifes Freiflächenprojekt mit 20 MWp, Phase Ready-to-Build, Kernunterlagen geprüft; daneben eine Match-Benachrichtigung und ein Datenraum, der nach NDA geöffnet wird."
+      className="relative pt-12 sm:px-6 lg:px-0"
+    >
+      <div aria-hidden="true">
+        {/* Match-Benachrichtigung */}
+        <div className="ov-hero-in absolute right-0 top-0 z-20 w-[min(272px,78%)] rounded-2xl bg-white/95 p-3.5 text-ink-900 shadow-e4 ring-1 ring-ink-900/10 backdrop-blur sm:right-2 lg:-right-4 xl:-right-8" style={{ "--ov-delay": "520ms" }}>
+          <div className="flex items-start gap-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-ov-600 text-white">
+              <BellRing className="h-4 w-4" />
+            </span>
+            <div className="min-w-0">
+              <p className="flex items-center gap-2 text-[12.5px] font-bold">Neues Match <BeispielPlakette /></p>
+              <p className="mt-0.5 text-[11.5px] leading-snug text-ink-600">passt zu Ihrem Suchprofil: Baureif · 5–20 MWp · Deutschland</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Exposé-Teaser */}
+        <Fenster titel="Projektbörse · Exposé-Teaser" className="ov-hero-in relative z-10 mr-6 sm:mr-14 lg:mr-10" >
+          <div className="p-4 sm:p-5">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-ink-500">Anonymer Teaser</p>
+                <p className="mt-1 font-display text-[17px] font-bold leading-tight text-ink-900 sm:text-[19px]">Freiflächen-PV, 20 MWp</p>
+                <p className="mt-1 flex items-center gap-1.5 text-[11.5px] text-ink-500"><MapPin className="h-3.5 w-3.5" /> Deutschland · Region verborgen bis NDA</p>
+              </div>
+              <BeispielPlakette />
+            </div>
+
+            {/* Phasenleiste */}
+            <div className="mt-4 rounded-xl bg-ink-50 p-3 ring-1 ring-ink-100">
+              <div className="flex items-center justify-between text-[10.5px] font-semibold text-ink-600">
+                <span>Phase</span>
+                <span className="rounded-full bg-ov-600 px-2 py-0.5 text-white">{rtb.label}</span>
+              </div>
+              <div className="mt-3 grid grid-cols-6 gap-1">
+                {PHASEN.map((p, i) => (
+                  <span key={p.id} className={cn("h-1.5 rounded-full", i < index ? "bg-ov-400" : i === index ? "bg-ov-600" : "bg-ink-200")} />
+                ))}
+              </div>
+              <div className="mt-1.5 flex justify-between text-[9.5px] text-ink-500">
+                <span>Fläche</span>
+                <span>Baureif</span>
+                <span>Bestand</span>
+              </div>
+            </div>
+
+            <div className="mt-3 grid grid-cols-2 gap-2.5">
+              <div className="rounded-xl p-3 ring-1 ring-ink-200/80">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-ink-500">Marktspanne RTB</p>
+                <p className="ov-num mt-1 font-display text-[16px] font-extrabold text-ink-900">{fmt(rtb.preisProKwp.min)}–{fmt(rtb.preisProKwp.max)}<span className="ml-1 text-[11px] font-bold text-ink-500">€/kWp</span></p>
+              </div>
+              <div className="rounded-xl p-3 ring-1 ring-ink-200/80">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-ink-500">Technologie</p>
+                <p className="mt-1 flex items-center gap-1.5 font-display text-[14px] font-bold text-ink-900"><Sun className="h-4 w-4 text-sun-500" /> Freifläche</p>
+              </div>
+            </div>
+
+            <ul className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1.5">
+              {UNTERLAGEN.map((u) => (
+                <li key={u} className="flex items-center gap-1.5 text-[11.5px] text-ink-700">
+                  <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full bg-ov-100 text-ov-700"><Check className="h-2.5 w-2.5" strokeWidth={3.5} /></span>
+                  {u}
+                </li>
+              ))}
+            </ul>
+
+            <div className="mt-4 flex items-center justify-between gap-3 border-t border-ink-100 pt-3">
+              <span className="flex items-center gap-1.5 text-[11px] text-ink-500"><Lock className="h-3.5 w-3.5" /> Details nach NDA</span>
+              <span className="inline-flex items-center gap-1 rounded-full bg-navy-800 px-3 py-1.5 text-[11px] font-semibold text-white">NDA starten <ArrowRight className="h-3 w-3" /></span>
+            </div>
+            <div className="h-6 sm:h-10" />
+          </div>
+        </Fenster>
+
+        {/* Datenraum */}
+        <div className="ov-hero-in relative z-20 -mt-6 ml-auto w-[min(300px,86%)] sm:-mt-10 sm:ml-0 rounded-2xl bg-navy-900/95 p-3.5 text-white shadow-e4 ring-1 ring-white/15 backdrop-blur sm:-ml-2 lg:-ml-6" style={{ "--ov-delay": "640ms" }}>
+          <div className="flex items-center justify-between gap-2">
+            <p className="flex items-center gap-2 text-[12.5px] font-bold"><FolderLock className="h-4 w-4 text-ov-300" /> Datenraum</p>
+            <span className="flex items-center gap-1 rounded-full bg-ov-400/15 px-2 py-0.5 text-[10px] font-semibold text-ov-200 ring-1 ring-inset ring-ov-300/30"><ShieldCheck className="h-3 w-3" /> NDA unterzeichnet</span>
+          </div>
+          <ul className="mt-2.5 space-y-1.5">
+            {["Pachtverträge", "Netzzusage", "Ertragsgutachten P50/P90"].map((d) => (
+              <li key={d} className="flex items-center gap-2 rounded-lg bg-white/[0.06] px-2.5 py-1.5 text-[11px] text-white/85">
+                <FileText className="h-3.5 w-3.5 text-white/60" /> {d}
+              </li>
+            ))}
+          </ul>
+          <p className="mt-2 text-[10px] text-white/60">Jeder Zugriff wird protokolliert</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+import { PHASEN } from "@/lib/invest/markt";
+import { KENNZAHLEN } from "@/data/site";
+
+/**
+ * Schematische Pipeline: Jedes Jahr gehen rund 50 MWp neu in die Entwicklung,
+ * baureif werden sie typischerweise erst Jahre später. Die Segmentlängen
+ * folgen den typischen Monaten bis RTB aus PHASEN. Server-Komponente, SVG.
+ */
+
+const FARBEN = ["#cde3b1", "#aed083", "#8cba58", "#669933", "#1f5aa1"];
+
+export default function PipelineGrafik() {
+  const phasen = PHASEN.filter((p) => p.id !== "cod");
+  // Segmente: Dauer von Phase i bis Phase i+1 in Monaten
+  const segmente = phasen.slice(0, -1).map((p, i) => ({ id: p.id, label: p.kurz, monate: p.monateBisRtb - phasen[i + 1].monateBisRtb }));
+  const bau = 9; // Bau bis Inbetriebnahme, grob
+  segmente.push({ id: "bau", label: "Bau", monate: bau });
+  const jahrgaenge = 3;
+  const monateGesamt = 12 * (jahrgaenge - 1) + phasen[0].monateBisRtb + bau;
+  const W = 760;
+  const L = 96;
+  const R = 12;
+  const zeileH = 50;
+  const oben = 34;
+  const H = oben + jahrgaenge * zeileH + 64;
+  const x = (m) => L + (m / monateGesamt) * (W - L - R);
+  const jahre = Math.ceil(monateGesamt / 12);
+
+  return (
+    <figure className="rounded-[1.75rem] bg-white p-4 shadow-e2 ring-1 ring-ink-200/70 md:p-7">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-x-6 gap-y-3 px-1">
+        <p className="font-display text-[16px] font-bold text-ink-900">Drei Jahrgänge im Zeitverlauf</p>
+        <ul className="flex flex-wrap gap-x-4 gap-y-1.5 text-[12px] text-ink-600">
+          {segmente.map((s, i) => (
+            <li key={s.id} className="flex items-center gap-1.5">
+              <span aria-hidden="true" className="h-2.5 w-2.5 rounded-[3px]" style={{ background: FARBEN[i] || "#1f5aa1" }} />
+              {s.label}
+            </li>
+          ))}
+        </ul>
+      </div>
+      <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Schematische Projektpipeline">
+        <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full min-w-[560px]" role="img" aria-label={`Schema: Jedes Jahr starten rund ${KENNZAHLEN.entwicklungMwProJahr} MWp neu in die Entwicklung; bis zur Baureife vergehen typischerweise rund ${phasen[0].monateBisRtb} Monate, danach folgt der Bau.`}>
+          {Array.from({ length: jahre + 1 }, (_, j) => (
+            <g key={j}>
+              <line x1={x(j * 12)} x2={x(j * 12)} y1={oben - 10} y2={oben + jahrgaenge * zeileH} stroke="#eef0f4" />
+              {j < jahre && (
+                <text x={x(j * 12 + 6)} y={oben - 16} textAnchor="middle" className="fill-ink-500 text-[12px]">
+                  Jahr {j + 1}
+                </text>
+              )}
+            </g>
+          ))}
+          {Array.from({ length: jahrgaenge }, (_, k) => {
+            let m = k * 12;
+            const y = oben + k * zeileH + 8;
+            return (
+              <g key={k}>
+                <text x={L - 12} y={y + 19} textAnchor="end" className="fill-ink-700 text-[12.5px] font-semibold">
+                  {`+ ${KENNZAHLEN.entwicklungMwProJahr} MWp`}
+                </text>
+                {segmente.map((s, i) => {
+                  const x0 = x(m);
+                  m += s.monate;
+                  const w = x(m) - x0 - 2;
+                  return (
+                    <g key={s.id}>
+                      <rect x={x0} y={y} width={w} height={30} rx={8} fill={FARBEN[i] || "#1f5aa1"} />
+                    </g>
+                  );
+                })}
+                <circle cx={x(k * 12 + phasen[0].monateBisRtb)} cy={y + 14} r="5" fill="#ffc53d" stroke="#fff" strokeWidth="2" />
+              </g>
+            );
+          })}
+          <g transform={`translate(${L}, ${oben + jahrgaenge * zeileH + 30})`}>
+            <circle cx="6" cy="0" r="5" fill="#ffc53d" />
+            <text x="18" y="4" className="fill-ink-600 text-[12px]">Baureife (RTB) – ab hier kaufen viele institutionelle Investoren</text>
+          </g>
+        </svg>
+      </div>
+      <figcaption className="mt-3 px-1 text-[12.5px] leading-relaxed text-ink-500">
+        Schematische Darstellung mit typischen Dauern je Phase. Nicht jede Fläche wird zum Projekt: Netz, Planung oder Gemeinde können ein Vorhaben stoppen oder verzögern.
+      </figcaption>
+    </figure>
+  );
+}
+// Gemeinsame Bausteine der Seite /investoren (Server-Komponenten)
+import { cn } from "@/components/ui/cn";
+
+/** Sichtbare Kennzeichnung fiktiver Werte in Beispielansichten */
+export function BeispielPlakette({ hell = false, className }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex shrink-0 items-center rounded-full font-semibold uppercase leading-none",
+        hell
+          ? "bg-white/10 px-1.5 py-[3px] text-[9px] tracking-[0.14em] text-white/80 ring-1 ring-white/15"
+          : "bg-sun-50 px-2 py-[3px] text-[9.5px] tracking-[0.12em] text-sun-700 ring-1 ring-sun-200",
+        className
+      )}
+    >
+      Beispiel
+    </span>
+  );
+}
+
+/** Fensterrahmen für Plattform-Ansichten (ohne echte Adresse) */
+export function Fenster({ titel, className, children }) {
+  return (
+    <div
+      className={cn(
+        "relative overflow-hidden rounded-[16px] bg-white ring-1 ring-ink-900/10",
+        "shadow-[0_1px_0_rgba(255,255,255,0.9)_inset,0_2px_4px_-1px_rgba(3,18,43,0.08),0_18px_40px_-14px_rgba(3,18,43,0.28),0_50px_90px_-30px_rgba(3,18,43,0.5)]",
+        className
+      )}
+    >
+      <div className="flex h-9 items-center gap-2 border-b border-ink-200/70 bg-gradient-to-b from-ink-50 to-[#f3f5f8] px-3">
+        <span className="flex w-[52px] shrink-0 gap-[6px]">
+          <span className="h-[9px] w-[9px] rounded-full bg-[#f2a29b] ring-1 ring-inset ring-black/5" />
+          <span className="h-[9px] w-[9px] rounded-full bg-[#f3d08c] ring-1 ring-inset ring-black/5" />
+          <span className="h-[9px] w-[9px] rounded-full bg-[#a9d39a] ring-1 ring-inset ring-black/5" />
+        </span>
+        <span className="mx-auto truncate rounded-md bg-white px-3 py-[3px] text-[10.5px] font-medium text-ink-500 ring-1 ring-ink-200/80">{titel}</span>
+        <span className="w-[52px] shrink-0" />
+      </div>
+      {children}
+    </div>
+  );
+}
+
+/** Risikostufen als Punktreihe (0–5) */
+export function RisikoPunkte({ stufe, dunkel = false, klein = false }) {
+  return (
+    <span className="flex gap-1" aria-hidden="true">
+      {[1, 2, 3, 4, 5].map((s) => (
+        <span
+          key={s}
+          className={cn(
+            "rounded-full",
+            klein ? "h-1.5 w-3" : "h-2 w-4",
+            s <= stufe ? (stufe >= 4 ? "bg-sun-500" : "bg-sun-400") : dunkel ? "bg-white/15" : "bg-ink-200"
+          )}
+        />
+      ))}
+    </span>
+  );
+}
+
+export const RISIKO_STUFE = { "sehr hoch": 5, hoch: 4, "mittel–hoch": 3, mittel: 2, gering: 1, "sehr gering": 0 };

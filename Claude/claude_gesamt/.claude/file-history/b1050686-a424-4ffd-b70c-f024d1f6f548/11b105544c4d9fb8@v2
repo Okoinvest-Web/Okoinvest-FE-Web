@@ -1,0 +1,90 @@
+/**
+ * Getrennte Paletten fuer hell und dunkel.
+ *
+ * Dieselben Farbtoene, aber je Modus eigene Helligkeits- und
+ * Buntheitsstufen. Ein blosses Umkehren der Helligkeit fuehrt auf
+ * dunklem Grund zu Farben, die entweder verschwimmen oder grell wirken.
+ *
+ * Die Farbtoene sind semantisch gesetzt und bleiben fest:
+ *   Bernstein = Erzeugung, Gruen = Eigenverbrauch, Blau = Einspeisung,
+ *   gedaempftes Violett = Netzbezug, Magenta = Speicher.
+ */
+import { validate } from "file:///C:/Users/SALEAD~1/AppData/Local/Temp/claude/bundled-skills/2.1.270/49d628d1d9a56340540cbfbb3ca64951/dataviz/scripts/validate_palette.js";
+import { oklchToHex } from "./palette.mjs";
+
+const HUES = {
+  erzeugung: 68,
+  eigenverbrauch: 150,
+  einspeisung: 232,
+  netzbezug: 288,
+  speicher: 322,
+};
+
+const NAMEN = Object.keys(HUES);
+
+function suche(modus, surface, lWerte, cWerte) {
+  let aktuell = NAMEN.map(() => ({ L: lWerte[Math.floor(lWerte.length / 2)], C: 0.14 }));
+
+  const alsHex = (z) => z.map((s, i) => oklchToHex(s.L, s.C, HUES[NAMEN[i]]));
+
+  function bewerte(hex) {
+    const r = validate(hex, { mode: modus, surface });
+    const alle = r.report;
+    return {
+      fail: alle.filter(([, s]) => s === false || s === "fail").length,
+      warn: alle.filter(([, s]) => s === "warn" || s === "relief" || s === "floor").length,
+      r,
+    };
+  }
+
+  let beste = bewerte(alsHex(aktuell));
+
+  for (let runde = 0; runde < 10; runde++) {
+    let verbessert = false;
+
+    for (let i = 0; i < NAMEN.length; i++) {
+      for (const L of lWerte) {
+        for (const C of cWerte) {
+          const kandidat = aktuell.map((s, idx) => (idx === i ? { L, C } : s));
+          const e = bewerte(alsHex(kandidat));
+
+          const besser =
+            e.fail < beste.fail || (e.fail === beste.fail && e.warn < beste.warn);
+
+          if (besser) {
+            aktuell[i] = { L, C };
+            beste = e;
+            verbessert = true;
+          }
+        }
+      }
+    }
+    if (!verbessert) break;
+  }
+
+  return { zustand: aktuell, hex: alsHex(aktuell), bewertung: beste };
+}
+
+const L_HELL = [0.5, 0.54, 0.58, 0.62, 0.66, 0.7];
+const L_DUNKEL = [0.5, 0.54, 0.58, 0.62, 0.66];
+const C_WERTE = [0.1, 0.12, 0.14, 0.16, 0.18, 0.2];
+
+for (const [modus, surface, lWerte] of [
+  ["light", "#fcfcfb", L_HELL],
+  ["dark", "#1a1a19", L_DUNKEL],
+]) {
+  const { zustand, hex, bewertung } = suche(modus, surface, lWerte, C_WERTE);
+
+  console.log(`\n=== ${modus.toUpperCase()} (surface ${surface}) ===`);
+  NAMEN.forEach((name, i) => {
+    console.log(
+      `${name.padEnd(16)} oklch(${zustand[i].L} ${zustand[i].C} ${HUES[name]})`.padEnd(44) +
+        hex[i],
+    );
+  });
+  console.log("  " + hex.join(","));
+  console.log(`  ok=${bewertung.r.ok}  fail=${bewertung.fail} warn=${bewertung.warn}`);
+  for (const zeile of bewertung.r.report) {
+    console.log("    " + JSON.stringify(zeile));
+  }
+}

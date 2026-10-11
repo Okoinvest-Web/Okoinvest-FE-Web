@@ -1,0 +1,115 @@
+<template>
+  <div>
+    <PageHeader title="Dokumente" :subtitle="untertitel">
+      <template #actions>
+        <FormControl v-model="typ" type="select" :options="typOptionen" />
+      </template>
+    </PageHeader>
+
+    <div class="p-6">
+      <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <article
+          v-for="dokument in dokumente.data || []"
+          :key="dokument.name"
+          class="rounded-lg border border-outline-gray-2 bg-surface-white p-4"
+        >
+          <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <p class="text-base font-medium text-ink-gray-9">{{ dokument.title }}</p>
+              <p class="mt-0.5 text-sm text-ink-gray-5">
+                {{ TYP[dokument.document_type] || dokument.document_type }} · Version
+                {{ dokument.version }}
+              </p>
+            </div>
+            <Badge :theme="freigabeThema(dokument.approval_state)">
+              {{ FREIGABE[dokument.approval_state] || dokument.approval_state }}
+            </Badge>
+          </div>
+
+          <p class="mt-3 text-sm text-ink-gray-7">{{ dokument.content }}</p>
+
+          <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-outline-gray-2 pt-3">
+            <StatusDot
+              v-if="dokument.review_overdue"
+              level="critical"
+              :text="'Review überfällig seit ' + dokument.review_date"
+              klein
+            />
+            <StatusDot
+              v-else-if="dokument.review_date"
+              level="ok"
+              :text="'Review am ' + dokument.review_date"
+              klein
+            />
+            <span v-else class="text-sm text-ink-gray-5">Kein Review-Datum</span>
+
+            <span v-if="dokument.linked_objects.length" class="text-sm text-ink-gray-5">
+              Verknüpft:
+              <span class="text-ink-gray-7">
+                {{ dokument.linked_objects.map((o) => o.name).join(', ') }}
+              </span>
+            </span>
+          </div>
+        </article>
+      </div>
+
+      <p v-if="dokumente.loading" class="py-8 text-center text-sm text-ink-gray-5">Wird geladen …</p>
+      <p
+        v-else-if="!(dokumente.data || []).length"
+        class="py-8 text-center text-sm text-ink-gray-5"
+      >
+        Kein Dokument mit diesem Filter.
+      </p>
+
+      <p class="mt-6 text-xs text-ink-gray-4">
+        Jedes Dokument ist mit Objekten verknüpft – am Gerät erscheinen dadurch
+        alle zugehörigen Dokumente (Fachkonzept 2.6). Der Inhalt ist hier
+        einfacher Text; im Backend kommt ein Editor mit Anhängen und echter
+        Versionierung dazu.
+      </p>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed, ref, watch } from 'vue'
+import { Badge, FormControl, createResource } from 'frappe-ui'
+import PageHeader from '@/components/PageHeader.vue'
+import StatusDot from '@/components/StatusDot.vue'
+
+const TYP = {
+  network_plan: 'Netzplan',
+  config_state: 'Konfigurationsstand',
+  sop: 'SOP',
+  runbook: 'Runbook',
+  emergency_plan: 'Notfallplan',
+  maintenance_log: 'Wartungsprotokoll',
+}
+
+const FREIGABE = { draft: 'Entwurf', review: 'In Prüfung', approved: 'Freigegeben' }
+
+const typ = ref('')
+
+const dokumente = createResource({
+  url: 'netops.api.docs.document_list',
+  makeParams: () => ({ document_type: typ.value || null }),
+  auto: true,
+})
+
+watch(typ, () => dokumente.fetch())
+
+const typOptionen = [
+  { label: 'Alle Typen', value: '' },
+  ...Object.entries(TYP).map(([value, label]) => ({ label, value })),
+]
+
+const untertitel = computed(() => {
+  const liste = dokumente.data || []
+  const ueberfaellig = liste.filter((d) => d.review_overdue).length
+  return liste.length + ' Dokumente · ' + ueberfaellig + ' mit überfälligem Review'
+})
+
+function freigabeThema(zustand) {
+  return { approved: 'green', review: 'orange', draft: 'gray' }[zustand] || 'gray'
+}
+</script>

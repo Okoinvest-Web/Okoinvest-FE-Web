@@ -1,0 +1,420 @@
+     1	// src/lib/plattform/backend/demo/dienste.js
+     2	//
+     3	// Dienste „Firmen, Bonität, Identität + SPV-Gründung“ im Demo-Backend – Referenz für plattform/api/dienste.py
+     4	// (Vertrag: docs/API.md, Abschnitt „Dienste“). Daten unter db.dienste (eigene Sammlung, beim ersten Zugriff einmalig ergänzt).
+     5	//
+     6	// Rechte (jede Operation prüft selbst; Bereiche aus rechte.js):
+     7	//   Identität     – Person selbst (eigene Sitzungen, eigene MRZ-Vorprüfung); Webhook nur mit gültiger HMAC-Signatur
+     8	//   Register      – Bereich „register“: lesen = Suche, schreiben = kostenpflichtiger Abruf; Ablage im KYC-Fall nur
+     9	//                   zusätzlich mit Compliance (schreiben)
+    10	//   Bonität       – Bereich „bonitaet“ (Leitung, Transaktion, Compliance): lesen = Ergebnisse, schreiben = beauftragen,
+    11	//                   freigeben, Einstellungen. Andere Rollen sehen NIE Ergebnisse; Betroffene werden informiert (ohne Ergebnis).
+    12	//   Gesellschaften – Bereich „gesellschaften“: lesen = Verzeichnis/Organigramm/Fristen, schreiben = Gründung/Checkliste
+    13	//
+    14	// Ergebnisse externer Dienste ENTSCHEIDEN NIE über den KYC-Fall – sie werden über kycErgebnisAnhaengen() als Hinweis
+    15	// angehängt; die Entscheidung trifft die Compliance.
+    16	
+    17	import { PlattformFehler, konflikt, nichtGefunden, ungueltig, verboten } from "../../fehler";
+    18	import * as v from "../../validierung";
+    19	import { stufe, unterrollen } from "../../rechte";
+    20	import { GESELLSCHAFT } from "@/data/site";
+    21	import { intern } from "../demo";
+    22	import { aendern, lesen } from "./speicher";
+    23	import { jetzt, neueId, sha256 } from "./hilfen";
+    24	import * as kycDemo from "./kyc";
+    25	import * as entwicklungDemo from "./entwicklung";
+    26	import { bonitaetAktuell, bonitaetEinstellungenDb, bonitaetFreigabeDb, istFirma } from "./diensteRegeln";
+    27	import { IDENT_ANBIETER, IDENT_ERGEBNIS, identKonfig, sitzungStarten, webhookNormalisieren, webhookSignaturPruefen, webhookSignieren } from "../../dienste/identitaet/anbieter";
+    28	import { mrzVorpruefung, nummerMaskiert } from "../../dienste/identitaet/mrz";
+    29	import { registerAbrufen, registerKonfig, registerSuchen } from "../../dienste/register/adapter";
+    30	import { REGISTER_LAENDER, firmennamePruefen, registernummerPruefen } from "../../dienste/register/basis";
+    31	import { bonitaetAbrufen, bonitaetKonfig } from "../../dienste/bonitaet/adapter";
+    32	import { BONITAET_ANLAESSE, BONITAET_RECHTSGRUNDLAGEN, bonitaetEinstellungenStandard, bonitaetGeltung, bonitaetGueltig, bonitaetInformation } from "../../dienste/bonitaet/basis";
+    33	import {
+    34	  GESELLSCHAFT_STATUS, RECHTSFORMEN, fortschritt, fristenFuer, gegenstandVorlage, gruendungPruefen, musterprotokollMoeglich, schritteFuer, statusAusSchritten,
+    35	} from "../../dienste/gesellschaft/rechtsformen";
+    36	import { dokumentTitel, dokumentenpaket } from "../../dienste/gesellschaft/dokumente";
+    37	import { dokumentePdf } from "../../dienste/pdf";
+    38	
+    39	const { benachrichtigen, protokoll, nutzerById, nameVon } = intern;
+    40	
+    41	// ================================================================ Rechte
+    42	
+    43	const istAdmin = (n) => !!n?.rollen?.includes("admin");
+    44	function angemeldet(n) {
+    45	  if (!n) throw new PlattformFehler(401, "Bitte melden Sie sich an.");
+    46	}
+    47	function bereichNoetig(n, bereich, st, text) {
+    48	  angemeldet(n);
+    49	  if (!istAdmin(n) || stufe(n, bereich) < st) throw verboten(istAdmin(n) ? text : "Dafür fehlt Ihnen die Berechtigung.");
+    50	}
+    51	const bonitaetLesen = (n) => bereichNoetig(n, "bonitaet", 1, "Bonitätsauskünfte sehen nur Leitung, Transaktion und Compliance.");
+    52	const bonitaetSchreiben = (n) => bereichNoetig(n, "bonitaet", 2, "Bonitätsauskünfte beauftragen nur Leitung, Transaktion und Compliance.");
+    53	const registerLesen = (n) => bereichNoetig(n, "register", 1, "Für Registerauskünfte fehlt Ihnen die Berechtigung.");
+    54	const registerSchreiben = (n) => bereichNoetig(n, "register", 2, "Registerabrufe (kostenpflichtig) dürfen nur Leitung, Transaktion und Compliance auslösen.");
+    55	const gesLesen = (n) => bereichNoetig(n, "gesellschaften", 1, "Für das Gesellschaftsverzeichnis fehlt Ihnen die Berechtigung.");
+    56	const gesSchreiben = (n) => bereichNoetig(n, "gesellschaften", 2, "Gründungen bearbeiten nur Leitung und Transaktion.");
+    57	
+    58	// ================================================================ Datenbestand
+    59	
+    60	function leer() {
+    61	  return { v: 1, identitaet: [], mrz: [], register: [], bonitaet: [], gesellschaften: [], ereignisse: [], einstellungen: { bonitaet: bonitaetEinstellungenStandard() } };
+    62	}
+    63	
+    64	/** Bestand: ÖkoInvest GmbH und Beteiligungen (öffentliche Registerdaten aus src/data/site.js) + eine Demo-Gründung */
+    65	function seed(d) {
+    66	  const heute = jetzt();
+    67	  const oi = { id: "PG-26-OEKOIN", name: GESELLSCHAFT.name, rechtsform: "at_gmbh", land: "AT", sitz: GESELLSCHAFT.ort, anschrift: `${GESELLSCHAFT.sitz}, ${GESELLSCHAFT.plz} ${GESELLSCHAFT.ort}`, status: "bestand", registernummer: GESELLSCHAFT.register, gericht: GESELLSCHAFT.gericht, stammkapital: null, einzahlung: null, gesellschafter: [], geschaeftsfuehrung: GESELLSCHAFT.geschaeftsfuehrung.map((name) => ({ name })), gegenstand: GESELLSCHAFT.gegenstand, bilanzstichtag: "12-31", gegruendetAm: "2020-09-10", schritte: [], herkunft: "stammdaten", erstelltAm: heute, geaendertAm: heute, verlauf: [] };
+    68	  const bet = GESELLSCHAFT.beteiligungen.map((b, i) => ({
+    69	    id: `PG-26-BET${i + 1}XX`, name: b.name, rechtsform: "at_gmbh", land: "AT", sitz: "", anschrift: "", status: "bestand", registernummer: b.register, gericht: "", stammkapital: null, einzahlung: null,
+    70	    gesellschafter: [{ art: "gruppe", gesellschaftId: oi.id, name: oi.name, register: oi.registernummer, anteil: Number.parseFloat(b.anteil) || 0, einlage: null }, ...(Number.parseFloat(b.anteil) < 100 ? [{ art: "extern", name: "Mitgesellschafter (siehe Firmenbuch)", anteil: 100 - Number.parseFloat(b.anteil), einlage: null }] : [])],
+    71	    geschaeftsfuehrung: [], gegenstand: b.text, bilanzstichtag: "12-31", gegruendetAm: null, schritte: [], herkunft: "stammdaten", erstelltAm: heute, geaendertAm: heute, verlauf: [],
+    72	  }));
+    73	  const demo = {
+    74	    id: "PG-26-DEMO01", name: "Solarpark Innviertel Nord GmbH (Demo)", rechtsform: "at_gmbh", land: "AT", sitz: "Ostermiething", bundesland: "Oberösterreich", anschrift: `${GESELLSCHAFT.sitz}, ${GESELLSCHAFT.plz} ${GESELLSCHAFT.ort}`,
+    75	    status: "in_gruendung", registernummer: "", stammkapital: 35000, einzahlung: 17500,
+    76	    gesellschafter: [{ art: "gruppe", gesellschaftId: oi.id, name: oi.name, register: oi.registernummer, sitz: GESELLSCHAFT.ort, anteil: 100, einlage: 35000 }],
+    77	    geschaeftsfuehrung: GESELLSCHAFT.geschaeftsfuehrung.slice(0, 1).map((name) => ({ name, geburtsdatum: "", anschrift: "" })),
+    78	    gegenstand: gegenstandVorlage({ land: "AT", typ: "freiflaeche", ort: "Innviertel" }), bilanzstichtag: "12-31", projekt: null, entwicklungProjektId: null,
+    79	    namenspruefung: { ergebnis: "frei", am: heute, quelle: "demo", aehnlich: [] }, schritte: schritteFuer("at_gmbh"), herkunft: "assistent", erstelltAm: heute, geaendertAm: heute, verlauf: [], demo: true,
+    80	  };
+    81	  const tag = (t) => new Date(Date.now() - t * 86400000).toISOString().slice(0, 10);
+    82	  for (const [k, t] of [["namenspruefung", 21], ["unterlagen", 18], ["notartermin", 14], ["beurkundet", 7], ["bankkonto", 6]]) Object.assign(demo.schritte.find((s) => s.schluessel === k), { status: "erledigt", datum: tag(t) });
+    83	  demo.schritte.find((s) => s.schluessel === "notartermin").wert = JSON.stringify({ datum: tag(7), notariat: "Notariat (Demo)", art: "video" });
+    84	  demo.schritte.find((s) => s.schluessel === "einzahlung").status = "in_arbeit";
+    85	  demo.gegruendetAm = tag(7);
+    86	  d.dienste.gesellschaften.push(oi, ...bet, demo);
+    87	}
+    88	
+    89	async function lesenBereit() {
+    90	  const db = await lesen();
+    91	  if (db.dienste?.v) return db;
+    92	  await aendern((d) => {
+    93	    if (d.dienste?.v) return;
+    94	    d.dienste = leer();
+    95	    try {
+    96	      seed(d);
+    97	    } catch (e) {
+    98	      console.warn("[plattform-demo] Dienste-Demodaten nicht ergänzt:", e?.message);
+    99	    }
+   100	  });
+   101	  return lesen();
+   102	}
+   103	async function aendernBereit(fn) {
+   104	  await lesenBereit();
+   105	  return aendern(fn);
+   106	}
+   107	const D = (db) => db.dienste;
+   108	
+   109	/** KYC-Ergebnis anhängen (eigene Transaktion des KYC-Teams – NIE innerhalb von aendern() aufrufen) */
+   110	async function anKycHaengen(fall, eintrag) {
+   111	  try {
+   112	    return await kycDemo.kycErgebnisAnhaengen(fall, eintrag);
+   113	  } catch (e) {
+   114	    if (e?.status !== 404) console.warn("[plattform-dienste] KYC-Ergebnis nicht angehängt:", e?.message);
+   115	    return null;
+   116	  }
+   117	}
+   118	
+   119	// ================================================================ Identität
+   120	
+   121	function sitzungAusgabe(s) {
+   122	  return { id: s.id, anbieter: s.anbieter, anbieterLabel: IDENT_ANBIETER[s.anbieter]?.label || s.anbieter, status: s.status, statusLabel: IDENT_ERGEBNIS[s.status]?.label || s.status, verfahren: s.verfahren || "", erstelltAm: s.erstelltAm, abgeschlossenAm: s.abgeschlossenAm || null, kycVerknuepft: !!s.kycEintragId, url: s.status === "ausstehend" ? s.url : null };
+   123	}
+   124	
+   125	/** Konfiguration + eigene Sitzungen + letzte MRZ-Vorprüfung */
+   126	export async function identStatus(n) {
+   127	  angemeldet(n);
+   128	  const db = await lesenBereit();
+   129	  const k = identKonfig();
+   130	  const mrz = (D(db).mrz || []).filter((x) => x.kontoId === n.id).slice(-1)[0] || null;
+   131	  return {
+   132	    konfig: { anbieter: k.anbieter, label: k.label, aktiv: k.aktiv, demo: k.demo, verfahren: IDENT_ANBIETER[k.anbieter]?.verfahren || [] },
+   133	    sitzungen: D(db).identitaet.filter((s) => s.kontoId === n.id).slice(-5).reverse().map(sitzungAusgabe),
+   134	    mrz: mrz ? { am: mrz.am, ergebnis: mrz.ergebnis, dokumentart: mrz.dokumentart, gueltigBis: mrz.gueltigBis, nummer: mrz.nummerMaskiert } : null,
+   135	  };
+   136	}
+   137	
+   138	/** Online-Identifizierung starten → { sitzung, url } */
+   139	export async function identStarten(n, { basisUrl = "" } = {}) {
+   140	  angemeldet(n);
+   141	  const k = identKonfig();
+   142	  if (!k.aktiv) throw new PlattformFehler(503, "Die Online-Identifizierung ist derzeit nicht verfügbar. Bitte laden Sie Ihre Ausweiskopie hoch – unser Team prüft manuell.");
+   143	  const vorhanden = await lesenBereit();
+   144	  const heute = jetzt().slice(0, 10);
+   145	  if (D(vorhanden).identitaet.filter((s) => s.kontoId === n.id && s.erstelltAm.slice(0, 10) === heute).length >= 5) throw new PlattformFehler(429, "Heute wurden bereits mehrere Identifizierungen gestartet. Bitte versuchen Sie es morgen erneut.");
+   146	  const offen = D(vorhanden).identitaet.find((s) => s.kontoId === n.id && s.status === "ausstehend" && Date.now() - Date.parse(s.erstelltAm) < 30 * 60000);
+   147	  if (offen) return { sitzung: sitzungAusgabe(offen), url: offen.url, wiederverwendet: true };
+   148	  const id = neueId("IP");
+   149	  const r = await sitzungStarten(k, { id, vorname: n.vorname, nachname: n.nachname, email: n.email, rueckUrl: `${basisUrl}/portal/verifizierung?ident=${id}` }).catch((e) => {
+   150	    throw new PlattformFehler(e.status || 502, e.message);
+   151	  });
+   152	  return aendernBereit((db) => {
+   153	    const s = { id, kontoId: n.id, anbieter: k.anbieter, status: "ausstehend", url: r.url, externeId: r.externeId || null, erstelltAm: jetzt(), ereignisse: [] };
+   154	    D(db).identitaet.push(s);
+   155	    if (D(db).identitaet.length > 5000) D(db).identitaet.splice(0, D(db).identitaet.length - 5000);
+   156	    protokoll(db, n, "ident_start", "ident", id, `Online-Identifizierung gestartet (${k.label})`);
+   157	    return { sitzung: sitzungAusgabe(s), url: r.url };
+   158	  });
+   159	}
+   160	
+   161	const KYC_ERGEBNIS = { bestanden: "ok", pruefen: "auffaellig", abgelehnt: "auffaellig", abgebrochen: "hinweis" };
+   162	
+   163	/**
+   164	 * Webhook verarbeiten (Systemaufruf ohne Nutzer). kopf: (name) => Wert, roh: Roh-Body.
+   165	 * Liefert { status: 200|401|400, antwort }. Signatur falsch → 401 ohne Details. Wiederholte Ereignisse → 200 (idempotent).
+   166	 */
+   167	export async function identWebhook({ anbieter, kopf, roh }) {
+   168	  const k = identKonfig();
+   169	  if (!k.anbieter || anbieter !== k.anbieter) return { status: 404, antwort: { ok: false } };
+   170	  const sig = webhookSignaturPruefen(anbieter, kopf, roh, { geheimnis: k.geheimnis });
+   171	  if (!sig.ok) return { status: 401, antwort: { ok: false, error: "Signatur ungültig." } };
+   172	  let p;
+   173	  try {
+   174	    p = JSON.parse(roh);
+   175	  } catch {
+   176	    return { status: 400, antwort: { ok: false, error: "Ungültiges JSON." } };
+   177	  }
+   178	  const e = webhookNormalisieren(anbieter, p);
+   179	  if (!e) return { status: 200, antwort: { ok: true, verarbeitet: false } };
+   180	  const r = await aendernBereit((db) => {
+   181	    const s = D(db).identitaet.find((x) => x.id === v.kennung(e.sitzungId) && x.anbieter === anbieter);
+   182	    if (!s) return { unbekannt: true };
+   183	    const ereignisId = e.ereignisId || sha256(roh).slice(0, 24);
+   184	    if ((D(db).ereignisse || []).includes(`${anbieter}:${ereignisId}`)) return { doppelt: true };
+   185	    D(db).ereignisse.push(`${anbieter}:${ereignisId}`);
+   186	    if (D(db).ereignisse.length > 5000) D(db).ereignisse.splice(0, 1000);
+   187	    s.status = e.ergebnis;
+   188	    s.verfahren = e.verfahren;
+   189	    s.grund = e.grund;
+   190	    s.externeId = e.externeId || s.externeId;
+   191	    s.abgeschlossenAm = jetzt();
+   192	    s.ereignisse = [...(s.ereignisse || []), { am: jetzt(), ergebnis: e.ergebnis, ereignisId }].slice(-20);
+   193	    s.url = null;
+   194	    protokoll(db, null, "ident_ergebnis", "ident", s.id, `Identitätsanbieter ${IDENT_ANBIETER[anbieter]?.label}: ${IDENT_ERGEBNIS[e.ergebnis]?.label}`);
+   195	    const u = nutzerById(db, s.kontoId);
+   196	    if (u) benachrichtigen(db, u, { art: "status", titel: "Online-Identifizierung abgeschlossen", text: "Das Ergebnis liegt unserem Team vor. Die abschließende Prüfung Ihrer Verifizierung erfolgt durch die Compliance.", link: "/portal/verifizierung", objektArt: "kyc", objektId: s.id }, { mail: false });
+   197	    return { sitzung: { ...s }, ereignis: e };
+   198	  });
+   199	  if (r.unbekannt) return { status: 200, antwort: { ok: true, verarbeitet: false } };
+   200	  if (r.doppelt) return { status: 200, antwort: { ok: true, verarbeitet: false, doppelt: true } };
+   201	  const eintrag = await anKycHaengen({ kontoId: r.sitzung.kontoId }, {
+   202	    quelle: `Identitätsanbieter ${IDENT_ANBIETER[anbieter]?.label || anbieter}`, art: "identitaet", ergebnis: KYC_ERGEBNIS[r.ereignis.ergebnis] || "hinweis",
+   203	    zusammenfassung: `${IDENT_ERGEBNIS[r.ereignis.ergebnis]?.label}${r.ereignis.verfahren ? ` · ${r.ereignis.verfahren}` : ""}${r.ereignis.grund ? ` · ${r.ereignis.grund}` : ""}`,
+   204	    externeId: r.ereignis.externeId || r.sitzung.id, rohdatenRef: `Sitzung ${r.sitzung.id}`, daten: { sitzung: r.sitzung.id, ...r.ereignis.daten },
+   205	  });
+   206	  if (eintrag?.id) {
+   207	    await aendern((db) => {
+   208	      const s = D(db).identitaet.find((x) => x.id === r.sitzung.id);
+   209	      if (s) s.kycEintragId = eintrag.id;
+   210	    });
+   211	  }
+   212	  return { status: 200, antwort: { ok: true, verarbeitet: true } };
+   213	}
+   214	
+   215	/** Demo-Simulator: eigenes Ergebnis wählen → signierter Webhook über denselben Prüfpfad */
+   216	export async function identDemoAbschluss(n, { sitzungId, ergebnis } = {}) {
+   217	  angemeldet(n);
+   218	  const k = identKonfig();
+   219	  if (!k.demo) throw verboten("Nur im Demo-Betrieb verfügbar.");
+   220	  const db = await lesenBereit();
+   221	  const s = D(db).identitaet.find((x) => x.id === v.kennung(sitzungId));
+   222	  if (!s || s.kontoId !== n.id) throw nichtGefunden("Sitzung nicht gefunden.");
+   223	  if (s.status !== "ausstehend") throw konflikt("Diese Sitzung ist bereits abgeschlossen.");
+   224	  const e = v.auswahl(ergebnis, ["bestanden", "pruefen", "abgelehnt", "abgebrochen"], "");
+   225	  if (!e) throw ungueltig("Bitte ein Ergebnis wählen.");
+   226	  const roh = JSON.stringify({ sitzungId: s.id, externeId: `DEMO-${s.id}`, ergebnis: e, verfahren: "Simulation (Demo)", ereignisId: `demo-${s.id}-${e}`, nfc: e === "bestanden", liveness: e !== "abgebrochen" });
+   227	  const kopfWerte = webhookSignieren("demo", roh, { geheimnis: k.geheimnis });
+   228	  const r = await identWebhook({ anbieter: "demo", kopf: (h) => kopfWerte[h.toLowerCase()] ?? null, roh });
+   229	  return { ok: r.status === 200, ...r.antwort };
+   230	}
+   231	
+   232	/** MRZ-Vorprüfung: Prüfziffern, Ablauf, Abgleich mit Konto/KYC-Angaben → Hinweis im KYC-Fall (keine Entscheidung) */
+   233	export async function mrzPruefen(n, { zeilen = "" } = {}) {
+   234	  angemeldet(n);
+   235	  const text = String(zeilen || "").slice(0, 400);
+   236	  if (text.replace(/\s/g, "").length < 60) throw ungueltig("Bitte geben Sie alle Zeilen der maschinenlesbaren Zone ein.");
+   237	  let fall = null;
+   238	  try {
+   239	    fall = (await kycDemo.kycFall(n))?.fall || null;
+   240	  } catch {
+   241	    fall = null;
+   242	  }
+   243	  const p = fall?.person || {};
+   244	  const soll = { vorname: p.vorname || n.vorname, nachname: p.nachname || n.nachname, geburtsdatum: p.geburtsdatum || "", ausweisNummer: p.ausweis?.nummer || "" };
+   245	  const r = mrzVorpruefung(text, soll);
+   246	  const f = r.mrz.felder || {};
+   247	  const eintrag = {
+   248	    id: neueId("MZ"), kontoId: n.id, am: jetzt(), ergebnis: r.ergebnis, format: r.mrz.format, dokumentart: f.dokumentart || "", land: f.ausstellerstaat || "",
+   249	    gueltigBis: f.gueltigBis || null, nummerMaskiert: nummerMaskiert(f.dokumentnummer), abgleich: r.abgleich, pruefziffern: `${r.mrz.pruefungen.filter((x) => x.ok).length}/${r.mrz.pruefungen.length}`,
+   250	  };
+   251	  await aendernBereit((db) => {
+   252	    D(db).mrz.push(eintrag);
+   253	    if (D(db).mrz.length > 5000) D(db).mrz.splice(0, 1000);
+   254	    protokoll(db, n, "mrz_vorpruefung", "ident", eintrag.id, `MRZ-Vorprüfung: ${r.ergebnis} (${eintrag.pruefziffern} Prüfziffern)`);
+   255	  });
+   256	  const kyc = fall
+   257	    ? await anKycHaengen({ kontoId: n.id }, {
+   258	        quelle: "MRZ-Vorprüfung (automatisch)", art: "mrz", ergebnis: r.ergebnis === "plausibel" ? "ok" : r.ergebnis === "ungueltig" ? "fehler" : "auffaellig",
+   259	        zusammenfassung: `${r.ergebnis === "plausibel" ? "Automatisch plausibel" : r.ergebnis === "ungueltig" ? "MRZ nicht stimmig" : "Abweichungen"} – ${f.dokumentart || "Dokument"} ${f.ausstellerstaat || ""}, Nr. ${eintrag.nummerMaskiert}, gültig bis ${f.gueltigBis || "–"}. ${r.hinweise.join(" ")}`.trim(),
+   260	        externeId: eintrag.id,
+   261	        daten: { format: r.mrz.format || "", pruefziffern: eintrag.pruefziffern, gueltigBis: f.gueltigBis || "", nameStimmt: r.abgleich.name ?? "", geburtsdatumStimmt: r.abgleich.geburtsdatum ?? "", nummerStimmt: r.abgleich.ausweisNummer ?? "" },
+   262	      })
+   263	    : null;
+   264	  return { ...r, kycVerknuepft: !!kyc?.id, hinweisKyc: fall ? "" : "Sie haben noch keine Verifizierung begonnen – das Ergebnis wird angehängt, sobald Sie Ihre Angaben gespeichert haben und erneut prüfen." };
+   265	}
+   266	
+   267	// ================================================================ Register
+   268	
+   269	const auskunftKurz = (a) => ({ id: a.id, land: a.land, nummer: a.nummer, name: a.firma?.name || "", status: a.firma?.status || (a.firma ? "" : "nicht_gefunden"), quelle: a.quelle, abrufAm: a.abrufAm, zweck: a.zweck, kycFallId: a.kycFallId || null, von: a.von || "" });
+   270	
+   271	export async function registerSuche(n, { land, q } = {}) {
+   272	  registerLesen(n);
+   273	  const l = v.auswahl(land, Object.keys(REGISTER_LAENDER), "");
+   274	  if (!l) throw ungueltig("Bitte wählen Sie ein Land.");
+   275	  try {
+   276	    return { land: l, ...(await registerSuchen({ land: l, q })) };
+   277	  } catch (e) {
+   278	    throw new PlattformFehler(e.status || 502, e.message);
+   279	  }
+   280	}
+   281	
+   282	export async function registerAbruf(n, { land, nummer, kycFallId = null, zweck = "" } = {}) {
+   283	  registerSchreiben(n);
+   284	  const l = v.auswahl(land, Object.keys(REGISTER_LAENDER), "");
+   285	  if (!l) throw ungueltig("Bitte wählen Sie ein Land.");
+   286	  const fallId = kycFallId ? v.kennung(kycFallId) : null;
+   287	  if (kycFallId && !fallId) throw ungueltig("Ungültige Kennung des KYC-Falls.");
+   288	  if (fallId && stufe(n, "compliance") < 2) throw verboten("Registerauszüge im KYC-Fall hinterlegt nur die Compliance.");
+   289	  let r;
+   290	  try {
+   291	    r = await registerAbrufen({ land: l, nummer });
+   292	  } catch (e) {
+   293	    throw new PlattformFehler(e.status || 502, e.message);
+   294	  }
+   295	  const a = await aendernBereit((db) => {
+   296	    const x = { id: neueId("RA"), land: l, nummer: registernummerPruefen(l, nummer).nummer, firma: r.firma, quelle: r.quelle, abrufAm: r.abrufAm, vonId: n.id, von: nameVon(db, n.id), zweck: v.text(zweck, 160), kycFallId: fallId };
+   297	    D(db).register.unshift(x);
+   298	    if (D(db).register.length > 3000) D(db).register.length = 3000;
+   299	    protokoll(db, n, "register_abruf", "register", x.id, `Registerabruf ${REGISTER_LAENDER[l].register} ${x.nummer} (${r.quelle})`);
+   300	    return x;
+   301	  });
+   302	  if (fallId) {
+   303	    const f = a.firma;
+   304	    const kritisch = !f || ["geloescht", "in_loeschung", "in_liquidation"].includes(f.status);
+   305	    const e = await anKycHaengen(fallId, {
+   306	      quelle: `${REGISTER_LAENDER[l].register}${r.quelle === "demo" ? " (Demo)" : ""}`, art: "register", ergebnis: kritisch ? "auffaellig" : "ok",
+   307	      zusammenfassung: f ? `${f.name} · ${a.nummer} · ${f.rechtsform || ""} · Status ${f.status || "–"} · Sitz ${f.sitz || "–"} · abgerufen ${a.abrufAm.slice(0, 10)}` : `Unter ${a.nummer} wurde keine Firma gefunden.`,
+   308	      externeId: a.id, rohdatenRef: `/api/admin/register/${a.id}/pdf`, daten: { nummer: a.nummer, status: f?.status || "nicht_gefunden", abrufAm: a.abrufAm, quelle: r.quelle },
+   309	    });
+   310	    if (!e) throw nichtGefunden("KYC-Fall nicht gefunden – der Abruf wurde gespeichert, aber nicht hinterlegt.");
+   311	  }
+   312	  return { auskunft: { ...auskunftKurz(a), firma: a.firma } };
+   313	}
+   314	
+   315	export async function registerAuskuenfte(n, { q = "" } = {}) {
+   316	  registerLesen(n);
+   317	  const db = await lesenBereit();
+   318	  const such = v.text(q, 80).toLowerCase();
+   319	  const liste = D(db).register.filter((a) => !such || `${a.nummer} ${a.firma?.name || ""}`.toLowerCase().includes(such)).slice(0, 200);
+   320	  const k = registerKonfig();
+   321	  return { auskuenfte: liste.map(auskunftKurz), konfig: { CH: k.CH.aktiv ? "zefix" : "demo", AT: k.AT.aktiv ? "firmenbuch" : "demo", DE: k.DE.aktiv ? "handelsregister" : "demo" } };
+   322	}
+   323	
+   324	export async function registerAuskunft(n, id) {
+   325	  registerLesen(n);
+   326	  const db = await lesenBereit();
+   327	  const a = D(db).register.find((x) => x.id === v.kennung(id));
+   328	  if (!a) throw nichtGefunden("Registerauskunft nicht gefunden.");
+   329	  return { ...auskunftKurz(a), firma: a.firma };
+   330	}
+   331	
+   332	/** Registerauskunft als PDF (Abrufdatum, Quelle) – für den KYC-Fall */
+   333	export async function registerAuskunftPdf(n, id) {
+   334	  const a = await registerAuskunft(n, id);
+   335	  const f = a.firma || {};
+   336	  const r = REGISTER_LAENDER[a.land];
+   337	  const pdf = dokumentePdf([{
+   338	    id: "register", titel: `Registerauskunft ${r.register}`, untertitel: `${f.name || "Keine Firma gefunden"} · ${a.nummer} · abgerufen am ${a.abrufAm.slice(0, 16).replace("T", " ")} UTC über ${a.quelle === "demo" ? "Demo-Daten (keine Live-Abfrage)" : a.quelle}`,
+   339	    abschnitte: [
+   340	      { tabelle: { kopf: ["Angabe", "Wert"], zeilen: [["Firma", f.name || "–"], ["Registernummer", a.nummer], ["Gericht / Amt", f.gericht || r.behoerde], ["Rechtsform", f.rechtsform || "–"], ["Sitz", f.sitz || "–"], ["Anschrift", f.anschrift || "–"], ["Status", f.status || "nicht gefunden"], ["Stammkapital", f.stammkapital ? `${Number(f.stammkapital).toLocaleString("de-DE")} ${f.waehrung || (a.land === "CH" ? "CHF" : "EUR")}` : "–"], ["Registerstand", f.stand || "–"]] } },
+   341	      ...(f.gegenstand ? [{ titel: "Gegenstand / Zweck", text: f.gegenstand }] : []),
+   342	      ...((f.organe || []).length ? [{ titel: "Organe", tabelle: { kopf: ["Funktion", "Name", "seit"], zeilen: f.organe.map((o) => [o.funktion || "", o.name || "", o.seit || ""]) } }] : []),
+   343	      ...((f.gesellschafter || []).length ? [{ titel: "Gesellschafter", tabelle: { kopf: ["Name", "Anteil"], zeilen: f.gesellschafter.map((g) => [g.name, g.anteil != null ? `${g.anteil} %` : ""]) } }] : []),
+   344	      { text: `Diese Zusammenfassung ersetzt keinen amtlichen Registerauszug. Abrufzweck: ${a.zweck || "–"}. Abgerufen von: ${a.von || "–"}.` },
+   345	    ],
+   346	  }], { titel: `Registerauskunft ${a.nummer}`, kennzeichen: "REGISTERAUSKUNFT", demo: a.quelle === "demo" });
+   347	  return { pdf, name: `registerauskunft-${a.id}.pdf` };
+   348	}
+   349	
+   350	// ================================================================ Bonität
+   351	
+   352	function subjektAufloesen(db, { art, id }) {
+   353	  if (art === "organisation") {
+   354	    const o = (db.organisationen || []).find((x) => x.id === v.kennung(id));
+   355	    if (!o) throw nichtGefunden("Organisation nicht gefunden.");
+   356	    const mitglieder = (db.mitgliedschaften || []).filter((m) => m.organisationId === o.id && ["inhaber", "admin"].includes(m.rolle)).map((m) => m.nutzerId);
+   357	    return { organisationId: o.id, kontoId: null, name: o.name, informieren: mitglieder };
+   358	  }
+   359	  const u = nutzerById(db, v.kennung(id));
+   360	  if (!u) throw nichtGefunden("Konto nicht gefunden.");
+   361	  return { organisationId: null, kontoId: u.id, name: u.firma?.trim() || nameVon(db, u.id), informieren: [u.id] };
+   362	}
+   363	
+   364	function auskunftAusgabe(db, a, { voll = true } = {}) {
+   365	  const e = bonitaetEinstellungenDb(db);
+   366	  const g = bonitaetGueltig(a, e);
+   367	  return {
+   368	    id: a.id, subjekt: a.subjekt, anlass: a.anlass, anlassLabel: BONITAET_ANLAESSE[a.anlass] || a.anlass, status: a.status, anbieter: a.anbieter, anbieterLabel: a.anbieterLabel,
+   369	    am: a.am, auskunftAm: a.auskunftAm, von: nameVon(db, a.vonId), gueltig: g.ok, gueltigGrund: g.grund, informiertAm: a.informiertAm || null, demo: !!a.demo,
+   370	    ...(voll ? { ampel: a.ampel, score: a.score, skala: a.skala, kreditlimit: a.kreditlimit, waehrung: a.waehrung, ausfallwahrscheinlichkeit: a.ausfallwahrscheinlichkeit, zahlungsweise: a.zahlungsweise, negativmerkmale: a.negativmerkmale || [], referenz: a.referenz, rechtsgrundlage: a.rechtsgrundlage, freigabe: a.freigabe || null } : {}),
+   371	  };
+   372	}
+   373	
+   374	/** Übersicht: Auskünfte, offene LOI-Voraussetzungen, Einstellungen */
+   375	export async function bonitaetUebersicht(n, { q = "" } = {}) {
+   376	  bonitaetLesen(n);
+   377	  const db = await lesenBereit();
+   378	  const e = bonitaetEinstellungenDb(db);
+   379	  const such = v.text(q, 80).toLowerCase();
+   380	  const auskuenfte = D(db).bonitaet.filter((a) => !such || `${a.subjekt?.name} ${a.id}`.toLowerCase().includes(such)).slice(0, 200).map((a) => auskunftAusgabe(db, a));
+   381	  // Offene Voraussetzungen: Interessen mit freigegebenem Datenraum (nächster Schritt LOI/Gebot), Pflicht aktiv, keine gültige Auskunft
+   382	  const offen = [];
+   383	  const gesehen = new Set();
+   384	  for (const i of db.interessen || []) {
+   385	    if (!["nda_freigegeben", "loi_abgegeben"].includes(i.status)) continue;
+   386	    const ziel = { kontoId: i.investorId, organisationId: i.organisationId || null };
+   387	    const schluessel = ziel.organisationId || ziel.kontoId;
+   388	    if (gesehen.has(schluessel)) continue;
+   389	    const f = bonitaetFreigabeDb(db, "loi", ziel);
+   390	    if (!f.aktiv || f.ok) continue;
+   391	    gesehen.add(schluessel);
+   392	    const s = subjektAufloesen(db, ziel.organisationId ? { art: "organisation", id: ziel.organisationId } : { art: "konto", id: ziel.kontoId });
+   393	    offen.push({ interesseId: i.id, projektId: i.projektId, subjekt: { art: ziel.organisationId ? "organisation" : "konto", id: schluessel, name: s.name }, grund: f.grund });
+   394	  }
+   395	  const k = bonitaetKonfig();
+   396	  const kandidaten = [
+   397	    ...(db.organisationen || []).map((o) => ({ art: "organisation", id: o.id, name: o.name })),
+   398	    ...(db.nutzer || []).filter((u) => u.aktiv && u.rollen.includes("investor")).map((u) => ({ art: "konto", id: u.id, name: u.firma?.trim() ? `${u.firma} (${nameVon(db, u.id)})` : nameVon(db, u.id) })),
+   399	  ].slice(0, 400);
+   400	  return {
+   401	    auskuenfte, offen, kandidaten,
+   402	    einstellungen: { ...e, geltungWirksam: bonitaetGeltung(e, process.env), pilotKonten: (e.pilotKonten || []).map((id) => ({ id, name: nameVon(db, id) || id })) },
+   403	    konfig: { anbieter: k.anbieter, label: k.label, aktiv: k.aktiv, demo: k.demo },
+   404	    rechtsgrundlagen: BONITAET_RECHTSGRUNDLAGEN, anlaesse: BONITAET_ANLAESSE,
+   405	    schreiben: stufe(n, "bonitaet") >= 2,
+   406	  };
+   407	}
+   408	
+   409	/** Auskunft beauftragen (Leitung/Transaktion/Compliance). Betroffene werden informiert (ohne Ergebnis). */
+   410	export async function bonitaetBeauftragen(n, daten = {}) {
+   411	  bonitaetSchreiben(n);
+   412	  const art = v.auswahl(daten.subjekt?.art, ["organisation", "konto"], "");
+   413	  if (!art) throw ungueltig("Bitte wählen Sie Organisation oder Konto.");
+   414	  const anlass = v.auswahl(daten.anlass, Object.keys(BONITAET_ANLAESSE), "loi");
+   415	  const rechtsgrundlage = v.auswahl(daten.rechtsgrundlage, Object.keys(BONITAET_RECHTSGRUNDLAGEN), "berechtigtes_interesse");
+   416	  const land = v.auswahl(daten.land, ["AT", "DE", "CH"], "AT");
+   417	  const db0 = await lesenBereit();
+   418	  const s = subjektAufloesen(db0, { art, id: daten.subjekt?.id });
+   419	  const name = v.text(daten.name, 160) || s.name;
+   420	  const registernummer = v.text(daten.registernummer, 40);

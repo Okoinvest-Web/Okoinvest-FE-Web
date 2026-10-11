@@ -1,0 +1,55 @@
+/**
+ * Service-Worker-Registrierung und Aktualisierungshinweis (NFA-010, NFA-015).
+ *
+ * `registerType: 'prompt'` in der Vite-Konfiguration heißt: Eine neue Fassung
+ * übernimmt *nicht* von selbst. Das ist Absicht — ein Reload mitten in einem
+ * Prüfprotokoll wäre im Feld unzumutbar. Stattdessen meldet sich die App und
+ * der Techniker aktualisiert, wenn es ihm passt.
+ */
+
+import { ref } from 'vue'
+
+export const aktualisierungVerfuegbar = ref(false)
+export const offlineBereit = ref(false)
+export const registrierungsFehler = ref<string | null>(null)
+
+let aktualisierungAusloesen: ((neuLaden?: boolean) => Promise<void>) | null = null
+
+export async function serviceWorkerRegistrieren(): Promise<void> {
+  if (!('serviceWorker' in navigator)) {
+    registrierungsFehler.value = 'Dieser Browser unterstützt keine Offline-Nutzung.'
+    return
+  }
+
+  try {
+    const { registerSW } = await import('virtual:pwa-register')
+    aktualisierungAusloesen = registerSW({
+      immediate: true,
+      onNeedRefresh() {
+        aktualisierungVerfuegbar.value = true
+      },
+      onOfflineReady() {
+        offlineBereit.value = true
+      },
+      onRegisterError(fehler: unknown) {
+        registrierungsFehler.value = (fehler as Error)?.message ?? 'unbekannter Fehler'
+        console.warn('Service Worker konnte nicht registriert werden:', fehler)
+      },
+    })
+  } catch (fehler) {
+    // Im Dev-Server ist das virtuelle Modul ein Platzhalter — kein echter Fehler.
+    if (import.meta.env.PROD) {
+      registrierungsFehler.value = (fehler as Error).message
+    }
+  }
+}
+
+/** Übernimmt die neue Fassung und lädt die App neu. */
+export async function jetztAktualisieren(): Promise<void> {
+  aktualisierungVerfuegbar.value = false
+  await aktualisierungAusloesen?.(true)
+}
+
+export function aktualisierungVerschieben(): void {
+  aktualisierungVerfuegbar.value = false
+}

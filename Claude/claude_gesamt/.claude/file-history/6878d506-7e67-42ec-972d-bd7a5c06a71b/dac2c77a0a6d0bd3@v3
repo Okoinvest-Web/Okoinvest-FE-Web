@@ -1,0 +1,57 @@
+import { Mail, MapPin, Phone, StickyNote } from "lucide-react";
+import { db } from "@/lib/data";
+import { relative } from "@/lib/format";
+import { decodeActivity, type ActivityKind } from "@/lib/activity";
+import { NoteComposer } from "@/components/forms";
+
+const KIND = {
+  note: { icon: StickyNote, verb: "hat eine Notiz hinzugefügt", cls: "bg-gray-100 text-gray-500" },
+  call: { icon: Phone, verb: "hat telefoniert", cls: "bg-sky-50 text-sky-600" },
+  visit: { icon: MapPin, verb: "war vor Ort", cls: "bg-brand-50 text-brand-700" },
+  mail: { icon: Mail, verb: "hat eine E-Mail erfasst", cls: "bg-violet-50 text-violet-600" },
+} satisfies Record<ActivityKind, unknown>;
+
+// Negative Ergebnisse dezent rot, damit Nachfassbedarf auffällt
+const NEGATIVE = ["Nicht erreicht", "Mailbox", "Abgesagt", "Verschoben"];
+
+// Aktivitäten zu einem Datensatz (ERPNext: Comment) – Server-Komponente mit Erfassung.
+export async function Timeline({ doctype, name }: { doctype: string; name: string }) {
+  const notes = await db().listNotes(doctype, name);
+  return (
+    <div className="grid gap-6">
+      <NoteComposer doctype={doctype} name={name} />
+      {notes.length === 0 ? (
+        <p className="text-gray-500">Noch keine Aktivitäten. Halte Anrufe, Vor-Ort-Termine und Absprachen hier fest.</p>
+      ) : (
+        <ol className="relative grid gap-5 before:absolute before:bottom-3 before:left-[11px] before:top-3 before:w-px before:bg-gray-200">
+          {notes.map((n) => {
+            const a = decodeActivity(n.content);
+            const k = KIND[a.kind];
+            return (
+              <li key={n.name} className="relative flex gap-3">
+                <span className={`flex size-6 shrink-0 items-center justify-center rounded-full ring-4 ring-white ${k.cls}`}>
+                  <k.icon className="size-3" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-baseline gap-x-2 text-[12px]">
+                    <span className="font-medium text-gray-900">{n.comment_by ?? n.comment_email}</span>
+                    <span className="text-gray-500">{k.verb}</span>
+                    {a.outcome && (
+                      <span className={`rounded border px-1.5 text-[11px] font-medium ${NEGATIVE.includes(a.outcome) ? "border-rose-200 text-rose-700" : "border-gray-200 text-gray-700"}`}>
+                        {a.outcome}
+                      </span>
+                    )}
+                    <span className="text-gray-400">· {relative(n.creation)}</span>
+                  </div>
+                  {a.text && (
+                    <p className="mt-1.5 whitespace-pre-wrap rounded-lg border border-gray-150 bg-white px-3.5 py-2.5 leading-relaxed text-gray-800 shadow-xs">{a.text}</p>
+                  )}
+                </div>
+              </li>
+            );
+          })}
+        </ol>
+      )}
+    </div>
+  );
+}

@@ -1,0 +1,68 @@
+import Link from "next/link";
+import { CalendarClock } from "lucide-react";
+import type { ToDo } from "@/lib/types";
+import { date, dueLabel, PRIORITY_LABEL } from "@/lib/format";
+import { Avatar, Badge } from "@/components/ui";
+import { ToDoCheck } from "@/components/interactive";
+
+const REF_LABEL: Record<string, string> = { Lead: "Lead", Opportunity: "Chance", Customer: "Kunde" };
+
+function refHref(type?: string, name?: string) {
+  if (!name) return null;
+  if (type === "Lead") return `/leads/${encodeURIComponent(name)}`;
+  if (type === "Opportunity") return `/opportunities/${encodeURIComponent(name)}`;
+  if (type === "Customer") return `/customers/${encodeURIComponent(name)}`;
+  return null;
+}
+
+// Aufgabenzeilen für Übersicht, Detailseiten und Aufgabenliste
+// refLabels: ERPNext-ID -> lesbarer Name (Lead-Name, Titel der Chance)
+export function TodoList({
+  todos,
+  showRef,
+  showOwner,
+  refLabels,
+  inset = "px-4",
+  empty = "Keine Aufgaben.",
+}: {
+  todos: ToDo[];
+  showRef?: boolean;
+  showOwner?: boolean;
+  refLabels?: Record<string, string>;
+  inset?: string;
+  empty?: string;
+}) {
+  if (todos.length === 0) return <p className={`${inset} py-6 text-gray-500`}>{empty}</p>;
+  return (
+    <ul className="divide-y divide-gray-100">
+      {todos.map((t) => {
+        const done = t.status !== "Open";
+        const due = done ? { text: date(t.date), tone: "text-gray-400" } : dueLabel(t.date);
+        const href = showRef ? refHref(t.reference_type, t.reference_name) : null;
+        return (
+          <li key={t.name} className={`flex min-h-12 items-center gap-3 ${inset} py-2 transition-colors hover:bg-gray-50`}>
+            <ToDoCheck name={t.name} done={t.status === "Closed"} />
+            <div className="min-w-0 flex-1">
+              <div className={`truncate ${done ? "text-gray-400 line-through" : "text-gray-900"}`}>{t.description}</div>
+              {href && (
+                <Link href={href} className="inline-block text-[12px] text-gray-500 hover:text-gray-900">
+                  {REF_LABEL[t.reference_type ?? ""] ?? t.reference_type} · {refLabels?.[t.reference_name ?? ""] ?? t.reference_name}
+                </Link>
+              )}
+            </div>
+            {t.priority === "High" && !done && <Badge value="High" label={PRIORITY_LABEL.High} />}
+            {showOwner && t.allocated_to && (
+              <span title={t.allocated_to} className="hidden md:inline-flex">
+                <Avatar name={t.allocated_to} />
+              </span>
+            )}
+            <span className={`tnum flex w-28 items-center justify-end gap-1.5 text-[12px] ${done ? "text-gray-400" : due.tone}`}>
+              <CalendarClock className="size-3.5 opacity-70" />
+              {due.text}
+            </span>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}

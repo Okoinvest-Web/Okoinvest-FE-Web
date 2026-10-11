@@ -1,0 +1,73 @@
+"use client";
+
+import { useEffect, useRef } from "react";
+
+import { lohntZaehlen, setzeZahl, zerlegeZahl } from "@/lib/zaehlwerk";
+
+/**
+ * Eine Kennzahl zählt beim Erscheinen auf ihren Wert hoch.
+ *
+ * Drei Entscheidungen, die das von einer Spielerei unterscheiden:
+ *
+ * 1. *Der Text steht sofort da.* Gerendert wird der fertige Wert; die
+ *    Animation überschreibt ihn danach. Wer kein JavaScript hat, wer
+ *    einen Bildschirmleser benutzt oder wessen Gerät gerade zu tun
+ *    hat, sieht die Zahl - nicht eine Null, die nie hochzählt.
+ * 2. *Geschrieben wird am React-Baum vorbei.* Sechzig Zustandswechsel
+ *    je Sekunde und Kachel wären eine Renderlawine für eine Bewegung,
+ *    die eine halbe Sekunde dauert. Der Text wandert direkt in den
+ *    Knoten.
+ * 3. *Wer keine Bewegung will, bekommt keine.* `prefers-reduced-motion`
+ *    wird geprüft, bevor irgendetwas beginnt.
+ *
+ * Nicht jede Zahl zählt hoch: Bei einer 4 sähe man ein Flackern, bei
+ * drei Nachkommastellen ein Zappeln. Das entscheidet `lohntZaehlen`.
+ */
+
+/** Wie lange das Hochzählen dauert. */
+const DAUER_MS = 750;
+
+export function Zaehlwerk({ wert }: { wert: string }) {
+  const feld = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    const knoten = feld.current;
+    if (!knoten) return;
+
+    if (
+      typeof window === "undefined" ||
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) {
+      return;
+    }
+
+    const fund = zerlegeZahl(wert);
+    if (!lohntZaehlen(fund) || !fund) return;
+
+    let laufend = 0;
+    const beginn = performance.now();
+
+    const schritt = (jetzt: number) => {
+      const anteil = Math.min(1, (jetzt - beginn) / DAUER_MS);
+      // Kubisch ausklingend: schnell an, ruhig aus - dieselbe Kurve,
+      // der auch die Flächen folgen.
+      const weich = 1 - (1 - anteil) ** 3;
+
+      knoten.textContent = setzeZahl(fund, weich, wert);
+
+      if (anteil < 1) laufend = requestAnimationFrame(schritt);
+    };
+
+    laufend = requestAnimationFrame(schritt);
+
+    return () => {
+      cancelAnimationFrame(laufend);
+      // Beim Abräumen steht wieder der richtige Wert da. Sonst bliebe
+      // bei einem Wechsel mitten in der Bewegung ein Zwischenstand
+      // stehen - eine Zahl, die es nie gab.
+      knoten.textContent = wert;
+    };
+  }, [wert]);
+
+  return <span ref={feld}>{wert}</span>;
+}

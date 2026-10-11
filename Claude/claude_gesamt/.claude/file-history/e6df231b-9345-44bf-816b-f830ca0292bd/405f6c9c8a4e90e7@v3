@@ -1,0 +1,272 @@
+<script setup lang="ts">
+/** Anlagendetail: Stammdaten, Protokolle, Mängel und Tagesberichte (FA-081, FA-084). */
+import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
+
+import AnlagenKarte from '@/components/AnlagenKarte.vue'
+import AppIcon from '@/components/AppIcon.vue'
+import BasisDialog from '@/components/BasisDialog.vue'
+import QrCode from '@/components/QrCode.vue'
+import StatusAbzeichen from '@/components/StatusAbzeichen.vue'
+import VerlaufsDiagramm, { type Reihe } from '@/components/VerlaufsDiagramm.vue'
+import { baudoku } from '@/lib/api'
+import { datum, zahl } from '@/lib/format'
+import { useStammdaten } from '@/stores/stammdaten'
+
+const props = defineProps<{ name: string }>()
+
+const router = useRouter()
+const stammdaten = useStammdaten()
+
+interface Uebersicht {
+  protokolle: { name: string; vorlage_typ: string; status: string; pruef_datum: string; gesamtbewertung?: string }[]
+  maengel: { name: string; titel: string; schweregrad: string; status: string; faellig_am?: string }[]
+  tagesberichte: { name: string; datum: string; bericht_typ: string; status: string; fortschritt_prozent?: number }[]
+}
+
+interface Messwert {
+  string_nr: string
+  riso?: number | null
+  uoc?: number | null
+  isc?: number | null
+  anzahl_module?: number | null
+  pruef_datum?: string | null
+}
+
+const uebersicht = ref<Uebersicht>({ protokolle: [], maengel: [], tagesberichte: [] })
+const messwerte = ref<Messwert[]>([])
+const laedt = ref(true)
+const qrOffen = ref(false)
+const reiter = ref<'protokolle' | 'maengel' | 'berichte' | 'messwerte'>('protokolle')
+const messgroesse = ref<'riso' | 'uoc' | 'isc'>('riso')
+
+const anlage = computed(() => stammdaten.anlage(props.name))
+
+const qrZiel = computed(() => `${window.location.origin}/baudoku/anlagen/${props.name}`)
+
+const MESSGROESSEN = {
+  riso: { titel: 'Isolationswiderstand', einheit: 'kΩ' },
+  uoc: { titel: 'Leerlaufspannung', einheit: 'V' },
+  isc: { titel: 'Kurzschlussstrom', einheit: 'A' },
+} as const
+
+/** Messwerte je String über alle abgeschlossenen Protokolle (FA-094). */
+const trendReihen = computed<Reihe[]>(() => {
+  const jeString = new Map<string, { datum: string; wert: number }[]>()
+  for (const zeile of messwerte.value) {
+    const wert = zeile[messgroesse.value]
+    if (wert === null || wert === undefined || !zeile.pruef_datum) continue
+    const liste = jeString.get(zeile.string_nr) ?? []
+    liste.push({ datum: zeile.pruef_datum, wert: Number(wert) })
+    jeString.set(zeile.string_nr, liste)
+  }
+  return [...jeString.entries()]
+    .sort((a, b) => Number(a[0]) - Number(b[0]) || a[0].localeCompare(b[0]))
+    .map(([string_nr, punkte]) => ({ name: `String ${string_nr}`, punkte }))
+})
+
+/**
+ * Riso-Grenzwert nach IEC 62446-1 für die häufigste Modulzahl der Anlage —
+ * so sieht der Bauleiter sofort, ob sich ein String dem Grenzwert nähert.
+ */
+const grenzwert = computed(() => {
+  if (messgroesse.value !== 'riso') return null
+  const module = messwerte.value.find((z) => z.anzahl_module)?.anzahl_module ?? 0
+  const { riso_pro_modul_kohm, riso_minimum_kohm } = stammdaten.einstellungen
+  return Math.max(riso_pro_modul_kohm * module, riso_minimum_kohm)
+})
+
+onMounted(async () => {
+  const [u, m] = await Promise.allSettled([
+    baudoku.anlagenUebersicht(props.name),
+    baudoku.messdatenTrend(props.name),
+  ])
+  // Offline zeigt die Detailansicht die Stammdaten aus dem Cache.
+  if (u.status === 'fulfilled') uebersicht.value = u.value as Uebersicht
+  if (m.status === 'fulfilled') messwerte.value = m.value as Messwert[]
+  laedt.value = false
+})
+</script>
+
+<template>
+  <div v-if="!anlage" class="karte p-6 text-center text-sm text-slate-500">
+    Anlage {{ name }} ist lokal nicht verfügbar. Bitte synchronisieren.
+  </div>
+
+  <div v-else class="space-y-5">
+    <header class="karte p-4">
+      <div class="flex flex-wrap items-start gap-3">
+        <div class="min-w-0 flex-1">
+          <div class="flex flex-wrap items-center gap-2">
+            <h2 class="text-xl font-bold">{{ anlage.anlage_name }}</h2>
+            <StatusAbzeichen :wert="anlage.status" />
+          </div>
+          <p class="mt-1 text-sm text-slate-500">{{ anlage.customer }}</p>
+          <p class="text-sm text-slate-400">
+            {{ anlage.adresse }}, {{ anlage.plz }} {{ anlage.ort }}
+          </p>
+        </div>
+        <div class="flex gap-2">
+          <button class="knopf-sekundaer px-3 text-sm" @click="qrOffen = true">
+            <AppIcon name="qr" :groesse="18" /> QR
+          </button>
+          <button
+            class="knopf-primaer px-3 text-sm"
+            @click="router.push({ name: 'protokoll-neu', query: { anlage: anlage.name } })"
+          >
+            <AppIcon name="plus" :groesse="18" /> Protokoll
+          </button>
+        </div>
+      </div>
+
+      <dl class="mt-4 grid grid-cols-2 gap-3 text-sm tablet:grid-cols-4">
+        <div>
+          <dt class="text-xs text-slate-400">Leistung</dt>
+          <dd class="font-semibold tabular-nums">{{ zahl(anlage.kwp, 'kWp') }}</dd>
+        </div>
+        <div v-if="anlage.kwh_speicher">
+          <dt class="text-xs text-slate-400">Speicher</dt>
+          <dd class="font-semibold tabular-nums">{{ zahl(anlage.kwh_speicher, 'kWh') }}</dd>
+        </div>
+        <div v-if="anlage.ladepunkte">
+          <dt class="text-xs text-slate-400">Ladepunkte</dt>
+          <dd class="font-semibold tabular-nums">{{ anlage.ladepunkte }}</dd>
+        </div>
+        <div v-if="anlage.anzahl_strings">
+          <dt class="text-xs text-slate-400">Strings</dt>
+          <dd class="font-semibold tabular-nums">{{ anlage.anzahl_strings }}</dd>
+        </div>
+        <div>
+          <dt class="text-xs text-slate-400">Letzte Prüfung</dt>
+          <dd class="font-semibold">{{ datum(anlage.letzte_pruefung) }}</dd>
+        </div>
+        <div>
+          <dt class="text-xs text-slate-400">Nächste Wartung</dt>
+          <dd class="font-semibold">{{ datum(anlage.naechste_wartung) }}</dd>
+        </div>
+        <div v-if="anlage.modul_uoc">
+          <dt class="text-xs text-slate-400">Uoc je Modul</dt>
+          <dd class="font-semibold tabular-nums">{{ zahl(anlage.modul_uoc, 'V') }}</dd>
+        </div>
+        <div v-if="anlage.project">
+          <dt class="text-xs text-slate-400">ERPNext-Projekt</dt>
+          <dd class="truncate font-semibold">{{ anlage.project }}</dd>
+        </div>
+      </dl>
+    </header>
+
+    <AnlagenKarte
+      v-if="anlage.gps_lat && anlage.gps_lng"
+      :anlagen="[anlage]"
+      :aktiv="anlage.name"
+      hoehe="220px"
+    />
+
+    <!-- Reiter -->
+    <div class="flex gap-1 border-b border-slate-200 dark:border-slate-800">
+      <button
+        v-for="eintrag in [
+          { schluessel: 'protokolle', titel: 'Protokolle', anzahl: uebersicht.protokolle.length },
+          { schluessel: 'maengel', titel: 'Mängel', anzahl: uebersicht.maengel.length },
+          { schluessel: 'berichte', titel: 'Tagesberichte', anzahl: uebersicht.tagesberichte.length },
+          { schluessel: 'messwerte', titel: 'Messwerte', anzahl: trendReihen.length },
+        ]"
+        :key="eintrag.schluessel"
+        class="tap border-b-2 px-3 text-sm font-medium"
+        :class="
+          reiter === eintrag.schluessel
+            ? 'border-marke-600 text-marke-700 dark:text-marke-400'
+            : 'border-transparent text-slate-500'
+        "
+        @click="reiter = eintrag.schluessel as typeof reiter"
+      >
+        {{ eintrag.titel }}
+        <span class="ml-1 text-xs text-slate-400">{{ eintrag.anzahl }}</span>
+      </button>
+    </div>
+
+    <p v-if="laedt" class="py-6 text-center text-sm text-slate-500">Wird geladen …</p>
+
+    <ul v-else-if="reiter === 'protokolle'" class="space-y-2">
+      <li v-for="p in uebersicht.protokolle" :key="p.name" class="karte flex items-center gap-3 p-3">
+        <div class="min-w-0 flex-1">
+          <div class="font-semibold">{{ p.vorlage_typ }} · {{ p.name }}</div>
+          <div class="text-xs text-slate-500">{{ datum(p.pruef_datum) }}</div>
+        </div>
+        <StatusAbzeichen :wert="p.gesamtbewertung || p.status" klein />
+      </li>
+      <li v-if="!uebersicht.protokolle.length" class="py-6 text-center text-sm text-slate-500">
+        Noch kein Protokoll zu dieser Anlage.
+      </li>
+    </ul>
+
+    <ul v-else-if="reiter === 'maengel'" class="space-y-2">
+      <li v-for="m in uebersicht.maengel" :key="m.name" class="karte flex items-center gap-3 p-3">
+        <StatusAbzeichen :wert="m.schweregrad" klein />
+        <div class="min-w-0 flex-1">
+          <div class="truncate font-semibold">{{ m.titel }}</div>
+          <div class="text-xs text-slate-500">Fällig {{ datum(m.faellig_am) }}</div>
+        </div>
+        <StatusAbzeichen :wert="m.status" klein />
+      </li>
+      <li v-if="!uebersicht.maengel.length" class="py-6 text-center text-sm text-slate-500">
+        Keine Mängel erfasst.
+      </li>
+    </ul>
+
+    <section v-else-if="reiter === 'messwerte'" class="karte p-4">
+      <div class="mb-3 flex flex-wrap items-center gap-2">
+        <h3 class="flex-1 font-semibold">
+          {{ MESSGROESSEN[messgroesse].titel }} je String
+        </h3>
+        <div class="flex overflow-hidden rounded-lg border border-slate-300 text-sm dark:border-slate-700">
+          <button
+            v-for="schluessel in (['riso', 'uoc', 'isc'] as const)"
+            :key="schluessel"
+            class="px-3 py-1.5 font-medium"
+            :class="messgroesse === schluessel ? 'bg-marke-600 text-white' : ''"
+            @click="messgroesse = schluessel"
+          >
+            {{ schluessel === 'riso' ? 'Riso' : schluessel === 'uoc' ? 'Uoc' : 'Isc' }}
+          </button>
+        </div>
+      </div>
+
+      <VerlaufsDiagramm
+        :reihen="trendReihen"
+        :einheit="MESSGROESSEN[messgroesse].einheit"
+        :grenzwert="grenzwert"
+        grenzwert-label="Grenzwert IEC 62446-1"
+      />
+
+      <p class="mt-3 text-xs text-slate-400">
+        Aus allen abgeschlossenen und verifizierten Protokollen dieser Anlage.
+        Ein fallender Isolationswiderstand über mehrere Zyklen deutet auf
+        eindringende Feuchtigkeit hin, noch bevor der Grenzwert erreicht ist.
+      </p>
+    </section>
+
+    <ul v-else class="space-y-2">
+      <li v-for="b in uebersicht.tagesberichte" :key="b.name" class="karte flex items-center gap-3 p-3">
+        <div class="min-w-0 flex-1">
+          <div class="font-semibold">{{ datum(b.datum) }} · {{ b.bericht_typ }}</div>
+          <div class="text-xs text-slate-500">Fortschritt {{ b.fortschritt_prozent ?? 0 }} %</div>
+        </div>
+        <StatusAbzeichen :wert="b.status" klein />
+      </li>
+      <li v-if="!uebersicht.tagesberichte.length" class="py-6 text-center text-sm text-slate-500">
+        Noch kein Tagesbericht.
+      </li>
+    </ul>
+
+    <BasisDialog :offen="qrOffen" titel="QR-Code der Anlage" @schliessen="qrOffen = false">
+      <div class="text-center">
+        <QrCode :inhalt="qrZiel" :groesse="280" class="mx-auto" />
+        <p class="mt-3 break-all text-xs text-slate-500">{{ qrZiel }}</p>
+        <p class="mt-2 text-sm text-slate-600 dark:text-slate-300">
+          Aufkleber am Wechselrichter anbringen — Scannen öffnet diese Anlage direkt in der App.
+        </p>
+      </div>
+    </BasisDialog>
+  </div>
+</template>

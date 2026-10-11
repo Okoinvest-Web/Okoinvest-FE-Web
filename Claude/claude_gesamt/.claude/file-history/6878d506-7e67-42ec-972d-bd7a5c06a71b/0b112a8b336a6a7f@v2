@@ -1,0 +1,159 @@
+import sys, os
+os.chdir(r"C:\Users\SALEADMIN\Downloads\crm-develop\crm-next")
+p = "src/lib/data/erpnext.ts"
+s = open(p, encoding="utf-8").read()
+
+pairs = [
+('''import "server-only";
+import type { DataSource } from "./source";
+import type { Contact, Customer, Lead, ListOptions, Note, Opportunity, ToDo } from "@/lib/types";
+
+type Config = { url: string; key: string; secret: string };
+
+// Client für die Frappe-REST-API (/api/resource/<DocType>).
+// Läuft nur serverseitig, damit API-Key/Secret nie im Browser landen.
+export function createErpNextSource({ url, key, secret }: Config): DataSource {
+  const base = url.replace(/\\/$/, "");
+
+  async function call<T>(path: string, init?: RequestInit): Promise<T> {
+    const res = await fetch(`${base}${path}`, {
+      ...init,
+      headers: {
+        Authorization: `token ${key}:${secret}`,
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        ...init?.headers,
+      },''',
+'''import "server-only";
+import { redirect } from "next/navigation";
+import type { DataSource } from "./source";
+import type { Contact, Customer, Lead, ListOptions, Note, Opportunity, Role, ToDo } from "@/lib/types";
+import { getErpSid } from "@/lib/auth";
+
+// auth "user": jede Abfrage läuft mit der ERPNext-Sitzung des angemeldeten Nutzers –
+//   ERPNext setzt Rollen und Benutzerberechtigungen durch (Handelsvertreter sehen nur Eigenes).
+// auth "token": gemeinsamer API-Schlüssel (Dienstkonto) – alle sehen alles, nur für interne Teams.
+type Config = { url: string; auth: "user" } | { url: string; auth: "token"; key: string; secret: string };
+
+// ERPNext-Rollen, die die Vertriebsleitung kennzeichnen
+const MANAGER_ROLES = ["Sales Manager", "System Manager"];
+
+// Client für die Frappe-REST-API (/api/resource/<DocType>).
+// Läuft nur serverseitig, damit Zugangsdaten und Sitzungen nie im Browser landen.
+export function createErpNextSource(config: Config): DataSource {
+  const base = config.url.replace(/\\/$/, "");
+
+  async function authHeaders(): Promise<Record<string, string>> {
+    if (config.auth === "token") return { Authorization: `token ${config.key}:${config.secret}` };
+    const sid = await getErpSid();
+    if (!sid) redirect("/login");
+    return { Cookie: `sid=${sid}` };
+  }
+
+  // Abgelaufene ERPNext-Sitzung → neu anmelden
+  function checkAuth(res: Response) {
+    if (config.auth === "user" && res.status === 401) redirect("/login");
+  }
+
+  async function call<T>(path: string, init?: RequestInit): Promise<T> {
+    const res = await fetch(`${base}${path}`, {
+      ...init,
+      headers: {
+        ...(await authHeaders()),
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        ...init?.headers,
+      },'''),
+('''    if (!res.ok) {
+      // Keine Zugangsdaten in Fehlermeldungen''', '''    checkAuth(res);
+    if (!res.ok) {
+      // Keine Zugangsdaten in Fehlermeldungen'''),
+('''      headers: { Authorization: `token ${key}:${secret}`, Accept: "application/json", "Content-Type": "application/json" },
+      body: JSON.stringify(args),
+      cache: "no-store",
+      signal: AbortSignal.timeout(15_000),
+    });
+    if (!res.ok) throw new Error(`ERPNext ${path} → ${res.status}`);''', '''      headers: { ...(await authHeaders()), Accept: "application/json", "Content-Type": "application/json" },
+      body: JSON.stringify(args),
+      cache: "no-store",
+      signal: AbortSignal.timeout(15_000),
+    });
+    checkAuth(res);
+    if (!res.ok) throw new Error(`ERPNext ${path} → ${res.status}`);'''),
+('''    // Passwort wird nur an ERPNext weitergereicht, nicht gespeichert.
+    // Datenzugriffe laufen danach weiter über den API-Schlüssel (Dienstkonto).
+    async login(usr, pwd) {
+      const res = await fetch(`${base}/api/method/login`, {
+        method: "POST",
+        headers: { Accept: "application/json", "Content-Type": "application/json" },
+        body: JSON.stringify({ usr, pwd }),
+        cache: "no-store",
+        signal: AbortSignal.timeout(15_000),
+      });
+      if (!res.ok) return null;
+      const body = (await res.json()) as { full_name?: string };
+      return { user: usr, fullName: body.full_name ?? usr };
+    },''', '''    // Passwort wird nur an ERPNext weitergereicht, nicht gespeichert.
+    // Die zurückgegebene ERPNext-Sitzung (sid) landet verschlüsselt im Session-Cookie.
+    async login(usr, pwd) {
+      const res = await fetch(`${base}/api/method/login`, {
+        method: "POST",
+        headers: { Accept: "application/json", "Content-Type": "application/json" },
+        body: JSON.stringify({ usr, pwd }),
+        cache: "no-store",
+        signal: AbortSignal.timeout(15_000),
+      });
+      if (!res.ok) return null;
+      const body = (await res.json()) as { full_name?: string };
+      const sid = res.headers.getSetCookie().map((c) => c.match(/^sid=([^;]+)/)?.[1]).find((v) => v && v !== "Guest");
+      if (config.auth === "user" && !sid) return null;
+
+      // Rollen des Nutzers lesen (eigenes User-Dokument ist für jeden lesbar)
+      let role: Role = "agent";
+      try {
+        const u = await fetch(`${base}/api/resource/User/${encodeURIComponent(usr)}`, {
+          headers: { Accept: "application/json", ...(sid ? { Cookie: `sid=${sid}` } : await authHeaders()) },
+          cache: "no-store",
+          signal: AbortSignal.timeout(15_000),
+        });
+        if (u.ok) {
+          const roles = ((await u.json()) as { data?: { roles?: { role: string }[] } }).data?.roles ?? [];
+          if (roles.some((r) => MANAGER_ROLES.includes(r.role))) role = "manager";
+        }
+      } catch {
+        /* ohne Rolleninfo als Handelsvertreter behandeln – die restriktivere Wahl */
+      }
+      return { user: usr, fullName: body.full_name ?? usr, role, sid };
+    },'''),
+('''["name", "customer_name", "customer_type", "customer_group", "territory", "email_id", "mobile_no", "website", "disabled", "creation", "modified"]''',
+ '''["name", "customer_name", "customer_type", "customer_group", "territory", "email_id", "mobile_no", "website", "account_manager", "disabled", "creation", "modified"]'''),
+]
+for a, b in pairs:
+    if a not in s:
+        sys.exit("fehlt: " + a[:90])
+    s = s.replace(a, b, 1)
+open(p, "w", encoding="utf-8", newline="\n").write(s)
+
+p = "src/lib/data/index.ts"
+open(p, "w", encoding="utf-8", newline="\n").write('''import "server-only";
+import type { DataSource } from "./source";
+import { mockSource } from "./mock";
+import { createErpNextSource } from "./erpnext";
+
+let cached: DataSource | undefined;
+
+// ERPNEXT_URL gesetzt → echte API, sonst Demo-Daten.
+// Standard ist die Anmeldung je Nutzer (ERPNext-Berechtigungen greifen).
+// Nur mit ERPNEXT_AUTH=token werden API-Key/Secret als gemeinsames Dienstkonto genutzt.
+export function db(): DataSource {
+  if (cached) return cached;
+  const url = process.env.ERPNEXT_URL;
+  const key = process.env.ERPNEXT_API_KEY;
+  const secret = process.env.ERPNEXT_API_SECRET;
+  if (!url) cached = mockSource;
+  else if (process.env.ERPNEXT_AUTH === "token" && key && secret) cached = createErpNextSource({ url, auth: "token", key, secret });
+  else cached = createErpNextSource({ url, auth: "user" });
+  return cached;
+}
+''')
+print("ok")

@@ -1,0 +1,173 @@
+import sys, os
+os.chdir(r"C:\Users\SALEADMIN\Downloads\crm-develop\crm-next")
+
+def edit(p, pairs):
+    s = open(p, encoding="utf-8").read()
+    for a, b in pairs:
+        if a not in s:
+            sys.exit(f"{p}: fehlt {a[:80]!r}")
+        s = s.replace(a, b, 1)
+    open(p, "w", encoding="utf-8", newline="\n").write(s)
+
+# --- Einwilligungs-Logik zentral ---
+edit("src/lib/insights.ts", [
+    ('export function leadHints(lead: Lead, opps: Opportunity[], todos: ToDo[]): Hint[] {', '''// Verbraucher (kein Firmenname) ohne dokumentierte Einwilligung → keine Werbeanrufe
+export function needsConsent(lead: Lead) {
+  return !lead.company_name && lead.custom_consent !== "Ja";
+}
+
+export function leadHints(lead: Lead, opps: Opportunity[], todos: ToDo[]): Hint[] {'''),
+    ('''  const age = ageDays(lead.creation);
+  const idle = ageDays(lead.modified);
+
+  if (lead.status === "Lead" && age >= 1)''', '''  const age = ageDays(lead.creation);
+  const idle = ageDays(lead.modified);
+
+  if (needsConsent(lead))
+    out.push({
+      level: "risk",
+      text: "Keine dokumentierte Einwilligung – Werbeanrufe bei Privatkunden sind ohne Einwilligung unzulässig. Bei Anfrage des Kunden Einwilligung mit Quelle erfassen.",
+    });
+  if (lead.status === "Lead" && age >= 1)'''),
+])
+
+# --- Lead-Detail: Land, Einwilligung, Warnung am Anruf-Knopf ---
+edit("src/app/(crm)/leads/[name]/page.tsx", [
+    ('import { leadHints, parsePv, scoreLead } from "@/lib/insights";', 'import { leadHints, needsConsent, parsePv, scoreLead } from "@/lib/insights";'),
+    ('import { LEAD_SOURCES } from "@/lib/types";', 'import { CONSENT_SOURCES, COUNTRY_LABEL, LEAD_SOURCES, type Country } from "@/lib/types";'),
+    ('''              {lead.mobile_no && (
+                <a href={`tel:${lead.mobile_no.replace(/\\s/g, "")}`} className={BTN.primary}>
+                  <Phone /> Anrufen''', '''              {lead.mobile_no && (
+                <a
+                  href={`tel:${lead.mobile_no.replace(/\\s/g, "")}`}
+                  className={needsConsent(lead) ? BTN.secondary : BTN.primary}
+                  title={needsConsent(lead) ? "Keine dokumentierte Einwilligung – nur anrufen, wenn der Kunde den Rückruf gewünscht hat" : undefined}
+                >
+                  {needsConsent(lead) ? <ShieldAlert className="text-amber-600" /> : <Phone />} Anrufen'''),
+    ('sheetHref={`/kundenblatt/lead/${encodeURIComponent(lead.name)}`} />}', 'country={lead.country} sheetHref={`/kundenblatt/lead/${encodeURIComponent(lead.name)}`} />}'),
+    ('''            <Field label="Quelle">''', '''            <Field label="Land">
+              <InlineField
+                type="select"
+                value={lead.country ?? "Germany"}
+                options={(Object.keys(COUNTRY_LABEL) as Country[]).map((c) => ({ value: c, label: COUNTRY_LABEL[c] }))}
+                action={edit("country")}
+              />
+            </Field>
+            <Field label="Einwilligung">
+              <InlineField
+                type="select"
+                value={lead.custom_consent ?? ""}
+                options={[
+                  { value: "Ja", label: "Ja – liegt vor" },
+                  { value: "Nein", label: "Nein" },
+                ]}
+                display={
+                  lead.custom_consent === "Ja" ? (
+                    <span className="text-brand-700">Ja · seit {date(lead.custom_consent_date)}</span>
+                  ) : lead.custom_consent === "Nein" ? (
+                    <span className="text-rose-600">Nein</span>
+                  ) : undefined
+                }
+                placeholder="Nicht erfasst"
+                action={edit("custom_consent")}
+              />
+            </Field>
+            {lead.custom_consent === "Ja" && (
+              <Field label="Nachweis">
+                <InlineField
+                  type="select"
+                  value={lead.custom_consent_source ?? ""}
+                  options={CONSENT_SOURCES.map((s) => ({ value: s, label: s }))}
+                  placeholder="Quelle ergänzen"
+                  action={edit("custom_consent_source")}
+                />
+              </Field>
+            )}
+            <Field label="Quelle">'''),
+])
+s = open("src/app/(crm)/leads/[name]/page.tsx", encoding="utf-8").read()
+s = s.replace('import { Mail, Pencil, Phone, Plus } from "lucide-react";', 'import { Mail, Pencil, Phone, Plus, ShieldAlert } from "lucide-react";')
+open("src/app/(crm)/leads/[name]/page.tsx", "w", encoding="utf-8", newline="\n").write(s)
+
+# --- PV-Rechner: Vorbelegung je Land ---
+edit("src/lib/pv.ts", [
+    ('''export function pvDefaults(kwp = 10, storage = 0, invest?: number): PvInput {
+  const business = kwp > 30;
+  return {
+    kwp,
+    storage,
+    use: business ? Math.round((kwp * YIELD * 0.8) / 1000) * 1000 : 5000,
+    price: business ? 25 : 35,
+    feed: 7.9,''', '''// Richtwerte je Land (editierbar): DE mit EEG-Vergütung für Teileinspeisung,
+// AT mit Marktpreis-Richtwert (OeMAG/Energieversorger – schwankt deutlich).
+const COUNTRY_DEFAULTS = {
+  Germany: { price: 35, priceBusiness: 25, feed: 7.9 },
+  Austria: { price: 28, priceBusiness: 22, feed: 6 },
+};
+
+export function pvDefaults(kwp = 10, storage = 0, invest?: number, country: "Germany" | "Austria" = "Germany"): PvInput {
+  const business = kwp > 30;
+  const c = COUNTRY_DEFAULTS[country];
+  return {
+    kwp,
+    storage,
+    use: business ? Math.round((kwp * YIELD * 0.8) / 1000) * 1000 : 5000,
+    price: business ? c.priceBusiness : c.price,
+    feed: c.feed,'''),
+])
+edit("src/components/PvCalculator.tsx", [
+    ('export function PvCalculator({ kwp, storage, invest, sheetHref }: { kwp?: number; storage?: number; invest?: number; sheetHref?: string }) {\n  const [v, setV] = useState<PvInput>(() => pvDefaults(kwp, storage, invest));',
+     'export function PvCalculator({\n  kwp,\n  storage,\n  invest,\n  country,\n  sheetHref,\n}: {\n  kwp?: number;\n  storage?: number;\n  invest?: number;\n  country?: "Germany" | "Austria";\n  sheetHref?: string;\n}) {\n  const [v, setV] = useState<PvInput>(() => pvDefaults(kwp, storage, invest, country));'),
+])
+
+# --- Neuer Lead: Land + Einwilligung ---
+edit("src/components/forms.tsx", [
+    ('import { LEAD_SOURCES, LEAD_STATUSES, OPPORTUNITY_STAGES, type Lead } from "@/lib/types";',
+     'import { CONSENT_SOURCES, COUNTRY_LABEL, LEAD_SOURCES, LEAD_STATUSES, OPPORTUNITY_STAGES, type Country, type Lead } from "@/lib/types";'),
+    ('''        {withStatus ? (
+          <L label="Status">''', '''        <L label="Land">
+          <select name="country" defaultValue={lead?.country ?? "Germany"} className={inputCls}>
+            {(Object.keys(COUNTRY_LABEL) as Country[]).map((c) => (
+              <option key={c} value={c}>
+                {COUNTRY_LABEL[c]}
+              </option>
+            ))}
+          </select>
+        </L>
+        {withStatus ? (
+          <L label="Status">'''),
+    ('''      </Group>
+    </>
+  );
+}
+
+const DUPE_FIELDS''', '''      </Group>
+      {withStatus && (
+        <Group
+          title="Einwilligung"
+          desc="Werbeanrufe und Werbe-E-Mails an Privatkunden nur mit vorheriger Einwilligung (DE: § 7 UWG, AT: § 174 TKG 2021). Nachweis mit Quelle dokumentieren."
+        >
+          <L label="Einwilligung zur Kontaktaufnahme">
+            <select name="custom_consent" defaultValue="" className={inputCls}>
+              <option value="">Nicht erfasst</option>
+              <option value="Ja">Ja – liegt vor</option>
+              <option value="Nein">Nein</option>
+            </select>
+          </L>
+          <L label="Nachweis / Quelle">
+            <select name="custom_consent_source" defaultValue="" className={inputCls}>
+              <option value="">–</option>
+              {CONSENT_SOURCES.map((s) => (
+                <option key={s}>{s}</option>
+              ))}
+            </select>
+          </L>
+        </Group>
+      )}
+    </>
+  );
+}
+
+const DUPE_FIELDS'''),
+])
+print("ok")

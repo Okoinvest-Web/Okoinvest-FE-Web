@@ -1,0 +1,221 @@
+-- ====================================================================
+-- Kaufmaennische Ebene: Dossier, Nachhaltigkeit, Alarmierung
+--
+-- Alles, was nicht am Geraet haengt, sondern am Vertrag: Dokumente aus
+-- dem ERP, der Nachweis fuer die Nachhaltigkeitsberichterstattung und
+-- die Frage, wer nachts um drei angerufen wird.
+-- ====================================================================
+
+-- --------------------------------------------------------------------
+-- Digitales Dossier
+--
+-- Die Dokumente entstehen im ERP, nicht hier. Das Portal fuehrt einen
+-- Spiegel: Kennung, Art, Stand und Ablageort. Wer das Dokument selbst
+-- braucht, holt es ueber die Schnittstelle - damit gibt es keine
+-- zweite Wahrheit ueber den Inhalt einer Rechnung.
+-- --------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS dossier_dokument (
+  id            TEXT PRIMARY KEY,
+  anlage_id     TEXT REFERENCES anlage(id),
+  kunde_id      TEXT REFERENCES kunde(id),
+  gruppe        TEXT NOT NULL CHECK (gruppe IN
+                  ('Kaufmaennisch','Rechtlich','Technisch','Wartung','Garantie')),
+  art           TEXT NOT NULL,
+  bezeichnung   TEXT NOT NULL,
+  -- Kennung im ERP. Ueber sie wird das PDF nachgeladen.
+  erp_kennung   TEXT,
+  erp_doctype   TEXT,
+  -- Fuer Nachweise mit Ablaufdatum: Pruefprotokolle, Garantien.
+  ausgestellt_am TEXT,
+  gueltig_bis   TEXT,
+  -- Gesetzlich vorgeschrieben: Fehlt das Dokument, ist die
+  -- Anlagendokumentation unvollstaendig.
+  pflicht       INTEGER NOT NULL DEFAULT 0,
+  norm          TEXT,
+  dateigroesse  INTEGER,
+  seiten        INTEGER,
+  -- Stand der Uebernahme aus dem ERP.
+  sync_stand    TEXT NOT NULL DEFAULT 'Aktuell'
+                  CHECK (sync_stand IN ('Aktuell','Ausstehend','Fehler','Entfallen')),
+  sync_am       TEXT,
+  angelegt_am   TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_dossier_anlage
+  ON dossier_dokument(anlage_id, gruppe);
+
+-- --------------------------------------------------------------------
+-- Nachhaltigkeitsberichterstattung
+--
+-- Die Treibhausgasbilanz eines Betriebs nach dem Greenhouse Gas
+-- Protocol. Scope 1 und 2 kommen aus der Anlagentelemetrie, Scope 3
+-- muss erfasst werden - dafuer gibt es keine Messung.
+--
+-- Die Emissionsfaktoren werden mitgeschrieben und nicht nachgeschlagen:
+-- Der Faktor des oesterreichischen Strommixes aendert sich jaehrlich,
+-- und eine Bilanz von 2024 muss 2027 noch dieselbe Zahl ergeben.
+-- --------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS esg_periode (
+  id           TEXT PRIMARY KEY,
+  kunde_id     TEXT NOT NULL REFERENCES kunde(id),
+  jahr         INTEGER NOT NULL,
+  bezeichnung  TEXT NOT NULL,
+  standard     TEXT NOT NULL DEFAULT 'VSME'
+                 CHECK (standard IN ('VSME','ESRS','CSRD','GHG')),
+  status       TEXT NOT NULL DEFAULT 'Entwurf'
+                 CHECK (status IN ('Entwurf','Geprueft','Freigegeben','Testiert')),
+  -- Ergebnis in Tonnen CO2-Aequivalent.
+  scope1_t     REAL NOT NULL DEFAULT 0,
+  scope2_markt_t REAL NOT NULL DEFAULT 0,
+  scope2_standort_t REAL NOT NULL DEFAULT 0,
+  scope3_t     REAL NOT NULL DEFAULT 0,
+  -- Vermieden durch Eigenerzeugung, nachrichtlich. Gehoert nie in die
+  -- Bilanz selbst: Vermiedene Emissionen sind keine Minderung der
+  -- eigenen.
+  vermieden_t  REAL NOT NULL DEFAULT 0,
+  freigegeben_am TEXT,
+  freigegeben_von TEXT,
+  UNIQUE (kunde_id, jahr, standard)
+);
+
+CREATE TABLE IF NOT EXISTS esg_position (
+  id           TEXT PRIMARY KEY,
+  periode_id   TEXT NOT NULL REFERENCES esg_periode(id) ON DELETE CASCADE,
+  scope        INTEGER NOT NULL CHECK (scope IN (1, 2, 3)),
+  kategorie    TEXT NOT NULL,
+  bezeichnung  TEXT NOT NULL,
+  menge        REAL NOT NULL,
+  einheit      TEXT NOT NULL,
+  faktor       REAL NOT NULL,
+  faktor_einheit TEXT NOT NULL,
+  faktor_quelle TEXT,
+  emission_t   REAL NOT NULL,
+  -- Woher die Menge kommt: gemessen, aus dem ERP, oder erfasst.
+  herkunft     TEXT NOT NULL DEFAULT 'Erfasst'
+                 CHECK (herkunft IN ('Gemessen','ERP','Erfasst','Geschaetzt')),
+  bemerkung    TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_esg_position_periode
+  ON esg_position(periode_id, scope);
+
+-- --------------------------------------------------------------------
+-- Alarmierung
+--
+-- Eine Meldung nuetzt nichts, wenn sie niemanden erreicht. Deshalb
+-- wird mitgefuehrt, ueber welchen Weg zugestellt wurde, ob es
+-- ankam - und was geschieht, wenn nicht.
+-- --------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS bereitschaft (
+  id           TEXT PRIMARY KEY,
+  bezeichnung  TEXT NOT NULL,
+  -- Wochentage als Ziffernfolge, 1 = Montag.
+  wochentage   TEXT NOT NULL DEFAULT '12345',
+  von_stunde   INTEGER NOT NULL DEFAULT 0,
+  bis_stunde   INTEGER NOT NULL DEFAULT 24,
+  -- Rang in der Eskalation: 1 wird zuerst versucht.
+  stufe        INTEGER NOT NULL DEFAULT 1,
+  empfaenger   TEXT NOT NULL,
+  rolle        TEXT,
+  telefon      TEXT,
+  email        TEXT,
+  -- Bevorzugter Weg dieser Stufe.
+  kanal        TEXT NOT NULL DEFAULT 'Push'
+                 CHECK (kanal IN ('Push','WhatsApp','SMS','Anruf','E-Mail','Webhook')),
+  -- Nach wie vielen Minuten ohne Bestaetigung eskaliert wird.
+  eskalation_nach_min INTEGER NOT NULL DEFAULT 15,
+  aktiv        INTEGER NOT NULL DEFAULT 1
+);
+
+CREATE TABLE IF NOT EXISTS benachrichtigung (
+  id            TEXT PRIMARY KEY,
+  anlage_id     TEXT REFERENCES anlage(id),
+  -- Woher die Meldung stammt.
+  quelle        TEXT NOT NULL CHECK (quelle IN
+                  ('Alarm','Drift','Sicherheit','Service','Abrechnung','Markt')),
+  quelle_id     TEXT,
+  dringlichkeit TEXT NOT NULL DEFAULT 'Mittel'
+                  CHECK (dringlichkeit IN ('Niedrig','Mittel','Hoch','Kritisch')),
+  betreff       TEXT NOT NULL,
+  text          TEXT NOT NULL,
+  erzeugt_am    TEXT NOT NULL,
+  -- Zeitpunkt der Bestaetigung durch einen Menschen. Ohne sie laeuft
+  -- die Eskalation weiter.
+  bestaetigt_am TEXT,
+  bestaetigt_von TEXT,
+  -- Erreichte Eskalationsstufe.
+  stufe         INTEGER NOT NULL DEFAULT 1,
+  status        TEXT NOT NULL DEFAULT 'Offen'
+                  CHECK (status IN ('Offen','Zugestellt','Bestaetigt','Eskaliert','Abgebrochen'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_benachrichtigung_zeit
+  ON benachrichtigung(erzeugt_am DESC);
+
+-- Ein Zustellversuch je Weg. Bei einer kritischen Meldung werden
+-- mehrere Wege gleichzeitig bedient - wer im Funkloch steht, bekommt
+-- die Push-Nachricht nicht, das Telefon klingelt aber.
+CREATE TABLE IF NOT EXISTS zustellung (
+  id                 TEXT PRIMARY KEY,
+  benachrichtigung_id TEXT NOT NULL REFERENCES benachrichtigung(id) ON DELETE CASCADE,
+  kanal              TEXT NOT NULL,
+  empfaenger         TEXT NOT NULL,
+  stufe              INTEGER NOT NULL DEFAULT 1,
+  versucht_am        TEXT NOT NULL,
+  zugestellt_am      TEXT,
+  gelesen_am         TEXT,
+  status             TEXT NOT NULL DEFAULT 'Versucht'
+                       CHECK (status IN ('Versucht','Zugestellt','Gelesen','Fehler')),
+  fehler             TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_zustellung_meldung
+  ON zustellung(benachrichtigung_id);
+
+-- --------------------------------------------------------------------
+-- Buchhaltungsexport
+--
+-- Jeder Lauf erzeugt einen Stapel, der genau einmal uebergeben wird.
+-- Ein zweimal eingespielter Stapel doppelt die Umsaetze - deshalb
+-- traegt jeder Lauf eine Nummer und einen Zustand.
+-- --------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS buchungsstapel (
+  id            TEXT PRIMARY KEY,
+  bezeichnung   TEXT NOT NULL,
+  zeitraum_von  TEXT NOT NULL,
+  zeitraum_bis  TEXT NOT NULL,
+  format        TEXT NOT NULL DEFAULT 'BMD_NTCS'
+                  CHECK (format IN ('BMD_NTCS','ERPNext','SEPA_pain008')),
+  status        TEXT NOT NULL DEFAULT 'Entwurf'
+                  CHECK (status IN ('Entwurf','Uebergeben','Storniert')),
+  buchungen     INTEGER NOT NULL DEFAULT 0,
+  summe_soll    REAL NOT NULL DEFAULT 0,
+  summe_haben   REAL NOT NULL DEFAULT 0,
+  erzeugt_am    TEXT NOT NULL,
+  uebergeben_am TEXT,
+  erzeugt_von   TEXT
+);
+
+CREATE TABLE IF NOT EXISTS buchung (
+  id            TEXT PRIMARY KEY,
+  stapel_id     TEXT NOT NULL REFERENCES buchungsstapel(id) ON DELETE CASCADE,
+  belegdatum    TEXT NOT NULL,
+  belegnummer   TEXT NOT NULL,
+  -- Konto und Gegenkonto nach oesterreichischem Einheitskontenrahmen.
+  konto         TEXT NOT NULL,
+  gegenkonto    TEXT NOT NULL,
+  kostenstelle  TEXT,
+  text          TEXT NOT NULL,
+  betrag        REAL NOT NULL,
+  steuersatz    REAL NOT NULL DEFAULT 20,
+  steuercode    TEXT,
+  waehrung      TEXT NOT NULL DEFAULT 'EUR',
+  -- Woher der Umsatz stammt.
+  herkunft      TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_buchung_stapel ON buchung(stapel_id);

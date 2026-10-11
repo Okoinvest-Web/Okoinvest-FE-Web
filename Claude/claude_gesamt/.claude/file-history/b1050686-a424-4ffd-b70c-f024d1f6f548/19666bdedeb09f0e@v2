@@ -1,0 +1,54 @@
+import { Suspense } from "react";
+import type { Metadata } from "next";
+
+import { DEMO_KONTEN, DEMO_PASSWORT, istDemoModus } from "@/lib/demo/modus";
+
+import { LoginForm } from "./login-form";
+
+export const metadata: Metadata = {
+  title: "Anmelden",
+};
+
+export default function LoginSeite() {
+  const demo = istDemoModus();
+
+  return (
+    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-50 px-4 py-12 dark:bg-slate-950">
+      {/* Ruhiger Farbverlauf im Hintergrund - Sonne ueber Horizont. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(60rem_40rem_at_50%_-10rem,theme(colors.amber.200/.55),transparent_60%),radial-gradient(50rem_30rem_at_80%_110%,theme(colors.emerald.200/.45),transparent_60%)] dark:bg-[radial-gradient(60rem_40rem_at_50%_-10rem,theme(colors.amber.500/.12),transparent_60%),radial-gradient(50rem_30rem_at_80%_110%,theme(colors.emerald.500/.12),transparent_60%)]"
+      />
+
+      <div className="relative w-full max-w-sm">
+        <div className="mb-8 text-center">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 to-emerald-500 text-2xl shadow-lg shadow-emerald-500/20">
+            <span aria-hidden>☀</span>
+          </div>
+          <h1 className="mt-4 text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-50">
+            Energieportal
+          </h1>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            Photovoltaik, Ladeinfrastruktur und Abrechnung
+          </p>
+        </div>
+
+        <div className="rounded-2xl border border-slate-200/80 bg-white/90 p-6 shadow-xl shadow-slate-900/5 backdrop-blur dark:border-slate-800 dark:bg-slate-900/90">
+          {/* useSearchParams verlangt eine Suspense-Grenze beim Prerendern. */}
+          <Suspense fallback={null}>
+            <LoginForm
+              demoKonten={demo ? DEMO_KONTEN : []}
+              demoPasswort={DEMO_PASSWORT}
+            />
+          </Suspense>
+        </div>
+
+        <p className="mt-6 text-center text-xs text-slate-400">
+          {demo
+            ? "Demonstrationsbetrieb mit Beispieldaten"
+            : "Anmeldung über Ihr Frappe-Benutzerkonto"}
+        </p>
+      </div>
+    </main>
+  );
+}

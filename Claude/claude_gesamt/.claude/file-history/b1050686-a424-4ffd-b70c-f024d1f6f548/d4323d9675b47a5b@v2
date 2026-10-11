@@ -1,0 +1,160 @@
+/**
+ * Rollen und Rechte im Gewerbekundenportal.
+ *
+ * Anders als bei Privatkunden greifen hier mehrere Personen eines
+ * Unternehmens auf dieselben Anlagen zu - Geschaeftsfuehrung, Technik,
+ * Buchhaltung, Fuhrpark. Sie brauchen unterschiedliche Rechte.
+ *
+ * Diese Datei definiert das Modell. Durchgesetzt wird es serverseitig
+ * (siehe `pruefeRecht`) und zusaetzlich in Frappe ueber Rollen und
+ * User Permissions - das Portal ist nicht die einzige Schutzschicht.
+ */
+
+export type Recht =
+  | "monitoring.lesen"
+  | "anlagen.lesen"
+  | "anlagen.bearbeiten"
+  | "steuerung.lesen"
+  | "steuerung.schreiben"
+  | "fernwartung.anfordern"
+  | "fernwartung.freigeben"
+  | "belege.lesen"
+  | "belege.freigeben"
+  | "shop.bestellen"
+  | "mobilitaet.lesen"
+  | "mobilitaet.verwalten"
+  | "zertifikate.lesen"
+  | "zertifikate.handeln"
+  | "vollmacht.erteilen"
+  | "gemeinschaft.lesen"
+  | "gemeinschaft.verwalten"
+  | "support.melden"
+  | "sicherheit.lesen"
+  | "sicherheit.verwalten"
+  | "benutzer.verwalten";
+
+export interface RollenDefinition {
+  schluessel: string;
+  bezeichnung: string;
+  beschreibung: string;
+  rechte: Recht[];
+}
+
+const ALLE_RECHTE: Recht[] = [
+  "monitoring.lesen",
+  "anlagen.lesen",
+  "anlagen.bearbeiten",
+  "steuerung.lesen",
+  "steuerung.schreiben",
+  "fernwartung.anfordern",
+  "fernwartung.freigeben",
+  "belege.lesen",
+  "belege.freigeben",
+  "shop.bestellen",
+  "mobilitaet.lesen",
+  "mobilitaet.verwalten",
+  "zertifikate.lesen",
+  "zertifikate.handeln",
+  "vollmacht.erteilen",
+  "gemeinschaft.lesen",
+  "gemeinschaft.verwalten",
+  "support.melden",
+  "sicherheit.lesen",
+  "sicherheit.verwalten",
+  "benutzer.verwalten",
+];
+
+export const ROLLEN: RollenDefinition[] = [
+  {
+    schluessel: "geschaeftsfuehrung",
+    bezeichnung: "Geschäftsführung",
+    beschreibung:
+      "Vollzugriff einschließlich Vollmachten, Zertifikatehandel und Benutzerverwaltung.",
+    rechte: ALLE_RECHTE,
+  },
+  {
+    schluessel: "technik",
+    bezeichnung: "Technische Leitung",
+    beschreibung:
+      "Betrieb und Steuerung der Anlagen, Fernwartung anfordern, Störungen bearbeiten.",
+    rechte: [
+      "monitoring.lesen",
+      "anlagen.lesen",
+      "anlagen.bearbeiten",
+      "steuerung.lesen",
+      "steuerung.schreiben",
+      "fernwartung.anfordern",
+      "fernwartung.freigeben",
+      "mobilitaet.lesen",
+      "mobilitaet.verwalten",
+      "gemeinschaft.lesen",
+      "support.melden",
+      "sicherheit.lesen",
+    ],
+  },
+  {
+    schluessel: "buchhaltung",
+    bezeichnung: "Buchhaltung",
+    beschreibung:
+      "Rechnungen, Lieferscheine, Abrechnung der Ladevorgänge und Tankkarten.",
+    rechte: [
+      "monitoring.lesen",
+      "anlagen.lesen",
+      "belege.lesen",
+      "belege.freigeben",
+      "shop.bestellen",
+      "mobilitaet.lesen",
+      "zertifikate.lesen",
+      "gemeinschaft.lesen",
+      "support.melden",
+    ],
+  },
+  {
+    schluessel: "fuhrpark",
+    bezeichnung: "Fuhrparkleitung",
+    beschreibung:
+      "Ladepunkte, Tankkarten und Ladevorgänge der Firmenfahrzeuge.",
+    rechte: [
+      "monitoring.lesen",
+      "mobilitaet.lesen",
+      "mobilitaet.verwalten",
+      "belege.lesen",
+      "support.melden",
+    ],
+  },
+  {
+    schluessel: "betrachter",
+    bezeichnung: "Betrachter",
+    beschreibung: "Nur Lesezugriff auf Monitoring und Anlagendaten.",
+    rechte: ["monitoring.lesen", "anlagen.lesen", "gemeinschaft.lesen"],
+  },
+];
+
+const NACH_SCHLUESSEL = new Map(ROLLEN.map((r) => [r.schluessel, r]));
+
+export function findeRolle(schluessel: string): RollenDefinition | undefined {
+  return NACH_SCHLUESSEL.get(schluessel);
+}
+
+/**
+ * Hat eine der Rollen das verlangte Recht?
+ *
+ * Ohne passende Rolle wird abgelehnt - eine unbekannte Rolle bringt
+ * keine Rechte mit.
+ */
+export function hatRecht(rollen: string[], recht: Recht): boolean {
+  return rollen.some((schluessel) =>
+    findeRolle(schluessel)?.rechte.includes(recht),
+  );
+}
+
+/** Alle Rechte, die sich aus mehreren Rollen zusammen ergeben. */
+export function rechteVon(rollen: string[]): Set<Recht> {
+  const menge = new Set<Recht>();
+  for (const schluessel of rollen) {
+    for (const recht of findeRolle(schluessel)?.rechte ?? []) {
+      menge.add(recht);
+    }
+  }
+  return menge;
+}

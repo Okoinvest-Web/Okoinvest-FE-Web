@@ -1,0 +1,53 @@
+/** UI-Zustand: Theme, Toasts, Navigationszustand. */
+
+import { defineStore } from 'pinia'
+import { ref, watch } from 'vue'
+
+export type ToastArt = 'info' | 'erfolg' | 'warnung' | 'fehler'
+
+export interface Toast {
+  id: number
+  art: ToastArt
+  text: string
+  dauer: number
+}
+
+const THEME_SCHLUESSEL = 'baudoku-theme'
+
+export const useUi = defineStore('ui', () => {
+  /** Dark Mode für Dacharbeiten bei starker Sonneneinstrahlung (NFA-025). */
+  const dunkel = ref(
+    localStorage.getItem(THEME_SCHLUESSEL) === 'dunkel' ||
+      (localStorage.getItem(THEME_SCHLUESSEL) === null &&
+        window.matchMedia('(prefers-color-scheme: dark)').matches),
+  )
+  const toasts = ref<Toast[]>([])
+  const sidebarOffen = ref(false)
+  let naechsteId = 1
+
+  watch(
+    dunkel,
+    (wert) => {
+      document.documentElement.classList.toggle('dark', wert)
+      localStorage.setItem(THEME_SCHLUESSEL, wert ? 'dunkel' : 'hell')
+    },
+    { immediate: true },
+  )
+
+  function toast(text: string, art: ToastArt = 'info', dauer = 4000) {
+    const id = naechsteId++
+    toasts.value.push({ id, art, text, dauer })
+    if (dauer > 0) setTimeout(() => schliessen(id), dauer)
+    return id
+  }
+
+  const erfolg = (text: string) => toast(text, 'erfolg')
+  const warnung = (text: string) => toast(text, 'warnung', 6000)
+  const fehler = (text: string) => toast(text, 'fehler', 8000)
+
+  function schliessen(id: number) {
+    toasts.value = toasts.value.filter((t) => t.id !== id)
+  }
+
+  return { dunkel, toasts, sidebarOffen, toast, erfolg, warnung, fehler, schliessen }
+})

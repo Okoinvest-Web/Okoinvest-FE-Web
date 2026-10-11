@@ -1,0 +1,132 @@
+// Vertriebsintelligenz: Lead-Scoring, nächste Schritte und Deal-Risiken.
+// Reine Regeln ohne externe Dienste, damit Ergebnisse nachvollziehbar bleiben –
+// jeder Wert kommt mit Begründung.
+
+import type { Lead, Opportunity, ToDo } from "@/lib/types";
+import { OPPORTUNITY_STAGES } from "@/lib/types";
+
+const DAY = 86_400_000;
+const ageDays = (iso?: string) => (iso ? Math.floor((Date.now() - new Date(iso).getTime()) / DAY) : 0);
+const isOverdue = (t: ToDo) => t.status === "Open" && !!t.date && new Date(t.date).getTime() < new Date().setHours(0, 0, 0, 0);
+
+export type Level = "good" | "warn" | "risk";
+export type Hint = { level: Level; text: string; action?: { label: string; href: string } };
+
+// ---------- Lead-Scoring ----------
+
+const SOURCE_POINTS: Record<string, number> = { Empfehlung: 25, Website: 20, Messe: 15, LinkedIn: 10, Kaltakquise: 5 };
+const STATUS_POINTS: Record<string, number> = { Lead: 0, Open: 8, Replied: 12, Interested: 20, Opportunity: 22, Quotation: 22 };
+
+export type LeadScore = { score: number; grade: "Heiß" | "Warm" | "Kalt"; reasons: string[] };
+
+export function scoreLead(lead: Lead): LeadScore {
+  if (lead.status === "Do Not Contact") return { score: 0, grade: "Kalt", reasons: ["Möchte nicht kontaktiert werden"] };
+  const reasons: string[] = [];
+  let s = 0;
+  const add = (pts: number, why: string) => {
+    if (pts > 0) {
+      s += pts;
+      reasons.push(`+${pts} ${why}`);
+    }
+  };
+
+  add(SOURCE_POINTS[lead.source ?? ""] ?? 0, `Quelle ${lead.source}`);
+  add(STATUS_POINTS[lead.status] ?? 0, "Gesprächsstand");
+  add(lead.mobile_no ? 15 : 0, "Telefonnummer vorhanden");
+  add(lead.email_id ? 8 : 0, "E-Mail vorhanden");
+  add(lead.company_name ? 10 : 0, "Gewerbe/Landwirtschaft (größeres Volumen)");
+  add(lead.notes && lead.notes.length > 40 ? 7 : 0, "Bedarf dokumentiert");
+
+  const age = ageDays(lead.creation);
+  add(age <= 7 ? 15 : age <= 30 ? 8 : 0, age <= 7 ? "Frische Anfrage" : "Anfrage < 30 Tage");
+  const idle = ageDays(lead.modified);
+  if (idle > 21) {
+    s -= 10;
+    reasons.push(`−10 seit ${idle} Tagen keine Aktivität`);
+  }
+
+  const score = Math.max(0, Math.min(100, s));
+  return { score, grade: score >= 70 ? "Heiß" : score >= 45 ? "Warm" : "Kalt", reasons };
+}
+
+// ---------- Nächste Schritte für Leads ----------
+
+export function leadHints(lead: Lead, opps: Opportunity[], todos: ToDo[]): Hint[] {
+  if (lead.status === "Converted" || lead.status === "Do Not Contact") return [];
+  const out: Hint[] = [];
+  const enc = encodeURIComponent(lead.name);
+  const openTodos = todos.filter((t) => t.status === "Open");
+  const overdue = todos.filter(isOverdue).length;
+  const age = ageDays(lead.creation);
+  const idle = ageDays(lead.modified);
+
+  if (lead.status === "Lead" && age >= 1)
+    out.push({ level: age > 2 ? "risk" : "warn", text: `Seit ${age} ${age === 1 ? "Tag" : "Tagen"} unbearbeitet – Anfragen innerhalb von 24 h zurückrufen erhöht die Abschlussquote deutlich.` });
+  if (overdue > 0) out.push({ level: "risk", text: `${overdue} überfällige ${overdue === 1 ? "Aufgabe" : "Aufgaben"}.` });
+  if (idle > 14 && lead.status !== "Lead") out.push({ level: "warn", text: `Seit ${idle} Tagen keine Aktivität – nachfassen.` });
+  if (!lead.mobile_no) out.push({ level: "warn", text: "Keine Telefonnummer – für Beratungstermin ergänzen.", action: { label: "Ergänzen", href: `/leads/${enc}/edit` } });
+  if (opps.length === 0 && ["Interested", "Replied", "Opportunity"].includes(lead.status))
+    out.push({ level: "good", text: "Interesse bestätigt – jetzt Chance mit Anlagengröße und Budget anlegen.", action: { label: "Chance anlegen", href: `/opportunities/new?from=Lead&party=${enc}` } });
+  if (openTodos.length === 0) out.push({ level: "warn", text: "Kein nächster Schritt geplant – Rückruf oder Vor-Ort-Termin als Aufgabe anlegen." });
+  return out;
+}
+
+// ---------- Deal-Risiko ----------
+
+// Erwartete Wahrscheinlichkeit je Phase, um unplausible Prognosen zu erkennen
+const STAGE_PROB = [10, 25, 40, 60, 80];
+
+export type DealHealth = { level: Level; hints: Hint[] };
+
+export function dealHealth(opp: Opportunity, todos: ToDo[]): DealHealth {
+  if (opp.status !== "Open" && opp.status !== "Quotation") return { level: "good", hints: [] };
+  const hints: Hint[] = [];
+  const now = new Date().setHours(0, 0, 0, 0);
+  const closing = opp.expected_closing ? new Date(opp.expected_closing).getTime() : undefined;
+  const mine = todos.filter((t) => t.reference_name === opp.name);
+  const idle = ageDays(opp.modified);
+
+  if (!closing) hints.push({ level: "warn", text: "Kein Abschlussdatum – Prognose unvollständig." });
+  else if (closing < now) hints.push({ level: "risk", text: `Abschlussdatum seit ${Math.round((now - closing) / DAY)} Tagen überschritten – aktualisieren oder als verloren markieren.` });
+  else if (closing - now <= 14 * DAY && opp.probability < 50)
+    hints.push({ level: "warn", text: `Abschluss in ${Math.round((closing - now) / DAY)} Tagen, aber nur ${opp.probability} % Wahrscheinlichkeit.` });
+
+  if (idle > 14) hints.push({ level: idle > 30 ? "risk" : "warn", text: `Stillstand seit ${idle} Tagen.` });
+  if (mine.filter(isOverdue).length > 0) hints.push({ level: "risk", text: "Überfällige Aufgaben zu dieser Chance." });
+  if (!mine.some((t) => t.status === "Open")) hints.push({ level: "warn", text: "Kein nächster Schritt geplant." });
+
+  const idx = OPPORTUNITY_STAGES.indexOf(opp.sales_stage as (typeof OPPORTUNITY_STAGES)[number]);
+  if (idx >= 0 && Math.abs(opp.probability - STAGE_PROB[idx]) >= 30)
+    hints.push({ level: "warn", text: `Wahrscheinlichkeit ${opp.probability} % passt nicht zur Phase (üblich ~${STAGE_PROB[idx]} %).` });
+
+  const level: Level = hints.some((h) => h.level === "risk") ? "risk" : hints.length > 0 ? "warn" : "good";
+  return { level, hints };
+}
+
+// ---------- Anlagendaten aus Freitext ----------
+
+// Liest "12,4 kWp" und "10 kWh" aus Titeln/Notizen, um den PV-Rechner vorzubelegen
+export function parsePv(text = "") {
+  const num = (re: RegExp) => {
+    const m = text.match(re);
+    // "1.500" = Tausenderpunkt, "12,4" = Dezimalkomma
+    return m ? parseFloat(m[1].replace(/\.(?=\d{3}\b)/, "").replace(",", ".")) : undefined;
+  };
+  return { kwp: num(/(\d+(?:[.,]\d+)?)\s*kWp/i), storage: num(/(\d+(?:[.,]\d+)?)\s*kWh(?!\s*\/)/i) };
+}
+
+// ---------- Wochenreihen für Sparklines ----------
+
+// Summiert Werte je Kalenderwoche (älteste zuerst), z. B. neue Leads oder neues Pipeline-Volumen
+export function weekly<T>(rows: T[], when: (r: T) => string | undefined, value: (r: T) => number = () => 1, weeks = 8) {
+  const now = Date.now();
+  const out = Array.from({ length: weeks }, () => 0);
+  for (const r of rows) {
+    const t = when(r);
+    if (!t) continue;
+    const idx = weeks - 1 - Math.floor((now - new Date(t).getTime()) / (7 * DAY));
+    if (idx >= 0 && idx < weeks) out[idx] += value(r);
+  }
+  const labels = out.map((_, i) => (i === weeks - 1 ? "Diese Woche" : `Vor ${weeks - 1 - i} Wo.`));
+  return { values: out, labels };
+}

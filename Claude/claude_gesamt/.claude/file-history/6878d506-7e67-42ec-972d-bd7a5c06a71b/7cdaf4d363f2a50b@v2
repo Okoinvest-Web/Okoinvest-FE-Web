@@ -1,0 +1,30 @@
+import "server-only";
+import { cache } from "react";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import { SESSION_COOKIE, verifySession } from "@/lib/session-token";
+import type { SessionUser } from "@/lib/types";
+
+// Data Access Layer: jede Seite und jede Server Action prüft die Session selbst.
+// Der Proxy leitet nur vorab um und ist nicht die einzige Schutzschicht.
+
+const getSession = cache(async () => verifySession((await cookies()).get(SESSION_COOKIE)?.value));
+
+// Öffentliche Nutzerdaten ohne ERPNext-Sitzung – dürfen an Client-Komponenten
+export const getUser = cache(async (): Promise<SessionUser | null> => {
+  const s = await getSession();
+  return s ? { user: s.user, fullName: s.fullName, role: s.role } : null;
+});
+
+// ERPNext-Sitzung des angemeldeten Nutzers – nur für den Datenzugriff auf dem Server
+export async function getErpSid() {
+  return (await getSession())?.sid;
+}
+
+export async function requireUser() {
+  const user = await getUser();
+  if (!user) redirect("/login");
+  return user;
+}
+
+export const isManager = (u: SessionUser | null) => u?.role === "manager";

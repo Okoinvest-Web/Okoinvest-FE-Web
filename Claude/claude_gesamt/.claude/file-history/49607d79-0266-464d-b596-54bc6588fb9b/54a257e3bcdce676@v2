@@ -1,0 +1,252 @@
+/**
+ * Sind die Sicherungssysteme erreichbar, und was melden sie?
+ *
+ * ## Warum das oben auf die Seite gehört
+ *
+ * Alle anderen Zahlen der Backup-Seite stammen aus dem, was die Konnektoren
+ * zuletzt gemeldet haben. Antwortet ein System nicht mehr, zeigt die Seite
+ * **weiter die alten Werte** – und sieht dabei genauso aus wie vorher. Das
+ * ist der gefährlichste Zustand einer Überwachung: nicht der rote Punkt,
+ * sondern der grüne, der eingefroren ist.
+ *
+ * Deshalb steht hier zuerst das Alter der Meldung und erst danach ihr
+ * Inhalt.
+ *
+ * ## Zwei Logquellen
+ *
+ * Das Aufgabenprotokoll des Systems sagt, **dass** etwas schiefging. Das
+ * Syslog daneben sagt oft, **warum** – ein PBS meldet „verify failed", und
+ * die erklärende Zeile ist ein `critical medium error` vom Kernel. Wer
+ * dafür zwei Fenster aufmachen muss, liest das zweite nicht.
+ */
+import { table } from '../db.js'
+import { alterStunden } from '../zeit.js'
+import { zielart } from './backup-steuerung.js'
+
+/** RFC 5424. rsyslog liefert Zahlen; hier bekommen sie Namen. */
+export const SCHWEREGRADE = {
+  0: { kurz: 'emerg', label: 'Notfall', level: 'critical' },
+  1: { kurz: 'alert', label: 'Alarm', level: 'critical' },
+  2: { kurz: 'crit', label: 'Kritisch', level: 'critical' },
+  3: { kurz: 'err', label: 'Fehler', level: 'critical' },
+  4: { kurz: 'warning', label: 'Warnung', level: 'warning' },
+  5: { kurz: 'notice', label: 'Hinweis', level: 'ok' },
+  6: { kurz: 'info', label: 'Information', level: 'ok' },
+  7: { kurz: 'debug', label: 'Fehlersuche', level: 'neutral' },
+}
+
+/** Ab hier gilt eine Meldung als Problem. */
+const PROBLEM_AB = 4
+
+// --- Erreichbarkeit ---------------------------------------------------------
+
+/**
+ * Ein Zustand je Sicherungssystem: erreichbar, wie frisch, was zuletzt.
+ *
+ * Geht bewusst vom **Konnektor** aus, nicht vom Ziel: ein Ziel kann
+ * tadellos aussehen, weil seit zwei Tagen niemand nachgesehen hat.
+ */
+export function backup_health({ tenant = null } = {}) {
+  const ziele = table('Backup Target').filter((t) => !tenant || t.tenant === tenant)
+  const logs = table('Backup Log Entry')
+  const arten = new Set(ziele.map((t) => t.kind))
+
+  const zeilen = table('Connector')
+    .filter((c) => arten.has(c.kind) || c.kind === 'rsyslog')
+    .map((c) => {
+      const meine = ziele.filter((t) => t.connector === c.name)
+      const alter = c.last_run ? Math.round(alterStunden(c.last_run) * 10) / 10 : null
+      const takt = c.interval_minutes || 60
+      // Zweifacher Takt als Grenze: ein einzelner verpasster Lauf ist
+      // Betrieb, zwei sind ein Muster.
+      const ueberfaellig = alter !== null && alter * 60 > takt * 2
+      const nieGelaufen = !c.last_run
+
+      const meldungen = logs.filter(
+        (l) => l.connector === c.name && alterStunden(l.logged_at) <= 24,
+      )
+      const fehler = meldungen.filter((l) => l.severity <= 3).length
+      const warnungen = meldungen.filter((l) => l.severity === PROBLEM_AB).length
+
+      const gruende = []
+      if (!c.enabled) gruende.push('Konnektor abgeschaltet')
+      else if (nieGelaufen) gruende.push('Noch nie gelaufen')
+      else if (c.last_status === 'error') gruende.push('Letzter Abruf mit Fehler')
+      else if (ueberfaellig) {
+        gruende.push(`Seit ${alter} h keine Meldung – Takt ist ${takt} min`)
+      }
+      if (fehler) gruende.push(`${fehler} Fehlermeldungen in 24 h`)
+      else if (warnungen) gruende.push(`${warnungen} Warnungen in 24 h`)
+
+      // Nicht erreichbar wiegt schwerer als eine Fehlermeldung: eine
+      // Fehlermeldung heißt, dass jemand hinsieht.
+      const stufe = !c.enabled
+        ? 'neutral'
+        : nieGelaufen || c.last_status === 'error' || ueberfaellig
+          ? 'critical'
+          : fehler
+            ? 'critical'
+            : warnungen
+              ? 'warning'
+              : 'ok'
+
+      return {
+        connector: c.name,
+        connector_name: c.connector_name,
+        kind: c.kind,
+        label: zielart(c.kind)?.label || c.kind,
+        base_url: c.base_url,
+        enabled: !!c.enabled,
+        read_only: !!c.read_only,
+        reachable: !!c.enabled && !nieGelaufen && c.last_status !== 'error' && !ueberfaellig,
+        last_run: c.last_run,
+        age_hours: alter,
+        interval_minutes: takt,
+        overdue: ueberfaellig,
+        last_status: c.last_status,
+        api_version: c.api_version,
+        targets: meine.map((t) => t.target_name),
+        errors_24h: fehler,
+        warnings_24h: warnungen,
+        // Die jüngste Fehlermeldung gehört neben die Ampel, nicht drei
+        // Klicks weiter.
+        latest_problem:
+          meldungen
+            .filter((l) => l.severity <= PROBLEM_AB)
+            .sort((a, b) => String(b.logged_at).localeCompare(String(a.logged_at)))[0]?.message ||
+          null,
+        reasons: gruende,
+        level: stufe,
+      }
+    })
+    .sort((a, b) => {
+      const rang = { critical: 4, warning: 3, ok: 2, neutral: 1 }
+      return rang[b.level] - rang[a.level] || a.connector_name.localeCompare(b.connector_name)
+    })
+
+  const erreichbar = zeilen.filter((z) => z.reachable).length
+  const blind = zeilen.filter((z) => z.enabled && !z.reachable)
+
+  return {
+    summary: {
+      systems: zeilen.length,
+      reachable: erreichbar,
+      unreachable: blind.length,
+      errors_24h: zeilen.reduce((s, z) => s + z.errors_24h, 0),
+      warnings_24h: zeilen.reduce((s, z) => s + z.warnings_24h, 0),
+      // Der Satz, der auf die Seite gehört, wenn etwas blind ist.
+      stale_warning: blind.length
+        ? `Von ${blind.map((z) => z.connector_name).join(', ')} kommt nichts mehr – ` +
+          'die Zahlen auf dieser Seite sind dort so alt wie die letzte Meldung.'
+        : null,
+      level: blind.length
+        ? 'critical'
+        : zeilen.some((z) => z.level === 'critical')
+          ? 'critical'
+          : zeilen.some((z) => z.level === 'warning')
+            ? 'warning'
+            : 'ok',
+    },
+    rows: zeilen,
+  }
+}
+
+// --- Meldungen --------------------------------------------------------------
+
+/**
+ * Die Meldungen der Sicherungssysteme, aus beiden Quellen.
+ *
+ * `max_severity` filtert nach RFC-5424-Zahl: 3 heißt „Fehler und
+ * schlimmer", 4 nimmt Warnungen dazu.
+ */
+export function backup_logs({
+  target = null,
+  connector = null,
+  source = null,
+  max_severity = null,
+  since_hours = null,
+  search = null,
+  limit = 200,
+  tenant = null,
+} = {}) {
+  const ziele = new Map(table('Backup Target').map((t) => [t.name, t]))
+  const begriff = search ? String(search).toLowerCase() : null
+
+  const alle = table('Backup Log Entry')
+    .filter((l) => !tenant || l.tenant === tenant)
+    .filter((l) => !target || l.target === target)
+    .filter((l) => !connector || l.connector === connector)
+    .filter((l) => !source || l.source === source)
+    .filter((l) => max_severity === null || l.severity <= Number(max_severity))
+    .filter((l) => since_hours === null || alterStunden(l.logged_at) <= Number(since_hours))
+    .filter(
+      (l) =>
+        !begriff ||
+        String(l.message).toLowerCase().includes(begriff) ||
+        String(l.program || '')
+          .toLowerCase()
+          .includes(begriff) ||
+        String(l.host || '')
+          .toLowerCase()
+          .includes(begriff),
+    )
+
+  const zeilen = alle
+    .map((l) => {
+      const grad = SCHWEREGRADE[l.severity] || SCHWEREGRADE[6]
+      return {
+        ...l,
+        severity_label: grad.label,
+        severity_short: grad.kurz,
+        level: grad.level,
+        source_label: l.source === 'syslog' ? 'Syslog' : 'Aufgabenprotokoll',
+        target_label: l.target ? ziele.get(l.target)?.target_name || l.target : null,
+        age_hours: Math.round(alterStunden(l.logged_at) * 10) / 10,
+      }
+    })
+    .sort((a, b) => String(b.logged_at).localeCompare(String(a.logged_at)))
+
+  return {
+    summary: {
+      count: zeilen.length,
+      shown: Math.min(zeilen.length, limit),
+      errors: zeilen.filter((z) => z.severity <= 3).length,
+      warnings: zeilen.filter((z) => z.severity === 4).length,
+      from_syslog: zeilen.filter((z) => z.source === 'syslog').length,
+      from_api: zeilen.filter((z) => z.source === 'api').length,
+      hosts: [...new Set(zeilen.map((z) => z.host).filter(Boolean))],
+      programs: [...new Set(zeilen.map((z) => z.program).filter(Boolean))].sort(),
+    },
+    rows: zeilen.slice(0, limit),
+  }
+}
+
+/**
+ * Meldungen rund um einen Zeitpunkt – aus allen Quellen.
+ *
+ * Für den Fall, den man tatsächlich hat: ein Lauf ist um 02:14
+ * fehlgeschlagen, und die Frage ist, was **sonst noch** in diesen Minuten
+ * passiert ist. Ein Filter auf das eine System beantwortet das nicht.
+ */
+export function backup_log_context({ at = null, window_minutes = 30, host = null } = {}) {
+  if (!at) return { summary: { count: 0 }, rows: [] }
+  const mitte = alterStunden(at)
+  const fenster = Number(window_minutes) / 60
+
+  const alle = backup_logs({ limit: 1000 }).rows.filter((l) => {
+    const d = Math.abs(alterStunden(l.logged_at) - mitte)
+    return d <= fenster && (!host || l.host === host)
+  })
+
+  return {
+    summary: {
+      count: alle.length,
+      at,
+      window_minutes: Number(window_minutes),
+      hosts: [...new Set(alle.map((z) => z.host).filter(Boolean))],
+      // Die Frage hinter dem Fenster.
+      worst: alle.reduce((m, z) => (z.severity < m ? z.severity : m), 7),
+    },
+    rows: alle,
+  }
+}

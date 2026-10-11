@@ -1,0 +1,63 @@
+import { Suspense } from "react";
+import { Package } from "lucide-react";
+import { db } from "@/lib/data";
+import { money } from "@/lib/format";
+import { Empty, PageHeader } from "@/components/ui";
+import { ListToolbar } from "@/components/ListToolbar";
+
+export const metadata = { title: "Produkte" };
+
+function Stock({ qty }: { qty?: number }) {
+  if (qty === undefined) return <span className="text-[12px] text-gray-400">Dienstleistung</span>;
+  const [dot, text] = qty === 0 ? ["bg-rose-500", "Nicht vorrätig"] : qty <= 5 ? ["bg-amber-500", `Knapp · ${qty}`] : ["bg-brand-500", `Auf Lager · ${qty}`];
+  return (
+    <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-[12px] text-gray-600">
+      <span className={`size-1.5 rounded-full ${dot}`} /> {text}
+    </span>
+  );
+}
+
+// Katalog aus ERPNext: Artikel, Verkaufspreis (netto) und Lagerbestand – gruppiert nach Artikelgruppe
+export default async function ProductsPage({ searchParams }: PageProps<"/products">) {
+  const sp = await searchParams;
+  const items = await db().listItems({ search: typeof sp.q === "string" ? sp.q : undefined, limit: 500 });
+  const groups = [...new Set(items.map((i) => i.item_group))];
+
+  return (
+    <>
+      <PageHeader title="Produkte" subtitle="Preise netto aus der Verkaufspreisliste, Bestand aus dem Lager" />
+      <Suspense>
+        <ListToolbar count={items.length} />
+      </Suspense>
+      {items.length === 0 && <Empty icon={Package}>Keine Artikel gefunden.</Empty>}
+      {groups.map((g) => (
+        <section key={g}>
+          <h2 className="sticky top-[52px] z-10 flex h-9 items-center gap-2 border-b border-gray-150 bg-gray-50/95 px-4 text-[12px] font-semibold text-gray-900 backdrop-blur sm:px-6">
+            {g}
+            <span className="font-normal text-gray-400">{items.filter((i) => i.item_group === g).length}</span>
+          </h2>
+          <ul className="divide-y divide-gray-100">
+            {items
+              .filter((i) => i.item_group === g)
+              .map((i) => (
+                <li key={i.item_code} className="flex items-center gap-4 px-4 py-3 sm:px-6">
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate font-medium text-gray-900">{i.item_name}</div>
+                    <div className="text-[12px] text-gray-500">
+                      {i.item_code}
+                      {i.kwp ? ` · ${(i.kwp * 1000).toLocaleString("de-DE")} Wp` : ""}
+                    </div>
+                  </div>
+                  <Stock qty={i.stock_qty} />
+                  <div className="w-32 text-right">
+                    <div className="tnum font-medium text-gray-900">{money(i.rate)}</div>
+                    <div className="text-[12px] text-gray-400">je {i.stock_uom}</div>
+                  </div>
+                </li>
+              ))}
+          </ul>
+        </section>
+      ))}
+    </>
+  );
+}

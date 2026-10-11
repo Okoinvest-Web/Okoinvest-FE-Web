@@ -1,0 +1,99 @@
+<template>
+  <div>
+    <PageHeader title="VLANs" :subtitle="untertitel">
+      <template #actions>
+        <FormControl v-model="zone" type="select" :options="zonenOptionen" />
+      </template>
+    </PageHeader>
+
+    <div class="p-6">
+      <DataTable
+        tabellen-id="VlanList"
+        :columns="spalten"
+        :rows="vlans.data || []"
+        :loading="vlans.loading"
+        empty-text="Kein VLAN mit diesem Filter."
+      >
+        <template #zelle-vid="{ zeile }">
+          <span class="font-medium tabular-nums text-ink-gray-9">{{ zeile.vid }}</span>
+        </template>
+        <template #zelle-vlan_name="{ zeile }">
+          <span class="block text-ink-gray-9">{{ zeile.vlan_name }}</span>
+          <span class="block text-sm text-ink-gray-5">{{ zeile.description }}</span>
+        </template>
+        <template #zelle-security_zone="{ zeile }">
+          <Badge :theme="zoneTheme(zeile.security_zone)">
+            {{ valueLabel('security_zone', zeile.security_zone) }}
+          </Badge>
+        </template>
+        <template #zelle-prefixes="{ zeile }">
+          <span v-if="!zeile.prefixes.length" class="text-ink-gray-4">–</span>
+          <span v-else class="tabular-nums">{{ zeile.prefixes.join(', ') }}</span>
+        </template>
+        <template #zelle-devices="{ zeile }">
+          <span v-if="!zeile.devices.length" class="text-ink-gray-4">–</span>
+          <span v-else>{{ zeile.devices.join(', ') }}</span>
+        </template>
+        <template #zelle-verwendung="{ zeile }">
+          <StatusDot
+            v-if="zeile.unused"
+            level="warning"
+            text="ungenutzt"
+            klein
+            titel="Weder ein Port noch ein Präfix verweist auf dieses VLAN"
+          />
+          <StatusDot v-else level="ok" :text="zeile.port_count + ' Ports'" klein />
+        </template>
+      </DataTable>
+
+      <p class="mt-3 text-xs text-ink-gray-4">
+        „Ungenutzt“ heißt: dokumentiert, aber weder einem Port noch einem Präfix zugeordnet. Das ist
+        kein Fehler, sondern ein Hinweis – etwa auf ein geplantes oder ein vergessenes Segment.
+      </p>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed, ref, watch } from 'vue'
+import { Badge, FormControl, createResource } from 'frappe-ui'
+import PageHeader from '@/components/PageHeader.vue'
+import DataTable from '@/components/DataTable.vue'
+import StatusDot from '@/components/StatusDot.vue'
+import { valueLabel, zoneTheme } from '@/labels'
+
+const zone = ref('')
+
+const vlans = createResource({
+  url: 'netops.api.ipam.vlan_list',
+  makeParams: () => ({ security_zone: zone.value || null }),
+  auto: true,
+})
+
+watch(zone, () => vlans.fetch())
+
+const zonenOptionen = [
+  { label: 'Alle Schutzzonen', value: '' },
+  { label: 'Management', value: 'management' },
+  { label: 'Intern', value: 'internal' },
+  { label: 'DMZ', value: 'dmz' },
+  { label: 'OT', value: 'ot' },
+  { label: 'SOC', value: 'soc' },
+  { label: 'Gast', value: 'guest' },
+]
+
+const spalten = [
+  { key: 'vid', label: 'VID', align: 'right', width: '70px' },
+  { key: 'vlan_name', label: 'Name', width: '280px' },
+  { key: 'security_zone', label: 'Schutzzone', width: '140px' },
+  { key: 'prefixes', label: 'Präfixe', width: '180px' },
+  { key: 'devices', label: 'Geräte' },
+  { key: 'verwendung', label: 'Verwendung', width: '150px' },
+]
+
+const untertitel = computed(() => {
+  const liste = vlans.data || []
+  const ungenutzt = liste.filter((v) => v.unused).length
+  return liste.length + ' VLANs · ' + ungenutzt + ' ohne Verwendung'
+})
+</script>

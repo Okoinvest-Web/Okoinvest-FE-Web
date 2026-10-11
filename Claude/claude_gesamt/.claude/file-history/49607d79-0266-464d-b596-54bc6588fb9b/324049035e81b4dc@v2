@@ -1,0 +1,222 @@
+/**
+ * Meldungen der Sicherungssysteme.
+ *
+ * Zwei Quellen, ein DocType:
+ *
+ *   **Aufgabenprotokolle** – was PBS, NAKIVO, Drive und S3 über ihre eigene
+ *   API herausgeben. Bezug auf einen Auftrag oder Lauf.
+ *
+ *   **rsyslog** – das zentrale Syslog. Dort steht, was auf dem Gerät selbst
+ *   passiert ist: ein voller Datenträger, ein Bandfehler, ein abgelehnter
+ *   Token. Oft **bevor** es als Fehlversuch in einer Statistik auftaucht.
+ *
+ * Der Grund, beides zusammenzuführen: Ein PBS meldet „Verify failed", und
+ * der interessante Satz steht im Syslog daneben – `scsi: Medium Error`. Wer
+ * für die beiden Quellen zwei Fenster aufmachen muss, liest das zweite
+ * nicht.
+ *
+ * Schweregrade nach RFC 5424 (0 emerg … 7 debug), weil rsyslog sie so
+ * liefert. Die Oberfläche fasst sie zusammen, der Datensatz behält sie.
+ */
+import { defineDoctype } from './db.js'
+import { stundenVersetzt } from './zeit.js'
+
+const AT = 'TEN-0001'
+
+defineDoctype('Backup Log Entry', {
+  naming: (doc, i) => 'BLOG-' + String(i).padStart(6, '0'),
+  titleField: 'message',
+  fields: [
+    'logged_at',
+    // Woher: 'api' (Aufgabenprotokoll des Systems) oder 'syslog'
+    'source',
+    'connector',
+    'target',
+    'host',
+    // Syslog-Programm bzw. API-Aufgabenart
+    'program',
+    // RFC 5424: 0 emerg, 1 alert, 2 crit, 3 err, 4 warning, 5 notice, 6 info, 7 debug
+    'severity',
+    'facility',
+    'task_ref',
+    'message',
+  ],
+  seed: [
+    // --- PBS: ein Verify-Fehler und die Zeile, die ihn erklärt
+    {
+      logged_at: stundenVersetzt(-2.2),
+      source: 'api',
+      connector: 'pbs-srv-pbs-01',
+      target: 'pbs-ds-main',
+      host: 'srv-pbs-01',
+      program: 'verify',
+      severity: 3,
+      task_ref: 'UPID:srv-pbs-01:00012A4F:verify:ds-main',
+      message: 'verify group vm/102 failed - chunk 9f3a…c21 corrupt',
+      tenant: AT,
+    },
+    {
+      logged_at: stundenVersetzt(-2.25),
+      source: 'syslog',
+      connector: 'rsyslog-zentral',
+      target: 'pbs-ds-main',
+      host: 'srv-pbs-01',
+      program: 'kernel',
+      severity: 2,
+      facility: 'kern',
+      // Die Zeile, die den Verify-Fehler erst verständlich macht.
+      message: 'blk_update_request: critical medium error, dev sdd, sector 1904862720',
+      tenant: AT,
+    },
+    {
+      logged_at: stundenVersetzt(-2.4),
+      source: 'syslog',
+      connector: 'rsyslog-zentral',
+      target: 'pbs-ds-main',
+      host: 'srv-pbs-01',
+      program: 'smartd',
+      severity: 4,
+      facility: 'daemon',
+      message: 'Device: /dev/sdd, 24 Currently unreadable (pending) sectors',
+      tenant: AT,
+    },
+
+    // --- NAKIVO: abgelehnter Token
+    {
+      logged_at: stundenVersetzt(-5),
+      source: 'api',
+      connector: 'nakivo-bnr-01',
+      target: 'nakivo-repo-01',
+      host: 'nakivo.oekovolt.test',
+      program: 'job',
+      severity: 4,
+      task_ref: 'job/17/run/2261',
+      message: 'Job "Dateifreigaben" completed with warnings: 3 files skipped (in use)',
+      tenant: AT,
+    },
+    {
+      logged_at: stundenVersetzt(-26),
+      source: 'api',
+      connector: 'nakivo-bnr-01',
+      target: 'nakivo-repo-passau',
+      host: 'nakivo.oekovolt.test',
+      program: 'transporter',
+      severity: 3,
+      message: 'Transporter "Passau" unreachable - connection timed out after 60s',
+      tenant: AT,
+    },
+    {
+      logged_at: stundenVersetzt(-26.1),
+      source: 'syslog',
+      connector: 'rsyslog-zentral',
+      target: 'nakivo-repo-passau',
+      host: 'nas-tn-01',
+      program: 'sshd',
+      severity: 5,
+      facility: 'auth',
+      message: 'Connection closed by authenticating user netops-ro 10.20.4.11 port 52244',
+      tenant: AT,
+    },
+
+    // --- Speicher wird eng
+    {
+      logged_at: stundenVersetzt(-8),
+      source: 'syslog',
+      connector: 'rsyslog-zentral',
+      target: 'nakivo-repo-passau',
+      host: 'nas-tn-01',
+      program: 'zfs',
+      severity: 4,
+      facility: 'daemon',
+      message: 'pool "tank" is 86% full - performance degrades beyond 90%',
+      tenant: AT,
+    },
+
+    // --- Bandlaufwerk
+    {
+      logged_at: stundenVersetzt(-30),
+      source: 'syslog',
+      connector: 'rsyslog-zentral',
+      target: 'lto-archiv',
+      host: 'srv-pbs-01',
+      program: 'kernel',
+      severity: 4,
+      facility: 'kern',
+      message: 'st0: Cleaning requested - drive reports TapeAlert flag 20 (clean now)',
+      tenant: AT,
+    },
+    {
+      logged_at: stundenVersetzt(-29),
+      source: 'api',
+      connector: 'pbs-srv-pbs-01',
+      target: 'lto-archiv',
+      host: 'srv-pbs-01',
+      program: 'tape-backup',
+      severity: 6,
+      task_ref: 'UPID:srv-pbs-01:00012B10:tape-backup:woche-38',
+      message: 'tape backup finished: 14.2 TB written to OEK038L9, 212 minutes',
+      tenant: AT,
+    },
+
+    // --- Die ruhigen Meldungen, damit die Liste nicht nur aus Fehlern besteht
+    {
+      logged_at: stundenVersetzt(-1),
+      source: 'api',
+      connector: 'pbs-srv-pbs-01',
+      target: 'pbs-ds-main',
+      host: 'srv-pbs-01',
+      program: 'backup',
+      severity: 6,
+      task_ref: 'UPID:srv-pbs-01:00012C88:backup:vm/101',
+      message: 'backup vm/101-erp finished: 41.2 GB in 19 minutes',
+      tenant: AT,
+    },
+    {
+      logged_at: stundenVersetzt(-7),
+      source: 'api',
+      connector: 'pbs-srv-pbs-01',
+      target: 'pbs-ds-offsite',
+      host: 'srv-pbs-01',
+      program: 'sync',
+      severity: 6,
+      task_ref: 'UPID:srv-pbs-01:00012B99:sync:offsite',
+      message: 'sync job "offsite" finished: 88 snapshots, 0 errors',
+      tenant: AT,
+    },
+    {
+      logged_at: stundenVersetzt(-14),
+      source: 'api',
+      connector: 'frappe-drive-01',
+      target: 'drive-betriebsdoku',
+      host: 'drive.oekovolt.test',
+      program: 'export',
+      severity: 6,
+      message: 'export finished: 4 files, 348 MB to /NetOps/Sicherungen',
+      tenant: AT,
+    },
+    {
+      logged_at: stundenVersetzt(-26.5),
+      source: 'api',
+      connector: 's3-archiv',
+      target: 's3-archiv-eu',
+      host: 's3.eu-central-1.amazonaws.com',
+      program: 'archive',
+      severity: 6,
+      message:
+        'PutObject mail/2026-09.tar.zst 620.5 GB, storage class GLACIER_IR, object lock until 2033-08-31',
+      tenant: AT,
+    },
+    {
+      logged_at: stundenVersetzt(-0.3),
+      source: 'syslog',
+      connector: 'rsyslog-zentral',
+      target: null,
+      host: 'srv-pbs-01',
+      program: 'proxmox-backup-proxy',
+      severity: 6,
+      facility: 'daemon',
+      message: 'GET /api2/json/status/datastore-usage 200 - 12ms',
+      tenant: AT,
+    },
+  ],
+})

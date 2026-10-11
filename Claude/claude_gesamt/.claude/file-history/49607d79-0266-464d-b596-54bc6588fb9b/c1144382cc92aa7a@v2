@@ -1,0 +1,191 @@
+/**
+ * Dienste und Abhängigkeiten (Fachkonzept 2.9).
+ *
+ * Zwei Fragen beantwortet dieser Bereich:
+ *   "Was fällt aus, wenn X ausfällt?"  – die Auswirkungsanalyse
+ *   "Wovon hängt X ab?"                – die Abhängigkeitskette
+ *
+ * Grundlage ist der Graph aus `Object Relation`. Leserichtung ist immer
+ * "from hängt ab von to"; die Auswirkung ist also der Weg gegen die Kanten.
+ */
+import { FrappeMockError, table } from '../db.js'
+
+const KRITIKALITAET_RANG = { critical: 0, high: 1, medium: 2, low: 3 }
+
+/** Nur Beziehungen, die eine Abhängigkeit ausdrücken - nicht "dokumentiert". */
+const ABHAENGIGKEITS_TYPEN = new Set(['depends_on', 'runs_on', 'stores_on', 'connected_via'])
+
+function baueGraph() {
+  const kanten = table('Object Relation').filter((r) =>
+    ABHAENGIGKEITS_TYPEN.has(r.relation_type),
+  )
+
+  /** Wovon hängt ein Knoten ab? */
+  const abwaerts = new Map()
+  /** Wer hängt von einem Knoten ab? */
+  const aufwaerts = new Map()
+
+  // Trennzeichen, das in keinem DocType- oder Dokumentnamen vorkommt.
+  // Ein Leerzeichen waere zweideutig: "A B"/"C" und "A"/"B C"
+  // ergaeben denselben Schluessel.
+  const schluessel = (typ, name) => typ + '::' + name
+
+  for (const kante of kanten) {
+    const von = schluessel(kante.from_type, kante.from_name)
+    const nach = schluessel(kante.to_type, kante.to_name)
+
+    if (!abwaerts.has(von)) abwaerts.set(von, [])
+    abwaerts.get(von).push({ type: kante.to_type, name: kante.to_name, relation_type: kante.relation_type })
+
+    if (!aufwaerts.has(nach)) aufwaerts.set(nach, [])
+    aufwaerts.get(nach).push({ type: kante.from_type, name: kante.from_name, relation_type: kante.relation_type })
+  }
+
+  return { abwaerts, aufwaerts, schluessel }
+}
+
+/**
+ * Breitensuche über den Graph. Liefert je gefundenem Knoten die Entfernung
+ * und den Weg dorthin - der Weg ist das, was ein Techniker sehen will.
+ */
+function durchlaufe(start, richtung, tiefeMax = 8) {
+  const { abwaerts, aufwaerts, schluessel } = baueGraph()
+  const kanten = richtung === 'up' ? aufwaerts : abwaerts
+
+  const gesehen = new Set([schluessel(start.type, start.name)])
+  const ergebnis = []
+  let welle = [{ ...start, pfad: [] }]
+  let tiefe = 0
+
+  while (welle.length && tiefe < tiefeMax) {
+    tiefe += 1
+    const naechste = []
+
+    for (const knoten of welle) {
+      for (const nachbar of kanten.get(schluessel(knoten.type, knoten.name)) || []) {
+        const id = schluessel(nachbar.type, nachbar.name)
+        if (gesehen.has(id)) continue
+        gesehen.add(id)
+
+        const eintrag = {
+          type: nachbar.type,
+          name: nachbar.name,
+          relation_type: nachbar.relation_type,
+          distance: tiefe,
+          path: [...knoten.pfad, { type: knoten.type, name: knoten.name }],
+        }
+        ergebnis.push(eintrag)
+        naechste.push({ type: nachbar.type, name: nachbar.name, pfad: eintrag.path })
+      }
+    }
+
+    welle = naechste
+  }
+
+  return ergebnis
+}
+
+/** Alle Geschäftsdienste mit ihrer unmittelbaren Kette. */
+export function service_list({ tenant = null } = {}) {
+  const dienste = table('Business Service').filter((s) => !tenant || s.tenant === tenant)
+
+  return dienste
+    .map((dienst) => {
+      const kette = durchlaufe({ type: 'Business Service', name: dienst.name }, 'down')
+      // Verknüpfung über den Schlüssel, nicht über den Anzeigenamen - sonst
+      // gilt ein Dienst als ungesichert, nur weil die Sicherung anders heisst.
+      const backup = table('Backup Object').find((b) => b.business_service === dienst.name)
+
+      return {
+        ...dienst,
+        dependency_count: kette.length,
+        // Die Geräte in der Kette sind das, was man im Ernstfall anfassen muss.
+        devices: kette.filter((k) => k.type === 'Network Device').map((k) => k.name),
+        vms: kette.filter((k) => k.type === 'Virtual Machine').map((k) => k.name),
+        provider_links: kette.filter((k) => k.type === 'Provider Link').map((k) => k.name),
+        backup_object: backup ? backup.name : null,
+        backup_verify: backup ? backup.verify_status : null,
+      }
+    })
+    .sort(
+      (a, b) =>
+        (KRITIKALITAET_RANG[a.criticality] ?? 9) - (KRITIKALITAET_RANG[b.criticality] ?? 9) ||
+        a.service_name.localeCompare(b.service_name),
+    )
+}
+
+/**
+ * Auswirkungsanalyse: Was fällt aus, wenn dieses Objekt ausfällt?
+ *
+ * @param {{object_type: string, object_name: string}} args
+ */
+export function impact_analysis({ object_type, object_name } = {}) {
+  if (!object_type || !object_name) {
+    throw new FrappeMockError('ValidationError: object_type und object_name sind erforderlich')
+  }
+
+  const start = { type: object_type, name: object_name }
+  const betroffen = durchlaufe(start, 'up')
+  const haengtAbVon = durchlaufe(start, 'down')
+
+  const dienste = new Map(table('Business Service').map((s) => [s.name, s]))
+  const betroffeneDienste = betroffen
+    .filter((k) => k.type === 'Business Service')
+    .map((k) => ({ ...dienste.get(k.name), distance: k.distance, path: k.path }))
+    .filter((s) => s.service_key)
+    .sort(
+      (a, b) =>
+        (KRITIKALITAET_RANG[a.criticality] ?? 9) - (KRITIKALITAET_RANG[b.criticality] ?? 9) ||
+        a.service_name.localeCompare(b.service_name),
+    )
+
+  const betroffeneBenutzer = betroffeneDienste.reduce((summe, s) => summe + (s.user_count || 0), 0)
+
+  // Ein einzelner Pfad ohne Alternative ist ein Einzelfehlerpunkt. Erkennbar
+  // daran, dass genau ein Nachbar in Abwärtsrichtung existiert.
+  const { abwaerts, schluessel } = baueGraph()
+  const einzelpfade = haengtAbVon.filter((k) => {
+    const nachbarn = abwaerts.get(schluessel(k.type, k.name)) || []
+    return nachbarn.length === 1
+  })
+
+  return {
+    object: start,
+    // Nach oben: wer bricht weg
+    impacted: betroffen.sort((a, b) => a.distance - b.distance),
+    impacted_services: betroffeneDienste,
+    impacted_users: betroffeneBenutzer,
+    highest_criticality: betroffeneDienste.length ? betroffeneDienste[0].criticality : null,
+    // Nach unten: woran es hängt
+    depends_on: haengtAbVon.sort((a, b) => a.distance - b.distance),
+    single_points: einzelpfade.map((k) => ({ type: k.type, name: k.name, distance: k.distance })),
+  }
+}
+
+/** Abhängigkeitskette eines Geschäftsdienstes, als Ebenen für die Anzeige. */
+export function service_chain({ service } = {}) {
+  const dienst = table('Business Service').find((s) => s.name === service)
+  if (!dienst) {
+    throw new FrappeMockError('DoesNotExistError: Business Service ' + service + ' existiert nicht', 404)
+  }
+
+  const kette = durchlaufe({ type: 'Business Service', name: service }, 'down')
+
+  const ebenen = new Map()
+  for (const knoten of kette) {
+    const reihe = ebenen.get(knoten.distance) || []
+    reihe.push(knoten)
+    ebenen.set(knoten.distance, reihe)
+  }
+
+  return {
+    service: dienst,
+    levels: [...ebenen.entries()]
+      .sort((a, b) => a[0] - b[0])
+      .map(([tiefe, knoten]) => ({
+        distance: tiefe,
+        nodes: knoten.sort((a, b) => a.type.localeCompare(b.type) || a.name.localeCompare(b.name)),
+      })),
+    total: kette.length,
+  }
+}

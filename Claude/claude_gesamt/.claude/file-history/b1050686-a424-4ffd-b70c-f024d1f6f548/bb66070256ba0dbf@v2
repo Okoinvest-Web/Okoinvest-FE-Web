@@ -1,0 +1,246 @@
+import type { Metadata } from "next";
+
+import { Verlauf } from "@/components/diagramme/verlauf";
+import { Karte, Kennzahl, Seitenkopf, Status } from "@/components/ui";
+import { boersenpreise } from "@/lib/demo/quelle";
+import { ENERGIE_FARBEN } from "@/lib/farben";
+import { formatCentProKwh, formatZahl, formatZeit } from "@/lib/format";
+import { ladeAnlagen } from "@/lib/portal-daten";
+import {
+  PARAMETER,
+  parameterDerGruppe,
+  type ParameterGruppe,
+} from "@/lib/sicherheit/regelgrenzen";
+import { hatRecht } from "@/lib/sicherheit/rollen";
+import { requireRecht } from "@/lib/session";
+
+import { ParameterFeld, type FeldDefinition } from "./parameter-feld";
+
+export const metadata: Metadata = { title: "Steuerung" };
+
+/**
+ * Aktuelle Werte der Anlage.
+ * Im Regelbetrieb kaemen sie aus dem DocType "PV Steuerprofil"; hier
+ * stehen plausible Ausgangswerte, damit die Oberflaeche vollstaendig ist.
+ */
+const AKTUELLE_WERTE: Record<string, string> = {
+  eigenverbrauch_ziel: "85",
+  speicher_ladeleistung_max: "180",
+  speicher_reserve_soc: "20",
+  speicher_modus: "Lastspitzenkappung",
+  boerse_aktiv: "ja",
+  boerse_ladeschwelle: "4.5",
+  boerse_entladeschwelle: "21",
+  lade_lastmanagement: "Dynamisch",
+  lade_anschlussleistung_max: "160",
+  einspeise_wirkleistungsgrenze: "70",
+  einspeise_parkregler_sollwert: "525",
+  einspeise_blindleistungskennlinie: "Q(U) nach Netzzugangsvertrag",
+  netzschutz_spannung_grenzen: "184 – 253",
+  netzschutz_frequenz_grenzen: "47,5 – 51,5",
+  netzschutz_abschaltzeit: "0,2",
+};
+
+const GRUPPEN: { schluessel: ParameterGruppe; titel: string; text: string }[] = [
+  {
+    schluessel: "eigenverbrauch",
+    titel: "Eigenverbrauch",
+    text: "Wie die Anlage eigenerzeugten Strom im Betrieb verteilt.",
+  },
+  {
+    schluessel: "speicher",
+    titel: "Batteriespeicher",
+    text: "Lade- und Entladeverhalten sowie Reserve für den Notstrombetrieb.",
+  },
+  {
+    schluessel: "boerse",
+    titel: "Börsenpreissteuerung",
+    text: "Richtet Laden und Entladen nach den Day-Ahead-Preisen der EPEX Spot AT aus.",
+  },
+  {
+    schluessel: "laden",
+    titel: "Ladeinfrastruktur",
+    text: "Verteilung der verfügbaren Anschlussleistung auf die Ladepunkte.",
+  },
+];
+
+const GESPERRTE_GRUPPEN: {
+  schluessel: ParameterGruppe;
+  titel: string;
+  text: string;
+}[] = [
+  {
+    schluessel: "einspeiseregelung",
+    titel: "Einspeiseregelung",
+    text: "Vom Netzbetreiber im Netzzugangsvertrag festgelegt.",
+  },
+  {
+    schluessel: "netzschutz",
+    titel: "Netz- und Anlagenschutz",
+    text: "Schutzeinstellungen nach ÖVE/ÖNORM E 8001-4-712 und TOR Erzeuger.",
+  },
+];
+
+export default async function SteuerungSeite() {
+  const benutzer = await requireRecht("steuerung.lesen");
+  const darfSchreiben = hatRecht([benutzer.rolle], "steuerung.schreiben");
+
+  const anlagen = await ladeAnlagen();
+  const anlage = anlagen[0];
+
+  const preise = boersenpreise(48);
+  const jetzt = new Date().getHours();
+  const aktuellerPreis = preise[jetzt]?.preis_eur_mwh ?? 0;
+  const guenstigste = [...preise.slice(jetzt, jetzt + 24)].sort(
+    (a, b) => (a.preis_eur_mwh ?? 0) - (b.preis_eur_mwh ?? 0),
+  )[0];
+
+  function feld(schluessel: string): FeldDefinition {
+    const definition = PARAMETER.find((p) => p.schluessel === schluessel)!;
+    return {
+      schluessel: definition.schluessel,
+      bezeichnung: definition.bezeichnung,
+      einheit: definition.einheit,
+      gesperrt: definition.gesperrt,
+      grundlage: definition.grundlage,
+      hinweis: definition.hinweis,
+      min: definition.min,
+      max: definition.max,
+      optionen: definition.optionen,
+      aktuellerWert: AKTUELLE_WERTE[schluessel] ?? "",
+    };
+  }
+
+  return (
+    <div className="space-y-6">
+      <Seitenkopf
+        titel="Steuerung"
+        beschreibung={`Betriebsstrategie für ${anlage?.anlagen_name ?? "Ihre Anlage"} · ${anlage?.steuerung_typ ?? ""}`}
+        aktion={
+          <Status ton={darfSchreiben ? "gut" : "neutral"}>
+            {darfSchreiben ? "Schreibzugriff" : "Nur Leserecht"}
+          </Status>
+        }
+      />
+
+      <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+        <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+          <strong className="font-medium text-slate-900 dark:text-slate-100">
+            Was Sie hier einstellen dürfen – und was nicht.
+          </strong>{" "}
+          Frei einstellbar ist alles, was hinter Ihrem Zählpunkt wirkt:
+          Eigenverbrauch, Speicherstrategie, Börsenpreissteuerung, Lastmanagement
+          der Ladepunkte. Nicht einstellbar sind Werte, die auf das öffentliche
+          Netz wirken – Wirkleistungsbegrenzung, Parkregler, Blindleistungskennlinie
+          und der Netz- und Anlagenschutz. Diese legt der Netzbetreiber im
+          Netzzugangsvertrag fest; eine Änderung durch den Anlagenbetreiber wäre
+          unzulässig und im Fehlerfall gefährlich. Das Portal lehnt solche
+          Änderungen serverseitig ab, nicht nur in der Anzeige.
+        </p>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Kennzahl
+          label="Börsenpreis jetzt"
+          wert={formatZahl(aktuellerPreis, 2)}
+          einheit="EUR/MWh"
+          hinweis={`entspricht ${formatCentProKwh(aktuellerPreis / 1000)}/kWh`}
+          farbe={ENERGIE_FARBEN.netzbezug}
+        />
+        <Kennzahl
+          label="Günstigste Stunde"
+          wert={formatZeit(guenstigste?.zeitpunkt)}
+          hinweis={`${formatZahl(guenstigste?.preis_eur_mwh, 2)} EUR/MWh`}
+          verzoegerung={60}
+        />
+        <Kennzahl
+          label="Speicherstrategie"
+          wert={AKTUELLE_WERTE.speicher_modus}
+          verzoegerung={120}
+        />
+        <Kennzahl
+          label="Wirkleistungsgrenze"
+          wert={AKTUELLE_WERTE.einspeise_wirkleistungsgrenze}
+          einheit="%"
+          hinweis="netzseitig vorgegeben"
+          verzoegerung={180}
+        />
+      </div>
+
+      <Karte
+        titel="Börsenpreis Day-Ahead"
+        beschreibung="Marktgebiet Österreich, heute und morgen"
+      >
+        <Verlauf
+          beschriftungen={preise.map((p) => formatZeit(p.zeitpunkt))}
+          einheit="EUR/MWh"
+          nachkommastellen={0}
+          achsenSchritte={8}
+          hoehe={200}
+          reihen={[
+            {
+              schluessel: "preis",
+              label: "Day-Ahead-Preis",
+              farbe: ENERGIE_FARBEN.netzbezug,
+              werte: preise.map((p) => p.preis_eur_mwh ?? 0),
+              gefuellt: true,
+            },
+          ]}
+        />
+        <p className="mt-3 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+          Die Mittagsdelle entsteht durch die hohe Photovoltaikeinspeisung im
+          Netz. Bei aktiver Börsenpreissteuerung lädt der Speicher bevorzugt in
+          diesen Stunden und entlädt zur Abendspitze.
+        </p>
+      </Karte>
+
+      {GRUPPEN.map((gruppe) => (
+        <Karte
+          key={gruppe.schluessel}
+          titel={gruppe.titel}
+          beschreibung={gruppe.text}
+        >
+          <div className="grid gap-3 md:grid-cols-2">
+            {parameterDerGruppe(gruppe.schluessel).map((p) => (
+              <ParameterFeld
+                key={p.schluessel}
+                feld={feld(p.schluessel)}
+                anlage={anlage?.name ?? ""}
+                darfSchreiben={darfSchreiben}
+              />
+            ))}
+          </div>
+        </Karte>
+      ))}
+
+      <div className="rounded-xl border-2 border-dashed border-slate-300 p-1 dark:border-slate-700">
+        {GESPERRTE_GRUPPEN.map((gruppe) => (
+          <Karte
+            key={gruppe.schluessel}
+            titel={gruppe.titel}
+            beschreibung={gruppe.text}
+            klasse="border-0 shadow-none"
+          >
+            <div className="grid gap-3 md:grid-cols-2">
+              {parameterDerGruppe(gruppe.schluessel).map((p) => (
+                <ParameterFeld
+                  key={p.schluessel}
+                  feld={feld(p.schluessel)}
+                  anlage={anlage?.name ?? ""}
+                  darfSchreiben={false}
+                />
+              ))}
+            </div>
+          </Karte>
+        ))}
+
+        <p className="px-5 pb-4 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+          Änderungen an diesen Werten nimmt ausschließlich der Netzbetreiber oder
+          ein konzessionierter Errichter vor. Benötigen Sie eine Anpassung – etwa
+          nach einer Anlagenerweiterung –, stellen Sie eine Anfrage über den
+          Support; sie wird an den Netzbetreiber weitergeleitet.
+        </p>
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,188 @@
+# ÖKOVOLT NetOps – Vue-Frontend
+
+Vue-3-Frontend der Frappe-App `netops`. Es lässt sich **ohne laufendes
+Frappe-Backend** entwickeln: ein Mock im Browser beantwortet die Frappe-RPCs
+mit denselben Daten- und Fehlerformaten wie das echte Backend.
+
+Fachliche Grundlage: `CLAUDE.md` im Projektwurzelverzeichnis.
+
+## Loslegen
+
+```bash
+npm install
+npm run dev      # http://localhost:8080
+npm test         # 47 Tests auf Mock- und API-Logik
+```
+
+Es wird nichts weiter benötigt: keine Bench, kein Site, keine Datenbank.
+
+| Befehl            | Zweck                                       |
+| ----------------- | ------------------------------------------- |
+| `npm run dev`     | Entwicklungsserver mit Hot Reload           |
+| `npm run build`   | Produktionsbuild nach `dist/`               |
+| `npm run preview` | Gebautes Ergebnis lokal ausliefern          |
+| `npm test`        | Vitest-Suite einmal ausführen               |
+| `npm run test:watch` | Vitest im Beobachtungsmodus              |
+
+## Was schon da ist
+
+Umgesetzt ist Punkt 3 des MVP-Umfangs aus CLAUDE.md Abschnitt 7:
+
+- Layout mit Seitenleiste; noch nicht gebaute Bereiche stehen sichtbar als
+  „geplant“ in der Navigation statt als toter Link
+- Globale Suche **Strg+K** über IP, MAC, Hostname, Seriennummer, Asset-Nr.,
+  Kabel-Label, VLAN, Dose, Präfix und DNS-Name
+- Geräteliste mit Filter nach Rolle und Mandant
+- Gerätedetail mit Tabs: Übersicht, Schnittstellen, VLANs, IP-Adressen,
+  Verkabelung
+- IPAM-Baum mit berechneter Auslastung je Präfix
+- Lage-Seite mit Bestandszahlen und auslaufendem Support
+
+**Noch nicht umgesetzt** (jeweils backendabhängig): Audit-Hash-Kette,
+Konnektoren und Drift-Ansicht, Backup-Ampel, Leitstand-Screens mit
+Freigabe-Ablauf, Offline-Export, Rollen und Rechte.
+
+## Wie der Mock funktioniert
+
+frappe-ui schickt jede Abfrage durch eine austauschbare Funktion, den
+`resourceFetcher`. [src/api/index.js](src/api/index.js) entscheidet beim Start,
+welche das ist:
+
+```
+VITE_USE_MOCK=true   ->  src/api/mock/server.js   (Standard, kein Backend)
+VITE_USE_MOCK=false  ->  frappeRequest            (echtes Frappe über Vite-Proxy)
+```
+
+Der Mock beantwortet:
+
+**Frappe-Standard** – `frappe.client.get_list` (beide Filterschreibweisen,
+Operatoren `= != > < >= <= like "not like" in "not in" between is`, `order_by`,
+Paginierung, Feldauswahl), `get_count`, `get`, `get_value`, `insert`,
+`set_value`, `delete`, `frappe.auth.get_logged_user`, `logout`.
+
+**NetOps-eigene Methoden** – gleiche Pfade wie später in Python:
+
+| Methode | Zweck |
+| ------- | ----- |
+| `netops.api.search.global_search` | Globale Suche über alle Kernobjekte |
+| `netops.api.ipam.prefix_tree` | Präfix-Hierarchie mit Auslastung |
+| `netops.api.ipam.prefix_list` | Derselbe Baum flach, für Tabellen |
+| `netops.api.ipam.prefix_addresses` | Adressen eines Präfix mit Gerätebezug |
+| `netops.api.dcim.device_list` | Geräteliste mit aufgelösten Bezügen |
+| `netops.api.dcim.device_detail` | Gerät samt aller Tabs in einem Aufruf |
+| `netops.api.dcim.dashboard_counters` | Bestandszahlen für die Lage-Seite |
+
+Die Daten liegen im `localStorage` und überstehen einen Reload. Die Schaltfläche
+unten links in der Seitenleiste – oder `__mock.resetMockData()` in der
+Browser-Konsole – stellt den Ausgangszustand wieder her.
+`__mock.getRegisteredMethods()` listet alle registrierten Methoden.
+
+### Warum die Logik im Mock liegt und nicht in den Komponenten
+
+CLAUDE.md Abschnitt 3 verlangt: keine Geschäftslogik im Frontend. Suche,
+Auslastungsberechnung und Aggregationen stehen deshalb in
+`src/api/mock/methods/` – das ist die Schicht, die später unverändert nach
+Python wandert. Die Vue-Komponenten rufen nur auf und stellen dar.
+
+**Bei der Portierung nicht vergessen:** Der Mock prüft **keine Rechte**. Jede
+Python-Entsprechung braucht eine explizite `frappe.has_permission`-Prüfung und
+einen Mandantenfilter (CLAUDE.md Abschnitt 3 und 7.2).
+
+### Eine eigene Backend-Methode ergänzen
+
+```js
+import { registerMethod } from '@/api/mock/server.js'
+
+registerMethod('netops.api.dcim.trace_path', ({ endpoint }) => {
+  return [{ hop: 1, device: 'SW-ACC-01', port: 'Port 5' }]
+})
+```
+
+Nicht registrierte Methoden werfen einen Fehler, der sagt, was fehlt – so wird
+früh sichtbar, was das echte Backend bereitstellen muss.
+
+## Datenmodell
+
+[src/api/mock/fixtures.js](src/api/mock/fixtures.js) definiert die Phase-1-DocTypes
+aus CLAUDE.md Abschnitt 4 (Auszug, soweit die Oberfläche sie braucht):
+
+`Tenant`, `Site`, `Manufacturer`, `Device Type`, `Device Role`, `Rack`,
+`Network Device`, `Device Interface`, `Wall Outlet`, `Cable`, `Security Zone`,
+`VRF`, `VLAN`, `IP Prefix`, `IP Address`.
+
+DocType- und Feldnamen sind **englisch**, die Oberfläche ist **deutsch**. Die
+Zuordnung steht in [src/labels.js](src/labels.js) und wird später durch die
+Übersetzungsdateien der Frappe-App ersetzt. `defineDoctype()` erzwingt an jedem
+DocType die Pflichtfelder `tenant`, `status` und `description`; ein Test
+prüft das.
+
+Zwei bewusste Abweichungen von CLAUDE.md Abschnitt 4:
+
+- „Verantwortlicher (User)“ heißt hier `responsible_user`, nicht `owner` –
+  `owner` ist in Frappe ein Standardfeld und wäre kollidiert.
+- `Tenant` trägt selbst ein `tenant`-Feld (auf sich selbst zeigend), damit die
+  Regel „jeder DocType hat `tenant`“ ohne Sonderfall gilt.
+
+### Testdaten
+
+Alle Seed-Daten sind frei erfunden (CLAUDE.md Abschnitt 6.1: keine
+Produktivdaten). Seriennummern beginnen mit `TEST-`, Domains enden auf `.test`,
+`passbolt_reference` enthält nur eine Referenz – nie ein Geheimnis.
+
+## Umstieg auf ein echtes Frappe
+
+1. `VITE_USE_MOCK=false` in `.env` setzen, `VITE_FRAPPE_URL` auf die Site zeigen lassen.
+2. In [vite.config.js](vite.config.js) `build.outDir` auf `../netops/public/frontend`
+   ändern und die Plugin-Schalter `frappeProxy` / `jinjaBootData` / `buildConfig`
+   wieder einschalten.
+3. DocTypes im Backend so anlegen, dass Namen und Feldnamen zu
+   `src/api/mock/fixtures.js` passen.
+4. Die Methoden aus `src/api/mock/methods/` als whitelisted Python-Methoden
+   umsetzen – **mit** Rechteprüfung.
+5. `src/labels.js` durch `netops/translations/de.csv` ersetzen.
+
+Der Anwendungscode ändert sich dabei nicht: Er nutzt ausschließlich
+`createResource` / `createListResource` / `createDocumentResource`.
+
+## Aufbau
+
+```
+src/
+  api/
+    index.js              Auswahl des Fetchers (Mock oder echtes Frappe)
+    mock/
+      server.js           Frappe-Standardmethoden, Latenz, Fehlerformat
+      db.js               Dokumentspeicher, Pflichtfelder, Persistenz
+      query.js            Filter-, Sortier- und Feldauswahllogik
+      ip.js               IPv4-Rechnung für IPAM
+      fixtures.js         DocType-Definitionen und Testdaten
+      methods/            NetOps-eigene Methoden (dcim, ipam, search)
+  components/             Layout, globale Suche, wiederverwendete Bausteine
+  pages/                  Eine Datei je Route
+  router/                 Routendefinition
+  stores/                 Pinia-Stores
+  labels.js               Deutsche Beschriftungen zu englischen Feldnamen
+tests/                    Vitest-Suite
+```
+
+## Tests
+
+`bench run-tests --app netops` aus CLAUDE.md Abschnitt 3 lässt sich hier nicht
+ausführen – es gibt keine Bench. `npm test` tritt an seine Stelle und deckt ab:
+
+- IPv4-Rechnung inklusive Grenzfällen (`/31`, `/32`, Adressen über 2^31)
+- Frappe-RPC-Verhalten: Filter, Sortierung, Paginierung, Schreiboperationen,
+  Fehlerformate
+- Pflichtfelder an jedem DocType
+- Globale Suche über alle in CLAUDE.md geforderten Felder
+- IPAM-Baum: Hierarchie, VRF-Trennung, beide Auslastungsarten
+- Gerätedetail: Anreicherung, natürliche Portsortierung, Fehlerfall
+
+## Bekannte Grenzen des Mocks
+
+- Keine Berechtigungen, keine Rollen, keine serverseitigen Hooks
+- Keine Child-Tables; Link-Felder sind einfache Zeichenketten ohne Integritätsprüfung
+- Kein Realtime (`socketio` ist in [src/main.js](src/main.js) abgeschaltet)
+- Kein IPv6
+- Aggregatfelder wie `count(name) as anzahl` in `fields` werden ignoriert
+- Keine Audit-Hash-Kette – die gehört ins Backend

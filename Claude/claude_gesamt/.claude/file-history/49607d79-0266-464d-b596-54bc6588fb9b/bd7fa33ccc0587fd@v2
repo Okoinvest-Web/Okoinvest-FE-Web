@@ -1,0 +1,65 @@
+<template>
+  <div>
+    <PageHeader title="Racks" :subtitle="untertitel">
+      <template #actions>
+        <FormControl v-model="standort" type="select" :options="standortOptionen" />
+      </template>
+    </PageHeader>
+
+    <div class="p-6">
+      <p v-if="racks.loading" class="text-sm text-ink-gray-5">Wird geladen …</p>
+
+      <div v-else class="flex flex-wrap items-start gap-6">
+        <RackElevation
+          v-for="rack in racks.data || []"
+          :key="rack.rack"
+          :rack="rack"
+          @select="$router.push('/devices/' + $event.name)"
+        />
+      </div>
+
+      <p
+        v-if="!racks.loading && !(racks.data || []).length"
+        class="py-8 text-center text-sm text-ink-gray-5"
+      >
+        Für diesen Standort ist kein Rack erfasst.
+      </p>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed, ref, watch } from 'vue'
+import { FormControl, createResource } from 'frappe-ui'
+import PageHeader from '@/components/PageHeader.vue'
+import RackElevation from '@/components/RackElevation.vue'
+
+const standort = ref('')
+
+const racks = createResource({
+  url: 'netops.api.dcim.rack_list',
+  makeParams: () => ({ site: standort.value || null }),
+  auto: true,
+})
+
+const standorte = createResource({
+  url: 'frappe.client.get_list',
+  params: { doctype: 'Site', fields: ['name', 'site_name'], limit_page_length: 0 },
+  auto: true,
+})
+
+watch(standort, () => racks.fetch())
+
+const standortOptionen = computed(() => [
+  { label: 'Alle Standorte', value: '' },
+  ...(standorte.data || []).map((s) => ({ label: s.site_name, value: s.name })),
+])
+
+const untertitel = computed(() => {
+  const liste = racks.data || []
+  if (!liste.length) return ''
+  const belegt = liste.reduce((summe, r) => summe + r.used_u, 0)
+  const gesamt = liste.reduce((summe, r) => summe + r.height_u, 0)
+  return liste.length + ' Racks · ' + belegt + ' von ' + gesamt + ' HE belegt'
+})
+</script>

@@ -1,0 +1,214 @@
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+
+import {
+  bewerte,
+  bewerteEintrag,
+  falte,
+  filtere,
+  zerlege,
+} from "./suche.ts";
+
+/**
+ * Eine Suche, die Umlaute nicht kennt, ist in einer deutschen
+ * Anwendung keine Suche. Niemand tippt "Wärmepumpe" mit Umlaut, wenn
+ * er es eilig hat.
+ */
+
+describe("Falten", () => {
+  it("löst die Umlaute auf", () => {
+    assert.equal(falte("Wärmepumpe"), "warmepumpe");
+    assert.equal(falte("Ökovolt"), "okovolt");
+    assert.equal(falte("Überschuss"), "uberschuss");
+  });
+
+  it("schreibt das scharfe s aus", () => {
+    assert.equal(falte("Straße"), "strasse");
+    assert.equal(falte("Großhandel"), "grosshandel");
+  });
+
+  it("entfernt Akzente", () => {
+    assert.equal(falte("Résumé"), "resume");
+  });
+
+  it("macht klein", () => {
+    assert.equal(falte("ANL-0002"), "anl-0002");
+  });
+});
+
+describe("Bewerten", () => {
+  it("findet ein Wort in sich selbst", () => {
+    assert.ok(bewerte("Anlagen", "anlagen"));
+  });
+
+  it("findet über Umlaute hinweg", () => {
+    assert.ok(bewerte("Wärmepumpe", "warmepumpe"));
+    assert.ok(bewerte("Energiegemeinschaft", "energiegemeinschaft"));
+  });
+
+  it("findet auch verstreute Buchstaben", () => {
+    assert.ok(bewerte("Speichervermarktung", "spverm"));
+  });
+
+  it("gibt nichts zurück, wenn ein Buchstabe fehlt", () => {
+    assert.equal(bewerte("Anlagen", "anlagenx"), null);
+  });
+
+  it("achtet auf die Reihenfolge", () => {
+    assert.equal(bewerte("Anlagen", "negalna"), null);
+  });
+
+  it("bewertet einen zusammenhängenden Treffer höher als einen verstreuten", () => {
+    const zusammen = bewerte("Anlagen", "anla")!;
+    const verstreut = bewerte("Auf neuen Lagen", "anla")!;
+
+    assert.ok(zusammen.punkte > verstreut.punkte);
+  });
+
+  it("bewertet Wortanfänge höher", () => {
+    // "eg" steht in "Energie Gemeinschaft" an zwei Wortanfängen.
+    const anfaenge = bewerte("Energie Gemeinschaft", "eg")!;
+    const mittendrin = bewerte("Legende", "eg")!;
+
+    assert.ok(anfaenge.punkte > mittendrin.punkte);
+  });
+
+  it("bewertet einen Anfangstreffer am höchsten", () => {
+    const vorn = bewerte("Steuerung", "steu")!;
+    const hinten = bewerte("Anlagensteuerung", "steu")!;
+
+    assert.ok(vorn.punkte > hinten.punkte);
+  });
+
+  it("nimmt ein leeres Muster als Treffer", () => {
+    const treffer = bewerte("Irgendwas", "");
+
+    assert.ok(treffer);
+    assert.deepEqual(treffer.stellen, []);
+  });
+
+  it("übergeht Leerzeichen im Muster", () => {
+    assert.ok(bewerte("Energiegemeinschaft", "energie gemein"));
+  });
+
+  it("findet eine Anlagenkennung in Kurzform", () => {
+    assert.ok(bewerte("ANL-0002 Sägewerk Amstetten", "anl2"));
+  });
+
+  it("waehlt die beste Zuordnung, nicht die erste", () => {
+    // Gierig gelesen trifft "eg" das g in "Energie". Gemeint ist
+    // E-nergie G-emeinschaft - beide an einem Wortanfang.
+    const treffer = bewerte("Energie Gemeinschaft", "eg")!;
+
+    assert.deepEqual(treffer.stellen, [0, 8]);
+  });
+
+  it("merkt sich die Trefferstellen", () => {
+    const treffer = bewerte("Anlagen", "ala")!;
+
+    assert.deepEqual(treffer.stellen, [0, 2, 3]);
+  });
+});
+
+describe("Einträge bewerten", () => {
+  it("zieht den Titel dem Stichwort vor", () => {
+    const perTitel = bewerteEintrag({ titel: "Handel" }, "handel")!;
+    const perStichwort = bewerteEintrag(
+      { titel: "Speichervermarktung", stichworte: ["Handel"] },
+      "handel",
+    )!;
+
+    assert.ok(perTitel.punkte > perStichwort.punkte);
+  });
+
+  it("findet auch, was nur im Stichwort steht", () => {
+    assert.ok(
+      bewerteEintrag(
+        { titel: "Speichervermarktung", stichworte: ["EPEX", "Arbitrage"] },
+        "epex",
+      ),
+    );
+  });
+
+  it("gibt nichts zurück, wenn weder Titel noch Stichwort passen", () => {
+    assert.equal(
+      bewerteEintrag({ titel: "Handel", stichworte: ["EPEX"] }, "wartung"),
+      null,
+    );
+  });
+});
+
+describe("Filtern", () => {
+  const eintraege = [
+    { titel: "Anlagen" },
+    { titel: "Ladeinfrastruktur" },
+    { titel: "Anlagensteuerung" },
+    { titel: "Buchhaltung" },
+  ];
+
+  it("sortiert den besten Treffer nach oben", () => {
+    const gefunden = filtere(eintraege, "anlagen");
+
+    assert.equal(gefunden[0]?.titel, "Anlagen");
+  });
+
+  it("lässt aus, was nicht passt", () => {
+    const gefunden = filtere(eintraege, "anlagen");
+
+    assert.ok(!gefunden.some((g) => g.titel === "Buchhaltung"));
+  });
+
+  it("gibt bei leerem Muster alles in ursprünglicher Reihenfolge zurück", () => {
+    const gefunden = filtere(eintraege, "");
+
+    assert.equal(gefunden.length, 4);
+    assert.equal(gefunden[0]?.titel, "Anlagen");
+    assert.equal(gefunden[3]?.titel, "Buchhaltung");
+  });
+
+  it("hält die Reihenfolge bei Gleichstand stabil", () => {
+    // Eine Liste, die bei jedem Tastendruck umspringt, ist nicht
+    // bedienbar: Man zielt auf einen Eintrag und trifft den nächsten.
+    const gleich = [{ titel: "Abc" }, { titel: "Abd" }, { titel: "Abe" }];
+    const gefunden = filtere(gleich, "ab");
+
+    assert.deepEqual(
+      gefunden.map((g) => g.titel),
+      ["Abc", "Abd", "Abe"],
+    );
+  });
+});
+
+describe("Zerlegen für die Hervorhebung", () => {
+  it("trennt Treffer von Nichttreffern", () => {
+    const stuecke = zerlege("Anlagen", [0, 1, 2]);
+
+    assert.deepEqual(stuecke, [
+      { text: "Anl", treffer: true },
+      { text: "agen", treffer: false },
+    ]);
+  });
+
+  it("kommt mit Treffern in der Mitte zurecht", () => {
+    const stuecke = zerlege("Anlagen", [3]);
+
+    assert.deepEqual(stuecke, [
+      { text: "Anl", treffer: false },
+      { text: "a", treffer: true },
+      { text: "gen", treffer: false },
+    ]);
+  });
+
+  it("gibt ohne Treffer den ganzen Text zurück", () => {
+    assert.deepEqual(zerlege("Anlagen", []), [
+      { text: "Anlagen", treffer: false },
+    ]);
+  });
+
+  it("setzt den Text lückenlos wieder zusammen", () => {
+    const text = "Sägewerk Amstetten";
+    const stuecke = zerlege(text, [0, 1, 9, 10]);
+
+    assert.equal(stuecke.map((s) => s.text).join(""), text);
+  });
+});

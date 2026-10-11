@@ -1,0 +1,209 @@
+import Link from "next/link";
+
+import { Tabelle, Zeile, Zelle } from "@/components/tabelle";
+import type { Wartungsprofil } from "@/lib/daten/wartung";
+import { formatDatum } from "@/lib/format";
+import {
+  fasseWartungZusammen,
+  LEISTUNG_JE_REGEL,
+  UMGEBUNG_TEXT,
+  type Fristart,
+  type Terminstand,
+  type Wartungsposten,
+} from "@/lib/pv/wartung";
+import { mehrzahl } from "@/lib/zahl";
+
+import { Hinweis, Status } from "./ui";
+
+/**
+ * Der Prüfkalender einer Anlage.
+ *
+ * Zwei Angaben stehen in jeder Zeile, und beide sind der Grund, warum
+ * es diese Tafel gibt: *woher* die Frist kommt und *was* ihr Versäumen
+ * kostet. Eine Liste von Terminen ohne Rechtsgrundlage ist eine
+ * Erinnerung; mit Rechtsgrundlage ist sie eine Begründung, mit der
+ * jemand ein Budget bekommt.
+ *
+ * Die Verbindlichkeit wird in der Farbe unterschieden. Eine
+ * überfällige Verordnung ist rot, eine überfällige Empfehlung nicht -
+ * sonst gewöhnt sich das Auge an Rot, und dann wirkt auch die
+ * Verordnung nicht mehr.
+ */
+
+const ARTWORT: Record<Fristart, string> = {
+  vorschrift: "Vorschrift",
+  norm: "Norm",
+  vertrag: "Vertrag",
+  empfehlung: "Empfehlung",
+};
+
+function verbindlich(art: Fristart): boolean {
+  return art === "vorschrift" || art === "vertrag";
+}
+
+function standTon(stand: Terminstand, art: Fristart) {
+  switch (stand) {
+    case "ueberfaellig":
+      return verbindlich(art) ? ("kritisch" as const) : ("ernst" as const);
+    case "steht_an":
+      return "hinweis" as const;
+    case "unbekannt":
+      return "ernst" as const;
+    default:
+      return "gut" as const;
+  }
+}
+
+function standWort(posten: Wartungsposten): string {
+  const { stand, tage } = posten.befund;
+
+  switch (stand) {
+    case "ueberfaellig":
+      return `seit ${mehrzahl(Math.abs(tage), "Tag", "Tagen")} fällig`;
+    case "steht_an":
+      return tage === 0 ? "heute fällig" : `in ${mehrzahl(tage, "Tag", "Tagen")}`;
+    case "unbekannt":
+      return "kein Nachweis";
+    default:
+      return "aktuell";
+  }
+}
+
+function intervallText(monate: number): string {
+  if (monate % 12 === 0) {
+    const jahre = monate / 12;
+    return jahre === 1 ? "jährlich" : `alle ${jahre} Jahre`;
+  }
+  return `alle ${monate} Monate`;
+}
+
+export function Wartungstafel({
+  plan,
+  profil,
+  anlageId,
+}: {
+  plan: Wartungsposten[];
+  profil: Wartungsprofil | null;
+  /** Für den Weg von der Frist zum Auftrag. */
+  anlageId?: string;
+}) {
+  const versaeumt = plan.filter(
+    (p) => p.befund.stand === "ueberfaellig" && verbindlich(p.regel.art),
+  );
+
+  return (
+    <div className="space-y-4">
+      {versaeumt.length > 0 && (
+        <Hinweis
+          ton="kritisch"
+          titel={
+            versaeumt.length === 1
+              ? "Eine verpflichtende Prüfung ist überfällig"
+              : `${versaeumt.length} verpflichtende Prüfungen sind überfällig`
+          }
+        >
+          {versaeumt[0]!.regel.folge}
+        </Hinweis>
+      )}
+
+      <p className="t-mikro leading-relaxed">
+        {fasseWartungZusammen(plan)}
+        {profil && (
+          <>
+            {" "}
+            Einstufung nach ESV: {UMGEBUNG_TEXT[profil.umgebung]}
+            {profil.blitzschutzklasse
+              ? `, Blitzschutz Schutzklasse ${profil.blitzschutzklasse}`
+              : ""}
+            {profil.kritisch === 1 ? ", als kritisches System geführt" : ""}.
+          </>
+        )}
+      </p>
+
+      <Tabelle
+        spalten={[
+          { titel: "Prüfung" },
+          { titel: "Grundlage", schmalAusblenden: true },
+          { titel: "Abstand", schmalAusblenden: true },
+          { titel: "Zuletzt", zahl: true, schmalAusblenden: true },
+          { titel: "Fällig", zahl: true },
+          { titel: "Stand" },
+        ]}
+        mindestbreite="62rem"
+      >
+        {plan.map((posten) => (
+          <Zeile key={posten.regel.schluessel}>
+            <Zelle>
+              <span className="block" style={{ color: "var(--t-stark)" }}>
+                {posten.regel.bezeichnung}
+              </span>
+              <span className="t-mikro block leading-relaxed">
+                {posten.regel.inhalt}
+              </span>
+            </Zelle>
+
+            <Zelle leise schmalAusblenden>
+              <span className="block">{ARTWORT[posten.regel.art]}</span>
+              <span className="t-mikro block">{posten.regel.grundlage}</span>
+            </Zelle>
+
+            <Zelle leise schmalAusblenden>
+              {intervallText(posten.monate)}
+              {posten.abweichend && (
+                <span className="t-mikro block">abweichend festgelegt</span>
+              )}
+            </Zelle>
+
+            <Zelle zahl leise schmalAusblenden>
+              {posten.letzte ? (
+                <>
+                  <span className="block">{formatDatum(posten.letzte)}</span>
+                  {posten.protokoll && (
+                    <span className="t-mikro block font-mono">
+                      {posten.protokoll}
+                    </span>
+                  )}
+                </>
+              ) : (
+                "–"
+              )}
+            </Zelle>
+
+            <Zelle zahl>
+              {posten.befund.faellig ? formatDatum(posten.befund.faellig) : "–"}
+            </Zelle>
+
+            <Zelle>
+              <Status ton={standTon(posten.befund.stand, posten.regel.art)}>
+                {standWort(posten)}
+              </Status>
+
+              {/*
+                Der Weg von der Frist zum Auftrag. Nur dort, wo etwas
+                ansteht - ein "beauftragen" neben einer aktuellen
+                Prüfung wäre Verkauf, nicht Hilfe.
+              */}
+              {posten.befund.stand !== "erledigt" &&
+                LEISTUNG_JE_REGEL[posten.regel.schluessel] && (
+                  <Link
+                    href={`/portal/shop?leistung=${LEISTUNG_JE_REGEL[posten.regel.schluessel]}${anlageId ? `&anlage=${anlageId}` : ""}`}
+                    className="t-mikro mt-1 block hover:underline"
+                    style={{ color: "var(--akzent-text)" }}
+                  >
+                    beauftragen
+                  </Link>
+                )}
+            </Zelle>
+          </Zeile>
+        ))}
+      </Tabelle>
+
+      <p className="t-mikro leading-relaxed">
+        Die Abstände sind Höchstfristen. Verordnung und Netzzugangsvertrag
+        binden; Normen und Empfehlungen sind der Maßstab, an dem ein
+        Sachverständiger misst. Wo eine Behörde oder der Netzbetreiber etwas
+        anderes vorschreibt, steht der abweichende Abstand in der Zeile.
+      </p>
+    </div>
+  );
+}

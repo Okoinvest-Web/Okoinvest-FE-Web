@@ -1,0 +1,109 @@
+# Auflösung der Bargeldbewegungen
+
+Grundlage: 1.885 Buchungen aus vier Konten (09/2018 bis 05/2021), 198 Eingangsrechnungen, 12 Lohnverrechnungsläufe 2021, 112 Einträge des Exekutionsregisters, fünf BMD-Buchhaltungsexporte (FIB), sämtliche Auswertungen und Kontoblätter.
+
+---
+
+## 1. Ausgangslage
+
+| | Betrag EUR | Buchungen |
+|---|---:|---:|
+| Barauszahlungen gesamt | 160.104,57 | 189 |
+| Bareinzahlungen gesamt | 54.910,00 | 15 |
+| **Netto-Barverbrauch** | **105.194,57** | |
+| über 32 Monate | 3.287,33 / Monat | |
+
+---
+
+## 2. Aufgelöst
+
+### 2.1 Routinebehebungen — EUR 60.473,57
+
+183 Behebungen unter EUR 4.000,00, Durchschnitt EUR 330,46. Bankomat- und Schalterbehebungen in normaler Frequenz über 32 Monate, also rund EUR 1.890 monatlich. Diese Kategorie ist nach Höhe und Verteilung unauffällig und bedarf keiner Einzelerklärung.
+
+### 2.2 Durchlaufende Beträge — EUR 11.000,00
+
+| Behebung | Wiedereinlage | Ergebnis |
+|---|---|---|
+| 01.03.2019 EUR 6.000,00 „Barauszahlung Darlehen" (Höfler-9948) | 01.03.2019 EUR 6.000,00 „Bareinzahlung Darlehen" (Höfler-9948) | **taggleich neutralisiert** |
+| 11.09.2018 EUR 9.000,00 (JB Technology) | 19.12.2018 EUR 5.000,00 „Bareinzahlung Darlehen" (JB Technology) | EUR 5.000,00 zurückgeflossen |
+
+### 2.3 Wiedereinlagen nach der Großbehebung — EUR 21.500,00
+
+Nach der Behebung vom 11.01.2021 wurden folgende Beträge wieder eingelegt:
+
+| Datum | Konto | Betrag EUR |
+|---|---|---:|
+| 18.03.2021 | Mikic | 4.000,00 |
+| 22.03.2021 | Mikic | 8.000,00 |
+| 12.04.2021 | Mikic | 5.600,00 |
+| 21.04.2021 | Mikic | 3.000,00 |
+| 26.04.2021 | Mikic | 500,00 |
+| 12.05.2021 | Höfler-9891 | 400,00 |
+| **Summe** | | **21.500,00** |
+
+Die Behebung vom 11.01.2021 reduziert sich damit auf einen Nettobetrag von **EUR 43.500,00**.
+
+### 2.4 Lebenshaltung — rechnerisch der größte Posten
+
+Der über Karte und Lastschrift dokumentierte Privatkonsum beträgt über alle vier Konten und 32 Monate **EUR 60.085,71**, also **EUR 1.877,68 pro Monat** für einen Zweipersonenhaushalt. Darin enthalten sind Lebensmittel, Amazon, Drogerie, Gastronomie und Abonnements.
+
+Dieser Betrag liegt deutlich unter den durchschnittlichen Konsumausgaben eines österreichischen Zweipersonenhaushalts im betreffenden Zeitraum. Die Differenz muss in bar bestritten worden sein, weil sie auf den Konten sonst schlicht fehlt. Bei einer realistischen Bandbreite von EUR 2.800 bis 3.500 monatlich ergibt sich eine bar gedeckte Lücke von **rund EUR 30.000 bis 52.000** über den Erfassungszeitraum.
+
+Das ist kein Beleg im urkundlichen Sinn, aber ein belastbarer rechnerischer Befund: Ein Haushalt, der über die Konten nachweislich nur EUR 1.878 monatlich verbraucht, hat die übrigen Lebenshaltungskosten zwangsläufig aus dem behobenen Bargeld bestritten.
+
+### 2.5 Löhne in bar — dem Grunde nach belegt
+
+Die Auszahlungsjournale der JB Technology GmbH weisen für sämtliche zwölf Monate 2021 die Auszahlungsart **KASSA** aus, also Barauszahlung. Dienstnehmerin war Daniela Mikic, ab August 2021 zusätzlich Marko Mikic. Gesamtaufwand 2021 EUR 32.515,00, davon Nettoauszahlungen an die Dienstnehmer EUR 20.711,25.
+
+Dass Löhne bar ausbezahlt wurden, ist damit urkundlich belegt. Ein Barbedarf des Unternehmens bestand also tatsächlich.
+
+---
+
+## 3. Nicht aufgelöst
+
+### 3.1 Der Restbetrag
+
+| Position | Betrag EUR |
+|---|---:|
+| Behebung 11.01.2021 abzüglich Wiedereinlagen | 43.500,00 |
+| Behebung 28.12.2020 „Anzahlung Quelle" | 5.000,00 |
+| Behebung 18.11.2020 | 4.631,00 |
+| Behebung 28.12.2020 „Mitarbeiter Lohnzahlungen" | 10.000,00 |
+| Behebung 11.09.2018 abzüglich Rückfluss | 4.000,00 |
+| **Summe ohne Einzelnachweis** | **67.131,00** |
+
+Davon entfällt ein rechnerisch nicht abgrenzbarer Teil auf die unter 2.4 beschriebene Lebenshaltung.
+
+### 3.2 Was ausdrücklich nicht gefunden wurde
+
+**Kein Kassabuch.** Die BMD-Buchhaltungsexporte enthalten im Kontenplan zwar das Sachkonto „Kassenbestand in Euro", in den Kontoblättern und Buchungsdaten der Jahre 2017 bis 2022 finden sich darauf jedoch **keine Buchungen**. Eine Durchsuchung sämtlicher Buchungstexte nach Kassa- und Barbezügen ergab ausschließlich Kundennamen (Gösser Bar, Cube 8 Bar, Stage Bar u. a.), keine Kassavorgänge.
+
+**Keine Lohnquittungen.** Für die bar ausbezahlten Löhne 2021 existieren Auszahlungsjournale, aber keine unterschriebenen Empfangsbestätigungen. Für Dezember 2020, den Monat der Behebung mit dem Vermerk „Mitarbeiter Lohnzahlungen", fehlen die Lohnunterlagen vollständig; der Ordner `2020/DN` ist leer. Die Monatslohnsumme im Jänner 2021 betrug EUR 310,69.
+
+**Keine Materialrechnungen.** Baumarkt- und Großhandelszahlungen über alle Konten und den gesamten Zeitraum: **EUR 5.571,77 in 21 Buchungen, sämtlich Kartenzahlungen**. Nach dem 11.01.2021 lediglich EUR 110,63. In der Buchhaltung 2016 bis 2022 existiert keine einzige OBI-, Bauhaus- oder Hornbach-Rechnung. Der Abgleich der 198 Eingangsrechnungen gegen die Bankbuchungen ergab für den Ordner „bezahlt" 18 Rechnungen ohne Banküberweisung mit einer Gesamtsumme von **EUR 7.327,14**, überwiegend Amazon-Quittungen über wenige Euro.
+
+**Keine Barzahlungen an Gerichtsvollzieher.** Sämtliche 18 Zahlungen mit Exekutionsbezug über EUR 18.807,52 erfolgten per Überweisung unter Angabe der Geschäftszahl, einschließlich der einzigen Zahlung an eine Gerichtsvollzieherin (Brigitte Steidl, OLG Innsbruck, 23 E 708/19g, EUR 1.129,97 am 15.02.2021).
+
+**Keine Auszüge des Kontos AT75 5700 0300…** Dieses Konto erscheint am 28.12.2020 im Buchungstext „JB Technology GmbH ‚Webshop'". Auszüge liegen nicht vor.
+
+---
+
+## 4. Bewertung der Beweislage
+
+**Was sich sagen lässt.** Von den EUR 160.104,57 Barauszahlungen sind EUR 60.473,57 Routinebehebungen ohne Erklärungsbedarf, EUR 11.000,00 nachweislich wieder eingelegt worden und EUR 21.500,00 nach der Großbehebung zurückgeflossen. Ein erheblicher, rechnerisch eingrenzbarer Teil des Restes hat die Lebenshaltung gedeckt, die über die Konten mit EUR 1.878 monatlich auffällig unterdotiert ist. Ein Barbedarf des Unternehmens für Lohnzahlungen ist durch die Auszahlungsjournale dem Grunde nach belegt.
+
+**Was sich nicht sagen lässt.** Eine Einzelzuordnung der EUR 43.500,00 aus der Behebung vom 11.01.2021 ist aus den vorliegenden Unterlagen nicht möglich. Eine Erklärung, die auf Materialeinkäufe gestützt wird, ist mit den Kontodaten nicht vereinbar: In der betreffenden Zeit gibt es keine entsprechenden Einkäufe, und über drei Jahre hinweg betragen sämtliche Baumarktumsätze EUR 5.571,77.
+
+**Konsequenz für das Verfahren.** Die Staatsanwaltschaft verfügt über dieselben Kontodaten. Eine Einlassung, die sich an diesen Daten widerlegen lässt, verschlechtert die Position. Tragfähig sind demgegenüber die unter Punkt 2 belegten Positionen sowie der Hinweis, dass eine Barbehebung ohne festgestellten Empfänger für sich genommen kein Beiseiteschaffen im Sinne des § 156 StGB belegt, solange nicht feststeht, dass die Mittel dem Gläubigerzugriff entzogen und nicht verbraucht wurden.
+
+---
+
+## 5. Womit sich der Rest noch auflösen ließe
+
+1. **Auszüge des Kontos AT75 5700 0300…** (JB Technology „Webshop"). Die einzige noch offene Bankquelle.
+2. **Kontoauszüge nach dem 21.05.2021.** Der gesamte Zeitraum ab Juni 2021 ist unbelegt; dort könnten weitere Wiedereinlagen liegen.
+3. **Lohnquittungen 2021** der Dienstnehmer Daniela und Marko Mikic, die den Barbedarf von EUR 20.711,25 belegen würden.
+4. **Lohnunterlagen Dezember 2020**, die den Vermerk „Mitarbeiter Lohnzahlungen" auf der Behebung über EUR 10.000,00 stützen würden.
+5. **Unterlagen zur „Anzahlung Quelle"** vom 28.12.2020 über EUR 5.000,00 — Bestellung, Lieferschein oder Vertrag.
+6. **Belege zu Materialeinkäufen**, falls solche außerhalb der vorliegenden Buchhaltung existieren, samt zugehöriger Ausgangsrechnung, aus der der Materialeinsatz hervorgeht.

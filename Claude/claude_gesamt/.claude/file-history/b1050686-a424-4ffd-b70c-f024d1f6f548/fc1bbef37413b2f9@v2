@@ -1,0 +1,77 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+
+import { protokolliere } from "@/lib/sicherheit/audit";
+import { pruefeParameter } from "@/lib/sicherheit/regelgrenzen";
+import { requireRecht } from "@/lib/session";
+
+export interface SteuerErgebnis {
+  ok: boolean;
+  meldung: string;
+  /** Parameter, auf den sich die Meldung bezieht. */
+  parameter?: string;
+}
+
+/**
+ * Aendert einen Steuerungsparameter.
+ *
+ * Die Reihenfolge der Pruefungen ist bewusst so gewaehlt:
+ *
+ *   1. Recht des Benutzers - darf diese Person ueberhaupt steuern?
+ *   2. Zulaessigkeit des Parameters - ist er gesetzlich freigegeben?
+ *   3. Protokollierung - jeder Versuch wird vermerkt, auch der
+ *      abgelehnte. Gerade abgelehnte Versuche sind fuer den Nachweis
+ *      nach NIS2 interessant.
+ *
+ * Punkt 2 ist der Kern: Netzrelevante Werte wie Wirkleistungsbegrenzung,
+ * Parkregler-Sollwert oder die Schutzeinstellungen des Netz- und
+ * Anlagenschutzes werden hier abgelehnt - unabhaengig davon, was die
+ * Oberflaeche anbietet. Wer das Formular umgeht und direkt an diese
+ * Funktion sendet, kommt keinen Schritt weiter.
+ */
+export async function setzeParameter(
+  _vorher: SteuerErgebnis | null,
+  formular: FormData,
+): Promise<SteuerErgebnis> {
+  const benutzer = await requireRecht("steuerung.schreiben");
+
+  const anlage = String(formular.get("anlage") ?? "");
+  const parameter = String(formular.get("parameter") ?? "");
+  const rohwert = formular.get("wert");
+
+  const pruefung = pruefeParameter(parameter, rohwert);
+
+  if (!pruefung.erlaubt) {
+    await protokolliere({
+      kategorie: "steuerung",
+      aktion: `Änderung von "${parameter}"`,
+      ergebnis: "abgelehnt",
+      objekt: anlage,
+      nachher: String(rohwert),
+      begruendung: pruefung.grund,
+    });
+
+    return { ok: false, meldung: pruefung.grund, parameter };
+  }
+
+  // An dieser Stelle ginge der Befehl an die Anlagensteuerung.
+  // Die Uebertragung selbst ist noch nicht angebunden - siehe
+  // src/lib/steuerung/README.md.
+  await protokolliere({
+    kategorie: "steuerung",
+    aktion: `Änderung von "${parameter}"`,
+    ergebnis: "erfolg",
+    objekt: anlage,
+    nachher: String(pruefung.wert),
+    begruendung: `Geändert durch ${benutzer.vollname}`,
+  });
+
+  revalidatePath("/portal/steuerung");
+
+  return {
+    ok: true,
+    meldung: `Wert übernommen. Die Anlage übernimmt die Änderung mit dem nächsten Regelzyklus.`,
+    parameter,
+  };
+}

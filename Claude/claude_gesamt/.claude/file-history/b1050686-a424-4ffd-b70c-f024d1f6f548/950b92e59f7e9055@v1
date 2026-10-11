@@ -1,0 +1,141 @@
+import "server-only";
+
+import {
+  DOCTYPE,
+  type FrappeFile,
+  type PvAnlage,
+  type PvErtrag,
+  type PvStoerung,
+  type SalesInvoice,
+  getCount,
+  getList,
+} from "./doctypes";
+
+/**
+ * Datenzugriff fuer den Portalbereich.
+ *
+ * Hier wird bewusst NICHT nach Kunde gefiltert: Frappe wendet die
+ * Berechtigungen des angemeldeten Benutzers serverseitig an. Die
+ * Zuordnung "Benutzer sieht nur seine Anlagen" gehoert als User
+ * Permission auf den Customer-Datensatz in Frappe konfiguriert - nicht
+ * in diese Anwendung. Ein Filter hier waere nur Kosmetik und liesse
+ * sich umgehen.
+ */
+
+export async function ladeAnlagen(limit = 50): Promise<PvAnlage[]> {
+  return getList<PvAnlage>(DOCTYPE.anlage, {
+    fields: [
+      "name",
+      "anlagen_name",
+      "kunde",
+      "standort",
+      "leistung_kwp",
+      "inbetriebnahme",
+      "status",
+    ],
+    orderBy: "anlagen_name asc",
+    limit,
+  });
+}
+
+export async function ladeErtraege(
+  anlage?: string,
+  limit = 30,
+): Promise<PvErtrag[]> {
+  return getList<PvErtrag>(DOCTYPE.ertrag, {
+    fields: [
+      "name",
+      "anlage",
+      "datum",
+      "ertrag_kwh",
+      "eigenverbrauch_kwh",
+      "einspeisung_kwh",
+    ],
+    filters: anlage ? [["anlage", "=", anlage]] : undefined,
+    orderBy: "datum desc",
+    limit,
+  });
+}
+
+export async function ladeRechnungen(limit = 20): Promise<SalesInvoice[]> {
+  return getList<SalesInvoice>(DOCTYPE.rechnung, {
+    fields: [
+      "name",
+      "customer",
+      "posting_date",
+      "due_date",
+      "grand_total",
+      "outstanding_amount",
+      "currency",
+      "status",
+    ],
+    orderBy: "posting_date desc",
+    limit,
+  });
+}
+
+export async function ladeStoerungen(limit = 20): Promise<PvStoerung[]> {
+  return getList<PvStoerung>(DOCTYPE.stoerung, {
+    fields: [
+      "name",
+      "betreff",
+      "anlage",
+      "status",
+      "prioritaet",
+      "gemeldet_am",
+    ],
+    orderBy: "modified desc",
+    limit,
+  });
+}
+
+export async function ladeDokumente(limit = 50): Promise<FrappeFile[]> {
+  return getList<FrappeFile>(DOCTYPE.dokument, {
+    fields: [
+      "name",
+      "file_name",
+      "file_url",
+      "file_size",
+      "attached_to_doctype",
+      "attached_to_name",
+      "is_private",
+      "creation",
+    ],
+    orderBy: "creation desc",
+    limit,
+  });
+}
+
+export interface DashboardZahlen {
+  anlagen: number;
+  leistungKwp: number;
+  ertragLetzte30Tage: number;
+  offeneStoerungen: number;
+}
+
+/** Sammelt die Kennzahlen fuer die Portaluebersicht in einem Rutsch. */
+export async function ladeDashboardZahlen(): Promise<DashboardZahlen> {
+  const vor30Tagen = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .slice(0, 10);
+
+  const [anlagen, ertraege, offeneStoerungen] = await Promise.all([
+    ladeAnlagen(200),
+    getList<PvErtrag>(DOCTYPE.ertrag, {
+      fields: ["name", "anlage", "datum", "ertrag_kwh"],
+      filters: [["datum", ">=", vor30Tagen]],
+      limit: 2000,
+    }),
+    getCount(DOCTYPE.stoerung, [["status", "!=", "Geschlossen"]]),
+  ]);
+
+  return {
+    anlagen: anlagen.length,
+    leistungKwp: anlagen.reduce((summe, a) => summe + (a.leistung_kwp ?? 0), 0),
+    ertragLetzte30Tage: ertraege.reduce(
+      (summe, e) => summe + (e.ertrag_kwh ?? 0),
+      0,
+    ),
+    offeneStoerungen,
+  };
+}

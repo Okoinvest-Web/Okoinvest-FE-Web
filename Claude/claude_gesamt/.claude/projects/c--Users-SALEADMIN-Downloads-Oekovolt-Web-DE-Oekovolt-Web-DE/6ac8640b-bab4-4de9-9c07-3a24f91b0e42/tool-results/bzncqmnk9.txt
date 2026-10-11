@@ -1,0 +1,513 @@
+     1	// src/lib/plattform/backend/demo/teams.js
+     2	//
+     3	// Firmenkonten (Organisationen & Teams) im Demo-Backend – Referenz für die Frappe-App
+     4	// (plattform/api/organisation.py, plattform/organisation.py). Vertrag: docs/API.md, Abschnitt 8.
+     5	//
+     6	// Modell
+     7	//   db.organisationen   { id O-…, name, art, suchprofil, erstelltVon, erstelltAm, geaendertAm }
+     8	//   db.mitgliedschaften { id MG-…, organisationId, nutzerId, rolle (inhaber|admin|mitglied|lesen), seit, eingeladenVon }
+     9	//   db.einladungen      { id EL-…, organisationId, email, rolle, hash (SHA-256 des Tokens), ablauf, status, eingeladenVon, … }
+    10	//   Flächen, Projekte und Interessen tragen `organisationId` (leer = persönlich).
+    11	//
+    12	// Rechte (siehe src/lib/plattform/organisation.js): Eigentümer wie bisher; zusätzlich sehen Mitglieder der
+    13	// Organisation eines Objekts dieses Objekt (jede Teamrolle), bearbeiten ab „Mitglied“, verwalten ab „Admin“.
+    14	// Listen: ohne aktive Organisation die eigenen Objekte (wie bisher), mit aktiver Organisation deren Objekte.
+    15	// Die aktive Organisation hängt an der Sitzung (Organisationswechsel im Portal-Kopf).
+    16	
+    17	import {
+    18	  EINLADUNG_ROLLEN, EINLADUNG_TAGE, MAX_MITGLIEDER, ORGANISATION_ARTEN, ORGANISATION_OBJEKTE, TEAM_ROLLEN,
+    19	  darfTeamSchreiben, darfTeamVerwalten, teamRolleLabel, teamStufe,
+    20	} from "../../organisation";
+    21	import { PlattformFehler, konflikt, nichtGefunden, ungueltig, verboten } from "../../fehler";
+    22	import * as v from "../../validierung";
+    23	import { jetzt, neueId, sha256, zufallsToken } from "./hilfen";
+    24	import { aendern, lesen } from "./speicher";
+    25	import { internSicherheit } from "./sicherheitWerkzeuge";
+    26	
+    27	// ================================================================ Rechte-Helfer (von demo.js genutzt)
+    28	
+    29	const BESITZ_FELD = { flaeche: "nutzerId", projekt: "anbieterId", interesse: "investorId" };
+    30	const SAMMLUNG = { flaeche: "flaechen", projekt: "projekte", interesse: "interessen" };
+    31	
+    32	/** Sammlungen anlegen, falls die Demo-Datenbank älter ist (kein Schema-Wechsel nötig) */
+    33	export function orgSammlungen(db) {
+    34	  db.organisationen ||= [];
+    35	  db.mitgliedschaften ||= [];
+    36	  db.einladungen ||= [];
+    37	  return db;
+    38	}
+    39	
+    40	export function mitgliedschaft(db, nutzerId, organisationId) {
+    41	  if (!nutzerId || !organisationId) return null;
+    42	  return (db.mitgliedschaften || []).find((m) => m.nutzerId === nutzerId && m.organisationId === organisationId) || null;
+    43	}
+    44	
+    45	/** Teamrolle des Nutzers in der Organisation oder null */
+    46	export const teamRolle = (db, nutzerId, organisationId) => mitgliedschaft(db, nutzerId, organisationId)?.rolle || null;
+    47	
+    48	/** Aktive Organisation der Sitzung – nur, wenn die Mitgliedschaft (noch) besteht */
+    49	export function aktiveOrganisation(db, n) {
+    50	  const id = n?.organisation?.id || null;
+    51	  return id && mitgliedschaft(db, n.id, id) ? id : null;
+    52	}
+    53	
+    54	/** Zugriff von n auf ein Objekt der Organisation: "schreiben" | "lesen" | null (ohne Eigentum/Admin) */
+    55	export function teamZugriff(db, n, o) {
+    56	  if (!n || !o?.organisationId) return null;
+    57	  const r = teamRolle(db, n.id, o.organisationId);
+    58	  if (!r) return null;
+    59	  return darfTeamSchreiben(r) ? "schreiben" : "lesen";
+    60	}
+    61	export const darfTeamLesenObjekt = (db, n, o) => !!teamZugriff(db, n, o);
+    62	export const darfTeamSchreibenObjekt = (db, n, o) => teamZugriff(db, n, o) === "schreiben";
+    63	export function darfTeamVerwaltenObjekt(db, n, o) {
+    64	  if (!n || !o?.organisationId) return false;
+    65	  return darfTeamVerwalten(teamRolle(db, n.id, o.organisationId));
+    66	}
+    67	
+    68	/**
+    69	 * Filter für Listen: ohne aktive Organisation eigene Objekte (Feld `feld` = n.id),
+    70	 * mit aktiver Organisation alle Objekte dieser Organisation.
+    71	 */
+    72	export function listenFilter(db, n, feld) {
+    73	  const aktiv = aktiveOrganisation(db, n);
+    74	  return aktiv ? (o) => o.organisationId === aktiv : (o) => o[feld] === n.id;
+    75	}
+    76	
+    77	/** Organisation, der ein neu angelegtes Objekt gehört (aktive Organisation, Rolle ≥ Mitglied) */
+    78	export function organisationFuerNeu(db, n) {
+    79	  const aktiv = aktiveOrganisation(db, n);
+    80	  if (!aktiv) return null;
+    81	  if (!darfTeamSchreiben(teamRolle(db, n.id, aktiv))) throw verboten("Mit der Rolle „Nur lesen“ können Sie in dieser Organisation nichts anlegen.");
+    82	  return aktiv;
+    83	}
+    84	
+    85	/** Zusatzfelder für die Ausgabe eines Objekts: organisation {id, name}, meinZugriff */
+    86	export function zugriffInfo(db, n, o, besitzerId) {
+    87	  const org = o?.organisationId ? (db.organisationen || []).find((x) => x.id === o.organisationId) : null;
+    88	  const admin = !!n?.rollen?.includes("admin");
+    89	  const meinZugriff = besitzerId === n?.id ? "eigentuemer" : teamZugriff(db, n, o) || (admin ? "admin" : null);
+    90	  return { organisation: org ? { id: org.id, name: org.name } : null, meinZugriff };
+    91	}
+    92	
+    93	/**
+    94	 * Interesse, das n für ein Projekt „gehört“: im Organisationskontext das Interesse der Organisation
+    95	 * (von jedem Mitglied angelegt) bzw. sonst das eigene.
+    96	 */
+    97	export function interesseFuer(db, n, projektId) {
+    98	  if (!n) return null;
+    99	  const aktiv = aktiveOrganisation(db, n);
+   100	  const liste = db.interessen.filter((i) => i.projektId === projektId);
+   101	  if (aktiv) {
+   102	    const org = liste.find((i) => i.organisationId === aktiv);
+   103	    if (org) return org;
+   104	  }
+   105	  return liste.find((i) => i.investorId === n.id) || null;
+   106	}
+   107	
+   108	/** Hat n über eigenes oder Team-Interesse Zugang zum Datenraum (Status aus `status`)? */
+   109	export function datenraumUeberInteresse(db, n, projektId, status) {
+   110	  return db.interessen.some((i) => i.projektId === projektId && status.includes(i.status) && (i.investorId === n.id || darfTeamLesenObjekt(db, n, i)));
+   111	}
+   112	
+   113	/** Suchprofil im aktuellen Kontext (Organisation oder Konto) */
+   114	export function suchprofilFuer(db, n) {
+   115	  const aktiv = aktiveOrganisation(db, n);
+   116	  if (aktiv) return (db.organisationen || []).find((o) => o.id === aktiv)?.suchprofil || null;
+   117	  return db.nutzer.find((u) => u.id === n.id)?.suchprofil || null;
+   118	}
+   119	
+   120	/** Organisationen des Nutzers für Sitzung/Kopfzeile */
+   121	export function organisationenVon(db, nutzerId) {
+   122	  return (db.mitgliedschaften || [])
+   123	    .filter((m) => m.nutzerId === nutzerId)
+   124	    .map((m) => {
+   125	      const o = (db.organisationen || []).find((x) => x.id === m.organisationId);
+   126	      return o ? { id: o.id, name: o.name, art: o.art, rolle: m.rolle } : null;
+   127	    })
+   128	    .filter(Boolean)
+   129	    .sort((a, b) => a.name.localeCompare(b.name, "de"));
+   130	}
+   131	
+   132	/**
+   133	 * Suchprofil-Alarm für Organisationen: Mitglieder von Organisationen mit passendem Team-Suchprofil
+   134	 * (ohne die Organisation des Anbieters) werden benachrichtigt – je Person höchstens einmal.
+   135	 */
+   136	export function organisationsAlarm(db, projekt, { matching, schwelleStandard, bereits = new Set(), melden }) {
+   137	  for (const org of db.organisationen || []) {
+   138	    const sp = org.suchprofil;
+   139	    if (!sp?.benachrichtigen || org.id === projekt.organisationId) continue;
+   140	    const m = matching(projekt, sp);
+   141	    if (m.score < (Number(sp.schwelle) || schwelleStandard)) continue;
+   142	    for (const mg of (db.mitgliedschaften || []).filter((x) => x.organisationId === org.id)) {
+   143	      const u = db.nutzer.find((x) => x.id === mg.nutzerId);
+   144	      if (!u || !u.aktiv || bereits.has(u.id) || u.id === projekt.anbieterId) continue;
+   145	      bereits.add(u.id);
+   146	      melden(u, m, org);
+   147	    }
+   148	  }
+   149	}
+   150	
+   151	// ================================================================ Ausgabe
+   152	
+   153	const nutzerKurz = (db, id) => {
+   154	  const u = db.nutzer.find((x) => x.id === id);
+   155	  return u ? { id: u.id, vorname: u.vorname, nachname: u.nachname, email: u.email, firma: u.firma || "" } : null;
+   156	};
+   157	const nameVon = (db, id) => {
+   158	  const u = db.nutzer.find((x) => x.id === id);
+   159	  return u ? [u.vorname, u.nachname].filter(Boolean).join(" ") : "";
+   160	};
+   161	
+   162	function objektTitel(art, o) {
+   163	  if (art === "flaeche") return o.bezeichnung;
+   164	  if (art === "projekt") return o.titel;
+   165	  return null;
+   166	}
+   167	
+   168	function organisationAusgabe(db, org, n) {
+   169	  const rolle = teamRolle(db, n.id, org.id);
+   170	  const verwalten = darfTeamVerwalten(rolle);
+   171	  const zaehle = (art) => db[SAMMLUNG[art]].filter((x) => x.organisationId === org.id).length;
+   172	  const interessenOrg = db.interessen.filter((i) => i.organisationId === org.id);
+   173	  return {
+   174	    id: org.id,
+   175	    name: org.name,
+   176	    art: org.art,
+   177	    rolle,
+   178	    erstelltAm: org.erstelltAm,
+   179	    suchprofil: org.suchprofil || null,
+   180	    mitglieder: db.mitgliedschaften
+   181	      .filter((m) => m.organisationId === org.id)
+   182	      .sort((a, b) => teamStufe(b.rolle) - teamStufe(a.rolle) || String(a.seit).localeCompare(String(b.seit)))
+   183	      .map((m) => ({ id: m.id, nutzer: nutzerKurz(db, m.nutzerId), rolle: m.rolle, seit: m.seit, ich: m.nutzerId === n.id })),
+   184	    einladungen: verwalten
+   185	      ? db.einladungen
+   186	          .filter((e) => e.organisationId === org.id && e.status === "offen")
+   187	          .map((e) => ({ id: e.id, email: e.email, rolle: e.rolle, ablauf: e.ablauf, abgelaufen: new Date(e.ablauf) < new Date(), eingeladenVon: nameVon(db, e.eingeladenVon), erstelltAm: e.erstelltAm }))
+   188	      : [],
+   189	    objekte: {
+   190	      flaechen: zaehle("flaeche"),
+   191	      projekte: zaehle("projekt"),
+   192	      interessen: interessenOrg.length,
+   193	      liste: [
+   194	        ...db.flaechen.filter((x) => x.organisationId === org.id).map((x) => ({ art: "flaeche", id: x.id, titel: x.bezeichnung, status: x.status, link: `/portal/flaechen/${x.id}` })),
+   195	        ...db.projekte.filter((x) => x.organisationId === org.id).map((x) => ({ art: "projekt", id: x.id, titel: x.titel, status: x.status, link: `/portal/projekte/${x.id}` })),
+   196	        ...interessenOrg.map((i) => {
+   197	          const p = db.projekte.find((x) => x.id === i.projektId);
+   198	          return { art: "interesse", id: i.id, titel: p?.titel || i.projektId, status: i.status, link: `/portal/boerse/${i.projektId}` };
+   199	        }),
+   200	      ].slice(0, 200),
+   201	    },
+   202	    // Eigene persönliche Objekte, die in die Organisation übernommen werden können (ab Mitglied)
+   203	    zuordenbar: darfTeamSchreiben(rolle)
+   204	      ? [
+   205	          ...db.flaechen.filter((x) => x.nutzerId === n.id && !x.organisationId).map((x) => ({ art: "flaeche", id: x.id, titel: x.bezeichnung })),
+   206	          ...db.projekte.filter((x) => x.anbieterId === n.id && !x.organisationId).map((x) => ({ art: "projekt", id: x.id, titel: x.titel })),
+   207	          ...db.interessen.filter((x) => x.investorId === n.id && !x.organisationId).map((i) => ({ art: "interesse", id: i.id, titel: db.projekte.find((p) => p.id === i.projektId)?.titel || i.projektId })),
+   208	        ].slice(0, 100)
+   209	      : [],
+   210	  };
+   211	}
+   212	
+   213	function orgLaden(db, n, id, { verwalten = false, inhaber = false } = {}) {
+   214	  if (!n) throw new PlattformFehler(401, "Bitte melden Sie sich an.");
+   215	  const org = (db.organisationen || []).find((o) => o.id === v.kennung(id));
+   216	  // Nicht-Mitglieder erfahren nicht, ob es die Organisation gibt → immer 403
+   217	  const rolle = org ? teamRolle(db, n.id, org.id) : null;
+   218	  if (!org || !rolle) throw verboten("Sie sind kein Mitglied dieser Organisation.");
+   219	  if (inhaber && rolle !== "inhaber") throw verboten("Nur der Inhaber kann das.");
+   220	  if (verwalten && !darfTeamVerwalten(rolle)) throw verboten("Dafür brauchen Sie die Teamrolle Admin oder Inhaber.");
+   221	  return { org, rolle };
+   222	}
+   223	
+   224	// ================================================================ Operationen
+   225	
+   226	export async function organisationen(n) {
+   227	  if (!n) throw new PlattformFehler(401, "Bitte melden Sie sich an.");
+   228	  const db = orgSammlungen(await lesen());
+   229	  return { organisationen: organisationenVon(db, n.id).map((o) => ({ ...o, mitglieder: db.mitgliedschaften.filter((m) => m.organisationId === o.id).length })), aktiv: aktiveOrganisation(db, n) };
+   230	}
+   231	
+   232	export async function organisationAnlegen(n, daten = {}) {
+   233	  if (!n) throw new PlattformFehler(401, "Bitte melden Sie sich an.");
+   234	  const name = v.text(daten.name, 120);
+   235	  v.pflicht(name.length >= 2, "Bitte geben Sie den Namen der Organisation an.");
+   236	  const art = v.auswahl(daten.art, ORGANISATION_ARTEN, "");
+   237	  v.pflicht(art, "Bitte wählen Sie die Art der Organisation.");
+   238	  return aendern((db) => {
+   239	    orgSammlungen(db);
+   240	    v.pflicht(db.mitgliedschaften.filter((m) => m.nutzerId === n.id).length < 20, "Sie sind bereits Mitglied in 20 Organisationen.");
+   241	    const org = { id: neueId("O"), name, art, suchprofil: null, erstelltVon: n.id, erstelltAm: jetzt(), geaendertAm: jetzt() };
+   242	    db.organisationen.push(org);
+   243	    db.mitgliedschaften.push({ id: neueId("MG"), organisationId: org.id, nutzerId: n.id, rolle: "inhaber", seit: jetzt(), eingeladenVon: null });
+   244	    internSicherheit.protokoll(db, n, "organisation", "organisation", org.id, `Organisation „${name}“ angelegt (${ORGANISATION_ARTEN[art].label})`);
+   245	    return organisationAusgabe(db, org, n);
+   246	  });
+   247	}
+   248	
+   249	export async function organisation(n, id) {
+   250	  const db = orgSammlungen(await lesen());
+   251	  const { org } = orgLaden(db, n, id);
+   252	  return organisationAusgabe(db, org, n);
+   253	}
+   254	
+   255	export async function organisationAendern(n, id, daten = {}) {
+   256	  return aendern((db) => {
+   257	    orgSammlungen(db);
+   258	    const { org } = orgLaden(db, n, id, { verwalten: true });
+   259	    if (daten.name !== undefined) {
+   260	      const name = v.text(daten.name, 120);
+   261	      v.pflicht(name.length >= 2, "Bitte geben Sie den Namen der Organisation an.");
+   262	      org.name = name;
+   263	    }
+   264	    if (daten.art !== undefined) {
+   265	      const art = v.auswahl(daten.art, ORGANISATION_ARTEN, "");
+   266	      v.pflicht(art, "Unbekannte Art.");
+   267	      org.art = art;
+   268	    }
+   269	    org.geaendertAm = jetzt();
+   270	    internSicherheit.protokoll(db, n, "organisation", "organisation", org.id, `Organisation bearbeitet: ${org.name}`);
+   271	    return organisationAusgabe(db, org, n);
+   272	  });
+   273	}
+   274	
+   275	export async function organisationLoeschen(n, id) {
+   276	  return aendern((db) => {
+   277	    orgSammlungen(db);
+   278	    const { org } = orgLaden(db, n, id, { inhaber: true });
+   279	    // Objekte fallen an ihre Eigentümer zurück (nichts wird gelöscht)
+   280	    for (const art of ORGANISATION_OBJEKTE) for (const o of db[SAMMLUNG[art]]) if (o.organisationId === org.id) o.organisationId = null;
+   281	    db.mitgliedschaften = db.mitgliedschaften.filter((m) => m.organisationId !== org.id);
+   282	    db.einladungen = db.einladungen.filter((e) => e.organisationId !== org.id);
+   283	    for (const s of db.sitzungen || []) if (s.organisationId === org.id) s.organisationId = null;
+   284	    db.organisationen = db.organisationen.filter((o) => o.id !== org.id);
+   285	    internSicherheit.protokoll(db, n, "organisation", "organisation", org.id, `Organisation „${org.name}“ gelöscht`);
+   286	    return { ok: true };
+   287	  });
+   288	}
+   289	
+   290	// ---------------------------------------------------------------- Einladungen
+   291	
+   292	export async function einladungAnlegen(n, id, { email, rolle, basisUrl } = {}) {
+   293	  const e = v.email(email);
+   294	  v.pflicht(e, "Bitte geben Sie eine gültige E-Mail-Adresse an.");
+   295	  const r = v.auswahl(rolle, EINLADUNG_ROLLEN, "");
+   296	  v.pflicht(r, "Bitte wählen Sie eine Teamrolle.");
+   297	  return aendern((db) => {
+   298	    orgSammlungen(db);
+   299	    const { org, rolle: eigene } = orgLaden(db, n, id, { verwalten: true });
+   300	    if (teamStufe(r) > teamStufe(eigene)) throw verboten("Sie können keine höhere Rolle vergeben als Ihre eigene.");
+   301	    const vorhanden = db.nutzer.find((u) => u.email === e);
+   302	    if (vorhanden && mitgliedschaft(db, vorhanden.id, org.id)) throw konflikt("Diese Person ist bereits Mitglied.");
+   303	    v.pflicht(db.mitgliedschaften.filter((m) => m.organisationId === org.id).length < MAX_MITGLIEDER, "Die Organisation hat die maximale Mitgliederzahl erreicht.");
+   304	    // offene Einladung an dieselbe Adresse ersetzen
+   305	    for (const x of db.einladungen) if (x.organisationId === org.id && x.email === e && x.status === "offen") x.status = "ersetzt";
+   306	    const token = zufallsToken();
+   307	    const einl = {
+   308	      id: neueId("EL"), organisationId: org.id, email: e, rolle: r, hash: sha256(token),
+   309	      ablauf: new Date(Date.now() + EINLADUNG_TAGE * 86400e3).toISOString(), status: "offen", eingeladenVon: n.id, erstelltAm: jetzt(), angenommenAm: null, angenommenVon: null,
+   310	    };
+   311	    db.einladungen.push(einl);
+   312	    const link = `${basisUrl}/einladung/${token}`;
+   313	    db.demoLinks.unshift({ am: jetzt(), art: "einladung", email: e, link });
+   314	    db.demoLinks = db.demoLinks.slice(0, 50);
+   315	    console.info(`[plattform-demo] Einladungs-Link für ${e}: ${link}`);
+   316	    internSicherheit.postausgangAnlegen(db, {
+   317	      an: e, anName: vorhanden ? [vorhanden.vorname, vorhanden.nachname].filter(Boolean).join(" ") : "", nutzerId: vorhanden?.id || null, art: "einladung",
+   318	      betreff: `Einladung in das Team „${org.name}“ – ÖkoInvest`,
+   319	      text: `${nameVon(db, n.id)} lädt Sie ein, im Portal von ÖkoInvest dem Team „${org.name}“ beizutreten (Rolle: ${teamRolleLabel(r)}). Der Link ist ${EINLADUNG_TAGE} Tage gültig. Ohne Konto registrieren Sie sich mit dieser E-Mail-Adresse.`,
+   320	      link, linkText: "Einladung ansehen", hinweis: "Sie kennen die einladende Person nicht? Dann ignorieren Sie diese E-Mail bitte.",
+   321	    });
+   322	    internSicherheit.protokoll(db, n, "einladung", "organisation", org.id, `Einladung an ${e} als ${teamRolleLabel(r)}`);
+   323	    return { id: einl.id, email: e, rolle: r, ablauf: einl.ablauf };
+   324	  });
+   325	}
+   326	
+   327	export async function einladungWiderrufen(n, id, einladungId) {
+   328	  return aendern((db) => {
+   329	    orgSammlungen(db);
+   330	    const { org } = orgLaden(db, n, id, { verwalten: true });
+   331	    const e = db.einladungen.find((x) => x.id === einladungId && x.organisationId === org.id && x.status === "offen");
+   332	    if (!e) throw nichtGefunden("Einladung nicht gefunden.");
+   333	    e.status = "widerrufen";
+   334	    internSicherheit.protokoll(db, n, "einladung", "organisation", org.id, `Einladung an ${e.email} widerrufen`);
+   335	    return { ok: true };
+   336	  });
+   337	}
+   338	
+   339	function einladungSuchen(db, token) {
+   340	  const t = String(token || "");
+   341	  if (!/^[A-Za-z0-9_-]{20,200}$/.test(t)) return null;
+   342	  const h = sha256(t);
+   343	  return (db.einladungen || []).find((x) => x.hash === h) || null;
+   344	}
+   345	
+   346	const maskieren = (email) => {
+   347	  const [lokal, domain] = String(email).split("@");
+   348	  return `${lokal.slice(0, 1)}${"•".repeat(Math.max(2, Math.min(6, lokal.length - 1)))}@${domain}`;
+   349	};
+   350	
+   351	/** Öffentliche Kurzinfo zur Einladungsseite (ohne Anmeldung) – verrät nur, was im Link-Empfänger ohnehin weiß */
+   352	export async function einladungInfo(token) {
+   353	  const db = orgSammlungen(await lesen());
+   354	  const e = einladungSuchen(db, token);
+   355	  const org = e ? db.organisationen.find((o) => o.id === e.organisationId) : null;
+   356	  if (!e || !org || e.status !== "offen" || new Date(e.ablauf) < new Date()) return { gueltig: false, status: e ? (e.status === "offen" ? "abgelaufen" : e.status) : "unbekannt" };
+   357	  return { gueltig: true, organisation: { name: org.name, art: org.art }, rolle: e.rolle, eingeladenVon: nameVon(db, e.eingeladenVon), email: maskieren(e.email), ablauf: e.ablauf };
+   358	}
+   359	
+   360	export async function einladungAnnehmen(n, token) {
+   361	  if (!n) throw new PlattformFehler(401, "Bitte melden Sie sich an.");
+   362	  return aendern((db) => {
+   363	    orgSammlungen(db);
+   364	    const e = einladungSuchen(db, token);
+   365	    if (!e || e.status !== "offen" || new Date(e.ablauf) < new Date()) throw ungueltig("Die Einladung ist ungültig, abgelaufen oder wurde widerrufen.");
+   366	    const u = db.nutzer.find((x) => x.id === n.id);
+   367	    if (u.email !== e.email) throw verboten(`Diese Einladung gilt für eine andere E-Mail-Adresse. Bitte melden Sie sich mit der eingeladenen Adresse an.`);
+   368	    const org = db.organisationen.find((o) => o.id === e.organisationId);
+   369	    if (!org) throw nichtGefunden("Die Organisation besteht nicht mehr.");
+   370	    if (!mitgliedschaft(db, u.id, org.id)) {
+   371	      db.mitgliedschaften.push({ id: neueId("MG"), organisationId: org.id, nutzerId: u.id, rolle: e.rolle, seit: jetzt(), eingeladenVon: e.eingeladenVon });
+   372	    }
+   373	    e.status = "angenommen";
+   374	    e.angenommenAm = jetzt();
+   375	    e.angenommenVon = u.id;
+   376	    // Wer die Einladung per E-Mail erhalten hat, hat die Adresse nachgewiesen
+   377	    if (!u.emailBestaetigt) {
+   378	      u.emailBestaetigt = true;
+   379	      internSicherheit.verknuepfen(db, u);
+   380	    }
+   381	    const einladender = db.nutzer.find((x) => x.id === e.eingeladenVon);
+   382	    if (einladender) {
+   383	      internSicherheit.benachrichtigen(db, einladender, { art: "status", titel: `Team „${org.name}“`, text: `${nameVon(db, u.id)} hat die Einladung angenommen (${teamRolleLabel(e.rolle)}).`, link: "/portal/organisation", objektArt: "organisation", objektId: org.id }, { mail: false });
+   384	    }
+   385	    internSicherheit.protokoll(db, u, "einladung", "organisation", org.id, `Einladung angenommen (${teamRolleLabel(e.rolle)})`);
+   386	    return { organisationId: org.id, name: org.name, rolle: e.rolle };
+   387	  });
+   388	}
+   389	
+   390	// ---------------------------------------------------------------- Mitglieder
+   391	
+   392	export async function mitgliedAendern(n, id, mitgliedId, { rolle } = {}) {
+   393	  const r = v.auswahl(rolle, TEAM_ROLLEN, "");
+   394	  v.pflicht(r, "Unbekannte Teamrolle.");
+   395	  return aendern((db) => {
+   396	    orgSammlungen(db);
+   397	    const { org, rolle: eigene } = orgLaden(db, n, id, { verwalten: true });
+   398	    const m = db.mitgliedschaften.find((x) => x.id === mitgliedId && x.organisationId === org.id);
+   399	    if (!m) throw nichtGefunden("Mitglied nicht gefunden.");
+   400	    if (r === "inhaber") {
+   401	      // Übertragung der Inhaberschaft: nur durch den Inhaber, bisheriger Inhaber wird Admin
+   402	      if (eigene !== "inhaber") throw verboten("Nur der Inhaber kann die Inhaberschaft übertragen.");
+   403	      if (m.nutzerId === n.id) return organisationAusgabe(db, org, n);
+   404	      const alt = db.mitgliedschaften.find((x) => x.organisationId === org.id && x.rolle === "inhaber");
+   405	      if (alt) alt.rolle = "admin";
+   406	      m.rolle = "inhaber";
+   407	    } else {
+   408	      if (m.rolle === "inhaber") throw konflikt("Die Rolle des Inhabers ändern Sie, indem Sie die Inhaberschaft übertragen.");
+   409	      if (teamStufe(r) > teamStufe(eigene) || teamStufe(m.rolle) > teamStufe(eigene)) throw verboten("Sie können keine Rolle über Ihrer eigenen vergeben oder ändern.");
+   410	      m.rolle = r;
+   411	    }
+   412	    internSicherheit.protokoll(db, n, "mitglied", "organisation", org.id, `${nameVon(db, m.nutzerId)}: Teamrolle ${teamRolleLabel(m.rolle)}`);
+   413	    return organisationAusgabe(db, org, n);
+   414	  });
+   415	}
+   416	
+   417	export async function mitgliedEntfernen(n, id, mitgliedId) {
+   418	  return aendern((db) => {
+   419	    orgSammlungen(db);
+   420	    const { org, rolle: eigene } = orgLaden(db, n, id);
+   421	    const m = db.mitgliedschaften.find((x) => x.id === mitgliedId && x.organisationId === org.id);
+   422	    if (!m) throw nichtGefunden("Mitglied nicht gefunden.");
+   423	    const selbst = m.nutzerId === n.id;
+   424	    if (!selbst && !darfTeamVerwalten(eigene)) throw verboten("Dafür brauchen Sie die Teamrolle Admin oder Inhaber.");
+   425	    if (m.rolle === "inhaber") throw konflikt(selbst ? "Übertragen Sie zuerst die Inhaberschaft oder löschen Sie die Organisation." : "Der Inhaber kann nicht entfernt werden.");
+   426	    if (!selbst && teamStufe(m.rolle) > teamStufe(eigene)) throw verboten();
+   427	    db.mitgliedschaften = db.mitgliedschaften.filter((x) => x.id !== m.id);
+   428	    for (const s of db.sitzungen || []) if (s.nutzerId === m.nutzerId && s.organisationId === org.id) s.organisationId = null;
+   429	    internSicherheit.protokoll(db, n, "mitglied", "organisation", org.id, selbst ? "Organisation verlassen" : `${nameVon(db, m.nutzerId)} entfernt`);
+   430	    return selbst ? { ok: true, verlassen: true } : organisationAusgabe(db, org, n);
+   431	  });
+   432	}
+   433	
+   434	// ---------------------------------------------------------------- Kontext & Zuordnung
+   435	
+   436	/** Aktive Organisation der aktuellen Sitzung setzen (null = persönlich) */
+   437	export async function organisationWechseln(n, organisationId) {
+   438	  if (!n) throw new PlattformFehler(401, "Bitte melden Sie sich an.");
+   439	  const ziel = organisationId ? v.kennung(organisationId) : null;
+   440	  return aendern((db) => {
+   441	    orgSammlungen(db);
+   442	    if (ziel && !mitgliedschaft(db, n.id, ziel)) throw verboten("Sie sind kein Mitglied dieser Organisation.");
+   443	    const s = (db.sitzungen || []).find((x) => x.id === n.sitzung?.id && x.nutzerId === n.id);
+   444	    if (!s) throw new PlattformFehler(409, "Bitte melden Sie sich neu an, um die Organisation zu wechseln.", "sitzung");
+   445	    s.organisationId = ziel;
+   446	    const org = ziel ? db.organisationen.find((o) => o.id === ziel) : null;
+   447	    return { aktiv: ziel, organisation: org ? { id: org.id, name: org.name, art: org.art, rolle: teamRolle(db, n.id, org.id) } : null };
+   448	  });
+   449	}
+   450	
+   451	/** Eigenes Objekt einer Organisation zuordnen oder wieder persönlich machen */
+   452	export async function objektZuordnen(n, { art, id, organisationId } = {}) {
+   453	  if (!n) throw new PlattformFehler(401, "Bitte melden Sie sich an.");
+   454	  if (!ORGANISATION_OBJEKTE.includes(art)) throw ungueltig("Unbekannte Objektart.");
+   455	  return aendern((db) => {
+   456	    orgSammlungen(db);
+   457	    const o = db[SAMMLUNG[art]].find((x) => x.id === v.kennung(id));
+   458	    if (!o) throw nichtGefunden();
+   459	    const eigen = o[BESITZ_FELD[art]] === n.id;
+   460	    const ziel = organisationId ? v.kennung(organisationId) : null;
+   461	    if (ziel) {
+   462	      if (!eigen) throw verboten("Nur eigene Objekte können einer Organisation zugeordnet werden.");
+   463	      if (!darfTeamSchreiben(teamRolle(db, n.id, ziel))) throw verboten("Dafür brauchen Sie in der Organisation mindestens die Rolle Mitglied.");
+   464	    } else if (!eigen && !darfTeamVerwaltenObjekt(db, n, o)) {
+   465	      throw verboten();
+   466	    }
+   467	    const vorher = o.organisationId || null;
+   468	    o.organisationId = ziel;
+   469	    o.geaendertAm = jetzt();
+   470	    internSicherheit.protokoll(db, n, "zuordnung", art, o.id, ziel ? `Organisation zugeordnet: ${db.organisationen.find((x) => x.id === ziel)?.name}` : `Aus Organisation gelöst (${vorher || "–"})`);
+   471	    return { id: o.id, art, organisationId: ziel, titel: objektTitel(art, o) };
+   472	  });
+   473	}
+   474	
+   475	// ---------------------------------------------------------------- Team-Suchprofil
+   476	
+   477	/** Suchprofil der aktiven Organisation speichern (Rolle ≥ Mitglied) – von suchprofilSpeichern genutzt */
+   478	export function teamSuchprofilSetzen(db, n, profil) {
+   479	  const aktiv = aktiveOrganisation(db, n);
+   480	  if (!aktiv) return false;
+   481	  if (!darfTeamSchreiben(teamRolle(db, n.id, aktiv))) throw verboten("Mit der Rolle „Nur lesen“ können Sie das Team-Suchprofil nicht ändern.");
+   482	  const org = db.organisationen.find((o) => o.id === aktiv);
+   483	  org.suchprofil = profil;
+   484	  org.geaendertAm = jetzt();
+   485	  internSicherheit.protokoll(db, n, "suchprofil", "organisation", org.id, "Team-Suchprofil gespeichert");
+   486	  return true;
+   487	}
+   488	
+   489	// ---------------------------------------------------------------- Demo-Daten
+   490	
+   491	/** Demo-Organisationen (fiktiv). Einmalig beim ersten Zugriff ergänzt, ohne bestehende Objekte umzuhängen. */
+   492	export function orgSeed(db) {
+   493	  orgSammlungen(db);
+   494	  if (db.orgSeed) return;
+   495	  db.orgSeed = true;
+   496	  const u = (email) => db.nutzer.find((x) => x.email === email);
+   497	  const investor = u("investor@example.com");
+   498	  const anbieter = u("anbieter@example.com");
+   499	  const admin = u("admin@example.com");
+   500	  const t = jetzt();
+   501	  if (investor) {
+   502	    const o = { id: neueId("O"), name: "Demo Capital GmbH (fiktiv)", art: "investmenthaus", suchprofil: investor.suchprofil ? { ...investor.suchprofil, benachrichtigen: false } : null, erstelltVon: investor.id, erstelltAm: t, geaendertAm: t, demo: true };
+   503	    db.organisationen.push(o);
+   504	    db.mitgliedschaften.push({ id: neueId("MG"), organisationId: o.id, nutzerId: investor.id, rolle: "inhaber", seit: t, eingeladenVon: null });
+   505	    db.einladungen.push({ id: neueId("EL"), organisationId: o.id, email: "analyst@example.com", rolle: "lesen", hash: sha256(zufallsToken()), ablauf: new Date(Date.now() + 5 * 86400e3).toISOString(), status: "offen", eingeladenVon: investor.id, erstelltAm: t, angenommenAm: null, angenommenVon: null });
+   506	  }
+   507	  if (anbieter) {
+   508	    const o = { id: neueId("O"), name: "Muster Projektentwicklung GmbH (fiktiv)", art: "projektentwickler", suchprofil: null, erstelltVon: anbieter.id, erstelltAm: t, geaendertAm: t, demo: true };
+   509	    db.organisationen.push(o);
+   510	    db.mitgliedschaften.push({ id: neueId("MG"), organisationId: o.id, nutzerId: anbieter.id, rolle: "inhaber", seit: t, eingeladenVon: null });
+   511	    if (admin) db.mitgliedschaften.push({ id: neueId("MG"), organisationId: o.id, nutzerId: admin.id, rolle: "lesen", seit: t, eingeladenVon: anbieter.id });
+   512	  }
+   513	}

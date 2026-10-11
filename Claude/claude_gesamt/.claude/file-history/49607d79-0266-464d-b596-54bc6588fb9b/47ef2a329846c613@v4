@@ -1,0 +1,227 @@
+<template>
+  <div>
+    <PageHeader title="Lage" subtitle="Bestand aus dem Soll-Modell" />
+
+    <div class="p-6">
+      <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <div
+          v-for="kachel in kacheln"
+          :key="kachel.label"
+          class="rounded-lg border border-outline-gray-2 bg-surface-white p-4"
+        >
+          <p class="text-sm text-ink-gray-6">{{ kachel.label }}</p>
+          <!-- Kennzahl in proportionalen Ziffern; tabular-nums bleibt den
+               Spalten vorbehalten, die untereinander fluchten müssen. -->
+          <p class="mt-1 text-2xl font-semibold text-ink-gray-9">
+            <span v-if="kachel.wert === null" class="text-ink-gray-4">–</span>
+            <span v-else>{{ kachel.wert }}</span>
+          </p>
+          <!-- Statusfarbe nie allein: immer Punkt UND Beschriftung. -->
+          <p v-if="kachel.hinweis" class="mt-1 flex items-center gap-1.5 text-xs text-ink-gray-6">
+            <span
+              class="inline-block size-2 shrink-0 rounded-full"
+              :style="{ background: kachel.farbe }"
+            />
+            {{ kachel.hinweis }}
+          </p>
+        </div>
+      </div>
+
+      <!-- Lagebild über die angebundenen Bereiche. Jede Kachel führt dorthin,
+           wo man damit arbeitet. -->
+      <div class="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <RouterLink
+          v-for="bereich in lagebild"
+          :key="bereich.label"
+          :to="bereich.to"
+          class="rounded-lg border border-outline-gray-2 bg-surface-white p-4 hover:bg-surface-gray-1"
+        >
+          <p class="text-sm text-ink-gray-6">{{ bereich.label }}</p>
+          <p class="mt-1 text-2xl font-semibold text-ink-gray-9">{{ bereich.wert }}</p>
+          <StatusDot class="mt-1" :level="bereich.level" :text="bereich.hinweis" klein />
+        </RouterLink>
+      </div>
+
+      <div class="mt-8 grid grid-cols-1 gap-6 xl:grid-cols-2">
+        <section>
+          <h2 class="mb-3 text-base font-semibold text-ink-gray-8">Geräte je Rolle</h2>
+          <!-- Eine Serie, eine Hue: keine Legende nötig, der Titel benennt sie.
+               Jeder Balken trägt seinen Wert direkt am Ende. -->
+          <div class="rounded-lg border border-outline-gray-2 bg-surface-white px-4 py-3">
+            <div v-for="zeile in jeRolle" :key="zeile.rolle" class="flex items-center gap-3 py-1.5">
+              <span class="w-36 shrink-0 truncate text-base text-ink-gray-7">{{ zeile.rolle }}</span>
+              <div class="h-2.5 flex-1">
+                <div
+                  class="h-full"
+                  :style="{
+                    width: zeile.anteil + '%',
+                    background: 'var(--viz-seq-400)',
+                    borderTopRightRadius: '4px',
+                    borderBottomRightRadius: '4px',
+                  }"
+                />
+              </div>
+              <span class="w-6 shrink-0 text-right text-base tabular-nums text-ink-gray-8">
+                {{ zeile.anzahl }}
+              </span>
+            </div>
+            <p v-if="!jeRolle.length" class="py-6 text-center text-sm text-ink-gray-5">
+              Keine Geräte erfasst.
+            </p>
+          </div>
+        </section>
+
+        <section>
+          <h2 class="mb-3 text-base font-semibold text-ink-gray-8">
+            Support läuft aus
+          </h2>
+          <div class="overflow-hidden rounded-lg border border-outline-gray-2 bg-surface-white">
+            <RouterLink
+              v-for="geraet in supportEnde"
+              :key="geraet.name"
+              :to="'/devices/' + geraet.name"
+              class="flex items-center justify-between border-b border-outline-gray-2 px-4 py-2.5 last:border-b-0 hover:bg-surface-gray-1"
+            >
+              <span class="min-w-0">
+                <span class="block truncate text-base text-ink-gray-8">{{ geraet.hostname }}</span>
+                <span class="block truncate text-sm text-ink-gray-5">
+                  {{ geraet.device_role }} · {{ geraet.site_name }}
+                </span>
+              </span>
+              <Badge :theme="geraet.support_end < heute ? 'red' : 'orange'">
+                {{ geraet.support_end }}
+              </Badge>
+            </RouterLink>
+            <p v-if="!supportEnde.length" class="px-4 py-6 text-center text-sm text-ink-gray-5">
+              Kein Gerät mit auslaufendem Support.
+            </p>
+          </div>
+        </section>
+      </div>
+
+      <p class="mt-8 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-ink-gray-4">
+        <StatusDot
+          v-if="kette.data"
+          :level="kette.data.ok ? 'ok' : 'critical'"
+          :text="kette.data.ok ? 'Audit-Kette unversehrt (' + kette.data.length + ' Einträge)' : 'Audit-Kette gebrochen'"
+          klein
+        />
+        <span>
+          Soll-Modell aus NetOps, Ist-Daten aus den Konnektoren. Die Konnektoren
+          selbst laufen erst mit dem Backend – hier stehen Testdaten.
+        </span>
+      </p>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed } from 'vue'
+import { Badge, createResource } from 'frappe-ui'
+import PageHeader from '@/components/PageHeader.vue'
+import StatusDot from '@/components/StatusDot.vue'
+
+// Lokales Datum – toISOString() liefert UTC und kippt abends um einen Tag.
+const heute = new Date().toLocaleDateString('sv-SE')
+
+const kennzahlen = createResource({
+  url: 'netops.api.dcim.dashboard_counters',
+  auto: true,
+})
+
+const geraete = createResource({
+  url: 'netops.api.dcim.device_list',
+  auto: true,
+})
+
+const alarme = createResource({ url: 'netops.api.ops.alert_list', auto: true })
+const drift = createResource({
+  url: 'netops.api.ops.drift_list',
+  params: { state: 'open' },
+  auto: true,
+})
+const backup = createResource({ url: 'netops.api.backup.backup_status', auto: true })
+const sicherheit = createResource({ url: 'netops.api.security.security_overview', auto: true })
+const kette = createResource({ url: 'netops.api.audit.verify_chain', auto: true })
+
+const lagebild = computed(() => {
+  const offeneAlarme = (alarme.data || []).filter((a) => a.alert_state !== 'closed')
+  const kritisch = offeneAlarme.filter((a) => a.severity === 'critical').length
+  const backupKritisch = backup.data?.summary.critical ?? 0
+  const kevOffen = sicherheit.data?.vulnerabilities_kev ?? 0
+
+  return [
+    {
+      label: 'Offene Alarme',
+      wert: offeneAlarme.length,
+      to: '/alerts',
+      level: kritisch ? 'critical' : offeneAlarme.length ? 'warning' : 'ok',
+      hinweis: kritisch ? kritisch + ' kritisch' : offeneAlarme.length ? 'keine kritischen' : 'ruhig',
+    },
+    {
+      label: 'Offene Drift',
+      wert: (drift.data || []).length,
+      to: '/drift',
+      level: (drift.data || []).length ? 'warning' : 'ok',
+      hinweis: (drift.data || []).length ? 'Soll und Ist weichen ab' : 'Soll gleich Ist',
+    },
+    {
+      label: 'Backup kritisch',
+      wert: backupKritisch,
+      to: '/backup',
+      level: backupKritisch ? 'critical' : 'ok',
+      hinweis: backupKritisch ? 'Sicherung ungültig' : 'alle Dienste gesichert',
+    },
+    {
+      label: 'Aktiv ausgenutzte Lücken',
+      wert: kevOffen,
+      to: '/vulnerabilities',
+      level: kevOffen ? 'critical' : 'ok',
+      hinweis: kevOffen ? 'Frist 72 Stunden' : 'keine bekannten',
+    },
+  ]
+})
+
+const kacheln = computed(() => {
+  const k = kennzahlen.data
+  return [
+    { label: 'Geräte', wert: k?.devices ?? null },
+    { label: 'Standorte', wert: k?.sites ?? null },
+    { label: 'VLANs', wert: k?.vlans ?? null },
+    { label: 'Präfixe', wert: k?.prefixes ?? null },
+    { label: 'IP-Adressen', wert: k?.ip_addresses ?? null },
+    { label: 'Schnittstellen', wert: k?.interfaces ?? null },
+    {
+      label: 'Support < 6 Monate',
+      wert: k?.support_expiring ?? null,
+      hinweis: (k?.support_expiring ?? 0) > 0 ? 'Beschaffung prüfen' : null,
+      farbe: 'var(--viz-warning)',
+    },
+    {
+      label: 'Support abgelaufen',
+      wert: k?.support_expired ?? null,
+      hinweis: (k?.support_expired ?? 0) > 0 ? 'ohne Herstellersupport' : null,
+      farbe: 'var(--viz-critical)',
+    },
+  ]
+})
+
+const jeRolle = computed(() => {
+  const liste = geraete.data || []
+  const zaehler = new Map()
+  for (const g of liste) {
+    zaehler.set(g.device_role, (zaehler.get(g.device_role) || 0) + 1)
+  }
+  const groesste = Math.max(1, ...zaehler.values())
+  return [...zaehler.entries()]
+    .map(([rolle, anzahl]) => ({ rolle, anzahl, anteil: Math.round((anzahl / groesste) * 100) }))
+    .sort((a, b) => b.anzahl - a.anzahl)
+})
+
+const supportEnde = computed(() =>
+  (geraete.data || [])
+    .filter((g) => g.support_end)
+    .sort((a, b) => a.support_end.localeCompare(b.support_end))
+    .slice(0, 6),
+)
+</script>

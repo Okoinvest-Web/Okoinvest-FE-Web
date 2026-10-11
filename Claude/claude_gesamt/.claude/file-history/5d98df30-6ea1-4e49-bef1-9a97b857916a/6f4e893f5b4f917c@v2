@@ -1,0 +1,78 @@
+# -*- coding: utf-8 -*-
+import io
+p='SCHRIFTSATZ_18St14-26m_VOLLSTAENDIG.md'
+t=io.open(p,encoding='utf-8').read()
+def rep(o,n,c=1):
+    global t
+    assert o in t, o[:70]
+    t=t.replace(o,n,c)
+
+# --- 1. Zusammenfassung: neuer Punkt 1 ---
+for a,b in [('**6. Der Kreis möglicher Geschädigter ist klein.**','**7. Der Kreis möglicher Geschädigter ist klein.**'),
+            ('**5. Die Konten beweisen einen strukturellen Barbedarf.**','**6. Die Konten beweisen einen strukturellen Barbedarf.**'),
+            ('**4. Ein Irrtum der Darlehensgeber ist ausgeschlossen.**','**5. Ein Irrtum der Darlehensgeber ist ausgeschlossen.**'),
+            ('**3. Die 90.000 € an die tyb Beteiligungs GmbH waren Kaufpreis, nicht Darlehen.**','**4. Die 90.000 € an die tyb Beteiligungs GmbH waren Kaufpreis, nicht Darlehen.**'),
+            ('**2. Am 09.05.2022 flossen 132.194,00 € an Gläubiger**','**3. Am 09.05.2022 flossen 132.194,00 € an Gläubiger**'),
+            ('**1. Die Ermittlungen sind ausgeschöpft, der Verdacht ist nicht erhärtet.**','**2. Die Ermittlungen sind ausgeschöpft, der Verdacht ist nicht erhärtet.**')]:
+    rep(a,b)
+
+rep('## DAS WESENTLICHE IN SECHS PUNKTEN\n',
+"""## DAS WESENTLICHE IN SIEBEN PUNKTEN
+
+**1. Die Anzeige beruht auf einer Lücke, die der Anzeiger selbst offengehalten hat.** Der tragende Satz der Sachverhaltsdarstellung lautet, der Beschuldigte habe „bis heute keine Nachweise vorgelegt". Der Anzeiger hat jedoch **schriftlich festgehalten**, dass sich die vermissten Buchhaltungsunterlagen bei einem namentlich benannten Innsbrucker Rechtsanwalt befinden — und dass er ihretwegen sogar auf eine Masseforderung von 10.000,00 € verzichtete, um dessen „Kooperationsbereitschaft" nicht zu gefährden (ON 2.5, Seite 11, vom 09.12.2024). Dreizehn Monate und drei weitere Berichte später erstattete er Anzeige, ohne diesen Umstand zu erwähnen. (Teile J.1, J.2)
+""")
+
+# --- 2. A.4 ---
+rep("""Der Verdacht wird damit nicht aus positiven Anhaltspunkten abgeleitet, sondern allein aus dem Ausbleiben von Nachweisen. Diese Nachweise werden mit diesem Schriftsatz vorgelegt.""",
+"""Der Verdacht wird damit nicht aus positiven Anhaltspunkten abgeleitet, sondern allein aus dem Ausbleiben von Nachweisen. Diese Nachweise werden mit diesem Schriftsatz vorgelegt.
+
+**Hinzu kommt ein Umstand, der die Tragfähigkeit dieses Schlusses von Grund auf betrifft.** Der Anzeiger wusste, wo sich die von ihm vermissten Unterlagen befinden. Er hat es zweimal schriftlich festgehalten und daraus sogar eine Vermögensdisposition abgeleitet — und es der Staatsanwaltschaft gleichwohl nicht mitgeteilt. Die Einzelheiten sind unter **Teil J.1** dargestellt; der daraus folgende Antrag nach § 2 Abs 1 StPO unter **Teil J.2**.""")
+
+# --- 3. A.5.4 ---
+rep("""- Die Annahme eines Vermögensentzugs — widerlegt durch die von der Behörde selbst ermittelten 161.832,11 €.""",
+"""- Die Annahme eines Vermögensentzugs — widerlegt durch die von der Behörde selbst ermittelten 161.832,11 €.
+- Die Annahme, der Beschuldigte halte Nachweise zurück — entkräftet dadurch, dass der Anzeiger den Verwahrungsort der Unterlagen kannte, nicht beschaffte und nicht offenlegte (Teil J.1).""")
+
+# --- 4. L.1 ---
+rep("""**Es wird beantragt**, die Auswertung der geöffneten Konten so zu führen, dass sie jedenfalls erfasst:""",
+"""Hinzu tritt ein vierter Punkt, der das Objektivitätsgebot bereits auf der Ebene der Anzeigengrundlage berührt: Der Anzeiger hat zwei entlastende Tatsachen, die ihm bei Abfassung der Anzeige bekannt waren — den Verwahrungsort der vermissten Unterlagen und die aus seiner eigenen Beilage ON 2.11 ersichtlichen Gläubigerzahlungen über 132.194,00 € —, der Staatsanwaltschaft nicht mitgeteilt. **§ 3 Abs 2 StPO** verpflichtet die Staatsanwaltschaft, die zur Belastung und die zur Verteidigung dienenden Umstände mit gleicher Sorgfalt zu ermitteln. Diese Pflicht greift auch dort, wo entlastendes Material beim Anzeiger liegt und von diesem nicht vorgelegt wurde (Teile J.1, J.2).
+
+**Es wird beantragt**, die Auswertung der geöffneten Konten so zu führen, dass sie jedenfalls erfasst:""")
+
+# --- 5. J.1 präzisieren ---
+rep("""3. Gleichwohl hat er die Unterlagen **bis zur Erstattung der Anzeige am 14.01.2026** — also über rund **achtzehn Monate** hinweg — nicht erlangt. Ein Versuch ihrer Beischaffung ist in keinem der Berichte ON 2.3 bis ON 2.6 dokumentiert.""",
+"""3. Gleichwohl hat er die Unterlagen bis zur Erstattung der Anzeige am **14.01.2026** nicht erlangt. Zwischen der schriftlichen Bestätigung seiner Kenntnis am **09.12.2024** und der Anzeige liegen **dreizehn Monate**, in denen er dem Insolvenzgericht **drei weitere Berichte** erstattete — am 19.02.2025, am 13.06.2025 und am 06.10.2025. In **keinem** dieser Berichte ist ein Versuch der Beschaffung dokumentiert. Gerechnet ab der Konkurseröffnung am 04.07.2024 sind es achtzehn Monate.""")
+
+rep("""1. Der Anzeiger **wusste** seit Beginn des Konkursverfahrens, dass sich die vermissten Buchhaltungsunterlagen bei einem namentlich benannten, in Innsbruck ansässigen Rechtsanwalt befinden.""",
+"""1. Der Anzeiger **wusste** seit Beginn des Konkursverfahrens, dass sich die vermissten Buchhaltungsunterlagen bei einem namentlich benannten, in Innsbruck ansässigen Rechtsanwalt befinden — schriftlich bestätigt spätestens am **09.12.2024**.""")
+
+# --- 6. Abb. 9 ---
+rep("""**Das Instrumentarium stand zur Verfügung.**""",
+"""![Abb. 9 — Was der Anzeiger wusste und wann](Grafiken/Abb09_Chronologie.png)
+
+**Das Instrumentarium stand zur Verfügung.**""")
+
+# --- 7. J.2 Tabelle ---
+rep("""| 2 | Er hielt diese Kenntnis für so gewichtig, dass er ihretwegen auf die Einbringung einer von ihm selbst als „leicht beweisbar" bezeichneten Masseforderung von 10.000,00 € verzichtete | ON 2.5, Seite 11 |
+| 3 | Er hat die Unterlagen über rund achtzehn Monate nicht beigeschafft; ein Versuch ist in keinem Bericht dokumentiert | ON 2.3 bis ON 2.6 |""",
+"""| 2 | Er hielt diese Kenntnis für so gewichtig, dass er ihretwegen auf die Einbringung einer von ihm selbst als „leicht beweisbar" bezeichneten Masseforderung von 10.000,00 € verzichtete | ON 2.5, Seite 11, vom **09.12.2024** |
+| 3 | In den folgenden dreizehn Monaten erstattete er drei weitere Berichte — 19.02.2025, 13.06.2025, 06.10.2025 —; in keinem ist ein Versuch der Beschaffung dokumentiert | ON 2.6 bis ON 2.8 |""")
+
+# --- 8. Teil N Vorbemerkung ---
+rep("""Es wird gestellt der
+
+**A N T R A G ,**""",
+"""**Zu Antrag 10.** Dieser Antrag ist kein Rechtsmittel und keine Anzeige. Er knüpft an die Pflicht der Staatsanwaltschaft nach **§ 2 Abs 1 StPO** an, jeden ihr zur Kenntnis gelangten Anfangsverdacht von Amts wegen aufzuklären. Der Beschuldigte trägt den Sachverhalt vor und überlässt die rechtliche Beurteilung zur Gänze der Behörde. Er ersucht lediglich darum, dass das Ergebnis der Prüfung **aktenkundig** gemacht wird, damit es der gerichtlichen Kontrolle zugänglich ist.
+
+Es wird gestellt der
+
+**A N T R A G ,**""")
+
+# --- 9. Abbildungsverzeichnis ---
+rep("""| 8 | Flugkilometer je Monat aus der Reiseroutenaufzeichnung | G.6a |""",
+"""| 8 | Flugkilometer je Monat aus der Reiseroutenaufzeichnung | G.6a |
+| 9 | Was der Anzeiger wusste und wann — Chronologie | J.1 |""")
+rep('1-fach · 17 Beilagen · 8 Abbildungen','1-fach · 17 Beilagen · 9 Abbildungen')
+
+io.open(p,'w',encoding='utf-8').write(t)
+print('Schriftsatz verwoben')

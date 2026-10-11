@@ -1,0 +1,361 @@
+import Link from "next/link";
+import type { Metadata } from "next";
+
+import { Sparkline } from "@/components/diagramme/sparkline";
+import { Tabelle, Zeile, Zelle, ZelleMitZusatz } from "@/components/tabelle";
+import {
+  Hinweis,
+  Kennzahl,
+  Kennzahlenleiste,
+  LeerZustand,
+  Seitenkopf,
+  Status,
+  Tafel,
+} from "@/components/ui";
+import { kuerzeZaehlpunkt } from "@/lib/at/zaehlpunkt";
+import { ladePortfolio, letzteTage } from "@/lib/daten/monitoring";
+import { ENERGIE_FARBEN, STATUS_FARBEN } from "@/lib/farben";
+import {
+  formatDatum,
+  formatEnergie,
+  formatProzent,
+  formatZahl,
+} from "@/lib/format";
+import { medianVon } from "@/lib/pv/kennzahlen";
+import { requireRecht } from "@/lib/session";
+
+export const metadata: Metadata = { title: "Anlagen" };
+
+/**
+ * Ab welcher Abweichung vom Median eine Anlage auffällt.
+ *
+ * Zehn Prozent sind bewusst großzügig: Standorte unterscheiden sich in
+ * Ausrichtung, Neigung und Verschattung, und ein Carport erreicht nie
+ * die Werte eines freien Hallendachs. Erst darunter ist die Abweichung
+ * nicht mehr mit dem Standort erklärbar.
+ */
+const AUFFAELLIG_AB_PROZENT = 10;
+
+function statusTon(status: string) {
+  switch (status) {
+    case "Aktiv":
+      return "gut" as const;
+    case "Wartung":
+      return "hinweis" as const;
+    case "Störung":
+      return "kritisch" as const;
+    default:
+      return "neutral" as const;
+  }
+}
+
+export default async function AnlagenSeite({
+  searchParams,
+}: {
+  searchParams: Promise<{ zeitraum?: string }>;
+}) {
+  await requireRecht("anlagen.lesen");
+
+  const { zeitraum } = await searchParams;
+  const tage = Number(zeitraum) > 0 ? Number(zeitraum) : 30;
+  const fenster = letzteTage(tage);
+
+  const anlagen = ladePortfolio(fenster);
+
+  const leistungGesamt = anlagen.reduce((s, a) => s + a.leistung_kwp, 0);
+  const ertragGesamt = anlagen.reduce((s, a) => s + a.kennzahlen.ertragKwh, 0);
+  const offeneGesamt = anlagen.reduce(
+    (s, a) => s + a.kennzahlen.offeneAlarme,
+    0,
+  );
+  const ausfallGesamt = anlagen.reduce(
+    (s, a) => s + a.kennzahlen.ausfallKwh,
+    0,
+  );
+
+  // Portfoliowerte werden nach Leistung gewichtet, nicht gemittelt:
+  // Sonst zählte ein 98-kWp-Bürodach so viel wie ein 1,2-MWp-Sägewerk.
+  const spezifischGesamt =
+    leistungGesamt > 0 ? ertragGesamt / leistungGesamt : 0;
+
+  const verfuegbarGewichtet = gewichtetesMittel(
+    anlagen.map((a) => ({
+      wert: a.kennzahlen.verfuegbarkeit,
+      gewicht: a.leistung_kwp,
+    })),
+  );
+
+  // Vergleichsmaßstab ist der Median der spezifischen Erträge. Er ist
+  // gegen einen einzelnen Ausreißer unempfindlich - anders als der
+  // Mittelwert, den eine stillstehende Anlage nach unten zöge und der
+  // damit alle übrigen zu gut aussehen ließe.
+  const medianSpezifisch = medianVon(
+    anlagen.map((a) => a.kennzahlen.spezifisch ?? 0).filter((w) => w > 0),
+  );
+
+  const bewertet = anlagen.map((a) => {
+    const spezifisch = a.kennzahlen.spezifisch ?? 0;
+    const abweichung =
+      medianSpezifisch > 0
+        ? ((spezifisch - medianSpezifisch) / medianSpezifisch) * 100
+        : 0;
+
+    return {
+      ...a,
+      abweichung,
+      auffaellig: abweichung < -AUFFAELLIG_AB_PROZENT && spezifisch > 0,
+    };
+  });
+
+  const auffaellige = bewertet.filter((a) => a.auffaellig);
+  const ertrag = formatEnergie(ertragGesamt);
+
+  return (
+    <div className="space-y-5">
+      <Seitenkopf
+        titel="Anlagen"
+        hinweis={`${anlagen.length} Anlagen · ${formatZahl(leistungGesamt, 1)} kWp · ${anlagen.reduce((s, a) => s + a.anzahlWechselrichter, 0)} Wechselrichter`}
+        aktion={<ZeitraumWahl aktiv={tage} />}
+      />
+
+      {auffaellige.length > 0 && (
+        <Hinweis
+          ton="hinweis"
+          titel={`${auffaellige.length} Anlage${auffaellige.length > 1 ? "n liegen" : " liegt"} unter dem Portfolio`}
+        >
+          {auffaellige
+            .map(
+              (a) =>
+                `${a.bezeichnung} (${formatProzent(a.abweichung, 0)} gegenüber dem Median)`,
+            )
+            .join(", ")}
+          . Ein dauerhafter Rückstand im spezifischen Ertrag hat eine
+          Ursache in der Anlage – Verschattung, Verschmutzung, ein
+          stehender Strang.
+        </Hinweis>
+      )}
+
+      <Kennzahlenleiste>
+        <Kennzahl
+          label={`Ertrag ${tage === 365 ? "12 Monate" : `${tage} Tage`}`}
+          wert={ertrag.wert}
+          einheit={ertrag.einheit}
+          hinweis={`${formatZahl(spezifischGesamt, 0)} kWh/kWp spezifisch`}
+        />
+        <Kennzahl
+          label="Verfügbarkeit"
+          wert={
+            verfuegbarGewichtet !== null
+              ? formatProzent(verfuegbarGewichtet * 100, 1)
+              : "–"
+          }
+          hinweis="nach Leistung gewichtet"
+        />
+        <Kennzahl
+          label="Ertragsausfall"
+          wert={formatZahl(ausfallGesamt, 0)}
+          einheit="kWh"
+          hinweis="aus gemeldeten Störungen"
+          akzent={ausfallGesamt > 0}
+        />
+        <Kennzahl
+          label="Offene Meldungen"
+          wert={formatZahl(offeneGesamt, 0)}
+          hinweis={
+            offeneGesamt > 0 ? "über alle Anlagen" : "nichts Offenes"
+          }
+          akzent={offeneGesamt > 0}
+        />
+      </Kennzahlenleiste>
+
+      <Tafel
+        dicht
+        fusszeile={
+          <p className="t-mikro leading-relaxed">
+            Verglichen wird über den spezifischen Ertrag in Kilowattstunden
+            je Kilowattpeak, nicht über die erzeugte Menge: Die größte
+            Anlage liefert immer am meisten, auch wenn sie am schlechtesten
+            läuft. Die Performance Ratio setzt den Ertrag zusätzlich ins
+            Verhältnis zur gemessenen Einstrahlung und trennt so
+            schlechtes Wetter von einem Mangel an der Anlage.
+          </p>
+        }
+      >
+        {anlagen.length === 0 ? (
+          <div className="p-4">
+            <LeerZustand text="Es sind keine Anlagen hinterlegt." />
+          </div>
+        ) : (
+          <Tabelle
+            spalten={[
+              { titel: "Anlage" },
+              { titel: "Zählpunkt", schmalAusblenden: true },
+              { titel: "Leistung", zahl: true },
+              { titel: "Ertrag", zahl: true },
+              { titel: "Spezifisch", zahl: true },
+              { titel: "PR", zahl: true, schmalAusblenden: true },
+              { titel: "Verfügbar", zahl: true, schmalAusblenden: true },
+              { titel: "Verlauf", schmalAusblenden: true },
+              { titel: "Status" },
+            ]}
+            mindestbreite="64rem"
+          >
+            {bewertet.map((anlage) => {
+              const wert = formatEnergie(anlage.kennzahlen.ertragKwh);
+
+              return (
+                <Zeile key={anlage.id} hervorgehoben={anlage.auffaellig}>
+                  <ZelleMitZusatz
+                    haupt={
+                      <Link
+                        href={`/portal/anlagen/${encodeURIComponent(anlage.id)}?zeitraum=${tage}`}
+                        className="hover:underline"
+                      >
+                        {anlage.bezeichnung}
+                      </Link>
+                    }
+                    zusatz={`${anlage.ort ?? ""} · ${anlage.anzahlWechselrichter} WR · seit ${formatDatum(anlage.inbetriebnahme)}`}
+                  />
+
+                  <Zelle leise schmalAusblenden>
+                    <span className="font-mono text-[0.6875rem]">
+                      {anlage.zaehlpunkt
+                        ? kuerzeZaehlpunkt(anlage.zaehlpunkt)
+                        : "–"}
+                    </span>
+                    <span className="t-mikro block">
+                      Netzebene {anlage.netzebene ?? "–"}
+                    </span>
+                  </Zelle>
+
+                  <Zelle zahl>
+                    {formatZahl(anlage.leistung_kwp, 1)}
+                    <span className="t-mikro"> kWp</span>
+                  </Zelle>
+
+                  <Zelle zahl>
+                    {wert.wert}
+                    <span className="t-mikro"> {wert.einheit}</span>
+                    {anlage.zielerreichung !== null && (
+                      <span className="t-mikro block">
+                        {formatProzent(anlage.zielerreichung * 100, 0)} vom Ziel
+                      </span>
+                    )}
+                  </Zelle>
+
+                  <Zelle zahl>
+                    <span
+                      style={{
+                        color: anlage.auffaellig
+                          ? STATUS_FARBEN.ernst
+                          : undefined,
+                        fontWeight: anlage.auffaellig ? 500 : undefined,
+                      }}
+                    >
+                      {formatZahl(anlage.kennzahlen.spezifisch ?? 0, 0)}
+                    </span>
+                    <span className="t-mikro"> kWh/kWp</span>
+                    <span className="t-mikro block">
+                      {abweichungText(anlage.abweichung)} zum Median
+                    </span>
+                  </Zelle>
+
+                  <Zelle zahl leise schmalAusblenden>
+                    {anlage.kennzahlen.performanceRatio !== null
+                      ? formatProzent(
+                          anlage.kennzahlen.performanceRatio * 100,
+                          1,
+                        )
+                      : "–"}
+                  </Zelle>
+
+                  <Zelle zahl leise schmalAusblenden>
+                    {anlage.kennzahlen.verfuegbarkeit !== null
+                      ? formatProzent(
+                          anlage.kennzahlen.verfuegbarkeit * 100,
+                          1,
+                        )
+                      : "–"}
+                  </Zelle>
+
+                  <Zelle schmalAusblenden>
+                    <Sparkline
+                      werte={anlage.tagesreihe}
+                      farbe={ENERGIE_FARBEN.erzeugung}
+                      breite={96}
+                      hoehe={28}
+                      beschreibung={`Tagesertrag ${anlage.bezeichnung} über ${anlage.tagesreihe.length} Tage`}
+                    />
+                  </Zelle>
+
+                  <Zelle>
+                    <Status ton={statusTon(anlage.status)}>
+                      {anlage.status}
+                    </Status>
+                    {anlage.kennzahlen.offeneAlarme > 0 && (
+                      <span className="t-mikro block">
+                        {anlage.kennzahlen.offeneAlarme} Meldung
+                        {anlage.kennzahlen.offeneAlarme > 1 ? "en" : ""}
+                      </span>
+                    )}
+                  </Zelle>
+                </Zeile>
+              );
+            })}
+          </Tabelle>
+        )}
+      </Tafel>
+    </div>
+  );
+}
+
+/**
+ * Nach Gewicht gemitteltes Verhältnis; Einträge ohne Wert bleiben außen vor.
+ */
+function gewichtetesMittel(
+  eintraege: { wert: number | null; gewicht: number }[],
+): number | null {
+  let summe = 0;
+  let gewicht = 0;
+
+  for (const e of eintraege) {
+    if (e.wert === null || e.gewicht <= 0) continue;
+    summe += e.wert * e.gewicht;
+    gewicht += e.gewicht;
+  }
+
+  return gewicht > 0 ? summe / gewicht : null;
+}
+
+/** Abweichung mit Vorzeichen; das Vorzeichen folgt dem gerundeten Wert. */
+function abweichungText(prozent: number): string {
+  const gerundet = Math.round(prozent);
+  if (gerundet === 0) return "0 %";
+  return `${gerundet > 0 ? "+" : "−"}${Math.abs(gerundet)} %`;
+}
+
+function ZeitraumWahl({ aktiv }: { aktiv: number }) {
+  const stufen = [7, 30, 90, 365];
+
+  return (
+    <div
+      className="flex overflow-hidden rounded-lg border"
+      style={{ borderColor: "var(--linie)" }}
+    >
+      {stufen.map((tage) => (
+        <Link
+          key={tage}
+          href={`/portal/anlagen?zeitraum=${tage}`}
+          className="px-2.5 py-1.5 text-[0.75rem] transition-colors"
+          style={{
+            background: aktiv === tage ? "var(--f-belegt)" : "var(--f-ebene)",
+            color: aktiv === tage ? "var(--t-stark)" : "var(--t-leise)",
+            fontWeight: aktiv === tage ? 500 : 400,
+          }}
+        >
+          {tage === 365 ? "1 Jahr" : `${tage} Tage`}
+        </Link>
+      ))}
+    </div>
+  );
+}

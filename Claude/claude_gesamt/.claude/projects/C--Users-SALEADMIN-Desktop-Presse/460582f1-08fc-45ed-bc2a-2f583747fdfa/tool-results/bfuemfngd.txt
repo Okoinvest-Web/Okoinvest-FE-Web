@@ -1,0 +1,427 @@
+Mag. Georg H. Jeitler BA MBA CMC 
+Partner · Head of Advisory · Forensic Services Leader 
+Allgemein beeideter und gerichtlich zertifizierter Sachverständiger 
+Klemens Sattler BSc MSc CISSP GIME 
+Director · Forensic Services · Digital Forensics 
+Allgemein beeideter und gerichtlich zertifizierter Sachverständiger 
+1 Allgemeines  
+Dieser Bericht versteht sich als Ergänzung zum bereits am 16. März 2026 erstattetem 
+Zwischenbericht zu forensischen Analysen und wurde auf Basis neuer Erkenntnisse der 
+digitalforensischen Untersuchungen sowie der ablehnenden Stellungnahme der 
+Staatsanwaltschaft Ried im Innkreis vom 29. März 2026 erstellt. Ziel der nachstehenden 
+Ergänzungen ist es, einzelne in der Stellungnahme angesprochene Aspekte weiter zu vertiefen 
+und die bereits vorgenommenen forensischen Analysen inhaltlich zu konkretisieren. 
+Es gelten sämtliche Inhalte und allgemeinen Ausführungen des Zwischenberichts vom 16. März 
+2026 auch für dieses Dokument, sofern diese nicht im vorliegenden Dokument präzisiert oder 
+korrigiert werden. Der Zwischenbericht vom 16. März 2026 versteht sich daher als dieser 
+Ergänzung integrales Dokument. 
+2 Befund 
+2.1 Speicherung auf externem Datenträger 
+Im forensischen Zwischenbericht vom 16. März 2026 wurde festgehalten, dass am untersuchten 
+Laptop neben den Laufwerksbuchstaben O: und B: ein weiterer Laufwerksbuchstabe E: in 
+Verwendung war, dem bis dahin keine Quelle zugeordnet werden konnte. 
+Die zwischenzeitlich fortgeführte Auswertung von Windows-Artefakten (Jump Lists1) hat ergeben, 
+dass es sich bei diesem Laufwerk E: um einen externen Datenträger mit dem Volume-Bezeichner 
+„Extreme SSD” (Volume Serial Number CEA05EBC) handelt2.  
+1 Jump Lists sind eine Windows-Funktion, die beim Rechtsklick auf ein Programmsymbol in der Taskleiste oder im Startmenü 
+eine Liste mit kürzlich geöffneten Dateien, häufig genutzten Elementen oder programmspezifischen Aktionen anzeigt. Sie 
+ermöglichen dadurch einen schnellen Zugriff auf relevante Inhalte, ohne die Anwendung erst öffnen zu müssen. Es erfolgte eine 
+Untersuchung mehrerer AutomaticDestinations-ms Dateien im Pfad: C:\Users\friedrich.schiefer\AppData\Roaming\Microsoft\ 
+Windows\Recent\AutomaticDestinations\ Diese Dateien ermöglichen eine forensische Auswertung der betreffenden historischen 
+Einträge. 
+2 Für das Laufwerk E: wurden bislang keine anderen Spuren, die eine Zuordnung zu einem anderen Datenträger erlauben 
+würden, identifiziert. 
+Zugriffe durch den Benutzer “friedrich.schiefer” auf diesen Datenträger erfolgten an mehreren 
+Tagen zumindest im Zeitraum 24.04.2023 - 10.10.2024. Dies geht aus der Auswertung der vom 
+Betriebssystem automatisch angelegten Shellbags3 hervor. 
+Dieser Datenträger war auf dem untersuchten Laptop neben dem Laufwerksbuchstaben E: 
+zumindest einmal auch unter dem Laufwerksbuchstaben D: eingebunden. In den Jump Lists ist 
+ersichtlich, dass ein Öffnen von Dateien über den Laufwerksbuchstaben D: am 11.01.2023 
+stattfand. 
+2.1.1 Datenträger und Identifikation 
+Der betreffende Datenträger hat gemäß den genannten untersuchten Windows-Artefakten 
+folgende bekannte Eigenschaften: 
+▪ Volume Name: „Extreme SSD” 
+▪ Volume Serial Number: CEA05EBC 
+Der Volume Name „Extreme SSD” dürfte auf ein Laufwerk aus der SanDisk-Extreme-Portable-
+SSD-Produktlinie hinweisen; es handelt sich hierbei um ein mobiles Hochleistungs-
+Speichermedium (externe „Festplatte“ bzw. konkret eine externe SSD4). 
+2.1.2 Zugriffe auf Dateien in B_CONTROLLING-Verzeichnissen  
+Eine Auswertung der Zugriffslisten (Jump Lists) zeigt, dass Dateien in zwei unterschiedlichen 
+Ordnern namens „B_CONTROLLING“ auf dem betreffenden Laufwerk „Extreme SSD” abgelegt 
+waren. Einmal befindet sich der Ordner im Hauptverzeichnis des Laufwerkes, einmal im 
+Unterordner „GV“. 
+Konkret wurden folgende 24 Jump List-Einträge für Zugriffe durch den Benutzer 
+„friedrich.schiefer” auf 9 unterschiedliche Dateien, die in diesen “B_CONTROLLING”-
+Ordnern gespeichert sind oder waren, festgestellt. Für 14 dieser 24 Einträge ist neben dem 
+Erstellzeitpunkt der Datei am Datenträger selbst („Target File Created“) auch ein Zeitpunkt 
+dokumentiert, der das letzte Öffnen der Dateien zeigt. Zeilen, in denen dieses Datum fehlt, 
+zeigen, dass diese Dateien häufiger – jedoch zu einem unbekannten Zeitpunkt – geöffnet 
+wurden. Durch das Öffnen der Dateien mit Programmen können hierbei z.B. durch die 
+3 Hierbei handelt es sich um Betriebssystemartefakte, die den Zugriff auf Verzeichnisse und teilweise deren Eigenschaften 
+dokumentieren. Es erfolgte eine Untersuchung der Inhalte des Pfades: C:\Users\friedrich.schiefer\AppData\Local\Microsoft\ 
+Windows\usrClass.dat\Local Settings\Software\Microsoft\Windows\Shell\BagMRU 
+4 Solide State Drive 
+Systemfunktion Quick Access automatisch angelegte Jump List Einträge entstehen. Aufgrund 
+dessen zeigt die folgende Tabelle augenscheinliche Duplikate: 
+# Programm Dateipfad und -name Erstellung 
+2.1.3 Ergänzende technische Feststellungen 
+▪ Die in den Zeilen 1-4 referenzierten Dateien weisen als Erstell-Zeitstempel („Target File 
+Created”) am Datenträger zeitgleich den 06.10.2023 aus; die Ablage dieser Dateien auf 
+der „Extreme SSD” ist damit bereits im Oktober 2023 indiziert. 
+▪ Die ab Eintrag Nr. 6 sichtbare Speicherpfadvariante „E:\GV\B_CONTROLLING\…” trägt 
+als Erstell-Zeitstempel („Target File Created”) einheitlich den 27.05.2024 im Zeitfenster 
+16:23:23 bis 16:23:56 Uhr. Dies spricht für einen ergänzenden Kopiervorgang in einen 
+neu angelegten Unterordner „GV” am Nachmittag des 27.05.2024, mit zeitlich unmittelbar 
+anschließendem Öffnen einzelner Dateien am Folgetag, dem 28.05.2024. 
+▪ Sämtliche in der o.g. Zugriffsliste angeführten Dateien sind nach bisherigem 
+Erkenntnisstand dem Grunde nach (Vergleich anhand der Dateinamen) auch am 
+Fileserver \\oekovolt.local\folders\Geschäftsleitung-AT\B_CONTROLLING enthalten. 
+▪ Die Zugriffe erfolgten sämtlich manuell über Office-Anwendungen (Excel, Word, 
+PowerPoint) beziehungsweise über Windows Quick Access5 (zu Deutsch "Schnellzugriff") 
+▪ Folgende Dateien liegen hierbei verschlüsselt auf dem untersuchten Laptop und auf dem 
+Fileserver vor, ein Zugriff auf diese ist für die Auftraggeberin daher bisher nicht möglich 
+(siehe auch Abschnitt 2.3): 
+• A1.1_Bilanz D.xlsx 
+• Protokoll für GV am 03072023_mark-up.docx 
+• Protokoll für GV am 03072023.docx 
+2.1.4 Dateien der Ökovolt GmbH Solartechnik 
+Unter den in Tabelle 1 ersichtlichen Jump List-Einträgen konnten unter anderem Zugriffe auf drei 
+Dateien identifiziert werden, welche in Ordnern mit der Bezeichnung „B_CONTROLLING“ 
+5 Bei Quick Access handelt es sich um eine Funktion vom Betriebssystem Windows, das es Benutzern ermöglich schnell auf 
+relevante bzw. zuletzt geöffnete Dateien zuzugreifen, wobei dies auch in Jump List-Einträgen hinterlegt wird. 
+gespeichert waren oder sind und die Ökovolt GmbH Solartechnik betrafen. Konkret handelt es 
+sich um nachstehende Dateien, welche mindestens einmal von SCHIEFER geöffnet wurden und 
+sich auf dem betreffenden Laufwerk „Extreme SSD” befanden: 
+• A1.2_GuV D.xlsx 
+• A1.1_Bilanz D.xlsx 
+• A1.1_Bilanz D_23.xlsx 
+2.2 Weitere Daten zu anderen Unternehmen 
+Neben den zuvor genannten Daten in Bezug auf den B_CONTROLLING-Ordner der 
+Auftraggeberin sind Spuren des Zugriffes auf Dateien auf dem externen Datenträger vorhanden, 
+die laut Pfad- und Dateinamen auf Geschäftsdokumente anderer Firmen hinweisen. Konkret sind 
+in den Jump Lists Einträge gespeichert, die Zugriffe auf Dateien in Pfaden zeigen, die 
+Firmenwortlaute „Salzburg Schokolade“ und „Paul Reber GmbH&CoKG“ (bzw. auch nur „Reber“) 
+enthalten. Diese Dateien weisen ein Erstell-Datum („Target File Created“) aus dem Zeitraum 
+21.09.2020 – 25.10.2022 auf.  
+Die nachfolgende Tabelle listet Beispiele von Dateien die in Verzeichnissen, die die oben 
+genannten Firmenlauten enthalten, gespeichert waren samt deren Erstelldatum („Target File 
+Created“), sowie wann auf diese Dateien zugegriffen wurde: 
+# Dateipfad und -name Erstellung 
+(Target File Created) 
+Zugriff 
+1 E:\REBER DUE DILL\O. Sonstiges\Strategie und 
+Beirat\Strategie 2020 13.05.14.pptx 
+21.09.2020 17:57:29 11.06.2024 8:58:52 
+2 E:\F I N A N Z E N\Beirat\107.Sitzung\3-
+Jahresplanung Reber-Gruppe ohne 1,25 Mio 
+Tilgung.xls 
+22.09.2020 8:01:26 19.10.2023 15:06:14 
+3 D:\Controlling\REPORTING\SOLL IST\WJ 2016-
+2017\12 Juni 2017\01 REBER\CO_REBER_Soll_IST 
+alt\CO_REBER_Soll_Ist_10_16.xlsx 
+29.10.2020 10:30:57 11.01.2023 8:55:25 
+4 E:\Controlling\PLANUNG\Budget 2015-2016\01 
+Reber\Kostenstellenplanung\VERWALTUNG\EDV\WG 
+Leasing-Vertrag über ein Software-Projekt.msg 
+29.10.2020 11:56:56 16.05.2024 16:28:10 
+5 E:\WJ 2019-20\0100 Paul Reber 
+GmbH&CoKG\JA_2020_0100_Paul Reber 
+GmbH&CoKG.xlsx 
+16.12.2020 8:44:02 04.04.2023 10:45:16 
+6 E:\Salzburg 
+Schokolade\BPS\2S_BPS_Datasheet_SRF22_v1_22-
+07-22_v3.xlsx 
+19.08.2022 15:30:04 15.05.2023 9:04:25 
+7 E:\Salzburg Schokolade\DD\FINANZEN\ACT22_g+v 
+Salzburg Schokolade 0622_v5-3_c Basis SRF FP 22 
+07 2022.xlsx 
+25.10.2022 12:15:20 08.02.2023 9:32:27 
+Tabelle 2: Beispiele von Dateien, die Zugriffe auf Dateien in Pfaden zeigen, die Firmenwortlaute „Salzburg 
+Schokolade“ und „Paul Reber GmbH&CoKG“ enthalten. 
+Es kam zu einem Erstellvorgang der Dateien an sechs unterschiedlichen Tagen, dem 
+21.09.2020, 22.09.2020, 29.10.2020, 16,12,2020, 19.08.2022 und dem 25.10.2022. Der letzte 
+Zugriff auf diese Dateien – falls ein Öffnungsdatum vorhanden ist - erfolgte teils Monate bis Jahre 
+später. 
+Eine Recherchen aus öffentlichen Quellen6 sowie ein der Auftraggeberin verfügbarer Lebenslauf 
+zeigen, dass Mag. (FH) SCHIEFER historisch für die betreffenden Unternehmen tätig war. 
+2.3 Zugriff auf verschlüsselte Dateien 
+Auf dem untersuchten Laptop von SCHIEFER sind auch JumpList-Einträge7 gespeichert8, die 
+einen Zugriff durch den Benutzer “friedrich.schiefer” kurz vor dessen Austritt (Dezember 2024 – 
+Ende Jänner 2025) auf Dateien zeigen, die als verschlüsselt hinterlassen bekannt sind und 
+sowohl auf dem Laptop selbst als auch auf dem File Server gespeichert sind. 
+Die nachfolgende Tabelle listet die verschlüsselten Dateien samt Zugriffszeitpunkt auf: 
+Dateipfad und -name Zugriff 
+\\oekovolt.local\folders\Geschäftsleitung-AT\B_CONTROLLING\ 
+PLANRECHNUNG\Budget 2025\Ökovolt AT\2390900_072024.xlsx 
+30.01.2025 13:21:37 
+\\oekovolt.local\folders\Geschäftsleitung-AT\B_CONTROLLING\ 
+KALKULATIONEN\CO_Kalk2024_Analyse_Q3 inkl. Auswertungen.xlsx 
+30.01.2025 13:12:42 
+C:\B_CONTROLLING\Aktenvermerk_VGA.docx 22.01.2025 13:04:08 
+\\oekovolt.local\folders\Geschäftsleitung-AT\B_CONTROLLING\ 
+JAHRESABSCHLUSS\A\2023\Inventur\CO_12_ReportingSet.xlsx 
+21.01.2025 11:38:36 
+\\oekovolt.local\folders\Geschäftsleitung-AT\A_BUCHHALTUNG\ 
+BILANZ\Jahresabschluss 2023\Unterlagen Abschluss\Unterlagen Abschluss\3 - 
+UFE\UFE 31.12.2023.xlsx 
+19.12.2024 15:43:44 
+Tabelle 3: Verschlüsselten Dateien samt Zugriffszeitpunkt durch den Benutzer “friedrich.schiefer”, kurz vor Austritt 
+des SCHIEFER 
+Inklusive den in der obigen Tabelle gelisteten JumpList Einträgen, existieren insgesamt 446 
+Einträge die einen Zugriff durch den Benutzer „friedrich.schiefer“ auf als verschlüsselt bekannte 
+Dateien die auf dem File Server, dem Laptop oder des externen Datenträgers „Extreme SSD“. 
+Die Zugriffe erstrecken sich über den Zeitraum 11.01.2023 – 30.01.2025. 
+Wie erwähnt, erfolgten Zugriffe auf verschlüsselte Daten an anderen Zeitpunkten über den zuvor 
+beschriebenen (siehe Abschnitt 2) externen Datenträger „Extreme SSD“: 
+6 sh. https://www.it-zoom.de/mittelstand/e/paul-reber-verbessert-vertrieb-mit-crm-loesung-15018/ (abgerufen am 30. April 2026) 
+7 JumpLists sind eine Windows-Funktion, die beim Rechtsklick auf ein Programmsymbol in der Taskleiste oder im Startmenü 
+eine Liste mit kürzlich geöffneten Dateien, häufig genutzten Elementen oder programmspezifischen Aktionen anzeigt. Sie 
+ermöglichen dadurch einen schnellen Zugriff auf relevante Inhalte, ohne die Anwendung erst öffnen zu müssen. 
+8 Auf Basis mehrerer automaticDestinations-ms Dateien im Pfad 
+C:\Users\friedrich.schiefer\AppData\Roaming\Microsoft\Windows\Recent\AutomaticDestinations\ 
+Dateipfad und -name Zugriff 
+E:\GV\B_CONTROLLING\JAHRESABSCHLUSS\D\A1.1_Bilanz D.xlsx 27.05.2024 16:23:23 
+E:\GV\B_CONTROLLING\JAHRESABSCHLUSS\GV\Protokoll für GV am 
+03072023.docx 
+27.05.2024 16:23:30 
+E:\GV\B_CONTROLLING\JAHRESABSCHLUSS\GV\Protokoll für GV am 
+03072023_mark-up.docx 
+27.05.2024 16:23:30 
+E:\B_CONTROLLING\JAHRESABSCHLUSS\D\A1.1_Bilanz D.xlsx 06.10.2023 08:32:18 
+D:\CO_OEKOVOLT_Soll_Ist_12_22.xlsx 11.01.2023 08:56:28 
+Tabelle 4: Verschlüsselten Dateien samt Zugriffszeitpunkt durch den Benutzer “friedrich.schiefer”. über „Extreme 
+SSD“. 
+2.4 Übermittlung verschlüsselter und unverschlüsselter Dateien 
+Im Zuge der forensischen Untersuchung wurde geprüft, ob jene Dateien, welche von der 
+Auftraggeberin als „verschlüsselte Dateien“ vorgelegt wurden, im E-Mail-Postfach von 
+SCHIEFER aufgefunden werden können. Dabei wurden sämtliche Dateinamen aus der Liste der 
+verschlüsselten Dateien mit den im E-Mail-Postfach von Schiefer auffindbaren E-Mails samt 
+Anhängen abgeglichen. Hierbei wurde allerdings ausschließlich ein Abgleich des Dateinamens 
+vorgenommen; eine allfällige inhaltliche Änderung von Dateien war nicht Gegenstand dieser 
+Prüfung. 
+Im Ergebnis zeigte sich, dass ein erheblicher Teil jener Dateien, die bereits in verschlüsselter 
+Form vorgefunden wurden (siehe hierzu Anhang), zu einem früheren Zeitpunkt bereits per E-Mail 
+unverschlüsselt versendet oder empfangen worden waren. Mehrere dieser Dateien wurden dabei 
+wiederholt per E‑Mail durch SCHIEFER übermittelt oder von diesem empfangen. Insgesamt 
+konnten bei 40 der in der Liste der Auftraggeberin enthaltenen Dateien entsprechende 
+E‑Mail‑Übermittlungen festgestellt werden. Nachstehend werden diese Übermittlungen 
+----
+2.5 Kosten zur Wiederherstellung des Zugriffs auf verschlüsselte 
+Dateien 
+Die Ausführungen der Staatsanwaltschaft, wonach die 144 verschlüsselten XLSX-Dateien „nicht 
+wiederherstellbar" seien und die indikativ errechneten Kosten in Höhe von EUR 118.500,00 „nicht 
+überzeugen", beruhen auf einer technisch unzutreffenden Prämisse. Der genannte Betrag 
+orientierte sich an einer grob hochgerechneten Annahme des Zeitbedarfes einer Neuschaffung. 
+Es können auch Wiederherstellungsaufwände indikativ angegeben werden und der genannte 
+Betrag liegt ebenso hier im unteren Bereich einer üblichen Dimension. 
+Festzuhalten ist vor allem, dass die Dateien sehr wohl grundsätzlich wiederherstellbar sind – 
+nämlich durch Eingabe eines Passwortes bzw. bei einer Nichtverfügbarkeit des Passwortes über 
+den Angriff auf das jeweilige Passwort mittels spezialisierter forensischer Software und 
+entsprechender Rechenleistung („Brute-Force-Attacke“). Dass das Passwort nicht bekannt ist, 
+macht die Wiederherstellung nicht unmöglich, sondern lediglich extrem aufwendig und 
+kostenintensiv; tatsächlich kann freilich etwa die Passwortlänge eine Wiederherstellung mit 
+derzeitigen technischen Möglichkeiten auch unwahrscheinlich machen, was jedoch vorweg nicht 
+feststellbar ist. Ausgeschlossen ist eine Wiederherstellung jedoch dem Grunde nach nicht und die 
+Praxis der Sachverständigen zeigt, dass Wiederherstellungen auch immer wieder beauftragt 
+werden und Erfolg haben. Die nachfolgende technische Darlegung zeigt, dass der genannte 
+Betrag von EUR 118.500,00 auch für einen Wiederherstellungsaufwand nicht nur realistisch, 
+sondern angesichts des tatsächlich erforderlichen Aufwands sogar als konservativ zu bewerten 
+ist. 
+Moderne Office-Dateien verwenden eine Verschlüsselung, die zwar keinen bekannten 
+Schwachstellen unterliegt, aber mittels spezialisierter forensischer Software grundsätzlich 
+angreifbar ist. Sofern nicht überall das gleiche Passwort verwendet wird, muss jedoch jede Datei 
+einzeln angegriffen werden. 
+Eine Kostenkalkulation eines solchen typischen Wiederherstellungsversuchs (mit dem Risiko nur 
+punktuellen Erfolges oder auch eines gänzlichen Scheiterns) umfasst Softwarelizenzen (z.B. 
+EUR 2.000,– bis 5.000,– p.a.), Cloud-GPU-Rechenleistung über mehrere Monate auf 
+Hochleistungsclustern (z.B. EUR 25.000,– bis 120.000,– je nach Anbieter und Laufzeit), sowie 
+die Arbeitsleistung eines spezialisierten IT-Forensikers für Angriffsplanung, laufende 
+Überwachung und forensische Dokumentation (z.B. EUR 45.000,– bis 150.000,–). In Summe 
+ergibt die technische Kostenberechnung eines typischen Versuchs eine Bandbreite von z.B. EUR 
+80.000,– bis EUR 316.000,–, wobei der Aufwand realiter nahezu frei skalierbar wäre. Im Rahmen 
+eines solchen Aufwandes ist angesichts der Charakteristik der Mehrheit der aufgefundenen 
+Passwörter eine Herstellbarkeit zumindest eines Teiles des Datenbestandes denkmöglich.  
+Die Prämisse der Nicht-Wiederherstellbarkeit sollte der Verfahrenseinstellung jedenfalls nicht 
+zugrunde gelegt werden. 
+2.6 Forensisches Potential persönlicher Datenträger 
+Die Einschätzung, eine Sicherstellung persönlicher Datenträger sei aufgrund der 
+Verfahrenskenntnis des Mag. SCHIEFER aussichtslos, greift aus forensisch-technischer Sicht zu 
+kurz. 
+Das Löschen von Dateien durch einen Nutzer bedeutet keineswegs deren unwiederbringliche 
+Vernichtung. Mittels File Carving lassen sich gelöschte Dateien sektorenweise rekonstruieren, 
+solange die betreffenden Speicherbereiche nicht vollständig überschrieben wurden – bei 
+herkömmlichen Festplatten oft über längere Zeit hinweg. Darüber hinaus führen moderne 
+Betriebssysteme umfangreiche Metadaten, Protokolle und Schattenkopien, die selbst nach 
+gezielter Löschung von Nutzdaten erhalten bleiben und Rückschlüsse auf Art, Umfang und 
+Zeitpunkt der Datenverarbeitung ermöglichen. Bereits der forensische Nachweis eines gezielten 
+Löschvorgangs nach Verfahrenskenntnis wäre für sich genommen beweiserheblich. 
+Zudem befinden sich relevante Datenspuren regelmäßig nicht ausschließlich auf lokalen Geräten: 
+Cloud-Dienste, E-Mail-Server, Netzwerklaufwerke und Backup-Systeme z.B. des neuen 
+Dienstgebers enthalten Kopien und Metadaten, die dem Zugriff des Einzelnen entzogen und 
+damit nicht ohne Weiteres beseitigbar sind.  
+Die alltägliche Erfahrung in forensischen Untersuchungen und auch bekannte Umstände aus 
+clamorosen Causen zeigen, dass gerade digitale Beweismittel auch in bereits langjährig 
+laufenden Verfahren immer wieder zu unerwarteten Ermittlungsergebnissen führen. Grund hierfür 
+ist oftmals mangelndes technisches Wissen v.a. über zurückbleibende Artefakte, aber immer 
+wieder auch der Wunsch, umfassende Datenbestände nicht zu vernichten, sondern vermeintlich 
+unauffindbar verfügbar zu halten (z.B. etwa auf einem externen Datenträger, worauf 
+gegenständlich ja Hinweise gefunden wurden, oder in der Cloud). 
+2.7 Know-How-Inhalt von Mustervorlagen 
+Ergänzend zu den im Zwischenbericht vom 16. März 2026 angeführten Übermittlungen von 
+Mustern bzw. Vorlagen durch SCHIEFER an seine private E‑Mail‑Adresse bzw. an WIENER 
+wurde eine inhaltliche Überprüfung der betreffenden Dateien vorgenommen, insbesondere 
+dahingehend, ob es sich um leere bzw. lediglich schematisch befüllte Vorlagen oder um 
+Unterlagen mit wesentlichem unternehmensspezifischem Know-how handelt. 
+Am 30. Juni 2023 wurde von der E-Mail-Adresse friedrich.schiefer@oekovolt.at an 
+fredrich.schiefer@gmx.at das Dokument „Muster Protokoll für GV am 03072023.docx“ 
+übermittelt.9 Bei diesem Dokument handelt es sich um eine Vorlage eines Protokolls sowohl für 
+eine Gesellschafterversammlung der Ökovolt GmbH Solartechnik (Deutschland) als auch für eine 
+Generalversammlung der Ökovolt Solartechnik GmbH (Österreich) am 3. Juli 2023. Das 
+Dokument war bereits hinsichtlich der Teilnehmer (Gesellschafter und Geschäftsführer der 
+Gesellschaften) und Gäste (SCHLIESSELBERGER, STAUDE, WIENER), als auch der 
+Tagesordnungspunkte vorausgefüllt, jedoch konnten wesentliche Inhalte aufgrund des in der 
+9 ID 71415 
+Zukunft liegenden Termins noch nicht befüllt werden und wurden somit lediglich mit Platzhalter 
+versehen. Als Tagesordnungspunkte waren unter anderem Beschlussfassungen zu den 
+Jahresabschlüssen der österreichischen und der deutschen Gesellschaft angeführt, die 
+Beschlussfassung über das Earn-Out 2021 laut Punkt 5 des Kauf- und Abtretungsvertrages vom 
+18.10.2021 oder aber die Genehmigung des Protokolls vom 23.11.2022, wobei im Protokoll 
+selbst noch keine inhaltlichen Ausführungen bzw. Zahlen eingetragen waren. Aus 
+sachverständiger Sicht enthält das Dokument jedenfalls nicht-öffentliche Informationen zur 
+internen Willensbildung der Gesellschaften. Dies betrifft insbesondere die vorausgefüllten 
+Angaben zu Teilnehmern und Gästen sowie die konkret vorgesehenen Tagesordnungspunkte. 
+Bei der Excel Datei „Vorlage Planung 2025 MIS Ökovolt DE.xlsx“, welche am 15. September 
+2024 von der E-Mail-Adresse friedrich.schiefer@gmx.at an friedrich.schiefer@oekovolt.at 
+übermittelt wurde10, handelt es sich um eine teilweise befüllte Vorlage für wirtschaftliche Daten 
+des Unternehmen Ökovolt GmbH Solartechnik, sohin der deutschen Gesellschaft. Aus dieser 
+Datei sind Informationen wie der planmäßige Umsatz, das planmäßige EBIT und Ergebnis vor 
+Steuern, der planmäßige Cashflow sowie planmäßige Kennzahlen (EBIT-Marge, Personalkosten 
+/Umsatz, EK-Quote etc.) jeweils für die Jahre 2024 bis 2029 ersichtlich. Weiters wurde der 
+planmäßige sonstige Aufwand lt. GuV auf quartalsmäßiger Basis für das Jahr 2025 erfasst. 
+Ebenfalls ersichtlich ist die Planung der Umsatzsegmente für das Jahr 2025 gesamthaft sowie die 
+detailliertere Planung dieser auf Quartalsbasis. Zudem ersichtlich ist eine Plan GuV, welche das 
+Jahr 2025 umfasst sowie eine Planbilanz11 für den Zeitraum 2025 bis 2029. Bei der vorliegenden 
+Datei handelt es sich jedenfalls um sensible interne Daten, welche keinesfalls an Außenstehende 
+weitergegeben werden dürfte. Anzumerken ist, dass Planunterlagen auch betriebsspezifische, 
+strukturelle Charakteristika abbilden. 
+Bei der „Kopie von Vorlage Planung 2025 MIS Ökovolt AT.xlsx“, welche laut E-Mail vom 15. 
+September 2024 von der E-Mail-Adresse friedrich.schiefer@oekovolt.at an 
+friedrich.schiefer@gmx.at übermittelt wurde12, handelt es sich um eine ähnlich aufgebaute Datei, 
+wie vorstehend genannte der deutschen Gesellschaft, jedoch nunmehr mit Werten der Ökovolt 
+Solartechnik GmbH. Strukturell gesehen, beinhaltet diese Vorlage dieselben sensiblen 
+Informationen wie zuvor und kann sohin auf vorstehende Ausführungen verwiesen werden. Die 
+Datei enthält somit ebenfalls Informationen, die ausschließlich für den internen Gebrauch 
+bestimmt sind. 
+Die Excel Datei „Hofer 120 Kwp Muster.xlsx“, welche am 27. November 2024 von 
+friedrich.schiefer@oekovolt.at an tobias.wiener@one2zero.at übermittelt wurde, beinhaltet 
+Angaben, welche eine 120 kwp Installation betrifft. Aus dieser Datei sind Stückzahlen und weitere 
+10 ID 98519 
+11 Diese ist jedoch lediglich rudimentär befüllt. 
+12 ID 25550 
+technische Daten (beispielsweise Meter), jedoch keine Preise ersichtlich. Hier handelt es sich 
+scheinbar um eine genaue Auflistung benötigter Komponenten für ein Projekt, welches bei 
+Weitergabe an einen Konkurrenten eventuell zu einem Wettbewerbsnachteil führen könnte. Es ist 
+davon auszugehen, dass die Zusammenstellung der genutzten Komponenten spezifisches 
+betriebliches Know-How, insbesondere hinsichtlich des Bezuges und der Kombination von 
+Produkten darstellt.13 Hierzu kann die Auftraggeberin sicherlich näher Auskunft geben. 
+13 ID 28669 
+3 Conclusio 
+Durch fortgeschrittene Analysen von Spuren auf dem Laptop von Mag. (FH) SCHIEFER wurde 
+nachvollziehbar, dass von diesem Zugriff auf Daten von Ökovolt erfolgte, die auf einem als 
+„Extreme SSD“ bezeichneten externen Datenträger gespeichert waren. Es handelt sich 
+hierbei dem Eindruck nach um ein privates Speichermedium, da auch Zugriffe auf 
+offenbare Dateien früherer Arbeitgeber von Mag. (FH) SCHIEFER auf demselben 
+Datenträger ersichtlich waren; auch findet sich kein derartiges Gerät im Bestand von Ökovolt. 
+Zugriffe durch den Benutzer “friedrich.schiefer” auf diesen Datenträger erfolgten an mehreren 
+Tagen zumindest im Zeitraum 24.04.2023 - 10.10.2024. Es zeigen sich konkret 24 Aktivitäten in 
+Bezug auf 9 unterschiedliche Dateien in Verzeichnissen mit dem Namen „B_CONTROLLING“ an 
+einzelnen unregelmäßigen Zeitpunkten zwischen 6. Oktober 2023 und 28. Mai 2024. 
+Die festgestellten Zugriffe sind durchwegs manuelle Vorgänge durch genutzte Office-
+Applikationen bzw. durch vom Benutzer ausgeführte Systemfunktionen wie Quick Access 
+(Schnellzugriff). Geöffnet wurden gezielt einzelne Dateien aus verschiedenen Unterordnern 
+(GuV, Bilanz, Quartalsbericht, Protokolle, Präsentationen). Dieses Verhalten schließt eine 
+Charakteristik als Backup typisch aus. 
+Die betroffenen Dateien liegen parallel auch am Unternehmens-Fileserver vor und wurden 
+spätestens am 2. Dezember 2024 auch direkt am betreffenden Laptop gespeichert. Eine 
+zusätzliche Sicherung auf einem persönlichen Datenträger erscheint in diesem Kontext als 
+redundant bzw. würde keinen betrieblichen Vorgehensweisen lege artis entsprechen; eine 
+sachlich tragfähige betriebliche Notwendigkeit zu diesem Vorgehen ist zum Stand der 
+Erkenntnisse nicht ersichtlich. Zu verweisen ist insbesondere auch darauf, dass eine 
+Speicherung direkt am Laptop und somit in der Unternehmenssphäre verbleibend möglich war, 
+wie die später erfolgte Speicherung direkt auf dem Laptop zeigt. 
+In der Gesamtschau zeigen die festgestellten Windows-Artefakte typische Spuren einer 
+bewusst erfolgten Ablage von Dokumenten des B_CONTROLLING-Ordners auf einem dem 
+Beschuldigten zuordenbaren persönlichen Datenträger in einem ident als 
+B_CONTROLLING benannten Ordner an zwei Orten. Eine Überprüfung der Feststellungen ist 
+für die Kriminalpolizei eigenständig auf Basis der dortigen Extraktion des Laptops möglich. 
+Nachvollzogen werden konnten 24 Zugriffe auf 9 unterschiedliche Dateien auf dem externen 
+Datenträger „Extreme SSD“; in einer lebensnahen Betrachtung scheint aufgrund der 
+übereinstimmenden Ordnerstruktur indiziert, dass an den betreffenden Orten eine Gesamtkopie 
+des Ordners vorgehalten wurde.  
+Wie bereits erwähnt war auch feststellbar, dass Mag. (FH) SCHIEFER auf dem Datenträger mit 
+dem untersuchten Laptop über diesen Datenträger offenbar auf weitere Daten fremder 
+Unternehmen zugegriffen wurde, für die dieser historisch tätig war. Zugriffe auf Dateien in 
+Pfaden, die die Firmenwortlaute „Salzburg Schokolade“ und „Paul Reber GmbH&CoKG“ (bzw. 
+auch nur „Reber“) beinhalteten, fanden dabei zwischen Jänner 2023 und Juni 2024 statt. Diese 
+Dateien weisen hierbei ein viel früheres Erstellungsdatum („Target File Created“) aus dem 
+Zeitraum 21.09.2020 bis 25.10.2022 auf. 
+Auf dem untersuchten Laptop von SCHIEFER zeigen Windows-Artefakte zudem Zugriffe durch 
+den Benutzer “friedrich.schiefer” kurz vor dessen Austritt (Dezember 2024 – Ende Jänner 2025) 
+auf als verschlüsselt bekannte Dateien. Diese Zugriffe erfolgten dabei sowohl auf Dateien die auf 
+dem Laptop selbst als auch auf dem File Server gespeichert waren. Zugriffe auf als verschlüsselt 
+bekannte Daten erfolgten außerdem an anderen Zeitpunkten über den zuvor beschriebenen 
+externen Datenträger „Extreme SSD“. 
+Im Zuge der forensischen Untersuchung wurde zudem geprüft, ob jene Dateien, welche von der 
+Auftraggeberin als verschlüsselte Dateien identifiziert wurden, im E-Mail-Postfach von 
+SCHIEFER aufgefunden werden können. Im Ergebnis zeigte sich, dass ein erheblicher Teil jener 
+Dateien, die bereits in verschlüsselter Form vorgefunden wurden, zu einem früheren Zeitpunkt 
+bereits per E-Mail unverschlüsselt von SCHIEFER versendet oder empfangen worden waren. 
+Die lokal bzw. auf dem Fileserver vorgefundenen verschlüsselten Dateien scheinen sohin trotz 
+zuvor erfolgter unverschlüsselter E-Mail-Übermittlungen erst nachträglich von SCHIEFER 
+verschlüsselt abgelegt worden zu sein. Dies schließt die typische Hypothese, dass die Dateien 
+zur Sicherung während eines Versandes per E-Mail passwortgeschützt wurden, offenbar aus. Ob 
+und welche inhaltlichen Änderungen zwischen einerseits den mehrfachen Übermittlungen 
+bestimmter Dateien bzw. andererseits den Ablagen vorgenommen wurden, wurde keiner 
+inhaltlichen Überprüfung unterzogen bzw. konnte bisher nicht überprüft werden. 
+Typische Kosten für Entschlüsselungsversuche werden in einer indikativen Bandbreite von z.B. 
+EUR 80.000,– bis EUR 316.000,– bewertet. 
+Eine inhaltliche Überprüfung der von SCHIEFER an seine private E-Mail-Adresse bzw. WIENER 
+übermittelten Muster-Dateien zeigt, dass es sich teils nicht bloß um leere Vorlagen handelt, 
+sondern bestimmte Dokumente durchaus sensible Informationen aufweisen. Besonders die 
+Planungsunterlagen der österreichischen und deutschen Gesellschaft beinhalten wesentliche 
+unternehmensspezifische sensible Informationen. Auch die technische Projektvorlage („Hofer 
+120 Kwp Muster.xlsx“) enthält aus sachverständiger Sicht verwertbare Informationen zu 
+Komponenten, die bei Weitergabe an Dritte durchaus geeignet erscheint, die 
+Wettbewerbsposition der Gesellschaft zu beeinträchtigen. 
+3.1 Hinweis 
+Eine unmittelbare digitalforensische Untersuchung des erwähnten externen Datenträgers 
+„Extreme SSD” selbst ist mangels physischer Verfügbarkeit derzeit nicht möglich und wird für 
+eine abschließende Würdigung ausdrücklich angeregt; hierzu ist freilich eine Sicherstellung des 
+betreffenden Gerätes beim Verdächtigen erforderlich, ebenso wie eine Sicherstellung weiterer 
+Datenträger und die Auswertung von Cloud-Diensten ausdrücklich anzuregen ist. 
+Zum Gerät „Extreme SSD“ ist ausdrücklich festzuhalten, dass sich gemäß Auskunft der Ökovolt 
+Solartechnik GmbH kein derartiges Laufwerk im eigenen Bestand der dortigen IT findet. 
+4 Rückfragen durch die Ermittlungsbehörden 
+Die Sachverständigen stehen jederzeit für direkte Anfragen durch die Ermittlungsbehörden zur 
+Verfügung. 
+Mag. Georg H. Jeitler BA MBA CMC 
+Partner · Head of Advisory · Forensic Services Leader 
+Allgemein beeideter und gerichtlich zertifizierter Sachverständiger 
+Tel. +43 664 1616388 · georg.jeitler@at.gt.com 
+Klemens Sattler BSc MSc CISSP GIME 
+Director · Forensic Services · Digital Forensics 
+Allgemein beeideter und gerichtlich zertifizierter Sachverständiger 
+Tel. +43 677 61209593 · klemens.sattler@at.gt.com 
+Grant Thornton Austria Forensic GmbH 
+Gertrude-Fröhlich-Sandner-Straße 1 / Top 13, 1100 Wien 
+Tel. +43 1 505 43 13 · forensic@at.gt.com 
+5 Abschließende Hinweise 
+Vorbehalt der Änderung 
+Dieses Dokument beruht auf dem dargestellten vorläufigen Befund- und Informationsstand und 
+behält punktuellen Irrtum aufgrund der knappen verfügbaren Zeit ausdrücklich vor. 
+Veränderungen der Informationslage können zu Änderungsbedarf führen. Der / die 
+Auftraggeber/in verpflichtet sich mit Nutzung dieses Dokuments, allfällige Korrekturen oder 
+Richtigstellungen an Dritte gleichsam weiterzugeben bzw. in Verfahren vorzulegen. 
+Vollständigkeitserklärung 
+Mit Freigabe und / oder Nutzung dieses Dokuments wird durch den/die Auftraggeber/in und die 

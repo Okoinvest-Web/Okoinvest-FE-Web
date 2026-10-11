@@ -1,0 +1,102 @@
+import re, shutil
+P = r"C:\Users\SALEADMIN\Desktop\Presse\5_Website\fakten.html"
+shutil.copy(P, P.replace(".html", "_vor_umbau.html"))
+html = open(P, encoding="utf-8").read()
+
+# ---------- Abschnitte neu ordnen ----------
+names = ["ZEITSTRAHL", "STECKBRIEF ONE2ZERO", "ANKÜNDIGUNG OHNE GEWERBE", "E-MAILS", "RECHNER", "ZITATE",
+         "FRAGEN & FORDERUNG", "DOKUMENTE", "FAQ"]
+marks = {n: html.index(f"<!-- ===================== {n} ===================== -->") for n in names}
+end = html.index('<section id="kontakt"')
+order_pos = sorted(marks.items(), key=lambda kv: kv[1])
+blocks = {}
+for i, (n, pos) in enumerate(order_pos):
+    nxt = order_pos[i + 1][1] if i + 1 < len(order_pos) else end
+    blocks[n] = html[pos:nxt]
+start = order_pos[0][1]
+new_order = ["ZEITSTRAHL", "E-MAILS", "STECKBRIEF ONE2ZERO", "ANKÜNDIGUNG OHNE GEWERBE", "ZITATE", "RECHNER",
+             "FRAGEN & FORDERUNG", "DOKUMENTE", "FAQ"]
+
+kurz = '''<!-- ===================== IN 60 SEKUNDEN ===================== -->
+  <section id="kurz" class="kurz">
+    <h2>Das Wichtigste in 60 Sekunden</h2>
+    <ol>
+      <li><strong>Partnerschaft und Konkurrenz am selben Tag:</strong> Am 18.10.2021 beteiligte sich die Salzburg AG an Ökovolt – mit dem Ziel, Wettbewerb zu vermeiden. Am selben Tag gründete sie die eigene Tochter one2zero und setzte einen Mitarbeiter mit Einblick in Ökovolt als Geschäftsführer ein.</li>
+      <li><strong>Schriftlich zugesagt:</strong> „Es ist das vereinbarte Ziel … Ökovolt als Errichtungspartner bevorzugt einzusetzen“ (E-Mail der Salzburg-AG-Seite, 10.06.2021). Den Hofer-Bau bekam trotzdem die eigene Tochter.</li>
+      <li><strong>Ohne Gewerbeschein:</strong> Die one2zero hatte bei der Ankündigung des Großprojekts keine einzige Gewerbeberechtigung; Elektrotechnik erst ab August 2023.</li>
+      <li><strong>Dreimal verloren:</strong> Das Oberlandesgericht München wies die Salzburg AG in allen drei Verfahren ab und wertete ihr Vorgehen als „treuwidrig“. Die WKStA hat auf gerichtlichen Auftrag Ermittlungen eingeleitet; es gilt die Unschuldsvermutung.</li>
+      <li><strong>Unsere Forderung:</strong> keine Entschuldigung – eine unabhängige Prüfung durch einen neutralen Sachverständigen. Die Eigentümer haben alle Unterlagen seit 21.09.2026.</li>
+    </ol>
+  </section>
+
+  '''
+nav = '''<nav class="toc" aria-label="Inhalt">
+  <div class="toc-in">
+    <a href="#kurz">Kurz</a><a href="#zeitstrahl">Zeitstrahl</a><a href="#emails">E-Mails</a><a href="#one2zero">one2zero</a>
+    <a href="#ankuendigung" data-welle="AT-3">Ohne Gewerbe</a><a href="#gerichte">Urteile</a><a href="#rechner" data-welle="AT-4">Rechner</a>
+    <a href="#fragen">Fragen</a><a href="#dokumente">Dokumente</a><a href="#faq">FAQ</a>
+  </div>
+</nav>
+'''
+html = html[:start] + kurz + "".join(blocks[n] for n in new_order) + html[end:]
+html = html.replace('<main class="wrap">', nav + '\n<main class="wrap">', 1)
+
+# ---------- Stand + Änderungsverlauf + PDF ----------
+html = html.replace('<div class="stand">Stand: <span class="ph">[Datum]</span></div>',
+    '<div class="stand">Stand: <span class="ph">[Datum]</span> · <a href="#verlauf" style="color:#9bc46a">Änderungsverlauf</a> · '
+    '<a href="#" onclick="window.print();return false" style="color:#9bc46a">Als PDF speichern</a></div>')
+verlauf = '''  <section id="verlauf" style="padding-top:0">
+    <h2 style="font-size:22px">Änderungsverlauf</h2>
+    <p class="lead" style="font-size:15px">Diese Seite wird bei jeder neuen Entscheidung oder Antwort aktualisiert. Jede Änderung ist hier vermerkt.</p>
+    <table class="docs"><thead><tr><th>Datum</th><th>Änderung</th></tr></thead><tbody>
+      <tr><td><span class="ph">[Datum]</span></td><td>Erstveröffentlichung</td></tr>
+    </tbody></table>
+  </section>
+
+  '''
+html = html.replace('  <section id="kontakt"', verlauf + '<section id="kontakt"', 1)
+
+# ---------- CSS: Kurz-Kasten, Navigation, Handy, Druck ----------
+css = '''
+  /* In 60 Sekunden */
+  .kurz{background:var(--card);border:2px solid var(--green);border-radius:var(--radius);padding:30px 32px;margin-top:36px}
+  .kurz h2{font-size:26px}
+  .kurz ol{margin:0;padding-left:22px}
+  .kurz li{margin-bottom:10px}
+  /* Navigation */
+  .toc{position:sticky;top:0;z-index:20;background:rgba(21,26,36,.96);backdrop-filter:saturate(1.2) blur(6px)}
+  .toc-in{max-width:1080px;margin:0 auto;padding:10px 20px;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
+  .toc-in::-webkit-scrollbar{display:none}
+  .toc a{color:#fff;text-decoration:none;font-size:14px;font-weight:600;padding:7px 14px;border-radius:999px;white-space:nowrap;background:rgba(255,255,255,.08)}
+  .toc a:hover{background:var(--green)}
+  section{scroll-margin-top:64px}
+  /* Handy */
+  @media(max-width:640px){
+    body{font-size:16px}
+    .hero{padding:48px 16px 64px}
+    .hero p{font-size:17px}
+    .wrap{padding:0 16px}
+    section{padding:52px 0}
+    .kurz{padding:22px 20px}
+    .stat .n{font-size:32px}
+    .res .val{font-size:26px}.res.big .val{font-size:32px}
+    .contact{padding:24px}
+    blockquote p{font-size:17px}
+  }
+  /* Druck / PDF */
+  @media print{
+    .toc,.hero .actions,.btn{display:none!important}
+    .top{background:#fff;color:#000}.hero p,.stand{color:#333}
+    .eyebrow{color:#558227}
+    body{background:#fff;font-size:11pt}
+    section{padding:18px 0;page-break-inside:avoid}
+    .ev,.mail,blockquote,.card,.res{page-break-inside:avoid;box-shadow:none}
+    blockquote,.bigq,.res.big,.contact{background:#fff!important;color:#000!important;border:1px solid #999}
+    blockquote p,.bigq p,.bigq-t,.res.big .val,.res.big .lbl,.split,.contact p{color:#000!important}
+    details{display:block}details>*{display:block}
+    a{color:#000;text-decoration:none}
+  }
+'''
+html = html.replace("</style>", css + "</style>", 1)
+open(P, "w", encoding="utf-8").write(html)
+print("ok", [m.group(1) for m in re.finditer(r'<section id="([^"]+)"', html)])

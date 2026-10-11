@@ -1,0 +1,130 @@
+import { NextResponse } from "next/server";
+
+import {
+  FULLNAME_COOKIE,
+  ROLLE_COOKIE,
+  SID_COOKIE,
+  USER_COOKIE,
+  cookieOptionen,
+} from "@/lib/cookies";
+import { pruefeDemoAnmeldung } from "@/lib/demo/modus";
+import { FrappeError, frappeRaw } from "@/lib/frappe";
+
+/**
+ * Meldet den Benutzer an und legt die Session serverseitig ab.
+ *
+ * Zwei Wege:
+ *   1. Demonstrationsbetrieb - gegen die hinterlegten Beispielkonten.
+ *   2. Regelbetrieb - gegen Frappe. Frappe gibt bei erfolgreichem Login
+ *      ein sid-Cookie zurueck, das wir httpOnly uebernehmen und bei
+ *      jedem weiteren Aufruf serverseitig weiterreichen.
+ */
+export async function POST(request: Request) {
+  let body: { usr?: string; pwd?: string };
+
+  try {
+    body = (await request.json()) as { usr?: string; pwd?: string };
+  } catch {
+    return NextResponse.json(
+      { error: "Ungültiger Anfrageinhalt." },
+      { status: 400 },
+    );
+  }
+
+  const usr = body.usr?.trim();
+  const pwd = body.pwd;
+
+  if (!usr || !pwd) {
+    return NextResponse.json(
+      { error: "Bitte E-Mail-Adresse und Passwort angeben." },
+      { status: 400 },
+    );
+  }
+
+  // --- Demonstrationsbetrieb -------------------------------------
+  const demo = pruefeDemoAnmeldung(usr, pwd);
+  if (demo) {
+    const antwort = NextResponse.json({ ok: true, demo: true });
+    setzeSession(antwort, {
+      // Im Demonstrationsbetrieb gibt es keine echte Frappe-Session.
+      // Die Kennung macht das an jeder Stelle erkennbar.
+      sid: "demo-session",
+      benutzer: demo.benutzer,
+      vollname: demo.vollname,
+      rolle: demo.rolle,
+    });
+    return antwort;
+  }
+
+  // --- Regelbetrieb gegen Frappe ---------------------------------
+  let upstream: Awaited<ReturnType<typeof frappeRaw>>;
+
+  try {
+    upstream = await frappeRaw("/api/method/login", {
+      method: "POST",
+      json: { usr, pwd },
+    });
+  } catch (error) {
+    const message =
+      error instanceof FrappeError
+        ? error.message
+        : "Das Backend ist nicht erreichbar. Läuft die Frappe-Instanz?";
+    return NextResponse.json({ error: message }, { status: 502 });
+  }
+
+  if (!upstream.response.ok) {
+    // Frappe antwortet bei falschen Zugangsdaten mit 401.
+    return NextResponse.json(
+      { error: "E-Mail-Adresse oder Passwort ist falsch." },
+      { status: 401 },
+    );
+  }
+
+  const payload = upstream.data as { full_name?: string } | undefined;
+
+  // Frappe liefert die Session als Set-Cookie; daraus holen wir die sid.
+  const setCookie = upstream.response.headers.getSetCookie?.() ?? [];
+  const sid = setCookie
+    .map((eintrag) => /(?:^|;\s*)sid=([^;]+)/.exec(eintrag)?.[1])
+    .find((wert): wert is string => Boolean(wert && wert !== "Guest"));
+
+  if (!sid) {
+    return NextResponse.json(
+      { error: "Frappe hat keine Session zurückgegeben." },
+      { status: 502 },
+    );
+  }
+
+  const antwort = NextResponse.json({ ok: true });
+  setzeSession(antwort, {
+    sid: decodeURIComponent(sid),
+    benutzer: usr,
+    vollname: payload?.full_name ?? usr,
+    // Die Rolle kommt im Regelbetrieb aus Frappe; bis dahin der
+    // vorsichtigste Wert.
+    rolle: "betrachter",
+  });
+
+  return antwort;
+}
+
+interface SessionDaten {
+  sid: string;
+  benutzer: string;
+  vollname: string;
+  rolle: string;
+}
+
+function setzeSession(antwort: NextResponse, daten: SessionDaten): void {
+  const sicher = process.env.NODE_ENV === "production";
+
+  antwort.cookies.set(SID_COOKIE, daten.sid, cookieOptionen(sicher, true));
+
+  for (const [name, wert] of [
+    [USER_COOKIE, daten.benutzer],
+    [FULLNAME_COOKIE, daten.vollname],
+    [ROLLE_COOKIE, daten.rolle],
+  ] as const) {
+    antwort.cookies.set(name, wert, cookieOptionen(sicher, false));
+  }
+}

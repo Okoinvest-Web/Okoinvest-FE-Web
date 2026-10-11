@@ -1,0 +1,477 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import { db } from "@/lib/data";
+import { requireUser } from "@/lib/auth";
+import { SESSION_COOKIE, SESSION_MAX_AGE, signSession } from "@/lib/session-token";
+import { CONSENT_SOURCES, COUNTRIES, LEAD_SOURCES, LEAD_STATUSES, LOST_REASONS, type Country, OPPORTUNITY_STAGES, type LeadStatus, type LeadUpdate, type OpportunityUpdate, type ToDo } from "@/lib/types";
+import { parseAmount } from "@/lib/format";
+import { TAX_OPTIONS } from "@/lib/tax";
+import { STAGE_PROB } from "@/lib/insights";
+import { ACTIVITY_KINDS, encodeActivity, type ActivityKind } from "@/lib/activity";
+import { EMAIL_TEMPLATES } from "@/lib/templates";
+
+// Server Actions sind öffentliche POST-Endpunkte: jede prüft Session und Eingaben selbst.
+
+export type FormState = { error?: string };
+
+const str = (form: FormData, key: string) => String(form.get(key) ?? "").trim();
+const opt = (form: FormData, key: string) => str(form, key) || undefined;
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+// ---------- Anmeldung ----------
+
+// Einfache Bremse gegen Passwort-Raten: 5 Fehlversuche je Benutzer in 5 Minuten
+const g = globalThis as unknown as { __loginFails?: Map<string, number[]> };
+const fails = (g.__loginFails ??= new Map());
+const WINDOW = 5 * 60_000;
+
+export async function loginAction(_prev: FormState, form: FormData): Promise<FormState> {
+  const usr = str(form, "usr").toLowerCase();
+  const pwd = String(form.get("pwd") ?? "");
+  if (!usr || !pwd) return { error: "Bitte Benutzer und Passwort eingeben." };
+
+  const recent = (fails.get(usr) ?? []).filter((t: number) => Date.now() - t < WINDOW);
+  if (recent.length >= 5) return { error: "Zu viele Fehlversuche. Bitte in einigen Minuten erneut versuchen." };
+
+  let user;
+  try {
+    user = await db().login(usr, pwd);
+  } catch {
+    return { error: "Anmeldedienst nicht erreichbar." };
+  }
+  if (!user) {
+    fails.set(usr, [...recent, Date.now()]);
+    return { error: "Benutzer oder Passwort falsch." };
+  }
+  fails.delete(usr);
+
+  (await cookies()).set(SESSION_COOKIE, await signSession(user), {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: SESSION_MAX_AGE,
+  });
+
+  // Nur interne Pfade zulassen (kein Open Redirect)
+  const next = str(form, "next");
+  redirect(next.startsWith("/") && !next.startsWith("//") ? next : "/");
+}
+
+export async function logoutAction() {
+  (await cookies()).delete(SESSION_COOKIE);
+  redirect("/login");
+}
+
+// ---------- Leads ----------
+
+export async function createLeadAction(_prev: FormState, form: FormData): Promise<FormState> {
+  await requireUser();
+  const first_name = str(form, "first_name");
+  const email_id = str(form, "email_id");
+  const status = (str(form, "status") || "Lead") as LeadStatus;
+
+  if (!first_name) return { error: "Vorname ist ein Pflichtfeld." };
+  if (email_id && !EMAIL.test(email_id)) return { error: "E-Mail-Adresse ist ungültig." };
+  if (!LEAD_STATUSES.includes(status)) return { error: "Ungültiger Status." };
+
+  const country = (str(form, "country") || "Germany") as Country;
+  if (!COUNTRIES.includes(country)) return { error: "Ungültiges Land." };
+  const consent = str(form, "custom_consent");
+  if (consent && consent !== "Ja" && consent !== "Nein") return { error: "Ungültige Angabe zur Einwilligung." };
+  const consentSource = opt(form, "custom_consent_source");
+  if (consentSource && !CONSENT_SOURCES.includes(consentSource)) return { error: "Ungültige Quelle der Einwilligung." };
+
+  const lead = await db().createLead({
+    country,
+    custom_consent: (consent || undefined) as "Ja" | "Nein" | undefined,
+    // Datum der Einwilligung dokumentieren (Nachweispflicht nach DSGVO)
+    custom_consent_date: consent === "Ja" ? new Date().toISOString().slice(0, 10) : undefined,
+    custom_consent_source: consent === "Ja" ? consentSource : undefined,
+    first_name,
+    last_name: opt(form, "last_name"),
+    company_name: opt(form, "company_name"),
+    email_id: email_id || undefined,
+    mobile_no: opt(form, "mobile_no"),
+    source: opt(form, "source"),
+    status,
+  });
+  revalidatePath("/leads");
+  redirect(`/leads/${encodeURIComponent(lead.name)}`);
+}
+
+export async function updateLeadAction(name: string, _prev: FormState, form: FormData): Promise<FormState> {
+  await requireUser();
+  const first_name = str(form, "first_name");
+  const email_id = str(form, "email_id");
+  if (!first_name) return { error: "Vorname ist ein Pflichtfeld." };
+  if (email_id && !EMAIL.test(email_id)) return { error: "E-Mail-Adresse ist ungültig." };
+
+  await db().updateLead(name, {
+    first_name,
+    last_name: str(form, "last_name"),
+    company_name: str(form, "company_name"),
+    email_id,
+    mobile_no: str(form, "mobile_no"),
+    source: str(form, "source"),
+    territory: str(form, "territory"),
+    notes: str(form, "notes"),
+  });
+  revalidatePath("/leads");
+  redirect(`/leads/${encodeURIComponent(name)}`);
+}
+
+// Einzelnes Feld direkt im Eigenschaftenpanel ändern
+const LEAD_FIELDS = ["first_name", "last_name", "company_name", "email_id", "mobile_no", "source", "territory", "notes", "country", "custom_consent", "custom_consent_source"];
+
+export async function updateLeadFieldAction(name: string, field: string, value: string): Promise<FormState> {
+  await requireUser();
+  const v = value.trim();
+  if (!LEAD_FIELDS.includes(field)) return { error: "Feld nicht änderbar." };
+  if (field === "first_name" && !v) return { error: "Vorname ist ein Pflichtfeld." };
+  if (field === "email_id" && v && !EMAIL.test(v)) return { error: "E-Mail-Adresse ist ungültig." };
+  if (field === "source" && v && !LEAD_SOURCES.includes(v)) return { error: "Ungültige Quelle." };
+  if (field === "country" && !(COUNTRIES as readonly string[]).includes(v)) return { error: "Ungültiges Land." };
+  if (field === "custom_consent" && v && v !== "Ja" && v !== "Nein") return { error: "Ungültige Angabe." };
+  if (field === "custom_consent_source" && v && !CONSENT_SOURCES.includes(v)) return { error: "Ungültige Quelle." };
+  if (v.length > (field === "notes" ? 5000 : 140)) return { error: "Eingabe ist zu lang." };
+  if (!(await db().getLead(name))) return { error: "Lead nicht gefunden." };
+  const update = { [field]: v } as LeadUpdate;
+  // Einwilligung erteilt → Datum festhalten; entzogen → Datum und Quelle leeren
+  if (field === "custom_consent") {
+    update.custom_consent_date = v === "Ja" ? new Date().toISOString().slice(0, 10) : "";
+    if (v !== "Ja") update.custom_consent_source = "";
+  }
+  await db().updateLead(name, update);
+  revalidatePath("/", "layout");
+  return {};
+}
+
+export async function setLeadStatusAction(name: string, status: string) {
+  await requireUser();
+  if (!LEAD_STATUSES.includes(status as LeadStatus)) throw new Error("Ungültiger Status");
+  await db().setLeadStatus(name, status as LeadStatus);
+  revalidatePath("/leads");
+  revalidatePath(`/leads/${encodeURIComponent(name)}`);
+}
+
+export async function convertLeadAction(name: string) {
+  await requireUser();
+  const lead = await db().getLead(name);
+  if (!lead) throw new Error("Lead nicht gefunden");
+  if (lead.status === "Converted") throw new Error("Lead ist bereits konvertiert");
+  const customer = await db().convertLead(name);
+  revalidatePath("/", "layout");
+  redirect(`/customers/${encodeURIComponent(customer.name)}`);
+}
+
+// ---------- Chancen ----------
+
+export async function createOpportunityAction(_prev: FormState, form: FormData): Promise<FormState> {
+  const user = await requireUser();
+  const opportunity_from = str(form, "opportunity_from");
+  const party_name = str(form, "party_name");
+  const title = str(form, "title");
+  const sales_stage = str(form, "sales_stage") || OPPORTUNITY_STAGES[0];
+  const amount = parseAmount(str(form, "opportunity_amount"));
+  const probability = Number(str(form, "probability") || "0");
+  const expected_closing = opt(form, "expected_closing");
+
+  if (opportunity_from !== "Lead" && opportunity_from !== "Customer") return { error: "Bitte Lead oder Kunde wählen." };
+  if (!party_name) return { error: "Bitte einen Lead bzw. Kunden auswählen." };
+  if (!title) return { error: "Titel ist ein Pflichtfeld." };
+  if (!(OPPORTUNITY_STAGES as readonly string[]).includes(sales_stage)) return { error: "Ungültige Phase." };
+  if (!Number.isFinite(amount) || amount < 0) return { error: "Betrag ist ungültig." };
+  if (!Number.isInteger(probability) || probability < 0 || probability > 100) return { error: "Wahrscheinlichkeit muss zwischen 0 und 100 liegen." };
+  if (expected_closing && !DATE.test(expected_closing)) return { error: "Datum ist ungültig." };
+
+  const exists = opportunity_from === "Lead" ? await db().getLead(party_name) : await db().getCustomer(party_name);
+  if (!exists) return { error: `${opportunity_from === "Lead" ? "Lead" : "Kunde"} nicht gefunden.` };
+
+  const opp = await db().createOpportunity(
+    { opportunity_from, party_name, title, sales_stage, opportunity_amount: amount, probability, expected_closing },
+    user.user,
+  );
+  revalidatePath("/", "layout");
+  redirect(`/opportunities/${encodeURIComponent(opp.name)}`);
+}
+
+export async function setOpportunityStageAction(name: string, stage: string) {
+  await requireUser();
+  const newIdx = OPPORTUNITY_STAGES.indexOf(stage as (typeof OPPORTUNITY_STAGES)[number]);
+  if (newIdx < 0) throw new Error("Ungültige Phase");
+  const opp = await db().getOpportunity(name);
+  if (!opp) throw new Error("Chance nicht gefunden");
+  const oldIdx = OPPORTUNITY_STAGES.indexOf(opp.sales_stage as (typeof OPPORTUNITY_STAGES)[number]);
+  // Wahrscheinlichkeit mitziehen, solange sie noch dem Standardwert der alten Phase entspricht
+  if (oldIdx >= 0 && opp.probability === STAGE_PROB[oldIdx]) {
+    await db().updateOpportunity(name, { sales_stage: stage, probability: STAGE_PROB[newIdx] });
+  } else {
+    await db().setOpportunityStage(name, stage);
+  }
+  revalidatePath("/", "layout");
+}
+
+// Einzelnes Feld direkt auf der Detailseite ändern
+export async function updateOpportunityFieldAction(name: string, field: string, value: string): Promise<FormState> {
+  await requireUser();
+  const v = value.trim();
+  const data: OpportunityUpdate = {};
+  switch (field) {
+    case "title":
+      if (!v || v.length > 140) return { error: "Titel fehlt oder ist zu lang." };
+      data.title = v;
+      break;
+    case "opportunity_amount": {
+      const n = parseAmount(v);
+      if (!Number.isFinite(n) || n < 0) return { error: "Betrag ist ungültig." };
+      data.opportunity_amount = n;
+      break;
+    }
+    case "probability": {
+      const n = Number(v.replace("%", "").trim());
+      if (!Number.isInteger(n) || n < 0 || n > 100) return { error: "Wahrscheinlichkeit muss zwischen 0 und 100 liegen." };
+      data.probability = n;
+      break;
+    }
+    case "expected_closing":
+      if (!DATE.test(v)) return { error: "Bitte ein gültiges Datum wählen." };
+      data.expected_closing = v;
+      break;
+    default:
+      return { error: "Feld nicht änderbar." };
+  }
+  if (!(await db().getOpportunity(name))) return { error: "Chance nicht gefunden." };
+  await db().updateOpportunity(name, data);
+  revalidatePath("/", "layout");
+  return {};
+}
+
+export async function setOpportunityOutcomeAction(name: string, outcome: "won" | "lost" | "open", reason?: string): Promise<FormState> {
+  await requireUser();
+  if (!["won", "lost", "open"].includes(outcome)) return { error: "Ungültiger Ausgang." };
+  if (outcome === "lost" && !(LOST_REASONS as readonly string[]).includes(reason ?? "")) return { error: "Bitte einen Grund wählen." };
+  const opp = await db().getOpportunity(name);
+  if (!opp) return { error: "Chance nicht gefunden." };
+  await db().setOpportunityOutcome(name, outcome, reason);
+  // Wahrscheinlichkeit passend setzen: 100/0 beim Abschluss, Phasen-Standard beim Wiederöffnen
+  const idx = OPPORTUNITY_STAGES.indexOf(opp.sales_stage as (typeof OPPORTUNITY_STAGES)[number]);
+  const probability = outcome === "won" ? 100 : outcome === "lost" ? 0 : STAGE_PROB[Math.max(0, idx)];
+  await db().updateOpportunity(name, { probability });
+  revalidatePath("/", "layout");
+  return {};
+}
+
+// ---------- Aufgaben ----------
+
+const REF_TYPES = ["Lead", "Opportunity", "Customer"];
+const PRIORITIES: ToDo["priority"][] = ["Low", "Medium", "High"];
+
+export async function createToDoAction(_prev: FormState, form: FormData): Promise<FormState> {
+  const user = await requireUser();
+  const description = str(form, "description");
+  const priority = (str(form, "priority") || "Medium") as ToDo["priority"];
+  const date = opt(form, "date");
+  const reference_type = opt(form, "reference_type");
+  const reference_name = opt(form, "reference_name");
+
+  if (!description) return { error: "Beschreibung fehlt." };
+  if (description.length > 500) return { error: "Beschreibung ist zu lang (max. 500 Zeichen)." };
+  if (!PRIORITIES.includes(priority)) return { error: "Ungültige Priorität." };
+  if (date && !DATE.test(date)) return { error: "Datum ist ungültig." };
+  if (reference_type && !REF_TYPES.includes(reference_type)) return { error: "Ungültiger Bezug." };
+
+  await db().createToDo({
+    description,
+    priority,
+    date,
+    allocated_to: opt(form, "allocated_to") ?? user.user,
+    reference_type: reference_name ? reference_type : undefined,
+    reference_name,
+  });
+  revalidatePath("/", "layout");
+  return {};
+}
+
+export async function toggleToDoAction(name: string, done: boolean) {
+  await requireUser();
+  await db().setToDoStatus(name, done ? "Closed" : "Open");
+  revalidatePath("/", "layout");
+}
+
+// ---------- Aktivitäten ----------
+
+export async function logActivityAction(doctype: string, name: string, _prev: FormState, form: FormData): Promise<FormState> {
+  const user = await requireUser();
+  if (!NOTE_DOCTYPES.includes(doctype)) return { error: "Ungültiger Bezug." };
+  const kind = str(form, "kind") as ActivityKind;
+  if (!(kind in ACTIVITY_KINDS)) return { error: "Ungültige Aktivität." };
+  const outcome = opt(form, "outcome");
+  const allowed: readonly string[] = ACTIVITY_KINDS[kind].outcomes;
+  if (outcome && !allowed.includes(outcome)) return { error: "Ungültiges Ergebnis." };
+  const content = str(form, "content");
+  if (!content && kind === "note") return { error: "Notiz ist leer." };
+  if (content.length > 5000) return { error: "Text ist zu lang (max. 5000 Zeichen)." };
+  const followUp = Number(str(form, "followup") || "0");
+  if (!Number.isInteger(followUp) || followUp < 0 || followUp > 90) return { error: "Ungültige Wiedervorlage." };
+
+  await db().addNote(doctype, name, encodeActivity(kind, outcome, content), user);
+
+  // Wiedervorlage als Aufgabe mit Bezug zum Datensatz
+  if (followUp > 0) {
+    const due = new Date(Date.now() + followUp * 86_400_000).toISOString().slice(0, 10);
+    await db().createToDo({
+      description: `Wiedervorlage nach ${ACTIVITY_KINDS[kind].label}${outcome ? ` (${outcome})` : ""}${content ? `: ${content.slice(0, 120)}` : ""}`,
+      priority: "Medium",
+      date: due,
+      allocated_to: user.user,
+      reference_type: doctype,
+      reference_name: name,
+    });
+  }
+
+  // Erster echter Kontakt: neuer Lead wechselt automatisch auf "Offen"
+  if (doctype === "Lead" && kind !== "note") {
+    const lead = await db().getLead(name);
+    if (lead?.status === "Lead") await db().setLeadStatus(name, "Open");
+  }
+
+  revalidatePath("/", "layout");
+  return {};
+}
+
+// ---------- Dubletten ----------
+
+// href leer = geschützter Treffer bei einem Kollegen (keine Details)
+export type DuplicateHit = { type: "Lead" | "Kunde" | "Kontakt" | "Kundenschutz"; title: string; detail: string; href: string };
+
+// Sucht vorhandene Datensätze mit gleicher E-Mail, Telefonnummer oder gleichem Namen
+export async function findDuplicatesAction(input: { email?: string; mobile?: string; firstName?: string; lastName?: string }): Promise<DuplicateHit[]> {
+  await requireUser();
+  const email = input.email?.trim().toLowerCase() ?? "";
+  const digits = (s?: string) => (s ?? "").replace(/\D/g, "").replace(/^0049|^49/, "0");
+  const phone = digits(input.mobile);
+  const fullName = [input.firstName, input.lastName].map((s) => s?.trim()).filter(Boolean).join(" ").toLowerCase();
+  if (!email && phone.length < 6 && fullName.length < 5) return [];
+
+  const [leads, customers, contacts] = await Promise.all([db().listLeads({ limit: 500 }), db().listCustomers({ limit: 500 }), db().listContacts({ limit: 500 })]);
+  const match = (e?: string, m?: string, n?: string) =>
+    (email && e?.toLowerCase() === email) || (phone.length >= 6 && digits(m) === phone) || (fullName.length >= 5 && n?.toLowerCase() === fullName);
+
+  const hits: DuplicateHit[] = [
+    ...leads.filter((l) => match(l.email_id, l.mobile_no, l.lead_name)).map((l) => ({ type: "Lead" as const, title: l.lead_name, detail: l.email_id ?? l.mobile_no ?? "", href: `/leads/${encodeURIComponent(l.name)}` })),
+    ...customers.filter((c) => match(c.email_id, c.mobile_no, c.customer_name)).map((c) => ({ type: "Kunde" as const, title: c.customer_name, detail: c.email_id ?? "", href: `/customers/${encodeURIComponent(c.name)}` })),
+    ...contacts
+      .filter((c) => match(c.email_id, c.mobile_no, c.full_name))
+      .map((c) => ({ type: "Kontakt" as const, title: c.full_name, detail: c.company_name ?? c.email_id ?? "", href: c.company_name ? `/customers/${encodeURIComponent(c.company_name)}` : "/contacts" })),
+  ];
+  // Kundenschutz: auch Datensätze prüfen, die der Vertreter nicht sehen darf – nur ja/nein
+  if (!hits.length && (await db().existsElsewhere({ email, mobile: input.mobile }))) {
+    hits.push({ type: "Kundenschutz", title: "Bereits bei einem Kollegen in Betreuung", detail: "Bitte mit der Vertriebsleitung klären, bevor du den Lead anlegst.", href: "" });
+  }
+  return hits.slice(0, 5);
+}
+
+// ---------- Notizen ----------
+
+const NOTE_DOCTYPES = ["Lead", "Opportunity", "Customer"];
+
+export async function addNoteAction(doctype: string, name: string, _prev: FormState, form: FormData): Promise<FormState> {
+  const user = await requireUser();
+  if (!NOTE_DOCTYPES.includes(doctype)) return { error: "Ungültiger Bezug." };
+  const content = str(form, "content");
+  if (!content) return { error: "Notiz ist leer." };
+  if (content.length > 5000) return { error: "Notiz ist zu lang (max. 5000 Zeichen)." };
+  await db().addNote(doctype, name, content, user);
+  revalidatePath("/", "layout");
+  return {};
+}
+
+// ---------- Angebote ----------
+
+type QuoteLine = { item_code: string; qty: number; rate: number };
+
+export async function createQuotationAction(_prev: FormState, form: FormData): Promise<FormState> {
+  const user = await requireUser();
+  const oppName = str(form, "opportunity");
+  const opp = oppName ? await db().getOpportunity(oppName) : null;
+  if (!opp) return { error: "Chance nicht gefunden." };
+
+  let lines: QuoteLine[];
+  try {
+    lines = JSON.parse(str(form, "items") || "[]");
+  } catch {
+    return { error: "Positionen sind ungültig." };
+  }
+  if (!Array.isArray(lines) || lines.length === 0) return { error: "Bitte mindestens eine Position hinzufügen." };
+  if (lines.length > 100) return { error: "Zu viele Positionen." };
+
+  // Nur Artikel aus dem Katalog, Mengen und Preise plausibel
+  const catalog = new Map((await db().listItems({ limit: 1000 })).map((i) => [i.item_code, i]));
+  for (const l of lines) {
+    if (!catalog.has(l.item_code)) return { error: `Unbekannter Artikel: ${String(l.item_code).slice(0, 40)}` };
+    if (!(typeof l.qty === "number" && l.qty > 0 && l.qty <= 100000)) return { error: "Menge ist ungültig." };
+    if (!(typeof l.rate === "number" && l.rate >= 0 && l.rate <= 10_000_000)) return { error: "Preis ist ungültig." };
+  }
+
+  const country = (str(form, "country") || "Germany") as Country;
+  if (!COUNTRIES.includes(country)) return { error: "Ungültiges Land." };
+  const taxRate = Number(str(form, "tax_rate"));
+  if (!TAX_OPTIONS[country].some((t) => t.rate === taxRate)) return { error: "Ungültiger Steuersatz." };
+  const validTill = str(form, "valid_till");
+  if (!DATE.test(validTill)) return { error: "Bitte ein gültiges Datum für „gültig bis“ wählen." };
+
+  const q = await db().createQuotation(
+    {
+      quotation_to: opp.opportunity_from,
+      party_name: opp.party_name,
+      opportunity: opp.name,
+      title: str(form, "title").slice(0, 140) || opp.title,
+      valid_till: validTill,
+      tax_rate: taxRate,
+      items: lines.map((l) => ({ item_code: l.item_code, qty: l.qty, rate: l.rate })),
+    },
+    user.user,
+  );
+  revalidatePath("/", "layout");
+  redirect(`/quotations/${encodeURIComponent(q.name)}`);
+}
+
+// ---------- Lead-Börse ----------
+
+// Kostenpflichtige Freischaltung: Preis und Verfügbarkeit prüft ausschließlich der Server
+export async function unlockLeadAction(name: string): Promise<FormState> {
+  const user = await requireUser();
+  if (user.role !== "agent") return { error: "Nur Handelsvertreter können Leads freischalten." };
+  if (!/^[\w\- .]{1,80}$/.test(name)) return { error: "Ungültiger Lead." };
+  let charge;
+  try {
+    charge = await db().unlockLead(name);
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Freischaltung fehlgeschlagen." };
+  }
+  revalidatePath("/", "layout");
+  redirect(`/leads/${encodeURIComponent(charge.lead)}?freigeschaltet=${charge.amount}`);
+}
+
+// ---------- E-Mail-Vorlagen ----------
+
+// Versand über das eigene Mailprogramm; hier wird nur die Aktivität protokolliert
+export async function logEmailAction(doctype: string, name: string, templateId: string, subject: string): Promise<FormState> {
+  const user = await requireUser();
+  if (!NOTE_DOCTYPES.includes(doctype)) return { error: "Ungültiger Bezug." };
+  const t = EMAIL_TEMPLATES.find((x) => x.id === templateId);
+  if (!t) return { error: "Unbekannte Vorlage." };
+  await db().addNote(doctype, name, encodeActivity("mail", "Gesendet", `Vorlage „${t.label}“: ${subject.slice(0, 200)}`), user);
+  // Erster Kontakt per E-Mail: neuer Lead wird "Offen"
+  if (doctype === "Lead") {
+    const lead = await db().getLead(name);
+    if (lead?.status === "Lead") await db().setLeadStatus(name, "Open");
+  }
+  revalidatePath("/", "layout");
+  return {};
+}

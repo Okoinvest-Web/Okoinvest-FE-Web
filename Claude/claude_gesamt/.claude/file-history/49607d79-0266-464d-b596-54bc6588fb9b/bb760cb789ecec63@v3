@@ -1,0 +1,29 @@
+import { defineConfig } from 'vitest/config'
+import vue from '@vitejs/plugin-vue'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const root = path.dirname(fileURLToPath(import.meta.url))
+
+export default defineConfig({
+  // Ohne den Plugin kann Vitest keine .vue-Datei lesen; die Komponententests
+  // brauchen ihn, die Tests gegen den Mock nicht.
+  plugins: [vue()],
+  resolve: {
+    alias: {
+      '@': path.resolve(root, 'src'),
+      // Warum das echte frappe-ui hier nicht geht, steht in der Datei.
+      'frappe-ui': path.resolve(root, 'tests/doubles/frappe-ui.js'),
+    },
+  },
+  define: {
+    __FRONTEND_ROUTE__: JSON.stringify('/'),
+  },
+  test: {
+    // Voreinstellung bleibt node - die Komponententests setzen sich per
+    // Docblock (@vitest-environment happy-dom) selbst um.
+    environment: 'node',
+    setupFiles: ['./vitest.setup.js'],
+    include: ['tests/**/*.test.js'],
+  },
+})

@@ -1,0 +1,148 @@
+"use client";
+
+import { useActionState, useState } from "react";
+
+import { aendereVollmacht, type VollmachtErgebnis } from "./aktionen";
+
+/**
+ * Erteilen oder Widerrufen einer Vollmacht.
+ *
+ * Der Ablauf ist bewusst zweistufig: erst aufklappen, dann ausdruecklich
+ * bestaetigen. Eine Vollmacht ist eine rechtsgeschaeftliche Erklaerung -
+ * sie soll nicht mit einem einzigen unbedachten Klick zustande kommen
+ * oder erloeschen.
+ */
+export function VollmachtFormular({
+  vollmacht,
+  bevollmaechtigter,
+  erteilt,
+  darfAendern,
+}: {
+  vollmacht: string;
+  bevollmaechtigter: string;
+  erteilt: boolean;
+  darfAendern: boolean;
+}) {
+  const [offen, setOffen] = useState(false);
+  const [ergebnis, aktion, laeuft] = useActionState<
+    VollmachtErgebnis | null,
+    FormData
+  >(aendereVollmacht, null);
+
+  if (!darfAendern) {
+    return (
+      <p className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500 dark:bg-slate-800/50 dark:text-slate-400">
+        Vollmachten darf nur die Geschäftsführung erteilen oder widerrufen.
+      </p>
+    );
+  }
+
+  if (ergebnis?.ok) {
+    return (
+      <p
+        role="status"
+        className="rounded-lg bg-emerald-50 px-3 py-2.5 text-sm leading-relaxed text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
+      >
+        {ergebnis.meldung}
+      </p>
+    );
+  }
+
+  if (!offen) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOffen(true)}
+        className={`rounded-lg border px-3.5 py-2 text-sm font-medium transition ${
+          erteilt
+            ? "border-rose-300 text-rose-700 hover:bg-rose-50 dark:border-rose-800 dark:text-rose-300 dark:hover:bg-rose-950/40"
+            : "border-emerald-300 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-300 dark:hover:bg-emerald-950/40"
+        }`}
+      >
+        {erteilt ? "Vollmacht widerrufen" : "Vollmacht erteilen"}
+      </button>
+    );
+  }
+
+  return (
+    <form
+      action={aktion}
+      className="rounded-lg border border-slate-300 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/50"
+    >
+      <input type="hidden" name="vollmacht" value={vollmacht} />
+      <input
+        type="hidden"
+        name="absicht"
+        value={erteilt ? "widerrufen" : "erteilen"}
+      />
+
+      <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-200">
+        {erteilt ? (
+          <>
+            Sie widerrufen die Vollmacht an{" "}
+            <strong className="font-medium">{bevollmaechtigter}</strong>. Ab dem
+            Widerruf dürfen in Ihrem Namen keine weiteren Zertifikatsgeschäfte
+            abgeschlossen werden. Bereits abgeschlossene Geschäfte bleiben
+            gültig.
+          </>
+        ) : (
+          <>
+            Sie bevollmächtigen{" "}
+            <strong className="font-medium">{bevollmaechtigter}</strong>, CO₂-
+            Zertifikate aus Ihren Anlagen in Ihrem Namen und auf Ihre Rechnung
+            zu registrieren, zertifizieren zu lassen und zu verkaufen.
+          </>
+        )}
+      </p>
+
+      <label className="mt-3 flex items-start gap-2.5 text-sm text-slate-700 dark:text-slate-200">
+        <input
+          type="checkbox"
+          name="bestaetigung"
+          value="ja"
+          required
+          className="mt-0.5 h-4 w-4 rounded border-slate-400 text-emerald-600 focus:ring-emerald-500"
+        />
+        <span>
+          Ich bin zeichnungsberechtigt und bestätige die
+          {erteilt ? " Widerrufserklärung" : " Vollmachtserteilung"}
+          verbindlich.
+        </span>
+      </label>
+
+      {ergebnis && !ergebnis.ok && (
+        <p
+          role="alert"
+          className="mt-2.5 rounded-md bg-rose-50 px-2.5 py-1.5 text-xs text-rose-800 dark:bg-rose-950/60 dark:text-rose-300"
+        >
+          {ergebnis.meldung}
+        </p>
+      )}
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        <button
+          type="submit"
+          disabled={laeuft}
+          className={`rounded-lg px-3.5 py-2 text-sm font-medium text-white transition disabled:opacity-60 ${
+            erteilt
+              ? "bg-rose-600 hover:bg-rose-700"
+              : "bg-emerald-600 hover:bg-emerald-700"
+          }`}
+        >
+          {laeuft
+            ? "Wird verarbeitet …"
+            : erteilt
+              ? "Widerruf verbindlich erklären"
+              : "Vollmacht verbindlich erteilen"}
+        </button>
+        <button
+          type="button"
+          onClick={() => setOffen(false)}
+          className="rounded-lg border border-slate-300 px-3.5 py-2 text-sm text-slate-600 transition hover:bg-white dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800"
+        >
+          Abbrechen
+        </button>
+      </div>
+    </form>
+  );
+}

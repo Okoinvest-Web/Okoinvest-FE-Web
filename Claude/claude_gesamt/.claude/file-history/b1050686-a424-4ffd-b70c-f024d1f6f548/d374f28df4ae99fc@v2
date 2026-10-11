@@ -1,0 +1,150 @@
+import io
+
+p = "src/lib/db/befuellen-technik.ts"
+s = io.open(p, encoding="utf-8").read()
+
+# --- Dokumentation oben ergaenzen -----------------------------------
+alt = """ *   - ein Strang mit zunehmender Verschattung durch Bewuchs
+ *   - ein Wechselrichter, der an einem Tag komplett ausfällt
+ *   - regelmäßige Abregelung bei knapper Auslegung
+ *   - ein Kommunikationsabbruch über Nacht
+ *"""
+neu = """ *   - ein Strang mit zunehmender Verschattung durch Bewuchs
+ *   - ein Wechselrichter, der an einem Tag komplett ausfällt
+ *   - regelmäßige Abregelung bei knapper Auslegung
+ *   - ein Kommunikationsabbruch über Nacht
+ *   - ein Morgenschatten durch ein Nachbargebäude, täglich zur
+ *     gleichen Stunde und danach vollständige Erholung
+ *   - eine zunehmende Verschmutzung, die ein Regentag zurücksetzt
+ *
+ * Die letzten beiden sind hinzugekommen, damit sich die
+ * Ursachenzuordnung in `pv/befund.ts` überhaupt zeigen lässt: Ein
+ * Bestand, in dem jeder Tag unauffällig ist, beweist nur, dass die
+ * Auswertung nichts meldet.
+ *"""
+assert alt in s
+s = s.replace(alt, neu, 1)
+
+# --- Neue Stoerungsart ----------------------------------------------
+s = s.replace('''  /** Eingebautes Fehlerbild. */
+  stoerung?: "ausfall" | "abregelung";''',
+'''  /** Eingebautes Fehlerbild. */
+  stoerung?: "ausfall" | "abregelung" | "morgenschatten";''', 1)
+
+# --- Konstanten ------------------------------------------------------
+alt = """/** Tag des Kommunikationsabbruchs, relativ zu heute. */
+const ABBRUCH_VOR_TAGEN = 26;"""
+neu = """/** Tag des Kommunikationsabbruchs, relativ zu heute. */
+const ABBRUCH_VOR_TAGEN = 26;
+
+/**
+ * Morgenschatten durch das Nachbargebäude.
+ *
+ * Zwischen 07:00 und 09:00 Ortszeit liegt ein Teil des Feldes im
+ * Schatten; danach erholt sich die Anlage vollständig. Genau diese
+ * Signatur - scharfer Einbruch, Erholung, jeden Tag zur selben
+ * Stunde - unterscheidet einen Schatten von einem Defekt.
+ */
+const SCHATTEN_VON_MINUTE = 7 * 60;
+const SCHATTEN_BIS_MINUTE = 9 * 60;
+const SCHATTEN_RESTANTEIL = 0.32;
+
+/**
+ * Verschmutzung auf dem Carport.
+ *
+ * Ein Carport an einer Zufahrt bekommt Staub und Bremsabrieb ab. Die
+ * Ausbeute sinkt langsam, bis ein kräftiger Regen sie zurücksetzt.
+ * Der Sprung nach oben ist das einzige Merkmal, das Verschmutzung von
+ * Alterung unterscheidet - ohne ihn wird jahrelang abgeschrieben,
+ * was sich waschen ließe.
+ */
+const VERSCHMUTZTE_ANLAGE = "ANL-0005";
+const REGEN_VOR_TAGEN = 9;
+/** Verlust je Tag ohne Regen, als Anteil der Leistung. */
+const VERSCHMUTZUNG_JE_TAG = 0.004;
+const VERSCHMUTZUNG_HOECHSTENS = 0.11;
+
+/**
+ * Wie stark die Verschmutzung an einem Tag bremst.
+ *
+ * Gezählt wird ab dem letzten Regen. Vor dem Regen liegen die Module
+ * seit Beginn des Datenbestands ungewaschen da, danach beginnt die
+ * Zählung von vorn.
+ */
+function verschmutzung(anlageId: string, tagVonHeute: number): number {
+  if (anlageId !== VERSCHMUTZTE_ANLAGE) return 0;
+
+  const tageSeitRegen =
+    tagVonHeute > REGEN_VOR_TAGEN
+      ? TAGE_DETAIL - tagVonHeute
+      : REGEN_VOR_TAGEN - tagVonHeute;
+
+  return Math.min(
+    VERSCHMUTZUNG_HOECHSTENS,
+    tageSeitRegen * VERSCHMUTZUNG_JE_TAG,
+  );
+}"""
+assert alt in s
+s = s.replace(alt, neu, 1)
+
+# --- Der Wechselrichter des Buerogebaeudes bekommt den Schatten ------
+alt = """    id: "WR-0016",
+    anlageId: "ANL-0004","""
+if alt not in s:
+    # Nummer unbekannt - stattdessen ueber die Anlage suchen.
+    import re
+    m = re.search(r'\{\n    id: "(WR-\d+)",\n    anlageId: "ANL-0004",', s)
+    assert m, "Wechselrichter von ANL-0004 nicht gefunden"
+    alt = f'''    id: "{m.group(1)}",
+    anlageId: "ANL-0004",'''
+
+block_start = s.index(alt)
+block_end = s.index("  },", block_start)
+block = s[block_start:block_end]
+assert "stoerung" not in block, block
+s = (
+    s[:block_end]
+    + "    // Das Nachbargebäude wirft bis neun Uhr einen Schatten.\n"
+    + '    stoerung: "morgenschatten",\n'
+    + s[block_end:]
+)
+
+# --- Anwendung in der Messwertschleife -------------------------------
+alt = """            let leistung = moeglich;
+            let zustand = "Normal";
+
+            // Eingebaute Fehlerbilder.
+            if (wr.stoerung === "ausfall" && tagVonHeute === AUSFALL_VOR_TAGEN) {
+              leistung = 0;
+              zustand = einstrahlung > 50 ? "Stoerung" : "Aus";
+            } else if (wr.stoerung === "abregelung" && moeglich > wr.nennleistungKw) {
+              leistung = wr.nennleistungKw;
+              zustand = "Abgeregelt";
+            }"""
+neu = """            let leistung = moeglich;
+            let zustand = "Normal";
+
+            // Eingebaute Fehlerbilder.
+            if (wr.stoerung === "ausfall" && tagVonHeute === AUSFALL_VOR_TAGEN) {
+              leistung = 0;
+              zustand = einstrahlung > 50 ? "Stoerung" : "Aus";
+            } else if (wr.stoerung === "abregelung" && moeglich > wr.nennleistungKw) {
+              leistung = wr.nennleistungKw;
+              zustand = "Abgeregelt";
+            } else if (wr.stoerung === "morgenschatten") {
+              const minute = zeit.getHours() * 60 + zeit.getMinutes();
+              if (
+                minute >= SCHATTEN_VON_MINUTE &&
+                minute < SCHATTEN_BIS_MINUTE
+              ) {
+                leistung = moeglich * SCHATTEN_RESTANTEIL;
+              }
+            }
+
+            // Schmutz auf dem Glas wirkt auf die ganze Anlage.
+            leistung *= 1 - verschmutzung(anlageId, tagVonHeute);"""
+assert alt in s
+s = s.replace(alt, neu, 1)
+
+io.open(p, "w", encoding="utf-8").write(s)
+print("Fehlerbilder ergaenzt")

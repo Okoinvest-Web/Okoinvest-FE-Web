@@ -1,0 +1,400 @@
+import type { Metadata } from "next";
+
+import { Abnahmetafel } from "@/components/abnahmetafel";
+import { Tabelle, Zeile, Zelle } from "@/components/tabelle";
+import {
+  Balken,
+  Tafel,
+  Kennzahl,
+  LeerZustand,
+  Seitenkopf,
+  Status,
+} from "@/components/ui";
+import { ladeAbnahmen } from "@/lib/daten/abnahme";
+import { ladeWartungsbedarf } from "@/lib/daten/wartung";
+import type { Wartungsposten } from "@/lib/pv/wartung";
+import { mehrzahl } from "@/lib/zahl";
+import { formatDatum, formatProzent, formatZahl } from "@/lib/format";
+import {
+  ladeAnlagen,
+  ladeAnlagendoku,
+} from "@/lib/portal-daten";
+import { requireRecht } from "@/lib/session";
+
+export const metadata: Metadata = { title: "Dokumentation" };
+
+/**
+ * Normen, die fuer die Dokumentation einer netzgekoppelten
+ * Photovoltaikanlage in Oesterreich massgeblich sind.
+ */
+const NORMEN = [
+  {
+    nummer: "ÖVE/ÖNORM E 8001-4-712",
+    titel: "Errichtung und Betrieb von Photovoltaikanlagen",
+    zweck:
+      "Planung, Errichtung und Überwachung netzgekoppelter Anlagen, einschließlich der selbsttätigen Trennstelle.",
+  },
+  {
+    nummer: "ÖVE/ÖNORM EN 62446-1",
+    titel: "Prüfung, Dokumentation und Instandhaltung",
+    zweck:
+      "Mindestumfang der Systemdokumentation, Erst- und wiederkehrende Prüfung mit Prüfprotokoll.",
+  },
+  {
+    nummer: "ÖVE/ÖNORM E 8101",
+    titel: "Elektrische Niederspannungsanlagen",
+    zweck:
+      "Grundlegende Errichtungsbestimmungen, Teil 7-712 behandelt Photovoltaik-Stromversorgungssysteme.",
+  },
+  {
+    nummer: "TOR Erzeuger",
+    titel: "Technische und organisatorische Regeln",
+    zweck:
+      "Anforderungen an Erzeugungsanlagen je Typ A bis D, insbesondere Netz- und Anlagenschutz.",
+  },
+  {
+    nummer: "ÖVE/ÖNORM EN 62305",
+    titel: "Blitzschutz",
+    zweck: "Blitz- und Überspannungsschutzkonzept für die Anlage.",
+  },
+  {
+    nummer: "TRVB E 133",
+    titel: "Brandschutztechnische Anforderungen",
+    zweck:
+      "Kennzeichnung, Trennstellen und Zugänglichkeit für die Feuerwehr im Einsatzfall.",
+  },
+];
+
+
+/**
+ * Ton und Wort eines Prueftermins.
+ *
+ * Dieselbe Unterscheidung wie auf der Anlagenseite: Eine ueberfaellige
+ * Vorschrift ist rot, eine ueberfaellige Empfehlung nicht. Wer beides
+ * gleich faerbt, erzieht dazu, beides zu uebersehen.
+ */
+function terminTon(posten: Wartungsposten) {
+  const verbindlich =
+    posten.regel.art === "vorschrift" || posten.regel.art === "vertrag";
+
+  switch (posten.befund.stand) {
+    case "ueberfaellig":
+      return verbindlich ? ("kritisch" as const) : ("ernst" as const);
+    case "unbekannt":
+      return "ernst" as const;
+    case "steht_an":
+      return "hinweis" as const;
+    default:
+      return "gut" as const;
+  }
+}
+
+function terminWort(posten: Wartungsposten): string {
+  const { stand, tage } = posten.befund;
+
+  switch (stand) {
+    case "ueberfaellig":
+      return `seit ${mehrzahl(Math.abs(tage), "Tag", "Tagen")} fällig`;
+    case "steht_an":
+      return tage === 0 ? "heute fällig" : `in ${mehrzahl(tage, "Tag", "Tagen")}`;
+    case "unbekannt":
+      return "kein Nachweis";
+    default:
+      return "aktuell";
+  }
+}
+
+export default async function DokumentationSeite() {
+  await requireRecht("anlagen.lesen");
+
+  const abnahmen = ladeAbnahmen();
+
+  const [anlagen, doku] = await Promise.all([
+    ladeAnlagen(),
+    ladeAnlagendoku(),
+  ]);
+
+  const pflicht = doku.filter((d) => d.pflicht === 1);
+  const pflichtVorhanden = pflicht.filter((d) => d.vorhanden === 1);
+  const vollstaendigkeit =
+    pflicht.length > 0 ? (pflichtVorhanden.length / pflicht.length) * 100 : 0;
+
+  const fehlend = doku.filter((d) => d.vorhanden !== 1);
+
+  /*
+   * Prueftermine kommen aus dem Wartungsplan und nicht aus einer
+   * zweiten Ablage. Vorher stand hier eine eigene Liste mit eigenen
+   * Terminen - und damit zwei Antworten auf dieselbe Frage, von denen
+   * frueher oder spaeter eine falsch ist.
+   */
+  const { bedarf, geprueft, aktuell } = ladeWartungsbedarf();
+
+  /*
+   * Die Kachel nennt das Dringendste, nicht das Naechste. Ein Feld
+   * "Naechste Pruefung", in dem ein Datum aus dem Mai steht, waehrend
+   * September ist, liest sich wie ein Fehler - und ist einer: Der
+   * Termin ist nicht der naechste, sondern der versaeumte.
+   */
+  const ueberfaellige = bedarf.filter(
+    (b) => b.posten.befund.stand === "ueberfaellig",
+  );
+  const anstehende = bedarf.filter((b) => b.posten.befund.stand === "steht_an");
+
+  const dringend = ueberfaellige[0] ?? anstehende[0] ?? null;
+
+  const anlagenName = (name: string | undefined) =>
+    anlagen.find((a) => a.name === name)?.anlagen_name ?? name;
+
+  return (
+    <div className="space-y-6">
+      <Seitenkopf
+        titel="Anlagendokumentation"
+        hinweis="Vollständigkeit nach ÖVE/ÖNORM und TOR Erzeuger"
+      />
+
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Kennzahl
+          label="Pflichtdokumente"
+          wert={`${pflichtVorhanden.length}/${pflicht.length}`}
+          hinweis="vorhanden und geprüft"
+        />
+        <Kennzahl
+          label="Vollständigkeit"
+          wert={formatProzent(vollstaendigkeit, 0)}
+        />
+        <Kennzahl
+          label="Fehlende Unterlagen"
+          wert={formatZahl(fehlend.length, 0)}
+        />
+        <Kennzahl
+          label={
+            ueberfaellige.length > 0 ? "Älteste offene Frist" : "Nächste Prüfung"
+          }
+          wert={
+            dringend?.posten.befund.faellig
+              ? formatDatum(dringend.posten.befund.faellig)
+              : "–"
+          }
+          hinweis={
+            dringend
+              ? `${dringend.anlage} · ${dringend.posten.regel.bezeichnung}`
+              : `alle ${geprueft} Prüfungen aktuell`
+          }
+        />
+      </div>
+
+      {fehlend.length > 0 && (
+        <Tafel titel="Offene Punkte">
+          <ul className="space-y-2">
+            {fehlend.map((eintrag) => (
+              <li
+                key={eintrag.name}
+                className="flex flex-wrap items-start justify-between gap-2 rounded-sm flaeche-vertieft px-3 py-2.5"
+              >
+                <span className="min-w-0">
+                  <span className="block text-sm font-medium">
+                    {eintrag.kapitel}
+                  </span>
+                  <span className="block text-xs farbe-leise">
+                    {eintrag.norm} · {anlagenName(eintrag.anlage)}
+                  </span>
+                  {eintrag.bemerkung && (
+                    <span className="mt-1 block text-xs farbe-normal">
+                      {eintrag.bemerkung}
+                    </span>
+                  )}
+                </span>
+                <Status ton={eintrag.pflicht === 1 ? "ernst" : "hinweis"}>
+                  {eintrag.pflicht === 1 ? "Pflicht" : "Empfohlen"}
+                </Status>
+              </li>
+            ))}
+          </ul>
+        </Tafel>
+      )}
+
+      <Tafel
+        titel="Dokumentenverzeichnis"
+        hinweis={`Für ${anlagenName(doku[0]?.anlage) ?? "die Anlage"}`}
+      >
+        <div className="mb-5">
+          <Balken
+            label="Pflichtdokumente vorhanden"
+            anteil={vollstaendigkeit}
+            wertText={`${pflichtVorhanden.length} von ${pflicht.length}`}
+          />
+        </div>
+
+        {doku.length === 0 ? (
+          <LeerZustand text="Für diese Anlage ist noch kein Dokumentenverzeichnis angelegt." />
+        ) : (
+          <Tabelle
+            spalten={[{ titel: "Kapitel" }, { titel: "Norm" }, { titel: "Erfordernis" }, { titel: "Geprüft" }, { titel: "Status" }]}
+          >
+            {doku.map((eintrag) => (
+              <Zeile
+                key={eintrag.name}
+                hervorgehoben={eintrag.pflicht === 1 && eintrag.vorhanden !== 1}
+              >
+                <Zelle>
+                  <span className="font-medium">{eintrag.kapitel}</span>
+                  {eintrag.geprueft_von && (
+                    <span className="block text-xs farbe-leise">
+                      {eintrag.geprueft_von}
+                    </span>
+                  )}
+                </Zelle>
+                <Zelle leise>
+                  <span className="text-xs">{eintrag.norm}</span>
+                </Zelle>
+                <Zelle leise>
+                  {eintrag.pflicht === 1 ? "Pflicht" : "Empfohlen"}
+                </Zelle>
+                <Zelle leise>
+                  {eintrag.geprueft_am ? formatDatum(eintrag.geprueft_am) : "–"}
+                </Zelle>
+                <Zelle>
+                  <Status ton={eintrag.vorhanden === 1 ? "gut" : "ernst"}>
+                    {eintrag.vorhanden === 1 ? "Vorhanden" : "Fehlt"}
+                  </Status>
+                </Zelle>
+              </Zeile>
+            ))}
+          </Tabelle>
+        )}
+      </Tafel>
+
+            {/* ---------------- Abnahme nach ÖVE/ÖNORM ---------------- */}
+      {abnahmen.length > 0 && (
+        <Tafel
+          titel="Abnahmeprüfungen"
+          hinweis="ÖVE/ÖNORM E 8001-4-712 und EN 62446-1"
+          fusszeile={
+            <p className="t-mikro leading-relaxed">
+              Abgelegt werden die Messwerte, nicht das Ergebnis. Das ist
+              kein Umweg: Ein gespeichertes „bestanden“ ist nicht
+              nachprüfbar, und wenn ein Grenzwert sich ändert – oder
+              auffällt, dass er falsch angewandt wurde –, lässt sich ein
+              Bestand aus Ergebnissen nicht mehr berichtigen. Ein Bestand
+              aus Messwerten schon. Gerechnet wird bei jedem Aufruf neu:
+              Leerlaufspannung temperaturkorrigiert, Kurzschlussstrom
+              einstrahlungskorrigiert, Isolationswiderstand gegen die
+              Prüfspannung, die zur Systemspannung gehört.
+            </p>
+          }
+        >
+          <div className="a-staffel space-y-6">
+            {abnahmen.map((abnahme, i) => (
+              <div
+                key={abnahme.id}
+                className={i > 0 ? "border-t rand-zart pt-6" : ""}
+              >
+                <Abnahmetafel abnahme={abnahme} />
+              </div>
+            ))}
+          </div>
+        </Tafel>
+      )}
+
+<Tafel
+        titel="Prüftermine über alle Anlagen"
+        hinweis="ESV 2012, EN 62446-1, EN 62305-3, Netzzugang und Herstellergarantie"
+      >
+        {bedarf.length === 0 ? (
+          <LeerZustand
+            text={`Alle ${geprueft} Prüfungen sind aktuell.`}
+            hinweis="Sobald eine Frist in Sicht kommt, steht sie hier – und in den Aufgaben auf der Übersicht."
+          />
+        ) : (
+          <>
+            <Tabelle
+              spalten={[
+                { titel: "Anlage" },
+                { titel: "Prüfung" },
+                { titel: "Grundlage", schmalAusblenden: true },
+                { titel: "Zuletzt", zahl: true, schmalAusblenden: true },
+                { titel: "Fällig", zahl: true },
+                { titel: "Stand" },
+              ]}
+              mindestbreite="62rem"
+            >
+              {bedarf.map(({ anlageId, anlage, posten }) => (
+                <Zeile
+                  key={`${anlageId}-${posten.regel.schluessel}`}
+                  hervorgehoben={posten.befund.stand === "ueberfaellig"}
+                >
+                  <Zelle>{anlage}</Zelle>
+                  <Zelle>
+                    <span className="block" style={{ color: "var(--t-stark)" }}>
+                      {posten.regel.bezeichnung}
+                    </span>
+                    <span className="t-mikro block leading-relaxed">
+                      {posten.befund.stand === "unbekannt"
+                        ? posten.regel.folge
+                        : posten.regel.inhalt}
+                    </span>
+                  </Zelle>
+                  <Zelle leise schmalAusblenden>
+                    {posten.regel.grundlage}
+                  </Zelle>
+                  <Zelle zahl leise schmalAusblenden>
+                    {posten.letzte ? formatDatum(posten.letzte) : "–"}
+                  </Zelle>
+                  <Zelle zahl>
+                    {posten.befund.faellig
+                      ? formatDatum(posten.befund.faellig)
+                      : "–"}
+                  </Zelle>
+                  <Zelle>
+                    <Status ton={terminTon(posten)}>
+                      {terminWort(posten)}
+                    </Status>
+                  </Zelle>
+                </Zeile>
+              ))}
+            </Tabelle>
+
+            <p className="t-mikro mt-3 leading-relaxed">
+              {aktuell} von {geprueft} Prüfungen über alle Anlagen sind aktuell.
+              Die Termine stammen aus dem Wartungsplan der jeweiligen Anlage;
+              dort steht auch, wo eine Behörde oder der Netzbetreiber einen
+              kürzeren Abstand vorgeschrieben hat.
+            </p>
+          </>
+        )}
+      </Tafel>
+
+      <Tafel
+        titel="Maßgebliche Normen"
+        hinweis="Welche Regelwerke für Ihre Anlagen gelten"
+      >
+        <div className="grid gap-3 md:grid-cols-2">
+          {NORMEN.map((norm) => (
+            <div
+              key={norm.nummer}
+              className="rounded-sm border rand-linie p-3.5"
+            >
+              <p
+                className="farbe-akzent font-mono text-[0.6875rem] font-medium"
+              >
+                {norm.nummer}
+              </p>
+              <p className="mt-1 text-sm font-medium farbe-stark">
+                {norm.titel}
+              </p>
+              <p className="mt-1 text-xs leading-relaxed farbe-leise">
+                {norm.zweck}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        <p className="mt-4 text-xs leading-relaxed farbe-leise">
+          Die Aufstellung nennt die für die Dokumentation wesentlichen
+          Regelwerke. Maßgeblich ist stets die zum Errichtungszeitpunkt gültige
+          Fassung sowie der Netzzugangsvertrag Ihres Netzbetreibers.
+        </p>
+      </Tafel>
+    </div>
+  );
+}

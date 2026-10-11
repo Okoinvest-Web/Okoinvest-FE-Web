@@ -1,0 +1,459 @@
+/**
+ * Freigabe eines Geräts zur Inbetriebnahme.
+ *
+ * Ein Gateway, das ans Netz geht, bevor es geprüft ist, bleibt
+ * jahrelang so, wie es an dem Tag war. Die Fernwartungsfreigabe „nur
+ * für die Inbetriebnahme“ ist drei Jahre später noch offen, die
+ * Firmware von damals hat inzwischen bekannte Lücken, und niemand
+ * erinnert sich, warum das Gerät im Büro-VLAN hängt.
+ *
+ * Deshalb steht vor dem Betrieb eine Freigabe, und deshalb steht sie
+ * hier und nicht in einem Formular: Was verbindlich ist, entscheidet
+ * nicht die Oberfläche.
+ *
+ * Drei Ergebnisse, nicht zwei. Zwischen „erteilt“ und „verweigert“
+ * liegt „offen“ - der Fall, in dem eine Angabe fehlt. Ein Gerät ohne
+ * erfassten Firmwarestand ist nicht sicher und nicht unsicher; es ist
+ * unbekannt, und unbekannt gehört nicht in Betrieb.
+ *
+ * Hintergrund: NIS2 verlangt vom Betreiber ein gepflegtes
+ * Anlagenverzeichnis, Zugriffskontrolle und Schwachstellenbehandlung.
+ * Diese Liste ist die Stelle, an der beides zusammenkommt.
+ */
+
+/* ------------------------------------------------------------------ */
+/* Versionen                                                           */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Vergleicht zwei Versionsangaben.
+ *
+ * Zeichenweise zu vergleichen ginge daneben: "7.9.1" wäre dann größer
+ * als "7.14.2", weil "9" nach "1" kommt. Verglichen wird deshalb
+ * Abschnitt für Abschnitt als Zahl.
+ *
+ * Rückgabe: negativ, wenn `a` älter ist; 0 bei Gleichstand.
+ */
+export function vergleicheVersion(a: string, b: string): number {
+  const teile = (v: string) =>
+    v
+      .trim()
+      .split(/[.\-_]/)
+      // Ein vorangestelltes "v" ist verbreitet und traegt keine
+      // Bedeutung; alles andere Nichtnumerische zaehlt als null.
+      .map((t) => Number.parseInt(t.replace(/^v/i, ""), 10))
+      .map((n) => (Number.isFinite(n) ? n : 0));
+
+  const links = teile(a);
+  const rechts = teile(b);
+  const laenge = Math.max(links.length, rechts.length);
+
+  for (let i = 0; i < laenge; i += 1) {
+    const unterschied = (links[i] ?? 0) - (rechts[i] ?? 0);
+    if (unterschied !== 0) return unterschied;
+  }
+
+  return 0;
+}
+
+/**
+ * Mindeststände der Firmware.
+ *
+ * Der Betreiber legt sie fest, üblicherweise anhand der
+ * Sicherheitshinweise des Herstellers. Sie stehen hier und nicht im
+ * Gerätedatensatz, weil sie für den ganzen Bestand gelten - sonst
+ * trägt jedes Gerät seinen eigenen Maßstab, und der Bestand lässt
+ * sich nicht mehr als Ganzes beurteilen.
+ *
+ * Ein Modell, das hier nicht steht, wird nicht als gut bewertet,
+ * sondern als unbekannt.
+ */
+export const MINDESTFIRMWARE: Record<string, string> = {
+  "Niagara JACE 9000": "4.14.0",
+  RUT142: "7.14.0",
+  RUT956: "7.14.0",
+  TRB256: "7.14.0",
+  TSW202: "1.6.0",
+  TRB143: "7.13.0",
+};
+
+/* ------------------------------------------------------------------ */
+/* Punkte der Freigabe                                                 */
+/* ------------------------------------------------------------------ */
+
+export type Punktstand = "erfuellt" | "verletzt" | "offen";
+
+export type Geraeterolle =
+  | "Steuerung"
+  | "Gateway"
+  | "Switch"
+  | "Umsetzer"
+  | "HMI";
+
+export interface Freigabepunkt {
+  schluessel: string;
+  titel: string;
+  /** Ohne diesen Punkt gibt es keine Freigabe. */
+  verbindlich: boolean;
+  anforderung: string;
+  grundlage: string;
+  /** Was geschieht, wenn er übergangen wird. */
+  folge: string;
+}
+
+/** Rollen, für die Secure Boot verbindlich ist. */
+const SECURE_BOOT_PFLICHT: Geraeterolle[] = ["Steuerung", "Gateway"];
+
+/** Rollen, die einen versiegelten Sollstand führen müssen. */
+const SOLLSTAND_PFLICHT: Geraeterolle[] = ["Steuerung"];
+
+/** Tage Restlaufzeit, unter denen ein Zertifikat als knapp gilt. */
+export const ZERTIFIKAT_VORLAUF_TAGE = 30;
+
+export const FREIGABEPUNKTE: Freigabepunkt[] = [
+  {
+    schluessel: "identitaet",
+    titel: "Eindeutige Kennung",
+    verbindlich: true,
+    anforderung:
+      "Seriennummer, Hersteller und Modell sind erfasst und im Anlagenverzeichnis eindeutig.",
+    grundlage: "NISG, Anlagenverzeichnis",
+    folge:
+      "Ein Gerät ohne Seriennummer lässt sich bei einem Sicherheitshinweis des Herstellers nicht zuordnen - man weiß nicht, ob man betroffen ist.",
+  },
+  {
+    schluessel: "firmware",
+    titel: "Firmwarestand",
+    verbindlich: true,
+    anforderung:
+      "Der Firmwarestand ist erfasst und erreicht mindestens den festgelegten Stand.",
+    grundlage: "Schwachstellenbehandlung nach NIS2",
+    folge:
+      "Bekannte Lücken bleiben offen. Am Tag der Inbetriebnahme fällt das niemandem auf, drei Jahre später auch nicht.",
+  },
+  {
+    schluessel: "secure-boot",
+    titel: "Gesicherter Startvorgang",
+    verbindlich: true,
+    anforderung:
+      "Secure Boot ist aktiv, der Startvorgang gegen einen Hardware-Vertrauensanker geprüft.",
+    grundlage: "Stand der Technik für Steuerungen und Gateways",
+    folge:
+      "Eine ausgetauschte Firmware startet unbemerkt. Bei einem Gerät in der Trafostation genügt dafür ein Zugang zum Schaltschrank.",
+  },
+  {
+    schluessel: "netzzone",
+    titel: "Zuordnung zur Netzzone",
+    verbindlich: true,
+    anforderung:
+      "Das Gerät liegt in einer Zone für Betriebstechnik, nicht im Büro- oder Gästenetz.",
+    grundlage: "Netzsegmentierung, IEC 62443",
+    folge:
+      "Ein infizierter Büro-Rechner erreicht die Steuerung direkt. Die Segmentierung ist die letzte Trennlinie zwischen Verwaltung und Anlage.",
+  },
+  {
+    schluessel: "zertifikat",
+    titel: "Gültiges Gerätezertifikat",
+    verbindlich: true,
+    anforderung: `Das Zertifikat ist gültig und läuft nicht innerhalb von ${ZERTIFIKAT_VORLAUF_TAGE} Tagen ab.`,
+    grundlage: "Beiderseitige Authentisierung im Zugangsdienst",
+    folge:
+      "Mit dem Ablauf verschwindet das Gerät aus der Überwachung - meist an einem Sonntag, und niemand weiß zunächst, warum.",
+  },
+  {
+    schluessel: "sollstand",
+    titel: "Versiegelter Sollstand",
+    verbindlich: true,
+    anforderung:
+      "Die netzrelevanten Parameter sind als Sollstand hinterlegt und versiegelt.",
+    grundlage: "TOR Erzeuger, Netzzugangsvertrag",
+    folge:
+      "Ohne Sollstand gibt es nichts, wogegen der Abgleich laufen könnte. Eine Abweichung fällt dann erst bei der nächsten Netzbetreiberprüfung auf.",
+  },
+  {
+    schluessel: "protokollkette",
+    titel: "Aufnahme in die Protokollkette",
+    verbindlich: true,
+    anforderung:
+      "Die Inbetriebnahme ist in der fälschungssicheren Protokollkette vermerkt.",
+    grundlage: "NISG, Nachweispflicht",
+    folge:
+      "Im Streitfall lässt sich nicht belegen, in welchem Zustand das Gerät übergeben wurde.",
+  },
+  {
+    schluessel: "fernzugang",
+    titel: "Fernzugang nur über den Zugangsdienst",
+    verbindlich: true,
+    anforderung:
+      "Kein eingehender Port aus dem Internet; Zugriff ausschließlich über den Zero-Trust-Zugang.",
+    grundlage: "Stand der Technik, NIS2",
+    folge:
+      "Eine Portweiterleitung auf ein Gateway wird binnen Stunden gefunden. Sie ist der häufigste Weg in eine Anlage.",
+  },
+];
+
+export function findePunkt(schluessel: string): Freigabepunkt | undefined {
+  return FREIGABEPUNKTE.find((p) => p.schluessel === schluessel);
+}
+
+/* ------------------------------------------------------------------ */
+/* Prüfung                                                             */
+/* ------------------------------------------------------------------ */
+
+export interface Geraetestand {
+  rolle: Geraeterolle;
+  hersteller: string;
+  modell: string;
+  seriennummer: string | null;
+  firmware: string | null;
+  secureBoot: boolean;
+  /** Nummer der Netzzone, in der das Gerät liegt. */
+  vlanNummer: number | null;
+  /** Zweck der Zone - "Büro" und "Gast" sind keine Betriebstechnik. */
+  vlanZweck: string | null;
+  zertifikatBis: Date | null;
+  sollstandVersiegelt: boolean;
+  inProtokollkette: boolean;
+  /** Wie der Fernzugang hergestellt wird. */
+  fernzugang: "Zero-Trust" | "Portweiterleitung" | "keiner" | null;
+}
+
+export interface Punktbefund {
+  punkt: Freigabepunkt;
+  stand: Punktstand;
+  /** Ob der Punkt für dieses Gerät verbindlich ist. */
+  verbindlich: boolean;
+  /** Was konkret vorliegt. */
+  befund: string;
+}
+
+export type Freigabe = "erteilt" | "verweigert" | "offen";
+
+export interface Freigabebefund {
+  freigabe: Freigabe;
+  punkte: Punktbefund[];
+  begruendung: string;
+}
+
+/** Zonen, die keine Betriebstechnik führen. */
+const FREMDE_ZONEN = ["büro", "buero", "gast", "office", "verwaltung"];
+
+function tageBis(ziel: Date, heute: Date): number {
+  return Math.round(
+    (new Date(ziel.getFullYear(), ziel.getMonth(), ziel.getDate()).getTime() -
+      new Date(
+        heute.getFullYear(),
+        heute.getMonth(),
+        heute.getDate(),
+      ).getTime()) /
+      86_400_000,
+  );
+}
+
+/**
+ * Prüft ein Gerät gegen die Punkte der Freigabe.
+ *
+ * Nicht jeder Punkt gilt für jedes Gerät: Ein Switch führt keinen
+ * versiegelten Sollstand, und viele Industrie-Switches können kein
+ * Secure Boot. Diese Punkte werden dann nicht verschwiegen, sondern
+ * als nicht verbindlich geführt - sonst stünde bei jedem Switch eine
+ * rote Zeile, und rote Zeilen, die immer dastehen, liest niemand.
+ */
+export function pruefeFreigabe(
+  stand: Geraetestand,
+  heute: Date,
+): Freigabebefund {
+  const punkte: Punktbefund[] = [];
+
+  const nimm = (
+    schluessel: string,
+    ergebnis: Punktstand,
+    befund: string,
+    verbindlich = true,
+  ) => {
+    const punkt = findePunkt(schluessel);
+    if (punkt) {
+      punkte.push({ punkt, stand: ergebnis, verbindlich, befund });
+    }
+  };
+
+  /* ---------- Kennung ---------- */
+
+  nimm(
+    "identitaet",
+    stand.seriennummer?.trim() ? "erfuellt" : "offen",
+    stand.seriennummer?.trim()
+      ? `${stand.hersteller} ${stand.modell}, Seriennummer ${stand.seriennummer}`
+      : "Keine Seriennummer erfasst.",
+  );
+
+  /* ---------- Firmware ---------- */
+
+  const mindest = MINDESTFIRMWARE[stand.modell];
+
+  if (!stand.firmware?.trim()) {
+    nimm("firmware", "offen", "Kein Firmwarestand erfasst.");
+  } else if (!mindest) {
+    nimm(
+      "firmware",
+      "offen",
+      `Für ${stand.modell} ist kein Mindeststand festgelegt; ${stand.firmware} lässt sich nicht beurteilen.`,
+    );
+  } else if (vergleicheVersion(stand.firmware, mindest) < 0) {
+    nimm(
+      "firmware",
+      "verletzt",
+      `${stand.firmware} liegt unter dem festgelegten Mindeststand ${mindest}.`,
+    );
+  } else {
+    nimm("firmware", "erfuellt", `${stand.firmware}, Mindeststand ${mindest}.`);
+  }
+
+  /* ---------- Secure Boot ---------- */
+
+  const bootPflicht = SECURE_BOOT_PFLICHT.includes(stand.rolle);
+  nimm(
+    "secure-boot",
+    stand.secureBoot ? "erfuellt" : "verletzt",
+    stand.secureBoot
+      ? "Aktiv."
+      : bootPflicht
+        ? "Nicht aktiv."
+        : `Nicht aktiv. Für die Rolle ${stand.rolle} nicht verbindlich - viele Geräte dieser Art können es nicht.`,
+    bootPflicht,
+  );
+
+  /* ---------- Netzzone ---------- */
+
+  const zweck = (stand.vlanZweck ?? "").toLowerCase();
+  const fremd = FREMDE_ZONEN.some((z) => zweck.includes(z));
+
+  if (stand.vlanNummer === null) {
+    nimm("netzzone", "offen", "Keiner Netzzone zugeordnet.");
+  } else if (fremd) {
+    nimm(
+      "netzzone",
+      "verletzt",
+      `Liegt in VLAN ${stand.vlanNummer} (${stand.vlanZweck}) - das ist keine Zone der Betriebstechnik.`,
+    );
+  } else {
+    nimm(
+      "netzzone",
+      "erfuellt",
+      `VLAN ${stand.vlanNummer}${stand.vlanZweck ? ` (${stand.vlanZweck})` : ""}.`,
+    );
+  }
+
+  /* ---------- Zertifikat ---------- */
+
+  if (!stand.zertifikatBis || Number.isNaN(stand.zertifikatBis.getTime())) {
+    nimm("zertifikat", "offen", "Kein Zertifikat hinterlegt.");
+  } else {
+    const tage = tageBis(stand.zertifikatBis, heute);
+
+    if (tage < 0) {
+      nimm("zertifikat", "verletzt", `Abgelaufen seit ${Math.abs(tage)} Tagen.`);
+    } else if (tage <= ZERTIFIKAT_VORLAUF_TAGE) {
+      nimm(
+        "zertifikat",
+        "verletzt",
+        `Läuft in ${tage} Tagen ab. Eine Inbetriebnahme mit einem Zertifikat, das im ersten Monat abläuft, erzeugt den ersten Ausfall selbst.`,
+      );
+    } else {
+      nimm("zertifikat", "erfuellt", `Gültig noch ${tage} Tage.`);
+    }
+  }
+
+  /* ---------- Sollstand ---------- */
+
+  const sollPflicht = SOLLSTAND_PFLICHT.includes(stand.rolle);
+  nimm(
+    "sollstand",
+    stand.sollstandVersiegelt ? "erfuellt" : sollPflicht ? "offen" : "erfuellt",
+    stand.sollstandVersiegelt
+      ? "Versiegelter Sollstand hinterlegt."
+      : sollPflicht
+        ? "Kein versiegelter Sollstand hinterlegt."
+        : `Für die Rolle ${stand.rolle} nicht erforderlich.`,
+    sollPflicht,
+  );
+
+  /* ---------- Protokollkette ---------- */
+
+  nimm(
+    "protokollkette",
+    stand.inProtokollkette ? "erfuellt" : "offen",
+    stand.inProtokollkette
+      ? "Eintrag vorhanden."
+      : "Kein Eintrag zur Inbetriebnahme.",
+  );
+
+  /* ---------- Fernzugang ---------- */
+
+  if (stand.fernzugang === null) {
+    nimm("fernzugang", "offen", "Nicht erfasst.");
+  } else if (stand.fernzugang === "Portweiterleitung") {
+    nimm(
+      "fernzugang",
+      "verletzt",
+      "Eingehende Portweiterleitung aus dem Internet.",
+    );
+  } else {
+    nimm(
+      "fernzugang",
+      "erfuellt",
+      stand.fernzugang === "keiner"
+        ? "Kein Fernzugang eingerichtet."
+        : "Zugriff ausschließlich über den Zugangsdienst.",
+    );
+  }
+
+  /* ---------- Ergebnis ---------- */
+
+  const verletzt = punkte.filter((p) => p.verbindlich && p.stand === "verletzt");
+  const offen = punkte.filter((p) => p.verbindlich && p.stand === "offen");
+
+  if (verletzt.length > 0) {
+    return {
+      freigabe: "verweigert",
+      punkte,
+      begruendung: `${verletzt.length === 1 ? "Ein verbindlicher Punkt ist" : `${verletzt.length} verbindliche Punkte sind`} verletzt: ${verletzt
+        .map((p) => p.punkt.titel)
+        .join(", ")}.`,
+    };
+  }
+
+  if (offen.length > 0) {
+    return {
+      freigabe: "offen",
+      punkte,
+      begruendung: `${offen.length === 1 ? "Eine Angabe fehlt" : `${offen.length} Angaben fehlen`} noch: ${offen
+        .map((p) => p.punkt.titel)
+        .join(", ")}. Bis dahin ist das Gerät weder freigegeben noch abgelehnt.`,
+    };
+  }
+
+  return {
+    freigabe: "erteilt",
+    punkte,
+    begruendung: "Alle verbindlichen Punkte sind erfüllt.",
+  };
+}
+
+/** Kurzfassung über einen ganzen Bestand. */
+export function fasseFreigabenZusammen(
+  befunde: { geraet: string; befund: Freigabebefund }[],
+): string {
+  const verweigert = befunde.filter((b) => b.befund.freigabe === "verweigert");
+  const offen = befunde.filter((b) => b.befund.freigabe === "offen");
+
+  if (verweigert.length > 0) {
+    return `${verweigert.length} von ${befunde.length} Geräten erfüllen die Freigabe nicht.`;
+  }
+
+  if (offen.length > 0) {
+    return `Zu ${offen.length} von ${befunde.length} Geräten fehlen Angaben für die Freigabe.`;
+  }
+
+  return `Alle ${befunde.length} Geräte sind freigegeben.`;
+}

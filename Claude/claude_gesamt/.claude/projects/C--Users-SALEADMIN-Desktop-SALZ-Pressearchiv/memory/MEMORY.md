@@ -1,0 +1,1 @@
+- [Pressearchiv Ökovolt/Salzburg AG](pressearchiv-oekovolt-salzburg-ag.md) — archive structure, scripts, user's side & preferences

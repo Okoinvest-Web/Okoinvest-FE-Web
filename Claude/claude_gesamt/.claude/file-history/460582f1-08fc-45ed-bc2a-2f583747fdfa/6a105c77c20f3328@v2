@@ -1,0 +1,117 @@
+import re, os
+from docx import Document
+from docx.shared import Pt, RGBColor, Cm
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.oxml.ns import qn
+from docx.oxml import OxmlElement
+
+ROOT = r"C:\Users\SALEADMIN\Desktop\Presse"
+ACCENT = RGBColor(0x1F, 0x4E, 0x3D)
+GREY = RGBColor(0x5F, 0x5F, 0x5F)
+RED = RGBColor(0xB0, 0x00, 0x00)
+WHITE = RGBColor(0xFF, 0xFF, 0xFF)
+PH = RGBColor(0xC0, 0x00, 0x00)
+
+
+class Doc:
+    def __init__(self, label, title, sub=None, intern=True):
+        self.d = d = Document()
+        s = d.sections[0]
+        s.left_margin = s.right_margin = Cm(2.0)
+        s.top_margin = s.bottom_margin = Cm(1.6)
+        n = d.styles["Normal"]
+        n.font.name = "Calibri"
+        n.font.size = Pt(10.5)
+        n.paragraph_format.space_after = Pt(5)
+        n.paragraph_format.line_spacing = 1.12
+        if label:
+            self.add(d.add_paragraph(), label, bold=True, size=9, color=RED if intern else GREY)
+        self.add(d.add_paragraph(), title, bold=True, size=18, color=ACCENT)
+        if sub:
+            self.add(d.add_paragraph(), sub, italic=True, color=GREY)
+
+    def add(self, p, text, bold=False, size=None, color=None, italic=False):
+        for part in re.split(r"(\[[^\]]+\])", text):
+            if not part:
+                continue
+            r = p.add_run(part)
+            r.bold, r.italic = bold, italic
+            if size:
+                r.font.size = Pt(size)
+            if part.startswith("["):
+                r.font.color.rgb, r.bold = PH, True
+            elif color:
+                r.font.color.rgb = color
+        return p
+
+    def h1(self, t):
+        p = self.add(self.d.add_paragraph(), t, bold=True, size=14, color=ACCENT)
+        p.paragraph_format.space_before = Pt(12)
+        p.paragraph_format.keep_with_next = True
+
+    def h2(self, t):
+        p = self.add(self.d.add_paragraph(), t, bold=True, size=11.5, color=ACCENT)
+        p.paragraph_format.space_before = Pt(6)
+        p.paragraph_format.keep_with_next = True
+
+    def p(self, t, **kw):
+        p = self.add(self.d.add_paragraph(), t, **kw)
+        p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+        return p
+
+    def bullets(self, items, style="List Bullet"):
+        for it in items:
+            p = self.d.add_paragraph(style=style)
+            if isinstance(it, tuple):
+                self.add(p, it[0] + " ", bold=True)
+                self.add(p, it[1])
+            else:
+                self.add(p, it)
+
+    def nums(self, items):
+        self.bullets(items, "List Number")
+
+    def box(self, title, lines, fill="EAF2E3"):
+        t = self.d.add_table(rows=1, cols=1)
+        t.style = "Table Grid"
+        c = t.rows[0].cells[0]
+        self._shade(c, fill)
+        self.add(c.paragraphs[0], title, bold=True, color=ACCENT)
+        for l in lines:
+            self.add(c.add_paragraph(), l)
+        self.d.add_paragraph()
+
+    def quote(self, lines):
+        """Mustertext zum Verwenden (grau hinterlegt)."""
+        self.box("Mustertext", lines, "F2F2F2")
+
+    def _shade(self, c, hexcolor):
+        tcPr = c._tc.get_or_add_tcPr()
+        sh = OxmlElement("w:shd")
+        sh.set(qn("w:val"), "clear")
+        sh.set(qn("w:color"), "auto")
+        sh.set(qn("w:fill"), hexcolor)
+        tcPr.append(sh)
+
+    def table(self, head, rows, widths=None):
+        t = self.d.add_table(rows=1, cols=len(head))
+        t.style = "Table Grid"
+        for i, h in enumerate(head):
+            c = t.rows[0].cells[i]
+            self._shade(c, "1F4E3D")
+            self.add(c.paragraphs[0], h, bold=True, color=WHITE, size=9.5)
+        for r in rows:
+            cells = t.add_row().cells
+            for i, v in enumerate(r):
+                self.add(cells[i].paragraphs[0], str(v), size=9.5)
+        if widths:
+            for row in t.rows:
+                for i, w in enumerate(widths):
+                    row.cells[i].width = Cm(w)
+        self.d.add_paragraph()
+
+    def save(self, rel):
+        path = os.path.join(ROOT, rel)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        self.d.save(path)
+        print("ok", rel)

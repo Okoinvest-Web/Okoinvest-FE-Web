@@ -1,0 +1,114 @@
+[
+  {
+    "id": "orf-sbg-3372554",
+    "medium": "ORF Salzburg (salzburg.ORF.at)",
+    "art": "Online-Artikel",
+    "kategorie": "Berichterstattung",
+    "url": "https://salzburg.orf.at/stories/3372554/",
+    "ordner": "WKStA_Salzburg-AG/01_Berichterstattung/2026-09-24_ORF-Salzburg_WKStA-ermittelt-gegen-Salzburg-AG",
+    "zusatzmedien": [
+      "https://apasfiis.sf.apa.at/dash/filehandler/1165877_fh_ins_wksta_ermittlungen_salzburg_ag_rsbsb1779248.smil/manifest.mpd"
+    ],
+    "hinweis": "Eingebettetes ORF-Video 'WKStA-Ermittlungen' (0:52) separat im Unterordner video/ gesichert."
+  },
+  {
+    "id": "sn-674574",
+    "medium": "Salzburger Nachrichten (SN.at)",
+    "art": "Online-Artikel",
+    "kategorie": "Berichterstattung",
+    "url": "https://www.sn.at/salzburg/wirtschaft/anzeigenflut-gegen-salzburg-ag-gesellschafterstreit-beschaeftigt-aufsichtsrat-art-674574",
+    "ordner": "WKStA_Salzburg-AG/01_Berichterstattung/2026-09-24_SN_Anzeigenflut-gegen-Salzburg-AG",
+    "hinweis": "SN+-Paywall: nur Anriss öffentlich. Vollständigen Text ggf. mit SN-Abo im Browser als PDF nachsichern."
+  },
+  {
+    "id": "zib2-2026-09-24",
+    "medium": "ORF ZIB 2",
+    "art": "TV-Beitrag (Video)",
+    "kategorie": "Berichterstattung",
+    "typ": "artikel+video",
+    "url": "https://on.orf.at/video/14340438/16159707/ermittlungen-gegen-salzburg-ag",
+    "videos": [
+      "https://on.orf.at/video/14340438/16159707/ermittlungen-gegen-salzburg-ag"
+    ],
+    "titel": "Ermittlungen gegen Salzburg AG (ZIB 2 vom 24.09.2026)",
+    "datum": "2026-09-24",
+    "ordner": "WKStA_Salzburg-AG/01_Berichterstattung/2026-09-24_ORF-ZIB2_Ermittlungen-gegen-Salzburg-AG_VIDEO"
+  },
+  {
+    "id": "sbg-heute-2026-09-24",
+    "medium": "ORF Salzburg heute",
+    "art": "TV-Sendung (Video, ganze Sendung)",
+    "kategorie": "Berichterstattung",
+    "typ": "artikel+video",
+    "url": "https://on.orf.at/video/14340778/salzburg-heute-vom-24092026",
+    "videos": [
+      "https://on.orf.at/video/14340778/salzburg-heute-vom-24092026"
+    ],
+    "titel": "Salzburg heute vom 24.09.2026",
+    "datum": "2026-09-24",
+    "ordner": "WKStA_Salzburg-AG/01_Berichterstattung/2026-09-24_ORF-Salzburg-heute_Sendung_VIDEO",
+    "hinweis": "Gesamte Sendung gesichert (17 Min.). Beitrag zur Salzburg AG ist der Aufmacher (0:35–1:45) – zusätzlich als AUSSCHNITT-Datei geschnitten.",
+    "ausschnitt": {
+      "von": "00:00:35",
+      "bis": "00:01:45"
+    }
+  },
+  {
+    "id": "oe1-mj-2026-09-25",
+    "medium": "Ö1 Morgenjournal (ORF-Radio)",
+    "art": "Radiobeitrag (Audio, ganze Sendung)",
+    "kategorie": "Berichterstattung",
+    "typ": "medien",
+    "titel": "Ö1 Morgenjournal vom 25.09.2026 – Erstbericht WKStA-Ermittlungen",
+    "datum": "2026-09-25",
+    "url": "https://sound.orf.at/radio/oe1/sendung/845046/oe1-morgenjournal",
+    "zusatzmedien": [
+      "https://loopstream01.apa.at/?channel=oe1&id=2026-09-25_0659_tl_51_7DaysFri4_2972959.mp3"
+    ],
+    "hinweis": "Quelle der APA-Meldung ('Wie das Ö1-Morgenjournal am Freitag berichtete'). Ganze Sendung gesichert; ORF-Radiothek hält Sendungen nur 7 Tage online.",
+    "ordner": "WKStA_Salzburg-AG/01_Berichterstattung/2026-09-25_Oe1-Morgenjournal_Radiobeitrag_AUDIO"
+  },
+  {
+    "id": "standard-3000000341444",
+    "medium": "Der Standard (derStandard.at)",
+    "art": "Online-Artikel",
+    "kategorie": "Berichterstattung",
+    "url": "https://www.derstandard.at/story/3000000341444/wksta-ermittelt-wegen-photovoltaik-auftrag-gegen-die-salzburg-ag",
+    "ordner": "WKStA_Salzburg-AG/01_Berichterstattung/2026-09-25_Standard_WKStA-ermittelt-wegen-Photovoltaik-Auftrag",
+    "datum": "2026-09-25",
+    "hinweis": "Nur Anriss gesichert (Consent-/Abo-Sperre 'PUR'). Datum erschlossen: Bericht bezieht sich auf Ö1-Morgenjournal vom Freitag, 25.09.2026."
+  },
+  {
+    "id": "ooen-4215774",
+    "medium": "Oberösterreichische Nachrichten (nachrichten.at)",
+    "art": "Online-Artikel",
+    "kategorie": "Berichterstattung",
+    "url": "https://www.nachrichten.at/wirtschaft/photovoltaik-wksta-ermittelt-gegen-salzburg-ag;art15,4215774",
+    "ordner": "WKStA_Salzburg-AG/01_Berichterstattung/2026-09-25_OOeN_Photovoltaik-WKStA-ermittelt-gegen-Salzburg-AG"
+  },
+  {
+    "id": "s24-339251",
+    "medium": "Salzburg24",
+    "art": "Online-Artikel",
+    "kategorie": "Berichterstattung",
+    "url": "https://www.salzburg24.at/news/salzburg/stadt/schwere-vorwuerfe-gegen-salzburg-ag-ging-lukrativer-grossauftrag-nicht-mit-rechten-dingen-zu-art-339251",
+    "ordner": "WKStA_Salzburg-AG/01_Berichterstattung/2026-09-25_Salzburg24_Schwere-Vorwuerfe-gegen-Salzburg-AG"
+  },
+  {
+    "id": "enm-2026-09-25",
+    "medium": "Energynewsmagazine",
+    "art": "Online-Artikel",
+    "kategorie": "Berichterstattung",
+    "url": "https://www.energynewsmagazine.at/2026/09/25/salzburg-ag-ist-mit-klagswelle-konfrontiert/",
+    "ordner": "WKStA_Salzburg-AG/01_Berichterstattung/2026-09-25_Energynewsmagazine_Salzburg-AG-mit-Klagswelle-konfrontiert",
+    "hinweis": "Textgleich mit dem SN-Artikel 'Anzeigenflut gegen Salzburg AG' (SN+) – hier frei zugänglich im Volltext."
+  },
+  {
+    "id": "enm-2021-11-18",
+    "medium": "Energynewsmagazine",
+    "art": "Online-Artikel",
+    "kategorie": "Hintergrund",
+    "url": "https://www.energynewsmagazine.at/2021/11/18/salzburg-ag-beteiligt-sich-an-zwei-firmen/",
+    "ordner": "WKStA_Salzburg-AG/02_Hintergrund/2021-11-18_Energynewsmagazine_Salzburg-AG-beteiligt-sich-an-Oekovolt"
+  }
+]

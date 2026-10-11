@@ -1,0 +1,602 @@
+import Link from "next/link";
+import LegalShell from "@/components/Reusable/LegalShell";
+
+const PAGE_URL = "https://www.oekovolt.de/barrierefreiheit";
+const TITEL = "Erklärung zur Barrierefreiheit | Ökovolt Deutschland";
+const BESCHREIBUNG =
+  "Erklärung zur Barrierefreiheit der Website www.oekovolt.de nach dem Barrierefreiheitsstärkungsgesetz (BFSG): Standards, Stand der Vereinbarkeit, bekannte Einschränkungen und Kontakt.";
+
+export const metadata = {
+  title: TITEL,
+  description: BESCHREIBUNG,
+  alternates: { canonical: PAGE_URL },
+  robots: { index: true, follow: true },
+  openGraph: {
+    type: "website",
+    locale: "de_DE",
+    url: PAGE_URL,
+    siteName: "Ökovolt Deutschland",
+    title: TITEL,
+    description: BESCHREIBUNG,
+    images: [{ url: "https://www.oekovolt.de/og-image.jpg", width: 1200, height: 630, alt: "Ökovolt Deutschland" }],
+  },
+};
+
+/** Datum der Erstellung bzw. letzten Überprüfung dieser Erklärung */
+const STAND = "14. September 2026";
+
+export default function BarrierefreiheitPage() {
+  return (
+    <LegalShell
+      titel="Erklärung zur Barrierefreiheit"
+      pfad="/barrierefreiheit"
+      lead="Wir möchten, dass alle Menschen unsere Website und unsere Online-Dienste ohne Hürden nutzen können – unabhängig von Einschränkungen, Endgerät oder Hilfsmitteln."
+    >
+      <>
+        <h2>Geltungsbereich</h2>
+        <p>
+          Diese Erklärung gilt für die Website <strong>www.oekovolt.de</strong> der ÖKOVOLT GmbH Solartechnik einschließlich der dort
+          angebotenen Online-Dienste:
+        </p>
+        <ul className="space-y-1.5">
+          <li>Angebots-Konfigurator (Anfrage einer Photovoltaik-Ersteinschätzung)</li>
+          <li>Rechner und Werkzeuge (u. a. Solarrechner, Stromspeicher-, Wärmepumpen- und Finanzierungsrechner, Fördercheck)</li>
+          <li>Rückruf-Service und Online-Terminbuchung</li>
+          <li>Kontaktformular und Kurzbewerbung</li>
+        </ul>
+      </>
+
+      <>
+        <h2>Angewandte Standards</h2>
+        <p>
+          Grundlage sind das Barrierefreiheitsstärkungsgesetz (BFSG) und die zugehörige Verordnung (BFSGV). Technisch orientieren wir uns an
+          der harmonisierten europäischen Norm <strong>EN 301 549 V3.2.1</strong> und den darin in Bezug genommenen
+          <strong> Web Content Accessibility Guidelines (WCAG) 2.1, Konformitätsstufe AA</strong>.
+        </p>
+      </>
+
+      <>
+        <h2>So ist unser Angebot barrierefrei nutzbar</h2>
+        <ul className="space-y-1.5">
+          <li>
+            <strong>Bedienung per Tastatur:</strong> Alle Menüs, Formulare, Rechner und Dialoge lassen sich ohne Maus bedienen. Ein Sprunglink
+            führt direkt zum Hauptinhalt, der Tastaturfokus ist deutlich sichtbar. Dialoge (Menü, Rückruf, Cookie-Einstellungen) halten den
+            Fokus, lassen sich mit der Escape-Taste schließen und geben den Fokus an den Auslöser zurück.
+          </li>
+          <li>
+            <strong>Screenreader:</strong> Seiten sind mit Überschriften, Landmarken und Listen gegliedert. Bedienelemente, Formularfelder,
+            Pflichtfelder und Fehlermeldungen sind programmatisch beschriftet; Statusmeldungen werden angesagt. Tabellen haben Beschriftungen
+            und Kopfzellen, Diagramme eine textliche bzw. tabellarische Alternative.
+          </li>
+          <li>
+            <strong>Kontraste und Farbe:</strong> Texte und Bedienelemente erfüllen die geforderten Mindestkontraste. Informationen werden nicht
+            allein über Farbe vermittelt.
+          </li>
+          <li>
+            <strong>Bewegung:</strong> Die Einstellung „Bewegung reduzieren“ Ihres Betriebssystems wird berücksichtigt – Animationen und das
+            Hintergrundvideo entfallen dann. Das Hintergrundvideo und das Logo-Laufband lassen sich außerdem jederzeit anhalten.
+          </li>
+          <li>
+            <strong>Zoom und Darstellung:</strong> Die Inhalte lassen sich bis 400 % vergrößern und passen sich ohne horizontales Scrollen an
+            schmale Bildschirme an (breite Tabellen scrollen innerhalb ihres Rahmens).
+          </li>
+          <li>
+            <strong>Keine Zeitbegrenzungen:</strong> Formulare und Terminbuchung haben keine Zeitlimits; Eingaben gehen beim Wechsel zwischen
+            den Schritten nicht verloren.
+          </li>
+          <li>
+            <strong>Sprache:</strong> Die Seiten sind als deutschsprachig ausgezeichnet, damit Vorleseprogramme die richtige Aussprache
+            verwenden.
+          </li>
+        </ul>
+      </>
+
+      <>
+        <h2>Stand der Vereinbarkeit</h2>
+        <p>
+          Die Website ist mit den oben genannten Anforderungen <strong>weitgehend vereinbar</strong>. Die folgenden Inhalte bzw. Funktionen sind
+          aus den genannten Gründen noch nicht vollständig barrierefrei.
+        </p>
+
+        <h3>Bekannte Einschränkungen</h3>
+        <ul className="space-y-1.5">
+          <li>
+            <strong>Eingebettete Google-Maps-Karte</strong> (Kontaktseite): Die Karte eines Drittanbieters ist nicht vollständig per Tastatur
+            und Screenreader bedienbar. <em>Alternative:</em> Unsere Anschrift steht als Text auf der Kontaktseite, im Fußbereich jeder Seite und in
+            dieser Erklärung.
+          </li>
+          <li>
+            <strong>Interaktive Karten</strong> (Referenzkarte, Förderkarte der Bundesländer): Die grafische Karte selbst ist nur eingeschränkt
+            für Screenreader erschlossen. <em>Alternative:</em> Die Inhalte stehen zusätzlich als Liste bzw. Auswahl neben der Karte bereit.
+          </li>
+          <li>
+            <strong>Inhalte von Drittanbietern</strong> (z. B. Energiemarktdaten der Energy-Charts, verlinkte Profile in sozialen Netzwerken,
+            Buchungs- und Telefoniesysteme unserer Dienstleister): Auf deren Barrierefreiheit haben wir nur begrenzt Einfluss.
+          </li>
+          <li>
+            <strong>PDF-Dokumente und Bilder aus dem Redaktionssystem</strong> (z. B. Datenblätter, Stellenanzeigen, Referenzfotos): Ältere
+            Dokumente sind teilweise nicht barrierefrei getaggt; einzelne Bilder haben noch keine aussagekräftige Textalternative. Wir
+            überarbeiten diese Inhalte schrittweise. <em>Alternative:</em> Auf Anfrage senden wir Ihnen die Informationen in einem für Sie
+            zugänglichen Format.
+          </li>
+          <li>
+            <strong>Diagramme mit Mausinteraktion</strong> (Börsenstrompreis, Stromerzeugung, Rechner-Verläufe): Einzelwerte sind per Tastatur
+            abrufbar; die vollständigen Daten stehen zusätzlich als Tabelle bzw. Text zur Verfügung.
+          </li>
+          <li>
+            <strong>Ältere Unterseiten</strong>, die noch nicht auf das aktuelle Design umgestellt sind, können vereinzelt Kontrast- oder
+            Strukturmängel aufweisen. Sie werden bei der laufenden Überarbeitung angepasst.
+          </li>
+          <li>
+            <strong>Leichte Sprache und Gebärdensprache:</strong> Informationen in Leichter Sprache oder Deutscher Gebärdensprache bieten wir
+            derzeit nicht an.
+          </li>
+        </ul>
+
+        <h3>Alternative Zugangswege</h3>
+        <p>
+          Alle Leistungen, die Sie online anfragen können, erreichen Sie auch persönlich: telefonisch unter{" "}
+          <a href="tel:+498245967880">08245 96 788 0</a> (Mo–Do 8–16 Uhr, Fr 8–13 Uhr) oder per E-Mail an{" "}
+          <a href="mailto:office@oekovolt.de">office@oekovolt.de</a>. Wir beraten Sie gern auch vor Ort.
+        </p>
+      </>
+
+      <>
+        <h2>Erstellung dieser Erklärung</h2>
+        <p>
+          Diese Erklärung wurde am <strong>{STAND}</strong> erstellt. Grundlage ist eine Selbstbewertung: automatisierte Prüfungen mit axe-core
+          (WCAG 2.1 A/AA) auf den wichtigsten Seiten in Desktop- und Smartphone-Breite sowie manuelle Tests der Tastaturbedienung,
+          Fokusführung, Kontraste, Vergrößerung und reduzierten Bewegung. Die Erklärung wird bei wesentlichen Änderungen der Website, mindestens
+          jedoch jährlich, überprüft.
+205 src/app/barrierefreiheit/page.js
+// src/app/sitemap.js
+
+import { generateSlug, generateJobSlug } from "@/lib/slugify";
+import { API_BASE_URL, getApiHeaders, isApiConfigured } from "@/lib/apiBaseUrl";
+import { sitemapLanguages } from "@/lib/hreflang";
+import { alleArtikel, artikelPfad } from "@/lib/ratgeber";
+import { STELLEN, STELLEN_DATUM } from "@/data/stellen";
+import { normalisiereApiProjekt } from "@/components/Project/projektDaten";
+import { REGIONEN } from "@/data/regionen";
+
+const BASE_URL = "https://www.oekovolt.de";
+// ACHTUNG: Hier stand frueher `new Date()`. Damit bekam JEDE statische Seite
+// bei jedem Build einen neuen lastmod - Google wurde also bei jedem Deploy
+// gemeldet, saemtliche Seiten haetten sich geaendert. Das entwertet das
+// Signal und kostet Crawl-Vertrauen.
+//
+// Stattdessen feste Daten, die nur angefasst werden, wenn sich der INHALT
+// der jeweiligen Seite wirklich aendert. Dynamische Seiten (Projekte, Jobs,
+// Foerderungen, Hersteller) nutzen weiter den echten `modified`-Zeitstempel
+// aus dem Backoffice.
+const CONTENT_DATE = new Date("2026-06-06");   // letzter groesserer Inhaltsstand
+const UPDATED_2026_09 = new Date("2026-09-13"); // Redesign 2026 (alle Hauptseiten neu gestaltet)
+// Rechtstexte aendern sich praktisch nie
+const LEGAL_DATE = new Date("2025-01-01");
+// Regionalseiten: Stand der Recherche (Förderprogramme, Netzbetreiber)
+const REGIONEN_DATUM = new Date("2026-09-14");
+const STATIC_PAGES = [
+  { path: "", changeFrequency: "weekly", priority: 1.0, lastModified: UPDATED_2026_09 },
+  { path: "/dienstleistungen/photovoltaik", changeFrequency: "monthly", priority: 0.9, lastModified: UPDATED_2026_09 },
+  { path: "/dienstleistungen/smarthome", changeFrequency: "monthly", priority: 0.8, lastModified: UPDATED_2026_09 },
+  { path: "/produkte/photovoltaikanlage", changeFrequency: "monthly", priority: 0.9, lastModified: UPDATED_2026_09 },
+  { path: "/produkte/stromspeicher", changeFrequency: "monthly", priority: 0.8, lastModified: UPDATED_2026_09 },
+  { path: "/produkte/warmepumpe", changeFrequency: "monthly", priority: 0.8, lastModified: UPDATED_2026_09 },
+  { path: "/produkte/wallbox", changeFrequency: "monthly", priority: 0.8, lastModified: UPDATED_2026_09 },
+  { path: "/produkte/smartmeter", changeFrequency: "monthly", priority: 0.7, lastModified: UPDATED_2026_09 },
+  { path: "/produkte/smartenergyhome", changeFrequency: "monthly", priority: 0.7, lastModified: UPDATED_2026_09 },
+  { path: "/produkte/mieterstrom", changeFrequency: "monthly", priority: 0.7, lastModified: UPDATED_2026_09 },
+  { path: "/produkte/hersteller", changeFrequency: "monthly", priority: 0.6, lastModified: UPDATED_2026_09 },
+  { path: "/service/finanzierung", changeFrequency: "monthly", priority: 0.7, lastModified: UPDATED_2026_09 },
+  { path: "/service/repowering", changeFrequency: "monthly", priority: 0.7, lastModified: UPDATED_2026_09 },
+  { path: "/service/stromtarif", changeFrequency: "monthly", priority: 0.7, lastModified: UPDATED_2026_09 },
+  { path: "/service/vorteilswelt", changeFrequency: "monthly", priority: 0.6, lastModified: UPDATED_2026_09 },
+  { path: "/service/direktvermarktung", changeFrequency: "monthly", priority: 0.7, lastModified: UPDATED_2026_09 },
+  { path: "/referenzen/projekte", changeFrequency: "weekly", priority: 0.7, lastModified: UPDATED_2026_09 },
+  { path: "/referenzen/referenzkarte", changeFrequency: "monthly", priority: 0.6, lastModified: UPDATED_2026_09 },
+  { path: "/forderungen/landesforderungen", changeFrequency: "monthly", priority: 0.7, lastModified: UPDATED_2026_09 },
+  { path: "/forderungen/baurecht", changeFrequency: "monthly", priority: 0.6, lastModified: UPDATED_2026_09 },
+  { path: "/forderungen/steuerlich", changeFrequency: "monthly", priority: 0.6, lastModified: UPDATED_2026_09 },
+  { path: "/forderungen/richtlinien", changeFrequency: "monthly", priority: 0.5, lastModified: UPDATED_2026_09 },
+  { path: "/uber-uns/team", changeFrequency: "monthly", priority: 0.6, lastModified: UPDATED_2026_09 },
+  { path: "/uber-uns/jobs", changeFrequency: "weekly", priority: 0.6, lastModified: UPDATED_2026_09 },
+  { path: "/kontakt", changeFrequency: "monthly", priority: 0.7, lastModified: UPDATED_2026_09 },
+  { path: "/barrierefreiheit", changeFrequency: "yearly", priority: 0.3, lastModified: UPDATED_2026_09 },
+  { path: "/termin", changeFrequency: "monthly", priority: 0.8, lastModified: UPDATED_2026_09 },
+  { path: "/presse", changeFrequency: "daily", priority: 0.7, lastModified: UPDATED_2026_09 },
+  { path: "/kommunen", changeFrequency: "monthly", priority: 0.8, lastModified: UPDATED_2026_09 },
+  { path: "/gewerbe", changeFrequency: "monthly", priority: 0.8, lastModified: UPDATED_2026_09 },
+  { path: "/landwirtschaft", changeFrequency: "monthly", priority: 0.8, lastModified: UPDATED_2026_09 },
+  { path: "/photovoltaik", changeFrequency: "monthly", priority: 0.8, lastModified: REGIONEN_DATUM },
+  { path: "/faqs", changeFrequency: "monthly", priority: 0.6, lastModified: UPDATED_2026_09 },
+  { path: "/ratgeber", changeFrequency: "weekly", priority: 0.7, lastModified: UPDATED_2026_09 },
+  { path: "/solarrechner", changeFrequency: "monthly", priority: 0.9, lastModified: UPDATED_2026_09 },
+  // Neue Werkzeuge & Wissensseiten (Redesign 2026)
+  { path: "/angebot", changeFrequency: "monthly", priority: 0.9, lastModified: UPDATED_2026_09 },
+  { path: "/rechner", changeFrequency: "monthly", priority: 0.8, lastModified: UPDATED_2026_09 },
+  { path: "/rechner/stromspeicher", changeFrequency: "monthly", priority: 0.8, lastModified: UPDATED_2026_09 },
+  { path: "/rechner/waermepumpe", changeFrequency: "monthly", priority: 0.8, lastModified: UPDATED_2026_09 },
+  { path: "/rechner/wallbox", changeFrequency: "monthly", priority: 0.7, lastModified: UPDATED_2026_09 },
+  { path: "/rechner/dynamischer-stromtarif", changeFrequency: "daily", priority: 0.8, lastModified: UPDATED_2026_09 },
+  { path: "/foerdercheck", changeFrequency: "monthly", priority: 0.8, lastModified: UPDATED_2026_09 },
+  // Live-Daten: Inhalt aendert sich viertelstuendlich
+  { path: "/energie-live", changeFrequency: "hourly", priority: 0.8, lastModified: UPDATED_2026_09 },
+  { path: "/wissen/lexikon", changeFrequency: "monthly", priority: 0.7, lastModified: UPDATED_2026_09 },
+  { path: "/impressum", changeFrequency: "yearly", priority: 0.3, lastModified: LEGAL_DATE },
+  { path: "/datenschutz", changeFrequency: "yearly", priority: 0.3, lastModified: LEGAL_DATE },
+  { path: "/agb", changeFrequency: "yearly", priority: 0.3, lastModified: LEGAL_DATE },
+];
+
+// Helper function to make authenticated fetch requests.
+// A timeout guarantees the sitemap never hangs waiting on a slow backend —
+// Google would otherwise see a "Temporary processing error".
+async function authenticatedFetch(url, timeoutMs = 5000) {
+  if (!isApiConfigured()) {
+    console.error("API not configured: Missing API_KEY or API_SECRET in environment variables");
+    return null;
+  }
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const headers = getApiHeaders();
+    const res = await fetch(url, {
+      method: "GET",
+      headers: headers,
+      signal: controller.signal,
+      next: { revalidate: 600 }
+    });
+
+    if (!res.ok) {
+      console.error(`API returned ${res.status} for ${url}`);
+      return null;
+    }
+
+    const data = await res.json();
+    return data;
+  } catch (error) {
+    console.error(`Error fetching ${url}:`, error?.name || error);
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// Projekte – gleiche Quelle wie /referenzen/projekte (Slug = projektSlug, z. B. „mindelheim-2“)
+async function fetchAllProjects() {
+  const API_URL = `${API_BASE_URL}oekovolt_app.website_api.projekte.get_projekte`;
+  const data = await authenticatedFetch(API_URL);
+  const msg = data?.message;
+  const liste = Array.isArray(msg) ? msg : msg?.projekte;
+  return (Array.isArray(liste) ? liste : []).map(normalisiereApiProjekt).filter((p) => p.slug);
+}
+
+// Fetch jobs data
+async function fetchAllJobs() {
+  const API_URL = `${API_BASE_URL}oekovoltdeutchland.oekovoltdeutchland.doctype.jobs.api.jobsde_data`;
+  const data = await authenticatedFetch(API_URL);
+  return data?.message || [];
+}
+
+// Fetch landesforderungen data
+async function fetchAllLandesforderungen() {
+  const API_URL = `${API_BASE_URL}oekovoltdeutchland.forderungen_pages.doctype.forderungen_lande.api.get_all_forderung_lande_pages`;
+  const data = await authenticatedFetch(API_URL);
+  return data?.message || [];
+}
+
+// Fetch stromspeicher manufacturers from the stromspeicher page API
+async function fetchStromspeicherManufacturers() {
+  const API_URL = `${API_BASE_URL}oekovoltdeutchland.oekovoltdeutchland.doctype.stromspeicher_page.api.get_strom_page_with_keywords`;
+  const data = await authenticatedFetch(API_URL);
+  const stromspeicherData = data?.message;
+  // Get the second card table (strom_second_card_table) which contains manufacturers
+  const manufacturers = stromspeicherData?.strom_second_card_table || [];
+  return manufacturers;
+}
+
+// Fetch warmepumpe manufacturers from the warmepumpe page API
+async function fetchWarmepumpeManufacturers() {
+  const API_URL = `${API_BASE_URL}oekovoltdeutchland.oekovoltdeutchland.doctype.waermepumpe_page.api.get_waermepumpe_page_with_keywords`;
+  const data = await authenticatedFetch(API_URL);
+  const warmepumpeData = data?.message;
+  // Get the third card options table (warmepumpe_third_card_options_table) which contains manufacturers
+  const manufacturers = warmepumpeData?.warmepumpe_third_card_options_table || [];
+  return manufacturers;
+}
+
+export default async function sitemap() {
+  // alternates nur fuer Seiten, die es auch auf oekovolt.com gibt — sonst
+  // laesst sitemapLanguages() das Feld weg (undefined wird nicht gerendert).
+  const staticEntries = STATIC_PAGES.map(({ path, changeFrequency, priority, lastModified }) => {
+    const languages = sitemapLanguages(path || "/");
+    return {
+      url: `${BASE_URL}${path}`,
+      lastModified,
+      changeFrequency,
+      priority,
+      ...(languages ? { alternates: { languages } } : {}),
+    };
+  });
+
+  const dynamicEntries = [];
+
+  // Fetch every data source in parallel so the sitemap's total time is the
+  // slowest single request (~5s cap), not the sum of all five. Each fetcher
+  // already returns [] on failure, so a partial outage never breaks the sitemap.
+  const [
+    projects,
+    jobs,
+    landesforderungen,
+    stromspeicherManufacturers,
+    warmepumpeManufacturers,
+  ] = await Promise.all([
+    fetchAllProjects(),
+    fetchAllJobs(),
+    fetchAllLandesforderungen(),
+    fetchStromspeicherManufacturers(),
+    fetchWarmepumpeManufacturers(),
+  ]);
+
+  // 1. Project pages
+  projects.forEach((project) => {
+    const slug = project.slug;
+    if (slug) {
+      dynamicEntries.push({
+        url: `${BASE_URL}/referenzen/projekte/${slug}`,
+        lastModified: project.modified ? new Date(project.modified) : CONTENT_DATE,
+        changeFrequency: "monthly",
+        priority: 0.6,
+      });
+    }
+  });
+
+  // 2. Job pages – ganzjährige Stellen aus src/data/stellen.js …
+  const jobSlugs = new Set(jobs.map((job) => generateJobSlug(job.name || job.title)).filter(Boolean));
+  STELLEN.filter((s) => !jobSlugs.has(s.slug)).forEach((s) => {
+    dynamicEntries.push({
+      url: `${BASE_URL}/uber-uns/jobs/${s.slug}`,
+      lastModified: new Date(STELLEN_DATUM),
+      changeFrequency: "monthly",
+      priority: 0.6,
+    });
+  });
+
+  // … und Stellen aus dem Backoffice
+  jobs.forEach((job) => {
+    const slug = generateJobSlug(job.name || job.title);
+    if (slug) {
+      dynamicEntries.push({
+        url: `${BASE_URL}/uber-uns/jobs/${slug}`,
+        lastModified: job.modified ? new Date(job.modified) : CONTENT_DATE,
+        changeFrequency: "weekly",
+        priority: 0.5,
+      });
+    }
+  });
+
+  // 3. Landesforderungen pages
+  landesforderungen.forEach((item) => {
+    const title = item.firstcard_title || item.name || '';
+    const slug = generateSlug(title);
+    if (slug) {
+      dynamicEntries.push({
+        url: `${BASE_URL}/forderungen/landesforderungen/${slug}`,
+        lastModified: item.modified ? new Date(item.modified) : CONTENT_DATE,
+        changeFrequency: "monthly",
+        priority: 0.6,
+      });
+    }
+  });
+
+  // 4. Stromspeicher manufacturer pages (from stromspeicher page API)
+  stromspeicherManufacturers.forEach((manufacturer) => {
+    const slug = generateSlug(manufacturer.title);
+    if (slug) {
+      const languages = sitemapLanguages(`/produkte/stromspeicher/${slug}`);
+      dynamicEntries.push({
+        url: `${BASE_URL}/produkte/stromspeicher/${slug}`,
+        lastModified: manufacturer.modified ? new Date(manufacturer.modified) : CONTENT_DATE,
+        changeFrequency: "monthly",
+        priority: 0.6,
+        ...(languages ? { alternates: { languages } } : {}),
+      });
+    }
+  });
+
+  // 5. Warmepumpe manufacturer pages (from warmepumpe page API)
+  warmepumpeManufacturers.forEach((manufacturer) => {
+    const slug = generateSlug(manufacturer.title);
+    if (slug) {
+      const languages = sitemapLanguages(`/produkte/warmepumpe/${slug}`);
+      dynamicEntries.push({
+        url: `${BASE_URL}/produkte/warmepumpe/${slug}`,
+        lastModified: manufacturer.modified ? new Date(manufacturer.modified) : CONTENT_DATE,
+        changeFrequency: "monthly",
+        priority: 0.6,
+        ...(languages ? { alternates: { languages } } : {}),
+      });
+    }
+  });
+
+  // 6. Ratgeber-Artikel (aus dem Register, nicht aus der API - deshalb immer
+  //    vorhanden, auch wenn das Backoffice gerade nicht antwortet).
+  //    Deutschlandspezifisch -> bewusst ohne alternates/hreflang.
+  const ratgeberEntries = alleArtikel().map((a) => ({
+    url: `${BASE_URL}${artikelPfad(a.slug)}`,
+    lastModified: new Date(a.aktualisiert),
+    changeFrequency: "monthly",
+    priority: 0.8,
+  }));
+
+  // 7. Regionalseiten /photovoltaik/[stadt]
+  const regionEntries = Object.entries(REGIONEN).map(([slug, r]) => ({
+    url: `${BASE_URL}/photovoltaik/${slug}`,
+    lastModified: new Date(r.fakten?.stand || REGIONEN_DATUM),
+    changeFrequency: "monthly",
+    priority: 0.7,
+  }));
+
+  const allEntries = [...staticEntries, ...dynamicEntries, ...ratgeberEntries, ...regionEntries];
+
+  return allEntries;
+}export default function manifest() {
+  return {
+    name: "Ökovolt Solartechnik Deutschland",
+    short_name: "Ökovolt",
+    description: "Photovoltaik, Stromspeicher, Wallbox & Wärmepumpe – mit Rechnern und Live-Strompreis.",
+    start_url: "/",
+    display: "standalone",
+    background_color: "#03122b",
+    theme_color: "#669933",
+    lang: "de-DE",
+    icons: [{ src: "/logo_blue.png", sizes: "any", type: "image/png" }],
+  };
+}
+import Link from "next/link";
+import { ArrowRight, BookOpen, Calculator, Home, Sun } from "lucide-react";
+import Button from "@/components/ui/Button";
+
+export const metadata = {
+  title: "Seite nicht gefunden | Ökovolt",
+  robots: { index: false, follow: true },
+};
+
+const ZIELE = [
+  { titel: "Photovoltaikanlage", text: "Komplettanlage vom Fachbetrieb", href: "/produkte/photovoltaikanlage", icon: Sun },
+  { titel: "Solarrechner", text: "Ertrag & Ersparnis berechnen", href: "/solarrechner", icon: Calculator },
+  { titel: "Ratgeber", text: "Kosten, Förderung, Technik", href: "/ratgeber", icon: BookOpen },
+];
+
+export default function NotFound() {
+  return (
+    <section className="ov-noise relative isolate overflow-hidden bg-navy-950 text-white">
+      <div aria-hidden="true" className="ov-grid-bg absolute inset-0 -z-10" />
+      <div aria-hidden="true" className="absolute left-1/2 top-1/3 -z-10 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-ov-500/25 blur-[140px]" />
+      <div className="ov-container flex min-h-[70vh] flex-col items-center justify-center py-20 text-center">
+        <p aria-hidden="true" className="ov-hero-in select-none font-display text-[clamp(7rem,5rem+10vw,14rem)] font-extrabold leading-none tracking-tighter">
+          <span className="ov-text-gradient-light">4</span>
+          <span className="inline-block animate-ov-float text-sun-400">☀</span>
+          <span className="ov-text-gradient-light">4</span>
+        </p>
+        <h1 className="ov-h2 ov-hero-in mt-4" style={{ "--ov-delay": "100ms" }}>Diese Seite hat heute keine Sonne abbekommen.</h1>
+        <p className="ov-lead ov-hero-in mx-auto mt-5 max-w-xl text-white/65" style={{ "--ov-delay": "180ms" }}>
+          Die gesuchte Seite existiert nicht oder wurde verschoben. Diese Wege führen garantiert ans Ziel:
+        </p>
+        <ul className="ov-hero-in mt-10 grid w-full max-w-3xl gap-3 sm:grid-cols-3" style={{ "--ov-delay": "260ms" }}>
+          {ZIELE.map((z) => (
+            <li key={z.href}>
+              <Link href={z.href} className="group ov-glass flex h-full flex-col items-start rounded-3xl p-5 text-left transition-colors hover:bg-white/15">
+                <z.icon aria-hidden="true" className="h-6 w-6 text-ov-300" />
+                <span className="mt-4 font-display text-[17px] font-bold">{z.titel}</span>
+                <span className="mt-1 text-[14px] text-white/60">{z.text}</span>
+                <ArrowRight aria-hidden="true" className="mt-4 h-4 w-4 text-white/50 transition-transform group-hover:translate-x-1 group-hover:text-white" />
+              </Link>
+            </li>
+          ))}
+        </ul>
+        <div className="ov-hero-in mt-10" style={{ "--ov-delay": "320ms" }}>
+          <Button href="/" size="lg" icon={Home}>Zur Startseite</Button>
+        </div>
+      </div>
+    </section>
+  );
+}
+User-agent: Googlebot
+User-agent: Bingbot
+User-agent: Slurp
+User-agent: DuckDuckBot
+User-agent: SistrixBot
+Allow: /api/image
+Allow: /
+Disallow: /api/
+
+User-agent: OAI-SearchBot
+User-agent: ChatGPT-User
+User-agent: Claude-Web
+User-agent: Claude-SearchBot
+User-agent: anthropic-ai
+User-agent: PerplexityBot
+User-agent: Perplexity-User
+User-agent: Amazonbot
+User-agent: Applebot
+User-agent: Applebot-Extended
+User-agent: YouBot
+Allow: /api/image
+Allow: /
+Disallow: /api/
+Crawl-delay: 2
+
+User-agent: GPTBot
+User-agent: ClaudeBot
+User-agent: CCBot
+User-agent: FacebookBot
+User-agent: Meta-ExternalAgent
+User-agent: Bytespider
+User-agent: Omgilibot
+User-agent: Diffbot
+User-agent: Google-Extended
+User-agent: cohere-ai
+User-agent: ImagesiftBot
+Disallow: /
+
+User-agent: *
+Allow: /_next/image
+Allow: /api/image
+Allow: /
+Disallow: /api/
+Disallow: /private/
+
+Sitemap: https://www.oekovolt.de/sitemap.xml# Ökovolt Solartechnik – Full LLM Context for Germany
+
+Version: 1.0
+Date: 2026-06-23
+Primary language: German
+Secondary language: English
+Market focus: Germany
+Audience: AI assistants, search engines, answer engines, research tools, website crawlers, and structured-data processors
+Purpose: Provide structured, factual, LLM-readable context about Ökovolt Solartechnik GmbH's operations and services in Germany, based on publicly available information.
+
+---
+
+## Website Pages
+
+- [Startseite / Home](https://www.oekovolt.de/)
+- [Photovoltaik (Dienstleistung)](https://www.oekovolt.de/dienstleistungen/photovoltaik)
+- [Smart Home](https://www.oekovolt.de/dienstleistungen/smarthome)
+- [Photovoltaikanlage](https://www.oekovolt.de/produkte/photovoltaikanlage)
+- [Stromspeicher](https://www.oekovolt.de/produkte/stromspeicher)
+- [Wärmepumpe](https://www.oekovolt.de/produkte/warmepumpe)
+- [Wallbox](https://www.oekovolt.de/produkte/wallbox)
+- [Smart Meter](https://www.oekovolt.de/produkte/smartmeter)
+- [Smart Energy Home](https://www.oekovolt.de/produkte/smartenergyhome)
+- [Mieterstrom](https://www.oekovolt.de/produkte/mieterstrom)
+- [Photovoltaik für Gewerbe & Industrie](https://www.oekovolt.de/gewerbe)
+- [Photovoltaik für Landwirtschaft & Agri-PV](https://www.oekovolt.de/landwirtschaft)
+- [Photovoltaik für Kommunen & Stadtwerke](https://www.oekovolt.de/kommunen)
+- [Einzugsgebiet: Photovoltaik je Stadt (Ertrag, Netzbetreiber, Förderung)](https://www.oekovolt.de/photovoltaik)
+- [Hersteller](https://www.oekovolt.de/produkte/hersteller)
+- [Direktvermarktung](https://www.oekovolt.de/service/direktvermarktung)
+551:.ov-legal { color: var(--color-ink-700); font-size: 16px; line-height: 1.75; }
+552:.ov-legal > div { max-width: none !important; padding: 0 !important; margin: 0 !important; }
+553:.ov-legal h2 { font-family: var(--font-display); font-size: clamp(1.35rem, 1.15rem + 0.8vw, 1.75rem) !important; font-weight: 800; color: var(--color-ink-900) !important; letter-spacing: -0.02em; margin-top: 2.2em; margin-bottom: 0.7em !important; line-height: 1.25; }
+554:.ov-legal section:first-child h2, .ov-legal h2:first-child { margin-top: 0; }
+555:.ov-legal h3 { font-family: var(--font-display); font-size: 1.15rem !important; font-weight: 700; color: var(--color-ink-900); margin-top: 1.6em !important; }
+556:.ov-legal section { margin-bottom: 0 !important; }
+557:.ov-legal a { color: var(--color-ov-700); text-decoration: underline; text-decoration-color: var(--color-ov-300); overflow-wrap: anywhere; }
+558:.ov-legal ul { list-style: disc; padding-left: 1.25em; }
+559:.ov-legal ol { list-style: decimal; padding-left: 1.25em; }
+560:.ov-legal strong { color: var(--color-ink-900); }
+561:.ov-legal p + p { margin-top: 0.75em; }
+562-
+563-/* Lange deutsche Komposita ("Energiemanagementsystem") sprengen auf dem Handy
+564-   sonst die Überschrift. Nur auf schmalen Bildschirmen trennen. */
+565-@media (max-width: 640px) {
+566-  h1, h2, h3, .ov-display, .ov-h1, .ov-h2 {
+567-    -webkit-hyphens: auto;
+568-    hyphens: auto;
+569-    hyphenate-limit-chars: 12 5 5;
+570-    overflow-wrap: anywhere;
+571-  }
+572-}

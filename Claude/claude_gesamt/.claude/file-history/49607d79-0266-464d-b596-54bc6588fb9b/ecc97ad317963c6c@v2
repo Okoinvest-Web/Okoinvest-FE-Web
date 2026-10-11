@@ -1,0 +1,119 @@
+/**
+ * Zielarten als Daten: welches Sicherungssystem kann welche Aktion.
+ *
+ * ## Warum das kein Objektliteral mehr ist
+ *
+ * Ein neues System - etwa ein gebuchter Google-Drive-Speicher - soll sich
+ * anbinden lassen, indem jemand einen Konnektor mit Token anlegt und eine
+ * Zielart einträgt. Nicht, indem jemand eine Datei ändert und dabei
+ * versehentlich die Sperre für `backup_now` mit abbaut.
+ *
+ * ## Die Grenze, die trotzdem im Code bleibt
+ *
+ * Zwei Dinge sind **nicht** konfigurierbar, und das ist Absicht:
+ *
+ * 1. **`VERBOTEN`** (in `backup-steuerung.js`) - Löschen, Prune, Forget,
+ *    Aufbewahrung ändern, Auftrag löschen, Schutz aufheben. Stünde diese
+ *    Liste in der Datenbank, trüge sich irgendwann jemand `delete` in eine
+ *    Zielart ein, und die Zusage dieser Anwendung wäre weg.
+ *
+ * 2. **Der Verbkatalog** - `backup_now`, `verify_now`, `sync_now`,
+ *    `export_now`, `archive_now`, `protect`. Jedes Verb braucht eine
+ *    Umsetzung; ein Verb ohne Code wäre eine Schaltfläche, die nichts tut.
+ *
+ * Konfigurierbar ist die **Zuordnung**: welche dieser Verben eine Zielart
+ * anbietet. Google Drive bekommt `export_now` und ist damit fertig - der
+ * Code dafür liegt schon da.
+ */
+import { defineDoctype } from './db.js'
+
+const AT = 'TEN-0001'
+
+defineDoctype('Backup Target Kind', {
+  naming: (doc) => doc.kind,
+  titleField: 'label',
+  fields: [
+    'kind',
+    'label',
+    // Kommaliste aus dem Verbkatalog. Alles andere wird beim Speichern
+    // abgewiesen.
+    'allowed_actions',
+    // Geschätzte Dauer je Aktion, Form "backup_now:22,verify_now:95".
+    'durations',
+    // Lässt sich das Ziel wie ein Ordner durchsehen? Ein Snapshot im
+    // Sicherungsserver ist keiner.
+    'browsable',
+    // Konnektoren dieser Art dürfen nie schreibend angelegt werden.
+    'never_writable',
+    'default_interval_minutes',
+    'api_style',
+  ],
+  seed: [
+    {
+      kind: 'pbs',
+      label: 'Proxmox Backup Server',
+      allowed_actions: 'backup_now,verify_now,sync_now,protect',
+      durations: 'backup_now:22,verify_now:95,sync_now:140',
+      browsable: 0,
+      // Ein Token mit Prune-Recht kann die Sicherung vernichten, die es
+      // überwachen soll.
+      never_writable: 1,
+      default_interval_minutes: 30,
+      api_style: 'PBS REST, API-Token im Header',
+      tenant: AT,
+      description: 'Datastores, Namespaces, Snapshots. Verify und Sync eingebaut.',
+    },
+    {
+      kind: 'nakivo',
+      label: 'NAKIVO Backup & Replication',
+      allowed_actions: 'backup_now,protect',
+      durations: 'backup_now:65',
+      browsable: 0,
+      never_writable: 1,
+      default_interval_minutes: 30,
+      api_style: 'JSON-RPC über /c/router',
+      tenant: AT,
+      description: 'Repositories, Jobs, Recovery Points. Prüfung steckt im Job selbst.',
+    },
+    {
+      kind: 'frappe-drive',
+      label: 'Frappe Drive',
+      allowed_actions: 'export_now',
+      durations: 'export_now:4',
+      browsable: 1,
+      // Ein Ablageziel ist kein Sicherungssystem: dort etwas hinzulegen
+      // nimmt nichts weg.
+      never_writable: 0,
+      default_interval_minutes: 60,
+      api_style: 'Frappe REST, /api/method',
+      tenant: AT,
+      description: 'Zweitablage für Konfigurationsauszüge und Betriebsunterlagen.',
+    },
+    {
+      kind: 's3',
+      label: 'Amazon S3',
+      allowed_actions: 'archive_now',
+      durations: 'archive_now:320',
+      browsable: 1,
+      never_writable: 0,
+      default_interval_minutes: 120,
+      api_style: 'S3 SigV4',
+      tenant: AT,
+      description: 'Object Lock im Compliance-Modus – dort löscht auch der Root-Account nichts.',
+    },
+    {
+      kind: 'lto',
+      label: 'LTO-Bandarchiv',
+      // Ein Band wird beschrieben und geprüft; abgleichen oder exportieren
+      // ergibt bei einem Wechsler keinen Sinn.
+      allowed_actions: 'backup_now,verify_now,protect',
+      durations: 'backup_now:210,verify_now:260',
+      browsable: 0,
+      never_writable: 1,
+      default_interval_minutes: 60,
+      api_style: 'mtx/mt über den Sicherungsserver',
+      tenant: AT,
+      description: 'Airgap: das ausgeworfene Band ist über kein Netz erreichbar.',
+    },
+  ],
+})

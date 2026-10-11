@@ -1,0 +1,144 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { ExternalLink, Printer } from "lucide-react";
+import { db } from "@/lib/data";
+import { date, daysUntil, money2, personName, QUOTE_STATUS_LABEL } from "@/lib/format";
+import { Badge, BTN, Field, PageHeader } from "@/components/ui";
+
+export async function generateMetadata({ params }: PageProps<"/quotations/[name]">) {
+  const q = await db().getQuotation(decodeURIComponent((await params).name));
+  return { title: q?.title ?? "Angebot" };
+}
+
+export default async function QuotationPage({ params }: PageProps<"/quotations/[name]">) {
+  const q = await db().getQuotation(decodeURIComponent((await params).name));
+  if (!q) notFound();
+  const kwpUnits = q.items.filter((i) => i.uom === "kWp");
+  const left = daysUntil(q.valid_till);
+  const partyHref = q.quotation_to === "Lead" ? `/leads/${encodeURIComponent(q.party_name)}` : `/customers/${encodeURIComponent(q.party_name)}`;
+
+  return (
+    <>
+      <PageHeader
+        title={q.title ?? q.name}
+        crumbs={[{ href: "/quotations", label: "Angebote" }]}
+        actions={
+          <>
+            <Badge value={q.status} label={QUOTE_STATUS_LABEL[q.status] ?? q.status} />
+            <a href={`/druck/angebot/${encodeURIComponent(q.name)}`} target="_blank" rel="noreferrer" className={BTN.secondary}>
+              <Printer /> <span className="hidden sm:inline">Druckansicht</span>
+            </a>
+          </>
+        }
+      />
+      <div className="grid min-h-0 flex-1 grid-cols-1 xl:grid-cols-[1fr_320px]">
+        <div className="min-w-0 px-4 py-6 sm:px-8 sm:py-7">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <h2 className="text-[22px] font-semibold tracking-[-0.02em] text-gray-900">{q.title ?? q.name}</h2>
+              <p className="mt-0.5 text-gray-500">
+                <Link href={partyHref} className="text-gray-700 hover:underline">
+                  {q.customer_name}
+                </Link>{" "}
+                · {q.name}
+              </p>
+            </div>
+            <div className="text-right">
+              <div className="tnum text-[26px] font-semibold leading-none tracking-[-0.02em]">{money2(q.grand_total, q.currency)}</div>
+              <div className="tnum mt-1.5 text-[12px] text-gray-500">
+                netto {money2(q.net_total, q.currency)} · USt {q.tax_rate} %
+              </div>
+            </div>
+          </div>
+
+          {q.status === "Draft" && (
+            <div className="mt-6 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-gray-700">
+              <strong className="font-semibold">Entwurf.</strong> Vor dem Versand in ERPNext prüfen und buchen – danach ist das Angebot verbindlich und wird hier als „Versendet“ geführt.
+            </div>
+          )}
+
+          <div className="mt-7 overflow-hidden rounded-xl border border-gray-200">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="border-b border-gray-150 bg-gray-25 text-[12px] text-gray-500">
+                  <th className="px-4 py-2 font-medium">Pos.</th>
+                  <th className="px-4 py-2 font-medium">Artikel</th>
+                  <th className="px-4 py-2 text-right font-medium">Menge</th>
+                  <th className="px-4 py-2 text-right font-medium">Einzelpreis</th>
+                  <th className="px-4 py-2 text-right font-medium">Gesamt</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {q.items.map((i, idx) => (
+                  <tr key={idx}>
+                    <td className="tnum px-4 py-2.5 text-gray-400">{idx + 1}</td>
+                    <td className="px-4 py-2.5">
+                      <div className="text-gray-900">{i.item_name}</div>
+                      <div className="text-[12px] text-gray-400">{i.item_code}</div>
+                    </td>
+                    <td className="tnum px-4 py-2.5 text-right">
+                      {i.qty.toLocaleString("de-DE")} {i.uom}
+                    </td>
+                    <td className="tnum px-4 py-2.5 text-right">{money2(i.rate, q.currency)}</td>
+                    <td className="tnum px-4 py-2.5 text-right font-medium text-gray-900">{money2(i.amount, q.currency)}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot className="border-t border-gray-150 bg-gray-25">
+                <tr>
+                  <td colSpan={4} className="px-4 py-2 text-right text-gray-500">
+                    Netto
+                  </td>
+                  <td className="tnum px-4 py-2 text-right">{money2(q.net_total, q.currency)}</td>
+                </tr>
+                <tr>
+                  <td colSpan={4} className="px-4 py-2 text-right text-gray-500">
+                    Umsatzsteuer {q.tax_rate} %
+                  </td>
+                  <td className="tnum px-4 py-2 text-right">{money2(q.total_taxes_and_charges, q.currency)}</td>
+                </tr>
+                <tr>
+                  <td colSpan={4} className="px-4 py-2 text-right font-semibold">
+                    Gesamt
+                  </td>
+                  <td className="tnum px-4 py-2 text-right font-semibold">{money2(q.grand_total, q.currency)}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+          {q.items.length === 0 && <p className="mt-3 text-gray-500">Positionen sind nur in der Detailansicht von ERPNext abrufbar.</p>}
+        </div>
+
+        <aside className="border-t border-gray-150 bg-gray-25 px-6 py-7 xl:border-l xl:border-t-0">
+          <div className="mb-2 text-[12px] font-medium text-gray-500">Eigenschaften</div>
+          <dl>
+            <Field label="Status">
+              <Badge value={q.status} label={QUOTE_STATUS_LABEL[q.status] ?? q.status} />
+            </Field>
+            <Field label="Datum">{date(q.transaction_date)}</Field>
+            <Field label="Gültig bis">
+              {date(q.valid_till)}
+              {q.status === "Open" && left !== undefined && (
+                <span className={`ml-1.5 text-[12px] ${left < 0 ? "text-rose-600" : left <= 7 ? "text-amber-700" : "text-gray-400"}`}>
+                  {left < 0 ? "abgelaufen" : `noch ${left} T`}
+                </span>
+              )}
+            </Field>
+            {kwpUnits[0] && <Field label="Anlage">{kwpUnits[0].qty.toLocaleString("de-DE")} kWp</Field>}
+            <Field label="Chance">
+              {q.opportunity && (
+                <Link href={`/opportunities/${encodeURIComponent(q.opportunity)}`} className="inline-flex items-center gap-1 hover:underline">
+                  Zur Chance <ExternalLink className="size-3" />
+                </Link>
+              )}
+            </Field>
+            <Field label="Erstellt von">{personName(q.owner)}</Field>
+            <Field label="ID">
+              <span className="font-mono text-[12px] text-gray-500">{q.name}</span>
+            </Field>
+          </dl>
+        </aside>
+      </div>
+    </>
+  );
+}

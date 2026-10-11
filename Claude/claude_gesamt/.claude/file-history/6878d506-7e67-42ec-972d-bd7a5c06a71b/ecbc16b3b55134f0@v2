@@ -1,0 +1,107 @@
+import Link from "next/link";
+import { Suspense } from "react";
+import { ArrowDownWideNarrow, Clock, Plus, Users } from "lucide-react";
+import { db } from "@/lib/data";
+import { LEAD_STATUSES } from "@/lib/types";
+import { LEAD_STATUS_LABEL, relative } from "@/lib/format";
+import { Avatar, Badge, ButtonLink, Card, Empty, PageBody, PageHeader, Table, TD } from "@/components/ui";
+import { ListToolbar } from "@/components/ListToolbar";
+import { ScoreBadge } from "@/components/Insights";
+import { scoreLead } from "@/lib/insights";
+
+export const metadata = { title: "Leads" };
+
+export default async function LeadsPage({ searchParams }: PageProps<"/leads">) {
+  const sp = await searchParams;
+  const q = typeof sp.q === "string" ? sp.q : undefined;
+  const status = typeof sp.status === "string" ? sp.status : undefined;
+  const byScore = sp.sort === "score";
+  const rows = (await db().listLeads({ search: q, filters: { status } })).map((l) => ({ ...l, score: scoreLead(l) }));
+  const leads = byScore ? [...rows].sort((a, b) => b.score.score - a.score.score) : rows;
+  const hot = rows.filter((l) => l.score.grade === "Heiß").length;
+
+  // Sortierung umschalten, Suche und Filter bleiben erhalten
+  const sortHref = (score: boolean) => {
+    const p = new URLSearchParams();
+    if (q) p.set("q", q);
+    if (status) p.set("status", status);
+    if (score) p.set("sort", "score");
+    return `/leads${p.size ? `?${p}` : ""}`;
+  };
+  const sortTab = (score: boolean, label: string, Icon: typeof Clock) => (
+    <Link
+      href={sortHref(score)}
+      className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm transition ${
+        byScore === score ? "bg-white font-medium text-gray-900 shadow-sm ring-1 ring-gray-200" : "text-gray-600 hover:text-gray-900"
+      }`}
+    >
+      <Icon className="size-4" /> {label}
+    </Link>
+  );
+
+  return (
+    <>
+      <PageHeader
+        title="Leads"
+        subtitle={
+          <>
+            Anfragen und Interessenten vor dem ersten Angebot · <span className="font-medium text-rose-600">{hot} heiße Leads</span>
+          </>
+        }
+        actions={
+          <>
+          <div className="flex gap-1 rounded-lg bg-gray-100 p-1">
+            {sortTab(false, "Neueste", Clock)}
+            {sortTab(true, "Beste zuerst", ArrowDownWideNarrow)}
+          </div>
+          <ButtonLink href="/leads/new">
+            <Plus className="size-4" /> Neuer Lead
+          </ButtonLink>
+          </>
+        }
+      />
+      <PageBody>
+        <Card className="overflow-hidden">
+          <Suspense>
+            <ListToolbar statuses={LEAD_STATUSES} labels={LEAD_STATUS_LABEL} count={leads.length} />
+          </Suspense>
+          {leads.length === 0 ? (
+            <Empty icon={Users}>Keine Leads gefunden.</Empty>
+          ) : (
+            <Table head={["Name", "Score", "Status", "Kontakt", "Quelle", "Region", "Geändert"]}>
+              {leads.map((l) => {
+                const href = `/leads/${encodeURIComponent(l.name)}`;
+                return (
+                  <tr key={l.name} className="transition-colors hover:bg-brand-50/40">
+                    <td className="px-5 py-3">
+                      <Link href={href} className="group flex items-center gap-3">
+                        <Avatar name={l.lead_name} size="md" />
+                        <div className="min-w-0">
+                          <div className="font-medium text-gray-900 group-hover:text-brand-700">{l.lead_name}</div>
+                          <div className="truncate text-xs text-gray-500">{l.company_name ?? "Privat"}</div>
+                        </div>
+                      </Link>
+                    </td>
+                    <td className={TD}>
+                      <ScoreBadge s={l.score} />
+                    </td>
+                    <td className={TD}>
+                      <Badge value={l.status} label={LEAD_STATUS_LABEL[l.status]} />
+                    </td>
+                    <td className={TD}>
+                      <div className="truncate">{l.email_id ?? "–"}</div>
+                      <div className="whitespace-nowrap text-xs text-gray-500">{l.mobile_no}</div>
+                    </td>
+                    <td className={TD}>{l.source ?? "–"}</td>
+                    <td className={TD}>{l.territory ?? "–"}</td>
+                    <td className={`${TD} whitespace-nowrap text-gray-500`}>{relative(l.modified)}</td>
+                  </tr>
+                );
+              })}
+            </Table>
+          )}
+        </Card>
+      </PageBody>
+    </>
+  );
+}

@@ -1,0 +1,225 @@
+/**
+ * Mock-Server, der die Whitelisted-Methoden von Frappe im Browser nachstellt.
+ *
+ * Er wird als `resourceFetcher` in frappe-ui eingehaengt und hat dieselbe
+ * Signatur wie `frappeRequest`. Dadurch sieht jede Komponente exakt das,
+ * was sie spaeter auch vom echten Backend bekommt - der Umstieg ist ein
+ * Ein-Zeilen-Wechsel in src/api/index.js.
+ *
+ * Der Mock prueft keine Berechtigungen. Er ersetzt das Backend fuer die
+ * Entwicklung der Oberflaeche, nicht dessen Sicherheitslogik.
+ */
+import {
+  FrappeMockError,
+  SESSION_USER,
+  loadDatabase,
+  nextName,
+  persist,
+  resetDatabase,
+  standardFields,
+  table,
+  touch,
+} from './db.js'
+import { matches, pickFields, sortDocs } from './query.js'
+import './fixtures.js'
+import './fixtures-ops.js'
+import { protokolliere } from './methods/audit.js'
+import { registerNetopsMethods } from './methods/index.js'
+import { seedAuditLog } from './seed-audit.js'
+
+// Kuenstliche Latenz, damit Ladezustaende in der UI sichtbar bleiben.
+const LATENCY_MS = 140
+
+/** @type {Map<string, (args: any) => any>} */
+const methods = new Map()
+
+/** Registriert eine zusaetzliche "whitelisted" Methode. */
+export function registerMethod(path, handler) {
+  methods.set(path, handler)
+}
+
+export function getRegisteredMethods() {
+  return [...methods.keys()].sort()
+}
+
+loadDatabase()
+seedAuditLog()
+
+/**
+ * DocTypes, die nur angehängt werden dürfen. Im echten Frappe verbietet der
+ * Controller Update und Delete - hier tut es der Server.
+ */
+const NUR_ANHAENGEN = new Set(['Audit Entry'])
+
+function pruefeAppendOnly(doctype, aktion) {
+  if (NUR_ANHAENGEN.has(doctype)) {
+    throw new FrappeMockError(
+      'PermissionError: ' + doctype + ' ist append-only – ' + aktion + ' ist nicht zulässig',
+      403,
+    )
+  }
+}
+
+// --- Standardmethoden von Frappe -------------------------------------------
+
+registerMethod('frappe.client.get_list', ({
+  doctype,
+  fields = ['name'],
+  filters,
+  or_filters,
+  order_by = 'modified desc',
+  limit_start = 0,
+  limit_page_length = 20,
+} = {}) => {
+  let rows = table(doctype).filter((doc) => matches(doc, filters))
+
+  if (or_filters?.length) {
+    const alternativen = [].concat(or_filters)
+    rows = rows.filter((doc) => alternativen.some((filter) => matches(doc, [filter])))
+  }
+
+  rows = sortDocs(rows, order_by)
+
+  const start = Number(limit_start) || 0
+  // limit_page_length 0 bedeutet in Frappe "alle".
+  const laenge = Number(limit_page_length)
+  const seite = laenge ? rows.slice(start, start + laenge) : rows.slice(start)
+
+  return seite.map((doc) => pickFields(doc, fields))
+})
+
+registerMethod('frappe.client.get_count', ({ doctype, filters } = {}) =>
+  table(doctype).filter((doc) => matches(doc, filters)).length,
+)
+
+registerMethod('frappe.client.get', ({ doctype, name, filters } = {}) => {
+  const rows = table(doctype)
+  const doc = name
+    ? rows.find((row) => row.name === name)
+    : rows.find((row) => matches(row, filters))
+
+  if (!doc) {
+    throw new FrappeMockError(
+      'DoesNotExistError: ' + doctype + ' ' + (name ?? JSON.stringify(filters)) + ' existiert nicht',
+      404,
+    )
+  }
+  return { ...doc }
+})
+
+registerMethod('frappe.client.get_value', ({ doctype, filters, fieldname } = {}) => {
+  const doc = table(doctype).find((row) =>
+    typeof filters === 'string' ? row.name === filters : matches(row, filters),
+  )
+  if (!doc) return null
+  return pickFields(doc, [].concat(fieldname))
+})
+
+registerMethod('frappe.client.insert', ({ doc } = {}) => {
+  if (!doc?.doctype) {
+    throw new FrappeMockError('ValidationError: doc.doctype fehlt')
+  }
+  const rows = table(doc.doctype)
+  const angelegt = {
+    ...standardFields(),
+    status: 'active',
+    description: '',
+    ...doc,
+    name: doc.name || nextName(doc.doctype, doc),
+    doctype: doc.doctype,
+  }
+  if (rows.some((row) => row.name === angelegt.name)) {
+    throw new FrappeMockError(
+      'DuplicateEntryError: ' + angelegt.doctype + ' ' + angelegt.name + ' existiert bereits',
+      409,
+    )
+  }
+  rows.push(angelegt)
+  if (!NUR_ANHAENGEN.has(angelegt.doctype)) {
+    protokolliere({
+      action: 'insert',
+      object_type: angelegt.doctype,
+      object_name: angelegt.name,
+      payload: doc,
+    })
+  }
+  persist()
+  return { ...angelegt }
+})
+
+registerMethod('frappe.client.set_value', ({ doctype, name, fieldname, value } = {}) => {
+  pruefeAppendOnly(doctype, 'Ändern')
+
+  const doc = table(doctype).find((row) => row.name === name)
+  if (!doc) {
+    throw new FrappeMockError('DoesNotExistError: ' + doctype + ' ' + name + ' existiert nicht', 404)
+  }
+  // fieldname kann ein einzelnes Feld oder ein Objekt mit mehreren sein.
+  const patch = typeof fieldname === 'object' ? fieldname : { [fieldname]: value }
+  Object.assign(doc, patch)
+  touch(doc)
+  protokolliere({ action: 'set_value', object_type: doctype, object_name: name, payload: patch })
+  persist()
+  return { ...doc }
+})
+
+registerMethod('frappe.client.delete', ({ doctype, name } = {}) => {
+  pruefeAppendOnly(doctype, 'Löschen')
+
+  const rows = table(doctype)
+  const index = rows.findIndex((row) => row.name === name)
+  if (index === -1) {
+    throw new FrappeMockError('DoesNotExistError: ' + doctype + ' ' + name + ' existiert nicht', 404)
+  }
+  rows.splice(index, 1)
+  protokolliere({ action: 'delete', object_type: doctype, object_name: name })
+  persist()
+  return null
+})
+
+registerMethod('frappe.auth.get_logged_user', () => SESSION_USER)
+
+registerMethod('logout', () => ({ message: 'Logged out' }))
+
+// --- NetOps-eigene Methoden ------------------------------------------------
+
+registerNetopsMethods()
+
+// --- Fetcher ---------------------------------------------------------------
+
+/**
+ * Gleiche Signatur wie `frappeRequest` aus frappe-ui.
+ * @param {{url?: string, method?: string, params?: object, data?: object}} options
+ */
+export async function mockRequest(options = {}) {
+  const { url = '', params, data } = options
+  const pfad = String(url).replace(/^\/?api\/method\//, '')
+  const args = params ?? data ?? {}
+
+  await verzoegere(LATENCY_MS)
+
+  const handler = methods.get(pfad)
+  if (!handler) {
+    throw new FrappeMockError(
+      'MethodNotFound: "' + pfad + '" ist im Mock nicht registriert. ' +
+        'Mit registerMethod(\'' + pfad + '\', handler) ergaenzen.',
+      404,
+    )
+  }
+
+  return handler(args)
+}
+
+/** Verwirft alle lokalen Aenderungen und stellt die Seed-Daten wieder her. */
+export function resetMockData() {
+  resetDatabase()
+}
+
+function verzoegere(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+// Praktisch beim Entwickeln: in der Browser-Konsole verfuegbar machen.
+if (typeof window !== 'undefined') {
+  window.__mock = { resetMockData, registerMethod, getRegisteredMethods }
+}

@@ -1,0 +1,1010 @@
+import "server-only";
+
+import { db, imBlock, istBefuellt, schreibe } from "./verbindung.ts";
+import { frist, slaFuer } from "../service/frist.ts";
+import { messStempel, tagesSchluessel, verschiebeTage } from "../datum.ts";
+import {
+  bewoelkungAmTag,
+  erzeugungKw,
+  startwertAus,
+  verbrauchKw,
+  zufallsfolge,
+} from "../demo/generator.ts";
+
+/**
+ * Befuellt eine leere Datenbank mit einem Beispielbestand.
+ *
+ * Anders als zuvor sind das keine fest verdrahteten Anzeigewerte,
+ * sondern echte Datensaetze: Zaehlpunkte mit Viertelstunden-Lastgang,
+ * aus dem die Abrechnung tatsaechlich rechnet. Ein Jahr bei acht
+ * Zaehlpunkten ergibt rund 400.000 Lastgangzeilen.
+ *
+ * Der Bestand bildet einen Industriepark ab - ein Betrieb mit mehreren
+ * Erzeugungsanlagen und mehrere Verbraucher in derselben Trafostation.
+ * Genau die Konstellation, fuer die eine lokale EEG gedacht ist.
+ */
+
+const TAGE_LASTGANG = 400;
+
+/** Zaehlpunktbezeichnung: AT + Netzbetreiber (6) + PLZ auf 5 + Lauf (20). */
+function zp(netz: string, plz: string, lauf: string): string {
+  return `AT${netz}0${plz}${lauf.padStart(20, "0")}`;
+}
+
+interface ZaehlpunktVorlage {
+  id: string;
+  bezeichnung: string;
+  kundeId: string | null;
+  anlageId: string | null;
+  art: "Erzeugung" | "Verbrauch" | "Kombiniert";
+  plz: string;
+  ort: string;
+  adresse: string;
+  netzebene: number;
+  anschlussleistung: number;
+  /** Erzeugungsleistung in kWp, 0 bei reinen Verbrauchern. */
+  kwp: number;
+  /** Grundlast in kW. */
+  grundlast: number;
+  /** Zusaetzliche Spitzenlast werktags in kW. */
+  spitzenlast: number;
+}
+
+const KUNDE = {
+  id: "KD-0001",
+  firma: "Steiner Holzbau GmbH",
+  uid: "ATU 58274136",
+  firmenbuch: "FN 214877 k",
+  strasse: "Industriestraße 24",
+  plz: "3100",
+  ort: "St. Pölten",
+  bundesland: "Niederösterreich",
+  email: "energie@steiner-holzbau.at",
+  telefon: "+43 2742 71400",
+  branche: "Holzverarbeitung und Fertigteilbau",
+};
+
+/** Weitere Mitglieder der Energiegemeinschaft. */
+const MITGLIEDER = [
+  {
+    id: "KD-0002",
+    firma: "Kunststofftechnik Radlmayr GmbH",
+    uid: "ATU 61338204",
+    branche: "Kunststoffverarbeitung",
+  },
+  {
+    id: "KD-0003",
+    firma: "Spedition Weinberger e.U.",
+    uid: "ATU 49872215",
+    branche: "Transport und Logistik",
+  },
+  {
+    id: "KD-0004",
+    firma: "Bäckerei Hubmann GmbH",
+    uid: "ATU 55190377",
+    branche: "Backwarenerzeugung",
+  },
+  {
+    id: "KD-0005",
+    firma: "Autohaus Pichler GmbH",
+    uid: "ATU 52664198",
+    branche: "Kraftfahrzeughandel",
+  },
+  {
+    id: "KD-0006",
+    firma: "Stadtgemeinde St. Pölten, Bauhof",
+    uid: null,
+    branche: "Öffentliche Verwaltung",
+  },
+];
+
+const ANLAGEN = [
+  {
+    id: "ANL-0001",
+    bezeichnung: "Produktionshalle St. Pölten",
+    standort: "Industriestraße 24",
+    plz: "3100",
+    ort: "St. Pölten",
+    leistung_kwp: 749.7,
+    wechselrichter_kw: 690,
+    speicher_kwh: 420,
+    modul_typ: "JA Solar JAM72D30-565/MB",
+    modul_anzahl: 1327,
+    wechselrichter_typ: "SMA Sunny Highpower PEAK3",
+    steuerung_typ: "Tridium JACE 9000",
+    ausrichtung: "Süd-Ost / Süd-West",
+    neigung: 12,
+    inbetriebnahme: "2022-04-19",
+    soll_ertrag_kwh: 802_000,
+    lat: 48.2047,
+    lon: 15.6256,
+  },
+  {
+    id: "ANL-0002",
+    bezeichnung: "Sägewerk Amstetten",
+    standort: "Waidhofner Straße 112",
+    plz: "3300",
+    ort: "Amstetten",
+    leistung_kwp: 1240.5,
+    wechselrichter_kw: 1150,
+    speicher_kwh: 860,
+    modul_typ: "Meyer Burger Glass 400",
+    modul_anzahl: 3101,
+    wechselrichter_typ: "Fronius Tauro ECO 100-3-P",
+    steuerung_typ: "Tridium JACE 9000",
+    ausrichtung: "Süd",
+    neigung: 15,
+    inbetriebnahme: "2023-09-07",
+    soll_ertrag_kwh: 1_352_000,
+    lat: 48.1225,
+    lon: 14.8719,
+  },
+  {
+    id: "ANL-0003",
+    bezeichnung: "Lagerhalle Krems",
+    standort: "Hafenstraße 8",
+    plz: "3500",
+    ort: "Krems an der Donau",
+    leistung_kwp: 312.4,
+    wechselrichter_kw: 290,
+    speicher_kwh: 180,
+    modul_typ: "Longi Hi-MO 5 LR5-72HPH-540",
+    modul_anzahl: 578,
+    wechselrichter_typ: "SMA Sunny Tripower CORE2",
+    steuerung_typ: "Tridium JACE 9000",
+    ausrichtung: "Ost / West",
+    neigung: 10,
+    inbetriebnahme: "2021-06-28",
+    soll_ertrag_kwh: 321_000,
+    lat: 48.4098,
+    lon: 15.6141,
+  },
+  {
+    id: "ANL-0004",
+    bezeichnung: "Bürogebäude St. Pölten",
+    standort: "Industriestraße 24, Objekt B",
+    plz: "3100",
+    ort: "St. Pölten",
+    leistung_kwp: 98.6,
+    wechselrichter_kw: 90,
+    speicher_kwh: 60,
+    modul_typ: "SunPower Maxeon 3",
+    modul_anzahl: 232,
+    wechselrichter_typ: "Fronius Symo GEN24 30.0 Plus",
+    steuerung_typ: "Fronius Datamanager",
+    ausrichtung: "Süd",
+    neigung: 30,
+    inbetriebnahme: "2020-11-12",
+    soll_ertrag_kwh: 108_000,
+    lat: 48.2051,
+    lon: 15.6262,
+  },
+  {
+    id: "ANL-0005",
+    bezeichnung: "Carport Fuhrpark Krems",
+    standort: "Hafenstraße 8, Betriebsparkplatz",
+    plz: "3500",
+    ort: "Krems an der Donau",
+    leistung_kwp: 186.3,
+    wechselrichter_kw: 170,
+    speicher_kwh: 240,
+    modul_typ: "Trina Vertex S+ TSM-NEG9R.28",
+    modul_anzahl: 414,
+    wechselrichter_typ: "Huawei SUN2000-100KTL-M2",
+    steuerung_typ: "Tridium JACE 9000",
+    ausrichtung: "Süd",
+    neigung: 8,
+    inbetriebnahme: "2024-05-23",
+    soll_ertrag_kwh: 193_000,
+    lat: 48.4101,
+    lon: 15.6138,
+  },
+];
+
+const ZAEHLPUNKTE: ZaehlpunktVorlage[] = [
+  // --- Erzeugung und Verbrauch der Steiner Holzbau GmbH ---
+  {
+    id: "ZP-0001",
+    bezeichnung: zp("200000", "3100", "100000000000012345"),
+    kundeId: KUNDE.id,
+    anlageId: "ANL-0001",
+    art: "Kombiniert",
+    plz: "3100",
+    ort: "St. Pölten",
+    adresse: "Industriestraße 24",
+    netzebene: 5,
+    anschlussleistung: 800,
+    kwp: 749.7,
+    grundlast: 62,
+    spitzenlast: 310,
+  },
+  {
+    id: "ZP-0002",
+    bezeichnung: zp("200000", "3300", "100000000000023871"),
+    kundeId: KUNDE.id,
+    anlageId: "ANL-0002",
+    art: "Kombiniert",
+    plz: "3300",
+    ort: "Amstetten",
+    adresse: "Waidhofner Straße 112",
+    netzebene: 5,
+    anschlussleistung: 1250,
+    kwp: 1240.5,
+    grundlast: 98,
+    spitzenlast: 520,
+  },
+  {
+    id: "ZP-0003",
+    bezeichnung: zp("200000", "3500", "100000000000031204"),
+    kundeId: KUNDE.id,
+    anlageId: "ANL-0003",
+    art: "Kombiniert",
+    plz: "3500",
+    ort: "Krems an der Donau",
+    adresse: "Hafenstraße 8",
+    netzebene: 6,
+    anschlussleistung: 350,
+    kwp: 312.4,
+    grundlast: 24,
+    spitzenlast: 96,
+  },
+  {
+    id: "ZP-0004",
+    bezeichnung: zp("200000", "3100", "100000000000012346"),
+    kundeId: KUNDE.id,
+    anlageId: "ANL-0004",
+    art: "Kombiniert",
+    plz: "3100",
+    ort: "St. Pölten",
+    adresse: "Industriestraße 24, Objekt B",
+    netzebene: 7,
+    anschlussleistung: 120,
+    kwp: 98.6,
+    grundlast: 9,
+    spitzenlast: 31,
+  },
+  {
+    id: "ZP-0005",
+    bezeichnung: zp("200000", "3500", "100000000000031205"),
+    kundeId: KUNDE.id,
+    anlageId: "ANL-0005",
+    art: "Kombiniert",
+    plz: "3500",
+    ort: "Krems an der Donau",
+    adresse: "Hafenstraße 8, Betriebsparkplatz",
+    netzebene: 6,
+    anschlussleistung: 200,
+    kwp: 186.3,
+    grundlast: 6,
+    spitzenlast: 48,
+  },
+
+  // --- Weitere Mitglieder der Energiegemeinschaft, reiner Verbrauch ---
+  {
+    id: "ZP-0006",
+    bezeichnung: zp("200000", "3100", "100000000000018802"),
+    kundeId: "KD-0002",
+    anlageId: null,
+    art: "Verbrauch",
+    plz: "3100",
+    ort: "St. Pölten",
+    adresse: "Industriestraße 31",
+    netzebene: 5,
+    anschlussleistung: 420,
+    kwp: 0,
+    grundlast: 48,
+    spitzenlast: 190,
+  },
+  {
+    id: "ZP-0007",
+    bezeichnung: zp("200000", "3100", "100000000000019441"),
+    kundeId: "KD-0003",
+    anlageId: null,
+    art: "Verbrauch",
+    plz: "3100",
+    ort: "St. Pölten",
+    adresse: "Industriestraße 12",
+    netzebene: 6,
+    anschlussleistung: 150,
+    kwp: 0,
+    grundlast: 14,
+    spitzenlast: 62,
+  },
+  {
+    id: "ZP-0008",
+    bezeichnung: zp("200000", "3100", "100000000000020117"),
+    kundeId: "KD-0004",
+    anlageId: null,
+    art: "Verbrauch",
+    plz: "3100",
+    ort: "St. Pölten",
+    adresse: "Bahnhofplatz 7",
+    netzebene: 7,
+    anschlussleistung: 110,
+    kwp: 0,
+    // Eine Bäckerei hat ihre Spitze frueh am Morgen - also gerade dann,
+    // wenn die Photovoltaik noch wenig liefert. Genau solche Profile
+    // machen die Aufteilungsrechnung interessant.
+    grundlast: 18,
+    spitzenlast: 54,
+  },
+  {
+    id: "ZP-0009",
+    bezeichnung: zp("200000", "3100", "100000000000021663"),
+    kundeId: "KD-0005",
+    anlageId: null,
+    art: "Verbrauch",
+    plz: "3100",
+    ort: "St. Pölten",
+    adresse: "Wiener Straße 88",
+    netzebene: 7,
+    anschlussleistung: 90,
+    kwp: 0,
+    grundlast: 8,
+    spitzenlast: 34,
+  },
+  {
+    id: "ZP-0010",
+    bezeichnung: zp("200000", "3100", "100000000000022904"),
+    kundeId: "KD-0006",
+    anlageId: null,
+    art: "Verbrauch",
+    plz: "3100",
+    ort: "St. Pölten",
+    adresse: "Bauhofstraße 3",
+    netzebene: 7,
+    anschlussleistung: 75,
+    kwp: 0,
+    grundlast: 6,
+    spitzenlast: 26,
+  },
+];
+
+/**
+ * Erzeugt den Lastgang eines Zaehlpunkts.
+ *
+ * Bezug und Einspeisung entstehen aus der Differenz von Erzeugung und
+ * Verbrauch - so, wie ein echter Zweirichtungszaehler misst. Ein
+ * Zaehlpunkt kann in derselben Viertelstunde nicht beides aufweisen.
+ */
+function* lastgangZeilen(
+  vorlage: ZaehlpunktVorlage,
+  vonTag: Date,
+  tage: number,
+): Generator<{
+  zeitpunkt: string;
+  richtung: "Bezug" | "Einspeisung";
+  wert: number;
+}> {
+  for (let versatz = 0; versatz < tage; versatz++) {
+    const tag = verschiebeTage(vonTag, versatz);
+    const schluessel = tagesSchluessel(tag);
+
+    const bewoelkung = bewoelkungAmTag(tag, vorlage.id);
+    const zufall = zufallsfolge(startwertAus(`${vorlage.id}-${schluessel}`));
+
+    // Von Mitternacht Ortszeit bis Mitternacht des Folgetags, in
+    // Schritten von 15 Minuten echter Zeit. An Umstellungstagen ergibt
+    // das 92 beziehungsweise 100 Werte - genau so, wie ein Zaehler misst.
+    const tagBeginn = new Date(tag);
+    tagBeginn.setHours(0, 0, 0, 0);
+    const tagEnde = verschiebeTage(tagBeginn, 1);
+    tagEnde.setHours(0, 0, 0, 0);
+
+    for (
+      let zeit = new Date(tagBeginn);
+      zeit < tagEnde;
+      zeit = new Date(zeit.getTime() + 15 * 60 * 1000)
+    ) {
+
+      const erzeugungKwh =
+        vorlage.kwp > 0
+          ? erzeugungKw(vorlage.kwp, zeit, zufall, bewoelkung) * 0.25
+          : 0;
+
+      const verbrauchKwh =
+        verbrauchKw(vorlage.grundlast, vorlage.spitzenlast, zeit, zufall) * 0.25;
+
+      const saldo = erzeugungKwh - verbrauchKwh;
+      const zeitpunkt = messStempel(zeit);
+
+      if (saldo > 0.0005) {
+        yield {
+          zeitpunkt,
+          richtung: "Einspeisung",
+          wert: Number(saldo.toFixed(3)),
+        };
+      } else {
+        // Auch ein Saldo von null wird geschrieben. Ein Zaehler misst
+        // in jeder Viertelstunde - eine fehlende Zeile bedeutet
+        // "keine Daten", nicht "kein Verbrauch". Die Pruefung auf
+        // Datenluecken kann beides nur unterscheiden, wenn Nullwerte
+        // tatsaechlich vorliegen.
+        yield {
+          zeitpunkt,
+          richtung: "Bezug",
+          wert: Number(Math.max(0, -saldo).toFixed(3)),
+        };
+      }
+    }
+  }
+}
+
+
+export interface BefuellErgebnis {
+  uebersprungen: boolean;
+  zaehlpunkte: number;
+  lastgangZeilen: number;
+  dauerMs: number;
+}
+
+export function befuelleDatenbank(erzwingen = false): BefuellErgebnis {
+  const start = Date.now();
+
+  if (istBefuellt() && !erzwingen) {
+    return { uebersprungen: true, zaehlpunkte: 0, lastgangZeilen: 0, dauerMs: 0 };
+  }
+
+  const heute = new Date();
+  heute.setHours(0, 0, 0, 0);
+  const beginn = verschiebeTage(heute, -TAGE_LASTGANG + 1);
+
+  let zeilen = 0;
+
+  imBlock(() => {
+    if (erzwingen) leereAlles();
+
+    // --- Kunden ---
+    schreibe(
+      `INSERT INTO kunde (id, firma, uid, firmenbuch, strasse, plz, ort,
+                          bundesland, email, telefon, branche)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      KUNDE.id,
+      KUNDE.firma,
+      KUNDE.uid,
+      KUNDE.firmenbuch,
+      KUNDE.strasse,
+      KUNDE.plz,
+      KUNDE.ort,
+      KUNDE.bundesland,
+      KUNDE.email,
+      KUNDE.telefon,
+      KUNDE.branche,
+    );
+
+    for (const mitglied of MITGLIEDER) {
+      schreibe(
+        `INSERT INTO kunde (id, firma, uid, plz, ort, bundesland, branche)
+         VALUES (?, ?, ?, '3100', 'St. Pölten', 'Niederösterreich', ?)`,
+        mitglied.id,
+        mitglied.firma,
+        mitglied.uid,
+        mitglied.branche,
+      );
+    }
+
+    // --- Anlagen ---
+    for (const anlage of ANLAGEN) {
+      schreibe(
+        `INSERT INTO anlage (id, kunde_id, bezeichnung, standort, plz, ort,
+                             bundesland, leistung_kwp, wechselrichter_kw,
+                             speicher_kwh, modul_typ, modul_anzahl,
+                             wechselrichter_typ, steuerung_typ, ausrichtung,
+                             neigung, inbetriebnahme, status, soll_ertrag_kwh,
+                             latitude, longitude)
+         VALUES (?, ?, ?, ?, ?, ?, 'Niederösterreich', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        anlage.id,
+        KUNDE.id,
+        anlage.bezeichnung,
+        anlage.standort,
+        anlage.plz,
+        anlage.ort,
+        anlage.leistung_kwp,
+        anlage.wechselrichter_kw,
+        anlage.speicher_kwh,
+        anlage.modul_typ,
+        anlage.modul_anzahl,
+        anlage.wechselrichter_typ,
+        anlage.steuerung_typ,
+        anlage.ausrichtung,
+        anlage.neigung,
+        anlage.inbetriebnahme,
+        anlage.id === "ANL-0003" ? "Wartung" : "Aktiv",
+        anlage.soll_ertrag_kwh,
+        anlage.lat,
+        anlage.lon,
+      );
+    }
+
+    // --- Zaehlpunkte ---
+    for (const vorlage of ZAEHLPUNKTE) {
+      schreibe(
+        `INSERT INTO zaehlpunkt (id, bezeichnung, kunde_id, anlage_id, art,
+                                 netzbetreiber_kz, netzebene, anschlussleistung,
+                                 adresse, plz, ort)
+         VALUES (?, ?, ?, ?, ?, '200000', ?, ?, ?, ?, ?)`,
+        vorlage.id,
+        vorlage.bezeichnung,
+        vorlage.kundeId,
+        vorlage.anlageId,
+        vorlage.art,
+        vorlage.netzebene,
+        vorlage.anschlussleistung,
+        vorlage.adresse,
+        vorlage.plz,
+        vorlage.ort,
+      );
+    }
+
+    // --- Lastgang ---
+    // Eine vorbereitete Anweisung fuer alle Zeilen: Bei mehreren
+    // hunderttausend Einfuegungen macht das den Unterschied zwischen
+    // Sekunden und Minuten.
+    const einfuegen = db().prepare(
+      `INSERT OR REPLACE INTO lastgang
+         (zaehlpunkt_id, zeitpunkt, richtung, wert_kwh, qualitaet, quelle)
+       VALUES (?, ?, ?, ?, 'Gemessen', 'EDA')`,
+    );
+
+    for (const vorlage of ZAEHLPUNKTE) {
+      for (const zeile of lastgangZeilen(vorlage, beginn, TAGE_LASTGANG)) {
+        einfuegen.run(vorlage.id, zeile.zeitpunkt, zeile.richtung, zeile.wert);
+        zeilen += 1;
+      }
+    }
+
+    befuelleGemeinschaft(beginn);
+    befuelleBetrieb();
+    befuelleBenutzer();
+  });
+
+  return {
+    uebersprungen: false,
+    zaehlpunkte: ZAEHLPUNKTE.length,
+    lastgangZeilen: zeilen,
+    dauerMs: Date.now() - start,
+  };
+}
+
+function befuelleGemeinschaft(beginn: Date): void {
+  schreibe(
+    `INSERT INTO gemeinschaft (id, bezeichnung, art, rechtsform, reichweite,
+                               netzbetreiber_kz, gegruendet_am, aufteilungsmodell, status)
+     VALUES ('EEG-0001', 'Energiegemeinschaft Industriepark St. Pölten', 'EEG',
+             'Verein', 'Lokal', '200000', '2024-03-18', 'Dynamisch', 'Aktiv')`,
+  );
+
+  /**
+   * Teilnahmen. Die Anteile gelten nur bei statischer Aufteilung; im
+   * dynamischen Modell bleiben sie ungenutzt, werden aber gepflegt,
+   * damit ein Wechsel des Modells moeglich ist.
+   *
+   * Die Zaehlpunkte in Amstetten und Krems nehmen NICHT teil: Eine
+   * lokale EEG setzt denselben Netzbereich voraus. Das ist kein Detail,
+   * sondern der haeufigste Grund, warum ein Beitritt abgelehnt wird.
+   */
+  const teilnahmen: [string, string, number, number][] = [
+    ["ZP-0001", "Beides", 34.0, 1.0],
+    ["ZP-0004", "Beides", 6.0, 1.0],
+    ["ZP-0006", "Verbraucher", 21.0, 1.0],
+    ["ZP-0007", "Verbraucher", 12.0, 1.0],
+    ["ZP-0008", "Verbraucher", 11.0, 1.0],
+    ["ZP-0009", "Verbraucher", 9.0, 0.6],
+    ["ZP-0010", "Verbraucher", 7.0, 1.0],
+  ];
+
+  const beitritt = tagesSchluessel(beginn);
+
+  let nummer = 0;
+  for (const [zaehlpunkt, rolle, anteil, faktor] of teilnahmen) {
+    nummer += 1;
+    schreibe(
+      `INSERT INTO teilnahme (id, gemeinschaft_id, zaehlpunkt_id, rolle,
+                              anteil_prozent, teilnahmefaktor, gueltig_von)
+       VALUES (?, 'EEG-0001', ?, ?, ?, ?, ?)`,
+      `TN-${String(nummer).padStart(4, "0")}`,
+      zaehlpunkt,
+      rolle,
+      anteil,
+      faktor,
+      `${beitritt}T00:00`,
+    );
+  }
+
+  // EDA-Vorgaenge: die Anmeldungen, ueber die die Teilnahmen zustande kamen.
+  nummer = 0;
+  for (const [zaehlpunkt] of teilnahmen) {
+    nummer += 1;
+    schreibe(
+      `INSERT INTO eda_prozess (id, gemeinschaft_id, zaehlpunkt_id, art, status,
+                                referenz, gesendet_am, beantwortet_am, angelegt_von)
+       VALUES (?, 'EEG-0001', ?, 'CCMI', 'Angenommen', ?,
+               datetime('now','-120 days'), datetime('now','-118 days'), 'System')`,
+      `EDA-${String(nummer).padStart(4, "0")}`,
+      zaehlpunkt,
+      `NB-2026-${String(40000 + nummer)}`,
+    );
+  }
+
+  // Ein abgelehnter Vorgang - der Regelfall bei Zaehlpunkten ausserhalb
+  // des Netzbereichs. Ohne solche Faelle wäre die Liste unrealistisch.
+  schreibe(
+    `INSERT INTO eda_prozess (id, gemeinschaft_id, zaehlpunkt_id, art, status,
+                              referenz, ablehnungsgrund, gesendet_am,
+                              beantwortet_am, angelegt_von)
+     VALUES ('EDA-0008', 'EEG-0001', 'ZP-0003', 'CCMI', 'Abgelehnt',
+             'NB-2026-40008',
+             'Zählpunkt liegt außerhalb des Netzbereichs der lokalen Erneuerbare-Energie-Gemeinschaft (abweichende Trafostation).',
+             datetime('now','-95 days'), datetime('now','-93 days'), 'System')`,
+  );
+
+  // Ein offener Vorgang - wartet auf die Zustimmung des Inhabers.
+  schreibe(
+    `INSERT INTO eda_prozess (id, gemeinschaft_id, zaehlpunkt_id, art, status,
+                              referenz, zeitraum_von, zeitraum_bis,
+                              gesendet_am, angelegt_von)
+     VALUES ('EDA-0009', 'EEG-0001', 'ZP-0002', 'CMRQ', 'Zustimmung offen',
+             'NB-2026-40009', date('now','-90 days'), date('now'),
+             datetime('now','-3 days'), 'm.hofbauer@steiner-holzbau.at')`,
+  );
+}
+
+function befuelleBetrieb(): void {
+  interface TicketVorlage {
+    id: string;
+    anlage: string;
+    betreff: string;
+    text: string;
+    status: string;
+    prio: string;
+    kategorie: string;
+    kanal: string;
+    ausfall: number | null;
+    /** Meldezeitpunkt, Stunden vor jetzt. */
+    vorStunden: number;
+    /** Erste Rückmeldung, Stunden nach der Meldung. Null: noch keine. */
+    reaktionNach: number | null;
+    /** Behebung, Stunden nach der Meldung. Null: noch offen. */
+    behobenNach: number | null;
+    techniker: string | null;
+  }
+
+  const vorlagen: TicketVorlage[] = [
+    {
+      id: "STOE-0001",
+      anlage: "ANL-0003",
+      betreff: "Wechselrichter WR 2 meldet Isolationsfehler",
+      text:
+        "Riso-Wert unter Grenzwert, Strang 3 betroffen. Vermutlich Feuchtigkeitseintritt an einer Steckverbindung nach dem Starkregen.",
+      status: "In Bearbeitung",
+      prio: "Hoch",
+      kategorie: "Wechselrichter",
+      kanal: "Automatisch",
+      ausfall: 1840,
+      vorStunden: 96,
+      reaktionNach: 3,
+      behobenNach: null,
+      techniker: "M. Hofbauer",
+    },
+    {
+      id: "STOE-0002",
+      anlage: "ANL-0002",
+      betreff: "Ertragsabweichung Strang 4",
+      text:
+        "Strang 4 liefert seit mehreren Wochen rund 22 Prozent weniger als die Vergleichsstränge. Bewuchs an der Südkante wird geprüft.",
+      status: "Offen",
+      prio: "Mittel",
+      kategorie: "Module und Stränge",
+      kanal: "Automatisch",
+      ausfall: 640,
+      // Seit Wochen bekannt: Auf die Meldung wurde zwar reagiert, die
+      // Behebungsfrist ist aber laengst abgelaufen. Genau dieser Fall
+      // fällt in einer reinen Statusliste nicht auf.
+      vorStunden: 600,
+      reaktionNach: 3,
+      behobenNach: null,
+      techniker: "M. Hofbauer",
+    },
+    {
+      id: "STOE-0003",
+      anlage: "ANL-0004",
+      betreff: "Kommunikationsabbruch Datenlogger",
+      text:
+        "Datenlogger war nach Stromausfall nicht erreichbar. Nach Neustart wieder in Betrieb, Daten wurden nachgeladen.",
+      status: "Geschlossen",
+      prio: "Niedrig",
+      kategorie: "Kommunikation",
+      kanal: "Automatisch",
+      ausfall: 0,
+      vorStunden: 384,
+      reaktionNach: 6,
+      behobenNach: 30,
+      techniker: "M. Hofbauer",
+    },
+    {
+      id: "STOE-0004",
+      anlage: "ANL-0004",
+      betreff: "Ladepunkt Büro Besucher 2 ohne Funktion",
+      text:
+        "Der Ladepunkt quittiert die Karte, startet aber keinen Ladevorgang. Fehlerbild deutet auf den Schütz hin; Ersatzteil ist bestellt.",
+      status: "Warten auf Kunde",
+      prio: "Mittel",
+      kategorie: "Ladeinfrastruktur",
+      kanal: "Telefon",
+      ausfall: null,
+      vorStunden: 120,
+      reaktionNach: 5,
+      behobenNach: null,
+      techniker: "J. Wallner",
+    },
+    {
+      id: "STOE-0005",
+      anlage: "ANL-0001",
+      betreff: "Abregelung WR 3 Südfeld häuft sich",
+      text:
+        "Das Gerät begrenzt an klaren Tagen über mehrere Stunden. Auslegung und mögliche Umverteilung auf WR 4 sollen geprüft werden.",
+      status: "Offen",
+      prio: "Niedrig",
+      kategorie: "Auslegung",
+      kanal: "Portal",
+      ausfall: 184,
+      vorStunden: 26,
+      reaktionNach: 4,
+      behobenNach: null,
+      techniker: "M. Hofbauer",
+    },
+    {
+      id: "STOE-0006",
+      anlage: "ANL-0002",
+      betreff: "Zählerstand weicht von der Netzabrechnung ab",
+      text:
+        "Die Jahresabrechnung des Netzbetreibers weist 1 240 kWh mehr Einspeisung aus als das Portal. Klärung mit dem Netzbetreiber läuft.",
+      status: "In Bearbeitung",
+      prio: "Mittel",
+      kategorie: "Abrechnung",
+      kanal: "E-Mail",
+      ausfall: null,
+      vorStunden: 200,
+      // Die Nachricht blieb ueber ein Wochenende liegen; die
+      // Reaktionsfrist von acht Arbeitsstunden war da vorbei.
+      reaktionNach: 60,
+      behobenNach: null,
+      techniker: "A. Berger",
+    },
+    {
+      id: "STOE-0007",
+      anlage: "ANL-0005",
+      betreff: "Carport 8 liefert nur halbe Ladeleistung",
+      text:
+        "Statt 22 kW stehen nur 11 kW zur Verfügung. Vermutlich ist eine Phase am Zuleitungsklemmkasten nicht aufgelegt.",
+      status: "Geschlossen",
+      prio: "Mittel",
+      kategorie: "Ladeinfrastruktur",
+      kanal: "Portal",
+      ausfall: null,
+      vorStunden: 600,
+      reaktionNach: 2,
+      behobenNach: 40,
+      techniker: "J. Wallner",
+    },
+    {
+      id: "STOE-0008",
+      anlage: "ANL-0002",
+      betreff: "Wechselrichter WR 3 Halle West ausgefallen",
+      text:
+        "Das Gerät meldete Störung und speiste einen ganzen Tag nicht ein. Nach dem Wiedereinschalten läuft es normal; die Ursache ist offen.",
+      status: "Geschlossen",
+      prio: "Kritisch",
+      kategorie: "Wechselrichter",
+      kanal: "Automatisch",
+      ausfall: 712,
+      vorStunden: 288,
+      reaktionNach: 1,
+      behobenNach: 11,
+      techniker: "M. Hofbauer",
+    },
+    {
+      id: "STOE-0009",
+      anlage: "ANL-0001",
+      betreff: "Zugang für neuen Mitarbeiter anlegen",
+      text:
+        "Für die neue Kollegin in der Betriebsführung wird ein Zugang mit Lesezugriff auf alle Anlagen benötigt.",
+      status: "Offen",
+      prio: "Niedrig",
+      kategorie: "Benutzerverwaltung",
+      kanal: "E-Mail",
+      ausfall: null,
+      vorStunden: 8,
+      reaktionNach: null,
+      behobenNach: null,
+      techniker: null,
+    },
+  ];
+
+  const jetzt = Date.now();
+  const stunde = 3600000;
+
+  for (const v of vorlagen) {
+    const gemeldet = new Date(jetzt - v.vorStunden * stunde);
+    const sla = slaFuer(v.prio);
+
+    // Die Fristen werden hier einmal gerechnet und mitgeschrieben.
+    // Wuerden sie bei jeder Anzeige neu ermittelt, verschoebe eine
+    // spätere Vertragsaenderung rückwirkend die Bewertung alter
+    // Meldungen - und ein eingehaltener Termin wäre ploetzlich keiner.
+    const reaktionBis = frist(gemeldet, sla.reaktionStunden);
+    const loesungBis = frist(gemeldet, sla.loesungStunden);
+
+    schreibe(
+      `INSERT INTO stoerung
+         (id, anlage_id, betreff, beschreibung, status, prioritaet,
+          ausfall_kwh, techniker, gemeldet_von, gemeldet_am, behoben_am,
+          nummer, kategorie, kanal, reaktion_bis, loesung_bis, reaktion_am,
+          servicezeit)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Werktags')`,
+      v.id,
+      v.anlage,
+      v.betreff,
+      v.text,
+      v.status,
+      v.prio,
+      v.ausfall,
+      v.techniker,
+      "m.hofbauer@steiner-holzbau.at",
+      gemeldet.toISOString(),
+      v.behobenNach !== null
+        ? new Date(gemeldet.getTime() + v.behobenNach * stunde).toISOString()
+        : null,
+      `SR-${gemeldet.getFullYear()}-${v.id.slice(-4)}`,
+      v.kategorie,
+      v.kanal,
+      reaktionBis.toISOString(),
+      loesungBis.toISOString(),
+      v.reaktionNach !== null
+        ? new Date(gemeldet.getTime() + v.reaktionNach * stunde).toISOString()
+        : null,
+    );
+  }
+
+  // Verlauf zur ersten Stoerung - ein Ticket ohne Verlauf ist nur eine Liste.
+  const verlauf: [string, string, number, string, string][] = [
+    [
+      "SE-0001",
+      "m.hofbauer@steiner-holzbau.at",
+      0,
+      "Fehler am Vormittag aufgetreten, Anlage hat abgeschaltet. Fehlercode 3501.",
+      "-4 days",
+    ],
+    [
+      "SE-0002",
+      "Support Team",
+      0,
+      "Danke für die Meldung. Ein Techniker prüft die Strangverkabelung vor Ort. Termin: übermorgen vormittags.",
+      "-4 days",
+    ],
+    [
+      "SE-0003",
+      "M. Hofbauer",
+      1,
+      "Riso-Messung an Strang 3 ergab 0,4 MOhm. Steckverbinder an Modul 18 zeigt Korrosion.",
+      "-1 days",
+    ],
+    [
+      "SE-0004",
+      "Support Team",
+      0,
+      "Ursache gefunden: defekter Steckverbinder. Ersatzteil ist bestellt, Austausch in der kommenden Woche.",
+      "-1 days",
+    ],
+  ];
+
+  for (const [id, verfasser, intern, text, versatz] of verlauf) {
+    schreibe(
+      `INSERT INTO stoerung_eintrag (id, stoerung_id, verfasser, intern, text, erstellt_am)
+       VALUES (?, 'STOE-0001', ?, ?, ?, datetime('now', ?))`,
+      id,
+      verfasser,
+      intern,
+      text,
+      versatz,
+    );
+  }
+
+  // Steuerwerte je Anlage.
+  const werte: [string, string, string][] = [
+    ["eigenverbrauch_ziel", "85", "Kunde"],
+    ["speicher_ladeleistung_max", "180", "Kunde"],
+    ["speicher_reserve_soc", "20", "Kunde"],
+    ["speicher_modus", "Lastspitzenkappung", "Kunde"],
+    ["boerse_aktiv", "ja", "Kunde"],
+    ["boerse_ladeschwelle", "4.5", "Kunde"],
+    ["boerse_entladeschwelle", "21", "Kunde"],
+    ["lade_lastmanagement", "Dynamisch", "Kunde"],
+    ["lade_anschlussleistung_max", "160", "Kunde"],
+    ["einspeise_wirkleistungsgrenze", "70", "Netzbetreiber"],
+    ["einspeise_parkregler_sollwert", "525", "Netzbetreiber"],
+    ["einspeise_blindleistungskennlinie", "Q(U) nach Netzzugangsvertrag", "Netzbetreiber"],
+    ["netzschutz_spannung_grenzen", "184 – 253", "Errichter"],
+    ["netzschutz_frequenz_grenzen", "47,5 – 51,5", "Errichter"],
+    ["netzschutz_abschaltzeit", "0,2", "Errichter"],
+  ];
+
+  for (const anlage of ANLAGEN) {
+    for (const [parameter, wert, quelle] of werte) {
+      schreibe(
+        `INSERT INTO steuerwert (anlage_id, parameter, wert, quelle)
+         VALUES (?, ?, ?, ?)`,
+        anlage.id,
+        parameter,
+        wert,
+        quelle,
+      );
+    }
+  }
+}
+
+function befuelleBenutzer(): void {
+  const benutzer: [string, string, string, string, string, number][] = [
+    ["BEN-0001", "m.steiner@steiner-holzbau.at", "Markus Steiner", "geschaeftsfuehrung", "+43 2742 71400-10", 1],
+    ["BEN-0002", "m.hofbauer@steiner-holzbau.at", "Michael Hofbauer", "technik", "+43 2742 71400-42", 1],
+    ["BEN-0003", "a.gruber@steiner-holzbau.at", "Andrea Gruber", "buchhaltung", "+43 2742 71400-28", 0],
+    ["BEN-0004", "t.leitner@steiner-holzbau.at", "Thomas Leitner", "fuhrpark", "+43 2742 71400-35", 1],
+  ];
+
+  for (const [id, email, name, rolle, telefon, mfa] of benutzer) {
+    schreibe(
+      `INSERT INTO benutzer (id, email, kunde_id, vollname, rolle, telefon, mfa_aktiv)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      id,
+      email,
+      KUNDE.id,
+      name,
+      rolle,
+      telefon,
+      mfa,
+    );
+  }
+}
+
+function leereAlles(): void {
+  // Reihenfolge beachtet die Fremdschluessel: Erst alles, was auf eine
+  // Anlage zeigt, dann die Anlage selbst. Der technische Bestand steht
+  // mit vorne - er haengt ueber Wechselrichter und Alarme ebenfalls an
+  // der Anlage, wird aber in einer eigenen Datei aufgebaut. Fehlt er
+  // hier, scheitert jeder Neuaufbau am Fremdschluessel.
+  for (const tabelle of [
+    "ladebeleg",
+    "ladeabrechnung",
+    "ladevorgang",
+    "ladekarte",
+    "ladetarif",
+    "ladepunkt",
+    "alarm",
+    "alarmregel",
+    "strang_messwert",
+    "wr_messwert",
+    "sensor_messwert",
+    "strang",
+    "wechselrichter",
+    "verguetung",
+    "betriebskosten",
+    "aufteilung",
+    "beleg",
+    "abrechnungslauf",
+    "eda_prozess",
+    "teilnahme",
+    "gemeinschaft",
+    "lastgang",
+    "steuerbefehl",
+    "steuerwert",
+    "stoerung_eintrag",
+    "stoerung",
+    "zaehlpunkt",
+    "anlage",
+    "benutzer",
+    "kunde",
+    "audit",
+  ]) {
+    schreibe(`DELETE FROM ${tabelle}`);
+  }
+}

@@ -1,0 +1,176 @@
+<script setup lang="ts">
+/** Tagesberichte mit Freigabeansicht und Fortschritts-Timeline (FA-074, FA-076). */
+import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
+
+import AppIcon from '@/components/AppIcon.vue'
+import LeereListe from '@/components/LeereListe.vue'
+import StatusAbzeichen from '@/components/StatusAbzeichen.vue'
+import { useDokumentenliste, type ListenZeile } from '@/composables/dokumentenliste'
+import { useUrlFilter } from '@/composables/urlfilter'
+import { baudoku } from '@/lib/api'
+import { datum, zahl } from '@/lib/format'
+import type { Tagesbericht } from '@/lib/typen'
+import { useStammdaten } from '@/stores/stammdaten'
+import { useUi } from '@/stores/ui'
+
+type Berichtszeile = Partial<Tagesbericht> &
+  Pick<Tagesbericht, 'anlage' | 'datum' | 'status' | 'bericht_typ'>
+
+type Zeile = Berichtszeile & ListenZeile
+
+const router = useRouter()
+const stammdaten = useStammdaten()
+const ui = useUi()
+
+const { zeilen, laedt, nurLokalerBestand, laden } = useDokumentenliste<Berichtszeile>({
+  doctype: 'Tagesbericht',
+  felder: [
+    'name', 'anlage', 'datum', 'bericht_typ', 'status', 'ersteller', 'supplier',
+    'fortschritt_prozent', 'personal_anzahl', 'arbeitsstunden_gesamt',
+  ],
+  orderBy: 'datum desc',
+  limit: 150,
+})
+
+const anlage = ref('')
+const status = ref('')
+
+useUrlFilter({ anlage, status })
+
+const gefiltert = computed(() =>
+  zeilen.value
+    .filter((z) => {
+      if (anlage.value && z.anlage !== anlage.value) return false
+      if (status.value && z.status !== status.value) return false
+      return true
+    })
+    .sort((a, b) => String(b.datum).localeCompare(String(a.datum))),
+)
+
+/** Verlauf des Baufortschritts je Baustelle aus den Berichten (FA-076). */
+const timeline = computed(() => {
+  if (!anlage.value) return []
+  return [...gefiltert.value]
+    .filter((z) => z.fortschritt_prozent)
+    .sort((a, b) => String(a.datum).localeCompare(String(b.datum)))
+})
+
+async function freigeben(zeile: Zeile, genehmigen: boolean) {
+  if (!zeile.name) return
+  try {
+    if (genehmigen) {
+      await baudoku.dokumentMethode('Tagesbericht', zeile.name, 'genehmigen')
+      ui.erfolg(`${zeile.name} genehmigt.`)
+    } else {
+      const grund = window.prompt('Ablehnungsgrund')
+      if (!grund) return
+      await baudoku.dokumentMethode('Tagesbericht', zeile.name, 'ablehnen', { grund })
+      ui.toast(`${zeile.name} abgelehnt.`, 'warnung')
+    }
+    await laden()
+  } catch (fehler) {
+    ui.fehler((fehler as Error).message)
+  }
+}
+
+onMounted(laden)
+</script>
+
+<template>
+  <div class="space-y-4">
+    <div class="flex flex-wrap items-center gap-2">
+      <select v-model="anlage" class="feld w-auto max-w-[240px] flex-1">
+        <option value="">Alle Baustellen</option>
+        <option v-for="a in stammdaten.anlagen" :key="a.name" :value="a.name">{{ a.anlage_name }}</option>
+      </select>
+      <select v-model="status" class="feld w-auto">
+        <option value="">Alle Status</option>
+        <option>Entwurf</option>
+        <option>Eingereicht</option>
+        <option>Genehmigt</option>
+        <option>Abgelehnt</option>
+      </select>
+      <button class="knopf-primaer px-4" @click="router.push({ name: 'tagesbericht-neu' })">
+        <AppIcon name="plus" :groesse="18" /> Neu
+      </button>
+    </div>
+
+    <!-- Fortschrittsverlauf einer Baustelle -->
+    <section v-if="timeline.length > 1" class="karte p-4">
+      <h3 class="mb-3 text-sm font-semibold">Baufortschritt</h3>
+      <div class="flex h-24 items-end gap-1">
+        <div
+          v-for="z in timeline"
+          :key="z.schluessel"
+          class="group relative flex-1 rounded-t bg-marke-500/80"
+          :style="{ height: `${Math.max(4, z.fortschritt_prozent ?? 0)}%` }"
+          :title="`${datum(z.datum)}: ${z.fortschritt_prozent} %`"
+        />
+      </div>
+      <div class="mt-1 flex justify-between text-xs text-slate-400">
+        <span>{{ datum(timeline[0].datum) }}</span>
+        <span class="font-semibold text-marke-600">
+          {{ timeline.at(-1)?.fortschritt_prozent }} % aktuell
+        </span>
+        <span>{{ datum(timeline.at(-1)!.datum) }}</span>
+      </div>
+    </section>
+
+    <p
+      v-if="nurLokalerBestand && !laedt"
+      class="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:bg-amber-900/30 dark:text-amber-200"
+    >
+      Serverliste nicht erreichbar — angezeigt werden nur die Berichte auf diesem Gerät.
+    </p>
+
+    <p v-if="laedt" class="py-8 text-center text-sm text-slate-500">Berichte werden geladen …</p>
+
+    <LeereListe
+      v-else-if="!gefiltert.length"
+      symbol="bericht"
+      titel="Kein Tagesbericht"
+      text="Dokumentieren Sie den Baufortschritt eines Tages."
+      aktion-text="Tagesbericht erstellen"
+      @aktion="router.push({ name: 'tagesbericht-neu' })"
+    />
+
+    <ul v-else class="space-y-2">
+      <li v-for="zeile in gefiltert" :key="zeile.schluessel">
+        <div class="karte flex items-center gap-3 p-3">
+          <RouterLink
+            :to="{ name: 'tagesbericht-detail', params: { lokaleId: zeile.lokale_id ?? zeile.name } }"
+            class="min-w-0 flex-1"
+          >
+            <div class="flex items-center gap-2">
+              <span class="font-semibold">{{ datum(zeile.datum) }}</span>
+              <span class="text-xs text-slate-400">{{ zeile.bericht_typ }}</span>
+              <span v-if="zeile.nurLokal" class="abzeichen bg-amber-100 text-amber-900">nur lokal</span>
+            </div>
+            <div class="truncate text-xs text-slate-500">
+              {{ stammdaten.anlage(zeile.anlage)?.anlage_name ?? zeile.anlage }}
+              <span v-if="zeile.supplier"> · {{ zeile.supplier }}</span>
+            </div>
+            <div class="text-xs text-slate-400">
+              {{ zeile.personal_anzahl ?? 0 }} Personen ·
+              {{ zahl(zeile.arbeitsstunden_gesamt, 'h') }} ·
+              Fortschritt {{ zeile.fortschritt_prozent ?? 0 }} %
+            </div>
+          </RouterLink>
+
+          <div class="flex shrink-0 flex-col items-end gap-1">
+            <StatusAbzeichen :wert="zeile.status" klein />
+            <div v-if="stammdaten.istBauleiter && zeile.status === 'Eingereicht' && zeile.name" class="flex gap-2">
+              <button class="text-xs font-semibold text-ok hover:underline" @click="freigeben(zeile, true)">
+                genehmigen
+              </button>
+              <button class="text-xs font-semibold text-fehler hover:underline" @click="freigeben(zeile, false)">
+                ablehnen
+              </button>
+            </div>
+          </div>
+        </div>
+      </li>
+    </ul>
+  </div>
+</template>

@@ -1,0 +1,440 @@
+import "server-only";
+
+import { alle, eine, imBlock, schreibe } from "../db/verbindung.ts";
+import { messStempel } from "../datum.ts";
+import {
+  bewerteVorgang,
+  fasseKarteZusammen,
+  sachbezug,
+  type Ladetarif,
+  type Vorgangsbewertung,
+} from "./tarif.ts";
+
+/**
+ * Abrechnungslauf für die Ladeinfrastruktur.
+ *
+ * Aufgebaut wie der Lauf der Energiegemeinschaft, und aus denselben
+ * Gründen: Ein Lauf entsteht als Entwurf, wird gerechnet, geprüft und
+ * erst dann festgeschrieben. Danach ist er unveränderlich. Eine
+ * Korrektur läuft über eine Stornierung und einen neuen Lauf - wer
+ * gebuchte Belege nachträglich ändert, macht die Buchhaltung
+ * unprüfbar.
+ *
+ * Ein Vorgang wird höchstens einmal abgerechnet. Das stellt nicht die
+ * Abfrage sicher, sondern der Vermerk am Vorgang selbst: Er trägt
+ * nach dem Lauf die Kennung der Abrechnung.
+ */
+
+export interface Ladelauf {
+  id: string;
+  bezeichnung: string;
+  zeitraum_von: string;
+  zeitraum_bis: string;
+  status: string;
+  anzahl_vorgaenge: number;
+  energie_kwh: number;
+  netto: number;
+  ust_betrag: number;
+  brutto: number;
+  angelegt_am: string;
+  angelegt_von: string | null;
+  festgeschrieben_am: string | null;
+}
+
+export interface LadelaufErgebnis {
+  vorgaenge: number;
+  energieKwh: number;
+  pvKwh: number;
+  netto: number;
+  ustBetrag: number;
+  brutto: number;
+  sachbezug: number;
+  belege: number;
+  /** Vorgänge ohne zugeordnete Karte - diese lassen sich nicht abrechnen. */
+  ohneKarte: number;
+}
+
+/**
+ * Kalendermonat als Zeitraumgrenzen.
+ *
+ * `bis` ist der erste Zeitpunkt des Folgemonats und damit
+ * ausschließlich - so fällt der letzte Tag vollständig hinein, ohne
+ * dass eine Sekunde fehlt oder doppelt zählt.
+ */
+export function monatsZeitraum(
+  jahr: number,
+  monat: number,
+): { von: Date; bis: Date } {
+  return {
+    von: new Date(jahr, monat - 1, 1, 0, 0, 0, 0),
+    bis: new Date(jahr, monat, 1, 0, 0, 0, 0),
+  };
+}
+
+export function ladebelegnummer(
+  jahr: number,
+  monat: number,
+  laufendeNummer: number,
+): string {
+  return `LAD-${jahr}-${String(monat).padStart(2, "0")}-${String(laufendeNummer).padStart(4, "0")}`;
+}
+
+interface VorgangsZeile {
+  id: string;
+  karte_id: string | null;
+  beginn: string;
+  ende: string | null;
+  ladeende: string | null;
+  energie_kwh: number;
+  pv_kwh: number;
+}
+
+interface KartenZeile {
+  id: string;
+  bezeichnung: string;
+  kostenstelle: string;
+  art: string;
+  sachbezug_ct_kwh: number | null;
+  tarif_id: string | null;
+}
+
+interface TarifZeile {
+  id: string;
+  bezeichnung: string;
+  ct_kwh: number;
+  ct_kwh_pv: number | null;
+  ct_minute: number;
+  blocking_ab_minute: number | null;
+  ct_minute_blocking: number;
+  blocking_hoechst_eur: number | null;
+  grundpreis_monat_eur: number;
+  ust_satz: number;
+}
+
+function alsTarif(z: TarifZeile): Ladetarif {
+  return {
+    id: z.id,
+    bezeichnung: z.bezeichnung,
+    ctKwh: z.ct_kwh,
+    ctKwhPv: z.ct_kwh_pv,
+    ctMinute: z.ct_minute,
+    blockingAbMinute: z.blocking_ab_minute,
+    ctMinuteBlocking: z.ct_minute_blocking,
+    blockingHoechstEur: z.blocking_hoechst_eur,
+    ustSatz: z.ust_satz,
+  };
+}
+
+/**
+ * Welche Belegart zu einer Kartenart gehört.
+ *
+ * Ein Firmenfahrzeug bekommt keine Rechnung - seine Kosten werden
+ * innerhalb des Unternehmens auf eine Kostenstelle umgelegt. Nur wer
+ * dem Unternehmen gegenübersteht, bekommt eine Rechnung.
+ */
+function belegart(kartenart: string): string {
+  switch (kartenart) {
+    case "Mitarbeiter":
+    case "Gast":
+    case "Fremdanbieter":
+      return "Rechnung";
+    default:
+      return "Kostenumlage";
+  }
+}
+
+/**
+ * Rechnet einen Lauf und schreibt die Belege.
+ *
+ * Alles oder nichts: Bricht die Rechnung in der Mitte ab, bleibt kein
+ * halb abgerechneter Zeitraum zurück, in dem einige Vorgänge als
+ * verrechnet gelten und andere nicht.
+ */
+export function rechneLadelauf(
+  laufId: string,
+  benutzer: string,
+): LadelaufErgebnis {
+  const lauf = holeLadelauf(laufId);
+
+  if (lauf.status === "Festgeschrieben") {
+    throw new Error(
+      `Der Lauf ${laufId} ist festgeschrieben und wird nicht neu gerechnet.`,
+    );
+  }
+
+  const karten = new Map(
+    alle<KartenZeile>(
+      `SELECT id, bezeichnung, kostenstelle, art, sachbezug_ct_kwh, tarif_id
+         FROM ladekarte`,
+    ).map((k) => [k.id, k]),
+  );
+
+  const tarife = new Map(
+    alle<TarifZeile>(
+      `SELECT id, bezeichnung, ct_kwh, ct_kwh_pv, ct_minute,
+              blocking_ab_minute, ct_minute_blocking, blocking_hoechst_eur,
+              grundpreis_monat_eur, ust_satz
+         FROM ladetarif`,
+    ).map((t) => [t.id, t]),
+  );
+
+  // Nur beendete Vorgänge, die noch keiner Abrechnung angehören oder
+  // bereits dieser hier: Ein erneut gerechneter Entwurf muss seine
+  // eigenen Vorgänge wiederfinden.
+  const vorgaenge = alle<VorgangsZeile>(
+    `SELECT id, karte_id, beginn, ende, ladeende, energie_kwh, pv_kwh
+       FROM ladevorgang
+      WHERE beginn >= ? AND beginn < ?
+        AND status = 'Beendet'
+        AND (abrechnung_id IS NULL OR abrechnung_id = ?)
+      ORDER BY beginn`,
+    lauf.zeitraum_von,
+    lauf.zeitraum_bis,
+    laufId,
+  );
+
+  // Je Karte sammeln.
+  const jeKarte = new Map<string, Vorgangsbewertung[]>();
+  let ohneKarte = 0;
+
+  for (const v of vorgaenge) {
+    if (!v.karte_id) {
+      ohneKarte += 1;
+      continue;
+    }
+
+    const karte = karten.get(v.karte_id);
+    const tarif = karte?.tarif_id ? tarife.get(karte.tarif_id) : undefined;
+    if (!karte || !tarif) {
+      ohneKarte += 1;
+      continue;
+    }
+
+    const bewertung = bewerteVorgang(
+      {
+        id: v.id,
+        beginn: new Date(v.beginn),
+        ende: v.ende ? new Date(v.ende) : null,
+        ladeende: v.ladeende ? new Date(v.ladeende) : null,
+        energieKwh: v.energie_kwh,
+        pvKwh: v.pv_kwh,
+      },
+      alsTarif(tarif),
+    );
+
+    const liste = jeKarte.get(v.karte_id) ?? [];
+    liste.push(bewertung);
+    jeKarte.set(v.karte_id, liste);
+  }
+
+  const von = new Date(lauf.zeitraum_von);
+  const jahr = von.getFullYear();
+  const monat = von.getMonth() + 1;
+
+  const ergebnis: LadelaufErgebnis = {
+    vorgaenge: 0,
+    energieKwh: 0,
+    pvKwh: 0,
+    netto: 0,
+    ustBetrag: 0,
+    brutto: 0,
+    sachbezug: 0,
+    belege: 0,
+    ohneKarte,
+  };
+
+  imBlock(() => {
+    // Ein erneut gerechneter Entwurf beginnt bei null.
+    schreibe("DELETE FROM ladebeleg WHERE abrechnung_id = ?", laufId);
+    schreibe(
+      "UPDATE ladevorgang SET abrechnung_id = NULL WHERE abrechnung_id = ?",
+      laufId,
+    );
+
+    let nummer = 0;
+
+    // Nach Kostenstelle und Karte sortiert, damit die Belegnummern
+    // einer Abrechnung derselben Ordnung folgen wie die Auswertung.
+    const sortiert = [...jeKarte.entries()].sort((a, b) => {
+      const ka = karten.get(a[0]);
+      const kb = karten.get(b[0]);
+      return (
+        (ka?.kostenstelle ?? "").localeCompare(kb?.kostenstelle ?? "", "de-AT") ||
+        (ka?.bezeichnung ?? "").localeCompare(kb?.bezeichnung ?? "", "de-AT")
+      );
+    });
+
+    for (const [karteId, bewertungen] of sortiert) {
+      const karte = karten.get(karteId);
+      const tarifZeile = karte?.tarif_id ? tarife.get(karte.tarif_id) : null;
+      if (!karte || !tarifZeile) continue;
+
+      const tarif = alsTarif(tarifZeile);
+      const zeile = fasseKarteZusammen(
+        karteId,
+        karte.kostenstelle,
+        bewertungen,
+        tarif,
+        tarifZeile.grundpreis_monat_eur,
+      );
+
+      const geldwert = sachbezug(zeile.energieKwh, karte.sachbezug_ct_kwh);
+
+      nummer += 1;
+      schreibe(
+        `INSERT INTO ladebeleg
+           (id, abrechnung_id, karte_id, nummer, kostenstelle, art,
+            anzahl_vorgaenge, energie_kwh, pv_kwh, arbeit_eur, zeit_eur,
+            blocking_eur, grundpreis_eur, netto, ust_satz, ust_betrag,
+            brutto, sachbezug_eur, status)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Offen')`,
+        `${laufId}-B${String(nummer).padStart(3, "0")}`,
+        laufId,
+        karteId,
+        ladebelegnummer(jahr, monat, nummer),
+        karte.kostenstelle,
+        belegart(karte.art),
+        zeile.anzahlVorgaenge,
+        zeile.energieKwh,
+        zeile.pvKwh,
+        zeile.arbeitEur,
+        zeile.zeitEur,
+        zeile.blockingEur,
+        zeile.grundpreisEur,
+        zeile.nettoEur,
+        zeile.ustSatz,
+        zeile.ustEur,
+        zeile.bruttoEur,
+        geldwert,
+      );
+
+      for (const b of bewertungen) {
+        schreibe(
+          "UPDATE ladevorgang SET abrechnung_id = ? WHERE id = ?",
+          laufId,
+          b.vorgangId,
+        );
+      }
+
+      ergebnis.vorgaenge += zeile.anzahlVorgaenge;
+      ergebnis.energieKwh += zeile.energieKwh;
+      ergebnis.pvKwh += zeile.pvKwh;
+      ergebnis.netto += zeile.nettoEur;
+      ergebnis.ustBetrag += zeile.ustEur;
+      ergebnis.brutto += zeile.bruttoEur;
+      ergebnis.sachbezug += geldwert;
+      ergebnis.belege += 1;
+    }
+
+    ergebnis.energieKwh = Number(ergebnis.energieKwh.toFixed(3));
+    ergebnis.pvKwh = Number(ergebnis.pvKwh.toFixed(3));
+    ergebnis.netto = Number(ergebnis.netto.toFixed(2));
+    ergebnis.ustBetrag = Number(ergebnis.ustBetrag.toFixed(2));
+    ergebnis.brutto = Number(ergebnis.brutto.toFixed(2));
+    ergebnis.sachbezug = Number(ergebnis.sachbezug.toFixed(2));
+
+    schreibe(
+      `UPDATE ladeabrechnung
+          SET anzahl_vorgaenge = ?, energie_kwh = ?, netto = ?,
+              ust_betrag = ?, brutto = ?, angelegt_von = ?
+        WHERE id = ?`,
+      ergebnis.vorgaenge,
+      ergebnis.energieKwh,
+      ergebnis.netto,
+      ergebnis.ustBetrag,
+      ergebnis.brutto,
+      benutzer,
+      laufId,
+    );
+  });
+
+  return ergebnis;
+}
+
+/** Legt einen Lauf für einen Kalendermonat an, sofern er fehlt. */
+export function legeLadelaufAn(jahr: number, monat: number): string {
+  const id = `LAD-${jahr}-${String(monat).padStart(2, "0")}`;
+  const vorhanden = eine<{ id: string }>(
+    "SELECT id FROM ladeabrechnung WHERE id = ?",
+    id,
+  );
+  if (vorhanden) return id;
+
+  const { von, bis } = monatsZeitraum(jahr, monat);
+  const monatsname = von.toLocaleDateString("de-AT", {
+    month: "long",
+    year: "numeric",
+  });
+
+  schreibe(
+    `INSERT INTO ladeabrechnung
+       (id, bezeichnung, zeitraum_von, zeitraum_bis, status)
+     VALUES (?, ?, ?, ?, 'Entwurf')`,
+    id,
+    `Ladeabrechnung ${monatsname}`,
+    messStempel(von),
+    messStempel(bis),
+  );
+
+  return id;
+}
+
+export function holeLadelauf(laufId: string): Ladelauf {
+  const lauf = eine<Ladelauf>(
+    "SELECT * FROM ladeabrechnung WHERE id = ?",
+    laufId,
+  );
+  if (!lauf) throw new Error(`Abrechnung ${laufId} ist nicht vorhanden.`);
+  return lauf;
+}
+
+export function schreibeLadelaufFest(laufId: string): void {
+  const lauf = holeLadelauf(laufId);
+
+  if (lauf.status === "Storniert") {
+    throw new Error("Ein stornierter Lauf wird nicht festgeschrieben.");
+  }
+  if (lauf.status === "Festgeschrieben") return;
+  if (lauf.anzahl_vorgaenge === 0) {
+    throw new Error(
+      "Ein Lauf ohne abgerechnete Vorgänge wird nicht festgeschrieben.",
+    );
+  }
+
+  schreibe(
+    `UPDATE ladeabrechnung
+        SET status = 'Festgeschrieben', festgeschrieben_am = datetime('now')
+      WHERE id = ?`,
+    laufId,
+  );
+}
+
+/**
+ * Storniert einen Lauf und gibt seine Vorgänge wieder frei.
+ *
+ * Die Belege bleiben erhalten und werden nur als storniert gekennzeichnet.
+ * Ein gelöschter Beleg hinterlässt eine Lücke in der Nummernfolge, und
+ * genau darauf schaut jede Prüfung zuerst.
+ */
+export function storniereLadelauf(laufId: string, grund: string): void {
+  holeLadelauf(laufId);
+
+  imBlock(() => {
+    schreibe(
+      "UPDATE ladebeleg SET status = 'Storniert' WHERE abrechnung_id = ?",
+      laufId,
+    );
+    schreibe(
+      "UPDATE ladevorgang SET abrechnung_id = NULL WHERE abrechnung_id = ?",
+      laufId,
+    );
+    schreibe(
+      `UPDATE ladeabrechnung
+          SET status = 'Storniert',
+              bezeichnung = bezeichnung || ' (storniert: ' || ? || ')'
+        WHERE id = ?`,
+      grund,
+      laufId,
+    );
+  });
+}

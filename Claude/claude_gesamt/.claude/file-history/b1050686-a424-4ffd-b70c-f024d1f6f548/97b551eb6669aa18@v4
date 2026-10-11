@@ -1,0 +1,217 @@
+import "server-only";
+
+import { DOCTYPE, createDoc, type AuditProtokoll } from "../doctypes.ts";
+import { alle, schreibe } from "../db/verbindung.ts";
+import { istDemoModus } from "../demo/modus.ts";
+import { getCurrentUser } from "../session.ts";
+
+/**
+ * Revisionssicheres Protokoll sicherheitsrelevanter Vorgaenge.
+ *
+ * Hintergrund NIS2 / NISG: Betreiber von Energieanlagen muessen
+ * nachweisen koennen, wer wann welchen Eingriff vorgenommen hat -
+ * besonders bei Fernzugriffen und Aenderungen an der Steuerung.
+ *
+ * Im Regelbetrieb landen die Eintraege in Frappe und werden dort nur
+ * angelegt, nie geaendert oder geloescht. Das Portal bietet bewusst
+ * keine Funktion zum Bearbeiten eines Protokolleintrags.
+ */
+
+export type AuditKategorie =
+  | "anmeldung"
+  | "steuerung"
+  | "fernwartung"
+  | "vollmacht"
+  | "stammdaten"
+  | "berechtigung"
+  | "abrechnung"
+  | "sicherheitsvorfall";
+
+export type AuditErgebnis = "erfolg" | "abgelehnt" | "fehler";
+
+export interface AuditEintrag {
+  kategorie: AuditKategorie;
+  aktion: string;
+  ergebnis: AuditErgebnis;
+  /** Betroffene Anlage oder Objekt, sofern zuordenbar. */
+  objekt?: string;
+  /** Alter Wert bei Aenderungen - fuer die Nachvollziehbarkeit. */
+  vorher?: string;
+  nachher?: string;
+  /** Begruendung, insbesondere bei abgelehnten Vorgaengen. */
+  begruendung?: string;
+  ip?: string;
+}
+
+/**
+ * Protokoll des Demonstrationsbetriebs.
+ *
+ * Im Demonstrationsbetrieb geht der Eintrag in die eingebettete
+ * Datenbank. Das war frueher ein Feld im Arbeitsspeicher - mit zwei
+ * Folgen, die beide gegen den Zweck eines Protokolls sprachen: Es war
+ * nach einem Neustart weg, und es stand neben den Eintraegen, die die
+ * Abrechnung direkt in die Tabelle schreibt. Zwei Protokolle
+ * nebeneinander sind kein Protokoll.
+ */
+
+/**
+ * Schreibt einen Protokolleintrag.
+ *
+ * Wirft bewusst nicht: Ein fehlgeschlagener Protokolleintrag darf den
+ * ausloesenden Vorgang nicht abbrechen. Er wird stattdessen auf der
+ * Serverkonsole vermerkt, damit der Verlust auffaellt.
+ */
+export async function protokolliere(eintrag: AuditEintrag): Promise<void> {
+  const benutzer = await getCurrentUser();
+
+  const datensatz = {
+    kategorie: eintrag.kategorie,
+    aktion: eintrag.aktion,
+    ergebnis: eintrag.ergebnis,
+    objekt: eintrag.objekt,
+    wert_vorher: eintrag.vorher,
+    wert_nachher: eintrag.nachher,
+    begruendung: eintrag.begruendung,
+    ip_adresse: eintrag.ip,
+    benutzer: benutzer?.id,
+    zeitpunkt: new Date().toISOString(),
+  };
+
+  if (istDemoModus()) {
+    try {
+      schreibe(
+        `INSERT INTO audit
+           (zeitpunkt, benutzer, kategorie, aktion, ergebnis, objekt,
+            wert_vorher, wert_nachher, begruendung, ip_adresse)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        datensatz.zeitpunkt,
+        datensatz.benutzer ?? "unbekannt",
+        datensatz.kategorie,
+        datensatz.aktion,
+        datensatz.ergebnis,
+        datensatz.objekt ?? null,
+        datensatz.wert_vorher ?? null,
+        datensatz.wert_nachher ?? null,
+        datensatz.begruendung ?? null,
+        datensatz.ip_adresse ?? null,
+      );
+    } catch (fehler) {
+      console.error(
+        "[audit] Protokolleintrag konnte nicht gespeichert werden:",
+        eintrag.kategorie,
+        eintrag.aktion,
+        fehler,
+      );
+    }
+    return;
+  }
+
+  try {
+    await createDoc(DOCTYPE.audit, datensatz);
+  } catch (error) {
+    console.error(
+      "[audit] Protokolleintrag konnte nicht gespeichert werden:",
+      eintrag.kategorie,
+      eintrag.aktion,
+      error,
+    );
+  }
+}
+
+/**
+ * Protokolleintraege, neueste zuerst.
+ *
+ * Im Demonstrationsbetrieb aus der eingebetteten Datenbank. Im
+ * Regelbetrieb steht das Protokoll in Frappe und wird dort gelesen -
+ * diese Funktion liefert dann nichts, statt eine zweite Quelle
+ * aufzumachen.
+ */
+export function protokollEintraege(grenze = 60): AuditProtokoll[] {
+  if (!istDemoModus()) return [];
+
+  return alle<{
+    id: number;
+    zeitpunkt: string;
+    benutzer: string | null;
+    kategorie: string;
+    aktion: string;
+    ergebnis: "erfolg" | "abgelehnt" | "fehler";
+    objekt: string | null;
+    wert_vorher: string | null;
+    wert_nachher: string | null;
+    begruendung: string | null;
+    ip_adresse: string | null;
+  }>(
+    `SELECT * FROM audit ORDER BY zeitpunkt DESC, id DESC LIMIT ?`,
+    grenze,
+  ).map((z) => ({
+    name: `AUD-${String(z.id).padStart(5, "0")}`,
+    zeitpunkt: z.zeitpunkt,
+    benutzer: z.benutzer ?? undefined,
+    kategorie: z.kategorie,
+    aktion: z.aktion,
+    ergebnis: z.ergebnis,
+    objekt: z.objekt ?? undefined,
+    wert_vorher: z.wert_vorher ?? undefined,
+    wert_nachher: z.wert_nachher ?? undefined,
+    begruendung: z.begruendung ?? undefined,
+    ip_adresse: z.ip_adresse ?? undefined,
+  }));
+}
+
+/**
+ * Meldefristen nach NIS2 bzw. NISG.
+ *
+ * Die Fristen laufen ab Kenntnis des Vorfalls. Das Portal rechnet sie
+ * aus und zeigt an, wie viel Zeit bleibt - zu spaet abgegebene Meldungen
+ * sind der haeufigste Verstoss.
+ */
+export const MELDEFRISTEN = [
+  {
+    schluessel: "fruehwarnung",
+    bezeichnung: "Frühwarnung",
+    stunden: 24,
+    beschreibung:
+      "Erste Meldung an die zuständige Behörde: Verdacht auf rechtswidrige Handlung, mögliche grenzüberschreitende Auswirkungen.",
+  },
+  {
+    schluessel: "meldung",
+    bezeichnung: "Vorfallsmeldung",
+    stunden: 72,
+    beschreibung:
+      "Bewertung des Vorfalls: Schweregrad, Auswirkungen, bekannte Kompromittierungsindikatoren.",
+  },
+  {
+    schluessel: "abschluss",
+    bezeichnung: "Abschlussbericht",
+    stunden: 24 * 30,
+    beschreibung:
+      "Ausführliche Beschreibung, Ursache, ergriffene Abhilfemaßnahmen und grenzüberschreitende Auswirkungen.",
+  },
+] as const;
+
+export type Meldefrist = (typeof MELDEFRISTEN)[number];
+
+export interface FristStatus {
+  frist: Meldefrist;
+  faelligkeit: Date;
+  verbleibendeStunden: number;
+  ueberfaellig: boolean;
+}
+
+/** Rechnet die Meldefristen ab dem Zeitpunkt der Kenntnisnahme aus. */
+export function berechneFristen(bekanntSeit: string | Date): FristStatus[] {
+  const start = new Date(bekanntSeit).getTime();
+
+  return MELDEFRISTEN.map((frist) => {
+    const faelligkeit = new Date(start + frist.stunden * 3600 * 1000);
+    const verbleibend = (faelligkeit.getTime() - Date.now()) / 3600000;
+
+    return {
+      frist,
+      faelligkeit,
+      verbleibendeStunden: verbleibend,
+      ueberfaellig: verbleibend < 0,
+    };
+  });
+}

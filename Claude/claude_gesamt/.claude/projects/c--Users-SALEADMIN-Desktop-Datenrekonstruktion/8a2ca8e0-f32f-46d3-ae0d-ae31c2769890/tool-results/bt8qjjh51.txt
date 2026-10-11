@@ -1,0 +1,156 @@
+| 21.04. | 22:27 | 22:27 | Innsbruck (Tankanker) | Ankerpunkt Tankkarte – keine Fahrt | 3.750,0 | 3.750,0 | 0 | 0 | BELEGT | eni ...0161 |
+| 21.04.–23.04. |  |  | Innsbruck … Innsbruck | nicht zugeordnete Fahrten – Zweck OFFEN (inkl. An-/Rückfahrt Tankorte, Lokalverkehr, Umwege) | 3.750,0 | 3.800,0 | 0 | 50,0 | OFFEN | km-Differenz Belege (ABGELEITET) |
+| 23.04. | 16:22 | 16:22 | Innsbruck (Tankanker) | Ankerpunkt Tankkarte – keine Fahrt | 3.800,0 | 3.800,0 | 0 | 0 | BELEGT | eni ...0161 |
+| 24.–28.04. | Fenster ABGELEITET |  | Hall i. T. – Ostermiething | Dienstreise Hall–Ostermiething–Hall (Dienstbesprechung), KW17 – Hinfahrt | 3.800,0 | 3.978,4 | 178,4 | 0,0 | MODELL | OSRM; Wochentest |
+| 24.–28.04. |  | Fenster ABGELEITET | Ostermiething – Hall i. T. | Dienstreise KW17 – Rückfahrt | 3.978,4 | 4.157,9 | 179,5 | 0,0 | MODELL | OSRM; Rückfahrt-Regel |
+| 23.04.–04.05. |  |  | Innsbruck … Wattens | nicht zugeordnete Fahrten – Zweck OFFEN (inkl. An-/Rückfahrt Tankorte, Lokalverkehr, Umwege) | 4.157,9 | 4.650,0 | 0 | 492,1 | OFFEN | km-Differenz Belege (ABGELEITET) |
+| 04.05. | 10:33 | 10:33 | Wattens (Tankanker) | Ankerpunkt Tankkarte – keine Fahrt | 4.650,0 | 4.650,0 | 0 | 0 | BELEGT | eni ...0161 |
+| 04.05.(ab 10:45)–05.05. | Fenster ABGELEITET |  | Hall i. T. – Ostermiething | Dienstreise Hall–Ostermiething–Hall (Dienstbesprechung), KW18 – Hinfahrt | 4.650,0 | 4.828,4 | 178,4 | 0,0 | MODELL | OSRM; Wochentest |
+| 04.05.(ab 10:45)–05.05. |  | Fenster ABGELEITET | Ostermiething – Hall i. T. | Dienstreise KW18 – Rückfahrt | 4.828,4 | 5.007,9 | 179,5 | 0,0 | MODELL | OSRM; Rückfahrt-Regel |
+| 04.05.–08.05. |  |  | Wattens … Brixlegg | nicht zugeordnete Fahrten – Zweck OFFEN (inkl. An-/Rückfahrt Tankorte, Lokalverkehr, Umwege) | 5.007,9 | 5.270,0 | 0 | 262,1 | OFFEN | km-Differenz Belege (ABGELEITET) |
+| 08.05. | 09:18 | 09:18 | Brixlegg (Tankanker) | Ankerpunkt Tankkarte – keine Fahrt | 5.270,0 | 5.270,0 | 0 | 0 | BELEGT | eni ...0161 |
+| 09.–12.05. | Fenster ABGELEITET |  | Hall i. T. – Ostermiething | Dienstreise Hall–Ostermiething–Hall (Dienstbesprechung), KW19 – Hinfahrt | 5.270,0 | 5.448,4 | 178,4 | 0,0 | MODELL | OSRM; Wochentest |
+| 09.–12.05. |  | Fenster ABGELEITET | Ostermiething – Hall i. T. | Dienstreise KW19 – Rückfahrt | 5.448,4 | 5.627,9 | 179,5 | 0,0 | MODELL | OSRM; Rückfahrt-Regel |
+| 08.05.–12.05. |  |  | Brixlegg … Wattens | nicht zugeordnete Fahrten – Zweck OFFEN (inkl. An-/Rückfahrt Tankorte, Lokalverkehr, Umwege) | 5.627,9 | 6.100,0 | 0 | 472,1 | OFFEN | km-Differenz Belege (ABGELEITET) |
+| 12.05. | 20:21 | 20:21 | Wattens (Tankanker) | Ankerpunkt Tankkarte – keine Fahrt | 6.100,0 | 6.100,0 | 0 | 0 | BELEGT | eni ...0161 |
+| 15.–17.05./19.05. | Fenster ABGELEITET |  | Hall i. T. – Ostermiething | Dienstreise Hall–Ostermiething–Hall (Dienstbesprechung), KW20 – Hinfahrt | 6.100,0 | 6.278,4 | 178,4 | 0,0 | MODELL | OSRM; Wochentest |
+| 15.–17.05./19.05. |  | Fenster ABGELEITET | Ostermiething – Hall i. T. | Dienstreise KW20 – Rückfahrt | 6.278,4 | 6.457,9 | 179,5 | 0,0 | MODELL | OSRM; Rückfahrt-Regel |
+| 22.–26.05. | Fenster ABGELEITET |  | Hall i. T. – Ostermiething | Dienstreise Hall–Ostermiething–Hall (Dienstbesprechung), KW21 – Hinfahrt | 6.457,9 | 6.636,3 | 178,4 | 0,0 | MODELL | OSRM; Wochentest |
+| 22.–26.05. |  | Fenster ABGELEITET | Ostermiething – Hall i. T. | Dienstreise KW21 – Rückfahrt | 6.636,3 | 6.815,8 | 179,5 | 0,0 | MODELL | OSRM; Rückfahrt-Regel |
+| 12.05.–28.05. |  |  | Wattens … Hall | nicht zugeordnete Fahrten – Zweck OFFEN (inkl. An-/Rückfahrt Tankorte, Lokalverkehr, Umwege) | 6.815,8 | 7.000,0 | 0 | 184,2 | OFFEN | km-Differenz Belege (ABGELEITET) |
+| 28.05. | 12:34 | 12:34 | Hall (Tankanker) | Ankerpunkt Tankkarte – keine Fahrt | 7.000,0 | 7.000,0 | 0 | 0 | BELEGT | eni ...0161 |
+| 30.05.–02.06. | Fenster ABGELEITET |  | Hall i. T. – Ostermiething | Dienstreise Hall–Ostermiething–Hall (Dienstbesprechung), KW22 – Hinfahrt | 7.000,0 | 7.178,4 | 178,4 | 0,0 | MODELL | OSRM; Wochentest |
+| 30.05.–02.06. |  | Fenster ABGELEITET | Ostermiething – Hall i. T. | Dienstreise KW22 – Rückfahrt | 7.178,4 | 7.357,9 | 179,5 | 0,0 | MODELL | OSRM; Rückfahrt-Regel |
+| 28.05.–06.06. |  |  | Hall … Hall | nicht zugeordnete Fahrten – Zweck OFFEN (inkl. An-/Rückfahrt Tankorte, Lokalverkehr, Umwege) | 7.357,9 | 7.900,0 | 0 | 542,1 | OFFEN | km-Differenz Belege (ABGELEITET) |
+| 06.06. | 18:15 | 18:15 | Hall (Tankanker) | Ankerpunkt Tankkarte – keine Fahrt | 7.900,0 | 7.900,0 | 0 | 0 | BELEGT | eni ...0161 |
+| 07.06. | ca. 08:30−21 min (ABGELEITET) |  | Hall i. T. – Maut Schönberg 08:30 – Brenner | betrieblich – Vertriebsmeeting M. Ultmar (ANGABE, Nachweis ausstehend) – Hinfahrt | 7.900,0 | 7.946,5 | 46,5 | 0,0 | ANGABE | Maut-Beleg; OSRM |
+| 07.06. |  | ca. 11:39+21 min (ABGELEITET) | Brenner – Maut Schönberg 11:39 – Hall i. T. | Vertriebsmeeting M. Ultmar – Rückfahrt (ANGABE) | 7.946,5 | 7.989,6 | 43,1 | 0,0 | ANGABE | Maut-Beleg; OSRM; Rückfahrt-Regel |
+| 09.06. | Fenster ABGELEITET |  | Hall i. T. – Ostermiething | Dienstreise Hall–Ostermiething–Hall (Dienstbesprechung), KW23 – Hinfahrt | 7.989,6 | 8.168,0 | 178,4 | 0,0 | MODELL | OSRM; Wochentest |
+| 09.06. |  | Fenster ABGELEITET | Ostermiething – Hall i. T. | Dienstreise KW23 – Rückfahrt | 8.168,0 | 8.347,5 | 179,5 | 0,0 | MODELL | OSRM; Rückfahrt-Regel |
+| 12.06.(vor 21:31) | Fenster ABGELEITET |  | Hall i. T. – Ostermiething | Dienstreise Hall–Ostermiething–Hall (Dienstbesprechung), KW24 – Hinfahrt | 8.347,5 | 8.525,9 | 178,4 | 0,0 | MODELL | OSRM; Wochentest |
+| 12.06.(vor 21:31) |  | Fenster ABGELEITET | Ostermiething – Hall i. T. | Dienstreise KW24 – Rückfahrt | 8.525,9 | 8.705,4 | 179,5 | 0,0 | MODELL | OSRM; Rückfahrt-Regel |
+| 06.06.–12.06. |  |  | Hall … Hall | nicht zugeordnete Fahrten – Zweck OFFEN (inkl. An-/Rückfahrt Tankorte, Lokalverkehr, Umwege) | 8.705,4 | 9.350,0 | 0 | 644,6 | OFFEN | km-Differenz Belege (ABGELEITET) |
+| 12.06. | 21:31 | 21:31 | Hall (Tankanker) | Ankerpunkt Tankkarte – keine Fahrt | 9.350,0 | 9.350,0 | 0 | 0 | BELEGT | eni ...0161 |
+| 19.–21.06. | Fenster ABGELEITET |  | Hall i. T. – Ostermiething | Dienstreise Hall–Ostermiething–Hall (Dienstbesprechung), KW25 – Hinfahrt | 9.350,0 | 9.528,4 | 178,4 | 0,0 | MODELL | OSRM; Wochentest |
+| 19.–21.06. |  | Fenster ABGELEITET | Ostermiething – Hall i. T. | Dienstreise KW25 – Rückfahrt | 9.528,4 | 9.707,9 | 179,5 | 0,0 | MODELL | OSRM; Rückfahrt-Regel |
+| 12.06.–21.06. |  |  | Hall … Hall | nicht zugeordnete Fahrten – Zweck OFFEN (inkl. An-/Rückfahrt Tankorte, Lokalverkehr, Umwege) | 9.707,9 | 10.200,0 | 0 | 492,1 | OFFEN | km-Differenz Belege (ABGELEITET) |
+| 21.06. | 17:06 | 17:06 | Hall (Tankanker) | Ankerpunkt Tankkarte – keine Fahrt | 10.200,0 | 10.200,0 | 0 | 0 | BELEGT | eni ...0161 |
+| 21.06.–22.06. |  |  | Hall … Innsbruck | nicht zugeordnete Fahrten – Zweck OFFEN (inkl. An-/Rückfahrt Tankorte, Lokalverkehr, Umwege); Abschnitt 21.06.–22.06.: 300 km in 27 h | 10.200,0 | 10.500,0 | 0 | 300,0 | OFFEN | km-Differenz Belege (ABGELEITET) |
+| 22.06. | 20:26 | 20:26 | Innsbruck (Tankanker) | Ankerpunkt Tankkarte – keine Fahrt | 10.500,0 | 10.500,0 | 0 | 0 | BELEGT | eni ...0161 |
+| 26.–30.06. | Fenster ABGELEITET |  | Hall i. T. – Ostermiething | Dienstreise Hall–Ostermiething–Hall (Dienstbesprechung), KW26 – Hinfahrt | 10.500,0 | 10.678,4 | 178,4 | 0,0 | MODELL | OSRM; Wochentest |
+| 26.–30.06. |  | Fenster ABGELEITET | Ostermiething – Hall i. T. | Dienstreise KW26 – Rückfahrt | 10.678,4 | 10.857,9 | 179,5 | 0,0 | MODELL | OSRM; Rückfahrt-Regel |
+| 22.06.–01.07. |  |  | Innsbruck … Hall | nicht zugeordnete Fahrten – Zweck OFFEN (inkl. An-/Rückfahrt Tankorte, Lokalverkehr, Umwege) | 10.857,9 | 11.000,0 | 0 | 142,1 | OFFEN | km-Differenz Belege (ABGELEITET) |
+| 01.07. | 20:28 | 20:28 | Hall (Tankanker) | Ankerpunkt Tankkarte – keine Fahrt | 11.000,0 | 11.000,0 | 0 | 0 | BELEGT | eni ...0161 |
+| 03.–07.07. | Fenster ABGELEITET |  | Hall i. T. – Ostermiething | Dienstreise Hall–Ostermiething–Hall (Dienstbesprechung), KW27 – Hinfahrt | 11.000,0 | 11.178,4 | 178,4 | 0,0 | MODELL | OSRM; Wochentest |
+| 03.–07.07. |  | Fenster ABGELEITET | Ostermiething – Hall i. T. | Dienstreise KW27 – Rückfahrt | 11.178,4 | 11.357,9 | 179,5 | 0,0 | MODELL | OSRM; Rückfahrt-Regel |
+| 01.07.–10.07. |  |  | Hall … Hall | nicht zugeordnete Fahrten – Zweck OFFEN (inkl. An-/Rückfahrt Tankorte, Lokalverkehr, Umwege) | 11.357,9 | 11.850,0 | 0 | 492,1 | OFFEN | km-Differenz Belege (ABGELEITET) |
+| 10.07. | 22:21 | 22:21 | Hall (Tankanker) | Ankerpunkt Tankkarte – keine Fahrt | 11.850,0 | 11.850,0 | 0 | 0 | BELEGT | eni ...0161 |
+| 11.–14.07. | Fenster ABGELEITET |  | Hall i. T. – Ostermiething | Dienstreise Hall–Ostermiething–Hall (Dienstbesprechung), KW28 – Hinfahrt | 11.850,0 | 12.028,4 | 178,4 | 0,0 | MODELL | OSRM; Wochentest |
+| 11.–14.07. |  | Fenster ABGELEITET | Ostermiething – Hall i. T. | Dienstreise KW28 – Rückfahrt | 12.028,4 | 12.207,9 | 179,5 | 0,0 | MODELL | OSRM; Rückfahrt-Regel |
+| 17.07. | Fenster ABGELEITET |  | Hall i. T. – Ostermiething | Dienstreise KW29 – Hinfahrt | 12.207,9 | 12.386,3 | 178,4 | 0,0 | MODELL | OSRM; Wochentest |
+| 17.07. | ab Ostermiething spät. ca. 13:19 (ABGELEITET) | 14:44 | Ostermiething – Kiefersfelden (Tankung 14:44) | Dienstreise KW29 – Rückfahrt Teil 1 (über A93) | 12.386,3 | 12.497,2 | 110,9 | 0,0 | MODELL | ER_13157925 S.2; OSRM |
+| 10.07.–17.07. |  |  | Hall … Kiefersfelden | nicht zugeordnete Fahrten – Zweck OFFEN (inkl. An-/Rückfahrt Tankorte, Lokalverkehr, Umwege) | 12.497,2 | 12.830,0 | 0 | 332,8 | OFFEN | km-Differenz Belege (ABGELEITET) |
+| 17.07. | 14:44 | 14:44 | Kiefersfelden (Tankanker) | Ankerpunkt Tankkarte – keine Fahrt | 12.830,0 | 12.830,0 | 0 | 0 | BELEGT | eni ...0161 |
+| 17.07. | 14:44 | ca. 15:45 (ABGELEITET) | Kiefersfelden – Hall i. T. | Dienstreise KW29 – Rückfahrt Teil 2 (Umweg 3,8 km OFFEN) | 12.830,0 | 12.902,4 | 68,6 | 3,8 | MODELL | OSRM |
+| 17.07.–21.07. |  |  | Kiefersfelden … Hall | nicht zugeordnete Fahrten – Zweck OFFEN (inkl. An-/Rückfahrt Tankorte, Lokalverkehr, Umwege) | 12.902,4 | 13.000,0 | 0 | 97,6 | OFFEN | km-Differenz Belege (ABGELEITET) |
+| 21.07. | 13:08 | 13:08 | Hall (Tankanker) | Ankerpunkt Tankkarte – keine Fahrt | 13.000,0 | 13.000,0 | 0 | 0 | BELEGT | eni ...0161 |
+| 23.07.(So) | ca. 13:08−21 min (ABGELEITET) |  | Hall i. T. – Maut Schönberg 13:08 – Brenner | Fahrt Richtung Brenner – Angabe Vertriebsmeeting WIDERSPRUCH (Sonntag); Zweck OFFEN – Hinfahrt | 13.000,0 | 13.046,5 | 0,0 | 46,5 | ANGABE/WIDERSPRUCH | Maut-Beleg; OSRM |
+| 23.07.(So) |  | ca. 16:08+21 min (ABGELEITET) | Brenner – Maut Schönberg 16:08 – Hall i. T. | Rückfahrt – Zweck OFFEN | 13.046,5 | 13.089,6 | 0,0 | 43,1 | ANGABE/WIDERSPRUCH | Maut-Beleg; OSRM; Rückfahrt-Regel |
+| 24.–26.07. | Fenster ABGELEITET |  | Hall i. T. – Ostermiething | Dienstreise Hall–Ostermiething–Hall (Dienstbesprechung), KW30 – Hinfahrt | 13.089,6 | 13.268,0 | 178,4 | 0,0 | MODELL | OSRM; Wochentest |
+| 24.–26.07. |  | Fenster ABGELEITET | Ostermiething – Hall i. T. | Dienstreise KW30 – Rückfahrt | 13.268,0 | 13.447,5 | 179,5 | 0,0 | MODELL | OSRM; Rückfahrt-Regel |
+| 21.07.–27.07. |  |  | Hall … Brixlegg | nicht zugeordnete Fahrten – Zweck OFFEN (inkl. An-/Rückfahrt Tankorte, Lokalverkehr, Umwege) | 13.447,5 | 13.800,0 | 0 | 352,5 | OFFEN | km-Differenz Belege (ABGELEITET) |
+| 27.07. | 09:55 | 09:55 | Brixlegg (Tankanker) | Ankerpunkt Tankkarte – keine Fahrt | 13.800,0 | 13.800,0 | 0 | 0 | BELEGT | eni ...0161 |
+| 31.07.–01.08.(vor 19:27) | Fenster ABGELEITET |  | Hall i. T. – Ostermiething | Dienstreise Hall–Ostermiething–Hall (Dienstbesprechung), KW31 – Hinfahrt | 13.800,0 | 13.978,4 | 178,4 | 0,0 | MODELL | OSRM; Wochentest |
+| 31.07.–01.08.(vor 19:27) |  | Fenster ABGELEITET | Ostermiething – Hall i. T. | Dienstreise KW31 – Rückfahrt | 13.978,4 | 14.157,9 | 179,5 | 0,0 | MODELL | OSRM; Rückfahrt-Regel |
+| 27.07.–01.08. |  |  | Brixlegg … Hall | nicht zugeordnete Fahrten – Zweck OFFEN (inkl. An-/Rückfahrt Tankorte, Lokalverkehr, Umwege) | 14.157,9 | 14.550,0 | 0 | 392,1 | OFFEN | km-Differenz Belege (ABGELEITET) |
+| 01.08. | 19:27 | 19:27 | Hall (Tankanker) | Ankerpunkt Tankkarte – keine Fahrt | 14.550,0 | 14.550,0 | 0 | 0 | BELEGT | eni ...0161 |
+| 07.–11.08. | Fenster ABGELEITET |  | Hall i. T. – Ostermiething | Dienstreise Hall–Ostermiething–Hall (Dienstbesprechung), KW32 – Hinfahrt | 14.550,0 | 14.728,4 | 178,4 | 0,0 | MODELL | OSRM; Wochentest |
+| 07.–11.08. |  | Fenster ABGELEITET | Ostermiething – Hall i. T. | Dienstreise KW32 – Rückfahrt | 14.728,4 | 14.907,9 | 179,5 | 0,0 | MODELL | OSRM; Rückfahrt-Regel |
+| 14./16.–18.08. | Fenster ABGELEITET |  | Hall i. T. – Ostermiething | Dienstreise Hall–Ostermiething–Hall (Dienstbesprechung), KW33 – Hinfahrt | 14.907,9 | 15.086,3 | 178,4 | 0,0 | MODELL | OSRM; Wochentest |
+| 14./16.–18.08. |  | Fenster ABGELEITET | Ostermiething – Hall i. T. | Dienstreise KW33 – Rückfahrt | 15.086,3 | 15.265,8 | 179,5 | 0,0 | MODELL | OSRM; Rückfahrt-Regel |
+| 01.08.–20.08. |  |  | Hall … Hall | nicht zugeordnete Fahrten – Zweck OFFEN (inkl. An-/Rückfahrt Tankorte, Lokalverkehr, Umwege); Verbrauchs-Ausreißer: 3.750 km bei 43,72 l Kartenbetankung – Fremdbetankung OFFEN | 15.265,8 | 18.300,0 | 0 | 3.034,2 | OFFEN | km-Differenz Belege (ABGELEITET) |
+| 20.08. | 16:26 | 16:26 | Hall (Tankanker) | Ankerpunkt Tankkarte – keine Fahrt | 18.300,0 | 18.300,0 | 0 | 0 | BELEGT | eni ...0161 |
+| 21.–25.08. | Fenster ABGELEITET |  | Hall i. T. – Ostermiething | Dienstreise Hall–Ostermiething–Hall (Dienstbesprechung), KW34 – Hinfahrt | 18.300,0 | 18.478,4 | 178,4 | 0,0 | MODELL | OSRM; Wochentest |
+| 21.–25.08. |  | Fenster ABGELEITET | Ostermiething – Hall i. T. | Dienstreise KW34 – Rückfahrt | 18.478,4 | 18.657,9 | 179,5 | 0,0 | MODELL | OSRM; Rückfahrt-Regel |
+| 28.08.(Rückkehr vor 17:55) | Fenster ABGELEITET |  | Hall i. T. – Ostermiething | Dienstreise Hall–Ostermiething–Hall (Dienstbesprechung), KW35 – Hinfahrt | 18.657,9 | 18.836,3 | 178,4 | 0,0 | MODELL | OSRM; Wochentest |
+| 28.08.(Rückkehr vor 17:55) |  | Fenster ABGELEITET | Ostermiething – Hall i. T. | Dienstreise KW35 – Rückfahrt | 18.836,3 | 19.015,8 | 179,5 | 0,0 | MODELL | OSRM; Rückfahrt-Regel |
+| 20.08.–28.08. |  |  | Hall … Hall | nicht zugeordnete Fahrten – Zweck OFFEN (inkl. An-/Rückfahrt Tankorte, Lokalverkehr, Umwege) | 19.015,8 | 19.300,0 | 0 | 284,2 | OFFEN | km-Differenz Belege (ABGELEITET) |
+| 28.08. | 17:55 | 17:55 | Hall (Tankanker) | Ankerpunkt Tankkarte – keine Fahrt | 19.300,0 | 19.300,0 | 0 | 0 | BELEGT | eni ...0161 |
+| 04.–06.09. | Fenster ABGELEITET |  | Hall i. T. – Ostermiething | Dienstreise Hall–Ostermiething–Hall (Dienstbesprechung), KW36 – Hinfahrt | 19.300,0 | 19.478,4 | 178,4 | 0,0 | MODELL | OSRM; Wochentest |
+| 04.–06.09. |  | Fenster ABGELEITET | Ostermiething – Hall i. T. | Dienstreise KW36 – Rückfahrt | 19.478,4 | 19.657,9 | 179,5 | 0,0 | MODELL | OSRM; Rückfahrt-Regel |
+| 28.08.–07.09. |  |  | Hall … Hall | nicht zugeordnete Fahrten – Zweck OFFEN (inkl. An-/Rückfahrt Tankorte, Lokalverkehr, Umwege) | 19.657,9 | 19.900,0 | 0 | 242,1 | OFFEN | km-Differenz Belege (ABGELEITET) |
+| 07.09. | 08:12 | 08:12 | Hall (Tankanker) | Ankerpunkt Tankkarte – keine Fahrt | 19.900,0 | 19.900,0 | 0 | 0 | BELEGT | eni ...0161 |
+| 07.09.–08.09. |  |  | Hall … Hall | nicht zugeordnete Fahrten – Zweck OFFEN (inkl. An-/Rückfahrt Tankorte, Lokalverkehr, Umwege); Abschnitt 07.09. 08:12–08.09. 11:35: 400 km in 27 h | 19.900,0 | 20.300,0 | 0 | 400,0 | OFFEN | km-Differenz Belege (ABGELEITET) |
+| 08.09. | 11:35 | 11:35 | Hall (Tankanker) | Ankerpunkt Tankkarte – keine Fahrt | 20.300,0 | 20.300,0 | 0 | 0 | BELEGT | eni ...0161 |
+| 12.09. | Fenster ABGELEITET (ca. 07:30) |  | Hall i. T. – Ostermiething | Dienstreise KW37 – Hinfahrt | 20.300,0 | 20.478,4 | 178,4 | 0,0 | MODELL | OSRM; Wochentest |
+| 12.09. | ab Ostermiething ca. 14:25 (ABGELEITET) | 16:05 | Ostermiething – Lofer – Saalfelden (Tankung 16:05) | Dienstreise KW37 – Rückfahrt Teil 1 (Rundreise) | 20.478,4 | 20.574,9 | 96,5 | 0,0 | MODELL | ER_00038053 S.3; OSRM |
+| 08.09.–12.09. |  |  | Hall … Saalfelden | nicht zugeordnete Fahrten – Zweck OFFEN (inkl. An-/Rückfahrt Tankorte, Lokalverkehr, Umwege) | 20.574,9 | 20.650,0 | 0 | 75,1 | OFFEN | km-Differenz Belege (ABGELEITET) |
+| 12.09. | 16:05 | 16:05 | Saalfelden (Tankanker) | Ankerpunkt Tankkarte – keine Fahrt | 20.650,0 | 20.650,0 | 0 | 0 | BELEGT | eni ...0161 |
+| 12.09. | 16:05 | ca. 18:00 (ABGELEITET) | Saalfelden – Hall i. T. | Dienstreise KW37 – Rückfahrt Teil 2 (Umweg 36,7 km OFFEN) | 20.650,0 | 20.769,7 | 83,0 | 36,7 | MODELL | OSRM |
+| 14.09. | ca. 07:57−21 min (ABGELEITET) |  | Hall i. T. – Maut Schönberg 07:57 – Brenner | betrieblich – Vertriebsmeeting M. Ultmar (ANGABE, Nachweis ausstehend) – Hinfahrt | 20.769,7 | 20.816,2 | 46,5 | 0,0 | ANGABE | Maut-Beleg; OSRM |
+| 14.09. |  | ca. 09:36+21 min (ABGELEITET) | Brenner – Maut Schönberg 09:36 – Hall i. T. | Vertriebsmeeting M. Ultmar – Rückfahrt (ANGABE) | 20.816,2 | 20.859,3 | 43,1 | 0,0 | ANGABE | Maut-Beleg; OSRM; Rückfahrt-Regel |
+| 12.09.–16.09. |  |  | Saalfelden … Hall | nicht zugeordnete Fahrten – Zweck OFFEN (inkl. An-/Rückfahrt Tankorte, Lokalverkehr, Umwege) | 20.859,3 | 21.100,0 | 0 | 240,7 | OFFEN | km-Differenz Belege (ABGELEITET) |
+| 16.09. | 15:41 | 15:41 | Hall (Tankanker) | Ankerpunkt Tankkarte – keine Fahrt | 21.100,0 | 21.100,0 | 0 | 0 | BELEGT | eni ...0161 |
+| 16.09.–21.09. |  |  | Hall … Innsbruck | nicht zugeordnete Fahrten – Zweck OFFEN (inkl. An-/Rückfahrt Tankorte, Lokalverkehr, Umwege) | 21.100,0 | 21.300,0 | 0 | 200,0 | OFFEN | km-Differenz Belege (ABGELEITET) |
+| 21.09. | 09:31 | 09:31 | Innsbruck (Tankanker) | Ankerpunkt Tankkarte – keine Fahrt | 21.300,0 | 21.300,0 | 0 | 0 | BELEGT | eni ...0161 |
+| 21.09.(ab 09:45)–22.09. | Fenster ABGELEITET |  | Hall i. T. – Ostermiething | Dienstreise Hall–Ostermiething–Hall (Dienstbesprechung), KW38 – Hinfahrt | 21.300,0 | 21.478,4 | 178,4 | 0,0 | MODELL | OSRM; Wochentest |
+| 21.09.(ab 09:45)–22.09. |  | Fenster ABGELEITET | Ostermiething – Hall i. T. | Dienstreise KW38 – Rückfahrt | 21.478,4 | 21.657,9 | 179,5 | 0,0 | MODELL | OSRM; Rückfahrt-Regel |
+| 25.–28.09. | Fenster ABGELEITET |  | Hall i. T. – Ostermiething | Dienstreise Hall–Ostermiething–Hall (Dienstbesprechung), KW39 – Hinfahrt | 21.657,9 | 21.836,3 | 178,4 | 0,0 | MODELL | OSRM; Wochentest |
+| 25.–28.09. |  | Fenster ABGELEITET | Ostermiething – Hall i. T. | Dienstreise KW39 – Rückfahrt | 21.836,3 | 22.015,8 | 179,5 | 0,0 | MODELL | OSRM; Rückfahrt-Regel |
+| 21.09.–28.09. |  |  | Innsbruck … Hall | nicht zugeordnete Fahrten – Zweck OFFEN (inkl. An-/Rückfahrt Tankorte, Lokalverkehr, Umwege) | 22.015,8 | 22.240,0 | 0 | 224,2 | OFFEN | km-Differenz Belege (ABGELEITET) |
+| 28.09. | 18:06 | 18:06 | Hall (Tankanker) | Ankerpunkt Tankkarte – keine Fahrt | 22.240,0 | 22.240,0 | 0 | 0 | BELEGT | eni ...0161 |
+| 02.–05.10. | Fenster ABGELEITET |  | Hall i. T. – Ostermiething | Dienstreise Hall–Ostermiething–Hall (Dienstbesprechung), KW40 – Hinfahrt | 22.240,0 | 22.418,4 | 178,4 | 0,0 | MODELL | OSRM; Wochentest |
+| 02.–05.10. |  | Fenster ABGELEITET | Ostermiething – Hall i. T. | Dienstreise KW40 – Rückfahrt | 22.418,4 | 22.597,9 | 179,5 | 0,0 | MODELL | OSRM; Rückfahrt-Regel |
+| 28.09.–06.10. |  |  | Hall … Hall | nicht zugeordnete Fahrten – Zweck OFFEN (inkl. An-/Rückfahrt Tankorte, Lokalverkehr, Umwege) | 22.597,9 | 23.000,0 | 0 | 402,1 | OFFEN | km-Differenz Belege (ABGELEITET) |
+| 06.10. | 17:09 | 17:09 | Hall (Tankanker) | Ankerpunkt Tankkarte – keine Fahrt | 23.000,0 | 23.000,0 | 0 | 0 | BELEGT | eni ...0161 |
+| 09.–13.10. | Fenster ABGELEITET |  | Hall i. T. – Ostermiething | Dienstreise Hall–Ostermiething–Hall (Dienstbesprechung), KW41 – Hinfahrt | 23.000,0 | 23.178,4 | 178,4 | 0,0 | MODELL | OSRM; Wochentest |
+| 09.–13.10. |  | Fenster ABGELEITET | Ostermiething – Hall i. T. | Dienstreise KW41 – Rückfahrt | 23.178,4 | 23.357,9 | 179,5 | 0,0 | MODELL | OSRM; Rückfahrt-Regel |
+| 16.–20.10. | Fenster ABGELEITET |  | Hall i. T. – Ostermiething | Dienstreise Hall–Ostermiething–Hall (Dienstbesprechung), KW42 – Hinfahrt | 23.357,9 | 23.536,3 | 178,4 | 0,0 | MODELL | OSRM; Wochentest |
+| 16.–20.10. |  | Fenster ABGELEITET | Ostermiething – Hall i. T. | Dienstreise KW42 – Rückfahrt | 23.536,3 | 23.715,8 | 179,5 | 0,0 | MODELL | OSRM; Rückfahrt-Regel |
+| 06.10.–21.10. |  |  | Hall … Hall | nicht zugeordnete Fahrten – Zweck OFFEN (inkl. An-/Rückfahrt Tankorte, Lokalverkehr, Umwege) | 23.715,8 | 23.850,0 | 0 | 134,2 | OFFEN | km-Differenz Belege (ABGELEITET) |
+| 21.10. | 11:54 | 11:54 | Hall (Tankanker) | Ankerpunkt Tankkarte – keine Fahrt | 23.850,0 | 23.850,0 | 0 | 0 | BELEGT | eni ...0161 |
+| 21.10.–23.10. |  |  | Hall … Hall | nicht zugeordnete Fahrten – Zweck OFFEN (inkl. An-/Rückfahrt Tankorte, Lokalverkehr, Umwege); WIDERSPRUCH: Arlberg-Maut 23.10. (09:18/13:22) erfordert mind. 238 km (Hall–Langen–Hall), Anker zeigen nur 150 km; Lochau (396,4 km) rechnerisch ausgeschlossen | 23.850,0 | 24.000,0 | 0 | 150,0 | OFFEN | km-Differenz Belege (ABGELEITET) |
+| 23.10. | 17:55 | 17:55 | Hall (Tankanker) | Ankerpunkt Tankkarte – keine Fahrt | 24.000,0 | 24.000,0 | 0 | 0 | BELEGT | eni ...0161 |
+| 30.–31.10./02.11. | Fenster ABGELEITET |  | Hall i. T. – Ostermiething | Dienstreise Hall–Ostermiething–Hall (Dienstbesprechung), KW44 – Hinfahrt | 24.000,0 | 24.178,4 | 178,4 | 0,0 | MODELL | OSRM; Wochentest |
+| 30.–31.10./02.11. |  | Fenster ABGELEITET | Ostermiething – Hall i. T. | Dienstreise KW44 – Rückfahrt | 24.178,4 | 24.357,9 | 179,5 | 0,0 | MODELL | OSRM; Rückfahrt-Regel |
+| 03.11. | ca. 16:35−21 min (ABGELEITET) |  | Hall i. T. – Maut Schönberg 16:35 – Brenner | Fahrt Richtung Brenner – Angabe Vertriebsmeeting WIDERSPRUCH (57 min zwischen Passagen < 67 min Fahrzeit Schönberg–Brenner–Schönberg); Zweck OFFEN – Hinfahrt | 24.357,9 | 24.404,4 | 0,0 | 46,5 | ANGABE/WIDERSPRUCH | Maut-Beleg; OSRM |
+| 03.11. |  | ca. 17:32+21 min (ABGELEITET) | Brenner – Maut Schönberg 17:32 – Hall i. T. | Rückfahrt – Zweck OFFEN | 24.404,4 | 24.447,5 | 0,0 | 43,1 | ANGABE/WIDERSPRUCH | Maut-Beleg; OSRM; Rückfahrt-Regel |
+| 23.10.–09.11. |  |  | Hall … Hall | nicht zugeordnete Fahrten – Zweck OFFEN (inkl. An-/Rückfahrt Tankorte, Lokalverkehr, Umwege) | 24.447,5 | 24.660,0 | 0 | 212,5 | OFFEN | km-Differenz Belege (ABGELEITET) |
+| 09.11. | 17:50 | 17:50 | Hall (Tankanker) | Ankerpunkt Tankkarte – keine Fahrt | 24.660,0 | 24.660,0 | 0 | 0 | BELEGT | eni ...0161 |
+| 10.11. | Fenster ABGELEITET |  | Hall i. T. – Ostermiething | Dienstreise Hall–Ostermiething–Hall (Dienstbesprechung), KW45 – Hinfahrt | 24.660,0 | 24.838,4 | 178,4 | 0,0 | MODELL | OSRM; Wochentest |
+| 10.11. |  | Fenster ABGELEITET | Ostermiething – Hall i. T. | Dienstreise KW45 – Rückfahrt | 24.838,4 | 25.017,9 | 179,5 | 0,0 | MODELL | OSRM; Rückfahrt-Regel |
+| 09.11.–11.11. |  |  | Hall … Hall | nicht zugeordnete Fahrten – Zweck OFFEN (inkl. An-/Rückfahrt Tankorte, Lokalverkehr, Umwege) | 25.017,9 | 25.110,0 | 0 | 92,1 | OFFEN | km-Differenz Belege (ABGELEITET) |
+| 11.11.–18.11. |  |  | Hall … (Fahrzeugtausch?) … Mils | KETTENBRUCH 318d→320d: km OFFEN. KW46-Modell (Rundreise 14.11. Hall–St. Pantaleon–Gmunden–Hall, 537,8 km) nur nachrichtlich, NICHT in Summen | 25.110 (318d) | 680 (320d) | – | – | OFFEN | BU_492023; ER_00047013 S.3 |
+| 18.11. | 13:04 | 13:04 | Mils (Tankanker) | Ankerpunkt Tankkarte – keine Fahrt | 680,0 | 680,0 | 0 | 0 | BELEGT | eni ...0161 |
+| 20.–23.11. | Fenster ABGELEITET |  | Hall i. T. – Ostermiething | Dienstreise Hall–Ostermiething–Hall (Dienstbesprechung), KW47 – Hinfahrt | 680,0 | 858,4 | 178,4 | 0,0 | MODELL | OSRM; Wochentest |
+| 20.–23.11. |  | Fenster ABGELEITET | Ostermiething – Hall i. T. | Dienstreise KW47 – Rückfahrt | 858,4 | 1.037,9 | 179,5 | 0,0 | MODELL | OSRM; Rückfahrt-Regel |
+| 18.11.–24.11. |  |  | Mils … Hall | nicht zugeordnete Fahrten – Zweck OFFEN (inkl. An-/Rückfahrt Tankorte, Lokalverkehr, Umwege) | 1.037,9 | 1.250,0 | 0 | 212,1 | OFFEN | km-Differenz Belege (ABGELEITET) |
+| 24.11. | 09:41 | 09:41 | Hall (Tankanker) | Ankerpunkt Tankkarte – keine Fahrt | 1.250,0 | 1.250,0 | 0 | 0 | BELEGT | eni ...0161 |
+| 27.–30.11. | Fenster ABGELEITET |  | Hall i. T. – Ostermiething | Dienstreise Hall–Ostermiething–Hall (Dienstbesprechung), KW48 – Hinfahrt | 1.250,0 | 1.428,4 | 178,4 | 0,0 | MODELL | OSRM; Wochentest |
+| 27.–30.11. |  | Fenster ABGELEITET | Ostermiething – Hall i. T. | Dienstreise KW48 – Rückfahrt | 1.428,4 | 1.607,9 | 179,5 | 0,0 | MODELL | OSRM; Rückfahrt-Regel |
+| 24.11.–01.12. |  |  | Hall … Innsbruck | nicht zugeordnete Fahrten – Zweck OFFEN (inkl. An-/Rückfahrt Tankorte, Lokalverkehr, Umwege) | 1.607,9 | 1.900,0 | 0 | 292,1 | OFFEN | km-Differenz Belege (ABGELEITET) |
+| 01.12. | 14:39 | 14:39 | Innsbruck (Tankanker) | Ankerpunkt Tankkarte – keine Fahrt | 1.900,0 | 1.900,0 | 0 | 0 | BELEGT | eni ...0161 |
+| 06.12. | Fenster ABGELEITET (ca. 11:45) | 14:11 | Hall i. T. – Eugendorf (Tankung 14:11) | Dienstreise KW49 – Hinfahrt Teil 1 (Rundreise; Umweg 48,6 km OFFEN) | 1.900,0 | 2.084,3 | 135,7 | 48,6 | MODELL | ER_00051462 S.3; OSRM |
+| 01.12.–06.12. |  |  | Innsbruck … Eugendorf | nicht zugeordnete Fahrten – Zweck OFFEN (inkl. An-/Rückfahrt Tankorte, Lokalverkehr, Umwege) | 2.084,3 | 2.600,0 | 0 | 515,7 | OFFEN | km-Differenz Belege (ABGELEITET) |
+| 06.12. | 14:11 | 14:11 | Eugendorf (Tankanker) | Ankerpunkt Tankkarte – keine Fahrt | 2.600,0 | 2.600,0 | 0 | 0 | BELEGT | eni ...0161 |
+| 06.12. | 14:20 |  | Eugendorf – Ostermiething | Dienstreise KW49 – Hinfahrt Teil 2 | 2.600,0 | 2.642,7 | 42,7 | 0,0 | MODELL | OSRM |
+| 06.12. |  | ca. 18:30 (ABGELEITET) | Ostermiething – Hall i. T. | Dienstreise KW49 – Rückfahrt | 2.642,7 | 2.822,2 | 179,5 | 0,0 | MODELL | OSRM; Rückfahrt-Regel |
+| 06.12.–09.12. |  |  | Eugendorf … Koessen | nicht zugeordnete Fahrten – Zweck OFFEN (inkl. An-/Rückfahrt Tankorte, Lokalverkehr, Umwege) | 2.822,2 | 3.250,0 | 0 | 427,8 | OFFEN | km-Differenz Belege (ABGELEITET) |
+| 09.12. | 19:59 | 19:59 | Koessen (Tankanker) | Ankerpunkt Tankkarte – keine Fahrt | 3.250,0 | 3.250,0 | 0 | 0 | BELEGT | eni ...0161 |
+| 11.12. | 08:07 Maut W | 10:20 Maut O | Hall i. T. – Arlberg-Maut – Langen a. A. – Maut – Hall i. T. | Fahrt Richtung Vorarlberg; Angabe Lochau zeitlich WIDERSPRUCH (133 min zwischen Passagen < ca. 136 min Maut–Lochau–Maut); Zweck OFFEN; Mindeststrecke Hall–Langen–Hall | 3.250,0 | 3.488,0 | 0,0 | 238,0 | ANGABE/WIDERSPRUCH | BU_542023; ER_00051462 S.3; OSRM |
+| 13.12. | Fenster ABGELEITET (ca. 08:30) |  | Hall i. T. – Ostermiething | Dienstreise KW50 – Hinfahrt | 3.488,0 | 3.666,4 | 178,4 | 0,0 | MODELL | OSRM; Wochentest |
+| 13.12. | ab Ostermiething ca. 14:30 (ABGELEITET) | 15:19 | Ostermiething – Salzburg-Aiglhof (Tankung 15:19) | Dienstreise KW50 – Rückfahrt Teil 1 (Rundreise) | 3.666,4 | 3.703,4 | 37,0 | 0,0 | MODELL | ER_00051462 S.3; OSRM |
+| 09.12.–13.12. |  |  | Koessen … Salzburg-Aiglhof | nicht zugeordnete Fahrten – Zweck OFFEN (inkl. An-/Rückfahrt Tankorte, Lokalverkehr, Umwege) | 3.703,4 | 4.200,0 | 0 | 496,6 | OFFEN | km-Differenz Belege (ABGELEITET) |
+| 13.12. | 15:19 | 15:19 | Salzburg-Aiglhof (Tankanker) | Ankerpunkt Tankkarte – keine Fahrt | 4.200,0 | 4.200,0 | 0 | 0 | BELEGT | eni ...0161 |
+| 13.12. | 15:19 | ca. 17:25 (ABGELEITET) | Salzburg-Aiglhof – Hall i. T. | Dienstreise KW50 – Rückfahrt Teil 2 (Umweg 29,1 km OFFEN) | 4.200,0 | 4.371,6 | 142,5 | 29,1 | MODELL | OSRM |
+| 13.12.–16.12. |  |  | Salzburg-Aiglhof … Wattens | nicht zugeordnete Fahrten – Zweck OFFEN (inkl. An-/Rückfahrt Tankorte, Lokalverkehr, Umwege) | 4.371,6 | 4.500,0 | 0 | 128,4 | OFFEN | km-Differenz Belege (ABGELEITET) |
+| 16.12. | 17:05 | 17:05 | Wattens (Tankanker) | Ankerpunkt Tankkarte – keine Fahrt | 4.500,0 | 4.500,0 | 0 | 0 | BELEGT | eni ...0161 |
+| 19.12. | ca. 07:05 (ABGELEITET) |  | Hall i. T. – Arlberg (Maut 08:24) – Lochau | betrieblich – Projektbesprechung Zweigniederlassung Lochau (ANGABE, Nachweis ausstehend) – Hinfahrt | 4.500,0 | 4.698,2 | 198,2 | 0,0 | ANGABE | Maut ER_00051462/BU_542023; OSRM |
+| 19.12. | ab Lochau ca. 10:19 (ABGELEITET) | ca. 12:46 (ABGELEITET) | Lochau – Arlberg (Maut 11:27) – Hall i. T. | Projektbesprechung Lochau – Rückfahrt (ANGABE) | 4.698,2 | 4.896,4 | 198,2 | 0,0 | ANGABE | OSRM; Rückfahrt-Regel |
+| 16.12.–20.12. |  |  | Wattens … Hall | nicht zugeordnete Fahrten – Zweck OFFEN (inkl. An-/Rückfahrt Tankorte, Lokalverkehr, Umwege) | 4.896,4 | 5.000,0 | 0 | 103,6 | OFFEN | km-Differenz Belege (ABGELEITET) |
+| 20.12. | 13:20 | 13:20 | Hall (Tankanker) | Ankerpunkt Tankkarte – keine Fahrt | 5.000,0 | 5.000,0 | 0 | 0 | BELEGT | eni ...0161 |
+| 21.12. | Fenster ABGELEITET |  | Hall i. T. – Ostermiething | Dienstreise Hall–Ostermiething–Hall (Dienstbesprechung), KW51 – Hinfahrt | 5.000,0 | 5.178,4 | 178,4 | 0,0 | MODELL | OSRM; Wochentest |
+| 21.12. |  | Fenster ABGELEITET | Ostermiething – Hall i. T. | Dienstreise KW51 – Rückfahrt | 5.178,4 | 5.357,9 | 179,5 | 0,0 | MODELL | OSRM; Rückfahrt-Regel |
+| 20.12.–22.12. |  |  | Hall … Mils | nicht zugeordnete Fahrten – Zweck OFFEN (inkl. An-/Rückfahrt Tankorte, Lokalverkehr, Umwege) | 5.357,9 | 5.400,0 | 0 | 42,1 | OFFEN | km-Differenz Belege (ABGELEITET) |
+| 22.12. | 13:27 | 13:27 | Mils (Tankanker) | Ankerpunkt Tankkarte – keine Fahrt | 5.400,0 | 5.400,0 | 0 | 0 | BELEGT | eni ...0161 |
+| 22.12.–31.12. |  |  | ab Mils | Zeitraum bis Jahresende ohne km-Anker in 2023; ABGELEITET linear ca. 1.235 km (Spanne 0–2.100 km bis 07.01.2024 Feistritz/Drau 7.500); NICHT in Summen | 5.400,0 | (ABGELEITET) | – | – | OFFEN | ER_00002482_31.01.2024 S.3 |

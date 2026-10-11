@@ -1,0 +1,259 @@
+/**
+ * Abgleich der Anlagenkonfiguration gegen den versiegelten Sollstand.
+ *
+ * Netzrelevante Parameter - Wirkleistungsbegrenzung, Sollwert des
+ * Parkreglers, Blindleistungskennlinie Q(U), Auslöseschwellen für
+ * Frequenz und Spannung - werden bei der Inbetriebnahme mit dem
+ * Netzbetreiber vereinbart und im Gerät versiegelt. Sie dürfen sich
+ * danach nicht mehr ändern, und zwar aus zwei Gründen:
+ *
+ *   - Netztechnisch: Eine Anlage, die bei Überfrequenz nicht abschaltet,
+ *     gefährdet die Netzstabilität. Der TOR Erzeuger schreibt diese
+ *     Werte verbindlich vor.
+ *   - Rechtlich: Wer sie eigenmächtig ändert, verliert den
+ *     Netzzugangsvertrag und haftet für Folgeschäden.
+ *
+ * Dieses Modul vergleicht die tatsächlich ausgelesenen Registerwerte
+ * mit dem hinterlegten Sollstand. Es entscheidet nicht, was richtig
+ * ist - es stellt fest, dass etwas abweicht, und wie schwer das wiegt.
+ *
+ * Rein rechnend, ohne Datenbank und ohne Netzzugriff: Das Auslesen
+ * geschieht anderswo, damit diese Logik prüfbar bleibt.
+ */
+
+export type Driftschwere = "kritisch" | "hoch" | "mittel" | "hinweis";
+
+/** Was nach einem Befund zu geschehen hat. */
+export type Massnahme =
+  | "sperren"
+  | "melden"
+  | "beobachten"
+  | "keine";
+
+export interface Sollwert {
+  /** Kennung des Parameters, etwa "wirkleistung_grenze". */
+  schluessel: string;
+  bezeichnung: string;
+  /** Modbus-Registeradresse oder Datenpunktpfad am Gerät. */
+  register: string;
+  sollwert: number;
+  einheit: string;
+  /**
+   * Versiegelt: Dieser Wert ist mit dem Netzbetreiber vereinbart und
+   * darf sich nicht ändern. Jede Abweichung ist ein Vorfall, keine
+   * Einstellungsfrage.
+   */
+  versiegelt: boolean;
+  /**
+   * Zulässige Abweichung in derselben Einheit.
+   *
+   * Auch versiegelte Werte brauchen eine Toleranz: Ein Messwert von
+   * 524,98 kW gegen einen Sollwert von 525 kW ist keine Manipulation,
+   * sondern die Auflösung des Registers.
+   */
+  toleranz: number;
+  /** Rechtliche Grundlage, für den Protokolleintrag. */
+  grundlage?: string;
+}
+
+export interface Istwert {
+  schluessel: string;
+  /** `null` heißt: Der Wert konnte nicht gelesen werden. */
+  wert: number | null;
+  /** Zeitpunkt der Abfrage. */
+  gelesenAm: Date;
+}
+
+export interface Driftbefund {
+  schluessel: string;
+  bezeichnung: string;
+  register: string;
+  sollwert: number;
+  istwert: number | null;
+  einheit: string;
+  /** Betrag der Abweichung; `null`, wenn nicht gelesen werden konnte. */
+  abweichung: number | null;
+  /** Abweichung in Prozent des Sollwerts. */
+  abweichungProzent: number | null;
+  versiegelt: boolean;
+  schwere: Driftschwere;
+  massnahme: Massnahme;
+  /** Im Klartext, für Protokoll und Oberfläche. */
+  begruendung: string;
+  gelesenAm: Date | null;
+}
+
+export interface Driftergebnis {
+  befunde: Driftbefund[];
+  /** Anzahl geprüfter Parameter. */
+  geprueft: number;
+  /** Muss die Anlage gesperrt werden? */
+  sperren: boolean;
+  /** Höchste aufgetretene Schwere, `null` bei sauberem Abgleich. */
+  hoechsteSchwere: Driftschwere | null;
+  /**
+   * Parameter, die das Gerät meldet, die aber nicht im Sollstand
+   * stehen. Ein zusätzliches Register ist immer verdächtig: Es kann
+   * eine Firmwareänderung sein oder ein Eingriff.
+   */
+  unbekannt: string[];
+}
+
+const RANG: Record<Driftschwere, number> = {
+  kritisch: 3,
+  hoch: 2,
+  mittel: 1,
+  hinweis: 0,
+};
+
+/**
+ * Vergleicht den ausgelesenen Zustand mit dem Sollstand.
+ *
+ * Der Sollstand ist führend: Was dort nicht steht, wird nicht
+ * stillschweigend übernommen, sondern als unbekannt gemeldet.
+ */
+export function pruefeDrift(
+  soll: Sollwert[],
+  ist: Istwert[],
+): Driftergebnis {
+  const istKarte = new Map(ist.map((i) => [i.schluessel, i]));
+  const befunde: Driftbefund[] = [];
+
+  for (const s of soll) {
+    const gelesen = istKarte.get(s.schluessel);
+
+    // Der Parameter wurde gar nicht geliefert.
+    if (!gelesen) {
+      befunde.push({
+        schluessel: s.schluessel,
+        bezeichnung: s.bezeichnung,
+        register: s.register,
+        sollwert: s.sollwert,
+        istwert: null,
+        einheit: s.einheit,
+        abweichung: null,
+        abweichungProzent: null,
+        versiegelt: s.versiegelt,
+        // Ein versiegelter Parameter, der nicht mehr antwortet, ist
+        // schwerer zu bewerten als eine reine Lücke: Genau so sieht
+        // es aus, wenn jemand den Datenpunkt entfernt hat.
+        schwere: s.versiegelt ? "hoch" : "mittel",
+        massnahme: s.versiegelt ? "melden" : "beobachten",
+        begruendung: s.versiegelt
+          ? `Der versiegelte Parameter ${s.bezeichnung} wurde vom Gerät nicht geliefert. Register ${s.register} prüfen.`
+          : `Kein Messwert für ${s.bezeichnung} erhalten.`,
+        gelesenAm: null,
+      });
+      continue;
+    }
+
+    if (gelesen.wert === null) {
+      befunde.push({
+        schluessel: s.schluessel,
+        bezeichnung: s.bezeichnung,
+        register: s.register,
+        sollwert: s.sollwert,
+        istwert: null,
+        einheit: s.einheit,
+        abweichung: null,
+        abweichungProzent: null,
+        versiegelt: s.versiegelt,
+        schwere: "mittel",
+        massnahme: "beobachten",
+        begruendung: `Register ${s.register} antwortete nicht. Ohne Lesewert lässt sich keine Aussage treffen.`,
+        gelesenAm: gelesen.gelesenAm,
+      });
+      continue;
+    }
+
+    const abweichung = gelesen.wert - s.sollwert;
+    const betrag = Math.abs(abweichung);
+
+    if (betrag <= s.toleranz) continue;
+
+    const prozent =
+      s.sollwert !== 0 ? (abweichung / Math.abs(s.sollwert)) * 100 : null;
+
+    befunde.push({
+      schluessel: s.schluessel,
+      bezeichnung: s.bezeichnung,
+      register: s.register,
+      sollwert: s.sollwert,
+      istwert: gelesen.wert,
+      einheit: s.einheit,
+      abweichung: Number(abweichung.toFixed(4)),
+      abweichungProzent: prozent !== null ? Number(prozent.toFixed(2)) : null,
+      versiegelt: s.versiegelt,
+      // Ein versiegelter Wert weicht nie zufällig ab. Entweder hat
+      // jemand ihn geändert, oder die Firmware hat ihn verworfen -
+      // beides muss die Anlage anhalten, bevor sie ans Netz geht.
+      schwere: s.versiegelt ? "kritisch" : "hoch",
+      massnahme: s.versiegelt ? "sperren" : "melden",
+      begruendung: s.versiegelt
+        ? `${s.bezeichnung} steht auf ${gelesen.wert} ${s.einheit} statt auf den versiegelten ${s.sollwert} ${s.einheit}.` +
+          (s.grundlage ? ` Vereinbart nach ${s.grundlage}.` : "")
+        : `${s.bezeichnung} weicht um ${abweichung.toFixed(2)} ${s.einheit} vom hinterlegten Wert ab.`,
+      gelesenAm: gelesen.gelesenAm,
+    });
+  }
+
+  // Register, die das Gerät liefert, die aber niemand vereinbart hat.
+  const bekannt = new Set(soll.map((s) => s.schluessel));
+  const unbekannt = ist
+    .map((i) => i.schluessel)
+    .filter((s) => !bekannt.has(s));
+
+  for (const schluessel of unbekannt) {
+    befunde.push({
+      schluessel,
+      bezeichnung: schluessel,
+      register: "unbekannt",
+      sollwert: Number.NaN,
+      istwert: istKarte.get(schluessel)?.wert ?? null,
+      einheit: "",
+      abweichung: null,
+      abweichungProzent: null,
+      versiegelt: false,
+      schwere: "hoch",
+      massnahme: "melden",
+      begruendung: `Das Gerät meldet den Parameter ${schluessel}, der nicht im Sollstand steht. Firmwarestand und Eingriffe prüfen.`,
+      gelesenAm: istKarte.get(schluessel)?.gelesenAm ?? null,
+    });
+  }
+
+  befunde.sort((a, b) => RANG[b.schwere] - RANG[a.schwere]);
+
+  return {
+    befunde,
+    geprueft: soll.length,
+    sperren: befunde.some((b) => b.massnahme === "sperren"),
+    hoechsteSchwere: befunde.length > 0 ? befunde[0].schwere : null,
+    unbekannt,
+  };
+}
+
+/**
+ * Der versiegelte Sollstand einer österreichischen Erzeugungsanlage.
+ *
+ * Die Auswahl folgt dem, was der TOR Erzeuger Typ B bis D verlangt.
+ * Die Werte selbst sind anlagenspezifisch und kommen aus dem
+ * Netzzugangsvertrag; hier steht, welche Parameter überhaupt zum
+ * versiegelten Satz gehören.
+ */
+export const VERSIEGELTE_PARAMETER = [
+  "wirkleistung_grenze",
+  "parkregler_sollwert",
+  "blindleistung_kennlinie",
+  "frequenz_ueber_ab",
+  "frequenz_unter_ab",
+  "spannung_ueber_ab",
+  "spannung_unter_ab",
+  "wiederzuschaltung_verzoegerung",
+] as const;
+
+export type VersiegelterParameter = (typeof VERSIEGELTE_PARAMETER)[number];
+
+/** Gehört der Parameter zum versiegelten Satz? */
+export function istVersiegelt(schluessel: string): boolean {
+  return (VERSIEGELTE_PARAMETER as readonly string[]).includes(schluessel);
+}

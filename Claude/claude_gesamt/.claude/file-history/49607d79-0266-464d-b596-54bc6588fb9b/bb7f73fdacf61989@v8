@@ -1,0 +1,603 @@
+<template>
+  <div class="flex h-screen w-screen overflow-hidden bg-surface-gray-1">
+    <!-- Abdunklung hinter der Schublade -->
+    <div
+      v-if="navOffen"
+      class="fixed inset-0 z-30 bg-black/40 lg:hidden"
+      aria-hidden="true"
+      @click="navOffen = false"
+    />
+
+    <!-- ===================== Seitenleiste ===================== -->
+    <aside
+      id="hauptnavigation"
+      class="fixed inset-y-0 left-0 z-40 flex shrink-0 flex-col border-r border-outline-gray-2 bg-surface-white transition-all lg:static lg:translate-x-0"
+      :class="[navOffen ? 'translate-x-0' : '-translate-x-full', schmal ? 'w-14' : 'w-60']"
+    >
+      <!-- Kopf: Arbeitsbereich mit Menü, wie in den übrigen Frappe-Apps -->
+      <div class="relative p-2">
+        <button
+          class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left hover:bg-surface-gray-2"
+          :aria-expanded="menueOffen"
+          aria-haspopup="menu"
+          aria-label="Arbeitsbereich und Mandant"
+          @click.stop="menueOffen = !menueOffen"
+        >
+          <span
+            class="flex size-7 shrink-0 items-center justify-center rounded bg-surface-gray-4 text-xs font-semibold text-ink-gray-8"
+            aria-hidden="true"
+          >
+            OV
+          </span>
+          <span v-if="!schmal" class="min-w-0 flex-1">
+            <span class="block truncate text-base font-medium text-ink-gray-8">NetOps</span>
+            <span class="block truncate text-xs text-ink-gray-5">{{ mandantName }}</span>
+          </span>
+          <AppIcon v-if="!schmal" name="ab" :size="14" class="shrink-0 text-ink-gray-5" />
+        </button>
+
+        <div
+          v-if="menueOffen"
+          role="menu"
+          class="absolute inset-x-2 z-50 mt-1 rounded-lg border border-outline-gray-2 bg-surface-white p-1 shadow-lg"
+        >
+          <p class="px-2 pb-1 pt-2 text-xs font-medium uppercase text-ink-gray-4">Mandant</p>
+          <button
+            v-for="m in mandantenOptionen"
+            :key="m.value"
+            role="menuitemradio"
+            :aria-checked="ui.mandant === m.value"
+            class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm hover:bg-surface-gray-1"
+            :class="ui.mandant === m.value ? 'font-medium text-ink-gray-9' : 'text-ink-gray-7'"
+            @click="mandantWaehlen(m.value)"
+          >
+            <AppIcon name="gebaeude" :size="15" class="shrink-0 text-ink-gray-5" />
+            <span class="min-w-0 flex-1 truncate">{{ m.label }}</span>
+            <span v-if="ui.mandant === m.value" aria-hidden="true">✓</span>
+          </button>
+
+          <div class="my-1 border-t border-outline-gray-2" />
+
+          <button
+            role="menuitem"
+            class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-ink-gray-7 hover:bg-surface-gray-1"
+            @click="schmalUmschalten"
+          >
+            <AppIcon :name="schmal ? 'rechts' : 'links'" :size="15" class="text-ink-gray-5" />
+            {{ schmal ? 'Leiste ausklappen' : 'Leiste einklappen' }}
+          </button>
+          <button
+            v-if="USE_MOCK"
+            role="menuitem"
+            class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-ink-gray-7 hover:bg-surface-gray-1"
+            @click="setzeZurueck"
+          >
+            <AppIcon name="zurueck" :size="15" class="text-ink-gray-5" />
+            Testdaten zurücksetzen
+          </button>
+        </div>
+      </div>
+
+      <!-- Navigation -->
+      <nav class="flex-1 overflow-y-auto px-2 pb-2" aria-label="Hauptnavigation">
+        <div v-for="gruppe in navigation" :key="gruppe.titel" class="mb-1">
+          <button
+            v-if="!schmal"
+            class="flex w-full items-center gap-1 rounded px-2 py-1 text-xs font-medium uppercase tracking-wide text-ink-gray-4 hover:text-ink-gray-6"
+            :aria-expanded="!zugeklappt.includes(gruppe.titel)"
+            @click="gruppeUmschalten(gruppe.titel)"
+          >
+            <AppIcon
+              :name="zugeklappt.includes(gruppe.titel) ? 'rechts' : 'ab'"
+              :size="12"
+              class="shrink-0"
+            />
+            {{ gruppe.titel }}
+          </button>
+          <div v-else class="my-2 border-t border-outline-gray-2" aria-hidden="true" />
+
+          <template v-if="schmal || !zugeklappt.includes(gruppe.titel)">
+            <RouterLink
+              v-for="eintrag in gruppe.eintraege"
+              :key="eintrag.label"
+              :to="eintrag.to"
+              class="flex items-center gap-2.5 rounded px-2 py-1.5 text-base text-ink-gray-7 hover:bg-surface-gray-2"
+              active-class="bg-surface-gray-3 font-medium text-ink-gray-9"
+              :title="schmal ? eintrag.label : undefined"
+              :aria-label="schmal ? eintrag.label : undefined"
+              @click="navOffen = false"
+            >
+              <AppIcon :name="eintrag.icon" :size="16" class="shrink-0" />
+              <span v-if="!schmal" class="truncate">{{ eintrag.label }}</span>
+            </RouterLink>
+          </template>
+        </div>
+      </nav>
+
+      <div v-if="USE_MOCK && !schmal" class="border-t border-outline-gray-2 px-3 py-2">
+        <p class="text-xs leading-4 text-ink-gray-5">Testdaten im Browser. Kein Backend.</p>
+      </div>
+    </aside>
+
+    <!-- ===================== Rechte Spalte ===================== -->
+    <div class="flex min-w-0 flex-1 flex-col">
+      <!--
+        Kopfleiste im Zuschnitt der übrigen Frappe-Apps: links der Ort, in
+        der Mitte die Suche, rechts Benachrichtigungen, Farbschema und Konto.
+      -->
+      <header
+        class="flex h-14 shrink-0 items-center gap-2 border-b border-outline-gray-2 bg-surface-white px-3"
+      >
+        <button
+          class="rounded p-2 text-ink-gray-7 hover:bg-surface-gray-2 lg:hidden"
+          aria-label="Navigation öffnen"
+          :aria-expanded="navOffen"
+          aria-controls="hauptnavigation"
+          @click="navOffen = true"
+        >
+          <AppIcon name="menue" :size="20" />
+        </button>
+
+        <!-- Ort: Gruppe › Seite -->
+        <nav class="min-w-0 shrink" aria-label="Pfad">
+          <ol class="flex items-center gap-1.5 text-base">
+            <li v-if="brotkrumen.gruppe" class="hidden truncate text-ink-gray-5 sm:block">
+              {{ brotkrumen.gruppe }}
+            </li>
+            <li v-if="brotkrumen.gruppe" class="hidden text-ink-gray-4 sm:block" aria-hidden="true">
+              ›
+            </li>
+            <li class="truncate font-medium text-ink-gray-8" aria-current="page">
+              {{ brotkrumen.seite }}
+            </li>
+          </ol>
+        </nav>
+
+        <!-- Suche: mittig und breit, wie die Awesomebar im Frappe Desk -->
+        <div class="mx-auto hidden min-w-0 max-w-md flex-1 md:block">
+          <button
+            class="flex w-full items-center gap-2 rounded-lg border border-outline-gray-2 bg-surface-gray-1 px-3 py-1.5 text-left text-base text-ink-gray-5 hover:bg-surface-gray-2"
+            @click="suche?.open()"
+          >
+            <AppIcon name="suche" :size="16" class="shrink-0" />
+            <span class="min-w-0 flex-1 truncate">Suchen …</span>
+            <kbd
+              class="shrink-0 rounded border border-outline-gray-2 bg-surface-white px-1.5 text-xs text-ink-gray-6"
+            >
+              Strg K
+            </kbd>
+          </button>
+        </div>
+
+        <div class="ml-auto flex shrink-0 items-center gap-1">
+          <button
+            class="rounded p-2 text-ink-gray-7 hover:bg-surface-gray-2 md:hidden"
+            aria-label="Suchen"
+            @click="suche?.open()"
+          >
+            <AppIcon name="suche" :size="18" />
+          </button>
+
+          <!-- Benachrichtigungen -->
+          <div class="relative">
+            <button
+              class="relative rounded p-2 text-ink-gray-7 hover:bg-surface-gray-2"
+              :aria-label="glockeLabel"
+              :aria-expanded="glockeOffen"
+              @click.stop="glockeOffen = !glockeOffen"
+            >
+              <AppIcon name="glocke" :size="18" />
+              <span
+                v-if="anzahl"
+                class="absolute right-1 top-1 flex min-w-[16px] justify-center rounded-full px-1 text-[10px] font-semibold leading-4 text-white"
+                :style="{ background: kritisch ? 'var(--viz-critical)' : 'var(--viz-warning)' }"
+                aria-hidden="true"
+              >
+                {{ anzahl > 9 ? '9+' : anzahl }}
+              </span>
+            </button>
+
+            <div
+              v-if="glockeOffen"
+              class="absolute right-0 z-50 mt-1 max-h-[70vh] w-80 overflow-y-auto rounded-lg border border-outline-gray-2 bg-surface-white shadow-lg"
+            >
+              <div
+                class="flex items-center justify-between border-b border-outline-gray-2 px-3 py-2"
+              >
+                <p class="text-sm font-medium text-ink-gray-8">Aufmerksamkeit</p>
+                <p class="text-xs text-ink-gray-5">
+                  {{ meldungen.data?.summary.critical || 0 }} kritisch
+                </p>
+              </div>
+              <p
+                v-if="!(meldungen.data?.entries || []).length"
+                class="px-3 py-6 text-center text-sm text-ink-gray-5"
+              >
+                Nichts Offenes.
+              </p>
+              <RouterLink
+                v-for="(m, i) in meldungen.data?.entries || []"
+                :key="i"
+                :to="m.to"
+                class="flex items-start gap-2 border-b border-outline-gray-2 px-3 py-2 last:border-0 hover:bg-surface-gray-1"
+                @click="glockeOffen = false"
+              >
+                <span
+                  class="mt-1.5 size-2 shrink-0 rounded-full"
+                  :style="{ background: balkenFarbe(m.level) }"
+                  aria-hidden="true"
+                />
+                <span class="min-w-0">
+                  <span class="block truncate text-sm font-medium text-ink-gray-8">
+                    {{ m.title }}
+                  </span>
+                  <span class="block text-sm text-ink-gray-6">{{ m.detail }}</span>
+                </span>
+              </RouterLink>
+            </div>
+          </div>
+
+          <!-- Farbschema -->
+          <button
+            class="rounded p-2 text-ink-gray-7 hover:bg-surface-gray-2"
+            :aria-label="
+              ui.thema === 'dark'
+                ? 'Zum hellen Farbschema wechseln'
+                : 'Zum dunklen Farbschema wechseln'
+            "
+            @click="ui.wechsleThema()"
+          >
+            <AppIcon :name="ui.thema === 'dark' ? 'sonne' : 'mond'" :size="18" />
+          </button>
+
+          <!-- Konto -->
+          <div class="relative">
+            <button
+              class="flex items-center gap-1.5 rounded p-1 hover:bg-surface-gray-2"
+              :aria-label="'Konto: ' + (session.user || 'nicht angemeldet')"
+              :aria-expanded="kontoOffen"
+              aria-haspopup="menu"
+              @click.stop="kontoOffen = !kontoOffen"
+            >
+              <span
+                class="flex size-7 items-center justify-center rounded-full text-xs font-semibold text-white"
+                :style="{ background: avatarFarbe }"
+                aria-hidden="true"
+              >
+                {{ initialen }}
+              </span>
+              <AppIcon name="ab" :size="14" class="hidden text-ink-gray-5 sm:block" />
+            </button>
+
+            <div
+              v-if="kontoOffen"
+              role="menu"
+              class="absolute right-0 z-50 mt-1 w-64 rounded-lg border border-outline-gray-2 bg-surface-white p-1 shadow-lg"
+            >
+              <div class="flex items-center gap-2 px-2 py-2">
+                <span
+                  class="flex size-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white"
+                  :style="{ background: avatarFarbe }"
+                  aria-hidden="true"
+                >
+                  {{ initialen }}
+                </span>
+                <span class="min-w-0">
+                  <span class="block truncate text-sm font-medium text-ink-gray-8">
+                    {{ anzeigename }}
+                  </span>
+                  <span class="block truncate text-xs text-ink-gray-5">{{
+                    session.user || '–'
+                  }}</span>
+                </span>
+              </div>
+
+              <div class="my-1 border-t border-outline-gray-2" />
+
+              <RouterLink
+                v-if="eigeneId"
+                role="menuitem"
+                :to="'/people/' + eigeneId"
+                class="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-ink-gray-7 hover:bg-surface-gray-1"
+                @click="kontoOffen = false"
+              >
+                <AppIcon name="person" :size="15" class="text-ink-gray-5" />
+                Meine Ausstattung
+              </RouterLink>
+              <RouterLink
+                role="menuitem"
+                to="/audit"
+                class="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-ink-gray-7 hover:bg-surface-gray-1"
+                @click="kontoOffen = false"
+              >
+                <AppIcon name="audit" :size="15" class="text-ink-gray-5" />
+                Protokoll
+              </RouterLink>
+
+              <div class="my-1 border-t border-outline-gray-2" />
+
+              <!--
+                Ohne Backend gibt es keine Sitzung, die man beenden könnte.
+                Statt eines Knopfes, der nichts tut, steht hier, warum.
+              -->
+              <p v-if="USE_MOCK" class="px-2 py-1.5 text-xs leading-4 text-ink-gray-5">
+                Abmelden gibt es erst mit Backend – hier läuft keine Sitzung.
+              </p>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main class="flex-1 overflow-y-auto">
+        <slot />
+      </main>
+    </div>
+
+    <GlobalSearch ref="suche" />
+  </div>
+</template>
+
+<script setup>
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
+import { createResource, toast } from 'frappe-ui'
+import GlobalSearch from '@/components/GlobalSearch.vue'
+import AppIcon from '@/components/AppIcon.vue'
+import { useSessionStore } from '@/stores/session'
+import { useUiStore } from '@/stores/ui'
+import { USE_MOCK } from '@/api'
+import { balkenFarbe } from '@/viz'
+
+const route = useRoute()
+const session = useSessionStore()
+const ui = useUiStore()
+
+const suche = ref(null)
+const navOffen = ref(false)
+const menueOffen = ref(false)
+const glockeOffen = ref(false)
+const kontoOffen = ref(false)
+
+// Eingeklappte Leiste und zugeklappte Gruppen überleben den Seitenwechsel -
+// wer sie einmal zumacht, will sie nicht bei jedem Klick wieder aufmachen.
+const schmal = ref(lies('netops:nav-schmal') === '1')
+const zugeklappt = ref(JSON.parse(lies('netops:nav-zu') || '[]'))
+
+function lies(schluessel) {
+  try {
+    return localStorage.getItem(schluessel)
+  } catch {
+    // Privates Fenster oder gesperrter Speicher: dann eben ohne Gedächtnis.
+    return null
+  }
+}
+
+function schreib(schluessel, wert) {
+  try {
+    localStorage.setItem(schluessel, wert)
+  } catch {
+    // siehe oben
+  }
+}
+
+const mandanten = createResource({
+  url: 'frappe.client.get_list',
+  params: { doctype: 'Tenant', fields: ['name', 'tenant_name'], limit_page_length: 0 },
+  auto: true,
+})
+
+const meldungen = createResource({
+  url: 'netops.api.ops.notifications',
+  makeParams: () => ({ tenant: ui.mandant || null }),
+  auto: true,
+})
+
+const beschaeftigte = createResource({ url: 'netops.api.personal.employee_list', auto: true })
+
+// Aufbau nach Fachkonzept Kapitel 6.
+const navigation = [
+  {
+    titel: 'Betrieb',
+    eintraege: [
+      { label: 'Lage', to: '/', icon: 'lage' },
+      { label: 'Alarme', to: '/alerts', icon: 'alarm' },
+      { label: 'Drift', to: '/drift', icon: 'drift' },
+      { label: 'Backup', to: '/backup', icon: 'backup' },
+      { label: 'Dienste', to: '/services', icon: 'dienste' },
+      { label: 'Changes', to: '/changes', icon: 'change' },
+      { label: 'Tickets', to: '/tickets', icon: 'ticket' },
+      { label: 'Audit', to: '/audit', icon: 'audit' },
+    ],
+  },
+  {
+    titel: 'DCIM',
+    eintraege: [
+      { label: 'Geräte', to: '/devices', icon: 'geraet' },
+      { label: 'Racks', to: '/racks', icon: 'rack' },
+      { label: 'Verkabelung', to: '/cables', icon: 'kabel' },
+      { label: 'Topologie', to: '/topology', icon: 'topologie' },
+      { label: 'Virtualisierung', to: '/virtualization', icon: 'virt' },
+      { label: 'Cloud', to: '/cloud', icon: 'cloud' },
+      { label: 'Strompfad', to: '/power', icon: 'strom' },
+      { label: 'Grundrisse', to: '/floorplan', icon: 'grundriss' },
+      { label: 'Fernwartung', to: '/remote', icon: 'fernwartung' },
+    ],
+  },
+  {
+    titel: 'IPAM & Firewall',
+    eintraege: [
+      { label: 'Präfixe', to: '/ipam', icon: 'praefix' },
+      { label: 'VLANs', to: '/vlans', icon: 'vlan' },
+      { label: 'Pfadanalyse', to: '/path', icon: 'pfad' },
+      { label: 'Regelwerk', to: '/firewall', icon: 'regel' },
+      { label: 'Matrix', to: '/matrix', icon: 'matrix' },
+      { label: 'Netzdienste', to: '/netservices', icon: 'netzdienst' },
+    ],
+  },
+  {
+    titel: 'Inventar',
+    eintraege: [
+      { label: 'Bestand', to: '/inventory', icon: 'inventar' },
+      { label: 'Ausgabe', to: '/issue', icon: 'ausgabe' },
+      { label: 'Inventur', to: '/stocktake', icon: 'inventur' },
+      { label: 'Reservierungen', to: '/reservations', icon: 'reservierung' },
+      { label: 'Verbrauchsmaterial', to: '/consumables', icon: 'material' },
+      { label: 'Fristen', to: '/deadlines', icon: 'frist' },
+      { label: 'Etiketten', to: '/labels', icon: 'etikett' },
+      { label: 'Entsorgung', to: '/disposal', icon: 'entsorgung' },
+    ],
+  },
+  {
+    titel: 'Menschen',
+    eintraege: [
+      { label: 'Beschäftigte', to: '/people', icon: 'person' },
+      { label: 'Ein- und Austritt', to: '/offboarding', icon: 'austritt' },
+    ],
+  },
+  {
+    titel: 'Dokumentation',
+    eintraege: [
+      { label: 'Dokumente', to: '/documents', icon: 'dokument' },
+      { label: 'Checklisten', to: '/checklists', icon: 'checkliste' },
+      { label: 'Verträge', to: '/contracts', icon: 'vertrag' },
+      { label: 'Compliance', to: '/compliance', icon: 'compliance' },
+    ],
+  },
+  {
+    titel: 'Security',
+    eintraege: [
+      { label: 'Schwachstellen', to: '/vulnerabilities', icon: 'schwachstelle' },
+      { label: 'Angriffsfläche', to: '/exposure', icon: 'angriffsflaeche' },
+      { label: 'Identitäten', to: '/identities', icon: 'identitaet' },
+      { label: 'Vorfälle', to: '/incidents', icon: 'vorfall' },
+      { label: 'E-Mail', to: '/mail', icon: 'mail' },
+      { label: 'Leitstand', to: '/control-room', icon: 'leitstand' },
+    ],
+  },
+]
+
+// --- Kopfleiste ------------------------------------------------------------
+
+const brotkrumen = computed(() => {
+  const gruppe = navigation.find((g) => g.eintraege.some((e) => e.to === route.path))
+  const seite = route.meta.title || 'NetOps'
+  // „Inventar › Inventar" sagt zweimal dasselbe.
+  return { gruppe: gruppe?.titel === seite ? '' : gruppe?.titel || '', seite }
+})
+
+const anzahl = computed(() => meldungen.data?.summary.total || 0)
+const kritisch = computed(() => (meldungen.data?.summary.critical || 0) > 0)
+
+const glockeLabel = computed(() =>
+  anzahl.value
+    ? `Benachrichtigungen: ${anzahl.value}, davon ${meldungen.data?.summary.critical || 0} kritisch`
+    : 'Benachrichtigungen: nichts Offenes',
+)
+
+const mandantenOptionen = computed(() => [
+  { label: 'Alle Mandanten', value: '' },
+  ...(mandanten.data || []).map((m) => ({ label: m.tenant_name, value: m.name })),
+])
+
+const mandantName = computed(
+  () => mandantenOptionen.value.find((m) => m.value === ui.mandant)?.label || 'Alle Mandanten',
+)
+
+// --- Konto -----------------------------------------------------------------
+
+const eigenerDatensatz = computed(() =>
+  (beschaeftigte.data || []).find((e) => e.user_id === session.user),
+)
+
+const eigeneId = computed(() => eigenerDatensatz.value?.name || '')
+const anzeigename = computed(() => eigenerDatensatz.value?.employee_name || session.user || '–')
+
+const initialen = computed(() => {
+  const teile = anzeigename.value.split(/[\s.@]+/).filter(Boolean)
+  return ((teile[0]?.[0] || '') + (teile[1]?.[0] || '')).toUpperCase() || '?'
+})
+
+/**
+ * Feste Farbe je Person statt einer zufälligen: derselbe Mensch hat morgen
+ * dieselbe Kachel. Die Farben kommen aus der Serienpalette, nicht aus der
+ * Statuspalette - ein Avatar sagt nichts über einen Zustand aus.
+ */
+const avatarFarbe = computed(() => {
+  const palette = ['var(--viz-series-1)', 'var(--viz-series-2)', 'var(--viz-seq-250)']
+  let summe = 0
+  for (const z of anzeigename.value) summe = (summe + z.charCodeAt(0)) % 997
+  return palette[summe % palette.length]
+})
+
+// --- Bedienung -------------------------------------------------------------
+
+function mandantWaehlen(wert) {
+  ui.mandant = wert
+  menueOffen.value = false
+}
+
+function schmalUmschalten() {
+  schmal.value = !schmal.value
+  schreib('netops:nav-schmal', schmal.value ? '1' : '0')
+  menueOffen.value = false
+}
+
+function gruppeUmschalten(titel) {
+  zugeklappt.value = zugeklappt.value.includes(titel)
+    ? zugeklappt.value.filter((t) => t !== titel)
+    : [...zugeklappt.value, titel]
+  schreib('netops:nav-zu', JSON.stringify(zugeklappt.value))
+}
+
+function alleMenuesZu() {
+  menueOffen.value = false
+  glockeOffen.value = false
+  kontoOffen.value = false
+}
+
+function tastatur(event) {
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+    event.preventDefault()
+    suche.value?.open()
+  }
+  if (event.key === 'Escape') {
+    alleMenuesZu()
+    navOffen.value = false
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', tastatur)
+  document.addEventListener('click', alleMenuesZu)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', tastatur)
+  document.removeEventListener('click', alleMenuesZu)
+})
+
+// Beim Seitenwechsel schließt sich alles Aufgeklappte – sonst verdeckt es
+// genau das, wohin man gerade wollte. Die Glocke lädt neu, weil sich die
+// Lage durch die Arbeit auf der Seite geändert haben kann.
+watch(
+  () => route.fullPath,
+  () => {
+    navOffen.value = false
+    alleMenuesZu()
+    meldungen.fetch()
+  },
+)
+
+watch(
+  () => ui.mandant,
+  () => meldungen.fetch(),
+)
+
+async function setzeZurueck() {
+  const { resetMockData } = await import('@/api/mock/server.js')
+  resetMockData()
+  toast.create({ message: 'Testdaten zurückgesetzt', type: 'success' })
+  // Einfachster Weg, alle gecachten Resourcen zu verwerfen.
+  window.location.reload()
+}
+</script>

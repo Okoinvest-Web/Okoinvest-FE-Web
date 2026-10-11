@@ -1,0 +1,383 @@
+# BEFUND
+
+**zur Aktenzahl 18 St 14/26m der Staatsanwaltschaft Innsbruck**
+(Registerzahl 816 018 ST 14/26 m)
+
+Beschuldigter: Benjamin Höfler, geb. 22.05.1989
+
+Befundaufnahme abgeschlossen am 20.09.2026
+
+---
+
+> Dieser Befund enthält ausschließlich tatsächliche Feststellungen. Rechtliche Bewertungen, Schlussfolgerungen und Wahrscheinlichkeitsaussagen sind nicht Gegenstand des Befundes; sie finden sich in den gesondert erstellten Dokumenten `Analyse_Gesamtakt_18St14-26m.md`, `Systematische_Auswertung_Geldfluesse.md` und `Beweismittelsichtung_Ergebnis.md`.
+
+---
+
+## 1. Gegenstand und Untersuchungsmaterial
+
+### 1.1 Untersuchtes Material
+
+| Position | Umfang |
+|---|---|
+| Gesamtakt 18 St 14/26m, Ausfertigung vom 16.04.2026 | 342 Seiten, davon 341 mit Text, 39 Aktenstücke |
+| Weitere Dateien im Untersuchungsordner | 394 |
+| Davon PDF-Dokumente mit Textebene | 364 |
+| PDF-Dokumente ohne Textebene (Bildscans) | 2, zusammen 7 Seiten |
+| Archivdateien | 2 (`Ökovolt.zip` mit 290 Einträgen, `99 – Buchhaltung`) |
+| Ausgewertete Kontoauszüge | 4 Konten, 21 Einzeldateien |
+| Ausgewertete Lohnverrechnungsunterlagen | 12 Monatsläufe 2021 |
+
+### 1.2 Methode
+
+Textextraktion mittels `pdftotext` in der Betriebsart `-layout` mit UTF-8-Zeichensatz. Für die Kontoauszüge zusätzlich koordinatenbasierte Rekonstruktion der Tabellenstruktur mittels PyMuPDF: Erfassung aller Wortobjekte mit Rahmenkoordinaten, Gruppierung nach y-Position zu Zeilen, Zuordnung zu Spalten nach x-Position (Buchungsdatum 58–130, Buchungstext 140–372, Valutadatum 372–440, Betrag 440–536). Fortsetzungszeilen ohne Datum und Betrag wurden der jeweils vorangehenden Buchung zugeordnet. Anschließend Deduplizierung überlappender Auszüge über den Schlüssel Datum, Betrag und Buchungstext sowie chronologische Sortierung. Klassifikation der Buchungen regelbasiert nach Empfänger und Verwendungszweck.
+
+Die beiden PDF-Dokumente ohne Textebene wurden mit 130 dpi als Bilddateien gerendert und manuell gesichtet.
+
+### 1.3 Abgrenzung
+
+Nicht Gegenstand der Befundaufnahme waren das Archiv `Ökovolt.zip` in seiner inhaltlichen Substanz (es betrifft die Verfahren 3 St 70/25 m und 3 St 287/25 y der Staatsanwaltschaft Ried im Innkreis), die handschriftlich ausgefüllten Formularseiten des Vermögensverzeichnisses (ON 2.13, Seiten 15 bis 28) wegen unzureichender Scanqualität sowie die fünf Dateien im Format `.fib`.
+
+---
+
+## 2. Befund zur Aktenstruktur
+
+**2.1** Der Akt gliedert sich in 39 Aktenstücke. Das Belastungsmaterial im engeren Sinn umfasst 16 Seiten, nämlich die Sachverhaltsdarstellung des Masseverwalters (ON 2.2, 10 Seiten) und den Anlassbericht des Landeskriminalamts Tirol (ON 5.2, 6 Seiten). 86 Seiten entfallen auf Kontoauszüge, 90 Seiten auf den Anzeigenstrang ON 4.
+
+**2.2** Der Fußvermerk jeder Aktenseite lautet: „Erstellt für Stefan ZAJIC am 16.04.2026 um 14:35:57 durch Verrechnungsstelle". Unter ON 8 liegt die am selben Tag eingebrachte Vollmachtsbekanntgabe und der Akteneinsichtsantrag des MMag. Stefan Zajic für Susanne Messmer.
+
+**2.3** Mit Verfügung vom 11.02.2026 (ON 1.2) wurde hinsichtlich des Vorwurfs nach § 297 StGB (Sachverhalt ON 4) von der Einleitung eines Ermittlungsverfahrens abgesehen. Die Aktenstücke ON 4.1 bis ON 4.13 verblieben im Akt.
+
+**2.4** Mit Verfügung vom 08.04.2026 (ON 1.3) wurde der Tatvorwurf um §§ 146, 147 Abs 2 StGB ergänzt.
+
+**2.5** Nach ON 5.2 hat eine Einvernahme des Beschuldigten nicht stattgefunden. Die Einvernahmen der Darlehensgeber und der Daniela Mikic sind als „vorgesehen" bezeichnet. Die Anfrage an das Finanzamt ist unbeantwortet. Der Bericht hält fest: „Zudem wurden die vorliegenden Unterlagen noch nicht abschließend ausgewertet."
+
+**2.6** Keiner der acht Darlehensverträge, auf die sich der Vorwurf nach §§ 146, 147 StGB stützt, liegt dem Akt bei.
+
+---
+
+## 3. Befund zu den Urkunden
+
+### 3.1 Kaufvertrag „adplac.es®"
+
+Fundstelle: Datei `20210316102953 (1).pdf`, 6 Seiten, Bildscan ohne Textebene.
+
+**3.1.1** Vertragsparteien sind die hjpe® Unternehmensgruppe GmbH & Co KG, vertreten durch Geschäftsführer Timo Bösch, sowie Timo Bösch persönlich, beide Goethestr. 2, 27374 Visselhövede, gemeinsam bezeichnet als „Programmierer", einerseits, und Benjamin Höfler, Kapuzinergasse 32, 6020 Innsbruck, bezeichnet als „Käufer", andererseits.
+
+**3.1.2** Der Vertrag trägt auf Seite 5 die Unterschriften „hjpe® GmbH" und „Timo Bösch", auf Seite 6 die Unterschrift „Benjamin Höfler". Auf jeder Seite befindet sich eine Paraphe. Der handschriftliche Datumseintrag auf Seite 5 lautet „Innsbruck/Visselhövede, am" mit nachfolgender, teilweise unleserlicher Datumsangabe im März 2021. Der Dateiname verweist auf den 16.03.2021.
+
+**3.1.3** Punkt I (Präambel) lautet auszugsweise: „Für die Umsetzung des Projektes beabsichtigt der Käufer eine eigene Kapitalgesellschaft zu gründen. In weiterer Folge wird der Käufer sämtliche Rechte aus diesem Vertrag auf die noch zu gründende Kapitalgesellschaft übertragen."
+
+**3.1.4** Punkt II (Kaufvereinbarung) bestimmt einen Kaufpreis von EUR 100.000,- für die Applikation „adplac.es" „samt allen dazugehörenden Assets wie Marken- und Urheberrecht, Internetdomain, etc. sowie jeglicher hinter der Applikation stehender Software". Als bereits geleistete Tranchen sind angeführt:
+
+> am 22.07.2020 — EUR 10.000,- bezahlt an die hjpe GmbH
+> am 28.12.2020 — EUR 90.000,- bezahlt an die Typ Beteiligungs GmbH
+
+**3.1.5** Punkt II enthält weiter folgende wörtliche Bestimmung:
+
+> „Da wie unter Punkt I. angeführt, vom Käufer eine eigene Kapitalgesellschaft gegründet werden wird, wurden bei sämtlichen Zahlungen als Verwendungszweck ‚Darlehen' angeführt. Sobald die Kapitalgesellschaft im Firmenbuch des Landesgerichtes Innsbruck eingetragen ist, verpflichtet sich der Programmierer über sämtliche erhaltene Zahlungen an die Kapitalgesellschaft Rechnung zu legen."
+
+**3.1.6** Punkt III (Übertragung) verpflichtet den Programmierer binnen 14 Tagen zur Übergabe der Software, des Lasten- und Pflichtenhefts, sämtlicher Logos und Grafiken sowie zur Übertragung der „zu Registernummer 302019235852 des Deutschen Patent- und Markenamtes registrierten Marke ‚adplac.es'", der Internet-Domain und der Datenbankrechte.
+
+**3.1.7** Punkt IV (weitere Entwicklung) lautet auszugsweise:
+
+> „Der Programmierer hat dem Käufer am 24.11.2020 ein Angebot (Nr. 2020-11.04) in Höhe von EUR 200.000,- zur Fertigstellung der Applikation und zum Zwecke des geplanten Marktganges unterbreitet. Dieses Angebot wurde vom Käufer angenommen […] Der zur Fertigstellung erforderliche Betrag wurde im Auftrag des Käufers am 26.01.2021 durch die Fa. Ökovolt Solartechnik GmbH an den Programmierer bzw. dessen Firma Typ Beteiligungs GmbH zur Auszahlung gebracht. Auch diese Zahlung erfolgte aufgrund der noch nicht gegründeten Kapitalgesellschaft mit dem Verwendungszweck ‚Darlehen Nr. 221-hjpe-01'."
+
+Ferner ist ein monatlicher Pauschalbetrag von EUR 15.000,- für Wartung und Weiterentwicklung als angeboten vermerkt.
+
+**3.1.8** Punkt IX bestimmt österreichisches materielles Recht und den Gerichtsstand Innsbruck.
+
+### 3.2 Inhaberwechselantrag
+
+Fundstelle: Datei `20210316103002 (2).pdf`, 1 Seite, Bildscan ohne Textebene.
+
+Übertragung sämtlicher Rechte und Pflichten an der Domain www.adplac.es von der hjpe® GmbH und Timo Bösch persönlich als „bisheriger Domaininhaber" auf Benjamin Höfler als „neuer Domaininhaber". Das Dokument trägt die Unterschriften beider Parteien sowie einen handschriftlichen Datumseintrag im März 2021.
+
+### 3.3 Angebot hjpe GmbH
+
+Fundstelle: Datei `Angebot adplac.es.pdf`.
+
+Angebot/Einzelauftrag Nr. 2020-11.04 vom 24.11.2020 der hjpe GmbH an die JB Technology GmbH, Adolf-Pichler-Platz 10, 6020 Innsbruck. Gegenstand „www.adplac.es – Restarbeiten zur Markteinführung", Angebotsbetrag netto EUR 200.000,00, Zahlungsmodalität „Sofortige Zahlung". Vermerk: „Die Abrechnung und Steuerung übernimmt unsere Gesellschaft: tyb Beteiligungs GmbH, Hohe Straße 19, 27374 Visselhövede, USt-IdNr.: DE303532968, Handelsregister des AG Walsrode HRB 206471". Geschäftsführung: Timo Bösch.
+
+### 3.4 Zahlungsbelege
+
+| Datum | Betrag EUR | Empfänger | Verwendungszweck laut Beleg | Belegart |
+|---|---:|---|---|---|
+| 20.07.2020 | 20.000,00 | hjpe GmbH, FR76 1695 8000 0146 3900 1079 455 | (kein Text) | Übernahmebestätigung, gezeichnet 20.07.2020 |
+| 22.07.2020 | 10.000,00 | hjpe GmbH, FR76 1695 8000 0146 3900 1079 455 | **„Darlehen"** | Buchungsbestätigung Hypo Tirol Bank |
+| 07.12.2020 | 14.800,00 | tyb Beteiligungs GmbH, DE27 7002 2200 0020 2375 46 | **„im Auftrag von JB Technology GmbH"** | Übernahmebestätigung, gezeichnet durch Daniela Mikic |
+| 28.12.2020 | 30.000,00 | tyb Beteiligungs GmbH | „Darlehen bis Jänner 2021" | Buchungsbestätigung, REF …97250438 |
+| 28.12.2020 | 30.000,00 | tyb Beteiligungs GmbH | „Darlehens-Teilbetrag 02 bis Jänner 2021" | Buchungsbestätigung, REF …97252346 |
+| 28.12.2020 | 30.000,00 | tyb Beteiligungs GmbH | „Darlehens-Teilbetrag 03 bis Jänner 2021" | Buchungsbestätigung, REF …97252354 |
+
+**3.4.1** ON 2.2 gibt die Verwendungszwecke der drei Zahlungen vom 28.12.2020 mit „Darlehen bis Jänner 2021", „Darlehens-Teilbetrag 02 bis Jänner 2021" und „Darlehens-Teilbetrag 02 bis Jänner 2021" an. Die Belege lauten auf Teilbetrag 02 und Teilbetrag 03.
+
+### 3.5 Unternehmenspräsentation GEFION GROUP
+
+Fundstelle: Datei `Gefion Präsentation neu 28.04.2021.pdf`, Vermerk „Geheimhaltungs-, Verbreitungs- und Veröffentlichungsverbot".
+
+Unter „Board of Directors" sind angeführt: Benjamin Hoefler (Chief Intellectual Property Officer), Susanne Messmer (Chief Executive Officer), MMag. Dr. Roman Schobesberger (Chief Data Officer), Andreas Wegscheider (Chief Financial Officer), Mag. Christoph Partl, Oliver Kuhlkamp (Chief Commercial Officer), B.A. M.Sc. Florian Weingärtner (Chief Investment Officer), Alexander Messmer (Chief Listening Officer). Die Applikation „Adplac.es – Airbnb für Werbeflächen" ist als Vorhaben der Gruppe dargestellt.
+
+---
+
+## 4. Befund zum Konto AT12 5700 0300 5545 9891 (Benjamin Höfler)
+
+**4.1** Erfasst wurden 193 Buchungen im Zeitraum 02.01.2020 bis 19.05.2021.
+
+**4.2** Am 28.12.2020 Zahlungseingang von EUR 250.000,00. Auftraggeber laut Buchungstext: „SM Immobilienverwaltung GmbH". Verwendungszweck laut Buchungstext: **„Vereinbarung vom 22.12.2020"**.
+
+**4.3** Abflüsse im Zeitraum 28.12.2020 bis 15.01.2021:
+
+| Datum | Betrag EUR | Empfänger | Verwendungszweck laut Buchungstext |
+|---|---:|---|---|
+| 28.12.2020 | 30.000,00 | tyb Beteiligungs GmbH | Darlehen bis Jänner 2021 |
+| 28.12.2020 | 30.000,00 | tyb Beteiligungs GmbH | Darlehens-Teilbetrag 02 |
+| 28.12.2020 | 30.000,00 | tyb Beteiligungs GmbH | Darlehens-Teilbetrag 03 |
+| 28.12.2020 | 30.000,00 | Daniela Mikic | AT94 5700 0300 5559 0335 |
+| 28.12.2020 | 12.500,00 | Daniela Mikic | AT94 5700 0300 5559 0335 |
+| 28.12.2020 | 10.000,00 | Barauszahlung | **„Mitarbeiter Lohnzahlungen"** |
+| 28.12.2020 | 5.000,00 | Barauszahlung | **„Anzahlung Quelle"** |
+| 28.12.2020 | 58,00 | JB Technology GmbH | „Webshop" |
+| 28.12.2020 | 50,00 | JB Technology GmbH | Umbuchung |
+| 29.12.2020 | 525,00 | Hamam Germany GmbH | „Rechnung JB Technology GmbH – H/2012/05" |
+| 29.12.2020 | 100,00 | Hutchison Drei Austria GmbH | Kundennummer |
+| 30.12.2020 | 414,05 | Four Telecom Services GmbH & Co KG | 3 Rechnungen 202009/202010/202011-55034 |
+| 31.12.2020 | 10.000,00 | Mag. Christoph Partl | **„Akonto für JB Technology GmbH"** |
+| 04.01.2021 | 30.000,00 | Daniela Mikic | AT94 5700 0300 5559 0335 |
+| 04.01.2021 | 14.500,00 | Daniela Mikic | AT94 5700 0300 5559 0335 |
+| 04.01.2021 | 10.000,00 | MMag. Dr. Roman Schobesberger | **„Darlehen Roman Schobesberger"** |
+| 04.01.2021 | 2.092,00 | MMag. Dr. Roman Schobesberger | **„Treuhand Rückerstattung Kosten"** |
+| 07.01.2021 | 991,27 | KSV1875 | **„Bezahlung für JB Technology GmbH"** |
+
+Gegenbuchung: 07.01.2021 Eingang EUR 2.000,00 von Daniela Mikic.
+
+**4.4** Die Summe der unter 4.3 angeführten, durch den Buchungstext einem geschäftlichen Zweck oder einer Verbindlichkeit zugeordneten Abflüsse beträgt EUR 129.230,32. Die Abflüsse an Daniela Mikic betragen im selben Zeitraum EUR 87.000,00.
+
+---
+
+## 5. Befund zum Konto AT94 5700 0300 5559 0335 (Daniela Mikic)
+
+**5.1** Erfasst wurden 424 Buchungen im Zeitraum 31.01.2020 bis 20.05.2021. Eingänge EUR 176.588,82, Ausgänge EUR 176.071,62, ausgewiesener Endsaldo EUR 101,01.
+
+**5.2** Eingänge von Benjamin Höfler: acht Buchungen über zusammen EUR 119.500,00.
+
+| Datum | Betrag EUR |
+|---|---:|
+| 31.03.2020 | 1.200,00 |
+| 29.06.2020 | 1.000,00 |
+| 28.12.2020 | 12.500,00 |
+| 28.12.2020 | 30.000,00 |
+| 04.01.2021 | 14.500,00 |
+| 04.01.2021 | 30.000,00 |
+| 04.01.2021 | 30.000,00 |
+| 14.05.2021 | 300,00 |
+
+**5.3** Weitere Eingänge: EUR 57.088,82, darunter elf Bareinzahlungen über zusammen EUR 43.360,00, Leistungen des AMS Tirol sowie am 18.11.2020 ein Eingang von EUR 7.000,00 mit dem Buchungstext **„Susanne Messmer Darlehen"**.
+
+**5.4** Am 07.12.2020 Bareinzahlung von EUR 15.000,00 mit dem Buchungstext **„Bareinzahlung Treuhandschaft"**. Am 09.12.2020 Abfluss von EUR 14.800,00 an die tyb Beteiligungs GmbH mit dem Verwendungszweck „im Auftrag von JB Technology GmbH".
+
+**5.5** Klassifikation der Ausgänge:
+
+| Kategorie | Betrag EUR | Anteil | Buchungen |
+|---|---:|---:|---:|
+| Barauszahlungen | 69.631,00 | 39,5 % | 2 |
+| Geschäftliche Zahlungen | 32.112,91 | 18,2 % | 9 |
+| Steuern und Sozialversicherung | 18.295,49 | 10,4 % | 6 |
+| Wohnen | 17.933,72 | 10,2 % | 58 |
+| Konsum | 11.870,52 | 6,7 % | 136 |
+| Finanzierungen und Versicherungen | 9.190,54 | 5,2 % | 49 |
+| Justiz, Exekution, Anwälte, Inkasso | 7.258,46 | 4,1 % | 25 |
+| Sonstige | 5.403,98 | 3,1 % | 54 |
+| Rückflüsse an Benjamin Höfler | 4.375,00 | 2,5 % | 6 |
+| **Summe** | **176.071,62** | 100 % | 345 |
+
+**5.6** Barauszahlungen im Einzelnen: 18.11.2020 EUR 4.631,00 und 11.01.2021 EUR 65.000,00. Beide Buchungen tragen keinen weiteren Verwendungstext. Die Buchung vom 11.01.2021 erfolgte sieben Tage nach dem Eingang von EUR 44.500,00 vom Konto des Beschuldigten.
+
+**5.7** Einzelpositionen der Kategorien Geschäft, Steuern, Wohnen und Justiz, soweit betragsmäßig hervortretend: Finanzamt Österreich EUR 8.336,00 (18.03., 29.03. und 14.04.2021), Sozialversicherungsanstalt der Selbständigen EUR 8.921,96, I.P.G. Betriebs- und Industrieversteigerungen GmbH EUR 8.896,86, Office Partner GmbH EUR 1.949,44, ESM Computer GmbH EUR 1.105,98, Dr. Martin Wuelz EUR 3.363,09 (Verwendungszweck „Marko Mikic – Drittschuldnerklage JBTech"), Rechtsanwalt Mag. Roland Testor EUR 2.500,00, Dr. Roland Gabl Rechtsanwalts KG EUR 1.722,44 (Verwendungszweck „Hutchison Drei Austria GmbH (25E382-20g) / JB…"), Österreichische Gesundheitskasse EUR 1.037,53 (Verwendungszweck „811 25 E 165/21x – 2 1.VP BG Innsbruck"), Prof. Dr. Wolfgang Völkl EUR 1.077,73 (Verwendungszweck „811 25 E 269/21s – 2 1.VP BG Innsbruck"), Landesgericht Innsbruck EUR 960,00, wiederkehrende Zahlungen an Dipl.-Ing. Alexander Naglich (Verwendungszweck teilweise „Miete") und an die Innsbrucker Immobilien GmbH & Co KG.
+
+**5.8** Amazon-bezogene Buchungen: 60 Stück, Eingänge EUR 862,10, Ausgänge EUR 6.014,72.
+
+**5.9** Die vorliegenden Auszüge enden am 20.05.2021. Der in ON 2.2 angeführte Zeitraum endet am 24.01.2022. Von der dort genannten Summe von EUR 145.613,00 sind EUR 117.300,00 durch die vorliegenden Auszüge abgedeckt, das entspricht 80,6 %.
+
+---
+
+## 6. Befund zur Lohnverrechnung der JB Technology GmbH
+
+**6.1** Für das Jahr 2021 liegen vollständige Monatsläufe (Auszahlungsjournale, Lohnzettel, Fehlerprotokolle) vor. Klientennummer 210012.
+
+**6.2** Dienstnehmer und Auszahlungsbeträge:
+
+| Monat 2021 | Dienstnehmer | Auszahlung EUR | Gesamtsumme inkl. Körperschaften EUR |
+|---|---|---:|---:|
+| Jänner | Mikic Daniela | 208,33 | 310,69 |
+| Februar | Mikic Daniela | 1.250,00 | 1.975,14 |
+| März | Mikic Daniela | 1.250,00 | 1.975,14 |
+| April | Mikic Daniela | 1.250,00 | 1.975,14 |
+| Mai | Mikic Daniela | 1.250,00 | 1.975,14 |
+| Juni | Mikic Daniela | 1.803,80 | 2.810,67 |
+| Juli | Mikic Daniela | 1.250,00 | 1.975,14 |
+| August | Mikic Daniela, Mikic Marko | 2.010,00 | 3.139,76 |
+| September | Mikic Daniela, Mikic Marko | 2.010,00 | 3.139,76 |
+| Oktober | Mikic Daniela, Mikic Marko | 2.010,00 | 3.141,59 |
+| November | Mikic Daniela, Mikic Marko | 3.460,40 | 5.466,18 |
+| Dezember | Mikic Daniela, Mikic Marko | 2.958,72 | 4.630,65 |
+| **Summe** | | **20.711,25** | **32.515,00** |
+
+**6.3** Die Auszahlungsart ist in sämtlichen zwölf Monatsläufen mit **„KASSA"** angegeben. Ein Bankkonto ist für die Dienstnehmer nicht hinterlegt.
+
+**6.4** Für das Jahr 2020 liegen keine Lohnverrechnungsunterlagen vor. Der Ordner `99 – Buchhaltung/2020/DN` ist leer.
+
+**6.5** Für 2018 liegt eine Anmeldung bei der TGKK (Dienstnehmer Charara) vor, für 2019 ein Lohnzettel (Dienstnehmer Ingo Koller, Zeitraum 20.09. bis 04.10.2019), eine Abmeldung und eine Abrechnung.
+
+---
+
+## 7. Befund zu den Beteiligten
+
+**7.1** Die SM Immobilienverwaltungs GmbH ist im Anmeldungsverzeichnis (ON 2.15) unter der Anschrift Grünegger 10, 6911 Lochau eingetragen. Unter derselben Anschrift ist die Gläubigerin Susanne Messmer eingetragen.
+
+**7.2** ON 4.2 bezeichnet als Geschäftsführung der MW Immobilienverwaltungs GmbH „Andreas Wegscheider und/oder Susanne Mesmer".
+
+**7.3** Nach ON 2.15 vertritt RA MMag. Stefan Zajic im Insolvenzverfahren Susanne Messmer, die SM Immobilienverwaltungs GmbH, Thomas Klepsch sowie die Association of Partnerships Austria and Kosovo Sh.P.K. ON 5.2 bezeichnet ihn als Vertreter „von zumindest zwei der Darlehensgeber".
+
+**7.4** Von den im Konkurs festgestellten Forderungen über EUR 689.035,82 entfallen EUR 419.935,82 auf Mandanten des RA Zajic (60,9 %). Unter Einbeziehung der selbst angemeldeten Forderung des Andreas Wegscheider über EUR 211.050,94 ergeben sich EUR 630.986,76 (91,6 %).
+
+**7.5** Nach ON 4.8 verfasste der Beschuldigte das Schreiben vom 30.08.2024 „im Namen der MW Immobilienverwaltungs GmbH". Nach ON 4.2 brachte er am 15.11.2024 „im Auftrag des Geschäftsführers Andreas Wegscheider" Einsprüche gegen Zahlungsbefehle zu 8 C 551/24d und 15 C 508/20g des BG Bregenz ein. Die Konkurseröffnung datiert vom 04.07.2024, die Forderungsanmeldung des Andreas Wegscheider über EUR 215.463,58 vom 27.07.2024.
+
+**7.6** In der eidesstättigen Erklärung des MMag. Dr. Roman Schobesberger vom 18.11.2025 (Aktenstück ON 3.15 zu 3 St 287/25 y der StA Ried im Innkreis) wird der Beschuldigte für den 10.10.2025 als „der Mitarbeiter der Gesellschaft, Herr Benjamin Höfler" der Ökovolt Solartechnik GmbH bezeichnet. Dieselbe Erklärung bezeichnet Schobesberger als „Rechtsabteilung" der Ökovolt Solartechnik GmbH und MMag. Stefan Zajic als Vertreter des Mehrheitsgesellschafters.
+
+---
+
+## 8. Befund zu Divergenzen zwischen den Aktenstücken
+
+**8.1** Summe der Überweisungen an Daniela Mikic: ON 2.5 (3. Bericht vom 09.12.2024) nennt EUR 144.980,00, ON 2.2 (vom 14.01.2026) nennt EUR 145.613,00. Die Differenz von EUR 633,00 entfällt auf drei in ON 2.2 zusätzlich angeführte Positionen über EUR 300,00, EUR 250,00 und EUR 83,00.
+
+**8.2** Tatzeitraum: ON 2.2 nennt 28.12.2020 bis 24.01.2022, ON 5.2 nennt 28.12.2020 bis 10.01.2022.
+
+**8.3** Rücküberweisungen: ON 5.2 führt an, es dürfte „auch zu Rücküberweisung in einer Gesamthöhe von ca. EUR 3.500,-" gekommen sein. ON 2.2 enthält dazu keine Angabe.
+
+**8.4** ON 2.2, Seite 5, führt zum Darlehen des Andreas Wegscheider über EUR 200.000,00 aus, dieses sei am 06.05.2021 eingegangen, am 09.05.2025 habe das Kontoguthaben EUR 25.856,36 betragen und am 07.06.2022 EUR 10.835,67. Nach ON 2.15 datiert der betreffende Darlehensvertrag vom 04.05.2022.
+
+**8.5** ON 2.2, Seite 5, führt für den 03.08.2021 ein „Kontoguthaben" von EUR 22,31 und für den 04.10.2021 einen „Negativsaldo" von EUR 22,31 an.
+
+**8.6** ON 2.2 beschreibt drei Zahlungen der SM Immobilienverwaltung über zusammen EUR 297.500,00. Nach ON 2.15 wurden vier Darlehensverträge über zusammen EUR 304.500,00 angemeldet.
+
+**8.7** Die vom Landeskriminalamt in ON 5.2 genannte Summe von EUR 538.671,61 entspricht der Summe der acht in ON 2.15 angemeldeten Kapitalbeträge. Sie enthält einen Teilbetrag von EUR 4.171,61, zu dem der Masseverwalter in ON 2.15 vermerkt: „Es liegt kein Nachweis vor, dass das Darlehen über € 4.171,61 dem Schuldner ausgezahlt wurde."
+
+**8.8** Von den angemeldeten Forderungen über EUR 1.122.209,08 sind EUR 433.173,26 bestritten. Davon entfallen EUR 332.416,11 auf das Finanzamt Österreich und EUR 89.390,36 auf die Sozialversicherungsanstalt der Selbständigen, zusammen EUR 421.806,47. Der Masseverwalter vermerkt dazu in ON 2.15, die Vorschreibungen beruhten „großteils auf Steuerbescheiden, in denen die Besteuerungsgrundlagen laut Angaben des Schuldners viel zu hoch geschätzt wurden".
+
+**8.9** ON 2.2, Seite 8, enthält den Satz: „Der Masseverwalter hält fest, dass nicht auszuschließen ist, dass die Angaben des Schuldners ganz oder teilweise stimmen."
+
+**8.10** Im Einvernahmeprotokoll vom 20.02.2024 (ON 2.13) ist als Forderung des Beschuldigten angeführt: „Timo Bösch in Höhe von Euro 90.000.- (Darlehen)" sowie „Wilhelm Müller in Höhe von Euro 30.000.- (aus Warenlieferung)".
+
+**8.11** In denselben Protokollen vom 20.02.2024 und 21.03.2024 ist festgehalten, der Beschuldigte sei in der Lage, seinen laufenden Zahlungsverpflichtungen nachzukommen, es bestehe weder Zahlungsunfähigkeit noch Überschuldung, es gebe weitere Gläubiger mit Forderungen von insgesamt etwa EUR 20.000,00 und es seien keine Zivilprozesse anhängig. Die Konkurseröffnung erfolgte am 04.07.2024. Die Abfrage des Exekutionsregisters (ON 6.1) weist für den Beschuldigten mehr als 55 Verfahren im Zeitraum 2009 bis 2024 aus, für die JB Technology GmbH (ON 6.2) rund 50 Verfahren.
+
+**8.12** Die Kontenregisterabfragen zur JB Technology GmbH (ON 7.3 und ON 7.4) enden jeweils mit der Anzeige „Kein Ergebnis gefunden". Die Abfrage zum Beschuldigten (ON 7.2) weist drei Bankverbindungen aus: zwei Girokonten bei der Hypo Tirol Bank AG und ein Konto bei der Generali Bank AG (15.06.2020 bis 04.11.2021).
+
+---
+
+## 9. Befund zu nicht auffindbaren Unterlagen
+
+Im untersuchten Material nicht auffindbar sind:
+
+**9.1** Die in Punkt 4.2 genannte **Vereinbarung vom 22.12.2020** zwischen dem Beschuldigten und der SM Immobilienverwaltungs GmbH.
+
+**9.2** Ein Kassabuch, Empfangsbestätigungen oder Lohnquittungen zu den Barbewegungen. Zum Umfang und zur Struktur der Barbewegungen siehe den ergänzenden Befund unter Punkt 10; die frühere Fassung dieses Punktes, die einen Betrag von EUR 84.631,00 als „ohne Verwendungsnachweis" auswies, beruhte auf einer Einzelkontenbetrachtung und ist durch die konsolidierte Auswertung überholt.
+
+**9.3** Kontoauszüge für den Zeitraum nach dem 21.05.2021. Nicht belegt sind damit die Darlehen der SM Immobilienverwaltungs GmbH vom 02.06.2021, der Susanne Messmer vom 30.07.2021 und vom 01.10.2021 sowie des Andreas Wegscheider vom 28.03.2022 und vom 04.05.2022.
+
+**9.4** Schriftliche Stellungnahmen des Andreas Wegscheider und der Susanne Messmer. Eine Volltextsuche über sämtliche 364 PDF-Dokumente mit Textebene nach den Zeichenfolgen „Opfer eines Betrug" und „nicht … betrogen" ergab null Treffer; auch die beiden Bildscans enthalten keine derartigen Erklärungen.
+
+**9.5** Schreiben der Ökovolt Solartechnik GmbH vom 26.02.2024 und 18.03.2024. Volltextsuche nach beiden Daten: null Treffer.
+
+**9.6** Rangrücktrittserklärungen. Volltextsuche nach „Rangrücktritt": null Treffer.
+
+**9.7** Eine Treuhandvereinbarung. Vorhanden sind lediglich die beiden unter 4.3 und 5.4 angeführten Buchungen mit Treuhandbezug.
+
+**9.8** Ein Registerauszug des Deutschen Patent- und Markenamtes zur Registernummer 302019235852. Die Registernummer selbst ist ausschließlich in Punkt III des Kaufvertrages (3.1.6) belegt.
+
+---
+
+---
+
+## 10. Ergänzender Befund: konsolidierte Betrachtung aller Konten
+
+### 10.1 Erfasster Kontenkreis
+
+| Konto | Inhaber laut Auszug | Buchungen | Zeitraum |
+|---|---|---:|---|
+| AT12 5700 0300 5545 9891 | Benjamin Höfler | 193 | 02.01.2020 – 19.05.2021 |
+| AT25 5700 0300 5545 9948 | Benjamin Höfler | 1.155 | 30.09.2018 – 19.05.2021 |
+| AT26 5700 0300 5542 3846 | JB Technology GmbH | 113 | 10.09.2018 – 31.03.2021 |
+| AT94 5700 0300 5559 0335 | Daniela Mikic | 424 | 31.01.2020 – 20.05.2021 |
+| **Summe** | | **1.885** | 09/2018 – 05/2021 |
+
+### 10.2 Gesamtumsätze
+
+| | Eingänge EUR | Ausgänge EUR | Saldo EUR |
+|---|---:|---:|---:|
+| Bruttoumsätze aller vier Konten | 773.431,94 | 762.556,41 | +10.875,53 |
+| davon Umbuchungen innerhalb des Kontenkreises | 139.349,01 | 112.453,49 | |
+| **Bereinigt um konteninterne Umbuchungen** | **634.082,93** | **650.102,92** | **−16.019,99** |
+
+**10.2.1** Die in ON 2.2 beanstandeten Überweisungen an Daniela Mikic sind innerhalb dieses Kontenkreises **konteninterne Umbuchungen**. Sie stellen in konsolidierter Betrachtung keinen Mittelabfluss dar, sondern eine Verlagerung zwischen zwei erfassten Konten. Der tatsächliche Mittelabfluss ist erst auf der nachgelagerten Stufe zu messen, also bei den Zahlungen, die vom Konto der Daniela Mikic an Dritte geleistet wurden.
+
+### 10.3 Verwendung der EUR 650.102,92 externen Abflüsse
+
+| Verwendung | Betrag EUR | Anteil | Buchungen |
+|---|---:|---:|---:|
+| Barbehebungen | 160.104,57 | 24,6 % | 189 |
+| Softwareprojekt adplac.es (tyb Beteiligungs GmbH, hjpe GmbH) | 137.558,85 | 21,2 % | 7 |
+| Lieferanten und Betriebsmittel | 101.024,26 | 15,5 % | 241 |
+| Justiz, Anwälte, Inkasso, Exekution | 56.834,03 | 8,7 % | 48 |
+| Privatkonsum | 51.475,81 | 7,9 % | 640 |
+| Miete, Betriebskosten, Energie | 34.962,15 | 5,4 % | 80 |
+| Steuern und Sozialversicherung | 32.084,48 | 4,9 % | 27 |
+| Versicherungen und Finanzierungen | 15.906,59 | 2,4 % | 71 |
+| Personal | 400,00 | 0,1 % | 1 |
+| Nicht regelbasiert zugeordnet | 59.249,11 | 9,1 % | 176 |
+| **Summe** | **650.102,92** | 100 % | 1.481 |
+
+**10.3.1** Der Anteil des Privatkonsums an sämtlichen externen Abflüssen beträgt 7,9 %.
+
+**10.3.2** Die 176 nicht regelbasiert zugeordneten Posten wurden manuell gesichtet. Die betragsmäßig größten sind: Thomas Müller EUR 10.000,00 (02.04.2020), Troostwijk Veilingen B.V. EUR 6.408,09 (23.07.2020), Klepsch Thomas EUR 5.000,00 (22.07.2020), TGK EUR 3.206,80, Thomas Klepsch EUR 2.500,00 (02.01.2020), Harlander.com EUR 2.467,47, Omega Handelsges.m.b.H. EUR 2.437,20, 1u1 IONOS SE EUR 2.214,79, CHINA TREND MANAGEMENT LTD. EUR 1.807,36, Danijela Ostojic EUR 1.760,00, RAin Dr. Katharina Bleckmann EUR 1.424,98 (Verwendungszweck „Drittschuldnerzahlung"), Canon Austria EUR 853,13, Einbringungsstelle EUR 784,70, Flavorex Environmental Care BV EUR 720,00, Republik Österreich EUR 442,34 (Verwendungszweck „811 025 E 37/21 y").
+
+### 10.4 Struktur der Barbewegungen
+
+| | Betrag EUR | Buchungen |
+|---|---:|---:|
+| Barauszahlungen gesamt | 160.104,57 | 189 |
+| davon Einzelbeträge ab EUR 4.000,00 | 99.631,00 | 6 |
+| davon Routinebehebungen unter EUR 4.000,00 | 60.473,57 | 183 |
+| Bareinzahlungen gesamt | 54.910,00 | 15 |
+| **Netto-Barverbrauch** | **105.194,57** | |
+
+Bezogen auf den erfassten Zeitraum von 32 Monaten ergibt sich ein durchschnittlicher Netto-Barverbrauch von EUR 3.287,33 pro Monat.
+
+**10.4.1** Einzelbeträge ab EUR 4.000,00: 11.01.2021 EUR 65.000,00 (Konto Mikic), 28.12.2020 EUR 10.000,00 (Konto Höfler-9891, Vermerk „Mitarbeiter Lohnzahlungen"), 11.09.2018 EUR 9.000,00 (Konto JB Technology), 01.03.2019 EUR 6.000,00 (Konto Höfler-9948, Vermerk „Darlehen", am selben Tag Gegenbuchung „Bareinzahlung Darlehen" EUR 6.000,00), 28.12.2020 EUR 5.000,00 (Konto Höfler-9891, Vermerk „Anzahlung Quelle"), 18.11.2020 EUR 4.631,00 (Konto Mikic).
+
+**10.4.2** Bareinzahlungen über EUR 4.000,00: 07.12.2020 EUR 15.000,00 („Bareinzahlung Treuhandschaft", Konto Mikic), 22.03.2021 EUR 8.000,00, 01.03.2019 EUR 6.000,00 („Bareinzahlung Darlehen"), 12.04.2021 EUR 5.600,00, 19.12.2018 EUR 5.000,00 („Bareinzahlung Darlehen", Konto JB Technology), 18.03.2021 EUR 4.000,00.
+
+**10.4.3** Für die Barauszahlung vom 11.01.2021 über EUR 65.000,00 ist innerhalb des erfassten Kontenkreises keine zeitnahe Bareinzahlung in entsprechender Größenordnung feststellbar. Die nachfolgenden Bareinzahlungen auf dem Konto Mikic betragen EUR 4.000,00 (18.03.2021), EUR 8.000,00 (22.03.2021), EUR 5.600,00 (12.04.2021), EUR 3.000,00 (21.04.2021) und EUR 500,00 (26.04.2021), zusammen EUR 21.100,00.
+
+### 10.5 Rückzahlungen an Gläubiger
+
+**10.5.1** An Thomas Klepsch, im Anmeldungsverzeichnis ON 2.15 als Gläubiger Nr. 12 mit einer festgestellten Forderung von EUR 13.290,19 geführt, wurden vom Konto AT25 5700 0300 5545 9948 folgende Zahlungen geleistet:
+
+| Datum | Betrag EUR | Verwendungszweck laut Buchungstext |
+|---|---:|---|
+| 02.01.2020 | 2.500,00 | „Thomas Klepsch Teil-Rückzahlung" |
+| 22.07.2020 | 5.000,00 | „Klepsch Thomas Darlehen Rückzahlung" |
+| **Summe** | **7.500,00** | |
+
+**10.5.2** ON 5.2 führt zu den acht Darlehensverträgen aus: „Diese Darlehen wurden vom Beschuldigten nicht zurückgeführt." Die unter 10.5.1 angeführten Buchungen betreffen einen Gläubiger, dessen Forderung im Konkursverfahren festgestellt wurde.
+
+**10.5.3** Weitere Zahlungen an Personen mit gleichlautendem Familiennamen wie im Gläubigerverzeichnis: Thomas Müller EUR 10.000,00 am 02.04.2020. Ein Bezug zu der in ON 2.13 angeführten Forderung gegen „Wilhelm Müller in Höhe von Euro 30.000.- (aus Warenlieferung)" ist aus dem Buchungstext nicht ableitbar.
+
+### 10.6 Gegenüberstellung zum Vorwurf
+
+**10.6.1** Die in ON 5.2 genannte Darlehenssumme beträgt EUR 538.671,61. Die im erfassten Zeitraum festgestellten externen Abflüsse betragen EUR 650.102,92, die Eingänge EUR 634.082,93.
+
+**10.6.2** Die Erfassung deckt den Zeitraum 09/2018 bis 05/2021 ab. Nicht erfasst sind die Darlehen vom 02.06.2021, 30.07.2021, 01.10.2021, 28.03.2022 und 04.05.2022 sowie sämtliche Kontobewegungen nach dem 20.05.2021.
+
+---
+
+*Befund erstellt auf Grundlage des am 20.09.2026 im Verzeichnis `C:\Users\SALEADMIN\Pictures\Strafrecht BH` vorgefundenen Materials. Die Rohdaten der Kontoauswertung liegen als `Rohdaten_Konto_Mikic.json` (424 Datensätze), `Rohdaten_Konto_Hoefler_9891.json` (193 Datensätze) und `Rohdaten_Alle_Konten.json` (1.885 Datensätze) vor.*

@@ -1,0 +1,71 @@
+<script setup lang="ts">
+/** Offline-/Sync-Anzeige (NFA-014, Kapitel 7.4 Punkt 6). */
+import { computed } from 'vue'
+
+import AppIcon from '@/components/AppIcon.vue'
+import { relativ } from '@/lib/format'
+import { useSync } from '@/stores/sync'
+import { useUi } from '@/stores/ui'
+
+withDefaults(defineProps<{ ausfuehrlich?: boolean }>(), { ausfuehrlich: false })
+
+const sync = useSync()
+const ui = useUi()
+
+const darstellung = computed(() => {
+  if (sync.laeuft) return { symbol: 'sync', farbe: 'text-sky-600', text: 'Synchronisiert …' }
+  if (sync.istOffline) return { symbol: 'wolkeAus', farbe: 'text-amber-600', text: 'Offline' }
+  if (sync.zustand === 'fehler') return { symbol: 'warnung', farbe: 'text-fehler', text: 'Sync-Fehler' }
+  if (sync.hatAusstehende)
+    return { symbol: 'wolke', farbe: 'text-amber-600', text: `${sync.ausstehend} ausstehend` }
+  return { symbol: 'check', farbe: 'text-ok', text: 'Aktuell' }
+})
+
+async function jetzt() {
+  const ergebnis = await sync.jetztSynchronisieren()
+  ui.toast(ergebnis.meldung, ergebnis.fehler ? 'warnung' : 'erfolg')
+}
+</script>
+
+<template>
+  <div v-if="ausfuehrlich" class="rounded-lg bg-slate-50 p-3 text-xs dark:bg-slate-800/60">
+    <div class="flex items-center gap-2 font-semibold" :class="darstellung.farbe">
+      <AppIcon :name="darstellung.symbol" :groesse="16" :class="{ 'animate-spin': sync.laeuft }" />
+      {{ darstellung.text }}
+    </div>
+    <dl class="mt-2 space-y-1 text-slate-500">
+      <div class="flex justify-between">
+        <dt>Letzter Sync</dt>
+        <dd>{{ relativ(sync.letzterSync) }}</dd>
+      </div>
+      <div class="flex justify-between">
+        <dt>Warteschlange</dt>
+        <dd>{{ sync.ausstehend }}</dd>
+      </div>
+      <div v-if="sync.pufferMb" class="flex justify-between">
+        <dt>Fotopuffer</dt>
+        <dd>{{ sync.pufferMb }} MB</dd>
+      </div>
+      <div v-if="sync.konflikte" class="flex justify-between text-fehler">
+        <dt>Konflikte</dt>
+        <dd>{{ sync.konflikte }}</dd>
+      </div>
+    </dl>
+    <button class="mt-2 w-full rounded-lg border border-slate-300 py-1.5 font-medium
+                   hover:bg-white dark:border-slate-700 dark:hover:bg-slate-900"
+            :disabled="sync.laeuft" @click="jetzt">
+      Jetzt synchronisieren
+    </button>
+  </div>
+
+  <button
+    v-else
+    class="tap flex items-center gap-1.5 rounded-lg px-2 text-xs font-semibold"
+    :class="darstellung.farbe"
+    :title="`${darstellung.text} · letzter Sync ${relativ(sync.letzterSync)}`"
+    @click="jetzt"
+  >
+    <AppIcon :name="darstellung.symbol" :groesse="18" :class="{ 'animate-spin': sync.laeuft }" />
+    <span v-if="sync.hatAusstehende || sync.istOffline">{{ sync.ausstehend || '' }}</span>
+  </button>
+</template>

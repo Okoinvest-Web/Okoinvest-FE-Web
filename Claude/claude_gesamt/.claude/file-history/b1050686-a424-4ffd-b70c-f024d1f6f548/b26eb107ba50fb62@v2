@@ -1,0 +1,517 @@
+/**
+ * EU-Taxonomie: fähig, konform, oder offen.
+ *
+ * Die Taxonomie-Verordnung (EU) 2020/852 fragt nicht "ist das grün?",
+ * sondern stellt vier Bedingungen hintereinander. Eine Tätigkeit ist
+ * nur dann konform, wenn *alle vier* zutreffen:
+ *
+ * 1. Sie steht im delegierten Rechtsakt - dann ist sie "taxonomiefähig".
+ *    Fähigkeit ist keine Auszeichnung, sondern nur die Eintrittskarte.
+ * 2. Sie leistet einen wesentlichen Beitrag zu einem der sechs
+ *    Umweltziele und erfüllt dessen technische Bewertungskriterien.
+ * 3. Sie schadet keinem der übrigen fünf Ziele erheblich (DNSH).
+ * 4. Der Betrieb hält den sozialen Mindestschutz nach Artikel 18 ein.
+ *
+ * Der Fehler, den fast jede erste Berichterstattung macht: Schritt 1
+ * mit Schritt 4 zu verwechseln. Eine Photovoltaikanlage ist immer
+ * taxonomiefähig - sie steht in Abschnitt 4.1 des Anhangs I. Konform
+ * ist sie erst mit Klimarisikoprüfung, Nachweisen zur
+ * Kreislauffähigkeit, Biodiversitätsprüfung und Mindestschutz. Wer
+ * "fähig" als "konform" meldet, meldet falsch, und die Prüfstelle
+ * findet es.
+ *
+ * Deshalb kennt diese Datei drei Ergebnisse und nicht zwei. Zwischen
+ * "konform" und "nicht konform" liegt "offen": der Fall, in dem ein
+ * Nachweis schlicht noch fehlt. Ihn als konform zu führen wäre eine
+ * Gefälligkeitsprüfung; ihn als nicht konform zu führen wäre falsch,
+ * weil nichts geprüft wurde.
+ *
+ * Rechtsstand: delegierte Verordnung (EU) 2021/2139 (technische
+ * Bewertungskriterien, Anhang I), delegierte Verordnung (EU) 2021/2178
+ * (Meldebögen und Kennzahlen) samt der Vereinfachung vom 4. Juli 2025,
+ * die die Wesentlichkeitsschwelle von 10 % eingeführt hat.
+ */
+
+/* ------------------------------------------------------------------ */
+/* Umweltziele                                                         */
+/* ------------------------------------------------------------------ */
+
+export const UMWELTZIELE = [
+  "klimaschutz",
+  "anpassung",
+  "wasser",
+  "kreislauf",
+  "verschmutzung",
+  "biodiversitaet",
+] as const;
+
+export type Umweltziel = (typeof UMWELTZIELE)[number];
+
+export const ZIELNAMEN: Record<Umweltziel, string> = {
+  klimaschutz: "Klimaschutz",
+  anpassung: "Anpassung an den Klimawandel",
+  wasser: "Wasser- und Meeresressourcen",
+  kreislauf: "Kreislaufwirtschaft",
+  verschmutzung: "Vermeidung von Umweltverschmutzung",
+  biodiversitaet: "Biologische Vielfalt und Ökosysteme",
+};
+
+/* ------------------------------------------------------------------ */
+/* Tätigkeiten                                                         */
+/* ------------------------------------------------------------------ */
+
+export interface Kriterium {
+  /** Kennung, unter der der Nachweis geführt wird. */
+  schluessel: string;
+  /** Ziel, dem das Kriterium dient. */
+  ziel: Umweltziel;
+  /** Was verlangt wird, in einem Satz. */
+  anforderung: string;
+  /** Woran es sich belegen lässt. */
+  nachweis: string;
+  /** Fundstelle im Rechtsakt. */
+  fundstelle: string;
+}
+
+export interface Taetigkeit {
+  /** Abschnitt im Anhang, etwa "4.1". */
+  schluessel: string;
+  bezeichnung: string;
+  /** NACE-Codes, unter denen die Tätigkeit geführt wird. */
+  nace: string[];
+  /** Ziel, zu dem der wesentliche Beitrag geleistet wird. */
+  beitragZu: Umweltziel;
+  /** Das Kriterium des wesentlichen Beitrags. */
+  beitrag: Kriterium;
+  /** Die DNSH-Kriterien für die übrigen Ziele. */
+  dnsh: Kriterium[];
+}
+
+/**
+ * Die Tätigkeiten, die bei einem Photovoltaikbetrieb vorkommen.
+ *
+ * Bewusst nur diese vier. Ein Katalog aller hundertfünfzig Tätigkeiten
+ * des Anhangs wäre vollständig und unbrauchbar: Niemand sucht in einer
+ * Liste, in der 146 Zeilen nicht zutreffen.
+ *
+ * Wasser (Ziel 3) und Umweltverschmutzung (Ziel 5) führen bei 4.1
+ * keine eigenen DNSH-Kriterien - der Anhang lässt sie dort aus. Das
+ * ist kein Versehen dieser Datei: Eine Photovoltaikanlage verbraucht
+ * im Betrieb kein Wasser und emittiert nichts.
+ */
+export const TAETIGKEITEN: Taetigkeit[] = [
+  {
+    schluessel: "4.1",
+    bezeichnung: "Stromerzeugung mittels Photovoltaik-Technologie",
+    nace: ["D35.11", "F42.22"],
+    beitragZu: "klimaschutz",
+    beitrag: {
+      schluessel: "4.1-beitrag",
+      ziel: "klimaschutz",
+      anforderung:
+        "Die Tätigkeit erzeugt Strom mittels Photovoltaik-Technologie.",
+      nachweis:
+        "Anlagenstammdaten, Inbetriebnahmemeldung, Zählpunktbezeichnung",
+      fundstelle: "VO (EU) 2021/2139, Anhang I, 4.1",
+    },
+    dnsh: [
+      {
+        schluessel: "4.1-anpassung",
+        ziel: "anpassung",
+        anforderung:
+          "Klimarisiko- und Vulnerabilitätsprüfung nach Anlage A; für erkannte Risiken sind Anpassungslösungen vorgesehen.",
+        nachweis:
+          "Risikoanalyse mit Klimaszenarien, Maßnahmenplan (Hagel, Sturm, Hitze, Starkregen)",
+        fundstelle: "VO (EU) 2021/2139, Anhang I, Anlage A",
+      },
+      {
+        schluessel: "4.1-kreislauf",
+        ziel: "kreislauf",
+        anforderung:
+          "Die Verfügbarkeit langlebiger und recyclingfähiger Ausrüstung wurde bewertet und nach Möglichkeit genutzt; für das Lebensende besteht eine Bewirtschaftung.",
+        nachweis:
+          "Beschaffungsbewertung, Rücknahmevereinbarung nach EAG-VO/WEEE, Demontagekonzept",
+        fundstelle: "VO (EU) 2021/2139, Anhang I, 4.1 DNSH (4)",
+      },
+      {
+        schluessel: "4.1-biodiversitaet",
+        ziel: "biodiversitaet",
+        anforderung:
+          "Umweltverträglichkeitsprüfung oder Einzelfallprüfung nach Anlage D; in oder nahe schutzwürdigen Gebieten zusätzlich eine Naturverträglichkeitsprüfung.",
+        nachweis:
+          "UVP-Feststellungsbescheid oder Bestätigung der Nichtnotwendigkeit, Standortbeurteilung",
+        fundstelle: "VO (EU) 2021/2139, Anhang I, Anlage D",
+      },
+    ],
+  },
+  {
+    schluessel: "4.10",
+    bezeichnung: "Speicherung von Elektrizität",
+    nace: ["D35.11", "D35.12"],
+    beitragZu: "klimaschutz",
+    beitrag: {
+      schluessel: "4.10-beitrag",
+      ziel: "klimaschutz",
+      anforderung:
+        "Die Tätigkeit speichert Elektrizität und gibt sie später wieder ab.",
+      nachweis: "Speicherstammdaten, Zyklenprotokoll",
+      fundstelle: "VO (EU) 2021/2139, Anhang I, 4.10",
+    },
+    dnsh: [
+      {
+        schluessel: "4.10-anpassung",
+        ziel: "anpassung",
+        anforderung: "Klimarisiko- und Vulnerabilitätsprüfung nach Anlage A.",
+        nachweis: "Risikoanalyse, Maßnahmenplan",
+        fundstelle: "VO (EU) 2021/2139, Anhang I, Anlage A",
+      },
+      {
+        schluessel: "4.10-kreislauf",
+        ziel: "kreislauf",
+        anforderung:
+          "Für Batterien besteht ein Plan zur Bewirtschaftung am Lebensende, einschließlich Wiederverwendung und Recycling.",
+        nachweis:
+          "Rücknahmevereinbarung des Herstellers, Nachweis nach Batterieverordnung (EU) 2023/1542",
+        fundstelle: "VO (EU) 2021/2139, Anhang I, 4.10 DNSH (4)",
+      },
+      {
+        schluessel: "4.10-verschmutzung",
+        ziel: "verschmutzung",
+        anforderung:
+          "Der Einsatz und die Handhabung von Chemikalien entsprechen den Anforderungen der Anlage C.",
+        nachweis: "Sicherheitsdatenblätter, Stoffliste, Löschkonzept",
+        fundstelle: "VO (EU) 2021/2139, Anhang I, Anlage C",
+      },
+    ],
+  },
+  {
+    schluessel: "6.15",
+    bezeichnung:
+      "Infrastruktur für einen kohlenstoffarmen Straßenverkehr (Ladepunkte)",
+    nace: ["F42.11", "F42.13"],
+    beitragZu: "klimaschutz",
+    beitrag: {
+      schluessel: "6.15-beitrag",
+      ziel: "klimaschutz",
+      anforderung:
+        "Errichtung oder Betrieb von Ladeinfrastruktur für Elektrofahrzeuge.",
+      nachweis: "Ladepunktverzeichnis, Eichnachweis, Anschlussbestätigung",
+      fundstelle: "VO (EU) 2021/2139, Anhang I, 6.15",
+    },
+    dnsh: [
+      {
+        schluessel: "6.15-anpassung",
+        ziel: "anpassung",
+        anforderung: "Klimarisiko- und Vulnerabilitätsprüfung nach Anlage A.",
+        nachweis: "Risikoanalyse, Maßnahmenplan",
+        fundstelle: "VO (EU) 2021/2139, Anhang I, Anlage A",
+      },
+      {
+        schluessel: "6.15-biodiversitaet",
+        ziel: "biodiversitaet",
+        anforderung:
+          "Umweltverträglichkeitsprüfung oder Einzelfallprüfung nach Anlage D.",
+        nachweis: "Bescheid oder Bestätigung der Nichtnotwendigkeit",
+        fundstelle: "VO (EU) 2021/2139, Anhang I, Anlage D",
+      },
+    ],
+  },
+  {
+    schluessel: "7.6",
+    bezeichnung:
+      "Installation, Wartung und Reparatur von Technologien für erneuerbare Energien",
+    nace: ["F42", "F43", "M71"],
+    beitragZu: "klimaschutz",
+    beitrag: {
+      schluessel: "7.6-beitrag",
+      ziel: "klimaschutz",
+      anforderung:
+        "Installation, Wartung oder Reparatur von Anlagen zur Nutzung erneuerbarer Energie vor Ort.",
+      nachweis: "Auftrags- und Wartungsnachweise, Leistungsverzeichnis",
+      fundstelle: "VO (EU) 2021/2139, Anhang I, 7.6",
+    },
+    dnsh: [
+      {
+        schluessel: "7.6-anpassung",
+        ziel: "anpassung",
+        anforderung: "Klimarisiko- und Vulnerabilitätsprüfung nach Anlage A.",
+        nachweis: "Risikoanalyse, Maßnahmenplan",
+        fundstelle: "VO (EU) 2021/2139, Anhang I, Anlage A",
+      },
+    ],
+  },
+];
+
+export function findeTaetigkeit(schluessel: string): Taetigkeit | undefined {
+  return TAETIGKEITEN.find((t) => t.schluessel === schluessel);
+}
+
+/* ------------------------------------------------------------------ */
+/* Mindestschutz                                                       */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Der soziale Mindestschutz nach Artikel 18.
+ *
+ * Er gilt für das Unternehmen, nicht für die einzelne Anlage: Ein
+ * Betrieb, der die Kernarbeitsnormen verletzt, kann keine konforme
+ * Tätigkeit haben, auch wenn die Anlage technisch einwandfrei ist.
+ * Deshalb steht der Mindestschutz hier neben den Tätigkeiten und nicht
+ * in ihnen.
+ */
+export const MINDESTSCHUTZ: Kriterium[] = [
+  {
+    schluessel: "ms-oecd",
+    ziel: "klimaschutz",
+    anforderung:
+      "Verfahren zur Einhaltung der OECD-Leitsätze für multinationale Unternehmen und der UN-Leitprinzipien für Wirtschaft und Menschenrechte.",
+    nachweis: "Sorgfaltsprüfung in der Lieferkette, Beschwerdemechanismus",
+    fundstelle: "VO (EU) 2020/852, Artikel 18",
+  },
+  {
+    schluessel: "ms-arbeit",
+    ziel: "klimaschutz",
+    anforderung:
+      "Einhaltung der acht ILO-Kernarbeitsnormen und der Internationalen Menschenrechtscharta.",
+    nachweis: "Verhaltenskodex, Lieferantenerklärungen, Schulungsnachweise",
+    fundstelle: "VO (EU) 2020/852, Artikel 18",
+  },
+  {
+    schluessel: "ms-steuern",
+    ziel: "klimaschutz",
+    anforderung:
+      "Keine Feststellungen zu Steuerhinterziehung, Korruption, unlauterem Wettbewerb oder Verstößen gegen Kartellrecht.",
+    nachweis: "Compliance-Bericht, Bestätigung der Geschäftsführung",
+    fundstelle: "VO (EU) 2020/852, Artikel 18",
+  },
+];
+
+/* ------------------------------------------------------------------ */
+/* Prüfung                                                             */
+/* ------------------------------------------------------------------ */
+
+/** Ergebnis eines einzelnen Kriteriums. */
+export type Nachweisstand = "erfuellt" | "nicht_erfuellt" | "offen";
+
+/** Was zu den Kriterien vorliegt, je Schlüssel. */
+export type Nachweislage = Record<string, Nachweisstand | undefined>;
+
+/**
+ * Wie eine Tätigkeit oder eine Position einzustufen ist.
+ *
+ * "nicht_faehig" entsteht nie aus einer Prüfung: Was im Katalog steht,
+ * ist fähig. Die Einstufung trifft Beträge, die keiner Tätigkeit des
+ * Anhangs zugeordnet sind - der Getränkeautomat in der Werkshalle.
+ */
+export type Einstufung = "nicht_faehig" | "faehig" | "konform" | "offen";
+
+export interface Taetigkeitsbefund {
+  taetigkeit: Taetigkeit;
+  einstufung: Einstufung;
+  /** Kriterien, die verletzt sind. */
+  verletzt: Kriterium[];
+  /** Kriterien, zu denen noch nichts vorliegt. */
+  offen: Kriterium[];
+  /** Ein Satz, der das Ergebnis erklärt. */
+  begruendung: string;
+}
+
+function stand(lage: Nachweislage, schluessel: string): Nachweisstand {
+  return lage[schluessel] ?? "offen";
+}
+
+/**
+ * Prüft eine Tätigkeit gegen die vorliegenden Nachweise.
+ *
+ * Der Mindestschutz geht in jede Tätigkeit ein, weil er in jeder
+ * Tätigkeit Bedingung ist. Ein Betrieb ohne Sorgfaltsprüfung hat
+ * keine konforme Tätigkeit - das ist der Punkt, an dem die Taxonomie
+ * mehr ist als eine Technikliste.
+ */
+export function pruefeTaetigkeit(
+  taetigkeit: Taetigkeit,
+  lage: Nachweislage,
+  mindestschutz: Nachweislage = lage,
+): Taetigkeitsbefund {
+  const verletzt: Kriterium[] = [];
+  const offen: Kriterium[] = [];
+
+  const alle = [taetigkeit.beitrag, ...taetigkeit.dnsh, ...MINDESTSCHUTZ];
+
+  for (const kriterium of alle) {
+    const quelle = MINDESTSCHUTZ.includes(kriterium) ? mindestschutz : lage;
+    const s = stand(quelle, kriterium.schluessel);
+    if (s === "nicht_erfuellt") verletzt.push(kriterium);
+    else if (s === "offen") offen.push(kriterium);
+  }
+
+  // Der wesentliche Beitrag ist die Trennlinie zwischen "fähig" und
+  // allem darüber. Fällt er, ist die Tätigkeit zwar weiterhin im
+  // Anhang genannt - also fähig -, aber nicht konform.
+  const beitragVerletzt = verletzt.includes(taetigkeit.beitrag);
+
+  let einstufung: Einstufung;
+  let begruendung: string;
+
+  if (beitragVerletzt) {
+    einstufung = "faehig";
+    begruendung =
+      "Der wesentliche Beitrag ist nicht belegt. Die Tätigkeit bleibt taxonomiefähig, ist aber nicht konform.";
+  } else if (verletzt.length > 0) {
+    einstufung = "faehig";
+    begruendung = `${verletzt.length === 1 ? "Ein Kriterium ist" : `${verletzt.length} Kriterien sind`} verletzt: ${verletzt
+      .map((k) => ZIELNAMEN[k.ziel])
+      .join(", ")}. Taxonomiefähig, nicht konform.`;
+  } else if (offen.length > 0) {
+    einstufung = "offen";
+    begruendung = `${offen.length === 1 ? "Ein Nachweis fehlt" : `${offen.length} Nachweise fehlen`} noch. Bis dahin ist die Tätigkeit weder als konform noch als nicht konform zu melden.`;
+  } else {
+    einstufung = "konform";
+    begruendung =
+      "Wesentlicher Beitrag, alle DNSH-Kriterien und der Mindestschutz sind belegt.";
+  }
+
+  return { taetigkeit, einstufung, verletzt, offen, begruendung };
+}
+
+/* ------------------------------------------------------------------ */
+/* Kennzahlen                                                          */
+/* ------------------------------------------------------------------ */
+
+export const KENNZAHLARTEN = ["Umsatz", "CapEx", "OpEx"] as const;
+export type Kennzahlart = (typeof KENNZAHLARTEN)[number];
+
+/**
+ * Die Wesentlichkeitsschwelle aus der Vereinfachung vom Juli 2025.
+ *
+ * Tätigkeiten unterhalb von 10 % des Nenners dürfen als unwesentlich
+ * behandelt und aus dem Meldebogen gelassen werden. Gerechnet wird die
+ * Schwelle je Kennzahl, nicht über alle hinweg: Eine Tätigkeit kann
+ * beim Umsatz unwesentlich und beim CapEx wesentlich sein - genau so
+ * sieht es bei einem Betrieb aus, der gerade in Photovoltaik
+ * investiert und damit noch kaum Umsatz macht.
+ */
+export const WESENTLICHKEITSSCHWELLE = 0.1;
+
+export interface Kennzahlposition {
+  /** Schlüssel der Tätigkeit, etwa "4.1". */
+  taetigkeit: string;
+  bezeichnung: string;
+  betrag: number;
+  /** Ergebnis der Prüfung dieser Tätigkeit. */
+  einstufung: Einstufung;
+}
+
+export interface Kennzahlergebnis {
+  art: Kennzahlart;
+  /** Gesamtwert des Unternehmens - der Nenner. */
+  nenner: number;
+  faehigBetrag: number;
+  konformBetrag: number;
+  faehigAnteil: number;
+  konformAnteil: number;
+  /** Betrag, der auf noch offene Tätigkeiten entfällt. */
+  offenBetrag: number;
+  /** Positionen unterhalb der Wesentlichkeitsschwelle. */
+  unwesentlich: Kennzahlposition[];
+  beanstandungen: string[];
+}
+
+function anteil(teil: number, ganzes: number): number {
+  if (!(ganzes > 0)) return 0;
+  return Math.round((teil / ganzes) * 10000) / 10000;
+}
+
+/**
+ * Rechnet eine Kennzahl aus.
+ *
+ * Der Nenner kommt aus dem Jahresabschluss und nicht aus der Summe
+ * der Positionen: Was nicht zugeordnet ist, gehört trotzdem dazu.
+ * Übersteigt die Summe der Positionen den Nenner, ist etwas doppelt
+ * zugeordnet - das ist der häufigste Fehler bei CapEx, weil dieselbe
+ * Investition leicht unter 4.1 und 7.6 landet.
+ */
+export function berechneKennzahl(
+  art: Kennzahlart,
+  nenner: number,
+  positionen: Kennzahlposition[],
+): Kennzahlergebnis {
+  const beanstandungen: string[] = [];
+
+  const summe = positionen.reduce((s, p) => s + p.betrag, 0);
+
+  if (nenner <= 0) {
+    beanstandungen.push(
+      `Der Nenner der Kennzahl ${art} ist null. Ein Anteil lässt sich daraus nicht bilden.`,
+    );
+  } else if (summe > nenner * 1.0001) {
+    beanstandungen.push(
+      `Die zugeordneten Beträge übersteigen den Nenner der Kennzahl ${art}. Eine Position ist doppelt zugeordnet.`,
+    );
+  }
+
+  for (const p of positionen) {
+    if (p.betrag < 0) {
+      beanstandungen.push(
+        `Die Position "${p.bezeichnung}" trägt einen negativen Betrag. Kennzahlen der Taxonomie kennen keine negativen Anteile.`,
+      );
+    }
+  }
+
+  const faehigBetrag = positionen.reduce(
+    (s, p) => (p.einstufung === "nicht_faehig" ? s : s + p.betrag),
+    0,
+  );
+  const konformBetrag = positionen.reduce(
+    (s, p) => (p.einstufung === "konform" ? s + p.betrag : s),
+    0,
+  );
+  const offenBetrag = positionen.reduce(
+    (s, p) => (p.einstufung === "offen" ? s + p.betrag : s),
+    0,
+  );
+
+  const unwesentlich =
+    nenner > 0
+      ? positionen.filter((p) => p.betrag / nenner < WESENTLICHKEITSSCHWELLE)
+      : [];
+
+  return {
+    art,
+    nenner,
+    faehigBetrag,
+    konformBetrag,
+    offenBetrag,
+    faehigAnteil: anteil(faehigBetrag, nenner),
+    konformAnteil: anteil(konformBetrag, nenner),
+    unwesentlich,
+    beanstandungen,
+  };
+}
+
+/* ------------------------------------------------------------------ */
+/* Zusammenfassung                                                     */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Ein Satz, der das Ergebnis trägt.
+ *
+ * Er nennt zuerst die Konformität und nicht die Fähigkeit. Berichte,
+ * die mit der Fähigkeit aufmachen, lesen sich besser und sagen
+ * weniger - taxonomiefähig ist ein Kohlekraftwerk auch.
+ */
+export function fasseKennzahlZusammen(ergebnis: Kennzahlergebnis): string {
+  if (ergebnis.nenner <= 0) {
+    return `${ergebnis.art}: kein Nenner hinterlegt.`;
+  }
+
+  const konform = (ergebnis.konformAnteil * 100).toFixed(1).replace(".", ",");
+  const faehig = (ergebnis.faehigAnteil * 100).toFixed(1).replace(".", ",");
+
+  const offen =
+    ergebnis.offenBetrag > 0
+      ? ` ${((ergebnis.offenBetrag / ergebnis.nenner) * 100).toFixed(1).replace(".", ",")} % hängen an offenen Nachweisen.`
+      : "";
+
+  return `${ergebnis.art}: ${konform} % taxonomiekonform, ${faehig} % taxonomiefähig.${offen}`;
+}

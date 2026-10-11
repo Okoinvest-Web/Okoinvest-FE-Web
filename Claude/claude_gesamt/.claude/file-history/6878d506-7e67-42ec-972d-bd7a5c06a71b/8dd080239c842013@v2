@@ -1,0 +1,82 @@
+import sys, os, re
+os.chdir(r"C:\Users\SALEADMIN\Downloads\crm-develop\crm-next")
+p = "src/lib/data/mock.ts"
+s = open(p, encoding="utf-8").read()
+
+def rep(a, b, count=1):
+    global s
+    if a not in s:
+        sys.exit("fehlt: " + a[:90])
+    s = s.replace(a, b, count)
+
+rep("Quotation, Role, SalesInvoice, SalesOrder, ToDo } from \"@/lib/types\";", "Quotation, Role, SalesInvoice, SalesOrder, ToDo, Version } from \"@/lib/types\";")
+
+# Beispielverlauf
+rep("  return { leads, customers, opportunities, contacts, todos, notes, leadCharges,", '''  const versions: Version[] = [
+    { name: "VER-0001", ref_doctype: "Lead", docname: "CRM-LEAD-2026-00001", owner: "max@firma.example", creation: d(10), changes: [["status", "Lead", "Open"]] },
+    { name: "VER-0002", ref_doctype: "Opportunity", docname: "CRM-OPP-2026-00007", owner: "max@firma.example", creation: d(3), changes: [["sales_stage", "Needs Analysis", "Proposal/Price Quote"], ["probability", "40", "55"]] },
+  ];
+
+  return { leads, customers, opportunities, contacts, todos, notes, leadCharges, versions,''')
+
+# Hilfsfunktion: Änderungen erfassen (vor Object.assign aufrufen)
+rep("// Kleine künstliche Latenz", '''// Änderungsverlauf wie ERPNext "Version": nur tatsächlich geänderte Felder
+async function track<T extends object>(doctype: string, name: string, before: T, patch: Partial<T>) {
+  const changes = Object.entries(patch)
+    .filter(([k, v]) => v !== undefined && String(before[k as keyof T] ?? "") !== String(v ?? ""))
+    .map(([k, v]) => [k, String(before[k as keyof T] ?? ""), String(v ?? "")] as [string, string, string]);
+  if (!changes.length) return;
+  const u = await getUser();
+  store.versions.push({ name: nextId("VER-"), ref_doctype: doctype, docname: name, owner: u?.user ?? "system", creation: now(), changes });
+}
+
+// Kleine künstliche Latenz''')
+
+# updateLead
+rep('''    if (!(await viewer()).lead(l)) deny();
+    Object.assign(l, data);''', '''    if (!(await viewer()).lead(l)) deny();
+    await track("Lead", n, l, data);
+    Object.assign(l, data);''')
+# setLeadStatus
+rep('''    if (!(await viewer()).lead(l)) deny();
+    l.status = status;''', '''    if (!(await viewer()).lead(l)) deny();
+    await track("Lead", n, l, { status });
+    l.status = status;''')
+# Chancen: Phase, Update, Ausgang
+rep('''    if (!(await viewer()).opp(o)) deny();
+    o.sales_stage = stage;''', '''    if (!(await viewer()).opp(o)) deny();
+    await track("Opportunity", n, o, { sales_stage: stage });
+    o.sales_stage = stage;''')
+rep('''    if (!(await viewer()).opp(o)) deny();
+    Object.assign(o, data);''', '''    if (!(await viewer()).opp(o)) deny();
+    await track("Opportunity", n, o, data);
+    Object.assign(o, data);''')
+rep('''    if (!(await viewer()).opp(o)) deny();
+    o.status = outcome''', '''    if (!(await viewer()).opp(o)) deny();
+    await track("Opportunity", n, o, { status: outcome === "won" ? "Converted" : outcome === "lost" ? "Lost" : "Open", order_lost_reason: reason });
+    o.status = outcome''')
+
+rep('''  async listNotes(doctype, name) {''', '''  async listVersions(doctype, name) {
+    await tick();
+    if (!(await viewer()).doc(doctype, name)) return [];
+    return store.versions.filter((v) => v.ref_doctype === doctype && v.docname === name).sort((a, b) => b.creation.localeCompare(a.creation));
+  },
+  // Kundenschutz: sucht über ALLE Datensätze, meldet aber nur, ob es einen fremden Treffer gibt
+  async existsElsewhere({ email, mobile }) {
+    await tick();
+    const v = await viewer();
+    const mail = email?.trim().toLowerCase();
+    const digits = (x?: string) => (x ?? "").replace(/\\D/g, "").replace(/^0049|^49|^0043|^43/, "0");
+    const phone = digits(mobile);
+    const hit = (e?: string, m?: string) => (!!mail && e?.toLowerCase() === mail) || (phone.length >= 6 && digits(m) === phone);
+    return (
+      store.leads.some((l) => !v.lead(l) && l.lead_owner && hit(l.email_id, l.mobile_no)) ||
+      store.customers.some((c) => !v.customer(c) && hit(c.email_id, c.mobile_no))
+    );
+  },
+
+  async listNotes(doctype, name) {''')
+
+s = re.sub(r"__crmMockV\d+", "__crmMockV50", s)
+open(p, "w", encoding="utf-8", newline="\n").write(s)
+print("ok")

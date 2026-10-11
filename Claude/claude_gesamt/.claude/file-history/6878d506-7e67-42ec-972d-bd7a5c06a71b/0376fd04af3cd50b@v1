@@ -1,0 +1,6 @@
+# Ohne diese Werte läuft die App mit Beispieldaten (Demo-Modus).
+# Kopieren nach .env.local und ausfüllen – .env.local wird nicht eingecheckt.
+# API-Key/Secret in ERPNext: Benutzer → Einstellungen → API-Zugang → Schlüssel generieren.
+ERPNEXT_URL=https://erp.example.com
+ERPNEXT_API_KEY=
+ERPNEXT_API_SECRET=

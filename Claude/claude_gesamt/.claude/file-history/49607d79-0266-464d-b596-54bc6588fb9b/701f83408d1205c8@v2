@@ -1,0 +1,129 @@
+# -*- coding: utf-8 -*-
+"""Dokumentiert den Alarm-Ausbau in README und CHANGELOG."""
+import io
+
+README = """### Alarme
+
+Eine Alarmliste ist schnell gebaut. Brauchbar wird sie durch das, was sie
+*nicht* zeigt:
+
+| Funktion | Warum |
+| -------- | ----- |
+| **Korrelation** | Fünf Meldungen zu einem überlasteten Host sind ein Vorfall, nicht fünf. Gruppiert wird nach `correlation_key`, ersatzweise nach Objekt – auch über Quellen hinweg |
+| **Rauscherkennung** | An der **Rate**, nicht an der Menge: ab 2 Meldungen je Stunde über mindestens 6 Stunden. 200 Meldungen im Jahr sind normal, 200 an einem Tag sind ein Defekt an der Meldung |
+| **Stummschaltung** | Immer mit Ablauf und Begründung, höchstens 30 Tage. Trifft Objekt, Quelle oder Korrelationsgruppe |
+| **MTTA / MTTR** | Nur aus tatsächlich bearbeiteten Alarmen – ein Mittel über unbearbeitete wäre geschönt |
+| **Kontext je Alarm** | Was hängt am Objekt, wie wurde derselbe Alarm beim letzten Mal gelöst, welches Runbook gilt |
+| **Sammelaktionen** | Annehmen und Schließen über die Auswahl; bricht nicht beim ersten Fehler ab |
+
+Zwei Entscheidungen, die im Betrieb den Unterschied machen:
+
+- **Schließen verlangt eine Notiz.** Ohne sie verliert man genau die
+  Information, die beim nächsten Mal hilft – und die die Seite dann unter
+  „Beim letzten Mal" wieder anbietet.
+- **Zwei verschiedene Alter.** `age_hours` ist „wann zuletzt gemeldet",
+  `unattended_hours` ist „wie lange schon da, ohne dass jemand hingesehen
+  hat". Ein Alarm, der seit 26 Stunden läuft und vor fünf Minuten zuletzt
+  meldete, ist frisch im einen und überfällig im anderen Sinn.
+
+#### Der Alarmpuls
+
+Solange ein kritischer Alarm offen **und unbeachtet** ist, pulst ein
+rot-oranger Rahmen um das Fenster. Gedacht für den Leitstandbildschirm, auf
+den niemand dauerhaft schaut: Bewegung am Rand des Blickfelds bemerkt man
+auch von der Seite, eine rote Zahl nicht.
+
+- Er hört auf, sobald jemand den Alarm **annimmt** – er sagt „noch niemand
+  kümmert sich", nicht „es gibt ein Problem". Sonst pulste er dauerhaft und
+  würde zu genau dem Rauschen, das diese Seite bekämpft.
+- 2,4 Sekunden je Zyklus, deutlich unter drei Blitzen je Sekunde
+  (WCAG 2.3.1) – schnelles Blinken ist für Menschen mit Photosensibilität
+  ein Risiko.
+- Bei `prefers-reduced-motion: reduce` bleibt derselbe Rahmen **statisch**
+  stehen. Die Information steckt in Farbe und Text, nie in der Bewegung
+  allein.
+- `pointer-events: none` – er blockiert keinen Klick.
+
+"""
+
+p = 'README.md'
+s = io.open(p, encoding='utf-8').read()
+marke = '### Die Lage'
+assert marke in s, 'README-Marke fehlt'
+s = s.replace(marke, README + marke, 1)
+s = s.replace('npm test         # 387 Tests', 'npm test         # 422 Tests')
+s = s.replace(
+    "| `lage.test.js` | Bereichsampeln mit Begründung, Brennpunkt-Reihenfolge, Kapazitätsschwellen je Art, Abdeckungsrechnung, Verlaufsfenster, Mandantentrennung |",
+    "| `lage.test.js` | Bereichsampeln mit Begründung, Brennpunkt-Reihenfolge, Kapazitätsschwellen je Art, Abdeckungsrechnung, Verlaufsfenster, Mandantentrennung |\n"
+    "| `alarme.test.js` | Korrelation ohne Verlust, Rauschen an der Rate, Stummschaltung mit Ablauf, Sammelaktion ohne Abbruch, MTTA/MTTR, zwei Alterbegriffe |")
+io.open(p, 'w', encoding='utf-8').write(s)
+print('README')
+
+CHANGELOG = """# Änderungsverlauf
+
+## 2026-09-19 (3) – Alarme: Korrelation statt Liste
+
+Die Alarmseite zeigte 15 Zeilen. Dahinter standen 681 Einzelmeldungen, und
+fünf der Zeilen hatten dieselbe Ursache. Genau das macht die Seite jetzt
+sichtbar.
+
+### Neu
+
+- **Korrelation** über `correlation_key`, ersatzweise über das Objekt – auch
+  quellenübergreifend. Aus 14 offenen Alarmen werden 9 Gruppen; die größte
+  fasst fünf Meldungen zu einem überlasteten Host zusammen.
+- **Rauscherkennung an der Rate**: ab 2 Meldungen je Stunde über mindestens
+  6 Stunden. Der flappende Port mit 214 Meldungen in 26 Stunden erscheint
+  als das, was er ist – ein Defekt an der Meldung, nicht ein Befund.
+- **Stummschaltung** mit Pflicht-Ablauf (höchstens 30 Tage) und
+  Pflicht-Begründung, wahlweise auf Objekt, Quelle oder Korrelationsgruppe.
+- **MTTA und MTTR**, gerechnet nur aus bearbeiteten Alarmen.
+- **Kontext je Alarm**: was am Objekt hängt, wie derselbe Alarm beim letzten
+  Mal gelöst wurde, welches Runbook gilt.
+- **Sammelaktionen** über die Tabellenauswahl, die beim ersten Fehler nicht
+  abbrechen, sondern je Alarm melden, ob es geklappt hat.
+- **Schließen verlangt eine Notiz** – sie ist es, die beim nächsten Mal unter
+  „Beim letzten Mal" wieder auftaucht.
+
+### Der Alarmpuls
+
+Ein rot-oranger Rahmen pulst um das Fenster, solange ein kritischer Alarm
+offen **und unbeachtet** ist. Er hört nach dem Annehmen auf: er meldet „noch
+niemand kümmert sich", nicht „es gibt ein Problem".
+
+2,4 Sekunden je Zyklus (WCAG 2.3.1 verlangt unter drei Blitzen je Sekunde),
+bei `prefers-reduced-motion` statisch statt animiert, ohne Klickblockade.
+Alles im Browser nachgemessen: Geometrie 0,0 → volle Fensterbreite, fünf
+verschiedene Animationszustände in zwei Sekunden, Puls aus nach der Annahme.
+
+### Behoben
+
+**Zwei Stellen maßen „Alter" unterschiedlich.** Die Kennzahl „unbeachtet"
+zählte ab der letzten Meldung, die Begründung am Alarm ab der ersten.
+Ergebnis war „0 überfällig", obwohl zwei Alarme seit über 24 Stunden ohne
+Bearbeitung liefen. Jetzt gibt es zwei klar getrennte Felder: `age_hours`
+(wann zuletzt gemeldet) und `unattended_hours` (wie lange unbeachtet).
+
+### Testdaten
+
+Der Seed hatte acht Alarme – zu wenig, um Korrelation oder Rauschen zu
+zeigen. Jetzt 19: ein Sturm mit gemeinsamer Ursache, eine Lärmquelle,
+abgeschlossene Alarme mit Lösungsnotiz als Grundlage für MTTA/MTTR, und
+einer, der bereits angenommen ist.
+
+### Geprüft
+
+- 422 Tests (35 neue), ESLint und Prettier sauber, Build grün
+- Alle 48 Routen im Browser ohne Konsolenfehler, zwei Durchläufe
+- Alarmpuls in Geometrie, Animation, Abschaltung und reduzierter Bewegung
+  gemessen
+
+"""
+
+p = 'CHANGELOG.md'
+s = io.open(p, encoding='utf-8').read()
+alt = '# Änderungsverlauf\n\n'
+assert s.startswith(alt)
+s = CHANGELOG + s[len(alt):]
+io.open(p, 'w', encoding='utf-8').write(s)
+print('CHANGELOG')

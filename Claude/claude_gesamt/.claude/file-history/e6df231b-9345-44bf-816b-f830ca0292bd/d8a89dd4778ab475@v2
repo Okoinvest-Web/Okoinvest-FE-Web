@@ -1,0 +1,142 @@
+"""Personalmeldung: wer heute auf der Baustelle ist.
+
+Pflicht nur fuer Subunternehmer mit Drittstaatsangehoerigen — bei einheimischen
+Firmen entfaellt sie. Die Meldung geht der Arbeit voraus: Wer nicht gemeldet
+ist, kann nicht stempeln (siehe `Stempelung.berechtigung_pruefen`).
+
+Der Nutzen ist doppelt: Ihr wisst bei einer Kontrolle sofort, wer da ist und
+mit welchen Papieren — und der Subunternehmer kann hinterher nicht behaupten,
+jemand sei dagewesen, der nie gemeldet war.
+"""
+
+from __future__ import annotations
+
+import frappe
+from frappe import _
+from frappe.model.document import Document
+from frappe.utils import now_datetime, today
+
+
+class Personalmeldung(Document):
+	def validate(self):
+		self.doppelte_meldung_pruefen()
+		self.nachweise_pruefen()
+		self.anzahl_personen = len(self.zeilen)
+		if self.status == "Gemeldet" and not self.gemeldet_am:
+			self.gemeldet_am = now_datetime()
+			self.gemeldet_von = frappe.session.user
+
+	def doppelte_meldung_pruefen(self):
+		if frappe.db.exists("Personalmeldung", {
+			"supplier": self.supplier,
+			"datum": self.datum,
+			"anlage": self.anlage,
+			"status": ["!=", "Beanstandet"],
+			"name": ["!=", self.name or ""],
+		}):
+			frappe.throw(
+				_("Fuer diesen Tag und diese Baustelle liegt bereits eine Meldung vor. "
+				  "Bitte die bestehende ergaenzen."),
+				title=_("Doppelte Personalmeldung"),
+			)
+
+	def nachweise_pruefen(self):
+		"""Je Person pruefen, ob Ausweis und Bewilligung gueltig sind."""
+		alle_gueltig = True
+		fremde = []
+
+		for zeile in self.zeilen:
+			person = frappe.get_cached_doc("Subunternehmer Mitarbeiter", zeile.mitarbeiter)
+			if person.supplier != self.supplier:
+				fremde.append(person.vollname)
+			gueltig, meldung = person.nachweise_gueltig()
+			zeile.nachweis_vollstaendig = 1 if gueltig else 0
+			zeile.hinweis = meldung
+			alle_gueltig = alle_gueltig and gueltig
+
+		if fremde:
+			frappe.throw(
+				_("Diese Personen gehoeren nicht zu {0}: {1}").format(
+					self.supplier, ", ".join(fremde)
+				)
+			)
+
+		self.alle_nachweise_gueltig = 1 if alle_gueltig else 0
+
+	@frappe.whitelist()
+	def melden(self):
+		if not self.zeilen:
+			frappe.throw(_("Die Meldung enthaelt keine Personen."))
+		self.status = "Gemeldet"
+		self.save()
+		return self.name
+
+
+@frappe.whitelist()
+def meldepflicht(supplier: str) -> dict:
+	"""Muss dieser Subunternehmer taeglich melden?
+
+	Massgeblich ist, ob er Drittstaatsangehoerige beschaeftigt — nicht, wo die
+	Firma sitzt.
+	"""
+	settings = frappe.get_cached_doc("Baudoku Settings")
+	if not settings.personalmeldung_pflicht_drittstaat:
+		return {"pflichtig": False, "grund": "Die Meldepflicht ist deaktiviert."}
+
+	anzahl = frappe.db.count(
+		"Subunternehmer Mitarbeiter", {"supplier": supplier, "drittstaat": 1, "aktiv": 1}
+	)
+	return {
+		"pflichtig": bool(anzahl),
+		"drittstaat_personen": anzahl,
+		"grund": (
+			_("{0} Drittstaatsangehoerige beschaeftigt.").format(anzahl)
+			if anzahl else _("Keine Drittstaatsangehoerigen beschaeftigt.")
+		),
+	}
+
+
+@frappe.whitelist()
+def heutige_meldung(supplier: str, anlage: str) -> dict | None:
+	name = frappe.db.get_value(
+		"Personalmeldung", {"supplier": supplier, "anlage": anlage, "datum": today()}, "name"
+	)
+	return frappe.get_doc("Personalmeldung", name).as_dict() if name else None
+
+
+def fehlende_meldungen_pruefen():
+	"""Scheduler: Wer heute stempelt, aber nicht gemeldet hat."""
+	pflichtige = {
+		zeile.supplier
+		for zeile in frappe.get_all(
+			"Subunternehmer Mitarbeiter",
+			filters={"drittstaat": 1, "aktiv": 1},
+			fields=["supplier"],
+			group_by="supplier",
+		)
+	}
+	if not pflichtige:
+		return []
+
+	gemeldet = {
+		(m.supplier, m.anlage)
+		for m in frappe.get_all(
+			"Personalmeldung",
+			filters={"datum": today(), "status": "Gemeldet"},
+			fields=["supplier", "anlage"],
+		)
+	}
+	aktiv = {
+		(s.supplier, s.anlage)
+		for s in frappe.get_all(
+			"Stempelung",
+			filters={"datum": today(), "ungueltig": 0},
+			fields=["supplier", "anlage"],
+		)
+		if s.supplier in pflichtige
+	}
+
+	fehlend = sorted(aktiv - gemeldet)
+	if fehlend:
+		frappe.logger("baudoku").warning(f"Personalmeldung fehlt: {fehlend}")
+	return fehlend

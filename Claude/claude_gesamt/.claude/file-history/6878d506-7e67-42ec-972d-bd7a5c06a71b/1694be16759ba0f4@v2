@@ -1,0 +1,105 @@
+import Link from "next/link";
+import { Coins } from "lucide-react";
+import { db } from "@/lib/data";
+import { isManager, requireUser } from "@/lib/auth";
+import { date, money, money2, personName } from "@/lib/format";
+import { currentMonthKey, monthKey, monthLabel } from "@/lib/tax";
+import { Avatar, Badge, Empty, PageBody, PageHeader, Stat, StatBand } from "@/components/ui";
+
+export const metadata = { title: "Lead-Kosten" };
+
+// Verbrauchte Lead-Kosten aus der Lead-Börse – für Vertreter die eigenen, für die Leitung alle
+export default async function LeadCostsPage() {
+  const user = await requireUser();
+  const manager = isManager(user);
+  const [charges, opps] = await Promise.all([db().listLeadCharges({ limit: 1000 }), db().listOpportunities({ limit: 1000 })]);
+
+  const thisMonth = currentMonthKey();
+  const thisYear = thisMonth.slice(0, 4);
+  const sum = (xs: typeof charges) => xs.reduce((s, c) => s + c.amount, 0);
+  const month = charges.filter((c) => monthKey(c.posting_date) === thisMonth);
+  const year = charges.filter((c) => c.posting_date.startsWith(thisYear));
+  const open = charges.filter((c) => c.status === "Offen");
+
+  // Was haben die gekauften Leads gebracht? Chancen, die (noch) am Lead hängen
+  const bought = new Set(charges.map((c) => c.lead));
+  const fromBought = opps.filter((o) => o.opportunity_from === "Lead" && bought.has(o.party_name));
+  const pipeline = fromBought.filter((o) => o.status === "Open" || o.status === "Quotation").reduce((s, o) => s + o.opportunity_amount, 0);
+
+  const months = [...new Set(charges.map((c) => monthKey(c.posting_date)))].sort().reverse();
+  const agents = [...new Set(charges.map((c) => c.agent))];
+
+  return (
+    <>
+      <PageHeader title="Lead-Kosten" subtitle={manager ? "Freischaltungen aller Handelsvertreter" : "Deine freigeschalteten Leads aus der Lead-Börse"} />
+      <PageBody className="grid grid-cols-1 gap-8">
+        <StatBand>
+          <Stat label={`Diesen Monat · ${monthLabel(thisMonth)}`} value={money2(sum(month))} hint={`${month.length} Leads`} />
+          <Stat label={`Laufendes Jahr ${thisYear}`} value={money2(sum(year))} hint={`${year.length} Leads · Ø ${year.length ? money(sum(year) / year.length) : "–"}`} />
+          <Stat label="Noch nicht verrechnet" value={money2(sum(open))} hint="wird mit der Provision verrechnet" />
+          <Stat label="Pipeline aus gekauften Leads" value={money(pipeline)} hint={`${fromBought.length} Chancen`} />
+        </StatBand>
+
+        {manager && agents.length > 0 && (
+          <section className="overflow-hidden rounded-xl border border-gray-200">
+            <h2 className="border-b border-gray-150 px-4 py-2.5 font-semibold text-gray-900">Je Handelsvertreter</h2>
+            <ul className="divide-y divide-gray-100">
+              {agents.map((a) => {
+                const mine = charges.filter((c) => c.agent === a);
+                return (
+                  <li key={a} className="flex items-center gap-3 px-4 py-2.5">
+                    <Avatar name={a} />
+                    <span className="flex-1 font-medium text-gray-900">{personName(a)}</span>
+                    <span className="text-[12px] text-gray-500">{mine.length} Leads</span>
+                    <span className="tnum w-28 text-right text-gray-600">{money2(sum(mine.filter((c) => monthKey(c.posting_date) === thisMonth)))} Monat</span>
+                    <span className="tnum w-28 text-right font-medium text-gray-900">{money2(sum(mine))} gesamt</span>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        )}
+
+        {charges.length === 0 && (
+          <Empty icon={Coins}>
+            Noch keine Lead-Kosten. Freie Anfragen findest du in der{" "}
+            <Link href="/pool" className="text-brand-700 hover:underline">
+              Lead-Börse
+            </Link>
+            .
+          </Empty>
+        )}
+
+        {months.map((m) => {
+          const rows = charges.filter((c) => monthKey(c.posting_date) === m);
+          return (
+            <section key={m} className="overflow-hidden rounded-xl border border-gray-200">
+              <div className="flex items-center gap-3 border-b border-gray-150 px-4 py-2.5">
+                <h2 className="font-semibold text-gray-900">{monthLabel(m)}</h2>
+                <span className="tnum ml-auto font-medium text-gray-900">{money2(sum(rows))}</span>
+              </div>
+              <ul className="divide-y divide-gray-100">
+                {rows.map((c) => (
+                  <li key={c.name} className="flex items-center gap-4 px-4 py-2.5">
+                    <div className="min-w-0 flex-1">
+                      <Link href={`/leads/${encodeURIComponent(c.lead)}`} className="font-medium text-gray-900 hover:underline">
+                        {c.lead_name}
+                      </Link>
+                      <div className="text-[12px] text-gray-500">
+                        {date(c.posting_date)}
+                        {c.kwp ? ` · ${c.kwp.toLocaleString("de-DE")} kWp` : ""}
+                        {manager && ` · ${personName(c.agent)}`}
+                      </div>
+                    </div>
+                    <Badge value={c.status} label={c.status} tone={c.status === "Offen" ? "amber" : "gray"} />
+                    <span className="tnum w-24 text-right font-medium text-gray-900">{money2(c.amount)}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          );
+        })}
+      </PageBody>
+    </>
+  );
+}

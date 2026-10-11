@@ -1,0 +1,304 @@
+# Sicherungskonzept ÖKOVOLT NetOps
+
+Stand 2026-09-19 · gilt für die Frappe-App `netops`
+
+Dieses Papier beschreibt, wie NetOps mit Sicherungen umgeht: was es liest,
+was es steuern darf, was es ausdrücklich nicht kann, und **wie die
+Automatisierung entsteht** – über den Frappe Scheduler und Frappe Workflow,
+nicht über Logik im Browser.
+
+---
+
+## 1. Der Satz, aus dem alles folgt
+
+> Eine Sicherungsplattform, die löschen kann, ist ein Angriffswerkzeug.
+
+Wer die Verwaltung übernimmt, löscht zuerst die Sicherungen und
+verschlüsselt dann in Ruhe. Deshalb ist die zentrale Entwurfsentscheidung
+nicht, was NetOps kann, sondern **was es nicht gebaut bekommt**.
+
+Alles Weitere in diesem Papier ist eine Folge davon.
+
+---
+
+## 2. Rollenverteilung: wer macht was
+
+NetOps ist **keine Sicherungssoftware**. Es sichert nichts, es hält nichts
+vor, es stellt nichts wieder her. Es ist die Stelle, an der man erfährt, ob
+die vier Systeme darunter tun, was zugesagt wurde.
+
+| Ebene | Wer | Aufgabe |
+| --- | --- | --- |
+| Ausführung | PBS, NAKIVO, Frappe Drive, Amazon S3 | sichern, prüfen, aufbewahren, löschen |
+| Vermittlung | Konnektoren (`Connector`) | lesen, was dort passiert; Läufe anstoßen |
+| Entscheidung | NetOps (Frappe) | erklären, was gelten soll; vergleichen; genehmigen |
+| Anzeige | Vue-Oberfläche | darstellen; Anträge stellen |
+
+Die Oberfläche enthält **keine Regel**. Jede Prüfung, jede Sperre und jeder
+Übergang liegt serverseitig. Eine Regel, die nur das Frontend kennt, gilt
+beim nächsten API-Aufruf nicht mehr.
+
+---
+
+## 3. Vier Systeme, vier Begriffswelten
+
+| System | Kennt | Kennung |
+| --- | --- | --- |
+| Proxmox Backup Server | Datastore, Namespace, Snapshot | `vm/101/2026-09-19T02:00:00Z` |
+| NAKIVO Backup & Replication | Repository, Job, Recovery Point | numerische Job-/Point-IDs |
+| Frappe Drive | Ordner, Datei | Entity-ID |
+| Amazon S3 | Bucket, Key, Storage-Klasse, Object Lock | `s3://bucket/prefix/key` |
+
+Wer das nicht vereinheitlicht, baut vier Oberflächen. Der gemeinsame Nenner
+ist `Backup Snapshot`: ein Wiederherstellungspunkt mit Zeitpunkt, Größe und
+Prüfzustand.
+
+**Die ursprüngliche Kennung bleibt in `source_ref` erhalten.** Ohne sie
+lässt sich im Ernstfall nichts zurückholen – die vereinheitlichte Sicht ist
+zum Nachdenken da, die Wiederherstellung läuft über das Ursprungssystem.
+
+---
+
+## 4. Erklärt gegen gemessen
+
+Die wichtigste Unterscheidung im Datenmodell. Jedes Feld gehört in genau
+eine der beiden Welten.
+
+**Erklärt** – ein Mensch legt es fest. Wo dürfen Sicherungen liegen, was
+muss geschützt werden, wie lange aufbewahrt. Das ist die **Zusage**.
+
+**Gemessen** – ein Konnektor liest es aus dem Zielsystem. Wann zuletzt
+gesichert, wie viele Kopien, wie voll das Ziel, geprüft oder nicht. Das ist
+die **Wirklichkeit**.
+
+`backup_assurance` vergleicht die beiden. Genau daraus bezieht die ganze
+Seite ihren Wert.
+
+| DocType | Erklärt | Gemessen |
+| --- | --- | --- |
+| `Backup Target` | Name, Art, Konnektor, Ort, Kapazität, unveränderlich, verschlüsselt, außer Haus, Aufbewahrung | Belegung, letzter Abgleich, Zustand |
+| `Backup Object` | Kennung, Dienst, Geschäftsdienst, Ziel, Aufbewahrung | letzte Sicherung, letzte Prüfung, Prüfergebnis, Größe, Kopien, Medienarten, Alter der Kopie außer Haus |
+| `Backup Snapshot` | – | alles |
+| `Backup Job` / `Job Run` | – | alles (im Zielsystem definiert) |
+
+Die Schreibmethoden weisen gemessene Felder **ausdrücklich ab**, statt sie
+still zu übernehmen. Ließe sich „copies: 3" von Hand eintragen, wäre die
+Prüfung keine Prüfung mehr, sondern eine Selbstauskunft – und die fällt
+erfahrungsgemäß immer gut aus.
+
+### Die eine Ausnahme
+
+Der **Wiederherstellungstest** ist eine Messung, die nur über die Tastatur
+hereinkommt: ein Mensch hat zurückgespielt und weiß, ob es geklappt hat und
+wie lange es gedauert hat. Ohne diesen Weg bliebe der Befund „nie getestet"
+für immer stehen – und ein Befund, den niemand abarbeiten kann, wird
+ignoriert, mit ihm die daneben.
+
+Deshalb ist `backup_restore_test` strenger geprüft als alles andere:
+Ergebnis nur `ok` oder `failed`, bei Erfolg ist die gemessene Dauer Pflicht
+(sie *ist* der tatsächliche RTO), kein Datum in der Zukunft, und ein
+Fehlschlag überschreibt die bisherige Dauer nicht.
+
+---
+
+## 5. Die Sicherheitsgrenze
+
+Positivliste erlaubter Aktionen **je Zielart**. Was nicht daraufsteht, ist
+nicht abgeschaltet, sondern nicht vorhanden.
+
+| Zielart | Erlaubt |
+| --- | --- |
+| `pbs` | `backup_now`, `verify_now`, `sync_now`, `protect` |
+| `nakivo` | `backup_now`, `protect` |
+| `frappe-drive` | `export_now` |
+| `s3` | `archive_now` |
+
+**Nicht gebaut:** `delete`, `prune`, `forget`, `set_retention`,
+`delete_job`, `unprotect`.
+
+`protect` gibt es, `unprotect` nicht. Die Richtung, die Daten rettet, ist
+leicht; die andere braucht den Weg über das Ursprungssystem und eine
+Person, die dort angemeldet ist.
+
+### Die Grenze gilt doppelt
+
+Die Positivliste im Code ist die **zweite** Verteidigungslinie. Die erste
+sind die Token selbst:
+
+- PBS-Token ohne `Datastore.Prune` und ohne `Datastore.Modify`
+- NAKIVO-Konto in einer Rolle ohne Löschrechte
+- S3-Bucket mit **Object Lock im Compliance-Modus** – dort kann selbst der
+  Root-Account nichts vor Fristablauf entfernen
+- Frappe Drive: Schreibrecht nur auf den Sicherungsordner
+
+Ein PBS-Token mit Prune-Recht ist auch dann gefährlich, wenn NetOps es nie
+benutzt. Die Konnektorarten `pbs` und `nakivo` sind deshalb im Code
+**erzwungen lesend** (`nie_schreibend`) – ein schreibender Konnektor lässt
+sich für sie nicht anlegen.
+
+### Geheimnisse
+
+Nirgendwo im Repo, in DocTypes, in Protokollen oder in Fehlermeldungen. Der
+`Connector` trägt nur einen `access_reference` auf einen Passbolt-Eintrag
+(ID, URL, Bezeichnung). Im Audit steht die Nutzlast ausschließlich als
+SHA-256-Hash – das Protokoll hält fest, *dass* etwas passiert ist, nicht
+*womit*.
+
+---
+
+## 6. Automatisierung: Scheduler und Workflow
+
+**Die Automatisierung entsteht in Frappe, nicht im Frontend.** Das ist der
+Kern dieses Konzepts und der Grund, warum die Anbindung über API läuft.
+
+### 6.1 Lesen: der Scheduler
+
+Die Konnektoren holen den Zustand der Fremdsysteme. Getaktet über
+`hooks.py`, nicht über Timer im Browser – ein Browser, der zugeklappt wird,
+taktet nichts.
+
+```python
+# netops/hooks.py
+scheduler_events = {
+    "cron": {
+        # Alarmquellen eng, Sicherungsziele ruhiger - unter fünf Minuten
+        # erzeugt ein Konnektor mehr Last als Erkenntnis.
+        "*/5 * * * *":  ["netops.connectors.poll.alarmquellen"],
+        "*/30 * * * *": ["netops.connectors.poll.sicherungen"],
+        "0 * * * *":    ["netops.connectors.poll.ablage"],
+    },
+    "daily": [
+        "netops.backup.assurance.taegliche_bewertung",
+        "netops.backup.fristen.pruefe_restore_test_faellig",
+    ],
+}
+```
+
+Jeder Lauf schreibt `Connector.last_run` und `last_status`. Bleibt ein
+Konnektor hinter seinem Takt zurück, meldet `connector_status` ihn als
+`stale` – **stille Konnektoren sind der gefährlichste Zustand**, weil die
+Oberfläche dann alte Werte als aktuelle zeigt.
+
+Die eigentlichen API-Aufrufe laufen über `frappe.enqueue` in einem
+Hintergrundjob, nie im Request. Ein PBS-Verify dauert anderthalb Stunden.
+
+### 6.2 Steuern: Frappe Workflow
+
+Eine Aktion ist **kein direkter Aufruf**, sondern ein Dokument mit Zustand.
+Wer „jetzt sichern" drückt, stellt einen Antrag; Frappe bewegt ihn weiter.
+
+```
+Entwurf ──beantragen──▶ Beantragt ──genehmigen──▶ Genehmigt
+                            │                         │
+                            └──ablehnen──▶ Abgelehnt  └──(Scheduler)──▶ Läuft
+                                                                          │
+                                                        ┌─────────────────┴────────┐
+                                                        ▼                          ▼
+                                                    Erledigt               Fehlgeschlagen
+```
+
+Das ist keine eigene Erfindung, sondern die Standardmechanik von Frappe:
+
+| Frappe-DocType | Inhalt |
+| --- | --- |
+| `Workflow` | `document_type`, `workflow_state_field`, `is_active` |
+| `Workflow Document State` (Child) | `state`, `doc_status`, `allow_edit` (Rolle), `update_field`/`update_value` |
+| `Workflow Transition` (Child) | `state`, `action`, `next_state`, `allowed` (Rolle), `allow_self_approval`, `condition` |
+| `Workflow Action` | die offene Aufgabe für die Person, die dran ist |
+
+**Warum das der Punkt ist:** Zustände, Übergänge und erlaubte Rollen sind
+**Daten**, keine `if`-Zweige. Wer will, dass ein Verify-Lauf künftig ohne
+Genehmigung durchgeht, stellt das in Frappe ein. Niemand ändert Code, und
+niemand baut dabei versehentlich die Sperre für `backup_now` mit ab.
+
+Genauso: `allow_self_approval = 0` bedeutet Vier-Augen-Prinzip, und
+`condition` erlaubt Feinheiten wie „ohne Genehmigung, solange es kein
+Produktivsystem ist":
+
+```python
+# Workflow Transition.condition
+doc.risk != "high" and doc.action != "backup_now"
+```
+
+### 6.3 Welche Aktion braucht eine Genehmigung?
+
+Die Vorbelegung, einstellbar über die Workflow-Übergänge:
+
+| Aktion | Genehmigung | Begründung |
+| --- | --- | --- |
+| `verify_now` | nein | liest nur, kostet Last |
+| `sync_now` | nein | kopiert in Richtung zweiter Ort |
+| `export_now`, `archive_now` | nein | legt ab, nimmt nichts weg |
+| `backup_now` | ja | erzeugt Last auf dem Produktivsystem |
+| `protect` | ja | bindet Speicher dauerhaft, nicht rücknehmbar |
+| Datei-Download | ja | holt den Datenbestand auf einen Arbeitsplatz |
+
+**Jeder Antrag braucht einen Grund im Klartext.** Ein von Hand gestarteter
+Lauf ohne Begründung taucht später in der Lastkurve auf, und niemand weiß
+mehr warum.
+
+### 6.4 Rollen
+
+| Rolle | Darf |
+| --- | --- |
+| `NetOps Viewer` | lesen |
+| `NetOps Operator` | Anträge stellen, genehmigungsfreie Aktionen auslösen |
+| `NetOps Backup Approver` | Sicherungsläufe und Schutz genehmigen |
+| `NetOps Admin` | Ziele und Schutzobjekte pflegen, Workflow ändern |
+
+Keine Rolle darf löschen – es gibt keine Methode dafür.
+
+---
+
+## 7. Was geprüft wird
+
+`backup_assurance` beantwortet nicht „läuft der Job?", sondern **„kommen wir
+zurück, und schnell genug?"**
+
+| Prüfung | Feststellung |
+| --- | --- |
+| **3-2-1** | drei Kopien, zwei Medienarten, eine außer Haus – als drei Einzelbefunde mit je eigener Abhilfe |
+| **Wiederherstellungstest** | wann zuletzt, mit welchem Ergebnis; Frist nach Kritikalität (kritisch 90, hoch 180, sonst 365 Tage) |
+| **Zusage gegen Wirklichkeit** | Sicherungsalter *ist* der RPO, Wiederherstellungsdauer *ist* der RTO |
+| **Aufbewahrung** | gesetzliche gegen eingestellte Frist (§ 132 BAO / § 147 AO: sieben Jahre) |
+
+Drei Entscheidungen dahinter:
+
+- **Fehlende Kopie außer Haus ist kritisch**, fehlende Kopien oder Medien
+  nur eine Warnung. Genau der Offsite-Fall ist der, für den es die Regel
+  gibt.
+- **Nie getestet ist so schlimm wie fehlgeschlagen.** Eine Sicherung ohne
+  Wiederherstellungstest ist eine Vermutung.
+- **Verfehlte Ziele werden abgestuft.** RPO-Zusage eine Stunde, tatsächlich
+  1,5 Stunden: nachjustieren. Tatsächlich 40 Stunden: die Zusage stimmt
+  nicht. Grenze bei Faktor 2.
+
+Ein neu angelegtes Schutzobjekt gilt sofort als **kritisch** – erklärt, aber
+noch nie gesichert. Das ist beabsichtigt: **nicht geprüft darf nie aussehen
+wie in Ordnung.**
+
+---
+
+## 8. Abschalten statt löschen
+
+Gilt für Konnektoren, Sicherungsziele und Schutzobjekte. Ein gelöschtes
+Ziel nimmt seine Wiederherstellungspunkte mit, und die Frage „was lag da
+eigentlich?" lässt sich danach nicht mehr beantworten.
+
+Stilllegen braucht einen Grund und fällt aus der Prüfung heraus – aber
+nicht aus der Historie. Ein stillgelegtes Ziel behält seine Punkte sichtbar
+und verliert seine Knöpfe.
+
+---
+
+## 9. Offene Punkte
+
+- **Frappe Drive als Sicherungsziel ist erst halb gedacht.** Ein
+  Konfigurationsauszug gehört dorthin, ein VM-Abbild nicht. Die
+  Größenbeschränkung fehlt.
+- **Object Lock wird angezeigt, aber nicht verifiziert.** Ob der Bucket
+  wirklich im Compliance-Modus läuft, prüft derzeit niemand nach.
+- **Die RTO-Messung stammt aus Einzeltests.** Eine Wiederherstellung unter
+  Last dauert länger; die Zahl ist eine Untergrenze.
+- **Kein Test der Wiederherstellung an fremder Hardware.** Der Fall, für den
+  die Kopie außer Haus da ist, ist genau der ungetestete.

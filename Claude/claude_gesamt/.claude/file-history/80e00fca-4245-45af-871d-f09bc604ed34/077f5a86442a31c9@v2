@@ -1,0 +1,272 @@
+<section class="hero">
+  <div class="wrap hero-in">
+    <div class="hero-grid">
+      <div>
+        <span class="kicker">Smart Energy Home</span>
+        <h1>Ein Haus, das seinen Strom selbst <span class="gl">verteilt</span>.</h1>
+        <p class="lede">Photovoltaik, Speicher, Wärmepumpe und Wallbox werden erst gemeinsam sinnvoll. Der Simulator fährt einen ganzen Tag durch und zeigt zu jeder Stunde, woher der Strom kommt und wohin er geht.</p>
+        <div class="hero-acts">
+          <a class="btn btn-v" href="#tool">Tag durchspielen</a>
+          <a class="btn btn-o" href="#details">Komponenten</a>
+        </div>
+      </div>
+      <div class="chips">
+        <div class="chip v"><div><i>Autarkie</i><p>Typisch mit Speicher im Jahresmittel</p></div><b>55–75<span class="unit">%</span></b></div>
+        <div class="chip s"><div><i>Regelintervall</i><p>Messwerte des Smart Meters</p></div><b>15<span class="unit">min</span></b></div>
+        <div class="chip c"><div><i>Steuerbare Lasten</i><p>Wärmepumpe, Wallbox, Warmwasser, Pool</p></div><b>4<span class="unit">Kreise</span></b></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="tool">
+  <div class="wrap">
+    <div class="sec-head">
+      <div><span class="kicker">Energiefluss-Simulator</span><h2>24 Stunden im Zeitraffer.</h2></div>
+      <p class="lede">Schalten Sie Komponenten zu oder ab und beobachten Sie, wie sich die Flüsse verschieben. Der Regler wandert durch den Tag, die Wiedergabe läuft automatisch.</p>
+    </div>
+
+    <div class="console glass chamf">
+      <div class="con-t"><span><span class="pulse"></span>Live-Simulation</span><span id="stamp">Übergangszeit · 10:00</span></div>
+      <div class="con-l">
+        <div class="field">
+          <div class="field-h"><label for="hour">Uhrzeit</label><span class="field-v" id="v-hour">10:00</span></div>
+          <input id="hour" type="range" min="0" max="23" step="1" value="10">
+          <div class="scale"><span>00:00</span><span>23:00</span></div>
+        </div>
+        <button class="sw" id="play" type="button" aria-pressed="false">Tagesverlauf abspielen<span class="tr"></span></button>
+        <div class="field">
+          <span class="lbl" id="sel">Jahreszeit</span>
+          <div class="seg c3" role="group" aria-labelledby="sel">
+            <button type="button" data-se="win" aria-pressed="false">Winter</button>
+            <button type="button" data-se="ueb" aria-pressed="true">Übergang</button>
+            <button type="button" data-se="som" aria-pressed="false">Sommer</button>
+          </div>
+        </div>
+        <div class="field">
+          <span class="lbl">Komponenten</span>
+          <button class="sw" id="c-pv" type="button" aria-pressed="true">Photovoltaik 20 kWp<span class="tr"></span></button>
+          <button class="sw" id="c-bat" type="button" aria-pressed="true">Speicher 15 kWh<span class="tr"></span></button>
+          <button class="sw" id="c-hp" type="button" aria-pressed="true">Wärmepumpe<span class="tr"></span></button>
+          <button class="sw" id="c-wb" type="button" aria-pressed="false">Wallbox 11 kW<span class="tr"></span></button>
+        </div>
+        <details class="as">
+          <summary>Rechenannahmen</summary>
+          <ul>
+            <li>Grundlast 12 kWh am Tag mit typischem Wohn- und Bürolastgang</li>
+            <li>PV-Anlage 20 kWp, Ertragsfaktor Winter 0,35, Übergang 0,80, Sommer 1,35</li>
+            <li>Speicher 15 kWh, Lade- und Entladeleistung 7,5 kW, Wirkungsgrad 94 %</li>
+            <li>Wärmepumpe mit Tagesbedarf je Jahreszeit, Arbeitszahl 3,8</li>
+            <li>Wallbox lädt ab 18:00 mit 11 kW, sofern freigegeben</li>
+            <li>Überschuss wird eingespeist, Defizit aus dem Netz bezogen</li>
+          </ul>
+        </details>
+      </div>
+
+      <div class="con-r">
+        <div class="stats">
+          <div class="stat s"><i>Erzeugung jetzt</i><b id="o-pv">—<span class="unit">kW</span></b><small id="o-pvd">Tagesertrag —</small></div>
+          <div class="stat"><i>Verbrauch jetzt</i><b id="o-load">—<span class="unit">kW</span></b><small id="o-loadd">Tagesbedarf —</small></div>
+          <div class="stat c"><i>Speicherstand</i><b id="o-soc">—<span class="unit">kWh</span></b><small id="o-socp">—</small></div>
+          <div class="stat v"><i>Autarkie Tag</i><b id="o-aut">—<span class="unit">%</span></b><small id="o-autn">—</small></div>
+          <div class="stat"><i>Netzbezug Tag</i><b id="o-grid">—<span class="unit">kWh</span></b><small id="o-feed">Einspeisung —</small></div>
+          <div class="stat v"><i>Stromkosten Tag</i><b id="o-cost">—<span class="unit">€</span></b><small id="o-cost2">ohne Anlage —</small></div>
+        </div>
+
+        <div class="panel dk">
+          <div class="panel-h"><h4>Energiefluss um <span id="c-h">10:00</span></h4><span id="c-note">—</span></div>
+          <svg id="flow" viewBox="0 0 760 300" role="img" aria-label="Energiefluss zwischen Erzeugung, Speicher, Netz und Verbrauchern"></svg>
+        </div>
+
+        <div class="panel">
+          <div class="panel-h"><h4>Tagesverlauf</h4><span id="c-day">—</span></div>
+          <svg id="day" viewBox="0 0 760 170" role="img" aria-label="Erzeugung und Verbrauch über den Tag"></svg>
+          <div class="legend">
+            <span><i style="background:#8CE04B"></i>PV direkt</span>
+            <span><i style="background:#45E0FF"></i>Speicher</span>
+            <span><i style="background:#3A4C66"></i>Netzbezug</span>
+            <span><i style="background:#FFB43D;height:3px"></i>Erzeugung</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="details">
+  <div class="wrap">
+    <div class="sec-head">
+      <div><span class="kicker c">Komponenten</span><h2>Was zusammenspielen muss, damit es funktioniert.</h2></div>
+      <p class="lede">Jede Komponente für sich ist Standard. Der Unterschied liegt im Energiemanager, der weiß, welche Last warten kann und welche nicht.</p>
+    </div>
+    <div class="cards">
+      <article class="card">
+        <span class="n">KERN</span>
+        <svg class="ic" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="5" y="5" width="22" height="22"/><path d="M11 11h10v10H11z"/><path d="M16 1v4M16 27v4M1 16h4M27 16h4"/></svg>
+        <h3>Energiemanager</h3>
+        <p>Er kennt Erzeugung, Ladezustand und Prognose und entscheidet im Viertelstundenraster, welcher Verbraucher Vorrang hat. Ohne ihn laufen die Komponenten aneinander vorbei.</p>
+        <ul><li>Prognosebasiertes Laden</li><li>Priorisierung der Kreise</li><li>Schnittstelle zum Smart Meter</li></ul>
+      </article>
+      <article class="card">
+        <span class="n">SPEICHER</span>
+        <svg class="ic" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="6" y="8" width="20" height="17"/><path d="M12 5v3M20 5v3M12 20v-7l4 4 4-4v7"/></svg>
+        <h3>Batterie und Warmwasser</h3>
+        <p>Nicht jeder Überschuss muss in die Batterie. Warmwasser ist der günstigste Speicher im Haus, und die Wärmepumpe hebt die Puffertemperatur an, solange die Sonne liefert.</p>
+        <ul><li>Batterie für die Abendstunden</li><li>Puffer als thermischer Speicher</li><li>Sperrzeiten berücksichtigen</li></ul>
+      </article>
+      <article class="card">
+        <span class="n">MESSUNG</span>
+        <svg class="ic" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="16" cy="16" r="12"/><path d="M16 16l6-5M16 8v2M24 16h-2M16 24v-2M8 16h2"/></svg>
+        <h3>Smart Meter und Datenzugang</h3>
+        <p>Der Zähler liefert Viertelstundenwerte über die Kundenschnittstelle. Erst damit lassen sich Eigenverbrauch, Lastspitzen und dynamische Tarife wirklich auswerten.</p>
+        <ul><li>Kundenschnittstelle aktivieren</li><li>Viertelstundenwerte freigeben</li><li>Auswertung im Portal</li></ul>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="faq">
+  <div class="wrap">
+    <div class="sec-head"><div><span class="kicker">Häufige Fragen</span><h2>Fragen zum vernetzten Haus.</h2></div></div>
+    <div class="faq">
+      <details class="qa" open><summary>Brauche ich alle Komponenten gleichzeitig?</summary><p>Nein, aber die Reihenfolge zählt. Zuerst die Photovoltaik, danach die größte steuerbare Last, meist die Wärmepumpe, dann Speicher und Wallbox. Schalten Sie die Komponenten im Simulator einzeln zu, dann sehen Sie den Effekt jeder Stufe.</p></details>
+      <details class="qa"><summary>Wie hoch ist die Autarkie realistisch?</summary><p>Ohne Speicher liegt sie meist bei dreißig bis vierzig Prozent, mit Speicher bei sechzig bis fünfundsiebzig. Vollständige Autarkie ist technisch möglich, aber wirtschaftlich selten sinnvoll, weil die letzten Prozentpunkte die teuersten sind.</p></details>
+      <details class="qa"><summary>Funktioniert das mit Geräten verschiedener Hersteller?</summary><p>In der Regel ja, sofern offene Schnittstellen vorhanden sind. Kritisch sind geschlossene Systeme, die nur mit eigener Hardware sprechen. Wir prüfen die Kompatibilität vor der Angebotslegung und nicht erst bei der Inbetriebnahme.</p></details>
+      <details class="qa"><summary>Was passiert bei einem Stromausfall?</summary><p>Ohne Notstromfunktion schaltet die Anlage ab. Mit Netztrennstelle und inselfähigem Wechselrichter versorgt der Speicher ausgewählte Kreise weiter. Welche das sind, wird bei der Planung der Verteilung festgelegt.</p></details>
+    </div>
+  </div>
+</section>
+
+<script>
+(function(){
+"use strict";
+var $=function(i){return document.getElementById(i);},
+de=function(n,d){d=d||0;return Number(n).toLocaleString("de-AT",{minimumFractionDigits:d,maximumFractionDigits:d});};
+var RM=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+var PVs=[0,0,0,0,.005,.02,.045,.07,.09,.105,.115,.12,.118,.105,.085,.06,.035,.015,.005,0,0,0,0,0];
+var BASE=[.2,.16,.15,.15,.18,.35,.7,.9,.7,.6,.55,.6,.75,.6,.55,.6,.8,1,1,.9,.75,.6,.4,.26];
+var HPs=[1,1,1,1,1,1.2,1.4,1.3,1,.8,.6,.5,.5,.6,.7,.9,1.2,1.4,1.4,1.3,1.2,1.1,1,1];
+var SE={win:{n:"Winter",pv:.35,hp:48},ueb:{n:"Übergangszeit",pv:.80,hp:18},som:{n:"Sommer",pv:1.35,hp:3}};
+var se="ueb",on={pv:true,bat:true,hp:true,wb:false},hour=10,playing=false,timer=null,dash=0;
+var KWP=20,CAP=15,CRATE=7.5,ETA=.97,BASEDAY=12,PRICE=.24,FEED=.07;
+function nrm(a){var s=a.reduce(function(x,y){return x+y;},0);return a.map(function(v){return v/s;});}
+var PVn=nrm(PVs),BASEn=nrm(BASE),HPn=nrm(HPs);
+
+function sim(){
+ var S=SE[se],pv=[],load=[],i;
+ for(i=0;i<24;i++){
+   var p=on.pv?PVn[i]*KWP*2.9*S.pv:0;
+   var l=BASEn[i]*BASEDAY;
+   if(on.hp)l+=HPn[i]*S.hp/3.8;
+   if(on.wb&&i>=18&&i<=21)l+=11;
+   pv.push(p);load.push(l);
+ }
+ var soc=CAP*0.35,dir=[],dis=[],chg=[],grid=[],feed=[],socA=[];
+ for(i=0;i<24;i++){
+   var d=Math.min(pv[i],load[i]);dir.push(d);
+   var sur=pv[i]-d,def=load[i]-d,c=0,x=0;
+   if(on.bat){c=Math.min(sur,CAP-soc,CRATE);soc+=c*ETA;x=Math.min(def,soc*ETA,CRATE);soc-=x/ETA;}
+   chg.push(c);dis.push(x);feed.push(sur-c);grid.push(def-x);socA.push(soc);
+ }
+ return {pv:pv,load:load,dir:dir,dis:dis,chg:chg,grid:grid,feed:feed,soc:socA};
+}
+
+function flowSvg(r){
+ var h=hour,W=760,H=300;
+ var src=[["PV-Anlage",r.pv[h],"#FFB43D"],["Netzbezug",r.grid[h],"#3A4C66"],["Speicher",r.dis[h],"#45E0FF"]];
+ var snk=[["Grundlast",BASEn[h]*BASEDAY,"#8CE04B"],
+          ["Wärmepumpe",on.hp?HPn[h]*SE[se].hp/3.8:0,"#8CE04B"],
+          ["Wallbox",(on.wb&&h>=18&&h<=21)?11:0,"#8CE04B"],
+          ["Speicher laden",r.chg[h],"#45E0FF"],
+          ["Einspeisung",r.feed[h],"#FFB43D"]];
+ var mx=Math.max(1,Math.max.apply(null,src.map(function(a){return a[1];}).concat(snk.map(function(a){return a[1];}))));
+ var s="",i,cy,w;
+ s+='<rect x="322" y="42" width="58" height="216" fill="rgba(18,30,51,.92)" stroke="rgba(150,180,220,.42)"/>';
+ s+='<text x="351" y="146" text-anchor="middle" fill="#EDF4FF" font-family="JetBrains Mono, monospace" font-size="10.5" transform="rotate(-90 351 146)">HAUSVERTEILER</text>';
+ for(i=0;i<3;i++){
+   cy=52+i*88;w=2+11*(src[i][1]/mx);
+   if(src[i][1]>0.02){
+     s+='<path d="M158 '+cy+' C 240 '+cy+' 250 150 322 150" fill="none" stroke="'+src[i][2]+'" stroke-width="'+w.toFixed(1)+'" opacity=".28"/>';
+     s+='<path class="fl" d="M158 '+cy+' C 240 '+cy+' 250 150 322 150" fill="none" stroke="'+src[i][2]+'" stroke-width="'+w.toFixed(1)+'" stroke-dasharray="7 17" stroke-linecap="round"/>';
+   }
+   s+='<rect x="14" y="'+(cy-25)+'" width="144" height="50" fill="rgba(13,23,41,.92)" stroke="'+(src[i][1]>0.02?src[i][2]:"rgba(150,180,220,.2)")+'"/>';
+   s+='<text x="26" y="'+(cy-5)+'" fill="#EDF4FF" font-family="JetBrains Mono, monospace" font-size="10.5">'+src[i][0]+'</text>';
+   s+='<text x="26" y="'+(cy+14)+'" fill="'+src[i][2]+'" font-family="JetBrains Mono, monospace" font-size="13">'+de(src[i][1],1)+' kW</text>';
+ }
+ for(i=0;i<5;i++){
+   cy=36+i*57;w=2+11*(snk[i][1]/mx);
+   if(snk[i][1]>0.02){
+     s+='<path d="M380 150 C 452 150 462 '+cy+' 534 '+cy+'" fill="none" stroke="'+snk[i][2]+'" stroke-width="'+w.toFixed(1)+'" opacity=".28"/>';
+     s+='<path class="fl" d="M380 150 C 452 150 462 '+cy+' 534 '+cy+'" fill="none" stroke="'+snk[i][2]+'" stroke-width="'+w.toFixed(1)+'" stroke-dasharray="7 17" stroke-linecap="round"/>';
+   }
+   s+='<rect x="534" y="'+(cy-21)+'" width="212" height="42" fill="rgba(13,23,41,.92)" stroke="'+(snk[i][1]>0.02?snk[i][2]:"rgba(150,180,220,.2)")+'"/>';
+   s+='<text x="546" y="'+(cy-4)+'" fill="#EDF4FF" font-family="JetBrains Mono, monospace" font-size="10.5">'+snk[i][0]+'</text>';
+   s+='<text x="546" y="'+(cy+13)+'" fill="'+snk[i][2]+'" font-family="JetBrains Mono, monospace" font-size="12">'+de(snk[i][1],1)+' kW</text>';
+ }
+ $("flow").innerHTML=s;
+ if(!RM)Array.prototype.forEach.call(document.querySelectorAll("#flow .fl"),function(p){p.setAttribute("stroke-dashoffset",dash);});
+}
+
+function dayChart(r){
+ var W=760,H=170,L=46,R=12,T=14,B=28,pw=W-L-R,ph=H-T-B,cw=pw/24;
+ var mx=Math.max(Math.max.apply(null,r.load),Math.max.apply(null,r.pv))*1.12||1;
+ var y=function(v){return T+ph*(1-v/mx);},s="",i;
+ for(i=0;i<=2;i++){var gv=mx*i/2,gy=y(gv);
+  s+='<line x1="'+L+'" y1="'+gy.toFixed(1)+'" x2="'+(W-R)+'" y2="'+gy.toFixed(1)+'" stroke="rgba(150,180,220,.11)"/>';
+  s+='<text x="'+(L-7)+'" y="'+(gy+3.5).toFixed(1)+'" text-anchor="end" fill="#617595" font-family="JetBrains Mono, monospace" font-size="9.5">'+de(gv,1)+'</text>';}
+ for(i=0;i<24;i++){
+  var acc=0,seg=[[r.dir[i],"#8CE04B"],[r.dis[i],"#45E0FF"],[r.grid[i],"#3A4C66"]];
+  for(var j=0;j<3;j++){var v=seg[j][0];if(v<=.01)continue;
+   s+='<rect x="'+(L+i*cw+2).toFixed(1)+'" y="'+y(acc+v).toFixed(1)+'" width="'+(cw-4).toFixed(1)+'" height="'+Math.max(0,ph*v/mx-1.5).toFixed(1)+'" fill="'+seg[j][1]+'" opacity="'+(i===hour?"1":".6")+'"><title>'+i+':00 '+["PV direkt","Speicher","Netz"][j]+' '+de(v,1)+' kWh</title></rect>';
+   acc+=v;}
+ }
+ var d="";for(i=0;i<24;i++)d+=(i?"L":"M")+(L+i*cw+cw/2).toFixed(1)+" "+y(r.pv[i]).toFixed(1)+" ";
+ s+='<path d="'+d+'" fill="none" stroke="#FFB43D" stroke-width="2" opacity=".9"/>';
+ s+='<line x1="'+(L+hour*cw+cw/2).toFixed(1)+'" y1="'+T+'" x2="'+(L+hour*cw+cw/2).toFixed(1)+'" y2="'+(T+ph)+'" stroke="#EDF4FF" stroke-width="1" opacity=".5"/>';
+ [0,6,12,18,23].forEach(function(hh){s+='<text x="'+(L+hh*cw+cw/2).toFixed(1)+'" y="'+(H-8)+'" text-anchor="middle" fill="#617595" font-family="JetBrains Mono, monospace" font-size="9.5">'+hh+':00</text>';});
+ s+='<text x="'+(L-7)+'" y="'+(T-3)+'" text-anchor="end" fill="#617595" font-family="JetBrains Mono, monospace" font-size="9">kW</text>';
+ $("day").innerHTML=s;
+}
+
+function render(){
+ var r=sim(),i,sPv=0,sLoad=0,sDir=0,sDis=0,sGrid=0,sFeed=0;
+ for(i=0;i<24;i++){sPv+=r.pv[i];sLoad+=r.load[i];sDir+=r.dir[i];sDis+=r.dis[i];sGrid+=r.grid[i];sFeed+=r.feed[i];}
+ var aut=sLoad>0?(sDir+sDis)/sLoad:0;
+ var hh=(hour<10?"0":"")+hour+":00";
+ $("v-hour").textContent=hh;$("c-h").textContent=hh;
+ $("stamp").textContent=SE[se].n+" · "+hh;
+ $("o-pv").innerHTML=de(r.pv[hour],1)+'<span class="unit">kW</span>';
+ $("o-pvd").textContent="Tagesertrag "+de(sPv,1)+" kWh";
+ $("o-load").innerHTML=de(r.load[hour],1)+'<span class="unit">kW</span>';
+ $("o-loadd").textContent="Tagesbedarf "+de(sLoad,1)+" kWh";
+ $("o-soc").innerHTML=(on.bat?de(r.soc[hour],1):"—")+'<span class="unit">kWh</span>';
+ $("o-socp").textContent=on.bat?de(r.soc[hour]/CAP*100)+" % von "+CAP+" kWh":"kein Speicher aktiv";
+ $("o-aut").innerHTML=de(aut*100)+'<span class="unit">%</span>';
+ $("o-autn").textContent=de(sDir,1)+" kWh direkt · "+de(sDis,1)+" kWh Speicher";
+ $("o-grid").innerHTML=de(sGrid,1)+'<span class="unit">kWh</span>';
+ $("o-feed").textContent="Einspeisung "+de(sFeed,1)+" kWh";
+ var cost=sGrid*PRICE-sFeed*FEED,ref=sLoad*PRICE;
+ $("o-cost").innerHTML=de(cost,2)+'<span class="unit">€</span>';
+ $("o-cost2").textContent="ohne Anlage "+de(ref,2)+" €";
+ $("c-note").textContent="Bilanz "+de(r.pv[hour]-r.load[hour],1)+" kW";
+ $("c-day").textContent="Autarkie "+de(aut*100)+" % an diesem Tag";
+ flowSvg(r);dayChart(r);
+}
+
+$("hour").addEventListener("input",function(){hour=+this.value;render();});
+Array.prototype.forEach.call(document.querySelectorAll("[data-se]"),function(b){
+ b.addEventListener("click",function(){
+  Array.prototype.forEach.call(document.querySelectorAll("[data-se]"),function(o){o.setAttribute("aria-pressed","false");});
+  b.setAttribute("aria-pressed","true");se=b.dataset.se;render();});});
+[["c-pv","pv"],["c-bat","bat"],["c-hp","hp"],["c-wb","wb"]].forEach(function(p){
+ $(p[0]).addEventListener("click",function(){on[p[1]]=!on[p[1]];this.setAttribute("aria-pressed",on[p[1]]?"true":"false");render();});});
+$("play").addEventListener("click",function(){
+ playing=!playing;this.setAttribute("aria-pressed",playing?"true":"false");
+ if(playing){timer=setInterval(function(){hour=(hour+1)%24;$("hour").value=hour;render();},900);}
+ else{clearInterval(timer);}
+});
+if(!RM)setInterval(function(){dash=(dash-1.3)%24;
+ Array.prototype.forEach.call(document.querySelectorAll("#flow .fl"),function(p){p.setAttribute("stroke-dashoffset",dash);});},45);
+render();
+})();
+</script>

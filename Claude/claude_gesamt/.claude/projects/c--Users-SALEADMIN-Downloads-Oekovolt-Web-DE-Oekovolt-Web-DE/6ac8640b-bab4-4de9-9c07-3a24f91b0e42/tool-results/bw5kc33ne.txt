@@ -1,0 +1,478 @@
+# Plattform ÖkoInvest – Betrieb, Demo, Sicherheit
+
+Login, Rollen-Portale, Projektbörse, Prozesse von der Anfrage bis zum Abschluss und Backoffice.
+Datenvertrag für die Frappe-App: [`docs/API.md`](./API.md).
+
+## Aufbau
+
+```
+Browser ──fetch(JSON, Origin)──▶ Next.js /api/** ──▶ src/lib/plattform/backend/index.js
+                                    │                     ├─ demo.js   (JSON-Datei .data/plattform.json)
+Server-Komponenten (/portal/**) ────┘                     └─ frappe.js (oekoinvest_app, whitelisted Methoden)
+Middleware: /portal/** ohne gültige Sitzung → /login?weiter=…
+```
+
+| Pfad | Inhalt |
+|---|---|
+| `src/lib/plattform/prozesse.js` | Zustandsautomaten (Vorgang, Fläche, Projekt, Interesse, Provision) mit erlaubten Übergängen je Rolle |
+| `src/lib/plattform/konstanten.js` | Rollen, Typen, Länder, NDA-Text, Upload-Regeln |
+| `src/lib/plattform/sitzung.js` | signierte Sitzungstoken (HMAC-SHA256, Web Crypto) |
+| `src/lib/plattform/server/route.js` | Rahmen aller APIs: CSRF, Sitzung, Rollen, Rate-Limit, Fehler |
+| `src/lib/plattform/server/seite.js` | Sitzung in Server-Komponenten |
+| `src/lib/plattform/backend/demo.js` | Referenz-Implementierung aller Operationen |
+| `src/lib/plattform/backend/frappe.js` | Adapter zur Frappe-App |
+| `src/lib/plattform/oeffentlich.js` | Positivliste öffentlicher/vertraulicher Projektfelder |
+| `src/lib/plattform/matching.js` | Matching-Score Projekt ↔ Suchprofil |
+| `src/lib/plattform/checkliste.js` | Dokumenten-Checklisten je Projektphase bzw. Fläche, Datenraum-Qualität |
+| `src/lib/plattform/csv.js` | CSV-Export für Excel-DE (BOM, Semikolon, Formel-Schutz), Spalten je Export |
+| `src/lib/plattform/server/pdf.js` | PDF-Erzeuger ohne Fremdpakete (mehrseitig, Helvetica/WinAnsi, Metriken für Zeilenumbruch) |
+| `src/lib/plattform/server/expose.js` | Layout Exposé-PDF (vertraulich) und Teaser-PDF (öffentlich) |
+| `src/components/Portal/**` | Portal-Rahmen mit Glocke, Status-Aktionen, Nachrichten, Dokumente, Formulare, Benachrichtigungen, Aufgaben, Checkliste, Aktivitäts-Feed, Postausgang |
+| `src/components/Boerse/**` | Projektkarte, Filter-Insel, Merken, Klick-NDA |
+| `src/components/Plattform/**` | Anfrageformular, Login, Registrierung, Passwort |
+| `scripts/plattform-test.mjs` | End-to-End-Test gegen den laufenden Server |
+
+## Routen
+
+Öffentlich: `/projektboerse`, `/projektboerse/[slug]`, `/projektboerse/anbieten`, `/login`, `/registrieren` (`?rolle=`, `?vorgang=`, `?weiter=`), `/passwort-vergessen` (`?token=` setzt neues Passwort).
+
+Portal (Sitzung Pflicht): `/portal` (Dashboard je Rolle), `/portal/anfragen[/id]`, `/portal/flaechen[/neu|/id]`, `/portal/projekte[/neu|/id]`, `/portal/boerse[/id]`, `/portal/boerse/vergleich` (Investor: 2–4 Projekte der Merkliste, `?ids=`), `/portal/benachrichtigungen` (Glocke, E-Mail-Einstellungen), `/portal/nachrichten`, `/portal/dokumente`, `/portal/profil`.
+Backoffice (Rolle admin): `/portal/admin` (Cockpit mit „Meine Aufgaben“, Überfällig-Hinweis, CSV-Export), `/portal/admin/aufgaben` (Aufgaben & Wiedervorlagen, `?ansicht=`), `/portal/admin/vorgaenge[/id]`, `/portal/admin/flaechen` (Kanban), `/portal/admin/projekte` (Freigabe), `/portal/admin/interessen` (NDA & LOI), `/portal/admin/deals` (Provisionen), `/portal/admin/nutzer` (Nutzer, Protokoll, Demo-Links), `/portal/admin/postausgang` (E-Mail-Vorschau).
+Detailseiten Vorgang/Fläche/Projekt zeigen dem Backoffice zusätzlich Aufgaben am Objekt und den Aktivitäts-Feed; Projekt- und Flächenseiten die Dokumenten-Checkliste mit Upload am Punkt; Exposé-PDF auf Projekt- und Börsenseite, Teaser-PDF auf der öffentlichen Exposé-Seite.
+
+APIs: siehe `docs/API.md`, Abschnitt 6.
+
+## Umgebungsvariablen
+
+| Variable | Pflicht | Bedeutung |
+|---|---|---|
+| `SESSION_SECRET` | **Produktion** | Schlüssel für Sitzungstoken, mindestens 32 Zeichen, zufällig (`openssl rand -base64 48`). Ohne: Middleware und APIs verweigern jede Sitzung. In Entwicklung fester, unsicherer Fallback mit Warnung im Log. Wechsel = alle abgemeldet. |
+| `PLATTFORM_BACKEND` | Produktion | `frappe` für den Betrieb. Sonst Demo-Backend. |
+| `PLATTFORM_DEMO` | – | `1` erlaubt das Demo-Backend auch im Production-Build (Vorführserver). Ohne `PLATTFORM_BACKEND=frappe` und ohne `PLATTFORM_DEMO=1` antwortet die Plattform in Produktion mit 503 „nicht konfiguriert“ – keine stillen Demo-Daten. |
+| `SERVER`, `API_KEY`, `API_SECRET` | bei Frappe | wie `src/lib/apiBaseUrl.js`; API-Nutzer mit Rolle `ÖkoInvest API` (Einrichtung: `Import-Frappe/ANLEITUNG.md`) |
+| `PLATTFORM_BASIS_URL` | empfohlen | Basis für Links in E-Mails (Bestätigung, Passwort). Standard in Produktion: `NEXT_PUBLIC_SITE_URL` bzw. `https://www.oekoinvest.com`. Nie aus dem Host-Header. |
+| `PLATTFORM_ORIGINS` | – | zusätzliche erlaubte Origins für Mutationen, kommagetrennt (z. B. Staging-Domain) |
+| `PLATTFORM_DEMO_PASSWORT` | – | Passwort der Demo-Konten (Standard `Demo-2026!`), wirkt beim Neuanlegen der Demo-Datenbank |
+| `PLATTFORM_RATE_FAKTOR` | – | nur außerhalb Produktion: Faktor für Rate-Limits (Standard 10 in Entwicklung, damit Testläufe wiederholbar sind) |
+
+## Demo-Backend
+
+- Datei `.data/plattform.json` (in `.gitignore`), Uploads unter `.data/uploads/`. Wird beim ersten Zugriff automatisch mit Beispieldaten befüllt.
+- **Zurücksetzen:** Ordner `.data` löschen – beim nächsten Aufruf wird neu befüllt. (Das Testskript legt Testdaten an; danach für Vorführungen zurücksetzen.)
+- Schreiben unter Sperrdatei, atomar über temporäre Datei + Umbenennen – nur für einen Server-Prozess gedacht.
+- E-Mails werden nicht versendet: Jede Mail, die Frappe schicken würde (Bestätigung, Passwort, Benachrichtigungen je Einstellung, Suchprofil-Treffer, neue Anfragen, Aufgaben), landet im **Postausgang** (`/portal/admin/postausgang`, Vorschau im Markenstil). Bestätigungs- und Passwort-Links stehen zusätzlich im Server-Log (`[plattform-demo] …`) und unter „Nutzer & Protokoll“.
+- Seit Schema 2 enthält die Demo-Datenbank Benachrichtigungen, Aufgaben (eine überfällig, eine heute fällig), Postausgang und Datenraum-Unterlagen mit Checklisten-Zuordnung. Ältere `.data`-Stände werden beim ersten Zugriff automatisch neu befüllt.
+- Alle Daten sind **fiktiv**: Namen mit „(Demo)“, Adressen unter `example.com`, Projekte mit Kennzeichen „Demo“. Die öffentliche Börse zeigt im Demo-Modus einen Hinweis „Vorführdaten“. Demo-Exposés stehen auf `noindex`. Preise der Demo-Projekte = Mitte der Phasenspannen aus `src/lib/invest/markt.js`.
+
+### Demo-Konten (Passwort für alle: `Demo-2026!`)
+
+| E-Mail | Rolle(n) | Inhalt |
+|---|---|---|
+| `admin@example.com` | Backoffice | Cockpit, alle Vorgänge, Freigaben |
+| `flaeche@example.com` | Flächeneigentümer | Fläche mit offenem Pachtangebot, Fläche in Vorprüfung |
+| `landwirt@example.com` | Landwirt, Mitglied | Agri-PV-Fläche in Standortanalyse, Genossenschaftsanfrage |
+| `investor@example.com` | Investor | Suchprofil, Merkliste, Datenraum frei, LOIs, abgeschlossener Kauf |
+| `anbieter@example.com` | Anbieter | 9 Projekte in allen Status, Statistik, verkauftes Projekt mit Provision |
+| `unternehmen@example.com` | Unternehmen | Reststrom-Angebot, Carport-Anfrage |
+| `mitglied@example.com` | Mitglied | Energiegemeinschaft |
+
+Auf `/login` sind die Konten im Demo-Modus per Klick vorbelegbar.
+
+## Test
+
+```
+npm run dev                      # läuft bereits auf :3100
+node scripts/plattform-test.mjs  # ca. 210 Prüfungen, Exit-Code 0 = grün
+```
+Geprüft: Anfrage (inkl. CSRF 403/415, Einwilligung), Registrierung mit Verknüpfung, Login/Logout, manipulierte Signatur, Middleware-Weiterleitung, Flächen-Pipeline bis Vertrag, Admin-Statuswechsel mit Kommentar → Nachricht beim Nutzer, Rechteverletzungen (401/403 für fremde Objekte, falsche Rolle, Admin-APIs), Projekt einreichen (Provision Pflicht) und freigeben (Satz 1,5–3 %), öffentliche Börse ohne vertrauliche Felder, Klick-NDA, Datenraum-Upload (Magic Bytes) und Download nur mit NDA, LOI → Reservierung → Verkauf → automatische Provision, Passwort vergessen/setzen (Token einmalig, alte Sitzungen ungültig), E-Mail-Bestätigung, Kontosperre wirkt sofort. Ausbaustufe 2: Exposé-PDF (nur mit NDA/Anbieter/Admin, Empfänger im PDF, Abruf protokolliert), Teaser-PDF ohne vertrauliche Felder, Suchprofil-Alarm mit Schwelle (Benachrichtigung + Mail ohne vertrauliche Angaben), Checklisten-Upload und Datenraum-Qualität in der Börsenkarte, Benachrichtigungen (nur eigene, gelesen markieren, Thread lesen markiert mit, CSRF), E-Mail-Einstellungen wirken auf den Postausgang, Aufgaben (Rechte, Validierung, Zuweisung benachrichtigt, Wiedervorlage in der Glocke, Cockpit-Kennzahl), Aktivitäts-Feed mit geänderten Feldern, CSV-Export (BOM, Semikolon, Formel-Schutz, nur Admin, protokolliert), neue Portalseiten inkl. 404 für falsche Rollen.
+
+## Sicherheitskonzept
+
+**Sitzung**
+- Eigenes Token `v1.<payload>.<HMAC-SHA256>`; Signatur mit `crypto.subtle.verify` (zeitkonstant). Payload nur Nutzer-ID, Sitzungsversion, Ablauf (7 Tage) – keine Rollen.
+- Cookie HttpOnly, SameSite=Lax, Secure und `__Host-`-Präfix in Produktion.
+- Rollen, Sperre und Sitzungsversion werden bei **jeder** Anfrage frisch aus dem Backend gelesen. Passwortänderung, -reset und Sperre erhöhen die Version → alle alten Sitzungen sofort ungültig.
+- Middleware schützt `/portal/**` (nur Signatur/Ablauf), Seiten und APIs prüfen vollständig.
+
+**Passwörter** (Demo-Backend): scrypt (N=16384, r=8, p=1, 64 Byte) mit 16 Byte Salt, Vergleich mit `timingSafeEqual`; bei unbekannter E-Mail wird trotzdem gerechnet (gleiche Antwortzeit). Regel: ≥ 10 Zeichen, Buchstabe + Ziffer/Sonderzeichen. Frappe nutzt sein eigenes Hashing.
+
+**CSRF**: Mutationen nur mit Origin der eigenen Seite und `Content-Type: application/json` (fremde Formulare können kein JSON senden; fremde Skripte scheitern an Origin/CORS). Uploads zusätzlich mit Kopfzeile `X-Plattform-Upload: 1`.
+
+**Rechte**: Jede API prüft Rolle (Route) UND Eigentum (Backend). Statuswechsel ausschließlich über die Zustandsautomaten, serverseitig erzwungen; Pflichtangaben (Begründung, Pachtangebot, Provisionssatz, Kaufpreis, LOI) werden serverseitig validiert. Fremde Objekte → 403 bzw. auf Seiten 404 (keine Existenz verraten).
+
+**Vertraulichkeit Projektbörse**: Öffentliche Ausgabe ausschließlich über eine Positivliste (`oeffentlich.js`). Vertrauliche Felder und Datenraum nur für Anbieter, Admin und Investoren mit freigegebenem NDA. Das gesperrte Feld im öffentlichen Exposé ist ein Platzhalter – echte Werte werden nie ausgeliefert. Titel und Region anonym (Hinweis im Formular, Prüfung im Backoffice).
+
+**Nachweise**: Klick-NDA (Textversion, Zeitpunkt, IP, Browser), Provisionsvereinbarung (Zeitpunkt, IP, Text), Einwilligung zur Anfrage (Zeitpunkt, IP, Text), Aktivitätsprotokoll inkl. Datenraum-Downloads, Exposé-Abrufen und CSV-Exporten.
+
+**Exposé & Export**: Das vertrauliche Exposé-PDF nennt auf jeder Seite den Empfänger (Name, E-Mail, Zeitpunkt) und den NDA-Hinweis; erzeugt wird es serverseitig nur nach Rechteprüfung im Backend. Der Teaser wird immer ohne Nutzer aus der öffentlichen Projektion gebaut. CSV-Exporte leiten Werte, die mit `= + - @` beginnen, mit `'` ein (keine Formel-Ausführung in Excel).
+
+**Benachrichtigungen**: Links in Benachrichtigungen sind immer interne Portal-Pfade (Server und Client prüfen). E-Mails enthalten nie Nachrichtentexte oder vertrauliche Projektdaten; welche Ereignisse per E-Mail kommen, legt jedes Konto selbst fest.
+
+**Konto-Verknüpfung**: Anfragen werden einem Konto nur zugeordnet, wenn (a) bei der Registrierung Vorgangsnummer **und** E-Mail übereinstimmen oder (b) die E-Mail-Adresse bestätigt wurde. So kann niemand fremde Anfragen durch Registrierung mit fremder Adresse einsehen.
+
+**Uploads**: nur PDF/JPG/PNG, Typ an den ersten Bytes erkannt (nicht am Dateinamen), ≤ 10 MB, zufällige Dateinamen außerhalb von `public/`, Download mit `Content-Disposition`, `nosniff` und restriktiver CSP (sandbox).
+
+**Eingaben**: Positivlisten und Bereinigung aller Felder (`validierung.js`), Längenbegrenzungen, Body-Limit (64–96 KB), Honeypot in Anfrage/Registrierung, keine HTML-Ausgabe von Nutzertext (React-Escaping).
+
+**Rate-Limits** (in-memory je Prozess): Login 10/15 min je IP + 8/15 min je E-Mail, Registrierung 5/h, Anfrage 10/h, Passwort 5/h, Uploads 60/h und Nachrichten 120/h je Nutzer. Bei mehreren Instanzen zusätzlich am Proxy begrenzen, z. B. nginx:
+```nginx
+limit_req_zone $binary_remote_addr zone=auth:10m rate=10r/m;
+location ~ ^/api/(auth|anfrage) { limit_req zone=auth burst=10 nodelay; proxy_pass http://127.0.0.1:3000; }
+```
+
+**Enumeration**: Passwort-vergessen antwortet immer gleich. Die Registrierung meldet eine vergebene Adresse (409) – bewusst für die Nutzerführung, durch Rate-Limit begrenzt.
+
+**Keine Geheimnisse im Code**: Schlüssel nur über Umgebungsvariablen; der Entwicklungs-Fallback für `SESSION_SECRET` greift in Produktion nie.
+
+## Vor dem Livegang
+
+- [ ] Frappe-App `oekoinvest_app` nach `docs/API.md` bauen, `PLATTFORM_BACKEND=frappe` setzen.
+- [ ] `SESSION_SECRET`, `PLATTFORM_BASIS_URL` setzen; HTTPS erzwingen.
+- [ ] E-Mail-Versand in Frappe (Bestätigung, Passwort, optional Benachrichtigung bei neuen Nachrichten).
+- [ ] Texte der Klick-NDA (`konstanten.js`) und der Provisionsvereinbarung juristisch prüfen lassen; Nutzungsbedingungen um Portal/Projektbörse ergänzen; Datenschutzerklärung um Portal, Protokollierung (IP bei NDA/Einwilligung) und Datenraum ergänzen.
+- [ ] Löschkonzept (Aufbewahrungsfristen für Anfragen ohne Konto, Aktivitätsprotokoll).
+- [ ] Optional: Zwei-Faktor-Anmeldung für Backoffice-Konten.
+# Plattform-API – Vertrag für die Frappe-App `oekoinvest_app`
+
+Stand: September 2026 · Referenz-Implementierung: `src/lib/plattform/backend/demo.js` (verhält sich exakt so, wie hier beschrieben).
+Adapter auf Next.js-Seite: `src/lib/plattform/backend/frappe.js` (Tabelle `METHODEN`). Zustandsautomaten: `src/lib/plattform/prozesse.js`.
+
+Dieses Dokument beschreibt
+1. die **whitelisted Frappe-Methoden**, die die Website serverseitig aufruft,
+2. das **Datenmodell** (DocTypes, Felder),
+3. **Rechte** (Rolle UND Eigentum) und **Zustandsautomaten**,
+4. die **öffentlichen HTTP-APIs der Website** (`/api/...`), die Browser und Testskript nutzen.
+
+---
+
+## 1. Aufrufkonvention Next.js → Frappe
+
+- `POST {SERVER}/api/method/oekoinvest_app.plattform.api.<modul>.<funktion>`
+- Header `Authorization: token {API_KEY}:{API_SECRET}` (wie `src/lib/apiBaseUrl.js`), `Content-Type: application/json`.
+- Der API-Nutzer hat in Frappe **nur** die Rolle `ÖkoInvest API`. Jede Methode prüft zuerst `"ÖkoInvest API" in frappe.get_roles()`. Keine Methode ist `allow_guest` – auch die „öffentlichen“ (ohne `als_benutzer`) ruft ausschließlich der API-Nutzer der Website auf. Nur `POST`.
+- **Handeln im Namen eines Nutzers:** Alle Methoden außer den mit „öffentlich“ markierten bekommen `als_benutzer` = **Konto-ID** (`nutzer.id`, z. B. `U-26-7KQ2XM`; so sendet es `frappe.js`). Frappe löst daraus das `Plattform Konto` und dessen Frappe-User (`User.name` = E-Mail) auf – aus Robustheit wird auch die E-Mail-Adresse akzeptiert. Die Methode führt dann `frappe.set_user(<User des Kontos>)` aus (nur nach bestandener Prüfung der API-Rolle; unbekannte oder gesperrte Konten → 401; Konten mit `System Manager`/`ÖkoInvest API` werden nie über die Website gesteuert → 403) und prüft **selbst** Rolle und Eigentum. Die Website prüft vorab ebenfalls – Frappe ist die maßgebliche Instanz.
+- Die fachlichen Rollen und `ÖkoInvest API` haben **keine** DocType-Rechte: `/api/resource/...` liefert dem API-Nutzer nichts; gelesen und geschrieben wird nur innerhalb der Methoden nach eigener Prüfung.
+- Argumente und Antworten in **camelCase-JSON**, identisch zu den Objekten unten. Frappe-DocType-Felder sind snake_case; Umrechnung in der App (`plattform/ausgabe.py`, Positivlisten in den Methoden).
+- Antwort: `{"message": <Ergebnis>}`. Ist das Ergebnis `None` (z. B. `auth.anmelden` mit falschen Daten, `interesse.merken` mit `an: false` ohne bestehendes Interesse), lässt Frappe `message` weg – der Adapter liefert dann `null`.
+- Fehler: `frappe.throw(msg, exc)` mit
+  - `frappe.PermissionError` → HTTP 403 (Website zeigt `msg`)
+  - `frappe.DoesNotExistError` → 404
+  - `frappe.ValidationError` / `MandatoryError` → 417 (Website macht 422 daraus, zeigt `msg`)
+  - `frappe.DuplicateEntryError` → 409 (z. B. E-Mail vergeben, verbotener Statuswechsel)
+  - `frappe.AuthenticationError` → 401
+  Meldungen sind **deutsch, für Endnutzer**, ohne Interna. Tracebacks bleiben im Frappe-Log.
+- Zeiten ISO 8601 in UTC (`2026-09-29T05:57:00.000Z`). Geldbeträge in EUR als Zahl. Prozentsätze als Dezimalbruch (`0.02` = 2 %).
+- Kennungen: `U-26-XXXXXX` Nutzer, `V-` Vorgang, `F-` Fläche, `P-` Projekt, `I-` Interesse, `PV-` Provision, `D-` Dokument, `M-` Nachricht, `A-` Aktivität, `B-` Benachrichtigung, `AF-` Aufgabe, `E-` E-Mail im Demo-Postausgang. Frappe kann eigene Naming-Series nutzen, solange das Format `^[A-Z]{1,3}-[0-9A-Z-]{4,40}$` erfüllt ist (die Website validiert Kennungen so). Umsetzung in `oekoinvest_app`: Schema `PRÄFIX-JJ-XXXXXX` mit 6 zufälligen Zeichen (per Controller, nicht fortlaufend – Kennungen sind nicht aufzählbar).
+
+## 2. Rollen
+
+| Rolle (Website) | Frappe-Rolle | Selbst wählbar |
+|---|---|---|
+| `flaeche` | Plattform Flächeneigentümer | ja |
+| `landwirt` | Plattform Landwirt | ja |
+| `investor` | Plattform Investor | ja |
+| `anbieter` | Plattform Anbieter | ja |
+| `unternehmen` | Plattform Unternehmen | ja |
+| `mitglied` | Plattform Mitglied | ja |
+| `admin` | Plattform Backoffice | **nein** (nur durch Admin) |
+
+Ein Konto kann mehrere Rollen haben. `admin` darf alles lesen und alle Admin-Übergänge auslösen; Eigentümer-Übergänge (z. B. Pachtangebot annehmen) bleiben dem Eigentümer vorbehalten.
+
+Maßgeblich sind die Rollen am `Plattform Konto` (Tabelle `rollen`, Stammdaten `Plattform Rolle`); die Frappe-Rollen des Users werden daraus automatisch gesetzt (alle ohne Desk-Zugang).
+
+Technische Rollen (nicht auf der Website):
+
+| Frappe-Rolle | Wer | Desk |
+|---|---|---|
+| `ÖkoInvest API` | nur der technische API-Benutzer der Website | nein |
+| `ÖkoInvest Admin` | Pflege/Lesen der Plattform-DocTypes im Frappe-Desk (keine Anlage/Löschung; Statuswechsel mit Pflichtangaben nur über das Portal) | ja |
+
+**Eigentum**
+- Vorgang: `nutzerId` · Fläche: `nutzerId` · Projekt: `anbieterId` · Interesse: `investorId` · Provision: `anbieterId` (lesen nur Admin) · Thread „nutzer“: der Nutzer selbst.
+
+## 3. Datenmodell (DocTypes)
+
+Alle DocTypes mit `track_changes = 1`. Felder in camelCase (JSON) → snake_case (DocType).
+DocType-Namen ohne Umlaute (`Plattform Flaeche`, `Plattform Aktivitaet`; Anzeige über Übersetzung). `statusVerlauf` = Kindtabelle `Plattform Statusverlauf`, `flurstuecke` = Kindtabelle `Plattform Flurstueck`, `rollen` = Table MultiSelect `Plattform Konto Rolle` → `Plattform Rolle`. Bezüge von Nachricht/Dokument als `bezug_art` + Dynamic Link (`bezug_doctype`, `bezug_id`). Interne Felder, die die App nie ausgibt: Projekt `kaeuferInteresseId`/`kaufpreis` (Grundlage der Provision), `description` (interne Notiz).
+
+### Plattform Konto (eigener DocType, 1:1-Link auf `User`)
+| Feld | Typ | Hinweis |
+|---|---|---|
+| id | Data | Kennung |
+| email | Data (unique, lowercase) | = Frappe-User |
+| vorname, nachname, firma, telefon | Data | |
+| rollen | Table MultiSelect | siehe Rollen |
+| sitzungVersion | Int | +1 bei Passwortänderung/-reset und Sperre → alte Website-Sitzungen ungültig |
+| aktiv | Check | |
+| emailBestaetigt | Check | |
+| erstelltAm, letzterLogin | Datetime | |
+| suchprofil | JSON | siehe Suchprofil |
+| mailEinstellungen | JSON | `{status, nachricht, nda, suchprofil, anfrage, aufgabe}` je `true/false` – welche Benachrichtigungen zusätzlich per E-Mail kommen. Fehlt ein Schlüssel: `true`. Wird in `nutzerFuerSitzung`/`anmelden` mit ausgegeben (`null` = Standard). |
+
+Passwort: Frappe-Standard (`frappe.utils.password`). Nie im JSON ausgeben.
+
+### Suchprofil (JSON am Konto)
+`{ mwpMin, mwpMax, phasen: [phaseId], laender: ["DE"|"AT"|"CH"], typen: [projektTyp], ticketMin, ticketMax, benachrichtigen: bool, schwelle: 50–100 }`
+`schwelle` = Mindest-Matching-Score für den Suchprofil-Alarm (Standard 70; Werte außerhalb 50–100 → 70).
+Phasen-IDs aus `PHASEN` (`src/lib/invest/markt.js`): `flaeche, netz, aufstellung, satzung, rtb, cod`.
+
+### Plattform Vorgang
+| Feld | Typ | Hinweis |
+|---|---|---|
+| id | Data | |
+| typ | Select | `flaeche, agri, investor, projekt, reststrom, energiegemeinschaft, genossenschaft, kommune, carport, speicher, kontakt` |
+| status | Select | Automat `vorgang` |
+| statusVerlauf | Table | `{status, am, vonId, vonRolle: admin|eigentuemer|system, kommentar}` |
+| nutzerId | Link Konto | leer bis zur Zuordnung |
+| email | Data | Kontakt-E-Mail (lowercase) |
+| kontakt | JSON | `{anrede, vorname, nachname, firma, email, telefon, plz, ort, land}` |
+| daten | JSON | freie Zusatzdaten je Typ (flach, max. 60 Felder, ≤ 20 KB) |
+| herkunft | JSON | Kampagnen-Zuordnung (`src/lib/herkunft.js`) |
+| ip | Data | nur Admin sichtbar |
+| einwilligung | JSON | `{am, ip, text}` |
+| zustaendigId | Link Konto (admin) | |
+| flaecheId | Link Fläche | bei typ flaeche/agri |
+| erstelltAm, geaendertAm | Datetime | |
+
+### Plattform Fläche
+`id, nutzerId, vorgangId, bezeichnung, land (DE|AT|CH), bundesland, plz, ort, gemarkung, flurstuecke [{gemarkung, flur, nummer}], ha, nutzung (acker|gruenland|konversion|gewerbe|sonstige), agri (Check), eigentum (eigentum|miteigentum|verwaltung), hinweise, status, statusVerlauf, pachtangebot {euroProHaJahr, laufzeitJahre, verlaengerung, text, am}, ablehnGrund, zustaendigId, erstelltAm, geaendertAm`
+Ausgabe zusätzlich: `zustaendig {id, vorname, nachname, email, firma}`, `dokumente` (Anzahl), `checkliste` (s. u.), für Admin `eigentuemer {…}`.
+
+### Plattform Projekt
+| Feld | Öffentlich | Hinweis |
+|---|---|---|
+| id, slug | ja | slug = `slugify(titel)-<letzte 4 Zeichen der ID>`, fix nach erster Veröffentlichung |
+| titel | ja | anonym (keine Gemeinde) |
+| typ | ja | `freiflaeche, agri, carport, speicher, hybrid` |
+| land, bundesland, region | ja | Region nur grob |
+| mwp, mwhSpeicher, flaecheHa | ja | |
+| phase | ja | PHASEN-ID |
+| netzanschluss | ja | `offen, angefragt, zusage, reserviert, vorhanden` |
+| codGeplant | ja | `JJJJ` oder `JJJJ-MM` |
+| preisModus, preis, preisProKwp | ja | `gesamt | proKwp | anfrage` |
+| beschreibung, highlights[] | ja | |
+| status, veroeffentlichtAm, demo | ja | |
+| vertraulich | **nein** | `{gemeinde, gemarkung, flurstuecke, netzbetreiber, einspeisepunkt, entfernungNetzKm, sicherung, planungsrecht, ertragKwhKwp, verguetung, details}` |
+| anbieterId | **nein** | |
+| provisionAkzeptiert | nein | `{am, ip, version, text}` |
+| provisionSatz | nein | 0.015–0.03, bei Veröffentlichung gesetzt |
+| ablehnGrund, aufrufe, zustaendigId, statusVerlauf, erstelltAm, geaendertAm | nein | |
+
+Öffentliche Projektion = Positivliste in `src/lib/plattform/oeffentlich.js` (`projektOeffentlich`). **Frappe muss dieselbe Positivliste verwenden.**
+In Börsenliste, Börsendetail und Exposé-Daten kommt als berechnetes Feld `datenraumQualitaet` (0–100, Vollständigkeit der Pflichtunterlagen, s. Checklisten) hinzu – nur die Kennzahl, keine Dokumentnamen.
+Ausgabe für Eigentümer/Admin zusätzlich: `statistik {aufrufe, merker, ndaAnfragen, lois}`, `dokumente` (Anzahl), `checkliste` (s. u.), `provision` (falls verkauft); Admin: `anbieter {…}`, `zustaendig {…}`.
+
+### Plattform Interesse
+`id, projektId, investorId, status, gemerkt (Check), statusVerlauf, nda {version, am, ip, userAgent}, loi {betrag, text, bedingungen, gueltigBis, am}, ablehnGrund, erstelltAm, geaendertAm`
+Genau ein Interesse je (Projekt, Investor). Ausgabe mit `projekt` (öffentliche Projektion); Admin zusätzlich `investor {…}`, `anbieter {…}`. Für Investoren ohne `nda.ip/userAgent`.
+
+### Plattform Provision
+`id, projektId, anbieterId, investorId, interesseId, kaufpreis, satz, betrag (= round(kaufpreis × satz)), status, statusVerlauf, erstelltAm`
+Wird **automatisch** beim Übergang Projekt → `verkauft` erzeugt.
+
+### Plattform Nachricht
+`id, bezugArt (vorgang|flaeche|projekt|interesse|nutzer), bezugId, vonId, vonAdmin (Check), system (Check), text (≤ 5000), am, gelesenNutzer (Check), gelesenAdmin (Check)`
+Threads = alle Nachrichten mit gleichem (bezugArt, bezugId).
+
+### Plattform Dokument
+`id, bezugArt, bezugId, name, mime (application/pdf|image/jpeg|image/png), groesse, datei (privates File), kategorie (allgemein|datenraum|vertrag|plan), checkliste (Schlüssel eines Checklisten-Punkts oder leer), hochgeladenVon, am, sha256`
+Dateien **privat** (`is_private = 1`). Größe ≤ 10 MB, Typ an den ersten Bytes geprüft (die Website prüft vorab, Frappe prüft erneut).
+
+### Plattform Aktivität (append-only)
+`id, am, nutzerId, aktion, objektArt, objektId, text, ip` – Login, Registrierung, Anfrage, Status, NDA, Upload, Download, Zuweisung, Nutzeränderung. Kein Update/Delete.
+
+### Dokumenten-Checklisten (berechnet, kein DocType)
+Tabelle: `src/lib/plattform/checkliste.js` = `plattform/checkliste.py` (identisch). Ein Dokument erfüllt einen Punkt, wenn sein Feld `checkliste` den Schlüssel trägt.
+- **Projekt** (erwartet ab Phase): `pacht`, `lageplan` (flaeche) · `netzzusage` (netz) · `aufstellung` (nicht carport), `gutachten` (aufstellung) · `satzung`, `ertrag` (nicht speicher) (satzung) · `baugenehmigung`, `eeg` (optional, nicht speicher) (rtb) · `betrieb` (cod). Bezeichnungen je Land (AT: Umwidmung/Grünland-PV, EAG; CH: Nutzungsplanung, Baubewilligung, Einmalvergütung).
+- **Fläche**: `grundbuch`, `flurkarte`, `vollmacht` (nur bei Miteigentum/Verwaltung), `pachtDritter` (optional).
+Ausgabe `checkliste = {punkte: [{id, label, text, pflicht, ab?, erwartet, vorhanden, dokumente: [{id, name, am}]}], erwartet, erfuellt, quote}`; `quote` = erfüllte / erwartete Pflichtpunkte in % (kaufmännisch gerundet, ohne erwartete Pflichtpunkte 100).
+
+### Plattform Benachrichtigung
+`id, nutzerId, art (status|nachricht|nda|suchprofil|anfrage|aufgabe), titel, text, link (nur `/portal…`), objektArt, objektId, am, gelesen, mail (per E-Mail gemeldet)`. Nach dem Anlegen ist nur `gelesen` änderbar. Entstehen:
+- aus jeder Nachricht für die Seite, die sie noch nicht gelesen hat (Eigentümer bei `gelesenNutzer = 0`, Backoffice bei `gelesenAdmin = 0` → zuständiges Admin-Konto, sonst alle aktiven Admins; nie an den Absender). Art: Systemnachricht „Status: …“ → `status` (an Interessen: `nda`), sonst `nachricht`. Willkommensnachricht nur in der Glocke, ohne E-Mail.
+- neue Anfrage → alle aktiven Admins (`anfrage`); Aufgabe zugewiesen / Wiedervorlage fällig → Zuständiger (`aufgabe`); Suchprofil-Treffer → Investor (`suchprofil`).
+- Lesen eines Threads (`nachricht.liste` mit `markieren`) markiert Benachrichtigungen (`status|nachricht|nda`) zum selben Objekt als gelesen.
+- E-Mail nur, wenn `mailEinstellungen[art]` nicht `false` ist; Inhalt nur Hinweis, bei `suchprofil`/`aufgabe` der (öffentliche bzw. interne) Titel, und Link ins Portal – nie Nachrichtentexte oder vertrauliche Projektdaten.
+
+### Plattform Aufgabe
+`id, titel (3–160), beschreibung, faelligAm (JJJJ-MM-TT, Pflicht), zustaendigId (aktives Admin-Konto), bezugArt? (vorgang|flaeche|projekt|interesse), bezugId?, status (offen|erledigt), erstelltVon, erstelltAm, erledigtAm, erledigtVon, erinnertAm`.
+Ausgabe zusätzlich: `zustaendig {…}`, `erstelltVonName`, `bezugTitel`, `bezugLink`, `ueberfaellig` (offen und fällig < heute, Europe/Vienna), `heuteFaellig`. Sortierung: offene nach Fälligkeit, dann erledigte (neueste zuerst). Verschieben oder Neuzuweisen setzt `erinnertAm` zurück.
+
+### Plattform Token
+`hash (SHA-256 des Tokens), art (email|reset), nutzerId, ablauf, benutzt` – das Token selbst wird nie gespeichert. Reset 1 h, E-Mail-Bestätigung 72 h, einmalig.
+
+## 4. Zustandsautomaten
+
+Quelle der Wahrheit: `PROZESSE` in `src/lib/plattform/prozesse.js`. Frappe übernimmt die Tabelle 1:1 (z. B. als Python-Dict). Ein Übergang ist erlaubt, wenn (von, nach, wer) in der Tabelle steht; `wer` ∈ `admin | eigentuemer | system`. Pflichtangaben (`pflicht`) fehlen → ValidationError. Bedingungen (`bedingung`) → ValidationError mit Liste fehlender Punkte.
+
+**Vorgang:** eingegangen → in_pruefung → qualifiziert → angebot → abgeschlossen (admin) · offen → abgelehnt (admin, `grund`) · abgelehnt/zurückgezogen → in_pruefung (admin) · offen → zurueckgezogen (eigentuemer)
+
+**Fläche:** entwurf → eingegangen (eigentuemer mit Bedingung `flaecheVollstaendig`: Bezeichnung, Land, PLZ, Ort, ha; oder admin) → vorpruefung → standortanalyse → pachtangebot (admin, `pachtangebot {euroProHaJahr 50–50000, laufzeitJahre 1–60}`) → vertrag (eigentuemer „annehmen“ oder admin) → planung → bau → betrieb (admin) · entwurf…planung → abgelehnt (admin, `grund`) · abgelehnt → vorpruefung (admin)
+
+**Projekt:** entwurf → pruefung (eigentuemer, Bedingung `projektEinreichbar`: Titel, Typ, Land, Bundesland, Region, MWp > 0, Phase, Beschreibung ≥ 80 Zeichen, Provisionsvereinbarung akzeptiert) · pruefung → entwurf (eigentuemer „zurückziehen“ oder admin mit `kommentar`) · pruefung → veroeffentlicht (admin, `provisionSatz` 1,5–3 %; Eingabe > 0,2 wird als Prozent interpretiert) · pruefung → abgelehnt (admin, `grund`) · abgelehnt → entwurf (eigentuemer) · veroeffentlicht → entwurf (eigentuemer „von der Börse nehmen“) · veroeffentlicht ↔ reserviert (admin) · veroeffentlicht/reserviert → verkauft (admin, `interesseId` + `kaufpreis`)
+
+**Interesse:** gemerkt → nda_angefragt (eigentuemer, nur über `interesse.nda_anfragen`, `ndaAkzeptiert`) → nda_freigegeben (admin) → loi_abgegeben (eigentuemer, `loi {text ≥ 10 Zeichen, betrag?, bedingungen?, gueltigBis?}`) → loi_angenommen (admin) → abgeschlossen (system) · nda_angefragt/nda_freigegeben/loi_abgegeben → abgelehnt (admin, `grund`) · offen → abgelehnt (system „anderweitig verkauft“)
+
+**Provision:** offen → in_rechnung → bezahlt (admin) · offen/in_rechnung → storniert (admin, `grund`)
+
+**Nebenwirkungen (müssen in Frappe identisch sein):**
+1. Jeder Übergang schreibt `statusVerlauf` und eine **System-Nachricht** in den Thread des Objekts: `Status: „<alt>“ → „<neu>“. <kommentar|grund>` (bei Admin: `gelesenNutzer = 0`; bei Eigentümer: `gelesenAdmin = 0`). Ausnahme: Provision.
+2. `grund` → `ablehnGrund`.
+3. Interesse → `loi_angenommen`: Projekt `veroeffentlicht` → `reserviert` (system).
+4. Projekt → `verkauft`: Provision anlegen (`satz = provisionSatz`, sonst Minimum), Käufer-Interesse → `abgeschlossen`, alle anderen offenen Interessen → `abgelehnt` („Projekt anderweitig verkauft.“).
+5. Projekt → `veroeffentlicht`: `veroeffentlichtAm` setzen (einmalig); **Suchprofil-Alarm**: Investoren mit `suchprofil.benachrichtigen` und Matching-Score ≥ `suchprofil.schwelle` (Standard 70) erhalten eine System-Nachricht im Thread `nutzer` (ohne eigene Benachrichtigung), eine Benachrichtigung `suchprofil` (Titel, Passung, Link `/portal/boerse/<id>`) und – je nach Einstellung – eine E-Mail mit öffentlichem Titel und Passung; Aktivität `suchprofil_treffer` (Score: `src/lib/plattform/matching.js`).
+6. Dokument-Upload erzeugt eine System-Nachricht „Dokument hochgeladen: <name>“ im Thread des Bezugs (Benachrichtigungsart `nachricht`).
+7. Jede Nachricht erzeugt Benachrichtigungen (s. Plattform Benachrichtigung). Neue Anfragen melden alle aktiven Admins.
+8. Wiedervorlagen: offene Aufgaben mit `faelligAm ≤ heute` und ohne `erinnertAm` werden einmalig als Benachrichtigung `aufgabe` gemeldet (Frappe: täglicher Scheduler `aufgaben.wiedervorlagen_erinnern` und beim Abruf von `benachrichtigung.liste` durch den Zuständigen; Demo: beim Abruf).
+9. Änderungen an Fläche/Projekt protokollieren die geänderten Felder („Fläche bearbeitet: Ort, Größe“).
+
+## 5. Frappe-Methoden
+
+`n` = Nutzer aus `als_benutzer`. „Recht“ = zusätzlich zu `ÖkoInvest API`.
+
+### auth
+| Methode | Argumente | Ergebnis | Recht |
+|---|---|---|---|
+| `auth.anmelden` | `email, passwort` | Konto (ohne Hash) oder `null` bei falschen Daten/gesperrt | öffentlich; setzt `letzterLogin`, verknüpft Vorgänge (s. u.), Aktivität |
+| `auth.nutzer_fuer_sitzung` | `nutzerId` | Konto inkl. `sitzungVersion`, `aktiv` oder `null` | öffentlich (nur API-Nutzer) |
+| `auth.registrieren` | `email, passwort, vorname, nachname, firma?, telefon?, rollen[], vorgangId?, basisUrl, ip` | `{nutzer, vorgangVerknuepft: id|null}` | öffentlich; Passwortregel: ≥ 10 Zeichen, Buchstabe + Ziffer/Sonderzeichen; `admin` nie; E-Mail vergeben → 409. Vorgang sofort verknüpfen, wenn `vorgangId` existiert, noch kein Konto hat **und** die E-Mail übereinstimmt. Bestätigungsmail mit Link `{basisUrl}/api/auth/email-bestaetigen?token=…` (72 h). Willkommens-System-Nachricht im Thread `nutzer`. |
+| `auth.email_bestaetigen` | `token` | Konto | öffentlich; `emailBestaetigt = 1`, dann **Verknüpfung**: alle Vorgänge ohne Konto mit gleicher E-Mail → `nutzerId`, zugehörige Flächen ebenso; passende Rolle (`ROLLE_FUER_TYP`) ergänzen |
+| `auth.passwort_vergessen` | `email, basisUrl, ip` | `{ok: true}` immer | öffentlich; nur bei aktivem Konto Mail mit `{basisUrl}/passwort-vergessen?token=…` (1 h) |
+| `auth.passwort_setzen` | `token, passwort, ip` | Konto | öffentlich; `sitzungVersion + 1`, `emailBestaetigt = 1`, Verknüpfung wie oben |
+
+`basisUrl` kommt in Produktion aus `PLATTFORM_BASIS_URL` (nie aus dem Host-Header). **Frappe baut die Links in E-Mails ausschließlich mit `plattform_basis_url` aus der `site_config.json`**; das Argument `basisUrl` wird nur bei `developer_mode` als Ersatz genutzt (Test-Bench). Fehlt der Schlüssel in Produktion, wird keine Mail versendet (Eintrag im Error Log) – das Konto entsteht trotzdem.
+Benachrichtigungs-E-Mails (Vorlage `oekoinvest_benachrichtigung`, ohne Inhalte, nur Hinweis + Link ins Portal) folgen den Benachrichtigungen (Abschnitt 3) und den `mailEinstellungen` des Empfängers. Gibt es noch kein aktives Backoffice-Konto, geht der Hinweis auf neue Anfragen an `plattform_backoffice_email` (Vorlage `oekoinvest_hinweis`).
+
+### konto
+| `konto.passwort_aendern` | `alt, neu` | Konto | eigenes Konto; `sitzungVersion + 1` |
+| `konto.profil_speichern` | `daten {vorname, nachname, firma, telefon, rollen?}` | Konto | eigenes Konto; `admin` bleibt erhalten, wird nie ergänzt |
+| `konto.suchprofil_speichern` | `profil` | Suchprofil (inkl. `schwelle`) | Rolle investor |
+
+### benachrichtigung
+| `benachrichtigung.liste` | `nurUngelesen?, limit? (1–200, Standard 50)` | `{eintraege: [Benachrichtigung], ungelesen, gesamt, einstellungen}` | eigene; neueste zuerst. Für Admins werden fällige Wiedervorlagen vorher gemeldet. |
+| `benachrichtigung.gelesen` | `ids? [..]` oder `alle: true` | `{geaendert, ungelesen}` | nur eigene (fremde Kennungen werden ignoriert, `geaendert` zählt nur eigene); ohne Auswahl → ValidationError |
+| `benachrichtigung.einstellungen_speichern` | `einstellungen {art: bool}` | vollständige Einstellungen | eigenes Konto; nur bekannte Arten, nur Booleans |
+
+### anfrage
+| `anfrage.anlegen` | `typ, kontakt, daten, herkunft, ip, einwilligungText` (+ optional `als_benutzer`) | `{id, vorgang {id, typ, status, flaecheId}}` | öffentlich. Pflicht: Vor-/Nachname, gültige E-Mail, bekannter Typ. Bei typ `flaeche`/`agri` zusätzlich Fläche im Status `entwurf` (ha aus `daten.ha|hektar|flaeche|flaecheHa`). Ist `als_benutzer` gesetzt **und** stimmt dessen bestätigte E-Mail mit `kontakt.email` überein → sofort `nutzerId`. |
+
+### vorgang
+| `vorgang.liste` | `alle?, status?, typ?, q?` | Liste `{id, typ, status, erstelltAm, geaendertAm, kontakt{vorname,nachname,firma,email}, zustaendig, flaecheId, letzterKommentar, nutzerId (nur admin)}` | eigene; `alle` nur admin |
+| `vorgang.holen` | `id` | Vorgang (+`zustaendig`, admin: `nutzer`; Nicht-Admin ohne `ip`/`herkunft`) | Eigentümer oder admin |
+
+### flaeche
+| `flaeche.liste` | `alle?, status?` | Flächen | eigene; `alle` nur admin |
+| `flaeche.holen` | `id` | Fläche | Eigentümer oder admin |
+| `flaeche.anlegen` | `daten {…, einreichen?}`, `ip` | Fläche (Status `entwurf`, bei `einreichen` und vollständig `eingegangen`) | Rolle flaeche oder landwirt |
+| `flaeche.aendern` | `id, daten` | Fläche | Eigentümer nur in `entwurf`/`eingegangen` (sonst 409), admin immer |
+
+### projekt
+| `projekt.liste` | `alle?, status?` | Projekte inkl. Statistik | Rolle anbieter (eigene); `alle` nur admin |
+| `projekt.holen` | `id` | Projekt | Anbieter oder admin |
+| `projekt.anlegen` | `daten, ip` | Projekt (entwurf) | Rolle anbieter |
+| `projekt.aendern` | `id, daten` | Projekt | Anbieter nur im `entwurf` (sonst 409), admin immer |
+| `projekt.provision_akzeptieren` | `id, ip` | Projekt | nur Anbieter des Projekts; speichert `{am, ip, version: "2026-09", text}` |
+
+### boerse
+| `boerse.liste` | `typ?, land?, phase?, mwpMin?, mwpMax?` (+ optional `als_benutzer`) | `{projekte: [öffentliche Projektion (+ für Investoren meinInteresse {id,status,gemerkt}, matching {score, gruende})], kennzahlen {anzahl, mwp, laender, verkauft}, demo}` | öffentlich; nur Status `veroeffentlicht`, `reserviert` |
+| `boerse.detail` | `schluessel` (slug oder id), `zaehlen` | `{projekt, zugriff: oeffentlich|nda|eigentuemer|admin, interesse, vertraulich|null, dokumente[]}` | öffentlich; nicht sichtbare Status → 404 (außer Anbieter/admin). `vertraulich` + Datenraum-Dokumente nur bei `zugriff ≠ oeffentlich`; `nda` sieht nur Kategorie `datenraum`. `zaehlen` erhöht `aufrufe` (nicht für Anbieter/admin). |
+
+### interesse
+| `interesse.merken` | `projektId, an` | Interesse bzw. `null` (`an: false` ohne bestehendes Interesse) | Rolle investor; Projekt sichtbar |
+| `interesse.nda_anfragen` | `projektId, akzeptiert, ip, userAgent` | Interesse | Rolle investor, nicht eigenes Projekt; idempotent (bereits angefragt → unverändert); `akzeptiert` Pflicht; speichert `nda {version, am, ip, userAgent}` |
+| `interesse.liste` | `alle?, status? (String oder Liste), projektId?` | Interessen | eigene (investor); `alle` nur admin |
+
+### boerse.expose (Exposé-PDF)
+| `boerse.expose` | `id` (Kennung oder Slug), `ip` | `{projekt (öffentliche Projektion + datenraumQualitaet), vertraulich, dokumente [Metadaten], zugriff: admin|eigentuemer|nda, empfaenger {name, firma, email, rolle}, erstelltAm}` | Backoffice, Anbieter des Projekts, Investor mit Interesse in `DATENRAUM_STATUS` (sonst 403; nicht sichtbare Projekte 404). `nda` erhält nur Datenraum-Dokumente. Jeder Abruf → Aktivität `expose`. Das PDF erzeugt die Website (`src/lib/plattform/server/expose.js`), der öffentliche Teaser entsteht aus `boerse.detail` ohne Nutzer. |
+
+Interesse-Objekte (auch in `merken`, `nda_anfragen` und `boerse.detail.interesse`) enthalten für Nicht-Admins **nie** `nda.ip`/`nda.userAgent` – der Nachweis ist nur für das Backoffice (das Demo-Backend liefert in `merken`/`nda_anfragen`/`boerse.detail` noch das Rohobjekt).
+
+### prozess
+| `prozess.status_wechsel` | `art, id, nach, als (admin|eigentuemer), extra {…}, ip` | Objekt | `als = admin` → Rolle admin; `als = eigentuemer` → Eigentum. Prüfung nach Abschnitt 4. `interesse → nda_angefragt` hier verboten (nur `nda_anfragen`). |
+
+### nachricht
+| `nachricht.threads` | `nurUngelesen?` | `[{bezugArt, bezugId, titel, link, gegenueber, anzahl, ungelesen, letzte {text, am, vonAdmin, system}}]` | eigene Threads; admin alle (max. 500 neueste). `ungelesen` aus Sicht des Aufrufers (admin: `gelesenAdmin`, sonst `gelesenNutzer`). |
+| `nachricht.liste` | `bezugArt, bezugId, markieren` | `{titel, link, gegenueber, bezugArt, bezugId, nachrichten [{id, text, am, system, vonAdmin, eigene, vonName, neu}]}` | Eigentümer des Bezugs oder admin; markiert gelesen |
+| `nachricht.senden` | `bezugArt, bezugId, text` | `{id, am}` | Eigentümer des Bezugs oder admin (dann `vonAdmin = 1`); 2–5000 Zeichen |
+
+### dokument
+| `dokument.liste` | `bezugArt?, bezugId?` | Metadaten (+ `bezugTitel`, `bezugLink`) | ohne Bezug: Dokumente an eigenen Objekten bzw. eigene Uploads; admin alle |
+| `dokument.lesen` | `id` | `{meta, inhaltBase64}` | admin; Uploader; Eigentümer des Bezugs; bei Projekt + Kategorie `datenraum`: Investor mit Interesse in `nda_freigegeben, loi_abgegeben, loi_angenommen, abgeschlossen`. Jeder Zugriff → Aktivität „Download“. |
+| `dokument.speichern` | `bezugArt, bezugId, name, mime, kategorie, inhaltBase64, checkliste?` | Metadaten (inkl. `checkliste`) | Eigentümer des Bezugs oder admin; Typ (erste Bytes müssen zu `mime` passen) und Größe prüfen; `datenraum` nur für Projekte. Der JSON-Body ist bei 10 MB Datei ≈ 13,4 MB groß (Base64) – Proxy/Frappe müssen das zulassen (siehe ANLEITUNG). |
+| `dokument.loeschen` | `id` | `{ok}` | Uploader oder admin |
+
+### admin (alle nur Rolle admin)
+| `admin.zuweisen` | `art, id, zustaendigId|null` | `{id, zustaendigId}` | Zuständige nur aktive Admin-Konten |
+| `admin.nutzer_liste` | `q?, rolle?` | Konten + `zaehler {vorgaenge, flaechen, projekte, interessen}` | |
+| `admin.nutzer_aendern` | `id, rollen?, aktiv?` | Konto | eigenes Admin-Recht nicht entfernbar, eigenes Konto nicht sperrbar (409); Sperren → `sitzungVersion + 1` |
+| `admin.provisionen` | – | Provisionen + `projekt`, `anbieter`, `investor` | |
+| `admin.aktivitaeten` | `limit ≤ 500, objektId?, objektIds? [≤ 50]` | Aktivitäten (neueste zuerst) + `nutzer` (Name) | Aktivitäts-Feed je Objekt (auch mehrere, z. B. Projekt + Interessen) |
+| `admin.protokoll_eintrag` | `aktion, objektArt, objektId, text, ip` | `{ok}` | nur Aktionen der Positivliste (`export`) – z. B. CSV-Export der Website |
+| `admin.admin_konten` | – | aktive Admin-Konten (kurz) | |
+| `admin.uebersicht` | – | Kennzahlen (siehe `adminUebersicht` in demo.js): `vorgaenge {gesamt, neu7, offen, ohneZustaendig, status{}, typ{}, trichter[]}`, `flaechen {gesamt, ha, status{}, trichter[]}`, `projekte {gesamt, inPruefung, mwpBoerse, status{}}`, `interessen {status{}, ndaOffen, loiOffen, trichter[]}`, `provisionen {anzahl, offen, bezahlt}`, `nutzer {gesamt, rollen{}}`, `nachrichten {ungelesen}`, `aufgaben {offen, ueberfaellig, heute, meineOffen, meineUeberfaellig, meine [≤ 6 Aufgaben]}` | |
+
+### aufgabe (alle nur Rolle admin)
+| `aufgabe.liste` | `zustaendigId?, status? (offen|erledigt), bezugArt?, bezugId?, nurUeberfaellig?` | Aufgaben (≤ 500) | |
+| `aufgabe.anlegen` | `daten {titel, beschreibung?, faelligAm, zustaendigId? (Standard: selbst), bezugArt?, bezugId?}` | Aufgabe | Datum ungültig/Titel zu kurz/Zuständiger kein aktives Admin-Konto → ValidationError; Bezug unbekannt → 404. Zuständiger ≠ Anlegender → Benachrichtigung `aufgabe`. Aktivität `aufgabe` am Bezug. |
+| `aufgabe.aendern` | `id, daten {titel?, beschreibung?, faelligAm?, zustaendigId?, status?}` | Aufgabe | wie anlegen; Neuzuweisung benachrichtigt; Änderungen werden protokolliert |
+
+`demoLinks` und `postausgang` (E-Mails, die Frappe versenden würde: `{id, am, an, anName, nutzerId, art (bestaetigung|passwort|status|nachricht|nda|suchprofil|anfrage|aufgabe), betreff, text, link, linkText, hinweis}`) gibt es nur im Demo-Backend (im Frappe-Adapter liefern sie `[]`; Frappe versendet über die Email Queue).
+
+Umsetzung: Frappe-App `oekoinvest_app` unter `Import-Frappe/oekoinvest_app` (Installation: `Import-Frappe/ANLEITUNG.md`). Zustandsautomaten zusätzlich im Controller erzwungen: Statusänderungen außerhalb der API (z. B. im Desk) sind nur als Admin-Schritt ohne Pflichtangaben möglich; die Provision entsteht beim Übergang Projekt → `verkauft` im Controller; `Plattform Aktivitaet` ist append-only (Ändern/Löschen/Umbenennen verboten).
+
+## 6. HTTP-APIs der Website
+
+Alle Antworten JSON mit `Cache-Control: no-store`. Fehler: `{ ok: false, error, code }`.
+**CSRF:** Jede Mutation (POST/PATCH/PUT/DELETE) braucht einen `Origin`-Header der eigenen Seite (oder aus `PLATTFORM_ORIGINS`) und `Content-Type: application/json`; Uploads `multipart/form-data` + Kopfzeile `X-Plattform-Upload: 1`. Sonst 403 bzw. 415.
+**Sitzung:** Cookie `oi_sitzung` (Produktion `__Host-oi_sitzung`), HttpOnly, SameSite=Lax, Secure in Produktion, 7 Tage.
+
+| Route | Methode | Auth | Body / Query | Antwort |
+|---|---|---|---|---|
+| `/api/anfrage` | POST | optional | `{typ, kontakt, daten, einwilligung: true, herkunft?}` (Vertrag BRIEFING) | `{ok, id, vorgang}` · Limit 10/h je IP |
+| `/api/auth/login` | POST | – | `{email, passwort}` | `{ok, nutzer}` + Cookie · Limit 10/15 min je IP, 8/15 min je E-Mail |
+| `/api/auth/logout` | POST | – | `{}` | `{ok}` |
+| `/api/auth/registrieren` | POST | – | `{email, passwort, vorname, nachname, firma?, telefon?, rollen[], vorgang?, agb: true}` | 201 `{ok, nutzer, vorgangVerknuepft}` + Cookie · 5/h |
+| `/api/auth/passwort-vergessen` | POST | – | `{email}` | `{ok}` immer · 5/h |
+| `/api/auth/passwort-setzen` | POST | – | `{token, passwort}` | `{ok, nutzer}` + Cookie |
+| `/api/auth/email-bestaetigen?token=` | GET | – | | 307 → `/portal?hinweis=email-bestaetigt` bzw. `/login?hinweis=link-ungueltig` |
+| `/api/auth/ich` | GET | optional | | `{ok, nutzer|null}` |
+| `/api/boerse` | GET | optional | `typ, land, phase, mwpMin, mwpMax` | `{ok, projekte, kennzahlen, demo}` |
+| `/api/boerse/[slug]` | GET | optional | slug oder id | `{ok, projekt, zugriff, interesse, vertraulich, dokumente}` |
+| `/api/portal/vorgaenge` | GET | ja | `status?` | `{ok, vorgaenge}` |
+| `/api/portal/vorgaenge/[id]` | GET | ja | | `{ok, vorgang}` |
+| `/api/portal/flaechen` | GET / POST | flaeche, landwirt | Fläche | `{ok, flaechen}` / `{ok, flaeche}` |
+| `/api/portal/flaechen/[id]` | GET / PATCH | ja | | `{ok, flaeche}` |
+| `/api/portal/projekte` | GET / POST | anbieter | Projekt | `{ok, projekte}` / `{ok, projekt}` |
+| `/api/portal/projekte/[id]` | GET / PATCH | ja | | `{ok, projekt}` |
+| `/api/portal/projekte/[id]/provision` | POST | anbieter | `{akzeptiert: true}` | `{ok, projekt}` |
+| `/api/portal/boerse/[id]/merken` | POST | investor | `{an}` | `{ok, interesse}` |
+| `/api/portal/boerse/[id]/nda` | POST | investor | `{akzeptiert: true}` | `{ok, interesse}` |
+| `/api/portal/interessen` | GET | investor | | `{ok, interessen}` |
+| `/api/portal/status` | POST | ja (Eigentümer) | `{art, id, nach, extra}` | `{ok, objekt {id, status}}` |
+| `/api/portal/nachrichten` | GET / POST | ja | GET `?bezug=art:id` · POST `{bezugArt, bezugId, text}` | `{ok, threads}` / `{ok, thread}` / `{ok, nachricht}` |
+| `/api/portal/dokumente` | GET / POST | ja | GET `?bezug=art:id` · POST multipart `datei, bezugArt, bezugId, kategorie` | `{ok, dokumente}` / `{ok, dokument}` |
+| `/api/portal/dokumente/[id]` | GET / DELETE | ja | `?anzeigen=1` inline | Datei / `{ok}` |
+| `/api/portal/profil` | GET / PATCH | ja | Stammdaten, rollen | `{ok, nutzer}` |
+| `/api/portal/passwort` | POST | ja | `{alt, neu}` | `{ok}` + neues Cookie |
+| `/api/portal/suchprofil` | PUT | investor | Suchprofil (inkl. `schwelle`) | `{ok, suchprofil}` |
+| `/api/portal/benachrichtigungen` | GET / POST / PUT | ja | GET `?ungelesen=1&limit=` · POST `{ids}` bzw. `{alle: true}` · PUT `{einstellungen}` | `{ok, eintraege, ungelesen, gesamt, einstellungen}` / `{ok, geaendert, ungelesen}` / `{ok, einstellungen}` |
+| `/api/portal/projekte/[id]/expose` | GET | ja (Rechte s. `boerse.expose`) | | PDF (Download, protokolliert) |
+| `/api/boerse/[slug]/teaser` | GET | – | | öffentlicher Teaser als PDF (nur Positivliste, `noindex`) |
+| `/api/admin/uebersicht` | GET | admin | | `{ok, uebersicht}` |
+| `/api/admin/vorgaenge` | GET | admin | `status, typ, q` | `{ok, vorgaenge}` |
+| `/api/admin/flaechen` | GET | admin | `status` | `{ok, flaechen}` |
+| `/api/admin/projekte` | GET | admin | `status` | `{ok, projekte}` |
+| `/api/admin/interessen` | GET | admin | `status=a,b` | `{ok, interessen}` |
+| `/api/admin/status` | POST | admin | `{art (+provision), id, nach, extra}` | `{ok, objekt}` |
+| `/api/admin/zuweisen` | POST | admin | `{art, id, zustaendigId}` | `{ok, ergebnis}` |
+| `/api/admin/nutzer` | GET | admin | `q, rolle` | `{ok, nutzer}` |
+| `/api/admin/nutzer/[id]` | PATCH | admin | `{rollen?, aktiv?}` | `{ok, nutzer}` |
+| `/api/admin/provisionen` | GET | admin | | `{ok, provisionen}` |
+| `/api/admin/aktivitaeten` | GET | admin | `limit, objekt, objekte=a,b` | `{ok, aktivitaeten}` |
+| `/api/admin/aufgaben` | GET / POST | admin | GET `?ansicht=meine|offen|ueberfaellig|erledigt|alle&bezug=art:id` · POST Aufgabe | `{ok, aufgaben}` / `{ok, aufgabe}` |
+| `/api/admin/aufgaben/[id]` | PATCH | admin | `{status?, titel?, beschreibung?, faelligAm?, zustaendigId?}` | `{ok, aufgabe}` |
+| `/api/admin/export/[art]` | GET | admin | `art` ∈ `vorgaenge, flaechen, projekte, interessen, provisionen` | CSV (UTF-8 mit BOM, Semikolon, CRLF, Dezimalkomma, Formel-Schutz), Export protokolliert |
+| `/api/admin/postausgang` | GET | admin | `limit` | `{ok, mails}` (nur Demo) |
+| `/api/admin/demo-links` | GET | admin | | `{ok, links}` (nur Demo) |
+
+Statuscodes: 401 nicht angemeldet · 403 Rolle/Eigentum/Herkunft · 404 · 409 Konflikt/Übergang nicht vorgesehen · 413 zu groß · 415 falscher Typ · 422 Validierung/Pflichtangabe · 429 Rate-Limit · 502 Backend nicht erreichbar · 503 Backend nicht konfiguriert.

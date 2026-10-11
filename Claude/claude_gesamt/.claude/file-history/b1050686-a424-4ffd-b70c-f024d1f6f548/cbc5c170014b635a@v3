@@ -1,0 +1,274 @@
+/**
+ * Befuellt die Datenbank und rechnet zur Kontrolle einen
+ * Abrechnungslauf durch.
+ *
+ *   node werkzeuge/datenbank.mjs           befuellt, wenn noch leer
+ *   node werkzeuge/datenbank.mjs --neu     leert und befuellt neu
+ *   node werkzeuge/datenbank.mjs --pruefen rechnet einen Probelauf
+ */
+
+// Die Anwendungsmodule liegen als TypeScript vor; Node kann sie ab
+// Version 22 direkt ausfuehren. Der Import erfolgt dynamisch, damit
+// die Datenbankverbindung erst nach dem Setzen der Umgebung entsteht.
+process.env.DB_DATEI ??= ".data/portal.db";
+
+/** Leerzeile zur Gliederung der Ausgabe. */
+const EOL = String.fromCharCode(10);
+
+const neu = process.argv.includes("--neu");
+const pruefen = process.argv.includes("--pruefen");
+
+const { befuelleDatenbank } = await import("../src/lib/db/befuellen.ts");
+const { befuelleTechnik } = await import("../src/lib/db/befuellen-technik.ts");
+const { befuelleLaden, befuelleLadeabrechnungen } = await import("../src/lib/db/befuellen-laden.ts");
+const { alle, skalar, schreibe, baueSchemaNeu } = await import(
+  "../src/lib/db/verbindung.ts"
+);
+
+// Bei --neu wird das Schema verworfen und neu aufgebaut, nicht nur
+// der Inhalt geleert - sonst fehlen nach einer Schemaaenderung
+// stillschweigend die neuen Spalten.
+if (neu) baueSchemaNeu();
+
+console.log("");
+const ergebnis = befuelleDatenbank(neu);
+
+if (ergebnis.uebersprungen) {
+  console.log("Datenbank ist bereits befuellt - uebersprungen.");
+  console.log("Mit --neu wird sie geleert und neu aufgebaut.\n");
+} else {
+  console.log(
+    `Befuellt: ${ergebnis.zaehlpunkte} Zaehlpunkte, ` +
+      `${ergebnis.lastgangZeilen.toLocaleString("de-AT")} Lastgangzeilen ` +
+      `in ${(ergebnis.dauerMs / 1000).toFixed(1)} s\n`,
+  );
+}
+
+// --- Technischer Bestand ---------------------------------------------
+const technik = befuelleTechnik(neu);
+if (!technik.dauerMs) {
+  console.log("Technikdaten bereits vorhanden - uebersprungen.\n");
+} else {
+  console.log(
+    `Technik:  ${technik.wechselrichter} Wechselrichter, ${technik.straenge} Straenge, ` +
+      `${technik.wrMesswerte.toLocaleString("de-AT")} WR-Messwerte, ` +
+      `${technik.strangMesswerte.toLocaleString("de-AT")} Strangwerte, ` +
+      `${technik.sensorMesswerte.toLocaleString("de-AT")} Sensorwerte, ` +
+      `${technik.alarme} Alarme in ${(technik.dauerMs / 1000).toFixed(1)} s\n`,
+  );
+}
+
+// --- Ladeinfrastruktur ------------------------------------------------
+const laden = befuelleLaden(neu);
+if (!laden.dauerMs) {
+  console.log("Ladedaten bereits vorhanden - uebersprungen." + EOL);
+} else {
+  console.log(
+    `Laden:    ${laden.ladepunkte} Ladepunkte, ${laden.tarife} Tarife, ` +
+      `${laden.karten} Karten, ${laden.vorgaenge.toLocaleString("de-AT")} Ladevorgaenge ` +
+      `in ${(laden.dauerMs / 1000).toFixed(1)} s` + EOL,
+  );
+}
+
+const ladeLaeufe = laden.dauerMs ? befuelleLadeabrechnungen() : null;
+if (ladeLaeufe) {
+  console.log(
+    `Abrechnung: ${ladeLaeufe.laeufe} Ladeabrechnungen, ${ladeLaeufe.belege} Belege, ` +
+      `${ladeLaeufe.brutto.toLocaleString("de-AT", { style: "currency", currency: "EUR" })} brutto` + EOL,
+  );
+}
+
+// --- Bestand ---------------------------------------------------------
+const tabellen = [
+  "kunde",
+  "anlage",
+  "zaehlpunkt",
+  "lastgang",
+  "gemeinschaft",
+  "teilnahme",
+  "eda_prozess",
+  "stoerung",
+  "stoerung_eintrag",
+  "steuerwert",
+  "benutzer",
+  "abrechnungslauf",
+  "beleg",
+  "aufteilung",
+  "wechselrichter",
+  "strang",
+  "wr_messwert",
+  "strang_messwert",
+  "sensor_messwert",
+  "alarmregel",
+  "alarm",
+  "verguetung",
+  "ladepunkt",
+  "ladetarif",
+  "ladekarte",
+  "ladevorgang",
+  "ladeabrechnung",
+  "ladebeleg",
+];
+
+console.log("Bestand:");
+for (const tabelle of tabellen) {
+  const anzahl = skalar(`SELECT COUNT(*) FROM ${tabelle}`) ?? 0;
+  console.log(`  ${tabelle.padEnd(18)} ${String(anzahl).padStart(9)}`);
+}
+
+// --- Gegenprobe: Bestueckung gegen Anlagenleistung -------------------
+// Deckt die Summe der Wechselrichter nicht die Nennleistung der Anlage,
+// sind alle daraus abgeleiteten Kennzahlen falsch - die Performance
+// Ratio faellt genau um den fehlenden Anteil zu niedrig aus. Das sieht
+// man einer einzelnen Zahl nicht an, deshalb wird es hier gerechnet.
+const bestueckung = alle(
+  `SELECT a.id, a.bezeichnung, a.leistung_kwp,
+          COUNT(wr.id)                           AS anzahl,
+          COALESCE(SUM(wr.modulleistung_kwp), 0) AS wr_kwp,
+          COALESCE((SELECT SUM(s.leistung_kwp)
+                      FROM strang s
+                      JOIN wechselrichter w2 ON w2.id = s.wechselrichter_id
+                     WHERE w2.anlage_id = a.id), 0) AS strang_kwp
+     FROM anlage a
+     LEFT JOIN wechselrichter wr ON wr.anlage_id = a.id
+    GROUP BY a.id
+    ORDER BY a.id`,
+);
+
+console.log(EOL + 'Bestueckung (Wechselrichter gegen Anlagenleistung):');
+let bestueckungFehler = 0;
+for (const b of bestueckung) {
+  // Ein halbes kWp Toleranz deckt die Rundung der Strangleistungen ab.
+  const abwWr = b.wr_kwp - b.leistung_kwp;
+  const abwStrang = b.strang_kwp - b.leistung_kwp;
+  const passt = Math.abs(abwWr) < 0.5 && Math.abs(abwStrang) < 0.5;
+  if (!passt) bestueckungFehler += 1;
+
+  console.log(
+    `  ${b.id}  ${String(b.bezeichnung).padEnd(26)}` +
+      `${b.leistung_kwp.toFixed(1).padStart(8)} kWp` +
+      `  ${String(b.anzahl).padStart(2)} WR = ${b.wr_kwp.toFixed(1).padStart(8)}` +
+      `  Straenge ${b.strang_kwp.toFixed(1).padStart(8)}` +
+      `  ${passt ? 'ok' : `<== es fehlen ${(-abwWr).toFixed(1)} kWp`}`,
+  );
+}
+
+if (bestueckungFehler > 0) {
+  console.error(
+    EOL + `  FEHLER: ${bestueckungFehler} Anlage(n) sind nicht vollstaendig ` +
+      `mit Wechselrichtern belegt. Alle Kennzahlen dieser Anlagen sind zu niedrig.` + EOL,
+  );
+  process.exit(1);
+}
+
+if (!pruefen) {
+  console.log("\nMit --pruefen wird ein Abrechnungslauf gerechnet.\n");
+  process.exit(0);
+}
+
+// --- Probelauf -------------------------------------------------------
+const { rechneLauf, pruefeDatenbestand } = await import("../src/lib/eeg/lauf.ts");
+const { quartalsZeitraum } = await import("../src/lib/eeg/abrechnung.ts");
+
+// Das zuletzt abgeschlossene Quartal.
+const jetzt = new Date();
+let jahr = jetzt.getFullYear();
+let quartal = Math.floor(jetzt.getMonth() / 3) + 1 - 1;
+if (quartal === 0) {
+  quartal = 4;
+  jahr -= 1;
+}
+
+const { von, bis } = quartalsZeitraum(jahr, quartal);
+const { messStempel } = await import("../src/lib/datum.ts");
+
+// Quartalsgrenzen in Ortszeit, als UTC-Stempel abgelegt - so liegen
+// genau die Viertelstunden im Zeitraum, die kalendarisch dazugehoeren.
+const vonStr = messStempel(von);
+// Exklusive Obergrenze: der erste Zeitpunkt des Folgequartals.
+const bisStr = messStempel(new Date(bis.getTime() + 1));
+
+console.log(`\nProbelauf fuer ${jahr} Q${quartal}  (${vonStr} bis ${bisStr})`);
+
+const luecken = pruefeDatenbestand("EEG-0001", vonStr, bisStr);
+if (luecken.length > 0) {
+  console.log("\n  Datenluecken:");
+  for (const l of luecken) {
+    console.log(
+      `    ${l.bezeichnung.slice(-8)}  ${l.vorhanden} von ${l.erwartet} Viertelstunden`,
+    );
+  }
+}
+
+const laufId = `LAUF-${jahr}Q${quartal}`;
+schreibe("DELETE FROM aufteilung WHERE lauf_id = ?", laufId);
+schreibe("DELETE FROM beleg WHERE lauf_id = ?", laufId);
+schreibe("DELETE FROM abrechnungslauf WHERE id = ?", laufId);
+schreibe(
+  `INSERT INTO abrechnungslauf
+     (id, gemeinschaft_id, zeitraum_von, zeitraum_bis, modell, preis_ct_kwh,
+      erzeuger_ct_kwh, ust_satz, angelegt_von)
+   VALUES (?, 'EEG-0001', ?, ?, 'Dynamisch', 15.0, 12.0, 20.0, 'Probelauf')`,
+  laufId,
+  vonStr,
+  bisStr,
+);
+
+const begonnen = Date.now();
+const lauf = rechneLauf(laufId, "Probelauf");
+const dauer = ((Date.now() - begonnen) / 1000).toFixed(1);
+
+const kwh = (n) => n.toLocaleString("de-AT", { maximumFractionDigits: 0 });
+const eur = (n) =>
+  n.toLocaleString("de-AT", { style: "currency", currency: "EUR" });
+
+console.log(`\n  Gerechnet in ${dauer} s ueber ${kwh(lauf.intervalle)} Viertelstunden`);
+console.log(`    in der Gemeinschaft verteilt   ${kwh(lauf.verteilt).padStart(12)} kWh`);
+console.log(`    Ueberschuss ins Netz           ${kwh(lauf.ueberschuss).padStart(12)} kWh`);
+console.log(`    aus dem Netz zugekauft         ${kwh(lauf.ungedeckt).padStart(12)} kWh`);
+
+const u = lauf.uebersicht;
+console.log(`\n  Belege: ${u.anzahlRechnungen} Rechnungen, ${u.anzahlGutschriften} Gutschriften`);
+console.log(`    Rechnungen netto               ${eur(u.summeRechnungenNetto).padStart(14)}`);
+console.log(`    Gutschriften netto             ${eur(u.summeGutschriftenNetto).padStart(14)}`);
+console.log(`    Deckungsbeitrag Gemeinschaft   ${eur(u.deckungsbeitrag).padStart(14)}`);
+console.log(`    Ersparnis Netzentgelt          ${eur(u.ersparnisGesamt).padStart(14)}`);
+
+console.log("\n  Belege je Zaehlpunkt:");
+const belege = alle(
+  `SELECT b.nummer, b.art, b.menge_kwh, b.netto, b.brutto,
+          k.firma, z.bezeichnung
+     FROM beleg b
+     JOIN zaehlpunkt z ON z.id = b.zaehlpunkt_id
+     LEFT JOIN kunde k ON k.id = b.kunde_id
+    WHERE b.lauf_id = ?
+    ORDER BY b.art, b.netto DESC`,
+  laufId,
+);
+
+for (const b of belege) {
+  console.log(
+    `    ${b.nummer.padEnd(16)} ${b.art.padEnd(11)} ` +
+      `${kwh(b.menge_kwh).padStart(9)} kWh  ${eur(b.brutto).padStart(12)}  ` +
+      `${(b.firma ?? "").slice(0, 32)}`,
+  );
+}
+
+// Gegenprobe: Die Summe der abgerechneten Bezugsmengen muss der
+// verteilten Menge entsprechen - sonst stimmt die Abrechnung nicht.
+const summeRechnungen = belege
+  .filter((b) => b.art === "Rechnung")
+  .reduce((s, b) => s + b.menge_kwh, 0);
+
+const abweichung = Math.abs(summeRechnungen - lauf.verteilt);
+console.log(
+  `\n  Gegenprobe: abgerechnet ${kwh(summeRechnungen)} kWh, verteilt ${kwh(lauf.verteilt)} kWh` +
+    `  -> Abweichung ${abweichung.toFixed(3)} kWh`,
+);
+
+if (abweichung > 0.01) {
+  console.error("\n  FEHLER: Abgerechnete Menge weicht von der verteilten ab.\n");
+  process.exit(1);
+}
+
+console.log("  Mengen stimmen ueberein.\n");

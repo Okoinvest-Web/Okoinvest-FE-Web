@@ -1,0 +1,60 @@
+import Link from "next/link";
+import { Suspense } from "react";
+import { Plus } from "lucide-react";
+import { db } from "@/lib/data";
+import { LEAD_STATUSES } from "@/lib/types";
+import { LEAD_STATUS_LABEL, relative } from "@/lib/format";
+import { Avatar, Badge, ButtonLink, Empty, PageHeader, Table } from "@/components/ui";
+import { ListToolbar } from "@/components/ListToolbar";
+
+export const metadata = { title: "Leads" };
+
+export default async function LeadsPage({ searchParams }: PageProps<"/leads">) {
+  const sp = await searchParams;
+  const q = typeof sp.q === "string" ? sp.q : undefined;
+  const status = typeof sp.status === "string" ? sp.status : undefined;
+  const leads = await db().listLeads({ search: q, filters: { status } });
+
+  return (
+    <>
+      <PageHeader
+        title="Leads"
+        actions={
+          <ButtonLink href="/leads/new">
+            <Plus className="size-4" /> Neuer Lead
+          </ButtonLink>
+        }
+      />
+      <Suspense>
+        <ListToolbar statuses={LEAD_STATUSES} labels={LEAD_STATUS_LABEL} count={leads.length} />
+      </Suspense>
+      {leads.length === 0 ? (
+        <Empty>Keine Leads gefunden.</Empty>
+      ) : (
+        <Table head={["Name", "Firma", "Status", "E-Mail", "Mobil", "Quelle", "Geändert"]}>
+          {leads.map((l) => {
+            const href = `/leads/${encodeURIComponent(l.name)}`;
+            return (
+              <tr key={l.name} className="hover:bg-gray-50">
+                <td className="px-5 py-2">
+                  <Link href={href} className="flex items-center gap-2 font-medium text-gray-900">
+                    <Avatar name={l.lead_name} />
+                    {l.lead_name}
+                  </Link>
+                </td>
+                <td className="px-5 py-2 text-gray-700">{l.company_name ?? "–"}</td>
+                <td className="px-5 py-2">
+                  <Badge value={l.status} label={LEAD_STATUS_LABEL[l.status]} />
+                </td>
+                <td className="px-5 py-2 text-gray-700">{l.email_id ?? "–"}</td>
+                <td className="whitespace-nowrap px-5 py-2 text-gray-700">{l.mobile_no ?? "–"}</td>
+                <td className="px-5 py-2 text-gray-700">{l.source ?? "–"}</td>
+                <td className="whitespace-nowrap px-5 py-2 text-gray-500">{relative(l.modified)}</td>
+              </tr>
+            );
+          })}
+        </Table>
+      )}
+    </>
+  );
+}

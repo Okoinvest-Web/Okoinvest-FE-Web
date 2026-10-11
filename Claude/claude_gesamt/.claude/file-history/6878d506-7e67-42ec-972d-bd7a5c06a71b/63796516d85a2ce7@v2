@@ -1,0 +1,364 @@
+"use client";
+
+import Link from "next/link";
+import { useActionState, useEffect, useRef, useState, useTransition } from "react";
+import { ArrowRight, UserCheck } from "lucide-react";
+import {
+  addNoteAction,
+  convertLeadAction,
+  createLeadAction,
+  createOpportunityAction,
+  createToDoAction,
+  loginAction,
+  updateLeadAction,
+  type FormState,
+} from "@/lib/actions";
+import { LEAD_STATUSES, OPPORTUNITY_STAGES, type Lead } from "@/lib/types";
+import { LEAD_STATUS_LABEL, STAGE_LABEL } from "@/lib/format";
+import { STAGE_PROB } from "@/lib/insights";
+import { BTN, INPUT } from "@/components/ui";
+import { toast } from "@/components/Toaster";
+
+export const inputCls = INPUT;
+const textareaCls = `${INPUT} h-auto py-2 leading-relaxed resize-y`;
+const SOURCES = ["Website", "Empfehlung", "Messe", "Kaltakquise", "LinkedIn"];
+
+function ErrorBox({ state }: { state: FormState }) {
+  return state.error ? <p className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-rose-700">{state.error}</p> : null;
+}
+
+function L({ label, hint, children, className = "" }: { label: string; hint?: string; children: React.ReactNode; className?: string }) {
+  return (
+    <label className={`flex flex-col gap-1.5 ${className}`}>
+      <span className="text-[12px] font-medium text-gray-700">{label}</span>
+      {children}
+      {hint && <span className="text-[12px] text-gray-400">{hint}</span>}
+    </label>
+  );
+}
+
+// Formularabschnitt: Titel + Erklärung links, Felder rechts
+function Group({ title, desc, children }: { title: string; desc?: string; children: React.ReactNode }) {
+  return (
+    <div className="grid gap-x-12 gap-y-4 border-b border-gray-150 py-7 first:pt-0 md:grid-cols-[220px_1fr]">
+      <div>
+        <h3 className="font-semibold text-gray-900">{title}</h3>
+        {desc && <p className="mt-1 text-[12px] leading-relaxed text-gray-500">{desc}</p>}
+      </div>
+      <div className="grid grid-cols-2 gap-x-4 gap-y-5">{children}</div>
+    </div>
+  );
+}
+
+function Footer({ state, pending, label, cancelHref }: { state: FormState; pending: boolean; label: string; cancelHref: string }) {
+  return (
+    <div className="flex items-center justify-end gap-2 pt-5">
+      <div className="mr-auto">
+        <ErrorBox state={state} />
+      </div>
+      <Link href={cancelHref} className={BTN.secondary}>
+        Abbrechen
+      </Link>
+      <button disabled={pending} className={BTN.primary}>
+        {pending ? "Speichern …" : label}
+      </button>
+    </div>
+  );
+}
+
+// Nach erfolgreichem Absenden: Formular leeren und Rückmeldung zeigen
+function useResetOnSuccess(pending: boolean, state: FormState, message: string) {
+  const ref = useRef<HTMLFormElement>(null);
+  const wasPending = useRef(false);
+  useEffect(() => {
+    if (wasPending.current && !pending) {
+      if (state.error) toast(state.error, "error");
+      else {
+        ref.current?.reset();
+        toast(message);
+      }
+    }
+    wasPending.current = pending;
+  }, [pending, state, message]);
+  return ref;
+}
+
+// ---------- Login ----------
+
+export function LoginForm({ next, demo }: { next?: string; demo: boolean }) {
+  const [state, action, pending] = useActionState<FormState, FormData>(loginAction, {});
+  return (
+    <form action={action} className="flex flex-col gap-4">
+      <input type="hidden" name="next" value={next ?? ""} />
+      <L label="E-Mail">
+        <input name="usr" type="email" autoComplete="username" required autoFocus className={`${inputCls} h-9`} defaultValue={demo ? "max@firma.example" : ""} />
+      </L>
+      <L label="Passwort">
+        <input name="pwd" type="password" autoComplete="current-password" required className={`${inputCls} h-9`} />
+      </L>
+      <ErrorBox state={state} />
+      <button disabled={pending} className={`${BTN.primary} h-9 w-full`}>
+        {pending ? (
+          "Anmelden …"
+        ) : (
+          <>
+            Anmelden <ArrowRight />
+          </>
+        )}
+      </button>
+    </form>
+  );
+}
+
+// ---------- Notizen ----------
+
+export function NoteComposer({ doctype, name }: { doctype: string; name: string }) {
+  const [state, action, pending] = useActionState<FormState, FormData>(addNoteAction.bind(null, doctype, name), {});
+  const ref = useResetOnSuccess(pending, state, "Notiz gespeichert");
+
+  return (
+    <form ref={ref} action={action} className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xs transition focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-500/20">
+      <textarea
+        name="content"
+        rows={3}
+        placeholder="Gespräch, Vor-Ort-Termin oder Absprache festhalten …"
+        className="block w-full resize-y px-3 py-2.5 leading-relaxed outline-none placeholder:text-gray-400"
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) e.currentTarget.form?.requestSubmit();
+        }}
+      />
+      <div className="flex items-center justify-end gap-3 border-t border-gray-100 bg-gray-25 px-2 py-1.5">
+        <span className="text-[12px] text-gray-400">Strg + Enter</span>
+        <button disabled={pending} className={`${BTN.primary} h-7`}>
+          {pending ? "Speichern …" : "Notiz speichern"}
+        </button>
+      </div>
+    </form>
+  );
+}
+
+// ---------- Aufgaben ----------
+
+export function ToDoForm({ referenceType, referenceName }: { referenceType?: string; referenceName?: string; compact?: boolean }) {
+  const [state, action, pending] = useActionState<FormState, FormData>(createToDoAction, {});
+  const ref = useResetOnSuccess(pending, state, "Aufgabe angelegt");
+
+  return (
+    <form ref={ref} action={action} className="flex flex-wrap items-center gap-2">
+      {referenceType && <input type="hidden" name="reference_type" value={referenceType} />}
+      {referenceName && <input type="hidden" name="reference_name" value={referenceName} />}
+      <input name="description" required placeholder="Neue Aufgabe, z. B. Rückruf wegen Dachfotos …" className={`${inputCls} min-w-56 flex-1`} />
+      <input name="date" type="date" className={`${inputCls} w-36`} aria-label="Fällig am" />
+      <select name="priority" defaultValue="Medium" className={`${inputCls} w-28`} aria-label="Priorität">
+        <option value="Low">Niedrig</option>
+        <option value="Medium">Normal</option>
+        <option value="High">Hoch</option>
+      </select>
+      <button disabled={pending} className={BTN.primary}>
+        Hinzufügen
+      </button>
+    </form>
+  );
+}
+
+// ---------- Lead ----------
+
+export function ConvertLeadButton({ name, label }: { name: string; label: string }) {
+  const [pending, start] = useTransition();
+  return (
+    <button
+      disabled={pending}
+      onClick={() => {
+        if (!confirm(`„${label}“ in einen Kunden umwandeln? Offene Chancen werden auf den Kunden übertragen.`)) return;
+        start(async () => {
+          try {
+            await convertLeadAction(name);
+          } catch (e) {
+            // redirect() wirft absichtlich – nur echte Fehler anzeigen
+            if (e instanceof Error && !e.message.includes("NEXT_REDIRECT")) toast(e.message, "error");
+            else throw e;
+          }
+        });
+      }}
+      title="In Kunde umwandeln"
+      className={BTN.secondary}
+    >
+      <UserCheck className="text-brand-600" />
+      <span className="hidden sm:inline">{pending ? "Konvertiere …" : "In Kunde umwandeln"}</span>
+    </button>
+  );
+}
+
+// Gemeinsame Felder für Anlegen und Bearbeiten
+function LeadFields({ lead, withStatus }: { lead?: Lead; withStatus?: boolean }) {
+  return (
+    <>
+      <Group title="Person" desc="Ansprechpartner der Anfrage. Bei Gewerbe und Landwirtschaft zusätzlich die Firma.">
+        <L label="Vorname *">
+          <input name="first_name" required autoFocus defaultValue={lead?.first_name} className={inputCls} />
+        </L>
+        <L label="Nachname">
+          <input name="last_name" defaultValue={lead?.last_name} className={inputCls} />
+        </L>
+        <L label="Firma / Betrieb" className="col-span-2" hint="Leer lassen bei Privatkunden">
+          <input name="company_name" defaultValue={lead?.company_name} className={inputCls} />
+        </L>
+      </Group>
+      <Group title="Kontakt" desc="Telefonnummer erhöht den Lead-Score – Rückruf binnen 24 h ist der stärkste Hebel.">
+        <L label="E-Mail">
+          <input name="email_id" type="email" defaultValue={lead?.email_id} className={inputCls} placeholder="name@beispiel.de" />
+        </L>
+        <L label="Mobil">
+          <input name="mobile_no" type="tel" defaultValue={lead?.mobile_no} className={inputCls} placeholder="+49 …" />
+        </L>
+      </Group>
+      <Group title="Herkunft" desc="Woher kam die Anfrage? Fließt in Lead-Score und Auswertungen ein.">
+        <L label="Quelle">
+          <select name="source" defaultValue={lead?.source ?? ""} className={inputCls}>
+            <option value="">Nicht angegeben</option>
+            {SOURCES.map((s) => (
+              <option key={s}>{s}</option>
+            ))}
+          </select>
+        </L>
+        {withStatus ? (
+          <L label="Status">
+            <select name="status" defaultValue="Lead" className={inputCls}>
+              {LEAD_STATUSES.map((s) => (
+                <option key={s} value={s}>
+                  {LEAD_STATUS_LABEL[s]}
+                </option>
+              ))}
+            </select>
+          </L>
+        ) : (
+          <L label="Region">
+            <input name="territory" defaultValue={lead?.territory} className={inputCls} placeholder="z. B. Unterallgäu" />
+          </L>
+        )}
+      </Group>
+    </>
+  );
+}
+
+export function NewLeadForm() {
+  const [state, action, pending] = useActionState<FormState, FormData>(createLeadAction, {});
+  return (
+    <form action={action} className="mx-auto max-w-3xl">
+      <LeadFields withStatus />
+      <Footer state={state} pending={pending} label="Lead anlegen" cancelHref="/leads" />
+    </form>
+  );
+}
+
+export function LeadEditForm({ lead }: { lead: Lead }) {
+  const [state, action, pending] = useActionState<FormState, FormData>(updateLeadAction.bind(null, lead.name), {});
+  return (
+    <form action={action} className="mx-auto max-w-3xl">
+      <LeadFields lead={lead} />
+      <Group title="Bedarf" desc="Dachfläche, Ausrichtung, Verbrauch, Wünsche. Angaben wie „12 kWp“ oder „10 kWh“ belegen den PV-Rechner automatisch vor.">
+        <L label="Beschreibung" className="col-span-2">
+          <textarea name="notes" rows={5} defaultValue={lead.notes} className={textareaCls} />
+        </L>
+      </Group>
+      <Footer state={state} pending={pending} label="Änderungen speichern" cancelHref={`/leads/${encodeURIComponent(lead.name)}`} />
+    </form>
+  );
+}
+
+// ---------- Chance ----------
+
+type PartyOption = { value: string; label: string };
+
+export function OpportunityForm({
+  leads,
+  customers,
+  defaultFrom = "Customer",
+  defaultParty,
+}: {
+  leads: PartyOption[];
+  customers: PartyOption[];
+  defaultFrom?: "Lead" | "Customer";
+  defaultParty?: string;
+}) {
+  const [state, action, pending] = useActionState<FormState, FormData>(createOpportunityAction, {});
+  const [from, setFrom] = useState(defaultFrom);
+  const [prob, setProb] = useState(STAGE_PROB[0]);
+  const [probTouched, setProbTouched] = useState(false);
+  const options = from === "Lead" ? leads : customers;
+
+  return (
+    <form action={action} className="mx-auto max-w-3xl">
+      <Group title="Projekt" desc="Ein aussagekräftiger Titel mit Anlagengröße, z. B. „PV 12 kWp + Speicher 10 kWh“ – so erkennt der PV-Rechner die Werte.">
+        <L label="Titel *" className="col-span-2">
+          <input name="title" required autoFocus className={inputCls} placeholder="z. B. PV 12 kWp + Speicher 10 kWh" />
+        </L>
+        <L label="Bezug">
+          <select name="opportunity_from" value={from} onChange={(e) => setFrom(e.target.value as "Lead" | "Customer")} className={inputCls}>
+            <option value="Customer">Bestehender Kunde</option>
+            <option value="Lead">Lead</option>
+          </select>
+        </L>
+        <L label={from === "Lead" ? "Lead *" : "Kunde *"}>
+          <select key={from} name="party_name" required defaultValue={from === defaultFrom ? defaultParty ?? "" : ""} className={inputCls}>
+            <option value="" disabled>
+              Bitte wählen …
+            </option>
+            {options.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </L>
+      </Group>
+      <Group title="Prognose" desc="Die Wahrscheinlichkeit folgt automatisch der Phase, bis du sie selbst änderst.">
+        <L label="Auftragswert">
+          <div className="relative">
+            <input name="opportunity_amount" inputMode="decimal" placeholder="0" className={`${inputCls} w-full pr-8`} />
+            <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400">€</span>
+          </div>
+        </L>
+        <L label="Erwarteter Abschluss">
+          <input name="expected_closing" type="date" className={inputCls} />
+        </L>
+        <L label="Phase">
+          <select
+            name="sales_stage"
+            defaultValue={OPPORTUNITY_STAGES[0]}
+            onChange={(e) => {
+              const i = OPPORTUNITY_STAGES.indexOf(e.target.value as (typeof OPPORTUNITY_STAGES)[number]);
+              if (!probTouched && i >= 0) setProb(STAGE_PROB[i]);
+            }}
+            className={inputCls}
+          >
+            {OPPORTUNITY_STAGES.map((s) => (
+              <option key={s} value={s}>
+                {STAGE_LABEL[s]}
+              </option>
+            ))}
+          </select>
+        </L>
+        <L label="Wahrscheinlichkeit" hint={probTouched ? "Manuell gesetzt" : "Automatisch aus Phase"}>
+          <div className="relative">
+            <input
+              name="probability"
+              type="number"
+              min={0}
+              max={100}
+              step={5}
+              value={prob}
+              onChange={(e) => {
+                setProbTouched(true);
+                setProb(Number(e.target.value));
+              }}
+              className={`${inputCls} w-full pr-8`}
+            />
+            <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400">%</span>
+          </div>
+        </L>
+      </Group>
+      <Footer state={state} pending={pending} label="Chance anlegen" cancelHref="/opportunities" />
+    </form>
+  );
+}

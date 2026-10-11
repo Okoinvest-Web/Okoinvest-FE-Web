@@ -1,0 +1,200 @@
+import type { Metadata } from "next";
+
+import { Tabelle, Zeile, Zelle } from "@/components/tabelle";
+import { Angabe, Tafel, Seitenkopf, Status } from "@/components/ui";
+import { formatZaehlpunkt } from "@/lib/at/zaehlpunkt";
+import { DEMO_KUNDE } from "@/lib/demo/stammdaten";
+import { formatRelativ } from "@/lib/format";
+import { ladeAnlagen, ladePortalBenutzer } from "@/lib/portal-daten";
+import { ROLLEN, findeRolle, rechteVon } from "@/lib/sicherheit/rollen";
+import { requireUser } from "@/lib/session";
+
+export const metadata: Metadata = { title: "Einstellungen" };
+
+export default async function EinstellungenSeite() {
+  const angemeldet = await requireUser();
+
+  const [benutzer, anlagen] = await Promise.all([
+    ladePortalBenutzer(),
+    ladeAnlagen(),
+  ]);
+
+  const eigeneRolle = findeRolle(angemeldet.rolle);
+  const eigeneRechte = rechteVon([angemeldet.rolle]);
+
+  return (
+    <div className="space-y-6">
+      <Seitenkopf
+        titel="Einstellungen"
+        hinweis="Stammdaten, Benutzer und Berechtigungen"
+      />
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <Tafel titel="Unternehmen">
+          <dl className="space-y-2.5">
+            <Angabe label="Firmenwortlaut">{DEMO_KUNDE.firma}</Angabe>
+            <Angabe label="UID-Nummer">
+              <span className="font-mono text-sm">{DEMO_KUNDE.uid}</span>
+            </Angabe>
+            <Angabe label="Firmenbuchnummer">
+              <span className="font-mono text-sm">{DEMO_KUNDE.firmenbuch}</span>
+            </Angabe>
+            <Angabe label="Anschrift">
+              {DEMO_KUNDE.strasse}, {DEMO_KUNDE.plz} {DEMO_KUNDE.ort}
+            </Angabe>
+            <Angabe label="Bundesland">{DEMO_KUNDE.bundesland}</Angabe>
+            <Angabe label="Branche">{DEMO_KUNDE.branche}</Angabe>
+            <Angabe label="Telefon">{DEMO_KUNDE.telefon}</Angabe>
+            <Angabe label="E-Mail">{DEMO_KUNDE.email}</Angabe>
+          </dl>
+
+          <p className="mt-4 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500 dark:bg-slate-800/50 dark:text-slate-400">
+            Änderungen an den Stammdaten nimmt der Kundenservice vor – sie
+            wirken auch auf Rechnungen und Verträge.
+          </p>
+        </Tafel>
+
+        <Tafel titel="Ihr Zugang">
+          <dl className="space-y-2.5">
+            <Angabe label="Angemeldet als">{angemeldet.vollname}</Angabe>
+            <Angabe label="Benutzerkennung">
+              <span className="font-mono text-xs">{angemeldet.id}</span>
+            </Angabe>
+            <Angabe label="Rolle">
+              {eigeneRolle?.bezeichnung ?? angemeldet.rolle}
+            </Angabe>
+            <Angabe label="Sitzungsart">
+              {angemeldet.demo ? "Demonstrationsbetrieb" : "Frappe-Sitzung"}
+            </Angabe>
+          </dl>
+
+          {eigeneRolle && (
+            <p className="mt-3 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+              {eigeneRolle.beschreibung}
+            </p>
+          )}
+
+          <div className="mt-4 border-t border-slate-100 pt-3 dark:border-slate-800">
+            <p className="mb-2 text-xs font-medium text-slate-600 dark:text-slate-300">
+              Ihre Berechtigungen ({eigeneRechte.size})
+            </p>
+            <ul className="flex flex-wrap gap-1.5">
+              {[...eigeneRechte].map((recht) => (
+                <li
+                  key={recht}
+                  className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[11px] text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+                >
+                  {recht}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </Tafel>
+      </div>
+
+      <Tafel
+        titel="Benutzer"
+        hinweis="Wer aus Ihrem Unternehmen Zugang zum Portal hat"
+      >
+        <Tabelle
+          spalten={[{ titel: "Name" }, { titel: "E-Mail" }, { titel: "Rolle" }, { titel: "Anmeldung" }, { titel: "2FA" }, { titel: "Status" }]}
+        >
+          {benutzer.map((konto) => (
+            <Zeile key={konto.name}>
+              <Zelle>
+                <span className="font-medium">{konto.vollname}</span>
+                {konto.telefon && (
+                  <span className="block text-xs text-slate-500 dark:text-slate-400">
+                    {konto.telefon}
+                  </span>
+                )}
+              </Zelle>
+              <Zelle leise>
+                <span className="font-mono text-xs">{konto.benutzer}</span>
+              </Zelle>
+              <Zelle leise>
+                {findeRolle(konto.rolle ?? "")?.bezeichnung ?? konto.rolle}
+              </Zelle>
+              <Zelle leise>{formatRelativ(konto.letzte_anmeldung)}</Zelle>
+              <Zelle>
+                <Status ton={konto.mfa_aktiv === 1 ? "gut" : "ernst"}>
+                  {konto.mfa_aktiv === 1 ? "aktiv" : "fehlt"}
+                </Status>
+              </Zelle>
+              <Zelle>
+                <Status ton={konto.aktiv === 1 ? "gut" : "neutral"}>
+                  {konto.aktiv === 1 ? "Aktiv" : "Gesperrt"}
+                </Status>
+              </Zelle>
+            </Zeile>
+          ))}
+        </Tabelle>
+      </Tafel>
+
+      <Tafel
+        titel="Rollen und Rechte"
+        hinweis="Welche Rolle welche Bereiche öffnet"
+      >
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {ROLLEN.map((rolle) => {
+            const eigene = rolle.schluessel === angemeldet.rolle;
+
+            return (
+              <div
+                key={rolle.schluessel}
+                className={`rounded-lg border p-4 ${
+                  eigene
+                    ? "border-emerald-300 bg-emerald-50/50 dark:border-emerald-800 dark:bg-emerald-950/30"
+                    : "border-slate-200 dark:border-slate-800"
+                }`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <p className="font-medium text-slate-900 dark:text-slate-100">
+                    {rolle.bezeichnung}
+                  </p>
+                  {eigene && <Status ton="gut">Ihre Rolle</Status>}
+                </div>
+                <p className="mt-1.5 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+                  {rolle.beschreibung}
+                </p>
+                <p className="mt-2.5 border-t border-slate-200 pt-2 text-xs text-slate-400 dark:border-slate-700">
+                  {rolle.rechte.length} Berechtigungen
+                </p>
+              </div>
+            );
+          })}
+        </div>
+
+        <p className="mt-4 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+          Rollen werden in Frappe vergeben. Zusätzlich bestimmt eine User
+          Permission auf den Kundendatensatz, welche Anlagen eine Person
+          überhaupt sieht – dadurch wirkt die Einschränkung auch für Zugriffe,
+          die nicht über dieses Portal laufen.
+        </p>
+      </Tafel>
+
+      <Tafel titel="Zählpunkte" hinweis="Alle Anlagen mit ihrer Netzkennung">
+        <Tabelle spalten={[{ titel: "Anlage" }, { titel: "Zählpunktbezeichnung" }, { titel: "Netzbetreiber" }]}>
+          {anlagen.map((anlage) => (
+            <Zeile key={anlage.name}>
+              <Zelle>
+                <span className="font-medium">{anlage.anlagen_name}</span>
+                <span className="block text-xs text-slate-500 dark:text-slate-400">
+                  {anlage.plz} {anlage.ort}
+                </span>
+              </Zelle>
+              <Zelle leise>
+                <span className="font-mono text-xs">
+                  {anlage.zaehlpunkt
+                    ? formatZaehlpunkt(anlage.zaehlpunkt)
+                    : "–"}
+                </span>
+              </Zelle>
+              <Zelle leise>{anlage.netzbetreiber ?? "–"}</Zelle>
+            </Zeile>
+          ))}
+        </Tabelle>
+      </Tafel>
+    </div>
+  );
+}

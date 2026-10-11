@@ -1,0 +1,319 @@
+-- ====================================================================
+-- OT-Ebene: Edge-Hardware, Netzsegmentierung, Grid Safety, Zero Trust
+--
+-- Was hier abgebildet wird, steht physisch in einer Trafostation oder
+-- einer Unterverteilung. Der Unterschied zur IT ist nicht die Technik,
+-- sondern die Folge eines Fehlers: Ein falsch gesetztes Register
+-- speist mit falschen Schutzwerten ins oeffentliche Netz ein.
+--
+-- Deshalb gilt durchgehend: Was netzrelevant ist, wird versiegelt und
+-- nur gelesen. Was dahinter liegt, darf der Kunde stellen.
+-- ====================================================================
+
+-- --------------------------------------------------------------------
+-- Edge-Geraete
+--
+-- Je Standort ein fester Bausatz: ein Steuergeraet, ein Gateway und
+-- ein Switch. Das Gateway kommt in zwei Varianten - leitungsgebunden
+-- ueber die bauseitige Breitbandinfrastruktur, oder mobilfunkautark
+-- fuer Trafostationen und Dachstandorte ohne Anschluss.
+-- --------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS edge_geraet (
+  id              TEXT PRIMARY KEY,
+  anlage_id       TEXT NOT NULL REFERENCES anlage(id),
+  rolle           TEXT NOT NULL CHECK (rolle IN
+                    ('Steuerung','Gateway','Switch','Umsetzer','HMI')),
+  hersteller      TEXT NOT NULL,
+  modell          TEXT NOT NULL,
+  seriennummer    TEXT UNIQUE,
+  -- Prozessor, Speicher und Betriebssystem - fuer die
+  -- Ersatzteilplanung und die Bewertung von Firmwarehinweisen.
+  prozessor       TEXT,
+  arbeitsspeicher TEXT,
+  datenspeicher   TEXT,
+  betriebssystem  TEXT,
+  firmware        TEXT,
+  -- Temperaturbereich und Montageart. Ein batterieloses Geraet auf
+  -- Hutschiene braucht keine Wartung an der Pufferbatterie - genau
+  -- deshalb wird es in unbeheizten Stationen verbaut.
+  temperatur_von  INTEGER,
+  temperatur_bis  INTEGER,
+  montage         TEXT,
+  batterielos     INTEGER NOT NULL DEFAULT 0,
+  -- Secure Boot mit Hardware-Vertrauensanker.
+  secure_boot     INTEGER NOT NULL DEFAULT 0,
+  -- Ablauf des Geraetezertifikats fuer die beiderseitige
+  -- Authentisierung im Zugangsdienst. Laeuft es ab, verschwindet das
+  -- Geraet aus der Ueberwachung - deshalb steht es im Datensatz und
+  -- nicht nur im Zugangsdienst.
+  zertifikat_bis  TEXT,
+  -- Wie der Fernzugang hergestellt wird. Eine Portweiterleitung ist
+  -- der haeufigste Weg in eine Anlage und wird deshalb ausdruecklich
+  -- gefuehrt statt stillschweigend geduldet.
+  fernzugang      TEXT CHECK (fernzugang IN ('Zero-Trust','Portweiterleitung','keiner')),
+  ip_adresse      TEXT,
+  vlan_id         TEXT REFERENCES vlan(id),
+  -- Mobilfunk: Betreiber und Zustand der zweiten SIM.
+  mobilfunk_technik TEXT,
+  sim_primaer     TEXT,
+  sim_sekundaer   TEXT,
+  status          TEXT NOT NULL DEFAULT 'Online'
+                    CHECK (status IN ('Online','Offline','Wartung','Gestoert')),
+  -- Zeitpunkt der letzten Rueckmeldung ueber den Tunnel.
+  gesehen_am      TEXT,
+  inbetriebnahme  TEXT,
+  angelegt_am     TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_edge_geraet_anlage ON edge_geraet(anlage_id);
+
+-- Schnittstellen eines Geraets: serielle Anschluesse, Klemmen, SFP.
+--
+-- Eigene Tabelle, weil die Frage "haben wir vor Ort noch eine freie
+-- RS485-Schnittstelle" bei jeder Erweiterung zuerst gestellt wird.
+CREATE TABLE IF NOT EXISTS edge_schnittstelle (
+  id           TEXT PRIMARY KEY,
+  geraet_id    TEXT NOT NULL REFERENCES edge_geraet(id) ON DELETE CASCADE,
+  art          TEXT NOT NULL CHECK (art IN
+                 ('RS232','RS485','Ethernet','SFP','IO','PoE')),
+  bezeichnung  TEXT NOT NULL,
+  protokoll    TEXT,
+  -- Woran sie haengt; leer heisst frei.
+  belegt_durch TEXT,
+  bemerkung    TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_edge_schnittstelle_geraet
+  ON edge_schnittstelle(geraet_id);
+
+-- --------------------------------------------------------------------
+-- Netzsegmentierung
+--
+-- Drei Zonen je Standort. Die Trennung ist nicht organisatorisch,
+-- sondern wird auf dem Switch und auf der Gateway-Firewall erzwungen.
+-- Die wichtigste Regel ist eine Sperre: Die Feldebene darf das
+-- Internet nicht sehen. Ein Wechselrichter mit Firmware von 2019
+-- gehoert nicht ans offene Netz.
+-- --------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS vlan (
+  id           TEXT PRIMARY KEY,
+  anlage_id    TEXT NOT NULL REFERENCES anlage(id),
+  nummer       INTEGER NOT NULL,
+  bezeichnung  TEXT NOT NULL,
+  zweck        TEXT,
+  subnetz      TEXT,
+  -- Darf aus dieser Zone heraus ins Internet zugegriffen werden?
+  internet     INTEGER NOT NULL DEFAULT 0,
+  UNIQUE (anlage_id, nummer)
+);
+
+-- Erlaubt oder verboten: Verkehr von einer Zone in eine andere.
+CREATE TABLE IF NOT EXISTS vlan_regel (
+  id           TEXT PRIMARY KEY,
+  anlage_id    TEXT NOT NULL REFERENCES anlage(id),
+  von_vlan     INTEGER NOT NULL,
+  nach_vlan    INTEGER NOT NULL,
+  erlaubt      INTEGER NOT NULL DEFAULT 0,
+  dienste      TEXT,
+  begruendung  TEXT,
+  -- Fest verdrahtet: Diese Regel laesst sich im Portal nicht aendern.
+  fest         INTEGER NOT NULL DEFAULT 0,
+  UNIQUE (anlage_id, von_vlan, nach_vlan)
+);
+
+-- --------------------------------------------------------------------
+-- Versiegelter Sollstand und Drifterkennung
+-- --------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS sollparameter (
+  id           TEXT PRIMARY KEY,
+  anlage_id    TEXT NOT NULL REFERENCES anlage(id),
+  schluessel   TEXT NOT NULL,
+  bezeichnung  TEXT NOT NULL,
+  register     TEXT NOT NULL,
+  sollwert     REAL NOT NULL,
+  einheit      TEXT NOT NULL DEFAULT '',
+  -- Versiegelt: mit dem Netzbetreiber vereinbart, nur lesbar.
+  versiegelt   INTEGER NOT NULL DEFAULT 1,
+  toleranz     REAL NOT NULL DEFAULT 0,
+  grundlage    TEXT,
+  gueltig_ab   TEXT,
+  UNIQUE (anlage_id, schluessel)
+);
+
+-- Ein Abgleichlauf. Der Fingerabdruck verdichtet den gesamten
+-- Parametersatz; weicht er vom hinterlegten ab, hat sich irgendetwas
+-- geaendert - welcher Wert, sagen die Befunde.
+CREATE TABLE IF NOT EXISTS driftlauf (
+  id              TEXT PRIMARY KEY,
+  anlage_id       TEXT NOT NULL REFERENCES anlage(id),
+  gelaufen_am     TEXT NOT NULL,
+  soll_hash       TEXT NOT NULL,
+  ist_hash        TEXT NOT NULL,
+  geprueft        INTEGER NOT NULL DEFAULT 0,
+  befunde         INTEGER NOT NULL DEFAULT 0,
+  hoechste_schwere TEXT,
+  gesperrt        INTEGER NOT NULL DEFAULT 0,
+  dauer_ms        INTEGER,
+  -- Wo der Abgleich herkam: Worker, Handauslösung, Inbetriebnahme.
+  ausloeser       TEXT NOT NULL DEFAULT 'Worker'
+);
+
+CREATE INDEX IF NOT EXISTS idx_driftlauf_anlage
+  ON driftlauf(anlage_id, gelaufen_am DESC);
+
+CREATE TABLE IF NOT EXISTS driftbefund (
+  id            TEXT PRIMARY KEY,
+  lauf_id       TEXT NOT NULL REFERENCES driftlauf(id) ON DELETE CASCADE,
+  schluessel    TEXT NOT NULL,
+  bezeichnung   TEXT NOT NULL,
+  register      TEXT,
+  sollwert      REAL,
+  istwert       REAL,
+  einheit       TEXT,
+  abweichung    REAL,
+  versiegelt    INTEGER NOT NULL DEFAULT 0,
+  schwere       TEXT NOT NULL,
+  massnahme     TEXT NOT NULL,
+  begruendung   TEXT NOT NULL,
+  -- Erledigt, sobald der Wert wieder stimmt oder der Vorfall
+  -- bearbeitet wurde.
+  erledigt_am   TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_driftbefund_lauf ON driftbefund(lauf_id);
+
+-- --------------------------------------------------------------------
+-- Faelschungssichere Protokollkette
+--
+-- Jeder Eintrag traegt den Hash seines Vorgaengers. Wer einen Eintrag
+-- nachtraeglich aendert, bricht die Kette ab dieser Stelle - und die
+-- Pruefung sagt, wo. Ohne diese Eigenschaft ist ein Protokoll fuer
+-- einen NIS-2-Nachweis wertlos.
+-- --------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS protokollkette (
+  folge       INTEGER PRIMARY KEY AUTOINCREMENT,
+  anlage_id   TEXT REFERENCES anlage(id),
+  zeitpunkt   TEXT NOT NULL,
+  ereignis    TEXT NOT NULL,
+  urheber     TEXT NOT NULL,
+  -- Von welcher Adresse oder Schnittstelle der Befehl kam. Bei einem
+  -- Vorfall ist das die erste Frage.
+  herkunft    TEXT NOT NULL,
+  inhalt      TEXT NOT NULL DEFAULT '',
+  vorgaenger  TEXT NOT NULL,
+  hash        TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_protokollkette_anlage
+  ON protokollkette(anlage_id, folge);
+
+-- --------------------------------------------------------------------
+-- Firewall am Netzrand
+-- --------------------------------------------------------------------
+
+-- Vom Kunden gesetzte Regeln. Bewusst auf drei Bausteine beschraenkt:
+-- Wer eine freie Regelsprache anbietet, bekommt Regeln, die niemand
+-- mehr versteht - und im Zweifel die Anlage aussperren.
+CREATE TABLE IF NOT EXISTS waf_regel (
+  id           TEXT PRIMARY KEY,
+  anlage_id    TEXT REFERENCES anlage(id),
+  art          TEXT NOT NULL CHECK (art IN
+                 ('Geosperre','Ratenbegrenzung','Subnetzfreigabe')),
+  bezeichnung  TEXT NOT NULL,
+  -- Bedeutung je nach Art: Laendercode, Anfragen je Minute, CIDR.
+  wert         TEXT NOT NULL,
+  aktion       TEXT NOT NULL DEFAULT 'blockieren'
+                 CHECK (aktion IN ('blockieren','begrenzen','erlauben')),
+  aktiv        INTEGER NOT NULL DEFAULT 1,
+  -- Zaehler der Treffer seit Einrichtung.
+  treffer      INTEGER NOT NULL DEFAULT 0,
+  angelegt_von TEXT,
+  angelegt_am  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_waf_regel_anlage ON waf_regel(anlage_id);
+
+-- Zentral gepflegte Sperrlisten aus den Bedrohungsfeeds.
+CREATE TABLE IF NOT EXISTS sperrliste (
+  id            TEXT PRIMARY KEY,
+  quelle        TEXT NOT NULL CHECK (quelle IN ('CrowdSec','Spamhaus','Oekovolt')),
+  bezeichnung   TEXT NOT NULL,
+  -- Anzahl Adressen nach Bereinigung und Entdopplung.
+  eintraege     INTEGER NOT NULL DEFAULT 0,
+  -- Groesse der letzten Differenzuebertragung.
+  delta_neu     INTEGER NOT NULL DEFAULT 0,
+  delta_entfernt INTEGER NOT NULL DEFAULT 0,
+  aktualisiert_am TEXT,
+  aktiv         INTEGER NOT NULL DEFAULT 1
+);
+
+-- Stand der Verteilung je Gateway. Eine Sperrliste nuetzt nichts,
+-- solange sie nicht auf dem Geraet angekommen ist.
+CREATE TABLE IF NOT EXISTS sperrliste_verteilung (
+  id            TEXT PRIMARY KEY,
+  sperrliste_id TEXT NOT NULL REFERENCES sperrliste(id),
+  geraet_id     TEXT NOT NULL REFERENCES edge_geraet(id),
+  stand         TEXT NOT NULL DEFAULT 'Aktuell'
+                  CHECK (stand IN ('Aktuell','Veraltet','Fehler','Ausstehend')),
+  version       TEXT,
+  uebertragen_am TEXT,
+  bytes         INTEGER,
+  UNIQUE (sperrliste_id, geraet_id)
+);
+
+-- Abgewehrte Zugriffe, verdichtet je Stunde und Herkunftsland.
+CREATE TABLE IF NOT EXISTS waf_ereignis (
+  id          TEXT PRIMARY KEY,
+  anlage_id   TEXT REFERENCES anlage(id),
+  zeitpunkt   TEXT NOT NULL,
+  land        TEXT,
+  quelle      TEXT,
+  regel       TEXT,
+  anzahl      INTEGER NOT NULL DEFAULT 1,
+  -- Was versucht wurde, soweit erkennbar.
+  muster      TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_waf_ereignis_zeit
+  ON waf_ereignis(anlage_id, zeitpunkt);
+
+-- --------------------------------------------------------------------
+-- Zero-Trust-Zugriff auf Zeit
+--
+-- Es gibt keinen dauerhaften Fernzugang. Jede Sitzung wird einzeln
+-- freigegeben, laeuft von selbst ab und ist vollstaendig protokolliert.
+-- --------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS zt_sitzung (
+  id             TEXT PRIMARY KEY,
+  anlage_id      TEXT NOT NULL REFERENCES anlage(id),
+  -- Auf welches Geraet der Zugriff geht - nie auf das ganze Netz.
+  geraet_id      TEXT REFERENCES edge_geraet(id),
+  techniker      TEXT NOT NULL,
+  techniker_firma TEXT,
+  -- Vorgang im ERP, ueber den die Freigabe lief.
+  erp_ticket     TEXT,
+  zweck          TEXT NOT NULL,
+  status         TEXT NOT NULL DEFAULT 'Angefragt'
+                   CHECK (status IN
+                     ('Angefragt','Freigegeben','Aktiv','Beendet','Abgelaufen','Abgelehnt')),
+  angefragt_am   TEXT NOT NULL,
+  freigegeben_am TEXT,
+  freigegeben_von TEXT,
+  -- Hartes Zeitfenster. Nach Ablauf erlischt die Berechtigung von
+  -- selbst; niemand muss daran denken, sie zu entziehen.
+  gueltig_bis    TEXT,
+  beendet_am     TEXT,
+  -- Nachweis der Identitaetspruefung.
+  mfa_verfahren  TEXT,
+  quell_ip       TEXT,
+  -- Was in der Sitzung geschah.
+  massnahmen     TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_zt_sitzung_anlage
+  ON zt_sitzung(anlage_id, angefragt_am DESC);

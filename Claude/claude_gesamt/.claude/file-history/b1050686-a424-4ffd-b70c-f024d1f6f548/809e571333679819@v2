@@ -1,0 +1,303 @@
+import assert from "node:assert/strict";
+import { generateKeyPairSync, createSign } from "node:crypto";
+import { describe, it } from "node:test";
+
+import {
+  liesZeitstempel,
+  pruefeOcmf,
+  pruefeSignatur,
+  zerlegeOcmf,
+  type OcmfNutzlast,
+} from "./ocmf.ts";
+
+/**
+ * Geprüft wird mit einem echten Schlüsselpaar und einer echten
+ * Signatur. Eine Signaturprüfung, die in den Tests durch eine
+ * Attrappe ersetzt wird, prüft nichts - und genau sie ist der Teil,
+ * der im Betrieb trägt.
+ */
+
+const { privateKey, publicKey } = generateKeyPairSync("ec", {
+  namedCurve: "prime256v1",
+  publicKeyEncoding: { type: "spki", format: "pem" },
+  privateKeyEncoding: { type: "pkcs8", format: "pem" },
+});
+
+/** Ein anderer Zähler - für den Fall der falschen Herkunft. */
+const fremd = generateKeyPairSync("ec", {
+  namedCurve: "prime256v1",
+  publicKeyEncoding: { type: "spki", format: "pem" },
+  privateKeyEncoding: { type: "pkcs8", format: "pem" },
+});
+
+function nutzlast(teil: Partial<OcmfNutzlast> = {}): OcmfNutzlast {
+  return {
+    FV: "1.0",
+    GI: "Ökovolt Ladepunkt",
+    GS: "LP-0004-ZAEHLER",
+    GV: "1.4.2",
+    PG: "T12345",
+    MV: "EMH",
+    MM: "eHZ",
+    MS: "09876543",
+    IS: true,
+    IT: "ISO14443",
+    ID: "04A3B2C1",
+    RD: [
+      {
+        TM: "2026-09-14T08:00:00,000+0200 S",
+        TX: "B",
+        RV: 1204.5,
+        RU: "kWh",
+        RT: "B",
+        EF: "",
+        ST: "G",
+      },
+      {
+        TM: "2026-09-14T10:30:00,000+0200 S",
+        TX: "E",
+        RV: 1237.75,
+        RU: "kWh",
+        RT: "E",
+        EF: "",
+        ST: "G",
+      },
+    ],
+    ...teil,
+  };
+}
+
+/** Baut einen echten, signierten OCMF-Datensatz. */
+function signiert(
+  inhalt: OcmfNutzlast = nutzlast(),
+  schluessel = privateKey,
+): string {
+  const text = JSON.stringify(inhalt);
+
+  const signierer = createSign("SHA256");
+  signierer.update(text, "utf8");
+  signierer.end();
+
+  const signatur = {
+    SA: "ECDSA-secp256r1-SHA256",
+    SE: "hex",
+    SD: signierer.sign(schluessel).toString("hex"),
+  };
+
+  return `OCMF|${text}|${JSON.stringify(signatur)}`;
+}
+
+describe("Zerlegen", () => {
+  it("trennt Nutzlast und Signatur", () => {
+    const d = zerlegeOcmf(signiert());
+
+    assert.ok(d);
+    assert.equal(d.nutzlast.GS, "LP-0004-ZAEHLER");
+    assert.equal(d.nutzlast.RD.length, 2);
+    assert.ok(d.signatur.SD.length > 40);
+  });
+
+  it("behält den signierten Text unverändert", () => {
+    // Wer ihn durch JSON.parse und JSON.stringify schickt, prüft eine
+    // andere Zeichenkette als die signierte.
+    const text = signiert();
+    const d = zerlegeOcmf(text)!;
+
+    assert.ok(text.includes(d.signierterText));
+  });
+
+  it("weist etwas zurück, das kein OCMF ist", () => {
+    assert.equal(zerlegeOcmf("irgendwas"), null);
+    assert.equal(zerlegeOcmf("OCMF|{}"), null);
+    assert.equal(zerlegeOcmf("XYZ|{}|{}"), null);
+  });
+
+  it("weist kaputtes JSON zurück", () => {
+    assert.equal(zerlegeOcmf('OCMF|{nicht json}|{"SD":"ab"}'), null);
+  });
+
+  it("verlangt eine Ablesungsliste", () => {
+    assert.equal(zerlegeOcmf('OCMF|{"FV":"1.0"}|{"SD":"ab"}'), null);
+  });
+});
+
+describe("Zeitstempel", () => {
+  it("trennt Zeit und Kennzeichen", () => {
+    const z = liesZeitstempel("2026-09-14T08:00:00,000+0200 S");
+
+    assert.equal(z.zeit, "2026-09-14T08:00:00,000+0200");
+    assert.equal(z.kennzeichen, "S");
+  });
+
+  it("kommt ohne Kennzeichen zurecht", () => {
+    assert.equal(liesZeitstempel("2026-09-14T08:00:00Z").kennzeichen, "");
+  });
+});
+
+describe("Signatur", () => {
+  it("erkennt eine gültige Signatur", () => {
+    const d = zerlegeOcmf(signiert())!;
+
+    assert.ok(pruefeSignatur(d.signierterText, d.signatur, publicKey));
+  });
+
+  it("erkennt einen veränderten Datensatz", () => {
+    // Der klassische Fall: Jemand korrigiert den Zählerstand von Hand.
+    const text = signiert();
+    const verfaelscht = text.replace("1237.75", "1337.75");
+    const d = zerlegeOcmf(verfaelscht)!;
+
+    assert.equal(pruefeSignatur(d.signierterText, d.signatur, publicKey), false);
+  });
+
+  it("erkennt einen fremden Zähler", () => {
+    const d = zerlegeOcmf(signiert(nutzlast(), fremd.privateKey))!;
+
+    assert.equal(pruefeSignatur(d.signierterText, d.signatur, publicKey), false);
+  });
+
+  it("stürzt bei einem unbrauchbaren Schlüssel nicht ab", () => {
+    const d = zerlegeOcmf(signiert())!;
+
+    assert.equal(pruefeSignatur(d.signierterText, d.signatur, "kein PEM"), false);
+  });
+});
+
+describe("Vollständige Prüfung", () => {
+  it("erklärt einen sauberen Datensatz für verwertbar", () => {
+    const b = pruefeOcmf(signiert(), { oeffentlicherSchluessel: publicKey });
+
+    assert.ok(b.verwertbar, b.beanstandungen.join(" | "));
+    assert.equal(b.signatur, "gueltig");
+    assert.equal(b.zeitSynchron, true);
+  });
+
+  it("rechnet die Menge aus den Zählerständen", () => {
+    const b = pruefeOcmf(signiert(), { oeffentlicherSchluessel: publicKey });
+
+    assert.equal(b.energieKwh, 33.25);
+  });
+
+  it("gilt ohne Schlüssel als ungeprüft, nicht als gültig", () => {
+    const b = pruefeOcmf(signiert());
+
+    assert.equal(b.signatur, "ungeprueft");
+    assert.match(b.warnungen.join(" "), /nicht geprüft/);
+  });
+
+  it("verwirft einen Datensatz mit unsynchronisierter Uhr", () => {
+    // Sieht aus wie jeder andere und ist eichrechtlich wertlos.
+    const inhalt = nutzlast();
+    inhalt.RD[1]!.TM = "2026-09-14T10:30:00,000+0200 I";
+
+    const b = pruefeOcmf(signiert(inhalt), {
+      oeffentlicherSchluessel: publicKey,
+    });
+
+    assert.equal(b.verwertbar, false);
+    assert.equal(b.zeitSynchron, false);
+    assert.match(b.beanstandungen.join(" "), /nicht synchronisiert/);
+  });
+
+  it("meldet ein Fehlerkennzeichen des Zählers", () => {
+    const inhalt = nutzlast();
+    inhalt.RD[1]!.EF = "E";
+
+    const b = pruefeOcmf(signiert(inhalt), {
+      oeffentlicherSchluessel: publicKey,
+    });
+
+    assert.equal(b.verwertbar, false);
+    assert.match(b.beanstandungen.join(" "), /Fehlerkennzeichen/);
+  });
+
+  it("meldet einen Status, der nicht G ist", () => {
+    const inhalt = nutzlast();
+    inhalt.RD[0]!.ST = "I";
+
+    const b = pruefeOcmf(signiert(inhalt), {
+      oeffentlicherSchluessel: publicKey,
+    });
+
+    assert.equal(b.verwertbar, false);
+  });
+
+  it("meldet ein rückwärts laufendes Zählwerk", () => {
+    const inhalt = nutzlast();
+    inhalt.RD[1]!.RV = 1200;
+
+    const b = pruefeOcmf(signiert(inhalt), {
+      oeffentlicherSchluessel: publicKey,
+    });
+
+    assert.equal(b.verwertbar, false);
+    assert.match(b.beanstandungen.join(" "), /rückwärts/);
+  });
+
+  it("vergleicht mit der abgerechneten Menge", () => {
+    const b = pruefeOcmf(signiert(), {
+      oeffentlicherSchluessel: publicKey,
+      abgerechneteKwh: 34,
+    });
+
+    assert.equal(b.verwertbar, false);
+    assert.match(b.beanstandungen.join(" "), /Abweichung 0,?750|Abweichung 0\.750/);
+  });
+
+  it("lässt eine Abweichung innerhalb der Toleranz durch", () => {
+    const b = pruefeOcmf(signiert(), {
+      oeffentlicherSchluessel: publicKey,
+      abgerechneteKwh: 33.2505,
+      toleranzKwh: 0.001,
+    });
+
+    assert.ok(b.verwertbar, b.beanstandungen.join(" | "));
+  });
+
+  it("warnt bei fehlender Identifikation, verwirft aber nicht", () => {
+    // Bei einer Ad-hoc-Ladung ist das der Regelfall.
+    const b = pruefeOcmf(signiert(nutzlast({ IS: false })), {
+      oeffentlicherSchluessel: publicKey,
+    });
+
+    assert.ok(b.verwertbar);
+    assert.match(b.warnungen.join(" "), /nicht identifiziert/);
+  });
+
+  it("verlangt ein benanntes Messgerät", () => {
+    const b = pruefeOcmf(
+      signiert(nutzlast({ GI: undefined, GS: undefined })),
+      { oeffentlicherSchluessel: publicKey },
+    );
+
+    assert.equal(b.verwertbar, false);
+    assert.match(b.beanstandungen.join(" "), /kein Messgerät/);
+  });
+
+  it("verlangt zwei Ablesungen", () => {
+    const inhalt = nutzlast();
+    inhalt.RD = [inhalt.RD[0]!];
+
+    const b = pruefeOcmf(signiert(inhalt), {
+      oeffentlicherSchluessel: publicKey,
+    });
+
+    assert.equal(b.verwertbar, false);
+    assert.match(b.beanstandungen.join(" "), /zwei Ablesungen/);
+  });
+
+  it("gibt einen unlesbaren Datensatz sauber zurück", () => {
+    const b = pruefeOcmf("das ist kein OCMF");
+
+    assert.equal(b.verwertbar, false);
+    assert.equal(b.energieKwh, null);
+    assert.equal(b.beanstandungen.length, 1);
+  });
+
+  it("nennt Anfang und Ende des Vorgangs", () => {
+    const b = pruefeOcmf(signiert(), { oeffentlicherSchluessel: publicKey });
+
+    assert.equal(b.beginn, "2026-09-14T08:00:00,000+0200");
+    assert.equal(b.ende, "2026-09-14T10:30:00,000+0200");
+  });
+});

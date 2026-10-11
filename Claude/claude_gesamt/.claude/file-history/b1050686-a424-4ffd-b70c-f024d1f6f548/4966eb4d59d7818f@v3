@@ -1,0 +1,473 @@
+@import "tailwindcss";
+
+/* ==================================================================
+ * Designsprache
+ *
+ * Leitgedanke: Das Portal zeigt technische Betriebsdaten. Es soll
+ * wirken wie ein Messinstrument, nicht wie eine Broschuere - ruhig,
+ * praezise, dicht. Die Gestaltung tritt zurueck, die Zahlen fuehren.
+ *
+ * Drei Entscheidungen tragen das:
+ *
+ *  1. EINE Akzentfarbe (Bernstein) fuer Energie, sonst Neutraltoene.
+ *     Farbe bekommt nur, was Bedeutung traegt.
+ *  2. Flaechen unterscheiden sich durch Helligkeit, nicht durch
+ *     Schatten. Schatten gibt es nur dort, wo etwas wirklich ueber
+ *     der Ebene schwebt (Werteblasen, Schubladen).
+ *  3. Eine typografische Skala mit echten Spruengen. Kennzahlen sind
+ *     gross und schmal geschnitten, Fliesstext klein und ruhig.
+ * ================================================================== */
+
+@theme {
+  /* ---- Neutrale Skala -------------------------------------------
+   * Eigene Toene mit leichtem Blaustich statt Tailwind-Grau. Der
+   * Stich haelt die Flaechen kuehl, damit das warme Bernstein wirkt.
+   */
+  --color-grund-0: oklch(0.995 0.001 260);
+  --color-grund-25: oklch(0.982 0.002 260);
+  --color-grund-50: oklch(0.968 0.003 260);
+  --color-grund-100: oklch(0.941 0.004 260);
+  --color-grund-200: oklch(0.898 0.006 260);
+  --color-grund-300: oklch(0.826 0.008 260);
+  --color-grund-400: oklch(0.687 0.011 260);
+  --color-grund-500: oklch(0.573 0.013 260);
+  --color-grund-600: oklch(0.468 0.014 260);
+  --color-grund-700: oklch(0.382 0.014 262);
+  --color-grund-800: oklch(0.276 0.013 264);
+  --color-grund-850: oklch(0.232 0.012 265);
+  --color-grund-900: oklch(0.196 0.011 266);
+  --color-grund-950: oklch(0.158 0.010 267);
+  --color-grund-1000: oklch(0.128 0.009 268);
+
+  /* ---- Akzent: Bernstein ---------------------------------------- */
+  --color-akzent-100: oklch(0.945 0.045 75);
+  --color-akzent-200: oklch(0.885 0.082 74);
+  --color-akzent-400: oklch(0.768 0.135 70);
+  --color-akzent-500: oklch(0.706 0.152 66);
+  --color-akzent-600: oklch(0.628 0.148 61);
+  --color-akzent-700: oklch(0.528 0.124 57);
+
+  --font-sans:
+    var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", sans-serif;
+  --font-mono:
+    var(--font-geist-mono), ui-monospace, "SF Mono", "Cascadia Code", monospace;
+
+  /* ---- Bewegung --------------------------------------------------
+   * Zwei Kurven reichen: eine zum Erscheinen (schnell an, sanft aus)
+   * und eine fuer Zustandswechsel (gleichmaessig, unauffaellig).
+   */
+  --ease-aus: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-weich: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ==================================================================
+ * Flaechen und Text je Erscheinungsbild
+ *
+ * Beide Modi sind eigenstaendig gesetzt. Der dunkle ist kein
+ * umgedrehter heller: Er braucht mehr Abstufungen im unteren
+ * Helligkeitsbereich und weniger Buntheit, sonst flimmert er.
+ * ================================================================== */
+
+:root {
+  color-scheme: light;
+
+  --f-grund: var(--color-grund-50);
+  --f-ebene: var(--color-grund-0);
+  --f-ebene-hoch: var(--color-grund-0);
+  --f-vertieft: var(--color-grund-25);
+  --f-belegt: var(--color-grund-100);
+
+  --linie: var(--color-grund-200);
+  --linie-zart: var(--color-grund-100);
+  --linie-stark: var(--color-grund-300);
+
+  --t-stark: var(--color-grund-900);
+  --t-normal: var(--color-grund-700);
+  --t-leise: var(--color-grund-500);
+  --t-zart: var(--color-grund-400);
+
+  --akzent: var(--color-akzent-600);
+  --akzent-flaeche: var(--color-akzent-100);
+  --akzent-text: var(--color-akzent-700);
+
+  /* Schatten nur fuer wirklich schwebende Ebenen. */
+  --schatten-blase:
+    0 1px 2px oklch(0.2 0.01 260 / 0.06), 0 8px 24px -6px oklch(0.2 0.01 260 / 0.12);
+  --schatten-schublade: 0 0 0 1px oklch(0.2 0.01 260 / 0.05), 0 24px 48px -12px oklch(0.2 0.01 260 / 0.25);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+
+    --f-grund: var(--color-grund-1000);
+    --f-ebene: var(--color-grund-950);
+    --f-ebene-hoch: var(--color-grund-900);
+    --f-vertieft: var(--color-grund-1000);
+    --f-belegt: var(--color-grund-850);
+
+    --linie: var(--color-grund-850);
+    --linie-zart: var(--color-grund-900);
+    --linie-stark: var(--color-grund-800);
+
+    --t-stark: var(--color-grund-50);
+    --t-normal: var(--color-grund-300);
+    --t-leise: var(--color-grund-400);
+    --t-zart: var(--color-grund-500);
+
+    --akzent: var(--color-akzent-500);
+    --akzent-flaeche: oklch(0.32 0.07 66);
+    --akzent-text: var(--color-akzent-400);
+
+    --schatten-blase:
+      0 1px 2px oklch(0 0 0 / 0.4), 0 8px 24px -6px oklch(0 0 0 / 0.5);
+    --schatten-schublade: 0 0 0 1px oklch(1 0 0 / 0.06), 0 24px 48px -12px oklch(0 0 0 / 0.6);
+  }
+}
+
+/* ==================================================================
+ * Grundlagen
+ * ================================================================== */
+
+* {
+  border-color: var(--linie);
+}
+
+body {
+  background: var(--f-grund);
+  color: var(--t-normal);
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* ---- Typografische Skala ------------------------------------------
+ * Wenige, klar getrennte Stufen. Wo Zahlen stehen, sind sie
+ * tabellarisch und enger gesetzt - so fluchten Spalten und die Zahl
+ * bekommt Gewicht, ohne laut zu wirken.
+ */
+
+.t-titel {
+  font-size: 1.375rem;
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--t-stark);
+}
+
+.t-abschnitt {
+  font-size: 0.8125rem;
+  line-height: 1.3;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  color: var(--t-stark);
+}
+
+.t-leise {
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--t-leise);
+}
+
+.t-mikro {
+  font-size: 0.6875rem;
+  line-height: 1.4;
+  letter-spacing: 0.01em;
+  color: var(--t-zart);
+}
+
+.t-etikett {
+  font-size: 0.6875rem;
+  line-height: 1;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--t-zart);
+}
+
+/* Kennzahl: gross, schmal, tabellarisch. */
+.t-zahl {
+  font-size: 1.75rem;
+  line-height: 1.05;
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  color: var(--t-stark);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "ss01";
+}
+
+.t-zahl-gross {
+  font-size: 2.5rem;
+  line-height: 1;
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  color: var(--t-stark);
+  font-variant-numeric: tabular-nums;
+}
+
+.t-zahl-klein {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--t-stark);
+  font-variant-numeric: tabular-nums;
+}
+
+.zahl {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ==================================================================
+ * Bewegung
+ *
+ * Kurz, einmalig, richtungsgebend. Wer reduzierte Bewegung
+ * eingestellt hat, bekommt keine.
+ * ================================================================== */
+
+@keyframes erscheinen {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes einblenden {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes seitlich {
+  from {
+    opacity: 0;
+    transform: translateX(-0.375rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes schubladeAuf {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@keyframes atmen {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.3;
+    transform: scale(0.7);
+  }
+}
+
+@keyframes fliessen {
+  to {
+    stroke-dashoffset: -24;
+  }
+}
+
+@keyframes zeichnen {
+  from {
+    stroke-dashoffset: var(--laenge, 2000);
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes schimmern {
+  from {
+    background-position: -200% 0;
+  }
+  to {
+    background-position: 200% 0;
+  }
+}
+
+.a-erscheinen {
+  animation: erscheinen 0.42s var(--ease-aus) backwards;
+}
+
+.a-einblenden {
+  animation: einblenden 0.3s var(--ease-aus) backwards;
+}
+
+.a-seitlich {
+  animation: seitlich 0.32s var(--ease-aus) backwards;
+}
+
+.a-atmen {
+  animation: atmen 2.4s var(--ease-weich) infinite;
+}
+
+.skelett {
+  background: linear-gradient(
+    90deg,
+    var(--f-belegt) 25%,
+    var(--f-ebene-hoch) 50%,
+    var(--f-belegt) 75%
+  );
+  background-size: 200% 100%;
+  animation: schimmern 1.5s var(--ease-weich) infinite;
+  border-radius: 0.25rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ==================================================================
+ * Bedienelemente
+ *
+ * Einheitlich definiert, damit nicht jede Seite eigene Klassenketten
+ * mitschleppt - das war der Hauptgrund, warum die Oberflaeche
+ * zusammengestueckelt wirkte.
+ * ================================================================== */
+
+.feld {
+  width: 100%;
+  background: var(--f-ebene);
+  border: 1px solid var(--linie);
+  border-radius: 0.5rem;
+  padding: 0.4375rem 0.625rem;
+  font-size: 0.8125rem;
+  color: var(--t-stark);
+  transition:
+    border-color 0.14s var(--ease-weich),
+    box-shadow 0.14s var(--ease-weich);
+}
+
+.feld::placeholder {
+  color: var(--t-zart);
+}
+
+.feld:focus {
+  outline: none;
+  border-color: var(--akzent);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--akzent), transparent 82%);
+}
+
+.feld:disabled {
+  background: var(--f-vertieft);
+  color: var(--t-leise);
+  cursor: not-allowed;
+}
+
+.knopf {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  border-radius: 0.5rem;
+  padding: 0.4375rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  white-space: nowrap;
+  transition:
+    background 0.14s var(--ease-weich),
+    border-color 0.14s var(--ease-weich),
+    color 0.14s var(--ease-weich);
+}
+
+.knopf:focus-visible {
+  outline: 2px solid var(--akzent);
+  outline-offset: 2px;
+}
+
+.knopf:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.knopf-voll {
+  background: var(--t-stark);
+  color: var(--f-ebene);
+  border: 1px solid transparent;
+}
+
+.knopf-voll:hover:not(:disabled) {
+  background: color-mix(in oklch, var(--t-stark), var(--t-normal) 30%);
+}
+
+.knopf-rand {
+  background: var(--f-ebene);
+  color: var(--t-normal);
+  border: 1px solid var(--linie);
+}
+
+.knopf-rand:hover:not(:disabled) {
+  background: var(--f-belegt);
+  border-color: var(--linie-stark);
+  color: var(--t-stark);
+}
+
+.knopf-leise {
+  background: transparent;
+  color: var(--t-leise);
+  border: 1px solid transparent;
+}
+
+.knopf-leise:hover:not(:disabled) {
+  background: var(--f-belegt);
+  color: var(--t-stark);
+}
+
+.knopf-warnung {
+  background: transparent;
+  color: oklch(0.55 0.19 25);
+  border: 1px solid color-mix(in oklch, oklch(0.55 0.19 25), transparent 70%);
+}
+
+.knopf-warnung:hover:not(:disabled) {
+  background: color-mix(in oklch, oklch(0.55 0.19 25), transparent 92%);
+}
+
+/* ==================================================================
+ * Bildlaufleisten - schmal und zurueckhaltend
+ * ================================================================== */
+
+@supports selector(::-webkit-scrollbar) {
+  ::-webkit-scrollbar {
+    height: 0.5rem;
+    width: 0.5rem;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--linie-stark);
+    border-radius: 999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--t-zart);
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
+
+::selection {
+  background: color-mix(in oklch, var(--akzent), transparent 75%);
+  color: var(--t-stark);
+}

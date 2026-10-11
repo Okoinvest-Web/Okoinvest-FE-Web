@@ -1,0 +1,54 @@
+# -*- coding: utf-8 -*-
+import io
+p='SCHRIFTSATZ_18St14-26m_VOLLSTAENDIG.md'
+t=io.open(p,encoding='utf-8').read()
+def rep(o,n,c=1):
+    global t
+    assert o in t, o[:70]
+    t=t.replace(o,n,c)
+
+# --- A.5.3: Erfolgsdelikt, bloße Verzögerung genügt nicht ---
+rep("""§ 156 StGB ist ein **Erfolgs- und Verletzungsdelikt**. Der Taterfolg besteht in der effektiven Schmälerung oder Vereitelung der Befriedigung zumindest eines Gläubigers. Eine bloße **Gefährdung** der Befriedigungsrechte genügt nicht; ebenso wenig eine bloße Verzögerung.""",
+"""§ 156 StGB ist ein **Erfolgs- und Verletzungsdelikt**. Der Taterfolg besteht in der effektiven Schmälerung oder Vereitelung der Befriedigung zumindest eines Gläubigers. Eine bloße **Gefährdung** der Befriedigungsrechte genügt nicht; ebenso wenig eine bloße Verzögerung. Die Kommentarliteratur hält ausdrücklich fest: *„Werden die Forderungen des Gläubigers nicht sofort befriedigt, liegt noch keine Vereitelung oder Schmälerung vor."*¹
+
+> ¹ Flora in Leukauf/Steininger (Hrsg), StGB⁴ (2016) § 156 Rz 11. Geschütztes Rechtsgut ist nach RIS-Justiz **RS0128145** das Interesse der Gläubiger an der Befriedigung ihrer Forderungen (vgl. Kirchbacher in Höpfel/Ratz [Hrsg], WK² StGB [2018] § 156 Rz 2).""")
+
+# --- C.0: Wertgrenze ---
+rep("""Dass diese Wertgrenze nicht erreicht wird, ergibt sich aus Teil I: Der Kreis der zum Tatzeitpunkt bestehenden, nicht einverstandenen Gläubiger umfasst **17.619,63 €**; selbst die Gesamtheit der festgestellten Forderungen außerhalb der Schicht A beträgt 97.889,25 €.""",
+"""Maßgeblich für die Wertqualifikation ist nach der Kommentarliteratur nicht die Höhe der Abflüsse, sondern **der Betrag der unbefriedigt gebliebenen Gläubigerforderungen**.²
+
+> ² Kirchbacher in WK² StGB § 156 Rz 31.
+
+Dass diese Wertgrenze nicht erreicht wird, ergibt sich aus Teil I: Der Kreis der zum Tatzeitpunkt bestehenden, nicht einverstandenen Gläubiger umfasst **17.619,63 €**; selbst die Gesamtheit der festgestellten Forderungen außerhalb der Schicht A beträgt 97.889,25 €.""")
+
+# --- C.3: Vollendung unabhängig von Insolvenzeröffnung ---
+rep("""**Oder** er ist nicht festgestellt — und genau das hält ON 5.2 fest („derzeit nicht konkret feststellbar"). § 156 StGB ist ein Erfolgs- und Verletzungsdelikt; eine bloße Gefährdung der Befriedigungsrechte genügt nicht. Ohne festgestellten Erfolg fehlt es am vollendeten Delikt.""",
+"""**Oder** er ist nicht festgestellt — und genau das hält ON 5.2 fest („derzeit nicht konkret feststellbar"). § 156 StGB ist ein Erfolgs- und Verletzungsdelikt; eine bloße Gefährdung der Befriedigungsrechte genügt nicht. Ohne festgestellten Erfolg fehlt es am vollendeten Delikt.
+
+**Ergänzend ist darauf hinzuweisen**, dass die Vollendung des § 156 StGB nach der Kommentarliteratur **nicht an die Eröffnung eines Insolvenzverfahrens anknüpft**: *„Zur Tatvollendung des § 156 StGB kommt es nicht darauf an, ob eine Forderung bereits fällig ist oder ob eine wirtschaftliche Krisensituation tatsächlich vorliegt. § 156 StGB kann auch ohne die Eröffnung eines Insolvenzverfahrens verwirklicht werden."*³ Knüpft die Vollendung nicht an das Insolvenzverfahren an, kann auch der Beginn der Verjährungsfrist nicht an die Konkurseröffnung vom 04.07.2024 anknüpfen.
+
+> ³ Reisch in Kert/Kodek (Hrsg), Das große Handbuch Wirtschaftsstrafrecht², Rz 6.104.""")
+
+# --- E.5: Aktivtausch ---
+rep("""Dem Abfluss von 90.000 € stand der Erwerb eines Softwareprodukts samt Marken-, Domain- und Datenbankrechten gegenüber. Das ist ein **Aktivtausch**; eine Vermögensverringerung im Sinne des § 156 StGB liegt nicht vor.""",
+"""Dem Abfluss von 90.000 € stand der Erwerb eines Softwareprodukts samt Marken-, Domain- und Datenbankrechten gegenüber. Das ist ein **Aktivtausch**; eine Vermögensverringerung im Sinne des § 156 StGB liegt nicht vor.
+
+Die Kommentarliteratur bestätigt dies ausdrücklich: Vermögensbestandteile gelten erst dann als veräußert im Sinne des § 156 StGB, *„sobald das Vermögen **ohne Erhalt eines Gegenwertes** verringert ist"*.⁴ Eine wirkliche Vermögensverringerung liegt etwa dann vor, wenn Bestandteile des Vermögens **unter Marktwert** verkauft werden⁵ — dass der Kaufpreis von 100.000,00 € für die Applikation samt Marke, Domain und Datenbankrechten über dem Marktwert gelegen wäre, wird in ON 2.2 und ON 5.2 nicht einmal behauptet.
+
+> ⁴ Flora in Leukauf/Steininger, StGB⁴ (2016) § 156 Rz 10.
+> ⁵ Flora, aaO § 156 Rz 9; zur Tathandlung ferner Kirchbacher in WK² StGB § 156 Rz 6 und Flora, aaO § 156 Rz 5, die eine *wirkliche oder zumindest scheinbare* Verringerung des Schuldnervermögens verlangen.""")
+
+# --- I.5 ---
+rep("""## I.5 Folge für § 156 Abs 2 StGB
+
+Die Wertgrenze von 300.000 € wird vom Kreis der bestehenden, nicht einverstandenen Gläubiger bei Weitem nicht erreicht.""",
+"""## I.5 Folge für § 156 Abs 2 StGB
+
+Die Qualifikation des § 156 Abs 2 StGB bemisst sich nach dem **Betrag der unbefriedigt gebliebenen Gläubigerforderungen** (Kirchbacher in WK² StGB § 156 Rz 31), nicht nach der Höhe der Abflüsse. Dieser Betrag wird vom Kreis der bestehenden, nicht einverstandenen Gläubiger bei Weitem nicht erreicht — er beläuft sich nach I.3 auf 17.619,63 €.""")
+
+# --- I.7.1 ---
+rep("""Hinzu tritt, dass ein **Befriedigungsausfall** — der Erfolg des Delikts — bis heute weder dem Grunde noch der Höhe nach, weder bezogen auf einen bestimmten Gläubiger noch auf eine bestimmte Tathandlung festgestellt ist (Teil A.5.3).""",
+"""Hinzu tritt, dass ein **Befriedigungsausfall** — der Erfolg des Delikts — bis heute weder dem Grunde noch der Höhe nach, weder bezogen auf einen bestimmten Gläubiger noch auf eine bestimmte Tathandlung festgestellt ist (Teil A.5.3). Für die Tatbestandsverwirklichung ist die Vereitelung oder Schmälerung der Befriedigung **zumindest eines** Gläubigers erforderlich (Kirchbacher in WK² StGB § 156 Rz 4 f); auch ein solcher einzelner Gläubiger ist im Akt nicht benannt.""")
+
+io.open(p,'w',encoding='utf-8').write(t)
+print('Fundstellen eingearbeitet:', t.count('Flora in Leukauf')+t.count('Kirchbacher in WK')+t.count('Reisch in Kert'), 'Zitate')

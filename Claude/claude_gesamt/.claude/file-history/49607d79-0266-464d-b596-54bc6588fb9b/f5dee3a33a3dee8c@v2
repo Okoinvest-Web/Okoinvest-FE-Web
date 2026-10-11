@@ -1,0 +1,166 @@
+# -*- coding: utf-8 -*-
+"""Ergänzt die Dienste-Seite um Deckungslücken und tragende Objekte."""
+import io
+
+p = 'src/pages/ServiceView.vue'
+s = io.open(p, encoding='utf-8').read()
+
+# --- 1. Tragende Objekte vor die Auswirkungsanalyse
+alt = u'''    <div class="p-6">
+      <!-- Auswirkungsanalyse steht oben: das ist die Frage im Ernstfall -->'''
+neu = u'''    <div class="p-6">
+      <!--
+        Die Umkehrung der Auswirkungsanalyse: nicht „was fällt aus, wenn
+        dieses Objekt ausfällt", sondern „welches Objekt sollten wir
+        redundant auslegen". Ohne diese Zahl wird Redundanz danach
+        beschafft, was zuletzt ausgefallen ist.
+      -->
+      <section v-if="tragende.data" class="mb-8">
+        <h2 class="mb-1 text-base font-semibold text-ink-gray-8">Woran hängt am meisten</h2>
+        <p class="mb-3 max-w-3xl text-sm text-ink-gray-6">{{ tragende.data.summary.note }}</p>
+
+        <!--
+          Der Vorbehalt gehört neben die Zahl, nicht in eine Fußnote:
+          eine Rangfolge, die auf nicht modellierter Redundanz beruht,
+          ist erfundene Genauigkeit.
+        -->
+        <div
+          v-if="tragende.data.summary.caveat"
+          class="mb-3 rounded-lg border border-outline-amber-2 bg-surface-amber-1 p-3"
+        >
+          <StatusDot level="warning" text="Rangfolge mit Vorbehalt" klein />
+          <p class="mt-1 max-w-3xl text-sm text-ink-gray-7">
+            {{ tragende.data.summary.caveat }}
+          </p>
+        </div>
+
+        <DataTable
+          :columns="tragendeSpalten"
+          :rows="tragende.data.rows"
+          :loading="tragende.loading"
+          :seiten-groesse="0"
+          export-name="tragende-objekte"
+        >
+          <template #zelle-object_name="{ zeile }">
+            <button
+              class="block text-left font-mono text-sm text-ink-gray-9 underline"
+              @click="analyseFuer(zeile)"
+            >
+              {{ zeile.object_name }}
+            </button>
+            <span class="block text-sm text-ink-gray-5">{{ doctypeLabel(zeile.object_type) }}</span>
+          </template>
+          <template #zelle-service_names="{ zeile }">
+            <span class="text-sm text-ink-gray-7">{{ zeile.service_names.join(', ') }}</span>
+          </template>
+          <template #zelle-befund="{ zeile }">
+            <StatusDot :level="zeile.level" :text="zeile.reasons[0] || 'unauffällig'" klein />
+          </template>
+        </DataTable>
+      </section>
+
+      <!-- Auswirkungsanalyse steht oben: das ist die Frage im Ernstfall -->'''
+assert alt in s
+s = s.replace(alt, neu, 1)
+
+# --- 2. Dienstliste auf die Deckungspruefung umstellen
+alt = u'''      <section>
+        <h2 class="mb-3 text-base font-semibold text-ink-gray-8">Geschäftsdienste</h2>
+        <DataTable
+          tabellen-id="ServiceView"
+          :columns="spalten"
+          :rows="dienste.data || []"
+          :loading="dienste.loading"
+        >'''
+neu = u'''      <section>
+        <div class="mb-3">
+          <h2 class="text-base font-semibold text-ink-gray-8">Geschäftsdienste</h2>
+          <p class="text-sm text-ink-gray-6">{{ deckung.data?.summary?.note }}</p>
+        </div>
+        <DataTable
+          tabellen-id="ServiceView"
+          :columns="spalten"
+          :rows="deckung.data?.rows || []"
+          :loading="deckung.loading"
+          export-name="dienste"
+        >'''
+assert alt in s
+s = s.replace(alt, neu, 1)
+
+# --- 3. Luecken-Spalte statt der reinen Verify-Anzeige
+alt = u'''          <template #zelle-backup_verify="{ zeile }">
+            <StatusDot v-if="zeile.backup_verify === 'ok'" level="ok" text="verifiziert" klein />
+            <StatusDot
+              v-else-if="zeile.backup_verify === 'failed'"
+              level="critical"
+              text="Verify fehlgeschlagen"
+              klein
+            />
+            <StatusDot v-else level="warning" text="keine gültige Sicherung" klein />
+          </template>'''
+neu = u'''          <template #zelle-backup_verify="{ zeile }">
+            <StatusDot v-if="zeile.backup_verify === 'ok'" level="ok" text="verifiziert" klein />
+            <StatusDot
+              v-else-if="zeile.backup_verify === 'failed'"
+              level="critical"
+              text="Verify fehlgeschlagen"
+              klein
+            />
+            <StatusDot v-else level="warning" text="keine gültige Sicherung" klein />
+          </template>
+          <!-- Drei verschiedene Lücken brauchen drei verschiedene Leute. -->
+          <template #zelle-gaps="{ zeile }">
+            <StatusDot
+              v-if="!zeile.gaps.length"
+              level="ok"
+              text="Sicherung, Ansprechpartner, Kette"
+              klein
+            />
+            <span v-for="g in zeile.gaps" :key="g" class="block text-sm text-ink-gray-7">
+              · {{ g }}
+            </span>
+          </template>
+          <template #zelle-verlauf="{ zeile }">
+            <Button size="sm" variant="subtle" @click="verlaufFuer(zeile)">Was war los?</Button>
+          </template>'''
+assert alt in s
+s = s.replace(alt, neu, 1)
+
+# --- 4. Dialog fuer den Verlauf vor das Template-Ende
+alt = u'''    </div>
+  </div>
+</template>'''
+neu = u'''    </div>
+
+    <!--
+      Die Frage vor jeder Störungsmeldung: gab es eine Änderung, eine
+      Abweichung oder ein Ticket an etwas, das diesen Dienst trägt?
+    -->
+    <Dialog v-model="verlaufOffen" :options="{ title: 'Was war los?', size: '2xl' }">
+      <template #body-content>
+        <p class="mb-3 text-sm text-ink-gray-6">{{ verlauf.data?.summary?.note }}</p>
+        <ol v-if="verlauf.data?.rows?.length" class="space-y-2">
+          <li
+            v-for="(e, i) in verlauf.data.rows"
+            :key="i"
+            class="rounded border border-outline-gray-2 p-2"
+          >
+            <div class="flex flex-wrap items-center gap-2">
+              <StatusDot :level="e.level" :text="e.kind_label" klein />
+              <span class="tabular-nums text-sm text-ink-gray-6">
+                {{ String(e.at).slice(0, 16) }}
+              </span>
+              <span class="font-mono text-sm text-ink-gray-5">{{ e.object_name }}</span>
+            </div>
+            <p class="mt-1 text-sm text-ink-gray-8">{{ e.text }}</p>
+          </li>
+        </ol>
+      </template>
+    </Dialog>
+  </div>
+</template>'''
+assert alt in s
+s = s.replace(alt, neu, 1)
+
+io.open(p, 'w', encoding='utf-8').write(s)
+print('Vorlage ergaenzt')

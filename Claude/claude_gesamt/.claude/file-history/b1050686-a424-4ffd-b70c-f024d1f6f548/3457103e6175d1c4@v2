@@ -1,0 +1,273 @@
+import io
+
+p = "src/app/portal/sicherheit/page.tsx"
+s = io.open(p, encoding="utf-8").read()
+
+s = s.replace('''import { berechneFristen, demoEintraege } from "@/lib/sicherheit/audit";
+import { findeRolle } from "@/lib/sicherheit/rollen";
+import { requireRecht } from "@/lib/session";''',
+'''import {
+  ladeAbwehrKennzahlen,
+  ladeHerkunft,
+  ladeSperrlisten,
+  ladeVerteilungsluecken,
+  ladeWafRegeln,
+} from "@/lib/daten/abwehr";
+import { ladeAnlagen as ladeAnlagenStamm } from "@/lib/daten/monitoring";
+import { landesname, regelsatz } from "@/lib/ot/regel";
+import { berechneFristen, demoEintraege } from "@/lib/sicherheit/audit";
+import { findeRolle } from "@/lib/sicherheit/rollen";
+import { aktuelleRechte, requireRecht } from "@/lib/session";
+
+import {
+  Regelformular,
+  Regelschalter,
+  Verteilungsknopf,
+} from "./abwehr-steuerung";''', 1)
+
+s = s.replace('''  const protokoll = demoEintraege();''',
+'''  const protokoll = demoEintraege();
+
+  const rechte = await aktuelleRechte();
+  const darfVerwalten = rechte.has("sicherheit.verwalten");
+
+  const abwehr = ladeAbwehrKennzahlen();
+  const regeln = ladeWafRegeln();
+  const sperrlisten = ladeSperrlisten();
+  const luecken = ladeVerteilungsluecken();
+  const herkunft = ladeHerkunft();
+  const stammAnlagen = ladeAnlagenStamm().map((a) => ({
+    id: a.id,
+    bezeichnung: a.bezeichnung,
+  }));
+
+  const abgewehrtGesamt = herkunft.reduce((s, h) => s + h.anzahl, 0);''', 1)
+
+anker = '''      <Tafel
+        titel="Sicherheitsvorfälle"
+        hinweis="Erkannte Ereignisse und ihre Meldefristen"
+      >'''
+
+abschnitt = '''      {/* ---------------- Perimeter ---------------- */}
+      <Kennzahlenleiste>
+        <Kennzahl
+          label="Abgewehrt"
+          wert={formatZahl(abwehr.abgewehrt, 0)}
+          hinweis={`aus ${abwehr.laender} Ländern, letzte 14 Tage`}
+          akzent
+        />
+        <Kennzahl
+          label="Regeln scharf"
+          wert={formatZahl(abwehr.regelnAktiv, 0)}
+          hinweis={`von ${abwehr.regelnGesamt} im Bestand`}
+        />
+        <Kennzahl
+          label="Sperrlisten"
+          wert={formatZahl(abwehr.sperrlisteneintraege, 0)}
+          hinweis="Adressen aus CrowdSec, Spamhaus, eigenem Bestand"
+        />
+        <Kennzahl
+          label="Verteilung"
+          wert={formatProzent(abwehr.verteilungQuote, 0)}
+          hinweis={
+            abwehr.verteilungLuecken > 0
+              ? `${abwehr.verteilungLuecken} Gateways hinterher`
+              : "alle Gateways aktuell"
+          }
+        />
+      </Kennzahlenleiste>
+
+      {abwehr.verteilungLuecken > 0 && (
+        <Hinweis ton="hinweis" titel="Sperrliste nicht überall angekommen">
+          Auf {abwehr.verteilungLuecken} Gateways ist eine Sperrliste
+          veraltet. Eine Sperrliste, die zentral aktuell und am Gerät drei
+          Wochen alt ist, schützt nichts – der Stand je Gerät steht deshalb
+          unten.
+        </Hinweis>
+      )}
+
+      <Tafel
+        titel="Perimeterregeln"
+        hinweis={`${abwehr.regelnAktiv} scharf · ${formatZahl(abwehr.treffer, 0)} Treffer seit Einrichtung`}
+        fusszeile={
+          <p className="t-mikro leading-relaxed">
+            Die Anlagen sind von außen nicht erreichbar; der Steuerrechner
+            baut den Tunnel selbst auf. Diese Regeln greifen davor, am
+            Perimeter. Die Regelsprache ist bewusst eng gehalten – drei
+            Arten, ein Wert je Regel. Wer eine freie Regelsprache anbietet,
+            bekommt Regeln, die niemand mehr versteht und die im Zweifel die
+            eigene Anlage aussperren.
+          </p>
+        }
+      >
+        <Regelformular anlagen={stammAnlagen} darfVerwalten={darfVerwalten} />
+      </Tafel>
+
+      <Tafel titel="Regelwerk" hinweis="Was am Perimeter greift" dicht>
+        {regeln.length === 0 ? (
+          <div className="p-4">
+            <LeerZustand text="Es ist keine Regel hinterlegt." />
+          </div>
+        ) : (
+          <Tabelle
+            spalten={[
+              { titel: "Regel" },
+              { titel: "Gilt für", schmalAusblenden: true },
+              { titel: "Treffer", zahl: true },
+              { titel: "Zustand" },
+              { titel: "" },
+            ]}
+            mindestbreite="58rem"
+          >
+            {regeln.map((r) => (
+              <Zeile key={r.id} gedaempft={r.aktiv !== 1}>
+                <Zelle>
+                  <span className="block" style={{ color: "var(--t-stark)" }}>
+                    {r.bezeichnung}
+                  </span>
+                  <span className="t-mikro block">
+                    {regelsatz(r.art, r.wert)}
+                  </span>
+                </Zelle>
+                <Zelle leise schmalAusblenden>
+                  {r.anlage ?? "alle Anlagen"}
+                </Zelle>
+                <Zelle zahl leise>
+                  {formatZahl(r.treffer, 0)}
+                </Zelle>
+                <Zelle>
+                  <Status ton={r.aktiv === 1 ? "gut" : "neutral"}>
+                    {r.aktiv === 1 ? "scharf" : "zurückgenommen"}
+                  </Status>
+                </Zelle>
+                <Zelle>
+                  <Regelschalter
+                    regelId={r.id}
+                    aktiv={r.aktiv === 1}
+                    bezeichnung={r.bezeichnung}
+                    darfVerwalten={darfVerwalten}
+                  />
+                </Zelle>
+              </Zeile>
+            ))}
+          </Tabelle>
+        )}
+      </Tafel>
+
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+        <Tafel
+          titel="Sperrlisten"
+          hinweis="Zentral gepflegt, je Gateway verteilt"
+          fusszeile={
+            <p className="t-mikro leading-relaxed">
+              Übertragen wird die Differenz, nicht die ganze Liste: 284.000
+              Adressen über eine Mobilfunkverbindung zu schieben kostet
+              Datenvolumen, das im Störfall fehlt.
+            </p>
+          }
+        >
+          <ul className="space-y-3">
+            {sperrlisten.map((l) => (
+              <li
+                key={l.id}
+                className="rounded-lg border p-3"
+                style={{ borderColor: "var(--linie)" }}
+              >
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <span className="min-w-0">
+                    <span
+                      className="block text-[0.8125rem] font-medium"
+                      style={{ color: "var(--t-stark)" }}
+                    >
+                      {l.quelle}
+                    </span>
+                    <span className="t-mikro block">{l.bezeichnung}</span>
+                  </span>
+                  <Status ton={l.hinterher > 0 ? "hinweis" : "gut"}>
+                    {l.aktuell} von {l.geraete} Gateways
+                  </Status>
+                </div>
+
+                <p className="t-mikro mt-2 leading-relaxed">
+                  {formatZahl(l.eintraege, 0)} Adressen · letzte Übertragung
+                  plus {formatZahl(l.delta_neu, 0)}, minus{" "}
+                  {formatZahl(l.delta_entfernt, 0)}
+                  {l.aktualisiert_am
+                    ? ` · ${formatRelativ(l.aktualisiert_am)}`
+                    : ""}
+                </p>
+
+                <div className="mt-2">
+                  <Verteilungsknopf
+                    listeId={l.id}
+                    offen={l.hinterher}
+                    darfVerwalten={darfVerwalten}
+                  />
+                </div>
+              </li>
+            ))}
+          </ul>
+
+          {luecken.length > 0 && (
+            <div
+              className="mt-3 border-t pt-3"
+              style={{ borderColor: "var(--linie-zart)" }}
+            >
+              <p className="t-etikett mb-2">Nicht aktuell</p>
+              <ul className="space-y-1">
+                {luecken.map((v) => (
+                  <li key={`${v.sperrliste}-${v.geraet_id}`} className="t-mikro">
+                    {v.geraet ?? v.geraet_id}
+                    {v.anlage ? ` · ${v.anlage}` : ""} · {v.quelle}:{" "}
+                    {v.stand.toLowerCase()}
+                    {v.uebertragen_am
+                      ? `, zuletzt ${formatRelativ(v.uebertragen_am)}`
+                      : ""}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </Tafel>
+
+        <Tafel
+          titel="Herkunft der Zugriffe"
+          hinweis="Abgewehrt, letzte 14 Tage"
+          fusszeile={
+            <p className="t-mikro leading-relaxed">
+              Das Muster ist das häufigste je Land, nicht das letzte. Ein
+              einzelner ungewöhnlicher Versuch verschöbe sonst das Bild einer
+              ganzen Woche.
+            </p>
+          }
+        >
+          {herkunft.length === 0 ? (
+            <LeerZustand text="In diesem Zeitraum wurde nichts abgewehrt." />
+          ) : (
+            <div className="space-y-2.5">
+              {herkunft.slice(0, 8).map((h) => (
+                <Balken
+                  key={h.land}
+                  label={`${landesname(h.land)} · ${h.muster ?? "unbestimmt"}`}
+                  wert={h.anzahl}
+                  hoechstwert={herkunft[0]?.anzahl ?? 1}
+                  anzeige={`${formatZahl(h.anzahl, 0)} · ${h.quellen} Quellen`}
+                  farbe={ENERGIE_FARBEN.netzbezug}
+                />
+              ))}
+              <p className="t-mikro pt-1 leading-relaxed">
+                {formatZahl(abgewehrtGesamt, 0)} Zugriffe insgesamt. Keiner
+                davon hat ein Gerät erreicht – gezählt wird, was an der
+                Außenhaut hängen bleibt.
+              </p>
+            </div>
+          )}
+        </Tafel>
+      </div>
+
+'''
+
+assert anker in s
+s = s.replace(anker, abschnitt + anker, 1)
+io.open(p, "w", encoding="utf-8").write(s)
+print("Perimeterabschnitt eingefuegt")

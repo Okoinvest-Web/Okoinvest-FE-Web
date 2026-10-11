@@ -1,0 +1,562 @@
+
+
+
+
+ 
+Handlungsanweisung für die Umsetzung von 
+Energiegemeinschaften – Version II
+April 2023, Oesterreichs Energie 2/45
+ 
+Dokumentenhistorie 
+Version 
+Datum 
+Anmerkung 
+01.00 
+August 2022 
+Konsultation und Veröffentli-
+chung der Erstversion 
+02.00 
+April 2023 
+Ergänzung der Themenblöcke 
+Mehrfachteilnahme, Teilnah-
+mefaktor und netzgebietsüber-
+greifende Bürgerenergiege-
+meinschaften.
+Inhaltsverzeichnis 
+Dokumentenhistorie ............................................................................................................................ 2 
+Inhaltsverzeichnis ................................................................................................................................ 2 
+1 
+Einleitung ..................................................................................................................................... 3 
+2 
+Grundlegende Festlegungen und Klarstellungen .......................................................................... 5 
+2.1 
+Mehrfachteilnahme ................................................................................................................ 5 
+2.2 
+Teilnahmefaktor .................................................................................................................... 5 
+2.3 
+Netzgebietsübergreifende Bürgerenergiegemeinschaften ..................................................... 6 
+2.3.1 
+Umgang mit fehlenden Energiedaten bei einer Teilnahme an 
+Bürgerenergiegemeinschaft ......................................................................................................... 7 
+2.4 
+Webportal des Netzbetreibers ............................................................................................... 8 
+3 
+Vertragsbeziehungen ................................................................................................................... 9 
+4 
+Rechnungslegung ...................................................................................................................... 11 
+5 
+Marktprozesse ............................................................................................................................ 14 
+5.1 
+Anmeldung von Anlagen zu einer Energiegemeinschaft ...................................................... 16 
+5.1.1 
+Online-Prozess - EC_REQ_ONL .................................................................................. 17 
+5.1.2 
+Offline-Prozess - EC_REQ_OFF .................................................................................. 18 
+5.2 
+Anforderung auf Änderung Teilnahmefaktor – EC_PRTFACT_CHG ................................... 19 
+5.3 
+Deregistrierung von Anlagen ............................................................................................... 20 
+5.3.1 
+Aufhebung Datenfreigabe durch den Endkunden - CM_REV_CUS .............................. 20
+April 2023, Oesterreichs Energie 3/45
+ 
+5.3.2 
+Implizite Datenfreigabe-Aufhebung durch einen energiewirtschaftlichen Prozess - 
+CM_REV_IMP ............................................................................................................................ 21 
+5.3.3 
+Aufhebung durch den Dienstleister - CM_REV_SP ...................................................... 22 
+5.4 
+Anwendungsfälle ................................................................................................................. 22 
+5.5 
+Zählpunktliste – EC_PODLIST ............................................................................................ 27 
+5.6 
+Änderung des Aufteilungsanteils – EC_PRT_CHANGE ...................................................... 28 
+6 
+Teilnahmemöglichkeiten am Energiewirtschaftlichen Datenaustausch (EDA) ............................. 29 
+7 
+Gemeinschafts-ID....................................................................................................................... 30 
+7.1 
+Vergabe der Gemeinschafts-ID ........................................................................................... 30 
+7.2 
+Deregistrierung von Anlagen ............................................................................................... 31 
+8 
+Änderung einer lokalen zu einer regionale EEG oder umgekehrt ............................................... 32 
+9 
+Änderung des Verteilmodells ...................................................................................................... 33 
+10 
+Schaltungen/Netzumbauten .................................................................................................... 34 
+11 
+Definition der Rolle des Dienstleisters ..................................................................................... 35 
+12 
+Energiezuweisung .................................................................................................................. 36 
+12.1 Dynamisches Verteilmodell ................................................................................................. 36 
+12.2 Statisches Verteilmodell ...................................................................................................... 39 
+13 
+Energiedaten-Übermittlung ..................................................................................................... 43 
+13.1 Versenden von Energiedaten - CR_MSG ............................................................................ 44
+1 Einleitung 
+Die Umsetzung einer Energiegemeinschaft kann in folgende Phasen unterteilt werden:
+April 2023, Oesterreichs Energie 4/45
+
+ 
+Dieses Dokument soll als Klarstellung über den bilateralen und elektronischen Datenaustausch zwi-
+schen der Energiegemeinschaft und dem Netzbetreiber ab der Realisierungsphase (Phase 3) die-
+nen.
+Unter dem Begriff Energiegemeinschaft sind die gemeinschaftlichen Erzeugungsanlagen gemäß 
+§16a ElWOG, die Erneuerbare-Energie-Gemeinschaften gemäß §16c ElWOG und Bürgerenergiege-
+meinschaften gemäß §16b ElWOG zu verstehen. 
+Bei den Fragestellungen zu den Phasen 1 und 2 bietet die Österreichische Koordinationsstelle für 
+Energiegemeinschaften nähere Informationen und Leitfäden unter Anderem zu den Themen der 
+Gründung und Finanzierung auf ihrer Homepage www.energiegemeinschaften.gv.at an.
+
+April 2023, Oesterreichs Energie 5/45
+ 
+2 Grundlegende Festlegungen und Klarstellungen 
+2.1 Mehrfachteilnahme 
+Unter der Mehrfachteilnahme versteht man die gleichzeitige Teilnahme von einzelnen Erzeugungs- 
+und/oder Verbrauchsanlagen an mehreren Energiegemeinschaften.  
+Bei der Umsetzung der Mehrfachteilnahme kommt der verteilte Verbrauch bzw. verteilte Erzeugung 
+zur Anwendung. Dabei ist gleich zu Beginn der Teilnahme zwischen jeder Energiegemeinschaft und 
+den Teilnehmer:innen festzulegen, mit welchem Anteil des Verbrauches bzw. der Erzeugung die Teil-
+nahme erfolgen soll. Bei diesem Anteil handelt es sich um den Teilnahmefaktor, der als ein prozen-
+tualer Wert definiert wird.
+Mit dem Ansatz „verteilter Verbrauch / verteilte Erzeugung“ können ab 2024 Einzelzählpunkte an 
+bis zu 5 Energiegemeinschaften teilnehmen. Gemäß dem Erneuerbare-Ausbau-Gesetz ist die 
+Mehrfachteilnahme ab Jänner 2024 zu ermöglichen. Von Jänner bis April 2024 wird eine schrittweise 
+Umsetzung durchgeführt.
+
+ 
+2.2 Teilnahmefaktor 
+Ab 08.04.2024 kommt der Teilnahmefaktor zur Geltung und gibt an, mit welchem prozentuellen An-
+teil der Erzeugung bzw. des Verbrauches laut Messung die Teilnahme an einer Energiegemein-
+schaft erfolgt. Diese Vereinbarung ist zwischen den Teilnehmer:innen und der Energiegemeinschaft 
+bereits im Vorhinein zu treffen und dem Netzbetreiber mit dem Anmeldeprozess EC_REQ_ONL bzw. 
+EC_REQ_OFF mitzuteilen.
+Innerhalb jeder Energiegemeinschaft wird entweder das statische oder das dynamische Ver-
+teilmodell angewendet.
+April 2023, Oesterreichs Energie 6/45
+ 
+Der Teilnahmefaktor ist nicht mit dem Aufteilungsschlüssel des statischen Modells zu verwechseln. 
+Im statischen Verteilmodell wird anhand des Schlüssels angegeben, welchen prozentuellen Anteil an 
+der Erzeugung einer Verbrauchsanlage zugewiesen werden soll. 
+Für bereits aktive Teilnehmer:innen sind als Teilnahmefaktor 100 % zu hinterlegen. 
+Mit dem Prozess EC_PRTFACT_CHG kann der Teilnahmefaktor täglich durch die Energiegemein-
+schaft geändert werden. Dabei ist zu beachten, dass der Faktor 100 % nicht überschreiten darf und 
+keine Normierung durch den Netzbetreiber erfolgt.  
+Bei der Angabe des Teilnahmefaktors sind keine Nachkommastellen zulässig und muss mindes-
+tens 1 % sein.
+ 
+2.3 Netzgebietsübergreifende Bürgerenergiegemeinschaften 
+Die Energiezuweisung von netzgebietsübergreifenden Bürgerenergiegemeinschaften wird durch den 
+Verteilernetzübergreifenden Energiezuweiser (VEZ) durchgeführt.  Mit dem Markteintritt vom VEZ am 
+03.07.2023 beginnt die schrittweise Produktivsetzung der netzgebietsübergreifenden Energiezuwei-
+sung. Ab 02.10.2023 sind soll die Energiezuweisung für alle BEGs in ganz Österreich durch den VEZ 
+durchgeführt werden.
+Der VEZ dient in seiner Rolle als „Rechenmaschine“ und verwaltet weder kundenbezogene Daten, 
+noch Zählpunkte in seinem System. Die Netzbetreiber übermitteln dem VEZ die Energiemengen in 
+Form von aggregierten Zeitreihen mit Bezug auf die Gemeinschafts-ID.
+
+
+April 2023, Oesterreichs Energie 7/45
+ 
+2.3.1 Umgang mit fehlenden Energiedaten bei einer Teilnahme an Bürger-
+energiegemeinschaft
+Der VEZ dient in seiner Rolle als „Rechenmaschine“ und verwaltet weder kundenbezogene Daten, 
+noch Zählpunkte in seinem System. Die Netzbetreiber übermitteln dem VEZ die Energiemengen in 
+Form von aggregierten Zeitreihen mit Bezug auf die Gemeinschafts-ID.
+Eine große Herausforderung stellt der Umgang mit fehlenden Energiedaten, insbesondere bei netzge-
+bietesübergreifenden BEGs dar. Fehlen die Energiedaten von nur einem teilnehmenden Zählpunkt in 
+einem Netzgebiet, hat dies Auswirkungen auf sämtliche Teilnehmer:innen der BEG.
+Aus diesem Grund wurde folgende Regelung festgelegt und gilt für BEGs: 
+o Dem VEZ sind täglich alle, bis zu diesem Zeitpunkt vorhandene Energiedaten als entspre-
+chende Aggregate zu übermitteln. 
+o Fehlen Messwerte zu teilnehmenden Zählpunkten, sind diese mit 0 zu bewerten und das Ag-
+gregat für diese Zeiträume mit dem Status L3 an den VEZ zu übermitteln. 
+o Der Netzbetreiber soll innerhalb von max. 15 Kalendertagen diese L3-Werte gegen L1- oder 
+L2-Werte ersetzen. 
+o Diese Vorgehensweise gilt sowohl für Erzeugungs-, als auch für Verbrauchsanlagen.
+Der VEZ führt die Energiezuweisung entsprechend dem Verteilmodell durch, sofern folgende Be-
+dingungen erfüllt sind: 
+o sämtliche beteiligten Netzbetreiber haben die Energiedaten vollständig übermittelt. Bei den 
+Energiedaten handelt es sich um L1- bzw. L2-Werte 
+ODER: 
+o die Wartezeit von 15 Kalendertagen ist abgelaufen. In diesem Fall berücksichtigt der VEZ 
+die ihm zu diesem Zeitpunkt zur Verfügung stehenden Energiedaten für die Energiezuwei-
+sung. Netzbetreiber, die bis zu diesem Zeitpunkt noch gar keine Energiedaten übermittelt 
+haben, obwohl sich Teilnehmer:innen in ihrem Netzgebiet befinden, werden mit dem Wert 
+0 bewertet.
+April 2023, Oesterreichs Energie 8/45
+
+Eine erneute Durchführung der Energiezuweisung durch den VEZ ist ab diesem Zeitpunkt 
+nicht mehr möglich.  
+Energiedaten, die dem VEZ für Zeiträume übermittelt werden, für die bereits die Energiezuwei-
+sung durchgeführt wurde, werden mit dem dafür definierten Responsecode abgelehnt.
+Wurden bei der Energiedatenübermittlung an den VEZ Zeiträume zu Zählpunkten aufgrund feh-
+lender Messwerte mit 0 bewertet und diese nicht innerhalb der 15 Kalendertage ersetzt, hat das 
+folgende Auswirkung: 
+o Teilnehmenden Verbrauchern wir für Zeiträume mit 0-Bewertung keine Energie zugewie-
+sen. 
+o Teilnehmenden Erzeugern liefern für Zeiträume mit 0-Bewertung liefern keine Energie in 
+die BEG.
+Stehen dem Netzbetreiber bessere Messwerte zu einem Zeitpunkt nach der Durchführung der 
+Energiezuweisung durch den VEZ zur Verfügung, ist die Korrektur im eigenen Netzgebiet durch-
+zuführen und darf sich auf die Erzeugungsanteile anderer Netzbetreiber nicht auswirken.
+ 
+2.4 Webportal des Netzbetreibers 
+Das Webportal des Netzbetreibers wird insbesondere mit der Umsetzung der Mehrfachteilnahme ein 
+unverzichtbares Medium. 
+Nur der Netzbetreiber hat die entsprechenden Informationen und Daten, um den einzelnen Teilneh-
+mer:innen darzustellen, welche seiner Anlagen einer oder mehreren Energiegemeinschaften inklusive 
+dem Teilnahmefaktor zugeordnet sind.
+Die Teilnehmer:innen erhalten dadurch einen Überblick, aus welchen Energiegemeinschaften Energie 
+bezogen bzw. geliefert wird und ob das Limit für eine Mehrfachteilnahme erreicht wurde.
+April 2023, Oesterreichs Energie 9/45
+ 
+Gleichzeitig werden im Portal sämtliche Datenfreigaben zu den Anlagen, aber auch die gemessenen 
+und errechneten Energiemengen dargestellt.
+ 
+3 Vertragsbeziehungen 
+Welche Verträge sind zwischen den einzelnen Akteuren notwendig?
+
+
+ 
+Beispiel: 
+Die EEG Musterverein besteht aus dem folgenden Teilnehmer:innen-Kreis: 
+• 
+1 Erzeugungsanlage 
+• 
+2 Verbrauchsanlagen
+April 2023, Oesterreichs Energie 10/45
+ 
+Damit der Netzbetreiber die Teilnehmer:innen der EEG Musterverein zuordnen kann, müssen 
+folgende Verträge abgeschlossen werden: 
+• 
+Vertrag für den Betrieb einer Energiegemeinschaft zwischen der EEG Musterverein und dem 
+Netzbetreiber. 
+• 
+Energieabnahmevertrag zwischen dem Betreiber der Erzeugungsanlage und einem frei 
+wählbaren Energieabnehmer. 
+• 
+Netznutzungsvertrag zwischen dem Betreiber der Erzeugungsanlage und dem Netzbetreiber.  
+• 
+Energieliefervertrag für jede Verbrauchsanlage zwischen den Teilnehmer:innen und einem frei 
+wählbaren Lieferanten. 
+• 
+Netznutzungsvertrag zwischen jedem Teilnehmer und dem Netzbetreiber.
+In der Phase der Gründung der EEG Musterverein sind die innerbetrieblichen Verträge mit den 
+einzelnen Teilnehmer:innen abzuschließen, die aber nicht vom Netzbetreiber überprüft werden. 
+Für den elektronischen Datenaustausch ist für die Nutzung des EDA-Anwenderportals eine 
+Registrierung erforderlich.
+
+April 2023, Oesterreichs Energie 11/45
+
+4 Rechnungslegung
+
+Sowohl die Verrechnung der aus den Erzeugungsanlagen eingebrachten Energie und der 
+Eigendeckung an die Teilnehmer:innen, als auch die steuerrechtliche Betrachtung liegt in der 
+Verantwortung der Energiegemeinschaft.
+Der Netzbetreiber berücksichtigt bereits bei der Erstellung der Netzrechnung die reduzierten 
+Arbeitspreise für das Netznutzungsentgelt für teilnehmende Netzbenutzer einer Erneuerbaren-
+Energie-Gemeinschaft in Bezug auf jenen Verbrauch der durch zugeordnete eingespeiste Energie 
+einer Erzeugungsanlage gemäß § 16c ElWOG 2010 abgedeckt ist. 
+Auch die Elektrizitätsabgabe und Förderbeiträge werden vom Netzbetreiber abgezogen und müssen 
+somit nicht von den einzelnen Teilnehmer:innen beim Finanzamt beantragt werden.
+
+April 2023, Oesterreichs Energie 12/45
+
+
+ 
+Beispiel: 
+Die EEG Musterverein besteht aus dem folgenden Teilnehmer:innen-Kreis: 
+• 
+Max Mustermann nimmt mit seiner Erzeugungsanlage teil und hat einen Abnahmevertrag mit 
+einem Energieabnehmer. Vereinbart wurde, dass der Energieabnehmer der 
+Netzrechnungsempfänger ist.  
+• 
+Maria Musterfrau nimmt mit einer Verbrauchsanlage teil und hat einen Energieliefervertrag mit 
+einem Lieferanten. Entsprechend der vertraglichen Vereinbarung erhält Frau Musterfrau die 
+Netzrechnung direkt vom Netzbetreiber und die Energierechnung vom Lieferanten. 
+• 
+Hans Test nimmt ebenfalls mit einer Verbrauchsanlage teil und hat einen Energieliefervertrag 
+mit einem Lieferanten. Empfänger der Netzrechnung ist der Lieferant, der eine 
+Gesamtrechnung (Netz + Energie) erstellt. 
+Zusätzlich haben alle Teilnehmer:innen Verträge mit dem EEG Musterverein.
+
+April 2023, Oesterreichs Energie 13/45
+ 
+Max Mustermann erhält folgende Rechnungen: 
+1. Netz- und Energierechnung vom Energieabnehmer:  
+o Vergütung der erzeugten Menge, die nicht den Teilnehmer:innen zugewiesen wurde. 
+2. Gutschrift von der EEG: 
+o Vergütung der in die Energiegemeinschaft eingebrachten Menge.
+Maria Musterfrau erhält folgende Rechnungen: 
+1. Netzrechnung vom Netzbetreiber über die Netztarife. 
+2. Energierechnung vom Lieferanten: 
+o Verrechnung vom Restnetzbezug  
+3. Rechnung von der EEG: 
+o Verrechnung der Eigendeckung
+Hans Test erhält folgende Rechnungen: 
+1. Netz- und Energierechnung vom Lieferanten: 
+o Verrechnung vom Restnetzbezug 
+2. Rechnung von der EEG: 
+o Verrechnung der Eigendeckung
+
+April 2023, Oesterreichs Energie 14/45
+ 
+5 Marktprozesse 
+Entsprechend den Sonstigen Marktregeln Kapitel 5 setzt ein liberalisierter und voll funktionsfähiger 
+Energiemarkt die Definition und Vereinheitlichung von energiewirtschaftlichen Geschäftsprozessen 
+zur Marktkommunikation voraus. 
+Diese Prozessdefinitionen können aufgrund von Verpflichtungen zur Informationsweitergabe zwi-
+schen Marktteilnehmer:innen in Gesetzen und Verordnungen erforderlich werden oder allgemein der 
+Automatisierung des Informationsaustausches oder des Informationsabgleichs dienen.  Für einen rei-
+bungslosen Ablauf der Marktkommunikation über die EDA-Infrastruktur sind einheitliche technische 
+Dokumentationen der: 
+- 
+Geschäftsprozesse, 
+- 
+Datenformate und 
+- 
+Datenübertragung 
+erforderlich.
+Seit 04.10.2021 werden für die Abwicklung der Energiegemeinschaften aus dem Erneuerbaren-Aus-
+bau-Gesetz die bestehenden Marktprozesse für gemeinschaftliche Erzeugungsanlagen verwendet. 
+Die Aufnahme von weiteren Erzeugungszählpunkten ist in diesen Prozessen allerdings nicht vorgese-
+hen, da dies für die gemeinschaftlichen Erzeugungsanlagen nicht relevant war.
+Daraus ergibt sich folgender Ablauf für die Zuordnung einer Verbrauchsanlage zu einer Energiege-
+meinschaft bis 03. Oktober 2022: 
+1. Vertragsabschluss über den Betrieb einer Energiegemeinschaft mit dem Netzbetreiber. 
+2. Jede einzelne Teilnehmer:in schließt eine Zusatzvereinbarung zum Netzzugangsvertrag ab. 
+3. Bilaterale Abstimmung zwischen der Energiegemeinschaft und dem Netzbetreiber, ab 
+welchem Zeitpunkt der elektronische Datenaustausch gestartet werden kann. 
+a. Voraussetzung dafür ist, dass in jeder teilnehmenden Anlage ein Smart-Meter oder 
+Lastprofilzähler verbaut ist, da ansonsten der Prozess abgelehnt wird. 
+4. Die Energiegemeinschaft scannt die von den Kunden unterschriebenen Zusatzvereinbarungen 
+ein und übermittelt diese mit dem Prozess MD_VDC an den Netzbetreiber. 
+5. Der Netzbetreiber prüft und verarbeitet die empfangenen Dokumente.
+April 2023, Oesterreichs Energie 15/45
+ 
+6. Die Energiegemeinschaft gibt dem Netzbetreiber die teilnehmenden Verbrauchsanlagen mit 
+dem Prozess GC_REQ_RP bekannt. 
+7. Der Netzbetreiber verarbeitet die eingehende Anforderung und prüft, ob die Anlage entspre-
+chend den gesetzlichen Vorgaben teilnahmeberechtigt ist. 
+8. Die Energiegemeinschaft aktiviert die teilnehmenden Verbrauchsanlagen mit dem Prozess 
+GC_REQ_AP. 
+a. Voraussetzung ist, dass der Registrierungsprozess GC_REQ_RP vom Netzbetreiber 
+positiv beantwortet wurde. 
+9. Der Netzbetreiber  
+a. ordnet die Anlagen der Energiegemeinschaft zu, 
+b. führt ab diesem Zeitpunkt täglich die Energiezuweisung durch und 
+c. übermittelt täglich die Energiedaten mit dem Prozess CR_MSG an die Energiegemein-
+schaft, den Lieferanten und Energieabnehmern.
+Sollten einer Energiegemeinschaft zusätzliche Erzeugungsanlagen zugeordnet werden müssen, ist 
+dies bis 03.10.2022 mit dem Netzbetreiber bilateral abzustimmen.
+Seit 03.10.2022 werden für die Anmeldung, Deregistrierung und die Änderung des Aufteilungsschlüs-
+sels neue Prozesse herangezogen, welche auf www.ebutilities.at konsultiert und veröffentlicht wur-
+den. 
+Nachfolgend werden die ab 03.10.2022 gültigen Prozesse beschrieben. Bei diesen Prozessen 
+handelt es sich um den elektronischen Datenaustausch zwischen der Energiegemeinschaft 
+und dem Netzbetreiber über die EDA-Infrastruktur. Per 08.04.2024 kommt der Teilnahmefaktor 
+in den nachfolgenden Prozessen zur Geltung: 
+o EC_REQ_ONL – Anmeldung zu einer EG (Online-Prozess) 
+o EC_REQ_OFF – Anmeldung zu einer EG (Offline-Prozess) 
+o EC_PODLIST - Zählpunktliste 
+o EC_PRTFACT_CHG - Anforderung auf Änderung des Teilnahmefaktors
+April 2023, Oesterreichs Energie 16/45
+ 
+5.1 Anmeldung von Anlagen zu einer Energiegemeinschaft 
+Für die Anmeldung eines Zählpunkts zu einer Energiegemeinschaft ist der Prozess EC_REQ_ONL 
+mit dem Datentyp EnergyCommunityRegistration vorgesehen.
+Empfohlen wird der Online-Prozess. Dieser Prozess sieht vor, dass dem Kunden die Anforderung 
+für eine Datenfreigabe am Webportal des Netzbetreibers dargestellt wird. Der Kunde kann online der 
+Freigabe zustimmen und die Zusatzvereinbarung zum Netzzugangsvertrag abschließen. Viele Netz-
+betreiber bieten zusätzliche Services am Webportal an, wie zB die Abbildung der Energiedaten und 
+auch einen Überblick über freigegebene Daten.
+Für Ausnahmefälle steht der Offline-Prozess zur Verfügung. 
+• 
+EC_REQ_OFF – Anmeldung Teilnahme Offline 
+o Auf Wunsch des Teilnehmers generiert der Netzbetreiber einen QR-Code und übermit-
+telt ihm diesen. Der QR-Code wird vom Teilnehmer an die Energiegemeinschaft wei-
+tergeleitet, damit dieser den Offline-Prozess starten kann.
+Folgende Informationen sind in beiden Prozessen als Pflichtfelder definiert: 
+• 
+Zählpunkt 
+• 
+Gemeinschafts-ID 
+• 
+Marktpartner-ID 
+• 
+Aufteilungsschlüssel im statischen Modell 
+• 
+Energierichtung 
+• 
+Teilnahmefaktor
+Mit der Umsetzung der Mehrfachteilnahme wird ermöglicht, dass ein Erzeugungs- oder Verbrauchs-
+zählpunkt gleichzeitig an max. 5 Energiegemeinschaften teilnimmt. Die Art der Energiegemein-
+schaften sind dabei irrelevant. Der Teilnahmefaktor darf in Summe 100 % nicht überschreiten und es 
+sind keine Nachkommastellen zulässig. In den nachfolgend beschriebenen Anmeldeprozessen 
+EC_REQ_ONL und EC_REQ_OFF sind aus diesem Grund folgende Prüfungen durch den Netzbetrei-
+ber durchzuführen: 
+• 
+An wie vielen Energiegemeinschaften nimmt der Zählpunkt teil? 
+• 
+Sind laufende bzw. noch aktive Anmeldeprozesse zum Zählpunkt vorhanden?
+April 2023, Oesterreichs Energie 17/45
+ 
+• 
+Wird der Teilnahmefaktor 100 % überschritten, wenn der aktuelle Prozess fortgesetzt wird? 
+• 
+Sind laufende bzw. noch aktive Deregistrierungs- oder Teilnahmefaktor-Änderungsprozesse 
+vorhanden?
+ 
+Bei der Angabe des Teilnahmefaktors sind keine Nachkommastellen zulässig und muss mindestens 1 
+% sein.
+Fazit: 
+Das Fortsetzen eines Anmeldeprozesses wird nach dem Prinzip first come – first-served durchge-
+führt. Unmittelbar nach dem Empfang einer Nachricht führt der Netzbetreiber die oben erwähnten 
+Prüfungen durch und ermittelt dadurch zur Laufzeit, ob eine Zuordnung zur Gemeinschafts-ID mög-
+lich ist. Bei der Ermittlung der Anzahl, an wie vielen Energiegemeinschaften der Zählpunkt teilnimmt 
+und des Teilnahmefaktors sind auch alle aktiven Prozesse, inklusive jener mit einem Prozessdatum in 
+der Zukunft, zu berücksichtigen.
+5.1.1 Online-Prozess - EC_REQ_ONL 
+1. Vertragsabschluss über den Betrieb einer Energiegemeinschaft mit dem Netzbetreiber. 
+(Wichtig: Erst nach dem Vertragsabschluss kann der Onlineprozess angestoßen werden) 
+2. Die Energiegemeinschaft führt mit dem Prozess EC_REQ_ONL die Anmeldung für die teilneh-
+menden Erzeugungs- und Verbrauchsanlagen durch.  
+3. Der Netzbetreiber prüft die eingehende Anforderungsnachricht auf Vollständigkeit und Gültigkeit 
+und stellt dem Kunden die Anfrage am Webportal dar. 
+4. Der Kunde stimmt der Teilnahme an der Energiegemeinschaft am Webportal zu und schließt da-
+mit gleichzeitig die Zusatzvereinbarung zum Netzzugangsvertrag ab. Die Energiegemeinschaft 
+wird über die erfolgte Zustimmung benachrichtigt. Gleichzeitig wird in dieser Nachricht auch die 
+Information übermittelt, sollte noch kein fernauslesbarer Zähler eingebaut sein und/oder die 
+Summe der gemeldeten Aufteilungsschlüssel im statischen Modell 100 % übersteigen. 
+5. Der Netzbetreiber führt die für die Zuordnung der Anlage zur Energiegemeinschaft notwendigen 
+Folgeschritte durch:
+April 2023, Oesterreichs Energie 18/45
+ 
+o 
+Einbau Smart-Meter oder Lastprofilzähler, sofern noch nicht vorhanden.  
+Herstellung einer stabilen Kommunikation und Aktivierung der Viertelstundenauslesung. 
+Hinweis: Dieser Vorgang kann laut EAG §16e Abs. 1 bis zu 2 Monate dauern.  
+o 
+Zuordnung der Anlagen zur Energiegemeinschaft. 
+o 
+Der Netzbetreiber bestätigt der Energiegemeinschaft die Zuordnung der Anlagen und gibt das 
+Aktivierungsdatum der Energiegemeinschaft bekannt. Ab diesem Zeitpunkt wird der angemel-
+dete Zählpunkt bei der Energiezuweisung und dem EDA-Datenversand berücksichtigt.
+Die gemessenen und errechneten Energiedaten werden den Teilnehmer:innen am Webportal des 
+Netzbetreibers dargestellt.
+Für die Erteilung der Zustimmung am Webportal des Netzbetreibers hat der Kunde 30 Tage Zeit. 
+Sollte innerhalb dieser Frist keine Zustimmung erfolgen, wird der Prozess mit dem entsprechenden 
+Responsecode abgelehnt.
+5.1.2 Offline-Prozess - EC_REQ_OFF  
+ Teilnehmer:innen ohne Möglichkeit des Zugriffes zum Webportal des Netzbetreibers können sich 
+auch offline anmelden: 
+1. Vertragsabschluss über den Betrieb einer Energiegemeinschaft mit dem Netzbetreiber.  
+(Wichtig: Erst nach dem Vertragsabschluss kann der Offlineprozess angestoßen werden.) 
+2. Die Teilnehmer:innen melden sich beim Netzbetreiber und teilen ihm das Interesse an der 
+Teilnahme an dieser Energiegemeinschaft mit. 
+3. Die Teilnehmer:innen schließen die Zusatzvereinbarung zum Netzzugangsvertrag ab.  
+4. Der Netzbetreiber händigt dem Kunden ein Dokument in Papierform aus, welches für die be-
+vollmächtigte Energiegemeinschaft die Zustimmung als QR-Code (im XML-Format) beinhaltet. 
+Dieses Dokument ist 30 Tage ab Erstellungsdatum gültig. 
+5. Die Teilnehmer:innen leiten das Dokument an die Energiegemeinschaft weiter. 
+6. Die Energiegemeinschaft liest den QR-Code ein und erhält die erforderlichen Daten für die Er-
+stellung der Anforderungsnachricht. Die Energiegemeinschaft muss die Nachricht um den 
+mit den Teilnehmer:innen vereinbarten Teilnahmefaktor ergänzen.  
+7. Die Anforderungsnachricht wird an den Netzbetreiber übermittelt. 
+8. Der Netzbetreiber prüft die eingehende Anforderungsnachricht auf Vollständigkeit und Gültig-
+keit.
+April 2023, Oesterreichs Energie 19/45
+ 
+9. Der Netzbetreiber räumt dem Kunden eine Frist von 5 Tagen für einen Widerruf der Datenfrei-
+gabe ein. 
+10. Nach Ablauf der 5 Tage wird die Energiegemeinschaft über die Zustimmung informiert, sofern 
+der Teilnehmer nicht widerrufen hat. 
+11. Der Netzbetreiber führt die für die Zuordnung der Anlage zur Energiegemeinschaft notwendi-
+gen Folgeschritte durch: 
+o Einbau Smart-Meter oder Lastprofilzähler, sofern noch nicht vorhanden.  
+Herstellung einer stabilen Kommunikation und Aktivierung der Viertelstundenausle-
+sung. 
+Hinweis: Dieser Vorgang kann laut EAG §16e Abs. 1 bis zu 2 Monate dauern.  
+o Zuordnung der Anlagen zur Energiegemeinschaft. 
+o Der Netzbetreiber bestätigt der Energiegemeinschaft die Zuordnung der Anlagen und 
+gibt das Aktivierungsdatum der Energiegemeinschaft bekannt. Ab diesem Zeitpunkt 
+wird der angemeldete Zählpunkt bei der Energiezuweisung und dem EDA-Datenver-
+sand berücksichtigt. 
+Aufgrund der zusätzlich für den Widerruf einzuräumenden Fristen kommt es bei der Offline-Abwick-
+lung in jedem Fall zu einer längeren Laufzeit bis zur Zuordnung der Anlage.
+5.2 Anforderung auf Änderung Teilnahmefaktor – EC_PRTFACT_CHG 
+Mit diesem Prozess kann der Teilnahmefaktor geändert werden. Zulässig ist eine Änderung pro Tag 
+und je Energiegemeinschaft und Zählpunkt. Diese Änderung liegt in der Verantwortung der Energie-
+gemeinschaft. Für den Netzbetreiber ist keine Zustimmung des Kunden erforderlich.
+Der Teilnahmefaktor darf 100 % nicht überschreiten und wird nicht durch den Netzbetreiber normiert. 
+Nachkommastellen sind nicht zulässig.
+Im Prozess EC_PRTFACT_CHG sind folgende Prüfungen durch den Netzbetreiber unmittelbar nach 
+dem Eingang der Nachricht durchzuführen: 
+• 
+Wird der Teilnahmefaktor 100 % überschritten, wenn der aktuelle Prozess fortgesetzt wird? 
+• 
+Sind laufende bzw. noch aktive Anmeldeprozesse zum Zählpunkt vorhanden?
+April 2023, Oesterreichs Energie 20/45
+ 
+• 
+Sind laufende bzw. noch aktive Deregistrierungs- oder Teilnahmefaktor-Änderungsprozesse 
+vorhanden?
+Bei der Angabe des Teilnahmefaktors sind keine Nachkommastellen zulässig und muss mindestens 1 
+% sein. 
+Das Fortsetzen eines Änderungsprozesses wird nach dem Prinzip first-come – first-served durchge-
+führt. Unmittelbar nach dem Empfang einer Nachricht führt der Netzbetreiber die oben erwähnten 
+Prüfungen durch und ermittelt dadurch zur Laufzeit, ob eine Änderung des Teilnahmefaktors möglich 
+ist, ohne 100 % zu überschreiten. Bei der Ermittlung des Teilnahmefaktors sind auch alle aktiven De-
+registrierungs-, Anmelde- und Teilnahmefaktor-Änderungsprozesse zu berücksichtigen, inklusive je-
+ner mit einem Prozessdatum in der Zukunft.
+ 
+5.3 Deregistrierung von Anlagen 
+Mit der Deregistrierung soll die Zuordnung einer Anlage aus einer Energiegemeinschaft beendet wer-
+den. Je nach Anwendungsfall wird dieser Prozess entweder durch die Energiegemeinschaft oder dem 
+Netzbetreiber ausgelöst. 
+Eine rückwirkende Deregistrierung ist nicht zulässig.
+5.3.1 Aufhebung Datenfreigabe durch den Endkunden - CM_REV_CUS 
+Der Kunde möchte die zuvor erteilte Zustimmung widerrufen bzw. aus der Energiegemeinschaft aus-
+treten. Der Prozess CM_REV_CUS wird vom Netzbetreibers gestartet und damit die Energiegemein-
+schaft vom Ausscheiden des Zählpunktes verständigt. 
+Beim Prozessdatum handelt es sich um den letzten Tag der Zuordnung zur Energiegemeinschaft. Ab 
+dem Folgetag wird die betroffene Anlage nicht mehr bei der Energiezuweisung berücksichtigt.
+Fristen: Prozessdatum = frühestens Tagesdatum
+April 2023, Oesterreichs Energie 21/45
+ 
+5.3.2 Implizite Datenfreigabe-Aufhebung durch einen energiewirtschaftli-
+chen Prozess - CM_REV_IMP 
+Dieser Prozess wird vom Netzbetreiber angestoßen, wenn eine an einer Energiegemeinschaft teil-
+nehmende Erzeugungs- oder Verbrauchsanlage: 
+a. aufgrund des Auszuges des Teilnehmers abgemeldet wird oder 
+b. im Rahmen eines vertragslosen Zustands die Zuordnung zu einem Lieferanten bzw. Energie-
+abnehmer beendet wird und es keine Folgeverträge gibt. 
+Beim Prozessdatum handelt es sich um den letzten Tag der Zuordnung zum teilnehmenden Kunden 
+und zur Energiegemeinschaft. Ab dem Folgetag wird die betroffene Anlage nicht mehr bei der Ener-
+giezuweisung berücksichtigt. 
+Das Prozessdatum der Deregistrierung entspricht dem Prozessdatum des Abmeldeprozesses.  
+Die Energiegemeinschaft erhält keine Daten bzw. Informationen vom Netzbetreiber, ob und von wem 
+die Anlage übernommen wurde.  
+Für eine erneute Aufnahme einer deregistrierten Anlage in die Energiegemeinschaft ist der Standard-
+prozess für die Anmeldung auszuführen.
+Dieser Prozess ist auch dann zu verwenden, wenn die betroffene Anlage der Energiegemeinschaft 
+zwar noch nicht zugeordnet wurde, da zB noch kein Smart-Meter verbaut ist, der Kunde der Teil-
+nahme beim Netzbetreiber jedoch bereits zugestimmt hat. 
+Fristen: Prozessdatum der Deregistrierung = Prozessdatum vom Hauptprozess zB ABM 
+Für Anwendungsfall „Vertragsloser Zustand“ bedarf es folgender Sonderregelung: 
+Grundsätzlich gilt, dass der Marktprozesse „VZ – Vertragsloser Zustand / Beendigung des Energielie-
+fervertrages oder Netznutzungsvertrages aus anderen Gründen“ die Zuordnung der Anlage zu einem 
+Lieferanten bzw. Energieabnehmer und/oder den Netznutzungsvertrag mit dem Kunden beendet. 
+Gleichzeitig ist auch die Zuordnung der Anlage zur Energiegemeinschaft zu beenden, außer der vom 
+Kunden frei gewählte Lieferant bzw. Energieabnehmer leitet ein Anmeldeverfahren ein und übermittelt 
+dem Netzbetreiber den Prozess „Neuanmeldung (ANM)“: 
+1. noch vor Ablauf des Datums vom VZ und 
+2. mit einem Stichtag VZ-Datum plus 1 Kalendertag.
+April 2023, Oesterreichs Energie 22/45
+ 
+5.3.3 Aufhebung durch den Dienstleister - CM_REV_SP 
+Mit diesem Prozess wird dem Netzbetreiber mitgeteilt, dass am dem Prozessdatum die Zuordnung 
+einer Anlage zur Energiegemeinschaft beendet wird.
+Beim Prozessdatum handelt es sich um den letzten Tag der Zuo

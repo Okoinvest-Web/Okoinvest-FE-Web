@@ -1,0 +1,140 @@
+import pathlib
+
+ROOT = pathlib.Path(r"C:\Users\SALEADMIN\Documents\Servicetechniker APP")
+
+
+def patch(pfad, paare):
+    p = ROOT / pfad
+    s = p.read_text(encoding="utf-8")
+    for alt, neu in paare:
+        if alt not in s:
+            raise SystemExit(f"NICHT GEFUNDEN in {pfad}:\n---\n{alt[:300]}\n---")
+        s = s.replace(alt, neu, 1)
+    p.write_text(s, encoding="utf-8")
+    print("ok", pfad)
+
+
+ALT = '''@frappe.whitelist()
+def pull(seit: str | None = None, doctypes: str | list | None = None) -> dict:
+	"""Alle fuer den Benutzer sichtbaren Aenderungen seit dem letzten Sync."""
+	if isinstance(doctypes, str):
+		doctypes = json.loads(doctypes)
+	doctypes = doctypes or [*SYNCBARE_DOCTYPES, "PV Anlage", "Checklistenvorlage"]
+
+	filters = {"modified": [">", seit]} if seit else {}
+	daten = {}
+	for doctype in doctypes:
+		if doctype not in SYNCBARE_DOCTYPES | {"PV Anlage", "Checklistenvorlage"}:
+			continue
+		namen = frappe.get_all(doctype, filters=filters, pluck="name", limit_page_length=200)
+		daten[doctype] = [frappe.get_doc(doctype, n).as_dict() for n in namen]
+
+	return {"daten": daten, "server_zeit": str(now_datetime())}'''
+
+NEU = '''# Felder der Anlagenuebersicht — die Stammdaten kommen sonst nur beim Start.
+ANLAGEN_FELDER = [
+	"name", "anlage_name", "anlagen_typ", "status", "customer", "project",
+	"kwp", "kwh_speicher", "ladepunkte", "anzahl_strings", "modul_uoc", "modul_isc",
+	"adresse", "plz", "ort", "gps_lat", "gps_lng", "offene_maengel",
+	"letzte_pruefung", "naechste_wartung", "modified",
+]
+
+MAX_PULL = 200
+
+
+def _relevanzfilter(doctype: str, mitarbeiter: str | None) -> list[dict]:
+	"""Welche Dokumente gehoeren auf *dieses* Geraet?
+
+	Ein Techniker braucht offline seine eigenen Vorgaenge, nicht den Bestand der
+	ganzen Firma. Ohne diese Einschraenkung zoege der erste Sync tausende
+	Dokumente auf das Tablet und fuellte den Speicher.
+
+	Bauleiter und Projektleiter bekommen zusaetzlich, was auf ihre Freigabe
+	wartet — das ist genau ihr Arbeitsvorrat.
+	"""
+	benutzer = frappe.session.user
+	rollen = set(frappe.get_roles())
+	ist_freigeber = bool({"Baudoku Bauleiter", "Baudoku Projektleiter", "Baudoku Admin",
+	                      "System Manager"} & rollen)
+
+	bedingungen: list[dict] = [{"owner": benutzer}]
+
+	if doctype == "Pruefprotokoll":
+		if mitarbeiter:
+			bedingungen.append({"pruefer": mitarbeiter})
+		if ist_freigeber:
+			bedingungen.append({"status": "Abgeschlossen"})
+	elif doctype == "Mangel":
+		if mitarbeiter:
+			bedingungen.append({"zugewiesen_an": mitarbeiter})
+	elif doctype == "Tagesbericht":
+		if mitarbeiter:
+			bedingungen.append({"ersteller": mitarbeiter})
+		if ist_freigeber:
+			bedingungen.append({"status": "Eingereicht"})
+
+	return bedingungen
+
+
+@frappe.whitelist()
+def pull(seit: str | None = None, doctypes: str | list | None = None) -> dict:
+	"""Aenderungen seit dem letzten Sync — die Gegenrichtung zu ``push``.
+
+	Ohne diesen Weg erfaehrt das Geraet nie, dass ein Bauleiter einen Mangel
+	zugewiesen oder ein Protokoll verifiziert hat: Die lokale Fassung bliebe auf
+	dem Stand des letzten eigenen Schreibvorgangs (NFA-012).
+
+	Die Berechtigungen der Doctypes und `permission_query_conditions` greifen
+	ueber `frappe.get_all` automatisch; die Relevanzfilter schraenken zusaetzlich
+	auf den eigenen Arbeitsvorrat ein.
+	"""
+	if isinstance(doctypes, str):
+		doctypes = json.loads(doctypes)
+	doctypes = doctypes or list(SYNCBARE_DOCTYPES)
+
+	mitarbeiter = frappe.db.get_value("Employee", {"user_id": frappe.session.user}, "name")
+	zeitfilter = {"modified": [">", seit]} if seit else {}
+
+	daten: dict[str, list] = {}
+	for doctype in doctypes:
+		if doctype not in SYNCBARE_DOCTYPES:
+			continue
+
+		namen: set[str] = set()
+		for bedingung in _relevanzfilter(doctype, mitarbeiter):
+			namen.update(
+				frappe.get_all(
+					doctype,
+					filters={**zeitfilter, **bedingung},
+					pluck="name",
+					order_by="modified desc",
+					limit_page_length=MAX_PULL,
+				)
+			)
+		daten[doctype] = [frappe.get_doc(doctype, name).as_dict() for name in sorted(namen)[:MAX_PULL]]
+
+	# Anlagen als flache Liste: Sie aendern sich haeufig (Maengelzaehler,
+	# Wartungstermin) und werden sonst nur beim Anwendungsstart aktualisiert.
+	anlagen = frappe.get_all(
+		"PV Anlage", filters=zeitfilter, fields=ANLAGEN_FELDER,
+		order_by="modified desc", limit_page_length=MAX_PULL,
+	)
+
+	_pull_protokollieren(len(anlagen) + sum(len(v) for v in daten.values()), seit)
+
+	return {"daten": daten, "anlagen": anlagen, "server_zeit": str(now_datetime())}
+
+
+def _pull_protokollieren(anzahl: int, seit: str | None):
+	if not anzahl:
+		return
+	frappe.get_doc({
+		"doctype": "Baudoku Sync Log",
+		"benutzer": frappe.session.user,
+		"zeitpunkt": now_datetime(),
+		"richtung": "Pull",
+		"ergebnis": "Erfolg",
+		"meldung": f"{anzahl} Dokumente seit {seit or 'Beginn'}",
+	}).insert(ignore_permissions=True)'''
+
+patch("oekovolt_baudoku/api/sync.py", [(ALT, NEU)])

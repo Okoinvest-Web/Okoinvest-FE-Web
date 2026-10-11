@@ -1,0 +1,40 @@
+# Änderungsverlauf
+
+## 2026-09-18
+
+### Hinzugefügt
+
+- Vue-3-Frontend der App `netops` auf Vite 7 mit frappe-ui, vue-router und Pinia.
+  SPA-Route `/netops`, Assets unter `/assets/netops/frontend/`.
+- Browser-Mock der Frappe-RPCs (`src/api/mock/`), damit ohne laufende Bench
+  entwickelt werden kann. Umschaltung über `VITE_USE_MOCK`.
+- Phase-1-DocTypes als Mock-Fixtures: Tenant, Site, Manufacturer, Device Type,
+  Device Role, Rack, Network Device, Device Interface, Wall Outlet, Cable,
+  Security Zone, VRF, VLAN, IP Prefix, IP Address – englische Feldnamen,
+  ausschließlich Testdaten.
+- Serverseitige Methoden `netops.api.search.global_search`,
+  `netops.api.ipam.prefix_tree` / `prefix_list` / `prefix_addresses`,
+  `netops.api.dcim.device_list` / `device_detail` / `dashboard_counters`.
+- Oberfläche (MVP-Punkt 3): Layout mit Seitenleiste, globale Suche Strg+K,
+  Geräteliste, Gerätedetail mit Tabs, IPAM-Baum mit Auslastung, Lage-Seite.
+- Deutsche Beschriftungen zu den englischen Feldnamen in `src/labels.js`
+  (Übergangslösung bis zu den Frappe-Übersetzungsdateien).
+- Vitest-Suite mit 47 Tests als Ersatz für `bench run-tests`, solange keine
+  Bench existiert.
+
+### Behoben
+
+- `nextName()` im Mock lief endlos, wenn die Namensvergabe auf einem Feld
+  beruht (z. B. `hostname`) und der Name bereits vergeben war. Jetzt bricht
+  die Suche ab und der Aufrufer meldet `DuplicateEntryError`.
+- IPAM-Tabelle zeigte bei Container-Präfixen einen Auslastungsbalken aus den
+  Teilnetzen neben einer Adresszahl – zwei verschiedene Bezugsgrößen
+  nebeneinander. Container weisen jetzt die Zahl der Teilnetze aus.
+- Adressen eines Präfix wurden alphabetisch sortiert (`.11` vor `.2`) statt
+  numerisch.
+
+### Offen
+
+Noch nicht umgesetzt, jeweils weil das Backend fehlt: Audit-Hash-Kette,
+Konnektoren (OPNsense, Proxmox VE, PBS) und Drift-Ansicht, Backup-Ampel,
+Leitstand-Screens mit Freigabe-Ablauf, Offline-Export, Rollen und Rechte.

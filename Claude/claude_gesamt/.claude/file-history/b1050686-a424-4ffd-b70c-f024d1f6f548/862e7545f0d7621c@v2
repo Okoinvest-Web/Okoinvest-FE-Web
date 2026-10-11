@@ -1,0 +1,26 @@
+import { Stoerbild } from "@/components/stoerbild";
+
+/**
+ * Ein Gegenstand, den es nicht gibt.
+ *
+ * Der häufigste Weg hierher ist kein Tippfehler, sondern ein Lesezeichen
+ * auf eine Anlage, einen Beleg oder einen Abrechnungslauf, den jemand
+ * inzwischen storniert oder umbenannt hat. Deshalb steht hier nicht
+ * "Seite nicht gefunden", sondern der Hinweis darauf, was tatsächlich
+ * passiert sein dürfte.
+ */
+export default function NichtGefunden() {
+  return (
+    <Stoerbild
+      titel="Diesen Eintrag gibt es nicht"
+      text={
+        <>
+          Der Datensatz wurde entfernt oder umbenannt – oder die Adresse ist
+          unvollständig. Über die Suche mit <kbd className="tastenkappe">Strg</kbd>{" "}
+          <kbd className="tastenkappe">K</kbd> finden Sie Anlagen, Belege und
+          Meldungen am schnellsten wieder.
+        </>
+      }
+    />
+  );
+}

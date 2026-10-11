@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!--
+    Das Zeichen im Reiter des Browsers.
+
+    Es muss bei 16 Pixeln noch erkennbar sein. Deshalb eine volle
+    Fläche mit einem kräftigen Sonnenzeichen darauf und keine feinen
+    Strahlen: Was unter 1,5 Pixeln Strichstärke liegt, verschwindet
+    beim Verkleinern zu Grau.
+  -->
+  <rect width="32" height="32" rx="8" fill="#16833f" />
+  <circle cx="16" cy="16" r="5.4" fill="#ffffff" />
+  <g stroke="#ffffff" stroke-width="2.4" stroke-linecap="round">
+    <path d="M16 3.6v3.2M16 25.2v3.2M3.6 16h3.2M25.2 16h3.2" />
+    <path d="M7.2 7.2l2.3 2.3M22.5 22.5l2.3 2.3M7.2 24.8l2.3-2.3M22.5 9.5l2.3-2.3" />
+  </g>
+</svg>

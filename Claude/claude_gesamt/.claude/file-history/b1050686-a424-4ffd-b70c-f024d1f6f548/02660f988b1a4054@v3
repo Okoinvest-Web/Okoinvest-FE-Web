@@ -1,0 +1,266 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+
+import { IconPfeilLinks } from "@/components/icon";
+import {
+  Angabe,
+  Hinweis,
+  Kennzahl,
+  Kennzahlenleiste,
+  LeerZustand,
+  Seitenkopf,
+  Status,
+  Tafel,
+} from "@/components/ui";
+import { ladeMeldung, ladeVerlauf } from "@/lib/daten/service";
+import { formatDatumZeit, formatZahl } from "@/lib/format";
+import { slaFuer } from "@/lib/service/frist";
+import { getCurrentUser, requireRecht } from "@/lib/session";
+
+import { Bearbeitung } from "./bearbeitung";
+
+function statusTon(status: string) {
+  switch (status) {
+    case "Geschlossen":
+      return "gut" as const;
+    case "In Bearbeitung":
+      return "akzent" as const;
+    case "Warten auf Kunde":
+      return "hinweis" as const;
+    default:
+      return "ernst" as const;
+  }
+}
+
+function prioTon(prio: string) {
+  switch (prio) {
+    case "Kritisch":
+      return "kritisch" as const;
+    case "Hoch":
+      return "ernst" as const;
+    case "Mittel":
+      return "hinweis" as const;
+    default:
+      return "neutral" as const;
+  }
+}
+
+/**
+ * Eine einzelne Servicemeldung.
+ *
+ * Der Verlauf steht im Mittelpunkt, nicht die Stammdaten: Wer eine
+ * Meldung öffnet, will wissen, was zuletzt passiert ist. Interne
+ * Notizen sind als solche gekennzeichnet und nur für Bearbeiter
+ * sichtbar - ein Ticketsystem, in dem jede Notiz beim Kunden landet,
+ * wird nicht benutzt.
+ */
+export default async function MeldungsSeite({
+  params,
+}: {
+  params: Promise<{ meldung: string }>;
+}) {
+  await requireRecht("support.melden");
+  const benutzer = await getCurrentUser();
+
+  const { meldung: id } = await params;
+  const meldung = ladeMeldung(decodeURIComponent(id));
+  if (!meldung) notFound();
+
+  // Interne Notizen sieht nur, wer Meldungen auch bearbeitet.
+  const darfBearbeiten = benutzer?.rolle !== "kunde";
+  const verlauf = ladeVerlauf(meldung.id, darfBearbeiten);
+
+  const sla = slaFuer(meldung.prioritaet);
+  const offen = meldung.status !== "Geschlossen";
+
+  return (
+    <div className="space-y-5">
+      <Seitenkopf
+        titel={meldung.betreff}
+        hinweis={`${meldung.nummer ?? meldung.id} · ${meldung.anlage ?? "ohne Anlagenbezug"} · gemeldet ${formatDatumZeit(meldung.gemeldet_am)} über ${meldung.kanal}`}
+        zurueck={
+          <Link
+            href="/portal/support"
+            className="t-leise inline-flex items-center gap-1.5 hover:underline"
+          >
+            <IconPfeilLinks groesse={14} />
+            Alle Meldungen
+          </Link>
+        }
+        aktion={
+          <>
+            <Status ton={prioTon(meldung.prioritaet)}>
+              {meldung.prioritaet}
+            </Status>
+            <Status ton={statusTon(meldung.status)}>{meldung.status}</Status>
+          </>
+        }
+      />
+
+      {(meldung.reaktion_ueberschritten === 1 ||
+        meldung.loesung_ueberschritten === 1) && (
+        <Hinweis ton="ernst" titel="Frist überschritten">
+          {meldung.reaktion_ueberschritten === 1 &&
+            `Die zugesagte Reaktion binnen ${sla.reaktionStunden} Arbeitsstunden wurde nicht eingehalten. `}
+          {meldung.loesung_ueberschritten === 1 &&
+            `Die Behebungsfrist von ${sla.loesungStunden} Arbeitsstunden ist abgelaufen. `}
+          Gerechnet wird in Arbeitsstunden innerhalb der Servicezeit
+          {meldung.servicezeit === "Durchgehend"
+            ? " – dieser Vertrag läuft rund um die Uhr."
+            : " – werktags 8 bis 17 Uhr, ohne Feiertage."}
+        </Hinweis>
+      )}
+
+      <Kennzahlenleiste>
+        <Kennzahl
+          label="Reaktion"
+          wert={meldung.reaktion_am ? "erfolgt" : offen ? "ausstehend" : "–"}
+          hinweis={
+            meldung.reaktion_am
+              ? formatDatumZeit(meldung.reaktion_am)
+              : `zugesagt bis ${formatDatumZeit(meldung.reaktion_bis)}`
+          }
+          ton={meldung.reaktion_ueberschritten === 1 ? "kritisch" : undefined}
+        />
+        <Kennzahl
+          label="Behebung"
+          wert={meldung.behoben_am ? "abgeschlossen" : "offen"}
+          hinweis={
+            meldung.behoben_am
+              ? formatDatumZeit(meldung.behoben_am)
+              : `zugesagt bis ${formatDatumZeit(meldung.loesung_bis)}`
+          }
+          ton={meldung.loesung_ueberschritten === 1 ? "kritisch" : undefined}
+        />
+        <Kennzahl
+          label="Ertragsausfall"
+          wert={
+            meldung.ausfall_kwh !== null
+              ? formatZahl(meldung.ausfall_kwh, 0)
+              : "–"
+          }
+          einheit={meldung.ausfall_kwh !== null ? "kWh" : undefined}
+          hinweis="bewertet im Ticket"
+        />
+        <Kennzahl
+          label="Bearbeitung"
+          wert={meldung.techniker ?? "nicht zugewiesen"}
+          hinweis={meldung.kategorie ?? undefined}
+        />
+      </Kennzahlenleiste>
+
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[3fr_2fr]">
+        {/* ---------------- Verlauf ---------------- */}
+        <Tafel
+          titel="Verlauf"
+          hinweis={
+            darfBearbeiten
+              ? "interne Notizen sind gekennzeichnet"
+              : "alle Rückmeldungen zu dieser Meldung"
+          }
+        >
+          {meldung.beschreibung && verlauf.length === 0 && (
+            <p className="text-[0.875rem] leading-relaxed">
+              {meldung.beschreibung}
+            </p>
+          )}
+
+          {verlauf.length === 0 && !meldung.beschreibung ? (
+            <LeerZustand text="Zu dieser Meldung gibt es noch keine Einträge." />
+          ) : (
+            <ol className="space-y-3">
+              {verlauf.map((eintrag) => (
+                <li
+                  key={eintrag.id}
+                  className="rounded-sm border p-3"
+                  style={{
+                    borderColor:
+                      eintrag.intern === 1
+                        ? "var(--linie)"
+                        : "var(--linie-zart)",
+                    background:
+                      eintrag.intern === 1
+                        ? "var(--f-belegt)"
+                        : "var(--f-vertieft)",
+                  }}
+                >
+                  <div className="flex flex-wrap items-baseline justify-between gap-2">
+                    <span className="text-[0.8125rem] font-medium">
+                      {eintrag.verfasser}
+                    </span>
+                    <span className="t-mikro">
+                      {eintrag.intern === 1 && (
+                        <span className="mr-2">interne Notiz</span>
+                      )}
+                      {formatDatumZeit(eintrag.erstellt_am)}
+                    </span>
+                  </div>
+                  <p className="mt-1.5 text-[0.8125rem] leading-relaxed whitespace-pre-line">
+                    {eintrag.text}
+                  </p>
+                </li>
+              ))}
+            </ol>
+          )}
+
+          {darfBearbeiten && (
+            <div
+              className="mt-4 border-t pt-4"
+              style={{ borderColor: "var(--linie-zart)" }}
+            >
+              <Bearbeitung
+                meldungId={meldung.id}
+                status={meldung.status}
+                hatReaktion={Boolean(meldung.reaktion_am)}
+              />
+            </div>
+          )}
+        </Tafel>
+
+        {/* ---------------- Einordnung ---------------- */}
+        <Tafel titel="Einordnung">
+          <dl className="space-y-0.5">
+            <Angabe label="Nummer">{meldung.nummer ?? meldung.id}</Angabe>
+            <Angabe label="Kategorie">{meldung.kategorie ?? "–"}</Angabe>
+            <Angabe label="Eingang">{meldung.kanal}</Angabe>
+            <Angabe label="Gemeldet von">{meldung.gemeldet_von ?? "–"}</Angabe>
+            <Angabe label="Anlage">{meldung.anlage ?? "ohne Bezug"}</Angabe>
+            <Angabe label="Servicezeit">
+              {meldung.servicezeit === "Durchgehend"
+                ? "rund um die Uhr"
+                : "werktags 8 bis 17 Uhr"}
+            </Angabe>
+            <Angabe label="Reaktion zugesagt">
+              {sla.reaktionStunden} Arbeitsstunden
+            </Angabe>
+            <Angabe label="Behebung zugesagt">
+              {sla.loesungStunden} Arbeitsstunden
+            </Angabe>
+          </dl>
+
+          <p className="t-mikro mt-3 leading-relaxed">{sla.beschreibung}</p>
+
+          {meldung.anlage_id && (
+            <div
+              className="mt-3 flex flex-wrap gap-2 border-t pt-3"
+              style={{ borderColor: "var(--linie-zart)" }}
+            >
+              <Link
+                href={`/portal/anlagen/${meldung.anlage_id}`}
+                className="knopf knopf-rand"
+              >
+                Zur Anlage
+              </Link>
+              <Link
+                href={`/portal/alarme?anlage=${meldung.anlage_id}`}
+                className="knopf knopf-leise"
+              >
+                Meldungen der Überwachung
+              </Link>
+            </div>
+          )}
+        </Tafel>
+      </div>
+    </div>
+  );
+}

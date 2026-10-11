@@ -1,0 +1,45 @@
+import Link from "next/link";
+import { Suspense } from "react";
+import { db } from "@/lib/data";
+import { relative } from "@/lib/format";
+import { Avatar, Badge, Empty, PageHeader, Table } from "@/components/ui";
+import { ListToolbar } from "@/components/ListToolbar";
+
+export const metadata = { title: "Kunden" };
+
+export default async function CustomersPage({ searchParams }: PageProps<"/customers">) {
+  const sp = await searchParams;
+  const customers = await db().listCustomers({ search: typeof sp.q === "string" ? sp.q : undefined });
+
+  return (
+    <>
+      <PageHeader title="Kunden" />
+      <Suspense>
+        <ListToolbar count={customers.length} />
+      </Suspense>
+      {customers.length === 0 ? (
+        <Empty>Keine Kunden gefunden.</Empty>
+      ) : (
+        <Table head={["Name", "Typ", "Gruppe", "Gebiet", "E-Mail", "Geändert"]}>
+          {customers.map((c) => (
+            <tr key={c.name} className="hover:bg-gray-50">
+              <td className="px-5 py-2">
+                <Link href={`/customers/${encodeURIComponent(c.name)}`} className="flex items-center gap-2 font-medium text-gray-900">
+                  <Avatar name={c.customer_name} />
+                  {c.customer_name}
+                </Link>
+              </td>
+              <td className="px-5 py-2">
+                <Badge value={c.customer_type} label={c.customer_type === "Company" ? "Firma" : "Privatperson"} tone={c.customer_type === "Company" ? "blue" : "violet"} />
+              </td>
+              <td className="px-5 py-2 text-gray-700">{c.customer_group}</td>
+              <td className="px-5 py-2 text-gray-700">{c.territory}</td>
+              <td className="px-5 py-2 text-gray-700">{c.email_id ?? "–"}</td>
+              <td className="whitespace-nowrap px-5 py-2 text-gray-500">{relative(c.modified)}</td>
+            </tr>
+          ))}
+        </Table>
+      )}
+    </>
+  );
+}

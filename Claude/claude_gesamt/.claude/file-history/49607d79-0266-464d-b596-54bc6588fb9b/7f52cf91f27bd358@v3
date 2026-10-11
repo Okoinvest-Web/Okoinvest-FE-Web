@@ -1,0 +1,414 @@
+/**
+ * Serverseitige Aufbereitung der grafischen Ansichten:
+ * Frontplatte, Rack-Ansicht und Topologie.
+ *
+ * Auch die Anordnung wird hier berechnet, nicht im Frontend. Das hält die
+ * Komponenten frei von Fachlogik (CLAUDE.md Abschnitt 3) und sorgt dafür,
+ * dass dieselbe Topologie bei jedem Aufruf gleich aussieht.
+ */
+import { FrappeMockError, table } from '../db.js'
+import { PORT_LAYOUTS } from '../portlayout.js'
+
+/**
+ * Rollen, die als Wurzel der Topologie gelten. Von dort aus wird die Ebene
+ * über den Kabelgraph berechnet, nicht über die Rolle - sonst überspringen
+ * Kanten Ebenen und ihre Beschriftungen landen auf fremden Knoten.
+ */
+const WURZEL_ROLLEN = ['Firewall']
+
+/**
+ * Frontplatte eines Geräts: Portblöcke in physischer Anordnung, je Port der
+ * Zustand und was daran hängt.
+ */
+export function device_front_panel({ name } = {}) {
+  const geraet = table('Network Device').find((d) => d.name === name)
+  if (!geraet) {
+    throw new FrappeMockError('DoesNotExistError: Network Device ' + name + ' existiert nicht', 404)
+  }
+
+  const layout = PORT_LAYOUTS[geraet.device_type]
+  const vlans = new Map(table('VLAN').map((v) => [v.name, v]))
+  const kabel = table('Cable')
+  const adressen = table('IP Address')
+  const alleSchnittstellen = table('Device Interface')
+  const geraeteJeSchnittstelle = new Map(alleSchnittstellen.map((i) => [i.name, i]))
+
+  const schnittstellen = alleSchnittstellen.filter((i) => i.device === name)
+
+  const ports = schnittstellen.map((i) => {
+    const verbindung = kabel.find(
+      (c) =>
+        (c.a_endpoint_type === 'Device Interface' && c.a_endpoint === i.name) ||
+        (c.b_endpoint_type === 'Device Interface' && c.b_endpoint === i.name),
+    )
+
+    let gegenstelle = null
+    if (verbindung) {
+      const istA = verbindung.a_endpoint === i.name
+      const typ = istA ? verbindung.b_endpoint_type : verbindung.a_endpoint_type
+      const ziel = istA ? verbindung.b_endpoint : verbindung.a_endpoint
+      const zielSchnittstelle = typ === 'Device Interface' ? geraeteJeSchnittstelle.get(ziel) : null
+
+      gegenstelle = {
+        type: typ,
+        name: ziel,
+        device: zielSchnittstelle ? zielSchnittstelle.device : null,
+        interface_name: zielSchnittstelle ? zielSchnittstelle.interface_name : ziel,
+      }
+    }
+
+    const vlan = i.untagged_vlan ? vlans.get(i.untagged_vlan) : null
+    const ip = adressen
+      .filter((a) => a.assigned_object_type === 'Device Interface' && a.assigned_object === i.name)
+      .map((a) => a.address)
+
+    return {
+      name: i.name,
+      interface_name: i.interface_name,
+      interface_type: i.interface_type,
+      // 'sfp' wird als Käfig gezeichnet, 'copper' als RJ45-Buchse.
+      form_factor: i.interface_type.includes('sfp') ? 'sfp' : 'copper',
+      speed_mbps: i.speed_mbps,
+      mode: i.mode,
+      poe_enabled: i.poe_enabled,
+      enabled: i.enabled,
+      description: i.description,
+      mac_address: i.mac_address,
+      vid: vlan ? vlan.vid : null,
+      vlan: i.untagged_vlan,
+      vlan_label: vlan ? vlan.vid + ' · ' + vlan.vlan_name : null,
+      security_zone: vlan ? vlan.security_zone : null,
+      ip_addresses: ip,
+      cable: verbindung ? verbindung.label : null,
+      cable_type: verbindung ? verbindung.cable_type : null,
+      peer: gegenstelle,
+      // Genau drei Zustände – sie tragen die einzige Farbe auf der Platte.
+      port_status: !i.enabled ? 'disabled' : verbindung ? 'up' : 'free',
+      panel_block: i.panel_block,
+      panel_row: i.panel_row,
+      panel_position: i.panel_position,
+      panel_staggered: i.panel_staggered,
+    }
+  })
+
+  // Nach Portblöcken gruppieren, Reihenfolge wie auf dem Gerät.
+  const bloecke = []
+  for (const port of [...ports].sort(
+    (a, b) =>
+      (a.panel_row ?? 99) - (b.panel_row ?? 99) ||
+      (a.panel_position ?? 0) - (b.panel_position ?? 0),
+  )) {
+    let block = bloecke.find((b) => b.row === port.panel_row)
+    if (!block) {
+      block = {
+        row: port.panel_row ?? 0,
+        block: port.panel_block || 'Ports',
+        staggered: !!port.panel_staggered,
+        ports: [],
+      }
+      bloecke.push(block)
+    }
+    block.ports.push(port)
+  }
+
+  return {
+    device: geraet.name,
+    hostname: geraet.hostname,
+    device_type: geraet.device_type,
+    device_role: geraet.device_role,
+    has_layout: !!layout,
+    blocks: bloecke,
+    summary: {
+      total: ports.length,
+      up: ports.filter((p) => p.port_status === 'up').length,
+      free: ports.filter((p) => p.port_status === 'free').length,
+      disabled: ports.filter((p) => p.port_status === 'disabled').length,
+      poe: ports.filter((p) => p.poe_enabled).length,
+    },
+    // Welche VLANs auf dieser Platte vorkommen - Grundlage der VLAN-Hervorhebung.
+    vlans: [...new Set(ports.map((p) => p.vlan).filter(Boolean))]
+      .map((v) => {
+        const vlan = vlans.get(v)
+        const anzahl = ports.filter((p) => p.vlan === v).length
+        return {
+          name: v,
+          vid: vlan.vid,
+          vlan_name: vlan.vlan_name,
+          security_zone: vlan.security_zone,
+          port_count: anzahl,
+        }
+      })
+      .sort((a, b) => a.vid - b.vid),
+  }
+}
+
+/** Rack-Ansicht: belegte und freie Höheneinheiten, von oben nach unten. */
+export function rack_elevation({ name } = {}) {
+  const rack = table('Rack').find((r) => r.name === name)
+  if (!rack) {
+    throw new FrappeMockError('DoesNotExistError: Rack ' + name + ' existiert nicht', 404)
+  }
+
+  const typen = new Map(table('Device Type').map((t) => [t.name, t]))
+  const geraete = table('Network Device')
+    .filter((d) => d.rack === name)
+    .map((d) => {
+      const typ = typen.get(d.device_type)
+      return {
+        name: d.name,
+        hostname: d.hostname,
+        device_role: d.device_role,
+        device_type: d.device_type,
+        model: typ ? typ.model : d.device_type,
+        position_u: d.position_u,
+        height_u: typ?.height_u || 1,
+        rack_face: d.rack_face || 'front',
+        lifecycle_status: d.lifecycle_status,
+        management_ip: d.management_ip,
+      }
+    })
+    .sort((a, b) => b.position_u - a.position_u)
+
+  const belegt = new Set()
+  for (const g of geraete) {
+    for (let he = g.position_u; he < g.position_u + g.height_u; he++) belegt.add(he)
+  }
+
+  const genutzt = belegt.size
+  return {
+    rack: rack.name,
+    rack_name: rack.rack_name,
+    site: rack.site,
+    height_u: rack.height_u,
+    devices: geraete,
+    used_u: genutzt,
+    free_u: rack.height_u - genutzt,
+    utilization: Math.round((genutzt / rack.height_u) * 1000) / 10,
+  }
+}
+
+/** Alle Racks eines Standorts, jeweils als vollständige Ansicht. */
+export function rack_list({ site = null } = {}) {
+  return table('Rack')
+    .filter((r) => !site || r.site === site)
+    .map((r) => rack_elevation({ name: r.name }))
+    .sort((a, b) => a.rack_name.localeCompare(b.rack_name))
+}
+
+/**
+ * Physische Topologie aus der Verkabelung.
+ *
+ * Die Anordnung wird hier bestimmt: Ebene aus der Geräterolle, Position
+ * innerhalb der Ebene alphabetisch. Damit sieht der Graph bei jedem Aufruf
+ * gleich aus - wichtig, wenn zwei Leute über denselben Plan sprechen.
+ */
+export function topology({ site = null, tenant = null } = {}) {
+  const schnittstellen = new Map(table('Device Interface').map((i) => [i.name, i]))
+  const standorte = new Map(table('Site').map((s) => [s.name, s]))
+
+  let geraete = table('Network Device')
+  if (site) geraete = geraete.filter((d) => d.site === site)
+  if (tenant) geraete = geraete.filter((d) => d.tenant === tenant)
+  const geraeteNamen = new Set(geraete.map((d) => d.name))
+
+  const kabel = table('Cable').filter((c) => {
+    const enden = [
+      [c.a_endpoint_type, c.a_endpoint],
+      [c.b_endpoint_type, c.b_endpoint],
+    ]
+    return enden.some(([typ, ende]) => {
+      if (typ !== 'Device Interface') return false
+      const schnittstelle = schnittstellen.get(ende)
+      return schnittstelle && geraeteNamen.has(schnittstelle.device)
+    })
+  })
+
+  // Dosen kommen nur in den Plan, wenn ein Kabel dort endet.
+  const dosenNamen = new Set()
+  for (const c of kabel) {
+    if (c.a_endpoint_type === 'Wall Outlet') dosenNamen.add(c.a_endpoint)
+    if (c.b_endpoint_type === 'Wall Outlet') dosenNamen.add(c.b_endpoint)
+  }
+  const dosen = table('Wall Outlet').filter((d) => dosenNamen.has(d.name))
+
+  const knoten = [
+    ...geraete.map((d) => ({
+      id: d.name,
+      kind: 'device',
+      label: d.hostname,
+      device_role: d.device_role,
+      sublabel: d.management_ip || d.device_type,
+      site: d.site,
+      site_name: standorte.get(d.site)?.site_name || d.site,
+      lifecycle_status: d.lifecycle_status,
+      tenant: d.tenant,
+      layer: 0,
+    })),
+    ...dosen.map((d) => ({
+      id: d.name,
+      kind: 'outlet',
+      label: d.outlet_label,
+      device_role: 'Dose',
+      sublabel: d.room,
+      site: d.site,
+      site_name: standorte.get(d.site)?.site_name || d.site,
+      tenant: d.tenant,
+      layer: 0,
+    })),
+  ]
+
+  const kanten = kabel.map((c) => {
+    const seite = (typ, ende) => {
+      if (typ === 'Device Interface') {
+        const schnittstelle = schnittstellen.get(ende)
+        return {
+          node: schnittstelle ? schnittstelle.device : ende,
+          port: schnittstelle ? schnittstelle.interface_name : '',
+        }
+      }
+      return { node: ende, port: '' }
+    }
+    const a = seite(c.a_endpoint_type, c.a_endpoint)
+    const b = seite(c.b_endpoint_type, c.b_endpoint)
+
+    return {
+      id: c.name,
+      source: a.node,
+      target: b.node,
+      source_port: a.port,
+      target_port: b.port,
+      label: c.label,
+      cable_type: c.cable_type,
+      // 10G-Strecken werden kräftiger gezeichnet.
+      speed_mbps: hoechsteGeschwindigkeit(c, schnittstellen),
+    }
+  })
+
+  const vorhandene = new Set(knoten.map((k) => k.id))
+  const gueltigeKanten = kanten.filter((k) => vorhandene.has(k.source) && vorhandene.has(k.target))
+
+  setzeEbenen(knoten, gueltigeKanten)
+  const ebenen = ordneAn(knoten, gueltigeKanten)
+
+  return {
+    nodes: knoten.sort((a, b) => a.layer - b.layer || a.position.x - b.position.x),
+    edges: gueltigeKanten,
+    layers: ebenen,
+  }
+}
+
+/**
+ * Ebene = Abstand vom Perimeter im Kabelgraph (Breitensuche).
+ *
+ * Damit liegt jedes Gerät genau eine Ebene unter dem, woran es hängt, und
+ * eine Kante überspringt keine Ebene mehr. Nicht verkabelte Geräte landen
+ * gesammelt unter der tiefsten Ebene - dass sie dort stehen, ist die
+ * ehrliche Aussage "keine Verkabelung dokumentiert".
+ */
+function setzeEbenen(knoten, kanten) {
+  const nachbarn = new Map(knoten.map((k) => [k.id, []]))
+  for (const kante of kanten) {
+    nachbarn.get(kante.source).push(kante.target)
+    nachbarn.get(kante.target).push(kante.source)
+  }
+
+  const tiefe = new Map()
+  let warteschlange = knoten.filter((k) => WURZEL_ROLLEN.includes(k.device_role)).map((k) => k.id)
+
+  // Ohne Firewall im Ausschnitt: das am besten verkabelte Gerät ist die Wurzel.
+  if (!warteschlange.length) {
+    const beste = [...knoten].sort(
+      (a, b) =>
+        nachbarn.get(b.id).length - nachbarn.get(a.id).length || a.label.localeCompare(b.label),
+    )[0]
+    warteschlange = beste ? [beste.id] : []
+  }
+
+  warteschlange.forEach((id) => tiefe.set(id, 0))
+
+  while (warteschlange.length) {
+    const naechste = []
+    for (const id of warteschlange) {
+      for (const nachbar of nachbarn.get(id)) {
+        if (tiefe.has(nachbar)) continue
+        tiefe.set(nachbar, tiefe.get(id) + 1)
+        naechste.push(nachbar)
+      }
+    }
+    warteschlange = naechste
+  }
+
+  const tiefste = Math.max(-1, ...tiefe.values())
+  for (const k of knoten) {
+    k.layer = tiefe.has(k.id) ? tiefe.get(k.id) : tiefste + 1
+    k.connected = tiefe.has(k.id)
+  }
+}
+
+/**
+ * Anordnung nach dem Schwerpunktverfahren (Sugiyama): Ein Knoten rückt dorthin,
+ * wo seine bereits platzierten Nachbarn stehen. Das verkürzt die Kanten und
+ * verhindert, dass Beschriftungen quer über fremde Knoten laufen.
+ *
+ * Setzt `position` auf jedem Knoten und liefert die Ebenennummern zurück.
+ */
+function ordneAn(knoten, kanten) {
+  const ABSTAND_X = 230
+  const ABSTAND_Y = 150
+
+  const nachbarn = new Map(knoten.map((k) => [k.id, []]))
+  for (const kante of kanten) {
+    nachbarn.get(kante.source).push(kante.target)
+    nachbarn.get(kante.target).push(kante.source)
+  }
+
+  const jeEbene = new Map()
+  for (const k of knoten) {
+    const reihe = jeEbene.get(k.layer) || []
+    reihe.push(k)
+    jeEbene.set(k.layer, reihe)
+  }
+
+  const ebenen = [...jeEbene.keys()].sort((a, b) => a - b)
+  const spalte = new Map()
+
+  for (const ebene of ebenen) {
+    const reihe = jeEbene.get(ebene)
+
+    const schwerpunkt = (k) => {
+      const platziert = nachbarn
+        .get(k.id)
+        .map((id) => spalte.get(id))
+        .filter((s) => s !== undefined)
+      if (!platziert.length) return Number.POSITIVE_INFINITY
+      return platziert.reduce((summe, s) => summe + s, 0) / platziert.length
+    }
+
+    // Ohne platzierte Nachbarn bleibt die alphabetische Reihenfolge - so ist
+    // das Ergebnis auch bei völlig unverkabelten Geräten reproduzierbar.
+    reihe.sort((a, b) => schwerpunkt(a) - schwerpunkt(b) || a.label.localeCompare(b.label))
+    reihe.forEach((k, i) => spalte.set(k.id, i))
+  }
+
+  const breiteste = Math.max(...ebenen.map((e) => jeEbene.get(e).length), 1)
+  for (const ebene of ebenen) {
+    const reihe = jeEbene.get(ebene)
+    const versatz = ((breiteste - reihe.length) * ABSTAND_X) / 2
+    reihe.forEach((k, i) => {
+      k.position = { x: versatz + i * ABSTAND_X, y: ebene * ABSTAND_Y }
+    })
+  }
+
+  return ebenen
+}
+
+function hoechsteGeschwindigkeit(kabel, schnittstellen) {
+  const werte = [
+    [kabel.a_endpoint_type, kabel.a_endpoint],
+    [kabel.b_endpoint_type, kabel.b_endpoint],
+  ]
+    .filter(([typ]) => typ === 'Device Interface')
+    .map(([, ende]) => schnittstellen.get(ende)?.speed_mbps || 0)
+
+  return werte.length ? Math.max(...werte) : 0
+}

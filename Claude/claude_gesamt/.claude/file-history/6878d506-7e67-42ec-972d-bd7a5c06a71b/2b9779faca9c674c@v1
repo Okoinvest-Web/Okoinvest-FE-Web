@@ -1,0 +1,108 @@
+"use client";
+
+import { useActionState, useOptimistic, useTransition } from "react";
+import { createLeadAction, setLeadStatusAction, toggleToDoAction, type FormState } from "@/lib/actions";
+import { LEAD_STATUSES } from "@/lib/types";
+import { LEAD_STATUS_LABEL } from "@/lib/format";
+import { BTN, INPUT } from "@/components/ui";
+
+export function LeadStatusSelect({ name, status }: { name: string; status: string }) {
+  const [pending, start] = useTransition();
+  const [value, setValue] = useOptimistic(status);
+
+  return (
+    <select
+      value={value}
+      disabled={pending}
+      onChange={(e) => {
+        const next = e.target.value;
+        start(async () => {
+          setValue(next);
+          await setLeadStatusAction(name, next);
+        });
+      }}
+      className={`${INPUT} w-auto pr-7 font-medium disabled:opacity-60`}
+    >
+      {LEAD_STATUSES.map((s) => (
+        <option key={s} value={s}>
+          {LEAD_STATUS_LABEL[s]}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+export function ToDoCheck({ name, done }: { name: string; done: boolean }) {
+  const [, start] = useTransition();
+  const [checked, setChecked] = useOptimistic(done);
+  return (
+    <input
+      type="checkbox"
+      checked={checked}
+      onChange={(e) => {
+        const next = e.target.checked;
+        start(async () => {
+          setChecked(next);
+          await toggleToDoAction(name, next);
+        });
+      }}
+      className="size-4 cursor-pointer rounded accent-brand-600"
+      aria-label="Erledigt"
+    />
+  );
+}
+
+const input = INPUT;
+
+export function NewLeadForm() {
+  const [state, action, pending] = useActionState<FormState, FormData>(createLeadAction, {});
+  return (
+    <form action={action} className="grid max-w-3xl grid-cols-2 gap-5 rounded-xl border border-gray-200/80 bg-white p-6 shadow-card">
+      <label className="flex flex-col gap-1.5">
+        <span className="text-[13px] font-medium text-gray-700">Vorname *</span>
+        <input name="first_name" required className={input} />
+      </label>
+      <label className="flex flex-col gap-1.5">
+        <span className="text-[13px] font-medium text-gray-700">Nachname</span>
+        <input name="last_name" className={input} />
+      </label>
+      <label className="col-span-2 flex flex-col gap-1.5">
+        <span className="text-[13px] font-medium text-gray-700">Firma</span>
+        <input name="company_name" className={input} />
+      </label>
+      <label className="flex flex-col gap-1.5">
+        <span className="text-[13px] font-medium text-gray-700">E-Mail</span>
+        <input name="email_id" type="email" className={input} />
+      </label>
+      <label className="flex flex-col gap-1.5">
+        <span className="text-[13px] font-medium text-gray-700">Mobil</span>
+        <input name="mobile_no" className={input} />
+      </label>
+      <label className="flex flex-col gap-1.5">
+        <span className="text-[13px] font-medium text-gray-700">Quelle</span>
+        <select name="source" className={input} defaultValue="">
+          <option value="">–</option>
+          {["Website", "Empfehlung", "Messe", "Kaltakquise", "LinkedIn"].map((s) => (
+            <option key={s}>{s}</option>
+          ))}
+        </select>
+      </label>
+      <label className="flex flex-col gap-1.5">
+        <span className="text-[13px] font-medium text-gray-700">Status</span>
+        <select name="status" className={input} defaultValue="Lead">
+          {LEAD_STATUSES.map((s) => (
+            <option key={s} value={s}>
+              {LEAD_STATUS_LABEL[s]}
+            </option>
+          ))}
+        </select>
+      </label>
+      {state.error && <p className="col-span-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{state.error}</p>}
+      <div className="col-span-2 border-t border-gray-100 pt-5">
+        <button disabled={pending} className={BTN.primary}>
+          {pending ? "Speichern…" : "Lead anlegen"}
+        </button>
+      </div>
+    </form>
+  );
+}

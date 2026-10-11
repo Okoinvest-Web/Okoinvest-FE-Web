@@ -1,0 +1,171 @@
+"use client";
+
+import { useActionState, useState } from "react";
+
+import { Meldung } from "@/components/ui";
+
+import {
+  entzieheZugriff,
+  gibZugriffFrei,
+  hebeSperreAuf,
+  type NetzErgebnis,
+} from "./aktionen";
+
+/**
+ * Freigabe einer Fernwartungssitzung.
+ *
+ * Die Dauer wird bewusst bei jeder Freigabe neu gewählt und nicht
+ * voreingestellt gespeichert. Wer sie einmal auf vier Stunden setzt
+ * und nie wieder anfasst, hat faktisch einen Dauerzugang.
+ */
+export function Zugriffsfreigabe({
+  sitzungId,
+  status,
+  darfFreigeben,
+}: {
+  sitzungId: string;
+  status: string;
+  darfFreigeben: boolean;
+}) {
+  const [frei, freiAktion, freiLaeuft] = useActionState<
+    NetzErgebnis | null,
+    FormData
+  >(gibZugriffFrei, null);
+
+  const [entzogen, entziehAktion, entziehLaeuft] = useActionState<
+    NetzErgebnis | null,
+    FormData
+  >(entzieheZugriff, null);
+
+  const [stunden, setStunden] = useState("1");
+
+  const rueckmeldung = frei ?? entzogen;
+
+  if (!darfFreigeben) {
+    return <p className="t-mikro">Freigabe nur durch berechtigte Personen.</p>;
+  }
+
+  if (status === "Beendet" || status === "Abgelehnt" || status === "Abgelaufen") {
+    return <p className="t-mikro">Abgeschlossen.</p>;
+  }
+
+  return (
+    <div className="space-y-2">
+      {status === "Angefragt" && (
+        <form action={freiAktion} className="flex flex-wrap items-center gap-2">
+          <input type="hidden" name="sitzung" value={sitzungId} />
+          <label className="sr-only" htmlFor={`d-${sitzungId}`}>
+            Dauer der Freigabe
+          </label>
+          <select
+            id={`d-${sitzungId}`}
+            name="stunden"
+            value={stunden}
+            onChange={(e) => setStunden(e.target.value)}
+            className="feld feld-schmal"
+            style={{ width: "5.5rem" }}
+          >
+            <option value="1">1 Stunde</option>
+            <option value="2">2 Stunden</option>
+            <option value="4">4 Stunden</option>
+          </select>
+          <button
+            type="submit"
+            disabled={freiLaeuft}
+            className="knopf knopf-voll"
+          >
+            {freiLaeuft ? "Wird freigegeben …" : "Freigeben"}
+          </button>
+        </form>
+      )}
+
+      <form action={entziehAktion}>
+        <input type="hidden" name="sitzung" value={sitzungId} />
+        <button
+          type="submit"
+          disabled={entziehLaeuft}
+          className="knopf knopf-warnung"
+        >
+          {entziehLaeuft
+            ? "Wird beendet …"
+            : status === "Angefragt"
+              ? "Ablehnen"
+              : "Zugang sofort entziehen"}
+        </button>
+      </form>
+
+      {rueckmeldung && (
+        <Meldung ton={rueckmeldung.ok ? "gut" : "kritisch"}>
+          {rueckmeldung.meldung}
+        </Meldung>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Aufhebung einer Anlagensperre.
+ *
+ * Verlangt eine Begründung im Klartext. Das ist keine Schikane: Wer
+ * später prüft, warum eine Anlage trotz abweichendem Schutzparameter
+ * wieder ans Netz ging, findet hier die Antwort - oder eben nicht,
+ * und dann war es ein Fehler.
+ */
+export function Sperraufhebung({
+  anlageId,
+  anlage,
+  darfVerwalten,
+}: {
+  anlageId: string;
+  anlage: string;
+  darfVerwalten: boolean;
+}) {
+  const [ergebnis, aktion, laeuft] = useActionState<
+    NetzErgebnis | null,
+    FormData
+  >(hebeSperreAuf, null);
+
+  if (!darfVerwalten) {
+    return (
+      <p className="t-mikro">
+        Die Aufhebung einer Sperre ist der Sicherheitsverwaltung vorbehalten.
+      </p>
+    );
+  }
+
+  if (ergebnis?.ok) {
+    return <Meldung ton="gut">{ergebnis.meldung}</Meldung>;
+  }
+
+  return (
+    <form action={aktion} className="space-y-2.5">
+      <input type="hidden" name="anlage" value={anlageId} />
+
+      <label htmlFor={`b-${anlageId}`} className="t-etikett block">
+        Was wurde geprüft?
+      </label>
+      <textarea
+        id={`b-${anlageId}`}
+        name="begruendung"
+        rows={2}
+        required
+        minLength={10}
+        placeholder={`Etwa: Wert an ${anlage} am Gerät geprüft, Begrenzung steht wieder auf 70 Prozent. Ursache war ein Firmwareupdate.`}
+        className="feld"
+      />
+
+      <div className="flex flex-wrap items-center gap-2">
+        <button type="submit" disabled={laeuft} className="knopf knopf-voll">
+          {laeuft ? "Wird aufgehoben …" : "Sperre aufheben"}
+        </button>
+        <span className="t-mikro">
+          Der nächste Abgleich prüft erneut.
+        </span>
+      </div>
+
+      {ergebnis && !ergebnis.ok && (
+        <Meldung ton="kritisch">{ergebnis.meldung}</Meldung>
+      )}
+    </form>
+  );
+}

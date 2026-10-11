@@ -1,0 +1,794 @@
+/**
+ * Fahrplanoptimierung für Industriespeicher.
+ *
+ * Aufgabe: Für jede Viertelstunde des Folgetags entscheiden, ob der
+ * Speicher lädt, entlädt oder ruht - so, dass in Summe der größte
+ * wirtschaftliche Nutzen entsteht.
+ *
+ * Die Ziele widersprechen einander. Wer den Speicher mittags für den
+ * Abendhandel vollädt, hat ihn nicht mehr, wenn um 14 Uhr die
+ * Lastspitze der Produktion kommt - und eine einzige überschrittene
+ * Viertelstunde bestimmt den Leistungspreis für zwölf Monate. Deshalb
+ * wird nicht ein Gesamtoptimum gesucht, sondern eine feste Rangfolge
+ * abgearbeitet:
+ *
+ *   0. Netzschutz          - harte Grenzen, keine Stufe, sondern
+ *                            Nebenbedingung jeder einzelnen Bewegung
+ *   1. Lastspitzenkappung  - schützt den Leistungspreis
+ *   2. Eigenverbrauch      - vermeidet Netzbezug zum vollen Arbeitspreis
+ *   3. Börsenhandel        - nutzt, was danach an Kapazität übrig ist
+ *
+ * Der Netzschutz steht bewusst nicht als Stufe in der Liste. Eine
+ * Stufe kann leer ausgehen, wenn vor ihr nichts übrig blieb - eine
+ * Anschlussgrenze darf das nie. Sie wird deshalb in jeder Bewegung
+ * geprüft, nicht einmal am Anfang.
+ *
+ * Jede Stufe belegt Leistung und Kapazität, die der nächsten nicht mehr
+ * zur Verfügung steht. Das ist bewusst nicht dasselbe wie eine
+ * gemeinsame Optimierung über alle drei Ziele: Es ist nachvollziehbar,
+ * und im Streitfall lässt sich für jede Viertelstunde sagen, welche
+ * Regel sie belegt hat. Ein gemischt-ganzzahliges Modell, das eine um
+ * drei Euro bessere Lösung findet, aber niemand nachrechnen kann, wird
+ * im Betrieb nicht eingeschaltet.
+ *
+ * Keine Datenbank, keine Seitenwirkungen - die Funktion ist mit
+ * denselben Eingaben immer gleich.
+ */
+
+/** Länge einer Viertelstunde in Stunden. */
+const INTERVALL_H = 0.25;
+
+export interface Marktintervall {
+  /** Beginn der Viertelstunde. */
+  zeitpunkt: Date;
+  /** Day-Ahead-Preis der EPEX Spot AT, Euro je MWh. Darf negativ sein. */
+  preisEurMwh: number;
+  /** Prognostizierte Erzeugung in diesem Intervall, kWh. */
+  erzeugungKwh: number;
+  /** Prognostizierter Verbrauch in diesem Intervall, kWh. */
+  verbrauchKwh: number;
+}
+
+export interface Speicher {
+  kapazitaetKwh: number;
+  ladeleistungKw: number;
+  entladeleistungKw: number;
+  /** Wirkungsgrad je Richtung, 0 bis 1. Der Umlauf ist das Produkt. */
+  wirkungsgradLaden: number;
+  wirkungsgradEntladen: number;
+  /**
+   * Anteil der Kapazität, der für den Notstromfall reserviert bleibt.
+   * Unter diesen Ladestand fährt keine Strategie.
+   */
+  notstromReserve: number;
+  /** Ladestand zu Beginn des Fahrplans, kWh. */
+  startLadestandKwh: number;
+  /**
+   * Für Regelleistung vorgehaltene Leistung, kW.
+   *
+   * Wer Primär- oder Sekundärregelleistung anbietet, muss sie
+   * jederzeit abrufen können. Diese Leistung steht dem Handel nicht
+   * zur Verfügung - und zwar in beide Richtungen, weil ein Abruf
+   * sowohl Einspeisung als auch Bezug verlangen kann.
+   *
+   * Ohne diesen Abzug verplant der Fahrplan dieselbe Leistung
+   * zweimal: einmal am Spotmarkt und einmal als Reserve. Auffallen
+   * würde das erst beim Abruf - also genau dann, wenn eine
+   * Pönale fällig wird.
+   */
+  vorhaltungKw?: number;
+  /**
+   * Kosten der Alterung je umgesetzter Kilowattstunde, Euro.
+   *
+   * Ohne diesen Posten handelt der Speicher jede Preisdifferenz über
+   * null mit - und verbraucht Zyklen, die mehr kosten als der Gewinn.
+   */
+  zykluskostenEurKwh: number;
+}
+
+export interface Netzanschluss {
+  /** Vereinbarte Anschlussleistung für den Bezug, kW. */
+  bezugsgrenzeKw: number;
+  /**
+   * Zielwert für die Lastspitzenkappung, kW.
+   *
+   * Üblicherweise unter der Anschlussleistung: Der Leistungspreis
+   * richtet sich nach der höchsten gemessenen Viertelstunde des
+   * Abrechnungszeitraums, nicht nach der vereinbarten Grenze.
+   */
+  spitzenzielKw: number;
+  /** Höchste zulässige Einspeiseleistung, kW. */
+  einspeisegrenzeKw: number;
+  /** Arbeitspreis für Netzbezug, Cent je kWh. */
+  arbeitspreisBezugCtKwh: number;
+  /** Vergütung für Einspeisung, Cent je kWh. */
+  einspeiseverguetungCtKwh: number;
+  /** Leistungspreis, Euro je kW und Monat. */
+  leistungspreisEurKwMonat: number;
+}
+
+/** Was in einem Intervall mit dem Speicher geschieht. */
+export type Belegung =
+  | "ruht"
+  | "spitzenkappung"
+  | "eigenverbrauch"
+  | "handel";
+
+export interface Fahrplanschritt {
+  zeitpunkt: Date;
+  preisEurMwh: number;
+  erzeugungKwh: number;
+  verbrauchKwh: number;
+  /**
+   * Residuallast vor Speichereinsatz, kWh.
+   * Positiv: Bezug nötig. Negativ: Überschuss.
+   */
+  residuallastKwh: number;
+  /** Ins Netz eingespeiste Energie nach Speichereinsatz, kWh. */
+  einspeisungKwh: number;
+  /** Aus dem Netz bezogene Energie nach Speichereinsatz, kWh. */
+  netzbezugKwh: number;
+  /** Geladene Energie, gemessen am Speichereingang, kWh. */
+  ladenKwh: number;
+  /** Entladene Energie, gemessen am Speicherausgang, kWh. */
+  entladenKwh: number;
+  /** Ladestand am Ende des Intervalls, kWh. */
+  ladestandKwh: number;
+  belegung: Belegung;
+  /** Wirtschaftliches Ergebnis dieses Intervalls, Euro. */
+  ergebnisEur: number;
+}
+
+export interface Fahrplanbilanz {
+  /** Eingesparter Netzbezug durch Eigenverbrauch, Euro. */
+  eigenverbrauchEur: number;
+  /** Erlös aus dem Börsenhandel abzüglich Einkauf, Euro. */
+  handelEur: number;
+  /** Vermiedener Leistungspreis durch Kappung, Euro. */
+  spitzenkappungEur: number;
+  /** Kosten der Batteriealterung, Euro (negativ). */
+  zykluskostenEur: number;
+  /** Summe aller Posten, Euro. */
+  gesamtEur: number;
+  /** Höchste Bezugsleistung ohne Speicher, kW. */
+  spitzeOhneSpeicherKw: number;
+  /** Höchste Bezugsleistung mit Speicher, kW. */
+  spitzeMitSpeicherKw: number;
+  /** Umgesetzte Energie, kWh am Speicherausgang. */
+  durchsatzKwh: number;
+  /** Vollzyklen, bezogen auf die Nennkapazität. */
+  vollzyklen: number;
+}
+
+export interface Fahrplan {
+  schritte: Fahrplanschritt[];
+  bilanz: Fahrplanbilanz;
+}
+
+/** Auf Cent gerundet. */
+function eur(betrag: number): number {
+  return Math.round(betrag * 100) / 100;
+}
+
+/** Auf Wattstunden gerundet - feiner ist bei kWh nicht sinnvoll. */
+function kwh(menge: number): number {
+  return Math.round(menge * 1000) / 1000;
+}
+
+interface Arbeitsschritt extends Fahrplanschritt {
+  /** Noch verfügbare Ladeleistung in diesem Intervall, kWh. */
+  restLadenKwh: number;
+  /** Noch verfügbare Entladeleistung in diesem Intervall, kWh. */
+  restEntladenKwh: number;
+}
+
+/**
+ * Erstellt den Fahrplan.
+ *
+ * Der Ladestand wird nach jeder Stufe vollständig neu durchgerechnet,
+ * nicht fortgeschrieben. Das ist aufwendiger, aber es verhindert den
+ * häufigsten Fehler dieser Art von Rechnung: Eine spätere Stufe fügt
+ * eine Entladung ein, und der Ladestand aller folgenden Intervalle
+ * stimmt nicht mehr - mit dem Ergebnis, dass der Fahrplan im Betrieb
+ * an der Untergrenze abbricht.
+ */
+export function erstelleFahrplan(
+  intervalle: Marktintervall[],
+  speicher: Speicher,
+  netz: Netzanschluss,
+): Fahrplan {
+  const schritte: Arbeitsschritt[] = intervalle.map((i) => {
+    const residual = i.verbrauchKwh - i.erzeugungKwh;
+
+    return {
+      zeitpunkt: i.zeitpunkt,
+      preisEurMwh: i.preisEurMwh,
+      erzeugungKwh: i.erzeugungKwh,
+      verbrauchKwh: i.verbrauchKwh,
+      residuallastKwh: residual,
+      einspeisungKwh: residual < 0 ? -residual : 0,
+      netzbezugKwh: residual > 0 ? residual : 0,
+      ladenKwh: 0,
+      entladenKwh: 0,
+      ladestandKwh: 0,
+      belegung: "ruht",
+      ergebnisEur: 0,
+      restLadenKwh:
+        Math.max(0, speicher.ladeleistungKw - (speicher.vorhaltungKw ?? 0)) *
+        INTERVALL_H,
+      restEntladenKwh:
+        Math.max(
+          0,
+          speicher.entladeleistungKw - (speicher.vorhaltungKw ?? 0),
+        ) * INTERVALL_H,
+    };
+  });
+
+  const spitzeOhne = hoechsteBezugsleistung(schritte);
+
+  stufeSpitzenkappung(schritte, speicher, netz);
+  stufeEigenverbrauch(schritte, speicher, netz);
+  stufeHandel(schritte, speicher, netz);
+  stufeBestandsverkauf(schritte, speicher, netz);
+
+  const ladestaende = rechneLadestand(schritte, speicher);
+  for (let i = 0; i < schritte.length; i++) {
+    schritte[i].ladestandKwh = kwh(ladestaende[i]);
+  }
+
+  return {
+    schritte: schritte.map(({ restLadenKwh, restEntladenKwh, ...rest }) => {
+      void restLadenKwh;
+      void restEntladenKwh;
+      return {
+        ...rest,
+        einspeisungKwh: kwh(rest.einspeisungKwh),
+        netzbezugKwh: kwh(rest.netzbezugKwh),
+        ladenKwh: kwh(rest.ladenKwh),
+        entladenKwh: kwh(rest.entladenKwh),
+        residuallastKwh: kwh(rest.residuallastKwh),
+        ergebnisEur: eur(rest.ergebnisEur),
+      };
+    }),
+    bilanz: bilanziere(schritte, speicher, netz, spitzeOhne),
+  };
+}
+
+function hoechsteBezugsleistung(schritte: Arbeitsschritt[]): number {
+  let hoechste = 0;
+  for (const s of schritte) {
+    hoechste = Math.max(hoechste, s.netzbezugKwh / INTERVALL_H);
+  }
+  return hoechste;
+}
+
+/**
+ * Ladestandsverlauf über den gesamten Fahrplan.
+ *
+ * Getrennt gerechnet, damit jede Stufe gegen den tatsächlichen Verlauf
+ * prüfen kann statt gegen eine Fortschreibung.
+ */
+function rechneLadestand(
+  schritte: Arbeitsschritt[],
+  speicher: Speicher,
+): number[] {
+  const verlauf: number[] = [];
+  let stand = speicher.startLadestandKwh;
+
+  for (const s of schritte) {
+    stand += s.ladenKwh * speicher.wirkungsgradLaden;
+    stand -= s.entladenKwh / speicher.wirkungsgradEntladen;
+    verlauf.push(stand);
+  }
+
+  return verlauf;
+}
+
+/**
+ * Untergrenze des Ladestands.
+ *
+ * Sie setzt sich aus zwei Dingen zusammen: der Notstromreserve, die
+ * der Kunde festlegt, und dem Energievorrat, den eine zugesagte
+ * Regelleistung braucht. Für eine Stunde Vorhaltung muss die
+ * entsprechende Energie im Speicher stehen - sonst ist das Angebot
+ * nicht erfüllbar.
+ */
+function untergrenze(speicher: Speicher): number {
+  const notstrom = speicher.kapazitaetKwh * speicher.notstromReserve;
+  // Vorhaltung wird mit einer Stunde Abrufdauer bemessen; das
+  // entspricht der üblichen Anforderung an einen FCR-Erbringer.
+  const vorhaltung = speicher.vorhaltungKw ?? 0;
+
+  return Math.min(speicher.kapazitaetKwh, notstrom + vorhaltung);
+}
+
+/**
+ * Wie viel lässt sich in Intervall `index` zusätzlich entladen, ohne
+ * dass der Ladestand irgendwann danach unter die Reserve fällt?
+ *
+ * Die Frage muss über den ganzen Rest des Tages gestellt werden. Wer
+ * nur den Ladestand im Intervall selbst prüft, baut Fahrpläne, die
+ * zwei Stunden später an der Untergrenze anstehen.
+ */
+function entladespielraum(
+  schritte: Arbeitsschritt[],
+  speicher: Speicher,
+  index: number,
+): number {
+  const verlauf = rechneLadestand(schritte, speicher);
+  const grenze = untergrenze(speicher);
+
+  let kleinster = Infinity;
+  for (let i = index; i < verlauf.length; i++) {
+    kleinster = Math.min(kleinster, verlauf[i] - grenze);
+  }
+
+  if (kleinster <= 0) return 0;
+
+  // Am Ausgang gemessen: Der Ladestand sinkt um den Entnahmebetrag
+  // geteilt durch den Entladewirkungsgrad.
+  return Math.max(0, kleinster * speicher.wirkungsgradEntladen);
+}
+
+/** Entsprechend für das Laden: Wie viel passt noch hinein? */
+function ladespielraum(
+  schritte: Arbeitsschritt[],
+  speicher: Speicher,
+  index: number,
+): number {
+  const verlauf = rechneLadestand(schritte, speicher);
+
+  // Obergrenze: Wer Regelleistung nach unten zugesagt hat, muss
+  // Energie aufnehmen können - der Speicher darf also nicht randvoll
+  // stehen.
+  const obergrenze =
+    speicher.kapazitaetKwh - Math.min(
+      speicher.kapazitaetKwh * 0.5,
+      speicher.vorhaltungKw ?? 0,
+    );
+
+  let kleinsterAbstand = Infinity;
+  for (let i = index; i < verlauf.length; i++) {
+    kleinsterAbstand = Math.min(kleinsterAbstand, obergrenze - verlauf[i]);
+  }
+
+  if (kleinsterAbstand <= 0) return 0;
+
+  return Math.max(0, kleinsterAbstand / speicher.wirkungsgradLaden);
+}
+
+/**
+ * Stufe 1: Lastspitzenkappung.
+ *
+ * Jede Viertelstunde, deren Bezugsleistung über dem Zielwert liegt,
+ * wird so weit wie möglich durch Entladung gedeckt. Diese Stufe hat
+ * Vorrang, weil der Leistungspreis sich nach einer einzigen
+ * Viertelstunde richtet: Eine verpasste Kappung kostet zwölf Monate
+ * lang Geld, ein verpasstes Handelsgeschäft einmal.
+ */
+function stufeSpitzenkappung(
+  schritte: Arbeitsschritt[],
+  speicher: Speicher,
+  netz: Netzanschluss,
+): void {
+  const zielKwh = netz.spitzenzielKw * INTERVALL_H;
+
+  // Die höchsten Spitzen zuerst: Sie bestimmen den Leistungspreis.
+  const reihenfolge = schritte
+    .map((s, index) => ({ index, ueberschuss: s.netzbezugKwh - zielKwh }))
+    .filter((e) => e.ueberschuss > 0)
+    .sort((a, b) => b.ueberschuss - a.ueberschuss);
+
+  for (const { index } of reihenfolge) {
+    const s = schritte[index];
+    const noetig = s.netzbezugKwh - zielKwh;
+    if (noetig <= 0) continue;
+
+    const moeglich = Math.min(
+      noetig,
+      s.restEntladenKwh,
+      entladespielraum(schritte, speicher, index),
+    );
+    if (moeglich <= 0) continue;
+
+    s.entladenKwh += moeglich;
+    s.restEntladenKwh -= moeglich;
+    s.netzbezugKwh -= moeglich;
+    s.belegung = "spitzenkappung";
+
+    // Bewertet wird die vermiedene Arbeit; der Leistungspreis kommt
+    // in der Bilanz dazu, weil er sich nicht je Intervall aufteilen
+    // lässt - er hängt an der höchsten Viertelstunde des Monats.
+    s.ergebnisEur += (moeglich * netz.arbeitspreisBezugCtKwh) / 100;
+  }
+}
+
+/**
+ * Wie viel Netzbezug nach diesem Intervall noch ansteht.
+ *
+ * Bezugsgröße dafür, wie viel Überschuss der Eigenverbrauch sinnvoll
+ * aufnehmen kann. Was darüber hinausgeht, hat im Speicher keine
+ * Aufgabe mehr.
+ */
+function restlicherBezug(schritte: Arbeitsschritt[], ab: number): number {
+  let summe = 0;
+  for (let i = ab + 1; i < schritte.length; i++) {
+    summe += schritte[i].netzbezugKwh;
+  }
+  return summe;
+}
+
+/**
+ * Stufe 2: Eigenverbrauch.
+ *
+ * Zwei Bewegungen: Überschuss aufnehmen, der sonst zur
+ * Einspeisevergütung ins Netz ginge, und ihn später gegen Netzbezug
+ * zum vollen Arbeitspreis einsetzen. Der Nutzen ist die Differenz
+ * zwischen beidem - bei einem Arbeitspreis von 21,8 Cent und einer
+ * Vergütung von 7,9 Cent lohnt sich das fast immer.
+ */
+function stufeEigenverbrauch(
+  schritte: Arbeitsschritt[],
+  speicher: Speicher,
+  netz: Netzanschluss,
+): void {
+  const nutzenCt =
+    netz.arbeitspreisBezugCtKwh - netz.einspeiseverguetungCtKwh;
+
+  const umlauf = speicher.wirkungsgradLaden * speicher.wirkungsgradEntladen;
+
+  // Ohne Preisvorteil lohnt die Bewegung nicht - dann bleibt der
+  // Speicher für den Handel frei.
+  if (nutzenCt * umlauf <= speicher.zykluskostenEurKwh * 100) return;
+
+  // Chronologisch: Erst laden, dann entladen. Alles andere ergäbe
+  // Fahrpläne, die Energie verbrauchen, bevor sie da ist.
+  for (let index = 0; index < schritte.length; index++) {
+    const s = schritte[index];
+
+    // Überschuss aufnehmen - aber nur so viel, wie später auch
+    // gebraucht wird.
+    //
+    // Ohne diese Grenze füllt der Eigenverbrauch den Speicher bis
+    // oben, auch wenn danach gar keine Last mehr kommt. Die Kosten
+    // der Aufnahme stünden dann bei dieser Stufe, der Erlös aus dem
+    // späteren Verkauf beim Handel - und die Aufteilung des
+    // Ergebnisses wäre irreführend. Was über den späteren Bedarf
+    // hinausgeht, bleibt dem Handel überlassen.
+    const spaetererBedarf = restlicherBezug(schritte, index);
+
+    if (s.einspeisungKwh > 0 && spaetererBedarf > 0) {
+      const moeglich = Math.min(
+        s.einspeisungKwh,
+        s.restLadenKwh,
+        ladespielraum(schritte, speicher, index),
+        // Was gespeichert wird, kommt vermindert wieder heraus.
+        spaetererBedarf / umlauf,
+      );
+
+      if (moeglich > 0) {
+        s.ladenKwh += moeglich;
+        s.restLadenKwh -= moeglich;
+        s.einspeisungKwh -= moeglich;
+        if (s.belegung === "ruht") s.belegung = "eigenverbrauch";
+
+        // Der Einkauf kostet nur die entgangene Vergütung.
+        s.ergebnisEur -= (moeglich * netz.einspeiseverguetungCtKwh) / 100;
+      }
+    }
+
+    // Bezug decken.
+    if (s.netzbezugKwh > 0) {
+      const moeglich = Math.min(
+        s.netzbezugKwh,
+        s.restEntladenKwh,
+        entladespielraum(schritte, speicher, index),
+      );
+
+      if (moeglich > 0) {
+        s.entladenKwh += moeglich;
+        s.restEntladenKwh -= moeglich;
+        s.netzbezugKwh -= moeglich;
+        if (s.belegung === "ruht") s.belegung = "eigenverbrauch";
+
+        s.ergebnisEur += (moeglich * netz.arbeitspreisBezugCtKwh) / 100;
+      }
+    }
+  }
+}
+
+/**
+ * Stufe 3: Börsenhandel.
+ *
+ * Es werden Paare gebildet: ein günstiges Intervall zum Einkauf, ein
+ * späteres teures zum Verkauf. Ein Paar wird nur ausgeführt, wenn die
+ * Preisdifferenz die Umlaufverluste und die Zykluskosten übersteigt -
+ * sonst zahlt der Betreiber für den Verschleiß mehr, als der Handel
+ * einbringt.
+ *
+ * Die Paare werden nach fallender Spanne abgearbeitet. Das ist für
+ * dieses Problem nicht beweisbar optimal, kommt dem Optimum aber sehr
+ * nahe und ist in jedem Schritt begründbar - siehe Kopf der Datei.
+ */
+function stufeHandel(
+  schritte: Arbeitsschritt[],
+  speicher: Speicher,
+  netz: Netzanschluss,
+): void {
+  const umlauf = speicher.wirkungsgradLaden * speicher.wirkungsgradEntladen;
+
+  interface Paar {
+    kauf: number;
+    verkauf: number;
+    spanneEur: number;
+    /**
+     * Woher die Energie kommen sollte, als das Paar gebildet wurde.
+     *
+     * Die Einstufung wird mitgeführt und beim Ausführen nicht neu
+     * getroffen: Hat ein früheres Paar den Überschuss bereits
+     * aufgebraucht, wäre dieselbe Paarung plötzlich ein Zukauf zum
+     * vollen Netzpreis - ausgewählt wurde sie aber zum Preis der
+     * entgangenen Einspeisevergütung. Aus einem lohnenden Geschäft
+     * würde so ein Verlustgeschäft.
+     */
+    ausUeberschuss: boolean;
+  }
+
+  const paare: Paar[] = [];
+
+  for (let k = 0; k < schritte.length; k++) {
+    for (let v = k + 1; v < schritte.length; v++) {
+      // Einkauf. Zwei Quellen mit sehr unterschiedlichem Preis:
+      //
+      //   - Eigener Überschuss: kostet nur die entgangene
+      //     Einspeisevergütung. Das ist der Fall, der sich für eine
+      //     Gewerbeanlage fast immer rechnet.
+      //   - Zukauf vom Netz: Börsenpreis plus Netzentgelt. Das
+      //     Entgelt frisst praktisch jede Spanne, deshalb kommt
+      //     dieser Fall selten zum Tragen.
+      const ausUeberschuss = schritte[k].einspeisungKwh > 0.001;
+      const kaufEurKwh = ausUeberschuss
+        ? netz.einspeiseverguetungCtKwh / 100
+        : schritte[k].preisEurMwh / 1000 + netz.arbeitspreisBezugCtKwh / 100;
+      // Verkauf: reiner Börsenpreis, ohne Entgelte.
+      const verkaufEurKwh = schritte[v].preisEurMwh / 1000;
+
+      const spanne =
+        verkaufEurKwh * umlauf - kaufEurKwh - speicher.zykluskostenEurKwh;
+
+      if (spanne > 0) {
+        paare.push({
+          kauf: k,
+          verkauf: v,
+          spanneEur: spanne,
+          ausUeberschuss,
+        });
+      }
+    }
+  }
+
+  paare.sort((a, b) => b.spanneEur - a.spanneEur);
+
+  for (const paar of paare) {
+    const kauf = schritte[paar.kauf];
+    const verkauf = schritte[paar.verkauf];
+
+    const ausUeberschuss = paar.ausUeberschuss;
+
+    // Der Überschuss ist aufgebraucht: Das Paar wird nicht zum
+    // Zukauf umgedeutet, sondern fällt weg.
+    if (ausUeberschuss && kauf.einspeisungKwh <= 0.001) continue;
+
+    const mengeKauf = Math.min(
+      kauf.restLadenKwh,
+      ladespielraum(schritte, speicher, paar.kauf),
+      ausUeberschuss
+        ? // Aus dem Überschuss lässt sich nur nehmen, was da ist.
+          kauf.einspeisungKwh
+        : // Der Zukauf darf die Anschlussleistung nicht sprengen.
+          Math.max(0, netz.bezugsgrenzeKw * INTERVALL_H - kauf.netzbezugKwh),
+    );
+    if (mengeKauf <= 0) continue;
+
+    // Was nach Verlusten am Ausgang ankommt.
+    const mengeVerkauf = Math.min(
+      mengeKauf * umlauf,
+      verkauf.restEntladenKwh,
+      Math.max(
+        0,
+        netz.einspeisegrenzeKw * INTERVALL_H - verkauf.einspeisungKwh,
+      ),
+    );
+    if (mengeVerkauf <= 0) continue;
+
+    const tatsaechlichKauf = mengeVerkauf / umlauf;
+
+    kauf.ladenKwh += tatsaechlichKauf;
+    kauf.restLadenKwh -= tatsaechlichKauf;
+
+    if (ausUeberschuss) {
+      // Der Überschuss geht in den Speicher statt ins Netz.
+      kauf.einspeisungKwh -= tatsaechlichKauf;
+      kauf.ergebnisEur -=
+        tatsaechlichKauf * (netz.einspeiseverguetungCtKwh / 100);
+    } else {
+      kauf.netzbezugKwh += tatsaechlichKauf;
+      kauf.ergebnisEur -=
+        tatsaechlichKauf *
+        (kauf.preisEurMwh / 1000 + netz.arbeitspreisBezugCtKwh / 100);
+    }
+
+    if (kauf.belegung === "ruht") kauf.belegung = "handel";
+
+    // Der Entladespielraum muss nach dem Einbuchen des Kaufs erneut
+    // geprüft werden - der Kauf hat den Verlauf verändert.
+    const spielraum = entladespielraum(schritte, speicher, paar.verkauf);
+    const endgueltig = Math.min(mengeVerkauf, spielraum);
+
+    // Lässt sich nicht alles verkaufen, wird der Einkauf im selben
+    // Maß zurückgenommen. Sonst stünde der volle Einkaufspreis in der
+    // Rechnung und nur ein Teil des Erlöses - der Handel erschiene
+    // als Verlustgeschäft, obwohl er keines ist.
+    const zuviel = tatsaechlichKauf - endgueltig / umlauf;
+    if (zuviel > 0.0001) {
+      kauf.ladenKwh -= zuviel;
+      kauf.restLadenKwh += zuviel;
+
+      if (ausUeberschuss) {
+        kauf.einspeisungKwh += zuviel;
+        kauf.ergebnisEur += zuviel * (netz.einspeiseverguetungCtKwh / 100);
+      } else {
+        kauf.netzbezugKwh -= zuviel;
+        kauf.ergebnisEur +=
+          zuviel *
+          (kauf.preisEurMwh / 1000 + netz.arbeitspreisBezugCtKwh / 100);
+      }
+
+      if (kauf.ladenKwh <= 0.0001 && kauf.entladenKwh <= 0.0001) {
+        kauf.ladenKwh = 0;
+        kauf.belegung = "ruht";
+      }
+    }
+
+    if (endgueltig > 0) {
+      verkauf.entladenKwh += endgueltig;
+      verkauf.restEntladenKwh -= endgueltig;
+      verkauf.einspeisungKwh += endgueltig;
+      if (verkauf.belegung === "ruht") verkauf.belegung = "handel";
+      verkauf.ergebnisEur += endgueltig * (verkauf.preisEurMwh / 1000);
+    }
+  }
+}
+
+/**
+ * Stufe 3b: Verkauf ungenutzter gespeicherter Energie.
+ *
+ * Was am Ende des Tages über der Reserve im Speicher steht, hat keine
+ * Aufgabe mehr: Der Eigenverbrauch ist gedeckt, die Spitzen sind
+ * gekappt. Diese Energie stammt aus dem eigenen Überschuss und hat
+ * den Betreiber nur die entgangene Einspeisevergütung gekostet.
+ *
+ * Genau hier liegt der Handelsfall einer Gewerbeanlage - nicht im
+ * Zukauf vom Netz. Auf jede bezogene Kilowattstunde kommt das
+ * Netzentgelt, und das frisst praktisch jede Börsenspanne. Der
+ * gespeicherte Sonnenstrom trägt es nicht.
+ */
+function stufeBestandsverkauf(
+  schritte: Arbeitsschritt[],
+  speicher: Speicher,
+  netz: Netzanschluss,
+): void {
+  if (schritte.length === 0) return;
+
+  const umlauf = speicher.wirkungsgradLaden * speicher.wirkungsgradEntladen;
+  void umlauf;
+
+  // Nach Preis absteigend: Was verkauft wird, soll im teuersten
+  // Intervall verkauft werden.
+  const reihenfolge = schritte
+    .map((s, index) => ({ index, preis: s.preisEurMwh }))
+    .sort((a, b) => b.preis - a.preis);
+
+  for (const { index } of reihenfolge) {
+    const s = schritte[index];
+
+    // In einem Intervall, in dem geladen wird, wird nicht entladen.
+    // Beides gleichzeitig ist physikalisch unmöglich und in jedem
+    // Modell ein Zeichen dafür, dass zwei Stufen unabhängig
+    // voneinander gerechnet haben.
+    if (s.ladenKwh > 0) continue;
+
+    // Der Erlös muss die Alterung decken. Die Einspeisevergütung ist
+    // die Untergrenze: Darunter wäre es besser, die Energie einfach
+    // einzuspeisen.
+    const erloesEurKwh = s.preisEurMwh / 1000;
+    const untergrenzeEurKwh =
+      netz.einspeiseverguetungCtKwh / 100 + speicher.zykluskostenEurKwh;
+
+    if (erloesEurKwh <= untergrenzeEurKwh) continue;
+
+    const moeglich = Math.min(
+      s.restEntladenKwh,
+      entladespielraum(schritte, speicher, index),
+      Math.max(
+        0,
+        netz.einspeisegrenzeKw * INTERVALL_H - s.einspeisungKwh,
+      ),
+    );
+    if (moeglich <= 0.001) continue;
+
+    s.entladenKwh += moeglich;
+    s.restEntladenKwh -= moeglich;
+    s.einspeisungKwh += moeglich;
+    if (s.belegung === "ruht") s.belegung = "handel";
+
+    // Bewertet wird der Mehrerlös gegenüber der Einspeisevergütung:
+    // Ohne den Verkauf wäre die Energie ohnehin irgendwann zur
+    // Vergütung ins Netz gegangen.
+    s.ergebnisEur +=
+      moeglich * (erloesEurKwh - netz.einspeiseverguetungCtKwh / 100);
+  }
+}
+
+function bilanziere(
+  schritte: Arbeitsschritt[],
+  speicher: Speicher,
+  netz: Netzanschluss,
+  spitzeOhneKw: number,
+): Fahrplanbilanz {
+  let eigenverbrauchEur = 0;
+  let handelEur = 0;
+  let spitzenkappungEur = 0;
+  let durchsatz = 0;
+
+  for (const s of schritte) {
+    durchsatz += s.entladenKwh;
+
+    switch (s.belegung) {
+      case "spitzenkappung":
+        spitzenkappungEur += s.ergebnisEur;
+        break;
+      case "handel":
+        handelEur += s.ergebnisEur;
+        break;
+      case "eigenverbrauch":
+        eigenverbrauchEur += s.ergebnisEur;
+        break;
+      default:
+        break;
+    }
+  }
+
+  const spitzeMitKw = hoechsteBezugsleistung(schritte);
+
+  // Der Leistungspreis wird einmal je Monat auf die höchste
+  // Viertelstunde erhoben. Für einen Tagesfahrplan ist deshalb nur
+  // der anteilige Betrag anzusetzen - sonst erscheint jeder Tag so,
+  // als spare er eine ganze Monatsrechnung.
+  const vermiedeneSpitze = Math.max(0, spitzeOhneKw - spitzeMitKw);
+  const leistungspreisAnteil =
+    (vermiedeneSpitze * netz.leistungspreisEurKwMonat) / 30;
+
+  const zykluskosten = durchsatz * speicher.zykluskostenEurKwh;
+
+  return {
+    eigenverbrauchEur: eur(eigenverbrauchEur),
+    handelEur: eur(handelEur),
+    spitzenkappungEur: eur(spitzenkappungEur + leistungspreisAnteil),
+    zykluskostenEur: eur(-zykluskosten),
+    gesamtEur: eur(
+      eigenverbrauchEur +
+        handelEur +
+        spitzenkappungEur +
+        leistungspreisAnteil -
+        zykluskosten,
+    ),
+    spitzeOhneSpeicherKw: Number(spitzeOhneKw.toFixed(1)),
+    spitzeMitSpeicherKw: Number(spitzeMitKw.toFixed(1)),
+    durchsatzKwh: kwh(durchsatz),
+    vollzyklen:
+      speicher.kapazitaetKwh > 0
+        ? Number((durchsatz / speicher.kapazitaetKwh).toFixed(2))
+        : 0,
+  };
+}

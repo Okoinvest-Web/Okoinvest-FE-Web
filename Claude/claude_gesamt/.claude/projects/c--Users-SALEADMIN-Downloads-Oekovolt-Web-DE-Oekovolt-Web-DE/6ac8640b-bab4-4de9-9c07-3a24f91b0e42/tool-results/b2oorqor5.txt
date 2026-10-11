@@ -1,0 +1,518 @@
+# Briefing ÖkoInvest-Website (für alle Mitwirkenden)
+
+Projekt: `C:\Users\SALEADMIN\Downloads\Oekoinvest-Web` – Next.js 15 (App Router, JavaScript, Tailwind 4).
+Entstanden als Kopie der Website von Ökovolt Deutschland (`C:\Users\SALEADMIN\Downloads\Oekovolt-Web-DE\Oekovolt-Web-DE`, **nur lesen, nie ändern**). Qualitätsmaßstab ist genau diese Seite: Schau Dir dort bei Bedarf Seiten wie `src/app/page.js`, `src/app/landwirtschaft/page.js`, `src/components/Rechner/StromspeicherRechner.js`, `src/components/Foerdercheck/FoerderWizard.js` an.
+
+Dev-Server läuft bereits auf http://localhost:3100 (NICHT neu starten, NICHT `next build` im Projektordner ausführen – das zerschießt den laufenden Server. Für einen Build: `NEXT_DIST_DIR=.next-verify npx next build`).
+
+## Unternehmen
+
+- **ÖkoInvest GmbH**, Gewerbegebiet 10, 5121 Ostermiething (AT), FN 541505g, LG Ried im Innkreis, eingetragen 10.09.2020. GF: Andreas Wegscheider, Manuel Thaler. Teil der **ÖKOVOLT Gruppe** (seit 2010, Muttergesellschaft ÖKOVOLT GmbH Solartechnik in Türkheim/Bayern; Schwester ÖKOVOLT Solartechnik GmbH in AT). Beteiligungen: GFL – PV-Kraftwerk GmbH (100 %), HIL PV Kraftwerk GmbH (50 %, mit Prime Energy Solutions GmbH). Die Gruppe betreibt eigene Solarparks seit 2012 (z. B. Irsingen, Artern, Tilleda) und hat eigene Rammtechnik (Deutsche Solar & Rammtechnik GmbH).
+- Geschäft: Projektentwicklung **Freiflächen-PV, Agri-PV, Solarcarports/Parkplätze, Großspeicher**; Contracting & PPA. Entwickelt **rund 50 MWp pro Jahr neu** (Baureife erst Jahre später – ehrlich kommunizieren).
+- Plattform-Ziel: führende Seite im DACH-Raum, Markt durch Digitalisierung erschließen. Einnahmen über **Provision** (Projektbörse: Verkäuferprovision 1,5–3 % nur bei Abschluss; für Investoren und Flächeneigentümer kostenfrei).
+- Zielgruppen: Flächeneigentümer, Landwirte (Agri-PV: verpachten / selbst investieren / Investor betreibt + Landwirt ist Mitglied in der Genossenschaft), Investoren (Projekte kaufen, Suchprofil), Projektentwickler/Anbieter (Projekte in die Börse stellen), Unternehmen/Mittelstand (**Reststrom-Pool**: die Firmen, denen die Muttergesellschaft ÖKOVOLT PV + Speicher baut, beziehen den Strom, den sie trotzdem noch kaufen müssen, gebündelt über das virtuelle Kraftwerk von ÖkoInvest → Preise drücken), Kommunen, Bürger (Genossenschaft, Energiegemeinschaften).
+- Kontakt: Telefon und E-Mail sind noch **nicht freigegeben** → `KONTAKT.telefon`/`email` sind `null`, nie eine Nummer oder Adresse erfinden. Kontaktwege sind Formulare und das Portal.
+
+## Harte Regeln
+
+1. **Corporate Design nicht zerstören.** Nur die vorhandenen Tokens/Klassen: Farben `ov-*` (Grün, 600 für Buttons), `navy-*`, `ink-*`, `sand-*`, `sun-*` (sparsam). Schriften: Überschriften Manrope (`font-display`, `ov-h1/ov-h2/ov-h3/ov-display`), Text Inter. Klassen `ov-container`, `ov-lead`, `ov-text-gradient(-light)`, `ov-glass`, `ov-noise`, `ov-grid-bg(-light)`, `ov-card-hover`, `ov-num`, `ov-range`, `ov-prose`. Radien groß (rounded-3xl / rounded-[2rem]). Keine neuen Farben, keine anderen Fonts, keine Emojis im UI.
+2. **Bausteine wiederverwenden** (`src/components/ui`): `PageHero` (variant split | immersive | dark), `Section` (tone white|sand|ink|green|navy, space), `SectionHeading` (+ `Eyebrow`), `Button` (primary|navy|secondary|ghost|white|outlineLight|sun), `FeatureGrid`, `Steps`, `Faq` (liefert FAQPage-Schema), `CtaBand` (Props: eyebrow,title,text,primary,secondary), `Reveal`, `CountUp`, `Breadcrumbs`, `SplitMedia`, `Marquee`. Rechner: `src/components/Rechner/bausteine.js` (`Zahl`, `Regler`, `Auswahl`, `Schalter`, `Gruppe`, `Kennzahl`, `Tooltip`, `useBreite`) und `RechnerSeite.js` (Seitenrahmen jedes Rechners, Props siehe Datei, `querverweise=[{href,titel,text}]`). `Querverweise` nimmt `items`.
+3. **Zahlen nur aus `src/lib/invest/markt.js`** importieren (REGIONEN, BAUART, FREIFLAECHE, ERLOESE, FINANZIERUNG, PACHT, AGRI, CARPORT, SPEICHER, STROM, KOMMUNE, PHASEN, PROVISION, GEMEINSCHAFTEN, npv, irr, annuitaet, STAND). Formatierung aus `src/lib/rechner/annahmen.js` (fmt, fmtEur, fmtMio, fmtPct, fmtCt). Fehlt ein Wert, ergänze ihn dort **am Ende der passenden Konstante** mit Quelle als Kommentar (nicht umbenennen/löschen – andere nutzen die Datei parallel).
+4. **Fachlich tief und korrekt, DACH-weit.** Deutschland: EEG 2023 (Ausschreibungen, § 6 Kommunalbeteiligung 0,2 ct/kWh, § 48 Randstreifen 500 m an Autobahnen/Schienen, benachteiligte Gebiete/Länderöffnungsklausel), BauGB § 35 (Privilegierung 200-m-Korridor an Autobahnen/zweigleisigen Schienen; Agri-PV bis 2,5 ha mit Hofbezug), B-Plan-Verfahren (Aufstellungsbeschluss, frühzeitige Beteiligung, Satzungsbeschluss), DIN SPEC 91434, GAP (Agri-PV: 85 % bleiben förderfähig), Erbschaft-/Grundsteuer (Achtung: § 158 Abs. 2 BewG erfasst nach Wortlaut nur die Überlassung zur Pflanzen-/Tiererzeugung – für klassische Freiflächen-PV gibt es KEINE Sonderregel, verpachtete Flächen können aus dem land- und forstwirtschaftlichen Vermögen fallen; vorsichtig formulieren, Steuerberatung empfehlen), Energy Sharing § 42c EnWG, Stromsteuer 0,05 ct für produzierendes Gewerbe ab 2026. Österreich: EAG, Marktprämie/Investitionszuschüsse, Flächenwidmung „Grünland-Photovoltaik“ je Bundesland, EEG/BEG (Erneuerbare-Energie-Gemeinschaften), UVP ab bestimmter Größe. Schweiz: Solarexpress (alpine Anlagen), Einmalvergütung, ZEV/vZEV, LEG seit 2026. **Unsichere Details vorsichtig formulieren** („in der Regel“, „nach aktuellem Stand“) statt erfinden. Keine erfundenen Referenzprojekte, Kunden, Zitate, Auszeichnungen oder Kennzahlen über ÖkoInvest. Belegt nur: siehe „Unternehmen“.
+5. **Sprache:** Deutsch, Sie-Form, sachlich-selbstbewusst, keine Werbefloskeln. Echte Umlaute (ä, ö, ü, ß) in allen Texten. Code-Bezeichner und Kommentare deutsch wie im Bestand.
+6. **SEO/Barrierefreiheit wie im Bestand:** `export const metadata` mit title (≤ 60 Z., Muster „… | ÖkoInvest“), description (140–160 Z.), `alternates.canonical` via `abs(pfad)` aus `@/data/site`, openGraph (siteName „ÖkoInvest“, Bild z. B. `/img/solarpark-himmel.jpg`). JSON-LD wo sinnvoll (Service, WebApplication, FAQPage über `Faq`). Semantische Überschriften, `aria-*`, Tastaturbedienung, `prefers-reduced-motion` respektieren (globals.css tut das meist schon).
+7. **Mobil zuerst prüfen:** Nichts darf bei 360–390 px horizontal überlaufen.
+8. **Bilder:** nur aus `/public/img` (Liste: solarpark-himmel, solarpark-reihen, solarpark-baeume, freiflaeche-begehung, investoren-vor-ort, montage-freiflaeche, planer-tablet, pv-wind-abend, module-sonne, module-raster, floating-pv, floating-pv-montage, gewerbedach, dach-drohne, techniker, team-praesentation, firmensitz, speicher – alle `.jpg`). Für Agri-PV, Carports, Karten, Prozesse: **eigene Inline-SVG-Illustrationen** im Markenstil (Grün/Navy/Sand, flach, sauber) statt fremder Bilder.
+9. **Server-Komponenten bevorzugen**, `"use client"` nur für interaktive Teile.
+10. **Keine neuen npm-Pakete** ohne zwingenden Grund.
+
+## Vertrag Formulare / Plattform (wird vom Plattform-Team gebaut)
+
+- `POST /api/anfrage` – JSON `{ typ, kontakt: { anrede?, vorname, nachname, firma?, email, telefon?, plz?, ort?, land? }, daten: {…frei je typ…}, einwilligung: true, herkunft? }`.
+  `typ` ∈ `flaeche | agri | investor | projekt | reststrom | energiegemeinschaft | genossenschaft | kommune | carport | speicher | kontakt`.
+  Antwort `{ ok: true, id, vorgang }` oder `{ ok:false, error }`. Die Anfrage wird als Vorgang gespeichert und erscheint im Portal, wenn sich die Person mit derselben E-Mail registriert.
+- Wiederverwendbare Client-Komponente: `@/components/Plattform/AnfrageFormular` – Props `{ typ, daten = {}, titel?, text?, felder?: ["firma","telefon","plz", …], button?, erfolgText? }`. Darf ab sofort importiert werden (wird parallel gebaut; bis dahin existiert ein funktionsfähiger Stub).
+- Portal-Routen: `/login`, `/registrieren?rolle=flaeche|landwirt|investor|anbieter|unternehmen|mitglied`, `/portal` (Dashboard je Rolle), `/portal/flaechen`, `/portal/projekte`, `/portal/boerse`, `/portal/anfragen`, `/portal/nachrichten`, `/portal/dokumente`, `/portal/profil`, `/portal/admin`.
+- Öffentliche Projektbörse: `/projektboerse` (Liste mit Filtern), `/projektboerse/[slug]` (Exposé-Teaser, Details nach Login+NDA), `/projektboerse/anbieten`.
+
+## Seitenlandkarte (öffentlich)
+
+`/` · `/freiflaeche` · `/agri-pv` · `/solarcarport` · `/grossspeicher` · `/prozess` · `/kommunen` · `/flaeche-verpachten` · `/landwirte` · `/investoren` · `/projektboerse` (+ `/anbieten`, `/[slug]`) · `/virtuelles-kraftwerk` · `/reststrom` · `/energiegemeinschaften` · `/genossenschaft` · `/energie-live` · `/rechner` · `/flaechencheck` · `/rechner/pacht` · `/rechner/agri-pv` · `/rechner/solarpark` · `/rechner/projektbewertung` · `/rechner/reststrom` · `/rechner/solarcarport` · `/rechner/kommune` · `/ratgeber` (+ `/[slug]`) · `/wissen/lexikon` · `/faq` · `/unternehmen` · `/kontakt` · `/impressum` · `/datenschutz` · `/nutzungsbedingungen` · `/barrierefreiheit`.
+
+Nur auf existierende oder in dieser Liste geplante Routen verlinken.
+
+## Visuelle Kontrolle
+
+Screenshot-Werkzeug (Playwright, bereits installiert):
+```
+cd "C:/Users/SALEAD~1/AppData/Local/Temp/claude/c--Users-SALEADMIN-Downloads-Oekovolt-Web-DE-Oekovolt-Web-DE/6ac8640b-bab4-4de9-9c07-3a24f91b0e42/scratchpad/pw"
+MSYS_NO_PATHCONV=1 node shot.mjs /pfad 1440 1 name   # Desktop, ganze Seite
+MSYS_NO_PATHCONV=1 node shot.mjs /pfad 390 1 name    # Mobil
+```
+Bild liegt dann unter `shots/<name>_<breite>.png` (mit dem Read-Werkzeug ansehen). Ausgabe zeigt HTTP-Status und Konsolen-/Laufzeitfehler. **Jede Seite muss mit Status 200, ohne Laufzeitfehler, in beiden Breiten sauber aussehen**, bevor sie als fertig gilt. Sehr lange Seiten ggf. zusätzlich mit `0` (nur sichtbarer Bereich) prüfen.
+
+## Ausbaustufe 2 – Ergänzungen
+
+- Stand: Alle Seiten der Stufe 1 existieren (siehe `src/app/`). Vor dem Verlinken prüfen, dass die Route existiert.
+- Gemeinsame Dateien `src/data/navigation.js`, `src/components/Rechner/tools.js`, `src/app/sitemap.js`, `src/components/Reusable/footer.js` pflegt der Koordinator. Neue Routen/Tools im Abschlussbericht melden (mit Titel, Kurztext, Icon-Vorschlag aus lucide-react).
+- Metadaten für Nicht-Rechner-Seiten: `rechnerMetadata` aus `@/components/Rechner/RechnerSeite` funktioniert allgemein.
+- Rechner-Layout mit fixierter Ergebnisspalte: `@/components/Rechner/InvestTeile` (RechnerRahmen, Hinweise, Legende).
+- Formular mit Chips davor: `@/components/Carport/AuswahlAnfrage`.
+- Qualitäts-Audit (alle Sitemap-Routen: Status, Laufzeitfehler, Überlauf 390 px, tote Links): `MSYS_NO_PATHCONV=1 node audit.mjs` im Scratchpad-Ordner `pw`. Eigene Skripte dort mit eigenem Präfix benennen, fremde nicht überschreiben.
+- Dev-Server kann durch parallele Arbeit langsam sein (bis 30 s je Erstaufruf) – Timeouts großzügig setzen, nicht neu starten.
+// src/lib/invest/markt.js
+//
+// MARKTANNAHMEN für alle Rechner, Tools und Texte der ÖkoInvest-Website –
+// an EINER Stelle. Texte und Rechner importieren diese Werte, statt Zahlen
+// abzutippen. Wer hier ändert, ändert die ganze Website.
+//
+// Recherchestand: September 2026. Alles ORIENTIERUNGSWERTE für eine erste
+// Einschätzung (Spannen, keine Angebote). Die konkrete Projektrechnung
+// erfolgt im Einzelfall.
+//
+// Quellen (Auswahl, siehe QUELLEN unten): Bundesnetzagentur (Ausschreibungs-
+// ergebnisse Solar), Fraunhofer ISE (Stromgestehungskosten, Agri-PV-Leitfaden),
+// PVGIS (Einstrahlung), Destatis (Pachtpreise), BDEW-Strompreisanalyse,
+// EEG 2023, EnWG, DIN SPEC 91434, E-Control (AT), BFE (CH).
+//
+// Konvention: Geld in €, Energie in kWh, Leistung in kWp, Fläche in ha.
+
+export const STAND = "September 2026";
+
+/* ------------------------------------------------------------------ */
+/* Regionen und spezifischer Ertrag                                    */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Spezifischer Jahresertrag einer optimal ausgerichteten Freiflächenanlage
+ * (Süd, fest aufgeständert, monofazial) in kWh/kWp im ersten Jahr.
+ * Grundlage: PVGIS-Einstrahlung, Performance Ratio ~0,85.
+ */
+export const REGIONEN = [
+  { id: "de-nord", land: "DE", label: "Norddeutschland", sub: "SH, HH, NI, HB, MV", ertrag: 960 },
+  { id: "de-ost", land: "DE", label: "Ostdeutschland", sub: "BB, BE, SN, ST, TH", ertrag: 1020 },
+  { id: "de-west", land: "DE", label: "West- & Mitteldeutschland", sub: "NW, HE, RP, SL", ertrag: 1000 },
+  { id: "de-sued", land: "DE", label: "Süddeutschland", sub: "BY, BW", ertrag: 1100 },
+  { id: "at", land: "AT", label: "Österreich", sub: "Flach- und Hügelland", ertrag: 1120 },
+  { id: "ch", land: "CH", label: "Schweiz", sub: "Mittelland", ertrag: 1050 },
+];
+
+export const regionById = (id) => REGIONEN.find((r) => r.id === id) || REGIONEN[3];
+
+/** Mehrertrag/Minderertrag nach Anlagenbauart gegenüber fester Süd-Aufständerung */
+export const BAUART = {
+  sued: { label: "Süd, fest", faktor: 1.0, haProMwp: 1.1 },
+  ostWest: { label: "Ost/West, fest", faktor: 0.92, haProMwp: 0.85 },
+  tracker: { label: "Einachsig nachgeführt", faktor: 1.15, haProMwp: 1.5 },
+  agriVertikal: { label: "Agri-PV vertikal, bifazial", faktor: 0.9, haProMwp: 2.6 },
+  agriHoch: { label: "Agri-PV hoch aufgeständert", faktor: 0.95, haProMwp: 1.6 },
+};
+
+/* ------------------------------------------------------------------ */
+/* Freiflächen-PV                                                      */
+/* ------------------------------------------------------------------ */
+
+export const FREIFLAECHE = {
+  /** Fläche je MWp (Süd, fest, moderne Module ~ 580–620 Wp) */
+  haProMwp: 1.1,
+  /** Sinnvolle Mindestgröße einer Fläche in ha (darunter selten wirtschaftlich) */
+  mindestHa: 3,
+  /**
+   * Schlüsselfertige Errichtung (EPC) ohne Netzanschluss, €/kWp – Spanne.
+   * Große Parks (> 10 MWp) liegen 2025/26 bei stark gefallenen Modulpreisen
+   * eher am unteren Ende, kleine und schwierige Standorte am oberen.
+   */
+  capexProKwp: { min: 400, mittel: 470, max: 600 },
+  /** Netzanschluss: Kabeltrasse Mittelspannung je Meter (inkl. Tiefbau) */
+  kabelProMeter: 120,
+  /** Übergabestation / Trafo je MWp */
+  netzanschlussFixProMwp: 35000,
+  /** Entwicklungskosten bis Baureife (Planung, Gutachten, B-Plan) €/kWp */
+  entwicklungProKwp: { min: 40, max: 90 },
+  /**
+   * Betriebskosten ohne Pacht, €/kWp und Jahr: technische und kaufmännische
+   * Betriebsführung, Wartung/Grünpflege, Versicherung, Direktvermarktung,
+   * Überwachung/Sicherheit. Größere Parks eher 7–9, kleine 10–12.
+   */
+  opexProKwp: 9,
+  /** Rückbau-Rücklage €/kWp einmalig (bis Laufzeitende angespart) */
+  rueckbauProKwp: 25,
+  /** Jährliche Degradation */
+  degradation: 0.004,
+  /** Kostensteigerung Opex pro Jahr */
+  inflation: 0.02,
+  /** Laufzeit Betrachtung (Jahre) */
+  laufzeit: 30,
+};
+
+/* ------------------------------------------------------------------ */
+/* Erlöse                                                              */
+/* ------------------------------------------------------------------ */
+
+export const ERLOESE = {
+  /**
+   * EEG-Ausschreibung Freifläche (erstes Segment): mengengewichtete
+   * durchschnittliche Zuschlagswerte lagen 2024/2025 grob zwischen 4,5 und
+   * 5,2 ct/kWh (Bundesnetzagentur). Anzulegender Wert gilt 20 Jahre.
+   */
+  eegFreiflaecheCt: 4.8,
+  /**
+   * Agri-PV in der Ausschreibung: Ein eigenes Untersegment mit höherem Höchstwert
+   * ist im EEG vorgesehen, war aber zum Stand noch nicht beihilferechtlich
+   * freigegeben. Agri-PV bietet daher im ersten Segment mit, hoch aufgeständerte
+   * Anlagen erhalten einen Bonus von 0,5 ct/kWh → Zuschlag Freifläche + Bonus.
+   */
+  eegBesondereCt: 5.3,
+  /**
+   * PPA Solar pay-as-produced, 10 Jahre, DE – Spanne. Reine Erzeuger-PPA
+   * notieren wegen Kannibalisierung eher bei 3,5–4,5 ct (dena/Pexapark),
+   * Liefer-PPA an Unternehmen mit Strukturierung darüber.
+   */
+  ppaCt: { min: 3.8, mittel: 4.5, max: 5.5 },
+  /** Durchschnittlicher Marktwert Solar (Capture Price) nach Förderende, konservativ */
+  merchantCt: 4.0,
+  /**
+   * Jährliche Steigerung des Solar-Marktwerts (nominal) für Merchant-Phasen.
+   * Eigene vorsichtige Annahme: unter der allgemeinen Inflation, weil mit
+   * wachsendem PV-Zubau die Mittagspreise sinken (Kannibalisierung).
+   */
+  merchantSteigerung: 0.01,
+  /** Gebotstermine 2025 (Bundesnetzagentur, erstes Segment, mengengewichteter Durchschnitt) */
+  zuschlagsHistorie: [
+    { termin: "1. März 2025", ct: 4.66 },
+    { termin: "1. Juli 2025", ct: 4.84 },
+    { termin: "1. Dezember 2025", ct: 5.0 },
+  ],
+  /** Fraunhofer ISE, Studie Stromgestehungskosten (Juli 2024): neue PV-Freiflächenanlagen in DE, ct/kWh */
+  lcoeIseCt: { min: 4.1, max: 6.9 },
+};
+
+/* ------------------------------------------------------------------ */
+/* Finanzierung                                                        */
+/* ------------------------------------------------------------------ */
+
+export const FINANZIERUNG = {
+  fremdkapitalQuote: 0.75,
+  zins: 0.045,
+  tilgungJahre: 18,
+  /** Eigenkapitalrendite-Erwartung (Diskontsatz für Barwerte) */
+  diskont: 0.065,
+  /** Steuersatz vereinfacht (Körperschaft + Gewerbe, DE) */
+  steuer: 0.3,
+  /**
+   * Mindest-Schuldendienstdeckungsgrad (DSCR), auf den Banken das Darlehen
+   * bemessen – bei EEG-Projekten meist um 1,10–1,20, bei PPA/Merchant höher
+   * (marktübliche Spanne, eigene Einschätzung).
+   */
+  dscrZiel: 1.15,
+};
+
+/* ------------------------------------------------------------------ */
+/* Pacht                                                               */
+/* ------------------------------------------------------------------ */
+
+export const PACHT = {
+  /** Übliche Pacht für Freiflächen-PV in €/ha und Jahr (DACH, 2025/26) */
+  freiflaecheProHa: { min: 1500, mittel: 2800, max: 4500 },
+  /** Agri-PV: höhere Nutzung bleibt beim Landwirt, Pacht meist niedriger */
+  /** Agri-PV: Bewirtschaftung bleibt beim Landwirt, Projekte sind knapp kalkuliert → Pacht deutlich unter Freifläche */
+  agriProHa: { min: 600, mittel: 1200, max: 2000 },
+  /** Alternativ: Umsatzbeteiligung in % der Stromerlöse */
+  umsatzbeteiligung: { min: 0.04, max: 0.08 },
+  /** Durchschnittliche landwirtschaftliche Pacht Ackerland DE (Destatis, Landwirtschaftszählung) */
+  ackerProHa: 380,
+  /** Deckungsbeitrag Ackerbau €/ha und Jahr (Getreide, stark schwankend) */
+  deckungsbeitragAcker: { min: 200, mittel: 450, max: 800 },
+  /** Übliche Laufzeit in Jahren + Verlängerungsoptionen */
+  laufzeit: 30,
+  verlaengerung: "2 × 5 Jahre Option",
+  /** Jährliche Indexierung (Verbraucherpreisindex, vereinfacht) */
+  indexierung: 0.015,
+  /** Einmalige Bereitstellungs-/Reservierungsprämie je ha (bis Baubeginn) */
+  reservierungProHa: { min: 100, max: 300 },
+};
+
+/* ------------------------------------------------------------------ */
+/* Agri-PV                                                             */
+/* ------------------------------------------------------------------ */
+
+export const AGRI = {
+  /** DIN SPEC 91434: max. Flächenverlust durch Aufbauten */
+  flaechenverlustMaxKat1: 0.1,
+  flaechenverlustMaxKat2: 0.15,
+  /** DIN SPEC 91434: landwirtschaftlicher Ertrag mind. 66 % des Referenzertrags */
+  mindestErtrag: 0.66,
+  /** GAP-Direktzahlungen DE: bis 85 % der Fläche bleibt förderfähig (Abzug 15 %) */
+  gapFoerderfaehig: 0.85,
+  /** Einkommensgrundstützung + Umverteilung DE grob €/ha (2025/26) */
+  direktzahlungProHa: 250,
+  capexProKwp: {
+    vertikal: { min: 550, mittel: 640, max: 800 },
+    hoch: { min: 850, mittel: 1000, max: 1300 },
+  },
+  /** Betriebskosten ohne Pacht €/kWp·a – etwas über Freifläche (Bewirtschaftung zwischen den Reihen, mehr Unterkonstruktion) */
+  opexProKwp: 10,
+  /** Privilegierung Außenbereich § 35 Abs. 1 Nr. 9 BauGB: Grundfläche bis 2,5 ha, Hofbezug */
+  privilegierungHa: 2.5,
+  /**
+   * Kulturen für den Agri-PV-Rechner – GROBE Orientierung, stark betriebs- und
+   * jahresabhängig (im Rechner überschreibbar):
+   *  db      Deckungsbeitrag ohne Anlage in €/ha und Jahr (Größenordnung KTBL-Standarddeckungsbeiträge)
+   *  ertrag  landwirtschaftlicher Ertrag unter dem System relativ zur Referenz, inkl. Flächenverlust
+   *          (Bandbreiten aus Fraunhofer ISE, Agri-PV-Leitfaden; DIN SPEC 91434 verlangt ≥ 66 %)
+   *          null = System für diese Kultur unüblich
+   */
+  kulturen: [
+    { id: "acker", label: "Ackerbau", sub: "Getreide, Raps, Mais", db: 450, ertrag: { vertikal: 0.9, hoch: 0.85 } },
+    { id: "gruenland", label: "Grünland", sub: "Mahd, Futterbau", db: 300, ertrag: { vertikal: 0.92, hoch: 0.9 } },
+    { id: "weide", label: "Weide", sub: "Schafe, Rinder, Geflügel", db: 250, ertrag: { vertikal: 0.95, hoch: 0.95 } },
+    { id: "sonder", label: "Obst & Beeren", sub: "Sonderkultur", db: 3500, ertrag: { vertikal: null, hoch: 0.95 } },
+  ],
+  /** Anteil an der Anlage, den ein Landwirt über Genossenschaft/Beteiligung halten kann (Rechner-Spanne) */
+  beteiligungAnteil: { min: 0.05, standard: 0.2, max: 0.49 },
+};
+
+/* ------------------------------------------------------------------ */
+/* Solarcarports & Parkflächen                                         */
+/* ------------------------------------------------------------------ */
+
+export const CARPORT = {
+  /** kWp je Stellplatz (2,5 × 5 m, Module ~ 225 Wp/m²) */
+  kwpProStellplatz: 2.6,
+  /** Errichtung inkl. Stahlbau, Fundamente, Entwässerung €/kWp */
+  capexProKwp: { min: 1100, mittel: 1350, max: 1700 },
+  /** Ertrag geringer als Freifläche (flachere Neigung, Verschattung) */
+  ertragFaktor: 0.93,
+  /** Ladepunkt AC 11/22 kW inkl. Installation */
+  ladepunktAc: 2500,
+  /** Ladepunkt DC 50–150 kW inkl. Installation (ohne Netzausbau) */
+  ladepunktDc: 45000,
+  opexProKwp: 15,
+  /** Betrachtungszeitraum Wirtschaftlichkeit (Jahre) – Stahlbau hält deutlich länger, Wechselrichter-Tausch in Opex */
+  laufzeit: 25,
+  /** Contracting: Vertragslaufzeit (Jahre) und Aufschlag des Contractors auf die Vollkosten (eigene Annahme) */
+  contractingJahre: 20,
+  contractingMarge: 0.1,
+  /** Stellplatzfläche brutto inkl. anteiliger Fahrgasse, m² (Orientierung) */
+  stellplatzM2: 25,
+};
+
+/* ------------------------------------------------------------------ */
+/* Batteriegroßspeicher                                                */
+/* ------------------------------------------------------------------ */
+
+export const SPEICHER = {
+  /** Systempreis 2-h-Speicher schlüsselfertig €/kWh (2026, stark fallend) */
+  capexProKwh: { min: 200, mittel: 260, max: 340 },
+  /** Erlöse (Arbitrage + Regelenergie) €/MW und Jahr – Spanne, stark marktabhängig */
+  erloesProMwJahr: { min: 90000, mittel: 130000, max: 180000 },
+  zyklenProJahr: 330,
+  wirkungsgrad: 0.87,
+};
+
+/* ------------------------------------------------------------------ */
+/* Strom für Unternehmen (Reststrom-Pool, virtuelles Kraftwerk)        */
+/* ------------------------------------------------------------------ */
+
+export const STROM = {
+  /**
+   * Gewerblicher Strompreis Mittelstand DE (netto, ohne USt.), ct/kWh:
+   * Beschaffung/Vertrieb, Netzentgelte, Abgaben/Umlagen, Stromsteuer.
+   * Grobe Aufteilung für Neuverträge 2026 (BDEW-Strompreisanalyse, eigene Einschätzung).
+   */
+  bestandteile: [
+    { id: "beschaffung", label: "Beschaffung & Vertrieb", ct: 10.5, beeinflussbar: true },
+    { id: "netz", label: "Netzentgelte & Messung", ct: 5.5, beeinflussbar: false },
+    { id: "umlagen", label: "Umlagen (KWKG, Offshore, § 19)", ct: 1.8, beeinflussbar: false },
+    { id: "konzession", label: "Konzessionsabgabe", ct: 0.11, beeinflussbar: false },
+    { id: "stromsteuer", label: "Stromsteuer", ct: 2.05, beeinflussbar: false },
+  ],
+  /**
+   * Stromsteuer: Regelsatz 2,05 ct/kWh; produzierendes Gewerbe sowie Land-
+   * und Forstwirtschaft seit 2026 auf EU-Mindestsatz 0,05 ct/kWh entlastet.
+   */
+  stromsteuerProduzierend: 0.05,
+  /**
+   * Wirkung des Pools auf die Beschaffungskomponente (ct/kWh), vorsichtig:
+   *  - Bündelung / strukturierte Tranchenbeschaffung statt Einzelvertrag zum Stichtag
+   *  - Solar-PPA aus Parks der Gruppe für die Tagesstunden
+   *  - Flexibilität (Lastverschiebung, Speicher) in günstige Viertelstunden
+   */
+  poolHebel: [
+    { id: "buendelung", label: "Bündelung & strukturierte Beschaffung", ct: { min: 0.4, max: 1.2 } },
+    { id: "ppa", label: "Solarstrom aus Parks der Gruppe (PPA)", ct: { min: 0.5, max: 2.0 } },
+    { id: "flex", label: "Flexibilität & Speicher im virtuellen Kraftwerk", ct: { min: 0.2, max: 1.0 } },
+  ],
+  /** Anteil der Tagesstunden-Last, die typischerweise aus Solar-PPA gedeckt werden kann */
+  ppaDeckungsanteil: { min: 0.2, max: 0.4 },
+};
+
+/* ------------------------------------------------------------------ */
+/* Kommunen                                                            */
+/* ------------------------------------------------------------------ */
+
+export const KOMMUNE = {
+  /** § 6 EEG: freiwillige Zahlung bis 0,2 ct/kWh an betroffene Gemeinden */
+  beteiligungCt: 0.2,
+  /** § 29 Abs. 1 Nr. 2 GewStG: 90 % des Gewerbesteuermessbetrags an Standortgemeinde (Solar) */
+  gewerbesteuerStandort: 0.9,
+  /** Hebesatz Durchschnitt DE */
+  hebesatz: 4.0,
+  messzahl: 0.035,
+  /** Betrachtungszeitraum für Kommunen (Jahre, entspricht der EEG-Förderdauer) */
+  betrachtungJahre: 20,
+  /** Nutzungsdauer PV nach AfA-Tabelle (lineare Abschreibung) */
+  afaJahre: 20,
+  /** § 8 Nr. 1 GewStG: 25 % der Entgelte für Schulden werden hinzugerechnet, soweit die Summe 200.000 € übersteigt */
+  hinzurechnungZinsen: 0.25,
+  hinzurechnungFreibetrag: 200000,
+  /** Reglerspanne Hebesatz (gesetzliches Minimum 200 %, § 16 Abs. 4 GewStG) */
+  hebesatzSpanne: { min: 2.0, max: 6.0 },
+};
+
+/* ------------------------------------------------------------------ */
+/* Projektbörse: Bewertung von Projektrechten nach Phase               */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Übliche Kaufpreise (Entwicklungsprämie) für Freiflächenprojekte in €/kWp
+ * je Entwicklungsstand, DACH 2025/26 – breite Spannen, stark abhängig von
+ * Netzanschluss, Größe, Tarif/PPA und Standort.
+ */
+export const PHASEN = [
+  { id: "flaeche", label: "Fläche gesichert", kurz: "Flächensicherung", preisProKwp: { min: 5, max: 20 }, risiko: "sehr hoch", monateBisRtb: 30 },
+  { id: "netz", label: "Netzanschlusszusage", kurz: "Netzzusage", preisProKwp: { min: 15, max: 40 }, risiko: "hoch", monateBisRtb: 24 },
+  { id: "aufstellung", label: "Aufstellungsbeschluss B-Plan", kurz: "Aufstellungsbeschluss", preisProKwp: { min: 25, max: 55 }, risiko: "mittel–hoch", monateBisRtb: 15 },
+  { id: "satzung", label: "Satzungsbeschluss / Baurecht", kurz: "Baurecht", preisProKwp: { min: 45, max: 90 }, risiko: "mittel", monateBisRtb: 6 },
+  { id: "rtb", label: "Ready-to-Build (RTB)", kurz: "Baureif", preisProKwp: { min: 60, max: 130 }, risiko: "gering", monateBisRtb: 0 },
+  { id: "cod", label: "In Betrieb (COD / Bestand)", kurz: "Bestand", preisProKwp: { min: 550, max: 850 }, risiko: "sehr gering", monateBisRtb: 0 },
+];
+
+export const phaseById = (id) => PHASEN.find((p) => p.id === id) || PHASEN[0];
+
+/** Provisionsmodell der Projektbörse (Erfolgsprovision, nur bei Abschluss) */
+export const PROVISION = {
+  verkaeufer: { min: 0.015, max: 0.03, text: "1,5–3 % des Kaufpreises, nur bei erfolgreichem Abschluss" },
+  kaeufer: { text: "für Investoren kostenfrei (Suchprofil, NDA, Datenraum)" },
+  flaeche: { text: "für Flächeneigentümer immer kostenfrei" },
+};
+
+/* ------------------------------------------------------------------ */
+/* Energiegemeinschaften DACH                                          */
+/* ------------------------------------------------------------------ */
+
+export const GEMEINSCHAFTEN = {
+  de: {
+    titel: "Energy Sharing (§ 42c EnWG)",
+    text: "Gemeinsame Nutzung von Strom aus Anlagen in derselben Region über das öffentliche Netz – zunächst im Netzgebiet eines Verteilnetzbetreibers, später auch in angrenzenden Gebieten.",
+  },
+  at: {
+    titel: "Erneuerbare-Energie-Gemeinschaft (EEG) und Bürgerenergiegemeinschaft (BEG)",
+    text: "Lokale und regionale EEGs erhalten reduzierte Netzentgelte; BEGs dürfen österreichweit tätig sein. Teilnahme an mehreren Gemeinschaften ist möglich.",
+  },
+  ch: {
+    titel: "ZEV, vZEV und lokale Elektrizitätsgemeinschaft (LEG)",
+    text: "Seit 2026 können Verbraucher innerhalb einer Gemeinde über das Verteilnetz Strom teilen (LEG) – mit reduziertem Netznutzungsentgelt.",
+  },
+};
+
+/* ------------------------------------------------------------------ */
+/* Allgemein                                                           */
+/* ------------------------------------------------------------------ */
+
+export const ALLGEMEIN = {
+  /** CO₂-Vermeidung je kWh Solarstrom (UBA, Emissionsbilanz erneuerbarer Energien, gerundet) */
+  co2KgProKwh: 0.65,
+  /** Durchschnittlicher Haushaltsverbrauch für anschauliche Vergleiche */
+  haushaltKwh: 3500,
+};
+
+export const QUELLEN = [
+  { titel: "Bundesnetzagentur – Ausschreibungen Solaranlagen erstes Segment", url: "https://www.bundesnetzagentur.de/DE/Fachthemen/ElektrizitaetundGas/Ausschreibungen/Solaranlagen1/start.html" },
+  { titel: "Fraunhofer ISE – Stromgestehungskosten erneuerbarer Energien", url: "https://www.ise.fraunhofer.de/de/veroeffentlichungen/studien/studie-stromgestehungskosten-erneuerbare-energien.html" },
+  { titel: "Fraunhofer ISE – Agri-Photovoltaik: Chance für Landwirtschaft und Energiewende (Leitfaden)", url: "https://www.ise.fraunhofer.de/de/veroeffentlichungen/studien/agri-photovoltaik-chance-fuer-landwirtschaft-und-energiewende.html" },
+  { titel: "EU JRC – PVGIS Photovoltaic Geographical Information System", url: "https://re.jrc.ec.europa.eu/pvg_tools/de/" },
+  { titel: "BDEW – Strompreisanalyse", url: "https://www.bdew.de/service/daten-und-grafiken/bdew-strompreisanalyse/" },
+  { titel: "Umweltbundesamt – Emissionsbilanz erneuerbarer Energieträger", url: "https://www.umweltbundesamt.de/publikationen" },
+  { titel: "Gesetz für den Ausbau erneuerbarer Energien (EEG 2023), § 6", url: "https://www.gesetze-im-internet.de/eeg_2014/__6.html" },
+  { titel: "Baugesetzbuch § 35 (Bauen im Außenbereich)", url: "https://www.gesetze-im-internet.de/bbaug/__35.html" },
+];
+
+/* ------------------------------------------------------------------ */
+/* Hilfsfunktionen für alle Rechner                                    */
+/* ------------------------------------------------------------------ */
+
+/** Barwert einer Zahlungsreihe (Index 0 = Jahr 0) */
+export function npv(rate, cashflows) {
+  return cashflows.reduce((s, cf, t) => s + cf / Math.pow(1 + rate, t), 0);
+}
+
+/** Interner Zinsfuß per Bisektion; null, wenn keine Lösung im Intervall */
+export function irr(cashflows, lo = -0.9, hi = 1.0) {
+  const f = (r) => npv(r, cashflows);
+  let flo = f(lo);
+  let fhi = f(hi);
+  if (!Number.isFinite(flo) || !Number.isFinite(fhi) || flo * fhi > 0) return null;
+  for (let i = 0; i < 200; i++) {
+    const mid = (lo + hi) / 2;
+    const fm = f(mid);
+    if (Math.abs(fm) < 1e-6) return mid;
+    if (flo * fm < 0) {
+      hi = mid;
+      fhi = fm;
+    } else {
+      lo = mid;
+      flo = fm;
+    }
+  }
+  return (lo + hi) / 2;
+}
+
+/** Annuität (Rate je Jahr) */
+export function annuitaet(betrag, zins, jahre) {
+  if (zins === 0) return betrag / jahre;
+  return (betrag * zins) / (1 - Math.pow(1 + zins, -jahre));
+}
+{
+  "name": "oekoinvest-web",
+  "version": "0.1.0",
+  "private": true,
+  "browserslist": {
+    "production": [
+      "chrome >= 90",
+      "firefox >= 90",
+      "safari >= 15",
+      "edge >= 90",
+      "ios >= 15",
+      "android >= 90"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "scripts": {
+    "dev": "next dev --turbopack -p 3100",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "cookies-next": "^5.1.0",
+    "lucide-react": "^0.511.0",
+    "next": "^15.5.26",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3",
+    "@tailwindcss/postcss": "^4",
+    "eslint": "^9",
+    "eslint-config-next": "^15.5.26",
+    "tailwindcss": "^4"
+  },
+  "overrides": {
+    "postcss": "^8.5.28"
+  }
+}

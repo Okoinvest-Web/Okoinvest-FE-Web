@@ -1,0 +1,221 @@
+import pathlib
+
+ROOT = pathlib.Path(r"C:\Users\SALEADMIN\Documents\Servicetechniker APP")
+FE = ROOT / "frontend"
+
+
+def patch(pfad, paare, basis=FE):
+    p = basis / pfad
+    s = p.read_text(encoding="utf-8")
+    for alt, neu in paare:
+        if alt not in s:
+            raise SystemExit("NICHT GEFUNDEN in %s:\n---\n%s\n---" % (pfad, alt[:300]))
+        s = s.replace(alt, neu, 1)
+    p.write_text(s, encoding="utf-8")
+    print("ok", pfad)
+
+
+# ------------------------------------------------------------------ portal.ts
+patch(
+    "src/lib/portal.ts",
+    [
+        (
+            """  auftragAusMangel: (parameter: Record<string, unknown>) =>
+    methode<string>(`${SA}auftrag_aus_mangel`, parameter),""",
+            """  auftragAusMangel: (parameter: Record<string, unknown>) =>
+    methode<string>(`${SA}auftrag_aus_mangel`, parameter),
+  /** Auswahlliste der Subunternehmer — nur fuer die Bauleitung. */
+  subunternehmer: () => methode<Subunternehmer[]>(`${P}subunternehmer_liste`, {}, 'GET'),""",
+        ),
+        (
+            "const P = 'oekovolt_baudoku.api.subunternehmer.'",
+            """export interface Subunternehmer {
+  name: string
+  supplier_name: string
+  personal_hinterlegt: 0 | 1
+}
+
+const P = 'oekovolt_baudoku.api.subunternehmer.'""",
+        ),
+    ],
+)
+
+# ------------------------------------------------------------------- demo.ts
+patch(
+    "src/lib/demo.ts",
+    [
+        (
+            "    case 'oekovolt_baudoku.baudoku.doctype.subunternehmerauftrag.subunternehmerauftrag.auftrag_aus_mangel':\n      return 'SUA-2026-00033'",
+            """    case 'oekovolt_baudoku.api.subunternehmer.subunternehmer_liste':
+      return [
+        { name: SUPPLIER, supplier_name: SUPPLIER, personal_hinterlegt: 1 },
+        { name: 'Dachdeckerei Gruber e.U.', supplier_name: 'Dachdeckerei Gruber e.U.',
+          personal_hinterlegt: 0 },
+      ]
+
+    case 'oekovolt_baudoku.baudoku.doctype.subunternehmerauftrag.subunternehmerauftrag.auftrag_aus_mangel':
+      return 'SUA-2026-00033'""",
+        )
+    ],
+)
+
+# ------------------------------------------------------- MangelFormularView.vue
+SKRIPT_IMPORTS = """import { resource } from '@/lib/api'
+import { db, entkoppeln, neueId } from '@/lib/db'
+import { datum, isoDatum } from '@/lib/format'"""
+
+SKRIPT_IMPORTS_NEU = """import { resource } from '@/lib/api'
+import { db, entkoppeln, neueId } from '@/lib/db'
+import { datum, isoDatum } from '@/lib/format'
+import { portal, type Subunternehmer } from '@/lib/portal'"""
+
+LOGIK = '''
+/**
+ * Mangel an einen Subunternehmer weiterreichen (FA-063).
+ *
+ * Der haeufigste Ablauf auf der Baustelle: Der Bauleiter geht durch, findet
+ * etwas — und der Mangel soll beim Verursacher sofort als offener Auftrag
+ * liegen, nicht erst nach einem Telefonat am Abend. Der Auftrag entsteht
+ * deshalb aus genau diesem Formular heraus.
+ *
+ * Bedingung ist ein bereits uebertragener Mangel: Der Server braucht dessen
+ * Namen. Solange er nur lokal liegt, bleibt der Knopf gesperrt.
+ */
+const auftragDialog = ref(false)
+const subunternehmen = ref<Subunternehmer[]>([])
+const auftragFirma = ref('')
+const auftragVon = ref(isoDatum())
+const auftragBis = ref(isoDatum())
+const auftragGewaehrleistung = ref(true)
+const auftragLaeuft = ref(false)
+
+const kannAuftragErteilen = computed(
+  () =>
+    stammdaten.istBauleiter &&
+    Boolean(mangel.value?.name) &&
+    !['Erledigt', 'Verifiziert', 'Verworfen'].includes(mangel.value?.status ?? ''),
+)
+
+async function auftragDialogOeffnen() {
+  auftragDialog.value = true
+  auftragVon.value = isoDatum()
+  auftragBis.value = mangel.value?.faellig_am || isoDatum()
+  if (subunternehmen.value.length) return
+  try {
+    subunternehmen.value = await portal.subunternehmer()
+    auftragFirma.value = subunternehmen.value[0]?.name ?? ''
+  } catch (fehler) {
+    ui.fehler(`Subunternehmerliste nicht verfügbar: ${(fehler as Error).message}`)
+  }
+}
+
+async function auftragErteilen() {
+  if (!mangel.value?.name || !auftragFirma.value) return
+  auftragLaeuft.value = true
+  try {
+    const auftrag = await portal.auftragAusMangel({
+      mangel: mangel.value.name,
+      supplier: auftragFirma.value,
+      termin_von: `${auftragVon.value} 07:00:00`,
+      termin_bis: `${auftragBis.value} 16:00:00`,
+      frist: mangel.value.faellig_am,
+      gewaehrleistung: auftragGewaehrleistung.value ? 1 : 0,
+    })
+    ui.erfolg(`Auftrag ${auftrag} erteilt — der Subunternehmer sieht ihn sofort.`)
+    auftragDialog.value = false
+    mangel.value.status = 'In Bearbeitung'
+  } catch (fehler) {
+    ui.fehler((fehler as Error).message)
+  } finally {
+    auftragLaeuft.value = false
+  }
+}
+'''
+
+VORLAGE = """    <!-- Behebung -->"""
+
+VORLAGE_NEU = """    <!-- Weitergabe an den Subunternehmer -->
+    <div v-if="kannAuftragErteilen" class="karte flex flex-wrap items-center gap-3 p-4">
+      <div class="min-w-0 flex-1">
+        <h3 class="font-semibold">Subunternehmer beauftragen</h3>
+        <p class="text-sm text-slate-500">
+          Der Mangel wird zum offenen Auftrag mit Frist — sichtbar im Portal des
+          beauftragten Unternehmens.
+        </p>
+      </div>
+      <button class="knopf-sekundaer shrink-0" @click="auftragDialogOeffnen">
+        <AppIcon name="bericht" :groesse="18" /> Auftrag erteilen
+      </button>
+    </div>
+
+    <p
+      v-else-if="stammdaten.istBauleiter && !mangel.name && !istNeu"
+      class="px-1 text-xs text-slate-400"
+    >
+      Ein Auftrag an den Subunternehmer ist möglich, sobald der Mangel übertragen ist.
+    </p>
+
+    <!-- Behebung -->"""
+
+DIALOG = """    <BasisDialog :offen="anlagenwahlOffen" titel="Anlage wählen" @schliessen="anlagenwahlOffen = false">"""
+
+DIALOG_NEU = """    <BasisDialog :offen="auftragDialog" titel="Auftrag erteilen" @schliessen="auftragDialog = false">
+      <div class="space-y-3">
+        <p class="text-sm text-slate-600 dark:text-slate-300">
+          „{{ mangel.titel }}“ — Schweregrad {{ mangel.schweregrad }}
+        </p>
+        <label>
+          <span class="beschriftung">Subunternehmer</span>
+          <select v-model="auftragFirma" class="feld">
+            <option v-for="s in subunternehmen" :key="s.name" :value="s.name">
+              {{ s.supplier_name }}{{ s.personal_hinterlegt ? '' : ' (kein Personal hinterlegt)' }}
+            </option>
+          </select>
+        </label>
+        <p v-if="!subunternehmen.length" class="text-sm text-warnung">
+          Es ist kein Subunternehmer erfasst. Bitte zuerst in ERPNext anlegen und
+          Mitarbeiter hinterlegen.
+        </p>
+        <div class="grid grid-cols-2 gap-3">
+          <label>
+            <span class="beschriftung">Beginn</span>
+            <input v-model="auftragVon" class="feld" type="date" />
+          </label>
+          <label>
+            <span class="beschriftung">Ende</span>
+            <input v-model="auftragBis" class="feld" type="date" />
+          </label>
+        </div>
+        <label class="flex items-center gap-3 text-sm">
+          <input v-model="auftragGewaehrleistung" type="checkbox" class="h-5 w-5" />
+          Gewährleistung — die Behebung wird nicht gesondert vergütet
+        </label>
+        <p class="text-xs text-slate-400">
+          Frist: {{ mangel.faellig_am ? datum(mangel.faellig_am) : 'aus dem Schweregrad' }}.
+          Fotos des Mangels werden mitgegeben.
+        </p>
+        <div class="flex gap-2">
+          <button class="knopf-sekundaer flex-1" @click="auftragDialog = false">Abbrechen</button>
+          <button
+            class="knopf-primaer flex-[2]"
+            :disabled="auftragLaeuft || !auftragFirma"
+            @click="auftragErteilen"
+          >
+            {{ auftragLaeuft ? 'Wird erteilt …' : 'Auftrag erteilen' }}
+          </button>
+        </div>
+      </div>
+    </BasisDialog>
+
+    <BasisDialog :offen="anlagenwahlOffen" titel="Anlage wählen" @schliessen="anlagenwahlOffen = false">"""
+
+patch(
+    "src/views/MangelFormularView.vue",
+    [
+        (SKRIPT_IMPORTS, SKRIPT_IMPORTS_NEU),
+        ("const istErledigt = computed(() =>\n  ['Erledigt', 'Verifiziert'].includes(mangel.value?.status ?? ''),\n)",
+         "const istErledigt = computed(() =>\n  ['Erledigt', 'Verifiziert'].includes(mangel.value?.status ?? ''),\n)\n" + LOGIK),
+        (VORLAGE, VORLAGE_NEU),
+        (DIALOG, DIALOG_NEU),
+    ],
+)

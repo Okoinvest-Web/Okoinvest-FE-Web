@@ -1,0 +1,87 @@
+# -*- coding: utf-8 -*-
+"""Legt den DocType fuer Stummschaltungen an und registriert die Alarmmethoden."""
+import io
+
+# 1. DocType 'Alert Silence'
+p = 'src/api/mock/fixtures-ops.js'
+s = io.open(p, encoding='utf-8').read()
+
+DOCTYPE = """
+/**
+ * Stummschaltung von Alarmen.
+ *
+ * Immer mit Ablaufdatum und immer mit Begruendung. Eine Stummschaltung ohne
+ * Ende ist eine Abschaltung mit besserem Namen, und eine ohne Begruendung
+ * laesst sich in drei Wochen nicht mehr beurteilen.
+ */
+defineDoctype('Alert Silence', {
+  naming: (doc, i) => 'STUMM-' + String(i).padStart(5, '0'),
+  titleField: 'match_value',
+  fields: ['match_kind', 'match_value', 'reason', 'until', 'active', 'created_by'],
+  seed: [
+    {
+      match_kind: 'object',
+      match_value: 'NAS-TN-01',
+      reason: 'Firmware-Update, Neustart eingeplant',
+      until: stundenVersetzt(6),
+      active: 1,
+      created_by: 'HR-EMP-00002',
+      tenant: AT,
+    },
+    {
+      match_kind: 'source',
+      match_value: 'pmg',
+      reason: 'Testlauf des Konnektors, Meldungen noch nicht verlaesslich',
+      until: stundenVersetzt(-12),
+      active: 1,
+      created_by: 'HR-EMP-00003',
+      tenant: AT,
+      description: 'Abgelaufen - taucht nur noch im Verlauf auf.',
+    },
+  ],
+})
+"""
+
+marke = "defineDoctype('Alert', {"
+assert marke in s, 'Alert-DocType nicht gefunden'
+s = s.replace(marke, DOCTYPE.strip() + '\n\n' + marke, 1)
+io.open(p, 'w', encoding='utf-8').write(s)
+print('DocType Alert Silence angelegt')
+
+# 2. Methoden registrieren
+p = 'src/api/mock/methods/index.js'
+s = io.open(p, encoding='utf-8').read()
+
+IMPORT = """import {
+  alert_detail,
+  alert_groups,
+  alert_list_v2,
+  alert_overview,
+  bulk_alert_action,
+  create_silence,
+  end_silence,
+  set_alert_state,
+  silence_list,
+} from './alarme.js'
+"""
+anker = "import { situation_overview } from './lage.js'"
+assert anker in s
+s = s.replace(anker, anker + '\n' + IMPORT.rstrip(), 1)
+
+REG = """
+  // --- Alarme (Korrelation, Rauschen, Bearbeitung) ---
+  registerMethod('netops.api.ops.alert_overview', alert_overview)
+  registerMethod('netops.api.ops.alert_groups', alert_groups)
+  registerMethod('netops.api.ops.alert_list_v2', alert_list_v2)
+  registerMethod('netops.api.ops.alert_detail', alert_detail)
+  registerMethod('netops.api.ops.set_alert_state', set_alert_state)
+  registerMethod('netops.api.ops.bulk_alert_action', bulk_alert_action)
+  registerMethod('netops.api.ops.silence_list', silence_list)
+  registerMethod('netops.api.ops.create_silence', create_silence)
+  registerMethod('netops.api.ops.end_silence', end_silence)
+"""
+anker2 = "  registerMethod('netops.api.ops.situation_overview', situation_overview)"
+assert anker2 in s
+s = s.replace(anker2, anker2 + '\n' + REG.rstrip(), 1)
+io.open(p, 'w', encoding='utf-8').write(s)
+print('Methoden registriert')

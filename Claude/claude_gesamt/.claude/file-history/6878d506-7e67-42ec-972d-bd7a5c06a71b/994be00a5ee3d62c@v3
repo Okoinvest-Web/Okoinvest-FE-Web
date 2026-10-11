@@ -1,0 +1,243 @@
+import Link from "next/link";
+import type { ComponentType, ReactNode } from "react";
+import { ChevronRight, Inbox } from "lucide-react";
+import { initials, personName, STATUS_TONE, type Tone } from "@/lib/format";
+
+// ---------- Gemeinsame Klassen (auch für Client-Formulare) ----------
+
+export const BTN = {
+  primary:
+    "inline-flex h-9 items-center justify-center gap-1.5 rounded-lg bg-brand-600 px-3.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-brand-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 disabled:opacity-60",
+  secondary:
+    "inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3.5 text-sm font-medium text-gray-800 shadow-sm transition-colors hover:border-gray-300 hover:bg-gray-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 disabled:opacity-60",
+  ghost:
+    "inline-flex h-8 items-center gap-1.5 rounded-md px-2 text-sm font-medium text-brand-700 transition-colors hover:bg-brand-50 hover:text-brand-800",
+};
+
+export const INPUT =
+  "h-10 min-w-0 rounded-lg border border-gray-200 bg-white px-3 text-[14px] text-gray-900 shadow-xs outline-none transition placeholder:text-gray-400 focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 disabled:bg-gray-50";
+
+// ---------- Marke ----------
+
+export function LogoMark({ className = "size-8" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 64 64" className={className} aria-hidden>
+      <rect width="64" height="64" rx="14" fill="#16754c" />
+      <circle cx="32" cy="27" r="9" fill="#fbbf24" />
+      <g stroke="#fbbf24" strokeWidth="3.5" strokeLinecap="round">
+        <path d="M32 9v4M17 15l3 3M47 15l-3 3M12 27h4M48 27h4" />
+      </g>
+      <path d="M14 50l6-12h24l6 12z" fill="#fff" />
+      <path d="M26 38l-2 12M38 38l2 12M17 44h30" stroke="#16754c" strokeWidth="2" />
+    </svg>
+  );
+}
+
+export function Logo({ tone = "dark", sub = "Vertrieb" }: { tone?: "dark" | "light"; sub?: string }) {
+  return (
+    <div className="flex items-center gap-2.5">
+      <LogoMark />
+      <div className="leading-tight">
+        <div className={`text-[15px] font-semibold tracking-tight ${tone === "light" ? "text-white" : "text-gray-900"}`}>Ökovolt</div>
+        <div className={`text-[11px] font-medium uppercase tracking-[0.14em] ${tone === "light" ? "text-brand-300" : "text-brand-600"}`}>{sub}</div>
+      </div>
+    </div>
+  );
+}
+
+// ---------- Statusanzeigen ----------
+
+const TONES: Record<Tone, string> = {
+  gray: "bg-gray-100 text-gray-700 ring-gray-200",
+  blue: "bg-sky-50 text-sky-700 ring-sky-200",
+  green: "bg-brand-50 text-brand-700 ring-brand-200",
+  amber: "bg-amber-50 text-amber-800 ring-amber-200",
+  red: "bg-rose-50 text-rose-700 ring-rose-200",
+  violet: "bg-violet-50 text-violet-700 ring-violet-200",
+};
+
+export function Badge({ value, label, tone }: { value: string; label?: string; tone?: Tone }) {
+  const t = tone ?? STATUS_TONE[value] ?? "gray";
+  return (
+    <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${TONES[t]}`}>
+      <span className="size-1.5 rounded-full bg-current opacity-70" />
+      {label ?? value}
+    </span>
+  );
+}
+
+// Feste Farbe je Name, damit dieselbe Person überall gleich aussieht
+const AVATAR_COLORS = [
+  "bg-brand-100 text-brand-800",
+  "bg-sky-100 text-sky-800",
+  "bg-amber-100 text-amber-800",
+  "bg-violet-100 text-violet-800",
+  "bg-rose-100 text-rose-800",
+  "bg-teal-100 text-teal-800",
+  "bg-lime-100 text-lime-800",
+];
+
+function hash(s: string) {
+  let h = 0;
+  for (const c of s) h = (h * 31 + c.charCodeAt(0)) | 0;
+  return Math.abs(h);
+}
+
+export function Avatar({ name: raw, size = "sm" }: { name: string; size?: "sm" | "md" | "lg" }) {
+  const name = personName(raw);
+  const sz = size === "lg" ? "size-14 text-lg" : size === "md" ? "size-9 text-xs" : "size-7 text-[10px]";
+  return (
+    <span title={name} className={`inline-flex shrink-0 items-center justify-center rounded-full font-semibold ${sz} ${AVATAR_COLORS[hash(name) % AVATAR_COLORS.length]}`}>
+      {initials(name)}
+    </span>
+  );
+}
+
+export function Progress({ value, className = "" }: { value: number; className?: string }) {
+  const v = Math.max(0, Math.min(100, value));
+  const color = v >= 70 ? "bg-brand-500" : v >= 35 ? "bg-sun-400" : "bg-gray-300";
+  return (
+    <div className={`h-1.5 overflow-hidden rounded-full bg-gray-100 ${className}`}>
+      <div className={`h-full rounded-full ${color}`} style={{ width: `${v}%` }} />
+    </div>
+  );
+}
+
+// ---------- Seitenaufbau ----------
+
+export function PageHeader({
+  title,
+  subtitle,
+  crumbs,
+  actions,
+}: {
+  title: string;
+  subtitle?: ReactNode;
+  crumbs?: { href: string; label: string }[];
+  actions?: ReactNode;
+}) {
+  return (
+    <header className="sticky top-0 z-20 shrink-0 border-b border-gray-200/80 bg-white/85 px-6 py-4 backdrop-blur-md lg:px-8">
+      {crumbs && crumbs.length > 0 && (
+        <nav className="mb-1 flex items-center gap-1 text-xs text-gray-500">
+          {crumbs.map((c) => (
+            <span key={c.href} className="flex items-center gap-1">
+              <Link href={c.href} className="hover:text-brand-700">
+                {c.label}
+              </Link>
+              <ChevronRight className="size-3 text-gray-400" />
+            </span>
+          ))}
+        </nav>
+      )}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="truncate text-xl font-semibold tracking-tight text-gray-900">{title}</h1>
+          {subtitle && <p className="mt-0.5 text-sm text-gray-500">{subtitle}</p>}
+        </div>
+        {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
+      </div>
+    </header>
+  );
+}
+
+export function PageBody({ children, className = "" }: { children: ReactNode; className?: string }) {
+  return <div className={`mx-auto w-full max-w-[1400px] p-6 lg:px-8 ${className}`}>{children}</div>;
+}
+
+export function ButtonLink({ href, children, variant = "primary" }: { href: string; children: ReactNode; variant?: keyof typeof BTN }) {
+  return (
+    <Link href={href} className={BTN[variant]}>
+      {children}
+    </Link>
+  );
+}
+
+export function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
+  return <section className={`rounded-xl border border-gray-200/80 bg-white shadow-card ${className}`}>{children}</section>;
+}
+
+export function CardHeader({ title, icon: Icon, action, sub }: { title: string; icon?: ComponentType<{ className?: string }>; action?: ReactNode; sub?: ReactNode }) {
+  return (
+    <div className="flex items-center justify-between gap-3 border-b border-gray-100 px-5 py-3.5">
+      <div className="flex min-w-0 items-center gap-2.5">
+        {Icon && <Icon className="size-4 shrink-0 text-gray-400" />}
+        <div className="min-w-0">
+          <h2 className="font-semibold text-gray-900">{title}</h2>
+          {sub && <p className="text-xs text-gray-500">{sub}</p>}
+        </div>
+      </div>
+      {action}
+    </div>
+  );
+}
+
+export function Stat({
+  label,
+  value,
+  hint,
+  icon: Icon,
+  accent = "brand",
+}: {
+  label: string;
+  value: ReactNode;
+  hint?: ReactNode;
+  icon: ComponentType<{ className?: string }>;
+  accent?: "brand" | "sun" | "sky" | "violet";
+}) {
+  const acc = accent === "sun" ? "bg-amber-50 text-amber-600" : "bg-brand-50 text-brand-700";
+  return (
+    <Card className="p-5">
+      <div className="flex items-start justify-between gap-3">
+        <div className="text-sm font-medium text-gray-500">{label}</div>
+        <span className={`flex size-9 items-center justify-center rounded-lg ${acc}`}>
+          <Icon className="size-[18px]" />
+        </span>
+      </div>
+      <div className="mt-2 text-[26px] font-semibold leading-none tracking-tight tabular-nums text-gray-900">{value}</div>
+      {hint && <div className="mt-2 text-xs text-gray-500">{hint}</div>}
+    </Card>
+  );
+}
+
+export function Empty({ children, icon: Icon = Inbox }: { children: ReactNode; icon?: ComponentType<{ className?: string }> }) {
+  return (
+    <div className="flex flex-col items-center gap-3 px-5 py-14 text-center text-gray-500">
+      <span className="flex size-11 items-center justify-center rounded-full bg-gray-100 text-gray-400">
+        <Icon className="size-5" />
+      </span>
+      <div>{children}</div>
+    </div>
+  );
+}
+
+export function Field({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="grid grid-cols-[120px_1fr] items-start gap-3 py-2">
+      <dt className="text-gray-500">{label}</dt>
+      <dd className="min-w-0 truncate font-medium text-gray-900">{children || <span className="font-normal text-gray-400">–</span>}</dd>
+    </div>
+  );
+}
+
+export function Table({ head, children, align }: { head: string[]; children: ReactNode; align?: Record<number, "right"> }) {
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-left">
+        <thead>
+          <tr className="border-b border-gray-100 bg-gray-50/70 text-[11px] uppercase tracking-wider text-gray-500">
+            {head.map((h, i) => (
+              <th key={h} className={`whitespace-nowrap px-5 py-2.5 font-semibold ${align?.[i] === "right" ? "text-right" : ""}`}>
+                {h}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-100">{children}</tbody>
+      </table>
+    </div>
+  );
+}
+
+// Zeilenzellen einheitlich
+export const TD = "px-5 py-3 text-gray-700";

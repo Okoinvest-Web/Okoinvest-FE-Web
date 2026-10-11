@@ -1,0 +1,309 @@
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+
+import {
+  berechneKennzahl,
+  fasseKennzahlZusammen,
+  findeTaetigkeit,
+  MINDESTSCHUTZ,
+  pruefeTaetigkeit,
+  TAETIGKEITEN,
+  UMWELTZIELE,
+  WESENTLICHKEITSSCHWELLE,
+  ZIELNAMEN,
+  type Kennzahlposition,
+  type Nachweislage,
+} from "./taxonomie.ts";
+
+const PV = findeTaetigkeit("4.1")!;
+
+/** Alle Kriterien einer Tätigkeit samt Mindestschutz auf einen Stand. */
+function lage(
+  stand: "erfuellt" | "nicht_erfuellt" | "offen",
+  abweichungen: Nachweislage = {},
+): Nachweislage {
+  const ergebnis: Nachweislage = {};
+  for (const t of TAETIGKEITEN) {
+    ergebnis[t.beitrag.schluessel] = stand;
+    for (const d of t.dnsh) ergebnis[d.schluessel] = stand;
+  }
+  for (const m of MINDESTSCHUTZ) ergebnis[m.schluessel] = stand;
+  return { ...ergebnis, ...abweichungen };
+}
+
+describe("Katalog", () => {
+  it("führt jede Tätigkeit mit NACE-Code und Fundstelle", () => {
+    for (const t of TAETIGKEITEN) {
+      assert.ok(t.nace.length > 0, t.schluessel);
+      assert.match(t.beitrag.fundstelle, /2021\/2139/);
+    }
+  });
+
+  it("vergibt jeden Kriteriumsschlüssel nur einmal", () => {
+    const schluessel = TAETIGKEITEN.flatMap((t) => [
+      t.beitrag.schluessel,
+      ...t.dnsh.map((d) => d.schluessel),
+    ]).concat(MINDESTSCHUTZ.map((m) => m.schluessel));
+
+    assert.equal(new Set(schluessel).size, schluessel.length);
+  });
+
+  it("nennt bei jedem DNSH-Kriterium ein anderes Ziel als den Beitrag", () => {
+    // DNSH gilt für die *übrigen* Ziele. Ein DNSH-Kriterium zum
+    // eigenen Beitragsziel wäre ein Denkfehler.
+    for (const t of TAETIGKEITEN) {
+      for (const d of t.dnsh) {
+        assert.notEqual(d.ziel, t.beitragZu, `${t.schluessel}/${d.schluessel}`);
+      }
+    }
+  });
+
+  it("benennt jedes Umweltziel", () => {
+    for (const ziel of UMWELTZIELE) {
+      assert.ok(ZIELNAMEN[ziel].length > 3, ziel);
+    }
+  });
+
+  it("führt Photovoltaik unter 4.1 mit Klimaschutz als Beitragsziel", () => {
+    assert.equal(PV.beitragZu, "klimaschutz");
+    assert.ok(PV.nace.includes("D35.11"));
+  });
+
+  it("verlangt bei 4.1 Anpassung, Kreislauf und Biodiversität", () => {
+    assert.deepEqual(
+      PV.dnsh.map((d) => d.ziel).sort(),
+      ["anpassung", "biodiversitaet", "kreislauf"],
+    );
+  });
+});
+
+describe("Prüfung einer Tätigkeit", () => {
+  it("stuft als konform ein, wenn alles belegt ist", () => {
+    const befund = pruefeTaetigkeit(PV, lage("erfuellt"));
+
+    assert.equal(befund.einstufung, "konform");
+    assert.deepEqual(befund.verletzt, []);
+    assert.deepEqual(befund.offen, []);
+  });
+
+  it("führt eine Anlage ohne Nachweise als offen, nicht als konform", () => {
+    // Der Kern: Nichts geprüft ist nicht dasselbe wie geprüft und gut.
+    const befund = pruefeTaetigkeit(PV, {});
+
+    assert.equal(befund.einstufung, "offen");
+    assert.equal(befund.verletzt.length, 0);
+    assert.ok(befund.offen.length > 0);
+  });
+
+  it("führt eine Anlage ohne Nachweise auch nicht als nicht konform", () => {
+    const befund = pruefeTaetigkeit(PV, {});
+
+    assert.notEqual(befund.einstufung, "faehig");
+  });
+
+  it("fällt auf fähig zurück, wenn ein DNSH-Kriterium verletzt ist", () => {
+    const befund = pruefeTaetigkeit(
+      PV,
+      lage("erfuellt", { "4.1-biodiversitaet": "nicht_erfuellt" }),
+    );
+
+    assert.equal(befund.einstufung, "faehig");
+    assert.equal(befund.verletzt.length, 1);
+    assert.match(befund.begruendung, /Ökosysteme|Vielfalt/);
+  });
+
+  it("fällt auf fähig zurück, wenn der Mindestschutz verletzt ist", () => {
+    // Die Anlage ist technisch einwandfrei und trotzdem nicht konform.
+    const befund = pruefeTaetigkeit(
+      PV,
+      lage("erfuellt", { "ms-arbeit": "nicht_erfuellt" }),
+    );
+
+    assert.equal(befund.einstufung, "faehig");
+    assert.equal(befund.verletzt[0]!.schluessel, "ms-arbeit");
+  });
+
+  it("nimmt den Mindestschutz aus einer eigenen Quelle, wenn sie übergeben wird", () => {
+    // Der Mindestschutz gilt für den Betrieb, nicht für die Anlage.
+    const befund = pruefeTaetigkeit(
+      PV,
+      lage("erfuellt"),
+      { "ms-oecd": "erfuellt", "ms-arbeit": "erfuellt", "ms-steuern": "nicht_erfuellt" },
+    );
+
+    assert.equal(befund.einstufung, "faehig");
+    assert.equal(befund.verletzt[0]!.schluessel, "ms-steuern");
+  });
+
+  it("bleibt bei verletztem Beitrag fähig und nennt den Grund", () => {
+    const befund = pruefeTaetigkeit(
+      PV,
+      lage("erfuellt", { "4.1-beitrag": "nicht_erfuellt" }),
+    );
+
+    assert.equal(befund.einstufung, "faehig");
+    assert.match(befund.begruendung, /wesentliche Beitrag/);
+  });
+
+  it("gewichtet eine Verletzung höher als einen fehlenden Nachweis", () => {
+    const befund = pruefeTaetigkeit(PV, {
+      "4.1-beitrag": "erfuellt",
+      "4.1-kreislauf": "nicht_erfuellt",
+    });
+
+    assert.equal(befund.einstufung, "faehig");
+    assert.ok(befund.offen.length > 0);
+  });
+
+  it("zählt mehrere Verletzungen in der Begründung", () => {
+    const befund = pruefeTaetigkeit(
+      PV,
+      lage("erfuellt", {
+        "4.1-kreislauf": "nicht_erfuellt",
+        "4.1-anpassung": "nicht_erfuellt",
+      }),
+    );
+
+    assert.match(befund.begruendung, /2 Kriterien/);
+  });
+});
+
+describe("Kennzahlen", () => {
+  const positionen: Kennzahlposition[] = [
+    {
+      taetigkeit: "4.1",
+      bezeichnung: "Stromerlöse Photovoltaik",
+      betrag: 400_000,
+      einstufung: "konform",
+    },
+    {
+      taetigkeit: "6.15",
+      bezeichnung: "Ladeinfrastruktur",
+      betrag: 100_000,
+      einstufung: "faehig",
+    },
+    {
+      taetigkeit: "",
+      bezeichnung: "Handelswaren",
+      betrag: 200_000,
+      einstufung: "nicht_faehig",
+    },
+  ];
+
+  it("rechnet Anteile gegen den Nenner aus dem Abschluss", () => {
+    const k = berechneKennzahl("Umsatz", 1_000_000, positionen);
+
+    assert.equal(k.konformAnteil, 0.4);
+    assert.equal(k.faehigAnteil, 0.5);
+    assert.deepEqual(k.beanstandungen, []);
+  });
+
+  it("nimmt nicht die Summe der Positionen als Nenner", () => {
+    // 700.000 zugeordnet, 1.000.000 Gesamtumsatz: Der Rest gehört
+    // in den Nenner, sonst wird der Anteil zu gut.
+    const k = berechneKennzahl("Umsatz", 1_000_000, positionen);
+
+    assert.notEqual(k.konformAnteil, 400_000 / 700_000);
+  });
+
+  it("erkennt eine doppelte Zuordnung", () => {
+    const k = berechneKennzahl("CapEx", 300_000, positionen);
+
+    assert.match(k.beanstandungen.join(" "), /doppelt zugeordnet/);
+  });
+
+  it("beanstandet einen fehlenden Nenner", () => {
+    const k = berechneKennzahl("OpEx", 0, positionen);
+
+    assert.equal(k.konformAnteil, 0);
+    assert.match(k.beanstandungen.join(" "), /Nenner/);
+  });
+
+  it("beanstandet einen negativen Betrag", () => {
+    const k = berechneKennzahl("Umsatz", 1_000_000, [
+      { taetigkeit: "4.1", bezeichnung: "Gutschrift", betrag: -5, einstufung: "konform" },
+    ]);
+
+    assert.match(k.beanstandungen.join(" "), /negativen Betrag/);
+  });
+
+  it("zählt offene Tätigkeiten getrennt und nicht als konform", () => {
+    const k = berechneKennzahl("Umsatz", 1_000_000, [
+      {
+        taetigkeit: "4.1",
+        bezeichnung: "Stromerlöse",
+        betrag: 300_000,
+        einstufung: "offen",
+      },
+    ]);
+
+    assert.equal(k.konformBetrag, 0);
+    assert.equal(k.offenBetrag, 300_000);
+    // Offen heißt nicht "nicht fähig": Der Betrag zählt zur Fähigkeit.
+    assert.equal(k.faehigAnteil, 0.3);
+  });
+
+  it("weist Positionen unter der Wesentlichkeitsschwelle aus", () => {
+    const k = berechneKennzahl("Umsatz", 1_000_000, positionen);
+
+    assert.equal(WESENTLICHKEITSSCHWELLE, 0.1);
+    // 100.000 von 1.000.000 sind genau 10 % und damit wesentlich.
+    assert.deepEqual(k.unwesentlich, []);
+  });
+
+  it("führt eine Tätigkeit knapp unter der Schwelle als unwesentlich", () => {
+    const k = berechneKennzahl("Umsatz", 1_000_000, [
+      {
+        taetigkeit: "7.6",
+        bezeichnung: "Wartung",
+        betrag: 99_000,
+        einstufung: "konform",
+      },
+    ]);
+
+    assert.equal(k.unwesentlich.length, 1);
+    // Unwesentlich heißt nicht "zählt nicht" - der Betrag bleibt drin.
+    assert.equal(k.konformBetrag, 99_000);
+  });
+
+  it("bewertet die Wesentlichkeit je Kennzahl", () => {
+    // Derselbe Betrag ist beim kleineren Nenner wesentlich.
+    const umsatz = berechneKennzahl("Umsatz", 1_000_000, [
+      { taetigkeit: "4.1", bezeichnung: "Strom", betrag: 50_000, einstufung: "konform" },
+    ]);
+    const capex = berechneKennzahl("CapEx", 200_000, [
+      { taetigkeit: "4.1", bezeichnung: "Strom", betrag: 50_000, einstufung: "konform" },
+    ]);
+
+    assert.equal(umsatz.unwesentlich.length, 1);
+    assert.equal(capex.unwesentlich.length, 0);
+  });
+});
+
+describe("Zusammenfassung", () => {
+  it("nennt die Konformität vor der Fähigkeit", () => {
+    const satz = fasseKennzahlZusammen(
+      berechneKennzahl("Umsatz", 1_000_000, [
+        { taetigkeit: "4.1", bezeichnung: "Strom", betrag: 400_000, einstufung: "konform" },
+        { taetigkeit: "6.15", bezeichnung: "Laden", betrag: 100_000, einstufung: "faehig" },
+      ]),
+    );
+
+    assert.ok(satz.indexOf("konform") < satz.indexOf("fähig"), satz);
+    assert.match(satz, /40,0 %/);
+  });
+
+  it("nennt offene Nachweise, wenn welche anhängen", () => {
+    const satz = fasseKennzahlZusammen(
+      berechneKennzahl("CapEx", 500_000, [
+        { taetigkeit: "4.1", bezeichnung: "Zubau", betrag: 250_000, einstufung: "offen" },
+      ]),
+    );
+
+    assert.match(satz, /50,0 % hängen an offenen Nachweisen/);
+  });
+
+  it("sagt es, wenn kein Nenner hinterlegt ist", () => {
+    assert.match(fasseKennzahlZusammen(berechneKennzahl("OpEx", 0, [])), /kein Nenner/);
+  });
+});

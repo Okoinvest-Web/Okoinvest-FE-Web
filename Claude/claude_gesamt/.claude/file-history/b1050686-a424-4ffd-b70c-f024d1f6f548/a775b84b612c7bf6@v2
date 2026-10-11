@@ -1,0 +1,326 @@
+import "server-only";
+
+import { alle, eine, skalar } from "../db/verbindung.ts";
+import { pruefeKette, type Protokolleintrag } from "../sicherheit/kette.ts";
+
+/**
+ * Auswertungen der OT-Ebene: Edge-Hardware, Netzsegmentierung,
+ * Konfigurationsabgleich und Protokoll.
+ */
+
+/* ------------------------------------------------------------------ */
+/* Edge-Hardware                                                       */
+/* ------------------------------------------------------------------ */
+
+export interface GeraetZeile {
+  id: string;
+  anlage_id: string;
+  anlage: string;
+  rolle: string;
+  hersteller: string;
+  modell: string;
+  seriennummer: string | null;
+  prozessor: string | null;
+  arbeitsspeicher: string | null;
+  datenspeicher: string | null;
+  betriebssystem: string | null;
+  firmware: string | null;
+  temperatur_von: number | null;
+  temperatur_bis: number | null;
+  montage: string | null;
+  batterielos: number;
+  secure_boot: number;
+  ip_adresse: string | null;
+  vlan_nummer: number | null;
+  mobilfunk_technik: string | null;
+  sim_primaer: string | null;
+  sim_sekundaer: string | null;
+  status: string;
+  gesehen_am: string | null;
+  /** Minuten seit der letzten Rückmeldung, in der Datenbank gerechnet. */
+  stille_minuten: number | null;
+  schnittstellen: number;
+  schnittstellen_frei: number;
+}
+
+export function ladeGeraete(anlageId?: string): GeraetZeile[] {
+  const wo = anlageId ? "WHERE g.anlage_id = ?" : "";
+  const werte = anlageId ? [anlageId] : [];
+
+  return alle<GeraetZeile>(
+    `SELECT g.*, a.bezeichnung AS anlage, v.nummer AS vlan_nummer,
+            (SELECT COUNT(*) FROM edge_schnittstelle s
+              WHERE s.geraet_id = g.id) AS schnittstellen,
+            (SELECT COUNT(*) FROM edge_schnittstelle s
+              WHERE s.geraet_id = g.id AND s.belegt_durch IS NULL)
+              AS schnittstellen_frei,
+            -- Stille Zeit in der Datenbank gerechnet: Ein Renderlauf
+            -- muss bei gleichen Eingaben dasselbe ergeben.
+            CAST((julianday('now') - julianday(g.gesehen_am)) * 1440
+                 AS INTEGER) AS stille_minuten
+       FROM edge_geraet g
+       JOIN anlage a ON a.id = g.anlage_id
+       LEFT JOIN vlan v ON v.id = g.vlan_id
+       ${wo}
+      ORDER BY g.anlage_id, g.rolle DESC, g.id`,
+    ...werte,
+  );
+}
+
+export interface SchnittstelleZeile {
+  id: string;
+  geraet_id: string;
+  art: string;
+  bezeichnung: string;
+  protokoll: string | null;
+  belegt_durch: string | null;
+  bemerkung: string | null;
+}
+
+export function ladeSchnittstellen(geraetId?: string): SchnittstelleZeile[] {
+  const wo = geraetId ? "WHERE geraet_id = ?" : "";
+  const werte = geraetId ? [geraetId] : [];
+
+  return alle<SchnittstelleZeile>(
+    `SELECT * FROM edge_schnittstelle ${wo} ORDER BY geraet_id, id`,
+    ...werte,
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Netzsegmentierung                                                   */
+/* ------------------------------------------------------------------ */
+
+export interface ZoneZeile {
+  id: string;
+  anlage_id: string;
+  nummer: number;
+  bezeichnung: string;
+  zweck: string | null;
+  subnetz: string | null;
+  internet: number;
+  geraete: number;
+}
+
+export function ladeZonen(anlageId: string): ZoneZeile[] {
+  return alle<ZoneZeile>(
+    `SELECT v.*, (SELECT COUNT(*) FROM edge_geraet g WHERE g.vlan_id = v.id)
+              AS geraete
+       FROM vlan v
+      WHERE v.anlage_id = ?
+      ORDER BY v.nummer`,
+    anlageId,
+  );
+}
+
+export interface ZonenRegel {
+  id: string;
+  von_vlan: number;
+  nach_vlan: number;
+  erlaubt: number;
+  dienste: string | null;
+  begruendung: string | null;
+  fest: number;
+}
+
+export function ladeZonenregeln(anlageId: string): ZonenRegel[] {
+  return alle<ZonenRegel>(
+    `SELECT * FROM vlan_regel WHERE anlage_id = ?
+      ORDER BY von_vlan, nach_vlan`,
+    anlageId,
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Sollstand und Drift                                                 */
+/* ------------------------------------------------------------------ */
+
+export interface SollparameterZeile {
+  id: string;
+  anlage_id: string;
+  schluessel: string;
+  bezeichnung: string;
+  register: string;
+  sollwert: number;
+  einheit: string;
+  versiegelt: number;
+  toleranz: number;
+  grundlage: string | null;
+  /** Zuletzt gelesener Wert aus dem jüngsten Abgleich. */
+  istwert: number | null;
+  abweichend: number;
+}
+
+export function ladeSollparameter(anlageId: string): SollparameterZeile[] {
+  return alle<SollparameterZeile>(
+    `SELECT p.*,
+            b.istwert,
+            CASE WHEN b.id IS NULL THEN 0 ELSE 1 END AS abweichend
+       FROM sollparameter p
+       LEFT JOIN driftbefund b
+              ON b.schluessel = p.schluessel
+             AND b.lauf_id = (SELECT id FROM driftlauf
+                               WHERE anlage_id = p.anlage_id
+                               ORDER BY gelaufen_am DESC LIMIT 1)
+      WHERE p.anlage_id = ?
+      ORDER BY p.versiegelt DESC, p.register`,
+    anlageId,
+  );
+}
+
+export interface DriftlaufZeile {
+  id: string;
+  anlage_id: string;
+  anlage: string;
+  gelaufen_am: string;
+  soll_hash: string;
+  ist_hash: string;
+  geprueft: number;
+  befunde: number;
+  hoechste_schwere: string | null;
+  gesperrt: number;
+  dauer_ms: number | null;
+  ausloeser: string;
+  /** Stimmen Soll- und Ist-Fingerabdruck überein? */
+  unveraendert: number;
+}
+
+export function ladeDriftlaeufe(grenze = 20): DriftlaufZeile[] {
+  return alle<DriftlaufZeile>(
+    `SELECT l.*, a.bezeichnung AS anlage,
+            CASE WHEN l.soll_hash = l.ist_hash THEN 1 ELSE 0 END
+              AS unveraendert
+       FROM driftlauf l
+       JOIN anlage a ON a.id = l.anlage_id
+      ORDER BY l.gesperrt DESC, l.befunde DESC, l.gelaufen_am DESC
+      LIMIT ?`,
+    grenze,
+  );
+}
+
+export function ladeDriftlauf(anlageId: string): DriftlaufZeile | null {
+  return eine<DriftlaufZeile>(
+    `SELECT l.*, a.bezeichnung AS anlage,
+            CASE WHEN l.soll_hash = l.ist_hash THEN 1 ELSE 0 END
+              AS unveraendert
+       FROM driftlauf l
+       JOIN anlage a ON a.id = l.anlage_id
+      WHERE l.anlage_id = ?
+      ORDER BY l.gelaufen_am DESC LIMIT 1`,
+    anlageId,
+  );
+}
+
+export interface DriftbefundZeile {
+  id: string;
+  lauf_id: string;
+  anlage_id: string;
+  anlage: string;
+  schluessel: string;
+  bezeichnung: string;
+  register: string | null;
+  sollwert: number | null;
+  istwert: number | null;
+  einheit: string | null;
+  abweichung: number | null;
+  versiegelt: number;
+  schwere: string;
+  massnahme: string;
+  begruendung: string;
+  erledigt_am: string | null;
+  gelaufen_am: string;
+}
+
+export function ladeDriftbefunde(grenze = 50): DriftbefundZeile[] {
+  return alle<DriftbefundZeile>(
+    `SELECT b.*, l.anlage_id, l.gelaufen_am, a.bezeichnung AS anlage
+       FROM driftbefund b
+       JOIN driftlauf l ON l.id = b.lauf_id
+       JOIN anlage a    ON a.id = l.anlage_id
+      ORDER BY
+        CASE b.schwere WHEN 'kritisch' THEN 0 WHEN 'hoch' THEN 1
+                       WHEN 'mittel' THEN 2 ELSE 3 END,
+        l.gelaufen_am DESC
+      LIMIT ?`,
+    grenze,
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Protokollkette                                                      */
+/* ------------------------------------------------------------------ */
+
+export interface ProtokollZeile extends Protokolleintrag {
+  anlage_id: string | null;
+  anlage: string | null;
+}
+
+export function ladeProtokoll(grenze = 100): ProtokollZeile[] {
+  return alle<ProtokollZeile>(
+    `SELECT p.folge, p.anlage_id, a.bezeichnung AS anlage, p.zeitpunkt,
+            p.ereignis, p.urheber, p.herkunft, p.inhalt, p.vorgaenger, p.hash
+       FROM protokollkette p
+       LEFT JOIN anlage a ON a.id = p.anlage_id
+      ORDER BY p.folge DESC
+      LIMIT ?`,
+    grenze,
+  );
+}
+
+/**
+ * Prüft die gesamte Kette vom ersten Eintrag an.
+ *
+ * Bewusst über alle Einträge und nicht nur über die angezeigten: Eine
+ * Lücke am Anfang bliebe sonst unentdeckt, und genau dort würde
+ * jemand ansetzen, der etwas verbergen will.
+ */
+export function pruefeProtokollkette(): ReturnType<typeof pruefeKette> {
+  const eintraege = alle<Protokolleintrag>(
+    `SELECT folge, zeitpunkt, ereignis, urheber, herkunft, inhalt,
+            vorgaenger, hash
+       FROM protokollkette ORDER BY folge`,
+  );
+
+  return pruefeKette(eintraege);
+}
+
+/* ------------------------------------------------------------------ */
+/* Kennzahlen                                                          */
+/* ------------------------------------------------------------------ */
+
+export interface NetzKennzahlen {
+  geraete: number;
+  geraeteOnline: number;
+  geraeteGestoert: number;
+  anlagenGesperrt: number;
+  offeneBefunde: number;
+  versiegelteParameter: number;
+  protokollEintraege: number;
+  ketteGueltig: boolean;
+}
+
+export function ladeNetzKennzahlen(): NetzKennzahlen {
+  const z = (sql: string) => skalar<number>(sql) ?? 0;
+
+  return {
+    geraete: z("SELECT COUNT(*) FROM edge_geraet"),
+    geraeteOnline: z("SELECT COUNT(*) FROM edge_geraet WHERE status = 'Online'"),
+    geraeteGestoert: z(
+      "SELECT COUNT(*) FROM edge_geraet WHERE status IN ('Gestoert','Offline')",
+    ),
+    anlagenGesperrt: z(
+      `SELECT COUNT(*) FROM driftlauf l
+        WHERE l.gesperrt = 1
+          AND l.gelaufen_am = (SELECT MAX(gelaufen_am) FROM driftlauf
+                                WHERE anlage_id = l.anlage_id)`,
+    ),
+    offeneBefunde: z(
+      "SELECT COUNT(*) FROM driftbefund WHERE erledigt_am IS NULL",
+    ),
+    versiegelteParameter: z(
+      "SELECT COUNT(*) FROM sollparameter WHERE versiegelt = 1",
+    ),
+    protokollEintraege: z("SELECT COUNT(*) FROM protokollkette"),
+    ketteGueltig: pruefeProtokollkette().gueltig,
+  };
+}

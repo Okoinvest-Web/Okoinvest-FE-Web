@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Die Fakten | Ökovolt</title>
+<meta name="description" content="Was zwischen Ökovolt und der Salzburg AG geschah – belegt durch Urteile, Verträge und öffentliche Register.">
+<meta name="robots" content="index, follow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+<!--
+  ENTWURF /fakten – Stand [Datum]
+  VOR VERÖFFENTLICHUNG:
+  1. Anwaltliche Freigabe der gesamten Seite.
+  2. Alle [eckigen Klammern] ausfüllen.
+  3. Elemente mit data-welle="…" erst sichtbar schalten, wenn die jeweilige Presseaussendung verschickt ist
+     (bis dahin: class="hidden" ergänzen oder Element entfernen).
+  4. Keine Namen von Beschuldigten, keine Grant-Thornton-Berichte, keine Tonaufnahmen, keine Vergleichskorrespondenz.
+-->
+<style>
+  :root{
+    --green:#558227; --green-dark:#44691f; --navy:#151a24; --navy-2:#03122b;
+    --ink:#171717; --muted:#4e5667; --line:#e3e6ec; --bg:#fbfaf6; --card:#ffffff; --soft:#eef0f4;
+    --radius:16px;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;font-family:Inter,system-ui,"Segoe UI",Arial,sans-serif;color:var(--ink);background:var(--bg);line-height:1.6;font-size:17px}
+  h1,h2,h3{font-family:Manrope,Inter,system-ui,sans-serif;line-height:1.2;margin:0 0 .5em}
+  a{color:var(--green)}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+  .hidden{display:none!important}
+
+  /* Kopf */
+  .top{background:var(--navy);color:#fff}
+  .top .bar{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;max-width:1080px;margin:0 auto}
+  .logo{font-family:Manrope,sans-serif;font-weight:800;font-size:20px;color:#fff;text-decoration:none}
+  .logo span{color:#9bc46a}
+  .btn{display:inline-block;background:var(--green);color:#fff;text-decoration:none;font-weight:600;padding:12px 22px;border-radius:999px;border:0;cursor:pointer}
+  .btn:hover{background:var(--green-dark)}
+  .btn.ghost{background:transparent;border:1.5px solid rgba(255,255,255,.5)}
+  .hero{padding:72px 20px 80px;max-width:1080px;margin:0 auto}
+  .eyebrow{text-transform:uppercase;letter-spacing:.12em;font-size:13px;font-weight:600;color:#9bc46a}
+  .hero h1{font-size:clamp(34px,5.5vw,58px);font-weight:800;margin:.3em 0}
+  .hero p{font-size:20px;color:rgba(255,255,255,.8);max-width:720px}
+  .hero .actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:28px}
+  .stand{margin-top:22px;font-size:14px;color:rgba(255,255,255,.55)}
+
+  /* Kennzahlen */
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-top:-44px}
+  .stat{background:var(--card);border-radius:var(--radius);padding:24px;box-shadow:0 8px 30px rgba(21,26,36,.08)}
+  .stat .n{font-family:Manrope,sans-serif;font-weight:800;font-size:40px;color:var(--green);line-height:1}
+  .stat .t{margin-top:8px;font-weight:600}
+  .stat .s{font-size:14px;color:var(--muted);margin-top:4px}
+
+  section{padding:72px 0}
+  section h2{font-size:clamp(26px,3.5vw,36px);font-weight:800}
+  .lead{font-size:19px;color:var(--muted);max-width:760px}
+
+  /* Zeitstrahl */
+  .timeline{position:relative;margin-top:36px;padding-left:28px}
+  .timeline::before{content:"";position:absolute;left:8px;top:6px;bottom:6px;width:2px;background:var(--line)}
+  .ev{position:relative;margin-bottom:26px;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px}
+  .ev::before{content:"";position:absolute;left:-26px;top:22px;width:14px;height:14px;border-radius:50%;background:#fff;border:3px solid var(--green)}
+  .ev.key{border-color:var(--green);box-shadow:0 0 0 3px rgba(85,130,39,.12)}
+  .ev.key::before{background:var(--green)}
+  .ev .d{font-family:Manrope,sans-serif;font-weight:800;color:var(--green)}
+  .ev h3{font-size:18px;margin:.2em 0 .3em}
+  .ev p{margin:0;color:var(--muted)}
+  .src{display:inline-block;margin-top:10px;font-size:12.5px;background:var(--soft);color:var(--muted);padding:3px 10px;border-radius:999px}
+
+  /* E-Mails */
+  .mails{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:30px}
+  @media(max-width:860px){.mails{grid-template-columns:1fr}}
+  .mail{margin:0;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:20px;display:flex;flex-direction:column;gap:12px}
+  .mail.key{border-color:var(--green);box-shadow:0 0 0 3px rgba(85,130,39,.12)}
+  .mail .meta{font-size:14px;color:var(--muted)}
+  .mail .meta .d{font-family:Manrope,sans-serif;font-weight:800;color:var(--green)}
+  .mail img{width:100%;height:auto;border-radius:10px;border:1px solid var(--line)}
+  .mail .shot.todo{border:2px dashed #e0b4b4;background:#fff5f5;color:#b00000;border-radius:10px;padding:34px 16px;text-align:center;font-weight:600;font-size:14px}
+  .mail figcaption{font-family:Manrope,sans-serif;font-weight:700;font-size:17px;line-height:1.4}
+  .mail .why{margin:0;font-size:14.5px;color:var(--muted);border-top:1px solid var(--line);padding-top:10px}
+
+  /* Zitate */
+  .quotes{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px;margin-top:32px}
+  blockquote{margin:0;background:var(--navy);color:#fff;border-radius:var(--radius);padding:26px}
+  blockquote p{font-family:Manrope,sans-serif;font-size:19px;font-weight:700;margin:0 0 14px}
+  blockquote cite{font-style:normal;font-size:13.5px;color:rgba(255,255,255,.65)}
+
+  /* Fragen / Standards */
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-top:28px}
+  @media(max-width:820px){.grid2{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:26px}
+  ol.q{counter-reset:q;list-style:none;padding:0;margin:0}
+  ol.q li{counter-increment:q;position:relative;padding:0 0 16px 48px;font-weight:600}
+  ol.q li::before{content:counter(q);position:absolute;left:0;top:-2px;width:32px;height:32px;border-radius:50%;background:var(--green);color:#fff;display:grid;place-items:center;font-family:Manrope,sans-serif}
+  ul.check{list-style:none;padding:0;margin:0}
+  ul.check li{position:relative;padding:0 0 12px 30px}
+  ul.check li::before{content:"✓";position:absolute;left:0;top:0;color:var(--green);font-weight:800}
+
+  /* Einordnung */
+  .note{background:#fff8e6;border:1px solid #f0dca8;border-radius:var(--radius);padding:22px 24px;margin-top:28px}
+  .note h3{font-size:17px}
+  .note ul{margin:.3em 0 0;padding-left:20px}
+  .other{background:var(--soft);border-radius:var(--radius);padding:22px 24px;margin-top:18px}
+
+  /* Dokumente */
+  table.docs{width:100%;border-collapse:collapse;margin-top:26px;background:var(--card);border-radius:var(--radius);overflow:hidden}
+  table.docs th,table.docs td{text-align:left;padding:14px 16px;border-bottom:1px solid var(--line);font-size:15px;vertical-align:top}
+  table.docs th{background:var(--navy);color:#fff;font-weight:600}
+  @media(max-width:640px){table.docs thead{display:none}table.docs td{display:block;border:0;padding:6px 16px}table.docs tr{display:block;border-bottom:1px solid var(--line);padding:10px 0}}
+
+  /* FAQ */
+  details{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 20px;margin-bottom:12px}
+  summary{cursor:pointer;font-weight:600;font-family:Manrope,sans-serif}
+  details p{color:var(--muted);margin:.7em 0 0}
+
+  .contact{background:var(--navy);color:#fff;border-radius:var(--radius);padding:36px;display:flex;flex-wrap:wrap;justify-content:space-between;gap:20px;align-items:center}
+  .contact p{margin:0;color:rgba(255,255,255,.8)}
+  footer{padding:28px 0 48px;font-size:13.5px;color:var(--muted)}
+  .wait{color:#c0392b;font-weight:700}
+  /* Ankündigung ohne Gewerbe */
+  .gap{margin-top:30px;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:10px 24px}
+  .gap-row{display:grid;grid-template-columns:120px 1fr;gap:16px;padding:14px 0;border-bottom:1px solid var(--line);align-items:baseline}
+  .gap-row:last-child{border-bottom:0}
+  .gap-d{font-family:Manrope,sans-serif;font-weight:800;color:var(--green)}
+  .gap-row.hot{background:#fff6e0;margin:0 -24px;padding:14px 24px}
+  .gap-row.hot .gap-d{color:#b36b00}
+  .gap-bar{margin:6px 0;height:44px;border-radius:10px;background:repeating-linear-gradient(135deg,#fde2e2 0 12px,#fbd0d0 12px 24px);display:flex;align-items:center;justify-content:center}
+  .gap-bar.long{height:64px}
+  .gap-bar span{font-family:Manrope,sans-serif;font-weight:800;color:#b00000;font-size:15px;background:rgba(255,255,255,.85);padding:4px 12px;border-radius:999px}
+  .bigq{margin-top:22px;background:var(--navy);color:#fff;border-radius:var(--radius);padding:28px}
+  .bigq-t{font-family:Manrope,sans-serif;font-weight:800;font-size:clamp(24px,3.2vw,34px);color:#9bc46a;margin-bottom:8px}
+  .bigq p{margin:0;color:rgba(255,255,255,.88);font-size:17.5px}
+  @media(max-width:560px){.gap-row{grid-template-columns:1fr;gap:2px}}
+  /* Rechner */
+  .calc{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:28px}
+  @media(max-width:860px){.calc{grid-template-columns:1fr}}
+  .inputs{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:24px;display:flex;flex-direction:column;gap:18px}
+  .inputs label{font-weight:600;display:flex;flex-direction:column;gap:6px}
+  .inputs input{font:inherit;font-size:18px;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;background:#fff}
+  .inputs input:focus{outline:none;border-color:var(--green)}
+  .inputs small{font-weight:400;color:var(--muted);font-size:13px}
+  .results{display:flex;flex-direction:column;gap:14px}
+  .res{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px 22px}
+  .res .lbl{font-size:14px;color:var(--muted)}
+  .res .val{font-family:Manrope,sans-serif;font-weight:800;font-size:30px;color:var(--green)}
+  .res.neg .val{color:#c0392b}
+  .res.big{background:var(--navy);border:0}
+  .res.big .lbl{color:rgba(255,255,255,.7)}
+  .res.big .val{color:#9bc46a;font-size:40px}
+  .split{margin-top:6px;font-size:14px;color:rgba(255,255,255,.8)}
+  .calcnote{font-size:13.5px;color:var(--muted);margin-top:16px}
+  .ph{background:#ffe7e7;color:#b00000;border-radius:4px;padding:0 4px;font-weight:600}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="bar">
+    <a class="logo" href="/">Ökovolt<span> Solartechnik</span></a>
+    <a class="btn ghost" href="#kontakt">Pressekontakt</a>
+  </div>
+  <div class="hero">
+    <div class="eyebrow">Ökovolt und die Salzburg AG</div>
+    <h1>Partner auf dem Papier.<br>Konkurrent am selben Tag.</h1>
+    <p>Was zwischen Ökovolt und dem Landesenergieversorger Salzburg AG geschah – belegt durch Urteile, Verträge und öffentliche Register. Jede Aussage auf dieser Seite hat eine Quelle.</p>
+    <div class="actions">
+      <a class="btn" href="#zeitstrahl">Zum Zeitstrahl</a>
+      <a class="btn ghost" href="#emails">Die E-Mails</a>
+      <a class="btn ghost" href="#dokumente">Dokumente</a>
+    </div>
+    <div class="stand">Stand: <span class="ph">[Datum]</span></div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <div class="stats">
+    <div class="stat">
+      <div class="n">3 : 0</div>
+      <div class="t">Verfahren vor dem OLG München</div>
+      <div class="s">Berufungen der Salzburg AG zurückgewiesen, Rügen verworfen (Eilverfahren)</div>
+    </div>
+    <div class="stat">
+      <div class="n">18.10.21</div>
+      <div class="t">Vertrag und Konkurrenz am selben Tag</div>
+      <div class="s">Syndikatsvertrag mit Ökovolt – und Gründung der eigenen Tochter one2zero</div>
+    </div>
+    <div class="stat" data-welle="AT-1">
+      <div class="n">WKStA</div>
+      <div class="t">Ermittlungsverfahren eingeleitet</div>
+      <div class="s">Auf Auftrag des Landesgerichts für Strafsachen Wien, Hofer-Auftrag. Es gilt die Unschuldsvermutung.</div>
+    </div>
+  </div>
+
+  <!-- ===================== ZEITSTRAHL ===================== -->
+  <section id="zeitstrahl">
+    <h2>Der Zeitstrahl</h2>
+    <p class="lead">Die wichtigsten Stationen – jede mit ihrer Quelle.</p>
+
+    <div class="timeline">
+      <div class="ev">
+        <div class="d">2020</div>
+        <h3>Beteiligungsgespräche und Due Diligence</h3>
+        <p>Die Salzburg AG interessiert sich für eine Beteiligung. Ökovolt gewährt umfassenden Einblick in Zahlen, Kunden und Projekte – auch in das Photovoltaik-Projekt für die Filialen des Diskonters Hofer, an dem Ökovolt seit 2015 arbeitet.</p>
+        <span class="src">Quelle: Geheimhaltungsvereinbarung 06.04.2020, Korrespondenz</span>
+      </div>
+      <div class="ev">
+        <div class="d">Januar – Februar 2021</div>
+        <h3>Rückzug aus der Hofer-Ausschreibung</h3>
+        <p>Nach Absprache mit der Salzburg AG gibt Ökovolt kein eigenes Angebot ab. Am 5. Februar 2021 schreibt Ökovolt: „… haben wir uns aufgrund unserer Besprechung beim Hofer zurück gezogen und kein eigenes Angebot abgegeben, da wir ja zusammen dort aufschlagen wollten.“</p>
+        <span class="src">Quelle: E-Mail vom 05.02.2021 (Ausschnitt unten)</span>
+      </div>
+      <div class="ev key" data-welle="AT-1">
+        <div class="d">10. Juni 2021</div>
+        <h3>„Ökovolt als Errichtungspartner bevorzugt einsetzen“</h3>
+        <p>Die Salzburg-AG-Gruppe schreibt an das eigene Hofer-Projektteam: „Es ist das vereinbarte Ziel das Projekt Hofer zum ersten Leuchtturmprojekt für diese Partnerschaft zu entwickeln und Ökovolt als Errichtungspartner bevorzugt einzusetzen.“</p>
+        <span class="src">Quelle: E-Mail vom 10.06.2021, Ökovolt von der Salzburg-AG-Seite am 07.12.2024 weitergeleitet (Ausschnitt unten)</span>
+      </div>
+      <div class="ev key">
+        <div class="d">18. Oktober 2021</div>
+        <h3>Partnerschaft unterschrieben – Konkurrenz gegründet</h3>
+        <p>Die Salzburg AG erwirbt 49 % an Ökovolt. Der Syndikatsvertrag nennt als Ziel die „Vermeidung von Wettbewerbssituationen“; Ökovolt soll „bevorzugter Partner“ sein. Am selben Tag gründet die Salzburg AG die one2zero GmbH – eine eigene Tochter im selben Geschäftsfeld.</p>
+        <span class="src">Quelle: Syndikatsvertrag (Pkt. 4.2, 4.3); OLG München 14 U 3746/25, Tatbestand</span>
+      </div>
+      <div class="ev key" data-welle="AT-1">
+        <div class="d">Dezember 2021</div>
+        <h3>Die Tochter ist gegründet – das Angebot holt man sich trotzdem bei Ökovolt</h3>
+        <p>Zwei Monate nach Gründung der one2zero bittet die Salzburg AG Ökovolt um die „Aktualisierung letztes Hofer Angebot unter den aktuellen Rahmenbedingungen“ – und bedankt sich am 14. Dezember für das aktualisierte Angebot.</p>
+        <span class="src">Quelle: E-Mails vom 10.12. und 14.12.2021 (Ausschnitte unten)</span>
+      </div>
+      <div class="ev">
+        <div class="d">2021 / 2022</div>
+        <h3>Der Hofer-Bau geht an die Tochter der Salzburg AG</h3>
+        <p>Den Bau erhält nicht Ökovolt, sondern die one2zero, die Tochter der Salzburg AG; errichtet wird von Subunternehmen. Erste Gewerbeberechtigung der one2zero: 28.11.2022 (Unternehmensberatung). Berechtigung für Elektrotechnik: 02.08.2023.</p>
+        <span class="src">Quelle: GISA-Zahlen 35453048, 35939931; Firmenbuch FN 567399k</span>
+      </div>
+      <div class="ev key" data-welle="AT-2b">
+        <div class="d">2. Dezember 2024</div>
+        <h3>Controlling-Daten kopiert</h3>
+        <p>Zwei allgemein beeidete und gerichtlich zertifizierte Sachverständige für IT-Forensik (beauftragt von Ökovolt) stellen fest: Der gesamte Controlling-Ordner – rund 1.150 Dateien – wird auf den Laptop des von der Salzburg AG entsandten Geschäftsführers kopiert. Am selben Tag wird sein Wechsel zur one2zero vorbereitet.</p>
+        <span class="src">Quelle: OLG München 14 U 3746/25 (Würdigung der forensischen Befunde)</span>
+      </div>
+      <div class="ev" data-welle="AT-2b">
+        <div class="d">Februar 2025</div>
+        <h3>Angestellt bei der Salzburg AG</h3>
+        <p>Der Geschäftsführer scheidet bei Ökovolt aus und wird – nach eigenen Angaben der Salzburg AG vor Gericht – Angestellter der Salzburg AG. Die Staatsanwaltschaft Memmingen ermittelt; es gilt die Unschuldsvermutung.</p>
+        <span class="src">Quelle: OLG München 14 U 3746/25</span>
+      </div>
+      <div class="ev key" data-welle="AT-2">
+        <div class="d">10. Oktober 2025</div>
+        <h3>Die Generalversammlung „im Flüsterton“</h3>
+        <p>Die Vertreter der Salzburg AG haben das Protokoll samt Abstimmungsergebnissen vorab geschrieben und die Versammlung begonnen, während die Mehrheitsgesellschafter noch auf dem Weg in den Saal waren. Das Oberlandesgericht wertet das als „treuwidrig“. Das Firmenbuchgericht setzt die Eintragung der Beschlüsse aus.</p>
+        <span class="src">Quelle: OLG München 14 U 3748/25; Beschluss 18.06.2026; Firmenbuchgericht <span class="ph">[GZ, Datum]</span></span>
+      </div>
+      <div class="ev key">
+        <div class="d">21. Mai / 18. Juni 2026</div>
+        <h3>Dreimal gescheitert vor dem Oberlandesgericht München</h3>
+        <p>Die Gesellschafter hatten die Anteile der Salzburg AG an der deutschen Ökovolt eingezogen. Alle drei Anträge der Salzburg AG dagegen scheitern; auch ihre Rügen werden verworfen. Die Entscheidungen ergingen im Eilverfahren.</p>
+        <span class="src">Quelle: OLG München 14 U 3746/25, 14 U 3748/25, 14 U 295/26</span>
+      </div>
+      <div class="ev" data-welle="AT-1">
+        <div class="d">27. August 2026</div>
+        <h3>Gericht beauftragt WKStA</h3>
+        <p>Das Landesgericht für Strafsachen Wien trägt der Wirtschafts- und Korruptionsstaatsanwaltschaft auf, zum Hofer-Sachverhalt ein Ermittlungsverfahren einzuleiten. Es gilt die Unschuldsvermutung.</p>
+        <span class="src">Quelle: LG für Strafsachen Wien, 176 Bl 7/26w</span>
+      </div>
+      <div class="ev" data-welle="AT-1b">
+        <div class="d">21. September 2026</div>
+        <h3>Die Eigentümer werden informiert</h3>
+        <p>Ökovolt informiert Land Salzburg, Stadt Salzburg und Energie AG Oberösterreich umfassend und ersucht um eine unabhängige Prüfung. Die Frist endet am 30. September.</p>
+        <span class="src">Antwort bis heute: keine (Stand <span class="ph">[Datum]</span>)</span>
+      </div>
+      <div class="ev">
+        <div class="d"><span class="ph">[Termin prüfen]</span></div>
+        <h3>Hauptverhandlung in Memmingen</h3>
+        <p>Das Landgericht Memmingen verhandelt in der Hauptsache über die Einziehung (1 HK O 1771/25).</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== STECKBRIEF ONE2ZERO ===================== -->
+  <!-- Fokus auf das Unternehmen, nie auf Personen. Nur Register-, Urteils- und Bilanzdaten. -->
+  <section id="one2zero">
+    <h2>Die Salzburg AG und ihre Tochter one2zero</h2>
+    <p class="lead">Die one2zero GmbH ist eine hundertprozentige Tochter der Salzburg AG. Die Salzburg AG hat sie gegründet, finanziert und beauftragt. Die wichtigsten Daten – alle aus öffentlichen Registern und Gerichtsentscheidungen:</p>
+    <table class="docs">
+      <thead><tr><th>Merkmal</th><th>Fakt</th><th>Quelle</th></tr></thead>
+      <tbody>
+        <tr><td>Gründung</td><td><strong>18. Oktober 2021</strong> – am Tag des Syndikatsvertrags mit Ökovolt</td><td>OLG München 14 U 3746/25; Firmenbuch FN 567399k</td></tr>
+        <tr><td>Eigentümerin</td><td>Salzburg AG, 100 %</td><td>Firmenbuch</td></tr>
+        <tr><td>Geschäftsführung</td><td>Ein Mitarbeiter aus der Strategieabteilung der Salzburg AG, der 2020 im Beteiligungsprozess Einblick in Ökovolt erhalten hatte – seit der Gründung am 18.10.2021 ununterbrochen</td><td>Firmenbuch; E-Mails aus 2020</td></tr>
+        <tr><td>Geschäftsfeld</td><td>Photovoltaik und Energiedienstleistungen – im selben Markt wie Ökovolt</td><td>Firmenbuch, Unternehmensauftritt</td></tr>
+        <tr><td>Erste Gewerbeberechtigung</td><td>28.11.2022 – Unternehmensberatung</td><td>GISA 35453048</td></tr>
+        <tr><td>Gewerbe Elektrotechnik</td><td>erst seit 02.08.2023</td><td>GISA 35939931</td></tr>
+        <tr><td>Hofer-Projekt</td><td>übernahm den Bau, für den sich Ökovolt zurückgezogen hatte</td><td>Korrespondenz 2021; LG Memmingen</td></tr>
+        <tr data-welle="AT-2b"><td>Vorgesehene Geschäftsführung</td><td>Wechsel des von der Salzburg AG in Ökovolt entsandten Geschäftsführers zur one2zero am 02.12.2024 eingeleitet – am Tag der Datenkopie</td><td>OLG München 14 U 3746/25</td></tr>
+        <tr data-welle="AT-4"><td>Wirtschaftliche Entwicklung</td><td>Verluste seit Gründung, aufgelaufen <span class="ph">[Betrag lt. Firmenbuch]</span></td><td>Jahresabschlüsse</td></tr>
+      </tbody>
+    </table>
+
+    <!-- Keine Namen. Es geht um die Entscheidung der Salzburg AG, nicht um eine Person. -->
+    <div class="bigq" style="margin-top:22px">
+      <div class="bigq-t">Vom Einblick zur Konkurrenz</div>
+      <p>2020 öffnete Ökovolt der Salzburg AG im Beteiligungsprozess die Bücher: Kunden, Kalkulationen, Projekte – auch das Hofer-Projekt. Zu den Empfängern dieser Informationen gehörte ein Mitarbeiter der Strategieabteilung der Salzburg AG. Am 18. Oktober 2021 – am selben Tag, an dem sie mit Ökovolt die Partnerschaft unterschrieb – machte die Salzburg AG ihn zum Geschäftsführer ihrer neu gegründeten Photovoltaik-Tochter. Er führt sie bis heute. Es ist jenes Unternehmen, das den Hofer-Bau übernahm.</p>
+      <p style="margin-top:12px">Die Frage richtet sich an die Salzburg AG: <strong style="color:#fff">Wie verträgt es sich mit einer Partnerschaft, wer im Beteiligungsprozess die Geschäftsgeheimnisse des Partners gesehen hat, an die Spitze eines Konkurrenzunternehmens zu setzen?</strong></p>
+    </div>
+    <span class="src">Quellen: E-Mails an die Salzburg AG vom 14.09.2020, 23.10.2020 und 18.11.2020; Firmenbuch FN 567399k. Über eine persönliche Verantwortung entscheiden ausschließlich Behörden und Gerichte.</span>
+  </section>
+
+  <!-- ===================== ANKÜNDIGUNG OHNE GEWERBE ===================== -->
+  <!-- Welle 3. Nur öffentliche Quellen: Präsentation 30.06.2022 / Bericht brutkasten 01.07.2022, GISA, Firmenbuch. -->
+  <section id="ankuendigung" data-welle="AT-3">
+    <h2>Großauftrag angekündigt – ohne Gewerbeberechtigung</h2>
+    <p class="lead">Am 30. Juni 2022 präsentierte die Salzburg AG ihre Tochter one2zero öffentlich und kündigte an, eine große österreichische Handelskette mit Photovoltaikanlagen auszustatten. Laut Gewerbeinformationssystem Austria besaß die one2zero zu diesem Zeitpunkt keine einzige Gewerbeberechtigung.</p>
+
+    <div class="gap">
+      <div class="gap-row">
+        <div class="gap-d">18.10.2021</div><div class="gap-t">Gründung der one2zero – am Tag des Vertrags mit Ökovolt</div>
+      </div>
+      <div class="gap-row">
+        <div class="gap-d">Dez. 2021</div><div class="gap-t">Die Salzburg AG lässt sich von Ökovolt das Hofer-Angebot aktualisieren</div>
+      </div>
+      <div class="gap-row hot">
+        <div class="gap-d">30.06.2022</div><div class="gap-t"><strong>Öffentliche Ankündigung:</strong> one2zero stattet große Handelskette mit Photovoltaik aus</div>
+      </div>
+      <div class="gap-bar"><span>151 Tage ohne jede Gewerbeberechtigung</span></div>
+      <div class="gap-row">
+        <div class="gap-d">28.11.2022</div><div class="gap-t">Erste Gewerbeberechtigung – <strong>Unternehmensberatung</strong></div>
+      </div>
+      <div class="gap-bar long"><span>weitere 247 Tage ohne Berechtigung für Elektrotechnik</span></div>
+      <div class="gap-row">
+        <div class="gap-d">02.08.2023</div><div class="gap-t">Gewerbeberechtigung <strong>Elektrotechnik</strong> – 398 Tage nach der Ankündigung</div>
+      </div>
+    </div>
+
+    <div class="bigq">
+      <div class="bigq-t">Woher kam das Know-how?</div>
+      <p>Eine Firma, gegründet am Tag der Partnerschaft mit Ökovolt, acht Monate alt und ohne Gewerbeberechtigung, übernimmt ein Photovoltaik-Großprojekt – das Ökovolt seit 2015 vorbereitet, der Salzburg AG in der Due Diligence offengelegt und für das es der Salzburg AG noch im Dezember 2021 ein aktualisiertes Angebot geliefert hatte.</p>
+    </div>
+    <span class="src">Quellen: Bericht brutkasten.com vom 01.07.2022 („one2zero: Was hinter dem neuen Corporate Startup der Salzburg AG steckt“); GISA 35453048, 35939931; Firmenbuch FN 567399k; E-Mails vom 10.12. und 14.12.2021</span>
+  </section>
+
+  <!-- ===================== E-MAILS ===================== -->
+  <!-- Nur vollständig geschwärzte Ausschnitte einbinden. Anwaltliche Freigabe vor Veröffentlichung. -->
+  <section id="emails" data-welle="AT-1">
+    <h2>Was damals geschrieben wurde</h2>
+    <p class="lead">Echte Ausschnitte aus der Korrespondenz – lange bevor es einen Streit gab. Namen und E-Mail-Adressen von Mitarbeitenden sind geschwärzt.</p>
+    <div class="mails">
+      <figure class="mail">
+        <div class="meta"><span class="d">5. Februar 2021</span> · Ökovolt an die Salzburg-AG-Gruppe</div>
+        <img src="img/mail_2021-02-05_rueckzug.png" alt="E-Mail von Ökovolt vom 05.02.2021 zum abgesprochenen Rückzug aus der Hofer-Ausschreibung" loading="lazy">
+        <figcaption>„… haben wir uns aufgrund unserer Besprechung beim Hofer zurück gezogen und kein eigenes Angebot abgegeben, da wir ja zusammen dort aufschlagen wollten?“</figcaption>
+        <p class="why">Der Rückzug aus der Ausschreibung war abgesprochen.</p>
+      </figure>
+      <figure class="mail key">
+        <div class="meta"><span class="d">10. Juni 2021</span> · Salzburg-AG-Gruppe, Betreff „Ökovolt strategischer Partner / Projekt Hofer“</div>
+        <img src="img/mail_2021-06-10_leuchtturmprojekt.png" alt="E-Mail der Salzburg-AG-Gruppe vom 10.06.2021: vereinbartes Ziel, Ökovolt als Errichtungspartner bevorzugt einzusetzen" loading="lazy">
+        <figcaption>„Es ist das vereinbarte Ziel das Projekt Hofer zum ersten Leuchtturmprojekt für diese Partnerschaft zu entwickeln und Ökovolt als Errichtungspartner bevorzugt einzusetzen.“</figcaption>
+        <p class="why">Die Salzburg-AG-Seite selbst: Ökovolt sollte bevorzugt errichten.</p>
+      </figure>
+      <figure class="mail key">
+        <div class="meta"><span class="d">10. Dezember 2021</span> · Salzburg AG an Ökovolt – zwei Monate nach Gründung der one2zero</div>
+        <img src="img/mail_2021-12-10_aktualisierung_hofer.png" alt="E-Mail der Salzburg AG vom 10.12.2021 mit der Bitte um Aktualisierung des letzten Hofer-Angebots" loading="lazy">
+        <figcaption>„Aktualisierung letztes Hofer Angebot unter den aktuellen Rahmenbedingungen“</figcaption>
+        <p class="why">Die eigene Tochter war schon gegründet – das Angebot holte man sich trotzdem bei Ökovolt.</p>
+      </figure>
+      <figure class="mail">
+        <div class="meta"><span class="d">14. Dezember 2021</span> · Salzburg AG an Ökovolt</div>
+        <img src="img/mail_2021-12-14_dank_hofer_angebot.png" alt="E-Mail der Salzburg AG vom 14.12.2021 mit Dank für das aktualisierte Hofer-Angebot" loading="lazy">
+        <figcaption>„Vielen Dank für das aktualisierte Angebot Hofer …“</figcaption>
+        <p class="why">Die Salzburg AG bestätigt den Erhalt.</p>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ===================== RECHNER ===================== -->
+  <!-- Welle 4. Voreinstellungen nur mit Quelle. one2zero-Verluste vor Veröffentlichung mit Jahresabschlüssen im Firmenbuch abgleichen. -->
+  <section id="rechner" data-welle="AT-4">
+    <h2>Was der Hofer-Auftrag für die öffentliche Hand bedeutet hätte</h2>
+    <p class="lead">Eine Modellrechnung zum Selbstprüfen: Die Salzburg AG hält 49 % an Ökovolt. Hätte Ökovolt den Hofer-Auftrag errichtet, wäre ein Teil des Ertrags über die Salzburg AG an Land und Stadt Salzburg geflossen. Verändern Sie die Annahmen selbst.</p>
+    <div class="calc">
+      <div class="inputs">
+        <label>Deckungsbeitrag aus dem Hofer-Bau – nur Errichtung (€)
+          <input type="number" id="db" value="10500000" step="100000" min="0">
+          <small>Voreinstellung: 10,5 Mio. € – vom LG Memmingen im Eilverfahren als glaubhaft angesehen (wiedergegeben in OLG München 14 U 3746/25)</small>
+        </label>
+        <label>Anteil der Salzburg AG an Ökovolt (%)
+          <input type="number" id="anteil" value="49" step="1" min="0" max="100">
+          <small>Laut Beteiligung vom 18.10.2021</small>
+        </label>
+        <label>Aufgelaufene Verluste der one2zero GmbH (€)
+          <input type="number" id="verlust" value="5160000" step="10000" min="0">
+          <small>Voreinstellung laut Jahresabschlüssen bis 2024 <span class="ph">[mit Firmenbuch abgleichen]</span></small>
+        </label>
+      </div>
+      <div class="results">
+        <div class="res"><div class="lbl">Anteil der Salzburg AG am Hofer-Ertrag bei Errichtung durch Ökovolt</div><div class="val" id="r1">–</div></div>
+        <div class="res neg"><div class="lbl">Bisherige Verluste der eigenen Tochter one2zero</div><div class="val" id="r2">–</div></div>
+        <div class="res big"><div class="lbl">Unterschied für die Salzburg AG</div><div class="val" id="r3">–</div>
+          <div class="split" id="r4"></div></div>
+      </div>
+    </div>
+    <!-- Erst mit Welle 5 freischalten; bei laufenden Vergleichsgesprächen ganz weglassen -->
+    <div class="card" data-welle="AT-5" style="margin-top:20px;border-left:5px solid var(--green)">
+      <h3 style="margin-bottom:.3em">Die Frage, die sich daraus ergibt</h3>
+      <p style="margin:0">Wenn ein Unternehmen im Eigentum der öffentlichen Hand einen Ertrag aus der eigenen Beteiligung nicht nutzt und zugleich eine Tochter mit Verlusten finanziert: <strong>Ist der Salzburg AG dadurch ein Vermögensnachteil entstanden – und wer hat das geprüft?</strong></p>
+      <p style="margin:.6em 0 0;color:var(--muted);font-size:15px">Die Überwachung solcher Entscheidungen ist Aufgabe des Aufsichtsrats. Ökovolt hat den Sachverhalt zudem den zuständigen Behörden zur Prüfung vorgelegt.</p>
+    </div>
+    <p class="calcnote"><strong>Die Rechnung erfasst nur den Bauauftrag.</strong> Erträge aus dem laufenden Betrieb der Anlagen (Contracting, Stromlieferung, Wartung über die Laufzeit) sind nicht enthalten.<br>
+    Modellrechnung, keine Tatsachenbehauptung. Sie vereinfacht bewusst: Sie unterstellt, dass die Salzburg AG ohne eigene Tochter keine vergleichbaren Verluste gehabt hätte, und berücksichtigt keine Steuern, Finanzierungskosten oder Ausschüttungspolitik. Die Aufteilung auf Land und Stadt folgt den Eigentumsanteilen an der Salzburg AG (Land 42,56 %, Stadt 31,31 %, Energie AG Oberösterreich 26,13 %).</p>
+  </section>
+  <script>
+    (function(){
+      const f = n => new Intl.NumberFormat('de-AT',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(n);
+      const $ = id => document.getElementById(id);
+      function calc(){
+        const db = +$('db').value || 0, a = (+$('anteil').value || 0)/100, v = +$('verlust').value || 0;
+        const share = db*a, diff = share + v;
+        $('r1').textContent = f(share);
+        $('r2').textContent = '− ' + f(v);
+        $('r3').textContent = f(diff);
+        $('r4').innerHTML = 'davon rechnerisch Land Salzburg <b>' + f(diff*0.4256) + '</b> · Stadt Salzburg <b>' + f(diff*0.3131) + '</b> · Energie AG Oberösterreich <b>' + f(diff*0.2613) + '</b>';
+      }
+      ['db','anteil','verlust'].forEach(id => $(id).addEventListener('input', calc));
+      calc();
+    })();
+  </script>
+
+  <!-- ===================== ZITATE ===================== -->
+  <section id="gerichte">
+    <h2>Was die Gerichte sagen</h2>
+    <p class="lead">Wörtliche Auszüge aus den Entscheidungen des Oberlandesgerichts München (Eilverfahren).</p>
+    <div class="quotes">
+      <blockquote>
+        <p>„Der sofortige Beginn der Versammlung, das Vorziehen der ‚kritischen‘ Tagesordnungspunkte und ihre beschleunigte Behandlung sind … als treuwidrig zu bewerten.“</p>
+        <cite>OLG München, 14 U 3748/25</cite>
+      </blockquote>
+      <blockquote>
+        <p>„… nach Erscheinen der gegnerischen Mehrheitsgruppe im Flüsterton fortsetzte, das vorgesehene Verfahren der Beschlussfassung ausgehebelt …“</p>
+        <cite>OLG München, Beschluss vom 18.06.2026</cite>
+      </blockquote>
+      <blockquote data-welle="AT-2b">
+        <p>„Dass [der Geschäftsführer] ohne Mitwirkung der Klägerin gehandelt hätte, ist zwar vorstellbar; es erscheint jedoch deutlich weniger wahrscheinlich.“</p>
+        <cite>OLG München, 14 U 3746/25 · Klägerin = Salzburg AG</cite>
+      </blockquote>
+      <blockquote>
+        <p>„… auch im hypothetischen Fall, dass ein Wettbewerbsverbot überhaupt nicht vereinbart worden wäre, nicht zu akzeptieren.“</p>
+        <cite>OLG München, 14 U 3746/25</cite>
+      </blockquote>
+    </div>
+  </section>
+
+  <!-- ===================== FRAGEN & FORDERUNG ===================== -->
+  <section id="fragen">
+    <h2>Fragen, auf die wir eine Antwort erwarten</h2>
+    <div class="grid2">
+      <div class="card">
+        <h3>An die Salzburg AG</h3>
+        <ol class="q">
+          <li>Warum wurde am Tag der Vertragsunterzeichnung mit Ökovolt eine eigene Konkurrentin gegründet?</li>
+          <li>Warum ging der Hofer-Auftrag an diese Tochter und nicht an den vertraglich „bevorzugten Partner“?</li>
+          <li>Warum wurde das Protokoll der Generalversammlung vom 10. Oktober 2025 vor der Versammlung geschrieben?</li>
+          <li data-welle="AT-2b">Warum wurde der frühere Geschäftsführer, bei dem Sachverständige die Kopie der Controlling-Daten festgestellt haben, bei der Salzburg AG angestellt?</li>
+          <li>Wie viel haben die Verfahren gegen Ökovolt bisher gekostet – und wer bezahlt sie?</li>
+        </ol>
+      </div>
+      <div class="card" id="pruefung">
+        <h3>Unsere Forderung: eine unabhängige Prüfung</h3>
+        <p style="color:var(--muted);margin-top:0">Wir erwarten keine Entschuldigung. Wir erwarten Aufklärung – nach diesen Standards:</p>
+        <ul class="check">
+          <li>Prüfer bestellt von einer unabhängigen Stelle, nicht von der Salzburg AG</li>
+          <li>Gerichtlich beeideter Sachverständiger ohne Verbindung zu den Beteiligten</li>
+          <li>Prüfauftrag vorab veröffentlicht, Ökovolt kann Fragen einbringen</li>
+          <li>Voller Zugang zu allen Unterlagen</li>
+          <li>Ökovolt wird angehört</li>
+          <li>Ergebnis zu einem festen Termin veröffentlicht</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card" id="warten" style="margin-top:28px">
+      <h3>Warum niemand auf die Gerichte warten muss</h3>
+      <p style="color:var(--muted);margin-top:0">„Wir warten die laufenden Verfahren ab“ ist verständlich – aber keine Voraussetzung für Aufklärung:</p>
+      <ul class="check">
+        <li>Der Aufsichtsrat einer Aktiengesellschaft hat eine <strong>eigene Pflicht</strong>, die Geschäftsführung des Vorstands zu überwachen – unabhängig von Staatsanwaltschaft und Gerichten.</li>
+        <li>Die Gerichte klären, was <strong>strafbar oder rechtswidrig</strong> war. Eine unabhängige Prüfung klärt, ob das Unternehmen <strong>gut geführt</strong> wurde. Das sind zwei verschiedene Fragen.</li>
+        <li>Rechnungshof, Landesrechnungshof und Kontrollamt der Stadt Salzburg können <strong>jederzeit</strong> prüfen – auch während laufender Verfahren.</li>
+        <li>Eine unabhängige Prüfung gefährdet kein Verfahren. Sie <strong>ergänzt</strong> es.</li>
+      </ul>
+    </div>
+
+    <div class="card" id="status" data-welle="AT-1b" style="margin-top:18px">
+      <h3>Antwortstatus</h3>
+      <p style="color:var(--muted);margin-top:0">Wer die Unterlagen erhalten hat – und ob es eine Antwort gibt. Stand <span class="ph">[Datum]</span>.</p>
+      <table class="docs" style="margin-top:6px">
+        <thead><tr><th>Adressat</th><th>Informiert am</th><th>Antwort</th></tr></thead>
+        <tbody>
+          <tr><td>Land Salzburg (Eigentümerin, 42,56 %)</td><td>21.09.2026</td><td><span class="ph">[ausständig / Datum]</span></td></tr>
+          <tr><td>Stadt Salzburg (Eigentümerin, 31,31 %)</td><td>21.09.2026</td><td><span class="ph">[ausständig / Datum]</span></td></tr>
+          <tr><td>Energie AG Oberösterreich (Eigentümerin, 26,13 %)</td><td>21.09.2026</td><td><span class="ph">[ausständig / Datum]</span></td></tr>
+          <tr><td>Aufsichtsrat der Salzburg AG</td><td>mehrfach seit 2025</td><td><strong class="wait">Wir warten noch immer auf eine Antwort</strong></td></tr>
+        </tbody>
+      </table>
+      <!-- Aufsichtsrats-Teil erst mit Welle 5 freischalten (vorher class="hidden" am folgenden div ergänzen) -->
+      <div data-welle="AT-5">
+      <h3 style="margin-top:22px">Der Aufsichtsrat wurde schon früher informiert</h3>
+      <table class="docs" style="margin-top:6px">
+        <thead><tr><th>Adressat</th><th>Informiert am</th><th>Reaktion</th></tr></thead>
+        <tbody>
+          <tr><td>Vorsitzender des Aufsichtsrats der Salzburg AG</td><td>März 2025</td><td>Keine Antwort des Aufsichtsrats. Die Anwälte der Salzburg AG teilten mit, die direkte Kommunikation mit Aufsichtsratsmitgliedern sei „ausdrücklich untersagt“.</td></tr><!-- Beleg: Antwortschreiben der Kanzlei, Beilage ./18 – Wortlaut vor Veröffentlichung vom Anwalt bestätigen lassen -->
+          <tr><td>Alle Mitglieder des Aufsichtsrats, persönlich</td><td>16.09.2025</td><td>Keine Reaktion bekannt – trotz Angebot eines persönlichen Gesprächs und voller Akteneinsicht</td></tr>
+          <tr><td>Vorsitzender des Aufsichtsrats der Salzburg AG</td><td>13.10.2025</td><td>Keine Reaktion bekannt</td></tr>
+        </tbody>
+      </table>
+      <p style="font-size:14.5px;margin:10px 0 0"><strong>Der Aufsichtsrat weiß seit März 2025 Bescheid.</strong> Die Eigentümer seit 21. September 2026.</p>
+      <p style="font-size:14.5px;margin:8px 0 0">Ökovolt hat zuerst das Gespräch gesucht, nicht die Behörden: Lange bevor sich Ökovolt mit einer Sachverhaltsdarstellung an die Wirtschafts- und Korruptionsstaatsanwaltschaft wandte <span class="ph">[Datum der Sachverhaltsdarstellung]</span>, hat das Unternehmen den Aufsichtsrat der Salzburg AG mehrfach um Hilfe und um Aufklärung ersucht. Der Weg zu den Behörden war nicht der erste Schritt, sondern der letzte.</p>
+      </div>
+      <p style="font-size:14px;color:var(--muted);margin-bottom:0">Jede Antwort wird hier veröffentlicht – auf Wunsch im vollen Wortlaut.</p>
+    </div>
+
+    <div class="card" id="mandatare" style="margin-top:18px">
+      <h3>Für Abgeordnete, Gemeinderätinnen und Gemeinderäte</h3>
+      <p style="color:var(--muted);margin:0">Die Salzburg AG gehört den Salzburgerinnen und Salzburgern. Ihre gewählten Vertreterinnen und Vertreter haben das Recht, sich selbst ein Bild zu machen. Ökovolt stellt allen Mandatarinnen und Mandataren – aller Parteien, zur selben Zeit – die Urteile und Registerauszüge auf Anfrage zur Verfügung: <span class="ph">[E-Mail]</span></p>
+    </div>
+
+    <div class="note">
+      <h3>Zur Einordnung – fair und vollständig</h3>
+      <ul>
+        <li>Die Entscheidungen des Oberlandesgerichts München ergingen im <strong>Eilverfahren</strong>. Über die Einziehung entscheidet das Landgericht Memmingen in der Hauptsache.</li>
+        <li>Die Gutachten und forensischen Befunde hat <strong>Ökovolt beauftragt</strong>. Das Oberlandesgericht hat die forensischen Befunde seiner Würdigung zugrunde gelegt.</li>
+        <li>Bei allen Ermittlungsverfahren gilt die <strong>Unschuldsvermutung</strong>. Wir nennen deshalb keine Namen von Beschuldigten.</li>
+        <li>Der Syndikatsvertrag enthält für die Salzburg AG <strong>kein ausdrückliches Wettbewerbsverbot</strong>, wohl aber das Ziel, Wettbewerb zu vermeiden.</li>
+      </ul>
+    </div>
+    <div class="other">
+      <strong>Die Sicht der Salzburg AG:</strong> Die Salzburg AG bestreitet die Vorwürfe und spricht von einem Gesellschafterstreit.
+      <span class="ph">[Link zur Stellungnahme der Salzburg AG]</span>
+    </div>
+  </section>
+
+  <!-- ===================== DOKUMENTE ===================== -->
+  <section id="dokumente">
+    <h2>Dokumente</h2>
+    <p class="lead">Für Medien und Mandatare auf Anfrage vollständig verfügbar. Personenbezogene Daten sind geschwärzt.</p>
+    <table class="docs">
+      <thead><tr><th>Dokument</th><th>Inhalt</th><th>Verfügbar</th></tr></thead>
+      <tbody>
+        <tr><td>OLG München 14 U 3746/25</td><td>Einziehung I, Datenkomplex, one2zero</td><td><span class="ph">[PDF, geschwärzt]</span></td></tr>
+        <tr><td>OLG München 14 U 3748/25</td><td>Einziehung II, Generalversammlung „treuwidrig“</td><td><span class="ph">[PDF, geschwärzt]</span></td></tr>
+        <tr><td>OLG München 14 U 295/26</td><td>Gesellschafterliste</td><td><span class="ph">[PDF, geschwärzt]</span></td></tr>
+        <tr><td>OLG München, Beschlüsse 18.06.2026</td><td>Rügen der Salzburg AG verworfen</td><td><span class="ph">[PDF, geschwärzt]</span></td></tr>
+        <tr><td>Syndikatsvertrag 18.10.2021 (Auszug)</td><td>Pkt. 4.2, 4.3, 6</td><td>auf Anfrage</td></tr>
+        <tr><td>GISA-Auszüge one2zero</td><td>Gewerbeberechtigungen mit historischen Daten</td><td><span class="ph">[PDF]</span></td></tr>
+        <tr><td>Firmenbuch one2zero FN 567399k</td><td>Gründung, Gesellschafter</td><td><span class="ph">[PDF]</span></td></tr>
+        <tr><td>Beschluss Firmenbuchgericht</td><td>Aussetzung der Eintragung</td><td><span class="ph">[GZ]</span> auf Anfrage</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ===================== FAQ ===================== -->
+  <section id="faq">
+    <h2>Häufige Fragen</h2>
+    <details><summary>Ist das nicht einfach ein Streit unter Gesellschaftern?</summary>
+      <p>Das Oberlandesgericht München hat das Vorgehen der Salzburg AG bei der Generalversammlung als treuwidrig gewertet und ihre Anträge in drei Verfahren abgewiesen. Treuwidrig ist kein Streit, das ist ein Befund.</p></details>
+    <details><summary>Warum geht Ökovolt an die Öffentlichkeit?</summary>
+      <p>Weil die Salzburg AG öffentlich erklärt, die Vorwürfe hätten keine Grundlage. Diese Seite zeigt die Grundlage – mit Quellen.</p></details>
+    <details><summary>Was fordert Ökovolt?</summary>
+      <p>Eine unabhängige Prüfung durch einen gerichtlich beeideten Sachverständigen, bestellt von einer unabhängigen Stelle, mit veröffentlichtem Ergebnis. Dieses Angebot steht.</p></details>
+    <details><summary>Wer wird beschuldigt?</summary>
+      <p>Dazu äußern wir uns nicht. Es laufen Ermittlungsverfahren, und es gilt die Unschuldsvermutung.</p></details>
+    <details><summary>Betrifft das Ökovolt-Kundinnen und -Kunden?</summary>
+      <p>Nein. Ökovolt arbeitet ganz normal weiter; alle Projekte, Garantien und Serviceleistungen laufen unverändert.</p></details>
+  </section>
+
+  <section id="kontakt" style="padding-top:0">
+    <div class="contact">
+      <div>
+        <h2 style="margin-bottom:.2em">Pressekontakt</h2>
+        <p><span class="ph">[Name, Funktion]</span> · <span class="ph">[Telefon]</span> · <span class="ph">[E-Mail]</span></p>
+      </div>
+      <a class="btn" href="mailto:[E-Mail]">Unterlagen anfordern</a>
+    </div>
+  </section>
+
+  <footer>
+    ÖKOVOLT GmbH Solartechnik · Schlingener Straße 1a · 86842 Türkheim · <a href="/impressum">Impressum</a> · <a href="/datenschutz">Datenschutz</a><br>
+    Diese Seite gibt den Stand vom <span class="ph">[Datum]</span> wieder und wird bei neuen Entscheidungen aktualisiert.
+  </footer>
+</main>
+</body>
+</html>

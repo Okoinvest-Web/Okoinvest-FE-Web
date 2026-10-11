@@ -1,0 +1,350 @@
+<template>
+  <form class="space-y-3" @submit.prevent="absenden">
+    <FormControl
+      v-model="werte.connector_name"
+      label="Name"
+      type="text"
+      placeholder="zabbix-sw-core-01"
+      :disabled="bearbeiten"
+    />
+    <p v-if="!bearbeiten" class="-mt-2 text-xs text-ink-gray-5">
+      Kleinbuchstaben, Ziffern und Bindestriche. Der Name lässt sich später nicht ändern.
+    </p>
+
+    <FormControl v-model="werte.kind" label="Art" type="select" :options="artOptionen" />
+
+    <FormControl v-model="werte.target" label="Ziel" type="select" :options="zielOptionen" />
+    <StatusDot
+      v-if="zielIstPerimeter"
+      class="-mt-1"
+      level="warning"
+      text="Perimeter – ausschließlich lesend"
+      klein
+    />
+
+    <FormControl
+      v-model.number="werte.interval_minutes"
+      label="Takt (Minuten)"
+      type="number"
+      min="1"
+    />
+
+    <!-- Verbindung zur API -->
+    <fieldset class="rounded border border-outline-gray-2 p-3">
+      <legend class="px-1 text-sm font-medium text-ink-gray-7">Verbindung</legend>
+
+      <div class="space-y-3">
+        <FormControl
+          v-model="werte.base_url"
+          label="Adresse"
+          type="text"
+          placeholder="https://fw-os-01.oekovolt.test"
+        />
+        <div class="grid grid-cols-2 gap-3">
+          <FormControl v-model.number="werte.port" label="Port" type="number" min="1" max="65535" />
+          <FormControl
+            v-model.number="werte.timeout_seconds"
+            label="Zeitlimit (s)"
+            type="number"
+            min="1"
+            max="300"
+          />
+        </div>
+        <FormControl
+          v-model="werte.api_path"
+          label="API-Pfad"
+          type="text"
+          placeholder="/api2/json"
+        />
+
+        <div class="grid grid-cols-2 gap-3">
+          <FormControl
+            v-model="werte.username"
+            label="Benutzername"
+            type="text"
+            placeholder="netops@pve"
+          />
+          <FormControl
+            v-model="werte.token_id"
+            label="Token-Kennung"
+            type="text"
+            placeholder="readonly"
+          />
+        </div>
+        <p class="text-xs text-ink-gray-5">
+          Benutzername und Token-Kennung sind Bezeichner, keine Geheimnisse. Das Token selbst gehört
+          nach Passbolt.
+        </p>
+
+        <label class="flex items-center gap-2 text-sm text-ink-gray-7">
+          <input v-model="werte.verify_tls" type="checkbox" class="size-4" />
+          TLS-Zertifikat prüfen
+        </label>
+        <StatusDot
+          v-if="!werte.verify_tls"
+          level="warning"
+          text="Ohne Zertifikatsprüfung ist die Verbindung gegen einen Mittelsmann ungeschützt"
+          klein
+        />
+
+        <FormControl
+          v-if="!werte.verify_tls"
+          v-model="werte.ca_fingerprint"
+          label="Fingerabdruck des Zertifikats (statt Prüfung)"
+          type="text"
+          placeholder="SHA256:…"
+        />
+
+        <FormControl
+          v-model="werte.proxy_url"
+          label="Proxy (optional)"
+          type="text"
+          placeholder="http://proxy.oekovolt.test:3128"
+        />
+      </div>
+    </fieldset>
+
+    <!--
+      Kein Feld für das Geheimnis - und das ist der Punkt. Es liegt in
+      Passbolt, hier steht nur der Verweis darauf (CLAUDE.md Abschnitt 3).
+    -->
+    <FormControl
+      v-model="werte.access_reference"
+      label="Zugangsverweis (Passbolt)"
+      type="select"
+      :options="verweisOptionen"
+    />
+    <p class="-mt-2 text-xs text-ink-gray-5">
+      Hier steht nur der Verweis. Das Geheimnis selbst gehört nach Passbolt und niemals in dieses
+      Formular.
+    </p>
+
+    <FormControl
+      v-model="werte.scope_note"
+      label="Was liest der Konnektor?"
+      type="text"
+      placeholder="Regelwerk, Schnittstellen, Aliase"
+    />
+
+    <!-- Schreibzugriff -->
+    <div class="rounded border border-outline-gray-2 p-3">
+      <label
+        class="flex items-center gap-2 text-sm"
+        :class="schreibenGesperrt ? 'text-ink-gray-4' : 'text-ink-gray-7'"
+      >
+        <input v-model="schreibend" type="checkbox" class="size-4" :disabled="schreibenGesperrt" />
+        Schreibzugriff erlauben
+      </label>
+
+      <p v-if="schreibenGesperrt" class="mt-1 text-xs text-ink-gray-5">
+        {{ sperrgrund }}
+      </p>
+
+      <FormControl
+        v-if="schreibend && !schreibenGesperrt"
+        v-model="werte.write_reason"
+        class="mt-2"
+        label="Begründung (kommt ins Protokoll)"
+        type="text"
+        placeholder="VM-Tags aus NetOps zurückschreiben"
+      />
+    </div>
+
+    <div
+      v-if="hinweise.length"
+      role="alert"
+      class="rounded border border-outline-red-2 bg-surface-red-1 p-3"
+    >
+      <StatusDot level="critical" :text="bearbeiten ? 'Änderung abgelehnt' : 'Anlegen abgelehnt'" />
+      <p v-for="(h, i) in hinweise" :key="i" class="mt-1 text-sm text-ink-gray-7">{{ h }}</p>
+    </div>
+
+    <div class="flex flex-wrap gap-2">
+      <Button variant="solid" type="submit" :loading="laeuft" :disabled="!bereit">
+        {{ bearbeiten ? 'Änderung speichern' : 'Konnektor anlegen' }}
+      </Button>
+      <Button v-if="bearbeiten" variant="subtle" @click="$emit('abbrechen')">Abbrechen</Button>
+    </div>
+  </form>
+</template>
+
+<script setup>
+import { computed, ref, watch } from 'vue'
+import { Button, FormControl, createResource } from 'frappe-ui'
+import StatusDot from '@/components/StatusDot.vue'
+import { fehlerText } from '@/viz'
+
+const props = defineProps({
+  optionen: { type: Object, default: null },
+  /** Beim Bearbeiten der vorhandene Datensatz, sonst null. */
+  vorhanden: { type: Object, default: null },
+})
+
+const emit = defineEmits(['gespeichert', 'abbrechen'])
+
+const bearbeiten = computed(() => !!props.vorhanden)
+
+const werte = ref(leereWerte())
+const schreibend = ref(false)
+const hinweise = ref([])
+
+const anlegen = createResource({ url: 'netops.api.ops.create_connector' })
+const aendern = createResource({ url: 'netops.api.ops.update_connector' })
+
+const laeuft = computed(() => anlegen.loading || aendern.loading)
+
+function leereWerte() {
+  return {
+    connector_name: '',
+    kind: 'zabbix',
+    target: '',
+    interval_minutes: 15,
+    base_url: '',
+    port: null,
+    api_path: '',
+    username: '',
+    token_id: '',
+    // Die sichere Voreinstellung darf nicht die sein, die man vergisst.
+    verify_tls: true,
+    ca_fingerprint: '',
+    timeout_seconds: 30,
+    proxy_url: '',
+    access_reference: '',
+    scope_note: '',
+    write_reason: '',
+  }
+}
+
+watch(
+  () => props.vorhanden,
+  (v) => {
+    hinweise.value = []
+    if (!v) {
+      werte.value = leereWerte()
+      schreibend.value = false
+      return
+    }
+    werte.value = {
+      connector_name: v.connector_name,
+      kind: v.kind,
+      target: v.target || '',
+      interval_minutes: v.interval_minutes,
+      base_url: v.base_url || '',
+      port: v.port ?? null,
+      api_path: v.api_path || '',
+      username: v.username || '',
+      token_id: v.token_id || '',
+      verify_tls: v.verify_tls === undefined ? true : !!v.verify_tls,
+      ca_fingerprint: v.ca_fingerprint || '',
+      timeout_seconds: v.timeout_seconds ?? 30,
+      proxy_url: v.proxy_url || '',
+      access_reference: v.access_reference || '',
+      scope_note: v.scope_note || '',
+      write_reason: v.write_reason || '',
+    }
+    schreibend.value = !v.read_only
+  },
+  { immediate: true },
+)
+
+const artOptionen = computed(() =>
+  (props.optionen?.kinds || []).map((k) => ({ label: k.label, value: k.value })),
+)
+
+const zielOptionen = computed(() => [
+  { label: 'Ziel wählen …', value: '' },
+  ...(props.optionen?.targets || []).map((t) => ({
+    label: t.label + (t.perimeter ? ' (Perimeter)' : ''),
+    value: t.value,
+  })),
+])
+
+const verweisOptionen = computed(() => [
+  { label: 'Verweis wählen …', value: '' },
+  ...(props.optionen?.access_references || []).map((a) => ({
+    label: a.label + ' · ' + a.passbolt_id,
+    value: a.value,
+  })),
+])
+
+const gewaehlteArt = computed(() =>
+  (props.optionen?.kinds || []).find((k) => k.value === werte.value.kind),
+)
+
+const zielIstPerimeter = computed(
+  () =>
+    !!(props.optionen?.targets || []).find((t) => t.value === werte.value.target && t.perimeter),
+)
+
+/**
+ * Schreibzugriff ist nicht überall wählbar. Die Oberfläche sperrt ihn, wo
+ * die Server-Methode ihn ohnehin ablehnen würde – aber die Sperre hier ist
+ * nur Bequemlichkeit. Verlassen kann man sich auf die Prüfung im Server.
+ */
+const schreibenGesperrt = computed(
+  () => !!gewaehlteArt.value?.read_only_forced || zielIstPerimeter.value,
+)
+
+const sperrgrund = computed(() => {
+  if (zielIstPerimeter.value) {
+    return 'Änderungen am Perimeter erfolgen ausschließlich manuell (CLAUDE.md 6.2).'
+  }
+  if (gewaehlteArt.value?.value === 'pbs') {
+    return 'Ein Backup-Token mit Schreibrechten kann die Sicherung vernichten, die es überwachen soll (CLAUDE.md 6.3).'
+  }
+  return 'Diese Quelle liefert Meldungen; geschrieben wird dort nichts.'
+})
+
+// Art wechseln setzt den Takt auf den Vorschlag – aber nur beim Anlegen,
+// sonst überschreibt es eine bewusst gesetzte Zahl.
+watch(
+  () => werte.value.kind,
+  () => {
+    if (bearbeiten.value) return
+    const vorschlag = gewaehlteArt.value?.default_interval
+    if (vorschlag) werte.value.interval_minutes = vorschlag
+  },
+)
+
+watch(schreibenGesperrt, (gesperrt) => {
+  if (gesperrt) schreibend.value = false
+})
+
+const bereit = computed(
+  () =>
+    !!werte.value.connector_name &&
+    !!werte.value.kind &&
+    !!werte.value.target &&
+    !!werte.value.access_reference,
+)
+
+async function absenden() {
+  hinweise.value = []
+  // Leere Felder gar nicht erst mitschicken: die Server-Methode
+  // unterscheidet zwischen "nicht angegeben" und "leer gesetzt".
+  const nutzlast = { read_only: !schreibend.value }
+  for (const [feld, wert] of Object.entries(werte.value)) {
+    if (wert === '' || wert === null) continue
+    nutzlast[feld] = wert
+  }
+  nutzlast.verify_tls = werte.value.verify_tls
+  nutzlast.write_reason = schreibend.value ? werte.value.write_reason : null
+
+  try {
+    if (bearbeiten.value) {
+      await aendern.submit({ name: props.vorhanden.name, ...nutzlast })
+    } else {
+      await anlegen.submit(nutzlast)
+    }
+    emit('gespeichert')
+    if (!bearbeiten.value) {
+      werte.value = leereWerte()
+      schreibend.value = false
+    }
+  } catch (fehler) {
+    // Die Meldung der Server-Methode ist die eigentliche Erklärung – sie
+    // nennt die Regel und den Grund. Deshalb steht sie hier wörtlich.
+    hinweise.value = [fehlerText(fehler)]
+  }
+}
+</script>

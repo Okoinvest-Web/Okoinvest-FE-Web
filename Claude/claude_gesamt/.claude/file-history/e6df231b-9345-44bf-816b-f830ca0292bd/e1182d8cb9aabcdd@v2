@@ -1,0 +1,30 @@
+import { chromium } from '@playwright/test'
+
+const browser = await chromium.launch()
+const kontext = await browser.newContext({
+  permissions: ['geolocation'],
+  geolocation: { latitude: 48.0655, longitude: 12.8452 },
+  locale: 'de-AT',
+})
+const page = await kontext.newPage()
+
+page.on('console', (m) => console.log(`[${m.type()}]`, m.text()))
+page.on('pageerror', (e) => console.log('[pageerror]', e.message))
+
+await page.goto('http://localhost:8080/baudoku/maengel/neu')
+await page.waitForTimeout(3000)
+
+await page.getByRole('button', { name: /Anlage wählen/ }).click()
+await page.getByRole('button', { name: /Aumayr GmbH Dachanlage/ }).click()
+await page.getByPlaceholder('Kurz und eindeutig').fill('Debug Mangel')
+await page.getByPlaceholder('Was wurde festgestellt').fill('Debugtext.')
+
+console.log('--- vor dem Speichern ---')
+await page.getByRole('button', { name: 'Speichern' }).click()
+await page.waitForTimeout(1500)
+
+const toasts = await page.getByRole('status').allTextContents()
+console.log('Toasts:', JSON.stringify(toasts))
+console.log('URL:', page.url())
+
+await browser.close()

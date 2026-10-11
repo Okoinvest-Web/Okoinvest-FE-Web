@@ -1,0 +1,79 @@
+// Audit aller Sitemap-Routen bei 390 px: Status, Laufzeitfehler, horizontaler Überlauf, tote interne Links.
+import { chromium } from "playwright";
+
+const B = "http://localhost:3100";
+const warte = (ms) => new Promise((r) => setTimeout(r, ms));
+
+async function holen(u, opt = {}) {
+  for (let i = 0; i < 4; i++) {
+    try {
+      return await fetch(u, { redirect: "manual", ...opt });
+    } catch {
+      await warte(5000);
+    }
+  }
+  return { status: 599, text: async () => "" };
+}
+
+const xml = await (await holen(B + "/sitemap.xml")).text();
+let pfade = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => new URL(m[1]).pathname);
+pfade = [...new Set(["/", ...pfade, "/login", "/registrieren", "/passwort-vergessen", "/gibt-es-nicht"])];
+console.log("Routen:", pfade.length);
+
+const b = await chromium.launch();
+const ctx = await b.newContext({ viewport: { width: 390, height: 844 } });
+const links = new Set();
+const probleme = [];
+
+try {
+  for (const pfad of pfade) {
+    const p = await ctx.newPage();
+    const fehler = [];
+    p.on("pageerror", (e) => fehler.push("PAGEERROR " + e.message.slice(0, 160)));
+    p.on("console", (m) => m.type() === "error" && !/hydrat|Failed to load resource/i.test(m.text()) && fehler.push("CONSOLE " + m.text().slice(0, 160)));
+    let st = 0;
+    try {
+      const r = await p.goto(B + pfad, { waitUntil: "load", timeout: 240000 });
+      st = r.status();
+    } catch (e) {
+      fehler.push("GOTO " + e.message.slice(0, 80));
+    }
+    await p.waitForTimeout(400);
+    let info = { w: 0, iw: 390, breit: [], links: [] };
+    try {
+      info = await p.evaluate(() => {
+        const w = document.documentElement.scrollWidth;
+        const iw = window.innerWidth;
+        const breit = [...document.querySelectorAll("main *")]
+          .filter((el) => {
+            const r = el.getBoundingClientRect();
+            return r.right > iw + 2 && r.width > 0 && getComputedStyle(el).position !== "fixed";
+          })
+          .slice(0, 3)
+          .map((el) => el.tagName + "." + String(el.className).slice(0, 60));
+        return { w, iw, breit, links: [...document.querySelectorAll("a[href^='/']")].map((a) => a.getAttribute("href").split("#")[0].split("?")[0]) };
+      });
+    } catch (e) {
+      fehler.push("EVAL " + e.message.slice(0, 80));
+    }
+    info.links.forEach((l) => l && links.add(l));
+    const soll = pfad === "/gibt-es-nicht" ? 404 : 200;
+    if (st !== soll || fehler.length || info.w > info.iw + 1) {
+      probleme.push({ pfad, st, ueberlauf: info.w > info.iw + 1 ? `${info.w}px ${info.breit.join(" | ")}` : undefined, fehler });
+    }
+    process.stdout.write(".");
+    await p.close();
+  }
+} finally {
+  await b.close();
+}
+
+console.log("\nSeitenprobleme:", JSON.stringify(probleme, null, 1));
+console.log("Interne Links:", links.size);
+const tote = [];
+for (const l of links) {
+  if (/^\/(api|_next)/.test(l)) continue;
+  const r = await holen(B + l);
+  if (r.status >= 400) tote.push({ link: l, st: r.status });
+}
+console.log("Tote Links:", JSON.stringify(tote, null, 1));

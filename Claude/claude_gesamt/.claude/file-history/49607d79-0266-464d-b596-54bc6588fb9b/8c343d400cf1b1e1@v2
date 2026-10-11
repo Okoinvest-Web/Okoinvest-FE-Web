@@ -1,0 +1,140 @@
+# -*- coding: utf-8 -*-
+"""Tauscht den Befund-Teil im Skript der Drift-Seite aus."""
+import io
+
+p = 'src/pages/DriftView.vue'
+s = io.open(p, encoding='utf-8').read()
+
+anfang = s.index("const befunde = createResource({\n  url: 'netops.api.ops.drift_list',")
+ende = s.index("function gesundheitStufe(gesundheit) {")
+
+NEU = u'''const deckung = ref('')
+
+const befunde = createResource({
+  url: 'netops.api.ops.drift_findings',
+  makeParams: () => ({
+    state: zustand.value || null,
+    covered: deckung.value === '' ? null : deckung.value === 'ja',
+  }),
+  auto: true,
+})
+const haeufungen = createResource({ url: 'netops.api.ops.drift_hotspots', auto: true })
+const erledigen = createResource({ url: 'netops.api.ops.drift_resolve' })
+const sammel = createResource({ url: 'netops.api.ops.drift_accept_covered' })
+
+watch([zustand, deckung], () => befunde.fetch())
+
+const zustandOptionen = [
+  { label: 'Offen', value: 'open' },
+  { label: '\\u00dcbernommen', value: 'accepted' },
+  { label: 'Verworfen', value: 'rejected' },
+  { label: 'Alle Zust\\u00e4nde', value: '' },
+]
+
+const deckungOptionen = [
+  { label: 'Gedeckt und ungedeckt', value: '' },
+  { label: 'Nur ohne Change', value: 'nein' },
+  { label: 'Nur mit Change', value: 'ja' },
+]
+
+const spalten = [
+  { key: 'object_name', label: 'Objekt und Feld', width: '250px' },
+  { key: 'werte', label: 'Soll / Ist', width: '260px' },
+  { key: 'deckung', label: 'Change', width: '190px' },
+  { key: 'age_days', label: 'Offen seit', align: 'right', numeric: true, width: '110px' },
+  { key: 'befund', label: 'Befund' },
+  { key: 'aktion', label: '', align: 'right', width: '210px' },
+]
+
+const haeufungSpalten = [
+  { key: 'object_name', label: 'Objekt', width: '230px' },
+  { key: 'findings', label: 'Befunde', align: 'right', numeric: true, width: '100px' },
+  { key: 'uncovered', label: 'ohne Change', align: 'right', numeric: true, width: '130px' },
+  { key: 'fields', label: 'Betroffene Felder', width: '280px' },
+  { key: 'befund', label: 'Bewertung' },
+]
+
+/** Nur Objekte mit mehr als einem Befund - der Rest ist Betrieb. */
+const auffaellige = computed(() => (haeufungen.data || []).filter((h) => h.findings > 1))
+
+// --- Erledigen ---------------------------------------------------------------
+
+const erledigenOffen = ref(false)
+const gewaehlt = ref(null)
+const zielZustand = ref('accepted')
+const erledigenGrund = ref('')
+
+/**
+ * Wann ist eine Begr\\u00fcndung Pflicht?
+ *
+ * Immer beim Verwerfen - da bleibt die Abweichung in der Welt. Und beim
+ * \\u00dcbernehmen dann, wenn kein Change dahintersteht: das hie\\u00dfe sonst, eine
+ * \\u00c4nderung am Freigabeprozess vorbei stillschweigend gutzuhei\\u00dfen.
+ *
+ * Die Oberfl\\u00e4che macht das nur sichtbar; entschieden wird es in der
+ * Server-Methode.
+ */
+const grundPflicht = computed(
+  () =>
+    zielZustand.value === 'rejected' ||
+    (zielZustand.value === 'accepted' && !gewaehlt.value?.covered_by_change),
+)
+
+const erledigenTitel = computed(() =>
+  zielZustand.value === 'accepted' ? 'Abweichung \\u00fcbernehmen' : 'Abweichung verwerfen',
+)
+const erledigenKnopf = computed(() =>
+  zielZustand.value === 'accepted' ? '\\u00dcbernehmen' : 'Verwerfen',
+)
+const erledigenText = computed(() =>
+  zielZustand.value === 'accepted'
+    ? `Die Dokumentation wird auf \\u201e${gewaehlt.value?.ist_value || ''}" nachgef\\u00fchrt. Am Ger\\u00e4t \\u00e4ndert das nichts.`
+    : 'Der gemessene Zustand gilt als falsch. Die Abweichung bleibt bestehen und geh\\u00f6rt \\u00fcber einen Change zur\\u00fcckgedreht.',
+)
+const grundBeispiel = computed(() =>
+  zielZustand.value === 'accepted'
+    ? 'Ger\\u00e4t geh\\u00f6rt zum Testaufbau, wird nachdokumentiert'
+    : 'Schnittstelle muss aktiv sein, wird \\u00fcber CHG-0000x zur\\u00fcckgesetzt',
+)
+
+function erledigenFragen(befund, ziel) {
+  gewaehlt.value = befund
+  zielZustand.value = ziel
+  erledigenGrund.value = ''
+  erledigenOffen.value = true
+}
+
+async function erledigenAusfuehren() {
+  try {
+    const e = await erledigen.submit({
+      name: gewaehlt.value.name,
+      state: zielZustand.value,
+      reason: erledigenGrund.value || null,
+    })
+    toast.create({ message: e.note, type: 'success' })
+    erledigenOffen.value = false
+    befunde.fetch()
+    haeufungen.fetch()
+    konnektoren.fetch()
+  } catch (fehler) {
+    toast.create({ message: fehlerText(fehler), type: 'error' })
+  }
+}
+
+async function sammelUebernehmen() {
+  try {
+    const e = await sammel.submit({})
+    toast.create({ message: e.note, type: 'success' })
+    befunde.fetch()
+    haeufungen.fetch()
+    konnektoren.fetch()
+  } catch (fehler) {
+    toast.create({ message: fehlerText(fehler), type: 'error' })
+  }
+}
+
+'''
+
+s = s[:anfang] + NEU + s[ende:]
+io.open(p, 'w', encoding='utf-8').write(s)
+print('Skript ersetzt')

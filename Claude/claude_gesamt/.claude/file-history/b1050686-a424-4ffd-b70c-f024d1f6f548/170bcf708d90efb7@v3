@@ -1,0 +1,570 @@
+import Link from "next/link";
+import type { Metadata } from "next";
+
+import { IconPfeilLinks } from "@/components/icon";
+import { Tabelle, Summenzeile, Zeile, Zelle } from "@/components/tabelle";
+import {
+  Angabe,
+  Balken,
+  Hinweis,
+  Kennzahl,
+  Kennzahlenleiste,
+  LeerZustand,
+  Meldung,
+  Seitenkopf,
+  Status,
+  Tafel,
+} from "@/components/ui";
+import {
+  alsNachweislage,
+  ladeTaxonomieNachweise,
+  ladeTaxonomiePositionen,
+  ladeTaxonomiePruefung,
+  type TaxonomieNachweisZeile,
+} from "@/lib/daten/taxonomie";
+import {
+  berechneKennzahl,
+  fasseKennzahlZusammen,
+  findeTaetigkeit,
+  KENNZAHLARTEN,
+  MINDESTSCHUTZ,
+  pruefeTaetigkeit,
+  TAETIGKEITEN,
+  WESENTLICHKEITSSCHWELLE,
+  ZIELNAMEN,
+  type Einstufung,
+  type Kennzahlposition,
+  type Kriterium,
+  type Nachweisstand,
+} from "@/lib/esg/taxonomie";
+import { formatDatum, formatGeldRund, formatProzent } from "@/lib/format";
+import { requireRecht } from "@/lib/session";
+
+export const metadata: Metadata = { title: "EU-Taxonomie" };
+
+/**
+ * Die EU-Taxonomie, dargestellt.
+ *
+ * Die Seite zeigt beide Zahlen nebeneinander - fähig und konform - und
+ * niemals nur die höhere. Taxonomiefähig heißt: Die Tätigkeit steht im
+ * Anhang. Taxonomiekonform heißt: Sie erfüllt die Kriterien. Zwischen
+ * beiden liegt die ganze Arbeit, und ein Bericht, der nur die
+ * Fähigkeit nennt, verschweigt sie.
+ */
+
+function einstufungTon(einstufung: Einstufung) {
+  switch (einstufung) {
+    case "konform":
+      return "gut" as const;
+    case "offen":
+      return "hinweis" as const;
+    case "faehig":
+      return "ernst" as const;
+    default:
+      return "neutral" as const;
+  }
+}
+
+function einstufungWort(einstufung: Einstufung): string {
+  switch (einstufung) {
+    case "konform":
+      return "konform";
+    case "offen":
+      return "Nachweis offen";
+    case "faehig":
+      return "nur fähig";
+    default:
+      return "nicht fähig";
+  }
+}
+
+function standTon(stand: Nachweisstand) {
+  switch (stand) {
+    case "erfuellt":
+      return "gut" as const;
+    case "nicht_erfuellt":
+      return "kritisch" as const;
+    default:
+      return "hinweis" as const;
+  }
+}
+
+function standWort(stand: Nachweisstand): string {
+  switch (stand) {
+    case "erfuellt":
+      return "belegt";
+    case "nicht_erfuellt":
+      return "verletzt";
+    default:
+      return "offen";
+  }
+}
+
+export default async function TaxonomieSeite({
+  searchParams,
+}: {
+  searchParams: Promise<{ jahr?: string }>;
+}) {
+  await requireRecht("nachhaltigkeit.lesen");
+
+  const { jahr: gewaehlt } = await searchParams;
+  const pruefung = ladeTaxonomiePruefung(
+    gewaehlt && /^\d{4}$/.test(gewaehlt) ? Number(gewaehlt) : undefined,
+  );
+
+  const zurueck = (
+    <Link
+      href="/portal/nachhaltigkeit"
+      className="t-leise inline-flex items-center gap-1.5 hover:underline"
+    >
+      <IconPfeilLinks groesse={14} />
+      Nachhaltigkeit
+    </Link>
+  );
+
+  if (!pruefung) {
+    return (
+      <div className="space-y-5">
+        <Seitenkopf titel="EU-Taxonomie" zurueck={zurueck} />
+        <LeerZustand
+          text="Für kein Jahr ist eine Taxonomie-Prüfung angelegt."
+          hinweis="Eine Prüfung braucht die Nenner aus dem Jahresabschluss und die Zuordnung der Beträge zu den Tätigkeiten des Anhangs."
+        />
+      </div>
+    );
+  }
+
+  const positionen = ladeTaxonomiePositionen(pruefung.id);
+  const nachweiszeilen = ladeTaxonomieNachweise(pruefung.id);
+  const lage = alsNachweislage(nachweiszeilen);
+
+  const nachweisJe = new Map<string, TaxonomieNachweisZeile>();
+  for (const z of nachweiszeilen) nachweisJe.set(z.kriterium, z);
+
+  // Tätigkeiten, zu denen dieser Betrieb überhaupt Beträge führt.
+  const verwendet = TAETIGKEITEN.filter((t) =>
+    positionen.some((p) => p.taetigkeit === t.schluessel),
+  );
+
+  const befunde = verwendet.map((t) => pruefeTaetigkeit(t, lage));
+  const einstufungJe = new Map(
+    befunde.map((b) => [b.taetigkeit.schluessel, b.einstufung]),
+  );
+
+  const nenner: Record<string, number> = {
+    Umsatz: pruefung.umsatz_gesamt,
+    CapEx: pruefung.capex_gesamt,
+    OpEx: pruefung.opex_gesamt,
+  };
+
+  const ergebnisse = KENNZAHLARTEN.map((art) => {
+    const zeilen: Kennzahlposition[] = positionen
+      .filter((p) => p.art === art)
+      .map((p) => ({
+        taetigkeit: p.taetigkeit,
+        bezeichnung: p.bezeichnung,
+        betrag: p.betrag,
+        einstufung: p.taetigkeit
+          ? (einstufungJe.get(p.taetigkeit) ?? "offen")
+          : ("nicht_faehig" as const),
+      }));
+
+    return { art, zeilen, ergebnis: berechneKennzahl(art, nenner[art]!, zeilen) };
+  });
+
+  const beanstandungen = ergebnisse.flatMap((e) => e.ergebnis.beanstandungen);
+  const offeneKriterien = befunde.flatMap((b) => b.offen);
+  const verletzteKriterien = befunde.flatMap((b) => b.verletzt);
+
+  const umsatz = ergebnisse.find((e) => e.art === "Umsatz")!.ergebnis;
+
+  return (
+    <div className="space-y-5">
+      <Seitenkopf
+        titel="EU-Taxonomie"
+        hinweis={`${pruefung.bezeichnung} · Verordnung (EU) 2020/852 · technische Kriterien nach VO (EU) 2021/2139`}
+        zurueck={zurueck}
+        aktion={
+          <Status
+            ton={
+              pruefung.status === "Freigegeben"
+                ? "gut"
+                : pruefung.status === "Geprueft"
+                  ? "akzent"
+                  : "neutral"
+            }
+          >
+            {pruefung.status === "Geprueft" ? "Geprüft" : pruefung.status}
+          </Status>
+        }
+      />
+
+      {verletzteKriterien.length > 0 && (
+        <Hinweis ton="kritisch" titel="Ein Kriterium ist verletzt">
+          {verletzteKriterien.map((k) => k.anforderung).join(" ")} Solange das
+          so bleibt, ist die betroffene Tätigkeit taxonomiefähig, aber nicht
+          konform.
+        </Hinweis>
+      )}
+
+      {offeneKriterien.length > 0 && verletzteKriterien.length === 0 && (
+        <Hinweis ton="hinweis" titel="Nachweise fehlen noch">
+          Zu {offeneKriterien.length} Kriteri
+          {offeneKriterien.length === 1 ? "um" : "en"} liegt kein Nachweis vor.
+          Die betroffenen Tätigkeiten werden weder als konform noch als nicht
+          konform geführt – wer sie jetzt als konform meldete, meldete eine
+          Zahl, die niemand geprüft hat.
+        </Hinweis>
+      )}
+
+      {beanstandungen.length > 0 && (
+        <Hinweis ton="ernst" titel="Die Kennzahlen gehen nicht auf">
+          {beanstandungen.join(" ")}
+        </Hinweis>
+      )}
+
+      {/* ---------------- Kennzahlen ---------------- */}
+      <Kennzahlenleiste>
+        {ergebnisse.map(({ art, ergebnis }) => (
+          <Kennzahl
+            key={art}
+            label={`${art} taxonomiekonform`}
+            wert={formatProzent(ergebnis.konformAnteil * 100, 1)}
+            hinweis={`${formatProzent(ergebnis.faehigAnteil * 100, 1)} fähig · Nenner ${formatGeldRund(ergebnis.nenner)}`}
+            akzent={art === "Umsatz"}
+          />
+        ))}
+        <Kennzahl
+          label="Geprüfte Tätigkeiten"
+          wert={String(befunde.length)}
+          hinweis={`${befunde.filter((b) => b.einstufung === "konform").length} konform`}
+        />
+      </Kennzahlenleiste>
+
+      {/* ---------------- Anteile ---------------- */}
+      <Tafel
+        titel="Anteile je Kennzahl"
+        hinweis="Konform, fähig und nicht fähig – gerechnet gegen den Nenner aus dem Jahresabschluss"
+      >
+        <div className="space-y-4">
+          {ergebnisse.map(({ art, ergebnis }) => (
+            <div key={art}>
+              <Balken
+                label={`${art} – taxonomiekonform`}
+                anteil={ergebnis.konformAnteil * 100}
+                wertText={`${formatProzent(ergebnis.konformAnteil * 100, 1)} · ${formatGeldRund(ergebnis.konformBetrag)}`}
+              />
+              <div className="mt-2">
+                <Balken
+                  label={`${art} – taxonomiefähig`}
+                  anteil={ergebnis.faehigAnteil * 100}
+                  wertText={`${formatProzent(ergebnis.faehigAnteil * 100, 1)} · ${formatGeldRund(ergebnis.faehigBetrag)}`}
+                  farbe="var(--ton-hinweis)"
+                />
+              </div>
+              <p className="t-mikro mt-1.5 leading-relaxed">
+                {fasseKennzahlZusammen(ergebnis)}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        <p className="t-mikro mt-4 leading-relaxed">
+          Der Nenner kommt aus dem Jahresabschluss, nicht aus der Summe der
+          zugeordneten Beträge. Was keiner Tätigkeit des Anhangs zuzuordnen ist,
+          gehört trotzdem hinein – sonst fällt der Anteil zu günstig aus.
+        </p>
+      </Tafel>
+
+      {/* ---------------- Tätigkeiten ---------------- */}
+      <Tafel
+        titel="Tätigkeiten und ihre Kriterien"
+        hinweis="Wesentlicher Beitrag, DNSH für die übrigen Ziele, Mindestschutz"
+      >
+        <div className="space-y-5">
+          {befunde.map((befund) => (
+            <div key={befund.taetigkeit.schluessel}>
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p
+                    className="text-[0.875rem] font-semibold"
+                    style={{ color: "var(--t-stark)" }}
+                  >
+                    {befund.taetigkeit.schluessel}{" "}
+                    {befund.taetigkeit.bezeichnung}
+                  </p>
+                  <p className="t-mikro">
+                    NACE {befund.taetigkeit.nace.join(", ")} · Beitrag zu{" "}
+                    {ZIELNAMEN[befund.taetigkeit.beitragZu]}
+                  </p>
+                </div>
+                <Status ton={einstufungTon(befund.einstufung)}>
+                  {einstufungWort(befund.einstufung)}
+                </Status>
+              </div>
+
+              <p className="t-mikro mt-1.5 leading-relaxed">
+                {befund.begruendung}
+              </p>
+
+              <div className="mt-2.5">
+                <Kriterienliste
+                  kriterien={[befund.taetigkeit.beitrag, ...befund.taetigkeit.dnsh]}
+                  nachweise={nachweisJe}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      </Tafel>
+
+      {/* ---------------- Mindestschutz ---------------- */}
+      <Tafel
+        titel="Sozialer Mindestschutz"
+        hinweis="Artikel 18 – gilt für den Betrieb, nicht für die einzelne Anlage"
+      >
+        <Kriterienliste kriterien={MINDESTSCHUTZ} nachweise={nachweisJe} />
+        <p className="t-mikro mt-3 leading-relaxed">
+          Ohne Mindestschutz ist keine Tätigkeit konform, auch keine technisch
+          einwandfreie. Das ist die Stelle, an der die Taxonomie mehr ist als
+          eine Technikliste.
+        </p>
+      </Tafel>
+
+      {/* ---------------- Positionen ---------------- */}
+      {KENNZAHLARTEN.map((art) => {
+        const eintrag = ergebnisse.find((e) => e.art === art)!;
+        const zeilen = positionen.filter((p) => p.art === art);
+        if (zeilen.length === 0) return null;
+
+        return (
+          <Tafel
+            key={art}
+            titel={`Positionen ${art}`}
+            hinweis={`Nenner ${formatGeldRund(eintrag.ergebnis.nenner)} aus dem Jahresabschluss`}
+            dicht
+          >
+            <Tabelle
+              spalten={[
+                { titel: "Position" },
+                { titel: "Tätigkeit", schmalAusblenden: true },
+                { titel: "Konto", schmalAusblenden: true },
+                { titel: "Betrag", zahl: true },
+                { titel: "Anteil", zahl: true },
+                { titel: "Einstufung" },
+              ]}
+              mindestbreite="58rem"
+            >
+              {zeilen.map((p) => {
+                const einstufung: Einstufung = p.taetigkeit
+                  ? (einstufungJe.get(p.taetigkeit) ?? "offen")
+                  : "nicht_faehig";
+                const anteil =
+                  eintrag.ergebnis.nenner > 0
+                    ? p.betrag / eintrag.ergebnis.nenner
+                    : 0;
+
+                return (
+                  <Zeile key={p.id}>
+                    <Zelle>
+                      <span className="block" style={{ color: "var(--t-stark)" }}>
+                        {p.bezeichnung}
+                      </span>
+                      {p.bemerkung && (
+                        <span className="t-mikro block leading-relaxed">
+                          {p.bemerkung}
+                        </span>
+                      )}
+                    </Zelle>
+                    <Zelle leise schmalAusblenden>
+                      {p.taetigkeit
+                        ? `${p.taetigkeit} ${findeTaetigkeit(p.taetigkeit)?.bezeichnung ?? ""}`
+                        : "–"}
+                    </Zelle>
+                    <Zelle leise schmalAusblenden>
+                      <span className="font-mono text-[0.75rem]">
+                        {p.konto ?? "–"}
+                      </span>
+                    </Zelle>
+                    <Zelle zahl>{formatGeldRund(p.betrag)}</Zelle>
+                    <Zelle zahl leise>
+                      {formatProzent(anteil * 100, 1)}
+                      {p.taetigkeit && anteil < WESENTLICHKEITSSCHWELLE && (
+                        <span className="t-mikro block">unwesentlich</span>
+                      )}
+                    </Zelle>
+                    <Zelle>
+                      <Status ton={einstufungTon(einstufung)}>
+                        {einstufungWort(einstufung)}
+                      </Status>
+                    </Zelle>
+                  </Zeile>
+                );
+              })}
+
+              <Summenzeile>
+                <Zelle>Zugeordnet</Zelle>
+                <Zelle schmalAusblenden>{null}</Zelle>
+                <Zelle schmalAusblenden>{null}</Zelle>
+                <Zelle zahl>
+                  {formatGeldRund(zeilen.reduce((s, p) => s + p.betrag, 0))}
+                </Zelle>
+                <Zelle zahl>
+                  {formatProzent(
+                    eintrag.ergebnis.nenner > 0
+                      ? (zeilen.reduce((s, p) => s + p.betrag, 0) /
+                          eintrag.ergebnis.nenner) *
+                          100
+                      : 0,
+                    1,
+                  )}
+                </Zelle>
+                <Zelle>{null}</Zelle>
+              </Summenzeile>
+            </Tabelle>
+          </Tafel>
+        );
+      })}
+
+      {/* ---------------- Einordnung ---------------- */}
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+        <Tafel titel="Grundlagen dieser Prüfung">
+          <dl className="space-y-0.5">
+            <Angabe label="Geschäftsjahr">{String(pruefung.jahr)}</Angabe>
+            <Angabe label="Umsatz gesamt">
+              {formatGeldRund(pruefung.umsatz_gesamt)}
+            </Angabe>
+            <Angabe label="CapEx gesamt">
+              {formatGeldRund(pruefung.capex_gesamt)}
+            </Angabe>
+            <Angabe label="OpEx gesamt">
+              {formatGeldRund(pruefung.opex_gesamt)}
+            </Angabe>
+            <Angabe label="Wesentlichkeitsschwelle">
+              {formatProzent(WESENTLICHKEITSSCHWELLE * 100, 0)} des Nenners
+            </Angabe>
+            {pruefung.freigegeben_am && (
+              <Angabe label="Freigegeben am">
+                {formatDatum(pruefung.freigegeben_am)}
+              </Angabe>
+            )}
+          </dl>
+          {pruefung.bemerkung && (
+            <p className="t-mikro mt-3 leading-relaxed">{pruefung.bemerkung}</p>
+          )}
+        </Tafel>
+
+        <Tafel titel="Was die Zahlen bedeuten">
+          <div className="space-y-2.5 text-[0.8125rem] leading-relaxed">
+            <p style={{ color: "var(--t-normal)" }}>
+              <strong style={{ color: "var(--t-stark)" }}>Fähig</strong> heißt:
+              Die Tätigkeit steht im Anhang des delegierten Rechtsakts. Das ist
+              die Eintrittskarte, keine Auszeichnung.
+            </p>
+            <p style={{ color: "var(--t-normal)" }}>
+              <strong style={{ color: "var(--t-stark)" }}>Konform</strong>{" "}
+              heißt: wesentlicher Beitrag belegt, kein erheblicher Schaden an
+              den übrigen fünf Zielen, Mindestschutz eingehalten. Alle vier
+              Bedingungen, nicht drei.
+            </p>
+            <p style={{ color: "var(--t-normal)" }}>
+              Die Wesentlichkeitsschwelle von{" "}
+              {formatProzent(WESENTLICHKEITSSCHWELLE * 100, 0)} stammt aus der
+              Vereinfachung vom Juli 2025 und wird je Kennzahl beurteilt.
+              Deshalb kann dieselbe Tätigkeit beim Umsatz unwesentlich und beim
+              CapEx wesentlich sein – der Fall eines Betriebs, der gerade
+              investiert.
+            </p>
+          </div>
+
+          {umsatz.unwesentlich.length > 0 && (
+            <div className="mt-3">
+              <Meldung ton="hinweis">
+                Beim Umsatz liegen{" "}
+                {umsatz.unwesentlich.filter((p) => p.taetigkeit).length}{" "}
+                Positionen unter der Schwelle.
+              </Meldung>
+            </div>
+          )}
+        </Tafel>
+      </div>
+    </div>
+  );
+}
+
+/** Die Kriterien einer Tätigkeit samt Nachweisstand. */
+function Kriterienliste({
+  kriterien,
+  nachweise,
+}: {
+  kriterien: Kriterium[];
+  nachweise: Map<string, TaxonomieNachweisZeile>;
+}) {
+  return (
+    <ul className="space-y-2">
+      {kriterien.map((k) => {
+        const nachweis = nachweises(nachweise, k.schluessel);
+
+        return (
+          <li
+            key={k.schluessel}
+            className="rounded-sm px-3 py-2.5"
+            style={{ background: "var(--f-vertieft)" }}
+          >
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <p
+                className="t-mikro font-medium"
+                style={{ color: "var(--t-stark)" }}
+              >
+                {ZIELNAMEN[k.ziel]}
+              </p>
+              <Status ton={standTon(nachweis.stand)}>
+                {standWort(nachweis.stand)}
+              </Status>
+            </div>
+
+            <p
+              className="mt-1 text-[0.8125rem] leading-relaxed"
+              style={{ color: "var(--t-normal)" }}
+            >
+              {k.anforderung}
+            </p>
+
+            <p className="t-mikro mt-1 leading-relaxed">
+              {nachweis.beleg
+                ? `Beleg: ${nachweis.beleg}`
+                : `Verlangt: ${k.nachweis}`}
+              {nachweis.geprueft_am
+                ? ` · geprüft am ${formatDatum(nachweis.geprueft_am)}`
+                : ""}
+              {` · ${k.fundstelle}`}
+            </p>
+
+            {nachweis.bemerkung && (
+              <p className="t-mikro mt-1 leading-relaxed">
+                {nachweis.bemerkung}
+              </p>
+            )}
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+/** Ein fehlender Eintrag ist offen, nicht erfüllt. */
+function nachweises(
+  nachweise: Map<string, TaxonomieNachweisZeile>,
+  schluessel: string,
+): TaxonomieNachweisZeile {
+  return (
+    nachweise.get(schluessel) ?? {
+      kriterium: schluessel,
+      stand: "offen",
+      beleg: null,
+      geprueft_am: null,
+      geprueft_von: null,
+      bemerkung: null,
+    }
+  );
+}

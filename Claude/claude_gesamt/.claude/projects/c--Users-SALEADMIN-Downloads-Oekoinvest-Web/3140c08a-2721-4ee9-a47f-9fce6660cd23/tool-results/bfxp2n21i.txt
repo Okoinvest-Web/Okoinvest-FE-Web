@@ -1,0 +1,772 @@
+=== index
+// src/lib/land – einzige Quelle für Länderzonen, Pfade, hreflang, Sitemaps je Land,
+// Länderwechsler und Navigation (Welle 2, Masterplan Abschnitt 4).
+export * from "./laender.js";
+export * from "./zonen.js";
+export * from "./stufen.js";
+export * from "./pfad.js";
+export * from "./vorschlag.js";
+=== laender
+// src/lib/land/laender.js – die drei Länderzonen (Welle 2, Länderrouting, Masterplan Abschnitt 4)
+//
+// Einzige Quelle für Ländercode, URL-Präfix, Sprache (BCP 47 für <html lang> und hreflang),
+// og:locale und Währung. Namen und länderbezogene Kontaktangaben kommen aus src/data/site.js
+// (LAENDER_ANGABEN), die Währung aus dem Faktenregister (B1, src/lib/fakten/waehrung.js).
+//
+// Relative Importe mit Dateiendung: Das Modul wird auch von next.config.mjs (über umzug.js)
+// und von node:test ohne Alias-Auflösung geladen.
+
+import { LAENDER_ANGABEN } from "../../data/site.js";
+import { waehrungFuer } from "../fakten/waehrung.js";
+
+/** Reihenfolge = Anzeige im Länderwechsler. DE zuerst (größter Markt, x-default der Länderzonen). */
+export const LAND_CODES = Object.freeze(["DE", "AT", "CH"]);
+
+const BASIS = {
+  DE: { praefix: "de", lang: "de-DE", ogLocale: "de_DE" },
+  AT: { praefix: "at", lang: "de-AT", ogLocale: "de_AT" },
+  CH: { praefix: "ch", lang: "de-CH", ogLocale: "de_CH" },
+};
+
+export const LAENDER = Object.freeze(
+  Object.fromEntries(
+    LAND_CODES.map((code) => [
+      code,
+      Object.freeze({ code, ...BASIS[code], ...LAENDER_ANGABEN[code], waehrung: waehrungFuer(code), einstieg: `/${BASIS[code].praefix}` }),
+    ]),
+  ),
+);
+
+/** "de" | "DE" | " at " → "DE" | "AT"; alles andere → null */
+export function landCode(wert) {
+  const s = typeof wert === "string" ? wert.trim().toUpperCase() : "";
+  return LAND_CODES.includes(s) ? s : null;
+}
+
+/** URL-Präfix ("de") → Ländercode ("DE"); nur exakt kleingeschriebene Präfixe sind gültig. */
+export function landAusPraefix(praefix) {
+  if (typeof praefix !== "string") return null;
+  return LAND_CODES.find((c) => BASIS[c].praefix === praefix) || null;
+}
+
+/** Länderinfo; unbekannt → null */
+export const landInfo = (wert) => LAENDER[landCode(wert)] || null;
+
+/** Einstiegsseite eines Landes ("/de"); unbekannt → null */
+export const einstiegPfad = (wert) => landInfo(wert)?.einstieg || null;
+
+/** Präfix-Muster am Pfadanfang: "/de", "/de/…", "/at…" */
+export const PRAEFIX_MUSTER = /^\/(de|at|ch)(?=\/|$|\?|#)/;
+=== pfad
+// src/lib/land/pfad.js – Pfade, Alternativen und hreflang (Welle 2, Länderrouting)
+//
+// Schlüssel = Pfad OHNE Länderpräfix, so wie er vor dem Umzug hieß ("/rechner/pacht").
+//   pfad("/rechner/pacht")            → "/de/rechner/pacht"
+//   pfad("/flaechencheck", "AT")      → "/at/flaechencheck"
+//   pfad("/rechner/pacht", "AT")      → "/de/rechner/pacht"   (fehlt in AT → DE-Seite, „gilt für Deutschland“)
+//   pfad("/kontakt", "AT")            → "/kontakt"            (Stamm: nie ein Präfix)
+//   pfad("/ratgeber/x")               → "/wissen/ratgeber/x"  (umbenannt, Stamm)
+//   pfad("/de/rechner/pacht", "AT")   → "/de/rechner/pacht"   (schon aufgelöst: unverändert, idempotent)
+// Query und Anker bleiben erhalten.
+
+import { abs } from "../../data/site.js";
+import { LAENDER, PRAEFIX_MUSTER, einstiegPfad, landAusPraefix, landCode } from "./laender.js";
+import { EINSTIEG, laenderFrei, laenderMitSeite, seiteFuer, stufe, vorhanden } from "./stufen.js";
+import { nurPfad, umbenannt, zoneFuer } from "./zonen.js";
+
+const zerlege = (roh) => {
+  const s = String(roh ?? "");
+  const i = s.search(/[?#]/);
+  return i < 0 ? [s, ""] : [s.slice(0, i), s.slice(i)];
+};
+
+/** Pfad einer Seite in einem Land (ohne Prüfung, ob es sie dort gibt). */
+export const landPfad = (schluessel, land) => `${LAENDER[land].einstieg}${schluessel === "/" ? "" : schluessel}`;
+
+/**
+ * Ziel eines Links im Kontext eines Landes.
+ * @returns {{ href: string, land: string|null, art: "land"|"anderesLand"|"einstieg"|"stamm"|"unbekannt", giltFuer: string|null }}
+ *   art "anderesLand": Die Seite fehlt im gewünschten Land; der Link führt in das Land, für das sie gilt
+ *   (giltFuer z. B. „für Deutschland“ – sichtbar neben dem Link anzeigen).
+ */
+export function ziel(schluesselRoh, land = "DE") {
+  const [roh, rest] = zerlege(schluesselRoh);
+  const wunsch = landCode(land) || "DE";
+  if (PRAEFIX_MUSTER.test(roh)) return { href: roh + rest, land: landAusPraefix(roh.slice(1, 3)), art: "land", giltFuer: null };
+  const p = nurPfad(roh);
+  const neu = umbenannt(p);
+  if (neu) return { href: neu + rest, land: null, art: "stamm", giltFuer: null };
+  if (zoneFuer(p) !== "land") return { href: roh + rest, land: null, art: "stamm", giltFuer: null };
+  const s = seiteFuer(p);
+  if (!s) return { href: roh + rest, land: null, art: "unbekannt", giltFuer: null };
+  if (vorhanden(p, wunsch)) return { href: landPfad(p, wunsch) + rest, land: wunsch, art: "land", giltFuer: null };
+  const andere = laenderMitSeite(p);
+  const ersatz = andere.includes("DE") ? "DE" : andere[0];
+  if (ersatz) return { href: landPfad(p, ersatz) + rest, land: ersatz, art: "anderesLand", giltFuer: LAENDER[ersatz].fuerLand };
+  // Seite ist in keinem Land freigegeben (z. B. CH-Regionsseite im gestuften Start): Einstieg ihres Landes
+  const heimat = s.laender[0];
+  return { href: einstiegPfad(heimat), land: heimat, art: "einstieg", giltFuer: LAENDER[heimat].fuerLand };
+}
+
+/**
+ * Link mit sichtbarem Länderhinweis: fehlt die Seite im Land, zeigt das Label „(gilt für Deutschland)“.
+ * @returns {{ href: string, label: string, giltFuer: string|null }}
+ */
+export function linkFuer(schluessel, land, label) {
+  const z = ziel(schluessel, land);
+  return { href: z.href, label: z.giltFuer ? `${label} (gilt ${z.giltFuer})` : label, giltFuer: z.giltFuer };
+}
+
+/** Link-Ziel als String (siehe ziel()). Standardland DE. */
+export const pfad = (schluessel, land = "DE") => ziel(schluessel, land).href;
+
+/**
+ * Wo befindet sich ein (aufgelöster) Pfad?
+ * @returns {{ land: string|null, schluessel: string, zone: string }}
+ *   schluessel: Pfad ohne Länderpräfix ("" = Einstiegsseite des Landes)
+ */
+export function landAusPfad(pathname) {
+  const p = nurPfad(pathname);
+  const m = PRAEFIX_MUSTER.exec(p);
+  if (m) {
+    const rest = p.slice(m[0].length);
+    return { land: landAusPraefix(m[1]), schluessel: rest === "/" ? EINSTIEG : rest, zone: "land" };
+  }
+  return { land: null, schluessel: p, zone: zoneFuer(p) };
+}
+
+/**
+ * Länderwechsler: Entsprechung der aktuellen Seite im Zielland, sonst dessen Einstieg.
+ * @returns {{ href: string, art: "entsprechung"|"einstieg" }}
+ */
+export function entsprechung(pathname, zielLand) {
+  const l = landCode(zielLand) || "DE";
+  const { schluessel, zone } = landAusPfad(pathname);
+  if (zone === "land" && vorhanden(schluessel, l)) return { href: landPfad(schluessel, l), art: "entsprechung" };
+  return { href: einstiegPfad(l), art: "einstieg" };
+}
+
+/**
+ * hreflang-Cluster einer Seite der Länderzonen: alle Länder mit freigegebenem Inhalt + x-default.
+ * x-default = DE-Fassung, wenn es sie gibt, sonst die erste freigegebene.
+ * Bidirektional per Konstruktion: Alle Mitglieder eines Clusters liefern dieselbe Tabelle.
+ * @returns {Record<string,string>} { "de-DE": url, "de-AT": url, "x-default": url } oder {} ohne Freigabe
+ */
+export function hreflang(schluessel) {
+  const frei = laenderFrei(schluessel);
+  if (!frei.length) return {};
+  const tabelle = {};
+  for (const l of frei) tabelle[LAENDER[l].lang] = abs(landPfad(schluessel, l));
+  tabelle["x-default"] = abs(landPfad(schluessel, frei.includes("DE") ? "DE" : frei[0]));
+  return tabelle;
+}
+
+/**
+ * Metadaten-Feld `alternates` (Next.js) für eine Seite.
+ *  - Länderzone: canonical auf die eigene Länder-URL, languages = hreflang-Cluster
+ *    (nur wenn die Seite in diesem Land freigegeben ist; „in Vorbereitung“ → nur canonical).
+ *  - Stamm/ohne Präfix: canonical auf den Pfad selbst, nie ein Präfix; languages optional
+ *    (z. B. das DE/EN-Paar aus src/components/En/sprachpaare.js).
+ */
+export function alternates(schluessel, land = "DE", { languages } = {}) {
+  const p = schluessel === EINSTIEG ? EINSTIEG : nurPfad(schluessel);
+  const l = landCode(land) || "DE";
+  if (p !== EINSTIEG && zoneFuer(p) !== "land") {
+    return { canonical: abs(p), ...(languages ? { languages } : {}) };
+  }
+  const canonical = abs(landPfad(p, l));
+  if (stufe(p, l) !== "frei") return { canonical };
+  return { canonical, languages: hreflang(p) };
+}
+
+/** og:locale je Land ("de_AT") */
+export const ogLocale = (land) => LAENDER[landCode(land) || "DE"].ogLocale;
+
+/** <html lang> je Land ("de-AT") */
+export const htmlLang = (land) => LAENDER[landCode(land) || "DE"].lang;
+
+=== seite
+// src/lib/land/seite.js – Bausteine für Seiten der Länderzonen (Server, nutzt next/navigation)
+//
+// Getrennt von index.js, damit node:test, next.config.mjs und Client-Komponenten die reine
+// Länderlogik ohne Next-Server-Funktionen laden können.
+//
+// Jede Seite unter src/app/(laender)/[land]/… ruft am Anfang
+//   const { land } = await landDerSeite(params, "/rechner/pacht");
+// und exportiert
+//   export const generateMetadata = landMetadata("/rechner/pacht", metadata);
+// Nicht freigegebene Kombinationen (stufen.js) enden in notFound() → 404.
+// Ein Test (src/lib/land/routen.test.mjs) prüft, dass jede Route genau ihren Schlüssel nutzt.
+
+import { notFound } from "next/navigation";
+import { landAusPraefix } from "./laender.js";
+import { alternates, ogLocale } from "./pfad.js";
+import { stufe } from "./stufen.js";
+
+/**
+ * Land aus der Route prüfen. 404, wenn das Präfix unbekannt oder die Seite im Land nicht
+ * freigegeben ist.
+ * @param {Promise<{land: string}>|{land: string}} params
+ * @param {string | ((p: object) => string)} schluessel Pfad ohne Präfix (bei dynamischen Routen aus params)
+ * @returns {Promise<{ land: "DE"|"AT"|"CH", stufe: "frei"|"vorbereitung", schluessel: string }>}
+ */
+export async function landDerSeite(params, schluessel) {
+  const p = (await params) || {};
+  const land = landAusPraefix(p.land);
+  const konkret = typeof schluessel === "function" ? schluessel(p) : schluessel;
+  const st = land ? stufe(konkret, land) : null;
+  if (!st) notFound();
+  return { land, stufe: st, schluessel: konkret };
+}
+
+/**
+ * generateMetadata für eine Seite der Länderzonen: übernimmt die Basis-Metadaten der Seite und
+ * setzt canonical, hreflang (alternates), og:url und og:locale je Land. „In Vorbereitung“ → noindex.
+ * @param {string | ((p: object) => string)} schluessel
+ * @param {object | ((land: string, p: object) => object|Promise<object>)} basis
+ */
+export function landMetadata(schluessel, basis) {
+  return async function generateMetadata({ params }) {
+    const p = (await params) || {};
+    const land = landAusPraefix(p.land) || "DE";
+    const konkret = typeof schluessel === "function" ? schluessel(p) : schluessel;
+    const b = (typeof basis === "function" ? await basis(land, p) : basis) || {};
+    const a = alternates(konkret, land);
+    const st = stufe(konkret, land);
+    return {
+      ...b,
+      alternates: { ...(b.alternates || {}), ...a },
+      ...(b.openGraph ? { openGraph: { ...b.openGraph, url: a.canonical, locale: ogLocale(land) } } : {}),
+      ...(st === "vorbereitung" ? { robots: { index: false, follow: true } } : {}),
+    };
+  };
+}
+=== navigation
+// src/lib/land/navigation.js – Navigation und Footer je Land (Welle 2)
+//
+// src/data/navigation.js führt nur Schlüssel (Pfade ohne Länderpräfix). Hier werden sie für das
+// Land der Seite aufgelöst. Fehlt eine Seite im Land, führt der Link in das Land, für das sie gilt,
+// und trägt `giltFuer` („für Deutschland“) – Navbar und Footer zeigen das sichtbar an.
+
+import { NAVIGATION } from "../../data/navigation.js";
+import { ziel } from "./pfad.js";
+
+/** Ein Link im Kontext eines Landes: { href, giltFuer } */
+export function navLink(href, land) {
+  const z = ziel(href, land);
+  return { href: z.href, giltFuer: z.art === "anderesLand" || z.art === "einstieg" ? z.giltFuer : null };
+}
+
+/** Navigation mit aufgelösten Links für ein Land (DE | AT | CH). */
+export function navigationFuer(land = "DE") {
+  return NAVIGATION.map((n) => ({
+    ...n,
+    groups: n.groups.map((g) => ({ ...g, items: g.items.map((it) => ({ ...it, ...navLink(it.href, land) })) })),
+    ...(n.feature ? { feature: { ...n.feature, ...navLink(n.feature.href, land) } } : {}),
+  }));
+}
+=== stufen
+// src/lib/land/stufen.js – Seiten der Länderzonen und gestufter Start (Masterplan Abschnitt 4)
+//
+// SEITEN: jede Seite der Länderzonen mit ihrem Schlüssel (= Pfad ohne Länderpräfix) und den
+//   Ländern, für die es fachlich eigenen Inhalt gibt (`laender`). Kein Klonen: Eine Seite steht
+//   nur für die Länder drin, deren Recht, Zahlen und Begriffe sie wirklich abbildet.
+// STUFEN: welche dieser Seiten je Land freigegeben sind.
+//   - DE: vollständig (jede Seite mit DE-Inhalt).
+//   - AT, CH: Positivliste. Jeder Eintrag trägt einen Fachfreigabe-Vermerk; die zweite
+//     Prüfperson ist noch nicht benannt (Entscheidung E6) → Prüfer „TODO-E6“.
+//   - `inVorbereitung: true`: Die Seite ist für das Land vorgesehen, der Inhalt fehlt noch.
+//     Die Route zeigt dann „in Vorbereitung“ (noindex, nicht in der Sitemap).
+// Was nicht freigegeben ist, liefert 404 (notFound()).
+//
+// Relative Importe mit Dateiendung (next.config.mjs lädt das Modul über umzug.js).
+
+import { META as REGIONEN_META } from "../../data/regionen/meta.js";
+import { LAND_CODES } from "./laender.js";
+
+/** Schlüssel der Einstiegsseite je Land (/de, /at, /ch). */
+export const EINSTIEG = "";
+
+/**
+ * Seiten der Länderzonen. prio/freq = Sitemap (übernommen aus der bisherigen Sitemap).
+ * titel = Anzeige auf der Einstiegsseite, im Länderwechsler und im Hinweis „gilt für …“.
+ * gruppe = Abschnitt auf der Einstiegsseite.
+ * index: false = noindex (nie in der Sitemap), z. B. bis zur Freigabe durch die Rechtsabteilung.
+ * neu: true = gab es vor dem Umzug nicht (keine Weiterleitung in umzug.js).
+ */
+export const SEITEN = Object.freeze({
+  [EINSTIEG]: { titel: "Übersicht", laender: ["DE", "AT", "CH"], prio: 0.9, freq: "monthly", gruppe: null, neu: true },
+  // Leistungen
+  "/freiflaeche": { titel: "Freiflächen-PV", laender: ["DE"], prio: 0.9, freq: "monthly", gruppe: "leistungen" },
+  "/agri-pv": { titel: "Agri-PV", laender: ["DE"], prio: 0.9, freq: "monthly", gruppe: "leistungen" },
+  "/solarcarport": { titel: "Solarcarports", laender: ["DE"], prio: 0.8, freq: "monthly", gruppe: "leistungen" },
+  "/grossspeicher": { titel: "Großspeicher", laender: ["DE"], prio: 0.8, freq: "monthly", gruppe: "leistungen" },
+  "/prozess": { titel: "Projektprozess", laender: ["DE"], prio: 0.7, freq: "monthly", gruppe: "leistungen" },
+  "/warum-oekoinvest": { titel: "Warum ÖkoInvest", laender: ["DE"], prio: 0.6, freq: "monthly", gruppe: "leistungen" },
+  // Zielgruppen
+  "/flaeche-verpachten": { titel: "Fläche verpachten", laender: ["DE"], prio: 0.9, freq: "monthly", gruppe: "zielgruppen" },
+  "/dachflaeche-verpachten": { titel: "Dachfläche verpachten", laender: ["DE"], prio: 0.9, freq: "monthly", gruppe: "zielgruppen" },
+  "/landwirte": { titel: "Landwirte", laender: ["DE"], prio: 0.8, freq: "monthly", gruppe: "zielgruppen" },
+  "/kommunen": { titel: "Kommunen", laender: ["DE"], prio: 0.8, freq: "monthly", gruppe: "zielgruppen" },
+  "/bestandsanlagen": { titel: "Bestandsanlagen", laender: ["DE"], prio: 0.8, freq: "monthly", gruppe: "zielgruppen" },
+  "/regionen": { titel: "Regionen", laender: ["DE", "AT"], prio: 0.8, freq: "monthly", gruppe: "zielgruppen" },
+  "/regionen/[slug]": { titel: "Region", laender: ["DE", "AT", "CH"], prio: 0.8, freq: "monthly", gruppe: null, dynamisch: true },
+  // Strom & Gemeinschaft
+  "/virtuelles-kraftwerk": { titel: "Virtuelles Kraftwerk", laender: ["DE"], prio: 0.8, freq: "monthly", gruppe: "strom" },
+  "/reststrom": { titel: "Reststrom-Pool", laender: ["DE"], prio: 0.8, freq: "monthly", gruppe: "strom" },
+  "/energie-live": { titel: "Strommarkt live", laender: ["DE"], prio: 0.7, freq: "hourly", gruppe: "strom" },
+  "/energiegemeinschaften": { titel: "Energiegemeinschaften", laender: ["DE", "AT"], prio: 0.8, freq: "monthly", gruppe: "strom" },
+  // Österreichische Inhalte (EAG, ElWG): nur in /at
+  "/energiegemeinschaften/rechner": { titel: "Energiegemeinschaft-Rechner", laender: ["AT"], prio: 0.7, freq: "monthly", gruppe: "strom" },
+  "/energiegemeinschaften/software": { titel: "Software für Energiegemeinschaften", laender: ["AT"], prio: 0.8, freq: "monthly", gruppe: "strom" },
+  "/genossenschaft": { titel: "Genossenschaft", laender: ["DE"], prio: 0.7, freq: "monthly", gruppe: "strom" },
+  // Rechner & Werkzeuge
+  "/flaechencheck": { titel: "Flächencheck", laender: ["DE", "AT"], prio: 0.9, freq: "monthly", gruppe: "werkzeuge" },
+  "/rechner": { titel: "Alle Rechner", laender: ["DE"], prio: 0.8, freq: "monthly", gruppe: "werkzeuge" },
+  "/rechner/pacht": { titel: "Pachtrechner", laender: ["DE"], prio: 0.8, freq: "monthly", gruppe: "werkzeuge" },
+  "/rechner/agri-pv": { titel: "Agri-PV-Rechner", laender: ["DE"], prio: 0.8, freq: "monthly", gruppe: "werkzeuge" },
+  "/rechner/solarpark": { titel: "Solarpark-Renditerechner", laender: ["DE"], prio: 0.8, freq: "monthly", gruppe: "werkzeuge" },
+  "/rechner/projektbewertung": { titel: "Projektbewertung", laender: ["DE"], prio: 0.8, freq: "monthly", gruppe: "werkzeuge" },
+  "/rechner/reststrom": { titel: "Reststrom-Rechner", laender: ["DE"], prio: 0.7, freq: "monthly", gruppe: "werkzeuge" },
+  "/rechner/solarcarport": { titel: "Carport-Rechner", laender: ["DE"], prio: 0.7, freq: "monthly", gruppe: "werkzeuge" },
+  "/rechner/kommune": { titel: "Kommunal-Rechner", laender: ["DE"], prio: 0.7, freq: "monthly", gruppe: "werkzeuge" },
+  "/rechner/pachtangebot-check": { titel: "Pachtangebot prüfen", laender: ["DE"], prio: 0.8, freq: "monthly", gruppe: "werkzeuge" },
+  "/rechner/netzanschluss": { titel: "Netzanschluss-Check", laender: ["DE"], prio: 0.7, freq: "monthly", gruppe: "werkzeuge" },
+  "/rechner/ppa": { titel: "PPA-Rechner", laender: ["DE"], prio: 0.7, freq: "monthly", gruppe: "werkzeuge" },
+  "/rechner/grossspeicher": { titel: "Großspeicher-Rechner", laender: ["DE"], prio: 0.7, freq: "monthly", gruppe: "werkzeuge" },
+  "/rechner/beteiligung": { titel: "Beteiligungsrechner", laender: ["DE"], prio: 0.6, freq: "monthly", gruppe: "werkzeuge" },
+  "/rechner/energy-sharing": { titel: "Energy-Sharing-Rechner", laender: ["DE"], prio: 0.6, freq: "monthly", gruppe: "werkzeuge" },
+  "/rechner/dachpacht": { titel: "Dachpacht-Rechner", laender: ["DE"], prio: 0.8, freq: "monthly", gruppe: "werkzeuge" },
+  "/rechner/bestandsanlage": { titel: "Bestandsanlage bewerten", laender: ["DE"], prio: 0.8, freq: "monthly", gruppe: "werkzeuge" },
+  // Schweiz (Start-Positivliste, Inhalte folgen)
+  "/marktzugang-check": { titel: "Marktzugang-Check", laender: ["CH"], prio: 0.7, freq: "monthly", gruppe: "werkzeuge", neu: true },
+  "/parzellen-vorpruefung": { titel: "Parzellen-Vorprüfung", laender: ["CH"], prio: 0.7, freq: "monthly", gruppe: "werkzeuge", neu: true },
+  // Markt & Wissen je Land
+  "/marktdaten": { titel: "Marktdaten Solar", laender: ["DE"], prio: 0.8, freq: "weekly", gruppe: "wissen" },
+  "/marktdaten/fristen": { titel: "Fristen und Termine", laender: ["DE"], prio: 0.6, freq: "weekly", gruppe: "wissen", index: false },
+  "/faq": { titel: "FAQ", laender: ["DE"], prio: 0.6, freq: "monthly", gruppe: "wissen" },
+});
+
+/** Wegweiser auf AT/CH-Einstiegsseiten: wichtige Seiten, die bisher nur für Deutschland gelten. */
+export const WEGWEISER_DE = Object.freeze(["/flaeche-verpachten", "/rechner/pacht", "/agri-pv", "/kommunen", "/reststrom", "/rechner"]);
+
+/** Gruppen der Einstiegsseite in Anzeigereihenfolge. */
+export const GRUPPEN = Object.freeze([
+  { id: "werkzeuge", titel: "Prüfen und rechnen" },
+  { id: "zielgruppen", titel: "Für Eigentümer, Landwirte und Gemeinden" },
+  { id: "leistungen", titel: "Kraftwerke entwickeln" },
+  { id: "strom", titel: "Strom und Gemeinschaft" },
+  { id: "wissen", titel: "Markt und Wissen" },
+]);
+
+const VERMERK_AT = Object.freeze({
+  stand: "2026-10-03",
+  grundlage: "Masterplan Abschnitt 4, gestufter Start: Seite in Welle 1 fachlich überarbeitet (Recht AT, Länder-Sperre der Rechner)",
+  pruefer: "TODO-E6",
+});
+const VERMERK_CH = Object.freeze({
+  stand: "2026-10-03",
+  grundlage: "Masterplan Abschnitt 4, gestufter Start CH",
+  pruefer: "TODO-E6",
+});
+
+/**
+ * Gestufter Start. DE vollständig; AT und CH nur mit Positivliste und Fachfreigabe-Vermerk.
+ * Erweitern: Seite in SEITEN um das Land ergänzen (eigener Inhalt!) und hier mit Vermerk eintragen.
+ */
+export const STUFEN = Object.freeze({
+  DE: { modus: "vollstaendig" },
+  AT: {
+    modus: "positivliste",
+    seiten: {
+      [EINSTIEG]: VERMERK_AT,
+      "/regionen": VERMERK_AT,
+      "/regionen/[slug]": VERMERK_AT,
+      "/energiegemeinschaften": VERMERK_AT,
+      "/energiegemeinschaften/rechner": VERMERK_AT,
+      "/energiegemeinschaften/software": VERMERK_AT,
+      "/flaechencheck": VERMERK_AT,
+    },
+  },
+  CH: {
+    modus: "positivliste",
+    seiten: {
+      [EINSTIEG]: VERMERK_CH,
+      "/marktzugang-check": { ...VERMERK_CH, inVorbereitung: true },
+      "/parzellen-vorpruefung": { ...VERMERK_CH, inVorbereitung: true },
+    },
+  },
+});
+
+/** Regionsseiten: Land je Slug kommt aus den Stammdaten der Regionen. */
+export const REGION_LAND = Object.freeze(Object.fromEntries(REGIONEN_META.map((r) => [r.slug, r.land])));
+
+const REGION_MUSTER = /^\/regionen\/([a-z0-9-]+)$/;
+
+/** Schlüssel einer Regionsseite ("tirol" → "/regionen/tirol"). */
+export const regionSchluessel = (slug) => "/regionen/" + slug;
+
+/**
+ * Pfad ohne Präfix → Registereintrag. Konkrete Regionsseiten werden auf "/regionen/[slug]"
+ * abgebildet und tragen dann nur das Land ihrer Region.
+ * @returns {{ schluessel: string, muster: string, eintrag: object, laender: string[] } | null}
+ */
+export function seiteFuer(schluessel) {
+  if (typeof schluessel !== "string") return null;
+  if (Object.hasOwn(SEITEN, schluessel) && !SEITEN[schluessel].dynamisch) {
+    return { schluessel, muster: schluessel, eintrag: SEITEN[schluessel], laender: SEITEN[schluessel].laender };
+  }
+  const r = REGION_MUSTER.exec(schluessel);
+  if (r && Object.hasOwn(REGION_LAND, r[1])) {
+    return { schluessel, muster: "/regionen/[slug]", eintrag: SEITEN["/regionen/[slug]"], laender: [REGION_LAND[r[1]]] };
+  }
+  return null;
+}
+
+/** Stufe eines Landes für eine Seite: "frei" | "vorbereitung" | null (nicht freigegeben) */
+export function stufe(schluessel, land) {
+  const s = seiteFuer(schluessel);
+  if (!s || !LAND_CODES.includes(land) || !s.laender.includes(land)) return null;
+  const st = STUFEN[land];
+  if (st.modus === "vollstaendig") return "frei";
+  const vermerk = Object.hasOwn(st.seiten, s.muster) ? st.seiten[s.muster] : null;
+  if (!vermerk) return null;
+  return vermerk.inVorbereitung ? "vorbereitung" : "frei";
+}
+
+/** Gibt es die Seite im Land (freigegeben oder „in Vorbereitung“)? */
+export const vorhanden = (schluessel, land) => stufe(schluessel, land) !== null;
+
+/** Freigegeben mit Inhalt? */
+export const freigegeben = (schluessel, land) => stufe(schluessel, land) === "frei";
+
+/** Indexierbar = freigegeben, mit Inhalt und nicht als noindex markiert. */
+export function indexierbar(schluessel, land) {
+  const s = seiteFuer(schluessel);
+  return !!s && freigegeben(schluessel, land) && s.eintrag.index !== false;
+}
+
+/** Länder, in denen die Seite existiert (freigegeben oder in Vorbereitung), in LAND_CODES-Reihenfolge. */
+export const laenderMitSeite = (schluessel) => LAND_CODES.filter((l) => vorhanden(schluessel, l));
+
+/** Länder, in denen die Seite mit Inhalt freigegeben ist. */
+export const laenderFrei = (schluessel) => LAND_CODES.filter((l) => freigegeben(schluessel, l));
+
+/** Alle konkreten Schlüssel (Regionen aufgelöst). */
+export function alleSchluessel() {
+  const liste = [];
+  for (const k of Object.keys(SEITEN)) {
+    if (SEITEN[k].dynamisch) liste.push(...Object.keys(REGION_LAND).map((slug) => `/regionen/${slug}`));
+    else liste.push(k);
+  }
+  return liste;
+}
+
+/** Alle Seiten eines Landes (konkrete Schlüssel) mit ihrer Stufe. */
+export function seitenDesLandes(land) {
+  return alleSchluessel()
+    .map((schluessel) => ({ schluessel, stufe: stufe(schluessel, land) }))
+    .filter((x) => x.stufe);
+}
+
+/** Regionen-Slugs eines Landes, die dort freigegeben sind (für generateStaticParams). */
+export const regionenSlugs = (land) => Object.keys(REGION_LAND).filter((slug) => freigegeben(`/regionen/${slug}`, land));
+=== umzug
+// src/lib/land/umzug.js – Weiterleitungen der alten Pfade auf die Länderzonen (Welle 2)
+//
+// Eingebunden über redirects() in next.config.mjs. permanent: true → HTTP 308 (Methode bleibt
+// erhalten). Query-Parameter reicht Next.js unverändert weiter.
+//
+// Regeln (getestet in src/lib/land/umzug.test.mjs):
+//  - Jeder alte öffentliche Pfad (bisherige Sitemap) hat GENAU EINE Weiterleitung oder bleibt im Stamm.
+//  - Keine Ketten: Kein Ziel ist selbst wieder Quelle einer Weiterleitung.
+//  - Keine Schleifen, keine externen Ziele.
+//  - Ziel ist die Fassung des Landes, für das die Seite gilt (in der Regel /de/…); Regionsseiten
+//    gehen in ihr Land, nicht freigegebene (CH im gestuften Start) auf den Einstieg ihres Landes.
+// Der Middleware-Matcher bleibt unverändert (Masterplan Abschnitt 4).
+//
+// Relative Importe mit Dateiendung: next.config.mjs lädt dieses Modul ohne Alias-Auflösung.
+
+import { ziel } from "./pfad.js";
+import { SEITEN, alleSchluessel } from "./stufen.js";
+import { UMBENANNT } from "./zonen.js";
+
+const ziel1 = (schluessel) => ziel(schluessel, "DE").href;
+
+/** Feste Weiterleitungen alt → neu (eine Zeile je alter Seite). */
+export function umzugsTabelle() {
+  const zeilen = [];
+  for (const schluessel of alleSchluessel()) {
+    const muster = schluessel.startsWith("/regionen/") ? "/regionen/[slug]" : schluessel;
+    if (SEITEN[muster]?.neu) continue;
+    zeilen.push({ source: schluessel, destination: ziel1(schluessel), permanent: true });
+  }
+  // Umbenannt im Stamm: /ratgeber → /wissen/ratgeber, Artikel per Muster (ein Eintrag je Ebene)
+  for (const u of UMBENANNT) {
+    zeilen.push({ source: u.alt, destination: u.neu, permanent: true });
+    zeilen.push({ source: `${u.alt}/:slug`, destination: `${u.neu}/:slug`, permanent: true });
+  }
+  return zeilen;
+}
+
+export const UMZUG = Object.freeze(umzugsTabelle());
+
+/**
+ * Welche Regel trifft einen Pfad? (Nachbildung der Next.js-Auswertung für die Tests:
+ * exakte Quellen und das einfache Muster ":slug" = genau ein Pfadsegment.)
+ * @returns {Array<{ source: string, destination: string }>} alle passenden Regeln
+ */
+export function treffer(pfad, tabelle = UMZUG) {
+  const p = String(pfad).split(/[?#]/)[0];
+  return tabelle.filter((r) => {
+    if (!r.source.includes(":")) return r.source === p;
+    const basis = r.source.slice(0, r.source.indexOf("/:"));
+    if (!p.startsWith(`${basis}/`)) return false;
+    const rest = p.slice(basis.length + 1);
+    return rest.length > 0 && !rest.includes("/");
+  });
+}
+
+/** Ziel einer Regel für einen konkreten Pfad (":slug" eingesetzt). */
+export function zielFuer(regel, pfad) {
+  if (!regel.source.includes(":")) return regel.destination;
+  const basis = regel.source.slice(0, regel.source.indexOf("/:"));
+  const slug = String(pfad).split(/[?#]/)[0].slice(basis.length + 1);
+  return regel.destination.replace(":slug", slug);
+}
+=== zonen
+// src/lib/land/zonen.js – Zonenmodell (Masterplan Abschnitt 4, ADR-L1)
+//
+//  - Länderzonen /de, /at, /ch: alles, was rechtlich, rechnerisch oder sprachlich je Land abweicht.
+//    Welche Seiten es dort gibt, steht in stufen.js.
+//  - Neutraler Stamm: GESCHLOSSENE Liste aus dem Masterplan. Erweitern nur mit Entscheidung
+//    des Inhabers (Masterplan ändern, dann hier eintragen; ein Test vergleicht beide Listen).
+//  - Ohne Präfix: /en, Portal, Login, Einladungen, API sowie die Token-Strecken /bericht und /p.
+//
+// Ein Pfad gehört zum Stamm bzw. zu „ohne Präfix“, wenn er gleich einem Eintrag ist oder
+// darunter liegt (/projektboerse/karte gehört zu /projektboerse). Der Stamm-Eintrag "/" gilt
+// nur für die Startseite selbst.
+
+/** Neutraler Stamm (geschlossene Liste, Masterplan Abschnitt 4 „Zonenmodell“). */
+export const STAMM = Object.freeze([
+  "/",
+  "/wissen",
+  "/projektboerse",
+  "/investoren",
+  "/unternehmen",
+  "/referenzen",
+  "/kontakt",
+  "/impressum",
+  "/datenschutz",
+  "/presse",
+  "/hinweisgeber",
+  "/quellen",
+  "/sicherheit",
+]);
+
+/** Ohne Präfix laut Masterplan: /en, Portal, Login, Einladungen, API – dazu /bericht und /p (Welle 2, B4/GRP). */
+export const OHNE_PRAEFIX = Object.freeze(["/en", "/portal", "/login", "/einladung", "/api", "/bericht", "/p"]);
+
+/**
+ * Bestehende Seiten, die der Masterplan nicht ausdrücklich einordnet. Sie bleiben ohne Präfix,
+ * weil sie keine Länderinhalte tragen (Strecken der Anmeldung, Token-Seiten, interner
+ * Styleguide) oder Rechtstexte sind, die die Rechtsabteilung gesamthaft prüft.
+ * Abweichung vom Plan, im Bericht vermerkt – Einordnung je Eintrag bestätigen (TODO-Inhaber).
+ */
+export const OHNE_PRAEFIX_ERGAENZT = Object.freeze([
+  { pfad: "/registrieren", grund: "Teil der Anmeldestrecke (wie /login)" },
+  { pfad: "/passwort-vergessen", grund: "Teil der Anmeldestrecke (wie /login)" },
+  { pfad: "/angebot", grund: "Briefcode-Strecke mit persönlichem Code (wie /einladung)" },
+  { pfad: "/termin", grund: "Terminbuchung für alle Länder, Land wird im Formular gewählt" },
+  { pfad: "/design", grund: "interner Styleguide (noindex)" },
+  { pfad: "/barrierefreiheit", grund: "Rechtstext (Barrierefreiheitserklärung) – Prüfung Rechtsabteilung, ob Stamm" },
+  { pfad: "/nutzungsbedingungen", grund: "Rechtstext (Entwurf) – Prüfung Rechtsabteilung, ob Stamm oder je Land" },
+  { pfad: "/bedingungen", grund: "Rechtstexte (Entwürfe) – Prüfung Rechtsabteilung, ob Stamm oder je Land" },
+]);
+
+/**
+ * Technische Dateien der Website (Next.js-Metadaten-Routen, Bilder, Skripte). Sie sind keine
+ * Seiten und gehören zu keiner Zone; die Linkprüfung ignoriert sie.
+ */
+export const TECHNISCH = Object.freeze(["/_next", "/img", "/geo", "/sitemap", "/robots.txt", "/manifest.webmanifest", "/llms.txt", "/icon", "/apple-touch-icon.png", "/favicon.ico", "/portal.webmanifest", "/sw-portal.js", "/portal-offline.html"]);
+
+/** Alte Pfade, die beim Umzug den Namen wechseln und im Stamm bleiben (Ratgeber gehört zum Wissen). */
+export const UMBENANNT = Object.freeze([{ alt: "/ratgeber", neu: "/wissen/ratgeber" }]);
+
+const unter = (pfad, basis) => (basis === "/" ? pfad === "/" : pfad === basis || pfad.startsWith(`${basis}/`));
+
+/** Pfad ohne Query und Anker; "" → "/" */
+export function nurPfad(pfad) {
+  const s = String(pfad ?? "").split(/[?#]/)[0];
+  if (!s) return "/";
+  return s.length > 1 ? s.replace(/\/+$/, "") || "/" : s;
+}
+
+/**
+ * Zone eines Pfads OHNE Länderpräfix.
+ * @returns {"stamm" | "ohne-praefix" | "technisch" | "land"}
+ */
+export function zoneFuer(pfad) {
+  const p = nurPfad(pfad);
+  if (STAMM.some((b) => unter(p, b))) return "stamm";
+  if (OHNE_PRAEFIX.some((b) => unter(p, b)) || OHNE_PRAEFIX_ERGAENZT.some((e) => unter(p, e.pfad))) return "ohne-praefix";
+  if (TECHNISCH.some((b) => p === b || p.startsWith(b))) return "technisch";
+  return "land";
+}
+
+/** Bekommt dieser (präfixlose) Pfad niemals ein Länderpräfix? */
+export const ohnePraefixImmer = (pfad) => zoneFuer(pfad) !== "land";
+
+/** Alter Pfad im Stamm mit neuem Namen ("/ratgeber/x" → "/wissen/ratgeber/x"); sonst null */
+export function umbenannt(pfad) {
+  const p = nurPfad(pfad);
+  for (const u of UMBENANNT) if (unter(p, u.alt)) return u.neu + p.slice(u.alt.length);
+  return null;
+}
+=== vorschlag
+// src/lib/land/vorschlag.js – Ländervorschlag und Länderwahl (Welle 2, Masterplan Abschnitt 4)
+//
+// Grundsätze (Geoblocking-VO Art. 3 Abs. 2, Google: keine IP-basierte Anpassung):
+//  - Es gibt KEINE Weiterleitung nach IP oder Sprache. Der Server liefert über /api/land nur einen
+//    Vorschlag; daraus entsteht ein schließbares Banner.
+//  - Kein `Vary` auf Geo-Header, Antwort nie zwischenspeichern (private, no-store).
+//  - Das Cookie „land“ wird erst bei aktiver Wahl gesetzt (Klick im Banner oder im Länderwechsler).
+//    Schließen des Banners ist keine Länderwahl: Das merkt sich nur die Browsersitzung
+//    (sessionStorage), es entsteht kein Cookie.
+//  Kennzeichnung im Datenschutz-Entwurf: Prüfung Rechtsabteilung.
+
+import { landCode } from "./laender.js";
+
+/** Name und Laufzeit des Präferenz-Cookies (Prüfung Rechtsabteilung: Laufzeit 12 Monate). */
+export const LAND_COOKIE = "land";
+export const LAND_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
+/** sessionStorage-Schlüssel für „Hinweis geschlossen“ (nur diese Browsersitzung). */
+export const HINWEIS_ZU = "oi-land-hinweis-zu";
+
+/** Geo-Header des Hostings, die als Hinweis gelesen werden (nie für eine Weiterleitung). */
+export const GEO_HEADER = Object.freeze(["x-vercel-ip-country", "cf-ipcountry", "x-country-code"]);
+
+/**
+ * Accept-Language auswerten: Sprach-Tags mit Region DE/AT/CH nach q-Wert.
+ * "de-AT,de;q=0.9,en;q=0.8" → "AT"; "de" allein → null (keine Region erkennbar).
+ */
+export function landAusSprache(acceptLanguage) {
+  if (typeof acceptLanguage !== "string" || !acceptLanguage.trim()) return null;
+  const tags = acceptLanguage
+    .split(",")
+    .slice(0, 20)
+    .map((teil, i) => {
+      const [tag, ...param] = teil.trim().split(";");
+      const q = param.map((p) => p.trim()).find((p) => p.startsWith("q="));
+      const wert = q ? Number(q.slice(2)) : 1;
+      return { tag: tag.trim(), q: Number.isFinite(wert) ? wert : 0, i };
+    })
+    .filter((t) => t.tag && t.q > 0)
+    .sort((a, b) => b.q - a.q || a.i - b.i);
+  for (const t of tags) {
+    const region = t.tag.split("-")[1];
+    const code = landCode(region);
+    if (code) return code;
+  }
+  return null;
+}
+
+/**
+ * Vorschlag aus Accept-Language (zuerst) bzw. Geo-Header (danach).
+ * @param {{ acceptLanguage?: string|null, geo?: string|null }} e
+ * @returns {{ vorschlag: "DE"|"AT"|"CH"|null, quelle: "sprache"|"geo"|null }}
+ */
+export function landVorschlag({ acceptLanguage, geo } = {}) {
+  const aus = landAusSprache(acceptLanguage);
+  if (aus) return { vorschlag: aus, quelle: "sprache" };
+  const g = landCode(typeof geo === "string" ? geo : "");
+  if (g) return { vorschlag: g, quelle: "geo" };
+  return { vorschlag: null, quelle: null };
+}
+
+/** Land aus einem Cookie-String ("a=1; land=AT") – nur gültige Codes, sonst null. */
+export function landAusCookie(cookieString) {
+  if (typeof cookieString !== "string") return null;
+  for (const teil of cookieString.split(";")) {
+    const [k, ...v] = teil.trim().split("=");
+    if (k === LAND_COOKIE) return landCode(decodeURIComponent(v.join("=")));
+  }
+  return null;
+}
+
+/** Cookie-Zeile für die aktive Länderwahl (nur nach Klick setzen). */
+export function landCookieZeile(land, { https = true } = {}) {
+  const code = landCode(land);
+  if (!code) return null;
+  return `${LAND_COOKIE}=${code}; Path=/; Max-Age=${LAND_COOKIE_MAX_AGE}; SameSite=Lax${https ? "; Secure" : ""}`;
+}
+
+=== sitemaps
+// src/lib/land/sitemaps.js – Sitemap-Einträge je Land und für den Stamm (Welle 2)
+//
+// Eine Sitemap je Länderzone (/sitemap/de.xml, /sitemap/at.xml, /sitemap/ch.xml) und eine für
+// den Stamm (/sitemap/stamm.xml). In die Länder-Sitemaps kommt nur, was im Land freigegeben,
+// mit Inhalt und indexierbar ist (stufen.js: kein „in Vorbereitung“, kein index: false).
+// Jeder Eintrag trägt seinen hreflang-Cluster (alternates.languages) – derselbe wie im <head>.
+//
+// lastModified bewusst mit festen Daten statt `new Date()`: sonst meldet jeder Build Google,
+// sämtliche Seiten hätten sich geändert. Datum nur anfassen, wenn sich der INHALT ändert.
+
+import { abs } from "../../data/site.js";
+import { LAND_CODES } from "./laender.js";
+import { hreflang, landPfad } from "./pfad.js";
+import { SEITEN, indexierbar, seiteFuer, seitenDesLandes } from "./stufen.js";
+
+export const START = new Date("2026-09-29"); // Relaunch ÖkoInvest
+export const LAENDERROUTING = new Date("2026-10-03"); // neue URLs der Länderzonen
+export const RECHT = new Date("2026-09-29"); // letzte Überarbeitung der Rechtstexte
+
+/** Kennungen der Sitemaps (generateSitemaps): "stamm" und je Land der Präfix. */
+export const SITEMAP_IDS = Object.freeze(["stamm", ...LAND_CODES.map((c) => c.toLowerCase())]);
+
+/** Absolute URLs der Sitemaps (für robots.txt). */
+export const sitemapUrls = (siteUrl) => SITEMAP_IDS.map((id) => `${siteUrl}/sitemap/${id}.xml`);
+
+/**
+ * Stammseiten der bisherigen Sitemap (ohne Länderpräfix). Entwurfsseiten filtert sitemap.js mit
+ * ohneEntwuerfe() heraus; sie bleiben hier, damit sie nach der Freigabe nur aus der
+ * Entwurfsliste (src/lib/indexsteuerung.js) ausgetragen werden müssen.
+ */
+export const STAMM_SEITEN = Object.freeze([
+  { pfad: "/", prio: 1.0, freq: "weekly" },
+  { pfad: "/investoren", prio: 0.9, freq: "monthly" },
+  { pfad: "/projektboerse", prio: 0.9, freq: "daily" },
+  { pfad: "/projektboerse/anbieten", prio: 0.7, freq: "monthly" },
+  { pfad: "/projektboerse/karte", prio: 0.7, freq: "daily" },
+  { pfad: "/referenzen", prio: 0.6, freq: "monthly" },
+  { pfad: "/en", prio: 0.6, freq: "monthly" },
+  { pfad: "/en/investors", prio: 0.6, freq: "monthly" },
+  { pfad: "/en/project-exchange", prio: 0.6, freq: "monthly" },
+  { pfad: "/en/sell-your-project", prio: 0.6, freq: "monthly" },
+  { pfad: "/en/contact", prio: 0.4, freq: "yearly" },
+  { pfad: "/wissen/ratgeber", prio: 0.8, freq: "weekly", datum: LAENDERROUTING },
+  { pfad: "/wissen/lexikon", prio: 0.7, freq: "monthly", lexikon: true },
+  { pfad: "/unternehmen", prio: 0.6, freq: "monthly" },
+  { pfad: "/kontakt", prio: 0.6, freq: "yearly" },
+  { pfad: "/termin", prio: 0.6, freq: "monthly" },
+  { pfad: "/impressum", prio: 0.2, freq: "yearly", datum: RECHT },
+  { pfad: "/datenschutz", prio: 0.2, freq: "yearly", datum: RECHT },
+  { pfad: "/nutzungsbedingungen", prio: 0.3, freq: "yearly", datum: RECHT },
+  { pfad: "/barrierefreiheit", prio: 0.2, freq: "yearly", datum: RECHT },
+]);
+
+/** Einträge der Sitemap eines Landes ("DE" | "AT" | "CH"). */
+export function landEintraege(land) {
+  return seitenDesLandes(land)
+    .filter(({ schluessel }) => indexierbar(schluessel, land))
+    .map(({ schluessel }) => {
+      const e = seiteFuer(schluessel)?.eintrag || SEITEN[schluessel];
+      return {
+        url: abs(landPfad(schluessel, land)),
+        lastModified: LAENDERROUTING,
+        changeFrequency: e.freq,
+        priority: e.prio,
+        alternates: { languages: hreflang(schluessel) },
+      };
+    });
+}

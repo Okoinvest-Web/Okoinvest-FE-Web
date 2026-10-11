@@ -1,0 +1,125 @@
+import pathlib
+
+FE = pathlib.Path(r"C:\Users\SALEADMIN\Documents\Servicetechniker APP\frontend")
+
+
+def patch(pfad, paare):
+    p = FE / pfad
+    s = p.read_text(encoding="utf-8")
+    for alt, neu in paare:
+        if alt not in s:
+            raise SystemExit(f"NICHT GEFUNDEN in {pfad}:\n---\n{alt[:240]}\n---")
+        s = s.replace(alt, neu, 1)
+    p.write_text(s, encoding="utf-8")
+    print("ok", pfad)
+
+
+SKRIPT_ALT = """const kennzahlen = ref<Kennzahlen | null>(null)
+const wartungen = ref<{ name: string; anlage_name: string; naechste_wartung: string; ort?: string }[]>([])
+const lokaleEntwuerfe = ref<Protokoll[]>([])
+const laedt = ref(true)"""
+
+SKRIPT_NEU = """interface Aufgabe {
+  name: string
+  titel: string
+  anlage: string
+  schweregrad: string
+  status: string
+  faellig_am?: string
+  ueberfaellig?: 0 | 1
+}
+
+const kennzahlen = ref<Kennzahlen | null>(null)
+const wartungen = ref<{ name: string; anlage_name: string; naechste_wartung: string; ort?: string }[]>([])
+const aufgaben = ref<Aufgabe[]>([])
+const lokaleEntwuerfe = ref<Protokoll[]>([])
+const laedt = ref(true)"""
+
+LADEN_ALT = """async function laden() {
+  laedt.value = true
+  try {
+    const [k, w] = await Promise.allSettled([baudoku.kennzahlen(), baudoku.anstehendeWartungen(30)])
+    if (k.status === 'fulfilled') kennzahlen.value = k.value as Kennzahlen
+    if (w.status === 'fulfilled') wartungen.value = w.value as typeof wartungen.value
+  } finally {"""
+
+LADEN_NEU = """async function laden() {
+  laedt.value = true
+  try {
+    const [k, w, a] = await Promise.allSettled([
+      baudoku.kennzahlen(),
+      baudoku.anstehendeWartungen(30),
+      baudoku.meineAufgaben(),
+    ])
+    if (k.status === 'fulfilled') kennzahlen.value = k.value as Kennzahlen
+    if (w.status === 'fulfilled') wartungen.value = w.value as typeof wartungen.value
+    if (a.status === 'fulfilled') aufgaben.value = a.value as Aufgabe[]
+  } finally {"""
+
+# Abschnitt "Meine Aufgaben" vor die angefangenen Protokolle setzen
+ABSCHNITT_ALT = """    <!-- Angefangene Protokolle -->
+    <section v-if="lokaleEntwuerfe.length">"""
+
+ABSCHNITT_NEU = """    <!-- Mir zugewiesene Mängel: überfällige zuerst -->
+    <section v-if="aufgaben.length">
+      <h3 class="mb-2 flex items-center gap-2 text-lg font-bold">
+        <AppIcon name="mangel" :groesse="20" class="text-warnung" />
+        Meine Mängel
+        <RouterLink
+          :to="{ name: 'maengel' }"
+          class="ml-auto text-sm font-medium text-marke-600 hover:underline"
+        >
+          alle ansehen
+        </RouterLink>
+      </h3>
+      <ul class="space-y-2">
+        <li v-for="aufgabe in aufgaben.slice(0, 5)" :key="aufgabe.name">
+          <RouterLink
+            :to="{ name: 'mangel-detail', params: { lokaleId: aufgabe.name } }"
+            class="karte flex items-center gap-3 p-3"
+            :class="aufgabe.ueberfaellig ? 'border-l-4 border-l-fehler' : ''"
+          >
+            <StatusAbzeichen :wert="aufgabe.schweregrad" />
+            <div class="min-w-0 flex-1">
+              <div class="truncate font-semibold">{{ aufgabe.titel }}</div>
+              <div class="truncate text-xs text-slate-500">{{ anlagenName(aufgabe.anlage) }}</div>
+            </div>
+            <div class="shrink-0 text-right text-xs">
+              <div :class="aufgabe.ueberfaellig ? 'font-semibold text-fehler' : 'text-slate-400'">
+                {{ fristText(aufgabe) }}
+              </div>
+              <StatusAbzeichen :wert="aufgabe.status" klein />
+            </div>
+          </RouterLink>
+        </li>
+      </ul>
+    </section>
+
+    <!-- Angefangene Protokolle -->
+    <section v-if="lokaleEntwuerfe.length">"""
+
+HELFER_ALT = """function anlagenName(name: string) {
+  return stammdaten.anlage(name)?.anlage_name ?? name
+}"""
+
+HELFER_NEU = """function anlagenName(name: string) {
+  return stammdaten.anlage(name)?.anlage_name ?? name
+}
+
+function fristText(aufgabe: Aufgabe): string {
+  const tage = tageBis(aufgabe.faellig_am)
+  if (tage === null) return 'ohne Frist'
+  if (tage < 0) return `${Math.abs(tage)} Tage überfällig`
+  if (tage === 0) return 'heute fällig'
+  return `in ${tage} Tagen`
+}"""
+
+patch(
+    "src/views/DashboardView.vue",
+    [
+        (SKRIPT_ALT, SKRIPT_NEU),
+        (LADEN_ALT, LADEN_NEU),
+        (HELFER_ALT, HELFER_NEU),
+        (ABSCHNITT_ALT, ABSCHNITT_NEU),
+    ],
+)

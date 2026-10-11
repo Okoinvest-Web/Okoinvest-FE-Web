@@ -1,0 +1,190 @@
+"""Mangel: SLA-Frist, ToDo-Zuweisung, Statusworkflow (FA-060 bis FA-066)."""
+
+from __future__ import annotations
+
+import frappe
+from frappe import _
+from frappe.model.document import Document
+from frappe.utils import add_days, getdate, now_datetime, today
+
+
+class Mangel(Document):
+	def validate(self):
+		self.frist_setzen()
+		self.status_pruefen()
+		self.ueberfaellig = bool(
+			self.faellig_am
+			and getdate(self.faellig_am) < getdate(today())
+			and self.status in ("Offen", "In Bearbeitung")
+		)
+
+	def after_insert(self):
+		self.todo_anlegen()
+		self.benachrichtigen("neu")
+
+	def on_update(self):
+		self.anlage_zaehler_aktualisieren()
+		if self.has_value_changed("zugewiesen_an") and not self.is_new():
+			self.todo_anlegen()
+
+	def on_trash(self):
+		self.todo_schliessen()
+		self.anlage_zaehler_aktualisieren(entfernt=True)
+
+	# ---------------------------------------------------------------- Validate
+
+	def frist_setzen(self):
+		if not self.gemeldet_am:
+			self.gemeldet_am = today()
+		if self.faellig_am:
+			return
+		sla = frappe.db.get_value("Mangel Schweregrad", self.schweregrad, "sla_tage")
+		self.faellig_am = add_days(self.gemeldet_am, sla or 14)
+
+	def status_pruefen(self):
+		settings = frappe.get_cached_doc("Baudoku Settings")
+
+		if self.status in ("Erledigt", "Verifiziert"):
+			if not self.massnahme:
+				frappe.throw(_("Bitte die durchgefuehrte Massnahme dokumentieren."))
+			if settings.nachweisfoto_pflicht and not self.erledigt_fotos:
+				frappe.throw(
+					_("Zur Erledigung ist mindestens ein Nachweisfoto erforderlich (FA-064)."),
+					title=_("Nachweisfoto fehlt"),
+				)
+			if not self.erledigt_am:
+				self.erledigt_am = today()
+				self.erledigt_von = frappe.session.user
+
+		if self.status == "Verifiziert" and not self.verifiziert_am:
+			erlaubt = {"Baudoku Bauleiter", "Baudoku Projektleiter", "Baudoku Admin", "System Manager"}
+			if not erlaubt & set(frappe.get_roles()):
+				frappe.throw(_("Keine Berechtigung zur Verifizierung."), frappe.PermissionError)
+			self.verifiziert_von = frappe.session.user
+			self.verifiziert_am = now_datetime()
+
+		if self.status in ("Erledigt", "Verifiziert", "Verworfen"):
+			self.todo_schliessen()
+
+	# ----------------------------------------------------------------- Aktionen
+
+	def empfaenger_user(self) -> str | None:
+		"""Benutzerkonto des zustaendigen Mitarbeiters."""
+		if self.zugewiesen_an_user:
+			return self.zugewiesen_an_user
+		if self.zugewiesen_an:
+			return frappe.db.get_value("Employee", self.zugewiesen_an, "user_id")
+		return None
+
+	def todo_anlegen(self):
+		"""Frappe-ToDo fuer den Zustaendigen erzeugen (FA-065)."""
+		if not frappe.db.get_single_value("Baudoku Settings", "todo_erzeugen"):
+			return
+		user = self.empfaenger_user()
+		if not user:
+			return
+
+		self.todo_schliessen()
+		frappe.get_doc({
+			"doctype": "ToDo",
+			"allocated_to": user,
+			"reference_type": self.doctype,
+			"reference_name": self.name,
+			"date": self.faellig_am,
+			"priority": {"A": "High", "B": "Medium", "C": "Low"}.get(self.schweregrad, "Medium"),
+			"description": _("Mangel {0} ({1}): {2}").format(
+				self.name, self.schweregrad, self.titel
+			),
+		}).insert(ignore_permissions=True)
+
+	def todo_schliessen(self):
+		offene = frappe.get_all(
+			"ToDo",
+			filters={"reference_type": self.doctype, "reference_name": self.name, "status": "Open"},
+			pluck="name",
+		)
+		for todo in offene:
+			frappe.db.set_value("ToDo", todo, "status", "Closed", update_modified=False)
+
+	def anlage_zaehler_aktualisieren(self, entfernt: bool = False):
+		if not self.anlage:
+			return
+		offen = frappe.db.count("Mangel", {
+			"anlage": self.anlage,
+			"status": ["in", ["Offen", "In Bearbeitung"]],
+		})
+		if entfernt and self.status in ("Offen", "In Bearbeitung"):
+			offen = max(0, offen - 1)
+		frappe.db.set_value("PV Anlage", self.anlage, "offene_maengel", offen, update_modified=False)
+
+	def benachrichtigen(self, anlass: str):
+		"""E-Mail an den Zustaendigen (FA-066)."""
+		settings = frappe.get_cached_doc("Baudoku Settings")
+		if anlass == "neu" and not settings.mail_bei_neuem_mangel:
+			return
+		empfaenger = self.empfaenger_user()
+		if not empfaenger:
+			return
+
+		anlage_name = frappe.db.get_value("PV Anlage", self.anlage, "anlage_name")
+		frappe.sendmail(
+			recipients=[empfaenger],
+			subject=_("Neuer Mangel {0} - {1}").format(self.schweregrad, self.titel),
+			message=frappe.render_template(
+				"""<p>Dir wurde ein neuer Mangel zugewiesen.</p>
+				<ul>
+					<li><b>Anlage:</b> {{ anlage }}</li>
+					<li><b>Schweregrad:</b> {{ doc.schweregrad }}</li>
+					<li><b>Faellig am:</b> {{ doc.faellig_am }}</li>
+				</ul>
+				<p>{{ doc.beschreibung }}</p>""",
+				{"doc": self, "anlage": anlage_name},
+			),
+			reference_doctype=self.doctype,
+			reference_name=self.name,
+			now=False,
+		)
+
+
+def taeglich_eskalieren():
+	"""Scheduler-Job: ueberfaellige Maengel markieren und eskalieren (FA-066)."""
+	settings = frappe.get_cached_doc("Baudoku Settings")
+	ueberfaellig = frappe.get_all(
+		"Mangel",
+		filters={
+			"status": ["in", ["Offen", "In Bearbeitung"]],
+			"faellig_am": ["<", today()],
+			"ueberfaellig": 0,
+		},
+		fields=["name", "titel", "schweregrad", "faellig_am", "anlage", "zugewiesen_an_user"],
+	)
+
+	for mangel in ueberfaellig:
+		frappe.db.set_value("Mangel", mangel.name, "ueberfaellig", 1, update_modified=False)
+
+	if not (ueberfaellig and settings.mail_bei_ueberfaellig and settings.eskalation_an):
+		return
+
+	empfaenger = frappe.get_all(
+		"Has Role", filters={"role": settings.eskalation_an, "parenttype": "User"}, pluck="parent"
+	)
+	if not empfaenger:
+		return
+
+	zeilen = "".join(
+		f"<tr><td>{m.name}</td><td>{m.schweregrad}</td><td>{m.titel}</td>"
+		f"<td>{m.anlage}</td><td>{m.faellig_am}</td></tr>"
+		for m in ueberfaellig
+	)
+	frappe.sendmail(
+		recipients=empfaenger,
+		subject=_("{0} ueberfaellige Maengel").format(len(ueberfaellig)),
+		message=f"""<p>Folgende Maengel haben die Behebungsfrist ueberschritten:</p>
+		<table border="1" cellpadding="4" cellspacing="0">
+		<tr><th>Nr.</th><th>Grad</th><th>Titel</th><th>Anlage</th><th>Faellig</th></tr>
+		{zeilen}</table>""",
+	)
+	frappe.db.set_value(
+		"Mangel", {"name": ["in", [m.name for m in ueberfaellig]]},
+		"eskaliert_am", now_datetime(), update_modified=False,
+	)

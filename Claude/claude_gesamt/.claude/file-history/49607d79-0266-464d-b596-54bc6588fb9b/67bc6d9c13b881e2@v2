@@ -1,0 +1,234 @@
+<template>
+  <div>
+    <PageHeader title="Virtualisierung & Speicher" :subtitle="untertitel" />
+
+    <div class="p-6">
+      <!-- Cluster mit Knoten -->
+      <section class="mb-8">
+        <h2 class="mb-3 text-base font-semibold text-ink-gray-8">Cluster</h2>
+        <div
+          v-for="cluster in cluster.data || []"
+          :key="cluster.name"
+          class="rounded-lg border border-outline-gray-2 bg-surface-white p-4"
+        >
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p class="text-base font-medium text-ink-gray-9">{{ cluster.cluster_name }}</p>
+              <p class="text-sm text-ink-gray-6">
+                {{ cluster.cluster_kind }} {{ cluster.version }} ·
+                {{ cluster.vm_running }} von {{ cluster.vm_total }} Gästen laufen ·
+                {{ cluster.vm_ha }} HA-verwaltet
+              </p>
+            </div>
+            <StatusDot
+              :level="cluster.level"
+              :text="cluster.reason || 'Quorum in Ordnung'"
+            />
+          </div>
+
+          <div class="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
+            <div
+              v-for="knoten in cluster.nodes"
+              :key="knoten.host"
+              class="rounded border border-outline-gray-2 p-3"
+            >
+              <div class="flex items-center justify-between gap-2">
+                <RouterLink
+                  :to="'/devices/' + knoten.host"
+                  class="text-base font-medium text-ink-gray-9 underline decoration-outline-gray-3 underline-offset-2"
+                >
+                  {{ knoten.host }}
+                </RouterLink>
+                <span class="text-sm text-ink-gray-5">
+                  {{ knoten.running }} / {{ knoten.vm_count }} Gäste
+                </span>
+              </div>
+              <p class="mt-1 text-sm text-ink-gray-6">
+                {{ knoten.vcpu_assigned }} vCPU · {{ knoten.memory_assigned_gb }} GB zugewiesen
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Gäste -->
+      <section class="mb-8">
+        <div class="mb-3 flex items-center justify-between gap-3">
+          <h2 class="text-base font-semibold text-ink-gray-8">Gäste</h2>
+          <FormControl v-model="hostFilter" type="select" :options="hostOptionen" />
+        </div>
+        <DataTable :columns="vmSpalten" :rows="vms.data || []" :loading="vms.loading">
+          <template #zelle-vm_name="{ zeile }">
+            <span class="block font-medium text-ink-gray-9">{{ zeile.vm_name }}</span>
+            <span class="block font-mono text-sm text-ink-gray-5">{{ zeile.vmid }}</span>
+          </template>
+          <template #zelle-vm_state="{ zeile }">
+            <StatusDot
+              :level="zeile.vm_state === 'running' ? 'ok' : 'neutral'"
+              :text="zeile.vm_state === 'running' ? 'läuft' : 'gestoppt'"
+              klein
+            />
+          </template>
+          <template #zelle-ausstattung="{ zeile }">
+            {{ zeile.vcpu }} vCPU · {{ zeile.memory_gb }} GB · {{ zeile.disk_gb }} GB
+          </template>
+          <template #zelle-vlan_label="{ zeile }">
+            <Badge v-if="zeile.security_zone" :theme="zoneTheme(zeile.security_zone)">
+              {{ zeile.vlan_label }}
+            </Badge>
+            <span v-else>{{ zeile.vlan_label }}</span>
+          </template>
+          <template #zelle-befund="{ zeile }">
+            <StatusDot
+              :level="zeile.level"
+              :text="zeile.reason || 'in Ordnung'"
+              klein
+            />
+          </template>
+        </DataTable>
+      </section>
+
+      <!-- Speicher -->
+      <section>
+        <h2 class="mb-3 text-base font-semibold text-ink-gray-8">Speicher</h2>
+
+        <div class="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div
+            v-for="pool in speicher.data?.pools || []"
+            :key="pool.name"
+            class="rounded-lg border border-outline-gray-2 bg-surface-white p-4"
+          >
+            <div class="flex items-start justify-between gap-2">
+              <div>
+                <p class="text-base font-medium text-ink-gray-9">{{ pool.pool_name }}</p>
+                <p class="text-sm text-ink-gray-6">
+                  {{ pool.raid_level }} · {{ pool.disk_count }} Platten ·
+                  {{ pool.used_tb }} von {{ pool.total_tb }} TB
+                </p>
+              </div>
+              <StatusDot :level="pool.level" :text="pool.health" />
+            </div>
+
+            <div class="mt-3 flex items-center gap-2">
+              <div class="h-2.5 flex-1" style="background: var(--viz-neutral-soft)">
+                <div
+                  class="h-full"
+                  :style="{
+                    width: pool.used_pct + '%',
+                    background: balkenFarbe(pool.level),
+                    borderTopRightRadius: '4px',
+                    borderBottomRightRadius: '4px',
+                  }"
+                />
+              </div>
+              <span class="w-14 shrink-0 text-right text-sm tabular-nums text-ink-gray-7">
+                {{ pool.used_pct }} %
+              </span>
+            </div>
+
+            <ul v-if="pool.reasons.length" class="mt-2 space-y-0.5">
+              <li v-for="grund in pool.reasons" :key="grund" class="text-sm text-ink-gray-6">
+                {{ grund }}
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <DataTable
+          :columns="datasetSpalten"
+          :rows="speicher.data?.datasets || []"
+          :loading="speicher.loading"
+        >
+          <template #zelle-dataset_path="{ zeile }">
+            <span class="font-mono text-sm text-ink-gray-9">{{ zeile.dataset_path }}</span>
+          </template>
+          <template #zelle-belegung="{ zeile }">
+            {{ zeile.used_gb.toLocaleString('de-AT') }} / {{ zeile.quota_gb.toLocaleString('de-AT') }} GB
+            <span class="ml-1 text-ink-gray-5">({{ zeile.quota_pct }} %)</span>
+          </template>
+          <template #zelle-replication_target="{ zeile }">
+            <StatusDot
+              v-if="!zeile.replication_target"
+              level="warning"
+              text="keine Replikation"
+              klein
+            />
+            <span v-else class="text-sm">
+              {{ zeile.replication_target }} · {{ zeile.replication_age_hours }} h
+            </span>
+          </template>
+          <template #zelle-befund="{ zeile }">
+            <StatusDot :level="zeile.level" :text="zeile.reasons[0] || 'in Ordnung'" klein />
+          </template>
+        </DataTable>
+      </section>
+
+      <p class="mt-6 text-xs text-ink-gray-4">
+        Ein Gast ohne Sicherung oder mit fehlgeschlagenem Verify ist kritisch –
+        dieselbe Regel wie in der Backup-Ampel. Ein Dataset ohne Replikation
+        ist kein Fehler, aber ein Hinweis: es gibt dann keinen zweiten Ort.
+      </p>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed, ref, watch } from 'vue'
+import { Badge, FormControl, createResource } from 'frappe-ui'
+import PageHeader from '@/components/PageHeader.vue'
+import DataTable from '@/components/DataTable.vue'
+import StatusDot from '@/components/StatusDot.vue'
+import { zoneTheme } from '@/labels'
+
+const hostFilter = ref('')
+
+const cluster = createResource({ url: 'netops.api.virt.cluster_overview', auto: true })
+const speicher = createResource({ url: 'netops.api.virt.storage_overview', auto: true })
+
+const vms = createResource({
+  url: 'netops.api.virt.vm_list',
+  makeParams: () => ({ host: hostFilter.value || null }),
+  auto: true,
+})
+
+watch(hostFilter, () => vms.fetch())
+
+const hostOptionen = computed(() => [
+  { label: 'Alle Hosts', value: '' },
+  ...[...new Set((cluster.data || []).flatMap((c) => c.nodes.map((n) => n.host)))].map((h) => ({
+    label: h,
+    value: h,
+  })),
+])
+
+const vmSpalten = [
+  { key: 'vm_name', label: 'Gast', width: '200px' },
+  { key: 'vm_kind', label: 'Art', muted: true, width: '90px' },
+  { key: 'host', label: 'Host', width: '140px' },
+  { key: 'vm_state', label: 'Zustand', width: '130px' },
+  { key: 'ausstattung', label: 'Ausstattung', width: '220px' },
+  { key: 'vlan_label', label: 'VLAN', width: '170px' },
+  { key: 'ip_address', label: 'IP', numeric: true, width: '140px' },
+  { key: 'befund', label: 'Befund' },
+]
+
+const datasetSpalten = [
+  { key: 'dataset_path', label: 'Dataset', width: '200px' },
+  { key: 'share_kind', label: 'Freigabe', muted: true, width: '100px' },
+  { key: 'belegung', label: 'Belegung', width: '240px' },
+  { key: 'snapshot_count', label: 'Snapshots', align: 'right', numeric: true, width: '110px' },
+  { key: 'replication_target', label: 'Replikation', width: '200px' },
+  { key: 'befund', label: 'Befund' },
+]
+
+const untertitel = computed(() => {
+  const z = speicher.data?.summary
+  const gaeste = (vms.data || []).length
+  if (!z) return ''
+  return gaeste + ' Gäste · ' + z.used_tb + ' von ' + z.total_tb + ' TB belegt'
+})
+
+function balkenFarbe(level) {
+  return { ok: 'var(--viz-seq-400)', warning: 'var(--viz-warning)', critical: 'var(--viz-critical)' }[level]
+}
+</script>

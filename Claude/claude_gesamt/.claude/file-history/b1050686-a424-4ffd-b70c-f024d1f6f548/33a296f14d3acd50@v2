@@ -1,0 +1,132 @@
+import io
+
+p = "src/app/portal/mobilitaet/abrechnung/[lauf]/page.tsx"
+s = io.open(p, encoding="utf-8").read()
+
+s = s.replace('''import {
+  ladeAbrechnung,
+  ladeLadebelege,
+  ladeVorgaenge,
+} from "@/lib/daten/laden";''',
+'''import {
+  ladeAbrechnung,
+  ladeLadebelege,
+  ladeNachweise,
+  ladeVorgaenge,
+} from "@/lib/daten/laden";''', 1)
+
+s = s.replace('''  const vorgaenge = ladeVorgaenge({ abrechnungId: lauf.id, grenze: 25 });''',
+'''  const vorgaenge = ladeVorgaenge({ abrechnungId: lauf.id, grenze: 25 });
+  const nachweise = ladeNachweise(lauf.id);
+
+  // Nur die Faelle zeigen, die jemand ansehen muss. Eine Liste mit
+  // hundert Zeilen "in Ordnung" liest niemand ein zweites Mal.
+  const auffaellig = nachweise.zeilen.filter((z) => !z.befund.verwertbar);''', 1)
+
+anker = '''      {/* ---------------- Einordnung ---------------- */}'''
+
+abschnitt = '''      {/* ---------------- Eichrechtliche Nachweise ---------------- */}
+      <Tafel
+        titel="Eichrechtliche Nachweise"
+        hinweis={`${nachweise.verwertbar} von ${nachweise.gesamt} Vorgängen mit geprüfter Signatur`}
+        fusszeile={
+          <p className="t-mikro leading-relaxed">
+            Wer Ladestrom nach Energie abrechnet, verkauft eine geeichte
+            Menge. Der Nachweis dafür ist nicht die Zahl im Backend, sondern
+            der vom Zähler signierte Datensatz im Open Charge Metering
+            Format: Anfangs- und Endstand, Zeitstempel mit Angabe der
+            Zeitsynchronität, Zählerkennung – und eine Signatur darüber. Der
+            private Schlüssel liegt im Zähler und verlässt ihn nie; das
+            Portal kennt nur den öffentlichen. Ein Portal, das signieren
+            könnte, könnte auch fälschen.
+          </p>
+        }
+      >
+        <Kennzahlenleiste>
+          <Kennzahl
+            label="Verwertbar"
+            wert={formatZahl(nachweise.verwertbar, 0)}
+            hinweis={`von ${nachweise.gesamt} Vorgängen`}
+            akzent={nachweise.verwertbar === nachweise.gesamt}
+          />
+          <Kennzahl
+            label="Beanstandet"
+            wert={formatZahl(auffaellig.length, 0)}
+            hinweis={
+              auffaellig.length > 0
+                ? "nicht abrechenbar gegenüber Dritten"
+                : "keine Beanstandung"
+            }
+          />
+          <Kennzahl
+            label="Ohne Nachweis"
+            wert={formatZahl(nachweise.ohneNachweis, 0)}
+            hinweis="Ladepunkt ohne geeichten Zähler"
+          />
+          <Kennzahl
+            label="Signaturfehler"
+            wert={formatZahl(nachweise.signaturFehler, 0)}
+            hinweis={
+              nachweise.signaturFehler > 0
+                ? "Datensatz verändert oder fremd"
+                : "alle Signaturen passen"
+            }
+          />
+        </Kennzahlenleiste>
+
+        {auffaellig.length === 0 ? (
+          <p className="t-mikro mt-4 leading-relaxed">
+            Jeder Vorgang mit geeichtem Zähler trägt einen signierten
+            Messwert, jede Signatur passt, jede Uhr war synchronisiert, und
+            jede abgerechnete Menge entspricht der Differenz der
+            Zählerstände. Diese Abrechnung ist gegenüber Dritten belegbar.
+          </p>
+        ) : (
+          <div className="mt-4">
+            <Hinweis
+              ton="kritisch"
+              titel={`${auffaellig.length} Vorgänge sind nicht verwertbar`}
+            >
+              Diese Vorgänge dürfen Dritten nicht nach Energie in Rechnung
+              gestellt werden. Eine interne Kostenumlage bleibt zulässig.
+            </Hinweis>
+
+            <ul className="mt-3 space-y-2.5">
+              {auffaellig.map((z) => (
+                <li
+                  key={z.vorgang}
+                  className="rounded-lg border p-3"
+                  style={{ borderColor: "var(--linie)" }}
+                >
+                  <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+                    <span
+                      className="text-[0.8125rem] font-medium"
+                      style={{ color: "var(--t-stark)" }}
+                    >
+                      {z.karte ?? "ohne Karte"} · {z.ladepunkt}
+                    </span>
+                    <span className="zahl t-mikro">
+                      {formatDatumZeit(z.beginn)} ·{" "}
+                      {formatZahl(z.energie_kwh, 2)} kWh
+                    </span>
+                  </div>
+                  <ul className="mt-1 space-y-0.5">
+                    {z.befund.beanstandungen.map((b) => (
+                      <li key={b} className="t-mikro leading-relaxed">
+                        {b}
+                      </li>
+                    ))}
+                  </ul>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </Tafel>
+
+'''
+
+assert anker in s
+s = s.replace(anker, abschnitt + anker, 1)
+io.open(p, "w", encoding="utf-8").write(s)
+print("Nachweistafel eingebaut")

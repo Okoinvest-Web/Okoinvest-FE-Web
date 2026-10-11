@@ -1,0 +1,101 @@
+import { NextResponse } from "next/server";
+
+import {
+  FULLNAME_COOKIE,
+  SID_COOKIE,
+  USER_COOKIE,
+  FrappeError,
+  frappeRaw,
+} from "@/lib/frappe";
+
+/**
+ * Meldet den Benutzer bei Frappe an und legt die Session serverseitig ab.
+ *
+ * Frappe gibt bei erfolgreichem Login mehrere Cookies zurueck. Wir
+ * uebernehmen `sid` als httpOnly (kein Zugriff aus Client-JS) sowie
+ * Benutzer-ID und Anzeigename als normale Cookies fuer die Darstellung.
+ */
+export async function POST(request: Request) {
+  let body: { usr?: string; pwd?: string };
+
+  try {
+    body = (await request.json()) as { usr?: string; pwd?: string };
+  } catch {
+    return NextResponse.json(
+      { error: "Ungueltiger Anfrageinhalt." },
+      { status: 400 },
+    );
+  }
+
+  const usr = body.usr?.trim();
+  const pwd = body.pwd;
+
+  if (!usr || !pwd) {
+    return NextResponse.json(
+      { error: "Bitte E-Mail-Adresse und Passwort angeben." },
+      { status: 400 },
+    );
+  }
+
+  let upstream: Awaited<ReturnType<typeof frappeRaw>>;
+
+  try {
+    upstream = await frappeRaw("/api/method/login", {
+      method: "POST",
+      json: { usr, pwd },
+    });
+  } catch (error) {
+    const message =
+      error instanceof FrappeError
+        ? error.message
+        : "Das Backend ist nicht erreichbar. Laeuft die Frappe-Instanz?";
+    return NextResponse.json({ error: message }, { status: 502 });
+  }
+
+  if (!upstream.response.ok) {
+    // Frappe antwortet bei falschen Zugangsdaten mit 401.
+    return NextResponse.json(
+      { error: "E-Mail-Adresse oder Passwort ist falsch." },
+      { status: 401 },
+    );
+  }
+
+  const payload = upstream.data as { full_name?: string } | undefined;
+
+  // Frappe liefert die Session als Set-Cookie zurueck; wir holen uns die sid daraus.
+  const setCookie = upstream.response.headers.getSetCookie?.() ?? [];
+  const sid = setCookie
+    .map((entry) => /(?:^|;\s*)sid=([^;]+)/.exec(entry)?.[1])
+    .find((value): value is string => Boolean(value && value !== "Guest"));
+
+  if (!sid) {
+    return NextResponse.json(
+      { error: "Frappe hat keine Session zurueckgegeben." },
+      { status: 502 },
+    );
+  }
+
+  const response = NextResponse.json({ ok: true });
+  const secure = process.env.NODE_ENV === "production";
+
+  response.cookies.set(SID_COOKIE, decodeURIComponent(sid), {
+    httpOnly: true,
+    sameSite: "lax",
+    secure,
+    path: "/",
+  });
+
+  for (const [name, value] of [
+    [USER_COOKIE, usr],
+    [FULLNAME_COOKIE, payload?.full_name ?? usr],
+  ] as const) {
+    response.cookies.set(name, value, {
+      httpOnly: false,
+      sameSite: "lax",
+      secure,
+      path: "/",
+    });
+  }
+
+  return response;
+}

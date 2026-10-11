@@ -1,0 +1,342 @@
+/**
+ * LTO-9-Bandarchiv: die Airgap-Sicherung.
+ *
+ * ## Warum Band, wenn es schon vier andere Ziele gibt
+ *
+ * Alle vier sind über ein Netz erreichbar. Wer die Verwaltung übernimmt,
+ * erreicht sie auch. Ein ausgeworfenes Band im Schrank ist das einzige
+ * Ziel, an das kein Angreifer herankommt – aber **nur, solange es
+ * tatsächlich draußen ist.**
+ *
+ * Daraus folgt der ganze Ablauf in `band.js`: Auswerfen allein genügt
+ * nicht. Ein Band, das im Laufwerk liegen bleibt, weil es freitags niemand
+ * herausgenommen hat, ist kein Airgap – es sieht nur so aus. Deshalb muss
+ * der Wechsel in der Software quittiert werden, und bis dahin erinnert die
+ * Anwendung stündlich.
+ *
+ * ## LTO-9 in Zahlen
+ *
+ *   Kapazität    18 TB nativ, 45 TB bei 2,5:1 Verdichtung
+ *   Etikett      sechs Stellen plus Medienkürzel `L9`, Code 39
+ *   Lade­zyklen  rund 20.000 je Band
+ *   Haltbarkeit  30 Jahre bei 16–25 °C und 20–50 % Luftfeuchte
+ *
+ * Die Zykluszahl steht hier, weil sie im Betrieb zählt: ein Band, das
+ * jeden Montag geladen wird, ist nach 380 Jahren durch – die Zahl ist also
+ * kein Grenzwert, sondern ein Hinweis darauf, dass Bänder an der
+ * Aufbewahrungsfrist scheitern und nicht am Verschleiß.
+ */
+import { defineDoctype } from './db.js'
+import { stundenVersetzt, tageVersetzt } from './zeit.js'
+
+const AT = 'TEN-0001'
+
+// --- Der Satz Bänder --------------------------------------------------------
+
+/**
+ * Ein Rotationssatz.
+ *
+ * Vier Wochenbänder und zwölf Monatsbänder sind die übliche Aufteilung:
+ * die Woche deckt den Bedienfehler ab, der Monat die späte Entdeckung.
+ */
+defineDoctype('Tape Pool', {
+  naming: (doc) => doc.pool_name,
+  titleField: 'pool_name',
+  fields: [
+    'pool_name',
+    'label_prefix',
+    'media_type',
+    'target',
+    // Wochentag des Schreiblaufs und des Wechsels, 1 = Montag.
+    'write_day',
+    'change_day',
+    'change_time',
+    'retention_days',
+    // Wohin das volle Band wandert.
+    'offsite_location',
+    'remind_email',
+    'remind_interval_hours',
+    'encrypted',
+  ],
+  seed: [
+    {
+      pool_name: 'woche',
+      label_prefix: 'OEK',
+      media_type: 'LTO-9',
+      target: 'lto-archiv',
+      write_day: 1,
+      change_day: 2,
+      change_time: '06:00',
+      retention_days: 35,
+      offsite_location: 'Bankschließfach Sparkasse Linz, Fach 2213',
+      remind_email: 'it-betrieb@oekovolt.test',
+      remind_interval_hours: 1,
+      encrypted: 1,
+      tenant: AT,
+      description: 'Montag schreiben, Dienstag früh wechseln. Vier Bänder im Umlauf.',
+    },
+    {
+      pool_name: 'monat',
+      label_prefix: 'OEM',
+      media_type: 'LTO-9',
+      target: 'lto-archiv',
+      write_day: 6,
+      change_day: 1,
+      change_time: '08:00',
+      // § 132 BAO: sieben Jahre.
+      retention_days: 2555,
+      offsite_location: 'Bankschließfach Sparkasse Linz, Fach 2213',
+      remind_email: 'it-betrieb@oekovolt.test',
+      remind_interval_hours: 4,
+      encrypted: 1,
+      tenant: AT,
+      description: 'Monatsarchiv, erster Samstag. Bleibt sieben Jahre außer Haus.',
+    },
+  ],
+})
+
+// --- Die Bänder selbst ------------------------------------------------------
+
+defineDoctype('Tape Cartridge', {
+  naming: (doc) => doc.label,
+  titleField: 'label',
+  fields: [
+    // Das Barcode-Etikett, sechs Stellen plus Medienkürzel.
+    'label',
+    'pool',
+    'media_type',
+    // frei | im_laufwerk | beschrieben | ausgeworfen | ausser_haus | gesperrt | ausgesondert
+    'tape_state',
+    'location',
+    'slot',
+    'written_at',
+    'written_gb',
+    'capacity_gb',
+    'load_count',
+    'encrypted',
+    'verify_status',
+    'verified_at',
+    'retention_until',
+    'offsite_since',
+    // Was draufsteht - im Klartext, weil man davor steht und es wissen muss.
+    'content_summary',
+    'first_used',
+  ],
+  seed: [
+    {
+      label: 'OEK038L9',
+      pool: 'woche',
+      media_type: 'LTO-9',
+      tape_state: 'ausser_haus',
+      location: 'Bankschließfach Sparkasse Linz, Fach 2213',
+      slot: null,
+      written_at: tageVersetzt(-2),
+      written_gb: 14540,
+      capacity_gb: 18000,
+      load_count: 38,
+      encrypted: 1,
+      verify_status: 'ok',
+      verified_at: tageVersetzt(-2),
+      retention_until: tageVersetzt(33),
+      offsite_since: tageVersetzt(-1),
+      content_summary: 'KW 38: vm/101-erp, vm/102-bmd, vm/104-mail, ct/201-monitoring',
+      first_used: tageVersetzt(-742),
+      tenant: AT,
+    },
+    {
+      label: 'OEK039L9',
+      pool: 'woche',
+      media_type: 'LTO-9',
+      // Das Band, um das es gerade geht: beschrieben, geprüft, noch im
+      // Laufwerk. Bis es draußen ist, gibt es keinen Airgap.
+      tape_state: 'beschrieben',
+      location: 'Laufwerk st0, Serverraum A.01',
+      slot: 1,
+      written_at: stundenVersetzt(-29),
+      written_gb: 14210,
+      capacity_gb: 18000,
+      load_count: 31,
+      encrypted: 1,
+      verify_status: 'ok',
+      verified_at: stundenVersetzt(-25),
+      retention_until: tageVersetzt(34),
+      offsite_since: null,
+      content_summary: 'KW 39: vm/101-erp, vm/102-bmd, vm/104-mail, ct/201-monitoring',
+      first_used: tageVersetzt(-728),
+      tenant: AT,
+    },
+    {
+      label: 'OEK040L9',
+      pool: 'woche',
+      media_type: 'LTO-9',
+      tape_state: 'frei',
+      location: 'Medienschrank A.01, Fach 3',
+      slot: 2,
+      written_at: null,
+      written_gb: 0,
+      capacity_gb: 18000,
+      load_count: 24,
+      encrypted: 1,
+      verify_status: 'none',
+      verified_at: null,
+      retention_until: null,
+      offsite_since: null,
+      content_summary: null,
+      first_used: tageVersetzt(-714),
+      tenant: AT,
+    },
+    {
+      label: 'OEK041L9',
+      pool: 'woche',
+      media_type: 'LTO-9',
+      tape_state: 'frei',
+      location: 'Medienschrank A.01, Fach 4',
+      slot: 3,
+      written_at: null,
+      written_gb: 0,
+      capacity_gb: 18000,
+      load_count: 19,
+      encrypted: 1,
+      verify_status: 'none',
+      retention_until: null,
+      content_summary: null,
+      first_used: tageVersetzt(-700),
+      tenant: AT,
+    },
+    {
+      label: 'OEK031L9',
+      pool: 'woche',
+      media_type: 'LTO-9',
+      // Ein Band, das die Prüfung nicht bestanden hat. Es bleibt gesperrt,
+      // bis jemand entscheidet - ein stilles Weiterverwenden wäre der Fall,
+      // in dem die Sicherung im Ernstfall nicht liest.
+      tape_state: 'gesperrt',
+      location: 'Medienschrank A.01, Fach 8',
+      slot: null,
+      written_at: tageVersetzt(-51),
+      written_gb: 9100,
+      capacity_gb: 18000,
+      load_count: 46,
+      encrypted: 1,
+      verify_status: 'failed',
+      verified_at: tageVersetzt(-51),
+      retention_until: tageVersetzt(-16),
+      content_summary: 'KW 31 – Prüfung fehlgeschlagen, Band gesperrt',
+      first_used: tageVersetzt(-756),
+      tenant: AT,
+    },
+    {
+      label: 'OEM009L9',
+      pool: 'monat',
+      media_type: 'LTO-9',
+      tape_state: 'ausser_haus',
+      location: 'Bankschließfach Sparkasse Linz, Fach 2213',
+      written_at: tageVersetzt(-19),
+      written_gb: 16880,
+      capacity_gb: 18000,
+      load_count: 9,
+      encrypted: 1,
+      verify_status: 'ok',
+      verified_at: tageVersetzt(-19),
+      retention_until: tageVersetzt(2536),
+      offsite_since: tageVersetzt(-18),
+      content_summary: 'Monatsarchiv 2026-08: alle Dienste, Vollsicherung',
+      first_used: tageVersetzt(-289),
+      tenant: AT,
+    },
+  ],
+})
+
+// --- Der Wechselauftrag -----------------------------------------------------
+
+/**
+ * Ein offener Bandwechsel.
+ *
+ * Läuft über den Workflow „Bandwechsel". Der Zustand `ejected` ist der
+ * entscheidende: ab da erinnert die Anwendung, bis jemand quittiert.
+ */
+defineDoctype('Tape Change Request', {
+  naming: (doc, i) => 'TCR-' + String(i).padStart(5, '0'),
+  titleField: 'tape',
+  fields: [
+    'pool',
+    'tape',
+    'next_tape',
+    'target',
+    'workflow_state',
+    'due_at',
+    'ejected_at',
+    'confirmed_at',
+    'confirmed_by',
+    'new_location',
+    // Erinnerungen
+    'remind_email',
+    'remind_interval_hours',
+    'reminders_sent',
+    'last_reminder_at',
+    'requested_by',
+  ],
+  seed: [
+    {
+      pool: 'woche',
+      tape: 'OEK039L9',
+      next_tape: 'OEK040L9',
+      target: 'lto-archiv',
+      // Der Schreiblauf ist durch und geprüft - das Band wartet aufs
+      // Auswerfen.
+      workflow_state: 'ready',
+      due_at: stundenVersetzt(-3),
+      ejected_at: null,
+      confirmed_at: null,
+      remind_email: 'it-betrieb@oekovolt.test',
+      remind_interval_hours: 1,
+      reminders_sent: 0,
+      last_reminder_at: null,
+      requested_by: 'benny.hoefler@oekovolt.test',
+      tenant: AT,
+    },
+    {
+      pool: 'woche',
+      tape: 'OEK038L9',
+      next_tape: 'OEK039L9',
+      target: 'lto-archiv',
+      workflow_state: 'confirmed',
+      due_at: tageVersetzt(-8),
+      ejected_at: tageVersetzt(-8),
+      confirmed_at: tageVersetzt(-8),
+      confirmed_by: 'lena.steiner@oekovolt.test',
+      new_location: 'Bankschließfach Sparkasse Linz, Fach 2213',
+      remind_email: 'it-betrieb@oekovolt.test',
+      remind_interval_hours: 1,
+      reminders_sent: 2,
+      last_reminder_at: tageVersetzt(-8),
+      requested_by: 'benny.hoefler@oekovolt.test',
+      tenant: AT,
+    },
+  ],
+})
+
+/** Jede verschickte Erinnerung, damit sich später nachlesen lässt, wie oft. */
+defineDoctype('Tape Reminder', {
+  naming: (doc, i) => 'TRM-' + String(i).padStart(6, '0'),
+  titleField: 'sent_to',
+  fields: ['request', 'sent_at', 'sent_to', 'attempt', 'subject'],
+  seed: [
+    {
+      request: 'TCR-00002',
+      sent_at: tageVersetzt(-8),
+      sent_to: 'it-betrieb@oekovolt.test',
+      attempt: 1,
+      subject: 'Bandwechsel offen: OEK038L9 liegt noch im Laufwerk',
+      tenant: AT,
+    },
+    {
+      request: 'TCR-00002',
+      sent_at: tageVersetzt(-8),
+      sent_to: 'it-betrieb@oekovolt.test',
+      attempt: 2,
+      subject: 'Bandwechsel offen: OEK038L9 liegt noch im Laufwerk',
+      tenant: AT,
+    },
+  ],
+})

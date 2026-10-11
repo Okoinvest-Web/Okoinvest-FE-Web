@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bildideen Grafiken | Ökovolt</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+:root{--green:#558227;--lime:#9bc46a;--navy:#151a24;--line:#e3e6ec;--muted:#5f6677;--bg:#f4f5f2}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,system-ui,sans-serif;background:var(--bg);color:#171717}
+header{background:var(--navy);color:#fff;padding:32px 24px}
+header h1{font-family:Manrope,sans-serif;margin:0 0 6px;font-size:clamp(24px,4vw,36px)}
+header p{margin:0;color:rgba(255,255,255,.75);max-width:900px}
+.tag{display:inline-block;background:#b00000;color:#fff;font-size:12px;font-weight:700;letter-spacing:.08em;padding:4px 10px;border-radius:999px;margin-bottom:12px}
+nav{position:sticky;top:0;z-index:5;background:rgba(21,26,36,.97);padding:10px 16px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+nav button{font:inherit;font-size:13px;font-weight:600;color:#fff;border:0;padding:7px 14px;border-radius:999px;background:rgba(255,255,255,.08);cursor:pointer}
+nav button.on{background:var(--green)}
+nav .zip{margin-left:auto;background:var(--lime);color:var(--navy)}
+.info{max-width:1280px;margin:18px auto 0;padding:0 16px}
+.info div{background:#fff;border-left:4px solid var(--lime);padding:12px 16px;border-radius:8px;font-size:14.5px}
+main{max-width:1280px;margin:0 auto;padding:18px 16px 40px;display:grid;gap:20px}
+.g{background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden;display:flex;flex-direction:column}
+.g .art{background:#ddd}
+.g .art svg{width:100%;height:auto;display:block}
+.g .meta{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:12px 14px;margin-top:auto}
+.g b{font-family:Manrope,sans-serif}
+.g .f{color:var(--muted);font-size:12px;flex:1;word-break:break-all}
+.g a,.g button{font:inherit;font-size:13px;font-weight:600;border:0;background:var(--green);color:#fff;padding:6px 12px;border-radius:999px;cursor:pointer;text-decoration:none}
+.g a{background:var(--navy)}
+</style></head><body>
+<header><span class="tag">INTERN – ENTWURF FÜR ADOBE</span>
+<h1>Bildideen: fertige Grafiken je Kanal</h1>
+<p>12 Motive in je 6 Formaten. Oben den Kanal wählen. Die SVG-Dateien öffnen Sie in Illustrator, alle Texte bleiben editierbar. PNG ist sofort postbar, mit den Originalschriften Manrope und Inter. Werte in eckigen Klammern sind Platzhalter und müssen vor dem Posten ersetzt werden.</p></header>
+<nav id="tabs"></nav>
+<div class="info"><div id="hint"></div></div>
+<main id="m"></main>
+<script>
+var IDX, CUR, FONTCSS;
+var HINT={
+ "LinkedIn_1200x627":"LinkedIn-Beitrag des Geschäftsführers und der Unternehmensseite.",
+ "Facebook_1200x630":"Facebook-Beitrag der Unternehmensseite.",
+ "X_1600x900":"X und Bluesky (16:9).",
+ "Instagram_Feed_1080x1350":"Instagram- und Facebook-Feed im Hochformat 4:5. Dieses Format bekommt im Feed die meiste Fläche; als erstes Karussell-Bild verwenden. Unten steht „Alle Belege: Link in Bio“.",
+ "Instagram_Quadrat_1080x1080":"Quadratisch: Instagram, falls das Karussell quadratisch ist, sowie LinkedIn-Dokument/Karussell.",
+ "Story_1080x1920":"Instagram- und Facebook-Story. Oben und unten sind je 250 px frei für die App-Leisten. Den Link-Sticker in der App auf den grünen Knopf „Alle Belege“ legen."
+};
+function el(h){var d=document.createElement('div');d.innerHTML=h;return d.firstChild}
+async function fontCSS(){
+  if(FONTCSS!==undefined) return FONTCSS;
+  try{
+    var css=await (await fetch('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap')).text();
+    var blocks=css.split('/*').filter(function(b){return /^ (latin|latin-ext) \*\//.test(b)}).map(function(b){return b.replace(/^[^*]*\*\//,'')});
+    var out=blocks.join('\n');
+    var urls=[...new Set([...out.matchAll(/url\((https:[^)]+)\)/g)].map(function(m){return m[1]}))];
+    for(var u of urls){
+      var blob=await (await fetch(u)).blob();
+      var data=await new Promise(function(r){var fr=new FileReader();fr.onload=function(){r(fr.result)};fr.readAsDataURL(blob)});
+      out=out.split(u).join(data);
+    }
+    FONTCSS=out;
+  }catch(e){FONTCSS='';}
+  return FONTCSS;
+}
+async function toPNG(path){
+  var svg=await (await fetch('grafiken/'+path)).text();
+  var css=await fontCSS();
+  var w=+svg.match(/width="(\d+)"/)[1], h=+svg.match(/height="(\d+)"/)[1];
+  svg=svg.replace(/(<svg[^>]*>)/,'$1<defs><style>'+css+'</style></defs>');
+  var img=new Image();
+  await new Promise(function(r,j){img.onload=r;img.onerror=j;img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg)});
+  await new Promise(function(r){setTimeout(r,150)});
+  var c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);
+  return await new Promise(function(r){c.toBlob(r,'image/png')});
+}
+function save(blob,name){var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(function(){URL.revokeObjectURL(a.href)},2000)}
+function show(folder){
+  CUR=folder;
+  document.querySelectorAll('#tabs button[data-f]').forEach(function(b){b.classList.toggle('on',b.dataset.f===folder)});
+  var fm=IDX.formate.find(function(f){return f.ordner===folder});
+  document.getElementById('hint').innerHTML='<b>'+fm.w+' × '+fm.h+' px</b> · '+(HINT[folder]||fm.hinweis);
+  var m=document.getElementById('m');m.innerHTML='';
+  var col=fm.h>fm.w? (fm.h>1500?'repeat(auto-fill,minmax(min(260px,100%),1fr))':'repeat(auto-fill,minmax(min(340px,100%),1fr))') : (fm.w===fm.h?'repeat(auto-fill,minmax(min(380px,100%),1fr))':'repeat(auto-fill,minmax(min(560px,100%),1fr))');
+  m.style.gridTemplateColumns=col;
+  IDX.motive.forEach(function(mo){
+    var p=mo.dateien[folder], name=p.split('/').pop();
+    var d=el('<div class="g"><div class="art"></div><div class="meta"><b>'+mo.welle+'</b><span class="f">'+name+'</span><a href="grafiken/'+p+'" download>SVG</a><button type="button">PNG</button></div></div>');
+    m.appendChild(d);
+    fetch('grafiken/'+p).then(function(r){return r.text()}).then(function(s){d.querySelector('.art').innerHTML=s});
+    d.querySelector('button').onclick=async function(){var b=this;b.textContent='…';save(await toPNG(p),name.replace('.svg','.png'));b.textContent='PNG ✓'};
+  });
+}
+fetch('grafiken/_index.json').then(function(r){return r.json()}).then(function(j){
+  IDX=j;var t=document.getElementById('tabs');
+  j.formate.forEach(function(f){var b=el('<button type="button" data-f="'+f.ordner+'">'+f.ordner.replace(/_/g,' ')+'</button>');b.onclick=function(){show(f.ordner)};t.appendChild(b)});
+  var z=el('<button type="button" class="zip">Alle PNG dieses Kanals als ZIP</button>');
+  z.onclick=async function(){
+    if(!window.JSZip){alert('ZIP-Bibliothek nicht geladen (Internet nötig).');return}
+    var zip=new JSZip(), n=0;
+    for(var mo of IDX.motive){var p=mo.dateien[CUR];z.textContent='PNG '+(++n)+'/'+IDX.motive.length+' …';zip.file(p.split('/').pop().replace('.svg','.png'),await toPNG(p))}
+    save(await zip.generateAsync({type:'blob'}),'Oekovolt_'+CUR+'.zip');z.textContent='Alle PNG dieses Kanals als ZIP';
+  };
+  t.appendChild(z);
+  show(j.formate[0].ordner);
+});
+</script></body></html>

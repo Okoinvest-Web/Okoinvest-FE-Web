@@ -1,0 +1,213 @@
+import pathlib
+
+FE = pathlib.Path(r"C:\Users\SALEADMIN\Documents\Servicetechniker APP\frontend")
+
+
+def patch(pfad, paare):
+    p = FE / pfad
+    s = p.read_text(encoding="utf-8")
+    for alt, neu in paare:
+        if alt not in s:
+            raise SystemExit(f"NICHT GEFUNDEN in {pfad}:\n---\n{alt[:300]}\n---")
+        s = s.replace(alt, neu, 1)
+    p.write_text(s, encoding="utf-8")
+    print("ok", pfad)
+
+
+# ------------------------------------------------------------------- Routen
+patch(
+    "src/router/index.ts",
+    [
+        (
+            """  {
+    path: '/analysen',""",
+            """  // --- Subunternehmerportal ------------------------------------------------
+  {
+    path: '/portal',
+    name: 'portal',
+    component: () => import('@/views/PortalStartView.vue'),
+    meta: { titel: 'Start', portal: true, symbol: 'haus' },
+  },
+  {
+    path: '/portal/auftraege',
+    name: 'portal-auftraege',
+    component: () => import('@/views/PortalAuftraegeView.vue'),
+    meta: { titel: 'Aufträge', portal: true, symbol: 'bericht' },
+  },
+  {
+    path: '/portal/auftraege/:name',
+    name: 'portal-auftrag',
+    component: () => import('@/views/PortalAuftragView.vue'),
+    props: true,
+    meta: { titel: 'Auftrag', portal: true },
+  },
+  {
+    path: '/portal/personalmeldung',
+    name: 'portal-personalmeldung',
+    component: () => import('@/views/PortalPersonalmeldungView.vue'),
+    meta: { titel: 'Personal', portal: true, symbol: 'person' },
+  },
+  {
+    path: '/portal/zeiten',
+    name: 'portal-zeiten',
+    component: () => import('@/views/PortalZeitenView.vue'),
+    meta: { titel: 'Zeiten', portal: true, symbol: 'uhr' },
+  },
+  {
+    path: '/portal/material',
+    name: 'portal-material',
+    component: () => import('@/views/PortalMaterialView.vue'),
+    meta: { titel: 'Material', portal: true, symbol: 'plus' },
+  },
+  {
+    path: '/portal/meldung',
+    name: 'portal-meldung',
+    component: () => import('@/views/PortalMeldungView.vue'),
+    meta: { titel: 'Meldung', portal: true, symbol: 'warnung' },
+  },
+
+  // --- Bauleitung ----------------------------------------------------------
+  {
+    path: '/zeitfreigabe',
+    name: 'zeitfreigabe',
+    component: () => import('@/views/ZeitfreigabeView.vue'),
+    meta: { titel: 'Zeitfreigabe', navigation: true, symbol: 'uhr', rolle: 'bauleiter' },
+  },
+  {
+    path: '/analysen',""",
+        )
+    ],
+)
+
+# --------------------------------------------------- Stammdaten: Portalrolle
+patch(
+    "src/stores/stammdaten.ts",
+    [
+        (
+            """  const istSubunternehmer = computed(
+    () => rollen.value.includes('Baudoku Subunternehmer') && !istBauleiter.value,
+  )""",
+            """  const istSubunternehmer = computed(
+    () => rollen.value.includes('Baudoku Subunternehmer') && !istBauleiter.value,
+  )
+  /**
+   * Portalnutzer sehen eine eigene Oberfläche — Subunternehmerfirma oder Polier.
+   * Wer zusätzlich eine ÖKOVOLT-Rolle hat, bleibt in der normalen Ansicht.
+   */
+  const istPortalnutzer = computed(
+    () =>
+      rollen.value.some((r) => ['Baudoku Subunternehmer', 'Baudoku Polier'].includes(r)) &&
+      !istBauleiter.value &&
+      !rollen.value.includes('Baudoku Techniker'),
+  )""",
+        ),
+        (
+            """    istSubunternehmer,
+    mitarbeiter,""",
+            """    istSubunternehmer,
+    istPortalnutzer,
+    mitarbeiter,""",
+        ),
+    ],
+)
+
+# ------------------------------------------------------------ App: Portalmodus
+patch(
+    "src/App.vue",
+    [
+        (
+            """const alleEintraege: NavEintrag[] = [
+  { name: 'dashboard', titel: 'Start', symbol: 'haus' },
+  { name: 'anlagen', titel: 'Anlagen', symbol: 'anlage' },
+  { name: 'protokolle', titel: 'Protokolle', symbol: 'protokoll' },
+  { name: 'maengel', titel: 'Mängel', symbol: 'mangel' },
+  { name: 'tagesberichte', titel: 'Berichte', symbol: 'bericht' },
+  { name: 'karte', titel: 'Karte', symbol: 'karte' },
+  { name: 'analysen', titel: 'Analysen', symbol: 'analyse', rolle: 'bauleiter' },
+  { name: 'vorlagen', titel: 'Vorlagen', symbol: 'vorlage', rolle: 'projektleiter' },
+  { name: 'einstellungen', titel: 'Einstellungen', symbol: 'zahnrad' },
+]""",
+            """const alleEintraege: NavEintrag[] = [
+  { name: 'dashboard', titel: 'Start', symbol: 'haus' },
+  { name: 'anlagen', titel: 'Anlagen', symbol: 'anlage' },
+  { name: 'protokolle', titel: 'Protokolle', symbol: 'protokoll' },
+  { name: 'maengel', titel: 'Mängel', symbol: 'mangel' },
+  { name: 'tagesberichte', titel: 'Berichte', symbol: 'bericht' },
+  { name: 'karte', titel: 'Karte', symbol: 'karte' },
+  { name: 'zeitfreigabe', titel: 'Zeitfreigabe', symbol: 'uhr', rolle: 'bauleiter' },
+  { name: 'analysen', titel: 'Analysen', symbol: 'analyse', rolle: 'bauleiter' },
+  { name: 'vorlagen', titel: 'Vorlagen', symbol: 'vorlage', rolle: 'projektleiter' },
+  { name: 'einstellungen', titel: 'Einstellungen', symbol: 'zahnrad' },
+]
+
+/** Der Subunternehmer bekommt eine eigene Navigation — er hat mit dem Rest nichts zu tun. */
+const portalEintraege: NavEintrag[] = [
+  { name: 'portal', titel: 'Start', symbol: 'haus' },
+  { name: 'portal-auftraege', titel: 'Aufträge', symbol: 'bericht' },
+  { name: 'portal-personalmeldung', titel: 'Personal', symbol: 'person' },
+  { name: 'portal-zeiten', titel: 'Zeiten', symbol: 'uhr' },
+  { name: 'portal-material', titel: 'Material', symbol: 'plus' },
+  { name: 'portal-meldung', titel: 'Meldung', symbol: 'warnung' },
+]""",
+        ),
+        (
+            """const navigation = computed(() => alleEintraege.filter(darfSehen))""",
+            """const navigation = computed(() =>
+  stammdaten.istPortalnutzer ? portalEintraege : alleEintraege.filter(darfSehen),
+)""",
+        ),
+        (
+            """const schnellaktionen: Schnellaktion[] = [
+  { titel: 'Protokoll', symbol: 'protokoll', ziel: 'protokoll-neu' },
+  { titel: 'Mangel mit Foto', symbol: 'kamera', ziel: 'mangel-neu', query: { kamera: '1' } },
+  { titel: 'Mangel', symbol: 'mangel', ziel: 'mangel-neu' },
+  { titel: 'Tagesbericht', symbol: 'bericht', ziel: 'tagesbericht-neu' },
+]""",
+            """const oekovoltAktionen: Schnellaktion[] = [
+  { titel: 'Protokoll', symbol: 'protokoll', ziel: 'protokoll-neu' },
+  { titel: 'Mangel mit Foto', symbol: 'kamera', ziel: 'mangel-neu', query: { kamera: '1' } },
+  { titel: 'Mangel', symbol: 'mangel', ziel: 'mangel-neu' },
+  { titel: 'Tagesbericht', symbol: 'bericht', ziel: 'tagesbericht-neu' },
+]
+
+const portalAktionen: Schnellaktion[] = [
+  { titel: 'Material anfordern', symbol: 'plus', ziel: 'portal-material' },
+  { titel: 'Behinderung melden', symbol: 'warnung', ziel: 'portal-meldung' },
+]
+
+const schnellaktionen = computed(() =>
+  stammdaten.istPortalnutzer ? portalAktionen : oekovoltAktionen,
+)""",
+        ),
+        (
+            """            <div>
+              <div class="text-sm font-bold leading-tight">ÖKOVOLT</div>
+              <div class="text-xs text-slate-500">Baudoku</div>
+            </div>""",
+            """            <div>
+              <div class="text-sm font-bold leading-tight">ÖKOVOLT</div>
+              <div class="text-xs text-slate-500">
+                {{ stammdaten.istPortalnutzer ? 'Subunternehmerportal' : 'Baudoku' }}
+              </div>
+            </div>""",
+        ),
+        (
+            """        <RouterLink
+          :to="{ name: 'einstellungen' }"
+          class="flex flex-col items-center gap-0.5 py-2 text-[11px] font-medium text-slate-500"
+          active-class="text-marke-600 dark:text-marke-400"
+        >
+          <AppIcon name="zahnrad" :groesse="22" />
+          Mehr
+        </RouterLink>""",
+            """        <RouterLink
+          :to="{ name: stammdaten.istPortalnutzer ? 'portal-meldung' : 'einstellungen' }"
+          class="flex flex-col items-center gap-0.5 py-2 text-[11px] font-medium text-slate-500"
+          active-class="text-marke-600 dark:text-marke-400"
+        >
+          <AppIcon :name="stammdaten.istPortalnutzer ? 'warnung' : 'zahnrad'" :groesse="22" />
+          {{ stammdaten.istPortalnutzer ? 'Meldung' : 'Mehr' }}
+        </RouterLink>""",
+        ),
+    ],
+)

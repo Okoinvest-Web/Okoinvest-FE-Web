@@ -1,0 +1,101 @@
+import sys, os
+os.chdir(r"C:\Users\SALEADMIN\Downloads\crm-develop\crm-next")
+
+def edit(p, pairs):
+    s = open(p, encoding="utf-8").read()
+    for a, b in pairs:
+        if a not in s:
+            sys.exit(f"{p}: fehlt {a[:80]!r}")
+        s = s.replace(a, b, 1)
+    open(p, "w", encoding="utf-8", newline="\n").write(s)
+
+# ---- 1) Kundenschutz in der Dubletten-Prüfung ----
+edit("src/lib/actions.ts", [
+    ('export type DuplicateHit = { type: "Lead" | "Kunde" | "Kontakt"; title: string; detail: string; href: string };',
+     '// href leer = geschützter Treffer bei einem Kollegen (keine Details)\nexport type DuplicateHit = { type: "Lead" | "Kunde" | "Kontakt" | "Kundenschutz"; title: string; detail: string; href: string };'),
+    ('''  return hits.slice(0, 5);
+}''', '''  // Kundenschutz: auch Datensätze prüfen, die der Vertreter nicht sehen darf – nur ja/nein
+  if (!hits.length && (await db().existsElsewhere({ email, mobile: input.mobile }))) {
+    hits.push({ type: "Kundenschutz", title: "Bereits bei einem Kollegen in Betreuung", detail: "Bitte mit der Vertriebsleitung klären, bevor du den Lead anlegst.", href: "" });
+  }
+  return hits.slice(0, 5);
+}'''),
+])
+edit("src/components/forms.tsx", [
+    ('''              <li key={d.href + d.title}>
+                <Link href={d.href} className="text-amber-900 underline-offset-2 hover:underline">
+                  {d.type}: {d.title}
+                </Link>''', '''              <li key={d.href + d.title}>
+                {d.href ? (
+                  <Link href={d.href} className="text-amber-900 underline-offset-2 hover:underline">
+                    {d.type}: {d.title}
+                  </Link>
+                ) : (
+                  <span className="font-medium text-amber-900">{d.title}</span>
+                )}'''),
+])
+
+# ---- 2) Reaktionszeit (SLA) ----
+edit("src/lib/insights.ts", [
+    ('''// Verbraucher (kein Firmenname) ohne dokumentierte Einwilligung → keine Werbeanrufe''', '''// ---------- Reaktionszeit (SLA) ----------
+// Neue Leads (Status "Neu") müssen binnen 24 h kontaktiert werden – schneller Rückruf ist der stärkste Abschlusshebel.
+export const SLA_HOURS = 24;
+
+export type Sla = { state: "ok" | "due" | "breached"; label: string };
+
+export function slaOf(lead: Lead, now = Date.now()): Sla | null {
+  if (lead.status !== "Lead") return null;
+  const left = (new Date(lead.creation).getTime() + SLA_HOURS * 3_600_000 - now) / 3_600_000;
+  if (left < 0) {
+    const over = -left;
+    return { state: "breached", label: over >= 48 ? `SLA seit ${Math.floor(over / 24)} T überschritten` : `SLA seit ${Math.ceil(over)} h überschritten` };
+  }
+  return { state: left <= 4 ? "due" : "ok", label: `Erstkontakt in ${Math.max(1, Math.floor(left))} h fällig` };
+}
+
+// Verbraucher (kein Firmenname) ohne dokumentierte Einwilligung → keine Werbeanrufe'''),
+])
+edit("src/components/Insights.tsx", [
+    ('''const DOT: Record<Level, string>''', '''// Reaktionszeit-Anzeige für neue Leads
+export function SlaBadge({ sla }: { sla: { state: "ok" | "due" | "breached"; label: string } | null }) {
+  if (!sla) return null;
+  const cls = sla.state === "breached" ? "border-rose-200 bg-rose-50 text-rose-700" : sla.state === "due" ? "border-amber-200 bg-amber-50 text-amber-800" : "border-gray-200 bg-white text-gray-600";
+  return (
+    <span className={`inline-flex h-[22px] items-center gap-1 whitespace-nowrap rounded-md border px-1.5 text-[12px] font-medium ${cls}`}>
+      <Timer className="size-3" /> {sla.label}
+    </span>
+  );
+}
+
+const DOT: Record<Level, string>'''),
+    ('import { AlertTriangle, ArrowRight, CircleCheck, Flame, Lightbulb, Snowflake, Sparkles, ThermometerSun } from "lucide-react";',
+     'import { AlertTriangle, ArrowRight, CircleCheck, Flame, Lightbulb, Snowflake, Sparkles, ThermometerSun, Timer } from "lucide-react";'),
+])
+# Leads-Liste: SLA unter dem Status (Tabelle + Karten)
+edit("src/app/(crm)/leads/page.tsx", [
+    ('import { ScoreBadge } from "@/components/Insights";', 'import { ScoreBadge, SlaBadge } from "@/components/Insights";'),
+    ('import { scoreLead } from "@/lib/insights";', 'import { scoreLead, slaOf } from "@/lib/insights";'),
+    ('''                    <td className={TD}>
+                      <Badge value={l.status} label={LEAD_STATUS_LABEL[l.status]} />
+                    </td>''', '''                    <td className={TD}>
+                      <div className="flex flex-col items-start gap-1">
+                        <Badge value={l.status} label={LEAD_STATUS_LABEL[l.status]} />
+                        <SlaBadge sla={slaOf(l)} />
+                      </div>
+                    </td>'''),
+    ('''          <Badge value={l.status} label={LEAD_STATUS_LABEL[l.status]} />
+        </div>''', '''          <Badge value={l.status} label={LEAD_STATUS_LABEL[l.status]} />
+          <SlaBadge sla={slaOf(l)} />
+        </div>'''),
+])
+# Lead-Detail: SLA im Kopf
+edit("src/app/(crm)/leads/[name]/page.tsx", [
+    ('import { leadHints, needsConsent, parsePv, scoreLead } from "@/lib/insights";', 'import { leadHints, needsConsent, parsePv, scoreLead, slaOf } from "@/lib/insights";'),
+    ('import { NextSteps, ScorePanel } from "@/components/Insights";', 'import { NextSteps, ScorePanel, SlaBadge } from "@/components/Insights";'),
+    ('''              <h2 className="truncate text-[22px] font-semibold tracking-[-0.02em] text-gray-900">{lead.lead_name}</h2>''',
+     '''              <h2 className="flex flex-wrap items-center gap-2 text-[22px] font-semibold tracking-[-0.02em] text-gray-900">
+                <span className="truncate">{lead.lead_name}</span>
+                <SlaBadge sla={slaOf(lead)} />
+              </h2>'''),
+])
+print("ok")

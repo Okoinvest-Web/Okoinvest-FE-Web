@@ -1,0 +1,148 @@
+import { ladeGemeinschaft, ladeLauf, ladeMeldungszeilen } from "@/lib/daten/eeg";
+import { findeNetzbetreiber } from "@/lib/at/netzbetreiber";
+import {
+  meldungsDateiname,
+  stelleMeldungZusammen,
+  uebertragungsreferenz,
+} from "@/lib/eeg/messmeldung";
+import { baueMscons, pruefeMscons } from "@/lib/eeg/mscons";
+import { ausMessStempel } from "@/lib/datum";
+import { requireRecht } from "@/lib/session";
+
+/**
+ * Die Aufteilung eines Laufs als MSCONS-Nachricht.
+ *
+ * Erzeugt wird bei jedem Abruf neu - anders als bei der SEPA-Datei,
+ * die abgelegt bleibt, weil sie Geld bewegt. Eine Messdatenmeldung
+ * bewegt nichts; sie beschreibt einen Lauf, und der Lauf ist ab dem
+ * Festschreiben unveränderlich. Zwei Abrufe liefern dieselben Mengen,
+ * nur mit verschiedener Übertragungsreferenz - so, wie es sein muss:
+ * Eine wiederholte Referenz gilt beim Empfänger als Dublette.
+ *
+ * Geprüft wird vor der Ausgabe, nicht danach. Eine Nachricht mit einem
+ * falschen Segmentzähler nimmt der Empfänger nicht an, meldet das aber
+ * erst am nächsten Werktag - und bis dahin glaubt hier jemand, die
+ * Daten seien übermittelt.
+ */
+
+/** Zeitzonenversatz Österreichs am Tag der Erzeugung, in Minuten. */
+function versatzMinuten(zeitpunkt: Date): number {
+  // `getTimezoneOffset` zählt nach Westen positiv; EDIFACT nach Osten.
+  return -zeitpunkt.getTimezoneOffset();
+}
+
+export async function GET(
+  _request: Request,
+  { params }: { params: Promise<{ lauf: string }> },
+) {
+  await requireRecht("gemeinschaft.lesen");
+
+  const { lauf: laufId } = await params;
+  const lauf = ladeLauf(decodeURIComponent(laufId));
+
+  if (!lauf) {
+    return new Response("Abrechnungslauf nicht gefunden.", { status: 404 });
+  }
+
+  const text = (inhalt: string, status: number) =>
+    new Response(inhalt, {
+      status,
+      headers: { "Content-Type": "text/plain; charset=utf-8" },
+    });
+
+  if (lauf.status === "Entwurf") {
+    return text(
+      `${lauf.id} ist noch ein Entwurf. Erst nach dem Rechnen liegen Werte vor, die sich melden lassen.`,
+      409,
+    );
+  }
+
+  if (lauf.status === "Storniert") {
+    return text(
+      `${lauf.id} wurde storniert. Seine Werte dürfen nicht mehr an einen Marktpartner gehen.`,
+      409,
+    );
+  }
+
+  const gemeinschaft = ladeGemeinschaft(lauf.gemeinschaft_id);
+  const zeilen = ladeMeldungszeilen(lauf.id);
+
+  const bestand = stelleMeldungZusammen(zeilen, {
+    von: ausMessStempel(lauf.zeitraum_von),
+    bis: ausMessStempel(lauf.zeitraum_bis),
+  });
+
+  if (bestand.reihen.length === 0) {
+    return text(
+      `Zu ${lauf.id} wurde nichts aufgeteilt – es gibt nichts zu melden.`,
+      409,
+    );
+  }
+
+  const erzeugtAm = new Date();
+
+  // Der Netzbetreiber der Gemeinschaft ist der Empfänger. Kennung ist
+  // seine Kennzahl aus der Zählpunktbezeichnung; das Schema 293 steht
+  // für eine national vergebene Nummer. Sobald im Marktpartner-
+  // verzeichnis eine GLN hinterlegt ist, tritt sie mit Schema 9 an
+  // diese Stelle.
+  const kz = gemeinschaft?.netzbetreiber_kz ?? "";
+  const netzbetreiber = findeNetzbetreiber(kz);
+
+  const nachricht = baueMscons(
+    {
+      uebertragung: uebertragungsreferenz(lauf.id, erzeugtAm),
+      nachricht: "1",
+      dokument: lauf.id,
+      erstelltAm: erzeugtAm,
+      versatzMinuten: versatzMinuten(erzeugtAm),
+      absender: {
+        kennung: gemeinschaft?.id ?? "EEG",
+        schema: "293",
+        name: gemeinschaft?.bezeichnung,
+      },
+      empfaenger: {
+        kennung: kz || "UNBEKANNT",
+        schema: "293",
+        name: netzbetreiber?.name,
+      },
+    },
+    bestand.reihen,
+  );
+
+  const pruefung = pruefeMscons(nachricht);
+
+  if (!pruefung.gueltig) {
+    // Bewusst keine Datei: Eine Nachricht, die der Empfänger abweist,
+    // ist schlimmer als gar keine, weil sie hier als versandt gilt.
+    return text(
+      [
+        `Die Nachricht zu ${lauf.id} wurde nicht erzeugt.`,
+        "",
+        ...pruefung.beanstandungen.map((b) => `– ${b}`),
+      ].join("\n"),
+      409,
+    );
+  }
+
+  // UNB kündigt UNOC an, also ISO 8859-1. Die Prüfung hat bereits
+  // ausgeschlossen, dass ein Zeichen darüber hinaus enthalten ist;
+  // deshalb ist die Umwandlung hier verlustfrei.
+  const koerper = Buffer.from(nachricht, "latin1");
+
+  return new Response(new Uint8Array(koerper), {
+    headers: {
+      "Content-Type": "application/EDIFACT; charset=ISO-8859-1",
+      "Content-Disposition": `attachment; filename="${meldungsDateiname(lauf.id, erzeugtAm)}"`,
+      "Cache-Control": "no-store",
+      // Zum Abgleich, ohne die Datei öffnen zu müssen. Lücken halten
+      // die Nachricht nicht auf - fehlende Viertelstunden sind ein
+      // Befund des Netzbetreibers, nicht ein Fehler der Nachricht -,
+      // aber ein anschließender Verarbeitungsschritt soll davon
+      // wissen, ohne die Datei zu zählen.
+      "X-Messwerte": String(pruefung.werte),
+      "X-Menge-kWh": pruefung.summeKwh.toFixed(3),
+      "X-Beanstandungen": String(bestand.beanstandungen.length),
+    },
+  });
+}

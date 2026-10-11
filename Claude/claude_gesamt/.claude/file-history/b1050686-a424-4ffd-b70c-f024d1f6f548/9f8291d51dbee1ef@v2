@@ -1,0 +1,439 @@
+/**
+ * Wiederkehrende Prüfungen und Wartung.
+ *
+ * Eine Photovoltaikanlage wird einmal abgenommen und danach
+ * jahrzehntelang betrieben. Was in diesen Jahrzehnten zu prüfen ist,
+ * steht nicht an einer Stelle, sondern verteilt sich auf
+ * Arbeitnehmerschutzrecht, Normen, Netzzugangsbedingungen und
+ * Herstellergarantien - und genau deshalb wird es übersehen. Der
+ * häufigste Befund einer Betriebsprüfung ist keine kaputte Anlage,
+ * sondern eine fehlende Prüfplakette.
+ *
+ * Diese Datei führt die Fristen zusammen und rechnet sie in Termine
+ * um. Sie unterscheidet dabei, worauf eine Frist beruht:
+ *
+ * - *Vorschrift*: verpflichtend, mit Rechtsfolge. Die ESV 2012 ist
+ *   eine Verordnung zum ArbeitnehmerInnenschutzgesetz; wer sie
+ *   verletzt, haftet und verliert im Schadensfall den
+ *   Versicherungsschutz.
+ * - *Norm*: Stand der Technik. Nicht unmittelbar Gesetz, aber der
+ *   Maßstab, an dem ein Sachverständiger misst.
+ * - *Vertrag*: Netzzugang oder Herstellergarantie. Wer die Frist
+ *   versäumt, verliert einen Anspruch.
+ * - *Empfehlung*: wirtschaftlich sinnvoll, rechtlich frei.
+ *
+ * Diese Unterscheidung ist kein Etikettenschmuck. Eine Oberfläche,
+ * die eine Empfehlung so dringlich darstellt wie eine Verordnung,
+ * erzieht ihre Benutzer dazu, beide zu ignorieren.
+ */
+
+/* ------------------------------------------------------------------ */
+/* Grundlagen                                                          */
+/* ------------------------------------------------------------------ */
+
+export type Fristart = "vorschrift" | "norm" | "vertrag" | "empfehlung";
+
+/**
+ * Umgebung nach § 9 Abs. 2 ESV 2012.
+ *
+ * Sie entscheidet über den Abstand der wiederkehrenden Prüfung der
+ * elektrischen Anlage. Die Einstufung trifft der Betrieb, nicht diese
+ * Datei - sie kennt die Räume nicht.
+ */
+export type Umgebung =
+  | "gering"
+  | "normal"
+  | "explosionsgefaehrdet"
+  | "aussergewoehnlich"
+  | "baustelle"
+  | "untertage";
+
+/** Prüfabstand der elektrischen Anlage in Monaten, § 9 Abs. 2 ESV 2012. */
+export const ESV_INTERVALL: Record<Umgebung, number> = {
+  // Büro, Handel, Dienstleistung - geringe Beanspruchung, höchstens
+  // zehn Jahre.
+  gering: 120,
+  // Der Regelfall: höchstens fünf Jahre.
+  normal: 60,
+  // Explosionsgefährdete Bereiche: höchstens drei Jahre.
+  explosionsgefaehrdet: 36,
+  // Außergewöhnliche Beanspruchung im Ex-Bereich: höchstens ein Jahr.
+  aussergewoehnlich: 12,
+  // Baustellen und übertägiger Rohstoffabbau: höchstens ein Jahr.
+  baustelle: 12,
+  // Untertagebau: höchstens sechs Monate.
+  untertage: 6,
+};
+
+export const UMGEBUNG_TEXT: Record<Umgebung, string> = {
+  gering: "geringe Beanspruchung (Büro, Handel, Dienstleistung)",
+  normal: "normale Beanspruchung",
+  explosionsgefaehrdet: "explosionsgefährdeter Bereich",
+  aussergewoehnlich: "außergewöhnliche Beanspruchung",
+  baustelle: "Baustelle oder übertägiger Abbau",
+  untertage: "Untertagebau",
+};
+
+/**
+ * Prüfabstände des Blitzschutzsystems nach ÖVE/ÖNORM EN 62305-3.
+ *
+ * Die Schutzklasse ergibt sich aus der Risikoanalyse des Gebäudes.
+ * "Kritisch" meint ein System, dessen Ausfall Menschen gefährdet oder
+ * einen Betrieb zum Stillstand brächte; dort wird jährlich umfassend
+ * geprüft, unabhängig von der Klasse.
+ */
+export interface BlitzschutzFristen {
+  /** Sichtprüfung in Monaten. */
+  sicht: number;
+  /** Umfassende Prüfung in Monaten. */
+  umfassend: number;
+}
+
+export function blitzschutzFristen(
+  schutzklasse: 1 | 2 | 3 | 4,
+  kritisch = false,
+): BlitzschutzFristen {
+  if (kritisch) return { sicht: 12, umfassend: 12 };
+  if (schutzklasse <= 2) return { sicht: 12, umfassend: 24 };
+  return { sicht: 24, umfassend: 48 };
+}
+
+/* ------------------------------------------------------------------ */
+/* Katalog                                                             */
+/* ------------------------------------------------------------------ */
+
+export interface Fristregel {
+  schluessel: string;
+  bezeichnung: string;
+  art: Fristart;
+  /** Woher die Frist kommt. */
+  grundlage: string;
+  /** Regelabstand in Monaten. */
+  monate: number;
+  /** Was dabei geschieht. */
+  inhalt: string;
+  /** Was es kostet, sie zu versäumen. */
+  folge: string;
+}
+
+/**
+ * Die Fristen, die an einer gewerblichen Photovoltaikanlage hängen.
+ *
+ * Die Monatswerte sind Regelwerte. Wo eine Anlage einen eigenen
+ * Abstand trägt - weil der Netzbetreiber, die Behörde oder der
+ * Hersteller etwas anderes vorschreibt -, gilt der eigene. Ein
+ * Katalog, der sich nicht übersteuern lässt, wird umgangen.
+ */
+export const FRISTEN: Fristregel[] = [
+  {
+    schluessel: "esv-anlage",
+    bezeichnung: "Wiederkehrende Prüfung der elektrischen Anlage",
+    art: "vorschrift",
+    grundlage: "§ 9 Abs. 2 ESV 2012",
+    monate: ESV_INTERVALL.normal,
+    inhalt:
+      "Besichtigen, Erproben, Messen der ortsfesten Anlage samt Dokumentation im Prüfbefund.",
+    folge:
+      "Ohne gültigen Befund haftet der Betrieb bei einem Elektrounfall persönlich; der Versicherer kann die Leistung kürzen.",
+  },
+  {
+    schluessel: "pv-anlagenpruefung",
+    bezeichnung: "Wiederkehrende Prüfung der PV-Anlage",
+    art: "norm",
+    grundlage: "ÖVE/ÖNORM EN 62446-1, OVE E 8101-7-712",
+    monate: 24,
+    inhalt:
+      "Strangmessungen, Isolationswiderstand, Schutzleiterdurchgang, Sichtprüfung der Module und Verbindungen.",
+    folge:
+      "Schleichende Fehler - ein feuchter Steckverbinder, ein Isolationsabfall - bleiben unentdeckt, bis der Wechselrichter abschaltet oder es brennt.",
+  },
+  {
+    schluessel: "blitzschutz-sicht",
+    bezeichnung: "Sichtprüfung des Blitzschutzsystems",
+    art: "norm",
+    grundlage: "ÖVE/ÖNORM EN 62305-3, Anhang E",
+    monate: 24,
+    inhalt:
+      "Sichtprüfung von Fangeinrichtung, Ableitungen, Trennungsabständen und Erdungsanschlüssen.",
+    folge:
+      "Eine unterbrochene Ableitung führt den Blitzstrom über die Anlage statt an ihr vorbei.",
+  },
+  {
+    schluessel: "blitzschutz-umfassend",
+    bezeichnung: "Umfassende Prüfung des Blitzschutzsystems",
+    art: "norm",
+    grundlage: "ÖVE/ÖNORM EN 62305-3, Anhang E",
+    monate: 48,
+    inhalt:
+      "Messung der Erdungswiderstände, Durchgangsprüfung, Beurteilung von Korrosion und Trennungsabständen.",
+    folge: "Wie bei der Sichtprüfung, nur unentdeckt über einen längeren Zeitraum.",
+  },
+  {
+    schluessel: "na-schutz",
+    bezeichnung: "Prüfung der entkuppelnden Schutzeinrichtung",
+    art: "vertrag",
+    grundlage: "TOR Erzeuger, Netzzugangsvertrag",
+    monate: 48,
+    inhalt:
+      "Funktionsprüfung von Spannungs- und Frequenzschutz mit Prüfprotokoll für den Netzbetreiber.",
+    folge:
+      "Der Netzbetreiber kann den Netzzugang aussetzen, bis das Protokoll vorliegt.",
+  },
+  {
+    schluessel: "wechselrichter-wartung",
+    bezeichnung: "Wartung der Wechselrichter",
+    art: "vertrag",
+    grundlage: "Herstellergarantie",
+    monate: 12,
+    inhalt:
+      "Lüfter und Filter, Anzugsmomente der Anschlüsse, Firmwarestand, Auslesen des Fehlerspeichers.",
+    folge: "Die Garantie entfällt, und Lüfterausfälle führen zur Abregelung im Sommer.",
+  },
+  {
+    schluessel: "thermografie",
+    bezeichnung: "Thermografie der Anlage",
+    art: "empfehlung",
+    grundlage: "Versicherungsauflage, VdS-Richtlinie",
+    monate: 24,
+    inhalt:
+      "Aufnahme von Modulfeldern, Anschlusskästen und Verteilern unter Last.",
+    folge:
+      "Lose Klemmstellen bleiben unentdeckt. Sie sind die häufigste Brandursache an Photovoltaikanlagen.",
+  },
+  {
+    schluessel: "modulreinigung",
+    bezeichnung: "Reinigung der Module",
+    art: "empfehlung",
+    grundlage: "Betriebswirtschaftlich",
+    monate: 24,
+    inhalt: "Reinigung nach Bedarf, abgeleitet aus dem Verschmutzungsbefund.",
+    folge: "Ertragsverlust, der sich schleichend aufbaut und nie auffällt.",
+  },
+];
+
+export function findeFrist(schluessel: string): Fristregel | undefined {
+  return FRISTEN.find((f) => f.schluessel === schluessel);
+}
+
+/**
+ * Welche Leistung aus dem Katalog eine Frist erfüllt.
+ *
+ * Der Weg von der überfälligen Prüfung zum Auftrag ist die Stelle, an
+ * der ein Prüfkalender nützlich wird. Ohne ihn merkt sich jemand den
+ * Termin, öffnet später den Leistungskatalog und sucht dort das
+ * Passende - und zwischen beiden Schritten geht es verloren.
+ *
+ * Nicht jede Frist steht im Katalog: Die wiederkehrende Prüfung der
+ * elektrischen Anlage nach ESV gehört zu einer konzessionierten
+ * Elektrofachkraft und wird nicht pauschal angeboten. Wo nichts
+ * hinterlegt ist, steht auch kein Knopf.
+ */
+export const LEISTUNG_JE_REGEL: Record<string, string> = {
+  "pv-anlagenpruefung": "ART-1002",
+  thermografie: "ART-1003",
+  modulreinigung: "ART-1001",
+};
+
+/* ------------------------------------------------------------------ */
+/* Termine                                                             */
+/* ------------------------------------------------------------------ */
+
+/** Wie viele Tage vorher ein Termin als "steht an" gilt. */
+export const VORLAUF_TAGE = 60;
+
+const TAG_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Nächste Fälligkeit nach einer Prüfung.
+ *
+ * Gerechnet wird in Kalendermonaten, nicht in Tagen: Eine Frist von
+ * fünf Jahren läuft am selben Kalendertag ab, nicht 1825 Tage später -
+ * sonst wandert der Termin bei jeder Prüfung um die Schaltjahre.
+ *
+ * Trifft der Stichtag auf einen Tag, den der Zielmonat nicht hat -
+ * der 31. Mai plus ein Monat -, wird auf den Monatsletzten
+ * zurückgesetzt statt in den Folgemonat zu rutschen.
+ */
+export function naechsteFaelligkeit(letzte: Date, monate: number): Date {
+  const ziel = new Date(letzte.getFullYear(), letzte.getMonth() + monate, 1);
+  const letzterTag = new Date(
+    ziel.getFullYear(),
+    ziel.getMonth() + 1,
+    0,
+  ).getDate();
+
+  ziel.setDate(Math.min(letzte.getDate(), letzterTag));
+  return ziel;
+}
+
+export type Terminstand = "erledigt" | "steht_an" | "ueberfaellig" | "unbekannt";
+
+export interface Terminbefund {
+  stand: Terminstand;
+  /** Tage bis zur Fälligkeit; negativ, wenn sie vorbei ist. */
+  tage: number;
+  faellig: Date | null;
+}
+
+/**
+ * Beurteilt einen Termin gegen den heutigen Tag.
+ *
+ * Ohne letzte Prüfung ist der Stand nicht "erledigt" und nicht
+ * "überfällig", sondern unbekannt. Eine Anlage, zu der nichts
+ * abgelegt ist, als geprüft zu führen wäre die gefährlichere
+ * Annahme von beiden.
+ */
+export function bewerteTermin(
+  letzte: Date | null,
+  monate: number,
+  heute: Date,
+  vorlaufTage = VORLAUF_TAGE,
+): Terminbefund {
+  if (!letzte || Number.isNaN(letzte.getTime())) {
+    return { stand: "unbekannt", tage: 0, faellig: null };
+  }
+
+  const faellig = naechsteFaelligkeit(letzte, monate);
+
+  // Auf den Kalendertag gerechnet, nicht auf die Stunde: Ein Termin
+  // ist am Tag seines Ablaufs noch nicht versäumt.
+  const tage = Math.round(
+    (new Date(
+      faellig.getFullYear(),
+      faellig.getMonth(),
+      faellig.getDate(),
+    ).getTime() -
+      new Date(
+        heute.getFullYear(),
+        heute.getMonth(),
+        heute.getDate(),
+      ).getTime()) /
+      TAG_MS,
+  );
+
+  if (tage < 0) return { stand: "ueberfaellig", tage, faellig };
+  if (tage <= vorlaufTage) return { stand: "steht_an", tage, faellig };
+  return { stand: "erledigt", tage, faellig };
+}
+
+/* ------------------------------------------------------------------ */
+/* Plan                                                                */
+/* ------------------------------------------------------------------ */
+
+/** Was zu einer Anlage abgelegt ist. */
+export interface Pruefstand {
+  schluessel: string;
+  /** Letzte durchgeführte Prüfung. */
+  letzte: Date | null;
+  /** Abweichender Abstand in Monaten, etwa aus einem Bescheid. */
+  monate?: number;
+  pruefer?: string;
+  protokoll?: string;
+}
+
+export interface Wartungsposten {
+  regel: Fristregel;
+  /** Tatsächlich angewandter Abstand. */
+  monate: number;
+  /** Ob der Abstand vom Katalog abweicht. */
+  abweichend: boolean;
+  /** Tag der letzten Prüfung, soweit abgelegt. */
+  letzte: Date | null;
+  befund: Terminbefund;
+  pruefer?: string;
+  protokoll?: string;
+}
+
+const RANG: Record<Terminstand, number> = {
+  ueberfaellig: 0,
+  unbekannt: 1,
+  steht_an: 2,
+  erledigt: 3,
+};
+
+const ARTRANG: Record<Fristart, number> = {
+  vorschrift: 0,
+  vertrag: 1,
+  norm: 2,
+  empfehlung: 3,
+};
+
+/**
+ * Stellt den Wartungsplan einer Anlage auf.
+ *
+ * Sortiert nach Dringlichkeit, dann nach Verbindlichkeit: Eine
+ * überfällige Verordnung steht vor einer überfälligen Empfehlung, und
+ * beide stehen vor allem, was noch Zeit hat.
+ *
+ * Die Umgebung greift nur an einer Stelle ein - beim Abstand nach der
+ * ESV. Die übrigen Fristen hängen an der Anlage, nicht am Raum.
+ */
+export function planeWartung(
+  staende: Pruefstand[],
+  heute: Date,
+  umgebung: Umgebung = "normal",
+  regeln: Fristregel[] = FRISTEN,
+): Wartungsposten[] {
+  const jeSchluessel = new Map(staende.map((s) => [s.schluessel, s]));
+
+  const posten = regeln.map((regel) => {
+    const stand = jeSchluessel.get(regel.schluessel);
+
+    const katalog =
+      regel.schluessel === "esv-anlage" ? ESV_INTERVALL[umgebung] : regel.monate;
+    const monate = stand?.monate ?? katalog;
+
+    return {
+      regel,
+      monate,
+      abweichend: monate !== regel.monate,
+      letzte: stand?.letzte ?? null,
+      befund: bewerteTermin(stand?.letzte ?? null, monate, heute),
+      pruefer: stand?.pruefer,
+      protokoll: stand?.protokoll,
+    };
+  });
+
+  return posten.sort(
+    (a, b) =>
+      RANG[a.befund.stand] - RANG[b.befund.stand] ||
+      ARTRANG[a.regel.art] - ARTRANG[b.regel.art] ||
+      a.befund.tage - b.befund.tage,
+  );
+}
+
+/**
+ * Ein Satz über den Zustand des Plans.
+ *
+ * Er nennt zuerst, was versäumt ist. Eine Zusammenfassung, die mit
+ * dem Erledigten beginnt, wird bis zum Ende gelesen - und die
+ * schlechte Nachricht steht dort.
+ */
+export function fasseWartungZusammen(posten: Wartungsposten[]): string {
+  const ueberfaellig = posten.filter((p) => p.befund.stand === "ueberfaellig");
+  const unbekannt = posten.filter((p) => p.befund.stand === "unbekannt");
+  const anstehend = posten.filter((p) => p.befund.stand === "steht_an");
+
+  if (ueberfaellig.length > 0) {
+    const pflicht = ueberfaellig.filter(
+      (p) => p.regel.art === "vorschrift" || p.regel.art === "vertrag",
+    ).length;
+
+    return pflicht > 0
+      ? `${ueberfaellig.length} Prüfungen sind überfällig, davon ${pflicht} verpflichtend.`
+      : `${ueberfaellig.length} Prüfungen sind überfällig.`;
+  }
+
+  if (unbekannt.length > 0) {
+    return `Zu ${unbekannt.length} Prüfungen ist nichts abgelegt. Ob sie stattgefunden haben, lässt sich hier nicht sagen.`;
+  }
+
+  if (anstehend.length > 0) {
+    const naechster = anstehend.reduce((a, b) =>
+      a.befund.tage <= b.befund.tage ? a : b,
+    );
+    return `${anstehend.length} Prüfungen stehen an, die nächste in ${naechster.befund.tage} Tagen.`;
+  }
+
+  return "Alle Prüfungen sind aktuell.";
+}

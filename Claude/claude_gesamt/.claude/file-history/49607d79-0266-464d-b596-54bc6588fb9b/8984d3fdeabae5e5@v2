@@ -1,0 +1,71 @@
+/**
+ * Zeitstempel im Frappe-Format: "YYYY-MM-DD HH:MM:SS" ohne Zeitzone.
+ *
+ * Frappe speichert naive Zeitstempel in der Zeitzone der Site. Genau das wird
+ * hier nachgebildet - und zwar durchgängig in LOKALER Zeit.
+ *
+ * Warum das wichtig ist: `new Date(...).toISOString()` liefert UTC. Ein daraus
+ * gebauter naiver String wird von `new Date("2026-09-18 18:00:00")` aber als
+ * Lokalzeit gelesen. In einer Zeitzone mit Versatz entsteht dabei ein Sprung -
+ * ein gerade gelaufener Konnektor sieht dann zwei Stunden alt aus und ein
+ * eben erzeugter Bestätigungscode gilt sofort als abgelaufen.
+ */
+
+/** Aktueller Zeitpunkt als Frappe-Zeitstempel. */
+export function jetzt(datum = new Date()) {
+  return formatiere(datum)
+}
+
+/** Zeitstempel um `stunden` versetzt (negativ = Vergangenheit). */
+export function stundenVersetzt(stunden, basis = new Date()) {
+  return formatiere(new Date(basis.getTime() + stunden * 3600000))
+}
+
+/** Datum (ohne Uhrzeit) um `tage` versetzt. */
+export function tageVersetzt(tage, basis = new Date()) {
+  return formatiere(new Date(basis.getTime() + tage * 86400000)).slice(0, 10)
+}
+
+/** Heutiges Datum als YYYY-MM-DD. */
+export function heute() {
+  return formatiere(new Date()).slice(0, 10)
+}
+
+/**
+ * Liest einen Frappe-Zeitstempel als Lokalzeit.
+ * Gibt `null` zurück, wenn nichts da ist - Aufrufer müssen das prüfen.
+ */
+export function parse(text) {
+  if (!text) return null
+  const datum = new Date(String(text).replace(' ', 'T'))
+  return Number.isNaN(datum.getTime()) ? null : datum
+}
+
+/** Alter in Stunden, oder `null` wenn kein Zeitstempel vorliegt. */
+export function alterStunden(text, basis = Date.now()) {
+  const datum = parse(text)
+  return datum === null ? null : (basis - datum.getTime()) / 3600000
+}
+
+/** Alter in Minuten, oder `Infinity` wenn kein Zeitstempel vorliegt. */
+export function alterMinuten(text, basis = Date.now()) {
+  const datum = parse(text)
+  return datum === null ? Number.POSITIVE_INFINITY : (basis - datum.getTime()) / 60000
+}
+
+function formatiere(datum) {
+  const zwei = (wert) => String(wert).padStart(2, '0')
+  return (
+    datum.getFullYear() +
+    '-' +
+    zwei(datum.getMonth() + 1) +
+    '-' +
+    zwei(datum.getDate()) +
+    ' ' +
+    zwei(datum.getHours()) +
+    ':' +
+    zwei(datum.getMinutes()) +
+    ':' +
+    zwei(datum.getSeconds())
+  )
+}

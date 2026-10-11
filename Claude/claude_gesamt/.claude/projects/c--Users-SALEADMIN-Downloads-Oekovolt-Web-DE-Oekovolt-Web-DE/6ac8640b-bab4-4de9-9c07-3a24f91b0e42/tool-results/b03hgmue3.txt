@@ -1,0 +1,881 @@
+// src/lib/plattform/fach/energie.js
+//
+// Energie-Stammdaten für Unternehmen (Reststrom-Pool, Contracting) und Mitglieder (Energiegemeinschaften):
+// Identifikatoren der Mess- und Marktlokationen DE/AT/CH mit Prüfung, Messart, Spannungsebene, Liefervertrag,
+// Entlastungen. Reine Funktionen (Browser, Server, Node-Tests). Frappe: plattform/fach/energie.py (gleiche Regeln).
+//
+// Identifikatoren (Stand 2026, nach aktuellem Stand der Marktkommunikation):
+//  - DE Marktlokations-ID (MaLo-ID): 11 Ziffern, 11. Stelle Prüfziffer (BDEW-Codenummernverfahren):
+//      Summe der Ziffern an ungeraden Stellen (1,3,5,7,9) + 2 × Summe der Ziffern an geraden Stellen (2,4,6,8,10);
+//      Prüfziffer = (10 − Summe mod 10) mod 10. Beispiel: 41373559241.
+//  - DE Messlokations-ID (MeLo-ID, früher Zählpunktbezeichnung): 33 Zeichen, „DE“ + 6-stellige Netzbetreibernummer +
+//      5-stellige Postleitzahl + 20 alphanumerische Zeichen. Keine Prüfziffer – nur Formatprüfung.
+//  - AT Zählpunktnummer: 33 Zeichen, „AT“ + 6-stellige Netzbetreibernummer + 5-stellige Postleitzahl + 20 Zeichen
+//      (Ziffern/Großbuchstaben). Keine Prüfziffer – Formatprüfung; Quelle: Netzbetreiber-Rechnung bzw. Smart-Meter-Portal.
+//  - CH Messpunktbezeichnung: 33 Zeichen, „CH“ + 31 alphanumerische Zeichen (Metering Code Schweiz) – Formatprüfung.
+
+export const MESSARTEN = {
+  rlm: { label: "RLM – registrierende Leistungsmessung (Lastgang, 15 min)", kurz: "RLM" },
+  slp: { label: "SLP – Standardlastprofil", kurz: "SLP" },
+  imsys: { label: "Intelligentes Messsystem (Smart Meter, 15 min)", kurz: "iMSys" },
+};
+
+export const SPANNUNGSEBENEN = {
+  ns: "Niederspannung",
+  ms_ns: "Umspannung Mittel-/Niederspannung",
+  ms: "Mittelspannung",
+  hs_ms: "Umspannung Hoch-/Mittelspannung",
+  hs: "Hochspannung",
+};
+
+/** AT: Netzebenen 1–7 (Netzebene 7 = Niederspannung Haushalt/Gewerbe) */
+export const NETZEBENEN_AT = { 7: "Netzebene 7 (Niederspannung)", 6: "Netzebene 6 (Umspannung MS/NS)", 5: "Netzebene 5 (Mittelspannung)", 4: "Netzebene 4 (Umspannung HS/MS)", 3: "Netzebene 3 (Hochspannung)" };
+
+export const PREISSTRUKTUREN = {
+  fest: "Festpreis (Arbeitspreis fix für die Laufzeit)",
+  tranchen: "Tranchenbeschaffung (strukturiert)",
+  spot: "Spot-/Indexpreis (Day-Ahead)",
+  mischung: "Mischung Fest- und Spotanteil",
+  grundversorgung: "Grund-/Ersatzversorgung",
+};
+
+export const PAR19 = {
+  keine: "Keine Sonderform",
+  atypisch: "Atypische Netznutzung (§ 19 Abs. 2 S. 1 StromNEV)",
+  intensiv: "Stromintensive Netznutzung (§ 19 Abs. 2 S. 2 StromNEV)",
+  singulaer: "Singulär genutzte Betriebsmittel (§ 19 Abs. 3 StromNEV)",
+  pruefung: "Prüfung gewünscht",
+};
+
+/** Messart-Grenze: In DE ist eine registrierende Leistungsmessung in der Regel ab 100.000 kWh/Jahr Pflicht */
+export const RLM_GRENZE_KWH = 100000;
+/** § 19 Abs. 2 S. 2 StromNEV: Benutzungsstunden ≥ 7.000 h und Verbrauch > 10 GWh an einer Abnahmestelle */
+export const INTENSIV = { stunden: 7000, kwh: 10000000 };
+
+// ---------------------------------------------------------------- Identifikatoren
+
+const nurZeichen = (s) => String(s ?? "").toUpperCase().replace(/[\s.\-_/]/g, "");
+
+/** Prüfziffer einer MaLo-ID aus den ersten 10 Ziffern */
+export function maloPruefziffer(zehn) {
+  const z = String(zehn);
+  if (!/^\d{10}$/.test(z)) return null;
+  let ungerade = 0;
+  let gerade = 0;
+  for (let i = 0; i < 10; i++) {
+    const d = Number(z[i]);
+    if (i % 2 === 0) ungerade += d; // Stellen 1, 3, 5, 7, 9
+    else gerade += d; // Stellen 2, 4, 6, 8, 10
+  }
+  return (10 - ((ungerade + 2 * gerade) % 10)) % 10;
+}
+
+/** MaLo-ID prüfen → { ok, wert, fehler } */
+export function maloPruefen(eingabe) {
+  const s = nurZeichen(eingabe);
+  if (!s) return { ok: false, wert: "", fehler: "Bitte geben Sie die Marktlokations-ID an." };
+  if (!/^\d{11}$/.test(s)) return { ok: false, wert: s, fehler: "Die Marktlokations-ID hat genau 11 Ziffern." };
+  if (s[0] === "0") return { ok: false, wert: s, fehler: "Eine Marktlokations-ID beginnt nicht mit 0." };
+  const soll = maloPruefziffer(s.slice(0, 10));
+  if (soll !== Number(s[10])) return { ok: false, wert: s, fehler: "Prüfziffer stimmt nicht – bitte Tippfehler prüfen (Angabe auf der Stromrechnung)." };
+  return { ok: true, wert: s, fehler: "" };
+}
+
+/** 33-stellige Lokations-/Zählpunktbezeichnung DE/AT/CH (Formatprüfung) */
+export function zaehlpunktPruefen(eingabe, land = "DE") {
+  const s = nurZeichen(eingabe);
+  const name = land === "AT" ? "Zählpunktnummer" : land === "CH" ? "Messpunktbezeichnung" : "Messlokations-ID";
+  if (!s) return { ok: false, wert: "", fehler: `Bitte geben Sie die ${name} an.` };
+  if (s.length !== 33) return { ok: false, wert: s, fehler: `Die ${name} hat 33 Zeichen (derzeit ${s.length}).` };
+  if (!s.startsWith(land)) return { ok: false, wert: s, fehler: `Die ${name} beginnt mit „${land}“.` };
+  if (land === "CH") {
+    if (!/^CH[0-9A-Z]{31}$/.test(s)) return { ok: false, wert: s, fehler: `Die ${name} enthält nur Ziffern und Großbuchstaben.` };
+  } else if (!/^(DE|AT)\d{11}[0-9A-Z]{20}$/.test(s)) {
+    return { ok: false, wert: s, fehler: `Aufbau: ${land} + 6-stellige Netzbetreibernummer + 5-stellige Postleitzahl + 20 Zeichen.` };
+  }
+  return { ok: true, wert: s, fehler: "", netzbetreiberNr: land === "CH" ? null : s.slice(2, 8), plz: land === "CH" ? null : s.slice(8, 13) };
+}
+
+/** Lesbar gruppiert: DE 000562 66802 AO6G56M11SN51G21M24S */
+export function zaehlpunktFormatiert(s) {
+  const x = nurZeichen(s);
+  if (x.length !== 33) return x;
+  return `${x.slice(0, 2)} ${x.slice(2, 8)} ${x.slice(8, 13)} ${x.slice(13, 23)} ${x.slice(23)}`;
+}
+
+// ---------------------------------------------------------------- Stammdaten Energie (je Abnahmestelle)
+
+const TXT = /[\u0000-\u001F\u007F]/g;
+const text = (v, max = 160) => (v === undefined || v === null || typeof v === "object" ? "" : String(v).replace(TXT, " ").replace(/\s{2,}/g, " ").trim().slice(0, max));
+function zahl(v, min, max, stellen = 0) {
+  if (v === undefined || v === null || v === "" || typeof v === "object" || typeof v === "boolean") return null;
+  const n = typeof v === "number" ? v : Number(String(v).replace(/\s/g, "").replace(",", "."));
+  if (!Number.isFinite(n) || n < min || n > max) return null;
+  return Math.round(n * 10 ** stellen) / 10 ** stellen;
+}
+const auswahl = (v, erlaubt, std = "") => (Object.prototype.hasOwnProperty.call(erlaubt, v) ? v : std);
+const datum = (v) => (/^20\d\d-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.test(String(v || "")) ? String(v) : "");
+const jaNein = (v) => (v === true || v === "ja" ? true : v === false || v === "nein" ? false : null);
+
+class Ungueltig extends Error {
+  constructor(msg, feld) {
+    super(msg);
+    this.status = 422;
+    this.feld = feld;
+  }
+}
+
+/**
+ * Abnahmestelle bereinigen und prüfen. Wirft Fehler mit status 422 bei ungültigen Pflichtangaben.
+ * Pflicht: Bezeichnung, Land, Identifikator je Land (DE: MaLo-ID; MeLo optional; AT: Zählpunkt; CH: Messpunkt),
+ * Messart, Jahresverbrauch.
+ */
+export function abnahmestelleBereinigen(d = {}) {
+  const land = auswahl(d.land, { DE: 1, AT: 1, CH: 1 }, "DE");
+  const s = {
+    bezeichnung: text(d.bezeichnung, 80),
+    land,
+    plz: text(d.plz, 10),
+    ort: text(d.ort, 80),
+    maloId: "",
+    meloId: "",
+    zaehlpunkt: "",
+    messart: auswahl(d.messart, MESSARTEN, ""),
+    netzbetreiber: text(d.netzbetreiber, 120),
+    spannungsebene: land === "AT" ? "" : auswahl(d.spannungsebene, SPANNUNGSEBENEN, ""),
+    netzebeneAt: land === "AT" ? auswahl(String(d.netzebeneAt ?? ""), NETZEBENEN_AT, "") : "",
+    jahresverbrauchKwh: zahl(d.jahresverbrauchKwh, 0, 5e9),
+    spitzeKw: zahl(d.spitzeKw, 0, 5e6, 1),
+    lieferant: text(d.lieferant, 120),
+    vertragEnde: datum(d.vertragEnde),
+    kuendigungsfristMonate: zahl(d.kuendigungsfristMonate, 0, 36),
+    preisstruktur: auswahl(d.preisstruktur, PREISSTRUKTUREN, ""),
+    arbeitspreisCt: zahl(d.arbeitspreisCt, 0, 200, 3),
+    leistungspreisEurKwJahr: zahl(d.leistungspreisEurKwJahr, 0, 1000, 2),
+    grundpreisEurMonat: zahl(d.grundpreisEurMonat, 0, 100000, 2),
+    netzentgeltCt: zahl(d.netzentgeltCt, 0, 100, 3),
+    stromsteuerEntlastung: land === "DE" ? jaNein(d.stromsteuerEntlastung) : null,
+    par19: land === "DE" ? auswahl(d.par19, PAR19, "keine") : "",
+    eigenerzeugungKwp: zahl(d.eigenerzeugungKwp, 0, 1e6, 1),
+    bemerkung: text(d.bemerkung, 300),
+  };
+  if (!s.bezeichnung) throw new Ungueltig("Bitte geben Sie eine Bezeichnung der Abnahmestelle an (z. B. „Werk Nord“).", "bezeichnung");
+  if (land === "DE") {
+    const m = maloPruefen(d.maloId);
+    if (!m.ok) throw new Ungueltig(m.fehler, "maloId");
+    s.maloId = m.wert;
+    if (d.meloId) {
+      const z = zaehlpunktPruefen(d.meloId, "DE");
+      if (!z.ok) throw new Ungueltig(z.fehler, "meloId");
+      s.meloId = z.wert;
+    }
+  } else {
+    const z = zaehlpunktPruefen(d.zaehlpunkt, land);
+    if (!z.ok) throw new Ungueltig(z.fehler, "zaehlpunkt");
+    s.zaehlpunkt = z.wert;
+  }
+  if (!s.messart) throw new Ungueltig("Bitte wählen Sie die Messart (RLM, SLP oder intelligentes Messsystem).", "messart");
+  if (s.jahresverbrauchKwh === null) throw new Ungueltig("Bitte geben Sie den Jahresverbrauch in kWh an.", "jahresverbrauchKwh");
+  return s;
+}
+
+/**
+ * Fachliche Hinweise zur Abnahmestelle (keine Fehler): Messart vs. Verbrauch, Kündigungsfenster, § 19, Stromsteuer.
+ * @returns {[{stufe: "warnung"|"info", text}]}
+ */
+export function abnahmestelleHinweise(s, { jetzt, benutzungsstunden } = {}) {
+  const h = [];
+  if (!s) return h;
+  const heute = (jetzt ? new Date(jetzt) : new Date()).toISOString().slice(0, 10);
+  if (s.land === "DE" && s.messart === "slp" && s.jahresverbrauchKwh > RLM_GRENZE_KWH) h.push({ stufe: "warnung", text: `Über ${RLM_GRENZE_KWH.toLocaleString("de-DE")} kWh/Jahr ist in Deutschland in der Regel eine registrierende Leistungsmessung (RLM) vorgeschrieben – Messart beim Netzbetreiber prüfen.` });
+  if (s.messart === "slp") h.push({ stufe: "info", text: "Bei SLP-Messung gibt es keinen echten Lastgang – für die Pool-Bewertung genügt die Jahresmenge, eine Lastgang-Analyse ist erst mit RLM oder Smart Meter möglich." });
+  if (s.vertragEnde) {
+    const ende = new Date(`${s.vertragEnde}T00:00:00Z`);
+    const frist = new Date(ende);
+    frist.setUTCMonth(frist.getUTCMonth() - (s.kuendigungsfristMonate ?? 3));
+    const fristIso = frist.toISOString().slice(0, 10);
+    if (s.vertragEnde < heute) h.push({ stufe: "warnung", text: "Vertragsende liegt in der Vergangenheit – ggf. Verlängerung oder Ersatzversorgung zu teuren Konditionen prüfen." });
+    else if (fristIso < heute) h.push({ stufe: "warnung", text: `Kündigungsfrist abgelaufen (Stichtag ${fristIso.split("-").reverse().join(".")}) – prüfen Sie die automatische Verlängerung.` });
+    else {
+      const tage = Math.round((frist - new Date(`${heute}T00:00:00Z`)) / 864e5);
+      h.push({ stufe: tage < 120 ? "warnung" : "info", text: `Kündigung spätestens am ${fristIso.split("-").reverse().join(".")} (${tage} Tage) – Beschaffung für den Pool rechtzeitig vorbereiten.` });
+    }
+  }
+  if (s.land === "DE" && s.stromsteuerEntlastung === null) h.push({ stufe: "info", text: "Produzierendes Gewerbe sowie Land- und Forstwirtschaft können seit 2026 eine Stromsteuer-Entlastung auf 0,05 ct/kWh beantragen (§ 9b StromStG, Antrag beim Hauptzollamt)." });
+  if (s.land === "DE" && benutzungsstunden && s.jahresverbrauchKwh) {
+    if (benutzungsstunden >= INTENSIV.stunden && s.jahresverbrauchKwh > INTENSIV.kwh && s.par19 !== "intensiv") h.push({ stufe: "warnung", text: `Mit ${Math.round(benutzungsstunden).toLocaleString("de-DE")} Benutzungsstunden und über 10 GWh kommt ein individuelles Netzentgelt nach § 19 Abs. 2 S. 2 StromNEV in Betracht – Antrag bei der Regulierungsbehörde prüfen.` });
+  }
+  return h;
+}
+
+// ---------------------------------------------------------------- Energiegemeinschaften (Teilnahme)
+
+export const EG_FORMEN = {
+  DE: { energy_sharing: "Energy Sharing (§ 42c EnWG)", buergerenergie: "Bürgerenergiegesellschaft" },
+  AT: { eeg_lokal: "Erneuerbare-Energie-Gemeinschaft – lokal", eeg_regional: "Erneuerbare-Energie-Gemeinschaft – regional", beg: "Bürgerenergiegemeinschaft (BEG)", gea: "Gemeinschaftliche Erzeugungsanlage (Mehrparteienhaus)" },
+  CH: { leg: "Lokale Elektrizitätsgemeinschaft (LEG)", zev: "Zusammenschluss zum Eigenverbrauch (ZEV)", vzev: "Virtueller ZEV (vZEV)" },
+};
+export const EG_ROLLEN = { bezug: "Bezug (Verbraucher)", einspeisung: "Einspeisung (Erzeuger)", beides: "Bezug und Einspeisung (Prosumer)" };
+
+/**
+ * Teilnahme an einer Energiegemeinschaft bereinigen. Land-spezifische Pflichtangaben:
+ * DE: MaLo-ID; AT: Zählpunktnummer (Bezug) bzw. zweite Zählpunktnummer für die Einspeisung, Netzbetreiber, Form lokal/regional/BEG;
+ * CH: Messpunkt, Gemeinde (LEG nur innerhalb einer Gemeinde).
+ */
+export function egTeilnahmeBereinigen(d = {}) {
+  const land = auswahl(d.land, { DE: 1, AT: 1, CH: 1 }, "DE");
+  const t = {
+    land,
+    form: auswahl(d.form, EG_FORMEN[land], ""),
+    rolle: auswahl(d.rolle, EG_ROLLEN, "bezug"),
+    maloId: "",
+    zaehlpunkt: "",
+    zaehlpunktEinspeisung: "",
+    netzbetreiber: text(d.netzbetreiber, 120),
+    plz: text(d.plz, 10),
+    ort: text(d.ort, 80),
+    jahresverbrauchKwh: zahl(d.jahresverbrauchKwh, 0, 1e8),
+    anlageKwp: zahl(d.anlageKwp, 0, 100000, 1),
+    smartMeter: jaNein(d.smartMeter),
+    datenfreigabe: jaNein(d.datenfreigabe),
+  };
+  if (!t.form) throw new Ungueltig("Bitte wählen Sie die Form der Energiegemeinschaft.", "form");
+  if (land === "DE") {
+    const m = maloPruefen(d.maloId);
+    if (!m.ok) throw new Ungueltig(m.fehler, "maloId");
+    t.maloId = m.wert;
+  } else {
+    const z = zaehlpunktPruefen(d.zaehlpunkt, land);
+    if (!z.ok) throw new Ungueltig(z.fehler, "zaehlpunkt");
+    t.zaehlpunkt = z.wert;
+    if (t.rolle !== "bezug" && d.zaehlpunktEinspeisung) {
+      const e = zaehlpunktPruefen(d.zaehlpunktEinspeisung, land);
+      if (!e.ok) throw new Ungueltig(`Einspeisung: ${e.fehler}`, "zaehlpunktEinspeisung");
+      if (e.wert === t.zaehlpunkt) throw new Ungueltig("Für Bezug und Einspeisung gibt es in der Regel zwei verschiedene Zählpunkte.", "zaehlpunktEinspeisung");
+      t.zaehlpunktEinspeisung = e.wert;
+    }
+  }
+  if (!t.netzbetreiber) throw new Ungueltig("Bitte geben Sie Ihren Netzbetreiber an.", "netzbetreiber");
+  if (!t.plz) throw new Ungueltig("Bitte geben Sie die Postleitzahl der Abnahmestelle an.", "plz");
+  return t;
+}
+
+/** Hinweise zur Teilnahme (Voraussetzungen je Land) */
+export function egHinweise(t) {
+  const h = [];
+  if (!t) return h;
+  if (t.land === "AT") {
+    if (t.smartMeter === false) h.push({ stufe: "warnung", text: "Für die Teilnahme ist ein Smart Meter mit Viertelstundenwerten nötig – beim Netzbetreiber beantragen." });
+    if (t.datenfreigabe !== true) h.push({ stufe: "info", text: "Die Viertelstundenwerte müssen im Webportal des Netzbetreibers für die Gemeinschaft freigegeben werden (Opt-in)." });
+    if (t.form === "eeg_lokal") h.push({ stufe: "info", text: "Lokal heißt: alle Teilnehmer hängen am Niederspannungsnetz derselben Trafostation (Netzebenen 6–7) – höchster Netzentgelt-Rabatt." });
+    if (t.form === "eeg_regional") h.push({ stufe: "info", text: "Regional heißt: Teilnehmer im Mittelspannungsnetz desselben Umspannwerks (zusätzlich Netzebenen 4–5) – geringerer Rabatt als lokal." });
+    if (t.rolle !== "bezug" && !t.zaehlpunktEinspeisung) h.push({ stufe: "info", text: "Für die Einspeisung ist die Zählpunktnummer der Überschusseinspeisung anzugeben (eigener Zählpunkt)." });
+  }
+  if (t.land === "DE") h.push({ stufe: "info", text: "Energy Sharing nach § 42c EnWG ist nach aktuellem Stand zunächst im Netzgebiet eines Verteilnetzbetreibers möglich; ein Netzentgeltvorteil ist derzeit nicht vorgesehen. Ein intelligentes Messsystem ist Voraussetzung." });
+  if (t.land === "CH" && t.form === "leg") h.push({ stufe: "info", text: "Eine LEG ist auf das Gebiet einer Gemeinde und auf dieselbe Netzebene bzw. denselben Verteilnetzbetreiber beschränkt; die Netznutzung wird reduziert abgerechnet." });
+  return h;
+}
+
+export { Ungueltig as EnergieUngueltig };
+// src/lib/plattform/fach/lastgang.js
+//
+// Lastgang-Import und -Analyse für Unternehmen (Reststrom-Pool, Contracting). Reine Funktionen ohne Node-Importe –
+// im Browser (Vorschau) und auf dem Server (maßgeblich) identisch. Getestet in scripts/plattform-test-fach-kapital.mjs.
+//
+// Parser (lastgangParsen):
+//  - Trennzeichen ; \t , – Dezimalkomma oder -punkt, BOM, Kopf- und Metadatenzeilen (Zählpunkt, Einheit …)
+//  - Zeitstempel: „TT.MM.JJJJ hh:mm[:ss]“, „TT.MM.JJ“, „JJJJ-MM-TT[T ]hh:mm[:ss]“ mit oder ohne Offset/Z,
+//    Datum und Uhrzeit in getrennten Spalten, Von-/Bis-Spalten (Beginn zählt), Zeitstempel am Intervallende
+//  - Einheit aus Kopf/Metadaten: W, kW, MW (Leistungsmittelwert) bzw. Wh, kWh, MWh (Energie je Intervall), OBIS
+//    1.29.x = Energie je Periode, 1.4.x/1.5.x = Leistung; sonst Vorgabe des Nutzers, sonst Annahme kW (mit Hinweis)
+//  - Zeitumstellung (MEZ/MESZ, EU-Regel – gilt für DE, AT, CH): doppelte Stunde im Oktober wird der Reihe nach
+//    MESZ → MEZ zugeordnet; fehlende Stunde im März ist KEINE Lücke. Enthält die Datei Zeiten aus der
+//    übersprungenen Stunde, ist sie durchgehend in MEZ (Winterzeit) geführt – dann wird so gerechnet.
+//  - Raster 15 min in UTC; Stundenwerte werden auf Viertelstunden verteilt (gleiche Leistung)
+//  - Plausibilisierung: Lücken, doppelte Werte, negative Werte, Ausreißer, Nullphasen
+//
+// Analyse (lastgangAnalyse): Jahresverbrauch (bei < 12 Monaten hochgerechnet), Spitze mit Zeitpunkt,
+// Benutzungsstunden, Grund-/Mittagslast, Wochenprofil (7 × 24), Monate, Lastdauerlinie, Anteil Solarstunden,
+// PV-Deckungspotenzial je Anlagengröße (Viertelstundensimulation mit Regionsertrag und Monatsverteilung aus
+// markt.js, Sonnenstandsprofil wie im Anlagen-Simulator) und Pool-Ersparnis (rechner/reststrom.js).
+
+import { ALLGEMEIN, REGIONEN } from "../../invest/markt.js";
+import { berechneReststrom, LASTPROFILE } from "../../rechner/reststrom.js";
+
+const SLOT_MS = 900000;
+const TAG_MS = 86400000;
+const MAX_ZEILEN = 120000; // > 3 Jahre Viertelstunden
+
+// ---------------------------------------------------------------- Zeit (MEZ/MESZ, EU-Regel)
+
+function letzterSonntagUtc(jahr, monat) {
+  const d = new Date(Date.UTC(jahr, monat + 1, 0));
+  return d.getUTCDate() - d.getUTCDay();
+}
+/** Beginn/Ende der Sommerzeit in UTC-ms (01:00 UTC am letzten Sonntag im März/Oktober) */
+export function sommerzeitGrenzen(jahr) {
+  return { beginn: Date.UTC(jahr, 2, letzterSonntagUtc(jahr, 2), 1), ende: Date.UTC(jahr, 9, letzterSonntagUtc(jahr, 9), 1) };
+}
+/** Versatz Ortszeit – UTC in Stunden für einen UTC-Zeitpunkt */
+export function versatzH(ms) {
+  const { beginn, ende } = sommerzeitGrenzen(new Date(ms).getUTCFullYear());
+  return ms >= beginn && ms < ende ? 2 : 1;
+}
+/** Ortszeit-Bestandteile eines UTC-Zeitpunkts */
+export function ortszeit(ms) {
+  const d = new Date(ms + versatzH(ms) * 3600000);
+  return { jahr: d.getUTCFullYear(), monat: d.getUTCMonth(), tag: d.getUTCDate(), stunde: d.getUTCHours(), minute: d.getUTCMinutes(), wochentag: (d.getUTCDay() + 6) % 7 /* 0 = Mo */, datum: d.toISOString().slice(0, 10) };
+}
+
+/** Lokale Wandzeit → UTC. `zweite` = zweites Auftreten in der doppelten Oktober-Stunde. Liefert {ms, art} */
+function ortszeitZuUtc(j, mo, t, h, mi, { zweite = false, nurMez = false } = {}) {
+  const wand = Date.UTC(j, mo, t, h, mi);
+  if (nurMez) return { ms: wand - 3600000, art: "normal" };
+  const { beginn, ende } = sommerzeitGrenzen(j);
+  // übersprungene Stunde im März: Wandzeit 02:00–02:59 existiert nicht
+  const sprungVon = beginn + 3600000; // 02:00 MEZ-Wandzeit = beginn + 1 h
+  if (wand >= sprungVon && wand < sprungVon + 3600000) return { ms: wand - 3600000, art: "luecke" };
+  // doppelte Stunde im Oktober: Wandzeit 02:00–02:59 existiert zweimal
+  const doppelVon = ende + 3600000; // 02:00 Wandzeit
+  if (wand >= doppelVon && wand < doppelVon + 3600000) return { ms: wand - (zweite ? 3600000 : 7200000), art: "doppelt" };
+  const sommer = wand - 7200000 >= beginn && wand - 7200000 < ende;
+  return { ms: wand - (sommer ? 7200000 : 3600000), art: "normal" };
+}
+
+// ---------------------------------------------------------------- Parser
+
+const RE_DE = /^(\d{1,2})\.(\d{1,2})\.(\d{2}|\d{4})(?:[ T]+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/;
+const RE_ISO = /^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2})(?:\.\d+)?)?)?\s*(Z|[+-]\d{2}:?\d{2})?$/i;
+const RE_ZEIT = /^(\d{1,2}):(\d{2})(?::(\d{2}))?$/;
+
+function datumLesen(s) {
+  const x = s.trim().replace(/^"|"$/g, "");
+  let m = RE_DE.exec(x);
+  if (m) {
+    const j = m[3].length === 2 ? 2000 + Number(m[3]) : Number(m[3]);
+    return { j, mo: Number(m[2]) - 1, t: Number(m[1]), h: m[4] !== undefined ? Number(m[4]) : null, mi: m[5] !== undefined ? Number(m[5]) : null, offset: null };
+  }
+  m = RE_ISO.exec(x);
+  if (m) {
+    let offset = null;
+    if (m[7]) offset = m[7].toUpperCase() === "Z" ? 0 : (m[7][0] === "-" ? -1 : 1) * (Number(m[7].slice(1, 3)) * 60 + Number(m[7].slice(-2)));
+    return { j: Number(m[1]), mo: Number(m[2]) - 1, t: Number(m[3]), h: m[4] !== undefined ? Number(m[4]) : null, mi: m[5] !== undefined ? Number(m[5]) : null, offset };
+  }
+  return null;
+}
+function zeitLesen(s) {
+  const m = RE_ZEIT.exec(s.trim().replace(/^"|"$/g, ""));
+  return m ? { h: Number(m[1]), mi: Number(m[2]) } : null;
+}
+function zahlLesen(s) {
+  let x = String(s).trim().replace(/^"|"$/g, "").replace(/\s/g, "");
+  if (!x || !/^[+-]?[\d.,]+(e[+-]?\d+)?$/i.test(x)) return null;
+  if (x.includes(",") && x.includes(".")) x = x.lastIndexOf(",") > x.lastIndexOf(".") ? x.replace(/\./g, "").replace(",", ".") : x.replace(/,/g, "");
+  else if (x.includes(",")) x = x.replace(",", ".");
+  const n = Number(x);
+  return Number.isFinite(n) ? n : null;
+}
+
+/** Einheit aus einem Text (Kopf, Metadaten) erkennen */
+export function einheitErkennen(text) {
+  const t = String(text || "").toLowerCase();
+  if (/1[.-]29\.\d|1-1:1\.29|\b[12]\.8\.\d\s*\(delta|energie je (periode|intervall)/.test(t)) return "kWh";
+  if (/1[.-][45]\.\d|1-1:1\.[45]\b/.test(t)) return "kW";
+  if (/\bmwh\b/.test(t)) return "MWh";
+  if (/\bkwh\b/.test(t)) return "kWh";
+  if (/(^|[^k])\bwh\b/.test(t)) return "Wh";
+  if (/\bmw\b/.test(t)) return "MW";
+  if (/\bkw\b/.test(t)) return "kW";
+  if (/\[w\]|\(w\)|\bin w\b|\bwatt\b/.test(t)) return "W";
+  return null;
+}
+const EINHEITEN = { W: { energie: false, faktor: 0.001 }, kW: { energie: false, faktor: 1 }, MW: { energie: false, faktor: 1000 }, Wh: { energie: true, faktor: 0.001 }, kWh: { energie: true, faktor: 1 }, MWh: { energie: true, faktor: 1000 } };
+export const EINHEIT_IDS = Object.keys(EINHEITEN);
+
+function trennzeichen(zeilen) {
+  const probe = zeilen.slice(0, 40).join("\n");
+  const zaehl = (c) => probe.split(c).length - 1;
+  const s = zaehl(";");
+  const t = zaehl("\t");
+  if (s >= Math.max(t, 1)) return ";";
+  if (t >= 1) return "\t";
+  return ",";
+}
+
+function feldSplit(zeile, sep) {
+  if (!zeile.includes('"')) return zeile.split(sep);
+  const out = [];
+  let akt = "";
+  let inQ = false;
+  for (const c of zeile) {
+    if (c === '"') inQ = !inQ;
+    else if (c === sep && !inQ) {
+      out.push(akt);
+      akt = "";
+    } else akt += c;
+  }
+  out.push(akt);
+  return out;
+}
+
+/**
+ * CSV-Text eines Lastgangs parsen.
+ * @param {string} text
+ * @param {{einheit?: string}} optionen einheit = Vorgabe des Nutzers (W|kW|MW|Wh|kWh|MWh), überschreibt die Erkennung
+ * @returns {{ok, fehler?, startMs, kw: number[] (NaN = Lücke), n, intervallMin, einheit, einheitQuelle, zeitbasis, hinweise, statistik}}
+ */
+export function lastgangParsen(text, { einheit: vorgabe = null } = {}) {
+  const roh = String(text || "").replace(/^﻿/, "");
+  const zeilen = roh.split(/\r?\n/).map((z) => z.trimEnd()).filter((z) => z.trim());
+  if (zeilen.length < 10) return { ok: false, fehler: "Die Datei enthält zu wenige Zeilen für einen Lastgang." };
+  if (zeilen.length > MAX_ZEILEN) return { ok: false, fehler: `Die Datei ist zu groß (mehr als ${MAX_ZEILEN.toLocaleString("de-DE")} Zeilen). Bitte höchstens drei Jahre hochladen.` };
+  const sep = trennzeichen(zeilen);
+  const hinweise = [];
+
+  // Kopf- und Metadatenzeilen sammeln (alles vor der ersten Datenzeile)
+  let kopf = "";
+  let kopfFelder = null;
+  let erste = -1;
+  for (let i = 0; i < Math.min(zeilen.length, 60); i++) {
+    const f = feldSplit(zeilen[i], sep);
+    if (datumLesen(f[0] || "") && f.slice(1).some((x) => zahlLesen(x) !== null)) {
+      erste = i;
+      break;
+    }
+    kopf += ` ${zeilen[i]}`;
+    if (f.length >= 2) kopfFelder = f.map((x) => x.trim().replace(/^"|"$/g, ""));
+  }
+  if (erste < 0) return { ok: false, fehler: "Keine Datenzeilen erkannt. Erwartet: Datum/Uhrzeit in der ersten Spalte und ein Messwert (z. B. „01.01.2025 00:15;12,5“)." };
+
+  // Spaltenaufbau aus der ersten Datenzeile
+  const probe = feldSplit(zeilen[erste], sep).map((x) => x.trim());
+  const d0 = datumLesen(probe[0]);
+  let zeitSpalte = -1;
+  let endeSpalte = -1;
+  let spalte = 1;
+  if (d0.h === null) {
+    if (zeitLesen(probe[1] || "")) {
+      zeitSpalte = 1;
+      spalte = 2;
+      if (zeitLesen(probe[2] || "")) {
+        endeSpalte = 2;
+        spalte = 3;
+      }
+    } else return { ok: false, fehler: "Uhrzeit fehlt – erwartet wird ein Viertelstunden- oder Stundenwert je Zeile." };
+  } else if (probe[1] && datumLesen(probe[1])?.h !== null && datumLesen(probe[1])) {
+    endeSpalte = 1; // Von-/Bis-Zeitstempel
+    spalte = 2;
+  } else if (zeitLesen(probe[1] || "")) {
+    endeSpalte = 1; // „01.01.2025 00:00;00:15;Wert“
+    spalte = 2;
+  }
+  // Wertspalte: Kopf mit Einheit/Stichwort bevorzugen, sonst erste Zahl nach den Zeitspalten
+  let wertSpalte = -1;
+  if (kopfFelder) {
+    const idx = kopfFelder.findIndex((k, i) => i >= spalte && /(kwh|kw|mwh|\bmw\b|\bwh\b|\bw\b|wert|leistung|verbrauch|energie|bezug|1\.29|1\.5\.0|1\.4\.0)/i.test(k));
+    if (idx >= 0 && zahlLesen(probe[idx] ?? "") !== null) wertSpalte = idx;
+  }
+  if (wertSpalte < 0) wertSpalte = probe.findIndex((x, i) => i >= spalte && zahlLesen(x) !== null);
+  if (wertSpalte < 0) return { ok: false, fehler: "Keine Messwert-Spalte gefunden." };
+
+  // Einheit
+  const kopfEinheit = kopfFelder?.[wertSpalte] ? einheitErkennen(kopfFelder[wertSpalte]) || einheitErkennen(kopf) : einheitErkennen(kopf);
+  let einheit = kopfEinheit;
+  let einheitQuelle = kopfEinheit ? "datei" : "annahme";
+  if (vorgabe && EINHEITEN[vorgabe]) {
+    if (kopfEinheit && kopfEinheit !== vorgabe) hinweise.push({ stufe: "warnung", text: `In der Datei steht „${kopfEinheit}“, gewählt wurde „${vorgabe}“ – es wird mit „${vorgabe}“ gerechnet.` });
+    einheit = vorgabe;
+    einheitQuelle = "vorgabe";
+  }
+  if (!einheit) {
+    einheit = "kW";
+    hinweise.push({ stufe: "warnung", text: "Einheit nicht erkannt – die Werte werden als Leistungsmittelwerte in kW gelesen. Wählen Sie sonst die Einheit aus (z. B. kWh je Viertelstunde)." });
+  }
+  const endeBeschriftet = /\b(bis|ende|intervallende|end)\b/i.test(kopfFelder?.[0] || "") && endeSpalte < 0;
+
+  // Zeilen lesen (Ortszeit oder mit Offset)
+  const roheWerte = [];
+  let fehlerZeilen = 0;
+  for (let i = erste; i < zeilen.length; i++) {
+    const f = feldSplit(zeilen[i], sep);
+    const d = datumLesen(f[0] || "");
+    const w = zahlLesen(f[wertSpalte] ?? "");
+    if (!d || w === null) {
+      fehlerZeilen++;
+      continue;
+    }
+    let h = d.h;
+    let mi = d.mi;
+    if (zeitSpalte >= 0) {
+      const z = zeitLesen(f[zeitSpalte] || "");
+      if (!z) {
+        fehlerZeilen++;
+        continue;
+      }
+      h = z.h;
+      mi = z.mi;
+    }
+    if (h === 24 && mi === 0) {
+      // 24:00 = Intervallende am Tagesende
+      const n = new Date(Date.UTC(d.j, d.mo, d.t + 1));
+      roheWerte.push({ j: n.getUTCFullYear(), mo: n.getUTCMonth(), t: n.getUTCDate(), h: 0, mi: 0, offset: d.offset, w });
+    } else roheWerte.push({ j: d.j, mo: d.mo, t: d.t, h, mi, offset: d.offset, w });
+  }
+  if (roheWerte.length < 96) return { ok: false, fehler: "Zu wenige gültige Messwerte (mindestens ein Tag in Viertelstunden)." };
+  if (fehlerZeilen > roheWerte.length * 0.05) hinweise.push({ stufe: "warnung", text: `${fehlerZeilen} Zeilen konnten nicht gelesen werden und wurden übersprungen.` });
+
+  // Zeitbasis: Datei mit Offsets → exakt; sonst MEZ/MESZ. Zeiten aus der übersprungenen März-Stunde → durchgehend MEZ.
+  const mitOffset = roheWerte.every((r) => r.offset !== null);
+  let nurMez = false;
+  if (!mitOffset) {
+    for (const r of roheWerte) {
+      const { art } = ortszeitZuUtc(r.j, r.mo, r.t, r.h, r.mi);
+      if (art === "luecke") {
+        nurMez = true;
+        break;
+      }
+    }
+  }
+
+  // Intervall erkennen (Median der Abstände der Wandzeiten)
+  const wand = roheWerte.slice(0, 2000).map((r) => Date.UTC(r.j, r.mo, r.t, r.h, r.mi));
+  const abst = [];
+  for (let i = 1; i < wand.length; i++) if (wand[i] > wand[i - 1]) abst.push(wand[i] - wand[i - 1]);
+  abst.sort((a, b) => a - b);
+  const median = abst[Math.floor(abst.length / 2)] || SLOT_MS;
+  const intervallMin = Math.round(median / 60000);
+  if (![15, 30, 60].includes(intervallMin)) return { ok: false, fehler: `Zeitraster ${intervallMin} Minuten wird nicht unterstützt (erwartet 15 oder 60 Minuten).` };
+  const intervallMs = intervallMin * 60000;
+
+  // Intervallende-Beschriftung: erster Wert eines Tages bei 00:15 (bzw. 01:00) → um ein Intervall zurück
+  const tagesbeginn = roheWerte.find((r, i) => i > 0 && r.t !== roheWerte[i - 1].t);
+  const endeZeit = endeBeschriftet || (tagesbeginn && tagesbeginn.h * 60 + tagesbeginn.mi === intervallMin) || (roheWerte[0].h * 60 + roheWerte[0].mi === intervallMin && roheWerte.some((r) => r.h === 0 && r.mi === 0));
+  if (endeZeit) hinweise.push({ stufe: "info", text: "Zeitstempel bezeichnen das Intervallende – die Werte wurden dem jeweiligen Intervallbeginn zugeordnet." });
+
+  // In UTC umrechnen; doppelte Oktober-Stunde der Reihe nach zuordnen
+  const e = EINHEITEN[einheit];
+  const umrechnung = e.energie ? e.faktor * (60 / intervallMin) : e.faktor; // → kW
+  const gesehen = new Set();
+  const punkte = [];
+  let dstDoppelt = 0;
+  let dstLuecke = 0;
+  const dstTage = new Set();
+  for (const r of roheWerte) {
+    let ms;
+    if (mitOffset) ms = Date.UTC(r.j, r.mo, r.t, r.h, r.mi) - r.offset * 60000;
+    else {
+      const key = `${r.j}-${r.mo}-${r.t}-${r.h}-${r.mi}`;
+      const zweite = gesehen.has(key);
+      gesehen.add(key);
+      const u = ortszeitZuUtc(r.j, r.mo, r.t, r.h, r.mi, { zweite, nurMez });
+      ms = u.ms;
+      if (u.art === "doppelt") {
+        dstTage.add(`${r.j}-${String(r.mo + 1).padStart(2, "0")}-${String(r.t).padStart(2, "0")}`);
+        if (zweite) dstDoppelt++;
+      }
+    }
+    if (endeZeit) ms -= intervallMs;
+    punkte.push({ ms, kw: r.w * umrechnung });
+  }
+  punkte.sort((a, b) => a.ms - b.ms);
+  // Zählerstände statt Intervallwerte? (nahezu monoton steigend und stark anwachsend)
+  if (punkte.length > 200) {
+    let steigend = 0;
+    for (let i = 1; i < punkte.length; i++) if (punkte[i].kw >= punkte[i - 1].kw) steigend++;
+    const erster = punkte[0].kw;
+    const letzter = punkte[punkte.length - 1].kw;
+    if (steigend / (punkte.length - 1) > 0.98 && letzter > Math.max(1, erster) * 1.2 && letzter - erster > 100) {
+      return { ok: false, fehler: "Die Datei enthält offenbar Zählerstände (fortlaufend steigend) statt Viertelstundenwerten. Bitte den Lastgang (Leistung bzw. Energie je Intervall) exportieren." };
+    }
+  }
+  if (!mitOffset && !nurMez) {
+    // Sommerzeitbeginn im Zeitraum: fehlende Stunde ist erwartet (keine Lücke)
+    const jahre = new Set(punkte.map((p) => new Date(p.ms).getUTCFullYear()));
+    for (const j of jahre) {
+      const { beginn } = sommerzeitGrenzen(j);
+      if (punkte[0].ms < beginn && punkte[punkte.length - 1].ms > beginn) {
+        dstLuecke++;
+        dstTage.add(new Date(beginn).toISOString().slice(0, 10));
+      }
+    }
+  }
+  const start = Math.floor(punkte[0].ms / SLOT_MS) * SLOT_MS;
+  const ende = Math.floor(punkte[punkte.length - 1].ms / SLOT_MS) * SLOT_MS + intervallMs;
+  const n = Math.round((ende - start) / SLOT_MS);
+  if (n > 3 * 366 * 96 + 96) return { ok: false, fehler: "Zeitraum länger als drei Jahre – bitte kürzen." };
+  const kw = new Array(n).fill(NaN);
+  let doppelt = 0;
+  const jeSlot = intervallMin / 15;
+  for (const p of punkte) {
+    const i0 = Math.round((p.ms - start) / SLOT_MS);
+    for (let k = 0; k < jeSlot; k++) {
+      const i = i0 + k;
+      if (i < 0 || i >= n) continue;
+      if (!Number.isNaN(kw[i])) {
+        if (k === 0) doppelt++;
+        continue;
+      }
+      kw[i] = p.kw;
+    }
+  }
+
+  // Plausibilisierung
+  const gueltig = kw.filter((x) => !Number.isNaN(x));
+  const luecken = n - gueltig.length;
+  const negativ = gueltig.filter((x) => x < 0).length;
+  const sortiert = [...gueltig].sort((a, b) => a - b);
+  const med = sortiert[Math.floor(sortiert.length / 2)] || 0;
+  const ausreisser = med > 0 ? gueltig.filter((x) => x > med * 25).length : 0;
+  let nullLauf = 0;
+  let maxNull = 0;
+  for (const x of kw) {
+    if (x === 0) maxNull = Math.max(maxNull, ++nullLauf);
+    else nullLauf = 0;
+  }
+  if (luecken) hinweise.push({ stufe: luecken > n * 0.02 ? "warnung" : "info", text: `${luecken.toLocaleString("de-DE")} Viertelstunden fehlen (${((luecken / n) * 100).toLocaleString("de-DE", { maximumFractionDigits: 1 })} %) – sie werden in der Analyse nicht mitgerechnet, der Jahresverbrauch wird hochgerechnet.` });
+  if (doppelt) hinweise.push({ stufe: "warnung", text: `${doppelt} doppelte Zeitstempel außerhalb der Zeitumstellung – jeweils der erste Wert wurde verwendet.` });
+  if (negativ) hinweise.push({ stufe: "warnung", text: `${negativ} negative Werte – enthält die Datei Einspeisung? Für den Reststrom zählt nur der Bezug.` });
+  if (ausreisser) hinweise.push({ stufe: "warnung", text: `${ausreisser} Werte über dem 25-Fachen des Medians – Einheit (W statt kW?) oder Messfehler prüfen.` });
+  if (maxNull >= 96 * 3) hinweise.push({ stufe: "info", text: `Längste Phase ohne Verbrauch: ${Math.round(maxNull / 96)} Tage (Betriebsruhe oder Messausfall?).` });
+  if (nurMez) hinweise.push({ stufe: "info", text: "Die Datei ist durchgehend in Winterzeit (MEZ) geführt – so wurde gerechnet." });
+  if (mitOffset) hinweise.push({ stufe: "info", text: "Zeitstempel mit Zeitzonenangabe erkannt – exakte Zuordnung ohne Zeitumstellungsregel." });
+  else if (!nurMez && dstTage.size) hinweise.push({ stufe: "info", text: `Zeitumstellung berücksichtigt (${[...dstTage].sort().map((t) => t.split("-").reverse().join(".")).join(", ")}).` });
+
+  return {
+    ok: true,
+    startMs: start,
+    n,
+    kw,
+    intervallMin,
+    einheit,
+    einheitQuelle,
+    zeitbasis: mitOffset ? "offset" : nurMez ? "mez" : "mez_mesz",
+    hinweise,
+    statistik: { zeilen: roheWerte.length, fehlerZeilen, luecken, doppelt, dstDoppelt, dstLuecke, negativ, ausreisser, maxNullTage: Math.round(maxNull / 96) },
+  };
+}
+
+// ---------------------------------------------------------------- PV-Simulation (typisches Jahr)
+
+const REGION_GEO = { "de-nord": [53.6, 10], "de-ost": [51.8, 12.5], "de-west": [50.7, 7.5], "de-sued": [48.4, 10.9], at: [47.9, 13.8], ch: [47.2, 8.0] };
+const profilCache = new Map();
+/** Sonnenstandsprofil eines UTC-Tages (96 Gewichte, Summe 1) – wie im Anlagen-Simulator */
+function sonnenprofil(regionId, doy) {
+  const k = `${regionId}|${doy}`;
+  if (profilCache.has(k)) return profilCache.get(k);
+  const [lat, lon] = REGION_GEO[regionId] || REGION_GEO["de-sued"];
+  const phi = (lat * Math.PI) / 180;
+  const dekl = ((23.44 * Math.PI) / 180) * Math.sin((2 * Math.PI * (284 + doy)) / 365);
+  const w = new Float64Array(96);
+  let s = 0;
+  for (let i = 0; i < 96; i++) {
+    const utcH = (i + 0.5) * 0.25;
+    const ha = ((utcH + lon / 15 - 12) * 15 * Math.PI) / 180;
+    const sinEl = Math.sin(phi) * Math.sin(dekl) + Math.cos(phi) * Math.cos(dekl) * Math.cos(ha);
+    w[i] = sinEl > 0.02 ? sinEl : 0; // Dach/Gewerbe: breites Profil
+    s += w[i];
+  }
+  if (s > 0) for (let i = 0; i < 96; i++) w[i] /= s;
+  profilCache.set(k, w);
+  return w;
+}
+
+/** PV-Leistung (kW) je Viertelstunde für das Raster eines Lastgangs; spezErtrag in kWh/kWp·a */
+export function pvReihe(startMs, n, kwp, { regionId = "de-sued", spezErtrag } = {}) {
+  const region = REGIONEN.find((r) => r.id === regionId) || REGIONEN[3];
+  const jahr = kwp * (spezErtrag || Math.round(region.ertrag * 0.9)); // Gewerbedach: ~ 90 % des Freiflächen-Richtwerts
+  const out = new Float64Array(n);
+  for (let i = 0; i < n; i++) {
+    const ms = startMs + i * SLOT_MS;
+    const d = new Date(ms);
+    const tag0 = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+    const doy = Math.floor((tag0 - Date.UTC(d.getUTCFullYear(), 0, 1)) / TAG_MS) + 1;
+    const tageMonat = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate();
+    const tagKwh = (jahr * (ALLGEMEIN.pvMonatsanteile?.[d.getUTCMonth()] ?? 1 / 12)) / tageMonat;
+    const slot = Math.floor((ms - tag0) / SLOT_MS);
+    out[i] = Math.min(kwp * 0.85, (tagKwh * sonnenprofil(regionId, doy)[slot]) / 0.25);
+  }
+  return out;
+}
+
+// ---------------------------------------------------------------- Analyse
+
+function quantil(sortiert, q) {
+  if (!sortiert.length) return 0;
+  const i = Math.min(sortiert.length - 1, Math.max(0, Math.round(q * (sortiert.length - 1))));
+  return sortiert[i];
+}
+const rund = (x, s = 0) => Math.round(x * 10 ** s) / 10 ** s;
+
+/**
+ * Analyse eines geparsten Lastgangs.
+ * @param {object} g Ergebnis von lastgangParsen (ok)
+ * @param {{regionId?, pvKwp?, bestandPvKwp?, preisCt?, produzierend?}} o
+ */
+export function lastgangAnalyse(g, { regionId = "de-sued", pvKwp = null, bestandPvKwp = 0, preisCt = 20, produzierend = false } = {}) {
+  const { kw, startMs, n } = g;
+  const woche = Array.from({ length: 7 }, () => new Array(24).fill(0));
+  const wocheN = Array.from({ length: 7 }, () => new Array(24).fill(0));
+  const monate = new Array(12).fill(0);
+  const monateN = new Array(12).fill(0);
+  let summeKwh = 0;
+  let gueltig = 0;
+  let spitze = -Infinity;
+  let spitzeMs = startMs;
+  let solarKwh = 0;
+  let wochenendeKwh = 0;
+  let mittagSumme = 0;
+  let mittagN = 0;
+  const werte = [];
+  for (let i = 0; i < n; i++) {
+    const x = kw[i];
+    if (Number.isNaN(x)) continue;
+    const v = Math.max(0, x);
+    const ms = startMs + i * SLOT_MS;
+    const o = ortszeit(ms);
+    gueltig++;
+    summeKwh += v / 4;
+    werte.push(v);
+    if (v > spitze) {
+      spitze = v;
+      spitzeMs = ms;
+    }
+    woche[o.wochentag][o.stunde] += v;
+    wochenN_add(wocheN, o.wochentag, o.stunde);
+    monate[o.monat] += v / 4;
+    monateN[o.monat]++;
+    if (o.stunde >= 8 && o.stunde < 17) solarKwh += v / 4;
+    if (o.wochentag >= 5) wochenendeKwh += v / 4;
+    if (o.wochentag < 5 && o.stunde >= 11 && o.stunde < 14) {
+      mittagSumme += v;
+      mittagN++;
+    }
+  }
+  const tageAbgedeckt = gueltig / 96;
+  const faktorJahr = tageAbgedeckt > 0 ? 365 / tageAbgedeckt : 0;
+  const jahresKwh = summeKwh * faktorJahr;
+  werte.sort((a, b) => a - b);
+  const grundlast = quantil(werte, 0.05);
+  const benutzungsstunden = spitze > 0 ? jahresKwh / spitze : 0;
+  const tagAnteil = summeKwh > 0 ? solarKwh / summeKwh : 0;
+  const mittagslast = mittagN ? mittagSumme / mittagN : 0;
+  const profil = LASTPROFILE.reduce((best, p) => (Math.abs(p.tag - tagAnteil) < Math.abs(best.tag - tagAnteil) ? p : best), LASTPROFILE[0]);
+  const lastdauer = Array.from({ length: 21 }, (_, k) => rund(quantil(werte, 1 - k / 20), 1));
+
+  // PV-Deckungspotenzial: Varianten je Anlagengröße (Vielfache der Mittagslast) plus gewünschte Größe
+  const basis = Math.max(10, mittagslast);
+  const groessen = [...new Set([0.5, 1, 1.5, 2].map((f) => Math.max(10, Math.round((basis * f) / 10) * 10)).concat(pvKwp > 0 ? [Math.round(pvKwp)] : []))].sort((a, b) => a - b);
+  const pv = groessen.map((kwp) => {
+    const reihe = pvReihe(startMs, n, kwp, { regionId });
+    let erzeugt = 0;
+    let ev = 0;
+    for (let i = 0; i < n; i++) {
+      if (Number.isNaN(kw[i])) continue;
+      erzeugt += reihe[i] / 4;
+      ev += Math.min(reihe[i], Math.max(0, kw[i])) / 4;
+    }
+    erzeugt *= faktorJahr;
+    ev *= faktorJahr;
+    return { kwp, erzeugungKwh: Math.round(erzeugt), eigenverbrauchKwh: Math.round(ev), evQuote: erzeugt > 0 ? rund(ev / erzeugt, 3) : 0, autarkie: jahresKwh > 0 ? rund(ev / jahresKwh, 3) : 0 };
+  });
+  // Empfehlung: größte Variante mit Eigenverbrauchsquote ≥ 70 %
+  const empfehlung = [...pv].reverse().find((x) => x.evQuote >= 0.7) || pv[0];
+  const gewaehlt = pvKwp > 0 ? pv.find((x) => x.kwp === Math.round(pvKwp)) : empfehlung;
+
+  // Pool-Ersparnis auf den Reststrom (nach der gewählten bzw. empfohlenen PV)
+  const reststromKwh = Math.max(0, jahresKwh - (gewaehlt?.eigenverbrauchKwh || 0));
+  const pool = berechneReststrom({ verbrauchMwh: reststromKwh / 1000, preisCt, profil: profil.id, pvKwp: 0, pvBestand: true, produzierend });
+
+  return {
+    zeitraum: { von: new Date(startMs).toISOString(), bis: new Date(startMs + n * SLOT_MS).toISOString(), tage: rund(tageAbgedeckt, 1), hochgerechnet: tageAbgedeckt < 360, abdeckung: rund(gueltig / n, 3) },
+    verbrauchKwh: Math.round(summeKwh),
+    jahresverbrauchKwh: Math.round(jahresKwh),
+    spitzeKw: rund(spitze, 1),
+    spitzeAm: new Date(spitzeMs).toISOString(),
+    spitzeOrtszeit: (() => {
+      const o = ortszeit(spitzeMs);
+      return `${o.datum.split("-").reverse().join(".")} ${String(o.stunde).padStart(2, "0")}:${String(o.minute).padStart(2, "0")}`;
+    })(),
+    benutzungsstunden: Math.round(benutzungsstunden),
+    grundlastKw: rund(grundlast, 1),
+    mittagslastKw: rund(mittagslast, 1),
+    mittelKw: rund(gueltig ? (summeKwh * 4) / gueltig : 0, 1),
+    tagAnteil: rund(tagAnteil, 3),
+    wochenendeAnteil: rund(summeKwh ? wochenendeKwh / summeKwh : 0, 3),
+    lastprofil: { id: profil.id, label: profil.label },
+    wochenprofil: woche.map((r, t) => r.map((s, h) => rund(wocheN[t][h] ? s / wocheN[t][h] : 0, 1))),
+    monate: monate.map((m, i) => ({ monat: i + 1, kwh: Math.round(m), vollstaendig: monateN[i] >= 26 * 96 })),
+    lastdauerlinie: lastdauer,
+    pv: { varianten: pv, empfehlungKwp: empfehlung?.kwp || null, gewaehltKwp: gewaehlt?.kwp || null, regionId, bestandKwp: bestandPvKwp || 0 },
+    pool: {
+      reststromKwh: Math.round(reststromKwh),
+      preisCt,
+      ersparnisEurMin: Math.round(pool.gesamt.eurMin),
+      ersparnisEurMax: Math.round(pool.gesamt.eurMax),
+      ctMin: rund(pool.gesamt.ctMin, 2),
+      ctMax: rund(pool.gesamt.ctMax, 2),
+      stromsteuerEur: pool.stromsteuer ? Math.round(pool.stromsteuer.eur) : null,
+      preisUnplausibel: pool.preisUnplausibel,
+      klein: pool.klein,
+    },
+  };
+}
+function wochenN_add(m, t, h) {
+  m[t][h]++;
+}
+
+/** Kompakte Zusammenfassung für Vorgang/Angebotsanfrage (flach, ≤ 60 Felder) */
+export function analyseKurz(a) {
+  return {
+    jahresverbrauchKwh: a.jahresverbrauchKwh,
+    spitzeKw: a.spitzeKw,
+    benutzungsstunden: a.benutzungsstunden,
+    grundlastKw: a.grundlastKw,
+    mittagslastKw: a.mittagslastKw,
+    tagAnteilPct: Math.round(a.tagAnteil * 100),
+    lastprofil: a.lastprofil.label,
+    pvEmpfehlungKwp: a.pv.empfehlungKwp,
+    reststromKwh: a.pool.reststromKwh,
+    poolErsparnisEur: `${a.pool.ersparnisEurMin}–${a.pool.ersparnisEurMax}`,
+    zeitraumTage: a.zeitraum.tage,
+  };
+}
+// src/lib/plattform/backend/fach.js
+//
+// Backend-Teil „Fachprüfung Kapitalseite“ (eigene Schnittstelle, backend/index.js bleibt unverändert). Auswahl wie
+// backend(): Frappe bei PLATTFORM_BACKEND=frappe, sonst Demo (503 im Produktions-Build ohne PLATTFORM_DEMO=1).
+// Vertrag: docs/API.md, Abschnitt 11. Datenblatt, LOI und Suchprofil laufen über die bestehenden Operationen
+// (projektAendern, statusWechsel, suchprofilSpeichern) – hier nur die neuen Bereiche.
+//
+// Operationen (n = angemeldeter Nutzer):
+//   Energie:    energieDaten(n,{nutzerId?}) · abnahmestelleSpeichern(n,{id?,daten}) · abnahmestelleLoeschen(n,id)
+//               lastgangHochladen(n,{name,inhalt,einheit?,abnahmestelleId?,parameter?}) · lastgangNeuRechnen(n,id,parameter)
+//               lastgangLoeschen(n,id) · lastgangAnfrage(n,id,{nachricht,ip})
+//   Mitglied:   egTeilnahmeSpeichern(n,daten) · genoInteresseSpeichern(n,daten,{ip})
+//   Bewertung:  bewertung(n,projektId) · szenarioSpeichern(n,projektId,{name,eingaben}) · szenarioLoeschen(n,id)
+//
+// Nur serverseitig verwenden.
+
+import * as demo from "./demo/fach";
+import * as frappe from "./frappe/fach";
+import { backendName, KONFIG_FEHLER } from "./index";
+import { PlattformFehler } from "../fehler";
+
+export const FACH_OPERATIONEN = [
+  "energieDaten", "abnahmestelleSpeichern", "abnahmestelleLoeschen", "lastgangHochladen", "lastgangNeuRechnen", "lastgangLoeschen", "lastgangAnfrage",
+  "egTeilnahmeSpeichern", "genoInteresseSpeichern", "bewertung", "szenarioSpeichern", "szenarioLoeschen",
+];
+
+if (process.env.NODE_ENV !== "production") {
+  for (const [name, impl] of [["demo", demo], ["frappe", frappe]]) {
+    const fehlt = FACH_OPERATIONEN.filter((op) => typeof impl[op] !== "function");
+    if (fehlt.length) console.warn(`[plattform] Fach ${name}: fehlende Operationen ${fehlt.join(", ")}`);
+  }
+}
+
+export function fachBackend() {
+  const n = backendName();
+  if (n === "frappe") return frappe;
+  if (n === "demo") return demo;
+  throw new PlattformFehler(503, KONFIG_FEHLER);
+}

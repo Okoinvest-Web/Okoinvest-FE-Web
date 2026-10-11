@@ -1,0 +1,27 @@
+<template>
+  <FrappeUIProvider>
+    <!-- Sprunglink: erste Station beim Tabben, führt an der Navigation
+         vorbei direkt in den Inhalt. -->
+    <a href="#inhalt" class="sr-only sprunglink">Zum Inhalt springen</a>
+
+    <!-- Leitstand-Screens laufen ohne Rahmen: keine Navigation, keine
+         Bedienelemente, nur die Anzeige (Fachkonzept 2.16). -->
+    <RouterView v-if="$route.meta.fullscreen" :key="ui.mandant" />
+    <AppLayout v-else>
+      <!-- Der Schlüssel erzwingt einen Neuaufbau beim Mandantenwechsel –
+           sonst zeigen die Seiten weiter die zuvor geladenen Daten. -->
+      <div id="inhalt">
+        <RouterView :key="ui.mandant" />
+      </div>
+    </AppLayout>
+    <Dialogs />
+  </FrappeUIProvider>
+</template>
+
+<script setup>
+import { Dialogs, FrappeUIProvider } from 'frappe-ui'
+import AppLayout from '@/components/AppLayout.vue'
+import { useUiStore } from '@/stores/ui'
+
+const ui = useUiStore()
+</script>

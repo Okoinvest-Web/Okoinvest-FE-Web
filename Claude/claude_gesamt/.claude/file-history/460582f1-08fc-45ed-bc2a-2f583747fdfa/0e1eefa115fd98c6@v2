@@ -1,0 +1,256 @@
+import re
+from docx import Document
+from docx.shared import Pt, RGBColor, Cm
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+
+ACCENT = RGBColor(0x1F, 0x3A, 0x5F)
+GREY = RGBColor(0x5F, 0x5F, 0x5F)
+PH = RGBColor(0xC0, 0x00, 0x00)
+RED = RGBColor(0xB0, 0x00, 0x00)
+WHO = "[Name], Geschäftsführer der ÖKOVOLT GmbH Solartechnik"
+UNSCHULD = "Es gilt die Unschuldsvermutung."
+ABOUT = ("Über ÖKOVOLT: Die ÖKOVOLT GmbH Solartechnik mit Sitz in Türkheim (Landkreis Unterallgäu) plant und errichtet "
+         "Photovoltaik-Großanlagen für Gewerbe und Industrie. [Gründungsjahr, Mitarbeiterzahl Deutschland, Referenzen]")
+KONTAKT = "Pressekontakt: [Name, Funktion] · ÖKOVOLT GmbH Solartechnik · [Adresse Türkheim] · [Telefon] · [E-Mail]"
+
+
+def add(p, text, bold=False, size=None, color=None, italic=False):
+    for part in re.split(r"(\[[^\]]+\])", text):
+        if not part:
+            continue
+        r = p.add_run(part)
+        r.bold, r.italic = bold, italic
+        if size:
+            r.font.size = Pt(size)
+        if part.startswith("["):
+            r.font.color.rgb, r.bold = PH, True
+        elif color:
+            r.font.color.rgb = color
+    return p
+
+
+class PM:
+    def __init__(self, title, sub, kopf="PRESSEMITTEILUNG", note=None):
+        self.d = Document()
+        s = self.d.sections[0]
+        s.left_margin = s.right_margin = Cm(2.3)
+        s.top_margin = s.bottom_margin = Cm(1.8)
+        n = self.d.styles["Normal"]
+        n.font.name = "Calibri"
+        n.font.size = Pt(11)
+        n.paragraph_format.space_after = Pt(8)
+        n.paragraph_format.line_spacing = 1.18
+        if note:
+            add(self.d.add_paragraph(), note, bold=True, size=9, color=RED)
+        add(self.d.add_paragraph(), f"{kopf}  |  Türkheim, [Datum]", bold=True, size=9, color=ACCENT)
+        p = add(self.d.add_paragraph(), title, bold=True, size=19)
+        p.paragraph_format.space_after = Pt(4)
+        p = add(self.d.add_paragraph(), sub, italic=True, size=11.5, color=GREY)
+        p.paragraph_format.space_after = Pt(12)
+
+    def para(self, t, **kw):
+        p = add(self.d.add_paragraph(), t, **kw)
+        p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+
+    def lead(self, t):
+        self.para(t, bold=True)
+
+    def h(self, t):
+        p = add(self.d.add_paragraph(), t, bold=True, size=11.5, color=ACCENT)
+        p.paragraph_format.space_before = Pt(6)
+        p.paragraph_format.space_after = Pt(2)
+        p.paragraph_format.keep_with_next = True
+
+    def bullets(self, items):
+        for b in items:
+            add(self.d.add_paragraph(style="List Bullet"), b)
+
+    def quote(self, t, who=WHO):
+        p = self.d.add_paragraph()
+        p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+        add(p, f"„{t}“", bold=True, color=ACCENT)
+        add(p, f", sagt {who}.")
+
+    def save(self, docs, fn):
+        if docs:
+            p = add(self.d.add_paragraph(), f"{docs} stellt ÖKOVOLT Medienvertreterinnen und -vertretern auf Anfrage zur "
+                    "Verfügung.", italic=True, size=9.5)
+            p.paragraph_format.space_before = Pt(10)
+        add(self.d.add_paragraph(), ABOUT, size=9, color=GREY)
+        add(self.d.add_paragraph(), KONTAKT, size=9, color=GREY)
+        self.d.save(fn)
+        print(f"{len(' '.join(p.text for p in self.d.paragraphs).split()):4d} Woerter  {fn}")
+
+
+# =====================================================================
+# D2 – PARTNER AUF DEM PAPIER (Wirtschaftspresse)
+# =====================================================================
+r = PM("Partner auf dem Papier: Wie ein österreichischer Staatskonzern am Tag der Beteiligung seine eigene Konkurrenz gründete",
+       "Die Salzburg AG stieg 2021 beim Allgäuer Solarunternehmen ÖKOVOLT ein – mit dem erklärten Ziel, Wettbewerb zu "
+       "vermeiden. Am selben Tag entstand ihre eigene Photovoltaik-Tochter.")
+r.lead("Am 18. Oktober 2021 erwarb die Salzburg AG, ein Energieversorger im Mehrheitseigentum des Landes und der Stadt "
+       "Salzburg, 49 Prozent an der ÖKOVOLT GmbH Solartechnik in Türkheim und an deren österreichischer "
+       "Schwestergesellschaft. Im notariellen Syndikatsvertrag verpflichteten sich die Partner auf das gemeinsame Ziel der "
+       "„Vermeidung von Wettbewerbssituationen“; ÖKOVOLT sollte „bevorzugter Partner“ bei den Photovoltaikprojekten der "
+       "Salzburg AG sein. Am selben Tag gründete die Salzburg AG die one2zero GmbH – eine hundertprozentige Tochter im "
+       "selben Geschäftsfeld. Das hält auch das Oberlandesgericht München im Tatbestand seines Urteils vom 21. Mai 2026 fest.")
+r.para("Für den Mittelständler aus dem Unterallgäu war die Beteiligung eines großen Versorgers zunächst eine Chance: "
+       "Kapital, Kunden, gemeinsame Projekte. ÖKOVOLT gewährte dem Partner über Monate umfassenden Einblick in Kalkulationen, "
+       "Kundenbeziehungen und Projekte. Die neue Tochter des Partners übernahm später Großprojekte, an denen ÖKOVOLT "
+       "gearbeitet hatte.")
+r.quote("Wir haben einen Partner an Bord geholt, der Wettbewerb vermeiden wollte. Am selben Tag hat er seinen eigenen "
+        "Wettbewerber gegründet. So etwas erwartet man nicht von einem Unternehmen, das der öffentlichen Hand gehört")
+r.para("Ein ausdrückliches Wettbewerbsverbot enthielt der Vertrag für die Salzburg AG nicht. Das Oberlandesgericht München "
+       "hält das jedoch nicht für entscheidend: „Das glaubhaft gemachte Verhalten von [dem Geschäftsführer] und der Klägerin "
+       "bräuchte die Beklagte auch im hypothetischen Fall, dass ein Wettbewerbsverbot überhaupt nicht vereinbart worden "
+       "wäre, nicht zu akzeptieren.“ Nach Würdigung des Gerichts ist glaubhaft, dass Daten der "
+       "ÖKOVOLT-Unternehmen kopiert wurden, um sie für die Salzburg AG und/oder die one2zero zu verwenden.")
+r.para("Wirtschaftlich ist die Bilanz für die Salzburg AG ernüchternd. ÖKOVOLT hat den Gewinn zuletzt deutlich gesteigert "
+       "[Kennzahl deutsche GmbH]. Die one2zero schreibt laut ihren Jahresabschlüssen seit der Gründung Verluste "
+       "[Beleg: Firmenbuch]. Ihre Anteile an der deutschen ÖKOVOLT haben die Gesellschafter im Oktober 2025 eingezogen; "
+       "die Anträge der Salzburg AG dagegen scheiterten in drei Verfahren vor dem Oberlandesgericht München.")
+r.quote("Ein öffentlicher Versorger hat eine Beteiligung, die Geld verdient, und eine Tochter, die Verluste schreibt. Er "
+        "kämpft gegen die eine und finanziert die andere. Das ist keine Strategie, das ist ein Governance-Problem")
+r.para("Die Salzburg AG bestreitet die Vorwürfe. Die Entscheidungen des OLG München ergingen im Eilverfahren; das "
+       "Hauptsacheverfahren ist beim Landgericht Memmingen anhängig, die Verhandlung ist für den 12. Dezember 2026 "
+       "angesetzt.")
+r.save("Die Urteile des OLG München und Auszüge aus dem Syndikatsvertrag", "Pressemitteilung_DE2_Partner_auf_dem_Papier.docx")
+
+# =====================================================================
+# D3 – DIE VERSAMMLUNG IM FLÜSTERTON (Rechtspresse)
+# =====================================================================
+r = PM("„Im Flüsterton fortgesetzt“: OLG München weist Salzburg AG in drei Verfahren um ÖKOVOLT-Anteile ab",
+       "14. Zivilsenat wertet Vorgehen bei Gesellschafterversammlung als treuwidrig – Gehörsrügen verworfen, "
+       "angeblich übergangene Schriftsätze lagen der Akte nicht vor.")
+r.lead("Das Oberlandesgericht München hat in drei Eilverfahren die Berufungen der Salzburg AG gegen die ÖKOVOLT GmbH "
+       "Solartechnik zurückgewiesen (Urteile vom 21. Mai 2026, Az. 14 U 3746/25 e, 14 U 3748/25 e und 14 U 295/26 e; "
+       "Vorinstanz LG Memmingen). Mit Beschlüssen vom 18. Juni 2026 verwarf der 14. Zivilsenat zudem die Anhörungsrügen "
+       "der Salzburg AG nach § 321a ZPO sowie ihre Anträge auf einstweilige Einstellung der Zwangsvollstreckung.")
+r.h("Gegenstand der Verfahren")
+r.para("Die Gesellschafter der ÖKOVOLT hatten die Geschäftsanteile der Salzburg AG (49 Prozent) im Oktober und November "
+       "2025 aus wichtigem Grund eingezogen. Die Salzburg AG wollte die Einziehung per einstweiliger Verfügung aufhalten "
+       "und einen Widerspruch gegen die Gesellschafterliste eintragen lassen. Das OLG sah keinen Verfügungsanspruch als "
+       "glaubhaft gemacht an.")
+r.h("Die Würdigung des Senats")
+r.bullets([
+    "Zur Gesellschafterversammlung der österreichischen Schwestergesellschaft am 10. Oktober 2025: Die Vertreter der "
+    "Salzburg AG hatten das Protokoll samt Abstimmungsergebnissen vorab verfasst und die Versammlung eröffnet, während "
+    "die Vertreter der Mehrheitsgesellschafter auf dem Weg in den Sitzungssaal waren. „Der sofortige Beginn der "
+    "Versammlung, das Vorziehen der ‚kritischen‘ Tagesordnungspunkte und ihre beschleunigte Behandlung sind … als "
+    "treuwidrig zu bewerten.“",
+    "Im Beschluss vom 18. Juni 2026: Die Salzburg AG habe „durch ihre Separat-Versammlung, die sie nach Erscheinen der "
+    "gegnerischen Mehrheitsgruppe im Flüsterton fortsetzte, das vorgesehene Verfahren der Beschlussfassung ausgehebelt“.",
+    "Zum Datenkomplex hält der Senat für glaubhaft gemacht, dass der von der Salzburg AG nominierte Geschäftsführer "
+    "geheime Daten der ÖKOVOLT-Unternehmen kopierte, um sie für die Salzburg AG und/oder deren Tochter one2zero zu "
+    "verwenden. Ein Handeln ohne Mitwirkung der Salzburg AG erscheine „deutlich weniger wahrscheinlich“.",
+    "Zu den Anhörungsrügen stellte der Senat fest, dass die angeblich übergangenen Schriftsätze der Salzburg AG vom "
+    "15. und 18. Mai 2026 nicht zur Akte gelangt waren.",
+])
+r.quote("Die Salzburg AG hat mit erheblichem anwaltlichem Aufwand jede Instanz und jeden Rechtsbehelf ausgeschöpft. "
+        "Das Ergebnis ist dreimal dasselbe. Wir sehen der Hauptverhandlung mit großer Zuversicht entgegen")
+r.para("Die Eilverfahren sind abgeschlossen. Über die Wirksamkeit der Einziehung entscheidet das Landgericht Memmingen "
+       "im Hauptsacheverfahren (1 HK O 1771/25); die mündliche Verhandlung ist für den 12. Dezember 2026 angesetzt. Gegen "
+       "den früheren Geschäftsführer ermittelt die Staatsanwaltschaft Memmingen. " + UNSCHULD)
+r.save("Die Urteile und Beschlüsse des OLG München", "Pressemitteilung_DE3_Fluesterton_Rechtspresse.docx")
+
+# =====================================================================
+# D4 – WIE EIN STAATSKONZERN DEN MITTELSTAND VERDRÄNGT (Branche)
+# =====================================================================
+r = PM("Wenn der Staatskonzern mitliest: Was ein Allgäuer Solarunternehmen über Beteiligungen öffentlicher Versorger "
+       "gelernt hat",
+       "Controlling-Daten kopiert, Wechsel zur Konzerntochter geplant, danach beim Konzern angestellt – ÖKOVOLT legt "
+       "offen, was nach dem Einstieg der Salzburg AG geschah.")
+r.lead("Viele mittelständische Solarunternehmen suchen Partner mit Kapital – oft sind es Energieversorger in öffentlicher "
+       "Hand. Die ÖKOVOLT GmbH Solartechnik aus Türkheim hat erlebt, was dabei schiefgehen kann. Nach Würdigung des "
+       "Oberlandesgerichts München ist glaubhaft, dass der Geschäftsführer, den die Salzburg AG in das Unternehmen "
+       "entsandt hatte, Geschäftsdaten der ÖKOVOLT-Gruppe kopierte, um sie für den Konzern und/oder dessen eigene "
+       "Photovoltaik-Tochter zu verwenden.")
+r.h("Was die Forensiker fanden")
+r.para("Zwei von ÖKOVOLT beauftragte IT-Forensiker werteten Laptop, Mobiltelefon, Postfach und Serverprotokolle aus. "
+       "Ihre Befunde, die das Oberlandesgericht seiner Würdigung zugrunde gelegt hat:")
+r.bullets([
+    "Am 2. Dezember 2024 wurde der gesamte Controlling-Ordner – rund 1.150 Dateien mit 4,3 Gigabyte an Geschäftsdaten – "
+    "auf den Laptop des Geschäftsführers kopiert.",
+    "Am selben Tag wurde bei der Salzburg AG sein Wechsel als Geschäftsführer zur Konzerntochter one2zero zum 1. Januar "
+    "2025 vorbereitet.",
+    "Bilanz- und Ergebnisdateien der deutschen ÖKOVOLT lagen auf einem privaten externen Datenträger und wurden dort "
+    "über Monate geöffnet.",
+    "Vor seinem Ausscheiden wurden Tausende E-Mails und Dateien gelöscht; die Forensiker konnten sie wiederherstellen.",
+])
+r.para("Nach seinem Ausscheiden bei ÖKOVOLT im Februar 2025 wurde der Manager – nach eigenen Angaben der Salzburg AG vor "
+       "dem Oberlandesgericht – Angestellter des Konzerns. Die Staatsanwaltschaft Memmingen ermittelt gegen ihn. "
+       + UNSCHULD + " Ob Daten tatsächlich weitergegeben wurden, werden die Gerichte klären.")
+r.quote("Wir haben einem Partner die Türen geöffnet. Am Tag, an dem sein Manager zur Konzerntochter wechseln sollte, "
+        "wurden unsere Controlling-Daten kopiert. Danach hat ihn der Konzern angestellt. Jeder Mittelständler, der über "
+        "eine Beteiligung nachdenkt, sollte diese Geschichte kennen")
+r.h("Was Mittelständler daraus lernen können")
+r.bullets([
+    "Informationsrechte und Geschäftsführer-Entsendungen eines strategischen Investors klar begrenzen – besonders, wenn "
+    "der Investor selbst im selben Markt tätig ist oder werden kann.",
+    "Eigene Aktivitäten des Investors im Kerngeschäft vertraglich ausschließen, nicht nur „Wettbewerbsvermeidung“ vereinbaren.",
+    "Zugriffe auf sensible Daten protokollieren und regelmäßig prüfen.",
+])
+r.quote("Wir erzählen das nicht, um uns zu beklagen. Wir erzählen es, damit anderen Familienunternehmen das nicht passiert")
+r.para("Die Salzburg AG bestreitet die Vorwürfe. Die Entscheidungen des OLG München ergingen im Eilverfahren; das "
+       "Hauptsacheverfahren verhandelt das Landgericht Memmingen am 12. Dezember 2026.")
+r.save("Das Urteil des OLG München (14 U 3746/25)", "Pressemitteilung_DE4_Mittelstand_Branche.docx")
+
+# =====================================================================
+# D5a – VORBERICHT HAUPTVERHANDLUNG (ca. 1 Woche vorher)
+# =====================================================================
+r = PM("Salzburg AG gegen ÖKOVOLT: Hauptverhandlung am 12. Dezember vor dem Landgericht Memmingen",
+       "Nach drei verlorenen Eilverfahren entscheidet das Landgericht nun in der Hauptsache über die Anteile des "
+       "österreichischen Staatskonzerns am Allgäuer Solarunternehmen.",
+       kopf="PRESSEMITTEILUNG / TERMINHINWEIS")
+r.lead("Am 12. Dezember 2026 verhandelt das Landgericht Memmingen in der Hauptsache über die Einziehung der "
+       "Geschäftsanteile der Salzburg AG an der ÖKOVOLT GmbH Solartechnik (Az. 1 HK O 1771/25). Die Salzburg AG, ein "
+       "Energieversorger im Mehrheitseigentum von Land und Stadt Salzburg, war in den vorangegangenen drei Eilverfahren "
+       "vor dem Oberlandesgericht München gescheitert.")
+r.h("Termin")
+r.bullets(["[Wochentag – Datum 12.12.2026 fällt auf einen Samstag, Termin prüfen], [Uhrzeit]",
+           "Landgericht Memmingen, [Adresse], Sitzungssaal [Nr.]",
+           "Die Verhandlung ist öffentlich. [Name] steht vor und nach der Verhandlung für Fragen und Aufnahmen zur Verfügung."])
+r.h("Worum es geht")
+r.para("Die Salzburg AG hatte sich 2021 mit 49 Prozent an ÖKOVOLT beteiligt. Die Gesellschafter zogen ihre Anteile im "
+       "Herbst 2025 aus wichtigem Grund ein. Das Oberlandesgericht München hielt im Eilverfahren einen wichtigen Grund für "
+       "glaubhaft gemacht und wertete das Vorgehen der Salzburg AG bei einer Gesellschafterversammlung als „treuwidrig“. "
+       "Im Hauptverfahren wird nun abschließend geprüft.")
+r.quote("Wir gehen mit Zuversicht und mit Respekt vor dem Gericht in diese Verhandlung. Unsere Mitarbeiterinnen und "
+        "Mitarbeiter und unsere Kunden haben ein Recht auf Klarheit – und wir auch")
+r.save("Die bisherigen Entscheidungen des OLG München", "Pressemitteilung_DE5a_Terminhinweis_12Dez.docx")
+
+# =====================================================================
+# D5b – ERGEBNIS: ENTSCHEIDUNG ZUGUNSTEN ÖKOVOLT (Vorlage)
+# =====================================================================
+r = PM("Landgericht Memmingen bestätigt: Salzburg AG ist nicht mehr Gesellschafterin von ÖKOVOLT",
+       "[Kurzfassung des Urteils] – nach drei Niederlagen vor dem OLG München scheitert der österreichische "
+       "Landesversorger auch in der Hauptsache.",
+       note="VORLAGE – NUR VERWENDEN, WENN DAS URTEIL ZUGUNSTEN VON ÖKOVOLT AUSFÄLLT. TENOR WÖRTLICH PRÜFEN.")
+r.lead("Das Landgericht Memmingen hat am [Datum] die Klage der Salzburg AG gegen die Einziehung ihrer Geschäftsanteile an "
+       "der ÖKOVOLT GmbH Solartechnik [abgewiesen] (Az. 1 HK O 1771/25). [Kernaussage des Gerichts, wörtlich]. Das Urteil "
+       "ist [nicht] rechtskräftig.")
+r.para("Damit hat nach dem Oberlandesgericht München auch das Landgericht in der Hauptsache zugunsten von ÖKOVOLT "
+       "entschieden. [Gegebenenfalls: Die Salzburg AG kann binnen eines Monats Berufung einlegen.]")
+r.quote("Das Gericht hat nach sorgfältiger Prüfung entschieden. Wir danken unseren Mitarbeiterinnen und Mitarbeitern, "
+        "die in dieser schwierigen Zeit jeden Tag weitergearbeitet haben. Unsere Tür für eine faire Lösung bleibt offen – "
+        "auf der Grundlage dieses Urteils")
+r.para("ÖKOVOLT erwartet nun, dass die Eigentümer der Salzburg AG – Land und Stadt Salzburg sowie die Energie AG "
+       "Oberösterreich – die Vorgänge unabhängig aufarbeiten lassen.")
+r.save("Das Urteil", "Pressemitteilung_DE5b_VORLAGE_Urteil_positiv.docx")
+
+# =====================================================================
+# D5c – HALTUNGSERKLÄRUNG BEI UNGÜNSTIGEM ERGEBNIS (Vorlage)
+# =====================================================================
+r = PM("Stellungnahme der ÖKOVOLT GmbH Solartechnik zur Entscheidung des Landgerichts Memmingen",
+       "ÖKOVOLT prüft die Entscheidung und die Rechtsmittel.",
+       kopf="STELLUNGNAHME",
+       note="VORLAGE – NUR BEI UNGÜNSTIGEM ODER TEILWEISE UNGÜNSTIGEM ERGEBNIS. KURZ HALTEN, KEINE URTEILSSCHELTE.")
+r.lead("Das Landgericht Memmingen hat am [Datum] in der Hauptsache über die Einziehung der Geschäftsanteile der Salzburg "
+       "AG entschieden. ÖKOVOLT respektiert die Entscheidung und wird die schriftliche Begründung sorgfältig prüfen. "
+       "[Das Urteil ist nicht rechtskräftig.]")
+r.para("Unabhängig davon bleiben die Feststellungen des Oberlandesgerichts München bestehen, das das Vorgehen der "
+       "Salzburg AG bei der Gesellschafterversammlung vom 10. Oktober 2025 als „treuwidrig“ gewertet hat. [Nur verwenden, "
+       "wenn das LG dem nicht ausdrücklich widerspricht.]")
+r.quote("Wir nehmen die Entscheidung ernst und prüfen unsere nächsten Schritte in Ruhe. Für unsere Kunden und unsere "
+        "Mitarbeiterinnen und Mitarbeiter ändert sich im Tagesgeschäft nichts")
+r.save(None, "Pressemitteilung_DE5c_VORLAGE_Stellungnahme_ungünstig.docx")

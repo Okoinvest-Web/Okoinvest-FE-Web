@@ -1,0 +1,215 @@
+/**
+ * Grundgestaltung der Baudoku im ÖKOVOLT-Corporate-Design.
+ *
+ * Die Formensprache folgt der Website: Pillen statt Kästchen, Ringe statt
+ * Rahmen, großzügige Rundungen, Flächen in Weiß und Sand auf Ink-Neutralen.
+ * Feldtauglichkeit geht dabei vor Effekt — Touch-Ziele bleiben bei 44 px
+ * (NFA-023), Kontraste bleiben sonnentauglich, Bewegung bleibt sparsam.
+ */
+@import './assets/schriften.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    /* Sichere Bereiche auf Geräten mit Notch */
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    @apply font-sans;
+  }
+
+  /* Überschriften in der Hausschrift, eng gesetzt wie auf der Website. */
+  h1,
+  h2,
+  h3 {
+    @apply font-display font-bold tracking-tight;
+  }
+
+  /* Ankreuzfelder und Auswahlknöpfe haken in der Hausfarbe ab. */
+  input[type='checkbox'],
+  input[type='radio'] {
+    accent-color: theme('colors.ov.600');
+  }
+
+  /* Eingaben nie kleiner als 16px — sonst zoomt iOS beim Fokus hinein. */
+  input,
+  select,
+  textarea {
+    font-size: max(16px, 1rem);
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-ov-500 ring-offset-2 ring-offset-white dark:ring-offset-navy-950;
+  }
+}
+
+@layer components {
+  /* Mindestgröße für Touch-Ziele mit Arbeitshandschuhen (NFA-023) */
+  .tap {
+    @apply min-h-tap min-w-tap;
+  }
+
+  /**
+   * Flächen tragen ihre Kante als Ring, nicht als Rahmen: der Ring liegt außen
+   * auf und verschiebt dadurch kein Innenmaß, wenn eine Karte aktiv wird.
+   */
+  .karte {
+    @apply rounded-2xl bg-white shadow-karte ring-1 ring-ink-200/70
+           dark:bg-slate-900 dark:shadow-none dark:ring-white/10;
+  }
+
+  /* Karte, die auf Tippen/Zeigen reagiert — für Listeneinträge mit Ziel. */
+  .karte-aktiv {
+    @apply karte transition duration-300 hover:ring-ov-200 active:scale-[0.995]
+           dark:hover:ring-ov-500/40;
+  }
+
+  @media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    .karte-aktiv:hover {
+      @apply -translate-y-0.5 shadow-schwebe;
+    }
+  }
+
+  /* Ruhige Fläche für eingebettete Abschnitte innerhalb einer Karte. */
+  .flaeche {
+    @apply rounded-xl bg-sand-50 ring-1 ring-ink-200/60 dark:bg-white/5 dark:ring-white/10;
+  }
+
+  .knopf {
+    @apply tap inline-flex items-center justify-center gap-2 rounded-full px-5 text-base font-semibold
+           transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .knopf-primaer {
+    @apply knopf bg-ov-600 text-white shadow-sm hover:bg-ov-700;
+  }
+
+  .knopf-sekundaer {
+    @apply knopf bg-white text-ink-900 ring-1 ring-inset ring-ink-200
+           hover:bg-ink-50 hover:text-ov-700
+           dark:bg-white/5 dark:text-ink-100 dark:ring-white/15 dark:hover:bg-white/10;
+  }
+
+  .knopf-gefahr {
+    @apply knopf bg-fehler text-white shadow-sm hover:bg-red-700;
+  }
+
+  .knopf-geist {
+    @apply knopf text-ink-600 hover:bg-ink-100 hover:text-ov-700
+           dark:text-ink-300 dark:hover:bg-white/10 dark:hover:text-ov-300;
+  }
+
+  /**
+   * Eingabefelder mit Innenring: im Ruhezustand zurückhaltend, im Fokus in
+   * Markengrün und zwei Pixel stark — auf dem Dach bei Sonne noch erkennbar.
+   */
+  .feld {
+    @apply tap w-full rounded-xl bg-white px-3.5 py-2 text-base text-ink-900 ring-1 ring-inset
+           ring-ink-200 transition placeholder:text-ink-400
+           focus:ring-2 focus:ring-inset focus:ring-ov-500
+           dark:bg-white/5 dark:text-ink-50 dark:ring-white/15 dark:placeholder:text-ink-500;
+  }
+
+  /**
+   * Kippschalter aus einem echten Ankreuzfeld: Tastatur, Screenreader und
+   * `v-model` funktionieren unveraendert, nur die Darstellung ist ersetzt.
+   */
+  .schalter {
+    @apply relative h-6 w-11 shrink-0 cursor-pointer appearance-none rounded-full bg-ink-300
+           transition-colors dark:bg-white/20;
+  }
+
+  .schalter:checked {
+    @apply bg-ov-600;
+  }
+
+  .schalter::after {
+    content: '';
+    @apply absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform;
+  }
+
+  .schalter:checked::after {
+    @apply translate-x-5;
+  }
+
+  .beschriftung {
+    @apply mb-1.5 block text-sm font-semibold text-ink-700 dark:text-ink-300;
+  }
+
+  /* Kleine Zeile über einer Überschrift — das Eyebrow-Muster der Website. */
+  .uebertitel {
+    @apply text-[11px] font-bold uppercase tracking-[0.14em] text-ov-700 dark:text-ov-300;
+  }
+
+  .abzeichen {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold;
+  }
+
+  .tabelle {
+    @apply w-full border-collapse text-sm;
+  }
+
+  .tabelle th {
+    @apply border-b border-ink-200 px-3 py-2 text-left text-[11px] font-bold uppercase
+           tracking-wider text-ink-500 dark:border-white/10 dark:text-ink-400;
+  }
+
+  .tabelle td {
+    @apply border-b border-ink-100 px-3 py-2.5 align-top dark:border-white/5;
+  }
+}
+
+@layer utilities {
+  /* Kennzahlen: Ziffern gleicher Breite, damit Werte beim Zählen nicht zappeln. */
+  .zahl {
+    @apply font-display font-extrabold tabular-nums tracking-tight;
+  }
+
+  /* Der Grünverlauf der Website — sparsam einsetzen, er trägt keinen Fließtext. */
+  .verlauf-text {
+    color: transparent;
+    background: linear-gradient(100deg, #8cba58, #669933 45%, #3f7a2a);
+    -webkit-background-clip: text;
+    background-clip: text;
+  }
+
+  /* Milchglas für aufliegende Leisten (Kopfzeile, Tab-Leiste). */
+  .glas {
+    @apply bg-white/85 backdrop-blur-md dark:bg-navy-950/85;
+  }
+
+  .scrollbar-schmal::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .scrollbar-schmal::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-ink-300 dark:bg-white/15;
+  }
+
+  /* Horizontale Wischnavigation zwischen Prüfpunkten */
+  .wisch {
+    touch-action: pan-y;
+  }
+}
+
+/* Leaflet-Grundlayout ohne das komplette Theme zu importieren */
+.leaflet-container {
+  @apply h-full w-full rounded-2xl;
+  background: #dfe3ea;
+}
+
+.dark .leaflet-container {
+  background: #0a1c33;
+}
+
+.dark .leaflet-tile {
+  filter: brightness(0.75) contrast(1.05);
+}

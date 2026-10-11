@@ -1,0 +1,275 @@
+"use client";
+
+import { useActionState, useState } from "react";
+
+import { Meldung } from "@/components/ui";
+
+import {
+  legeLaufAn,
+  rechneLaufNeu,
+  schreibeLaufFest,
+  setzeKarteAktiv,
+  storniereLauf,
+  type LadenErgebnis,
+} from "./aktionen";
+
+/**
+ * Monatslauf der Ladeabrechnung.
+ *
+ * Ein Monat, ein Knopf. Welche Vorgänge hineinkommen, entscheidet
+ * nicht die Bedienung, sondern ihr Zustand: beendet, im Zeitraum, noch
+ * keiner Abrechnung zugeordnet. Eine Auswahl einzelner Vorgänge von
+ * Hand wäre schneller falsch bedient, als sie Zeit spart.
+ */
+export function Ladelauf({
+  monate,
+  darfVerwalten,
+}: {
+  monate: { schluessel: string; beschriftung: string; gesperrt: boolean }[];
+  darfVerwalten: boolean;
+}) {
+  const [ergebnis, aktion, laeuft] = useActionState<
+    LadenErgebnis | null,
+    FormData
+  >(legeLaufAn, null);
+
+  const erster = monate.find((m) => !m.gesperrt) ?? monate[0];
+  const [monat, setMonat] = useState(erster?.schluessel ?? "");
+
+  const gewaehlt = monate.find((m) => m.schluessel === monat);
+
+  if (!darfVerwalten) {
+    return (
+      <p className="t-mikro leading-relaxed">
+        Ihre Rolle erlaubt das Ansehen der Ladeabrechnung, nicht das
+        Rechnen. Läufe startet die Fuhrparkleitung oder die technische
+        Leitung.
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <form action={aktion} className="flex flex-wrap items-end gap-2">
+        <div className="min-w-0">
+          <label htmlFor="lade-monat" className="t-etikett mb-1 block">
+            Abrechnungsmonat
+          </label>
+          <select
+            id="lade-monat"
+            name="monat"
+            value={monat}
+            onChange={(e) => setMonat(e.target.value)}
+            className="feld"
+            style={{ width: "16rem", maxWidth: "100%" }}
+          >
+            {monate.map((m) => (
+              <option key={m.schluessel} value={m.schluessel}>
+                {m.beschriftung}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <button
+          type="submit"
+          disabled={laeuft || (gewaehlt?.gesperrt ?? false)}
+          className="knopf knopf-voll"
+        >
+          {laeuft ? "Wird gerechnet …" : "Lauf rechnen"}
+        </button>
+      </form>
+
+      {gewaehlt?.gesperrt && (
+        <p className="t-mikro leading-relaxed">
+          Dieser Monat ist festgeschrieben und wird nicht neu gerechnet.
+          Eine Korrektur läuft über eine Stornierung und einen neuen Lauf.
+        </p>
+      )}
+
+      {ergebnis && (
+        <Meldung ton={ergebnis.ok ? "gut" : "hinweis"}>
+          {ergebnis.meldung}
+        </Meldung>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Die Handgriffe an einem bestehenden Lauf.
+ *
+ * Festschreiben ist der Punkt ohne Rückweg: Danach ist der Lauf
+ * unveränderlich und die Belege sind buchbar. Deshalb steht daneben
+ * immer, was das bedeutet, und nicht nur, dass es passiert.
+ */
+export function Laufsteuerung({
+  laufId,
+  status,
+  vorgaenge,
+  darfVerwalten,
+}: {
+  laufId: string;
+  status: string;
+  vorgaenge: number;
+  darfVerwalten: boolean;
+}) {
+  const [gerechnet, rechneAktion, rechneLaeuft] = useActionState<
+    LadenErgebnis | null,
+    FormData
+  >(rechneLaufNeu, null);
+
+  const [fest, festAktion, festLaeuft] = useActionState<
+    LadenErgebnis | null,
+    FormData
+  >(schreibeLaufFest, null);
+
+  const [storniert, stornoAktion, stornoLaeuft] = useActionState<
+    LadenErgebnis | null,
+    FormData
+  >(storniereLauf, null);
+
+  const [stornoOffen, setStornoOffen] = useState(false);
+
+  const ergebnis = gerechnet ?? fest ?? storniert;
+  const laeuft = rechneLaeuft || festLaeuft || stornoLaeuft;
+
+  if (!darfVerwalten) {
+    return (
+      <p className="t-mikro leading-relaxed">
+        Ihre Rolle erlaubt das Ansehen, nicht das Ändern dieses Laufs.
+      </p>
+    );
+  }
+
+  if (status === "Storniert") {
+    return (
+      <p className="t-mikro leading-relaxed">
+        Storniert. Die Vorgänge sind wieder frei, die Belege bleiben als
+        storniert stehen.
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center gap-2">
+        {status === "Entwurf" && (
+          <>
+            <form action={festAktion}>
+              <input type="hidden" name="lauf" value={laufId} />
+              <button
+                type="submit"
+                disabled={laeuft || vorgaenge === 0}
+                className="knopf knopf-voll"
+              >
+                {festLaeuft ? "Wird festgeschrieben …" : "Festschreiben"}
+              </button>
+            </form>
+
+            <form action={rechneAktion}>
+              <input type="hidden" name="lauf" value={laufId} />
+              <button
+                type="submit"
+                disabled={laeuft}
+                className="knopf knopf-rand"
+              >
+                {rechneLaeuft ? "Wird gerechnet …" : "Neu rechnen"}
+              </button>
+            </form>
+          </>
+        )}
+
+        <button
+          type="button"
+          onClick={() => setStornoOffen((w) => !w)}
+          className="knopf knopf-leise"
+        >
+          {stornoOffen ? "Abbrechen" : "Lauf stornieren"}
+        </button>
+      </div>
+
+      {stornoOffen && (
+        <form action={stornoAktion} className="space-y-2">
+          <input type="hidden" name="lauf" value={laufId} />
+          <label htmlFor={`sg-${laufId}`} className="t-etikett block">
+            Warum wird storniert?
+          </label>
+          <textarea
+            id={`sg-${laufId}`}
+            name="grund"
+            rows={2}
+            required
+            minLength={10}
+            placeholder="Etwa: Tarifänderung ab 1. des Monats war noch nicht hinterlegt."
+            className="feld"
+          />
+          <button
+            type="submit"
+            disabled={stornoLaeuft}
+            className="knopf knopf-warnung"
+          >
+            {stornoLaeuft ? "Wird storniert …" : "Stornieren"}
+          </button>
+        </form>
+      )}
+
+      <p className="t-mikro leading-relaxed">
+        {status === "Entwurf"
+          ? "Solange der Lauf Entwurf ist, lässt er sich neu rechnen – die Belegnummern werden dabei neu vergeben. Nach dem Festschreiben ist er unveränderlich und die Belege sind in der Buchhaltung buchbar."
+          : "Festgeschrieben. Die Belege stehen der Buchhaltung zur Verfügung und werden hier nicht mehr verändert."}
+      </p>
+
+      {ergebnis && (
+        <Meldung ton={ergebnis.ok ? "gut" : "kritisch"}>
+          {ergebnis.meldung}
+        </Meldung>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Sperren und Freigeben einer Ladekarte.
+ *
+ * Steht in der Tabellenzeile, weil genau dort die Entscheidung fällt:
+ * Wer die Liste durchgeht, weil jemand das Unternehmen verlassen hat,
+ * will nicht erst eine Detailseite öffnen.
+ */
+export function Kartenschalter({
+  karteId,
+  bezeichnung,
+  aktiv,
+  darfVerwalten,
+}: {
+  karteId: string;
+  bezeichnung: string;
+  aktiv: boolean;
+  darfVerwalten: boolean;
+}) {
+  const [ergebnis, aktion, laeuft] = useActionState<
+    LadenErgebnis | null,
+    FormData
+  >(setzeKarteAktiv, null);
+
+  if (!darfVerwalten) return null;
+
+  return (
+    <form action={aktion} className="flex flex-col items-start gap-1">
+      <input type="hidden" name="karte" value={karteId} />
+      <input type="hidden" name="aktiv" value={aktiv ? "0" : "1"} />
+      <button
+        type="submit"
+        disabled={laeuft}
+        className={`knopf ${aktiv ? "knopf-leise" : "knopf-rand"}`}
+        aria-label={`${bezeichnung} ${aktiv ? "sperren" : "freigeben"}`}
+      >
+        {laeuft ? "…" : aktiv ? "Sperren" : "Freigeben"}
+      </button>
+
+      {ergebnis && !ergebnis.ok && (
+        <span className="t-mikro">{ergebnis.meldung}</span>
+      )}
+    </form>
+  );
+}

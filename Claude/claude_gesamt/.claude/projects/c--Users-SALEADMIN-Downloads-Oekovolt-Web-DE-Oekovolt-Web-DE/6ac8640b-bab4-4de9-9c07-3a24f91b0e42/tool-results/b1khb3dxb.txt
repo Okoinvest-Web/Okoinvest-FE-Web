@@ -1,0 +1,700 @@
+import { FileSignature, FolderLock, KeyRound, Search, ShieldCheck, UserPlus, Coins, BadgePercent } from "lucide-react";
+import PageHero from "@/components/ui/PageHero";
+import Section from "@/components/ui/Section";
+import SectionHeading from "@/components/ui/SectionHeading";
+import Steps from "@/components/ui/Steps";
+import Faq from "@/components/ui/Faq";
+import CtaBand from "@/components/ui/CtaBand";
+import Button from "@/components/ui/Button";
+import Reveal from "@/components/ui/Reveal";
+import BoerseListe from "@/components/Boerse/BoerseListe";
+import { abs, SITE } from "@/data/site";
+import { PROVISION, PHASEN } from "@/lib/invest/markt";
+import { backend, istDemo } from "@/lib/plattform/backend";
+import { PlattformFehler } from "@/lib/plattform/fehler";
+
+export const dynamic = "force-dynamic";
+
+const PFAD = "/projektboerse";
+const TITEL = "Projektbörse: Solarprojekte kaufen & anbieten | ÖkoInvest";
+const BESCHREIBUNG =
+  "Solarparks, Agri-PV, Parkplatz-PV und Großspeicher im DACH-Raum: geprüfte Projekte in allen Phasen, NDA per Klick, digitaler Datenraum – für Investoren kostenfrei.";
+
+export const metadata = {
+  title: TITEL,
+  description: BESCHREIBUNG,
+  alternates: { canonical: abs(PFAD) },
+  openGraph: {
+    type: "website",
+    url: abs(PFAD),
+    siteName: "ÖkoInvest",
+    title: TITEL,
+    description: BESCHREIBUNG,
+    images: [{ url: abs("/img/solarpark-reihen.jpg"), width: 1280, height: 852, alt: "Reihen eines Solarparks" }],
+  },
+};
+
+const ERLAUBTE_FILTER = ["typ", "land", "phase", "mwpMin", "mwpMax", "sortierung"];
+
+const FAQ = [
+  {
+    q: "Was kostet die Projektbörse?",
+    a: `Für Investoren ist die Börse ${PROVISION.kaeufer.text.replace("für Investoren ", "")}. Anbieter zahlen eine Erfolgsprovision von ${PROVISION.verkaeufer.text} – keine Einstell- oder Listungsgebühren.`,
+  },
+  {
+    q: "Warum sehe ich keine genaue Lage?",
+    a: "Öffentlich zeigen wir nur Region, Bundesland bzw. Kanton und Eckdaten. Gemeinde, Flurstücke, Netzbetreiber und Unterlagen sehen registrierte Investoren erst, nachdem sie die Vertraulichkeitsvereinbarung akzeptiert haben und das Backoffice den Datenraum freigegeben hat. Das schützt Flächeneigentümer und Anbieter.",
+  },
+  {
+    q: "Wie werden Projekte geprüft?",
+    a: "Vor der Veröffentlichung prüft das Backoffice Angaben und Kernunterlagen auf Vollständigkeit und Plausibilität – etwa Flächensicherung, Stand der Bauleitplanung und Netzanschluss. Eine rechtliche und technische Due Diligence ersetzt das nicht; sie bleibt Aufgabe des Käufers.",
+  },
+  {
+    q: "Welche Phasen gibt es?",
+    a: `Wir unterscheiden ${PHASEN.length} Entwicklungsstände – von „${PHASEN[0].label}“ bis „${PHASEN[PHASEN.length - 1].label}“. Je weiter ein Projekt entwickelt ist, desto geringer das Risiko und desto höher der Preis je kWp.`,
+  },
+];
+
+export default async function Projektboerse({ searchParams }) {
+  const sp = await searchParams;
+  const start = Object.fromEntries(ERLAUBTE_FILTER.map((k) => [k, typeof sp?.[k] === "string" ? sp[k].slice(0, 20) : ""]).filter(([, v]) => v));
+
+  let daten = null;
+  let fehler = "";
+  try {
+    daten = await backend().boerse(null, {});
+  } catch (e) {
+    fehler = e instanceof PlattformFehler ? e.message : "Die Projektbörse ist vorübergehend nicht erreichbar.";
+    if (!(e instanceof PlattformFehler)) console.error("[projektboerse]", e);
+  }
+  const demo = istDemo();
+  const kz = daten?.kennzahlen;
+
+  const jsonLd = daten && {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: "Projektbörse ÖkoInvest",
+    url: abs(PFAD),
+    description: BESCHREIBUNG,
+    publisher: { "@type": "Organization", name: SITE.firma, url: SITE.url },
+    mainEntity: {
+      "@type": "ItemList",
+      numberOfItems: daten.projekte.length,
+      itemListElement: daten.projekte.map((p, i) => ({ "@type": "ListItem", position: i + 1, url: abs(`${PFAD}/${p.slug}`), name: p.titel })),
+    },
+  };
+
+  return (
+    <>
+      {jsonLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />}
+      <PageHero
+        variant="dark"
+        breadcrumbs={[{ name: "Projektbörse", href: PFAD }]}
+        eyebrow="Projektbörse DACH"
+        title={<>Solarprojekte kaufen und verkaufen – <span className="ov-text-gradient-light">geprüft und vertraulich</span></>}
+        lead="Freiflächen-PV, Agri-PV, Parkplatz-PV und Großspeicher in Deutschland, Österreich und der Schweiz – von der Flächensicherung bis zur Bestandsanlage. Öffentlich als anonymer Teaser, Details erst nach NDA."
+        actions={[
+          { label: "Als Investor registrieren", href: "/registrieren?rolle=investor" },
+          { label: "Projekt anbieten", href: "/projektboerse/anbieten" },
+        ]}
+        stats={
+          kz
+            ? [
+                { value: kz.anzahl, label: "Projekte in der Börse" },
+                { value: kz.mwp, decimals: kz.mwp < 100 ? 1 : 0, suffix: " MWp", label: "Leistung gesamt" },
+                { value: kz.laender, label: kz.laender === 1 ? "Land" : "Länder" },
+              ]
+            : []
+        }
+      />
+
+      <Section tone="sand" space="md" id="projekte">
+        {demo && (
+          <p className="mb-6 rounded-2xl bg-sun-300/25 px-5 py-4 text-[14.5px] leading-relaxed text-ink-900 ring-1 ring-inset ring-sun-400/50">
+            <strong>Vorführdaten:</strong> Die Plattform läuft im Demo-Modus. Alle gezeigten Projekte sind fiktive Beispiele und keine Angebote.
+          </p>
+        )}
+        {fehler ? (
+          <div className="rounded-3xl bg-white p-8 text-center ring-1 ring-ink-200/70">
+            <p className="font-display text-[20px] font-bold text-ink-900">Projektbörse derzeit nicht verfügbar</p>
+            <p className="mt-2 text-[15px] text-ink-600">{fehler}</p>
+          </div>
+        ) : (
+          <BoerseListe projekte={daten.projekte} basisHref={`${PFAD}/`} start={start} />
+        )}
+      </Section>
+
+      <Section tone="white" space="lg">
+        <SectionHeading eyebrow="Ablauf" title="Vom Exposé zum Abschluss – alles im Portal" lead="Einheitlicher, nachvollziehbarer Prozess für beide Seiten. Jeder Schritt wird protokolliert." />
+        <Steps
+          className="mt-12"
+          items={[
+            { icon: UserPlus, title: "Registrieren & Suchprofil", text: "Kostenloses Investorenkonto mit Größe, Phasen, Ländern und Ticket. Passende Projekte zeigen wir zuerst." },
+            { icon: Search, title: "Exposé prüfen", text: "Eckdaten, Phase, Netzanschluss und Preisindikation – anonym, ohne genaue Lage." },
+            { icon: KeyRound, title: "NDA per Klick", text: "Vertraulichkeitsvereinbarung im Portal akzeptieren. Nach Freigabe öffnet sich der Datenraum." },
+            { icon: FileSignature, title: "LOI & Abschluss", text: "Absichtserklärung digital abgeben, Due Diligence, Kaufvertrag – begleitet durch das Backoffice." },
+          ]}
+        />
+      </Section>
+
+      <Section tone="ink" space="lg">
+        <div className="grid gap-5 lg:grid-cols-2">
+          <Reveal className="rounded-[2rem] bg-white p-8 ring-1 ring-ink-200/70 md:p-10">
+            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-ov-50 text-ov-600"><ShieldCheck aria-hidden="true" className="h-6 w-6" /></span>
+            <h2 className="ov-h3 mt-6 text-ink-900">Für Investoren: kostenfrei</h2>
+            <p className="mt-3 text-[16px] leading-relaxed text-ink-600">Suchprofil, Merkliste, NDA und Datenraum sind für Investoren kostenfrei. Sie sehen Projekte aus der Entwicklung der ÖKOVOLT Gruppe und von weiteren Entwicklern.</p>
+            <ul className="mt-5 space-y-2 text-[15px] text-ink-700">
+              <li className="flex gap-2"><FolderLock aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-ov-600" /> Datenraum mit Download-Protokoll</li>
+              <li className="flex gap-2"><Search aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-ov-600" /> Matching nach Suchprofil</li>
+            </ul>
+            <Button href="/registrieren?rolle=investor" className="mt-7" pfeil>Investorenkonto anlegen</Button>
+          </Reveal>
+          <Reveal delay={100} className="ov-noise relative overflow-hidden rounded-[2rem] bg-navy-950 p-8 text-white md:p-10">
+            <div aria-hidden="true" className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-ov-500/30 blur-[90px]" />
+            <span className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 text-ov-300"><BadgePercent aria-hidden="true" className="h-6 w-6" /></span>
+            <h2 className="ov-h3 relative mt-6 text-white">Für Projektentwickler: Provision nur bei Erfolg</h2>
+            <p className="relative mt-3 text-[16px] leading-relaxed text-white/70">Einstellen, prüfen lassen, vertraulich vermarkten. Die Provision beträgt {PROVISION.verkaeufer.text} – keine Listungsgebühren.</p>
+            <ul className="relative mt-5 space-y-2 text-[15px] text-white/80">
+              <li className="flex gap-2"><Coins aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-ov-300" /> Transparente Statistik: Aufrufe, Merker, NDA-Anfragen</li>
+              <li className="flex gap-2"><ShieldCheck aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-ov-300" /> Anonymer Teaser, Datenraum nur nach NDA</li>
+            </ul>
+            <Button href="/projektboerse/anbieten" variant="white" className="relative mt-7" pfeil>Projekt anbieten</Button>
+          </Reveal>
+        </div>
+      </Section>
+
+      <Section tone="white" space="lg">
+        <div className="grid gap-12 lg:grid-cols-[1fr_1.4fr]">
+          <SectionHeading eyebrow="Häufige Fragen" title="Projektbörse: das Wichtigste in Kürze" />
+          <Faq items={FAQ} />
+        </div>
+      </Section>
+
+      <CtaBand
+        eyebrow="Projektbörse"
+        title="Das passende Projekt nicht dabei?"
+        text="Legen Sie ein Suchprofil an. Neue Projekte, die zu Ihren Kriterien passen, sehen Sie im Portal zuerst."
+        primary={{ label: "Suchprofil anlegen", href: "/registrieren?rolle=investor" }}
+        secondary={{ label: "Für Investoren", href: "/investoren" }}
+      />
+    </>
+  );
+}
+"use client";
+
+import { useState } from "react";
+import { Check, FileSearch, Gauge, Landmark, MapPinned, PlugZap, Scale, Wrench } from "lucide-react";
+import { cn } from "@/components/ui/cn";
+
+/**
+ * Interaktive Due-Diligence-Checkliste für Solarprojekte. Rein clientseitig,
+ * speichert nichts – zum Abhaken beim Lesen eines Exposés.
+ */
+
+export const DD_BEREICHE = [
+  {
+    id: "flaeche",
+    icon: MapPinned,
+    titel: "Flächensicherung",
+    punkte: [
+      "Pacht- oder Nutzungsverträge für alle Flurstücke, Laufzeit mindestens Betriebsdauer plus Rückbau",
+      "Beschränkte persönliche Dienstbarkeiten im Grundbuch (Anlage, Leitungen, Zuwegung) und Rangrücktritt der Grundpfandgläubiger",
+      "Zustimmung aller Eigentümer, Erbengemeinschaften und Pächter; Kündigung laufender Landpacht",
+      "Übertragbarkeit der Verträge auf Käufer und finanzierende Bank (Eintrittsrecht)",
+    ],
+  },
+  {
+    id: "genehmigung",
+    icon: Landmark,
+    titel: "Genehmigung & Baurecht",
+    punkte: [
+      "Bebauungsplan: Aufstellungsbeschluss, Beteiligung, Satzungsbeschluss, Bekanntmachung – bzw. Privilegierung nach § 35 BauGB",
+      "Baugenehmigung mit Auflagen, Fristen und Nebenbestimmungen",
+      "Umwelt- und Artenschutz (Umweltbericht, saP, Ausgleichsflächen), ggf. UVP-Vorprüfung",
+      "Blendgutachten, Boden- und Kampfmittelgutachten, Denkmal- und Wasserschutz",
+      "Städtebaulicher Vertrag und Vereinbarung nach § 6 EEG mit der Gemeinde",
+    ],
+  },
+  {
+    id: "netz",
+    icon: PlugZap,
+    titel: "Netzanschluss",
+    punkte: [
+      "Netzanschlusszusage mit Einspeisepunkt, Spannungsebene und Leistung",
+      "Reservierung und deren Fristen, Baukostenzuschuss, Kostenschätzung des Netzbetreibers",
+      "Kabeltrasse: Wegerechte, Kreuzungen, Genehmigungen entlang der Trasse",
+      "Einspeisemanagement, Redispatch-Erwartung und ggf. flexible Netzanschlussvereinbarung",
+    ],
+  },
+  {
+    id: "ertrag",
+    icon: Gauge,
+    titel: "Ertragsgutachten",
+    punkte: [
+      "Unabhängiges Gutachten mit P50 und P90 (1 und 10 Jahre), Einstrahlungsdaten und Unsicherheiten",
+      "Layout, Modul- und Wechselrichterwahl, Verschattung, Verluste, Degradation",
+      "Bei Agri-PV: Nachweis nach DIN SPEC 91434 und landwirtschaftliches Nutzungskonzept",
+    ],
+  },
+  {
+    id: "technik",
+    icon: Wrench,
+    titel: "Technik & Bau",
+    punkte: [
+      "EPC-Angebot oder -Vertrag, Bauzeitenplan, Gewährleistung und Garantien",
+      "Baugrund und Rammtests, Einfriedung, Zuwegung, Brandschutz",
+      "Umspannwerk bzw. Übergabestation, Schutzkonzept, Zertifizierung nach VDE-Anwendungsregeln",
+      "Betriebsführung, Wartung, Monitoring und Versicherung",
+    ],
+  },
+  {
+    id: "recht",
+    icon: Scale,
+    titel: "Recht, Erlöse & Gesellschaft",
+    punkte: [
+      "Projektgesellschaft: Handelsregister, Gesellschafter, keine Altlasten oder Nebenabreden",
+      "EEG-Zuschlag (Gebotstermin, Fristen, Pönalen) oder PPA-Term-Sheet bzw. -Vertrag",
+      "Direktvermarktungsvertrag, Förderberechtigung, Anmeldung im Marktstammdatenregister",
+      "Rückbauverpflichtung und Sicherheitsleistung, Steuern und Zerlegung der Gewerbesteuer",
+    ],
+  },
+];
+
+export default function DdCheckliste() {
+  const [haken, setHaken] = useState({});
+  const gesamt = DD_BEREICHE.reduce((s, b) => s + b.punkte.length, 0);
+  const erledigt = Object.values(haken).filter(Boolean).length;
+
+  return (
+    <div>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-white px-5 py-4 ring-1 ring-ink-200/70">
+        <p className="flex items-center gap-2.5 text-[14.5px] font-semibold text-ink-800">
+          <FileSearch aria-hidden="true" className="h-5 w-5 text-ov-600" />
+          Beim Lesen eines Exposés abhaken – nichts wird gespeichert.
+        </p>
+        <div className="flex min-w-[200px] flex-1 items-center gap-3 sm:max-w-xs">
+          <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-ink-100" role="progressbar" aria-valuemin={0} aria-valuemax={gesamt} aria-valuenow={erledigt} aria-label="Fortschritt der Checkliste">
+            <div className="h-full rounded-full bg-ov-500 motion-safe:transition-[width] motion-safe:duration-300" style={{ width: `${(erledigt / gesamt) * 100}%` }} />
+          </div>
+          <span className="ov-num shrink-0 text-[13.5px] font-semibold text-ink-700">
+            {erledigt}/{gesamt}
+          </span>
+        </div>
+      </div>
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {DD_BEREICHE.map((b) => {
+          const Icon = b.icon;
+          const fertig = b.punkte.every((_, i) => haken[`${b.id}-${i}`]);
+          return (
+            <fieldset key={b.id} className={cn("rounded-3xl bg-white p-6 ring-1 transition-colors", fertig ? "ring-ov-300" : "ring-ink-200/70")}>
+              <legend className="sr-only">{b.titel}</legend>
+              <div className="flex items-center gap-3" aria-hidden="true">
+                <span className={cn("flex h-11 w-11 items-center justify-center rounded-2xl transition-colors", fertig ? "bg-ov-500 text-white" : "bg-ov-50 text-ov-600")}>
+                  <Icon className="h-5 w-5" />
+                </span>
+                <h3 className="font-display text-[18px] font-bold text-ink-900">{b.titel}</h3>
+              </div>
+              <ul className="mt-5 space-y-2.5">
+                {b.punkte.map((p, i) => {
+                  const k = `${b.id}-${i}`;
+                  const an = !!haken[k];
+                  return (
+                    <li key={k}>
+                      <label className="group flex cursor-pointer items-start gap-3 text-[14px] leading-relaxed text-ink-700 has-[:focus-visible]:rounded-lg has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ov-500">
+                        <input type="checkbox" checked={an} onChange={(e) => setHaken((h) => ({ ...h, [k]: e.target.checked }))} className="sr-only" />
+                        <span
+                          aria-hidden="true"
+                          className={cn(
+                            "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md ring-1 transition-colors",
+                            an ? "bg-ov-500 text-white ring-ov-500" : "bg-white text-transparent ring-ink-300 group-hover:ring-ov-400"
+                          )}
+                        >
+                          <Check className="h-3.5 w-3.5" strokeWidth={3} />
+                        </span>
+                        <span className={an ? "text-ink-500 line-through decoration-ink-300" : undefined}>{p}</span>
+                      </label>
+                    </li>
+                  );
+                })}
+              </ul>
+            </fieldset>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+import Link from "next/link";
+import { ArrowUpRight } from "lucide-react";
+import { cn } from "./cn";
+import Reveal from "./Reveal";
+
+/**
+ * Raster aus Vorteils-/Leistungskarten.
+ * items: [{ icon: LucideIcon, title, text, href?, tag? }]
+ * cols: 2 | 3 | 4
+ * tone: light | dark
+ */
+export default function FeatureGrid({ items = [], cols = 3, tone = "light", className }) {
+  const spalten = cols === 2 ? "md:grid-cols-2" : cols === 4 ? "sm:grid-cols-2 lg:grid-cols-4" : "md:grid-cols-2 lg:grid-cols-3";
+  return (
+    <div className={cn("grid gap-4 md:gap-5", spalten, className)}>
+      {items.map((it, i) => (
+        <Reveal key={it.title} delay={i * 70}>
+          <FeatureCard {...it} tone={tone} />
+        </Reveal>
+      ))}
+    </div>
+  );
+}
+
+export function FeatureCard({ icon: Icon, title, text, href, tag, tone = "light", className }) {
+  const dunkel = tone === "dark";
+  const inhalt = (
+    <>
+      <div className="flex items-start justify-between gap-4">
+        {Icon && (
+          <span
+            className={cn(
+              "flex h-12 w-12 items-center justify-center rounded-2xl transition-colors duration-300",
+              dunkel ? "bg-white/10 text-ov-300 group-hover:bg-ov-500 group-hover:text-white" : "bg-ov-50 text-ov-600 group-hover:bg-ov-500 group-hover:text-white"
+            )}
+          >
+            <Icon aria-hidden="true" className="h-6 w-6" strokeWidth={1.8} />
+          </span>
+        )}
+        {tag && (
+          <span className={cn("rounded-full px-2.5 py-1 text-[11.5px] font-semibold uppercase tracking-wider", dunkel ? "bg-white/10 text-white/80" : "bg-ink-100 text-ink-600")}>
+            {tag}
+          </span>
+        )}
+        {href && !tag && (
+          <ArrowUpRight
+            aria-hidden="true"
+            className={cn("h-5 w-5 transition-all duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5", dunkel ? "text-white/40 group-hover:text-white" : "text-ink-300 group-hover:text-ov-600")}
+          />
+        )}
+      </div>
+      <h3 className={cn("ov-h3 mt-6", dunkel ? "text-white" : "text-ink-900")}>{title}</h3>
+      {text && <p className={cn("mt-3 text-[15.5px] leading-relaxed", dunkel ? "text-white/65" : "text-ink-600")}>{text}</p>}
+    </>
+  );
+
+  const basis = cn(
+    "group ov-card-hover relative block h-full rounded-3xl p-7 md:p-8",
+    dunkel ? "bg-white/[0.04] ring-1 ring-white/10 hover:bg-white/[0.07]" : "bg-white ring-1 ring-ink-200/70 hover:ring-ov-200",
+    className
+  );
+
+  return href ? (
+    <Link href={href} className={basis}>
+      {inhalt}
+    </Link>
+  ) : (
+    <div className={basis}>{inhalt}</div>
+  );
+}
+import { cn } from "./cn";
+import Reveal from "./Reveal";
+
+/**
+ * Prozess in nummerierten Schritten mit Verbindungslinie.
+ * items: [{ title, text, icon? }]
+ */
+export default function Steps({ items = [], tone = "light", cols, className }) {
+  const dunkel = tone === "dark";
+  return (
+    <ol className={cn("relative grid gap-6 md:gap-5", cols === 2 ? "md:grid-cols-2" : cols === 3 ? "md:grid-cols-3" : cols === 4 || (!cols && items.length >= 4) ? "md:grid-cols-2 lg:grid-cols-4" : "md:grid-cols-3", className)}>
+      <div
+        aria-hidden="true"
+        className={cn(
+          cn("absolute left-0 right-0 top-7 hidden h-px", cols === 2 ? "" : "lg:block"),
+          dunkel ? "bg-gradient-to-r from-transparent via-white/20 to-transparent" : "bg-gradient-to-r from-transparent via-ov-300 to-transparent"
+        )}
+      />
+      {items.map((s, i) => {
+        const Icon = s.icon;
+        return (
+          <Reveal as="li" key={s.title} delay={i * 110} className="relative">
+            <div
+              className={cn(
+                "relative z-10 flex h-14 w-14 items-center justify-center rounded-2xl font-display text-[18px] font-extrabold shadow-lg",
+                dunkel ? "bg-ov-600 text-white shadow-ov-900/40" : "bg-white text-ov-600 ring-1 ring-ov-200"
+              )}
+            >
+              {Icon ? <Icon aria-hidden="true" className="h-6 w-6" /> : String(i + 1).padStart(2, "0")}
+            </div>
+            <h3 className={cn("ov-h3 mt-6", dunkel ? "text-white" : "text-ink-900")}>
+              {Icon && <span className={cn("mr-2 font-display text-[14px] font-bold", dunkel ? "text-ov-300" : "text-ov-700")}>{String(i + 1).padStart(2, "0")}</span>}
+              {s.title}
+            </h3>
+            <p className={cn("mt-3 text-[15.5px] leading-relaxed", dunkel ? "text-white/65" : "text-ink-600")}>{s.text}</p>
+          </Reveal>
+        );
+      })}
+    </ol>
+  );
+}
+import { Plus } from "lucide-react";
+import { cn } from "./cn";
+
+/**
+ * FAQ-Akkordeon auf Basis von <details> – funktioniert ohne JavaScript,
+ * ist per Tastatur bedienbar und liefert optional FAQPage-Schema.
+ * items: [{ q, a }]  (a: String oder JSX; für Schema wird `aText` oder a als String genutzt)
+ */
+export default function Faq({ items = [], schema = true, className, tone = "light" }) {
+  const dunkel = tone === "dark";
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: items.map((it) => ({
+      "@type": "Question",
+      name: it.q,
+      acceptedAnswer: { "@type": "Answer", text: it.aText || (typeof it.a === "string" ? it.a : "") },
+    })),
+  };
+
+  return (
+    <div className={cn("divide-y", dunkel ? "divide-white/10" : "divide-ink-200", className)}>
+      {schema && items.length > 0 && (
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      )}
+      {items.map((it, i) => (
+        <details key={it.q} className="group py-1" open={i === 0 ? undefined : undefined}>
+          <summary
+            className={cn(
+              "flex cursor-pointer list-none items-center justify-between gap-6 py-5 text-left font-display text-[17px] font-bold leading-snug transition-colors md:text-[18.5px] [&::-webkit-details-marker]:hidden",
+              dunkel ? "text-white hover:text-ov-300" : "text-ink-900 hover:text-ov-700"
+            )}
+          >
+            {it.q}
+            <span
+              className={cn(
+                "flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-all duration-300 group-open:rotate-45",
+                dunkel ? "bg-white/10 text-white group-open:bg-ov-500" : "bg-ink-100 text-ink-700 group-open:bg-ov-500 group-open:text-white"
+              )}
+            >
+              <Plus aria-hidden="true" className="h-4 w-4" />
+            </span>
+          </summary>
+          <div className={cn("-mt-1 pb-6 pr-12 text-[16px] leading-relaxed", dunkel ? "text-white/70" : "text-ink-600")}>
+            {it.a}
+          </div>
+        </details>
+      ))}
+    </div>
+  );
+}
+import Link from "next/link";
+import { ArrowRight } from "lucide-react";
+import { cn } from "./cn";
+
+const VARIANTEN = {
+  primary:
+    "bg-ov-600 text-white shadow-[0_8px_24px_-8px_rgba(102,153,51,0.65)] hover:bg-ov-700 hover:shadow-[0_12px_32px_-8px_rgba(102,153,51,0.75)]",
+  navy: "bg-navy-700 text-white hover:bg-navy-800 shadow-[0_8px_24px_-10px_rgba(0,52,115,0.6)]",
+  secondary:
+    "bg-white text-ink-900 ring-1 ring-inset ring-ink-200 hover:ring-ink-300 hover:bg-ink-50",
+  ghost: "text-ink-800 hover:bg-ink-100",
+  white: "bg-white text-navy-900 hover:bg-ov-50 shadow-[0_8px_30px_-10px_rgba(0,0,0,0.4)]",
+  outlineLight:
+    "text-white ring-1 ring-inset ring-white/35 hover:bg-white/10 hover:ring-white/60 backdrop-blur-sm",
+  sun: "bg-sun-400 text-navy-950 hover:bg-sun-300 shadow-[0_10px_30px_-10px_rgba(245,167,15,0.7)]",
+};
+
+const GROESSEN = {
+  sm: "h-10 px-4 text-[14px] gap-1.5 rounded-full",
+  md: "h-12 px-6 text-[15px] gap-2 rounded-full",
+  lg: "h-14 px-8 text-[16px] gap-2.5 rounded-full",
+};
+
+/**
+ * Einheitlicher Button. Mit `href` wird ein Link gerendert (intern via
+ * next/link, extern/tel/mailto als <a>), sonst ein <button>.
+ */
+export default function Button({
+  href,
+  variant = "primary",
+  size = "md",
+  pfeil = false,
+  icon: Icon,
+  className,
+  children,
+  ...rest
+}) {
+  const klassen = cn(
+    "group relative inline-flex select-none items-center justify-center whitespace-nowrap font-semibold tracking-[-0.005em] transition-all duration-300 active:scale-[0.98] disabled:opacity-50",
+    VARIANTEN[variant],
+    GROESSEN[size],
+    className
+  );
+
+  const inhalt = (
+    <>
+      {Icon && <Icon aria-hidden="true" className="h-[1.1em] w-[1.1em] shrink-0" />}
+      <span>{children}</span>
+      {pfeil && (
+        <ArrowRight
+          aria-hidden="true"
+          className="h-[1.05em] w-[1.05em] shrink-0 transition-transform duration-300 group-hover:translate-x-1"
+        />
+      )}
+    </>
+  );
+
+  if (href) {
+    const extern = /^(https?:|tel:|mailto:)/.test(href);
+    if (extern) {
+      return (
+        <a
+          href={href}
+          className={klassen}
+          {...(href.startsWith("http") ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+          {...rest}
+        >
+          {inhalt}
+        </a>
+      );
+    }
+    return (
+      <Link href={href} className={klassen} {...rest}>
+        {inhalt}
+      </Link>
+    );
+  }
+
+  return (
+    <button type="button" className={klassen} {...rest}>
+      {inhalt}
+    </button>
+  );
+}
+import GoogleAnalytics from "@/components/Statistik/GoogleAnalytics";
+import "./globals.css";
+import { Inter, Manrope } from "next/font/google";
+import LayoutWrapper from "@/components/Reusable/LayoutWrapper";
+import { GESELLSCHAFT, SITE } from "@/data/site";
+
+// Zwei Schriften wie auf oekovolt.de: Inter für Fließtext, Manrope für
+// Überschriften. next/font hostet beide selbst (keine Verbindung zu Google).
+const inter = Inter({
+  subsets: ["latin", "latin-ext"],
+  display: "swap",
+  variable: "--font-inter",
+  fallback: ["system-ui", "Segoe UI", "Arial", "sans-serif"],
+});
+
+const manrope = Manrope({
+  subsets: ["latin", "latin-ext"],
+  weight: ["500", "600", "700", "800"],
+  display: "swap",
+  variable: "--font-manrope",
+  fallback: ["system-ui", "Segoe UI", "Arial", "sans-serif"],
+});
+
+const BASE_URL = SITE.url;
+
+const siteSchema = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": `${BASE_URL}/#organization`,
+      name: "ÖkoInvest",
+      legalName: GESELLSCHAFT.name,
+      alternateName: ["Oekoinvest", "ÖkoInvest GmbH", "ÖKOINVEST"],
+      url: BASE_URL,
+      description: SITE.kurz,
+      slogan: SITE.claim,
+      foundingDate: "2020-09-10",
+      address: {
+        "@type": "PostalAddress",
+        streetAddress: GESELLSCHAFT.sitz,
+        addressLocality: GESELLSCHAFT.ort,
+        postalCode: GESELLSCHAFT.plz,
+        addressCountry: "AT",
+      },
+      identifier: { "@type": "PropertyValue", propertyID: "Firmenbuchnummer", value: GESELLSCHAFT.register },
+      parentOrganization: { "@type": "Organization", name: "ÖKOVOLT Gruppe", url: SITE.gruppeUrl },
+      areaServed: [
+        { "@type": "Country", name: "Deutschland" },
+        { "@type": "Country", name: "Österreich" },
+        { "@type": "Country", name: "Schweiz" },
+      ],
+      knowsAbout: [
+        "Freiflächen-Photovoltaik",
+        "Agri-Photovoltaik",
+        "Solarcarports",
+        "Projektentwicklung Solarpark",
+        "Flächenpacht Photovoltaik",
+        "Projektrechte Photovoltaik",
+        "Power Purchase Agreement",
+        "Virtuelles Kraftwerk",
+        "Energiegemeinschaften",
+        "Energiegenossenschaft",
+        "Batteriegroßspeicher",
+      ],
+    },
+    {
+      "@type": "WebSite",
+      "@id": `${BASE_URL}/#website`,
+      url: BASE_URL,
+      name: "ÖkoInvest",
+      inLanguage: "de",
+      publisher: { "@id": `${BASE_URL}/#organization` },
+    },
+  ],
+};
+
+export const viewport = {
+  themeColor: "#669933",
+  width: "device-width",
+  initialScale: 1,
+};
+
+const TITEL = "ÖkoInvest – Solarparks, Agri-PV & Projektbörse für DACH";
+const BESCHREIBUNG =
+  "Fläche verpachten, Agri-PV umsetzen, PV-Projekte kaufen oder verkaufen, Strom im Pool günstiger beziehen: ÖkoInvest entwickelt Solarkraftwerke in Deutschland, Österreich und der Schweiz.";
+
+export const metadata = {
+  metadataBase: new URL(BASE_URL),
+  title: { default: TITEL, template: "%s" },
+  description: BESCHREIBUNG,
+  applicationName: "ÖkoInvest",
+  authors: [{ name: GESELLSCHAFT.name, url: BASE_URL }],
+  creator: GESELLSCHAFT.name,
+  publisher: GESELLSCHAFT.name,
+  category: "Erneuerbare Energien",
+  icons: { icon: "/icon.svg", shortcut: "/icon.svg", apple: "/icon.svg" },
+  openGraph: {
+    type: "website",
+    locale: "de_DE",
+    url: BASE_URL,
+    siteName: "ÖkoInvest",
+    title: TITEL,
+    description: BESCHREIBUNG,
+    images: [{ url: `${BASE_URL}/img/solarpark-himmel.jpg`, width: 1280, height: 852, alt: "Solarpark unter blauem Himmel" }],
+  },
+  twitter: { card: "summary_large_image", title: TITEL, description: BESCHREIBUNG, images: [`${BASE_URL}/img/solarpark-himmel.jpg`] },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true, "max-video-preview": -1, "max-image-preview": "large", "max-snippet": -1 },
+  },
+  referrer: "origin-when-cross-origin",
+  formatDetection: { email: false, address: false, telephone: false },
+};
+
+export default function RootLayout({ children }) {
+  return (
+    <html lang="de" dir="ltr" className={`${inter.variable} ${manrope.variable}`}>
+      <body className="bg-white text-ink-900">
+        <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[9999] focus:px-4 focus:py-2 focus:bg-[#669933] focus:text-white focus:rounded">Zum Hauptinhalt springen</a>
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(siteSchema) }} />
+        <LayoutWrapper>{children}</LayoutWrapper>
+        <GoogleAnalytics />
+      </body>
+    </html>
+  );
+}

@@ -1,0 +1,900 @@
+=== components/ui/Breadcrumbs.js
+import Link from "next/link";
+import { ChevronRight } from "lucide-react";
+import { cn } from "./cn";
+
+import { SITE } from "@/data/site";
+
+const BASE = SITE.url;
+
+/**
+ * Brotkrumen – sichtbar UND als BreadcrumbList-Schema.
+ * items: [{ name, href }] – der letzte Eintrag ist die aktuelle Seite.
+ */
+export default function Breadcrumbs({ items = [], dark = false, className, schema = true }) {
+  const alle = [{ name: "Startseite", href: "/" }, ...items];
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: alle.map((it, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      name: it.name,
+      ...(it.href ? { item: `${BASE}${it.href === "/" ? "" : it.href}` } : {}),
+    })),
+  };
+
+  return (
+    <nav aria-label="Brotkrumen" className={cn("text-[13px]", className)}>
+      {schema && (
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      )}
+      <ol className="flex flex-wrap items-center gap-1.5">
+        {alle.map((it, i) => {
+          const letzte = i === alle.length - 1;
+          return (
+            <li key={`${it.name}-${i}`} className="flex items-center gap-1.5">
+              {i > 0 && (
+                <ChevronRight aria-hidden="true" className={cn("h-3.5 w-3.5", dark ? "text-white/35" : "text-ink-300")} />
+              )}
+              {letzte || !it.href ? (
+                <span aria-current={letzte ? "page" : undefined} className={dark ? "text-white/90" : "text-ink-800 font-medium"}>
+                  {it.name}
+                </span>
+              ) : (
+                <Link
+                  href={it.href}
+                  className={cn(
+                    "transition-colors",
+                    dark ? "text-white/60 hover:text-white" : "text-ink-500 hover:text-ov-600"
+                  )}
+                >
+                  {it.name}
+                </Link>
+              )}
+            </li>
+          );
+        })}
+      </ol>
+    </nav>
+  );
+}
+=== components/ui/Button.js
+import Link from "next/link";
+import { ArrowRight } from "lucide-react";
+import { cn } from "./cn";
+
+const VARIANTEN = {
+  primary:
+    "bg-ov-600 text-white shadow-[0_8px_24px_-8px_rgba(102,153,51,0.65)] hover:bg-ov-700 hover:shadow-[0_12px_32px_-8px_rgba(102,153,51,0.75)]",
+  navy: "bg-navy-700 text-white hover:bg-navy-800 shadow-[0_8px_24px_-10px_rgba(0,52,115,0.6)]",
+  secondary:
+    "bg-white text-ink-900 ring-1 ring-inset ring-ink-200 hover:ring-ink-300 hover:bg-ink-50",
+  ghost: "text-ink-800 hover:bg-ink-100",
+  white: "bg-white text-navy-900 hover:bg-ov-50 shadow-[0_8px_30px_-10px_rgba(0,0,0,0.4)]",
+  outlineLight:
+    "text-white ring-1 ring-inset ring-white/35 hover:bg-white/10 hover:ring-white/60 backdrop-blur-sm",
+  sun: "bg-sun-400 text-navy-950 hover:bg-sun-300 shadow-[0_10px_30px_-10px_rgba(245,167,15,0.7)]",
+};
+
+const GROESSEN = {
+  sm: "h-10 px-4 text-[14px] gap-1.5 rounded-full",
+  md: "h-12 px-6 text-[15px] gap-2 rounded-full",
+  lg: "h-14 px-8 text-[16px] gap-2.5 rounded-full",
+};
+
+/**
+ * Einheitlicher Button. Mit `href` wird ein Link gerendert (intern via
+ * next/link, extern/tel/mailto als <a>), sonst ein <button>.
+ */
+export default function Button({
+  href,
+  variant = "primary",
+  size = "md",
+  pfeil = false,
+  icon: Icon,
+  className,
+  children,
+  ...rest
+}) {
+  const klassen = cn(
+    "group relative inline-flex select-none items-center justify-center whitespace-nowrap font-semibold tracking-[-0.005em] transition-all duration-300 active:scale-[0.98] disabled:opacity-50",
+    VARIANTEN[variant],
+    GROESSEN[size],
+    className
+  );
+
+  const inhalt = (
+    <>
+      {Icon && <Icon aria-hidden="true" className="h-[1.1em] w-[1.1em] shrink-0" />}
+      <span>{children}</span>
+      {pfeil && (
+        <ArrowRight
+          aria-hidden="true"
+          className="h-[1.05em] w-[1.05em] shrink-0 transition-transform duration-300 group-hover:translate-x-1"
+        />
+      )}
+    </>
+  );
+
+  if (href) {
+    const extern = /^(https?:|tel:|mailto:)/.test(href);
+    if (extern) {
+      return (
+        <a
+          href={href}
+          className={klassen}
+          {...(href.startsWith("http") ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+          {...rest}
+        >
+          {inhalt}
+        </a>
+      );
+    }
+    return (
+      <Link href={href} className={klassen} {...rest}>
+        {inhalt}
+      </Link>
+    );
+  }
+
+  return (
+    <button type="button" className={klassen} {...rest}>
+      {inhalt}
+    </button>
+  );
+}
+=== components/ui/CountUp.js
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+
+/**
+ * Zählt eine Zahl hoch, sobald sie sichtbar wird.
+ * Server-HTML enthält bereits den Endwert (SEO, kein Layout-Sprung).
+ */
+export default function CountUp({ value, decimals = 0, duration = 1600, prefix = "", suffix = "", className }) {
+  const ref = useRef(null);
+  const ziel = Number(value) || 0;
+  const [anzeige, setAnzeige] = useState(ziel);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    let raf;
+    const io = new IntersectionObserver(
+      ([e]) => {
+        if (!e.isIntersecting) return;
+        io.disconnect();
+        const start = performance.now();
+        const schritt = (t) => {
+          const p = Math.min((t - start) / duration, 1);
+          const eased = 1 - Math.pow(1 - p, 4);
+          setAnzeige(ziel * eased);
+          if (p < 1) raf = requestAnimationFrame(schritt);
+        };
+        setAnzeige(0);
+        raf = requestAnimationFrame(schritt);
+      },
+      { threshold: 0.4 }
+    );
+    io.observe(el);
+    return () => {
+      io.disconnect();
+      cancelAnimationFrame(raf);
+    };
+  }, [ziel, duration]);
+
+  return (
+    <span ref={ref} className={className ? `ov-num ${className}` : "ov-num"}>
+      {prefix}
+      {anzeige.toLocaleString("de-DE", { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}
+      {suffix}
+    </span>
+  );
+}
+=== components/ui/CtaBand.js
+import Link from "next/link";
+import { ArrowUpRight, Phone, Calculator, ShieldCheck, Clock, BadgeCheck } from "lucide-react";
+import { KONTAKT } from "@/data/site";
+import { cn } from "./cn";
+import Button from "./Button";
+import Reveal from "./Reveal";
+
+/**
+ * Abschluss-Handlungsaufruf für jede Seite. Dunkle, leuchtende Fläche mit
+ * zwei Wegen und einer Wegweiser-Box für die Zielgruppen. Telefon erscheint
+ * nur, wenn in src/data/site.js eine Nummer hinterlegt ist.
+ */
+export default function CtaBand({
+  eyebrow = "Kostenlos & unverbindlich",
+  title = "Ihre Fläche, Ihr Projekt, Ihr Kapital – wir machen daraus ein Kraftwerk.",
+  text = "Ein Team, das seit 2010 Solarkraftwerke plant, baut und selbst betreibt. Mit ehrlicher Ersteinschätzung, festem Ansprechpartner und transparentem Status im Portal.",
+  primary = { label: "Fläche prüfen lassen", href: "/flaechencheck" },
+  secondary = { label: "Zur Projektbörse", href: "/projektboerse" },
+  className,
+}) {
+  return (
+    <section className={cn("relative px-4 py-16 md:px-8 md:py-24", className)}>
+      <Reveal dir="scale" className="ov-noise relative mx-auto max-w-7xl overflow-hidden rounded-[2rem] bg-navy-950 px-6 py-14 text-white md:rounded-[2.5rem] md:px-16 md:py-20">
+        <div aria-hidden="true" className="ov-grid-bg absolute inset-0" />
+        <div aria-hidden="true" className="absolute -right-24 -top-32 h-[460px] w-[460px] rounded-full bg-ov-500/35 blur-[110px]" />
+        <div aria-hidden="true" className="absolute -bottom-40 left-1/4 h-[360px] w-[360px] rounded-full bg-sun-400/15 blur-[110px]" />
+
+        {/* minmax(0, …): Spalten dürfen nicht über ihren Anteil wachsen – sonst schieben breite Buttons
+            die rechte Box in den Innenabstand und overflow-hidden schneidet sie ab */}
+        <div className="relative grid items-center gap-12 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+          <div className="min-w-0">
+            <p className="text-[12.5px] font-semibold uppercase tracking-[0.16em] text-ov-300">{eyebrow}</p>
+            <h2 className="ov-h2 mt-4 text-white">{title}</h2>
+            <p className="ov-lead mt-5 max-w-2xl text-white/70">{text}</p>
+            {/* flex-wrap: bei wenig Platz rutscht der zweite Button in die nächste Zeile */}
+            <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+              <Button href={primary.href} size="lg" pfeil>
+                {primary.label}
+              </Button>
+              {secondary && (
+                <Button href={secondary.href} size="lg" variant="outlineLight" icon={secondary.icon === undefined ? undefined : secondary.icon}>
+                  {secondary.label}
+                </Button>
+              )}
+            </div>
+          </div>
+
+          <div className="ov-glass min-w-0 rounded-3xl p-6 md:p-8">
+            {KONTAKT.telefon ? (
+              <>
+                <p className="text-[13px] font-medium text-white/60">Lieber direkt sprechen?</p>
+                <a href={KONTAKT.telefonHref} className="group mt-2 flex items-center gap-3">
+                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-ov-500 transition-transform group-hover:scale-110">
+                    <Phone aria-hidden="true" className="h-5 w-5" />
+                  </span>
+                  <span className="min-w-0 font-display text-[22px] font-extrabold tracking-tight md:text-[26px]">{KONTAKT.telefon}</span>
+                </a>
+              </>
+            ) : (
+              <>
+                <p className="text-[13px] font-medium text-white/60">Direkt zum passenden Weg</p>
+                <ul className="mt-3 grid gap-2">
+                  {[
+                    { label: "Ich habe eine Fläche", href: "/flaeche-verpachten" },
+                    { label: "Ich bin Landwirt", href: "/landwirte" },
+                    { label: "Ich möchte investieren", href: "/investoren" },
+                    { label: "Ich brauche günstigen Strom", href: "/reststrom" },
+                  ].map((w) => (
+                    <li key={w.href}>
+                      <Link href={w.href} className="group flex items-center justify-between gap-3 rounded-2xl bg-white/[0.06] px-4 py-3 text-[15px] font-semibold ring-1 ring-white/10 transition-colors hover:bg-white/[0.12]">
+                        {w.label}
+                        <ArrowUpRight aria-hidden="true" className="h-4 w-4 text-ov-300 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+            <ul className="mt-6 space-y-3 border-t border-white/10 pt-6 text-[14.5px] text-white/80">
+              <li className="flex items-start gap-2.5"><BadgeCheck aria-hidden="true" className="mt-[3px] h-4 w-4 shrink-0 text-ov-300" /><span className="min-w-0">Teil der ÖKOVOLT Gruppe – seit 2010 im Solargeschäft</span></li>
+              <li className="flex items-start gap-2.5"><ShieldCheck aria-hidden="true" className="mt-[3px] h-4 w-4 shrink-0 text-ov-300" /><span className="min-w-0">Entwicklung, Bau und Betrieb aus einer Gruppe</span></li>
+              <li className="flex items-start gap-2.5"><Clock aria-hidden="true" className="mt-[3px] h-4 w-4 shrink-0 text-ov-300" /><span className="min-w-0">Status, Dokumente und Nachrichten im Portal</span></li>
+            </ul>
+          </div>
+        </div>
+      </Reveal>
+    </section>
+  );
+}
+=== components/ui/Faq.js
+import { Plus } from "lucide-react";
+import { cn } from "./cn";
+
+/**
+ * FAQ-Akkordeon auf Basis von <details> – funktioniert ohne JavaScript,
+ * ist per Tastatur bedienbar und liefert optional FAQPage-Schema.
+ * items: [{ q, a }]  (a: String oder JSX; für Schema wird `aText` oder a als String genutzt)
+ */
+export default function Faq({ items = [], schema = true, className, tone = "light" }) {
+  const dunkel = tone === "dark";
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: items.map((it) => ({
+      "@type": "Question",
+      name: it.q,
+      acceptedAnswer: { "@type": "Answer", text: it.aText || (typeof it.a === "string" ? it.a : "") },
+    })),
+  };
+
+  return (
+    <div className={cn("divide-y", dunkel ? "divide-white/10" : "divide-ink-200", className)}>
+      {schema && items.length > 0 && (
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      )}
+      {items.map((it, i) => (
+        <details key={it.q} className="group py-1" open={i === 0 ? undefined : undefined}>
+          <summary
+            className={cn(
+              "flex cursor-pointer list-none items-center justify-between gap-6 py-5 text-left font-display text-[17px] font-bold leading-snug transition-colors md:text-[18.5px] [&::-webkit-details-marker]:hidden",
+              dunkel ? "text-white hover:text-ov-300" : "text-ink-900 hover:text-ov-700"
+            )}
+          >
+            {it.q}
+            <span
+              className={cn(
+                "flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-all duration-300 group-open:rotate-45",
+                dunkel ? "bg-white/10 text-white group-open:bg-ov-500" : "bg-ink-100 text-ink-700 group-open:bg-ov-500 group-open:text-white"
+              )}
+            >
+              <Plus aria-hidden="true" className="h-4 w-4" />
+            </span>
+          </summary>
+          <div className={cn("-mt-1 pb-6 pr-12 text-[16px] leading-relaxed", dunkel ? "text-white/70" : "text-ink-600")}>
+            {it.a}
+          </div>
+        </details>
+      ))}
+    </div>
+  );
+}
+=== components/ui/FeatureGrid.js
+import Link from "next/link";
+import { ArrowUpRight } from "lucide-react";
+import { cn } from "./cn";
+import Reveal from "./Reveal";
+
+/**
+ * Raster aus Vorteils-/Leistungskarten.
+ * items: [{ icon: LucideIcon, title, text, href?, tag? }]
+ * cols: 2 | 3 | 4
+ * tone: light | dark
+ */
+export default function FeatureGrid({ items = [], cols = 3, tone = "light", className }) {
+  const spalten = cols === 2 ? "md:grid-cols-2" : cols === 4 ? "sm:grid-cols-2 lg:grid-cols-4" : "md:grid-cols-2 lg:grid-cols-3";
+  return (
+    <div className={cn("grid gap-4 md:gap-5", spalten, className)}>
+      {items.map((it, i) => (
+        <Reveal key={it.title} delay={i * 70}>
+          <FeatureCard {...it} tone={tone} />
+        </Reveal>
+      ))}
+    </div>
+  );
+}
+
+export function FeatureCard({ icon: Icon, title, text, href, tag, tone = "light", className }) {
+  const dunkel = tone === "dark";
+  const inhalt = (
+    <>
+      <div className="flex items-start justify-between gap-4">
+        {Icon && (
+          <span
+            className={cn(
+              "flex h-12 w-12 items-center justify-center rounded-2xl transition-colors duration-300",
+              dunkel ? "bg-white/10 text-ov-300 group-hover:bg-ov-500 group-hover:text-white" : "bg-ov-50 text-ov-600 group-hover:bg-ov-500 group-hover:text-white"
+            )}
+          >
+            <Icon aria-hidden="true" className="h-6 w-6" strokeWidth={1.8} />
+          </span>
+        )}
+        {tag && (
+          <span className={cn("rounded-full px-2.5 py-1 text-[11.5px] font-semibold uppercase tracking-wider", dunkel ? "bg-white/10 text-white/80" : "bg-ink-100 text-ink-600")}>
+            {tag}
+          </span>
+        )}
+        {href && !tag && (
+          <ArrowUpRight
+            aria-hidden="true"
+            className={cn("h-5 w-5 transition-all duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5", dunkel ? "text-white/40 group-hover:text-white" : "text-ink-300 group-hover:text-ov-600")}
+          />
+        )}
+      </div>
+      <h3 className={cn("ov-h3 mt-6", dunkel ? "text-white" : "text-ink-900")}>{title}</h3>
+      {text && <p className={cn("mt-3 text-[15.5px] leading-relaxed", dunkel ? "text-white/65" : "text-ink-600")}>{text}</p>}
+    </>
+  );
+
+  const basis = cn(
+    "group ov-card-hover relative block h-full rounded-3xl p-7 md:p-8",
+    dunkel ? "bg-white/[0.04] ring-1 ring-white/10 hover:bg-white/[0.07]" : "bg-white ring-1 ring-ink-200/70 hover:ring-ov-200",
+    className
+  );
+
+  return href ? (
+    <Link href={href} className={basis}>
+      {inhalt}
+    </Link>
+  ) : (
+    <div className={basis}>{inhalt}</div>
+  );
+}
+=== components/ui/LiveTicker.js
+"use client";
+
+import Link from "next/link";
+import { Sun, Wind, Leaf, Zap } from "lucide-react";
+import useEnergyLive, { fmtCt, fmtGw } from "./useEnergyLive";
+import { cn } from "./cn";
+
+/** Pulsierender Live-Punkt */
+export function LiveDot({ className }) {
+  return <span aria-hidden="true" className={cn("inline-block h-2 w-2 shrink-0 animate-ov-pulse-dot rounded-full bg-ov-400", className)} />;
+}
+
+/**
+ * Schlanker Live-Ticker: Börsenstrompreis, Anteil Erneuerbarer, Solar/Wind.
+ * Rendert serverseitig einen ruhigen Platzhalter gleicher Höhe (kein Layout-Sprung).
+ */
+export default function LiveTicker({ className }) {
+  const d = useEnergyLive();
+  const p = d?.preis?.aktuell;
+  const e = d?.erzeugung;
+  const solarAktiv = e?.solarMw > 500;
+
+  return (
+    <Link
+      href="/energie-live"
+      className={cn("group flex min-w-0 items-center gap-4 text-[12.5px] text-white/75 transition-colors hover:text-white", className)}
+    >
+      <span className="sr-only">Zum Live-Dashboard: </span>
+      <span className="flex items-center gap-2 font-semibold uppercase tracking-[0.14em] text-ov-300">
+        <LiveDot />
+        Live
+      </span>
+      {!d ? (
+        <span className="h-3 w-64 animate-ov-shimmer rounded bg-[linear-gradient(90deg,rgba(255,255,255,0.06),rgba(255,255,255,0.16),rgba(255,255,255,0.06))] bg-[length:200%_100%]" />
+      ) : (
+        <span className="flex min-w-0 items-center gap-4 truncate">
+          {p && (
+            <span className="flex items-center gap-1.5">
+              <Zap aria-hidden="true" className="h-3.5 w-3.5 text-sun-400" />
+              Börsenstrom <strong className="ov-num font-semibold text-white">{fmtCt(p.eurMwh)} ct/kWh</strong>
+            </span>
+          )}
+          {e?.eeAnteil != null && (
+            <span className="hidden items-center gap-1.5 md:flex">
+              <Leaf aria-hidden="true" className="h-3.5 w-3.5 text-ov-300" />
+              Erneuerbare <strong className="ov-num font-semibold text-white">{Math.round(e.eeAnteil)} %</strong>
+            </span>
+          )}
+          {e?.solarMw != null && (
+            <span className="hidden items-center gap-1.5 lg:flex">
+              {solarAktiv ? (
+                <>
+                  <Sun aria-hidden="true" className="h-3.5 w-3.5 text-sun-300" />
+                  Solar <strong className="ov-num font-semibold text-white">{fmtGw(e.solarMw)} GW</strong>
+                </>
+              ) : (
+                <>
+                  <Wind aria-hidden="true" className="h-3.5 w-3.5 text-navy-200" />
+                  Wind <strong className="ov-num font-semibold text-white">{fmtGw(e.windMw || 0)} GW</strong>
+                </>
+              )}
+            </span>
+          )}
+          <span className="hidden text-white/60 underline-offset-2 group-hover:underline xl:inline">Zum Dashboard →</span>
+        </span>
+      )}
+    </Link>
+  );
+}
+=== components/ui/Logo.js
+import { cn } from "./cn";
+
+/**
+ * ÖKOINVEST-Wortmarke im Corporate Design der ÖKOVOLT Gruppe:
+ * „ÖKO“ in Markengrün, zweiter Wortteil in Markenblau, rechts die
+ * Symbolkachel (grünes Feld, blauer Rahmen) – hier mit Solarpark-Reihen
+ * und steigender Linie statt Blitz.
+ *
+ * Solange keine freigegebene Logodatei vorliegt, ist das die einzige
+ * Stelle, an der das Logo entsteht. Später einfach durch <Image> ersetzen.
+ *
+ * tone: "light" (auf hellem Grund) | "dark" (auf Navy/Bild)
+ */
+export default function Logo({ tone = "light", unterzeile = true, className, title = "ÖkoInvest – Teil der ÖKOVOLT Gruppe" }) {
+  const blau = tone === "dark" ? "#ffffff" : "#003473";
+  const gruen = "#669933";
+  const sub = tone === "dark" ? "rgba(255,255,255,0.75)" : "#003473";
+  return (
+    <svg
+      viewBox={unterzeile ? "0 0 330 74" : "0 0 330 52"}
+      role="img"
+      aria-label={title}
+      className={cn("block h-full w-auto", className)}
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <title>{title}</title>
+      <text
+        x="0"
+        y="42"
+        fontFamily="var(--font-manrope), Manrope, 'Arial Black', sans-serif"
+        fontWeight="800"
+        fontSize="46"
+        letterSpacing="-1.5"
+      >
+        <tspan fill={gruen}>ÖKO</tspan>
+        <tspan fill={blau}>INVEST</tspan>
+      </text>
+      {/* Symbolkachel */}
+      <g transform="translate(272 2)">
+        <rect x="2" y="2" width="50" height="46" rx="9" fill={gruen} stroke={blau} strokeWidth="4" />
+        <path d="M11 38 L22 31 L22 38 Z M24 38 L35 29 L35 38 Z" fill="#ffffff" opacity="0.55" />
+        <path d="M10 33 L22 24 L31 28 L43 13" fill="none" stroke="#ffffff" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M36 12 L44 12 L44 20" fill="none" stroke="#ffffff" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round" />
+      </g>
+      {unterzeile && (
+        <text
+          x="1"
+          y="68"
+          fontFamily="var(--font-inter), Inter, Arial, sans-serif"
+          fontWeight="700"
+          fontSize="15.5"
+          fill={sub}
+          letterSpacing="0.2"
+        >
+          Projektentwicklung · ÖKOVOLT Gruppe
+        </text>
+      )}
+    </svg>
+  );
+}
+=== components/ui/Marquee.js
+"use client";
+
+import { useState } from "react";
+import { Pause, Play } from "lucide-react";
+import { cn } from "./cn";
+
+/**
+ * Endloses Laufband (z. B. Herstellerlogos, Vertrauenspunkte).
+ * Inhalte werden doppelt gerendert; die zweite Kopie ist für Screenreader verborgen.
+ * Pausiert bei Hover und bei Tastaturfokus auf einem Link im Band, lässt sich per Knopf anhalten (WCAG 2.2.2)
+ * und steht bei reduzierter Bewegung still.
+ */
+export default function Marquee({ children, className, speed = 40, fade = "from-white" }) {
+  const [angehalten, setAngehalten] = useState(false);
+  return (
+    <div className={cn("group relative overflow-hidden", className)}>
+      <div aria-hidden="true" className={cn("pointer-events-none absolute inset-y-0 left-0 z-10 w-16 bg-gradient-to-r to-transparent md:w-32", fade)} />
+      <div aria-hidden="true" className={cn("pointer-events-none absolute inset-y-0 right-0 z-10 w-16 bg-gradient-to-l to-transparent md:w-32", fade)} />
+      <div
+        className={cn(
+          "flex w-max animate-ov-marquee items-center group-hover:[animation-play-state:paused] group-has-[a:focus-visible]:[animation-play-state:paused] motion-reduce:animate-none",
+          angehalten && "[animation-play-state:paused]"
+        )}
+        style={{ animationDuration: `${speed}s` }}
+      >
+        <div className="flex shrink-0 items-center gap-12 pr-12 md:gap-16 md:pr-16">{children}</div>
+        <div aria-hidden="true" className="flex shrink-0 items-center gap-12 pr-12 md:gap-16 md:pr-16">
+          {children}
+        </div>
+      </div>
+      <button
+        type="button"
+        onClick={() => setAngehalten((a) => !a)}
+        aria-label={angehalten ? "Laufband fortsetzen" : "Laufband anhalten"}
+        title={angehalten ? "Laufband fortsetzen" : "Laufband anhalten"}
+        className="absolute right-2 top-1/2 z-20 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-ink-600 ring-1 ring-ink-200 transition-colors hover:text-ink-900 motion-reduce:hidden"
+      >
+        {angehalten ? <Play aria-hidden="true" className="h-3.5 w-3.5" /> : <Pause aria-hidden="true" className="h-3.5 w-3.5" />}
+      </button>
+    </div>
+  );
+}
+=== components/ui/PageHero.js
+import Image from "next/image";
+import { Check } from "lucide-react";
+import { cn } from "./cn";
+import Breadcrumbs from "./Breadcrumbs";
+import Button from "./Button";
+import CountUp from "./CountUp";
+import { Eyebrow } from "./SectionHeading";
+
+/**
+ * Einheitlicher Seitenkopf für alle Unterseiten.
+ *
+ * variant:
+ *  - "split"      Text links, großes Bild rechts mit schwebender Kennzahl (Standard)
+ *  - "immersive"  Vollflächiges Bild, dunkler Verlauf, Text unten links
+ *  - "dark"       Navy-Fläche mit Raster und Lichtschein, ohne Bild (Tools, Wissen)
+ *
+ * props:
+ *  breadcrumbs  [{ name, href }]
+ *  eyebrow, title (string oder JSX), lead
+ *  image { src, alt }  – bei split/immersive
+ *  actions      [{ label, href, variant, icon }]
+ *  points       ["Kurzer Vorteil", ...]
+ *  stats        [{ value: 5000, suffix: "+", label: "Anlagen" }]
+ *  badge        JSX – schwebendes Element auf dem Bild (split)
+ */
+export default function PageHero({
+  variant = "split",
+  breadcrumbs,
+  eyebrow,
+  title,
+  lead,
+  image,
+  actions = [],
+  points = [],
+  stats = [],
+  badge,
+  children,
+  className,
+}) {
+  if (variant === "immersive") return <Immersive {...{ breadcrumbs, eyebrow, title, lead, image, actions, points, stats, children, className }} />;
+  if (variant === "dark") return <Dark {...{ breadcrumbs, eyebrow, title, lead, actions, points, stats, children, className }} />;
+
+  return (
+    <section className={cn("relative overflow-hidden bg-sand-50", className)}>
+      <div aria-hidden="true" className="ov-grid-bg-light pointer-events-none absolute inset-0" />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -right-40 -top-40 h-[520px] w-[520px] rounded-full bg-ov-200/40 blur-3xl"
+      />
+      <div className="ov-container relative grid items-center gap-12 pb-16 pt-8 md:pb-24 md:pt-12 lg:grid-cols-[1.05fr_1fr] lg:gap-16">
+        <div>
+          {breadcrumbs && <Breadcrumbs items={breadcrumbs} className="ov-hero-in mb-8" />}
+          {eyebrow && (
+            <div className="ov-hero-in" style={{ "--ov-delay": "60ms" }}>
+              <Eyebrow className="mb-5">{eyebrow}</Eyebrow>
+            </div>
+          )}
+          <h1 className="ov-h1 ov-hero-in text-ink-900" style={{ "--ov-delay": "120ms" }}>
+            {title}
+          </h1>
+          {lead && (
+            <p
+              className={cn("ov-hero-in mt-6 max-w-xl text-ink-600", typeof lead === "string" && lead.length > 260 ? "text-[16px] leading-relaxed" : "ov-lead")}
+              style={{ "--ov-delay": "200ms" }}
+            >
+              {lead}
+            </p>
+          )}
+          {points.length > 0 && (
+            <ul className="ov-hero-in mt-7 grid gap-3 sm:grid-cols-2" style={{ "--ov-delay": "260ms" }}>
+              {points.map((p) => (
+                <li key={p} className="flex items-start gap-2.5 text-[15px] text-ink-700">
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-ov-500 text-white">
+                    <Check aria-hidden="true" className="h-3 w-3" strokeWidth={3} />
+                  </span>
+                  {p}
+                </li>
+              ))}
+            </ul>
+          )}
+          {actions.length > 0 && (
+            <div className="ov-hero-in mt-9 flex flex-col gap-3 sm:flex-row" style={{ "--ov-delay": "320ms" }}>
+              {actions.map((a, i) => (
+                <Button key={a.label} href={a.href} variant={a.variant || (i === 0 ? "primary" : "secondary")} size="lg" pfeil={i === 0} icon={a.icon}>
+                  {a.label}
+                </Button>
+              ))}
+            </div>
+          )}
+          {stats.length > 0 && (
+            <dl className="ov-hero-in mt-12 grid grid-cols-3 gap-4 border-t border-ink-200 pt-8" style={{ "--ov-delay": "380ms" }}>
+              {stats.map((s) => (
+                <div key={s.label}>
+                  <dt className="sr-only">{s.label}</dt>
+                  <dd className="font-display text-[clamp(1.5rem,1.1rem+1.4vw,2.25rem)] font-extrabold leading-none tracking-tight text-ink-900">
+                    <CountUp value={s.value} decimals={s.decimals} suffix={s.suffix} prefix={s.prefix} />
+                  </dd>
+                  <dd className="mt-2 text-[13px] leading-snug text-ink-500">{s.label}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
+          {children}
+        </div>
+
+        {image?.src && (
+          <div className="ov-hero-in relative" style={{ "--ov-delay": "180ms" }}>
+            <div className="relative aspect-[4/5] w-full overflow-hidden rounded-[2rem] bg-ink-100 shadow-2xl sm:aspect-[5/4] lg:aspect-[4/5]">
+              <Image
+                src={image.src}
+                alt={image.alt || ""}
+                fill
+                priority
+                sizes="(max-width: 1024px) 100vw, 45vw"
+                className="object-cover"
+              />
+              <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-navy-950/40 via-transparent to-transparent" />
+            </div>
+            {badge && (
+              <div className="absolute -bottom-6 left-4 right-4 sm:left-auto sm:right-6 sm:max-w-xs md:-left-8 md:right-auto">
+                <div className="animate-ov-float rounded-2xl bg-white/95 p-5 shadow-2xl ring-1 ring-ink-100 backdrop-blur">{badge}</div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function Actions({ actions, dark = true }) {
+  if (!actions.length) return null;
+  return (
+    <div className="ov-hero-in mt-9 flex flex-col gap-3 sm:flex-row" style={{ "--ov-delay": "320ms" }}>
+      {actions.map((a, i) => (
+        <Button
+          key={a.label}
+          href={a.href}
+          variant={a.variant || (i === 0 ? "primary" : dark ? "outlineLight" : "secondary")}
+          size="lg"
+          pfeil={i === 0}
+          icon={a.icon}
+        >
+          {a.label}
+        </Button>
+      ))}
+    </div>
+  );
+}
+
+function StatsDark({ stats }) {
+  if (!stats.length) return null;
+  return (
+    <dl className="ov-hero-in mt-12 grid max-w-2xl grid-cols-3 gap-6 border-t border-white/15 pt-8" style={{ "--ov-delay": "400ms" }}>
+      {stats.map((s) => (
+        <div key={s.label}>
+          <dt className="sr-only">{s.label}</dt>
+          <dd className="font-display text-[clamp(1.5rem,1.1rem+1.4vw,2.25rem)] font-extrabold leading-none tracking-tight text-white">
+            <CountUp value={s.value} decimals={s.decimals} suffix={s.suffix} prefix={s.prefix} />
+          </dd>
+          <dd className="mt-2 text-[13px] leading-snug text-white/60">{s.label}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+function Immersive({ breadcrumbs, eyebrow, title, lead, image, actions, points, stats, children, className }) {
+  return (
+    <section className={cn("relative isolate overflow-hidden bg-navy-950 text-white", className)}>
+      {image?.src && (
+        <Image src={image.src} alt={image.alt || ""} fill priority sizes="100vw" className="-z-20 object-cover" style={image.position ? { objectPosition: image.position } : undefined} />
+      )}
+      <div aria-hidden="true" className="absolute inset-0 -z-10 bg-gradient-to-r from-navy-950/95 via-navy-950/75 to-navy-950/20" />
+      <div aria-hidden="true" className="absolute inset-0 -z-10 bg-gradient-to-t from-navy-950 via-transparent to-transparent" />
+      <div className="ov-container flex min-h-[560px] flex-col justify-end pb-16 pt-10 md:min-h-[640px] md:pb-20">
+        {breadcrumbs && <Breadcrumbs items={breadcrumbs} dark className="ov-hero-in mb-auto pb-10" />}
+        <div className="max-w-3xl">
+          {eyebrow && (
+            <div className="ov-hero-in" style={{ "--ov-delay": "60ms" }}>
+              <Eyebrow dark className="mb-5">{eyebrow}</Eyebrow>
+            </div>
+          )}
+          <h1 className="ov-h1 ov-hero-in" style={{ "--ov-delay": "120ms" }}>{title}</h1>
+          {lead && <p className="ov-lead ov-hero-in mt-6 max-w-2xl text-white/75" style={{ "--ov-delay": "200ms" }}>{lead}</p>}
+          {points.length > 0 && (
+            <ul className="ov-hero-in mt-7 flex flex-wrap gap-2" style={{ "--ov-delay": "260ms" }}>
+              {points.map((p) => (
+                <li key={p} className="ov-glass inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-[13.5px] text-white/90">
+                  <Check aria-hidden="true" className="h-3.5 w-3.5 text-ov-300" strokeWidth={3} />
+                  {p}
+                </li>
+              ))}
+            </ul>
+          )}
+          <Actions actions={actions} />
+          <StatsDark stats={stats} />
+          {children}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Dark({ breadcrumbs, eyebrow, title, lead, actions, points, stats, children, className }) {
+  return (
+    <section className={cn("ov-noise relative isolate overflow-hidden bg-navy-950 text-white", className)}>
+      <div aria-hidden="true" className="ov-grid-bg absolute inset-0 -z-10" />
+      <div aria-hidden="true" className="absolute -left-32 top-1/3 -z-10 h-[420px] w-[420px] rounded-full bg-ov-500/25 blur-[120px]" />
+      <div aria-hidden="true" className="absolute -right-20 -top-24 -z-10 h-[380px] w-[380px] rounded-full bg-navy-400/30 blur-[120px]" />
+      <div className="ov-container pb-16 pt-8 md:pb-24 md:pt-12">
+        {breadcrumbs && <Breadcrumbs items={breadcrumbs} dark className="ov-hero-in mb-10" />}
+        <div className="max-w-3xl">
+          {eyebrow && (
+            <div className="ov-hero-in" style={{ "--ov-delay": "60ms" }}>
+              <Eyebrow dark className="mb-5">{eyebrow}</Eyebrow>
+            </div>
+          )}
+          <h1 className="ov-h1 ov-hero-in" style={{ "--ov-delay": "120ms" }}>{title}</h1>
+          {lead && <p className="ov-lead ov-hero-in mt-6 max-w-2xl text-white/70" style={{ "--ov-delay": "200ms" }}>{lead}</p>}
+          {points.length > 0 && (
+            <ul className="ov-hero-in mt-7 flex flex-wrap gap-2" style={{ "--ov-delay": "260ms" }}>
+              {points.map((p) => (
+                <li key={p} className="ov-glass inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-[13.5px] text-white/90">
+                  <Check aria-hidden="true" className="h-3.5 w-3.5 text-ov-300" strokeWidth={3} />
+                  {p}
+                </li>
+              ))}
+            </ul>
+          )}
+          <Actions actions={actions} />
+          <StatsDark stats={stats} />
+        </div>
+        {children}
+      </div>
+    </section>
+  );
+}
+=== components/ui/Reveal.js
+import { cn } from "./cn";
+
+/**
+ * Einblenden beim Scrollen – ohne eigenen Client-Baustein.
+ * Die Klasse `ov-reveal` wird global vom <RevealObserver/> beobachtet
+ * (siehe LayoutWrapper). Ohne JavaScript bleibt der Inhalt sichtbar.
+ *
+ * dir: up (Standard) | left | right | scale
+ */
+export default function Reveal({ as: Tag = "div", delay = 0, dir, className, style, children, ...rest }) {
+  return (
+    <Tag
+      className={cn("ov-reveal", className)}
+      data-dir={dir}
+      style={delay ? { "--ov-delay": `${delay}ms`, ...style } : style}
+      {...rest}
+    >
+      {children}
+    </Tag>
+  );
+}
+=== components/ui/RevealObserver.js
+"use client";
+
+import { useEffect } from "react";
+import { usePathname } from "next/navigation";
+
+/**
+ * Ein einziger IntersectionObserver für alle `.ov-reveal`-Elemente der Seite.
+ * Neue Elemente (Routenwechsel, nachgeladene Inhalte) erfasst ein
+ * MutationObserver. Sicherheitsnetz: nach 4 s wird alles sichtbar.
+ */
+export default function RevealObserver() {
+  const pfad = usePathname();
+
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.add("js-ready");
+
+    const io = new IntersectionObserver(
+      (eintraege) => {
+        for (const e of eintraege) {
+          if (e.isIntersecting) {
+            e.target.classList.add("is-visible");
+            io.unobserve(e.target);
+          }
+        }
+      },
+      { rootMargin: "0px 0px -8% 0px", threshold: 0.08 }
+    );
+
+    const erfassen = (knoten = document) => {
+      knoten.querySelectorAll?.(".ov-reveal:not(.is-visible)").forEach((el) => io.observe(el));
+    };
+    erfassen();
+
+    const mo = new MutationObserver((mutationen) => {
+      for (const m of mutationen) {
+        m.addedNodes.forEach((n) => {
+          if (n.nodeType !== 1) return;
+          if (n.classList?.contains("ov-reveal")) io.observe(n);
+          erfassen(n);
+        });
+      }
+    });
+    mo.observe(document.body, { childList: true, subtree: true });
+
+    const netz = setTimeout(() => {
+      document.querySelectorAll(".ov-reveal:not(.is-visible)").forEach((el) => {
+        const r = el.getBoundingClientRect();
+        if (r.top < window.innerHeight) el.classList.add("is-visible");
+      });
+    }, 4000);
+
+    return () => {
+      io.disconnect();

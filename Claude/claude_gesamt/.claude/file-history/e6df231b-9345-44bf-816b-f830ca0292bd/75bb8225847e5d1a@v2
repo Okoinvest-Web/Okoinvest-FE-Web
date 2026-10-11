@@ -1,0 +1,204 @@
+<script setup lang="ts">
+/**
+ * Liniendiagramm für Messwertverläufe über mehrere Wartungszyklen (FA-094).
+ *
+ * Inline-SVG statt Diagrammbibliothek: Das Offline-Bundle bleibt klein, und
+ * die Darstellung passt sich ohne Zusatzarbeit dem hellen und dunklen Design an.
+ */
+import { computed } from 'vue'
+
+export interface Messpunkt {
+  datum: string
+  wert: number
+}
+
+export interface Reihe {
+  name: string
+  punkte: Messpunkt[]
+}
+
+const props = withDefaults(
+  defineProps<{
+    reihen: Reihe[]
+    einheit?: string
+    /** Waagrechte Marke, z. B. der Riso-Grenzwert nach IEC 62446-1. */
+    grenzwert?: number | null
+    grenzwertLabel?: string
+    hoehe?: number
+  }>(),
+  { einheit: '', grenzwert: null, grenzwertLabel: 'Grenzwert', hoehe: 200 },
+)
+
+// Farben aus der Statuspalette, damit Diagramm und Abzeichen zusammenpassen.
+const FARBEN = ['#0ea5e9', '#10b981', '#8b5cf6', '#f59e0b', '#ec4899', '#14b8a6', '#6366f1', '#f97316']
+
+const BREITE = 640
+const RAND = { oben: 12, rechts: 12, unten: 26, links: 46 }
+
+const zeitpunkte = computed(() => {
+  const alle = new Set<string>()
+  for (const reihe of props.reihen) for (const punkt of reihe.punkte) alle.add(punkt.datum)
+  return [...alle].sort()
+})
+
+const bereich = computed(() => {
+  const werte = props.reihen.flatMap((r) => r.punkte.map((p) => p.wert))
+  if (props.grenzwert) werte.push(props.grenzwert)
+  if (!werte.length) return { min: 0, max: 1 }
+
+  const min = Math.min(...werte)
+  const max = Math.max(...werte)
+  if (min === max) return { min: min * 0.9, max: max * 1.1 || 1 }
+  // 8 % Luft nach oben und unten, damit Punkte nicht am Rand kleben.
+  const luft = (max - min) * 0.08
+  return { min: Math.max(0, min - luft), max: max + luft }
+})
+
+const innen = computed(() => ({
+  breite: BREITE - RAND.links - RAND.rechts,
+  hoehe: props.hoehe - RAND.oben - RAND.unten,
+}))
+
+function x(datum: string): number {
+  const index = zeitpunkte.value.indexOf(datum)
+  const anzahl = Math.max(1, zeitpunkte.value.length - 1)
+  return RAND.links + (index / anzahl) * innen.value.breite
+}
+
+function y(wert: number): number {
+  const { min, max } = bereich.value
+  const anteil = (wert - min) / (max - min || 1)
+  return RAND.oben + (1 - anteil) * innen.value.hoehe
+}
+
+const linien = computed(() =>
+  props.reihen.map((reihe, i) => ({
+    name: reihe.name,
+    farbe: FARBEN[i % FARBEN.length],
+    punkte: [...reihe.punkte].sort((a, b) => a.datum.localeCompare(b.datum)),
+    pfad: [...reihe.punkte]
+      .sort((a, b) => a.datum.localeCompare(b.datum))
+      .map((punkt, index) => `${index === 0 ? 'M' : 'L'}${x(punkt.datum).toFixed(1)} ${y(punkt.wert).toFixed(1)}`)
+      .join(' '),
+  })),
+)
+
+/** Drei Achsenmarken genügen — mehr wird auf dem Smartphone unleserlich. */
+const achsenwerte = computed(() => {
+  const { min, max } = bereich.value
+  return [max, (max + min) / 2, min].map((wert) => ({
+    wert,
+    y: y(wert),
+    text: wert >= 100 ? Math.round(wert).toLocaleString('de-AT') : wert.toFixed(1),
+  }))
+})
+
+const beschriftungen = computed(() => {
+  const liste = zeitpunkte.value
+  if (liste.length <= 4) return liste
+  // Erste, letzte und zwei dazwischen
+  const indizes = [0, Math.floor(liste.length / 3), Math.floor((2 * liste.length) / 3), liste.length - 1]
+  return [...new Set(indizes)].map((i) => liste[i])
+})
+
+function kurzesDatum(datum: string): string {
+  const d = new Date(datum.replace(' ', 'T'))
+  return Number.isNaN(d.getTime())
+    ? datum.slice(0, 10)
+    : d.toLocaleDateString('de-AT', { month: '2-digit', year: '2-digit' })
+}
+
+const hatDaten = computed(() => zeitpunkte.value.length > 0)
+</script>
+
+<template>
+  <figure>
+    <svg
+      v-if="hatDaten"
+      :viewBox="`0 0 ${BREITE} ${hoehe}`"
+      class="w-full"
+      :style="{ height: `${hoehe}px` }"
+      role="img"
+      :aria-label="`Messwertverlauf mit ${reihen.length} Reihen`"
+    >
+      <!-- Achsenraster -->
+      <g class="text-slate-300 dark:text-slate-700">
+        <line
+          v-for="marke in achsenwerte"
+          :key="marke.wert"
+          :x1="RAND.links"
+          :x2="BREITE - RAND.rechts"
+          :y1="marke.y"
+          :y2="marke.y"
+          stroke="currentColor"
+          stroke-width="1"
+          stroke-dasharray="3 3"
+        />
+      </g>
+      <g class="fill-slate-400 text-[10px]">
+        <text
+          v-for="marke in achsenwerte"
+          :key="`t-${marke.wert}`"
+          :x="RAND.links - 6"
+          :y="marke.y + 3"
+          text-anchor="end"
+        >
+          {{ marke.text }}
+        </text>
+        <text
+          v-for="datum in beschriftungen"
+          :key="datum"
+          :x="x(datum)"
+          :y="hoehe - 8"
+          text-anchor="middle"
+        >
+          {{ kurzesDatum(datum) }}
+        </text>
+      </g>
+
+      <!-- Grenzwert -->
+      <g v-if="grenzwert">
+        <line
+          :x1="RAND.links"
+          :x2="BREITE - RAND.rechts"
+          :y1="y(grenzwert)"
+          :y2="y(grenzwert)"
+          stroke="#dc2626"
+          stroke-width="1.5"
+          stroke-dasharray="6 4"
+        />
+        <text :x="BREITE - RAND.rechts" :y="y(grenzwert) - 4" text-anchor="end"
+              class="fill-fehler text-[10px] font-semibold">
+          {{ grenzwertLabel }}
+        </text>
+      </g>
+
+      <!-- Messreihen -->
+      <g v-for="linie in linien" :key="linie.name">
+        <path :d="linie.pfad" fill="none" :stroke="linie.farbe" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round" />
+        <circle
+          v-for="punkt in linie.punkte"
+          :key="`${linie.name}-${punkt.datum}`"
+          :cx="x(punkt.datum)"
+          :cy="y(punkt.wert)"
+          r="3"
+          :fill="linie.farbe"
+        >
+          <title>{{ linie.name }} · {{ kurzesDatum(punkt.datum) }}: {{ punkt.wert }} {{ einheit }}</title>
+        </circle>
+      </g>
+    </svg>
+
+    <p v-else class="py-8 text-center text-sm text-slate-500">
+      Noch keine Messwerte aus abgeschlossenen Protokollen.
+    </p>
+
+    <figcaption v-if="hatDaten && reihen.length > 1" class="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs">
+      <span v-for="linie in linien" :key="`l-${linie.name}`" class="flex items-center gap-1.5">
+        <span class="h-2 w-2 rounded-full" :style="{ background: linie.farbe }" />
+        {{ linie.name }}
+      </span>
+    </figcaption>
+  </figure>
+</template>

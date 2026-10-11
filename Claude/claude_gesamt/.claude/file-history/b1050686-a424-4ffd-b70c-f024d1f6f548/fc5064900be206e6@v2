@@ -1,0 +1,351 @@
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+
+import {
+  HOECHSTE_STUFE,
+  KANALPLAENE,
+  hatDienst,
+  planeZustellung,
+  pruefeEskalation,
+  werHatDienst,
+  type Dienstplaneintrag,
+  type Meldung,
+} from "./eskalation.ts";
+
+/**
+ * Der teuerste Fehler ist die Meldung, die niemanden erreicht und von
+ * der alle annehmen, sie sei angekommen.
+ *
+ * Bezugswoche: Montag, 14. September 2026 bis Sonntag, 20. September.
+ * 26. Oktober 2026 ist ein Montag und Nationalfeiertag.
+ */
+const MO = (stunde: number) => new Date(2026, 8, 14, stunde, 0, 0, 0);
+const SA = (stunde: number) => new Date(2026, 8, 19, stunde, 0, 0, 0);
+const FEIERTAG = (stunde: number) => new Date(2026, 9, 26, stunde, 0, 0, 0);
+
+function eintrag(teil: Partial<Dienstplaneintrag> = {}): Dienstplaneintrag {
+  return {
+    id: "D1",
+    bezeichnung: "Tagdienst Technik",
+    wochentage: "12345",
+    vonStunde: 7,
+    bisStunde: 17,
+    stufe: 1,
+    empfaenger: "m.hofbauer@steiner-holzbau.at",
+    kanal: "Push",
+    aktiv: true,
+    auchFeiertags: false,
+    ...teil,
+  };
+}
+
+const PLAN: Dienstplaneintrag[] = [
+  eintrag({ id: "D1", stufe: 1, empfaenger: "Tagdienst" }),
+  eintrag({
+    id: "D2",
+    bezeichnung: "Stellvertretung",
+    stufe: 2,
+    empfaenger: "Teamleitung",
+    kanal: "Anruf",
+  }),
+  eintrag({
+    id: "D3",
+    bezeichnung: "Notdienst rund um die Uhr",
+    wochentage: "1234567",
+    vonStunde: 0,
+    bisStunde: 24,
+    stufe: 3,
+    empfaenger: "SOC",
+    kanal: "Anruf",
+    auchFeiertags: false,
+  }),
+  eintrag({
+    id: "D4",
+    bezeichnung: "Notdienst Feiertag",
+    wochentage: "1234567",
+    vonStunde: 0,
+    bisStunde: 24,
+    stufe: 3,
+    empfaenger: "SOC",
+    kanal: "Anruf",
+    auchFeiertags: true,
+  }),
+];
+
+describe("hatDienst", () => {
+  it("erkennt die Dienstzeit an einem Werktag", () => {
+    assert.equal(hatDienst(eintrag(), MO(9)), true);
+    assert.equal(hatDienst(eintrag(), MO(6)), false);
+    assert.equal(hatDienst(eintrag(), MO(17)), false);
+  });
+
+  it("greift am Wochenende nicht", () => {
+    assert.equal(hatDienst(eintrag(), SA(9)), false);
+  });
+
+  it("kommt mit einem Dienst über Mitternacht zurecht", () => {
+    // Nachtdienst von 22 bis 6 Uhr.
+    const nacht = eintrag({
+      wochentage: "1234567",
+      vonStunde: 22,
+      bisStunde: 6,
+    });
+
+    assert.equal(hatDienst(nacht, MO(23)), true);
+    assert.equal(hatDienst(nacht, MO(3)), true);
+    assert.equal(hatDienst(nacht, MO(12)), false);
+  });
+
+  it("trennt Feiertagsdienst vom Werktagsdienst", () => {
+    // Am Nationalfeiertag klingelt nicht das Telefon derjenigen, die
+    // Werktagsdienst haben - auch wenn es ein Montag ist.
+    const werktag = eintrag({ auchFeiertags: false });
+    const feiertag = eintrag({ auchFeiertags: true });
+
+    assert.equal(hatDienst(werktag, FEIERTAG(9)), false);
+    assert.equal(hatDienst(feiertag, FEIERTAG(9)), true);
+    assert.equal(hatDienst(feiertag, MO(9)), false);
+  });
+
+  it("übergeht abgeschaltete Einträge", () => {
+    assert.equal(hatDienst(eintrag({ aktiv: false }), MO(9)), false);
+  });
+});
+
+describe("werHatDienst", () => {
+  it("ordnet nach Stufe", () => {
+    const dienst = werHatDienst(PLAN, MO(9));
+
+    assert.deepEqual(
+      dienst.map((d) => d.stufe),
+      [1, 2, 3],
+    );
+  });
+
+  it("liefert am Feiertag nur den Feiertagsdienst", () => {
+    const dienst = werHatDienst(PLAN, FEIERTAG(9));
+
+    assert.equal(dienst.length, 1);
+    assert.equal(dienst[0].id, "D4");
+  });
+
+  it("liefert nachts nur den Notdienst", () => {
+    const dienst = werHatDienst(PLAN, MO(3));
+
+    assert.equal(dienst.length, 1);
+    assert.equal(dienst[0].stufe, 3);
+  });
+});
+
+describe("planeZustellung", () => {
+  function meldung(teil: Partial<Meldung> = {}): Meldung {
+    return {
+      id: "M1",
+      dringlichkeit: "Kritisch",
+      erzeugtAm: MO(9),
+      stufe: 1,
+      ...teil,
+    };
+  }
+
+  it("bedient bei einer kritischen Meldung mehrere Wege gleichzeitig", () => {
+    // Wer im Funkloch steht, bekommt die Push-Nachricht nicht.
+    const auftraege = planeZustellung(meldung(), PLAN, MO(9));
+    const wege = new Set(auftraege.map((a) => a.kanal));
+
+    assert.ok(wege.has("Anruf"));
+    assert.ok(wege.has("SMS"));
+    assert.ok(wege.has("Push"));
+    assert.ok(wege.size >= 4);
+  });
+
+  it("ruft bei einer niedrigen Meldung niemanden an", () => {
+    const auftraege = planeZustellung(
+      meldung({ dringlichkeit: "Niedrig" }),
+      PLAN,
+      MO(9),
+    );
+
+    assert.ok(!auftraege.some((a) => a.kanal === "Anruf"));
+    assert.ok(!auftraege.some((a) => a.kanal === "SMS"));
+  });
+
+  it("stellt nach einer Bestätigung nichts mehr zu", () => {
+    const auftraege = planeZustellung(
+      meldung({ bestaetigtAm: MO(9) }),
+      PLAN,
+      MO(9),
+    );
+
+    assert.equal(auftraege.length, 0);
+  });
+
+  it("geht auf Stufe 1 an den Tagdienst", () => {
+    const auftraege = planeZustellung(meldung(), PLAN, MO(9));
+
+    assert.ok(auftraege.every((a) => a.empfaenger === "Tagdienst"));
+  });
+
+  it("geht auf Stufe 2 an die Stellvertretung", () => {
+    const auftraege = planeZustellung(
+      meldung({ stufe: 2 }),
+      PLAN,
+      MO(9),
+    );
+
+    assert.ok(auftraege.every((a) => a.empfaenger === "Teamleitung"));
+  });
+
+  it("geht auf Stufe 3 an alle Diensthabenden", () => {
+    // Dort ist die Frage nicht mehr, wer zuständig ist, sondern dass
+    // überhaupt jemand reagiert.
+    const auftraege = planeZustellung(
+      meldung({ stufe: 3 }),
+      PLAN,
+      MO(9),
+    );
+
+    const empfaenger = new Set(auftraege.map((a) => a.empfaenger));
+    assert.ok(empfaenger.size >= 3);
+  });
+
+  it("verschluckt keine Meldung, wenn auf der Stufe niemand Dienst hat", () => {
+    // Eine Lücke im Dienstplan darf nicht dazu führen, dass die
+    // Meldung ins Leere läuft.
+    const nurNotdienst: Dienstplaneintrag[] = [
+      eintrag({
+        id: "N",
+        wochentage: "1234567",
+        vonStunde: 0,
+        bisStunde: 24,
+        stufe: 3,
+        empfaenger: "SOC",
+      }),
+    ];
+
+    const auftraege = planeZustellung(meldung(), nurNotdienst, MO(3));
+
+    assert.ok(auftraege.length > 0);
+    assert.ok(auftraege.every((a) => a.empfaenger === "SOC"));
+  });
+
+  it("ergänzt den im Dienstplan hinterlegten Weg", () => {
+    const auftraege = planeZustellung(
+      meldung({ dringlichkeit: "Mittel" }),
+      PLAN,
+      MO(9),
+    );
+
+    // Kanalplan "Mittel" sieht nur Push vor; der Eintrag auch Push.
+    assert.ok(auftraege.some((a) => a.kanal === "Push"));
+  });
+
+  it("gibt jedem Auftrag eine Begründung mit", () => {
+    for (const a of planeZustellung(meldung(), PLAN, MO(9))) {
+      assert.ok(a.begruendung.length > 20);
+      assert.ok(a.begruendung.includes("Kritisch"));
+    }
+  });
+});
+
+describe("pruefeEskalation", () => {
+  function meldung(teil: Partial<Meldung> = {}): Meldung {
+    return {
+      id: "M1",
+      dringlichkeit: "Kritisch",
+      erzeugtAm: MO(9),
+      stufe: 1,
+      ...teil,
+    };
+  }
+
+  it("eskaliert nicht innerhalb der Frist", () => {
+    // Kritisch: zehn Minuten.
+    const e = pruefeEskalation(meldung(), new Date(2026, 8, 14, 9, 5));
+
+    assert.equal(e.eskalieren, false);
+    assert.equal(e.neueStufe, 1);
+    assert.ok(e.bisNaechsteMinuten > 0);
+  });
+
+  it("eskaliert nach Ablauf der Frist", () => {
+    const e = pruefeEskalation(meldung(), new Date(2026, 8, 14, 9, 11));
+
+    assert.equal(e.eskalieren, true);
+    assert.equal(e.neueStufe, 2);
+  });
+
+  it("eskaliert bei einer niedrigen Meldung deutlich später", () => {
+    const nachEinerStunde = new Date(2026, 8, 14, 10, 0);
+
+    assert.equal(
+      pruefeEskalation(meldung({ dringlichkeit: "Niedrig" }), nachEinerStunde)
+        .eskalieren,
+      false,
+    );
+    assert.equal(
+      pruefeEskalation(meldung({ dringlichkeit: "Kritisch" }), nachEinerStunde)
+        .eskalieren,
+      true,
+    );
+  });
+
+  it("eskaliert nach einer Bestätigung nicht mehr", () => {
+    const e = pruefeEskalation(
+      meldung({ bestaetigtAm: new Date(2026, 8, 14, 9, 2) }),
+      new Date(2026, 8, 14, 12, 0),
+    );
+
+    assert.equal(e.eskalieren, false);
+    assert.ok(e.begruendung.includes("bestätigt"));
+  });
+
+  it("bleibt auf der höchsten Stufe stehen", () => {
+    // Über dem Notdienst gibt es nichts mehr.
+    const e = pruefeEskalation(
+      meldung({ stufe: HOECHSTE_STUFE }),
+      new Date(2026, 8, 14, 23, 0),
+    );
+
+    assert.equal(e.eskalieren, false);
+    assert.equal(e.neueStufe, HOECHSTE_STUFE);
+    assert.ok(e.begruendung.includes("Notdienst"));
+  });
+
+  it("erreicht den Notdienst bei einer kritischen Meldung nach dreißig Minuten", () => {
+    // Zweite Stufe nach zwanzig Minuten, dritte nach dreißig.
+    const nachDreissig = new Date(2026, 8, 14, 9, 31);
+
+    const e = pruefeEskalation(meldung({ stufe: 2 }), nachDreissig);
+
+    assert.equal(e.eskalieren, true);
+    assert.equal(e.neueStufe, 3);
+    assert.ok(e.begruendung.includes("Notdienst"));
+  });
+});
+
+describe("Kanalpläne", () => {
+  it("setzt den Sprachanruf erst ab hoher Dringlichkeit ein", () => {
+    // Wer ihn bei jeder Meldung einsetzt, erreicht nach zwei Wochen
+    // niemanden mehr.
+    assert.ok(!KANALPLAENE.Niedrig.sofort.includes("Anruf"));
+    assert.ok(!KANALPLAENE.Mittel.sofort.includes("Anruf"));
+    assert.ok(KANALPLAENE.Kritisch.sofort.includes("Anruf"));
+  });
+
+  it("verkürzt die Frist mit steigender Dringlichkeit", () => {
+    assert.ok(
+      KANALPLAENE.Kritisch.fristMinuten < KANALPLAENE.Hoch.fristMinuten,
+    );
+    assert.ok(KANALPLAENE.Hoch.fristMinuten < KANALPLAENE.Mittel.fristMinuten);
+    assert.ok(
+      KANALPLAENE.Mittel.fristMinuten < KANALPLAENE.Niedrig.fristMinuten,
+    );
+  });
+
+  it("begründet jede Stufe im Klartext", () => {
+    for (const plan of Object.values(KANALPLAENE)) {
+      assert.ok(plan.begruendung.length > 40, plan.dringlichkeit);
+    }
+  });
+});

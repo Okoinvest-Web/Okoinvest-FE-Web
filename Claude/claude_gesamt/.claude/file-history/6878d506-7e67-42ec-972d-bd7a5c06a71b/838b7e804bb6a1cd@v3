@@ -1,0 +1,67 @@
+// Überschlagsrechnung fürs Kundengespräch – gemeinsam für PV-Rechner und Kundenblatt.
+// Richtwerte für Süddeutschland, keine Ertragsprognose; die liefert die Anlagenplanung.
+
+export const YIELD = 1050; // kWh je kWp und Jahr (Allgäu/Schwaben)
+export const CO2 = 0.38; // kg CO₂ je kWh Netzstrom
+export const YEARS = 20;
+
+export type PvInput = { kwp: number; storage: number; use: number; price: number; feed: number; invest: number };
+
+// Sinnvolle Startwerte: Gewerbe schätzt den Verbrauch aus der Anlagengröße, Privat nimmt einen typischen Haushalt
+// Richtwerte je Land (editierbar): DE mit EEG-Vergütung für Teileinspeisung,
+// AT mit Marktpreis-Richtwert (OeMAG/Energieversorger – schwankt deutlich).
+const COUNTRY_DEFAULTS = {
+  Germany: { price: 35, priceBusiness: 25, feed: 7.9 },
+  Austria: { price: 28, priceBusiness: 22, feed: 6 },
+};
+
+export function pvDefaults(kwp = 10, storage = 0, invest?: number, country: "Germany" | "Austria" = "Germany"): PvInput {
+  const business = kwp > 30;
+  const c = COUNTRY_DEFAULTS[country];
+  return {
+    kwp,
+    storage,
+    use: business ? Math.round((kwp * YIELD * 0.8) / 1000) * 1000 : 5000,
+    price: business ? c.priceBusiness : c.price,
+    feed: c.feed,
+    invest: invest && invest > 0 ? invest : Math.round(kwp * 1500 + storage * 700),
+  };
+}
+
+export function calcPv({ kwp, storage, use, price, feed, invest }: PvInput) {
+  const prod = kwp * YIELD;
+  const cover = use > 0 ? Math.min(prod / use, 1) : 0;
+  // Autarkie: ohne Speicher ~25–35 %, Speicher hebt um bis zu ~40 Punkte (sättigt bei ~1 kWh je MWh Verbrauch)
+  const base = 0.25 + 0.1 * cover;
+  const boost = 0.4 * Math.min(1, storage / Math.max(1, use / 1000));
+  const autarky = Math.min(0.9, base + boost, cover);
+  const self = autarky * use;
+  const exported = Math.max(0, prod - self);
+  const saving = (self * price + exported * feed) / 100;
+  return {
+    prod,
+    self,
+    exported,
+    autarky,
+    selfShare: prod > 0 ? self / prod : 0,
+    saving,
+    payback: saving > 0 ? invest / saving : Infinity,
+    co2: (prod * CO2) / 1000,
+    over20: saving * YEARS - invest,
+  };
+}
+
+// Kumulierter Überschuss je Jahr (für den Verlauf auf dem Kundenblatt)
+export function cumulative(input: PvInput, years = YEARS) {
+  const { saving } = calcPv(input);
+  return Array.from({ length: years + 1 }, (_, y) => Math.round(saving * y - input.invest));
+}
+
+// Werte aus der URL lesen (Kundenblatt übernimmt die Eingaben des Rechners)
+export function pvFromParams(sp: Record<string, string | string[] | undefined>, fallback: PvInput): PvInput {
+  const num = (k: keyof PvInput) => {
+    const v = Number(typeof sp[k] === "string" ? sp[k] : NaN);
+    return Number.isFinite(v) && v >= 0 && v < 1e8 ? v : fallback[k];
+  };
+  return { kwp: num("kwp"), storage: num("storage"), use: num("use"), price: num("price"), feed: num("feed"), invest: num("invest") };
+}

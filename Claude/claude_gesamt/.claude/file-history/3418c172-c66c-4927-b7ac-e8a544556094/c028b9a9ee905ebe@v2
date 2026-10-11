@@ -1,0 +1,32 @@
+import type {
+  Contact,
+  Customer,
+  Lead,
+  LeadStatus,
+  ListOptions,
+  NewLead,
+  Opportunity,
+  ToDo,
+} from "@/lib/types";
+
+// Gemeinsame Schnittstelle für Mock-Daten und die echte ERPNext-API.
+export interface DataSource {
+  readonly kind: "mock" | "erpnext";
+
+  listLeads(opts?: ListOptions): Promise<Lead[]>;
+  getLead(name: string): Promise<Lead | null>;
+  createLead(data: NewLead): Promise<Lead>;
+  setLeadStatus(name: string, status: LeadStatus): Promise<void>;
+
+  listOpportunities(opts?: ListOptions): Promise<Opportunity[]>;
+  getOpportunity(name: string): Promise<Opportunity | null>;
+  setOpportunityStage(name: string, stage: string): Promise<void>;
+
+  listCustomers(opts?: ListOptions): Promise<Customer[]>;
+  getCustomer(name: string): Promise<Customer | null>;
+
+  listContacts(opts?: ListOptions): Promise<Contact[]>;
+
+  listToDos(opts?: ListOptions): Promise<ToDo[]>;
+  setToDoStatus(name: string, status: ToDo["status"]): Promise<void>;
+}

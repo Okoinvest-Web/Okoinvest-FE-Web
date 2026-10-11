@@ -1,0 +1,178 @@
+# LTO-Bandarchiv ÖKOVOLT NetOps
+
+Stand 2026-09-19 · Ergänzung zum [Sicherungskonzept](backup-konzept.md)
+
+---
+
+## 1. Warum Band, wenn es schon vier Ziele gibt
+
+Proxmox Backup Server, NAKIVO, Frappe Drive und Amazon S3 sind alle über
+ein Netz erreichbar. **Wer die Verwaltung übernimmt, erreicht sie auch.**
+
+Object Lock im Compliance-Modus hilft dagegen, aber nur solange das
+AWS-Konto selbst hält. Ein ausgeworfenes Band im Bankschließfach hat keine
+Netzwerkschnittstelle. Das ist die ganze Idee.
+
+> **Ein ausgeworfenes Band, das im Serverraum liegen bleibt, ist kein
+> Airgap – es sieht nur so aus.**
+
+Aus diesem Satz folgt der komplette Ablauf: Der Vorgang endet nicht beim
+Auswurf, sondern bei der Quittung.
+
+---
+
+## 2. LTO-9 in Zahlen
+
+| Größe | Wert |
+| --- | --- |
+| Kapazität nativ | 18 TB |
+| Kapazität bei 2,5:1 | 45 TB |
+| Etikett | sechs Stellen Seriennummer + Medienkürzel `L9` |
+| Symbolik | Code 39 |
+| Ladezyklen | rund 20.000 je Band |
+| Haltbarkeit | 30 Jahre bei 16–25 °C, 20–50 % rel. Feuchte |
+
+Die Zykluszahl steht hier, weil sie im Betrieb praktisch nie der Grund ist:
+ein Wochenband wird 52-mal im Jahr geladen und wäre nach 380 Jahren durch.
+**Bänder scheitern an der Aufbewahrungsfrist, nicht am Verschleiß.** Die
+Zahl gehört trotzdem in den Bestand – sie ist das einzige Verschleißmaß,
+das es gibt.
+
+---
+
+## 3. Etiketten
+
+`tape_label_generate` zählt innerhalb eines Präfixes hoch und überspringt
+alles Vergebene – **auch ausgesonderte Bänder**. Eine wiederverwendete
+Nummer macht jede Historie mehrdeutig, und genau die braucht man, wenn
+jemand fragt, was auf dem Band von vor drei Jahren war.
+
+Gedruckt wird Code 39 mit Klartext unter den Balken. Das ist kein Beiwerk:
+am Medienschrank steht selten jemand mit einem Scanner. Ein Etikett, das
+nur eine Maschine lesen kann, zwingt zum Einlegen, bevor man weiß, was man
+einlegt.
+
+Drucklage: Modulbreite mindestens 0,25 mm, Ruhezone 6 mm links und rechts.
+
+`tape_label_check` beantwortet einen Scan. Es wirft **keine Ausnahme** bei
+einem ungültigen Code – beim Scannen ist der Fehlgriff der Normalfall, und
+ein roter Kasten mit Grund hilft mehr als ein Abbruch.
+
+---
+
+## 4. Der Rotationsplan
+
+Steht am `Tape Pool`, nicht im Code:
+
+| Feld | Satz „woche" | Satz „monat" |
+| --- | --- | --- |
+| Schreiblauf | Montag | erster Samstag |
+| Wechsel | Dienstag 06:00 | Montag 08:00 |
+| Aufbewahrung | 35 Tage | 2555 Tage (§ 132 BAO) |
+| Erinnerungstakt | 1 Stunde | 4 Stunden |
+| Auslagerung | Bankschließfach Sparkasse Linz, Fach 2213 | dieselbe |
+
+Vier Wochenbänder und zwölf Monatsbänder: die Woche deckt den Bedienfehler
+ab, der Monat die späte Entdeckung.
+
+---
+
+## 5. Der Ablauf
+
+Frappe Workflow, DocType `Tape Change Request`:
+
+```
+Wartet auf Schreiblauf
+        │ Schreiblauf ist fertig
+        ▼
+Bereit zum Auswerfen ─────Abbrechen────▶ Abgebrochen
+        │ Auswerfen
+        ▼
+Ausgeworfen – Wechsel offen   ◀── hier läuft die Erinnerungsschleife
+        │ Wechsel bestätigen
+        ▼
+Wechsel bestätigt
+```
+
+### 5.1 Auswerfen hat Bedingungen
+
+`tape_eject_check` sperrt, wenn:
+
+- der Schreiblauf noch läuft – Auswerfen zerstört ihn
+- die Prüfung fehlgeschlagen ist – ein unlesbares Band auszulagern
+  verschiebt nur den Schaden
+- das Band ungeprüft ist – sich auf etwas zu verlassen, das niemand
+  gelesen hat, ist keine Sicherung
+- das Band unverschlüsselt ist – außer Haus wäre das eine lesbare Kopie
+  der Firma
+
+Das sind **Sperren, keine Warnungen**. Alle vier Fälle fallen sonst erst im
+Ernstfall auf.
+
+### 5.2 Die Erinnerungsschleife
+
+Sie hängt am **Fälligkeitstermin**, nicht am Auswurf. Wer gar nicht erst
+auswirft, bekäme sonst nie eine Mail – und das ist der Fall, der am
+längsten unbemerkt bleibt.
+
+Zwei Lagen, zwei verschiedene Mails:
+
+| Zustand | Betreff |
+| --- | --- |
+| `ready`, überfällig | „Bandwechsel fällig: OEK039L9 ist noch nicht ausgeworfen" |
+| `ejected` | „Bandwechsel offen: OEK039L9 liegt noch im Serverraum" |
+
+„Bandwechsel offen" hilft niemandem, der noch gar nicht ausgeworfen hat.
+
+In Frappe ruft das ein stündlicher Scheduler-Job auf:
+
+```python
+# netops/hooks.py
+scheduler_events = {
+    "hourly": ["netops.tape.reminders.versende_faellige"],
+}
+```
+
+`tape_reminders_due()` **verschickt nichts** – es sagt, was zu verschicken
+wäre. Der Versand gehört ins Backend, nicht in einen Browser-Mock.
+
+### 5.3 Die Quittung
+
+`tape_confirm_change` verlangt:
+
+- einen **Lagerort** – „irgendwo sicher" findet im Ernstfall niemand
+- optional das **gescannte Etikett**; stimmt es nicht mit dem Auftrag
+  überein, wird abgewiesen. Ein verwechseltes Band fällt sonst erst bei
+  der Wiederherstellung auf.
+
+Erst hier gilt das Band als außer Haus, erst hier endet die Erinnerung,
+und hier rückt das Nachfolgeband nach. Ohne Nachfolger sagt die Antwort
+das ausdrücklich – sonst findet der nächste Lauf kein Medium, und das
+merkt man frühestens in der Nacht darauf.
+
+---
+
+## 6. Rollen
+
+| Rolle | Darf am Bandarchiv |
+| --- | --- |
+| `NetOps Viewer` | Bestand und Pläne lesen |
+| `NetOps Operator` | Etiketten erzeugen, Bänder aufnehmen, auswerfen, Wechsel quittieren |
+| `NetOps Admin` | Wechselauftrag abbrechen, Sätze pflegen |
+
+Löschen gibt es nicht. Ein Band wird ausgesondert, nicht entfernt – sonst
+lässt sich später nicht mehr sagen, was darauf war.
+
+---
+
+## 7. Offene Punkte
+
+- **Der Lagerort wird nicht geprüft.** Dass jemand „Bankschließfach"
+  eintippt, heißt nicht, dass das Band dort liegt. Eine Gegenzeichnung
+  durch die zweite Person beim Einwurf wäre das nächste Niveau.
+- **Kein Tausch-Nachweis beim Schließfach.** Wer wann welches Band geholt
+  hat, weiß derzeit nur die Bank.
+- **TapeAlert-Flags werden angezeigt, aber nicht ausgewertet.** Ein Laufwerk,
+  das Reinigung anfordert, sollte den nächsten Lauf blockieren.
+- **Wiederherstellung vom Band ist nie getestet worden.** Der Fall, für den
+  das Airgap da ist, ist genau der ungeübte.

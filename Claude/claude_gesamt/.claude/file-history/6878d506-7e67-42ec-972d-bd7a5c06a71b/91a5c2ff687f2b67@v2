@@ -1,0 +1,85 @@
+import sys, os, re
+os.chdir(r"C:\Users\SALEADMIN\Downloads\crm-develop\crm-next")
+
+def wrap(p, table_start, cards):
+    s = open(p, encoding="utf-8").read()
+    i = s.index(table_start)
+    j = s.index("</Table>", i) + len("</Table>")
+    table = s[i:j]
+    new = "<>\n" + cards + '\n<div className="hidden sm:block">\n' + table + "\n</div>\n</>"
+    s = s[:i] + new + s[j:]
+    open(p, "w", encoding="utf-8", newline="\n").write(s)
+
+wrap(
+    "src/app/(crm)/leads/page.tsx",
+    '<Table head={["Name", "Score"',
+    '''{/* Handy: Karten statt Tabelle */}
+<ul className="divide-y divide-gray-100 sm:hidden">
+  {leads.map((l) => (
+    <li key={l.name}>
+      <Link href={`/leads/${encodeURIComponent(l.name)}`} className="flex items-center gap-3 px-4 py-3 active:bg-gray-50">
+        <Avatar name={l.lead_name} size="md" />
+        <div className="min-w-0 flex-1">
+          <div className="truncate font-medium text-gray-900">{l.lead_name}</div>
+          <div className="truncate text-[12px] text-gray-500">
+            {l.company_name ?? "Privat"} · {l.source ?? "–"} · {relative(l.modified)}
+          </div>
+        </div>
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          <ScoreBadge s={l.score} />
+          <Badge value={l.status} label={LEAD_STATUS_LABEL[l.status]} />
+        </div>
+      </Link>
+    </li>
+  ))}
+</ul>''',
+)
+
+wrap(
+    "src/app/(crm)/customers/page.tsx",
+    '<Table head={["Name", "Typ"',
+    '''{/* Handy: Karten statt Tabelle */}
+<ul className="divide-y divide-gray-100 sm:hidden">
+  {customers.map((c) => (
+    <li key={c.name}>
+      <Link href={`/customers/${encodeURIComponent(c.name)}`} className="flex items-center gap-3 px-4 py-3 active:bg-gray-50">
+        <Avatar name={c.customer_name} size="md" square={c.customer_type === "Company"} />
+        <div className="min-w-0 flex-1">
+          <div className="truncate font-medium text-gray-900">{c.customer_name}</div>
+          <div className="truncate text-[12px] text-gray-500">
+            {c.customer_group} · {c.territory}
+          </div>
+        </div>
+      </Link>
+    </li>
+  ))}
+</ul>''',
+)
+
+wrap(
+    "src/app/(crm)/contacts/page.tsx",
+    '<Table head={["Name", "Firma"',
+    '''{/* Handy: Karten mit Direktwahl */}
+<ul className="divide-y divide-gray-100 sm:hidden">
+  {contacts.map((c) => (
+    <li key={c.name} className="flex items-center gap-3 px-4 py-3">
+      <Avatar name={c.full_name} size="md" />
+      <div className="min-w-0 flex-1">
+        <div className="truncate font-medium text-gray-900">{c.full_name}</div>
+        <div className="truncate text-[12px] text-gray-500">{[c.designation, c.company_name].filter(Boolean).join(" · ") || "–"}</div>
+      </div>
+      {c.mobile_no && (
+        <a href={`tel:${c.mobile_no.replace(/\\s/g, "")}`} aria-label={`${c.full_name} anrufen`} className="rounded-md border border-gray-200 p-2 text-gray-600">
+          <Phone className="size-4" />
+        </a>
+      )}
+    </li>
+  ))}
+</ul>''',
+)
+
+p = "src/app/(crm)/contacts/page.tsx"
+s = open(p, encoding="utf-8").read()
+s = s.replace('import { Contact } from "lucide-react";', 'import { Contact, Phone } from "lucide-react";')
+open(p, "w", encoding="utf-8", newline="\n").write(s)
+print("ok")

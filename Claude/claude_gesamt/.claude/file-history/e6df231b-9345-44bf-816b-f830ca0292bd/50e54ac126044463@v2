@@ -1,0 +1,60 @@
+import pathlib
+
+p = pathlib.Path(r"C:\Users\SALEADMIN\Documents\Servicetechniker APP\frontend\vite.config.ts")
+s = p.read_text(encoding="utf-8")
+
+ANFANG = "/**\n * Verteilt das Build-Ergebnis"
+ENDE = "export default defineConfig("
+start = s.index(ANFANG)
+stop = s.index(ENDE)
+
+BLOCK = r"""/**
+ * Verteilt das Build-Ergebnis an die Stellen, an denen Frappe es erwartet:
+ *
+ * - `www/baudoku.html` — die Einstiegsseite der SPA
+ * - `www/sw.js` und die Workbox-Laufzeit — der Service Worker **muss** im
+ *   Wurzelpfad liegen. Er kontrolliert nur Seiten unterhalb seines eigenen
+ *   Verzeichnisses; aus `/assets/oekovolt_baudoku/frontend/` heraus registriert
+ *   erreichte er die App unter `/baudoku` nie, und die Offline-Fähigkeit wäre
+ *   wirkungslos (NFA-010).
+ */
+function frappeWebsitePage(): Plugin {
+  return {
+    name: 'frappe-website-page',
+    apply: 'build',
+    // `post`: vite-plugin-pwa erzeugt den Service Worker ebenfalls in
+    // `closeBundle` — ohne diese Reihenfolge wäre er hier noch nicht vorhanden.
+    closeBundle: {
+      order: 'post',
+      sequential: true,
+      handler() {
+        const bundle = resolve(APP_DIR, 'public/frontend')
+        const www = resolve(APP_DIR, 'www')
+        if (!existsSync(resolve(bundle, 'index.html'))) return
+
+        mkdirSync(www, { recursive: true })
+        copyFileSync(resolve(bundle, 'index.html'), resolve(www, 'baudoku.html'))
+
+        // sw.js und die per importScripts geladene Workbox-Datei; deren Name
+        // trägt einen Hash, deshalb aus dem Verzeichnis lesen.
+        const wurzeldateien = readdirSync(bundle).filter(
+          (datei) => datei === 'sw.js' || /^workbox-[\w-]+\.js$/.test(datei),
+        )
+        for (const datei of wurzeldateien) {
+          copyFileSync(resolve(bundle, datei), resolve(www, datei))
+        }
+
+        const kopiert = wurzeldateien.length
+          ? wurzeldateien.join(', ')
+          : '(kein Service Worker gefunden)'
+        // eslint-disable-next-line no-console
+        console.log(`\n  Nach www kopiert: baudoku.html, ${kopiert}\n`)
+      },
+    },
+  }
+}
+
+"""
+
+p.write_text(s[:start] + BLOCK + s[stop:], encoding="utf-8")
+print("Plugin neu geschrieben")

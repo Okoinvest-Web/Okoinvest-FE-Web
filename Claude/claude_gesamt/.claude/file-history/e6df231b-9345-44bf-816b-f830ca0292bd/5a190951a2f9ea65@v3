@@ -1,0 +1,85 @@
+"""Jinja-Helfer fuer die Print Formats (in hooks.py registriert)."""
+
+from __future__ import annotations
+
+import base64
+import mimetypes
+import os
+
+import frappe
+
+FARBEN = {
+	"OK": "#16a34a",
+	"Warnung": "#f59e0b",
+	"Fehler": "#dc2626",
+	"Offen": "#94a3b8",
+	"Uebersprungen": "#64748b",
+	"Bestanden": "#16a34a",
+	"Bestanden mit Auflagen": "#f59e0b",
+	"Nicht bestanden": "#dc2626",
+	"A": "#dc2626",
+	"B": "#f59e0b",
+	"C": "#0284c7",
+}
+
+
+def status_farbe(status: str | None) -> str:
+	"""Hex-Farbe zu einem Status- oder Schweregradwert."""
+	return FARBEN.get(status or "", "#475569")
+
+
+def gruppiere_ergebnisse(ergebnisse) -> list[dict]:
+	"""Fasst die flache Ergebnisliste wieder nach Sektionen zusammen."""
+	gruppen: list[dict] = []
+	for zeile in ergebnisse:
+		if not gruppen or gruppen[-1]["sektion"] != zeile.sektion:
+			gruppen.append({"sektion": zeile.sektion, "zeilen": []})
+		gruppen[-1]["zeilen"].append(zeile)
+	return gruppen
+
+
+# Ueber dieser Groesse wird nicht eingebettet: Ein Protokoll mit 30 Fotos
+# erzeugt sonst ein PDF, das kein Mailserver mehr annimmt.
+MAX_EINBETTUNG_BYTES = 4 * 1024 * 1024
+
+
+def bild_daten(datei_url: str | None) -> str:
+	"""Bettet ein Bild als ``data:``-URI in das PDF ein.
+
+	Fotos liegen als private Dateien. Der PDF-Renderer laeuft ohne Session und
+	kann ``/private/files/...`` nicht abrufen — im erzeugten PDF blieben die
+	Bilder leer. Der Umweg ueber das Dateisystem umgeht die Authentifizierung
+	vollstaendig und ist damit auch unabhaengig von der Renderer-Konfiguration
+	(FA-090, AK-03).
+
+	Schlaegt etwas fehl, wird die urspruengliche URL zurueckgegeben: Ein
+	fehlendes Bild darf den Druck nicht verhindern.
+	"""
+	if not datei_url:
+		return ""
+	if datei_url.startswith("data:"):
+		return datei_url
+
+	try:
+		datei = frappe.get_doc("File", {"file_url": datei_url})
+		pfad = datei.get_full_path()
+		if not os.path.exists(pfad) or os.path.getsize(pfad) > MAX_EINBETTUNG_BYTES:
+			return datei_url
+
+		typ = mimetypes.guess_type(pfad)[0] or "image/jpeg"
+		with open(pfad, "rb") as strom:
+			kodiert = base64.b64encode(strom.read()).decode("ascii")
+		return f"data:{typ};base64,{kodiert}"
+	# Ein fehlendes oder unlesbares Bild darf den Druck nicht verhindern.
+	except Exception:
+		frappe.log_error(title="Baudoku PDF-Bild", message=frappe.get_traceback())
+		return datei_url
+
+
+def formatiere_gps(wert: str | None, lat: float | None = None, lng: float | None = None) -> str:
+	"""GPS als lesbare Koordinate mit Kartenlink."""
+	if lat and lng:
+		wert = f"{lat:.6f}, {lng:.6f}"
+	if not wert:
+		return "-"
+	return wert

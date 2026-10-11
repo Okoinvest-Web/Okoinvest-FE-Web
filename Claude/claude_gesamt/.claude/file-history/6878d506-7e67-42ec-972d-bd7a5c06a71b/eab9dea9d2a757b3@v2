@@ -1,0 +1,84 @@
+"use client";
+
+import Link from "next/link";
+import { useOptimistic, useState, useTransition } from "react";
+import { setOpportunityStageAction } from "@/lib/actions";
+import { money, date, STAGE_LABEL } from "@/lib/format";
+import type { Opportunity } from "@/lib/types";
+import type { DealHealth } from "@/lib/insights";
+import { Avatar, Progress } from "@/components/ui";
+import { HealthDot } from "@/components/Insights";
+
+// Chancen per Drag & Drop zwischen Vertriebsphasen verschieben.
+export function Kanban({ stages, items, health }: { stages: readonly string[]; items: Opportunity[]; health: Record<string, DealHealth> }) {
+  const [, start] = useTransition();
+  const [over, setOver] = useState<string | null>(null);
+  const [opps, move] = useOptimistic(items, (state, { name, stage }: { name: string; stage: string }) =>
+    state.map((o) => (o.name === name ? { ...o, sales_stage: stage } : o)),
+  );
+
+  function drop(stage: string, name: string) {
+    setOver(null);
+    const current = opps.find((o) => o.name === name);
+    if (!current || current.sales_stage === stage) return;
+    start(async () => {
+      move({ name, stage });
+      await setOpportunityStageAction(name, stage);
+    });
+  }
+
+  return (
+    <div className="flex min-h-0 flex-1 gap-2.5 overflow-x-auto p-4">
+      {stages.map((stage) => {
+        const col = opps.filter((o) => o.sales_stage === stage);
+        const sum = col.reduce((s, o) => s + o.opportunity_amount, 0);
+        return (
+          <section
+            key={stage}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setOver(stage);
+            }}
+            onDragLeave={() => setOver((s) => (s === stage ? null : s))}
+            onDrop={(e) => drop(stage, e.dataTransfer.getData("text/plain"))}
+            className={`flex min-w-[216px] flex-1 basis-0 flex-col rounded-xl p-1.5 transition-colors ${over === stage ? "bg-brand-50 ring-1 ring-brand-200" : "bg-gray-50"}`}
+          >
+            <header className="flex items-center gap-2 px-2 pb-2.5 pt-1.5">
+              <h2 className="truncate font-semibold text-gray-900">{STAGE_LABEL[stage] ?? stage}</h2>
+              <span className="tnum text-gray-400">{col.length}</span>
+              <span className="tnum ml-auto text-[12px] text-gray-500">{money(sum)}</span>
+            </header>
+            <div className="flex min-h-24 flex-col gap-1.5">
+              {col.map((o) => (
+                <Link
+                  key={o.name}
+                  href={`/opportunities/${encodeURIComponent(o.name)}`}
+                  draggable
+                  onDragStart={(e) => e.dataTransfer.setData("text/plain", o.name)}
+                  className="group block cursor-grab rounded-lg border border-gray-200 bg-white p-3 shadow-xs transition hover:border-gray-300 hover:shadow-lift active:cursor-grabbing"
+                >
+                  <div className="flex items-start gap-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="font-medium leading-snug text-gray-900">{o.title ?? o.name}</div>
+                      <div className="mt-0.5 truncate text-[12px] text-gray-500">{o.customer_name ?? o.party_name}</div>
+                    </div>
+                    {o.opportunity_owner && <Avatar name={o.opportunity_owner} size="xs" />}
+                  </div>
+                  <div className="mt-3 flex items-center gap-2">
+                    <span className="tnum font-semibold text-gray-900">{money(o.opportunity_amount, o.currency)}</span>
+                    <Progress value={o.probability} className="ml-auto w-10" />
+                    <span className="tnum w-8 text-right text-[12px] text-gray-500">{o.probability} %</span>
+                  </div>
+                  <div className="mt-2.5 flex items-center justify-between border-t border-gray-100 pt-2 text-[12px] text-gray-500">
+                    <span className="tnum">{date(o.expected_closing)}</span>
+                    {health[o.name] && <HealthDot h={health[o.name]} />}
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+        );
+      })}
+    </div>
+  );
+}

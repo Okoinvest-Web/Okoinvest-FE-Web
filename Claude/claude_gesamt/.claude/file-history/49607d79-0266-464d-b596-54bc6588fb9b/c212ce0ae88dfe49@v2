@@ -1,0 +1,34 @@
+"""Ersetzt das NUL-Trennzeichen im Graph-Schluessel durch '::'.
+
+Ein NUL-Byte in der Quelldatei ist zwar gueltiges JavaScript, laesst aber
+jedes Werkzeug die Datei fuer binaer halten - grep, Diffs und Editoren
+verhalten sich dann anders als erwartet.
+"""
+import glob
+import io
+
+NUL = chr(0)
+
+ALT = "  const schluessel = (typ, name) => typ + '" + NUL + "' + name"
+NEU = (
+    "  // Trennzeichen, das in keinem DocType- oder Dokumentnamen vorkommt.\n"
+    "  // Ein Leerzeichen waere zweideutig: \"A B\"/\"C\" und \"A\"/\"B C\"\n"
+    "  // ergaeben denselben Schluessel.\n"
+    "  const schluessel = (typ, name) => typ + '::' + name"
+)
+
+pfad = "src/api/mock/methods/services.js"
+text = io.open(pfad, encoding="utf-8").read()
+print("Zeile gefunden:", ALT in text)
+text = text.replace(ALT, NEU)
+rest = text.count(NUL)
+text = text.replace(NUL, "::")
+io.open(pfad, "w", encoding="utf-8").write(text)
+print("weitere NUL ersetzt:", rest)
+
+for muster in ("src/**/*.js", "src/**/*.vue", "tests/*.js"):
+    for datei in glob.glob(muster, recursive=True):
+        if NUL in io.open(datei, encoding="utf-8").read():
+            print("NUL noch in", datei)
+
+print("Pruefung fertig")

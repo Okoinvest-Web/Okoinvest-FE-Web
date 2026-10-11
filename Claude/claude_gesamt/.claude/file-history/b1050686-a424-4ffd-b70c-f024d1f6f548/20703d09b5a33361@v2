@@ -1,0 +1,84 @@
+import io
+
+p = "src/app/portal/anlagen/[name]/page.tsx"
+s = io.open(p, encoding="utf-8").read()
+
+s = s.replace('''import { Verlauf } from "@/components/diagramme/verlauf";''',
+'''import { Befundliste, Verlaufskarte } from "@/components/befundtafel";
+import { Verlauf } from "@/components/diagramme/verlauf";''', 1)
+
+s = s.replace('''import { tageslicht } from "@/lib/pv/sonnenstand";''',
+'''import {
+  ladeAnlagenkontext,
+  ladeTagesausbeuten,
+  ladeTagespunkte,
+} from "@/lib/daten/befunde";
+import { untersucheTag, untersucheVerlauf } from "@/lib/pv/befund";
+import { tageslicht } from "@/lib/pv/sonnenstand";''', 1)
+
+alt = '''  const alarme = ladeAlarme({ anlageId: anlage.id, grenze: 10 });
+  const verguetung = ladeVerguetung(anlage.id);'''
+neu = '''  const alarme = ladeAlarme({ anlageId: anlage.id, grenze: 10 });
+  const verguetung = ladeVerguetung(anlage.id);
+
+  /*
+   * Die Ursachensuche.
+   *
+   * Zwei Blickwinkel, weil sie verschiedene Dinge sehen: Der Tag
+   * zeigt, was heute war - Schatten, Deckelung, Stillstand. Der
+   * Verlauf ueber Wochen zeigt, was langsam kommt, und nur er kann
+   * Verschmutzung von Alterung unterscheiden.
+   */
+  const kontext = ladeAnlagenkontext(anlage.id);
+  const tagesschluessel = `${messtag.getFullYear()}-${String(messtag.getMonth() + 1).padStart(2, "0")}-${String(messtag.getDate()).padStart(2, "0")}`;
+
+  const befunde = kontext
+    ? untersucheTag(ladeTagespunkte(anlage.id, tagesschluessel), kontext)
+    : [];
+
+  const verlaufsbefund = untersucheVerlauf(ladeTagesausbeuten(anlage.id, 30));'''
+assert alt in s
+s = s.replace(alt, neu, 1)
+
+# Die Befundtafel steht direkt hinter dem Tagesverlauf - dort ist die
+# Kurve noch im Blick, zu der die Aussage gehoert.
+anker = '''      {/* ---------------- Wechselrichter ---------------- */}'''
+abschnitt = '''      {/* ---------------- Ursachen ---------------- */}
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <Tafel
+            titel="Woran es liegt"
+            hinweis={`Auswertung des ${formatDatum(messtag)}`}
+            fusszeile={
+              <p className="t-mikro leading-relaxed">
+                Jede Überwachung erkennt, <em>dass</em> zu wenig kommt. Das
+                ist die leichte Hälfte und für den Betrieb die wertlose:
+                „Minderertrag 8 Prozent“ sagt niemandem, ob jemand aufs Dach
+                steigen, den Netzbetreiber anrufen oder gar nichts tun muss.
+                Die Zuordnung hier ist regelbasiert und nicht angelernt –
+                eine Aussage, die einem Kunden gegenüber vertreten wird, muss
+                begründbar sein.
+              </p>
+            }
+          >
+            {befunde.length === 0 ? (
+              <LeerZustand text="Für diesen Tag liegen keine auswertbaren Messwerte vor." />
+            ) : (
+              <Befundliste
+                befunde={befunde}
+                arbeitspreisCtKwh={verguetung?.arbeitspreis_ct_kwh}
+              />
+            )}
+          </Tafel>
+        </div>
+
+        <Tafel titel="Über 30 Tage" hinweis="Verschmutzung oder Alterung">
+          <Verlaufskarte befund={verlaufsbefund} />
+        </Tafel>
+      </div>
+
+'''
+assert anker in s
+s = s.replace(anker, abschnitt + anker, 1)
+io.open(p, "w", encoding="utf-8").write(s)
+print("Befundtafel eingebaut")

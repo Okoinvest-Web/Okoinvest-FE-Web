@@ -1,0 +1,536 @@
+/**
+ * Lagebild: der Zustand des Ganzen in einem Aufruf.
+ *
+ * Die bisherige Lage-Seite zählte Bestände - wie viele Geräte, wie viele
+ * VLANs. Das beantwortet die Frage nicht, die jemand hat, der morgens den
+ * Bildschirm anschaltet: *ist etwas nicht in Ordnung, und was zuerst?*
+ *
+ * Diese Datei rechnet dafür fünf Dinge aus:
+ *
+ *   1. Bereichsampeln - je Domäne eine Stufe mit Begründung
+ *   2. Was brennt      - die dringendsten Befunde quer über alles
+ *   3. Kapazität       - wo es eng wird, bevor es voll ist
+ *   4. Abdeckung       - was gar nicht überwacht oder dokumentiert ist
+ *   5. Verlauf         - Alarme und Vorfälle über die letzten Wochen
+ *
+ * Bewusst EIN Aufruf statt zwölf Ressourcen in der Seite: das Lagebild ist
+ * die meistbesuchte Seite, und zwölf parallele Anfragen je Aufruf wären
+ * die teuerste Stelle der App.
+ *
+ * Für die Portierung: in Python gehört hier ein Cache davor (die Werte
+ * ändern sich im Minutentakt, nicht im Sekundentakt) und wie überall
+ * `frappe.has_permission` je Teilbereich - wer Security nicht sehen darf,
+ * darf auch die Security-Ampel nicht sehen.
+ */
+import { table } from '../db.js'
+import { heute, tageVersetzt } from '../zeit.js'
+import { alert_list, connector_status, drift_list } from './ops.js'
+import { backup_status } from './backup.js'
+import { incident_list, security_overview } from './security.js'
+import { compliance_summary } from './change.js'
+import { power_overview } from './power.js'
+import { prefix_list } from './ipam.js'
+import { rack_list } from './viz.js'
+import { storage_overview } from './virt.js'
+import { rule_hygiene } from './firewall.js'
+import { ticket_list } from './netsvc.js'
+import { deadline_overview, inventory_overview } from './inventar.js'
+import { offboarding_overview } from './personal.js'
+
+/** Die schlimmste Stufe gewinnt - so wie im Betrieb auch. */
+const RANG = { critical: 3, warning: 2, ok: 1, neutral: 0 }
+
+function schlimmste(...stufen) {
+  return stufen.reduce((a, b) => (RANG[b] > RANG[a] ? b : a), 'ok')
+}
+
+// --- Bereichsampeln --------------------------------------------------------
+
+/**
+ * Je Domäne eine Ampel mit Begründung und Ziel.
+ *
+ * Eine Ampel ohne Begründung ist wertlos - „Security: rot" sagt niemandem,
+ * was zu tun ist. Deshalb trägt jede Ampel die Gründe, die sie rot gemacht
+ * haben, und führt dorthin, wo man sie abarbeitet.
+ */
+function bereiche(mandant) {
+  const liste = []
+
+  // --- Betrieb: Alarme und Konnektoren
+  const alarme = alert_list({ tenant: mandant, limit: 500 }).filter(
+    (a) => a.alert_state !== 'closed',
+  )
+  const kritischeAlarme = alarme.filter((a) => a.severity === 'critical')
+  const konnektoren = connector_status({ tenant: mandant })
+  const stilleKonnektoren = konnektoren.filter((k) => k.overdue && k.enabled)
+
+  liste.push({
+    key: 'betrieb',
+    label: 'Betrieb',
+    to: '/alerts',
+    icon: 'alarm',
+    zahl: alarme.length,
+    einheit: 'offene Alarme',
+    level: kritischeAlarme.length
+      ? 'critical'
+      : alarme.length || stilleKonnektoren.length
+        ? 'warning'
+        : 'ok',
+    reasons: [
+      kritischeAlarme.length ? `${kritischeAlarme.length} kritisch` : null,
+      stilleKonnektoren.length ? `${stilleKonnektoren.length} Konnektoren überfällig` : null,
+    ].filter(Boolean),
+  })
+
+  // --- Sicherung
+  const sicherung = backup_status({ tenant: mandant })
+  liste.push({
+    key: 'backup',
+    label: 'Sicherung',
+    to: '/backup',
+    icon: 'backup',
+    zahl: sicherung.summary.ok,
+    einheit: `von ${sicherung.summary.total} Diensten in Ordnung`,
+    level: sicherung.summary.critical ? 'critical' : sicherung.summary.warning ? 'warning' : 'ok',
+    reasons: [
+      sicherung.summary.critical ? `${sicherung.summary.critical} kritisch` : null,
+      sicherung.summary.unverified ? `${sicherung.summary.unverified} nicht verifiziert` : null,
+    ].filter(Boolean),
+  })
+
+  // --- Security
+  const sicherheit = security_overview({ tenant: mandant })
+  const vorfaelle = incident_list({ tenant: mandant }).filter((i) => i.open)
+  liste.push({
+    key: 'security',
+    label: 'Security',
+    to: '/vulnerabilities',
+    icon: 'schwachstelle',
+    zahl: sicherheit.vulnerabilities_open,
+    einheit: 'offene Schwachstellen',
+    level:
+      sicherheit.vulnerabilities_kev || sicherheit.vulnerabilities_overdue || vorfaelle.length
+        ? 'critical'
+        : sicherheit.vulnerabilities_critical
+          ? 'warning'
+          : 'ok',
+    reasons: [
+      sicherheit.vulnerabilities_kev
+        ? `${sicherheit.vulnerabilities_kev} bekannt ausgenutzt`
+        : null,
+      sicherheit.vulnerabilities_overdue
+        ? `${sicherheit.vulnerabilities_overdue} über Frist`
+        : null,
+      vorfaelle.length ? `${vorfaelle.length} offene Vorfälle` : null,
+    ].filter(Boolean),
+  })
+
+  // --- Netz: Regelhygiene und Drift
+  const hygiene = rule_hygiene({ tenant: mandant })
+  const abweichungen = drift_list({ state: 'open', tenant: mandant })
+  liste.push({
+    key: 'netz',
+    label: 'Netz',
+    to: '/firewall',
+    icon: 'regel',
+    zahl: hygiene.findings.length,
+    einheit: 'Befunde im Regelwerk',
+    level: hygiene.summary.too_broad
+      ? 'critical'
+      : hygiene.findings.length || abweichungen.length
+        ? 'warning'
+        : 'ok',
+    reasons: [
+      hygiene.summary.too_broad ? `${hygiene.summary.too_broad} zu weit gefasst` : null,
+      abweichungen.length ? `${abweichungen.length} offene Abweichungen` : null,
+    ].filter(Boolean),
+  })
+
+  // --- Inventar
+  const bestand = inventory_overview({ tenant: mandant })
+  const austritte = offboarding_overview({ tenant: mandant })
+  liste.push({
+    key: 'inventar',
+    label: 'Inventar',
+    to: '/inventory',
+    icon: 'inventar',
+    zahl: bestand.summary.active,
+    einheit: 'Gegenstände',
+    level: bestand.summary.critical ? 'critical' : bestand.summary.warning ? 'warning' : 'ok',
+    reasons: [
+      bestand.summary.critical ? `${bestand.summary.critical} kritische Befunde` : null,
+      austritte.summary.already_left_with_assets
+        ? `${austritte.summary.already_left_with_assets} Ausgetretene mit Geräten`
+        : null,
+    ].filter(Boolean),
+  })
+
+  // --- Compliance
+  const nachweis = compliance_summary({ tenant: mandant })
+  liste.push({
+    key: 'compliance',
+    label: 'Compliance',
+    to: '/compliance',
+    icon: 'compliance',
+    zahl: nachweis.coverage_pct,
+    einheit: '% der Anforderungen erfüllt',
+    level: nachweis.failed ? 'critical' : nachweis.partial ? 'warning' : 'ok',
+    reasons: [
+      nachweis.failed ? `${nachweis.failed} nicht erfüllt` : null,
+      nachweis.partial ? `${nachweis.partial} teilweise` : null,
+    ].filter(Boolean),
+  })
+
+  // --- Strom
+  const strom = power_overview({ tenant: mandant })
+  liste.push({
+    key: 'strom',
+    label: 'Strom',
+    to: '/power',
+    icon: 'strom',
+    zahl: strom.summary.redundant,
+    einheit: `von ${strom.summary.devices} Geräten redundant`,
+    level: strom.summary.not_redundant ? 'warning' : 'ok',
+    reasons: [
+      strom.summary.not_redundant ? `${strom.summary.not_redundant} ohne zweiten Strang` : null,
+      strom.summary.sources_with_findings
+        ? `${strom.summary.sources_with_findings} Quellen mit Befund`
+        : null,
+    ].filter(Boolean),
+  })
+
+  // --- Fristen
+  //
+  // Nur was ein Gerät sperrt oder einen Dienst abschaltet, macht die Ampel
+  // rot: überfällige Prüfung, abgelaufenes Zertifikat, abgelaufene Lizenz.
+  // Eine abgelaufene Garantie kostet im Schadensfall Geld und sonst nichts -
+  // dieselbe Abstufung wie in der Glocke, damit beide dasselbe sagen.
+  const fristen = deadline_overview({ days: 30, tenant: mandant })
+  const SPERREND = new Set(['inspection', 'certificate', 'license'])
+  const sperrend = fristen.entries.filter((f) => f.days < 0 && SPERREND.has(f.kind))
+  const sonstigeUeberfaellig = fristen.summary.overdue - sperrend.length
+
+  liste.push({
+    key: 'fristen',
+    label: 'Fristen',
+    to: '/deadlines',
+    icon: 'frist',
+    zahl: fristen.summary.total,
+    einheit: 'in 30 Tagen',
+    level: sperrend.length
+      ? 'critical'
+      : fristen.summary.overdue || fristen.summary.within_30
+        ? 'warning'
+        : 'ok',
+    reasons: [
+      sperrend.length ? `${sperrend.length} überfällig, sperrt Betrieb` : null,
+      sonstigeUeberfaellig ? `${sonstigeUeberfaellig} sonstige überfällig` : null,
+    ].filter(Boolean),
+  })
+
+  return liste.sort((a, b) => RANG[b.level] - RANG[a.level])
+}
+
+// --- Kapazität -------------------------------------------------------------
+
+/**
+ * Wo wird es eng?
+ *
+ * Auslastung ist eine Größenordnung, kein Zustand - deshalb steht hier der
+ * Prozentwert und daneben, ab wann es zur Warnung wird. Die Schwellen sind
+ * je Art verschieden: ein Rack auf 85 % ist normal, ein Präfix auf 85 % ist
+ * ein Problem, weil die nächste Erweiterung eine Umnummerierung bedeutet.
+ */
+function kapazitaet(mandant) {
+  const zeilen = []
+
+  const einstufen = (prozent, warnAb, kritischAb) =>
+    prozent >= kritischAb ? 'critical' : prozent >= warnAb ? 'warning' : 'ok'
+
+  for (const p of prefix_list({ tenant: mandant })) {
+    // Pools und Container zählen nicht: dort ist hohe Belegung der Zweck.
+    if (p.is_pool || p.has_children) continue
+    if (!p.usable) continue
+    zeilen.push({
+      art: 'Präfix',
+      name: p.prefix,
+      detail: p.vlan_label || p.prefix_role || '',
+      genutzt: p.address_count,
+      gesamt: p.usable,
+      prozent: p.utilization,
+      level: einstufen(p.utilization, 75, 90),
+      to: '/ipam',
+    })
+  }
+
+  for (const r of rack_list({ tenant: mandant })) {
+    zeilen.push({
+      art: 'Rack',
+      name: r.rack_name,
+      detail: r.height_u + ' HE',
+      genutzt: r.used_u,
+      gesamt: r.height_u,
+      prozent: r.utilization,
+      level: einstufen(r.utilization, 80, 92),
+      to: '/racks',
+    })
+  }
+
+  for (const q of power_overview({ tenant: mandant }).sources || []) {
+    zeilen.push({
+      art: 'Strom',
+      name: q.source_name,
+      detail: 'Strang ' + q.feed,
+      genutzt: q.load_w,
+      gesamt: q.capacity_w,
+      prozent: q.load_pct,
+      einheit: 'W',
+      level: einstufen(q.load_pct, 70, 85),
+      to: '/power',
+    })
+  }
+
+  for (const s of storage_overview({ tenant: mandant }).pools || []) {
+    zeilen.push({
+      art: 'Speicher',
+      name: s.pool_name,
+      detail: s.raid_level || '',
+      genutzt: s.used_tb,
+      gesamt: s.total_tb,
+      prozent: s.used_pct,
+      einheit: 'TB',
+      level: einstufen(s.used_pct, 75, 88),
+      to: '/virtualization',
+    })
+  }
+
+  const sortiert = zeilen.sort((a, b) => RANG[b.level] - RANG[a.level] || b.prozent - a.prozent)
+
+  // Je Art die höchste Auslastung als Bezugspunkt. Ohne sie zeigt die
+  // Ansicht bei ruhiger Lage entweder nichts oder die zufällig vollste
+  // Zeile - beides sagt nicht, wie viel Luft tatsächlich bleibt.
+  const spitze = new Map()
+  for (const z of sortiert) if (!spitze.has(z.art)) spitze.set(z.art, z)
+
+  return {
+    auffaellig: sortiert.filter((z) => z.level !== 'ok'),
+    spitzen: [...spitze.values()],
+    gesamt: sortiert.length,
+  }
+}
+
+// --- Abdeckung -------------------------------------------------------------
+
+/**
+ * Was ist gar nicht erfasst?
+ *
+ * Das ist der blinde Fleck jeder Dokumentation: ein Gerät, das niemand
+ * überwacht, meldet auch nichts. Eine Ampel bleibt dafür grün - und genau
+ * deshalb gehört diese Liste auf die Lage.
+ */
+function abdeckung(mandant) {
+  const geraete = table('Network Device').filter((g) => !mandant || g.tenant === mandant)
+  const assets = table('Asset')
+  const agenten = table('Remote Agent')
+  const dokumente = table('Object Relation').filter((r) => r.from_type === 'NetOps Document')
+  const stromverbindungen = table('Power Connection')
+
+  const pruefungen = [
+    {
+      key: 'inventory',
+      label: 'ohne Inventarnummer',
+      detail: 'kaufmännisch nicht erfasst',
+      to: '/inventory',
+      fehlend: geraete.filter((g) => !assets.some((a) => a.linked_device === g.name)),
+    },
+    {
+      key: 'agent',
+      label: 'ohne Fernwartungsagent',
+      detail: 'kein Zugriff ohne Vor-Ort-Termin',
+      to: '/remote',
+      fehlend: geraete.filter(
+        (g) => !agenten.some((a) => a.device === g.name) && g.device_role !== 'Access Point',
+      ),
+    },
+    {
+      key: 'doku',
+      label: 'ohne verknüpftes Dokument',
+      detail: 'kein Betriebshandbuch hinterlegt',
+      to: '/documents',
+      fehlend: geraete.filter(
+        (g) => !dokumente.some((r) => r.to_type === 'Network Device' && r.to_name === g.name),
+      ),
+    },
+    {
+      key: 'strom',
+      label: 'ohne dokumentierte Einspeisung',
+      detail: 'Stromweg unbekannt',
+      to: '/power',
+      fehlend: geraete.filter((g) => !stromverbindungen.some((v) => v.device === g.name)),
+    },
+  ]
+
+  return pruefungen.map((p) => ({
+    key: p.key,
+    label: p.label,
+    detail: p.detail,
+    to: p.to,
+    fehlend: p.fehlend.length,
+    gesamt: geraete.length,
+    prozent: geraete.length
+      ? Math.round(((geraete.length - p.fehlend.length) / geraete.length) * 100)
+      : 100,
+    beispiele: p.fehlend.slice(0, 4).map((g) => g.hostname || g.name),
+    level: !p.fehlend.length
+      ? 'ok'
+      : p.fehlend.length > geraete.length / 2
+        ? 'critical'
+        : 'warning',
+  }))
+}
+
+// --- Verlauf ---------------------------------------------------------------
+
+/**
+ * Alarme und Vorfälle je Tag.
+ *
+ * Eine Zahl sagt „drei offene Alarme". Eine Reihe sagt, ob es gerade
+ * schlimmer wird. Das ist der Unterschied zwischen einem Zähler und einem
+ * Lagebild.
+ */
+function verlauf(mandant, tage = 30) {
+  const eimer = new Map()
+  for (let i = tage - 1; i >= 0; i--) {
+    const tag = tageVersetzt(-i).slice(0, 10)
+    eimer.set(tag, { tag, alarme: 0, kritisch: 0, vorfaelle: 0 })
+  }
+
+  for (const a of table('Alert')) {
+    if (mandant && a.tenant !== mandant) continue
+    const tag = String(a.first_seen || '').slice(0, 10)
+    const e = eimer.get(tag)
+    if (!e) continue
+    e.alarme += 1
+    if (a.severity === 'critical') e.kritisch += 1
+  }
+
+  for (const i of table('Incident')) {
+    if (mandant && i.tenant !== mandant) continue
+    const tag = String(i.opened || '').slice(0, 10)
+    const e = eimer.get(tag)
+    if (e) e.vorfaelle += 1
+  }
+
+  return [...eimer.values()]
+}
+
+// --- Was brennt ------------------------------------------------------------
+
+/**
+ * Die dringendsten Befunde quer über alle Bereiche, mit Weg zur Abhilfe.
+ */
+function brennpunkte(mandant, limit = 8) {
+  const punkte = []
+
+  for (const a of alert_list({ tenant: mandant, limit: 200 })) {
+    if (a.alert_state === 'closed' || a.severity !== 'critical') continue
+    punkte.push({
+      bereich: 'Betrieb',
+      title: a.title,
+      detail: [a.source, a.object_name].filter(Boolean).join(' · '),
+      to: '/alerts',
+      rang: 0,
+    })
+  }
+
+  for (const b of backup_status({ tenant: mandant }).rows || []) {
+    if (b.level !== 'critical') continue
+    punkte.push({
+      bereich: 'Sicherung',
+      title: b.service,
+      detail: b.reasons?.[0] || 'kritisch',
+      to: '/backup',
+      rang: 1,
+    })
+  }
+
+  for (const i of incident_list({ tenant: mandant })) {
+    if (!i.open) continue
+    punkte.push({
+      bereich: 'Security',
+      title: i.title,
+      detail:
+        i.hours_to_report !== null && i.hours_to_report < 24
+          ? `NIS2-Meldung in ${i.hours_to_report} h`
+          : i.summary,
+      to: '/incidents',
+      rang: 0,
+    })
+  }
+
+  for (const t of ticket_list({ tenant: mandant })) {
+    if (!t.sla_breached) continue
+    punkte.push({
+      bereich: 'Tickets',
+      title: t.subject,
+      detail: `SLA um ${Math.abs(t.sla_remaining_hours)} h überschritten`,
+      to: '/tickets',
+      rang: 2,
+    })
+  }
+
+  for (const f of deadline_overview({ days: 0, tenant: mandant }).entries) {
+    if (f.days >= 0 || !['inspection', 'certificate'].includes(f.kind)) continue
+    punkte.push({
+      bereich: 'Fristen',
+      title: f.title,
+      detail: f.kind_label + ' ' + f.text,
+      to: '/deadlines',
+      rang: 1,
+    })
+  }
+
+  return punkte.sort((a, b) => a.rang - b.rang).slice(0, limit)
+}
+
+// --- Gesamtbild ------------------------------------------------------------
+
+export function situation_overview({ tenant = null, days = 30 } = {}) {
+  const ampeln = bereiche(tenant)
+  const engpaesse = kapazitaet(tenant)
+  const luecken = abdeckung(tenant)
+  const reihe = verlauf(tenant, days)
+  const brennt = brennpunkte(tenant)
+
+  const gesamt = schlimmste(...ampeln.map((a) => a.level))
+
+  // Die Kette ist die Vertrauensgrundlage für alles andere - wenn sie
+  // bricht, steht jede Zahl auf dieser Seite in Frage.
+  const kette = table('Audit Entry').length
+
+  return {
+    generated: heute(),
+    overall: {
+      level: gesamt,
+      text:
+        gesamt === 'critical'
+          ? 'Es gibt kritische Befunde'
+          : gesamt === 'warning'
+            ? 'Auffälligkeiten, nichts Kritisches'
+            : 'Keine offenen Befunde',
+      critical_areas: ampeln.filter((a) => a.level === 'critical').map((a) => a.label),
+      audit_entries: kette,
+    },
+    areas: ampeln,
+    hotspots: brennt,
+    capacity: {
+      rows: engpaesse.auffaellig,
+      peaks: engpaesse.spitzen,
+      checked: engpaesse.gesamt,
+      critical: engpaesse.auffaellig.filter((z) => z.level === 'critical').length,
+      warning: engpaesse.auffaellig.filter((z) => z.level === 'warning').length,
+    },
+    coverage: luecken,
+    timeline: reihe,
+  }
+}

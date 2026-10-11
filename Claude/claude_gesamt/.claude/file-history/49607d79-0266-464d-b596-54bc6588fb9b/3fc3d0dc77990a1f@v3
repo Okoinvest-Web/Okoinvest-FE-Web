@@ -1,0 +1,108 @@
+/**
+ * Backup-Ampel je Dienst (Fachkonzept 2.5, CLAUDE.md Abschnitt 7 Punkt 5).
+ *
+ * Die Schwellen stehen im Fachkonzept:
+ *   kein Backup > 24 h · Verify fehlgeschlagen · kein Offsite-Stand ·
+ *   Datastore > 80 %
+ *
+ * Entscheidend ist der Satz "Ein Backup gilt erst als gültig, wenn es
+ * verifiziert ist" - ein fehlgeschlagener Verify ist deshalb rot, nicht gelb,
+ * auch wenn die Sicherung selbst frisch ist.
+ */
+import { table } from '../db.js'
+import { alterStunden, tageVersetzt } from '../zeit.js'
+
+export const SCHWELLEN = {
+  backup_alter_stunden: 24,
+  offsite_alter_stunden: 48,
+  datastore_prozent: 80,
+}
+
+export function backup_status({ tenant = null } = {}) {
+  const jetzt = Date.now()
+
+  const datastores = table('Backup Datastore')
+    .filter((d) => !tenant || d.tenant === tenant)
+    .map((d) => {
+      const freieTb = ((100 - d.used_pct) / 100) * d.total_tb
+      const tageBisVoll =
+        d.growth_gb_per_day > 0 ? Math.round((freieTb * 1024) / d.growth_gb_per_day) : null
+
+      return {
+        ...d,
+        days_until_full: tageBisVoll,
+        // "voll am" aus dem Fachkonzept - eine Prognose, kein Versprechen.
+        full_on: tageBisVoll === null ? null : tageVersetzt(tageBisVoll),
+        level:
+          d.used_pct >= 90
+            ? 'critical'
+            : d.used_pct >= SCHWELLEN.datastore_prozent
+              ? 'warning'
+              : 'ok',
+      }
+    })
+    .sort((a, b) => b.used_pct - a.used_pct)
+
+  const objekte = table('Backup Object')
+    .filter((o) => !tenant || o.tenant === tenant)
+    .map((o) => {
+      const gruende = []
+      let stufe = 'ok'
+
+      const alter = alterStunden(o.last_backup, jetzt)
+
+      if (alter === null) {
+        stufe = 'critical'
+        gruende.push('Noch nie gesichert')
+      } else if (alter > SCHWELLEN.backup_alter_stunden) {
+        stufe = hoeher(stufe, 'warning')
+        gruende.push('Letzte Sicherung vor ' + Math.round(alter) + ' Stunden')
+      }
+
+      if (o.verify_status === 'failed') {
+        stufe = 'critical'
+        gruende.push('Verify fehlgeschlagen – die Sicherung gilt als ungültig')
+      } else if (o.verify_status === 'none' && alter !== null) {
+        stufe = hoeher(stufe, 'warning')
+        gruende.push('Nicht verifiziert')
+      }
+
+      if (o.offsite_age_hours === null || o.offsite_age_hours === undefined) {
+        stufe = hoeher(stufe, 'warning')
+        gruende.push('Kein Offsite-Stand')
+      } else if (o.offsite_age_hours > SCHWELLEN.offsite_alter_stunden) {
+        stufe = hoeher(stufe, 'warning')
+        gruende.push('Offsite-Kopie ist ' + o.offsite_age_hours + ' Stunden alt')
+      }
+
+      return {
+        ...o,
+        backup_age_hours: alter === null ? null : Math.round(alter * 10) / 10,
+        level: stufe,
+        reasons: gruende,
+      }
+    })
+    .sort((a, b) => rang(a.level) - rang(b.level) || a.backup_object.localeCompare(b.backup_object))
+
+  return {
+    thresholds: SCHWELLEN,
+    datastores,
+    objects: objekte,
+    summary: {
+      total: objekte.length,
+      ok: objekte.filter((o) => o.level === 'ok').length,
+      warning: objekte.filter((o) => o.level === 'warning').length,
+      critical: objekte.filter((o) => o.level === 'critical').length,
+      protected: objekte.filter((o) => o.protected).length,
+      unverified: objekte.filter((o) => o.verify_status !== 'ok').length,
+    },
+  }
+}
+
+function hoeher(aktuell, neu) {
+  return rang(neu) < rang(aktuell) ? neu : aktuell
+}
+
+function rang(stufe) {
+  return { critical: 0, warning: 1, ok: 2 }[stufe] ?? 3
+}

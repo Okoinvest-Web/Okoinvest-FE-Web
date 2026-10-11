@@ -1,0 +1,300 @@
+<section class="hero">
+  <div class="wrap hero-in">
+    <div class="hero-grid">
+      <div>
+        <span class="kicker c">Gewerbespeicher</span>
+        <h1>Der Speicher rechnet sich über die <span class="gc">Lastspitze</span>, nicht über die Nacht.</h1>
+        <p class="lede">Im Gewerbe zahlen Sie zweimal für Strom: für die Arbeit in Kilowattstunden und für die höchste Viertelstunde des Monats. Der Simulator zeigt beides an Ihrem Tagesverlauf.</p>
+        <div class="hero-acts">
+          <a class="btn btn-v" href="#tool">Speicher simulieren</a>
+          <a class="btn btn-o" href="#details">Technik &amp; Einsatzfälle</a>
+        </div>
+      </div>
+      <div class="chips">
+        <div class="chip c"><div><i>Typische Ladung</i><p>Vollzyklen pro Jahr im Gewerbe</p></div><b>250–320</b></div>
+        <div class="chip v"><div><i>Eigenverbrauch</i><p>Anstieg gegenüber Anlage ohne Speicher</p></div><b>+15–25<span class="unit">%</span></b></div>
+        <div class="chip s"><div><i>Reaktionszeit</i><p>Umschaltung auf Notstrombetrieb</p></div><b>&lt;20<span class="unit">ms</span></b></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="tool">
+  <div class="wrap">
+    <div class="sec-head">
+      <div><span class="kicker">Lastgang-Simulator</span><h2>Ein Betriebstag, Viertelstunde für Viertelstunde.</h2></div>
+      <p class="lede">Stellen Sie Speichergröße, Anlagenleistung und Lastprofil ein. Der Simulator fährt die Batterie über den Tag, deckt zuerst den Eigenverbrauch und kappt danach die Lastspitze.</p>
+    </div>
+
+    <div class="console glass chamf">
+      <div class="con-t"><span><span class="pulse"></span>Dispatch · Betriebstag</span><span id="stamp">Profil: Einschicht</span></div>
+      <div class="con-l">
+        <div class="field">
+          <div class="field-h"><label for="cap">Speicherkapazität</label><span class="field-v" id="v-cap">200<span class="unit">kWh</span></span></div>
+          <input id="cap" type="range" min="0" max="600" step="10" value="200">
+          <div class="scale"><span>ohne</span><span>600 kWh</span></div>
+        </div>
+        <div class="field">
+          <div class="field-h"><label for="kwp">PV-Leistung</label><span class="field-v" id="v-kwp">400<span class="unit">kWp</span></span></div>
+          <input id="kwp" type="range" min="0" max="1500" step="10" value="400">
+          <div class="scale"><span>ohne</span><span>1.500 kWp</span></div>
+        </div>
+        <div class="field">
+          <span class="lbl" id="pl">Lastprofil</span>
+          <div class="seg c2" role="group" aria-labelledby="pl">
+            <button type="button" data-p="ein" aria-pressed="true">Einschicht</button>
+            <button type="button" data-p="zwei" aria-pressed="false">Zweischicht</button>
+            <button type="button" data-p="dur" aria-pressed="false">Durchlauf</button>
+            <button type="button" data-p="han" aria-pressed="false">Handel/Büro</button>
+          </div>
+        </div>
+        <div class="field">
+          <div class="field-h"><label for="use">Jahresverbrauch</label><span class="field-v" id="v-use">620<span class="unit">MWh</span></span></div>
+          <input id="use" type="range" min="50" max="4000" step="10" value="620">
+          <div class="scale"><span>50</span><span>4.000 MWh</span></div>
+        </div>
+        <div class="field">
+          <div class="field-h"><label for="price">Arbeitspreis</label><span class="field-v" id="v-price">21,0<span class="unit">ct/kWh</span></span></div>
+          <input id="price" type="range" min="8" max="40" step="0.5" value="21">
+          <div class="scale"><span>8</span><span>40 ct/kWh</span></div>
+        </div>
+        <button class="sw" id="peak" type="button" aria-pressed="true">Spitzenlastkappung<span class="tr"></span></button>
+        <details class="as">
+          <summary>Rechenannahmen</summary>
+          <ul>
+            <li>Mittlerer Ertragstag, 1.030 kWh/kWp und Jahr auf 365 Tage verteilt</li>
+            <li>300 Betriebstage, Ladeleistung 0,5 C, Wirkungsgrad 94 % im Umlauf</li>
+            <li>Leistungspreis 90 €/kW und Jahr für die gekappte Spitze</li>
+            <li>Speicherkosten 280–350 €/kWh je nach Baugröße</li>
+            <li>Kappung reserviert 35 % der Kapazität für die Abendspitze</li>
+          </ul>
+        </details>
+      </div>
+
+      <div class="con-r">
+        <div class="stats">
+          <div class="stat v"><i>Eigenverbrauch</i><b id="o-ev">—<span class="unit">%</span></b><small id="o-ev2">ohne Speicher —</small></div>
+          <div class="stat c"><i>Lastspitze</i><b id="o-pk">—<span class="unit">kW</span></b><small id="o-pk2">ohne Kappung —</small></div>
+          <div class="stat"><i>Vollzyklen p.a.</i><b id="o-cyc">—</b><small id="o-thr">Durchsatz —</small></div>
+          <div class="stat s"><i>Mehrertrag Speicher</i><b id="o-gain">—<span class="unit">€/a</span></b><small id="o-gain2">Arbeit + Leistung</small></div>
+          <div class="stat"><i>Speicherinvest</i><b id="o-inv">—<span class="unit">€</span></b><small id="o-spez">—</small></div>
+          <div class="stat v"><i>Amortisation</i><b id="o-pay">—<span class="unit">Jahre</span></b><small>nur Speicheranteil</small></div>
+        </div>
+
+        <div class="panel dk">
+          <div class="panel-h"><h4>Deckung des Betriebstags</h4><span id="c-note">—</span></div>
+          <svg id="ch" viewBox="0 0 760 232" role="img" aria-label="Stündliche Deckung des Lastgangs durch PV, Speicher und Netz"></svg>
+          <div class="legend">
+            <span><i style="background:#8CE04B"></i>PV direkt</span>
+            <span><i style="background:#45E0FF"></i>Speicher</span>
+            <span><i style="background:#3A4C66"></i>Netzbezug</span>
+            <span><i style="background:#FFB43D;height:3px"></i>PV-Erzeugung</span>
+            <span><i style="background:#FF6B8A;height:3px"></i>Lastspitze</span>
+          </div>
+        </div>
+
+        <div class="grid2">
+          <div class="panel">
+            <div class="panel-h"><h4>Ladezustand</h4><span id="c-soc">—</span></div>
+            <svg id="soc" viewBox="0 0 360 120" role="img" aria-label="Ladezustand des Speichers über den Tag"></svg>
+          </div>
+          <div class="panel">
+            <div class="panel-h"><h4>Energiebilanz Tag</h4><span id="c-bal">—</span></div>
+            <svg id="bal" viewBox="0 0 360 120" role="img" aria-label="Tagesenergiebilanz"></svg>
+          </div>
+        </div>
+        <p class="fine">Richtwerte auf Basis eines mittleren Ertragstags. Die verbindliche Auslegung erfolgt am realen Viertelstunden-Lastgang Ihres Zählpunkts.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="details">
+  <div class="wrap">
+    <div class="sec-head">
+      <div><span class="kicker s">Einsatzfälle</span><h2>Drei Gründe, aus denen ein Gewerbespeicher gebaut wird.</h2></div>
+      <p class="lede">Welcher davon bei Ihnen trägt, entscheidet der Lastgang. Oft rechnen sich zwei gleichzeitig, und erst die Kombination macht das Projekt tragfähig.</p>
+    </div>
+    <div class="cards">
+      <article class="card">
+        <span class="n">FALL A</span>
+        <svg class="ic" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 24h24M6 24V13l6-4 6 4v11M18 24v-7h8v7"/></svg>
+        <h3>Eigenverbrauch am Abend</h3>
+        <p>Produziert Ihre Anlage mittags mehr, als der Betrieb braucht, wandert der Überschuss in die Batterie und deckt die Spätschicht. Der Hebel ist der Abstand zwischen Arbeitspreis und Einspeiseerlös.</p>
+        <ul><li>Wirkt bei Ein- und Zweischichtbetrieb</li><li>Steigt mit dem Strompreis</li><li>Begrenzt durch Zyklenzahl</li></ul>
+      </article>
+      <article class="card">
+        <span class="n">FALL B</span>
+        <svg class="ic" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M3 26h26"/><path d="M5 22l5-9 4 6 4-13 5 16 4-6"/><path d="M3 14h26" stroke-dasharray="3 3"/></svg>
+        <h3>Spitzenlastkappung</h3>
+        <p>Der Leistungspreis bemisst sich an der höchsten Viertelstunde. Eine einzige Anfahrspitze bestimmt damit die Netzkosten eines ganzen Jahres. Der Speicher deckelt genau diese Viertelstunde.</p>
+        <ul><li>Wirkt unabhängig von der Sonne</li><li>Braucht ein zuverlässiges Lastmanagement</li><li>Ersparnis pro gekapptem Kilowatt</li></ul>
+      </article>
+      <article class="card">
+        <span class="n">FALL C</span>
+        <svg class="ic" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="5" y="7" width="22" height="18"/><path d="M11 19v-8l5 5 5-5v8M10 4v3M22 4v3"/></svg>
+        <h3>Notstrom und Netzqualität</h3>
+        <p>Mit Netztrennstelle versorgt die Anlage definierte Kreise weiter, etwa Serverraum, Kühlung oder eine Charge, die nicht abreißen darf. Die Umschaltung erfolgt im Millisekundenbereich.</p>
+        <ul><li>Getrennte Notstromverteilung nötig</li><li>Inselfähiger Wechselrichter</li><li>Regelmäßiger Funktionstest</li></ul>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="faq">
+  <div class="wrap">
+    <div class="sec-head"><div><span class="kicker">Häufige Fragen</span><h2>Was vor der Speicherentscheidung zu klären ist.</h2></div></div>
+    <div class="faq">
+      <details class="qa" open><summary>Wie groß soll der Speicher sein?</summary><p>Als Faustzahl liegt die sinnvolle Kapazität bei ein bis zwei Kilowattstunden je Kilowattpeak, wenn es um Eigenverbrauch geht. Für die Spitzenlastkappung zählt dagegen nicht die Kapazität, sondern die Leistung und die Dauer der Spitze. Beide Ziele zusammen führen fast immer zu einer größeren Auslegung als eines allein.</p></details>
+      <details class="qa"><summary>Wie viele Zyklen hält die Batterie?</summary><p>Lithium-Eisenphosphat erreicht je nach Hersteller sechs- bis zehntausend Vollzyklen bis zum Erreichen von achtzig Prozent Restkapazität. Bei rund dreihundert Zyklen im Jahr liegt die rechnerische Lebensdauer damit klar über der üblichen Betrachtungsdauer von zwanzig Jahren.</p></details>
+      <details class="qa"><summary>Was passiert, wenn die Lastspitze trotzdem durchschlägt?</summary><p>Dann greift das Lastmanagement zu kurz. Deshalb wird die Kappung mit Reserve ausgelegt und nicht auf den letzten Kilowatt gerechnet. Zusätzlich lassen sich unkritische Verbraucher wie Ladepunkte oder Kälteanlagen kurzzeitig abregeln, bevor die Batterie an ihre Grenze kommt.</p></details>
+      <details class="qa"><summary>Braucht der Speicher einen eigenen Raum?</summary><p>Gewerbespeicher kommen als Schrank oder als Container. Entscheidend sind Brandabschnitt, Temperaturführung und Zugänglichkeit. Wir klären das im Zuge der Planung gemeinsam mit dem Brandschutzbeauftragten Ihres Betriebs.</p></details>
+    </div>
+  </div>
+</section>
+
+<script>
+(function(){
+"use strict";
+var $=function(i){return document.getElementById(i);},
+de=function(n,d){d=d||0;return Number(n).toLocaleString("de-AT",{minimumFractionDigits:d,maximumFractionDigits:d});};
+var PV=[0,0,0,0,.005,.02,.045,.07,.09,.105,.115,.12,.118,.105,.085,.06,.035,.015,.005,0,0,0,0,0];
+var P={
+ ein:{n:"Einschicht",s:[.2,.2,.2,.2,.25,.5,.9,1,1,1,.95,.85,.9,1,1,.95,.7,.4,.3,.25,.22,.2,.2,.2]},
+ zwei:{n:"Zweischicht",s:[.25,.25,.25,.3,.4,.7,.95,1,1,1,.95,.9,.9,1,1,1,.95,.9,.85,.8,.7,.5,.3,.25]},
+ dur:{n:"Durchlaufbetrieb",s:[.8,.8,.8,.8,.85,.9,.95,1,1,1,.95,.9,.95,1,1,1,.95,.9,.9,.85,.85,.85,.8,.8]},
+ han:{n:"Handel/Büro",s:[.2,.2,.2,.2,.25,.35,.6,.85,1,1,1,1,.95,.95,1,1,.95,.85,.7,.5,.35,.25,.2,.2]}
+};
+var prof="ein",peak=true,DAYS=300,LP=90,ETA=.97;
+function norm(a){var s=a.reduce(function(x,y){return x+y;},0);return a.map(function(v){return v/s;});}
+var PVn=norm(PV);
+
+function calc(){
+ var cap=+$("cap").value,kwp=+$("kwp").value,useM=+$("use").value,pr=+$("price").value/100;
+ var ls=norm(P[prof].s),dayLoad=useM*1000/DAYS,dayPv=kwp*1030/365;
+ var load=ls.map(function(v){return v*dayLoad;}),pv=PVn.map(function(v){return v*dayPv;});
+ var soc=0,cRate=cap*0.5,res=peak?cap*0.35:0;
+ var dir=[],dis=[],grid=[],chg=[],feed=[],socA=[];
+ for(var h=0;h<24;h++){
+   var d=Math.min(pv[h],load[h]);dir.push(d);
+   var sur=pv[h]-d,def=load[h]-d;
+   var c=Math.min(sur,cap-soc,cRate);soc+=c*ETA;chg.push(c);feed.push(sur-c);
+   var avail=Math.max(0,soc-res);
+   var x=Math.min(def,avail*ETA,cRate);soc-=x/ETA;dis.push(x);
+   grid.push(def-x);socA.push(soc);
+ }
+ /* peak shaving with the reserve */
+ var pk0=Math.max.apply(null,grid),pk=pk0;
+ if(peak&&cap>0){
+   var reserve=Math.min(res,soc+res),lo=0,hi=pk0,i,t;
+   for(i=0;i<28;i++){
+     t=(lo+hi)/2;
+     var need=0;for(var h2=0;h2<24;h2++)need+=Math.max(0,grid[h2]-t);
+     if(need<=reserve&&t<=pk0)hi=t;else lo=t;
+   }
+   pk=hi;
+   for(var h3=0;h3<24;h3++){var cut=Math.max(0,grid[h3]-pk);if(cut>0){grid[h3]-=cut;dis[h3]+=cut;}}
+ }
+ var sDir=0,sDis=0,sLoad=0,sPv=0,sGrid=0,sFeed=0;
+ for(var k=0;k<24;k++){sDir+=dir[k];sDis+=dis[k];sLoad+=load[k];sPv+=pv[k];sGrid+=grid[k];sFeed+=feed[k];}
+ return {cap:cap,kwp:kwp,pr:pr,load:load,pv:pv,dir:dir,dis:dis,grid:grid,soc:socA,
+  sDir:sDir,sDis:sDis,sLoad:sLoad,sPv:sPv,sGrid:sGrid,sFeed:sFeed,pk:pk,pk0:pk0,
+  ev0:sPv>0?sDir/sPv:0,ev1:sPv>0?(sDir+sDis)/sPv:0};
+}
+
+function bars(r){
+ var W=760,H=232,L=52,R=12,T=14,B=30,pw=W-L-R,ph=H-T-B,cw=pw/24,bw=cw-4;
+ var mx=Math.max(Math.max.apply(null,r.load),Math.max.apply(null,r.pv))*1.12||1;
+ var y=function(v){return T+ph*(1-v/mx);},s="",i;
+ for(i=0;i<=3;i++){var gv=mx*i/3,gy=y(gv);
+   s+='<line x1="'+L+'" y1="'+gy.toFixed(1)+'" x2="'+(W-R)+'" y2="'+gy.toFixed(1)+'" stroke="rgba(150,180,220,.11)"/>';
+   s+='<text x="'+(L-7)+'" y="'+(gy+3.5).toFixed(1)+'" text-anchor="end" fill="#617595" font-family="JetBrains Mono, monospace" font-size="9.5">'+de(gv)+'</text>';}
+ for(i=0;i<24;i++){
+   var x=L+i*cw+2,acc=0,seg=[[r.dir[i],"#8CE04B"],[r.dis[i],"#45E0FF"],[r.grid[i],"#3A4C66"]];
+   for(var j=0;j<3;j++){
+     var v=seg[j][0];if(v<=0.001)continue;
+     var h1=ph*v/mx,yy=y(acc+v);
+     s+='<rect x="'+x.toFixed(1)+'" y="'+yy.toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+Math.max(0,h1-2).toFixed(1)+'" fill="'+seg[j][1]+'"><title>'+i+':00 '+["PV direkt","Speicher","Netzbezug"][j]+' '+de(v)+' kWh</title></rect>';
+     acc+=v;
+   }
+ }
+ var d="";for(i=0;i<24;i++){d+=(i?"L":"M")+(L+i*cw+cw/2).toFixed(1)+" "+y(r.pv[i]).toFixed(1)+" ";}
+ s+='<path d="'+d+'" fill="none" stroke="#FFB43D" stroke-width="2" stroke-linejoin="round" opacity=".9"/>';
+ s+='<line x1="'+L+'" y1="'+y(r.pk).toFixed(1)+'" x2="'+(W-R)+'" y2="'+y(r.pk).toFixed(1)+'" stroke="#FF6B8A" stroke-width="1.5" stroke-dasharray="5 5"/>';
+ s+='<text x="'+(W-R)+'" y="'+(y(r.pk)-6).toFixed(1)+'" text-anchor="end" fill="#FF6B8A" font-family="JetBrains Mono, monospace" font-size="10">Spitze '+de(r.pk)+' kW</text>';
+ [0,6,12,18,23].forEach(function(h){s+='<text x="'+(L+h*cw+cw/2).toFixed(1)+'" y="'+(H-9)+'" text-anchor="middle" fill="#617595" font-family="JetBrains Mono, monospace" font-size="9.5">'+h+':00</text>';});
+ s+='<text x="'+(L-7)+'" y="'+(T-3)+'" text-anchor="end" fill="#617595" font-family="JetBrains Mono, monospace" font-size="9">kWh</text>';
+ $("ch").innerHTML=s;
+}
+
+function socChart(r){
+ var W=360,H=120,L=34,R=8,T=10,B=20,pw=W-L-R,ph=H-T-B;
+ var mx=Math.max(r.cap,1),x=function(i){return L+pw*i/23;},y=function(v){return T+ph*(1-v/mx);};
+ var d="",i;for(i=0;i<24;i++)d+=(i?"L":"M")+x(i).toFixed(1)+" "+y(r.soc[i]).toFixed(1)+" ";
+ var a="M"+L+" "+(T+ph)+" "+d.substring(1)+"L"+(L+pw).toFixed(1)+" "+(T+ph)+"Z";
+ var s='<defs><linearGradient id="sg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#45E0FF" stop-opacity=".38"/><stop offset="100%" stop-color="#45E0FF" stop-opacity="0"/></linearGradient></defs>';
+ s+='<line x1="'+L+'" y1="'+(T+ph)+'" x2="'+(W-R)+'" y2="'+(T+ph)+'" stroke="rgba(150,180,220,.2)"/>';
+ s+='<path d="'+a+'" fill="url(#sg)"/><path d="'+d+'" fill="none" stroke="#45E0FF" stroke-width="2"/>';
+ s+='<text x="'+(L-6)+'" y="'+(T+4)+'" text-anchor="end" fill="#617595" font-family="JetBrains Mono, monospace" font-size="9">'+de(r.cap)+'</text>';
+ s+='<text x="'+(L-6)+'" y="'+(T+ph)+'" text-anchor="end" fill="#617595" font-family="JetBrains Mono, monospace" font-size="9">0</text>';
+ s+='<text x="'+L+'" y="'+(H-5)+'" fill="#617595" font-family="JetBrains Mono, monospace" font-size="9">00:00</text>';
+ s+='<text x="'+(W-R)+'" y="'+(H-5)+'" text-anchor="end" fill="#617595" font-family="JetBrains Mono, monospace" font-size="9">24:00</text>';
+ $("soc").innerHTML=s;
+}
+
+function balChart(r){
+ var W=360,H=120,L=96,R=52,T=12,rows=[["PV direkt",r.sDir,"#8CE04B"],["Speicher",r.sDis,"#45E0FF"],["Netzbezug",r.sGrid,"#3A4C66"],["Einspeisung",r.sFeed,"#FFB43D"]];
+ var mx=Math.max.apply(null,rows.map(function(x){return x[1];}))||1,pw=W-L-R,s="",i;
+ for(i=0;i<4;i++){
+   var yy=T+i*25,w=pw*rows[i][1]/mx;
+   s+='<text x="'+(L-8)+'" y="'+(yy+12)+'" text-anchor="end" fill="#9FB4CE" font-family="JetBrains Mono, monospace" font-size="10">'+rows[i][0]+'</text>';
+   s+='<rect x="'+L+'" y="'+(yy+3)+'" width="'+Math.max(1,w).toFixed(1)+'" height="13" fill="'+rows[i][2]+'"/>';
+   s+='<text x="'+(L+Math.max(1,w)+6).toFixed(1)+'" y="'+(yy+13.5)+'" fill="#9FB4CE" font-family="JetBrains Mono, monospace" font-size="9.5">'+de(rows[i][1])+'</text>';
+ }
+ s+='<text x="'+L+'" y="'+(H-4)+'" fill="#617595" font-family="JetBrains Mono, monospace" font-size="9">kWh am Betriebstag</text>';
+ $("bal").innerHTML=s;
+}
+
+function render(){
+ var r=calc();
+ $("v-cap").innerHTML=de(r.cap)+'<span class="unit">kWh</span>';
+ $("v-kwp").innerHTML=de(r.kwp)+'<span class="unit">kWp</span>';
+ $("v-use").innerHTML=de(+$("use").value)+'<span class="unit">MWh</span>';
+ $("v-price").innerHTML=de(r.pr*100,1)+'<span class="unit">ct/kWh</span>';
+ $("stamp").textContent="Profil: "+P[prof].n;
+
+ var cyc=r.cap>0?r.sDis*DAYS/r.cap:0;
+ var gainWork=r.sDis*DAYS*(r.pr-0.06);
+ var gainPeak=(r.pk0-r.pk)*LP;
+ var gain=Math.round(gainWork+gainPeak);
+ var spez=r.cap<100?350:280,inv=Math.round(r.cap*spez);
+ var pay=gain>0?inv/gain:0;
+
+ $("o-ev").innerHTML=de(r.ev1*100)+'<span class="unit">%</span>';
+ $("o-ev2").textContent="ohne Speicher "+de(r.ev0*100)+" %";
+ $("o-pk").innerHTML=de(r.pk)+'<span class="unit">kW</span>';
+ $("o-pk2").textContent="ohne Kappung "+de(r.pk0)+" kW";
+ $("o-cyc").textContent=de(cyc);
+ $("o-thr").textContent="Durchsatz "+de(r.sDis*DAYS/1000)+" MWh/a";
+ $("o-gain").innerHTML=de(gain)+'<span class="unit">€/a</span>';
+ $("o-gain2").textContent=de(Math.round(gainWork))+" € Arbeit · "+de(Math.round(gainPeak))+" € Leistung";
+ $("o-inv").innerHTML=de(inv)+'<span class="unit">€</span>';
+ $("o-spez").textContent=de(spez)+" €/kWh";
+ $("o-pay").innerHTML=(r.cap>0&&gain>0?de(pay,1):"—")+'<span class="unit">Jahre</span>';
+
+ $("c-note").textContent=de(r.sLoad)+" kWh Bedarf · "+de(r.sPv)+" kWh Erzeugung";
+ $("c-soc").textContent="max "+de(Math.max.apply(null,r.soc))+" kWh";
+ $("c-bal").textContent=de(Math.round((1-r.sGrid/Math.max(r.sLoad,1))*100))+" % aus eigener Erzeugung";
+ bars(r);socChart(r);balChart(r);
+}
+
+["cap","kwp","use","price"].forEach(function(i){$(i).addEventListener("input",render);});
+Array.prototype.forEach.call(document.querySelectorAll(".seg button"),function(b){
+ b.addEventListener("click",function(){
+  Array.prototype.forEach.call(document.querySelectorAll(".seg button"),function(o){o.setAttribute("aria-pressed","false");});
+  b.setAttribute("aria-pressed","true");prof=b.dataset.p;render();});
+});
+$("peak").addEventListener("click",function(){peak=!peak;this.setAttribute("aria-pressed",peak?"true":"false");render();});
+render();
+})();
+</script>

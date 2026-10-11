@@ -1,0 +1,74 @@
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+
+import { jahresgang, type MonatsSumme } from "./auswertung.ts";
+
+/**
+ * Ein Jahresgang, wie ihn eine Dachanlage in Niederösterreich zeigt:
+ * Der Juni trägt ein Vielfaches des Dezembers.
+ */
+function monat(schluessel: string, erzeugung: number): MonatsSumme {
+  return {
+    schluessel,
+    label: schluessel.slice(5),
+    erzeugung,
+    eigenverbrauch: erzeugung * 0.6,
+    einspeisung: erzeugung * 0.4,
+    netzbezug: 0,
+  };
+}
+
+const JAHR: MonatsSumme[] = [
+  monat("2025-10", 62),
+  monat("2025-11", 34),
+  monat("2025-12", 21),
+  monat("2026-01", 28),
+  monat("2026-02", 46),
+  monat("2026-03", 84),
+  monat("2026-04", 118),
+  monat("2026-05", 142),
+  monat("2026-06", 151),
+  monat("2026-07", 149),
+  monat("2026-08", 133),
+  monat("2026-09", 96),
+];
+
+describe("Jahresgang", () => {
+  it("findet den stärksten und den schwächsten Monat", () => {
+    const g = jahresgang(JAHR);
+
+    assert.equal(g.bester?.schluessel, "2026-06");
+    assert.equal(g.schwaechster?.schluessel, "2025-12");
+  });
+
+  it("rechnet das Sommerhalbjahr nach Kalendermonat, nicht nach Position", () => {
+    // Das Fenster beginnt im Oktober. Wer die ersten sechs Einträge
+    // als Sommer nähme, käme auf das Gegenteil.
+    const g = jahresgang(JAHR);
+
+    // April bis September: 118+142+151+149+133+96 = 789 von 1064.
+    assert.equal(Math.round(g.sommeranteil * 1000) / 1000, 0.742);
+  });
+
+  it("nennt die Spreizung zwischen bestem und schwächstem Monat", () => {
+    const g = jahresgang(JAHR);
+
+    assert.equal(Math.round(g.spreizung * 10) / 10, 7.2);
+  });
+
+  it("kommt ohne Daten zurecht", () => {
+    const g = jahresgang([]);
+
+    assert.equal(g.bester, null);
+    assert.equal(g.sommeranteil, 0);
+    assert.equal(g.spreizung, 0);
+  });
+
+  it("teilt nicht durch null, wenn ein Monat ohne Ertrag dabei ist", () => {
+    // Ein Monat mit Ausfall oder eine gerade erst errichtete Anlage.
+    const g = jahresgang([monat("2026-01", 0), monat("2026-06", 90)]);
+
+    assert.equal(g.spreizung, 0);
+    assert.equal(g.sommeranteil, 1);
+  });
+});

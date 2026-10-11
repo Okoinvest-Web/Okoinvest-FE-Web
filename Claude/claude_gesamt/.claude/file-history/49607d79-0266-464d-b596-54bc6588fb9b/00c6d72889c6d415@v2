@@ -1,0 +1,75 @@
+<template>
+  <!--
+    Zweite Navigationsebene innerhalb eines Bereichs.
+
+    Der Backup-Bereich hatte alles in einem Auswahlfeld im Seitenkopf. Bei
+    fünf Ansichten ging das; bei zwölf sieht man nicht mehr, was es
+    überhaupt gibt - ein Auswahlfeld verbirgt seinen Inhalt, bis man es
+    aufklappt.
+
+    Zahlen stehen an den Reitern, nicht nur in den Seiten: sonst muss man
+    jede Seite aufmachen, um zu erfahren, ob dort etwas liegt.
+  -->
+  <nav
+    class="flex gap-x-1 gap-y-1 overflow-x-auto border-b border-outline-gray-2 bg-surface-white px-6"
+    :aria-label="titel"
+  >
+    <RouterLink
+      v-for="e in eintraege"
+      :key="e.to"
+      :to="e.to"
+      class="-mb-px flex shrink-0 items-center gap-2 border-b-2 px-3 py-2.5 text-sm transition-colors"
+      :class="
+        aktiv(e.to)
+          ? 'border-outline-gray-4 font-medium text-ink-gray-9'
+          : 'border-transparent text-ink-gray-6 hover:border-outline-gray-2 hover:text-ink-gray-8'
+      "
+      :aria-current="aktiv(e.to) ? 'page' : undefined"
+    >
+      {{ e.label }}
+      <!--
+        Farbe trägt den Zustand, die Zahl die Menge. Eine Zahl ohne Punkt
+        wäre bei „3" nicht von „3 Probleme" zu unterscheiden.
+      -->
+      <span
+        v-if="e.zahl"
+        class="rounded-full px-1.5 py-0.5 text-xs font-medium tabular-nums"
+        :class="abzeichen(e.level)"
+        :title="e.hinweis || undefined"
+      >
+        {{ e.zahl }}
+      </span>
+    </RouterLink>
+  </nav>
+</template>
+
+<script setup>
+import { useRoute } from 'vue-router'
+
+const props = defineProps({
+  /** [{ label, to, zahl?, level?, hinweis? }] */
+  eintraege: { type: Array, default: () => [] },
+  titel: { type: String, default: 'Unterbereiche' },
+})
+
+const route = useRoute()
+
+/**
+ * Der Übersichtsreiter ist nur bei genauer Übereinstimmung aktiv, sonst
+ * leuchtete er auf jeder Unterseite mit.
+ */
+function aktiv(ziel) {
+  const basis = props.eintraege[0]?.to
+  return ziel === basis ? route.path === ziel : route.path.startsWith(ziel)
+}
+
+function abzeichen(level) {
+  return (
+    {
+      critical: 'bg-surface-red-2 text-ink-red-3',
+      warning: 'bg-surface-amber-2 text-ink-amber-3',
+      ok: 'bg-surface-green-2 text-ink-green-3',
+    }[level] || 'bg-surface-gray-3 text-ink-gray-7'
+  )
+}
+</script>

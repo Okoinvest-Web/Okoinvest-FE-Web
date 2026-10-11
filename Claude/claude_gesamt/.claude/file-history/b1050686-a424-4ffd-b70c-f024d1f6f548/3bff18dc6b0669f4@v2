@@ -1,0 +1,242 @@
+"use client";
+
+import { useActionState, useCallback, useRef, useState } from "react";
+
+import { Dialogflaeche, useDialog } from "@/components/dialog";
+import { Hinweis } from "@/components/ui";
+import {
+  GRENZEN,
+  MINDESTEINSTRAHLUNG,
+  SCHWEREGRADE,
+  type Regelart,
+} from "@/lib/melden/regelwerk";
+
+import { regelAendern, type RegelErgebnis } from "./aktionen";
+
+/**
+ * Eine Meldeschwelle stellen.
+ *
+ * Als Dialog und nicht als aufklappende Tabellenzeile: Das Formular
+ * braucht zwei Spalten und vier Felder, eine Tabellenzelle ist
+ * dreißig Zeichen breit. Ein Formular, das in eine Zelle gequetscht
+ * wird, ist auf dem Telefon unbedienbar - und dort wird es gebraucht,
+ * wenn jemand auf dem Dach steht und wissen will, warum keine Meldung
+ * kam.
+ *
+ * Das Formular nennt bei jedem Feld den zulässigen Bereich *und* den
+ * Grund dafür. Ein Eingabefeld mit einem Bereich, dessen Herkunft
+ * niemand kennt, wird umgangen oder für Willkür gehalten - und beim
+ * nächsten Streit über eine nicht gemeldete Störung steht die Frage
+ * im Raum, warum die Schwelle so stand, wie sie stand.
+ *
+ * Geprüft wird trotzdem auf dem Server. Die Angaben hier sind eine
+ * Hilfe, keine Absicherung.
+ */
+export function Regelformular({
+  regel,
+  art,
+  bezeichnung,
+  schwellwert,
+  dauerMinuten,
+  schweregrad,
+  minEinstrahlung,
+  nurTagsueber,
+  aktiv,
+}: {
+  regel: string;
+  art: Regelart;
+  bezeichnung: string;
+  schwellwert: number | null;
+  dauerMinuten: number;
+  schweregrad: string;
+  minEinstrahlung: number | null;
+  nurTagsueber: boolean;
+  aktiv: boolean;
+}) {
+  const [offen, setOffen] = useState(false);
+  const kasten = useRef<HTMLDivElement>(null);
+
+  const schliessen = useCallback(() => setOffen(false), []);
+  useDialog({ offen, schliessen, behaelter: kasten });
+
+  const [ergebnis, aktion, laeuft] = useActionState<RegelErgebnis | null, FormData>(
+    regelAendern,
+    null,
+  );
+
+  const grenzen = GRENZEN[art];
+
+  return (
+    <>
+      <button
+        type="button"
+        className="knopf knopf-rand"
+        onClick={() => setOffen(true)}
+      >
+        Schwelle stellen
+      </button>
+
+      {offen && (
+        <div
+          className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto px-4 py-[8vh]"
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Schwelle stellen: ${bezeichnung}`}
+        >
+          <Dialogflaeche beiKlick={schliessen} />
+
+          <div
+            ref={kasten}
+            className="a-palette relative w-full max-w-[36rem]"
+            style={{
+              background: "var(--f-ebene)",
+              border: "1px solid var(--linie)",
+              borderRadius: "var(--radius-tafel)",
+              boxShadow: "var(--schatten-schwebend)",
+            }}
+          >
+            <form action={aktion} className="p-5">
+              <input type="hidden" name="regel" value={regel} />
+
+              <p
+                className="text-[0.9375rem] font-semibold"
+                style={{ color: "var(--t-stark)" }}
+              >
+                {bezeichnung}
+              </p>
+              <p className="t-mikro mt-0.5 mb-4">
+                Regelart {art} · Die Änderung greift ab der nächsten Auswertung
+                und wird protokolliert.
+              </p>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                {grenzen.mitSchwelle && (
+                  <label className="block">
+                    <span className="t-mikro mb-1 block">
+                      Schwellwert in {grenzen.einheit}
+                    </span>
+                    <input
+                      name="schwellwert"
+                      className="feld"
+                      type="number"
+                      step="0.1"
+                      min={grenzen.von}
+                      max={grenzen.bis}
+                      defaultValue={schwellwert ?? ""}
+                      required
+                    />
+                    <span className="t-mikro mt-1 block leading-relaxed">
+                      Zulässig {grenzen.von} bis {grenzen.bis} {grenzen.einheit}.{" "}
+                      {grenzen.begruendung}
+                    </span>
+                  </label>
+                )}
+
+                <label className="block">
+                  <span className="t-mikro mb-1 block">
+                    Mindestdauer in Minuten
+                  </span>
+                  <input
+                    name="dauer"
+                    className="feld"
+                    type="number"
+                    step="1"
+                    min={grenzen.dauerVon}
+                    max={grenzen.dauerBis}
+                    defaultValue={dauerMinuten}
+                    required
+                  />
+                  <span className="t-mikro mt-1 block leading-relaxed">
+                    Zulässig {grenzen.dauerVon} bis {grenzen.dauerBis} Minuten. So
+                    lange muss die Bedingung anhalten, bevor gemeldet wird.
+                  </span>
+                </label>
+
+                <label className="block">
+                  <span className="t-mikro mb-1 block">Einstufung</span>
+                  <select name="schwere" className="feld" defaultValue={schweregrad}>
+                    {SCHWEREGRADE.map((grad) => (
+                      <option key={grad} value={grad}>
+                        {grad}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="t-mikro mt-1 block leading-relaxed">
+                    Kritisch und hoch eingestufte Meldungen erreichen die
+                    Bereitschaft auch nachts.
+                  </span>
+                </label>
+
+                <label className="block">
+                  <span className="t-mikro mb-1 block">
+                    Mindesteinstrahlung in W/m²
+                  </span>
+                  <input
+                    name="einstrahlung"
+                    className="feld"
+                    type="number"
+                    step="10"
+                    min={0}
+                    defaultValue={minEinstrahlung ?? ""}
+                  />
+                  <span className="t-mikro mt-1 block leading-relaxed">
+                    Bei Ertragsregeln mindestens {MINDESTEINSTRAHLUNG} W/m².
+                    Darunter weicht bei diffusem Licht jede Anlage ab.
+                  </span>
+                </label>
+              </div>
+
+              <div className="mt-4 flex flex-wrap gap-4">
+                <label className="flex items-center gap-2 text-[0.8125rem]">
+                  <input
+                    type="checkbox"
+                    name="tagsueber"
+                    value="ja"
+                    defaultChecked={nurTagsueber}
+                  />
+                  <span>Nur bei Tageslicht prüfen</span>
+                </label>
+
+                <label className="flex items-center gap-2 text-[0.8125rem]">
+                  <input
+                    type="checkbox"
+                    name="aktiv"
+                    value="ja"
+                    defaultChecked={aktiv}
+                  />
+                  <span>Regel ist aktiv</span>
+                </label>
+              </div>
+
+              {ergebnis && (
+                <div className="mt-4 space-y-2">
+                  <Hinweis ton={ergebnis.ok ? "gut" : "kritisch"}>
+                    {ergebnis.meldung}
+                  </Hinweis>
+                  {ergebnis.warnungen?.map((warnung) => (
+                    <Hinweis key={warnung} ton="hinweis">
+                      {warnung}
+                    </Hinweis>
+                  ))}
+                </div>
+              )}
+
+              <div className="mt-5 flex gap-2">
+                <button type="submit" className="knopf knopf-voll" disabled={laeuft}>
+                  {laeuft ? "Wird gespeichert …" : "Schwelle übernehmen"}
+                </button>
+                <button
+                  type="button"
+                  className="knopf knopf-rand"
+                  onClick={schliessen}
+                >
+                  Schließen
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}

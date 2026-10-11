@@ -1,0 +1,312 @@
+import "server-only";
+
+/**
+ * Schutzschicht fuer die Anlagensteuerung.
+ *
+ * Hintergrund: Ein Teil der Regelparameter einer PV-Anlage ist
+ * netzbetreiber- bzw. normseitig vorgegeben (TOR Erzeuger, ÖVE/ÖNORM
+ * E 8001-4-712, Netz- und Anlagenschutz). Diese Werte darf ein Kunde
+ * nicht veraendern - eine Aenderung kann den Netzparallelbetrieb
+ * unzulaessig machen, Menschen gefaehrden und den Versicherungsschutz
+ * kosten.
+ *
+ * Deshalb steht die Sperre HIER, im Servercode, und nicht nur in der
+ * Oberflaeche: Ein ausgeblendetes Eingabefeld laesst sich umgehen,
+ * ein serverseitig abgelehnter Schreibvorgang nicht.
+ *
+ * Jede Steuerungsaenderung laeuft durch `pruefeParameter()`.
+ */
+
+export type ParameterGruppe =
+  | "eigenverbrauch"
+  | "speicher"
+  | "boerse"
+  | "laden"
+  | "netzschutz"
+  | "einspeiseregelung";
+
+export interface ParameterDefinition {
+  schluessel: string;
+  bezeichnung: string;
+  gruppe: ParameterGruppe;
+  einheit?: string;
+  /**
+   * Gesperrt = netzbetreiber- oder normseitig vorgegeben.
+   * Nur der Netzbetreiber oder ein autorisierter Errichter darf das
+   * aendern, niemals der Portalbenutzer.
+   */
+  gesperrt: boolean;
+  /** Rechtsgrundlage - wird dem Benutzer als Begruendung angezeigt. */
+  grundlage?: string;
+  min?: number;
+  max?: number;
+  /** Erlaubte Werte bei Auswahlfeldern. */
+  optionen?: string[];
+  /** Kurze Erklaerung fuer die Oberflaeche. */
+  hinweis?: string;
+}
+
+/**
+ * Vollstaendiger Katalog der steuerbaren und gesperrten Parameter.
+ *
+ * Was NICHT in dieser Liste steht, ist grundsaetzlich nicht schreibbar -
+ * `pruefeParameter` lehnt unbekannte Schluessel ab. Das ist bewusst eine
+ * Positivliste: Bei einer Negativliste wuerde ein vergessener Eintrag
+ * einen sicherheitsrelevanten Parameter freigeben.
+ */
+export const PARAMETER: ParameterDefinition[] = [
+  // ---------------------------------------------------------------
+  // Frei einstellbar - wirkt nur hinter dem Zaehlpunkt
+  // ---------------------------------------------------------------
+  {
+    schluessel: "eigenverbrauch_ziel",
+    bezeichnung: "Eigenverbrauchsziel",
+    gruppe: "eigenverbrauch",
+    einheit: "%",
+    gesperrt: false,
+    min: 0,
+    max: 100,
+    hinweis:
+      "Zielwert für die Eigenverbrauchsoptimierung. Die Regelung priorisiert Verbraucher, solange PV-Leistung verfügbar ist.",
+  },
+  {
+    schluessel: "speicher_ladeleistung_max",
+    bezeichnung: "Maximale Ladeleistung Speicher",
+    gruppe: "speicher",
+    einheit: "kW",
+    gesperrt: false,
+    min: 0,
+    max: 500,
+    hinweis: "Begrenzt die Ladeleistung, etwa zur Schonung der Batterie.",
+  },
+  {
+    schluessel: "speicher_reserve_soc",
+    bezeichnung: "Notstromreserve",
+    gruppe: "speicher",
+    einheit: "%",
+    gesperrt: false,
+    min: 0,
+    max: 100,
+    hinweis:
+      "Dieser Ladezustand wird für den Notstrombetrieb freigehalten und nicht ins Netz oder in den Eigenverbrauch entladen.",
+  },
+  {
+    schluessel: "speicher_modus",
+    bezeichnung: "Speicherstrategie",
+    gruppe: "speicher",
+    gesperrt: false,
+    optionen: [
+      "Eigenverbrauch",
+      "Lastspitzenkappung",
+      "Börsenpreis",
+      "Notstromvorrang",
+    ],
+    hinweis:
+      "Lastspitzenkappung senkt das Netzleistungsentgelt, das sich am höchsten Viertelstundenwert bemisst.",
+  },
+  {
+    schluessel: "boerse_aktiv",
+    bezeichnung: "Börsenpreissteuerung",
+    gruppe: "boerse",
+    gesperrt: false,
+    optionen: ["ja", "nein"],
+    hinweis:
+      "Richtet Laden und Entladen nach den Day-Ahead-Preisen der EPEX Spot AT aus.",
+  },
+  {
+    schluessel: "boerse_ladeschwelle",
+    bezeichnung: "Laden unter Börsenpreis",
+    gruppe: "boerse",
+    einheit: "ct/kWh",
+    gesperrt: false,
+    min: -50,
+    max: 100,
+    hinweis:
+      "Unterhalb dieses Preises wird aus dem Netz geladen. Negative Preise sind zulässig und kommen real vor.",
+  },
+  {
+    schluessel: "boerse_entladeschwelle",
+    bezeichnung: "Entladen über Börsenpreis",
+    gruppe: "boerse",
+    einheit: "ct/kWh",
+    gesperrt: false,
+    min: -50,
+    max: 500,
+    hinweis: "Oberhalb dieses Preises wird der Speicher vermarktet.",
+  },
+  {
+    schluessel: "lade_lastmanagement",
+    bezeichnung: "Lastmanagement Ladepunkte",
+    gruppe: "laden",
+    gesperrt: false,
+    optionen: ["Statisch", "Dynamisch", "PV-Überschuss"],
+    hinweis:
+      "Dynamisch verteilt die verfügbare Anschlussleistung auf die aktiven Ladevorgänge.",
+  },
+  {
+    schluessel: "lade_anschlussleistung_max",
+    bezeichnung: "Freigegebene Anschlussleistung Ladepunkte",
+    gruppe: "laden",
+    einheit: "kW",
+    gesperrt: false,
+    min: 0,
+    max: 1000,
+    hinweis:
+      "Obergrenze für alle Ladepunkte gemeinsam. Schützt den Hausanschluss vor Überlast.",
+  },
+
+  // ---------------------------------------------------------------
+  // GESPERRT - netzbetreiber- bzw. normseitig vorgegeben
+  // ---------------------------------------------------------------
+  {
+    schluessel: "einspeise_wirkleistungsgrenze",
+    bezeichnung: "Wirkleistungsbegrenzung Einspeisung",
+    gruppe: "einspeiseregelung",
+    einheit: "%",
+    gesperrt: true,
+    grundlage:
+      "Vorgabe des Netzbetreibers aus dem Netzzugangsvertrag (TOR Erzeuger). Eine Änderung ist nur durch den Netzbetreiber zulässig.",
+  },
+  {
+    schluessel: "einspeise_parkregler_sollwert",
+    bezeichnung: "Parkregler-Sollwert",
+    gruppe: "einspeiseregelung",
+    einheit: "kW",
+    gesperrt: true,
+    grundlage:
+      "Der Parkregler setzt Vorgaben des Netzbetreibers um, etwa Wirkleistungsreduktion per Rundsteuersignal. Eingriffe sind unzulässig.",
+  },
+  {
+    schluessel: "einspeise_blindleistungskennlinie",
+    bezeichnung: "Blindleistungskennlinie",
+    gruppe: "einspeiseregelung",
+    gesperrt: true,
+    grundlage:
+      "Im Netzzugangsvertrag nach TOR Erzeuger Typ B/C festgelegt. Die Kennlinie stützt die Spannungshaltung im Verteilernetz.",
+  },
+  {
+    schluessel: "netzschutz_spannung_grenzen",
+    bezeichnung: "Spannungsgrenzen Netz- und Anlagenschutz",
+    gruppe: "netzschutz",
+    einheit: "V",
+    gesperrt: true,
+    grundlage:
+      "Netz- und Anlagenschutz nach ÖVE/ÖNORM E 8001-4-712. Schutzeinstellungen darf ausschließlich der konzessionierte Errichter ändern.",
+  },
+  {
+    schluessel: "netzschutz_frequenz_grenzen",
+    bezeichnung: "Frequenzgrenzen Netz- und Anlagenschutz",
+    gruppe: "netzschutz",
+    einheit: "Hz",
+    gesperrt: true,
+    grundlage:
+      "Frequenzabhängige Wirkleistungsreduktion und Abschaltgrenzen nach TOR Erzeuger. Unmittelbar sicherheitsrelevant.",
+  },
+  {
+    schluessel: "netzschutz_abschaltzeit",
+    bezeichnung: "Abschaltzeit bei Netzfehler",
+    gruppe: "netzschutz",
+    einheit: "s",
+    gesperrt: true,
+    grundlage:
+      "Vorgegebene Auslösezeit des Netz- und Anlagenschutzes. Eine Verlängerung gefährdet Personen bei Arbeiten am Netz.",
+  },
+];
+
+const NACH_SCHLUESSEL = new Map(PARAMETER.map((p) => [p.schluessel, p]));
+
+export function findeParameter(
+  schluessel: string,
+): ParameterDefinition | undefined {
+  return NACH_SCHLUESSEL.get(schluessel);
+}
+
+export function istGesperrt(schluessel: string): boolean {
+  // Unbekannt wird wie gesperrt behandelt - im Zweifel nicht schreiben.
+  return findeParameter(schluessel)?.gesperrt ?? true;
+}
+
+export type PruefErgebnis =
+  | { erlaubt: true; wert: number | string }
+  | { erlaubt: false; grund: string };
+
+/**
+ * Einzige zugelassene Stelle, an der ein Steuerungswert freigegeben wird.
+ *
+ * Prueft in dieser Reihenfolge:
+ *   1. Ist der Parameter ueberhaupt bekannt?  (Positivliste)
+ *   2. Ist er gesperrt?                       (Gesetz / Netzbetreiber)
+ *   3. Liegt der Wert im zulaessigen Bereich? (Plausibilitaet)
+ */
+export function pruefeParameter(
+  schluessel: string,
+  rohwert: unknown,
+): PruefErgebnis {
+  const definition = findeParameter(schluessel);
+
+  if (!definition) {
+    return {
+      erlaubt: false,
+      grund: `Unbekannter Parameter "${schluessel}". Die Änderung wurde abgelehnt.`,
+    };
+  }
+
+  if (definition.gesperrt) {
+    return {
+      erlaubt: false,
+      grund:
+        definition.grundlage ??
+        "Dieser Parameter ist netzseitig vorgegeben und kann im Portal nicht geändert werden.",
+    };
+  }
+
+  if (definition.optionen) {
+    const wert = String(rohwert);
+    if (!definition.optionen.includes(wert)) {
+      return {
+        erlaubt: false,
+        grund: `Unzulässiger Wert. Erlaubt sind: ${definition.optionen.join(", ")}.`,
+      };
+    }
+    return { erlaubt: true, wert };
+  }
+
+  // Number("") und Number([]) ergeben beide 0. Ohne diese Pruefung wuerde
+  // ein leer abgesendetes Feld den Parameter stillschweigend auf 0 setzen -
+  // bei der Notstromreserve etwa hiesse das: keine Reserve mehr.
+  if (typeof rohwert !== "number" && typeof rohwert !== "string") {
+    return { erlaubt: false, grund: "Der Wert ist keine gültige Zahl." };
+  }
+  if (typeof rohwert === "string" && rohwert.trim() === "") {
+    return { erlaubt: false, grund: "Bitte einen Wert angeben." };
+  }
+
+  const zahl = typeof rohwert === "number" ? rohwert : Number(rohwert);
+  if (!Number.isFinite(zahl)) {
+    return { erlaubt: false, grund: "Der Wert ist keine gültige Zahl." };
+  }
+
+  const einheit = definition.einheit ? ` ${definition.einheit}` : "";
+
+  if (definition.min !== undefined && zahl < definition.min) {
+    return {
+      erlaubt: false,
+      grund: `Wert unter dem zulässigen Minimum von ${definition.min}${einheit}.`,
+    };
+  }
+
+  if (definition.max !== undefined && zahl > definition.max) {
+    return {
+      erlaubt: false,
+      grund: `Wert über dem zulässigen Maximum von ${definition.max}${einheit}.`,
+    };
+  }
+
+  return { erlaubt: true, wert: zahl };
+}
+
+export function parameterDerGruppe(
+  gruppe: ParameterGruppe,
+): ParameterDefinition[] {
+  return PARAMETER.filter((p) => p.gruppe === gruppe);
+}

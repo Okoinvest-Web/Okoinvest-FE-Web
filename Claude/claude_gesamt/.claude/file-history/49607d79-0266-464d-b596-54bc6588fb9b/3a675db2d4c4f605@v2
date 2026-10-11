@@ -1,0 +1,62 @@
+/**
+ * IPv4-Hilfsfunktionen fuer die serverseitige IPAM-Logik.
+ *
+ * Bewusst ohne Fremdbibliothek: die Berechnung wandert spaeter nach Python
+ * (`ipaddress`-Modul) und soll hier nachvollziehbar dasselbe tun.
+ */
+
+/** Wandelt "10.10.20.0/24" in { base, bits, size }. */
+export function parsePrefix(prefix) {
+  const [adresse, maske] = String(prefix).split('/')
+  const bits = Number(maske)
+  if (!Number.isInteger(bits) || bits < 0 || bits > 32) {
+    throw new Error('Ungültige Präfixlänge: ' + prefix)
+  }
+  const zahl = ipToInt(adresse)
+  const netz = bits === 0 ? 0 : (zahl >>> (32 - bits)) << (32 - bits)
+  return { base: netz >>> 0, bits, size: 2 ** (32 - bits) }
+}
+
+/** Wandelt "10.10.20.5" in eine vorzeichenlose Ganzzahl. */
+export function ipToInt(adresse) {
+  const teile = String(adresse).trim().split('.')
+  if (teile.length !== 4) throw new Error('Ungültige IPv4-Adresse: ' + adresse)
+  return teile.reduce((summe, teil) => {
+    const oktett = Number(teil)
+    if (!Number.isInteger(oktett) || oktett < 0 || oktett > 255) {
+      throw new Error('Ungültige IPv4-Adresse: ' + adresse)
+    }
+    return (summe * 256 + oktett) >>> 0
+  }, 0)
+}
+
+export function intToIp(zahl) {
+  return [24, 16, 8, 0].map((schub) => (zahl >>> schub) & 255).join('.')
+}
+
+/** Liegt `adresse` (mit oder ohne Maske) innerhalb von `prefix`? */
+export function istInPraefix(adresse, prefix) {
+  const { base, bits } = parsePrefix(prefix)
+  const zahl = ipToInt(String(adresse).split('/')[0])
+  if (bits === 0) return true
+  const maske = (0xffffffff << (32 - bits)) >>> 0
+  return ((zahl & maske) >>> 0) === base
+}
+
+/** Ist `kind` ein echtes Teilnetz von `elternteil`? */
+export function istTeilnetz(kind, elternteil) {
+  const k = parsePrefix(kind)
+  const e = parsePrefix(elternteil)
+  if (k.bits <= e.bits) return false
+  return istInPraefix(intToIp(k.base), elternteil)
+}
+
+/**
+ * Nutzbare Adressen eines Praefix.
+ * /31 und /32 haben keine Netz-/Broadcast-Adresse (RFC 3021 bzw. Hostroute).
+ */
+export function nutzbareAdressen(prefix) {
+  const { size, bits } = parsePrefix(prefix)
+  if (bits >= 31) return size
+  return size - 2
+}

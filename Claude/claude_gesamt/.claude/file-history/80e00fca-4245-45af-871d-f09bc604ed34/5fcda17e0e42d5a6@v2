@@ -1,0 +1,233 @@
+<section class="hero">
+  <div class="wrap hero-in">
+    <div class="hero-grid">
+      <div>
+        <span class="kicker c">Finanzierung</span>
+        <h1>Die Anlage kostet nichts, wenn sie mehr <span class="gc">einbringt als die Rate</span>.</h1>
+        <p class="lede">Kauf aus Eigenmitteln, Kreditfinanzierung oder Contracting führen zum selben Kraftwerk, aber zu völlig unterschiedlichen Liquiditätsverläufen. Der Vergleich zeigt alle drei über zwanzig Jahre.</p>
+        <div class="hero-acts">
+          <a class="btn btn-v" href="#tool">Varianten vergleichen</a>
+          <a class="btn btn-o" href="#details">Worauf Banken schauen</a>
+        </div>
+      </div>
+      <div class="chips">
+        <div class="chip v"><div><i>Nutzungsdauer</i><p>Steuerliche Abschreibung für PV-Anlagen</p></div><b>20<span class="unit">Jahre</span></b></div>
+        <div class="chip c"><div><i>Contracting</i><p>Anteil des Nutzens, der beim Contractor bleibt</p></div><b>~80<span class="unit">%</span></b></div>
+        <div class="chip s"><div><i>Liquiditätseffekt</i><p>Kreditvariante ab dem ersten Jahr</p></div><b>positiv<span class="unit">möglich</span></b></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="tool">
+  <div class="wrap">
+    <div class="sec-head">
+      <div><span class="kicker">Finanzierungsvergleich</span><h2>Drei Wege, dieselbe Anlage.</h2></div>
+      <p class="lede">Entscheidend ist nicht, welche Variante am Ende die höchste Summe ergibt, sondern welche zu Ihrer Liquiditätsplanung passt. Beides zeigt der Verlauf unten.</p>
+    </div>
+
+    <div class="console glass chamf">
+      <div class="con-t"><span><span class="pulse"></span>Kapitalflussvergleich · 20 Jahre</span><span id="stamp">—</span></div>
+      <div class="con-l">
+        <div class="field">
+          <div class="field-h"><label for="inv">Investition</label><span class="field-v" id="v-inv">420.000<span class="unit">€</span></span></div>
+          <input id="inv" type="range" min="20000" max="3000000" step="10000" value="420000">
+          <div class="scale"><span>20k</span><span>3 Mio €</span></div>
+        </div>
+        <div class="field">
+          <div class="field-h"><label for="ben">Jährlicher Nutzen</label><span class="field-v" id="v-ben">70.000<span class="unit">€/a</span></span></div>
+          <input id="ben" type="range" min="2000" max="500000" step="1000" value="70000">
+          <div class="scale"><span>2k</span><span>500k €/a</span></div>
+        </div>
+        <div class="field">
+          <div class="field-h"><label for="eq">Eigenkapitalanteil</label><span class="field-v" id="v-eq">20<span class="unit">%</span></span></div>
+          <input id="eq" type="range" min="0" max="100" step="5" value="20">
+          <div class="scale"><span>0</span><span>100 %</span></div>
+        </div>
+        <div class="field">
+          <div class="field-h"><label for="int">Sollzinssatz</label><span class="field-v" id="v-int">4,5<span class="unit">%</span></span></div>
+          <input id="int" type="range" min="0.5" max="9" step="0.1" value="4.5">
+          <div class="scale"><span>0,5</span><span>9 %</span></div>
+        </div>
+        <div class="field">
+          <div class="field-h"><label for="term">Kreditlaufzeit</label><span class="field-v" id="v-term">12<span class="unit">Jahre</span></span></div>
+          <input id="term" type="range" min="4" max="20" step="1" value="12">
+          <div class="scale"><span>4</span><span>20 Jahre</span></div>
+        </div>
+        <div class="field">
+          <div class="field-h"><label for="csh">Contracting-Anteil</label><span class="field-v" id="v-csh">80<span class="unit">%</span></span></div>
+          <input id="csh" type="range" min="50" max="95" step="1" value="80">
+          <div class="scale"><span>50</span><span>95 %</span></div>
+        </div>
+        <details class="as">
+          <summary>Rechenannahmen</summary>
+          <ul>
+            <li>Nutzen steigt mit 2 % Strompreissteigerung, Ertrag sinkt mit 0,5 % Degradation</li>
+            <li>Annuitätendarlehen mit gleichbleibender Rate über die gewählte Laufzeit</li>
+            <li>Contracting über 15 Jahre, danach geht die Anlage in Ihr Eigentum über</li>
+            <li>Betriebskosten pauschal 1,2 % der Investition pro Jahr in allen Varianten</li>
+            <li>Wechselrichtertausch im Jahr 13 mit 8 % der Investition angesetzt</li>
+            <li>Ohne Förderung, Steuereffekte und Investitionsfreibetrag</li>
+          </ul>
+        </details>
+      </div>
+
+      <div class="con-r">
+        <div class="stats">
+          <div class="stat"><i>Kreditbetrag</i><b id="o-loan">—<span class="unit">€</span></b><small id="o-eqa">Eigenmittel —</small></div>
+          <div class="stat c"><i>Annuität</i><b id="o-ann">—<span class="unit">€/a</span></b><small id="o-mon">monatlich —</small></div>
+          <div class="stat"><i>Zinsaufwand gesamt</i><b id="o-zins">—<span class="unit">€</span></b><small id="o-zins2">über die Laufzeit</small></div>
+          <div class="stat v"><i>Liquidität Jahr 1</i><b id="o-liq">—<span class="unit">€</span></b><small>Kreditvariante</small></div>
+          <div class="stat v"><i>Break-even Kredit</i><b id="o-be">—<span class="unit">Jahr</span></b><small id="o-be2">Kauf —</small></div>
+          <div class="stat s"><i>Summe nach 20 J</i><b id="o-sum">—<span class="unit">€</span></b><small>beste Variante</small></div>
+        </div>
+
+        <div class="panel dk">
+          <div class="panel-h"><h4>Kumulierter Kapitalfluss</h4><span id="c-note">—</span></div>
+          <svg id="ch" viewBox="0 0 760 280" role="img" aria-label="Kumulierter Kapitalfluss der drei Finanzierungsvarianten über zwanzig Jahre"></svg>
+          <div class="legend">
+            <span><i style="background:#8CE04B"></i>Kauf aus Eigenmitteln</span>
+            <span><i style="background:#45E0FF"></i>Kreditfinanzierung</span>
+            <span><i style="background:#FFB43D"></i>Contracting</span>
+          </div>
+        </div>
+
+        <div class="tbl-s">
+          <table class="fd" id="tb">
+            <thead><tr><th>Variante</th><th>Startaufwand</th><th>Belastung Jahr 1</th><th>Break-even</th><th>Summe Jahr 20</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <p class="fine">Modellrechnung ohne Steuerwirkung. Investitionsfreibetrag, Abschreibung und Förderungen verschieben das Ergebnis je nach Rechtsform deutlich.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="details">
+  <div class="wrap">
+    <div class="sec-head">
+      <div><span class="kicker s">Bankgespräch</span><h2>Worauf bei der Finanzierung geschaut wird.</h2></div>
+      <p class="lede">Eine Photovoltaikanlage gilt als gut finanzierbar, weil die Erträge prognostizierbar sind. Drei Punkte entscheiden trotzdem über die Konditionen.</p>
+    </div>
+    <div class="cards">
+      <article class="card">
+        <span class="n">PUNKT 1</span>
+        <svg class="ic" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 27h24M7 27V13M13 27V9M19 27V16M25 27V6"/></svg>
+        <h3>Planbarkeit der Erlöse</h3>
+        <p>Eigenverbrauch ist für Banken der stärkste Teil der Rechnung, weil er auf dem eigenen Lastgang beruht. Reine Markterlöse werden konservativer bewertet.</p>
+        <ul><li>Lastgang als Nachweis</li><li>Ertragsgutachten beilegen</li><li>Konservatives Szenario rechnen</li></ul>
+      </article>
+      <article class="card">
+        <span class="n">PUNKT 2</span>
+        <svg class="ic" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="4" y="9" width="24" height="16"/><circle cx="16" cy="17" r="4"/><path d="M4 5h24"/></svg>
+        <h3>Sicherheiten und Laufzeit</h3>
+        <p>Die Laufzeit sollte zur technischen Lebensdauer passen, aber deutlich darunter bleiben. Üblich sind acht bis fünfzehn Jahre, bei Contracting entfällt die Frage ganz.</p>
+        <ul><li>Laufzeit unter Nutzungsdauer</li><li>Anlage als Sicherheit</li><li>Tilgungsfreie Anlaufphase möglich</li></ul>
+      </article>
+      <article class="card">
+        <span class="n">PUNKT 3</span>
+        <svg class="ic" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M16 3v26M22 9H13a4 4 0 0 0 0 8h6a4 4 0 0 1 0 8H9"/></svg>
+        <h3>Förderung und Steuer</h3>
+        <p>Ein Investitionszuschuss senkt die Kreditsumme direkt, der Investitionsfreibetrag wirkt über die Steuererklärung. Beides gehört vor dem Kreditantrag geklärt, nicht danach.</p>
+        <ul><li>Zuschuss vor Baubeginn beantragen</li><li>Freibetrag mit der Steuerberatung klären</li><li>Zwischenfinanzierung einplanen</li></ul>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="faq">
+  <div class="wrap">
+    <div class="sec-head"><div><span class="kicker">Häufige Fragen</span><h2>Fragen zur Finanzierung.</h2></div></div>
+    <div class="faq">
+      <details class="qa" open><summary>Warum ist Kredit oft besser als Kauf aus Eigenmitteln?</summary><p>Nicht wegen der Gesamtkosten, sondern wegen der Liquidität. Beim Kauf ist das Kapital sofort gebunden, bei der Kreditvariante trägt sich die Rate weitgehend aus der Ersparnis. Das freie Kapital bleibt für das operative Geschäft verfügbar.</p></details>
+      <details class="qa"><summary>Was genau ist Contracting?</summary><p>Ein Dritter errichtet und betreibt die Anlage auf Ihrem Dach und verrechnet Ihnen den Strom oder eine Nutzungsgebühr. Sie investieren nichts und tragen kein technisches Risiko, geben dafür aber den Großteil des wirtschaftlichen Nutzens ab. Nach Vertragsende geht die Anlage üblicherweise in Ihr Eigentum über.</p></details>
+      <details class="qa"><summary>Wie wirkt eine Förderung auf die Rechnung?</summary><p>Ein Investitionszuschuss reduziert die Investition und damit unmittelbar Kreditsumme und Rate. Im Rechner oben setzen Sie dafür einfach den Investitionsbetrag um die erwartete Förderung niedriger an.</p></details>
+      <details class="qa"><summary>Was ist im Jahr dreizehn eingerechnet?</summary><p>Der Tausch der Wechselrichter. Module halten deutlich länger als die Leistungselektronik, deshalb ist dieser Posten mit acht Prozent der Investition in allen Varianten berücksichtigt. Er erklärt die Delle im Verlauf.</p></details>
+    </div>
+  </div>
+</section>
+
+<script>
+(function(){
+"use strict";
+var $=function(i){return document.getElementById(i);},
+de=function(n,d){d=d||0;return Number(n).toLocaleString("de-AT",{minimumFractionDigits:d,maximumFractionDigits:d});};
+var YRS=20,ESC=.02,DEG=.005,OPEX=.012,WR=.08,WRY=13,CTERM=15;
+
+function series(){
+ var inv=+$("inv").value,ben=+$("ben").value,eq=+$("eq").value/100,ir=+$("int").value/100,n=+$("term").value,cs=+$("csh").value/100;
+ var loan=inv*(1-eq),eqa=inv*eq;
+ var ann=ir>0?loan*ir/(1-Math.pow(1+ir,-n)):loan/n;
+ var a=[-inv],b=[-eqa],c=[0],i,zins=0,rest=loan;
+ for(i=1;i<=YRS;i++){
+   var net=ben*Math.pow(1+ESC,i-1)*Math.pow(1-DEG,i-1)-inv*OPEX;
+   if(i===WRY)net-=inv*WR;
+   var pay=0;
+   if(i<=n){var z=rest*ir;zins+=z;var t=ann-z;rest-=t;pay=ann;}
+   a.push(a[i-1]+net);
+   b.push(b[i-1]+net-pay);
+   var cnet=i<=CTERM?(ben*Math.pow(1+ESC,i-1)*Math.pow(1-DEG,i-1))*(1-cs):net;
+   c.push(c[i-1]+cnet);
+ }
+ return {a:a,b:b,c:c,ann:ann,loan:loan,eqa:eqa,zins:zins,inv:inv,ben:ben,n:n,cs:cs};
+}
+function be(arr){for(var i=1;i<arr.length;i++)if(arr[i]>=0)return i;return null;}
+
+function render(){
+ var r=series(),i;
+ $("v-inv").innerHTML=de(r.inv)+'<span class="unit">€</span>';
+ $("v-ben").innerHTML=de(r.ben)+'<span class="unit">€/a</span>';
+ $("v-eq").innerHTML=de(+$("eq").value)+'<span class="unit">%</span>';
+ $("v-int").innerHTML=de(+$("int").value,1)+'<span class="unit">%</span>';
+ $("v-term").innerHTML=de(r.n)+'<span class="unit">Jahre</span>';
+ $("v-csh").innerHTML=de(r.cs*100)+'<span class="unit">%</span>';
+ $("stamp").textContent="Nutzen "+de(r.ben)+" € gegen Investition "+de(r.inv)+" €";
+
+ $("o-loan").innerHTML=de(r.loan)+'<span class="unit">€</span>';
+ $("o-eqa").textContent="Eigenmittel "+de(r.eqa)+" €";
+ $("o-ann").innerHTML=de(r.ann)+'<span class="unit">€/a</span>';
+ $("o-mon").textContent="monatlich "+de(r.ann/12)+" €";
+ $("o-zins").innerHTML=de(r.zins)+'<span class="unit">€</span>';
+ var liq=r.b[1]-r.b[0];
+ $("o-liq").innerHTML=(liq>=0?"+":"−")+de(Math.abs(liq))+'<span class="unit">€</span>';
+ $("o-liq").parentNode.className="stat "+(liq>=0?"v":"r");
+ var beB=be(r.b),beA=be(r.a);
+ $("o-be").innerHTML=(beB||"—")+'<span class="unit">Jahr</span>';
+ $("o-be2").textContent="Kauf "+(beA?"Jahr "+beA:"nicht erreicht");
+ var best=Math.max(r.a[YRS],r.b[YRS],r.c[YRS]);
+ $("o-sum").innerHTML=de(best)+'<span class="unit">€</span>';
+
+ var rows=[["Kauf aus Eigenmitteln",r.inv,Math.round(r.a[1]-r.a[0]),beA,r.a[YRS],"#8CE04B"],
+           ["Kreditfinanzierung",r.eqa,Math.round(r.b[1]-r.b[0]),beB,r.b[YRS],"#45E0FF"],
+           ["Contracting",0,Math.round(r.c[1]-r.c[0]),be(r.c),r.c[YRS],"#FFB43D"]];
+ var tb=$("tb").querySelector("tbody"),html="";
+ for(i=0;i<3;i++){
+  html+="<tr><td>"+rows[i][0]+"</td><td class='k'>"+de(rows[i][1])+" €</td><td>"+(rows[i][2]>=0?"+":"−")+de(Math.abs(rows[i][2]))+" €</td><td>"+(rows[i][3]?"Jahr "+rows[i][3]:"—")+"</td><td class='num'>"+de(rows[i][4])+" €</td></tr>";
+ }
+ tb.innerHTML=html;
+
+ var W=760,H=280,L=66,R=86,T=16,B=30,pw=W-L-R,ph=H-T-B;
+ var all=r.a.concat(r.b).concat(r.c),mn=Math.min.apply(null,all),mx=Math.max.apply(null,all);
+ var pad=(mx-mn)*.1||1;mn-=pad;mx+=pad;
+ var x=function(i){return L+pw*i/YRS;},y=function(v){return T+ph*(1-(v-mn)/(mx-mn));};
+ var s="",zero=y(0);
+ s+='<line x1="'+L+'" y1="'+zero.toFixed(1)+'" x2="'+(W-R)+'" y2="'+zero.toFixed(1)+'" stroke="rgba(150,180,220,.32)"/>';
+ s+='<text x="'+(L-8)+'" y="'+(zero+3.5).toFixed(1)+'" text-anchor="end" fill="#9FB4CE" font-family="JetBrains Mono, monospace" font-size="9.5">0 €</text>';
+ [["a","#8CE04B","Kauf"],["b","#45E0FF","Kredit"],["c","#FFB43D","Contracting"]].forEach(function(v){
+   var d="",arr=r[v[0]],i2;
+   for(i2=0;i2<=YRS;i2++)d+=(i2?"L":"M")+x(i2).toFixed(1)+" "+y(arr[i2]).toFixed(1)+" ";
+   s+='<path d="'+d+'" fill="none" stroke="'+v[1]+'" stroke-width="2.2" stroke-linejoin="round"/>';
+   s+='<circle cx="'+x(YRS).toFixed(1)+'" cy="'+y(arr[YRS]).toFixed(1)+'" r="3.5" fill="'+v[1]+'"/>';
+   s+='<text x="'+(x(YRS)+8).toFixed(1)+'" y="'+(y(arr[YRS])+4).toFixed(1)+'" fill="'+v[1]+'" font-family="JetBrains Mono, monospace" font-size="10">'+de(arr[YRS]/1000)+'k</text>';
+ });
+ for(i=0;i<=YRS;i+=5)s+='<text x="'+x(i).toFixed(1)+'" y="'+(H-9)+'" text-anchor="middle" fill="#617595" font-family="JetBrains Mono, monospace" font-size="9.5">J '+i+'</text>';
+ s+='<text x="'+(L-8)+'" y="'+(T+4)+'" text-anchor="end" fill="#617595" font-family="JetBrains Mono, monospace" font-size="9">'+de(mx/1000)+'k</text>';
+ s+='<text x="'+(L-8)+'" y="'+(T+ph)+'" text-anchor="end" fill="#617595" font-family="JetBrains Mono, monospace" font-size="9">'+de(mn/1000)+'k</text>';
+ $("ch").innerHTML=s;
+ $("c-note").textContent="Wechselrichtertausch im Jahr "+WRY+" eingerechnet";
+}
+["inv","ben","eq","int","term","csh"].forEach(function(i){$(i).addEventListener("input",render);});
+render();
+})();
+</script>

@@ -1,0 +1,216 @@
+<template>
+  <div>
+    <PageHeader title="Identitäten & Zugänge" :subtitle="untertitel" />
+
+    <div class="p-6">
+      <div v-if="identitaet.data" class="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <StatCard
+          v-for="kachel in kacheln"
+          :key="kachel.label"
+          :label="kachel.label"
+          :wert="kachel.wert"
+          :hinweis="kachel.hinweis"
+          :level="kachel.level"
+        />
+      </div>
+
+      <!-- MFA-Abdeckung als Größenordnung, Wert daneben -->
+      <section
+        v-if="identitaet.data"
+        class="mb-8 rounded-lg border border-outline-gray-2 bg-surface-white p-4"
+      >
+        <h2 class="mb-2 text-base font-semibold text-ink-gray-8">MFA-Abdeckung</h2>
+        <div class="flex items-center gap-3">
+          <div class="h-3 flex-1" style="background: var(--viz-neutral-soft)">
+            <div
+              class="h-full"
+              :style="{
+                width: identitaet.data.summary.mfa_coverage_pct + '%',
+                background:
+                  identitaet.data.summary.mfa_coverage_pct >= 100
+                    ? 'var(--viz-good)'
+                    : 'var(--viz-warning)',
+                borderTopRightRadius: '4px',
+                borderBottomRightRadius: '4px',
+              }"
+            />
+          </div>
+          <span class="w-16 shrink-0 text-right text-base tabular-nums text-ink-gray-8">
+            {{ identitaet.data.summary.mfa_coverage_pct }} %
+          </span>
+        </div>
+        <p class="mt-2 text-sm text-ink-gray-6">
+          {{ identitaet.data.summary.persons - identitaet.data.summary.without_mfa }} von
+          {{ identitaet.data.summary.persons }} Personenkonten mit zweitem Faktor. FIDO2 ist für
+          Admin- und Security-Rollen Pflicht, TOTP nur für reine Leserollen zulässig.
+        </p>
+      </section>
+
+      <section class="mb-8">
+        <h2 class="mb-3 text-base font-semibold text-ink-gray-8">Konten</h2>
+        <DataTable
+          tabellen-id="IdentityView-1"
+          :columns="kontoSpalten"
+          :rows="identitaet.data?.accounts || []"
+          :loading="identitaet.loading"
+        >
+          <template #zelle-display_name="{ zeile }">
+            <span class="block text-ink-gray-9">{{ zeile.display_name }}</span>
+            <span class="block font-mono text-sm text-ink-gray-5">{{ zeile.account_name }}</span>
+          </template>
+          <template #zelle-account_kind="{ zeile }">
+            <Badge :theme="artThema(zeile.account_kind)">
+              {{ ART[zeile.account_kind] || zeile.account_kind }}
+            </Badge>
+          </template>
+          <template #zelle-mfa_kind="{ zeile }">
+            <StatusDot
+              :level="
+                zeile.mfa_kind === 'fido2'
+                  ? 'ok'
+                  : zeile.mfa_kind === 'none'
+                    ? 'critical'
+                    : 'warning'
+              "
+              :text="MFA[zeile.mfa_kind] || zeile.mfa_kind"
+              klein
+            />
+          </template>
+          <template #zelle-privileged="{ zeile }">
+            <StatusDot v-if="zeile.privileged" level="warning" text="privilegiert" klein />
+            <span v-else class="text-ink-gray-4">–</span>
+          </template>
+          <template #zelle-last_login_days="{ zeile }">
+            <span v-if="zeile.last_login_days === null" class="text-ink-gray-4">nie</span>
+            <span v-else class="tabular-nums">vor {{ zeile.last_login_days }} Tagen</span>
+          </template>
+          <template #zelle-befund="{ zeile }">
+            <StatusDot v-if="!zeile.reasons.length" level="ok" text="in Ordnung" klein />
+            <ul v-else class="space-y-0.5">
+              <li v-for="grund in zeile.reasons" :key="grund" class="text-sm text-ink-gray-6">
+                {{ grund }}
+              </li>
+            </ul>
+          </template>
+        </DataTable>
+      </section>
+
+      <section>
+        <h2 class="mb-3 text-base font-semibold text-ink-gray-8">Token-Inventar</h2>
+        <DataTable
+          tabellen-id="IdentityView-2"
+          :columns="tokenSpalten"
+          :rows="identitaet.data?.tokens || []"
+        >
+          <template #zelle-token_label="{ zeile }">
+            <span class="block text-ink-gray-9">{{ zeile.token_label }}</span>
+            <span class="block text-sm text-ink-gray-5"
+              >{{ zeile.system }} · {{ zeile.scope }}</span
+            >
+          </template>
+          <template #zelle-read_only="{ zeile }">
+            <StatusDot
+              :level="zeile.read_only ? 'ok' : 'warning'"
+              :text="zeile.read_only ? 'nur lesen' : 'schreibend'"
+              klein
+            />
+          </template>
+          <template #zelle-last_used_days="{ zeile }">
+            <span v-if="zeile.last_used_days === null" class="text-ink-gray-4">nie</span>
+            <span v-else class="tabular-nums">vor {{ zeile.last_used_days }} Tagen</span>
+          </template>
+          <template #zelle-befund="{ zeile }">
+            <StatusDot v-if="!zeile.reasons.length" level="ok" text="in Ordnung" klein />
+            <ul v-else class="space-y-0.5">
+              <li v-for="grund in zeile.reasons" :key="grund" class="text-sm text-ink-gray-6">
+                {{ grund }}
+              </li>
+            </ul>
+          </template>
+        </DataTable>
+      </section>
+
+      <p class="mt-6 text-xs text-ink-gray-4">
+        Notfallzugänge sind bewusst unbenutzt und gelten deshalb nicht als auffällig – ihre Nutzung
+        löst im Betrieb einen Alarm aus. Dienstkonten ohne MFA sind zulässig, solange der Zugang
+        ausschließlich über den Vault läuft; sie stehen trotzdem hier, weil sie privilegiert sind.
+      </p>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed } from 'vue'
+import { Badge, createResource } from 'frappe-ui'
+import PageHeader from '@/components/PageHeader.vue'
+import DataTable from '@/components/DataTable.vue'
+import StatCard from '@/components/StatCard.vue'
+
+const ART = { person: 'Person', service: 'Dienstkonto', break_glass: 'Notfallzugang' }
+const MFA = { fido2: 'FIDO2', totp: 'TOTP', none: 'kein Faktor' }
+
+const identitaet = createResource({ url: 'netops.api.identity.identity_overview', auto: true })
+
+const kontoSpalten = [
+  { key: 'display_name', label: 'Konto', width: '280px' },
+  { key: 'account_kind', label: 'Art', width: '140px' },
+  { key: 'system', label: 'System', muted: true, width: '120px' },
+  { key: 'mfa_kind', label: 'Zweiter Faktor', width: '150px' },
+  { key: 'privileged', label: 'Rechte', width: '140px' },
+  { key: 'last_login_days', label: 'Letzte Anmeldung', width: '160px' },
+  { key: 'befund', label: 'Befund' },
+]
+
+const tokenSpalten = [
+  { key: 'token_label', label: 'Token', width: '280px' },
+  { key: 'token_kind', label: 'Art', muted: true, width: '90px' },
+  { key: 'account', label: 'Konto', muted: true, width: '200px' },
+  { key: 'read_only', label: 'Zugriff', width: '140px' },
+  { key: 'expires', label: 'Läuft ab', numeric: true, width: '120px' },
+  { key: 'last_used_days', label: 'Zuletzt genutzt', width: '150px' },
+  { key: 'befund', label: 'Befund' },
+]
+
+const kacheln = computed(() => {
+  const z = identitaet.data?.summary
+  if (!z) return []
+  return [
+    {
+      label: 'Ohne zweiten Faktor',
+      wert: z.without_mfa,
+      level: 'critical',
+      hinweis: z.without_mfa ? 'nachziehen' : null,
+    },
+    {
+      label: 'Privilegierte Konten',
+      wert: z.privileged,
+      level: 'warning',
+      hinweis: 'regelmäßig prüfen',
+    },
+    {
+      label: 'Abgelaufene Token',
+      wert: z.tokens_expired,
+      level: 'critical',
+      hinweis: z.tokens_expired ? 'rotieren' : null,
+    },
+    {
+      label: 'Verwaiste Konten',
+      wert: z.stale_accounts,
+      level: 'warning',
+      hinweis: z.stale_accounts ? 'über 90 Tage inaktiv' : null,
+    },
+  ]
+})
+
+const untertitel = computed(() => {
+  const z = identitaet.data?.summary
+  if (!z) return ''
+  return (
+    z.accounts + ' Konten · ' + z.tokens + ' Token · MFA-Abdeckung ' + z.mfa_coverage_pct + ' %'
+  )
+})
+
+function artThema(art) {
+  return { person: 'blue', service: 'gray', break_glass: 'orange' }[art] || 'gray'
+}
+</script>

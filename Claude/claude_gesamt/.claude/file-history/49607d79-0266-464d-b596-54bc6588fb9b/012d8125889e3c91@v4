@@ -1,0 +1,193 @@
+@import 'frappe-ui/style.css';
+
+@layer base {
+  html,
+  body {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-surface-white text-ink-gray-8;
+  }
+
+  /*
+   * Sichtbarer Tastaturfokus.
+   *
+   * Tailwind setzt in seinem Preflight `outline: none` auf fokussierte
+   * Elemente. Ohne Ersatz sieht man beim Navigieren mit der Tastatur
+   * nicht, wo man gerade ist - gemessen: outline-style "none" auf jedem
+   * Navigationslink. `:focus-visible` greift nur bei Tastatur, nicht beim
+   * Klick, und stört deshalb die Mausbedienung nicht.
+   */
+  :focus-visible {
+    outline: 2px solid var(--viz-series-1);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+}
+
+@layer components {
+  /* Nur für Screenreader: sichtbar erst bei Tastaturfokus. */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+
+  .sprunglink:focus {
+    position: fixed;
+    top: 0.5rem;
+    left: 0.5rem;
+    z-index: 100;
+    width: auto;
+    height: auto;
+    margin: 0;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+    @apply rounded border border-outline-gray-3 bg-surface-white px-3 py-2 text-base text-ink-gray-9 shadow-lg;
+  }
+}
+
+/*
+ * Farbrollen der grafischen Ansichten.
+ *
+ * Die Werte stammen aus der geprüften Referenzpalette und wurden mit dem
+ * Validator gegen die helle Fläche (#ffffff) geprüft. Grundregel im NetOps-
+ * Frontend: FARBE TRÄGT ZUSTAND, TEXT TRÄGT IDENTITÄT. Deshalb gibt es hier
+ * keine Palette für VLANs oder Geräterollen - sechs Zonenfarben fallen im
+ * All-Pairs-Test durch (Grün/Orange ΔE 3,2 bei Protanopie). VLAN und Rolle
+ * stehen stattdessen als Text am Objekt, und die VLAN-Ansicht hebt genau ein
+ * VLAN hervor statt alle einzufärben.
+ *
+ * Statusfarben erscheinen nie allein: immer mit Symbol oder Beschriftung.
+ */
+:root {
+  --viz-surface: #ffffff;
+  --viz-chassis: #f1f1ef;
+  --viz-chassis-line: #d5d5d1;
+  --viz-grid: #e1e0d9;
+  --viz-ink: #0b0b0b;
+  --viz-ink-muted: #52514e;
+
+  /* Statuspalette – fest, nie umgefärbt */
+  --viz-good: #0ca30c;
+  --viz-warning: #fab219;
+  --viz-serious: #ec835a;
+  --viz-critical: #d03b3b;
+
+  /* Kategoriale Slots 1 und 2 – nur für Hervorhebung und Einzelserien */
+  --viz-series-1: #2a78d6;
+  --viz-series-2: #eb6834;
+
+  /* Sequenzielle Blauskala für Größenordnungen (Auslastung) */
+  --viz-seq-250: #86b6ef;
+  --viz-seq-400: #3987e5;
+  --viz-seq-550: #1c5cab;
+
+  /* Neutrale Portfläche: frei heißt "kein Zustand", nicht "gut" */
+  --viz-neutral: #c8c8c4;
+  --viz-neutral-soft: #e8e8e5;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme='light'])) {
+    --viz-surface: #1a1a19;
+    --viz-chassis: #262624;
+    --viz-chassis-line: #3d3d39;
+    --viz-grid: #2c2c2a;
+    --viz-ink: #ffffff;
+    --viz-ink-muted: #c3c2b7;
+
+    --viz-good: #0ca30c;
+    --viz-warning: #fab219;
+    --viz-serious: #ec835a;
+    --viz-critical: #d03b3b;
+
+    --viz-series-1: #3987e5;
+    --viz-series-2: #d95926;
+
+    --viz-seq-250: #2a6bbf;
+    --viz-seq-400: #3987e5;
+    --viz-seq-550: #86b6ef;
+
+    --viz-neutral: #55554f;
+    --viz-neutral-soft: #333331;
+  }
+}
+
+:root[data-theme='dark'] {
+  --viz-surface: #1a1a19;
+  --viz-chassis: #262624;
+  --viz-chassis-line: #3d3d39;
+  --viz-grid: #2c2c2a;
+  --viz-ink: #ffffff;
+  --viz-ink-muted: #c3c2b7;
+
+  --viz-good: #0ca30c;
+  --viz-warning: #fab219;
+  --viz-serious: #ec835a;
+  --viz-critical: #d03b3b;
+
+  --viz-series-1: #3987e5;
+  --viz-series-2: #d95926;
+
+  --viz-seq-250: #2a6bbf;
+  --viz-seq-400: #3987e5;
+  --viz-seq-550: #86b6ef;
+
+  --viz-neutral: #55554f;
+  --viz-neutral-soft: #333331;
+}
+
+/* =========================================================================
+   Alarmpuls
+   =========================================================================
+   Ein pulsierender Rahmen, solange ein kritischer Alarm offen ist. Gedacht
+   für den Leitstandbildschirm, auf den niemand dauerhaft schaut: Bewegung
+   am Rand des Blickfelds bemerkt man auch von der Seite, eine rote Zahl
+   nicht.
+
+   Der Puls ist bewusst langsam (2,4 s) und bleibt am Rand. Schnelles
+   Blinken wäre schlechter lesbar und ist für Menschen mit Photosensibilität
+   ein Risiko - deshalb auch deutlich unter drei Blitzen je Sekunde
+   (WCAG 2.3.1).
+
+   Wer Animationen abgeschaltet hat, bekommt denselben Rahmen statisch.
+   Die Information steckt in der Farbe UND im Text daneben, nie in der
+   Bewegung allein. */
+
+@keyframes alarmpuls {
+  0%,
+  100% {
+    box-shadow:
+      inset 0 0 0 3px var(--viz-critical),
+      inset 0 0 18px 2px rgb(208 59 59 / 0.35);
+  }
+  50% {
+    box-shadow:
+      inset 0 0 0 3px var(--viz-serious),
+      inset 0 0 26px 6px rgb(236 131 90 / 0.45);
+  }
+}
+
+.alarmpuls {
+  animation: alarmpuls 2.4s ease-in-out infinite;
+  border-radius: 8px;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .alarmpuls {
+    animation: none;
+    box-shadow:
+      inset 0 0 0 3px var(--viz-critical),
+      inset 0 0 18px 2px rgb(208 59 59 / 0.35);
+  }
+}

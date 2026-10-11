@@ -1,0 +1,454 @@
+import Link from "next/link";
+import type { Metadata } from "next";
+
+import { IconPfeilRechts, IconZaehlpunkt } from "@/components/icon";
+import { Tabelle, Zeile, Zelle, ZelleMitZusatz } from "@/components/tabelle";
+import {
+  Angabe,
+  Hinweis,
+  Kennzahl,
+  Kennzahlenleiste,
+  LeerZustand,
+  Seitenkopf,
+  Status,
+  Tafel,
+} from "@/components/ui";
+import { kuerzeZaehlpunkt } from "@/lib/at/zaehlpunkt";
+import {
+  ladeDatenbestand,
+  ladeEdaProzesse,
+  ladeGemeinschaft,
+  ladeKennzahlen,
+  ladeLaeufe,
+  ladeTeilnehmer,
+} from "@/lib/daten/eeg";
+import { NETZRABATT } from "@/lib/eeg/abrechnung";
+import {
+  formatDatum,
+  formatDatumZeit,
+  formatEnergie,
+  formatGeld,
+  formatProzent,
+  formatZahl,
+} from "@/lib/format";
+import { hatRecht } from "@/lib/sicherheit/rollen";
+import { requireRecht } from "@/lib/session";
+
+import { LaufFormular } from "./lauf-formular";
+import { TeilnahmeFormular } from "./teilnahme-formular";
+
+export const metadata: Metadata = { title: "Energiegemeinschaft" };
+
+function laufTon(status: string) {
+  switch (status) {
+    case "Festgeschrieben":
+      return "gut" as const;
+    case "Berechnet":
+      return "akzent" as const;
+    case "Storniert":
+      return "neutral" as const;
+    default:
+      return "hinweis" as const;
+  }
+}
+
+function edaTon(status: string) {
+  switch (status) {
+    case "Angenommen":
+      return "gut" as const;
+    case "Abgelehnt":
+      return "kritisch" as const;
+    case "Zustimmung offen":
+      return "hinweis" as const;
+    default:
+      return "neutral" as const;
+  }
+}
+
+/** Die letzten abgeschlossenen Quartale, fuer die Daten vorliegen. */
+function moeglicheZeitraeume(fruehester: string | null) {
+  const zeitraeume: { jahr: number; quartal: number; label: string }[] = [];
+  const grenze = fruehester ? new Date(fruehester) : null;
+
+  const jetzt = new Date();
+  let jahr = jetzt.getFullYear();
+  let quartal = Math.floor(jetzt.getMonth() / 3) + 1;
+
+  for (let i = 0; i < 6; i++) {
+    quartal -= 1;
+    if (quartal === 0) {
+      quartal = 4;
+      jahr -= 1;
+    }
+
+    const beginn = new Date(jahr, (quartal - 1) * 3, 1);
+    if (grenze && beginn < grenze) break;
+
+    zeitraeume.push({ jahr, quartal, label: `${jahr} Q${quartal}` });
+  }
+
+  return zeitraeume;
+}
+
+export default async function GemeinschaftSeite() {
+  const benutzer = await requireRecht("gemeinschaft.lesen");
+  const darfVerwalten = hatRecht([benutzer.rolle], "gemeinschaft.verwalten");
+
+  const gemeinschaft = ladeGemeinschaft();
+
+  if (!gemeinschaft) {
+    return (
+      <div className="space-y-5">
+        <Seitenkopf titel="Energiegemeinschaft" />
+        <Tafel>
+          <LeerZustand
+            text="Sie sind derzeit in keiner Energiegemeinschaft eingetragen."
+            hinweis="Eine lokale Erneuerbare-Energie-Gemeinschaft senkt den Arbeitspreis des Netznutzungsentgelts um bis zu 57 Prozent."
+          />
+        </Tafel>
+      </div>
+    );
+  }
+
+  const [kennzahlen, teilnehmer, laeufe, eda, bestand] = [
+    ladeKennzahlen(gemeinschaft.id),
+    ladeTeilnehmer(gemeinschaft.id),
+    ladeLaeufe(gemeinschaft.id),
+    ladeEdaProzesse(gemeinschaft.id),
+    ladeDatenbestand(gemeinschaft.id),
+  ];
+
+  const verteilt = formatEnergie(kennzahlen.verteiltGesamt);
+  const rabatt = NETZRABATT[gemeinschaft.reichweite ?? "Lokal"] ?? 0;
+
+  const offeneEda = eda.filter((e) => e.status === "Zustimmung offen");
+  const abgelehnteEda = eda.filter((e) => e.status === "Abgelehnt");
+
+  return (
+    <div className="space-y-5">
+      <Seitenkopf
+        titel={gemeinschaft.bezeichnung}
+        hinweis={`${gemeinschaft.art} · ${gemeinschaft.reichweite} · ${gemeinschaft.rechtsform ?? ""} · gegründet am ${formatDatum(gemeinschaft.gegruendet_am)}`}
+        aktion={
+          darfVerwalten ? (
+            <LaufFormular
+              gemeinschaftId={gemeinschaft.id}
+              standardModell={gemeinschaft.aufteilungsmodell}
+              moeglicheZeitraeume={moeglicheZeitraeume(bestand.fruehester)}
+            />
+          ) : undefined
+        }
+      />
+
+      <Kennzahlenleiste>
+        <Kennzahl
+          label="Teilnehmer"
+          wert={formatZahl(kennzahlen.teilnehmer, 0)}
+          hinweis={`davon ${kennzahlen.erzeuger} mit Erzeugung`}
+        />
+        <Kennzahl
+          label="Erzeugungsleistung"
+          wert={formatZahl(kennzahlen.erzeugungKwp, 1)}
+          einheit="kWp"
+        />
+        <Kennzahl
+          label="In der Gemeinschaft verteilt"
+          wert={verteilt.wert}
+          einheit={verteilt.einheit}
+          hinweis="abgerechnet, gesamt"
+          akzent
+        />
+        <Kennzahl
+          label="Ersparnis Netzentgelt"
+          wert={formatGeld(kennzahlen.ersparnisGesamt)}
+          hinweis={`${formatProzent(rabatt * 100, 0)} Rabatt auf den Arbeitspreis`}
+        />
+      </Kennzahlenleiste>
+
+      {offeneEda.length > 0 && (
+        <Hinweis ton="hinweis" titel="Offene Vorgänge beim Netzbetreiber">
+          {offeneEda.length === 1
+            ? "Ein Vorgang wartet auf die Zustimmung des Zählpunktinhabers."
+            : `${offeneEda.length} Vorgänge warten auf die Zustimmung der Zählpunktinhaber.`}{" "}
+          Ohne Zustimmung liefert der Netzbetreiber keine Messdaten, und die
+          betroffenen Zählpunkte können nicht abgerechnet werden.
+        </Hinweis>
+      )}
+
+      {/* ---------------- Abrechnungsläufe ---------------- */}
+      <Tafel
+        titel="Abrechnungsläufe"
+        hinweis="Je Quartal ein Lauf. Festgeschriebene Läufe sind unveränderlich."
+        dicht
+      >
+        {laeufe.length === 0 ? (
+          <div className="p-4">
+            <LeerZustand
+              text="Es wurde noch kein Abrechnungslauf durchgeführt."
+              hinweis={
+                bestand.zeilen > 0
+                  ? `Es liegen ${bestand.zeilen.toLocaleString("de-AT")} Messwerte vor – ein Lauf kann sofort gerechnet werden.`
+                  : "Es liegen noch keine Messdaten vor."
+              }
+            />
+          </div>
+        ) : (
+          <Tabelle
+            spalten={[
+              { titel: "Zeitraum" },
+              { titel: "Modell", schmalAusblenden: true },
+              { titel: "Belege", zahl: true, schmalAusblenden: true },
+              { titel: "Verteilte Menge", zahl: true },
+              { titel: "Rechnungen", zahl: true },
+              { titel: "Gutschriften", zahl: true, schmalAusblenden: true },
+              { titel: "Status" },
+              { titel: "", breite: "3rem" },
+            ]}
+          >
+            {laeufe.map((lauf) => {
+              const menge = formatEnergie(lauf.menge_bezogen);
+              const von = new Date(lauf.zeitraum_von);
+              const quartal = Math.floor(von.getMonth() / 3) + 1;
+
+              return (
+                <Zeile
+                  key={lauf.id}
+                  gedaempft={lauf.status === "Storniert"}
+                >
+                  <ZelleMitZusatz
+                    haupt={`${von.getFullYear()} Q${quartal}`}
+                    zusatz={lauf.id}
+                  />
+                  <Zelle leise schmalAusblenden>
+                    {lauf.modell}
+                  </Zelle>
+                  <Zelle zahl leise schmalAusblenden>
+                    {lauf.anzahl_belege}
+                  </Zelle>
+                  <Zelle zahl>
+                    {menge.wert}
+                    <span className="t-mikro"> {menge.einheit}</span>
+                  </Zelle>
+                  <Zelle zahl>{formatGeld(lauf.summe_rechnungen)}</Zelle>
+                  <Zelle zahl leise schmalAusblenden>
+                    {formatGeld(lauf.summe_gutschriften)}
+                  </Zelle>
+                  <Zelle>
+                    <Status ton={laufTon(lauf.status)}>{lauf.status}</Status>
+                  </Zelle>
+                  <Zelle>
+                    <Link
+                      href={`/portal/gemeinschaft/abrechnung/${lauf.id}`}
+                      className="inline-flex opacity-40 transition-opacity group-hover:opacity-100"
+                      style={{ color: "var(--t-normal)" }}
+                      aria-label={`Lauf ${lauf.id} öffnen`}
+                    >
+                      <IconPfeilRechts groesse={15} />
+                    </Link>
+                  </Zelle>
+                </Zeile>
+              );
+            })}
+          </Tabelle>
+        )}
+      </Tafel>
+
+      {/* ---------------- Teilnehmer ---------------- */}
+      <Tafel
+        titel="Teilnehmer"
+        hinweis="Jede Teilnahme hängt an einem Zählpunkt, nicht an einem Unternehmen."
+        dicht
+      >
+        <Tabelle
+          spalten={[
+            { titel: "Mitglied" },
+            { titel: "Zählpunkt", schmalAusblenden: true },
+            { titel: "Rolle" },
+            { titel: "Anteil", zahl: true, schmalAusblenden: true },
+            { titel: "Teilnahme", zahl: true },
+            { titel: "Seit", schmalAusblenden: true },
+            ...(darfVerwalten ? [{ titel: "", breite: "9rem" }] : []),
+          ]}
+        >
+          {teilnehmer.map((t) => (
+            <Zeile key={t.teilnahme_id}>
+              <ZelleMitZusatz
+                haupt={t.firma ?? "–"}
+                zusatz={t.anlage_bezeichnung ?? t.ort ?? undefined}
+              />
+              <Zelle leise schmalAusblenden>
+                <span className="font-mono text-[0.75rem]">
+                  {kuerzeZaehlpunkt(t.bezeichnung)}
+                </span>
+              </Zelle>
+              <Zelle>
+                <Status
+                  ton={t.rolle === "Verbraucher" ? "neutral" : "akzent"}
+                  punkt={false}
+                >
+                  {t.rolle}
+                </Status>
+              </Zelle>
+              <Zelle zahl leise schmalAusblenden>
+                {formatProzent(t.anteil_prozent, 1)}
+              </Zelle>
+              <Zelle zahl>
+                {t.teilnahmefaktor < 1 ? (
+                  <span style={{ color: "var(--akzent-text)" }}>
+                    {formatProzent(t.teilnahmefaktor * 100, 0)}
+                  </span>
+                ) : (
+                  <span style={{ color: "var(--t-leise)" }}>100 %</span>
+                )}
+              </Zelle>
+              <Zelle leise schmalAusblenden>
+                {formatDatum(t.gueltig_von.slice(0, 10))}
+              </Zelle>
+              {darfVerwalten && (
+                <Zelle>
+                  <TeilnahmeFormular
+                    teilnahmeId={t.teilnahme_id}
+                    mitglied={t.firma ?? t.bezeichnung}
+                    faktor={Math.round(t.teilnahmefaktor * 100)}
+                    anteil={t.anteil_prozent ?? 0}
+                  />
+                </Zelle>
+              )}
+            </Zeile>
+          ))}
+        </Tabelle>
+      </Tafel>
+
+      {/* ---------------- EDA ---------------- */}
+      <Tafel
+        titel="Datenaustausch mit dem Netzbetreiber"
+        hinweis="EDA-Vorgänge: Anmeldung zur Gemeinschaft und Anforderung von Messdaten"
+        dicht
+        fusszeile={
+          <p className="t-mikro">
+            CCMI meldet einen Zählpunkt zur Gemeinschaft an, CCMO wieder ab.
+            CMRQ fordert historische Messdaten an. Jeder Vorgang braucht die
+            Zustimmung des Zählpunktinhabers.
+          </p>
+        }
+      >
+        <Tabelle
+          spalten={[
+            { titel: "Vorgang" },
+            { titel: "Zählpunkt", schmalAusblenden: true },
+            { titel: "Mitglied", schmalAusblenden: true },
+            { titel: "Referenz", schmalAusblenden: true },
+            { titel: "Gesendet", schmalAusblenden: true },
+            { titel: "Status" },
+          ]}
+        >
+          {eda.map((vorgang) => (
+            <Zeile
+              key={vorgang.id}
+              hervorgehoben={vorgang.status === "Zustimmung offen"}
+            >
+              <ZelleMitZusatz
+                haupt={vorgang.art}
+                zusatz={
+                  vorgang.art === "CCMI"
+                    ? "Anmeldung"
+                    : vorgang.art === "CCMO"
+                      ? "Abmeldung"
+                      : "Datenanforderung"
+                }
+              />
+              <Zelle leise schmalAusblenden>
+                <span className="font-mono text-[0.75rem]">
+                  {kuerzeZaehlpunkt(vorgang.bezeichnung)}
+                </span>
+              </Zelle>
+              <Zelle leise schmalAusblenden>
+                {vorgang.firma ?? "–"}
+              </Zelle>
+              <Zelle leise schmalAusblenden>
+                <span className="font-mono text-[0.75rem]">
+                  {vorgang.referenz ?? "–"}
+                </span>
+              </Zelle>
+              <Zelle leise schmalAusblenden>
+                {vorgang.gesendet_am
+                  ? formatDatumZeit(vorgang.gesendet_am)
+                  : "–"}
+              </Zelle>
+              <Zelle>
+                <Status ton={edaTon(vorgang.status)}>{vorgang.status}</Status>
+              </Zelle>
+            </Zeile>
+          ))}
+        </Tabelle>
+      </Tafel>
+
+      {abgelehnteEda.length > 0 && (
+        <Tafel titel="Abgelehnte Anmeldungen">
+          <ul className="space-y-3">
+            {abgelehnteEda.map((vorgang) => (
+              <li key={vorgang.id}>
+                <p className="t-zahl-klein">{vorgang.firma ?? vorgang.bezeichnung}</p>
+                <p className="t-leise mt-0.5 leading-relaxed">
+                  {vorgang.ablehnungsgrund}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </Tafel>
+      )}
+
+      {/* ---------------- Datenbestand ---------------- */}
+      <div className="grid gap-5 lg:grid-cols-2">
+        <Tafel titel="Messdatenbestand">
+          <dl className="space-y-0.5">
+            <Angabe label="Lastgangwerte">
+              {bestand.zeilen.toLocaleString("de-AT")}
+            </Angabe>
+            <Angabe label="Frühester Wert">
+              {bestand.fruehester ? formatDatumZeit(bestand.fruehester) : "–"}
+            </Angabe>
+            <Angabe label="Jüngster Wert">
+              {bestand.spaetester ? formatDatumZeit(bestand.spaetester) : "–"}
+            </Angabe>
+            <Angabe label="Auflösung">Viertelstunde</Angabe>
+          </dl>
+          <p className="t-mikro mt-3 leading-relaxed">
+            Die Abrechnung rechnet auf Viertelstundenbasis – das ist die
+            Auflösung, in der Netzbetreiber Messdaten liefern und in der im
+            österreichischen Markt abgerechnet wird.
+          </p>
+        </Tafel>
+
+        <Tafel titel="Aufteilungsmodell">
+          <dl className="space-y-0.5">
+            <Angabe label="Standardmodell">
+              {gemeinschaft.aufteilungsmodell}
+            </Angabe>
+            <Angabe label="Reichweite">{gemeinschaft.reichweite}</Angabe>
+            <Angabe label="Netzentgeltrabatt">
+              {formatProzent(rabatt * 100, 0)}
+            </Angabe>
+          </dl>
+          <p className="t-mikro mt-3 leading-relaxed">
+            <strong style={{ color: "var(--t-normal)" }}>Dynamisch</strong>{" "}
+            verteilt die Erzeugung je Viertelstunde nach dem tatsächlichen
+            Bedarf der Teilnehmer.{" "}
+            <strong style={{ color: "var(--t-normal)" }}>Statisch</strong>{" "}
+            verteilt nach festen Anteilen; was ein Teilnehmer nicht braucht,
+            wird auf die übrigen weiterverteilt, statt ins Netz zu gehen.
+          </p>
+        </Tafel>
+      </div>
+
+      <p className="t-mikro flex items-start gap-1.5">
+        <IconZaehlpunkt groesse={14} />
+        <span>
+          Zählpunkte außerhalb des Netzbereichs können einer lokalen
+          Erneuerbare-Energie-Gemeinschaft nicht beitreten. Das ist der
+          häufigste Ablehnungsgrund des Netzbetreibers.
+        </span>
+      </p>
+    </div>
+  );
+}

@@ -1,0 +1,203 @@
+import { beforeEach, describe, expect, it } from 'vitest'
+import { mockRequest, resetMockData } from '@/api/mock/server.js'
+
+const ruf = (url, params) => mockRequest({ url, params })
+
+beforeEach(() => {
+  resetMockData()
+})
+
+describe('netops.api.dcim.device_front_panel', () => {
+  it('gruppiert die Ports in die Blöcke der Frontplatte', async () => {
+    const panel = await ruf('netops.api.dcim.device_front_panel', { name: 'SW-CORE-01' })
+    expect(panel.has_layout).toBe(true)
+    expect(panel.blocks.map((b) => b.block)).toEqual(['Ethernet', 'SFP'])
+    expect(panel.blocks[0].ports).toHaveLength(8)
+    expect(panel.blocks[1].ports).toHaveLength(2)
+    // Kupferports sitzen versetzt wie am echten Gerät, SFP-Käfige nicht.
+    expect(panel.blocks[0].staggered).toBe(true)
+    expect(panel.blocks[1].staggered).toBe(false)
+  })
+
+  it('kennt genau drei Portzustände und zählt sie', async () => {
+    const panel = await ruf('netops.api.dcim.device_front_panel', { name: 'SW-CORE-01' })
+    const zustaende = new Set(panel.blocks.flatMap((b) => b.ports).map((p) => p.port_status))
+    expect([...zustaende].sort()).toEqual(['disabled', 'free', 'up'])
+
+    const summe = panel.summary.up + panel.summary.free + panel.summary.disabled
+    expect(summe).toBe(panel.summary.total)
+    expect(panel.summary.total).toBe(10)
+  })
+
+  it('markiert einen abgeschalteten Port unabhängig vom Kabel', async () => {
+    const panel = await ruf('netops.api.dcim.device_front_panel', { name: 'SW-CORE-01' })
+    const port8 = panel.blocks[0].ports.find((p) => p.interface_name === 'Port 8')
+    expect(port8.enabled).toBe(0)
+    expect(port8.port_status).toBe('disabled')
+  })
+
+  it('löst die Gegenstelle eines belegten Ports auf', async () => {
+    const panel = await ruf('netops.api.dcim.device_front_panel', { name: 'SW-CORE-01' })
+    const port1 = panel.blocks[0].ports.find((p) => p.interface_name === 'Port 1')
+    expect(port1.port_status).toBe('up')
+    expect(port1.peer.device).toBe('SW-ACC-01')
+    expect(port1.peer.interface_name).toBe('Port 1')
+    expect(port1.cable).toBe('P-0002')
+  })
+
+  it('kennt auch eine Dose als Gegenstelle', async () => {
+    const panel = await ruf('netops.api.dcim.device_front_panel', { name: 'SW-ACC-01' })
+    const port5 = panel.blocks[0].ports.find((p) => p.interface_name === 'Port 5')
+    expect(port5.peer.type).toBe('Wall Outlet')
+    expect(port5.peer.name).toBe('A02-D14')
+  })
+
+  it('unterscheidet Bauformen für die Darstellung', async () => {
+    const panel = await ruf('netops.api.dcim.device_front_panel', { name: 'SW-CORE-01' })
+    expect(panel.blocks[0].ports[0].form_factor).toBe('copper')
+    expect(panel.blocks[1].ports[0].form_factor).toBe('sfp')
+  })
+
+  it('listet die VLANs der Platte für die Hervorhebung', async () => {
+    const panel = await ruf('netops.api.dcim.device_front_panel', { name: 'SW-CORE-01' })
+    expect(panel.vlans.map((v) => v.vid)).toEqual([10, 20, 160, 170])
+    const server = panel.vlans.find((v) => v.vid === 20)
+    expect(server.port_count).toBe(2)
+  })
+
+  it('meldet fehlende Portvorlagen, statt eine leere Platte zu zeigen', async () => {
+    await ruf('frappe.client.insert', {
+      doc: {
+        doctype: 'Device Type',
+        manufacturer: 'Dell',
+        model: 'Unbekannt X',
+        height_u: 1,
+        tenant: 'TEN-0001',
+      },
+    })
+    await ruf('frappe.client.insert', {
+      doc: {
+        doctype: 'Network Device',
+        hostname: 'TEST-OHNE-LAYOUT',
+        device_type: 'Dell Unbekannt X',
+        device_role: 'Storage',
+        site: 'SITE-0003',
+        tenant: 'TEN-0001',
+      },
+    })
+    const panel = await ruf('netops.api.dcim.device_front_panel', { name: 'TEST-OHNE-LAYOUT' })
+    expect(panel.has_layout).toBe(false)
+    expect(panel.blocks).toEqual([])
+  })
+})
+
+describe('netops.api.dcim.rack_elevation', () => {
+  it('rechnet Belegung über die Bauhöhe der Geräte', async () => {
+    const rack = await ruf('netops.api.dcim.rack_elevation', { name: 'RACK-0001' })
+    expect(rack.height_u).toBe(42)
+    // FW 1 HE + Core 1 HE + zwei R740 à 2 HE = 6 HE
+    expect(rack.used_u).toBe(6)
+    expect(rack.free_u).toBe(36)
+    expect(rack.utilization).toBeCloseTo(14.3, 1)
+  })
+
+  it('liefert Geräte von oben nach unten mit ihrer Bauhöhe', async () => {
+    const rack = await ruf('netops.api.dcim.rack_elevation', { name: 'RACK-0001' })
+    expect(rack.devices.map((d) => d.hostname)).toEqual([
+      'FW-OS-01',
+      'SW-CORE-01',
+      'SRV-PVE-01',
+      'SRV-PVE-02',
+    ])
+    expect(rack.devices.find((d) => d.hostname === 'SRV-PVE-01').height_u).toBe(2)
+    expect(rack.devices.find((d) => d.hostname === 'FW-OS-01').height_u).toBe(1)
+  })
+
+  it('meldet ein unbekanntes Rack sauber', async () => {
+    await expect(ruf('netops.api.dcim.rack_elevation', { name: 'RACK-9999' })).rejects.toThrow(
+      /DoesNotExistError/,
+    )
+  })
+
+  it('rack_list filtert nach Standort', async () => {
+    const alle = await ruf('netops.api.dcim.rack_list', {})
+    expect(alle).toHaveLength(2)
+    const serverraum = await ruf('netops.api.dcim.rack_list', { site: 'SITE-0003' })
+    expect(serverraum).toHaveLength(2)
+    const leitstand = await ruf('netops.api.dcim.rack_list', { site: 'SITE-0004' })
+    expect(leitstand).toHaveLength(0)
+  })
+})
+
+describe('netops.api.dcim.topology', () => {
+  it('baut Knoten aus Geräten und angeschlossenen Dosen', async () => {
+    const graph = await ruf('netops.api.dcim.topology', {})
+    const arten = graph.nodes.reduce((zaehler, n) => {
+      zaehler[n.kind] = (zaehler[n.kind] || 0) + 1
+      return zaehler
+    }, {})
+    expect(arten.device).toBe(9)
+    // Nur Dosen mit Kabel kommen in den Plan.
+    expect(arten.outlet).toBe(2)
+  })
+
+  it('leitet die Ebene aus dem Kabelgraph ab – Abstand vom Perimeter', async () => {
+    const graph = await ruf('netops.api.dcim.topology', {})
+    const ebene = (host) => graph.nodes.find((n) => n.label === host).layer
+    expect(ebene('FW-OS-01')).toBe(0)
+    expect(ebene('SW-CORE-01')).toBe(1)
+    // Direkt am Core: Access Switch und Server liegen auf derselben Ebene.
+    expect(ebene('SW-ACC-01')).toBe(2)
+    expect(ebene('SRV-PVE-01')).toBe(2)
+    // Hinter dem Access Switch.
+    expect(ebene('AP-A02-01')).toBe(3)
+    expect(ebene('A02-D14')).toBe(3)
+  })
+
+  it('sammelt unverkabelte Geräte unter der tiefsten Ebene', async () => {
+    const graph = await ruf('netops.api.dcim.topology', {})
+    const passau = graph.nodes.find((n) => n.label === 'SW-ACC-PA-01')
+    expect(passau.connected).toBe(false)
+    expect(passau.layer).toBe(Math.max(...graph.nodes.map((n) => n.layer)))
+  })
+
+  it('lässt keine Kante eine Ebene überspringen', async () => {
+    // Genau dafür wird die Ebene aus dem Graph statt aus der Rolle bestimmt:
+    // überspringende Kanten legen ihre Beschriftung auf fremde Knoten.
+    const graph = await ruf('netops.api.dcim.topology', {})
+    const ebene = new Map(graph.nodes.map((n) => [n.id, n.layer]))
+    for (const kante of graph.edges) {
+      const sprung = Math.abs(ebene.get(kante.source) - ebene.get(kante.target))
+      expect(sprung, kante.label).toBe(1)
+    }
+  })
+
+  it('vergibt reproduzierbare Positionen', async () => {
+    const a = await ruf('netops.api.dcim.topology', {})
+    const b = await ruf('netops.api.dcim.topology', {})
+    expect(a.nodes.map((n) => n.position)).toEqual(b.nodes.map((n) => n.position))
+    // y folgt der Ebene, nicht der Reihenfolge im Datensatz.
+    const fw = a.nodes.find((n) => n.label === 'FW-OS-01')
+    const core = a.nodes.find((n) => n.label === 'SW-CORE-01')
+    expect(fw.position.y).toBeLessThan(core.position.y)
+  })
+
+  it('führt Kanten auf Geräte, nicht auf Schnittstellen', async () => {
+    const graph = await ruf('netops.api.dcim.topology', {})
+    const uplink = graph.edges.find((e) => e.label === 'P-0001')
+    expect(uplink.source).toBe('FW-OS-01')
+    expect(uplink.target).toBe('SW-CORE-01')
+    expect(uplink.source_port).toBe('ix0')
+    expect(uplink.target_port).toBe('SFP 1')
+    expect(uplink.speed_mbps).toBe(10000)
+  })
+
+  it('lässt keine Kante ins Leere zeigen, wenn nach Standort gefiltert wird', async () => {
+    const graph = await ruf('netops.api.dcim.topology', { site: 'SITE-0003' })
+    const knotenIds = new Set(graph.nodes.map((n) => n.id))
+    for (const kante of graph.edges) {
+      expect(knotenIds.has(kante.source)).toBe(true)
+      expect(knotenIds.has(kante.target)).toBe(true)
+    }
+  })
+})

@@ -1,0 +1,466 @@
+import pathlib
+
+FE = pathlib.Path(r"C:\Users\SALEADMIN\Documents\Servicetechniker APP\frontend")
+
+
+def patch(pfad, paare):
+    p = FE / pfad
+    s = p.read_text(encoding="utf-8")
+    for alt, neu in paare:
+        if alt not in s:
+            raise SystemExit("NICHT GEFUNDEN in %s:\n---\n%s\n---" % (pfad, alt[:300]))
+        s = s.replace(alt, neu, 1)
+    p.write_text(s, encoding="utf-8")
+    print("ok", pfad)
+
+
+PORTAL_DATEN = '''
+// ----------------------------------------------------------------------------
+// Subunternehmerportal
+// ----------------------------------------------------------------------------
+
+/**
+ * Mit `?demo=1&rolle=subu` schluepft man in die Rolle eines Poliers und sieht
+ * das Portal statt der OEKOVOLT-Oberflaeche.
+ */
+const PORTALROLLE =
+  typeof window !== 'undefined' &&
+  new URLSearchParams(window.location.search).get('rolle') === 'subu'
+
+const SUPPLIER = 'Elektro Mayrhofer GmbH'
+
+const KOLONNE: Kolonnenmitglied[] = [
+  {
+    name: 'SUM-0001', vollname: 'Ivan Horvat', drittstaat: 0, ist_polier: 1,
+    qualifikation: 'Polier, Elektrofachkraft',
+  },
+  {
+    name: 'SUM-0002', vollname: 'Marek Nowak', drittstaat: 0, ist_polier: 0,
+    qualifikation: 'Monteur',
+  },
+  {
+    name: 'SUM-0003', vollname: 'Dragan Petrovic', drittstaat: 1, ist_polier: 0,
+    qualifikation: 'Monteur',
+    ausweis_gueltig_bis: tage(400), bewilligung_gueltig_bis: tage(21),
+  },
+  {
+    name: 'SUM-0004', vollname: 'Emre Yilmaz', drittstaat: 1, ist_polier: 0,
+    qualifikation: 'Hilfskraft',
+    ausweis_gueltig_bis: tage(900), bewilligung_gueltig_bis: tage(180),
+  },
+]
+
+const MELDEPFLICHT = {
+  pflichtig: KOLONNE.some((p) => p.drittstaat === 1),
+  drittstaat_personen: KOLONNE.filter((p) => p.drittstaat === 1).length,
+  grund: `${KOLONNE.filter((p) => p.drittstaat === 1).length} Drittstaatsangehoerige beschaeftigt.`,
+}
+
+interface DemoAuftrag extends Auftrag {
+  positionen: { beschreibung: string; bereich: string; menge: number; einheit: string; fortschritt: number }[]
+  fertigmeldung_bemerkung?: string
+  abnahme_bemerkung?: string
+}
+
+const PORTAL_AUFTRAEGE: DemoAuftrag[] = [
+  {
+    name: 'SUA-2026-00031',
+    titel: 'Unterkonstruktion Feld C montieren',
+    anlage: 'ANL-2026-00002',
+    status: 'In Arbeit',
+    prioritaet: 'Hoch',
+    termin_von: tage(0) + ' 07:00:00',
+    termin_bis: tage(2) + ' 16:00:00',
+    frist: tage(2),
+    tage_bis_frist: 2,
+    fristwarnung_aktiv: 1,
+    verzug: 0,
+    fortschritt_prozent: 45,
+    herkunft: 'Planung',
+    gewaehrleistung: 0,
+    aufgabe:
+      '<p>Unterkonstruktion Feld C laut Verlegeplan montieren. Anzugsmoment 18 Nm, '
+      + 'Dachdurchdringungen nach der Montage abdichten und fotografieren.</p>',
+    positionen: [
+      { beschreibung: 'Dachhaken setzen', bereich: 'Unterkonstruktion', menge: 180, einheit: 'Stk', fortschritt: 60 },
+      { beschreibung: 'Schienen montieren', bereich: 'Unterkonstruktion', menge: 320, einheit: 'm', fortschritt: 30 },
+    ],
+  },
+  {
+    name: 'SUA-2026-00033',
+    titel: 'Mangelbehebung: Erdungsleitung Speicherschrank fehlt',
+    anlage: 'ANL-2026-00002',
+    status: 'Geplant',
+    prioritaet: 'Kritisch',
+    termin_von: tage(1) + ' 07:00:00',
+    termin_bis: tage(1) + ' 12:00:00',
+    frist: tage(1),
+    tage_bis_frist: 1,
+    fristwarnung_aktiv: 1,
+    verzug: 0,
+    fortschritt_prozent: 0,
+    herkunft: 'Mangel',
+    gewaehrleistung: 1,
+    aufgabe:
+      '<p>Die Erdungsleitung am Speicherschrank fehlt vollstaendig. Nach OEVE/OENORM E 8001 '
+      + 'herstellen und Durchgaengigkeit messen. Der Bauleiter hat den Mangel mit Schweregrad A '
+      + 'bewertet.</p>',
+    positionen: [],
+  },
+  {
+    name: 'SUA-2026-00028',
+    titel: 'DC-Verkabelung Feld A',
+    anlage: 'ANL-2026-00002',
+    status: 'In Arbeit',
+    prioritaet: 'Mittel',
+    termin_von: tage(-6) + ' 07:00:00',
+    termin_bis: tage(-2) + ' 16:00:00',
+    frist: tage(-2),
+    tage_bis_frist: -2,
+    fristwarnung_aktiv: 0,
+    verzug: 1,
+    fortschritt_prozent: 80,
+    herkunft: 'Planung',
+    gewaehrleistung: 0,
+    aufgabe: '<p>DC-Strings Feld A ziehen, kennzeichnen und am Generatoranschlusskasten auflegen.</p>',
+    positionen: [
+      { beschreibung: 'Strings ziehen', bereich: 'DC', menge: 24, einheit: 'Stk', fortschritt: 100 },
+      { beschreibung: 'GAK auflegen', bereich: 'DC', menge: 24, einheit: 'Stk', fortschritt: 60 },
+    ],
+  },
+]
+
+const PORTAL_BAUSTELLEN: Baustelle[] = BOOTSTRAP.anlagen
+  .filter((a) => a.name === 'ANL-2026-00002')
+  .map((a) => ({
+    name: a.name,
+    anlage_name: a.anlage_name,
+    adresse: a.adresse,
+    plz: a.plz,
+    ort: a.ort,
+    gps_lat: a.gps_lat,
+    gps_lng: a.gps_lng,
+  }))
+
+/** Stempelzustand je Mitarbeiter — lebt nur im Speicher der Demositzung. */
+const STEMPELZUSTAND: Record<string, { eingestempelt: boolean; in_pause: boolean; seit?: string }> = {}
+
+const ARBEITSTAGE: Arbeitstag[] = (() => {
+  const liste: Arbeitstag[] = []
+  for (const person of KOLONNE) {
+    for (let i = 1; i <= 4; i += 1) {
+      const t = tage(-i)
+      const lang = i === 2 && person.name === 'SUM-0002'
+      const kurzePause = i === 3 && person.name === 'SUM-0001'
+      liste.push({
+        name: `ATG-${person.name}-${i}`,
+        mitarbeiter: person.vollname,
+        supplier: SUPPLIER,
+        datum: t,
+        anlage: 'ANL-2026-00002',
+        beginn: `${t} 07:00:00`,
+        ende: lang ? `${t} 18:30:00` : `${t} 16:30:00`,
+        arbeitszeit_stunden: lang ? 11 : 9,
+        pause_minuten: kurzePause ? 15 : 30,
+        pause_ausreichend: kurzePause ? 0 : 1,
+        ueber_tagesgrenze: lang ? 1 : 0,
+        ueber_wochengrenze: 0,
+        status: i <= 2 ? 'Vollstaendig' : 'Freigegeben',
+        hinweise: lang
+          ? 'Arbeitszeit 11.00 h ueber der Tagesgrenze von 10.0 h.'
+          : kurzePause
+            ? 'Ruhepause 15 min, erforderlich 30 min.'
+            : '',
+      })
+    }
+  }
+  return liste
+})()
+
+const MATERIALANFORDERUNGEN: Record<string, unknown>[] = [
+  {
+    name: 'MAF-2026-00014', supplier: SUPPLIER, anlage: 'ANL-2026-00002',
+    auftrag: 'SUA-2026-00031', status: 'Bestellt', benoetigt_am: tage(1),
+    dringlichkeit: 'Morgen', begruendung: 'Dachhaken reichen nur bis Reihe 9.',
+    antwort: 'Wird morgen frueh mit dem Materialtransport geliefert.', lieferdatum: tage(1),
+    positionen: [
+      { beschreibung: 'Dachhaken verstellbar', menge: 60, einheit: 'Stk' },
+      { beschreibung: 'Montageschiene 4,4 m', menge: 20, einheit: 'Stk' },
+    ],
+  },
+]
+
+const BAUVERTRAGSMELDUNGEN: Record<string, unknown>[] = [
+  {
+    name: 'BVM-2026-00007', supplier: SUPPLIER, art: 'Behinderungsanzeige',
+    betreff: 'Kran am Vormittag nicht verfuegbar', anlage: 'ANL-2026-00002',
+    auftrag: 'SUA-2026-00028', status: 'Anerkannt',
+    eingetreten_am: tage(-5) + ' 07:15:00', gemeldet_am: tage(-5) + ' 08:40:00',
+    verzoegerung_stunden: 1, auswirkung_frist_tage: 2,
+    beschreibung: 'Der Kran war bis 12:00 durch das Vorgewerk belegt.',
+    antwort: 'Behinderung anerkannt, Frist um zwei Tage verlaengert.', anerkannte_frist_tage: 2,
+  },
+]
+
+const PERSONALMELDUNGEN: Record<string, unknown>[] = []
+
+'''
+
+PORTAL_FAELLE = '''    // --- Subunternehmerportal ---------------------------------------------
+    case 'oekovolt_baudoku.api.subunternehmer.portal_bootstrap':
+      return {
+        supplier: SUPPLIER,
+        firmenname: SUPPLIER,
+        ich: { name: 'SUM-0001', vollname: 'Ivan Horvat', ist_polier: 1 },
+        ist_polier: true,
+        kolonne: KOLONNE,
+        meldepflicht: MELDEPFLICHT,
+        baustellen: PORTAL_BAUSTELLEN,
+        einstellungen: { geofence_radius_m: 300, geofence_erzwingen: false, fristwarnung_tage: 3 },
+        server_zeit: new Date().toISOString(),
+      }
+
+    case 'oekovolt_baudoku.api.subunternehmer.meine_auftraege':
+      return parameter.mit_erledigten
+        ? PORTAL_AUFTRAEGE
+        : PORTAL_AUFTRAEGE.filter((a) => a.status !== 'Abgenommen' && a.status !== 'Storniert')
+
+    case 'oekovolt_baudoku.api.subunternehmer.kalender':
+      return PORTAL_AUFTRAEGE.map((a) => ({ ...a, baustelle: PORTAL_BAUSTELLEN[0] ?? null }))
+
+    case 'oekovolt_baudoku.api.subunternehmer.tagesuebersicht':
+      return {
+        auftraege_heute: PORTAL_AUFTRAEGE
+          .filter((a) => a.status === 'In Arbeit' || a.status === 'Angenommen')
+          .map((a) => ({ ...a, baustelle: PORTAL_BAUSTELLEN[0] ?? null })),
+        fristwarnungen: PORTAL_AUFTRAEGE.filter((a) => a.fristwarnung_aktiv && !a.verzug),
+        im_verzug: PORTAL_AUFTRAEGE.filter((a) => a.verzug),
+        personalmeldung: {
+          ...MELDEPFLICHT,
+          abgegeben: PERSONALMELDUNGEN.length > 0,
+          meldung: PERSONALMELDUNGEN[0] ?? null,
+        },
+        offene_materialanforderungen: MATERIALANFORDERUNGEN.filter(
+          (m) => m.status !== 'Geliefert' && m.status !== 'Abgelehnt',
+        ).length,
+        offene_meldungen: BAUVERTRAGSMELDUNGEN.filter((m) => m.status === 'Gemeldet').length,
+      }
+
+    case 'oekovolt_baudoku.api.subunternehmer.fortschritt_melden': {
+      const treffer = PORTAL_AUFTRAEGE.find((a) => a.name === parameter.auftrag)
+      if (treffer) {
+        treffer.fortschritt_prozent = Number(parameter.fortschritt)
+        if (treffer.status === 'Angenommen' && treffer.fortschritt_prozent > 0) {
+          treffer.status = 'In Arbeit'
+        }
+      }
+      return { status: treffer?.status, fortschritt: treffer?.fortschritt_prozent }
+    }
+
+    case 'oekovolt_baudoku.api.subunternehmer.arbeitszeiten':
+      return ARBEITSTAGE
+
+    case 'oekovolt_baudoku.baudoku.doctype.stempelung.stempelung.offener_status':
+      return (
+        STEMPELZUSTAND[String(parameter.mitarbeiter)] ?? { eingestempelt: false, in_pause: false }
+      )
+
+    case 'oekovolt_baudoku.baudoku.doctype.stempelung.stempelung.stempeln': {
+      const person = String(parameter.mitarbeiter)
+      const richtung = String(parameter.richtung)
+      STEMPELZUSTAND[person] = {
+        eingestempelt: richtung === 'Ein' || richtung === 'Pause Ende',
+        in_pause: richtung === 'Pause Beginn',
+        seit: new Date().toISOString(),
+      }
+      return {
+        name: `STP-DEMO-${Date.now()}`,
+        zeitpunkt: new Date().toISOString(),
+        innerhalb_geofence: true,
+        entfernung_m: 42,
+        ortung_verweigert: false,
+        dublette: false,
+      }
+    }
+
+    case 'oekovolt_baudoku.baudoku.doctype.arbeitstag.arbeitstag.zur_freigabe':
+      return ARBEITSTAGE.filter((t) => t.status === 'Vollstaendig')
+
+    case 'oekovolt_baudoku.baudoku.doctype.arbeitstag.arbeitstag.sammelfreigabe': {
+      const namen = (parameter.namen as string[]) ?? []
+      for (const tag of ARBEITSTAGE) {
+        if (namen.includes(tag.name)) tag.status = 'Freigegeben'
+      }
+      return { erfolgreich: namen, fehlgeschlagen: [] }
+    }
+
+    case 'oekovolt_baudoku.baudoku.doctype.personalmeldung.personalmeldung.meldepflicht':
+      return MELDEPFLICHT
+
+    case 'oekovolt_baudoku.baudoku.doctype.personalmeldung.personalmeldung.heutige_meldung':
+      return PERSONALMELDUNGEN[0] ?? null
+
+    case 'oekovolt_baudoku.baudoku.doctype.subunternehmerauftrag.subunternehmerauftrag.auftrag_aus_mangel':
+      return 'SUA-2026-00033'
+
+'''
+
+RUN_DOC_METHOD = '''    case 'run_doc_method': {
+      if (parameter.method === 'uebersicht') {
+        return {
+          protokolle: PROTOKOLLE.filter((p) => p.anlage === parameter.dn),
+          maengel: MAENGEL.filter((m) => m.anlage === parameter.dn),
+          tagesberichte: BERICHTE.filter((b) => b.anlage === parameter.dn),
+        }
+      }
+
+      const args = JSON.parse(String(parameter.args ?? '{}')) as Record<string, unknown>
+
+      // Statuswechsel am Subunternehmerauftrag, damit sich das Portal
+      // durchspielen laesst.
+      if (parameter.dt === 'Subunternehmerauftrag') {
+        const auftrag = PORTAL_AUFTRAEGE.find((a) => a.name === parameter.dn)
+        if (auftrag && parameter.method === 'annehmen') auftrag.status = 'Angenommen'
+        if (auftrag && parameter.method === 'fertigmelden') {
+          auftrag.status = 'Fertiggemeldet'
+          auftrag.fortschritt_prozent = 100
+          auftrag.fertigmeldung_bemerkung = String(args.bemerkung ?? '')
+        }
+        return {}
+      }
+
+      if (parameter.dt === 'Arbeitstag' && parameter.method === 'beanstanden') {
+        const tag = ARBEITSTAGE.find((t) => t.name === parameter.dn)
+        if (tag) {
+          tag.status = 'Beanstandet'
+          tag.beanstandung = String(args.grund ?? '')
+        }
+        return {}
+      }
+
+      return {}
+    }
+'''
+
+DEMO_ANLEGEN = '''/**
+ * Schreibende Aufrufe im Demo-Modus.
+ *
+ * Es geht nichts an einen Server, aber das Ergebnis landet in den Demodaten —
+ * damit sich Personalmeldung, Materialanforderung und Bauvertragsmeldung
+ * vollstaendig durchspielen lassen.
+ */
+export function demoAnlegen(
+  doctype: string,
+  daten: Record<string, unknown>,
+): Record<string, unknown> {
+  const doc: Record<string, unknown> = {
+    ...daten,
+    name: daten.name ?? `${doctype.slice(0, 3).toUpperCase()}-DEMO-${Date.now()}`,
+    modified: new Date().toISOString(),
+  }
+
+  if (doctype === 'Personalmeldung') {
+    doc.gemeldet_am = new Date().toISOString()
+    doc.alle_nachweise_gueltig = 1
+    PERSONALMELDUNGEN.splice(0, PERSONALMELDUNGEN.length, doc)
+  }
+  if (doctype === 'Materialanforderung') {
+    MATERIALANFORDERUNGEN.unshift(doc)
+  }
+  if (doctype === 'Bauvertragsmeldung') {
+    doc.gemeldet_am = new Date().toISOString()
+    doc.verzoegerung_stunden = 0
+    BAUVERTRAGSMELDUNGEN.unshift(doc)
+  }
+  return doc
+}
+
+'''
+
+patch(
+    "src/lib/demo.ts",
+    [
+        (
+            "/** Verbaute Komponenten je Anlage",
+            PORTAL_DATEN + "/** Verbaute Komponenten je Anlage",
+        ),
+        (
+            """    case 'oekovolt_baudoku.api.sync.bootstrap':
+      return { ...BOOTSTRAP, server_zeit: new Date().toISOString() }""",
+            """    case 'oekovolt_baudoku.api.sync.bootstrap':
+      return {
+        ...BOOTSTRAP,
+        benutzer: {
+          ...BOOTSTRAP.benutzer,
+          vollname: PORTALROLLE ? 'Ivan Horvat' : BOOTSTRAP.benutzer.vollname,
+          rollen: PORTALROLLE
+            ? ['Baudoku Subunternehmer', 'Baudoku Polier']
+            : BOOTSTRAP.benutzer.rollen,
+        },
+        server_zeit: new Date().toISOString(),
+      }""",
+        ),
+        (
+            "    case 'oekovolt_baudoku.api.komponenten.liste':",
+            PORTAL_FAELLE + "    case 'oekovolt_baudoku.api.komponenten.liste':",
+        ),
+        (
+            """    case 'run_doc_method':
+      if (parameter.method === 'uebersicht') {
+        return {
+          protokolle: PROTOKOLLE.filter((p) => p.anlage === parameter.dn),
+          maengel: MAENGEL.filter((m) => m.anlage === parameter.dn),
+          tagesberichte: BERICHTE.filter((b) => b.anlage === parameter.dn),
+        }
+      }
+      return {}
+""",
+            RUN_DOC_METHOD,
+        ),
+        ("/** Ersatz für den Einzelabruf", DEMO_ANLEGEN + "/** Ersatz für den Einzelabruf"),
+        (
+            """    case 'PV Anlage':
+      return BOOTSTRAP.anlagen""",
+            """    case 'Subunternehmerauftrag':
+      return PORTAL_AUFTRAEGE
+    case 'Materialanforderung':
+      return MATERIALANFORDERUNGEN
+    case 'Bauvertragsmeldung':
+      return BAUVERTRAGSMELDUNGEN
+    case 'Personalmeldung':
+      return PERSONALMELDUNGEN
+    case 'Arbeitstag':
+      return ARBEITSTAGE
+    case 'PV Anlage':
+      return BOOTSTRAP.anlagen""",
+        ),
+    ],
+)
+
+patch(
+    "src/lib/api.ts",
+    [
+        (
+            "import { demoAktiv, demoAntwort, demoDokument, demoListe } from './demo'",
+            "import { demoAktiv, demoAnlegen, demoAntwort, demoDokument, demoListe } from './demo'",
+        ),
+        (
+            """  anlegen<T = Record<string, unknown>>(doctype: string, daten: Record<string, unknown>): Promise<T> {
+    return anfrage<T>(""",
+            """  anlegen<T = Record<string, unknown>>(doctype: string, daten: Record<string, unknown>): Promise<T> {
+    if (demoAktiv()) return Promise.resolve(demoAnlegen(doctype, daten) as T)
+    return anfrage<T>(""",
+        ),
+        (
+            """    daten: Record<string, unknown>,
+  ): Promise<T> {
+    return anfrage<T>(`/api/resource/${encodeURIComponent(doctype)}/${encodeURIComponent(name)}`, {
+      method: 'PUT',""",
+            """    daten: Record<string, unknown>,
+  ): Promise<T> {
+    if (demoAktiv()) return Promise.resolve(demoAnlegen(doctype, { ...daten, name }) as T)
+    return anfrage<T>(`/api/resource/${encodeURIComponent(doctype)}/${encodeURIComponent(name)}`, {
+      method: 'PUT',""",
+        ),
+    ],
+)

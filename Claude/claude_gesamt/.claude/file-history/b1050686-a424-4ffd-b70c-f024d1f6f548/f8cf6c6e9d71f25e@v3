@@ -1,0 +1,145 @@
+import { Tabelle, Zeile, Zelle } from "@/components/tabelle";
+import type { AbnahmeZeile } from "@/lib/daten/abnahme";
+import type { Pruefergebnis } from "@/lib/pv/abnahme";
+
+import { Status } from "./ui";
+
+/**
+ * Das Abnahmeprotokoll, dargestellt.
+ *
+ * Jede Zeile führt den gemessenen Wert *und* den Grenzwert, gegen den
+ * gerechnet wurde. Ein Protokoll, in dem nur "in Ordnung" steht, ist
+ * gegenüber einer Prüfstelle wertlos: Sie will wissen, wogegen
+ * geprüft wurde und unter welchen Bedingungen.
+ *
+ * Drei Ergebnisse, nicht zwei. Zwischen "bestanden" und "beanstandet"
+ * liegt "nicht bewertbar" - der Fall, in dem gemessen wurde, der
+ * Messwert aber nichts aussagt. Ihn als bestanden zu führen wäre eine
+ * Gefälligkeitsprüfung.
+ */
+
+function ton(ergebnis: Pruefergebnis) {
+  switch (ergebnis) {
+    case "bestanden":
+      return "gut" as const;
+    case "beanstandet":
+      return "kritisch" as const;
+    default:
+      return "hinweis" as const;
+  }
+}
+
+function wort(ergebnis: Pruefergebnis): string {
+  switch (ergebnis) {
+    case "bestanden":
+      return "bestanden";
+    case "beanstandet":
+      return "beanstandet";
+    default:
+      return "nicht bewertbar";
+  }
+}
+
+export function Abnahmetafel({ abnahme }: { abnahme: AbnahmeZeile }) {
+  const { befund, protokoll } = abnahme;
+
+  // Nur die Punkte zeigen, die jemand ansehen muss. Bei fünfzig
+  // Strängen wären es sonst zweihundertfünfzig Zeilen "in Ordnung".
+  const auffaellig = befund.befunde.filter((b) => b.ergebnis !== "bestanden");
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p
+            className="text-[0.875rem] font-semibold"
+            style={{ color: "var(--t-stark)" }}
+          >
+            {abnahme.anlage}
+          </p>
+          <p className="t-mikro leading-relaxed">
+            Geprüft am{" "}
+            {abnahme.geprueft_am.split("-").reverse().join(".")} durch{" "}
+            {abnahme.pruefer}
+            {abnahme.pruefstelle ? ` · ${abnahme.pruefstelle}` : ""}
+          </p>
+          <p className="t-mikro">
+            {protokoll.straenge.length} Stränge ·{" "}
+            {protokoll.bedingungen.einstrahlung.toLocaleString("de-AT")} W/m² ·{" "}
+            {protokoll.bedingungen.modultemperatur
+              .toFixed(1)
+              .replace(".", ",")}{" "}
+            °C Modultemperatur · Systemspannung{" "}
+            {protokoll.systemspannungV.toLocaleString("de-AT")} V
+          </p>
+        </div>
+
+        <Status ton={ton(befund.ergebnis)}>{wort(befund.ergebnis)}</Status>
+      </div>
+
+      <p
+        className="text-[0.8125rem] leading-relaxed"
+        style={{ color: "var(--t-normal)" }}
+      >
+        {befund.zusammenfassung}
+      </p>
+
+      {auffaellig.length > 0 && (
+        <Tabelle
+          spalten={[
+            { titel: "Prüfpunkt" },
+            { titel: "Gemessen", zahl: true },
+            { titel: "Verlangt", zahl: true, schmalAusblenden: true },
+            { titel: "Ergebnis" },
+          ]}
+          mindestbreite="54rem"
+        >
+          {auffaellig.map((b, i) => (
+            <Zeile key={`${b.strang}-${b.merkmal}-${i}`}>
+              <Zelle>
+                <span className="block" style={{ color: "var(--t-stark)" }}>
+                  {b.strang} · {b.merkmal}
+                </span>
+                {b.bemerkung && (
+                  <span className="t-mikro block leading-relaxed">
+                    {b.bemerkung}
+                  </span>
+                )}
+              </Zelle>
+              <Zelle zahl>{b.gemessen}</Zelle>
+              <Zelle zahl leise schmalAusblenden>
+                {b.erwartet}
+              </Zelle>
+              <Zelle>
+                <Status ton={ton(b.ergebnis)}>{wort(b.ergebnis)}</Status>
+              </Zelle>
+            </Zeile>
+          ))}
+        </Tabelle>
+      )}
+
+      {befund.hinweise.length > 0 && (
+        <div>
+          <p className="t-etikett mb-1.5">Offen</p>
+          <ul className="space-y-1">
+            {befund.hinweise.slice(0, 6).map((h, i) => (
+              <li key={`${i}-${h}`} className="t-mikro leading-relaxed">
+                {h}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {abnahme.bemerkung && (
+        <p
+          className="t-mikro rounded-sm px-3 py-2 leading-relaxed"
+          style={{ background: "var(--f-vertieft)" }}
+        >
+          <span className="t-etikett mr-1.5">Bemerkung des Prüfers</span>
+          {abnahme.bemerkung}
+        </p>
+      )}
+    </div>
+  );
+}

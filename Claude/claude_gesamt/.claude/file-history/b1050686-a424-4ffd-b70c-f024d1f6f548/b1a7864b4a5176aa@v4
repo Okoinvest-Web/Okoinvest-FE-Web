@@ -1,0 +1,437 @@
+# Energieportal
+
+Kundenportal für **Photovoltaik-Gewerbekunden in Österreich**: Betriebsführung,
+Vermarktung, Abrechnung und Nachweise für Anlagen zwischen 100 kWp und einigen
+Megawatt.
+
+Die Oberfläche ist ein **Leitstand**: dunkel, dicht, rechtwinklig, alle Zahlen in
+einer Zahlenschrift. Sie ist für Menschen gebaut, die acht Stunden davor sitzen —
+nicht für den ersten Eindruck.
+
+Next.js 16 im Vordergrund, **Frappe Framework als Backend** für den Regelbetrieb.
+Für die Vorführung und die Entwicklung läuft dieselbe Anwendung gegen eine
+**eingebettete SQLite-Datenbank** (`node:sqlite`, keine zusätzliche
+Abhängigkeit) mit einem vollständigen, fachlich kalibrierten Datenbestand –
+67 Tabellen, rund 90 MB, darunter zwei Jahre Viertelstundenwerte.
+
+## Schnellstart
+
+```bash
+npm install
+npm run daten -- --neu   # Beispieldatenbank aufbauen (einmalig, ~1 Minute)
+npm run dev              # http://localhost:3000
+```
+
+Der Demonstrationsbetrieb ist voreingestellt (`DEMO_MODUS=1` in `.env.local`),
+es wird also keine laufende Frappe-Instanz benötigt.
+
+**Demo-Zugänge** — Passwort für alle: `demo`
+
+| E-Mail | Rolle | Sieht |
+| --- | --- | --- |
+| `m.steiner@steiner-holzbau.at` | Geschäftsführung | alles |
+| `m.hofbauer@steiner-holzbau.at` | Technische Leitung | Betrieb, Steuerung, Fernwartung |
+| `a.gruber@steiner-holzbau.at` | Buchhaltung | Belege, Abrechnung, Leistungen |
+| `t.leitner@steiner-holzbau.at` | Fuhrparkleitung | Ladepunkte, Tankkarten |
+
+Die Konten stehen auf der Anmeldeseite als Schaltflächen bereit. Sie zeigen
+zugleich, wie die Rollentrennung wirkt: Meldet man sich als Fuhrparkleitung an,
+sind Steuerung, Cybersicherheit und Zertifikate weder sichtbar noch über die
+Adresszeile erreichbar.
+
+## Prüfen
+
+```bash
+npm run pruefen          # TypeScript, ESLint und Tests in einem Durchlauf
+npm test                 # nur die Tests (758 Stück in 36 Dateien)
+npm run build            # Produktionsbuild
+npm run daten -- --neu   # Beispieldatenbank neu aufbauen
+npm run bilder           # Bildschirmaufnahmen aller Seiten, hell/dunkel/mobil
+npm run bedienbarkeit    # Barrierefreiheitsprüfung über alle Seiten
+npm run ablaeufe         # die Wege, die ein Mensch geht: anmelden, suchen, schreiben
+npm run doctypes         # Frappe-DocType-Dateien neu erzeugen
+```
+
+`npm run bilder` fährt alle Seiten in drei Ansichten an und meldet
+Konsolenfehler, waagrechten Überlauf und Kontraste unter WCAG 2.1 AA. Mehrere
+Fehler dieser Arbeit fielen erst dadurch auf — unter anderem ein
+Zeitzonenfehler, durch den „Ertrag heute“ dauerhaft 0 kWh anzeigte, und ein
+absolut positioniertes `sr-only`-Etikett, das eine Tabelle 497 Pixel breiter
+machte als das Fenster.
+
+`npm run ablaeufe` geht die Wege ab, die aus mehreren Teilen bestehen: Anmeldung
+über einen Demo-Zugang, Suche mit `Strg`+`K`, eine Meldeschwelle stellen, eine
+Alarmierung übernehmen, die MSCONS-Datei abholen, aus dem Prüfkalender einen
+Auftrag auslösen – und einmal etwas versuchen, das die Rolle nicht darf. Genau
+dort, zwischen Formular, Serveraktion und neu gerechneter Seite, brechen
+Änderungen, ohne dass die Seite danach anders aussieht.
+
+`npm run bedienbarkeit` sucht Bedienelemente ohne zugänglichen Namen, doppelte
+Kennungen, Bilder ohne Textalternative, Sprünge in der Überschriftenordnung und
+Tabellen ohne Kopfzellen. Die Prüfung prüft sich selbst:
+`node werkzeuge/bedienbarkeit-selbsttest.mjs` baut jeden dieser Fehler
+absichtlich in eine Seite ein und erwartet, dass er gefunden wird.
+
+## Architektur
+
+```
+Browser  ──►  Next.js (Server)  ──►  Frappe REST API   (Regelbetrieb)
+             hält die Session         DocTypes, Rechte
+             im httpOnly-Cookie
+                     │
+                     └──────────►  SQLite über node:sqlite  (Vorführung)
+                                    67 Tabellen, WAL
+```
+
+Der Browser spricht **nie** direkt mit einem Backend. Der Next.js-Server hält die
+Frappe-Session (`sid`) in einem httpOnly-Cookie und reicht sie serverseitig
+weiter. Das umgeht CORS- und SameSite-Probleme und hält das Session-Token aus
+dem Client-JavaScript heraus.
+
+### Die Rechenkerne liegen frei
+
+Jede fachliche Entscheidung — was ein Befund ist, ob eine Abnahme bestanden hat,
+wie eine MSCONS-Nachricht aufgebaut wird, welcher Anteil taxonomiekonform ist —
+steht in einer Datei ohne Datenbank- und Netzzugriff unter `src/lib/`, mit
+eigener Testdatei daneben. Die Seiten holen Zeilen und stellen sie dar; sie
+rechnen nicht.
+
+Das ist keine Architekturmode, sondern Voraussetzung für die Prüfbarkeit: Eine
+Isolationsmessung gegen die Grenzwerte der ÖVE/ÖNORM zu halten, lässt sich in
+35 Tests festschreiben. Dieselbe Rechnung verteilt über drei React-Komponenten
+kann man nur ansehen.
+
+| Kern | Was er entscheidet |
+| --- | --- |
+| `pv/befund.ts` | Verschattung, Verschmutzung, Abregelung, Sensorfehler oder Defekt — aus dem Tagesverlauf |
+| `pv/abnahme.ts` | Abnahmeprüfung nach ÖVE/ÖNORM E 8001-4-712 und EN 62446-1 |
+| `pv/wartung.ts` | Wiederkehrende Prüfungen: ESV 2012, EN 62305-3, Netzzugang, Garantie |
+| `pv/kennzahlen.ts`, `pv/sonnenstand.ts` | Erwartungswert, Performance Ratio, Sonnenstand |
+| `eeg/aufteilung.ts` | Dynamische und statische Aufteilung in der Energiegemeinschaft |
+| `eeg/mscons.ts` | EDIFACT MSCONS D.04B — bauen, zählen, prüfen |
+| `eeg/messmeldung.ts` | Aufteilung → Marktnachricht, mit Lückenprüfung |
+| `esg/ccf.ts`, `esg/taxonomie.ts` | Treibhausgasbilanz; EU-Taxonomie mit DNSH und Mindestschutz |
+| `finanzen/sepa.ts`, `finanzen/bmd.ts` | SEPA pain.008, IBAN-Prüfung, BMD-NTCS-Übergabe |
+| `laden/ocmf.ts`, `laden/tarif.ts` | Signierte Ladeprotokolle (ECDSA), Tarifrechnung |
+| `melden/regelwerk.ts` | Grenzen der Meldeschwellen: Messunsicherheit, Mindestdauer, Rauschen |
+| `melden/eskalation.ts` | Dienstplan, Wege je Dringlichkeit, Eskalation ohne Bestätigung |
+| `ot/drift.ts`, `ot/regel.ts` | Abweichung vom versiegelten Sollstand, Firewallregeln |
+| `ot/inbetriebnahme.ts` | Freigabe eines Geräts: Firmware, Netzzone, Zertifikat, Fernzugang |
+| `unterlagen.ts` | Dossier einer Anlage: Pflicht, Gültigkeit, Übernahme aus dem ERP |
+| `at/elwg.ts`, `at/feiertage.ts` | ElWG-Fristen, österreichische Feiertage |
+| `sicherheit/regelgrenzen.ts`, `sicherheit/kette.ts` | Positivliste steuerbarer Parameter, Protokollkette |
+
+### Module
+
+| Bereich | Inhalt |
+| --- | --- |
+| Übersicht | Aufgabenliste über alle Bereiche, Kennzahlen, Tagesverlauf, Energiefluss |
+| Anlagen | Portfolio und Einzelanlage mit Ursachensuche, Strangvergleich, Prüfkalender, Dossier |
+| Meldungen | Automatische Überwachung, Regelwerk mit einstellbaren Schwellen, Alarmierung mit Dienstplan und Eskalation |
+| Energie & Markt | Erträge, Bilanz, Jahresgang, Day-Ahead-Preise, Prognose, Hochrechnung |
+| Regulierung | ElWG, Netzentgelte, Spitzenkappung, Fristen mit Handlungsempfehlung |
+| Steuerung | Betriebsstrategie — mit gesperrten Netzparametern |
+| Energiegemeinschaft | EEG/BEG/GEA, Aufteilung, Belege, EDA-Vorgänge, MSCONS-Ausgabe |
+| Speichervermarktung | Fahrpläne, Regelleistung, Marktpreise |
+| CO₂-Zertifikate | Zertifizierung, Handel, Vollmacht an Dritte |
+| Ladeinfrastruktur | Ladepunkte, Vorgänge, Ladekarten, Abrechnung, OCMF-Prüfung |
+| Nachhaltigkeit | Treibhausgasbilanz nach VSME/GHG, **EU-Taxonomie** mit DNSH-Nachweisen |
+| Buchhaltung | Buchungsstapel, BMD-Übergabe, SEPA-Lastschrift |
+| Belege | Rechnungen, Gutschriften, Lieferscheine |
+| Leistungen | Wartung, Prüfungen, Zubehör als Anfrage |
+| Support | Störungsmeldung, Tickets, Bereitschaft |
+| Dokumentation | Vollständigkeit nach ÖVE/ÖNORM, Abnahmeprotokolle, Prüftermine |
+| Netz & Geräte | Edge-Hardware, Freigabe zur Inbetriebnahme, Segmentierung, Drift, Protokollkette |
+| Fernwartung | Befristete Zugangsfreigabe, Zugriffsprotokoll |
+| Cybersicherheit | NIS2-Meldefristen, Vorfälle, Abwehr, Audit-Protokoll |
+| Einstellungen | Stammdaten, Benutzer, Rollen, Zählpunkte |
+
+## Vier Entwurfsentscheidungen, die tragen
+
+### Gesetzliche Regelparameter sind serverseitig gesperrt
+
+Ein Teil der Regelparameter einer PV-Anlage ist netzbetreiber- bzw. normseitig
+vorgegeben: Wirkleistungsbegrenzung, Parkregler-Sollwert,
+Blindleistungskennlinie und die Einstellungen des Netz- und Anlagenschutzes.
+Diese darf ein Anlagenbetreiber nicht verändern — eine Änderung kann den
+Netzparallelbetrieb unzulässig machen und Menschen bei Arbeiten am Netz
+gefährden.
+
+Die Sperre sitzt deshalb in [`src/lib/sicherheit/regelgrenzen.ts`](src/lib/sicherheit/regelgrenzen.ts)
+im Servercode, nicht in der Oberfläche. Ein ausgeblendetes Eingabefeld ließe
+sich umgehen, ein serverseitig abgelehnter Schreibvorgang nicht. Der Katalog
+ist eine **Positivliste**: Was nicht ausdrücklich freigegeben ist, wird
+abgelehnt — auch unbekannte Schlüssel.
+
+Gesperrte Parameter werden trotzdem **sichtbar** dargestellt — mit der
+Rechtsgrundlage daneben. Wer den Wert kennen muss, sieht ihn; wer ihn ändern
+will, erfährt warum das nicht geht.
+
+Dasselbe Muster gilt für die Meldeschwellen: `melden/regelwerk.ts` weist eine
+Minderertragsschwelle unter drei Prozent ab, weil dort die Messunsicherheit von
+Einstrahlungssensor und Zähler beginnt. Das Formular nennt den Grund, der
+Server erzwingt ihn.
+
+### Berechtigungen werden zweifach durchgesetzt
+
+Die Navigation blendet aus, was eine Rolle nicht darf. Das ist Bequemlichkeit,
+kein Schutz. Die eigentliche Prüfung passiert serverseitig über `requireRecht()`
+auf jeder Seite — und im Regelbetrieb ein drittes Mal in Frappe selbst, das
+jede API-Anfrage gegen Rollen und User Permissions prüft.
+
+### Drei Ergebnisse, nicht zwei
+
+Prüfungen dieser Anwendung kennen zwischen „bestanden“ und „beanstandet“ ein
+drittes Ergebnis: **nicht bewertbar**. Es trifft den Fall, in dem gemessen
+wurde, der Messwert aber nichts aussagt — eine Isolationsmessung mit zu
+geringer Prüfspannung, ein Strangvergleich bei 320 W/m², eine Taxonomie-Tätigkeit
+ohne vorliegenden Nachweis.
+
+Solche Fälle als bestanden zu führen wäre eine Gefälligkeitsprüfung, als
+beanstandet eine Falschaussage. Beides fällt im Betrieb erst dann auf, wenn es
+teuer wird.
+
+### Beispieldaten enthalten absichtlich Fehler
+
+Ein Bestand, in dem alles stimmt, zeigt nur, dass die Oberfläche grün
+darstellen kann. Im Datensatz stecken deshalb unter anderem: ein Strang mit
+zunehmender Verschattung durch Bewuchs, ein Morgenschatten mit vollständiger
+Erholung, eine Anlage mit Verschmutzung und Regenereignissen, ein fehlendes
+Modul in einem Strang, eine Isolationsmessung mit falscher Prüfspannung, ein
+Ladeprotokoll mit unsynchronisierter Uhr, ein manipulierter Zählerstand, eine
+überfällige ESV-Prüfung, eine Taxonomie-Tätigkeit ohne Biodiversitätsnachweis,
+ein Gateway mit ablaufendem Zertifikat, eines unter dem Firmware-Mindeststand
+und eines mit einer Portweiterleitung, die nach der Inbetriebnahme nie entfernt
+wurde.
+
+Jede Diagnosefunktion hat damit etwas zu finden — und jede Prüfung lässt sich
+daran beurteilen.
+
+## Frappe-Backend einrichten
+
+Die DocType-Definitionen werden aus einer kompakten Spezifikation erzeugt:
+
+```bash
+node frappe/erzeuge-doctypes.mjs
+```
+
+Das schreibt die DocTypes nach `frappe/energieportal/`. Einspielen:
+
+```bash
+bench new-app energieportal              # falls noch keine App besteht
+# Inhalt von frappe/energieportal/ in die App kopieren
+bench --site <site> install-app energieportal
+bench --site <site> migrate
+```
+
+Danach `.env.local` anpassen:
+
+```
+FRAPPE_URL=http://localhost:8000
+DEMO_MODUS=0
+```
+
+### Verwendete DocTypes
+
+Standard aus Frappe/ERPNext: `Customer`, `Contact`, `Address`, `File`,
+`Sales Invoice`, `Delivery Note`, `Item`, `Sales Order`, `User`.
+
+Eigene: `PV Anlage`, `PV Komponente`, `PV Ertrag`, `PV Messwert`,
+`PV Stoerung`, `PV Wartung`, `PV Anlagendokumentation`, `PV Pruefbefund`,
+`PV Steuerprofil`, `PV Steuerbefehl`, `Fernwartungszugang`,
+`Fernwartungssitzung`, `Ladepunkt`, `Ladevorgang`, `Tankkarte`,
+`CO2 Zertifikat`, `CO2 Handel`, `Vollmacht`, `Energiegemeinschaft`,
+`EG Mitglied`, `EG Aufteilung`, `Boersenpreis`, `Audit Protokoll`,
+`Sicherheitsvorfall`, `Portal Benutzer`, `Support Ticket`.
+
+Die Zuordnung steht zentral in
+[`src/lib/doctype-namen.ts`](src/lib/doctype-namen.ts). Weicht Ihr Schema ab,
+passen Sie **nur diese Datei** an.
+
+[`schema.test.ts`](src/lib/schema.test.ts) gleicht das erzeugte Frappe-Schema
+gegen die Abfragen der Anwendung ab. Wird ein Feld im DocType umbenannt, ohne
+die Abfrage anzupassen, schlägt der Test an — statt dass das Portal
+stillschweigend leere Werte anzeigt.
+
+### Berechtigungen in Frappe
+
+Die Anwendung filtert Daten **nicht** nach Kunde. Das ist Absicht: Frappe wendet
+die Berechtigungen des angemeldeten Benutzers serverseitig an. Ein Filter im
+Frontend wäre nur Kosmetik.
+
+1. Rollen `Portalkunde` und `Portaltechnik` anlegen (die erzeugten DocTypes
+   verweisen bereits darauf).
+2. Pro Portalbenutzer eine **User Permission** auf den passenden
+   `Customer`-Datensatz setzen.
+3. `PV Anlage.kunde` ist ein Link auf `Customer` — dadurch greift die User
+   Permission auf alle abhängigen Datensätze durch.
+
+Ohne Schritt 2 sieht jeder angemeldete Benutzer alle Anlagen.
+
+## Österreich-Bezug
+
+- **Zählpunktbezeichnung** 33-stellig, mit Zerlegung nach Netzbetreiberkennzahl
+  und Postleitzahl ([`src/lib/at/zaehlpunkt.ts`](src/lib/at/zaehlpunkt.ts))
+- **Netzebenen 1–7** und **TOR Erzeuger Typ A–D**
+- **Energiegemeinschaften** nach EAG: EEG, BEG und GEA mit ihren
+  unterschiedlichen Netzentgeltrabatten
+- **ElWG**: Versorgungssicherheitsbeitrag, entschädigungslose Spitzenkappung,
+  Netzanschlussentgelt, Mehrstandortversorgung — mit Stichtagen und der
+  jeweils nötigen Handlung ([`src/lib/at/elwg.ts`](src/lib/at/elwg.ts))
+- **ESV 2012 § 9** für die wiederkehrende Prüfung elektrischer Anlagen
+  (5 Jahre, 10 Jahre bei geringer Beanspruchung, 3 Jahre im Ex-Bereich)
+- **EU-Taxonomie** (VO 2020/852, technische Kriterien nach VO 2021/2139) mit
+  DNSH-Kriterien, Mindestschutz nach Artikel 18 und der
+  Wesentlichkeitsschwelle von 10 % aus der Vereinfachung vom Juli 2025
+- **EDA / MSCONS D.04B** für den Messdatenaustausch mit dem Netzbetreiber
+- **Normen**: ÖVE/ÖNORM E 8001-4-712, ÖVE/ÖNORM EN 62446-1, ÖVE/ÖNORM E 8101,
+  ÖVE/ÖNORM EN 62305, TRVB E 133
+- **NIS2 / NISG** mit den Meldefristen 24 h, 72 h und ein Monat
+- **SEPA** pain.008.001.08 und **BMD NTCS** für die Buchhaltung
+- Formatierung durchgängig `de-AT` — inklusive „Jänner“ und dem in Österreich
+  üblichen schmalen Leerzeichen als Tausendertrenner
+
+### Beispieldaten sind fachlich kalibriert
+
+Eine Vorführung verliert ihre Glaubwürdigkeit, wenn die Zahlen fachlich
+nicht stimmen können. Der Ertragsgenerator ist deshalb auf rund
+1 060 kWh je kWp und Jahr eingestellt — den für Ostösterreich üblichen
+Bereich. [`generator.test.ts`](src/lib/demo/generator.test.ts) hält das fest
+und schlägt an, wenn eine Änderung die Werte aus dem plausiblen Bereich
+schiebt. Ein erster Entwurf lag bei 1 470 kWh/kWp; das wäre jedem
+Fachkundigen sofort aufgefallen.
+
+## Gestaltung: ein Leitstand, kein Dashboard
+
+Die Oberfläche ist als **Arbeitsplatz** gebaut, nicht als Übersichtsseite. Wer
+eine Erzeugungsanlage führt, sitzt acht Stunden davor und liest Zahlen. Daraus
+folgen fünf Entscheidungen, und jede steht gegen das, was eine Marketingseite
+täte:
+
+**Dunkel zuerst.** Ein Leitstand steht in einem Raum, in dem auch nachts jemand
+sitzt. Wer nichts einstellt, bekommt die dunkle Fassung — auch auf einem hell
+eingestellten Rechner. Die helle Fassung bleibt vollwertig und ist eigens
+gerechnet; sie ist die Variante, nicht der Ausgangspunkt. Beide werden bei jedem
+`npm run bilder` gegen WCAG 2.1 AA geprüft.
+
+**Linien statt Schatten.** Eine Fläche ist eine Arbeitsfläche und schwebt nicht.
+Schatten gibt es nur dort, wo etwas wirklich über dem Inhalt liegt: Dialog und
+Befehlspalette. Getrennt wird mit Haarlinien; sie bilden ein Raster, und ein
+Raster lässt das Auge springen, ohne zu suchen. Radien liegen bei zwei bis vier
+Pixeln — runde Ecken machen eine Fläche freundlich, hier soll sie genau sein.
+
+**Zahlen in einer Zahlenschrift.** Text steht in Inter, jede Zahl in IBM Plex
+Mono mit gleicher Ziffernbreite. Der Grund ist nicht Geschmack: In einer Spalte
+mit fünfzig Strangwerten stehen Komma und Nachkommastellen dadurch übereinander,
+und ein Ausreißer fällt auf, ohne dass man ihn sucht. Eine Proportionalschrift
+verschiebt jede Zeile um ein paar Pixel — genau das macht Vergleichen zur Arbeit.
+
+**Dichte.** 14 Pixel Grundschrift, enge Tabellenzeilen, kleine Innenabstände, die
+volle Breite des Schirms. Ein Leitstand zeigt viel auf einmal; Blättern kostet
+mehr Aufmerksamkeit als Lesen. Fließtext bekommt trotzdem ein Maß von 84 Zeichen
+— eine Zeile über die Breite eines 27-Zoll-Schirms liest niemand.
+
+**Zustand vor Arbeit.** Die Übersicht zeigt zuerst, was die Anlagen gerade tun,
+und erst danach, was zu tun ist. Vorher stand die Aufgabenliste ganz oben; mit
+siebzehn Einträgen schob sie jede Zahl unter den Bildschirmrand.
+
+### Farbe ist Signal
+
+Das Ökovolt-Grün bleibt, ändert aber seine Rolle: Es heißt „in Ordnung“ oder
+„das ist die gemeinte Handlung“, sonst kommt es nicht vor. Die vier Zustandstöne
+— gut, Hinweis, ernst, kritisch — haben je eine eigene Fassung für hellen und
+dunklen Grund. Ein Dunkelrot auf Papier liest sich gut und verschwindet auf
+schwarzem Grund; Zustand ist genau das, was man nicht erraten darf. Jeder Ton
+tritt zusammen mit einem Wort auf, nie allein.
+
+Die Farbzuordnung der Energiedaten ist **gerechnet, nicht geschätzt**: geprüft
+gegen Helligkeitsband, Buntheitsuntergrenze, Unterscheidbarkeit bei Protanopie,
+Deuteranopie und Tritanopie sowie Kontrast — in beiden Erscheinungsbildern.
+Begründung und die zwei zulässigen Grenzfälle stehen in
+[`src/lib/farben.ts`](src/lib/farben.ts).
+
+### Bewegung, die etwas sagt
+
+Die Diagramme sind eigenentwickelt (SVG, keine Diagrammbibliothek). Das hält die
+Ladezeit klein und erlaubt durchgängige Farbzuordnung, Bedienung per Tastatur und
+zurückhaltende Animation: Balken wachsen aus ihrer Grundlinie, Linien zeichnen
+sich, Kennzahlen zählen hoch. Kürzer als üblich — in einer Anwendung, die
+stundenlang bedient wird, ist jede Animation eine Wartezeit. Wer im
+Betriebssystem reduzierte Bewegung eingestellt hat, bekommt nichts davon und
+sieht sofort den Endwert.
+
+Die Uhr in der Statusleiste ist kein Schmuck: In einem Betrieb, in dem
+Viertelstundenwerte gemessen und Fristen gezählt werden, ist die erste Frage bei
+jeder Zahl, von wann sie ist.
+
+Die Befehlspalette (`Strg`/`⌘` + `K`) durchsucht Anlagen, Wechselrichter,
+Meldungen, Belege, Geräte und Abrechnungen, nicht nur Seitennamen. Die
+Trefferbewertung läuft über eine vollständige Ausrichtung statt über den ersten
+passenden Buchstaben — sonst führt „eg“ in „Energiegemeinschaft“ auf das falsche
+„g“ und bewertet den Treffer schlechter als er ist.
+
+## Projektstruktur
+
+```
+src/
+├── proxy.ts                  Schützt /portal (Next.js 16, früher middleware.ts)
+├── lib/
+│   ├── db/                   SQLite-Verbindung, Schema, Datenbestand
+│   ├── daten/                Lesezugriffe je Bereich — das einzige SQL
+│   ├── frappe.ts             REST-Client, Fehlerbehandlung, Session-Weitergabe
+│   ├── doctype-namen.ts      DocType-Zuordnung (einzige Stelle für Schemaänderungen)
+│   ├── portal-daten.ts       Weiche zwischen Demonstration und Regelbetrieb
+│   ├── auswertung.ts         Kennzahlen: Eigenverbrauchsquote, Autarkie, Jahresgang
+│   ├── at/                   Zählpunkt, Netzbetreiber, ElWG, Feiertage
+│   ├── pv/                   Sonnenstand, Erwartungswert, Befund, Abnahme, Wartung
+│   ├── eeg/                  Aufteilung, Abrechnungslauf, MSCONS, Messmeldung
+│   ├── esg/                  Treibhausgasbilanz, EU-Taxonomie
+│   ├── finanzen/             SEPA, BMD, Buchungsstapel
+│   ├── laden/                OCMF, Tarife, Ladeabrechnung
+│   ├── handel/               Fahrpläne und Regelleistung
+│   ├── melden/               Meldeschwellen, Eskalation
+│   ├── ot/                   Konfigurationsdrift, Firewallregeln
+│   ├── sicherheit/           Regelgrenzen, Rollen, Audit, Protokollkette
+│   └── demo/                 Beispieldaten und Zeitreihengenerator
+├── components/
+│   ├── diagramme/            Verlauf, Balken, Ring, Sparkline, Energiefluss, Strangkarte
+│   └── …                     Tafeln, Kennzahlen, Tabellen, Befehlspalette, Dialoge
+└── app/
+    ├── login/                Anmeldung
+    ├── api/                  Anmeldung sowie Ausgabe von SEPA, BMD, CSV und MSCONS
+    └── portal/               20 Module, je mit loading.tsx; error/not-found gestaltet
+werkzeuge/
+├── datenbank.mjs             Beispieldatenbank aufbauen und prüfen
+├── screenshots.mjs           Sichtprüfung inklusive Kontrast und Überlauf
+├── kontrast.mjs              WCAG-Kontrastprüfung (auch für Verläufe)
+└── bedienbarkeit*.mjs        Barrierefreiheitsprüfung samt Selbsttest
+frappe/
+├── doctypes.spec.mjs         Kompakte Schemabeschreibung
+├── erzeuge-doctypes.mjs      Generator für die Frappe-JSON-Dateien
+└── energieportal/            Erzeugte App-Struktur
+```
+
+## Noch nicht angebunden
+
+Diese Teile sind als Oberfläche und Adapterschicht vorhanden, aber nicht mit
+einem echten Fremdsystem verbunden — dafür fehlen Zugänge und Schlüssel:
+
+- **Anlagensteuerung** (Tridium JACE 9000): Die Prüfung und Protokollierung
+  läuft, die Übertragung des Befehls an die Steuerung fehlt.
+- **Fernwartungstunnel** (Teltonika RUT142 über Zero-Trust-Zugang): Der
+  Freigabeprozess ist vollständig abgebildet und protokolliert; die
+  Durchschaltung erfolgt im Zugangsdienst.
+- **MSCONS-Versand**: Die Nachricht wird erzeugt und vor der Ausgabe geprüft;
+  die Zustellung über EDA bzw. AS4 fehlt.
+- **Zertifikatehandel**: Vollmacht und Bestandsführung laufen im Portal, die
+  Anbindung an den Handelspartner fehlt.
+- **Ladepunkte über OCPP**: Datenmodell, Abrechnung und OCMF-Prüfung stehen,
+  die Live-Anbindung an die Ladepunkte fehlt.
+- **Day-Ahead-Preise**: derzeit modelliert, nicht von der Börse bezogen.
+- **Wettervorhersage**: Die Ertragsprognose rechnet mit dem modellierten
+  Jahresgang. Die Schnittstelle in [`src/lib/prognose.ts`](src/lib/prognose.ts)
+  ist so geschnitten, dass an dieser Stelle eine echte Vorhersage eintreten
+  kann.
+
+An allen Stellen ist der Einstiegspunkt vorbereitet — es fehlt jeweils nur der
+Endpunkt und die Zugangsdaten.

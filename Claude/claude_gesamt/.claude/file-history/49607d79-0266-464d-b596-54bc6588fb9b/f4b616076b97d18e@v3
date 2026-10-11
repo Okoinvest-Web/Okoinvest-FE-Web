@@ -1,0 +1,156 @@
+<template>
+  <!--
+    Leitstand-Anzeige für die TV-Wand.
+    Große Schrift, hoher Kontrast, keine Bedienelemente, Stand-Zeitstempel.
+    Veraltete Daten werden sichtbar markiert - ein eingefrorener Screen darf
+    nie wie ein ruhiges Netz aussehen (Fachkonzept 2.16).
+  -->
+  <div class="flex min-h-screen flex-col bg-surface-gray-1 p-6">
+    <header class="mb-6 flex items-end justify-between gap-4">
+      <div>
+        <p class="text-sm uppercase tracking-wide text-ink-gray-5">
+          Screen {{ daten.data?.screen_no ?? nummer }}
+        </p>
+        <h1 class="text-3xl font-semibold text-ink-gray-9">
+          {{ daten.data?.screen_title || 'Leitstand' }}
+        </h1>
+      </div>
+      <div class="text-right">
+        <p class="text-3xl font-semibold tabular-nums text-ink-gray-9">{{ uhrzeit }}</p>
+        <p class="text-sm tabular-nums text-ink-gray-5">
+          Stand {{ daten.data?.generated_at || '–' }}
+        </p>
+        <StatusDot
+          v-if="veraltet"
+          class="mt-1"
+          level="warning"
+          :text="'Seit ' + alterSekunden + ' s kein Update'"
+          klein
+        />
+      </div>
+    </header>
+
+    <ErrorState
+      v-if="daten.error"
+      :error="daten.error"
+      titel="Anzeige nicht abrufbar"
+      :on-retry="() => daten.fetch()"
+    />
+
+    <!-- Die Kacheln füllen die Wand aus: auto-rows-fr teilt die Höhe gleich
+         auf, sonst klebt alles oben und der Rest bleibt leer. -->
+    <div v-else class="grid flex-1 auto-rows-fr grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+      <section
+        v-for="kachel in daten.data?.tiles || []"
+        :key="kachel.kind"
+        class="flex flex-col rounded-xl border border-outline-gray-2 bg-surface-white p-5"
+        :class="veraltet ? 'opacity-50' : ''"
+      >
+        <h2 class="mb-3 text-lg font-medium text-ink-gray-8">{{ kachel.title }}</h2>
+
+        <p v-if="kachel.placeholder" class="text-base text-ink-gray-5">
+          {{ kachel.note }}
+        </p>
+
+        <div v-if="kachel.metrics" class="grid grid-cols-2 gap-4">
+          <div v-for="kennzahl in kachel.metrics" :key="kennzahl.label">
+            <p class="text-sm text-ink-gray-6">{{ kennzahl.label }}</p>
+            <p class="text-4xl font-semibold text-ink-gray-9">{{ kennzahl.value }}</p>
+            <StatusDot
+              v-if="kennzahl.level && kennzahl.level !== 'ok'"
+              class="mt-1"
+              :level="kennzahl.level"
+              :text="kennzahl.level === 'critical' ? 'kritisch' : 'prüfen'"
+              klein
+            />
+          </div>
+        </div>
+
+        <ul v-if="kachel.rows" class="mt-3 space-y-2">
+          <li
+            v-for="(zeile, i) in kachel.rows"
+            :key="i"
+            class="flex items-start justify-between gap-3 border-b border-outline-gray-2 pb-2 last:border-b-0"
+          >
+            <span class="min-w-0">
+              <span class="block truncate text-base text-ink-gray-8">{{ zeile.title }}</span>
+              <span class="block truncate text-sm text-ink-gray-5">{{ zeile.subtitle }}</span>
+            </span>
+            <!-- Auch hier nie ein nackter Farbpunkt: ohne eigenes Etikett
+                 wird die Stufe ausgeschrieben. -->
+            <StatusDot
+              :level="zeile.level || 'neutral'"
+              :text="zeile.badge || STUFE[zeile.level] || ''"
+              klein
+            />
+          </li>
+        </ul>
+      </section>
+    </div>
+
+    <p class="mt-6 shrink-0 text-xs text-ink-gray-4">
+      Nur lesend. Ohne gültige Freigabe liefert die Adresse im Betrieb ausschließlich die Warteseite
+      mit Bestätigungscode – das setzt das Backend durch, nicht diese Seite.
+    </p>
+  </div>
+</template>
+
+<script setup>
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { createResource } from 'frappe-ui'
+import ErrorState from '@/components/ErrorState.vue'
+import StatusDot from '@/components/StatusDot.vue'
+
+const props = defineProps({
+  nummer: { type: String, default: '1' },
+})
+
+const STUFE = { ok: 'in Ordnung', warning: 'prüfen', critical: 'kritisch', serious: 'dringend' }
+
+const uhrzeit = ref(uhrText())
+const letzteAktualisierung = ref(Date.now())
+const jetzt = ref(Date.now())
+
+const daten = createResource({
+  url: 'netops.api.screen.screen_data',
+  makeParams: () => ({ screen: 'screen' + props.nummer }),
+  auto: true,
+  onSuccess() {
+    letzteAktualisierung.value = Date.now()
+  },
+})
+
+watch(
+  () => props.nummer,
+  () => daten.fetch(),
+)
+
+// Der Screen aktualisiert sich selbst. Im Betrieb kommt das über Frappe
+// Realtime; ohne Backend bleibt nur das Nachladen im Takt.
+let takt = null
+let uhr = null
+
+onMounted(() => {
+  takt = setInterval(() => daten.fetch(), 30000)
+  uhr = setInterval(() => {
+    uhrzeit.value = uhrText()
+    jetzt.value = Date.now()
+  }, 1000)
+})
+
+onBeforeUnmount(() => {
+  clearInterval(takt)
+  clearInterval(uhr)
+})
+
+const alterSekunden = computed(() => Math.round((jetzt.value - letzteAktualisierung.value) / 1000))
+const veraltet = computed(() => alterSekunden.value > 90)
+
+function uhrText() {
+  return new Date().toLocaleTimeString('de-AT', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  })
+}
+</script>

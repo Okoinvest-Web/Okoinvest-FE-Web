@@ -1,0 +1,160 @@
+import os, html
+OUT = r"C:\Users\SALEADMIN\Desktop\Presse\4_Social_Media\grafiken"
+os.makedirs(OUT, exist_ok=True)
+W, H = 1200, 627
+G, L, N, NB, R, BG, INK, MU = "#558227", "#9bc46a", "#151a24", "#1f3a5f", "#c0392b", "#fbfaf6", "#171717", "#5f6677"
+HF = "Manrope, 'Segoe UI', Arial, sans-serif"
+BF = "Inter, 'Segoe UI', Arial, sans-serif"
+
+
+def t(x, y, s, size, color, weight=800, font=HF, anchor="start", ls=1.15):
+    lines = s.split("\n")
+    out = [f'<text x="{x}" y="{y}" font-family="{font}" font-size="{size}" font-weight="{weight}" fill="{color}" text-anchor="{anchor}">']
+    for i, line in enumerate(lines):
+        dy = 0 if i == 0 else size * ls
+        out.append(f'<tspan x="{x}" dy="{dy}">{html.escape(line)}</tspan>')
+    out.append("</text>")
+    return "".join(out)
+
+
+def logo(x, y, color=L, size=22):
+    return t(x, y, "ÖKOVOLT", size, color, 800) + f'<rect x="{x}" y="{y+8}" width="36" height="4" fill="{color}"/>'
+
+
+def svg(name, body, bg=N):
+    s = (f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBox="0 0 {W} {H}">'
+         f'<rect width="{W}" height="{H}" fill="{bg}"/>{body}</svg>')
+    open(os.path.join(OUT, name), "w", encoding="utf-8").write(s)
+    return name
+
+
+def card(x, y, w, h, fill, stroke=None, r=22):
+    st = f' stroke="{stroke}" stroke-width="3"' if stroke else ""
+    return f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="{r}" fill="{fill}"{st}/>'
+
+
+def am_selben_tag(accent, name, headline_color=L):
+    b = logo(60, 70)
+    b += t(60, 150, "18. Oktober 2021", 58, "#fff")
+    b += card(60, 200, 470, 250, "rgba(255,255,255,0.07)", "rgba(155,196,106,0.5)")
+    b += t(90, 255, "VERTRAG MIT ÖKOVOLT", 18, headline_color, 800)
+    b += t(90, 305, "„Vermeidung von\nWettbewerbs-\nsituationen“", 34, "#fff", 800)
+    b += card(670, 200, 470, 250, "rgba(192,57,43,0.18)", R)
+    b += t(700, 255, "AM SELBEN TAG", 18, "#ff9a8b", 800)
+    b += t(700, 305, "Gründung der\neigenen Konkurrenz:\none2zero GmbH", 34, "#fff", 800)
+    b += f'<circle cx="600" cy="325" r="44" fill="{accent}"/>' + t(600, 340, "=", 44, "#fff", 800, anchor="middle")
+    b += t(60, 530, "Partner auf dem Papier.", 38, "#fff", 800)
+    b += t(60, 578, "Konkurrent am selben Tag.", 38, L, 800)
+    b += t(1140, 578, "Quellen: Syndikatsvertrag · OLG München", 16, "rgba(255,255,255,0.55)", 500, BF, "end")
+    return svg(name, b)
+
+
+made = {}
+# ---------- ÖSTERREICH ----------
+made["Welle 1"] = am_selben_tag(G, "AT1_am_selben_tag.svg")
+
+b = logo(60, 70)
+b += card(60, 120, 330, 380, "#fff") + f'<rect x="60" y="120" width="330" height="90" rx="22" fill="{R}"/><rect x="60" y="180" width="330" height="30" fill="{R}"/>'
+b += t(225, 180, "SEPTEMBER 2026", 22, "#fff", 800, anchor="middle") + t(225, 380, "21", 170, INK, 800, anchor="middle")
+b += t(225, 450, "Eigentümer informiert", 20, MU, 600, BF, "middle")
+b += t(450, 190, "[X] Tage", 96, R, 800) + t(450, 260, "ohne Antwort.", 60, "#fff", 800)
+b += t(450, 340, "Land Salzburg · Stadt Salzburg ·\nEnergie AG Oberösterreich haben\nUrteile, Gutachten und forensische\nBefunde auf dem Tisch.", 26, "rgba(255,255,255,0.85)", 500, BF)
+b += t(450, 540, "Wir erwarten keine Entschuldigung.\nWir erwarten eine unabhängige Prüfung.", 24, L, 700, BF, ls=1.3)
+made["Welle 1b"] = svg("AT1b_eigentuemer_wissen_es.svg", b)
+
+b = logo(60, 70)
+b += t(60, 170, "DAS OBERLANDESGERICHT MÜNCHEN ÜBER DAS VORGEHEN DER SALZBURG AG:", 20, L, 800)
+b += t(60, 350, "„treuwidrig“", 150, "#fff", 800)
+b += f'<rect x="60" y="395" width="120" height="6" fill="{L}"/>'
+b += t(60, 460, "Protokoll vorab geschrieben. „Im Flüsterton“ fortgesetzt. Eintragung ausgesetzt.", 28, "rgba(255,255,255,0.85)", 600, BF)
+b += t(60, 560, "3 Verfahren · 3 Niederlagen der Salzburg AG", 34, L, 800)
+b += t(1140, 600, "OLG München 14 U 3748/25 · Beschluss 18.06.2026 · Eilverfahren", 16, "rgba(255,255,255,0.55)", 500, BF, "end")
+made["Welle 2"] = svg("AT2_treuwidrig.svg", b)
+
+b = logo(60, 70) + t(60, 150, "Kopiert. Eingeladen. Angestellt.", 52, "#fff")
+tiles = [("02.12.2024", "Controlling-Ordner\nkopiert –\n1.150 Dateien"), ("02.12.2024", "Wechsel zur\nSalzburg-AG-Tochter\neingeleitet"), ("2025", "Angestellt bei\nder Salzburg AG")]
+for i, (d, txt) in enumerate(tiles):
+    x = 60 + i * 370
+    b += card(x, 200, 340, 280, "rgba(255,255,255,0.07)", "rgba(155,196,106,0.5)" if i < 2 else R)
+    b += t(x + 30, 260, d, 34, L if i < 2 else "#ff9a8b", 800)
+    b += t(x + 30, 320, txt, 28, "#fff", 700)
+    if i < 2:
+        b += t(x + 352, 350, "→", 40, L, 800, anchor="middle")
+b += t(60, 540, "Festgestellt von gerichtlich zertifizierten Sachverständigen · vom OLG München als glaubhaft gewürdigt", 18, "rgba(255,255,255,0.8)", 500, BF)
+b += t(60, 575, "Es gilt die Unschuldsvermutung.", 18, "rgba(255,255,255,0.6)", 500, BF)
+made["Welle 2b"] = svg("AT2b_kopiert_eingeladen_angestellt.svg", b)
+
+b = logo(60, 70, G)
+b += card(70, 130, 300, 380, "#fff", "#d7dbe2")
+b += '<rect x="145" y="200" width="150" height="230" rx="30" fill="#eef0f4" stroke="#c9ced8" stroke-width="3"/>'
+b += '<circle cx="220" cy="290" r="18" fill="#171717"/><circle cx="220" cy="350" r="18" fill="#171717"/>'
+b += t(430, 190, "Jeder Elektriker braucht", 46, INK) + t(430, 245, "einen Gewerbeschein.", 46, INK)
+b += t(430, 310, "Fast jeder.", 46, R)
+b += '<rect x="430" y="350" width="700" height="70" rx="14" fill="#fde2e2"/>'
+b += t(780, 396, "151 Tage ohne jede Gewerbeberechtigung", 28, "#b00000", 800, anchor="middle")
+b += t(430, 470, "one2zero, Tochter der Salzburg AG: Großprojekt angekündigt 30.06.2022 –\nerste Gewerbeberechtigung 28.11.2022, Elektrotechnik erst 02.08.2023.", 21, MU, 500, BF, ls=1.35)
+b += t(1140, 600, "Quelle: GISA 35453048, 35939931", 16, MU, 500, BF, "end")
+made["Welle 3"] = svg("AT3_ohne_gewerbeschein.svg", b, BG)
+
+b = logo(60, 70, G) + t(60, 150, "Wohin fließt das Geld der Salzburger?", 48, INK)
+b += t(60, 240, "Ökovolt 2024 – Beteiligung der Salzburg AG: 49 %", 24, MU, 600, BF)
+b += f'<rect x="60" y="260" width="760" height="70" rx="12" fill="{G}"/>' + t(90, 307, "+ 1,14 Mio. € Gewinn", 34, "#fff", 800)
+b += t(60, 395, "one2zero – eigene Tochter der Salzburg AG", 24, MU, 600, BF)
+b += f'<rect x="60" y="415" width="560" height="70" rx="12" fill="{R}"/>' + t(90, 462, "Verluste: [Betrag lt. Firmenbuch]", 30, "#fff", 800)
+b += t(60, 560, "Eine unabhängige Prüfung schafft Klarheit – für alle Eigentümer.", 26, G, 800)
+b += t(1140, 600, "Quellen: Jahresabschlüsse Ökovolt 2024, one2zero (Firmenbuch)", 16, MU, 500, BF, "end")
+made["Welle 4"] = svg("AT4_geld_der_salzburger.svg", b, BG)
+
+b = logo(60, 70)
+b += t(60, 280, "[X]", 170, R, 800) + t(60, 390, "Tage ohne\nAntwort", 50, "#fff")
+rows = ["Land Salzburg", "Stadt Salzburg", "Energie AG Oberösterreich", "Aufsichtsrat der Salzburg AG"]
+for i, r in enumerate(rows):
+    y = 170 + i * 80
+    b += f'<circle cx="660" cy="{y-10}" r="11" fill="{R}"/><circle cx="660" cy="{y-10}" r="20" fill="none" stroke="{R}" stroke-opacity="0.35" stroke-width="4"/>'
+    b += t(690, y, r, 30, "#fff", 700)
+b += t(60, 520, "Wer nichts zu verbergen hat, klärt auf.", 38, L, 800)
+b += t(60, 570, "Unsere Forderung: eine unabhängige Prüfung durch einen neutralen Sachverständigen.", 20, "rgba(255,255,255,0.8)", 500, BF)
+made["Welle 5"] = svg("AT5_eigentuemer_schweigen.svg", b)
+
+# ---------- DEUTSCHLAND ----------
+b = logo(60, 70)
+b += t(60, 330, "3 : 0", 230, "#fff", 800)
+b += t(660, 200, "Oberlandesgericht\nMünchen", 48, "#fff", 800)
+b += t(660, 330, "Drei Verfahren.\nDreimal gegen die\nSalzburg AG.", 32, "rgba(255,255,255,0.85)", 600, BF)
+b += t(60, 530, "Unterallgäu gegen Staatskonzern.", 40, L, 800)
+b += t(60, 578, "Deutsche Gerichte haben entschieden.", 28, "#fff", 700)
+b += t(1140, 600, "OLG München 14 U 3746/25, 14 U 3748/25, 14 U 295/26 · Eilverfahren", 16, "rgba(255,255,255,0.55)", 500, BF, "end")
+made["D1"] = svg("DE1_dreimal_gescheitert.svg", b, NB)
+
+made["D2"] = am_selben_tag(NB, "DE2_partner_auf_dem_papier.svg")
+
+b = logo(60, 70, G)
+b += t(60, 180, "OBERLANDESGERICHT MÜNCHEN, BESCHLUSS VOM 18.06.2026", 20, NB, 800)
+b += t(60, 300, "„… im Flüsterton", 80, INK) + t(60, 390, "fortsetzte …“", 80, INK)
+b += f'<rect x="60" y="430" width="120" height="6" fill="{NB}"/>'
+b += t(60, 500, "Das vorgesehene Verfahren der Beschlussfassung „ausgehebelt“.", 28, MU, 600, BF)
+b += t(60, 560, "Gehörsrügen der Salzburg AG verworfen.", 28, NB, 800)
+made["D3"] = svg("DE3_fluesterton.svg", b, BG)
+
+b = logo(60, 70, G) + t(60, 160, "3 Lehren für Mittelständler", 52, INK) + t(60, 210, "mit einem strategischen Investor", 30, MU, 600, BF)
+items = ["Informationsrechte und Geschäftsführer-Entsendungen klar begrenzen.",
+         "Eigene Aktivitäten des Investors im Kerngeschäft ausschließen.",
+         "Zugriffe auf sensible Daten protokollieren."]
+for i, it in enumerate(items):
+    y = 290 + i * 95
+    b += f'<circle cx="95" cy="{y-10}" r="28" fill="{G}"/>' + t(95, y + 2, str(i + 1), 30, "#fff", 800, anchor="middle")
+    b += t(145, y, it, 28, INK, 700)
+b += t(60, 590, "Damit anderen Familienunternehmen nicht passiert, was uns passiert ist.", 22, G, 700, BF)
+made["D4"] = svg("DE4_drei_lehren.svg", b, BG)
+
+b = logo(60, 70)
+b += card(640, 60, 500, 500, "rgba(255,255,255,0.06)", "rgba(255,255,255,0.3)")
+b += t(890, 320, "[Foto:\nLandgericht Memmingen]", 26, "rgba(255,255,255,0.5)", 600, BF, "middle")
+b += t(60, 200, "Hauptverhandlung", 56, "#fff") + t(60, 270, "Landgericht Memmingen", 40, L, 800)
+b += t(60, 350, "[Datum, Uhrzeit]", 36, "#fff", 700)
+b += t(60, 450, "Nach drei Entscheidungen\ndes OLG München nun\ndie Hauptsache.", 26, "rgba(255,255,255,0.85)", 500, BF)
+made["D5"] = svg("DE5_hauptverhandlung.svg", b, NB)
+
+import json
+json.dump(made, open(os.path.join(OUT, "_index.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+print(made)

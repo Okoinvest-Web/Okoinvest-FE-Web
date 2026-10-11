@@ -1,0 +1,497 @@
+<template>
+  <div class="p-6">
+    <!--
+      Offene Wechsel zuerst. Ein ausgeworfenes Band, das im Serverraum
+      liegen bleibt, ist kein Airgap - es sieht nur so aus. Das ist der
+      einzige Zustand dieser Seite, der etwas von jemandem will.
+    -->
+    <section v-if="offeneWechsel.length" class="mb-6">
+      <h2 class="mb-1 text-base font-semibold text-ink-gray-8">Offener Wechsel</h2>
+      <p class="mb-3 text-sm text-ink-gray-6">
+        Solange der Wechsel nicht bestätigt ist, liegt keine Kopie außerhalb der Netzreichweite.
+      </p>
+
+      <article
+        v-for="w in offeneWechsel"
+        :key="w.name"
+        class="mb-3 rounded-lg border p-4"
+        :class="
+          w.level === 'critical'
+            ? 'border-outline-red-2 bg-surface-red-1'
+            : 'border-outline-amber-2 bg-surface-amber-1'
+        "
+      >
+        <div class="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <div class="flex flex-wrap items-center gap-2">
+              <StatusDot :level="w.level" :text="ZUSTAND[w.workflow_state] || w.workflow_state" />
+              <span class="font-mono text-base font-medium text-ink-gray-9">{{ w.tape }}</span>
+              <Badge theme="gray">Satz {{ w.pool }}</Badge>
+            </div>
+            <ul class="mt-1">
+              <li v-for="g in w.reasons" :key="g" class="text-sm text-ink-gray-7">· {{ g }}</li>
+            </ul>
+          </div>
+          <div class="text-right text-sm">
+            <p class="text-ink-gray-6">Erinnerungen</p>
+            <p class="text-xl font-semibold tabular-nums text-ink-gray-9">{{ w.reminders }}</p>
+            <p class="text-ink-gray-5">an {{ w.remind_email }}</p>
+          </div>
+        </div>
+
+        <div class="mt-3 flex flex-wrap gap-2 border-t border-outline-gray-2 pt-3">
+          <Button v-if="w.workflow_state === 'ready'" variant="solid" @click="auswurfFragen(w)">
+            Auswerfen
+          </Button>
+          <Button v-if="w.workflow_state === 'ejected'" variant="solid" @click="quittungFragen(w)">
+            Wechsel bestätigen
+          </Button>
+          <Button variant="subtle" @click="erinnerungZeigen(w)">Erinnerung ansehen</Button>
+        </div>
+      </article>
+    </section>
+
+    <!-- Bandsätze -->
+    <section class="mb-6">
+      <div class="mb-3 flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2 class="text-base font-semibold text-ink-gray-8">Bandsätze</h2>
+          <p class="text-sm text-ink-gray-6">Der Plan, nach dem gewechselt und erinnert wird.</p>
+        </div>
+        <Button @click="etikettenOffen = true">Etiketten erzeugen</Button>
+      </div>
+
+      <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <article
+          v-for="p in saetze.data || []"
+          :key="p.pool_name"
+          class="rounded-lg border border-outline-gray-2 bg-surface-white p-4"
+        >
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <p class="font-medium text-ink-gray-9">Satz „{{ p.pool_name }}"</p>
+            <StatusDot :level="p.level" :text="p.free + ' frei'" klein />
+          </div>
+          <p class="mt-1 text-sm text-ink-gray-7">{{ p.plan }}</p>
+          <dl class="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 text-sm sm:grid-cols-4">
+            <div>
+              <dt class="text-ink-gray-5">Bänder</dt>
+              <dd class="tabular-nums text-ink-gray-8">{{ p.tapes }}</dd>
+            </div>
+            <div>
+              <dt class="text-ink-gray-5">Außer Haus</dt>
+              <dd class="tabular-nums text-ink-gray-8">{{ p.offsite }}</dd>
+            </div>
+            <div>
+              <dt class="text-ink-gray-5">Aufbewahrung</dt>
+              <dd class="tabular-nums text-ink-gray-8">{{ p.retention_days }} T</dd>
+            </div>
+            <div>
+              <dt class="text-ink-gray-5">Präfix</dt>
+              <dd class="font-mono text-ink-gray-8">{{ p.label_prefix }}</dd>
+            </div>
+          </dl>
+          <p class="mt-2 text-sm text-ink-gray-6">Auslagerung: {{ p.offsite_location }}</p>
+          <ul v-if="p.reasons.length" class="mt-2">
+            <li v-for="g in p.reasons" :key="g" class="text-sm text-ink-gray-6">· {{ g }}</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <!-- Bestand -->
+    <section>
+      <div class="mb-3 flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2 class="text-base font-semibold text-ink-gray-8">Bandbestand</h2>
+          <p class="text-sm text-ink-gray-6">
+            {{ baender.data?.summary?.tapes ?? 0 }} Bänder ·
+            {{ baender.data?.summary?.offsite ?? 0 }} außer Haus ·
+            {{ baender.data?.summary?.written_tb ?? 0 }} TB beschrieben
+          </p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <FormControl v-model="satzFilter" type="select" :options="satzOptionen" />
+          <Button @click="scanOffen = true">Band scannen</Button>
+        </div>
+      </div>
+
+      <DataTable
+        tabellen-id="TapeInventory"
+        :columns="spalten"
+        :rows="gefiltert"
+        :loading="baender.loading"
+        export-name="baender"
+      >
+        <template #zelle-label="{ zeile }">
+          <span class="font-mono text-sm font-medium text-ink-gray-9">{{ zeile.label }}</span>
+          <span class="block text-sm text-ink-gray-5">{{ zeile.media_type }}</span>
+        </template>
+        <template #zelle-state_label="{ zeile }">
+          <StatusDot :level="zeile.level" :text="zeile.state_label" klein />
+        </template>
+        <template #zelle-content_summary="{ zeile }">
+          <span class="text-sm text-ink-gray-8">{{ zeile.content_summary || '–' }}</span>
+          <span v-if="zeile.written_at" class="block text-sm text-ink-gray-5">
+            geschrieben {{ String(zeile.written_at).slice(0, 10) }}
+          </span>
+        </template>
+        <template #zelle-written_tb="{ zeile }">
+          <span class="tabular-nums">{{ zeile.written_tb }} TB</span>
+          <span v-if="zeile.used_pct !== null" class="block text-sm text-ink-gray-5">
+            {{ zeile.used_pct }} % belegt
+          </span>
+        </template>
+        <template #zelle-location="{ zeile }">
+          <span class="text-sm text-ink-gray-8">{{ zeile.location || '–' }}</span>
+        </template>
+        <template #zelle-retention_days_left="{ zeile }">
+          <span v-if="zeile.retention_days_left === null" class="text-ink-gray-4">–</span>
+          <span
+            v-else
+            class="tabular-nums"
+            :class="zeile.retention_days_left < 0 ? 'text-ink-gray-5' : ''"
+          >
+            {{ zeile.retention_days_left }}
+          </span>
+        </template>
+        <template #zelle-load_count="{ zeile }">
+          <span class="tabular-nums">{{ zeile.load_count }}</span>
+        </template>
+      </DataTable>
+
+      <p class="mt-4 max-w-3xl text-xs text-ink-gray-4">
+        LTO-9: 18 TB nativ, rund 20.000 Ladezyklen, 30 Jahre Haltbarkeit bei 16–25 °C. Die
+        Zykluszahl steht hier, weil sie im Betrieb selten der Grund ist – ein Wochenband ist nach
+        380 Jahren durch. Bänder scheitern an der Aufbewahrungsfrist, nicht am Verschleiß.
+      </p>
+    </section>
+
+    <!-- Auswerfen -->
+    <Dialog v-model="auswurfOffen" :options="{ title: 'Band auswerfen' }">
+      <template #body-content>
+        <div v-if="pruefung.data">
+          <p class="mb-2 font-mono text-base text-ink-gray-9">{{ pruefung.data.label }}</p>
+          <div v-if="!pruefung.data.allowed" class="rounded border border-outline-red-2 p-3">
+            <StatusDot level="critical" text="Auswerfen nicht möglich" klein />
+            <ul class="mt-1">
+              <li v-for="b in pruefung.data.blockers" :key="b" class="text-sm text-ink-gray-7">
+                · {{ b }}
+              </li>
+            </ul>
+          </div>
+          <template v-else>
+            <p class="mb-3 text-sm text-ink-gray-6">
+              Nach dem Auswurf ist das Band noch im Serverraum. Es zählt erst als Airgap, wenn es in
+              <strong>{{ pruefung.data.destination }}</strong> liegt und der Wechsel hier bestätigt
+              ist.
+            </p>
+            <FormControl
+              v-model="grund"
+              label="Grund"
+              type="text"
+              placeholder="Wochenwechsel KW 39"
+            />
+          </template>
+        </div>
+      </template>
+      <template #actions>
+        <Button
+          v-if="pruefung.data?.allowed"
+          variant="solid"
+          :disabled="!grund"
+          :loading="auswurf.loading"
+          @click="auswerfen"
+        >
+          Auswerfen
+        </Button>
+      </template>
+    </Dialog>
+
+    <!-- Quittieren -->
+    <Dialog v-model="quittungOffen" :options="{ title: 'Wechsel bestätigen' }">
+      <template #body-content>
+        <p class="mb-3 text-sm text-ink-gray-6">
+          Erst mit dieser Bestätigung endet die Erinnerung – und erst dann gilt das Band als außer
+          Haus.
+        </p>
+        <FormControl
+          v-model="scanBestaetigung"
+          label="Etikett scannen oder eintippen"
+          type="text"
+          :placeholder="aktuellerWechsel?.tape"
+          class="mb-3"
+        />
+        <FormControl
+          v-model="lagerort"
+          label="Wohin kommt das Band?"
+          type="text"
+          placeholder="Bankschließfach Sparkasse Linz, Fach 2213"
+          class="mb-3"
+        />
+        <FormControl
+          v-model="nachfolger"
+          label="Welches Band wird eingelegt?"
+          type="select"
+          :options="freieBaender"
+        />
+        <p class="mt-2 text-xs text-ink-gray-5">
+          Ohne Nachfolgeband findet der nächste Lauf kein Medium – und das merkt man frühestens in
+          der Nacht darauf.
+        </p>
+      </template>
+      <template #actions>
+        <Button
+          variant="solid"
+          :disabled="!lagerort"
+          :loading="quittung.loading"
+          @click="quittieren"
+        >
+          Bestätigen
+        </Button>
+      </template>
+    </Dialog>
+
+    <!-- Etiketten -->
+    <Dialog v-model="etikettenOffen" :options="{ title: 'Etiketten erzeugen' }">
+      <template #body-content>
+        <div class="flex gap-3">
+          <FormControl
+            v-model="etikettSatz"
+            label="Satz"
+            type="select"
+            :options="satzNurOptionen"
+            class="flex-1"
+          />
+          <FormControl v-model="etikettAnzahl" label="Anzahl" type="number" class="w-28" />
+        </div>
+        <Button class="mt-3" @click="etikettenErzeugen">Erzeugen</Button>
+
+        <div v-if="etiketten.data" class="mt-4">
+          <p class="mb-2 text-sm text-ink-gray-6">
+            {{ etiketten.data.barcode_symbology }} · {{ etiketten.data.media_type }} ·
+            {{ etiketten.data.capacity_gb / 1000 }} TB
+          </p>
+          <ul class="space-y-2">
+            <li
+              v-for="l in etiketten.data.labels"
+              :key="l"
+              class="rounded border border-outline-gray-2 p-2"
+            >
+              <BarcodeCode39 :wert="l" />
+            </li>
+          </ul>
+          <p class="mt-2 text-xs text-ink-gray-5">{{ etiketten.data.print_note }}</p>
+        </div>
+      </template>
+    </Dialog>
+
+    <!-- Scannen -->
+    <Dialog v-model="scanOffen" :options="{ title: 'Band scannen' }">
+      <template #body-content>
+        <FormControl
+          v-model="scanCode"
+          label="Etikett"
+          type="text"
+          placeholder="OEK039L9"
+          @update:model-value="scanPruefen"
+        />
+        <div v-if="scan.data" class="mt-3">
+          <div
+            class="rounded border p-3"
+            :class="scan.data.ok ? 'border-outline-gray-2' : 'border-outline-red-2'"
+          >
+            <StatusDot
+              :level="scan.data.ok ? (scan.data.known ? 'ok' : 'warning') : 'critical'"
+              :text="scan.data.ok ? scan.data.label : 'Nicht lesbar'"
+            />
+            <p class="mt-1 text-sm text-ink-gray-7">
+              {{ scan.data.ok ? scan.data.note : scan.data.reason }}
+            </p>
+          </div>
+          <Button
+            v-if="scan.data.ok && !scan.data.known"
+            class="mt-3"
+            variant="solid"
+            @click="bandAufnehmen"
+          >
+            In den Bestand aufnehmen
+          </Button>
+        </div>
+      </template>
+    </Dialog>
+
+    <!-- Erinnerung ansehen -->
+    <Dialog v-model="mailOffen" :options="{ title: 'Erinnerung', size: 'xl' }">
+      <template #body-content>
+        <p class="mb-3 text-sm text-ink-gray-6">
+          Das verschickt in Frappe der Scheduler. Hier steht nur, was verschickt würde.
+        </p>
+        <div
+          v-for="m in mails.data?.messages || []"
+          :key="m.request"
+          class="rounded border border-outline-gray-2 p-3"
+        >
+          <p class="text-sm text-ink-gray-5">An: {{ m.to }} · Versuch {{ m.attempt }}</p>
+          <p class="mt-1 font-medium text-ink-gray-9">{{ m.subject }}</p>
+          <p class="mt-2 whitespace-pre-line text-sm text-ink-gray-7">{{ m.body }}</p>
+        </div>
+        <p v-if="!mails.data?.messages?.length" class="text-sm text-ink-gray-6">
+          {{ mails.data?.note || 'Nichts fällig.' }}
+        </p>
+      </template>
+    </Dialog>
+  </div>
+</template>
+
+<script setup>
+import { computed, ref } from 'vue'
+import { Badge, Button, Dialog, FormControl, createResource, toast } from 'frappe-ui'
+import DataTable from '@/components/DataTable.vue'
+import StatusDot from '@/components/StatusDot.vue'
+import BarcodeCode39 from '@/components/BarcodeCode39.vue'
+import { fehlerText } from '@/viz'
+
+const emit = defineEmits(['neu-laden'])
+
+const ZUSTAND = {
+  waiting: 'Wartet auf Schreiblauf',
+  ready: 'Bereit zum Auswerfen',
+  ejected: 'Ausgeworfen – Wechsel offen',
+  confirmed: 'Bestätigt',
+  cancelled: 'Abgebrochen',
+}
+
+const baender = createResource({ url: 'netops.api.tape.tape_inventory', auto: true })
+const saetze = createResource({ url: 'netops.api.tape.tape_pools', auto: true })
+const wechsel = createResource({ url: 'netops.api.tape.tape_change_requests', auto: true })
+const pruefung = createResource({ url: 'netops.api.tape.tape_eject_check' })
+const auswurf = createResource({ url: 'netops.api.tape.tape_eject' })
+const quittung = createResource({ url: 'netops.api.tape.tape_confirm_change' })
+const etiketten = createResource({ url: 'netops.api.tape.tape_label_generate' })
+const scan = createResource({ url: 'netops.api.tape.tape_label_check' })
+const aufnahme = createResource({ url: 'netops.api.tape.tape_register' })
+const mails = createResource({ url: 'netops.api.tape.tape_reminders_due' })
+
+const satzFilter = ref('')
+const auswurfOffen = ref(false)
+const quittungOffen = ref(false)
+const etikettenOffen = ref(false)
+const scanOffen = ref(false)
+const mailOffen = ref(false)
+const grund = ref('')
+const lagerort = ref('')
+const nachfolger = ref('')
+const scanBestaetigung = ref('')
+const scanCode = ref('')
+const etikettSatz = ref('woche')
+const etikettAnzahl = ref(4)
+const aktuellerWechsel = ref(null)
+
+const offeneWechsel = computed(() => (wechsel.data || []).filter((w) => w.open))
+
+const gefiltert = computed(() =>
+  (baender.data?.rows || []).filter((t) => !satzFilter.value || t.pool === satzFilter.value),
+)
+
+const satzOptionen = computed(() => [
+  { label: 'Alle Sätze', value: '' },
+  ...(saetze.data || []).map((p) => ({ label: 'Satz ' + p.pool_name, value: p.pool_name })),
+])
+const satzNurOptionen = computed(() =>
+  (saetze.data || []).map((p) => ({
+    label: p.pool_name + ' (' + p.label_prefix + ')',
+    value: p.pool_name,
+  })),
+)
+const freieBaender = computed(() => [
+  { label: '– keins –', value: '' },
+  ...(baender.data?.rows || [])
+    .filter((t) => t.tape_state === 'frei')
+    .map((t) => ({ label: t.label, value: t.label })),
+])
+
+const spalten = [
+  { key: 'label', label: 'Etikett', width: '140px' },
+  { key: 'state_label', label: 'Zustand', width: '170px' },
+  { key: 'content_summary', label: 'Inhalt' },
+  { key: 'written_tb', label: 'Beschrieben', align: 'right', width: '130px' },
+  { key: 'location', label: 'Lagerort', width: '260px' },
+  { key: 'retention_days_left', label: 'Rest (T)', align: 'right', numeric: true, width: '100px' },
+  { key: 'load_count', label: 'Zyklen', align: 'right', numeric: true, width: '90px' },
+]
+
+function auswurfFragen(w) {
+  aktuellerWechsel.value = w
+  grund.value = ''
+  pruefung.fetch({ label: w.tape })
+  auswurfOffen.value = true
+}
+
+async function auswerfen() {
+  try {
+    const e = await auswurf.submit({ request: aktuellerWechsel.value.name, reason: grund.value })
+    toast.create({ message: e.note, type: 'success' })
+    auswurfOffen.value = false
+    neu()
+  } catch (f) {
+    toast.create({ message: fehlerText(f), type: 'error' })
+  }
+}
+
+function quittungFragen(w) {
+  aktuellerWechsel.value = w
+  lagerort.value = ''
+  nachfolger.value = w.next_tape || ''
+  scanBestaetigung.value = ''
+  quittungOffen.value = true
+}
+
+async function quittieren() {
+  try {
+    const e = await quittung.submit({
+      request: aktuellerWechsel.value.name,
+      new_location: lagerort.value,
+      next_tape: nachfolger.value || null,
+      scanned_label: scanBestaetigung.value || null,
+    })
+    toast.create({ message: e.note, type: 'success' })
+    quittungOffen.value = false
+    neu()
+  } catch (f) {
+    toast.create({ message: fehlerText(f), type: 'error' })
+  }
+}
+
+function etikettenErzeugen() {
+  etiketten.fetch({ pool: etikettSatz.value, count: Number(etikettAnzahl.value) || 1 })
+}
+
+function scanPruefen() {
+  if (String(scanCode.value).length >= 8) scan.fetch({ label: scanCode.value })
+}
+
+async function bandAufnehmen() {
+  try {
+    await aufnahme.submit({ label: scan.data.label, pool: etikettSatz.value })
+    toast.create({ message: scan.data.label + ' aufgenommen', type: 'success' })
+    scanOffen.value = false
+    scanCode.value = ''
+    neu()
+  } catch (f) {
+    toast.create({ message: fehlerText(f), type: 'error' })
+  }
+}
+
+function erinnerungZeigen(w) {
+  void w
+  mails.fetch({})
+  mailOffen.value = true
+}
+
+function neu() {
+  baender.fetch()
+  saetze.fetch()
+  wechsel.fetch()
+  emit('neu-laden')
+}
+</script>

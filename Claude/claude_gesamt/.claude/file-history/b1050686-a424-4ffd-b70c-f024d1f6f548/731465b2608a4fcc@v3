@@ -1,0 +1,381 @@
+import Link from "next/link";
+import type { Metadata } from "next";
+
+import { Tabelle, Zeile, Zelle, ZelleMitZusatz } from "@/components/tabelle";
+import {
+  Balken,
+  Hinweis,
+  Kennzahl,
+  Kennzahlenleiste,
+  LeerZustand,
+  Seitenkopf,
+  Status,
+  Tafel,
+} from "@/components/ui";
+import {
+  ladeEsgPerioden,
+  ladeEsgPositionen,
+  ladeNachweisKennzahlen,
+} from "@/lib/daten/nachweise";
+import { ladeTaxonomieUeberblick } from "@/lib/daten/taxonomie";
+import { ENERGIE_FARBEN } from "@/lib/farben";
+import { formatProzent, formatZahl } from "@/lib/format";
+import { requireRecht } from "@/lib/session";
+
+export const metadata: Metadata = { title: "Nachhaltigkeit" };
+
+const SCOPE_TEXT: Record<number, { titel: string; text: string; farbe: string }> =
+  {
+    1: {
+      titel: "Scope 1 – direkte Emissionen",
+      text: "Was im Betrieb selbst verbrannt wird: Heizung, Fuhrpark, Notstromaggregat.",
+      farbe: ENERGIE_FARBEN.erzeugung,
+    },
+    2: {
+      titel: "Scope 2 – bezogene Energie",
+      text: "Der eingekaufte Strom. Wird doppelt berichtet: mit dem Faktor des Netzes und mit dem des tatsächlich bezogenen Produkts.",
+      farbe: ENERGIE_FARBEN.netzbezug,
+    },
+    3: {
+      titel: "Scope 3 – vor- und nachgelagert",
+      text: "Alles übrige entlang der Wertschöpfungskette: Arbeitswege, Geschäftsreisen, graue Energie der Anlagen, Abfall.",
+      farbe: ENERGIE_FARBEN.speicher,
+    },
+  };
+
+function herkunftTon(herkunft: string) {
+  switch (herkunft) {
+    case "Gemessen":
+      return "gut" as const;
+    case "ERP":
+      return "akzent" as const;
+    case "Erfasst":
+      return "neutral" as const;
+    default:
+      return "hinweis" as const;
+  }
+}
+
+export default async function NachhaltigkeitSeite({
+  searchParams,
+}: {
+  searchParams: Promise<{ periode?: string }>;
+}) {
+  await requireRecht("nachhaltigkeit.lesen");
+
+  const { periode: gewaehlt } = await searchParams;
+
+  const kennzahlen = ladeNachweisKennzahlen();
+  const taxonomie = ladeTaxonomieUeberblick();
+  const perioden = ladeEsgPerioden();
+  const periode = perioden.find((p) => p.id === gewaehlt) ?? perioden[0];
+  const positionen = periode ? ladeEsgPositionen(periode.id) : [];
+
+  const ohneQuelle = positionen.filter((p) => !p.faktor_quelle?.trim());
+  const geschaetzt = positionen.filter((p) => p.herkunft === "Geschaetzt");
+
+  const gesamt = periode
+    ? periode.scope1_t + periode.scope2_markt_t + periode.scope3_t
+    : 0;
+
+  return (
+    <div className="space-y-5">
+      <Seitenkopf
+        titel="Nachhaltigkeit"
+        hinweis={
+          periode
+            ? `${periode.bezeichnung} · Standard ${periode.standard} · ${periode.positionen} Positionen`
+            : "Noch keine Bilanz angelegt"
+        }
+        aktion={
+          perioden.length > 1 ? (
+            <div className="flex gap-1.5">
+              {perioden.map((p) => (
+                <Link
+                  key={p.id}
+                  href={`/portal/nachhaltigkeit?periode=${p.id}`}
+                  className="rounded-md border px-2.5 py-1 text-[0.75rem]"
+                  style={{
+                    borderColor:
+                      p.id === periode?.id ? "var(--akzent)" : "var(--linie)",
+                    color:
+                      p.id === periode?.id
+                        ? "var(--akzent-text)"
+                        : "var(--t-leise)",
+                  }}
+                >
+                  {p.jahr}
+                </Link>
+              ))}
+            </div>
+          ) : undefined
+        }
+      />
+
+      {ohneQuelle.length > 0 && (
+        <Hinweis ton="ernst" titel="Nicht prüfbare Positionen">
+          {ohneQuelle.length} Position
+          {ohneQuelle.length > 1 ? "en haben" : " hat"} keine belegte Quelle
+          für den Emissionsfaktor. Für eine Bestätigung durch einen
+          Wirtschaftsprüfer reicht das nicht.
+        </Hinweis>
+      )}
+
+      <Kennzahlenleiste>
+        <Kennzahl
+          label="Treibhausgasbilanz"
+          wert={formatZahl(gesamt, 1)}
+          einheit="t CO₂e"
+          hinweis="Scope 1 + 2 marktbasiert + 3"
+        />
+        <Kennzahl
+          label="Vermieden"
+          wert={formatZahl(periode?.vermieden_t ?? 0, 1)}
+          einheit="t CO₂e"
+          hinweis="nachrichtlich, nicht verrechnet"
+          akzent
+        />
+        <Kennzahl
+          label="Aus Messwerten"
+          wert={formatProzent(kennzahlen.esgMessanteil * 100, 0)}
+          hinweis={`${positionen.length - geschaetzt.length} von ${positionen.length} Positionen belegt`}
+        />
+        <Kennzahl
+          label="Stand"
+          wert={
+            periode?.status === "Geprueft" ? "Geprüft" : (periode?.status ?? "–")
+          }
+          hinweis={
+            periode?.freigegeben_am ? "freigegeben" : "noch nicht freigegeben"
+          }
+        />
+      </Kennzahlenleiste>
+
+      {/* ---------------- EU-Taxonomie ---------------- */}
+      {taxonomie && (
+        <Tafel
+          titel="EU-Taxonomie"
+          hinweis={`Geschäftsjahr ${taxonomie.jahr} · Verordnung (EU) 2020/852`}
+          aktion={
+            <Link
+              href="/portal/nachhaltigkeit/taxonomie"
+              className="knopf knopf-rand"
+            >
+              Prüfung öffnen
+            </Link>
+          }
+        >
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            {(["Umsatz", "CapEx", "OpEx"] as const).map((art) => (
+              <div key={art}>
+                <Balken
+                  label={`${art} taxonomiekonform`}
+                  anteil={taxonomie.konformAnteil[art] * 100}
+                  wertText={formatProzent(taxonomie.konformAnteil[art] * 100, 1)}
+                />
+                <p className="t-mikro mt-1">
+                  {formatProzent(taxonomie.faehigAnteil[art] * 100, 1)} fähig
+                </p>
+              </div>
+            ))}
+          </div>
+
+          <p className="t-mikro mt-3 leading-relaxed">
+            {taxonomie.verletzteKriterien > 0
+              ? `${taxonomie.verletzteKriterien} Kriterien sind verletzt – die betroffenen Tätigkeiten bleiben fähig, aber nicht konform.`
+              : taxonomie.offeneKriterien > 0
+                ? `Zu ${taxonomie.offeneKriterien} Kriterien fehlt noch ein Nachweis. Bis dahin gelten die betroffenen Tätigkeiten weder als konform noch als nicht konform.`
+                : "Alle geprüften Tätigkeiten erfüllen wesentlichen Beitrag, DNSH und Mindestschutz."}
+          </p>
+        </Tafel>
+      )}
+
+      {/* ---------------- Scopes ---------------- */}
+      <Tafel
+        titel="Bilanz nach Scopes"
+        hinweis="Greenhouse Gas Protocol"
+        fusszeile={
+          <p className="t-mikro leading-relaxed">
+            Vermiedene Emissionen stehen bewusst außerhalb der Summe. Wer
+            Sonnenstrom selbst verbraucht, hat weniger Scope 2 – das steht
+            dort bereits drin. Die vermiedene Menge zusätzlich abzuziehen,
+            zählte sie ein zweites Mal und machte die Bilanz angreifbar.
+          </p>
+        }
+      >
+        <div className="space-y-4">
+          {[1, 2, 3].map((scope) => {
+            const beschreibung = SCOPE_TEXT[scope];
+            const wert =
+              scope === 1
+                ? (periode?.scope1_t ?? 0)
+                : scope === 2
+                  ? (periode?.scope2_markt_t ?? 0)
+                  : (periode?.scope3_t ?? 0);
+
+            return (
+              <div key={scope}>
+                <Balken
+                  label={beschreibung.titel}
+                  anteil={gesamt > 0 ? (wert / gesamt) * 100 : 0}
+                  wertText={`${formatZahl(wert, 1)} t`}
+                  farbe={beschreibung.farbe}
+                />
+                <p className="t-mikro mt-1 leading-relaxed">
+                  {beschreibung.text}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+
+        {periode && (
+          <div
+            className="mt-4 grid gap-3 border-t pt-4 sm:grid-cols-2"
+            style={{ borderColor: "var(--linie-zart)" }}
+          >
+            <div>
+              <p className="t-etikett">Scope 2 standortbasiert</p>
+              <p className="t-zahl mt-0.5">
+                {formatZahl(periode.scope2_standort_t, 1)}{" "}
+                <span className="t-mikro">t CO₂e</span>
+              </p>
+              <p className="t-mikro mt-1 leading-relaxed">
+                Gerechnet mit dem Emissionsfaktor des österreichischen
+                Netzes. Beantwortet die Frage: Wie viel verursacht dieser
+                Verbrauch physisch?
+              </p>
+            </div>
+            <div>
+              <p className="t-etikett">Scope 2 marktbasiert</p>
+              <p className="t-zahl mt-0.5">
+                {formatZahl(periode.scope2_markt_t, 1)}{" "}
+                <span className="t-mikro">t CO₂e</span>
+              </p>
+              <p className="t-mikro mt-1 leading-relaxed">
+                Gerechnet mit dem Faktor des tatsächlich bezogenen Produkts.
+                Beantwortet: Wie viel verantwortet dieses Unternehmen durch
+                seine Beschaffung? Beide Werte sind zu berichten.
+              </p>
+            </div>
+          </div>
+        )}
+      </Tafel>
+
+      {/* ---------------- Positionen ---------------- */}
+      <Tafel
+        titel="Positionen"
+        hinweis="Jede Zahl mit Menge, Faktor und Quelle"
+        dicht
+        fusszeile={
+          <p className="t-mikro leading-relaxed">
+            Der verwendete Emissionsfaktor wird mitgeschrieben und nicht
+            beim Anzeigen nachgeschlagen. Der Faktor des österreichischen
+            Strommixes ändert sich jährlich – eine Bilanz für 2025 muss auch
+            2028 noch dieselbe Zahl ergeben.
+          </p>
+        }
+      >
+        {positionen.length === 0 ? (
+          <div className="p-4">
+            <LeerZustand text="Für diesen Zeitraum sind keine Positionen erfasst." />
+          </div>
+        ) : (
+          <Tabelle
+            spalten={[
+              { titel: "Position" },
+              { titel: "Scope", schmalAusblenden: true },
+              { titel: "Menge", zahl: true },
+              { titel: "Faktor", zahl: true, schmalAusblenden: true },
+              { titel: "Emission", zahl: true },
+              { titel: "Herkunft" },
+            ]}
+            mindestbreite="64rem"
+          >
+            {positionen.map((p) => (
+              <Zeile key={p.id} hervorgehoben={!p.faktor_quelle?.trim()}>
+                <ZelleMitZusatz
+                  haupt={p.bezeichnung}
+                  zusatz={`${p.kategorie}${p.bemerkung ? ` · ${p.bemerkung}` : ""}`}
+                />
+                <Zelle leise schmalAusblenden>
+                  {p.scope}
+                </Zelle>
+                <Zelle zahl>
+                  {formatZahl(p.menge, 0)}
+                  <span className="t-mikro"> {p.einheit}</span>
+                </Zelle>
+                <Zelle zahl leise schmalAusblenden>
+                  {formatZahl(p.faktor, 3)}
+                  <span className="t-mikro block">{p.faktor_einheit}</span>
+                  <span className="t-mikro block">
+                    {p.faktor_quelle ?? "ohne Quelle"}
+                  </span>
+                </Zelle>
+                <Zelle zahl>
+                  {formatZahl(p.emission_t, 2)}
+                  <span className="t-mikro"> t</span>
+                </Zelle>
+                <Zelle>
+                  <Status ton={herkunftTon(p.herkunft)} punkt={false}>
+                    {p.herkunft === "Geschaetzt" ? "Geschätzt" : p.herkunft}
+                  </Status>
+                </Zelle>
+              </Zeile>
+            ))}
+          </Tabelle>
+        )}
+      </Tafel>
+
+      {/* ---------------- Prüfbarkeit ---------------- */}
+      <Tafel titel="Woran ein Prüfer zuerst schaut">
+        <ol className="space-y-3">
+          {[
+            {
+              frage: "Woher kommt die Menge?",
+              antwort: `${positionen.filter((p) => p.herkunft === "Gemessen").length} Positionen stammen aus Messwerten der Anlagen, ${positionen.filter((p) => p.herkunft === "ERP").length} aus Belegen im ERP, ${geschaetzt.length} aus Schätzung.`,
+            },
+            {
+              frage: "Woher kommt der Faktor?",
+              antwort:
+                ohneQuelle.length === 0
+                  ? "Jede Position nennt die Fundstelle ihres Emissionsfaktors."
+                  : `${ohneQuelle.length} Positionen nennen keine Fundstelle. Diese sind nachzutragen.`,
+            },
+            {
+              frage: "Ist doppelt gezählt worden?",
+              antwort:
+                "Vermiedene Emissionen stehen außerhalb der Summe, und der marktbasierte Scope-2-Wert ersetzt den standortbasierten, statt zu ihm hinzuzukommen.",
+            },
+            {
+              frage: "Lässt sich die Zahl zurückverfolgen?",
+              antwort:
+                "Jede Position führt Menge, Einheit, Faktor und Quelle mit. Die Mengen aus dem Monitoring lassen sich bis auf die einzelne Viertelstunde zurückverfolgen.",
+            },
+          ].map((e, i) => (
+            <li key={e.frage} className="flex gap-3">
+              <span
+                className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[0.6875rem] font-medium"
+                style={{
+                  background: "var(--f-belegt)",
+                  color: "var(--t-normal)",
+                }}
+                aria-hidden
+              >
+                {i + 1}
+              </span>
+              <span className="min-w-0">
+                <span className="block text-[0.8125rem] font-medium">
+                  {e.frage}
+                </span>
+                <span className="t-mikro block leading-relaxed">
+                  {e.antwort}
+                </span>
+              </span>
+            </li>
+          ))}
+        </ol>
+      </Tafel>
+    </div>
+  );
+}

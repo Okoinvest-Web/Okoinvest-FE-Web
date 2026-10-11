@@ -1,0 +1,342 @@
+import type { Metadata } from "next";
+
+import { Balkendiagramm } from "@/components/diagramme/balken";
+import { Ringdiagramm } from "@/components/diagramme/ring";
+import { Tabelle, Zeile, Zelle } from "@/components/tabelle";
+import {
+  Karte,
+  Kennzahl,
+  LeerZustand,
+  Legende,
+  Seitenkopf,
+  Status,
+} from "@/components/ui";
+import type { Ladevorgang } from "@/lib/doctypes";
+import { ENERGIE_FARBEN } from "@/lib/farben";
+import {
+  formatDatumZeit,
+  formatEnergie,
+  formatGeld,
+  formatProzent,
+  formatZahl,
+} from "@/lib/format";
+import {
+  ladeLadepunkte,
+  ladeLadevorgaenge,
+  ladeTankkarten,
+} from "@/lib/portal-daten";
+import { requireRecht } from "@/lib/session";
+
+export const metadata: Metadata = { title: "Ladeinfrastruktur" };
+
+function ladepunktTon(status: string | undefined) {
+  switch (status) {
+    case "Frei":
+      return "gut" as const;
+    case "Lädt":
+    case "Belegt":
+      return "hinweis" as const;
+    case "Störung":
+      return "kritisch" as const;
+    default:
+      return "neutral" as const;
+  }
+}
+
+export default async function MobilitaetSeite() {
+  await requireRecht("mobilitaet.lesen");
+
+  const [ladepunkte, vorgaenge, tankkarten] = await Promise.all([
+    ladeLadepunkte(),
+    ladeLadevorgaenge(200) as Promise<Ladevorgang[]>,
+    ladeTankkarten(),
+  ]);
+
+  const gesamtEnergie = vorgaenge.reduce(
+    (s, v) => s + (v.energie_kwh ?? 0),
+    0,
+  );
+  const gesamtPv = vorgaenge.reduce((s, v) => s + (v.pv_anteil_kwh ?? 0), 0);
+  const gesamtKosten = vorgaenge.reduce((s, v) => s + (v.kosten ?? 0), 0);
+  const pvQuote = gesamtEnergie > 0 ? (gesamtPv / gesamtEnergie) * 100 : 0;
+
+  const energie = formatEnergie(gesamtEnergie);
+
+  // --- Auswertung nach Kostenstelle ------------------------------
+  const nachKostenstelle = new Map<string, { kwh: number; kosten: number }>();
+  for (const vorgang of vorgaenge) {
+    const schluessel = vorgang.kostenstelle ?? "Ohne Zuordnung";
+    const vorher = nachKostenstelle.get(schluessel) ?? { kwh: 0, kosten: 0 };
+    nachKostenstelle.set(schluessel, {
+      kwh: vorher.kwh + (vorgang.energie_kwh ?? 0),
+      kosten: vorher.kosten + (vorgang.kosten ?? 0),
+    });
+  }
+
+  const kostenstellen = [...nachKostenstelle.entries()].sort(
+    (a, b) => b[1].kwh - a[1].kwh,
+  );
+
+  const aktiveLadungen = ladepunkte.filter((l) => l.status === "Lädt").length;
+  const gestoert = ladepunkte.filter((l) => l.status === "Störung").length;
+
+  return (
+    <div className="space-y-6">
+      <Seitenkopf
+        titel="Ladeinfrastruktur"
+        beschreibung="Ladepunkte, Ladevorgänge und Tankkarten des Fuhrparks"
+      />
+
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Kennzahl
+          label="Ladepunkte"
+          wert={formatZahl(ladepunkte.length, 0)}
+          hinweis={`${aktiveLadungen} laden gerade${gestoert > 0 ? `, ${gestoert} gestört` : ""}`}
+        />
+        <Kennzahl
+          label="Geladen"
+          wert={energie.wert}
+          einheit={energie.einheit}
+          hinweis="letzte 4 Wochen"
+          farbe={ENERGIE_FARBEN.eigenverbrauch}
+          verzoegerung={60}
+        />
+        <Kennzahl
+          label="Direkt aus PV"
+          wert={formatProzent(pvQuote, 1)}
+          hinweis={`${formatZahl(gesamtPv, 0)} kWh ohne Netzbezug`}
+          farbe={ENERGIE_FARBEN.erzeugung}
+          verzoegerung={120}
+        />
+        <Kennzahl
+          label="Ladekosten"
+          wert={formatGeld(gesamtKosten)}
+          hinweis="verrechnet auf Kostenstellen"
+          verzoegerung={180}
+        />
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-5">
+        <Karte
+          klasse="lg:col-span-3"
+          titel="Verbrauch je Kostenstelle"
+          beschreibung="Grundlage der innerbetrieblichen Verrechnung"
+        >
+          <Balkendiagramm
+            beschriftungen={kostenstellen.map(([name]) =>
+              name.replace(/^KST-\d+\s*/, ""),
+            )}
+            einheit="kWh"
+            kompakt
+            hoehe={220}
+            reihen={[
+              {
+                schluessel: "kwh",
+                label: "Geladene Energie",
+                farbe: ENERGIE_FARBEN.eigenverbrauch,
+                werte: kostenstellen.map(([, w]) => w.kwh),
+              },
+            ]}
+          />
+        </Karte>
+
+        <Karte
+          klasse="lg:col-span-2"
+          titel="Herkunft des Ladestroms"
+          beschreibung="letzte 4 Wochen"
+        >
+          <Ringdiagramm
+            einheit="kWh"
+            mitteWert={energie.wert}
+            mitteEinheit={energie.einheit}
+            mitteLabel="geladen"
+            abschnitte={[
+              {
+                label: "Direkt aus PV",
+                wert: gesamtPv,
+                farbe: ENERGIE_FARBEN.erzeugung,
+              },
+              {
+                label: "Aus dem Netz",
+                wert: gesamtEnergie - gesamtPv,
+                farbe: ENERGIE_FARBEN.netzbezug,
+              },
+            ]}
+          />
+        </Karte>
+      </div>
+
+      <Karte titel="Ladepunkte">
+        <Tabelle
+          spalten={[
+            "Bezeichnung",
+            "Standort",
+            "EVSE-ID",
+            "Leistung",
+            "Tarif",
+            "Status",
+          ]}
+          rechts={[3, 4]}
+        >
+          {ladepunkte.map((punkt) => (
+            <Zeile key={punkt.name} hervorgehoben={punkt.status === "Störung"}>
+              <Zelle>
+                <span className="font-medium">{punkt.bezeichnung}</span>
+                <span className="block text-xs text-slate-500 dark:text-slate-400">
+                  {punkt.steckertyp} · {punkt.ocpp_version}
+                  {punkt.oeffentlich === 1 && " · öffentlich"}
+                </span>
+              </Zelle>
+              <Zelle gedaempft>{punkt.standort}</Zelle>
+              <Zelle gedaempft>
+                <span className="font-mono text-xs">{punkt.evse_id}</span>
+              </Zelle>
+              <Zelle zahl>
+                {formatZahl(punkt.leistung_kw, 0)}
+                <span className="text-xs text-slate-400"> kW</span>
+              </Zelle>
+              <Zelle zahl>
+                {formatZahl(punkt.tarif_ct_kwh, 1)}
+                <span className="text-xs text-slate-400"> ct/kWh</span>
+              </Zelle>
+              <Zelle>
+                <Status ton={ladepunktTon(punkt.status)}>
+                  {punkt.status ?? "–"}
+                </Status>
+              </Zelle>
+            </Zeile>
+          ))}
+        </Tabelle>
+      </Karte>
+
+      <Karte
+        titel="Tankkarten"
+        beschreibung="RFID-Karten mit Zuordnung zu Fahrzeug und Kostenstelle"
+      >
+        <Tabelle
+          spalten={[
+            "Karte",
+            "Inhaber / Fahrzeug",
+            "Kostenstelle",
+            "Monatslimit",
+            "Gültig bis",
+            "Status",
+          ]}
+          rechts={[3]}
+        >
+          {tankkarten.map((karte) => (
+            <Zeile key={karte.name} hervorgehoben={karte.status === "Gesperrt"}>
+              <Zelle>
+                <span className="font-mono text-sm font-medium">
+                  {karte.kartennummer}
+                </span>
+                <span className="block font-mono text-xs text-slate-500 dark:text-slate-400">
+                  RFID {karte.rfid_uid}
+                </span>
+              </Zelle>
+              <Zelle>
+                {karte.inhaber}
+                <span className="block text-xs text-slate-500 dark:text-slate-400">
+                  {karte.fahrzeug} · {karte.kennzeichen}
+                </span>
+              </Zelle>
+              <Zelle gedaempft>{karte.kostenstelle}</Zelle>
+              <Zelle zahl>
+                {formatZahl(karte.limit_kwh_monat, 0)}
+                <span className="text-xs text-slate-400"> kWh</span>
+              </Zelle>
+              <Zelle zahl gedaempft>
+                {karte.gueltig_bis}
+              </Zelle>
+              <Zelle>
+                <Status
+                  ton={
+                    karte.status === "Aktiv"
+                      ? "gut"
+                      : karte.status === "Gesperrt"
+                        ? "kritisch"
+                        : "hinweis"
+                  }
+                >
+                  {karte.status ?? "–"}
+                </Status>
+              </Zelle>
+            </Zeile>
+          ))}
+        </Tabelle>
+      </Karte>
+
+      <Karte
+        titel="Letzte Ladevorgänge"
+        aktion={
+          <Legende
+            eintraege={[
+              { farbe: ENERGIE_FARBEN.erzeugung, label: "Anteil aus PV" },
+            ]}
+          />
+        }
+      >
+        {vorgaenge.length === 0 ? (
+          <LeerZustand text="Es wurden noch keine Ladevorgänge aufgezeichnet." />
+        ) : (
+          <Tabelle
+            spalten={[
+              "Beginn",
+              "Ladepunkt",
+              "Fahrzeug / Karte",
+              "Energie",
+              "davon PV",
+              "Kosten",
+              "Status",
+            ]}
+            rechts={[3, 4, 5]}
+          >
+            {vorgaenge.slice(0, 25).map((vorgang) => {
+              const punkt = ladepunkte.find((l) => l.name === vorgang.ladepunkt);
+              const anteil =
+                (vorgang.energie_kwh ?? 0) > 0
+                  ? ((vorgang.pv_anteil_kwh ?? 0) / (vorgang.energie_kwh ?? 1)) * 100
+                  : 0;
+
+              return (
+                <Zeile key={vorgang.name}>
+                  <Zelle gedaempft>{formatDatumZeit(vorgang.start)}</Zelle>
+                  <Zelle>{punkt?.bezeichnung ?? vorgang.ladepunkt}</Zelle>
+                  <Zelle>
+                    {vorgang.fahrzeug}
+                    <span className="block text-xs text-slate-500 dark:text-slate-400">
+                      {vorgang.kostenstelle}
+                    </span>
+                  </Zelle>
+                  <Zelle zahl>
+                    {formatZahl(vorgang.energie_kwh, 1)}
+                    <span className="text-xs text-slate-400"> kWh</span>
+                  </Zelle>
+                  <Zelle zahl>
+                    <span className="inline-flex items-center gap-1.5">
+                      <span
+                        aria-hidden
+                        className="h-1.5 rounded-full"
+                        style={{
+                          width: `${Math.max(2, anteil * 0.32)}px`,
+                          background: ENERGIE_FARBEN.erzeugung,
+                        }}
+                      />
+                      {formatProzent(anteil, 0)}
+                    </span>
+                  </Zelle>
+                  <Zelle zahl>{formatGeld(vorgang.kosten)}</Zelle>
+                  <Zelle>
+                    <Status ton={vorgang.abgerechnet === 1 ? "gut" : "neutral"}>
+                      {vorgang.abgerechnet === 1 ? "Abgerechnet" : "Offen"}
+                    </Status>
+                  </Zelle>
+                </Zeile>
+              );
+            })}
+          </Tabelle>
+        )}
+      </Karte>
+    </div>
+  );
+}

@@ -1,0 +1,1568 @@
+<title>Gesamtdossier Silicium</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,500;0,600;1,6..72,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --paper:#F6F6F3; --sheet:#FFFFFF; --ink:#15181E; --ink-2:#3C434F; --muted:#6B7280;
+  --rule:#DCDCD6; --rule-2:#EBEBE6; --accent:#243E8C; --accent-soft:#E8ECF7;
+  --crit:#A4241C; --crit-soft:#F7E7E5; --warn:#7A5600; --warn-soft:#F8F0DC;
+  --ok:#18614A; --ok-soft:#E3F0EA; --neutral-soft:#EDEDE8;
+  --shadow:0 1px 2px rgba(21,24,30,.05),0 8px 24px -16px rgba(21,24,30,.18);
+  --serif:"Newsreader",Georgia,"Times New Roman",serif;
+  --sans:"IBM Plex Sans","Segoe UI",Helvetica,Arial,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"Cascadia Mono",Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#111419; --sheet:#171B22; --ink:#E9EAEC; --ink-2:#B8BEC9; --muted:#8D95A3;
+    --rule:#2A303B; --rule-2:#222831; --accent:#9BB2F0; --accent-soft:#1C2435;
+    --crit:#F0918A; --crit-soft:#33201E; --warn:#E0BC6A; --warn-soft:#2E2718;
+    --ok:#7FC8AA; --ok-soft:#17271F; --neutral-soft:#1E242D;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px -18px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#111419; --sheet:#171B22; --ink:#E9EAEC; --ink-2:#B8BEC9; --muted:#8D95A3;
+  --rule:#2A303B; --rule-2:#222831; --accent:#9BB2F0; --accent-soft:#1C2435;
+  --crit:#F0918A; --crit-soft:#33201E; --warn:#E0BC6A; --warn-soft:#2E2718;
+  --ok:#7FC8AA; --ok-soft:#17271F; --neutral-soft:#1E242D;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px -18px rgba(0,0,0,.7);
+}
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--serif);font-size:16.5px;line-height:1.62;
+  -webkit-font-smoothing:antialiased;font-variant-numeric:oldstyle-nums}
+.wrap{max-width:1220px;margin:0 auto;padding:0 clamp(16px,4vw,44px) 96px}
+.lay{display:grid;grid-template-columns:minmax(0,1fr);gap:0}
+@media(min-width:1060px){.lay{grid-template-columns:232px minmax(0,1fr);gap:48px;align-items:start}}
+nav.toc{display:none}
+@media(min-width:1060px){
+  nav.toc{display:block;position:sticky;top:24px;max-height:calc(100vh - 48px);overflow-y:auto;
+    font-family:var(--sans);font-size:12.5px;line-height:1.4;padding-right:8px}
+  nav.toc .tl{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
+  nav.toc ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:7px}
+  nav.toc a{color:var(--ink-2);text-decoration:none;display:grid;grid-template-columns:24px 1fr;gap:6px}
+  nav.toc a:hover{color:var(--accent)}
+  nav.toc a span{font-family:var(--mono);font-size:11px;color:var(--muted)}
+  nav.toc li.ap a span{color:var(--accent)}
+}
+/* ---------- masthead ---------- */
+header.mast{border-bottom:2px solid var(--ink);padding:34px 0 18px;margin-bottom:6px}
+.mast .kick{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--crit);display:flex;flex-wrap:wrap;gap:14px;align-items:baseline}
+.mast .kick b{color:var(--ink);font-weight:500}
+.mast h1{font-size:clamp(2.1rem,5.2vw,3.5rem);line-height:1.02;font-weight:500;margin:18px 0 4px;
+  letter-spacing:-.02em;text-wrap:balance;font-variant-numeric:lining-nums}
+.mast h1 em{font-style:italic;color:var(--ink-2)}
+.mast .sub{font-size:1.12rem;color:var(--ink-2);max-width:60ch;margin:10px 0 0}
+.metagrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(178px,1fr));gap:1px;background:var(--rule);
+  border:1px solid var(--rule);margin:30px 0 0;font-family:var(--sans)}
+.metagrid div{background:var(--sheet);padding:11px 13px}
+.metagrid dt{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 3px}
+.metagrid dd{margin:0;font-size:13px;line-height:1.35;font-variant-numeric:lining-nums tabular-nums}
+/* ---------- sections ---------- */
+section{padding-top:54px;scroll-margin-top:18px}
+h2{font-family:var(--sans);font-size:1.42rem;font-weight:600;letter-spacing:-.01em;line-height:1.2;
+  margin:0 0 4px;text-wrap:balance;display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:baseline}
+h2 .no{font-family:var(--mono);font-size:.72em;font-weight:400;color:var(--accent);
+  border-bottom:2px solid var(--accent);padding-bottom:2px;font-variant-numeric:lining-nums}
+h2+.dek{font-size:1.02rem;color:var(--muted);margin:2px 0 22px;max-width:70ch}
+h3{font-family:var(--sans);font-size:1.01rem;font-weight:600;margin:34px 0 8px;letter-spacing:-.005em}
+h4{font-family:var(--sans);font-size:.86rem;font-weight:600;margin:22px 0 6px;
+  letter-spacing:.02em;color:var(--ink-2)}
+p{margin:0 0 14px;max-width:74ch}
+.lede{font-size:1.1rem;color:var(--ink-2)}
+ul,ol{margin:0 0 14px;padding-left:1.25em;max-width:74ch}
+li{margin-bottom:6px}
+a{color:var(--accent)}
+strong{font-weight:600}
+code,.m{font-family:var(--mono);font-size:.86em;font-variant-numeric:lining-nums}
+code{background:var(--neutral-soft);padding:1px 4px;border-radius:2px;word-break:break-all}
+/* ---------- tables ---------- */
+.tw{overflow-x:auto;margin:0 0 18px;border:1px solid var(--rule);background:var(--sheet)}
+table{border-collapse:collapse;width:100%;font-family:var(--sans);font-size:13px;line-height:1.42}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--rule-2);vertical-align:top}
+thead th{background:var(--neutral-soft);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--ink-2);font-weight:600;white-space:nowrap;border-bottom:1px solid var(--rule)}
+tbody tr:last-child td{border-bottom:0}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums lining-nums;white-space:nowrap}
+td.az{font-family:var(--mono);font-size:11.5px;white-space:nowrap}
+tfoot td{background:var(--neutral-soft);font-weight:600;border-top:1px solid var(--rule)}
+caption{caption-side:bottom;text-align:left;font-family:var(--sans);font-size:11.5px;color:var(--muted);
+  padding:8px 12px;border-top:1px solid var(--rule-2)}
+/* ---------- devices ---------- */
+.pill{display:inline-block;font-family:var(--sans);font-size:10.5px;font-weight:600;letter-spacing:.06em;
+  text-transform:uppercase;padding:2px 7px;border-radius:2px;white-space:nowrap}
+.p-crit{background:var(--crit-soft);color:var(--crit)}
+.p-warn{background:var(--warn-soft);color:var(--warn)}
+.p-ok{background:var(--ok-soft);color:var(--ok)}
+.p-neu{background:var(--neutral-soft);color:var(--ink-2)}
+.p-acc{background:var(--accent-soft);color:var(--accent)}
+blockquote{margin:18px 0;padding:14px 18px;border-left:3px solid var(--accent);background:var(--sheet);
+  font-size:1rem;max-width:76ch}
+blockquote p:last-child{margin-bottom:0}
+blockquote cite{display:block;font-family:var(--mono);font-size:11px;font-style:normal;color:var(--muted);
+  margin-top:9px}
+.note{border:1px solid var(--rule);border-left:3px solid var(--muted);background:var(--sheet);
+  padding:14px 18px;margin:18px 0;max-width:78ch}
+.note.crit{border-left-color:var(--crit)}
+.note.warn{border-left-color:var(--warn)}
+.note.ok{border-left-color:var(--ok)}
+.note .hd{font-family:var(--sans);font-size:10.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--muted);margin:0 0 6px}
+.note.crit .hd{color:var(--crit)} .note.warn .hd{color:var(--warn)} .note.ok .hd{color:var(--ok)}
+.note p:last-child{margin-bottom:0}
+/* key figures — used once, where the figures are the point */
+.kf{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--rule);
+  border:1px solid var(--rule);margin:22px 0}
+.kf div{background:var(--sheet);padding:14px 15px}
+.kf .v{font-family:var(--sans);font-size:1.55rem;font-weight:600;line-height:1.05;
+  font-variant-numeric:lining-nums tabular-nums;letter-spacing:-.02em}
+.kf .l{font-family:var(--sans);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--muted);margin-top:6px;line-height:1.3}
+.kf .s{font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-top:4px}
+/* timeline */
+.tl{border-top:1px solid var(--rule);margin:0 0 20px}
+.tl .ev{display:grid;grid-template-columns:112px 1fr;gap:18px;padding:13px 0;border-bottom:1px solid var(--rule-2)}
+@media(max-width:600px){.tl .ev{grid-template-columns:1fr;gap:4px}}
+.tl .d{font-family:var(--mono);font-size:11.5px;color:var(--muted);padding-top:3px;
+  font-variant-numeric:lining-nums tabular-nums}
+.tl .t{font-family:var(--sans);font-size:13.5px;line-height:1.45}
+.tl .t b{font-weight:600}
+.tl .ev[data-w="1"]{background:var(--crit-soft)}
+.tl .ev[data-w="1"] .d{color:var(--crit)}
+.tl .ev[data-w="2"]{background:var(--accent-soft)}
+/* matrix */
+.mx{overflow-x:auto;margin:0 0 8px}
+.mx table{font-size:11.5px;min-width:620px}
+.mx td{text-align:center;vertical-align:middle;height:54px;font-family:var(--sans)}
+.mx td.rh{text-align:left;font-weight:600;background:var(--neutral-soft);white-space:nowrap}
+.mx .c0{background:var(--ok-soft);color:var(--ok)}
+.mx .c1{background:var(--warn-soft);color:var(--warn)}
+.mx .c2{background:var(--crit-soft);color:var(--crit);font-weight:600}
+.mx .hit{outline:2px solid var(--ink);outline-offset:-2px}
+/* bar list */
+.bars{margin:0 0 18px;font-family:var(--sans);font-size:12.5px}
+.bars .row{display:grid;grid-template-columns:minmax(130px,200px) 1fr 92px;gap:12px;align-items:center;
+  padding:7px 0;border-bottom:1px solid var(--rule-2)}
+@media(max-width:620px){.bars .row{grid-template-columns:1fr 64px;grid-template-areas:"l v" "b b"}
+  .bars .lb{grid-area:l}.bars .vl{grid-area:v}.bars .tr{grid-area:b}}
+.bars .tr{height:10px;background:var(--neutral-soft);position:relative;border-radius:1px}
+.bars .tr i{position:absolute;top:0;bottom:0;background:var(--accent);border-radius:1px;display:block}
+.bars .tr i.c{background:var(--crit)}
+.bars .vl{text-align:right;font-variant-numeric:tabular-nums lining-nums;font-weight:500}
+footer{margin-top:70px;padding-top:18px;border-top:2px solid var(--ink);font-family:var(--sans);
+  font-size:11.5px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px 22px}
+.srcline{font-family:var(--mono);font-size:11px;color:var(--muted);margin:-8px 0 18px}
+hr.soft{border:0;border-top:1px solid var(--rule);margin:30px 0}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media print{body{background:#fff}nav.toc{display:none}.lay{grid-template-columns:1fr}section{break-inside:auto}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="wrap">
+<header class="mast">
+  <div class="kick">
+    <span>Vertraulich · Anwaltsprivileg</span>
+    <b>DOK-CB-03 · REV 3.0</b>
+    <span>Ersetzt DOK-CB-01/02 REV 2.0</span>
+  </div>
+  <h1>Gesamtdossier <em>Silicium</em></h1>
+  <p class="sub">Konsolidierte Sachverhalts-, Beweis- und Schadensanalyse zum Komplex ÖKOVOLT-Gruppe gegen
+  Salzburg AG, one2zero GmbH und Mag. (FH) Friedrich Schiefer — aufgebaut ausschließlich auf den 18 Dokumenten
+  des Aktenbestands, mit ausgewiesenen Korrekturen gegenüber der Vorversion.</p>
+  <dl class="metagrid">
+    <div><dt>Stand</dt><dd>10.09.2026</dd></div>
+    <div><dt>Quellenbasis</dt><dd>18 Dokumente · 15 ausgewertet · 3 nur als Scan</dd></div>
+    <div><dt>Verfahren</dt><dd>11 anhängig/erledigt in AT und DE</dd></div>
+    <div><dt>Forensik</dt><dd>Grant Thornton Austria Forensic GmbH</dd></div>
+    <div><dt>Vertretung AT</dt><dd>CERHA HEMPEL Rechtsanwälte GmbH, Wien</dd></div>
+    <div><dt>Vertretung DE</dt><dd>FEIGEN GRAF · Gyarmati · Kursawe Foitzik Hohlweg</dd></div>
+    <div><dt>Gegenseite</dt><dd>DORDA (AT) · Heuking Kühn Lüer Wojtek (DE)</dd></div>
+    <div><dt>Schadenskorridor</dt><dd>EUR 19,8–44,5 Mio. (belastbar hergeleitet)</dd></div>
+    <div><dt>Zusatzmaterial</dt><dd>4 Tonaufnahmen, Abschriften — Abschnitt 16</dd></div>
+  </dl>
+</header>
+
+<div class="lay">
+<nav class="toc" aria-label="Inhalt">
+  <p class="tl">Inhalt</p>
+  <ol>
+    <li><a href="#s01"><span>01</span>Kernbefund</a></li>
+    <li><a href="#s02"><span>02</span>Korrekturenblatt</a></li>
+    <li><a href="#s03"><span>03</span>Parteien und Personen</a></li>
+    <li><a href="#s04"><span>04</span>Vertragsarchitektur</a></li>
+    <li><a href="#s05"><span>05</span>Kartellanmeldung als Beweis</a></li>
+    <li><a href="#s06"><span>06</span>Chronologie</a></li>
+    <li><a href="#s07"><span>07</span>Komplex A — Hofer</a></li>
+    <li><a href="#s08"><span>08</span>Komplex B — Datenabfluss</a></li>
+    <li><a href="#s09"><span>09</span>Komplex C — 10.10.2025</a></li>
+    <li><a href="#s10"><span>10</span>Komplex D — Datenschutz</a></li>
+    <li><a href="#s11"><span>11</span>Verfahrenslandkarte</a></li>
+    <li><a href="#s12"><span>12</span>Beweiswürdigung</a></li>
+    <li><a href="#s13"><span>13</span>Schadensbezifferung</a></li>
+    <li><a href="#s14"><span>14</span>Risiken beidseitig</a></li>
+    <li><a href="#s15"><span>15</span>Maßnahmenplan</a></li>
+    <li><a href="#s16"><span>16</span>Tonaufnahmen</a></li>
+    <li class="ap"><a href="#a1"><span>A</span>Quellenregister</a></li>
+    <li class="ap"><a href="#a2"><span>B</span>Normen</a></li>
+    <li class="ap"><a href="#a3"><span>C</span>Judikatur</a></li>
+    <li class="ap"><a href="#a4"><span>D</span>Offene Beweisfragen</a></li>
+  </ol>
+</nav>
+
+<main>
+
+<!-- ============ 01 ============ -->
+<section id="s01">
+<h2><span class="no">01</span>Kernbefund</h2>
+<p class="dek">Was nach Auswertung des gesamten Aktenbestands trägt, was nur behauptet ist und wo die
+Vorversion des Berichts die eigene Position beschädigt.</p>
+
+<p class="lede">Der Aktenbestand belegt einen Gesellschafterkonflikt mit vier sachlich getrennten Komplexen.
+Drei davon sind dokumentarisch stark unterlegt: die Verdrängung der ÖKOVOLT-Gruppe aus dem Hofer-Rollout,
+der Datenabzug durch den von der Salzburg AG nominierten Geschäftsführer und die Schein-Generalversammlung
+vom 10.10.2025. Der vierte — der datenschutzrechtliche Komplex um die ungeschwärzte Vorlage eines Strafurteils —
+ist unstrittig im Tatsächlichen und offen in der Sanktionsfrage.</p>
+
+<p>Entscheidend ist die Trennung der Beweisebenen. Gerichtlich <em>glaubhaft gemacht</em> (nicht: bewiesen) ist
+die Nominierung Schiefers zum Zweck des Datenabzugs — so der 14. Zivilsenat des OLG München in drei
+Parallelentscheidungen vom 21.05.2026, deren Bestand durch die Zurückweisung der Gehörsrügen am 18.06.2026
+gesichert ist. Forensisch <em>festgestellt</em> sind Kopier-, Verschlüsselungs- und Löschvorgänge in genau
+bezifferten Umfängen. Forensisch <em>nicht</em> festgestellt ist die Weitergabe der Daten an die Salzburg AG
+oder die one2zero GmbH — mit einer einzigen Ausnahme, und diese Datei hatte Schiefer zuvor von
+Wegscheider selbst erhalten.</p>
+
+<div class="kf">
+  <div><div class="v">4,28 GB</div><div class="l">Kopiertes Volumen, forensisch</div><div class="s">1.155 Dateien, 02.12.2024</div></div>
+  <div><div class="v">2.262</div><div class="l">Gelöschte Dateien rekonstruiert</div><div class="s">LKA OÖ: 1.130</div></div>
+  <div><div class="v">147</div><div class="l">Verschlüsselte Office-/PDF-Dateien</div><div class="s">446 Zugriffsartefakte</div></div>
+  <div><div class="v">~7.000</div><div class="l">Gelöschte E-Mails</div><div class="s">19 % des Postfachs</div></div>
+  <div><div class="v">1</div><div class="l">Belegte Übermittlung an Dritte</div><div class="s">Hofer 120 kWp Muster.xlsx</div></div>
+</div>
+
+<div class="note crit">
+  <p class="hd">Zentrale Schwachstelle der Vorversion</p>
+  <p>DOK-CB-01/02 REV 2.0 stützt eine Forderung von EUR 137,6 Mio. auf ein Datenvolumen von
+  „420.000+ Dateien“, auf eine Umsatzbasis von EUR 80 Mio. p.a. und auf sechs Knowhow-Kategorien
+  (unter anderem Softwarequellcode und Netzregelungsalgorithmen nach VDE-AR-N 4110/TOR). Keine dieser
+  drei Annahmen findet im Gutachten von Grant Thornton eine Stütze. Die Salzburg AG hat die
+  Volumenangabe bereits prozessual gegen die ÖKOVOLT-Gruppe verwendet und dabei mit dem eigenen
+  Gutachten der Gegenseite argumentiert. Die Zahl muss aus allen weiteren Schriftsätzen verschwinden.</p>
+</div>
+
+<h3>Die vier Komplexe im Überblick</h3>
+<div class="tw">
+<table>
+<thead><tr><th>Komplex</th><th>Gegenstand</th><th>Dokumentarische Basis</th><th>Beweislage</th><th>Bezifferbar</th></tr></thead>
+<tbody>
+<tr><td><b>A — Hofer</b></td><td>Verzicht auf Ausschreibungsteilnahme gegen Zusicherung; Auftrag an one2zero und weiter an Eco-tec</td><td>LOI 09.03.2021, Exklusivitätsvereinbarung, NDA 06.04.2020, Sachverhaltsdarstellung WKStA</td><td><span class="pill p-warn">Urkunden stark, Zusicherung mündlich</span></td><td>EUR 10,5 Mio. Deckungsbeitrag</td></tr>
+<tr><td><b>B — Datenabzug</b></td><td>Kopie, Verschlüsselung, Löschung durch GF Schiefer; Doppelmandat one2zero</td><td>GT-Zwischenbericht 16.03.2026, Memo 22.04.2026, Abschlussbericht 30.04.2026</td><td><span class="pill p-ok">Handlungen belegt</span> <span class="pill p-crit">Weitergabe offen</span></td><td>EUR 118.500 nachgewiesen</td></tr>
+<tr><td><b>C — 10.10.2025</b></td><td>Flüster-Generalversammlung, vorgefertigtes Protokoll, Abberufung des Mehrheitsgesellschafters</td><td>Sachverhaltsdarstellung WKStA, Verfolgungsantrag CERHA HEMPEL ON 12.2</td><td><span class="pill p-ok">Zeugen und Urkunde</span></td><td>Folgeschäden, nicht beziffert</td></tr>
+<tr><td><b>D — Datenschutz</b></td><td>Ungeschwärztes Strafurteil LG Innsbruck als Anlage K 53 vorgelegt</td><td>Analyse „Nachgewiesener Datenschutzverstoß“</td><td><span class="pill p-ok">Vorgang unstrittig</span></td><td>Art. 82 DSGVO, offen</td></tr>
+</tbody>
+</table>
+<caption>Quellen je Komplex siehe Abschnitt A, Quellenregister.</caption>
+</div>
+
+<h3>Handlungsempfehlung in drei Sätzen</h3>
+<ol>
+<li><b>Zahlenbasis bereinigen.</b> Die Forderung auf den forensisch und urkundlich belegten Kern
+zurückführen: Hofer-Deckungsbeitrag, Earn-Out, Wiederherstellungsaufwand, und eine Lizenzanalogie auf
+nachweisbarer Bezugsgröße. Korridor EUR 19–35 Mio. statt EUR 137,6 Mio.</li>
+<li><b>Deutschland priorisieren.</b> Dort laufen drei obsiegende Senatsentscheidungen, dort ist die
+Anzeige bei der Staatsanwaltschaft Memmingen frisch eingebracht, dort sitzt die mitverletzte
+Gesellschaft mit eigener Antragsberechtigung.</li>
+<li><b>Beweismittelintegrität sichern.</b> Grant Thornton hält ausdrücklich fest, dass eigene
+Erhebungsmaßnahmen der Auftraggeberin die Befundgrundlagen verschlechtert haben dürften. Jeder weitere
+Eigenzugriff auf Asservate ist zu unterlassen.</li>
+</ol>
+</section>
+
+<!-- ============ 02 ============ -->
+<section id="s02">
+<h2><span class="no">02</span>Korrekturenblatt gegenüber REV 2.0</h2>
+<p class="dek">Neun Angaben der Vorversion sind nach Auswertung der Primärdokumente unrichtig oder
+nicht belegbar. Sie sind hier einzeln ausgewiesen, weil jede davon in einem Verfahren gegen die
+ÖKOVOLT-Gruppe verwendbar ist.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th style="width:22%">Angabe in REV 2.0</th><th style="width:30%">Tatsächlicher Aktenstand</th><th style="width:26%">Fundstelle</th><th>Folge</th></tr></thead>
+<tbody>
+<tr>
+<td>Datenabfluss über ein <b>Konica-Minolta-Gerät</b>, MAC-Adresse forensisch zugeordnet</td>
+<td>Im Befund erscheint eine Festplatte aus einem <b>OKI</b>-Drucker (ohne verwertbare Daten) und ein Netzlaufwerk <code>\\10.10.100.108\Xerox-Scan</code>. Eine MAC-Adressenzuordnung kommt im Gutachten nicht vor.</td>
+<td>GT-Zwischenbericht, Abschnitte 4.2.1 und 4.3.3</td>
+<td><span class="pill p-crit">streichen</span></td>
+</tr>
+<tr>
+<td><b>420.000+ Dateien</b> systematisch auf externe Datenträger kopiert</td>
+<td>4,28 GB und 1.155 Dateien auf den Dienstlaptop; auf dem privaten Datenträger 24 dokumentierte Zugriffe auf 9 Dateien. Die Ursprungszahl (338.000 Dateien / 500 GB) stammt aus einer Endanwender-Recovery-Software; GT bezeichnet sie als irreführend, da der Datenträger diese Menge nicht speichern kann.</td>
+<td>GT-Zwischenbericht 4.3.1, 4.8; Gegenseite im Schriftsatz 30.04.2026</td>
+<td><span class="pill p-crit">streichen</span></td>
+</tr>
+<tr>
+<td><b>12 Urteile</b> des OLG München bestätigen den Sachverhalt</td>
+<td>Im Akt liegen drei Verfahren: 14 U 3746/25 e, 14 U 3748/25 e, 14 U 295/26 e — Urteile vom 21.05.2026, Gehörsrügen am 18.06.2026 zurückgewiesen. Sämtlich Verfügungsverfahren; Maßstab ist Glaubhaftmachung, nicht Vollbeweis.</td>
+<td>Beschlüsse OLG München vom 18.06.2026</td>
+<td><span class="pill p-warn">auf 3 korrigieren</span></td>
+</tr>
+<tr>
+<td>Forensik belegt den Datenabfluss <b>„technisch zweifelsfrei“</b></td>
+<td>Das Gutachten hält ausdrücklich fest: ob die Daten auf andere Speicherorte übertragen wurden, kann „weder bestätigt noch ausgeschlossen werden“. Belege für eine unbefugte Weitergabe ergeben sich aus der E-Mail-Kommunikation nicht.</td>
+<td>GT-Zwischenbericht 4.3.2, 4.5.2</td>
+<td><span class="pill p-crit">umformulieren</span></td>
+</tr>
+<tr>
+<td>Sechs Knowhow-Kategorien, darunter <b>Softwarequellcode</b> und <b>Netzregelung VDE-AR-N 4110/TOR</b></td>
+<td>Der Befund beschreibt Controlling-, Buchhaltungs-, Projekt- und Kostenrechnungsunterlagen. Quellcode, Regelungsalgorithmen oder Konstruktionszeichnungen werden nicht genannt.</td>
+<td>GT-Zwischenbericht 4.8</td>
+<td><span class="pill p-crit">neu fassen</span></td>
+</tr>
+<tr>
+<td>Umsatzbasis der Lizenzanalogie <b>EUR 80 Mio. p.a.</b>, abgeleitet als 6,4 % des Stromsegments</td>
+<td>Die Konzern- und Segmentzahlen selbst sind korrekt und aus dem veröffentlichten Jahresabschluss der Salzburg AG nachprüfbar. Nicht belegt ist der <b>Zurechnungsschritt</b>: dass 6,4 % des Stromsegments kausal auf das entwendete Knowhow zurückgehen. Dagegen steht der im Akt dokumentierte PV-Umsatz von TEUR 714 bei rund 1 MWp und 0,3 % Marktanteil.</td>
+<td>Anlage B 8, Abschnitte 4.1 und 5.2; Jahresabschluss Salzburg AG</td>
+<td><span class="pill p-warn">Zurechnung begründen</span></td>
+</tr>
+<tr>
+<td>Salzburg AG, <b>FN 149800 y</b></td>
+<td>FN 51350 s — so im Syndikatsvertrag und in der Zusammenschlussanmeldung.</td>
+<td>Syndikatsvertrag Präambel 1.1; Anlage B 8</td>
+<td><span class="pill p-warn">berichtigen</span></td>
+</tr>
+<tr>
+<td>Abschlussbericht <b>vom 02.07.2026</b></td>
+<td>Zwischenbericht 16.03.2026; Memo zum externen Datenträger 22.04.2026; Abschlussbericht 30.04.2026; Ergänzung 08.05.2026.</td>
+<td>Strafanzeige StA Memmingen, Abschnitt B.IV</td>
+<td><span class="pill p-warn">berichtigen</span></td>
+</tr>
+<tr>
+<td><b>7.000 Ausdrucke</b> vor dem Ausscheiden</td>
+<td>Druckprotokolle wurden nie angelegt; die OKI-Festplatte enthält keine verwertbaren Daten; am Laptop sind drei gedruckte Dateien nachweisbar, zeitlich irrelevant. Die Behauptung ist nur durch Zeugen zu führen.</td>
+<td>GT-Zwischenbericht 4.3.3</td>
+<td><span class="pill p-warn">nur Zeugenbeweis</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<div class="note">
+  <p class="hd">Methodischer Grundsatz für REV 3.0</p>
+  <p>Jede Tatsachenbehauptung dieses Dossiers ist einer der vier Ebenen zugeordnet: <b>gerichtlich
+  festgestellt</b>, <b>forensisch festgestellt</b>, <b>urkundlich belegt</b> oder <b>von einer Partei
+  behauptet</b>. Behauptungen der Gegenseite sind als solche wiedergegeben, auch wo sie der eigenen
+  Position widersprechen — das ist die Voraussetzung dafür, dass der Bericht in einer Verhandlung
+  standhält.</p>
+</div>
+</section>
+
+<!-- ============ 03 ============ -->
+<section id="s03">
+<h2><span class="no">03</span>Parteien, Beteiligungen und handelnde Personen</h2>
+<p class="dek">Drei ÖKOVOLT-Gesellschaften, ein öffentlicher Energieversorger, zwei Tochtergesellschaften
+und siebzehn in Österreich angezeigte Personen und Verbände.</p>
+
+<h3>Gesellschaften</h3>
+<div class="tw">
+<table>
+<thead><tr><th>Gesellschaft</th><th class="az">Register</th><th>Sitz</th><th>Beteiligung nach 18.10.2021</th><th>Stammkapital</th></tr></thead>
+<tbody>
+<tr><td>Ökovolt Solartechnik GmbH <span class="pill p-neu">AT</span></td><td class="az">FN 375708 m, LG Ried i. I.</td><td>Gewerbegebiet 10, 5121 Ostermiething</td><td>Wegscheider 51 % · Salzburg AG 49 %<br><span class="m">vorher: Wegscheider 75 % · Messmer 25 %</span></td><td class="n">EUR 35.000</td></tr>
+<tr><td>ÖKOVOLT GmbH Solartechnik <span class="pill p-neu">DE</span></td><td class="az">HRB 14166, AG Memmingen</td><td>Schlingener Str. 1a, 86842 Türkheim</td><td>Wegscheider 26 % · Messmer 25 % · Salzburg AG 49 %<br><span class="m">vorher: Wegscheider 51 % · Messmer 49 %</span></td><td class="n">EUR 50.000</td></tr>
+<tr><td>Ökovolt Schweiz AG <span class="pill p-neu">CH</span></td><td class="az">—</td><td>Schweiz</td><td>im Akt nur mittelbar erfasst</td><td class="n">—</td></tr>
+<tr><td>Salzburg AG für Energie, Verkehr und Telekommunikation</td><td class="az">FN 51350 s</td><td>Bayerhamerstraße 16, 5020 Salzburg</td><td>Land Salzburg und Stadt Salzburg als Hauptgesellschafter</td><td class="n">—</td></tr>
+<tr><td>one2zero GmbH</td><td class="az">Errichtung 18.10.2021</td><td>Strubergasse 26, 5020 Salzburg</td><td>100 % Salzburg AG</td><td class="n">—</td></tr>
+<tr><td>MyElectric Energievertriebs- und -dienstleistungs GmbH</td><td class="az">FN 204712 y</td><td>Storchengasse 1, 1150 Wien</td><td>100 % Salzburg AG</td><td class="n">—</td></tr>
+<tr><td>Eco-tec Photovoltaik GmbH</td><td class="az">—</td><td>—</td><td>Drittunternehmen, Empfänger der Weitervergabe</td><td class="n">—</td></tr>
+</tbody>
+</table>
+<caption>Die one2zero GmbH wurde am Tag der notariellen Beurkundung der Beteiligung, beim selben Notar
+und im Zuge derselben Transaktion errichtet; Firmenbucheintragung 23.10.2021.</caption>
+</div>
+
+<h3>Handelnde Personen</h3>
+<div class="tw">
+<table>
+<thead><tr><th>Person</th><th>Funktion</th><th>Rolle im Sachverhalt</th></tr></thead>
+<tbody>
+<tr><td>Andreas Wegscheider</td><td>Gründer, Mehrheitsgesellschafter und Geschäftsführer beider ÖKOVOLT-Gesellschaften</td><td>Kläger in LG Salzburg 9 Cg 26/25m; Adressat der Abberufungsversuche</td></tr>
+<tr><td>Susanne Messmer</td><td>Mitgründerin, 25 % an der deutschen Gesellschaft</td><td>Zeugin zur Entstehung des Syndikatsvertrags</td></tr>
+<tr><td>Benjamin Höfler</td><td>Leiter IT und Risikomanagement, Compliance</td><td>Anzeiger der Sachverhaltsdarstellung vom 17.11.2025; Zeuge zum Ablauf des 10.10.2025</td></tr>
+<tr><td>MMag. Dr. Roman Schobesberger</td><td>Rechtsabteilung der ÖKOVOLT-Gesellschaften</td><td>Vergleichsgespräche 03.09.2025; Befundtermin mit Grant Thornton</td></tr>
+<tr><td>Mag. (FH) Friedrich Schiefer</td><td>Von der Salzburg AG nominierter zweiter Geschäftsführer, 09.01.2023 bis 03.02.2025; danach selbständiger Berater der Salzburg AG</td><td>Beschuldigter in AT (§§ 123, 126a StGB, § 11 UWG) und DE (§ 23 GeschGehG, §§ 303a, 303b StGB)</td></tr>
+<tr><td>Dr. Leonhard Schitter</td><td>Vorstandsvorsitzender der Salzburg AG bis 2021; später Aufsichtsrat</td><td>Initiator der Beteiligung; Zusicherungen der Partnerschaft</td></tr>
+<tr><td>MMag. Michael Baminger</td><td>Vorstandsvorsitzender der Salzburg AG</td><td>Organisator der one2zero-Termine Schiefers; Angebot der Bezugsübernahme EUR 122.500</td></tr>
+<tr><td>DI Herwig Struber</td><td>Vorstand der Salzburg AG</td><td>Druckausübung Sonderprüfung; Äußerung zur rechtlichen Absicherung des Austritts</td></tr>
+<tr><td>Mag. Friedrich Schliesselberger</td><td>Finanzchef der Salzburg AG, Prokurist</td><td>54 E-Mails mit Schiefer zu Planung und Jahresabschluss AT und DE</td></tr>
+<tr><td>DI Siegfried Müllegger</td><td>Leiter Erzeugung, Prokurist</td><td>Verhandlungsteam PV#GoBig</td></tr>
+<tr><td>Mag. Angelika Gradl</td><td>Board Executive Legal Counsel der Salzburg AG</td><td>E-Mail vom 02.12.2024 zur Tagesordnungsergänzung; gelöschtes Telefonat am 29.01.2025</td></tr>
+<tr><td>MMag. Christina Staude</td><td>Governance und Beteiligungen der Salzburg AG bis 2023, dann Salzburg Netz GmbH</td><td>Zeugin; bestreitet jede mündliche Einschränkung von Punkt 6.1</td></tr>
+<tr><td>Tobias Wiener</td><td>Strategieabteilung Salzburg AG, dann Geschäftsführer one2zero GmbH</td><td>Zusicherung im Hofer-Komplex; Empfänger der Datei vom 27.11.2024; Quelle für interne Eskalationsplanung</td></tr>
+<tr><td>Peter Hochleitner</td><td>Geschäftsführer MyElectric, dann one2zero GmbH</td><td>Verhandlungsteam; Gespräche zu Punkt 6.1</td></tr>
+<tr><td>Mag. Karl Pfisterer</td><td>Von der Salzburg AG nominierter Geschäftsführer ab 10.10.2025</td><td>Dienstanweisung vom 12.11.2025 an Rechts- und Compliance-Abteilung</td></tr>
+<tr><td>Dr. Bernhard Rieder, Dr. Nicole Scharl, Mag. Alexander Karl</td><td>DORDA Rechtsanwälte GmbH</td><td>Vertreter der Salzburg AG in der Generalversammlung vom 10.10.2025</td></tr>
+<tr><td>Dr. Philip Ranft, Mag. Sebastian Frank</td><td>Notariat Seekirchen am Wallersee</td><td>Firmenbuchantrag vom 15.03.2025 zum Geschäftsführerwechsel</td></tr>
+<tr><td>Mag. Michael Thaller</td><td>Notar, Notariat Ing. Mag. Volker Reifenberger</td><td>Ordnungsgemäß geladener Notar; verweigerte die Beurkundung des vorgefertigten Protokolls</td></tr>
+<tr><td>Dr. Wilfried Haslauer</td><td>Aufsichtsratsvorsitzender der Salzburg AG</td><td>in der Sachverhaltsdarstellung als Verdächtiger 9 geführt</td></tr>
+</tbody>
+</table>
+<caption>Die Bezeichnung als „Verdächtige“ folgt der Sachverhaltsdarstellung vom 14.11.2025. Eine
+strafgerichtliche Feststellung liegt zu keiner dieser Personen vor; sämtliche österreichischen
+Ermittlungsverfahren wurden eingestellt oder nicht eingeleitet.</caption>
+</div>
+</section>
+
+<!-- ============ 04 ============ -->
+<section id="s04">
+<h2><span class="no">04</span>Vertragsarchitektur</h2>
+<p class="dek">Sechs Urkunden bilden das Gerüst. Wer den Fall führt, muss Punkt 4.1, 4.3 und 6.1 des
+Syndikatsvertrags auswendig kennen — in dieser Spannung entscheidet sich der zivilrechtliche Kern.</p>
+
+<div class="tl">
+  <div class="ev"><div class="d">06.04.2020</div><div class="t"><b>Wechselseitige Geheimhaltungsvereinbarung (NDA)</b> — Nutzung der offengelegten Informationen strikt auf den Verhandlungszweck beschränkt, Offenlegung an Dritte untersagt, Überbindung auf Mitarbeiter und Beauftragte. Laufzeit ein Jahr, Nachwirkung drei Jahre, damit Schutz bis 06.04.2024.</div></div>
+  <div class="ev"><div class="d">2020/2021</div><div class="t"><b>Exklusivitätsvereinbarung</b> — die Salzburg AG verpflichtet sich, mit keinem im gleichen Geschäftsfeld tätigen Unternehmen Beteiligungsgespräche zu führen; ausdrücklich erfasst ist auch die <em>Gründung</em> eines Unternehmens. Geltungszeitraum bis 30.09.2021 — die Gegenseite leitet daraus das automatische Außerkrafttreten ab.</div></div>
+  <div class="ev"><div class="d">09.03.2021</div><div class="t"><b>Letter of Intent Hofer</b> — Subunternehmervertrag in Aussicht gestellt, ca. 120 kWp je Standort; die Salzburg AG stützt ihr Angebot an die Hofer KG ausdrücklich auf das ÖKOVOLT-Angebot „BVH Hofer Filialkonzept“ vom 05.02.2021. Eigene Geheimhaltungsklausel für Zeichnungen, Konzepte und Kalkulationen.</div></div>
+  <div class="ev" data-w="2"><div class="d">18.10.2021</div><div class="t"><b>Kauf- und Abtretungsvertrag</b> — 49 % an beiden Zielgesellschaften; Fixkaufpreis rund EUR 10 Mio., zusätzlich erfolgsabhängiger Earn-Out nach Punkt 5 mit einem Volumen von EUR 5 Mio.</div></div>
+  <div class="ev" data-w="2"><div class="d">18.10.2021</div><div class="t"><b>Syndikatsvertrag als Notariatsakt</b> — errichtet von BEURLE Rechtsanwälte (Dr. Paul Oberndorfer) im Auftrag der Salzburg AG. Unbefristet.</div></div>
+  <div class="ev"><div class="d">18.10.2021</div><div class="t"><b>Geschäftsordnung der Geschäftsführung</b> samt Geschäftsverteilungsplan, beschlossen in der Generalversammlung.</div></div>
+  <div class="ev"><div class="d">09.01.2023</div><div class="t"><b>Geschäftsführerdienstvertrag Schiefer</b> — befristet bis 31.12.2027, Ziffer VIII Vertraulichkeit, Ziffer IX Wettbewerbsverbot samt Verbot der Leitungsfunktion in Konkurrenzunternehmen ohne Zustimmung der Generalversammlung. Bezug zuletzt EUR 122.500 brutto jährlich.</div></div>
+</div>
+
+<h3>Der Syndikatsvertrag im Detail</h3>
+<div class="tw">
+<table>
+<thead><tr><th style="width:62px">Punkt</th><th>Regelung</th><th style="width:30%">Bedeutung im Streit</th></tr></thead>
+<tbody>
+<tr><td class="az">2.1–2.4</td><td>Förderpflicht, Informationspflicht, Mitwirkungspflicht, Interessenswahrungspflicht</td><td>Generalklauseln, auf die sich die Vorwürfe gegen die Salzburg AG primär stützen</td></tr>
+<tr><td class="az">3.1</td><td>Die Salzburg AG nominiert einen der beiden Geschäftsführer. Wegscheider darf ablehnen, wenn er sachliche Gründe benennt, und die Abberufung verlangen, wenn ein wichtiger Grund besteht.</td><td>Einfallstor für Schiefer und später Pfisterer; Gegenstand eines eigenen Verfahrens auf Unwirksamerklärung</td></tr>
+<tr><td class="az">3.2</td><td>Wegscheider verpflichtet sich auf mindestens fünf Jahre Vollzeit-Geschäftsführung; danach eigenes Nominierungsrecht des Gesellschafterzweigs</td><td>erklärt, warum die Abberufung des Mehrheitsgesellschafters vertragswidrig ist</td></tr>
+<tr><td class="az">3.5–3.7</td><td>Gemeinsame Vertretung; Geschäftsordnung mit Ressortzuweisung; Pflicht zur sofortigen Abberufung bei wichtigem Grund nach § 16 GmbHG, unmittelbar zwischen den Syndikatspartnern gerichtlich durchsetzbar</td><td>Punkt 3.7 ist die Anspruchsgrundlage für das Salzburger Verfahren auf Vornahme unvertretbarer Handlungen</td></tr>
+<tr><td class="az"><b>4.1</b></td><td>„Die Minderheitsbeteiligung ist keine reine Finanzbeteiligung.“ Gemeinsames Ziel: Sicherung von Marktanteilen <b>und Vermeidung von Wettbewerbssituationen</b> zwischen den Syndikatspartnern oder zwischen Zielgesellschaften und Syndikatspartnern</td><td><b>Kernnorm.</b> Trägt die These eines faktischen Wettbewerbsverbots trotz Punkt 6.1</td></tr>
+<tr><td class="az">4.2</td><td>Projektabwicklung gemeinsam mit der Salzburg AG oder einem verbundenen Unternehmen, ausdrücklich MyElectric; gemeinsame Bearbeitung von Ausschreibungen</td><td>erfasst one2zero als verbundenes Unternehmen mit</td></tr>
+<tr><td class="az"><b>4.3</b></td><td>Die Salzburg AG zieht die Zielgesellschaften als <b>bevorzugte Partner</b> bei eigenen PV-Projekten heran; Meistbegünstigung zugunsten der Salzburg AG; Zugriffsrecht auf 50 % der Errichtungskapazitäten; Ablehnung marktüblich profitabler Projekte begründungspflichtig</td><td>zentrale Pflichtverletzung im Hofer- und Quehenberger-Komplex</td></tr>
+<tr><td class="az">4.4</td><td>Zugang der Salzburg AG zu den Modul-Erwerbskanälen, vor allem am chinesischen Markt, zu originären Bezugspreisen gegen Provision</td><td>zeigt, dass der Knowhow-Transfer vertraglich ausdrücklich gewollt und bepreist war</td></tr>
+<tr><td class="az">4.5–4.7</td><td>Zielgesellschaften nutzen die Salzburg AG als bevorzugten Partner; Cross- und Upselling gegen Provision; die Salzburg AG soll bei jedem zweiten Projekt Finanzpartner werden</td><td>Gegengewicht in der Verhandlungsoptik</td></tr>
+<tr><td class="az"><b>4.8</b></td><td>Zugang der Salzburg AG und verbundener Unternehmen zu <b>Kunden- und Projektdaten</b> der Zielgesellschaften für Cross- und Upselling, gegen angemessene Provision</td><td><span class="pill p-crit">Risikonorm</span> Die Gegenseite kann den Datenzugriff teilweise auf diese Klausel stützen</td></tr>
+<tr><td class="az">5.1</td><td>Anreiz- und Mitarbeiterbeteiligungsmodell, Rahmenbedingungen bis Jahresende 2021 auszuarbeiten</td><td>korrespondiert mit „Leitplanke 5 — Bindung von Mitarbeitern/Know-how“ des Vorstandspapiers</td></tr>
+<tr><td class="az"><b>6.1</b></td><td>Die Salzburg AG unterliegt <b>keinem</b> Wettbewerbsverbot; der Gesellschafterzweig Wegscheider unterliegt einem umfassenden Wettbewerbsverbot in Österreich und Deutschland. Schlusssatz: dennoch wirken beide darauf hin, Wettbewerbssituationen zu vermeiden.</td><td><span class="pill p-crit">Hauptangriffspunkt der Gegenseite</span> Der Wortlaut spricht gegen ÖKOVOLT; die Auslegung entscheidet sich am Schlusssatz und an Punkt 4.1</td></tr>
+<tr><td class="az">7.1</td><td>Vesting: beendet Wegscheider ohne wichtigen Grund oder wird er aus wichtigem Grund abberufen, muss der Gesellschafterzweig der Salzburg AG binnen zwei Wochen ein notarielles Anbot zur Abtretung eines Anteilsteils übersenden</td><td>erklärt das wirtschaftliche Motiv hinter dem Abberufungsantrag „aus wichtigem Grund“</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>Der Streit um Punkt 6.1 — Aussagestand nach der Verhandlung vom 28.05.2026</h3>
+<p>Die Einvernahmen vor dem Landesgericht Salzburg haben die Beweislage zu Punkt 6.1 geklärt, aber nicht
+zugunsten einer Seite aufgelöst. Es stehen sich zwei in sich geschlossene Darstellungen gegenüber.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th style="width:18%">Aussage</th><th>Darstellung ÖKOVOLT</th><th>Darstellung Salzburg AG</th></tr></thead>
+<tbody>
+<tr><td><b>Wegscheider</b><br><span class="m">Kläger</span></td><td>Das Verbot sollte deshalb einseitig sein, weil die Salzburg AG ein Privatkunden-Dächerprogramm (4–6 kW), eigene und Landesflächen hatte. Außerdem sei gesagt worden, ein zweiseitiges Verbot hätte die Bundeswettbewerbsbehörde stören können — „dann wäre unser Deal geplatzt“. Verhandlungspartner waren Wiener und Hochleitner. Er räumt ein: „Es stimmt, dass die Klausel wortwörtlich für mich schlecht aussieht.“</td><td>—</td></tr>
+<tr><td><b>Messmer</b><br><span class="m">Zeugin</span></td><td>Bestätigt die Begründung mit den Altprojekten und dem Konzernkontext; Dr. Schitter habe dies beim Unterfertigungstermin am 18.10.2021 im Hotel gesagt. Sie steht in Lebensgemeinschaft mit dem Kläger und hatte keine unmittelbaren Gespräche mit der Salzburg AG.</td><td>—</td></tr>
+<tr><td><b>Staude</b><br><span class="m">Zeugin</span></td><td>—</td><td>Punkt 6.1 stand schon im ersten Entwurf und war <b>Bedingung</b> für den Einstieg. Grund: die Salzburg AG ist als Sektorenauftraggeberin ausschreibungspflichtig und konnte nicht von vornherein mit ÖKOVOLT kontrahieren. Eine Beschränkung auf Altprojekte hätte „keinen Sinn“ ergeben; hätte Schitter das gesagt, „hätte ich das richtiggestellt“. Der Steuerberater Voh habe die Klausel kritisch gesehen; darauf sei klargestellt worden, sie sei unverzichtbar.</td></tr>
+<tr><td><b>one2zero</b></td><td>Geschäftszweck sei als CO₂-Beratung dargestellt worden; von PV-Errichtung sei nie die Rede gewesen.</td><td>Die Gesellschaft hieß intern „NewCo“; Wiener und Hochleitner hätten in den Verhandlungen von ihr gesprochen; sie errichte keine Anlagen selbst und sei ergänzend, nicht konkurrierend. Das Booklet PV#GoBig sei vor Vertragsunterfertigung übergeben worden.</td></tr>
+</tbody>
+</table>
+<caption>Protokoll der öffentlichen mündlichen Verhandlung vom 28.05.2026, LG Salzburg 9 Cg 26/25m,
+Richterin Mag. Christine Außerhofer. Nicht zugelassen wurden drei eidesstättige Erklärungen
+(Beilagen ./CCCC, ./EEEE, ./NNNN) wegen des Unmittelbarkeitsgrundsatzes.</caption>
+</div>
+
+<div class="note warn">
+  <p class="hd">Bewertung</p>
+  <p>Die Aussage Staude ist für die Gegenseite stark, weil sie ein <em>eigenständiges, sachliches</em>
+  Motiv für Punkt 6.1 liefert — die Ausschreibungspflicht als Sektorenauftraggeberin. Dieses Motiv ist
+  überprüfbar und nicht konstruiert. Der Vortrag, die Klausel beziehe sich nur auf Altprojekte, ist
+  dagegen nur durch zwei einander persönlich nahestehende Personen belegt und sachlich schwer
+  plausibel, weil der Vertrag in die Zukunft gerichtet ist. Die Richterin hat diesen Punkt in der
+  Verhandlung ausdrücklich als nicht logisch angesprochen.</p>
+  <p>Der tragfähigere Weg führt nicht über eine mündliche Nebenabrede, sondern über Punkt 4.1 in
+  Verbindung mit dem Schlusssatz des Punktes 6.1 und Punkt 4.3: ein ausdrücklich vereinbartes Gebot zur
+  Vermeidung von Wettbewerbssituationen ist mit der Gründung einer 100-prozentigen Tochter im selben
+  Geschäftsfeld am Tag der Unterzeichnung schwer vereinbar.</p>
+</div>
+</section>
+
+<!-- ============ 05 ============ -->
+<section id="s05">
+<h2><span class="no">05</span>Die Kartellanmeldung als Beweismittel</h2>
+<p class="dek">Anlage B 8 ist das wertvollste Dokument des Akts, weil die Salzburg AG dort unter
+Wahrheitspflicht gegenüber einer Behörde über ihre eigene Marktposition aussagt.</p>
+
+<p>Die Zusammenschlussanmeldung vom 27.10.2021 nach § 9 Kartellgesetz, erstattet von BEURLE Rechtsanwälte
+für alle drei beteiligten Unternehmen, enthält zwei Feststellungen, die der späteren Verteidigungslinie
+der Salzburg AG entgegenstehen. Erstens: sie hatte PV-Anlagen bis dahin „nur in verschwindend geringem
+Ausmaß“ selbst errichtet. Zweitens: das Motiv der Beteiligung war ausdrücklich der „Einstieg der Salzburg AG
+in das Geschäft des PV-Anlagenbaus“ und der Zugang zu den chinesischen Lieferbeziehungen der
+ÖKOVOLT-Gesellschaften.</p>
+
+<h3>Geschäftsjahr 2020 — die belastbaren Zahlen</h3>
+<div class="tw">
+<table>
+<thead><tr><th>Kennzahl</th><th class="n">Salzburg AG</th><th class="n">Ökovolt AT</th><th class="n">Ökovolt DE</th></tr></thead>
+<tbody>
+<tr><td>Umsatzerlöse weltweit</td><td class="n">TEUR 1.450.442</td><td class="n">TEUR 13.928</td><td class="n">TEUR 13.009</td></tr>
+<tr><td>davon gemeinschaftsweit</td><td class="n">TEUR 1.353.955</td><td class="n">TEUR 13.928</td><td class="n">TEUR 13.009</td></tr>
+<tr><td>davon Inland Österreich</td><td class="n">TEUR 878.012</td><td class="n">TEUR 13.817</td><td class="n">TEUR 6.430</td></tr>
+<tr><td>davon Deutschland</td><td class="n">—</td><td class="n">—</td><td class="n">TEUR 6.562</td></tr>
+<tr><td>Umsatz im betroffenen PV-Markt</td><td class="n"><b>TEUR 714</b></td><td class="n">TEUR 13.817</td><td class="n">nahezu keiner</td></tr>
+<tr><td>Installierte Leistung</td><td class="n">1,047 MWp</td><td class="n">12,8 MWp</td><td class="n">—</td></tr>
+<tr><td>Marktanteil Österreich nach Leistung</td><td class="n"><b>0,3 %</b></td><td class="n"><b>3,75 %</b></td><td class="n">—</td></tr>
+<tr><td>Marktanteil Österreich nach Umsatz</td><td class="n">0,14 %</td><td class="n">2,68 %</td><td class="n">—</td></tr>
+<tr><td>Mitarbeiter</td><td class="n">ca. 2.400</td><td class="n">21 / 13 VZÄ</td><td class="n">7,8 VZÄ</td></tr>
+</tbody>
+<tfoot><tr><td>Gesamtmarkt Photovoltaik Österreich 2020</td><td class="n" colspan="3">EUR 513,4 Mio. Branchenumsatz · 341 MW Zubau · 2019: 247 MW, davon Ökovolt 8,3 MWp (3,36 %)</td></tr></tfoot>
+</table>
+<caption>Anlage B 8, Abschnitte 3.3, 4.1, 5.2. Vom DE-Umsatz der Ökovolt DE stammten TEUR 4.516 aus
+Modulverkäufen an die Ökovolt AT. Aufgriffsschwellen § 9 KartG erfüllt; in Deutschland keine Anmeldepflicht,
+weil kein weiteres beteiligtes Unternehmen dort EUR 17,5 Mio. überschritt.</caption>
+</div>
+
+<h3>Das interne Vorstandspapier PV#GoBig</h3>
+<p>Der Draft für das Board of Executives vom 04.02.2021 zeigt die Transaktion aus der Innenperspektive der
+Salzburg AG. Das Verhandlungsteam wird mit Hochleitner, Müllegger und Wiener benannt. Die Rolle von
+ÖKOVOLT ist dort ausdrücklich beschrieben als</p>
+<blockquote>
+  <p>„Vertrieb und Errichtung sowie Ressourcen/KnowHow Aufbau für Kraftwerke &amp; Großkunden“</p>
+  <cite>20210129_ökovolt_board_executives_preisband_draft, Seite 2</cite>
+</blockquote>
+<p>Weitere Einträge desselben Dokuments: fünf Projektchancen, darunter „Prio1 18 MW Freifläche“ und
+„Prio2 36 MW Supermarktkette“; Beteiligungsvarianten „49 % / 74 %“; Grobbewertung des Gesamtunternehmenswerts
+mit EUR 25 Mio. nach Wegscheider gegenüber EUR 16 Mio. nach Einschätzung eines M&amp;A-Beraters;
+Bestätigung einer DCF-Bewertung durch EY bei rund 21. „Leitplanke 1“ hält fest, dass Wegscheider
+Geschäftsführer bleibt und ein Geschäftsführer der Salzburg AG bestellt wird; „Leitplanke 5“ ist mit
+<b>„Bindung von Mitarbeitern / Know-how ÖKOVOLT“</b> überschrieben und skizziert eine Struktur
+„51 % Salzburg AG / MA 1 5 % / MA 2 5 % / AW 39 %“. Beschluss des Board of Executives vom 04.02.2021:
+Verhandlung fortsetzen.</p>
+
+<div class="note ok">
+  <p class="hd">Verwertung</p>
+  <p>Das Papier stützt zwei Thesen zugleich und muss deshalb vorsichtig eingesetzt werden. Es belegt,
+  dass der Know-how-Aufbau bei der Salzburg AG ein erklärtes Ziel der Transaktion war — das stärkt den
+  Vorwurf des planmäßigen Absaugens. Es belegt aber auch, dass dieses Ziel <em>offen</em> dokumentiert
+  und als Kooperationsinhalt gedacht war, was den Vorwurf der arglistigen Täuschung über den
+  Beteiligungszweck schwächt. Für die Schadensbezifferung ist vor allem die Wertangabe relevant:
+  ein Gesamtunternehmenswert im Bereich von EUR 16 bis 25 Mio. im Jahr 2021 setzt jeder
+  Schadensforderung im dreistelligen Millionenbereich eine Plausibilitätsgrenze.</p>
+</div>
+</section>
+
+<!-- ============ 06 ============ -->
+<section id="s06">
+<h2><span class="no">06</span>Chronologie</h2>
+<p class="dek">Von der ersten Kontaktaufnahme 2020 bis zum letzten Aktenstand im Juni 2026. Rot
+hervorgehoben sind die Ereignisse, auf die sich die strafrechtlichen Vorwürfe stützen.</p>
+
+<div class="tl">
+  <div class="ev"><div class="d">ab 2019</div><div class="t">Klimaziele 2030 und EAG-Vorbereitung lösen einen PV-Boom aus. Die Salzburg AG verfügt nach eigener Darstellung über kein Planungsteam, keine Montagekapazität und kein Projektsteuerungssystem.</div></div>
+  <div class="ev"><div class="d">Anfang 2020</div><div class="t">Vorstandsvorsitzender <b>Dr. Leonhard Schitter</b> tritt persönlich an Wegscheider heran. Die Gesellschafter lehnen zunächst mehrfach ab; Bedenken: Abfluss von Geschäftsgeheimnissen, schleichende Einflussnahme, spätere Übernahme.</div></div>
+  <div class="ev"><div class="d">06.04.2020</div><div class="t">Abschluss der wechselseitigen <b>Geheimhaltungsvereinbarung</b>. Schutzwirkung bis 06.04.2024.</div></div>
+  <div class="ev"><div class="d">12.06.2020</div><div class="t">Beginn konkreter Verhandlungen zum Hofer-Projekt. Due Diligence mit vollständiger Offenlegung von Standortkonzepten, Ertragsprognosen, Machbarkeitsstudien, Statik, Bauzeit- und Logistikplänen für rund 230 Filialen.</div></div>
+  <div class="ev"><div class="d">Nov. 2020</div><div class="t">Das Hofer-Projekt ist so weit fortgeschritten, dass ÖKOVOLT faktisch als exklusiver Umsetzungspartner gesetzt ist. Projektvorlauf seit 2015, Pilotanlage 2017.</div></div>
+  <div class="ev"><div class="d">26.01.2021</div><div class="t">ÖKOVOLT übermittelt einen strukturierten Vorschlag zur gemeinsamen Projektumsetzung. Eine inhaltliche Rückmeldung bleibt aus; die Hofer KG muss öffentlich ausschreiben.</div></div>
+  <div class="ev" data-w="1"><div class="d">Q1 2021</div><div class="t"><b>Zusicherung Wiener:</b> ÖKOVOLT soll auf die Ausschreibungsteilnahme verzichten und der Salzburg AG „den Zuschlag überlassen“; im Gegenzug erhalte ÖKOVOLT den Errichtungsauftrag und es entstehe kein wirtschaftlicher Nachteil. Interner Videocall Wegscheider/Schwab/Thaler: kein eigenes Angebot.</div></div>
+  <div class="ev"><div class="d">04.02.2021</div><div class="t">Board of Executives der Salzburg AG beschließt, die Verhandlungen fortzusetzen. Papier PV#GoBig mit „Leitplanke 5 — Bindung von Mitarbeitern / Know-how ÖKOVOLT“.</div></div>
+  <div class="ev"><div class="d">05.02. / 09.03.2021</div><div class="t">Angebot „BVH Hofer Filialkonzept“; darauf gestützter <b>Letter of Intent</b> über ca. 120 kWp je Standort.</div></div>
+  <div class="ev" data-w="2"><div class="d">18.10.2021</div><div class="t"><b>Vollzug:</b> Kauf- und Abtretungsvertrag, Syndikatsvertrag als Notariatsakt, Geschäftsordnung — und am selben Tag, beim selben Notar, die <b>Errichtung der one2zero GmbH</b> als 100-prozentige Tochter der Salzburg AG. Geschäftsführer: Wiener und Hochleitner.</div></div>
+  <div class="ev"><div class="d">27.10.2021</div><div class="t">Zusammenschlussanmeldung bei der Bundeswettbewerbsbehörde, Eingabegebühr EUR 3.500 am 25.10.2021 entrichtet.</div></div>
+  <div class="ev"><div class="d">Ende 2021 / Anfang 2022</div><div class="t">Die Salzburg AG erhält den Zuschlag der Hofer KG. Der Errichtungsauftrag geht an die one2zero GmbH und von dort weiter an die <b>Eco-tec Photovoltaik GmbH</b>.</div></div>
+  <div class="ev"><div class="d">Herbst 2022</div><div class="t">Nach Recherchen beginnt one2zero mit der Ausstattung von Hofer-Filialen — die Gewerbeberechtigung Elektrotechnik wird erst am <b>03.08.2023</b> angemeldet. Bilanzverlust 2021 der one2zero: EUR 68.000.</div></div>
+  <div class="ev" data-w="2"><div class="d">09.01.2023</div><div class="t">Nominierung und Bestellung von <b>Mag. (FH) Friedrich Schiefer</b> als zweiter Geschäftsführer der Ökovolt AT, Ressort Finanz, Digitalisierung, Innendienst und Schnittstelle Salzburg AG/MyElectric. Auswahl über Personalvermittler, Hearings mit beiden Gesellschaftern.</div></div>
+  <div class="ev"><div class="d">03.04.2023</div><div class="t">Erste Windows-Artefakte zu einem Verzeichnis <code>B_CONTROLLING</code> über Laufwerk O: verbunden mit <code>\\oekovolt.local\folders\Geschäftsleitung-AT</code>.</div></div>
+  <div class="ev" data-w="1"><div class="d">21.04.2023</div><div class="t">E-Mail mit dem Betreff <b>„Test“</b> von der dienstlichen an die private Adresse <code>friedrich.schiefer@gmx.at</code>, Anhang <code>FIB_1_202301_ÖKOVO.fib</code> — Zwischenstand der BMD-Finanzbuchhaltung mit Kunden- und Lieferantenkonten sowie Bankverbindungen. Nachricht gelöscht, forensisch wiederhergestellt.</div></div>
+  <div class="ev"><div class="d">24.04.2023 – 10.10.2024</div><div class="t">Zugriffe des Benutzers <code>friedrich.schiefer</code> auf den privaten externen Datenträger <b>„Extreme SSD“</b>, Volume Serial Number <code>CEA05EBC</code>. Kopiervorgänge am 06.10.2023 und 27.05.2024; 24 dokumentierte Zugriffe auf 9 Dateien in Verzeichnissen namens <code>B_CONTROLLING</code>. Auf demselben Träger Dateien früherer Arbeitgeber (Salzburg Schokolade, Paul Reber GmbH &amp; Co. KG) aus 2020 bis 2022.</div></div>
+  <div class="ev"><div class="d">05.09.2023</div><div class="t">WKÖ-Systemmeldung: Zugangsrechte für einen Förderantrag werden von <code>salzburg@oekovolt.com</code> auf die <b>private</b> Adresse Schiefers übertragen.</div></div>
+  <div class="ev"><div class="d">15.02.2024</div><div class="t">An einen ÖKOVOLT-Kunden: „bleiben wir vorerst bei meiner privaten Email — kannst mir bitte das Angebot hierher senden.“</div></div>
+  <div class="ev" data-w="1"><div class="d">28.08.2024</div><div class="t">Kalendereintrag <b>„Termin Hr. Schiefer“</b>, Organisator Baminger, Ort: Büro Baminger, Schiefer einziger Teilnehmer. Gelöscht, forensisch wiederhergestellt.</div></div>
+  <div class="ev" data-w="1"><div class="d">15.09.2024</div><div class="t">Zwei strukturell gleiche E-Mails an die private Adresse: Planungsdateien MIS Ökovolt <b>AT</b> und <b>DE</b> mit Umsatz-, EBIT-, Cashflow- und Kennzahlenplanung 2024–2029. <b>Nur die DE-Nachricht wurde gelöscht</b> — für die Gesellschaft, in der Schiefer keine Organfunktion hatte.</div></div>
+  <div class="ev"><div class="d">Sept. 2024</div><div class="t">Die Geschäftsführerposition der one2zero GmbH wird öffentlich ausgeschrieben. Schiefer bewirbt sich, während das Wettbewerbsverbot aus Ziffer IX seines Vertrags gilt.</div></div>
+  <div class="ev"><div class="d">07.10.2024</div><div class="t">Zwei Tage vor Ablauf der Bewerbungsfrist informiert Baminger Wegscheider über die Absicht des Doppelmandats und bietet an, den vollen Geschäftsführerbezug von EUR 122.500 brutto jährlich zu übernehmen.</div></div>
+  <div class="ev" data-w="1"><div class="d">27.11.2024</div><div class="t">Schiefer übermittelt <code>Hofer 120 Kwp Muster.xlsx</code> an <code>tobias.wiener@one2zero.at</code> mit der Frage nach den „Eco-Tec“-Werten. Die Datei hatte er am 12.09.2024 von Wegscheider erhalten. <b>Einziger forensisch belegter Außentransfer.</b></div></div>
+  <div class="ev"><div class="d">26.11.2024</div><div class="t">Kalendereintrag „Kennenlernen und Termin one2zero Geschäftsführung“, Einladung von Baminger an Wiener und Schiefer, Ort: Büro Baminger. Zugleich Einladung zum „Jahresauftakt 2025 | one2zero 2.0“ am 07.01.2025 mit Vorstellung des Business Plans.</div></div>
+  <div class="ev"><div class="d">28.11.2024</div><div class="t">Erstes virtuelles Management-Team-Meeting der one2zero mit Schiefer: Hubspot-Pipeline, TOP-Projekte, Liquidität und Cashflow auf Wochenbasis.</div></div>
+  <div class="ev" data-w="1"><div class="d">02.12.2024<br>15:30:52</div><div class="t"><b>Gesamtkopie des Ordners <code>B_CONTROLLING</code></b> auf <code>C:\</code> des Dienstlaptops, abgeschlossen 15:32:27 — 4,28 GB, 1.155 Dateien, rund 76 Archive. Am selben Nachmittag ersucht Angelika Gradl per E-Mail, die Geschäftsführerbestellung Schiefers per 01.01.2025 als Tagesordnungspunkt der Generalversammlung vom 03.12.2024 aufzunehmen.</div></div>
+  <div class="ev"><div class="d">03.12.2024</div><div class="t">Generalversammlung. Wegscheider beantragt zwei zusätzliche Tagesordnungspunkte zur Doppelfunktion und zum Interessenkonflikt; Schiefer hatte das Anliegen offenbar nicht weitergeleitet. Parallel erste E-Mail-Auseinandersetzung über Änderungen an der Server-Ordnerstruktur und ein neues Z-Laufwerk.</div></div>
+  <div class="ev"><div class="d">04.12.2024 – 30.01.2025</div><div class="t">Trotz lokaler Kopie greift Schiefer mindestens <b>21-mal</b> über den Server auf <code>B_CONTROLLING</code> zu, auf die lokale Kopie nur 5-mal. Eine abweichend erzeugte, heute verschlüsselte Datei <code>Aktenvermerk_VGA.docx</code> datiert vom 07.12.2024.</div></div>
+  <div class="ev"><div class="d">11.12.2024</div><div class="t">Schiefer lehnt ein one2zero-Managementtreffen ab: „aller Voraussicht nach werden die Dienstage und Donnerstage die ÖKOVOLT-Tage sein — Montag, Mittwoch und wechselweise der Freitag die o2z-Tage.“</div></div>
+  <div class="ev"><div class="d">17.12.2024</div><div class="t">Wegscheider kritisiert den von Schiefer übermittelten Entwurf des Generalversammlungsprotokolls als „absolut nicht richtig“ und „Müll“.</div></div>
+  <div class="ev" data-w="1"><div class="d">29.01.2025<br>16:21</div><div class="t">Telefonat von rund 16 Minuten mit <b>Angelika Gradl</b>, deren Nummer nicht im Telefonbuch gespeichert ist, 1,5 Minuten nach einem verpassten Anruf. Der Eintrag wurde gelöscht. Aus den letzten Tagen vor dem Austritt sind 27 Anrufe gelöscht und 39 erhalten — ohne Durchmischung.</div></div>
+  <div class="ev" data-w="1"><div class="d">03.02.2025<br>07:51:28</div><div class="t">Am Tag des Austritts letzter Zugriff auf <code>…\B_CONTROLLING\PLANRECHNUNG\Budget 2025\Ökovolt AT\2390900_072024.xlsx</code> über den Server; eine gleichnamige Datei liegt am Laptop verschlüsselt. Danach erklärt Schiefer <b>ohne Begründung seinen vorzeitigen Austritt</b> und stellt Laptop, Handy und Tesla zurück. Unmittelbar danach Tätigkeit als selbständiger Berater der Salzburg AG mit Büro in deren Zentrale.</div></div>
+  <div class="ev"><div class="d">02./03.02.2025</div><div class="t">Die Ökovolt AT setzt einen <b>Legal Hold</b> auf das Postfach — ohne diese Maßnahme wäre die Wiederherstellung der gelöschten E-Mails unmöglich gewesen.</div></div>
+  <div class="ev"><div class="d">04.02.2025</div><div class="t">Einen Tag nach dem Austritt lädt die Salzburg AG zu Generalversammlungen am 19.02.2025 zur Bestellung von Mag. Pfisterer. Der Name wird erst am Vortag bekanntgegeben. Die Salzburg AG beantragt eine Sonderprüfung der Gebarung Wegscheiders, gestützt auf ein bereits zurückgeführtes Darlehen von EUR 100.000.</div></div>
+  <div class="ev"><div class="d">26.03.2025</div><div class="t">Anzeige bei der <b>Staatsanwaltschaft Ried im Innkreis</b>, Aktenzeichen 3 St 70/25; Bearbeitung durch die Kriminalpolizei Linz. Das LKA Oberösterreich stellt 1.130 gelöschte Dateien wieder her.</div></div>
+  <div class="ev"><div class="d">07.03.2025</div><div class="t">Zweite Runde Generalversammlungen zur Nominierung Pfisterer. 15.03.2025: Firmenbuchantrag des Notariats Ranft zum Geschäftsführerwechsel.</div></div>
+  <div class="ev"><div class="d">29.07. – 22.09.2025</div><div class="t">Wegscheider setzt die Klagsführung gegen Schiefer, one2zero und Salzburg AG auf die Tagesordnung. Die Salzburg AG beantragt im Gegenzug die Abberufung Wegscheiders „aus wichtigem Grund“ und erneut die Bestellung Pfisterers. Zwei Verschiebungen im Einvernehmen.</div></div>
+  <div class="ev"><div class="d">03.09.2025</div><div class="t">Vergleichsgespräch mit Baminger und Struber. Der Vorschlag eines neutralen gerichtlich beeideten Sachverständigen wird abgelehnt — „dann würden bei uns Köpfe rollen“. Man brauche „nur eine konkrete Zahl“, es sei „ja nicht ihr Geld“.</div></div>
+  <div class="ev"><div class="d">07.10.2025</div><div class="t">Rückkaufangebot des Vorstands an den Mehrheitsgesellschafter, bei dem ausbezahlte Dividenden <b>und die Earn-Out-Regelung über EUR 5 Mio.</b> kaufpreismindernd berücksichtigt werden sollen.</div></div>
+  <div class="ev" data-w="1"><div class="d">10.10.2025<br>15:32–15:45</div><div class="t"><b>Generalversammlung Ostermiething.</b> Vormittags in Türkheim war den Vertretern der Salzburg AG mitgeteilt worden, dass Wegscheider nach einer Notoperation vertreten wird. Sein Vertreter MMag. Stefan Zajic ist seit 14:00 Uhr vor Ort und hat die Vertreter der Salzburg AG im Café persönlich informiert. Um 15:32 Uhr werden Rieder, Scharl und Karl in den Besprechungsraum geführt; Höfler sagt „Wartets bitte kurz, ich hole die anderen“ und verlässt den Raum um 15:33:06. In dieser Minute wird eine „Generalversammlung“ eröffnet und auf Basis eines vollständig vorgefertigten, ausgedruckten Protokolls beschlossen. Nach Eintreffen der übrigen Teilnehmer verliest Rieder flüsternd und auffällig schnell. Im Protokoll ist festgehalten, Wegscheider sei „nicht anwesend oder vertreten“ und die Versammlung beschlussfähig. Der Gesellschaftsvertrag verlangt 75 % Anwesenheitsquorum; die Salzburg AG hält 49 %. Notar Mag. Thaller erscheint um 15:45 Uhr und <b>verweigert die Beurkundung</b>. Die anschließende, ordnungsgemäße Versammlung mit 100 % des Stammkapitals dauert über zwei Stunden.</div></div>
+  <div class="ev"><div class="d">14.11. / 17.11.2025</div><div class="t">113-seitige <b>Sachverhaltsdarstellung</b> mit 47 Anlagen an die WKStA, eingebracht von Benjamin Höfler: § 293, §§ 15, 146, 147 Abs 1 Z 1 und Abs 3, § 153 und § 278 StGB gegen 17 Verdächtige.</div></div>
+  <div class="ev"><div class="d">12.11.2025</div><div class="t">Dienstanweisung Pfisterers: Informationen an externe Stellen nur mit seiner vorherigen persönlichen Genehmigung. Faktisches Kommunikationsverbot für Rechts- und Compliance-Abteilung.</div></div>
+  <div class="ev" data-w="1"><div class="d">23.11.2025</div><div class="t">Die WKStA sieht <b>sechs Tage</b> nach Eingang von der Verfolgung des gesamten Beteiligungskomplexes ab — mit einsatzweiser Begründung. Der Komplex 10.10.2025 wird an die StA Ried abgetreten, die am 09.12.2025 von der Einleitung absieht. Verfolgungsantrag 23.12.2025, Vorlage an das LG Ried am 02.01.2026.</div></div>
+  <div class="ev" data-w="1"><div class="d">02.03.2026</div><div class="t">Die StA Ried stellt 3 St 70/25 nach § 190 StPO ein: Kopieren auf den Firmenlaptop und anschließendes Löschen sei keine Datenbeschädigung, den Daten fehle der wirtschaftliche Wert. Die Einstellung erfolgt, obwohl die Vorlage des forensischen Zwischenberichts bereits angekündigt war.</div></div>
+  <div class="ev" data-w="2"><div class="d">16.03.2026</div><div class="t"><b>Forensischer Zwischenbericht</b> Project SILICIUM, Grant Thornton Austria Forensic GmbH, 57 Seiten, gefertigt von Mag. Georg H. Jeitler und Klemens Sattler, beide allgemein beeidet und gerichtlich zertifiziert. Am selben Tag Fortführungsantrag.</div></div>
+  <div class="ev"><div class="d">29.03.2026</div><div class="t">Die StA Ried legt den Fortführungsantrag dem LG Ried vor und beantragt, ihm nicht stattzugeben: dem Privatgutachten komme nur eingeschränkte Beweiskraft zu, der Antrag sei ein „Schuss ins Blaue“.</div></div>
+  <div class="ev"><div class="d">22.04. / 30.04.2026</div><div class="t">Memo zum externen Datenträger „Extreme SSD“ und <b>Abschlussbericht</b>. Äußerung von CERHA HEMPEL an das LG Ried, 28 Bl 13/26h, mit Wiederherstellungskosten von <b>EUR 118.500</b> und Antrag auf Sicherstellung des GMX-Postfachs und der privaten Geräte. Bis zum Aktenstand unbeantwortet.</div></div>
+  <div class="ev"><div class="d">30.04.2026</div><div class="t">Im Berufungsverfahren räumt die Salzburg AG selbst ein: „Das tatsächlich auf den Laptop kopierte Datenvolumen beträgt laut GT-Gutachten ca. 4,28 GB und 1.155 Dateien — also weniger als 1 % des von der Beklagten behaupteten Volumens.“</div></div>
+  <div class="ev" data-w="2"><div class="d">21.05.2026</div><div class="t"><b>Drei Urteile des OLG München</b>, 14. Zivilsenat, zugunsten der Ökovolt DE: 14 U 3746/25 e, 14 U 3748/25 e, 14 U 295/26 e. Der Senat hält es für glaubhaft gemacht, dass Schiefer zum Zweck des Datenabzugs nominiert wurde, und stützt sich dabei auf den Zwischenbericht vom 16.03.2026 (Anlage K 37).</div></div>
+  <div class="ev"><div class="d">28.05.2026</div><div class="t">Mündliche Verhandlung LG Salzburg 9 Cg 26/25m. Einvernahmen Wegscheider, Messmer, Staude. Auftrag an den Kläger, die Urteile im Verfahren gegen Quehenberger vorzulegen.</div></div>
+  <div class="ev"><div class="d">15.06.2026</div><div class="t"><b>Strafanzeige und Strafantrag bei der Staatsanwaltschaft Memmingen</b> durch FEIGEN GRAF gegen Schiefer wegen § 23 Abs 1 und 4 GeschGehG, § 303a und § 303b StGB. Antragsfristen gewahrt, weil Kenntnis der Einzeltaten erst ab 16.03.2026 vorlag.</div></div>
+  <div class="ev" data-w="2"><div class="d">18.06.2026</div><div class="t">Das OLG München weist die <b>Gehörsrügen</b> der Salzburg AG in allen drei Verfahren zurück und lehnt die einstweilige Einstellung der Zwangsvollstreckung ab. Kosten trägt die Salzburg AG. Die Schriftsätze vom 15. und 18.05.2026 samt eidesstattlicher Versicherung Schiefers befanden sich nicht in der Berufungsakte.</div></div>
+</div>
+</section>
+
+<!-- ============ 07 ============ -->
+<section id="s07">
+<h2><span class="no">07</span>Komplex A — Hofer, one2zero und die Verdrängung</h2>
+<p class="dek">Der wirtschaftlich größte und beweisrechtlich sauberste Komplex. Er beruht nicht auf
+Forensik, sondern auf Urkunden und einer Kausalkette, die sich aus dem Verhalten der Parteien ergibt.</p>
+
+<h3>Der Ablauf in sechs Schritten</h3>
+<ol>
+<li><b>Projektvorlauf seit 2015.</b> Die Ökovolt AT entwickelt die flächendeckende PV-Ausstattung der
+österreichischen Hofer-Filialen, errichtet 2017 eine Pilotanlage und wird bevorzugter technischer
+Ansprechpartner für ein nationales Rollout-Modell über rund 230 Standorte.</li>
+<li><b>Vollständige Offenlegung in der Due Diligence.</b> Standortkonzepte mit technischer
+Eignungsprüfung und Baugrundbewertung, Planrechnungen und Ertragsprognosen, Machbarkeitsstudien mit
+Netzzutrittsfragen, bauliche Bestandsaufnahmen und Substratanalysen, Bauzeit- und Meilensteinpläne,
+Disponierungs- und Logistikpläne über mehrere Kalenderjahre.</li>
+<li><b>Die Defacto-ARGE.</b> Nachdem die Hofer KG Bedenken zu einem Ausfallszenario der
+Projektgesellschaft ÖkovInvest GmbH äußert, bekundet die Salzburg AG selbst das Interesse, als
+Finanzierungspartner einzutreten. Vereinbart wird eine Aufgabenteilung: Contracting bei der Salzburg AG,
+technische Errichtung bei ÖKOVOLT. Genau diese Struktur entsprach auch dem Wunsch der Hofer KG.</li>
+<li><b>Die Zusicherung.</b> Nach Verschleppung der Kommunikation und der daraus folgenden öffentlichen
+Ausschreibung ersucht Wiener Wegscheider ausdrücklich, nicht teilzunehmen und der Salzburg AG „den
+Zuschlag zu überlassen“, mit der Zusicherung, ÖKOVOLT erhalte den Errichtungsauftrag und es entstehe
+kein wirtschaftlicher Nachteil.</li>
+<li><b>Der Verzicht.</b> ÖKOVOLT nimmt nicht teil, stellt Kalkulationen, Standortkonzepte, Logistik- und
+Bauzeitpläne zur Verfügung und unterstützt die Salzburg AG aktiv bei der Finalisierung ihres Angebots.
+Der LOI vom 09.03.2021 hält ausdrücklich fest, dass sich das Angebot an die Hofer KG auf das
+ÖKOVOLT-Angebot vom 05.02.2021 stützt.</li>
+<li><b>Die Weitervergabe.</b> Der Zuschlag geht Ende 2021 / Anfang 2022 an die Salzburg AG, der
+Errichtungsauftrag aber an die one2zero GmbH — und von dieser weiter an die Eco-tec Photovoltaik GmbH.</li>
+</ol>
+
+<div class="note crit">
+  <p class="hd">Das Gewerberechtsargument</p>
+  <p>Die one2zero GmbH meldete das für die Errichtung von PV-Anlagen zwingend erforderliche Gewerbe der
+  Elektrotechnik erst am <b>03.08.2023</b> an; bis dahin war sie formal nur zur Unternehmensberatung
+  befugt. Nach den Recherchen begann sie aber bereits im Herbst 2022 mit der Ausstattung von
+  Hofer-Filialen. Zum Zeitpunkt der Subvergabe wies sie für 2021 einen Bilanzverlust von EUR 68.000 aus
+  und verfügte über keine einschlägigen Referenzen. Das ist der angreifbarste Punkt der Gegenseite, weil
+  er aus einer behördlichen Registerabfrage folgt (GISA, 04.03.2025) und nicht aus einer Wertung.</p>
+</div>
+
+<h3>Quehenberger — das Muster in Reinform</h3>
+<p>Im Projekt Quehenberger (Impuls Immobilien GmbH) verfügte die Ökovolt AT nach ihrer Darstellung über
+einen unterzeichneten Auftrag. Ein Verkaufsmitarbeiter der one2zero wies die eigene Geschäftsführung
+ausdrücklich auf das bestehende Auftragsverhältnis hin; die Verhandlungen wurden dennoch fortgesetzt und
+ein deutlich unter marktüblichen Konditionen liegendes Konkurrenzangebot gelegt. Eine als Beweis
+eingereichte Anzahlungsrechnung trägt ein Ausstellungsdatum <em>vor</em> dem zugehörigen Angebot.</p>
+<div class="note warn">
+  <p class="hd">Prozessuale Realität</p>
+  <p>Die Ökovolt AT hat den Prozess gegen Quehenberger in beiden Instanzen verloren. Das Berufungsurteil
+  stützt sich darauf, dass ein entscheidendes Vorbringen erster Instanz unterblieb — nämlich, dass
+  ÖKOVOLT mit der Auftragsausführung bereits seit über einem Jahr im Zusammenwirken mit Quehenberger
+  begonnen hatte und das unterschriebene Auftragsschreiben schlüssig angenommen worden war. Die
+  Salzburg AG leitet daraus im Salzburger Verfahren ab, es habe nie ein Vertragsverhältnis gegeben und
+  eine eigene Verfehlung scheide damit aus. Das Landesgericht Salzburg hat dem Kläger am 28.05.2026
+  aufgetragen, beide Urteile binnen 14 Tagen vorzulegen. <b>Quehenberger ist als Schadensposten
+  derzeit nicht tragfähig und sollte in der Forderung nicht geführt werden.</b></p>
+</div>
+
+<h3>Schadensansatz Hofer</h3>
+<div class="tw">
+<table>
+<thead><tr><th>Parameter</th><th class="n">Wert</th><th>Herkunft und Prüfbedarf</th></tr></thead>
+<tbody>
+<tr><td>Rollout-Volumen</td><td class="n">35.000 kWp</td><td>Sachverhaltsdarstellung; abzugleichen mit dem tatsächlich errichteten Bestand der Hofer-Filialen</td></tr>
+<tr><td>Deckungsbeitrag je kWp</td><td class="n">EUR 300</td><td>interne Kalkulation; durch Sachverständigen aus den eigenen Projektnachkalkulationen zu verifizieren</td></tr>
+<tr><td>Entgangener Deckungsbeitrag</td><td class="n"><b>EUR 10.500.000</b></td><td>35.000 × 300</td></tr>
+<tr><td>Entgangenes Contracting-Ergebnis</td><td class="n">nicht beziffert</td><td>ÖKOVOLT behauptet, ohne Täuschung auch das Contracting selbst umgesetzt zu haben</td></tr>
+</tbody>
+</table>
+<caption>Die Plausibilität des Ansatzes lässt sich an einem zweiten Weg prüfen: 35.000 kWp entsprechen
+bei branchenüblichen EUR 900 bis 1.100 je kWp einem Auftragsvolumen von EUR 31,5 bis 38,5 Mio. Ein
+Deckungsbeitrag von EUR 10,5 Mio. entspricht damit 27 bis 33 Prozent des Auftragsvolumens — ein für
+Errichtungsleistungen hoher Wert, der substantiiert werden muss.</caption>
+</div>
+</section>
+
+<!-- ============ 08 ============ -->
+<section id="s08">
+<h2><span class="no">08</span>Komplex B — Datenabzug, Verschlüsselung, Löschung</h2>
+<p class="dek">Der Befund von Grant Thornton ist präzise, zurückhaltend und in beiden Richtungen
+verwertbar. Wer ihn überzeichnet, verliert ihn als Beweismittel.</p>
+
+<h3>Auftrag, Sachverständige, Methodik</h3>
+<p>Beauftragt am 04.03.2026 durch die Ökovolt Solartechnik GmbH, Datensicherung ab 09.03.2026. Gefertigt
+von <b>Mag. Georg H. Jeitler</b> (Partner, Head of Advisory, allgemein beeidet und gerichtlich
+zertifiziert für Unternehmensreorganisation, Kosten- und Leistungsrechnung, Finanzplanung, Marketing,
+Wirtschaftswerbung, Medienwesen) und <b>Klemens Sattler</b> (Director Digital Forensics, CISSP, GIME,
+zertifiziert für forensische Datensicherung, Datenrekonstruktion und Datenauswertung, Fachgebiet 68.62).
+Das Dokument ist ausdrücklich ein Zwischenstand zum Befundstand 13.03.2026.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Asservat</th><th>Gerät</th><th class="az">Kennung</th></tr></thead>
+<tbody>
+<tr><td>001</td><td>Apple iPhone 14, A2882</td><td class="az">IMEI 354715680849986</td></tr>
+<tr><td>002</td><td>Dell Latitude 5530, P104F</td><td class="az">SN JT3QSL3</td></tr>
+<tr><td>003</td><td>WD SN740 NVMe, 256 GB, aus Asservat 002</td><td class="az">SN 222161440335</td></tr>
+<tr><td>004</td><td>HGST Z5K500-250, ausgebaut aus einem OKI-Drucker</td><td class="az">SN M2G8P1JJ</td></tr>
+<tr><td>—</td><td>Postfach- und OneDrive-Export über Microsoft Purview, Windows Security Events Server DC2019</td><td class="az">SHA-Prüfsummen dokumentiert</td></tr>
+<tr><td>—</td><td>Virtuelle Maschinen BMD-Buchhaltung-SRV und MGM2019; Sicherung des Fileservers DC2019 betriebsbedingt unterbrochen</td><td class="az">—</td></tr>
+</tbody>
+</table>
+<caption>Werkzeuge: Cellebrite Inseyets UFED 10.8.0.322, Tableau TX-1 21.3.0, Magnet AXIOM 9.11.0.47760,
+X-Ways 21.5 SR-7, Intella Connect, Microsoft Purview. Originalsicherungen mit Hashwerten, davon
+inhaltsidentische Arbeitskopien.</caption>
+</div>
+
+<h3>Behauptung gegen Befund</h3>
+<div class="tw">
+<table>
+<thead><tr><th style="width:26%">Vorwurf</th><th style="width:37%">Forensischer Befund</th><th>Bewertung</th></tr></thead>
+<tbody>
+<tr>
+<td>Abzug von 338.000 Dateien / 500 GB</td>
+<td>4,28 GB, 1.155 Dateien, rund 76 Archive, erzeugt am 02.12.2024 zwischen 15:30:52 und 15:32:27 — ein einziger Kopiervorgang des gesamten Ordners. Die Ursprungszahl stammt aus einer nicht forensikgeeigneten Endanwendersoftware; der Datenträger kann diese Menge nicht speichern.</td>
+<td><span class="pill p-crit">widerlegt</span></td>
+</tr>
+<tr>
+<td>Kopie auf privaten Datenträger</td>
+<td>24 dokumentierte Zugriffe auf 9 Dateien in Verzeichnissen „B_CONTROLLING“ auf der „Extreme SSD“ (VSN CEA05EBC), Laufwerke E: und einmal D:; Kopiervorgänge 06.10.2023 und 27.05.2024, selektive Öffnung am 28.05.2024. Backup-Charakteristik ausgeschlossen, sämtliche Zugriffe manuell. Darauf auch Dateien früherer Arbeitgeber.</td>
+<td><span class="pill p-ok">belegt</span> Gesamtkopie indiziert, nicht bewiesen</td>
+</tr>
+<tr>
+<td>Verschlüsselung von Unternehmensdaten</td>
+<td>Mindestens 147 Office- und PDF-Dateien am Laptop passwortgeschützt; 446 JumpList-Einträge zu bekannten verschlüsselten Dateien im Zeitraum 11.01.2023 bis 30.01.2025, mit Häufung im Dezember 2024 und Januar 2025. Bei 40 Dateien liegen identische Dateinamen unverschlüsselt in E-Mail-Anhängen — die Verschlüsselung erfolgte also nachträglich.</td>
+<td><span class="pill p-ok">belegt</span></td>
+</tr>
+<tr>
+<td>Löschung vom Laptop</td>
+<td>LKA Oberösterreich: 1.130 wiederhergestellte Dateien. Grant Thornton mit neuerer Toolversion: 2.262, davon 1.791 in Büroformaten, zusätzlich 2.339 Bilddateien über 1 MB (überwiegend Anlagen, Bauteile, Drohnenaufnahmen, Baustellen).</td>
+<td><span class="pill p-ok">belegt</span></td>
+</tr>
+<tr>
+<td>Löschung von E-Mails und Kalendereinträgen</td>
+<td>Rund 7.000 von rund 36.700 E-Mails in <code>Recoverable Items/DiscoveryHolds</code> = 19 % des verfügbaren Bestands; in Elementen gerechnet 61.000 von 197.000. Wiederherstellung nur durch den Legal Hold möglich. Exchange verlangt für die endgültige Entfernung ein dreistufiges Verfahren — versehentliches Löschen dieser Größenordnung ist ausgeschlossen.</td>
+<td><span class="pill p-ok">belegt</span></td>
+</tr>
+<tr>
+<td>Löschung am Diensthandy</td>
+<td>Kein Werksreset — der beobachtete Begrüßungsbildschirm erscheint auch nach einem iOS-Update. 876 E-Mails vorhanden, keine gelöschten wiederherstellbar. Keine Spuren gelöschter WhatsApp-Nachrichten, keine Hinweise auf entfernte Chat-Apps. 27 gelöschte gegen 39 erhaltene Anrufe vom 31.01. bis 03.02.2025 ohne Durchmischung. Browserverlauf vollständig gelöscht, rekonstruierte Einträge ohne Relevanz.</td>
+<td><span class="pill p-warn">teils widerlegt</span> selektive Löschung belegt</td>
+</tr>
+<tr>
+<td>7.000 Ausdrucke</td>
+<td>Druckprotokolle auf dem Server DC2019 waren nicht konfiguriert. Die Festplatte aus dem OKI-Drucker enthält keine verwertbaren Daten. Am Laptop sind drei gedruckte Dateien nachweisbar, zeitlich irrelevant.</td>
+<td><span class="pill p-crit">nicht belegt</span></td>
+</tr>
+<tr>
+<td>Weitergabe an Salzburg AG / one2zero</td>
+<td>Aus der E-Mail-Kommunikation mit sieben geprüften Adressen der Salzburg AG und der one2zero ergeben sich keine Belege. Ob Daten auf andere Speicherorte übertragen wurden, kann „weder bestätigt noch ausgeschlossen werden“. Einzige Ausnahme: <code>Hofer 120 Kwp Muster.xlsx</code> an Wiener am 27.11.2024 — eine Datei, die Schiefer am 12.09.2024 von Wegscheider erhalten hatte und bei der offen ist, ob sie nicht ohnehin im Rahmen der Zusammenarbeit übergeben worden wäre.</td>
+<td><span class="pill p-crit">offen</span></td>
+</tr>
+<tr>
+<td>Screenshots mit Finanzdaten</td>
+<td>Rund 600 Screenshots, davon 39 als relevant eingestuft (Finanzplanungen, Lagerbestände, Controlling, Projektplanung, Gewinn- und Verlustrechnungen, Kundenanalysen einschließlich TOP-10-Kunden); ab Dezember 2024 zehn Stück. Nur zwei wurden versendet — an die externe Buchhaltung der Ökovolt.</td>
+<td><span class="pill p-warn">Zweck unklar</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<h3>Die Indizienkette, die trägt</h3>
+<p>Der Befund liefert keinen Transfernachweis, aber eine ungewöhnlich dichte Kette von Umständen, aus
+denen sich ein Weitergabevorsatz herleiten lässt. Diese Kette ist das Herzstück beider Strafanzeigen.</p>
+<ul>
+<li><b>Zeitliche Koinzidenz.</b> Die Gesamtkopie am 02.12.2024 fällt auf denselben Nachmittag, an dem
+die Geschäftsführerbestellung bei der Konkurrenzgesellschaft als Tagesordnungspunkt für den Folgetag
+angesetzt wird.</li>
+<li><b>Fortgesetzte Servernutzung.</b> Nach der lokalen Kopie greift Schiefer 21-mal über den Server und
+nur 5-mal auf die eigene Kopie zu. Für eine dienstlich motivierte Kopie ergibt das keinen Sinn.</li>
+<li><b>Selektivität der Löschung.</b> Von zwei am selben Tag versendeten, strukturell gleichen
+Planungsdateien wird ausschließlich die deutsche gelöscht — für die Gesellschaft, in der Schiefer keine
+Organfunktion und keine Zugriffsberechtigung hatte.</li>
+<li><b>Reichweite über die Zuständigkeit hinaus.</b> Im kopierten Ordner betreffen 240 Elemente die
+deutsche und 51 die schweizerische Gesellschaft, davon 147 bzw. 7 ausschließlich; in den gelöschten
+Laptopdaten 199 bzw. 39, im gelöschten Postfach 300 bzw. 4.</li>
+<li><b>Kommunikationsabbruch.</b> Der E-Mail-Verkehr mit Wiener endet am 27.11.2024 abrupt, während die
+Kalendereinträge bis 07.01.2025 weiterlaufen — genau ab dem Zeitpunkt, zu dem die Bestellung bekannt
+wurde.</li>
+<li><b>Verhaltensmuster.</b> Telefonate im Auto statt in den Betriebsräumen, ein gelöschtes 16-minütiges
+Gespräch mit der Legal Counsel der Gesellschafterin, deren Nummer nicht gespeichert war, 1,5 Minuten
+nach einem verpassten Anruf.</li>
+<li><b>Vorgeschichte.</b> Auf demselben privaten Datenträger liegen Jahres- und Kostenstellenplanungen
+früherer Arbeitgeber — Salzburg Schokolade und Paul Reber GmbH &amp; Co. KG.</li>
+</ul>
+
+<h3>Wertansatz der Sachverständigen</h3>
+<p>Grant Thornton bewertet ausdrücklich nur den Wiederherstellungsaufwand, nicht den Marktwert des
+Knowhows. Der Ansatz ist bewusst konservativ: von den 1.130 durch die Ermittlungsbehörden
+wiederhergestellten Dateien werden nur 3 Prozent — rund 22 Dateien — als wiederherstellungsrelevant
+angesehen, je Dokument ein Arbeitstag zu marktüblichem Beratungsstundensatz. Für die 147 verschlüsselten
+Dateien gilt derselbe Ansatz, hier jedoch für alle. Hinzu kommen die forensischen Kosten der Analyse und
+der Behebungsversuche, die bei langwierigen Entschlüsselungsversuchen ein Vielfaches ausmachen können.
+CERHA HEMPEL beziffert die Wiederherstellungskosten auf dieser Grundlage mit <b>EUR 118.500</b> und
+bezeichnet den Ansatz als konservativ.</p>
+<p>Zum wirtschaftlichen Wert des Ordners selbst äußern sich die Sachverständigen deutlich
+zurückhaltender als die Vorversion des Compliance-Berichts. Der Reproduktionswert einer vergleichbaren
+Datenbasis erfordere jahrelange Projekt- und Kostendaten sowie den Aufbau von Lieferanten- und
+Kundenbeziehungen und weise „vor dem Hintergrund der Betriebsgröße für einen sein Geschäft erst
+aufbauenden Mitbewerber einen deutlich sechsstelligen Wert“ auf. Der Ordner ermögliche „eine nahezu
+vollständige Rekonstruktion von Geschäftsmodell, Umsatzstruktur, Kostenstruktur und gegebenenfalls
+Projektpipeline“.</p>
+
+<div class="note">
+  <p class="hd">Was Grant Thornton als nächste Schritte empfiehlt</p>
+  <p>Verifizierung durch einen unabhängigen, behördlich beigezogenen Gerichtssachverständigen sowie
+  Sicherstellung und Analyse des privaten GMX-Postfachs, der persönlichen Rechner und Mobilgeräte
+  Schiefers und der Datenbestände potenziell beteiligter Personen bei der Salzburg AG und der one2zero
+  GmbH. Ohne diese Schritte bleibt die Transferfrage unbeantwortet — und damit der wertmäßig größte
+  Teil des behaupteten Schadens unbewiesen.</p>
+</div>
+</section>
+
+<!-- ============ 09 ============ -->
+<section id="s09">
+<h2><span class="no">09</span>Komplex C — Die Generalversammlung vom 10.10.2025</h2>
+<p class="dek">Dreizehn Minuten, zwanzig Tagesordnungspunkte, ein vorgefertigtes Protokoll und ein Notar,
+der die Beurkundung verweigerte.</p>
+
+<p>Die Generalversammlung war vom Mehrheitsgesellschafter mit Schreiben vom 24.09.2025 für den 10.10.2025,
+15:30 Uhr, in Ostermiething einberufen; die Einladung umfasste 14 Seiten und wies auf die Ladung eines
+Notars hin. Auf der Tagesordnung standen unter anderem die Klagsführung gegen Schiefer, one2zero und
+Salzburg AG sowie — auf Antrag der Salzburg AG — die Abberufung Wegscheiders und die Bestellung
+Pfisterers, ferner der Ausschluss der Salzburg AG als Gesellschafterin.</p>
+
+<h3>Die sechs tragenden Feststellungen</h3>
+<div class="tw">
+<table>
+<thead><tr><th style="width:30%">Feststellung</th><th>Beleg</th></tr></thead>
+<tbody>
+<tr><td><b>Kenntnis der Vertretung</b> — die Vertreter der Salzburg AG wussten, dass der Mehrheitsgesellschafter vertreten sein wird</td><td>Mitteilung in der Vormittagsversammlung in Türkheim gegenüber Mag. Karl; persönliches Gespräch mit MMag. Zajic im Café gegen 14:00 Uhr; Ankündigung Höflers im Besprechungsraum „Wartets bitte kurz, ich hole die anderen“, bezeugt durch Michael Schnaitl</td></tr>
+<tr><td><b>Vorgefertigtes Protokoll</b> — kein während der Versammlung erstelltes Protokoll, sondern ein vollständig ausgedrucktes Dokument, in das nur Beginn und Ende handschriftlich eingetragen wurden</td><td>übergebene Urkunde, unterschrieben von Rieder als Vorsitzenden und Scharl als Protokollführerin</td></tr>
+<tr><td><b>Falsche Anwesenheitsfeststellung</b> — „Andreas Wegscheider ist nicht anwesend oder vertreten“</td><td>Protokollinhalt gegen den tatsächlichen Ablauf; Zajic war seit 14:00 Uhr im Haus</td></tr>
+<tr><td><b>Falsche Beschlussfähigkeit</b> — der Gesellschaftsvertrag verlangt ein Anwesenheitsquorum von 75 % des Stammkapitals; die Salzburg AG hält 49 %</td><td>Gesellschaftsvertrag; § 38 Abs 7 GmbHG hätte die Vertagung geboten</td></tr>
+<tr><td><b>Zeitliche Unmöglichkeit</b> — Eröffnung angeblich 15:32 Uhr, Schluss 15:45 Uhr für 20 Tagesordnungspunkte; Höfler verließ den Raum erst um 15:33:06 und hätte eine Eröffnung wahrgenommen</td><td>die anschließende, ordnungsgemäß protokollierte Versammlung mit 100 % des Stammkapitals dauerte über zwei Stunden</td></tr>
+<tr><td><b>Beurkundungsverweigerung</b> — der um 15:45 Uhr eintreffende Notar Mag. Michael Thaller verweigerte ausdrücklich und mit Nachdruck die Beurkundung</td><td>Kern des Vorwurfs: die Unrichtigkeit war für einen unbeteiligten Berufsträger auf Anhieb erkennbar</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>Die rechtliche Auseinandersetzung um § 293 StGB</h3>
+<p>Die Staatsanwaltschaft Ried sah von der Einleitung ab: ein allenfalls inhaltlich unrichtiges Protokoll
+gehe nicht über unrichtiges Parteienvorbringen hinaus und sei damit kein taugliches Beweismittel
+(RIS-Justiz RS0117739, RS0103663).</p>
+<p>Der Verfolgungsantrag hält dem entgegen, dass einem Generalversammlungsprotokoll ein eigenständiger,
+sogar originärer Beweiswert zukommt: Ohne Protokollvorlage hinge der Firmenbuchantrag rechtlich in der
+Luft, eine Eintragung ohne zugrundeliegenden Beschluss wäre nicht möglich. Die zitierte Rechtsprechung
+führe daher zum gegenteiligen Ergebnis. Gestützt wird das auf die Leitentscheidung OGH 11.04.1989,
+5 Ob 576/88, zu einem nahezu identischen Sachverhalt.</p>
+<blockquote>
+<p>„Gleichsam auf einen Augenblick konzentriert um 14.01 Uhr erfolgte die Beschlussfassung in der Weise,
+dass die bereits vorher vorbereiteten und protokollierten Beschlüsse als gefasst festgestellt wurden …
+Eine solche Vorgangsweise widerspricht nicht nur der Treuepflicht der die Generalversammlung
+durchführenden Gesellschafter, sondern auch den gesetzlichen Bestimmungen über die Durchführung der
+Generalversammlung selbst.“</p>
+<cite>OGH 11.04.1989, 5 Ob 576/88 = EvBl 1989, 132 = wbl 1989, 222</cite>
+</blockquote>
+<p>Der Verfolgungsantrag arbeitet heraus, dass der vorliegende Fall in vier Punkten gravierender ist als
+der OGH-Fall: der Mehrheitsgesellschafter wartete im selben Gebäude und musste nur geholt werden; die
+Abhaltung durch den Minderheitsgesellschafter war wegen des Quorums von Anfang an statutenwidrig; der
+Erscheinende wurde über die laufende Versammlung getäuscht; und auf Grundlage des Protokolls wurde die
+Eintragung des Geschäftsführerwechsels begehrt.</p>
+
+<div class="note warn">
+  <p class="hd">Kontext: was davor und danach geschah</p>
+  <p>Der Vorgang steht nicht isoliert. Die Sachverhaltsdarstellung schildert ein Muster: die
+  Sonderprüfung als Druckmittel gegen den geschäftsführenden Gesellschafter, angeboten gegen den
+  Rückzug der Prüfungsanträge zur Gebarung Schiefers; zwei voneinander abweichende Lebensläufe
+  Pfisterers; die nach Darstellung Wieners vorgesehene Rolle Pfisterers, Zugriff auf die
+  Unternehmens-EDV und die persönlichen E-Mails der Gesellschafter zu erlangen und Spuren zu beseitigen;
+  die Dienstanweisung vom 12.11.2025, die jede externe Information von seiner Genehmigung abhängig
+  macht. Diese Punkte stützen den Vorsatznachweis, beruhen aber überwiegend auf der Aussage eines
+  einzelnen Zeugen und sind ohne dessen Einvernahme nicht verwertbar.</p>
+</div>
+</section>
+
+<!-- ============ 10 ============ -->
+<section id="s10">
+<h2><span class="no">10</span>Komplex D — Datenschutz</h2>
+<p class="dek">Der einzige Komplex, in dem der Vorgang selbst unstrittig ist. Gestritten wird
+ausschließlich über die Rechtsfolgen.</p>
+
+<p>Die Kanzlei Heuking Kühn Lüer Wojtek hat namens der Salzburg AG im Verfahren LG Memmingen
+1 HK O 1771/25 das <b>vollständige und ungeschwärzte Strafurteil des Landesgerichts Innsbruck vom
+01.07.2025</b> als Anlage K 53 vorgelegt. Das Urteil enthält über die Verurteilung hinaus vollständige
+Identitäts- und Adressdaten, Kontodaten, persönliche und wirtschaftliche Verhältnisse sowie Namen und
+individuelle Schadenersatzansprüche zahlreicher Geschädigter — Personen und Daten ohne jeden
+Zusammenhang mit dem Gesellschaftsrechtsstreit.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th>Ansatz</th><th>Adressat</th><th>Rechtsgrundlage</th><th class="n">Rahmen</th></tr></thead>
+<tbody>
+<tr><td>Aufsichtsbeschwerde</td><td>Salzburg AG</td><td>Art. 5 Abs 1 lit b und c, Art. 6, Art. 10 DSGVO — Zweckbindung, Datenminimierung, strafrechtliche Verurteilungen</td><td class="n">20 Mio. oder 4 % → EUR 82,4 Mio.</td></tr>
+<tr><td>Aufsichtsbeschwerde</td><td>Heuking (DE)</td><td>Entgegennahme, Speicherung, Auswertung, ungeschwärzte Vorlage</td><td class="n">20 Mio. oder 4 %</td></tr>
+<tr><td>Aufsichtsbeschwerde</td><td>DORDA (AT)</td><td>soweit dasselbe Urteil in österreichischen Verfahren eingebracht wurde</td><td class="n">20 Mio. oder 4 %</td></tr>
+<tr><td>Strafanzeige</td><td>natürliche Personen</td><td>§ 63 DSG — Datenverarbeitung in Gewinn- oder Schädigungsabsicht</td><td class="n">1 Jahr Freiheitsstrafe oder 720 Tagessätze</td></tr>
+<tr><td>Verbandsverantwortlichkeit</td><td>Salzburg AG und Berufsausübungsgesellschaften</td><td>VbVG bei Anlasstat nach § 63 DSG</td><td class="n">55 × EUR 30.000 = EUR 1,65 Mio.</td></tr>
+<tr><td>Schadenersatz</td><td>alle Verantwortlichen, gesamtschuldnerisch</td><td>Art. 82 DSGVO, Abs 4 für die Solidarhaftung</td><td class="n">ohne gesetzliche Höchstgrenze</td></tr>
+<tr><td>Unterlassung und Beseitigung</td><td>alle Empfänger</td><td>Rückruf, Löschung, Offenlegung der Empfänger, Berichtigung</td><td class="n">—</td></tr>
+<tr><td>Disziplinar- und Berufsrecht</td><td>beteiligte Rechtsanwälte</td><td>Rechtsanwaltskammer AT und DE, Verschwiegenheit und Herkunftsprüfung</td><td class="n">—</td></tr>
+</tbody>
+</table>
+<caption>Die Berechnung von EUR 82,4 Mio. beruht auf 4 % eines Jahresumsatzes von EUR 2,06 Mrd. Es handelt
+sich um den abstrakten gesetzlichen Rahmen, nicht um eine Prognose. Aufsichtsbehördliche Geldbußen
+fließen dem Staat zu, nicht den Betroffenen — als Vergleichsdruckmittel taugt die Zahl, als
+Forderungsposition nicht.</caption>
+</div>
+
+<div class="note crit">
+  <p class="hd">Gegenrisiko</p>
+  <p>Der datenschutzrechtliche Komplex ist zweischneidig. Wer Verstöße gegen Art. 5 und 32 DSGVO
+  geltend macht, muss die eigenen technischen und organisatorischen Maßnahmen belegen — und genau diese
+  stehen im Datenkomplex B ohnehin zur Debatte, weil einem Geschäftsführer auf dessen Beharren die
+  Master-Passwörter und globalen Administratorrechte für das gesamte Netzwerk übergeben wurden. Das ist
+  zugleich das Einfallstor für den Einwand, die Geheimhaltungsmaßnahmen seien nicht angemessen gewesen.
+  Die Beschwerden sollten daher erst nach Abschluss einer eigenen TOM-Dokumentation eingebracht werden.</p>
+</div>
+</section>
+
+<!-- ============ 11 ============ -->
+<section id="s11">
+<h2><span class="no">11</span>Verfahrenslandkarte</h2>
+<p class="dek">Elf Verfahren in zwei Rechtsordnungen. Die Erfolge liegen durchgehend in Deutschland,
+die Blockaden durchgehend in Österreich.</p>
+
+<h3>Deutschland</h3>
+<div class="tw">
+<table>
+<thead><tr><th class="az">Aktenzeichen</th><th>Gegenstand</th><th>Parteien</th><th>Stand</th></tr></thead>
+<tbody>
+<tr><td class="az">OLG München<br>14 U 3746/25 e<br><span style="color:var(--muted)">LG Memmingen 1 HK O 1437/25</span></td><td>Unterlassung, Komplex Wirtschaftsspionage</td><td>Salzburg AG (Heuking) gegen Ökovolt DE (Gyarmati; Kursawe Foitzik Hohlweg)</td><td><span class="pill p-ok">obsiegt</span> Urteil 21.05.2026; Gehörsrüge am 18.06.2026 zurückgewiesen, Kosten Klägerin</td></tr>
+<tr><td class="az">OLG München<br>14 U 3748/25 e<br><span style="color:var(--muted)">LG Memmingen 1 HK O 1568/25</span></td><td>Unterlassung, Komplex Beschlussfassung Österreich</td><td>wie vor</td><td><span class="pill p-ok">obsiegt</span> wie vor</td></tr>
+<tr><td class="az">OLG München<br>14 U 295/26 e<br><span style="color:var(--muted)">LG Memmingen 1 HK O 1932/25</span></td><td>einstweilige Verfügung, beide Komplexe</td><td>wie vor</td><td><span class="pill p-ok">obsiegt</span> wie vor, Verweis auf die Parallelbeschlüsse</td></tr>
+<tr><td class="az">LG Memmingen<br>1 HK O 1771/25</td><td>im Akt als Verfahren geführt, in dem Anlage K 53 vorgelegt wurde</td><td>Salzburg AG gegen Ökovolt DE</td><td><span class="pill p-neu">anhängig</span></td></tr>
+<tr><td class="az">StA Memmingen</td><td>Strafanzeige und Strafantrag gegen Schiefer: § 23 Abs 1 und 4 GeschGehG, § 303a Abs 1, § 303b Abs 1 StGB</td><td>Anzeigeerstatterin Ökovolt DE, vertreten durch FEIGEN GRAF (Dr. Minkoff, Weber LL.M.), Az. AMI/FWE 26 091</td><td><span class="pill p-acc">eingebracht 15.06.2026</span> Akteneinsicht nach § 406e StPO beantragt</td></tr>
+</tbody>
+</table>
+<caption>Zuständigkeit: § 143 Abs 1 S 1 GVG, § 7 Abs 1 StPO über den Sitz der Dateninhaberin in Türkheim.
+Anwendbarkeit deutschen Strafrechts über § 5 Nr. 7 StGB (Betriebs- und Geschäftsgeheimnisse eines
+inländischen Unternehmens), für das GeschGehG über § 23 Abs 7 S 1 GeschGehG, ferner §§ 3, 9 Abs 1 StGB
+über den Erfolgsort.</caption>
+</div>
+
+<h3>Österreich</h3>
+<div class="tw">
+<table>
+<thead><tr><th class="az">Aktenzeichen</th><th>Gegenstand</th><th>Stand</th></tr></thead>
+<tbody>
+<tr><td class="az">LG Salzburg<br>9 Cg 26/25m</td><td>Wegscheider gegen Salzburg AG: Vornahme unvertretbarer Handlungen, in eventu Feststellung, in eventu Rechtsgestaltung — Durchsetzung der Syndikatspflichten</td><td><span class="pill p-acc">Beweisverfahren</span> Verhandlung 28.05.2026, Richterin Mag. Außerhofer; Vorbringen und Beweisanträge beiderseits abschließend; Auftrag zur Vorlage der Quehenberger-Urteile</td></tr>
+<tr><td class="az">StA Ried im Innkreis<br>3 St 70/25</td><td>Schiefer: §§ 123, 126a StGB, § 11 UWG</td><td><span class="pill p-crit">eingestellt 02.03.2026</span> § 190 StPO; Fortführungsantrag 16.03.2026; ablehnende Stellungnahme 29.03.2026</td></tr>
+<tr><td class="az">LG Ried im Innkreis<br>28 Bl 13/26h</td><td>Fortführungsverfahren; Äußerung vom 30.04.2026 mit neuen Beweismitteln nach § 195 Abs 1 Z 3 StPO</td><td><span class="pill p-warn">unbeantwortet</span> Erfolgsaussichten von den eigenen Vertretern als sehr gering eingeschätzt</td></tr>
+<tr><td class="az">WKStA Wien<br>3 St 287/25 · 8 St 13/25y</td><td>Beteiligungskomplex: §§ 146, 147, 153, 278, 293 StGB gegen 17 Verdächtige</td><td><span class="pill p-crit">Absehen 23.11.2025</span> sechs Tage nach Eingang, einsatzweise Begründung</td></tr>
+<tr><td class="az">StA Ried im Innkreis</td><td>Komplex 10.10.2025, von der WKStA abgetreten</td><td><span class="pill p-crit">Absehen 09.12.2025</span> Verfolgungsantrag 23.12.2025; Vorlage an das LG Ried 02.01.2026</td></tr>
+<tr><td class="az">LG Ried im Innkreis<br>1 Cg 33/25</td><td>Urteil vom 16.04.2026, von der Salzburg AG im deutschen Verfahren als AS 51 eingeführt</td><td><span class="pill p-neu">erledigt</span></td></tr>
+<tr><td class="az">Ökovolt AT gegen<br>Quehenberger / Impuls Immobilien</td><td>Eingriff in ein Forderungsrecht</td><td><span class="pill p-crit">verloren</span> in beiden Instanzen; Berufungsurteil rügt fehlendes Vorbringen erster Instanz</td></tr>
+<tr><td class="az">Rechtsanwaltskammer<br>Notariatskammer</td><td>Disziplinaranzeige vom 04.10.2025 sowie Informationsschritte des Anzeigers im November 2025</td><td><span class="pill p-neu">offen</span> Urkunde im Akt nur als Scan, Inhalt hier nicht ausgewertet</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="note">
+  <p class="hd">Kein transnationales Verfolgungshindernis</p>
+  <p>Die Einstellung nach § 190 der österreichischen StPO verbraucht die Strafklage nicht endgültig und
+  ist daher keine rechtskräftige Entscheidung im Sinne von Art. 54 SDÜ und Art. 50 GRC (EuGH
+  29.06.2016, C-486/14). Das gilt umso mehr, als beide ablehnenden Entscheidungen der Staatsanwaltschaft
+  vor dem Abschluss der forensischen Auswertung ergingen. Parallele Ermittlungen in zwei
+  Mitgliedstaaten sind zulässig; es gilt das Prioritätsprinzip. Die Antragsfristen nach § 303c StGB und
+  § 23 Abs 8 GeschGehG sind gewahrt, weil Kenntnis der konkreten Einzeltaten frühestens am 16.03.2026
+  mit dem Zwischenbericht eintrat — die Kopie auf den privaten Datenträger wurde sogar erst mit dem Memo
+  vom 22.04.2026 bekannt.</p>
+</div>
+</section>
+
+<!-- ============ 12 ============ -->
+<section id="s12">
+<h2><span class="no">12</span>Beweiswürdigung</h2>
+<p class="dek">Eine ehrliche Bestandsaufnahme. Die Stärken sind erheblich, die Schwächen benennbar —
+und genau deshalb steuerbar.</p>
+
+<h3>Was trägt</h3>
+<div class="tw">
+<table>
+<thead><tr><th style="width:34%">Beweismittel</th><th>Tragweite</th><th>Stärke</th></tr></thead>
+<tbody>
+<tr><td>Drei Senatsentscheidungen des OLG München vom 21.05.2026, bestandskräftig nach Zurückweisung der Gehörsrügen</td><td>Ein Obergericht hält es für glaubhaft gemacht, dass die Nominierung Schiefers dem Datenabzug diente. Die Salzburg AG hat dagegen kein Gegengutachten vorgelegt.</td><td><span class="pill p-ok">sehr hoch</span></td></tr>
+<tr><td>Forensischer Befund Grant Thornton, zwei allgemein beeidete und gerichtlich zertifizierte Sachverständige, dokumentierte Hashwerte und Chain of Custody</td><td>Kopier-, Verschlüsselungs- und Löschvorgänge in bezifferten Umfängen; Artefakte mit Zeitstempeln auf die Sekunde</td><td><span class="pill p-ok">hoch</span></td></tr>
+<tr><td>Eigene Zusammenschlussanmeldung der Salzburg AG vom 27.10.2021</td><td>Eingeständnis der eigenen Marktschwäche und des Beteiligungsmotivs unter Wahrheitspflicht gegenüber einer Behörde</td><td><span class="pill p-ok">hoch</span></td></tr>
+<tr><td>Letter of Intent vom 09.03.2021 mit Bezug auf das ÖKOVOLT-Angebot vom 05.02.2021</td><td>urkundlicher Nachweis, dass das Angebot der Salzburg AG an die Hofer KG auf ÖKOVOLT-Unterlagen beruhte</td><td><span class="pill p-ok">hoch</span></td></tr>
+<tr><td>GISA-Abfrage vom 04.03.2025 zur Gewerbeberechtigung der one2zero</td><td>Registertatsache: Elektrotechnik erst ab 03.08.2023</td><td><span class="pill p-ok">hoch</span></td></tr>
+<tr><td>Beurkundungsverweigerung des Notars Mag. Thaller</td><td>unbeteiligter Berufsträger erkannte die Unrichtigkeit sofort — starkes Indiz für Vorsatz</td><td><span class="pill p-ok">hoch</span></td></tr>
+<tr><td>Internes Vorstandspapier PV#GoBig vom 04.02.2021</td><td>„Ressourcen/KnowHow Aufbau“ als erklärte Rolle von ÖKOVOLT; „Leitplanke 5 — Bindung von Mitarbeitern / Know-how“</td><td><span class="pill p-warn">mittel</span> zweischneidig</td></tr>
+<tr><td>Rückkaufangebot vom 07.10.2025</td><td>Bereitschaft, auf EUR 5 Mio. Earn-Out zu verzichten, bei gleichzeitigem Bestreiten jeder Pflichtverletzung</td><td><span class="pill p-warn">mittel</span> Indiz, kein Geständnis</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>Was nicht trägt</h3>
+<div class="tw">
+<table>
+<thead><tr><th style="width:34%">Schwachstelle</th><th>Wirkung gegen die eigene Position</th><th>Gegenmaßnahme</th></tr></thead>
+<tbody>
+<tr><td><b>Die Volumenangabe 500 GB / 338.000 Dateien</b></td><td>Die Gegenseite argumentiert damit, dass das tatsächliche Volumen „weniger als 1 %“ des behaupteten betrage — mit dem eigenen Gutachten der ÖKOVOLT. Das beschädigt die Glaubwürdigkeit jeder weiteren Zahl.</td><td>Zahl ersetzen, Abweichung aktiv erklären: Quelle war eine Endanwender-Recovery-Software, die Korrektur stammt aus dem eigenen Gutachten</td></tr>
+<tr><td><b>Die Transferfrage</b></td><td>Ohne Weitergabenachweis fehlt dem größten Teil des behaupteten Schadens die Kausalität. Das Gutachten sagt ausdrücklich, es könne weder bestätigt noch ausgeschlossen werden.</td><td>Sicherstellung GMX-Postfach und private Geräte; Auskunftsansprüche; gerichtlicher Sachverständiger</td></tr>
+<tr><td><b>Privatgutachtenstatus</b></td><td>Die Staatsanwaltschaft hat dem Bericht nur eingeschränkte Beweiskraft zugemessen. In Deutschland gilt ein Privatgutachten als qualifizierter Parteivortrag.</td><td>Antrag auf gerichtlichen Sachverständigen; Grant Thornton empfiehlt das selbst</td></tr>
+<tr><td><b>Beweismittelintegrität</b></td><td>Grant Thornton hält fest, dass eigene Erhebungsmaßnahmen der Auftraggeberin „zu einzelnen Verschlechterungen der Befundgrundlagen geführt haben dürften“ und Abweichungen gegenüber dem behördlich gesicherten Stand entstanden sein können. Die höhere Zahl wiederhergestellter Dateien kann teilweise darauf zurückgehen.</td><td>sofortiger Stopp jedes Eigenzugriffs; lückenlose Dokumentation aller bisherigen Zugriffe</td></tr>
+<tr><td><b>Punkt 6.1 im Wortlaut</b></td><td>Der Vertrag nimmt die Salzburg AG ausdrücklich von jedem Wettbewerbsverbot aus. Die Zeugin Staude liefert dafür ein sachliches, überprüfbares Motiv.</td><td>Argumentation auf Punkt 4.1, 4.3 und den Schlusssatz des Punktes 6.1 verlagern, nicht auf eine mündliche Nebenabrede</td></tr>
+<tr><td><b>Quehenberger</b></td><td>In beiden Instanzen verloren; die Gegenseite leitet daraus ab, dass kein Vertragsverhältnis bestand</td><td>aus der Forderung herausnehmen; nur als Verhaltensmuster führen</td></tr>
+<tr><td><b>Die 7.000 Ausdrucke</b></td><td>forensisch nicht belegbar, weil keine Druckprotokolle existierten</td><td>nur als Zeugenbeweis führen (Wegscheider, Buttinger zu 7.500 Seiten), nie als forensische Feststellung</td></tr>
+<tr><td><b>Einstellungslage in Österreich</b></td><td>Alle Verfahren eingestellt oder nicht eingeleitet; die eigenen Vertreter schätzen die Erfolgsaussichten der Fortführungsanträge als sehr gering ein</td><td>Schwerpunkt nach Deutschland verlagern; Koordinierung und Übernahme anregen</td></tr>
+<tr><td><b>Der Vorwurf politischer Einflussnahme</b></td><td>In der Strafanzeige ausdrücklich erhoben und mit der Entscheidungsgeschwindigkeit der WKStA begründet. Er ist nicht belegbar und lädt zur Gegenoffensive ein.</td><td>als Verfahrensrüge formulieren (Legalitätsprinzip, Übergehen angekündigter Beweismittel), nicht als Motivbehauptung</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+
+<!-- ============ 13 ============ -->
+<section id="s13">
+<h2><span class="no">13</span>Schadensbezifferung</h2>
+<p class="dek">Vier Stufen, nach Beweisnähe geordnet. Jede Stufe ist einzeln vertretbar; die Summe ist
+die Verhandlungsposition, nicht die Klagsforderung.</p>
+
+<div class="note crit">
+  <p class="hd">Warum die Vorversion neu aufzusetzen war</p>
+  <p>REV 2.0 multipliziert einen Lizenzsatz von 7,5 % mit einer Umsatzbasis von EUR 80 Mio. p.a., einem
+  Rentenbarwertfaktor von 11,47 über 20 Jahre und dem Verdoppelungsfaktor nach § 87 Abs 3 UrhG. Drei
+  Glieder dieser Kette sind nicht belegbar. <b>Erstens</b> nicht die Herkunft der Konzernzahlen — diese stammen
+  aus dem veröffentlichten Jahresabschluss der Salzburg AG und sind über das Firmenbuch zu FN 51350 s
+  jederzeit nachprüfbar. Nicht belegt ist der <b>Zurechnungsschritt</b>: weder der Ansatz von 6,4 % des
+  Stromsegments noch überhaupt eine Kausalität zwischen dem entwendeten Material und einem Umsatz dieser
+  Größenordnung. Die Lizenzanalogie bemisst sich nach dem Umsatz, der auf die Nutzung des verletzten
+  Gegenstands zurückgeht, nicht nach der Größe des Verletzers. Im Akt dokumentiert sind TEUR 714
+  PV-Umsatz bei 0,3 % Marktanteil; wer EUR 80 Mio. ansetzt, muss die Brücke zwischen diesen Zahlen
+  gutachterlich schlagen. <b>Zweitens</b> setzt der Verdoppelungsanspruch eine Urheberrechtsverletzung voraus — der
+  forensische Befund beschreibt aber Controlling- und Finanzunterlagen, keine Computerprogramme und keine
+  Konstruktionszeichnungen. <b>Drittens</b> setzt die Lizenzanalogie eine Nutzung durch die Verletzerin
+  voraus; genau diese Nutzung ist die offene Transferfrage. Eine Forderung von EUR 137,6 Mio. steht zudem
+  in keinem Verhältnis zu einem Gesamtunternehmenswert, den die Salzburg AG 2021 intern mit EUR 16 bis
+  25 Mio. und EY per DCF mit rund EUR 21 Mio. ansetzte.</p>
+</div>
+
+<h3>Stufe 1 — nachgewiesener Aufwand</h3>
+<div class="tw">
+<table>
+<thead><tr><th>Position</th><th class="n">Betrag</th><th>Grundlage</th><th>Beweisnähe</th></tr></thead>
+<tbody>
+<tr><td>Wiederherstellung gelöschter Dateien (rund 22 relevante Dateien, je ein Arbeitstag)</td><td class="n">im Ansatz enthalten</td><td>Grant Thornton, Abschnitt 4.11.1</td><td><span class="pill p-ok">Sachverständigenansatz</span></td></tr>
+<tr><td>Entschlüsselung von 147 Dateien, je ein Arbeitstag</td><td class="n">im Ansatz enthalten</td><td>Grant Thornton, Abschnitt 4.11.1</td><td><span class="pill p-ok">Sachverständigenansatz</span></td></tr>
+<tr><td><b>Summe Wiederherstellungskosten</b></td><td class="n"><b>EUR 118.500</b></td><td>Äußerung CERHA HEMPEL vom 30.04.2026, als konservativ bezeichnet</td><td><span class="pill p-ok">beziffert</span></td></tr>
+<tr><td>Forensische Kosten der Analyse und Behebungsversuche</td><td class="n">offen</td><td>kann nach GT „ein Vielfaches“ betragen</td><td><span class="pill p-warn">rechnungsbelegt nachzuweisen</span></td></tr>
+<tr><td>Kosten der rechtsmissbräuchlich veranlassten Sonderprüfung</td><td class="n">offen</td><td>Sachverhaltsdarstellung Abschnitt 24</td><td><span class="pill p-warn">belegbar</span></td></tr>
+<tr><td>Rechtsverfolgungs- und Beratungskosten AT und DE</td><td class="n">offen</td><td>vier Kanzleien, elf Verfahren</td><td><span class="pill p-ok">belegbar</span></td></tr>
+</tbody>
+</table>
+<caption>Stufe 1 ist der einzige Teil der Forderung, der ohne weiteres Gutachten klagbar ist. Die
+Qualifikation nach § 126a Abs 2 StGB setzt lediglich einen EUR 5.000 übersteigenden Schaden voraus —
+dieser Schwellenwert ist selbst bei einer Kürzung des Ansatzes um den Faktor zwanzig erreicht.</caption>
+</div>
+
+<h3>Stufe 2 — urkundlich und kaufmännisch hergeleitet</h3>
+<div class="tw">
+<table>
+<thead><tr><th>Position</th><th class="n">Betrag</th><th>Grundlage</th><th>Beweisbedarf</th></tr></thead>
+<tbody>
+<tr><td>Entgangener Deckungsbeitrag Hofer-Rollout</td><td class="n">EUR 10.500.000</td><td>35.000 kWp × EUR 300</td><td>Nachkalkulation vergleichbarer Projekte; Bestätigung des Rollout-Volumens; Zeugen der Hofer KG zur Bevorzugung</td></tr>
+<tr><td>Earn-Out nach Punkt 5 des Kauf- und Abtretungsvertrags</td><td class="n">EUR 5.000.000</td><td>Rückkaufangebot vom 07.10.2025, das die Regelung außer Ansatz lassen wollte</td><td>Nachweis der Umsatzziele; Abgrenzung zum Kaufpreis</td></tr>
+<tr><td>Entgangenes Contracting-Ergebnis Hofer</td><td class="n">nicht angesetzt</td><td>Behauptung, ohne Täuschung selbst zu contracten</td><td>Finanzierungsfähigkeit der ÖkovInvest GmbH nachzuweisen — genau dies war der Auslöser der Hofer-Bedenken</td></tr>
+<tr><td>Quehenberger</td><td class="n">nicht angesetzt</td><td>—</td><td>in beiden Instanzen verloren</td></tr>
+<tr><td><b>Summe Stufe 2</b></td><td class="n"><b>EUR 15.500.000</b></td><td></td><td></td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>Stufe 3 — Lizenzanalogie auf belegbarer Bezugsgröße</h3>
+<p>Die Lizenzanalogie bleibt methodisch richtig; falsch war allein die Bezugsgröße. Eine belastbare Basis
+lässt sich aus dem Akt selbst gewinnen: dem über die one2zero GmbH abgewickelten PV-Errichtungsumsatz,
+dessen erstes und größtes Element der Hofer-Rollout ist.</p>
+<div class="tw">
+<table>
+<thead><tr><th>Parameter</th><th class="n">konservativ</th><th class="n">mittel</th><th class="n">extensiv</th><th>Herleitung</th></tr></thead>
+<tbody>
+<tr><td>Auftragsvolumen Hofer-Rollout</td><td class="n">EUR 31,5 Mio.</td><td class="n">EUR 35,0 Mio.</td><td class="n">EUR 38,5 Mio.</td><td>35.000 kWp × EUR 900 / 1.000 / 1.100</td></tr>
+<tr><td>Rollout-Dauer</td><td class="n">4 Jahre</td><td class="n">4 Jahre</td><td class="n">3 Jahre</td><td>mehrjähriger Rollout laut Logistikplanung</td></tr>
+<tr><td>Relevante Umsatzbasis p.a.</td><td class="n">EUR 7,9 Mio.</td><td class="n">EUR 8,8 Mio.</td><td class="n">EUR 12,8 Mio.</td><td>Volumen ÷ Dauer</td></tr>
+<tr><td>Lizenzsatz</td><td class="n">5,0 %</td><td class="n">7,5 %</td><td class="n">10,0 %</td><td>Bandbreite Energietechnik und Software</td></tr>
+<tr><td>Jährliche Lizenzgebühr</td><td class="n">EUR 0,39 Mio.</td><td class="n">EUR 0,66 Mio.</td><td class="n">EUR 1,28 Mio.</td><td></td></tr>
+<tr><td>Berechnungszeitraum</td><td class="n">8 Jahre</td><td class="n">10 Jahre</td><td class="n">12 Jahre</td><td>wirtschaftliche Verwertbarkeit von Controlling- und Kalkulationsdaten, nicht Patentlaufzeit</td></tr>
+<tr><td>Barwertfaktor bei 6 % WACC</td><td class="n">6,21</td><td class="n">7,36</td><td class="n">8,38</td><td>Rentenbarwertfaktor</td></tr>
+<tr><td>Barwert ohne Zuschlag</td><td class="n">EUR 2,4 Mio.</td><td class="n">EUR 4,9 Mio.</td><td class="n">EUR 10,7 Mio.</td><td></td></tr>
+<tr><td>Zuschlag § 87 Abs 3 UrhG</td><td class="n">nein</td><td class="n">nein</td><td class="n">×2</td><td>nur soweit urheberrechtlich geschützte Werke betroffen sind — derzeit nicht belegt</td></tr>
+<tr><td><b>Stufe 3</b></td><td class="n"><b>EUR 2,4 Mio.</b></td><td class="n"><b>EUR 4,9 Mio.</b></td><td class="n"><b>EUR 21,5 Mio.</b></td><td></td></tr>
+</tbody>
+</table>
+<caption>Der Berechnungszeitraum ist gegenüber REV 2.0 von 20 auf 8 bis 12 Jahre verkürzt. Controlling-,
+Kalkulations- und Kundendaten verlieren ihren Wettbewerbswert mit dem Alter; § 16 PatG ist hier kein
+sachgerechter Anker, weil keine Patentverletzung geltend gemacht wird. Der BGH knüpft in „Layher II“
+(I ZR 20/21) ausdrücklich an die wirtschaftliche Verwertbarkeit an, nicht an eine starre Schutzfrist.</caption>
+</div>
+
+<h3>Stufe 4 — immaterieller Schaden</h3>
+<p>§ 26e UWG umfasst nach der Rechtsprechung des OGH (4 Ob 7/22m) auch immaterielle Schäden,
+insbesondere Reputationsschäden; die Höhe ist nach § 273 ZPO zu schätzen, wenn der konkrete Beweis nicht
+oder nur mit unverhältnismäßigen Schwierigkeiten zu führen ist. Im Akt dokumentiert sind kreditschädigende
+Äußerungen, die Abberufung des geschäftsführenden Gesellschafters auf Grundlage eines unrichtigen
+Protokolls und deren Eintragungsbegehren beim Firmenbuch. Ein Ansatz von 10 bis 20 Prozent des
+materiellen Schadens ist vertretbar, also <b>EUR 1,8 bis 7,4 Mio.</b></p>
+
+<h3>Zusammenführung</h3>
+<div class="bars">
+  <div class="row"><div class="lb">Stufe 1 — Aufwand</div><div class="tr"><i style="left:0;width:0.5%"></i></div><div class="vl">0,12</div></div>
+  <div class="row"><div class="lb">Stufe 2 — Hofer und Earn-Out</div><div class="tr"><i style="left:0;width:44%"></i></div><div class="vl">15,50</div></div>
+  <div class="row"><div class="lb">Stufe 3 — Lizenzanalogie</div><div class="tr"><i style="left:0;width:14%"></i><i class="c" style="left:14%;width:47%;opacity:.35"></i></div><div class="vl">2,4–21,5</div></div>
+  <div class="row"><div class="lb">Stufe 4 — immateriell</div><div class="tr"><i style="left:0;width:5%"></i><i class="c" style="left:5%;width:16%;opacity:.35"></i></div><div class="vl">1,8–7,4</div></div>
+  <div class="row"><div class="lb"><b>Gesamtkorridor</b></div><div class="tr"><i style="left:0;width:57%"></i><i class="c" style="left:57%;width:43%;opacity:.35"></i></div><div class="vl"><b>19,8–44,5</b></div></div>
+</div>
+<p class="srcline">Beträge in Mio. EUR. Volle Fläche: unterer Rand des Korridors. Schraffierte Fläche: Spanne bis zum oberen Rand.</p>
+
+<div class="kf">
+  <div><div class="v">19,8</div><div class="l">Untergrenze, konservativ</div><div class="s">Mio. EUR</div></div>
+  <div><div class="v">25,4</div><div class="l">Empfohlene Vergleichsbasis</div><div class="s">Mio. EUR, mittleres Szenario</div></div>
+  <div><div class="v">44,5</div><div class="l">Eröffnungsposition</div><div class="s">Mio. EUR, extensiv</div></div>
+  <div><div class="v">15,6</div><div class="l">Davon ohne Gutachten klagbar</div><div class="s">Mio. EUR, Stufen 1 und 2</div></div>
+</div>
+
+<div class="note ok">
+  <p class="hd">Verhandlungsleitlinie</p>
+  <p>Eröffnung bei EUR 44,5 Mio., Zielwert EUR 25,4 Mio., Reservationspreis EUR 15,6 Mio. — der Betrag,
+  der ohne weiteres Gutachten und ohne Klärung der Transferfrage durchsetzbar ist. Der Earn-Out von
+  EUR 5 Mio. ist <b>separat</b> zu sichern und nicht in den Vergleich einzurechnen: er ist ein
+  vertraglicher Anspruch, kein Schadenersatz, und das Rückkaufangebot vom 07.10.2025 zeigt, dass die
+  Gegenseite ihn gerade kompensatorisch verrechnen will.</p>
+  <p>Die Gegenseite hat im Gespräch vom 03.09.2025 selbst erklärt, sie brauche „eine konkrete Zahl“, es
+  sei „ja nicht ihr Geld“ — und gleichzeitig einen neutralen Sachverständigen abgelehnt. Eine belastbar
+  hergeleitete, eher niedrige Zahl ist in dieser Konstellation durchsetzbarer als eine hohe, die die
+  Gegenseite mit dem eigenen Gutachten zerlegen kann.</p>
+</div>
+
+<div class="note">
+  <p class="hd">Vorbehalt</p>
+  <p>Die endgültige Bezifferung obliegt einem gerichtlich bestellten Sachverständigen. Dieses Dossier
+  ersetzt keine anwaltliche Beratung und keine gutachterliche Bewertung; es ordnet den vorhandenen
+  Aktenbestand und macht die Beweisnähe jeder Position transparent.</p>
+</div>
+</section>
+
+<!-- ============ 14 ============ -->
+<section id="s14">
+<h2><span class="no">14</span>Risiken beidseitig</h2>
+<p class="dek">Eine Risikomatrix, die nur die Gegenseite betrachtet, ist für die Vorbereitung einer
+Verhandlung wertlos. Hier stehen beide Seiten.</p>
+
+<h3>Exposition der Salzburg AG</h3>
+<div class="tw">
+<table>
+<thead><tr><th>Risiko</th><th class="n">Eintritt</th><th class="n">Höhe</th><th>Begründung</th><th>Stufe</th></tr></thead>
+<tbody>
+<tr><td>Verurteilung zur Vornahme der Syndikatspflichten (LG Salzburg)</td><td class="n">60–70 %</td><td class="n">nicht monetär</td><td>Beweisverfahren abgeschlossen; Punkt 4.1 und 4.3 urkundlich; Punkt 6.1 im Wortlaut dagegen</td><td><span class="pill p-warn">hoch</span></td></tr>
+<tr><td>Schadenersatz Hofer-Komplex</td><td class="n">50–60 %</td><td class="n">EUR 10,5 Mio.</td><td>LOI urkundlich; Zusicherung mündlich und nur durch eigene Zeugen belegt</td><td><span class="pill p-warn">hoch</span></td></tr>
+<tr><td>Earn-Out-Anspruch</td><td class="n">70–80 %</td><td class="n">EUR 5,0 Mio.</td><td>vertraglicher Anspruch; Rückkaufangebot indiziert eigene Bewertung</td><td><span class="pill p-crit">kritisch</span></td></tr>
+<tr><td>Wiederherstellungsaufwand</td><td class="n">85 %</td><td class="n">EUR 0,12 Mio.</td><td>Sachverständigenansatz, Schwellenwert § 126a Abs 2 StGB deutlich überschritten</td><td><span class="pill p-ok">gering</span></td></tr>
+<tr><td>Lizenzanalogie</td><td class="n">30–45 %</td><td class="n">EUR 2,4–21,5 Mio.</td><td>abhängig vom Transfernachweis; ohne diesen nicht durchsetzbar</td><td><span class="pill p-warn">hoch</span></td></tr>
+<tr><td>Strafverfahren Deutschland gegen Schiefer</td><td class="n">40–55 %</td><td class="n">mittelbar</td><td>frisch eingebracht; deutsches Strafrecht anwendbar; kein Strafklageverbrauch</td><td><span class="pill p-warn">hoch</span></td></tr>
+<tr><td>Aufsichtsrechtliche Geldbuße Datenschutz</td><td class="n">20–35 %</td><td class="n">bis EUR 82,4 Mio. Rahmen</td><td>Vorgang unstrittig; Sanktionshöhe in behördlichem Ermessen, reale Bußgelder liegen weit unter dem Rahmen</td><td><span class="pill p-warn">mittel</span></td></tr>
+<tr><td>Reputations- und Governance-Risiko</td><td class="n">hoch</td><td class="n">nicht quantifizierbar</td><td>mehrheitlich öffentliches Eigentum; Landesrechnungshof; Finanzierung eines Geschäftsführerbezugs bei einem Drittunternehmen aus öffentlichen Mitteln (Art. 126b B-VG)</td><td><span class="pill p-crit">kritisch</span></td></tr>
+<tr><td>Gesellschafterausschluss bzw. Anteilseinziehung</td><td class="n">offen</td><td class="n">Beteiligungswert</td><td>in beiden Gesellschaften auf die Tagesordnung gesetzt; in Deutschland Einziehung, in Österreich Ausschluss</td><td><span class="pill p-crit">kritisch</span></td></tr>
+</tbody>
+</table>
+<caption>Wahrscheinlichkeiten sind Einschätzungen auf Basis des Aktenstands, keine Prognosen. Sie sind
+gegenüber REV 2.0 durchgehend nach unten korrigiert, weil dort von einer gesicherten Haftungsgrundlage
+ausgegangen wurde, die in Verfügungsverfahren nach dem Maßstab der Glaubhaftmachung nicht entsteht.</caption>
+</div>
+
+<h3>Exposition der ÖKOVOLT-Gruppe</h3>
+<div class="tw">
+<table>
+<thead><tr><th>Risiko</th><th class="n">Eintritt</th><th>Wirkung</th><th>Stufe</th></tr></thead>
+<tbody>
+<tr><td>Abberufung Wegscheiders „aus wichtigem Grund“ mit anschließender Vesting-Pflicht nach Punkt 7.1</td><td class="n">mittel</td><td>Pflicht zum notariellen Abtretungsanbot binnen zwei Wochen; nach der eigenen Darstellung und dem EY-Gutachten ist der Unternehmenswert untrennbar mit der Person des geschäftsführenden Gesellschafters verbunden</td><td><span class="pill p-crit">kritisch</span></td></tr>
+<tr><td>Glaubwürdigkeitsschaden aus der Volumenangabe</td><td class="n">eingetreten</td><td>bereits prozessual verwendet; wirkt auf alle weiteren Zahlen</td><td><span class="pill p-crit">kritisch</span></td></tr>
+<tr><td>Einwand unzureichender Geheimhaltungsmaßnahmen</td><td class="n">hoch</td><td>Übergabe von Master-Passwörtern und globalen Administratorrechten an den nominierten Geschäftsführer auf dessen Beharren; trifft § 26b lit c UWG und § 2 Nr. 1 lit b GeschGehG</td><td><span class="pill p-crit">kritisch</span></td></tr>
+<tr><td>Beweismittelintegrität</td><td class="n">hoch</td><td>vom eigenen Sachverständigen dokumentierte Verschlechterung der Befundgrundlagen durch Eigenerhebungen</td><td><span class="pill p-warn">hoch</span></td></tr>
+<tr><td>Kostenrisiko aus elf Verfahren in zwei Rechtsordnungen</td><td class="n">laufend</td><td>vier Kanzleien; Streitwertfestsetzungen werden in der Sachverhaltsdarstellung selbst als Eskalationsinstrument beschrieben</td><td><span class="pill p-warn">hoch</span></td></tr>
+<tr><td>Gegenbeweis aus der eidesstattlichen Versicherung Schiefers</td><td class="n">mittel</td><td>lag dem OLG nicht vor; wird in einem Hauptsacheverfahren nachgeholt werden</td><td><span class="pill p-warn">mittel</span></td></tr>
+<tr><td>Druck auf die Compliance-Funktion</td><td class="n">eingetreten</td><td>Dienstanweisung vom 12.11.2025; betrifft den Anzeiger unmittelbar — Hinweisgeberschutz prüfen</td><td><span class="pill p-warn">hoch</span></td></tr>
+<tr><td>Strafrisiko aus der Vorlage von Tonaufnahmen</td><td class="n">bei Vorlage hoch</td><td>§ 120 Abs 2 StGB in Österreich, § 201 Abs 1 StGB in Deutschland — jeweils eigenständige Tatbestände, die die handelnde natürliche Person treffen. In Deutschland kommt die voraussichtliche Unverwertbarkeit hinzu, sodass das Risiko ohne Beweisgewinn eingegangen würde.</td><td><span class="pill p-crit">kritisch</span></td></tr>
+<tr><td>Verspätungs- und Glaubwürdigkeitsrisiko bei bewusst zurückgehaltenem Material</td><td class="n">hoch</td><td>Das Protokoll vom 28.05.2026 hält fest, dass Vorbringen und Beweisanträge abschließend erstattet sind, soweit die Tatsachen bekannt waren; in Deutschland greift § 531 Abs 2 ZPO. Eine zweite Stelle, an der die eigene Seite Material kannte und nicht offenlegte, wirkt neben der Volumenangabe kumulativ.</td><td><span class="pill p-crit">kritisch</span></td></tr>
+<tr><td>Publizitätsrisiko der Urteilsveröffentlichung</td><td class="n">mittel</td><td>schneidet in beide Richtungen, weil auch die eigenen Zahlen und die IT-Governance öffentlich würden</td><td><span class="pill p-warn">mittel</span></td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>Positionierung im Erwartungsraum</h3>
+<div class="mx">
+<table>
+<thead><tr><th>Eintritt ↓ / Höhe →</th><th>&lt; EUR 1 Mio.</th><th>EUR 1–10 Mio.</th><th>EUR 10–25 Mio.</th><th>EUR 25–50 Mio.</th><th>&gt; EUR 50 Mio.</th></tr></thead>
+<tbody>
+<tr><td class="rh">über 70 %</td><td class="c0">Wiederherstellung</td><td class="c1 hit">Earn-Out</td><td class="c2"></td><td class="c2"></td><td class="c2"></td></tr>
+<tr><td class="rh">50–70 %</td><td class="c0"></td><td class="c1"></td><td class="c2 hit">Hofer</td><td class="c2"></td><td class="c2"></td></tr>
+<tr><td class="rh">30–50 %</td><td class="c0"></td><td class="c1 hit">Lizenz konservativ</td><td class="c1 hit">Lizenz mittel</td><td class="c2"></td><td class="c2"></td></tr>
+<tr><td class="rh">10–30 %</td><td class="c0"></td><td class="c0"></td><td class="c1"></td><td class="c1 hit">Lizenz extensiv</td><td class="c1 hit">DSGVO-Rahmen</td></tr>
+<tr><td class="rh">unter 10 %</td><td class="c0"></td><td class="c0"></td><td class="c0"></td><td class="c1"></td><td class="c1 hit">REV 2.0 Forderung</td></tr>
+</tbody>
+</table>
+</div>
+<p class="srcline">Schwarz umrandet: Positionen des aktuellen Forderungsaufbaus. Die Forderung der
+Vorversion liegt im Feld der geringsten Eintrittswahrscheinlichkeit.</p>
+</section>
+
+<!-- ============ 15 ============ -->
+<section id="s15">
+<h2><span class="no">15</span>Maßnahmenplan</h2>
+<p class="dek">Vier Sofortmaßnahmen, fünf Maßnahmen bis zum Quartalsende, drei mittelfristige.
+Verantwortlichkeiten sind nach Funktion benannt.</p>
+
+<h3>Sofort, 0 bis 30 Tage</h3>
+<div class="tw">
+<table>
+<thead><tr><th style="width:46px">Nr.</th><th>Maßnahme</th><th>Verantwortung</th><th>Wirkung</th></tr></thead>
+<tbody>
+<tr><td class="az">S1</td><td><b>Zahlenbasis bereinigen.</b> Die Angaben 500 GB / 338.000 / 420.000 Dateien aus allen aktiven Schriftsätzen, Präsentationen und Vergleichsunterlagen entfernen und durch 4,28 GB / 1.155 Dateien ersetzen. Die Abweichung in einer Fußnote offen erklären: Ursprung Endanwender-Recovery-Software, Korrektur durch das eigene Gutachten.</td><td>Rechtsabteilung, alle vier Kanzleien</td><td>entzieht der Gegenseite ihr wirksamstes Argument</td></tr>
+<tr><td class="az">S2</td><td><b>Eigenzugriffe auf Asservate einstellen</b> und jeden bisherigen Zugriff samt Zeitpunkt, Person und Werkzeug protokollieren. Grant Thornton hat die daraus folgende Verschlechterung der Befundgrundlagen ausdrücklich festgehalten.</td><td>Leitung IT und Risikomanagement</td><td>sichert die Verwertbarkeit des Gutachtens</td></tr>
+<tr><td class="az">S3</td><td><b>Compliance-Funktion schützen.</b> Die Dienstanweisung vom 12.11.2025 rechtlich bewerten und den Schutz des Anzeigers nach dem HinweisgeberInnenschutzgesetz bzw. dem deutschen Hinweisgeberschutzgesetz dokumentiert sichern.</td><td>Rechtsabteilung, externe Vertretung</td><td>verhindert, dass die Aufarbeitung intern abgeschnitten wird</td></tr>
+<tr><td class="az">S4</td><td><b>Akteneinsicht in Memmingen betreiben.</b> Der Antrag nach § 406e StPO ist gestellt; Nachfassen und Abstimmung mit den österreichischen Fortführungsanträgen, einschließlich Anregung der Koordinierung und Übernahme.</td><td>FEIGEN GRAF, CERHA HEMPEL</td><td>verlagert das Verfahren in die aktive Jurisdiktion</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>30 bis 90 Tage</h3>
+<div class="tw">
+<table>
+<thead><tr><th style="width:46px">Nr.</th><th>Maßnahme</th><th>Rechtsgrundlage</th></tr></thead>
+<tbody>
+<tr><td class="az">M1</td><td><b>Gerichtlichen Sachverständigen beantragen</b> — in allen drei laufenden Verfahren parallel. Die eigenen Sachverständigen empfehlen das ausdrücklich, und es beantwortet den Einwand des Privatgutachtens.</td><td>§ 351 ff ZPO (AT), § 402 ff ZPO (DE), § 126 StPO</td></tr>
+<tr><td class="az">M2</td><td><b>Sicherstellung der noch fehlenden Datenquellen anregen</b>: privates GMX-Postfach, persönliche Rechner und Mobilgeräte Schiefers, Postfächer und Mobilgeräte der benannten Personen bei Salzburg AG und one2zero. Die Kenntnis des Beschuldigten vom Verfahren steht dem nicht entgegen — Metadaten, Protokolle und Schattenkopien überdauern Nutzdatenlöschungen, und der Nachweis eines Löschvorgangs nach Verfahrenskenntnis wäre selbst beweiserheblich.</td><td>Äußerung vom 30.04.2026; §§ 110 ff StPO</td></tr>
+<tr><td class="az">M3</td><td><b>Auskunfts- und Rechnungslegungsansprüche durchsetzen</b>: Offenlegung der über one2zero abgewickelten PV-Errichtungsumsätze, insbesondere des Hofer-Rollouts, sowie der Weitervergabe an Eco-tec. Ohne diese Zahlen bleibt die Lizenzanalogie eine Schätzung.</td><td>§ 26e Abs 4 UWG, § 10 GeschGehG, Art. 8 RL 2004/48/EG</td></tr>
+<tr><td class="az">M4</td><td><b>Earn-Out separat geltend machen</b>, mit Nachweis der Umsatzziele und ausdrücklichem Vorbehalt gegen jede Verrechnung mit Schadenersatzansprüchen.</td><td>Punkt 5 Kauf- und Abtretungsvertrag</td></tr>
+<tr><td class="az">M5</td><td><b>TOM-Dokumentation erstellen</b> — dreistufiges Berechtigungssystem, Active-Directory-Richtlinien, Need-to-know, Vertraulichkeitsklauseln — und die Übergabe globaler Administratorrechte an Schiefer als Ausnahme mit Anlass und Zeitpunkt dokumentieren. Erst danach die datenschutzrechtlichen Beschwerden einbringen.</td><td>§ 26b lit c UWG, § 2 Nr. 1 lit b GeschGehG, Art. 32 DSGVO</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>90 bis 180 Tage</h3>
+<div class="tw">
+<table>
+<thead><tr><th style="width:46px">Nr.</th><th>Maßnahme</th><th>Ziel</th></tr></thead>
+<tbody>
+<tr><td class="az">L1</td><td><b>Schadensgutachten auf belegter Bezugsgröße</b> durch einen gerichtlich beeideten Sachverständigen für Unternehmensbewertung, aufbauend auf den eigenen Projektnachkalkulationen zum Deckungsbeitrag je kWp und den über M3 erlangten Umsatzdaten.</td><td>macht Stufe 2 und 3 klagbar</td></tr>
+<tr><td class="az">L2</td><td><b>Vergleichsarchitektur festlegen</b>: Eröffnung EUR 44,5 Mio., Zielwert EUR 25,4 Mio., Reservationspreis EUR 15,6 Mio.; Earn-Out außerhalb des Vergleichs; Ratenzahlung über mehrere Geschäftsjahre gegen Bankgarantie oder Patronatserklärung des Landes als Verhandlungsvariante.</td><td>verhandlungsfähige, verteidigbare Position</td></tr>
+<tr><td class="az">L3</td><td><b>Gesellschaftsrechtliche Endlage klären</b>: Ausschluss der Salzburg AG in Österreich und Einziehung in Deutschland gegen das Vesting-Risiko nach Punkt 7.1 abwägen und eine Entscheidung über die Zielstruktur treffen — Fortführung mit der Gesellschafterin, Trennung oder Rückkauf.</td><td>beendet die Blockade der Willensbildung</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+
+<!-- ============ 16 ============ -->
+<section id="s16">
+<h2><span class="no">16</span>Tonaufnahmen — Inhalt, Verwertbarkeit, Strafrisiko</h2>
+<p class="dek">Vier Aufnahmen schließen inhaltlich genau jene Lücken, die der forensische Befund offen
+lässt. Ihr Wert liegt aber nicht in der Vorlage, sondern in dem, was sie über die zu stellenden Fragen
+und die zu benennenden Zeugen verraten.</p>
+
+<div class="note crit">
+  <p class="hd">Vorbemerkung</p>
+  <p>Dieser Abschnitt bewertet vorhandenes Material und dessen prozessuale Behandlung. Er ist keine
+  anwaltliche Beratung. Die Entscheidung über Vorlage oder Nichtvorlage gehört ausschließlich zu
+  CERHA HEMPEL für Österreich und FEIGEN GRAF beziehungsweise den deutschen Prozessvertretern für
+  Deutschland — und zwar <b>vor</b> der nächsten Zeugeneinvernahme, nicht danach.</p>
+</div>
+
+<h3>Inhalt und Beweiswert</h3>
+<div class="tw">
+<table>
+<thead><tr><th style="width:18%">Aufnahme</th><th>Kerninhalt</th><th>Schließt welche Lücke</th><th>Gewicht</th></tr></thead>
+<tbody>
+<tr>
+<td><b>Tobias Wiener</b><br><span class="m">GF one2zero, vormals Strategie Salzburg AG</span></td>
+<td>Das Hofer-Projekt sei ÖKOVOLT zugesagt gewesen.</td>
+<td><b>Komplex A.</b> Die Zusicherung des Ausschreibungsverzichts ist bisher nur durch den Kläger selbst und einen internen Videocall belegt. Eine Bestätigung durch den Zusagenden selbst ist der fehlende Baustein.</td>
+<td><span class="pill p-crit">höchstes</span></td>
+</tr>
+<tr>
+<td><b>Übergabe der Ausdrucke</b><br><span class="m">Schiefer an Baminger, Zeuge im Gang</span></td>
+<td>Schiefer habe die entnommenen rund 7.000 Seiten an Baminger übergeben; eine Person sei ihm dabei im Gang begegnet.</td>
+<td><b>Komplex B, Transferfrage.</b> Grant Thornton konnte die Weitergabe nicht belegen und die 7.000 Ausdrucke nicht verifizieren, weil keine Druckprotokolle existierten. Damit fällt der wertmäßig größte Teil der Forderung.</td>
+<td><span class="pill p-crit">höchstes</span></td>
+</tr>
+<tr>
+<td><b>Michael Baminger</b><br><span class="m">Vorstandsvorsitzender</span></td>
+<td>Die Bleibe beziehungsweise das Bestehen der ÖKOVOLT sei ihm gleichgültig; Kündigungen im Vertrieb wegen Wettbewerbs nehme er in Kauf; Schiefer komme, ob Wegscheider das wolle oder nicht.</td>
+<td><b>Subjektive Tatseite.</b> Vorsatz und Schädigungsabsicht sind bisher nur über Indizien erschlossen. Eine solche Äußerung trifft zugleich Punkt 2.1 und 2.4 des Syndikatsvertrags und die Treuepflicht.</td>
+<td><span class="pill p-crit">höchstes</span></td>
+</tr>
+<tr>
+<td><b>Leonhard Schitter</b><br><span class="m">vormals Vorstandsvorsitzender, heute stv. Aufsichtsratsvorsitzender</span></td>
+<td>Baminger lüge in den Verfahren; es sei niemals geplant gewesen, dass die one2zero GmbH Photovoltaik betreibt.</td>
+<td><b>Komplex A und Punkt 6.1.</b> Trifft die Aussage der Zeugin Staude im Kern und liefert die Gegenposition aus dem Organ selbst, das die Beteiligung verhandelt hat.</td>
+<td><span class="pill p-crit">höchstes</span></td>
+</tr>
+</tbody>
+</table>
+<caption>Abschriften liegen vor. Inhalte hier nach mündlicher Wiedergabe; die Formulierungen sind vor
+jeder Verwendung wörtlich aus der Abschrift zu übernehmen und mit Datum, Ort, Gesprächsteilnehmern und
+Aufnahmegerät zu dokumentieren.</caption>
+</div>
+
+<h3>Rechtliche Lage — beide Rechtsordnungen getrennt</h3>
+<div class="tw">
+<table>
+<thead><tr><th style="width:16%">Schritt</th><th>Österreich</th><th>Deutschland</th></tr></thead>
+<tbody>
+<tr>
+<td><b>Das Aufnehmen</b></td>
+<td>§ 120 Abs 1 StGB erfasst das Verschaffen von Kenntnis einer <em>nicht zur eigenen Kenntnisnahme bestimmten</em> Äußerung. Wer selbst Gesprächsteilnehmer war, ist davon nach überwiegender Auffassung nicht erfasst. <span class="pill p-ok">regelmäßig straflos</span></td>
+<td>§ 201 Abs 1 Nr 1 StGB erfasst das Aufnehmen des nichtöffentlich gesprochenen Wortes <em>auch durch einen Gesprächsteilnehmer</em>. Strafrahmen bis drei Jahre. <span class="pill p-crit">bereits die Aufnahme ist strafbar</span></td>
+</tr>
+<tr>
+<td><b>Die Weitergabe und Vorlage</b></td>
+<td>§ 120 Abs 2 StGB stellt das Zugänglichmachen an einen Dritten, für den die Äußerung nicht bestimmt war, eigenständig unter Strafe — unabhängig davon, ob die Aufnahme selbst erlaubt war. Gericht, Gegenseite und Staatsanwaltschaft sind solche Dritte. Ob eine Rechtfertigung bei Anzeigeerstattung greift, ist strittig und nicht gesichert. <span class="pill p-crit">eigenständiges Strafrisiko</span></td>
+<td>§ 201 Abs 1 Nr 2 StGB: Gebrauchen oder Zugänglichmachen einer so hergestellten Aufnahme. <span class="pill p-crit">zweiter Tatbestand</span></td>
+</tr>
+<tr>
+<td><b>Verwertung im Zivilverfahren</b></td>
+<td>Kein allgemeines Beweisverwertungsverbot. Rechtswidrig erlangte Beweismittel sind grundsätzlich verwertbar; das Gericht wägt ab. Die strafrechtliche Verantwortung des Vorlegenden bleibt davon unberührt. <span class="pill p-warn">eher verwertbar</span></td>
+<td>Heimliche Tonaufnahmen sind wegen des allgemeinen Persönlichkeitsrechts grundsätzlich <b>nicht</b> verwertbar; Ausnahmen nur in einer notwehrähnlichen Lage und bei echter Beweisnot. <span class="pill p-crit">eher unverwertbar</span></td>
+</tr>
+<tr>
+<td><b>Nebenfolgen</b></td>
+<td>§ 1328a ABGB, § 16 ABGB, DSGVO: die Aufnahme und jede Weitergabe ist eine eigene Verarbeitung, für die eine Rechtsgrundlage nach Art. 6 DSGVO erforderlich ist. Bei Organen eines öffentlichen Unternehmens kommt Art. 10 DSGVO hinzu, sobald Straftatbezug hergestellt wird.</td>
+<td>entsprechend, zusätzlich Unterlassungs- und Geldentschädigungsansprüche der Aufgenommenen</td>
+</tr>
+</tbody>
+</table>
+<caption>Die Einschätzung beruht auf dem allgemeinen Rechtsstand und ist kein Gutachten. Sie ist vor
+jeder Verwendung durch die mandatierten Kanzleien zu verifizieren.</caption>
+</div>
+
+<div class="note crit">
+  <p class="hd">Zum geplanten Vorgehen: zurückhalten, dann Beweismittelnotstand geltend machen</p>
+  <p>Die Annahme, die Vorlage sei dann „straffrei“, trägt nach derzeitiger Einschätzung nicht. Drei
+  Gründe:</p>
+  <p><b>Erstens</b> ist der rechtfertigende Notstand nach § 10 StGB kein Freibrief, sondern ein
+  Rechtfertigungsgrund mit engen Voraussetzungen: ein unmittelbar drohender bedeutender Nachteil und die
+  Vorlage als das einzige verbleibende Mittel. Wer die Abschrift bewusst zurückhält, bis der Zeuge
+  falsch aussagt, hat die Notlage selbst herbeigeführt und zugleich dokumentiert, dass ein milderes
+  Mittel bestand — nämlich die rechtzeitige Benennung des Zeugen zum richtigen Beweisthema. Das
+  schwächt die Rechtfertigung genau in dem Punkt, auf den sie sich stützen soll.</p>
+  <p><b>Zweitens</b> entsteht ein prozessuales Risiko. Im Verfahren LG Salzburg 9 Cg 26/25m hat die
+  Richterin am 28.05.2026 ausdrücklich protokolliert, dass Vorbringen und Beweisanträge beider Parteien
+  abschließend erstattet sind, soweit die Tatsachen bis dahin bekannt waren. Material, das schon vorhanden
+  war und bewusst nicht genannt wurde, ist kein neu hervorgekommenes Beweismittel. Im deutschen
+  Berufungsverfahren greift zusätzlich § 531 Abs 2 ZPO — und der Senat hat in den Beschlüssen vom
+  18.06.2026 gerade demonstriert, wie konsequent er spät oder nicht aktenkundig eingebrachtes Material
+  behandelt.</p>
+  <p><b>Drittens</b> ist die Glaubwürdigkeitsbilanz bereits belastet. Die Volumenangabe von 500 GB hat
+  der Gegenseite das Argument geliefert, die eigene Darstellung übertreibe um den Faktor hundert. Eine
+  zweite Stelle, an der die eigene Seite Material kannte und nicht offenlegte, wiegt in derselben
+  Waagschale — unabhängig davon, wie die Vorlage rechtlich ausgeht.</p>
+</div>
+
+<h3>Der tragfähige Weg: Beweisthemen statt Bandvorlage</h3>
+<p>Der eigentliche Wert dieser Aufnahmen liegt darin, dass man weiß, was die Personen gesagt haben — und
+damit, wen man zu welchem Thema präzise benennen und fragen kann. Drei der vier Aufnahmen lassen sich
+vollständig durch zulässige Beweismittel ersetzen.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th style="width:46px">Nr.</th><th>Maßnahme</th><th>Ersetzt welche Aufnahme</th><th>Frist</th></tr></thead>
+<tbody>
+<tr><td class="az">T1</td><td><b>Den Zeugen im Gang benennen.</b> Die Person, die Schiefer mit den Ausdrucken begegnet ist, ist unmittelbarer Zeuge des Übergabevorgangs. Eine Aussage dieses Zeugen beantwortet die Transferfrage ohne jedes Band. Identität, Datum, Uhrzeit und Ort sind sofort schriftlich festzuhalten, bevor die Erinnerung verblasst.</td><td>Übergabe an Baminger</td><td><span class="pill p-crit">sofort</span></td></tr>
+<tr><td class="az">T2</td><td><b>Dr. Leonhard Schitter als Zeugen beantragen</b> — zu zwei klar abgegrenzten Beweisthemen: dass die one2zero GmbH zu keinem Zeitpunkt für die Projektierung oder Errichtung von Photovoltaikanlagen vorgesehen war, und dass im Zuge der Vertragsverhandlungen die Vermeidung jeder Konkurrenzsituation zugesagt wurde. Er ist heute stellvertretender Aufsichtsratsvorsitzender und damit leicht ladungsfähig.</td><td>Schitter</td><td><span class="pill p-crit">sofort</span></td></tr>
+<tr><td class="az">T3</td><td><b>Tobias Wiener als Zeugen beantragen</b> zum Beweisthema, dass ÖKOVOLT auf die Teilnahme an der Ausschreibung der Hofer KG verzichtet hat und ihr im Gegenzug der Errichtungsauftrag zugesagt wurde. Wiener ist nach dem Aktenstand ohnehin schon gegenüber Wegscheider offen gewesen.</td><td>Wiener</td><td><span class="pill p-crit">sofort</span></td></tr>
+<tr><td class="az">T4</td><td><b>Baminger als Partei beziehungsweise Zeugen zu der Äußerung befragen</b>, ihm sei das Bestehen der ÖKOVOLT gleichgültig und Schiefer komme unabhängig vom Willen des Mehrheitsgesellschafters. Die Frage ist auch dann wertvoll, wenn sie bestritten wird: sie fixiert die Aussage für eine spätere Konfrontation.</td><td>Baminger</td><td>nächste Verhandlung</td></tr>
+<tr><td class="az">T5</td><td><b>Abschriften ausschließlich anwaltlich verwahren.</b> Jede Weitergabe über den Kreis der mandatierten Rechtsvertreter hinaus ist nach § 120 Abs 2 StGB beziehungsweise § 201 Abs 1 Nr 2 StGB ein eigener Tatbestand. Keine Anhänge in E-Mails an nicht privilegierte Empfänger, keine Ablage auf Systemen, auf die ein von der Gesellschafterin nominierter Geschäftsführer Zugriff hat — die Dienstanweisung vom 12.11.2025 zeigt, wie schnell sich die Zugriffslage ändert.</td><td>alle</td><td><span class="pill p-crit">sofort</span></td></tr>
+<tr><td class="az">T6</td><td><b>Bei Falschaussage den lauteren Weg gehen.</b> Sagt ein Zeuge vor Gericht vorsätzlich falsch aus, ist die Anzeige nach § 288 StGB in Österreich beziehungsweise § 153 StGB in Deutschland das vorgesehene Instrument. Dafür genügt der Widerspruch zu anderen Beweisergebnissen; die Aufnahme muss nicht vorgelegt werden, um die Ermittlungsbehörde zu befassen.</td><td>alle</td><td>bei Eintritt</td></tr>
+<tr><td class="az">T7</td><td><b>Entscheidung über die Vorlage anwaltlich dokumentieren.</b> Wenn die Kanzleien nach Abwägung zur Vorlage raten, ist das eine bewusste, schriftlich begründete Mandantenentscheidung mit Belehrung über das Strafrisiko — und keine Improvisation im Gerichtssaal. Wenn sie abraten, ist das ebenso zu dokumentieren.</td><td>alle</td><td>vor nächster Einvernahme</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="note ok">
+  <p class="hd">Warum das die stärkere Variante ist</p>
+  <p>Eine Aussage von Schitter, die der Darstellung der Zeugin Staude widerspricht, ist als Beweismittel
+  mehr wert als jedes Band: sie steht im Protokoll, sie ist unangreifbar erlangt, und sie stammt von
+  einem amtierenden Organ der Gegenseite. Dasselbe gilt für den Zeugen im Gang — er liefert die
+  Transferfeststellung, an der die gesamte Lizenzanalogie hängt, in zulässiger Form. Die Aufnahmen
+  bleiben als Rückversicherung im anwaltlichen Verwahr und als Grundlage dafür, die Fragen so präzise zu
+  stellen, dass ein Ausweichen auffällt.</p>
+</div>
+
+<div class="note warn">
+  <p class="hd">Wirkung auf die Bezifferung</p>
+  <p>Bestätigt sich die Übergabe der Unterlagen an den Vorstandsvorsitzenden durch Zeugenaussage, ist die
+  Transferfrage beantwortet und Stufe 3 der Schadensbezifferung wird belastbar. Die
+  Eintrittswahrscheinlichkeit der Lizenzanalogie stiege von 30 bis 45 Prozent auf deutlich über 60
+  Prozent; der empfohlene Vergleichswert von EUR 25,4 Mio. wäre dann die Untergrenze und nicht der
+  Zielwert. Der Korridor ist nach der Zeugeneinvernahme neu zu rechnen — nicht vorher.</p>
+</div>
+</section>
+
+<!-- ============ A ============ -->
+<section id="a1">
+<h2><span class="no">A</span>Quellenregister</h2>
+<p class="dek">Alle 18 Dokumente des Aktenbestands mit Auswertungsstatus. Drei Dokumente enthalten keine
+Textebene und konnten nicht ausgewertet werden — das ist eine echte Lücke dieses Dossiers.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th style="width:30%">Dokument</th><th>Datum</th><th class="n">Umfang</th><th>Verwertet für</th><th>Status</th></tr></thead>
+<tbody>
+<tr><td>Forensischer Zwischenbericht Project SILICIUM, Grant Thornton Austria Forensic GmbH, signiert</td><td>16.03.2026</td><td class="n">57 S.</td><td>Abschnitte 08, 12, 13</td><td><span class="pill p-ok">vollständig</span></td></tr>
+<tr><td>Sachverhaltsdarstellung an die WKStA, Benjamin Höfler</td><td>14.11.2025</td><td class="n">113 S.</td><td>Abschnitte 03, 06, 07, 09, 13</td><td><span class="pill p-ok">vollständig</span></td></tr>
+<tr><td>Strafanzeige und Strafantrag an die StA Memmingen, FEIGEN GRAF</td><td>15.06.2026</td><td class="n">~60 S.</td><td>Abschnitte 06, 08, 11</td><td><span class="pill p-ok">vollständig</span></td></tr>
+<tr><td>Protokoll der öffentlichen mündlichen Verhandlung, LG Salzburg 9 Cg 26/25m</td><td>28.05.2026</td><td class="n">30 S.</td><td>Abschnitt 04, Aussagestand</td><td><span class="pill p-ok">vollständig</span></td></tr>
+<tr><td>Äußerung und Vorlage neuer Beweismittel, CERHA HEMPEL, LG Ried 28 Bl 13/26h</td><td>30.04.2026</td><td class="n">9 S.</td><td>Abschnitte 08, 13</td><td><span class="pill p-ok">vollständig</span></td></tr>
+<tr><td>Verfolgungsantrag § 197c iVm § 195 StPO, CERHA HEMPEL, ON 12.2</td><td>Dez. 2025</td><td class="n">13 S.</td><td>Abschnitt 09</td><td><span class="pill p-ok">vollständig</span></td></tr>
+<tr><td>Syndikatsvertrag als Notariatsakt, BEURLE</td><td>18.10.2021</td><td class="n">10 S.</td><td>Abschnitt 04</td><td><span class="pill p-ok">vollständig</span></td></tr>
+<tr><td>Anlage B 8 — Anmeldung Zusammenschluss nach § 9 KartG, BEURLE</td><td>27.10.2021</td><td class="n">20 S.</td><td>Abschnitt 05, 13</td><td><span class="pill p-ok">vollständig</span></td></tr>
+<tr><td>Beschluss OLG München 14 U 3746/25 e</td><td>18.06.2026</td><td class="n">5 S.</td><td>Abschnitte 02, 11, 12</td><td><span class="pill p-ok">vollständig</span></td></tr>
+<tr><td>Beschluss OLG München 14 U 3748/25 e</td><td>18.06.2026</td><td class="n">4 S.</td><td>Abschnitte 09, 11</td><td><span class="pill p-ok">vollständig</span></td></tr>
+<tr><td>Beschluss OLG München 14 U 295/26 e</td><td>18.06.2026</td><td class="n">3 S.</td><td>Abschnitt 11</td><td><span class="pill p-ok">vollständig</span></td></tr>
+<tr><td>Nachgewiesener Datenschutzverstoß und drohende Konsequenzen</td><td>o. D.</td><td class="n">4 S.</td><td>Abschnitt 10</td><td><span class="pill p-ok">vollständig</span></td></tr>
+<tr><td>Board of Executives, Preisband-Draft PV#GoBig</td><td>04.02.2021</td><td class="n">10 S.</td><td>Abschnitt 05</td><td><span class="pill p-warn">teilweise</span> Präsentation, Textebene lückenhaft</td></tr>
+<tr><td>DOK-CB-01 Compliance-Bericht REV 2.0</td><td>01.09.2026</td><td class="n">51 S.</td><td>Abschnitt 02, Korrekturen</td><td><span class="pill p-ok">vollständig</span></td></tr>
+<tr><td>DOK-CB-02 Schadenssummen Lizenzanalogie REV 2.0</td><td>01.09.2026</td><td class="n">49 S.</td><td>Abschnitt 02, 13</td><td><span class="pill p-ok">vollständig</span></td></tr>
+<tr><td><b>Anlage AG 24 — Gutachten EY</b></td><td>o. D.</td><td class="n">56 S.</td><td>—</td><td><span class="pill p-crit">nicht auswertbar</span> reiner Scan ohne Textebene</td></tr>
+<tr><td><b>Disziplinaranzeige</b></td><td>04.10.2025</td><td class="n">56 S.</td><td>—</td><td><span class="pill p-crit">nicht auswertbar</span> reiner Scan ohne Textebene</td></tr>
+<tr><td><b>Einschreiben LG Memmingen 1 HK O 1771/25</b></td><td>o. D.</td><td class="n">27 S.</td><td>—</td><td><span class="pill p-crit">nicht auswertbar</span> reiner Scan ohne Textebene</td></tr>
+<tr><td><b>Jahresabschluss und Geschäftsbericht Salzburg AG</b> — Quelle der in REV 2.0 verwendeten Konzern- und Segmentzahlen, öffentlich einsehbar</td><td>Geschäftsjahr zu fixieren</td><td class="n">—</td><td>Abschnitte 02, 05, 13</td><td><span class="pill p-warn">nicht im Aktenbestand</span> zu beschaffen und als Urkunde vorzulegen</td></tr>
+</tbody>
+</table>
+<caption>Die drei nicht auswertbaren Dokumente sollten durch eine Texterkennung erschlossen werden. Das
+EY-Gutachten ist für die Schadensbezifferung besonders relevant, weil es die Bewertungsbasis von 2021
+liefert; die Disziplinaranzeige vom 04.10.2025 datiert sechs Tage vor der Generalversammlung und dürfte
+den Vorlauf dokumentieren.</caption>
+</div>
+</section>
+
+<!-- ============ B ============ -->
+<section id="a2">
+<h2><span class="no">B</span>Normenregister</h2>
+<p class="dek">Nur die Normen, die im Aktenbestand tatsächlich herangezogen werden — geordnet nach
+Rechtsordnung und Funktion.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th style="width:20%">Norm</th><th>Inhalt</th><th>Funktion im Fall</th></tr></thead>
+<tbody>
+<tr><td colspan="3" style="background:var(--neutral-soft);font-family:var(--sans);font-weight:600;font-size:11px;letter-spacing:.08em;text-transform:uppercase">Österreich — Gesellschaftsrecht</td></tr>
+<tr><td class="az">§ 16 GmbHG</td><td>Abberufung eines Geschäftsführers aus wichtigem Grund</td><td>Grundlage beider Abberufungsanträge; Punkt 3.7 des Syndikatsvertrags knüpft daran an</td></tr>
+<tr><td class="az">§ 25 GmbHG</td><td>Sorgfalt eines ordentlichen Geschäftsmannes, Organhaftung</td><td>persönliche Haftung Schiefers</td></tr>
+<tr><td class="az">§ 38 Abs 7 GmbHG</td><td>Vertagung bei fehlender Beschlussfähigkeit</td><td>hätte am 10.10.2025 angewendet werden müssen</td></tr>
+<tr><td colspan="3" style="background:var(--neutral-soft);font-family:var(--sans);font-weight:600;font-size:11px;letter-spacing:.08em;text-transform:uppercase">Österreich — Straf- und Lauterkeitsrecht</td></tr>
+<tr><td class="az">§ 11 UWG</td><td>Verletzung von Geschäfts- und Betriebsgeheimnissen durch Bedienstete</td><td>Kernvorwurf gegen Schiefer in Österreich</td></tr>
+<tr><td class="az">§§ 26a–26j UWG</td><td>Geschäftsgeheimnisschutz, Umsetzung der RL 2016/943; § 26e Schadenersatz einschließlich immaterieller Schäden, Abs 4 Auskunft</td><td>zivilrechtliche Anspruchsgrundlage und Auskunftsanspruch</td></tr>
+<tr><td class="az">§ 123 StGB</td><td>Auskundschaftung eines Geschäfts- oder Betriebsgeheimnisses</td><td>Übermittlung der DE-Planungsdatei und der Bilanzdaten an die private Adresse</td></tr>
+<tr><td class="az">§ 126a StGB</td><td>Datenbeschädigung; Abs 2 Qualifikation bei Schaden über EUR 5.000</td><td>Löschung und Verschlüsselung; Qualifikation über den Wiederherstellungsaufwand</td></tr>
+<tr><td class="az">§ 293 StGB</td><td>Fälschung eines Beweismittels</td><td>Generalversammlungsprotokoll vom 10.10.2025</td></tr>
+<tr><td class="az">§§ 146, 147 StGB</td><td>Betrug, schwerer Betrug</td><td>Beteiligungs- und Hofer-Komplex; Versuchsform §§ 15, 146</td></tr>
+<tr><td class="az">§ 153 StGB</td><td>Untreue</td><td>Befugnismissbrauch des Versammlungsleiters</td></tr>
+<tr><td class="az">§ 278 StGB</td><td>Bildung einer kriminellen Vereinigung</td><td>in der Sachverhaltsdarstellung geltend gemacht</td></tr>
+<tr><td class="az">§ 63 DSG</td><td>Datenverarbeitung in Gewinn- oder Schädigungsabsicht</td><td>Komplex K 53</td></tr>
+<tr><td class="az">VbVG</td><td>Verbandsverantwortlichkeit, § 3 Abs 1–3</td><td>Salzburg AG und Berufsausübungsgesellschaften</td></tr>
+<tr><td class="az">§§ 190, 195, 197c StPO</td><td>Einstellung, Fortführung, Verfolgungsantrag</td><td>Verfahrensstand in Österreich</td></tr>
+<tr><td class="az">§ 273 ZPO</td><td>richterliche Schadensschätzung</td><td>immaterieller Schaden</td></tr>
+<tr><td class="az">Art. 126b B-VG</td><td>Sparsamkeit, Wirtschaftlichkeit, Zweckmäßigkeit</td><td>Übernahme des Geschäftsführerbezugs durch ein öffentliches Unternehmen</td></tr>
+<tr><td colspan="3" style="background:var(--neutral-soft);font-family:var(--sans);font-weight:600;font-size:11px;letter-spacing:.08em;text-transform:uppercase">Deutschland</td></tr>
+<tr><td class="az">§ 2 Nr. 1 GeschGehG</td><td>Begriff des Geschäftsgeheimnisses: nicht allgemein bekannt, wirtschaftlicher Wert, angemessene Geheimhaltungsmaßnahmen, berechtigtes Geheimhaltungsinteresse</td><td>Qualifikation des Ordners B_CONTROLLING</td></tr>
+<tr><td class="az">§ 4 GeschGehG</td><td>Handlungsverbote: unbefugter Zugang, Aneignung, Kopieren; Nutzung und Offenlegung</td><td>Kopie auf privaten Datenträger und Dienstlaptop, Übermittlung an Dritte</td></tr>
+<tr><td class="az">§ 10 GeschGehG</td><td>Schadenersatz, ausdrücklich auch auf Basis der angemessenen Vergütung</td><td>Lizenzanalogie</td></tr>
+<tr><td class="az">§ 23 GeschGehG</td><td>Strafvorschriften; Abs 1 Nr. 1–3, Abs 4 Qualifikationen Gewerbsmäßigkeit und Auslandsnutzung; Abs 7 S 1 Verweis auf § 5 Nr. 7 StGB; Abs 8 Antragsfrist</td><td>Kern der Anzeige in Memmingen</td></tr>
+<tr><td class="az">§ 303a StGB</td><td>Datenveränderung; Unterdrücken umfasst erstmaligen Passwortschutz; Abs 2 Versuch</td><td>Verschlüsselung und Löschung; Wiederherstellbarkeit schließt den Tatbestand nicht aus</td></tr>
+<tr><td class="az">§ 303b StGB</td><td>Computersabotage bei erheblicher Störung einer wesentlichen Datenverarbeitung</td><td>Entzug der Controlling-Datenbasis</td></tr>
+<tr><td class="az">§§ 3, 9, 5 Nr. 7 StGB</td><td>Erfolgsort, Schutz inländischer Betriebsgeheimnisse</td><td>Anwendbarkeit deutschen Strafrechts</td></tr>
+<tr><td class="az">§ 77b Abs 2 StGB, § 303c StGB</td><td>Antragsfrist und Kenntnisbegriff</td><td>Fristwahrung ab 16.03.2026</td></tr>
+<tr><td class="az">§ 406e StPO</td><td>Akteneinsicht des Verletzten</td><td>beantragt</td></tr>
+<tr><td class="az">§ 321a, § 707, § 97 ZPO</td><td>Gehörsrüge, einstweilige Einstellung der Vollstreckung, Kosten</td><td>Beschlüsse vom 18.06.2026</td></tr>
+<tr><td class="az">§ 35 GWB</td><td>Anmeldepflicht bei Zusammenschlüssen</td><td>in Deutschland nicht erfüllt</td></tr>
+<tr><td colspan="3" style="background:var(--neutral-soft);font-family:var(--sans);font-weight:600;font-size:11px;letter-spacing:.08em;text-transform:uppercase">Union</td></tr>
+<tr><td class="az">RL (EU) 2016/943</td><td>Geschäftsgeheimnisschutz; Art. 14 Abs 2 Pauschalbetrag auf Basis der hypothetischen Vergütung</td><td>Grundlage beider nationalen Umsetzungen</td></tr>
+<tr><td class="az">RL 2004/48/EG</td><td>Durchsetzungsrichtlinie; Art. 7 Beweissicherung, Art. 8 Auskunft, Art. 13 Schadensberechnung</td><td>Auskunftsanspruch</td></tr>
+<tr><td class="az">Art. 5, 6, 10, 32, 82 DSGVO</td><td>Zweckbindung und Datenminimierung, Rechtmäßigkeit, strafrechtliche Verurteilungen, Sicherheit der Verarbeitung, Schadenersatz mit Solidarhaftung</td><td>Komplex K 53</td></tr>
+<tr><td class="az">Art. 54 SDÜ, Art. 50 GRC</td><td>ne bis in idem</td><td>kein Verfolgungshindernis, weil § 190 StPO die Strafklage nicht verbraucht</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+
+<!-- ============ C ============ -->
+<section id="a3">
+<h2><span class="no">C</span>Judikaturregister</h2>
+<div class="tw">
+<table>
+<thead><tr><th class="az" style="width:24%">Entscheidung</th><th>Aussage</th><th>Verwendung</th></tr></thead>
+<tbody>
+<tr><td class="az">OGH 11.04.1989<br>5 Ob 576/88</td><td>Eine „auf einen Augenblick konzentrierte“ Beschlussfassung auf Basis vorbereiteter Protokolle unter Ausschluss einer Mitgesellschafterin ist treuwidrig und widerspricht den Vorschriften über die Durchführung der Generalversammlung</td><td>Leitentscheidung für Komplex C</td></tr>
+<tr><td class="az">OGH 4 Ob 7/22m</td><td>§ 26e UWG umfasst auch immaterielle Schäden, insbesondere Reputationsschäden</td><td>Stufe 4 der Bezifferung</td></tr>
+<tr><td class="az">OGH 4 Ob 82/21f</td><td>Voraussetzungen des Geschäftsgeheimnisses nach § 26b UWG; technische Spezifikationen und Kalkulationsmodelle erfüllen sie regelmäßig</td><td>Qualifikation der Controlling-Daten</td></tr>
+<tr><td class="az">OGH 4 Ob 210/22i</td><td>Angemessene Geheimhaltungsmaßnahmen dürfen nicht überspannt werden; Zugangsbeschränkungen und Need-to-know genügen regelmäßig</td><td>Antwort auf den Einwand unzureichender TOM</td></tr>
+<tr><td class="az">OGH 4 Ob 58/24v<br>4 Ob 155/17d</td><td>Die angemessene Lizenzgebühr ist nach objektivem Verkehrswert zu bestimmen; branchenübliche Sätze bilden den Ausgangspunkt</td><td>Methodik Stufe 3</td></tr>
+<tr><td class="az">OGH 6 Ob 195/18g</td><td>Die Sorgfaltspflicht umfasst die Pflicht, Geschäftsgeheimnisse auch gegenüber dem entsendenden Gesellschafter zu wahren</td><td>Organhaftung Schiefers</td></tr>
+<tr><td class="az">RIS-Justiz<br>RS0117739 · RS0103663</td><td>Unwahres Parteienvorbringen ist kein taugliches Beweismittel nach § 293 StGB, soweit ihm kein eigener Beweiswert zukommt</td><td>Argument der Staatsanwaltschaft; im Verfolgungsantrag mit dem originären Beweiswert des Protokolls entkräftet</td></tr>
+<tr><td class="az">BGH I ZR 44/06<br>„Bentley“</td><td>Maßgeblich ist die objektive Marktüblichkeit der Lizenz, nicht die subjektive Zahlungsbereitschaft</td><td>Methodik Stufe 3</td></tr>
+<tr><td class="az">BGH I ZR 93/19<br>„Layher I“</td><td>Bei Geschäftsgeheimnisverletzungen gelten dieselben Grundsätze wie bei Patentverletzungen</td><td>Methodik Stufe 3</td></tr>
+<tr><td class="az">BGH I ZR 20/21<br>„Layher II“</td><td>Der Berechnungszeitraum orientiert sich an der wirtschaftlichen Verwertbarkeit; maßgeblich ist der Zeitpunkt der Verletzung</td><td>Begründung der Verkürzung von 20 auf 8 bis 12 Jahre</td></tr>
+<tr><td class="az">BGH I ZR 120/22</td><td>Bei kumulativer Verletzung mehrerer Schutzrechte ist keine Addition der Lizenzsätze, sondern eine Gesamtbetrachtung vorzunehmen; Obergrenze ist die tragbare Lizenzbelastung</td><td>Argument gegen die Addition der sechs Knowhow-Kategorien in REV 2.0</td></tr>
+<tr><td class="az">EuGH C-367/15<br>„Stowarzyszenie“</td><td>Eine Pauschalentschädigung in Höhe der doppelten Lizenzgebühr bei vorsätzlicher Verletzung ist unionsrechtskonform</td><td>trägt den Verdoppelungszuschlag nur bei nachgewiesener Immaterialgüterrechtsverletzung</td></tr>
+<tr><td class="az">EuGH C-486/14</td><td>Ein Verfolgungsverbot besteht nur, wenn die Entscheidung die Strafklage nach nationalem Recht endgültig verbraucht</td><td>kein Strafklageverbrauch durch § 190 StPO</td></tr>
+<tr><td class="az">OLG München<br>14 U 3746/25 e u. a.</td><td>Glaubhaft gemacht, dass Schiefer zu dem Zweck nominiert wurde, kurz vor Ende seiner Tätigkeit in größerem Umfang Daten herunterzuladen und zu kopieren, um sie an die Salzburg AG und/oder die one2zero GmbH zu übermitteln</td><td>stärkstes Beweismittel; Maßstab Glaubhaftmachung</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+
+<!-- ============ D ============ -->
+<section id="a4">
+<h2><span class="no">D</span>Offene Beweisfragen</h2>
+<p class="dek">Zwölf Fragen, deren Beantwortung den Fall entscheidet. Sie sind nach Hebelwirkung geordnet.</p>
+
+<div class="tw">
+<table>
+<thead><tr><th style="width:46px">Nr.</th><th>Frage</th><th>Erkenntnisquelle</th><th>Hebel</th></tr></thead>
+<tbody>
+<tr><td class="az">F0</td><td><b>Wer ist die Person, die Schiefer mit den Ausdrucken im Gang begegnet ist, und wann genau?</b> Sie ist unmittelbarer Zeuge der Übergabe an den Vorstandsvorsitzenden und damit der einzige Weg, die Transferfrage ohne Tonaufnahme zu beantworten.</td><td>eigene Erhebung, sofortige schriftliche Festhaltung, Zeugenantrag</td><td><span class="pill p-crit">höchster Hebel</span> entscheidet über Stufe 3</td></tr>
+<tr><td class="az">F1</td><td>Befinden sich ÖKOVOLT-Daten im privaten GMX-Postfach oder auf den privaten Geräten Schiefers?</td><td>Sicherstellung und forensische Analyse</td><td><span class="pill p-crit">entscheidend</span> Stufe 3 der Bezifferung</td></tr>
+<tr><td class="az">F2</td><td>Befinden sich ÖKOVOLT-Daten in den Systemen der Salzburg AG oder der one2zero GmbH?</td><td>Sicherstellung; hilfsweise Auskunftsanspruch</td><td><span class="pill p-crit">entscheidend</span></td></tr>
+<tr><td class="az">F3</td><td>Wo ist der Datenträger „Extreme SSD“ (VSN CEA05EBC) und welchen Inhalt hat er tatsächlich?</td><td>Sicherstellung</td><td><span class="pill p-crit">entscheidend</span> beantwortet die Gesamtkopie-Frage</td></tr>
+<tr><td class="az">F4</td><td>Welches Auftragsvolumen und welchen Deckungsbeitrag hat die one2zero GmbH aus dem Hofer-Rollout erzielt?</td><td>Auskunft und Rechnungslegung; Jahresabschlüsse</td><td><span class="pill p-crit">entscheidend</span> Bezugsgröße Stufe 3</td></tr>
+<tr><td class="az">F5</td><td>Gab es die Zusicherung Wieners zum Ausschreibungsverzicht in schriftlicher Form oder in Begleit-Korrespondenz?</td><td>E-Mail-Bestände ÖKOVOLT und Salzburg AG; Zeugen Schwab, Thaler</td><td><span class="pill p-warn">hoch</span> Kern von Komplex A</td></tr>
+<tr><td class="az">F6</td><td>Bestätigen Vertreter der Hofer KG, dass ÖKOVOLT als Errichter bevorzugt war und die Ausschreibung nur wegen der Verschleppung nötig wurde?</td><td>Zeugen der Hofer KG</td><td><span class="pill p-warn">hoch</span></td></tr>
+<tr><td class="az">F7</td><td>Welchen Inhalt hat das EY-Bewertungsgutachten (Anlage AG 24) und welche Bewertungsbasis nennt es?</td><td>Texterkennung des vorhandenen Scans</td><td><span class="pill p-warn">hoch</span> Plausibilitätsanker jeder Forderung</td></tr>
+<tr><td class="az">F8</td><td>Welche 20 Eskalationspfade wurden nach Darstellung Wieners gemeinsam mit DORDA entwickelt, und existieren dazu Unterlagen?</td><td>Zeuge Wiener; Gremienunterlagen</td><td><span class="pill p-warn">hoch</span> trägt den Vorsatznachweis</td></tr>
+<tr><td class="az">F9</td><td>Wie lautet der Inhalt der Disziplinaranzeige vom 04.10.2025 und wie ist ihr Verfahrensstand?</td><td>Texterkennung; Auskunft der Kammern</td><td><span class="pill p-neu">mittel</span></td></tr>
+<tr><td class="az">F10</td><td>Wann, durch wen und aus welchem Anlass wurden Schiefer die globalen Administratorrechte übergeben?</td><td>eigene IT-Dokumentation, Active-Directory-Protokolle</td><td><span class="pill p-warn">hoch</span> verteidigt die Angemessenheit der TOM</td></tr>
+<tr><td class="az">F11</td><td>Welche Zugriffe auf Asservate erfolgten durch die Auftraggeberin selbst, wann und mit welchem Werkzeug?</td><td>eigene Rekonstruktion</td><td><span class="pill p-warn">hoch</span> Beweismittelintegrität</td></tr>
+<tr><td class="az">F12</td><td>Sind die Earn-Out-Umsatzziele nach Punkt 5 des Kauf- und Abtretungsvertrags erreicht?</td><td>Jahresabschlüsse 2021 bis 2024</td><td><span class="pill p-warn">hoch</span> EUR 5 Mio. ohne Gutachten durchsetzbar</td></tr>
+</tbody>
+</table>
+</div>
+
+<hr class="soft">
+<p class="srcline">DOK-CB-03 · REV 3.0 · Stand 10.09.2026 · erstellt auf Grundlage des Aktenbestands
+D:\Salzburg · ÖKOVOLT Solartechnik GmbH, Gewerbegebiet 10, 5121 Ostermiething, FN 375708 m</p>
+</section>
+
+<footer>
+  <span>Vertraulich — Anwaltsprivileg</span>
+  <span>Nur für interne Verwendung und Rechtsberater</span>
+  <span>Ersetzt DOK-CB-01 und DOK-CB-02 in der Fassung REV 2.0</span>
+  <span>Kein Ersatz für anwaltliche Beratung oder gutachterliche Bewertung</span>
+</footer>
+</main>
+</div>
+</div>

@@ -1,0 +1,156 @@
+import pathlib
+
+FE = pathlib.Path(r"C:\Users\SALEADMIN\Documents\Servicetechniker APP\frontend")
+
+
+def patch(pfad, paare):
+    p = FE / pfad
+    s = p.read_text(encoding="utf-8")
+    for alt, neu in paare:
+        if alt not in s:
+            raise SystemExit(f"NICHT GEFUNDEN in {pfad}:\n---\n{alt[:300]}\n---")
+        s = s.replace(alt, neu, 1)
+    p.write_text(s, encoding="utf-8")
+    print("ok", pfad)
+
+
+patch(
+    "src/lib/db.ts",
+    [
+        (
+            """/** Lokale Tabelle zu einem synchronisierbaren Dokumenttyp. */""",
+            """/**
+ * Löst Vue-Reaktivität auf, bevor Daten nach IndexedDB gehen.
+ *
+ * Der Strukturierte-Klon-Algorithmus lehnt Proxy-Objekte ab
+ * (`DataCloneError: … could not be cloned`). Ein aus einem Formular oder Store
+ * stammendes Dokument ist aber genau das — auch dann noch, wenn die oberste
+ * Ebene per Spread kopiert wurde: Verschachtelte Arrays wie `fotos` oder
+ * `messdaten` bleiben reaktiv.
+ *
+ * Der Umweg über JSON ist hier zulässig, weil diese Dokumente reine Daten sind
+ * (Zeichenketten, Zahlen, Listen). Binärdaten liegen in der Tabelle `fotos` und
+ * werden nie durch diese Funktion geschickt.
+ */
+export function entkoppeln<T>(wert: T): T {
+  return JSON.parse(JSON.stringify(wert)) as T
+}
+
+/** Lokale Tabelle zu einem synchronisierbaren Dokumenttyp. */""",
+        ),
+        (
+            """export async function einreihen(
+  doctype: Dokumenttyp,
+  lokale_id: string,
+  daten: Record<string, unknown>,
+  aktion: 'create' | 'update' = 'update',
+  basis_modified?: string,
+): Promise<void> {
+  const vorhanden = await db.warteschlange.where('lokale_id').equals(lokale_id).first()""",
+            """export async function einreihen(
+  doctype: Dokumenttyp,
+  lokale_id: string,
+  rohdaten: Record<string, unknown>,
+  aktion: 'create' | 'update' = 'update',
+  basis_modified?: string,
+): Promise<void> {
+  const daten = entkoppeln(rohdaten)
+  const vorhanden = await db.warteschlange.where('lokale_id').equals(lokale_id).first()""",
+        ),
+    ],
+)
+
+patch(
+    "src/lib/sync.ts",
+    [
+        (
+            """import {
+  db,
+  einreihen,
+  neueId,""",
+            """import {
+  db,
+  einreihen,
+  entkoppeln,
+  neueId,""",
+        ),
+        (
+            """  const t = tabelleFuer(doctype)
+  await t.put({ ...dokument, lokale_id } as never)
+  await einreihen(doctype, lokale_id, dokument, aktion, dokument.modified as string | undefined)""",
+            """  const t = tabelleFuer(doctype)
+  await t.put(entkoppeln({ ...dokument, lokale_id }) as never)
+  await einreihen(doctype, lokale_id, dokument, aktion, dokument.modified as string | undefined)""",
+        ),
+    ],
+)
+
+patch(
+    "src/stores/protokoll.ts",
+    [
+        (
+            """import { db, einreihen, neueId, stammdatenLesen, stammdatenSchreiben } from '@/lib/db'""",
+            """import { db, einreihen, entkoppeln, neueId, stammdatenLesen, stammdatenSchreiben } from '@/lib/db'""",
+        ),
+        (
+            """    await db.maengel.put(mangel)
+    await einreihen('Mangel', lokale_id, mangel, 'create')""",
+            """    await db.maengel.put(entkoppeln(mangel))
+    await einreihen('Mangel', lokale_id, mangel, 'create')""",
+        ),
+        (
+            """      await db.protokolle.put(protokoll)
+      await einreihen('Pruefprotokoll', protokoll.lokale_id, alsServerDokument(protokoll), 'create')""",
+            """      await db.protokolle.put(entkoppeln(protokoll))
+      await einreihen('Pruefprotokoll', protokoll.lokale_id, alsServerDokument(protokoll), 'create')""",
+        ),
+        (
+            """  async function vomServerHolen(name: string): Promise<Protokoll> {
+    const doc = (await baudoku.dokumentMethode('Pruefprotokoll', name, 'as_dict')) as Protokoll
+    const lokale_id = doc.lokale_id || neueId()
+    const protokoll = { ...doc, lokale_id }
+    await db.protokolle.put(protokoll)
+    return protokoll
+  }""",
+            """  async function vomServerHolen(name: string): Promise<Protokoll> {
+    const doc = (await baudoku.dokumentMethode('Pruefprotokoll', name, 'as_dict')) as Protokoll
+    const lokale_id = doc.lokale_id || neueId()
+    const protokoll = entkoppeln({ ...doc, lokale_id })
+    await db.protokolle.put(protokoll)
+    return protokoll
+  }""",
+        ),
+    ],
+)
+
+patch(
+    "src/views/MangelFormularView.vue",
+    [
+        (
+            """import { db, neueId } from '@/lib/db'""",
+            """import { db, entkoppeln, neueId } from '@/lib/db'""",
+        ),
+        (
+            """    const geholt: Mangel = { ...doc, lokale_id: doc.lokale_id || neueId() }
+    await db.maengel.put(geholt)""",
+            """    const geholt: Mangel = entkoppeln({ ...doc, lokale_id: doc.lokale_id || neueId() })
+    await db.maengel.put(geholt)""",
+        ),
+    ],
+)
+
+patch(
+    "src/stores/stammdaten.ts",
+    [
+        (
+            """import { stammdatenLesen, stammdatenSchreiben } from '@/lib/db'""",
+            """import { entkoppeln, stammdatenLesen, stammdatenSchreiben } from '@/lib/db'""",
+        ),
+        (
+            """    const cache = await stammdatenLesen<Bootstrap>('bootstrap')
+    if (cache) await stammdatenSchreiben('bootstrap', { ...cache, anlagen: anlagen.value })""",
+            """    const cache = await stammdatenLesen<Bootstrap>('bootstrap')
+    if (cache) await stammdatenSchreiben('bootstrap', entkoppeln({ ...cache, anlagen: anlagen.value }))""",
+        ),
+    ],
+)

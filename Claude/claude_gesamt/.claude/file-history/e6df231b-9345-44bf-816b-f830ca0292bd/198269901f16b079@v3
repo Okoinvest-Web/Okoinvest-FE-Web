@@ -1,0 +1,171 @@
+/**
+ * Kamera, Kompression, GPS-Tagging und Hash (FA-034, NFA-013, NFA-024, NFA-044).
+ *
+ * Ablauf: Aufnahme → Verkleinern auf die konfigurierte Kantenlänge → JPEG mit
+ * schrittweise reduzierter Qualität, bis die Größengrenze eingehalten ist →
+ * SHA-256 über den finalen Bytestrom → Ablage in IndexedDB bis zum Sync.
+ */
+
+import { db, fotoPufferMb, neueId, type FotoEintrag } from './db'
+import { positionEinmalig } from './geo'
+
+export interface KompressionsOptionen {
+  maxKantePx: number
+  maxMb: number
+}
+
+const STANDARD: KompressionsOptionen = { maxKantePx: 2048, maxMb: 2 }
+
+/** Öffnet die Gerätekamera bzw. die Dateiauswahl und liefert die gewählten Dateien. */
+export function dateienWaehlen(kamera = true, mehrfach = false): Promise<File[]> {
+  return new Promise((aufloesen) => {
+    const eingabe = document.createElement('input')
+    eingabe.type = 'file'
+    eingabe.accept = 'image/*'
+    eingabe.multiple = mehrfach
+    if (kamera) eingabe.setAttribute('capture', 'environment')
+    eingabe.style.display = 'none'
+    eingabe.addEventListener('change', () => {
+      aufloesen(Array.from(eingabe.files ?? []))
+      eingabe.remove()
+    })
+    // Bricht der Benutzer ab, feuert `change` nie — der Aufräumer verhindert Lecks.
+    window.addEventListener('focus', () => setTimeout(() => eingabe.remove(), 1500), { once: true })
+    document.body.appendChild(eingabe)
+    eingabe.click()
+  })
+}
+
+async function bildLaden(datei: Blob): Promise<ImageBitmap | HTMLImageElement> {
+  if ('createImageBitmap' in window) {
+    try {
+      return await createImageBitmap(datei)
+    } catch {
+      /* Fallback unten */
+    }
+  }
+  return new Promise((aufloesen, ablehnen) => {
+    const bild = new Image()
+    bild.onload = () => aufloesen(bild)
+    bild.onerror = () => ablehnen(new Error('Bild konnte nicht gelesen werden.'))
+    bild.src = URL.createObjectURL(datei)
+  })
+}
+
+function zeichenflaeche(breite: number, hoehe: number): HTMLCanvasElement {
+  const flaeche = document.createElement('canvas')
+  flaeche.width = breite
+  flaeche.height = hoehe
+  return flaeche
+}
+
+function alsBlob(flaeche: HTMLCanvasElement, qualitaet: number): Promise<Blob> {
+  return new Promise((aufloesen, ablehnen) => {
+    flaeche.toBlob(
+      (blob) => (blob ? aufloesen(blob) : ablehnen(new Error('Kompression fehlgeschlagen.'))),
+      'image/jpeg',
+      qualitaet,
+    )
+  })
+}
+
+/** Verkleinert und komprimiert ein Bild auf die konfigurierten Grenzen. */
+export async function komprimieren(
+  datei: Blob,
+  optionen: Partial<KompressionsOptionen> = {},
+): Promise<Blob> {
+  const { maxKantePx, maxMb } = { ...STANDARD, ...optionen }
+  const grenze = maxMb * 1024 * 1024
+  const bild = await bildLaden(datei)
+  const breite = 'width' in bild ? bild.width : 0
+  const hoehe = 'height' in bild ? bild.height : 0
+  const faktor = Math.min(1, maxKantePx / Math.max(breite, hoehe))
+
+  const flaeche = zeichenflaeche(Math.round(breite * faktor), Math.round(hoehe * faktor))
+  const kontext = flaeche.getContext('2d')
+  if (!kontext) return datei
+  kontext.drawImage(bild as CanvasImageSource, 0, 0, flaeche.width, flaeche.height)
+  if ('close' in bild) bild.close()
+
+  let qualitaet = 0.85
+  let ergebnis = await alsBlob(flaeche, qualitaet)
+  while (ergebnis.size > grenze && qualitaet > 0.4) {
+    qualitaet -= 0.12
+    ergebnis = await alsBlob(flaeche, qualitaet)
+  }
+  return ergebnis
+}
+
+/** SHA-256 als Hex — Manipulationsnachweis für Fotos (NFA-044). */
+export async function sha256(blob: Blob): Promise<string> {
+  const puffer = await blob.arrayBuffer()
+  const digest = await crypto.subtle.digest('SHA-256', puffer)
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('')
+}
+
+export interface AufnahmeOptionen extends Partial<KompressionsOptionen> {
+  beschriftung?: string
+  gehoertZu?: string
+  mitGps?: boolean
+  /** Grenze des Offline-Fotopuffers in MB (aus den Einstellungen). */
+  maxPufferMb?: number
+}
+
+/** Wird geworfen, wenn der Offline-Puffer voll ist. */
+export class PufferVollFehler extends Error {
+  constructor(
+    readonly belegtMb: number,
+    readonly grenzeMb: number,
+  ) {
+    super(
+      `Der Offline-Speicher ist mit ${belegtMb} von ${grenzeMb} MB belegt. ` +
+        'Bitte synchronisieren, bevor weitere Fotos aufgenommen werden.',
+    )
+    this.name = 'PufferVollFehler'
+  }
+}
+
+/**
+ * Nimmt ein Foto auf, komprimiert es, ergänzt Zeitstempel und GPS und legt es
+ * lokal ab. Der Upload erfolgt später über die Sync-Warteschlange.
+ */
+export async function fotoErfassen(datei: Blob, optionen: AufnahmeOptionen = {}): Promise<FotoEintrag> {
+  // Vor der Aufnahme prüfen: Läuft IndexedDB voll, bricht der Browser hart ab
+  // und nimmt im schlimmsten Fall bereits erfasste Fotos mit.
+  const grenze = optionen.maxPufferMb ?? 100
+  const belegt = await fotoPufferMb()
+  if (belegt >= grenze) throw new PufferVollFehler(belegt, grenze)
+
+  const komprimiert = await komprimieren(datei, optionen)
+  const hash = await sha256(komprimiert)
+  const position = optionen.mitGps === false ? null : await positionEinmalig().catch(() => null)
+
+  const eintrag: FotoEintrag = {
+    lokale_id: neueId(),
+    dateiname: `foto-${Date.now()}.jpg`,
+    blob: komprimiert,
+    groesse: komprimiert.size,
+    hash,
+    aufgenommen_am: new Date().toISOString(),
+    gps_lat: position?.lat,
+    gps_lng: position?.lng,
+    beschriftung: optionen.beschriftung,
+    gehoert_zu: optionen.gehoertZu,
+  }
+  await db.fotos.put(eintrag)
+  return eintrag
+}
+
+/** Blob-URL für die Vorschau; der Aufrufer gibt sie mit `URL.revokeObjectURL` frei. */
+export function vorschauUrl(eintrag: FotoEintrag): string {
+  return eintrag.file_url ?? URL.createObjectURL(eintrag.blob)
+}
+
+export async function alsDataUrl(blob: Blob): Promise<string> {
+  return new Promise((aufloesen, ablehnen) => {
+    const leser = new FileReader()
+    leser.onload = () => aufloesen(String(leser.result))
+    leser.onerror = () => ablehnen(leser.error ?? new Error('Datei konnte nicht gelesen werden.'))
+    leser.readAsDataURL(blob)
+  })
+}

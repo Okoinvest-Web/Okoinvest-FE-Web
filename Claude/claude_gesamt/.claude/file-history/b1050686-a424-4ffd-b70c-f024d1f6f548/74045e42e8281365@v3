@@ -1,0 +1,150 @@
+"use client";
+
+import { useActionState, useState } from "react";
+
+import { Meldung } from "@/components/ui";
+
+import { aendereVollmacht, type VollmachtErgebnis } from "./aktionen";
+
+/**
+ * Erteilen oder Widerrufen einer Vollmacht.
+ *
+ * Der Ablauf ist bewusst zweistufig: erst aufklappen, dann ausdruecklich
+ * bestaetigen. Eine Vollmacht ist eine rechtsgeschaeftliche Erklaerung -
+ * sie soll nicht mit einem einzigen unbedachten Klick zustande kommen
+ * oder erloeschen.
+ *
+ * Die Erklaerung steht im Klartext ueber dem Kreuz, nicht dahinter.
+ * Wer bestaetigt, ohne gelesen zu haben, tut das dann wenigstens
+ * sehenden Auges - und nicht, weil der Text unter einem Link lag.
+ */
+export function VollmachtFormular({
+  vollmacht,
+  bevollmaechtigter,
+  erteilt,
+  darfAendern,
+}: {
+  vollmacht: string;
+  bevollmaechtigter: string;
+  erteilt: boolean;
+  darfAendern: boolean;
+}) {
+  const [offen, setOffen] = useState(false);
+  const [ergebnis, aktion, laeuft] = useActionState<
+    VollmachtErgebnis | null,
+    FormData
+  >(aendereVollmacht, null);
+
+  if (!darfAendern) {
+    return (
+      <p className="t-mikro leading-relaxed">
+        Vollmachten darf nur die Geschäftsführung erteilen oder widerrufen.
+      </p>
+    );
+  }
+
+  if (ergebnis?.ok) {
+    return <Meldung ton="gut">{ergebnis.meldung}</Meldung>;
+  }
+
+  if (!offen) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOffen(true)}
+        className={`knopf ${erteilt ? "knopf-warnung" : "knopf-rand"}`}
+      >
+        {erteilt ? "Vollmacht widerrufen" : "Vollmacht erteilen"}
+      </button>
+    );
+  }
+
+  const kreuzId = `bestaetigung-${vollmacht}`;
+
+  return (
+    <form
+      action={aktion}
+      className="rounded-lg border p-4"
+      style={{
+        borderColor: "var(--linie)",
+        background: "var(--f-vertieft)",
+      }}
+    >
+      <input type="hidden" name="vollmacht" value={vollmacht} />
+      <input
+        type="hidden"
+        name="absicht"
+        value={erteilt ? "widerrufen" : "erteilen"}
+      />
+
+      <p
+        className="text-[0.8125rem] leading-relaxed"
+        style={{ color: "var(--t-normal)" }}
+      >
+        {erteilt ? (
+          <>
+            Sie widerrufen die Vollmacht an{" "}
+            <strong className="font-medium">{bevollmaechtigter}</strong>. Ab dem
+            Widerruf dürfen in Ihrem Namen keine weiteren Zertifikatsgeschäfte
+            abgeschlossen werden. Bereits abgeschlossene Geschäfte bleiben
+            gültig.
+          </>
+        ) : (
+          <>
+            Sie bevollmächtigen{" "}
+            <strong className="font-medium">{bevollmaechtigter}</strong>, CO₂-
+            Zertifikate aus Ihren Anlagen in Ihrem Namen und auf Ihre Rechnung
+            zu registrieren, zertifizieren zu lassen und zu verkaufen.
+          </>
+        )}
+      </p>
+
+      <label
+        htmlFor={kreuzId}
+        className="mt-3 flex items-start gap-2.5 text-[0.8125rem] leading-relaxed"
+        style={{ color: "var(--t-normal)" }}
+      >
+        <input
+          id={kreuzId}
+          type="checkbox"
+          name="bestaetigung"
+          value="ja"
+          required
+          className="kreuz mt-0.5"
+        />
+        <span>
+          Ich bin zeichnungsberechtigt und bestätige die
+          {erteilt ? " Widerrufserklärung" : " Vollmachtserteilung"}{" "}
+          verbindlich.
+        </span>
+      </label>
+
+      {ergebnis && !ergebnis.ok && (
+        <div className="mt-2.5">
+          <Meldung ton="kritisch">{ergebnis.meldung}</Meldung>
+        </div>
+      )}
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        <button
+          type="submit"
+          disabled={laeuft}
+          className={`knopf ${erteilt ? "knopf-warnung" : "knopf-voll"}`}
+        >
+          {laeuft
+            ? "Wird verarbeitet …"
+            : erteilt
+              ? "Widerruf verbindlich erklären"
+              : "Vollmacht verbindlich erteilen"}
+        </button>
+        <button
+          type="button"
+          onClick={() => setOffen(false)}
+          className="knopf knopf-leise"
+        >
+          Abbrechen
+        </button>
+      </div>
+    </form>
+  );
+}

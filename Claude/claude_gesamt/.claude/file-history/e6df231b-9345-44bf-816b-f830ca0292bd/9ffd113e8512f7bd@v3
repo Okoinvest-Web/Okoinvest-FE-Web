@@ -1,0 +1,166 @@
+"""Plausibilitaetspruefung der String-Messwerte (FA-050 bis FA-055).
+
+Die Logik ist bewusst frei von Frappe-Abhaengigkeiten, damit sie
+1:1 im Vue-Client (siehe `frontend/src/lib/plausibilitaet.ts`) gespiegelt und
+offline ohne Server ausgefuehrt werden kann. Beide Implementierungen teilen
+sich dieselben Testfaelle.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+
+OK = "OK"
+WARNUNG = "Warnung"
+FEHLER = "Fehler"
+
+# Rangfolge fuer die Aggregation mehrerer Einzelbefunde
+_RANG = {OK: 0, WARNUNG: 1, FEHLER: 2}
+
+
+@dataclass
+class Grenzwerte:
+    """Konfiguration aus `Baudoku Settings`."""
+
+    riso_pro_modul_kohm: float = 40.0
+    riso_minimum_kohm: float = 1000.0
+    uoc_toleranz_prozent: float = 10.0
+    isc_toleranz_prozent: float = 15.0
+
+
+@dataclass
+class Befund:
+    status: str = OK
+    meldungen: list[str] = field(default_factory=list)
+
+    @property
+    def meldung(self) -> str:
+        return " | ".join(self.meldungen)
+
+    def add(self, status: str, text: str) -> None:
+        self.meldungen.append(text)
+        if _RANG[status] > _RANG[self.status]:
+            self.status = status
+
+
+def _num(value) -> float | None:
+    if value in (None, ""):
+        return None
+    try:
+        wert = float(value)
+    except (TypeError, ValueError):
+        return None
+    return wert
+
+
+def pruefe_string(
+    *,
+    uoc: float | None,
+    isc: float | None,
+    riso: float | None,
+    anzahl_module: int | None,
+    modul_uoc: float | None = None,
+    modul_isc: float | None = None,
+    grenzwerte: Grenzwerte | None = None,
+) -> Befund:
+    """Prueft einen einzelnen String gegen Datenblatt und IEC 62446-1.
+
+    * Uoc gegen ``Anzahl Module x Uoc_Modul`` +/- Toleranz (FA-051)
+    * Isc gegen ``Isc_Modul`` +/- Toleranz (FA-052)
+    * Riso gegen ``Grenzwert je Modul x Anzahl Module``, mindestens jedoch
+      das Absolutminimum (FA-053)
+    """
+
+    gw = grenzwerte or Grenzwerte()
+    befund = Befund()
+
+    uoc = _num(uoc)
+    isc = _num(isc)
+    riso = _num(riso)
+    module = int(anzahl_module or 0)
+    modul_uoc = _num(modul_uoc)
+    modul_isc = _num(modul_isc)
+
+    # --- Uoc -------------------------------------------------------------
+    if uoc is not None and module and modul_uoc:
+        soll = module * modul_uoc
+        tol = soll * gw.uoc_toleranz_prozent / 100.0
+        if abs(uoc - soll) > tol * 2:
+            befund.add(FEHLER, f"Uoc {uoc:.1f} V weicht stark von Soll {soll:.1f} V ab "
+                               f"(zulaessig +/-{gw.uoc_toleranz_prozent:.0f} %).")
+        elif abs(uoc - soll) > tol:
+            befund.add(WARNUNG, f"Uoc {uoc:.1f} V ausserhalb Toleranz "
+                                f"(Soll {soll:.1f} V +/-{gw.uoc_toleranz_prozent:.0f} %).")
+    elif uoc is not None and module and not modul_uoc:
+        befund.add(WARNUNG, "Uoc konnte nicht geprueft werden: Uoc je Modul fehlt in den Anlagenstammdaten.")
+
+    # --- Isc -------------------------------------------------------------
+    if isc is not None and modul_isc:
+        tol = modul_isc * gw.isc_toleranz_prozent / 100.0
+        if abs(isc - modul_isc) > tol * 2:
+            befund.add(FEHLER, f"Isc {isc:.2f} A weicht stark von Soll {modul_isc:.2f} A ab "
+                               f"(zulaessig +/-{gw.isc_toleranz_prozent:.0f} %).")
+        elif abs(isc - modul_isc) > tol:
+            befund.add(WARNUNG, f"Isc {isc:.2f} A ausserhalb Toleranz "
+                                f"(Soll {modul_isc:.2f} A +/-{gw.isc_toleranz_prozent:.0f} %).")
+
+    # --- Riso ------------------------------------------------------------
+    if riso is not None:
+        grenze = max(gw.riso_pro_modul_kohm * module, gw.riso_minimum_kohm) if module \
+            else gw.riso_minimum_kohm
+        if riso < grenze:
+            befund.add(FEHLER, f"Riso {riso:.0f} kOhm unterschreitet den Grenzwert "
+                               f"{grenze:.0f} kOhm (IEC 62446-1).")
+        elif riso < grenze * 1.25:
+            befund.add(WARNUNG, f"Riso {riso:.0f} kOhm nur knapp ueber dem Grenzwert "
+                                f"{grenze:.0f} kOhm.")
+
+    if not befund.meldungen:
+        befund.meldungen.append("Alle Messwerte plausibel.")
+    return befund
+
+
+MANGEL_STICHWORT = "mangel"
+
+
+def ist_mangel_bewertung(bewertung: str | None) -> bool:
+    """Eine Bewertung mit 'Mangel' erzeugt beim Abschluss einen Mangel (FA-036)."""
+    return bool(bewertung and MANGEL_STICHWORT in bewertung.lower())
+
+
+def schweregrad_code(bewertung: str | None) -> str:
+    """'Mangel schwer' -> A, 'Mangel leicht' -> C, sonst B.
+
+    Spiegel zu `schweregradAusBewertung` im Client; beide teilen die Testfaelle.
+    """
+    text = (bewertung or "").lower()
+    if "schwer" in text:
+        return "A"
+    if "leicht" in text:
+        return "C"
+    return "B"
+
+
+def pruefe_zahlenwert(wert, min_wert=None, max_wert=None, einheit: str = "") -> Befund:
+    """Prueft einen numerischen Pruefpunkt gegen die Vorlagengrenzen (FA-014/FA-033)."""
+
+    befund = Befund()
+    wert = _num(wert)
+    min_wert = _num(min_wert)
+    max_wert = _num(max_wert)
+    einheit = f" {einheit}".rstrip()
+
+    if wert is None:
+        return befund
+
+    if min_wert is not None and wert < min_wert:
+        spanne = (max_wert - min_wert) if max_wert is not None else abs(min_wert) or 1
+        status = FEHLER if (min_wert - wert) > spanne * 0.1 else WARNUNG
+        befund.add(status, f"Wert {wert:g}{einheit} unter Minimum {min_wert:g}{einheit}.")
+
+    if max_wert is not None and wert > max_wert:
+        spanne = (max_wert - min_wert) if min_wert is not None else abs(max_wert) or 1
+        status = FEHLER if (wert - max_wert) > spanne * 0.1 else WARNUNG
+        befund.add(status, f"Wert {wert:g}{einheit} ueber Maximum {max_wert:g}{einheit}.")
+
+    return befund

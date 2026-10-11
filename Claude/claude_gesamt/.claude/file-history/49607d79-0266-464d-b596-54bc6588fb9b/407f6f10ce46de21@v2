@@ -1,0 +1,150 @@
+/**
+ * Klickt die drei neuen Abläufe durch: Antrag genehmigen,
+ * Wiederherstellungstest eintragen, Bandwechsel auswerfen und quittieren.
+ */
+import { spawn } from 'node:child_process'
+import { mkdtempSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+
+const EDGE = 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'
+const port = 9392
+const profil = mkdtempSync(join(tmpdir(), 'edge-cdp-'))
+const kind = spawn(
+  EDGE,
+  ['--headless=new','--disable-gpu','--no-first-run','--no-default-browser-check',
+   `--remote-debugging-port=${port}`, `--user-data-dir=${profil}`, 'about:blank'],
+  { stdio: 'ignore' },
+)
+const schlafe = (ms) => new Promise((r) => setTimeout(r, ms))
+let ziel = null
+for (let i = 0; i < 40 && !ziel; i++) {
+  await schlafe(250)
+  try { ziel = (await (await fetch(`http://127.0.0.1:${port}/json/list`)).json()).find((t) => t.type === 'page') } catch {}
+}
+const ws = new WebSocket(ziel.webSocketDebuggerUrl)
+await new Promise((r) => (ws.onopen = r))
+let id = 0
+const offen = new Map()
+let fehler = []
+ws.onmessage = (ev) => {
+  const m = JSON.parse(ev.data)
+  if (m.id && offen.has(m.id)) { offen.get(m.id)(m.result); offen.delete(m.id) }
+  if (m.method === 'Runtime.exceptionThrown') fehler.push(String(m.params.exceptionDetails.text).slice(0, 140))
+  if (m.method === 'Runtime.consoleAPICalled' && m.params.type === 'error')
+    fehler.push('console: ' + m.params.args.map((a) => a.description || a.value).join(' ').split('\n')[0].slice(0, 140))
+}
+const sende = (me, p = {}) => new Promise((r) => { const n = ++id; offen.set(n, r); ws.send(JSON.stringify({ id: n, method: me, params: p })) })
+const js = async (a) => (await sende('Runtime.evaluate', { returnByValue: true, expression: a, awaitPromise: true })).result.value
+await sende('Runtime.enable'); await sende('Page.enable')
+await sende('Emulation.setDeviceMetricsOverride', { width: 1500, height: 1100, deviceScaleFactor: 1, mobile: false })
+const SCRATCH = process.argv[2] || '.'
+
+async function klick(ausdruck) {
+  const r = await js(`(() => { const e = ${ausdruck}; if (!e) return null;
+    e.scrollIntoView({ block: 'center' });
+    const b = e.getBoundingClientRect();
+    return JSON.stringify({ x: b.x + b.width / 2, y: b.y + b.height / 2 }) })()`)
+  if (!r) return 'nicht gefunden'
+  const { x, y } = JSON.parse(r)
+  await sende('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y })
+  await sende('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', buttons: 1, clickCount: 1 })
+  await sende('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', buttons: 0, clickCount: 1 })
+  return 'geklickt'
+}
+const KNOPF = (t) => `[...document.querySelectorAll('button')].find(x => x.innerText.trim() === ${JSON.stringify(t)} && !x.disabled)`
+async function tippe(index, wert) {
+  return js(`(() => {
+    const i = [...document.querySelectorAll('input[type=text], input[type=number], textarea')].at(${index})
+    if (!i) return 'kein Feld'
+    const proto = i.tagName === 'TEXTAREA' ? window.HTMLTextAreaElement : window.HTMLInputElement
+    Object.getOwnPropertyDescriptor(proto.prototype, 'value').set.call(i, ${JSON.stringify(wert)})
+    i.dispatchEvent(new Event('input', { bubbles: true }))
+    return 'ok'
+  })()`)
+}
+async function gehe(pfad) {
+  await sende('Page.navigate', { url: 'http://localhost:8080' + pfad })
+  for (let i = 0; i < 80; i++) { if ((await js('document.body.innerText.trim().length')) > 600) break; await schlafe(250) }
+  await schlafe(1400)
+  fehler = []
+}
+const meldung = () =>
+  js(`[...document.querySelectorAll('body *')].map(e=>e.textContent).filter(t=>t&&t.length<220).find(t=>/Angesto|eingetragen|Eingetragen|ausgeworfen|liegt in|erzeugt|tats\\u00e4chliche/.test(t)) || '(keine)'`)
+
+// ---------------------------------------------------------------- 1. Antrag
+console.log('=== 1. Antrag genehmigen ===')
+await gehe('/backup/auftraege')
+console.log('  Genehmigen da:', await js(`!!${KNOPF('Genehmigen')}`))
+await klick(KNOPF('Genehmigen'))
+await schlafe(900)
+console.log('  Dialog:', (await js("[...document.querySelectorAll('body > div *')].filter(e=>!e.closest('#inhalt') && e.children.length===0 && e.textContent.trim()).map(e=>e.textContent.trim()).join(' | ')")).slice(0, 260))
+await klick(`[...document.querySelectorAll('button')].filter(x => x.innerText.trim() === 'Genehmigen').at(-1)`)
+await schlafe(1600)
+console.log('  Zustand jetzt:', await js(`(() => { const r=[...document.querySelectorAll('tbody tr')].find(x=>x.innerText.includes('Beweissicherung')); return r ? r.innerText.split(String.fromCharCode(10)).slice(0,4).join(' / ') : 'Zeile weg' })()`))
+if (fehler.length) console.log('  FEHLER:', fehler.join(' ; '))
+
+// -------------------------------------------------------------- 2. Restore
+console.log('\n=== 2. Wiederherstellungstest eintragen ===')
+await gehe('/backup/pruefung')
+const vorher = await js(`document.body.innerText.split('nie durchgef\\u00fchrt').length - 1`)
+console.log('  „nie durchgeführt" vorher:', vorher)
+await klick(KNOPF('Test eintragen'))
+await schlafe(900)
+console.log('  Dauerfeld gefordert:', await js(`!!document.querySelector('input[type=number]')`))
+await tippe(-1, '')
+await klick(`[...document.querySelectorAll('button')].filter(x=>x.innerText.trim()==='Eintragen').at(-1)`)
+await schlafe(600)
+console.log('  ohne Dauer gesperrt:', await js(`[...document.querySelectorAll('button')].filter(x=>x.innerText.trim()==='Eintragen').at(-1)?.disabled`))
+await tippe(-1, '35')
+await schlafe(400)
+await klick(`[...document.querySelectorAll('button')].filter(x=>x.innerText.trim()==='Eintragen').at(-1)`)
+await schlafe(1800)
+console.log('  Rückmeldung:', String(await meldung()).slice(0, 150))
+console.log('  „nie durchgeführt" danach:', await js(`document.body.innerText.split('nie durchgef\\u00fchrt').length - 1`))
+if (fehler.length) console.log('  FEHLER:', fehler.join(' ; '))
+
+// ------------------------------------------------------------------ 3. Band
+console.log('\n=== 3. Etiketten und Barcode ===')
+await gehe('/backup/band')
+await klick(KNOPF('Etiketten erzeugen'))
+await schlafe(700)
+await klick(KNOPF('Erzeugen'))
+await schlafe(1200)
+console.log('  Barcodes gezeichnet:', await js(`document.querySelectorAll('svg[role=img][aria-label^="Strichcode"]').length`))
+console.log('  Balken im ersten:', await js(`document.querySelector('svg[role=img][aria-label^="Strichcode"]')?.querySelectorAll('rect').length`))
+console.log('  Etiketten:', await js(`[...document.querySelectorAll('svg[role=img][aria-label^="Strichcode"]')].map(s=>s.getAttribute('aria-label')).join(' ')`))
+const d = await sende('Page.captureScreenshot', { format: 'png' })
+writeFileSync(join(SCRATCH, 'bk-etiketten.png'), Buffer.from(d.data, 'base64'))
+if (fehler.length) console.log('  FEHLER:', fehler.join(' ; '))
+
+console.log('\n=== 4. Bandwechsel ===')
+await gehe('/backup/band')
+await klick(KNOPF('Auswerfen'))
+await schlafe(1000)
+console.log('  Dialogtext:', (await js("[...document.querySelectorAll('body > div *')].filter(e=>!e.closest('#inhalt') && e.children.length===0 && e.textContent.trim()).map(e=>e.textContent.trim()).join(' | ')")).slice(0, 300))
+console.log('  ohne Grund gesperrt:', await js(`[...document.querySelectorAll('button')].filter(x=>x.innerText.trim()==='Auswerfen').at(-1)?.disabled`))
+await tippe(-1, 'Wochenwechsel KW 39')
+await schlafe(400)
+await klick(`[...document.querySelectorAll('button')].filter(x=>x.innerText.trim()==='Auswerfen').at(-1)`)
+await schlafe(1800)
+console.log('  nach Auswurf:', String(await meldung()).slice(0, 170))
+
+await klick(KNOPF('Wechsel bestätigen'))
+await schlafe(1000)
+await tippe(-3, 'OEK040L9')
+await tippe(-2, 'Bankschließfach Sparkasse Linz, Fach 2213')
+await schlafe(400)
+console.log('  falsches Band, Knopf frei:', await js(`!${'[...document.querySelectorAll(\'button\')].filter(x=>x.innerText.trim()===\'Bestätigen\').at(-1)?.disabled'}`))
+await klick(`[...document.querySelectorAll('button')].filter(x=>x.innerText.trim()==='Bestätigen').at(-1)`)
+await schlafe(1600)
+console.log('  Absage:', (await js(`[...document.querySelectorAll('body *')].map(e=>e.textContent).filter(t=>t&&t.length<200).find(t=>/Gescannt wurde/.test(t)) || '(keine)'`)).slice(0, 150))
+await tippe(-3, 'OEK039L9')
+await schlafe(400)
+await klick(`[...document.querySelectorAll('button')].filter(x=>x.innerText.trim()==='Bestätigen').at(-1)`)
+await schlafe(1800)
+console.log('  nach Quittung:', String(await meldung()).slice(0, 180))
+console.log('  offene Wechsel:', await js(`document.body.innerText.includes('Offener Wechsel')`))
+if (fehler.length) console.log('  FEHLER:', fehler.join(' ; '))
+
+ws.close(); kind.kill()

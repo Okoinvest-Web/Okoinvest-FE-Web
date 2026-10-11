@@ -1,0 +1,347 @@
+<template>
+  <div>
+    <PageHeader title="Inventur" :subtitle="untertitel">
+      <template #actions>
+        <FormControl v-model="gewaehlt" type="select" :options="zaehlungOptionen" />
+      </template>
+    </PageHeader>
+
+    <div class="p-6">
+      <!-- Neue Inventur -->
+      <section class="mb-6 rounded-lg border border-outline-gray-2 bg-surface-white p-4">
+        <h2 class="mb-3 text-base font-semibold text-ink-gray-8">Neue Inventur starten</h2>
+        <form class="flex flex-wrap items-end gap-3" @submit.prevent="starten">
+          <FormControl
+            v-model="neuName"
+            label="Bezeichnung"
+            type="text"
+            placeholder="Jahresinventur"
+          />
+          <FormControl
+            v-model="neuOrt"
+            label="Standort"
+            type="select"
+            :options="standortOptionen"
+          />
+          <FormControl
+            v-model="neuKategorie"
+            label="Nur Kategorie"
+            type="select"
+            :options="kategorieOptionen"
+          />
+          <Button variant="solid" type="submit" :loading="start.loading" :disabled="!neuName">
+            Starten
+          </Button>
+        </form>
+        <p class="mt-2 text-xs text-ink-gray-5">
+          Beim Start wird der Sollbestand eingefroren. Ohne das ließe sich hinterher nicht sagen, ob
+          ein Gerät während der Zählung umgezogen ist oder schon vorher woanders stand.
+        </p>
+      </section>
+
+      <div v-if="detail.data" class="grid grid-cols-1 gap-6 xl:grid-cols-3">
+        <!-- Zählen -->
+        <div class="xl:col-span-1">
+          <CodeScanner v-if="detail.data.count_state === 'open'" titel="Zählen" @code="scanne" />
+
+          <div
+            v-else
+            class="rounded-lg border border-outline-gray-2 bg-surface-white p-4 text-sm text-ink-gray-6"
+          >
+            Diese Inventur ist abgeschlossen.
+          </div>
+
+          <StatusDot
+            v-if="letzterTreffer"
+            class="mt-3"
+            :level="letzterTreffer.level"
+            :text="letzterTreffer.text"
+          />
+
+          <!-- Fortschritt -->
+          <div class="mt-4 rounded-lg border border-outline-gray-2 bg-surface-white p-4">
+            <div class="flex items-baseline justify-between gap-2">
+              <p class="text-sm text-ink-gray-6">Gezählt</p>
+              <p class="text-2xl font-semibold tabular-nums text-ink-gray-9">
+                {{ detail.data.summary.counted }} / {{ detail.data.summary.total }}
+              </p>
+            </div>
+            <div class="mt-2 h-2.5 w-full" style="background: var(--viz-neutral-soft)">
+              <div
+                class="h-full rounded-r"
+                :style="{
+                  width: detail.data.summary.progress_pct + '%',
+                  background: 'var(--viz-series-1)',
+                }"
+              />
+            </div>
+            <dl class="mt-3 space-y-1 text-sm">
+              <div class="flex justify-between gap-2">
+                <dt class="text-ink-gray-6">Gefunden</dt>
+                <dd class="tabular-nums text-ink-gray-8">
+                  {{ detail.data.summary.by_state.found || 0 }}
+                </dd>
+              </div>
+              <div class="flex justify-between gap-2">
+                <dt class="text-ink-gray-6">An anderem Ort</dt>
+                <dd class="tabular-nums text-ink-gray-8">
+                  {{ detail.data.summary.by_state.moved || 0 }}
+                </dd>
+              </div>
+              <div class="flex justify-between gap-2">
+                <dt class="text-ink-gray-6">Fehlt</dt>
+                <dd class="tabular-nums text-ink-gray-8">{{ detail.data.summary.missing }}</dd>
+              </div>
+              <div class="flex justify-between gap-2">
+                <dt class="text-ink-gray-6">Erklärt (ausgegeben)</dt>
+                <dd class="tabular-nums text-ink-gray-8">{{ detail.data.summary.explained }}</dd>
+              </div>
+            </dl>
+
+            <Button
+              v-if="detail.data.count_state === 'open'"
+              class="mt-4 w-full"
+              variant="solid"
+              :loading="abschluss.loading"
+              @click="abschliessen"
+            >
+              Inventur abschließen
+            </Button>
+            <p v-if="detail.data.count_state === 'open'" class="mt-2 text-xs text-ink-gray-5">
+              Beim Abschluss werden gefundene Standorte in die Stammdaten übernommen. Ohne diesen
+              Schritt hat man gezählt und nichts korrigiert.
+            </p>
+          </div>
+        </div>
+
+        <!-- Zeilen -->
+        <div class="xl:col-span-2">
+          <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <h2 class="text-base font-semibold text-ink-gray-8">Zählliste</h2>
+            <FormControl v-model="zeilenFilter" type="select" :options="zeilenOptionen" />
+          </div>
+          <DataTable
+            tabellen-id="StocktakeView"
+            :columns="spalten"
+            :rows="gefilterteZeilen"
+            :loading="detail.loading"
+            empty-text="Keine Zeile mit diesem Filter."
+          >
+            <template #zelle-asset_tag="{ zeile }">
+              <RouterLink
+                :to="'/inventory/' + zeile.asset_tag"
+                class="font-mono text-sm text-ink-gray-9 underline decoration-outline-gray-3 underline-offset-2"
+              >
+                {{ zeile.asset_tag }}
+              </RouterLink>
+            </template>
+            <template #zelle-ort="{ zeile }">
+              <span class="text-sm">
+                {{ [zeile.expected_site_name, zeile.expected_room].filter(Boolean).join(' · ') }}
+              </span>
+              <span
+                v-if="zeile.found_site && zeile.line_state === 'moved'"
+                class="block text-sm text-ink-gray-5"
+              >
+                gefunden:
+                {{ [zeile.found_site_name, zeile.found_room].filter(Boolean).join(' · ') }}
+              </span>
+            </template>
+            <template #zelle-line_state="{ zeile }">
+              <StatusDot
+                :level="zeile.level"
+                :text="
+                  zeile.explained_by_assignment
+                    ? 'ausgegeben an ' + (zeile.holder_name || '?')
+                    : ZEILE[zeile.line_state]
+                "
+                klein
+              />
+            </template>
+          </DataTable>
+        </div>
+      </div>
+
+      <p v-else-if="!zaehlungen.loading" class="text-sm text-ink-gray-5">
+        Noch keine Inventur angelegt.
+      </p>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed, ref, watch } from 'vue'
+import { Button, FormControl, createResource, toast } from 'frappe-ui'
+import PageHeader from '@/components/PageHeader.vue'
+import DataTable from '@/components/DataTable.vue'
+import StatusDot from '@/components/StatusDot.vue'
+import CodeScanner from '@/components/CodeScanner.vue'
+import { fehlerText, mengeText } from '@/viz'
+
+const ZEILE = {
+  pending: 'noch nicht gezählt',
+  found: 'gefunden',
+  moved: 'an anderem Ort',
+  unexpected: 'gehört nicht hierher',
+}
+
+const gewaehlt = ref('')
+const zeilenFilter = ref('')
+const letzterTreffer = ref(null)
+
+const neuName = ref('')
+const neuOrt = ref('')
+const neuKategorie = ref('')
+
+const zaehlungen = createResource({
+  url: 'frappe.client.get_list',
+  params: {
+    doctype: 'Inventory Count',
+    fields: ['name', 'count_name', 'count_state', 'site'],
+    limit_page_length: 0,
+  },
+  auto: true,
+})
+
+const detail = createResource({
+  url: 'netops.api.inventar.count_detail',
+  makeParams: () => ({ name: gewaehlt.value }),
+})
+
+const start = createResource({ url: 'netops.api.inventar.count_start' })
+const scan = createResource({ url: 'netops.api.inventar.count_scan' })
+const abschluss = createResource({ url: 'netops.api.inventar.count_close' })
+
+const standorte = createResource({
+  url: 'frappe.client.get_list',
+  params: { doctype: 'Site', fields: ['name', 'site_name'], limit_page_length: 0 },
+  auto: true,
+})
+const kategorien = createResource({
+  url: 'frappe.client.get_list',
+  params: { doctype: 'Asset Category', fields: ['name'], limit_page_length: 0 },
+  auto: true,
+})
+
+// Die erste offene Inventur vorauswählen - das ist fast immer die gesuchte.
+watch(
+  () => zaehlungen.data,
+  (liste) => {
+    if (gewaehlt.value || !liste?.length) return
+    gewaehlt.value = (liste.find((z) => z.count_state === 'open') || liste[0]).name
+  },
+)
+
+watch(gewaehlt, () => {
+  letzterTreffer.value = null
+  if (gewaehlt.value) detail.fetch()
+})
+
+const zaehlungOptionen = computed(() =>
+  (zaehlungen.data || []).map((z) => ({
+    label: z.count_name + (z.count_state === 'open' ? ' (läuft)' : ' (abgeschlossen)'),
+    value: z.name,
+  })),
+)
+
+const standortOptionen = computed(() => [
+  { label: 'Alle Standorte', value: '' },
+  ...(standorte.data || []).map((s) => ({ label: s.site_name, value: s.name })),
+])
+
+const kategorieOptionen = computed(() => [
+  { label: 'Alle Kategorien', value: '' },
+  ...(kategorien.data || []).map((k) => ({ label: k.name, value: k.name })),
+])
+
+const zeilenOptionen = [
+  { label: 'Alle Zeilen', value: '' },
+  { label: 'Noch nicht gezählt', value: 'pending' },
+  { label: 'Gefunden', value: 'found' },
+  { label: 'An anderem Ort', value: 'moved' },
+  { label: 'Gehört nicht hierher', value: 'unexpected' },
+]
+
+const gefilterteZeilen = computed(() => {
+  const zeilen = detail.data?.lines || []
+  return zeilenFilter.value ? zeilen.filter((z) => z.line_state === zeilenFilter.value) : zeilen
+})
+
+const spalten = [
+  { key: 'asset_tag', label: 'Nummer', width: '130px' },
+  { key: 'asset_name', label: 'Gegenstand', width: '240px' },
+  { key: 'ort', label: 'Erwartet', width: '230px' },
+  { key: 'line_state', label: 'Ergebnis', width: '240px' },
+]
+
+const untertitel = computed(() => {
+  const d = detail.data
+  if (!d) return ''
+  return (
+    d.count_name +
+    ' · ' +
+    d.summary.counted +
+    ' von ' +
+    d.summary.total +
+    ' gezählt' +
+    (d.summary.missing ? ' · ' + mengeText(d.summary.missing, 'fehlt', 'fehlen') : '')
+  )
+})
+
+async function starten() {
+  try {
+    const ergebnis = await start.submit({
+      count_name: neuName.value,
+      site: neuOrt.value || null,
+      scope_category: neuKategorie.value || null,
+    })
+    toast.create({ message: ergebnis.lines + ' Positionen im Umfang', type: 'success' })
+    neuName.value = ''
+    await zaehlungen.fetch()
+    gewaehlt.value = ergebnis.count
+  } catch (fehler) {
+    toast.create({ message: fehlerText(fehler), type: 'error' })
+  }
+}
+
+async function scanne(wert) {
+  try {
+    const ergebnis = await scan.submit({ count: gewaehlt.value, asset_tag: wert })
+    if (!ergebnis.ok) {
+      letzterTreffer.value = { level: 'critical', text: ergebnis.text }
+      return
+    }
+    letzterTreffer.value = {
+      level: ergebnis.line_state === 'found' ? 'ok' : 'warning',
+      text:
+        ergebnis.asset_name +
+        ' – ' +
+        (ZEILE[ergebnis.line_state] || ergebnis.line_state) +
+        (ergebnis.line_state === 'moved'
+          ? ` (erwartet in ${ergebnis.expected_room || ergebnis.expected_site})`
+          : ''),
+    }
+    await detail.fetch()
+  } catch (fehler) {
+    letzterTreffer.value = { level: 'critical', text: fehlerText(fehler) }
+  }
+}
+
+async function abschliessen() {
+  try {
+    const ergebnis = await abschluss.submit({ name: gewaehlt.value, apply_moves: true })
+    toast.create({
+      message:
+        ergebnis.corrected +
+        ' Standorte korrigiert' +
+        (ergebnis.missing.length
+          ? ', ' + mengeText(ergebnis.missing.length, 'fehlt', 'fehlen')
+          : ''),
+      type: ergebnis.missing.length ? 'warning' : 'success',
+    })
+    await Promise.all([zaehlungen.fetch(), detail.fetch()])
+  } catch (fehler) {
+    toast.create({ message: fehlerText(fehler), type: 'error' })
+  }
+}
+</script>

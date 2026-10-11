@@ -1,0 +1,116 @@
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+
+import {
+  ausTagesSchluessel,
+  heute,
+  tagesSchluessel,
+  verschiebeTage,
+} from "./datum.ts";
+
+/**
+ * Diese Tests halten einen Fehler fest, der in der Anwendung tatsaechlich
+ * aufgetreten ist: Der Tagesschluessel wurde mit `toISOString()` gebildet.
+ * Oestlich von Greenwich liegt die lokale Mitternacht damit im Vortag -
+ * aus dem 13. September wurde "2026-09-12". Die Auswertung "Ertrag heute"
+ * fand deshalb nichts und zeigte 0 kWh an, obwohl die Anlage lief.
+ */
+
+describe("tagesSchluessel", () => {
+  it("nimmt den Kalendertag der Ortszeit, nicht den von UTC", () => {
+    const mitternacht = new Date(2026, 8, 13, 0, 0, 0, 0);
+    assert.equal(tagesSchluessel(mitternacht), "2026-09-13");
+  });
+
+  it("bleibt ueber den ganzen Tag derselbe", () => {
+    for (const stunde of [0, 1, 6, 12, 18, 23]) {
+      const zeitpunkt = new Date(2026, 8, 13, stunde, 30);
+      assert.equal(
+        tagesSchluessel(zeitpunkt),
+        "2026-09-13",
+        `${stunde}:30 haette denselben Schluessel liefern muessen`,
+      );
+    }
+  });
+
+  it("fuellt Monat und Tag auf zwei Stellen auf", () => {
+    assert.equal(tagesSchluessel(new Date(2026, 0, 5)), "2026-01-05");
+    assert.equal(tagesSchluessel(new Date(2026, 11, 31)), "2026-12-31");
+  });
+});
+
+describe("ausTagesSchluessel", () => {
+  it("liest den Schluessel als lokale Mitternacht", () => {
+    const datum = ausTagesSchluessel("2026-09-13");
+    assert.equal(datum.getFullYear(), 2026);
+    assert.equal(datum.getMonth(), 8);
+    assert.equal(datum.getDate(), 13);
+    assert.equal(datum.getHours(), 0);
+  });
+
+  it("ist die Umkehrung von tagesSchluessel", () => {
+    for (const schluessel of [
+      "2026-01-01",
+      "2026-06-21",
+      "2026-09-13",
+      "2026-12-31",
+    ]) {
+      assert.equal(tagesSchluessel(ausTagesSchluessel(schluessel)), schluessel);
+    }
+  });
+
+  it("liefert ein ungueltiges Datum bei unbrauchbarer Eingabe", () => {
+    for (const wert of ["", "kein Datum", "13.09.2026"]) {
+      assert.ok(
+        Number.isNaN(ausTagesSchluessel(wert).getTime()),
+        `"${wert}" haette kein gueltiges Datum ergeben duerfen`,
+      );
+    }
+  });
+});
+
+describe("heute", () => {
+  it("liegt auf lokaler Mitternacht", () => {
+    const d = heute();
+    assert.equal(d.getHours(), 0);
+    assert.equal(d.getMinutes(), 0);
+    assert.equal(d.getSeconds(), 0);
+    assert.equal(d.getMilliseconds(), 0);
+  });
+
+  it("traegt denselben Schluessel wie der aktuelle Zeitpunkt", () => {
+    // Der eigentliche Kern des behobenen Fehlers.
+    assert.equal(tagesSchluessel(heute()), tagesSchluessel(new Date()));
+  });
+});
+
+describe("verschiebeTage", () => {
+  it("verschiebt vorwaerts und rueckwaerts", () => {
+    const basis = new Date(2026, 8, 13);
+    assert.equal(tagesSchluessel(verschiebeTage(basis, 1)), "2026-09-14");
+    assert.equal(tagesSchluessel(verschiebeTage(basis, -1)), "2026-09-12");
+    assert.equal(tagesSchluessel(verschiebeTage(basis, 0)), "2026-09-13");
+  });
+
+  it("laesst das Ausgangsdatum unveraendert", () => {
+    const basis = new Date(2026, 8, 13);
+    verschiebeTage(basis, 30);
+    assert.equal(tagesSchluessel(basis), "2026-09-13");
+  });
+
+  it("kommt ueber Monats- und Jahresgrenzen", () => {
+    assert.equal(
+      tagesSchluessel(verschiebeTage(new Date(2026, 0, 1), -1)),
+      "2025-12-31",
+    );
+    assert.equal(
+      tagesSchluessel(verschiebeTage(new Date(2026, 11, 31), 1)),
+      "2027-01-01",
+    );
+    // Schaltjahr
+    assert.equal(
+      tagesSchluessel(verschiebeTage(new Date(2028, 1, 28), 1)),
+      "2028-02-29",
+    );
+  });
+});

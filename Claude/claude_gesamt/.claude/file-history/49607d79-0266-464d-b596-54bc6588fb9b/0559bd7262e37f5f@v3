@@ -1,0 +1,238 @@
+<template>
+  <div>
+    <PageHeader title="Dienste" :subtitle="untertitel" />
+
+    <div class="p-6">
+      <!-- Auswirkungsanalyse steht oben: das ist die Frage im Ernstfall -->
+      <section class="mb-8 rounded-lg border border-outline-gray-2 bg-surface-white p-4">
+        <h2 class="mb-3 text-base font-semibold text-ink-gray-8">
+          Was fällt aus, wenn ein Objekt ausfällt?
+        </h2>
+
+        <div class="flex flex-wrap items-end gap-3">
+          <FormControl v-model="objektTyp" label="Objektart" type="select" :options="typOptionen" />
+          <FormControl
+            v-model="objektName"
+            label="Objekt"
+            type="select"
+            :options="objektOptionen"
+          />
+          <Button variant="solid" :loading="analyse.loading" @click="analyse.fetch()">
+            Auswirkung berechnen
+          </Button>
+        </div>
+
+        <div v-if="analyse.data" class="mt-5">
+          <div class="flex flex-wrap items-center gap-x-8 gap-y-3">
+            <div>
+              <p class="text-sm text-ink-gray-6">Betroffene Dienste</p>
+              <p class="text-2xl font-semibold text-ink-gray-9">
+                {{ analyse.data.impacted_services.length }}
+              </p>
+            </div>
+            <div>
+              <p class="text-sm text-ink-gray-6">Betroffene Benutzer</p>
+              <p class="text-2xl font-semibold text-ink-gray-9">
+                {{ analyse.data.impacted_users }}
+              </p>
+            </div>
+            <div>
+              <p class="text-sm text-ink-gray-6">Höchste Kritikalität</p>
+              <StatusDot
+                class="mt-1"
+                :level="kritikalitaetStufe(analyse.data.highest_criticality)"
+                :text="KRITIKALITAET[analyse.data.highest_criticality] || 'keine'"
+              />
+            </div>
+          </div>
+
+          <div class="mt-5 grid grid-cols-1 gap-6 xl:grid-cols-2">
+            <div>
+              <h3 class="mb-2 text-sm font-medium text-ink-gray-7">
+                Bricht weg ({{ analyse.data.impacted.length }} Objekte)
+              </h3>
+              <ul class="space-y-1">
+                <li
+                  v-for="(betroffen, i) in analyse.data.impacted"
+                  :key="i"
+                  class="flex items-center gap-2 text-sm"
+                >
+                  <span class="inline-block w-5 shrink-0 text-right tabular-nums text-ink-gray-4">
+                    {{ betroffen.distance }}
+                  </span>
+                  <Badge theme="gray">{{ doctypeLabel(betroffen.type) }}</Badge>
+                  <span class="text-ink-gray-8">{{ betroffen.name }}</span>
+                  <span class="text-ink-gray-4">
+                    über {{ betroffen.path.map((p) => p.name).join(' ← ') }}
+                  </span>
+                </li>
+              </ul>
+              <p v-if="!analyse.data.impacted.length" class="text-sm text-ink-gray-5">
+                Nichts hängt daran.
+              </p>
+            </div>
+
+            <div>
+              <h3 class="mb-2 text-sm font-medium text-ink-gray-7">
+                Hängt selbst ab von ({{ analyse.data.depends_on.length }} Objekte)
+              </h3>
+              <ul class="space-y-1">
+                <li
+                  v-for="(abhaengig, i) in analyse.data.depends_on"
+                  :key="i"
+                  class="flex items-center gap-2 text-sm"
+                >
+                  <span class="inline-block w-5 shrink-0 text-right tabular-nums text-ink-gray-4">
+                    {{ abhaengig.distance }}
+                  </span>
+                  <Badge theme="gray">{{ doctypeLabel(abhaengig.type) }}</Badge>
+                  <span class="text-ink-gray-8">{{ abhaengig.name }}</span>
+                  <StatusDot
+                    v-if="istEinzelpfad(abhaengig)"
+                    level="warning"
+                    text="einzige Verbindung"
+                    klein
+                  />
+                </li>
+              </ul>
+              <p v-if="!analyse.data.depends_on.length" class="text-sm text-ink-gray-5">
+                Hängt von nichts ab.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2 class="mb-3 text-base font-semibold text-ink-gray-8">Geschäftsdienste</h2>
+        <DataTable :columns="spalten" :rows="dienste.data || []" :loading="dienste.loading">
+          <template #zelle-service_name="{ zeile }">
+            <span class="block font-medium text-ink-gray-9">{{ zeile.service_name }}</span>
+            <span class="block text-sm text-ink-gray-5">{{ zeile.service_owner }}</span>
+          </template>
+          <template #zelle-criticality="{ zeile }">
+            <StatusDot
+              :level="kritikalitaetStufe(zeile.criticality)"
+              :text="KRITIKALITAET[zeile.criticality]"
+            />
+          </template>
+          <template #zelle-ziel="{ zeile }">
+            RTO {{ zeile.rto_hours }} h · RPO {{ zeile.rpo_hours }} h
+          </template>
+          <template #zelle-backup_verify="{ zeile }">
+            <StatusDot v-if="zeile.backup_verify === 'ok'" level="ok" text="verifiziert" klein />
+            <StatusDot
+              v-else-if="zeile.backup_verify === 'failed'"
+              level="critical"
+              text="Verify fehlgeschlagen"
+              klein
+            />
+            <StatusDot v-else level="warning" text="keine gültige Sicherung" klein />
+          </template>
+          <template #zelle-devices="{ zeile }">
+            <span v-if="!zeile.devices.length" class="text-ink-gray-4">–</span>
+            <span v-else class="text-sm">{{ zeile.devices.join(', ') }}</span>
+          </template>
+        </DataTable>
+      </section>
+
+      <p class="mt-3 text-xs text-ink-gray-4">
+        Die Kette Geschäftsdienst → VM → Host → Switch → Firewall → Provider steht als Beziehungen
+        im Datenmodell. Die Auswirkungsanalyse läuft gegen die Kanten, die Abhängigkeitsliste mit
+        ihnen. „Einzige Verbindung“ markiert ein Objekt ohne Alternativweg – also einen
+        Einzelfehlerpunkt.
+      </p>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed, ref, watch } from 'vue'
+import { Badge, Button, FormControl, createResource } from 'frappe-ui'
+import PageHeader from '@/components/PageHeader.vue'
+import DataTable from '@/components/DataTable.vue'
+import StatusDot from '@/components/StatusDot.vue'
+import { doctypeLabel } from '@/labels'
+import { kritikalitaetStufe } from '@/viz'
+
+const KRITIKALITAET = { critical: 'Kritisch', high: 'Hoch', medium: 'Mittel', low: 'Niedrig' }
+
+const objektTyp = ref('Network Device')
+const objektName = ref('SRV-PVE-01')
+
+const dienste = createResource({ url: 'netops.api.services.service_list', auto: true })
+
+const geraete = createResource({
+  url: 'frappe.client.get_list',
+  params: { doctype: 'Network Device', fields: ['name'], limit_page_length: 0 },
+  auto: true,
+})
+const vms = createResource({
+  url: 'frappe.client.get_list',
+  params: { doctype: 'Virtual Machine', fields: ['name'], limit_page_length: 0 },
+  auto: true,
+})
+const leitungen = createResource({
+  url: 'frappe.client.get_list',
+  params: { doctype: 'Provider Link', fields: ['name'], limit_page_length: 0 },
+  auto: true,
+})
+const pools = createResource({
+  url: 'frappe.client.get_list',
+  params: { doctype: 'Storage Pool', fields: ['name'], limit_page_length: 0 },
+  auto: true,
+})
+
+const analyse = createResource({
+  url: 'netops.api.services.impact_analysis',
+  makeParams: () => ({ object_type: objektTyp.value, object_name: objektName.value }),
+  auto: true,
+})
+
+const typOptionen = [
+  { label: 'Gerät', value: 'Network Device' },
+  { label: 'VM', value: 'Virtual Machine' },
+  { label: 'Providerleitung', value: 'Provider Link' },
+  { label: 'Speicherpool', value: 'Storage Pool' },
+]
+
+const objektOptionen = computed(() => {
+  const quelle = {
+    'Network Device': geraete,
+    'Virtual Machine': vms,
+    'Provider Link': leitungen,
+    'Storage Pool': pools,
+  }[objektTyp.value]
+  return (quelle?.data || []).map((o) => ({ label: o.name, value: o.name }))
+})
+
+// Beim Wechsel der Objektart die erste Auswahl übernehmen, sonst zeigt das
+// Feld einen Wert, den es in der neuen Liste gar nicht gibt.
+watch(objektTyp, () => {
+  const erste = objektOptionen.value[0]
+  if (erste) objektName.value = erste.value
+  analyse.fetch()
+})
+watch(objektName, () => analyse.fetch())
+
+const spalten = [
+  { key: 'service_name', label: 'Dienst', width: '260px' },
+  { key: 'criticality', label: 'Kritikalität', width: '140px' },
+  { key: 'user_count', label: 'Benutzer', align: 'right', numeric: true, width: '100px' },
+  { key: 'ziel', label: 'Wiederanlaufziel', width: '190px' },
+  { key: 'backup_verify', label: 'Sicherung', width: '200px' },
+  { key: 'devices', label: 'Geräte in der Kette' },
+]
+
+const untertitel = computed(() => {
+  const liste = dienste.data || []
+  const benutzer = liste.reduce((s, d) => s + (d.user_count || 0), 0)
+  return liste.length + ' Dienste · ' + benutzer + ' Benutzerzuordnungen'
+})
+
+function istEinzelpfad(knoten) {
+  return (analyse.data?.single_points || []).some(
+    (p) => p.type === knoten.type && p.name === knoten.name,
+  )
+}
+</script>

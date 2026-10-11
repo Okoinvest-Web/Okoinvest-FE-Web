@@ -1,0 +1,390 @@
+/**
+ * Kennzahlen der technischen Betriebsführung.
+ *
+ * Die zentrale Frage lautet: Liefert die Anlage das, was sie unter den
+ * gegebenen Bedingungen liefern müsste? Ein Ertrag von 800 kWh sagt für
+ * sich nichts aus - er kann an einem trüben Tag hervorragend und an
+ * einem klaren Tag alarmierend sein.
+ *
+ * Die Definitionen folgen IEC 61724, damit die Werte mit denen anderer
+ * Systeme und mit Vertragszusagen vergleichbar sind.
+ */
+
+/** Einstrahlung unter Standardtestbedingungen, W/m². */
+export const STC_EINSTRAHLUNG = 1000;
+
+/** Modultemperatur unter Standardtestbedingungen, Grad Celsius. */
+export const STC_TEMPERATUR = 25;
+
+/**
+ * Temperaturkoeffizient der Leistung, Prozent je Kelvin.
+ *
+ * Kristalline Module verlieren rund 0,35 Prozent Leistung je Grad über
+ * 25 Grad Celsius. An einem heißen Sommertag mit 60 Grad Modultemperatur
+ * sind das über zwölf Prozent - wer das nicht herausrechnet, hält den
+ * sommerlichen Leistungsrückgang für einen Defekt.
+ */
+export const TEMPERATURKOEFFIZIENT = -0.35;
+
+export interface Messpunkt {
+  /** Erzeugte Energie in dieser Viertelstunde, kWh. */
+  ertragKwh: number;
+  /** Einstrahlung in der Modulebene, W/m². */
+  einstrahlung: number;
+  /** Modultemperatur in Grad Celsius. */
+  modultemperatur?: number;
+}
+
+/**
+ * Performance Ratio nach IEC 61724.
+ *
+ *   PR = tatsächlicher Ertrag / (Nennleistung x Einstrahlungsstunden)
+ *
+ * Sie beschreibt, welcher Anteil der theoretisch möglichen Energie
+ * tatsächlich ankommt. Alles, was zwischen Modul und Zähler verloren
+ * geht, schlägt sich darin nieder: Temperatur, Verschmutzung,
+ * Leitungsverluste, Wechselrichterwirkungsgrad, Verschattung.
+ *
+ * Übliche Werte liegen zwischen 0,75 und 0,88. Unter 0,70 liegt in der
+ * Regel ein Mangel vor - aber erst der Vergleich über die Zeit zeigt,
+ * ob sich etwas verschlechtert.
+ *
+ * Wichtig: Ohne gemessene Einstrahlung ist die PR nicht berechenbar.
+ * Eine geschätzte Einstrahlung ergibt eine geschätzte PR, und die taugt
+ * nicht für eine Vertragszusage.
+ */
+export function performanceRatio(
+  punkte: Messpunkt[],
+  nennleistungKwp: number,
+  /** Viertelstunde = 0,25 Stunden. */
+  intervallStunden = 0.25,
+): number | null {
+  if (nennleistungKwp <= 0) return null;
+
+  let ertrag = 0;
+  let einstrahlungsstunden = 0;
+
+  for (const punkt of punkte) {
+    // Zeitpunkte ohne nennenswerte Einstrahlung tragen nichts bei und
+    // würden die Kennzahl nur verwässern.
+    if (punkt.einstrahlung < 20) continue;
+
+    ertrag += punkt.ertragKwh;
+    einstrahlungsstunden +=
+      (punkt.einstrahlung / STC_EINSTRAHLUNG) * intervallStunden;
+  }
+
+  if (einstrahlungsstunden <= 0) return null;
+
+  return ertrag / (nennleistungKwp * einstrahlungsstunden);
+}
+
+/**
+ * Temperaturkorrigierte Performance Ratio.
+ *
+ * Rechnet die Module auf 25 Grad zurück. Erst dadurch wird ein
+ * Sommermonat mit einem Wintermonat vergleichbar - ohne Korrektur
+ * liegt die PR im Juli regelmäßig mehrere Punkte unter der im März,
+ * ohne dass mit der Anlage etwas nicht stimmt.
+ */
+export function performanceRatioKorrigiert(
+  punkte: Messpunkt[],
+  nennleistungKwp: number,
+  intervallStunden = 0.25,
+): number | null {
+  if (nennleistungKwp <= 0) return null;
+
+  let ertrag = 0;
+  let korrigierteStunden = 0;
+
+  for (const punkt of punkte) {
+    if (punkt.einstrahlung < 20) continue;
+
+    const temperatur = punkt.modultemperatur ?? STC_TEMPERATUR;
+    // Faktor unter 1 bedeutet: Bei dieser Temperatur ist weniger
+    // möglich, der Sollwert sinkt entsprechend.
+    const temperaturfaktor =
+      1 + (TEMPERATURKOEFFIZIENT / 100) * (temperatur - STC_TEMPERATUR);
+
+    ertrag += punkt.ertragKwh;
+    korrigierteStunden +=
+      (punkt.einstrahlung / STC_EINSTRAHLUNG) *
+      intervallStunden *
+      temperaturfaktor;
+  }
+
+  if (korrigierteStunden <= 0) return null;
+
+  return ertrag / (nennleistungKwp * korrigierteStunden);
+}
+
+/**
+ * Spezifischer Ertrag in kWh je kWp.
+ * Macht unterschiedlich große Anlagen vergleichbar.
+ */
+export function spezifischerErtrag(
+  ertragKwh: number,
+  nennleistungKwp: number,
+): number | null {
+  return nennleistungKwp > 0 ? ertragKwh / nennleistungKwp : null;
+}
+
+export interface VerfuegbarkeitsPunkt {
+  /** Stand die Anlage in diesem Intervall zur Verfügung? */
+  verfuegbar: boolean;
+  /** Lag Einstrahlung an, die eine Erzeugung ermöglicht hätte? */
+  ertragsfaehig: boolean;
+  /** Entgangene Energie, sofern nicht verfügbar. */
+  ausfallKwh?: number;
+}
+
+export interface Verfuegbarkeit {
+  /** Anteil verfügbarer Zeit an der ertragsfähigen Zeit, 0 bis 1. */
+  technisch: number;
+  /** Anteil erzeugter an möglicher Energie, 0 bis 1. */
+  energetisch: number | null;
+  ausfallKwh: number;
+  ausfallIntervalle: number;
+}
+
+/**
+ * Verfügbarkeit.
+ *
+ * Zwei Größen, die häufig verwechselt werden:
+ *
+ *   TECHNISCH - Anteil der Zeit, in der die Anlage betriebsbereit war.
+ *   Gezählt wird nur ertragsfähige Zeit; ein nächtlicher Ausfall
+ *   mindert die Verfügbarkeit nicht, weil er keinen Ertrag kostet.
+ *
+ *   ENERGETISCH - Anteil der Energie, die tatsächlich erzeugt wurde,
+ *   an der bei Verfügbarkeit möglichen. Diese Größe zählt
+ *   wirtschaftlich: Ein zweistündiger Ausfall zur Mittagszeit im Juni
+ *   wiegt weit schwerer als ein ganzer Dezembertag.
+ *
+ * In Betriebsführungsverträgen ist meist die technische Verfügbarkeit
+ * zugesagt - üblich sind 97 bis 99 Prozent.
+ */
+export function verfuegbarkeit(
+  punkte: VerfuegbarkeitsPunkt[],
+  erzeugtKwh: number,
+): Verfuegbarkeit {
+  let ertragsfaehig = 0;
+  let verfuegbarUndErtragsfaehig = 0;
+  let ausfallKwh = 0;
+  let ausfallIntervalle = 0;
+
+  for (const punkt of punkte) {
+    if (!punkt.ertragsfaehig) continue;
+
+    ertragsfaehig++;
+    if (punkt.verfuegbar) {
+      verfuegbarUndErtragsfaehig++;
+    } else {
+      ausfallIntervalle++;
+      ausfallKwh += punkt.ausfallKwh ?? 0;
+    }
+  }
+
+  const moeglich = erzeugtKwh + ausfallKwh;
+
+  return {
+    technisch:
+      ertragsfaehig > 0 ? verfuegbarUndErtragsfaehig / ertragsfaehig : 1,
+    energetisch: moeglich > 0 ? erzeugtKwh / moeglich : null,
+    ausfallKwh: Number(ausfallKwh.toFixed(2)),
+    ausfallIntervalle,
+  };
+}
+
+/* ------------------------------------------------------------------ */
+/* Strangvergleich                                                     */
+/* ------------------------------------------------------------------ */
+
+export interface StrangWert {
+  strangId: string;
+  bezeichnung: string;
+  /** Mittlerer Strom über den Auswertungszeitraum, Ampere. */
+  mittelStrom: number;
+  leistungKwp: number;
+}
+
+export interface StrangBefund extends StrangWert {
+  /** Strom je kWp - macht unterschiedlich große Stränge vergleichbar. */
+  spezifisch: number;
+  /** Abweichung vom Median der Vergleichsgruppe, Prozent. */
+  abweichung: number;
+  auffaellig: boolean;
+}
+
+/**
+ * Vergleicht Stränge untereinander.
+ *
+ * Der Kunstgriff liegt im Bezug auf den MEDIAN statt auf den
+ * Mittelwert: Fällt ein Strang aus, zieht er den Mittelwert nach unten
+ * und lässt alle übrigen zu gut aussehen. Der Median bleibt stabil,
+ * solange die Mehrheit der Stränge in Ordnung ist - und genau das ist
+ * der Normalfall.
+ *
+ * Verglichen wird nur innerhalb einer Gruppe gleicher Ausrichtung:
+ * Ein Ostrang liefert am Vormittag zwangsläufig mehr als ein Weststrang,
+ * ohne dass einer davon defekt wäre.
+ */
+/**
+ * Median einer Zahlenreihe.
+ *
+ * Bezugsgröße für jeden Vergleich innerhalb einer Anlage. Der
+ * Mittelwert wäre hier falsch: Ein einzelner ausgefallener Strang zöge
+ * ihn nach unten und ließe alle übrigen zu gut dastehen - genau der
+ * Fall, den die Auswertung finden soll.
+ *
+ * Gibt `null` für eine leere Reihe zurück.
+ */
+export function medianVon(werte: number[]): number {
+  if (werte.length === 0) return 0;
+
+  const sortiert = [...werte].sort((a, b) => a - b);
+  const mitte = Math.floor(sortiert.length / 2);
+
+  return sortiert.length % 2 === 0
+    ? (sortiert[mitte - 1] + sortiert[mitte]) / 2
+    : sortiert[mitte];
+}
+
+export function vergleicheStraenge(
+  straenge: StrangWert[],
+  /** Ab dieser Abweichung nach unten gilt ein Strang als auffällig. */
+  schwelleProzent = 8,
+): StrangBefund[] {
+  const spezifisch = straenge
+    .map((s) => (s.leistungKwp > 0 ? s.mittelStrom / s.leistungKwp : 0))
+    .filter((w) => w > 0)
+    .sort((a, b) => a - b);
+
+  if (spezifisch.length === 0) {
+    return straenge.map((s) => ({
+      ...s,
+      spezifisch: 0,
+      abweichung: 0,
+      auffaellig: false,
+    }));
+  }
+
+  const median = medianVon(spezifisch);
+
+  return straenge.map((strang) => {
+    const wert =
+      strang.leistungKwp > 0 ? strang.mittelStrom / strang.leistungKwp : 0;
+    const abweichung = median > 0 ? ((wert - median) / median) * 100 : 0;
+
+    return {
+      ...strang,
+      spezifisch: Number(wert.toFixed(4)),
+      abweichung: Number(abweichung.toFixed(2)),
+      // Nur Abweichungen nach unten sind ein Befund. Ein Strang, der
+      // mehr liefert, ist kein Mangel.
+      auffaellig: abweichung < -schwelleProzent,
+    };
+  });
+}
+
+/* ------------------------------------------------------------------ */
+/* Wirtschaftliche Bewertung                                           */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Bewertet einen Ertragsausfall in Euro.
+ *
+ * Der Wert einer ausgefallenen Kilowattstunde hängt davon ab, was mit
+ * ihr geschehen wäre: Eigenverbrauch ersetzt teuren Netzbezug und ist
+ * am wertvollsten, Einspeisung bringt nur den Vergütungssatz. Wer
+ * pauschal mit dem Einspeisetarif rechnet, unterschätzt den Schaden
+ * bei Betrieben mit hohem Eigenverbrauch erheblich.
+ */
+export function bewerteAusfall(
+  ausfallKwh: number,
+  eigenverbrauchsquote: number,
+  strompreisCtKwh: number,
+  einspeiseCtKwh: number,
+): number {
+  const quote = Math.max(0, Math.min(1, eigenverbrauchsquote));
+
+  const wertCt =
+    ausfallKwh * quote * strompreisCtKwh +
+    ausfallKwh * (1 - quote) * einspeiseCtKwh;
+
+  return Number((wertCt / 100).toFixed(2));
+}
+
+/**
+ * Erwartete Leistung zu einem Zeitpunkt.
+ *
+ * Grundlage für die Beurteilung, ob ein Messwert plausibel ist. Ohne
+ * Erwartungswert lässt sich kein Minderertrag feststellen - man sieht
+ * nur, dass wenig kommt, aber nicht, ob das zu wenig ist.
+ */
+export function erwarteteLeistung(
+  nennleistungKwp: number,
+  einstrahlung: number,
+  modultemperatur = STC_TEMPERATUR,
+  /** Anlagenwirkungsgrad einschließlich aller Verluste. */
+  systemwirkungsgrad = 0.84,
+): number {
+  if (einstrahlung <= 0) return 0;
+
+  const temperaturfaktor =
+    1 + (TEMPERATURKOEFFIZIENT / 100) * (modultemperatur - STC_TEMPERATUR);
+
+  return Math.max(
+    0,
+    nennleistungKwp *
+      (einstrahlung / STC_EINSTRAHLUNG) *
+      temperaturfaktor *
+      systemwirkungsgrad,
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Verfügbarkeit einer Anlage aus den einzelnen Geräten                */
+/* ------------------------------------------------------------------ */
+
+export interface GeraeteVerfuegbarkeit {
+  /**
+   * Gewicht des Geräts, üblicherweise seine Modulleistung in kWp.
+   *
+   * Ohne Gewichtung zählte ein 30-kWp-Gerät so viel wie ein
+   * 250-kWp-Gerät. Eine Anlage, bei der das kleinste Gerät steht,
+   * sähe dann schlechter aus als eine, bei der das größte steht.
+   */
+  gewicht: number;
+  /** Ertragsfähige Intervalle, in denen das Gerät beobachtet wurde. */
+  ertragsfaehig: number;
+  /** Davon jene, in denen es verfügbar war. */
+  verfuegbar: number;
+}
+
+/**
+ * Technische Verfügbarkeit einer Anlage, gewichtet nach Geräteleistung.
+ *
+ * Die naheliegende Rechnung - hat die Anlage in Summe eingespeist? -
+ * ist unbrauchbar: Solange ein einziger Wechselrichter läuft, steht die
+ * Summe über null und die Anlage meldet 100 Prozent, auch wenn die
+ * Hälfte der Fläche seit Tagen still steht. Deshalb wird jedes Gerät
+ * für sich bewertet und mit seiner Leistung gewichtet.
+ *
+ * Rückgabe `null` heißt: keine ertragsfähige Zeit im Zeitraum, also
+ * keine Aussage möglich - nicht etwa null Prozent.
+ */
+export function gewichteteVerfuegbarkeit(
+  geraete: GeraeteVerfuegbarkeit[],
+): number | null {
+  let moeglich = 0;
+  let erreicht = 0;
+
+  for (const g of geraete) {
+    if (g.gewicht <= 0 || g.ertragsfaehig <= 0) continue;
+    moeglich += g.gewicht * g.ertragsfaehig;
+    erreicht += g.gewicht * Math.min(g.verfuegbar, g.ertragsfaehig);
+  }
+
+  return moeglich > 0 ? erreicht / moeglich : null;
+}

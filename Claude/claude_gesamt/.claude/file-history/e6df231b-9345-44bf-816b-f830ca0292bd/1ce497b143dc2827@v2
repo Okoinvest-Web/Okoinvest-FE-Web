@@ -1,0 +1,170 @@
+<script setup lang="ts">
+/** Vorlagenverwaltung mit Statusreitern und Revisionen (FA-010 bis FA-012, FA-019). */
+import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
+
+import AppIcon from '@/components/AppIcon.vue'
+import BasisDialog from '@/components/BasisDialog.vue'
+import LeereListe from '@/components/LeereListe.vue'
+import { baudoku, resource } from '@/lib/api'
+import type { Vorlage } from '@/lib/typen'
+import { useProtokoll } from '@/stores/protokoll'
+import { useUi } from '@/stores/ui'
+
+const router = useRouter()
+const store = useProtokoll()
+const ui = useUi()
+
+const vorlagen = ref<(Vorlage & { status: string })[]>([])
+const laedt = ref(true)
+const reiter = ref<'Veroeffentlicht' | 'Entwurf' | 'Deaktiviert'>('Veroeffentlicht')
+const vorschauOffen = ref(false)
+const vorschauHtml = ref('')
+const vorlaedt = ref(false)
+
+const gefiltert = computed(() => vorlagen.value.filter((v) => v.status === reiter.value))
+
+const REITER: { schluessel: typeof reiter.value; titel: string }[] = [
+  { schluessel: 'Veroeffentlicht', titel: 'Veröffentlicht' },
+  { schluessel: 'Entwurf', titel: 'Entwurf' },
+  { schluessel: 'Deaktiviert', titel: 'Deaktiviert' },
+]
+
+async function laden() {
+  laedt.value = true
+  try {
+    vorlagen.value = await resource.liste<Vorlage & { status: string }>('Checklistenvorlage', {
+      fields: [
+        'name', 'titel', 'vorlage_typ', 'anlagen_typ', 'revision', 'status',
+        'anzahl_pruefpunkte', 'sprache', 'modified',
+      ],
+      order_by: 'vorlage_typ asc, titel asc',
+      limit_page_length: 100,
+    })
+  } catch (fehler) {
+    ui.warnung(`Vorlagen konnten nicht geladen werden: ${(fehler as Error).message}`)
+  } finally {
+    laedt.value = false
+  }
+}
+
+async function aktion(name: string, methode: 'veroeffentlichen' | 'neue_revision' | 'duplizieren') {
+  try {
+    await baudoku.dokumentMethode('Checklistenvorlage', name, methode)
+    ui.erfolg('Aktion ausgeführt.')
+    await laden()
+  } catch (fehler) {
+    ui.fehler((fehler as Error).message)
+  }
+}
+
+async function vorschau(name: string) {
+  vorschauOffen.value = true
+  vorschauHtml.value = ''
+  try {
+    vorschauHtml.value = await baudoku.vorlagenVorschau(name)
+  } catch (fehler) {
+    vorschauHtml.value = `<p>Vorschau nicht verfügbar: ${(fehler as Error).message}</p>`
+  }
+}
+
+/** Alle veröffentlichten Vorlagen für den Offlinebetrieb vorladen (NFA-015). */
+async function vorladen() {
+  vorlaedt.value = true
+  try {
+    const anzahl = await store.vorlagenVorladen()
+    ui.erfolg(`${anzahl} Vorlage(n) im Offline-Cache.`)
+  } finally {
+    vorlaedt.value = false
+  }
+}
+
+onMounted(laden)
+</script>
+
+<template>
+  <div class="space-y-4">
+    <div class="flex flex-wrap items-center gap-2">
+      <div class="flex gap-1 border-b border-slate-200 dark:border-slate-800">
+        <button
+          v-for="eintrag in REITER"
+          :key="eintrag.schluessel"
+          class="tap border-b-2 px-3 text-sm font-medium"
+          :class="
+            reiter === eintrag.schluessel
+              ? 'border-marke-600 text-marke-700 dark:text-marke-400'
+              : 'border-transparent text-slate-500'
+          "
+          @click="reiter = eintrag.schluessel"
+        >
+          {{ eintrag.titel }}
+          <span class="ml-1 text-xs text-slate-400">
+            {{ vorlagen.filter((v) => v.status === eintrag.schluessel).length }}
+          </span>
+        </button>
+      </div>
+      <button class="knopf-sekundaer ml-auto px-3 text-sm" :disabled="vorlaedt" @click="vorladen">
+        <AppIcon name="pfeilUnten" :groesse="18" />
+        {{ vorlaedt ? 'Lädt …' : 'Offline vorladen' }}
+      </button>
+    </div>
+
+    <p v-if="laedt" class="py-8 text-center text-sm text-slate-500">Vorlagen werden geladen …</p>
+
+    <LeereListe
+      v-else-if="!gefiltert.length"
+      symbol="vorlage"
+      titel="Keine Vorlage in diesem Status"
+      text="Die mitgelieferten Vorlagen werden bei der Installation angelegt."
+    />
+
+    <ul v-else class="space-y-2">
+      <li v-for="vorlage in gefiltert" :key="vorlage.name" class="karte p-4">
+        <div class="flex flex-wrap items-start gap-3">
+          <div class="min-w-0 flex-1">
+            <h3 class="font-semibold">{{ vorlage.titel }}</h3>
+            <p class="text-xs text-slate-500">
+              {{ vorlage.vorlage_typ }} · {{ vorlage.anlagen_typ }} · Rev. {{ vorlage.revision }} ·
+              {{ vorlage.anzahl_pruefpunkte ?? 0 }} Prüfpunkte · {{ vorlage.name }}
+            </p>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button class="knopf-geist px-3 text-sm" @click="vorschau(vorlage.name)">
+              <AppIcon name="pdf" :groesse="16" /> Vorschau
+            </button>
+            <button
+              class="knopf-sekundaer px-3 text-sm"
+              @click="router.push({ name: 'vorlage-editor', params: { name: vorlage.name } })"
+            >
+              <AppIcon name="stift" :groesse="16" /> Öffnen
+            </button>
+            <button
+              v-if="vorlage.status === 'Entwurf'"
+              class="knopf-primaer px-3 text-sm"
+              @click="aktion(vorlage.name, 'veroeffentlichen')"
+            >
+              <AppIcon name="check" :groesse="16" /> Veröffentlichen
+            </button>
+            <button
+              v-else-if="vorlage.status === 'Veroeffentlicht'"
+              class="knopf-sekundaer px-3 text-sm"
+              @click="aktion(vorlage.name, 'neue_revision')"
+            >
+              Neue Revision
+            </button>
+            <button class="knopf-geist px-3 text-sm" @click="aktion(vorlage.name, 'duplizieren')">
+              Duplizieren
+            </button>
+          </div>
+        </div>
+      </li>
+    </ul>
+
+    <BasisDialog :offen="vorschauOffen" titel="Druckvorschau" breit @schliessen="vorschauOffen = false">
+      <div v-if="!vorschauHtml" class="py-8 text-center text-sm text-slate-500">Wird geladen …</div>
+      <!-- Serverseitig gerendertes Jinja-Template der eigenen App -->
+      <!-- eslint-disable-next-line vue/no-v-html -->
+      <div v-else class="prose max-w-none text-sm" v-html="vorschauHtml" />
+    </BasisDialog>
+  </div>
+</template>

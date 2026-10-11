@@ -1,0 +1,62 @@
+<section class="cta" id="kontakt">
+  <div class="wrap cta-in">
+    <div>
+      <span class="kicker">Kontakt</span>
+      <h2>Schicken Sie uns Ihre Eckdaten. Sie bekommen Zahlen zurück.</h2>
+      <p class="cta-l">Sie erhalten eine erste Auslegung mit Ertragsprognose, Förderabschätzung und Amortisationsrechnung. Unverbindlich und ohne Vor-Ort-Termin.</p>
+      <div class="cts">
+        <div><i>Telefon</i><a href="tel:+43627871030">+43 6278 71030</a></div>
+        <div><i>E-Mail</i><a href="mailto:office@oekovolt.at">office@oekovolt.at</a></div>
+        <div><i>Standort</i><p>Gewerbegebiet 10<br>5121 Ostermiething, Österreich</p></div>
+        <div><i>Öffnungszeiten</i><p>Mo–Do 08:00–16:00<br>Fr 08:00–13:00</p></div>
+      </div>
+    </div>
+    <form class="form" id="form" novalidate>
+      <h3>Unverbindliche Anfrage</h3>
+      <div><label class="lbl" for="f-topic">Thema</label><select id="f-topic"><option>Photovoltaik Gewerbe</option><option>Stromspeicher</option><option>Wärmepumpe</option><option>Wallbox &amp; Flotte</option><option>Agri-Photovoltaik</option><option>Smart Energy Home</option><option>Mieterstrom</option><option>Dynamischer Tarif</option><option>Direktvermarktung</option><option>Finanzierung</option><option>Repowering</option></select></div>
+      <div><label class="lbl" for="f-comp">Unternehmen</label><input id="f-comp" type="text" placeholder="Musterbetrieb GmbH"></div>
+      <div class="row2">
+        <div><label class="lbl" for="f-name">Ansprechpartner</label><input id="f-name" type="text" placeholder="Vor- und Nachname"></div>
+        <div><label class="lbl" for="f-mail">E-Mail</label><input id="f-mail" type="email" placeholder="name@betrieb.at"></div>
+      </div>
+      <button class="btn btn-v" type="submit">Auslegung anfordern</button>
+      <p class="fine">Rückmeldung innerhalb eines Werktags. Die Angaben werden ausschließlich zur Bearbeitung der Anfrage verwendet.</p>
+      <div class="sent" id="sent" role="status"></div>
+    </form>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="fg">
+      <div>
+        <a class="brand" href="#top"><span class="mark"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M13.5 2 4 13.5h6L9.5 22 20 10.5h-6.5L13.5 2Z" fill="#06170A"/></svg></span><span><b>ÖKOVOLT</b><small>Solartechnik</small></span></a>
+        <p class="fa">Ökovolt Solartechnik GmbH<br>Gewerbegebiet 10<br>5121 Ostermiething, Österreich</p>
+      </div>
+      <div><h4>Erzeugung</h4><ul><li><a href="#tool">Photovoltaik</a></li><li><a href="#tool">Agri-Photovoltaik</a></li><li><a href="#tool">Repowering</a></li><li><a href="#tool">Direktvermarktung</a></li></ul></div>
+      <div><h4>Verbrauch</h4><ul><li><a href="#tool">Stromspeicher</a></li><li><a href="#tool">Wärmepumpe</a></li><li><a href="#tool">Wallbox</a></li><li><a href="#tool">Smart Energy Home</a></li></ul></div>
+      <div><h4>Wirtschaft</h4><ul><li><a href="#tool">Finanzierung</a></li><li><a href="#tool">Mieterstrom</a></li><li><a href="#tool">Dynamischer Tarif</a></li><li><a href="#kontakt">Kontakt</a></li></ul></div>
+    </div>
+    <div class="fb"><span>© 2026 Ökovolt Solartechnik GmbH</span><span><a href="#kontakt">Impressum</a> · <a href="#kontakt">Datenschutz</a> · <a href="#kontakt">AGB</a></span></div>
+  </div>
+</footer>
+<p class="dis">Designstudie für oekovolt.com. Die Rechner liefern Richtwerte nach den jeweils offengelegten Annahmen und ersetzen keine Anlagenplanung oder Energieberatung. Preise, Förderhöhen und Marktwerte ändern sich laufend.</p>
+<script>
+(function(){
+"use strict";
+var f=document.getElementById("form");
+if(f)f.addEventListener("submit",function(e){
+  e.preventDefault();
+  var s=document.getElementById("sent");s.className="sent on";
+  s.innerHTML="<b>Vorschau — nichts versendet</b>Dieses Formular ist in der Designstudie nicht angebunden. Für den Livebetrieb an CRM oder Postfach koppeln.";
+});
+var RM=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+document.querySelectorAll('a[href^="#"]').forEach(function(a){
+  a.addEventListener("click",function(e){
+    var t=document.querySelector(a.getAttribute("href"));
+    if(t){e.preventDefault();t.scrollIntoView({behavior:RM?"auto":"smooth",block:"start"});}
+  });
+});
+})();
+</script>

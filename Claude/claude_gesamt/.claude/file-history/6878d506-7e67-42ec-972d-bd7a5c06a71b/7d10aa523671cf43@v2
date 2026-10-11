@@ -1,0 +1,53 @@
+import Link from "next/link";
+import { CalendarClock } from "lucide-react";
+import type { ToDo } from "@/lib/types";
+import { dueLabel, PRIORITY_LABEL } from "@/lib/format";
+import { Avatar, Badge } from "@/components/ui";
+import { ToDoCheck } from "@/components/interactive";
+
+const REF_LABEL: Record<string, string> = { Lead: "Lead", Opportunity: "Chance", Customer: "Kunde" };
+
+function refHref(type?: string, name?: string) {
+  if (!name) return null;
+  if (type === "Lead") return `/leads/${encodeURIComponent(name)}`;
+  if (type === "Opportunity") return `/opportunities/${encodeURIComponent(name)}`;
+  if (type === "Customer") return `/customers/${encodeURIComponent(name)}`;
+  return null;
+}
+
+// Aufgabenzeilen für Übersicht, Detailseiten und Aufgabenliste
+export function TodoList({ todos, showRef, showOwner, empty = "Keine Aufgaben." }: { todos: ToDo[]; showRef?: boolean; showOwner?: boolean; empty?: string }) {
+  if (todos.length === 0) return <p className="px-5 py-8 text-center text-gray-500">{empty}</p>;
+  return (
+    <ul className="divide-y divide-gray-100">
+      {todos.map((t) => {
+        const done = t.status !== "Open";
+        const due = dueLabel(t.date);
+        const href = showRef ? refHref(t.reference_type, t.reference_name) : null;
+        return (
+          <li key={t.name} className="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-gray-50/70">
+            <ToDoCheck name={t.name} done={t.status === "Closed"} />
+            <div className="min-w-0 flex-1">
+              <div className={`truncate ${done ? "text-gray-400 line-through" : "text-gray-900"}`}>{t.description}</div>
+              {href && (
+                <Link href={href} className="mt-0.5 inline-block text-xs text-gray-500 hover:text-brand-700">
+                  {REF_LABEL[t.reference_type ?? ""] ?? t.reference_type} · {t.reference_name}
+                </Link>
+              )}
+            </div>
+            <Badge value={t.priority} label={PRIORITY_LABEL[t.priority]} />
+            {showOwner && t.allocated_to && (
+              <span title={t.allocated_to} className="hidden md:inline-flex">
+                <Avatar name={t.allocated_to} />
+              </span>
+            )}
+            <span className={`flex w-32 items-center justify-end gap-1.5 text-xs ${done ? "text-gray-400" : due.tone}`}>
+              <CalendarClock className="size-3.5 opacity-70" />
+              {due.text}
+            </span>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}

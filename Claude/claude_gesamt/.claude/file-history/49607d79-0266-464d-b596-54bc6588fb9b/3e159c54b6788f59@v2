@@ -1,0 +1,88 @@
+"""Ergaenzt Tests fuer das erweiterte Objektdossier und die Screen-Kacheln."""
+import io
+
+ZUSATZ = '''
+describe('Objektdossier mit Betriebskontext', () => {
+  it('führt Tickets und anstehende Änderungen am Gerät', async () => {
+    const dossier = await ruf('netops.api.docs.object_dossier', {
+      object_type: 'Network Device',
+      object_name: 'FW-OS-01',
+    })
+    expect(dossier.tickets.length).toBeGreaterThan(0)
+    expect(dossier.changes.length).toBeGreaterThan(0)
+    // Nur offene Vorgänge - abgeschlossene gehören nicht in die Arbeitsliste.
+    expect(dossier.tickets.every((t) => t.ticket_state !== 'closed')).toBe(true)
+    expect(dossier.changes.every((c) => !['verified', 'rejected'].includes(c.change_state))).toBe(true)
+  })
+
+  it('zeigt die Stromversorgung mit Redundanzaussage', async () => {
+    const redundant = await ruf('netops.api.docs.object_dossier', {
+      object_type: 'Network Device',
+      object_name: 'FW-OS-01',
+    })
+    expect(redundant.power.redundant).toBe(true)
+    expect(redundant.power.feeds).toEqual(['A', 'B'])
+
+    const ohne = await ruf('netops.api.docs.object_dossier', {
+      object_type: 'Network Device',
+      object_name: 'SRV-PVE-02',
+    })
+    expect(ohne.power.redundant).toBe(false)
+  })
+
+  it('zeigt den Fernwartungsagenten, wo es einen gibt', async () => {
+    const mit = await ruf('netops.api.docs.object_dossier', {
+      object_type: 'Network Device',
+      object_name: 'SRV-PVE-01',
+    })
+    expect(mit.remote_agent.online).toBe(1)
+
+    const ohne = await ruf('netops.api.docs.object_dossier', {
+      object_type: 'Network Device',
+      object_name: 'SW-CORE-01',
+    })
+    expect(ohne.remote_agent).toBeNull()
+  })
+
+  it('liefert Strom und Agent nur für Geräte', async () => {
+    const dossier = await ruf('netops.api.docs.object_dossier', {
+      object_type: 'NetOps Document',
+      object_name: 'DOC-00001',
+    })
+    expect(dossier.power).toBeNull()
+    expect(dossier.remote_agent).toBeNull()
+  })
+})
+
+describe('Leitstand-Kacheln', () => {
+  it('füllt alle Screens bis auf die nicht angebundene Deception-Plattform', async () => {
+    const offen = []
+    for (let i = 1; i <= 10; i++) {
+      const daten = await ruf('netops.api.screen.screen_data', { screen: 'screen' + i })
+      for (const kachel of daten.tiles.filter((t) => t.placeholder)) {
+        offen.push(kachel.kind)
+      }
+    }
+    expect(offen).toEqual(['honeypot'])
+  })
+
+  it('gruppiert Alarme nach ATT&CK-Technik', async () => {
+    const daten = await ruf('netops.api.screen.screen_data', { screen: 'screen4' })
+    const mitre = daten.tiles.find((t) => t.kind === 'mitre')
+    expect(mitre.rows.length).toBeGreaterThan(0)
+    expect(mitre.rows[0].title).toMatch(/^T\\d+/)
+  })
+
+  it('zeigt den Zustand der Providerleitungen', async () => {
+    const daten = await ruf('netops.api.screen.screen_data', { screen: 'screen2' })
+    const uplinks = daten.tiles.find((t) => t.kind === 'uplinks')
+    expect(uplinks.rows).toHaveLength(3)
+    expect(uplinks.rows.some((r) => r.level === 'warning')).toBe(true)
+  })
+})
+'''
+
+pfad = "tests/security-docs.test.js"
+text = io.open(pfad, encoding="utf-8").read()
+io.open(pfad, "w", encoding="utf-8").write(text.rstrip() + "\n" + ZUSATZ)
+print("Tests ergaenzt")

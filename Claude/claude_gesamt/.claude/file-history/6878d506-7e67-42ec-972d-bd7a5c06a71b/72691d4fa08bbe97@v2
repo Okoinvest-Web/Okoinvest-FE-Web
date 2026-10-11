@@ -1,0 +1,129 @@
+import { notFound } from "next/navigation";
+import { requireUser } from "@/lib/auth";
+import { db } from "@/lib/data";
+import { date, money2, personName } from "@/lib/format";
+import { LogoMark } from "@/components/ui";
+import { PrintButton } from "@/components/PrintButton";
+
+export const metadata = { title: "Angebot" };
+
+// Absenderzeile aus der Konfiguration – keine erfundenen Firmendaten im Code
+const COMPANY = process.env.COMPANY_ADDRESS_LINE ?? "";
+
+export default async function AngebotDruck({ params }: PageProps<"/druck/angebot/[name]">) {
+  const user = await requireUser();
+  const q = await db().getQuotation(decodeURIComponent((await params).name));
+  if (!q) notFound();
+
+  // Land ermitteln, um den passenden Steuerhinweis zu drucken
+  const lead = q.quotation_to === "Lead" ? await db().getLead(q.party_name) : null;
+  const country = lead?.country ?? "Germany";
+  const nullRateDE = q.tax_rate === 0 && country === "Germany";
+  const owner = q.owner ?? user.user;
+
+  return (
+    <div className="min-h-full bg-gray-100 py-8 print:bg-white print:py-0">
+      <style>{`@page { size: A4; margin: 16mm 14mm; } @media print { html, body { background: #fff; } }`}</style>
+      <div className="mx-auto mb-4 flex max-w-[210mm] justify-end px-4 print:hidden">
+        <PrintButton />
+      </div>
+
+      <article className="mx-auto max-w-[210mm] bg-white px-14 py-12 text-[12.5px] leading-relaxed text-gray-900 shadow-sm print:max-w-none print:p-0 print:shadow-none">
+        <header className="flex items-start justify-between">
+          <div className="flex items-center gap-3">
+            <LogoMark className="size-10" />
+            <div>
+              <div className="text-[16px] font-semibold">Ökovolt Solartechnik</div>
+              <div className="text-[11px] text-gray-500">Ihr Dach. Ihr Kraftwerk.</div>
+            </div>
+          </div>
+          <dl className="grid grid-cols-[auto_auto] gap-x-4 text-[11.5px]">
+            <dt className="text-gray-500">Angebot</dt>
+            <dd className="text-right font-medium">{q.name}</dd>
+            <dt className="text-gray-500">Datum</dt>
+            <dd className="text-right">{date(q.transaction_date)}</dd>
+            <dt className="text-gray-500">Gültig bis</dt>
+            <dd className="text-right">{date(q.valid_till)}</dd>
+            <dt className="text-gray-500">Ansprechpartner</dt>
+            <dd className="text-right">{personName(owner)}</dd>
+          </dl>
+        </header>
+
+        {COMPANY && <div className="mt-8 text-[10px] text-gray-500 underline decoration-gray-300">{COMPANY}</div>}
+        <div className="mt-2 text-[13px]">
+          <div className="font-medium">{q.customer_name}</div>
+          {lead?.company_name && lead.lead_name !== q.customer_name && <div>{lead.lead_name}</div>}
+        </div>
+
+        <h1 className="mt-10 text-[18px] font-semibold tracking-[-0.01em]">Angebot: {q.title ?? q.name}</h1>
+        <p className="mt-3 text-gray-700">
+          Vielen Dank für Ihr Interesse. Gerne bieten wir Ihnen die folgende Anlage einschließlich Lieferung, Montage und Inbetriebnahme an:
+        </p>
+
+        <table className="mt-5 w-full text-left">
+          <thead>
+            <tr className="border-y border-gray-300 text-[11px] text-gray-500">
+              <th className="py-1.5 pr-2 font-medium">Pos.</th>
+              <th className="py-1.5 pr-2 font-medium">Bezeichnung</th>
+              <th className="py-1.5 pr-2 text-right font-medium">Menge</th>
+              <th className="py-1.5 pr-2 text-right font-medium">Einzelpreis</th>
+              <th className="py-1.5 text-right font-medium">Gesamt</th>
+            </tr>
+          </thead>
+          <tbody>
+            {q.items.map((i, idx) => (
+              <tr key={idx} className="border-b border-gray-100 align-top">
+                <td className="tnum py-2 pr-2 text-gray-500">{idx + 1}</td>
+                <td className="py-2 pr-2">
+                  {i.item_name}
+                  <div className="text-[10.5px] text-gray-400">Art.-Nr. {i.item_code}</div>
+                </td>
+                <td className="tnum whitespace-nowrap py-2 pr-2 text-right">
+                  {i.qty.toLocaleString("de-DE")} {i.uom}
+                </td>
+                <td className="tnum whitespace-nowrap py-2 pr-2 text-right">{money2(i.rate, q.currency)}</td>
+                <td className="tnum whitespace-nowrap py-2 text-right">{money2(i.amount, q.currency)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        <dl className="ml-auto mt-4 w-72 text-[12.5px]">
+          <div className="flex justify-between py-0.5">
+            <dt className="text-gray-600">Summe netto</dt>
+            <dd className="tnum">{money2(q.net_total, q.currency)}</dd>
+          </div>
+          <div className="flex justify-between py-0.5">
+            <dt className="text-gray-600">Umsatzsteuer {q.tax_rate} %</dt>
+            <dd className="tnum">{money2(q.total_taxes_and_charges, q.currency)}</dd>
+          </div>
+          <div className="mt-1 flex justify-between border-t border-gray-300 pt-1.5 text-[14px] font-semibold">
+            <dt>Gesamtbetrag</dt>
+            <dd className="tnum">{money2(q.grand_total, q.currency)}</dd>
+          </div>
+        </dl>
+
+        {nullRateDE && (
+          <p className="mt-6 rounded border border-gray-200 bg-gray-50 px-3 py-2 text-[11.5px] text-gray-700">
+            Lieferung und Installation der Photovoltaikanlage unterliegen dem Nullsteuersatz gemäß § 12 Abs. 3 UStG. Voraussetzung ist die Installation auf
+            oder in der Nähe eines Wohngebäudes bzw. eines Gebäudes für dem Gemeinwohl dienende Tätigkeiten.
+          </p>
+        )}
+
+        <p className="mt-6 text-gray-700">
+          Die Preise verstehen sich inklusive Montage und Netzanmeldung. Grundlage ist die Vor-Ort-Besichtigung; Abweichungen am Dach oder Zählerschrank
+          stimmen wir vor Ausführung mit Ihnen ab. Wir freuen uns auf Ihren Auftrag.
+        </p>
+        <p className="mt-4">
+          Mit sonnigen Grüßen
+          <br />
+          {personName(owner)}
+        </p>
+
+        <footer className="mt-12 border-t border-gray-200 pt-3 text-[10px] text-gray-400">
+          Ökovolt Solartechnik · Planung, Montage und Netzanmeldung aus einer Hand{COMPANY ? ` · ${COMPANY}` : ""}
+        </footer>
+      </article>
+    </div>
+  );
+}

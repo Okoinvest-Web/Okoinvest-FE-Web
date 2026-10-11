@@ -1,0 +1,90 @@
+/**
+ * Umgang mit Kalendertagen.
+ *
+ * Hintergrund: `new Date().toISOString()` rechnet nach UTC um. In
+ * Oesterreich liegt die lokale Mitternacht damit im Vortag - aus dem
+ * 13. September wird "2026-09-12". Ein Tagesertrag bekaeme dann das
+ * Datum des Vortags, und die Auswertung "heute" fände nichts.
+ *
+ * Umgekehrt interpretiert `new Date("2026-09-13")` den String als UTC.
+ * Westlich von Greenwich landet dieser Zeitpunkt im Vortag.
+ *
+ * Beide Richtungen laufen deshalb ueber diese Datei - und nur ueber sie.
+ */
+
+/** Kalendertag als "JJJJ-MM-TT" aus der ORTSZEIT des Datums. */
+export function tagesSchluessel(datum: Date): string {
+  const jahr = datum.getFullYear();
+  const monat = String(datum.getMonth() + 1).padStart(2, "0");
+  const tag = String(datum.getDate()).padStart(2, "0");
+  return `${jahr}-${monat}-${tag}`;
+}
+
+/**
+ * "JJJJ-MM-TT" als lokale Mitternacht lesen.
+ * Gibt ein ungueltiges Datum zurueck, wenn der Wert nicht passt -
+ * das faellt beim Formatieren als "–" auf.
+ */
+export function ausTagesSchluessel(wert: string): Date {
+  const treffer = /^(\d{4})-(\d{2})-(\d{2})/.exec(wert);
+  if (!treffer) return new Date(NaN);
+
+  return new Date(
+    Number(treffer[1]),
+    Number(treffer[2]) - 1,
+    Number(treffer[3]),
+  );
+}
+
+/** Heutiger Kalendertag, auf lokale Mitternacht gesetzt. */
+export function heute(): Date {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+/** Datum um Tage verschieben, ohne das Ausgangsdatum zu veraendern. */
+export function verschiebeTage(datum: Date, tage: number): Date {
+  const d = new Date(datum);
+  d.setDate(d.getDate() + tage);
+  return d;
+}
+
+/* ------------------------------------------------------------------ */
+/* Zeitachse für Messdaten                                             */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Messzeitpunkte werden in UTC gespeichert, nicht in Ortszeit.
+ *
+ * Der Grund ist die Zeitumstellung. In der Nacht auf den letzten Sonntag
+ * im Oktober gibt es die Stunde von 2 bis 3 Uhr ZWEIMAL. In Ortszeit
+ * tragen beide Durchläufe denselben Zeitstempel - der zweite überschreibt
+ * den ersten, und vier Viertelstundenwerte verschwinden. Im März fehlt
+ * die Stunde umgekehrt ganz.
+ *
+ * Das fällt niemandem auf, bis ein Teilnehmer seine Abrechnung nachrechnet.
+ * In UTC ist jeder Zeitpunkt eindeutig und bleibt lexikographisch
+ * sortierbar - deshalb liegt die Speicherung dort, und nur die Anzeige
+ * rechnet in Ortszeit zurück.
+ */
+
+/** Messzeitpunkt für die Ablage: "2026-10-25T00:15Z". */
+export function messStempel(zeitpunkt: Date): string {
+  return zeitpunkt.toISOString().slice(0, 16) + "Z";
+}
+
+/** Liest einen Messzeitpunkt aus der Ablage. */
+export function ausMessStempel(wert: string): Date {
+  return new Date(wert.endsWith("Z") ? wert : wert + "Z");
+}
+
+/**
+ * Beginn eines Kalendertags in Ortszeit, als Messzeitpunkt.
+ * Für Abfragegrenzen: "alle Werte des 13. September in Wien".
+ */
+export function tagesBeginnStempel(datum: Date): string {
+  const beginn = new Date(datum);
+  beginn.setHours(0, 0, 0, 0);
+  return messStempel(beginn);
+}

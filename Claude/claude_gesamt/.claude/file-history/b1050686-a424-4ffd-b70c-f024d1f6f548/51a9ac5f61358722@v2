@@ -1,0 +1,284 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+
+import { type Thema } from "@/lib/thema";
+
+import { Dialogflaeche, useDialog } from "./dialog";
+import {
+  Befehlspalette,
+  type Palettenbefehl,
+  type Palettenziel,
+} from "./befehlspalette";
+import { ThemaSchalter, setzeThema } from "./thema-schalter";
+
+/**
+ * Die Kopfleiste über dem Inhalt.
+ *
+ * Sie trägt genau drei Dinge: die Suche, das Erscheinungsbild und den
+ * Hinweis auf die Tastenkürzel. Alles andere gehört auf die Seite,
+ * nicht in eine Leiste, die auf jeder Seite mitläuft - eine
+ * Kopfleiste mit sieben Symbolen ist eine zweite Navigation.
+ */
+
+export interface Kuerzel {
+  tasten: string[];
+  was: string;
+}
+
+const KUERZEL: { gruppe: string; eintraege: Kuerzel[] }[] = [
+  {
+    gruppe: "Überall",
+    eintraege: [
+      { tasten: ["Strg", "K"], was: "Suche und Befehle öffnen" },
+      { tasten: ["?"], was: "Diese Übersicht zeigen" },
+      { tasten: ["Esc"], was: "Schließen" },
+    ],
+  },
+  {
+    gruppe: "In der Suche",
+    eintraege: [
+      { tasten: ["↑", "↓"], was: "Eintrag wählen" },
+      { tasten: ["↵"], was: "Öffnen" },
+      { tasten: ["Pos1", "Ende"], was: "An den Anfang oder ans Ende" },
+    ],
+  },
+  {
+    gruppe: "Springen",
+    eintraege: [
+      { tasten: ["g", "ü"], was: "Übersicht" },
+      { tasten: ["g", "a"], was: "Anlagen" },
+      { tasten: ["g", "m"], was: "Meldungen" },
+      { tasten: ["g", "s"], was: "Steuerung" },
+    ],
+  },
+];
+
+/** Zielpfade der Sprungkürzel, zweiter Tastendruck nach "g". */
+const SPRUNG: Record<string, string> = {
+  ü: "/portal",
+  u: "/portal",
+  a: "/portal/anlagen",
+  m: "/portal/alarme",
+  s: "/portal/steuerung",
+  e: "/portal/energie",
+  l: "/portal/mobilitaet",
+  b: "/portal/finanzen",
+  n: "/portal/netz",
+};
+
+export function Kopfleiste({
+  ziele,
+  seiten,
+}: {
+  ziele: Palettenziel[];
+  /** Menüeinträge, serverseitig nach Rechten gefiltert. */
+  seiten: { pfad: string; label: string; gruppe: string; beschreibung: string }[];
+}) {
+  const router = useRouter();
+  const [hilfeOffen, setHilfeOffen] = useState(false);
+  const hilfeKasten = useRef<HTMLDivElement>(null);
+
+  const schliesseHilfe = useCallback(() => setHilfeOffen(false), []);
+  useDialog({
+    offen: hilfeOffen,
+    schliessen: schliesseHilfe,
+    behaelter: hilfeKasten,
+  });
+
+  /*
+   * Sprungkürzel nach dem Muster "g" und dann ein Buchstabe.
+   *
+   * Zwei Tasten nacheinander statt einer Tastenkombination: Strg und
+   * Alt sind im Browser und im Betriebssystem schon weitgehend
+   * belegt, und was belegt ist, funktioniert bei irgendjemandem
+   * nicht. Das Zeitfenster ist kurz, damit ein "g" im Fließtext
+   * keinen Sprung auslöst.
+   */
+  useEffect(() => {
+    let wartetAufZiel = false;
+    let zeit: number | undefined;
+
+    function taste(e: KeyboardEvent) {
+      const ziel = e.target as HTMLElement | null;
+      const imFeld =
+        ziel?.tagName === "INPUT" ||
+        ziel?.tagName === "TEXTAREA" ||
+        ziel?.tagName === "SELECT" ||
+        ziel?.isContentEditable;
+
+      if (imFeld || e.metaKey || e.ctrlKey || e.altKey) return;
+
+      if (e.key === "?") {
+        e.preventDefault();
+        setHilfeOffen((o) => !o);
+        return;
+      }
+
+      if (wartetAufZiel) {
+        wartetAufZiel = false;
+        window.clearTimeout(zeit);
+        const pfad = SPRUNG[e.key.toLowerCase()];
+        if (pfad) {
+          e.preventDefault();
+          router.push(pfad);
+        }
+        return;
+      }
+
+      if (e.key.toLowerCase() === "g") {
+        wartetAufZiel = true;
+        zeit = window.setTimeout(() => {
+          wartetAufZiel = false;
+        }, 1200);
+      }
+    }
+
+    window.addEventListener("keydown", taste);
+    return () => {
+      window.removeEventListener("keydown", taste);
+      window.clearTimeout(zeit);
+    };
+  }, [router]);
+
+  const befehle = useMemo<Palettenbefehl[]>(() => {
+    const seitenBefehle: Palettenbefehl[] = seiten.map((s) => ({
+      id: `seite-${s.pfad}`,
+      titel: s.label,
+      zusatz: s.beschreibung,
+      gruppe: s.gruppe,
+      stichworte: [s.pfad, s.gruppe, "Seite", "Menü"],
+      tun: () => router.push(s.pfad),
+    }));
+
+    function themaBefehl(wert: Thema, titel: string): Palettenbefehl {
+      return {
+        id: `thema-${wert}`,
+        titel,
+        zusatz: "Erscheinungsbild umstellen",
+        gruppe: "Ansicht",
+        stichworte: ["Thema", "Darstellung", "dunkel", "hell", "Kontrast"],
+        tun: () => setzeThema(wert),
+      };
+    }
+
+    return [
+      ...seitenBefehle,
+      themaBefehl("hell", "Helle Ansicht"),
+      themaBefehl("dunkel", "Dunkle Ansicht"),
+      themaBefehl("system", "Ansicht wie das System"),
+      {
+        id: "hilfe-kuerzel",
+        titel: "Tastenkürzel anzeigen",
+        zusatz: "Alle Kürzel auf einen Blick",
+        gruppe: "Ansicht",
+        stichworte: ["Tastatur", "Hilfe", "Shortcuts"],
+        tun: () => setHilfeOffen(true),
+      },
+      {
+        id: "drucken",
+        titel: "Seite drucken",
+        zusatz: "Druckansicht ohne Navigation",
+        gruppe: "Ansicht",
+        stichworte: ["Drucken", "PDF", "Ausdruck"],
+        tun: () => window.print(),
+      },
+    ];
+  }, [router, seiten]);
+
+  return (
+    <>
+      <div className="mb-4 flex items-center gap-3 print:hidden">
+        <div className="min-w-0 max-w-sm flex-1">
+          <Befehlspalette ziele={ziele} befehle={befehle} />
+        </div>
+
+        <div className="ml-auto flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setHilfeOffen(true)}
+            className="hidden rounded-full border px-2 py-1 text-[0.6875rem] font-medium sm:block"
+            style={{ borderColor: "var(--linie)", color: "var(--t-zart)" }}
+            aria-label="Tastenkürzel anzeigen"
+            title="Tastenkürzel (?)"
+          >
+            ?
+          </button>
+          <ThemaSchalter />
+        </div>
+      </div>
+
+      {hilfeOffen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center px-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Tastenkürzel"
+        >
+          <Dialogflaeche beiKlick={schliesseHilfe} />
+
+          <div
+            ref={hilfeKasten}
+            className="a-palette relative w-full max-w-lg overflow-hidden p-5"
+            style={{
+              background: "var(--f-ebene)",
+              border: "1px solid var(--linie)",
+              borderRadius: "var(--radius-tafel)",
+              boxShadow: "var(--schatten-schwebend)",
+            }}
+          >
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <h2 className="t-abschnitt">Tastenkürzel</h2>
+                <p className="t-mikro mt-0.5">
+                  Auf einem Mac steht ⌘ für Strg.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={schliesseHilfe}
+                className="knopf knopf-leise shrink-0"
+              >
+                Schließen
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {KUERZEL.map((gruppe) => (
+                <div key={gruppe.gruppe}>
+                  <p className="t-etikett mb-1.5">{gruppe.gruppe}</p>
+                  <ul className="space-y-1">
+                    {gruppe.eintraege.map((k) => (
+                      <li
+                        key={k.was}
+                        className="flex items-center justify-between gap-3"
+                      >
+                        <span className="text-[0.8125rem]">{k.was}</span>
+                        <span className="flex shrink-0 items-center gap-1">
+                          {k.tasten.map((t) => (
+                            <kbd key={t} className="tastenkappe">
+                              {t}
+                            </kbd>
+                          ))}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+
+            <p className="t-mikro mt-4 leading-relaxed">
+              Die Sprungkürzel sind zwei Tasten nacheinander, nicht
+              gleichzeitig: erst g, dann den Buchstaben. Tastenkombinationen
+              mit Strg oder Alt sind im Browser und im Betriebssystem
+              weitgehend belegt – und was belegt ist, funktioniert bei
+              irgendjemandem nicht.
+            </p>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}

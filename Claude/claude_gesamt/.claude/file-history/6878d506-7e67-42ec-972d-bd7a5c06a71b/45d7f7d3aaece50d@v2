@@ -1,0 +1,134 @@
+import { notFound } from "next/navigation";
+import { requireUser } from "@/lib/auth";
+import { db } from "@/lib/data";
+import { date, longDate, money2 } from "@/lib/format";
+import { commissionOf, monthKey, monthLabel } from "@/lib/tax";
+import { userOfPartner } from "@/lib/partners";
+import { LogoMark } from "@/components/ui";
+import { PrintButton } from "@/components/PrintButton";
+
+export const metadata = { title: "Provisionsabrechnung" };
+
+// Monatliche Provisionsabrechnung für einen Handelsvertreter.
+// Die Rechnungen kommen gefiltert nach Berechtigung – ein Vertreter sieht nur seine eigenen.
+export default async function ProvisionDruck({ params, searchParams }: PageProps<"/druck/provision/[month]">) {
+  await requireUser();
+  const { month } = await params;
+  if (!/^\d{4}-\d{2}$/.test(month)) notFound();
+  const partner = String((await searchParams).partner ?? "");
+
+  const [allInvoices, allCharges] = await Promise.all([db().listInvoices({ limit: 1000 }), db().listLeadCharges({ limit: 1000 })]);
+  const agent = userOfPartner(partner);
+  // Lead-Kosten nur, wenn die Zuordnung Vertriebspartner → Benutzer bekannt ist
+  const charges = agent ? allCharges.filter((c) => c.agent === agent && monthKey(c.posting_date) === month) : [];
+  const leadCosts = charges.reduce((s, c) => s + c.amount, 0);
+  const rows = allInvoices
+    .filter((i) => i.sales_partner === partner && monthKey(i.posting_date) === month && !["Draft", "Cancelled"].includes(i.status))
+    .map((i) => ({ ...i, c: commissionOf(i) }));
+  if (rows.length === 0 && charges.length === 0) notFound();
+
+  const total = rows.reduce((s, r) => s + r.c.amount, 0);
+  const earned = rows.reduce((s, r) => s + r.c.earned, 0);
+
+  return (
+    <div className="min-h-full bg-gray-100 py-8 print:bg-white print:py-0">
+      <style>{`@page { size: A4; margin: 16mm 14mm; } @media print { html, body { background: #fff; } }`}</style>
+      <div className="mx-auto mb-4 flex max-w-[210mm] justify-end px-4 print:hidden">
+        <PrintButton />
+      </div>
+      <article className="mx-auto max-w-[210mm] bg-white px-14 py-12 text-[12.5px] leading-relaxed text-gray-900 shadow-sm print:max-w-none print:p-0 print:shadow-none">
+        <header className="flex items-start justify-between border-b border-gray-200 pb-5">
+          <div className="flex items-center gap-3">
+            <LogoMark className="size-10" />
+            <div>
+              <div className="text-[16px] font-semibold">Ökovolt Solartechnik</div>
+              <div className="text-[11px] text-gray-500">Provisionsabrechnung</div>
+            </div>
+          </div>
+          <div className="text-right text-[11.5px]">
+            <div className="font-medium">{monthLabel(month)}</div>
+            <div className="text-gray-500">erstellt am {longDate()}</div>
+          </div>
+        </header>
+
+        <h1 className="mt-8 text-[18px] font-semibold">Handelsvertreter: {partner}</h1>
+        <p className="mt-2 text-gray-600">
+          Aufstellung der im Abrechnungszeitraum berechneten provisionspflichtigen Geschäfte. Provisionen werden mit Zahlungseingang beim
+          Unternehmen fällig; noch nicht bezahlte Rechnungen sind als „ausstehend“ ausgewiesen und werden nach Zahlung abgerechnet.
+        </p>
+
+        <table className="mt-6 w-full text-left">
+          <thead>
+            <tr className="border-y border-gray-300 text-[11px] text-gray-500">
+              <th className="py-1.5 pr-2 font-medium">Rechnung</th>
+              <th className="py-1.5 pr-2 font-medium">Kunde</th>
+              <th className="py-1.5 pr-2 text-right font-medium">Netto</th>
+              <th className="py-1.5 pr-2 text-right font-medium">Satz</th>
+              <th className="py-1.5 pr-2 text-right font-medium">Provision</th>
+              <th className="py-1.5 text-right font-medium">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.name} className="border-b border-gray-100">
+                <td className="py-2 pr-2">
+                  {r.name}
+                  <div className="text-[10.5px] text-gray-400">{date(r.posting_date)}</div>
+                </td>
+                <td className="py-2 pr-2">{r.customer_name}</td>
+                <td className="tnum py-2 pr-2 text-right">{money2(r.net_total)}</td>
+                <td className="tnum py-2 pr-2 text-right">{(r.commission_rate ?? 0).toLocaleString("de-DE")} %</td>
+                <td className="tnum py-2 pr-2 text-right">{money2(r.c.amount)}</td>
+                <td className="py-2 text-right text-[11px]">{r.c.earned === r.c.amount ? "fällig" : r.c.earned > 0 ? "teilweise fällig" : "ausstehend"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        <dl className="ml-auto mt-4 w-80">
+          <div className="flex justify-between py-0.5">
+            <dt className="text-gray-600">Provision gesamt</dt>
+            <dd className="tnum">{money2(total)}</dd>
+          </div>
+          <div className="flex justify-between py-0.5">
+            <dt className="text-gray-600">davon ausstehend</dt>
+            <dd className="tnum">{money2(total - earned)}</dd>
+          </div>
+          <div className="flex justify-between py-0.5">
+            <dt className="text-gray-600">Provision fällig</dt>
+            <dd className="tnum">{money2(earned)}</dd>
+          </div>
+          <div className="flex justify-between py-0.5">
+            <dt className="text-gray-600">abzgl. Lead-Kosten ({charges.length})</dt>
+            <dd className="tnum">−{money2(leadCosts)}</dd>
+          </div>
+          <div className="mt-1 flex justify-between border-t border-gray-300 pt-1.5 text-[14px] font-semibold">
+            <dt>{earned - leadCosts >= 0 ? "Zur Auszahlung fällig (netto)" : "Saldo zu Lasten Vertreter (netto)"}</dt>
+            <dd className="tnum">{money2(Math.abs(earned - leadCosts))}</dd>
+          </div>
+        </dl>
+        {charges.length > 0 && (
+          <>
+            <h2 className="mt-8 font-semibold">Verrechnete Lead-Kosten</h2>
+            <table className="mt-2 w-full text-left">
+              <tbody>
+                {charges.map((c) => (
+                  <tr key={c.name} className="border-b border-gray-100">
+                    <td className="py-1.5 pr-2">{date(c.posting_date)}</td>
+                    <td className="py-1.5 pr-2">Lead-Freischaltung {c.lead_name}</td>
+                    <td className="py-1.5 pr-2 text-gray-500">{c.kwp ? `${c.kwp.toLocaleString("de-DE")} kWp` : ""}</td>
+                    <td className="tnum py-1.5 text-right">−{money2(c.amount)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </>
+        )}
+        <p className="mt-6 text-[11px] text-gray-500">
+          Beträge netto. Die Umsatzsteuer auf die Provision stellt der Handelsvertreter gesondert in Rechnung, sofern er nicht Kleinunternehmer ist.
+        </p>
+        <footer className="mt-12 border-t border-gray-200 pt-3 text-[10px] text-gray-400">Ökovolt Solartechnik · Provisionsabrechnung {monthLabel(month)}</footer>
+      </article>
+    </div>
+  );
+}

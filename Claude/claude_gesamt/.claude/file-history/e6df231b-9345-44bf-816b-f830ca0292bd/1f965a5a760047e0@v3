@@ -1,0 +1,119 @@
+<script setup lang="ts">
+/**
+ * Modal: auf dem Smartphone als Sheet von unten, ab Tablet zentriert.
+ *
+ * Der Fokus wandert beim Öffnen in den Dialog, bleibt beim Tabben darin und
+ * kehrt beim Schließen zum auslösenden Element zurück.
+ */
+import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+
+import AppIcon from '@/components/AppIcon.vue'
+
+const props = withDefaults(defineProps<{ offen: boolean; titel: string; breit?: boolean }>(), {
+  breit: false,
+})
+
+const emit = defineEmits<{ (e: 'schliessen'): void }>()
+
+const rahmen = ref<HTMLElement | null>(null)
+const titelId = `dialog-titel-${Math.random().toString(36).slice(2, 9)}`
+let vorherigerFokus: HTMLElement | null = null
+
+const FOKUSSIERBAR =
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), ' +
+  'textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+
+function fokussierbare(): HTMLElement[] {
+  return Array.from(rahmen.value?.querySelectorAll<HTMLElement>(FOKUSSIERBAR) ?? []).filter(
+    (element) => element.offsetParent !== null,
+  )
+}
+
+function beiTaste(ereignis: KeyboardEvent) {
+  if (!props.offen) return
+
+  if (ereignis.key === 'Escape') {
+    emit('schliessen')
+    return
+  }
+
+  if (ereignis.key !== 'Tab') return
+  const elemente = fokussierbare()
+  if (!elemente.length) return
+
+  const erstes = elemente[0]
+  const letztes = elemente[elemente.length - 1]
+  const aktiv = document.activeElement as HTMLElement | null
+
+  if (ereignis.shiftKey && (aktiv === erstes || !rahmen.value?.contains(aktiv))) {
+    ereignis.preventDefault()
+    letztes.focus()
+  } else if (!ereignis.shiftKey && aktiv === letztes) {
+    ereignis.preventDefault()
+    erstes.focus()
+  }
+}
+
+watch(
+  () => props.offen,
+  async (offen) => {
+    if (offen) {
+      vorherigerFokus = document.activeElement as HTMLElement | null
+      await nextTick()
+      fokussierbare()[0]?.focus()
+    } else {
+      vorherigerFokus?.focus()
+      vorherigerFokus = null
+    }
+  },
+)
+
+onMounted(() => window.addEventListener('keydown', beiTaste))
+onBeforeUnmount(() => window.removeEventListener('keydown', beiTaste))
+</script>
+
+<template>
+  <Teleport to="body">
+    <Transition
+      enter-active-class="transition duration-150"
+      enter-from-class="opacity-0"
+      leave-active-class="transition duration-100"
+      leave-to-class="opacity-0"
+    >
+      <div
+        v-if="offen"
+        class="fixed inset-0 z-40 flex items-end justify-center bg-slate-900/50 p-0 backdrop-blur-sm
+               tablet:items-center tablet:p-6"
+        role="dialog"
+        aria-modal="true"
+        :aria-labelledby="titelId"
+        @click.self="emit('schliessen')"
+      >
+        <div
+          ref="rahmen"
+          class="max-h-[92vh] w-full overflow-y-auto rounded-t-2xl bg-white shadow-xl
+                 scrollbar-schmal tablet:rounded-2xl dark:bg-slate-900"
+          :class="breit ? 'tablet:max-w-3xl' : 'tablet:max-w-lg'"
+        >
+          <header
+            class="sticky top-0 flex items-center gap-3 border-b border-slate-200 bg-white px-4 py-3
+                   dark:border-slate-800 dark:bg-slate-900"
+          >
+            <h2 :id="titelId" class="flex-1 text-lg font-bold">{{ titel }}</h2>
+            <button
+              class="tap flex items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100
+                     dark:hover:bg-slate-800"
+              aria-label="Schließen"
+              @click="emit('schliessen')"
+            >
+              <AppIcon name="kreuz" :groesse="20" />
+            </button>
+          </header>
+          <div class="p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+            <slot />
+          </div>
+        </div>
+      </div>
+    </Transition>
+  </Teleport>
+</template>

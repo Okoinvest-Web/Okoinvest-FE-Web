@@ -1,0 +1,271 @@
+<script setup lang="ts">
+/**
+ * Auftragsdetail im Portal: annehmen, Fortschritt melden, fertigmelden.
+ *
+ * Was der Subunternehmer *nicht* kann, ist ebenso wichtig: Termine ändern,
+ * abnehmen, stornieren. Das bleibt beim Bauleiter — hier gibt es dafür keine
+ * Schaltfläche, und der Server ließe es auch nicht zu.
+ */
+import { computed, onMounted, ref } from 'vue'
+
+import AppIcon from '@/components/AppIcon.vue'
+import BasisDialog from '@/components/BasisDialog.vue'
+import StatusAbzeichen from '@/components/StatusAbzeichen.vue'
+import StempelUhr from '@/components/StempelUhr.vue'
+import { baudoku, resource } from '@/lib/api'
+import { datum, datumZeit } from '@/lib/format'
+import { portal, type Auftrag } from '@/lib/portal'
+import { usePortal } from '@/stores/portal'
+import { useUi } from '@/stores/ui'
+
+const props = defineProps<{ name: string }>()
+
+const store = usePortal()
+const ui = useUi()
+
+interface AuftragDetail extends Auftrag {
+  positionen?: { beschreibung: string; bereich: string; menge?: number; einheit?: string; fortschritt?: number }[]
+  fertigmeldung_bemerkung?: string
+  abnahme_bemerkung?: string
+  ablehnungsgrund?: string
+}
+
+const auftrag = ref<AuftragDetail | null>(null)
+const laedt = ref(true)
+const arbeitet = ref(false)
+const fertigDialog = ref(false)
+const fertigBemerkung = ref('')
+const fortschritt = ref(0)
+
+const baustelle = computed(() =>
+  auftrag.value ? store.baustelle(auftrag.value.anlage) : undefined,
+)
+
+const kartenLink = computed(() => {
+  const b = baustelle.value
+  if (!b) return ''
+  const ziel = b.gps_lat && b.gps_lng
+    ? `${b.gps_lat},${b.gps_lng}`
+    : `${b.adresse ?? ''} ${b.plz ?? ''} ${b.ort ?? ''}`.trim()
+  return `https://www.openstreetmap.org/search?query=${encodeURIComponent(ziel)}`
+})
+
+const kannAnnehmen = computed(() => auftrag.value?.status === 'Geplant')
+const kannArbeiten = computed(() =>
+  ['Angenommen', 'In Arbeit'].includes(auftrag.value?.status ?? ''),
+)
+
+const fristText = computed(() => {
+  const a = auftrag.value
+  if (!a?.frist) return null
+  if (a.verzug) return { text: `${Math.abs(a.tage_bis_frist ?? 0)} Tage über der Frist`, klasse: 'text-fehler' }
+  if (a.tage_bis_frist === 0) return { text: 'heute fällig', klasse: 'text-warnung' }
+  if (a.fristwarnung_aktiv) return { text: `noch ${a.tage_bis_frist} Tage`, klasse: 'text-warnung' }
+  return { text: `Frist ${datum(a.frist)}`, klasse: 'text-slate-500' }
+})
+
+async function laden() {
+  laedt.value = true
+  try {
+    auftrag.value = (await resource.lesen('Subunternehmerauftrag', props.name)) as AuftragDetail
+    fortschritt.value = auftrag.value.fortschritt_prozent ?? 0
+  } catch (fehler) {
+    ui.fehler(`Auftrag konnte nicht geladen werden: ${(fehler as Error).message}`)
+  } finally {
+    laedt.value = false
+  }
+}
+
+async function annehmen() {
+  arbeitet.value = true
+  try {
+    await baudoku.dokumentMethode('Subunternehmerauftrag', props.name, 'annehmen')
+    ui.erfolg('Auftrag angenommen.')
+    await laden()
+  } catch (fehler) {
+    ui.fehler((fehler as Error).message)
+  } finally {
+    arbeitet.value = false
+  }
+}
+
+async function fortschrittSpeichern() {
+  arbeitet.value = true
+  try {
+    await portal.fortschrittMelden(props.name, fortschritt.value)
+    ui.erfolg(`Fortschritt auf ${fortschritt.value} % gesetzt.`)
+    await laden()
+  } catch (fehler) {
+    ui.fehler((fehler as Error).message)
+  } finally {
+    arbeitet.value = false
+  }
+}
+
+async function fertigmelden() {
+  arbeitet.value = true
+  try {
+    await baudoku.dokumentMethode('Subunternehmerauftrag', props.name, 'fertigmelden', {
+      bemerkung: fertigBemerkung.value,
+    })
+    ui.erfolg('Fertigmeldung abgegeben. Der Bauleiter prüft die Abnahme.')
+    fertigDialog.value = false
+    await laden()
+  } catch (fehler) {
+    ui.fehler((fehler as Error).message)
+  } finally {
+    arbeitet.value = false
+  }
+}
+
+onMounted(async () => {
+  if (!store.geladen) await store.laden()
+  await laden()
+})
+</script>
+
+<template>
+  <p v-if="laedt" class="py-8 text-center text-sm text-slate-500">Wird geladen …</p>
+
+  <div v-else-if="!auftrag" class="karte p-6 text-center text-sm text-slate-500">
+    Dieser Auftrag ist nicht verfügbar.
+  </div>
+
+  <div v-else class="mx-auto max-w-feld space-y-4">
+    <header class="karte p-4">
+      <div class="flex flex-wrap items-start gap-2">
+        <h2 class="min-w-0 flex-1 text-xl font-bold">{{ auftrag.titel }}</h2>
+        <StatusAbzeichen :wert="auftrag.status" />
+      </div>
+      <div class="mt-2 flex flex-wrap items-center gap-2 text-sm">
+        <span v-if="auftrag.gewaehrleistung"
+              class="abzeichen bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+          Gewährleistung
+        </span>
+        <span v-if="auftrag.herkunft === 'Mangel'"
+              class="abzeichen bg-amber-100 text-amber-900">aus Mangel</span>
+        <span v-if="fristText" class="font-semibold" :class="fristText.klasse">
+          {{ fristText.text }}
+        </span>
+      </div>
+
+      <dl class="mt-4 grid grid-cols-2 gap-3 text-sm">
+        <div>
+          <dt class="text-xs text-slate-400">Beginn</dt>
+          <dd class="font-medium">{{ datumZeit(auftrag.termin_von) }}</dd>
+        </div>
+        <div>
+          <dt class="text-xs text-slate-400">Ende (geplant)</dt>
+          <dd class="font-medium">{{ datumZeit(auftrag.termin_bis) }}</dd>
+        </div>
+      </dl>
+    </header>
+
+    <!-- Baustelle mit Wegbeschreibung -->
+    <a v-if="baustelle" :href="kartenLink" target="_blank" rel="noopener"
+       class="karte flex items-center gap-3 p-4">
+      <AppIcon name="karte" :groesse="22" class="shrink-0 text-marke-600" />
+      <div class="min-w-0 flex-1">
+        <div class="truncate font-semibold">{{ baustelle.anlage_name }}</div>
+        <div class="truncate text-sm text-slate-500">
+          {{ baustelle.adresse }}, {{ baustelle.plz }} {{ baustelle.ort }}
+        </div>
+      </div>
+      <AppIcon name="pfeilRechts" :groesse="18" class="shrink-0 text-slate-400" />
+    </a>
+
+    <!-- Aufgabe -->
+    <section class="karte p-4">
+      <h3 class="mb-2 font-semibold">Aufgabe</h3>
+      <!-- Vom Bauleiter erfasster Text aus dem eigenen System -->
+      <!-- eslint-disable-next-line vue/no-v-html -->
+      <div class="prose max-w-none text-sm dark:prose-invert" v-html="auftrag.aufgabe" />
+
+      <ul v-if="auftrag.positionen?.length" class="mt-3 space-y-2">
+        <li v-for="(p, i) in auftrag.positionen" :key="i"
+            class="rounded-lg bg-slate-50 p-3 text-sm dark:bg-slate-800">
+          <div class="flex items-center gap-2">
+            <span class="flex-1 font-medium">{{ p.beschreibung }}</span>
+            <span class="text-xs text-slate-500">{{ p.menge }} {{ p.einheit }}</span>
+          </div>
+          <div class="text-xs text-slate-400">{{ p.bereich }}</div>
+        </li>
+      </ul>
+    </section>
+
+    <!-- Aktionen -->
+    <section v-if="kannAnnehmen" class="karte p-4">
+      <p class="mb-3 text-sm text-slate-600 dark:text-slate-300">
+        Mit der Annahme bestätigen Sie Termin und Aufgabe.
+      </p>
+      <button class="knopf-primaer w-full" :disabled="arbeitet" @click="annehmen">
+        <AppIcon name="check" :groesse="20" /> Auftrag annehmen
+      </button>
+    </section>
+
+    <section v-else-if="kannArbeiten" class="karte space-y-3 p-4">
+      <h3 class="font-semibold">Fortschritt</h3>
+      <div class="flex items-center gap-3">
+        <input v-model.number="fortschritt" type="range" min="0" max="100" step="5"
+               class="h-2 flex-1" />
+        <span class="w-14 text-right text-lg font-bold tabular-nums">{{ fortschritt }} %</span>
+      </div>
+      <button class="knopf-sekundaer w-full" :disabled="arbeitet" @click="fortschrittSpeichern">
+        Fortschritt melden
+      </button>
+      <button class="knopf-primaer w-full" :disabled="arbeitet" @click="fertigDialog = true">
+        <AppIcon name="check" :groesse="20" /> Fertigmelden
+      </button>
+    </section>
+
+    <section v-else-if="auftrag.status === 'Fertiggemeldet'"
+             class="karte border-l-4 border-l-marke-500 p-4">
+      <p class="font-semibold">Fertiggemeldet — wartet auf Abnahme</p>
+      <p class="mt-1 text-sm text-slate-500">{{ auftrag.fertigmeldung_bemerkung }}</p>
+    </section>
+
+    <section v-else-if="auftrag.abnahme_bemerkung" class="karte p-4">
+      <p class="font-semibold">Rückmeldung des Bauleiters</p>
+      <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">{{ auftrag.abnahme_bemerkung }}</p>
+    </section>
+
+    <!-- Stempeln direkt auf den Auftrag -->
+    <section v-if="kannArbeiten">
+      <h3 class="mb-2 flex items-center gap-2 font-semibold">
+        <AppIcon name="uhr" :groesse="18" class="text-marke-600" /> Zeit auf diesen Auftrag
+      </h3>
+      <StempelUhr :auftrag="auftrag.name" />
+    </section>
+
+    <div class="grid grid-cols-2 gap-2 pb-4">
+      <RouterLink :to="{ name: 'portal-material', query: { auftrag: auftrag.name } }"
+                  class="knopf-sekundaer text-sm">
+        Material anfordern
+      </RouterLink>
+      <RouterLink :to="{ name: 'portal-meldung', query: { auftrag: auftrag.name } }"
+                  class="knopf-sekundaer text-sm">
+        Behinderung melden
+      </RouterLink>
+    </div>
+
+    <BasisDialog :offen="fertigDialog" titel="Fertigmelden" @schliessen="fertigDialog = false">
+      <div class="space-y-3">
+        <p class="text-sm text-slate-600 dark:text-slate-300">
+          Der Bauleiter wird benachrichtigt und nimmt ab. Bis zur Abnahme bleibt der
+          Auftrag offen.
+        </p>
+        <label>
+          <span class="beschriftung">Bemerkung (optional)</span>
+          <textarea v-model="fertigBemerkung" class="feld min-h-[96px]" rows="3"
+                    placeholder="Besonderheiten, Restarbeiten, Hinweise für die Abnahme" />
+        </label>
+        <div class="flex gap-2">
+          <button class="knopf-sekundaer flex-1" @click="fertigDialog = false">Abbrechen</button>
+          <button class="knopf-primaer flex-[2]" :disabled="arbeitet" @click="fertigmelden">
+            Fertigmelden
+          </button>
+        </div>
+      </div>
+    </BasisDialog>
+  </div>
+</template>

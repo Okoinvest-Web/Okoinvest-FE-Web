@@ -1,0 +1,49 @@
+import { chromium } from "playwright";
+
+const browser = await chromium.launch();
+const kontext = await browser.newContext({
+  viewport: { width: 1440, height: 1000 },
+  locale: "de-AT",
+  timezoneId: "Europe/Vienna",
+});
+await kontext.addCookies(
+  [
+    { name: "sid", value: "demo-session" },
+    { name: "frappe_user", value: "m.steiner@steiner-holzbau.at" },
+    { name: "frappe_full_name", value: "Markus Steiner" },
+    { name: "portal_rolle", value: "geschaeftsfuehrung" },
+  ].map((c) => ({ ...c, domain: "localhost", path: "/" })),
+);
+
+const seite = await kontext.newPage();
+
+// Erst warmlaufen lassen, damit der Entwicklungsserver uebersetzt hat.
+await seite.goto("http://localhost:3000/portal/energie", { waitUntil: "networkidle" });
+await seite.waitForTimeout(500);
+
+await seite.goto("http://localhost:3000/portal/energie", { waitUntil: "commit" });
+
+const proben = [];
+for (let i = 0; i < 8; i += 1) {
+  await seite.waitForTimeout(120);
+  const stand = await seite.evaluate(() => {
+    const kacheln = [...document.querySelectorAll("p.t-zahl, p.t-zahl-mittel, p.t-zahl-klein")]
+      .slice(0, 4)
+      .map((k) => k.textContent.trim().slice(0, 16));
+    const balken = document.querySelector("rect.animate-aufsteigen");
+    const linien = [...document.querySelectorAll("svg path")]
+      .filter((l) => getComputedStyle(l).strokeDashoffset !== "0px")
+      .slice(0, 2)
+      .map((l) => getComputedStyle(l).strokeDashoffset);
+    return {
+      kacheln,
+      balken: balken ? getComputedStyle(balken).transform : null,
+      linien,
+    };
+  });
+  proben.push(stand);
+}
+
+console.log(JSON.stringify(proben, null, 1));
+
+await browser.close();

@@ -1,0 +1,16 @@
+<template>
+  <FrappeUIProvider>
+    <!-- Leitstand-Screens laufen ohne Rahmen: keine Navigation, keine
+         Bedienelemente, nur die Anzeige (Fachkonzept 2.16). -->
+    <RouterView v-if="$route.meta.fullscreen" />
+    <AppLayout v-else>
+      <RouterView />
+    </AppLayout>
+    <Dialogs />
+  </FrappeUIProvider>
+</template>
+
+<script setup>
+import { Dialogs, FrappeUIProvider } from 'frappe-ui'
+import AppLayout from '@/components/AppLayout.vue'
+</script>

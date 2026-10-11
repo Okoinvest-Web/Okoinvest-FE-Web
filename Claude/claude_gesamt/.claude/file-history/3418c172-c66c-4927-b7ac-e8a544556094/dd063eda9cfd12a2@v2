@@ -1,0 +1,122 @@
+import "server-only";
+import type { DataSource } from "./source";
+import type { Contact, Customer, Lead, ListOptions, Opportunity, ToDo } from "@/lib/types";
+
+type Config = { url: string; key: string; secret: string };
+
+// Client für die Frappe-REST-API (/api/resource/<DocType>).
+// Läuft nur serverseitig, damit API-Key/Secret nie im Browser landen.
+export function createErpNextSource({ url, key, secret }: Config): DataSource {
+  const base = url.replace(/\/$/, "");
+
+  async function call<T>(path: string, init?: RequestInit): Promise<T> {
+    const res = await fetch(`${base}${path}`, {
+      ...init,
+      headers: {
+        Authorization: `token ${key}:${secret}`,
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        ...init?.headers,
+      },
+      cache: "no-store",
+      signal: AbortSignal.timeout(15_000),
+    });
+    if (!res.ok) {
+      // Keine Zugangsdaten in Fehlermeldungen
+      throw new Error(`ERPNext ${init?.method ?? "GET"} ${path.split("?")[0]} → ${res.status}`);
+    }
+    const body = (await res.json()) as { data: T };
+    return body.data;
+  }
+
+  function list<T>(doctype: string, fields: string[], opts: ListOptions = {}, searchField?: string) {
+    const filters: [string, string, string][] = [];
+    for (const [k, v] of Object.entries(opts.filters ?? {})) {
+      if (v) filters.push([k, "=", v]);
+    }
+    if (opts.search && searchField) filters.push([searchField, "like", `%${opts.search}%`]);
+    const qs = new URLSearchParams({
+      fields: JSON.stringify(fields),
+      filters: JSON.stringify(filters),
+      order_by: "modified desc",
+      limit_page_length: String(opts.limit ?? 100),
+    });
+    return call<T[]>(`/api/resource/${encodeURIComponent(doctype)}?${qs}`);
+  }
+
+  async function get<T>(doctype: string, name: string): Promise<T | null> {
+    try {
+      return await call<T>(`/api/resource/${encodeURIComponent(doctype)}/${encodeURIComponent(name)}`);
+    } catch (e) {
+      if (e instanceof Error && e.message.endsWith("404")) return null;
+      throw e;
+    }
+  }
+
+  function update(doctype: string, name: string, data: Record<string, unknown>) {
+    return call(`/api/resource/${encodeURIComponent(doctype)}/${encodeURIComponent(name)}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  }
+
+  return {
+    kind: "erpnext",
+
+    listLeads: (o) =>
+      list<Lead>(
+        "Lead",
+        ["name", "first_name", "last_name", "lead_name", "company_name", "email_id", "mobile_no", "status", "source", "territory", "lead_owner", "creation", "modified"],
+        o,
+        "lead_name",
+      ),
+    getLead: (n) => get<Lead>("Lead", n),
+    createLead: (data) => call<Lead>("/api/resource/Lead", { method: "POST", body: JSON.stringify(data) }),
+    setLeadStatus: async (n, status) => {
+      await update("Lead", n, { status });
+    },
+
+    listOpportunities: (o) =>
+      list<Opportunity>(
+        "Opportunity",
+        ["name", "opportunity_from", "party_name", "customer_name", "title", "status", "sales_stage", "opportunity_amount", "currency", "probability", "expected_closing", "opportunity_owner", "creation", "modified"],
+        o,
+        "title",
+      ),
+    getOpportunity: (n) => get<Opportunity>("Opportunity", n),
+    setOpportunityStage: async (n, sales_stage) => {
+      await update("Opportunity", n, { sales_stage });
+    },
+
+    listCustomers: (o) =>
+      list<Customer>(
+        "Customer",
+        ["name", "customer_name", "customer_type", "customer_group", "territory", "email_id", "mobile_no", "website", "disabled", "creation", "modified"],
+        o,
+        "customer_name",
+      ),
+    getCustomer: (n) => get<Customer>("Customer", n),
+
+    // Kind-Tabelle "links" kommt über die Listen-API nicht mit – für die Übersicht reicht das.
+    listContacts: async (o) => {
+      const rows = await list<Omit<Contact, "links">>(
+        "Contact",
+        ["name", "first_name", "last_name", "full_name", "email_id", "mobile_no", "designation", "company_name", "creation", "modified"],
+        o,
+        "full_name",
+      );
+      return rows.map((r) => ({ ...r, links: [] }));
+    },
+
+    listToDos: (o) =>
+      list<ToDo>(
+        "ToDo",
+        ["name", "description", "status", "priority", "date", "allocated_to", "reference_type", "reference_name", "creation", "modified"],
+        o,
+        "description",
+      ),
+    setToDoStatus: async (n, status) => {
+      await update("ToDo", n, { status });
+    },
+  };
+}

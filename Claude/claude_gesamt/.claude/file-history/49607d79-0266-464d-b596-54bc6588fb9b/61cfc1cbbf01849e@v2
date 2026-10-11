@@ -1,0 +1,56 @@
+import { describe, expect, it } from 'vitest'
+import {
+  intToIp,
+  ipToInt,
+  istInPraefix,
+  istTeilnetz,
+  nutzbareAdressen,
+  parsePrefix,
+} from '@/api/mock/ip.js'
+
+describe('IPv4-Hilfsfunktionen', () => {
+  it('zerlegt ein Präfix in Netzadresse, Länge und Größe', () => {
+    expect(parsePrefix('10.10.20.0/24')).toEqual({
+      base: ipToInt('10.10.20.0'),
+      bits: 24,
+      size: 256,
+    })
+  })
+
+  it('normalisiert eine Hostadresse auf die Netzadresse', () => {
+    // 10.10.20.77/24 beschreibt dasselbe Netz wie 10.10.20.0/24
+    expect(intToIp(parsePrefix('10.10.20.77/24').base)).toBe('10.10.20.0')
+  })
+
+  it('rechnet auch oberhalb von 2^31 korrekt', () => {
+    // Ohne >>> 0 kippt die Bitrechnung hier ins Negative.
+    expect(intToIp(parsePrefix('192.168.1.130/25').base)).toBe('192.168.1.128')
+    expect(ipToInt('255.255.255.255')).toBe(4294967295)
+  })
+
+  it('weist ungültige Eingaben zurück', () => {
+    expect(() => parsePrefix('10.10.20.0/33')).toThrow()
+    expect(() => ipToInt('10.10.300.1')).toThrow()
+    expect(() => ipToInt('10.10.1')).toThrow()
+  })
+
+  it('erkennt Zugehörigkeit zu einem Präfix', () => {
+    expect(istInPraefix('10.10.20.5', '10.10.20.0/24')).toBe(true)
+    expect(istInPraefix('10.10.21.5', '10.10.20.0/24')).toBe(false)
+    expect(istInPraefix('10.10.21.5/24', '10.10.0.0/16')).toBe(true)
+    expect(istInPraefix('10.11.0.1', '10.10.0.0/16')).toBe(false)
+  })
+
+  it('erkennt echte Teilnetze, aber nicht sich selbst', () => {
+    expect(istTeilnetz('10.10.20.0/24', '10.10.0.0/16')).toBe(true)
+    expect(istTeilnetz('10.10.0.0/16', '10.10.0.0/16')).toBe(false)
+    expect(istTeilnetz('10.10.0.0/16', '10.10.20.0/24')).toBe(false)
+  })
+
+  it('zieht Netz- und Broadcastadresse ab, außer bei /31 und /32', () => {
+    expect(nutzbareAdressen('10.10.20.0/24')).toBe(254)
+    expect(nutzbareAdressen('10.10.30.0/23')).toBe(510)
+    expect(nutzbareAdressen('10.10.20.0/31')).toBe(2)
+    expect(nutzbareAdressen('10.10.20.1/32')).toBe(1)
+  })
+})

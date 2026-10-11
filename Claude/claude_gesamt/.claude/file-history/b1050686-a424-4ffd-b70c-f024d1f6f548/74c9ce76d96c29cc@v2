@@ -1,0 +1,138 @@
+"""
+Stellt die Portalseiten auf die neue Komponenten-API um.
+
+Die Umstellung ist mechanisch: Karte wird zu Tafel, beschreibung zu
+hinweis, die Tabellenspalten werden von Zeichenketten zu Objekten. Was
+sich nicht mechanisch abbilden laesst, bleibt stehen und faellt beim
+Typecheck auf.
+"""
+
+import io
+import os
+import re
+
+WURZEL = "src/app/portal"
+
+# Dateien, die bereits auf die neue API gebaut sind.
+AUSNAHMEN = {
+    "src/app/portal/gemeinschaft/page.tsx",
+    "src/app/portal/gemeinschaft/lauf-formular.tsx",
+    "src/app/portal/gemeinschaft/teilnahme-formular.tsx",
+    "src/app/portal/gemeinschaft/aktionen.ts",
+    "src/app/portal/gemeinschaft/abrechnung/[lauf]/page.tsx",
+    "src/app/portal/gemeinschaft/abrechnung/[lauf]/aktionen-leiste.tsx",
+    "src/app/portal/gemeinschaft/belege/[beleg]/page.tsx",
+}
+
+
+def spalten_umbauen(text):
+    """spalten={["A","B"]} rechts={[1,2]} -> Objektform."""
+
+    def ersetze(m):
+        roh = m.group(1)
+        namen = re.findall(r'"([^"]*)"', roh)
+        if not namen:
+            return m.group(0)
+        eintraege = ", ".join('{ titel: "' + n + '" }' for n in namen)
+        return "spalten={[" + eintraege + "]}"
+
+    text = re.sub(r"spalten=\{\[(.*?)\]\}", ersetze, text, flags=re.S)
+
+    # rechts={[...]} traegt die Zahlenspalten - in der neuen API steht
+    # das am Spaltenobjekt. Die Zuordnung erfolgt ueber den Index.
+    def rechts_einarbeiten(m):
+        indizes = {int(x) for x in re.findall(r"\d+", m.group(1))}
+        return "___RECHTS___" + ",".join(str(i) for i in sorted(indizes)) + "___"
+
+    text = re.sub(r"\s*rechts=\{\[(.*?)\]\}", rechts_einarbeiten, text, flags=re.S)
+
+    # Jetzt die Marker aufloesen: die Spaltenliste davor anpassen.
+    def marker_aufloesen(text):
+        while True:
+            treffer = re.search(r"___RECHTS___([\d,]*)___", text)
+            if not treffer:
+                return text
+            indizes = {int(x) for x in treffer.group(1).split(",") if x}
+
+            # Die zugehoerige Spaltenliste liegt davor.
+            davor = text[: treffer.start()]
+            liste = list(re.finditer(r"spalten=\{\[(.*?)\]\}", davor, flags=re.S))
+            if not liste:
+                text = text[: treffer.start()] + text[treffer.end() :]
+                continue
+
+            letzte = liste[-1]
+            inhalt = letzte.group(1)
+            teile = re.findall(r"\{ titel: \"([^\"]*)\" \}", inhalt)
+            if not teile:
+                text = text[: treffer.start()] + text[treffer.end() :]
+                continue
+
+            neu = []
+            for i, titel in enumerate(teile):
+                if i in indizes:
+                    neu.append('{ titel: "' + titel + '", zahl: true }')
+                else:
+                    neu.append('{ titel: "' + titel + '" }')
+
+            ersetzt = "spalten={[" + ", ".join(neu) + "]}"
+            text = (
+                text[: letzte.start()]
+                + ersetzt
+                + text[letzte.end() : treffer.start()]
+                + text[treffer.end() :]
+            )
+
+    return marker_aufloesen(text)
+
+
+def datei_umbauen(pfad):
+    s = io.open(pfad, encoding="utf-8").read()
+    original = s
+
+    # --- Komponentennamen ---
+    s = s.replace("<Karte", "<Tafel").replace("</Karte>", "</Tafel>")
+    s = s.replace("<Fehlerhinweis", "<Hinweis ton=\"hinweis\"")
+    s = s.replace("<Seitenkopf", "<Seitenkopf")
+
+    # --- Importe ---
+    s = re.sub(r"\bKarte\b(?=,|\s*\})", "Tafel", s)
+    s = re.sub(r"\bFehlerhinweis\b(?=,|\s*\})", "Hinweis", s)
+
+    # --- Eigenschaften, die es nicht mehr gibt ---
+    s = re.sub(r"\n\s*verzoegerung=\{\d+\}", "", s)
+    s = re.sub(r"\n\s*farbe=\{ENERGIE_FARBEN\.\w+\}", "", s)
+    s = re.sub(r"\s*mitZeichen=\{false\}", ' punkt={false}', s)
+
+    # beschreibung -> hinweis (nur als JSX-Eigenschaft)
+    s = re.sub(r"\bbeschreibung=", "hinweis=", s)
+
+    # Angabe: einspaltig -> untereinander
+    s = s.replace("einspaltig", "untereinander")
+
+    # Zelle: gedaempft -> leise
+    s = re.sub(r"(<Zelle[^>]*?)\bgedaempft\b", r"\1leise", s)
+
+    # Tabellen
+    s = spalten_umbauen(s)
+
+    if s != original:
+        io.open(pfad, "w", encoding="utf-8", newline="\n").write(s)
+        return True
+    return False
+
+
+geaendert = []
+for wurzel, _, dateien in os.walk(WURZEL):
+    for name in dateien:
+        if not name.endswith((".tsx", ".ts")):
+            continue
+        pfad = os.path.join(wurzel, name).replace(os.sep, "/")
+        if pfad in AUSNAHMEN:
+            continue
+        if datei_umbauen(pfad):
+            geaendert.append(pfad)
+
+for p in geaendert:
+    print("  " + p)
+print(str(len(geaendert)) + " Dateien umgestellt")

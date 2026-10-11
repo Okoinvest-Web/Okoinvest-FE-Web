@@ -1,0 +1,88 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { db } from "@/lib/data";
+import { date, LEAD_STATUS_LABEL, money, STAGE_LABEL } from "@/lib/format";
+import { Avatar, Badge, Field, PageHeader } from "@/components/ui";
+
+export default async function CustomerPage({ params }: PageProps<"/customers/[name]">) {
+  const customer = await db().getCustomer(decodeURIComponent((await params).name));
+  if (!customer) notFound();
+
+  const [opps, contacts] = await Promise.all([
+    db().listOpportunities({ filters: { customer_name: customer.customer_name } }),
+    db().listContacts({ filters: { company_name: customer.customer_name } }),
+  ]);
+
+  return (
+    <>
+      <PageHeader title={customer.customer_name} crumbs={[{ href: "/customers", label: "Kunden" }]} />
+      <div className="grid lg:grid-cols-[1fr_360px]">
+        <div className="min-w-0 p-5">
+          <div className="flex items-center gap-4">
+            <Avatar name={customer.customer_name} size="lg" />
+            <div>
+              <h2 className="text-lg font-semibold">{customer.customer_name}</h2>
+              <p className="text-gray-500">
+                {customer.customer_group} · {customer.territory}
+              </p>
+            </div>
+          </div>
+
+          <section className="mt-6">
+            <h3 className="mb-2 font-medium">Chancen</h3>
+            {opps.length === 0 ? (
+              <p className="text-gray-500">Keine Chancen.</p>
+            ) : (
+              <ul className="divide-y divide-gray-100 rounded-md border border-gray-200">
+                {opps.map((o) => (
+                  <li key={o.name}>
+                    <Link href={`/opportunities/${encodeURIComponent(o.name)}`} className="flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50">
+                      <span className="font-medium">{o.title}</span>
+                      <span className="text-gray-500">{STAGE_LABEL[o.sales_stage]}</span>
+                      <Badge value={o.status} label={LEAD_STATUS_LABEL[o.status]} />
+                      <span className="ml-auto tabular-nums">{money(o.opportunity_amount, o.currency)}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
+          <section className="mt-6">
+            <h3 className="mb-2 font-medium">Kontakte</h3>
+            {contacts.length === 0 ? (
+              <p className="text-gray-500">Keine Kontakte.</p>
+            ) : (
+              <ul className="divide-y divide-gray-100 rounded-md border border-gray-200">
+                {contacts.map((c) => (
+                  <li key={c.name} className="flex items-center gap-3 px-3 py-2.5">
+                    <Avatar name={c.full_name} />
+                    <span className="font-medium">{c.full_name}</span>
+                    <span className="text-gray-500">{c.designation}</span>
+                    <span className="ml-auto text-gray-700">{c.email_id}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        </div>
+        <aside className="border-l border-gray-200 p-5">
+          <h3 className="mb-2 font-medium">Details</h3>
+          <dl>
+            <Field label="Typ">{customer.customer_type === "Company" ? "Firma" : "Privatperson"}</Field>
+            <Field label="E-Mail">{customer.email_id}</Field>
+            <Field label="Telefon">{customer.mobile_no}</Field>
+            <Field label="Website">
+              {customer.website && (
+                <a href={customer.website} target="_blank" rel="noreferrer" className="text-blue-700 hover:underline">
+                  {customer.website.replace(/^https?:\/\//, "")}
+                </a>
+              )}
+            </Field>
+            <Field label="Kunde seit">{date(customer.creation)}</Field>
+          </dl>
+        </aside>
+      </div>
+    </>
+  );
+}

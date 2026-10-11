@@ -1,0 +1,221 @@
+<template>
+  <div>
+    <PageHeader title="Changes" :subtitle="untertitel">
+      <template #actions>
+        <FormControl v-model="zustand" type="select" :options="zustandOptionen" />
+      </template>
+    </PageHeader>
+
+    <div class="p-6">
+      <!-- Der Ablauf als Leiste, damit klar ist, wo ein Antrag steht -->
+      <div class="mb-6 flex flex-wrap items-center gap-2">
+        <template v-for="(schritt, i) in ABLAUF" :key="schritt">
+          <div class="rounded-lg border border-outline-gray-2 bg-surface-white px-3 py-2">
+            <p class="text-sm text-ink-gray-6">{{ ZUSTAND[schritt] }}</p>
+            <p class="text-xl font-semibold text-ink-gray-9">{{ anzahlJeZustand[schritt] || 0 }}</p>
+          </div>
+          <span v-if="i < ABLAUF.length - 1" class="text-ink-gray-4">→</span>
+        </template>
+        <div class="ml-2 rounded-lg border border-outline-gray-2 bg-surface-white px-3 py-2">
+          <p class="text-sm text-ink-gray-6">Abgelehnt</p>
+          <p class="text-xl font-semibold text-ink-gray-9">{{ anzahlJeZustand.rejected || 0 }}</p>
+        </div>
+      </div>
+
+      <div class="space-y-4">
+        <article
+          v-for="antrag in antraege.data || []"
+          :key="antrag.name"
+          class="rounded-lg border border-outline-gray-2 bg-surface-white p-4"
+        >
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <div class="min-w-0">
+              <p class="text-base font-medium text-ink-gray-9">{{ antrag.title }}</p>
+              <p class="mt-0.5 text-sm text-ink-gray-6">
+                {{ antrag.name }} · {{ antrag.target_object }} ·
+                Ticket {{ antrag.ticket || '–' }}
+              </p>
+            </div>
+            <div class="flex shrink-0 flex-wrap items-center gap-3">
+              <StatusDot :level="risikoStufe(antrag.risk)" :text="'Risiko ' + RISIKO[antrag.risk]" />
+              <Badge :theme="zustandThema(antrag.change_state)">
+                {{ ZUSTAND[antrag.change_state] || antrag.change_state }}
+              </Badge>
+            </div>
+          </div>
+
+          <dl class="mt-3 grid grid-cols-1 gap-x-6 gap-y-2 text-sm md:grid-cols-2">
+            <div>
+              <dt class="text-ink-gray-5">Rückfallplan</dt>
+              <dd class="text-ink-gray-8">{{ antrag.rollback_plan || '–' }}</dd>
+            </div>
+            <div>
+              <dt class="text-ink-gray-5">Verifikation</dt>
+              <dd class="text-ink-gray-8">{{ antrag.verification || '–' }}</dd>
+            </div>
+            <div>
+              <dt class="text-ink-gray-5">Wartungsfenster</dt>
+              <dd class="tabular-nums text-ink-gray-8">
+                <span v-if="antrag.window_start">
+                  {{ antrag.window_start }} – {{ antrag.window_end }}
+                </span>
+                <span v-else class="text-ink-gray-4">nicht festgelegt</span>
+              </dd>
+            </div>
+            <div>
+              <dt class="text-ink-gray-5">Freigabe</dt>
+              <dd class="text-ink-gray-8">
+                <span v-if="antrag.approved_by">
+                  {{ antrag.approved_by }}
+                  <span v-if="antrag.second_approver"> und {{ antrag.second_approver }}</span>
+                </span>
+                <span v-else class="text-ink-gray-4">offen</span>
+              </dd>
+            </div>
+          </dl>
+
+          <div class="mt-3 flex flex-wrap items-center gap-3 border-t border-outline-gray-2 pt-3">
+            <StatusDot
+              v-if="antrag.perimeter"
+              level="warning"
+              text="Perimeter – Umsetzung ausschließlich manuell"
+              klein
+            />
+            <StatusDot
+              v-if="antrag.missing.length"
+              level="warning"
+              :text="'Fehlt: ' + antrag.missing.join(', ')"
+              klein
+            />
+            <StatusDot
+              v-if="antrag.needs_second_approver && !antrag.has_second_approver"
+              level="warning"
+              text="Vier-Augen-Freigabe erforderlich"
+              klein
+            />
+
+            <div class="ml-auto flex flex-wrap gap-2">
+              <Button
+                v-for="naechster in antrag.next_states"
+                :key="naechster"
+                size="sm"
+                :variant="naechster === 'rejected' ? 'subtle' : 'solid'"
+                @click="wechsle(antrag, naechster)"
+              >
+                {{ AKTION[naechster] || naechster }}
+              </Button>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <p v-if="antraege.loading" class="py-8 text-center text-sm text-ink-gray-5">Wird geladen …</p>
+      <p
+        v-else-if="!(antraege.data || []).length"
+        class="py-8 text-center text-sm text-ink-gray-5"
+      >
+        Kein Antrag mit diesem Filter.
+      </p>
+
+      <p class="mt-6 text-xs text-ink-gray-4">
+        Ablauf nach Fachkonzept 2.10: Antrag → Risikobewertung → Freigabe →
+        Umsetzung → Verifikation. Zwei Regeln greifen bereits hier: niemand
+        gibt seinen eigenen Antrag frei, und hohes Risiko verlangt zwei
+        verschiedene Freigebende. Im Betrieb kommt FIDO2-Step-up dazu – und die
+        Umsetzung am Perimeter bleibt in jedem Fall manuell.
+      </p>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed, ref, watch } from 'vue'
+import { Badge, Button, FormControl, createResource, toast } from 'frappe-ui'
+import PageHeader from '@/components/PageHeader.vue'
+import StatusDot from '@/components/StatusDot.vue'
+
+const ABLAUF = ['draft', 'review', 'approved', 'implemented', 'verified']
+
+const ZUSTAND = {
+  draft: 'Entwurf',
+  review: 'In Prüfung',
+  approved: 'Freigegeben',
+  implemented: 'Umgesetzt',
+  verified: 'Verifiziert',
+  rejected: 'Abgelehnt',
+}
+
+const AKTION = {
+  draft: 'Zurück zum Entwurf',
+  review: 'Zur Prüfung',
+  approved: 'Freigeben',
+  implemented: 'Als umgesetzt markieren',
+  verified: 'Verifizieren',
+  rejected: 'Ablehnen',
+}
+
+const RISIKO = { high: 'hoch', medium: 'mittel', low: 'niedrig' }
+
+const zustand = ref('')
+
+const antraege = createResource({
+  url: 'netops.api.change.change_list',
+  makeParams: () => ({ state: zustand.value || null }),
+  auto: true,
+})
+
+const alle = createResource({ url: 'netops.api.change.change_list', auto: true })
+const wechseln = createResource({ url: 'netops.api.change.set_change_state' })
+
+watch(zustand, () => antraege.fetch())
+
+const zustandOptionen = [
+  { label: 'Alle Zustände', value: '' },
+  ...ABLAUF.map((z) => ({ label: ZUSTAND[z], value: z })),
+  { label: 'Abgelehnt', value: 'rejected' },
+]
+
+const anzahlJeZustand = computed(() => {
+  const zaehler = {}
+  for (const antrag of alle.data || []) {
+    zaehler[antrag.change_state] = (zaehler[antrag.change_state] || 0) + 1
+  }
+  return zaehler
+})
+
+const untertitel = computed(() => {
+  const liste = alle.data || []
+  const offen = liste.filter((c) => !['verified', 'rejected'].includes(c.change_state)).length
+  return liste.length + ' Anträge · ' + offen + ' in Bearbeitung'
+})
+
+async function wechsle(antrag, neuerZustand) {
+  try {
+    const ergebnis = await wechseln.submit({ name: antrag.name, state: neuerZustand })
+    toast.create({
+      message: ergebnis.pending || 'Zustand: ' + (ZUSTAND[ergebnis.change_state] || ergebnis.change_state),
+      type: ergebnis.pending ? 'info' : 'success',
+    })
+  } catch (fehler) {
+    // Die Regeln des Ablaufs melden sich hier – das ist der Sinn der Übung.
+    toast.create({ message: String(fehler.message || fehler), type: 'error' })
+  }
+  antraege.fetch()
+  alle.fetch()
+}
+
+function risikoStufe(risiko) {
+  return { high: 'critical', medium: 'warning', low: 'neutral' }[risiko] || 'neutral'
+}
+
+function zustandThema(zustandWert) {
+  return {
+    draft: 'gray',
+    review: 'orange',
+    approved: 'blue',
+    implemented: 'blue',
+    verified: 'green',
+    rejected: 'red',
+  }[zustandWert] || 'gray'
+}
+</script>

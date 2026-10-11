@@ -1,0 +1,335 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+
+import { IconPfeilLinks, IconPfeilRechts } from "@/components/icon";
+import { Tabelle, Summenzeile, Zeile, Zelle } from "@/components/tabelle";
+import {
+  Angabe,
+  Hinweis,
+  Kennzahl,
+  Kennzahlenleiste,
+  LeerZustand,
+  Seitenkopf,
+  Status,
+  Tafel,
+} from "@/components/ui";
+import { kuerzeZaehlpunkt } from "@/lib/at/zaehlpunkt";
+import { ladeBelege, ladeGemeinschaft, ladeLauf } from "@/lib/daten/eeg";
+import { NETZ_ARBEITSPREIS_CT, NETZRABATT } from "@/lib/eeg/abrechnung";
+import {
+  formatDatum,
+  formatDatumZeit,
+  formatEnergie,
+  formatGeld,
+  formatProzent,
+  formatZahl,
+} from "@/lib/format";
+import { hatRecht } from "@/lib/sicherheit/rollen";
+import { requireRecht } from "@/lib/session";
+
+import { LaufAktionen } from "./aktionen-leiste";
+
+export default async function LaufSeite({
+  params,
+}: {
+  params: Promise<{ lauf: string }>;
+}) {
+  const benutzer = await requireRecht("gemeinschaft.lesen");
+  const darfVerwalten = hatRecht([benutzer.rolle], "gemeinschaft.verwalten");
+
+  const { lauf: laufId } = await params;
+  const lauf = ladeLauf(decodeURIComponent(laufId));
+  if (!lauf) notFound();
+
+  const gemeinschaft = ladeGemeinschaft(lauf.gemeinschaft_id);
+  const belege = ladeBelege(lauf.id);
+
+  const rechnungen = belege.filter((b) => b.art === "Rechnung");
+  const gutschriften = belege.filter((b) => b.art === "Gutschrift");
+
+  const von = new Date(lauf.zeitraum_von);
+  const bis = new Date(new Date(lauf.zeitraum_bis).getTime() - 1);
+  const quartal = Math.floor(von.getMonth() / 3) + 1;
+
+  const mengeBezogen = rechnungen.reduce((s, b) => s + b.menge_kwh, 0);
+  const mengeGeliefert = gutschriften.reduce((s, b) => s + b.menge_kwh, 0);
+  const summeRechnungen = rechnungen.reduce((s, b) => s + b.netto, 0);
+  const summeGutschriften = gutschriften.reduce((s, b) => s + b.netto, 0);
+  const ersparnis = belege.reduce((s, b) => s + b.netzentgelt_ersparnis, 0);
+
+  const menge = formatEnergie(mengeBezogen);
+  const rabatt = NETZRABATT[gemeinschaft?.reichweite ?? "Lokal"] ?? 0;
+
+  return (
+    <div className="space-y-5">
+      <Seitenkopf
+        titel={`Abrechnung ${von.getFullYear()} Q${quartal}`}
+        hinweis={`${gemeinschaft?.bezeichnung} · ${formatDatum(von)} bis ${formatDatum(bis)} · Modell ${lauf.modell}`}
+        zurueck={
+          <Link
+            href="/portal/gemeinschaft"
+            className="t-leise inline-flex items-center gap-1.5 hover:underline"
+          >
+            <IconPfeilLinks groesse={14} />
+            Energiegemeinschaft
+          </Link>
+        }
+        aktion={
+          <>
+            <Status
+              ton={
+                lauf.status === "Festgeschrieben"
+                  ? "gut"
+                  : lauf.status === "Storniert"
+                    ? "neutral"
+                    : "akzent"
+              }
+            >
+              {lauf.status}
+            </Status>
+            {darfVerwalten && (
+              <LaufAktionen laufId={lauf.id} status={lauf.status} />
+            )}
+          </>
+        }
+      />
+
+      {lauf.status === "Storniert" && (
+        <Hinweis ton="kritisch" titel="Dieser Lauf wurde storniert">
+          {lauf.storno_grund}
+          {lauf.storniert_am && ` (${formatDatumZeit(lauf.storniert_am)})`}
+        </Hinweis>
+      )}
+
+      {lauf.status === "Berechnet" && darfVerwalten && (
+        <Hinweis ton="hinweis" titel="Noch nicht festgeschrieben">
+          Die Belege sind gerechnet, aber noch veränderbar. Solange der Lauf
+          nicht festgeschrieben ist, können Sie ihn mit geänderten Vorgaben neu
+          rechnen. Erst mit dem Festschreiben werden die Belege unveränderlich.
+        </Hinweis>
+      )}
+
+      <Kennzahlenleiste>
+        <Kennzahl
+          label="In der Gemeinschaft verteilt"
+          wert={menge.wert}
+          einheit={menge.einheit}
+          akzent
+        />
+        <Kennzahl
+          label="Rechnungen"
+          wert={formatGeld(summeRechnungen)}
+          hinweis={`${rechnungen.length} Belege, netto`}
+        />
+        <Kennzahl
+          label="Gutschriften"
+          wert={formatGeld(summeGutschriften)}
+          hinweis={`${gutschriften.length} Belege, netto`}
+        />
+        <Kennzahl
+          label="Deckungsbeitrag"
+          wert={formatGeld(summeRechnungen - summeGutschriften)}
+          hinweis="verbleibt der Gemeinschaft"
+        />
+      </Kennzahlenleiste>
+
+      {/* ---------------- Rechnungen ---------------- */}
+      <Tafel
+        titel="Rechnungen an Verbraucher"
+        hinweis={`Bezug aus der Gemeinschaft zu ${formatZahl(lauf.preis_ct_kwh, 2)} ct/kWh`}
+        dicht
+      >
+        {rechnungen.length === 0 ? (
+          <div className="p-4">
+            <LeerZustand text="Keine Rechnungen in diesem Lauf." />
+          </div>
+        ) : (
+          <Tabelle
+            spalten={[
+              { titel: "Beleg" },
+              { titel: "Mitglied" },
+              { titel: "Zählpunkt", schmalAusblenden: true },
+              { titel: "Menge", zahl: true },
+              { titel: "Netto", zahl: true },
+              { titel: "USt", zahl: true, schmalAusblenden: true },
+              { titel: "Brutto", zahl: true },
+              { titel: "", breite: "3rem" },
+            ]}
+          >
+            {rechnungen.map((beleg) => (
+              <Zeile key={beleg.id} gedaempft={beleg.status === "Storniert"}>
+                <Zelle>
+                  <span className="font-mono text-[0.75rem]">{beleg.nummer}</span>
+                </Zelle>
+                <Zelle>{beleg.firma ?? "–"}</Zelle>
+                <Zelle leise schmalAusblenden>
+                  <span className="font-mono text-[0.75rem]">
+                    {kuerzeZaehlpunkt(beleg.bezeichnung)}
+                  </span>
+                </Zelle>
+                <Zelle zahl>
+                  {formatZahl(beleg.menge_kwh, 0)}
+                  <span className="t-mikro"> kWh</span>
+                </Zelle>
+                <Zelle zahl>{formatGeld(beleg.netto)}</Zelle>
+                <Zelle zahl leise schmalAusblenden>
+                  {formatGeld(beleg.ust_betrag)}
+                </Zelle>
+                <Zelle zahl>{formatGeld(beleg.brutto)}</Zelle>
+                <Zelle>
+                  <Link
+                    href={`/portal/gemeinschaft/belege/${beleg.id}`}
+                    className="inline-flex opacity-40 transition-opacity group-hover:opacity-100"
+                    style={{ color: "var(--t-normal)" }}
+                    aria-label={`Beleg ${beleg.nummer} öffnen`}
+                  >
+                    <IconPfeilRechts groesse={15} />
+                  </Link>
+                </Zelle>
+              </Zeile>
+            ))}
+
+            <Summenzeile>
+              <Zelle>Summe</Zelle>
+              <Zelle>{rechnungen.length} Belege</Zelle>
+              <Zelle schmalAusblenden>{null}</Zelle>
+              <Zelle zahl>
+                {formatZahl(mengeBezogen, 0)}
+                <span className="t-mikro"> kWh</span>
+              </Zelle>
+              <Zelle zahl>{formatGeld(summeRechnungen)}</Zelle>
+              <Zelle zahl schmalAusblenden>
+                {formatGeld(rechnungen.reduce((s, b) => s + b.ust_betrag, 0))}
+              </Zelle>
+              <Zelle zahl>
+                {formatGeld(rechnungen.reduce((s, b) => s + b.brutto, 0))}
+              </Zelle>
+              <Zelle>{null}</Zelle>
+            </Summenzeile>
+          </Tabelle>
+        )}
+      </Tafel>
+
+      {/* ---------------- Gutschriften ---------------- */}
+      <Tafel
+        titel="Gutschriften an Erzeuger"
+        hinweis={`Lieferung in die Gemeinschaft zu ${formatZahl(lauf.erzeuger_ct_kwh, 2)} ct/kWh`}
+        dicht
+      >
+        {gutschriften.length === 0 ? (
+          <div className="p-4">
+            <LeerZustand text="Keine Gutschriften in diesem Lauf." />
+          </div>
+        ) : (
+          <Tabelle
+            spalten={[
+              { titel: "Beleg" },
+              { titel: "Mitglied" },
+              { titel: "Zählpunkt", schmalAusblenden: true },
+              { titel: "Menge", zahl: true },
+              { titel: "Netto", zahl: true },
+              { titel: "Brutto", zahl: true },
+              { titel: "", breite: "3rem" },
+            ]}
+          >
+            {gutschriften.map((beleg) => (
+              <Zeile key={beleg.id} gedaempft={beleg.status === "Storniert"}>
+                <Zelle>
+                  <span className="font-mono text-[0.75rem]">{beleg.nummer}</span>
+                </Zelle>
+                <Zelle>{beleg.firma ?? "–"}</Zelle>
+                <Zelle leise schmalAusblenden>
+                  <span className="font-mono text-[0.75rem]">
+                    {kuerzeZaehlpunkt(beleg.bezeichnung)}
+                  </span>
+                </Zelle>
+                <Zelle zahl>
+                  {formatZahl(beleg.menge_kwh, 0)}
+                  <span className="t-mikro"> kWh</span>
+                </Zelle>
+                <Zelle zahl>{formatGeld(beleg.netto)}</Zelle>
+                <Zelle zahl>{formatGeld(beleg.brutto)}</Zelle>
+                <Zelle>
+                  <Link
+                    href={`/portal/gemeinschaft/belege/${beleg.id}`}
+                    className="inline-flex opacity-40 transition-opacity group-hover:opacity-100"
+                    style={{ color: "var(--t-normal)" }}
+                    aria-label={`Beleg ${beleg.nummer} öffnen`}
+                  >
+                    <IconPfeilRechts groesse={15} />
+                  </Link>
+                </Zelle>
+              </Zeile>
+            ))}
+
+            <Summenzeile>
+              <Zelle>Summe</Zelle>
+              <Zelle>{gutschriften.length} Belege</Zelle>
+              <Zelle schmalAusblenden>{null}</Zelle>
+              <Zelle zahl>
+                {formatZahl(mengeGeliefert, 0)}
+                <span className="t-mikro"> kWh</span>
+              </Zelle>
+              <Zelle zahl>{formatGeld(summeGutschriften)}</Zelle>
+              <Zelle zahl>
+                {formatGeld(gutschriften.reduce((s, b) => s + b.brutto, 0))}
+              </Zelle>
+              <Zelle>{null}</Zelle>
+            </Summenzeile>
+          </Tabelle>
+        )}
+      </Tafel>
+
+      {/* ---------------- Vorgaben und Nachweis ---------------- */}
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+        <Tafel titel="Vorgaben dieses Laufs">
+          <dl className="space-y-0.5">
+            <Angabe label="Aufteilungsmodell">{lauf.modell}</Angabe>
+            <Angabe label="Bezugspreis Verbraucher">
+              {formatZahl(lauf.preis_ct_kwh, 2)} ct/kWh
+            </Angabe>
+            <Angabe label="Gutschrift Erzeuger">
+              {formatZahl(lauf.erzeuger_ct_kwh, 2)} ct/kWh
+            </Angabe>
+            <Angabe label="Umsatzsteuer">
+              {formatProzent(lauf.ust_satz, 0)}
+            </Angabe>
+            <Angabe label="Angelegt am">{formatDatumZeit(lauf.angelegt_am)}</Angabe>
+            {lauf.berechnet_am && (
+              <Angabe label="Berechnet am">
+                {formatDatumZeit(lauf.berechnet_am)}
+              </Angabe>
+            )}
+            {lauf.festgeschrieben_am && (
+              <Angabe label="Festgeschrieben am">
+                {formatDatumZeit(lauf.festgeschrieben_am)}
+              </Angabe>
+            )}
+          </dl>
+          <p className="t-mikro mt-3 leading-relaxed">
+            Die Vorgaben sind im Lauf festgehalten. Werden sie später geändert,
+            bleiben die Belege dieses Laufs davon unberührt.
+          </p>
+        </Tafel>
+
+        <Tafel titel="Ersparnis beim Netznutzungsentgelt">
+          <dl className="space-y-0.5">
+            <Angabe label="Arbeitspreis Netz">
+              {formatZahl(NETZ_ARBEITSPREIS_CT, 2)} ct/kWh
+            </Angabe>
+            <Angabe label="Rabatt">{formatProzent(rabatt * 100, 0)}</Angabe>
+            <Angabe label="Begünstigte Menge">
+              {formatZahl(mengeBezogen, 0)} kWh
+            </Angabe>
+            <Angabe label="Ersparnis gesamt">{formatGeld(ersparnis)}</Angabe>
+          </dl>
+          <p className="t-mikro mt-3 leading-relaxed">
+            Die Ersparnis ist keine Zahlung der Gemeinschaft, sondern eine
+            geringere Rechnung des Netzbetreibers. Sie wird deshalb nur
+            nachrichtlich ausgewiesen und nicht in die Belegsummen eingerechnet.
+          </p>
+        </Tafel>
+      </div>
+    </div>
+  );
+}

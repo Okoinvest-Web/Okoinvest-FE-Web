@@ -1,0 +1,128 @@
+/** @type {import('tailwindcss').Config} */
+
+/**
+ * Laubgrün der Marke. Identisch zu den Tokens der Website (`--color-ov-*`).
+ * `ov-500` (#669933) ist die Signalfarbe des Logos, `ov-600` die Flächenfarbe
+ * für Schaltflächen — sie trägt weißen Text mit ausreichendem Kontrast.
+ */
+const ov = {
+  50: '#f4f9ee',
+  100: '#e6f1d8',
+  200: '#cde3b1',
+  300: '#aed083',
+  400: '#8cba58',
+  500: '#669933',
+  600: '#558227',
+  700: '#436621',
+  800: '#37521e',
+  900: '#2f461c',
+}
+
+/** Dunkle Zweitfarbe der Marke — Kopfflächen, dunkles Design, Info-Status. */
+const navy = {
+  50: '#eef4fb',
+  100: '#d9e6f5',
+  200: '#b2cbe9',
+  300: '#7fa7d6',
+  400: '#4a7cbd',
+  500: '#1f5aa1',
+  600: '#0b4488',
+  700: '#003473',
+  800: '#03285a',
+  900: '#041d42',
+  950: '#03122b',
+}
+
+/** Neutralachse der Marke: leicht blaustichiges Grau für Text und Ränder. */
+const ink = {
+  50: '#f7f8fa',
+  100: '#eef0f4',
+  200: '#dfe3ea',
+  300: '#c4cad5',
+  400: '#97a0b0',
+  500: '#6b7486',
+  600: '#4e5667',
+  700: '#394050',
+  800: '#252b37',
+  900: '#151a24',
+}
+
+/** Ruhiger Papierton für Flächen, die sich von Weiß absetzen sollen. */
+const sand = {
+  50: '#fbfaf6',
+  100: '#f5f3ea',
+}
+
+/**
+ * Die App war auf Tailwinds `slate` gebaut (gut 600 Stellen in Ansichten und
+ * Komponenten). Statt jede davon anzufassen, zeigt `slate` auf die Neutralen
+ * der Marke: die hellen Stufen auf `ink`, die dunklen auf Navy-Töne. So wird
+ * das dunkle Design marineblau statt grau (NFA-025 bleibt erhalten).
+ *
+ * Neu geschriebene Ansichten verwenden bitte direkt `ink-*` und `navy-*`.
+ */
+const slate = {
+  50: ink[50],
+  100: ink[100],
+  200: ink[200],
+  300: ink[300],
+  400: ink[400],
+  500: ink[500],
+  600: ink[600],
+  700: '#223a56',
+  800: '#132840',
+  900: '#0a1c33',
+  950: navy[950],
+}
+
+export default {
+  content: ['./index.html', './src/**/*.{vue,ts}'],
+  darkMode: 'class',
+  theme: {
+    extend: {
+      colors: {
+        ov,
+        navy,
+        ink,
+        sand,
+        slate,
+        /**
+         * Altbestand: `marke-*` bleibt als Alias auf das Laubgrün bestehen,
+         * damit vorhandene Klassen ohne Umschreiben auf die Markenfarbe
+         * umschwenken. Neue Ansichten schreiben `ov-*`.
+         */
+        marke: ov,
+        // Statusfarben (identisch zu utils/jinja.py, damit PDF und UI übereinstimmen)
+        ok: ov[600],
+        warnung: '#f59e0b',
+        fehler: '#dc2626',
+        offen: ink[400],
+      },
+      fontFamily: {
+        sans: ['Inter Variable', 'Inter', 'system-ui', '-apple-system', 'Segoe UI', 'sans-serif'],
+        // Überschriften und Kennzahlen — wie auf der Website
+        display: ['Manrope Variable', 'Manrope', 'Inter Variable', 'system-ui', 'sans-serif'],
+      },
+      spacing: {
+        // Mindestgröße für Touch-Ziele mit Arbeitshandschuhen (NFA-023)
+        tap: '44px',
+      },
+      maxWidth: {
+        feld: '52rem',
+      },
+      borderRadius: {
+        '4xl': '2rem',
+      },
+      boxShadow: {
+        // Flächen liegen flach auf; die Kante macht der Ring, nicht der Schatten.
+        karte: '0 1px 2px rgb(3 18 43 / 0.04), 0 6px 20px -8px rgb(3 18 43 / 0.10)',
+        schwebe: '0 2px 6px -2px rgb(3 18 43 / 0.06), 0 24px 48px -16px rgb(3 18 43 / 0.18)',
+      },
+      screens: {
+        tablet: '768px',
+        desktop: '1180px',
+      },
+    },
+  },
+  plugins: [],
+}

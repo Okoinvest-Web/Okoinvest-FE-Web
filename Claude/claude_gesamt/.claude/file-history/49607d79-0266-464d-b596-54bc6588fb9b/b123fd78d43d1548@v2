@@ -1,0 +1,223 @@
+import { beforeEach, describe, expect, it } from 'vitest'
+import { mockRequest, resetMockData } from '@/api/mock/server.js'
+import { seedAuditLog } from '@/api/mock/seed-audit.js'
+
+const ruf = (url, params) => mockRequest({ url, params })
+
+beforeEach(() => {
+  resetMockData()
+  seedAuditLog()
+})
+
+describe('netops.api.power.power_overview', () => {
+  it('erkennt zwei Netzteile am selben Strang als fehlende Redundanz', async () => {
+    // Der Fall, den eine reine Zählung übersieht: zwei Netzteile, ein Strang.
+    const strom = await ruf('netops.api.power.power_overview', {})
+    const host = strom.devices.find((g) => g.device === 'SRV-PVE-02')
+    expect(host.connections).toHaveLength(2)
+    expect(host.feeds).toEqual(['A'])
+    expect(host.redundant).toBe(false)
+    expect(host.reasons.join(' ')).toMatch(/Strang A/)
+  })
+
+  it('erkennt ein Gerät mit nur einem Netzteil', async () => {
+    const strom = await ruf('netops.api.power.power_overview', {})
+    const nas = strom.devices.find((g) => g.device === 'NAS-TN-01')
+    expect(nas.redundant).toBe(false)
+    expect(nas.reasons.join(' ')).toMatch(/Nur ein Netzteil/)
+  })
+
+  it('bestätigt echte Redundanz über zwei Stränge', async () => {
+    const strom = await ruf('netops.api.power.power_overview', {})
+    const fw = strom.devices.find((g) => g.device === 'FW-OS-01')
+    expect(fw.feeds).toEqual(['A', 'B'])
+    expect(fw.redundant).toBe(true)
+    expect(fw.reasons).toEqual([])
+  })
+
+  it('führt den Strompfad bis zur USV', async () => {
+    const strom = await ruf('netops.api.power.power_overview', {})
+    const fw = strom.devices.find((g) => g.device === 'FW-OS-01')
+    const pfad = fw.connections[0].path.map((p) => p.name)
+    expect(pfad).toEqual(['PDU-A1', 'USV-A'])
+  })
+
+  it('beanstandet eine USV mit zu kurzer Batterielaufzeit', async () => {
+    const strom = await ruf('netops.api.power.power_overview', {})
+    const usvB = strom.sources.find((q) => q.source_name === 'USV-B')
+    expect(usvB.level).toBe('critical')
+    expect(usvB.reasons.join(' ')).toMatch(/Batterielaufzeit/)
+    expect(usvB.reasons.join(' ')).toMatch(/Test/)
+  })
+})
+
+describe('netops.api.power.power_impact', () => {
+  it('reisst beim USV-Ausfall den ganzen Strang mit', async () => {
+    const w = await ruf('netops.api.power.power_impact', { source: 'USV-A' })
+    expect(w.affected_sources).toContain('PDU-A1')
+    expect(w.affected_sources).toContain('PDU-A2')
+  })
+
+  it('lässt redundant versorgte Geräte weiterlaufen', async () => {
+    const w = await ruf('netops.api.power.power_impact', { source: 'USV-A' })
+    const ausfall = w.fails.map((g) => g.device)
+    expect(ausfall).toContain('SRV-PVE-02')
+    expect(ausfall).toContain('NAS-TN-01')
+    expect(ausfall).not.toContain('FW-OS-01')
+
+    const weiter = w.survives.map((g) => g.device)
+    expect(weiter).toContain('FW-OS-01')
+    expect(weiter).toContain('SW-CORE-01')
+  })
+
+  it('betrifft bei einer einzelnen PDU weniger Geräte', async () => {
+    const usv = await ruf('netops.api.power.power_impact', { source: 'USV-A' })
+    const pdu = await ruf('netops.api.power.power_impact', { source: 'PDU-A1' })
+    expect(pdu.fails.length).toBeLessThan(usv.fails.length)
+  })
+
+  it('meldet eine unbekannte Quelle', async () => {
+    await expect(ruf('netops.api.power.power_impact', { source: 'USV-Z' })).rejects.toThrow(
+      /DoesNotExistError/,
+    )
+  })
+})
+
+describe('netops.api.netsvc.network_services', () => {
+  it('erkennt einen getrennten Tunnel und veraltete Verschlüsselung', async () => {
+    const netz = await ruf('netops.api.netsvc.network_services', {})
+    const ipsec = netz.tunnels.find((t) => t.tunnel_name === 'ipsec-partner')
+    expect(ipsec.level).toBe('critical')
+    expect(ipsec.reasons.join(' ')).toMatch(/nicht verbunden/)
+    expect(ipsec.reasons.join(' ')).toMatch(/Schwaches Verfahren/)
+  })
+
+  it('markiert eine Route über einen getrennten Tunnel als tot', async () => {
+    const netz = await ruf('netops.api.netsvc.network_services', {})
+    const tot = netz.routes.find((r) => r.interface === 'ipsec-partner')
+    expect(tot.level).toBe('critical')
+    expect(netz.summary.dead_routes).toBe(1)
+  })
+
+  it('erkennt eine versteckte SSID als Scheinsicherheit', async () => {
+    const netz = await ruf('netops.api.netsvc.network_services', {})
+    const iot = netz.wireless.find((w) => w.ssid === 'OV-IOT')
+    expect(iot.reasons.join(' ')).toMatch(/Versteckte SSID/)
+  })
+
+  it('wertet ein Gastnetz mit PSK nicht als Befund', async () => {
+    // Für Gäste ist ein gemeinsames Kennwort mit VLAN-Trennung vertretbar.
+    const netz = await ruf('netops.api.netsvc.network_services', {})
+    const gast = netz.wireless.find((w) => w.ssid === 'OEKOVOLT-GAST')
+    expect(gast.reasons.join(' ')).not.toMatch(/Gemeinsames Kennwort/)
+  })
+
+  it('gleicht interne DNS-Einträge gegen das IPAM ab', async () => {
+    const netz = await ruf('netops.api.netsvc.network_services', {})
+    const karteileiche = netz.dns.find((d) => d.record_name === 'nas.oekovolt.test')
+    expect(karteileiche.level).toBe('warning')
+    expect(karteileiche.reasons.join(' ')).toMatch(/IPAM/)
+
+    const passt = netz.dns.find((d) => d.record_name === 'erp.oekovolt.test')
+    expect(passt.level).toBe('ok')
+  })
+
+  it('prüft externe Einträge nicht gegen das IPAM', async () => {
+    // Öffentliche Adressen stehen nicht im internen IPAM - das wäre ein
+    // falscher Befund.
+    const netz = await ruf('netops.api.netsvc.network_services', {})
+    const extern = netz.dns.find((d) => d.record_name === 'www.oekovolt.test')
+    expect(extern.level).toBe('ok')
+  })
+})
+
+describe('netops.api.netsvc.floor_plan', () => {
+  it('verortet Dosen und Access Points im Raum', async () => {
+    const plan = await ruf('netops.api.netsvc.floor_plan', { site: 'SITE-0004' })
+    expect(plan.width_m).toBe(10)
+    const dosen = plan.items.filter((i) => i.kind === 'outlet')
+    expect(dosen).toHaveLength(2)
+    expect(plan.items.some((i) => i.kind === 'ap')).toBe(true)
+  })
+
+  it('löst auf, worauf eine Dose gepatcht ist', async () => {
+    const plan = await ruf('netops.api.netsvc.floor_plan', { site: 'SITE-0004' })
+    const gepatcht = plan.items.find((i) => i.ref === 'A02-D14')
+    expect(gepatcht.connected).toBe(true)
+    expect(gepatcht.peer_device).toBe('SW-ACC-01')
+    expect(gepatcht.peer_port).toBe('Port 5')
+
+    const frei = plan.items.find((i) => i.ref === 'A02-D15')
+    expect(frei.connected).toBe(false)
+  })
+
+  it('meldet einen Standort ohne hinterlegten Grundriss', async () => {
+    await expect(ruf('netops.api.netsvc.floor_plan', { site: 'SITE-0005' })).rejects.toThrow(
+      /kein Grundriss/,
+    )
+  })
+})
+
+describe('netops.api.netsvc.ticket_list', () => {
+  it('erkennt ein gerissenes SLA', async () => {
+    const tickets = await ruf('netops.api.netsvc.ticket_list', {})
+    const gerissen = tickets.filter((t) => t.sla_breached)
+    expect(gerissen).toHaveLength(1)
+    expect(gerissen[0].ticket_key).toBe('TCK-2210')
+    expect(gerissen[0].sla_remaining_hours).toBeLessThan(0)
+  })
+
+  it('rechnet SLA nur für offene Tickets', async () => {
+    const tickets = await ruf('netops.api.netsvc.ticket_list', {})
+    const geschlossen = tickets.find((t) => !t.open)
+    expect(geschlossen.sla_remaining_hours).toBeNull()
+    expect(geschlossen.sla_breached).toBe(false)
+  })
+
+  it('markiert Tickets ohne Bearbeiter', async () => {
+    const tickets = await ruf('netops.api.netsvc.ticket_list', {})
+    const ohne = tickets.filter((t) => t.unassigned)
+    expect(ohne.length).toBeGreaterThan(0)
+    expect(ohne.every((t) => t.open && !t.assignee)).toBe(true)
+  })
+
+  it('stellt offene und gerissene Tickets nach vorne', async () => {
+    const tickets = await ruf('netops.api.netsvc.ticket_list', {})
+    expect(tickets[0].open).toBe(true)
+    expect(tickets[0].sla_breached).toBe(true)
+    expect(tickets[tickets.length - 1].open).toBe(false)
+  })
+})
+
+describe('netops.api.netsvc.remote_overview', () => {
+  it('meldet eine Sitzung ohne Ticketbezug', async () => {
+    const fern = await ruf('netops.api.netsvc.remote_overview', {})
+    const ohne = fern.sessions.filter((s) => !s.ticket)
+    expect(ohne).toHaveLength(1)
+    expect(ohne[0].level).toBe('warning')
+    expect(ohne[0].reasons.join(' ')).toMatch(/Ticketbezug/)
+  })
+
+  it('kennzeichnet eine laufende Sitzung', async () => {
+    const fern = await ruf('netops.api.netsvc.remote_overview', {})
+    const laufend = fern.sessions.filter((s) => s.running)
+    expect(laufend).toHaveLength(1)
+    expect(laufend[0].duration_minutes).toBeNull()
+  })
+
+  it('meldet einen offline Agenten', async () => {
+    const fern = await ruf('netops.api.netsvc.remote_overview', {})
+    const offline = fern.agents.filter((a) => !a.online)
+    expect(offline).toHaveLength(1)
+    expect(offline[0].level).toBe('warning')
+    expect(offline[0].reasons.join(' ')).toMatch(/offline/)
+  })
+
+  it('bestätigt Aufzeichnung und Step-up für jede abgeschlossene Sitzung', async () => {
+    const fern = await ruf('netops.api.netsvc.remote_overview', {})
+    for (const sitzung of fern.sessions) {
+      expect(sitzung.recorded, sitzung.name).toBe(1)
+      expect(sitzung.step_up_ok, sitzung.name).toBe(1)
+    }
+  })
+})

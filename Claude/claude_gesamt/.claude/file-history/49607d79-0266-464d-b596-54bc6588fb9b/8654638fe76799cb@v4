@@ -1,0 +1,134 @@
+<template>
+  <div>
+    <PageHeader title="Verträge & Lizenzen" :subtitle="untertitel" />
+
+    <div class="p-6">
+      <section>
+        <h2 class="mb-3 text-base font-semibold text-ink-gray-8">Verträge</h2>
+        <DataTable
+          tabellen-id="ContractList-1"
+          :columns="vertragSpalten"
+          :rows="daten.data?.contracts || []"
+          :loading="daten.loading"
+        >
+          <template #zelle-contract_name="{ zeile }">
+            <span class="block text-ink-gray-9">{{ zeile.contract_name }}</span>
+            <span class="block text-sm text-ink-gray-5">{{ zeile.provider }}</span>
+          </template>
+          <template #zelle-notice="{ zeile }">
+            <!--
+              Der eigentliche Stichtag ist nicht das Vertragsende, sondern
+              Ende minus Kündigungsfrist. Danach verlängert sich der Vertrag.
+            -->
+            <StatusDot
+              v-if="zeile.notice_missed"
+              level="critical"
+              :text="'Frist am ' + zeile.notice_deadline + ' verstrichen'"
+              klein
+            />
+            <StatusDot
+              v-else-if="zeile.level === 'warning'"
+              level="warning"
+              :text="'kündbar bis ' + zeile.notice_deadline"
+              klein
+            />
+            <span v-else class="tabular-nums text-ink-gray-6">{{ zeile.notice_deadline }}</span>
+          </template>
+          <template #zelle-days_to_end="{ zeile }">
+            <span
+              class="tabular-nums"
+              :class="zeile.days_to_end < 90 ? 'text-ink-gray-9' : 'text-ink-gray-6'"
+            >
+              {{ zeile.days_to_end }}
+            </span>
+          </template>
+          <template #zelle-auto_renew="{ zeile }">
+            <Badge :theme="zeile.auto_renew ? 'orange' : 'gray'">
+              {{ zeile.auto_renew ? 'verlängert sich' : 'endet' }}
+            </Badge>
+          </template>
+          <template #zelle-cost_per_year="{ zeile }">
+            {{ zeile.cost_per_year.toLocaleString('de-AT') }} €
+          </template>
+        </DataTable>
+      </section>
+
+      <section class="mt-8">
+        <h2 class="mb-3 text-base font-semibold text-ink-gray-8">Lizenzen</h2>
+        <DataTable
+          tabellen-id="ContractList-2"
+          :columns="lizenzSpalten"
+          :rows="daten.data?.licenses || []"
+          :loading="daten.loading"
+        >
+          <template #zelle-license_name="{ zeile }">
+            <span class="block text-ink-gray-9">{{ zeile.license_name }}</span>
+            <span class="block text-sm text-ink-gray-5">{{ zeile.product }}</span>
+          </template>
+          <template #zelle-expiry_date="{ zeile }">
+            <StatusDot
+              v-if="zeile.expired"
+              level="critical"
+              :text="'abgelaufen am ' + zeile.expiry_date"
+              klein
+            />
+            <StatusDot
+              v-else-if="zeile.level === 'warning'"
+              level="warning"
+              :text="'läuft ab am ' + zeile.expiry_date"
+              klein
+            />
+            <span v-else class="tabular-nums text-ink-gray-6">{{ zeile.expiry_date }}</span>
+          </template>
+        </DataTable>
+      </section>
+
+      <p class="mt-6 text-xs text-ink-gray-4">
+        Entscheidend ist nicht das Vertragsende, sondern der Kündigungsstichtag – Ende minus Frist.
+        Ist der verstrichen und der Vertrag verlängert sich automatisch, steht das hier als
+        kritisch.
+      </p>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed } from 'vue'
+import { Badge, createResource } from 'frappe-ui'
+import PageHeader from '@/components/PageHeader.vue'
+import DataTable from '@/components/DataTable.vue'
+import StatusDot from '@/components/StatusDot.vue'
+
+const daten = createResource({ url: 'netops.api.docs.contract_list', auto: true })
+
+const vertragSpalten = [
+  { key: 'contract_name', label: 'Vertrag', width: '280px' },
+  { key: 'end_date', label: 'Ende', numeric: true, muted: true, width: '130px' },
+  { key: 'days_to_end', label: 'Tage', align: 'right', numeric: true, width: '90px' },
+  { key: 'notice', label: 'Kündigungsstichtag', width: '260px' },
+  { key: 'auto_renew', label: 'Verlängerung', width: '160px' },
+  { key: 'cost_per_year', label: 'Kosten/Jahr', align: 'right', numeric: true, width: '140px' },
+]
+
+const lizenzSpalten = [
+  { key: 'license_name', label: 'Lizenz', width: '320px' },
+  { key: 'seats', label: 'Plätze', align: 'right', numeric: true, width: '100px' },
+  { key: 'assigned_to', label: 'Zugeordnet', muted: true, width: '180px' },
+  { key: 'expiry_date', label: 'Gültig bis' },
+]
+
+const untertitel = computed(() => {
+  const d = daten.data
+  if (!d) return ''
+  const kritisch = d.contracts.filter((c) => c.level === 'critical').length
+  return (
+    d.contracts.length +
+    ' Verträge · ' +
+    d.licenses.length +
+    ' Lizenzen · ' +
+    d.yearly_cost.toLocaleString('de-AT') +
+    ' € pro Jahr' +
+    (kritisch ? ' · ' + kritisch + ' kritisch' : '')
+  )
+})
+</script>

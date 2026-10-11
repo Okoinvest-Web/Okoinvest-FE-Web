@@ -1,0 +1,130 @@
+import sys, os
+os.chdir(r"C:\Users\SALEADMIN\Downloads\crm-develop\crm-next")
+p = "src/app/(crm)/page.tsx"
+s = open(p, encoding="utf-8").read()
+
+pairs = [
+('''  const attention = hotLeads.length''', '''  // Abschlussprognose: gewichtetes Volumen offener Chancen je Monat (6 Monate ab jetzt)
+  const MONTH_LONG = new Intl.DateTimeFormat("de-DE", { month: "long", year: "numeric" });
+  const now = new Date();
+  const forecast = Array.from({ length: 6 }, (_, i) => {
+    const m = new Date(now.getFullYear(), now.getMonth() + i, 1);
+    const inMonth = open.filter((o) => {
+      if (!o.expected_closing) return false;
+      const d = new Date(o.expected_closing);
+      return d.getFullYear() === m.getFullYear() && d.getMonth() === m.getMonth();
+    });
+    return {
+      label: MONTH.format(m),
+      long: MONTH_LONG.format(m),
+      weighted: inMonth.reduce((s, o) => s + (o.opportunity_amount * o.probability) / 100, 0),
+      total: inMonth.reduce((s, o) => s + o.opportunity_amount, 0),
+      count: inMonth.length,
+    };
+  });
+  const maxForecast = Math.max(1, ...forecast.map((f) => f.weighted));
+
+  // Gewonnen / verloren: Quote, Volumen, häufigste Verlustgründe
+  const won = opps.filter((o) => o.status === "Converted");
+  const lost = opps.filter((o) => o.status === "Lost");
+  const winRate = won.length + lost.length ? Math.round((won.length / (won.length + lost.length)) * 100) : undefined;
+  const wonVolume = won.reduce((s, o) => s + o.opportunity_amount, 0);
+  const reasons = Object.entries(
+    lost.reduce<Record<string, number>>((acc, o) => {
+      const r = o.order_lost_reason || "Ohne Angabe";
+      acc[r] = (acc[r] ?? 0) + 1;
+      return acc;
+    }, {}),
+  ).sort((a, b) => b[1] - a[1]);
+  const recentClosed = [...won, ...lost].sort((a, b) => b.modified.localeCompare(a.modified)).slice(0, 4);
+
+  const attention = hotLeads.length'''),
+('''          <Stat label="Offene Aufgaben" value={todos.length} hint={overdue > 0 ? <span className="text-rose-600">{overdue} überfällig</span> : "Nichts überfällig"} />''',
+ '''          <Stat label="Gewinnquote" value={winRate === undefined ? "–" : `${winRate} %`} hint={`${won.length} gewonnen · ${lost.length} verloren`} />'''),
+('''        <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[1.35fr_1fr]">''', '''        <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-2">'''),
+('''          <Card>
+            <CardHeader title="Anstehende Abschlüsse" sub="45 Tage" />''', '''          <Card>
+            <CardHeader title="Abschlussprognose" sub="gewichtet, nächste 6 Monate" />
+            <div className="flex h-[212px] items-end gap-3 px-4 pb-3 pt-6" role="img" aria-label="Gewichtetes Abschlussvolumen je Monat">
+              {forecast.map((f) => (
+                <div key={f.long} className="group flex h-full flex-1 flex-col items-center justify-end gap-1.5" title={`${f.long}: ${money(f.weighted)} gewichtet · ${money(f.total)} gesamt · ${f.count} Chancen`}>
+                  <span className={`tnum text-[11px] ${f.weighted ? "text-gray-600" : "text-gray-300"}`}>{f.weighted ? `${Math.round(f.weighted / 1000)}k` : "–"}</span>
+                  <div className="flex w-full max-w-10 flex-1 items-end">
+                    <div
+                      className="w-full rounded-t-[4px] bg-brand-500 transition-colors group-hover:bg-brand-600"
+                      style={{ height: `${f.weighted ? Math.max(3, (f.weighted / maxForecast) * 100) : 0}%` }}
+                    />
+                  </div>
+                  <span className="text-[11px] font-medium uppercase text-gray-500">{f.label}</span>
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center justify-between border-t border-gray-150 px-4 py-2.5 text-[12px] text-gray-500">
+              <span>Summe 6 Monate</span>
+              <span className="tnum font-medium text-gray-900">{money(forecast.reduce((s, f) => s + f.weighted, 0))}</span>
+            </div>
+          </Card>
+        </div>
+
+        <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-2">
+          <Card>
+            <CardHeader title="Anstehende Abschlüsse" sub="45 Tage" />'''),
+]
+for a, b in pairs:
+    if a not in s:
+        sys.exit("fehlt: " + a[:80])
+    s = s.replace(a, b, 1)
+
+anchor = '''        <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+          <Card>
+            <CardHeader
+              title="Meine Aufgaben"'''
+closing_card = '''          <Card>
+            <CardHeader title="Gewonnen & verloren" sub={winRate === undefined ? "Noch keine Abschlüsse" : `Gewinnquote ${winRate} %`} />
+            <div className="grid grid-cols-2 divide-x divide-gray-150 border-b border-gray-150">
+              <div className="px-4 py-3">
+                <div className="text-[12px] text-gray-500">Umsatz gewonnen</div>
+                <div className="tnum mt-0.5 text-[18px] font-semibold tracking-[-0.01em]">{money(wonVolume)}</div>
+              </div>
+              <div className="px-4 py-3">
+                <div className="text-[12px] text-gray-500">Verloren</div>
+                <div className="tnum mt-0.5 text-[18px] font-semibold tracking-[-0.01em]">{money(lost.reduce((s, o) => s + o.opportunity_amount, 0))}</div>
+              </div>
+            </div>
+            {reasons.length > 0 && (
+              <div className="grid gap-2 border-b border-gray-150 px-4 py-3">
+                <div className="text-[12px] font-medium text-gray-500">Verlustgründe</div>
+                {reasons.map(([r, n]) => (
+                  <div key={r} className="grid grid-cols-[1fr_80px_20px] items-center gap-3" title={`${r}: ${n}×`}>
+                    <span className="truncate text-gray-700">{r}</span>
+                    <div className="h-1.5 rounded-full bg-gray-100">
+                      <div className="h-full rounded-full bg-gray-400" style={{ width: `${(n / reasons[0][1]) * 100}%` }} />
+                    </div>
+                    <span className="tnum text-right text-[12px] text-gray-500">{n}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            <ul className="divide-y divide-gray-100">
+              {recentClosed.map((o) => (
+                <li key={o.name}>
+                  <Link href={`/opportunities/${encodeURIComponent(o.name)}`} className="flex h-12 items-center gap-3 px-4 transition-colors hover:bg-gray-50">
+                    <Badge value={o.status} label={o.status === "Converted" ? "Gewonnen" : "Verloren"} tone={o.status === "Converted" ? "green" : "red"} />
+                    <span className="min-w-0 flex-1 truncate text-gray-900">{o.title}</span>
+                    <span className="tnum text-gray-600">{money(o.opportunity_amount)}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </Card>
+        </div>
+
+'''
+idx = s.index(anchor)
+before = s[:idx]
+tail = "        </div>\n\n"
+if not before.endswith(tail):
+    sys.exit("tail mismatch: " + repr(before[-80:]))
+s = before[: -len(tail)] + closing_card + s[idx:]
+open(p, "w", encoding="utf-8", newline="\n").write(s)
+print("ok")

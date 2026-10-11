@@ -1,0 +1,182 @@
+/**
+ * Verkabelung mit End-to-End-Trace und VLAN-Übersicht.
+ *
+ * `trace_path` ist die Methode, die CLAUDE.md Abschnitt 4 unter
+ * "Kabel-Trace als serverseitige Methode" nennt. Sie läuft von einem Endpunkt
+ * über Kabel und Geräte weiter, bis kein Kabel mehr folgt.
+ */
+import { FrappeMockError, table } from '../db.js'
+
+/** Kabel mit aufgelösten Endpunkten, für die Verkabelungsliste. */
+export function cable_list({ site = null, tenant = null, cable_type = null } = {}) {
+  const schnittstellen = new Map(table('Device Interface').map((i) => [i.name, i]))
+  const dosen = new Map(table('Wall Outlet').map((d) => [d.name, d]))
+  const geraete = new Map(table('Network Device').map((g) => [g.name, g]))
+
+  const beschreibe = (typ, name) => {
+    if (typ === 'Device Interface') {
+      const schnittstelle = schnittstellen.get(name)
+      if (!schnittstelle) return { kind: typ, name, label: name, device: null, site: null }
+      const geraet = geraete.get(schnittstelle.device)
+      return {
+        kind: typ,
+        name,
+        label: schnittstelle.device + ' · ' + schnittstelle.interface_name,
+        device: schnittstelle.device,
+        site: geraet ? geraet.site : null,
+      }
+    }
+    const dose = dosen.get(name)
+    return {
+      kind: typ,
+      name,
+      label: dose ? 'Dose ' + dose.outlet_label : name,
+      device: null,
+      site: dose ? dose.site : null,
+    }
+  }
+
+  return table('Cable')
+    .filter((c) => !tenant || c.tenant === tenant)
+    .filter((c) => !cable_type || c.cable_type === cable_type)
+    .map((c) => {
+      const a = beschreibe(c.a_endpoint_type, c.a_endpoint)
+      const b = beschreibe(c.b_endpoint_type, c.b_endpoint)
+      return { ...c, a, b }
+    })
+    .filter((c) => !site || c.a.site === site || c.b.site === site)
+    .sort((a, b) => a.label.localeCompare(b.label, 'de', { numeric: true }))
+}
+
+/**
+ * Verfolgt den Weg ab einem Endpunkt.
+ *
+ * @param {{endpoint_type?: string, endpoint: string}} args
+ * @returns {{hops: Array, complete: boolean}}
+ */
+export function trace_path({ endpoint, endpoint_type = 'Device Interface' } = {}) {
+  const schnittstellen = new Map(table('Device Interface').map((i) => [i.name, i]))
+  const dosen = new Map(table('Wall Outlet').map((d) => [d.name, d]))
+  const kabel = table('Cable')
+
+  const existiert =
+    endpoint_type === 'Device Interface' ? schnittstellen.has(endpoint) : dosen.has(endpoint)
+  if (!existiert) {
+    throw new FrappeMockError(
+      'DoesNotExistError: ' + endpoint_type + ' ' + endpoint + ' existiert nicht',
+      404,
+    )
+  }
+
+  const hops = []
+  const besuchteKabel = new Set()
+
+  let aktuellerTyp = endpoint_type
+  let aktuell = endpoint
+
+  hops.push(beschreibeKnoten(aktuellerTyp, aktuell, schnittstellen, dosen))
+
+  // Schleifen sind in falsch dokumentierter Verkabelung durchaus möglich –
+  // deshalb wird jedes Kabel höchstens einmal betreten.
+  while (true) {
+    const verbindung = kabel.find(
+      (c) =>
+        !besuchteKabel.has(c.name) &&
+        ((c.a_endpoint_type === aktuellerTyp && c.a_endpoint === aktuell) ||
+          (c.b_endpoint_type === aktuellerTyp && c.b_endpoint === aktuell)),
+    )
+    if (!verbindung) break
+
+    besuchteKabel.add(verbindung.name)
+    const istA = verbindung.a_endpoint === aktuell && verbindung.a_endpoint_type === aktuellerTyp
+    const zielTyp = istA ? verbindung.b_endpoint_type : verbindung.a_endpoint_type
+    const ziel = istA ? verbindung.b_endpoint : verbindung.a_endpoint
+
+    hops.push({
+      kind: 'cable',
+      name: verbindung.name,
+      label: verbindung.label,
+      cable_type: verbindung.cable_type,
+      color: verbindung.color,
+      length_m: verbindung.length_m,
+    })
+    hops.push(beschreibeKnoten(zielTyp, ziel, schnittstellen, dosen))
+
+    // An einem Gerät geht der Weg nur weiter, wenn das Gerät durchreicht
+    // (Patchfeld). Ein Endgerät beendet die Kette – so wie in echt.
+    aktuellerTyp = zielTyp
+    aktuell = ziel
+
+    const weiterfuehrend = kabel.some(
+      (c) =>
+        !besuchteKabel.has(c.name) &&
+        ((c.a_endpoint_type === aktuellerTyp && c.a_endpoint === aktuell) ||
+          (c.b_endpoint_type === aktuellerTyp && c.b_endpoint === aktuell)),
+    )
+    if (!weiterfuehrend) break
+  }
+
+  const letzter = hops[hops.length - 1]
+  return {
+    start: { kind: endpoint_type, name: endpoint },
+    hops,
+    // Ein Weg gilt als vollständig, wenn er an einer Dose oder einem Gerät endet
+    // und nicht mitten im Patchfeld abbricht.
+    complete: letzter.kind !== 'cable',
+    cable_count: hops.filter((h) => h.kind === 'cable').length,
+    total_length_m: hops
+      .filter((h) => h.kind === 'cable')
+      .reduce((summe, h) => summe + (h.length_m || 0), 0),
+  }
+}
+
+function beschreibeKnoten(typ, name, schnittstellen, dosen) {
+  if (typ === 'Device Interface') {
+    const schnittstelle = schnittstellen.get(name)
+    return {
+      kind: 'interface',
+      name,
+      label: schnittstelle ? schnittstelle.device + ' · ' + schnittstelle.interface_name : name,
+      device: schnittstelle ? schnittstelle.device : null,
+      interface_name: schnittstelle ? schnittstelle.interface_name : null,
+      enabled: schnittstelle ? schnittstelle.enabled : null,
+    }
+  }
+  const dose = dosen.get(name)
+  return {
+    kind: 'outlet',
+    name,
+    label: dose ? 'Dose ' + dose.outlet_label : name,
+    room: dose ? dose.room : null,
+    site: dose ? dose.site : null,
+  }
+}
+
+/** VLAN-Übersicht mit Verwendung je Netz. */
+export function vlan_list({ tenant = null, security_zone = null } = {}) {
+  const schnittstellen = table('Device Interface')
+  const praefixe = table('IP Prefix')
+  const geraete = new Map(table('Network Device').map((g) => [g.name, g]))
+
+  let vlans = table('VLAN')
+  if (tenant) vlans = vlans.filter((v) => v.tenant === tenant)
+  if (security_zone) vlans = vlans.filter((v) => v.security_zone === security_zone)
+
+  return [...vlans]
+    .map((v) => {
+      const ports = schnittstellen.filter((i) => i.untagged_vlan === v.name)
+      const netze = praefixe.filter((p) => p.vlan === v.name)
+
+      return {
+        ...v,
+        port_count: ports.length,
+        devices: [...new Set(ports.map((p) => p.device))].sort(),
+        device_count: new Set(ports.map((p) => p.device)).size,
+        prefixes: netze.map((p) => p.prefix),
+        // Ein VLAN ohne Port und ohne Präfix ist dokumentiert, aber ungenutzt.
+        unused: ports.length === 0 && netze.length === 0,
+        sites: [...new Set(ports.map((p) => geraete.get(p.device)?.site).filter(Boolean))],
+      }
+    })
+    .sort((a, b) => a.vid - b.vid)
+}

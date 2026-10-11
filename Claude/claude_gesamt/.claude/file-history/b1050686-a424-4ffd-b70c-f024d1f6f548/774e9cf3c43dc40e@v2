@@ -1,0 +1,199 @@
+import "server-only";
+
+import { ausTagesSchluessel } from "./datum";
+import type { PvAnlage, PvErtrag, PvMesswert } from "./doctypes";
+
+/**
+ * Auswertung der Energiedaten.
+ *
+ * Die Kennzahlen folgen der in der Branche ueblichen Definition, damit
+ * sie mit Auswertungen aus anderen Systemen vergleichbar bleiben:
+ *
+ *   Eigenverbrauchsquote = Eigenverbrauch / Erzeugung
+ *     Wie viel der eigenen Erzeugung im Betrieb bleibt.
+ *
+ *   Autarkiegrad = Eigenverbrauch / Gesamtverbrauch
+ *     Wie viel des Bedarfs aus eigener Erzeugung gedeckt wird.
+ *
+ *   Spezifischer Ertrag = Ertrag / installierte Leistung (kWh/kWp)
+ *     Macht unterschiedlich grosse Anlagen vergleichbar.
+ *
+ * Die beiden ersten werden haeufig verwechselt - deshalb stehen sie im
+ * Portal nie ohne Bezeichnung.
+ */
+
+export interface Zeitraum {
+  von: Date;
+  bis: Date;
+}
+
+export function letzteTage(anzahl: number): Zeitraum {
+  const bis = new Date();
+  bis.setHours(23, 59, 59, 999);
+  const von = new Date(bis);
+  von.setDate(von.getDate() - anzahl + 1);
+  von.setHours(0, 0, 0, 0);
+  return { von, bis };
+}
+
+export function imZeitraum(ertrag: PvErtrag, zeitraum: Zeitraum): boolean {
+  // Als lokales Datum lesen: "2026-09-13" waere sonst UTC-Mitternacht und
+  // faellt je nach Zeitzone in den Vor- oder Folgetag.
+  const datum = ausTagesSchluessel(ertrag.datum);
+  return datum >= zeitraum.von && datum <= zeitraum.bis;
+}
+
+export interface EnergieSumme {
+  erzeugung: number;
+  eigenverbrauch: number;
+  einspeisung: number;
+  netzbezug: number;
+}
+
+export function summiere(ertraege: PvErtrag[]): EnergieSumme {
+  return ertraege.reduce<EnergieSumme>(
+    (summe, e) => ({
+      erzeugung: summe.erzeugung + (e.ertrag_kwh ?? 0),
+      eigenverbrauch: summe.eigenverbrauch + (e.eigenverbrauch_kwh ?? 0),
+      einspeisung: summe.einspeisung + (e.einspeisung_kwh ?? 0),
+      netzbezug: summe.netzbezug + (e.netzbezug_kwh ?? 0),
+    }),
+    { erzeugung: 0, eigenverbrauch: 0, einspeisung: 0, netzbezug: 0 },
+  );
+}
+
+/** Anteil der Erzeugung, der im Betrieb bleibt (0 bis 100). */
+export function eigenverbrauchsquote(summe: EnergieSumme): number {
+  return summe.erzeugung > 0
+    ? (summe.eigenverbrauch / summe.erzeugung) * 100
+    : 0;
+}
+
+/** Anteil des Bedarfs, der aus eigener Erzeugung gedeckt wird (0 bis 100). */
+export function autarkiegrad(summe: EnergieSumme): number {
+  const gesamtverbrauch = summe.eigenverbrauch + summe.netzbezug;
+  return gesamtverbrauch > 0
+    ? (summe.eigenverbrauch / gesamtverbrauch) * 100
+    : 0;
+}
+
+/**
+ * Vermiedenes CO2 in Kilogramm.
+ *
+ * Bezugswert ist der oesterreichische Strommix. Er liegt deutlich unter
+ * dem deutschen, weil Wasserkraft einen grossen Anteil hat. Der Wert
+ * wird bewusst hier zentral gehalten - eine Aenderung wirkt dann
+ * ueberall gleich.
+ */
+export const CO2_FAKTOR_KG_PRO_KWH = 0.225;
+
+export function vermiedenesCo2(erzeugungKwh: number): number {
+  return erzeugungKwh * CO2_FAKTOR_KG_PRO_KWH;
+}
+
+/** Prozentuale Veraenderung zwischen zwei Werten. */
+export function veraenderung(aktuell: number, vorher: number): number {
+  if (vorher === 0) return aktuell > 0 ? 100 : 0;
+  return ((aktuell - vorher) / vorher) * 100;
+}
+
+/**
+ * Fasst Tageswerte zu Monatssummen zusammen.
+ * Liefert die letzten `anzahl` Monate in aufsteigender Reihenfolge.
+ */
+export interface MonatsSumme extends EnergieSumme {
+  schluessel: string;
+  label: string;
+}
+
+const MONATE_KURZ = [
+  "Jän",
+  "Feb",
+  "Mär",
+  "Apr",
+  "Mai",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Okt",
+  "Nov",
+  "Dez",
+];
+
+export function monatsSummen(
+  ertraege: PvErtrag[],
+  anzahl = 12,
+): MonatsSumme[] {
+  const nachMonat = new Map<string, EnergieSumme>();
+
+  for (const e of ertraege) {
+    const schluessel = e.datum.slice(0, 7);
+    const vorher = nachMonat.get(schluessel) ?? {
+      erzeugung: 0,
+      eigenverbrauch: 0,
+      einspeisung: 0,
+      netzbezug: 0,
+    };
+
+    nachMonat.set(schluessel, {
+      erzeugung: vorher.erzeugung + (e.ertrag_kwh ?? 0),
+      eigenverbrauch: vorher.eigenverbrauch + (e.eigenverbrauch_kwh ?? 0),
+      einspeisung: vorher.einspeisung + (e.einspeisung_kwh ?? 0),
+      netzbezug: vorher.netzbezug + (e.netzbezug_kwh ?? 0),
+    });
+  }
+
+  return [...nachMonat.entries()]
+    .sort(([a], [b]) => (a < b ? -1 : 1))
+    .slice(-anzahl)
+    .map(([schluessel, summe]) => {
+      const monat = Number(schluessel.slice(5, 7)) - 1;
+      return { schluessel, label: MONATE_KURZ[monat] ?? schluessel, ...summe };
+    });
+}
+
+/** Tagessummen fuer Sparklines, aufsteigend nach Datum. */
+export function tagesReihe(ertraege: PvErtrag[], tage: number): number[] {
+  const nachTag = new Map<string, number>();
+
+  for (const e of ertraege) {
+    nachTag.set(e.datum, (nachTag.get(e.datum) ?? 0) + (e.ertrag_kwh ?? 0));
+  }
+
+  return [...nachTag.entries()]
+    .sort(([a], [b]) => (a < b ? -1 : 1))
+    .slice(-tage)
+    .map(([, wert]) => wert);
+}
+
+/**
+ * Momentaufnahme aus den Viertelstundenwerten.
+ * Nimmt den Wert, der der aktuellen Uhrzeit am naechsten liegt.
+ */
+export function momentanwert(messwerte: PvMesswert[]): PvMesswert | null {
+  if (messwerte.length === 0) return null;
+
+  const jetzt = Date.now();
+  let bester = messwerte[0];
+  let kleinsterAbstand = Infinity;
+
+  for (const wert of messwerte) {
+    const abstand = Math.abs(new Date(wert.zeitpunkt).getTime() - jetzt);
+    if (abstand < kleinsterAbstand) {
+      kleinsterAbstand = abstand;
+      bester = wert;
+    }
+  }
+
+  return bester;
+}
+
+/** Summiert die installierte Leistung eines Anlagenbestands. */
+export function gesamtLeistung(anlagen: PvAnlage[]): number {
+  return anlagen.reduce((summe, a) => summe + (a.leistung_kwp ?? 0), 0);
+}
+
+export function gesamtSpeicher(anlagen: PvAnlage[]): number {
+  return anlagen.reduce((summe, a) => summe + (a.speicher_kwh ?? 0), 0);
+}

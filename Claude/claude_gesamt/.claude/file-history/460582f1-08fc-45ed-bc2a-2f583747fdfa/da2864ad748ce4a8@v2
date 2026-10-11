@@ -1,0 +1,176 @@
+import os, sys, json, shutil, glob
+sys.path.insert(0, os.path.dirname(__file__))
+import grafiken as g
+from grafiken import t, logo, card, G, L, N, NB, R, BG, INK, MU, BF
+
+OUT = g.OUT
+for f in glob.glob(os.path.join(OUT, "*.svg")):  # alte Einzeldateien (nur 1200x627) ersetzen
+    os.remove(f)
+
+W8 = "rgba(255,255,255,0.8)"
+
+
+def am_selben_tag_sq(bg):
+    b = logo(70, 90)
+    b += t(70, 190, "18. Oktober 2021", 64, "#fff")
+    b += card(70, 240, 940, 200, "rgba(255,255,255,0.07)", "rgba(155,196,106,0.5)")
+    b += t(105, 295, "VERTRAG MIT ÖKOVOLT", 20, L)
+    b += t(105, 360, "„Vermeidung von Wettbewerbssituationen“", 38, "#fff")
+    b += f'<circle cx="540" cy="490" r="40" fill="{G if bg == N else "#3a6ea5"}"/>' + t(540, 505, "=", 40, "#fff", anchor="middle")
+    b += card(70, 540, 940, 200, "rgba(192,57,43,0.18)", R)
+    b += t(105, 595, "AM SELBEN TAG", 20, "#ff9a8b")
+    b += t(105, 650, "Gründung der eigenen Konkurrenz:\none2zero GmbH", 38, "#fff")
+    b += t(70, 850, "Partner auf dem Papier.", 54, "#fff") + t(70, 920, "Konkurrent am selben Tag.", 54, L)
+    b += t(1010, 1030, "Quellen: Syndikatsvertrag · OLG München", 18, "rgba(255,255,255,0.55)", 500, BF, "end")
+    return b
+
+
+SQ = {}
+SQ["Welle 1"] = am_selben_tag_sq(N)
+SQ["D2"] = am_selben_tag_sq(NB)
+
+b = logo(70, 90)
+b += card(70, 150, 380, 440, "#fff") + f'<rect x="70" y="150" width="380" height="100" rx="22" fill="{R}"/><rect x="70" y="220" width="380" height="30" fill="{R}"/>'
+b += t(260, 215, "SEPTEMBER 2026", 26, "#fff", anchor="middle") + t(260, 470, "21", 190, INK, anchor="middle")
+b += t(260, 555, "Eigentümer informiert", 24, MU, 600, BF, "middle")
+b += t(500, 280, "[X] Tage", 92, R) + t(500, 370, "ohne\nAntwort.", 66, "#fff")
+b += t(70, 690, "Land Salzburg · Stadt Salzburg · Energie AG Oberösterreich\nhaben Urteile, Gutachten und forensische Befunde auf dem Tisch.", 27, "rgba(255,255,255,0.85)", 500, BF, ls=1.4)
+b += t(70, 880, "Wir erwarten keine Entschuldigung.\nWir erwarten eine unabhängige Prüfung.", 38, L, 700, BF, ls=1.3)
+SQ["Welle 1b"] = b
+
+b = logo(70, 90)
+b += t(70, 200, "DAS OBERLANDESGERICHT MÜNCHEN\nÜBER DAS VORGEHEN DER SALZBURG AG:", 26, L, ls=1.35)
+b += t(70, 450, "„treuwidrig“", 140, "#fff")
+b += f'<rect x="70" y="500" width="140" height="7" fill="{L}"/>'
+b += t(70, 590, "Protokoll vorab geschrieben.\n„Im Flüsterton“ fortgesetzt.\nEintragung ausgesetzt.", 36, "rgba(255,255,255,0.85)", 600, BF, ls=1.35)
+b += t(70, 860, "3 Verfahren · 3 Niederlagen\nder Salzburg AG", 46, L)
+b += t(1010, 1035, "OLG München 14 U 3748/25 · Beschluss 18.06.2026 · Eilverfahren", 18, "rgba(255,255,255,0.55)", 500, BF, "end")
+SQ["Welle 2"] = b
+
+b = logo(70, 90) + t(70, 190, "Kopiert. Eingeladen.\nAngestellt.", 62, "#fff")
+tiles = [("02.12.2024", "Controlling-Ordner kopiert –\n1.150 Dateien", False),
+         ("02.12.2024", "Wechsel zur Salzburg-AG-Tochter\neingeleitet", False),
+         ("2025", "Angestellt bei\nder Salzburg AG", True)]
+for i, (d, txt, red) in enumerate(tiles):
+    y0 = 330 + i * 180
+    b += card(70, y0, 940, 155, "rgba(255,255,255,0.07)", R if red else "rgba(155,196,106,0.5)")
+    b += t(105, y0 + 92, d, 40, "#ff9a8b" if red else L)
+    b += t(400, y0 + 68, txt, 32, "#fff", 700)
+b += t(70, 925, "Festgestellt von gerichtlich zertifizierten Sachverständigen ·\nvom OLG München als glaubhaft gewürdigt", 24, W8, 500, BF, ls=1.35)
+b += t(70, 1025, "Es gilt die Unschuldsvermutung.", 24, "rgba(255,255,255,0.6)", 500, BF)
+SQ["Welle 2b"] = b
+
+b = logo(70, 90, G)
+b += card(70, 150, 270, 340, "#fff", "#d7dbe2")
+b += '<rect x="140" y="205" width="130" height="230" rx="28" fill="#eef0f4" stroke="#c9ced8" stroke-width="3"/>'
+b += '<circle cx="205" cy="290" r="17" fill="#171717"/><circle cx="205" cy="350" r="17" fill="#171717"/>'
+b += t(390, 225, "Jeder Elektriker\nbraucht einen\nGewerbeschein.", 50, INK) + t(390, 430, "Fast jeder.", 60, R)
+b += '<rect x="70" y="545" width="940" height="95" rx="14" fill="#fde2e2"/>'
+b += t(540, 606, "151 Tage ohne jede Gewerbeberechtigung", 38, "#b00000", anchor="middle")
+b += t(70, 730, "one2zero, Tochter der Salzburg AG:\nGroßprojekt angekündigt 30.06.2022 –\nerste Gewerbeberechtigung 28.11.2022,\nElektrotechnik erst 02.08.2023.", 30, MU, 500, BF, ls=1.4)
+b += t(1010, 1030, "Quelle: GISA 35453048, 35939931", 18, MU, 500, BF, "end")
+SQ["Welle 3"] = b
+
+b = logo(70, 90, G) + t(70, 200, "Wohin fließt das Geld\nder Salzburger?", 60, INK)
+b += t(70, 385, "Ökovolt 2024 – Beteiligung der Salzburg AG: 49 %", 27, MU, 600, BF)
+b += f'<rect x="70" y="410" width="800" height="95" rx="14" fill="{G}"/>' + t(105, 473, "+ 1,14 Mio. € Gewinn", 44, "#fff")
+b += t(70, 600, "one2zero – eigene Tochter der Salzburg AG", 27, MU, 600, BF)
+b += f'<rect x="70" y="625" width="720" height="95" rx="14" fill="{R}"/>' + t(105, 685, "Verluste: [Betrag lt. Firmenbuch]", 36, "#fff")
+b += t(70, 850, "Eine unabhängige Prüfung schafft\nKlarheit – für alle Eigentümer.", 42, G)
+b += t(1010, 1035, "Quellen: Jahresabschlüsse Ökovolt 2024, one2zero (Firmenbuch)", 18, MU, 500, BF, "end")
+SQ["Welle 4"] = b
+
+b = logo(70, 90)
+b += t(70, 330, "[X]", 210, R) + t(70, 440, "Tage ohne Antwort", 66, "#fff")
+for i, r in enumerate(["Land Salzburg", "Stadt Salzburg", "Energie AG Oberösterreich", "Aufsichtsrat der Salzburg AG"]):
+    y = 545 + i * 68
+    b += f'<circle cx="92" cy="{y-11}" r="11" fill="{R}"/><circle cx="92" cy="{y-11}" r="20" fill="none" stroke="{R}" stroke-opacity="0.35" stroke-width="4"/>'
+    b += t(128, y, r, 34, "#fff", 700)
+b += t(70, 880, "Wer nichts zu verbergen hat,\nklärt auf.", 48, L)
+b += t(70, 1000, "Unsere Forderung: eine unabhängige Prüfung\ndurch einen neutralen Sachverständigen.", 24, W8, 500, BF, ls=1.3)
+SQ["Welle 5"] = b
+
+b = logo(70, 90)
+b += t(70, 380, "3 : 0", 270, "#fff") + t(70, 500, "Oberlandesgericht München", 54, "#fff")
+b += t(70, 580, "Drei Verfahren. Dreimal gegen die Salzburg AG.", 32, "rgba(255,255,255,0.85)", 600, BF)
+b += t(70, 790, "Unterallgäu gegen\nStaatskonzern.", 60, L) + t(70, 950, "Deutsche Gerichte haben entschieden.", 36, "#fff")
+b += t(1010, 1035, "OLG München 14 U 3746/25, 14 U 3748/25, 14 U 295/26 · Eilverfahren", 17, "rgba(255,255,255,0.55)", 500, BF, "end")
+SQ["D1"] = b
+
+b = logo(70, 90, G)
+b += t(70, 200, "OBERLANDESGERICHT MÜNCHEN,\nBESCHLUSS VOM 18.06.2026", 26, NB, ls=1.35)
+b += t(70, 430, "„… im Flüsterton\nfortsetzte …“", 98, INK)
+b += f'<rect x="70" y="590" width="140" height="7" fill="{NB}"/>'
+b += t(70, 690, "Das vorgesehene Verfahren\nder Beschlussfassung „ausgehebelt“.", 36, MU, 600, BF, ls=1.35)
+b += t(70, 900, "Gehörsrügen der Salzburg AG\nverworfen.", 46, NB)
+SQ["D3"] = b
+
+b = logo(70, 90, G) + t(70, 200, "3 Lehren für\nMittelständler", 66, INK) + t(70, 345, "mit einem strategischen Investor", 32, MU, 600, BF)
+for i, it in enumerate(["Informationsrechte und Geschäftsführer-\nEntsendungen klar begrenzen.",
+                        "Eigene Aktivitäten des Investors\nim Kerngeschäft ausschließen.",
+                        "Zugriffe auf sensible Daten\nprotokollieren."]):
+    y = 470 + i * 145
+    b += f'<circle cx="105" cy="{y+5}" r="32" fill="{G}"/>' + t(105, y + 18, str(i + 1), 34, "#fff", anchor="middle")
+    b += t(165, y, it, 32, INK, 700)
+b += t(70, 940, "Damit anderen Familienunternehmen nicht\npassiert, was uns passiert ist.", 32, G, 700, BF, ls=1.3)
+SQ["D4"] = b
+
+b = logo(70, 90)
+b += t(70, 210, "Hauptverhandlung", 74, "#fff") + t(70, 290, "Landgericht Memmingen", 50, L)
+b += t(70, 370, "[Datum, Uhrzeit]", 42, "#fff", 700)
+b += card(70, 430, 940, 380, "rgba(255,255,255,0.06)", "rgba(255,255,255,0.3)")
+b += t(540, 625, "[Foto: Landgericht Memmingen]", 30, "rgba(255,255,255,0.5)", 600, BF, "middle")
+b += t(70, 900, "Nach drei Entscheidungen des OLG München\nnun die Hauptsache.", 34, "rgba(255,255,255,0.85)", 500, BF, ls=1.35)
+SQ["D5"] = b
+
+# ---------- Formate je Kanal ----------
+FORMATE = [  # ordner, W, H, basis, Hinweis
+    ("LinkedIn_1200x627", 1200, 627, "land", "LinkedIn Beitrag"),
+    ("Facebook_1200x630", 1200, 630, "land", "Facebook Beitrag / Link"),
+    ("X_1600x900", 1600, 900, "land", "X / Bluesky"),
+    ("Instagram_Feed_1080x1350", 1080, 1350, "sq", "Instagram & Facebook Feed (4:5, empfohlen)"),
+    ("Instagram_Quadrat_1080x1080", 1080, 1080, "sq", "Instagram Quadrat / LinkedIn Karussell"),
+    ("Story_1080x1920", 1080, 1920, "sq", "Instagram & Facebook Story"),
+]
+
+
+def dark(bg):
+    return bg != BG
+
+
+def compose(key, fmt):
+    folder, Wd, Hd, base, _ = fmt
+    info = g.made[key]
+    bg = info["bg"]
+    if base == "land":
+        s = Wd / 1200
+        dy = (Hd - 627 * s) / 2
+        inner = f'<g transform="translate(0 {dy:.1f}) scale({s:.4f})">{info["body"]}</g>'
+    else:
+        body = SQ[key]
+        if Hd == 1080:
+            inner = body
+        elif Hd == 1350:
+            cta = "Alle Belege: Link in Bio"
+            inner = f'<g transform="translate(0 40)">{body}</g>'
+            inner += f'<rect x="70" y="1190" width="940" height="2" fill="{"rgba(255,255,255,0.25)" if dark(bg) else "#d7dbe2"}"/>'
+            inner += t(70, 1265, cta, 34, L if dark(bg) else G, 800)
+            inner += t(1010, 1265, "→", 40, L if dark(bg) else G, 800, anchor="end")
+        else:  # Story: Inhalt in der sicheren Zone (oben/unten je 250 px frei)
+            inner = f'<g transform="translate(0 330)">{body}</g>'
+            inner += f'<rect x="240" y="1520" width="600" height="96" rx="48" fill="{L if dark(bg) else G}"/>'
+            inner += t(540, 1580, "Alle Belege: Link im Sticker", 32, N if dark(bg) else "#fff", 800, anchor="middle")
+    svg = (f'<svg xmlns="http://www.w3.org/2000/svg" width="{Wd}" height="{Hd}" viewBox="0 0 {Wd} {Hd}">'
+           f'<rect width="{Wd}" height="{Hd}" fill="{bg}"/>{inner}</svg>')
+    os.makedirs(os.path.join(OUT, folder), exist_ok=True)
+    fn = f'{info["file"]}_{folder}.svg'
+    open(os.path.join(OUT, folder, fn), "w", encoding="utf-8").write(svg)
+    return f"{folder}/{fn}"
+
+
+index = {"formate": [{"ordner": f[0], "w": f[1], "h": f[2], "hinweis": f[4]} for f in FORMATE], "motive": []}
+for key in g.made:
+    index["motive"].append({"welle": ("AT · " + key) if key.startswith("Welle") else "DE · Welle " + key[1:],
+                            "dateien": {f[0]: compose(key, f) for f in FORMATE}})
+json.dump(index, open(os.path.join(OUT, "_index.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+print(len(index["motive"]), "Motive x", len(FORMATE), "Formate")

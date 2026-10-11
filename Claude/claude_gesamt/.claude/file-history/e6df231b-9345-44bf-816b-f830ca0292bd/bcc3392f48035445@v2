@@ -1,0 +1,192 @@
+import pathlib
+
+ROOT = pathlib.Path(r"C:\Users\SALEADMIN\Documents\Servicetechniker APP")
+
+
+def patch(pfad, paare):
+    p = ROOT / pfad
+    s = p.read_text(encoding="utf-8")
+    for alt, neu in paare:
+        if alt not in s:
+            raise SystemExit(f"NICHT GEFUNDEN in {pfad}:\n---\n{alt[:240]}\n---")
+        s = s.replace(alt, neu, 1)
+    p.write_text(s, encoding="utf-8")
+    print("ok", pfad)
+
+
+# ============================================ Jinja-Helfer: Bild als data-URI
+patch(
+    "oekovolt_baudoku/utils/jinja.py",
+    [
+        (
+            '''"""Jinja-Helfer fuer die Print Formats (in hooks.py registriert)."""
+
+from __future__ import annotations
+''',
+            '''"""Jinja-Helfer fuer die Print Formats (in hooks.py registriert)."""
+
+from __future__ import annotations
+
+import base64
+import mimetypes
+import os
+
+import frappe
+''',
+        ),
+        (
+            '''def formatiere_gps(wert: str | None, lat: float | None = None, lng: float | None = None) -> str:''',
+            '''# Ueber dieser Groesse wird nicht eingebettet: Ein Protokoll mit 30 Fotos
+# erzeugt sonst ein PDF, das kein Mailserver mehr annimmt.
+MAX_EINBETTUNG_BYTES = 4 * 1024 * 1024
+
+
+def bild_daten(datei_url: str | None) -> str:
+	"""Bettet ein Bild als ``data:``-URI in das PDF ein.
+
+	Fotos liegen als private Dateien. Der PDF-Renderer laeuft ohne Session und
+	kann ``/private/files/...`` nicht abrufen — im erzeugten PDF blieben die
+	Bilder leer. Der Umweg ueber das Dateisystem umgeht die Authentifizierung
+	vollstaendig und ist damit auch unabhaengig von der Renderer-Konfiguration
+	(FA-090, AK-03).
+
+	Schlaegt etwas fehl, wird die urspruengliche URL zurueckgegeben: Ein
+	fehlendes Bild darf den Druck nicht verhindern.
+	"""
+	if not datei_url:
+		return ""
+	if datei_url.startswith("data:"):
+		return datei_url
+
+	try:
+		datei = frappe.get_doc("File", {"file_url": datei_url})
+		pfad = datei.get_full_path()
+		if not os.path.exists(pfad) or os.path.getsize(pfad) > MAX_EINBETTUNG_BYTES:
+			return datei_url
+
+		typ = mimetypes.guess_type(pfad)[0] or "image/jpeg"
+		with open(pfad, "rb") as strom:
+			kodiert = base64.b64encode(strom.read()).decode("ascii")
+		return f"data:{typ};base64,{kodiert}"
+	except Exception:  # noqa: BLE001
+		frappe.log_error(title="Baudoku PDF-Bild", message=frappe.get_traceback())
+		return datei_url
+
+
+def formatiere_gps(wert: str | None, lat: float | None = None, lng: float | None = None) -> str:''',
+        ),
+    ],
+)
+
+# ------------------------------------------------ Helfer in hooks bekanntgeben
+patch(
+    "oekovolt_baudoku/hooks.py",
+    [
+        (
+            '''		"oekovolt_baudoku.utils.jinja.status_farbe",
+		"oekovolt_baudoku.utils.jinja.gruppiere_ergebnisse",
+		"oekovolt_baudoku.utils.jinja.formatiere_gps",''',
+            '''		"oekovolt_baudoku.utils.jinja.status_farbe",
+		"oekovolt_baudoku.utils.jinja.gruppiere_ergebnisse",
+		"oekovolt_baudoku.utils.jinja.formatiere_gps",
+		"oekovolt_baudoku.utils.jinja.bild_daten",''',
+        )
+    ],
+)
+
+# ------------------------------------- Print Formats: Bilder eingebettet laden
+patch(
+    "scripts/generate_print_formats.py",
+    [
+        (
+                '''				{% for foto in z.fotos %}
+				<div class="foto">
+					<img src="{{ foto.bild }}">''',
+                '''				{% for foto in z.fotos %}
+				<div class="foto">
+					<img src="{{ bild_daten(foto.bild) }}">''',
+        ),
+        (
+            '''	<div class="foto">
+		<img src="{{ foto.bild }}">
+		<div class="bu">{{ foto.beschriftung or "" }}
+			{{ frappe.format(foto.aufgenommen_am, {"fieldtype": "Datetime"}) }}</div>
+	</div>
+	{% endfor %}
+</div>
+{% endif %}
+
+{% if doc.unterschriften %}
+<h2>Unterschrift</h2>''',
+            '''	<div class="foto">
+		<img src="{{ bild_daten(foto.bild) }}">
+		<div class="bu">{{ foto.beschriftung or "" }}
+			{{ frappe.format(foto.aufgenommen_am, {"fieldtype": "Datetime"}) }}</div>
+	</div>
+	{% endfor %}
+</div>
+{% endif %}
+
+{% if doc.unterschriften %}
+<h2>Unterschrift</h2>''',
+        ),
+        (
+            '''		{% if p.foto %}<div class="fotos"><div class="foto"><img src="{{ p.foto }}"></div></div>{% endif %}''',
+            '''		{% if p.foto %}<div class="fotos"><div class="foto"><img src="{{ bild_daten(p.foto) }}"></div></div>{% endif %}''',
+        ),
+    ],
+)
+
+# ============================================ Demo-Modus nur in der Entwicklung
+patch(
+    "frontend/src/lib/demo.ts",
+    [
+        (
+            """/**
+ * Einmalig beim Laden ausgewertet: `demoAktiv()` läuft bei jedem API-Aufruf und
+ * darf weder die URL neu parsen noch localStorage anfassen.
+ */
+const AKTIV = (() => {
+  if (import.meta.env.VITE_DEMO === '1') return true
+  if (typeof window === 'undefined') return false
+
+  const parameter = new URLSearchParams(window.location.search)
+  if (parameter.get('demo') === '1') {
+    localStorage.setItem('baudoku-demo', '1')
+    return true
+  }
+  if (parameter.get('demo') === '0') {
+    localStorage.removeItem('baudoku-demo')
+    return false
+  }
+  return localStorage.getItem('baudoku-demo') === '1'
+})()""",
+            """/**
+ * Einmalig beim Laden ausgewertet: `demoAktiv()` läuft bei jedem API-Aufruf und
+ * darf weder die URL neu parsen noch localStorage anfassen.
+ *
+ * `?demo=1` wirkt ausschließlich in der Entwicklung oder in einem ausdrücklich
+ * mit `VITE_DEMO=1` gebauten Demo-Stand. Sonst könnte ein Techniker mit einem
+ * weitergereichten Link dauerhaft in erfundenen Daten arbeiten und sie für echt
+ * halten — der Schalter bliebe in localStorage stehen.
+ */
+const DEMO_ERLAUBT = import.meta.env.DEV || import.meta.env.VITE_DEMO === '1'
+
+const AKTIV = (() => {
+  if (import.meta.env.VITE_DEMO === '1') return true
+  if (!DEMO_ERLAUBT || typeof window === 'undefined') return false
+
+  const parameter = new URLSearchParams(window.location.search)
+  if (parameter.get('demo') === '1') {
+    localStorage.setItem('baudoku-demo', '1')
+    return true
+  }
+  if (parameter.get('demo') === '0') {
+    localStorage.removeItem('baudoku-demo')
+    return false
+  }
+  return localStorage.getItem('baudoku-demo') === '1'
+})()""",
+        )
+    ],
+)

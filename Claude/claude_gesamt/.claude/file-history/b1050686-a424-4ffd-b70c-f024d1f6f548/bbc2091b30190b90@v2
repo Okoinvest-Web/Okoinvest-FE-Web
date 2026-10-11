@@ -1,0 +1,728 @@
+/**
+ * Warum eine Anlage weniger liefert, als sie sollte.
+ *
+ * Jede Überwachung erkennt, *dass* zu wenig kommt. Das ist die
+ * leichte Hälfte und für den Betrieb die wertlose: "Minderertrag
+ * 8 Prozent" sagt niemandem, ob jemand aufs Dach steigen, den
+ * Netzbetreiber anrufen oder gar nichts tun muss.
+ *
+ * Diese Datei benennt die Ursache. Sie tut das regelbasiert und nicht
+ * über ein angelerntes Modell - aus zwei Gründen: Eine Aussage, die
+ * einem Kunden gegenüber vertreten wird, muss begründbar sein, und
+ * die Signaturen sind physikalisch eindeutig genug, dass ein Modell
+ * nichts hinzufügt.
+ *
+ * Die Signaturen im Einzelnen:
+ *
+ * - *Abregelung durch den Wechselrichter* ("Clipping"): Die
+ *   Wirkleistung steht über längere Zeit exakt auf der Nennleistung
+ *   des Wechselrichters, während die Einstrahlung weiter steigt. Das
+ *   ist kein Mangel, sondern Auslegung - eine Anlage mit
+ *   Gleichstromüberbau erntet im Jahresmittel mehr, obwohl sie
+ *   mittags Spitzen abschneidet. Beziffert werden muss es trotzdem.
+ *
+ * - *Netzseitige Abregelung*: Dieselbe Deckelung, aber unterhalb der
+ *   Wechselrichternennleistung und auf einem vereinbarten Wert -
+ *   etwa den 70 Prozent der Modulleistung nach ElWG.
+ *
+ * - *Verschattung*: Ein scharf abgegrenzter Einbruch zu einer
+ *   bestimmten Tageszeit bei sonst guter Einstrahlung, mit Erholung
+ *   danach. Kamin, Baum, Nachbargebäude.
+ *
+ * - *Verschmutzung*: Keine Tagesstruktur, sondern eine über den
+ *   ganzen Tag gleichmäßig abgesenkte Ausbeute - und über Wochen
+ *   schleichend zunehmend, bis Regen oder Reinigung sie abrupt
+ *   zurücksetzt.
+ *
+ * - *Temperatur*: Die Ausbeute ist niedrig, die temperaturkorrigierte
+ *   Ausbeute aber normal. Ein Hochsommertag ist kein Mangel.
+ *
+ * - *Sensorfehler*: Die Einstrahlung passt nicht zur Leistung - Null
+ *   Einstrahlung bei laufender Erzeugung oder umgekehrt. Bevor eine
+ *   Anlage verdächtigt wird, muss die Messung stimmen.
+ */
+
+import { alsDatum, alsKomma } from "../zahl.ts";
+import {
+  STC_EINSTRAHLUNG,
+  STC_TEMPERATUR,
+  TEMPERATURKOEFFIZIENT,
+  medianVon,
+} from "./kennzahlen.ts";
+
+export type Befundart =
+  | "sensorfehler"
+  | "wechselrichter_abregelung"
+  | "netz_abregelung"
+  | "verschattung"
+  | "verschmutzung"
+  | "temperatur"
+  | "strangausfall"
+  | "degradation"
+  | "ausfall"
+  | "unauffaellig";
+
+export interface Befund {
+  art: Befundart;
+  /** Klartext für die Meldung. */
+  titel: string;
+  /** Ein Satz, der die Entscheidung trägt. */
+  begruendung: string;
+  /**
+   * Wie sicher die Zuordnung ist, 0 bis 1.
+   *
+   * Bewusst kein Prozentwert mit Nachkommastelle: Die Zahl ist eine
+   * Einordnung, keine Messung, und sollte auch so aussehen.
+   */
+  sicherheit: number;
+  /** Fehlende Energie in kWh, soweit bezifferbar. */
+  verlustKwh: number;
+  /** Ist das ein Mangel oder nur eine Eigenschaft? */
+  mangel: boolean;
+  /** Was zu tun ist. Leer, wenn nichts zu tun ist. */
+  massnahme: string;
+  /** Einzelne Beobachtungen, die zur Aussage geführt haben. */
+  belege: string[];
+}
+
+export interface Tagespunkt {
+  /** Minuten seit Mitternacht, Ortszeit. */
+  minute: number;
+  /** Einstrahlung in Modulebene, W/m². */
+  einstrahlung: number;
+  /** Modultemperatur in Grad Celsius. */
+  modultemperatur: number;
+  /** Gemessene Wirkleistung, kW. */
+  leistungKw: number;
+}
+
+export interface Anlagenkontext {
+  /** Installierte Modulleistung, kWp. */
+  kwp: number;
+  /** Nennwirkleistung des Wechselrichters, kW. */
+  wechselrichterKw: number;
+  /**
+   * Vereinbarte Einspeisebegrenzung am Übergabepunkt in kW.
+   *
+   * In kW und nicht in Prozent, weil sie so im Netzzugangsvertrag
+   * steht. Der Prozentwert - etwa die 70 Prozent nach ElWG - wird für
+   * die Anzeige daraus gerechnet, nicht umgekehrt.
+   */
+  einspeisegrenzeKw?: number;
+  /** Anlagenwirkungsgrad ohne Temperatur- und Einstrahlungseinfluss. */
+  systemwirkungsgrad?: number;
+  /** Länge eines Messintervalls in Minuten. */
+  intervallMinuten?: number;
+}
+
+const STANDARD_WIRKUNGSGRAD = 0.84;
+
+/** Unterhalb dieser Einstrahlung ist jede Aussage Rauschen. */
+export const MINDESTEINSTRAHLUNG = 120;
+
+/**
+ * Erwartete Wechselstromleistung eines Messpunkts.
+ *
+ * Der Gleichstromertrag wird auf die Wechselrichternennleistung
+ * gedeckelt - genau dort entsteht das Clipping, und ohne die
+ * Deckelung im Erwartungswert würde jeder Mittag als Minderertrag
+ * gemeldet.
+ */
+export function erwarteterPunkt(
+  punkt: Tagespunkt,
+  kontext: Anlagenkontext,
+): { dcKw: number; acKw: number } {
+  if (punkt.einstrahlung <= 0) return { dcKw: 0, acKw: 0 };
+
+  const temperaturfaktor =
+    1 +
+    (TEMPERATURKOEFFIZIENT / 100) * (punkt.modultemperatur - STC_TEMPERATUR);
+
+  const dcKw = Math.max(
+    0,
+    kontext.kwp *
+      (punkt.einstrahlung / STC_EINSTRAHLUNG) *
+      temperaturfaktor *
+      (kontext.systemwirkungsgrad ?? STANDARD_WIRKUNGSGRAD),
+  );
+
+  return { dcKw, acKw: Math.min(dcKw, kontext.wechselrichterKw) };
+}
+
+interface Bewerteter {
+  punkt: Tagespunkt;
+  erwartetDc: number;
+  erwartetAc: number;
+  /** Ist durch Erwartet, oder null wenn die Einstrahlung zu klein ist. */
+  quote: number | null;
+}
+
+function bewerte(punkte: Tagespunkt[], kontext: Anlagenkontext): Bewerteter[] {
+  return punkte.map((punkt) => {
+    const { dcKw, acKw } = erwarteterPunkt(punkt, kontext);
+    return {
+      punkt,
+      erwartetDc: dcKw,
+      erwartetAc: acKw,
+      quote:
+        punkt.einstrahlung >= MINDESTEINSTRAHLUNG && acKw > 0
+          ? punkt.leistungKw / acKw
+          : null,
+    };
+  });
+}
+
+/** Zusammenhängende Abschnitte, in denen eine Bedingung gilt. */
+function abschnitte(
+  reihe: Bewerteter[],
+  gilt: (b: Bewerteter) => boolean,
+): { von: number; bis: number; laenge: number }[] {
+  const gefunden: { von: number; bis: number; laenge: number }[] = [];
+  let start = -1;
+
+  for (let i = 0; i < reihe.length; i += 1) {
+    if (gilt(reihe[i]!)) {
+      if (start === -1) start = i;
+    } else if (start !== -1) {
+      gefunden.push({ von: start, bis: i - 1, laenge: i - start });
+      start = -1;
+    }
+  }
+
+  if (start !== -1) {
+    gefunden.push({
+      von: start,
+      bis: reihe.length - 1,
+      laenge: reihe.length - start,
+    });
+  }
+
+  return gefunden;
+}
+
+/** Minuten als "09:15". */
+export function alsUhrzeit(minute: number): string {
+  const s = Math.floor(minute / 60);
+  const m = minute % 60;
+  return `${String(s).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
+/**
+ * Untersucht einen Tag und benennt, was ihn erklärt.
+ *
+ * Die Befunde kommen nach Gewicht sortiert zurück. Mehrere zugleich
+ * sind der Normalfall: Ein Sommertag hat Temperaturverluste *und*
+ * Clipping, und beides ist kein Mangel.
+ */
+export function untersucheTag(
+  punkte: Tagespunkt[],
+  kontext: Anlagenkontext,
+): Befund[] {
+  const intervall = (kontext.intervallMinuten ?? 15) / 60;
+  const reihe = bewerte(punkte, kontext);
+  const befunde: Befund[] = [];
+
+  const hell = reihe.filter((b) => b.quote !== null);
+
+  /* ---------- 1. Stimmt die Messung überhaupt? ---------- */
+
+  const widerspruch = reihe.filter(
+    (b) =>
+      b.punkt.einstrahlung < 20 && b.punkt.leistungKw > 0.05 * kontext.kwp,
+  );
+
+  if (widerspruch.length >= 2) {
+    befunde.push({
+      art: "sensorfehler",
+      titel: "Einstrahlungsmessung unplausibel",
+      begruendung: `In ${widerspruch.length} Intervallen meldet die Anlage Leistung, während der Sensor nahezu keine Einstrahlung zeigt. Bevor die Anlage beurteilt wird, muss die Messung stimmen.`,
+      sicherheit: 0.9,
+      verlustKwh: 0,
+      mangel: true,
+      massnahme:
+        "Einstrahlungssensor prüfen: Verschmutzung, Ausrichtung, Kabelbruch. Auch eine falsch gestellte Uhr im Datenlogger erzeugt dieses Bild.",
+      belege: [
+        `Erste Abweichung um ${alsUhrzeit(widerspruch[0]!.punkt.minute)}`,
+        `Höchste gemeldete Leistung ohne Einstrahlung: ${alsKomma(Math.max(...widerspruch.map((w) => w.punkt.leistungKw)))} kW`,
+      ],
+    });
+
+    // Ohne verlässliche Einstrahlung ist jede weitere Aussage geraten.
+    return befunde;
+  }
+
+  if (hell.length === 0) {
+    return [
+      {
+        art: "unauffaellig",
+        titel: "Zu wenig Einstrahlung für eine Aussage",
+        begruendung:
+          "An diesem Tag lag die Einstrahlung durchgehend unter der Schwelle, ab der sich eine Ausbeute sinnvoll bewerten lässt.",
+        sicherheit: 1,
+        verlustKwh: 0,
+        mangel: false,
+        massnahme: "",
+        belege: [],
+      },
+    ];
+  }
+
+  /* ---------- 2. Vollständiger Ausfall ---------- */
+
+  const still = hell.filter((b) => b.punkt.leistungKw <= 0.01 * kontext.kwp);
+
+  if (still.length >= 3) {
+    const verlust = still.reduce((s, b) => s + b.erwartetAc * intervall, 0);
+    befunde.push({
+      art: "ausfall",
+      titel: "Erzeugung steht",
+      begruendung: `Über ${alsKomma(still.length * intervall)} Stunden bei nutzbarer Einstrahlung kommt keine Leistung. Das ist kein Minderertrag, sondern ein Stillstand.`,
+      sicherheit: 0.95,
+      verlustKwh: Number(verlust.toFixed(1)),
+      mangel: true,
+      massnahme:
+        "Wechselrichter und Netzanschluss prüfen. Bei mehreren Geräten zuerst klären, ob alle betroffen sind - sonst liegt es am Gerät, nicht am Netz.",
+      belege: [
+        `Stillstand ab ${alsUhrzeit(still[0]!.punkt.minute)}`,
+        `Erwartet wären ${alsKomma(verlust, 0)} kWh gewesen`,
+      ],
+    });
+  }
+
+  /* ---------- 3. Deckelung: Wechselrichter oder Netz ---------- */
+
+  const gedeckelt = deckelung(reihe, kontext, intervall);
+  if (gedeckelt) befunde.push(gedeckelt);
+
+  /* ---------- 4. Verschattung ---------- */
+
+  const schatten = verschattung(reihe, intervall);
+  if (schatten) befunde.push(schatten);
+
+  /* ---------- 5. Temperatur ---------- */
+
+  const warm = hell.filter((b) => b.punkt.modultemperatur > 45);
+  if (warm.length >= hell.length * 0.3) {
+    const mittlereTemperatur =
+      warm.reduce((s, b) => s + b.punkt.modultemperatur, 0) / warm.length;
+    const abschlag =
+      (-TEMPERATURKOEFFIZIENT / 100) * (mittlereTemperatur - STC_TEMPERATUR);
+    const verlust = warm.reduce(
+      (s, b) => s + b.erwartetDc * intervall * abschlag,
+      0,
+    );
+
+    befunde.push({
+      art: "temperatur",
+      titel: "Wärmebedingter Leistungsrückgang",
+      begruendung: `Die Module liegen im Mittel bei ${alsKomma(mittlereTemperatur, 0)} Grad. Kristalline Module verlieren ${alsKomma(Math.abs(TEMPERATURKOEFFIZIENT), 2)} Prozent je Grad über 25 - das sind hier rund ${alsKomma(abschlag * 100, 0)} Prozent und kein Mangel.`,
+      sicherheit: 0.85,
+      verlustKwh: Number(verlust.toFixed(1)),
+      mangel: false,
+      massnahme: "",
+      belege: [
+        `Höchste Modultemperatur: ${alsKomma(Math.max(...warm.map((w) => w.punkt.modultemperatur)), 0)} Grad`,
+        `Betroffen: ${warm.length} von ${hell.length} Intervallen`,
+      ],
+    });
+  }
+
+  /* ---------- 6. Gleichmäßige Absenkung ---------- */
+
+  // Alles, was nach Abzug der erklärten Abschnitte übrig bleibt.
+  const erklaert = new Set<number>();
+  for (const b of gedeckelt ? deckelungsIndizes(reihe, kontext) : []) {
+    erklaert.add(b);
+  }
+  if (schatten) {
+    for (const i of schattenIndizes(reihe)) erklaert.add(i);
+  }
+
+  const rest = reihe.filter(
+    (b, i) =>
+      b.quote !== null &&
+      !erklaert.has(i) &&
+      b.punkt.leistungKw > 0.01 * kontext.kwp,
+  );
+
+  if (rest.length >= 8) {
+    const quoten = rest.map((b) => b.quote!);
+    const mittel = medianVon(quoten);
+    const streuung =
+      quoten.reduce((s, q) => s + (q - mittel) ** 2, 0) / quoten.length;
+
+    // Gleichmäßig heißt: wenig Streuung. Eine Verschmutzung senkt den
+    // ganzen Tag, eine Störung macht Zacken.
+    if (mittel < 0.93 && Math.sqrt(streuung) < 0.08) {
+      const verlust = rest.reduce(
+        (s, b) => s + Math.max(0, b.erwartetAc - b.punkt.leistungKw) * intervall,
+        0,
+      );
+
+      befunde.push({
+        art: "verschmutzung",
+        titel: "Gleichmäßig abgesenkte Ausbeute",
+        begruendung: `Die Ausbeute liegt den ganzen Tag bei ${alsKomma(mittel * 100, 0)} Prozent des Erwartungswerts, ohne Tagesstruktur und ohne Temperaturerklärung. Das Bild spricht für Verschmutzung oder eine gleichmäßige Verschlechterung der Module.`,
+        sicherheit: mittel < 0.88 ? 0.7 : 0.5,
+        verlustKwh: Number(verlust.toFixed(1)),
+        mangel: true,
+        massnahme:
+          "Verlauf über mehrere Wochen ansehen: Steigt die Absenkung langsam an und verschwindet nach Regen, war es Verschmutzung. Bleibt sie, gehört die Anlage vermessen.",
+        belege: [
+          `Streuung über den Tag: ${alsKomma(Math.sqrt(streuung) * 100)} Prozentpunkte`,
+          `${rest.length} Intervalle ohne andere Erklärung`,
+        ],
+      });
+    }
+  }
+
+  if (befunde.length === 0) {
+    const mittel = medianVon(hell.map((b) => b.quote!));
+    befunde.push({
+      art: "unauffaellig",
+      titel: "Kein Befund",
+      begruendung: `Die Anlage liefert ${alsKomma(mittel * 100, 0)} Prozent des Erwartungswerts. Das liegt im üblichen Bereich.`,
+      sicherheit: 0.8,
+      verlustKwh: 0,
+      mangel: false,
+      massnahme: "",
+      belege: [],
+    });
+  }
+
+  // Mängel zuerst, darin nach Verlust.
+  return befunde.sort(
+    (a, b) =>
+      Number(b.mangel) - Number(a.mangel) || b.verlustKwh - a.verlustKwh,
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Deckelung                                                           */
+/* ------------------------------------------------------------------ */
+
+/** Indizes, in denen die Leistung auf einem Plateau steht. */
+function deckelungsIndizes(
+  reihe: Bewerteter[],
+  kontext: Anlagenkontext,
+): number[] {
+  const indizes: number[] = [];
+
+  for (let i = 0; i < reihe.length; i += 1) {
+    const b = reihe[i]!;
+    if (b.quote === null) continue;
+    // Der Gleichstromertrag würde mehr hergeben, die Wechselstrom-
+    // leistung steht aber still - das ist eine Deckelung, gleich
+    // welcher Herkunft.
+    const grenze = grenzwert(kontext);
+    if (
+      b.erwartetDc > grenze * 1.02 &&
+      Math.abs(b.punkt.leistungKw - grenze) < grenze * 0.03
+    ) {
+      indizes.push(i);
+    }
+  }
+
+  return indizes;
+}
+
+/** Der Wert, auf dem die Leistung steht, wenn sie gedeckelt ist. */
+function grenzwert(kontext: Anlagenkontext): number {
+  return Math.min(
+    kontext.wechselrichterKw,
+    kontext.einspeisegrenzeKw ?? Infinity,
+  );
+}
+
+function deckelung(
+  reihe: Bewerteter[],
+  kontext: Anlagenkontext,
+  intervall: number,
+): Befund | null {
+  const indizes = deckelungsIndizes(reihe, kontext);
+  if (indizes.length < 2) return null;
+
+  const grenze = grenzwert(kontext);
+  const verlust = indizes.reduce((s, i) => {
+    const b = reihe[i]!;
+    return s + Math.max(0, b.erwartetDc - b.punkt.leistungKw) * intervall;
+  }, 0);
+
+  // Eine Deckelung, die nichts kostet, ist keine Meldung wert. Ein
+  // Befund über null Kilowattstunden ist Rauschen, und Rauschen ist
+  // der Grund, warum Meldungslisten irgendwann niemand mehr liest.
+  if (verlust < 1) return null;
+
+  const netzseitig =
+    kontext.einspeisegrenzeKw !== undefined &&
+    kontext.einspeisegrenzeKw < kontext.wechselrichterKw;
+
+  const von = alsUhrzeit(reihe[indizes[0]!]!.punkt.minute);
+  const bis = alsUhrzeit(reihe[indizes[indizes.length - 1]!]!.punkt.minute);
+
+  if (netzseitig) {
+    return {
+      art: "netz_abregelung",
+      titel: "Einspeisung am vereinbarten Wert gedeckelt",
+      begruendung: `Von ${von} bis ${bis} steht die Einspeisung auf ${alsKomma(grenze, 0)} kW - die vereinbarte Grenze und damit ${alsKomma((grenze / kontext.kwp) * 100, 0)} Prozent der Modulleistung. Der Wechselrichter hätte mehr geliefert.`,
+      sicherheit: 0.9,
+      verlustKwh: Number(verlust.toFixed(1)),
+      mangel: false,
+      massnahme:
+        "Die abgeregelte Energie lässt sich nur nutzen, wenn sie vor dem Zähler bleibt: Eigenverbrauch vorziehen, Speicher in diesen Stunden laden, Ladepunkte takten. Das ist der wirtschaftlich größte Hebel an einer gedeckelten Anlage.",
+      belege: [
+        `${indizes.length} Intervalle auf dem Plateau`,
+        `Rechnerisch möglich gewesen: ${alsKomma(verlust + indizes.length * grenze * intervall, 0)} kWh`,
+      ],
+    };
+  }
+
+  return {
+    art: "wechselrichter_abregelung",
+    titel: "Wechselrichter an der Nennleistung",
+    begruendung: `Von ${von} bis ${bis} steht die Leistung auf ${alsKomma(grenze, 0)} kW, der Nennleistung des Wechselrichters, während die Einstrahlung mehr hergäbe. Das ist Auslegung, kein Fehler: Ein Gleichstromüberbau erntet im Jahresmittel mehr, auch wenn er mittags Spitzen abschneidet.`,
+    sicherheit: 0.9,
+    verlustKwh: Number(verlust.toFixed(1)),
+    mangel: false,
+    massnahme: "",
+    belege: [
+      `${indizes.length} Intervalle an der Grenze`,
+      `Verhältnis Modulleistung zu Wechselrichterleistung: ${alsKomma(kontext.kwp / kontext.wechselrichterKw, 2)}`,
+    ],
+  };
+}
+
+/* ------------------------------------------------------------------ */
+/* Verschattung                                                        */
+/* ------------------------------------------------------------------ */
+
+function schattenIndizes(reihe: Bewerteter[]): number[] {
+  const treffer = abschnitte(
+    reihe,
+    (b) => b.quote !== null && b.quote < 0.65,
+  ).filter((a) => a.laenge >= 2);
+
+  const indizes: number[] = [];
+  for (const a of treffer) {
+    for (let i = a.von; i <= a.bis; i += 1) indizes.push(i);
+  }
+  return indizes;
+}
+
+function verschattung(reihe: Bewerteter[], intervall: number): Befund | null {
+  const einbrueche = abschnitte(
+    reihe,
+    (b) => b.quote !== null && b.quote < 0.65,
+  ).filter((a) => a.laenge >= 2);
+
+  if (einbrueche.length === 0) return null;
+
+  /*
+   * Ein Schatten zieht vorbei, ein Defekt bleibt.
+   *
+   * Deshalb genuegt es nicht, dass die Anlage *vor* dem Einbruch
+   * normal lieferte - das tut sie auch vor einem Defekt, der um acht
+   * Uhr beginnt. Verlangt wird eine Erholung *danach*.
+   *
+   * Die Ausnahme ist der Abendschatten: Er endet nicht mehr im
+   * Hellen, weil vorher die Sonne untergeht. Er wird anerkannt, wenn
+   * er kurz ist und die Anlage davor normal lief - ein Einbruch ueber
+   * ein Viertel des nutzbaren Tages ist kein Schatten mehr.
+   */
+  const nutzbar = reihe
+    .map((b, i) => (b.quote !== null ? i : -1))
+    .filter((i) => i >= 0);
+  const letzterHell = nutzbar[nutzbar.length - 1] ?? -1;
+
+  function naechsterHeller(ab: number): Bewerteter | undefined {
+    for (let i = ab; i < reihe.length; i += 1) {
+      if (reihe[i]!.quote !== null) return reihe[i];
+    }
+    return undefined;
+  }
+
+  function vorherigerHeller(bis: number): Bewerteter | undefined {
+    for (let i = bis; i >= 0; i -= 1) {
+      if (reihe[i]!.quote !== null) return reihe[i];
+    }
+    return undefined;
+  }
+
+  const erholt = einbrueche.filter((a) => {
+    const danach = naechsterHeller(a.bis + 1);
+    if (danach && danach.quote! > 0.85) return true;
+
+    const davor = vorherigerHeller(a.von - 1);
+    const bisAnsEnde = a.bis >= letzterHell;
+    const kurz = a.laenge <= Math.max(2, nutzbar.length * 0.25);
+
+    return Boolean(davor && davor.quote! > 0.85 && bisAnsEnde && kurz);
+  });
+
+  if (erholt.length === 0) return null;
+
+  const verlust = erholt.reduce((s, a) => {
+    let summe = 0;
+    for (let i = a.von; i <= a.bis; i += 1) {
+      const b = reihe[i]!;
+      summe += Math.max(0, b.erwartetAc - b.punkt.leistungKw) * intervall;
+    }
+    return s + summe;
+  }, 0);
+
+  const fenster = erholt
+    .map(
+      (a) =>
+        `${alsUhrzeit(reihe[a.von]!.punkt.minute)} bis ${alsUhrzeit(reihe[a.bis]!.punkt.minute)}`,
+    )
+    .join(", ");
+
+  // Morgens und abends ist Verschattung erwartbar, mittags nicht.
+  const mittags = erholt.some((a) => {
+    const m = reihe[a.von]!.punkt.minute;
+    return m > 10 * 60 && m < 15 * 60;
+  });
+
+  return {
+    art: "verschattung",
+    titel: mittags
+      ? "Einbruch in der Mittagszeit"
+      : "Einbruch am Tagesrand",
+    begruendung: `Zwischen ${fenster} fällt die Ausbeute scharf ab und erholt sich danach wieder, obwohl die Einstrahlung passt. Das ist die Signatur einer Verschattung – ${mittags ? "in der Mittagszeit allerdings ungewöhnlich, dort steht die Sonne hoch" : "am Tagesrand der Regelfall, etwa durch Nachbargebäude oder Bewuchs"}.`,
+    sicherheit: mittags ? 0.55 : 0.75,
+    verlustKwh: Number(verlust.toFixed(1)),
+    mangel: mittags,
+    massnahme: mittags
+      ? "Vor Ort ansehen: Ein mittäglicher Einbruch bei hohem Sonnenstand deutet eher auf ein Gerät als auf einen Schatten - etwa einen abschaltenden MPP-Tracker."
+      : "Bewuchs zurückschneiden, wenn es einer ist. Ein baulicher Schatten lässt sich nicht beseitigen, aber die Stringbelegung kann ihn entschärfen.",
+    belege: [
+      `${erholt.length} Einbruch${erholt.length === 1 ? "" : "e"} mit Erholung`,
+      `Tiefster Wert: ${alsKomma(
+        Math.min(
+          ...erholt.flatMap((a) =>
+            reihe.slice(a.von, a.bis + 1).map((b) => b.quote ?? 1),
+          ),
+        ) * 100,
+        0,
+      )} Prozent des Erwartungswerts`,
+    ],
+  };
+}
+
+/* ------------------------------------------------------------------ */
+/* Verlauf über Wochen                                                 */
+/* ------------------------------------------------------------------ */
+
+export interface Tagesausbeute {
+  /** ISO-Datum. */
+  tag: string;
+  /** Performance Ratio des Tages, 0 bis 1. */
+  pr: number;
+}
+
+export interface Verlaufsbefund {
+  art: "verschmutzung" | "degradation" | "unauffaellig";
+  titel: string;
+  begruendung: string;
+  /** Verlust je Tag in Prozentpunkten der Ausbeute. */
+  steigungProTag: number;
+  /** Tag, an dem sich die Ausbeute sprunghaft erholt hat. */
+  reinigungAm: string | null;
+  massnahme: string;
+}
+
+/**
+ * Lineare Steigung einer Reihe, Methode der kleinsten Quadrate.
+ *
+ * Zurück kommt die Änderung je Schritt. Für die Ausbeute heißt das:
+ * Änderung der PR je Tag.
+ */
+export function steigung(werte: number[]): number {
+  const n = werte.length;
+  if (n < 2) return 0;
+
+  const mittelX = (n - 1) / 2;
+  const mittelY = werte.reduce((s, w) => s + w, 0) / n;
+
+  let oben = 0;
+  let unten = 0;
+  for (let i = 0; i < n; i += 1) {
+    oben += (i - mittelX) * (werte[i]! - mittelY);
+    unten += (i - mittelX) ** 2;
+  }
+
+  return unten === 0 ? 0 : oben / unten;
+}
+
+/**
+ * Unterscheidet Verschmutzung von Alterung.
+ *
+ * Beide senken die Ausbeute langsam. Der Unterschied ist der Sprung:
+ * Verschmutzung verschwindet nach einem kräftigen Regen oder einer
+ * Reinigung von einem Tag auf den anderen, Alterung nicht. Wer den
+ * Sprung nicht sucht, schreibt jahrelang Verschmutzung als
+ * Degradation ab - und reinigt nie.
+ */
+export function untersucheVerlauf(
+  tage: Tagesausbeute[],
+): Verlaufsbefund {
+  if (tage.length < 7) {
+    return {
+      art: "unauffaellig",
+      titel: "Zu kurzer Zeitraum",
+      begruendung:
+        "Für eine Aussage über einen schleichenden Rückgang braucht es mindestens eine Woche.",
+      steigungProTag: 0,
+      reinigungAm: null,
+      massnahme: "",
+    };
+  }
+
+  const werte = tage.map((t) => t.pr);
+
+  // Ein Sprung nach oben um mehr als drei Prozentpunkte gegenüber dem
+  // Mittel der drei Vortage.
+  let sprungIndex = -1;
+  for (let i = 3; i < werte.length; i += 1) {
+    const vorher = (werte[i - 1]! + werte[i - 2]! + werte[i - 3]!) / 3;
+    if (werte[i]! - vorher > 0.03) {
+      sprungIndex = i;
+      break;
+    }
+  }
+
+  const vorSprung = sprungIndex > 0 ? werte.slice(0, sprungIndex) : werte;
+  const trend = steigung(vorSprung);
+
+  if (sprungIndex > 0 && trend < -0.0008) {
+    return {
+      art: "verschmutzung",
+      titel: "Verschmutzung mit Erholung",
+      begruendung: `Die Ausbeute sank über ${vorSprung.length} Tage um ${alsKomma(Math.abs(trend) * 100 * vorSprung.length)} Prozentpunkte und sprang am ${alsDatum(tage[sprungIndex]!.tag)} wieder hoch. Ein Sprung nach oben ist Alterung nicht möglich - das war Schmutz, den Regen oder eine Reinigung entfernt hat.`,
+      steigungProTag: trend,
+      reinigungAm: tage[sprungIndex]!.tag,
+      massnahme: `Der Rückgang beträgt rund ${alsKomma(Math.abs(trend) * 100 * 30)} Prozentpunkte im Monat. Daraus ergibt sich der wirtschaftlich richtige Reinigungsabstand - nicht aus einem Wartungsvertrag mit festem Intervall.`,
+    };
+  }
+
+  if (trend < -0.0004 && sprungIndex === -1) {
+    return {
+      art: "degradation",
+      titel: "Anhaltender Rückgang ohne Erholung",
+      begruendung: `Die Ausbeute fällt über ${werte.length} Tage gleichmäßig um ${alsKomma(Math.abs(trend) * 100 * werte.length)} Prozentpunkte, ohne dass sie sich zwischendurch erholt. Für Verschmutzung fehlt der Sprung nach oben.`,
+      steigungProTag: trend,
+      reinigungAm: null,
+      massnahme:
+        "Auf Jahressicht hochrechnen und mit der Leistungsgarantie des Herstellers vergleichen. Liegt der Rückgang darüber, ist er ein Gewährleistungsfall und kein Alterungsprozess.",
+    };
+  }
+
+  return {
+    art: "unauffaellig",
+    titel: "Kein Trend erkennbar",
+    begruendung: `Die Ausbeute schwankt über ${werte.length} Tage ohne erkennbare Richtung. Das ist der Normalfall.`,
+    steigungProTag: trend,
+    reinigungAm: sprungIndex > 0 ? tage[sprungIndex]!.tag : null,
+    massnahme: "",
+  };
+}

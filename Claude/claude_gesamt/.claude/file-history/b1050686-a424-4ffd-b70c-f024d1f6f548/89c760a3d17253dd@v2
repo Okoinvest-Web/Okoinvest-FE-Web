@@ -1,0 +1,111 @@
+/**
+ * Prueft die Bedienbarkeit aller Portalseiten.
+ *
+ * Nicht alles laesst sich pruefen - ob eine Beschriftung verstaendlich
+ * ist, entscheidet kein Skript. Aber das, was sich pruefen laesst,
+ * faellt von Hand fast nie auf:
+ *
+ *   1. Bedienelemente ohne zugaenglichen Namen. Ein Knopf, der nur ein
+ *      Symbol enthaelt, heisst fuer eine Vorlesesoftware "Schaltflaeche"
+ *      - und niemand weiss, was er tut.
+ *   2. Eingabefelder ohne Beschriftung. Dasselbe, nur schlimmer: Hier
+ *      wird etwas eingegeben.
+ *   3. Doppelte Kennungen. Ein `id`, das zweimal vorkommt, bricht jede
+ *      Verknuepfung von Beschriftung und Feld - und zwar still.
+ *   4. Bilder ohne Textalternative.
+ *   5. Sprungmarken in der Ueberschriftenordnung. Wer mit der
+ *      Ueberschriftenliste navigiert, verliert dort den Faden.
+ *   6. Tabellen ohne Kopfzellen.
+ *   7. Elemente, die den Tastaturfokus nicht sichtbar machen.
+ *
+ * Aufruf:  node werkzeuge/bedienbarkeit.mjs
+ */
+
+import { chromium } from "playwright";
+
+import { pruefeImBrowser } from "./bedienbarkeit-pruefer.mjs";
+
+const BASIS = process.env.PORTAL_URL ?? "http://localhost:3000";
+
+const SEITEN = [
+  "/portal",
+  "/portal/anlagen",
+  "/portal/anlagen/ANL-0001",
+  "/portal/energie",
+  "/portal/steuerung",
+  "/portal/regulierung",
+  "/portal/gemeinschaft",
+  "/portal/gemeinschaft/abrechnung/LAUF-2026Q2",
+  "/portal/zertifikate",
+  "/portal/mobilitaet",
+  "/portal/belege",
+  "/portal/shop",
+  "/portal/support",
+  "/portal/netz",
+  "/portal/handel",
+  "/portal/nachhaltigkeit",
+  "/portal/nachhaltigkeit/taxonomie",
+  "/portal/finanzen",
+  "/portal/alarme",
+  "/portal/alarme/meldewege",
+  "/portal/dokumentation",
+  "/portal/fernwartung",
+  "/portal/sicherheit",
+  "/portal/einstellungen",
+  "/login",
+];
+
+const SITZUNG = [
+  { name: "sid", value: "demo-session" },
+  { name: "frappe_user", value: "m.steiner@steiner-holzbau.at" },
+  { name: "frappe_full_name", value: "Markus Steiner" },
+  { name: "portal_rolle", value: "geschaeftsfuehrung" },
+].map((c) => ({ ...c, domain: "localhost", path: "/" }));
+
+const browser = await chromium.launch();
+const kontext = await browser.newContext({
+  viewport: { width: 1440, height: 1000 },
+  locale: "de-AT",
+  timezoneId: "Europe/Vienna",
+});
+await kontext.addCookies(SITZUNG);
+
+const seite = await kontext.newPage();
+let gesamt = 0;
+
+for (const pfad of SEITEN) {
+  await seite.goto(BASIS + pfad, { waitUntil: "networkidle", timeout: 90_000 });
+  await seite.waitForTimeout(400);
+
+  const befunde = await seite.evaluate(pruefeImBrowser);
+
+  /* 7. Sichtbarer Fokus - stichprobenartig am ersten Bedienelement. */
+  const erstes = seite.locator("button:visible, a[href]:visible").first();
+  if ((await erstes.count()) > 0) {
+    await erstes.focus();
+    const umriss = await erstes.evaluate((el) => {
+      const s = getComputedStyle(el);
+      return {
+        umriss: s.outlineStyle !== "none" && parseFloat(s.outlineWidth) > 0,
+        ring: s.boxShadow !== "none",
+      };
+    });
+    if (!umriss.umriss && !umriss.ring) {
+      befunde.push("erstes Bedienelement zeigt den Tastaturfokus nicht an");
+    }
+  }
+
+  if (befunde.length > 0) {
+    gesamt += befunde.length;
+    console.log(`\n${pfad}`);
+    for (const b of befunde) console.log(`  - ${b}`);
+  }
+}
+
+console.log(
+  gesamt === 0
+    ? "\nKeine Auffaelligkeiten in der Bedienbarkeit."
+    : `\n${gesamt} Auffaelligkeiten.`,
+);
+
+await browser.close();

@@ -1,0 +1,107 @@
+import pathlib
+
+FE = pathlib.Path(r"C:\Users\SALEADMIN\Documents\Servicetechniker APP\frontend")
+
+
+def patch(pfad, paare):
+    p = FE / pfad
+    s = p.read_text(encoding="utf-8")
+    for alt, neu in paare:
+        if alt not in s:
+            raise SystemExit(f"NICHT GEFUNDEN in {pfad}:\n---\n{alt[:240]}\n---")
+        s = s.replace(alt, neu, 1)
+    p.write_text(s, encoding="utf-8")
+    print("ok", pfad)
+
+
+# ------------------------------------------------------------------- Mängel
+patch(
+    "src/views/MaengelView.vue",
+    [
+        (
+            """import { useDokumentenliste, type ListenZeile } from '@/composables/dokumentenliste'""",
+            """import { useDokumentenliste, type ListenZeile } from '@/composables/dokumentenliste'
+import { useUrlFilter } from '@/composables/urlfilter'""",
+        ),
+        (
+            """const suche = ref('')
+const status = ref('offen')
+const schweregrad = ref('')
+const anlage = ref('')""",
+            """const suche = ref('')
+const status = ref('offen')
+const schweregrad = ref('')
+const anlage = ref('')
+
+useUrlFilter({ suche, status, schweregrad, anlage })""",
+        ),
+    ],
+)
+
+# -------------------------------------------------------------- Protokolle
+patch(
+    "src/views/ProtokolleView.vue",
+    [
+        (
+            """import { useDokumentenliste, type ListenZeile } from '@/composables/dokumentenliste'""",
+            """import { useDokumentenliste, type ListenZeile } from '@/composables/dokumentenliste'
+import { useUrlFilter } from '@/composables/urlfilter'""",
+        ),
+        (
+            """const suche = ref('')
+const status = ref('')
+const typ = ref('')""",
+            """const suche = ref('')
+const status = ref('')
+const typ = ref('')
+
+useUrlFilter({ suche, status, typ })""",
+        ),
+    ],
+)
+
+# ------------------------------------------------------------------ Anlagen
+patch(
+    "src/views/AnlagenView.vue",
+    [
+        (
+            """import BasisDialog from '@/components/BasisDialog.vue'
+import CodeScanner from '@/components/CodeScanner.vue'""",
+            """import BasisDialog from '@/components/BasisDialog.vue'
+import CodeScanner from '@/components/CodeScanner.vue'""",
+        ),
+        (
+            """import { anlagenNameAusCode } from '@/lib/code'""",
+            """import { useUrlFilter } from '@/composables/urlfilter'
+import { anlagenNameAusCode } from '@/lib/code'""",
+        ),
+        (
+            """const ansicht = ref<'liste' | 'karte'>('liste')
+const scannerOffen = ref(false)""",
+            """const ansicht = ref<'liste' | 'karte'>('liste')
+const scannerOffen = ref(false)
+
+useUrlFilter({ suche, typ, status })""",
+        ),
+    ],
+)
+
+# --------------------------------------------------------- Tagesberichte
+patch(
+    "src/views/TagesberichteView.vue",
+    [
+        (
+            """import { useDokumentenliste, type ListenZeile } from '@/composables/dokumentenliste'""",
+            """import { useDokumentenliste, type ListenZeile } from '@/composables/dokumentenliste'
+import { useUrlFilter } from '@/composables/urlfilter'""",
+        ),
+        (
+            """const anlage = ref('')
+const status = ref('')""",
+            """const anlage = ref('')
+const status = ref('')
+
+useUrlFilter({ anlage, status })""",
+        ),
+    ],
+)

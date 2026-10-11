@@ -1,0 +1,543 @@
+import { FileSignature, FolderLock, KeyRound, Search, ShieldCheck, UserPlus, Coins, BadgePercent } from "lucide-react";
+import PageHero from "@/components/ui/PageHero";
+import HeroSzene from "@/components/Landing/HeroSzene";
+import { InvestorenDashboard } from "@/components/illustrationen";
+import Section from "@/components/ui/Section";
+import SectionHeading from "@/components/ui/SectionHeading";
+import Steps from "@/components/ui/Steps";
+import Faq from "@/components/ui/Faq";
+import CtaBand from "@/components/ui/CtaBand";
+import Button from "@/components/ui/Button";
+import Reveal from "@/components/ui/Reveal";
+import BoerseListe from "@/components/Boerse/BoerseListe";
+import { abs, SITE, sprachAlternates } from "@/data/site";
+import { PROVISION, PHASEN } from "@/lib/invest/markt";
+import { backend, istDemo } from "@/lib/plattform/backend";
+import { PlattformFehler } from "@/lib/plattform/fehler";
+
+export const dynamic = "force-dynamic";
+
+const PFAD = "/projektboerse";
+const TITEL = "Projektbörse: Solarprojekte kaufen & anbieten | ÖkoInvest";
+const BESCHREIBUNG =
+  "Solarparks, Agri-PV, Parkplatz-PV und Großspeicher im DACH-Raum: geprüfte Projekte in allen Phasen, NDA per Klick, digitaler Datenraum – für Investoren kostenfrei.";
+
+export const metadata = {
+  title: TITEL,
+  description: BESCHREIBUNG,
+  alternates: sprachAlternates("/projektboerse", "/en/project-exchange"),
+  openGraph: {
+    type: "website",
+    url: abs(PFAD),
+    siteName: "ÖkoInvest",
+    title: TITEL,
+    description: BESCHREIBUNG,
+    images: [{ url: abs("/img/solarpark-reihen.jpg"), width: 1280, height: 852, alt: "Reihen eines Solarparks" }],
+  },
+};
+
+const ERLAUBTE_FILTER = ["typ", "land", "phase", "mwpMin", "mwpMax", "sortierung"];
+
+const FAQ = [
+  {
+    q: "Was kostet die Projektbörse?",
+    a: `Für Investoren ist die Börse ${PROVISION.kaeufer.text.replace("für Investoren ", "")}. Anbieter zahlen eine Erfolgsprovision von ${PROVISION.verkaeufer.text} – keine Einstell- oder Listungsgebühren.`,
+  },
+  {
+    q: "Warum sehe ich keine genaue Lage?",
+    a: "Öffentlich zeigen wir nur Region, Bundesland bzw. Kanton und Eckdaten. Gemeinde, Flurstücke, Netzbetreiber und Unterlagen sehen registrierte Investoren erst, nachdem sie die Vertraulichkeitsvereinbarung akzeptiert haben und das Backoffice den Datenraum freigegeben hat. Das schützt Flächeneigentümer und Anbieter.",
+  },
+  {
+    q: "Wie werden Projekte geprüft?",
+    a: "Vor der Veröffentlichung prüft das Backoffice Angaben und Kernunterlagen auf Vollständigkeit und Plausibilität – etwa Flächensicherung, Stand der Bauleitplanung und Netzanschluss. Eine rechtliche und technische Due Diligence ersetzt das nicht; sie bleibt Aufgabe des Käufers.",
+  },
+  {
+    q: "Welche Phasen gibt es?",
+    a: `Wir unterscheiden ${PHASEN.length} Entwicklungsstände – von „${PHASEN[0].label}“ bis „${PHASEN[PHASEN.length - 1].label}“. Je weiter ein Projekt entwickelt ist, desto geringer das Risiko und desto höher der Preis je kWp.`,
+  },
+];
+
+export default async function Projektboerse({ searchParams }) {
+  const sp = await searchParams;
+  const start = Object.fromEntries(ERLAUBTE_FILTER.map((k) => [k, typeof sp?.[k] === "string" ? sp[k].slice(0, 20) : ""]).filter(([, v]) => v));
+
+  let daten = null;
+  let fehler = "";
+  try {
+    daten = await backend().boerse(null, {});
+  } catch (e) {
+    fehler = e instanceof PlattformFehler ? e.message : "Die Projektbörse ist vorübergehend nicht erreichbar.";
+    if (!(e instanceof PlattformFehler)) console.error("[projektboerse]", e);
+  }
+  const demo = istDemo();
+  const kz = daten?.kennzahlen;
+
+  const jsonLd = daten && {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: "Projektbörse ÖkoInvest",
+    url: abs(PFAD),
+    description: BESCHREIBUNG,
+    publisher: { "@type": "Organization", name: SITE.firma, url: SITE.url },
+    mainEntity: {
+      "@type": "ItemList",
+      numberOfItems: daten.projekte.length,
+      itemListElement: daten.projekte.map((p, i) => ({ "@type": "ListItem", position: i + 1, url: abs(`${PFAD}/${p.slug}`), name: p.titel })),
+    },
+  };
+
+  return (
+    <>
+      {jsonLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />}
+      <PageHero
+        variant="dark"
+        breadcrumbs={[{ name: "Projektbörse", href: PFAD }]}
+        eyebrow="Projektbörse DACH"
+        title={<>Solarprojekte kaufen und verkaufen – <span className="ov-text-gradient-light">geprüft und vertraulich</span></>}
+        lead="Freiflächen-PV, Agri-PV, Parkplatz-PV und Großspeicher in Deutschland, Österreich und der Schweiz – von der Flächensicherung bis zur Bestandsanlage. Öffentlich als anonymer Teaser, Details erst nach NDA."
+        actions={[
+          { label: "Als Investor registrieren", href: "/registrieren?rolle=investor" },
+          { label: "Projekt anbieten", href: "/projektboerse/anbieten" },
+        ]}
+        stats={
+          kz
+            ? [
+                { value: kz.anzahl, label: "Projekte in der Börse" },
+                { value: kz.mwp, decimals: kz.mwp < 100 ? 1 : 0, suffix: " MWp", label: "Leistung gesamt" },
+                { value: kz.laender, label: kz.laender === 1 ? "Land" : "Länder" },
+              ]
+            : []
+        }
+        szene={
+          <HeroSzene>
+            <InvestorenDashboard ton="dunkel" animiert />
+          </HeroSzene>
+        }
+      />
+
+      <Section tone="sand" space="md" id="projekte">
+        {demo && (
+          <p className="mb-6 rounded-2xl bg-sun-300/25 px-5 py-4 text-[14.5px] leading-relaxed text-ink-900 ring-1 ring-inset ring-sun-400/50">
+            <strong>Vorführdaten:</strong> Die Plattform läuft im Demo-Modus. Alle gezeigten Projekte sind fiktive Beispiele und keine Angebote.
+          </p>
+        )}
+        {fehler ? (
+          <div className="rounded-3xl bg-white p-8 text-center ring-1 ring-ink-200/70">
+            <p className="font-display text-[20px] font-bold text-ink-900">Projektbörse derzeit nicht verfügbar</p>
+            <p className="mt-2 text-[15px] text-ink-600">{fehler}</p>
+          </div>
+        ) : (
+          <BoerseListe projekte={daten.projekte} basisHref={`${PFAD}/`} start={start} />
+        )}
+      </Section>
+
+      <Section tone="white" space="lg">
+        <SectionHeading eyebrow="Ablauf" title="Vom Exposé zum Abschluss – alles im Portal" lead="Einheitlicher, nachvollziehbarer Prozess für beide Seiten. Jeder Schritt wird protokolliert." />
+        <Steps
+          className="mt-12"
+          items={[
+            { icon: UserPlus, title: "Registrieren & Suchprofil", text: "Kostenloses Investorenkonto mit Größe, Phasen, Ländern und Ticket. Passende Projekte zeigen wir zuerst." },
+            { icon: Search, title: "Exposé prüfen", text: "Eckdaten, Phase, Netzanschluss und Preisindikation – anonym, ohne genaue Lage." },
+            { icon: KeyRound, title: "NDA per Klick", text: "Vertraulichkeitsvereinbarung im Portal akzeptieren. Nach Freigabe öffnet sich der Datenraum." },
+            { icon: FileSignature, title: "LOI & Abschluss", text: "Absichtserklärung digital abgeben, Due Diligence, Kaufvertrag – begleitet durch das Backoffice." },
+          ]}
+        />
+      </Section>
+
+      <Section tone="ink" space="lg">
+        <div className="grid gap-5 lg:grid-cols-2">
+          <Reveal className="rounded-[2rem] bg-white p-8 ring-1 ring-ink-200/70 md:p-10">
+            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-ov-50 text-ov-600"><ShieldCheck aria-hidden="true" className="h-6 w-6" /></span>
+            <h2 className="ov-h3 mt-6 text-ink-900">Für Investoren: kostenfrei</h2>
+            <p className="mt-3 text-[16px] leading-relaxed text-ink-600">Suchprofil, Merkliste, NDA und Datenraum sind für Investoren kostenfrei. Sie sehen Projekte aus der Entwicklung der ÖKOVOLT Gruppe und von weiteren Entwicklern.</p>
+            <ul className="mt-5 space-y-2 text-[15px] text-ink-700">
+              <li className="flex gap-2"><FolderLock aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-ov-600" /> Datenraum mit Download-Protokoll</li>
+              <li className="flex gap-2"><Search aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-ov-600" /> Matching nach Suchprofil</li>
+            </ul>
+            <Button href="/registrieren?rolle=investor" className="mt-7" pfeil>Investorenkonto anlegen</Button>
+          </Reveal>
+          <Reveal delay={100} className="ov-noise relative overflow-hidden rounded-[2rem] bg-navy-950 p-8 text-white md:p-10">
+            <div aria-hidden="true" className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-ov-500/30 blur-[90px]" />
+            <span className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 text-ov-300"><BadgePercent aria-hidden="true" className="h-6 w-6" /></span>
+            <h2 className="ov-h3 relative mt-6 text-white">Für Projektentwickler: Provision nur bei Erfolg</h2>
+            <p className="relative mt-3 text-[16px] leading-relaxed text-white/70">Einstellen, prüfen lassen, vertraulich vermarkten. Die Provision beträgt {PROVISION.verkaeufer.text} – keine Listungsgebühren.</p>
+            <ul className="relative mt-5 space-y-2 text-[15px] text-white/80">
+              <li className="flex gap-2"><Coins aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-ov-300" /> Transparente Statistik: Aufrufe, Merker, NDA-Anfragen</li>
+              <li className="flex gap-2"><ShieldCheck aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-ov-300" /> Anonymer Teaser, Datenraum nur nach NDA</li>
+            </ul>
+            <Button href="/projektboerse/anbieten" variant="white" className="relative mt-7" pfeil>Projekt anbieten</Button>
+          </Reveal>
+        </div>
+      </Section>
+
+      <Section tone="white" space="lg">
+        <div className="grid gap-12 lg:grid-cols-[1fr_1.4fr]">
+          <SectionHeading eyebrow="Häufige Fragen" title="Projektbörse: das Wichtigste in Kürze" />
+          <Faq items={FAQ} />
+        </div>
+      </Section>
+
+      <CtaBand
+        eyebrow="Projektbörse"
+        title="Das passende Projekt nicht dabei?"
+        text="Legen Sie ein Suchprofil an. Neue Projekte, die zu Ihren Kriterien passen, sehen Sie im Portal zuerst."
+        primary={{ label: "Suchprofil anlegen", href: "/registrieren?rolle=investor" }}
+        secondary={{ label: "Für Investoren", href: "/investoren" }}
+      />
+    </>
+  );
+}
+"use client";
+
+// Filter-Insel der Projektbörse: die Liste wird serverseitig vollständig gerendert
+// (SEO), Filter und Sortierung laufen im Browser und stehen in der URL.
+
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { Columns3, SlidersHorizontal, X, SearchX, List, Map as KarteIcon } from "lucide-react";
+import { cn } from "@/components/ui/cn";
+import ProjektKarte from "./ProjektKarte";
+import MerkenKnopf from "./MerkenKnopf";
+import KarteDach from "./KarteDach"; // Deal-Room-Team: Kartenansicht (Filter synchron)
+import { LAENDER, PROJEKT_TYPEN } from "@/lib/plattform/konstanten";
+import { statusInfo } from "@/lib/plattform/prozesse";
+import { PHASEN } from "@/lib/invest/markt";
+import { eingabe, auswahlfeld } from "@/components/Portal/felder";
+
+const LEER = { typ: "", land: "", phase: "", mwpMin: "", mwpMax: "", sortierung: "neu", ansicht: "alle", darstellung: "liste", region: "" };
+
+function chipKlasse(aktiv) {
+  return cn(
+    "inline-flex h-9 items-center rounded-full px-3.5 text-[13.5px] font-medium ring-1 ring-inset transition-colors",
+    aktiv ? "bg-navy-900 text-white ring-navy-900" : "bg-white text-ink-700 ring-ink-200 hover:ring-ink-300"
+  );
+}
+
+export default function BoerseListe({ projekte = [], basisHref = "/projektboerse/", portal = false, start = {}, karte = true }) {
+  const [f, setF] = useState({ ...LEER, ...start });
+  const [offen, setOffen] = useState(false);
+  const setze = (k, v) => setF((x) => ({ ...x, [k]: v }));
+
+  useEffect(() => {
+    const q = new URLSearchParams();
+    for (const [k, v] of Object.entries(f)) if (v && v !== LEER[k]) q.set(k, v);
+    const url = `${window.location.pathname}${q.toString() ? `?${q}` : ""}`;
+    window.history.replaceState(window.history.state, "", url);
+  }, [f]);
+
+  const basisListe = useMemo(() => {
+    const num = (v) => (v === "" ? null : Number(String(v).replace(",", ".")));
+    const min = num(f.mwpMin);
+    const max = num(f.mwpMax);
+    let l = projekte.filter(
+      (p) =>
+        (!f.typ || p.typ === f.typ) &&
+        (!f.land || p.land === f.land) &&
+        (!f.phase || p.phase === f.phase) &&
+        (min === null || p.mwp >= min) &&
+        (max === null || p.mwp <= max) &&
+        (f.ansicht !== "merkliste" || p.meinInteresse?.gemerkt) &&
+        (f.ansicht !== "aktiv" || (p.meinInteresse && p.meinInteresse.status !== "gemerkt"))
+    );
+    if (f.sortierung === "gross") l = [...l].sort((a, b) => b.mwp - a.mwp);
+    else if (f.sortierung === "passung") l = [...l].sort((a, b) => (b.matching?.score || 0) - (a.matching?.score || 0));
+    else if (f.sortierung === "phase") l = [...l].sort((a, b) => PHASEN.findIndex((x) => x.id === b.phase) - PHASEN.findIndex((x) => x.id === a.phase));
+    return l;
+  }, [projekte, f]);
+  // Region (Bundesland/Kanton) aus der Karte – wirkt auf die Liste, die Karte zeigt alle übrigen Treffer
+  const liste = useMemo(() => (f.region ? basisListe.filter((p) => p.bundesland === f.region) : basisListe), [basisListe, f.region]);
+
+  const aktiveFilter = ["typ", "land", "phase", "mwpMin", "mwpMax", "region"].filter((k) => f[k]).length;
+  const gemerkt = projekte.filter((p) => p.meinInteresse?.gemerkt).length;
+
+  const filter = (
+    <div className="space-y-5">
+      <fieldset>
+        <legend className="mb-2 text-[12.5px] font-semibold uppercase tracking-wider text-ink-500">Projekttyp</legend>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" className={chipKlasse(!f.typ)} aria-pressed={!f.typ} onClick={() => setze("typ", "")}>Alle</button>
+          {Object.entries(PROJEKT_TYPEN).map(([k, v]) => (
+            <button key={k} type="button" className={chipKlasse(f.typ === k)} aria-pressed={f.typ === k} onClick={() => setze("typ", f.typ === k ? "" : k)}>{v}</button>
+          ))}
+        </div>
+      </fieldset>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <fieldset>
+          <legend className="mb-2 text-[12.5px] font-semibold uppercase tracking-wider text-ink-500">Land</legend>
+          <div className="flex flex-wrap gap-2">
+            <button type="button" className={chipKlasse(!f.land)} aria-pressed={!f.land} onClick={() => setze("land", "")}>Alle</button>
+            {Object.keys(LAENDER).map((k) => (
+              <button key={k} type="button" className={chipKlasse(f.land === k)} aria-pressed={f.land === k} onClick={() => setze("land", f.land === k ? "" : k)} title={LAENDER[k]}>{k}</button>
+            ))}
+          </div>
+        </fieldset>
+        <div>
+          <label htmlFor="filter-phase" className="mb-2 block text-[12.5px] font-semibold uppercase tracking-wider text-ink-500">Phase</label>
+          <select id="filter-phase" className={cn(auswahlfeld, "h-10")} value={f.phase} onChange={(e) => setze("phase", e.target.value)}>
+            <option value="">Alle Phasen</option>
+            {PHASEN.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
+          </select>
+        </div>
+        <div>
+          <p id="filter-mwp" className="mb-2 text-[12.5px] font-semibold uppercase tracking-wider text-ink-500">Leistung (MWp)</p>
+          <div className="flex items-center gap-2" role="group" aria-labelledby="filter-mwp">
+            <input aria-label="MWp von" inputMode="decimal" placeholder="von" className={cn(eingabe, "h-10")} value={f.mwpMin} onChange={(e) => setze("mwpMin", e.target.value)} />
+            <span className="text-ink-400">–</span>
+            <input aria-label="MWp bis" inputMode="decimal" placeholder="bis" className={cn(eingabe, "h-10")} value={f.mwpMax} onChange={(e) => setze("mwpMax", e.target.value)} />
+          </div>
+        </div>
+        <div>
+          <label htmlFor="filter-sort" className="mb-2 block text-[12.5px] font-semibold uppercase tracking-wider text-ink-500">Sortierung</label>
+          <select id="filter-sort" className={cn(auswahlfeld, "h-10")} value={f.sortierung} onChange={(e) => setze("sortierung", e.target.value)}>
+            <option value="neu">Neueste zuerst</option>
+            <option value="gross">Größte zuerst</option>
+            <option value="phase">Am weitesten entwickelt</option>
+            {portal && <option value="passung">Beste Passung (Suchprofil)</option>}
+          </select>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div>
+      {portal && (
+        <div className="mb-5 flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Ansicht">
+          {[
+            ["alle", "Alle Projekte"],
+            ["merkliste", "Merkliste"],
+            ["aktiv", "NDA & Datenräume"],
+          ].map(([k, v]) => (
+            <button key={k} type="button" className={chipKlasse(f.ansicht === k)} aria-pressed={f.ansicht === k} onClick={() => setze("ansicht", k)}>{v}</button>
+          ))}
+        </div>
+          {gemerkt >= 2 && (
+            <Link href="/portal/boerse/vergleich" className="inline-flex h-9 items-center gap-1.5 rounded-full bg-ov-600 px-3.5 text-[13.5px] font-semibold text-white hover:bg-ov-700 sm:ml-auto">
+              <Columns3 aria-hidden="true" className="h-4 w-4" /> Merkliste vergleichen ({Math.min(4, gemerkt)})
+            </Link>
+          )}
+        </div>
+      )}
+
+      <div className="mb-6 rounded-3xl bg-white p-4 ring-1 ring-ink-200/70 md:p-6">
+        <div className="flex items-center justify-between gap-3 md:hidden">
+          <button type="button" onClick={() => setOffen((o) => !o)} aria-expanded={offen} aria-controls="boerse-filter" className="inline-flex h-10 items-center gap-2 rounded-full bg-sand-50 px-4 text-[14px] font-semibold text-ink-800 ring-1 ring-inset ring-ink-200">
+            <SlidersHorizontal aria-hidden="true" className="h-4 w-4" /> Filter{aktiveFilter ? ` (${aktiveFilter})` : ""}
+          </button>
+          <p className="text-[13.5px] text-ink-500" aria-live="polite">{liste.length} Projekte</p>
+        </div>
+        <div id="boerse-filter" className={cn("md:block", offen ? "mt-4 block" : "hidden")}>{filter}</div>
+        <div className="mt-4 hidden items-center justify-between border-t border-ink-100 pt-4 md:flex">
+          <p className="text-[14px] text-ink-600" aria-live="polite"><span className="ov-num font-semibold text-ink-900">{liste.length}</span> {liste.length === 1 ? "Projekt" : "Projekte"} gefunden</p>
+          {aktiveFilter > 0 && (
+            <button type="button" onClick={() => setF((x) => ({ ...LEER, sortierung: x.sortierung, ansicht: x.ansicht, darstellung: x.darstellung }))} className="inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-ink-600 hover:text-ink-900">
+              <X aria-hidden="true" className="h-4 w-4" /> Filter zurücksetzen
+            </button>
+          )}
+        </div>
+      </div>
+
+      {karte && (
+        <div className="mb-5 flex flex-wrap items-center gap-2">
+          <div className="inline-flex rounded-full bg-white p-1 ring-1 ring-inset ring-ink-200" role="group" aria-label="Darstellung">
+            {[["liste", "Liste", List], ["karte", "Karte", KarteIcon]].map(([k, label, Icon]) => (
+              <button key={k} type="button" aria-pressed={f.darstellung === k} onClick={() => setze("darstellung", k)} className={cn("inline-flex h-8 items-center gap-1.5 rounded-full px-3.5 text-[13.5px] font-semibold transition-colors", f.darstellung === k ? "bg-navy-900 text-white" : "text-ink-700 hover:bg-ink-50")}>
+                <Icon aria-hidden="true" className="h-4 w-4" /> {label}
+              </button>
+            ))}
+          </div>
+          {f.region && (
+            <button type="button" onClick={() => setze("region", "")} className="inline-flex h-9 items-center gap-1.5 rounded-full bg-ov-50 px-3.5 text-[13.5px] font-semibold text-ov-800 ring-1 ring-inset ring-ov-200 hover:bg-ov-100">
+              Region: {f.region} <X aria-hidden="true" className="h-3.5 w-3.5" /><span className="sr-only">entfernen</span>
+            </button>
+          )}
+        </div>
+      )}
+      {karte && f.darstellung === "karte" && (
+        <div className="mb-8">
+          <KarteDach projekte={basisListe} region={f.region} onRegion={(r) => setze("region", r)} />
+        </div>
+      )}
+
+      {liste.length ? (
+        <ul className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+          {liste.map((p) => (
+            <li key={p.id}>
+              <ProjektKarte
+                projekt={p}
+                href={`${basisHref}${portal ? p.id : p.slug}`}
+                extra={
+                  portal && (p.matching || (p.meinInteresse && p.meinInteresse.status !== "gemerkt")) ? (
+                    <div className="flex flex-wrap gap-1.5">
+                      {p.matching && (
+                        <span className={cn("rounded-full px-2.5 py-1 text-[12px] font-semibold ring-1 ring-inset", p.matching.score >= 70 ? "bg-ov-50 text-ov-800 ring-ov-200" : "bg-ink-50 text-ink-600 ring-ink-200")}>
+                          {p.matching.score} % Passung
+                        </span>
+                      )}
+                      {p.meinInteresse && p.meinInteresse.status !== "gemerkt" && (
+                        <span className="rounded-full bg-navy-50 px-2.5 py-1 text-[12px] font-semibold text-navy-700 ring-1 ring-inset ring-navy-100">{statusInfo("interesse", p.meinInteresse.status).label}</span>
+                      )}
+                    </div>
+                  ) : null
+                }
+                aktion={portal ? <MerkenKnopf projektId={p.id} gemerkt={!!p.meinInteresse?.gemerkt} /> : null}
+              />
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <div className="flex flex-col items-center rounded-3xl border border-dashed border-ink-200 bg-white/60 px-6 py-14 text-center">
+          <SearchX aria-hidden="true" className="h-8 w-8 text-ink-400" />
+          <p className="mt-3 font-display text-[18px] font-bold text-ink-900">Keine passenden Projekte</p>
+          <p className="mt-1 max-w-md text-[14.5px] text-ink-600">
+            {portal ? "Passen Sie die Filter an – oder hinterlegen Sie ein Suchprofil, dann melden wir uns, sobald ein passendes Projekt eingeht." : "Passen Sie die Filter an oder legen Sie als Investor ein Suchprofil an – wir melden uns, sobald ein passendes Projekt eingeht."}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+// Karte eines Projekts in der Börse (öffentlich und im Portal). Nur Teaser-Felder.
+
+import Link from "next/link";
+import { ArrowUpRight, MapPin, Zap } from "lucide-react";
+import { cn } from "@/components/ui/cn";
+import TypIllustration from "./TypIllustration";
+import { QualitaetsBalken } from "@/components/Portal/ui";
+import { LAENDER, NETZANSCHLUSS, PROJEKT_TYPEN } from "@/lib/plattform/konstanten";
+import { mwp, preisText } from "@/lib/plattform/format";
+import { statusLabel } from "@/lib/plattform/prozesse";
+import { phaseById, PHASEN } from "@/lib/invest/markt";
+import { fmt } from "@/lib/rechner/annahmen";
+
+export function PhaseBadge({ phase, className, dunkel = false }) {
+  const p = phaseById(phase);
+  const idx = PHASEN.findIndex((x) => x.id === p.id);
+  return (
+    <span className={cn("inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-[12px] font-semibold", dunkel ? "bg-white/10 text-white" : "bg-white/95 text-ink-800 shadow-sm ring-1 ring-ink-200/70", className)}>
+      <span aria-hidden="true" className="flex gap-0.5">
+        {PHASEN.map((x, i) => (
+          <span key={x.id} className={cn("h-2.5 w-1 rounded-full", i <= idx ? "bg-ov-500" : dunkel ? "bg-white/25" : "bg-ink-200")} />
+        ))}
+      </span>
+      {p.kurz}
+    </span>
+  );
+}
+
+export default function ProjektKarte({ projekt: p, href, extra, aktion, className }) {
+  const reserviert = p.status === "reserviert";
+  return (
+    <article className={cn("group ov-card-hover relative flex h-full flex-col rounded-3xl bg-white ring-1 ring-ink-200/70 hover:ring-ov-200", className)}>
+      <div className="relative h-36 overflow-hidden rounded-t-3xl">
+        <TypIllustration typ={p.typ} className="h-full w-full transition-transform duration-700 group-hover:scale-[1.04]" />
+        <div className="absolute inset-x-3 top-3 flex flex-wrap items-start justify-between gap-2">
+          <PhaseBadge phase={p.phase} />
+          <span className="flex flex-wrap justify-end gap-1.5">
+            {reserviert && <span className="rounded-full bg-navy-900 px-2.5 py-1 text-[12px] font-semibold text-white">{statusLabel("projekt", "reserviert")}</span>}
+            {p.demo && <span className="rounded-full bg-sun-400 px-2.5 py-1 text-[11.5px] font-bold uppercase tracking-wide text-navy-950">Demo</span>}
+          </span>
+        </div>
+      </div>
+      <div className="flex flex-1 flex-col p-5 md:p-6">
+        <p className="text-[11.5px] font-semibold uppercase tracking-[0.12em] text-ov-700">{PROJEKT_TYPEN[p.typ]}</p>
+        <p className="mt-1.5 flex items-start gap-1.5 text-[12.5px] font-medium text-ink-500">
+          <MapPin aria-hidden="true" className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          {[p.region, p.bundesland, LAENDER[p.land]].filter(Boolean).join(" · ")}
+        </p>
+        <h3 className="mt-2 font-display text-[18px] font-bold leading-snug text-ink-900">
+          <Link href={href} className="outline-none after:absolute after:inset-0 after:rounded-3xl after:content-[''] focus-visible:underline">
+            {p.titel}
+          </Link>
+        </h3>
+        <dl className="mt-4 grid grid-cols-2 gap-3 border-y border-ink-100 py-3.5">
+          <div className="min-w-0">
+            <dt className="text-[11.5px] text-ink-500">Leistung</dt>
+            <dd className="ov-num mt-0.5 font-display text-[17px] font-extrabold text-ink-900">{p.typ === "speicher" ? `${fmt(p.mwp, p.mwp < 10 ? 1 : 0)} MW` : mwp(p.mwp)}{p.mwhSpeicher ? <span className="ml-1 text-[13px] font-semibold text-ink-500">/ {fmt(p.mwhSpeicher)} MWh</span> : null}</dd>
+          </div>
+          <div className="min-w-0">
+            <dt className="text-[11.5px] text-ink-500">Preisindikation</dt>
+            <dd className="mt-0.5 font-display text-[17px] font-extrabold text-ink-900">{preisText(p)}</dd>
+          </div>
+        </dl>
+        <p className="mt-3 text-[13px] leading-snug text-ink-600">
+          <Zap aria-hidden="true" className="-mt-0.5 mr-1 inline h-3.5 w-3.5 text-ov-600" />{NETZANSCHLUSS[p.netzanschluss] || "Netzanschluss offen"}
+          {p.codGeplant && <span className="text-ink-400"> · COD {p.codGeplant}</span>}
+        </p>
+        {typeof p.datenraumQualitaet === "number" && (
+          <div className="mt-3">
+            <QualitaetsBalken quote={p.datenraumQualitaet} klein />
+          </div>
+        )}
+        {extra && <div className="mt-3">{extra}</div>}
+        <div className="mt-auto flex items-center justify-between gap-3 pt-5">
+          <span className="inline-flex items-center gap-1 text-[14px] font-semibold text-ov-700">
+            Exposé ansehen <ArrowUpRight aria-hidden="true" className="h-4 w-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+          </span>
+          {aktion && <div className="relative z-10">{aktion}</div>}
+        </div>
+      </div>
+    </article>
+  );
+}
+// Screenshots einer Seite in mehreren Breiten, sammelt Konsolenfehler.
+// Aufruf: node shot.mjs <url> <ausgabeordner> [breiten, z. B. 1440,768,390] [--full | --tiles | --el=<css>]
+//   --el=<css> jedes passende Element einzeln aufnehmen, z. B. --el=[data-abschnitt=hero]
+//   --full   eine Ganzseiten-Aufnahme (Reveal-Inhalte werden vorher sichtbar gemacht)
+//   --tiles  eine Aufnahme je Bildschirmhöhe beim echten Scrollen (wie ein Mensch sieht)
+import { chromium } from "playwright";
+import { mkdirSync } from "node:fs";
+
+const [url, out = "./shots", breitenArg = "1440,390", ...rest] = process.argv.slice(2);
+const full = rest.includes("--full");
+const tiles = rest.includes("--tiles");
+mkdirSync(out, { recursive: true });
+
+const browser = await chromium.launch();
+for (const w of breitenArg.split(",").map(Number)) {
+  const h = w < 700 ? 844 : 900;
+  const page = await browser.newPage({ viewport: { width: w, height: h }, deviceScaleFactor: 1 });
+  const fehler = [];
+  page.on("console", (m) => m.type() === "error" && fehler.push(m.text()));
+  page.on("pageerror", (e) => fehler.push(String(e)));
+  await page.goto(url, { waitUntil: "networkidle", timeout: 120000 });
+  await page.waitForTimeout(600);
+  // Cookie-Banner schließen, damit er keine Inhalte verdeckt
+  await page.locator("button", { hasText: "Nur notwendige" }).first().click({ timeout: 8000 }).catch(() => {});
+  await page.waitForTimeout(400);
+  const gesamt = await page.evaluate(() => document.documentElement.scrollHeight);
+
+  const elArg = rest.find((a) => a.startsWith("--el="));
+  if (elArg) {
+    // einzelne Elemente (z. B. --el=[data-abschnitt=hero]) nacheinander ins Bild scrollen und aufnehmen
+    const sel = elArg.slice(5);
+    const els = await page.locator(sel).all();
+    if (!els.length) console.log(`  ! kein Element für ${sel}`);
+    let n = 0;
+    for (const el of els) {
+      await el.scrollIntoViewIfNeeded();
+      // langsam durch das Element scrollen, damit Reveal-Inhalte sichtbar werden
+      const box = await el.boundingBox();
+      if (box) for (let d = 0; d < box.height; d += 300) { await page.mouse.wheel(0, 300); await page.waitForTimeout(100); }
+      await page.waitForTimeout(900);
+      const name = sel.replace(/[^a-z0-9]+/gi, "_").replace(/^_|_$/g, "");
+      const datei = `${out}/w${w}-${name}${els.length > 1 ? "-" + n : ""}.png`;
+      n++;
+      await el.screenshot({ path: datei });
+      console.log(datei);
+    }
+  } else if (tiles) {
+    let n = 0;
+    for (let y = 0; y < gesamt; y += h - 80) {
+      await page.evaluate((yy) => window.scrollTo(0, yy), y);
+      await page.waitForTimeout(900);
+      const datei = `${out}/w${w}-${String(n++).padStart(2, "0")}.png`;
+      await page.screenshot({ path: datei });
+      console.log(datei);
+    }
+  } else {
+    // langsam durchscrollen, damit Reveal-Beobachter auslösen
+    for (let y = 0; y < gesamt; y += 300) { await page.evaluate((yy) => window.scrollTo(0, yy), y); await page.waitForTimeout(120); }
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.waitForTimeout(800);

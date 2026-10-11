@@ -1,0 +1,154 @@
+<template>
+  <div class="rounded-lg border border-outline-gray-2 bg-surface-white p-4">
+    <div class="flex flex-wrap items-center justify-between gap-2">
+      <h3 class="text-base font-medium text-ink-gray-9">{{ titel }}</h3>
+      <Button v-if="kameraMoeglich && !laeuft" @click="starten">Kamera einschalten</Button>
+      <Button v-if="laeuft" variant="subtle" @click="stoppen">Kamera aus</Button>
+    </div>
+
+    <!--
+      Die Tastatureingabe steht bewusst oben und ist immer da. Handscanner
+      tippen den Code als Tastatur ein und schließen mit Enter ab; wer
+      keinen hat, tippt die Nummer vom Etikett. Die Kamera ist die
+      Zusatzoption, nicht die Voraussetzung.
+    -->
+    <form class="mt-3 flex flex-wrap items-end gap-2" @submit.prevent="absenden">
+      <div class="min-w-0 flex-1">
+        <label :for="feldId" class="mb-1 block text-sm text-ink-gray-6">
+          Inventarnummer scannen oder eintippen
+        </label>
+        <input
+          :id="feldId"
+          ref="feld"
+          v-model="eingabe"
+          type="text"
+          inputmode="text"
+          autocomplete="off"
+          spellcheck="false"
+          class="w-full rounded border border-outline-gray-3 bg-surface-white px-3 py-2 font-mono text-base text-ink-gray-9 placeholder:text-ink-gray-4"
+          placeholder="INV-000101"
+        />
+      </div>
+      <Button variant="solid" type="submit" :disabled="!eingabe.trim()">Übernehmen</Button>
+    </form>
+
+    <div v-if="laeuft" class="mt-3">
+      <video
+        ref="video"
+        class="w-full max-w-md rounded border border-outline-gray-2 bg-black"
+        playsinline
+        muted
+      />
+      <p class="mt-1 text-sm text-ink-gray-5">
+        Code vor die Kamera halten. Jeder Treffer wird nur einmal übernommen.
+      </p>
+    </div>
+
+    <StatusDot v-if="meldung" class="mt-3" :level="meldungStufe" :text="meldung" klein />
+
+    <p v-if="!kameraMoeglich" class="mt-3 text-xs text-ink-gray-4">
+      Dieser Browser kann keine Codes über die Kamera lesen (<code>BarcodeDetector</code> fehlt).
+      Die Eingabe oben funktioniert trotzdem – auch mit einem Handscanner.
+    </p>
+  </div>
+</template>
+
+<script setup>
+import { onBeforeUnmount, ref, useId } from 'vue'
+import { Button } from 'frappe-ui'
+import StatusDot from '@/components/StatusDot.vue'
+
+const props = defineProps({
+  titel: { type: String, default: 'Erfassen' },
+  /** Verhindert, dass ein liegen gebliebener Code zweimal zählt. */
+  entprellungMs: { type: Number, default: 2500 },
+})
+
+const emit = defineEmits(['code'])
+
+const feldId = useId()
+const eingabe = ref('')
+const feld = ref(null)
+const video = ref(null)
+const laeuft = ref(false)
+const meldung = ref('')
+const meldungStufe = ref('neutral')
+
+// BarcodeDetector gibt es in Chromium-Browsern; Firefox und Safari haben
+// ihn nicht. Deshalb ist die Kamera hier eine Zugabe und kein Fundament.
+const kameraMoeglich = typeof window !== 'undefined' && 'BarcodeDetector' in window
+
+let strom = null
+let schleife = null
+const zuletzt = new Map()
+
+function absenden() {
+  const wert = eingabe.value.trim()
+  if (!wert) return
+  emit('code', wert)
+  eingabe.value = ''
+  feld.value?.focus()
+}
+
+/** Meldet einen Code, aber nicht denselben zweimal in kurzer Folge. */
+function melde(wert) {
+  const jetzt = Date.now()
+  if (jetzt - (zuletzt.get(wert) || 0) < props.entprellungMs) return
+  zuletzt.set(wert, jetzt)
+  emit('code', wert)
+  meldung.value = 'Gelesen: ' + wert
+  meldungStufe.value = 'ok'
+}
+
+async function starten() {
+  meldung.value = ''
+  try {
+    strom = await navigator.mediaDevices.getUserMedia({
+      // Rückkamera, wo es eine gibt - auf dem Telefon zeigt sonst die
+      // Frontkamera auf die Person statt auf das Etikett.
+      video: { facingMode: { ideal: 'environment' } },
+    })
+  } catch (fehler) {
+    meldung.value =
+      fehler?.name === 'NotAllowedError'
+        ? 'Kamerazugriff wurde abgelehnt. Die Eingabe oben funktioniert weiterhin.'
+        : 'Keine Kamera verfügbar. Die Eingabe oben funktioniert weiterhin.'
+    meldungStufe.value = 'warning'
+    return
+  }
+
+  laeuft.value = true
+  await new Promise((r) => setTimeout(r, 0))
+  if (video.value) {
+    video.value.srcObject = strom
+    await video.value.play().catch(() => {})
+  }
+
+  const leser = new window.BarcodeDetector({
+    formats: ['qr_code', 'code_128', 'code_39', 'ean_13', 'data_matrix'],
+  })
+
+  const lesen = async () => {
+    if (!laeuft.value || !video.value) return
+    try {
+      const treffer = await leser.detect(video.value)
+      for (const t of treffer) if (t.rawValue) melde(t.rawValue)
+    } catch {
+      // Einzelne Bilder scheitern, etwa während des Fokussierens. Das ist
+      // normal und kein Grund, die Schleife abzubrechen.
+    }
+    schleife = setTimeout(lesen, 400)
+  }
+  lesen()
+}
+
+function stoppen() {
+  laeuft.value = false
+  clearTimeout(schleife)
+  strom?.getTracks().forEach((s) => s.stop())
+  strom = null
+  if (video.value) video.value.srcObject = null
+}
+
+onBeforeUnmount(stoppen)
+</script>

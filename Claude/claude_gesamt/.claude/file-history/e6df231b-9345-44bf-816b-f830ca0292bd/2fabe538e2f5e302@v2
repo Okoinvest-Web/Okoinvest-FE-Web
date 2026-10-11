@@ -1,0 +1,135 @@
+"""Checklistenvorlage: Aufbau, Revisionierung und Veroeffentlichung (FA-010 bis FA-019)."""
+
+from __future__ import annotations
+
+import frappe
+from frappe import _
+from frappe.model.document import Document
+from frappe.utils import now_datetime
+
+
+class Checklistenvorlage(Document):
+	def validate(self):
+		self.schluessel_vergeben()
+		self.sektionen_sortieren()
+		self.pruefpunkte_validieren()
+		self.anzahl_pruefpunkte = sum(len(s.pruefpunkte) for s in self.sektionen)
+
+	def before_save(self):
+		# Eine veroeffentlichte Vorlage ist eingefroren: inhaltliche Aenderungen
+		# erzeugen ueber `neue_revision()` eine neue Vorlage (FA-012).
+		if self.status == "Veroeffentlicht" and not self.is_new() and self.inhalt_geaendert():
+			frappe.throw(
+				_("Veroeffentlichte Vorlagen koennen nicht inhaltlich geaendert werden. "
+				  "Bitte ueber 'Neue Revision' eine Folgeversion anlegen."),
+				title=_("Vorlage ist eingefroren"),
+			)
+
+	# ------------------------------------------------------------------ Helfer
+
+	def inhalt_geaendert(self) -> bool:
+		vorher = self.get_doc_before_save()
+		if not vorher:
+			return False
+		felder = ("titel", "vorlage_typ", "anlagen_typ", "sprache")
+		if any(vorher.get(feld) != self.get(feld) for feld in felder):
+			return True
+		return self._aufbau_signatur(vorher) != self._aufbau_signatur(self)
+
+	@staticmethod
+	def _aufbau_signatur(doc) -> list:
+		return [
+			(
+				s.sektion_name,
+				s.sortierung,
+				s.nur_fuer_anlagen_typ,
+				[
+					(p.nummer, p.titel, p.feldtyp, p.bewertungsoptionen, p.auswahloptionen,
+					 p.einheit, p.min_wert, p.max_wert, p.pflichtfeld, p.foto_erforderlich,
+					 p.sichtbar_wenn)
+					for p in s.pruefpunkte
+				],
+			)
+			for s in doc.sektionen
+		]
+
+	def schluessel_vergeben(self):
+		"""Stabile Schluessel je Sektion/Pruefpunkt.
+
+		Ergebnisse aelterer Protokolle bleiben dadurch ueber Revisionen hinweg
+		zuordenbar (Trendauswertung der Messwerte, FA-094).
+		"""
+		for s_idx, sektion in enumerate(self.sektionen, start=1):
+			if not sektion.sektion_key:
+				sektion.sektion_key = frappe.scrub(sektion.sektion_name or f"sektion_{s_idx}")[:60]
+			for p_idx, punkt in enumerate(sektion.pruefpunkte, start=1):
+				if not punkt.pruefpunkt_key:
+					basis = punkt.nummer or f"{s_idx}.{p_idx}"
+					punkt.pruefpunkt_key = f"{sektion.sektion_key}::{frappe.scrub(str(basis))}"
+
+	def sektionen_sortieren(self):
+		for idx, sektion in enumerate(self.sektionen, start=1):
+			if not sektion.sortierung:
+				sektion.sortierung = idx * 10
+
+	def pruefpunkte_validieren(self):
+		for sektion in self.sektionen:
+			for punkt in sektion.pruefpunkte:
+				if punkt.feldtyp == "Bewertung" and not punkt.bewertungsoptionen:
+					punkt.bewertungsoptionen = "in Ordnung|Mangel leicht|Mangel schwer|nicht zutreffend"
+				if punkt.feldtyp == "Auswahl" and not punkt.auswahloptionen:
+					frappe.throw(
+						_("Pruefpunkt {0} ({1}) ist vom Typ 'Auswahl', hat aber keine Optionen.")
+						.format(punkt.nummer or punkt.idx, sektion.sektion_name)
+					)
+				if punkt.feldtyp == "Zahlenwert" and punkt.min_wert and punkt.max_wert:
+					if punkt.min_wert > punkt.max_wert:
+						frappe.throw(
+							_("Pruefpunkt {0}: Min-Wert ist groesser als der Max-Wert.")
+							.format(punkt.nummer or punkt.idx)
+						)
+
+	# ------------------------------------------------------------- Whitelisted
+
+	@frappe.whitelist()
+	def veroeffentlichen(self):
+		"""Entwurf -> Veroeffentlicht (FA-011)."""
+		if self.status == "Veroeffentlicht":
+			return self.name
+		if not self.sektionen:
+			frappe.throw(_("Eine Vorlage ohne Sektionen kann nicht veroeffentlicht werden."))
+
+		self.status = "Veroeffentlicht"
+		self.veroeffentlicht_am = now_datetime()
+		self.veroeffentlicht_von = frappe.session.user
+		self.save()
+
+		# Vorgaengerrevision automatisch deaktivieren
+		if self.vorgaenger:
+			frappe.db.set_value("Checklistenvorlage", self.vorgaenger, "status", "Deaktiviert")
+		return self.name
+
+	@frappe.whitelist()
+	def neue_revision(self):
+		"""Kopiert die Vorlage als naechste Revision im Status 'Entwurf' (FA-012)."""
+		neu = frappe.copy_doc(self)
+		neu.revision = (self.revision or 1) + 1
+		neu.status = "Entwurf"
+		neu.vorgaenger = self.name
+		neu.veroeffentlicht_am = None
+		neu.veroeffentlicht_von = None
+		neu.insert()
+		return neu.name
+
+	@frappe.whitelist()
+	def duplizieren(self, neuer_titel: str | None = None):
+		"""Freie Kopie als eigenstaendige Vorlage (FA-010)."""
+		neu = frappe.copy_doc(self)
+		neu.titel = neuer_titel or f"{self.titel} (Kopie)"
+		neu.revision = 1
+		neu.status = "Entwurf"
+		neu.vorgaenger = None
+		neu.veroeffentlicht_am = None
+		neu.veroeffentlicht_von = None
+		neu.insert()
+		return neu.name

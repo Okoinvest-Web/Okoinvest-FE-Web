@@ -1,0 +1,213 @@
+# -*- coding: utf-8 -*-
+"""Stellt die Drift-Seite auf die Auswertung um.
+
+Der Konnektorteil bleibt, wie er ist - der funktioniert. Ersetzt wird der
+Befundteil: statt einer Tabelle mit Soll/Ist jetzt die Frage, ob ein
+genehmigter Change dahintersteht.
+"""
+import io
+
+p = 'src/pages/DriftView.vue'
+s = io.open(p, encoding='utf-8').read()
+
+# ---------------------------------------------------------------- Vorlage
+anfang = s.index('      <section>\n        <div class="mb-3 flex items-center justify-between gap-3">')
+ende = s.index('    <!--\n      Abschalten statt Loeschen')
+
+NEU = u'''      <!--
+        Der Befundteil beantwortet nicht „welcher Wert weicht ab", sondern
+        „hat das jemand genehmigen lassen". Eine Liste von Feldwerten ist
+        Buchhaltung; die Frage nach dem Change ist der Grund, warum es eine
+        Drift-Erkennung gibt.
+      -->
+      <section class="mb-8">
+        <div class="mb-3 flex flex-wrap items-end justify-between gap-3">
+          <div class="max-w-3xl">
+            <h2 class="text-base font-semibold text-ink-gray-8">Abweichungen</h2>
+            <p class="text-sm text-ink-gray-6">{{ befunde.data?.summary?.note }}</p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <FormControl v-model="zustand" type="select" :options="zustandOptionen" />
+            <FormControl v-model="deckung" type="select" :options="deckungOptionen" />
+            <Button
+              v-if="befunde.data?.summary?.covered"
+              variant="subtle"
+              :loading="sammel.loading"
+              @click="sammelUebernehmen"
+            >
+              {{ befunde.data.summary.covered }} gedeckte übernehmen
+            </Button>
+          </div>
+        </div>
+
+        <div v-if="befunde.data" class="mb-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <StatCard
+            label="Offen"
+            :wert="befunde.data.summary.open"
+            :hinweis="befunde.data.summary.oldest_days + ' Tage die älteste'"
+            :level="befunde.data.summary.open ? 'warning' : 'ok'"
+          />
+          <StatCard
+            label="Ohne Change"
+            :wert="befunde.data.summary.uncovered"
+            hinweis="am Freigabeprozess vorbei"
+            :level="befunde.data.summary.uncovered ? 'critical' : 'ok'"
+          />
+          <StatCard
+            label="Vor dem Fenster"
+            :wert="befunde.data.summary.early"
+            hinweis="genehmigt, aber zu früh gemacht"
+            :level="befunde.data.summary.early ? 'critical' : 'ok'"
+          />
+          <StatCard
+            label="Nicht dokumentiert"
+            :wert="befunde.data.summary.undocumented"
+            hinweis="im Netz, aber nirgends erfasst"
+            :level="befunde.data.summary.undocumented ? 'warning' : 'ok'"
+          />
+        </div>
+
+        <DataTable
+          tabellen-id="DriftView"
+          :columns="spalten"
+          :rows="befunde.data?.rows || []"
+          :loading="befunde.loading"
+          export-name="abweichungen"
+          empty-text="Keine Abweichung mit diesem Filter."
+        >
+          <template #zelle-object_name="{ zeile }">
+            <span class="block font-mono text-sm text-ink-gray-9">{{ zeile.object_name }}</span>
+            <span class="block text-sm text-ink-gray-5">
+              {{ zeile.object_type }} · {{ zeile.field }}
+            </span>
+          </template>
+          <template #zelle-werte="{ zeile }">
+            <span class="block text-sm text-ink-gray-5">
+              Soll: <span class="text-ink-gray-8">{{ zeile.soll_value || '–' }}</span>
+            </span>
+            <span class="block text-sm text-ink-gray-5">
+              Ist: <span class="text-ink-gray-8">{{ zeile.ist_value || '–' }}</span>
+            </span>
+          </template>
+          <!-- Die Spalte, um die es geht. -->
+          <template #zelle-deckung="{ zeile }">
+            <StatusDot
+              v-if="zeile.covered_by_change"
+              level="ok"
+              :text="zeile.covered_by_change"
+              klein
+            />
+            <StatusDot
+              v-else-if="zeile.early_change"
+              level="critical"
+              :text="zeile.early_change + ' – zu früh'"
+              klein
+            />
+            <StatusDot v-else-if="zeile.open" level="warning" text="kein Change" klein />
+            <span v-else class="text-sm text-ink-gray-4">–</span>
+          </template>
+          <template #zelle-age_days="{ zeile }">
+            <span class="tabular-nums" :class="zeile.age_days > 14 ? 'text-ink-amber-3' : ''">
+              {{ zeile.age_days === 0 ? 'heute' : zeile.age_days + ' T' }}
+            </span>
+          </template>
+          <template #zelle-befund="{ zeile }">
+            <StatusDot :level="zeile.level" :text="zeile.reasons[0] || zeile.state_label" klein />
+          </template>
+          <template #zelle-aktion="{ zeile }">
+            <div v-if="zeile.open" class="flex justify-end gap-2">
+              <Button size="sm" @click="erledigenFragen(zeile, 'accepted')">Übernehmen</Button>
+              <Button size="sm" variant="subtle" @click="erledigenFragen(zeile, 'rejected')">
+                Verwerfen
+              </Button>
+            </div>
+            <Badge v-else :theme="zeile.state === 'accepted' ? 'green' : 'gray'">
+              {{ zeile.state_label }}
+            </Badge>
+          </template>
+        </DataTable>
+
+        <p class="mt-3 max-w-3xl text-xs text-ink-gray-4">
+          „Übernehmen" führt die <strong>Dokumentation</strong> auf den gemessenen Wert nach und
+          ändert am Gerät nichts – dafür ist der Change-Workflow da. „Verwerfen" heißt, der
+          gemessene Zustand ist falsch; dann besteht die Abweichung weiter und gehört über einen
+          Change zurückgedreht.
+        </p>
+      </section>
+
+      <!--
+        Ein Objekt mit fünf Befunden in vier Wochen hat kein Wertproblem,
+        sondern ein Prozessproblem.
+      -->
+      <section v-if="auffaellige.length">
+        <h2 class="mb-1 text-base font-semibold text-ink-gray-8">Häufungen</h2>
+        <p class="mb-3 text-sm text-ink-gray-6">
+          Objekte, an denen wiederholt etwas abweicht. Entweder stimmt dort die Dokumentation
+          nicht, oder es wird ohne Change gearbeitet.
+        </p>
+        <DataTable :columns="haeufungSpalten" :rows="auffaellige" :seiten-groesse="0">
+          <template #zelle-object_name="{ zeile }">
+            <span class="font-mono text-sm text-ink-gray-9">{{ zeile.object_name }}</span>
+            <span class="block text-sm text-ink-gray-5">{{ zeile.object_type }}</span>
+          </template>
+          <template #zelle-fields="{ zeile }">
+            <Badge v-for="f in zeile.fields" :key="f" class="mr-1" theme="gray">{{ f }}</Badge>
+          </template>
+          <template #zelle-befund="{ zeile }">
+            <StatusDot :level="zeile.level" :text="zeile.reasons[0] || 'unauffällig'" klein />
+          </template>
+        </DataTable>
+      </section>
+    </div>
+
+    <!-- Erledigen mit Begründung -->
+    <Dialog v-model="erledigenOffen" :options="{ title: erledigenTitel }">
+      <template #body-content>
+        <p class="mb-2 font-mono text-sm text-ink-gray-9">
+          {{ gewaehlt?.object_name }} · {{ gewaehlt?.field }}
+        </p>
+        <p class="mb-3 text-sm text-ink-gray-6">{{ erledigenText }}</p>
+        <ul v-if="gewaehlt?.reasons?.length" class="mb-3">
+          <li v-for="g in gewaehlt.reasons" :key="g" class="text-sm text-ink-gray-6">· {{ g }}</li>
+        </ul>
+        <FormControl
+          v-model="erledigenGrund"
+          label="Begründung"
+          type="text"
+          :placeholder="grundBeispiel"
+        />
+        <p v-if="grundPflicht" class="mt-2 text-xs text-ink-gray-5">
+          Ohne Begründung geht das hier nicht – der Vorgang steht sonst ohne Erklärung im
+          Protokoll.
+        </p>
+      </template>
+      <template #actions>
+        <Button
+          variant="solid"
+          :disabled="grundPflicht && !erledigenGrund"
+          :loading="erledigen.loading"
+          @click="erledigenAusfuehren"
+        >
+          {{ erledigenKnopf }}
+        </Button>
+      </template>
+    </Dialog>
+
+'''
+
+s = s[:anfang] + NEU + s[ende:]
+
+# ------------------------------------------------------------------ Skript
+alt_art = u"const ART = { changed: 'Abweichung', unknown_object: 'Unbekanntes Objekt', missing: 'Fehlt' }"
+assert alt_art in s
+s = s.replace(alt_art, u"const ART = { changed: 'Abweichung', unknown_object: 'Unbekanntes Objekt', missing: 'Fehlt' }", 1)
+
+# Import StatCard
+s = s.replace(
+    u"import StatusDot from '@/components/StatusDot.vue'",
+    u"import StatusDot from '@/components/StatusDot.vue'\nimport StatCard from '@/components/StatCard.vue'",
+    1,
+)
+
+io.open(p, 'w', encoding='utf-8').write(s)
+print('Vorlage ersetzt')

@@ -1,0 +1,446 @@
+"""Offline-Synchronisation zwischen PWA und Frappe (NFA-010 bis NFA-015, Kapitel 7.4).
+
+Ablauf:
+
+1. ``bootstrap`` liefert beim Start alle Stammdaten fuer den lokalen Cache.
+2. ``push`` nimmt die Offline-Warteschlange des Clients entgegen. Jede Operation
+   traegt eine lokale UUID und ist dadurch idempotent — ein wiederholter Upload
+   nach Verbindungsabbruch erzeugt keine Dubletten.
+3. Konflikt (Serverstand neuer als der Client-Basisstand): *Server gewinnt*. Die
+   Client-Fassung wird nicht verworfen, sondern als Konflikt zurueckgemeldet;
+   der Client legt sie lokal als Entwurfskopie ab und informiert den Benutzer.
+4. ``pull`` holt alle Aenderungen seit dem letzten Sync-Zeitstempel.
+"""
+
+from __future__ import annotations
+
+import base64
+import hashlib
+import json
+
+import frappe
+from frappe import _
+from frappe.utils import cint, get_datetime, now_datetime
+
+SYNCBARE_DOCTYPES = {"Pruefprotokoll", "Mangel", "Tagesbericht"}
+MAX_BATCH = 50
+
+
+# ----------------------------------------------------------------------------
+# Bootstrap
+# ----------------------------------------------------------------------------
+
+@frappe.whitelist()
+def bootstrap() -> dict:
+	"""Alles, was die App fuer den Offline-Betrieb braucht."""
+	settings = frappe.get_cached_doc("Baudoku Settings")
+	mitarbeiter = frappe.db.get_value(
+		"Employee", {"user_id": frappe.session.user},
+		["name", "employee_name", "designation", "company"], as_dict=True
+	)
+
+	return {
+		"benutzer": {
+			"user": frappe.session.user,
+			"vollname": frappe.utils.get_fullname(),
+			"rollen": frappe.get_roles(),
+			"mitarbeiter": mitarbeiter,
+			"sprache": frappe.local.lang or "de",
+		},
+		"einstellungen": {
+			"riso_pro_modul_kohm": settings.riso_pro_modul_kohm,
+			"riso_minimum_kohm": settings.riso_minimum_kohm,
+			"uoc_toleranz_prozent": settings.uoc_toleranz_prozent,
+			"isc_toleranz_prozent": settings.isc_toleranz_prozent,
+			"uebersteuerung_erlaubt": settings.uebersteuerung_erlaubt,
+			"nachweisfoto_pflicht": settings.nachweisfoto_pflicht,
+			"max_foto_mb": settings.max_foto_mb,
+			"foto_max_kante_px": settings.foto_max_kante_px,
+			"sync_batch_groesse": settings.sync_batch_groesse or 25,
+			"offline_puffer_mb": settings.offline_puffer_mb or 100,
+		},
+		"mangelkategorien": frappe.get_all(
+			"Mangelkategorie", filters={"aktiv": 1},
+			fields=["name", "kategorie_name", "bereich", "farbe"], limit_page_length=0,
+		),
+		"schweregrade": frappe.get_all(
+			"Mangel Schweregrad",
+			fields=["name", "code", "bezeichnung", "farbe", "sla_tage", "blockiert_abnahme"],
+			order_by="sortierung asc", limit_page_length=0,
+		),
+		"vorlagen": frappe.get_all(
+			"Checklistenvorlage", filters={"status": "Veroeffentlicht"},
+			fields=["name", "titel", "vorlage_typ", "anlagen_typ", "revision",
+			        "anzahl_pruefpunkte", "modified"],
+			limit_page_length=0,
+		),
+		"anlagen": frappe.get_all(
+			"PV Anlage",
+			fields=["name", "anlage_name", "anlagen_typ", "status", "customer", "project",
+			        "kwp", "kwh_speicher", "ladepunkte", "anzahl_strings", "modul_uoc",
+			        "modul_isc", "adresse", "plz", "ort", "gps_lat", "gps_lng",
+			        "offene_maengel", "letzte_pruefung", "naechste_wartung", "modified"],
+			limit_page_length=0, order_by="anlage_name asc",
+		),
+		"server_zeit": str(now_datetime()),
+	}
+
+
+# ----------------------------------------------------------------------------
+# Push
+# ----------------------------------------------------------------------------
+
+@frappe.whitelist()
+def push(operationen: str | list, client_version: str | None = None) -> dict:
+	"""Verarbeitet die Offline-Warteschlange.
+
+	Jede Operation:
+	``{"lokale_id", "doctype", "aktion": "create|update", "daten", "basis_modified"}``
+	"""
+	if isinstance(operationen, str):
+		operationen = json.loads(operationen)
+	if len(operationen) > MAX_BATCH:
+		frappe.throw(_("Maximal {0} Operationen je Batch.").format(MAX_BATCH))
+
+	ergebnisse = []
+	for op in operationen:
+		try:
+			ergebnisse.append(_verarbeite(op, client_version))
+			frappe.db.commit()
+		except Exception as fehler:
+			frappe.db.rollback()
+			frappe.log_error(
+				title=f"Baudoku-Sync {op.get('doctype')} {op.get('lokale_id')}",
+				message=frappe.get_traceback(),
+			)
+			ergebnisse.append({
+				"lokale_id": op.get("lokale_id"),
+				"ergebnis": "Fehler",
+				"meldung": str(fehler),
+			})
+			_protokolliere(op, "Fehler", str(fehler), client_version)
+			frappe.db.commit()
+
+	return {"ergebnisse": ergebnisse, "server_zeit": str(now_datetime())}
+
+
+def _verarbeite(op: dict, client_version: str | None) -> dict:
+	doctype = op.get("doctype")
+	lokale_id = op.get("lokale_id")
+	daten = op.get("daten") or {}
+
+	if doctype not in SYNCBARE_DOCTYPES:
+		frappe.throw(_("Dokumenttyp {0} ist nicht synchronisierbar.").format(doctype))
+	if not lokale_id:
+		frappe.throw(_("Jede Sync-Operation benoetigt eine lokale ID."))
+
+	vorhanden = frappe.db.get_value(doctype, {"lokale_id": lokale_id}, ["name", "modified"], as_dict=True)
+
+	if not vorhanden:
+		doc = frappe.new_doc(doctype)
+		doc.update(_bereinige(doctype, daten))
+		doc.lokale_id = lokale_id
+		doc.offline_erstellt = 1
+		doc.synchronisiert_am = now_datetime()
+		if hasattr(doc, "client_version"):
+			doc.client_version = client_version
+		doc.insert()
+		_verweise_aufloesen(doctype, doc)
+		_protokolliere(op, "Erfolg", "Neu angelegt", client_version, doc.name)
+		return {"lokale_id": lokale_id, "ergebnis": "Erfolg", "name": doc.name,
+		        "modified": str(doc.modified)}
+
+	# Konfliktpruefung: hat der Server sich seit dem Client-Basisstand geaendert?
+	basis = op.get("basis_modified")
+	if basis and get_datetime(vorhanden.modified) > get_datetime(basis):
+		_protokolliere(op, "Konflikt", "Serverstand ist neuer", client_version, vorhanden.name)
+		return {
+			"lokale_id": lokale_id,
+			"ergebnis": "Konflikt",
+			"name": vorhanden.name,
+			"meldung": _("Das Dokument wurde zwischenzeitlich auf dem Server geaendert. "
+			             "Die Serverfassung gilt; die lokale Fassung wurde als Entwurfskopie gesichert."),
+			"server_dokument": frappe.get_doc(doctype, vorhanden.name).as_dict(),
+		}
+
+	doc = frappe.get_doc(doctype, vorhanden.name)
+	doc.update(_bereinige(doctype, daten))
+	doc.synchronisiert_am = now_datetime()
+	doc.save()
+	_verweise_aufloesen(doctype, doc)
+	_protokolliere(op, "Erfolg", "Aktualisiert", client_version, doc.name)
+	return {"lokale_id": lokale_id, "ergebnis": "Erfolg", "name": doc.name,
+	        "modified": str(doc.modified)}
+
+
+def _verweise_aufloesen(doctype: str, doc) -> None:
+	"""Verknuepft Protokoll und Mangel, sobald beide Seiten angekommen sind.
+
+	Offline kennt der Client nur seine eigenen UUIDs. Er schreibt sie in
+	``mangel_lokal`` bzw. ``pruefprotokoll_lokal``; die echten Link-Felder
+	bleiben leer, bis die jeweils andere Seite synchronisiert ist. Weil die
+	Reihenfolge nicht garantiert ist, loest jede Seite beim Eintreffen beide
+	Richtungen auf (Abnahmekriterium AK-05).
+	"""
+	if doctype == "Mangel":
+		# Ergebniszeilen, die auf genau diesen Mangel gewartet haben
+		wartende = frappe.get_all(
+			"Pruefpunkt Ergebnis",
+			filters={"mangel_lokal": doc.lokale_id, "mangel": ["in", ["", None]]},
+			pluck="name",
+		)
+		for zeile in wartende:
+			frappe.db.set_value("Pruefpunkt Ergebnis", zeile, "mangel", doc.name,
+			                    update_modified=False)
+
+		if doc.pruefprotokoll_lokal and not doc.pruefprotokoll:
+			protokoll = frappe.db.get_value(
+				"Pruefprotokoll", {"lokale_id": doc.pruefprotokoll_lokal}, "name"
+			)
+			if protokoll:
+				frappe.db.set_value("Mangel", doc.name, "pruefprotokoll", protokoll,
+				                    update_modified=False)
+
+	elif doctype == "Pruefprotokoll":
+		for zeile in doc.ergebnisse:
+			if zeile.mangel or not zeile.mangel_lokal:
+				continue
+			mangel = frappe.db.get_value("Mangel", {"lokale_id": zeile.mangel_lokal}, "name")
+			if mangel:
+				frappe.db.set_value("Pruefpunkt Ergebnis", zeile.name, "mangel", mangel,
+				                    update_modified=False)
+
+		wartende = frappe.get_all(
+			"Mangel",
+			filters={"pruefprotokoll_lokal": doc.lokale_id, "pruefprotokoll": ["in", ["", None]]},
+			pluck="name",
+		)
+		for mangel in wartende:
+			frappe.db.set_value("Mangel", mangel, "pruefprotokoll", doc.name, update_modified=False)
+
+
+def _bereinige(doctype: str, daten: dict) -> dict:
+	"""Nur beschreibbare Felder des Doctypes uebernehmen."""
+	meta = frappe.get_meta(doctype)
+	gesperrt = {"name", "owner", "creation", "modified", "modified_by", "docstatus",
+	            "idx", "doctype", "lokale_id", "offline_erstellt", "synchronisiert_am"}
+	erlaubt = {df.fieldname for df in meta.fields if not df.read_only} - gesperrt
+	tabellen = {df.fieldname for df in meta.fields if df.fieldtype == "Table"}
+
+	sauber = {}
+	for key, value in daten.items():
+		if key in tabellen:
+			sauber[key] = _kindzeilen_bereinigen(value)
+		elif key in erlaubt:
+			sauber[key] = value
+	# Status und Fortschritt duerfen gesetzt werden, auch wenn sie read_only sind
+	for key in ("status", "gesamtbewertung"):
+		if key in daten:
+			sauber[key] = daten[key]
+	return sauber
+
+
+# Link-Felder in Kindtabellen, die der Client nicht setzen darf: Er kennt dort
+# nur lokale UUIDs, die keiner Server-Referenz entsprechen.
+GESPERRTE_KINDFELDER = {"mangel"}
+
+
+def _kindzeilen_bereinigen(zeilen):
+	if not isinstance(zeilen, list):
+		return zeilen
+	return [
+		{k: v for k, v in zeile.items() if k not in GESPERRTE_KINDFELDER}
+		if isinstance(zeile, dict) else zeile
+		for zeile in zeilen
+	]
+
+
+def _protokolliere(op: dict, ergebnis: str, meldung: str,
+                   client_version: str | None, dokument: str | None = None):
+	frappe.get_doc({
+		"doctype": "Baudoku Sync Log",
+		"benutzer": frappe.session.user,
+		"zeitpunkt": now_datetime(),
+		"richtung": "Push",
+		"dokumenttyp": op.get("doctype"),
+		"lokale_id": op.get("lokale_id"),
+		"dokument": dokument,
+		"ergebnis": ergebnis,
+		"meldung": meldung[:500],
+		"client_version": client_version,
+		"nutzlast": json.dumps(op.get("daten"), ensure_ascii=False, default=str)[:5000],
+	}).insert(ignore_permissions=True)
+
+
+# ----------------------------------------------------------------------------
+# Pull
+# ----------------------------------------------------------------------------
+
+# Felder der Anlagenuebersicht — die Stammdaten kommen sonst nur beim Start.
+ANLAGEN_FELDER = [
+	"name", "anlage_name", "anlagen_typ", "status", "customer", "project",
+	"kwp", "kwh_speicher", "ladepunkte", "anzahl_strings", "modul_uoc", "modul_isc",
+	"adresse", "plz", "ort", "gps_lat", "gps_lng", "offene_maengel",
+	"letzte_pruefung", "naechste_wartung", "modified",
+]
+
+MAX_PULL = 200
+
+
+def _relevanzfilter(doctype: str, mitarbeiter: str | None) -> list[dict]:
+	"""Welche Dokumente gehoeren auf *dieses* Geraet?
+
+	Ein Techniker braucht offline seine eigenen Vorgaenge, nicht den Bestand der
+	ganzen Firma. Ohne diese Einschraenkung zoege der erste Sync tausende
+	Dokumente auf das Tablet und fuellte den Speicher.
+
+	Bauleiter und Projektleiter bekommen zusaetzlich, was auf ihre Freigabe
+	wartet — das ist genau ihr Arbeitsvorrat.
+	"""
+	benutzer = frappe.session.user
+	rollen = set(frappe.get_roles())
+	ist_freigeber = bool({"Baudoku Bauleiter", "Baudoku Projektleiter", "Baudoku Admin",
+	                      "System Manager"} & rollen)
+
+	bedingungen: list[dict] = [{"owner": benutzer}]
+
+	if doctype == "Pruefprotokoll":
+		if mitarbeiter:
+			bedingungen.append({"pruefer": mitarbeiter})
+		if ist_freigeber:
+			bedingungen.append({"status": "Abgeschlossen"})
+	elif doctype == "Mangel":
+		if mitarbeiter:
+			bedingungen.append({"zugewiesen_an": mitarbeiter})
+	elif doctype == "Tagesbericht":
+		if mitarbeiter:
+			bedingungen.append({"ersteller": mitarbeiter})
+		if ist_freigeber:
+			bedingungen.append({"status": "Eingereicht"})
+
+	return bedingungen
+
+
+@frappe.whitelist()
+def pull(seit: str | None = None, doctypes: str | list | None = None) -> dict:
+	"""Aenderungen seit dem letzten Sync — die Gegenrichtung zu ``push``.
+
+	Ohne diesen Weg erfaehrt das Geraet nie, dass ein Bauleiter einen Mangel
+	zugewiesen oder ein Protokoll verifiziert hat: Die lokale Fassung bliebe auf
+	dem Stand des letzten eigenen Schreibvorgangs (NFA-012).
+
+	Die Berechtigungen der Doctypes und `permission_query_conditions` greifen
+	ueber `frappe.get_all` automatisch; die Relevanzfilter schraenken zusaetzlich
+	auf den eigenen Arbeitsvorrat ein.
+	"""
+	if isinstance(doctypes, str):
+		doctypes = json.loads(doctypes)
+	doctypes = doctypes or list(SYNCBARE_DOCTYPES)
+
+	mitarbeiter = frappe.db.get_value("Employee", {"user_id": frappe.session.user}, "name")
+	zeitfilter = {"modified": [">", seit]} if seit else {}
+
+	daten: dict[str, list] = {}
+	for doctype in doctypes:
+		if doctype not in SYNCBARE_DOCTYPES:
+			continue
+
+		namen: set[str] = set()
+		for bedingung in _relevanzfilter(doctype, mitarbeiter):
+			namen.update(
+				frappe.get_all(
+					doctype,
+					filters={**zeitfilter, **bedingung},
+					pluck="name",
+					order_by="modified desc",
+					limit_page_length=MAX_PULL,
+				)
+			)
+		daten[doctype] = [frappe.get_doc(doctype, name).as_dict() for name in sorted(namen)[:MAX_PULL]]
+
+	# Anlagen als flache Liste: Sie aendern sich haeufig (Maengelzaehler,
+	# Wartungstermin) und werden sonst nur beim Anwendungsstart aktualisiert.
+	anlagen = frappe.get_all(
+		"PV Anlage", filters=zeitfilter, fields=ANLAGEN_FELDER,
+		order_by="modified desc", limit_page_length=MAX_PULL,
+	)
+
+	_pull_protokollieren(len(anlagen) + sum(len(v) for v in daten.values()), seit)
+
+	return {"daten": daten, "anlagen": anlagen, "server_zeit": str(now_datetime())}
+
+
+def _pull_protokollieren(anzahl: int, seit: str | None):
+	if not anzahl:
+		return
+	frappe.get_doc({
+		"doctype": "Baudoku Sync Log",
+		"benutzer": frappe.session.user,
+		"zeitpunkt": now_datetime(),
+		"richtung": "Pull",
+		"ergebnis": "Erfolg",
+		"meldung": f"{anzahl} Dokumente seit {seit or 'Beginn'}",
+	}).insert(ignore_permissions=True)
+
+
+# ----------------------------------------------------------------------------
+# Fotos
+# ----------------------------------------------------------------------------
+
+@frappe.whitelist()
+def foto_hochladen(dateiname: str, inhalt_base64: str, doctype: str | None = None,
+                   docname: str | None = None, lokale_id: str | None = None) -> dict:
+	"""Nimmt ein clientseitig komprimiertes Foto entgegen (NFA-013, NFA-044).
+
+	Der SHA-256-Hash wird serverseitig ueber den empfangenen Bytestrom gebildet
+	und dient als Manipulationsnachweis.
+	"""
+	if lokale_id:
+		vorhanden = frappe.db.get_value(
+			"File", {"attached_to_field": "lokale_id", "file_name": f"{lokale_id}-{dateiname}"},
+			["file_url", "name"], as_dict=True
+		)
+		if vorhanden:
+			return {"file_url": vorhanden.file_url, "name": vorhanden.name, "dublette": True}
+
+	if "," in inhalt_base64:
+		inhalt_base64 = inhalt_base64.split(",", 1)[1]
+	rohdaten = base64.b64decode(inhalt_base64)
+
+	max_mb = frappe.db.get_single_value("Baudoku Settings", "max_foto_mb") or 2
+	if len(rohdaten) > max_mb * 1024 * 1024 * 1.2:
+		frappe.throw(
+			_("Das Foto ist mit {0:.1f} MB zu gross (Grenze {1} MB nach Kompression).")
+			.format(len(rohdaten) / 1024 / 1024, max_mb)
+		)
+
+	pruefsumme = hashlib.sha256(rohdaten).hexdigest()
+	datei = frappe.get_doc({
+		"doctype": "File",
+		"file_name": f"{lokale_id}-{dateiname}" if lokale_id else dateiname,
+		"attached_to_doctype": doctype,
+		"attached_to_name": docname,
+		"content": rohdaten,
+		"is_private": 1,
+	}).insert(ignore_permissions=True)
+
+	return {"file_url": datei.file_url, "name": datei.name, "hash": pruefsumme,
+	        "groesse": len(rohdaten), "dublette": False}
+
+
+@frappe.whitelist()
+def sync_status() -> dict:
+	"""Kennzahlen fuer den Sync-Indikator in der UI (Kapitel 7.4, Punkt 6)."""
+	letzter = frappe.get_all(
+		"Baudoku Sync Log",
+		filters={"benutzer": frappe.session.user, "ergebnis": "Erfolg"},
+		fields=["zeitpunkt"], order_by="zeitpunkt desc", limit_page_length=1,
+	)
+	fehler = frappe.db.count("Baudoku Sync Log", {
+		"benutzer": frappe.session.user, "ergebnis": ["in", ["Fehler", "Konflikt"]],
+	})
+	return {
+		"letzter_sync": str(letzter[0].zeitpunkt) if letzter else None,
+		"fehler_gesamt": cint(fehler),
+		"server_zeit": str(now_datetime()),
+	}

@@ -1,0 +1,38 @@
+/**
+ * Filter- und Suchzustand in der Adresszeile halten.
+ *
+ * Zwei Gründe: Ein Neuladen — im Feld nach einem Verbindungsabbruch nicht
+ * selten — wirft die Filter sonst weg. Und ein Bauleiter kann eine gefilterte
+ * Ansicht als Link weitergeben („die drei offenen A-Mängel auf Ostermiething").
+ *
+ * `router.replace` statt `push`: Jede Filteränderung als eigenen Verlaufseintrag
+ * zu führen macht die Zurück-Taste unbrauchbar.
+ */
+
+import { watch, type Ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+
+export function useUrlFilter(felder: Record<string, Ref<string>>): void {
+  const route = useRoute()
+  const router = useRouter()
+
+  // Anfangszustand aus der URL übernehmen — vor dem ersten Rendern.
+  for (const [schluessel, wert] of Object.entries(felder)) {
+    const ausUrl = route.query[schluessel]
+    if (typeof ausUrl === 'string') wert.value = ausUrl
+  }
+
+  watch(Object.values(felder), () => {
+    const query: Record<string, string> = {}
+
+    // Fremde Parameter erhalten (z. B. `demo`, `kamera`).
+    for (const [schluessel, wert] of Object.entries(route.query)) {
+      if (!(schluessel in felder) && typeof wert === 'string') query[schluessel] = wert
+    }
+    for (const [schluessel, wert] of Object.entries(felder)) {
+      if (wert.value) query[schluessel] = wert.value
+    }
+
+    void router.replace({ query })
+  })
+}

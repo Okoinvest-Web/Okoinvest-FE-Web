@@ -1,0 +1,36 @@
+import { describe, expect, it } from 'vitest'
+
+import { anlagenNameAusCode } from './code'
+
+describe('anlagenNameAusCode', () => {
+  it('liest die Nummer aus dem Deep-Link des Aufklebers', () => {
+    expect(anlagenNameAusCode('https://erp.oekovolt.at/baudoku/anlagen/ANL-2026-00001')).toBe(
+      'ANL-2026-00001',
+    )
+  })
+
+  it('ignoriert Query und Fragment', () => {
+    expect(anlagenNameAusCode('https://erp.oekovolt.at/baudoku/anlagen/ANL-1?ref=qr#oben')).toBe(
+      'ANL-1',
+    )
+  })
+
+  it('dekodiert kodierte Zeichen', () => {
+    expect(anlagenNameAusCode('https://x/baudoku/anlagen/ANL%2F7')).toBe('ANL/7')
+  })
+
+  // Aufkleber älterer Generationen tragen nur die Nummer
+  it('akzeptiert die bloße Nummer', () => {
+    expect(anlagenNameAusCode('ANL-2026-00004')).toBe('ANL-2026-00004')
+    expect(anlagenNameAusCode('  ANL-9  ')).toBe('ANL-9')
+  })
+
+  it('lehnt fremde Adressen ab', () => {
+    expect(anlagenNameAusCode('https://example.com/irgendwas')).toBeNull()
+  })
+
+  it('lehnt Freitext und Leeres ab', () => {
+    expect(anlagenNameAusCode('Wechselrichter Nummer 4')).toBeNull()
+    expect(anlagenNameAusCode('   ')).toBeNull()
+  })
+})

@@ -1,0 +1,133 @@
+"""Ersetzt kopierte Hilfsfunktionen durch Importe aus src/viz.js."""
+import io
+import re
+
+# --- balkenFarbe -----------------------------------------------------------
+# Die lokalen Fassungen nahmen teils eine Stufe, teils Prozent entgegen.
+# Beide Varianten hier erfassen und auf die gemeinsame Funktion abbilden.
+
+BALKEN_STUFE = """function balkenFarbe(level) {
+  return { ok: 'var(--viz-seq-400)', warning: 'var(--viz-warning)', critical: 'var(--viz-critical)' }[level]
+}"""
+
+BALKEN_PROZENT_IPAM = """function balkenFarbe(auslastung) {
+  if (auslastung >= 90) return 'var(--viz-critical)'
+  if (auslastung >= 70) return 'var(--viz-warning)'
+  return 'var(--viz-seq-400)'
+}
+
+/** Benennung des Schwellwerts – die Farbe warnt nie allein. */
+function schwelle(auslastung) {
+  if (auslastung >= 90) return 'kritisch'
+  if (auslastung >= 70) return 'hoch'
+  return null
+}"""
+
+BALKEN_COMPLIANCE = """function balkenFarbe(prozent) {
+  if (prozent >= 80) return 'var(--viz-good)'
+  if (prozent >= 50) return 'var(--viz-warning)'
+  return 'var(--viz-critical)'
+}"""
+
+SCHWEREGRAD = """function gradStufe(grad) {
+  return { critical: 'critical', high: 'serious', medium: 'warning', low: 'neutral' }[grad] || 'neutral'
+}"""
+
+PRIO = """function prioStufe(prio) {
+  return { critical: 'critical', high: 'serious', medium: 'warning', low: 'neutral' }[prio] || 'neutral'
+}"""
+
+KRIT = """function kritikalitaetStufe(wert) {
+  return { critical: 'critical', high: 'serious', medium: 'warning', low: 'neutral' }[wert] || 'neutral'
+}"""
+
+RISIKO = """function risikoStufe(risiko) {
+  return { high: 'critical', medium: 'warning', low: 'neutral' }[risiko] || 'neutral'
+}"""
+
+PRIO_DOSSIER = """function prioStufe(wert) {
+  return { critical: 'critical', high: 'serious', medium: 'warning', low: 'neutral' }[wert] || 'neutral'
+}"""
+
+
+def ersetze(pfad, paare, importzeile=None):
+    text = io.open(pfad, encoding="utf-8").read()
+    geaendert = False
+
+    for alt, neu in paare:
+        if alt in text:
+            text = text.replace(alt, neu)
+            geaendert = True
+        else:
+            print("  nicht gefunden in", pfad, ":", alt.split("\n")[0][:60])
+
+    if geaendert and importzeile and importzeile not in text:
+        # Hinter den letzten bestehenden Import setzen.
+        importe = list(re.finditer(r"^import .*$", text, re.M))
+        if importe:
+            ende = importe[-1].end()
+            text = text[:ende] + "\n" + importzeile + text[ende:]
+
+    io.open(pfad, "w", encoding="utf-8").write(text)
+    if geaendert:
+        print("ok", pfad)
+
+
+# Seiten mit stufenbasiertem Balken
+for pfad in [
+    "src/pages/BackupView.vue",
+    "src/pages/VirtualizationView.vue",
+    "src/pages/PowerView.vue",
+]:
+    ersetze(pfad, [("\n" + BALKEN_STUFE + "\n", "\n")], "import { balkenFarbe } from '@/viz'")
+
+ersetze(
+    "src/pages/IpamTree.vue",
+    [
+        (
+            BALKEN_PROZENT_IPAM,
+            "// Schwelle und Farbe kommen aus src/viz.js – sie gelten überall gleich.",
+        ),
+        ("balkenFarbe(knoten.utilization)", "balkenFarbe(auslastungStufe(knoten.utilization))"),
+        ("schwelle(knoten.utilization)", "auslastungText(knoten.utilization)"),
+    ],
+    "import { auslastungStufe, auslastungText, balkenFarbe } from '@/viz'",
+)
+
+ersetze(
+    "src/pages/ComplianceView.vue",
+    [(BALKEN_COMPLIANCE, "// Erfüllungsgrad: ab 80 % gut, ab 50 % mit Warnung, darunter kritisch.")],
+    "import { balkenFarbe } from '@/viz'",
+)
+
+# Schweregrad-, Prioritaets-, Kritikalitaets- und Risikoabbildungen
+ersetze(
+    "src/pages/AlertList.vue",
+    [("\n" + SCHWEREGRAD + "\n", "\n"), ("gradStufe(", "schweregradStufe(")],
+    "import { schweregradStufe } from '@/viz'",
+)
+ersetze(
+    "src/pages/IncidentList.vue",
+    [("\n" + SCHWEREGRAD + "\n", "\n"), ("gradStufe(", "schweregradStufe(")],
+    "import { schweregradStufe } from '@/viz'",
+)
+ersetze(
+    "src/pages/TicketView.vue",
+    [("\n" + PRIO + "\n", "\n"), ("prioStufe(", "schweregradStufe(")],
+    "import { schweregradStufe } from '@/viz'",
+)
+ersetze(
+    "src/pages/ServiceView.vue",
+    [("\n" + KRIT + "\n", "\n")],
+    "import { kritikalitaetStufe } from '@/viz'",
+)
+ersetze(
+    "src/pages/ChangeView.vue",
+    [("\n" + RISIKO + "\n", "\n")],
+    "import { risikoStufe } from '@/viz'",
+)
+ersetze(
+    "src/components/ObjectDossier.vue",
+    [("\n" + PRIO_DOSSIER + "\n", "\n"), ("prioStufe(", "schweregradStufe(")],
+    "import { schweregradStufe } from '@/viz'",
+)

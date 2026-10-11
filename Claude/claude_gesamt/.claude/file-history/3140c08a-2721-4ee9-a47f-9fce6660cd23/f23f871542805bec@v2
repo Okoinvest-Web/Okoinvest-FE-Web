@@ -1,0 +1,27 @@
+export const meta = {
+  name: 'welle3-qm',
+  description: 'Welle 3: Abnahme durch den Qualitätsmanager (verify, Gesamtprüfung, Commit-Vorschlag)',
+  phases: [{ title: 'Abnahme' }],
+}
+phase('Abnahme')
+const qm = await agent(`AUFTRAG (ausdrücklich erteilt vom Inhaber): Du bist der QUALITÄTSMANAGER für Welle 3 der ÖkoInvest-Website. Prüfen, Fehler direkt beheben, abnehmen – nicht nur analysieren, keine Rückfragen.
+
+PROJEKT: Next.js 15, React 19, Tailwind v4. Zuerst lesen: uebergabe/UEBERGABE.md (Vorgaben, Regeln) und die Berichte aller 8 Pakete (Bau und Prüfung) in C:/Users/SALEADMIN/claude-browser/armee/welle3-berichte.md. Der Paketzuschnitt steht in uebergabe/workflows/welle3.workflow.js (dort auch die REGELN, die für dich genauso gelten).
+
+VORGABEN: EINE Website mit identischem Design; jede öffentliche Seite funktioniert gemeinsam und unter /de, /at, /ch, /en, /en/<land>; DE/AT/CH strikt getrennt, Werte nur aus dem Faktenregister, sonst LandHinweis; ungeprüfte neue Seiten noindex und nicht in der Sitemap; keine Fremdmarken, keine Umweltclaims, keine erfundenen Zahlen/Meldungen, kein Scraping.
+
+HARTE REGELN: Keine git-Commits. Keine neuen npm-Abhängigkeiten. Dev-Server http://localhost:3100 NICHT beenden, kein next build. Antwortet der Server nicht: warten (ein Wächter startet ihn neu). Rechenlogik nur mit grünen Charakterisierungstests ändern.
+
+AUFGABEN:
+1. Bekannter roter Test „englische Seiten außerhalb des Registers“ (neue Seiten gewerbestrom-check, ausschreibungen u. a.): Ursache beheben (Sprachregister vollständig).
+2. npm test, npm run test:charakterisierung, npx eslint auf alle geänderten Dateien (git status).
+3. HTTP-Prüfung aller neuen und geänderten Seiten in allen Länder- und Sprachvarianten: 200, lang-Attribut, canonical, hreflang, noindex korrekt; Sitemap ohne noindex-Seiten.
+4. Design-Gleichheit: Screenshots 1440 und 390 der neuen Seiten (cd ~/claude-browser && MSYS_NO_PATHCONV=1 node check.mjs http://localhost:3100 <ordner im scratchpad> 1440,390 /pfad …; höchstens 8 Pfade je Aufruf) und mit dem Read-Tool ansehen. Keine Überläufe.
+5. Keine Konflikte zwischen Paketen in gemeinsamen Dateien (Navigation, Register, marktdaten/page.js, Rechner/tools.js).
+6. Lead-Kette: jedes neue Formular kommt im Demo-Backend mit Land und Einwilligungsprotokoll an (vorhandene E2E-Tests nutzen/ergänzen).
+7. Restliches „ß“ auf /ch (Ratgeber-Karten, Ratgeber-Artikel, JSON-LD): Suchlauf über alle CH-Seiten, Fundstellen beheben.
+8. Recht/Claims stichprobenartig; neue Abhängigkeiten in package.json prüfen und begründen oder entfernen.
+9. Am Ende EIN vollständiger grüner Lauf von npm run verify (nur du, nicht parallel; bei Serverabsturz warten und betroffene Schritte wiederholen, dann Gesamtlauf).
+
+RÜCKGABE (deutsch): Abnahmeprotokoll, offene Inhaberpunkte (gesammelt aus allen Paketen, nach Wichtigkeit), Liste der neuen Seiten mit Pfad, und Commit-Vorschlag als JSON-Liste [{"titel":"…","pfade":["…"]}] (deutsche Titel, ein Thema pro Commit, jede geänderte Datei in genau einem Commit; uebergabe/ und *.tmp.js nicht aufnehmen).`, { label: 'Welle 3 · Qualitätsmanager', phase: 'Abnahme' })
+return { qm }

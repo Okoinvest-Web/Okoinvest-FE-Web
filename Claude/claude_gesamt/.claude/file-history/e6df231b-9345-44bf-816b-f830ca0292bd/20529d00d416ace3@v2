@@ -1,0 +1,204 @@
+<script setup lang="ts">
+/** Abgeschlossenes Protokoll lesen, PDF erzeugen, verifizieren (FA-041, FA-090). */
+import { computed, onMounted, ref } from 'vue'
+
+import AppIcon from '@/components/AppIcon.vue'
+import StatusAbzeichen from '@/components/StatusAbzeichen.vue'
+import { baudoku } from '@/lib/api'
+import { db } from '@/lib/db'
+import { datumZeit, prozent, zahl } from '@/lib/format'
+import type { Protokoll } from '@/lib/typen'
+import { useStammdaten } from '@/stores/stammdaten'
+import { useUi } from '@/stores/ui'
+
+const props = defineProps<{ lokaleId: string }>()
+
+const stammdaten = useStammdaten()
+const ui = useUi()
+
+const protokoll = ref<Protokoll | null>(null)
+const laedt = ref(true)
+const pdfLaeuft = ref(false)
+
+const anlage = computed(() =>
+  protokoll.value ? stammdaten.anlage(protokoll.value.anlage) : undefined,
+)
+
+const sektionen = computed(() => {
+  const gruppen: { name: string; zeilen: Protokoll['ergebnisse'] }[] = []
+  for (const zeile of protokoll.value?.ergebnisse ?? []) {
+    const letzte = gruppen.at(-1)
+    if (!letzte || letzte.name !== zeile.sektion) gruppen.push({ name: zeile.sektion, zeilen: [zeile] })
+    else letzte.zeilen.push(zeile)
+  }
+  return gruppen
+})
+
+function anzeige(zeile: Protokoll['ergebnisse'][number]): string {
+  switch (zeile.feldtyp) {
+    case 'Bewertung':
+      return zeile.bewertung || '–'
+    case 'Zahlenwert':
+      return zahl(zeile.wert_zahl, zeile.einheit)
+    case 'Ja-Nein':
+      return zeile.wert_ja_nein ? 'Ja' : 'Nein'
+    case 'Foto':
+      return zeile.fotos?.length ? `${zeile.fotos.length} Foto(s)` : '–'
+    default:
+      return zeile.wert_text || '–'
+  }
+}
+
+async function pdf() {
+  if (!protokoll.value?.name) {
+    ui.warnung('Das Protokoll ist noch nicht synchronisiert — PDF erst nach dem Sync möglich.')
+    return
+  }
+  pdfLaeuft.value = true
+  try {
+    const ergebnis = (await baudoku.pdfErzeugen('Pruefprotokoll', protokoll.value.name)) as {
+      file_url: string
+    }
+    if (ergebnis.file_url) window.open(ergebnis.file_url, '_blank')
+    else ui.erfolg('PDF wurde erzeugt und am Dokument abgelegt.')
+  } catch (fehler) {
+    ui.fehler((fehler as Error).message)
+  } finally {
+    pdfLaeuft.value = false
+  }
+}
+
+async function verifizieren() {
+  if (!protokoll.value?.name) return
+  try {
+    await baudoku.dokumentMethode('Pruefprotokoll', protokoll.value.name, 'verifizieren')
+    protokoll.value.status = 'Verifiziert'
+    await db.protokolle.put(protokoll.value)
+    ui.erfolg('Protokoll verifiziert.')
+  } catch (fehler) {
+    ui.fehler((fehler as Error).message)
+  }
+}
+
+onMounted(async () => {
+  protokoll.value = (await db.protokolle.get(props.lokaleId)) ?? null
+  laedt.value = false
+})
+</script>
+
+<template>
+  <p v-if="laedt" class="py-8 text-center text-sm text-slate-500">Wird geladen …</p>
+
+  <p v-else-if="!protokoll" class="karte p-6 text-center text-sm text-slate-500">
+    Protokoll lokal nicht gefunden.
+  </p>
+
+  <div v-else class="space-y-5">
+    <header class="karte p-4">
+      <div class="flex flex-wrap items-start gap-3">
+        <div class="min-w-0 flex-1">
+          <div class="flex flex-wrap items-center gap-2">
+            <h2 class="text-xl font-bold">{{ anlage?.anlage_name ?? protokoll.anlage }}</h2>
+            <StatusAbzeichen :wert="protokoll.status" />
+            <StatusAbzeichen v-if="protokoll.gesamtbewertung" :wert="protokoll.gesamtbewertung" />
+          </div>
+          <p class="mt-1 text-sm text-slate-500">
+            {{ protokoll.vorlage_typ }} · Rev. {{ protokoll.vorlage_revision }}
+            <span v-if="protokoll.name"> · {{ protokoll.name }}</span>
+          </p>
+        </div>
+        <div class="flex gap-2">
+          <button class="knopf-sekundaer px-3 text-sm" :disabled="pdfLaeuft" @click="pdf">
+            <AppIcon name="pdf" :groesse="18" /> PDF
+          </button>
+          <button
+            v-if="stammdaten.istBauleiter && protokoll.status === 'Abgeschlossen'"
+            class="knopf-primaer px-3 text-sm"
+            @click="verifizieren"
+          >
+            <AppIcon name="check" :groesse="18" /> Verifizieren
+          </button>
+        </div>
+      </div>
+
+      <dl class="mt-4 grid grid-cols-2 gap-3 text-sm tablet:grid-cols-4">
+        <div>
+          <dt class="text-xs text-slate-400">Beginn</dt>
+          <dd class="font-medium">{{ datumZeit(protokoll.pruef_datum) }}</dd>
+        </div>
+        <div>
+          <dt class="text-xs text-slate-400">Ende</dt>
+          <dd class="font-medium">{{ datumZeit(protokoll.abschluss_datum) }}</dd>
+        </div>
+        <div>
+          <dt class="text-xs text-slate-400">Wetter</dt>
+          <dd class="font-medium">{{ protokoll.wetter ?? '–' }}</dd>
+        </div>
+        <div>
+          <dt class="text-xs text-slate-400">Fortschritt</dt>
+          <dd class="font-medium tabular-nums">{{ prozent(protokoll.fortschritt) }}</dd>
+        </div>
+      </dl>
+    </header>
+
+    <section v-for="sektion in sektionen" :key="sektion.name" class="karte overflow-hidden">
+      <h3 class="border-b border-slate-200 px-4 py-2 font-semibold dark:border-slate-800">
+        {{ sektion.name }}
+      </h3>
+      <table class="tabelle">
+        <tbody>
+          <tr v-for="z in sektion.zeilen" :key="z.pruefpunkt_key">
+            <td class="w-12 text-slate-400">{{ z.nummer }}</td>
+            <td>
+              {{ z.titel }}
+              <p v-if="z.bemerkung" class="text-xs text-slate-500">{{ z.bemerkung }}</p>
+              <p v-if="z.plausi_meldung && z.status !== 'OK'" class="text-xs text-slate-500">
+                {{ z.plausi_meldung }}
+              </p>
+            </td>
+            <td class="w-40 font-medium">{{ anzeige(z) }}</td>
+            <td class="w-24"><StatusAbzeichen :wert="z.status" klein /></td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section v-if="protokoll.messdaten.length" class="karte overflow-hidden">
+      <h3 class="border-b border-slate-200 px-4 py-2 font-semibold dark:border-slate-800">
+        String-Messdaten
+      </h3>
+      <div class="overflow-x-auto">
+        <table class="tabelle">
+          <thead>
+            <tr>
+              <th>String</th><th>Module</th><th>Uoc (V)</th><th>Isc (A)</th>
+              <th>Riso (kΩ)</th><th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="m in protokoll.messdaten" :key="m.string_nr">
+              <td class="font-semibold">{{ m.string_nr }}</td>
+              <td class="tabular-nums">{{ m.anzahl_module }}</td>
+              <td class="tabular-nums">{{ m.uoc ?? '–' }}</td>
+              <td class="tabular-nums">{{ m.isc ?? '–' }}</td>
+              <td class="tabular-nums">{{ m.riso ?? '–' }}</td>
+              <td><StatusAbzeichen :wert="m.status" klein /></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section v-if="protokoll.unterschriften.length" class="karte p-4">
+      <h3 class="mb-3 font-semibold">Unterschriften</h3>
+      <div class="grid gap-4 tablet:grid-cols-2">
+        <figure v-for="u in protokoll.unterschriften" :key="u.rolle">
+          <img :src="u.signatur" alt="" class="h-20 rounded bg-white p-2" />
+          <figcaption class="mt-1 border-t border-slate-200 pt-1 text-xs text-slate-500 dark:border-slate-700">
+            {{ u.name_unterzeichner }} ({{ u.rolle }}) · {{ datumZeit(u.unterzeichnet_am) }}
+          </figcaption>
+        </figure>
+      </div>
+    </section>
+  </div>
+</template>

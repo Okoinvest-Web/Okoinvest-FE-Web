@@ -1,0 +1,204 @@
+@import "tailwindcss";
+
+/*
+ * Gestaltungsgrundlage des Portals.
+ *
+ * Farbwelt: Bernstein steht fuer Erzeugung (Sonne), Smaragd fuer
+ * Eigenverbrauch und Gutschrift, Schiefer fuer Netzbezug, Rose fuer
+ * Stoerungen. Diese Zuordnung gilt in allen Diagrammen und Kennzahlen
+ * gleich - so bedeutet eine Farbe ueberall dasselbe.
+ */
+
+@theme {
+  --color-erzeugung: oklch(0.78 0.16 72);
+  --color-erzeugung-schwach: oklch(0.93 0.06 82);
+  --color-eigenverbrauch: oklch(0.67 0.15 155);
+  --color-eigenverbrauch-schwach: oklch(0.92 0.06 158);
+  --color-einspeisung: oklch(0.68 0.13 215);
+  --color-netzbezug: oklch(0.58 0.04 260);
+  --color-speicher: oklch(0.63 0.16 295);
+  --color-stoerung: oklch(0.64 0.19 22);
+
+  --font-sans:
+    var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "SF Mono", monospace;
+
+  /* Bewegungskurve: schnell anlaufen, sanft auslaufen. */
+  --ease-ruhig: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+:root {
+  --hintergrund: oklch(0.985 0.002 250);
+  --flaeche: oklch(1 0 0);
+  --rand: oklch(0.92 0.004 250);
+  --text: oklch(0.21 0.01 250);
+  --text-schwach: oklch(0.55 0.015 250);
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --hintergrund: oklch(0.17 0.012 255);
+    --flaeche: oklch(0.22 0.014 255);
+    --rand: oklch(0.3 0.016 255);
+    --text: oklch(0.96 0.003 250);
+    --text-schwach: oklch(0.68 0.012 250);
+    color-scheme: dark;
+  }
+}
+
+body {
+  background: var(--hintergrund);
+  color: var(--text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Zahlen in Tabellen und Kennzahlen sollen untereinander fluchten. */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ----------------------------------------------------------------
+ * Bewegung
+ *
+ * Alle Animationen sind kurz und laufen einmal ab. Sie sollen den
+ * Blick fuehren, nicht beschaeftigen. Wer im Betriebssystem reduzierte
+ * Bewegung eingestellt hat, bekommt sie gar nicht.
+ * ---------------------------------------------------------------- */
+
+@keyframes einblenden {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes aufsteigen {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes hereinziehen {
+  from {
+    opacity: 0;
+    transform: translateX(-0.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Seitenleiste faehrt auf schmalen Bildschirmen von links ein. */
+@keyframes schubladeAuf {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@keyframes pulsieren {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(0.85);
+  }
+}
+
+/* Laufender Punkt auf einer Leitung - zeigt Energiefluss an. */
+@keyframes fliessen {
+  from {
+    stroke-dashoffset: 24;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Linienzeichnung fuer Diagramme. */
+@keyframes linieZeichnen {
+  from {
+    stroke-dashoffset: var(--laenge, 1000);
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes schimmern {
+  from {
+    background-position: -200% 0;
+  }
+  to {
+    background-position: 200% 0;
+  }
+}
+
+.animate-aufsteigen {
+  animation: aufsteigen 0.5s var(--ease-ruhig) backwards;
+}
+
+.animate-einblenden {
+  animation: einblenden 0.4s var(--ease-ruhig) backwards;
+}
+
+.animate-hereinziehen {
+  animation: hereinziehen 0.35s var(--ease-ruhig) backwards;
+}
+
+.animate-pulsieren {
+  animation: pulsieren 2s ease-in-out infinite;
+}
+
+/* Ladeflaeche, solange Daten unterwegs sind. */
+.skelett {
+  background: linear-gradient(
+    90deg,
+    var(--rand) 25%,
+    color-mix(in oklch, var(--rand), var(--flaeche) 60%) 50%,
+    var(--rand) 75%
+  );
+  background-size: 200% 100%;
+  animation: schimmern 1.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Dezente Bildlaufleisten, damit Tabellen ruhig wirken. */
+@supports selector(::-webkit-scrollbar) {
+  ::-webkit-scrollbar {
+    height: 0.5rem;
+    width: 0.5rem;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--rand);
+    border-radius: 999px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}

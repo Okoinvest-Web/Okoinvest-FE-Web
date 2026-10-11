@@ -1,0 +1,214 @@
+/**
+ * Erzeugt Bildschirmaufnahmen aller Portalseiten.
+ *
+ * Zweck ist die Sichtpruefung: Ueberlappende Beschriftungen, abgeschnittene
+ * Diagramme oder waagrechtes Scrollen zeigen sich erst im Bild, nicht im
+ * Code. Laeuft gegen den Entwicklungsserver.
+ *
+ * Aufruf:  node werkzeuge/screenshots.mjs [ziel-ordner]
+ */
+
+import { mkdir } from "node:fs/promises";
+import { join } from "node:path";
+
+import { chromium } from "playwright";
+
+import { pruefeKontrast } from "./kontrast.mjs";
+
+const BASIS = process.env.PORTAL_URL ?? "http://localhost:3000";
+const ZIEL = process.argv[2] ?? "screenshots";
+
+const SEITEN = [
+  ["uebersicht", "/portal"],
+  ["anlagen", "/portal/anlagen"],
+  ["anlage-detail", "/portal/anlagen/ANL-0001"],
+  ["anlage-saegewerk", "/portal/anlagen/ANL-0002"],
+  ["energie", "/portal/energie"],
+  ["steuerung", "/portal/steuerung"],
+  ["regulierung", "/portal/regulierung"],
+  ["gemeinschaft", "/portal/gemeinschaft"],
+  ["gemeinschaft-lauf", "/portal/gemeinschaft/abrechnung/LAUF-2026Q2"],
+  ["zertifikate", "/portal/zertifikate"],
+  ["mobilitaet", "/portal/mobilitaet"],
+  ["belege", "/portal/belege"],
+  ["shop", "/portal/shop"],
+  ["support", "/portal/support"],
+  ["netz", "/portal/netz"],
+  ["handel", "/portal/handel"],
+  ["nachhaltigkeit", "/portal/nachhaltigkeit"],
+  ["taxonomie", "/portal/nachhaltigkeit/taxonomie"],
+  ["finanzen", "/portal/finanzen"],
+  ["support-meldung", "/portal/support/STOE-0002"],
+  ["mobilitaet-karten", "/portal/mobilitaet/karten"],
+  ["mobilitaet-abrechnung", "/portal/mobilitaet/abrechnung/LAD-2026-08"],
+  ["alarme", "/portal/alarme"],
+  ["meldewege", "/portal/alarme/meldewege"],
+  ["alarm-detail", "/portal/alarme/ALM-0001"],
+  ["dokumentation", "/portal/dokumentation"],
+  ["fernwartung", "/portal/fernwartung"],
+  ["sicherheit", "/portal/sicherheit"],
+  ["einstellungen", "/portal/einstellungen"],
+];
+
+const SITZUNG = [
+  { name: "sid", value: "demo-session" },
+  { name: "frappe_user", value: "m.steiner@steiner-holzbau.at" },
+  { name: "frappe_full_name", value: "Markus Steiner" },
+  { name: "portal_rolle", value: "geschaeftsfuehrung" },
+].map((c) => ({ ...c, domain: "localhost", path: "/" }));
+
+/*
+ * Das Erscheinungsbild wird ausdruecklich gesetzt und nicht ueber die
+ * Systemvorgabe erraten: Die Anwendung startet im dunklen Leitstand,
+ * auch auf einem hell eingestellten Rechner. Ohne den Eintrag im
+ * Speicher pruefte die helle Ansicht in Wahrheit noch einmal die
+ * dunkle - und der Kontrast der hellen Fassung waere nie geprueft.
+ */
+const ANSICHTEN = [
+  { name: "hell", schema: "light", thema: "hell", breite: 1440, hoehe: 1000 },
+  { name: "dunkel", schema: "dark", thema: "dunkel", breite: 1440, hoehe: 1000 },
+  { name: "mobil", schema: "light", thema: "hell", breite: 390, hoehe: 844 },
+];
+
+/** Schreibt die Themenwahl, bevor die Seite laeuft. */
+function themaSkript(thema) {
+  return `try{localStorage.setItem("oekovolt.thema",${JSON.stringify(thema)});}catch(e){}`;
+}
+
+await mkdir(ZIEL, { recursive: true });
+
+const browser = await chromium.launch();
+const befunde = [];
+
+for (const ansicht of ANSICHTEN) {
+  const kontext = await browser.newContext({
+    viewport: { width: ansicht.breite, height: ansicht.hoehe },
+    colorScheme: ansicht.schema,
+    locale: "de-AT",
+    timezoneId: "Europe/Vienna",
+    deviceScaleFactor: 1,
+  });
+
+  await kontext.addCookies(SITZUNG);
+  await kontext.addInitScript(themaSkript(ansicht.thema));
+  const seite = await kontext.newPage();
+
+  // Konsolenfehler der Seite einsammeln - sie deuten auf echte Probleme hin.
+  seite.on("console", (nachricht) => {
+    if (nachricht.type() === "error") {
+      befunde.push({
+        art: "Konsolenfehler",
+        ansicht: ansicht.name,
+        text: nachricht.text().slice(0, 200),
+      });
+    }
+  });
+  seite.on("pageerror", (fehler) => {
+    befunde.push({
+      art: "Seitenfehler",
+      ansicht: ansicht.name,
+      text: String(fehler).slice(0, 200),
+    });
+  });
+
+  // Die Anmeldeseite braucht einen eigenen Kontext ohne Sitzung - mit
+  // gueltigem Cookie leitet der Proxy sofort ins Portal weiter, und die
+  // Seite waere nie im Bild.
+  {
+    const anonym = await browser.newContext({
+      viewport: { width: ansicht.breite, height: ansicht.hoehe },
+      colorScheme: ansicht.schema,
+      locale: "de-AT",
+      timezoneId: "Europe/Vienna",
+    });
+    await anonym.addInitScript(themaSkript(ansicht.thema));
+    const anmeldung = await anonym.newPage();
+    const antwort = await anmeldung.goto(`${BASIS}/login`, {
+      waitUntil: "networkidle",
+      timeout: 90000,
+    });
+
+    if (antwort && antwort.status() < 400) {
+      await anmeldung.waitForTimeout(700);
+      await anmeldung.screenshot({
+        path: join(ZIEL, `${ansicht.name}-login.png`),
+        fullPage: true,
+      });
+    } else {
+      befunde.push({
+        art: "Statusfehler",
+        ansicht: ansicht.name,
+        text: `/login antwortete mit ${antwort?.status()}`,
+      });
+    }
+    await anonym.close();
+  }
+
+  for (const [name, pfad] of SEITEN) {
+    const antwort = await seite.goto(`${BASIS}${pfad}`, {
+      waitUntil: "networkidle",
+      timeout: 90000,
+    });
+
+    if (!antwort || antwort.status() >= 400) {
+      befunde.push({
+        art: "Statusfehler",
+        ansicht: ansicht.name,
+        text: `${pfad} antwortete mit ${antwort?.status()}`,
+      });
+      continue;
+    }
+
+    // Animationen auslaufen lassen, damit das Bild den Endzustand zeigt.
+    await seite.waitForTimeout(900);
+
+    // Waagrechtes Scrollen ist ein Layoutfehler - der Seitenkoerper darf
+    // nie breiter sein als das Sichtfenster.
+    const ueberlauf = await seite.evaluate(() => {
+      const koerper = document.documentElement;
+      return koerper.scrollWidth - koerper.clientWidth;
+    });
+
+    if (ueberlauf > 2) {
+      befunde.push({
+        art: "Waagrechter Überlauf",
+        ansicht: ansicht.name,
+        text: `${pfad}: ${ueberlauf} px zu breit`,
+      });
+    }
+
+    // Kontrast wird gerechnet, nicht begutachtet. Wer die Oberflaeche
+    // gebaut hat, liest jeden Text auch dann noch, wenn er kaum noch
+    // da ist - er kennt ihn auswendig.
+    const kontrastfehler = await seite.evaluate(pruefeKontrast);
+
+    for (const fehler of kontrastfehler) {
+      befunde.push({
+        art: "Kontrast",
+        ansicht: ansicht.name,
+        text: `${pfad}: "${fehler.text}" hat ${fehler.kontrast}:1, verlangt sind ${fehler.grenze}:1 (${fehler.groesse} px, ${fehler.marke}.${fehler.klasse})`,
+      });
+    }
+
+    await seite.screenshot({
+      path: join(ZIEL, `${ansicht.name}-${name}.png`),
+      fullPage: true,
+    });
+  }
+
+  await kontext.close();
+}
+
+await browser.close();
+
+console.log(`\nBilder in ${ZIEL}/ abgelegt.`);
+
+if (befunde.length === 0) {
+  console.log("Keine Auffaelligkeiten.\n");
+} else {
+  console.log(`\n${befunde.length} Auffaelligkeiten:\n`);
+  for (const b of befunde) {
+    console.log(`  [${b.ansicht}] ${b.art}: ${b.text}`);
+  }
+  console.log();
+}

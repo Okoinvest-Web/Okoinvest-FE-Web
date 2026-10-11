@@ -1,0 +1,75 @@
+"""Ersetzt fest verdrahtete Tailwind-Graustufen durch die Farbmarken.
+
+Fest verdrahtete Farben kennen den Dunkelmodus nur dort, wo jemand an
+jeder einzelnen Stelle daran gedacht hat - und genau das schlaegt fehl.
+Die Marken kennen ihn immer.
+"""
+
+import io
+import re
+import sys
+
+# Klassen, die sich eins zu eins durch eine Marke ersetzen lassen.
+# Reihenfolge zaehlt: laengere Muster zuerst.
+KLASSEN = [
+    # Fuell- und Strichfarben in SVG
+    ("stroke-slate-200 dark:stroke-slate-800", 'style_stroke:var(--linie)'),
+    ("stroke-slate-100 dark:stroke-slate-800", 'style_stroke:var(--linie-zart)'),
+    ("stroke-slate-500 dark:stroke-slate-400", 'style_stroke:var(--t-leise)'),
+    ("stroke-white dark:stroke-slate-900", 'style_stroke:var(--f-ebene)'),
+    ("fill-slate-100/70 dark:fill-slate-800/50", 'style_fill:var(--f-vertieft)'),
+    ("fill-slate-700 dark:fill-slate-200", 'style_fill:var(--t-normal)'),
+    ("fill-slate-500 dark:fill-slate-400", 'style_fill:var(--t-leise)'),
+    ("fill-slate-400", 'style_fill:var(--t-zart)'),
+    # Text
+    ("text-slate-900 dark:text-slate-50", 'style_color:var(--t-stark)'),
+    ("text-slate-900 dark:text-slate-100", 'style_color:var(--t-stark)'),
+    ("text-slate-900 tabular-nums dark:text-slate-50", 'zahl style_color:var(--t-stark)'),
+    ("text-slate-900 tabular-nums dark:text-slate-100", 'zahl style_color:var(--t-stark)'),
+    ("text-slate-600 dark:text-slate-300", 'style_color:var(--t-normal)'),
+    ("text-slate-700 dark:text-slate-200", 'style_color:var(--t-normal)'),
+    ("text-slate-500 dark:text-slate-400", 'style_color:var(--t-leise)'),
+    ("text-slate-400 tabular-nums", 'zahl style_color:var(--t-zart)'),
+    ("text-slate-400", 'style_color:var(--t-zart)'),
+    # Flaechen und Linien
+    ("border-slate-200 dark:border-slate-800", 'style_borderColor:var(--linie)'),
+    ("border-slate-200 dark:border-slate-700", 'style_borderColor:var(--linie)'),
+    ("border-slate-100 dark:border-slate-800", 'style_borderColor:var(--linie-zart)'),
+    ("bg-slate-100 dark:bg-slate-800", 'style_background:var(--f-vertieft)'),
+    ("bg-slate-50 dark:bg-slate-800/50", 'style_background:var(--f-vertieft)'),
+    ("bg-white/95 ", ""),
+    ("dark:bg-slate-900/95", 'style_background:var(--f-ebene)'),
+]
+
+
+def zerlege_klassen(klassen: str):
+    """Trennt echte Klassen von den Marken-Platzhaltern."""
+    uebrig = []
+    stile = {}
+    for teil in klassen.split():
+        if teil.startswith("style_"):
+            schluessel, wert = teil[len("style_"):].split(":", 1)
+            stile[schluessel] = wert
+        else:
+            uebrig.append(teil)
+    return " ".join(uebrig), stile
+
+
+def bearbeite(pfad: str) -> int:
+    s = io.open(pfad, encoding="utf-8").read()
+    vorher = s
+
+    for alt, neu in KLASSEN:
+        s = s.replace(alt, neu)
+
+    if s == vorher:
+        return 0
+
+    io.open(pfad, "w", encoding="utf-8").write(s)
+    return sum(1 for alt, _ in KLASSEN if alt in vorher)
+
+
+if __name__ == "__main__":
+    for pfad in sys.argv[1:]:
+        n = bearbeite(pfad)
+        print(f"{pfad}: {n} Muster")

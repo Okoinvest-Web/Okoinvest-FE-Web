@@ -1,0 +1,361 @@
+"use client";
+
+import { useId, useMemo, useRef, useState } from "react";
+
+import { Legende } from "@/components/ui";
+import { formatZahl } from "@/lib/format";
+
+/**
+ * Flaechen- und Liniendiagramm fuer Zeitreihen.
+ *
+ * Bewusst ohne Diagrammbibliothek: Die Anforderungen sind klar
+ * umrissen, und eine eigene Umsetzung erlaubt exakte Kontrolle ueber
+ * Farbzuordnung, Animation und Bedienung mit der Tastatur - bei einem
+ * Bruchteil der Ladezeit.
+ *
+ * Bedienung: Zeigen blendet Fadenkreuz und Werteblase ein. Mit den
+ * Pfeiltasten laesst sich derselbe Verlauf ohne Maus abfahren.
+ */
+
+export interface VerlaufsReihe {
+  schluessel: string;
+  label: string;
+  farbe: string;
+  werte: number[];
+  /** Flaeche unter der Linie fuellen. */
+  gefuellt?: boolean;
+  /** Gestrichelt - fuer Soll- und Vergleichswerte. */
+  gestrichelt?: boolean;
+}
+
+export interface VerlaufProps {
+  beschriftungen: string[];
+  reihen: VerlaufsReihe[];
+  einheit: string;
+  /**
+   * Nachkommastellen der Werte. Als Zahl statt als Funktion, weil
+   * Serverkomponenten keine Funktionen an Clientkomponenten uebergeben
+   * duerfen - die Formatierung passiert deshalb hier.
+   */
+  nachkommastellen?: 0 | 1 | 2;
+  hoehe?: number;
+  /** Anzahl der Beschriftungen auf der Querachse. */
+  achsenSchritte?: number;
+}
+
+const RAND = { oben: 12, rechts: 8, unten: 24, links: 44 };
+const BREITE = 720;
+
+export function Verlauf({
+  beschriftungen,
+  reihen,
+  einheit,
+  nachkommastellen = 1,
+  hoehe = 260,
+  achsenSchritte = 6,
+}: VerlaufProps) {
+  const id = useId();
+  const svgRef = useRef<SVGSVGElement>(null);
+  const [aktiv, setAktiv] = useState<number | null>(null);
+
+  const anzahl = beschriftungen.length;
+  const formatWert = (wert: number) => formatZahl(wert, nachkommastellen);
+
+  const { skalaY, skalaX, teilstriche } = useMemo(() => {
+    const alleWerte = reihen.flatMap((r) => r.werte);
+    const roh = Math.max(1, ...alleWerte);
+    // Auf eine glatte Zahl aufrunden, damit die Achse lesbar bleibt.
+    const stufe = 10 ** Math.floor(Math.log10(roh));
+    const maximum = Math.ceil(roh / (stufe / 2)) * (stufe / 2);
+
+    const innenH = hoehe - RAND.oben - RAND.unten;
+    const innenB = BREITE - RAND.links - RAND.rechts;
+
+    return {
+      maximum,
+      skalaY: (wert: number) => RAND.oben + innenH - (wert / maximum) * innenH,
+      skalaX: (index: number) =>
+        RAND.links + (anzahl <= 1 ? 0 : (index / (anzahl - 1)) * innenB),
+      teilstriche: Array.from({ length: 5 }, (_, i) => (maximum / 4) * i),
+    };
+  }, [reihen, hoehe, anzahl]);
+
+  function pfad(werte: number[]): string {
+    return werte
+      .map((wert, i) => `${i === 0 ? "M" : "L"}${skalaX(i)},${skalaY(wert)}`)
+      .join(" ");
+  }
+
+  function flaeche(werte: number[]): string {
+    const basis = skalaY(0);
+    return `${pfad(werte)} L${skalaX(werte.length - 1)},${basis} L${skalaX(0)},${basis} Z`;
+  }
+
+  function zeigerBewegt(event: React.PointerEvent<SVGSVGElement>) {
+    const svg = svgRef.current;
+    if (!svg) return;
+
+    const kasten = svg.getBoundingClientRect();
+    // Bildschirmkoordinate in das viewBox-System umrechnen.
+    const x = ((event.clientX - kasten.left) / kasten.width) * BREITE;
+    const innenB = BREITE - RAND.links - RAND.rechts;
+    const anteil = (x - RAND.links) / innenB;
+    const index = Math.round(anteil * (anzahl - 1));
+
+    setAktiv(Math.max(0, Math.min(anzahl - 1, index)));
+  }
+
+  function tasteGedrueckt(event: React.KeyboardEvent<SVGSVGElement>) {
+    if (event.key === "ArrowRight" || event.key === "ArrowLeft") {
+      event.preventDefault();
+      const richtung = event.key === "ArrowRight" ? 1 : -1;
+      setAktiv((vorher) => {
+        const basis = vorher ?? 0;
+        return Math.max(0, Math.min(anzahl - 1, basis + richtung));
+      });
+    }
+    if (event.key === "Escape") setAktiv(null);
+  }
+
+  const mehrereReihen = reihen.length >= 2;
+
+  return (
+    <div>
+      {mehrereReihen && (
+        <div className="mb-3">
+          <Legende
+            eintraege={reihen.map((r) => ({ farbe: r.farbe, label: r.label }))}
+          />
+        </div>
+      )}
+
+      <div className="relative">
+        {/*
+        Mindestbreite mit eigenem Querlauf: Auf schmalen Bildschirmen
+        wuerde das SVG sonst so weit herunterskaliert, dass die
+        Achsenbeschriftung unleserlich wird. Gescrollt wird nur das
+        Diagramm, nicht die Seite.
+      */}
+        <div className="-mx-5 min-w-0 overflow-x-auto px-5">
+          <svg
+            ref={svgRef}
+            viewBox={`0 0 ${BREITE} ${hoehe}`}
+            className="w-full touch-pan-y focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--akzent)]"
+            style={{ height: hoehe, minWidth: 560 }}
+            role="img"
+            aria-label={`Verlauf: ${reihen.map((r) => r.label).join(", ")} in ${einheit}`}
+            tabIndex={0}
+            onPointerMove={zeigerBewegt}
+            onPointerLeave={() => setAktiv(null)}
+            onKeyDown={tasteGedrueckt}
+            onBlur={() => setAktiv(null)}
+          >
+            <defs>
+              {reihen.map((reihe) => (
+                <linearGradient
+                  key={reihe.schluessel}
+                  id={`${id}-${reihe.schluessel}`}
+                  x1="0"
+                  y1="0"
+                  x2="0"
+                  y2="1"
+                >
+                  <stop
+                    offset="0%"
+                    stopColor={reihe.farbe}
+                    stopOpacity="0.28"
+                  />
+                  <stop
+                    offset="100%"
+                    stopColor={reihe.farbe}
+                    stopOpacity="0.02"
+                  />
+                </linearGradient>
+              ))}
+            </defs>
+
+            {/* Hilfslinien - zuruecktretend, damit die Daten fuehren. */}
+            {teilstriche.map((wert) => (
+              <g key={wert}>
+                <line
+                  x1={RAND.links}
+                  y1={skalaY(wert)}
+                  x2={BREITE - RAND.rechts}
+                  y2={skalaY(wert)}
+                  className="strich-linie"
+                  strokeWidth="1"
+                />
+                <text
+                  x={RAND.links - 8}
+                  y={skalaY(wert)}
+                  textAnchor="end"
+                  dominantBaseline="middle"
+                  className="fuellung-zart text-[11px] tabular-nums"
+                >
+                  {formatWert(wert)}
+                </text>
+              </g>
+            ))}
+
+            {/* Beschriftung der Querachse, ausgeduennt. */}
+            {beschriftungen.map((text, i) => {
+              const abstand = Math.max(
+                1,
+                Math.round(anzahl / Math.max(1, achsenSchritte)),
+              );
+              if (i % abstand !== 0 && i !== anzahl - 1) return null;
+              return (
+                <text
+                  key={`${text}-${i}`}
+                  x={skalaX(i)}
+                  y={hoehe - 6}
+                  textAnchor="middle"
+                  className="fuellung-zart text-[11px]"
+                >
+                  {text}
+                </text>
+              );
+            })}
+
+            {/* Flaechen zuerst, damit die Linien darauf liegen. */}
+            {reihen
+              .filter((r) => r.gefuellt)
+              .map((reihe) => (
+                <path
+                  key={`f-${reihe.schluessel}`}
+                  d={flaeche(reihe.werte)}
+                  fill={`url(#${id}-${reihe.schluessel})`}
+                  className="animate-einblenden"
+                />
+              ))}
+
+            {reihen.map((reihe, index) => (
+              <path
+                key={`l-${reihe.schluessel}`}
+                d={pfad(reihe.werte)}
+                fill="none"
+                stroke={reihe.farbe}
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={
+                  reihe.gestrichelt
+                    ? {
+                        // Eine gestrichelte Linie kann sich nicht
+                        // zeichnen: Ihr Strichmuster liegt bereits auf
+                        // demselben Weg, den die Animation verschoebe -
+                        // sie kroeche dann quer durchs Bild. Sie blendet
+                        // deshalb ein.
+                        strokeDasharray: "5 4",
+                        animation: `einblenden .5s var(--ease-aus) ${index * 90}ms backwards`,
+                      }
+                    : {
+                        animation: `linieZeichnen .9s var(--ease-ruhig) ${index * 90}ms backwards`,
+                        // Grosszuegig geschaetzte Pfadlaenge fuer die
+                        // Zeichenanimation - sie muss die tatsaechliche
+                        // uebersteigen, sonst bleibt ein Stueck stehen.
+                        ["--laenge" as string]: BREITE * 2,
+                        strokeDasharray: BREITE * 2,
+                      }
+                }
+              />
+            ))}
+
+            {/* Fadenkreuz und Messpunkte */}
+            {aktiv !== null && (
+              <g className="pointer-events-none">
+                <line
+                  x1={skalaX(aktiv)}
+                  y1={RAND.oben}
+                  x2={skalaX(aktiv)}
+                  y2={hoehe - RAND.unten}
+                  className="strich-zeiger"
+                  strokeWidth="1"
+                  strokeDasharray="3 3"
+                />
+                {reihen.map((reihe) => (
+                  <circle
+                    key={`p-${reihe.schluessel}`}
+                    cx={skalaX(aktiv)}
+                    cy={skalaY(reihe.werte[aktiv] ?? 0)}
+                    r="4.5"
+                    fill={reihe.farbe}
+                    // Ring in Flaechenfarbe trennt ueberlappende Punkte.
+                    className="strich-ebene"
+                    strokeWidth="2"
+                  />
+                ))}
+              </g>
+            )}
+          </svg>
+        </div>
+
+        {aktiv !== null && (
+          <Werteblase
+            beschriftung={beschriftungen[aktiv]}
+            reihen={reihen}
+            index={aktiv}
+            anzahl={anzahl}
+            einheit={einheit}
+            nachkommastellen={nachkommastellen}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Werteblase({
+  beschriftung,
+  reihen,
+  index,
+  anzahl,
+  einheit,
+  nachkommastellen,
+}: {
+  beschriftung: string;
+  reihen: VerlaufsReihe[];
+  index: number;
+  anzahl: number;
+  einheit: string;
+  nachkommastellen: 0 | 1 | 2;
+}) {
+  // Blase auf die andere Seite klappen, wenn sie sonst aus dem Bild liefe.
+  const anteil = anzahl <= 1 ? 0 : index / (anzahl - 1);
+  const rechts = anteil > 0.6;
+
+  return (
+    <div
+      className="animate-einblenden pointer-events-none absolute top-2 z-10 min-w-[9rem] rounded-sm border rand-linie glas p-2.5"
+      style={rechts ? { left: "0.5rem" } : { right: "0.5rem" }}
+      role="status"
+    >
+      <p className="mb-1.5 text-xs font-medium farbe-leise">
+        {beschriftung}
+      </p>
+      <ul className="space-y-1">
+        {reihen.map((reihe) => (
+          <li
+            key={reihe.schluessel}
+            className="flex items-center justify-between gap-3 text-xs"
+          >
+            <span className="flex items-center gap-1.5 farbe-normal">
+              <span
+                aria-hidden
+                className="h-2 w-2 shrink-0 rounded-[2px]"
+                style={{ background: reihe.farbe }}
+              />
+              {reihe.label}
+            </span>
+            <span className="font-medium zahl farbe-stark">
+              {formatZahl(reihe.werte[index] ?? 0, nachkommastellen)}
+              <span className="ml-0.5 font-normal farbe-zart">
+                {einheit}
+              </span>
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}

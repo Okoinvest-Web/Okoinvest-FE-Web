@@ -1,0 +1,156 @@
+"""Materialanforderung des Subunternehmers.
+
+Der Subunternehmer liefert kein Material und bestellt nichts — er fordert bei
+euch an. Deshalb ist das hier bewusst ein eigenes, einfaches Dokument und keine
+ERPNext-Bestellung: Er kennt eure Artikelnummern nicht und soll sie auch nicht
+kennen muessen. Er schreibt, was er braucht; die Zuordnung zum Artikelstamm
+macht euer Einkauf beim Uebernehmen.
+
+Aus einer geprueften Anforderung entsteht auf Knopfdruck eine ERPNext-
+Materialanforderung gegen euer Lager.
+"""
+
+from __future__ import annotations
+
+import frappe
+from frappe import _
+from frappe.model.document import Document
+from frappe.utils import getdate, now_datetime, today
+
+BEARBEITER_ROLLEN = {"Baudoku Bauleiter", "Baudoku Projektleiter", "Baudoku Admin", "System Manager"}
+
+
+class Materialanforderung(Document):
+	def validate(self):
+		self.positionen_pruefen()
+		self.termin_pruefen()
+		self.statuswechsel_pruefen()
+		if not self.angefordert_von:
+			self.angefordert_von = frappe.session.user
+			self.angefordert_am = now_datetime()
+
+	def after_insert(self):
+		self.einkauf_benachrichtigen()
+
+	def positionen_pruefen(self):
+		if not self.positionen:
+			frappe.throw(_("Die Anforderung enthaelt kein Material."))
+		for position in self.positionen:
+			if position.menge <= 0:
+				frappe.throw(
+					_("Position {0}: Die Menge muss groesser als null sein.").format(
+						position.bezeichnung
+					)
+				)
+
+	def termin_pruefen(self):
+		if self.benoetigt_am and getdate(self.benoetigt_am) < getdate(today()) and self.is_new():
+			frappe.msgprint(
+				_("Der Bedarfstermin liegt in der Vergangenheit."), indicator="orange", alert=True
+			)
+
+	def statuswechsel_pruefen(self):
+		vorher = self.get_doc_before_save()
+		wechselt = not vorher or vorher.status != self.status
+
+		if self.status in ("In Pruefung", "Bestellt", "Geliefert", "Abgelehnt") and wechselt:
+			if not BEARBEITER_ROLLEN & set(frappe.get_roles()):
+				frappe.throw(
+					_("Ueber Materialanforderungen entscheidet die Bauleitung."),
+					frappe.PermissionError,
+				)
+			self.bearbeitet_von = frappe.session.user
+			if self.status == "Abgelehnt" and not self.antwort:
+				frappe.throw(_("Bitte die Ablehnung begruenden."))
+
+	# ----------------------------------------------------------------- Aktionen
+
+	@frappe.whitelist()
+	def uebernehmen(self, warehouse: str | None = None) -> str:
+		"""Erzeugt daraus eine ERPNext-Materialanforderung gegen euer Lager.
+
+		Positionen ohne zugeordneten Artikel bleiben aussen vor und werden
+		gemeldet — sie sind vom Einkauf erst zuzuordnen.
+		"""
+		if not BEARBEITER_ROLLEN & set(frappe.get_roles()):
+			frappe.throw(_("Nur die Bauleitung kann uebernehmen."), frappe.PermissionError)
+		if self.material_request:
+			return self.material_request
+
+		ohne_artikel = [p.bezeichnung for p in self.positionen if not p.item]
+		mit_artikel = [p for p in self.positionen if p.item]
+		if not mit_artikel:
+			frappe.throw(
+				_("Keiner Position ist ein Artikel zugeordnet. Bitte zuerst zuordnen."),
+				title=_("Uebernahme nicht moeglich"),
+			)
+
+		anforderung = frappe.new_doc("Material Request")
+		anforderung.material_request_type = "Material Transfer"
+		anforderung.schedule_date = self.benoetigt_am
+		anforderung.transaction_date = today()
+		projekt = frappe.db.get_value("PV Anlage", self.anlage, "project")
+		if projekt:
+			anforderung.project = projekt
+
+		for position in mit_artikel:
+			anforderung.append("items", {
+				"item_code": position.item,
+				"qty": position.menge,
+				"schedule_date": self.benoetigt_am,
+				"warehouse": warehouse,
+				"description": position.bezeichnung,
+			})
+
+		anforderung.insert(ignore_permissions=True)
+
+		self.material_request = anforderung.name
+		self.status = "Bestellt"
+		self.save()
+
+		if ohne_artikel:
+			frappe.msgprint(
+				_("Nicht uebernommen, weil kein Artikel zugeordnet ist: {0}").format(
+					", ".join(ohne_artikel)
+				),
+				indicator="orange",
+			)
+		return anforderung.name
+
+	def einkauf_benachrichtigen(self):
+		if self.dringlichkeit not in ("Morgen", "Arbeit steht still"):
+			return
+		empfaenger = frappe.get_all(
+			"Has Role", filters={"role": "Baudoku Bauleiter", "parenttype": "User"}, pluck="parent"
+		)
+		empfaenger = [e for e in empfaenger if e not in ("Administrator", "Guest")]
+		if not empfaenger:
+			return
+
+		frappe.sendmail(
+			recipients=empfaenger,
+			subject=_("Dringende Materialanforderung ({0}): {1}").format(
+				self.dringlichkeit, self.supplier
+			),
+			message=_("Baustelle {0}, benoetigt am {1}. {2} Positionen.").format(
+				self.anlage, self.benoetigt_am, len(self.positionen)
+			),
+			reference_doctype=self.doctype,
+			reference_name=self.name,
+		)
+
+
+@frappe.whitelist()
+def offene_anforderungen(anlage: str | None = None) -> list[dict]:
+	filters = {"status": ["in", ["Angefragt", "In Pruefung"]]}
+	if anlage:
+		filters["anlage"] = anlage
+
+	return frappe.get_all(
+		"Materialanforderung",
+		filters=filters,
+		fields=["name", "supplier", "anlage", "auftrag", "status", "benoetigt_am",
+		        "dringlichkeit", "angefordert_am"],
+		order_by="field(dringlichkeit, 'Arbeit steht still', 'Morgen', 'Diese Woche', 'Planbar'), benoetigt_am asc",
+		limit_page_length=100,
+	)

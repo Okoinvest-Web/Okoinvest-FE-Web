@@ -1,0 +1,524 @@
+/**
+ * Konnektoren anlegen, ändern, abschalten.
+ *
+ * Ein Konnektor braucht Zugangsdaten. Genau deshalb ist diese Datei der
+ * Ort, an dem die Regeln aus CLAUDE.md Abschnitt 6 **strukturell**
+ * durchgesetzt werden statt nur dokumentiert zu sein:
+ *
+ *   - **Diese Methoden nehmen kein Geheimnis entgegen.** Es gibt kein Feld
+ *     dafür, und wer trotzdem eines mitschickt, bekommt einen Fehler statt
+ *     eines stillschweigend verworfenen Werts (Abschnitt 6.4). Die
+ *     Zugangsdaten liegen in Passbolt; hier steht nur der Verweis.
+ *   - **Der Perimeter bleibt lesend.** Ein Konnektor auf die
+ *     Perimeter-Firewall lässt sich nicht schreibend anlegen - nicht mit
+ *     einem Schalter, nicht mit `force` (Abschnitt 6.2).
+ *   - **Schreibzugriff braucht eine Begründung.** Wer einen Konnektor nicht
+ *     nur lesen lässt, muss sagen warum. Das steht dann im Protokoll.
+ *   - **Backup-Konnektoren dürfen nie löschen.** Ein PBS-Token mit
+ *     Prune-Rechten kann die Sicherung vernichten, die es überwachen soll
+ *     (Abschnitt 6.3).
+ *
+ * Für die Portierung: dieselben Prüfungen gehören in Python vor jeden
+ * Schreibvorgang, zusätzlich zu `frappe.has_permission`. Eine Regel, die
+ * nur die Oberfläche kennt, gilt beim nächsten API-Aufruf nicht mehr.
+ */
+import { FrappeMockError, SESSION_USER, table, touch } from '../db.js'
+import { jetzt } from '../zeit.js'
+import { protokolliere } from './audit.js'
+
+/**
+ * Welche Konnektorarten gibt es, und was dürfen sie?
+ *
+ * `nie_schreibend` ist keine Voreinstellung, sondern ein Verbot: für diese
+ * Arten lässt sich Schreibzugriff gar nicht einschalten.
+ */
+export const ARTEN = {
+  opnsense: { label: 'OPNsense (Firewall)', nie_schreibend: false, standard_intervall: 15 },
+  'proxmox-ve': { label: 'Proxmox VE', nie_schreibend: false, standard_intervall: 10 },
+  pbs: {
+    label: 'Proxmox Backup Server',
+    // CLAUDE.md 6.3: PBS-Token ohne Lösch- und Prune-Rechte. Ein
+    // schreibender Backup-Konnektor kann die Sicherung vernichten, die er
+    // überwachen soll.
+    nie_schreibend: true,
+    standard_intervall: 30,
+  },
+  truenas: { label: 'TrueNAS', nie_schreibend: false, standard_intervall: 30 },
+  wazuh: { label: 'Wazuh (SIEM)', nie_schreibend: true, standard_intervall: 5 },
+  zabbix: { label: 'Zabbix', nie_schreibend: true, standard_intervall: 5 },
+  crowdsec: { label: 'CrowdSec', nie_schreibend: true, standard_intervall: 5 },
+  gravityzone: { label: 'Bitdefender GravityZone', nie_schreibend: true, standard_intervall: 30 },
+  zenarmor: { label: 'Zenarmor', nie_schreibend: true, standard_intervall: 15 },
+  pmg: { label: 'Proxmox Mail Gateway', nie_schreibend: true, standard_intervall: 30 },
+  ironscales: { label: 'IRONSCALES', nie_schreibend: true, standard_intervall: 30 },
+  meshcentral: {
+    label: 'MeshCentral (Fernwartung)',
+    nie_schreibend: false,
+    standard_intervall: 10,
+  },
+  keycloak: { label: 'Keycloak (Identitäten)', nie_schreibend: true, standard_intervall: 60 },
+}
+
+/**
+ * Welche Felder nimmt ein Konnektor überhaupt entgegen?
+ *
+ * Bewusst eine **Positivliste**, keine Sperrliste. Eine Sperrliste auf
+ * Namen („alles mit `token` raus") hat zwei Fehler: sie lehnt legitime
+ * Felder ab (`token_id` ist eine Kennung, kein Geheimnis) und sie übersieht
+ * jedes Geheimnis, das anders heißt. Was hier nicht steht, kommt nicht
+ * durch - egal wie es benannt ist.
+ *
+ * Nicht enthalten und damit ausgeschlossen: jedes Passwort, jedes Token,
+ * jeder private Schlüssel. Die liegen in Passbolt, hier steht nur der
+ * Verweis (CLAUDE.md Abschnitt 3).
+ */
+const ERLAUBTE_FELDER = new Set([
+  'name',
+  'connector_name',
+  'kind',
+  'target',
+  'enabled',
+  'read_only',
+  'interval_minutes',
+  'tenant',
+  // Verbindung
+  'base_url',
+  'port',
+  'api_path',
+  'username',
+  'token_id',
+  'verify_tls',
+  'ca_fingerprint',
+  'timeout_seconds',
+  'proxy_url',
+  // Zuordnung und Begründung
+  'access_reference',
+  'scope_note',
+  'write_reason',
+])
+
+/**
+ * Welche Ziele liegen am Perimeter?
+ *
+ * Die Antwort steht in `Firewall Instance.layer`, nicht in einem eigenen
+ * Kennzeichen - und schon gar nicht im Namen. Eine Erkennung ueber
+ * "heisst FW-OS-01" wuerde beim naechsten Geraet stillschweigend versagen,
+ * und zwar genau bei der Regel, die am wenigsten versagen darf.
+ */
+function istPerimeter(ziel) {
+  return table('Firewall Instance').some((f) => f.device === ziel && f.layer === 'perimeter')
+}
+
+function pruefeFelder(eingabe) {
+  const unbekannt = Object.keys(eingabe || {}).filter((k) => !ERLAUBTE_FELDER.has(k))
+  if (!unbekannt.length) return
+
+  // Wer ein Geheimnis mitschickt, soll den Weg genannt bekommen - nicht nur
+  // ein "unbekanntes Feld".
+  const klingtNachGeheimnis = unbekannt.some((k) =>
+    /pass|pwd|secret|token|key|credential|geheim|kennwort|bearer|auth/i.test(k),
+  )
+
+  throw new FrappeMockError(
+    'ValidationError: Nicht vorgesehene Felder: ' +
+      unbekannt.join(', ') +
+      (klingtNachGeheimnis
+        ? '. Zugangsdaten gehören nach Passbolt – hier steht nur die Passbolt-ID ' +
+          'als Zugangsverweis. Benutzername und Token-Kennung (token_id) sind erlaubt, ' +
+          'das Token selbst nicht.'
+        : '.'),
+  )
+}
+
+/**
+ * Gemeinsame Prüfung für Anlegen und Ändern.
+ *
+ * Gibt die bereinigten Werte zurück oder wirft. Bewusst eine Funktion für
+ * beide Wege: eine Regel, die nur beim Anlegen greift, lässt sich durch
+ * Anlegen-und-sofort-Ändern umgehen.
+ */
+function pruefe(
+  { connector_name, kind, target, read_only, interval_minutes, write_reason },
+  bestand,
+) {
+  const art = ARTEN[kind]
+  if (!art) {
+    throw new FrappeMockError(
+      'ValidationError: Unbekannte Art. Möglich sind: ' + Object.keys(ARTEN).join(', '),
+    )
+  }
+
+  if (!connector_name || !/^[a-z0-9-]+$/.test(connector_name)) {
+    throw new FrappeMockError(
+      'ValidationError: Der Name darf nur Kleinbuchstaben, Ziffern und Bindestriche enthalten',
+    )
+  }
+
+  if (bestand && bestand.some((c) => c.connector_name === connector_name)) {
+    throw new FrappeMockError(
+      `ValidationError: Ein Konnektor namens ${connector_name} existiert bereits`,
+    )
+  }
+
+  if (!target) {
+    throw new FrappeMockError('ValidationError: Ohne Ziel weiß der Konnektor nicht, wen er fragt')
+  }
+
+  const takt = Number(interval_minutes)
+  if (!Number.isFinite(takt) || takt < 1) {
+    throw new FrappeMockError('ValidationError: Der Takt muss mindestens eine Minute betragen')
+  }
+  // Unter fünf Minuten erzeugt ein Konnektor mehr Last als Erkenntnis -
+  // und bei den meisten Quellen ändert sich in der Zeit ohnehin nichts.
+  if (takt < 5 && !['wazuh', 'zabbix', 'crowdsec'].includes(kind)) {
+    throw new FrappeMockError(
+      'ValidationError: Unter fünf Minuten nur für Alarmquellen sinnvoll – ' +
+        'bei den übrigen Arten erzeugt das mehr Last als Erkenntnis',
+    )
+  }
+
+  const nurLesend = read_only === undefined ? true : !!read_only
+
+  // --- Die beiden Verbote aus CLAUDE.md Abschnitt 6
+  if (!nurLesend && art.nie_schreibend) {
+    throw new FrappeMockError(
+      `ValidationError: ${art.label} wird ausschließlich lesend angebunden. ` +
+        (kind === 'pbs'
+          ? 'Ein Token mit Lösch- oder Prune-Rechten kann die Sicherung vernichten, die es überwachen soll.'
+          : 'Diese Quelle liefert Meldungen; geschrieben wird dort nichts.'),
+    )
+  }
+
+  if (!nurLesend && istPerimeter(target)) {
+    throw new FrappeMockError(
+      `ValidationError: ${target} ist die Perimeter-Firewall. Schreibzugriff ist ` +
+        'ausgeschlossen – Änderungen dort erfolgen ausschließlich manuell.',
+    )
+  }
+
+  // Wer schreiben lässt, muss sagen warum. Das landet im Protokoll.
+  if (!nurLesend && !write_reason) {
+    throw new FrappeMockError(
+      'ValidationError: Schreibzugriff braucht eine Begründung, die im Protokoll steht',
+    )
+  }
+
+  return { art, nurLesend, takt }
+}
+
+/**
+ * Prüft die Verbindungsangaben.
+ *
+ * Getrennt von `pruefe`, weil sie beim Ändern einzeln kommen können und
+ * eine fehlende Angabe dann kein Fehler ist - nur eine falsche.
+ */
+function pruefeVerbindung({ base_url, port, api_path, verify_tls, timeout_seconds, proxy_url }) {
+  if (base_url !== undefined && base_url !== null && base_url !== '') {
+    let url
+    try {
+      url = new URL(base_url)
+    } catch {
+      throw new FrappeMockError(
+        'ValidationError: Die Adresse muss vollständig sein, etwa https://host.example.test',
+      )
+    }
+    if (!['http:', 'https:'].includes(url.protocol)) {
+      throw new FrappeMockError('ValidationError: Nur http und https sind vorgesehen')
+    }
+    // Klartext nur, wo man weiss was man tut - ein API-Token ueber http
+    // steht im Netz mit.
+    if (url.protocol === 'http:') {
+      throw new FrappeMockError(
+        'ValidationError: Über http gingen Zugangsdaten im Klartext über das Netz. ' +
+          'Wenn das System kein TLS kann, gehört ein Proxy davor.',
+      )
+    }
+  }
+
+  if (port !== undefined && port !== null && port !== '') {
+    const p = Number(port)
+    if (!Number.isInteger(p) || p < 1 || p > 65535) {
+      throw new FrappeMockError('ValidationError: Der Port liegt zwischen 1 und 65535')
+    }
+  }
+
+  if (
+    api_path !== undefined &&
+    api_path !== null &&
+    api_path !== '' &&
+    !String(api_path).startsWith('/')
+  ) {
+    throw new FrappeMockError('ValidationError: Der API-Pfad beginnt mit einem Schrägstrich')
+  }
+
+  if (timeout_seconds !== undefined && timeout_seconds !== null && timeout_seconds !== '') {
+    const t = Number(timeout_seconds)
+    if (!Number.isFinite(t) || t < 1 || t > 300) {
+      throw new FrappeMockError('ValidationError: Das Zeitlimit liegt zwischen 1 und 300 Sekunden')
+    }
+  }
+
+  if (proxy_url !== undefined && proxy_url !== null && proxy_url !== '') {
+    try {
+      new URL(proxy_url)
+    } catch {
+      throw new FrappeMockError('ValidationError: Die Proxy-Adresse ist keine gültige URL')
+    }
+  }
+
+  void verify_tls
+}
+
+// --- Anlegen ---------------------------------------------------------------
+
+export function create_connector(eingabe = {}) {
+  pruefeFelder(eingabe)
+
+  const {
+    connector_name = null,
+    kind = null,
+    target = null,
+    read_only = true,
+    interval_minutes = null,
+    access_reference = null,
+    scope_note = null,
+    write_reason = null,
+    enabled = true,
+    tenant = null,
+  } = eingabe
+
+  pruefeVerbindung(eingabe)
+
+  const bestand = table('Connector')
+  const takt = interval_minutes ?? ARTEN[kind]?.standard_intervall ?? 15
+
+  const { art, nurLesend } = pruefe(
+    { connector_name, kind, target, read_only, interval_minutes: takt, write_reason },
+    bestand,
+  )
+
+  // Ein Konnektor ohne hinterlegten Zugang läuft nie - und ein Verweis, der
+  // ins Leere zeigt, ist schlimmer als keiner, weil er Sicherheit vortäuscht.
+  if (!access_reference) {
+    throw new FrappeMockError(
+      'ValidationError: Ohne Zugangsverweis fehlt der Bezug nach Passbolt. ' +
+        'Legen Sie den Eintrag dort an und tragen Sie hier die Passbolt-ID ein.',
+    )
+  }
+  const verweis = table('Access Reference').find(
+    (a) => a.name === access_reference || a.passbolt_id === access_reference,
+  )
+  if (!verweis) {
+    throw new FrappeMockError(
+      `DoesNotExistError: Zu "${access_reference}" gibt es keinen Zugangsverweis`,
+      404,
+    )
+  }
+
+  const eintrag = {
+    doctype: 'Connector',
+    name: connector_name,
+    connector_name,
+    kind,
+    target,
+    enabled: enabled ? 1 : 0,
+    read_only: nurLesend ? 1 : 0,
+    interval_minutes: takt,
+    last_run: null,
+    last_status: 'never',
+    api_version: null,
+    base_url: eingabe.base_url || null,
+    port: eingabe.port ? Number(eingabe.port) : null,
+    api_path: eingabe.api_path || null,
+    username: eingabe.username || null,
+    token_id: eingabe.token_id || null,
+    // TLS-Prüfung ist die sichere Voreinstellung; wer sie abschaltet, muss
+    // es ausdrücklich tun.
+    verify_tls: eingabe.verify_tls === undefined ? 1 : eingabe.verify_tls ? 1 : 0,
+    ca_fingerprint: eingabe.ca_fingerprint || null,
+    timeout_seconds: eingabe.timeout_seconds ? Number(eingabe.timeout_seconds) : 30,
+    proxy_url: eingabe.proxy_url || null,
+    access_reference: verweis.name,
+    scope_note: scope_note || null,
+    write_reason: nurLesend ? null : write_reason,
+    tenant,
+    status: 'active',
+    description: nurLesend
+      ? `Nur lesend. Zugang über Passbolt-Verweis ${verweis.passbolt_id}.`
+      : `Schreibend: ${write_reason}`,
+    owner: SESSION_USER,
+    creation: jetzt(),
+    modified: jetzt(),
+    modified_by: SESSION_USER,
+  }
+  bestand.push(eintrag)
+
+  protokolliere({
+    action: 'connector_created',
+    object_type: 'Connector',
+    object_name: connector_name,
+    // Im Protokoll steht, WAS angelegt wurde - nie, womit es sich anmeldet.
+    payload: { kind, target, read_only: nurLesend, interval_minutes: takt },
+  })
+
+  return {
+    ok: true,
+    connector: connector_name,
+    read_only: nurLesend,
+    label: art.label,
+    // Der nächste Schritt gehört auf den Schirm, nicht ins Handbuch.
+    next_step: nurLesend
+      ? 'Zugangsdaten in Passbolt hinterlegen, dann den Konnektor einschalten.'
+      : 'Schreibzugriff ist vermerkt und protokolliert.',
+  }
+}
+
+// --- Ändern ----------------------------------------------------------------
+
+export function update_connector(eingabe = {}) {
+  pruefeFelder(eingabe)
+
+  const { name = null, ...aenderung } = eingabe
+  const doc = table('Connector').find((c) => c.name === name)
+  if (!doc) {
+    throw new FrappeMockError(`DoesNotExistError: Connector ${name} existiert nicht`, 404)
+  }
+
+  const neu = {
+    connector_name: doc.connector_name,
+    kind: aenderung.kind ?? doc.kind,
+    target: aenderung.target ?? doc.target,
+    read_only: aenderung.read_only ?? !!doc.read_only,
+    interval_minutes: aenderung.interval_minutes ?? doc.interval_minutes,
+    write_reason: aenderung.write_reason ?? doc.write_reason,
+  }
+
+  // Ohne `bestand` prüft die Funktion nicht auf Namensgleichheit - beim
+  // Ändern wäre der eigene Name sonst immer ein Konflikt.
+  const { nurLesend } = pruefe(neu, null)
+  pruefeVerbindung(aenderung)
+
+  doc.kind = neu.kind
+  doc.target = neu.target
+  doc.interval_minutes = Number(neu.interval_minutes)
+  doc.read_only = nurLesend ? 1 : 0
+  doc.write_reason = nurLesend ? null : neu.write_reason
+  for (const feld of [
+    'base_url',
+    'api_path',
+    'username',
+    'token_id',
+    'ca_fingerprint',
+    'proxy_url',
+    'scope_note',
+    'access_reference',
+  ]) {
+    if (aenderung[feld] !== undefined) doc[feld] = aenderung[feld] || null
+  }
+  if (aenderung.port !== undefined) doc.port = aenderung.port ? Number(aenderung.port) : null
+  if (aenderung.timeout_seconds !== undefined) {
+    doc.timeout_seconds = Number(aenderung.timeout_seconds) || 30
+  }
+  if (aenderung.verify_tls !== undefined) doc.verify_tls = aenderung.verify_tls ? 1 : 0
+  if (aenderung.enabled !== undefined) doc.enabled = aenderung.enabled ? 1 : 0
+  touch(doc)
+
+  protokolliere({
+    action: 'connector_updated',
+    object_type: 'Connector',
+    object_name: name,
+    payload: {
+      read_only: nurLesend,
+      interval_minutes: doc.interval_minutes,
+      enabled: !!doc.enabled,
+    },
+  })
+
+  return { ok: true, connector: name, read_only: nurLesend }
+}
+
+/**
+ * Abschalten statt löschen.
+ *
+ * Ein gelöschter Konnektor nimmt seine Historie mit - und die Frage „seit
+ * wann kommen von dort keine Daten mehr?" lässt sich dann nicht mehr
+ * beantworten.
+ */
+export function disable_connector({ name = null, reason = null } = {}) {
+  const doc = table('Connector').find((c) => c.name === name)
+  if (!doc) {
+    throw new FrappeMockError(`DoesNotExistError: Connector ${name} existiert nicht`, 404)
+  }
+  if (!reason) {
+    throw new FrappeMockError(
+      'ValidationError: Ein abgeschalteter Konnektor liefert keine Daten mehr – der Grund gehört ins Protokoll',
+    )
+  }
+
+  doc.enabled = 0
+  doc.status = 'inactive'
+  touch(doc)
+
+  protokolliere({
+    action: 'connector_disabled',
+    object_type: 'Connector',
+    object_name: name,
+    payload: { reason },
+  })
+
+  return { ok: true, connector: name }
+}
+
+export function enable_connector({ name = null } = {}) {
+  const doc = table('Connector').find((c) => c.name === name)
+  if (!doc) {
+    throw new FrappeMockError(`DoesNotExistError: Connector ${name} existiert nicht`, 404)
+  }
+  if (!doc.access_reference) {
+    throw new FrappeMockError(
+      'ValidationError: Ohne Zugangsverweis kann sich der Konnektor nicht anmelden',
+    )
+  }
+  doc.enabled = 1
+  doc.status = 'active'
+  touch(doc)
+  protokolliere({ action: 'connector_enabled', object_type: 'Connector', object_name: name })
+  return { ok: true, connector: name }
+}
+
+// --- Hilfen für die Oberfläche ---------------------------------------------
+
+/**
+ * Was die Anlegemaske wissen muss, damit sie nichts anbietet, was hinterher
+ * abgelehnt wird.
+ */
+export function connector_options({ tenant = null } = {}) {
+  const geraete = table('Network Device').filter((g) => !tenant || g.tenant === tenant)
+  const perimeter = new Set(
+    table('Firewall Instance')
+      .filter((f) => f.layer === 'perimeter')
+      .map((f) => f.device),
+  )
+
+  return {
+    kinds: Object.entries(ARTEN).map(([value, a]) => ({
+      value,
+      label: a.label,
+      read_only_forced: a.nie_schreibend,
+      default_interval: a.standard_intervall,
+    })),
+    targets: geraete.map((g) => ({
+      value: g.name,
+      label: g.hostname || g.name,
+      role: g.device_role,
+      perimeter: perimeter.has(g.name),
+    })),
+    // Nur Verweise, niemals Geheimnisse (CLAUDE.md Abschnitt 3).
+    access_references: table('Access Reference').map((a) => ({
+      value: a.name,
+      label: a.label,
+      passbolt_id: a.passbolt_id,
+      access_kind: a.access_kind,
+    })),
+  }
+}

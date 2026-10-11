@@ -1,0 +1,121 @@
+/**
+ * Port-Vorlagen je Gerätetyp und die daraus erzeugten Schnittstellen.
+ *
+ * Entspricht den "Interface-Vorlagen" als Kind-Tabelle am Device Type
+ * (CLAUDE.md Abschnitt 4). Im echten Frappe liegen diese Zeilen als
+ * Child Table am DocType `Device Type`; hier erzeugen sie beim Seeden die
+ * konkreten `Device Interface`-Dokumente - so wie es Frappe beim Anlegen
+ * eines Geräts aus der Vorlage auch tut.
+ */
+
+/**
+ * Eine Reihe beschreibt einen Portblock auf der Frontplatte.
+ * `staggered` stellt die Ports wie bei echten Switches versetzt dar
+ * (ungerade oben, gerade unten).
+ */
+export const PORT_LAYOUTS = {
+  'Teltonika TSW202': {
+    rows: [
+      { block: 'Ethernet', prefix: 'Port ', count: 8, type: '1000base-t', speed: 1000, poe: 1, staggered: true },
+      { block: 'SFP', prefix: 'SFP ', count: 2, type: '1000base-x-sfp', speed: 1000, poe: 0 },
+    ],
+  },
+  'Deciso DEC2750': {
+    rows: [
+      { block: 'Ethernet', prefix: 'igb', count: 4, type: '1000base-t', speed: 1000, poe: 0, zeroBased: true },
+      { block: 'SFP+', prefix: 'ix', count: 2, type: '10gbase-x-sfpp', speed: 10000, poe: 0, zeroBased: true },
+    ],
+  },
+  'Dell PowerEdge R740': {
+    rows: [
+      { block: 'LOM', prefix: 'eno', count: 2, type: '1000base-t', speed: 1000, poe: 0 },
+      { block: 'SFP+', prefix: 'ens1f', count: 2, type: '10gbase-x-sfpp', speed: 10000, poe: 0, zeroBased: true },
+      { block: 'iDRAC', prefix: 'idrac', count: 1, type: '1000base-t', speed: 1000, poe: 0 },
+    ],
+  },
+  'TrueNAS Mini R': {
+    rows: [
+      { block: 'SFP+', prefix: 'eth', count: 2, type: '10gbase-x-sfpp', speed: 10000, poe: 0, zeroBased: true },
+      { block: 'IPMI', prefix: 'ipmi', count: 1, type: '1000base-t', speed: 1000, poe: 0 },
+    ],
+  },
+  'Ubiquiti U6 Pro': {
+    rows: [
+      { block: 'Uplink', prefix: 'eth', count: 1, type: '1000base-t', speed: 1000, poe: 1, zeroBased: true },
+    ],
+  },
+}
+
+/** Stabiler Dokumentname einer Schnittstelle: IF-<Gerät>-<laufende Nummer>. */
+export function interfaceName(device, index) {
+  return 'IF-' + device + '-' + String(index).padStart(2, '0')
+}
+
+/**
+ * Erzeugt die Schnittstellen eines Geräts aus der Vorlage seines Typs.
+ *
+ * @param {{hostname: string, device_type: string, tenant: string}} device
+ * @param {Record<string, object>} overrides - je Schnittstellenname die
+ *        abweichenden Felder (VLAN, Modus, abgeschaltet, Beschreibung).
+ */
+export function buildInterfaces(device, overrides = {}) {
+  const layout = PORT_LAYOUTS[device.device_type]
+  if (!layout) return []
+
+  const schnittstellen = []
+  let laufend = 0
+
+  for (const [reiheIndex, reihe] of layout.rows.entries()) {
+    for (let i = 0; i < reihe.count; i++) {
+      laufend += 1
+      const nummer = reihe.zeroBased ? i : i + 1
+      const bezeichnung = reihe.prefix + nummer
+
+      schnittstellen.push({
+        name: interfaceName(device.hostname, laufend),
+        device: device.hostname,
+        interface_name: bezeichnung,
+        interface_type: reihe.type,
+        speed_mbps: reihe.speed,
+        poe_enabled: reihe.poe,
+        enabled: 1,
+        mode: 'access',
+        untagged_vlan: null,
+        mac_address: macAdresse(device.hostname, laufend),
+        // Nur fuer die Frontplatte: wo der Port physisch sitzt.
+        panel_block: reihe.block,
+        panel_row: reiheIndex,
+        panel_position: i,
+        panel_staggered: reihe.staggered ? 1 : 0,
+        tenant: device.tenant,
+        ...(overrides[bezeichnung] || {}),
+      })
+    }
+  }
+
+  return schnittstellen
+}
+
+/**
+ * Erzeugt eine stabile, offensichtlich erfundene Testadresse aus dem
+ * Hostnamen. 02:... ist lokal verwaltet und kollidiert mit keinem Hersteller.
+ */
+function macAdresse(hostname, index) {
+  let hash = 0
+  for (const zeichen of hostname) {
+    hash = (hash * 31 + zeichen.charCodeAt(0)) % 0xffffff
+  }
+  const teile = [
+    '02',
+    hex((hash >> 16) & 0xff),
+    hex((hash >> 8) & 0xff),
+    hex(hash & 0xff),
+    hex((index >> 8) & 0xff),
+    hex(index & 0xff),
+  ]
+  return teile.join(':')
+}
+
+function hex(wert) {
+  return wert.toString(16).toUpperCase().padStart(2, '0')
+}

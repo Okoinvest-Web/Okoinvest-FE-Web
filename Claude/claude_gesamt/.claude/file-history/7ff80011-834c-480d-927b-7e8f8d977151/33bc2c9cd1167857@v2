@@ -1,0 +1,105 @@
+# Notebook-Auswertung 01 — Sachverhaltsdarstellung WKStA: Ökovolt gegen Salzburg AG
+
+Quelle: Gemini Notebook `c173a6bb-b0c3-45ad-af11-df14ecc0b45b`, 193 Quellen, angelegt 13.11.2025.
+Erhoben am 13.09.2026 über die Notebook-eigene Abfrage. Die Angaben stammen aus der
+Zusammenfassung der Notebook-Quellen, nicht aus einer eigenen Sichtung der Einzelurkunden.
+Jede Zahl und jedes Datum ist vor Verwendung gegen die Primärurkunde zu prüfen.
+
+## 1. Angezeigte Personen und Verbände
+
+| Person | Funktion |
+|---|---|
+| Dr. Bernhard Rieder | Rechtsanwalt DORDA, Vertreter der Salzburg AG in der GV vom 10.10.2025 |
+| Dr. Nicole Scharl | Rechtsanwältin DORDA, Vertretung der Salzburg AG |
+| Mag. Alexander Karl | Rechtsanwalt oder Konzipient DORDA, Vertreter der Salzburg AG |
+| Mag. Karl Pfisterer | Mitarbeiter der Salzburg AG, in der GV vom 10.10.2025 als neuer Geschäftsführer der Ökovolt eingesetzt |
+| MMag. Michael Baminger | Vorstandsvorsitzender der Salzburg AG |
+| Dipl.-Ing. Herwig Struber | Vorstandsmitglied der Salzburg AG |
+| Mag. Friedrich Schliesselberger | CFO und Prokurist der Salzburg AG |
+| Dipl.-Ing. Siegfried Müllegger | Prokurist der Salzburg AG |
+| Dr. Wilfried Haslauer | Aufsichtsrat der Salzburg AG |
+| Mag. Sebastian Frank | Notarsubstitut, Notariat Dr. Philip Ranft |
+| Dr. Philip Ranft | Notar in Seekirchen am Wallersee, reichte den Firmenbuchantrag ein |
+| Tobias Wiener | ehemals Strategieabteilung der Salzburg AG, Geschäftsführer der one2zero GmbH |
+| Peter Hochleitner | ehemals Strategieabteilung der Salzburg AG, Geschäftsführer MyElectric GmbH, Geschäftsführer der one2zero GmbH |
+| Mag. (FH) Friedrich Schiefer | ehemaliger Geschäftsführer der Ökovolt Solartechnik GmbH, danach Berater der Salzburg AG |
+| Salzburg AG | Verband nach VbVG |
+| DORDA Rechtsanwälte GmbH | Verband nach VbVG |
+
+## 2. Geltend gemachte Straftatbestände
+
+| Tatbestand | Norm | Vorwurf |
+|---|---|---|
+| Schwerer gewerbsmäßiger Betrug | §§ 146, 147 Abs 1 Z 1 und Abs 3, § 148 StGB, allenfalls Versuch §§ 15, 146 f | Täuschung der Ökovolt-Organe über die projektbezogene Zusammenarbeit und die Vergabe des Hofer-Großprojekts, um den Wettbewerbsverzicht zu erwirken, das Projekt an die one2zero umzuleiten und Abberufungs- und Vesting-Mechanismen auszulösen |
+| Fälschung eines Beweismittels | § 293 Abs 1 und 2 StGB | vorgefertigtes, inhaltlich fiktives Protokoll der GV vom 10.10.2025 mit wahrheitswidrig attestierter Abwesenheit des Mehrheitsgesellschafters, eingereicht beim Firmenbuchgericht |
+| Schwere Untreue | § 153 Abs 1 und 3 StGB | Missbrauch der Vermögensbetreuungspflicht durch Abwerbung von Know-how und Kunden, Untergrabung vertraglicher Schutzrechte, Vereitelung von Schadenersatzansprüchen |
+| Verletzung von Geschäfts- und Betriebsgeheimnissen | §§ 122, 123 StGB | Entwendung vertraulicher Unternehmensdaten durch Schiefer kurz vor dem Austritt, über 7.500 ausgedruckte Seiten und digitale Bestände, Übermittlung an one2zero und Salzburg AG |
+| Datenbeschädigung und betrügerischer Datenverarbeitungsmissbrauch | § 126a, § 148a StGB | vorsätzliche Löschung von E-Mails, Kalendereinträgen und Daten auf Dienstgeräten vor der Amtsniederlegung |
+| Kriminelle Vereinigung | § 278 StGB | arbeitsteiliger Zusammenschluss von Vorständen der Salzburg AG, Anwälten, Geschäftsführern der one2zero und Schiefer über Jahre |
+| Verbandsverantwortlichkeit | § 3 VbVG | Haftung der Salzburg AG und der DORDA Rechtsanwälte GmbH für Taten ihrer Entscheidungsträger |
+
+## 3. Tragende Beweismittel
+
+| Beilage | Inhalt |
+|---|---|
+| ./A bzw. ./Y | Protokoll der GV vom 10.10.2025, das angegriffene Scheinprotokoll |
+| ./P | Eidesstattliche Erklärung Benjamin Höfler zu Ablauf der Schein-Generalversammlung und IT-Aufdeckungen |
+| ./W bzw. ./AA | Tatortrekonstruktion und Ermittlungsbericht der EURODET, Weg-Zeit-Messungen zur physischen Unmöglichkeit des Protokollablaufs |
+| ./L ./M ./N ./O ./V | Eidesstattliche Erklärungen Dr. Frederik Foitzik, Dr. Michael Battlogg, MMag. Stefan Zajic, MMag. Dr. Roman Schobesberger, Michael Schnaitl |
+| ./AQ | Eidesstattliche Erklärung Erwin Buttinger, bestätigt 7.500 gedruckte Seiten trotz papierlosen Büros |
+| ./AR | Eidesstattliche Erklärung Tanja Schweighart zu Zahlungssperren und Datenlöschungen durch Schiefer |
+| ./AM | Aktenvermerk über ein Telefonat mit Tobias Wiener, Eingeständnisse zu Schiefer, one2zero und versuchten Protokollmanipulationen |
+| ./AN und ./AO | von Schiefer gelöschte Kalendereinträge und wiederhergestellte E-Mails, LKA Linz und IT-Forensik |
+| **./AU** | **E-Mail von Peter Hochleitner vom 10.06.2021 mit schriftlicher Zusicherung der exklusiven Vergabe an Ökovolt** |
+| ./AC ./AD ./X ./Z | Positionspapier, Kauf- und Abtretungsvertrag mit Earn-Out-Regelung, Syndikatsvertrag, Geheimhaltungsvereinbarung |
+
+## 4. Bezifferte Beträge in der Anzeige
+
+| Betrag | Gegenstand |
+|---|---|
+| EUR 21.500.000 | entgangener Gewinn aus der Entziehung des Hofer-Großprojekts |
+| EUR 45.952.115,90 | geltend gemachter Betrag gegenüber der one2zero GmbH und Mag. Schiefer |
+| EUR 10.000.000 | Kaufpreis für die 49-Prozent-Beteiligung im Oktober 2021 |
+| EUR 10.000.000 | entgangener Errichtungsauftrag durch Ausführung ohne Gewerbeberechtigung |
+| EUR 5.000.000 | maximaler variabler Kaufpreisteil, Earn-Out |
+| EUR 2.562.000 | Streitwert der Anfechtungsklage der Salzburg AG zur GV vom 07.03.2025 |
+| EUR 284.670,39 | in der Schein-Generalversammlung beschlossene Gewinnausschüttung |
+| EUR 225.000 p.a. | Geschäftsführerentgelt Andreas Wegscheider laut Dienstvertrag |
+| EUR 100.000 | Kosten der von der Salzburg AG erzwungenen Sonderprüfung |
+
+## 5. Chronologie
+
+| Datum | Vorgang |
+|---|---|
+| 06.04.2020 | wechselseitige Geheimhaltungsvereinbarung |
+| **20.01.2021** | **bindende Vereinbarung: Angebotsverzicht der Ökovolt bei Hofer gegen Weitergabe aller Errichtungsarbeiten im Subauftrag an Ökovolt, dazu Offenlegung der Hofer-Projektdaten** |
+| 09.03.2021 | Letter of Intent |
+| **10.06.2021** | **E-Mail Hochleitner mit Zusage des Errichtungsauftrags an Ökovolt** |
+| 18.10.2021 | Kauf- und Abtretungsvertrag über 49 Prozent sowie Syndikatsvertrag |
+| 23.12.2021 | Gründung der one2zero GmbH als Konkurrenztochter |
+| Herbst 2024 bis Jänner 2025 | systematische Datenentwendung, verdeckte Doppeltätigkeit Schiefers bei one2zero |
+| 02.12.2024 | Kopieren des Ordners B_CONTROLLING auf Schiefers Dienstlaptop |
+| 03.02.2025 | vorzeitiger Austritt Schiefers, Wechsel als Berater zur Salzburg AG und one2zero |
+| 19.02.2025 und 07.03.2025 | ordentliche Generalversammlungen mit Untersuchungsausschüssen, IT-Sperren, Schadenersatzbeschlüssen |
+| 10.10.2025 | inszenierte Generalversammlung |
+| 12.10.2025 | erste Teilanzeigen und Ankündigung |
+| 06.11.2025 | Fassung der Sachverhaltsdarstellung |
+| 14.11.2025 | formelle Einbringung bei der WKStA durch Benjamin Höfler |
+
+## 6. Aktenzeichen
+
+| Behörde | Zahl |
+|---|---|
+| WKStA Wien | 8 St 13/25y |
+| Landesgericht für Strafsachen Wien | 176 Bl 7/26w |
+| StA Ried im Innkreis | 3 St 287/25y sowie 3 St 70/25m |
+
+Anzeigende Partei: Benjamin Höfler.
+
+## Abweichungen zum bisherigen Aktenbestand — zu klären
+
+1. **Gründung one2zero.** Hier 23.12.2021, im Dossier 18.10.2021 mit Firmenbucheintragung 23.10.2021.
+2. **Einbringung bei der WKStA.** Hier 14.11.2025, im Dossier 17.11.2025.
+3. **Kopiertes Datenvolumen am 02.12.2024.** Hier 8,4 GB für den Ordner B_CONTROLLING, im Dossier 4,28 GB und 1.155 Dateien laut Grant Thornton.
+4. **Gedruckte Seiten.** Hier 7.500, im Dossier 7.000.
+5. **Schadensbetrag Hofer.** Hier 21,5 Mio., im Urteil des OLG München 10,5 Mio., in der eigenen Berechnung 14,2 bis 21,0 Mio.

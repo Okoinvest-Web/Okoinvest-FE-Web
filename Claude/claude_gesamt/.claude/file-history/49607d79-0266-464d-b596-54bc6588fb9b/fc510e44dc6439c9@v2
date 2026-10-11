@@ -1,0 +1,101 @@
+<template>
+  <div>
+    <PageHeader title="Beschäftigte" :subtitle="untertitel">
+      <template #actions>
+        <FormControl v-model="status" type="select" :options="statusOptionen" />
+      </template>
+    </PageHeader>
+
+    <div class="p-6">
+      <DataTable
+        :columns="spalten"
+        :rows="liste.data || []"
+        :loading="liste.loading"
+        empty-text="Niemand mit diesem Filter."
+        :on-row-click="(zeile) => $router.push('/people/' + zeile.name)"
+      >
+        <template #zelle-employee_name="{ zeile }">
+          <span class="block font-medium text-ink-gray-9">{{ zeile.employee_name }}</span>
+          <span class="block text-sm text-ink-gray-5">{{ zeile.designation }}</span>
+        </template>
+        <template #zelle-status="{ zeile }">
+          <Badge :theme="statusThema(zeile.status)">{{
+            STATUS[zeile.status] || zeile.status
+          }}</Badge>
+        </template>
+        <template #zelle-asset_value_cents="{ zeile }">
+          {{ euro(zeile.asset_value_cents) }}
+        </template>
+        <template #zelle-account_enabled="{ zeile }">
+          <span v-if="zeile.account_enabled === null" class="text-sm text-ink-gray-4">
+            kein Konto
+          </span>
+          <StatusDot v-else-if="zeile.account_enabled" level="ok" text="Konto aktiv" klein />
+          <StatusDot v-else level="neutral" text="Konto gesperrt" klein />
+        </template>
+        <template #zelle-befund="{ zeile }">
+          <StatusDot :level="zeile.level" :text="zeile.reasons[0] || 'in Ordnung'" klein />
+        </template>
+      </DataTable>
+
+      <p class="mt-3 text-xs text-ink-gray-4">
+        Personen, Abteilungen und Kostenstellen kommen aus ERPNext und Frappe HR. NetOps zeigt hier
+        nur, was für das Inventar nötig ist – Name, Abteilung, Status. Personalakten bleiben in HR,
+        samt ihrer eigenen Rechte.
+      </p>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed, ref, watch } from 'vue'
+import { Badge, FormControl, createResource } from 'frappe-ui'
+import PageHeader from '@/components/PageHeader.vue'
+import DataTable from '@/components/DataTable.vue'
+import StatusDot from '@/components/StatusDot.vue'
+import { euro } from '@/viz'
+
+const STATUS = { Active: 'Aktiv', Inactive: 'Inaktiv', Suspended: 'Gesperrt', Left: 'Ausgetreten' }
+
+const status = ref('')
+
+const liste = createResource({
+  url: 'netops.api.personal.employee_list',
+  makeParams: () => ({ status: status.value || null }),
+  auto: true,
+})
+
+watch(status, () => liste.fetch())
+
+const statusOptionen = [
+  { label: 'Alle', value: '' },
+  ...Object.entries(STATUS).map(([value, label]) => ({ label, value })),
+]
+
+const spalten = [
+  { key: 'employee_name', label: 'Person', width: '230px' },
+  { key: 'department', label: 'Abteilung', muted: true, width: '150px' },
+  { key: 'status', label: 'Status', width: '130px' },
+  { key: 'asset_count', label: 'Geräte', align: 'right', numeric: true, width: '90px' },
+  { key: 'asset_value_cents', label: 'Wert', align: 'right', numeric: true, width: '130px' },
+  { key: 'account_enabled', label: 'Konto', width: '160px' },
+  { key: 'befund', label: 'Befund', width: '240px' },
+]
+
+const untertitel = computed(() => {
+  const l = liste.data || []
+  const aktiv = l.filter((p) => p.status === 'Active').length
+  const offen = l.filter((p) => p.open_after_exit).length
+  return (
+    l.length +
+    ' Personen · ' +
+    aktiv +
+    ' aktiv' +
+    (offen ? ' · ' + offen + ' mit offenen Punkten nach Austritt' : '')
+  )
+})
+
+function statusThema(wert) {
+  return { Active: 'green', Inactive: 'gray', Suspended: 'orange', Left: 'red' }[wert] || 'gray'
+}
+</script>

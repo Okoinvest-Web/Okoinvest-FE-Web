@@ -1,0 +1,57 @@
+import pathlib
+
+p = pathlib.Path(r"C:\Users\SALEADMIN\Documents\Servicetechniker APP\frontend\vite.config.ts")
+s = p.read_text(encoding="utf-8")
+
+ALT_IMPORT = "import { copyFileSync, existsSync, mkdirSync, readdirSync } from 'node:fs'"
+NEU_IMPORT = (
+    "import {\n"
+    "  copyFileSync,\n"
+    "  existsSync,\n"
+    "  mkdirSync,\n"
+    "  readdirSync,\n"
+    "  readFileSync,\n"
+    "  writeFileSync,\n"
+    "} from 'node:fs'"
+)
+assert ALT_IMPORT in s
+s = s.replace(ALT_IMPORT, NEU_IMPORT, 1)
+
+ALT = """        // sw.js und die per importScripts geladene Workbox-Datei; deren Name
+        // trägt einen Hash, deshalb aus dem Verzeichnis lesen.
+        const wurzeldateien = readdirSync(bundle).filter(
+          (datei) => datei === 'sw.js' || /^workbox-[\\w-]+\\.js$/.test(datei),
+        )
+        for (const datei of wurzeldateien) {
+          copyFileSync(resolve(bundle, datei), resolve(www, datei))
+        }"""
+
+NEU = r"""        // Die Workbox-Laufzeit lädt sw.js per importScripts relativ nach; ihr
+        // Name trägt einen Hash, deshalb aus dem Verzeichnis lesen.
+        const workboxDateien = readdirSync(bundle).filter((datei) =>
+          /^workbox-[\w-]+\.js$/.test(datei),
+        )
+        for (const datei of workboxDateien) {
+          copyFileSync(resolve(bundle, datei), resolve(www, datei))
+        }
+
+        // Ein paar Precache-Einträge (Icons, Web-App-Manifest) fügt
+        // vite-plugin-pwa erst nach allen Workbox-Hooks hinzu — sie bleiben
+        // relativ und würden vom Wurzelpfad aus ins Leere zeigen. Da die
+        // Installation des Workers bei einem einzigen fehlenden Eintrag
+        // komplett scheitert, werden sie hier absolut gesetzt.
+        const swQuelle = resolve(bundle, 'sw.js')
+        const wurzeldateien = [...workboxDateien]
+        if (existsSync(swQuelle)) {
+          const inhalt = readFileSync(swQuelle, 'utf8').replace(
+            /url:"(?!https?:|\/)([^"]+)"/g,
+            (_treffer, pfad: string) => `url:"${BASE}${pfad}"`,
+          )
+          writeFileSync(resolve(www, 'sw.js'), inhalt)
+          wurzeldateien.unshift('sw.js')
+        }"""
+
+assert ALT in s, "Kopierblock nicht gefunden"
+s = s.replace(ALT, NEU, 1)
+p.write_text(s, encoding="utf-8")
+print("Kopierschritt korrigiert Precache-Pfade")

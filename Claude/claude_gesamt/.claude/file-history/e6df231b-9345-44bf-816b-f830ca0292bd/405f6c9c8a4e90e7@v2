@@ -1,0 +1,198 @@
+<script setup lang="ts">
+/** Anlagendetail: Stammdaten, Protokolle, Mängel und Tagesberichte (FA-081, FA-084). */
+import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
+
+import AnlagenKarte from '@/components/AnlagenKarte.vue'
+import AppIcon from '@/components/AppIcon.vue'
+import BasisDialog from '@/components/BasisDialog.vue'
+import StatusAbzeichen from '@/components/StatusAbzeichen.vue'
+import { baudoku } from '@/lib/api'
+import { datum, zahl } from '@/lib/format'
+import { useStammdaten } from '@/stores/stammdaten'
+
+const props = defineProps<{ name: string }>()
+
+const router = useRouter()
+const stammdaten = useStammdaten()
+
+interface Uebersicht {
+  protokolle: { name: string; vorlage_typ: string; status: string; pruef_datum: string; gesamtbewertung?: string }[]
+  maengel: { name: string; titel: string; schweregrad: string; status: string; faellig_am?: string }[]
+  tagesberichte: { name: string; datum: string; bericht_typ: string; status: string; fortschritt_prozent?: number }[]
+}
+
+const uebersicht = ref<Uebersicht>({ protokolle: [], maengel: [], tagesberichte: [] })
+const laedt = ref(true)
+const qrOffen = ref(false)
+const reiter = ref<'protokolle' | 'maengel' | 'berichte'>('protokolle')
+
+const anlage = computed(() => stammdaten.anlage(props.name))
+
+const qrZiel = computed(() => `${window.location.origin}/baudoku/anlagen/${props.name}`)
+
+/** QR-Code als SVG über einen öffentlichen Generator — offline zeigt die App den Link im Klartext. */
+const qrBild = computed(
+  () => `https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(qrZiel.value)}`,
+)
+
+onMounted(async () => {
+  try {
+    uebersicht.value = (await baudoku.anlagenUebersicht(props.name)) as Uebersicht
+  } catch {
+    // Offline: die Detailansicht zeigt die Stammdaten aus dem Cache.
+  } finally {
+    laedt.value = false
+  }
+})
+</script>
+
+<template>
+  <div v-if="!anlage" class="karte p-6 text-center text-sm text-slate-500">
+    Anlage {{ name }} ist lokal nicht verfügbar. Bitte synchronisieren.
+  </div>
+
+  <div v-else class="space-y-5">
+    <header class="karte p-4">
+      <div class="flex flex-wrap items-start gap-3">
+        <div class="min-w-0 flex-1">
+          <div class="flex flex-wrap items-center gap-2">
+            <h2 class="text-xl font-bold">{{ anlage.anlage_name }}</h2>
+            <StatusAbzeichen :wert="anlage.status" />
+          </div>
+          <p class="mt-1 text-sm text-slate-500">{{ anlage.customer }}</p>
+          <p class="text-sm text-slate-400">
+            {{ anlage.adresse }}, {{ anlage.plz }} {{ anlage.ort }}
+          </p>
+        </div>
+        <div class="flex gap-2">
+          <button class="knopf-sekundaer px-3 text-sm" @click="qrOffen = true">
+            <AppIcon name="qr" :groesse="18" /> QR
+          </button>
+          <button
+            class="knopf-primaer px-3 text-sm"
+            @click="router.push({ name: 'protokoll-neu', query: { anlage: anlage.name } })"
+          >
+            <AppIcon name="plus" :groesse="18" /> Protokoll
+          </button>
+        </div>
+      </div>
+
+      <dl class="mt-4 grid grid-cols-2 gap-3 text-sm tablet:grid-cols-4">
+        <div>
+          <dt class="text-xs text-slate-400">Leistung</dt>
+          <dd class="font-semibold tabular-nums">{{ zahl(anlage.kwp, 'kWp') }}</dd>
+        </div>
+        <div v-if="anlage.kwh_speicher">
+          <dt class="text-xs text-slate-400">Speicher</dt>
+          <dd class="font-semibold tabular-nums">{{ zahl(anlage.kwh_speicher, 'kWh') }}</dd>
+        </div>
+        <div v-if="anlage.ladepunkte">
+          <dt class="text-xs text-slate-400">Ladepunkte</dt>
+          <dd class="font-semibold tabular-nums">{{ anlage.ladepunkte }}</dd>
+        </div>
+        <div v-if="anlage.anzahl_strings">
+          <dt class="text-xs text-slate-400">Strings</dt>
+          <dd class="font-semibold tabular-nums">{{ anlage.anzahl_strings }}</dd>
+        </div>
+        <div>
+          <dt class="text-xs text-slate-400">Letzte Prüfung</dt>
+          <dd class="font-semibold">{{ datum(anlage.letzte_pruefung) }}</dd>
+        </div>
+        <div>
+          <dt class="text-xs text-slate-400">Nächste Wartung</dt>
+          <dd class="font-semibold">{{ datum(anlage.naechste_wartung) }}</dd>
+        </div>
+        <div v-if="anlage.modul_uoc">
+          <dt class="text-xs text-slate-400">Uoc je Modul</dt>
+          <dd class="font-semibold tabular-nums">{{ zahl(anlage.modul_uoc, 'V') }}</dd>
+        </div>
+        <div v-if="anlage.project">
+          <dt class="text-xs text-slate-400">ERPNext-Projekt</dt>
+          <dd class="truncate font-semibold">{{ anlage.project }}</dd>
+        </div>
+      </dl>
+    </header>
+
+    <AnlagenKarte
+      v-if="anlage.gps_lat && anlage.gps_lng"
+      :anlagen="[anlage]"
+      :aktiv="anlage.name"
+      hoehe="220px"
+    />
+
+    <!-- Reiter -->
+    <div class="flex gap-1 border-b border-slate-200 dark:border-slate-800">
+      <button
+        v-for="eintrag in [
+          { schluessel: 'protokolle', titel: 'Protokolle', anzahl: uebersicht.protokolle.length },
+          { schluessel: 'maengel', titel: 'Mängel', anzahl: uebersicht.maengel.length },
+          { schluessel: 'berichte', titel: 'Tagesberichte', anzahl: uebersicht.tagesberichte.length },
+        ]"
+        :key="eintrag.schluessel"
+        class="tap border-b-2 px-3 text-sm font-medium"
+        :class="
+          reiter === eintrag.schluessel
+            ? 'border-marke-600 text-marke-700 dark:text-marke-400'
+            : 'border-transparent text-slate-500'
+        "
+        @click="reiter = eintrag.schluessel as typeof reiter"
+      >
+        {{ eintrag.titel }}
+        <span class="ml-1 text-xs text-slate-400">{{ eintrag.anzahl }}</span>
+      </button>
+    </div>
+
+    <p v-if="laedt" class="py-6 text-center text-sm text-slate-500">Wird geladen …</p>
+
+    <ul v-else-if="reiter === 'protokolle'" class="space-y-2">
+      <li v-for="p in uebersicht.protokolle" :key="p.name" class="karte flex items-center gap-3 p-3">
+        <div class="min-w-0 flex-1">
+          <div class="font-semibold">{{ p.vorlage_typ }} · {{ p.name }}</div>
+          <div class="text-xs text-slate-500">{{ datum(p.pruef_datum) }}</div>
+        </div>
+        <StatusAbzeichen :wert="p.gesamtbewertung || p.status" klein />
+      </li>
+      <li v-if="!uebersicht.protokolle.length" class="py-6 text-center text-sm text-slate-500">
+        Noch kein Protokoll zu dieser Anlage.
+      </li>
+    </ul>
+
+    <ul v-else-if="reiter === 'maengel'" class="space-y-2">
+      <li v-for="m in uebersicht.maengel" :key="m.name" class="karte flex items-center gap-3 p-3">
+        <StatusAbzeichen :wert="m.schweregrad" klein />
+        <div class="min-w-0 flex-1">
+          <div class="truncate font-semibold">{{ m.titel }}</div>
+          <div class="text-xs text-slate-500">Fällig {{ datum(m.faellig_am) }}</div>
+        </div>
+        <StatusAbzeichen :wert="m.status" klein />
+      </li>
+      <li v-if="!uebersicht.maengel.length" class="py-6 text-center text-sm text-slate-500">
+        Keine Mängel erfasst.
+      </li>
+    </ul>
+
+    <ul v-else class="space-y-2">
+      <li v-for="b in uebersicht.tagesberichte" :key="b.name" class="karte flex items-center gap-3 p-3">
+        <div class="min-w-0 flex-1">
+          <div class="font-semibold">{{ datum(b.datum) }} · {{ b.bericht_typ }}</div>
+          <div class="text-xs text-slate-500">Fortschritt {{ b.fortschritt_prozent ?? 0 }} %</div>
+        </div>
+        <StatusAbzeichen :wert="b.status" klein />
+      </li>
+      <li v-if="!uebersicht.tagesberichte.length" class="py-6 text-center text-sm text-slate-500">
+        Noch kein Tagesbericht.
+      </li>
+    </ul>
+
+    <BasisDialog :offen="qrOffen" titel="QR-Code der Anlage" @schliessen="qrOffen = false">
+      <div class="text-center">
+        <img :src="qrBild" alt="QR-Code" class="mx-auto rounded-xl bg-white p-3" width="280" height="280" />
+        <p class="mt-3 break-all text-xs text-slate-500">{{ qrZiel }}</p>
+        <p class="mt-2 text-sm text-slate-600 dark:text-slate-300">
+          Aufkleber am Wechselrichter anbringen — Scannen öffnet diese Anlage direkt in der App.
+        </p>
+      </div>
+    </BasisDialog>
+  </div>
+</template>

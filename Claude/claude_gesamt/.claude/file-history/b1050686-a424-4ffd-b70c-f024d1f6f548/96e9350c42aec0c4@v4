@@ -1,0 +1,384 @@
+import Link from "next/link";
+import type { Metadata } from "next";
+
+import { Tabelle, Zeile, Zelle, ZelleMitZusatz } from "@/components/tabelle";
+import {
+  Balken,
+  Hinweis,
+  Kennzahl,
+  Kennzahlenleiste,
+  LeerZustand,
+  Seitenkopf,
+  Status,
+  Tafel,
+} from "@/components/ui";
+import { ladeAnlagen } from "@/lib/daten/monitoring";
+import {
+  ladeKategorien,
+  ladeMeldungen,
+  ladeServiceKennzahlen,
+} from "@/lib/daten/service";
+import { STATUS_FARBEN } from "@/lib/farben";
+import { formatDatumZeit, formatProzent, formatZahl } from "@/lib/format";
+import { SLA_STUFEN } from "@/lib/service/frist";
+import { requireRecht } from "@/lib/session";
+
+import { Meldeformular } from "./meldeformular";
+
+export const metadata: Metadata = { title: "Support" };
+
+function statusTon(status: string) {
+  switch (status) {
+    case "Geschlossen":
+      return "gut" as const;
+    case "In Bearbeitung":
+      return "akzent" as const;
+    case "Warten auf Kunde":
+      return "hinweis" as const;
+    default:
+      return "ernst" as const;
+  }
+}
+
+function prioTon(prio: string) {
+  switch (prio) {
+    case "Kritisch":
+      return "kritisch" as const;
+    case "Hoch":
+      return "ernst" as const;
+    case "Mittel":
+      return "hinweis" as const;
+    default:
+      return "neutral" as const;
+  }
+}
+
+export default async function SupportSeite({
+  searchParams,
+}: {
+  searchParams: Promise<{ alle?: string; kategorie?: string }>;
+}) {
+  await requireRecht("support.melden");
+
+  const { alle: alleZeigen, kategorie } = await searchParams;
+
+  const kennzahlen = ladeServiceKennzahlen();
+  const meldungen = ladeMeldungen({
+    nurOffene: alleZeigen !== "1",
+    kategorie,
+    grenze: 100,
+  });
+  const kategorien = ladeKategorien();
+  const anlagen = ladeAnlagen();
+
+  const verfehlt = meldungen.filter(
+    (m) => m.reaktion_ueberschritten === 1 || m.loesung_ueberschritten === 1,
+  );
+
+  const gesamtKategorien = kategorien.reduce((s, k) => s + k.anzahl, 0);
+  const aktiv =
+    kennzahlen.offen + kennzahlen.inBearbeitung + kennzahlen.wartenAufKunde;
+
+  return (
+    <div className="space-y-5">
+      <Seitenkopf
+        titel="Support"
+        hinweis="Servicemeldungen, Fristen aus dem Wartungsvertrag und Verlauf"
+        aktion={
+          <div
+            className="flex overflow-hidden rounded-lg border"
+            style={{ borderColor: "var(--linie)" }}
+          >
+            <FilterLink
+              href={`/portal/support${kategorie ? `?kategorie=${encodeURIComponent(kategorie)}` : ""}`}
+              aktiv={alleZeigen !== "1"}
+            >
+              Aktiv
+            </FilterLink>
+            <FilterLink
+              href={`/portal/support?alle=1${kategorie ? `&kategorie=${encodeURIComponent(kategorie)}` : ""}`}
+              aktiv={alleZeigen === "1"}
+            >
+              Alle
+            </FilterLink>
+          </div>
+        }
+      />
+
+      {verfehlt.length > 0 && (
+        <Hinweis
+          ton="ernst"
+          titel={`${verfehlt.length} Meldung${verfehlt.length > 1 ? "en" : ""} außerhalb der vereinbarten Frist`}
+        >
+          {verfehlt
+            .map(
+              (m) =>
+                `${m.nummer ?? m.id} (${m.reaktion_ueberschritten ? "Reaktion" : "Behebung"})`,
+            )
+            .join(", ")}
+          . Die Fristen zählen Arbeitsstunden nach der vereinbarten
+          Servicezeit, nicht Kalenderstunden.
+        </Hinweis>
+      )}
+
+      <Kennzahlenleiste>
+        <Kennzahl
+          label="Aktive Meldungen"
+          wert={formatZahl(aktiv, 0)}
+          hinweis={`${kennzahlen.offen} offen, ${kennzahlen.inBearbeitung} in Bearbeitung`}
+          akzent={aktiv > 0}
+        />
+        <Kennzahl
+          label="Reaktionsquote"
+          wert={
+            kennzahlen.reaktionsquote !== null
+              ? formatProzent(kennzahlen.reaktionsquote * 100, 0)
+              : "–"
+          }
+          hinweis={
+            kennzahlen.reaktionVerfehlt > 0
+              ? `${kennzahlen.reaktionVerfehlt} Frist verfehlt`
+              : "alle Fristen gehalten"
+          }
+        />
+        <Kennzahl
+          label="Behebungsquote"
+          wert={
+            kennzahlen.loesungsquote !== null
+              ? formatProzent(kennzahlen.loesungsquote * 100, 0)
+              : "–"
+          }
+          hinweis={`${kennzahlen.geschlossen} abgeschlossen`}
+        />
+        <Kennzahl
+          label="Ertragsausfall"
+          wert={formatZahl(kennzahlen.ausfallKwh, 0)}
+          einheit="kWh"
+          hinweis="aus allen Meldungen"
+        />
+      </Kennzahlenleiste>
+
+      {/* ---------------- Meldungen ---------------- */}
+      <Tafel
+        dicht
+        fusszeile={
+          <p className="t-mikro leading-relaxed">
+            Die Fristen laufen in Arbeitsstunden innerhalb der vereinbarten
+            Servicezeit – werktags von 8 bis 17 Uhr, ohne Wochenenden und
+            ohne gesetzliche Feiertage. Eine Meldung am Freitagnachmittag
+            ist deshalb am Montag fällig und nicht am Samstag; wer
+            Kalenderstunden zählt, meldet jeden Montag Überschreitungen,
+            die keine sind.
+          </p>
+        }
+      >
+        {meldungen.length === 0 ? (
+          <div className="p-4">
+            <LeerZustand
+              text={
+                alleZeigen === "1"
+                  ? "Es liegen keine Meldungen vor."
+                  : "Keine aktiven Meldungen."
+              }
+              hinweis="Störungen der Überwachung erscheinen hier automatisch, sobald daraus ein Serviceticket entsteht."
+            />
+          </div>
+        ) : (
+          <Tabelle
+            spalten={[
+              { titel: "Meldung" },
+              { titel: "Anlage", schmalAusblenden: true },
+              { titel: "Betrifft", schmalAusblenden: true },
+              { titel: "Gemeldet" },
+              { titel: "Reaktion" },
+              { titel: "Behebung bis" },
+              { titel: "Dringlichkeit" },
+              { titel: "Status" },
+            ]}
+            mindestbreite="64rem"
+          >
+            {meldungen.map((m) => (
+              <Zeile
+                key={m.id}
+                gedaempft={m.status === "Geschlossen"}
+                hervorgehoben={
+                  m.reaktion_ueberschritten === 1 ||
+                  m.loesung_ueberschritten === 1
+                }
+              >
+                <ZelleMitZusatz
+                  haupt={
+                    <Link
+                      href={`/portal/support/${m.id}`}
+                      className="hover:underline"
+                    >
+                      {m.betreff}
+                    </Link>
+                  }
+                  zusatz={`${m.nummer ?? m.id} · ${m.kanal}${m.eintraege > 0 ? ` · ${m.eintraege} Einträge` : ""}`}
+                />
+                <Zelle leise schmalAusblenden>
+                  {m.anlage ?? "–"}
+                </Zelle>
+                <Zelle leise schmalAusblenden>
+                  {m.kategorie ?? "–"}
+                </Zelle>
+                <Zelle leise>{formatDatumZeit(m.gemeldet_am)}</Zelle>
+
+                <Zelle>
+                  {m.reaktion_am ? (
+                    <Status
+                      ton={m.reaktion_ueberschritten ? "ernst" : "gut"}
+                      punkt={false}
+                    >
+                      {m.reaktion_ueberschritten ? "zu spät" : "erfolgt"}
+                    </Status>
+                  ) : m.reaktion_ueberschritten ? (
+                    <Status ton="kritisch">überfällig</Status>
+                  ) : (
+                    <span className="t-mikro">
+                      bis {formatDatumZeit(m.reaktion_bis)}
+                    </span>
+                  )}
+                </Zelle>
+
+                <Zelle>
+                  {m.status === "Geschlossen" ? (
+                    <Status
+                      ton={m.loesung_ueberschritten ? "ernst" : "gut"}
+                      punkt={false}
+                    >
+                      {m.loesung_ueberschritten ? "verspätet" : "im Termin"}
+                    </Status>
+                  ) : (
+                    <span
+                      className="t-mikro"
+                      style={{
+                        color: m.loesung_ueberschritten
+                          ? STATUS_FARBEN.kritisch
+                          : undefined,
+                        fontWeight: m.loesung_ueberschritten ? 500 : undefined,
+                      }}
+                    >
+                      {m.loesung_ueberschritten ? "überfällig seit " : ""}
+                      {formatDatumZeit(m.loesung_bis)}
+                    </span>
+                  )}
+                </Zelle>
+
+                <Zelle>
+                  <Status ton={prioTon(m.prioritaet)}>{m.prioritaet}</Status>
+                </Zelle>
+                <Zelle>
+                  <Status ton={statusTon(m.status)}>{m.status}</Status>
+                </Zelle>
+              </Zeile>
+            ))}
+          </Tabelle>
+        )}
+      </Tafel>
+
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[3fr_2fr]">
+        {/* ---------------- Neue Meldung ---------------- */}
+        <Tafel
+          titel="Störung melden"
+          hinweis="Je genauer die Angaben, desto seltener braucht es eine Anfahrt"
+        >
+          <Meldeformular
+            anlagen={anlagen.map((a) => ({
+              id: a.id,
+              bezeichnung: a.bezeichnung,
+            }))}
+          />
+        </Tafel>
+
+        <div className="space-y-5">
+          {/* ---------------- Fristen ---------------- */}
+          <Tafel
+            titel="Vereinbarte Fristen"
+            hinweis="Servicezeit werktags 8 bis 17 Uhr"
+            dicht
+          >
+            <Tabelle
+              spalten={[
+                { titel: "Dringlichkeit" },
+                { titel: "Reaktion", zahl: true },
+                { titel: "Behebung", zahl: true },
+              ]}
+            >
+              {SLA_STUFEN.map((stufe) => (
+                <Zeile key={stufe.prioritaet}>
+                  <ZelleMitZusatz
+                    haupt={stufe.prioritaet}
+                    zusatz={stufe.beschreibung}
+                  />
+                  <Zelle zahl>
+                    {stufe.reaktionStunden}
+                    <span className="t-mikro"> h</span>
+                  </Zelle>
+                  <Zelle zahl leise>
+                    {stufe.loesungStunden}
+                    <span className="t-mikro"> h</span>
+                  </Zelle>
+                </Zeile>
+              ))}
+            </Tabelle>
+          </Tafel>
+
+          {/* ---------------- Kategorien ---------------- */}
+          <Tafel
+            titel="Wo es klemmt"
+            hinweis="Meldungen nach Gegenstand"
+            fusszeile={
+              <p className="t-mikro leading-relaxed">
+                Häufungen in einer Kategorie sind das eigentliche Ergebnis
+                eines Ticketsystems: Sie zeigen, wo eine Nachrüstung mehr
+                brächte als der nächste Einsatz.
+              </p>
+            }
+          >
+            <div className="space-y-2.5">
+              {kategorien.map((k) => (
+                <Balken
+                  key={k.kategorie}
+                  label={`${k.kategorie}${k.offen > 0 ? ` · ${k.offen} offen` : ""}`}
+                  anteil={
+                    gesamtKategorien > 0
+                      ? (k.anzahl / gesamtKategorien) * 100
+                      : 0
+                  }
+                  wertText={`${k.anzahl}`}
+                  farbe={k.offen > 0 ? STATUS_FARBEN.hinweis : undefined}
+                />
+              ))}
+            </div>
+          </Tafel>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FilterLink({
+  href,
+  aktiv,
+  children,
+}: {
+  href: string;
+  aktiv: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      className="px-3 py-1.5 text-[0.75rem] transition-colors"
+      style={{
+        background: aktiv ? "var(--f-belegt)" : "var(--f-ebene)",
+        color: aktiv ? "var(--t-stark)" : "var(--t-leise)",
+        fontWeight: aktiv ? 500 : 400,
+      }}
+    >
+      {children}
+    </Link>
+  );
+}

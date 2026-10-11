@@ -1,0 +1,203 @@
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+
+import {
+  einfallsfaktor,
+  istTag,
+  sonnenposition,
+  tageslicht,
+} from "./sonnenstand.ts";
+
+/**
+ * Geprüft wird gegen bekannte astronomische Tatsachen, nicht gegen
+ * zufällig herausgegriffene Werte: Zur Sonnenwende steht die Sonne am
+ * höchsten, zur Tagundnachtgleiche geht sie fast genau im Osten auf,
+ * und die Tageslänge folgt dem Jahresgang.
+ *
+ * St. Pölten liegt bei 48,20 Grad Nord und 15,63 Grad Ost.
+ */
+
+const BREITE = 48.2047;
+const LAENGE = 15.6256;
+
+/** Mittagszeitpunkt in UTC - im Sommer ist Wien UTC+2. */
+function mittagSommer(monat: number, tag: number): Date {
+  return new Date(Date.UTC(2026, monat, tag, 11, 0));
+}
+
+describe("Sonnenhöhe", () => {
+  it("erreicht zur Sommersonnenwende den Jahreshöchststand", () => {
+    const juni = sonnenposition(mittagSommer(5, 21), BREITE, LAENGE).hoehe;
+    const dezember = sonnenposition(
+      new Date(Date.UTC(2026, 11, 21, 11, 0)),
+      BREITE,
+      LAENGE,
+    ).hoehe;
+
+    // Theoretisch: 90 - Breite + 23,44 = 65,2 Grad im Juni,
+    // 90 - Breite - 23,44 = 18,4 Grad im Dezember.
+    assert.ok(
+      Math.abs(juni - 65.2) < 1.5,
+      `Juni-Mittagshöhe ${juni.toFixed(1)} statt rund 65 Grad`,
+    );
+    assert.ok(
+      Math.abs(dezember - 18.4) < 1.5,
+      `Dezember-Mittagshöhe ${dezember.toFixed(1)} statt rund 18 Grad`,
+    );
+  });
+
+  it("ist nachts negativ", () => {
+    const mitternacht = new Date(Date.UTC(2026, 5, 21, 22, 0));
+    assert.ok(sonnenposition(mitternacht, BREITE, LAENGE).hoehe < 0);
+  });
+
+  it("steht zur Mittagszeit im Süden", () => {
+    const azimut = sonnenposition(mittagSommer(5, 21), BREITE, LAENGE).azimut;
+    assert.ok(
+      Math.abs(azimut - 180) < 6,
+      `Azimut ${azimut.toFixed(1)} statt rund 180 Grad (Süden)`,
+    );
+  });
+
+  it("steht am Morgen im Osten und am Abend im Westen", () => {
+    const morgens = sonnenposition(
+      new Date(Date.UTC(2026, 5, 21, 4, 0)),
+      BREITE,
+      LAENGE,
+    ).azimut;
+    const abends = sonnenposition(
+      new Date(Date.UTC(2026, 5, 21, 18, 0)),
+      BREITE,
+      LAENGE,
+    ).azimut;
+
+    assert.ok(morgens < 120, `morgens Azimut ${morgens.toFixed(0)}, erwartet Ost`);
+    assert.ok(abends > 240, `abends Azimut ${abends.toFixed(0)}, erwartet West`);
+  });
+});
+
+describe("Tageslicht", () => {
+  it("liefert im Juni deutlich mehr Stunden als im Dezember", () => {
+    const juni = tageslicht(new Date(2026, 5, 21), BREITE, LAENGE, 0);
+    const dezember = tageslicht(new Date(2026, 11, 21), BREITE, LAENGE, 0);
+
+    // In dieser Breite: rund 16 Stunden im Juni, rund 8,4 im Dezember.
+    assert.ok(
+      juni.stunden > 15.5 && juni.stunden < 16.5,
+      `Juni ${juni.stunden.toFixed(1)} h`,
+    );
+    assert.ok(
+      dezember.stunden > 8 && dezember.stunden < 9,
+      `Dezember ${dezember.stunden.toFixed(1)} h`,
+    );
+  });
+
+  it("liefert zur Tagundnachtgleiche etwa zwölf Stunden", () => {
+    const maerz = tageslicht(new Date(2026, 2, 20), BREITE, LAENGE, 0);
+    assert.ok(
+      Math.abs(maerz.stunden - 12) < 0.5,
+      `${maerz.stunden.toFixed(1)} h statt rund 12`,
+    );
+  });
+
+  it("nennt Aufgang und Untergang in richtiger Reihenfolge", () => {
+    const tag = tageslicht(new Date(2026, 5, 21), BREITE, LAENGE, 0);
+    assert.ok(tag.aufgang, "Aufgang fehlt");
+    assert.ok(tag.untergang, "Untergang fehlt");
+    assert.ok(tag.aufgang! < tag.untergang!, "Aufgang muss vor Untergang liegen");
+  });
+
+  it("verkürzt das Fenster bei höherer Mindesthöhe", () => {
+    const ohne = tageslicht(new Date(2026, 5, 21), BREITE, LAENGE, 0);
+    const mit = tageslicht(new Date(2026, 5, 21), BREITE, LAENGE, 10);
+    assert.ok(
+      mit.stunden < ohne.stunden,
+      "Ein höherer Schwellwert muss das Fenster verkürzen",
+    );
+  });
+});
+
+describe("istTag", () => {
+  it("trennt Tag und Nacht", () => {
+    assert.equal(istTag(mittagSommer(5, 21), BREITE, LAENGE), true);
+    assert.equal(
+      istTag(new Date(Date.UTC(2026, 5, 21, 23, 0)), BREITE, LAENGE),
+      false,
+    );
+  });
+
+  it("schließt die Dämmerung aus, wenn eine Mindesthöhe gilt", () => {
+    // 21. Dezember, kurz nach Sonnenaufgang (07:52 Ortszeit): Die Sonne
+    // steht bei rund zwei Grad. Sie ist aufgegangen, liefert aber noch
+    // praktisch nichts - genau der Fall, den eine Ertragsregel
+    // ausnehmen muss, um keine Fehlmeldung zu erzeugen.
+    const frueh = new Date(Date.UTC(2026, 11, 21, 7, 10));
+
+    assert.equal(
+      istTag(frueh, BREITE, LAENGE, 0),
+      true,
+      "Die Sonne steht über dem Horizont",
+    );
+    assert.equal(
+      istTag(frueh, BREITE, LAENGE, 10),
+      false,
+      "Bei zehn Grad Mindesthöhe gilt dieser Zeitpunkt nicht als Tag",
+    );
+  });
+
+  it("nennt den Sonnenaufgang im Dezember zur erwarteten Zeit", () => {
+    // Für St. Pölten liegt der Sonnenaufgang am 21. Dezember bei etwa
+    // 07:50 Ortszeit. Weicht die Rechnung davon ab, stimmt etwas am
+    // Algorithmus nicht.
+    const tag = tageslicht(new Date(2026, 11, 21), BREITE, LAENGE, 0);
+    assert.ok(tag.aufgang, "Aufgang fehlt");
+
+    const stunde = tag.aufgang!.getHours() + tag.aufgang!.getMinutes() / 60;
+    assert.ok(
+      Math.abs(stunde - 7.85) < 0.3,
+      `Sonnenaufgang ${stunde.toFixed(2)} statt rund 7,85 Uhr`,
+    );
+  });
+});
+
+describe("Einfallsfaktor", () => {
+  it("ist eins, wenn die Sonne senkrecht auf die Fläche trifft", () => {
+    // Sonne im Süden bei 40 Grad Höhe, Fläche nach Süden mit 50 Grad
+    // Neigung: Die Flächennormale zeigt genau zur Sonne.
+    const faktor = einfallsfaktor({ hoehe: 40, azimut: 180 }, 50, 180);
+    assert.ok(
+      Math.abs(faktor - 1) < 0.01,
+      `Faktor ${faktor.toFixed(3)} statt 1`,
+    );
+  });
+
+  it("ist null, wenn die Sonne hinter der Fläche steht", () => {
+    // Sonne im Norden, Fläche steil nach Süden.
+    const faktor = einfallsfaktor({ hoehe: 10, azimut: 0 }, 70, 180);
+    assert.equal(faktor, 0);
+  });
+
+  it("bevorzugt bei Ost-West-Aufständerung die passende Tageshälfte", () => {
+    const morgensOst = einfallsfaktor({ hoehe: 25, azimut: 95 }, 15, 90);
+    const morgensWest = einfallsfaktor({ hoehe: 25, azimut: 95 }, 15, 270);
+
+    assert.ok(
+      morgensOst > morgensWest,
+      "Am Morgen muss die Ostfläche mehr abbekommen",
+    );
+  });
+
+  it("liegt immer zwischen null und eins", () => {
+    for (let hoehe = -10; hoehe <= 90; hoehe += 7) {
+      for (let azimut = 0; azimut < 360; azimut += 23) {
+        for (const neigung of [0, 15, 30, 60, 90]) {
+          const faktor = einfallsfaktor({ hoehe, azimut }, neigung, 180);
+          assert.ok(
+            faktor >= 0 && faktor <= 1.0001,
+            `Faktor ${faktor} außerhalb des gültigen Bereichs`,
+          );
+        }
+      }
+    }
+  });
+});

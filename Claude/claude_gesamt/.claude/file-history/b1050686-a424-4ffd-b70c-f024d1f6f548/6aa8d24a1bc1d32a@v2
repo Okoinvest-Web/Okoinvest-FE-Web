@@ -1,0 +1,237 @@
+/**
+ * Bewertung einzelner Ladevorgänge.
+ *
+ * Keine Datenbank, keine Seitenwirkungen - allein die Rechnung. Was
+ * hier herauskommt, steht später auf einer Rechnung an einen
+ * Mitarbeiter oder auf einer Kostenumlage an eine Abteilung; es muss
+ * sich Zeile für Zeile nachvollziehen lassen.
+ *
+ * Alle Preise kommen in Cent herein und gehen in Euro hinaus. Das ist
+ * keine Willkür: Tarife werden in Cent je Kilowattstunde vereinbart,
+ * Belege in Euro gestellt. Die Umrechnung an genau einer Stelle zu
+ * machen, erspart die verstreuten Faktoren 100, an denen sich sonst
+ * irgendwann einer verrechnet.
+ */
+
+export interface Ladetarif {
+  id: string;
+  bezeichnung: string;
+  /** Arbeitspreis, Cent je kWh. */
+  ctKwh: number;
+  /**
+   * Ermäßigter Arbeitspreis für den Anteil aus der eigenen Anlage.
+   * Fehlt er, gilt auch für diesen Anteil der normale Arbeitspreis.
+   */
+  ctKwhPv?: number | null;
+  /** Zeitpreis, Cent je Minute der gesamten Ladedauer. */
+  ctMinute?: number;
+  /** Standgebühr erst ab dieser Minute nach Ladeende. */
+  blockingAbMinute?: number | null;
+  ctMinuteBlocking?: number;
+  /** Obergrenze der Standgebühr je Vorgang, Euro. */
+  blockingHoechstEur?: number | null;
+  ustSatz: number;
+}
+
+export interface Ladevorgang {
+  id: string;
+  /** Beginn und Ende der Belegung des Ladepunkts. */
+  beginn: Date;
+  ende: Date | null;
+  /**
+   * Zeitpunkt, zu dem die Leistung auf null ging.
+   *
+   * Ohne diesen Wert ist keine Standgebühr berechenbar - dann steht
+   * nicht fest, ab wann das Fahrzeug nur noch stand. In dem Fall wird
+   * keine berechnet, statt sie zu schätzen.
+   */
+  ladeende?: Date | null;
+  energieKwh: number;
+  /** Davon zeitgleich aus der eigenen Erzeugung. */
+  pvKwh?: number;
+}
+
+export interface Vorgangsbewertung {
+  vorgangId: string;
+  /** Dauer der Belegung in Minuten. */
+  dauerMinuten: number;
+  /** Reine Ladedauer in Minuten. */
+  ladedauerMinuten: number;
+  /** Minuten, für die eine Standgebühr anfällt. */
+  blockingMinuten: number;
+  energieKwh: number;
+  pvKwh: number;
+  netzKwh: number;
+  arbeitEur: number;
+  zeitEur: number;
+  blockingEur: number;
+  nettoEur: number;
+  ustEur: number;
+  bruttoEur: number;
+  /** Durchschnittliche Ladeleistung, kW. */
+  mittlereLeistungKw: number;
+}
+
+/** Auf zwei Nachkommastellen, kaufmännisch. */
+function cent(betrag: number): number {
+  return Math.round(betrag * 100) / 100;
+}
+
+function minutenZwischen(von: Date, bis: Date): number {
+  return Math.max(0, (bis.getTime() - von.getTime()) / 60000);
+}
+
+/**
+ * Bewertet einen einzelnen Ladevorgang nach einem Tarif.
+ *
+ * Der PV-Anteil wird nie höher angesetzt als die geladene Energie -
+ * ein Messfehler oder eine zu grobe Zuordnung darf nicht dazu führen,
+ * dass jemand mehr Sonnenstrom abgerechnet bekommt, als überhaupt
+ * geflossen ist.
+ */
+export function bewerteVorgang(
+  vorgang: Ladevorgang,
+  tarif: Ladetarif,
+): Vorgangsbewertung {
+  const ende = vorgang.ende ?? vorgang.beginn;
+  const dauerMinuten = minutenZwischen(vorgang.beginn, ende);
+
+  const ladeende = vorgang.ladeende ?? null;
+  const ladedauerMinuten = ladeende
+    ? minutenZwischen(vorgang.beginn, ladeende)
+    : dauerMinuten;
+
+  const energieKwh = Math.max(0, vorgang.energieKwh);
+  const pvKwh = Math.min(Math.max(0, vorgang.pvKwh ?? 0), energieKwh);
+  const netzKwh = energieKwh - pvKwh;
+
+  // Arbeitspreis: Der PV-Anteil kann zu einem eigenen Satz stehen.
+  const ctPv = tarif.ctKwhPv ?? tarif.ctKwh;
+  const arbeitEur = cent((netzKwh * tarif.ctKwh + pvKwh * ctPv) / 100);
+
+  // Zeitpreis läuft über die gesamte Belegung, nicht nur das Laden:
+  // Er bepreist die Verfügbarkeit des Ladepunkts.
+  const zeitEur = cent((dauerMinuten * (tarif.ctMinute ?? 0)) / 100);
+
+  // Standgebühr.
+  //
+  // Sie greift erst, wenn nach dem Ende des Ladens noch eine
+  // Karenzzeit verstrichen ist. Ohne bekanntes Ladeende gibt es keine
+  // Grundlage - dann bleibt sie bei null, statt die Karenz ab Beginn
+  // der Belegung zu rechnen und damit jeden langen Ladevorgang zu
+  // bestrafen.
+  let blockingMinuten = 0;
+  if (
+    ladeende &&
+    tarif.blockingAbMinute !== null &&
+    tarif.blockingAbMinute !== undefined &&
+    (tarif.ctMinuteBlocking ?? 0) > 0
+  ) {
+    const stehzeit = minutenZwischen(ladeende, ende);
+    blockingMinuten = Math.max(0, stehzeit - tarif.blockingAbMinute);
+  }
+
+  let blockingEur = cent(
+    (blockingMinuten * (tarif.ctMinuteBlocking ?? 0)) / 100,
+  );
+  if (
+    tarif.blockingHoechstEur !== null &&
+    tarif.blockingHoechstEur !== undefined
+  ) {
+    blockingEur = Math.min(blockingEur, tarif.blockingHoechstEur);
+  }
+
+  const nettoEur = cent(arbeitEur + zeitEur + blockingEur);
+  const ustEur = cent((nettoEur * tarif.ustSatz) / 100);
+
+  return {
+    vorgangId: vorgang.id,
+    dauerMinuten: Number(dauerMinuten.toFixed(1)),
+    ladedauerMinuten: Number(ladedauerMinuten.toFixed(1)),
+    blockingMinuten: Number(blockingMinuten.toFixed(1)),
+    energieKwh: Number(energieKwh.toFixed(3)),
+    pvKwh: Number(pvKwh.toFixed(3)),
+    netzKwh: Number(netzKwh.toFixed(3)),
+    arbeitEur,
+    zeitEur,
+    blockingEur,
+    nettoEur,
+    ustEur,
+    bruttoEur: cent(nettoEur + ustEur),
+    mittlereLeistungKw:
+      ladedauerMinuten > 0
+        ? Number(((energieKwh / ladedauerMinuten) * 60).toFixed(2))
+        : 0,
+  };
+}
+
+export interface Belegzeile {
+  karteId: string | null;
+  kostenstelle: string;
+  anzahlVorgaenge: number;
+  energieKwh: number;
+  pvKwh: number;
+  arbeitEur: number;
+  zeitEur: number;
+  blockingEur: number;
+  grundpreisEur: number;
+  nettoEur: number;
+  ustSatz: number;
+  ustEur: number;
+  bruttoEur: number;
+}
+
+/**
+ * Fasst die Bewertungen einer Karte zu einer Belegzeile zusammen.
+ *
+ * Die Umsatzsteuer wird auf die Summe gerechnet, nicht je Vorgang
+ * aufaddiert. Bei dreißig Ladevorgängen im Monat weicht die Summe der
+ * gerundeten Einzelbeträge sonst um einige Cent von der Steuer auf den
+ * Rechnungsbetrag ab - und eine Rechnung, deren Steuer nicht zum Netto
+ * passt, beanstandet jede Prüfung.
+ */
+export function fasseKarteZusammen(
+  karteId: string | null,
+  kostenstelle: string,
+  bewertungen: Vorgangsbewertung[],
+  tarif: Ladetarif,
+  grundpreisEur = 0,
+): Belegzeile {
+  const summe = (auswahl: (b: Vorgangsbewertung) => number) =>
+    bewertungen.reduce((s, b) => s + auswahl(b), 0);
+
+  const arbeitEur = cent(summe((b) => b.arbeitEur));
+  const zeitEur = cent(summe((b) => b.zeitEur));
+  const blockingEur = cent(summe((b) => b.blockingEur));
+  const nettoEur = cent(arbeitEur + zeitEur + blockingEur + grundpreisEur);
+  const ustEur = cent((nettoEur * tarif.ustSatz) / 100);
+
+  return {
+    karteId,
+    kostenstelle,
+    anzahlVorgaenge: bewertungen.length,
+    energieKwh: Number(summe((b) => b.energieKwh).toFixed(3)),
+    pvKwh: Number(summe((b) => b.pvKwh).toFixed(3)),
+    arbeitEur,
+    zeitEur,
+    blockingEur,
+    grundpreisEur: cent(grundpreisEur),
+    nettoEur,
+    ustSatz: tarif.ustSatz,
+    ustEur,
+    bruttoEur: cent(nettoEur + ustEur),
+  };
+}
+
+/**
+ * Geldwerter Vorteil aus geladener Energie.
+ *
+ * Lädt ein Mitarbeiter sein privat genutztes Fahrzeug im Betrieb, ist
+ * der Wert dieser Energie lohnsteuerlich zu erfassen. Der Satz kommt
+ * aus den Stammdaten der Karte und nicht aus dem Tarif: Er folgt der
+ * steuerlichen Bewertung, nicht dem, was der Strom kostet.
+ */
+export function sachbezug(energieKwh: number, ctKwh: number | null): number {
+  if (!ctKwh || ctKwh <= 0 || energieKwh <= 0) return 0;
+  return cent((energieKwh * ctKwh) / 100);
+}

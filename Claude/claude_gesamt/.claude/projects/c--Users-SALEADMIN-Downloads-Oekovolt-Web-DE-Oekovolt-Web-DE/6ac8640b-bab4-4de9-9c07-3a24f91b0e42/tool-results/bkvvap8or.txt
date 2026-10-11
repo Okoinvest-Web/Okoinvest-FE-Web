@@ -1,0 +1,892 @@
+# Copyright (c) 2026, ÖkoInvest GmbH
+#
+# Dokumente: private Frappe-Files, nur für Berechtigte.
+#  - Typ an den ersten Bytes geprüft (PDF/JPG/PNG), ≤ 10 MB – die Website prüft vorab, hier erneut
+#  - zufälliger Dateiname, is_private = 1, SHA-256 gespeichert
+#  - Datenraum-Dokumente (Kategorie „datenraum“) nur an Projekten; Investoren sehen sie erst nach NDA-Freigabe
+#  - jeder Download wird protokolliert
+
+import base64
+import binascii
+import re
+import secrets
+
+import frappe
+
+from oekoinvest_app.plattform import validierung as v
+from oekoinvest_app.plattform.ausgabe import dokument_meta, ist_eigen, thread_info
+from oekoinvest_app.plattform.kern import (
+	besitzer,
+	darf_bezug,
+	ist_admin,
+	jetzt,
+	nachricht_anlegen,
+	nicht_gefunden,
+	nutzer,
+	objekt_laden,
+	protokoll,
+	sha256,
+	ungueltig,
+	verboten,
+)
+from oekoinvest_app.plattform.konstanten import BEZUG_ARTEN, DOCTYPE, DOKUMENT_KATEGORIEN, UPLOAD_MAX_BYTES, UPLOAD_TYPEN
+from oekoinvest_app.plattform.prozesse import BOERSE_STATUS, DATENRAUM_STATUS
+
+MAX_BASE64 = (UPLOAD_MAX_BYTES + 2) // 3 * 4 + 16
+FELDER = ["name", "bezug_art", "bezug_id", "dateiname", "mime", "groesse", "kategorie", "am", "hochgeladen_von", "datei_id"]
+
+
+def mime_aus_bytes(b):
+	"""Dateityp an den ersten Bytes erkennen (nie dem Dateinamen/Browser-MIME trauen)."""
+	if len(b) >= 5 and b[:5] == b"%PDF-":
+		return "application/pdf"
+	if len(b) >= 3 and b[:3] == b"\xff\xd8\xff":
+		return "image/jpeg"
+	if len(b) >= 8 and b[:8] == b"\x89PNG\r\n\x1a\n":
+		return "image/png"
+	return ""
+
+
+def darf_dokument(n, d):
+	if ist_admin(n):
+		return True
+	if d.hochgeladen_von == n.id:
+		return True
+	o = objekt_laden(d.bezug_art, d.bezug_id)
+	if not o:
+		return False
+	if besitzer(d.bezug_art, o) == n.id:
+		return True
+	if d.bezug_art == "projekt" and d.kategorie == "datenraum" and o.status in (*BOERSE_STATUS, "verkauft"):
+		status = frappe.db.get_value("Plattform Interesse", {"projekt_id": o.name, "investor_id": n.id}, "status")
+		return status in DATENRAUM_STATUS
+	return False
+
+
+def _mit_bezug(meta, n, cache):
+	schluessel = (meta["bezugArt"], meta["bezugId"])
+	if schluessel not in cache:
+		cache[schluessel] = thread_info(meta["bezugArt"], meta["bezugId"], n) or {}
+	info = cache[schluessel]
+	return {**meta, "bezugTitel": info.get("titel") or meta["bezugId"], "bezugLink": info.get("link")}
+
+
+@frappe.whitelist(methods=["POST"])
+def liste(bezugArt=None, bezugId=None, als_benutzer=None):
+	n = nutzer(als_benutzer)
+	if bezugArt:
+		if bezugArt not in BEZUG_ARTEN or not v.kennung(bezugId):
+			return []
+		kandidaten = frappe.get_all("Plattform Dokument", filters={"bezug_art": bezugArt, "bezug_id": bezugId}, fields=FELDER, limit_page_length=0)
+	elif ist_admin(n):
+		kandidaten = frappe.get_all("Plattform Dokument", fields=FELDER, order_by="am desc", limit_page_length=500)
+	else:
+		# Übersicht: nur Dokumente an eigenen Objekten bzw. eigene Uploads (kein Datenraum fremder Projekte)
+		from oekoinvest_app.plattform.api.nachricht import eigene_bezuege
+
+		gesehen = {}
+		for d in frappe.get_all("Plattform Dokument", filters={"hochgeladen_von": n.id}, fields=FELDER, limit_page_length=0):
+			gesehen[d.name] = d
+		for art, namen in eigene_bezuege(n).items():
+			if namen:
+				for d in frappe.get_all("Plattform Dokument", filters={"bezug_art": art, "bezug_id": ("in", namen)}, fields=FELDER, limit_page_length=0):
+					gesehen[d.name] = d
+		kandidaten = list(gesehen.values())
+	erlaubt = [d for d in kandidaten if darf_dokument(n, d)]
+	erlaubt.sort(key=lambda d: str(d.am or ""), reverse=True)
+	cache = {}
+	return [_mit_bezug(dokument_meta(d), n, cache) for d in erlaubt[:500]]
+
+
+@frappe.whitelist(methods=["POST"])
+def lesen(id=None, als_benutzer=None):  # noqa: A002
+	n = nutzer(als_benutzer)
+	k = v.kennung(id)
+	if not k or not frappe.db.exists("Plattform Dokument", k):
+		nicht_gefunden("Dokument nicht gefunden.")
+	d = frappe.get_doc("Plattform Dokument", k)
+	if not darf_dokument(n, d):
+		verboten()
+	if not d.datei_id or not frappe.db.exists("File", d.datei_id):
+		nicht_gefunden("Dokument nicht gefunden.")
+	datei = frappe.get_doc("File", d.datei_id)
+	with open(datei.get_full_path(), "rb") as fh:
+		inhalt = fh.read()
+	if d.sha256 and sha256(inhalt) != d.sha256:
+		frappe.log_error(title="ÖkoInvest: Prüfsumme eines Dokuments stimmt nicht", message=f"Dokument {d.name}")
+		ungueltig("Das Dokument ist beschädigt. Bitte wenden Sie sich an das Backoffice.")
+	# Download-Protokoll (Datenraum: wer hat wann welche Unterlage geöffnet)
+	protokoll(n, "download", d.bezug_art, d.bezug_id, f"Dokument {d.dateiname} geöffnet")
+	return {"meta": dokument_meta(d), "inhaltBase64": base64.b64encode(inhalt).decode("ascii")}
+
+
+@frappe.whitelist(methods=["POST"])
+def speichern(bezugArt=None, bezugId=None, name=None, mime=None, kategorie=None, inhaltBase64=None, als_benutzer=None):
+	n = nutzer(als_benutzer)
+	if mime not in UPLOAD_TYPEN:
+		ungueltig("Erlaubt sind PDF, JPG und PNG.")
+	roh = inhaltBase64 if isinstance(inhaltBase64, str) else ""
+	if not roh or len(roh) > MAX_BASE64:
+		ungueltig("Die Datei ist leer oder größer als 10 MB.")
+	try:
+		daten = base64.b64decode(roh, validate=True)
+	except (binascii.Error, ValueError):
+		ungueltig("Die Datei konnte nicht gelesen werden.")
+	if not daten or len(daten) > UPLOAD_MAX_BYTES:
+		ungueltig("Die Datei ist leer oder größer als 10 MB.")
+	if mime_aus_bytes(daten) != mime:
+		ungueltig("Erlaubt sind PDF, JPG und PNG.")
+	kat = v.auswahl(kategorie, DOKUMENT_KATEGORIEN, "allgemein")
+	if kat == "datenraum" and bezugArt != "projekt":
+		ungueltig("Datenraum-Dokumente gehören zu einem Projekt.")
+	endung = UPLOAD_TYPEN[mime]
+	sauber = re.sub(r'[\\/:*?"<>|]', "_", v.text(name, 120)) or f"dokument.{endung}"
+
+	o = darf_bezug(n, bezugArt, bezugId)  # Rechte vor dem Schreiben der Datei
+	eigen = ist_eigen(bezugArt, o, n)
+	als_admin = ist_admin(n) and not eigen
+
+	d = frappe.get_doc(
+		{
+			"doctype": "Plattform Dokument",
+			"bezug_art": bezugArt,
+			"bezug_doctype": DOCTYPE[bezugArt],  # vor dem Insert nötig: Dynamic Link wird vor validate() geprüft
+			"bezug_id": o.name,
+			"dateiname": sauber,
+			"mime": mime,
+			"groesse": len(daten),
+			"kategorie": kat,
+			"hochgeladen_von": n.id,
+			"am": jetzt(),
+			"sha256": sha256(daten),
+		}
+	).insert(ignore_permissions=True)
+	datei = frappe.get_doc(
+		{
+			"doctype": "File",
+			"file_name": f"{d.name}-{secrets.token_hex(8)}.{endung}",
+			"is_private": 1,
+			"content": daten,
+			"attached_to_doctype": "Plattform Dokument",
+			"attached_to_name": d.name,
+		}
+	)
+	datei.flags.ignore_permissions = True
+	datei.insert(ignore_permissions=True)
+	d.datei = datei.file_url
+	d.datei_id = datei.name
+	d.save(ignore_permissions=True)
+
+	nachricht_anlegen(
+		bezugArt,
+		o.name,
+		von_id=n.id,
+		von_admin=als_admin,
+		system=True,
+		text=f"Dokument hochgeladen: {sauber}",
+		gelesen_nutzer=None if als_admin else True,
+		gelesen_admin=None if als_admin else False,
+	)
+	protokoll(n, "upload", bezugArt, o.name, f"Dokument {sauber} ({len(daten)} B)")
+	return dokument_meta(d)
+
+
+@frappe.whitelist(methods=["POST"])
+def loeschen(id=None, als_benutzer=None):  # noqa: A002
+	n = nutzer(als_benutzer)
+	k = v.kennung(id)
+	if not k or not frappe.db.exists("Plattform Dokument", k):
+		nicht_gefunden("Dokument nicht gefunden.")
+	d = frappe.get_doc("Plattform Dokument", k)
+	if not ist_admin(n) and d.hochgeladen_von != n.id:
+		verboten("Nur eigene Uploads können gelöscht werden.")
+	protokoll(n, "loeschen", d.bezug_art, d.bezug_id, f"Dokument {d.dateiname} gelöscht")
+	datei_id = d.datei_id
+	if datei_id and frappe.db.exists("File", datei_id):
+		frappe.delete_doc("File", datei_id, ignore_permissions=True, force=True)
+	frappe.delete_doc("Plattform Dokument", d.name, ignore_permissions=True, force=True)
+	return {"ok": True}
+# Copyright (c) 2026, ÖkoInvest GmbH
+#
+# Projektbörse. Ohne `als_benutzer` nur die öffentliche Projektion (Positivliste, plattform/oeffentlich.py).
+# Vertrauliche Felder und Datenraum nur für Anbieter, Backoffice und Investoren mit freigegebenem NDA.
+
+import frappe
+from frappe.utils import cint
+
+from oekoinvest_app.plattform import validierung as v
+from oekoinvest_app.plattform.ausgabe import dokument_meta, interesse_json, projekt_json
+from oekoinvest_app.plattform.kern import aus_json, hat_rolle, ist_admin, nicht_gefunden, nutzer
+from oekoinvest_app.plattform.konstanten import LAENDER, PHASEN_IDS, PROJEKT_TYPEN
+from oekoinvest_app.plattform.matching import matching
+from oekoinvest_app.plattform.oeffentlich import projekt_oeffentlich, projekt_vertraulich
+from oekoinvest_app.plattform.prozesse import BOERSE_STATUS, DATENRAUM_STATUS
+
+
+def _suchprofil(n):
+	if not n:
+		return None
+	return aus_json(frappe.db.get_value("Plattform Konto", n.id, "suchprofil"))
+
+
+def boerse_eintrag(p, n, profil=None):
+	pj = projekt_json(p)
+	o = projekt_oeffentlich(pj)
+	if n and hat_rolle(n, ["investor"]):
+		i = frappe.db.get_value("Plattform Interesse", {"projekt_id": p.name, "investor_id": n.id}, ["name", "status", "gemerkt"], as_dict=True)
+		o["meinInteresse"] = {"id": i.name, "status": i.status, "gemerkt": bool(cint(i.gemerkt))} if i else None
+		if profil:
+			o["matching"] = matching(pj, profil)
+	return o
+
+
+@frappe.whitelist(methods=["POST"])
+def liste(typ=None, land=None, phase=None, mwpMin=None, mwpMax=None, als_benutzer=None):
+	n = nutzer(als_benutzer, pflicht=False)
+	filters = {"status": ("in", BOERSE_STATUS)}
+	t = v.auswahl(typ, PROJEKT_TYPEN)
+	if t:
+		filters["typ"] = t
+	la = v.auswahl(land, LAENDER)
+	if la:
+		filters["land"] = la
+	ph = v.auswahl(phase, PHASEN_IDS)
+	if ph:
+		filters["phase"] = ph
+	mn = v.zahl(mwpMin, min=0)
+	mx = v.zahl(mwpMax, min=0)
+	if mn is not None and mx is not None:
+		filters["mwp"] = ("between", [mn, mx])
+	elif mn is not None:
+		filters["mwp"] = (">=", mn)
+	elif mx is not None:
+		filters["mwp"] = ("<=", mx)
+	namen = frappe.get_all("Plattform Projekt", filters=filters, pluck="name", order_by="veroeffentlicht_am desc", limit_page_length=500)
+	profil = _suchprofil(n) if n and hat_rolle(n, ["investor"]) else None
+	projekte = [boerse_eintrag(frappe.get_doc("Plattform Projekt", x), n, profil) for x in namen]
+
+	sichtbar = frappe.get_all("Plattform Projekt", filters={"status": ("in", BOERSE_STATUS)}, fields=["mwp", "land", "demo"], limit_page_length=0)
+	return {
+		"projekte": projekte,
+		"kennzahlen": {
+			"anzahl": len(sichtbar),
+			"mwp": round(sum(float(x.mwp or 0) for x in sichtbar) * 10) / 10,
+			"laender": len({x.land for x in sichtbar if x.land}),
+			"verkauft": frappe.db.count("Plattform Projekt", {"status": "verkauft"}),
+		},
+		# Hinweis „Vorführdaten“ nur, wenn Demo-Projekte in der Börse stehen
+		"demo": any(cint(x.demo) for x in sichtbar),
+	}
+
+
+@frappe.whitelist(methods=["POST"])
+def detail(schluessel=None, zaehlen=None, als_benutzer=None):
+	n = nutzer(als_benutzer, pflicht=False)
+	s = v.slug(schluessel) or v.kennung(schluessel)
+	name = None
+	if s:
+		name = frappe.db.get_value("Plattform Projekt", {"slug": s}, "name") or (s if frappe.db.exists("Plattform Projekt", s) else None)
+	if not name:
+		nicht_gefunden("Projekt nicht gefunden.")
+	p = frappe.get_doc("Plattform Projekt", name)
+	eigentuemer = bool(n) and p.anbieter_id == n.id
+	admin = ist_admin(n)
+	if p.status not in BOERSE_STATUS and not eigentuemer and not admin:
+		nicht_gefunden("Projekt nicht gefunden.")
+
+	if v.wahr(zaehlen) and not eigentuemer and not admin:
+		frappe.db.sql("update `tabPlattform Projekt` set aufrufe = aufrufe + 1 where name = %s", (p.name,))
+		p.aufrufe = cint(p.aufrufe) + 1
+
+	interesse = None
+	if n:
+		iname = frappe.db.get_value("Plattform Interesse", {"projekt_id": p.name, "investor_id": n.id}, "name")
+		interesse = frappe.get_doc("Plattform Interesse", iname) if iname else None
+	nda_frei = bool(interesse) and interesse.status in DATENRAUM_STATUS
+	zugriff = "admin" if admin else "eigentuemer" if eigentuemer else "nda" if nda_frei else "oeffentlich"
+
+	profil = _suchprofil(n) if n and hat_rolle(n, ["investor"]) else None
+	out = {
+		"projekt": boerse_eintrag(p, n, profil),
+		"zugriff": zugriff,
+		"interesse": interesse_json(interesse, n) if interesse else None,
+		"vertraulich": None,
+		"dokumente": [],
+	}
+	if zugriff != "oeffentlich":
+		out["vertraulich"] = projekt_vertraulich(projekt_json(p))
+		filters = {"bezug_art": "projekt", "bezug_id": p.name}
+		if zugriff == "nda":
+			filters["kategorie"] = "datenraum"
+		out["dokumente"] = [dokument_meta(d) for d in frappe.get_all("Plattform Dokument", filters=filters, fields=["*"], order_by="am desc")]
+	return out
+# Copyright (c) 2026, ÖkoInvest GmbH
+#
+# Ausgabe (zu_json) der DocTypes im camelCase-Format der Website – identisch zu den Objekten des
+# Demo-Backends (src/lib/plattform/backend/demo.js). Interne Felder (kaeufer_interesse_id, description …)
+# verlassen die App nicht.
+
+import frappe
+from frappe.utils import cint, flt
+
+from oekoinvest_app.plattform.kern import aus_json, besitzer, ist_admin, iso, kurz, name_von, objekt_laden, verlauf_json, zahl_oder_null
+from oekoinvest_app.plattform.konstanten import VORGANG_TYPEN
+from oekoinvest_app.plattform.oeffentlich import projekt_oeffentlich
+
+# ================================================================ Vorgang
+
+
+def vorgang_json(vg):
+	return {
+		"id": vg.name,
+		"typ": vg.typ,
+		"status": vg.status,
+		"statusVerlauf": verlauf_json(vg),
+		"nutzerId": vg.nutzer_id or None,
+		"email": vg.email,
+		"kontakt": aus_json(vg.kontakt, {}),
+		"daten": aus_json(vg.daten, {}),
+		"herkunft": aus_json(vg.herkunft, {}),
+		"ip": vg.ip or "",
+		"einwilligung": aus_json(vg.einwilligung),
+		"zustaendigId": vg.zustaendig_id or None,
+		"flaecheId": vg.flaeche_id or None,
+		"ablehnGrund": vg.ablehn_grund or "",
+		"erstelltAm": iso(vg.creation),
+		"geaendertAm": iso(vg.modified),
+	}
+
+
+def vorgang_ausgabe(vg, n):
+	out = vorgang_json(vg)
+	out["zustaendig"] = kurz(vg.zustaendig_id)
+	if ist_admin(n):
+		out["nutzer"] = kurz(vg.nutzer_id)
+	else:
+		out.pop("ip", None)
+		out.pop("herkunft", None)
+	return out
+
+
+# ================================================================ Fläche
+
+
+def flaeche_json(f):
+	return {
+		"id": f.name,
+		"nutzerId": f.nutzer_id or None,
+		"vorgangId": f.vorgang_id or None,
+		"bezeichnung": f.bezeichnung or "",
+		"land": f.land or "",
+		"bundesland": f.bundesland or "",
+		"plz": f.plz or "",
+		"ort": f.ort or "",
+		"gemarkung": f.gemarkung or "",
+		"flurstuecke": [{"gemarkung": x.gemarkung or "", "flur": x.flur or "", "nummer": x.nummer or ""} for x in (f.get("flurstuecke") or [])],
+		"ha": zahl_oder_null(f.ha),
+		"nutzung": f.nutzung or "",
+		"agri": bool(cint(f.agri)),
+		"eigentum": f.eigentum or "",
+		"hinweise": f.hinweise or "",
+		"status": f.status,
+		"statusVerlauf": verlauf_json(f),
+		"pachtangebot": aus_json(f.pachtangebot),
+		"ablehnGrund": f.ablehn_grund or "",
+		"zustaendigId": f.zustaendig_id or None,
+		"erstelltAm": iso(f.creation),
+		"geaendertAm": iso(f.modified),
+	}
+
+
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "",
+ "creation": "2026-09-29 08:00:00.000000",
+ "description": "Aktivitätsprotokoll (append-only): Login, Registrierung, Anfrage, Status, NDA, Upload, Download, Zuweisung, Nutzeränderung. Kein Update/Delete.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "am",
+  "nutzer_id",
+  "aktion",
+  "cb_aktivitaet",
+  "objekt_art",
+  "objekt_id",
+  "ip",
+  "sec_text",
+  "text"
+ ],
+ "fields": [
+  {
+   "fieldname": "am",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Zeitpunkt",
+   "read_only": 1
+  },
+  {
+   "fieldname": "nutzer_id",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Konto",
+   "options": "Plattform Konto",
+   "read_only": 1
+  },
+  {
+   "fieldname": "aktion",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Aktion",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cb_aktivitaet",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "objekt_art",
+   "fieldtype": "Data",
+   "in_standard_filter": 1,
+   "label": "Objektart",
+   "read_only": 1
+  },
+  {
+   "description": "Bewusst kein Link: das Protokoll bleibt lesbar, auch wenn z. B. ein Dokument gelöscht wurde.",
+   "fieldname": "objekt_id",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Objekt-ID",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "ip",
+   "fieldtype": "Data",
+   "label": "IP-Adresse",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sec_text",
+   "fieldtype": "Section Break",
+   "label": "Text"
+  },
+  {
+   "fieldname": "text",
+   "fieldtype": "Small Text",
+   "label": "Text",
+   "read_only": 1
+  }
+ ],
+ "in_create": 1,
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-29 08:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Aktivitaet",
+ "naming_rule": "By script",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 1,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "ÖkoInvest Admin",
+   "share": 0,
+   "write": 0
+  }
+ ],
+ "sort_field": "am",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}
+# Copyright (c) 2026, ÖkoInvest GmbH
+#
+# Plattform Aktivitaet – Aktivitätsprotokoll, append-only.
+# Einträge entstehen nur über kern.protokoll(); Ändern, Umbenennen und Löschen verbietet der Controller
+# (auch für Administratoren). Aufbewahrung/Löschkonzept: siehe ANLEITUNG.md (offener Punkt).
+
+import frappe
+
+from oekoinvest_app.plattform.basis import PlattformDokument
+
+MELDUNG = "Das Aktivitätsprotokoll kann nicht verändert werden."
+
+
+class PlattformAktivitaet(PlattformDokument):
+	def validate(self):
+		if not self.is_new():
+			frappe.throw(MELDUNG, frappe.PermissionError)
+
+	def on_trash(self):
+		frappe.throw("Einträge des Aktivitätsprotokolls können nicht gelöscht werden.", frappe.PermissionError)
+
+	def before_rename(self, alt, neu, merge=False):
+		frappe.throw(MELDUNG, frappe.PermissionError)
+
+
+def on_doctype_update():
+	frappe.db.add_index("Plattform Aktivitaet", ["objekt_id"])
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "hash",
+ "creation": "2026-09-29 08:00:00.000000",
+ "description": "Einmal-Token für E-Mail-Bestätigung (72 h) und Passwort-Reset (1 h). Gespeichert wird nur der SHA-256-Hash.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "hash",
+  "art",
+  "nutzer_id",
+  "ablauf",
+  "benutzt"
+ ],
+ "fields": [
+  {
+   "fieldname": "hash",
+   "fieldtype": "Data",
+   "label": "SHA-256 des Tokens",
+   "read_only": 1,
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "art",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Art",
+   "options": "email\nreset",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "nutzer_id",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Konto",
+   "options": "Plattform Konto",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "ablauf",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Gültig bis",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "benutzt",
+   "fieldtype": "Check",
+   "label": "Benutzt",
+   "read_only": 1
+  }
+ ],
+ "in_create": 1,
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-09-29 08:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Plattform",
+ "name": "Plattform Token",
+ "naming_rule": "Random",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 1,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 0,
+   "write": 0
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}
+# Copyright (c) 2026, ÖkoInvest GmbH
+# Aktivitätsprotokoll: append-only (kein Update, kein Delete – auch nicht als Administrator).
+
+import frappe
+from frappe.tests.utils import FrappeTestCase
+
+from oekoinvest_app.plattform.api import admin
+from oekoinvest_app.plattform.kern import protokoll
+from oekoinvest_app.plattform.tests.testdaten import aufruf, konto, vorbereiten
+
+
+class TestAktivitaet(FrappeTestCase):
+	@classmethod
+	def setUpClass(cls):
+		super().setUpClass()
+		vorbereiten()
+		cls.admin = konto(["admin"])
+
+	def tearDown(self):
+		frappe.set_user("Administrator")
+
+	def _eintrag(self):
+		frappe.set_user("Administrator")
+		protokoll(frappe._dict(id=self.admin), "test", "nutzer", self.admin, "Testeintrag", "127.0.0.1")
+		return frappe.get_all("Plattform Aktivitaet", filters={"aktion": "test", "objekt_id": self.admin}, pluck="name", order_by="creation desc", limit=1)[0]
+
+	def test_anlegen_erlaubt(self):
+		name = self._eintrag()
+		doc = frappe.get_doc("Plattform Aktivitaet", name)
+		self.assertTrue(doc.name.startswith("A-"))
+		self.assertEqual(doc.text, "Testeintrag")
+
+	def test_aendern_verboten(self):
+		doc = frappe.get_doc("Plattform Aktivitaet", self._eintrag())
+		doc.text = "manipuliert"
+		with self.assertRaises(frappe.PermissionError):
+			doc.save(ignore_permissions=True)
+		self.assertEqual(frappe.db.get_value("Plattform Aktivitaet", doc.name, "text"), "Testeintrag")
+
+	def test_loeschen_verboten(self):
+		name = self._eintrag()
+		with self.assertRaises(frappe.PermissionError):
+			frappe.delete_doc("Plattform Aktivitaet", name, ignore_permissions=True, force=True)
+		self.assertTrue(frappe.db.exists("Plattform Aktivitaet", name))
+
+	def test_umbenennen_verboten(self):
+		name = self._eintrag()
+		# je nach Frappe-Version greift zuerst die Rechteprüfung (Rename nicht erlaubt) oder der Controller
+		with self.assertRaises((frappe.PermissionError, frappe.ValidationError)):
+			frappe.rename_doc("Plattform Aktivitaet", name, "A-99-ZZZZZZ", force=True)
+		self.assertTrue(frappe.db.exists("Plattform Aktivitaet", name))
+
+	def test_registrierung_und_statuswechsel_werden_protokolliert(self):
+		kid = konto(["investor"])
+		self.assertTrue(frappe.db.exists("Plattform Aktivitaet", {"aktion": "registrierung", "objekt_id": kid}))
+		liste = aufruf(admin.aktivitaeten, limit=5, objektId=kid, als_benutzer=self.admin)
+		self.assertTrue(liste)
+		self.assertEqual(liste[0]["objektId"], kid)
+		self.assertIn("nutzer", liste[0])
+# Copyright (c) 2026, ÖkoInvest GmbH
+#
+# Hilfen für die Tests: API-Benutzer, Konten, Aufrufe „wie die Website“ (API-Benutzer + als_benutzer).
+# Alle Daten fiktiv (example.com), eindeutige Adressen je Lauf.
+
+import frappe
+
+from oekoinvest_app.plattform.api import auth, flaeche, interesse, projekt, prozess
+from oekoinvest_app.plattform.installation import stammdaten_anlegen
+from oekoinvest_app.plattform.konstanten import ROLLE_API
+
+API_USER = "oekoinvest-api-test@example.com"
+PASSWORT = "Test-Passwort-2026!"
+PDF = b"%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n"
+
+
+def vorbereiten():
+	stammdaten_anlegen()
+	frappe.local.conf.plattform_basis_url = "https://plattform-test.example.com"
+	if not frappe.db.exists("User", API_USER):
+		u = frappe.get_doc({"doctype": "User", "email": API_USER, "first_name": "API Test", "user_type": "Website User", "send_welcome_email": 0})
+		u.append("roles", {"role": ROLLE_API})
+		u.flags.no_welcome_mail = True
+		u.insert(ignore_permissions=True)
+
+
+def aufruf(fn, **kwargs):
+	"""Methode so aufrufen wie die Website: als API-Benutzer, optional mit als_benutzer."""
+	frappe.set_user(API_USER)
+	try:
+		return fn(**kwargs)
+	finally:
+		frappe.set_user(API_USER)
+
+
+def konto(rollen, bestaetigt=True, vorname="Test"):
+	"""Konto über auth.registrieren anlegen; `admin` wird wie im Backoffice nachträglich gesetzt."""
+	email = f"t-{frappe.generate_hash(length=10).lower()}@example.com"
+	waehlbar = [r for r in rollen if r != "admin"] or ["flaeche"]
+	ergebnis = aufruf(
+		auth.registrieren,
+		email=email,
+		passwort=PASSWORT,
+		vorname=vorname,
+		nachname="(Test)",
+		rollen=waehlbar,
+		basisUrl="https://plattform-test.example.com",
+		ip="127.0.0.1",
+	)
+	kid = ergebnis["nutzer"]["id"]
+	k = frappe.get_doc("Plattform Konto", kid)
+	if bestaetigt:
+		k.email_bestaetigt = 1
+	if "admin" in rollen:
+		k.set("rollen", [{"rolle": r} for r in rollen])
+	k.save(ignore_permissions=True)
+	return kid
+
+
+def flaeche_vollstaendig(eigentuemer):
+	return aufruf(
+		flaeche.anlegen,
+		daten={"bezeichnung": "Acker am Waldrand (Test)", "land": "DE", "bundesland": "Bayern", "plz": "86842", "ort": "Testort", "ha": 12.5},
+		ip="127.0.0.1",
+		als_benutzer=eigentuemer,
+	)
+
+
+def projekt_daten():
+	return {
+		"titel": "Freiflächen-PV 12 MWp in Süddeutschland (Test)",
+		"typ": "freiflaeche",
+		"land": "DE",
+		"bundesland": "Bayern",
+		"region": "Schwaben",
+		"mwp": 12,
+		"phase": "aufstellung",
+		"preisModus": "proKwp",
+		"preisProKwp": 40,
+		"beschreibung": "Testprojekt mit ausreichend langer Beschreibung, damit die Einreichungsbedingung von achtzig Zeichen sicher erfüllt ist.",
+		"vertraulich": {"gemeinde": "Geheimdorf", "netzbetreiber": "Netz Test GmbH"},
+	}
+
+
+def projekt_veroeffentlicht(anbieter, admin, satz=2):
+	p = aufruf(projekt.anlegen, daten=projekt_daten(), ip="127.0.0.1", als_benutzer=anbieter)
+	aufruf(projekt.provision_akzeptieren, id=p["id"], ip="127.0.0.1", als_benutzer=anbieter)
+	aufruf(prozess.status_wechsel, art="projekt", id=p["id"], nach="pruefung", als="eigentuemer", extra={}, als_benutzer=anbieter)
+	aufruf(prozess.status_wechsel, art="projekt", id=p["id"], nach="veroeffentlicht", als="admin", extra={"provisionSatz": satz}, als_benutzer=admin)
+	return p["id"]
+
+
+def interesse_mit_datenraum(investor, admin, projekt_id):
+	i = aufruf(interesse.nda_anfragen, projektId=projekt_id, akzeptiert=True, ip="127.0.0.1", userAgent="Test", als_benutzer=investor)
+	aufruf(prozess.status_wechsel, art="interesse", id=i["id"], nach="nda_freigegeben", als="admin", extra={}, als_benutzer=admin)
+	return i["id"]
+<div style="font-family: Inter, Arial, Helvetica, sans-serif; color: #1f2933; font-size: 15px; line-height: 1.6; max-width: 560px;">
+	<p style="font-family: Manrope, Arial, Helvetica, sans-serif; font-size: 18px; font-weight: 700; color: #15803d; margin: 0 0 16px;">ÖkoInvest</p>
+	<p>Guten Tag{% if vorname %} {{ vorname | e }}{% endif %},</p>
+	<p>{{ text | e }}</p>
+	<p style="margin: 24px 0;">
+		<a href="{{ link | e }}" style="background: #16a34a; color: #ffffff; text-decoration: none; padding: 12px 22px; border-radius: 999px; font-weight: 600; display: inline-block;">Zum Portal</a>
+	</p>
+	<p style="font-size: 13px; color: #52606d;">Aus Gründen der Vertraulichkeit enthält diese E-Mail keine Inhalte. Bitte melden Sie sich im Portal an.</p>
+	<p style="font-size: 13px; color: #52606d; border-top: 1px solid #e4e7eb; padding-top: 12px; margin-top: 24px;">ÖkoInvest GmbH · Gewerbegebiet 10 · 5121 Ostermiething · Österreich</p>
+</div>
+# Copyright (c) 2026, ÖkoInvest GmbH
+#
+# Installation/Migration: Rollen und Stammdaten „Plattform Rolle“ sicherstellen (idempotent).
+# Hilfsfunktion für das erste Backoffice-Konto:
+#   bench --site <site> execute oekoinvest_app.plattform.installation.admin_konto_anlegen \
+#     --kwargs "{'email': 'vorname.nachname@oekoinvest.com', 'vorname': 'Vorname', 'nachname': 'Nachname'}"
+# Das Konto erhält KEIN Passwort – es kommt eine E-Mail mit Link „Neues Passwort festlegen“.
+
+import frappe
+
+from oekoinvest_app.plattform.konstanten import ROLLE_API, ROLLE_DESK_ADMIN, ROLLEN
+
+DESK_ROLLEN = {ROLLE_DESK_ADMIN: 1, ROLLE_API: 0}
+
+
+def rollen_anlegen():
+	for rolle, desk in [*DESK_ROLLEN.items(), *[(r[0], 0) for r in ROLLEN.values()]]:
+		if not frappe.db.exists("Role", rolle):
+			frappe.get_doc({"doctype": "Role", "role_name": rolle, "desk_access": desk}).insert(ignore_permissions=True)
+
+
+def stammdaten_anlegen():
+	rollen_anlegen()
+	for rolle_id, (frappe_rolle, bezeichnung, waehlbar) in ROLLEN.items():
+		werte = {"bezeichnung": bezeichnung, "frappe_rolle": frappe_rolle, "selbst_waehlbar": waehlbar}
+		if frappe.db.exists("Plattform Rolle", rolle_id):
+			doc = frappe.get_doc("Plattform Rolle", rolle_id)
+			doc.update(werte)
+			doc.save(ignore_permissions=True)
+		else:
+			frappe.get_doc({"doctype": "Plattform Rolle", "rolle_id": rolle_id, **werte}).insert(ignore_permissions=True)
+
+
+def nach_installation():
+	stammdaten_anlegen()
+	frappe.db.commit()
+
+
+def nach_migration():
+	stammdaten_anlegen()
+
+
+def admin_konto_anlegen(email, vorname, nachname):
+	"""Erstes Backoffice-Konto (Rolle admin) anlegen und Passwort-Link senden."""
+	from oekoinvest_app.plattform import mail
+	from oekoinvest_app.plattform import validierung as v
+	from oekoinvest_app.plattform.kern import token_anlegen
+
+	stammdaten_anlegen()
+	e = v.email(email)
+	if not e:
+		frappe.throw("Ungültige E-Mail-Adresse.")
+	if frappe.db.exists("Plattform Konto", {"email": e}):
+		frappe.throw("Für diese E-Mail-Adresse besteht bereits ein Konto.")
+	if not frappe.db.exists("User", e):
+		user = frappe.get_doc({"doctype": "User", "email": e, "first_name": vorname, "last_name": nachname, "user_type": "Website User", "send_welcome_email": 0})
+		user.flags.no_welcome_mail = True
+		user.insert(ignore_permissions=True)
+	konto = frappe.get_doc(
+		{
+			"doctype": "Plattform Konto",
+			"user": e,
+			"email": e,
+			"vorname": v.text(vorname, 80),
+			"nachname": v.text(nachname, 80),
+			"firma": "ÖkoInvest GmbH",
+			"rollen": [{"rolle": "admin"}],
+			"aktiv": 1,
+			"email_bestaetigt": 1,
+		}
+	).insert(ignore_permissions=True)
+	token = token_anlegen("reset", konto.name, 24)
+	if not mail.passwort_link(konto, token):
+		print("Achtung: E-Mail nicht versendet – plattform_basis_url und ausgehendes E-Mail-Konto prüfen.")
+	frappe.db.commit()
+	print(f"Backoffice-Konto {konto.name} ({e}) angelegt. Passwort-Link ist 24 Stunden gültig.")
+	return konto.name
+__init__.py
+config
+fixtures
+hooks.py
+modules.txt
+patches.txt
+plattform
+public
+templates
+translations
+# oekoinvest_app
+
+Frappe-v15-App für die Plattform der ÖkoInvest-Website (Portal, Projektbörse, Backoffice).
+Vertrag: `docs/API.md` im Website-Repository. Installation: `../ANLEITUNG.md`.
+ANLEITUNG.md
+oekoinvest_app

@@ -1,0 +1,341 @@
+/**
+ * Tests für das Anlegen und Pflegen von Sicherungszielen und Schutzobjekten.
+ *
+ * Der Kern dieser Datei ist die Trennung zwischen **erklärt** und
+ * **gemessen**. `backup_assurance` vergleicht die Zusage mit der
+ * Wirklichkeit; ließe sich die Wirklichkeit von Hand eintragen, verglichen
+ * die Prüfungen die Zusage mit sich selbst. Diese Tests stehen dafür, dass
+ * beim nächsten Umbau niemand ein gemessenes Feld „der Bequemlichkeit
+ * halber" ins Formular nimmt.
+ */
+import { beforeEach, describe, expect, it } from 'vitest'
+import { mockRequest, resetMockData } from '@/api/mock/server.js'
+
+const ruf = (url, params) => mockRequest({ url, params })
+const zielSpeichern = (p) => ruf('netops.api.backup.backup_target_save', p)
+const zielStilllegen = (p) => ruf('netops.api.backup.backup_target_retire', p)
+const objektSpeichern = (p) => ruf('netops.api.backup.backup_object_save', p)
+const objektStilllegen = (p) => ruf('netops.api.backup.backup_object_retire', p)
+const testEintragen = (p) => ruf('netops.api.backup.backup_restore_test', p)
+const optionen = () => ruf('netops.api.backup.backup_admin_options', {})
+const ziele = (p = {}) => ruf('netops.api.backup.backup_targets', p)
+const pruefung = (p = {}) => ruf('netops.api.backup.backup_assurance', p)
+
+/** Ein gültiges Ziel, das einzelne Tests gezielt verbiegen. */
+const ZIEL = {
+  target_name: 'pbs-ds-zweitwerk',
+  kind: 'pbs',
+  connector: 'pbs-srv-pbs-01',
+  location: 'Werk Passau',
+  capacity_tb: 12,
+  retention_days: 90,
+  offsite: 1,
+  encrypted: 1,
+  immutable: 1,
+}
+
+const OBJEKT = {
+  backup_object: 'vm/205-warenwirtschaft',
+  service: 'Warenwirtschaft',
+  datastore: 'pbs-ds-main',
+  retention_days: 90,
+}
+
+beforeEach(() => {
+  resetMockData()
+})
+
+describe('Erklärt gegen gemessen', () => {
+  it('weist am Ziel jedes gemessene Feld ab und nennt den richtigen Weg', async () => {
+    for (const feld of ['used_tb', 'last_sync', 'target_state']) {
+      await expect(zielSpeichern({ ...ZIEL, [feld]: 1 })).rejects.toThrow(
+        /wird gemessen, nicht erklärt/,
+      )
+    }
+  })
+
+  it('weist am Schutzobjekt die Zahlen ab, auf denen die Prüfung beruht', async () => {
+    // Genau diese Felder machen aus der Prüfung eine Prüfung.
+    for (const feld of ['copies', 'media_types', 'last_backup', 'verify_status', 'size_gb']) {
+      await expect(objektSpeichern({ ...OBJEKT, [feld]: 3 })).rejects.toThrow(
+        /wird gemessen, nicht erklärt/,
+      )
+    }
+  })
+
+  it('lässt den Wiederherstellungstest nicht über das Objektformular herein', async () => {
+    // Sonst ließe sich „nie getestet" wegschreiben, ohne je getestet zu haben.
+    await expect(objektSpeichern({ ...OBJEKT, restore_test_result: 'ok' })).rejects.toThrow(
+      /wird gemessen, nicht erklärt/,
+    )
+  })
+
+  it('weist unbekannte Felder ab und nennt die möglichen', async () => {
+    await expect(zielSpeichern({ ...ZIEL, ausgedacht: 1 })).rejects.toThrow(/nicht vorgesehen/)
+    await expect(zielSpeichern({ ...ZIEL, ausgedacht: 1 })).rejects.toThrow(/retention_days/)
+  })
+
+  it('nennt in den Optionen, welche Felder gemessen sind', async () => {
+    // Damit die Oberfläche sie gar nicht erst anbietet.
+    const o = await optionen()
+    expect(Object.keys(o.measured.target)).toContain('used_tb')
+    expect(Object.keys(o.measured.object)).toContain('copies')
+  })
+})
+
+describe('Ein Ziel anlegen', () => {
+  it('legt an und beginnt mit leeren Messwerten', async () => {
+    const e = await zielSpeichern(ZIEL)
+    expect(e.created).toBe(true)
+
+    const z = (await ziele()).find((x) => x.name === 'pbs-ds-zweitwerk')
+    expect(z.used_tb).toBe(0)
+    expect(z.last_sync).toBeNull()
+    // „Noch nie abgeglichen" ist eine ehrliche Aussage, „online" wäre
+    // erfunden.
+    expect(z.target_state).toBe('unknown')
+    expect(z.level).toBe('warning')
+    expect(z.reasons).toContain('Noch nie abgeglichen')
+  })
+
+  it('verlangt einen Konnektor', async () => {
+    const { connector, ...ohne } = ZIEL
+    void connector
+    await expect(zielSpeichern(ohne)).rejects.toThrow(/Ohne Konnektor/)
+  })
+
+  it('weist einen Konnektor ab, der eine andere Sprache spricht', async () => {
+    // Ein PBS-Ziel über einen Zabbix-Konnektor: der Abgleich käme nie
+    // zustande, und niemandem fiele es auf.
+    await expect(zielSpeichern({ ...ZIEL, connector: 'nakivo-bnr-01' })).rejects.toThrow(
+      /spricht nakivo/,
+    )
+  })
+
+  it('bietet je Zielart nur die passenden Konnektoren an', async () => {
+    const o = await optionen()
+    for (const art of o.kinds) {
+      for (const c of art.connectors) expect(c.value).toBeTruthy()
+    }
+    const pbs = o.kinds.find((k) => k.value === 'pbs')
+    expect(pbs.connectors.map((c) => c.label)).toContain('pbs-srv-pbs-01')
+    expect(pbs.connectors.map((c) => c.label)).not.toContain('nakivo-bnr-01')
+  })
+
+  it('weist eine unbekannte Zielart ab', async () => {
+    await expect(zielSpeichern({ ...ZIEL, kind: 'veeam' })).rejects.toThrow(/Unbekannte Zielart/)
+  })
+
+  it('lässt keinen zweiten Eintrag desselben Namens zu', async () => {
+    await zielSpeichern(ZIEL)
+    await expect(zielSpeichern(ZIEL)).rejects.toThrow(/existiert bereits/)
+  })
+
+  it('erzwingt einen maschinenlesbaren Namen', async () => {
+    await expect(zielSpeichern({ ...ZIEL, target_name: 'PBS Zweitwerk' })).rejects.toThrow(
+      /Kleinbuchstaben/,
+    )
+  })
+
+  it('verlangt eine Aufbewahrungsfrist', async () => {
+    const { retention_days, ...ohne } = ZIEL
+    void retention_days
+    await expect(zielSpeichern(ohne)).rejects.toThrow(/Aufbewahrung in Tagen fehlt/)
+  })
+
+  it('warnt beim Speichern, statt es hinterher zu melden', async () => {
+    // Unverschlüsselt und außer Haus: eine lesbare Kopie der Firma bei
+    // jemand anderem. Das gehört gesagt, solange das Formular offen ist.
+    const e = await zielSpeichern({ ...ZIEL, encrypted: 0 })
+    expect(e.notes.join(' ')).toMatch(/nicht unter eigener Kontrolle/)
+  })
+
+  it('warnt bei einem Ziel ohne zweiten Ort', async () => {
+    const e = await zielSpeichern({ ...ZIEL, offsite: 0 })
+    expect(e.notes.join(' ')).toMatch(/3-2-1/)
+  })
+})
+
+describe('Ein Ziel ändern', () => {
+  it('ändert, ohne die Messwerte anzufassen', async () => {
+    const vorher = (await ziele()).find((z) => z.name === 'pbs-ds-main')
+    await zielSpeichern({ name: 'pbs-ds-main', location: 'Serverraum B.02' })
+    const nachher = (await ziele()).find((z) => z.name === 'pbs-ds-main')
+    expect(nachher.location).toBe('Serverraum B.02')
+    expect(nachher.used_tb).toBe(vorher.used_tb)
+    expect(nachher.last_sync).toBe(vorher.last_sync)
+  })
+
+  it('prüft beim Ändern dieselben Regeln wie beim Anlegen', async () => {
+    // Sonst ließe sich jede Regel durch Anlegen-und-sofort-Ändern umgehen.
+    await expect(
+      zielSpeichern({ name: 'pbs-ds-main', connector: 'nakivo-bnr-01' }),
+    ).rejects.toThrow(/spricht nakivo/)
+  })
+
+  it('meldet ein Ziel, das es nicht gibt', async () => {
+    await expect(zielSpeichern({ name: 'GIBTSNICHT', location: 'x' })).rejects.toThrow(
+      /existiert nicht/,
+    )
+  })
+})
+
+describe('Außer Dienst statt löschen', () => {
+  it('behält die Wiederherstellungspunkte', async () => {
+    const e = await zielStilllegen({ name: 'pbs-ds-main', reason: 'Hardware ersetzt' })
+    expect(e.snapshots_kept).toBeGreaterThan(0)
+    expect(e.note).toMatch(/bleiben erhalten/)
+  })
+
+  it('braucht einen Grund', async () => {
+    await expect(zielStilllegen({ name: 'pbs-ds-main' })).rejects.toThrow(/braucht einen Grund/)
+  })
+
+  it('nimmt dem Ziel die Knöpfe und macht aus ihm keinen Störungsfall', async () => {
+    await zielStilllegen({ name: 'pbs-ds-main', reason: 'Hardware ersetzt' })
+    const z = (await ziele()).find((x) => x.name === 'pbs-ds-main')
+    expect(z.retired).toBe(true)
+    expect(z.actions).toEqual([])
+    // Außer Dienst ist Geschichte, kein Befund - sonst steht die Ampel für
+    // immer auf Rot.
+    expect(z.level).toBe('neutral')
+  })
+
+  it('nimmt ein stillgelegtes Schutzobjekt aus der Prüfung', async () => {
+    const vorher = (await pruefung()).rows.length
+    const eins = (await pruefung()).rows[0].backup_object
+    await objektStilllegen({ name: eins, reason: 'System abgebaut' })
+    const nachher = await pruefung()
+    expect(nachher.rows.length).toBe(vorher - 1)
+    expect(nachher.rows.map((r) => r.backup_object)).not.toContain(eins)
+  })
+})
+
+describe('Ein Schutzobjekt anlegen', () => {
+  it('taucht sofort in der Prüfung auf – und zwar als kritisch', async () => {
+    // Erklärt, aber noch nie gesichert. Das ist der richtige Zustand:
+    // nicht geprüft darf nie wie in Ordnung aussehen.
+    const vorher = (await pruefung()).rows.length
+    const e = await objektSpeichern(OBJEKT)
+    expect(e.created).toBe(true)
+
+    const p = await pruefung()
+    expect(p.rows.length).toBe(vorher + 1)
+    const neu = p.rows.find((r) => r.backup_object === OBJEKT.backup_object)
+    expect(neu.level).toBe('critical')
+    expect(neu.restore_test.never).toBe(true)
+  })
+
+  it('verlangt die Kennung aus dem Sicherungssystem', async () => {
+    const { backup_object, ...ohne } = OBJEKT
+    void backup_object
+    await expect(objektSpeichern(ohne)).rejects.toThrow(/Kennung aus dem Sicherungssystem/)
+  })
+
+  it('weist ein Ziel ab, das es nicht gibt, und nennt die bekannten', async () => {
+    await expect(objektSpeichern({ ...OBJEKT, datastore: 'ds-erfunden' })).rejects.toThrow(
+      /kein Sicherungsziel/,
+    )
+    await expect(objektSpeichern({ ...OBJEKT, datastore: 'ds-erfunden' })).rejects.toThrow(
+      /pbs-ds-main/,
+    )
+  })
+
+  it('weist einen Geschäftsdienst ab, den es nicht gibt', async () => {
+    await expect(objektSpeichern({ ...OBJEKT, business_service: 'gibtsnicht' })).rejects.toThrow(
+      /existiert nicht/,
+    )
+  })
+})
+
+describe('Wiederherstellungstest eintragen', () => {
+  /** Ein Objekt, das die Prüfung als „nie getestet" führt. */
+  async function nieGetestet() {
+    const p = await pruefung()
+    return p.rows.find((r) => r.restore_test.never)
+  }
+
+  it('macht den Befund „nie getestet" abarbeitbar', async () => {
+    // Der eigentliche Punkt dieser Methode. Ohne sie bliebe der Befund für
+    // immer stehen, und ein Befund, den niemand erledigen kann, wird
+    // ignoriert - mit ihm die daneben.
+    const offen = await nieGetestet()
+    expect(offen).toBeTruthy()
+
+    await testEintragen({ backup_object: offen.backup_object, result: 'ok', minutes: 42 })
+
+    const danach = (await pruefung()).rows.find((r) => r.backup_object === offen.backup_object)
+    expect(danach.restore_test.never).toBe(false)
+    expect(danach.restore_test.result).toBe('ok')
+    expect(danach.restore_minutes).toBe(42)
+  })
+
+  it('verlangt bei Erfolg die gemessene Dauer', async () => {
+    // Die Dauer IST der tatsächliche RTO. Ohne sie bleibt die
+    // Wiederanlaufzusage ungedeckt.
+    const offen = await nieGetestet()
+    await expect(
+      testEintragen({ backup_object: offen.backup_object, result: 'ok' }),
+    ).rejects.toThrow(/Dauer in Minuten fehlt/)
+  })
+
+  it('nimmt ein unklares Ergebnis nicht an', async () => {
+    const offen = await nieGetestet()
+    await expect(
+      testEintragen({ backup_object: offen.backup_object, result: 'teilweise', minutes: 10 }),
+    ).rejects.toThrow(/„ok" oder „failed"/)
+  })
+
+  it('lässt keinen Test in der Zukunft zu', async () => {
+    // Ein Datum in der Zukunft setzt die Frist zurück, ohne dass jemand
+    // etwas getan hätte.
+    const offen = await nieGetestet()
+    await expect(
+      testEintragen({
+        backup_object: offen.backup_object,
+        result: 'ok',
+        minutes: 10,
+        tested_at: '2027-01-01 10:00:00',
+      }),
+    ).rejects.toThrow(/in der Zukunft/)
+  })
+
+  it('erledigt mit einem Fehlschlag nichts', async () => {
+    const offen = await nieGetestet()
+    const e = await testEintragen({ backup_object: offen.backup_object, result: 'failed' })
+    expect(e.note).toMatch(/kein erledigter Test/)
+
+    const danach = (await pruefung()).rows.find((r) => r.backup_object === offen.backup_object)
+    expect(danach.restore_test.result).toBe('failed')
+    expect(danach.level).toBe('critical')
+  })
+
+  it('lässt die alte Dauer stehen, wenn der Test scheitert', async () => {
+    // 0 zu schreiben ließe den RTO hervorragend aussehen.
+    const p = await pruefung()
+    const mitDauer = p.rows.find((r) => r.restore_minutes > 0)
+    const vorher = mitDauer.restore_minutes
+    await testEintragen({ backup_object: mitDauer.backup_object, result: 'failed' })
+    const danach = (await pruefung()).rows.find((r) => r.backup_object === mitDauer.backup_object)
+    expect(danach.restore_minutes).toBe(vorher)
+  })
+
+  it('schreibt den Eintrag ins Protokoll, mit dem Wert davor', async () => {
+    const offen = await nieGetestet()
+    await testEintragen({
+      backup_object: offen.backup_object,
+      result: 'ok',
+      minutes: 42,
+      tested_by: 'benny',
+    })
+    const log = await ruf('netops.api.audit.audit_log', { action: 'backup_restore_test' })
+    expect(log.length).toBe(1)
+    expect(log[0].object_name).toBe(offen.backup_object)
+  })
+
+  it('meldet ein Objekt, das es nicht gibt', async () => {
+    await expect(
+      testEintragen({ backup_object: 'GIBTSNICHT', result: 'ok', minutes: 5 }),
+    ).rejects.toThrow(/existiert nicht/)
+  })
+})

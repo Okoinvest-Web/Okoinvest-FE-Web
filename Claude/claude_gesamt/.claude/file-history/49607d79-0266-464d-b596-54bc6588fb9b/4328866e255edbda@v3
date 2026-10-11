@@ -1,0 +1,191 @@
+/**
+ * Strompfad mit Redundanzprüfung (Fachkonzept 2.2).
+ *
+ * Die Kette lautet USV → PDU → Steckplatz → Netzteil. Interessant ist nicht
+ * die Kette selbst, sondern die Frage dahinter: Übersteht ein Gerät den
+ * Ausfall eines Strangs? Dafür müssen beide Netzteile an *verschiedenen*
+ * Strängen hängen - zwei Netzteile am selben Strang sehen nach Redundanz aus,
+ * sind aber keine.
+ */
+import { FrappeMockError, table } from '../db.js'
+import { alterStunden } from '../zeit.js'
+
+export function power_overview({ site = null, tenant = null } = {}) {
+  const anschluesse = table('Power Connection')
+  const quellen = table('Power Source').filter(
+    (q) => (!site || q.site === site) && (!tenant || q.tenant === tenant),
+  )
+  const quellenNachName = new Map(table('Power Source').map((q) => [q.name, q]))
+
+  // Geräte mit ihren Netzteilen und der Redundanzbewertung.
+  const geraeteNamen = [...new Set(anschluesse.map((a) => a.device))]
+  const geraete = table('Network Device')
+
+  const bewertet = geraeteNamen
+    .map((hostname) => {
+      const geraet = geraete.find((g) => g.name === hostname)
+      const eigene = anschluesse.filter((a) => a.device === hostname)
+      const straenge = new Set(eigene.map((a) => a.feed))
+
+      const gruende = []
+      let stufe = 'ok'
+
+      if (eigene.length < 2) {
+        stufe = 'critical'
+        gruende.push('Nur ein Netzteil dokumentiert')
+      } else if (straenge.size < 2) {
+        // Genau der Fall, den eine reine Zählung übersieht.
+        stufe = 'critical'
+        gruende.push('Beide Netzteile auf Strang ' + [...straenge][0] + ' – keine Redundanz')
+      }
+
+      const gesamtLast = eigene.reduce((s, a) => s + (a.draw_w || 0), 0)
+
+      return {
+        device: hostname,
+        site: geraet ? geraet.site : null,
+        device_role: geraet ? geraet.device_role : null,
+        rack: geraet ? geraet.rack : null,
+        connections: eigene.map((a) => ({
+          psu_label: a.psu_label,
+          power_source: a.power_source,
+          feed: a.feed,
+          draw_w: a.draw_w,
+          // Der Weg bis zur USV – das ist der eigentliche Strompfad.
+          path: pfadNachOben(a.power_source, quellenNachName),
+        })),
+        feeds: [...straenge].sort(),
+        total_draw_w: gesamtLast,
+        redundant: straenge.size >= 2,
+        level: stufe,
+        reasons: gruende,
+      }
+    })
+    .filter((g) => !site || g.site === site)
+    .sort((a, b) => a.device.localeCompare(b.device))
+
+  const bewerteteQuellen = quellen
+    .map((quelle) => {
+      const gruende = []
+      let stufe = 'ok'
+
+      const auslastung = quelle.capacity_w ? (quelle.load_w / quelle.capacity_w) * 100 : 0
+      if (auslastung >= 80) {
+        stufe = 'critical'
+        gruende.push('Über 80 % Last')
+      } else if (auslastung >= 65) {
+        stufe = 'warning'
+        gruende.push('Über 65 % Last')
+      }
+
+      if (quelle.source_kind === 'ups') {
+        // Unter zehn Minuten reicht nicht für ein geordnetes Herunterfahren.
+        if (quelle.battery_minutes !== null && quelle.battery_minutes < 10) {
+          stufe = 'critical'
+          gruende.push('Batterielaufzeit nur ' + quelle.battery_minutes + ' Minuten')
+        }
+        const testAlter = quelle.last_test
+          ? alterStunden(quelle.last_test + ' 00:00:00') / 24
+          : null
+        if (testAlter === null) {
+          stufe = stufe === 'critical' ? stufe : 'warning'
+          gruende.push('Kein Batterietest dokumentiert')
+        } else if (testAlter > 180) {
+          stufe = stufe === 'critical' ? stufe : 'warning'
+          gruende.push('Letzter Test vor ' + Math.round(testAlter) + ' Tagen')
+        }
+      }
+
+      return {
+        ...quelle,
+        load_pct: Math.round(auslastung * 10) / 10,
+        connected_devices: anschluesse.filter((a) => a.power_source === quelle.name).length,
+        level: stufe,
+        reasons: gruende,
+      }
+    })
+    .sort((a, b) => a.source_name.localeCompare(b.source_name))
+
+  return {
+    sources: bewerteteQuellen,
+    devices: bewertet,
+    summary: {
+      sources: bewerteteQuellen.length,
+      sources_with_findings: bewerteteQuellen.filter((q) => q.level !== 'ok').length,
+      devices: bewertet.length,
+      redundant: bewertet.filter((g) => g.redundant).length,
+      not_redundant: bewertet.filter((g) => !g.redundant).length,
+      total_draw_w: bewertet.reduce((s, g) => s + g.total_draw_w, 0),
+    },
+  }
+}
+
+/** Weg von einer Stromquelle nach oben bis zur USV. */
+function pfadNachOben(quelleName, quellenNachName, tiefe = 0) {
+  const quelle = quellenNachName.get(quelleName)
+  if (!quelle || tiefe > 5) return []
+
+  const pfad = [{ name: quelle.name, kind: quelle.source_kind, feed: quelle.feed }]
+
+  if (quelle.source_kind === 'pdu') {
+    // Eine PDU hängt an der USV desselben Strangs im selben Standort.
+    const usv = [...quellenNachName.values()].find(
+      (q) => q.source_kind === 'ups' && q.feed === quelle.feed && q.site === quelle.site,
+    )
+    if (usv) pfad.push({ name: usv.name, kind: usv.source_kind, feed: usv.feed })
+  }
+
+  return pfad
+}
+
+/**
+ * Was fällt aus, wenn eine Stromquelle ausfällt?
+ * Ein Gerät fällt nur aus, wenn *alle* seine Netzteile betroffen sind.
+ */
+export function power_impact({ source } = {}) {
+  const quelle = table('Power Source').find((q) => q.name === source)
+  if (!quelle) {
+    throw new FrappeMockError('DoesNotExistError: Power Source ' + source + ' existiert nicht', 404)
+  }
+
+  const anschluesse = table('Power Connection')
+
+  // Bei einer USV fallen alle PDUs desselben Strangs mit aus.
+  const betroffeneQuellen = new Set([source])
+  if (quelle.source_kind === 'ups') {
+    for (const q of table('Power Source')) {
+      if (q.source_kind === 'pdu' && q.feed === quelle.feed && q.site === quelle.site) {
+        betroffeneQuellen.add(q.name)
+      }
+    }
+  }
+
+  const geraete = [...new Set(anschluesse.map((a) => a.device))]
+  const faelltAus = []
+  const laeuftWeiter = []
+
+  for (const geraet of geraete) {
+    const eigene = anschluesse.filter((a) => a.device === geraet)
+    const verbleibend = eigene.filter((a) => !betroffeneQuellen.has(a.power_source))
+
+    if (!eigene.some((a) => betroffeneQuellen.has(a.power_source))) continue
+
+    if (verbleibend.length === 0) {
+      faelltAus.push({ device: geraet, remaining_psu: 0 })
+    } else {
+      laeuftWeiter.push({ device: geraet, remaining_psu: verbleibend.length })
+    }
+  }
+
+  return {
+    source: quelle.name,
+    source_kind: quelle.source_kind,
+    affected_sources: [...betroffeneQuellen].sort(),
+    fails: faelltAus.sort((a, b) => a.device.localeCompare(b.device)),
+    survives: laeuftWeiter.sort((a, b) => a.device.localeCompare(b.device)),
+    summary: {
+      fails: faelltAus.length,
+      survives: laeuftWeiter.length,
+    },
+  }
+}

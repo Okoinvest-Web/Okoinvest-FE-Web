@@ -1,0 +1,1116 @@
+"use client";
+
+// src/components/formular/Absenden.js
+//
+// Absende-Choreografie: Button-Ladezustand → Erfolgshäkchen im Button → (optional) Toast → weiter.
+//   const a = useAbsenden();
+//   a.los(() => senden(…), { erfolgText: "Gespeichert", toast: { titel: "Gespeichert" }, danach: () => router.push(…) })
+//   <AbsendeKnopf status={a.status} erfolgText="Gespeichert">Speichern</AbsendeKnopf>
+// Breite bleibt stabil (beide Beschriftungen liegen übereinander im selben Raster), Status per aria-live.
+
+import { useCallback, useEffect, useRef, useState } from "react";
+import Button from "@/components/ui/Button";
+import { toast } from "@/components/ui/Toast";
+import { bewegungReduziert } from "@/components/ui/motion";
+import { cn } from "@/components/ui/cn";
+import { fehlerText } from "@/components/Portal/Bedienung/pruefung";
+
+/** Kleiner Haken für den Button (zeichnet sich einmal) */
+function KnopfHaken() {
+  return (
+    <span aria-hidden="true" className="ov-erfolg flex h-[1.35em] w-[1.35em] shrink-0 items-center justify-center rounded-full bg-white text-ov-700">
+      <svg viewBox="0 0 24 24" className="h-[0.85em] w-[0.85em]" fill="none">
+        <path d="M5 12.5l4.5 4.5L19 7.5" pathLength="1" className="ov-linie" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </span>
+  );
+}
+
+/**
+ * status: "bereit" | "laedt" | "erfolg"
+ * laedtText: Beschriftung während des Sendens (Standard: children)
+ */
+export function AbsendeKnopf({ status = "bereit", erfolgText = "Erledigt", laedtText, children, icon, pfeil = false, className, variant = "primary", ...rest }) {
+  const laedt = status === "laedt";
+  const erfolg = status === "erfolg";
+  return (
+    <>
+      <Button
+        type="submit"
+        variant={variant}
+        laedt={laedt}
+        icon={erfolg ? undefined : icon}
+        pfeil={pfeil && !laedt && !erfolg}
+        aria-disabled={erfolg || undefined}
+        className={cn(erfolg && "pointer-events-none", className)}
+        {...rest}
+      >
+        <span className="grid">
+          <span className={cn("col-start-1 row-start-1 inline-flex items-center justify-center gap-2", erfolg && "invisible")}>{laedt && laedtText ? laedtText : children}</span>
+          <span className={cn("col-start-1 row-start-1 inline-flex items-center justify-center gap-2", !erfolg && "invisible")} aria-hidden={!erfolg}>
+            {erfolg && <KnopfHaken />}
+            {erfolgText}
+          </span>
+        </span>
+      </Button>
+      <span className="sr-only" role="status" aria-live="polite">
+        {laedt ? `${laedtText || "Wird gesendet"} …` : erfolg ? erfolgText : ""}
+      </span>
+    </>
+  );
+}
+
+/**
+ * Hook zur Absende-Choreografie.
+ * Optionen: uebersetzen(e) → Fehlertext (Standard: fehlerText; für Anmeldung e.message, da 401 dort „falsches Passwort“ heißt)
+ * los(fn, { erfolgText, toast: { titel, text } | false, danach(ergebnis), haltezeit })
+ *  → Rückgabe: Ergebnis von fn oder null bei Fehler (fehler wird gesetzt, Klartext über fehlerText)
+ */
+export function useAbsenden({ uebersetzen = fehlerText } = {}) {
+  const [status, setStatus] = useState("bereit");
+  const [fehler, setFehler] = useState("");
+  const aktiv = useRef(true);
+  useEffect(() => {
+    aktiv.current = true;
+    return () => {
+      aktiv.current = false;
+    };
+  }, []);
+
+  const los = useCallback(async (fn, { toast: t = false, danach, haltezeit = 900, zuruecksetzen = true } = {}) => {
+    setStatus("laedt");
+    setFehler("");
+    let ergebnis;
+    try {
+      ergebnis = await fn();
+    } catch (e) {
+      if (aktiv.current) {
+        setFehler(uebersetzen(e));
+        setStatus("bereit");
+      }
+      return null;
+    }
+    if (!aktiv.current) return ergebnis;
+    setStatus("erfolg");
+    await new Promise((r) => setTimeout(r, bewegungReduziert() ? 250 : haltezeit));
+    if (t) toast.erfolg(t.titel, t.text);
+    if (danach) await danach(ergebnis);
+    if (aktiv.current && zuruecksetzen) setStatus("bereit");
+    return ergebnis;
+  }, [uebersetzen]);
+
+  return { status, fehler, setFehler, los, laedt: status === "laedt", erfolg: status === "erfolg" };
+}
+"use client";
+
+// src/components/formular/CodeEingabe.js
+//
+// Einmalcode (z. B. 2FA) als Einzelfelder: Tippen springt weiter, Rücktaste zurück, Pfeiltasten,
+// Einfügen verteilt den ganzen Code, Autofill (autocomplete="one-time-code") im ersten Feld.
+//   <CodeEingabe id="code" label="Code aus der App" wert={code} onChange={setCode} onKomplett={pruefen} fehler={…} />
+// Bei neuem `fehler` schüttelt die Gruppe und das erste Feld erhält den Fokus.
+
+import { useEffect, useRef } from "react";
+import { cn } from "@/components/ui/cn";
+import { signal } from "@/components/ui/motion";
+import { FeldMeldung } from "./FeldRahmen";
+import { labelKlasse } from "./stil";
+
+const nurZiffern = (s) => String(s || "").replace(/\D+/g, "");
+
+export default function CodeEingabe({ id, label = "Bestätigungscode", hinweis, wert = "", onChange, onKomplett, laenge = 6, fehler, deaktiviert = false, autoFocus = false, dunkel = false, className }) {
+  const felder = useRef([]);
+  const gruppe = useRef(null);
+  const ziffern = Array.from({ length: laenge }, (_, i) => wert[i] || "");
+
+  useEffect(() => {
+    if (autoFocus) felder.current[0]?.focus();
+  }, [autoFocus]);
+
+  useEffect(() => {
+    if (!fehler) return;
+    signal(gruppe.current, "schuetteln");
+    felder.current[0]?.focus();
+  }, [fehler]);
+
+  const setzeWert = (neu) => {
+    const w = nurZiffern(neu).slice(0, laenge);
+    onChange?.(w);
+    if (w.length === laenge) onKomplett?.(w);
+    return w;
+  };
+
+  const fokus = (i) => {
+    const el = felder.current[Math.max(0, Math.min(laenge - 1, i))];
+    el?.focus();
+    el?.select?.();
+  };
+
+  const eingabe = (i, roh) => {
+    const neu = nurZiffern(roh);
+    if (!neu) return;
+    if (neu.length > 1) {
+      // Autofill/Einfügen in ein Feld: ab Position i verteilen
+      const w = setzeWert((wert.slice(0, i) + neu).slice(0, laenge));
+      fokus(Math.min(w.length, laenge - 1));
+      return;
+    }
+    // Werte bleiben lückenlos: getippt wird höchstens an die nächste freie Stelle
+    const pos = Math.min(i, wert.length);
+    setzeWert(wert.slice(0, pos) + neu + wert.slice(pos + 1));
+    if (pos < laenge - 1) fokus(pos + 1);
+  };
+
+  const taste = (i, e) => {
+    if (e.key === "Backspace") {
+      e.preventDefault();
+      if (wert[i]) {
+        onChange?.(wert.slice(0, i) + wert.slice(i + 1));
+      } else if (i > 0) {
+        onChange?.(wert.slice(0, i - 1) + wert.slice(i));
+        fokus(i - 1);
+      }
+    } else if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      fokus(i - 1);
+    } else if (e.key === "ArrowRight") {
+      e.preventDefault();
+      fokus(i + 1);
+    } else if (e.key === "Home") {
+      e.preventDefault();
+      fokus(0);
+    } else if (e.key === "End") {
+      e.preventDefault();
+      fokus(laenge - 1);
+    }
+  };
+
+  const einfuegen = (e) => {
+    const text = nurZiffern(e.clipboardData?.getData("text"));
+    if (!text) return;
+    e.preventDefault();
+    const w = setzeWert(text);
+    fokus(Math.min(w.length, laenge - 1));
+  };
+
+  const beschreibung = fehler ? `${id}-fehler` : hinweis ? `${id}-hinweis` : undefined;
+
+  return (
+    <div className={cn("min-w-0", className)}>
+      <p id={`${id}-label`} className={labelKlasse(dunkel)}>{label}</p>
+      <div ref={gruppe} role="group" aria-labelledby={`${id}-label`} aria-describedby={beschreibung} className="flex gap-2 sm:gap-2.5">
+        {ziffern.map((z, i) => (
+          <input
+            key={i}
+            ref={(el) => {
+              felder.current[i] = el;
+            }}
+            id={i === 0 ? id : `${id}-${i}`}
+            type="text"
+            inputMode="numeric"
+            autoComplete={i === 0 ? "one-time-code" : "off"}
+            maxLength={i === 0 ? laenge : 1}
+            disabled={deaktiviert}
+            value={z}
+            aria-label={`Ziffer ${i + 1} von ${laenge}`}
+            aria-invalid={fehler ? true : undefined}
+            onChange={(e) => eingabe(i, e.target.value)}
+            onKeyDown={(e) => taste(i, e)}
+            onPaste={einfuegen}
+            onFocus={(e) => e.target.select()}
+            className={cn(
+              "h-14 w-full min-w-0 max-w-[3.5rem] flex-1 rounded-2xl text-center font-display text-[24px] font-bold outline-none ring-1 ring-inset transition-shadow duration-150 ease-ov-out ov-num focus-visible:ring-2 disabled:opacity-60 sm:h-16",
+              dunkel ? "bg-white/[0.07] text-white ring-white/15 focus-visible:ring-ov-300" : "bg-white text-ink-900 ring-ink-400 hover:ring-ink-500 focus-visible:ring-ov-500",
+              z && !fehler && (dunkel ? "ring-ov-300/60" : "bg-ov-50/60 ring-ov-300"),
+              fehler && "ring-2 ring-danger-500",
+              i === Math.floor(laenge / 2) - 1 && laenge === 6 && "mr-1.5 sm:mr-3"
+            )}
+          />
+        ))}
+      </div>
+      <FeldMeldung id={id} fehler={fehler} hinweis={hinweis} dunkel={dunkel} />
+    </div>
+  );
+}
+"use client";
+
+// src/components/formular/Entwurf.js
+//
+// Automatisches Zwischenspeichern von Formulareingaben im Browser-Tab (sessionStorage – endet mit dem Tab,
+// nichts landet auf dem Server). Passwörter und andere sensible Felder per `ohne` ausschließen.
+//   const entwurf = useEntwurf("anfrage-flaeche", form.werte, { ohne: ["passwort"], wiederherstellen: form.setzeAlle });
+//   <AutosaveHinweis stand={entwurf.stand} onVerwerfen={entwurf.verwerfen} />
+
+import { useCallback, useEffect, useRef, useState } from "react";
+import { CircleCheck, RotateCcw } from "lucide-react";
+import { cn } from "@/components/ui/cn";
+
+const PRAEFIX = "ov-entwurf:";
+
+function lesen(schluessel) {
+  try {
+    const roh = window.sessionStorage.getItem(PRAEFIX + schluessel);
+    return roh ? JSON.parse(roh) : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Entwurf für ein anderes Formular vorbelegen (z. B. Anfrage → Registrierung), ohne Daten in die URL zu schreiben.
+ * Bestehende Werte bleiben erhalten, leere werden ergänzt.
+ */
+export function entwurfVorbelegen(schluessel, werte) {
+  try {
+    const alt = lesen(schluessel)?.werte || {};
+    const neu = { ...alt };
+    for (const [k, v] of Object.entries(werte || {})) if (v && !alt[k]) neu[k] = v;
+    window.sessionStorage.setItem(PRAEFIX + schluessel, JSON.stringify({ werte: neu, zeit: Date.now() }));
+  } catch {
+    /* ignorieren */
+  }
+}
+
+/**
+ * stand: "leer" | "gespeichert" | "wiederhergestellt"
+ * aktiv=false schaltet ab (z. B. nach erfolgreichem Absenden)
+ */
+export function useEntwurf(schluessel, werte, { ohne = [], wiederherstellen, aktiv = true, verzoegerung = 700 } = {}) {
+  const [stand, setStand] = useState("leer");
+  const [zeit, setZeit] = useState(null);
+  const geladen = useRef(false);
+  const ohneText = ohne.join("|");
+
+  // Einmal beim Mounten wiederherstellen
+  useEffect(() => {
+    if (geladen.current) return;
+    geladen.current = true;
+    const e = lesen(schluessel);
+    if (e?.werte && Object.values(e.werte).some((v) => v !== "" && v !== false && v != null && !(Array.isArray(v) && !v.length))) {
+      wiederherstellen?.(e.werte);
+      setStand("wiederhergestellt");
+      setZeit(e.zeit || Date.now());
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [schluessel]);
+
+  // Entprellt speichern
+  useEffect(() => {
+    if (!aktiv || !geladen.current) return;
+    const t = setTimeout(() => {
+      const gefiltert = {};
+      const aus = ohneText ? ohneText.split("|") : [];
+      for (const [k, v] of Object.entries(werte || {})) if (!aus.includes(k)) gefiltert[k] = v;
+      const hatInhalt = Object.values(gefiltert).some((v) => v !== "" && v !== false && v != null && !(Array.isArray(v) && !v.length));
+      try {
+        if (hatInhalt) {
+          const jetzt = Date.now();
+          window.sessionStorage.setItem(PRAEFIX + schluessel, JSON.stringify({ werte: gefiltert, zeit: jetzt }));
+          setZeit(jetzt);
+          setStand((s) => (s === "wiederhergestellt" ? s : "gespeichert"));
+        } else {
+          window.sessionStorage.removeItem(PRAEFIX + schluessel);
+          setStand("leer");
+        }
+      } catch {
+        /* Speicher nicht verfügbar (privates Fenster) – still ignorieren */
+      }
+    }, verzoegerung);
+    return () => clearTimeout(t);
+  }, [werte, schluessel, aktiv, ohneText, verzoegerung]);
+
+  const verwerfen = useCallback(() => {
+    try {
+      window.sessionStorage.removeItem(PRAEFIX + schluessel);
+    } catch {
+      /* ignorieren */
+    }
+    setStand("leer");
+    setZeit(null);
+  }, [schluessel]);
+
+  return { stand, zeit, verwerfen };
+}
+
+const uhrzeit = (t) => (t ? new Date(t).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }) : "");
+
+/** Dezenter Hinweis „Entwurf gesichert“; bei wiederhergestelltem Entwurf mit „Verwerfen“ */
+export function AutosaveHinweis({ stand, zeit, onVerwerfen, dunkel = false, className }) {
+  return (
+    <div className={cn("flex min-h-[1.5rem] flex-wrap items-center gap-x-3 gap-y-1 text-[13px]", dunkel ? "text-white/70" : "text-ink-500", className)}>
+      <span role="status" className={cn("inline-flex items-center gap-1.5 transition-opacity duration-300", stand === "leer" ? "opacity-0" : "opacity-100")}>
+        <CircleCheck aria-hidden="true" className={cn("h-4 w-4", dunkel ? "text-ov-300" : "text-ov-600")} />
+        {stand === "wiederhergestellt" ? "Ihr Entwurf wurde wiederhergestellt" : stand === "gespeichert" ? "Entwurf in diesem Tab gesichert" : ""}
+        {stand !== "leer" && zeit ? <span className="ov-num"> · {uhrzeit(zeit)} Uhr</span> : null}
+      </span>
+      {stand === "wiederhergestellt" && onVerwerfen && (
+        <button type="button" onClick={onVerwerfen} className={cn("inline-flex items-center gap-1 font-semibold underline-offset-4 hover:underline", dunkel ? "text-white/85" : "text-ink-700")}>
+          <RotateCcw aria-hidden="true" className="h-3.5 w-3.5" /> Verwerfen
+        </button>
+      )}
+    </div>
+  );
+}
+// src/components/formular/FeldRahmen.js
+//
+// Label über dem Feld, Hilfetext darunter, Fehler (mit Icon) ersetzt den Hilfetext.
+// IDs: Hilfetext `${id}-hinweis`, Fehler `${id}-fehler` – passend zu beschreibungIds().
+
+import { cn } from "@/components/ui/cn";
+import { fehlerKlasse, hinweisKlasse, labelKlasse } from "./stil";
+
+export function FehlerIcon({ className }) {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 16 16" className={cn("mt-[1px] h-3.5 w-3.5 shrink-0 fill-current", className)}>
+      <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1Zm0 3.2c.5 0 .8.4.8.8v3.6a.8.8 0 0 1-1.6 0V5c0-.4.3-.8.8-.8Zm0 6.2a.95.95 0 1 1 0 1.9.95.95 0 0 1 0-1.9Z" />
+    </svg>
+  );
+}
+
+/** Fehlermeldung am Feld */
+export function FeldMeldung({ id, fehler, hinweis, dunkel = false }) {
+  if (fehler) {
+    return (
+      <p id={`${id}-fehler`} className={cn(fehlerKlasse(dunkel), "animate-ov-einblenden")}>
+        <FehlerIcon />
+        <span className="min-w-0">{fehler}</span>
+      </p>
+    );
+  }
+  if (hinweis) return <p id={`${id}-hinweis`} className={hinweisKlasse(dunkel)}>{hinweis}</p>;
+  return null;
+}
+
+export default function FeldRahmen({ id, label, pflicht = false, optional = false, hinweis, fehler, zusatz, dunkel = false, className, labelClassName, children }) {
+  return (
+    <div className={cn("min-w-0", className)}>
+      {label && (
+        <div className="flex items-baseline justify-between gap-3">
+          <label htmlFor={id} className={cn(labelKlasse(dunkel), labelClassName)}>
+            {label}
+            {pflicht && (
+              <>
+                <span aria-hidden="true" className={dunkel ? "text-ov-300" : "text-ov-700"}> *</span>
+                <span className="sr-only"> (Pflichtfeld)</span>
+              </>
+            )}
+            {optional && <span className={cn("ml-1 font-normal", dunkel ? "text-white/65" : "text-ink-500")}>(optional)</span>}
+          </label>
+          {zusatz && <span className="mb-1.5 shrink-0 text-[13px]">{zusatz}</span>}
+        </div>
+      )}
+      {children}
+      <FeldMeldung id={id} fehler={fehler} hinweis={hinweis} dunkel={dunkel} />
+    </div>
+  );
+}
+"use client";
+
+// src/components/formular/Meldungen.js
+//
+//  • FormFehler     – Fehler zum ganzen Formular (Server), role=alert, schüttelt beim Erscheinen
+//  • FormErfolg     – kurze Bestätigung (role=status)
+//  • ErfolgsAnsicht – Abschluss eines Formulars/Assistenten: ErfolgsHaken + Titel (fokussiert) + Text + Aktionen
+//  • Zusammenfassung – Prüfansicht vor dem Absenden mit „Ändern“ je Abschnitt
+
+import { useEffect, useRef } from "react";
+import { CheckCircle2, PencilLine, TriangleAlert } from "lucide-react";
+import ErfolgsHaken from "@/components/ui/ErfolgsHaken";
+import { signal } from "@/components/ui/motion";
+import { cn } from "@/components/ui/cn";
+
+export function FormFehler({ children, dunkel = false, className }) {
+  const ref = useRef(null);
+  const text = typeof children === "string" ? children : "";
+  useEffect(() => {
+    if (children) signal(ref.current, "schuetteln");
+  }, [children, text]);
+  if (!children) return null;
+  return (
+    <div ref={ref} role="alert" className={cn("flex items-start gap-2.5 rounded-2xl px-4 py-3 text-[14px] leading-relaxed ring-1 ring-inset", dunkel ? "bg-danger-500/15 text-white ring-danger-300/40" : "bg-danger-50 text-danger-800 ring-danger-200", className)}>
+      <TriangleAlert aria-hidden="true" className={cn("mt-0.5 h-4 w-4 shrink-0", dunkel ? "text-danger-300" : "text-danger-600")} />
+      <span className="min-w-0">{children}</span>
+    </div>
+  );
+}
+
+export function FormErfolg({ children, className }) {
+  if (!children) return null;
+  return (
+    <div role="status" className={cn("flex items-start gap-2.5 rounded-2xl bg-ov-50 px-4 py-3 text-[14px] leading-relaxed text-ov-900 ring-1 ring-inset ring-ov-200 animate-ov-einblenden", className)}>
+      <CheckCircle2 aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-ov-600" />
+      <span className="min-w-0">{children}</span>
+    </div>
+  );
+}
+
+export function ErfolgsAnsicht({ titel, text, dunkel = false, fokus = true, className, children, icon }) {
+  const kopf = useRef(null);
+  useEffect(() => {
+    if (fokus) kopf.current?.focus();
+  }, [fokus]);
+  return (
+    <div role="status" className={cn("animate-ov-auftauchen", className)}>
+      {icon || <ErfolgsHaken groesse={60} ton={dunkel ? "hell" : "marke"} />}
+      <h2 ref={kopf} tabIndex={-1} className={cn("mt-5 font-display text-[22px] font-bold leading-tight tracking-tight outline-none md:text-[24px]", dunkel ? "text-white" : "text-ink-900")}>
+        {titel}
+      </h2>
+      {text && <p className={cn("mt-2 text-[15.5px] leading-relaxed", dunkel ? "text-white/80" : "text-ink-700")}>{text}</p>}
+      {children}
+    </div>
+  );
+}
+
+/**
+ * abschnitte: [{ titel, schritt?, eintraege: [[label, wert], …] }]
+ * onAendern(schritt): „Ändern“ springt zurück zum Schritt
+ */
+export function Zusammenfassung({ titel = "Bitte prüfen Sie Ihre Angaben", text, abschnitte = [], onAendern, className }) {
+  return (
+    <section className={cn("min-w-0", className)} aria-label={titel}>
+      {titel && <h3 className="font-display text-[17px] font-bold text-ink-900">{titel}</h3>}
+      {text && <p className="mt-1 text-[14px] text-ink-600">{text}</p>}
+      <div className="mt-4 space-y-3">
+        {abschnitte.map((a, i) => (
+          <div key={a.titel || i} className="rounded-2xl bg-sand-50 p-4 ring-1 ring-inset ring-sand-200 sm:p-5">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-ink-600">{a.titel}</p>
+              {onAendern && a.schritt !== undefined && (
+                <button type="button" onClick={() => onAendern(a.schritt)} className="inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-[13.5px] font-semibold text-ov-700 hover:bg-white hover:text-ov-800" aria-label={`${a.titel} ändern`}>
+                  <PencilLine aria-hidden="true" className="h-3.5 w-3.5" /> Ändern
+                </button>
+              )}
+            </div>
+            <dl className="mt-2 grid gap-x-6 gap-y-2 sm:grid-cols-2">
+              {a.eintraege.filter(([, w]) => w !== undefined && w !== null && w !== "").map(([l, w]) => (
+                <div key={l} className="min-w-0">
+                  <dt className="text-[13px] text-ink-500">{l}</dt>
+                  <dd className="break-words text-[15px] font-medium text-ink-900">{w}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+"use client";
+
+// src/components/formular/PasswortFeld.js
+//
+// Passwortfeld mit Anzeigen/Verbergen, Feststelltaste-Hinweis und optionaler Stärkeanzeige
+// (vier Segmente, laufen per scaleX ein; Text per aria-live). Verbindlich prüft der Server.
+//   <PasswortFeld id="pw" label="Passwort" staerke email={email} personName={name} {...form.feld("passwort")} />
+
+import { useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
+import { cn } from "@/components/ui/cn";
+import { passwortStaerke } from "@/lib/plattform/passwortStaerke";
+import Textfeld from "./Textfeld";
+
+const SEGMENT = ["bg-ink-200", "bg-danger-500", "bg-sun-500", "bg-ov-500", "bg-ov-600"];
+const TEXT = ["text-ink-600", "text-danger-700", "text-sun-700", "text-ov-700", "text-ov-700"];
+
+export function StaerkeAnzeige({ id, passwort, email, name, dunkel = false }) {
+  const s = passwortStaerke(passwort || "", { email, name });
+  return (
+    <div id={id} className="mt-2">
+      <div className="flex gap-1" aria-hidden="true">
+        {[1, 2, 3, 4].map((i) => (
+          <span key={i} className={cn("relative h-1.5 flex-1 overflow-hidden rounded-full", dunkel ? "bg-white/15" : "bg-ink-100")}>
+            <span
+              className={cn("absolute inset-0 origin-left rounded-full transition-transform duration-300 ease-ov-out", SEGMENT[s.stufe] || SEGMENT[0])}
+              style={{ transform: `scaleX(${passwort && i <= s.stufe ? 1 : 0})`, transitionDelay: `${(i - 1) * 40}ms` }}
+            />
+          </span>
+        ))}
+      </div>
+      <p className={cn("mt-1.5 min-h-[1.25rem] text-[13px] leading-snug", dunkel ? "text-white/75" : "text-ink-600")} aria-live="polite">
+        {passwort ? (
+          <>
+            Passwortstärke: <strong className={cn("font-semibold", dunkel ? "text-white" : TEXT[s.stufe])}>{s.label}</strong>
+            {s.tipps.length > 0 && <span> · {s.tipps[0]}</span>}
+          </>
+        ) : (
+          <span className={dunkel ? "text-white/65" : "text-ink-500"}>Tipp: Ein Satz aus vier Wörtern ist sicher und leicht zu merken.</span>
+        )}
+      </p>
+    </div>
+  );
+}
+
+export default function PasswortFeld({ id, staerke = false, email, personName, value, dunkel = false, autoComplete = "current-password", onKeyUp, hinweis, ...rest }) {
+  const [zeigen, setZeigen] = useState(false);
+  const [feststell, setFeststell] = useState(false);
+
+  const knopf = (
+    <button
+      type="button"
+      onClick={() => setZeigen((z) => !z)}
+      className={cn("flex h-10 w-10 items-center justify-center rounded-xl transition-colors", dunkel ? "text-white/75 hover:bg-white/10 hover:text-white" : "text-ink-500 hover:bg-ink-100 hover:text-ink-900")}
+      aria-label={zeigen ? "Passwort verbergen" : "Passwort anzeigen"}
+      aria-pressed={zeigen}
+      aria-controls={id}
+    >
+      {zeigen ? <EyeOff aria-hidden="true" className="h-[18px] w-[18px]" /> : <Eye aria-hidden="true" className="h-[18px] w-[18px]" />}
+    </button>
+  );
+
+  const pruefeFeststell = (e) => {
+    if (typeof e.getModifierState === "function") setFeststell(e.getModifierState("CapsLock"));
+    onKeyUp?.(e);
+  };
+
+  return (
+    <div>
+      <Textfeld
+        id={id}
+        type={zeigen ? "text" : "password"}
+        autoComplete={autoComplete}
+        autoCapitalize="none"
+        spellCheck={false}
+        value={value}
+        rechts={knopf}
+        dunkel={dunkel}
+        hinweis={hinweis}
+        onKeyUp={pruefeFeststell}
+        aria-describedby={staerke ? `${id}-staerke` : undefined}
+        {...rest}
+      />
+      {feststell && (
+        <p className={cn("mt-1.5 text-[13px] font-medium animate-ov-einblenden", dunkel ? "text-sun-300" : "text-sun-700")} role="status">
+          Die Feststelltaste ist aktiv.
+        </p>
+      )}
+      {staerke && <StaerkeAnzeige id={`${id}-staerke`} passwort={value} email={email} name={personName} dunkel={dunkel} />}
+    </div>
+  );
+}
+"use client";
+
+// src/components/formular/Schritte.js
+//
+// Bausteine für Assistenten:
+//  • SchrittFortschritt – Leiste (scaleX, kein width-Repaint) + Schrittpunkte, erledigte Schritte anklickbar
+//  • SchrittBuehne      – Inhalt wechselt mit Richtung (ov-step-vor / ov-step-zurueck), Fokus auf Überschrift
+//  • useSchrittRichtung – "vor" | "zurueck" aus dem Wechsel des Index
+
+import { useEffect, useRef, useState } from "react";
+import { Check } from "lucide-react";
+import { cn } from "@/components/ui/cn";
+
+/** Richtung des letzten Schrittwechsels */
+export function useSchrittRichtung(index) {
+  const [stand, setStand] = useState({ index, richtung: "vor" });
+  if (stand.index !== index) setStand({ index, richtung: index > stand.index ? "vor" : "zurueck" });
+  return stand.richtung;
+}
+
+/**
+ * schritte: [{ id?, titel, kurz? }]; aktiv: Index; erledigt?: Index-Set/Array (sonst alle < aktiv);
+ * onSchritt(i): Sprung (nur erledigte bzw. bereits besuchte Schritte); dunkel; kompakt (nur Leiste + Text)
+ */
+export function SchrittFortschritt({ schritte = [], aktiv = 0, erledigt, onSchritt, dunkel = false, kompakt = false, label = "Fortschritt", className }) {
+  const n = schritte.length || 1;
+  const fertig = new Set(erledigt ? Array.from(erledigt) : schritte.map((_, i) => i).filter((i) => i < aktiv));
+  const anteil = Math.min(1, Math.max(0, (aktiv + (fertig.has(aktiv) ? 1 : 0)) / n));
+  const aktuell = schritte[aktiv];
+
+  return (
+    <div className={cn("min-w-0", className)}>
+      <div className="flex items-baseline justify-between gap-3 text-[13px]">
+        <span className={cn("font-semibold", dunkel ? "text-white" : "text-ink-900")}>
+          Schritt <span className="ov-num">{Math.min(aktiv + 1, n)}</span> von <span className="ov-num">{n}</span>
+          {aktuell && <span className={cn("font-normal", dunkel ? "text-white/75" : "text-ink-600")}> · {aktuell.kurz || aktuell.titel}</span>}
+        </span>
+        <span className={cn("ov-num", dunkel ? "text-white/70" : "text-ink-500")}>{Math.round(anteil * 100)} %</span>
+      </div>
+      <div
+        className={cn("mt-2 h-1.5 overflow-hidden rounded-full", dunkel ? "bg-white/15" : "bg-ink-100")}
+        role="progressbar"
+        aria-label={label}
+        aria-valuemin={0}
+        aria-valuemax={n}
+        aria-valuenow={Math.min(aktiv + 1, n)}
+        aria-valuetext={`Schritt ${Math.min(aktiv + 1, n)} von ${n}${aktuell ? `: ${aktuell.titel}` : ""}`}
+      >
+        <div className={cn("ov-fortschritt h-full rounded-full", dunkel ? "bg-ov-300" : "bg-ov-500")} style={{ transform: `scaleX(${Math.max(0.04, anteil)})` }} />
+      </div>
+      {!kompakt && schritte.length > 1 && (
+        <ol className="mt-4 flex gap-1.5 overflow-x-auto pb-1 sm:gap-2" aria-label="Schritte">
+          {schritte.map((s, i) => {
+            const istAktiv = i === aktiv;
+            const istFertig = fertig.has(i) && !istAktiv;
+            const klickbar = !!onSchritt && !istAktiv && (istFertig || i < aktiv);
+            const inhalt = (
+              <>
+                <span
+                  className={cn(
+                    "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[12px] font-bold transition-colors duration-200",
+                    istFertig ? (dunkel ? "bg-ov-300 text-navy-950" : "bg-ov-600 text-white") : istAktiv ? (dunkel ? "bg-white text-navy-950" : "bg-navy-900 text-white") : dunkel ? "bg-white/10 text-white/75" : "bg-ink-100 text-ink-600"
+                  )}
+                >
+                  {istFertig ? <Check aria-hidden="true" className="ov-erfolg h-3.5 w-3.5" strokeWidth={3} /> : i + 1}
+                </span>
+                <span className={cn("hidden min-w-0 truncate text-[13px] sm:inline", istAktiv ? (dunkel ? "font-semibold text-white" : "font-semibold text-ink-900") : dunkel ? "text-white/75" : "text-ink-600")}>{s.kurz || s.titel}</span>
+                <span className="sr-only">{istFertig ? " – erledigt" : istAktiv ? " – aktueller Schritt" : " – offen"}</span>
+              </>
+            );
+            return (
+              <li key={s.id || i} className="min-w-0 flex-1" aria-current={istAktiv ? "step" : undefined}>
+                {klickbar ? (
+                  <button type="button" onClick={() => onSchritt(i)} className={cn("flex w-full min-w-0 items-center gap-2 rounded-full py-1 pl-1 pr-2 text-left transition-colors", dunkel ? "hover:bg-white/10" : "hover:bg-ink-50")} aria-label={`Zu Schritt ${i + 1}: ${s.titel}`}>
+                    {inhalt}
+                  </button>
+                ) : (
+                  <div className="flex min-w-0 items-center gap-2 py-1 pl-1 pr-2">{inhalt}</div>
+                )}
+              </li>
+            );
+          })}
+        </ol>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Wechselt den Inhalt mit Richtungsanimation. `schluessel` ändert sich je Schritt.
+ * fokusZiel: Selektor innerhalb der Bühne, der nach dem Wechsel fokussiert wird (Standard: erste Überschrift).
+ */
+export function SchrittBuehne({ schluessel, richtung = "vor", fokusZiel = "h1, h2, h3, [data-schritt-titel]", className, children }) {
+  const ref = useRef(null);
+  const erster = useRef(true);
+  useEffect(() => {
+    if (erster.current) {
+      erster.current = false;
+      return;
+    }
+    if (!fokusZiel) return;
+    const el = ref.current?.querySelector(fokusZiel);
+    if (el) {
+      if (!el.hasAttribute("tabindex")) el.setAttribute("tabindex", "-1");
+      el.focus({ preventScroll: false });
+    }
+  }, [schluessel, fokusZiel]);
+  return (
+    <div ref={ref} key={schluessel} className={cn(richtung === "zurueck" ? "ov-step-zurueck" : "ov-step-vor", className)}>
+      {children}
+    </div>
+  );
+}
+"use client";
+
+// src/components/formular/Textfeld.js
+//
+// Ein Feld = Label + Eingabe + Hilfetext/Fehler + Erfolgshäkchen.
+//   <Textfeld id="x" label="E-Mail" pflicht type="email" {...form.feld("email")} />
+// Props: als="input" | "textarea" | "select"; gueltig (Häkchen rechts); rechts (eigenes Element rechts im Feld,
+// z. B. Passwort-Knopf); dunkel; feldClassName; alle übrigen Props gehen an das Eingabeelement.
+// Barrierefreiheit: aria-invalid, aria-describedby (Fehler bzw. Hilfetext), aria-required.
+
+import { Check, ChevronDown } from "lucide-react";
+import { cn } from "@/components/ui/cn";
+import FeldRahmen from "./FeldRahmen";
+import { auswahlKlasse, beschreibungIds, feldKlasse, textbereichKlasse } from "./stil";
+
+export function ErfolgsZeichen({ dunkel = false, className }) {
+  return (
+    <span aria-hidden="true" className={cn("ov-erfolg pointer-events-none flex h-5 w-5 items-center justify-center rounded-full", dunkel ? "bg-ov-300 text-navy-950" : "bg-ov-600 text-white", className)}>
+      <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none">
+        <path d="M5 12.5l4.5 4.5L19 7.5" pathLength="1" className="ov-linie" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </span>
+  );
+}
+
+export default function Textfeld({
+  id,
+  label,
+  pflicht = false,
+  optional = false,
+  hinweis,
+  fehler,
+  gueltig = false,
+  zusatz,
+  rechts,
+  dunkel = false,
+  als = "input",
+  className,
+  feldClassName,
+  children,
+  "aria-describedby": describedbyExtra,
+  ...rest
+}) {
+  const zeigeHaken = gueltig && !fehler && als !== "select";
+  const describedby = beschreibungIds(id, { hinweis, fehler, extra: describedbyExtra });
+  const gemeinsam = {
+    id,
+    "aria-invalid": fehler ? true : undefined,
+    "aria-describedby": describedby,
+    "aria-required": pflicht || undefined,
+    required: pflicht || undefined,
+    ...rest,
+  };
+
+  let feld;
+  if (als === "textarea") {
+    feld = <textarea {...gemeinsam} className={cn(textbereichKlasse(dunkel), feldClassName)} />;
+  } else if (als === "select") {
+    feld = (
+      <>
+        <select {...gemeinsam} className={cn(auswahlKlasse(dunkel), feldClassName)}>
+          {children}
+        </select>
+        <ChevronDown aria-hidden="true" className={cn("pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2", dunkel ? "text-white/70" : "text-ink-500")} />
+      </>
+    );
+  } else {
+    feld = <input {...gemeinsam} className={cn(feldKlasse(dunkel), (zeigeHaken || rechts) && "pr-12", rechts && zeigeHaken && "pr-20", feldClassName)} />;
+  }
+
+  return (
+    <FeldRahmen id={id} label={label} pflicht={pflicht} optional={optional} hinweis={hinweis} fehler={fehler} zusatz={zusatz} dunkel={dunkel} className={className}>
+      <div className="relative">
+        {feld}
+        {(zeigeHaken || rechts) && als !== "select" && (
+          <div className={cn("pointer-events-none absolute right-1.5 flex items-center gap-1", als === "textarea" ? "top-3 right-3" : "inset-y-0")}>
+            {zeigeHaken && <ErfolgsZeichen dunkel={dunkel} className={rechts ? "" : "mr-2"} />}
+            {rechts && <span className="pointer-events-auto">{rechts}</span>}
+          </div>
+        )}
+      </div>
+    </FeldRahmen>
+  );
+}
+// src/components/formular – gemeinsame Formular- und Assistenten-Bausteine (Team T5, DESIGN.md § 4 „Formulare“)
+//
+// Einzelimporte bevorzugen (Client-Bausteine): z. B. import Textfeld from "@/components/formular/Textfeld".
+// Übersicht:
+//   stil.js         Klassen (feldKlasse, labelKlasse, …) und beschreibungIds()
+//   FeldRahmen.js   Label + Hilfetext/Fehler
+//   Textfeld.js     Eingabe/Textbereich/Auswahl mit Erfolgshäkchen
+//   PasswortFeld.js Anzeigen/Verbergen, Feststelltaste, Stärkeanzeige
+//   CodeEingabe.js  Einmalcode als Einzelfelder (Einfügen, Autofill, Pfeiltasten)
+//   useFormular.js  Zustand + Inline-Validierung (beim Verlassen), Fokus auf ersten Fehler + Schütteln
+//   Absenden.js     AbsendeKnopf + useAbsenden (Laden → Haken → Toast)
+//   Schritte.js     SchrittFortschritt, SchrittBuehne, useSchrittRichtung
+//   Entwurf.js      useEntwurf + AutosaveHinweis (sessionStorage)
+//   Meldungen.js    FormFehler, FormErfolg, ErfolgsAnsicht, Zusammenfassung
+
+export { default as FeldRahmen, FeldMeldung, FehlerIcon } from "./FeldRahmen";
+export { default as Textfeld, ErfolgsZeichen } from "./Textfeld";
+export { default as PasswortFeld, StaerkeAnzeige } from "./PasswortFeld";
+export { default as CodeEingabe } from "./CodeEingabe";
+export { default as useFormular, regel } from "./useFormular";
+export { AbsendeKnopf, useAbsenden } from "./Absenden";
+export { SchrittFortschritt, SchrittBuehne, useSchrittRichtung } from "./Schritte";
+export { useEntwurf, AutosaveHinweis, entwurfVorbelegen } from "./Entwurf";
+export { FormFehler, FormErfolg, ErfolgsAnsicht, Zusammenfassung } from "./Meldungen";
+export * from "./stil";
+// src/components/formular/stil.js
+//
+// Klassen der gemeinsamen Formularbausteine (Team T5, DESIGN.md § 4 „Formulare“).
+// Ohne Hooks – auch in Server-Komponenten nutzbar.
+
+import { cn } from "@/components/ui/cn";
+
+/** Eingabefeld hell: h-12, rounded-2xl, Fokus ov-500, Fehler danger-300, mobil 16 px (kein iOS-Zoom) */
+export const feldHell =
+  "block h-12 w-full min-w-0 rounded-2xl bg-white px-4 text-[16px] text-ink-900 outline-none ring-1 ring-inset ring-ink-400 transition-shadow duration-150 ease-ov-out placeholder:text-ink-500 hover:ring-ink-500 focus-visible:ring-2 focus-visible:ring-ov-500 disabled:cursor-not-allowed disabled:bg-ink-50 disabled:text-ink-500 aria-[invalid=true]:ring-2 aria-[invalid=true]:ring-danger-500 md:text-[15px]";
+
+/** Eingabefeld auf Navy-Flächen */
+export const feldDunkel =
+  "block h-12 w-full min-w-0 rounded-2xl bg-white/[0.07] px-4 text-[16px] text-white outline-none ring-1 ring-inset ring-white/35 transition-shadow duration-150 ease-ov-out placeholder:text-white/55 hover:ring-white/55 focus-visible:ring-2 focus-visible:ring-ov-300 aria-[invalid=true]:ring-2 aria-[invalid=true]:ring-danger-300 md:text-[15px]";
+
+export const feldKlasse = (dunkel) => (dunkel ? feldDunkel : feldHell);
+
+/** Mehrzeilig */
+export const textbereichKlasse = (dunkel) => cn(feldKlasse(dunkel), "h-auto min-h-[112px] py-3 leading-relaxed");
+
+/** Auswahlliste mit eigenem Pfeil (Pfeil kommt als Icon aus Textfeld) */
+export const auswahlKlasse = (dunkel) => cn(feldKlasse(dunkel), "appearance-none pr-11");
+
+/** Label: immer sichtbar über dem Feld, 14 px/600 */
+export const labelKlasse = (dunkel) => cn("mb-1.5 block text-[14px] font-semibold leading-snug", dunkel ? "text-white/90" : "text-ink-900");
+
+/** Hilfetext 13 px */
+export const hinweisKlasse = (dunkel) => cn("mt-1.5 text-[13px] leading-snug", dunkel ? "text-white/70" : "text-ink-500");
+
+/** Fehlertext 13 px danger-700 (auf Dunkel danger-300) */
+export const fehlerKlasse = (dunkel) => cn("mt-1.5 flex items-start gap-1.5 text-[13px] font-medium leading-snug", dunkel ? "text-danger-300" : "text-danger-700");
+
+/** Checkbox im Markenstil (24 px Zielgröße über das Label) */
+export const checkboxKlasse = "mt-0.5 h-5 w-5 shrink-0 rounded accent-ov-600";
+
+/** aria-describedby aus Hinweis/Fehler zusammensetzen */
+export function beschreibungIds(id, { hinweis, fehler, extra } = {}) {
+  const ids = [];
+  if (fehler) ids.push(`${id}-fehler`);
+  else if (hinweis) ids.push(`${id}-hinweis`);
+  if (extra) ids.push(extra);
+  return ids.length ? ids.join(" ") : undefined;
+}
+"use client";
+
+// src/components/formular/useFormular.js
+//
+// Formularzustand mit Inline-Validierung beim Verlassen des Felds (danach live beim Korrigieren),
+// Erfolgshäkchen für gültige, berührte Felder und Fokusführung zum ersten Fehler (+ Schütteln).
+// Die maßgebliche Prüfung bleibt serverseitig – das hier ist Nutzerführung.
+//
+//   const form = useFormular({ email: "" }, { email: [regel.pflicht("…"), regel.email()] });
+//   <Textfeld id={`${id}-email`} label="E-Mail" {...form.feld("email")} />
+//   onSubmit: if (!form.pruefeAlles()) return;
+
+import { useCallback, useMemo, useRef, useState } from "react";
+import { signal } from "@/components/ui/motion";
+import { regeln as basisRegeln } from "@/components/Portal/Bedienung/pruefung";
+import { passwortFehler } from "@/lib/plattform/validierung";
+
+/** Prüfregeln: Basis aus Bedienung/pruefung + Formular-spezifische Ergänzungen */
+export const regel = {
+  ...basisRegeln,
+  /** Passwortregel wie auf dem Server (validierung.passwortFehler) */
+  passwort: () => (v) => (v ? passwortFehler(v) : ""),
+  /** Wert muss einem anderen Feld entsprechen (Passwort wiederholen) */
+  gleich: (feld, text = "Die Eingaben stimmen nicht überein.") => (v, alle) => (v && alle?.[feld] && v !== alle[feld] ? text : ""),
+  /** Checkbox muss gesetzt sein */
+  haken: (text = "Bitte bestätigen Sie diesen Punkt.") => (v) => (v ? "" : text),
+  /** Mindestens ein Eintrag in einer Liste */
+  auswahl: (text = "Bitte wählen Sie mindestens eine Option.") => (v) => (Array.isArray(v) && v.length ? "" : text),
+};
+
+function ersterFehler(liste = [], wert, alle) {
+  for (const r of liste) {
+    const m = r(wert, alle);
+    if (m) return m;
+  }
+  return "";
+}
+
+const leer = (v) => v === undefined || v === null || v === "" || v === false || (Array.isArray(v) && !v.length);
+
+export default function useFormular(startwerte, schema = {}) {
+  const [werte, setWerte] = useState(startwerte);
+  const [fehler, setFehler] = useState({});
+  const [beruehrt, setBeruehrt] = useState({});
+  const werteRef = useRef(startwerte);
+  const beruehrtRef = useRef({});
+  const formRef = useRef(null);
+
+  const markiere = useCallback((neu) => {
+    beruehrtRef.current = neu;
+    setBeruehrt(neu);
+  }, []);
+
+  const pruefe = useCallback(
+    (feld, alle = werteRef.current) => {
+      const m = ersterFehler(schema[feld], alle?.[feld], alle);
+      setFehler((f) => (f[feld] === m ? f : { ...f, [feld]: m }));
+      return !m;
+    },
+    [schema]
+  );
+
+  /** Wert setzen; berührte Felder live nachprüfen (auch abhängige, z. B. „Passwort wiederholen“) */
+  const setze = useCallback(
+    (feld, wert) => {
+      const neu = { ...werteRef.current, [feld]: wert };
+      werteRef.current = neu;
+      setWerte(neu);
+      const b = beruehrtRef.current;
+      const geprueft = {};
+      for (const k of Object.keys(schema)) if (b[k]) geprueft[k] = ersterFehler(schema[k], neu[k], neu);
+      if (Object.keys(geprueft).length) setFehler((f) => ({ ...f, ...geprueft }));
+    },
+    [schema]
+  );
+
+  /** Mehrere Werte auf einmal (z. B. Entwurf wiederherstellen, Demo-Konto übernehmen) */
+  const setzeAlle = useCallback((teil) => {
+    const neu = { ...werteRef.current, ...teil };
+    werteRef.current = neu;
+    setWerte(neu);
+  }, []);
+
+  const verlassen = useCallback(
+    (feld) => {
+      if (!beruehrtRef.current[feld]) markiere({ ...beruehrtRef.current, [feld]: true });
+      pruefe(feld);
+    },
+    [pruefe, markiere]
+  );
+
+  /** Alles prüfen; erstes fehlerhaftes Feld fokussieren und schütteln. Rückgabe: true = gültig */
+  const pruefeAlles = useCallback(() => {
+    const alle = werteRef.current;
+    const neu = {};
+    for (const k of Object.keys(schema)) neu[k] = ersterFehler(schema[k], alle[k], alle);
+    setFehler(neu);
+    markiere(Object.fromEntries(Object.keys(schema).map((k) => [k, true])));
+    const erster = Object.keys(neu).find((k) => neu[k]);
+    if (erster && typeof document !== "undefined") {
+      requestAnimationFrame(() => {
+        const wurzel = formRef.current || document;
+        const el = wurzel.querySelector(`[data-feld="${erster}"]`);
+        if (el) {
+          el.focus();
+          signal(el.closest("[data-feld-huelle]") || el, "schuetteln");
+        }
+      });
+    }
+    return !erster;
+  }, [schema, markiere]);
+
+  /** Serverfehler einem Feld zuordnen (z. B. „E-Mail bereits registriert“) */
+  const setzeFehler = useCallback(
+    (feld, text) => {
+      setFehler((f) => ({ ...f, [feld]: text }));
+      markiere({ ...beruehrtRef.current, [feld]: true });
+    },
+    [markiere]
+  );
+
+  const istGueltig = (name) => !!beruehrt[name] && !fehler[name] && !leer(werte[name]);
+
+  /** Props für Textfeld/PasswortFeld (checkbox: true → checked statt value) */
+  const feld = (name, { checkbox = false } = {}) => ({
+    name,
+    "data-feld": name,
+    ...(checkbox
+      ? {
+          checked: !!werte[name],
+          onChange: (e) => {
+            setze(name, e.target.checked);
+            verlassen(name);
+          },
+        }
+      : { value: werte[name] ?? "", onChange: (e) => setze(name, e.target.value) }),
+    onBlur: () => verlassen(name),
+    fehler: beruehrt[name] ? fehler[name] : "",
+    gueltig: istGueltig(name),
+  });
+
+  const anzahlFehler = useMemo(() => Object.values(fehler).filter(Boolean).length, [fehler]);
+
+  return { werte, setze, setzeAlle, fehler, beruehrt, feld, gueltig: istGueltig, pruefe, pruefeAlles, verlassen, setzeFehler, anzahlFehler, formRef };
+}
+import Link from "next/link";
+import { ArrowUpRight, Phone, Calculator, ShieldCheck, Clock, BadgeCheck } from "lucide-react";
+import { KONTAKT } from "@/data/site";
+import { cn } from "./cn";
+import Button from "./Button";
+import Reveal from "./Reveal";
+
+/**
+ * Abschluss-Handlungsaufruf für jede Seite. Dunkle, leuchtende Fläche mit
+ * zwei Wegen und einer Wegweiser-Box für die Zielgruppen. Telefon erscheint
+ * nur, wenn in src/data/site.js eine Nummer hinterlegt ist.
+ */
+export default function CtaBand({
+  eyebrow = "Kostenlos & unverbindlich",
+  title = "Ihre Fläche, Ihr Projekt, Ihr Kapital – wir machen daraus ein Kraftwerk.",
+  text = "Ein Team, das seit 2010 Solarkraftwerke plant, baut und selbst betreibt. Mit ehrlicher Ersteinschätzung, festem Ansprechpartner und transparentem Status im Portal.",
+  primary = { label: "Fläche prüfen lassen", href: "/flaechencheck" },
+  secondary = { label: "Zur Projektbörse", href: "/projektboerse" },
+  className,
+}) {
+  return (
+    <section className={cn("relative px-4 py-16 md:px-8 md:py-24", className)}>
+      <Reveal dir="scale" className="ov-noise relative mx-auto max-w-7xl overflow-hidden rounded-[2rem] bg-navy-950 px-6 py-14 text-white md:rounded-[2.5rem] md:px-16 md:py-20">
+        <div aria-hidden="true" className="ov-grid-bg absolute inset-0" />
+        <div aria-hidden="true" className="absolute -right-24 -top-32 h-[460px] w-[460px] rounded-full bg-ov-500/35 blur-[110px]" />
+        <div aria-hidden="true" className="absolute -bottom-40 left-1/4 h-[360px] w-[360px] rounded-full bg-sun-400/15 blur-[110px]" />
+
+        {/* minmax(0, …): Spalten dürfen nicht über ihren Anteil wachsen – sonst schieben breite Buttons
+            die rechte Box in den Innenabstand und overflow-hidden schneidet sie ab */}
+        <div className="relative grid items-center gap-12 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+          <div className="min-w-0">
+            <p className="text-[12.5px] font-semibold uppercase tracking-[0.16em] text-ov-300">{eyebrow}</p>
+            <h2 className="ov-h2 mt-4 text-white">{title}</h2>
+            <p className="ov-lead mt-5 max-w-2xl text-white/70">{text}</p>
+            {/* flex-wrap: bei wenig Platz rutscht der zweite Button in die nächste Zeile */}
+            <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+              <Button href={primary.href} size="lg" pfeil>
+                {primary.label}
+              </Button>
+              {secondary && (
+                <Button href={secondary.href} size="lg" variant="outlineLight" icon={secondary.icon === undefined ? undefined : secondary.icon}>
+                  {secondary.label}
+                </Button>
+              )}
+            </div>
+          </div>
+
+          <div className="ov-glass min-w-0 rounded-3xl p-6 md:p-8">
+            {KONTAKT.telefon ? (
+              <>
+                <p className="text-[13px] font-medium text-white/60">Lieber direkt sprechen?</p>
+                <a href={KONTAKT.telefonHref} className="group mt-2 flex items-center gap-3">
+                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-ov-500 transition-transform group-hover:scale-110">
+                    <Phone aria-hidden="true" className="h-5 w-5" />
+                  </span>
+                  <span className="min-w-0 font-display text-[22px] font-extrabold tracking-tight md:text-[26px]">{KONTAKT.telefon}</span>
+                </a>
+              </>
+            ) : (
+              <>
+                <p className="text-[13px] font-medium text-white/60">Direkt zum passenden Weg</p>
+                <ul className="mt-3 grid gap-2">
+                  {[
+                    { label: "Ich habe eine Fläche", href: "/flaeche-verpachten" },
+                    { label: "Ich bin Landwirt", href: "/landwirte" },
+                    { label: "Ich möchte investieren", href: "/investoren" },
+                    { label: "Ich brauche günstigen Strom", href: "/reststrom" },
+                  ].map((w) => (
+                    <li key={w.href}>
+                      <Link href={w.href} className="group flex items-center justify-between gap-3 rounded-2xl bg-white/[0.06] px-4 py-3 text-[15px] font-semibold ring-1 ring-white/10 transition-colors hover:bg-white/[0.12]">
+                        {w.label}
+                        <ArrowUpRight aria-hidden="true" className="h-4 w-4 text-ov-300 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+            <ul className="mt-6 space-y-3 border-t border-white/10 pt-6 text-[14.5px] text-white/80">
+              <li className="flex items-start gap-2.5"><BadgeCheck aria-hidden="true" className="mt-[3px] h-4 w-4 shrink-0 text-ov-300" /><span className="min-w-0">Teil der ÖKOVOLT Gruppe – seit 2010 im Solargeschäft</span></li>
+              <li className="flex items-start gap-2.5"><ShieldCheck aria-hidden="true" className="mt-[3px] h-4 w-4 shrink-0 text-ov-300" /><span className="min-w-0">Entwicklung, Bau und Betrieb aus einer Gruppe</span></li>
+              <li className="flex items-start gap-2.5"><Clock aria-hidden="true" className="mt-[3px] h-4 w-4 shrink-0 text-ov-300" /><span className="min-w-0">Status, Dokumente und Nachrichten im Portal</span></li>
+            </ul>
+          </div>
+        </div>
+      </Reveal>
+    </section>
+  );
+}
+import { cn } from "./cn";
+
+/**
+ * Erfolgs-Feedback: Kreis federt auf, Haken zeichnet sich (einmalig beim
+ * Erscheinen). Für Formular-Abschluss, gespeicherte Schritte, Zahlungen.
+ * Immer mit Text daneben/darunter („Anfrage gesendet“) – das Icon ist Deko.
+ *
+ * groesse: px; ton: marke | hell (auf Dunkel)
+ */
+export default function ErfolgsHaken({ groesse = 56, ton = "marke", className }) {
+  const hell = ton === "hell";
+  return (
+    <span
+      aria-hidden="true"
+      className={cn("ov-erfolg inline-flex shrink-0 items-center justify-center rounded-full", hell ? "bg-ov-300/15 ring-1 ring-ov-300/40" : "bg-ov-50 ring-1 ring-ov-200", className)}
+      style={{ width: groesse, height: groesse }}
+    >
+      <span
+        className={cn("flex items-center justify-center rounded-full", hell ? "bg-ov-300 text-navy-950" : "bg-ov-600 text-white")}
+        style={{ width: groesse * 0.7, height: groesse * 0.7 }}
+      >
+        <svg viewBox="0 0 24 24" width={groesse * 0.38} height={groesse * 0.38} fill="none">
+          <path d="M5 12.5l4.5 4.5L19 7.5" pathLength="1" className="ov-linie" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </span>
+    </span>
+  );
+}

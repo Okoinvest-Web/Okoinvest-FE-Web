@@ -1,0 +1,99 @@
+import { DEMO_BENUTZER, DEMO_KUNDE } from "./stammdaten.ts";
+
+/**
+ * Demonstrationsbetrieb.
+ *
+ * Ohne erreichbare Frappe-Instanz haette das Portal nichts anzuzeigen.
+ * Im Demonstrationsbetrieb liefert die Datenschicht stattdessen einen
+ * vollstaendigen, in sich stimmigen Beispieldatensatz.
+ *
+ * Die Umschaltung laeuft ueber DEMO_MODUS in .env.local und ist damit
+ * eine bewusste Entscheidung beim Betrieb - nicht etwas, das sich zur
+ * Laufzeit von aussen aktivieren liesse.
+ */
+
+export function istDemoModus(): boolean {
+  return process.env.DEMO_MODUS === "1";
+}
+
+/**
+ * Zugangsdaten fuer die Vorfuehrung.
+ *
+ * Das Passwort ist fuer alle Demonstrationskonten gleich und bewusst
+ * offen dokumentiert - im Demonstrationsbetrieb gibt es nichts zu
+ * schuetzen. Ist DEMO_MODUS aus, lehnt die Anmeldung diese Konten ab
+ * und es gilt ausschliesslich die Frappe-Anmeldung.
+ */
+export const DEMO_PASSWORT = "demo";
+
+export interface DemoKonto {
+  email: string;
+  name: string;
+  rolle: string;
+  rollenBezeichnung: string;
+  beschreibung: string;
+}
+
+export const DEMO_KONTEN: DemoKonto[] = [
+  {
+    email: "m.steiner@steiner-holzbau.at",
+    name: "Markus Steiner",
+    rolle: "geschaeftsfuehrung",
+    rollenBezeichnung: "Geschäftsführung",
+    beschreibung: "Vollzugriff auf alle Bereiche",
+  },
+  {
+    email: "m.hofbauer@steiner-holzbau.at",
+    name: "Michael Hofbauer",
+    rolle: "technik",
+    rollenBezeichnung: "Technische Leitung",
+    beschreibung: "Betrieb, Steuerung, Fernwartung",
+  },
+  {
+    email: "a.gruber@steiner-holzbau.at",
+    name: "Andrea Gruber",
+    rolle: "buchhaltung",
+    rollenBezeichnung: "Buchhaltung",
+    beschreibung: "Belege, Abrechnung, Bestellungen",
+  },
+  {
+    email: "t.leitner@steiner-holzbau.at",
+    name: "Thomas Leitner",
+    rolle: "fuhrpark",
+    rollenBezeichnung: "Fuhrparkleitung",
+    beschreibung: "Ladepunkte und Tankkarten",
+  },
+];
+
+export interface DemoAnmeldung {
+  benutzer: string;
+  vollname: string;
+  rolle: string;
+  kunde: string;
+}
+
+/**
+ * Prueft eine Anmeldung gegen die Demonstrationskonten.
+ * Gibt `null` zurueck, wenn der Demonstrationsbetrieb aus ist oder die
+ * Zugangsdaten nicht passen.
+ */
+export function pruefeDemoAnmeldung(
+  email: string,
+  passwort: string,
+): DemoAnmeldung | null {
+  if (!istDemoModus()) return null;
+  if (passwort !== DEMO_PASSWORT) return null;
+
+  const gesucht = email.trim().toLowerCase();
+  const konto = DEMO_KONTEN.find((k) => k.email.toLowerCase() === gesucht);
+  if (!konto) return null;
+
+  const stammdaten = DEMO_BENUTZER.find((b) => b.benutzer === konto.email);
+
+  return {
+    benutzer: konto.email,
+    vollname: stammdaten?.vollname ?? konto.name,
+    rolle: konto.rolle,
+    kunde: DEMO_KUNDE.name,
+  };
+}

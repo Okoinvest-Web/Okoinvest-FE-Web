@@ -1,0 +1,501 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+
+import { Verlauf } from "@/components/diagramme/verlauf";
+import { Strangkarte } from "@/components/diagramme/strangkarte";
+import { IconPfeilLinks } from "@/components/icon";
+import { Tabelle, Zeile, Zelle, ZelleMitZusatz } from "@/components/tabelle";
+import {
+  Angabe,
+  Balken,
+  Hinweis,
+  Kennzahl,
+  Kennzahlenleiste,
+  LeerZustand,
+  Seitenkopf,
+  Status,
+  Tafel,
+} from "@/components/ui";
+import {
+  juengsterMesstag,
+  ladeAlarme,
+  ladeAnlage,
+  ladeBetriebskosten,
+  ladeKennzahlen,
+  ladeStrangvergleich,
+  ladeTagesverlauf,
+  ladeVerguetung,
+  ladeWechselrichter,
+  letzteTage,
+} from "@/lib/daten/monitoring";
+import { ENERGIE_FARBEN } from "@/lib/farben";
+import {
+  formatDatum,
+  formatEnergie,
+  formatGeld,
+  formatProzent,
+  formatZahl,
+  formatZeit,
+} from "@/lib/format";
+import { tageslicht } from "@/lib/pv/sonnenstand";
+import { requireRecht } from "@/lib/session";
+
+function schweregradTon(grad: string) {
+  switch (grad) {
+    case "Kritisch":
+      return "kritisch" as const;
+    case "Hoch":
+      return "ernst" as const;
+    case "Mittel":
+      return "hinweis" as const;
+    case "Niedrig":
+      return "neutral" as const;
+    default:
+      return "akzent" as const;
+  }
+}
+
+export default async function AnlagenDetail({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ name: string }>;
+  searchParams: Promise<{ zeitraum?: string }>;
+}) {
+  await requireRecht("anlagen.lesen");
+
+  const { name } = await params;
+  const { zeitraum } = await searchParams;
+
+  const anlage = ladeAnlage(decodeURIComponent(name));
+  if (!anlage) notFound();
+
+  const tage = Number(zeitraum) > 0 ? Number(zeitraum) : 30;
+  const fenster = letzteTage(tage);
+
+  const kennzahlen = ladeKennzahlen(anlage.id, fenster, anlage.leistung_kwp);
+  const wechselrichter = ladeWechselrichter(anlage.id, fenster);
+  const strangGruppen = ladeStrangvergleich(anlage.id, fenster);
+  const alarme = ladeAlarme({ anlageId: anlage.id, grenze: 10 });
+  const verguetung = ladeVerguetung(anlage.id);
+  const kosten = ladeBetriebskosten(anlage.id);
+
+  const messtag = juengsterMesstag(anlage.id) ?? new Date();
+  const verlauf = ladeTagesverlauf(anlage.id, messtag, anlage.leistung_kwp);
+
+  const licht = anlage.latitude
+    ? tageslicht(messtag, anlage.latitude, anlage.longitude ?? 15.6, 0)
+    : null;
+
+  const ertrag = formatEnergie(kennzahlen.ertragKwh);
+  const offeneAlarme = alarme.filter(
+    (a) => a.status === "Offen" || a.status === "Quittiert",
+  );
+
+  // Wechselrichter mit auffälligem spezifischem Ertrag hervorheben.
+  const spezifischeWerte = wechselrichter
+    .map((w) => w.spezifisch)
+    .filter((w) => w > 0)
+    .sort((a, b) => a - b);
+  const medianSpezifisch =
+    spezifischeWerte.length > 0
+      ? spezifischeWerte[Math.floor(spezifischeWerte.length / 2)]
+      : 0;
+
+  const kostenJahr = kosten.reduce((s, k) => s + k.betrag_jahr, 0);
+
+  return (
+    <div className="space-y-5">
+      <Seitenkopf
+        titel={anlage.bezeichnung}
+        hinweis={`${anlage.ort ?? ""} · ${formatZahl(anlage.leistung_kwp, 1)} kWp · ${anlage.ausrichtung ?? ""}${anlage.neigung ? `, ${anlage.neigung}°` : ""} · seit ${formatDatum(anlage.inbetriebnahme)}`}
+        zurueck={
+          <Link
+            href="/portal/anlagen"
+            className="t-leise inline-flex items-center gap-1.5 hover:underline"
+          >
+            <IconPfeilLinks groesse={14} />
+            Alle Anlagen
+          </Link>
+        }
+        aktion={
+          <>
+            <Status
+              ton={
+                anlage.status === "Aktiv"
+                  ? "gut"
+                  : anlage.status === "Wartung"
+                    ? "hinweis"
+                    : "kritisch"
+              }
+            >
+              {anlage.status}
+            </Status>
+            <ZeitraumWahl anlage={anlage.id} aktiv={tage} />
+          </>
+        }
+      />
+
+      {offeneAlarme.length > 0 && (
+        <Hinweis
+          ton={schweregradTon(offeneAlarme[0].schweregrad)}
+          titel={`${offeneAlarme.length} offene Meldung${offeneAlarme.length > 1 ? "en" : ""}`}
+        >
+          {offeneAlarme[0].titel}
+          {offeneAlarme.length > 1 && ` und ${offeneAlarme.length - 1} weitere.`}{" "}
+          <Link href={`/portal/alarme?anlage=${anlage.id}`} className="underline">
+            Alle ansehen
+          </Link>
+        </Hinweis>
+      )}
+
+      <Kennzahlenleiste>
+        <Kennzahl
+          label={`Ertrag ${tage} Tage`}
+          wert={ertrag.wert}
+          einheit={ertrag.einheit}
+          hinweis={`${formatZahl(kennzahlen.spezifisch, 0)} kWh/kWp`}
+          akzent
+        />
+        <Kennzahl
+          label="Performance Ratio"
+          wert={
+            kennzahlen.performanceRatio !== null
+              ? formatProzent(kennzahlen.performanceRatio * 100, 1)
+              : "–"
+          }
+          hinweis={
+            kennzahlen.performanceRatioKorrigiert !== null
+              ? `${formatProzent(kennzahlen.performanceRatioKorrigiert * 100, 1)} temperaturkorrigiert`
+              : "ohne Einstrahlungsmessung nicht berechenbar"
+          }
+        />
+        <Kennzahl
+          label="Verfügbarkeit"
+          wert={
+            kennzahlen.verfuegbarkeit !== null
+              ? formatProzent(kennzahlen.verfuegbarkeit * 100, 1)
+              : "–"
+          }
+          hinweis="ertragsfähige Zeit"
+        />
+        <Kennzahl
+          label="Einstrahlung"
+          wert={formatZahl(kennzahlen.einstrahlungKwhM2, 0)}
+          einheit="kWh/m²"
+          hinweis={`Spitzenleistung ${formatZahl(kennzahlen.hoechstleistungKw, 0)} kW`}
+        />
+      </Kennzahlenleiste>
+
+      {/* ---------------- Tagesverlauf mit Erwartungswert ---------------- */}
+      <Tafel
+        titel="Leistung gegen Erwartung"
+        hinweis={`${formatDatum(messtag)}${licht?.aufgang ? ` · Sonne ${formatZeit(licht.aufgang)} bis ${formatZeit(licht.untergang)}` : ""}`}
+      >
+        {verlauf.length === 0 ? (
+          <LeerZustand text="Für diesen Tag liegen keine Messwerte vor." />
+        ) : (
+          <>
+            <Verlauf
+              beschriftungen={verlauf.map((p) => formatZeit(p.zeitpunkt))}
+              einheit="kW"
+              achsenSchritte={8}
+              hoehe={260}
+              reihen={[
+                {
+                  schluessel: "leistung",
+                  label: "Gemessene Leistung",
+                  farbe: ENERGIE_FARBEN.erzeugung,
+                  werte: verlauf.map((p) => p.leistung),
+                  gefuellt: true,
+                },
+                {
+                  schluessel: "erwartet",
+                  label: "Erwartet aus Einstrahlung",
+                  farbe: ENERGIE_FARBEN.netzbezug,
+                  werte: verlauf.map((p) => p.erwartet),
+                  gestrichelt: true,
+                },
+              ]}
+            />
+            <p className="t-mikro mt-3 leading-relaxed">
+              Die gestrichelte Linie ist der Erwartungswert aus gemessener
+              Einstrahlung und Modultemperatur. Erst dieser Vergleich zeigt, ob
+              eine Delle vom Wetter oder von der Anlage kommt – eine
+              Leistungskurve allein sagt darüber nichts.
+            </p>
+          </>
+        )}
+      </Tafel>
+
+      {/* ---------------- Wechselrichter ---------------- */}
+      <Tafel
+        titel="Wechselrichter"
+        hinweis="Der spezifische Ertrag macht unterschiedlich große Geräte vergleichbar"
+        dicht
+      >
+        {wechselrichter.length === 0 ? (
+          <div className="p-4">
+            <LeerZustand text="Für diese Anlage sind keine Wechselrichter erfasst." />
+          </div>
+        ) : (
+          <Tabelle
+            spalten={[
+              { titel: "Gerät" },
+              { titel: "Auslegung", zahl: true, schmalAusblenden: true },
+              { titel: "Ertrag", zahl: true },
+              { titel: "Spezifisch", zahl: true },
+              { titel: "Vergleich" },
+              { titel: "Zustand" },
+            ]}
+          >
+            {wechselrichter.map((wr) => {
+              const abweichung =
+                medianSpezifisch > 0
+                  ? ((wr.spezifisch - medianSpezifisch) / medianSpezifisch) * 100
+                  : 0;
+              const auffaellig = abweichung < -6;
+              const auslegung =
+                wr.nennleistung_kw > 0
+                  ? wr.modulleistung_kwp / wr.nennleistung_kw
+                  : 0;
+
+              return (
+                <Zeile key={wr.id} hervorgehoben={auffaellig}>
+                  <ZelleMitZusatz
+                    haupt={wr.bezeichnung}
+                    zusatz={`${wr.hersteller} ${wr.modell} · ${wr.straenge} Stränge`}
+                  />
+                  <Zelle zahl leise schmalAusblenden>
+                    {formatZahl(auslegung, 2)}
+                    <span className="t-mikro block">
+                      {formatZahl(wr.modulleistung_kwp, 0)} kWp auf{" "}
+                      {formatZahl(wr.nennleistung_kw, 0)} kW
+                    </span>
+                  </Zelle>
+                  <Zelle zahl>
+                    {formatZahl(wr.ertrag_kwh / 1000, 1)}
+                    <span className="t-mikro"> MWh</span>
+                  </Zelle>
+                  <Zelle zahl>
+                    {formatZahl(wr.spezifisch, 0)}
+                    <span className="t-mikro"> kWh/kWp</span>
+                  </Zelle>
+                  <Zelle>
+                    <span className="flex items-center gap-2">
+                      <span
+                        className="block h-1.5 rounded-full"
+                        style={{
+                          width: `${Math.max(4, Math.min(100, (wr.spezifisch / Math.max(1, medianSpezifisch)) * 60))}px`,
+                          background: auffaellig
+                            ? "oklch(0.58 0.2 25)"
+                            : "var(--akzent)",
+                          opacity: 0.8,
+                        }}
+                        aria-hidden
+                      />
+                      <span
+                        className="zahl text-[0.75rem]"
+                        style={{
+                          color: auffaellig
+                            ? "oklch(0.52 0.19 25)"
+                            : "var(--t-zart)",
+                        }}
+                      >
+                        {abweichung > 0 ? "+" : ""}
+                        {abweichung.toFixed(0)} %
+                      </span>
+                    </span>
+                  </Zelle>
+                  <Zelle>
+                    {wr.stoerungsanteil > 0.001 ? (
+                      <Status ton="kritisch">
+                        {formatProzent(wr.stoerungsanteil * 100, 1)} Störung
+                      </Status>
+                    ) : wr.abregelungsanteil > 0.005 ? (
+                      <Status ton="akzent">
+                        {formatProzent(wr.abregelungsanteil * 100, 1)} abgeregelt
+                      </Status>
+                    ) : (
+                      <Status ton="gut">Normal</Status>
+                    )}
+                  </Zelle>
+                </Zeile>
+              );
+            })}
+          </Tabelle>
+        )}
+      </Tafel>
+
+      {/* ---------------- Strangkarte ---------------- */}
+      <Tafel
+        titel="Strangvergleich"
+        hinweis={`Abweichung vom Median je Wechselrichter, ${tage} Tage · nur Zeitpunkte über 400 W/m²`}
+      >
+        {strangGruppen.length === 0 ? (
+          <LeerZustand text="Für diese Anlage liegen keine Strangdaten vor." />
+        ) : (
+          <>
+            <Strangkarte gruppen={strangGruppen} />
+            <p className="t-mikro mt-4 leading-relaxed">
+              Verglichen wird nur innerhalb eines Wechselrichters: Stränge an
+              unterschiedlichen Dachflächen liefern zwangsläufig verschieden
+              viel. Bezugsgröße ist der Median, nicht der Mittelwert – ein
+              ausgefallener Strang würde den Mittelwert nach unten ziehen und
+              alle übrigen zu gut aussehen lassen.
+            </p>
+          </>
+        )}
+      </Tafel>
+
+      {/* ---------------- Meldungen und Wirtschaft ---------------- */}
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+        <Tafel titel="Letzte Meldungen" dicht>
+          {alarme.length === 0 ? (
+            <div className="p-4">
+              <LeerZustand text="Für diese Anlage liegen keine Meldungen vor." />
+            </div>
+          ) : (
+            <Tabelle
+              spalten={[
+                { titel: "Meldung" },
+                { titel: "Ausfall", zahl: true },
+                { titel: "Status" },
+              ]}
+              mindestbreite="26rem"
+            >
+              {alarme.slice(0, 6).map((alarm) => (
+                <Zeile key={alarm.id}>
+                  <ZelleMitZusatz
+                    haupt={
+                      <Link
+                        href={`/portal/alarme/${alarm.id}`}
+                        className="hover:underline"
+                      >
+                        {alarm.titel}
+                      </Link>
+                    }
+                    zusatz={formatDatum(alarm.ausgeloest_am)}
+                  />
+                  <Zelle zahl leise>
+                    {alarm.ausfall_kwh > 0
+                      ? `${formatZahl(alarm.ausfall_kwh, 0)} kWh`
+                      : "–"}
+                  </Zelle>
+                  <Zelle>
+                    <Status
+                      ton={
+                        alarm.status === "Behoben"
+                          ? "gut"
+                          : schweregradTon(alarm.schweregrad)
+                      }
+                    >
+                      {alarm.status}
+                    </Status>
+                  </Zelle>
+                </Zeile>
+              ))}
+            </Tabelle>
+          )}
+        </Tafel>
+
+        <Tafel titel="Wirtschaftlichkeit">
+          <dl className="space-y-0.5">
+            {verguetung.map((v) => (
+              <Angabe key={v.id} label={v.art}>
+                {formatZahl(v.ct_kwh, 2)} ct/kWh
+              </Angabe>
+            ))}
+            {kostenJahr > 0 && (
+              <Angabe label="Betriebskosten je Jahr">
+                {formatGeld(kostenJahr)}
+              </Angabe>
+            )}
+          </dl>
+
+          {kennzahlen.ausfallKwh > 0 && (
+            <div
+              className="mt-3 border-t pt-3"
+              style={{ borderColor: "var(--linie-zart)" }}
+            >
+              <Balken
+                label="Ertragsausfall im Zeitraum"
+                anteil={
+                  kennzahlen.ertragKwh > 0
+                    ? (kennzahlen.ausfallKwh /
+                        (kennzahlen.ertragKwh + kennzahlen.ausfallKwh)) *
+                      100
+                    : 0
+                }
+                wertText={`${formatZahl(kennzahlen.ausfallKwh, 0)} kWh`}
+                farbe="oklch(0.58 0.2 25)"
+              />
+              <p className="t-mikro mt-2 leading-relaxed">
+                Bewertet mit dem höchsten hinterlegten Satz entspricht das rund{" "}
+                {formatGeld(
+                  (kennzahlen.ausfallKwh * (verguetung[0]?.ct_kwh ?? 0)) / 100,
+                )}
+                . Der tatsächliche Schaden hängt davon ab, ob die Energie
+                eigenverbraucht oder eingespeist worden wäre.
+              </p>
+            </div>
+          )}
+        </Tafel>
+      </div>
+
+      {/* ---------------- Stammdaten ---------------- */}
+      <Tafel titel="Technische Ausführung">
+        <dl className="grid gap-x-8 gap-y-1 sm:grid-cols-2">
+          <Angabe label="Module">{anlage.modul_typ ?? "–"}</Angabe>
+          <Angabe label="Anzahl Module">
+            {formatZahl(anlage.modul_anzahl, 0)}
+          </Angabe>
+          <Angabe label="Wechselrichter">
+            {anlage.wechselrichter_typ ?? "–"}
+          </Angabe>
+          <Angabe label="Speicher">
+            {anlage.speicher_kwh
+              ? `${formatZahl(anlage.speicher_kwh, 0)} kWh`
+              : "kein Speicher"}
+          </Angabe>
+          <Angabe label="Ausrichtung">
+            {anlage.ausrichtung ?? "–"}
+            {anlage.neigung !== null && `, ${anlage.neigung}° Neigung`}
+          </Angabe>
+          <Angabe label="Erwarteter Jahresertrag">
+            {anlage.soll_ertrag_kwh
+              ? `${formatZahl(anlage.soll_ertrag_kwh / 1000, 0)} MWh`
+              : "–"}
+          </Angabe>
+        </dl>
+      </Tafel>
+    </div>
+  );
+}
+
+/** Auswahl des Auswertungszeitraums. */
+function ZeitraumWahl({ anlage, aktiv }: { anlage: string; aktiv: number }) {
+  const stufen = [7, 30, 90, 365];
+
+  return (
+    <div
+      className="flex overflow-hidden rounded-lg border"
+      style={{ borderColor: "var(--linie)" }}
+    >
+      {stufen.map((tage) => (
+        <Link
+          key={tage}
+          href={`/portal/anlagen/${anlage}?zeitraum=${tage}`}
+          className="px-2.5 py-1.5 text-[0.75rem] transition-colors"
+          style={{
+            background: aktiv === tage ? "var(--f-belegt)" : "var(--f-ebene)",
+            color: aktiv === tage ? "var(--t-stark)" : "var(--t-leise)",
+            fontWeight: aktiv === tage ? 500 : 400,
+          }}
+        >
+          {tage === 365 ? "1 Jahr" : `${tage} Tage`}
+        </Link>
+      ))}
+    </div>
+  );
+}

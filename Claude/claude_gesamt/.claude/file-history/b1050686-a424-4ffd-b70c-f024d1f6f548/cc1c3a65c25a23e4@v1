@@ -1,0 +1,76 @@
+import Link from "next/link";
+import type { Metadata } from "next";
+
+import { Badge, Card, Fehlerhinweis, LeerZustand } from "@/components/ui";
+import { Tabelle, Zelle } from "@/components/tabelle";
+import { DOCTYPE, type AnlagenStatus } from "@/lib/doctypes";
+import { fehlerText } from "@/lib/fehler";
+import { formatDatum, formatZahl } from "@/lib/format";
+import { ladeAnlagen } from "@/lib/portal-daten";
+
+export const metadata: Metadata = {
+  title: "Anlagen",
+};
+
+/** Ordnet jedem Anlagenstatus eine Ampelfarbe zu. */
+export function statusFarbe(status: AnlagenStatus | undefined) {
+  switch (status) {
+    case "Aktiv":
+      return "gruen" as const;
+    case "In Bau":
+      return "gelb" as const;
+    case "Gestört":
+      return "rot" as const;
+    default:
+      return "grau" as const;
+  }
+}
+
+export default async function AnlagenSeite() {
+  let anlagen;
+
+  try {
+    anlagen = await ladeAnlagen();
+  } catch (error) {
+    return <Fehlerhinweis meldung={fehlerText(error, DOCTYPE.anlage)} />;
+  }
+
+  return (
+    <div className="space-y-6">
+      <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-50">
+        Anlagen
+      </h1>
+
+      <Card>
+        {anlagen.length === 0 ? (
+          <LeerZustand text="Es sind keine Anlagen hinterlegt." />
+        ) : (
+          <Tabelle
+            spalten={["Anlage", "Standort", "Leistung", "Inbetriebnahme", "Status"]}
+          >
+            {anlagen.map((anlage) => (
+              <tr key={anlage.name}>
+                <Zelle>
+                  <Link
+                    href={`/portal/anlagen/${encodeURIComponent(anlage.name)}`}
+                    className="font-medium text-emerald-700 hover:underline dark:text-emerald-400"
+                  >
+                    {anlage.anlagen_name || anlage.name}
+                  </Link>
+                </Zelle>
+                <Zelle>{anlage.standort ?? "–"}</Zelle>
+                <Zelle zahl>{formatZahl(anlage.leistung_kwp)} kWp</Zelle>
+                <Zelle zahl>{formatDatum(anlage.inbetriebnahme)}</Zelle>
+                <Zelle>
+                  <Badge farbe={statusFarbe(anlage.status)}>
+                    {anlage.status ?? "Unbekannt"}
+                  </Badge>
+                </Zelle>
+              </tr>
+            ))}
+          </Tabelle>
+        )}
+      </Card>
+    </div>
+  );
+}

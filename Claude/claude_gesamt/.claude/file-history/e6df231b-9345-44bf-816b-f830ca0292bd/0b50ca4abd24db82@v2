@@ -1,0 +1,177 @@
+<script setup lang="ts">
+/** Mängelübersicht mit Filtern nach Status, Schweregrad, Anlage und Frist (FA-062). */
+import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
+
+import AppIcon from '@/components/AppIcon.vue'
+import LeereListe from '@/components/LeereListe.vue'
+import StatusAbzeichen from '@/components/StatusAbzeichen.vue'
+import { resource } from '@/lib/api'
+import { db } from '@/lib/db'
+import { datum, tageBis } from '@/lib/format'
+import type { Mangel, MangelStatus } from '@/lib/typen'
+import { useStammdaten } from '@/stores/stammdaten'
+
+interface Zeile extends Partial<Mangel> {
+  schluessel: string
+  titel: string
+  anlage: string
+  status: MangelStatus
+  schweregrad: string
+  nurLokal: boolean
+}
+
+const router = useRouter()
+const stammdaten = useStammdaten()
+
+const zeilen = ref<Zeile[]>([])
+const laedt = ref(true)
+const suche = ref('')
+const status = ref('offen')
+const schweregrad = ref('')
+const anlage = ref('')
+
+const gefiltert = computed(() =>
+  zeilen.value
+    .filter((z) => {
+      if (status.value === 'offen' && !['Offen', 'In Bearbeitung'].includes(z.status)) return false
+      if (status.value && status.value !== 'offen' && z.status !== status.value) return false
+      if (schweregrad.value && z.schweregrad !== schweregrad.value) return false
+      if (anlage.value && z.anlage !== anlage.value) return false
+      const text = suche.value.trim().toLowerCase()
+      if (!text) return true
+      const anlagenName = stammdaten.anlage(z.anlage)?.anlage_name ?? z.anlage
+      return `${z.titel} ${anlagenName} ${z.kategorie ?? ''}`.toLowerCase().includes(text)
+    })
+    .sort((a, b) => {
+      const rang = (z: Zeile) => ({ A: 0, B: 1, C: 2 })[z.schweregrad as 'A' | 'B' | 'C'] ?? 3
+      if (rang(a) !== rang(b)) return rang(a) - rang(b)
+      return String(a.faellig_am ?? '9999').localeCompare(String(b.faellig_am ?? '9999'))
+    }),
+)
+
+const statistik = computed(() => ({
+  gesamt: gefiltert.value.length,
+  ueberfaellig: gefiltert.value.filter((z) => (tageBis(z.faellig_am) ?? 99) < 0).length,
+}))
+
+async function laden() {
+  laedt.value = true
+  try {
+    const lokal = await db.maengel.toArray()
+    const lokaleZeilen: Zeile[] = lokal.map((m) => ({
+      ...m,
+      schluessel: m.lokale_id,
+      nurLokal: !m.name,
+    }))
+
+    let serverZeilen: Zeile[] = []
+    try {
+      const daten = await resource.liste<Mangel & { name: string }>('Mangel', {
+        fields: [
+          'name', 'titel', 'anlage', 'kategorie', 'schweregrad', 'status',
+          'faellig_am', 'ueberfaellig', 'zugewiesen_an', 'gemeldet_am',
+        ],
+        order_by: 'faellig_am asc',
+        limit_page_length: 200,
+      })
+      serverZeilen = daten
+        .filter((d) => !lokaleZeilen.some((l) => l.name === d.name))
+        .map((d) => ({ ...d, schluessel: d.name, nurLokal: false }))
+    } catch {
+      // Offline: nur lokale Mängel.
+    }
+
+    zeilen.value = [...lokaleZeilen, ...serverZeilen]
+  } finally {
+    laedt.value = false
+  }
+}
+
+function fristText(zeile: Zeile): { text: string; klasse: string } {
+  const tage = tageBis(zeile.faellig_am)
+  if (tage === null) return { text: 'ohne Frist', klasse: 'text-slate-400' }
+  if (['Erledigt', 'Verifiziert', 'Verworfen'].includes(zeile.status)) {
+    return { text: datum(zeile.faellig_am), klasse: 'text-slate-400' }
+  }
+  if (tage < 0) return { text: `${Math.abs(tage)} Tage überfällig`, klasse: 'text-fehler font-semibold' }
+  if (tage === 0) return { text: 'heute fällig', klasse: 'text-warnung font-semibold' }
+  if (tage <= 3) return { text: `in ${tage} Tagen`, klasse: 'text-warnung' }
+  return { text: datum(zeile.faellig_am), klasse: 'text-slate-400' }
+}
+
+onMounted(laden)
+</script>
+
+<template>
+  <div class="space-y-4">
+    <div class="flex flex-wrap items-center gap-2">
+      <div class="relative min-w-[180px] flex-1">
+        <AppIcon name="suche" :groesse="20" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+        <input v-model="suche" class="feld pl-10" type="search" placeholder="Titel, Anlage, Kategorie …" />
+      </div>
+      <select v-model="status" class="feld w-auto">
+        <option value="offen">Offen und in Arbeit</option>
+        <option value="">Alle Status</option>
+        <option>Offen</option>
+        <option>In Bearbeitung</option>
+        <option>Erledigt</option>
+        <option>Verifiziert</option>
+      </select>
+      <select v-model="schweregrad" class="feld w-auto">
+        <option value="">Alle Grade</option>
+        <option v-for="s in stammdaten.schweregrade" :key="s.code" :value="s.code">
+          {{ s.code }} – {{ s.bezeichnung }}
+        </option>
+      </select>
+      <select v-model="anlage" class="feld w-auto max-w-[200px]">
+        <option value="">Alle Anlagen</option>
+        <option v-for="a in stammdaten.anlagen" :key="a.name" :value="a.name">{{ a.anlage_name }}</option>
+      </select>
+      <button class="knopf-primaer px-4" @click="router.push({ name: 'mangel-neu' })">
+        <AppIcon name="plus" :groesse="18" /> Neu
+      </button>
+    </div>
+
+    <p class="text-sm text-slate-500">
+      {{ statistik.gesamt }} Mängel
+      <span v-if="statistik.ueberfaellig" class="font-semibold text-fehler">
+        · {{ statistik.ueberfaellig }} überfällig
+      </span>
+    </p>
+
+    <p v-if="laedt" class="py-8 text-center text-sm text-slate-500">Mängel werden geladen …</p>
+
+    <LeereListe
+      v-else-if="!gefiltert.length"
+      symbol="mangel"
+      titel="Keine Mängel"
+      text="Mit den gewählten Filtern ist nichts offen."
+      aktion-text="Mangel erfassen"
+      @aktion="router.push({ name: 'mangel-neu' })"
+    />
+
+    <ul v-else class="space-y-2">
+      <li v-for="zeile in gefiltert" :key="zeile.schluessel">
+        <RouterLink
+          :to="{ name: 'mangel-detail', params: { lokaleId: zeile.lokale_id ?? zeile.name } }"
+          class="karte flex items-center gap-3 p-3"
+        >
+          <StatusAbzeichen :wert="zeile.schweregrad" />
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-2">
+              <span class="truncate font-semibold">{{ zeile.titel }}</span>
+              <span v-if="zeile.nurLokal" class="abzeichen bg-amber-100 text-amber-900">nur lokal</span>
+            </div>
+            <div class="truncate text-xs text-slate-500">
+              {{ stammdaten.anlage(zeile.anlage)?.anlage_name ?? zeile.anlage }}
+              <span v-if="zeile.kategorie"> · {{ zeile.kategorie }}</span>
+            </div>
+            <div class="text-xs" :class="fristText(zeile).klasse">{{ fristText(zeile).text }}</div>
+          </div>
+          <StatusAbzeichen :wert="zeile.status" klein />
+        </RouterLink>
+      </li>
+    </ul>
+  </div>
+</template>

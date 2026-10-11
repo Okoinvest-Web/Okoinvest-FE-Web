@@ -1,0 +1,36 @@
+import { Suspense } from "react";
+import { db } from "@/lib/data";
+import { PageHeader } from "@/components/ui";
+import { ListToolbar } from "@/components/ListToolbar";
+import { ToDoForm } from "@/components/forms";
+import { TodoList } from "@/components/TodoList";
+
+export const metadata = { title: "Aufgaben" };
+
+const STATUS_LABEL = { Open: "Offen", Closed: "Erledigt", Cancelled: "Abgebrochen" };
+
+export default async function ToDosPage({ searchParams }: PageProps<"/todos">) {
+  const sp = await searchParams;
+  const status = typeof sp.status === "string" ? sp.status : undefined;
+  const [todos, leads, opps] = await Promise.all([
+    db().listToDos({ search: typeof sp.q === "string" ? sp.q : undefined, filters: { status } }),
+    db().listLeads({ limit: 500 }),
+    db().listOpportunities({ limit: 500 }),
+  ]);
+  const refLabels = Object.fromEntries([...leads.map((l) => [l.name, l.lead_name]), ...opps.map((o) => [o.name, o.title ?? o.name])]);
+
+  return (
+    <>
+      <PageHeader title="Aufgaben" subtitle="Rückrufe, Vor-Ort-Termine und Nachfassaktionen" />
+      <div className="border-b border-gray-150 px-6 py-3">
+        <ToDoForm compact />
+      </div>
+      <div>
+          <Suspense>
+            <ListToolbar statuses={["Open", "Closed", "Cancelled"]} labels={STATUS_LABEL} count={todos.length} />
+          </Suspense>
+          <TodoList todos={todos} showRef showOwner refLabels={refLabels} inset="px-6" empty="Keine Aufgaben gefunden." />
+      </div>
+    </>
+  );
+}

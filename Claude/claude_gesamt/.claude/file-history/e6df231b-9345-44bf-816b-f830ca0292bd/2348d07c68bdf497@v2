@@ -1,0 +1,233 @@
+"""Stempelung: unveraenderlicher Einzeleintrag der Zeiterfassung.
+
+Die Stempelungen sind Abrechnungsgrundlage *und* Arbeitszeitaufzeichnung.
+Beides verliert seinen Wert, wenn Eintraege nachtraeglich veraendert werden
+koennen. Deshalb gilt hier: einmal gespeichert, nie mehr geaendert. Eine
+Korrektur ist ein **neuer** Eintrag mit Begruendung, der den alten als
+ungueltig markiert — die Historie bleibt vollstaendig nachvollziehbar.
+"""
+
+from __future__ import annotations
+
+import frappe
+from frappe import _
+from frappe.model.document import Document
+from frappe.utils import get_datetime, getdate, now_datetime
+
+from oekovolt_baudoku.utils.geofence import pruefe
+
+# Felder, die sich nach dem Speichern noch aendern duerfen: Nur die Markierung,
+# dass eine spaetere Korrektur diesen Eintrag ersetzt hat.
+NACHTRAEGLICH_AENDERBAR = {"ungueltig"}
+
+
+class Stempelung(Document):
+	def validate(self):
+		self.unveraenderlichkeit_pruefen()
+		self.zeitpunkt_pruefen()
+		self.datum = getdate(self.zeitpunkt)
+		if not self.erfasst_von:
+			self.erfasst_von = frappe.session.user
+		self.standort_pruefen()
+		self.berechtigung_pruefen()
+
+	def after_insert(self):
+		self.korrigierte_stempelung_entwerten()
+		self.arbeitstag_neu_berechnen()
+
+	def on_update(self):
+		self.arbeitstag_neu_berechnen()
+
+	def on_trash(self):
+		frappe.throw(
+			_("Stempelungen duerfen nicht geloescht werden. Bitte eine Korrektur erfassen."),
+			title=_("Nachweis muss erhalten bleiben"),
+		)
+
+	# ---------------------------------------------------------------- Validate
+
+	def unveraenderlichkeit_pruefen(self):
+		vorher = self.get_doc_before_save()
+		if not vorher:
+			return
+
+		geaendert = [
+			feld.fieldname
+			for feld in self.meta.fields
+			if feld.fieldname not in NACHTRAEGLICH_AENDERBAR
+			and self.get(feld.fieldname) != vorher.get(feld.fieldname)
+		]
+		if geaendert:
+			frappe.throw(
+				_("Stempelungen sind unveraenderlich. Geaendert wurde: {0}. "
+				  "Bitte stattdessen eine Korrektur erfassen.").format(", ".join(geaendert)),
+				title=_("Aenderung nicht zulaessig"),
+			)
+
+	def zeitpunkt_pruefen(self):
+		if not self.zeitpunkt:
+			self.zeitpunkt = now_datetime()
+		# Eine Stempelung in der Zukunft ist immer ein Fehler.
+		if get_datetime(self.zeitpunkt) > now_datetime():
+			frappe.throw(_("Der Zeitpunkt der Stempelung liegt in der Zukunft."))
+
+		if self.quelle == "App" and self.is_new():
+			abstand = (now_datetime() - get_datetime(self.zeitpunkt)).total_seconds()
+			# Offline erfasste Stempelungen kommen verzoegert an; alles darueber
+			# ist eine Nacherfassung und braucht eine Begruendung.
+			if abstand > 24 * 3600:
+				frappe.throw(
+					_("Stempelungen aelter als 24 Stunden sind als Nacherfassung "
+					  "mit Begruendung zu erfassen.")
+				)
+
+	def standort_pruefen(self):
+		settings = frappe.get_cached_doc("Baudoku Settings")
+		anlage = frappe.db.get_value(
+			"PV Anlage", self.anlage, ["gps_lat", "gps_lng"], as_dict=True
+		) or {}
+
+		ergebnis = pruefe(
+			gps_lat=self.gps_lat or None,
+			gps_lng=self.gps_lng or None,
+			anlage_lat=anlage.get("gps_lat"),
+			anlage_lng=anlage.get("gps_lng"),
+			radius_m=settings.geofence_radius_m or 300,
+		)
+
+		self.entfernung_m = ergebnis.entfernung_m
+		self.innerhalb_geofence = 1 if ergebnis.innerhalb else 0
+		self.ortung_verweigert = 1 if ergebnis.ortung_verweigert else 0
+
+		if settings.geofence_erzwingen and not ergebnis.innerhalb and not ergebnis.ortung_verweigert:
+			frappe.throw(ergebnis.meldung, title=_("Stempeln nur auf der Baustelle"))
+
+	def berechtigung_pruefen(self):
+		"""Nur der eigene Subunternehmer, und bei Drittstaat nur gemeldetes Personal."""
+		if not self.is_new():
+			return
+
+		settings = frappe.get_cached_doc("Baudoku Settings")
+		if not settings.personalmeldung_pflicht_drittstaat:
+			return
+		if not frappe.db.get_value("Subunternehmer Mitarbeiter", self.mitarbeiter, "drittstaat"):
+			return
+
+		gemeldet = frappe.db.exists(
+			"Personalmeldung Zeile",
+			{
+				"mitarbeiter": self.mitarbeiter,
+				"parenttype": "Personalmeldung",
+				"parent": ["in", frappe.get_all(
+					"Personalmeldung",
+					filters={"datum": self.datum, "anlage": self.anlage, "status": "Gemeldet"},
+					pluck="name",
+				) or [""]],
+			},
+		)
+		if not gemeldet:
+			frappe.throw(
+				_("{0} ist fuer heute nicht als anwesend gemeldet. Bitte zuerst die "
+				  "Personalmeldung abgeben.").format(
+					frappe.db.get_value("Subunternehmer Mitarbeiter", self.mitarbeiter, "vollname")
+				),
+				title=_("Personalmeldung fehlt"),
+			)
+
+	# ----------------------------------------------------------------- Aktionen
+
+	def korrigierte_stempelung_entwerten(self):
+		if self.korrigiert:
+			frappe.db.set_value("Stempelung", self.korrigiert, "ungueltig", 1, update_modified=False)
+
+	def arbeitstag_neu_berechnen(self):
+		from oekovolt_baudoku.baudoku.doctype.arbeitstag.arbeitstag import tag_aktualisieren
+
+		tag_aktualisieren(self.mitarbeiter, self.datum, self.anlage)
+
+
+@frappe.whitelist()
+def stempeln(
+	mitarbeiter: str,
+	anlage: str,
+	richtung: str,
+	gps_lat: float | None = None,
+	gps_lng: float | None = None,
+	auftrag: str | None = None,
+	zeitpunkt: str | None = None,
+	lokale_id: str | None = None,
+) -> dict:
+	"""Erfasst eine Stempelung — der Endpunkt der Stempeluhr im Portal."""
+	if lokale_id:
+		vorhanden = frappe.db.get_value("Stempelung", {"lokale_id": lokale_id}, "name")
+		if vorhanden:
+			return {"name": vorhanden, "dublette": True}
+
+	doc = frappe.new_doc("Stempelung")
+	doc.update({
+		"mitarbeiter": mitarbeiter,
+		"anlage": anlage,
+		"richtung": richtung,
+		"zeitpunkt": zeitpunkt or now_datetime(),
+		"auftrag": auftrag,
+		"gps_lat": gps_lat,
+		"gps_lng": gps_lng,
+		"quelle": "App",
+		"lokale_id": lokale_id,
+	})
+	doc.insert()
+
+	return {
+		"name": doc.name,
+		"zeitpunkt": str(doc.zeitpunkt),
+		"innerhalb_geofence": bool(doc.innerhalb_geofence),
+		"entfernung_m": doc.entfernung_m,
+		"ortung_verweigert": bool(doc.ortung_verweigert),
+		"dublette": False,
+	}
+
+
+@frappe.whitelist()
+def korrigieren(stempelung: str, neuer_zeitpunkt: str, begruendung: str) -> str:
+	"""Legt eine Korrektur an; das Original bleibt als ungueltig erhalten."""
+	if not begruendung:
+		frappe.throw(_("Eine Korrektur braucht eine Begruendung."))
+
+	erlaubt = {"Baudoku Bauleiter", "Baudoku Projektleiter", "Baudoku Admin", "System Manager"}
+	if not erlaubt & set(frappe.get_roles()):
+		frappe.throw(_("Korrekturen duerfen nur Bauleiter erfassen."), frappe.PermissionError)
+
+	original = frappe.get_doc("Stempelung", stempelung)
+	korrektur = frappe.copy_doc(original)
+	korrektur.update({
+		"zeitpunkt": neuer_zeitpunkt,
+		"quelle": "Korrektur",
+		"korrigiert": original.name,
+		"korrekturgrund": begruendung,
+		"lokale_id": None,
+		"ungueltig": 0,
+	})
+	korrektur.insert()
+	return korrektur.name
+
+
+@frappe.whitelist()
+def offener_status(mitarbeiter: str) -> dict:
+	"""Ist die Person gerade eingestempelt? Steuert die Beschriftung der Stempeluhr."""
+	letzte = frappe.get_all(
+		"Stempelung",
+		filters={"mitarbeiter": mitarbeiter, "ungueltig": 0},
+		fields=["name", "richtung", "zeitpunkt", "anlage"],
+		order_by="zeitpunkt desc",
+		limit_page_length=1,
+	)
+	if not letzte:
+		return {"eingestempelt": False, "in_pause": False}
+
+	eintrag = letzte[0]
+	return {
+		"eingestempelt": eintrag.richtung in ("Ein", "Pause Ende"),
+		"in_pause": eintrag.richtung == "Pause Beginn",
+		"seit": str(eintrag.zeitpunkt),
+		"anlage": eintrag.anlage,
+	}

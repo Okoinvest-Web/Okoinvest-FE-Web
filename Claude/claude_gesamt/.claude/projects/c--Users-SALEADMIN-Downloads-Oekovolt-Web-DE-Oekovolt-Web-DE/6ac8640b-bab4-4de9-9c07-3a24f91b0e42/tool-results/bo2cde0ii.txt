@@ -1,0 +1,186 @@
+src/components/Rechner/bausteine.js:73:        min={min}
+src/components/Rechner/BeteiligungRechner.js:39:              <Regler label="Anzahl Anteile" wert={e.anteile} min={1} max={40} step={1} onChange={set("anteile")} hinweis={`Einlage ${fmtEur(r.einlage)}`} />
+src/components/Rechner/BeteiligungRechner.js:43:                min={50}
+src/components/Rechner/BeteiligungRechner.js:52:              <Regler label="Größe des Parks" wert={e.parkMwp} min={2} max={50} step={1} einheit="MWp" onChange={set("parkMwp")} />
+src/components/Rechner/BeteiligungRechner.js:64:                min={5}
+src/components/Rechner/BeteiligungRechner.js:76:                min={0.25}
+src/components/Rechner/CarportRechner.js:41:              <Regler label="Überdachte Stellplätze" wert={stellplaetze} min={10} max={1000} step={5} onChange={setStellplaetze} hinweis={`≈ ${fmt(r.kwp)} kWp (${fmt(CARPORT.kwpProStellplatz, 1)} kWp je Stellplat
+src/components/Rechner/CarportRechner.js:50:              <Regler label="Baukosten Carport" wert={capexKwp} min={1000} max={1900} step={25} format={(v) => `${fmt(v)} €/kWp`} onChange={setCapex} hinweis={`Richtwert ${fmt(CARPORT.capexProKwp.min)}–${fmt(CARP
+src/components/Rechner/CarportRechner.js:54:              <Regler label="Heutiger Strompreis (netto)" wert={strompreisCt} min={10} max={35} step={0.5} stellen={1} format={(v) => `${fmt(v, 1)} ct/kWh`} onChange={setStrompreis} hinweis="Arbeitspreis inkl. Netzen
+src/components/Rechner/CarportRechner.js:58:                min={0.2}
+src/components/Rechner/CarportRechner.js:68:              <Regler label="AC-Ladepunkte (11/22 kW)" wert={ac} min={0} max={100} step={1} onChange={setAc} hinweis={`je rund ${fmtEur(CARPORT.ladepunktAc)} inkl. Installation`} />
+src/components/Rechner/CarportRechner.js:69:              <Regler label="DC-Schnelllader (50–150 kW)" wert={dc} min={0} max={20} step={1} onChange={setDc} hinweis={`je rund ${fmtEur(CARPORT.ladepunktDc)} – ohne Netzausbau und Baukostenzuschuss`} />
+src/components/Rechner/EnergySharingRechner.js:57:              <Regler label="Anlagenleistung" wert={e.kwp} min={10} max={5000} step={10} format={(v) => (v >= 1000 ? `${fmt(v / 1000, 2)} MWp` : `${fmt(v)} kWp`)} onChange={set("kwp")} hinweis={`≈ ${fmt(r.erz
+src/components/Rechner/EnergySharingRechner.js:58:              <Regler label="Teilnehmende" wert={e.teilnehmer} min={2} max={1000} step={1} onChange={set("teilnehmer")} />
+src/components/Rechner/EnergySharingRechner.js:59:              <Regler label="Verbrauch je Teilnehmer" wert={e.verbrauchJe} min={1000} max={50000} step={500} format={(v) => `${fmt(v)} kWh`} onChange={set("verbrauchJe")} hinweis={`Zusammen ${fmt(r.verbrauch / 
+src/components/Rechner/EnergySharingRechner.js:65:              <Regler label="Energiepreis beim Lieferanten" wert={e.energiepreis} min={5} max={30} step={0.5} stellen={1} format={(v) => `${fmt(v, 1)} ${ct}`} onChange={set("energiepreis")} hinweis="Nur der Ene
+src/components/Rechner/EnergySharingRechner.js:66:              <Regler label="Preis in der Gemeinschaft" wert={e.gemeinschaftCt} min={3} max={25} step={0.5} stellen={1} format={(v) => `${fmt(v, 1)} ${ct}`} onChange={set("gemeinschaftCt")} hinweis="Das zahlen 
+src/components/Rechner/EnergySharingRechner.js:68:                <Regler label="Netz-Arbeitspreis vor Ort" wert={e.netzAp} min={2} max={15} step={0.1} stellen={1} format={(v) => `${fmt(v, 1)} ${ct}`} onChange={set("netzAp")} hinweis={`Davon ${fmt(r.rabatt.ant
+src/components/Rechner/EnergySharingRechner.js:70:              <Regler label="Vergütung für Überschuss" wert={e.ueberschussCt} min={0} max={15} step={0.5} stellen={1} format={(v) => `${fmt(v, 1)} ${ct}`} onChange={set("ueberschussCt")} />
+src/components/Rechner/EnergySharingRechner.js:71:              <Regler label="Abrechnung je Teilnehmer" wert={e.verwaltung} min={0} max={120} step={5} format={(v) => `${fmt(v)} ${w}/Jahr`} onChange={set("verwaltung")} />
+src/components/Rechner/GrossspeicherRechner.js:49:              <Regler label="Leistung" wert={e.mw} min={1} max={200} step={1} einheit="MW" onChange={set("mw")} />
+src/components/Rechner/GrossspeicherRechner.js:54:                min={150}
+src/components/Rechner/GrossspeicherRechner.js:88:              <Regler label="Arbitrage (Day-Ahead, Intraday)" wert={e.erloese.arbitrage} min={0} max={150000} step={1000} format={(v) => `${fmt(v / 1000)} T€`} onChange={setErloes("arbitrage")} />
+src/components/Rechner/GrossspeicherRechner.js:89:              <Regler label="Sekundärregelleistung aFRR" wert={e.erloese.afrr} min={0} max={150000} step={1000} format={(v) => `${fmt(v / 1000)} T€`} onChange={setErloes("afrr")} />
+src/components/Rechner/GrossspeicherRechner.js:90:              <Regler label="Primärregelleistung FCR" wert={e.erloese.fcr} min={0} max={80000} step={1000} format={(v) => `${fmt(v / 1000)} T€`} onChange={setErloes("fcr")} />
+src/components/Rechner/GrossspeicherRechner.js:98:              <Regler label="Degradation (Kapazität)" wert={e.degradation * 100} min={1} max={4} step={0.25} stellen={2} einheit="% p. a." onChange={(v) => set("degradation")(v / 100)} />
+src/components/Rechner/GrossspeicherRechner.js:102:                min={-6}
+src/components/Rechner/GrossspeicherRechner.js:110:              <Regler label="Vollzyklen pro Jahr" wert={e.zyklen} min={150} max={730} step={10} onChange={set("zyklen")} hinweis={`≈ ${fmt(e.zyklen / 365, 1)} Zyklen pro Tag – Garantiebedingungen des Herst
+src/components/Rechner/GrossspeicherRechner.js:111:              <Regler label="Betrachtungsdauer" wert={e.lebensdauer} min={10} max={20} step={1} einheit="Jahre" onChange={set("lebensdauer")} />
+src/components/Rechner/KommuneRechner.js:50:              <Regler label="Leistung" wert={mwp} min={1} max={150} step={1} einheit="MWp" onChange={setMwp} hinweis={`≈ ${fmt(r.flaecheHa, 1)} ha · ${fmt(r.ertragJahr1 / 1e6, 1)} GWh im Jahr – rechnerisch rund 
+src/components/Rechner/KommuneRechner.js:62:                min={4}
+src/components/Rechner/KommuneRechner.js:76:                min={KOMMUNE.hebesatzSpanne.min}
+src/components/Rechner/KommuneRechner.js:86:                  <Regler label="Anteil Gemeindefläche" wert={anteilGemeinde} min={0.1} max={1} step={0.05} format={(v) => `${fmt(v * 100)} %`} onChange={setAnteil} />
+src/components/Rechner/KommuneRechner.js:87:                  <Regler label="Pacht" wert={pachtHa} min={PACHT.freiflaecheProHa.min} max={PACHT.freiflaecheProHa.max + 500} step={100} format={(v) => `${fmt(v)} €/ha`} onChange={setPachtHa} />
+src/components/Rechner/NetzanschlussRechner.js:42:              <Regler label="Anlagengröße" wert={e.mwp} min={1} max={150} step={1} einheit="MWp" onChange={set("mwp")} />
+src/components/Rechner/NetzanschlussRechner.js:46:                min={50}
+src/components/Rechner/NetzanschlussRechner.js:57:                  <Regler label="Speicherleistung" wert={e.speicherMw} min={1} max={Math.max(5, e.mwp)} step={1} einheit="MW" onChange={set("speicherMw")} />
+src/components/Rechner/NetzanschlussRechner.js:63:              <Regler label="Entfernung zum Anschlusspunkt" wert={e.km} min={0.2} max={20} step={0.1} stellen={1} format={(v) => `${fmt(v, 1)} km`} onChange={set("km")} hinweis="Trassenlänge bis zur MS-Leitung
+src/components/Rechner/PachtangebotCheck.js:63:                <Regler label="Flächengröße" wert={e.ha} min={1} max={150} step={0.5} stellen={e.ha % 1 ? 1 : 0} einheit="ha" onChange={set("ha")} hinweis={`≈ ${fmt(r.kwp / 1000, 1)} MWp auf der Fläche`} />
+src/components/Rechner/PachtangebotCheck.js:83:                    min={0}
+src/components/Rechner/PachtangebotCheck.js:94:                    min={1}
+src/components/Rechner/PachtangebotCheck.js:104:                  <ZahlFeld id={`${idBasis}-min`} label="Mindestpacht" wert={e.mindestProHa} onChange={set("mindestProHa")} min={0} max={8000} step={50} einheit="€/ha" />
+src/components/Rechner/PachtangebotCheck.js:110:                      <Regler label="Feste Steigerung" wert={e.indexSatz * 100} min={0.25} max={3} step={0.25} stellen={2} einheit="% p. a." onChange={(v) => set("indexSatz")(v / 100)} />
+src/components/Rechner/PachtangebotCheck.js:117:                <Regler label="Feste Laufzeit" wert={e.laufzeit} min={15} max={45} step={1} einheit="Jahre" onChange={set("laufzeit")} />
+src/components/Rechner/PachtangebotCheck.js:121:                  min={0}
+src/components/Rechner/PachtangebotCheck.js:134:                  min={0}
+src/components/Rechner/PachtangebotCheck.js:141:                <Regler label="Erwartete Jahre bis Baubeginn" wert={e.vorlaufJahre} min={0} max={8} step={1} format={(v) => (v ? `${v} Jahre` : "sofort")} onChange={set("vorlaufJahre")} />
+src/components/Rechner/PachtangebotCheck.js:145:                  min={0}
+src/components/Rechner/PachtangebotCheck.js:169:                  <Regler label="Deckel" wert={e.anwaltBetrag} min={250} max={5000} step={250} format={(v) => `${fmt(v)} €`} onChange={set("anwaltBetrag")} />
+src/components/Rechner/PachtangebotCheck.js:177:                  min={0}
+src/components/Rechner/PpaRechner.js:41:              <Regler label="Jahresverbrauch" wert={e.verbrauchMwh} min={100} max={50000} step={100} format={(v) => (v >= 1000 ? `${fmt(v / 1000, 1)} GWh` : `${fmt(v)} MWh`)} onChange={set("verbrauchMwh")} />
+src/components/Rechner/PpaRechner.js:46:                min={5}
+src/components/Rechner/PpaRechner.js:61:                min={3}
+src/components/Rechner/PpaRechner.js:73:                  min={0.5}
+src/components/Rechner/PpaRechner.js:85:                min={5}
+src/components/Rechner/PpaRechner.js:94:              <Regler label="Laufzeit" wert={e.laufzeit} min={3} max={20} step={1} einheit="Jahre" onChange={set("laufzeit")} />
+src/components/Rechner/ProjektbewertungRechner.js:39:              <Regler label="Leistung" wert={mwp} min={1} max={150} step={1} einheit="MWp" onChange={setMwp} />
+src/components/Rechner/ProjektbewertungRechner.js:72:                <Regler label="Entfernung zum Einspeisepunkt" wert={netzKm} min={0} max={20} step={0.5} stellen={1} format={(v) => `${fmt(v, 1)} km`} onChange={setNetzKm} />
+src/components/Rechner/SolarparkRechner.js:138:                min={1}
+src/components/Rechner/SolarparkRechner.js:167:                min={400}
+src/components/Rechner/SolarparkRechner.js:177:                min={0}
+src/components/Rechner/SolarparkRechner.js:187:                min={0}
+src/components/Rechner/SolarparkRechner.js:212:                  min={3}
+src/components/Rechner/SolarparkRechner.js:224:              {modell === "ppa" && <Regler label="PPA-Laufzeit" wert={vertragJahre} min={3} max={20} step={1} einheit="Jahre" onChange={setVertragJahre} />}
+src/components/Rechner/SolarparkRechner.js:228:                min={2}
+src/components/Rechner/SolarparkRechner.js:241:                min={800}
+src/components/Rechner/SolarparkRechner.js:251:                min={6}
+src/components/Rechner/SolarparkRechner.js:259:              <Regler label="Degradation" wert={degradation} min={0.002} max={0.008} step={0.0005} format={(v) => `${fmt(v * 100, 2)} % p. a.`} onChange={setDegradation} />
+src/components/Rechner/SolarparkRechner.js:263:              <Regler label="Fremdkapitalquote (Wunsch)" wert={fkQuote} min={0} max={0.9} step={0.05} format={(v) => `${fmt(v * 100)} %`} onChange={setFkQuote} />
+src/components/Rechner/SolarparkRechner.js:264:              <Regler label="Zins" wert={zins} min={0.02} max={0.08} step={0.0025} format={(v) => `${fmt(v * 100, 2)} %`} onChange={setZins} />
+src/components/Rechner/SolarparkRechner.js:265:              <Regler label="Darlehenslaufzeit" wert={tilgungJahre} min={8} max={25} step={1} einheit="Jahre" onChange={setTilgung} />
+src/components/Rechner/SolarparkRechner.js:266:              <Regler label="Betrachtungsdauer" wert={laufzeit} min={20} max={40} step={1} einheit="Jahre" onChange={setLaufzeit} hinweis="Pacht üblich 30 Jahre plus Verlängerungsoptionen." />
+src/components/Rechner/ToolTeile.js:280:          min={min}
+src/components/Agri/AgriPvRechner.js:68:              <Regler label="Fläche" wert={ha} min={1} max={50} step={0.5} stellen={ha % 1 ? 1 : 0} einheit="ha" onChange={setHa} hinweis={ha <= AGRI.privilegierungHa ? `Bis ${fmt(AGRI.privilegierungHa, 1)} ha hofnah gg
+src/components/Agri/AgriPvRechner.js:98:                min={AGRI.beteiligungAnteil.min * 100}
+src/components/Agri/AgriPvRechner.js:111:                min={0}
+src/components/Agri/WegeEntscheider.js:110:        <div  role="progressbar" aria-valuemin={0} aria-valuemax={FRAGEN.length} aria-valuenow={Math.min(schritt, FRAGEN.length)} aria-label="Fortschritt">
+src/components/Bestand/BestandsRechner.js:105:              <Regler label="Leistung" wert={kwp} min={100} max={20000} step={100} format={leistung} onChange={setKwp} />
+src/components/Bestand/BestandsRechner.js:115:              <Regler label="Inbetriebnahme" wert={ibnJahr} min={2005} max={2025} step={1} format={(v) => String(v)} onChange={setIbn} hinweis={`Heute ${r.alter} Jahre in Betrieb · Nutzung bis ${r.technischEnde}`}
+src/components/Bestand/BestandsRechner.js:127:                min={650}
+src/components/Bestand/BestandsRechner.js:149:                min={3}
+src/components/Bestand/BestandsRechner.js:157:              <Regler label="Förderdauer ab Inbetriebnahme" wert={foerderJahre} min={10} max={25} step={1} einheit="Jahre" onChange={setFoerderJahre} hinweis={`Ende ${r.foerderEnde} – Restlaufzeit ${r.foerderRes
+src/components/Bestand/BestandsRechner.js:161:                min={2}
+src/components/Bestand/BestandsRechner.js:172:              <Regler label="Betriebskosten" wert={opexKwp} min={6} max={25} step={0.5} stellen={1} format={(v) => `${fmt(v, 1)} €/kWp·a`} onChange={setOpex} hinweis="Wartung, Versicherung, Betriebsführung, Dir
+src/components/Bestand/BestandsRechner.js:173:              <Regler label="Pacht" wert={pachtJahr} min={0} max={150000} step={500} format={(v) => (v ? `${fmt(v)} €/Jahr` : "keine")} onChange={setPacht} hinweis={pachtJahr ? `${fmt(pachtJahr / kwp, 1)} €/kWp
+src/components/Bestand/BestandsRechner.js:174:              <Regler label="Pacht- bzw. Dachvertrag bis" wert={pachtEndeJahr} min={BESTAND.bewertungsjahr} max={2065} step={1} format={(v) => String(v)} onChange={setPachtEnde} />
+src/components/Bestand/BestandsRechner.js:176:              <Regler label="Technische Nutzungsdauer" wert={nutzungsdauer} min={BESTAND.nutzungsdauerSpanne.min} max={BESTAND.nutzungsdauerSpanne.max} step={1} einheit="Jahre" onChange={setNutzungsdauer} />
+src/components/Bestand/BestandsRechner.js:179:                  <Regler label="im Jahr" wert={wrJahr} min={BESTAND.bewertungsjahr} max={2050} step={1} format={(v) => String(v)} onChange={setWrJahr} />
+src/components/Bestand/BestandsRechner.js:180:                  <Regler label="Kosten" wert={wrProKwp} min={30} max={120} step={5} format={(v) => `${fmt(v)} €/kWp`} onChange={setWrProKwp} hinweis={`≈ ${fmtEur(wrProKwp * kwp)}`} />
+src/components/Bestand/BestandsRechner.js:189:                min={0.03}
+src/components/Bestand/BestandsRechner.js:197:                <Regler label="Kaufpreis" wert={kaufProKwp} min={100} max={2500} step={10} format={(v) => `${fmt(v)} €/kWp`} onChange={setKaufProKwp} hinweis={`= ${geld(kaufProKwp * kwp)}`} />
+src/components/Dach/DachpachtRechner.js:59:            min={500}
+src/components/Dach/DachpachtRechner.js:108:            min={0.5}
+src/components/Dach/DachpachtRechner.js:116:          <Regler label="Laufzeit" wert={laufzeit} min={15} max={30} step={1} einheit="Jahre" onChange={setLaufzeit} hinweis={`Üblich ${DACH.laufzeit} Jahre + ${DACH.verlaengerung}`} />
+src/components/Dach/DachpachtRechner.js:123:            min={10}
+src/components/Dach/DachpachtRechner.js:134:            min={0}
+src/components/Dach/DachpachtRechner.js:144:            min={8}
+src/components/Dach/DachpachtRechner.js:155:            min={500}
+src/components/Dach/DachpachtRechner.js:256:            <SpannenBalken min={r.pachtSpanne.min} max={r.pachtSpanne.max} wert={r.pachtJahr} />
+src/components/Flaeche/FlaechenWizard.js:169:                  <Regler label="Flächengröße" wert={Math.min(ha, 150)} min={0.5} max={150} step={0.5} stellen={ha % 1 ? 1 : 0} einheit="ha" onChange={setHa} minLabel="0,5 ha" maxLabel="150 ha" />
+src/components/Flaeche/FlaechenWizard.js:176:                        min={0.1}
+src/components/Flaeche/PachtRechner.js:61:              <Regler label="Flächengröße" wert={ha} min={1} max={100} step={0.5} stellen={ha % 1 ? 1 : 0} einheit="ha" onChange={setHa} hinweis={`≈ ${fmt(r.kwp / 1000, 1)} MWp Solarpark, ${fmt(r.kwh / 1e6, 1)} GW
+src/components/Flaeche/PachtRechner.js:78:                  min={1000}
+src/components/Flaeche/PachtRechner.js:87:                  <Regler label="Anteil an den Stromerlösen" wert={umsatzPct} min={3} max={10} step={0.5} stellen={umsatzPct % 1 ? 1 : 0} einheit="%" onChange={setUmsatzPct} hinweis={`Üblich ${fmt(PACHT.umsatzbeteili
+src/components/Flaeche/PachtRechner.js:88:                  <Regler label="Mindestpacht" wert={mindestProHa} min={0} max={3000} step={100} format={(v) => (v ? `${fmt(v)} €/ha` : "keine")} onChange={setMindestProHa} />
+src/components/Flaeche/PachtRechner.js:91:              <Regler label="Laufzeit" wert={laufzeit} min={20} max={40} step={1} einheit="Jahre" onChange={setLaufzeit} hinweis={`Üblich ${PACHT.laufzeit} Jahre + ${PACHT.verlaengerung}`} />
+src/components/Flaeche/PachtRechner.js:93:                <Regler label="Jahre bis Baubeginn" wert={vorlaufJahre} min={1} max={4} step={1} einheit="J." onChange={setVorlaufJahre} />
+src/components/Flaeche/PachtRechner.js:98:              <Regler label="Heutige Ackerpacht" wert={ackerProHa} min={100} max={1200} step={10} format={(v) => `${fmt(v)} €/ha`} onChange={setAckerProHa} hinweis={`Durchschnitt Deutschland rund ${fmt(PACHT.ackerPro
+src/components/Flaeche/PachtRechner.js:99:              <Regler label="Deckungsbeitrag Ackerbau" wert={dbProHa} min={0} max={1500} step={10} format={(v) => `${fmt(v)} €/ha`} onChange={setDbProHa} hinweis={`Getreide typisch ${fmt(PACHT.deckungsbeitragAcker.mi
+src/components/Investoren/DdCheckliste.js:94:          <div  role="progressbar" aria-valuemin={0} aria-valuemax={gesamt} aria-valuenow={erledigt} aria-label="Fortschritt der Checkliste">
+src/components/Rechner/bausteine.js:73:        min={min}
+src/components/Rechner/BeteiligungRechner.js:39:              <Regler label="Anzahl Anteile" wert={e.anteile} min={1} max={40} step={1} onChange={set("anteile")} hinweis={`Einlage ${fmtEur(r.einlage)}`} />
+src/components/Rechner/BeteiligungRechner.js:43:                min={50}
+src/components/Rechner/BeteiligungRechner.js:52:              <Regler label="Größe des Parks" wert={e.parkMwp} min={2} max={50} step={1} einheit="MWp" onChange={set("parkMwp")} />
+src/components/Rechner/BeteiligungRechner.js:64:                min={5}
+src/components/Rechner/BeteiligungRechner.js:76:                min={0.25}
+src/components/Rechner/CarportRechner.js:41:              <Regler label="Überdachte Stellplätze" wert={stellplaetze} min={10} max={1000} step={5} onChange={setStellplaetze} hinweis={`≈ ${fmt(r.kwp)} kWp (${fmt(CARPORT.kwpProStellplatz, 1)} kWp je Stellplat
+src/components/Rechner/CarportRechner.js:50:              <Regler label="Baukosten Carport" wert={capexKwp} min={1000} max={1900} step={25} format={(v) => `${fmt(v)} €/kWp`} onChange={setCapex} hinweis={`Richtwert ${fmt(CARPORT.capexProKwp.min)}–${fmt(CARP
+src/components/Rechner/CarportRechner.js:54:              <Regler label="Heutiger Strompreis (netto)" wert={strompreisCt} min={10} max={35} step={0.5} stellen={1} format={(v) => `${fmt(v, 1)} ct/kWh`} onChange={setStrompreis} hinweis="Arbeitspreis inkl. Netzen
+src/components/Rechner/CarportRechner.js:58:                min={0.2}
+src/components/Rechner/CarportRechner.js:68:              <Regler label="AC-Ladepunkte (11/22 kW)" wert={ac} min={0} max={100} step={1} onChange={setAc} hinweis={`je rund ${fmtEur(CARPORT.ladepunktAc)} inkl. Installation`} />
+src/components/Rechner/CarportRechner.js:69:              <Regler label="DC-Schnelllader (50–150 kW)" wert={dc} min={0} max={20} step={1} onChange={setDc} hinweis={`je rund ${fmtEur(CARPORT.ladepunktDc)} – ohne Netzausbau und Baukostenzuschuss`} />
+src/components/Rechner/EnergySharingRechner.js:57:              <Regler label="Anlagenleistung" wert={e.kwp} min={10} max={5000} step={10} format={(v) => (v >= 1000 ? `${fmt(v / 1000, 2)} MWp` : `${fmt(v)} kWp`)} onChange={set("kwp")} hinweis={`≈ ${fmt(r.erz
+src/components/Rechner/EnergySharingRechner.js:58:              <Regler label="Teilnehmende" wert={e.teilnehmer} min={2} max={1000} step={1} onChange={set("teilnehmer")} />
+src/components/Rechner/EnergySharingRechner.js:59:              <Regler label="Verbrauch je Teilnehmer" wert={e.verbrauchJe} min={1000} max={50000} step={500} format={(v) => `${fmt(v)} kWh`} onChange={set("verbrauchJe")} hinweis={`Zusammen ${fmt(r.verbrauch / 
+src/components/Rechner/EnergySharingRechner.js:65:              <Regler label="Energiepreis beim Lieferanten" wert={e.energiepreis} min={5} max={30} step={0.5} stellen={1} format={(v) => `${fmt(v, 1)} ${ct}`} onChange={set("energiepreis")} hinweis="Nur der Ene
+src/components/Rechner/EnergySharingRechner.js:66:              <Regler label="Preis in der Gemeinschaft" wert={e.gemeinschaftCt} min={3} max={25} step={0.5} stellen={1} format={(v) => `${fmt(v, 1)} ${ct}`} onChange={set("gemeinschaftCt")} hinweis="Das zahlen 
+src/components/Rechner/EnergySharingRechner.js:68:                <Regler label="Netz-Arbeitspreis vor Ort" wert={e.netzAp} min={2} max={15} step={0.1} stellen={1} format={(v) => `${fmt(v, 1)} ${ct}`} onChange={set("netzAp")} hinweis={`Davon ${fmt(r.rabatt.ant
+src/components/Rechner/EnergySharingRechner.js:70:              <Regler label="Vergütung für Überschuss" wert={e.ueberschussCt} min={0} max={15} step={0.5} stellen={1} format={(v) => `${fmt(v, 1)} ${ct}`} onChange={set("ueberschussCt")} />
+src/components/Rechner/EnergySharingRechner.js:71:              <Regler label="Abrechnung je Teilnehmer" wert={e.verwaltung} min={0} max={120} step={5} format={(v) => `${fmt(v)} ${w}/Jahr`} onChange={set("verwaltung")} />
+src/components/Rechner/GrossspeicherRechner.js:49:              <Regler label="Leistung" wert={e.mw} min={1} max={200} step={1} einheit="MW" onChange={set("mw")} />
+src/components/Rechner/GrossspeicherRechner.js:54:                min={150}
+src/components/Rechner/GrossspeicherRechner.js:88:              <Regler label="Arbitrage (Day-Ahead, Intraday)" wert={e.erloese.arbitrage} min={0} max={150000} step={1000} format={(v) => `${fmt(v / 1000)} T€`} onChange={setErloes("arbitrage")} />
+src/components/Rechner/GrossspeicherRechner.js:89:              <Regler label="Sekundärregelleistung aFRR" wert={e.erloese.afrr} min={0} max={150000} step={1000} format={(v) => `${fmt(v / 1000)} T€`} onChange={setErloes("afrr")} />
+src/components/Rechner/GrossspeicherRechner.js:90:              <Regler label="Primärregelleistung FCR" wert={e.erloese.fcr} min={0} max={80000} step={1000} format={(v) => `${fmt(v / 1000)} T€`} onChange={setErloes("fcr")} />
+src/components/Rechner/GrossspeicherRechner.js:98:              <Regler label="Degradation (Kapazität)" wert={e.degradation * 100} min={1} max={4} step={0.25} stellen={2} einheit="% p. a." onChange={(v) => set("degradation")(v / 100)} />
+src/components/Rechner/GrossspeicherRechner.js:102:                min={-6}
+src/components/Rechner/GrossspeicherRechner.js:110:              <Regler label="Vollzyklen pro Jahr" wert={e.zyklen} min={150} max={730} step={10} onChange={set("zyklen")} hinweis={`≈ ${fmt(e.zyklen / 365, 1)} Zyklen pro Tag – Garantiebedingungen des Herst
+src/components/Rechner/GrossspeicherRechner.js:111:              <Regler label="Betrachtungsdauer" wert={e.lebensdauer} min={10} max={20} step={1} einheit="Jahre" onChange={set("lebensdauer")} />
+src/components/Rechner/KommuneRechner.js:50:              <Regler label="Leistung" wert={mwp} min={1} max={150} step={1} einheit="MWp" onChange={setMwp} hinweis={`≈ ${fmt(r.flaecheHa, 1)} ha · ${fmt(r.ertragJahr1 / 1e6, 1)} GWh im Jahr – rechnerisch rund 
+src/components/Rechner/KommuneRechner.js:62:                min={4}
+src/components/Rechner/KommuneRechner.js:76:                min={KOMMUNE.hebesatzSpanne.min}
+src/components/Rechner/KommuneRechner.js:86:                  <Regler label="Anteil Gemeindefläche" wert={anteilGemeinde} min={0.1} max={1} step={0.05} format={(v) => `${fmt(v * 100)} %`} onChange={setAnteil} />
+src/components/Rechner/KommuneRechner.js:87:                  <Regler label="Pacht" wert={pachtHa} min={PACHT.freiflaecheProHa.min} max={PACHT.freiflaecheProHa.max + 500} step={100} format={(v) => `${fmt(v)} €/ha`} onChange={setPachtHa} />
+src/components/Rechner/NetzanschlussRechner.js:42:              <Regler label="Anlagengröße" wert={e.mwp} min={1} max={150} step={1} einheit="MWp" onChange={set("mwp")} />
+src/components/Rechner/NetzanschlussRechner.js:46:                min={50}
+src/components/Rechner/NetzanschlussRechner.js:57:                  <Regler label="Speicherleistung" wert={e.speicherMw} min={1} max={Math.max(5, e.mwp)} step={1} einheit="MW" onChange={set("speicherMw")} />
+src/components/Rechner/NetzanschlussRechner.js:63:              <Regler label="Entfernung zum Anschlusspunkt" wert={e.km} min={0.2} max={20} step={0.1} stellen={1} format={(v) => `${fmt(v, 1)} km`} onChange={set("km")} hinweis="Trassenlänge bis zur MS-Leitung
+src/components/Rechner/PachtangebotCheck.js:63:                <Regler label="Flächengröße" wert={e.ha} min={1} max={150} step={0.5} stellen={e.ha % 1 ? 1 : 0} einheit="ha" onChange={set("ha")} hinweis={`≈ ${fmt(r.kwp / 1000, 1)} MWp auf der Fläche`} />
+src/components/Rechner/PachtangebotCheck.js:83:                    min={0}
+src/components/Rechner/PachtangebotCheck.js:94:                    min={1}
+src/components/Rechner/PachtangebotCheck.js:104:                  <ZahlFeld id={`${idBasis}-min`} label="Mindestpacht" wert={e.mindestProHa} onChange={set("mindestProHa")} min={0} max={8000} step={50} einheit="€/ha" />
+src/components/Rechner/PachtangebotCheck.js:110:                      <Regler label="Feste Steigerung" wert={e.indexSatz * 100} min={0.25} max={3} step={0.25} stellen={2} einheit="% p. a." onChange={(v) => set("indexSatz")(v / 100)} />
+src/components/Rechner/PachtangebotCheck.js:117:                <Regler label="Feste Laufzeit" wert={e.laufzeit} min={15} max={45} step={1} einheit="Jahre" onChange={set("laufzeit")} />
+src/components/Rechner/PachtangebotCheck.js:121:                  min={0}
+src/components/Rechner/PachtangebotCheck.js:134:                  min={0}
+src/components/Rechner/PachtangebotCheck.js:141:                <Regler label="Erwartete Jahre bis Baubeginn" wert={e.vorlaufJahre} min={0} max={8} step={1} format={(v) => (v ? `${v} Jahre` : "sofort")} onChange={set("vorlaufJahre")} />
+src/components/Rechner/PachtangebotCheck.js:145:                  min={0}
+src/components/Rechner/PachtangebotCheck.js:169:                  <Regler label="Deckel" wert={e.anwaltBetrag} min={250} max={5000} step={250} format={(v) => `${fmt(v)} €`} onChange={set("anwaltBetrag")} />
+src/components/Rechner/PachtangebotCheck.js:177:                  min={0}
+src/components/Rechner/PpaRechner.js:41:              <Regler label="Jahresverbrauch" wert={e.verbrauchMwh} min={100} max={50000} step={100} format={(v) => (v >= 1000 ? `${fmt(v / 1000, 1)} GWh` : `${fmt(v)} MWh`)} onChange={set("verbrauchMwh")} />
+src/components/Rechner/PpaRechner.js:46:                min={5}
+src/components/Rechner/PpaRechner.js:61:                min={3}
+src/components/Rechner/PpaRechner.js:73:                  min={0.5}
+src/components/Rechner/PpaRechner.js:85:                min={5}
+src/components/Rechner/PpaRechner.js:94:              <Regler label="Laufzeit" wert={e.laufzeit} min={3} max={20} step={1} einheit="Jahre" onChange={set("laufzeit")} />
+src/components/Rechner/ProjektbewertungRechner.js:39:              <Regler label="Leistung" wert={mwp} min={1} max={150} step={1} einheit="MWp" onChange={setMwp} />
+src/components/Rechner/ProjektbewertungRechner.js:72:                <Regler label="Entfernung zum Einspeisepunkt" wert={netzKm} min={0} max={20} step={0.5} stellen={1} format={(v) => `${fmt(v, 1)} km`} onChange={setNetzKm} />
+src/components/Rechner/SolarparkRechner.js:138:                min={1}
+src/components/Rechner/SolarparkRechner.js:167:                min={400}
+src/components/Rechner/SolarparkRechner.js:177:                min={0}
+src/components/Rechner/SolarparkRechner.js:187:                min={0}
+src/components/Rechner/SolarparkRechner.js:212:                  min={3}
+src/components/Rechner/SolarparkRechner.js:224:              {modell === "ppa" && <Regler label="PPA-Laufzeit" wert={vertragJahre} min={3} max={20} step={1} einheit="Jahre" onChange={setVertragJahre} />}
+src/components/Rechner/SolarparkRechner.js:228:                min={2}
+src/components/Rechner/SolarparkRechner.js:241:                min={800}
+src/components/Rechner/SolarparkRechner.js:251:                min={6}
+src/components/Rechner/SolarparkRechner.js:259:              <Regler label="Degradation" wert={degradation} min={0.002} max={0.008} step={0.0005} format={(v) => `${fmt(v * 100, 2)} % p. a.`} onChange={setDegradation} />
+src/components/Rechner/SolarparkRechner.js:263:              <Regler label="Fremdkapitalquote (Wunsch)" wert={fkQuote} min={0} max={0.9} step={0.05} format={(v) => `${fmt(v * 100)} %`} onChange={setFkQuote} />
+src/components/Rechner/SolarparkRechner.js:264:              <Regler label="Zins" wert={zins} min={0.02} max={0.08} step={0.0025} format={(v) => `${fmt(v * 100, 2)} %`} onChange={setZins} />
+src/components/Rechner/SolarparkRechner.js:265:              <Regler label="Darlehenslaufzeit" wert={tilgungJahre} min={8} max={25} step={1} einheit="Jahre" onChange={setTilgung} />
+src/components/Rechner/SolarparkRechner.js:266:              <Regler label="Betrachtungsdauer" wert={laufzeit} min={20} max={40} step={1} einheit="Jahre" onChange={setLaufzeit} hinweis="Pacht üblich 30 Jahre plus Verlängerungsoptionen." />
+src/components/Rechner/ToolTeile.js:280:          min={min}
+src/components/Reststrom/ReststromRechner.js:48:            min={20}
+src/components/Reststrom/ReststromRechner.js:58:            min={12}
+src/components/Reststrom/ReststromRechner.js:78:              <Regler label="Leistung" wert={pvKwp} min={10} max={2000} step={10} einheit="kWp" onChange={setPvKwp} />

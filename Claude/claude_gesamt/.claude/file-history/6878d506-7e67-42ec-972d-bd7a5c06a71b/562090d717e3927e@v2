@@ -1,0 +1,160 @@
+import sys, os, re
+os.chdir(r"C:\Users\SALEADMIN\Downloads\crm-develop\crm-next")
+p = "src/lib/data/mock.ts"
+s = open(p, encoding="utf-8").read()
+
+def rep(a, b, count=1):
+    global s
+    if a not in s:
+        sys.exit("fehlt: " + a[:90])
+    s = s.replace(a, b, count)
+
+# Kundenbetreuer (account_manager) in den Beispieldaten
+for cust, mgr in [
+    ('name: "Gemeinde Bad Wörishofen", customer_name', "max"),
+    ('name: "Allgäuer Käserei Hartmann", customer_name', "lisa"),
+    ('name: "Wagner & Söhne Schreinerei", customer_name', "max"),
+    ('name: "Klara Fischer", customer_name', "max"),
+    ('name: "Thomas Brandl", customer_name', "max"),
+]:
+    i = s.index("{ " + cust)
+    j = s.index("disabled: 0", i)
+    s = s[:j] + f'account_manager: "{mgr}@firma.example", ' + s[j:]
+# Chance der Gemeinde gehört demselben Betreuer wie der Kunde
+rep('title: "PV Bauhof 45 kWp", status: "Converted", sales_stage: "Negotiation/Review", opportunity_amount: 52000, currency: "EUR", probability: 100, expected_closing: day(-35), opportunity_owner: "lisa@firma.example"',
+    'title: "PV Bauhof 45 kWp", status: "Converted", sales_stage: "Negotiation/Review", opportunity_amount: 52000, currency: "EUR", probability: 100, expected_closing: day(-35), opportunity_owner: "max@firma.example"')
+
+rep('''// Nur im Demo-Modus: feste Testbenutzer, Passwort "demo"
+const DEMO_USERS: Record<string, string> = {
+  "max@firma.example": "Max Mustermann",
+  "lisa@firma.example": "Lisa Schmidt",
+};''', '''// Nur im Demo-Modus: feste Testbenutzer, Passwort "demo".
+// Max und Lisa sind Handelsvertreter (sehen nur Eigenes), Petra ist Vertriebsleitung (sieht alles).
+const DEMO_USERS: Record<string, { fullName: string; role: Role }> = {
+  "max@firma.example": { fullName: "Max Mustermann", role: "agent" },
+  "lisa@firma.example": { fullName: "Lisa Schmidt", role: "agent" },
+  "leitung@firma.example": { fullName: "Petra Vogt", role: "manager" },
+};''')
+
+rep('''import type { Contact, Customer, Lead, ListOptions, Note, Opportunity, ToDo } from "@/lib/types";''',
+    '''import type { Contact, Customer, Lead, ListOptions, Note, Opportunity, Role, ToDo } from "@/lib/types";
+import { getUser } from "@/lib/auth";''')
+
+rep('''// Kleine künstliche Latenz''', '''// ---------- Sichtbarkeit (bildet ERPNext-Benutzerberechtigungen nach) ----------
+// Handelsvertreter sehen nur Datensätze, die sie betreuen; die Vertriebsleitung sieht alles.
+async function viewer() {
+  const u = await getUser();
+  const all = !u || u.role === "manager";
+  const me = u?.user;
+  const lead = (l: Lead) => all || l.lead_owner === me;
+  const opp = (o: Opportunity) => all || o.opportunity_owner === me;
+  const customer = (c: Customer) => all || c.account_manager === me;
+  const contact = (c: Contact) =>
+    all ||
+    c.links.some((k) =>
+      k.link_doctype === "Customer"
+        ? store.customers.some((x) => x.name === k.link_name && customer(x))
+        : k.link_doctype === "Lead" && store.leads.some((x) => x.name === k.link_name && lead(x)),
+    );
+  const todo = (t: ToDo) => all || t.allocated_to === me;
+  const doc = (doctype: string, name: string) =>
+    doctype === "Lead"
+      ? store.leads.some((x) => x.name === name && lead(x))
+      : doctype === "Opportunity"
+        ? store.opportunities.some((x) => x.name === name && opp(x))
+        : doctype === "Customer" && store.customers.some((x) => x.name === name && customer(x));
+  return { me, lead, opp, customer, contact, todo, doc };
+}
+
+function deny(): never {
+  throw new Error("Keine Berechtigung für diesen Datensatz");
+}
+
+// Kleine künstliche Latenz''')
+
+rep('''    const fullName = DEMO_USERS[usr.toLowerCase()];
+    return fullName && pwd === "demo" ? { user: usr.toLowerCase(), fullName } : null;''',
+    '''    const u = DEMO_USERS[usr.toLowerCase()];
+    return u && pwd === "demo" ? { user: usr.toLowerCase(), fullName: u.fullName, role: u.role } : null;''')
+
+# Listen und Einzelabrufe filtern
+rep('''    return applyList(store.leads, o, ["lead_name", "company_name", "email_id", "mobile_no"]);''',
+    '''    const v = await viewer();
+    return applyList(store.leads.filter(v.lead), o, ["lead_name", "company_name", "email_id", "mobile_no"]);''')
+rep('''    return store.leads.find((l) => l.name === n) ?? null;''', '''    const v = await viewer();
+    return store.leads.find((l) => l.name === n && v.lead(l)) ?? null;''')
+rep('''    const lead: Lead = {
+      ...data,
+      name: nextId("CRM-LEAD-2026-"),''', '''    const v = await viewer();
+    const lead: Lead = {
+      ...data,
+      lead_owner: v.me, // wie in ERPNext: Ersteller betreut den Lead
+      name: nextId("CRM-LEAD-2026-"),''')
+rep('''    const l = store.leads.find((x) => x.name === n);
+    if (!l) throw new Error("Lead nicht gefunden");
+    Object.assign(l, data);''', '''    const l = store.leads.find((x) => x.name === n);
+    if (!l) throw new Error("Lead nicht gefunden");
+    if (!(await viewer()).lead(l)) deny();
+    Object.assign(l, data);''')
+rep('''    const l = store.leads.find((x) => x.name === n);
+    if (!l) throw new Error("Lead nicht gefunden");
+    const customerName''', '''    const l = store.leads.find((x) => x.name === n);
+    if (!l) throw new Error("Lead nicht gefunden");
+    if (!(await viewer()).lead(l)) deny();
+    const customerName''')
+rep('''        mobile_no: l.mobile_no,
+        disabled: 0,''', '''        mobile_no: l.mobile_no,
+        account_manager: l.lead_owner,
+        disabled: 0,''')
+rep('''    const l = store.leads.find((x) => x.name === n);
+    if (!l) throw new Error("Lead nicht gefunden");
+    l.status = status;''', '''    const l = store.leads.find((x) => x.name === n);
+    if (!l) throw new Error("Lead nicht gefunden");
+    if (!(await viewer()).lead(l)) deny();
+    l.status = status;''')
+
+rep('''    return applyList(store.opportunities, o, ["title", "customer_name", "party_name"]);''',
+    '''    const v = await viewer();
+    return applyList(store.opportunities.filter(v.opp), o, ["title", "customer_name", "party_name"]);''')
+rep('''    return store.opportunities.find((x) => x.name === n) ?? null;''', '''    const v = await viewer();
+    return store.opportunities.find((x) => x.name === n && v.opp(x)) ?? null;''')
+# alle schreibenden Chancen-Methoden prüfen
+s = s.replace('''    const o = store.opportunities.find((x) => x.name === n);
+    if (!o) throw new Error("Opportunity nicht gefunden");''', '''    const o = store.opportunities.find((x) => x.name === n);
+    if (!o) throw new Error("Opportunity nicht gefunden");
+    if (!(await viewer()).opp(o)) deny();''')
+
+rep('''    return applyList(store.customers, o, ["customer_name", "email_id", "territory"]);''',
+    '''    const v = await viewer();
+    return applyList(store.customers.filter(v.customer), o, ["customer_name", "email_id", "territory"]);''')
+rep('''    return store.customers.find((x) => x.name === n) ?? null;''', '''    const v = await viewer();
+    return store.customers.find((x) => x.name === n && v.customer(x)) ?? null;''')
+rep('''    return applyList(store.contacts, o, ["full_name", "email_id", "company_name", "mobile_no"]);''',
+    '''    const v = await viewer();
+    return applyList(store.contacts.filter(v.contact), o, ["full_name", "email_id", "company_name", "mobile_no"]);''')
+rep('''    return applyList(store.todos, o, ["description", "reference_name"]);''',
+    '''    const v = await viewer();
+    return applyList(store.todos.filter(v.todo), o, ["description", "reference_name"]);''')
+rep('''    const t = store.todos.find((x) => x.name === n);
+    if (!t) throw new Error("Aufgabe nicht gefunden");''', '''    const t = store.todos.find((x) => x.name === n);
+    if (!t) throw new Error("Aufgabe nicht gefunden");
+    if (!(await viewer()).todo(t)) deny();''')
+rep('''    await tick();
+    return store.notes
+      .filter((c) => c.reference_doctype === doctype && c.reference_name === name)''', '''    await tick();
+    if (!(await viewer()).doc(doctype, name)) return [];
+    return store.notes
+      .filter((c) => c.reference_doctype === doctype && c.reference_name === name)''')
+rep('''  async addNote(doctype, name, content, user) {
+    await tick();''', '''  async addNote(doctype, name, content, user) {
+    await tick();
+    if (!(await viewer()).doc(doctype, name)) deny();''')
+# Aufgaben nur mit sichtbarem Bezug anlegen
+rep('''    const todo: ToDo = { ...data, name: nextId("TD-"), status: "Open", creation: ts, modified: ts };''',
+    '''    const v = await viewer();
+    if (data.reference_type && data.reference_name && !v.doc(data.reference_type, data.reference_name)) deny();
+    const todo: ToDo = { ...data, name: nextId("TD-"), status: "Open", creation: ts, modified: ts };''')
+
+s = re.sub(r"__crmMockV\d+", "__crmMockV10", s)
+open(p, "w", encoding="utf-8", newline="\n").write(s)
+print("ok", s.count("(await viewer()).opp(o)"), "Chancen-Schreibprüfungen")

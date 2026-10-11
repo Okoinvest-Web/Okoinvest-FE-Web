@@ -1,0 +1,59 @@
+<script setup lang="ts">
+/** Einheitliche Statusfarben für Protokolle, Mängel, Berichte und Messwerte. */
+import { computed } from 'vue'
+
+const props = defineProps<{ wert?: string | null; klein?: boolean }>()
+
+const STIL: Record<string, string> = {
+  // Prüfstatus
+  OK: 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300',
+  Warnung: 'bg-amber-100 text-amber-900 dark:bg-amber-900/50 dark:text-amber-200',
+  Fehler: 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300',
+  Offen: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300',
+  Uebersprungen: 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400',
+
+  // Protokoll
+  Entwurf: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300',
+  'In Arbeit': 'bg-sky-100 text-sky-800 dark:bg-sky-900/50 dark:text-sky-300',
+  Abgeschlossen: 'bg-marke-100 text-marke-700 dark:bg-marke-900/50 dark:text-marke-300',
+  Verifiziert: 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300',
+  Storniert: 'bg-slate-200 text-slate-500 line-through dark:bg-slate-800',
+
+  // Mangel
+  'In Bearbeitung': 'bg-sky-100 text-sky-800 dark:bg-sky-900/50 dark:text-sky-300',
+  Erledigt: 'bg-marke-100 text-marke-700 dark:bg-marke-900/50 dark:text-marke-300',
+  Verworfen: 'bg-slate-200 text-slate-500 dark:bg-slate-800',
+
+  // Tagesbericht
+  Eingereicht: 'bg-amber-100 text-amber-900 dark:bg-amber-900/50 dark:text-amber-200',
+  Genehmigt: 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300',
+  Abgelehnt: 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300',
+
+  // Gesamtbewertung
+  Bestanden: 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300',
+  'Bestanden mit Auflagen': 'bg-amber-100 text-amber-900 dark:bg-amber-900/50 dark:text-amber-200',
+  'Nicht bestanden': 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300',
+
+  // Anlagenstatus
+  Geplant: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300',
+  'In Bau': 'bg-amber-100 text-amber-900 dark:bg-amber-900/50 dark:text-amber-200',
+  'In Betrieb': 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300',
+  'Ausser Betrieb': 'bg-slate-200 text-slate-500 dark:bg-slate-800',
+
+  // Schweregrade
+  A: 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300',
+  B: 'bg-amber-100 text-amber-900 dark:bg-amber-900/50 dark:text-amber-200',
+  C: 'bg-sky-100 text-sky-800 dark:bg-sky-900/50 dark:text-sky-300',
+}
+
+const klasse = computed(
+  () => STIL[props.wert ?? ''] ?? 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300',
+)
+const beschriftung = computed(() => (props.wert === 'Ausser Betrieb' ? 'Außer Betrieb' : props.wert))
+</script>
+
+<template>
+  <span v-if="wert" class="abzeichen" :class="[klasse, klein ? 'px-2 py-0 text-[10px]' : '']">
+    {{ beschriftung }}
+  </span>
+</template>

@@ -1,0 +1,230 @@
+<template>
+  <figure class="rounded-lg border border-outline-gray-2 bg-surface-white p-4">
+    <figcaption class="mb-3">
+      <p class="text-base font-medium text-ink-gray-9">{{ plan.plan_name }}</p>
+      <p class="text-sm text-ink-gray-6">
+        {{ plan.width_m }} × {{ plan.height_m }} m · {{ plan.items.length }} Objekte
+      </p>
+      <p v-if="plan.description" class="mt-1 text-sm text-ink-gray-6">
+        {{ plan.description }}
+      </p>
+    </figcaption>
+
+    <svg
+      :viewBox="`0 0 ${breite} ${hoehe}`"
+      :width="breite"
+      :height="hoehe"
+      preserveAspectRatio="xMinYMin meet"
+      role="img"
+      :aria-label="`Grundriss ${plan.plan_name}`"
+      class="max-w-full"
+    >
+      <!-- Raster im Meterabstand: gibt dem Plan einen Maßstab -->
+      <g>
+        <line
+          v-for="x in Math.floor(plan.width_m)"
+          :key="'vx' + x"
+          :x1="RAND + x * SKALA"
+          :y1="RAND"
+          :x2="RAND + x * SKALA"
+          :y2="RAND + plan.height_m * SKALA"
+          stroke="var(--viz-grid)"
+          stroke-width="1"
+        />
+        <line
+          v-for="y in Math.floor(plan.height_m)"
+          :key="'hy' + y"
+          :x1="RAND"
+          :y1="RAND + y * SKALA"
+          :x2="RAND + plan.width_m * SKALA"
+          :y2="RAND + y * SKALA"
+          stroke="var(--viz-grid)"
+          stroke-width="1"
+        />
+      </g>
+
+      <!-- Raumumriss -->
+      <rect
+        :x="RAND"
+        :y="RAND"
+        :width="plan.width_m * SKALA"
+        :height="plan.height_m * SKALA"
+        fill="none"
+        stroke="var(--viz-chassis-line)"
+        stroke-width="2"
+      />
+
+      <!-- Flächige Objekte: Racks, Türen, Glaswand, Screens -->
+      <g v-for="(punkt, i) in flaechen" :key="'f' + i">
+        <rect
+          :x="RAND + punkt.x * SKALA"
+          :y="RAND + punkt.y * SKALA"
+          :width="(punkt.w || 0.5) * SKALA"
+          :height="(punkt.h || 0.5) * SKALA"
+          :fill="flaechenFarbe(punkt.kind)"
+          :stroke="punkt.kind === 'glass' ? 'var(--viz-series-1)' : 'var(--viz-chassis-line)'"
+          :stroke-dasharray="punkt.kind === 'glass' ? '6 4' : undefined"
+          stroke-width="1.5"
+          class="cursor-pointer"
+          @mousemove="zeige(punkt, $event)"
+          @mouseleave="aktiv = null"
+          @click="punkt.ref && $emit('select', punkt)"
+        />
+        <text
+          :x="RAND + punkt.x * SKALA + ((punkt.w || 0.5) * SKALA) / 2"
+          :y="RAND + punkt.y * SKALA + ((punkt.h || 0.5) * SKALA) / 2 + 4"
+          font-size="11"
+          text-anchor="middle"
+          fill="var(--viz-ink)"
+        >
+          {{ punkt.label }}
+        </text>
+      </g>
+
+      <!-- Punktobjekte: Dosen und Access Points -->
+      <g
+        v-for="(punkt, i) in punkte"
+        :key="'p' + i"
+        class="cursor-pointer"
+        @mousemove="zeige(punkt, $event)"
+        @mouseleave="aktiv = null"
+        @click="$emit('select', punkt)"
+      >
+        <!-- Bauform unterscheidet Dose (Quadrat) von Access Point (Kreis) -->
+        <rect
+          v-if="punkt.kind === 'outlet'"
+          :x="RAND + punkt.x * SKALA - 9"
+          :y="RAND + punkt.y * SKALA - 9"
+          width="18"
+          height="18"
+          rx="3"
+          :fill="punkt.connected ? 'var(--viz-good)' : 'var(--viz-neutral-soft)'"
+          :stroke="punkt.connected ? 'var(--viz-good)' : 'var(--viz-neutral)'"
+          stroke-width="1.5"
+        />
+        <circle
+          v-else
+          :cx="RAND + punkt.x * SKALA"
+          :cy="RAND + punkt.y * SKALA"
+          r="10"
+          fill="var(--viz-series-1)"
+          stroke="var(--viz-seq-550)"
+          stroke-width="1.5"
+        />
+        <text
+          :x="RAND + punkt.x * SKALA"
+          :y="RAND + punkt.y * SKALA + 24"
+          font-size="10"
+          text-anchor="middle"
+          fill="var(--viz-ink-muted)"
+        >
+          {{ punkt.label }}
+        </text>
+      </g>
+
+      <!-- Maßstab -->
+      <line
+        :x1="RAND"
+        :y1="hoehe - 14"
+        :x2="RAND + SKALA"
+        :y2="hoehe - 14"
+        stroke="var(--viz-ink-muted)"
+        stroke-width="2"
+      />
+      <text :x="RAND + SKALA + 6" :y="hoehe - 10" font-size="10" fill="var(--viz-ink-muted)">
+        1 m
+      </text>
+    </svg>
+
+    <!-- Legende: Farbe nie ohne Text -->
+    <div class="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-ink-gray-6">
+      <span class="flex items-center gap-1.5">
+        <span class="inline-block size-3 rounded-sm" style="background: var(--viz-good)" />
+        Dose belegt
+      </span>
+      <span class="flex items-center gap-1.5">
+        <span
+          class="inline-block size-3 rounded-sm border"
+          style="background: var(--viz-neutral-soft); border-color: var(--viz-neutral)"
+        />
+        Dose frei
+      </span>
+      <span class="flex items-center gap-1.5">
+        <span class="inline-block size-3 rounded-full" style="background: var(--viz-series-1)" />
+        Access Point
+      </span>
+      <span class="flex items-center gap-1.5">
+        <span
+          class="inline-block h-3 w-5 border-2 border-dashed"
+          style="border-color: var(--viz-series-1)"
+        />
+        Glaswand
+      </span>
+    </div>
+
+    <div
+      v-if="aktiv"
+      class="pointer-events-none fixed z-50 rounded-lg border border-outline-gray-2 bg-surface-white p-3 text-sm shadow-lg"
+      :style="{ left: maus.x + 14 + 'px', top: maus.y + 14 + 'px' }"
+    >
+      <p class="font-medium text-ink-gray-9">{{ aktiv.label }}</p>
+      <p class="text-ink-gray-6">{{ OBJEKT[aktiv.kind] || aktiv.kind }}</p>
+      <p v-if="aktiv.room" class="text-ink-gray-6">{{ aktiv.room }}</p>
+      <p v-if="aktiv.kind === 'outlet'" class="text-ink-gray-6">
+        <template v-if="aktiv.connected">
+          {{ aktiv.cable }} → {{ aktiv.peer_device }} · {{ aktiv.peer_port }}
+        </template>
+        <template v-else>nicht gepatcht</template>
+      </p>
+    </div>
+  </figure>
+</template>
+
+<script setup>
+import { computed, ref } from 'vue'
+
+const props = defineProps({
+  plan: { type: Object, required: true },
+})
+defineEmits(['select'])
+
+/** Bildpunkte je Meter. */
+const SKALA = 64
+const RAND = 24
+
+const OBJEKT = {
+  outlet: 'Netzwerkdose',
+  ap: 'Access Point',
+  rack: 'Rack',
+  door: 'Tür',
+  glass: 'Glaswand',
+  screen: 'Anzeige',
+}
+
+const aktiv = ref(null)
+const maus = ref({ x: 0, y: 0 })
+
+const breite = computed(() => props.plan.width_m * SKALA + RAND * 2)
+const hoehe = computed(() => props.plan.height_m * SKALA + RAND * 2 + 20)
+
+const flaechen = computed(() => props.plan.items.filter((p) => p.w && p.h))
+const punkte = computed(() => props.plan.items.filter((p) => !p.w || !p.h))
+
+function flaechenFarbe(art) {
+  switch (art) {
+    case 'rack':
+      return 'var(--viz-chassis)'
+    case 'screen':
+      return 'var(--viz-neutral-soft)'
+    case 'door':
+      return 'var(--viz-surface)'
+    default:
+      return 'transparent'
+  }
+}
+
+function zeige(punkt, event) {
+  aktiv.value = punkt
+  maus.value = { x: event.clientX, y: event.clientY }
+}
+</script>

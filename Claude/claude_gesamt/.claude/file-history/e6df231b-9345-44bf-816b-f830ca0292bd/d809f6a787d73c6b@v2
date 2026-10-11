@@ -1,0 +1,257 @@
+<script setup lang="ts">
+/**
+ * String-Messdaten mit sofortiger Plausibilitätsprüfung (FA-050 bis FA-055).
+ *
+ * Auf dem Tablet als Tabelle, auf dem Smartphone als Karten pro String —
+ * eine horizontal scrollende Tabelle ist mit Handschuhen nicht bedienbar.
+ */
+import { computed } from 'vue'
+
+import AppIcon from '@/components/AppIcon.vue'
+import StatusAbzeichen from '@/components/StatusAbzeichen.vue'
+import type { Anlage, Messzeile } from '@/lib/typen'
+
+const props = defineProps<{ zeilen: Messzeile[]; anlage?: Anlage; uebersteuerungErlaubt: boolean }>()
+
+const emit = defineEmits<{
+  (e: 'aendern', stringNr: string, werte: Partial<Messzeile>): void
+  (e: 'hinzufuegen'): void
+  (e: 'entfernen', stringNr: string): void
+}>()
+
+const sollUoc = computed(() => {
+  const proModul = props.anlage?.modul_uoc
+  return proModul ? (module: number) => (module * proModul).toFixed(1) : null
+})
+
+const zusammenfassung = computed(() => ({
+  gesamt: props.zeilen.length,
+  ok: props.zeilen.filter((z) => z.status === 'OK').length,
+  warnung: props.zeilen.filter((z) => z.status === 'Warnung').length,
+  fehler: props.zeilen.filter((z) => z.status === 'Fehler').length,
+}))
+
+function zahl(wert: string): number | null {
+  const normalisiert = wert.replace(',', '.').trim()
+  return normalisiert === '' ? null : Number(normalisiert)
+}
+
+function setze(zeile: Messzeile, feld: keyof Messzeile, wert: string) {
+  emit('aendern', zeile.string_nr, { [feld]: zahl(wert) } as Partial<Messzeile>)
+}
+</script>
+
+<template>
+  <section class="space-y-3">
+    <div class="flex flex-wrap items-center gap-3">
+      <h3 class="flex-1 text-lg font-bold">String-Messdaten</h3>
+      <div class="flex gap-2 text-xs">
+        <span class="abzeichen bg-green-100 text-green-800">{{ zusammenfassung.ok }} OK</span>
+        <span v-if="zusammenfassung.warnung" class="abzeichen bg-amber-100 text-amber-900">
+          {{ zusammenfassung.warnung }} Warnung
+        </span>
+        <span v-if="zusammenfassung.fehler" class="abzeichen bg-red-100 text-red-800">
+          {{ zusammenfassung.fehler }} Fehler
+        </span>
+      </div>
+      <button class="knopf-sekundaer px-3 text-sm" type="button" @click="emit('hinzufuegen')">
+        <AppIcon name="plus" :groesse="16" /> String
+      </button>
+    </div>
+
+    <p v-if="!anlage?.modul_uoc" class="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900
+              dark:bg-amber-900/30 dark:text-amber-200">
+      In den Anlagenstammdaten fehlt „Uoc je Modul“. Die Sollwertprüfung der Leerlaufspannung
+      ist deshalb nicht möglich.
+    </p>
+
+    <!-- Tablet und Desktop -->
+    <div class="hidden overflow-x-auto tablet:block">
+      <table class="tabelle">
+        <thead>
+          <tr>
+            <th class="w-16">String</th>
+            <th class="w-32">WR / MPPT</th>
+            <th class="w-24">Module</th>
+            <th class="w-28">Uoc (V)</th>
+            <th class="w-28">Isc (A)</th>
+            <th class="w-32">Riso (kΩ)</th>
+            <th>Plausibilität</th>
+            <th class="w-10"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="zeile in zeilen" :key="zeile.string_nr">
+            <td class="font-semibold">{{ zeile.string_nr }}</td>
+            <td>
+              <input
+                :value="zeile.wechselrichter"
+                class="feld py-1 text-sm"
+                placeholder="WR1/A"
+                @change="emit('aendern', zeile.string_nr, { wechselrichter: ($event.target as HTMLInputElement).value })"
+              />
+            </td>
+            <td>
+              <input
+                :value="zeile.anzahl_module || ''"
+                class="feld py-1 text-sm tabular-nums"
+                inputmode="numeric"
+                @change="setze(zeile, 'anzahl_module', ($event.target as HTMLInputElement).value)"
+              />
+            </td>
+            <td>
+              <input
+                :value="zeile.uoc ?? ''"
+                class="feld py-1 text-sm tabular-nums"
+                inputmode="decimal"
+                @change="setze(zeile, 'uoc', ($event.target as HTMLInputElement).value)"
+              />
+              <span v-if="sollUoc && zeile.anzahl_module" class="text-[10px] text-slate-400">
+                Soll {{ sollUoc(zeile.anzahl_module) }}
+              </span>
+            </td>
+            <td>
+              <input
+                :value="zeile.isc ?? ''"
+                class="feld py-1 text-sm tabular-nums"
+                inputmode="decimal"
+                @change="setze(zeile, 'isc', ($event.target as HTMLInputElement).value)"
+              />
+            </td>
+            <td>
+              <input
+                :value="zeile.riso ?? ''"
+                class="feld py-1 text-sm tabular-nums"
+                inputmode="decimal"
+                @change="setze(zeile, 'riso', ($event.target as HTMLInputElement).value)"
+              />
+            </td>
+            <td>
+              <StatusAbzeichen :wert="zeile.status" klein />
+              <p v-if="zeile.plausi_meldung && zeile.status !== 'OK'" class="mt-1 text-xs text-slate-500">
+                {{ zeile.plausi_meldung }}
+              </p>
+              <label
+                v-if="uebersteuerungErlaubt && ['Warnung', 'Fehler'].includes(zeile.status)"
+                class="mt-1 flex items-center gap-1.5 text-xs"
+              >
+                <input
+                  type="checkbox"
+                  class="h-4 w-4"
+                  :checked="Boolean(zeile.uebersteuert)"
+                  @change="emit('aendern', zeile.string_nr, { uebersteuert: ($event.target as HTMLInputElement).checked ? 1 : 0 })"
+                />
+                übersteuern
+              </label>
+              <input
+                v-if="zeile.uebersteuert"
+                :value="zeile.uebersteuerung_grund"
+                class="feld mt-1 py-1 text-xs"
+                placeholder="Begründung (Pflicht)"
+                @change="emit('aendern', zeile.string_nr, { uebersteuerung_grund: ($event.target as HTMLInputElement).value })"
+              />
+            </td>
+            <td>
+              <button
+                class="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-fehler dark:hover:bg-slate-800"
+                type="button"
+                aria-label="String entfernen"
+                @click="emit('entfernen', zeile.string_nr)"
+              >
+                <AppIcon name="muell" :groesse="16" />
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Smartphone -->
+    <div class="space-y-3 tablet:hidden">
+      <article v-for="zeile in zeilen" :key="zeile.string_nr" class="karte p-3">
+        <div class="mb-2 flex items-center gap-2">
+          <span class="text-base font-bold">String {{ zeile.string_nr }}</span>
+          <StatusAbzeichen :wert="zeile.status" klein />
+          <button
+            class="ml-auto rounded p-1.5 text-slate-400 hover:text-fehler"
+            type="button"
+            aria-label="String entfernen"
+            @click="emit('entfernen', zeile.string_nr)"
+          >
+            <AppIcon name="muell" :groesse="16" />
+          </button>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <label class="text-xs text-slate-500">
+            Module
+            <input
+              :value="zeile.anzahl_module || ''"
+              class="feld mt-1 tabular-nums"
+              inputmode="numeric"
+              @change="setze(zeile, 'anzahl_module', ($event.target as HTMLInputElement).value)"
+            />
+          </label>
+          <label class="text-xs text-slate-500">
+            WR / MPPT
+            <input
+              :value="zeile.wechselrichter"
+              class="feld mt-1"
+              @change="emit('aendern', zeile.string_nr, { wechselrichter: ($event.target as HTMLInputElement).value })"
+            />
+          </label>
+          <label class="text-xs text-slate-500">
+            Uoc (V)
+            <input
+              :value="zeile.uoc ?? ''"
+              class="feld mt-1 tabular-nums"
+              inputmode="decimal"
+              @change="setze(zeile, 'uoc', ($event.target as HTMLInputElement).value)"
+            />
+          </label>
+          <label class="text-xs text-slate-500">
+            Isc (A)
+            <input
+              :value="zeile.isc ?? ''"
+              class="feld mt-1 tabular-nums"
+              inputmode="decimal"
+              @change="setze(zeile, 'isc', ($event.target as HTMLInputElement).value)"
+            />
+          </label>
+          <label class="col-span-2 text-xs text-slate-500">
+            Riso (kΩ)
+            <input
+              :value="zeile.riso ?? ''"
+              class="feld mt-1 tabular-nums"
+              inputmode="decimal"
+              @change="setze(zeile, 'riso', ($event.target as HTMLInputElement).value)"
+            />
+          </label>
+        </div>
+
+        <p v-if="zeile.plausi_meldung && zeile.status !== 'OK'" class="mt-2 text-xs text-slate-500">
+          {{ zeile.plausi_meldung }}
+        </p>
+        <label
+          v-if="uebersteuerungErlaubt && ['Warnung', 'Fehler'].includes(zeile.status)"
+          class="mt-2 flex items-center gap-2 text-sm"
+        >
+          <input
+            type="checkbox"
+            class="h-5 w-5"
+            :checked="Boolean(zeile.uebersteuert)"
+            @change="emit('aendern', zeile.string_nr, { uebersteuert: ($event.target as HTMLInputElement).checked ? 1 : 0 })"
+          />
+          Messwert bewusst übernehmen
+        </label>
+        <input
+          v-if="zeile.uebersteuert"
+          :value="zeile.uebersteuerung_grund"
+          class="feld mt-2 text-sm"
+          placeholder="Begründung (Pflicht)"
+          @change="emit('aendern', zeile.string_nr, { uebersteuerung_grund: ($event.target as HTMLInputElement).value })"
+        />
+      </article>
+    </div>
+  </section>
+</template>

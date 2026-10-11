@@ -1,0 +1,148 @@
+# -*- coding: utf-8 -*-
+"""Changelog-Eintrag fuer Drift, Dienste, Changes, Tickets, Audit."""
+import io
+
+EINTRAG = u"""# Änderungsverlauf
+
+## 2026-09-19 (8) – Fünf Listen werden Befunde
+
+Drift, Dienste, Changes, Tickets und Audit waren Tabellen mit einem
+Filter. Jede zeigte richtige Daten und beantwortete keine Frage. Diese
+Runde legt unter jede eine Auswertung – und die meisten davon entstehen
+erst dadurch, dass zwei Bereiche miteinander reden.
+
+### Drift: die Frage ist nicht der Wert
+
+Ein Drift-Befund heißt nicht „Feld X hat einen anderen Wert". Er heißt:
+**hier ist die Wirklichkeit einen anderen Weg gegangen als die
+Dokumentation.** Die Frage dahinter ist immer dieselbe – gab es einen
+genehmigten Change?
+
+`drift_findings` korreliert deshalb jeden Befund mit dem Change-Verlauf
+desselben Objekts und unterscheidet drei Lagen:
+
+| Lage | Bedeutung |
+| --- | --- |
+| **Gedeckt** | Ein Change erklärt die Abweichung, nur die Dokumentation hinkt |
+| **Ohne Change** | Jemand hat am Freigabeprozess vorbei geändert |
+| **Vorzeitig** | Genehmigung eingeholt, Fenster ignoriert |
+
+Die dritte ist die schärfste und war vorher nicht von der zweiten zu
+unterscheiden. In den Testdaten steckt genau dieser Fall: CHG-00001 ist für
+den 21. freigegeben, die Firmware der Perimeter-Firewall ist schon drauf.
+
+Übernehmen führt die **Dokumentation** nach und ändert am Gerät nichts.
+Ohne Change braucht das eine Begründung – stillschweigend zu übernehmen
+hieße, eine Änderung am Freigabeprozess vorbei nachträglich gutzuheißen.
+An der Perimeter-Firewall geht es überhaupt nicht per Häkchen. Die
+Sammelübernahme rührt nur Gedecktes an; wer zwanzig ungedeckte
+Abweichungen mit einem Klick wegräumt, hat sie nicht gelesen.
+
+### Changes: was hängt, was kollidiert, was ist danach passiert
+
+`change_board` beantwortet die Fragen, die im Betrieb anstehen und die eine
+Zustandsliste nicht kennt: was blockiert diesen Antrag (man erfährt es
+sonst erst beim Versuch, ihn weiterzuschieben), überschneiden sich zwei
+Fenster am selben Objekt, ist ein genehmigtes Fenster verstrichen.
+
+Dazu der Rückbezug auf Drift – dieselbe Korrelation von der anderen Seite.
+Ein Test prüft ausdrücklich, dass beide Richtungen dasselbe Paar finden;
+zwei Seiten derselben Anwendung dürfen sich nicht widersprechen.
+
+`change_calendar` bündelt die Fenster nach Tagen. Drei Changes in einer
+Nacht sind planbar, aber nur mit Reihenfolge.
+
+### Tickets: die Uhr steht, wenn wir nicht am Zug sind
+
+Die wichtigste Regel dieser Runde. Läuft die Frist weiter, während auf eine
+Antwort der meldenden Person gewartet wird, misst sie nicht die eigene
+Bearbeitung, sondern deren Postfach. Nach ein paar solcher
+Überschreitungen ist die Kennzahl wertlos – und mit ihr die, die daneben
+steht.
+
+Im Zustand „Wartet auf Rückmeldung" steht die Uhr; die Wartezeit wird
+mitgeführt und abgezogen.
+
+Dazu: zuweisen, Zustand wechseln, schließen. Drei Sperren mit Grund:
+
+- **„In Arbeit" ohne zugewiesene Person** ist eine Absichtserklärung.
+- **Schließen ohne ein Wort zur Lösung** macht das Ticket beim nächsten
+  gleichen Vorfall wertlos.
+- **Abgeben ohne Grund** wirft es in die Liste zurück, in der es schon
+  niemand genommen hat.
+
+`ticket_hotspots` ist das eigentliche Wartungssignal: fünf Tickets an
+demselben Switch sind kein Ticketproblem, sondern die Antwort auf „was
+tauschen wir als Nächstes aus".
+
+### Audit: ein Hash, den niemand prüfen kann, beweist nichts
+
+Das Protokoll speichert von jeder Nutzlast nur den SHA-256-Hash – richtig,
+denn ein Protokoll mit Pfaden und Gründen im Klartext wird selbst zur
+Beute. Nur sah der Hash bisher aus wie Sorgfalt, ohne welche zu sein.
+
+`audit_verify_payload` schließt das: jemand legt vor, was seiner Meinung
+nach übergeben wurde, und bekommt eine Antwort. Der tatsächliche Inhalt
+kommt dabei nicht heraus – aus SHA-256 lässt sich nichts zurückrechnen.
+**Das ist der Unterschied zwischen einem Protokoll und einem Nachweis.**
+
+Dazu: Filter nach Bereich, Person, Zeitraum und Objekt; die Historie eines
+Objekts; der Kettenbruch mit Umfeld (ohne die Einträge davor und danach
+sieht ein Bruch aus wie ein Programmfehler); und eine Aktivitätsübersicht,
+die ausdrücklich keine Leistungsmessung ist – sie sucht die Ausnahme.
+
+Die Einordnung nach Bereich läuft über die Aktion **und** den DocType.
+Frappes eigene Aktionen (`insert`, `set_value`) sagen nichts über den
+Bereich; ohne den zweiten Weg landete die halbe Historie in „Sonstiges".
+
+### Dienste: die Umkehrung der Auswirkungsanalyse
+
+`impact_analysis` beantwortet „was fällt aus, wenn **dieses** Objekt
+ausfällt" – die richtige Frage im Störungsfall. Vorher braucht man die
+andere: **welches Objekt sollten wir redundant auslegen?**
+
+`service_risk_objects` rechnet das aus, gewichtet nach Kritikalität (ein
+kritischer Dienst wiegt achtmal so viel wie ein nachrangiger – sonst
+gewinnt, wer viele unwichtige trägt).
+
+**Und dann sagt es, was die Zahl nicht kann.** In diesen Daten tragen fünf
+Objekte rechnerisch dieselbe Last, darunter WAN 1 und WAN 2. Zwei Leitungen,
+die sich vertreten sollen, sehen im Graphen aus wie zwei einzelne
+Ausfallpunkte – der Abhängigkeitsgraph kennt keine Redundanz. Die Seite
+schreibt diesen Vorbehalt neben die Tabelle, nicht in eine Fußnote. Eine
+Rangfolge, die auf nicht modellierter Redundanz beruht, ist erfundene
+Genauigkeit.
+
+`service_assurance` nennt die Lücken einzeln: keine Sicherung, ungeprüfte
+Sicherung, kein Ansprechpartner, eine Wiederanlaufzusage, die die eigene
+Kette nicht hergibt. Drei verschiedene Lücken brauchen drei verschiedene
+Leute.
+
+### Das Repository
+
+`git init`, `.gitignore` geprüft (`.env` draußen, keine Geheimnisse im
+Baum), Erstcommit mit 184 Dateien.
+
+### Nebenbei behoben
+
+- **`cloud-change.test.js` zeigte auf `CHG-00004`.** Die Nummer hängt an
+  der Reihenfolge im Seed; ein eingefügter Datensatz hat den Test brechen
+  lassen. Er sucht den Entwurf jetzt über seine Eigenschaften – er prüft
+  die Regel und nicht die Fixture-Datei. (Derselbe Fehler wie zuvor bei der
+  Konnektorzahl.)
+- Lose Screenshot-PNGs im Wurzelverzeichnis entfernt.
+
+### Geprüft
+
+- 687 Tests (80 neue), ESLint und Prettier sauber
+- 56 Routen im Browser ohne Konsolenfehler
+- Die fünf Seiten einzeln angesehen: Drift zeigt „CHG-00001 – zu früh",
+  Dienste den Redundanz-Vorbehalt über der Rangfolge
+"""
+
+p = 'CHANGELOG.md'
+s = io.open(p, encoding='utf-8').read()
+kopf = u'# Änderungsverlauf\n'
+assert s.startswith(kopf)
+io.open(p, 'w', encoding='utf-8').write(EINTRAG + '\n' + s[len(kopf):].lstrip('\n'))
+print('CHANGELOG ergaenzt')

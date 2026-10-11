@@ -1,0 +1,626 @@
+/**
+ * Tests für Inventar, Ausgabe, Inventur, Abschreibung und Austritt.
+ *
+ * Die Regeln, die hier geprüft werden, sind der eigentliche Wert der
+ * Methoden. Eine Inventarsoftware, die alles erlaubt, ist eine Tabelle mit
+ * mehr Klicks.
+ */
+import { beforeEach, describe, expect, it } from 'vitest'
+import { mockRequest, resetMockData } from '@/api/mock/server.js'
+
+const ruf = (url, params) => mockRequest({ url, params })
+
+beforeEach(() => {
+  resetMockData()
+})
+
+describe('Abschreibung', () => {
+  it('rechnet linear über die Nutzungsdauer der Kategorie', async () => {
+    // Notebook: 36 Monate laut Kategorie, 1.899,00 € Anschaffung.
+    const plan = await ruf('netops.api.inventar.depreciation_schedule', { asset: 'INV-000101' })
+    expect(plan.method).toBe('linear')
+    expect(plan.months).toBe(36)
+    expect(plan.rows).toHaveLength(3)
+    // Jede Jahreszeile ein Drittel, Rundung auf ganze Cent.
+    expect(plan.rows[0].amount_cents).toBe(63300)
+    // Am Ende ist der Buchwert der Restwert, hier null.
+    expect(plan.rows.at(-1).book_value_cents).toBe(0)
+    expect(plan.rows.at(-1).accumulated_cents).toBe(plan.purchase_price_cents)
+  })
+
+  it('schreibt nie unter den Restbuchwert null', async () => {
+    const liste = await ruf('netops.api.inventar.asset_list', {})
+    for (const a of liste) {
+      if (a.book_value_cents === null) continue
+      expect(a.book_value_cents).toBeGreaterThanOrEqual(0)
+      expect(a.book_value_cents).toBeLessThanOrEqual(a.purchase_price_cents)
+    }
+  })
+
+  it('meldet ein altes Gerät als vollständig abgeschrieben', async () => {
+    // Hypervisor: vor vier Jahren gekauft, 60 Monate Nutzungsdauer.
+    const plan = await ruf('netops.api.inventar.depreciation_schedule', { asset: 'INV-000203' })
+    expect(plan.months_elapsed).toBeGreaterThan(40)
+    expect(plan.book_value_cents).toBeLessThan(plan.purchase_price_cents)
+  })
+
+  it('sagt beim fehlenden Anschaffungswert warum, statt null zu rechnen', async () => {
+    await ruf('frappe.client.set_value', {
+      doctype: 'Asset',
+      name: 'INV-000501',
+      fieldname: 'purchase_price_cents',
+      value: 0,
+    })
+    const plan = await ruf('netops.api.inventar.depreciation_schedule', { asset: 'INV-000501' })
+    expect(plan.rows).toHaveLength(0)
+    expect(plan.reason).toMatch(/Anschaffungswert/)
+  })
+})
+
+describe('Ausgabe', () => {
+  it('gibt ein Gerät aus dem Lager aus und setzt den Besitz', async () => {
+    const e = await ruf('netops.api.inventar.assign_asset', {
+      asset: 'INV-000103',
+      employee: 'HR-EMP-00003',
+      purpose: 'Test',
+    })
+    expect(e.ok).toBe(true)
+    const detail = await ruf('netops.api.inventar.asset_detail', { name: 'INV-000103' })
+    expect(detail.asset_state).toBe('issued')
+    expect(detail.holder).toBe('HR-EMP-00003')
+  })
+
+  it('verweigert die Ausgabe eines Messgeräts mit überfälliger Prüfung', async () => {
+    // Das ist die wichtigste Regel hier: wer mit einem unkalibrierten
+    // Gerät eine Anlage abnimmt, unterschreibt eine ungültige Messung.
+    await ruf('netops.api.inventar.return_asset', { asset: 'INV-000301' })
+    const e = await ruf('netops.api.inventar.assign_asset', {
+      asset: 'INV-000301',
+      employee: 'HR-EMP-00005',
+    })
+    expect(e.ok).toBe(false)
+    expect(e.blocked.map((b) => b.kind)).toContain('inspection_overdue')
+  })
+
+  it('lässt sich bei überfälliger Prüfung auch mit force nicht übergehen', async () => {
+    await ruf('netops.api.inventar.return_asset', { asset: 'INV-000301' })
+    const e = await ruf('netops.api.inventar.assign_asset', {
+      asset: 'INV-000301',
+      employee: 'HR-EMP-00005',
+      force: true,
+    })
+    expect(e.ok).toBe(false)
+    expect(e.blocked.map((b) => b.kind)).toContain('inspection_overdue')
+  })
+
+  it('verweigert die Ausgabe an eine ausgetretene Person', async () => {
+    const e = await ruf('netops.api.inventar.assign_asset', {
+      asset: 'INV-000103',
+      employee: 'HR-EMP-00011',
+    })
+    expect(e.ok).toBe(false)
+    expect(e.blocked.map((b) => b.kind)).toContain('employee_inactive')
+  })
+
+  it('verweigert die doppelte Ausgabe desselben Geräts', async () => {
+    const e = await ruf('netops.api.inventar.assign_asset', {
+      asset: 'INV-000101',
+      employee: 'HR-EMP-00003',
+    })
+    expect(e.ok).toBe(false)
+    expect(e.blocked.map((b) => b.kind)).toContain('already_issued')
+  })
+
+  it('nennt bei der doppelten Ausgabe, wer es hat', async () => {
+    const e = await ruf('netops.api.inventar.assign_asset', {
+      asset: 'INV-000101',
+      employee: 'HR-EMP-00003',
+    })
+    expect(e.blocked.find((b) => b.kind === 'already_issued').text).toContain('Benny Höfler')
+  })
+
+  it('hält eine bestätigte Reservierung anderer Leute frei', async () => {
+    // INV-000103 ist ab in vier Tagen für HR-EMP-00009 bestätigt.
+    const e = await ruf('netops.api.inventar.assign_asset', {
+      asset: 'INV-000103',
+      employee: 'HR-EMP-00003',
+      due_on: new Date(Date.now() + 8 * 86400000).toISOString().slice(0, 10),
+    })
+    expect(e.ok).toBe(false)
+    expect(e.blocked.map((b) => b.kind)).toContain('reserved')
+  })
+})
+
+describe('Rücknahme', () => {
+  it('stellt ein Gerät ohne Schaden zurück ins Lager', async () => {
+    const e = await ruf('netops.api.inventar.return_asset', {
+      asset: 'INV-000101',
+      condition_in: 'ohne Beanstandung',
+    })
+    expect(e.asset_state).toBe('in_stock')
+  })
+
+  it('schickt ein beschädigtes Gerät in Reparatur, nicht ins Lager', async () => {
+    // Sonst gibt es beim nächsten Griff jemand anderes weiter aus.
+    const e = await ruf('netops.api.inventar.return_asset', {
+      asset: 'INV-000101',
+      damaged: true,
+      damage_summary: 'Scharnier gebrochen',
+      damage_severity: 'high',
+    })
+    expect(e.asset_state).toBe('repair')
+    expect(e.damage).toBeTruthy()
+  })
+
+  it('verlangt zu einem Schaden eine Beschreibung', async () => {
+    await expect(
+      ruf('netops.api.inventar.return_asset', { asset: 'INV-000101', damaged: true }),
+    ).rejects.toThrow(/Beschreibung/)
+  })
+
+  it('weist die Rücknahme ohne offene Ausgabe ab', async () => {
+    await expect(ruf('netops.api.inventar.return_asset', { asset: 'INV-000103' })).rejects.toThrow(
+      /keine offene Ausgabe/,
+    )
+  })
+
+  it('setzt ein repariertes Gerät zurück in den Bestand', async () => {
+    const schaeden = await ruf('netops.api.inventar.damage_list', { damage_state: 'in_repair' })
+    const e = await ruf('netops.api.inventar.set_damage_state', {
+      name: schaeden[0].name,
+      state: 'repaired',
+    })
+    expect(e.asset_state).toBe('in_stock')
+  })
+
+  it('mustert ein abgeschriebenes Gerät aus statt es freizugeben', async () => {
+    const schaeden = await ruf('netops.api.inventar.damage_list', { damage_state: 'in_repair' })
+    const e = await ruf('netops.api.inventar.set_damage_state', {
+      name: schaeden[0].name,
+      state: 'written_off',
+    })
+    expect(e.asset_state).toBe('retired')
+  })
+})
+
+describe('Reservierung', () => {
+  it('bestätigt eine freie Reservierung sofort', async () => {
+    const e = await ruf('netops.api.inventar.reserve_asset', {
+      asset: 'INV-000110',
+      employee: 'HR-EMP-00003',
+      from_date: '2027-01-10',
+      to_date: '2027-01-12',
+    })
+    expect(e.state).toBe('confirmed')
+    expect(e.conflicts).toHaveLength(0)
+  })
+
+  it('macht aus einer kollidierenden Reservierung eine Anfrage', async () => {
+    await ruf('netops.api.inventar.reserve_asset', {
+      asset: 'INV-000110',
+      employee: 'HR-EMP-00003',
+      from_date: '2027-01-10',
+      to_date: '2027-01-12',
+    })
+    const e = await ruf('netops.api.inventar.reserve_asset', {
+      asset: 'INV-000110',
+      employee: 'HR-EMP-00004',
+      from_date: '2027-01-11',
+      to_date: '2027-01-14',
+    })
+    expect(e.state).toBe('requested')
+    expect(e.conflicts).toHaveLength(1)
+  })
+
+  it('weist ein Bis-Datum vor dem Von-Datum ab', async () => {
+    await expect(
+      ruf('netops.api.inventar.reserve_asset', {
+        asset: 'INV-000110',
+        employee: 'HR-EMP-00003',
+        from_date: '2027-01-12',
+        to_date: '2027-01-10',
+      }),
+    ).rejects.toThrow(/vor dem Von-Datum/)
+  })
+})
+
+describe('Verbrauchsmaterial', () => {
+  it('bucht eine Entnahme und senkt den Bestand', async () => {
+    const e = await ruf('netops.api.inventar.stock_move', {
+      consumable: 'VBM-0001',
+      kind: 'out',
+      qty: 4,
+      reason: 'Test',
+    })
+    expect(e.stock_qty).toBe(30)
+  })
+
+  it('lässt den Bestand nicht negativ werden', async () => {
+    await expect(
+      ruf('netops.api.inventar.stock_move', {
+        consumable: 'VBM-0003',
+        kind: 'out',
+        qty: 99,
+        reason: 'Test',
+      }),
+    ).rejects.toThrow(/negativ/)
+  })
+
+  it('verbietet negative Mengen bei Zu- und Abgang', async () => {
+    // Sonst ließe sich eine Entnahme als Zugang tarnen.
+    await expect(
+      ruf('netops.api.inventar.stock_move', {
+        consumable: 'VBM-0001',
+        kind: 'in',
+        qty: -5,
+        reason: 'Test',
+      }),
+    ).rejects.toThrow(/positive Menge/)
+  })
+
+  it('erlaubt eine negative Korrektur', async () => {
+    const e = await ruf('netops.api.inventar.stock_move', {
+      consumable: 'VBM-0001',
+      kind: 'correction',
+      qty: -2,
+      reason: 'Zähldifferenz',
+    })
+    expect(e.stock_qty).toBe(32)
+  })
+
+  it('verlangt einen Grund', async () => {
+    await expect(
+      ruf('netops.api.inventar.stock_move', { consumable: 'VBM-0001', kind: 'out', qty: 1 }),
+    ).rejects.toThrow(/Grund/)
+  })
+
+  it('meldet einen aufgebrauchten Artikel als kritisch', async () => {
+    const liste = await ruf('netops.api.inventar.consumable_list', {})
+    const leer = liste.find((c) => c.name === 'VBM-0021')
+    expect(leer.level).toBe('critical')
+    expect(leer.reason).toMatch(/aufgebraucht/)
+  })
+})
+
+describe('Inventur', () => {
+  it('friert beim Start den Sollbestand ein', async () => {
+    const e = await ruf('netops.api.inventar.count_start', {
+      count_name: 'Test Passau',
+      site: 'SITE-0005',
+    })
+    expect(e.lines).toBeGreaterThan(0)
+    const detail = await ruf('netops.api.inventar.count_detail', { name: e.count })
+    expect(detail.lines.every((z) => z.line_state === 'pending')).toBe(true)
+  })
+
+  it('lässt für denselben Umfang keine zweite Inventur zu', async () => {
+    await expect(
+      ruf('netops.api.inventar.count_start', { count_name: 'Zweite', site: 'SITE-0001' }),
+    ).rejects.toThrow(/läuft bereits/)
+  })
+
+  it('liest eine gescannte QR-URL und findet die Inventarnummer darin', async () => {
+    const e = await ruf('netops.api.inventar.count_scan', {
+      count: 'INV-Z-0001',
+      asset_tag: 'https://netops.oekovolt.test/netops/inventory/INV-000320',
+    })
+    expect(e.ok).toBe(true)
+    expect(e.asset).toBe('INV-000320')
+  })
+
+  it('meldet einen unbekannten Code, statt zu scheitern', async () => {
+    const e = await ruf('netops.api.inventar.count_scan', {
+      count: 'INV-Z-0001',
+      asset_tag: 'GIBTSNICHT',
+    })
+    expect(e.ok).toBe(false)
+    expect(e.reason).toBe('unknown_tag')
+  })
+
+  it('erkennt ein Gerät an einem anderen Ort als verschoben', async () => {
+    const e = await ruf('netops.api.inventar.count_scan', {
+      count: 'INV-Z-0001',
+      asset_tag: 'INV-000101',
+      found_room: 'A.09',
+    })
+    expect(e.line_state).toBe('moved')
+    expect(e.expected_room).toBe('A.02')
+  })
+
+  it('erklärt ein fehlendes Gerät, wenn es ausgegeben ist', async () => {
+    // Ein Gerät, das jemand in der Hand hat, fehlt im Regal zu Recht.
+    const detail = await ruf('netops.api.inventar.count_detail', { name: 'INV-Z-0001' })
+    const zeile = detail.lines.find((z) => z.explained_by_assignment)
+    if (zeile) expect(zeile.level).toBe('neutral')
+    expect(detail.summary.missing).toBeLessThanOrEqual(detail.summary.total)
+  })
+
+  it('übernimmt beim Abschluss die gefundenen Standorte', async () => {
+    await ruf('netops.api.inventar.count_scan', {
+      count: 'INV-Z-0001',
+      asset_tag: 'INV-000101',
+      found_room: 'A.09',
+    })
+    const e = await ruf('netops.api.inventar.count_close', { name: 'INV-Z-0001' })
+    expect(e.corrected).toBeGreaterThan(0)
+    const asset = await ruf('netops.api.inventar.asset_detail', { name: 'INV-000101' })
+    expect(asset.room).toBe('A.09')
+  })
+
+  it('lässt sich nicht zweimal abschließen', async () => {
+    await ruf('netops.api.inventar.count_close', { name: 'INV-Z-0001' })
+    await expect(ruf('netops.api.inventar.count_close', { name: 'INV-Z-0001' })).rejects.toThrow(
+      /bereits abgeschlossen/,
+    )
+  })
+
+  it('nimmt nach dem Abschluss keinen Scan mehr an', async () => {
+    await ruf('netops.api.inventar.count_close', { name: 'INV-Z-0001' })
+    await expect(
+      ruf('netops.api.inventar.count_scan', { count: 'INV-Z-0001', asset_tag: 'INV-000101' }),
+    ).rejects.toThrow(/abgeschlossen/)
+  })
+})
+
+describe('Entsorgung', () => {
+  it('verlangt bei einem Datenträger den Löschnachweis', async () => {
+    // Artikel 17 DSGVO verlangt den Nachweis der Löschung.
+    await expect(
+      ruf('netops.api.inventar.dispose_asset', {
+        asset: 'INV-000121',
+        method: 'recycled',
+        data_carrier: true,
+      }),
+    ).rejects.toThrow(/Löschverfahren/)
+  })
+
+  it('verlangt zusätzlich das Datum der Löschbestätigung', async () => {
+    await expect(
+      ruf('netops.api.inventar.dispose_asset', {
+        asset: 'INV-000121',
+        method: 'recycled',
+        data_carrier: true,
+        erasure_method: 'BSI TL-03423',
+      }),
+    ).rejects.toThrow(/Löschbestätigung/)
+  })
+
+  it('entsorgt ein Gerät ohne Datenträger ohne Löschnachweis', async () => {
+    const e = await ruf('netops.api.inventar.dispose_asset', {
+      asset: 'INV-000501',
+      method: 'donated',
+      recipient: 'Sozialmarkt',
+    })
+    expect(e.ok).toBe(true)
+    expect(e.asset_state).toBe('disposed')
+  })
+
+  it('entsorgt kein Gerät, das noch jemand hat', async () => {
+    await expect(
+      ruf('netops.api.inventar.dispose_asset', { asset: 'INV-000101', method: 'recycled' }),
+    ).rejects.toThrow(/noch ausgegeben/)
+  })
+
+  it('markiert einen Nachweis ohne Löschbeleg als unvollständig', async () => {
+    const liste = await ruf('netops.api.inventar.disposal_list', {})
+    for (const e of liste) {
+      expect(e.complete).toBe(!e.data_carrier || !!(e.erasure_method && e.erasure_verified_on))
+    }
+  })
+
+  it('behält das entsorgte Gerät im Bestand, damit der Nachweis bleibt', async () => {
+    const detail = await ruf('netops.api.inventar.asset_detail', { name: 'INV-000105' })
+    expect(detail.asset_state).toBe('disposed')
+    expect(detail.disposal).toBeTruthy()
+    expect(detail.disposal.erasure_method).toMatch(/BSI/)
+  })
+})
+
+describe('Etiketten', () => {
+  it('enthält keine Personen- und keine Gerätedaten im Code', async () => {
+    // Ein Etikett hängt sichtbar am Gerät. Wer es fotografiert, soll
+    // daraus nichts über Menschen oder Seriennummern erfahren.
+    const { labels } = await ruf('netops.api.inventar.label_payload', {})
+    const assets = await ruf('netops.api.inventar.asset_list', {})
+
+    for (const etikett of labels) {
+      const asset = assets.find((a) => a.name === etikett.asset)
+      expect(etikett.qr_content).toContain(asset.asset_tag)
+      if (asset.serial) expect(etikett.qr_content).not.toContain(asset.serial)
+      if (asset.holder_name) {
+        const nachname = asset.holder_name.split(' ').at(-1)
+        expect(etikett.qr_content).not.toContain(nachname)
+      }
+    }
+  })
+
+  it('liefert eine auflösbare Adresse auf die eigene Instanz', async () => {
+    const { labels, base_url } = await ruf('netops.api.inventar.label_payload', {
+      assets: ['INV-000101'],
+    })
+    expect(labels[0].qr_content.startsWith(base_url)).toBe(true)
+    expect(labels[0].barcode_content).toBe('INV-000101')
+  })
+})
+
+describe('Fristen', () => {
+  it('sammelt Garantie, Prüfung, Lizenz, Vertrag und Zertifikat in einer Liste', async () => {
+    const f = await ruf('netops.api.inventar.deadline_overview', { days: 365 })
+    const arten = new Set(f.entries.map((e) => e.kind))
+    expect(arten.has('warranty')).toBe(true)
+    expect(arten.has('inspection')).toBe(true)
+    expect(arten.has('license')).toBe(true)
+  })
+
+  it('sortiert das Überfällige nach vorn', async () => {
+    const f = await ruf('netops.api.inventar.deadline_overview', { days: 90 })
+    const tage = f.entries.map((e) => e.days)
+    expect([...tage].sort((a, b) => a - b)).toEqual(tage)
+    expect(f.entries[0].days).toBeLessThan(0)
+  })
+
+  it('stuft Überfälliges kritisch und die nächsten 30 Tage als Warnung', async () => {
+    const f = await ruf('netops.api.inventar.deadline_overview', { days: 90 })
+    for (const e of f.entries) {
+      if (e.days < 0) expect(e.level).toBe('critical')
+      else if (e.days <= 30) expect(e.level).toBe('warning')
+      else expect(e.level).toBe('ok')
+    }
+  })
+
+  it('hält sich an das Zeitfenster', async () => {
+    const f = await ruf('netops.api.inventar.deadline_overview', { days: 30 })
+    expect(f.entries.every((e) => e.days <= 30)).toBe(true)
+  })
+})
+
+describe('Austritt', () => {
+  it('findet Gerät UND noch aktives Konto einer ausgetretenen Person', async () => {
+    // Das ist der Punkt, an dem eine reine Inventarsoftware aufhört.
+    const p = await ruf('netops.api.personal.offboarding_check', { employee: 'HR-EMP-00011' })
+    const arten = p.items.map((i) => i.kind)
+    expect(arten).toContain('asset_return')
+    expect(arten).toContain('account_disable')
+    expect(p.already_left).toBe(true)
+  })
+
+  it('beziffert den Wert der nicht zurückgegebenen Gegenstände', async () => {
+    const p = await ruf('netops.api.personal.offboarding_check', { employee: 'HR-EMP-00011' })
+    expect(p.summary.value_at_risk_cents).toBe(139900)
+  })
+
+  it('meldet für eine Person ohne Ausstattung nichts Offenes', async () => {
+    // Elisabeth Moser hat weder Geraete noch ein eigenes Konto im Bestand.
+    const p = await ruf('netops.api.personal.offboarding_check', { employee: 'HR-EMP-00008' })
+    expect(p.summary.clear).toBe(true)
+  })
+
+  it('zählt auch eine laufende Reservierung als offenen Punkt', async () => {
+    // Erik Sandner hat kein Geraet, aber eine bestaetigte Reservierung -
+    // die laeuft sonst nach seinem Austritt ins Leere.
+    const p = await ruf('netops.api.personal.offboarding_check', { employee: 'HR-EMP-00009' })
+    expect(p.items.map((i) => i.kind)).toContain('reservation')
+  })
+
+  it('führt eine ausgetretene Person mit Geräten in der Übersicht', async () => {
+    const u = await ruf('netops.api.personal.offboarding_overview', {})
+    expect(u.summary.already_left_with_assets).toBeGreaterThan(0)
+    expect(u.rows[0].level).toBe('critical')
+  })
+
+  it('markiert im Bestand ein Gerät bei einer ausgetretenen Person als kritisch', async () => {
+    const liste = await ruf('netops.api.inventar.asset_list', {})
+    const verwaist = liste.find((a) => a.name === 'INV-000106')
+    expect(verwaist.level).toBe('critical')
+    expect(verwaist.reasons.join(' ')).toMatch(/ausgetreten/)
+  })
+})
+
+describe('Erstausstattung', () => {
+  it('sagt je Position, was verfügbar ist und was fehlt', async () => {
+    const plan = await ruf('netops.api.personal.onboarding_plan', {
+      bundle: 'Erstausstattung Montage',
+    })
+    const werkzeug = plan.positions.find((p) => p.category === 'Elektrowerkzeug')
+    expect(werkzeug.qty).toBe(2)
+    expect(werkzeug.missing).toBeGreaterThan(0)
+    expect(plan.summary.complete).toBe(false)
+  })
+
+  it('schlägt kein Gerät mit überfälliger Prüfung als einsatzbereit vor', async () => {
+    await ruf('netops.api.inventar.return_asset', { asset: 'INV-000301' })
+    const plan = await ruf('netops.api.personal.onboarding_plan', {
+      bundle: 'Erstausstattung Montage',
+    })
+    const messgeraet = plan.positions.find((p) => p.category === 'Messgerät')
+    const ueberfaellig = messgeraet.candidates.find((k) => k.asset === 'INV-000301')
+    if (ueberfaellig) expect(ueberfaellig.inspection_ok).toBe(false)
+  })
+})
+
+describe('Trennung zu Frappe HR', () => {
+  it('gibt zu Beschäftigten nur die Felder aus, die das Inventar braucht', async () => {
+    // Keine Personalakte über die API: Datenminimierung ist hier eine
+    // Zusicherung, kein Zufall.
+    const p = await ruf('netops.api.personal.employee_equipment', { employee: 'HR-EMP-00001' })
+    const erlaubt = new Set([
+      'name',
+      'employee_name',
+      'status',
+      'department',
+      'designation',
+      'company_email',
+      'user_id',
+      'date_of_joining',
+      'relieving_date',
+      'company',
+    ])
+    for (const feld of Object.keys(p.employee)) {
+      expect(erlaubt.has(feld)).toBe(true)
+    }
+  })
+
+  it('nennt niemals ein Geheimnis zu einem Zugangsverweis', async () => {
+    const p = await ruf('netops.api.personal.employee_equipment', { employee: 'HR-EMP-00001' })
+    const text = JSON.stringify(p)
+    expect(text).not.toMatch(/password|passwort|secret|geheim/i)
+  })
+
+  it('benutzt Frappe-HR-Namensschemata, damit der Umstieg nur den Fetcher betrifft', async () => {
+    const liste = await ruf('netops.api.personal.employee_list', {})
+    expect(liste.every((e) => /^HR-EMP-\d{5}$/.test(e.name))).toBe(true)
+    // Abteilung und Kostenstelle tragen das ERPNext-Kürzel.
+    expect(liste[0].department).toMatch(/ - Ö/)
+  })
+})
+
+describe('Bestandsübersicht', () => {
+  it('summiert Anschaffungs- und Restbuchwert über den aktiven Bestand', async () => {
+    const u = await ruf('netops.api.inventar.inventory_overview', {})
+    expect(u.summary.book_value_cents).toBeLessThan(u.summary.purchase_value_cents)
+    expect(u.summary.active).toBe(u.summary.total - u.summary.by_state.disposed)
+  })
+
+  it('gruppiert nach Kostenstelle für die Buchhaltung', async () => {
+    const u = await ruf('netops.api.inventar.inventory_overview', {})
+    expect(u.by_cost_center.length).toBeGreaterThan(1)
+    const summe = u.by_cost_center.reduce((s, k) => s + k.book_value_cents, 0)
+    expect(summe).toBe(u.summary.book_value_cents)
+  })
+
+  it('filtert nach Mandant', async () => {
+    const at = await ruf('netops.api.inventar.asset_list', { tenant: 'TEN-0001' })
+    const de = await ruf('netops.api.inventar.asset_list', { tenant: 'TEN-0002' })
+    expect(at.every((a) => a.tenant === 'TEN-0001')).toBe(true)
+    expect(de.every((a) => a.tenant === 'TEN-0002')).toBe(true)
+    expect(de.length).toBeGreaterThan(0)
+  })
+
+  it('findet ein Gerät über die Seriennummer', async () => {
+    const treffer = await ruf('netops.api.inventar.asset_list', { search: 'PF3X9K21' })
+    expect(treffer).toHaveLength(1)
+    expect(treffer[0].name).toBe('INV-000101')
+  })
+})
+
+describe('Protokollierung', () => {
+  it('schreibt jeden Vorgang in die Audit-Kette', async () => {
+    const vorher = await ruf('netops.api.audit.audit_log', { limit: 500 })
+    await ruf('netops.api.inventar.return_asset', { asset: 'INV-000101' })
+    const nachher = await ruf('netops.api.audit.audit_log', { limit: 500 })
+    expect(nachher.length).toBe(vorher.length + 1)
+    expect(nachher[0].action).toBe('asset_returned')
+  })
+
+  it('hält die Hash-Kette auch nach Inventarvorgängen zusammen', async () => {
+    await ruf('netops.api.inventar.return_asset', { asset: 'INV-000101' })
+    await ruf('netops.api.inventar.stock_move', {
+      consumable: 'VBM-0001',
+      kind: 'out',
+      qty: 1,
+      reason: 'Test',
+    })
+    const pruefung = await ruf('netops.api.audit.verify_chain', {})
+    expect(pruefung.ok).toBe(true)
+  })
+})

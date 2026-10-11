@@ -1,0 +1,254 @@
+/**
+ * Unscharfe Suche für die Befehlspalette.
+ *
+ * Der Anspruch: Wer "wamepupe" tippt, findet die Wärmepumpe, und wer
+ * "anl2" tippt, findet ANL-0002. Beides scheitert an einer Suche, die
+ * auf Gleichheit prüft - und beides ist der Normalfall, weil niemand
+ * beim Tippen auf einen Treffer wartet.
+ *
+ * Drei Dinge, die deutsche Anwendungen regelmäßig falsch machen:
+ *
+ * 1. Umlaute. "warmepumpe" muss "Wärmepumpe" finden. Wer nur
+ *    normalisiert, ohne ä auf a abzubilden, findet sie nicht - die
+ *    Zerlegung nach NFD trennt zwar den Umlautpunkt ab, aber "ß" und
+ *    die österreichische Schreibweise bleiben liegen.
+ * 2. Wortanfänge. "eg" soll "EnergieGemeinschaft" hoch bewerten und
+ *    "Legende" niedrig. Ohne Anfangsbonus steht das Falsche oben.
+ * 3. Zusammenhängende Treffer. "anla" in "Anlagen" ist ein besserer
+ *    Treffer als dieselben vier Buchstaben verstreut über einen Satz.
+ */
+
+/**
+ * Faltet einen Text auf eine vergleichbare Form.
+ *
+ * Kleinschreibung, Umlaute aufgelöst, diakritische Zeichen entfernt.
+ * "Öko-Volt GmbH" und "okovolt gmbh" werden damit vergleichbar.
+ */
+export function falte(text: string): string {
+  return text
+    .toLowerCase()
+    .replaceAll("ä", "a")
+    .replaceAll("ö", "o")
+    .replaceAll("ü", "u")
+    .replaceAll("ß", "ss")
+    .normalize("NFD")
+    // Kombinierende Zeichen aus der Zerlegung entfernen, etwa den
+    // Akzent aus "é".
+    .replace(/[̀-ͯ]/g, "");
+}
+
+export interface Treffer {
+  /** Je höher, desto besser. Null heißt: kein Treffer. */
+  punkte: number;
+  /** Positionen im Originaltext, zum Hervorheben. */
+  stellen: number[];
+}
+
+/** Gilt ein Zeichen als Wortanfang? */
+function istGrenze(zeichen: string | undefined): boolean {
+  if (zeichen === undefined) return true;
+  return !/[a-z0-9]/.test(zeichen);
+}
+
+/**
+ * Bewertet, wie gut `muster` in `text` passt.
+ *
+ * Die Buchstaben des Musters müssen der Reihe nach im Text vorkommen,
+ * aber nicht zusammenhängend. Bewertet wird danach, wie nah sie
+ * beieinander und wie nah sie an Wortanfängen liegen.
+ *
+ * Gesucht wird die *beste* Zuordnung, nicht die erste. Der
+ * Unterschied ist nicht theoretisch: "eg" in "Energie Gemeinschaft"
+ * trifft gierig gelesen das g in "Energie" - beide Buchstaben stecken
+ * dann mitten im ersten Wort, und der Eintrag landet hinter
+ * "Legende". Gemeint war E-nergie G-emeinschaft.
+ *
+ * Deshalb eine kleine dynamische Optimierung über alle Zuordnungen.
+ * Sie kostet Länge mal Länge statt Länge - bei Menüeinträgen und
+ * Anlagennamen sind das einige hundert Rechenschritte je Eintrag und
+ * Tastendruck, und dafür stimmt die Reihenfolge.
+ */
+export function bewerte(text: string, muster: string): Treffer | null {
+  const ziel = falte(text);
+  const suche = falte(muster).replace(/\s+/g, "");
+
+  if (suche.length === 0) return { punkte: 1, stellen: [] };
+  if (suche.length > ziel.length) return null;
+
+  const n = suche.length;
+  const m = ziel.length;
+  const KEIN = Number.NEGATIVE_INFINITY;
+
+  /** Bestes Ergebnis, wenn suche[i] auf ziel[j] fällt. */
+  const beste: number[][] = Array.from({ length: n }, () =>
+    new Array<number>(m).fill(KEIN),
+  );
+  /** Wo der vorige Buchstabe dafür lag - für die Rückverfolgung. */
+  const herkunft: number[][] = Array.from({ length: n }, () =>
+    new Array<number>(m).fill(-1),
+  );
+
+  for (let i = 0; i < n; i += 1) {
+    // Laufendes Maximum der Vorgängerzeile. Damit braucht die innere
+    // Schleife keine zweite Schleife über alle früheren Stellen.
+    let bisher = KEIN;
+    let bisherStelle = -1;
+
+    for (let j = i; j < m; j += 1) {
+      if (i > 0 && j > 0) {
+        const vorher = beste[i - 1]![j - 1]!;
+        if (vorher > bisher) {
+          bisher = vorher;
+          bisherStelle = j - 1;
+        }
+      }
+
+      if (ziel[j] !== suche[i]) continue;
+
+      // Was die Stelle selbst wert ist: Wortanfang und Lage im Text.
+      const grund =
+        (istGrenze(ziel[j - 1]) ? 6 : 0) + Math.max(0, 4 - Math.floor(j / 12));
+
+      if (i === 0) {
+        beste[0]![j] = grund;
+        continue;
+      }
+
+      if (bisher === KEIN) continue;
+
+      // Ein unmittelbar anschließender Buchstabe ist deutlich mehr
+      // wert als derselbe Buchstabe irgendwo weiter hinten.
+      const direkt = beste[i - 1]![j - 1]!;
+      const mitLauf = direkt === KEIN ? KEIN : direkt + 8;
+
+      if (mitLauf >= bisher) {
+        beste[i]![j] = mitLauf + grund;
+        herkunft[i]![j] = j - 1;
+      } else {
+        beste[i]![j] = bisher + grund;
+        herkunft[i]![j] = bisherStelle;
+      }
+    }
+  }
+
+  let bestesEnde = -1;
+  let punkte = KEIN;
+  for (let j = n - 1; j < m; j += 1) {
+    if (beste[n - 1]![j]! > punkte) {
+      punkte = beste[n - 1]![j]!;
+      bestesEnde = j;
+    }
+  }
+
+  if (bestesEnde === -1 || punkte === KEIN) return null;
+
+  const stellen: number[] = [];
+  let zeile = n - 1;
+  let spalte = bestesEnde;
+  while (zeile >= 0 && spalte >= 0) {
+    stellen.unshift(spalte);
+    spalte = herkunft[zeile]![spalte]!;
+    zeile -= 1;
+  }
+
+  // Ein Treffer, der den ganzen Text ausmacht, schlägt einen, der nur
+  // ein Viertel davon trifft.
+  punkte += Math.round((suche.length / ziel.length) * 12);
+
+  // Beginnt der Text mit dem Muster, ist es fast immer das Gemeinte.
+  if (ziel.startsWith(suche)) punkte += 20;
+
+  return { punkte, stellen };
+}
+
+export interface SuchbarerEintrag {
+  /** Der Haupttext, am stärksten gewichtet. */
+  titel: string;
+  /** Weitere Begriffe, unter denen der Eintrag zu finden sein soll. */
+  stichworte?: string[];
+}
+
+/**
+ * Bewertet einen Eintrag über Titel und Stichworte.
+ *
+ * Stichworte zählen weniger als der Titel. Sonst stünde ein Eintrag,
+ * der das Wort nur in seiner Beschreibung trägt, über dem, der so
+ * heißt.
+ */
+export function bewerteEintrag<T extends SuchbarerEintrag>(
+  eintrag: T,
+  muster: string,
+): Treffer | null {
+  const imTitel = bewerte(eintrag.titel, muster);
+  if (imTitel) return imTitel;
+
+  let bestes: Treffer | null = null;
+  for (const wort of eintrag.stichworte ?? []) {
+    const treffer = bewerte(wort, muster);
+    if (!treffer) continue;
+    const gedaempft = { punkte: treffer.punkte - 10, stellen: [] };
+    if (!bestes || gedaempft.punkte > bestes.punkte) bestes = gedaempft;
+  }
+
+  return bestes;
+}
+
+/**
+ * Sortiert Einträge nach Trefferqualität.
+ *
+ * Bei gleicher Punktzahl entscheidet die ursprüngliche Reihenfolge.
+ * Eine Liste, die bei jedem Tastendruck ihre Reihenfolge ändert, ist
+ * nicht bedienbar - man zielt auf einen Eintrag und trifft den
+ * nächsten.
+ */
+export function filtere<T extends SuchbarerEintrag>(
+  eintraege: readonly T[],
+  muster: string,
+): (T & { punkte: number; stellen: number[] })[] {
+  const gewertet = eintraege
+    .map((eintrag, i) => ({ eintrag, i, treffer: bewerteEintrag(eintrag, muster) }))
+    .filter((z) => z.treffer !== null);
+
+  gewertet.sort(
+    (a, b) => b.treffer!.punkte - a.treffer!.punkte || a.i - b.i,
+  );
+
+  return gewertet.map((z) => ({
+    ...z.eintrag,
+    punkte: z.treffer!.punkte,
+    stellen: z.treffer!.stellen,
+  }));
+}
+
+/**
+ * Zerlegt einen Text an den Trefferstellen.
+ *
+ * Ergebnis ist eine Folge aus Stücken, die entweder getroffen sind
+ * oder nicht - so lässt sich der Treffer hervorheben, ohne im JSX
+ * Indexrechnung zu betreiben.
+ */
+export function zerlege(
+  text: string,
+  stellen: readonly number[],
+): { text: string; treffer: boolean }[] {
+  if (stellen.length === 0) return [{ text, treffer: false }];
+
+  const menge = new Set(stellen);
+  const stuecke: { text: string; treffer: boolean }[] = [];
+
+  let aktuell = "";
+  let istTreffer = menge.has(0);
+
+  for (let i = 0; i < text.length; i += 1) {
+    const jetzt = menge.has(i);
+    if (jetzt !== istTreffer) {
+      if (aktuell) stuecke.push({ text: aktuell, treffer: istTreffer });
+      aktuell = "";
+      istTreffer = jetzt;
+    }
+    aktuell += text[i];
+  }
+
+  if (aktuell) stuecke.push({ text: aktuell, treffer: istTreffer });
+  return stuecke;
+}

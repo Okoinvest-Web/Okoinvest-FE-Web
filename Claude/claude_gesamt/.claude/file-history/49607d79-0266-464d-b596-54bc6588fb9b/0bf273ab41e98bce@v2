@@ -1,0 +1,435 @@
+/**
+ * Drift auswerten: was weicht ab, seit wann, und wer hat es getan.
+ *
+ * ## Was ein Drift-Befund eigentlich ist
+ *
+ * Nicht „Feld X hat einen anderen Wert". Ein Drift-Befund ist die Aussage:
+ * **hier ist die Wirklichkeit einen anderen Weg gegangen als die
+ * Dokumentation**. Die interessante Frage ist deshalb nie der Wert,
+ * sondern:
+ *
+ *   1. Gab es dazu einen genehmigten Change?
+ *   2. Wenn nein – wer hat geändert, und warum am Prozess vorbei?
+ *   3. Wenn ja – warum ist die Dokumentation nicht nachgezogen worden?
+ *
+ * Eine Liste von Feldwerten beantwortet keine davon. Deshalb korreliert
+ * diese Datei jeden Befund mit dem Change-Verlauf desselben Objekts.
+ *
+ * ## Der Befund, um den es wirklich geht
+ *
+ * **Drift ohne zugehörigen Change.** Jemand hat an einem produktiven Gerät
+ * etwas geändert, ohne dass es beantragt, genehmigt und protokolliert
+ * wurde. Genau dafür gibt es eine Drift-Erkennung – nicht dafür, die
+ * Firmwareversion in der Dokumentation nachzuführen.
+ *
+ * ## Warum das Alter zählt
+ *
+ * Ein Befund, der seit sechs Wochen offen steht, sagt weniger über das
+ * Gerät als über den Betrieb: dort pflegt niemand mehr die Dokumentation.
+ * Nach ein paar solcher Befunde liest niemand mehr hin, und dann geht der
+ * eine, der zählt, mit unter.
+ *
+ * ## Für die Portierung
+ *
+ * In Python gehört vor jede Methode `frappe.has_permission` und ein
+ * Mandantenfilter. Das Zeitfenster für die Change-Zuordnung sollte
+ * konfigurierbar sein – vier Stunden passen zu einem Wartungsfenster,
+ * nicht zu jedem Betrieb.
+ */
+import { FrappeMockError, SESSION_USER, table, touch } from '../db.js'
+import { alterStunden, jetzt } from '../zeit.js'
+import { protokolliere } from './audit.js'
+
+export const ARTEN = {
+  changed: 'Wert weicht ab',
+  unknown_object: 'Nicht dokumentiert',
+  missing_object: 'Dokumentiert, aber nicht vorhanden',
+}
+
+export const ZUSTAENDE = {
+  open: 'Offen',
+  accepted: 'Übernommen',
+  rejected: 'Verworfen',
+}
+
+/**
+ * Wie lange nach einem Change gilt eine Abweichung als dessen Folge?
+ *
+ * Vier Stunden: ein Wartungsfenster. Weiter gefasst würde jeder Change
+ * jede spätere Abweichung erklären, und die Korrelation wäre wertlos.
+ */
+const CHANGE_FENSTER_STUNDEN = 4
+
+/** Felder, deren Abweichung mehr bedeutet als eine veraltete Notiz. */
+const HEIKLE_FELDER = new Set([
+  'firmware',
+  'enabled',
+  'rule_count',
+  'nat_rules',
+  'admin_users',
+  'ssh_enabled',
+  'snmp_community',
+  'tls_version',
+  'password_policy',
+])
+
+// --- Hilfen ------------------------------------------------------------------
+
+/** Steht das Objekt an der Perimeter-Firewall? */
+function istPerimeter(objekt) {
+  return table('Firewall Instance').some((f) => f.device === objekt && f.layer === 'perimeter')
+}
+
+/**
+ * Changes, die dieses Objekt betreffen und zeitlich passen.
+ *
+ * Genehmigt oder umgesetzt – ein abgelehnter Change erklärt eine Änderung
+ * nicht, er verbietet sie.
+ */
+function passendeChanges(befund) {
+  const erkannt = alterStunden(befund.detected)
+  const kandidaten = table('Change Request')
+    .filter((c) => c.target_object === befund.object_name)
+    .filter((c) => ['approved', 'implemented', 'verified'].includes(c.change_state))
+    .map((c) => {
+      // Das Fenster ist die Umsetzung, nicht der Antrag.
+      const bezug = c.window_start || c.requested_on
+      return { change: c, abstand: alterStunden(bezug) - erkannt }
+    })
+
+  return {
+    // Der Change muss VOR der Erkennung liegen, aber nicht beliebig lange.
+    gedeckt: kandidaten
+      .filter((x) => x.abstand >= 0 && x.abstand <= CHANGE_FENSTER_STUNDEN)
+      .sort((a, b) => a.abstand - b.abstand),
+    /**
+     * Genehmigt, aber das Fenster liegt noch in der Zukunft - und geaendert
+     * wurde trotzdem schon.
+     *
+     * Das ist nicht dasselbe wie „kein Change". Es ist schlechter: jemand
+     * kannte den Ablauf, hat die Genehmigung eingeholt und sich dann nicht
+     * an das Fenster gehalten. Ein Wartungsfenster steht dort, weil zu
+     * anderen Zeiten Leute arbeiten.
+     */
+    vorzeitig: kandidaten.filter((x) => x.abstand < 0).sort((a, b) => b.abstand - a.abstand),
+  }
+}
+
+// --- Lesen -------------------------------------------------------------------
+
+/**
+ * Die Befunde mit Bewertung.
+ *
+ * `state` filtert auf den Bearbeitungszustand, `covered` auf die Frage, ob
+ * ein Change dahintersteht.
+ */
+export function drift_findings({
+  state = null,
+  connector = null,
+  object_name = null,
+  covered = null,
+  tenant = null,
+} = {}) {
+  const zeilen = table('Drift Finding')
+    .filter((d) => (!state || d.state === state) && (!connector || d.connector === connector))
+    .filter(
+      (d) => (!object_name || d.object_name === object_name) && (!tenant || d.tenant === tenant),
+    )
+    .map((d) => {
+      const alter = Math.round(alterStunden(d.detected))
+      const { gedeckt: treffer, vorzeitig } = passendeChanges(d)
+      const gedeckt = treffer.length > 0
+      const vorAblauf = !gedeckt && vorzeitig.length > 0
+      const perimeter = istPerimeter(d.object_name)
+      const heikel = HEIKLE_FELDER.has(d.field)
+
+      const gruende = []
+      if (vorAblauf && d.state === 'open') {
+        const c = vorzeitig[0].change
+        gruende.push(
+          `Vor dem genehmigten Fenster ausgeführt: ${c.name} ist für ${String(c.window_start).slice(0, 16)} ` +
+            'freigegeben. Wer die Genehmigung einholt und sich dann nicht an das Fenster hält, ' +
+            'arbeitet, während andere arbeiten.',
+        )
+      } else if (!gedeckt && d.state === 'open') {
+        // Der eigentliche Befund.
+        gruende.push('Kein genehmigter Change – am Freigabeprozess vorbei geändert')
+      }
+      if (perimeter) gruende.push('Betrifft die Perimeter-Firewall')
+      if (heikel) gruende.push(`Feld „${d.field}" wirkt auf Erreichbarkeit oder Zugang`)
+      if (d.finding_kind === 'unknown_object') {
+        gruende.push('Gerät ist im Netz, steht aber in keiner Dokumentation')
+      }
+      if (d.finding_kind === 'missing_object') {
+        gruende.push('Dokumentiert, aber nicht auffindbar – abgebaut oder ausgefallen?')
+      }
+      if (d.state === 'open' && alter > 24 * 14) {
+        gruende.push(`Seit ${Math.round(alter / 24)} Tagen offen – hier pflegt niemand mehr nach`)
+      }
+      if (gedeckt) {
+        gruende.push(
+          `Erklärt durch ${treffer[0].change.name}: ${treffer[0].change.title} – ` +
+            'die Dokumentation ist nur nicht nachgezogen',
+        )
+      }
+
+      const stufe =
+        d.state !== 'open'
+          ? 'neutral'
+          : // Vor dem Fenster geaendert ist immer kritisch: da war jemand im
+            // Ablauf drin und ist trotzdem ausgeschert.
+            vorAblauf
+            ? 'critical'
+            : // Perimeter ohne Change ist der andere schlimme Fall.
+              (perimeter || heikel) && !gedeckt
+              ? 'critical'
+              : !gedeckt
+                ? 'warning'
+                : 'ok'
+
+      return {
+        ...d,
+        kind_label: ARTEN[d.finding_kind] || d.finding_kind,
+        state_label: ZUSTAENDE[d.state] || d.state,
+        age_hours: alter,
+        age_days: Math.round(alter / 24),
+        open: d.state === 'open',
+        covered_by_change: gedeckt ? treffer[0].change.name : null,
+        covered_title: gedeckt ? treffer[0].change.title : null,
+        early_change: vorAblauf ? vorzeitig[0].change.name : null,
+        early_window: vorAblauf ? vorzeitig[0].change.window_start : null,
+        perimeter,
+        sensitive_field: heikel,
+        reasons: gruende,
+        level: stufe,
+      }
+    })
+    .filter((d) => covered === null || (covered ? !!d.covered_by_change : !d.covered_by_change))
+    .sort((a, b) => {
+      const rang = { critical: 4, warning: 3, ok: 2, neutral: 1 }
+      return rang[b.level] - rang[a.level] || String(b.detected).localeCompare(String(a.detected))
+    })
+
+  const offen = zeilen.filter((z) => z.open)
+  const ungedeckt = offen.filter((z) => !z.covered_by_change)
+
+  return {
+    summary: {
+      total: zeilen.length,
+      open: offen.length,
+      // Die Zahl, um die es geht. Alles andere ist Buchhaltung.
+      uncovered: ungedeckt.length,
+      covered: offen.length - ungedeckt.length,
+      perimeter: offen.filter((z) => z.perimeter).length,
+      early: offen.filter((z) => z.early_change).length,
+      undocumented: offen.filter((z) => z.finding_kind === 'unknown_object').length,
+      oldest_days: offen.length ? Math.max(...offen.map((z) => z.age_days)) : 0,
+      level: ungedeckt.some((z) => z.level === 'critical')
+        ? 'critical'
+        : ungedeckt.length
+          ? 'warning'
+          : 'ok',
+      note: ungedeckt.length
+        ? `${ungedeckt.length} von ${offen.length} offenen Abweichungen haben keinen genehmigten ` +
+          'Change. Dort hat jemand am Freigabeprozess vorbei geändert.'
+        : offen.length
+          ? 'Jede offene Abweichung lässt sich einem Change zuordnen – nur die Dokumentation hinkt.'
+          : 'Keine offenen Abweichungen.',
+    },
+    rows: zeilen,
+  }
+}
+
+/**
+ * Welche Objekte driften immer wieder?
+ *
+ * Ein Objekt mit fünf Befunden in vier Wochen hat kein Wertproblem,
+ * sondern ein Prozessproblem: entweder ist die Dokumentation falsch, oder
+ * dort ändert regelmäßig jemand ohne Change.
+ */
+export function drift_hotspots({ days = 90, tenant = null } = {}) {
+  const alle = table('Drift Finding')
+    .filter((d) => !tenant || d.tenant === tenant)
+    .filter((d) => alterStunden(d.detected) <= days * 24)
+
+  const nachObjekt = new Map()
+  for (const d of alle) {
+    if (!nachObjekt.has(d.object_name)) {
+      nachObjekt.set(d.object_name, {
+        object_name: d.object_name,
+        object_type: d.object_type,
+        rows: [],
+      })
+    }
+    nachObjekt.get(d.object_name).rows.push(d)
+  }
+
+  const bewertet = drift_findings({ tenant })
+  const gedeckt = new Map(bewertet.rows.map((r) => [r.name, r]))
+
+  return [...nachObjekt.values()]
+    .map((o) => {
+      const ungedeckt = o.rows.filter((d) => !gedeckt.get(d.name)?.covered_by_change).length
+      const felder = [...new Set(o.rows.map((d) => d.field))]
+      return {
+        object_name: o.object_name,
+        object_type: o.object_type,
+        findings: o.rows.length,
+        open: o.rows.filter((d) => d.state === 'open').length,
+        uncovered: ungedeckt,
+        fields: felder,
+        perimeter: istPerimeter(o.object_name),
+        last_detected: o.rows
+          .map((d) => d.detected)
+          .sort()
+          .at(-1),
+        reasons:
+          o.rows.length >= 3
+            ? [
+                `${o.rows.length} Abweichungen in ${days} Tagen an ${felder.length} Feldern – ` +
+                  'entweder stimmt die Dokumentation nicht oder dort wird ohne Change gearbeitet',
+              ]
+            : [],
+        level: o.rows.length >= 3 && ungedeckt ? 'critical' : o.rows.length >= 3 ? 'warning' : 'ok',
+      }
+    })
+    .sort((a, b) => b.findings - a.findings || a.object_name.localeCompare(b.object_name))
+}
+
+// --- Bearbeiten --------------------------------------------------------------
+
+/**
+ * Einen Befund übernehmen oder verwerfen.
+ *
+ * „Übernehmen" heißt: die Dokumentation wird auf den gemessenen Wert
+ * nachgeführt. Das ist **keine** Änderung am Gerät – dafür gibt es den
+ * Change-Workflow.
+ *
+ * „Verwerfen" heißt: der gemessene Wert ist falsch oder unerwünscht. Dann
+ * bleibt die Abweichung in der Welt und gehört über einen Change
+ * zurückgedreht – deshalb verlangt das Verwerfen einen Grund.
+ */
+export function drift_resolve({
+  name = null,
+  state = null,
+  reason = null,
+  actor = SESSION_USER,
+} = {}) {
+  const erlaubt = ['open', 'accepted', 'rejected']
+  if (!erlaubt.includes(state)) {
+    throw new FrappeMockError(
+      'ValidationError: Zustand muss einer von ' + erlaubt.join(', ') + ' sein',
+    )
+  }
+
+  const befund = table('Drift Finding').find((d) => d.name === name)
+  if (!befund) {
+    throw new FrappeMockError(`DoesNotExistError: Drift Finding ${name} existiert nicht`, 404)
+  }
+
+  const bewertet = drift_findings({}).rows.find((r) => r.name === name)
+
+  if (state === 'accepted' && bewertet?.early_change && !reason) {
+    throw new FrappeMockError(
+      `ValidationError: Die Änderung wurde vor dem genehmigten Fenster von ` +
+        `${bewertet.early_change} ausgeführt. Das ist kein Dokumentationsrückstand, ` +
+        'sondern ein übergangener Ablauf – das braucht eine Begründung.',
+    )
+  }
+
+  // Einen Befund ohne Change stillschweigend zu übernehmen heißt, eine
+  // Änderung am Freigabeprozess vorbei nachträglich zu legitimieren.
+  if (state === 'accepted' && bewertet && !bewertet.covered_by_change && !reason) {
+    throw new FrappeMockError(
+      'ValidationError: Zu dieser Abweichung gibt es keinen genehmigten Change. ' +
+        'Sie zu übernehmen heißt, eine Änderung am Freigabeprozess vorbei nachträglich ' +
+        'gutzuheißen – das braucht eine Begründung.',
+    )
+  }
+  if (state === 'rejected' && !reason) {
+    throw new FrappeMockError(
+      'ValidationError: Verwerfen heißt, der gemessene Zustand ist falsch. ' +
+        'Dann bleibt die Abweichung bestehen und gehört über einen Change zurückgedreht – ' +
+        'der Grund gehört ins Protokoll.',
+    )
+  }
+
+  if (state === 'accepted' && bewertet?.perimeter && !bewertet.covered_by_change) {
+    throw new FrappeMockError(
+      `ValidationError: ${befund.object_name} ist die Perimeter-Firewall. Eine Änderung dort ` +
+        'ohne genehmigten Change wird nicht per Häkchen übernommen – erst klären, wer sie ' +
+        'gemacht hat.',
+    )
+  }
+
+  befund.state = state
+  befund.resolved = state === 'open' ? null : jetzt()
+  touch(befund)
+
+  protokolliere({
+    action: 'drift_' + state,
+    object_type: 'Drift Finding',
+    object_name: name,
+    payload: {
+      state,
+      reason,
+      actor,
+      field: befund.field,
+      covered_by_change: bewertet?.covered_by_change || null,
+    },
+  })
+
+  return {
+    ok: true,
+    name,
+    state,
+    note:
+      state === 'accepted'
+        ? `Dokumentation auf „${befund.ist_value}" nachgeführt. Am Gerät ändert das nichts.`
+        : state === 'rejected'
+          ? 'Verworfen. Die Abweichung besteht weiter – ein Change dreht sie zurück.'
+          : 'Wieder offen.',
+  }
+}
+
+/**
+ * Mehrere Befunde auf einmal übernehmen.
+ *
+ * Nur die, zu denen ein Change existiert. Alles andere einzeln – wer
+ * zwanzig ungedeckte Abweichungen mit einem Klick wegräumt, hat sie nicht
+ * gelesen.
+ */
+export function drift_accept_covered({ names = null, actor = SESSION_USER } = {}) {
+  const bewertet = drift_findings({ state: 'open' })
+  const kandidaten = bewertet.rows
+    .filter((r) => !names || names.includes(r.name))
+    .filter((r) => r.covered_by_change)
+
+  const abgelehnt = bewertet.rows
+    .filter((r) => (!names || names.includes(r.name)) && !r.covered_by_change)
+    .map((r) => r.name)
+
+  for (const r of kandidaten) {
+    const befund = table('Drift Finding').find((d) => d.name === r.name)
+    befund.state = 'accepted'
+    befund.resolved = jetzt()
+    touch(befund)
+    protokolliere({
+      action: 'drift_accepted',
+      object_type: 'Drift Finding',
+      object_name: r.name,
+      payload: { covered_by_change: r.covered_by_change, actor, bulk: true },
+    })
+  }
+
+  return {
+    ok: true,
+    accepted: kandidaten.length,
+    skipped: abgelehnt.length,
+    skipped_names: abgelehnt,
+    note: abgelehnt.length
+      ? `${kandidaten.length} übernommen. ${abgelehnt.length} bleiben offen – zu ihnen gibt es ` +
+        'keinen Change, und die gehören einzeln angesehen.'
+      : `${kandidaten.length} übernommen, alle durch einen Change gedeckt.`,
+  }
+}

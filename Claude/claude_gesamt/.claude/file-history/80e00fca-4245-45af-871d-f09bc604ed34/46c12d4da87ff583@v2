@@ -1,0 +1,247 @@
+<section class="hero">
+  <div class="wrap hero-in">
+    <div class="hero-grid">
+      <div>
+        <span class="kicker">Agri-Photovoltaik</span>
+        <h1>Die Fläche zweimal nutzen, ohne sie <span class="gl">aufzugeben</span>.</h1>
+        <p class="lede">Agri-PV ist kein Kompromiss zwischen Acker und Kraftwerk, sondern eine Frage des Reihenabstands. Der Konfigurator zeigt, wie viel Licht am Boden ankommt und was das für Kultur und Stromertrag bedeutet.</p>
+        <div class="hero-acts">
+          <a class="btn btn-v" href="#tool">Fläche konfigurieren</a>
+          <a class="btn btn-o" href="#details">Baurecht &amp; Förderung</a>
+        </div>
+      </div>
+      <div class="chips">
+        <div class="chip v"><div><i>Flächeneffizienz</i><p>Summe aus Ernte und Strom je Hektar</p></div><b>1,2–1,7<span class="unit">LER</span></b></div>
+        <div class="chip s"><div><i>Durchfahrtshöhe</i><p>Aufgeständerte Systeme für Traktorbetrieb</p></div><b>4,5–5,5<span class="unit">m</span></b></div>
+        <div class="chip c"><div><i>Verdunstung</i><p>Reduktion unter teilbeschatteter Fläche</p></div><b>−10–20<span class="unit">%</span></b></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="tool">
+  <div class="wrap">
+    <div class="sec-head">
+      <div><span class="kicker">Flächenkonfigurator</span><h2>Reihenabstand entscheidet über alles.</h2></div>
+      <p class="lede">Enger gestellte Reihen bringen mehr Kilowattpeak und weniger Licht am Boden. Der Schnitt unten zeigt Schattenwurf und Lichtangebot, die Kennzahlen daneben übersetzen es in Ertrag und Deckungsbeitrag.</p>
+    </div>
+
+    <div class="console glass chamf">
+      <div class="con-t"><span><span class="pulse"></span>Flächenauslegung</span><span id="stamp">System: Aufgeständert</span></div>
+      <div class="con-l">
+        <div class="field">
+          <div class="field-h"><label for="ha">Projektfläche</label><span class="field-v" id="v-ha">5,0<span class="unit">ha</span></span></div>
+          <input id="ha" type="range" min="0.5" max="50" step="0.5" value="5">
+          <div class="scale"><span>0,5</span><span>50 ha</span></div>
+        </div>
+        <div class="field">
+          <span class="lbl" id="syl">Montagesystem</span>
+          <div class="seg" role="group" aria-labelledby="syl">
+            <button type="button" data-sy="hoch" aria-pressed="true">Aufgeständert · 5 m Durchfahrt</button>
+            <button type="button" data-sy="vert" aria-pressed="false">Vertikal bifazial · Ost-West</button>
+            <button type="button" data-sy="trac" aria-pressed="false">Einachsig nachgeführt</button>
+          </div>
+        </div>
+        <div class="field">
+          <div class="field-h"><label for="sp">Reihenabstand</label><span class="field-v" id="v-sp">8,0<span class="unit">m</span></span></div>
+          <input id="sp" type="range" min="3" max="16" step="0.5" value="8">
+          <div class="scale"><span>3 m dicht</span><span>16 m offen</span></div>
+        </div>
+        <div class="field">
+          <span class="lbl" id="kul">Kultur</span>
+          <div class="seg c2" role="group" aria-labelledby="kul">
+            <button type="button" data-k="gruen" aria-pressed="true">Grünland</button>
+            <button type="button" data-k="getr" aria-pressed="false">Getreide</button>
+            <button type="button" data-k="obst" aria-pressed="false">Obst/Beeren</button>
+            <button type="button" data-k="gem" aria-pressed="false">Feldgemüse</button>
+          </div>
+        </div>
+        <details class="as">
+          <summary>Rechenannahmen</summary>
+          <ul>
+            <li>Modulbelegung 220 Wp je Quadratmeter Modulfläche</li>
+            <li>Spezifischer Ertrag 1.000 bis 1.180 kWh/kWp je System</li>
+            <li>Referenz Freiflächenanlage 800 kWp je Hektar für den LER</li>
+            <li>Lichtbedarf je Kultur unterschiedlich gewichtet, Grünland toleranter als Feldgemüse</li>
+            <li>Stromerlös 7 ct/kWh, Deckungsbeiträge der Kulturen als Richtwerte</li>
+            <li>Ohne Berücksichtigung von Beregnung, Hagelschutz und Verdunstungseffekten</li>
+          </ul>
+        </details>
+      </div>
+
+      <div class="con-r">
+        <div class="stats">
+          <div class="stat s"><i>Anlagenleistung</i><b id="o-kwp">—<span class="unit">kWp</span></b><small id="o-dens">— kWp je ha</small></div>
+          <div class="stat s"><i>Jahresertrag</i><b id="o-y">—<span class="unit">MWh</span></b><small id="o-spec">—</small></div>
+          <div class="stat c"><i>Licht am Boden</i><b id="o-light">—<span class="unit">%</span></b><small id="o-shade">Beschattung —</small></div>
+          <div class="stat v"><i>Kulturertrag</i><b id="o-crop">—<span class="unit">%</span></b><small id="o-cropn">—</small></div>
+          <div class="stat v"><i>Flächeneffizienz</i><b id="o-ler">—<span class="unit">LER</span></b><small>Ernte plus Strom je Hektar</small></div>
+          <div class="stat"><i>Deckungsbeitrag</i><b id="o-db">—<span class="unit">€/ha</span></b><small id="o-db2">—</small></div>
+        </div>
+
+        <div class="panel dk">
+          <div class="panel-h"><h4>Schnitt durch die Anlage</h4><span id="c-note">—</span></div>
+          <svg id="cut" viewBox="0 0 760 250" role="img" aria-label="Querschnitt der Agri-PV-Anlage mit Reihenabstand und Schattenwurf"></svg>
+          <div class="legend">
+            <span><i style="background:#1E3A5C"></i>Modulreihe</span>
+            <span><i style="background:rgba(69,224,255,.35)"></i>Kernschatten Mittag</span>
+            <span><i style="background:#8CE04B"></i>voll besonnte Fläche</span>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-h"><h4>Ertrag je Hektar im Vergleich</h4><span id="c-cmp">—</span></div>
+          <svg id="cmp" viewBox="0 0 760 150" role="img" aria-label="Vergleich der Flächennutzung"></svg>
+        </div>
+        <p class="fine">Richtwerte für Oberösterreich und Salzburg. Standortgutachten, Bodenqualität und die konkrete Sorte verschieben das Ergebnis in beide Richtungen.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="details">
+  <div class="wrap">
+    <div class="sec-head">
+      <div><span class="kicker c">Rahmenbedingungen</span><h2>Was ein Agri-PV-Projekt in Österreich trägt.</h2></div>
+      <p class="lede">Technisch ist Agri-PV gelöst. Die Projektdauer bestimmen Widmung, Netzzutritt und der Nachweis, dass die landwirtschaftliche Nutzung tatsächlich weiterläuft.</p>
+    </div>
+    <div class="cards">
+      <article class="card">
+        <span class="n">A — RECHT</span>
+        <svg class="ic" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M16 4v24M8 10l-4 9a4 4 0 0 0 8 0l-4-9ZM24 10l-4 9a4 4 0 0 0 8 0l-4-9ZM6 8h20"/></svg>
+        <h3>Widmung und Nachweis</h3>
+        <p>Die Fläche bleibt landwirtschaftlich, wenn die Bewirtschaftung nachweislich fortgeführt wird. Entscheidend sind Durchfahrtshöhe, Reihenabstand und eine dokumentierte Nutzung über die gesamte Laufzeit.</p>
+        <ul><li>Abstimmung mit der Gemeinde</li><li>Nachweis der Fortführung</li><li>Rückbauverpflichtung</li></ul>
+      </article>
+      <article class="card">
+        <span class="n">B — TECHNIK</span>
+        <svg class="ic" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 26h24M8 26V12M24 26V12M4 12h24l-3-5H7l-3 5Z"/></svg>
+        <h3>Unterkonstruktion und Maschinen</h3>
+        <p>Die Konstruktion richtet sich nach dem größten Gerät, das darunter fährt. Stützenraster, lichte Höhe und Windlasten bestimmen die Stahlmenge und damit einen Großteil der Investitionskosten.</p>
+        <ul><li>Durchfahrtsbreite nach Maschinenpark</li><li>Rammfundamente statt Beton</li><li>Hagel- und Windlastnachweis</li></ul>
+      </article>
+      <article class="card">
+        <span class="n">C — ERLÖS</span>
+        <svg class="ic" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 24 11 15l5 5 6-10 6 8"/><path d="M4 28h24"/><circle cx="27" cy="8" r="2.5"/></svg>
+        <h3>Vermarktung des Stroms</h3>
+        <p>Größere Flächenanlagen speisen fast vollständig ein. Damit hängt der Erlös am Marktpreis oder an einem Abnahmevertrag. Ein Betrieb mit hohem Eigenverbrauch in der Nähe verändert die Rechnung deutlich.</p>
+        <ul><li>Direktvermarktung am Spotmarkt</li><li>Langfristiger Abnahmevertrag</li><li>Eigenverbrauch im Betrieb nebenan</li></ul>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="faq">
+  <div class="wrap">
+    <div class="sec-head"><div><span class="kicker">Häufige Fragen</span><h2>Was Landwirtinnen und Landwirte fragen.</h2></div></div>
+    <div class="faq">
+      <details class="qa" open><summary>Wie stark sinkt der Ernteertrag wirklich?</summary><p>Das hängt an der Kultur. Grünland und schattentolerante Kulturen verlieren bei zwanzig Prozent weniger Licht oft nur zehn Prozent Ertrag. Feldgemüse reagiert deutlich empfindlicher. Bei ausreichendem Reihenabstand bleibt der Verlust im einstelligen Bereich, wie der Konfigurator zeigt.</p></details>
+      <details class="qa"><summary>Kann ich mit normalen Maschinen weiterarbeiten?</summary><p>Bei aufgeständerten Systemen ja, sofern die lichte Höhe zum Maschinenpark passt. Vertikale Anlagen lassen die Fläche zwischen den Reihen völlig frei und sind für Mähdrescher und Ballenpressen unkritisch, solange der Abstand zum Arbeitsbreitenraster passt.</p></details>
+      <details class="qa"><summary>Was passiert bei Hagel oder Sturm?</summary><p>Die Module sind auf die Wind- und Schneelast des Standorts ausgelegt und nach ÖNORM nachgewiesen. Aufgeständerte Anlagen wirken für die Kultur darunter zusätzlich als Hagelschutz, was in Obstkulturen ein eigener Wert sein kann.</p></details>
+      <details class="qa"><summary>Wie lange läuft so ein Projekt?</summary><p>Von der ersten Machbarkeitsprüfung bis zur Inbetriebnahme sind zwölf bis vierundzwanzig Monate realistisch. Den Ausschlag geben Widmungsverfahren und Netzzutritt, nicht die Bauzeit.</p></details>
+    </div>
+  </div>
+</section>
+
+<script>
+(function(){
+"use strict";
+var $=function(i){return document.getElementById(i);},
+de=function(n,d){d=d||0;return Number(n).toLocaleString("de-AT",{minimumFractionDigits:d,maximumFractionDigits:d});};
+var SY={
+ hoch:{n:"Aufgeständert",w:4.0,kwm:0.88,y:1000,sh:0.80,h:5.0,tilt:20},
+ vert:{n:"Vertikal bifazial",w:0.6,kwm:0.44,y:1020,sh:0.55,h:3.0,tilt:90},
+ trac:{n:"Einachsig nachgeführt",w:4.5,kwm:0.99,y:1180,sh:0.70,h:4.0,tilt:35}
+};
+var KU={
+ gruen:{n:"Grünland",s:0.50,db:380},
+ getr:{n:"Getreide",s:0.78,db:620},
+ obst:{n:"Obst/Beeren",s:0.48,db:6200},
+ gem:{n:"Feldgemüse",s:0.95,db:9000}
+};
+var sy="hoch",ku="gruen",REF=800,CT=0.07;
+
+function render(){
+ var ha=+$("ha").value,sp=+$("sp").value,S=SY[sy],K=KU[ku];
+ var runM=100*(100/sp)*ha,kwp=Math.round(runM*S.kwm);
+ var dens=Math.round(kwp/ha),yld=Math.round(kwp*S.y/1000);
+ var t=Math.max(.22,Math.min(.98,1-S.sh*(S.w/sp)));
+ var crop=Math.max(.15,1-K.s*(1-t));
+ var ler=crop+dens/REF;
+ var dbStrom=Math.round(yld*1000/ha*CT),dbKultur=Math.round(K.db*crop);
+
+ $("v-ha").innerHTML=de(ha,1)+'<span class="unit">ha</span>';
+ $("v-sp").innerHTML=de(sp,1)+'<span class="unit">m</span>';
+ $("stamp").textContent="System: "+S.n;
+ $("o-kwp").innerHTML=de(kwp)+'<span class="unit">kWp</span>';
+ $("o-dens").textContent=de(dens)+" kWp je ha";
+ $("o-y").innerHTML=de(yld)+'<span class="unit">MWh</span>';
+ $("o-spec").textContent=de(S.y)+" kWh/kWp";
+ $("o-light").innerHTML=de(t*100)+'<span class="unit">%</span>';
+ $("o-shade").textContent="Beschattung "+de((1-t)*100)+" %";
+ $("o-crop").innerHTML=de(crop*100)+'<span class="unit">%</span>';
+ $("o-cropn").textContent=K.n+" gegenüber Freifläche";
+ $("o-ler").innerHTML=de(ler,2)+'<span class="unit">LER</span>';
+ $("o-db").innerHTML=de(dbStrom+dbKultur)+'<span class="unit">€/ha</span>';
+ $("o-db2").textContent=de(dbStrom)+" € Strom · "+de(dbKultur)+" € Kultur";
+ $("c-note").textContent="Reihenabstand "+de(sp,1)+" m · Modultiefe "+de(S.w,1)+" m";
+
+ /* cross section: 46 m of field */
+ var W=760,H=250,G=196,px=W/46,s="",i,x;
+ s+='<defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0A1526"/><stop offset="100%" stop-color="#0E2137"/></linearGradient></defs>';
+ s+='<rect x="0" y="0" width="'+W+'" height="'+G+'" fill="url(#sky)"/>';
+ s+='<circle cx="640" cy="40" r="15" fill="#FFB43D" opacity=".85"/>';
+ for(i=0;i<7;i++){s+='<line x1="'+(608-i*9)+'" y1="'+(56+i*7)+'" x2="'+(628-i*9)+'" y2="'+(70+i*7)+'" stroke="#FFB43D" stroke-width="1" opacity=".28"/>';}
+ /* sunlit ground base */
+ s+='<rect x="0" y="'+G+'" width="'+W+'" height="'+(H-G)+'" fill="#8CE04B" opacity=".22"/>';
+ s+='<line x1="0" y1="'+G+'" x2="'+W+'" y2="'+G+'" stroke="#8CE04B" stroke-width="1.5" opacity=".6"/>';
+ var shW=S.w*px*(S.tilt===90?0.35:0.92);
+ for(x=sp/2;x<46;x+=sp){
+   var cx=x*px,top=G-S.h*px*0.62;
+   /* shadow band */
+   s+='<rect x="'+(cx-shW/2+10).toFixed(1)+'" y="'+G+'" width="'+shW.toFixed(1)+'" height="'+(H-G)+'" fill="#45E0FF" opacity=".30"/>';
+   /* post */
+   s+='<line x1="'+cx.toFixed(1)+'" y1="'+G+'" x2="'+cx.toFixed(1)+'" y2="'+top.toFixed(1)+'" stroke="#4A6284" stroke-width="2.5"/>';
+   /* module */
+   if(S.tilt===90){
+     s+='<rect x="'+(cx-3).toFixed(1)+'" y="'+(top-30).toFixed(1)+'" width="6" height="'+(30+ (G-top)*0.0).toFixed(1)+'" fill="#1E3A5C" stroke="#45E0FF" stroke-width="1"/>';
+   }else{
+     var hw=S.w*px/2,dy=S.w*px*0.2;
+     s+='<path d="M'+(cx-hw).toFixed(1)+' '+(top+dy).toFixed(1)+' L'+(cx+hw).toFixed(1)+' '+(top-dy).toFixed(1)+' L'+(cx+hw).toFixed(1)+' '+(top-dy+7).toFixed(1)+' L'+(cx-hw).toFixed(1)+' '+(top+dy+7).toFixed(1)+'Z" fill="#1E3A5C" stroke="#45E0FF" stroke-width="1"/>';
+   }
+ }
+ /* spacing dimension */
+ var x1=(sp/2)*px,x2=(sp/2+sp)*px;
+ s+='<line x1="'+x1.toFixed(1)+'" y1="'+(H-14)+'" x2="'+x2.toFixed(1)+'" y2="'+(H-14)+'" stroke="#9FB4CE" stroke-width="1"/>';
+ s+='<line x1="'+x1.toFixed(1)+'" y1="'+(H-19)+'" x2="'+x1.toFixed(1)+'" y2="'+(H-9)+'" stroke="#9FB4CE" stroke-width="1"/>';
+ s+='<line x1="'+x2.toFixed(1)+'" y1="'+(H-19)+'" x2="'+x2.toFixed(1)+'" y2="'+(H-9)+'" stroke="#9FB4CE" stroke-width="1"/>';
+ s+='<text x="'+((x1+x2)/2).toFixed(1)+'" y="'+(H-20)+'" text-anchor="middle" fill="#9FB4CE" font-family="JetBrains Mono, monospace" font-size="10">'+de(sp,1)+' m</text>';
+ s+='<text x="12" y="'+(G-10)+'" fill="#617595" font-family="JetBrains Mono, monospace" font-size="10">Durchfahrt '+de(S.h,1)+' m</text>';
+ $("cut").innerHTML=s;
+
+ /* comparison bars */
+ var rows=[["Nur Landwirtschaft",1.00,K.db,"#3A4C66"],
+           ["Agri-PV kombiniert",ler,dbStrom+dbKultur,"#8CE04B"],
+           ["Nur Freiflächen-PV",REF/REF,Math.round(REF*S.y/1000*CT*1000/1000),"#FFB43D"]];
+ var W2=760,L2=160,R2=110,T2=12,mx=Math.max.apply(null,rows.map(function(r){return r[2];}))||1,pw=W2-L2-R2,s2="";
+ for(i=0;i<3;i++){
+   var y=T2+i*42,w=Math.max(2,pw*rows[i][2]/mx);
+   s2+='<text x="'+(L2-10)+'" y="'+(y+20)+'" text-anchor="end" fill="#9FB4CE" font-family="JetBrains Mono, monospace" font-size="10.5">'+rows[i][0]+'</text>';
+   s2+='<rect x="'+L2+'" y="'+(y+4)+'" width="'+w.toFixed(1)+'" height="22" fill="'+rows[i][3]+'"><title>'+rows[i][0]+': '+de(rows[i][2])+' € je ha</title></rect>';
+   s2+='<text x="'+(L2+w+8).toFixed(1)+'" y="'+(y+20)+'" fill="#EDF4FF" font-family="JetBrains Mono, monospace" font-size="10.5">'+de(rows[i][2])+' €/ha</text>';
+ }
+ $("cmp").innerHTML=s2;
+ $("c-cmp").textContent="Deckungsbeitrag je Hektar und Jahr";
+}
+["ha","sp"].forEach(function(i){$(i).addEventListener("input",render);});
+Array.prototype.forEach.call(document.querySelectorAll("[data-sy]"),function(b){
+ b.addEventListener("click",function(){
+  Array.prototype.forEach.call(document.querySelectorAll("[data-sy]"),function(o){o.setAttribute("aria-pressed","false");});
+  b.setAttribute("aria-pressed","true");sy=b.dataset.sy;render();});});
+Array.prototype.forEach.call(document.querySelectorAll("[data-k]"),function(b){
+ b.addEventListener("click",function(){
+  Array.prototype.forEach.call(document.querySelectorAll("[data-k]"),function(o){o.setAttribute("aria-pressed","false");});
+  b.setAttribute("aria-pressed","true");ku=b.dataset.k;render();});});
+render();
+})();
+</script>

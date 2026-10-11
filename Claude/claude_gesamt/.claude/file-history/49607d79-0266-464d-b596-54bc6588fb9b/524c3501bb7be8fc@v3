@@ -1,0 +1,132 @@
+/**
+ * Serverseitige IPAM-Logik: Praefix-Baum mit Auslastung.
+ *
+ * CLAUDE.md Abschnitt 3: keine Geschaeftslogik im Frontend. Die Berechnung
+ * gehoert deshalb hierher - das ist die Stelle, die spaeter als
+ * whitelisted Python-Methode `netops.api.ipam.prefix_tree` entsteht.
+ */
+import { table } from '../db.js'
+import { ipToInt, istInPraefix, istTeilnetz, nutzbareAdressen, parsePrefix } from '../ip.js'
+
+/**
+ * Baut die Praefix-Hierarchie eines VRF und berechnet je Knoten die Auslastung.
+ *
+ * Auslastung nach NetBox-Logik:
+ * - Container (hat Kind-Praefixe): Summe der Kindgroessen / eigene Groesse
+ * - Blatt: vergebene IP-Adressen / nutzbare Adressen
+ */
+export function prefix_tree({ vrf = null, tenant = null } = {}) {
+  let praefixe = table('IP Prefix').filter((p) => p.status !== 'deprecated')
+  if (vrf) praefixe = praefixe.filter((p) => p.vrf === vrf)
+  if (tenant) praefixe = praefixe.filter((p) => p.tenant === tenant)
+
+  const adressen = table('IP Address')
+  const vlans = new Map(table('VLAN').map((v) => [v.name, v]))
+
+  // Laengste Maske zuerst: so findet jedes Praefix seinen naechstgelegenen Elternteil.
+  const sortiert = [...praefixe].sort((a, b) => {
+    const pa = parsePrefix(a.prefix)
+    const pb = parsePrefix(b.prefix)
+    return pa.base - pb.base || pa.bits - pb.bits
+  })
+
+  const knoten = sortiert.map((p) => {
+    const vlan = p.vlan ? vlans.get(p.vlan) : null
+    return {
+      name: p.name,
+      prefix: p.prefix,
+      vrf: p.vrf,
+      site: p.site,
+      tenant: p.tenant,
+      status: p.status,
+      description: p.description,
+      prefix_role: p.prefix_role,
+      is_pool: p.is_pool,
+      vlan: p.vlan,
+      vlan_label: vlan ? vlan.vid + ' · ' + vlan.vlan_name : null,
+      security_zone: vlan ? vlan.security_zone : null,
+      children: [],
+      depth: 0,
+      size: parsePrefix(p.prefix).size,
+      usable: nutzbareAdressen(p.prefix),
+    }
+  })
+
+  // Adressen demselben VRF zuordnen und je Praefix zaehlen.
+  for (const k of knoten) {
+    k.address_count = adressen.filter(
+      (a) => a.vrf === k.vrf && istInPraefix(a.address, k.prefix),
+    ).length
+  }
+
+  // Elternteil ist das kuerzeste Praefix, das dieses echt enthaelt.
+  const wurzeln = []
+  for (const k of knoten) {
+    const elternteil = knoten
+      .filter((kandidat) => kandidat.vrf === k.vrf && istTeilnetz(k.prefix, kandidat.prefix))
+      .sort((a, b) => parsePrefix(b.prefix).bits - parsePrefix(a.prefix).bits)[0]
+
+    if (elternteil) {
+      elternteil.children.push(k)
+      k.parent = elternteil.name
+    } else {
+      wurzeln.push(k)
+    }
+  }
+
+  const setzeTiefe = (k, tiefe) => {
+    k.depth = tiefe
+    k.children.forEach((kind) => setzeTiefe(kind, tiefe + 1))
+  }
+  wurzeln.forEach((k) => setzeTiefe(k, 0))
+
+  const berechneAuslastung = (k) => {
+    k.children.forEach(berechneAuslastung)
+    if (k.children.length) {
+      const belegt = k.children.reduce((summe, kind) => summe + kind.size, 0)
+      k.utilization = k.size ? Math.round((belegt / k.size) * 1000) / 10 : 0
+      k.utilization_basis = 'children'
+    } else {
+      k.utilization = k.usable ? Math.round((k.address_count / k.usable) * 1000) / 10 : 0
+      k.utilization_basis = 'addresses'
+    }
+  }
+  wurzeln.forEach(berechneAuslastung)
+
+  return wurzeln
+}
+
+/** Flache Liste des Baums - fuer Tabellen, die keine Verschachtelung darstellen. */
+export function prefix_list({ vrf = null, tenant = null } = {}) {
+  const flach = []
+  const gehe = (k) => {
+    const { children, ...rest } = k
+    flach.push({ ...rest, has_children: children.length > 0, child_count: children.length })
+    children.forEach(gehe)
+  }
+  prefix_tree({ vrf, tenant }).forEach(gehe)
+  return flach
+}
+
+/** Adressen eines Praefix inkl. zugeordneter Schnittstelle und Geraet. */
+export function prefix_addresses({ prefix, vrf }) {
+  const schnittstellen = new Map(table('Device Interface').map((i) => [i.name, i]))
+
+  return (
+    table('IP Address')
+      .filter((a) => a.vrf === vrf && istInPraefix(a.address, prefix))
+      .map((a) => {
+        const schnittstelle =
+          a.assigned_object_type === 'Device Interface'
+            ? schnittstellen.get(a.assigned_object)
+            : null
+        return {
+          ...a,
+          interface_name: schnittstelle ? schnittstelle.interface_name : null,
+          device: schnittstelle ? schnittstelle.device : null,
+        }
+      })
+      // Numerisch sortieren - eine Textsortierung stellt .10 vor .9.
+      .sort((a, b) => ipToInt(a.address.split('/')[0]) - ipToInt(b.address.split('/')[0]))
+  )
+}

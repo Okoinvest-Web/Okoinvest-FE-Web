@@ -1,0 +1,208 @@
+<template>
+  <figure class="rounded-lg border border-outline-gray-2 bg-surface-white p-4">
+    <figcaption class="mb-3">
+      <p class="text-base font-medium text-ink-gray-9">{{ rack.rack_name }}</p>
+      <p class="text-sm text-ink-gray-6">
+        {{ rack.used_u }} von {{ rack.height_u }} HE belegt · {{ rack.free_u }} HE frei
+      </p>
+      <!-- Auslastung als Größenordnung: eine Hue, hell nach dunkel.
+           Der Wert steht als Zahl daneben, die Farbe ist nur Verstärkung. -->
+      <div class="mt-2 flex items-center gap-2">
+        <div
+          class="h-2 w-40 overflow-hidden rounded-sm"
+          style="background: var(--viz-neutral-soft)"
+        >
+          <div
+            class="h-full rounded-sm"
+            :style="{ width: rack.utilization + '%', background: 'var(--viz-seq-400)' }"
+          />
+        </div>
+        <span class="text-sm tabular-nums text-ink-gray-6">{{ rack.utilization }} %</span>
+      </div>
+    </figcaption>
+
+    <svg
+      :viewBox="`0 0 ${BREITE} ${hoehe}`"
+      :height="hoehe"
+      width="100%"
+      :style="{ maxWidth: BREITE + 'px' }"
+      role="img"
+      :aria-label="`Rack ${rack.rack_name}, ${rack.used_u} von ${rack.height_u} Höheneinheiten belegt`"
+    >
+      <!-- Rahmen -->
+      <rect
+        :x="SCHIENE + 0.5"
+        y="0.5"
+        :width="BREITE - SCHIENE - 1"
+        :height="hoehe - 1"
+        rx="4"
+        fill="var(--viz-chassis)"
+        stroke="var(--viz-chassis-line)"
+      />
+
+      <!-- Freie Höheneinheiten mit HE-Nummer an der Schiene -->
+      <g v-for="he in einheiten" :key="'he-' + he.u">
+        <text
+          :x="SCHIENE - 6"
+          :y="he.y + HE_HOEHE / 2 + 3"
+          font-size="8"
+          text-anchor="end"
+          fill="var(--viz-ink-muted)"
+          :opacity="he.u % 5 === 0 || he.belegt ? 0.9 : 0.35"
+        >
+          {{ he.u }}
+        </text>
+        <line
+          v-if="!he.belegt"
+          :x1="SCHIENE + 6"
+          :y1="he.y + HE_HOEHE / 2"
+          :x2="BREITE - 6"
+          :y2="he.y + HE_HOEHE / 2"
+          stroke="var(--viz-grid)"
+          stroke-width="1"
+        />
+      </g>
+
+      <!-- Geräte -->
+      <g
+        v-for="geraet in platzierte"
+        :key="geraet.name"
+        class="cursor-pointer"
+        @mousemove="zeige(geraet, $event)"
+        @mouseleave="aktiv = null"
+        @click="$emit('select', geraet)"
+      >
+        <rect
+          :x="SCHIENE + 5"
+          :y="geraet.y"
+          :width="BREITE - SCHIENE - 10"
+          :height="geraet.h"
+          rx="3"
+          :fill="hervorgehoben === geraet.name ? 'var(--viz-series-1)' : 'var(--viz-neutral-soft)'"
+          :stroke="hervorgehoben === geraet.name ? 'var(--viz-seq-550)' : 'var(--viz-neutral)'"
+          stroke-width="1.5"
+        />
+        <!-- Lebenszyklus als schmaler Streifen am linken Rand, zusätzlich
+             zur Beschriftung im Tooltip. -->
+        <rect
+          :x="SCHIENE + 5"
+          :y="geraet.y"
+          width="3"
+          :height="geraet.h"
+          :fill="statusFarbe(geraet.lifecycle_status)"
+        />
+        <text
+          :x="SCHIENE + 16"
+          :y="geraet.y + 13"
+          font-size="10"
+          font-weight="600"
+          :fill="hervorgehoben === geraet.name ? '#ffffff' : 'var(--viz-ink)'"
+        >
+          {{ geraet.hostname }}
+        </text>
+        <text
+          v-if="geraet.h >= 26"
+          :x="SCHIENE + 16"
+          :y="geraet.y + 25"
+          font-size="9"
+          :fill="hervorgehoben === geraet.name ? '#ffffff' : 'var(--viz-ink-muted)'"
+        >
+          {{ geraet.device_role }} · {{ geraet.model }}
+        </text>
+        <text
+          :x="BREITE - 12"
+          :y="geraet.y + 13"
+          font-size="9"
+          text-anchor="end"
+          :fill="hervorgehoben === geraet.name ? '#ffffff' : 'var(--viz-ink-muted)'"
+        >
+          {{ geraet.height_u }} HE
+        </text>
+      </g>
+    </svg>
+
+    <div
+      v-if="aktiv"
+      class="pointer-events-none fixed z-50 rounded-lg border border-outline-gray-2 bg-surface-white p-3 text-sm shadow-lg"
+      :style="{ left: maus.x + 14 + 'px', top: maus.y + 14 + 'px' }"
+    >
+      <p class="font-medium text-ink-gray-9">{{ aktiv.hostname }}</p>
+      <p class="text-ink-gray-6">{{ aktiv.device_role }} · {{ aktiv.model }}</p>
+      <p class="text-ink-gray-6">
+        HE {{ aktiv.position_u }}–{{ aktiv.position_u + aktiv.height_u - 1 }} ·
+        {{ valueLabel('rack_face', aktiv.rack_face) }}
+      </p>
+      <p class="text-ink-gray-6">
+        {{ valueLabel('lifecycle_status', aktiv.lifecycle_status) }}
+        <span v-if="aktiv.management_ip"> · {{ aktiv.management_ip }}</span>
+      </p>
+    </div>
+  </figure>
+</template>
+
+<script setup>
+import { computed, ref } from 'vue'
+import { valueLabel } from '@/labels'
+
+const props = defineProps({
+  rack: { type: Object, required: true },
+  hervorgehoben: { type: String, default: null },
+})
+defineEmits(['select'])
+
+const BREITE = 320
+const SCHIENE = 22
+const HE_HOEHE = 14
+
+const aktiv = ref(null)
+const maus = ref({ x: 0, y: 0 })
+
+const hoehe = computed(() => props.rack.height_u * HE_HOEHE + 8)
+
+// HE 1 liegt unten, die höchste HE oben – so steht ein Rack auch im Raum.
+function yFuerHe(u) {
+  return (props.rack.height_u - u) * HE_HOEHE + 4
+}
+
+const belegteHe = computed(() => {
+  const menge = new Set()
+  for (const g of props.rack.devices) {
+    for (let u = g.position_u; u < g.position_u + g.height_u; u++) menge.add(u)
+  }
+  return menge
+})
+
+const einheiten = computed(() =>
+  Array.from({ length: props.rack.height_u }, (_, i) => {
+    const u = props.rack.height_u - i
+    return { u, y: yFuerHe(u), belegt: belegteHe.value.has(u) }
+  }),
+)
+
+const platzierte = computed(() =>
+  props.rack.devices.map((g) => ({
+    ...g,
+    // Ein 2-HE-Gerät auf Position 30 belegt 30 und 31; oben beginnt es bei 31.
+    y: yFuerHe(g.position_u + g.height_u - 1),
+    h: g.height_u * HE_HOEHE - 2,
+  })),
+)
+
+function statusFarbe(lebenszyklus) {
+  switch (lebenszyklus) {
+    case 'production':
+      return 'var(--viz-good)'
+    case 'testing':
+      return 'var(--viz-series-1)'
+    case 'retired':
+      return 'var(--viz-critical)'
+    default:
+      return 'var(--viz-neutral)'
+  }
+}
+
+function zeige(geraet, event) {
+  aktiv.value = geraet
+  maus.value = { x: event.clientX, y: event.clientY }
+}
+</script>

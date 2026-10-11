@@ -1,0 +1,22 @@
+import http.server, os, functools
+ROOT = r"C:\Users\SALEADMIN\Desktop\Presse\4_Social_Media"
+FRAMES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "frames")
+
+
+class H(http.server.SimpleHTTPRequestHandler):
+    def log_message(self, *a):
+        pass
+
+    def do_PUT(self):
+        if not self.path.startswith("/frames/"):
+            self.send_response(403); self.end_headers(); return
+        target = os.path.normpath(os.path.join(FRAMES, self.path[len("/frames/"):].replace("/", os.sep)))
+        if not (target.startswith(FRAMES + os.sep) and target.endswith(".jpg")):
+            self.send_response(403); self.end_headers(); return
+        data = self.rfile.read(int(self.headers["Content-Length"]))
+        os.makedirs(os.path.dirname(target), exist_ok=True)
+        open(target, "wb").write(data)
+        self.send_response(201); self.end_headers()
+
+
+http.server.ThreadingHTTPServer(("127.0.0.1", 8767), functools.partial(H, directory=ROOT)).serve_forever()

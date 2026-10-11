@@ -1,0 +1,59 @@
+"use client";
+
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { Search } from "lucide-react";
+import { useEffect, useState, useTransition } from "react";
+
+// Suche und Statusfilter landen in der URL (?q=…&status=…), damit Listen teilbar sind.
+export function ListToolbar({ statuses, labels, count }: { statuses?: readonly string[]; labels?: Record<string, string>; count: number }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const params = useSearchParams();
+  const [q, setQ] = useState(params.get("q") ?? "");
+  const [pending, start] = useTransition();
+
+  function push(next: Record<string, string>) {
+    const sp = new URLSearchParams(params.toString());
+    for (const [k, v] of Object.entries(next)) {
+      if (v) sp.set(k, v);
+      else sp.delete(k);
+    }
+    start(() => router.replace(`${pathname}?${sp}`));
+  }
+
+  useEffect(() => {
+    if (q === (params.get("q") ?? "")) return;
+    const t = setTimeout(() => push({ q }), 250);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [q]);
+
+  return (
+    <div className="flex items-center gap-2 border-b border-gray-200 px-5 py-2.5">
+      <label className="relative">
+        <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-gray-400" />
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Suchen…"
+          className="h-8 w-64 rounded-md bg-gray-100 pl-8 pr-3 outline-none placeholder:text-gray-400 focus:bg-white focus:ring-1 focus:ring-gray-300"
+        />
+      </label>
+      {statuses && (
+        <select
+          value={params.get("status") ?? ""}
+          onChange={(e) => push({ status: e.target.value })}
+          className="h-8 rounded-md bg-gray-100 px-2 outline-none focus:ring-1 focus:ring-gray-300"
+        >
+          <option value="">Alle Status</option>
+          {statuses.map((s) => (
+            <option key={s} value={s}>
+              {labels?.[s] ?? s}
+            </option>
+          ))}
+        </select>
+      )}
+      <span className={`ml-auto text-xs text-gray-500 ${pending ? "opacity-50" : ""}`}>{count} Einträge</span>
+    </div>
+  );
+}

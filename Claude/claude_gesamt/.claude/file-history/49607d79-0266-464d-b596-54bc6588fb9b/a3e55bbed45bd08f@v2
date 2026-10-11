@@ -1,0 +1,133 @@
+<template>
+  <div>
+    <PageHeader title="Verkabelung" :subtitle="untertitel">
+      <template #actions>
+        <FormControl v-model="standort" type="select" :options="standortOptionen" />
+      </template>
+    </PageHeader>
+
+    <div class="p-6">
+      <DataTable
+        :columns="spalten"
+        :rows="kabel.data || []"
+        :loading="kabel.loading"
+        :on-row-click="verfolge"
+        empty-text="Kein Kabel erfasst."
+      >
+        <template #zelle-label="{ zeile }">
+          <span class="font-medium text-ink-gray-9">{{ zeile.label }}</span>
+        </template>
+        <template #zelle-a="{ zeile }">{{ zeile.a.label }}</template>
+        <template #zelle-b="{ zeile }">{{ zeile.b.label }}</template>
+        <template #zelle-cable_type="{ zeile }">
+          <Badge theme="gray">{{ zeile.cable_type }}</Badge>
+          <span class="ml-2 text-sm text-ink-gray-5">{{ zeile.color }}</span>
+        </template>
+      </DataTable>
+
+      <p class="mt-3 text-xs text-ink-gray-4">
+        Zeile anklicken verfolgt den Weg von Ende zu Ende.
+      </p>
+    </div>
+
+    <Dialog v-model="traceOffen" :options="{ title: 'Kabelweg', size: '2xl' }">
+      <template #body-content>
+        <p v-if="trace.loading" class="text-sm text-ink-gray-5">Wird verfolgt …</p>
+        <ErrorMessage v-else-if="trace.error" :message="trace.error" />
+
+        <div v-else-if="trace.data">
+          <p class="mb-4 text-sm text-ink-gray-6">
+            {{ trace.data.cable_count }} Kabel · {{ trace.data.total_length_m }} m
+            <template v-if="!trace.data.complete">
+              · <span class="text-ink-red-3">Weg bricht ab</span>
+            </template>
+          </p>
+
+          <!-- Der Weg als Kette: Knoten, Kabel, Knoten … -->
+          <ol class="space-y-0">
+            <li v-for="(hop, i) in trace.data.hops" :key="i">
+              <div
+                v-if="hop.kind === 'cable'"
+                class="ml-4 flex items-center gap-3 border-l-2 border-dashed border-outline-gray-3 py-2 pl-5 text-sm text-ink-gray-5"
+              >
+                <span>{{ hop.label }}</span>
+                <Badge theme="gray">{{ hop.cable_type }}</Badge>
+                <span>{{ hop.length_m }} m</span>
+                <span>{{ hop.color }}</span>
+              </div>
+              <div
+                v-else
+                class="flex items-center gap-3 rounded-lg border border-outline-gray-2 bg-surface-white px-4 py-2.5"
+              >
+                <span
+                  class="inline-block size-2 shrink-0 rounded-full"
+                  :style="{ background: hop.kind === 'outlet' ? 'var(--viz-neutral)' : 'var(--viz-series-1)' }"
+                />
+                <span class="text-base text-ink-gray-8">{{ hop.label }}</span>
+                <span v-if="hop.room" class="text-sm text-ink-gray-5">{{ hop.room }}</span>
+                <RouterLink
+                  v-if="hop.device"
+                  :to="'/devices/' + hop.device"
+                  class="ml-auto text-sm text-ink-gray-5 underline decoration-outline-gray-3 underline-offset-2"
+                  @click="traceOffen = false"
+                >
+                  Gerät öffnen
+                </RouterLink>
+              </div>
+            </li>
+          </ol>
+        </div>
+      </template>
+    </Dialog>
+  </div>
+</template>
+
+<script setup>
+import { computed, ref, watch } from 'vue'
+import { Badge, Dialog, ErrorMessage, FormControl, createResource } from 'frappe-ui'
+import PageHeader from '@/components/PageHeader.vue'
+import DataTable from '@/components/DataTable.vue'
+
+const standort = ref('')
+const traceOffen = ref(false)
+
+const kabel = createResource({
+  url: 'netops.api.dcim.cable_list',
+  makeParams: () => ({ site: standort.value || null }),
+  auto: true,
+})
+
+const standorte = createResource({
+  url: 'frappe.client.get_list',
+  params: { doctype: 'Site', fields: ['name', 'site_name'], limit_page_length: 0 },
+  auto: true,
+})
+
+const trace = createResource({ url: 'netops.api.dcim.trace_path' })
+
+watch(standort, () => kabel.fetch())
+
+const standortOptionen = computed(() => [
+  { label: 'Alle Standorte', value: '' },
+  ...(standorte.data || []).map((s) => ({ label: s.site_name, value: s.name })),
+])
+
+const spalten = [
+  { key: 'label', label: 'Label', width: '110px' },
+  { key: 'a', label: 'Ende A' },
+  { key: 'b', label: 'Ende B' },
+  { key: 'cable_type', label: 'Typ', width: '180px' },
+  { key: 'length_m', label: 'Länge (m)', align: 'right', numeric: true, width: '110px' },
+]
+
+const untertitel = computed(() => {
+  const liste = kabel.data || []
+  const meter = liste.reduce((summe, c) => summe + (c.length_m || 0), 0)
+  return liste.length + ' Kabel · ' + meter + ' m verlegt'
+})
+
+function verfolge(zeile) {
+  traceOffen.value = true
+  trace.submit({ endpoint: zeile.a.name, endpoint_type: zeile.a_endpoint_type })
+}
+</script>

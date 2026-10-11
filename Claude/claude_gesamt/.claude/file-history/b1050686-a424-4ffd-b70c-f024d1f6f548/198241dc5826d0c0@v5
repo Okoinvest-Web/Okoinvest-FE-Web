@@ -1,0 +1,531 @@
+import type { ReactNode } from "react";
+
+import { IconInfo, IconWarnung } from "./icon";
+
+/**
+ * Bausteine der Oberflaeche.
+ *
+ * Leitgedanke: Nicht jede Flaeche ist eine Karte. Zuvor lag alles in
+ * gleich aussehenden weissen Kaesten mit Schatten - das ergibt keine
+ * Hierarchie, sondern eine Kachelwand. Hier gibt es stattdessen
+ * abgestufte Flaechen und eine Kennzahlenleiste, die zusammengehoerende
+ * Werte auch optisch zusammenbindet.
+ *
+ * Schatten kommt nur dort vor, wo etwas wirklich schwebt.
+ */
+
+/* ------------------------------------------------------------------ */
+/* Flaechen                                                            */
+/* ------------------------------------------------------------------ */
+
+export function Tafel({
+  titel,
+  hinweis,
+  aktion,
+  fusszeile,
+  children,
+  klasse = "",
+  dicht = false,
+}: {
+  titel?: string;
+  hinweis?: string;
+  aktion?: ReactNode;
+  fusszeile?: ReactNode;
+  children: ReactNode;
+  klasse?: string;
+  /** Ohne Innenabstand - fuer Tabellen, die bis an den Rand gehen. */
+  dicht?: boolean;
+}) {
+  return (
+    <section
+      className={`relative min-w-0 overflow-hidden ${klasse}`}
+      style={{
+        background: "var(--f-ebene)",
+        borderRadius: "var(--radius-tafel)",
+        // Ring statt Rahmen: Er liegt ausserhalb der Flaeche und
+        // verschiebt deshalb nichts, wenn er die Farbe wechselt.
+        boxShadow: "0 0 0 1px var(--linie), var(--schatten-kachel)",
+      }}
+    >
+      {(titel || aktion) && (
+        <header
+          className="flex flex-wrap items-center justify-between gap-3 border-b px-5 py-4"
+          style={{ borderColor: "var(--linie-zart)" }}
+        >
+          <div className="min-w-0">
+            {titel && <h2 className="t-abschnitt">{titel}</h2>}
+            {hinweis && <p className="t-leise mt-1">{hinweis}</p>}
+          </div>
+          {aktion && (
+            // Kein shrink-0: Ein Aktionsbereich, der nicht schrumpfen
+            // darf, draengt auf schmalen Bildschirmen die ganze Seite
+            // auseinander. Er bricht stattdessen um.
+            <div className="flex min-w-0 flex-wrap gap-2">{aktion}</div>
+          )}
+        </header>
+      )}
+
+      <div className={dicht ? "" : "p-5"}>{children}</div>
+
+      {fusszeile && (
+        <footer
+          className="border-t px-5 py-3"
+          style={{
+            borderColor: "var(--linie-zart)",
+            background: "var(--f-vertieft)",
+          }}
+        >
+          {fusszeile}
+        </footer>
+      )}
+    </section>
+  );
+}
+
+export function Seitenkopf({
+  titel,
+  hinweis,
+  aktion,
+  zurueck,
+}: {
+  titel: string;
+  hinweis?: string;
+  aktion?: ReactNode;
+  zurueck?: ReactNode;
+}) {
+  return (
+    <div className="a-seitlich">
+      {zurueck && <div className="mb-2">{zurueck}</div>}
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="min-w-0">
+          <h1 className="t-titel">{titel}</h1>
+          {hinweis && <p className="t-leise mt-1">{hinweis}</p>}
+        </div>
+        {aktion && <div className="flex min-w-0 flex-wrap gap-2">{aktion}</div>}
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Kennzahlen                                                          */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Kennzahlenleiste.
+ *
+ * Die Werte stehen in einer durchgehenden Leiste mit Trennstrichen,
+ * nicht in vier einzelnen Kaesten. Das bindet sie zu einer Aussage
+ * zusammen, statt gleichwertige Kacheln nebeneinanderzustellen.
+ */
+export function Kennzahlenleiste({ children }: { children: ReactNode }) {
+  return (
+    <div
+      className="grid grid-cols-2 overflow-hidden lg:grid-cols-4"
+      style={{
+        // Die Fugenfarbe liegt im Behaelter, die Kacheln darin sind
+        // weiss. Der Zwischenraum von einem Pixel wird so zur
+        // Trennlinie - ohne zusaetzliche Elemente und ohne Umrisse,
+        // die sich mit dem aeusseren Ring ins Gehege kommen.
+        background: "var(--linie)",
+        borderRadius: "var(--radius-tafel)",
+        boxShadow: "0 0 0 1px var(--linie), var(--schatten-kachel)",
+        gap: "1px",
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+export function Kennzahl({
+  label,
+  wert,
+  einheit,
+  hinweis,
+  trend,
+  akzent = false,
+}: {
+  label: string;
+  wert: string;
+  einheit?: string;
+  hinweis?: string;
+  trend?: { wert: number };
+  /** Hebt die wichtigste Zahl der Leiste hervor. */
+  akzent?: boolean;
+}) {
+  /*
+   * Die Groesse folgt der Laenge, nicht dem Platz.
+   *
+   * Eine Kennzahl steht auf dem Telefon in einer halben Bildschirm-
+   * breite. Ein Betrag wie "€ 13.326,73" passt dort nicht in die
+   * grosse Stufe - und ein Umbruch ist keine Loesung, weil er die
+   * Zahl mitten in der Ziffernfolge trennt: "€ 2.221,1" ueber
+   * "2" liest niemand richtig.
+   */
+  const groesse =
+    wert.length > 12
+      ? "t-zahl-klein"
+      : wert.length > 7
+        ? "t-zahl-mittel"
+        : "t-zahl";
+
+  return (
+    <div
+      className="min-w-0 px-5 py-4"
+      style={{ background: "var(--f-ebene)" }}
+    >
+      {/*
+        Das Etikett bricht um, statt abgeschnitten zu werden. Auf einem
+        Telefon stehen zwei Kacheln nebeneinander; "Aus eigener
+        Erzeugung" endete dort als "Aus eigener Erzeu…" - und damit
+        erklaert die Zahl darunter nichts mehr.
+      */}
+      <p className="t-etikett">{label}</p>
+      <p
+        className={`mt-1.5 ${groesse}`}
+        style={akzent ? { color: "var(--akzent-text)" } : undefined}
+      >
+        {wert}
+        {einheit && (
+          <span
+            className="ml-1 text-sm font-normal"
+            style={{ color: "var(--t-zart)" }}
+          >
+            {einheit}
+          </span>
+        )}
+      </p>
+      {(hinweis || trend) && (
+        <p className="t-mikro mt-1 flex flex-wrap items-center gap-x-1.5">
+          {trend && <Trend wert={trend.wert} />}
+          {hinweis}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function Trend({ wert }: { wert: number }) {
+  const steigt = wert >= 0;
+  return (
+    <span
+      className="zahl font-medium"
+      style={{
+        color: steigt ? "oklch(0.5 0.13 152)" : "oklch(0.55 0.16 45)",
+      }}
+    >
+      <span aria-hidden>{steigt ? "↑" : "↓"}</span>{" "}
+      {Math.abs(wert).toLocaleString("de-AT", { maximumFractionDigits: 1 })} %
+    </span>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Status                                                              */
+/* ------------------------------------------------------------------ */
+
+export type StatusTon =
+  | "gut"
+  | "hinweis"
+  | "ernst"
+  | "kritisch"
+  | "neutral"
+  | "akzent";
+
+/**
+ * Die Farben der Zustandstoene - eine Quelle fuer alle.
+ *
+ * Auch Seiten, die keinen `Status` verwenden, brauchen dieselben
+ * Toene: eine ueberfaellige Frist muss so aussehen wie ein kritischer
+ * Alarm. Wer die Farbe an der Verwendungsstelle noch einmal waehlt,
+ * bekommt zwei Rottoene, die fast gleich sind - und das sieht man.
+ */
+export const STATUS_FARBEN: Record<
+  StatusTon,
+  { text: string; flaeche: string; rand: string }
+> = {
+  gut: {
+    text: "oklch(0.48 0.12 152)",
+    flaeche: "color-mix(in oklch, oklch(0.55 0.14 152), transparent 90%)",
+    rand: "color-mix(in oklch, oklch(0.55 0.14 152), transparent 72%)",
+  },
+  hinweis: {
+    text: "oklch(0.52 0.11 75)",
+    flaeche: "color-mix(in oklch, oklch(0.65 0.14 75), transparent 88%)",
+    rand: "color-mix(in oklch, oklch(0.65 0.14 75), transparent 70%)",
+  },
+  ernst: {
+    text: "oklch(0.54 0.15 45)",
+    flaeche: "color-mix(in oklch, oklch(0.62 0.17 45), transparent 89%)",
+    rand: "color-mix(in oklch, oklch(0.62 0.17 45), transparent 72%)",
+  },
+  kritisch: {
+    text: "oklch(0.52 0.19 25)",
+    flaeche: "color-mix(in oklch, oklch(0.58 0.2 25), transparent 89%)",
+    rand: "color-mix(in oklch, oklch(0.58 0.2 25), transparent 70%)",
+  },
+  neutral: {
+    text: "var(--t-leise)",
+    flaeche: "var(--f-belegt)",
+    rand: "var(--linie)",
+  },
+  akzent: {
+    text: "var(--akzent-text)",
+    flaeche: "color-mix(in oklch, var(--akzent), transparent 88%)",
+    rand: "color-mix(in oklch, var(--akzent), transparent 70%)",
+  },
+};
+
+/**
+ * Statuskennzeichen.
+ *
+ * Traegt immer Text - die Farbe allein darf die Aussage nie tragen.
+ * Der Punkt links ist Beiwerk, kein Informationstraeger.
+ */
+export function Status({
+  ton = "neutral",
+  children,
+  punkt = true,
+}: {
+  ton?: StatusTon;
+  children: ReactNode;
+  punkt?: boolean;
+}) {
+  const farben = STATUS_FARBEN[ton];
+
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[0.6875rem] leading-5 font-semibold whitespace-nowrap"
+      style={{
+        color: farben.text,
+        background: farben.flaeche,
+        borderColor: farben.rand,
+      }}
+    >
+      {punkt && (
+        <span
+          aria-hidden
+          className="h-1.5 w-1.5 shrink-0 rounded-full"
+          style={{ background: "currentColor" }}
+        />
+      )}
+      {children}
+    </span>
+  );
+}
+
+/**
+ * Rueckmeldung einer Bedienhandlung.
+ *
+ * Nicht `Status`: Das ist eine Pille fuer ein Etikett - ein Wort, das
+ * nicht umbrechen darf. Was eine Aktion zurueckmeldet, ist ein Satz,
+ * oft mehrere. In eine Pille gesteckt wird er abgeschnitten, und
+ * ausgerechnet der Teil, der sagt, was als Naechstes zu tun ist, faellt
+ * weg. Diese Meldung bricht um und behaelt den Ton bei.
+ */
+export function Meldung({
+  ton = "neutral",
+  children,
+}: {
+  ton?: StatusTon;
+  children: ReactNode;
+}) {
+  const farben = STATUS_FARBEN[ton];
+
+  return (
+    <div
+      role="status"
+      className="a-einblenden flex min-w-0 items-start gap-2 border px-3 py-2 text-[0.8125rem] leading-relaxed"
+      style={{
+        background: farben.flaeche,
+        borderColor: farben.rand,
+        borderRadius: "var(--radius-kachel)",
+        color: "var(--t-normal)",
+      }}
+    >
+      <span
+        aria-hidden
+        className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full"
+        style={{ background: farben.text }}
+      />
+      <span className="min-w-0">{children}</span>
+    </div>
+  );
+}
+
+export function LivePunkt({ aktiv = true }: { aktiv?: boolean }) {
+  return (
+    <span className="relative flex h-2 w-2" aria-hidden>
+      {aktiv && (
+        <span
+          className="a-atmen absolute inline-flex h-full w-full rounded-full"
+          style={{ background: "oklch(0.6 0.15 152)" }}
+        />
+      )}
+      <span
+        className="relative inline-flex h-2 w-2 rounded-full"
+        style={{ background: aktiv ? "oklch(0.6 0.15 152)" : "var(--t-zart)" }}
+      />
+    </span>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Werte und Beschriftung                                              */
+/* ------------------------------------------------------------------ */
+
+export function Angabe({
+  label,
+  children,
+  untereinander = false,
+}: {
+  label: string;
+  children: ReactNode;
+  untereinander?: boolean;
+}) {
+  if (untereinander) {
+    return (
+      <div className="min-w-0">
+        <dt className="t-mikro">{label}</dt>
+        <dd className="t-zahl-klein mt-0.5 break-words">{children}</dd>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-baseline justify-between gap-4 py-1">
+      <dt className="t-leise shrink-0">{label}</dt>
+      <dd className="t-zahl-klein text-right break-words">{children}</dd>
+    </div>
+  );
+}
+
+export function Balken({
+  label,
+  anteil,
+  wertText,
+  farbe,
+}: {
+  label: string;
+  /** 0 bis 100. */
+  anteil: number;
+  wertText: string;
+  farbe?: string;
+}) {
+  const begrenzt = Math.max(0, Math.min(100, anteil));
+
+  return (
+    <div>
+      <div className="mb-1.5 flex items-baseline justify-between gap-3">
+        <span className="t-leise truncate">{label}</span>
+        <span className="t-zahl-klein shrink-0">{wertText}</span>
+      </div>
+      <div
+        className="h-1.5 overflow-hidden rounded-full"
+        style={{ background: "var(--f-belegt)" }}
+        role="img"
+        aria-label={`${label}: ${wertText}`}
+      >
+        <div
+          className="h-full rounded-full transition-[width] duration-700"
+          style={{
+            width: `${begrenzt}%`,
+            background: farbe ?? "var(--akzent)",
+            transitionTimingFunction: "var(--ease-aus)",
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Zustaende und Hinweise                                              */
+/* ------------------------------------------------------------------ */
+
+export function LeerZustand({
+  text,
+  hinweis,
+  aktion,
+}: {
+  text: string;
+  hinweis?: string;
+  aktion?: ReactNode;
+}) {
+  return (
+    <div
+      className="border border-dashed px-4 py-10 text-center"
+      style={{
+        borderRadius: "var(--radius-kachel)",
+        borderColor: "var(--linie-stark)",
+      }}
+    >
+      <p className="t-leise">{text}</p>
+      {hinweis && <p className="t-mikro mx-auto mt-1.5 max-w-md">{hinweis}</p>}
+      {aktion && <div className="mt-4">{aktion}</div>}
+    </div>
+  );
+}
+
+export function Hinweis({
+  ton = "neutral",
+  titel,
+  children,
+}: {
+  ton?: StatusTon;
+  titel?: string;
+  children: ReactNode;
+}) {
+  const farben = STATUS_FARBEN[ton];
+  const Zeichen = ton === "neutral" || ton === "akzent" ? IconInfo : IconWarnung;
+
+  return (
+    <div
+      className="a-einblenden flex gap-2.5 border px-4 py-3.5"
+      style={{
+        background: farben.flaeche,
+        borderColor: farben.rand,
+        borderRadius: "var(--radius-kachel)",
+      }}
+    >
+      <span className="mt-0.5 shrink-0" style={{ color: farben.text }}>
+        <Zeichen groesse={15} />
+      </span>
+      <div className="min-w-0 text-[0.8125rem] leading-relaxed">
+        {titel && (
+          <p className="font-medium" style={{ color: farben.text }}>
+            {titel}
+          </p>
+        )}
+        <div style={{ color: "var(--t-normal)" }}>{children}</div>
+      </div>
+    </div>
+  );
+}
+
+export function Skelett({ klasse = "h-4 w-full" }: { klasse?: string }) {
+  return <div className={`skelett ${klasse}`} aria-hidden />;
+}
+
+export function Legende({
+  eintraege,
+}: {
+  eintraege: { farbe: string; label: string; wert?: string }[];
+}) {
+  return (
+    <ul className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+      {eintraege.map((eintrag) => (
+        <li key={eintrag.label} className="t-leise flex items-center gap-1.5">
+          <span
+            aria-hidden
+            className="h-2 w-2 shrink-0 rounded-[2px]"
+            style={{ background: eintrag.farbe }}
+          />
+          {eintrag.label}
+          {eintrag.wert && <span className="t-zahl-klein">{eintrag.wert}</span>}
+        </li>
+      ))}
+    </ul>
+  );
+}

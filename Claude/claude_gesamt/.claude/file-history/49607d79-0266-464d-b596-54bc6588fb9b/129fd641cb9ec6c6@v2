@@ -1,0 +1,254 @@
+/**
+ * Eine Workflow-Maschine nach dem Vorbild von Frappe Workflow.
+ *
+ * ## Warum nicht wieder eine Zustandstabelle im Code
+ *
+ * `change.js` hat seine Übergänge als Objektliteral (`UEBERGAENGE`). Das
+ * funktioniert, hat aber einen Haken: wer den Ablauf ändern will, ändert
+ * Code. Beim Sicherungs-Workflow ist genau das der Punkt - Benny will
+ * einstellen können, welche Aktion eine Genehmigung braucht, ohne dass
+ * jemand dafür eine Datei anfasst und dabei versehentlich die Sperre für
+ * `backup_now` mit abbaut.
+ *
+ * Deshalb sind Zustände, Übergänge und erlaubte Rollen hier **Daten**, und
+ * zwar in genau der Form, die Frappe verwendet:
+ *
+ *   Workflow                 document_type, workflow_state_field, is_active
+ *   Workflow Document State  state, doc_status, allow_edit
+ *   Workflow Transition      state, action, next_state, allowed,
+ *                            allow_self_approval, condition
+ *
+ * Damit ist die Portierung eine Übersetzung und kein Umbau: die Fixtures
+ * werden zu Datensätzen in der Frappe-Datenbank, diese Datei zu
+ * `frappe.model.workflow.apply_workflow`.
+ *
+ * ## Was hier bewusst nachgebaut ist
+ *
+ * - **Rollenprüfung je Übergang.** Ohne sie wäre eine Genehmigung eine
+ *   Zierleiste.
+ * - **`allow_self_approval`.** Vier-Augen-Prinzip: wer beantragt, genehmigt
+ *   nicht. In Frappe ein Häkchen, hier ein Feld.
+ * - **`condition`.** In Frappe ein Python-Ausdruck. Hier ein Name aus einer
+ *   kleinen Positivliste - einen Ausdruck aus den Daten auszuwerten wäre
+ *   im Browser eine Einladung zur Codeausführung.
+ * - **`doc_status`.** 0 Entwurf, 1 eingereicht, 2 abgebrochen. Frappe
+ *   hängt daran, ob ein Dokument noch änderbar ist.
+ *
+ * ## Was fehlt
+ *
+ * `Workflow Action` (die Aufgabenliste je Person) und der E-Mail-Versand.
+ * Beides gehört ins Backend, nicht in einen Browser-Mock.
+ */
+import { FrappeMockError, SESSION_USER, table, touch } from '../db.js'
+import { protokolliere } from './audit.js'
+
+/**
+ * Bedingungen, die ein Übergang verlangen darf.
+ *
+ * In Frappe steht hier ein Python-Ausdruck auf `doc`. Im Browser wird
+ * daraus eine Positivliste benannter Prüfungen: einen Ausdruck aus den
+ * Daten auszuwerten hieße `eval` auf Inhalten, die jemand über die API
+ * hineinschreiben kann.
+ */
+export const BEDINGUNGEN = {
+  /** Aktionen, die nur lesen oder ablegen - sie nehmen nichts weg. */
+  harmlos: (doc) => ['verify_now', 'sync_now', 'export_now', 'archive_now'].includes(doc.action),
+  /** Der Gegenpart: alles, was Last erzeugt oder dauerhaft bindet. */
+  eingreifend: (doc) => !BEDINGUNGEN.harmlos(doc),
+}
+
+function definition(doctype) {
+  const wf = table('Workflow').find((w) => w.document_type === doctype && w.is_active)
+  if (!wf) {
+    throw new FrappeMockError(`ValidationError: Für ${doctype} ist kein Workflow aktiv`)
+  }
+  return wf
+}
+
+function zustaende(wf) {
+  return table('Workflow Document State').filter((s) => s.parent === wf.name)
+}
+
+function uebergaenge(wf) {
+  return table('Workflow Transition').filter((t) => t.parent === wf.name)
+}
+
+/** Rollen der handelnden Person. Im Backend kommt das aus `frappe.get_roles`. */
+function rollenVon(benutzer) {
+  const u = table('User').find((x) => x.name === benutzer || x.email === benutzer)
+  const roh = u?.roles || u?.role_profile || ''
+  const liste = Array.isArray(roh) ? roh : String(roh).split(',')
+  return new Set(liste.map((r) => r.trim()).filter(Boolean))
+}
+
+/**
+ * Welche Übergänge stehen diesem Dokument für diese Person offen?
+ *
+ * Gibt auch die gesperrten zurück, mit Grund. Eine Schaltfläche, die
+ * kommentarlos fehlt, ist für die Person davor nicht von einem Fehler zu
+ * unterscheiden.
+ */
+export function workflow_actions({ doctype = null, name = null, user = SESSION_USER } = {}) {
+  const wf = definition(doctype)
+  const doc = table(doctype).find((d) => d.name === name)
+  if (!doc) {
+    throw new FrappeMockError(`DoesNotExistError: ${doctype} ${name} existiert nicht`, 404)
+  }
+
+  const jetztZustand = doc[wf.workflow_state_field]
+  const rollen = rollenVon(user)
+
+  const moeglich = []
+  const gesperrt = []
+
+  for (const t of uebergaenge(wf)) {
+    if (t.state !== jetztZustand) continue
+
+    if (t.condition && !BEDINGUNGEN[t.condition]?.(doc)) continue
+
+    if (t.allowed && !rollen.has(t.allowed)) {
+      gesperrt.push({
+        action: t.action,
+        next_state: t.next_state,
+        reason: `Rolle ${t.allowed} fehlt`,
+      })
+      continue
+    }
+    // Vier-Augen-Prinzip: wer beantragt, genehmigt nicht.
+    if (!t.allow_self_approval && doc.requested_by && doc.requested_by === user) {
+      gesperrt.push({
+        action: t.action,
+        next_state: t.next_state,
+        reason: 'Wer beantragt hat, genehmigt nicht',
+      })
+      continue
+    }
+    moeglich.push({ action: t.action, next_state: t.next_state })
+  }
+
+  const zustand = zustaende(wf).find((s) => s.state === jetztZustand)
+  return {
+    doctype,
+    name,
+    state: jetztZustand,
+    doc_status: zustand?.doc_status ?? 0,
+    editable: !zustand || zustand.doc_status === 0,
+    actions: moeglich,
+    blocked: gesperrt,
+  }
+}
+
+/**
+ * Einen Übergang anwenden.
+ *
+ * Entspricht `frappe.model.workflow.apply_workflow(doc, action)`. Die
+ * Prüfungen laufen serverseitig, nicht in der Oberfläche - eine
+ * Schaltfläche auszublenden ist Bequemlichkeit, keine Sperre.
+ */
+export function workflow_apply({
+  doctype = null,
+  name = null,
+  action = null,
+  user = SESSION_USER,
+  comment = null,
+} = {}) {
+  const wf = definition(doctype)
+  const doc = table(doctype).find((d) => d.name === name)
+  if (!doc) {
+    throw new FrappeMockError(`DoesNotExistError: ${doctype} ${name} existiert nicht`, 404)
+  }
+
+  const von = doc[wf.workflow_state_field]
+  const passend = uebergaenge(wf).filter((t) => t.state === von && t.action === action)
+  if (!passend.length) {
+    const offen = uebergaenge(wf)
+      .filter((t) => t.state === von)
+      .map((t) => t.action)
+    throw new FrappeMockError(
+      `ValidationError: „${action}" ist aus dem Zustand „${von}" nicht vorgesehen. ` +
+        (offen.length ? `Möglich: ${offen.join(', ')}.` : 'Dieser Zustand ist ein Endzustand.'),
+    )
+  }
+
+  const rollen = rollenVon(user)
+  const t =
+    passend.find(
+      (x) =>
+        (!x.condition || BEDINGUNGEN[x.condition]?.(doc)) && (!x.allowed || rollen.has(x.allowed)),
+    ) || passend[0]
+
+  if (t.condition && !BEDINGUNGEN[t.condition]?.(doc)) {
+    throw new FrappeMockError(
+      `ValidationError: Die Bedingung „${t.condition}" trifft auf diesen Antrag nicht zu`,
+    )
+  }
+  if (t.allowed && !rollen.has(t.allowed)) {
+    throw new FrappeMockError(
+      `PermissionError: Für „${action}" braucht es die Rolle ${t.allowed}`,
+      403,
+    )
+  }
+  if (!t.allow_self_approval && doc.requested_by && doc.requested_by === user) {
+    throw new FrappeMockError(
+      'PermissionError: Wer einen Antrag stellt, genehmigt ihn nicht selbst. ' +
+        'Das Vier-Augen-Prinzip ist genau für den Fall da, in dem es gerade eilig ist.',
+      403,
+    )
+  }
+
+  doc[wf.workflow_state_field] = t.next_state
+  const zielZustand = zustaende(wf).find((s) => s.state === t.next_state)
+  if (zielZustand?.update_field) {
+    doc[zielZustand.update_field] =
+      zielZustand.update_value === '__user' ? user : zielZustand.update_value
+  }
+  doc.docstatus = zielZustand?.doc_status ?? doc.docstatus ?? 0
+  touch(doc)
+
+  protokolliere({
+    action: 'workflow_' + action,
+    object_type: doctype,
+    object_name: name,
+    payload: { from: von, to: t.next_state, user, comment },
+  })
+
+  return {
+    ok: true,
+    doctype,
+    name,
+    from_state: von,
+    state: t.next_state,
+    doc_status: doc.docstatus,
+    next: workflow_actions({ doctype, name, user }).actions,
+  }
+}
+
+/**
+ * Die Workflow-Definition selbst - für die Oberfläche und zum Nachlesen.
+ *
+ * Dass eine Anwendung ihren eigenen Ablauf anzeigen kann, ist kein
+ * Luxus: sonst weiß niemand, warum ein Antrag hängt.
+ */
+export function workflow_definition({ doctype = null } = {}) {
+  const wf = definition(doctype)
+  return {
+    name: wf.name,
+    document_type: wf.document_type,
+    workflow_state_field: wf.workflow_state_field,
+    states: zustaende(wf).map((s) => ({
+      state: s.state,
+      label: s.label || s.state,
+      doc_status: s.doc_status,
+      allow_edit: s.allow_edit,
+      is_final: !uebergaenge(wf).some((t) => t.state === s.state),
+    })),
+    transitions: uebergaenge(wf).map((t) => ({
+      state: t.state,
+      action: t.action,
+      next_state: t.next_state,
+      allowed: t.allowed,
+      allow_self_approval: !!t.allow_self_approval,
+      condition: t.condition,
+    })),
+  }
+}

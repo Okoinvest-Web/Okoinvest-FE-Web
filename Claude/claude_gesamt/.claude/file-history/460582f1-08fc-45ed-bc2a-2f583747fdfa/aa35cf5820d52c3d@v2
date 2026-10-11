@@ -1,0 +1,116 @@
+import re
+from docx import Document
+from docx.shared import Pt, RGBColor, Cm
+from docx.oxml.ns import qn
+from docx.oxml import OxmlElement
+
+OUT = "Presseaussendung_Oekovolt_FINAL.docx"
+ACCENT = RGBColor(0x1F, 0x4E, 0x3D)
+GREY = RGBColor(0x66, 0x66, 0x66)
+PH = RGBColor(0xC0, 0x00, 0x00)
+
+doc = Document()
+s = doc.sections[0]
+s.left_margin = s.right_margin = Cm(2.2)
+s.top_margin = s.bottom_margin = Cm(1.6)
+n = doc.styles["Normal"]
+n.font.name = "Calibri"
+n.font.size = Pt(10.5)
+n.paragraph_format.space_after = Pt(6)
+n.paragraph_format.line_spacing = 1.12
+
+
+def add(p, text, bold=False, size=None, color=None, italic=False):
+    for part in re.split(r"(\[[^\]]+\])", text):
+        if not part:
+            continue
+        r = p.add_run(part)
+        r.bold, r.italic = bold, italic
+        if size:
+            r.font.size = Pt(size)
+        if part.startswith("["):
+            r.font.color.rgb, r.bold = PH, True
+        elif color:
+            r.font.color.rgb = color
+    return p
+
+
+def para(text="", **kw):
+    after = kw.pop("after", None)
+    p = add(doc.add_paragraph(), text, **kw)
+    if after is not None:
+        p.paragraph_format.space_after = Pt(after)
+    return p
+
+
+def head(text):
+    p = para(text, bold=True, size=11, color=ACCENT, after=2)
+    p.paragraph_format.space_before = Pt(6)
+    p.paragraph_format.keep_with_next = True
+
+
+def sager(text):
+    p = doc.add_paragraph()
+    p.paragraph_format.left_indent = Cm(0.5)
+    p.paragraph_format.space_after = Pt(8)
+    pPr = p._p.get_or_add_pPr()
+    b = OxmlElement("w:pBdr")
+    l = OxmlElement("w:left")
+    for k, v in (("w:val", "single"), ("w:sz", "24"), ("w:space", "8"), ("w:color", "1F4E3D")):
+        l.set(qn(k), v)
+    b.append(l)
+    pPr.append(b)
+    add(p, f"„{text}“", bold=True, italic=True, size=11, color=ACCENT)
+    add(p, "  – Andreas Wegscheider, Geschäftsführer Ökovolt-Gruppe", size=9, color=GREY)
+
+
+para("PRESSEINFORMATION  |  Ostermiething, [Datum]", bold=True, size=9, color=ACCENT, after=8)
+para("35 Millionen Euro ohne Gewerbeschein: Ökovolt-Gruppe legt Fakten zum Konflikt mit der Salzburg AG offen",
+     bold=True, size=17, after=4)
+para("Neun Gerichtsentscheidungen in Deutschland, öffentliche Registerdaten in Österreich – "
+     "Ökovolt fordert Aufklärung durch Eigentümer und Aufsichtsrat", italic=True, size=11, color=GREY, after=10)
+
+para("Die Ökovolt-Unternehmensgruppe tritt der aktuellen Darstellung der Salzburg AG entgegen. Der Konflikt ist kein "
+     "Streit unter Gleichen, sondern die Auseinandersetzung eines Energiekonzerns in öffentlicher Hand mit einem "
+     "Mittelständler, dessen Know-how er genutzt hat. Die zentralen Fakten sind gerichtlich bestätigt und in "
+     "öffentlichen Registern für jede und jeden nachprüfbar.", bold=True)
+para("Zum laufenden Ermittlungsverfahren der WKStA äußert sich die Ökovolt-Gruppe nicht, um dieses nicht zu "
+     "beeinträchtigen. Sie beschränkt sich auf dokumentierte Tatsachen.")
+
+head("Von der Salzburg AG vor Gericht eingeräumt")
+para("Vor dem Landgericht Memmingen hat die Salzburg AG durch die Leiterin ihrer Rechtsabteilung eingeräumt, das "
+     "Know-how der Ökovolt-Gruppe verwendet und damit einen Auftrag erlangt zu haben [Az.]. In der Folge wurden der "
+     "Salzburg AG ihre Geschäftsanteile an der deutschen Schwestergesellschaft entzogen; ihr Verbleib wurde für die "
+     "übrigen Gesellschafter als unzumutbar beurteilt. Neun aufeinanderfolgende Entscheidungen haben dies bestätigt, "
+     "zuletzt das Oberlandesgericht München [Az.].")
+sager("Was die Salzburg AG in Memmingen vor Gericht eingeräumt hat, kann sie in Salzburg nicht mit einer "
+      "Presseaussendung zurücknehmen.")
+
+head("Millionenauftrag an eine Tochter ohne Elektrotechnik-Berechtigung")
+para("Den Auftrag über mehr als 35 Millionen Euro vergab die Salzburg AG am [Datum] an ihre hundertprozentige Tochter "
+     "one2zero GmbH (FN 567399k). Laut Gewerbeinformationssystem Austria (GISA) verfügte diese ab ihrer Gründung im "
+     "November 2022 ausschließlich über eine Gewerbeberechtigung für Unternehmensberatung. Die für elektrische Anlagen "
+     "erforderliche Berechtigung für Elektrotechnik wurde erst am 2. August 2023 eingetragen. Laut Jahresabschluss wies "
+     "das Unternehmen zu diesem Zeitpunkt zudem einen Bilanzverlust von rund 65.000 Euro aus.")
+sager("Jeder Elektriker in Salzburg braucht einen Gewerbeschein, bevor er eine Steckdose montiert. Die Salzburg AG "
+      "hat 35 Millionen Euro an ein Unternehmen vergeben, das nur Unternehmensberatung durfte.")
+
+head("Öffentliches Eigentum verpflichtet")
+para("Die Salzburg AG steht zu knapp drei Vierteln im Eigentum von Land und Stadt Salzburg und bekennt sich in ihrem "
+     "Verhaltenskodex zu ihren Unternehmenswerten. Statt die Vorgänge aufzuklären, führt sie kostspielige Verfahren "
+     "gegen ein heimisches Mittelstandsunternehmen mit mehr als 30 Beschäftigten. Die Ökovolt-Gruppe erwartet, dass "
+     "Eigentümer und Aufsichtsrat ihrer Kontrollverantwortung nachkommen und den Sachverhalt vollständig aufklären.")
+sager("Unsere Leute machen die Energiewende auf dem Dach, bei Wind und Wetter. Die Salzburg AG führt sie im "
+      "Gerichtssaal – mit dem Geld der Salzburgerinnen und Salzburger.")
+
+para("Gerichtsentscheidungen, GISA- und Firmenbuchauszüge stellt die Ökovolt-Gruppe Medienvertretern auf Anfrage zur "
+     "Verfügung.", italic=True, size=9.5, after=8)
+
+para("Über die Ökovolt-Gruppe", bold=True, size=9, color=ACCENT, after=1)
+para("Die Ökovolt-Unternehmensgruppe mit Sitz in Ostermiething plant und errichtet seit 2012 Photovoltaik-Großanlagen "
+     "in Österreich und Deutschland und beschäftigt mehr als 30 Mitarbeiterinnen und Mitarbeiter.", size=9, after=6)
+para("Rückfragen: Andreas Wegscheider, Geschäftsführer · Gewerbegebiet 10, 5121 Ostermiething · [Telefon] · [E-Mail]",
+     size=9, color=GREY)
+
+doc.save(OUT)
+print("ok")

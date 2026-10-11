@@ -1,0 +1,280 @@
+"""Endpunkte des Subunternehmerportals.
+
+Der Subunternehmer sieht ausschliesslich, was ihm zugeteilt ist — kein
+Anlagenverzeichnis, keine fremden Auftraege, keine Preise. Die Einschraenkung
+liegt nicht in der Oberflaeche, sondern in `api/berechtigung.py` und in den
+Filtern dieser Endpunkte.
+"""
+
+from __future__ import annotations
+
+import frappe
+from frappe import _
+from frappe.utils import add_days, getdate, today
+
+
+def eigener_supplier() -> str | None:
+	"""Zu welchem Subunternehmer gehoert der angemeldete Benutzer?"""
+	aus_portal = frappe.db.get_value(
+		"Portal User", {"user": frappe.session.user, "parenttype": "Supplier"}, "parent"
+	)
+	if aus_portal:
+		return aus_portal
+	# Poliere haengen als Mitarbeiter an der Firma.
+	return frappe.db.get_value(
+		"Subunternehmer Mitarbeiter", {"benutzer": frappe.session.user}, "supplier"
+	)
+
+
+def _supplier_oder_fehler() -> str:
+	supplier = eigener_supplier()
+	if not supplier:
+		frappe.throw(
+			_("Dieses Konto ist keinem Subunternehmer zugeordnet."), frappe.PermissionError
+		)
+	return supplier
+
+
+@frappe.whitelist()
+def portal_bootstrap() -> dict:
+	"""Alles, was das Portal beim Start braucht."""
+	supplier = _supplier_oder_fehler()
+	ich = frappe.db.get_value(
+		"Subunternehmer Mitarbeiter",
+		{"benutzer": frappe.session.user},
+		["name", "vollname", "ist_polier"],
+		as_dict=True,
+	)
+
+	from oekovolt_baudoku.baudoku.doctype.personalmeldung.personalmeldung import meldepflicht
+	from oekovolt_baudoku.baudoku.doctype.subunternehmer_mitarbeiter.subunternehmer_mitarbeiter import (
+		kolonne,
+	)
+
+	settings = frappe.get_cached_doc("Baudoku Settings")
+
+	return {
+		"supplier": supplier,
+		"firmenname": frappe.db.get_value("Supplier", supplier, "supplier_name"),
+		"ich": ich,
+		"ist_polier": bool(ich and ich.ist_polier),
+		"kolonne": kolonne(supplier),
+		"meldepflicht": meldepflicht(supplier),
+		"baustellen": _baustellen(supplier),
+		"einstellungen": {
+			"geofence_radius_m": settings.geofence_radius_m or 300,
+			"geofence_erzwingen": bool(settings.geofence_erzwingen),
+			"fristwarnung_tage": settings.fristwarnung_tage or 3,
+		},
+		"server_zeit": str(frappe.utils.now_datetime()),
+	}
+
+
+def _baustellen(supplier: str) -> list[dict]:
+	"""Nur Baustellen, auf denen dieser Subunternehmer einen Auftrag hat."""
+	namen = frappe.get_all(
+		"Subunternehmerauftrag",
+		filters={"supplier": supplier, "status": ["not in", ["Abgenommen", "Storniert"]]},
+		pluck="anlage",
+		distinct=True,
+	)
+	if not namen:
+		return []
+
+	return frappe.get_all(
+		"PV Anlage",
+		filters={"name": ["in", namen]},
+		fields=["name", "anlage_name", "adresse", "plz", "ort", "gps_lat", "gps_lng"],
+		limit_page_length=0,
+	)
+
+
+@frappe.whitelist()
+def meine_auftraege(status: str | None = None, mit_erledigten: int = 0) -> list[dict]:
+	supplier = _supplier_oder_fehler()
+
+	filters: dict = {"supplier": supplier}
+	if status:
+		filters["status"] = status
+	elif not int(mit_erledigten):
+		filters["status"] = ["not in", ["Abgenommen", "Storniert", "Abgelehnt"]]
+
+	return frappe.get_all(
+		"Subunternehmerauftrag",
+		filters=filters,
+		fields=["name", "titel", "anlage", "status", "prioritaet", "termin_von", "termin_bis",
+		        "frist", "tage_bis_frist", "fristwarnung_aktiv", "verzug", "fortschritt_prozent",
+		        "herkunft", "gewaehrleistung"],
+		order_by="verzug desc, fristwarnung_aktiv desc, termin_von asc",
+		limit_page_length=200,
+	)
+
+
+@frappe.whitelist()
+def kalender(von: str | None = None, bis: str | None = None) -> list[dict]:
+	"""Terminsicht: wann muss wer wo sein, und was ist zu tun."""
+	supplier = _supplier_oder_fehler()
+	von = von or add_days(today(), -7)
+	bis = bis or add_days(today(), 42)
+
+	auftraege = frappe.get_all(
+		"Subunternehmerauftrag",
+		filters={
+			"supplier": supplier,
+			"status": ["not in", ["Storniert", "Abgelehnt"]],
+			"termin_von": ["<=", bis],
+			"termin_bis": [">=", von],
+		},
+		fields=["name", "titel", "anlage", "status", "termin_von", "termin_bis", "frist",
+		        "tage_bis_frist", "fristwarnung_aktiv", "verzug", "prioritaet", "aufgabe"],
+		order_by="termin_von asc",
+		limit_page_length=0,
+	)
+
+	orte = {
+		a.name: a
+		for a in frappe.get_all(
+			"PV Anlage",
+			filters={"name": ["in", [x.anlage for x in auftraege]]} if auftraege else {"name": ""},
+			fields=["name", "anlage_name", "adresse", "plz", "ort", "gps_lat", "gps_lng"],
+		)
+	}
+	for auftrag in auftraege:
+		auftrag["baustelle"] = orte.get(auftrag.anlage)
+
+	return auftraege
+
+
+@frappe.whitelist()
+def tagesuebersicht(anlage: str | None = None) -> dict:
+	"""Was heute ansteht — die Startseite des Portals."""
+	supplier = _supplier_oder_fehler()
+	heute = getdate(today())
+
+	heutige = [
+		a for a in kalender(add_days(heute, -1), add_days(heute, 1))
+		if getdate(a["termin_von"]) <= heute <= getdate(a["termin_bis"])
+		and (not anlage or a["anlage"] == anlage)
+	]
+
+	from oekovolt_baudoku.baudoku.doctype.personalmeldung.personalmeldung import (
+		heutige_meldung,
+		meldepflicht,
+	)
+
+	pflicht = meldepflicht(supplier)
+	meldung = heutige_meldung(supplier, anlage) if (anlage and pflicht["pflichtig"]) else None
+
+	return {
+		"auftraege_heute": heutige,
+		"fristwarnungen": frappe.get_all(
+			"Subunternehmerauftrag",
+			filters={"supplier": supplier, "fristwarnung_aktiv": 1},
+			fields=["name", "titel", "anlage", "frist", "tage_bis_frist"],
+			order_by="tage_bis_frist asc",
+		),
+		"im_verzug": frappe.get_all(
+			"Subunternehmerauftrag",
+			filters={"supplier": supplier, "verzug": 1},
+			fields=["name", "titel", "anlage", "frist", "tage_bis_frist"],
+			order_by="tage_bis_frist asc",
+		),
+		"personalmeldung": {
+			"pflichtig": pflicht["pflichtig"],
+			"grund": pflicht["grund"],
+			"abgegeben": bool(meldung and meldung.get("status") == "Gemeldet"),
+			"meldung": meldung,
+		},
+		"offene_materialanforderungen": frappe.db.count(
+			"Materialanforderung", {"supplier": supplier, "status": ["in", ["Angefragt", "In Pruefung"]]}
+		),
+		"offene_meldungen": frappe.db.count(
+			"Bauvertragsmeldung",
+			{"supplier": supplier, "status": ["in", ["Eingegangen", "In Pruefung"]]},
+		),
+	}
+
+
+@frappe.whitelist()
+def fortschritt_melden(auftrag: str, fortschritt: float, bemerkung: str | None = None) -> dict:
+	"""Fortschritt eines laufenden Auftrags fortschreiben."""
+	doc = frappe.get_doc("Subunternehmerauftrag", auftrag)
+	doc.check_permission("write")
+	if doc.supplier != _supplier_oder_fehler():
+		frappe.throw(_("Dieser Auftrag gehoert nicht zu Ihnen."), frappe.PermissionError)
+
+	doc.fortschritt_prozent = max(0, min(100, float(fortschritt)))
+	if doc.status == "Geplant":
+		doc.status = "Angenommen"
+	elif doc.status == "Angenommen" and doc.fortschritt_prozent > 0:
+		doc.status = "In Arbeit"
+	if bemerkung:
+		doc.fertigmeldung_bemerkung = bemerkung
+	doc.save()
+
+	return {"status": doc.status, "fortschritt": doc.fortschritt_prozent}
+
+
+@frappe.whitelist()
+def arbeitszeiten(von: str | None = None, bis: str | None = None) -> list[dict]:
+	"""Die eigenen Arbeitstage — der Subunternehmer sieht, was freigegeben ist."""
+	supplier = _supplier_oder_fehler()
+	return frappe.get_all(
+		"Arbeitstag",
+		filters={
+			"supplier": supplier,
+			"datum": ["between", [von or add_days(today(), -30), bis or today()]],
+		},
+		fields=["name", "mitarbeiter", "datum", "anlage", "beginn", "ende",
+		        "arbeitszeit_stunden", "pause_minuten", "status", "hinweise", "beanstandung"],
+		order_by="datum desc, mitarbeiter asc",
+		limit_page_length=500,
+	)
+
+
+BAULEITER_ROLLEN = {"Baudoku Bauleiter", "Baudoku Projektleiter", "Baudoku Admin", "System Manager"}
+
+
+@frappe.whitelist()
+def subunternehmer_liste() -> list[dict]:
+	"""Auswahlliste fuer den Bauleiter: wer kommt als Auftragnehmer in Frage?
+
+	Nicht jeder Lieferant ist ein Subunternehmer. Als solcher gilt, wer
+	Mitarbeiter hinterlegt hat (ohne die liefe weder Personalmeldung noch
+	Stempelung) oder schon einmal einen Auftrag bekommen hat.
+	"""
+	if not BAULEITER_ROLLEN & set(frappe.get_roles()):
+		frappe.throw(_("Nur die Bauleitung waehlt Subunternehmer aus."), frappe.PermissionError)
+
+	mit_personal = {
+		zeile.supplier
+		for zeile in frappe.get_all(
+			"Subunternehmer Mitarbeiter",
+			filters={"aktiv": 1},
+			fields=["supplier"],
+			group_by="supplier",
+			limit_page_length=0,
+		)
+	}
+	mit_auftrag = {
+		zeile.supplier
+		for zeile in frappe.get_all(
+			"Subunternehmerauftrag", fields=["supplier"], group_by="supplier",
+			limit_page_length=0,
+		)
+	}
+
+	namen = sorted(mit_personal | mit_auftrag)
+	if not namen:
+		return []
+
+	firmen = frappe.get_all(
+		"Supplier",
+		filters={"name": ["in", namen], "disabled": 0},
+		fields=["name", "supplier_name"],
+		order_by="supplier_name asc",
+		limit_page_length=0,
+	)
+	for firma in firmen:
+		firma["personal_hinterlegt"] = 1 if firma["name"] in mit_personal else 0
+	return firmen

@@ -1,0 +1,376 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+
+import {
+  ladeGebuchteNummern,
+  ladeGebuchteNummernAusser,
+  ladeQuellbelege,
+  ladeStapelbuchungen,
+} from "@/lib/daten/buchhaltung";
+import { eine, imBlock, schreibe, skalar } from "@/lib/db/verbindung";
+import { type Buchungszeile, type Erlosquelle } from "@/lib/finanzen/bmd";
+import {
+  darfUebergebenWerden,
+  stapelbezeichnung,
+  stapelkennung,
+  stelleStapelZusammen,
+} from "@/lib/finanzen/stapellauf";
+import { protokolliere } from "@/lib/sicherheit/audit";
+import { requireRecht } from "@/lib/session";
+
+export interface BuchhaltungErgebnis {
+  ok: boolean;
+  meldung: string;
+  /** Was der Lauf beanstandet oder übersprungen hat, zeilenweise. */
+  hinweise?: string[];
+}
+
+/**
+ * Freie Kennung für einen Stapel.
+ *
+ * Ein zweiter Lauf über denselben Monat ist ein normaler Vorgang -
+ * etwa wenn eine Abrechnung nachträglich festgeschrieben wurde. Er
+ * bekommt eine eigene Kennung mit dem Zusatz "N2", damit in der
+ * Buchhaltung zwei Stapel stehen und nicht einer, der sich
+ * unbemerkt verändert hat.
+ */
+function freieKennung(jahr: number, monat: number): string {
+  const grund = stapelkennung(jahr, monat);
+  const belegt = (id: string) =>
+    (skalar<number>("SELECT COUNT(*) FROM buchungsstapel WHERE id = ?", id) ??
+      0) > 0;
+
+  if (!belegt(grund)) return grund;
+
+  for (let n = 2; n <= 99; n += 1) {
+    const kandidat = `${grund}-N${n}`;
+    if (!belegt(kandidat)) return kandidat;
+  }
+
+  return `${grund}-N99`;
+}
+
+/** Letzter Tag des Monats, ohne Umweg über die Zeitzone. */
+function monatsgrenzen(jahr: number, monat: number): [string, string] {
+  const von = `${jahr}-${String(monat).padStart(2, "0")}-01`;
+  const tage = new Date(Date.UTC(jahr, monat, 0)).getUTCDate();
+  const bis = `${jahr}-${String(monat).padStart(2, "0")}-${String(tage).padStart(2, "0")}`;
+  return [von, bis];
+}
+
+/**
+ * Erzeugt einen Buchungsstapel für einen Monat.
+ *
+ * Der Stapel entsteht als Entwurf, nicht als Übergabe. Zwischen
+ * beidem liegt bewusst ein zweiter Handgriff: Wer bucht, sieht erst,
+ * was herauskommt, und übergibt danach - oder verwirft und rechnet
+ * neu. Ein Lauf, der sofort übergibt, nimmt genau diese Möglichkeit.
+ */
+export async function erzeugeStapel(
+  _vorher: BuchhaltungErgebnis | null,
+  formular: FormData,
+): Promise<BuchhaltungErgebnis> {
+  const benutzer = await requireRecht("finanzen.buchen");
+
+  const schluessel = String(formular.get("monat") ?? "");
+  const [jahrText, monatText] = schluessel.split("-");
+  const jahr = Number(jahrText);
+  const monat = Number(monatText);
+
+  if (!Number.isInteger(jahr) || monat < 1 || monat > 12) {
+    return { ok: false, meldung: "Bitte wählen Sie einen Monat." };
+  }
+
+  const belege = ladeQuellbelege(schluessel);
+  const gebucht = ladeGebuchteNummern();
+  const entwurf = stelleStapelZusammen(belege, gebucht);
+
+  const uebersprungen = entwurf.uebersprungen.map(
+    (u) => `${u.nummer}: ${u.grund}`,
+  );
+
+  if (!entwurf.pruefung.gueltig) {
+    await protokolliere({
+      kategorie: "abrechnung",
+      aktion: `Buchungslauf ${schluessel} abgebrochen`,
+      ergebnis: "abgelehnt",
+      objekt: schluessel,
+      begruendung: entwurf.pruefung.beanstandungen.join(" | "),
+    });
+
+    return {
+      ok: false,
+      meldung:
+        "Der Lauf wurde abgebrochen. Es wurde nichts geschrieben – ein halber Stapel wäre schlimmer als keiner.",
+      hinweise: entwurf.pruefung.beanstandungen,
+    };
+  }
+
+  if (entwurf.zeilen.length === 0) {
+    return {
+      ok: false,
+      meldung:
+        uebersprungen.length > 0
+          ? "Für diesen Monat ist nichts mehr zu buchen."
+          : "Für diesen Monat gibt es keine festgeschriebenen Belege. Erst festschreiben, dann buchen.",
+      hinweise: uebersprungen,
+    };
+  }
+
+  const stapelId = freieKennung(jahr, monat);
+  const [von, bis] = monatsgrenzen(jahr, monat);
+  const jetzt = new Date().toISOString();
+
+  // Ein Nachtragsstapel traegt den Zusatz auch im Namen. Zwei Zeilen,
+  // die beide "Buchungsstapel August 2026" heissen, sind in der
+  // Buchhaltung nicht auseinanderzuhalten - und dort entscheidet
+  // jemand, welchen er einspielt.
+  const nachtrag = stapelId.slice(stapelkennung(jahr, monat).length);
+  const bezeichnung =
+    stapelbezeichnung(jahr, monat) +
+    (nachtrag ? ` (Nachtrag ${nachtrag.replace("-N", "")})` : "");
+
+  imBlock(() => {
+    schreibe(
+      `INSERT INTO buchungsstapel
+         (id, bezeichnung, zeitraum_von, zeitraum_bis, format, status,
+          buchungen, summe_soll, summe_haben, erzeugt_am, erzeugt_von)
+       VALUES (?, ?, ?, ?, 'BMD_NTCS', 'Entwurf', ?, ?, ?, ?, ?)`,
+      stapelId,
+      bezeichnung,
+      von,
+      bis,
+      entwurf.zeilen.length,
+      entwurf.summe.bruttoEur,
+      entwurf.summe.bruttoEur,
+      jetzt,
+      benutzer.vollname,
+    );
+
+    for (const [i, z] of entwurf.zeilen.entries()) {
+      // Der Betrag wird vorzeichenbehaftet abgelegt: Eine Gutschrift
+      // ist negativ. Damit bleibt die Buchungsrichtung erhalten, ohne
+      // dass eine zweite Spalte sie beschreiben muss.
+      const vorzeichen = z.sollHaben === "S" ? 1 : -1;
+
+      schreibe(
+        `INSERT INTO buchung
+           (id, stapel_id, belegdatum, belegnummer, konto, gegenkonto,
+            kostenstelle, text, betrag, steuersatz, steuercode, waehrung,
+            herkunft)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'EUR', ?)`,
+        `${stapelId}-${String(i + 1).padStart(4, "0")}`,
+        stapelId,
+        z.belegdatum.toISOString().slice(0, 10),
+        z.belegnummer,
+        z.konto,
+        z.gegenkonto,
+        z.kostenstelle || null,
+        z.buchungstext,
+        vorzeichen * z.nettoEur,
+        z.steuersatz,
+        z.steuercode,
+        z.herkunft,
+      );
+    }
+  });
+
+  await protokolliere({
+    kategorie: "abrechnung",
+    aktion: `Buchungsstapel ${stapelId} erzeugt`,
+    ergebnis: "erfolg",
+    objekt: stapelId,
+    nachher: `${entwurf.zeilen.length} Buchungen, ${entwurf.summe.bruttoEur.toFixed(2)} EUR brutto`,
+    begruendung: `Lauf über ${schluessel} durch ${benutzer.vollname}`,
+  });
+
+  revalidatePath("/portal/finanzen");
+
+  return {
+    ok: true,
+    meldung: `${stapelId} steht als Entwurf: ${entwurf.zeilen.length} Buchungen über ${entwurf.summe.bruttoEur.toFixed(2)} Euro brutto. Prüfen, dann übergeben.`,
+    hinweise: uebersprungen,
+  };
+}
+
+/**
+ * Baut die gespeicherten Zeilen wieder zu Buchungszeilen auf.
+ *
+ * Die Steuer wird dabei erneut aus dem Netto gerechnet und nicht
+ * mitgeführt - sie ist eine abgeleitete Größe. Der Sinn der zweiten
+ * Prüfung liegt ohnehin woanders: Sie fängt den Fall ab, dass
+ * dieselben Belege zwischenzeitlich in einem anderen Stapel das Haus
+ * verlassen haben.
+ */
+function alsBuchungszeilen(stapelId: string): Buchungszeile[] {
+  return ladeStapelbuchungen(stapelId).map((b) => {
+    const netto = b.betrag;
+    const steuer = Math.round(((netto * b.steuersatz) / 100) * 100) / 100;
+
+    return {
+      belegdatum: new Date(b.belegdatum),
+      belegnummer: b.belegnummer,
+      konto: b.konto,
+      gegenkonto: b.gegenkonto,
+      buchungstext: b.text,
+      betragBrutto: Math.abs(Math.round((netto + steuer) * 100) / 100),
+      nettoEur: Math.abs(netto),
+      steuerEur: Math.abs(steuer),
+      steuersatz: b.steuersatz,
+      steuercode: b.steuercode ?? "",
+      kostenstelle: b.kostenstelle ?? "",
+      belegverweis: `${b.belegnummer}.pdf`,
+      sollHaben: netto >= 0 ? "S" : "H",
+      herkunft: b.herkunft as Erlosquelle,
+    };
+  });
+}
+
+/**
+ * Übergibt einen Stapel an die Finanzbuchhaltung.
+ *
+ * Ab hier wird der Stapel nicht mehr verändert. Eine Korrektur läuft
+ * über eine Stornierung und einen neuen Stapel - alles andere macht
+ * die Buchhaltung unprüfbar.
+ */
+export async function uebergebeStapel(
+  _vorher: BuchhaltungErgebnis | null,
+  formular: FormData,
+): Promise<BuchhaltungErgebnis> {
+  const benutzer = await requireRecht("finanzen.buchen");
+
+  const stapelId = String(formular.get("stapel") ?? "");
+
+  const stapel = eine<{ id: string; status: string; bezeichnung: string }>(
+    "SELECT id, status, bezeichnung FROM buchungsstapel WHERE id = ?",
+    stapelId,
+  );
+
+  if (!stapel) {
+    return { ok: false, meldung: "Dieser Stapel ist nicht vorhanden." };
+  }
+
+  if (stapel.status !== "Entwurf") {
+    return {
+      ok: false,
+      meldung:
+        stapel.status === "Uebergeben"
+          ? "Dieser Stapel wurde bereits übergeben. Ein zweites Mal eingespielt würde er den Umsatz verdoppeln."
+          : "Ein stornierter Stapel wird nicht übergeben.",
+    };
+  }
+
+  const zeilen = alsBuchungszeilen(stapelId);
+  const pruefung = darfUebergebenWerden(
+    zeilen,
+    ladeGebuchteNummernAusser(stapelId),
+  );
+
+  if (!pruefung.gueltig) {
+    await protokolliere({
+      kategorie: "abrechnung",
+      aktion: `Übergabe von ${stapelId} verweigert`,
+      ergebnis: "abgelehnt",
+      objekt: stapelId,
+      begruendung: pruefung.beanstandungen.join(" | "),
+    });
+
+    return {
+      ok: false,
+      meldung: "Der Stapel wurde nicht übergeben.",
+      hinweise: pruefung.beanstandungen,
+    };
+  }
+
+  const jetzt = new Date().toISOString();
+
+  schreibe(
+    `UPDATE buchungsstapel SET status = 'Uebergeben', uebergeben_am = ?
+      WHERE id = ? AND status = 'Entwurf'`,
+    jetzt,
+    stapelId,
+  );
+
+  await protokolliere({
+    kategorie: "abrechnung",
+    aktion: `Buchungsstapel ${stapelId} übergeben`,
+    ergebnis: "erfolg",
+    objekt: stapelId,
+    vorher: "Entwurf",
+    nachher: "Uebergeben",
+    begruendung: `${zeilen.length} Buchungen, freigegeben durch ${benutzer.vollname}`,
+  });
+
+  revalidatePath("/portal/finanzen");
+
+  return {
+    ok: true,
+    meldung: `${stapel.bezeichnung} ist übergeben. Die Datei lässt sich weiterhin herunterladen, der Stapel wird aber nicht mehr verändert.`,
+  };
+}
+
+/**
+ * Storniert einen Stapel im Entwurf.
+ *
+ * Die Belege werden damit wieder buchbar. Ein bereits übergebener
+ * Stapel lässt sich nicht stornieren - er ist in der Buchhaltung
+ * angekommen, und was dort ankommt, wird dort korrigiert.
+ */
+export async function storniereStapel(
+  _vorher: BuchhaltungErgebnis | null,
+  formular: FormData,
+): Promise<BuchhaltungErgebnis> {
+  const benutzer = await requireRecht("finanzen.buchen");
+
+  const stapelId = String(formular.get("stapel") ?? "");
+  const grund = String(formular.get("grund") ?? "").trim();
+
+  const stapel = eine<{ status: string; bezeichnung: string }>(
+    "SELECT status, bezeichnung FROM buchungsstapel WHERE id = ?",
+    stapelId,
+  );
+
+  if (!stapel) {
+    return { ok: false, meldung: "Dieser Stapel ist nicht vorhanden." };
+  }
+
+  if (stapel.status !== "Entwurf") {
+    return {
+      ok: false,
+      meldung:
+        "Nur ein Entwurf lässt sich stornieren. Ein übergebener Stapel wird in der Buchhaltung korrigiert, nicht hier.",
+    };
+  }
+
+  imBlock(() => {
+    schreibe("DELETE FROM buchung WHERE stapel_id = ?", stapelId);
+    schreibe(
+      `UPDATE buchungsstapel
+          SET status = 'Storniert', buchungen = 0,
+              summe_soll = 0, summe_haben = 0
+        WHERE id = ?`,
+      stapelId,
+    );
+  });
+
+  await protokolliere({
+    kategorie: "abrechnung",
+    aktion: `Buchungsstapel ${stapelId} storniert`,
+    ergebnis: "erfolg",
+    objekt: stapelId,
+    vorher: "Entwurf",
+    nachher: "Storniert",
+    begruendung: grund
+      ? `${benutzer.vollname}: ${grund}`
+      : `Storniert durch ${benutzer.vollname}`,
+  });
+
+  revalidatePath("/portal/finanzen");
+
+  return {
+    ok: true,
+    meldung:
+      "Storniert. Die Belege sind wieder offen und können in einen neuen Lauf.",
+  };
+}

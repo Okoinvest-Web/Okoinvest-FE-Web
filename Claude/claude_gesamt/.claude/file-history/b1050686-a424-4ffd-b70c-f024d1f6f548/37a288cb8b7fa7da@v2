@@ -1,0 +1,123 @@
+import io
+
+p = "src/lib/db/befuellen.ts"
+s = io.open(p, encoding="utf-8").read()
+
+zusatz = '''
+/**
+ * Abgeschlossene Quartalsabrechnungen der Energiegemeinschaft.
+ *
+ * Bewusst ausserhalb von `befuelleDatenbank`: Jeder Lauf fuehrt seine
+ * eigene Schreibklammer, und eine Klammer innerhalb einer anderen
+ * kennt die Datenbankschicht nicht.
+ *
+ * Die zurueckliegenden Quartale werden festgeschrieben, das laufende
+ * bleibt offen - so zeigt die Oberflaeche beide Zustaende, und der
+ * Lastschriftlauf hat Belege, auf die er sich stuetzen kann. Ohne
+ * einen abgeschlossenen Lauf waere die halbe kaufmaennische Kette im
+ * Demonstrationsbestand leer.
+ */
+export function befuelleGemeinschaftsabrechnungen(): {
+  laeufe: number;
+  belege: number;
+  brutto: number;
+} {
+  const gemeinschaft = eine<{ id: string }>(
+    "SELECT id FROM gemeinschaft ORDER BY id LIMIT 1",
+  );
+
+  let laeufe = 0;
+  let belege = 0;
+  let brutto = 0;
+
+  if (!gemeinschaft) return { laeufe, belege, brutto };
+
+  const heute = new Date();
+  const laufendesQuartal = Math.floor(heute.getMonth() / 3) + 1;
+
+  // Die beiden Quartale vor dem laufenden. Weiter zurueck reicht der
+  // Lastgang nicht verlaesslich.
+  for (let zurueck = 2; zurueck >= 1; zurueck -= 1) {
+    let quartal = laufendesQuartal - zurueck;
+    let jahr = heute.getFullYear();
+    while (quartal < 1) {
+      quartal += 4;
+      jahr -= 1;
+    }
+
+    const { von, bis } = quartalsZeitraum(jahr, quartal);
+
+    // Fehlen mehr als fuenf Prozent der Messwerte, waere die
+    // Abrechnung nicht belastbar - dann lieber kein Lauf.
+    const luecken = pruefeDatenbestand(
+      gemeinschaft.id,
+      messStempel(von),
+      messStempel(bis),
+    );
+    if (luecken.some((l) => l.vorhanden < l.erwartet * 0.95)) continue;
+
+    const id = legeLaufAn(
+      gemeinschaft.id,
+      von,
+      bis,
+      "Dynamisch",
+      15,
+      12,
+      20,
+      "Automatischer Lauf",
+    );
+
+    const ergebnis = rechneLauf(id, "Automatischer Lauf");
+    const anzahl =
+      ergebnis.uebersicht.anzahlRechnungen +
+      ergebnis.uebersicht.anzahlGutschriften;
+    if (anzahl === 0) continue;
+
+    schreibeLaufFest(id, "Automatischer Lauf");
+
+    laeufe += 1;
+    belege += anzahl;
+    brutto += ergebnis.uebersicht.summeRechnungenNetto * 1.2;
+  }
+
+  return { laeufe, belege, brutto: Number(brutto.toFixed(2)) };
+}
+'''
+
+s = s + zusatz
+s = s.replace('import { alle, db, imBlock, istBefuellt, schreibe } from "./verbindung.ts";',
+              'import { alle, db, eine, imBlock, istBefuellt, schreibe } from "./verbindung.ts";', 1)
+s = s.replace('import { frist, slaFuer } from "../service/frist.ts";',
+              '''import { quartalsZeitraum } from "../eeg/abrechnung.ts";
+import {
+  pruefeDatenbestand,
+  rechneLauf,
+  schreibeLaufFest,
+} from "../eeg/lauf.ts";
+import { legeLaufAn } from "../daten/eeg.ts";
+import { frist, slaFuer } from "../service/frist.ts";''', 1)
+io.open(p, "w", encoding="utf-8").write(s)
+print("Gemeinschaftsabrechnungen ergaenzt")
+
+# --- Werkzeug ------------------------------------------------------
+p = "werkzeuge/datenbank.mjs"
+s = io.open(p, encoding="utf-8").read()
+s = s.replace('const { befuelleDatenbank } = await import("../src/lib/db/befuellen.ts");',
+              'const { befuelleDatenbank, befuelleGemeinschaftsabrechnungen } = await import(\n  "../src/lib/db/befuellen.ts"\n);', 1)
+s = s.replace('const ladeLaeufe = laden.dauerMs ? befuelleLadeabrechnungen() : null;',
+'''const ladeLaeufe = laden.dauerMs ? befuelleLadeabrechnungen() : null;
+
+// Die Quartalsabrechnungen der Energiegemeinschaft laufen ebenfalls
+// ausserhalb der Schreibklammer - jeder Lauf fuehrt seine eigene.
+const eegLaeufe = ergebnis.uebersprungen
+  ? null
+  : befuelleGemeinschaftsabrechnungen();
+
+if (eegLaeufe) {
+  console.log(
+    `Energiegemeinschaft: ${eegLaeufe.laeufe} Quartalslaeufe, ` +
+      `${eegLaeufe.belege} Belege, ${eegLaeufe.brutto.toFixed(2)} EUR brutto`,
+  );
+}''', 1)
+io.open(p, "w", encoding="utf-8").write(s)
+print("Werkzeug ergaenzt")

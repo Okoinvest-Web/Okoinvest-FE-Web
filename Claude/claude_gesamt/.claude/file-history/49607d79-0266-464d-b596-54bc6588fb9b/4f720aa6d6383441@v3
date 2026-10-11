@@ -1,0 +1,132 @@
+<template>
+  <div class="relative overflow-hidden rounded-lg border border-outline-gray-2 bg-surface-white">
+    <div ref="rahmen" class="overflow-x-auto" @scroll="messen">
+      <!--
+        min-w-... ist Absicht: ohne sie quetscht die Tabelle auf einem
+        Telefon jede Zelle in Silben ("AP-A02-\n01"). Lieber seitlich
+        schieben als unleserlich stapeln.
+      -->
+      <table class="w-full min-w-[44rem] text-left">
+        <thead class="border-b border-outline-gray-2 bg-surface-gray-1">
+          <tr class="text-sm text-ink-gray-6">
+            <th
+              v-for="spalte in columns"
+              :key="spalte.key"
+              scope="col"
+              class="whitespace-nowrap px-4 py-2 font-medium"
+              :class="spalte.align === 'right' ? 'text-right' : ''"
+              :style="spalte.width ? { width: spalte.width } : undefined"
+            >
+              {{ spalte.label }}
+            </th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-outline-gray-2">
+          <tr
+            v-for="(zeile, i) in rows"
+            :key="zeile.name || i"
+            :class="onRowClick ? 'cursor-pointer hover:bg-surface-gray-1' : ''"
+            @click="onRowClick && onRowClick(zeile)"
+          >
+            <td
+              v-for="spalte in columns"
+              :key="spalte.key"
+              class="px-4 py-2.5 align-top"
+              :class="[
+                spalte.align === 'right' ? 'text-right' : '',
+                spalte.mono ? 'font-mono text-sm' : 'text-base',
+                spalte.numeric ? 'tabular-nums' : '',
+                spalte.muted ? 'text-ink-gray-6' : 'text-ink-gray-8',
+              ]"
+            >
+              <slot :name="'zelle-' + spalte.key" :zeile="zeile" :wert="zeile[spalte.key]">
+                <span v-if="leer(zeile[spalte.key])" class="text-ink-gray-4">–</span>
+                <span v-else>{{ zeile[spalte.key] }}</span>
+              </slot>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!--
+      Randverlauf nur, solange in die Richtung noch etwas liegt. Eine
+      Tabelle, die seitlich weitergeht, sieht sonst aus wie eine, die zu
+      Ende ist.
+    -->
+    <div
+      v-if="mehrLinks"
+      class="pointer-events-none absolute inset-y-0 left-0 w-6 schatten-links"
+      aria-hidden="true"
+    />
+    <div
+      v-if="mehrRechts"
+      class="pointer-events-none absolute inset-y-0 right-0 w-6 schatten-rechts"
+      aria-hidden="true"
+    />
+
+    <p v-if="loading" class="px-4 py-8 text-center text-sm text-ink-gray-5">Wird geladen …</p>
+    <p v-else-if="!rows.length" class="px-4 py-8 text-center text-sm text-ink-gray-5">
+      {{ emptyText }}
+    </p>
+  </div>
+</template>
+
+<script setup>
+import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+
+const props = defineProps({
+  /** @type {{key: string, label: string, align?: string, mono?: boolean, numeric?: boolean, muted?: boolean, width?: string}[]} */
+  columns: { type: Array, required: true },
+  rows: { type: Array, required: true },
+  loading: { type: Boolean, default: false },
+  emptyText: { type: String, default: 'Keine Einträge.' },
+  onRowClick: { type: Function, default: null },
+})
+
+const rahmen = ref(null)
+const mehrLinks = ref(false)
+const mehrRechts = ref(false)
+
+function messen() {
+  const el = rahmen.value
+  if (!el) return
+  // 1 px Toleranz: Browser runden scrollLeft auf Bruchteile.
+  mehrLinks.value = el.scrollLeft > 1
+  mehrRechts.value = el.scrollLeft + el.clientWidth < el.scrollWidth - 1
+}
+
+let beobachter = null
+
+onMounted(() => {
+  messen()
+  if (typeof ResizeObserver !== 'undefined') {
+    beobachter = new ResizeObserver(messen)
+    beobachter.observe(rahmen.value)
+  }
+})
+
+onBeforeUnmount(() => beobachter?.disconnect())
+
+// Neue Zeilen ändern die Breite der Tabelle, also neu nachmessen.
+watch(
+  () => props.rows,
+  () => nextTick(messen),
+  { deep: false },
+)
+
+function leer(wert) {
+  return wert === null || wert === undefined || wert === ''
+}
+</script>
+
+<style scoped>
+/* Über Tailwind ginge das auch, aber die Farbe muss die Flächenfarbe des
+   Kartenhintergrunds treffen - und die steht als Token im Theme. */
+.schatten-links {
+  background: linear-gradient(to right, rgb(0 0 0 / 0.08), transparent);
+}
+.schatten-rechts {
+  background: linear-gradient(to left, rgb(0 0 0 / 0.08), transparent);
+}
+</style>

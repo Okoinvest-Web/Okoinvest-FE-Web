@@ -1,0 +1,142 @@
+import "server-only";
+
+import { alle, skalar } from "../db/verbindung.ts";
+import { PARAMETER } from "../sicherheit/regelgrenzen.ts";
+
+/**
+ * Zustand der Anlagensteuerung.
+ *
+ * Zwei Dinge werden getrennt geführt und dürfen nie vermischt werden:
+ *
+ *   - Der **Sollwert** ist, was gelten soll. Er steht im Portal.
+ *   - Der **Befehl** ist der Weg dorthin. Er hat einen Zustand:
+ *     angenommen, übertragen, bestätigt, fehlgeschlagen.
+ *
+ * Wer nur den Sollwert zeigt, behauptet, die Anlage hätte ihn bereits.
+ * Das stimmt erst, wenn der Befehl bestätigt ist - und genau
+ * dazwischen liegen die Fälle, in denen jemand am nächsten Morgen vor
+ * einer Anlage steht, die etwas anderes tut als das Portal anzeigt.
+ */
+
+export interface Steuerwert {
+  parameter: string;
+  wert: string;
+  quelle: string;
+  geaendert_von: string | null;
+  geaendert_am: string;
+}
+
+export function ladeSteuerwerte(anlageId: string): Map<string, Steuerwert> {
+  const zeilen = alle<Steuerwert>(
+    `SELECT parameter, wert, quelle, geaendert_von, geaendert_am
+       FROM steuerwert WHERE anlage_id = ?`,
+    anlageId,
+  );
+
+  return new Map(zeilen.map((z) => [z.parameter, z]));
+}
+
+export interface BefehlZeile {
+  id: string;
+  anlage_id: string;
+  anlage: string;
+  parameter: string;
+  bezeichnung: string;
+  wert_vorher: string | null;
+  wert_nachher: string | null;
+  status: string;
+  begruendung: string | null;
+  benutzer: string | null;
+  erstellt_am: string;
+}
+
+/**
+ * Die letzten Befehle, neueste zuerst.
+ *
+ * Die Bezeichnung wird aus dem Parameterkatalog nachgeschlagen und
+ * nicht mitgeschrieben: Wird ein Parameter umbenannt, soll auch der
+ * alte Befehl unter dem neuen Namen auffindbar sein.
+ */
+export function ladeBefehle(anlageId?: string, grenze = 25): BefehlZeile[] {
+  const wo = anlageId ? "WHERE b.anlage_id = ?" : "";
+  const werte: (string | number)[] = anlageId ? [anlageId] : [];
+  werte.push(grenze);
+
+  const zeilen = alle<Omit<BefehlZeile, "bezeichnung">>(
+    `SELECT b.*, a.bezeichnung AS anlage
+       FROM steuerbefehl b
+       JOIN anlage a ON a.id = b.anlage_id
+       ${wo}
+      ORDER BY b.erstellt_am DESC
+      LIMIT ?`,
+    ...werte,
+  );
+
+  const namen = new Map(PARAMETER.map((p) => [p.schluessel, p.bezeichnung]));
+
+  return zeilen.map((z) => ({
+    ...z,
+    bezeichnung: namen.get(z.parameter) ?? z.parameter,
+  }));
+}
+
+export interface SteuerKennzahlen {
+  /** Wie viele Parameter der Kunde selbst gesetzt hat. */
+  gesetzt: number;
+  /** Wie viele frei einstellbar wären. */
+  einstellbar: number;
+  /** Wie viele gesperrt sind. */
+  gesperrt: number;
+  /** Befehle, die noch nicht bestätigt sind. */
+  offen: number;
+  /** Abgelehnte Versuche - Hinweis auf Bedienfehler oder Eingriffe. */
+  abgelehnt: number;
+  /** Zeitpunkt der letzten Änderung. */
+  zuletzt: string | null;
+}
+
+/**
+ * Die Schluessel der frei einstellbaren Parameter als SQL-Liste.
+ *
+ * Die Werte stammen aus dem Katalog im Code, nicht aus einer Eingabe -
+ * deshalb ist die Einbettung hier unbedenklich. Sicherheitshalber
+ * werden trotzdem nur Wortzeichen durchgelassen.
+ */
+function einstellbareListe(): string {
+  return PARAMETER.filter((p) => !p.gesperrt)
+    .map((p) => `'${p.schluessel.replace(/[^a-z0-9_]/gi, "")}'`)
+    .join(", ");
+}
+
+export function ladeSteuerKennzahlen(anlageId: string): SteuerKennzahlen {
+  const z = (sql: string, ...w: (string | number)[]) =>
+    skalar<number>(sql, ...w) ?? 0;
+
+  return {
+    // Nur die frei einstellbaren zaehlen. Die versiegelten liegen
+    // ebenfalls als Wert vor - sie hat aber niemand "gesetzt", sie
+    // sind vereinbart. Beides zusammenzuzaehlen ergab die unmoegliche
+    // Aussage "15 von 9 einstellbaren".
+    gesetzt: z(
+      `SELECT COUNT(*) FROM steuerwert
+        WHERE anlage_id = ? AND parameter IN (${einstellbareListe()})`,
+      anlageId,
+    ),
+    einstellbar: PARAMETER.filter((p) => !p.gesperrt).length,
+    gesperrt: PARAMETER.filter((p) => p.gesperrt).length,
+    offen: z(
+      `SELECT COUNT(*) FROM steuerbefehl
+        WHERE anlage_id = ? AND status IN ('Angenommen','Übertragen')`,
+      anlageId,
+    ),
+    abgelehnt: z(
+      `SELECT COUNT(*) FROM steuerbefehl
+        WHERE anlage_id = ? AND status = 'Abgelehnt'`,
+      anlageId,
+    ),
+    zuletzt: skalar<string>(
+      "SELECT MAX(geaendert_am) FROM steuerwert WHERE anlage_id = ?",
+      anlageId,
+    ),
+  };
+}

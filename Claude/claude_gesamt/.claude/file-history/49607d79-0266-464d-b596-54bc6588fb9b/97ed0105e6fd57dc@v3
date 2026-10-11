@@ -1,0 +1,147 @@
+/**
+ * Kommunikationsmatrix aus den Regelwerken (Fachkonzept 2.4).
+ *
+ * "Kommunikationsmatrix automatisch aus den Regelwerken generiert (ersetzt die
+ * manuelle HTML/XLSX-Matrix)." Genau das passiert hier: die Regeln werden auf
+ * Schutzzonen abgebildet und zu einer Zone-zu-Zone-Matrix verdichtet.
+ *
+ * Wichtig für die Lesart: Die Matrix zeigt, was das Regelwerk *erlaubt* -
+ * nicht, was tatsächlich fliesst. Dafür stehen die Trefferzähler daneben.
+ */
+import { table } from '../db.js'
+import { istInPraefix, parsePrefix } from '../ip.js'
+
+/** Zone eines Präfix über das VLAN, dem es zugeordnet ist. */
+function zonenNachPraefix() {
+  const vlans = new Map(table('VLAN').map((v) => [v.name, v]))
+  const zuordnung = []
+
+  for (const praefix of table('IP Prefix')) {
+    const vlan = praefix.vlan ? vlans.get(praefix.vlan) : null
+    if (!vlan) continue
+    zuordnung.push({
+      prefix: praefix.prefix,
+      zone: vlan.security_zone,
+      vlan: vlan.vlan_name,
+      vid: vlan.vid,
+    })
+  }
+
+  return zuordnung
+}
+
+/**
+ * Welche Zone gehört zu einem Regel-Präfix?
+ * `0.0.0.0/0` ist keine Zone, sondern "überall" - das wird als `internet`
+ * geführt, weil genau das gemeint ist, wenn es in einer Regel steht.
+ */
+function zoneFuer(regelPraefix, zuordnung) {
+  if (!regelPraefix || regelPraefix === '0.0.0.0/0') return 'internet'
+
+  // Genaueste Übereinstimmung gewinnt: ein /24 schlägt das umgebende /16.
+  const treffer = zuordnung
+    .filter((z) => {
+      try {
+        return (
+          istInPraefix(regelPraefix.split('/')[0], z.prefix) ||
+          istInPraefix(z.prefix.split('/')[0], regelPraefix)
+        )
+      } catch {
+        return false
+      }
+    })
+    .sort((a, b) => parsePrefix(b.prefix).bits - parsePrefix(a.prefix).bits)[0]
+
+  return treffer ? treffer.zone : 'unzugeordnet'
+}
+
+/** Dienstbezeichnung einer Regel, kurz und lesbar. */
+function dienstText(regel) {
+  if (regel.protocol === 'any') return 'alle'
+  const von = Number(regel.port_from ?? 0)
+  const bis = Number(regel.port_to ?? 65535)
+  if (von === 0 && bis >= 65535) return regel.protocol + '/alle'
+  if (von === bis) return regel.protocol + '/' + von
+  return regel.protocol + '/' + von + '–' + bis
+}
+
+/**
+ * @returns {{zones: string[], cells: Array, summary: object}}
+ */
+export function communication_matrix({ firewall = null, include_deny = false } = {}) {
+  const zuordnung = zonenNachPraefix()
+
+  let regeln = table('Firewall Rule').filter((r) => r.enabled)
+  if (firewall) regeln = regeln.filter((r) => r.firewall === firewall)
+  if (!include_deny) regeln = regeln.filter((r) => r.action === 'allow')
+
+  const zellen = new Map()
+
+  for (const regel of regeln) {
+    const von = zoneFuer(regel.source_prefix, zuordnung)
+    const nach = zoneFuer(regel.destination_prefix, zuordnung)
+    const schluessel = von + '::' + nach
+
+    if (!zellen.has(schluessel)) {
+      zellen.set(schluessel, {
+        from_zone: von,
+        to_zone: nach,
+        services: [],
+        rules: [],
+        hit_count: 0,
+        has_allow: false,
+        has_deny: false,
+        // Eine Zelle gilt als unbegründet, sobald eine Regel darin keine
+        // Begründung trägt - das ist die strengere und richtige Lesart.
+        undocumented: false,
+      })
+    }
+
+    const zelle = zellen.get(schluessel)
+    const dienst = dienstText(regel)
+    if (!zelle.services.includes(dienst)) zelle.services.push(dienst)
+    zelle.rules.push({
+      name: regel.name,
+      firewall: regel.firewall,
+      rule_index: regel.rule_index,
+      rule_name: regel.rule_name,
+      action: regel.action,
+      service: dienst,
+      hit_count: regel.hit_count,
+      justification: regel.justification,
+      ticket: regel.ticket,
+    })
+    zelle.hit_count += regel.hit_count || 0
+    if (regel.action === 'allow') zelle.has_allow = true
+    if (regel.action === 'deny') zelle.has_deny = true
+    if (!regel.justification) zelle.undocumented = true
+  }
+
+  const alleZellen = [...zellen.values()].sort(
+    (a, b) => a.from_zone.localeCompare(b.from_zone) || a.to_zone.localeCompare(b.to_zone),
+  )
+
+  const zonenListe = [...new Set(zuordnung.map((z) => z.zone))].sort()
+  const benutzt = new Set(alleZellen.flatMap((z) => [z.from_zone, z.to_zone]))
+  // internet und "ohne Zone" stehen am Rand - und nur dann, wenn sie
+  // tatsächlich vorkommen. Eine leere Achse kostet nur Platz.
+  const achsen = [...zonenListe, 'internet', 'unzugeordnet'].filter(
+    (zone, i, alle) => alle.indexOf(zone) === i && (zonenListe.includes(zone) || benutzt.has(zone)),
+  )
+
+  return {
+    zones: achsen,
+    cells: alleZellen,
+    summary: {
+      pairs: alleZellen.length,
+      rules: regeln.length,
+      undocumented_pairs: alleZellen.filter((z) => z.undocumented).length,
+      unused_pairs: alleZellen.filter((z) => z.hit_count === 0).length,
+      // Verbindungen aus dem Internet in interne Zonen sind das, was man
+      // zuerst anschaut.
+      from_internet: alleZellen.filter(
+        (z) => z.from_zone === 'internet' && z.to_zone !== 'internet',
+      ).length,
+    },
+  }
+}

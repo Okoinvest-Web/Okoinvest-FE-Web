@@ -1,0 +1,259 @@
+import type { Befund, Verlaufsbefund } from "@/lib/pv/befund";
+
+import { STATUS_FARBEN, Status } from "./ui";
+
+/**
+ * Die Ursachenzuordnung, dargestellt.
+ *
+ * Zwei Dinge stehen bei jedem Befund: wie sicher er ist und was er
+ * kostet. Ohne beides ist eine Diagnose eine Behauptung - und eine
+ * Liste von Behauptungen arbeitet niemand ab.
+ *
+ * Nicht alles Gefundene ist ein Mangel. Clipping und Temperatur sind
+ * Eigenschaften der Anlage; sie gehören beziffert, aber nicht rot
+ * markiert. Wer sie als Fehler meldet, erzeugt Meldungen, die
+ * niemand je erledigen kann.
+ */
+
+function ton(befund: Befund) {
+  if (!befund.mangel) return "neutral" as const;
+  if (befund.sicherheit >= 0.8) return "kritisch" as const;
+  return "hinweis" as const;
+}
+
+function sicherheitstext(wert: number): string {
+  if (wert >= 0.85) return "eindeutig";
+  if (wert >= 0.7) return "wahrscheinlich";
+  if (wert >= 0.5) return "möglich";
+  return "unsicher";
+}
+
+export function Befundliste({
+  befunde,
+  arbeitspreisCtKwh,
+}: {
+  befunde: Befund[];
+  /** Für die Bewertung des Verlusts in Geld. */
+  arbeitspreisCtKwh?: number;
+}) {
+  return (
+    <ul className="a-staffel space-y-3">
+      {befunde.map((befund) => {
+        const farben = STATUS_FARBEN[ton(befund)];
+
+        return (
+          <li
+            key={befund.art}
+            className="rounded-sm border p-3.5"
+            style={{
+              borderColor: befund.mangel ? farben.rand : "var(--linie)",
+              background: befund.mangel ? farben.flaeche : undefined,
+            }}
+          >
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <span className="min-w-0">
+                <span
+                  className="block text-[0.875rem] font-semibold"
+                  style={{ color: "var(--t-stark)" }}
+                >
+                  {befund.titel}
+                </span>
+                <span className="t-mikro">
+                  {sicherheitstext(befund.sicherheit)}
+                  {befund.mangel ? " · Mangel" : " · Anlageneigenschaft"}
+                </span>
+              </span>
+
+              {befund.verlustKwh > 0 && (
+                <span className="shrink-0 text-right">
+                  <span
+                    className="zahl block text-[0.9375rem] font-semibold"
+                    style={{ color: "var(--t-stark)" }}
+                  >
+                    {befund.verlustKwh.toLocaleString("de-AT", {
+                      maximumFractionDigits: 0,
+                    })}{" "}
+                    kWh
+                  </span>
+                  {arbeitspreisCtKwh !== undefined && (
+                    <span className="t-mikro block">
+                      {(
+                        (befund.verlustKwh * arbeitspreisCtKwh) /
+                        100
+                      ).toLocaleString("de-AT", {
+                        style: "currency",
+                        currency: "EUR",
+                        maximumFractionDigits: 0,
+                      })}
+                    </span>
+                  )}
+                </span>
+              )}
+            </div>
+
+            <p
+              className="mt-2 text-[0.8125rem] leading-relaxed"
+              style={{ color: "var(--t-normal)" }}
+            >
+              {befund.begruendung}
+            </p>
+
+            {befund.belege.length > 0 && (
+              <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
+                {befund.belege.map((beleg) => (
+                  <li key={beleg} className="t-mikro">
+                    {beleg}
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {befund.massnahme && (
+              <p
+                className="t-mikro mt-2.5 rounded-sm px-3 py-2 leading-relaxed"
+                style={{ background: "var(--f-vertieft)" }}
+              >
+                <span className="t-etikett mr-1.5">Zu tun</span>
+                {befund.massnahme}
+              </p>
+            )}
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+/** Der Blick über Wochen: Verschmutzung oder Alterung. */
+export function Verlaufskarte({ befund }: { befund: Verlaufsbefund }) {
+  const proMonat = Math.abs(befund.steigungProTag) * 100 * 30;
+
+  return (
+    <div>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span
+          className="text-[0.875rem] font-semibold"
+          style={{ color: "var(--t-stark)" }}
+        >
+          {befund.titel}
+        </span>
+        <Status
+          ton={
+            befund.art === "verschmutzung"
+              ? "hinweis"
+              : befund.art === "degradation"
+                ? "ernst"
+                : "gut"
+          }
+        >
+          {befund.art === "verschmutzung"
+            ? "waschbar"
+            : befund.art === "degradation"
+              ? "bleibend"
+              : "ohne Trend"}
+        </Status>
+      </div>
+
+      <p
+        className="mt-2 text-[0.8125rem] leading-relaxed"
+        style={{ color: "var(--t-normal)" }}
+      >
+        {befund.begruendung}
+      </p>
+
+      {befund.steigungProTag < 0 && (
+        <p className="t-mikro mt-2">
+          Rückgang: {proMonat.toFixed(1)} Prozentpunkte im Monat
+          {befund.reinigungAm ? ` · Erholung am ${befund.reinigungAm}` : ""}
+        </p>
+      )}
+
+      {befund.massnahme && (
+        <p
+          className="t-mikro mt-2.5 rounded-sm px-3 py-2 leading-relaxed"
+          style={{ background: "var(--f-vertieft)" }}
+        >
+          <span className="t-etikett mr-1.5">Zu tun</span>
+          {befund.massnahme}
+        </p>
+      )}
+    </div>
+  );
+}
+
+export interface Haeufigkeit {
+  art: string;
+  titel: string;
+  tage: number;
+  verlustKwh: number;
+  mangel: boolean;
+}
+
+/**
+ * Wie oft, wie teuer.
+ *
+ * Ein einzelner Schattentag kostet zwanzig Kilowattstunden und klingt
+ * nach nichts. Derselbe Schatten an dreissig Tagen kostet
+ * sechshundert, und im Jahr ein Vielfaches. Erst die Haeufigkeit macht
+ * aus einer Beobachtung eine Entscheidung: Ein Baum, der jeden Morgen
+ * Geld kostet, wird geschnitten.
+ *
+ * Die Jahreszahl steht bewusst als Ueberschlag da und nicht als
+ * Prognose - die Sonne steht im Dezember anders, und ein Schatten,
+ * der im September zwei Stunden dauert, dauert im Juni eine.
+ */
+export function Haeufigkeitsliste({
+  haeufigkeiten,
+  untersuchteTage,
+  arbeitspreisCtKwh,
+}: {
+  haeufigkeiten: Haeufigkeit[];
+  untersuchteTage: number;
+  arbeitspreisCtKwh?: number;
+}) {
+  if (haeufigkeiten.length === 0 || untersuchteTage === 0) {
+    return (
+      <p className="t-mikro leading-relaxed">
+        In den letzten {untersuchteTage} Tagen gab es nichts zu melden.
+      </p>
+    );
+  }
+
+  return (
+    <ul className="space-y-2.5">
+      {haeufigkeiten.map((h) => {
+        const jeTag = h.verlustKwh / untersuchteTage;
+        const euroJahr =
+          arbeitspreisCtKwh !== undefined
+            ? (jeTag * 365 * arbeitspreisCtKwh) / 100
+            : null;
+
+        return (
+          <li key={h.art}>
+            <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+              <span
+                className="text-[0.8125rem] font-medium"
+                style={{ color: "var(--t-stark)" }}
+              >
+                {h.titel}
+              </span>
+              <span className="zahl t-mikro">
+                {h.tage} von {untersuchteTage} Tagen
+              </span>
+            </div>
+            <p className="t-mikro">
+              {h.verlustKwh.toLocaleString("de-AT")} kWh im Zeitraum
+              {euroJahr !== null && euroJahr >= 1
+                ? ` · überschlägig ${euroJahr.toLocaleString("de-AT", {
+                    style: "currency",
+                    currency: "EUR",
+                    maximumFractionDigits: 0,
+                  })} im Jahr`
+                : ""}
+            </p>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}

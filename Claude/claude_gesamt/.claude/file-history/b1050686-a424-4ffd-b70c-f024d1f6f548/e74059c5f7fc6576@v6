@@ -1,0 +1,643 @@
+import type { Metadata } from "next";
+
+import { Tabelle, Zeile, Zelle } from "@/components/tabelle";
+import {
+  Angabe,
+  Balken,
+  Hinweis,
+  Kennzahl,
+  Kennzahlenleiste,
+  LeerZustand,
+  STATUS_FARBEN,
+  Seitenkopf,
+  Status,
+  Tafel,
+} from "@/components/ui";
+import { ENERGIE_FARBEN } from "@/lib/farben";
+import {
+  formatDatumZeit,
+  formatProzent,
+  formatRelativ,
+  formatZahl,
+} from "@/lib/format";
+import {
+  ladeAnlagen,
+  ladeFernwartungsSitzungen,
+  ladeKomponenten,
+  ladePortalBenutzer,
+  ladeVorfaelle,
+} from "@/lib/portal-daten";
+import {
+  ladeAbwehrKennzahlen,
+  ladeHerkunft,
+  ladeSperrlisten,
+  ladeVerteilungsluecken,
+  ladeWafRegeln,
+} from "@/lib/daten/abwehr";
+import { ladeAnlagen as ladeAnlagenStamm } from "@/lib/daten/monitoring";
+import { landesname, regelsatz } from "@/lib/ot/regel";
+import { berechneFristen, protokollEintraege } from "@/lib/sicherheit/audit";
+import { findeRolle } from "@/lib/sicherheit/rollen";
+import { aktuelleRechte, requireRecht } from "@/lib/session";
+
+import {
+  Regelformular,
+  Regelschalter,
+  Verteilungsknopf,
+} from "./abwehr-steuerung";
+
+export const metadata: Metadata = { title: "Cybersicherheit" };
+
+function schweregradTon(grad: string | undefined) {
+  switch (grad) {
+    case "Kritisch":
+      return "kritisch" as const;
+    case "Hoch":
+      return "ernst" as const;
+    case "Mittel":
+      return "hinweis" as const;
+    default:
+      return "neutral" as const;
+  }
+}
+
+export default async function SicherheitSeite() {
+  await requireRecht("sicherheit.lesen");
+
+  const [vorfaelle, komponenten, benutzer, sitzungen, anlagen] =
+    await Promise.all([
+      ladeVorfaelle(),
+      ladeKomponenten(),
+      ladePortalBenutzer(),
+      ladeFernwartungsSitzungen(),
+      ladeAnlagen(),
+    ]);
+
+  const protokoll = protokollEintraege();
+
+  const rechte = await aktuelleRechte();
+  const darfVerwalten = rechte.has("sicherheit.verwalten");
+
+  const abwehr = ladeAbwehrKennzahlen();
+  const regeln = ladeWafRegeln();
+  const sperrlisten = ladeSperrlisten();
+  const luecken = ladeVerteilungsluecken();
+  const herkunft = ladeHerkunft();
+  const stammAnlagen = ladeAnlagenStamm().map((a) => ({
+    id: a.id,
+    bezeichnung: a.bezeichnung,
+  }));
+
+  const abgewehrtGesamt = herkunft.reduce((s, h) => s + h.anzahl, 0);
+
+  const offeneVorfaelle = vorfaelle.filter((v) => v.status !== "Behoben");
+  const meldepflichtige = vorfaelle.filter((v) => v.meldepflichtig === 1);
+
+  const veraltet = komponenten.filter((k) => k.firmware_aktuell === 0);
+  const firmwareQuote =
+    komponenten.length > 0
+      ? ((komponenten.length - veraltet.length) / komponenten.length) * 100
+      : 100;
+
+  const mitMfa = benutzer.filter((b) => b.mfa_aktiv === 1);
+  const mfaQuote =
+    benutzer.length > 0 ? (mitMfa.length / benutzer.length) * 100 : 0;
+
+  const abgewiesen = sitzungen.filter((s) => s.status === "Abgelehnt").length;
+
+  const anlagenName = (name: string | undefined) =>
+    anlagen.find((a) => a.name === name)?.anlagen_name ?? name;
+
+  return (
+    <div className="space-y-6">
+      <Seitenkopf
+        titel="Cybersicherheit"
+        hinweis="Sicherheitslage, Nachweise und Meldepflichten nach NIS2 / NISG"
+      />
+
+      <div className="tafel px-4 py-3.5">
+        <p className="text-[0.8125rem] leading-relaxed" style={{ color: "var(--t-normal)" }}>
+          <strong className="font-medium" style={{ color: "var(--t-stark)" }}>
+            Warum das hier steht.
+          </strong>{" "}
+          Energieanlagen zählen zu den Sektoren, für die NIS2 und das
+          österreichische Netz- und Informationssystemsicherheitsgesetz
+          verschärfte Pflichten vorsehen: Risikomanagement, Nachweis von
+          Zugriffen, und vor allem enge Meldefristen. Diese Seite bündelt, was
+          Sie dafür brauchen – und rechnet die Fristen aus, weil Verspätung der
+          häufigste Verstoß ist.
+        </p>
+      </div>
+
+      <Kennzahlenleiste>
+        <Kennzahl
+          label="Offene Vorfälle"
+          wert={formatZahl(offeneVorfaelle.length, 0)}
+          hinweis={`${meldepflichtige.length} meldepflichtig`}
+        />
+        <Kennzahl
+          label="Firmware aktuell"
+          wert={formatProzent(firmwareQuote, 0)}
+          hinweis={`${veraltet.length} Komponenten mit Update`}
+        />
+        <Kennzahl
+          label="Zwei-Faktor-Anmeldung"
+          wert={formatProzent(mfaQuote, 0)}
+          hinweis={`${mitMfa.length} von ${benutzer.length} Konten`}
+        />
+        <Kennzahl
+          label="Abgewiesene Zugriffe"
+          wert={formatZahl(abgewiesen, 0)}
+          hinweis="Fernwartung"
+        />
+      </Kennzahlenleiste>
+
+      {/* ---------------- Perimeter ---------------- */}
+      <Kennzahlenleiste>
+        <Kennzahl
+          label="Abgewehrt"
+          wert={formatZahl(abwehr.abgewehrt, 0)}
+          hinweis={`aus ${abwehr.laender} Ländern, letzte 14 Tage`}
+          akzent
+        />
+        <Kennzahl
+          label="Regeln scharf"
+          wert={formatZahl(abwehr.regelnAktiv, 0)}
+          hinweis={`von ${abwehr.regelnGesamt} im Bestand`}
+        />
+        <Kennzahl
+          label="Sperrlisten"
+          wert={formatZahl(abwehr.sperrlisteneintraege, 0)}
+          hinweis="Adressen aus CrowdSec, Spamhaus, eigenem Bestand"
+        />
+        <Kennzahl
+          label="Verteilung"
+          wert={formatProzent(abwehr.verteilungQuote, 0)}
+          hinweis={
+            abwehr.verteilungLuecken > 0
+              ? `${abwehr.verteilungLuecken} Gateways hinterher`
+              : "alle Gateways aktuell"
+          }
+        />
+      </Kennzahlenleiste>
+
+      {abwehr.verteilungLuecken > 0 && (
+        <Hinweis ton="hinweis" titel="Sperrliste nicht überall angekommen">
+          Auf {abwehr.verteilungLuecken} Gateways ist eine Sperrliste
+          veraltet. Eine Sperrliste, die zentral aktuell und am Gerät drei
+          Wochen alt ist, schützt nichts – der Stand je Gerät steht deshalb
+          unten.
+        </Hinweis>
+      )}
+
+      <Tafel
+        titel="Perimeterregeln"
+        hinweis={`${abwehr.regelnAktiv} scharf · ${formatZahl(abwehr.treffer, 0)} Treffer seit Einrichtung`}
+        fusszeile={
+          <p className="t-mikro leading-relaxed">
+            Die Anlagen sind von außen nicht erreichbar; der Steuerrechner
+            baut den Tunnel selbst auf. Diese Regeln greifen davor, am
+            Perimeter. Die Regelsprache ist bewusst eng gehalten – drei
+            Arten, ein Wert je Regel. Wer eine freie Regelsprache anbietet,
+            bekommt Regeln, die niemand mehr versteht und die im Zweifel die
+            eigene Anlage aussperren.
+          </p>
+        }
+      >
+        <Regelformular anlagen={stammAnlagen} darfVerwalten={darfVerwalten} />
+      </Tafel>
+
+      <Tafel titel="Regelwerk" hinweis="Was am Perimeter greift" dicht>
+        {regeln.length === 0 ? (
+          <div className="p-4">
+            <LeerZustand text="Es ist keine Regel hinterlegt." />
+          </div>
+        ) : (
+          <Tabelle
+            spalten={[
+              { titel: "Regel" },
+              { titel: "Gilt für", schmalAusblenden: true },
+              { titel: "Treffer", zahl: true },
+              { titel: "Zustand" },
+              { titel: "" },
+            ]}
+            mindestbreite="58rem"
+          >
+            {regeln.map((r) => (
+              <Zeile key={r.id} gedaempft={r.aktiv !== 1}>
+                <Zelle>
+                  <span className="block" style={{ color: "var(--t-stark)" }}>
+                    {r.bezeichnung}
+                  </span>
+                  <span className="t-mikro block">
+                    {regelsatz(r.art, r.wert)}
+                  </span>
+                </Zelle>
+                <Zelle leise schmalAusblenden>
+                  {r.anlage ?? "alle Anlagen"}
+                </Zelle>
+                <Zelle zahl leise>
+                  {formatZahl(r.treffer, 0)}
+                </Zelle>
+                <Zelle>
+                  <Status ton={r.aktiv === 1 ? "gut" : "neutral"}>
+                    {r.aktiv === 1 ? "scharf" : "zurückgenommen"}
+                  </Status>
+                </Zelle>
+                <Zelle>
+                  <Regelschalter
+                    regelId={r.id}
+                    aktiv={r.aktiv === 1}
+                    bezeichnung={r.bezeichnung}
+                    darfVerwalten={darfVerwalten}
+                  />
+                </Zelle>
+              </Zeile>
+            ))}
+          </Tabelle>
+        )}
+      </Tafel>
+
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+        <Tafel
+          titel="Sperrlisten"
+          hinweis="Zentral gepflegt, je Gateway verteilt"
+          fusszeile={
+            <p className="t-mikro leading-relaxed">
+              Übertragen wird die Differenz, nicht die ganze Liste: 284.000
+              Adressen über eine Mobilfunkverbindung zu schieben kostet
+              Datenvolumen, das im Störfall fehlt.
+            </p>
+          }
+        >
+          <ul className="space-y-3">
+            {sperrlisten.map((l) => (
+              <li
+                key={l.id}
+                className="rounded-sm border p-3"
+                style={{ borderColor: "var(--linie)" }}
+              >
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <span className="min-w-0">
+                    <span
+                      className="block text-[0.8125rem] font-medium"
+                      style={{ color: "var(--t-stark)" }}
+                    >
+                      {l.quelle}
+                    </span>
+                    <span className="t-mikro block">{l.bezeichnung}</span>
+                  </span>
+                  <Status ton={l.hinterher > 0 ? "hinweis" : "gut"}>
+                    {l.aktuell} von {l.geraete} Gateways
+                  </Status>
+                </div>
+
+                <p className="t-mikro mt-2 leading-relaxed">
+                  {formatZahl(l.eintraege, 0)} Adressen · letzte Übertragung
+                  plus {formatZahl(l.delta_neu, 0)}, minus{" "}
+                  {formatZahl(l.delta_entfernt, 0)}
+                  {l.aktualisiert_am
+                    ? ` · ${formatRelativ(l.aktualisiert_am)}`
+                    : ""}
+                </p>
+
+                <div className="mt-2">
+                  <Verteilungsknopf
+                    listeId={l.id}
+                    offen={l.hinterher}
+                    darfVerwalten={darfVerwalten}
+                  />
+                </div>
+              </li>
+            ))}
+          </ul>
+
+          {luecken.length > 0 && (
+            <div
+              className="mt-3 border-t pt-3"
+              style={{ borderColor: "var(--linie-zart)" }}
+            >
+              <p className="t-etikett mb-2">Nicht aktuell</p>
+              <ul className="space-y-1">
+                {luecken.map((v) => (
+                  <li key={`${v.sperrliste}-${v.geraet_id}`} className="t-mikro">
+                    {v.geraet ?? v.geraet_id}
+                    {v.anlage ? ` · ${v.anlage}` : ""} · {v.quelle}:{" "}
+                    {v.stand.toLowerCase()}
+                    {v.uebertragen_am
+                      ? `, zuletzt ${formatRelativ(v.uebertragen_am)}`
+                      : ""}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </Tafel>
+
+        <Tafel
+          titel="Herkunft der Zugriffe"
+          hinweis="Abgewehrt, letzte 14 Tage"
+          fusszeile={
+            <p className="t-mikro leading-relaxed">
+              Das Muster ist das häufigste je Land, nicht das letzte. Ein
+              einzelner ungewöhnlicher Versuch verschöbe sonst das Bild einer
+              ganzen Woche.
+            </p>
+          }
+        >
+          {herkunft.length === 0 ? (
+            <LeerZustand text="In diesem Zeitraum wurde nichts abgewehrt." />
+          ) : (
+            <div className="space-y-2.5">
+              {herkunft.slice(0, 8).map((h) => (
+                <Balken
+                  key={h.land}
+                  label={`${landesname(h.land)} · ${h.muster ?? "unbestimmt"}`}
+                  anteil={(h.anzahl / (herkunft[0]?.anzahl ?? 1)) * 100}
+                  wertText={`${formatZahl(h.anzahl, 0)} · ${h.quellen} Quellen`}
+                  farbe={ENERGIE_FARBEN.netzbezug}
+                />
+              ))}
+              <p className="t-mikro pt-1 leading-relaxed">
+                {formatZahl(abgewehrtGesamt, 0)} Zugriffe insgesamt. Keiner
+                davon hat ein Gerät erreicht – gezählt wird, was an der
+                Außenhaut hängen bleibt.
+              </p>
+            </div>
+          )}
+        </Tafel>
+      </div>
+
+      <Tafel
+        titel="Sicherheitsvorfälle"
+        hinweis="Erkannte Ereignisse und ihre Meldefristen"
+      >
+        {vorfaelle.length === 0 ? (
+          <LeerZustand text="Es sind keine Sicherheitsvorfälle erfasst." />
+        ) : (
+          <ul className="space-y-4">
+            {vorfaelle.map((vorfall) => {
+              const fristen = vorfall.bekannt_seit
+                ? berechneFristen(vorfall.bekannt_seit)
+                : [];
+
+              return (
+                <li
+                  key={vorfall.name}
+                  className="rounded-sm border p-4" style={{ borderColor: "var(--linie)" }}
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-medium" style={{ color: "var(--t-stark)" }}>
+                        {vorfall.betreff}
+                      </p>
+                      <p className="t-mikro">
+                        {vorfall.kategorie} · {anlagenName(vorfall.anlage)} ·
+                        bekannt seit {formatRelativ(vorfall.bekannt_seit)}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 gap-2">
+                      <Status ton={schweregradTon(vorfall.schweregrad)}>
+                        {vorfall.schweregrad ?? "–"}
+                      </Status>
+                      <Status
+                        ton={vorfall.status === "Behoben" ? "gut" : "hinweis"}
+                      >
+                        {vorfall.status ?? "–"}
+                      </Status>
+                    </div>
+                  </div>
+
+                  <p className="mt-2.5 text-[0.8125rem] leading-relaxed" style={{ color: "var(--t-normal)" }}>
+                    {vorfall.beschreibung}
+                  </p>
+
+                  {vorfall.massnahmen && (
+                    <p className="t-mikro mt-2 rounded-sm px-3 py-2 leading-relaxed" style={{ background: "var(--f-vertieft)" }}>
+                      <strong className="font-medium">Maßnahmen:</strong>{" "}
+                      {vorfall.massnahmen}
+                    </p>
+                  )}
+
+                  {vorfall.meldepflichtig === 1 ? (
+                    <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                      {fristen.map((frist) => (
+                        <div
+                          key={frist.frist.schluessel}
+                          className="rounded-sm px-3 py-2"
+                          style={{
+                            background: frist.ueberfaellig
+                              ? STATUS_FARBEN.kritisch.flaeche
+                              : frist.verbleibendeStunden < 12
+                                ? STATUS_FARBEN.hinweis.flaeche
+                                : "var(--f-vertieft)",
+                          }}
+                        >
+                          <p
+                            className="text-[0.6875rem] font-medium"
+                            style={{ color: "var(--t-normal)" }}
+                          >
+                            {frist.frist.bezeichnung}
+                          </p>
+                          <p
+                            className="zahl mt-0.5 text-[0.6875rem]"
+                            style={{
+                              color: frist.ueberfaellig
+                                ? STATUS_FARBEN.kritisch.text
+                                : "var(--t-leise)",
+                              fontWeight: frist.ueberfaellig ? 600 : undefined,
+                            }}
+                          >
+                            {frist.ueberfaellig
+                              ? "überfällig"
+                              : `noch ${formatZahl(frist.verbleibendeStunden, 0)} h`}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="t-mikro mt-3">
+                      Nicht meldepflichtig – keine erhebliche Auswirkung auf die
+                      Diensterbringung.
+                    </p>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </Tafel>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <Tafel
+          titel="Zustand der Komponenten"
+          hinweis="Veraltete Firmware ist das häufigste Einfallstor"
+        >
+          <div className="mb-4">
+            <Balken
+              label="Komponenten mit aktueller Firmware"
+              anteil={firmwareQuote}
+              wertText={`${komponenten.length - veraltet.length} von ${komponenten.length}`}
+            />
+          </div>
+
+          {veraltet.length === 0 ? (
+            <p className="text-[0.8125rem]" style={{ color: "var(--t-leise)" }}>
+              Alle erfassten Komponenten sind auf dem aktuellen Stand.
+            </p>
+          ) : (
+            <ul className="space-y-2">
+              {veraltet.map((komponente) => (
+                <li
+                  key={komponente.name}
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-sm px-3 py-2"
+                  style={{ background: STATUS_FARBEN.hinweis.flaeche }}
+                >
+                  <span className="min-w-0">
+                    <span
+                      className="block text-[0.8125rem] font-medium"
+                      style={{ color: "var(--t-stark)" }}
+                    >
+                      {komponente.bezeichnung}
+                    </span>
+                    <span className="t-mikro block">
+                      {komponente.hersteller} {komponente.modell} · Firmware{" "}
+                      {komponente.firmware}
+                    </span>
+                  </span>
+                  <Status ton="hinweis">Update verfügbar</Status>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Tafel>
+
+        <Tafel
+          titel="Konten und Anmeldung"
+          hinweis="Zwei-Faktor-Anmeldung schützt auch bei erbeuteten Passwörtern"
+        >
+          <div className="mb-4">
+            <Balken
+              label="Konten mit Zwei-Faktor-Anmeldung"
+              anteil={mfaQuote}
+              wertText={`${mitMfa.length} von ${benutzer.length}`}
+              farbe={
+                mfaQuote === 100
+                  ? ENERGIE_FARBEN.eigenverbrauch
+                  : ENERGIE_FARBEN.erzeugung
+              }
+            />
+          </div>
+
+          <ul className="space-y-2">
+            {benutzer.map((konto) => (
+              <li
+                key={konto.name}
+                className="flex flex-wrap items-center justify-between gap-2 rounded-sm px-3 py-2" style={{ background: "var(--f-vertieft)" }}
+              >
+                <span className="min-w-0">
+                  <span className="block text-sm font-medium">
+                    {konto.vollname}
+                  </span>
+                  <span className="t-mikro block">
+                    {findeRolle(konto.rolle ?? "")?.bezeichnung ?? konto.rolle} ·
+                    zuletzt {formatRelativ(konto.letzte_anmeldung)}
+                  </span>
+                </span>
+                <Status ton={konto.mfa_aktiv === 1 ? "gut" : "ernst"}>
+                  {konto.mfa_aktiv === 1 ? "2FA aktiv" : "ohne 2FA"}
+                </Status>
+              </li>
+            ))}
+          </ul>
+        </Tafel>
+      </div>
+
+      <Tafel
+        titel="Protokoll"
+        hinweis="Sicherheitsrelevante Vorgänge, neueste zuerst – Eingriffe von Menschen und automatische Läufe in derselben Reihe"
+      >
+        {protokoll.length === 0 ? (
+          <LeerZustand
+            text="Es wurde noch kein Vorgang protokolliert."
+            hinweis="Sobald Sie eine Einstellung ändern, einen Fernzugang freigeben oder eine Vollmacht bearbeiten, erscheint der Vorgang hier."
+          />
+        ) : (
+          <Tabelle
+            spalten={[{ titel: "Zeitpunkt" }, { titel: "Benutzer" }, { titel: "Vorgang" }, { titel: "Objekt" }, { titel: "Ergebnis" }]}
+          >
+            {protokoll.map((eintrag) => (
+              <Zeile
+                key={eintrag.name}
+                hervorgehoben={eintrag.ergebnis === "abgelehnt"}
+              >
+                <Zelle leise>{formatDatumZeit(eintrag.zeitpunkt)}</Zelle>
+                <Zelle leise>
+                  <span className="text-xs">{eintrag.benutzer ?? "–"}</span>
+                </Zelle>
+                <Zelle>
+                  <span className="font-medium">{eintrag.aktion}</span>
+                  {eintrag.begruendung && (
+                    <span className="t-mikro block">
+                      {eintrag.begruendung}
+                    </span>
+                  )}
+                </Zelle>
+                <Zelle leise>
+                  <span className="font-mono text-xs">
+                    {eintrag.objekt || "–"}
+                  </span>
+                </Zelle>
+                <Zelle>
+                  <Status
+                    ton={
+                      eintrag.ergebnis === "erfolg"
+                        ? "gut"
+                        : eintrag.ergebnis === "abgelehnt"
+                          ? "ernst"
+                          : "kritisch"
+                    }
+                  >
+                    {eintrag.ergebnis}
+                  </Status>
+                </Zelle>
+              </Zeile>
+            ))}
+          </Tabelle>
+        )}
+
+        <p className="t-mikro mt-4 leading-relaxed">
+          Im Demonstrationsbetrieb liegt das Protokoll im Arbeitsspeicher und
+          endet mit dem Neustart des Servers. Im Regelbetrieb wird es in Frappe
+          geführt, wo Einträge nur angelegt, aber nicht geändert oder gelöscht
+          werden können. Das Portal bietet bewusst keine Funktion zum Bearbeiten
+          eines Protokolleintrags.
+        </p>
+      </Tafel>
+
+      <Tafel titel="Pflichten nach NIS2 im Überblick">
+        <dl className="grid gap-x-8 gap-y-3 sm:grid-cols-2">
+          <Angabe label="Frühwarnung" untereinander>
+            binnen 24 Stunden ab Kenntnis
+          </Angabe>
+          <Angabe label="Vorfallsmeldung" untereinander>
+            binnen 72 Stunden ab Kenntnis
+          </Angabe>
+          <Angabe label="Abschlussbericht" untereinander>
+            binnen eines Monats
+          </Angabe>
+          <Angabe label="Nachweispflicht" untereinander>
+            Zugriffe und Änderungen nachvollziehbar dokumentiert
+          </Angabe>
+        </dl>
+
+        <p className="t-mikro mt-4 leading-relaxed">
+          Diese Übersicht ersetzt keine Rechtsberatung. Ob Ihr Unternehmen als
+          wesentliche oder wichtige Einrichtung gilt, hängt von Größe und
+          Sektorzuordnung ab – klären Sie das im Zweifel mit Ihrer
+          Rechtsvertretung.
+        </p>
+      </Tafel>
+    </div>
+  );
+}

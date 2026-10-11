@@ -1,0 +1,21 @@
+/**
+ * Einziger Ort, an dem entschieden wird, wohin Datenabfragen gehen.
+ *
+ *   VITE_USE_MOCK=true   -> Browser-Mock, kein Backend noetig (Standard)
+ *   VITE_USE_MOCK=false  -> echtes Frappe ueber den Vite-Proxy
+ *
+ * Alle Komponenten nutzen ausschliesslich createResource/createListResource
+ * aus frappe-ui. Sie merken vom Unterschied nichts.
+ */
+import { setConfig, frappeRequest } from 'frappe-ui'
+
+export const USE_MOCK = import.meta.env.VITE_USE_MOCK !== 'false'
+
+export async function setupApi() {
+  if (USE_MOCK) {
+    const { mockRequest } = await import('./mock/server.js')
+    setConfig('resourceFetcher', mockRequest)
+  } else {
+    setConfig('resourceFetcher', frappeRequest)
+  }
+}

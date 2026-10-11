@@ -1,0 +1,425 @@
+/**
+ * Übergabe an die Finanzbuchhaltung BMD NTCS.
+ *
+ * Die Plattform erzeugt Umsätze aus sehr verschiedenen Quellen -
+ * Hardwareverkauf, Wartung, Ladeerlöse, Gemeinschaftsabrechnung,
+ * Börsenhandel. Für die Buchhaltung sind das nicht Varianten
+ * desselben, sondern unterschiedliche Erlöskonten mit
+ * unterschiedlichen Steuersätzen.
+ *
+ * Dieses Modul kontiert und formatiert. Es bucht nicht: Was hier
+ * herauskommt, geht als Stapel an den Steuerberater und wird dort
+ * eingespielt. Deshalb gilt eine Regel ohne Ausnahme - ein Stapel
+ * wird genau einmal übergeben. Ein zweimal eingespielter Stapel
+ * verdoppelt den Umsatz, und das fällt erst bei der Umsatzsteuer-
+ * voranmeldung auf.
+ *
+ * Rein rechnend und ohne Datenbank, damit die Kontierung prüfbar
+ * bleibt.
+ */
+
+/** Woher ein Umsatz stammt. */
+export type Erlosquelle =
+  | "hardware"
+  | "installation"
+  | "wartung"
+  | "laden_b2b"
+  | "laden_adhoc"
+  | "gemeinschaft"
+  | "einspeisung"
+  | "arbitrage"
+  | "regelleistung"
+  | "lieferant_hardware"
+  | "lieferant_wartung";
+
+export interface Kontierung {
+  /** Erlös- oder Aufwandskonto. */
+  konto: string;
+  bezeichnung: string;
+  steuersatz: number;
+  /** Steuercode der Buchhaltung. */
+  steuercode: string;
+  /** Handelt es sich um einen Aufwand statt eines Erlöses? */
+  aufwand?: boolean;
+  /** Erläuterung zur steuerlichen Einordnung. */
+  hinweis?: string;
+}
+
+/**
+ * Kontenzuordnung nach österreichischem Einheitskontenrahmen.
+ *
+ * Die Nummern folgen der in Österreich üblichen Gliederung: Klasse 4
+ * für Erlöse, Klasse 5 für Materialaufwand, Klasse 7 für sonstige
+ * betriebliche Aufwendungen. Sie sind bewusst hier hinterlegt und
+ * nicht im Code verstreut - ändert der Steuerberater ein Konto,
+ * ändert sich genau eine Zeile.
+ */
+export const KONTENRAHMEN: Record<Erlosquelle, Kontierung> = {
+  hardware: {
+    konto: "4000",
+    bezeichnung: "Erlöse Anlagenbau 20 %",
+    steuersatz: 20,
+    steuercode: "UST20",
+  },
+  installation: {
+    konto: "4010",
+    bezeichnung: "Erlöse Montage und Installation 20 %",
+    steuersatz: 20,
+    steuercode: "UST20",
+  },
+  wartung: {
+    konto: "4020",
+    bezeichnung: "Erlöse Wartung und Betriebsführung 20 %",
+    steuersatz: 20,
+    steuercode: "UST20",
+  },
+  laden_b2b: {
+    konto: "4100",
+    bezeichnung: "Erlöse Ladeinfrastruktur B2B 20 %",
+    steuersatz: 20,
+    steuercode: "UST20",
+    hinweis:
+      "Lieferung von Elektrizität an Unternehmer im Inland, Regelbesteuerung.",
+  },
+  laden_adhoc: {
+    konto: "4110",
+    bezeichnung: "Erlöse Ladeinfrastruktur Ad-hoc 20 %",
+    steuersatz: 20,
+    steuercode: "UST20",
+    hinweis:
+      "Ad-hoc-Laden gegenüber Endverbrauchern; getrennt auszuweisen, weil ohne Rechnungsempfänger abgerechnet.",
+  },
+  gemeinschaft: {
+    konto: "4120",
+    bezeichnung: "Erlöse Energiegemeinschaft 20 %",
+    steuersatz: 20,
+    steuercode: "UST20",
+  },
+  einspeisung: {
+    konto: "4130",
+    bezeichnung: "Erlöse Stromeinspeisung 20 %",
+    steuersatz: 20,
+    steuercode: "UST20",
+  },
+  arbitrage: {
+    konto: "4140",
+    bezeichnung: "Erlöse Stromgroßhandel 20 %",
+    steuersatz: 20,
+    steuercode: "UST20",
+    hinweis:
+      "Handelsgeschäfte am Großhandelsmarkt; getrennt von der Einspeisung, weil kein Erzeugungsbezug besteht.",
+  },
+  regelleistung: {
+    konto: "4150",
+    bezeichnung: "Erlöse Regelleistung 20 %",
+    steuersatz: 20,
+    steuercode: "UST20",
+  },
+  lieferant_hardware: {
+    konto: "5000",
+    bezeichnung: "Wareneinsatz Hardware",
+    steuersatz: 20,
+    steuercode: "VST20",
+    aufwand: true,
+  },
+  lieferant_wartung: {
+    konto: "7750",
+    bezeichnung: "Fremdleistungen Wartung",
+    steuersatz: 20,
+    steuercode: "VST20",
+    aufwand: true,
+  },
+};
+
+export interface Geschaeftsvorfall {
+  /** Eindeutige Kennung im Quellsystem. */
+  quelle_id: string;
+  quelle: Erlosquelle;
+  belegdatum: Date;
+  belegnummer: string;
+  /** Nettobetrag in Euro. Negativ bei Gutschriften. */
+  nettoEur: number;
+  buchungstext: string;
+  /** Debitoren- oder Kreditorenkonto. */
+  partnerkonto: string;
+  partnername?: string;
+  /** Standort oder Projekt, für die Deckungsbeitragsrechnung. */
+  kostenstelle?: string;
+  /** Verweis auf den hinterlegten Beleg im Dokumentenarchiv. */
+  belegverweis?: string;
+}
+
+export interface Buchungszeile {
+  belegdatum: Date;
+  belegnummer: string;
+  /** Bei Erlösen das Debitorenkonto, bei Aufwand das Erlös-/Aufwandskonto. */
+  konto: string;
+  gegenkonto: string;
+  buchungstext: string;
+  /** Bruttobetrag, immer positiv; die Richtung steht in `sollHaben`. */
+  betragBrutto: number;
+  nettoEur: number;
+  steuerEur: number;
+  steuersatz: number;
+  steuercode: string;
+  kostenstelle: string;
+  belegverweis: string;
+  /** "S" für Soll, "H" für Haben. */
+  sollHaben: "S" | "H";
+  herkunft: Erlosquelle;
+}
+
+/** Auf Cent gerundet. */
+function cent(betrag: number): number {
+  return Math.round(betrag * 100) / 100;
+}
+
+/**
+ * Kontiert einen Geschäftsvorfall.
+ *
+ * Ein Erlös wird gegen das Debitorenkonto gebucht: Die Forderung
+ * steht im Soll, der Erlös im Haben. Bei einer Gutschrift dreht sich
+ * die Richtung um - deshalb wird das Vorzeichen des Nettobetrags
+ * ausgewertet und nicht unterdrückt.
+ */
+export function kontiere(vorfall: Geschaeftsvorfall): Buchungszeile {
+  const kontierung = KONTENRAHMEN[vorfall.quelle];
+
+  const netto = cent(vorfall.nettoEur);
+  const steuer = cent((netto * kontierung.steuersatz) / 100);
+  const brutto = cent(netto + steuer);
+
+  // Bei Erlösen ist das Debitorenkonto das führende Konto und der
+  // Erlös das Gegenkonto. Bei Aufwendungen ist es umgekehrt.
+  const konto = kontierung.aufwand ? kontierung.konto : vorfall.partnerkonto;
+  const gegenkonto = kontierung.aufwand
+    ? vorfall.partnerkonto
+    : kontierung.konto;
+
+  // Ein negativer Nettobetrag ist eine Gutschrift und dreht die
+  // Buchungsrichtung.
+  const positiv = brutto >= 0;
+  const sollHaben: "S" | "H" = kontierung.aufwand
+    ? positiv
+      ? "S"
+      : "H"
+    : positiv
+      ? "S"
+      : "H";
+
+  return {
+    belegdatum: vorfall.belegdatum,
+    belegnummer: vorfall.belegnummer,
+    konto,
+    gegenkonto,
+    buchungstext: vorfall.buchungstext.slice(0, 70),
+    betragBrutto: Math.abs(brutto),
+    nettoEur: Math.abs(netto),
+    steuerEur: Math.abs(steuer),
+    steuersatz: kontierung.steuersatz,
+    steuercode: kontierung.steuercode,
+    kostenstelle: vorfall.kostenstelle ?? "",
+    belegverweis: vorfall.belegverweis ?? "",
+    sollHaben,
+    herkunft: vorfall.quelle,
+  };
+}
+
+export interface Stapelpruefung {
+  gueltig: boolean;
+  beanstandungen: string[];
+}
+
+/**
+ * Prüft einen Stapel, bevor er das Haus verlässt.
+ *
+ * Die Buchhaltung weist einen fehlerhaften Stapel als Ganzes zurück.
+ * Es ist deutlich billiger, ihn hier zu finden.
+ */
+export function pruefeStapel(zeilen: Buchungszeile[]): Stapelpruefung {
+  const beanstandungen: string[] = [];
+
+  const nummern = new Map<string, number>();
+
+  for (const [i, z] of zeilen.entries()) {
+    const zeile = i + 1;
+
+    if (!Number.isFinite(z.betragBrutto) || z.betragBrutto === 0) {
+      beanstandungen.push(`Zeile ${zeile}: Betrag ist null oder ungültig.`);
+    }
+    if (!z.konto || !z.gegenkonto) {
+      beanstandungen.push(`Zeile ${zeile}: Konto oder Gegenkonto fehlt.`);
+    }
+    if (z.konto === z.gegenkonto) {
+      beanstandungen.push(
+        `Zeile ${zeile}: Konto und Gegenkonto sind gleich (${z.konto}).`,
+      );
+    }
+    if (!z.buchungstext.trim()) {
+      beanstandungen.push(`Zeile ${zeile}: Buchungstext fehlt.`);
+    }
+    if (Number.isNaN(z.belegdatum.getTime())) {
+      beanstandungen.push(`Zeile ${zeile}: Belegdatum ist ungültig.`);
+    }
+
+    // Steuer muss zum Netto passen; sonst stimmt die
+    // Umsatzsteuervoranmeldung nicht.
+    const erwartet = cent((z.nettoEur * z.steuersatz) / 100);
+    if (Math.abs(erwartet - z.steuerEur) > 0.01) {
+      beanstandungen.push(
+        `Zeile ${zeile}: Steuer ${z.steuerEur} passt nicht zu ${z.nettoEur} bei ${z.steuersatz} %.`,
+      );
+    }
+
+    nummern.set(z.belegnummer, (nummern.get(z.belegnummer) ?? 0) + 1);
+  }
+
+  for (const [nummer, anzahl] of nummern) {
+    if (anzahl > 1) {
+      beanstandungen.push(
+        `Belegnummer ${nummer} kommt ${anzahl} Mal vor. Jede Nummer darf nur einmal gebucht werden.`,
+      );
+    }
+  }
+
+  return { gueltig: beanstandungen.length === 0, beanstandungen };
+}
+
+/** Datum im Format TTMMJJJJ, wie es die Schnittstelle erwartet. */
+function bmdDatum(datum: Date): string {
+  const t = String(datum.getDate()).padStart(2, "0");
+  const m = String(datum.getMonth() + 1).padStart(2, "0");
+  return `${t}${m}${datum.getFullYear()}`;
+}
+
+/** Betrag mit Komma und zwei Nachkommastellen, ohne Tausenderzeichen. */
+function bmdBetrag(betrag: number): string {
+  return betrag.toFixed(2).replace(".", ",");
+}
+
+function feld(wert: string): string {
+  // Semikolon ist das Trennzeichen und darf im Feld nicht vorkommen.
+  // Anführungszeichen zu maskieren würde die Schnittstelle nicht
+  // verstehen, deshalb wird ersetzt statt maskiert.
+  return wert.replace(/[;\r\n]/g, " ").trim();
+}
+
+/**
+ * Spaltenfolge der Übergabedatei.
+ *
+ * Sie folgt dem Aufbau des BMD-Buchungszeilenimports. Die Reihenfolge
+ * ist Teil der Schnittstelle: Wer eine Spalte einschiebt, verschiebt
+ * alle folgenden, und der Import zieht Beträge in die Kostenstelle.
+ * Deshalb steht sie hier als eine Liste und nicht verstreut im Code.
+ */
+export const BMD_SPALTEN = [
+  "Satzart",
+  "Konto",
+  "Gegenkonto",
+  "Belegdatum",
+  "Belegnummer",
+  "Buchsymbol",
+  "Betrag",
+  "SollHaben",
+  "Steuercode",
+  "Steuerprozent",
+  "Steuerbetrag",
+  "Buchungstext",
+  "Kostenstelle",
+  "Waehrung",
+  "Belegverweis",
+] as const;
+
+export interface BmdOptionen {
+  /** Buchungskreis oder Mandant beim Steuerberater. */
+  buchsymbol?: string;
+  /** Kopfzeile mit Spaltennamen voranstellen. */
+  mitKopfzeile?: boolean;
+}
+
+/**
+ * Erzeugt die Übergabedatei.
+ *
+ * Zeilenende ist CRLF und die Kodierung UTF-8 mit Byte-Order-Mark -
+ * dieselben Gründe wie bei jeder anderen Datei, die unter Windows
+ * eingelesen wird. Ohne Marke liest das Zielsystem UTF-8 als
+ * Windows-1252, und aus "Bürogebäude" wird "BÃ¼rogebÃ¤ude".
+ */
+export function alsBmdDatei(
+  zeilen: Buchungszeile[],
+  optionen: BmdOptionen = {},
+): string {
+  const buchsymbol = optionen.buchsymbol ?? "AR";
+  const ausgabe: string[] = [];
+
+  if (optionen.mitKopfzeile !== false) {
+    ausgabe.push(BMD_SPALTEN.join(";"));
+  }
+
+  for (const z of zeilen) {
+    ausgabe.push(
+      [
+        "0", // Satzart: Buchungszeile
+        feld(z.konto),
+        feld(z.gegenkonto),
+        bmdDatum(z.belegdatum),
+        feld(z.belegnummer),
+        feld(buchsymbol),
+        bmdBetrag(z.betragBrutto),
+        z.sollHaben,
+        feld(z.steuercode),
+        bmdBetrag(z.steuersatz),
+        bmdBetrag(z.steuerEur),
+        feld(z.buchungstext),
+        feld(z.kostenstelle),
+        "EUR",
+        feld(z.belegverweis),
+      ].join(";"),
+    );
+  }
+
+  return "﻿" + ausgabe.join("\r\n") + "\r\n";
+}
+
+export interface Stapelsumme {
+  zeilen: number;
+  nettoEur: number;
+  steuerEur: number;
+  bruttoEur: number;
+  /** Summen je Erlöskonto, für den Abgleich mit der Buchhaltung. */
+  jeKonto: { konto: string; bezeichnung: string; nettoEur: number }[];
+}
+
+/** Verdichtet einen Stapel für die Kontrollsumme. */
+export function fasseStapelZusammen(zeilen: Buchungszeile[]): Stapelsumme {
+  const jeKonto = new Map<string, number>();
+
+  let netto = 0;
+  let steuer = 0;
+
+  for (const z of zeilen) {
+    // Gutschriften mindern den Umsatz.
+    const vorzeichen = z.sollHaben === "S" ? 1 : -1;
+    netto += vorzeichen * z.nettoEur;
+    steuer += vorzeichen * z.steuerEur;
+
+    const konto = KONTENRAHMEN[z.herkunft].konto;
+    jeKonto.set(konto, (jeKonto.get(konto) ?? 0) + vorzeichen * z.nettoEur);
+  }
+
+  return {
+    zeilen: zeilen.length,
+    nettoEur: cent(netto),
+    steuerEur: cent(steuer),
+    bruttoEur: cent(netto + steuer),
+    jeKonto: [...jeKonto.entries()]
+      .map(([konto, betrag]) => ({
+        konto,
+        bezeichnung:
+          Object.values(KONTENRAHMEN).find((k) => k.konto === konto)
+            ?.bezeichnung ?? konto,
+        nettoEur: cent(betrag),
+      }))
+      .sort((a, b) => a.konto.localeCompare(b.konto)),
+  };
+}

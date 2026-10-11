@@ -1,0 +1,216 @@
+import re
+from docx import Document
+from docx.shared import Pt, RGBColor, Cm
+from docx.enum.section import WD_ORIENT
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.oxml.ns import qn
+from docx.oxml import OxmlElement
+
+ACCENT = RGBColor(0x1F, 0x4E, 0x3D)
+GREY = RGBColor(0x5F, 0x5F, 0x5F)
+PH = RGBColor(0xC0, 0x00, 0x00)
+RED = RGBColor(0xB0, 0x00, 0x00)
+WHO = "[Name], [Funktion] der Ökovolt-Gruppe"
+
+
+def new_doc(landscape=False):
+    d = Document()
+    s = d.sections[0]
+    if landscape:
+        s.orientation = WD_ORIENT.LANDSCAPE
+        s.page_width, s.page_height = s.page_height, s.page_width
+    s.left_margin = s.right_margin = Cm(1.8)
+    s.top_margin = s.bottom_margin = Cm(1.5)
+    n = d.styles["Normal"]
+    n.font.name = "Calibri"
+    n.font.size = Pt(10.5)
+    n.paragraph_format.space_after = Pt(6)
+    return d
+
+
+def add(p, text, bold=False, size=None, color=None, italic=False):
+    for part in re.split(r"(\[[^\]]+\])", text):
+        if not part:
+            continue
+        r = p.add_run(part)
+        r.bold, r.italic = bold, italic
+        if size:
+            r.font.size = Pt(size)
+        if part.startswith("["):
+            r.font.color.rgb, r.bold = PH, True
+        elif color:
+            r.font.color.rgb = color
+    return p
+
+
+def shade(cell, hexcolor):
+    tcPr = cell._tc.get_or_add_tcPr()
+    sh = OxmlElement("w:shd")
+    sh.set(qn("w:val"), "clear")
+    sh.set(qn("w:fill"), hexcolor)
+    tcPr.append(sh)
+
+
+def cell(c, text, **kw):
+    c.paragraphs[0].text = ""
+    add(c.paragraphs[0], text, **kw).paragraph_format.space_after = Pt(1)
+
+
+# =====================================================================
+# 1) Kampagnenplan
+# =====================================================================
+d = new_doc(landscape=True)
+add(d.add_paragraph(), "INTERN – NICHT WEITERGEBEN", bold=True, color=RED, size=9)
+add(d.add_paragraph(), "Kommunikationsplan: Themen in Wellen hochspielen", bold=True, size=18, color=ACCENT)
+add(d.add_paragraph(), "Prinzip: Jede Welle hat genau ein Thema, eine Zahl, ein Zitat und einen Beleg. Jede Welle gibt "
+    "Medien einen neuen Anlass, erneut zu berichten, und zwingt die Salzburg AG jedes Mal zu einer neuen Reaktion. "
+    "Nichts wird verschossen, bevor der Beleg in der Hand ist.", italic=True)
+
+waves = [
+    ("Welle 1\nTag 0",
+     "Eigene Konkurrenz gegründet – ohne Gewerbeschein zum Auftrag",
+     "one2zero zeitgleich mit Ökovolt-Einstieg gegründet (Herbst 2021), Ende 2021 Verlust 68.005 €, EK −33.005 €; "
+     "erste Gewerbeberechtigung 28.11.2022, Elektrotechnik erst 02.08.2023",
+     "„Kein Gewerbeschein, aber ein Millionenauftrag. Das schafft in Salzburg nur die Salzburg AG.“",
+     "ORF Salzburg, SN, Salzburg24, Krone Salzburg, APA-OTS",
+     "GISA-Auszüge (liegen vor), Firmenbuch one2zero, Vergabedatum Hofer [fehlt]"),
+    ("Welle 2\nTag 3–5",
+     "Die Elektrobranche zahlt mit",
+     "Jeder Elektriker braucht für jede Steckdose einen Gewerbeschein – die Landestochter nicht. Eingabe an die "
+     "Bundeswettbewerbsbehörde, Schreiben an die Landesinnung Elektrotechnik",
+     "„Wenn das Schule macht, kann in Salzburg jeder Handwerksbetrieb zusperren.“",
+     "Krone, Bezirksblätter/MeinBezirk, Salzburger Wirtschaft (WKS), Regionalradio",
+     "BWB-Eingabe eingebracht [Datum], Brief an Landesinnung; ideal: 1 Elektrobetrieb als Stimme [mit Zustimmung]"),
+    ("Welle 3\nWoche 2",
+     "Das Geld der Stromkunden",
+     "Ökovolt 2024: 1,14 Mio. € Gewinn (+154 %), Anteil Salzburg AG rund 560.000 €. one2zero: 1,87 Mio. € Verlust "
+     "2024, 5,16 Mio. € kumuliert",
+     "„In Salzburg zahlt der Stromkunde, in Wien kassieren die Anwälte.“",
+     "Wirtschaftsressorts: SN, Standard, Kurier, Presse, trend",
+     "Jahresabschluss Ökovolt 2024 (liegt vor), Jahresabschluss one2zero aus Firmenbuch [abrufen], Kaufpreis [Beleg]"),
+    ("Welle 4\nWoche 2–3",
+     "Belohnung statt Konsequenz",
+     "Vertrag des one2zero-Geschäftsführers trotz Kenntnis des Vorstands verlängert",
+     "„Andere ziehen Verantwortliche zur Rechenschaft. Die Salzburg AG verlängert ihnen den Vertrag.“",
+     "Exklusiv an EIN Medium mit investigativem Ressort (profil, Standard, Dossier oder ORF „Salzburg heute“)",
+     "NUR mit Beleg: Datum der Verlängerung + Nachweis der Kenntnis des Vorstands [fehlt]. Ohne Beleg: Welle entfällt"),
+    ("Welle 5\nWoche 3–4",
+     "Vor Gericht zugegeben",
+     "Eingeständnis vor LG Memmingen, Anteilsentzug, neun Entscheidungen bis OLG München",
+     "„Neun Urteile sind kein Gesellschafterstreit. Neun Urteile sind ein Ergebnis.“",
+     "Exklusiv mit Dokumenten an ein überregionales Medium; danach Übernahme durch Salzburger Medien",
+     "Protokoll/Urteil Memmingen mit Fundstelle, OLG-Entscheidung, Az. [fehlen]"),
+    ("Welle 6\nvor Aufsichtsrat/Landtag",
+     "Die Eigentümer sind gefordert",
+     "Offener Brief mit den fünf Fragen an Landeshauptfrau und Bürgermeister als Eigentümervertreter",
+     "„Wer nichts zu verbergen hat, klärt auf. Die Salzburg AG klagt.“",
+     "Alle Medien; parallel Information an Landtagsklubs und Gemeinderatsfraktionen (Grundlage für Anfragen)",
+     "Termin nächste Aufsichtsratssitzung / Landtagssitzung [recherchieren]"),
+]
+t = d.add_table(rows=len(waves) + 1, cols=6)
+t.style = "Table Grid"
+hdr = ["Welle", "Thema", "Kernfakt", "Zitat", "Medien / Adressaten", "Voraussetzung / Beleg"]
+widths = [2.2, 3.6, 6.2, 5.0, 4.4, 4.6]
+for j, h in enumerate(hdr):
+    cell(t.rows[0].cells[j], h, bold=True, size=9.5, color=RGBColor(0xFF, 0xFF, 0xFF))
+    shade(t.rows[0].cells[j], "1F4E3D")
+for i, w in enumerate(waves, start=1):
+    for j, txt in enumerate(w):
+        cell(t.rows[i].cells[j], txt, size=9, bold=(j in (0, 1)), color=ACCENT if j in (0, 1) else None,
+             italic=(j == 3))
+        if i % 2 == 0:
+            shade(t.rows[i].cells[j], "EEF3F1")
+for row in t.rows:
+    for j, w in enumerate(widths):
+        row.cells[j].width = Cm(w)
+
+add(d.add_paragraph(), "", size=4)
+add(d.add_paragraph(), "Spielregeln für die ganze Kampagne", bold=True, size=12, color=ACCENT)
+rules = [
+    "Nie zwei Themen in einer Welle. Wer alles auf einmal sagt, liefert nur eine Schlagzeile.",
+    "Jede Welle erst starten, wenn der Beleg vorliegt. Eine widerlegte Aussage kostet die Glaubwürdigkeit aller Wellen.",
+    "Reagiert die Salzburg AG, binnen zwei Stunden mit genau einem Fakt antworten – nicht mit einer Gegenkampagne.",
+    "Exklusivität gezielt einsetzen: Die stärksten Themen (Welle 4 und 5) je einem Medium zuerst geben.",
+    "Keine Namen von Personen, gegen die nicht ermittelt wird. Kritik richtet sich gegen Entscheidungen des Vorstands.",
+    "Zum WKStA-Verfahren nie etwas sagen außer: „Dazu äußern wir uns nicht, es gilt die Unschuldsvermutung.“",
+    "Eine Person spricht für Ökovolt, immer dieselbe, mit gleicher Funktionsbezeichnung wie im ORF-Bericht.",
+    "Jede Welle vor Versand anwaltlich freigeben lassen – die Salzburg AG ist weiterhin Gesellschafterin.",
+    "Jede Welle endet mit einer offenen Frage an die Salzburg AG. Ihr Schweigen ist die nächste Meldung.",
+]
+for r in rules:
+    add(d.add_paragraph(style="List Bullet"), r, size=10)
+d.save("INTERN_Kampagnenplan_Wellen.docx")
+
+# =====================================================================
+# 2) Welle 1 – kurze Aussendung
+# =====================================================================
+d = new_doc()
+d.styles["Normal"].font.size = Pt(11)
+d.styles["Normal"].paragraph_format.line_spacing = 1.18
+d.styles["Normal"].paragraph_format.space_after = Pt(8)
+
+
+def para(text, **kw):
+    p = add(d.add_paragraph(), text, **kw)
+    p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+    return p
+
+
+def quote(text):
+    p = d.add_paragraph()
+    p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+    add(p, f"„{text}“", bold=True, color=ACCENT)
+    add(p, f", sagt {WHO}.")
+
+
+add(d.add_paragraph(), "PRESSEINFORMATION  |  Ostermiething, [Datum]", bold=True, size=9, color=ACCENT)
+p = add(d.add_paragraph(), "Salzburg AG gründete eigene Konkurrenz – ohne Gewerbeschein zum Hofer-Auftrag", bold=True, size=21)
+p.paragraph_format.space_after = Pt(4)
+p = add(d.add_paragraph(), "Zeitgleich mit dem Einstieg bei Ökovolt baute der Landesversorger ein eigenes Unternehmen im selben Geschäft auf. "
+        "Die Berechtigung für Elektrotechnik erhielt es erst 2023.", italic=True, size=11.5, color=GREY)
+p.paragraph_format.space_after = Pt(12)
+
+para("Die Salzburg-AG-Tochter one2zero GmbH, die den Photovoltaik-Großauftrag des Diskonters Hofer übernommen hat, "
+     "besaß zu Projektbeginn keine einzige Gewerbeberechtigung. Das zeigen Firmenbuch und Gewerbeinformationssystem "
+     "Austria (GISA). Die Berechtigung für Elektrotechnik, ohne die in Österreich keine elektrische Anlage geplant "
+     "werden darf, wurde erst am 2. August 2023 eingetragen.", bold=True)
+para("Im Herbst 2021 tat die Salzburg AG zwei Dinge gleichzeitig: Im November beteiligte sie sich mit 49 Prozent an "
+     "Ökovolt, das seit 2015 mit Hofer zusammenarbeitete. Im selben Zeitraum gründete sie mit der one2zero GmbH eine "
+     "hundertprozentige Tochter im selben Geschäftsfeld [Gründungsdatum laut Firmenbuch]. Die neue Firma startete mit "
+     "einem Stammkapital von 35.000 Euro und wies Ende 2021 bereits einen Verlust von 68.005 Euro und ein negatives "
+     "Eigenkapital von 33.005 Euro aus. In ihrem Lagebericht kündigte die Salzburg AG an, Photovoltaik als Dienstleistung "
+     "„gezielt auszubauen“.")
+para("Im Juni 2022 präsentierte die Salzburg AG one2zero öffentlich und kündigte an, eine große Handelskette mit "
+     "Photovoltaik auszustatten. Die erste Gewerbeberechtigung von one2zero – für Unternehmensberatung – wurde am 28. November 2022 "
+     "eingetragen, jene für Elektrotechnik folgte acht Monate später. Errichtet wurden die Anlagen von Subunternehmen, "
+     "darunter einer der größten Mitbewerber von Ökovolt.")
+quote("Die Salzburg AG hat sich bei uns beteiligt und im selben Atemzug ihre eigene Konkurrenz gegründet. An genau "
+      "diese Firma ging dann der Hofer-Auftrag. Für uns ist das kein Zufall, sondern ein Plan")
+quote("Kein Gewerbeschein, aber ein Millionenauftrag. Das schafft in Salzburg nur die Salzburg AG. Jeder kleine "
+      "Elektriker braucht für jede Steckdose eine Befugnis – die Tochter des Landesversorgers hatte am Anfang gar keine")
+para("Die Wirtschafts- und Korruptionsstaatsanwaltschaft (WKStA) ermittelt im Zusammenhang mit dem Hofer-Projekt wegen "
+     "des Verdachts des schweren Betrugs gegen die Salzburg AG und eine natürliche Person. Zum Verfahren äußert sich "
+     "Ökovolt nicht; es gilt die Unschuldsvermutung. Die Salzburg AG hat erklärt, die Vorwürfe hätten keine Grundlage.")
+para("Ökovolt ersucht die Salzburg AG um Antwort auf zwei einfache Fragen:", bold=True)
+for i, q in enumerate([
+        "Besaß die one2zero GmbH bei Übernahme des Hofer-Auftrags eine Gewerbeberechtigung für Elektrotechnik – ja oder nein?",
+        "Warum gründete die Salzburg AG im selben Zeitraum, in dem sie sich an Ökovolt beteiligte, ein eigenes Unternehmen im "
+        "selben Geschäft – und wer hat entschieden, diesem den Hofer-Auftrag zu geben?"],
+        start=1):
+    p = d.add_paragraph()
+    p.paragraph_format.left_indent = Cm(0.7)
+    p.paragraph_format.first_line_indent = Cm(-0.7)
+    add(p, f"{i}.  ", bold=True, color=ACCENT)
+    add(p, q, bold=True)
+quote("Das sind zwei Fragen, die man mit einem Blick ins Register beantworten kann. Wir warten auf die Antwort")
+
+p = add(d.add_paragraph(), "GISA- und Firmenbuchauszüge stellt Ökovolt Medienvertreterinnen und -vertretern auf "
+        "Anfrage zur Verfügung.", italic=True, size=9.5)
+p.paragraph_format.space_before = Pt(10)
+add(d.add_paragraph(), "Über Ökovolt: Die Ökovolt-Gruppe mit Sitz in Ostermiething (Bezirk Braunau) plant und errichtet "
+    "seit 2012 Photovoltaik-Großanlagen in Österreich und Deutschland und beschäftigt mehr als 30 Mitarbeiterinnen und "
+    "Mitarbeiter.", size=9, color=GREY)
+add(d.add_paragraph(), "Rückfragen: [Name, Funktion] · Ökovolt Solartechnik GmbH · Gewerbegebiet 10, 5121 Ostermiething · "
+    "[Telefon] · [E-Mail]", size=9, color=GREY)
+d.save("Presseaussendung_Welle1_Gewerbeschein.docx")
+print("ok", len(" ".join(p.text for p in d.paragraphs).split()), "Woerter Welle 1")

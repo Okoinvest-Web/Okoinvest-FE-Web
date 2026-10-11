@@ -1,0 +1,364 @@
+/**
+ * OCMF - der signierte Messwert eines Ladevorgangs.
+ *
+ * Wer in Österreich oder Deutschland Ladestrom nach Energie abrechnet,
+ * verkauft eine geeichte Menge. Der Nachweis dafür ist nicht die Zahl
+ * im Backend, sondern ein vom Zähler signierter Datensatz: Anfang und
+ * Ende des Zählwerks, Zeitstempel mit Angabe der Zeitsynchronität,
+ * Zählerkennung, Fehlerkennzeichen - und eine Signatur über all das.
+ *
+ * Das Open Charge Metering Format hält das in drei Teilen, getrennt
+ * durch senkrechte Striche:
+ *
+ *     OCMF|{"FV":"1.0",...,"RD":[...]}|{"SA":"ECDSA-secp256r1-SHA256","SD":"..."}
+ *
+ * Warum das hier ausgewertet wird und nicht bloß gespeichert:
+ *
+ * - Ein Datensatz mit unsynchronisierter Uhr ("ST":"I") ist
+ *   eichrechtlich nicht verwertbar. Er sieht aus wie jeder andere.
+ * - Eine Signatur, die nicht passt, findet man nur, wenn man sie
+ *   prüft. Eine abgelegte Signatur, die nie geprüft wurde, ist kein
+ *   Nachweis, sondern eine Zeichenkette.
+ * - Die abgerechnete Menge muss der Differenz der Zählerstände
+ *   entsprechen. Weicht sie ab, ist entweder die Rechnung falsch oder
+ *   der Datensatz - und beides muss auffallen, bevor die Rechnung
+ *   hinausgeht.
+ *
+ * Geprüft wird mit `node:crypto` gegen den öffentlichen Schlüssel des
+ * Zählers. Ohne Schlüssel wird die Struktur geprüft und die Signatur
+ * ausdrücklich als ungeprüft ausgewiesen - nicht als gültig.
+ */
+
+import { createVerify } from "node:crypto";
+
+import { alsKomma } from "../zahl.ts";
+
+export interface OcmfMesswert {
+  /** Zeitstempel mit Synchronitätskennzeichen, etwa "2026-09-14T08:00:00,000+0200 S". */
+  TM: string;
+  /** Zählerstand. */
+  RV: number;
+  /** Einheit, üblicherweise "kWh". */
+  RU?: string;
+  /** Ablesegrund: B = Begin, E = End, T = Turn-on, ... */
+  RT?: string;
+  /** Fehlerkennzeichen des Zählers. Leer heißt fehlerfrei. */
+  EF?: string;
+  /** Status: G = gültig, I = informativ. */
+  ST?: string;
+  /** Laufende Nummer der Ablesung. */
+  TX?: string;
+}
+
+export interface OcmfNutzlast {
+  /** Formatversion. */
+  FV?: string;
+  /** Kennung des Messgeräts. */
+  GI?: string;
+  /** Seriennummer des Messgeräts. */
+  GS?: string;
+  /** Firmwarestand. */
+  GV?: string;
+  /** Vorgangsnummer im Ladepunkt. */
+  PG?: string;
+  /** Zählerkennung. */
+  MV?: string;
+  MM?: string;
+  MS?: string;
+  MF?: string;
+  /** Ist der Nutzer identifiziert? */
+  IS?: boolean;
+  /** Art der Identifikation, etwa "ISO14443". */
+  IT?: string;
+  /** Die Kennung selbst, etwa die UID der Karte. */
+  ID?: string;
+  RD: OcmfMesswert[];
+}
+
+export interface OcmfSignatur {
+  /** Signaturverfahren, etwa "ECDSA-secp256r1-SHA256". */
+  SA?: string;
+  /** Signatur, hexadezimal oder Base64. */
+  SD: string;
+  /** Kodierung der Signatur. */
+  SE?: string;
+  /** Kodierung des Signaturblocks. */
+  SM?: string;
+}
+
+export interface OcmfDatensatz {
+  nutzlast: OcmfNutzlast;
+  signatur: OcmfSignatur;
+  /** Der Teil, über den signiert wurde - unverändert. */
+  signierterText: string;
+}
+
+export type Signaturlage = "gueltig" | "ungueltig" | "ungeprueft";
+
+export interface OcmfBefund {
+  /** Darf dieser Datensatz einer Rechnung zugrunde liegen? */
+  verwertbar: boolean;
+  signatur: Signaturlage;
+  /** Gemessene Energie aus Anfangs- und Endstand, kWh. */
+  energieKwh: number | null;
+  beginn: string | null;
+  ende: string | null;
+  /** War die Uhr des Zählers synchronisiert? */
+  zeitSynchron: boolean;
+  beanstandungen: string[];
+  warnungen: string[];
+}
+
+/**
+ * Zerlegt einen OCMF-Datensatz.
+ *
+ * Der signierte Text ist der mittlere Teil in genau der Schreibweise,
+ * in der er ankam. Wer ihn vor der Prüfung durch JSON.parse und
+ * JSON.stringify schickt, prüft eine andere Zeichenkette als die
+ * signierte - Feldreihenfolge und Leerzeichen ändern sich dabei, und
+ * die Signatur schlägt fehl, obwohl sie stimmt.
+ */
+export function zerlegeOcmf(text: string): OcmfDatensatz | null {
+  const teile = text.trim().split("|");
+  if (teile.length !== 3) return null;
+  if (teile[0] !== "OCMF") return null;
+
+  try {
+    const nutzlast = JSON.parse(teile[1]!) as OcmfNutzlast;
+    const signatur = JSON.parse(teile[2]!) as OcmfSignatur;
+
+    if (!Array.isArray(nutzlast.RD)) return null;
+    if (typeof signatur.SD !== "string") return null;
+
+    return { nutzlast, signatur, signierterText: teile[1]! };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Liest den Zeitstempel und sagt, ob die Uhr synchron war.
+ *
+ * Das Kennzeichen steht hinter dem Zeitstempel:
+ *   S - synchronisiert, R - relativ, I - informativ, U - unbekannt.
+ * Nur "S" trägt eine Abrechnung. Ein "I" bedeutet: Die Uhr lief, aber
+ * niemand kann sagen, wogegen.
+ */
+export function liesZeitstempel(tm: string): {
+  zeit: string;
+  kennzeichen: string;
+} {
+  const teile = tm.trim().split(/\s+/);
+  return { zeit: teile[0] ?? "", kennzeichen: teile[1] ?? "" };
+}
+
+/** Ablesungen nach Grund, mit Rückfall auf die Reihenfolge. */
+function findeStand(
+  messwerte: OcmfMesswert[],
+  grund: "B" | "E",
+): OcmfMesswert | undefined {
+  const treffer = messwerte.find((m) => m.RT === grund);
+  if (treffer) return treffer;
+
+  // Ohne Ablesegrund gilt die erste als Anfang und die letzte als Ende.
+  return grund === "B" ? messwerte[0] : messwerte[messwerte.length - 1];
+}
+
+/**
+ * Prüft einen OCMF-Datensatz.
+ *
+ * `abgerechneteKwh` ist die Menge, die auf der Rechnung steht. Weicht
+ * sie von der Differenz der Zählerstände ab, wird das beanstandet -
+ * das ist der einzige Weg, einen Abrechnungsfehler zu finden, bevor
+ * die Rechnung hinausgeht.
+ */
+export function pruefeOcmf(
+  text: string,
+  optionen: {
+    oeffentlicherSchluessel?: string;
+    abgerechneteKwh?: number;
+    /** Toleranz beim Mengenabgleich, kWh. */
+    toleranzKwh?: number;
+  } = {},
+): OcmfBefund {
+  const beanstandungen: string[] = [];
+  const warnungen: string[] = [];
+
+  const datensatz = zerlegeOcmf(text);
+
+  if (!datensatz) {
+    return {
+      verwertbar: false,
+      signatur: "ungeprueft",
+      energieKwh: null,
+      beginn: null,
+      ende: null,
+      zeitSynchron: false,
+      beanstandungen: [
+        "Der Datensatz ist kein lesbares OCMF. Erwartet werden drei durch senkrechte Striche getrennte Teile.",
+      ],
+      warnungen: [],
+    };
+  }
+
+  const { nutzlast, signatur, signierterText } = datensatz;
+
+  /* ---------------- Pflichtangaben ---------------- */
+
+  if (!nutzlast.GS && !nutzlast.GI) {
+    beanstandungen.push(
+      "Der Datensatz nennt kein Messgerät. Ohne Gerätekennung ist er keinem Zähler zuzuordnen.",
+    );
+  }
+
+  if (nutzlast.RD.length < 2) {
+    beanstandungen.push(
+      "Es liegen weniger als zwei Ablesungen vor. Ohne Anfangs- und Endstand ist keine Menge belegt.",
+    );
+  }
+
+  /* ---------------- Zählerstände ---------------- */
+
+  const anfang = findeStand(nutzlast.RD, "B");
+  const ende = findeStand(nutzlast.RD, "E");
+
+  let energieKwh: number | null = null;
+
+  if (anfang && ende && anfang !== ende) {
+    const einheit = (ende.RU ?? anfang.RU ?? "kWh").toLowerCase();
+    if (einheit !== "kwh") {
+      warnungen.push(
+        `Die Zählerstände sind in "${ende.RU ?? anfang.RU}" angegeben, nicht in kWh. Die Menge wurde nicht umgerechnet.`,
+      );
+    }
+
+    energieKwh = Number((ende.RV - anfang.RV).toFixed(4));
+
+    if (energieKwh < 0) {
+      beanstandungen.push(
+        `Der Endstand liegt unter dem Anfangsstand (${alsKomma(ende.RV, 2)} gegen ${alsKomma(anfang.RV, 2)}). Ein Zählwerk läuft nicht rückwärts.`,
+      );
+    }
+  }
+
+  /* ---------------- Fehlerkennzeichen und Status ---------------- */
+
+  for (const [i, messwert] of nutzlast.RD.entries()) {
+    if (messwert.EF) {
+      beanstandungen.push(
+        `Ablesung ${i + 1} trägt das Fehlerkennzeichen "${messwert.EF}".`,
+      );
+    }
+    if (messwert.ST && messwert.ST !== "G") {
+      beanstandungen.push(
+        `Ablesung ${i + 1} hat den Status "${messwert.ST}" statt "G". Nur ein gültiger Stand trägt eine Abrechnung.`,
+      );
+    }
+  }
+
+  /* ---------------- Zeitsynchronität ---------------- */
+
+  const kennzeichen = nutzlast.RD.map(
+    (m) => liesZeitstempel(m.TM ?? "").kennzeichen,
+  );
+  const zeitSynchron = kennzeichen.every((k) => k === "S");
+
+  if (!zeitSynchron) {
+    const gefunden = [...new Set(kennzeichen.filter(Boolean))].join(", ");
+    beanstandungen.push(
+      `Die Uhr des Zählers war nicht synchronisiert (Kennzeichen ${gefunden || "fehlt"} statt S). Ein solcher Datensatz ist eichrechtlich nicht verwertbar.`,
+    );
+  }
+
+  /* ---------------- Identifikation ---------------- */
+
+  if (nutzlast.IS === false) {
+    warnungen.push(
+      "Der Nutzer war nicht identifiziert. Für eine Ad-hoc-Ladung ist das der Regelfall, für eine Vertragsladung nicht.",
+    );
+  }
+
+  /* ---------------- Signatur ---------------- */
+
+  let lage: Signaturlage = "ungeprueft";
+
+  if (!optionen.oeffentlicherSchluessel) {
+    warnungen.push(
+      "Ohne hinterlegten öffentlichen Schlüssel wurde die Signatur nicht geprüft. Sie gilt damit als ungeprüft, nicht als gültig.",
+    );
+  } else {
+    lage = pruefeSignatur(
+      signierterText,
+      signatur,
+      optionen.oeffentlicherSchluessel,
+    )
+      ? "gueltig"
+      : "ungueltig";
+
+    if (lage === "ungueltig") {
+      beanstandungen.push(
+        "Die Signatur passt nicht zum Datensatz. Entweder wurde er nachträglich verändert oder er stammt nicht von diesem Zähler.",
+      );
+    }
+  }
+
+  /* ---------------- Abgleich mit der Rechnung ---------------- */
+
+  if (optionen.abgerechneteKwh !== undefined && energieKwh !== null) {
+    const toleranz = optionen.toleranzKwh ?? 0.001;
+    const abweichung = Math.abs(optionen.abgerechneteKwh - energieKwh);
+
+    if (abweichung > toleranz) {
+      beanstandungen.push(
+        `Abgerechnet wurden ${alsKomma(optionen.abgerechneteKwh, 2)} kWh, der Zähler weist ${alsKomma(energieKwh, 2)} kWh aus. Abweichung ${alsKomma(abweichung, 3)} kWh.`,
+      );
+    }
+  }
+
+  return {
+    verwertbar: beanstandungen.length === 0 && lage !== "ungueltig",
+    signatur: lage,
+    energieKwh,
+    beginn: anfang ? liesZeitstempel(anfang.TM ?? "").zeit : null,
+    ende: ende ? liesZeitstempel(ende.TM ?? "").zeit : null,
+    zeitSynchron,
+    beanstandungen,
+    warnungen,
+  };
+}
+
+/**
+ * Prüft die Signatur gegen den öffentlichen Schlüssel des Zählers.
+ *
+ * Signiert wird der Nutzlastteil als Bytefolge - genau so, wie er
+ * übertragen wurde. Die Signatur selbst liegt je nach Zähler
+ * hexadezimal oder in Base64 vor; das Feld SE sagt, welches von
+ * beidem. Fehlt es, wird an der Zeichenmenge erkannt.
+ */
+export function pruefeSignatur(
+  signierterText: string,
+  signatur: OcmfSignatur,
+  oeffentlicherSchluessel: string,
+): boolean {
+  const kodierung =
+    signatur.SE?.toLowerCase() ??
+    (/^[0-9a-fA-F]+$/.test(signatur.SD) ? "hex" : "base64");
+
+  try {
+    const bytes = Buffer.from(
+      signatur.SD,
+      kodierung === "hex" ? "hex" : "base64",
+    );
+
+    const pruefer = createVerify("SHA256");
+    pruefer.update(signierterText, "utf8");
+    pruefer.end();
+
+    return pruefer.verify(oeffentlicherSchluessel, bytes);
+  } catch {
+    // Ein unlesbarer Schlüssel oder eine kaputte Kodierung ist keine
+    // gültige Signatur - und kein Grund, die Prüfung abstürzen zu
+    // lassen.
+    return false;
+  }
+}

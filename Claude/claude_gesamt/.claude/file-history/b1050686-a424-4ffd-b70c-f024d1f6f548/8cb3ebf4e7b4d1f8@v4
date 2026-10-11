@@ -1,0 +1,182 @@
+import "server-only";
+
+import { DatabaseSync } from "node:sqlite";
+import { readFileSync, mkdirSync } from "node:fs";
+import { dirname, join } from "node:path";
+
+/**
+ * Zugriff auf die eingebettete Datenbank.
+ *
+ * SQLite ist hier keine Notloesung, sondern passend: Die Daten eines
+ * Portalmandanten sind ueberschaubar, die Zugriffe fast ausschliesslich
+ * lesend, und Lastgangdaten lassen sich in Millionen Zeilen ohne
+ * Serverprozess halten. `node:sqlite` ist ab Node 22 eingebaut - es
+ * kommt keine Abhaengigkeit dazu.
+ *
+ * Im Regelbetrieb gegen Frappe bleibt diese Schicht ungenutzt; die
+ * Datenzugriffe in `src/lib/daten/` entscheiden, woher sie lesen.
+ */
+
+const DATEI = process.env.DB_DATEI ?? ".data/portal.db";
+
+/**
+ * Der Entwicklungsserver laedt Module bei jeder Änderung neu. Ohne
+ * diesen Zwischenspeicher entstuende bei jedem Neuladen eine weitere
+ * Verbindung, bis die Dateihandles ausgehen.
+ */
+const speicher = globalThis as unknown as {
+  __portalDb?: DatabaseSync;
+};
+
+function oeffne(): DatabaseSync {
+  mkdirSync(dirname(DATEI), { recursive: true });
+
+  const db = new DatabaseSync(DATEI);
+
+  // Schreibvorgaenge blockieren Leser nicht; Lesevorgaenge sehen einen
+  // konsistenten Stand. Fuer ein Portal mit vielen Leseanfragen und
+  // wenigen Schreibzugriffen ist das die richtige Einstellung.
+  db.exec("PRAGMA journal_mode = WAL");
+  db.exec("PRAGMA foreign_keys = ON");
+  db.exec("PRAGMA busy_timeout = 5000");
+
+  spieleSchemaEin(db);
+
+  return db;
+}
+
+/** Die Schemadateien in der Reihenfolge ihrer Abhängigkeiten. */
+const SCHEMADATEIEN = [
+  "schema.sql",
+  "schema-technik.sql",
+  "schema-laden.sql",
+  "schema-ot.sql",
+  "schema-markt.sql",
+  "schema-geschaeft.sql",
+];
+
+function spieleSchemaEin(verbindung: DatabaseSync): void {
+  for (const name of SCHEMADATEIEN) {
+    verbindung.exec(
+      readFileSync(join(process.cwd(), "src", "lib", "db", name), "utf8"),
+    );
+  }
+}
+
+/**
+ * Verwirft alle Tabellen und baut das Schema neu auf.
+ *
+ * Gedacht fuer den Neuaufbau des Demonstrationsbestands. Notwendig,
+ * weil `CREATE TABLE IF NOT EXISTS` eine bestehende Tabelle unberuehrt
+ * lässt: Kommt eine Spalte dazu, fällt das sonst erst auf, wenn eine
+ * Abfrage sie nicht findet - und dann sucht man den Fehler in der
+ * Abfrage statt im Schema.
+ *
+ * Die Datei zu löschen wäre einfacher, scheitert unter Windows aber,
+ * solange der Entwicklungsserver sie geöffnet haelt.
+ */
+export function baueSchemaNeu(): void {
+  const verbindung = db();
+
+  verbindung.exec("PRAGMA foreign_keys = OFF");
+  try {
+    const tabellen = verbindung
+      .prepare(
+        `SELECT name FROM sqlite_master
+          WHERE type = 'table' AND name NOT LIKE 'sqlite_%'`,
+      )
+      .all() as unknown as { name: string }[];
+
+    for (const t of tabellen) {
+      // Der Tabellenname kommt aus dem Systemkatalog, nicht von aussen;
+      // als Bezeichner lässt er sich ohnehin nicht binden.
+      verbindung.exec(`DROP TABLE IF EXISTS "${t.name}"`);
+    }
+
+    spieleSchemaEin(verbindung);
+  } finally {
+    verbindung.exec("PRAGMA foreign_keys = ON");
+  }
+}
+
+export function db(): DatabaseSync {
+  if (!speicher.__portalDb) {
+    speicher.__portalDb = oeffne();
+  }
+  return speicher.__portalDb;
+}
+
+/* ------------------------------------------------------------------ */
+/* Bequeme Hilfen                                                      */
+/* ------------------------------------------------------------------ */
+
+type Wert = string | number | null | bigint | Uint8Array;
+
+/** Mehrere Zeilen lesen. */
+export function alle<T>(sql: string, ...werte: Wert[]): T[] {
+  return db().prepare(sql).all(...werte) as T[];
+}
+
+/** Eine Zeile lesen, sonst `null`. */
+export function eine<T>(sql: string, ...werte: Wert[]): T | null {
+  return (db().prepare(sql).get(...werte) as T | undefined) ?? null;
+}
+
+/** Einen einzelnen Wert lesen, etwa aus COUNT(*) oder SUM(). */
+export function skalar<T = number>(sql: string, ...werte: Wert[]): T | null {
+  const zeile = db().prepare(sql).get(...werte) as
+    | Record<string, unknown>
+    | undefined;
+  if (!zeile) return null;
+  const erster = Object.values(zeile)[0];
+  return (erster ?? null) as T | null;
+}
+
+/** Schreibvorgang ausfuehren. */
+export function schreibe(sql: string, ...werte: Wert[]): void {
+  db().prepare(sql).run(...werte);
+}
+
+/**
+ * Mehrere Schreibvorgaenge als Einheit.
+ *
+ * Wichtig bei der Abrechnung: Entweder entstehen Aufteilung UND Belege,
+ * oder keines von beidem. Ein halb gerechneter Lauf wäre schlimmer als
+ * gar keiner.
+ */
+export function imBlock<T>(arbeit: () => T): T {
+  const verbindung = db();
+  verbindung.exec("BEGIN");
+  try {
+    const ergebnis = arbeit();
+    verbindung.exec("COMMIT");
+    return ergebnis;
+  } catch (fehler) {
+    verbindung.exec("ROLLBACK");
+    throw fehler;
+  }
+}
+
+/**
+ * Kennung im Stil "ANL-0007".
+ * Fortlaufend je Praefix, damit Belege und Vorgaenge nachvollziehbar
+ * nummeriert sind statt zufaellig.
+ */
+export function nächsteKennung(
+  tabelle: string,
+  praefix: string,
+  stellen = 4,
+): string {
+  const anzahl =
+    skalar<number>(
+      `SELECT COUNT(*) FROM ${tabelle} WHERE id LIKE ?`,
+      `${praefix}-%`,
+    ) ?? 0;
+
+  return `${praefix}-${String(anzahl + 1).padStart(stellen, "0")}`;
+}
+
+/** Ist die Datenbank bereits befuellt? */
+export function istBefuellt(): boolean {
+  return (skalar<number>("SELECT COUNT(*) FROM kunde") ?? 0) > 0;
+}

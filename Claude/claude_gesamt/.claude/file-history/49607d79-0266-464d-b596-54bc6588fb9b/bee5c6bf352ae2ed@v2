@@ -1,0 +1,208 @@
+# -*- coding: utf-8 -*-
+"""Ergaenzt die Alarm-Testdaten um das, was moderne Alarmarbeit sichtbar macht:
+einen Sturm mit gemeinsamer Ursache, eine Laermquelle, abgeschlossene Alarme
+fuer MTTA/MTTR und einen bereits angenommenen."""
+import io
+
+p = 'src/api/mock/fixtures-ops.js'
+s = io.open(p, encoding='utf-8').read()
+
+# 1. Bestehende Alarme um Korrelationsschluessel und Runbook ergaenzen
+tausch = [
+    ("      title: 'Mehrfach fehlgeschlagene Anmeldung',\n      source: 'wazuh',",
+     "      title: 'Mehrfach fehlgeschlagene Anmeldung',\n      source: 'wazuh',\n"
+     "      correlation_key: 'auth-brute-SRV-PVE-01',"),
+    ("      title: 'Ungewöhnlicher Datenabfluss',\n      source: 'zenarmor',",
+     "      title: 'Ungewöhnlicher Datenabfluss',\n      source: 'zenarmor',\n"
+     "      correlation_key: 'exfil-FW-OS-01',"),
+    ("      title: 'Agent offline',\n      source: 'gravityzone',",
+     "      title: 'Agent offline',\n      source: 'gravityzone',\n"
+     "      correlation_key: 'agent-offline-SW-ACC-PA-01',"),
+    ("      title: 'Switchport unerwartet abgeschaltet',\n      source: 'zabbix',",
+     "      title: 'Switchport unerwartet abgeschaltet',\n      source: 'zabbix',\n"
+     "      correlation_key: 'link-SW-CORE-01',"),
+]
+for alt, neu in tausch:
+    assert alt in s, alt[:50]
+    s = s.replace(alt, neu, 1)
+
+WEITERE = """
+    // --- Ein Alarmsturm auf denselben Host: fuenf Meldungen, eine Ursache.
+    //     Ohne Korrelation stehen hier fuenf Zeilen, mit Korrelation eine.
+    {
+      title: 'CPU dauerhaft über 95 %',
+      source: 'zabbix',
+      severity: 'high',
+      object_type: 'Network Device',
+      object_name: 'SRV-PVE-02',
+      alert_state: 'new',
+      first_seen: stundenVersetzt(-3.2),
+      last_seen: stundenVersetzt(-0.1),
+      occurrences: 19,
+      correlation_key: 'host-ueberlast-SRV-PVE-02',
+      tenant: AT,
+    },
+    {
+      title: 'Arbeitsspeicher knapp',
+      source: 'zabbix',
+      severity: 'high',
+      object_type: 'Network Device',
+      object_name: 'SRV-PVE-02',
+      alert_state: 'new',
+      first_seen: stundenVersetzt(-3.1),
+      last_seen: stundenVersetzt(-0.1),
+      occurrences: 14,
+      correlation_key: 'host-ueberlast-SRV-PVE-02',
+      tenant: AT,
+    },
+    {
+      title: 'Swap-Nutzung steigt',
+      source: 'zabbix',
+      severity: 'medium',
+      object_type: 'Network Device',
+      object_name: 'SRV-PVE-02',
+      alert_state: 'new',
+      first_seen: stundenVersetzt(-3.0),
+      last_seen: stundenVersetzt(-0.2),
+      occurrences: 9,
+      correlation_key: 'host-ueberlast-SRV-PVE-02',
+      tenant: AT,
+    },
+    {
+      title: 'Gast antwortet nicht',
+      source: 'zabbix',
+      severity: 'medium',
+      object_type: 'Virtual Machine',
+      object_name: 'vm-erp-01',
+      alert_state: 'new',
+      first_seen: stundenVersetzt(-2.8),
+      last_seen: stundenVersetzt(-0.3),
+      occurrences: 6,
+      correlation_key: 'host-ueberlast-SRV-PVE-02',
+      tenant: AT,
+    },
+    {
+      title: 'Antwortzeit ERP über Schwelle',
+      source: 'zabbix',
+      severity: 'medium',
+      object_type: 'Network Device',
+      object_name: 'SRV-PVE-02',
+      alert_state: 'new',
+      first_seen: stundenVersetzt(-2.7),
+      last_seen: stundenVersetzt(-0.3),
+      occurrences: 11,
+      correlation_key: 'host-ueberlast-SRV-PVE-02',
+      tenant: AT,
+    },
+
+    // --- Eine Laermquelle: hohe Wiederholung ueber Tage, niedrige Schwere.
+    //     Das ist kein Vorfall, das ist Rauschen - und genau das soll die
+    //     Seite als solches benennen statt es wie einen Befund zu behandeln.
+    {
+      title: 'Port flappt',
+      source: 'zabbix',
+      severity: 'low',
+      object_type: 'Network Device',
+      object_name: 'SW-ACC-01',
+      alert_state: 'new',
+      first_seen: stundenVersetzt(-26),
+      last_seen: stundenVersetzt(-0.05),
+      occurrences: 214,
+      correlation_key: 'link-SW-ACC-01',
+      tenant: AT,
+      description: 'Port 12 geht im Minutentakt auf und zu - Kabel oder Gegenstelle pruefen.',
+    },
+    {
+      title: 'Zertifikatswarnung Weboberfläche',
+      source: 'zabbix',
+      severity: 'low',
+      object_type: 'Network Device',
+      object_name: 'NAS-TN-01',
+      alert_state: 'new',
+      first_seen: stundenVersetzt(-52),
+      last_seen: stundenVersetzt(-1.2),
+      occurrences: 63,
+      correlation_key: 'cert-NAS-TN-01',
+      tenant: AT,
+    },
+
+    // --- Abgeschlossene Alarme: Grundlage fuer MTTA und MTTR.
+    {
+      title: 'Backup-Job abgebrochen',
+      source: 'pbs',
+      severity: 'high',
+      object_type: 'Network Device',
+      object_name: 'SRV-PBS-01',
+      alert_state: 'closed',
+      first_seen: stundenVersetzt(-96),
+      last_seen: stundenVersetzt(-95),
+      occurrences: 2,
+      acknowledged_by: 'HR-EMP-00002',
+      acknowledged_at: stundenVersetzt(-95.4),
+      resolved_at: stundenVersetzt(-92),
+      resolution: 'Datastore war voll, alte Snapshots entfernt.',
+      correlation_key: 'backup-SRV-PBS-01',
+      tenant: AT,
+    },
+    {
+      title: 'Uplink kurzzeitig weg',
+      source: 'zabbix',
+      severity: 'medium',
+      object_type: 'Network Device',
+      object_name: 'SW-CORE-01',
+      alert_state: 'closed',
+      first_seen: stundenVersetzt(-140),
+      last_seen: stundenVersetzt(-139),
+      occurrences: 3,
+      acknowledged_by: 'HR-EMP-00003',
+      acknowledged_at: stundenVersetzt(-139.7),
+      resolved_at: stundenVersetzt(-138),
+      resolution: 'Wartung beim Provider, angekündigt gewesen.',
+      correlation_key: 'link-SW-CORE-01',
+      tenant: AT,
+    },
+    {
+      title: 'Schadsoftware blockiert',
+      source: 'gravityzone',
+      severity: 'critical',
+      object_type: 'Network Device',
+      object_name: 'SRV-PVE-01',
+      alert_state: 'closed',
+      first_seen: stundenVersetzt(-200),
+      last_seen: stundenVersetzt(-200),
+      occurrences: 1,
+      acknowledged_by: 'HR-EMP-00001',
+      acknowledged_at: stundenVersetzt(-199.8),
+      resolved_at: stundenVersetzt(-196),
+      resolution: 'Datei in Quarantäne, Ursprung war ein USB-Stick.',
+      mitre_technique: 'T1204 User Execution',
+      tenant: AT,
+    },
+
+    // --- Bereits angenommen, aber noch offen: zeigt die Zuweisung.
+    {
+      title: 'Konfiguration weicht vom Soll ab',
+      source: 'wazuh',
+      severity: 'medium',
+      object_type: 'Network Device',
+      object_name: 'FW-OS-01',
+      alert_state: 'ack',
+      first_seen: stundenVersetzt(-18),
+      last_seen: stundenVersetzt(-6),
+      occurrences: 4,
+      acknowledged_by: 'HR-EMP-00002',
+      acknowledged_at: stundenVersetzt(-16),
+      assignee: 'HR-EMP-00002',
+      tenant: AT,
+    },
+"""
+
+# Der letzte Alarm im Seed ist "Agent offline" (Mandant DE). Direkt danach
+# schliesst das Seed-Array - dort haengen wir an.
+marke = "      occurrences: 8,\n      tenant: DE,\n    },\n  ],\n})"
+assert marke in s, 'Ende des Alert-Seeds nicht gefunden'
+ersatz = "      occurrences: 8,\n      tenant: DE,\n    },\n" + WEITERE + "  ],\n})"
+s = s.replace(marke, ersatz, 1)
+
+io.open(p, 'w', encoding='utf-8').write(s)
+print('Alarme erweitert')

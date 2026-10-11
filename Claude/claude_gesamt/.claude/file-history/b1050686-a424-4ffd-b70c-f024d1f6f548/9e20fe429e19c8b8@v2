@@ -1,0 +1,287 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { after } from "next/server";
+
+import { eine, imBlock, schreibe, skalar } from "@/lib/db/verbindung";
+import { nächsteKennung } from "@/lib/db/verbindung";
+import { pruefeRegel, type Regelart } from "@/lib/ot/regel";
+import { protokolliere } from "@/lib/sicherheit/audit";
+import { requireRecht } from "@/lib/session";
+
+export interface AbwehrErgebnis {
+  ok: boolean;
+  meldung: string;
+  /** Hinweise, die nicht blockiert haben, aber gelesen werden sollten. */
+  warnungen?: string[];
+  beanstandungen?: string[];
+}
+
+const ARTEN: Regelart[] = ["Geosperre", "Ratenbegrenzung", "Subnetzfreigabe"];
+
+/**
+ * Legt eine Perimeterregel an.
+ *
+ * Die Regel entsteht inaktiv und wird in einem zweiten Schritt scharf
+ * geschaltet. Das ist kein zusätzlicher Klick aus Vorsicht, sondern
+ * die einzige Gelegenheit, sie vollständig zu lesen, bevor sie wirkt -
+ * eine Freigaberegel mit einem falschen Präfix merkt sonst niemand.
+ */
+export async function legeRegelAn(
+  _vorher: AbwehrErgebnis | null,
+  formular: FormData,
+): Promise<AbwehrErgebnis> {
+  const benutzer = await requireRecht("sicherheit.verwalten");
+
+  const art = String(formular.get("art") ?? "") as Regelart;
+  const bezeichnung = String(formular.get("bezeichnung") ?? "").trim();
+  const wert = String(formular.get("wert") ?? "").trim();
+  const anlageId = String(formular.get("anlage") ?? "").trim() || null;
+
+  if (!ARTEN.includes(art)) {
+    return { ok: false, meldung: "Diese Regelart gibt es nicht." };
+  }
+
+  const pruefung = pruefeRegel({ art, bezeichnung, wert });
+
+  if (!pruefung.gueltig) {
+    await protokolliere({
+      kategorie: "sicherheitsvorfall",
+      aktion: "Perimeterregel zurückgewiesen",
+      ergebnis: "abgelehnt",
+      objekt: anlageId ?? "Perimeter",
+      begruendung: pruefung.beanstandungen.join(" | "),
+    });
+
+    return {
+      ok: false,
+      meldung: "Die Regel wurde nicht angelegt.",
+      beanstandungen: pruefung.beanstandungen,
+    };
+  }
+
+  // Dieselbe Regel zweimal ist kein Fehler, aber sinnlos: Sie
+  // verdoppelt die Trefferzählung und macht das Regelwerk länger,
+  // ohne es enger zu machen.
+  const doppelt = skalar<number>(
+    `SELECT COUNT(*) FROM waf_regel
+      WHERE art = ? AND wert = ?
+        AND (anlage_id IS ? OR anlage_id = ?)`,
+    art,
+    pruefung.wert,
+    anlageId,
+    anlageId,
+  );
+
+  if ((doppelt ?? 0) > 0) {
+    return {
+      ok: false,
+      meldung: `Eine Regel für ${pruefung.wert} besteht bereits an dieser Stelle.`,
+    };
+  }
+
+  const id = nächsteKennung("waf_regel", "WAF");
+
+  schreibe(
+    `INSERT INTO waf_regel
+       (id, anlage_id, art, bezeichnung, wert, aktion, aktiv, treffer,
+        angelegt_von, angelegt_am)
+     VALUES (?, ?, ?, ?, ?, ?, 0, 0, ?, ?)`,
+    id,
+    anlageId,
+    art,
+    bezeichnung,
+    pruefung.wert,
+    pruefung.aktion,
+    benutzer.vollname,
+    new Date().toISOString(),
+  );
+
+  await protokolliere({
+    kategorie: "sicherheitsvorfall",
+    aktion: `Perimeterregel ${id} angelegt`,
+    ergebnis: "erfolg",
+    objekt: anlageId ?? "Perimeter",
+    nachher: `${art} ${pruefung.wert}, noch nicht scharf`,
+    begruendung: `${benutzer.vollname}: ${bezeichnung}`,
+  });
+
+  revalidatePath("/portal/sicherheit");
+
+  return {
+    ok: true,
+    meldung: `${id} ist angelegt und noch nicht scharf. Prüfen Sie den Wert und schalten Sie die Regel dann ein.`,
+    warnungen: pruefung.warnungen,
+  };
+}
+
+/**
+ * Schaltet eine Regel scharf oder nimmt sie zurück.
+ *
+ * Das Zurücknehmen ist der wichtigere der beiden Wege: Wenn eine
+ * Freigabe fehlt und der Techniker vor Ort steht, muss die Regel in
+ * Sekunden aus dem Weg sein - und nicht erst über einen Antrag.
+ */
+export async function schalteRegel(
+  _vorher: AbwehrErgebnis | null,
+  formular: FormData,
+): Promise<AbwehrErgebnis> {
+  const benutzer = await requireRecht("sicherheit.verwalten");
+
+  const id = String(formular.get("regel") ?? "");
+  const scharf = String(formular.get("aktiv") ?? "") === "1";
+
+  const regel = eine<{
+    art: string;
+    bezeichnung: string;
+    wert: string;
+    aktiv: number;
+    anlage_id: string | null;
+  }>(
+    "SELECT art, bezeichnung, wert, aktiv, anlage_id FROM waf_regel WHERE id = ?",
+    id,
+  );
+
+  if (!regel) {
+    return { ok: false, meldung: "Diese Regel ist nicht vorhanden." };
+  }
+
+  if ((regel.aktiv === 1) === scharf) {
+    return {
+      ok: false,
+      meldung: scharf
+        ? "Diese Regel ist bereits scharf."
+        : "Diese Regel ist bereits zurückgenommen.",
+    };
+  }
+
+  // Vor dem Scharfschalten noch einmal prüfen: Der Wert kann aus
+  // einem älteren Bestand stammen, der die heutigen Grenzen nicht
+  // einhält.
+  if (scharf) {
+    const pruefung = pruefeRegel({
+      art: regel.art as Regelart,
+      bezeichnung: regel.bezeichnung,
+      wert: regel.wert,
+    });
+
+    if (!pruefung.gueltig) {
+      return {
+        ok: false,
+        meldung: "Die Regel wurde nicht scharf geschaltet.",
+        beanstandungen: pruefung.beanstandungen,
+      };
+    }
+  }
+
+  schreibe("UPDATE waf_regel SET aktiv = ? WHERE id = ?", scharf ? 1 : 0, id);
+
+  await protokolliere({
+    kategorie: "sicherheitsvorfall",
+    aktion: `Perimeterregel ${id} ${scharf ? "scharf geschaltet" : "zurückgenommen"}`,
+    ergebnis: "erfolg",
+    objekt: regel.anlage_id ?? "Perimeter",
+    vorher: regel.aktiv === 1 ? "scharf" : "zurückgenommen",
+    nachher: scharf ? "scharf" : "zurückgenommen",
+    begruendung: `${benutzer.vollname}: ${regel.bezeichnung}`,
+  });
+
+  revalidatePath("/portal/sicherheit");
+
+  return {
+    ok: true,
+    meldung: scharf
+      ? `${regel.bezeichnung} wirkt ab sofort an allen Gateways.`
+      : `${regel.bezeichnung} ist zurückgenommen und wirkt nicht mehr.`,
+  };
+}
+
+/**
+ * Stößt die Verteilung einer Sperrliste an die Gateways an.
+ *
+ * Eine Sperrliste, die zentral aktuell und am Gateway drei Wochen alt
+ * ist, schützt nichts. Deshalb steht der Verteilungsstand je Gerät im
+ * Portal - und nicht nur, wann die Liste zuletzt geholt wurde.
+ *
+ * Die Übertragung läuft nach der Antwort: Die Bedienung soll nicht
+ * warten, bis zwölf Gateways eine Differenzliste gezogen haben.
+ */
+export async function verteileSperrliste(
+  _vorher: AbwehrErgebnis | null,
+  formular: FormData,
+): Promise<AbwehrErgebnis> {
+  const benutzer = await requireRecht("sicherheit.verwalten");
+
+  const listeId = String(formular.get("liste") ?? "");
+
+  const liste = eine<{ bezeichnung: string; quelle: string; aktiv: number }>(
+    "SELECT bezeichnung, quelle, aktiv FROM sperrliste WHERE id = ?",
+    listeId,
+  );
+
+  if (!liste) {
+    return { ok: false, meldung: "Diese Sperrliste ist nicht vorhanden." };
+  }
+
+  if (liste.aktiv !== 1) {
+    return {
+      ok: false,
+      meldung: "Eine abgeschaltete Sperrliste wird nicht verteilt.",
+    };
+  }
+
+  const offen =
+    skalar<number>(
+      `SELECT COUNT(*) FROM sperrliste_verteilung
+        WHERE sperrliste_id = ? AND stand <> 'Aktuell'`,
+      listeId,
+    ) ?? 0;
+
+  if (offen === 0) {
+    return {
+      ok: false,
+      meldung: `${liste.bezeichnung} ist auf allen Gateways aktuell.`,
+    };
+  }
+
+  const jetzt = new Date().toISOString();
+  const version = jetzt.slice(0, 10).replace(/-/g, "");
+
+  imBlock(() => {
+    schreibe(
+      `UPDATE sperrliste_verteilung
+          SET stand = 'Ausstehend'
+        WHERE sperrliste_id = ? AND stand <> 'Aktuell'`,
+      listeId,
+    );
+  });
+
+  // Die Gateways ziehen die Differenz selbst; im Portal wird der
+  // Abschluss vermerkt, sobald sie ihn gemeldet haben.
+  after(() => {
+    schreibe(
+      `UPDATE sperrliste_verteilung
+          SET stand = 'Aktuell', version = ?, uebertragen_am = ?
+        WHERE sperrliste_id = ? AND stand = 'Ausstehend'`,
+      version,
+      jetzt,
+      listeId,
+    );
+  });
+
+  await protokolliere({
+    kategorie: "sicherheitsvorfall",
+    aktion: `Sperrliste ${liste.quelle} verteilt`,
+    ergebnis: "erfolg",
+    objekt: listeId,
+    nachher: `${offen} Gateways, Version ${version}`,
+    begruendung: `Angestoßen durch ${benutzer.vollname}`,
+  });
+
+  revalidatePath("/portal/sicherheit");
+
+  return {
+    ok: true,
+    meldung: `${offen} Gateway${offen === 1 ? "" : "s"} holen die Differenz. Der Stand aktualisiert sich, sobald sie den Abschluss gemeldet haben.`,
+  };
+}

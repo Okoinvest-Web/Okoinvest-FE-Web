@@ -1,0 +1,60 @@
+/** Schiesst die Backup-Unterseiten, hell und dunkel. */
+import { spawn } from 'node:child_process'
+import { mkdtempSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+
+const EDGE = 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'
+const port = 9390
+const profil = mkdtempSync(join(tmpdir(), 'edge-cdp-'))
+const kind = spawn(
+  EDGE,
+  ['--headless=new','--disable-gpu','--no-first-run','--no-default-browser-check',
+   `--remote-debugging-port=${port}`, `--user-data-dir=${profil}`, 'about:blank'],
+  { stdio: 'ignore' },
+)
+const schlafe = (ms) => new Promise((r) => setTimeout(r, ms))
+let ziel = null
+for (let i = 0; i < 40 && !ziel; i++) {
+  await schlafe(250)
+  try { ziel = (await (await fetch(`http://127.0.0.1:${port}/json/list`)).json()).find((t) => t.type === 'page') } catch {}
+}
+const ws = new WebSocket(ziel.webSocketDebuggerUrl)
+await new Promise((r) => (ws.onopen = r))
+let id = 0
+const offen = new Map()
+const fehler = []
+ws.onmessage = (ev) => {
+  const m = JSON.parse(ev.data)
+  if (m.id && offen.has(m.id)) { offen.get(m.id)(m.result); offen.delete(m.id) }
+  if (m.method === 'Runtime.exceptionThrown') fehler.push(String(m.params.exceptionDetails.text).slice(0, 160))
+  if (m.method === 'Runtime.consoleAPICalled' && m.params.type === 'error')
+    fehler.push('console: ' + m.params.args.map((a) => a.description || a.value).join(' ').split('\n')[0].slice(0, 160))
+}
+const sende = (me, p = {}) => new Promise((r) => { const n = ++id; offen.set(n, r); ws.send(JSON.stringify({ id: n, method: me, params: p })) })
+const js = async (a) => (await sende('Runtime.evaluate', { returnByValue: true, expression: a, awaitPromise: true })).result.value
+await sende('Runtime.enable'); await sende('Page.enable')
+await sende('Emulation.setDeviceMetricsOverride', { width: 1500, height: 1100, deviceScaleFactor: 1, mobile: false })
+
+const SCRATCH = process.argv[2] || '.'
+const dunkel = process.argv[3] === 'dunkel'
+if (dunkel) {
+  await sende('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: 'dark' }] })
+}
+
+const SEITEN = ['', '/systeme', '/band', '/auftraege', '/meldungen', '/ziele', '/pruefung']
+for (const p of SEITEN) {
+  await sende('Page.navigate', { url: 'http://localhost:8080/backup' + p })
+  for (let i = 0; i < 80; i++) {
+    if ((await js('document.body.innerText.trim().length')) > 600) break
+    await schlafe(250)
+  }
+  await schlafe(1400)
+  const d = await sende('Page.captureScreenshot', { format: 'png' })
+  const name = 'bk' + (dunkel ? 'd' : '') + (p.replace('/', '-') || '-uebersicht') + '.png'
+  writeFileSync(join(SCRATCH, name), Buffer.from(d.data, 'base64'))
+  const text = await js('document.body.innerText')
+  console.log(String(p || '/').padEnd(12), String(text.length).padStart(5), fehler.length ? 'FEHLER: ' + fehler.join(' | ') : '')
+  fehler.length = 0
+}
+ws.close(); kind.kill()

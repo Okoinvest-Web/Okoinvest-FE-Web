@@ -1,0 +1,158 @@
+<template>
+  <div>
+    <PageHeader title="Regelwerk" :subtitle="untertitel">
+      <template #actions>
+        <FormControl v-model="ansicht" type="select" :options="ansichtOptionen" />
+      </template>
+    </PageHeader>
+
+    <div class="p-6">
+      <!-- Regel-Hygiene zuerst: das ist die Kennzahl, nicht die Regelliste -->
+      <div v-if="ansicht === 'hygiene' && hygiene.data">
+        <div class="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <div
+            v-for="kachel in hygieneKacheln"
+            :key="kachel.kind"
+            class="rounded-lg border border-outline-gray-2 bg-surface-white p-4"
+          >
+            <p class="text-sm text-ink-gray-6">{{ kachel.label }}</p>
+            <p class="mt-1 text-2xl font-semibold text-ink-gray-9">{{ kachel.wert }}</p>
+            <StatusDot v-if="kachel.wert" class="mt-1" :level="kachel.level" :text="kachel.hinweis" klein />
+          </div>
+        </div>
+
+        <DataTable
+          :columns="hygieneSpalten"
+          :rows="hygiene.data.findings"
+          :loading="hygiene.loading"
+          empty-text="Keine Beanstandung – das Regelwerk ist sauber."
+        >
+          <template #zelle-kind="{ zeile }">
+            <StatusDot :level="befundStufe(zeile.kind)" :text="BEFUND[zeile.kind] || zeile.kind" />
+          </template>
+          <template #zelle-rule="{ zeile }">
+            <span class="block text-ink-gray-8">{{ zeile.rule_index }} · {{ zeile.rule_name }}</span>
+            <span class="block text-sm text-ink-gray-5">{{ zeile.firewall }}</span>
+          </template>
+        </DataTable>
+      </div>
+
+      <!-- Vollständiges Regelwerk je Ebene -->
+      <div v-else>
+        <DataTable :columns="regelSpalten" :rows="regeln.data || []" :loading="regeln.loading">
+          <template #zelle-action="{ zeile }">
+            <StatusDot
+              :level="zeile.action === 'allow' ? 'ok' : 'critical'"
+              :text="zeile.action === 'allow' ? 'Erlauben' : 'Verwerfen'"
+            />
+          </template>
+          <template #zelle-rule_name="{ zeile }">
+            <span class="block text-ink-gray-9">{{ zeile.rule_name }}</span>
+            <span class="block text-sm text-ink-gray-5">{{ zeile.firewall }} · {{ zeile.interface }}</span>
+          </template>
+          <template #zelle-dienst="{ zeile }">
+            {{ zeile.protocol }}/{{ zeile.port_from }}<template v-if="zeile.port_to !== zeile.port_from">–{{ zeile.port_to }}</template>
+          </template>
+          <template #zelle-justification="{ zeile }">
+            <span v-if="zeile.justification">{{ zeile.justification }}</span>
+            <StatusDot v-else level="warning" text="fehlt" klein />
+          </template>
+          <template #zelle-review_date="{ zeile }">
+            <StatusDot
+              v-if="!zeile.review_date"
+              level="warning"
+              text="kein Datum"
+              klein
+            />
+            <StatusDot
+              v-else-if="zeile.review_date < heute"
+              level="critical"
+              :text="zeile.review_date"
+              klein
+            />
+            <span v-else class="tabular-nums text-ink-gray-7">{{ zeile.review_date }}</span>
+          </template>
+        </DataTable>
+      </div>
+
+      <p class="mt-3 text-xs text-ink-gray-4">
+        Pro Regel sind Begründung, Verantwortlicher, Ticket und Review-Datum
+        fachliche Pflichtfelder (Fachkonzept 2.4). Was fehlt oder abgelaufen ist,
+        steht in der Hygiene-Ansicht. Auf den Perimeter schreibt die Plattform
+        grundsätzlich nicht.
+      </p>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed, ref } from 'vue'
+import { FormControl, createResource } from 'frappe-ui'
+import PageHeader from '@/components/PageHeader.vue'
+import DataTable from '@/components/DataTable.vue'
+import StatusDot from '@/components/StatusDot.vue'
+
+const BEFUND = {
+  too_broad: 'Zu weit gefasst',
+  shadowed: 'Schattenregel',
+  review_overdue: 'Review überfällig',
+  no_justification: 'Ohne Begründung',
+  unused: 'Ungenutzt',
+  no_owner: 'Ohne Verantwortlichen',
+  no_ticket: 'Ohne Ticket',
+  no_review: 'Ohne Review-Datum',
+}
+
+const heute = new Date().toISOString().slice(0, 10)
+const ansicht = ref('hygiene')
+
+const ansichtOptionen = [
+  { label: 'Regel-Hygiene', value: 'hygiene' },
+  { label: 'Alle Regeln', value: 'rules' },
+]
+
+const hygiene = createResource({ url: 'netops.api.firewall.rule_hygiene', auto: true })
+const regeln = createResource({ url: 'netops.api.firewall.firewall_rules', auto: true })
+
+const hygieneSpalten = [
+  { key: 'kind', label: 'Befund', width: '210px' },
+  { key: 'rule', label: 'Regel', width: '320px' },
+  { key: 'message', label: 'Hinweis', muted: true },
+]
+
+const regelSpalten = [
+  { key: 'rule_index', label: '#', numeric: true, width: '60px' },
+  { key: 'action', label: 'Aktion', width: '140px' },
+  { key: 'rule_name', label: 'Regel', width: '260px' },
+  { key: 'source_prefix', label: 'Quelle', numeric: true, width: '150px' },
+  { key: 'destination_prefix', label: 'Ziel', numeric: true, width: '150px' },
+  { key: 'dienst', label: 'Dienst', width: '130px' },
+  { key: 'hit_count', label: 'Treffer', align: 'right', numeric: true, width: '110px' },
+  { key: 'justification', label: 'Begründung' },
+  { key: 'review_date', label: 'Review', width: '140px' },
+]
+
+const hygieneKacheln = computed(() => {
+  const z = hygiene.data?.summary || {}
+  return [
+    { kind: 'too_broad', label: 'Zu weit gefasst', wert: z.too_broad || 0, level: 'critical', hinweis: 'Angriffsfläche' },
+    { kind: 'shadowed', label: 'Schattenregeln', wert: z.shadowed || 0, level: 'warning', hinweis: 'wirkungslos' },
+    { kind: 'review_overdue', label: 'Review überfällig', wert: z.review_overdue || 0, level: 'warning', hinweis: 'Frist abgelaufen' },
+    { kind: 'unused', label: 'Ungenutzt', wert: z.unused || 0, level: 'warning', hinweis: 'Kandidat zum Abräumen' },
+  ]
+})
+
+const untertitel = computed(() => {
+  if (ansicht.value === 'hygiene' && hygiene.data) {
+    return hygiene.data.findings.length + ' Befunde bei ' + hygiene.data.rules_checked + ' Regeln'
+  }
+  return (regeln.data || []).length + ' Regeln über alle Ebenen'
+})
+
+function befundStufe(kind) {
+  return (
+    { too_broad: 'critical', shadowed: 'warning', review_overdue: 'warning', no_justification: 'warning' }[kind] ||
+    'neutral'
+  )
+}
+</script>

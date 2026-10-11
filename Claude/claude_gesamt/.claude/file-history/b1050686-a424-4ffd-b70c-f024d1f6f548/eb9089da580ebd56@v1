@@ -1,0 +1,174 @@
+import "server-only";
+
+import { frappeFetch } from "./frappe";
+
+/**
+ * Zentrale Abbildung der Frappe-DocTypes.
+ *
+ * Die Namen hier muessen mit den DocTypes in der Frappe-Instanz
+ * uebereinstimmen. Standard-DocTypes (Customer, File, Sales Invoice) kommen
+ * aus Frappe/ERPNext, die PV-spezifischen sind Custom DocTypes.
+ * Weicht das Schema ab, wird nur diese Datei angepasst - der Rest der App
+ * bleibt unveraendert.
+ */
+export const DOCTYPE = {
+  kunde: "Customer",
+  anlage: "PV Anlage",
+  ertrag: "PV Ertrag",
+  stoerung: "PV Stoerung",
+  rechnung: "Sales Invoice",
+  dokument: "File",
+} as const;
+
+/** Jeder Frappe-Datensatz traegt diese Felder. */
+export interface FrappeDoc {
+  /** Primaerschluessel in Frappe (der "name" eines Dokuments). */
+  name: string;
+  owner?: string;
+  creation?: string;
+  modified?: string;
+  docstatus?: 0 | 1 | 2;
+}
+
+export type AnlagenStatus = "Aktiv" | "In Bau" | "Gestoert" | "Ausser Betrieb";
+
+export interface PvAnlage extends FrappeDoc {
+  anlagen_name: string;
+  kunde: string;
+  standort?: string;
+  /** Installierte Nennleistung in kWp. */
+  leistung_kwp?: number;
+  inbetriebnahme?: string;
+  status?: AnlagenStatus;
+  modul_typ?: string;
+  wechselrichter?: string;
+  speicher_kwh?: number;
+}
+
+export interface PvErtrag extends FrappeDoc {
+  anlage: string;
+  datum: string;
+  ertrag_kwh?: number;
+  eigenverbrauch_kwh?: number;
+  einspeisung_kwh?: number;
+}
+
+export type StoerungStatus = "Offen" | "In Bearbeitung" | "Geschlossen";
+
+export interface PvStoerung extends FrappeDoc {
+  betreff: string;
+  anlage?: string;
+  status?: StoerungStatus;
+  prioritaet?: "Niedrig" | "Mittel" | "Hoch";
+  beschreibung?: string;
+  gemeldet_am?: string;
+}
+
+export interface SalesInvoice extends FrappeDoc {
+  customer: string;
+  posting_date?: string;
+  due_date?: string;
+  grand_total?: number;
+  outstanding_amount?: number;
+  currency?: string;
+  status?: string;
+}
+
+export interface FrappeFile extends FrappeDoc {
+  file_name: string;
+  file_url?: string;
+  file_size?: number;
+  attached_to_doctype?: string;
+  attached_to_name?: string;
+  is_private?: 0 | 1;
+}
+
+/**
+ * Frappe-Filter im Listenformat, z.B. [["status", "=", "Aktiv"]].
+ * Frappe erwartet das als JSON-String im Query-Parameter.
+ */
+export type FrappeFilter = [field: string, operator: string, value: unknown];
+
+export interface ListOptions {
+  fields?: string[];
+  filters?: FrappeFilter[];
+  orderBy?: string;
+  limit?: number;
+  start?: number;
+}
+
+/** Liest eine Liste von Dokumenten eines DocTypes. */
+export async function getList<T extends FrappeDoc>(
+  doctype: string,
+  options: ListOptions = {},
+): Promise<T[]> {
+  const { fields = ["*"], filters, orderBy, limit = 20, start = 0 } = options;
+
+  const result = await frappeFetch<{ data: T[] }>(
+    `/api/resource/${encodeURIComponent(doctype)}`,
+    {
+      query: {
+        fields: JSON.stringify(fields),
+        filters: filters ? JSON.stringify(filters) : undefined,
+        order_by: orderBy,
+        limit_page_length: limit,
+        limit_start: start,
+      },
+    },
+  );
+
+  return result.data ?? [];
+}
+
+/** Liest ein einzelnes Dokument anhand seines Frappe-Namens. */
+export async function getDoc<T extends FrappeDoc>(
+  doctype: string,
+  name: string,
+): Promise<T> {
+  const result = await frappeFetch<{ data: T }>(
+    `/api/resource/${encodeURIComponent(doctype)}/${encodeURIComponent(name)}`,
+  );
+  return result.data;
+}
+
+/** Zaehlt Dokumente, ohne sie alle zu laden. */
+export async function getCount(
+  doctype: string,
+  filters?: FrappeFilter[],
+): Promise<number> {
+  const result = await frappeFetch<{ message: number }>(
+    "/api/method/frappe.client.get_count",
+    {
+      query: {
+        doctype,
+        filters: filters ? JSON.stringify(filters) : undefined,
+      },
+    },
+  );
+  return result.message ?? 0;
+}
+
+/** Legt ein neues Dokument an (z.B. eine Stoerungsmeldung). */
+export async function createDoc<T extends FrappeDoc>(
+  doctype: string,
+  doc: Record<string, unknown>,
+): Promise<T> {
+  const result = await frappeFetch<{ data: T }>(
+    `/api/resource/${encodeURIComponent(doctype)}`,
+    { method: "POST", json: doc },
+  );
+  return result.data;
+}
+
+/** Aktualisiert Felder eines bestehenden Dokuments. */
+export async function updateDoc<T extends FrappeDoc>(
+  doctype: string,
+  name: string,
+  patch: Record<string, unknown>,
+): Promise<T> {
+  const result = await frappeFetch<{ data: T }>(
+    `/api/resource/${encodeURIComponent(doctype)}/${encodeURIComponent(name)}`,
+    { method: "PUT", json: patch },
+  );
+  return result.data;
+}

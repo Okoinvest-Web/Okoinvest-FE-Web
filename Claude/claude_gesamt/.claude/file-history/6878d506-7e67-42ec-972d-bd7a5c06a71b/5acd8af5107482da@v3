@@ -1,0 +1,48 @@
+import Link from "next/link";
+import { Suspense } from "react";
+import { Building2 } from "lucide-react";
+import { db } from "@/lib/data";
+import { relative } from "@/lib/format";
+import { Avatar, Badge, Empty, PageHeader, Table, TD } from "@/components/ui";
+import { ListToolbar } from "@/components/ListToolbar";
+
+export const metadata = { title: "Kunden" };
+
+export default async function CustomersPage({ searchParams }: PageProps<"/customers">) {
+  const sp = await searchParams;
+  const customers = await db().listCustomers({ search: typeof sp.q === "string" ? sp.q : undefined });
+
+  return (
+    <>
+      <PageHeader title="Kunden" subtitle="Privat-, Gewerbe- und Landwirtschaftskunden" />
+      <div>
+          <Suspense>
+            <ListToolbar count={customers.length} />
+          </Suspense>
+          {customers.length === 0 ? (
+            <Empty icon={Building2}>Keine Kunden gefunden.</Empty>
+          ) : (
+            <Table head={["Name", "Typ", "Gruppe", "Region", "E-Mail", "Geändert"]}>
+              {customers.map((c) => (
+                <tr key={c.name} className="transition-colors hover:bg-gray-50">
+                  <td className={TD}>
+                    <Link href={`/customers/${encodeURIComponent(c.name)}`} className="group flex items-center gap-3">
+                      <Avatar name={c.customer_name} />
+                      <span className="font-medium text-gray-900 group-hover:text-brand-700">{c.customer_name}</span>
+                    </Link>
+                  </td>
+                  <td className={TD}>
+                    <Badge value={c.customer_type} label={c.customer_type === "Company" ? "Firma" : "Privatperson"} tone={c.customer_type === "Company" ? "blue" : "violet"} />
+                  </td>
+                  <td className={TD}>{c.customer_group}</td>
+                  <td className={TD}>{c.territory}</td>
+                  <td className={TD}>{c.email_id ?? "–"}</td>
+                  <td className={`${TD} whitespace-nowrap text-gray-500`}>{relative(c.modified)}</td>
+                </tr>
+              ))}
+            </Table>
+          )}
+      </div>
+    </>
+  );
+}

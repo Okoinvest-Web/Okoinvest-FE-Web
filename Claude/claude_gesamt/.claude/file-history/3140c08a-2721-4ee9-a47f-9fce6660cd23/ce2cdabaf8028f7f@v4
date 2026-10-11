@@ -1,0 +1,180 @@
+export const meta = {
+  name: 'armee-masterplan-dach',
+  description: 'Agenten-Armee: 11 Teams (Länder, Technik, Strategie, Conversion, Marketing, SEO/SEM, Daten, Recht & Qualität) mit Team-Leads und Strategie-Rat erstellen den Masterplan DACH',
+  phases: [
+    { title: 'Einsatzplan', detail: 'Besetzung aus roster.json laden' },
+    { title: 'Teams', detail: 'Fachexperten recherchieren parallel, Team-Lead bündelt je Team' },
+    { title: 'Rekrutierung', detail: 'Personalchef rekrutiert neue Experten und Teams für Lücken, Tiefe und Features – Runde für Runde bis zum Gipfel' },
+    { title: 'Strategie-Rat', detail: 'Masterplan, Red Team, finaler Masterplan mit Umsetzungswellen' },
+  ],
+}
+
+const ROOT = 'C:/Users/SALEADMIN/Downloads/Oekoinvest-Web'
+const SHOTS = 'C:/Users/SALEAD~1/AppData/Local/Temp/claude/c--Users-SALEADMIN-Downloads-Oekoinvest-Web/3140c08a-2721-4ee9-a47f-9fce6660cd23/scratchpad/wf5'
+
+phase('Einsatzplan')
+const plan = await agent(`Lies die Datei C:/Users/SALEADMIN/claude-browser/armee/roster.json und gib das Array "agenten" UNVERÄNDERT zurück (alle Felder label, team, rolle, auftrag, art exakt wie in der Datei). Nichts weglassen, nichts umformulieren.`, {
+  label: 'Leitstelle · Einsatzplan laden', phase: 'Einsatzplan', effort: 'low',
+  schema: { type: 'object', properties: { agenten: { type: 'array', items: { type: 'object', properties: { label: { type: 'string' }, team: { type: 'string' }, rolle: { type: 'string' }, auftrag: { type: 'string' }, art: { type: 'string' } }, required: ['label', 'team', 'rolle', 'auftrag', 'art'] } } }, required: ['agenten'] },
+})
+const ALLE = plan.agenten
+const TEAMS = [...new Set(ALLE.filter(a => a.art === 'analyst').map(a => a.team))]
+log(`${ALLE.length} Agenten in ${TEAMS.length} Teams + Strategie-Rat geladen`)
+
+const KONTEXT = `UNTERNEHMEN: ÖkoInvest GmbH, Projektgesellschaft der ÖKOVOLT Gruppe, aktiv in Deutschland, Österreich und der Schweiz. Projektentwicklung für Freiflächen-PV, Agri-PV, Solarcarports, Großspeicher; Flächenverpachtung (Eigentümer, Landwirte, Gemeinden), Projektbörse (Projektrechte für Investoren), Reststrom-Pool (Strombeschaffung für den Mittelstand), Software und Betriebsführung für Energiegemeinschaften (AT, ElWG), Genossenschaft, Portal mit ~177 Seiten (CRM, KYC, Finanzierung, Closing, Dealroom, EG-Abrechnung).
+WEBSITE: Next.js 15 unter ${ROOT} (src/app = Seiten, src/components, src/lib/invest/markt.js = alle Marktannahmen, src/lib/rechner = Rechenlogik, src/data/regionen = 26 Regionsseiten, src/content/ratgeber, docs/ = Briefings). Läuft lokal unter http://localhost:3100. ~70 öffentliche Seiten, 16 Rechner, Ratgeber, Lexikon, englische Seiten; frisch überarbeitet (Design, Animation, Conversion, technisches SEO).
+ZIEL DES INHABERS: die stärkste Website im DACH-Raum in diesem Feld – meiste Leads, Anfragen, Registrierungen, Traffic; ein Vorsprung, den Wettbewerber nicht aufholen können; Rechner erzeugen Leads (z. B. PDF-Bericht gegen Name, E-Mail, Telefon); laufend aktualisierter Vergleich der Gewerbestrompreise je Bundesland/Region; Reichweite der großen Energieversorger intelligent nutzen; DE, AT und CH strikt getrennt (eigene Inhalte, Rechenlogik, Rechtslage). Die Prozesse dahinter müssen perfekt sein: Vertrieb bekommt qualifizierte Leads und Anfragen; Marketing steuert Newsletter, Presse/Newsroom, Kampagnen und Inhalte selbst mit modernster Technologie; Compliance braucht ein Hinweisgebersystem; die Rechtsabteilung verwaltet AGB und Bedingungen je Land; Besucher sollen Wissen und Freude finden und gern lange bleiben und wiederkommen (durch echten Nutzen, nicht durch Manipulation); UI/UX-Führung perfekt auf Anfrage-Funnels ausgerichtet, mit Animation und Interaktion. Ziel ist ein Vorsprung, der für Wettbewerber nur mit sehr viel Wissen, Zeit und Geld einholbar wäre.
+LEITPLANKEN (verbindlich, auch für Ideen):
+- Nur legale und ehrliche Wege: keine Dark Patterns, kein erfundener Social Proof, keine Fake-Zahlen; kein Scraping gegen Nutzungsbedingungen oder Datenbankrechte; keine Markenrechtsverletzungen; Vergleichswerbung nur objektiv, nachprüfbar, aktuell; DSGVO/revDSG bei Leads.
+- „Power der Energieversorger nutzen“ = legitime Hebel (Partnerschaften, Kooperationen, Inhalte mit Mehrwert zur Versorger-Suchnachfrage, öffentliche Daten, Verbände) – nicht kopieren, nicht täuschen, keine Marken missbrauchen.
+- Ehrlich bewerten: Wirkung, Aufwand, Kosten, rechtlicher Prüfbedarf.
+ARBEITSWEISE: NUR LESEN – keine Dateien im Projekt ändern. Recherchiere aktiv im Web (WebSearch/WebFetch, ggf. per ToolSearch laden) und im Code; nenne Quellen (URL). Rechner hat nur 8 GB RAM: Screenshots nur wenn deine Rolle es braucht (cd ~/claude-browser && node shot.mjs <url> ${SHOTS}/<kürzel> 1440,390 --tiles, eine Seite pro Aufruf). Dev-Server nicht anfassen. Umfang: gründlich, zielgerichtet (etwa 25–50 Werkzeugaufrufe).`
+
+const ERGEBNIS = {
+  type: 'object',
+  properties: {
+    kernbefunde: { type: 'array', items: { type: 'string' } },
+    initiativen: { type: 'array', items: { type: 'object', properties: {
+      titel: { type: 'string' }, beschreibung: { type: 'string' }, land: { type: 'string', enum: ['DE', 'AT', 'CH', 'DACH'] },
+      wirkung: { type: 'string', enum: ['sehr hoch', 'hoch', 'mittel', 'niedrig'] }, aufwand: { type: 'string', enum: ['klein', 'mittel', 'groß'] },
+      alleinstellung: { type: 'string' }, risiko: { type: 'string' }, messgroesse: { type: 'string' },
+    }, required: ['titel', 'beschreibung', 'land', 'wirkung', 'aufwand', 'alleinstellung', 'risiko', 'messgroesse'] } },
+    fehler_im_bestand: { type: 'array', items: { type: 'string' }, description: 'konkrete falsche/veraltete/vermischte Aussagen oder Mängel auf der heutigen Website mit Datei/Seite' },
+    quick_wins: { type: 'array', items: { type: 'string' } },
+    warnungen: { type: 'array', items: { type: 'string' } },
+    quellen: { type: 'array', items: { type: 'string' } },
+  },
+  required: ['kernbefunde', 'initiativen', 'fehler_im_bestand', 'quick_wins', 'warnungen', 'quellen'],
+}
+const fmt = (r) => `### ${r.label}
+Kernbefunde:\n${r.kernbefunde.map(x => '- ' + x).join('\n')}
+Initiativen:\n${r.initiativen.map(i => `- [${i.land}|Wirkung ${i.wirkung}|Aufwand ${i.aufwand}] ${i.titel}: ${i.beschreibung} | Alleinstellung: ${i.alleinstellung} | Risiko: ${i.risiko} | Messung: ${i.messgroesse}`).join('\n')}
+Fehler im Bestand:\n${r.fehler_im_bestand.map(x => '- ' + x).join('\n')}
+Quick Wins:\n${r.quick_wins.map(x => '- ' + x).join('\n')}
+Warnungen:\n${r.warnungen.map(x => '- ' + x).join('\n')}
+Quellen: ${r.quellen.slice(0, 10).join(' ; ')}`
+
+phase('Teams')
+const teamBerichte = await pipeline(
+  TEAMS,
+  (team) => parallel(ALLE.filter(a => a.team === team && a.art === 'analyst').map(a => () =>
+    agent(`${KONTEXT}\n\nDEINE ROLLE: ${a.rolle} im ${team} – du gehörst zu den Besten der Welt in deinem Fach.\nAUFTRAG: ${a.auftrag}\n\nLiefere strukturiert: Kernbefunde mit Belegen, 4–10 konkrete Initiativen (Land, Wirkung, Aufwand, Alleinstellung, Risiko, Messgröße), Fehler im heutigen Bestand (mit Datei/Seite), Quick Wins, Warnungen, Quellen.`,
+      { label: a.label, phase: 'Teams', schema: ERGEBNIS }).then(r => r && { label: a.label, ...r })
+  )),
+  (mitglieder, team) => {
+    const ok = mitglieder.filter(Boolean)
+    return agent(`${KONTEXT}\n\nDu bist Team-Lead des Teams „${team}“. Deine ${ok.length} Fachexperten haben geliefert:\n\n${ok.map(fmt).join('\n\n')}\n\nBündle das Team-Ergebnis für den Strategie-Rat (max. 120 Zeilen): 1) die 5–8 stärksten Initiativen des Teams, priorisiert, mit Land, Wirkung, Aufwand, Alleinstellung, Risiko; Dubletten zusammengeführt, Widersprüche aufgelöst. 2) Kritische Fehler im Bestand (Datei/Seite), die sofort behoben werden sollten. 3) Quick Wins. 4) Rote Linien/Warnungen. Prüfe 2–3 der wichtigsten Behauptungen deiner Experten kurz selbst nach (Code oder Web).`,
+      { label: `${team} · Team-Lead`, phase: 'Teams' }).then(t => ({ team, bericht: t, experten: ok.length }))
+  },
+)
+const berichte = teamBerichte.filter(Boolean)
+log(`${berichte.length}/${TEAMS.length} Teams abgeschlossen`)
+let dossier = berichte.map(b => `## ${b.team} (${b.experten} Experten)\n${b.bericht}`).join('\n\n')
+
+// Personalchef: rekrutiert Runde für Runde neue Experten/Teams, bis keine wesentlichen Lücken mehr bestehen.
+phase('Rekrutierung')
+const REKRUTEN = {
+  type: 'object',
+  properties: {
+    gipfel_erreicht: { type: 'boolean', description: 'true, wenn keine wesentliche Lücke an Fachwissen, Tiefe oder Feature-Ideen mehr besteht' },
+    begruendung: { type: 'string' },
+    neue_experten: { type: 'array', maxItems: 15, items: { type: 'object', properties: {
+      team: { type: 'string', description: 'bestehendes oder neues Team, z. B. „Produkt & Features“, „Team Österreich“' },
+      rolle: { type: 'string' }, auftrag: { type: 'string', description: 'präziser Rechercheauftrag, der auf den bisherigen Ergebnissen aufbaut' },
+    }, required: ['team', 'rolle', 'auftrag'] } },
+  },
+  required: ['gipfel_erreicht', 'begruendung', 'neue_experten'],
+}
+const bekannteRollen = new Set(ALLE.map(a => a.label))
+
+// Pflicht-Verstärkung: Dokumentation nach Normen (vom Inhaber ausdrücklich gewünscht)
+const DOKU_TEAM = 'Dokumentation & Normen'
+const DOKU = [
+  ['ISO 9001 Qualitätsmanagement-Dokumentation', 'Welche dokumentierten Informationen verlangt ISO 9001:2015 für Entwicklung und Betrieb dieser Website und Plattform (Prozesse, Verantwortlichkeiten, Freigaben, Änderungslenkung, Nachweise, Lieferanten wie Hosting/KI-Anbieter)? Was existiert in docs/, CHANGELOG.md, README.md; Lückenliste und Dokumentenstruktur (Handbuch, Verfahrensanweisungen, Arbeitsanweisungen, Formulare).'],
+  ['ISO/IEC 27001 Informationssicherheit', 'ISMS-Dokumentation nach ISO/IEC 27001:2022 und Annex A für Website, Portal und Lead-Daten: Geltungsbereich, Risikobehandlung, Statement of Applicability, Richtlinien (Zugriff, Kryptografie, Logging, Backup, Lieferanten, sichere Entwicklung A.8.25–A.8.31), Abgleich mit dem Code (src/lib/plattform, middleware, hashkette, Rechte); Lücken und Vorlagen. Bezug zu NIS2/DSGVO.'],
+  ['Softwarequalität ISO/IEC 25010 & Code-Dokumentation', 'Code-Dokumentation nach anerkannten Standards: JSDoc/Typdokumentation, Modul-READMEs, API-Dokumentation (docs/API.md), Kommentarqualität, Testdokumentation; Bewertung nach den Qualitätsmerkmalen ISO/IEC 25010 (Wartbarkeit, Sicherheit, Zuverlässigkeit, Benutzbarkeit, Übertragbarkeit); Stichproben im Code, Lückenliste, Regeln und Automatisierung (Lint-Regeln, generierte Doku).'],
+  ['Architektur-Dokumentation arc42 & ADR', 'Architekturdokumentation nach arc42 (Kontext, Bausteine, Laufzeit, Verteilung, Querschnitt, Entscheidungen, Risiken) und Architecture Decision Records für die großen Entscheidungen (Frappe/Demo-Backend, Ländertrennung, Motion-System, Preisradar-Daten); was existiert in docs/, was fehlt; Gliederung und erste Inhalte als Vorschlag.'],
+  ['Technische Redaktion & Betriebshandbuch', 'Betriebs- und Redaktionshandbücher: Deployment, Go-Live (Backend-Import/GO-LIVE.md), Notfall/Wiederanlauf, Inhalte pflegen je Land, Rechner-Annahmen aktualisieren (markt.js), Freigabeprozesse; Anwenderdoku fürs Portal; Struktur nach ISO/IEC/IEEE 26514/82079-Grundsätzen, Zielgruppen, Lückenliste.'],
+]
+const dokuErg = (await parallel(DOKU.map(([rolle, auftr]) => () =>
+  agent(`${KONTEXT}\n\nDEINE ROLLE: ${rolle} im Team ${DOKU_TEAM} – du gehörst zu den Besten der Welt in deinem Fach.\nAUFTRAG: ${auftr}\n\nLiefere strukturiert: Kernbefunde mit Belegen (Normabschnitte, Dateien), 4–10 konkrete Initiativen (Land=DACH sofern nicht länderspezifisch, Wirkung, Aufwand, Alleinstellung, Risiko, Messgröße), Fehler/Lücken im heutigen Bestand (mit Datei), Quick Wins, Warnungen, Quellen.`,
+    { label: `${DOKU_TEAM} · ${rolle}`, phase: 'Rekrutierung', schema: ERGEBNIS }).then(r => r && { label: `${DOKU_TEAM} · ${rolle}`, ...r })
+))).filter(Boolean)
+DOKU.forEach(([rolle]) => bekannteRollen.add(`${DOKU_TEAM} · ${rolle}`))
+const dokuLead = await agent(`${KONTEXT}\n\nDu bist Team-Lead des Teams „${DOKU_TEAM}“. Bündle für den Strategie-Rat (max. 100 Zeilen): Ziel-Dokumentenlandschaft (Normen, Dokumente, Verantwortliche, Ablageort docs/), priorisierte Lücken, was Agenten in Welle 1 schreiben können (Arbeitspakete), was nur Menschen/Zertifizierer leisten können, Aufwand.\n\n${dokuErg.map(fmt).join('\n\n')}`,
+  { label: `${DOKU_TEAM} · Team-Lead`, phase: 'Rekrutierung' })
+dossier += `\n\n## ${DOKU_TEAM} (${dokuErg.length} Experten)\n${dokuLead}`
+
+const MAX_RUNDEN = 4
+for (let runde = 1; runde <= MAX_RUNDEN; runde++) {
+  const auftrag = await agent(`${KONTEXT}
+
+Du bist der Personalchef und Chef-Stratege der Agenten-Armee. Dein Ziel: die Website auf den Gipfel bringen – maximale Tiefe, keine Lücke an Fachwissen, die mächtigsten Features im DACH-Raum. Bisherige Rollen: ${[...bekannteRollen].join('; ')}.
+
+Bisherige Ergebnisse (Team-Berichte und Verstärkungen):
+${dossier}
+
+Runde ${runde} von höchstens ${MAX_RUNDEN}. Entscheide:
+- Welche Fachbereiche, Länder-Tiefen (z. B. je Bundesland/Kanton), Zielgruppen oder Spezialthemen fehlen noch? Wo widersprechen sich Teams und braucht es einen Schiedsexperten?
+- Welche FEATURES und Produktideen sind noch nicht ausgearbeitet (z. B. Werkzeuge, Datenprodukte, Portalfunktionen, Interaktionen), die einen Vorsprung schaffen, den Wettbewerber nur mit viel Wissen, Zeit und Geld einholen könnten?
+- Rekrutiere dafür bis zu 15 neue Experten mit präzisem Auftrag, der auf dem bisher Gefundenen aufbaut (nicht wiederholen, was schon da ist). Bevorzuge Tiefe vor Breite.
+Setze gipfel_erreicht=true und liefere keine Experten, wenn der Nutzen einer weiteren Runde gering wäre. Leitplanken (legal, ehrlich, keine Dark Patterns) gelten auch für neue Rollen.`,
+    { label: `Leitstelle · Personalchef Runde ${runde}`, phase: 'Rekrutierung', schema: REKRUTEN })
+  if (!auftrag || auftrag.gipfel_erreicht || !auftrag.neue_experten.length) {
+    log(`Personalchef Runde ${runde}: Gipfel erreicht – ${auftrag ? auftrag.begruendung.slice(0, 200) : 'keine Antwort'}`)
+    break
+  }
+  log(`Personalchef Runde ${runde}: ${auftrag.neue_experten.length} neue Experten rekrutiert`)
+  const neue = auftrag.neue_experten.map(e => ({ ...e, label: `${e.team} · ${e.rolle}` }))
+  neue.forEach(e => bekannteRollen.add(e.label))
+  const ergebnisse = (await parallel(neue.map(e => () =>
+    agent(`${KONTEXT}\n\nDEINE ROLLE: ${e.rolle} im Team ${e.team} – vom Personalchef in Runde ${runde} rekrutiert, du gehörst zu den Besten der Welt in deinem Fach.\nAUFTRAG: ${e.auftrag}\n\nBaue auf den bisherigen Ergebnissen auf, wiederhole nichts Bekanntes. Liefere strukturiert: Kernbefunde mit Belegen, 4–10 konkrete Initiativen (Land, Wirkung, Aufwand, Alleinstellung, Risiko, Messgröße), Fehler im heutigen Bestand (mit Datei/Seite), Quick Wins, Warnungen, Quellen.`,
+      { label: e.label, phase: 'Rekrutierung', schema: ERGEBNIS }).then(r => r && { label: e.label, ...r })
+  ))).filter(Boolean)
+  const verdichtet = await agent(`${KONTEXT}\n\nDu bist Team-Lead der Verstärkung aus Runde ${runde}. Bündle die Ergebnisse der ${ergebnisse.length} neu rekrutierten Experten für den Strategie-Rat (max. 100 Zeilen): stärkste Initiativen und Features priorisiert, Fehler im Bestand, Quick Wins, Warnungen.\n\n${ergebnisse.map(fmt).join('\n\n')}`,
+    { label: `Verstärkung · Team-Lead Runde ${runde}`, phase: 'Rekrutierung' })
+  dossier += `\n\n## Verstärkung Runde ${runde} (${ergebnisse.length} Experten: ${neue.map(e => e.rolle).join(', ')})\n${verdichtet}`
+}
+
+phase('Strategie-Rat')
+const entwurf = await agent(`${KONTEXT}
+
+Du bist Vorsitz des Strategie-Rats (Weltklasse-Strategieberatung). Hier die gebündelten Berichte von ${berichte.length} Teams:
+
+${dossier}
+
+Verdichte zu einem MASTERPLAN (deutsch, klar, entscheidungsreif):
+1. Strategische Leitidee in 3 Sätzen + Positionierung je Land (DE/AT/CH getrennt).
+2. Die 8–12 Burggraben-Initiativen, die zusammen einen schwer einholbaren Vorsprung erzeugen – je mit Begründung, Abhängigkeiten, Aufwand, Messgröße.
+3. Sofort zu behebende Fehler im Bestand (aus den Teams).
+4. Architekturentscheidung Ländertrennung (Empfehlung + Migrationsweg ohne SEO-Verlust).
+5. Lead-System end-to-end (Magneten → Formular → CRM → Vertrieb), rechtskonform.
+6. Preisradar Gewerbestrom: was legal machbar ist, Datenquellen je Land, was nicht.
+7. Reichweite: SEO/GEO/SEM/Social/PR/Partnerschaften je Land.
+8. Umsetzungswellen (Welle 1: 1–2 Wochen mit Agenten-Teams, Welle 2, Welle 3) mit konkreten Arbeitspaketen (Dateien/Bereiche) ohne Dateikonflikte.
+9. Was ausdrücklich NICHT gemacht wird und offene Entscheidungen für den Inhaber.
+10. Realistische Erwartung für 3/12/24 Monate – ehrlich, ohne Platz-1- oder Umsatzgarantien.`, { label: 'Strategie-Rat · Masterplan', phase: 'Strategie-Rat' })
+
+const kritik = await agent(`${KONTEXT}
+
+Du bist das Red Team (ehemalige Wettbewerber, Anwälte, CFO, CTO, skeptischer Investor). Greife diesen Masterplan schonungslos an:
+
+${entwurf}
+
+Prüfe: Rechtsrisiken (UWG, Marken, DSGVO, Datenbankrecht, KMG/AltFG), Datenquellen wirklich verfügbar und lizenziert, Machbarkeit mit dem vorhandenen Code (stichprobenhaft im Repo ${ROOT} prüfen) und 8-GB-Entwicklungsrechner, Thin-Content-Risiko bei programmatischem SEO, Abhängigkeit von Versorgern, Kosten (Ads, Daten, Pflege), Wartbarkeit, Ehrlichkeit, Priorisierung (was bringt am schnellsten echte Leads?). Nutze Websuche für Gegenbelege.
+Rückgabe: nummerierte Schwachstellen (kritisch/hoch/mittel) mit Verbesserungsvorschlag, die 3 Initiativen zum Streichen/Verschieben und die 3 unterschätzten.`, { label: 'Strategie-Rat · Red Team', phase: 'Strategie-Rat' })
+
+const final = await agent(`${KONTEXT}
+
+Du bist Vorsitz des Strategie-Rats. Überarbeite den Masterplan mit der Kritik des Red Teams (übernimm Berechtigtes, begründe Widerspruch kurz).
+
+MASTERPLAN-ENTWURF:
+${entwurf}
+
+RED-TEAM-KRITIK:
+${kritik}
+
+(a) Schreibe den finalen Masterplan als Markdown nach ${ROOT}/docs/MASTERPLAN-DACH.md (einzige Datei, die du anlegen darfst). Gliederung wie der Entwurf plus „Entscheidungen für den Inhaber“ (Ja/Nein-Fragen mit Empfehlung) und „Welle 1 – Arbeitspakete für die Agenten-Teams“ (je Paket: Ziel, Seiten/Dateien, Abnahmekriterien, Abhängigkeiten, rechtliche Prüfpunkte), parallel ohne Dateikonflikte baubar.
+(b) Antworte mit einer kompakten Zusammenfassung (max. 60 Zeilen): Leitidee, Top-Burggräben, sofort zu behebende Fehler, Welle 1, Entscheidungen für den Inhaber, größte Risiken.`, { label: 'Strategie-Rat · Masterplan final', phase: 'Strategie-Rat' })
+
+return { teams: berichte.length, final }

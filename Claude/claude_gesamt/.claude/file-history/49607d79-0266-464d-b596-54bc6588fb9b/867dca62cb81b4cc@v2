@@ -1,0 +1,59 @@
+import { defineStore } from 'pinia'
+import { ref, watch } from 'vue'
+
+const SCHLUESSEL_MANDANT = 'netops:tenant'
+const SCHLUESSEL_THEMA = 'netops:theme'
+
+/**
+ * Oberflächenzustand, der über Seiten hinweg gilt: gewählter Mandant und
+ * Farbschema. Beides überlebt einen Reload.
+ */
+export const useUiStore = defineStore('ui', () => {
+  const mandant = ref(lies(SCHLUESSEL_MANDANT, ''))
+  const thema = ref(lies(SCHLUESSEL_THEMA, 'light'))
+
+  watch(mandant, (wert) => schreibe(SCHLUESSEL_MANDANT, wert))
+
+  watch(
+    thema,
+    (wert) => {
+      schreibe(SCHLUESSEL_THEMA, wert)
+      // frappe-ui und die Viz-Token hängen beide an data-theme.
+      if (typeof document !== 'undefined') {
+        document.documentElement.dataset.theme = wert
+      }
+    },
+    { immediate: true },
+  )
+
+  function wechsleThema() {
+    thema.value = thema.value === 'dark' ? 'light' : 'dark'
+  }
+
+  return { mandant, thema, wechsleThema }
+})
+
+/**
+ * Gewählter Mandant, auch ausserhalb einer Komponente lesbar.
+ * Der Fetcher in src/api/index.js braucht ihn, hat aber keinen Zugriff
+ * auf den Pinia-Kontext.
+ */
+export function aktuellerMandant() {
+  return lies(SCHLUESSEL_MANDANT, '') || null
+}
+
+function lies(schluessel, standard) {
+  try {
+    return localStorage.getItem(schluessel) ?? standard
+  } catch {
+    return standard
+  }
+}
+
+function schreibe(schluessel, wert) {
+  try {
+    localStorage.setItem(schluessel, wert)
+  } catch {
+    // Privater Modus: die Wahl gilt dann nur für diese Sitzung.
+  }
+}

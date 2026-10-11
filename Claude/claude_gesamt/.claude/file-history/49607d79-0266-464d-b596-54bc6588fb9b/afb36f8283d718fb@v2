@@ -1,0 +1,253 @@
+<template>
+  <div>
+    <PageHeader title="Verbrauchsmaterial" :subtitle="untertitel">
+      <template #actions>
+        <FormControl v-model="nurKnapp" type="select" :options="filterOptionen" />
+      </template>
+    </PageHeader>
+
+    <div class="p-6">
+      <div class="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <StatCard
+          v-for="kachel in kacheln"
+          :key="kachel.label"
+          :label="kachel.label"
+          :wert="kachel.wert"
+          :hinweis="kachel.hinweis"
+          :level="kachel.level"
+        />
+      </div>
+
+      <div class="grid grid-cols-1 gap-6 xl:grid-cols-3">
+        <div class="xl:col-span-2">
+          <DataTable
+            :columns="spalten"
+            :rows="liste.data || []"
+            :loading="liste.loading"
+            empty-text="Kein Artikel mit diesem Filter."
+            :on-row-click="(zeile) => (gewaehlt = zeile.name)"
+          >
+            <template #zelle-item_name="{ zeile }">
+              <span class="block font-medium text-ink-gray-9">{{ zeile.item_name }}</span>
+              <span class="block font-mono text-sm text-ink-gray-5">{{ zeile.sku }}</span>
+            </template>
+            <template #zelle-bestand="{ zeile }">
+              <!-- Balken gegen den Mindestbestand: die Zahl allein sagt
+                   nicht, ob 8 viel oder wenig ist. -->
+              <div class="flex items-center gap-2">
+                <div class="h-2 w-24 shrink-0" style="background: var(--viz-neutral-soft)">
+                  <div
+                    class="h-full rounded-r"
+                    :style="{
+                      width: Math.min(100, balken(zeile)) + '%',
+                      background: balkenFarbe(zeile.level),
+                    }"
+                  />
+                </div>
+                <span class="tabular-nums text-ink-gray-8">
+                  {{ zeile.stock_qty }}
+                  <span class="text-ink-gray-5">/ {{ zeile.min_qty }}</span>
+                </span>
+              </div>
+            </template>
+            <template #zelle-stock_value_cents="{ zeile }">
+              {{ euro(zeile.stock_value_cents) }}
+            </template>
+            <template #zelle-befund="{ zeile }">
+              <StatusDot :level="zeile.level" :text="zeile.reason || 'ausreichend'" klein />
+            </template>
+          </DataTable>
+
+          <p class="mt-3 text-xs text-ink-gray-4">
+            Der Balken zeigt den Bestand im Verhältnis zum Mindestbestand. Voll bedeutet: doppelter
+            Mindestbestand oder mehr.
+          </p>
+        </div>
+
+        <!-- Buchen -->
+        <div>
+          <section class="rounded-lg border border-outline-gray-2 bg-surface-white p-4">
+            <h2 class="mb-3 text-base font-semibold text-ink-gray-8">Bestand buchen</h2>
+            <form class="space-y-3" @submit.prevent="buchen">
+              <FormControl
+                v-model="gewaehlt"
+                label="Artikel"
+                type="select"
+                :options="artikelOptionen"
+              />
+              <FormControl v-model="art" label="Art" type="select" :options="artOptionen" />
+              <FormControl v-model="menge" label="Menge" type="number" min="1" />
+              <FormControl
+                v-model="grund"
+                label="Grund"
+                type="text"
+                placeholder="Rack-Umbau A.01"
+              />
+              <Button
+                variant="solid"
+                type="submit"
+                class="w-full"
+                :loading="bewegung.loading"
+                :disabled="!gewaehlt || !grund"
+              >
+                Buchen
+              </Button>
+            </form>
+            <p class="mt-2 text-xs text-ink-gray-5">
+              Zu- und Abgang werden als positive Menge erfasst. Nur eine Korrektur darf negativ sein
+              – sonst ließe sich eine Entnahme als Zugang tarnen.
+            </p>
+          </section>
+
+          <section class="mt-6">
+            <h2 class="mb-3 text-base font-semibold text-ink-gray-8">Letzte Bewegungen</h2>
+            <DataTable
+              :columns="bewegungSpalten"
+              :rows="bewegungen.data || []"
+              :loading="bewegungen.loading"
+              empty-text="Keine Bewegung erfasst."
+            >
+              <template #zelle-movement_kind="{ zeile }">
+                <StatusDot
+                  :level="zeile.movement_kind === 'out' ? 'warning' : 'ok'"
+                  :text="ART[zeile.movement_kind]"
+                  klein
+                />
+              </template>
+              <template #zelle-moved_on="{ zeile }">
+                {{ String(zeile.moved_on).slice(0, 10) }}
+              </template>
+            </DataTable>
+          </section>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed, ref, watch } from 'vue'
+import { Button, FormControl, createResource, toast } from 'frappe-ui'
+import PageHeader from '@/components/PageHeader.vue'
+import DataTable from '@/components/DataTable.vue'
+import StatCard from '@/components/StatCard.vue'
+import StatusDot from '@/components/StatusDot.vue'
+import { balkenFarbe, euro, fehlerText } from '@/viz'
+
+const ART = { in: 'Zugang', out: 'Entnahme', correction: 'Korrektur' }
+
+const nurKnapp = ref('')
+const gewaehlt = ref('')
+const art = ref('out')
+const menge = ref(1)
+const grund = ref('')
+
+const liste = createResource({
+  url: 'netops.api.inventar.consumable_list',
+  makeParams: () => ({ below_min: nurKnapp.value === 'knapp' }),
+  auto: true,
+})
+
+const bewegungen = createResource({
+  url: 'netops.api.inventar.stock_movements',
+  params: { limit: 12 },
+  auto: true,
+})
+
+const bewegung = createResource({ url: 'netops.api.inventar.stock_move' })
+
+watch(nurKnapp, () => liste.fetch())
+
+const filterOptionen = [
+  { label: 'Alle Artikel', value: '' },
+  { label: 'Nur unter Mindestbestand', value: 'knapp' },
+]
+
+const artOptionen = [
+  { label: 'Entnahme', value: 'out' },
+  { label: 'Zugang', value: 'in' },
+  { label: 'Korrektur', value: 'correction' },
+]
+
+const artikelOptionen = computed(() => [
+  { label: 'Artikel wählen …', value: '' },
+  ...(liste.data || []).map((c) => ({
+    label: c.item_name + ' (' + c.stock_qty + ' ' + c.unit + ')',
+    value: c.name,
+  })),
+])
+
+const spalten = [
+  { key: 'item_name', label: 'Artikel', width: '260px' },
+  { key: 'bestand', label: 'Bestand / Minimum', width: '220px' },
+  { key: 'unit', label: 'Einheit', muted: true, width: '130px' },
+  { key: 'site_name', label: 'Lager', muted: true, width: '170px' },
+  { key: 'stock_value_cents', label: 'Wert', align: 'right', numeric: true, width: '120px' },
+  { key: 'befund', label: 'Befund', width: '220px' },
+]
+
+const bewegungSpalten = [
+  { key: 'moved_on', label: 'Datum', numeric: true, muted: true, width: '110px' },
+  { key: 'item_name', label: 'Artikel' },
+  { key: 'movement_kind', label: 'Art', width: '130px' },
+  { key: 'qty', label: 'Menge', align: 'right', numeric: true, width: '80px' },
+]
+
+const kacheln = computed(() => {
+  const l = liste.data || []
+  const knapp = l.filter((c) => c.below_min)
+  const leer = l.filter((c) => c.stock_qty <= 0)
+  return [
+    { label: 'Artikel', wert: l.length, level: 'neutral' },
+    {
+      label: 'Unter Mindestbestand',
+      wert: knapp.length,
+      hinweis: knapp.length ? 'nachbestellen' : 'keine',
+      level: knapp.length ? 'warning' : 'ok',
+    },
+    {
+      label: 'Aufgebraucht',
+      wert: leer.length,
+      hinweis: leer.length ? 'blockiert Arbeit' : 'keine',
+      level: leer.length ? 'critical' : 'ok',
+    },
+    {
+      label: 'Lagerwert',
+      wert: euro(l.reduce((s, c) => s + c.stock_value_cents, 0)),
+      level: 'neutral',
+    },
+  ]
+})
+
+const untertitel = computed(() => {
+  const l = liste.data || []
+  const knapp = l.filter((c) => c.below_min).length
+  return l.length + ' Artikel' + (knapp ? ' · ' + knapp + ' unter Mindestbestand' : '')
+})
+
+function balken(zeile) {
+  const minimum = zeile.min_qty || 1
+  return (zeile.stock_qty / (minimum * 2)) * 100
+}
+
+async function buchen() {
+  try {
+    const ergebnis = await bewegung.submit({
+      consumable: gewaehlt.value,
+      kind: art.value,
+      qty: Number(menge.value),
+      reason: grund.value,
+    })
+    toast.create({
+      message:
+        'Neuer Bestand: ' + ergebnis.stock_qty + (ergebnis.below_min ? ' – unter Minimum' : ''),
+      type: ergebnis.below_min ? 'warning' : 'success',
+    })
+    grund.value = ''
+    menge.value = 1
+    await Promise.all([liste.fetch(), bewegungen.fetch()])
+  } catch (fehler) {
+    toast.create({ message: fehlerText(fehler), type: 'error' })
+  }
+}
+</script>

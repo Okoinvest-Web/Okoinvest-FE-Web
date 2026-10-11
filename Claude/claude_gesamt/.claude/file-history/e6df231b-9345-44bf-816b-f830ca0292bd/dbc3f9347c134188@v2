@@ -1,0 +1,73 @@
+/**
+ * Bedingte Sichtbarkeit von Prüfpunkten (FA-015).
+ *
+ * Syntax im Vorlagenfeld `sichtbar_wenn`: `<Prüfpunktnummer> <Operator> <Wert>`,
+ * z. B. `3.1 == Mangel schwer` oder `6.1 > 0`.
+ *
+ * Entscheidend für den Zweifelsfall: Lässt sich eine Bedingung nicht auswerten
+ * — unbekannte Syntax, fehlender Bezugspunkt —, wird der Prüfpunkt **gezeigt**.
+ * Ein zu viel angezeigter Prüfpunkt kostet den Techniker einen Wisch; ein zu
+ * Unrecht ausgeblendeter Pflichtprüfpunkt fehlt im Protokoll.
+ */
+
+export type Operator = '==' | '!=' | '>' | '<' | '>=' | '<='
+
+export interface Bezugswert {
+  /** Bewertung oder Text des referenzierten Prüfpunkts. */
+  text?: string | null
+  zahl?: number | null
+}
+
+const MUSTER = /^(\S+)\s*(==|!=|>=|<=|>|<)\s*(.+)$/
+
+export interface Bedingung {
+  nummer: string
+  operator: Operator
+  wert: string
+}
+
+/** Zerlegt eine Bedingung; `null`, wenn die Syntax nicht passt. */
+export function bedingungLesen(ausdruck?: string | null): Bedingung | null {
+  const treffer = ausdruck?.trim().match(MUSTER)
+  if (!treffer) return null
+  return { nummer: treffer[1], operator: treffer[2] as Operator, wert: treffer[3].trim() }
+}
+
+/** Wertet eine gelesene Bedingung gegen den Bezugsprüfpunkt aus. */
+export function bedingungErfuellt(bedingung: Bedingung, bezug: Bezugswert | undefined): boolean {
+  // Kein Bezugswert vorhanden: im Zweifel anzeigen.
+  if (!bezug) return true
+
+  const istText = (bezug.text ?? '').trim().toLowerCase()
+  const sollText = bedingung.wert.toLowerCase()
+  const istZahl = bezug.zahl ?? Number.NaN
+  const sollZahl = Number(bedingung.wert)
+
+  switch (bedingung.operator) {
+    case '==':
+      return istText === sollText
+    case '!=':
+      return istText !== sollText
+    case '>':
+      return istZahl > sollZahl
+    case '<':
+      return istZahl < sollZahl
+    case '>=':
+      return istZahl >= sollZahl
+    case '<=':
+      return istZahl <= sollZahl
+    default:
+      return true
+  }
+}
+
+/** Kurzform: Ausdruck lesen und auswerten. Ohne Ausdruck immer sichtbar. */
+export function istSichtbar(
+  ausdruck: string | null | undefined,
+  bezugLesen: (nummer: string) => Bezugswert | undefined,
+): boolean {
+  if (!ausdruck?.trim()) return true
+  const bedingung = bedingungLesen(ausdruck)
+  if (!bedingung) return true
+  return bedingungErfuellt(bedingung, bezugLesen(bedingung.nummer))
+}

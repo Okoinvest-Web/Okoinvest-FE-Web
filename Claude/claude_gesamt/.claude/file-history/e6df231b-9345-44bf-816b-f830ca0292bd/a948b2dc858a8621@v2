@@ -1,0 +1,217 @@
+<script setup lang="ts">
+/**
+ * Materialanforderung des Subunternehmers.
+ *
+ * Er kennt eure Artikelnummern nicht und soll sie nicht kennen müssen: Er
+ * schreibt in Klartext, was er braucht. Die Zuordnung zum Artikelstamm macht
+ * euer Einkauf beim Übernehmen.
+ */
+import { computed, onMounted, ref } from 'vue'
+import { useRoute } from 'vue-router'
+
+import AppIcon from '@/components/AppIcon.vue'
+import StatusAbzeichen from '@/components/StatusAbzeichen.vue'
+import { resource } from '@/lib/api'
+import { datum, isoDatum } from '@/lib/format'
+import { usePortal } from '@/stores/portal'
+import { useUi } from '@/stores/ui'
+
+const route = useRoute()
+const store = usePortal()
+const ui = useUi()
+
+interface Position {
+  bezeichnung: string
+  menge: number | null
+  einheit: string
+  bemerkung?: string
+}
+
+interface Anforderung {
+  name: string
+  anlage: string
+  auftrag?: string
+  status: string
+  benoetigt_am: string
+  dringlichkeit: string
+  antwort?: string
+  lieferdatum?: string
+}
+
+const bisherige = ref<Anforderung[]>([])
+const laedt = ref(true)
+const speichert = ref(false)
+
+const anlage = ref('')
+const auftrag = ref((route.query.auftrag as string) ?? '')
+const benoetigtAm = ref(isoDatum(new Date(Date.now() + 2 * 86_400_000)))
+const dringlichkeit = ref('Planbar')
+const begruendung = ref('')
+const positionen = ref<Position[]>([{ bezeichnung: '', menge: null, einheit: 'Stk' }])
+
+const kannAbsenden = computed(
+  () => anlage.value && positionen.value.some((p) => p.bezeichnung.trim() && (p.menge ?? 0) > 0),
+)
+
+function positionHinzufuegen() {
+  positionen.value = [...positionen.value, { bezeichnung: '', menge: null, einheit: 'Stk' }]
+}
+
+function positionEntfernen(index: number) {
+  positionen.value = positionen.value.filter((_, i) => i !== index)
+}
+
+async function laden() {
+  laedt.value = true
+  try {
+    bisherige.value = await resource.liste<Anforderung>('Materialanforderung', {
+      fields: ['name', 'anlage', 'auftrag', 'status', 'benoetigt_am', 'dringlichkeit',
+               'antwort', 'lieferdatum'],
+      order_by: 'creation desc',
+      limit_page_length: 30,
+    })
+  } catch {
+    // Offline: Die Liste bleibt leer, das Formular funktioniert weiter.
+  } finally {
+    laedt.value = false
+  }
+}
+
+async function absenden() {
+  if (!store.daten) return
+  speichert.value = true
+  try {
+    await resource.anlegen('Materialanforderung', {
+      doctype: 'Materialanforderung',
+      supplier: store.daten.supplier,
+      anlage: anlage.value,
+      auftrag: auftrag.value || undefined,
+      benoetigt_am: benoetigtAm.value,
+      dringlichkeit: dringlichkeit.value,
+      begruendung: begruendung.value,
+      status: 'Angefragt',
+      positionen: positionen.value
+        .filter((p) => p.bezeichnung.trim() && (p.menge ?? 0) > 0)
+        .map((p) => ({ ...p })),
+    })
+    ui.erfolg('Materialanforderung abgeschickt.')
+    positionen.value = [{ bezeichnung: '', menge: null, einheit: 'Stk' }]
+    begruendung.value = ''
+    await laden()
+  } catch (fehler) {
+    ui.fehler((fehler as Error).message)
+  } finally {
+    speichert.value = false
+  }
+}
+
+onMounted(async () => {
+  if (!store.geladen) await store.laden()
+  anlage.value = store.aktuelleBaustelle || store.baustellen[0]?.name || ''
+  await laden()
+})
+</script>
+
+<template>
+  <div class="mx-auto max-w-feld space-y-4">
+    <header>
+      <h2 class="text-xl font-bold">Material anfordern</h2>
+      <p class="text-sm text-slate-500">
+        Material stellt ÖKOVOLT. Schreiben Sie in eigenen Worten, was Sie brauchen.
+      </p>
+    </header>
+
+    <section class="karte space-y-3 p-4">
+      <div class="grid gap-3 tablet:grid-cols-2">
+        <label>
+          <span class="beschriftung">Baustelle</span>
+          <select v-model="anlage" class="feld">
+            <option value="">– bitte wählen –</option>
+            <option v-for="b in store.baustellen" :key="b.name" :value="b.name">
+              {{ b.anlage_name }}
+            </option>
+          </select>
+        </label>
+        <label>
+          <span class="beschriftung">Benötigt am</span>
+          <input v-model="benoetigtAm" class="feld" type="date" />
+        </label>
+      </div>
+
+      <label>
+        <span class="beschriftung">Dringlichkeit</span>
+        <select v-model="dringlichkeit" class="feld">
+          <option>Planbar</option>
+          <option>Diese Woche</option>
+          <option>Morgen</option>
+          <option>Arbeit steht still</option>
+        </select>
+      </label>
+      <p v-if="dringlichkeit === 'Arbeit steht still'"
+         class="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-900/30 dark:text-amber-200">
+        Die Bauleitung wird sofort benachrichtigt. Bitte zusätzlich eine Behinderungsanzeige
+        erfassen, wenn dadurch der Termin gefährdet ist.
+      </p>
+    </section>
+
+    <section class="karte p-4">
+      <div class="mb-3 flex items-center gap-2">
+        <h3 class="flex-1 font-semibold">Material</h3>
+        <button class="knopf-sekundaer px-3 text-sm" @click="positionHinzufuegen">
+          <AppIcon name="plus" :groesse="16" /> Position
+        </button>
+      </div>
+
+      <div v-for="(position, i) in positionen" :key="i"
+           class="mb-3 rounded-xl border border-slate-200 p-3 dark:border-slate-800">
+        <input v-model="position.bezeichnung" class="feld mb-2"
+               placeholder="z. B. Modulklemmen Mittelklemme 35 mm schwarz" />
+        <div class="grid grid-cols-[1fr_100px_44px] gap-2">
+          <input v-model.number="position.menge" class="feld tabular-nums" inputmode="decimal"
+                 placeholder="Menge" />
+          <input v-model="position.einheit" class="feld" placeholder="Stk" />
+          <button class="tap flex items-center justify-center rounded-xl text-slate-400
+                         hover:text-fehler"
+                  :disabled="positionen.length === 1"
+                  :aria-label="`Position ${i + 1} entfernen`"
+                  @click="positionEntfernen(i)">
+            <AppIcon name="muell" :groesse="18" />
+          </button>
+        </div>
+        <input v-model="position.bemerkung" class="feld mt-2 text-sm" placeholder="Bemerkung" />
+      </div>
+
+      <label>
+        <span class="beschriftung">Begründung (optional)</span>
+        <textarea v-model="begruendung" class="feld min-h-[72px]" rows="2"
+                  placeholder="Warum wird das Material zusätzlich gebraucht?" />
+      </label>
+    </section>
+
+    <button class="knopf-primaer w-full" :disabled="!kannAbsenden || speichert" @click="absenden">
+      <AppIcon name="check" :groesse="20" />
+      {{ speichert ? 'Wird gesendet …' : 'Anforderung absenden' }}
+    </button>
+
+    <section v-if="bisherige.length">
+      <h3 class="mb-2 font-semibold">Bisherige Anforderungen</h3>
+      <ul class="space-y-2 pb-4">
+        <li v-for="a in bisherige" :key="a.name" class="karte p-3">
+          <div class="flex items-center gap-2">
+            <span class="flex-1 truncate text-sm font-medium">
+              {{ store.baustelle(a.anlage)?.anlage_name ?? a.anlage }}
+            </span>
+            <StatusAbzeichen :wert="a.status === 'Angefragt' ? 'Offen' : a.status" klein />
+          </div>
+          <div class="text-xs text-slate-500">
+            benötigt {{ datum(a.benoetigt_am) }} · {{ a.dringlichkeit }}
+            <span v-if="a.lieferdatum"> · Lieferung {{ datum(a.lieferdatum) }}</span>
+          </div>
+          <p v-if="a.antwort" class="mt-1 text-xs text-slate-600 dark:text-slate-300">
+            {{ a.antwort }}
+          </p>
+        </li>
+      </ul>
+    </section>
+  </div>
+</template>

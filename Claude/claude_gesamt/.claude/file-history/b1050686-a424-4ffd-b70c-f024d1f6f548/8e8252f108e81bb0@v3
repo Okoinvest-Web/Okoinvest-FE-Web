@@ -1,0 +1,371 @@
+import Link from "next/link";
+import type { Metadata } from "next";
+
+import { IconPfeilLinks } from "@/components/icon";
+import { Tabelle, Zeile, Zelle, ZelleMitZusatz } from "@/components/tabelle";
+import {
+  Kennzahl,
+  Kennzahlenleiste,
+  LeerZustand,
+  Seitenkopf,
+  Status,
+  Tafel,
+} from "@/components/ui";
+import {
+  ladeLadekarten,
+  ladeTarife,
+  ladeVorgaenge,
+  letzteTageLaden,
+} from "@/lib/daten/laden";
+import {
+  formatDatum,
+  formatDatumZeit,
+  formatProzent,
+  formatZahl,
+} from "@/lib/format";
+import { aktuelleRechte, requireRecht } from "@/lib/session";
+
+import { Kartenschalter } from "../lauf-steuerung";
+
+export const metadata: Metadata = { title: "Karten und Tarife" };
+
+/** Ab wann eine Karte als still gilt. */
+const STILL_AB_TAGEN = 60;
+
+function artTon(art: string) {
+  switch (art) {
+    case "Mitarbeiter":
+      return "akzent" as const;
+    case "Gast":
+    case "Fremdanbieter":
+      return "hinweis" as const;
+    default:
+      return "neutral" as const;
+  }
+}
+
+export default async function KartenSeite({
+  searchParams,
+}: {
+  searchParams: Promise<{ zeitraum?: string }>;
+}) {
+  await requireRecht("mobilitaet.lesen");
+
+  const rechte = await aktuelleRechte();
+  const darfVerwalten = rechte.has("mobilitaet.verwalten");
+
+  const { zeitraum } = await searchParams;
+  const tage = Number(zeitraum) > 0 ? Number(zeitraum) : 30;
+  const fenster = letzteTageLaden(tage);
+
+  const karten = ladeLadekarten(fenster);
+  const tarife = ladeTarife();
+  const vorgaenge = ladeVorgaenge({ fenster, grenze: 40 });
+
+  const bewertet = karten.map((k) => ({
+    ...k,
+    still:
+      k.aktiv === 1 &&
+      (k.tage_ohne_nutzung === null ||
+        k.tage_ohne_nutzung > STILL_AB_TAGEN),
+  }));
+
+  const aktive = bewertet.filter((k) => k.aktiv === 1);
+  const stille = bewertet.filter((k) => k.still);
+  const gesperrte = bewertet.filter((k) => k.aktiv !== 1);
+
+  const kostenstellen = [...new Set(karten.map((k) => k.kostenstelle))].sort(
+    (a, b) => a.localeCompare(b, "de-AT"),
+  );
+
+  return (
+    <div className="space-y-5">
+      <Seitenkopf
+        titel="Karten und Tarife"
+        hinweis={`${aktive.length} aktive Karten auf ${kostenstellen.length} Kostenstellen · ${tarife.length} Tarife`}
+        zurueck={
+          <Link
+            href="/portal/mobilitaet"
+            className="t-leise inline-flex items-center gap-1.5 hover:underline"
+          >
+            <IconPfeilLinks groesse={14} />
+            Ladeinfrastruktur
+          </Link>
+        }
+      />
+
+      <Kennzahlenleiste>
+        <Kennzahl label="Aktive Karten" wert={formatZahl(aktive.length, 0)} />
+        <Kennzahl
+          label="Gesperrt"
+          wert={formatZahl(gesperrte.length, 0)}
+          hinweis="bleiben im Bestand"
+        />
+        <Kennzahl
+          label="Ohne Nutzung"
+          wert={formatZahl(stille.length, 0)}
+          hinweis={`seit über ${STILL_AB_TAGEN} Tagen`}
+          akzent={stille.length > 0}
+        />
+        <Kennzahl
+          label="Kostenstellen"
+          wert={formatZahl(kostenstellen.length, 0)}
+          hinweis={kostenstellen.slice(0, 3).join(", ")}
+        />
+      </Kennzahlenleiste>
+
+      {/* ---------------- Karten ---------------- */}
+      <Tafel
+        titel="Ladekarten"
+        hinweis={`Nutzung der letzten ${tage} Tage`}
+        dicht
+        fusszeile={
+          <p className="t-mikro leading-relaxed">
+            Eine ausgeschiedene Karte wird gesperrt, nicht gelöscht: An
+            ihr hängen die Ladevorgänge vergangener Abrechnungszeiträume.
+            Wer sie entfernt, entfernt die Belegkette zu bereits
+            gebuchten Rechnungen.
+          </p>
+        }
+      >
+        <Tabelle
+          spalten={[
+            { titel: "Karte" },
+            { titel: "Kennung", schmalAusblenden: true },
+            { titel: "Kostenstelle" },
+            { titel: "Tarif", schmalAusblenden: true },
+            { titel: "Geladen", zahl: true },
+            { titel: "Zuletzt", schmalAusblenden: true },
+            { titel: "Art" },
+            { titel: "" },
+          ]}
+          mindestbreite="66rem"
+        >
+          {bewertet.map((k) => (
+            <Zeile
+              key={k.id}
+              gedaempft={k.aktiv !== 1}
+              hervorgehoben={k.still}
+            >
+              <ZelleMitZusatz
+                haupt={k.bezeichnung}
+                zusatz={
+                  [k.inhaber, k.fahrzeug, k.kennzeichen]
+                    .filter(Boolean)
+                    .join(" · ") || undefined
+                }
+              />
+              <Zelle leise schmalAusblenden>
+                <span className="font-mono text-[0.6875rem]">{k.kennung}</span>
+              </Zelle>
+              <Zelle leise>{k.kostenstelle}</Zelle>
+              <Zelle leise schmalAusblenden>
+                {k.tarif ?? "–"}
+                {k.ct_kwh !== null && (
+                  <span className="t-mikro block">
+                    {formatZahl(k.ct_kwh, 0)} ct/kWh
+                  </span>
+                )}
+              </Zelle>
+              <Zelle zahl>
+                {k.energie_kwh > 0 ? (
+                  <>
+                    {formatZahl(k.energie_kwh, 0)}
+                    <span className="t-mikro"> kWh</span>
+                    <span className="t-mikro block">
+                      {k.vorgaenge} Vorgänge
+                    </span>
+                  </>
+                ) : (
+                  <span style={{ color: "var(--t-zart)" }}>–</span>
+                )}
+              </Zelle>
+              <Zelle leise schmalAusblenden>
+                {k.zuletzt ? formatDatum(k.zuletzt) : "nie"}
+              </Zelle>
+              <Zelle>
+                {k.aktiv !== 1 ? (
+                  <Status ton="neutral">Gesperrt</Status>
+                ) : (
+                  <Status ton={artTon(k.art)} punkt={false}>
+                    {k.art}
+                  </Status>
+                )}
+                {k.sachbezug_ct_kwh !== null && k.aktiv === 1 && (
+                  <span className="t-mikro block">
+                    Sachbezug {formatZahl(k.sachbezug_ct_kwh, 1)} ct
+                  </span>
+                )}
+              </Zelle>
+              <Zelle>
+                <Kartenschalter
+                  karteId={k.id}
+                  bezeichnung={k.bezeichnung}
+                  aktiv={k.aktiv === 1}
+                  darfVerwalten={darfVerwalten}
+                />
+              </Zelle>
+            </Zeile>
+          ))}
+        </Tabelle>
+      </Tafel>
+
+      {/* ---------------- Tarife ---------------- */}
+      <Tafel
+        titel="Tarife"
+        hinweis="Was ein Ladevorgang kostet"
+        dicht
+        fusszeile={
+          <p className="t-mikro leading-relaxed">
+            Die Standgebühr greift erst nach der Karenzzeit und nur, wenn
+            der Ladepunkt meldet, wann das Laden endete. Ältere Geräte
+            melden nur Beginn und Ende der Belegung – dann wird keine
+            Standgebühr berechnet, statt sie zu schätzen.
+          </p>
+        }
+      >
+        <Tabelle
+          spalten={[
+            { titel: "Tarif" },
+            { titel: "Arbeitspreis", zahl: true },
+            { titel: "Anteil PV", zahl: true, schmalAusblenden: true },
+            { titel: "Standgebühr", zahl: true },
+            { titel: "Grundpreis", zahl: true, schmalAusblenden: true },
+            { titel: "Karten", zahl: true },
+          ]}
+          mindestbreite="52rem"
+        >
+          {tarife.map((t) => (
+            <Zeile key={t.id} gedaempft={t.aktiv !== 1}>
+              <ZelleMitZusatz
+                haupt={t.bezeichnung}
+                zusatz={t.beschreibung ?? undefined}
+              />
+              <Zelle zahl>
+                {formatZahl(t.ct_kwh, 0)}
+                <span className="t-mikro"> ct/kWh</span>
+              </Zelle>
+              <Zelle zahl leise schmalAusblenden>
+                {t.ct_kwh_pv !== null ? (
+                  <>
+                    {formatZahl(t.ct_kwh_pv, 0)}
+                    <span className="t-mikro"> ct/kWh</span>
+                    <span className="t-mikro block">
+                      {formatProzent(
+                        (1 - t.ct_kwh_pv / t.ct_kwh) * 100,
+                        0,
+                      )}{" "}
+                      günstiger
+                    </span>
+                  </>
+                ) : (
+                  <span style={{ color: "var(--t-zart)" }}>kein Abschlag</span>
+                )}
+              </Zelle>
+              <Zelle zahl leise>
+                {t.blocking_ab_minute !== null ? (
+                  <>
+                    {formatZahl(t.ct_minute_blocking, 0)}
+                    <span className="t-mikro"> ct/min</span>
+                    <span className="t-mikro block">
+                      ab {t.blocking_ab_minute} min
+                      {t.blocking_hoechst_eur !== null &&
+                        `, höchstens ${formatZahl(t.blocking_hoechst_eur, 0)} €`}
+                    </span>
+                  </>
+                ) : (
+                  <span style={{ color: "var(--t-zart)" }}>keine</span>
+                )}
+              </Zelle>
+              <Zelle zahl leise schmalAusblenden>
+                {t.grundpreis_monat_eur > 0
+                  ? `${formatZahl(t.grundpreis_monat_eur, 2)} €`
+                  : "–"}
+              </Zelle>
+              <Zelle zahl>{t.karten}</Zelle>
+            </Zeile>
+          ))}
+        </Tabelle>
+      </Tafel>
+
+      {/* ---------------- Vorgänge ---------------- */}
+      <Tafel
+        titel="Ladevorgänge"
+        hinweis={`die ${vorgaenge.length} jüngsten`}
+        dicht
+      >
+        {vorgaenge.length === 0 ? (
+          <div className="p-4">
+            <LeerZustand text="Im Zeitraum wurde nicht geladen." />
+          </div>
+        ) : (
+          <Tabelle
+            spalten={[
+              { titel: "Beginn" },
+              { titel: "Ladepunkt", schmalAusblenden: true },
+              { titel: "Karte" },
+              { titel: "Energie", zahl: true },
+              { titel: "Dauer", zahl: true, schmalAusblenden: true },
+              { titel: "Standzeit", zahl: true },
+              { titel: "Abrechnung", schmalAusblenden: true },
+            ]}
+            mindestbreite="60rem"
+          >
+            {vorgaenge.map((v) => (
+              <Zeile key={v.id}>
+                <ZelleMitZusatz
+                  haupt={formatDatumZeit(v.beginn)}
+                  zusatz={v.id}
+                />
+                <Zelle leise schmalAusblenden>
+                  {v.ladepunkt}
+                </Zelle>
+                <Zelle leise>
+                  {v.karte ?? "–"}
+                  {v.kostenstelle && (
+                    <span className="t-mikro block">{v.kostenstelle}</span>
+                  )}
+                </Zelle>
+                <Zelle zahl>
+                  {formatZahl(v.energie_kwh, 1)}
+                  <span className="t-mikro"> kWh</span>
+                  {v.pv_kwh > 0 && (
+                    <span className="t-mikro block">
+                      {formatProzent((v.pv_kwh / v.energie_kwh) * 100, 0)} PV
+                    </span>
+                  )}
+                </Zelle>
+                <Zelle zahl leise schmalAusblenden>
+                  {formatZahl(v.dauer_stunden, 1)}
+                  <span className="t-mikro"> h</span>
+                </Zelle>
+                <Zelle zahl leise>
+                  {v.standzeit_stunden > 0 ? (
+                    <>
+                      {formatZahl(v.standzeit_stunden, 1)}
+                      <span className="t-mikro"> h</span>
+                    </>
+                  ) : (
+                    <span style={{ color: "var(--t-zart)" }}>–</span>
+                  )}
+                </Zelle>
+                <Zelle leise schmalAusblenden>
+                  {v.abrechnung_id ? (
+                    <Link
+                      href={`/portal/mobilitaet/abrechnung/${v.abrechnung_id}`}
+                      className="hover:underline"
+                    >
+                      {v.abrechnung_id}
+                    </Link>
+                  ) : (
+                    <span style={{ color: "var(--t-zart)" }}>offen</span>
+                  )}
+                </Zelle>
+              </Zeile>
+            ))}
+          </Tabelle>
+        )}
+      </Tafel>
+    </div>
+  );
+}

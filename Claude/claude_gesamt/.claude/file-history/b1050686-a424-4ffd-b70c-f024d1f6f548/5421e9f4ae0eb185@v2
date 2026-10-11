@@ -1,0 +1,137 @@
+"use client";
+
+import { useActionState } from "react";
+
+import {
+  antworte,
+  setzeStatus,
+  type MeldungsErgebnis,
+} from "../aktionen";
+
+const STATUS = ["Offen", "In Bearbeitung", "Warten auf Kunde", "Geschlossen"];
+
+/**
+ * Antworten und Status setzen.
+ *
+ * Zwei getrennte Formulare, weil es zwei getrennte Vorgänge sind: Eine
+ * Antwort geht an den Melder, ein Statuswechsel ist eine interne
+ * Feststellung. Zusammengelegt verleitet die Maske dazu, beim
+ * Schließen keinen Text zu hinterlassen - und dann steht im Ticket,
+ * dass es erledigt sei, aber nicht wodurch.
+ */
+export function Bearbeitung({
+  meldungId,
+  status,
+  hatReaktion,
+}: {
+  meldungId: string;
+  status: string;
+  hatReaktion: boolean;
+}) {
+  const [antwortErgebnis, antwortAktion, antwortLaeuft] = useActionState<
+    MeldungsErgebnis | null,
+    FormData
+  >(antworte, null);
+
+  const [statusErgebnis, statusAktion, statusLaeuft] = useActionState<
+    MeldungsErgebnis | null,
+    FormData
+  >(setzeStatus, null);
+
+  return (
+    <div className="space-y-4">
+      <form action={antwortAktion} className="space-y-2.5">
+        <input type="hidden" name="stoerung" value={meldungId} />
+
+        <label htmlFor="text" className="t-etikett block">
+          Eintrag hinzufügen
+        </label>
+        <textarea
+          id="text"
+          name="text"
+          rows={3}
+          required
+          minLength={3}
+          placeholder="Was wurde festgestellt, was ist der nächste Schritt?"
+          className="feld"
+        />
+
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <label className="flex cursor-pointer items-center gap-2 text-[0.75rem]">
+            <input type="checkbox" name="intern" value="ja" />
+            <span style={{ color: "var(--t-leise)" }}>
+              Interne Notiz – für den Melder nicht sichtbar
+            </span>
+          </label>
+
+          <button
+            type="submit"
+            disabled={antwortLaeuft}
+            className="knopf knopf-voll"
+          >
+            {antwortLaeuft ? "Wird gespeichert …" : "Eintrag speichern"}
+          </button>
+        </div>
+
+        {!hatReaktion && (
+          <p className="t-mikro leading-relaxed">
+            Der erste Eintrag, der keine interne Notiz ist, gilt als
+            Rückmeldung an den Melder und beendet die Reaktionsfrist. Ein
+            Statuswechsel allein tut das nicht – wer einen Status umstellt,
+            hat dem Melder noch nichts gesagt.
+          </p>
+        )}
+
+        {antwortErgebnis && !antwortErgebnis.ok && (
+          <p role="alert" className="t-mikro" style={{ color: "#b3261e" }}>
+            {antwortErgebnis.meldung}
+          </p>
+        )}
+      </form>
+
+      <form
+        action={statusAktion}
+        className="flex flex-wrap items-end gap-2 border-t pt-3"
+        style={{ borderColor: "var(--linie-zart)" }}
+      >
+        <input type="hidden" name="stoerung" value={meldungId} />
+
+        <div className="min-w-40 flex-1">
+          <label htmlFor="status" className="t-etikett block">
+            Status
+          </label>
+          <select
+            id="status"
+            name="status"
+            defaultValue={status}
+            className="feld mt-1"
+          >
+            {STATUS.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <button
+          type="submit"
+          disabled={statusLaeuft}
+          className="knopf knopf-rand"
+        >
+          {statusLaeuft ? "Wird gesetzt …" : "Status übernehmen"}
+        </button>
+
+        {statusErgebnis && (
+          <p
+            role="status"
+            className="t-mikro w-full"
+            style={{ color: statusErgebnis.ok ? undefined : "#b3261e" }}
+          >
+            {statusErgebnis.meldung}
+          </p>
+        )}
+      </form>
+    </div>
+  );
+}

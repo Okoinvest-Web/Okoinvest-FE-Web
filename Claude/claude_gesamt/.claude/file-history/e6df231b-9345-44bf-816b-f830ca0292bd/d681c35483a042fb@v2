@@ -1,0 +1,168 @@
+<script setup lang="ts">
+/**
+ * Startseite des Subunternehmerportals.
+ *
+ * Reihenfolge nach Dringlichkeit, nicht nach Systematik: Was heute ansteht,
+ * was in Verzug ist, ob die Personalmeldung fehlt — und darunter die
+ * Stempeluhr, weil sie zweimal täglich gebraucht wird.
+ */
+import { computed, onMounted, ref } from 'vue'
+
+import AppIcon from '@/components/AppIcon.vue'
+import StatusAbzeichen from '@/components/StatusAbzeichen.vue'
+import StempelUhr from '@/components/StempelUhr.vue'
+import { datum, datumZeit } from '@/lib/format'
+import { usePortal } from '@/stores/portal'
+
+const store = usePortal()
+const laedt = ref(true)
+
+const uebersicht = computed(() => store.uebersicht)
+
+const meldungFehlt = computed(
+  () => uebersicht.value?.personalmeldung.pflichtig && !uebersicht.value.personalmeldung.abgegeben,
+)
+
+function uhrzeit(wert?: string) {
+  return wert ? datumZeit(wert).slice(-5) : ''
+}
+
+onMounted(async () => {
+  try {
+    if (!store.geladen) await store.laden()
+    await Promise.all([store.uebersichtLaden(), store.auftraegeLaden()])
+  } finally {
+    laedt.value = false
+  }
+})
+</script>
+
+<template>
+  <div class="space-y-5">
+    <header>
+      <p class="text-sm text-slate-500">
+        {{ new Date().toLocaleDateString('de-AT', { weekday: 'long', day: 'numeric', month: 'long' }) }}
+      </p>
+      <h2 class="text-2xl font-bold">{{ store.firmenname }}</h2>
+      <p v-if="store.daten?.ich" class="text-sm text-slate-500">
+        {{ store.daten.ich.vollname }}<span v-if="store.istPolier"> · Polier</span>
+      </p>
+    </header>
+
+    <p v-if="laedt" class="py-8 text-center text-sm text-slate-500">Wird geladen …</p>
+
+    <template v-else>
+      <!-- Personalmeldung zuerst: Ohne sie darf nicht gestempelt werden -->
+      <RouterLink
+        v-if="meldungFehlt"
+        :to="{ name: 'portal-personalmeldung' }"
+        class="flex items-center gap-3 rounded-xl border-2 border-warnung bg-amber-50 p-4
+               dark:bg-amber-900/30"
+      >
+        <AppIcon name="person" :groesse="24" class="shrink-0 text-warnung" />
+        <div class="flex-1">
+          <p class="font-semibold text-amber-900 dark:text-amber-200">Personalmeldung fehlt</p>
+          <p class="text-sm text-amber-800 dark:text-amber-300">
+            Ohne Meldung kann heute niemand eingestempelt werden.
+          </p>
+        </div>
+        <AppIcon name="pfeilRechts" :groesse="20" class="text-warnung" />
+      </RouterLink>
+
+      <!-- Verzug -->
+      <section v-if="uebersicht?.im_verzug.length">
+        <h3 class="mb-2 flex items-center gap-2 font-bold text-fehler">
+          <AppIcon name="warnung" :groesse="20" /> In Verzug
+        </h3>
+        <ul class="space-y-2">
+          <li v-for="a in uebersicht.im_verzug" :key="a.name">
+            <RouterLink :to="{ name: 'portal-auftrag', params: { name: a.name } }"
+                        class="karte flex items-center gap-3 border-l-4 border-l-fehler p-3">
+              <div class="min-w-0 flex-1">
+                <div class="truncate font-semibold">{{ a.titel }}</div>
+                <div class="text-xs text-slate-500">Frist war {{ datum(a.frist) }}</div>
+              </div>
+              <span class="shrink-0 text-sm font-bold text-fehler">
+                {{ Math.abs(a.tage_bis_frist) }} Tage
+              </span>
+            </RouterLink>
+          </li>
+        </ul>
+      </section>
+
+      <!-- Fristwarnung -->
+      <section v-if="uebersicht?.fristwarnungen.length">
+        <h3 class="mb-2 flex items-center gap-2 font-bold text-warnung">
+          <AppIcon name="uhr" :groesse="20" /> Frist läuft ab
+        </h3>
+        <ul class="space-y-2">
+          <li v-for="a in uebersicht.fristwarnungen" :key="a.name">
+            <RouterLink :to="{ name: 'portal-auftrag', params: { name: a.name } }"
+                        class="karte flex items-center gap-3 border-l-4 border-l-warnung p-3">
+              <div class="min-w-0 flex-1">
+                <div class="truncate font-semibold">{{ a.titel }}</div>
+                <div class="text-xs text-slate-500">Fertigstellung {{ datum(a.frist) }}</div>
+              </div>
+              <span class="shrink-0 text-sm font-bold text-warnung">
+                {{ a.tage_bis_frist === 0 ? 'heute' : `noch ${a.tage_bis_frist} Tage` }}
+              </span>
+            </RouterLink>
+          </li>
+        </ul>
+      </section>
+
+      <!-- Heute -->
+      <section>
+        <h3 class="mb-2 flex items-center gap-2 text-lg font-bold">
+          <AppIcon name="bericht" :groesse="20" class="text-marke-600" /> Heute
+        </h3>
+        <p v-if="!uebersicht?.auftraege_heute.length"
+           class="karte p-6 text-center text-sm text-slate-500">
+          Für heute ist kein Auftrag eingeplant.
+        </p>
+        <ul v-else class="space-y-2">
+          <li v-for="a in uebersicht.auftraege_heute" :key="a.name">
+            <RouterLink :to="{ name: 'portal-auftrag', params: { name: a.name } }"
+                        class="karte block p-3">
+              <div class="flex items-center gap-2">
+                <span class="flex-1 truncate font-semibold">{{ a.titel }}</span>
+                <StatusAbzeichen :wert="a.status" klein />
+              </div>
+              <div class="mt-1 text-xs text-slate-500">
+                {{ a.baustelle?.anlage_name ?? a.anlage }}
+                <span v-if="a.baustelle?.ort"> · {{ a.baustelle.plz }} {{ a.baustelle.ort }}</span>
+              </div>
+              <div class="mt-1 text-xs text-slate-400">
+                {{ uhrzeit(a.termin_von) }} bis {{ uhrzeit(a.termin_bis) }}
+              </div>
+            </RouterLink>
+          </li>
+        </ul>
+      </section>
+
+      <!-- Stempeluhr -->
+      <section>
+        <h3 class="mb-2 flex items-center gap-2 text-lg font-bold">
+          <AppIcon name="uhr" :groesse="20" class="text-marke-600" /> Zeiterfassung
+        </h3>
+        <StempelUhr />
+      </section>
+
+      <!-- Schnellzugriffe -->
+      <section class="grid grid-cols-2 gap-3">
+        <RouterLink :to="{ name: 'portal-material' }" class="karte p-4">
+          <AppIcon name="plus" :groesse="20" class="text-marke-600" />
+          <div class="mt-2 font-semibold">Material anfordern</div>
+          <div class="text-xs text-slate-500">
+            {{ uebersicht?.offene_materialanforderungen ?? 0 }} offen
+          </div>
+        </RouterLink>
+        <RouterLink :to="{ name: 'portal-meldung' }" class="karte p-4">
+          <AppIcon name="warnung" :groesse="20" class="text-warnung" />
+          <div class="mt-2 font-semibold">Behinderung melden</div>
+          <div class="text-xs text-slate-500">{{ uebersicht?.offene_meldungen ?? 0 }} in Prüfung</div>
+        </RouterLink>
+      </section>
+    </template>
+  </div>
+</template>

@@ -1,0 +1,64 @@
+import { describe, expect, it } from 'vitest'
+import {
+  alterMinuten,
+  alterStunden,
+  heute,
+  jetzt,
+  parse,
+  stundenVersetzt,
+  tageVersetzt,
+} from '@/api/mock/zeit.js'
+
+describe('Zeitstempel', () => {
+  it('liefert das Frappe-Format ohne Zeitzone', () => {
+    expect(jetzt()).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)
+    expect(heute()).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+  })
+
+  /**
+   * Der Fehler, der hier abgefangen wird: Zeitstempel wurden mit
+   * `toISOString()` in UTC erzeugt, aber von `new Date("... ...")` als
+   * Lokalzeit gelesen. In einer Zeitzone mit Versatz sah ein gerade
+   * gelaufener Konnektor dadurch Stunden alt aus und ein eben erzeugter
+   * Bestätigungscode galt sofort als abgelaufen.
+   */
+  it('erzeugen und lesen sich verlustfrei – unabhängig von der Zeitzone', () => {
+    for (const versatz of [0, -0.3, -1.2, 0.05, 5, -26]) {
+      const stempel = stundenVersetzt(versatz)
+      const alter = alterStunden(stempel)
+      expect(alter, String(versatz)).toBeCloseTo(-versatz, 1)
+    }
+  })
+
+  it('erkennt einen Zeitpunkt in der Zukunft als noch nicht abgelaufen', () => {
+    const inDreiMinuten = stundenVersetzt(0.05)
+    expect(parse(inDreiMinuten).getTime()).toBeGreaterThan(Date.now())
+  })
+
+  it('erkennt einen Zeitpunkt in der Vergangenheit als abgelaufen', () => {
+    const vorDreiMinuten = stundenVersetzt(-0.05)
+    expect(parse(vorDreiMinuten).getTime()).toBeLessThan(Date.now())
+  })
+
+  it('versetzt Tage korrekt', () => {
+    expect(tageVersetzt(0)).toBe(heute())
+    const morgen = tageVersetzt(1)
+    const gestern = tageVersetzt(-1)
+    expect(morgen > heute()).toBe(true)
+    expect(gestern < heute()).toBe(true)
+  })
+
+  it('geht mit fehlenden Werten um, statt still falsch zu rechnen', () => {
+    expect(parse(null)).toBeNull()
+    expect(parse('')).toBeNull()
+    expect(parse('Unsinn')).toBeNull()
+    expect(alterStunden(null)).toBeNull()
+    expect(alterMinuten(null)).toBe(Number.POSITIVE_INFINITY)
+  })
+
+  it('rechnet Minuten und Stunden konsistent', () => {
+    const vorEinerStunde = stundenVersetzt(-1)
+    expect(alterMinuten(vorEinerStunde)).toBeCloseTo(60, 0)
+    expect(alterStunden(vorEinerStunde)).toBeCloseTo(1, 1)
+  })
+})

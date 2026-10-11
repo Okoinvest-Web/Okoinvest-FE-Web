@@ -1,0 +1,258 @@
+<template>
+  <div>
+    <PageHeader title="Ein- und Austritt" :subtitle="untertitel" />
+
+    <div class="p-6">
+      <div v-if="uebersicht.data" class="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <StatCard
+          v-for="kachel in kacheln"
+          :key="kachel.label"
+          :label="kachel.label"
+          :wert="kachel.wert"
+          :hinweis="kachel.hinweis"
+          :level="kachel.level"
+        />
+      </div>
+
+      <!-- Austritte -->
+      <section class="mb-8">
+        <h2 class="mb-3 text-base font-semibold text-ink-gray-8">
+          Austritte und bevorstehende Austritte
+        </h2>
+
+        <div v-if="!(uebersicht.data?.rows || []).length && !uebersicht.loading">
+          <p
+            class="rounded-lg border border-outline-gray-2 bg-surface-white p-6 text-sm text-ink-gray-5"
+          >
+            Kein Austritt in den nächsten 30 Tagen und keiner mit offenen Punkten.
+          </p>
+        </div>
+
+        <div class="space-y-4">
+          <article
+            v-for="zeile in uebersicht.data?.rows || []"
+            :key="zeile.name"
+            class="rounded-lg border border-outline-gray-2 bg-surface-white p-4"
+          >
+            <div class="flex flex-wrap items-start justify-between gap-3">
+              <div class="min-w-0">
+                <p class="text-base font-medium text-ink-gray-9">{{ zeile.employee_name }}</p>
+                <p class="mt-0.5 text-sm text-ink-gray-6">
+                  {{ zeile.designation }} · {{ zeile.department }}
+                  <span v-if="zeile.already_left">
+                    · ausgetreten am {{ zeile.relieving_date }}
+                  </span>
+                  <span v-else-if="zeile.leaving_in_days !== null">
+                    · Austritt in {{ zeile.leaving_in_days }} Tagen
+                  </span>
+                </p>
+              </div>
+              <div class="flex shrink-0 flex-wrap items-center gap-3">
+                <StatusDot :level="zeile.level" :text="zeile.reason" />
+                <Button size="sm" @click="oeffne(zeile.name)">
+                  {{ offen === zeile.name ? 'Zuklappen' : 'Punkte anzeigen' }}
+                </Button>
+              </div>
+            </div>
+
+            <p v-if="zeile.value_at_risk_cents" class="mt-2 text-sm text-ink-gray-6">
+              Gegenstände im Wert von
+              <span class="font-medium tabular-nums text-ink-gray-8">
+                {{ euro(zeile.value_at_risk_cents) }}
+              </span>
+              sind nicht zurückgegeben.
+            </p>
+
+            <!-- Die Checkliste -->
+            <div v-if="offen === zeile.name" class="mt-4 border-t border-outline-gray-2 pt-4">
+              <p v-if="pruefung.loading" class="text-sm text-ink-gray-5">Wird geprüft …</p>
+
+              <div v-else-if="pruefung.data" class="space-y-2">
+                <p v-if="pruefung.data.summary.clear" class="text-sm text-ink-gray-6">
+                  Nichts offen – Geräte zurück, Konten gesperrt, Zugänge entzogen.
+                </p>
+
+                <div
+                  v-for="(punkt, i) in pruefung.data.items"
+                  :key="i"
+                  class="flex flex-wrap items-start gap-3 rounded border border-outline-gray-2 px-3 py-2"
+                >
+                  <StatusDot :level="punkt.level" :text="ART[punkt.kind] || punkt.kind" klein />
+                  <div class="min-w-0 flex-1">
+                    <p class="text-sm font-medium text-ink-gray-9">{{ punkt.title }}</p>
+                    <p class="text-sm text-ink-gray-6">{{ punkt.detail }}</p>
+                  </div>
+                  <span
+                    v-if="punkt.value_cents"
+                    class="shrink-0 text-sm tabular-nums text-ink-gray-7"
+                  >
+                    {{ euro(punkt.value_cents) }}
+                  </span>
+                  <RouterLink
+                    v-if="punkt.object_type === 'Asset'"
+                    :to="'/issue?asset=' + punkt.object_name"
+                    class="shrink-0 text-sm text-ink-gray-8 underline decoration-outline-gray-3 underline-offset-2"
+                  >
+                    Rücknahme
+                  </RouterLink>
+                </div>
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <!-- Erstausstattung -->
+      <section>
+        <h2 class="mb-3 text-base font-semibold text-ink-gray-8">Erstausstattung</h2>
+        <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <article
+            v-for="paket in pakete.data || []"
+            :key="paket.name"
+            class="rounded-lg border border-outline-gray-2 bg-surface-white p-4"
+          >
+            <div class="flex items-start justify-between gap-2">
+              <div class="min-w-0">
+                <p class="text-base font-medium text-ink-gray-9">{{ paket.bundle_name }}</p>
+                <p class="text-sm text-ink-gray-6">{{ paket.purpose }}</p>
+              </div>
+              <StatusDot
+                :level="paket.level"
+                :text="
+                  paket.complete
+                    ? 'lieferbar'
+                    : mengeText(paket.missing_positions, 'Position fehlt', 'Positionen fehlen')
+                "
+                klein
+              />
+            </div>
+
+            <ul class="mt-3 space-y-1">
+              <li
+                v-for="pos in plan(paket.name)"
+                :key="pos.category"
+                class="flex items-center justify-between gap-2 text-sm"
+              >
+                <span class="text-ink-gray-8">{{ pos.qty }} × {{ pos.category }}</span>
+                <StatusDot
+                  :level="pos.level"
+                  :text="
+                    pos.missing ? mengeText(pos.missing, 'fehlt', 'fehlen') : pos.available + ' da'
+                  "
+                  klein
+                />
+              </li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <p class="mt-6 text-xs text-ink-gray-4">
+        Diese Prüfung greift über Inventar, Konten, Zugangsverweise und Lizenzen hinweg – die Daten
+        liegen in NetOps ohnehin nebeneinander. Eine reine Inventarsoftware sieht nur die Geräte und
+        meldet den Rest nie. Die Personendaten stammen aus Frappe HR; NetOps liest sie, legt sie
+        aber nicht an.
+      </p>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed, ref, watch } from 'vue'
+import { Button, createResource } from 'frappe-ui'
+import PageHeader from '@/components/PageHeader.vue'
+import StatCard from '@/components/StatCard.vue'
+import StatusDot from '@/components/StatusDot.vue'
+import { euro, mengeText } from '@/viz'
+
+const ART = {
+  asset_return: 'Gerät',
+  account_disable: 'Konto',
+  license_seat: 'Lizenz',
+  access_reference: 'Zugang',
+  reservation: 'Reservierung',
+}
+
+const offen = ref('')
+
+const uebersicht = createResource({
+  url: 'netops.api.personal.offboarding_overview',
+  auto: true,
+})
+
+const pruefung = createResource({
+  url: 'netops.api.personal.offboarding_check',
+  makeParams: () => ({ employee: offen.value }),
+})
+
+const pakete = createResource({ url: 'netops.api.personal.bundle_list', auto: true })
+
+// Die Pläne aller Pakete einmal holen; drei Karten, drei Aufrufe - das ist
+// billiger als ein Sammelendpunkt, den sonst niemand braucht.
+const plaene = createResource({
+  url: 'netops.api.personal.onboarding_plan',
+  makeParams: () => ({ bundle: paketName.value }),
+})
+const paketName = ref('')
+const planCache = ref({})
+
+watch(
+  () => pakete.data,
+  async (liste) => {
+    for (const p of liste || []) {
+      paketName.value = p.name
+      const ergebnis = await plaene.fetch()
+      planCache.value = { ...planCache.value, [p.name]: ergebnis?.positions || [] }
+    }
+  },
+)
+
+watch(offen, () => {
+  if (offen.value) pruefung.fetch()
+})
+
+function plan(name) {
+  return planCache.value[name] || []
+}
+
+function oeffne(name) {
+  offen.value = offen.value === name ? '' : name
+}
+
+const kacheln = computed(() => {
+  const z = uebersicht.data?.summary
+  if (!z) return []
+  return [
+    { label: 'Betroffene Personen', wert: z.people, level: 'neutral' },
+    {
+      label: 'Mit offenen Punkten',
+      wert: z.with_open_items,
+      hinweis: z.with_open_items ? 'abarbeiten' : 'nichts offen',
+      level: z.with_open_items ? 'warning' : 'ok',
+    },
+    {
+      label: 'Bereits ausgetreten',
+      wert: z.already_left_with_assets,
+      hinweis: z.already_left_with_assets ? 'Geräte noch draußen' : 'keine',
+      level: z.already_left_with_assets ? 'critical' : 'ok',
+    },
+    {
+      label: 'Wert im Umlauf',
+      wert: euro(z.value_at_risk_cents),
+      hinweis: 'nicht zurückgegeben',
+      level: z.value_at_risk_cents ? 'warning' : 'ok',
+    },
+  ]
+})
+
+const untertitel = computed(() => {
+  const z = uebersicht.data?.summary
+  if (!z) return ''
+  return (
+    mengeText(z.people, 'Person', 'Personen') +
+    ' im Blick · ' +
+    z.with_open_items +
+    ' mit offenen Punkten'
+  )
+})
+</script>

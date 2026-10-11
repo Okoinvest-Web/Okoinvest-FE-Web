@@ -1,0 +1,337 @@
+/**
+ * Change-Workflow und Compliance (Fachkonzept 2.10 und 2.12).
+ *
+ * Der Ablauf ist: Antrag → Risikobewertung → Freigabe (4-Augen) → Umsetzung →
+ * Verifikation. Zwei Regeln trägt der Mock schon:
+ *   - hohes Risiko verlangt zwei verschiedene Freigebende
+ *   - niemand gibt seinen eigenen Antrag frei
+ * Beides muss im Backend genauso durchgesetzt werden, denn hier gibt es keine
+ * Rollen und keine Sitzung.
+ */
+import { FrappeMockError, SESSION_USER, table, touch } from '../db.js'
+import { protokolliere } from './audit.js'
+import { backup_status } from './backup.js'
+import { security_overview, vulnerability_list } from './security.js'
+import { verify_chain } from './audit.js'
+import { identity_overview, exposure_overview } from './cloud.js'
+import { heute, jetzt } from '../zeit.js'
+
+/** Reihenfolge der Zustände im Ablauf. */
+export const ABLAUF = ['draft', 'review', 'approved', 'implemented', 'verified']
+
+const UEBERGAENGE = {
+  draft: ['review', 'rejected'],
+  review: ['approved', 'rejected', 'draft'],
+  approved: ['implemented', 'rejected'],
+  implemented: ['verified', 'rejected'],
+  verified: [],
+  rejected: ['draft'],
+}
+
+export function change_list({ state = null, tenant = null } = {}) {
+  let antraege = table('Change Request')
+  if (state) antraege = antraege.filter((c) => c.change_state === state)
+  if (tenant) antraege = antraege.filter((c) => c.tenant === tenant)
+
+  return [...antraege]
+    .map((antrag) => {
+      const fehlend = pflichtangabenFehlen(antrag)
+
+      return {
+        ...antrag,
+        next_states: UEBERGAENGE[antrag.change_state] || [],
+        missing: fehlend,
+        // Vier-Augen gilt ab hohem Risiko.
+        needs_second_approver: antrag.risk === 'high',
+        has_second_approver: !!antrag.second_approver,
+        level:
+          antrag.change_state === 'rejected'
+            ? 'neutral'
+            : antrag.perimeter
+              ? 'warning'
+              : fehlend.length
+                ? 'warning'
+                : 'ok',
+        note: antrag.perimeter
+          ? 'Perimeter – Umsetzung ausschließlich manuell'
+          : fehlend.length
+            ? 'Unvollständig: ' + fehlend.join(', ')
+            : null,
+      }
+    })
+    .sort(
+      (a, b) =>
+        ABLAUF.indexOf(a.change_state) - ABLAUF.indexOf(b.change_state) ||
+        (a.requested_on < b.requested_on ? 1 : -1),
+    )
+}
+
+function pflichtangabenFehlen(antrag) {
+  const fehlend = []
+  if (!antrag.rollback_plan) fehlend.push('Rückfallplan')
+  if (!antrag.verification) fehlend.push('Verifikation')
+  if (!antrag.ticket) fehlend.push('Ticket')
+  if (antrag.risk === 'high' && !antrag.window_start) fehlend.push('Wartungsfenster')
+  return fehlend
+}
+
+/**
+ * Zustandswechsel mit den Regeln des Ablaufs.
+ *
+ * @param {{name: string, state: string, actor?: string}} args
+ */
+export function set_change_state({ name, state, actor = SESSION_USER } = {}) {
+  const antrag = table('Change Request').find((c) => c.name === name)
+  if (!antrag) {
+    throw new FrappeMockError('DoesNotExistError: Change Request ' + name + ' existiert nicht', 404)
+  }
+
+  const erlaubt = UEBERGAENGE[antrag.change_state] || []
+  if (!erlaubt.includes(state)) {
+    throw new FrappeMockError(
+      'ValidationError: Von "' +
+        antrag.change_state +
+        '" ist nur ' +
+        (erlaubt.join(', ') || 'kein Wechsel') +
+        ' möglich',
+    )
+  }
+
+  if (state === 'review') {
+    const fehlend = pflichtangabenFehlen(antrag)
+    if (fehlend.length) {
+      throw new FrappeMockError(
+        'ValidationError: Vor der Prüfung fehlen noch: ' + fehlend.join(', '),
+      )
+    }
+  }
+
+  if (state === 'approved') {
+    // Niemand gibt seinen eigenen Antrag frei.
+    if (antrag.requested_by === actor) {
+      throw new FrappeMockError(
+        'PermissionError: Der Antragsteller kann seinen eigenen Antrag nicht freigeben',
+        403,
+      )
+    }
+    if (antrag.risk === 'high' && antrag.approved_by && antrag.approved_by !== actor) {
+      antrag.second_approver = actor
+    } else {
+      antrag.approved_by = actor
+    }
+    // Bei hohem Risiko reicht eine Unterschrift nicht.
+    if (antrag.risk === 'high' && !antrag.second_approver) {
+      antrag.change_state = 'review'
+      touch(antrag)
+      protokolliere({
+        action: 'change_first_approval',
+        object_type: 'Change Request',
+        object_name: name,
+        payload: { approved_by: actor },
+      })
+      return {
+        ...antrag,
+        pending: 'Zweite Freigabe erforderlich (hohes Risiko)',
+      }
+    }
+  }
+
+  if (state === 'verified' && !antrag.verification) {
+    throw new FrappeMockError('ValidationError: Ohne beschriebene Verifikation kein Abschluss')
+  }
+
+  antrag.change_state = state
+  touch(antrag)
+  protokolliere({
+    action: 'change_' + state,
+    object_type: 'Change Request',
+    object_name: name,
+    payload: { state, actor },
+  })
+
+  return { ...antrag }
+}
+
+/**
+ * NIS2-Auditbericht (Fachkonzept 2.12).
+ *
+ * Jeder Punkt zieht seinen Nachweis aus den vorhandenen Daten. Was sich nicht
+ * belegen lässt, steht als "nicht belegbar" da - nicht als "erfüllt".
+ */
+export function compliance_report({ tenant = null } = {}) {
+  const punkte = table('Compliance Control').filter((c) => !tenant || c.tenant === tenant)
+
+  const ergebnisse = punkte.map((punkt) => {
+    const nachweis = sammleNachweis(punkt.evidence_source, tenant)
+    return {
+      ...punkt,
+      ...nachweis,
+    }
+  })
+
+  const erfuellt = ergebnisse.filter((e) => e.status === 'met').length
+
+  return {
+    framework: 'NIS2',
+    generated_at: jetzt(),
+    controls: ergebnisse,
+    summary: {
+      total: ergebnisse.length,
+      met: erfuellt,
+      partial: ergebnisse.filter((e) => e.status === 'partial').length,
+      failed: ergebnisse.filter((e) => e.status === 'failed').length,
+      coverage_pct: ergebnisse.length ? Math.round((erfuellt / ergebnisse.length) * 1000) / 10 : 0,
+    },
+  }
+}
+
+function sammleNachweis(quelle, tenant) {
+  switch (quelle) {
+    case 'device_inventory': {
+      const geraete = table('Network Device').filter((d) => !tenant || d.tenant === tenant)
+      const ohneSerie = geraete.filter((d) => !d.serial)
+      return {
+        status: ohneSerie.length ? 'partial' : 'met',
+        evidence: geraete.length + ' Geräte erfasst',
+        gap: ohneSerie.length ? ohneSerie.length + ' ohne Seriennummer' : null,
+        link: '/devices',
+      }
+    }
+    case 'segmentation': {
+      const vlans = table('VLAN').filter((v) => !tenant || v.tenant === tenant)
+      const zonen = new Set(vlans.map((v) => v.security_zone))
+      return {
+        status: 'met',
+        evidence: vlans.length + ' VLANs in ' + zonen.size + ' Schutzzonen',
+        gap: null,
+        link: '/matrix',
+      }
+    }
+    case 'change_process': {
+      const antraege = change_list({ tenant })
+      const ohneFreigabe = antraege.filter(
+        (c) => ['approved', 'implemented', 'verified'].includes(c.change_state) && !c.approved_by,
+      )
+      const unvollstaendig = antraege.filter((c) => c.missing.length)
+      return {
+        status: ohneFreigabe.length ? 'failed' : unvollstaendig.length ? 'partial' : 'met',
+        evidence:
+          antraege.length +
+          ' Anträge, ' +
+          antraege.filter((c) => c.approved_by).length +
+          ' freigegeben',
+        gap: unvollstaendig.length ? unvollstaendig.length + ' unvollständig' : null,
+        link: '/changes',
+      }
+    }
+    case 'backup': {
+      const ampel = backup_status({ tenant })
+      return {
+        status: ampel.summary.critical ? 'failed' : ampel.summary.warning ? 'partial' : 'met',
+        evidence: ampel.summary.ok + ' von ' + ampel.summary.total + ' Diensten ohne Beanstandung',
+        gap: ampel.summary.critical
+          ? ampel.summary.critical + ' kritisch'
+          : ampel.summary.warning
+            ? ampel.summary.warning + ' mit Warnung'
+            : null,
+        link: '/backup',
+      }
+    }
+    case 'mfa': {
+      const identitaet = identity_overview({ tenant })
+      return {
+        status: identitaet.summary.without_mfa ? 'failed' : 'met',
+        evidence: 'MFA-Abdeckung ' + identitaet.summary.mfa_coverage_pct + ' %',
+        gap: identitaet.summary.without_mfa
+          ? identitaet.summary.without_mfa + ' Konten ohne zweiten Faktor'
+          : null,
+        link: '/identities',
+      }
+    }
+    case 'vulnerabilities': {
+      const sicherheit = security_overview({ tenant })
+      const ueberfaellig = vulnerability_list({ tenant, only_overdue: true })
+      return {
+        status: ueberfaellig.length
+          ? 'failed'
+          : sicherheit.vulnerabilities_open
+            ? 'partial'
+            : 'met',
+        evidence:
+          sicherheit.vulnerabilities_open +
+          ' offen, davon ' +
+          sicherheit.vulnerabilities_kev +
+          ' aktiv ausgenutzt',
+        gap: ueberfaellig.length ? ueberfaellig.length + ' über der Frist' : null,
+        link: '/vulnerabilities',
+      }
+    }
+    case 'audit_chain': {
+      const kette = verify_chain()
+      return {
+        status: kette.ok ? 'met' : 'failed',
+        evidence: kette.length + ' Einträge, Kette ' + (kette.ok ? 'unversehrt' : 'gebrochen'),
+        gap: kette.ok ? null : 'Bruch bei ' + kette.broken_at,
+        link: '/audit',
+      }
+    }
+    case 'incidents': {
+      const sicherheit = security_overview({ tenant })
+      const knapp = sicherheit.next_deadline_hours !== null && sicherheit.next_deadline_hours < 24
+      return {
+        status:
+          sicherheit.next_deadline_hours !== null && sicherheit.next_deadline_hours < 0
+            ? 'failed'
+            : knapp
+              ? 'partial'
+              : 'met',
+        evidence: sicherheit.incidents_open + ' offene Vorfälle',
+        gap: knapp ? 'Nächste Frist in ' + sicherheit.next_deadline_hours + ' Stunden' : null,
+        link: '/incidents',
+      }
+    }
+    case 'exposure': {
+      const aussen = exposure_overview({ tenant })
+      return {
+        status: aussen.summary.undocumented ? 'failed' : 'met',
+        evidence: aussen.summary.services + ' öffentliche Dienste erfasst',
+        gap: aussen.summary.undocumented
+          ? aussen.summary.undocumented + ' nicht dokumentiert'
+          : null,
+        link: '/exposure',
+      }
+    }
+    case 'scan_governance': {
+      const aussen = exposure_overview({ tenant })
+      return {
+        status: aussen.summary.scan_windows_problematic ? 'failed' : 'met',
+        evidence: aussen.scan_windows.length + ' Scanfenster festgelegt',
+        gap: aussen.summary.scan_windows_problematic
+          ? aussen.summary.scan_windows_problematic + ' nicht angemeldet oder zu aggressiv'
+          : null,
+        link: '/exposure',
+      }
+    }
+    default:
+      // Ehrlicher als ein grüner Haken ohne Grundlage.
+      return {
+        status: 'unknown',
+        evidence: null,
+        gap: 'Für diesen Punkt gibt es in der Plattform noch keine Datenquelle',
+        link: null,
+      }
+  }
+}
+
+/** Kennzahl für Lage und Leitstand. */
+export function compliance_summary({ tenant = null } = {}) {
+  const bericht = compliance_report({ tenant })
+  return {
+    ...bericht.summary,
+    today: heute(),
+    worst: bericht.controls
+      .filter((c) => c.status === 'failed')
+      .map((c) => c.control_name)
+      .slice(0, 3),
+  }
+}

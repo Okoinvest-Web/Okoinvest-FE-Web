@@ -1,0 +1,825 @@
+     1	// src/lib/plattform/backend/demo/kyc.js
+     2	//
+     3	// KYC/KYB – Identitäts- und Firmenprüfung im Demo-Backend. Referenz für plattform/api/kyc.py (Vertrag: docs/API.md,
+     4	// Abschnitt „KYC/KYB“). Daten unter db.kyc (eigene Sammlung, beim ersten Zugriff mit Demo-Daten ergänzt – kyc-seed.js).
+     5	// Unterlagen verschlüsselt (AES-256-GCM, server/kycKrypto.js) unter .data/kyc/ – nie im Klartext auf der Platte.
+     6	//
+     7	// Rechte (jede Operation prüft selbst):
+     8	//   Person selbst  – eigener Fall: Angaben, Uploads, eigene Unterlagen ansehen/löschen (solange bearbeitbar), einreichen
+     9	//   Compliance     – Backoffice-Unterrolle „compliance“ (rechte.js, Bereich compliance = 2): Warteschlange, Fall, Unterlagen,
+    10	//                    Prüfliste, Risiko, Entscheidung, Vier-Augen, Sanktionsabgleich, Einstellungen, Fristen
+    11	//   Leitung        – Bereich compliance = 1: nur Warteschlange/Status (keine Unterlagen, keine Personendaten im Detail)
+    12	//   sonst          – 403. Jeder Zugriff auf Unterlagen und Falldetails wird im Aktivitätsprotokoll (Hash-Kette) vermerkt.
+    13	//
+    14	// Sanktionstreffer werden dem Nutzer NIE angezeigt (Status bleibt „In Prüfung“) – Tipping-off-Verbot (§ 47 GwG).
+    15	
+    16	import { readFileSync, existsSync, mkdirSync, writeFileSync } from "node:fs";
+    17	import { promises as fs } from "node:fs";
+    18	import path from "node:path";
+    19	import { PlattformFehler, konflikt, nichtGefunden, ungueltig, verboten } from "../../fehler";
+    20	import * as v from "../../validierung";
+    21	import { stufe, unterrollen } from "../../rechte";
+    22	import {
+    23	  KYC_BEARBEITBAR, KYC_DOKUMENTE, KYC_KONTOTYPEN, KYC_KONTROLLE_ARTEN, KYC_MITTEL_QUELLEN, KYC_PRUEFPUNKTE, KYC_SCHRITTE, KYC_SCHRITT_IDS, KYC_STATUS,
+    24	  KYC_TICKETS, KYC_UPLOAD, KYC_WARTESCHLANGE, heuteIso, ibanPruefen, kontoinhaberPasst, kycAnforderungen, kycEinstellungenStandard, kycFortschritt, kycGeltung,
+    25	  kycRisiko, kycSchrittAktiv, kycStatusLabel, kycUebergangErlaubt, loeschenAb, monateSpaeter, tageBis, ibanMaskiert, ibanFormatiert, kycInvestorVorgaben,
+    26	} from "../../kyc";
+    27	import { DEMO_SANKTIONSLISTE, prueflingeAusFall, sanktionsAbgleich } from "../../sanktionsliste";
+    28	import { kycEntschluesseln, kycSchluesselStatus, kycVerschluesseln } from "../../server/kycKrypto";
+    29	import { intern } from "../demo";
+    30	import { aendern, lesen, DATEN_ORDNER } from "./speicher";
+    31	import { jetzt, neueId, sha256 } from "./hilfen";
+    32	import { kycEinstellungenDb, kycErgebnisAnhaengenDb, kycFallFuer, kycFreigabeDb, kycStatusDb } from "./kycRegeln";
+    33	import { kycSeed } from "./kyc-seed";
+    34	import { suchprofilFuer } from "./teams"; // Investorentyp aus dem (Konto- bzw. Team-)Suchprofil
+    35	
+    36	const { benachrichtigen, protokoll, nutzerById, nameVon } = intern;
+    37	
+    38	export const KYC_ORDNER = path.join(DATEN_ORDNER, "kyc");
+    39	const LISTE_DATEI = path.join(DATEN_ORDNER, "kyc-sanktionsliste.json");
+    40	const MAIL_KYC = "Zu Ihrer Verifizierung gibt es Neuigkeiten. Aus Gründen der Vertraulichkeit enthält diese E-Mail keine Inhalte – bitte melden Sie sich im Portal an.";
+    41	
+    42	// ================================================================ Rechte
+    43	
+    44	const istAdmin = (n) => !!n?.rollen?.includes("admin");
+    45	const istCompliance = (n) => istAdmin(n) && unterrollen(n).includes("compliance") && stufe(n, "compliance") >= 2;
+    46	const complianceLesen = (n) => istAdmin(n) && stufe(n, "compliance") >= 1;
+    47	
+    48	function angemeldet(n) {
+    49	  if (!n) throw new PlattformFehler(401, "Bitte melden Sie sich an.");
+    50	}
+    51	function complianceNoetig(n) {
+    52	  angemeldet(n);
+    53	  if (!istCompliance(n)) throw verboten(istAdmin(n) ? "Nur für die Compliance (Backoffice-Rolle „Compliance“)." : "Dafür fehlt Ihnen die Berechtigung.");
+    54	}
+    55	
+    56	// ================================================================ Datenbestand
+    57	
+    58	function leer() {
+    59	  return { v: 1, faelle: [], dokumente: [], abgleiche: [], einstellungen: kycEinstellungenStandard() };
+    60	}
+    61	
+    62	async function lesenBereit() {
+    63	  const db = await lesen();
+    64	  if (db.kyc?.v) return db;
+    65	  await aendern(async (d) => {
+    66	    if (d.kyc?.v) return;
+    67	    d.kyc = leer();
+    68	    try {
+    69	      await kycSeed(d, { dateiSchreiben, abgleichen: (f) => abgleichAusfuehren(d, f, null, "Einreichung (Demo)") });
+    70	    } catch (e) {
+    71	      console.warn("[plattform-demo] KYC-Demodaten nicht ergänzt:", e?.message);
+    72	    }
+    73	  });
+    74	  return lesen();
+    75	}
+    76	
+    77	async function aendernBereit(fn) {
+    78	  await lesenBereit();
+    79	  return aendern(fn);
+    80	}
+    81	
+    82	// ---------------------------------------------------------------- Dateien (verschlüsselt)
+    83	
+    84	function dateiSchreiben(datei, verschluesselt) {
+    85	  mkdirSync(KYC_ORDNER, { recursive: true });
+    86	  writeFileSync(path.join(KYC_ORDNER, path.basename(datei)), verschluesselt);
+    87	}
+    88	async function dateiLesen(datei) {
+    89	  return fs.readFile(path.join(KYC_ORDNER, path.basename(datei)));
+    90	}
+    91	async function dateiLoeschen(datei) {
+    92	  await fs.rm(path.join(KYC_ORDNER, path.basename(datei)), { force: true }).catch(() => {});
+    93	}
+    94	
+    95	// ---------------------------------------------------------------- Sanktionsliste
+    96	
+    97	let listeCache = null;
+    98	export function sanktionsliste() {
+    99	  try {
+   100	    if (existsSync(LISTE_DATEI)) {
+   101	      const roh = readFileSync(LISTE_DATEI, "utf8");
+   102	      if (!listeCache || listeCache.roh !== roh.length) listeCache = { roh: roh.length, liste: JSON.parse(roh) };
+   103	      return listeCache.liste;
+   104	    }
+   105	  } catch (e) {
+   106	    console.warn("[plattform-kyc] Sanktionsliste nicht lesbar:", e?.message);
+   107	  }
+   108	  return { ...DEMO_SANKTIONSLISTE, demo: true };
+   109	}
+   110	
+   111	function abgleichAusfuehren(db, f, n, anlass) {
+   112	  const liste = sanktionsliste();
+   113	  const e = kycEinstellungenDb(db);
+   114	  const prueflinge = prueflingeAusFall(f);
+   115	  const treffer = prueflinge.flatMap((p) => sanktionsAbgleich(p, liste.eintraege || [], { schwelle: e.trefferSchwelle }).map((t) => ({ ...t, pruefling: p.rolle, prueflingName: p.name })));
+   116	  const alt = new Map((f.sanktionen?.treffer || []).map((t) => [`${t.eintragId}|${t.prueflingName}`, t]));
+   117	  const neu = treffer.map((t) => {
+   118	    const a = alt.get(`${t.eintragId}|${t.prueflingName}`);
+   119	    return a?.bewertung ? { ...t, bewertung: a.bewertung, begruendung: a.begruendung, bewertetVon: a.bewertetVon, bewertetAm: a.bewertetAm } : { ...t, bewertung: null };
+   120	  });
+   121	  const offen = neu.some((t) => !t.bewertung);
+   122	  const bestaetigt = neu.some((t) => t.bewertung === "bestaetigt");
+   123	  f.sanktionen = { status: bestaetigt ? "bestaetigt" : offen ? "treffer_pruefen" : neu.length ? "ausgeschlossen" : "kein_treffer", treffer: neu, letzterAbgleich: jetzt(), listeStand: liste.stand || "", listeQuelle: liste.quelle || "" };
+   124	  const eintrag = { id: neueId("KA"), fallId: f.id, am: jetzt(), anlass, prueflinge: prueflinge.length, treffer: neu.length, listeStand: liste.stand || "", vonId: n?.id || null };
+   125	  db.kyc.abgleiche.unshift(eintrag);
+   126	  if (db.kyc.abgleiche.length > 2000) db.kyc.abgleiche.length = 2000;
+   127	  protokoll(db, n, "kyc_abgleich", "kyc", f.id, `Sanktionsabgleich (${anlass}): ${prueflinge.length} Namen, ${neu.length} Treffer`);
+   128	  return f.sanktionen;
+   129	}
+   130	
+   131	// ---------------------------------------------------------------- Helfer
+   132	
+   133	const fallById = (db, id) => (db.kyc.faelle || []).find((f) => f.id === v.kennung(id)) || null;
+   134	const eigenerFall = (db, n) => (db.kyc.faelle || []).find((f) => f.kontoId === n.id) || null;
+   135	const dokumenteVon = (db, f) => (db.kyc.dokumente || []).filter((d) => d.fallId === f.id && !d.geloescht);
+   136	const flaechenVon = (db, kontoId) => (db.flaechen || []).filter((x) => x.nutzerId === kontoId).map((x) => ({ id: x.id, bezeichnung: x.bezeichnung, land: x.land }));
+   137	
+   138	/** Investorentyp aus dem Suchprofil (nur Investorenkonten) – wird in den KYC-Fall übernommen */
+   139	function investorTypVon(db, n) {
+   140	  if (!n?.rollen?.includes("investor")) return "";
+   141	  const typ = suchprofilFuer(db, n)?.investorTyp || nutzerById(db, n.id)?.suchprofil?.investorTyp || "";
+   142	  return kycInvestorVorgaben(typ) ? typ : "";
+   143	}
+   144	
+   145	function kontextFuer(db, f) {
+   146	  const u = nutzerById(db, f.kontoId);
+   147	  return { rollen: u?.rollen || [], flaechen: flaechenVon(db, f.kontoId), einstellungen: kycEinstellungenDb(db) };
+   148	}
+   149	
+   150	function anforderungenVon(db, f, { nurGeprueft = false } = {}) {
+   151	  const docs = dokumenteVon(db, f).filter((d) => !nurGeprueft || d.status === "ok");
+   152	  return kycAnforderungen({ ...f, dokumente: docs }, kontextFuer(db, f));
+   153	}
+   154	
+   155	function verlauf(f, status, n, rolle, kommentar = "", { oeffentlich = true } = {}) {
+   156	  f.verlauf = f.verlauf || [];
+   157	  f.verlauf.push({ status, am: jetzt(), vonId: n?.id || null, rolle, kommentar: v.mehrzeilig(kommentar, 1000), oeffentlich });
+   158	}
+   159	
+   160	function statusSetzen(db, f, nach, n, wer, kommentar = "", opt = {}) {
+   161	  if (!kycUebergangErlaubt(f.status, nach, wer)) throw konflikt(`Statuswechsel „${kycStatusLabel(f.status, { intern: true })}“ → „${kycStatusLabel(nach, { intern: true })}“ ist nicht möglich.`);
+   162	  const von = f.status;
+   163	  f.status = nach;
+   164	  f.geaendertAm = jetzt();
+   165	  verlauf(f, nach, n, wer, kommentar, opt);
+   166	  protokoll(db, n, "kyc_status", "kyc", f.id, `${kycStatusLabel(von, { intern: true })} → ${kycStatusLabel(nach, { intern: true })}`);
+   167	}
+   168	
+   169	function complianceKonten(db) {
+   170	  return db.nutzer.filter((u) => u.aktiv && u.rollen.includes("admin") && unterrollen(u).includes("compliance"));
+   171	}
+   172	
+   173	function nutzerMelden(db, f, titel, text) {
+   174	  const u = nutzerById(db, f.kontoId);
+   175	  if (u) benachrichtigen(db, u, { art: "status", titel, text, link: "/portal/verifizierung", objektArt: "kyc", objektId: f.id }, { mailText: MAIL_KYC, mailBetreff: "Neuigkeiten zu Ihrer Verifizierung – ÖkoInvest" });
+   176	}
+   177	
+   178	function complianceMelden(db, f, titel, text, { ohneId = null } = {}) {
+   179	  for (const u of complianceKonten(db)) {
+   180	    if (u.id === ohneId) continue;
+   181	    benachrichtigen(db, u, { art: "aufgabe", titel, text, link: `/portal/admin/compliance/${f.id}`, objektArt: "kyc", objektId: f.id }, { mailText: "Im Compliance-Bereich liegt ein Vorgang zur Prüfung bereit. Details nur im Portal." });
+   182	  }
+   183	}
+   184	
+   185	// ---------------------------------------------------------------- Ausgabe
+   186	
+   187	function dokumentMeta(d, { compliance = false } = {}) {
+   188	  return {
+   189	    id: d.id, fallId: d.fallId, art: d.art, artLabel: KYC_DOKUMENTE[d.art]?.label || d.art, name: d.name, mime: d.mime, groesse: d.groesse, am: d.am,
+   190	    flaecheId: d.flaecheId || null, personId: d.personId || null, ausgestelltAm: d.ausgestelltAm || null, status: d.status,
+   191	    grund: d.status === "abgelehnt" ? d.pruefung?.notiz || "" : "",
+   192	    ...(compliance ? { sha256: d.sha256, pruefung: d.pruefung || null, verschluesselt: true } : {}),
+   193	  };
+   194	}
+   195	
+   196	function fallFuerNutzer(db, f) {
+   197	  if (!f) return null;
+   198	  const sichtStatus = f.status === "zweitpruefung" ? "in_pruefung" : f.status;
+   199	  return {
+   200	    id: f.id, kontotyp: f.kontotyp, status: sichtStatus, statusLabel: kycStatusLabel(sichtStatus), organisationId: f.organisationId || null,
+   201	    investorTyp: f.investorTyp || "", investorVorgaben: kycInvestorVorgaben(f.investorTyp),
+   202	    person: f.person || {}, firma: f.firma || {}, ubos: f.ubos || [], vertreter: f.vertreter || [], einreicherVertretungsberechtigt: f.einreicherVertretungsberechtigt ?? null,
+   203	    pep: f.pep || {}, mittelherkunft: f.mittelherkunft || {}, steuer: f.steuer || {},
+   204	    bank: f.bank ? { iban: f.bank.iban ? ibanFormatiert(f.bank.iban) : "", kontoinhaber: f.bank.kontoinhaber || "", bic: f.bank.bic || "", geprueft: f.status === "verifiziert" && !!f.bank.geprueft } : {},
+   205	    nachforderung: f.status === "nachgefordert" ? f.nachforderung || "" : "",
+   206	    eingereichtAm: f.eingereichtAm || null, verifiziertAm: f.verifiziertAm || null, naechstePruefung: f.naechstePruefung || null,
+   207	    verlauf: (f.verlauf || []).filter((x) => x.oeffentlich !== false).map((x) => ({ status: x.status === "zweitpruefung" ? "in_pruefung" : x.status, am: x.am, kommentar: x.rolle === "nutzer" ? "" : x.kommentar })),
+   208	    bearbeitbar: KYC_BEARBEITBAR.includes(f.status),
+   209	    dokumente: dokumenteVon(db, f).map((d) => dokumentMeta(d)),
+   210	  };
+   211	}
+   212	
+   213	function freigabenFuer(db, kontoId, status) {
+   214	  const e = kycEinstellungenDb(db);
+   215	  return Object.fromEntries(KYC_SCHRITT_IDS.map((s) => {
+   216	    const aktiv = kycSchrittAktiv(s, kontoId, e, process.env);
+   217	    return [s, { label: KYC_SCHRITTE[s].label, aktiv, pflichtBeiGeltung: e.gating?.[s] !== false, ok: status.verifiziert }];
+   218	  }));
+   219	}
+   220	
+   221	// ================================================================ Nutzer
+   222	
+   223	/** Eigener Fall mit Anforderungen, Fortschritt und Freigaben */
+   224	export async function kycFall(n) {
+   225	  angemeldet(n);
+   226	  const db = await lesenBereit();
+   227	  const f = eigenerFall(db, n);
+   228	  const status = kycStatusDb(db, { kontoId: n.id, organisationId: n.organisation?.id || null });
+   229	  const kontext = { rollen: n.rollen || [], flaechen: flaechenVon(db, n.id), einstellungen: kycEinstellungenDb(db) };
+   230	  const anforderungen = kycAnforderungen(f ? { ...f, dokumente: dokumenteVon(db, f) } : null, kontext);
+   231	  return {
+   232	    fall: fallFuerNutzer(db, f),
+   233	    anforderungen,
+   234	    fortschritt: kycFortschritt(anforderungen),
+   235	    status: { ...status, statusLabel: kycStatusLabel(status.status === "zweitpruefung" ? "in_pruefung" : status.status), status: status.status === "zweitpruefung" ? "in_pruefung" : status.status, risiko: undefined },
+   236	    flaechen: kontext.flaechen,
+   237	    freigaben: freigabenFuer(db, n.id, status),
+   238	    investorVorgaben: kycInvestorVorgaben(f?.investorTyp || investorTypVon(db, n)), // Vorschlag Kontotyp/Unterlagen aus dem Suchprofil
+   239	    ablage: kycSchluesselStatus(),
+   240	  };
+   241	}
+   242	
+   243	const datum = (x) => (/^\d{4}-\d{2}-\d{2}$/.test(String(x || "")) ? String(x) : "");
+   244	const land = (x) => (/^[A-Z]{2}$/.test(String(x || "").toUpperCase()) ? String(x).toUpperCase() : "");
+   245	const personDaten = (d = {}) => ({
+   246	  vorname: v.text(d.vorname, 80), nachname: v.text(d.nachname, 80), geburtsdatum: datum(d.geburtsdatum), geburtsort: v.text(d.geburtsort, 80),
+   247	  staatsangehoerigkeit: land(d.staatsangehoerigkeit),
+   248	  adresse: { strasse: v.text(d.adresse?.strasse, 120), plz: v.text(d.adresse?.plz, 12), ort: v.text(d.adresse?.ort, 80), land: land(d.adresse?.land) },
+   249	  ausweis: { art: v.auswahl(d.ausweis?.art, ["personalausweis", "reisepass", "aufenthaltstitel"], ""), nummer: v.text(d.ausweis?.nummer, 30), behoerde: v.text(d.ausweis?.behoerde, 120), gueltigBis: datum(d.ausweis?.gueltigBis) },
+   250	});
+   251	
+   252	function listeBereinigen(liste, fn, max = 12) {
+   253	  return (Array.isArray(liste) ? liste : []).slice(0, max).map((x) => ({ id: /^[a-z0-9-]{4,20}$/i.test(String(x?.id || "")) ? String(x.id) : neueId("WB").toLowerCase(), ...fn(x || {}) }));
+   254	}
+   255	
+   256	const ABSCHNITTE = {
+   257	  kontotyp: (d, f, n, db) => {
+   258	    // ohne Angabe: Vorschlag aus dem Investorentyp des Suchprofils
+   259	    const typ = v.auswahl(d.kontotyp, Object.keys(KYC_KONTOTYPEN), "") || kycInvestorVorgaben(f.investorTyp)?.kontotyp || "";
+   260	    v.pflicht(typ, "Bitte wählen Sie den Kontotyp.");
+   261	    f.kontotyp = typ;
+   262	    if (typ === "unternehmen" && n.organisation?.id && ["inhaber", "admin"].includes(n.organisation.rolle) && !(db.kyc.faelle || []).some((x) => x.organisationId === n.organisation.id && x.id !== f.id)) {
+   263	      f.organisationId = n.organisation.id;
+   264	      f.firma = { ...(f.firma || {}), name: f.firma?.name || n.organisation.name };
+   265	    }
+   266	    if (typ === "privat") f.organisationId = null;
+   267	  },
+   268	  person: (d, f) => {
+   269	    f.person = personDaten(d);
+   270	  },
+   271	  firma: (d, f) => {
+   272	    f.firma = {
+   273	      name: v.text(d.name, 160), rechtsform: v.text(d.rechtsform, 60), registernummer: v.text(d.registernummer, 60), registergericht: v.text(d.registergericht, 120),
+   274	      land: land(d.land), sitz: v.text(d.sitz, 160), mehrstufig: v.wahr(d.mehrstufig), treuhand: v.wahr(d.treuhand),
+   275	    };
+   276	    if (d.einreicherVertretungsberechtigt !== undefined) f.einreicherVertretungsberechtigt = v.wahr(d.einreicherVertretungsberechtigt);
+   277	  },
+   278	  ubos: (d, f) => {
+   279	    f.ubos = listeBereinigen(d.liste, (u) => ({
+   280	      vorname: v.text(u.vorname, 80), nachname: v.text(u.nachname, 80), geburtsdatum: datum(u.geburtsdatum), staatsangehoerigkeit: land(u.staatsangehoerigkeit), wohnsitzland: land(u.wohnsitzland),
+   281	      anteil: v.zahl(u.anteil, { min: 0, max: 100, stellen: 2 }), kontrolleArt: v.auswahl(u.kontrolleArt, Object.keys(KYC_KONTROLLE_ARTEN), "anteil"), pep: v.wahr(u.pep),
+   282	    }), 10);
+   283	  },
+   284	  vertreter: (d, f) => {
+   285	    f.vertreter = listeBereinigen(d.liste, (x) => ({ vorname: v.text(x.vorname, 80), nachname: v.text(x.nachname, 80), geburtsdatum: datum(x.geburtsdatum), funktion: v.text(x.funktion, 80), istEinreicher: v.wahr(x.istEinreicher) }), 8);
+   286	  },
+   287	  pep: (d, f) => {
+   288	    f.pep = { istPep: d.istPep === undefined ? undefined : v.wahr(d.istPep), naheStehend: d.naheStehend === undefined ? undefined : v.wahr(d.naheStehend), funktion: v.text(d.funktion, 200), angaben: v.mehrzeilig(d.angaben, 1000) };
+   289	  },
+   290	  mittelherkunft: (d, f) => {
+   291	    f.mittelherkunft = { ticket: v.auswahl(d.ticket, Object.keys(KYC_TICKETS), ""), quellen: v.mehrfach(d.quellen, Object.keys(KYC_MITTEL_QUELLEN)), text: v.mehrzeilig(d.text, 1500) };
+   292	  },
+   293	  steuer: (d, f) => {
+   294	    f.steuer = { land: land(d.land), steuerId: v.text(d.steuerId, 40) };
+   295	  },
+   296	  bank: (d, f) => {
+   297	    const ib = ibanPruefen(d.iban);
+   298	    if (d.iban && !ib.ok) throw ungueltig(ib.fehler);
+   299	    const inhaber = v.text(d.kontoinhaber, 160);
+   300	    f.bank = { iban: ib.ok ? ib.iban : "", bic: v.text(d.bic, 11).toUpperCase(), kontoinhaber: inhaber, ibanOk: ib.ok, geprueft: false, geaendertAm: jetzt() };
+   301	  },
+   302	};
+   303	
+   304	/** Abschnitt speichern (nur solange bearbeitbar). Legt den Fall beim ersten Aufruf an. */
+   305	export async function kycSpeichern(n, { abschnitt, daten = {} } = {}) {
+   306	  angemeldet(n);
+   307	  if (!ABSCHNITTE[abschnitt]) throw ungueltig("Unbekannter Abschnitt.");
+   308	  return aendernBereit((db) => {
+   309	    let f = eigenerFall(db, n);
+   310	    if (!f) {
+   311	      if (abschnitt !== "kontotyp") throw ungueltig("Bitte wählen Sie zuerst den Kontotyp.");
+   312	      f = { id: neueId("KY"), kontoId: n.id, organisationId: null, kontotyp: "", investorTyp: investorTypVon(db, n), status: "offen", verlauf: [], erstelltAm: jetzt(), geaendertAm: jetzt() };
+   313	      verlauf(f, "offen", n, "nutzer", f.investorTyp ? `Verifizierung begonnen (Investorentyp: ${kycInvestorVorgaben(f.investorTyp).label}).` : "Verifizierung begonnen.");
+   314	      db.kyc.faelle.push(f);
+   315	    }
+   316	    if (!KYC_BEARBEITBAR.includes(f.status)) throw konflikt(f.status === "verifiziert" ? "Ihre Verifizierung ist abgeschlossen. Für Änderungen starten Sie bitte eine erneute Prüfung." : "Ihre Angaben liegen gerade zur Prüfung vor und können nicht geändert werden.");
+   317	    f.investorTyp = investorTypVon(db, n) || f.investorTyp || ""; // Suchprofil kann sich geändert haben
+   318	    ABSCHNITTE[abschnitt](daten || {}, f, n, db);
+   319	    f.geaendertAm = jetzt();
+   320	    protokoll(db, n, "kyc_angaben", "kyc", f.id, `Angaben gespeichert: ${abschnitt}`);
+   321	    return kycFallSync(db, n, f);
+   322	  });
+   323	}
+   324	
+   325	function kycFallSync(db, n, f) {
+   326	  const kontext = { rollen: n.rollen || [], flaechen: flaechenVon(db, n.id), einstellungen: kycEinstellungenDb(db) };
+   327	  const anforderungen = kycAnforderungen({ ...f, dokumente: dokumenteVon(db, f) }, kontext);
+   328	  return { fall: fallFuerNutzer(db, f), anforderungen, fortschritt: kycFortschritt(anforderungen) };
+   329	}
+   330	
+   331	/** Unterlage hochladen (Typ/Größe prüft die Route; hier Art, Bezug, Verschlüsselung) */
+   332	export async function kycDokumentSpeichern(n, { art, flaecheId = null, personId = null, ausgestelltAm = null, name, mime, daten } = {}) {
+   333	  angemeldet(n);
+   334	  if (!KYC_DOKUMENTE[art]) throw ungueltig("Unbekannte Dokumentart.");
+   335	  if (!KYC_UPLOAD.typen[mime]) throw new PlattformFehler(415, "Erlaubt sind PDF, JPG und PNG.");
+   336	  if (!daten?.length || daten.length > KYC_UPLOAD.maxBytes) throw new PlattformFehler(413, "Die Datei ist leer oder größer als 10 MB.");
+   337	  return aendernBereit((db) => {
+   338	    const f = eigenerFall(db, n);
+   339	    if (!f) throw ungueltig("Bitte wählen Sie zuerst den Kontotyp.");
+   340	    if (!KYC_BEARBEITBAR.includes(f.status)) throw konflikt("Ihre Unterlagen liegen gerade zur Prüfung vor bzw. sind geprüft. Für Änderungen starten Sie bitte eine erneute Prüfung.");
+   341	    const def = KYC_DOKUMENTE[art];
+   342	    let fl = null;
+   343	    if (def.bezug === "flaeche") {
+   344	      fl = (db.flaechen || []).find((x) => x.id === v.kennung(flaecheId));
+   345	      if (!fl || fl.nutzerId !== n.id) throw verboten("Eigentumsnachweise nur für eigene Flächen.");
+   346	    }
+   347	    if (def.bezug === "vertreter") v.pflicht((f.vertreter || []).some((x) => x.id === String(personId || "")), "Bitte ordnen Sie den Ausweis einer vertretungsberechtigten Person zu.");
+   348	    const id = neueId("KD");
+   349	    const datei = `${id}-${sha256(`${id}${Math.random()}`).slice(0, 16)}.bin`;
+   350	    dateiSchreiben(datei, kycVerschluesseln(Buffer.from(daten), id));
+   351	    const d = {
+   352	      id, fallId: f.id, kontoId: n.id, art, flaecheId: fl?.id || null, personId: def.bezug === "vertreter" ? String(personId) : null,
+   353	      ausgestelltAm: datum(ausgestelltAm) || null, name: v.text(name, 160) || `unterlage.${KYC_UPLOAD.typen[mime]}`, mime, groesse: daten.length,
+   354	      sha256: sha256(daten), datei, am: jetzt(), hochgeladenVon: n.id, status: "neu", pruefung: null, geloescht: false,
+   355	    };
+   356	    db.kyc.dokumente.push(d);
+   357	    f.geaendertAm = jetzt();
+   358	    protokoll(db, n, "kyc_upload", "kyc", f.id, `Unterlage hochgeladen: ${def.label} (${d.id})`);
+   359	    return dokumentMeta(d);
+   360	  });
+   361	}
+   362	
+   363	/** Unterlage öffnen: Person selbst oder Compliance. Jeder Zugriff wird protokolliert (Hash-Kette). */
+   364	export async function kycDokumentLesen(n, id, { ip = "" } = {}) {
+   365	  angemeldet(n);
+   366	  const db = await lesenBereit();
+   367	  const d = (db.kyc.dokumente || []).find((x) => x.id === v.kennung(id) && !x.geloescht);
+   368	  if (!d) throw nichtGefunden("Unterlage nicht gefunden.");
+   369	  const eigen = d.kontoId === n.id;
+   370	  if (!eigen && !istCompliance(n)) {
+   371	    await aendern((w) => protokoll(w, n, "kyc_zugriff_verweigert", "kyc", d.fallId, `Zugriff auf Unterlage ${d.id} verweigert`, ip));
+   372	    throw verboten("Auf diese Unterlage haben Sie keinen Zugriff.");
+   373	  }
+   374	  const roh = await dateiLesen(d.datei);
+   375	  const daten = kycEntschluesseln(roh, d.id);
+   376	  await aendern((w) => protokoll(w, n, "kyc_zugriff", "kyc", d.fallId, `Unterlage ${d.id} (${KYC_DOKUMENTE[d.art]?.label || d.art}) geöffnet${eigen ? " – eigene" : " – Compliance"}`, ip));
+   377	  return { meta: dokumentMeta(d), daten };
+   378	}
+   379	
+   380	export async function kycDokumentLoeschen(n, id) {
+   381	  angemeldet(n);
+   382	  let datei = null;
+   383	  const r = await aendernBereit((db) => {
+   384	    const d = (db.kyc.dokumente || []).find((x) => x.id === v.kennung(id) && !x.geloescht);
+   385	    if (!d || d.kontoId !== n.id) throw nichtGefunden("Unterlage nicht gefunden.");
+   386	    const f = fallById(db, d.fallId);
+   387	    if (!f || !KYC_BEARBEITBAR.includes(f.status) || d.status === "ok") throw konflikt("Geprüfte bzw. eingereichte Unterlagen können nicht gelöscht werden.");
+   388	    d.geloescht = true;
+   389	    d.geloeschtAm = jetzt();
+   390	    datei = d.datei;
+   391	    protokoll(db, n, "kyc_upload_geloescht", "kyc", f.id, `Unterlage ${d.id} gelöscht`);
+   392	    return { ok: true };
+   393	  });
+   394	  if (datei) await dateiLoeschen(datei);
+   395	  return r;
+   396	}
+   397	
+   398	export async function kycEinreichen(n, { ip = "" } = {}) {
+   399	  angemeldet(n);
+   400	  return aendernBereit((db) => {
+   401	    const f = eigenerFall(db, n);
+   402	    if (!f) throw ungueltig("Bitte beginnen Sie zuerst mit der Verifizierung.");
+   403	    if (KYC_BEARBEITBAR.includes(f.status)) f.investorTyp = investorTypVon(db, n) || f.investorTyp || "";
+   404	    const anf = kycAnforderungen({ ...f, dokumente: dokumenteVon(db, f) }, { rollen: n.rollen || [], flaechen: flaechenVon(db, n.id), einstellungen: kycEinstellungenDb(db) });
+   405	    const fp = kycFortschritt(anf);
+   406	    if (fp.fehlend.length) throw ungueltig(`Es fehlen noch: ${fp.fehlend.map((x) => x.label).join(" · ")}`);
+   407	    statusSetzen(db, f, "eingereicht", n, "nutzer", "Zur Prüfung eingereicht.");
+   408	    f.eingereichtAm = jetzt();
+   409	    f.nachforderung = "";
+   410	    f.einreichungIp = ip || "";
+   411	    if (f.bank) f.bank.inhaberPasst = kontoinhaberPasst(f.bank.kontoinhaber, f.kontotyp === "unternehmen" ? { firma: f.firma?.name } : { vorname: f.person?.vorname, nachname: f.person?.nachname });
+   412	    abgleichAusfuehren(db, f, n, "Einreichung");
+   413	    f.risiko = { ...kycRisiko(f, kycEinstellungenDb(db)), manuell: false };
+   414	    complianceMelden(db, f, `KYC ${f.kontotyp === "unternehmen" ? "KYB" : "KYC"} zur Prüfung: ${f.id}`, `Neuer Vorgang in der Warteschlange (Risiko ${f.risiko.stufe}).`);
+   415	    nutzerMelden(db, f, "Verifizierung eingereicht", "Vielen Dank – wir prüfen Ihre Angaben und melden uns im Portal.");
+   416	    return kycFallSync(db, n, f);
+   417	  });
+   418	}
+   419	
+   420	/** Erneute Prüfung starten (z. B. neue Angaben nach Verifizierung, Ausweis erneuert) */
+   421	export async function kycErneut(n) {
+   422	  angemeldet(n);
+   423	  return aendernBereit((db) => {
+   424	    const f = eigenerFall(db, n);
+   425	    if (!f) throw nichtGefunden("Keine Verifizierung vorhanden.");
+   426	    if (f.status === "abgelehnt") throw konflikt("Bitte wenden Sie sich über „Nachrichten“ an ÖkoInvest.");
+   427	    if (f.status !== "verifiziert") throw konflikt("Ihre Verifizierung kann derzeit bereits bearbeitet werden.");
+   428	    f.letzteVerifizierung = { am: f.verifiziertAm, risiko: f.risiko?.stufe || null };
+   429	    statusSetzen(db, f, "offen", n, "nutzer", "Erneute Prüfung gestartet.");
+   430	    return kycFallSync(db, n, f);
+   431	  });
+   432	}
+   433	
+   434	/**
+   435	 * KYC-Status für andere Module/Teams. ziel: { kontoId } | { organisationId }.
+   436	 * Nutzer: nur eigenes Konto bzw. aktive Organisation; Backoffice: alle. Ohne Nutzer (n = null): Systemaufruf im Server.
+   437	 */
+   438	export async function kycStatus(n, { kontoId = null, organisationId = null } = {}) {
+   439	  const db = await lesenBereit();
+   440	  if (n && !istAdmin(n)) {
+   441	    if (kontoId && kontoId !== n.id) throw verboten();
+   442	    if (organisationId && n.organisation?.id !== organisationId) throw verboten();
+   443	  }
+   444	  const s = kycStatusDb(db, { kontoId: kontoId || (!organisationId ? n?.id : null), organisationId });
+   445	  return { ...s, statusLabel: kycStatusLabel(s.status === "zweitpruefung" ? "in_pruefung" : s.status), status: s.status === "zweitpruefung" ? "in_pruefung" : s.status, risiko: n && complianceLesen(n) ? s.risiko : undefined };
+   446	}
+   447	
+   448	/** Freigabe eines Schritts prüfen (Gating) – eigenes Konto oder Backoffice für alle */
+   449	export async function kycFreigabePruefen(n, { schritt, kontoId = null, organisationId = null, flaecheId = null } = {}) {
+   450	  angemeldet(n);
+   451	  if (!KYC_SCHRITTE[schritt]) throw ungueltig("Unbekannter Schritt.");
+   452	  const ziel = kontoId || n.id;
+   453	  if (!istAdmin(n) && (ziel !== n.id || (organisationId && n.organisation?.id !== organisationId))) throw verboten();
+   454	  const db = await lesenBereit();
+   455	  const r = kycFreigabeDb(db, schritt, { kontoId: ziel, organisationId, flaecheId: flaecheId ? v.kennung(flaecheId) : null });
+   456	  return { ...r, schrittLabel: KYC_SCHRITTE[schritt].label };
+   457	}
+   458	
+   459	/**
+   460	 * Systemaufruf für externe Dienste (Team „Dienste“: Identitätsanbieter, MRZ, Register, Bonität): Prüfergebnis anhängen.
+   461	 * Protokolliert (Hash-Kette) und meldet der Compliance auffällige Ergebnisse. Keine automatische Statusänderung.
+   462	 */
+   463	export async function kycErgebnisAnhaengen(fall, eintrag = {}) {
+   464	  return aendernBereit((db) => {
+   465	    const e = kycErgebnisAnhaengenDb(db, fall, eintrag);
+   466	    const f = fallById(db, e.fallId);
+   467	    protokoll(db, null, "kyc_ergebnis", "kyc", e.fallId, `Prüfergebnis ${e.quelle}/${e.art}: ${e.ergebnis}`);
+   468	    if (f && ["auffaellig", "fehler"].includes(e.ergebnis)) complianceMelden(db, f, `Externes Prüfergebnis auffällig: ${f.id}`, `${e.quelle}: ${e.zusammenfassung || e.ergebnis}`.slice(0, 280));
+   469	    return e;
+   470	  });
+   471	}
+   472	
+   473	/** Systemaufruf (andere Module im Server, ohne Nutzerkontext): Freigabe eines Schritts */
+   474	export async function kycFreigabeSystem(schritt, { kontoId = null, organisationId = null, flaecheId = null } = {}) {
+   475	  if (!KYC_SCHRITTE[schritt]) throw ungueltig("Unbekannter Schritt.");
+   476	  const db = await lesenBereit();
+   477	  return kycFreigabeDb(db, schritt, { kontoId, organisationId, flaecheId });
+   478	}
+   479	
+   480	// ================================================================ Compliance
+   481	
+   482	function fallZeile(db, f) {
+   483	  const u = nutzerById(db, f.kontoId);
+   484	  const org = f.organisationId ? (db.organisationen || []).find((o) => o.id === f.organisationId) : null;
+   485	  const wartetSeit = f.eingereichtAm || f.erstelltAm;
+   486	  return {
+   487	    id: f.id, kontoId: f.kontoId, konto: u ? { name: nameVon(db, u.id), email: u.email, rollen: u.rollen } : null,
+   488	    organisation: org ? { id: org.id, name: org.name } : null, kontotyp: f.kontotyp, investorTyp: f.investorTyp || "", investorTypLabel: kycInvestorVorgaben(f.investorTyp)?.label || "", bezeichnung: f.kontotyp === "unternehmen" ? f.firma?.name || org?.name || "Unternehmen" : [f.person?.vorname, f.person?.nachname].filter(Boolean).join(" ") || nameVon(db, f.kontoId),
+   489	    status: f.status, statusLabel: kycStatusLabel(f.status, { intern: true }), risiko: f.risiko?.stufe || null, sanktionen: f.sanktionen?.status || null,
+   490	    pep: !!(f.pep?.istPep || f.pep?.naheStehend || (f.ubos || []).some((x) => x.pep)), eingereichtAm: f.eingereichtAm || null, wartetTage: wartetSeit ? Math.max(0, -tageBis(String(wartetSeit).slice(0, 10))) : null,
+   491	    bearbeiterId: f.bearbeiterId || null, bearbeiter: f.bearbeiterId ? nameVon(db, f.bearbeiterId) : "", erstPrueferId: f.pruefung?.erstPrueferId || null,
+   492	    naechstePruefung: f.naechstePruefung || null, ausweisGueltigBis: f.person?.ausweis?.gueltigBis || null, loeschenAb: f.loeschenAb || null,
+   493	  };
+   494	}
+   495	
+   496	export async function kycWarteschlange(n, { status = "offen", q = "" } = {}) {
+   497	  angemeldet(n);
+   498	  if (!complianceLesen(n)) throw verboten("Nur für die Compliance.");
+   499	  const db = await lesenBereit();
+   500	  const alle = (db.kyc.faelle || []).filter((f) => f.status !== "geloescht");
+   501	  let liste = alle;
+   502	  if (status === "offen") liste = alle.filter((f) => KYC_WARTESCHLANGE.includes(f.status));
+   503	  else if (KYC_STATUS[status]) liste = alle.filter((f) => f.status === status);
+   504	  else if (status === "treffer") liste = alle.filter((f) => ["treffer_pruefen", "bestaetigt"].includes(f.sanktionen?.status));
+   505	  else if (status === "faellig") liste = alle.filter((f) => f.status === "verifiziert" && f.naechstePruefung && tageBis(f.naechstePruefung) <= 30);
+   506	  const suche = v.text(q, 80).toLowerCase();
+   507	  let zeilen = liste.map((f) => fallZeile(db, f));
+   508	  if (suche) zeilen = zeilen.filter((z) => `${z.id} ${z.bezeichnung} ${z.konto?.email || ""} ${z.organisation?.name || ""}`.toLowerCase().includes(suche));
+   509	  const rang = { zweitpruefung: 0, eingereicht: 1, in_pruefung: 2 };
+   510	  zeilen.sort((a, b) => (rang[a.status] ?? 5) - (rang[b.status] ?? 5) || (b.risiko === "hoch") - (a.risiko === "hoch") || String(a.eingereichtAm || "").localeCompare(String(b.eingereichtAm || "")));
+   511	  const liste2 = sanktionsliste();
+   512	  return {
+   513	    faelle: complianceLesen(n) && !istCompliance(n) ? zeilen.map((z) => ({ ...z, konto: z.konto ? { name: z.konto.name, rollen: z.konto.rollen } : null })) : zeilen,
+   514	    kennzahlen: {
+   515	      warteschlange: alle.filter((f) => KYC_WARTESCHLANGE.includes(f.status)).length,
+   516	      zweitpruefung: alle.filter((f) => f.status === "zweitpruefung").length,
+   517	      treffer: alle.filter((f) => f.sanktionen?.status === "treffer_pruefen").length,
+   518	      hoch: alle.filter((f) => f.risiko?.stufe === "hoch" && f.status !== "abgelehnt").length,
+   519	      verifiziert: alle.filter((f) => f.status === "verifiziert").length,
+   520	      faellig: alle.filter((f) => f.status === "verifiziert" && f.naechstePruefung && tageBis(f.naechstePruefung) <= 30).length,
+   521	      nachgefordert: alle.filter((f) => f.status === "nachgefordert").length,
+   522	    },
+   523	    liste: { quelle: liste2.quelle, stand: liste2.stand, anzahl: (liste2.eintraege || []).length, demo: !!liste2.demo },
+   524	    schreiben: istCompliance(n),
+   525	  };
+   526	}
+   527	
+   528	export async function kycFallDetail(n, id, { ip = "" } = {}) {
+   529	  complianceNoetig(n);
+   530	  await lesenBereit();
+   531	  return aendern((db) => {
+   532	    const f = fallById(db, id);
+   533	    if (!f) throw nichtGefunden("KYC-Fall nicht gefunden.");
+   534	    protokoll(db, n, "kyc_einsicht", "kyc", f.id, "Fall eingesehen (Compliance)", ip);
+   535	    const u = nutzerById(db, f.kontoId);
+   536	    const e = kycEinstellungenDb(db);
+   537	    const anforderungen = anforderungenVon(db, f);
+   538	    const zugriffe = (db.aktivitaeten || []).filter((a) => a.objektArt === "kyc" && a.objektId === f.id).slice(-60).reverse()
+   539	      .map((a) => ({ id: a.id, am: a.am, aktion: a.aktion, text: a.text, nutzer: nameVon(db, a.nutzerId) || "System", hash: a.hash }));
+   540	    return {
+   541	      ...fallZeile(db, f),
+   542	      konto: u ? { id: u.id, name: nameVon(db, u.id), email: u.email, rollen: u.rollen, firma: u.firma || "" } : null,
+   543	      person: f.person || {}, firma: f.firma || {}, ubos: f.ubos || [], vertreter: f.vertreter || [], einreicherVertretungsberechtigt: f.einreicherVertretungsberechtigt ?? null,
+   544	      pep: f.pep || {}, mittelherkunft: f.mittelherkunft || {}, steuer: f.steuer || {},
+   545	      bank: f.bank ? { ...f.bank, ibanFormatiert: ibanFormatiert(f.bank.iban), ibanPruefung: ibanPruefen(f.bank.iban), inhaberPasst: kontoinhaberPasst(f.bank.kontoinhaber, f.kontotyp === "unternehmen" ? { firma: f.firma?.name } : { vorname: f.person?.vorname, nachname: f.person?.nachname }) } : null,
+   546	      risikoDetail: f.risiko || null, risikoRegel: kycRisiko(f, e), sanktionenDetail: f.sanktionen || null,
+   547	      abgleiche: (db.kyc.abgleiche || []).filter((a) => a.fallId === f.id).slice(0, 20),
+   548	      pruefung: f.pruefung || {}, nachforderung: f.nachforderung || "", entscheidung: f.entscheidung || null,
+   549	      verlauf: (f.verlauf || []).map((x) => ({ ...x, von: nameVon(db, x.vonId) || (x.rolle === "system" ? "System" : "") })),
+   550	      dokumente: dokumenteVon(db, f).map((d) => ({ ...dokumentMeta(d, { compliance: true }), pruefpunkte: KYC_DOKUMENTE[d.art]?.pruefpunkte || [], flaeche: d.flaecheId ? (db.flaechen || []).find((x) => x.id === d.flaecheId)?.bezeichnung || d.flaecheId : null })),
+   551	      anforderungen, fortschritt: kycFortschritt(anforderungen), fortschrittGeprueft: kycFortschritt(anforderungenVon(db, f, { nurGeprueft: true })),
+   552	      vierAugen: vierAugenNoetig(f, e),
+   553	      pruefergebnisse: [...(f.pruefergebnisse || [])].reverse(),
+   554	      zugriffe, beziehungEnde: f.beziehungEnde || null, loeschenAb: f.loeschenAb || null, ichBinErstpruefer: f.pruefung?.erstPrueferId === n.id,
+   555	    };
+   556	  });
+   557	}
+   558	
+   559	const ERGEBNISSE = ["verifiziert", "nachgefordert", "abgelehnt"];
+   560	
+   561	/** Vier-Augen: immer (Einstellung), bei Risiko hoch oder wenn ein Sanktionstreffer als Namensgleichheit ausgeschlossen wurde */
+   562	function vierAugenNoetig(f, e) {
+   563	  return !!(e.vierAugenImmer || (e.vierAugenBeiHoch && (f.risiko?.stufe === "hoch" || (f.sanktionen?.treffer || []).length > 0)));
+   564	}
+   565	
+   566	export async function kycAktion(n, id, daten = {}) {
+   567	  complianceNoetig(n);
+   568	  const aktion = v.auswahl(daten.aktion, ["uebernehmen", "pruefliste", "risiko", "entscheiden", "zweitfreigabe", "treffer", "abgleich", "beziehungEnde", "notiz"], "");
+   569	  if (!aktion) throw ungueltig("Unbekannte Aktion.");
+   570	  return aendernBereit((db) => {
+   571	    const f = fallById(db, id);
+   572	    if (!f) throw nichtGefunden("KYC-Fall nicht gefunden.");
+   573	    const e = kycEinstellungenDb(db);
+   574	    f.pruefung = f.pruefung || {};
+   575	    let hinweis = "";
+   576	    if (aktion === "uebernehmen") {
+   577	      f.bearbeiterId = n.id;
+   578	      if (f.status === "eingereicht") statusSetzen(db, f, "in_pruefung", n, "compliance", "Prüfung begonnen.");
+   579	      else protokoll(db, n, "kyc_bearbeiter", "kyc", f.id, "Fall übernommen");
+   580	    } else if (aktion === "pruefliste") {
+   581	      if (!KYC_WARTESCHLANGE.includes(f.status)) throw konflikt("Die Prüfliste kann nur während der Prüfung bearbeitet werden.");
+   582	      const d = dokumenteVon(db, f).find((x) => x.id === v.kennung(daten.dokumentId));
+   583	      if (!d) throw nichtGefunden("Unterlage nicht gefunden.");
+   584	      const punkte = {};
+   585	      for (const p of KYC_DOKUMENTE[d.art]?.pruefpunkte || []) punkte[p] = v.wahr(daten.punkte?.[p]);
+   586	      const ergebnis = v.auswahl(daten.ergebnis, ["ok", "abgelehnt", "neu"], "neu");
+   587	      const notiz = v.mehrzeilig(daten.notiz, 600);
+   588	      if (ergebnis === "ok") v.pflicht(Object.values(punkte).every(Boolean), `Für „geprüft“ müssen alle Prüfpunkte bestätigt sein: ${(KYC_DOKUMENTE[d.art]?.pruefpunkte || []).map((p) => KYC_PRUEFPUNKTE[p]).join(" · ")}`);
+   589	      if (ergebnis === "abgelehnt") v.pflicht(notiz.length >= 5, "Bitte begründen Sie die Ablehnung der Unterlage (wird dem Nutzer angezeigt).");
+   590	      d.pruefung = { punkte, notiz, vonId: n.id, am: jetzt() };
+   591	      d.status = ergebnis;
+   592	      if (f.status === "eingereicht") statusSetzen(db, f, "in_pruefung", n, "compliance", "Prüfung begonnen.");
+   593	      protokoll(db, n, "kyc_pruefliste", "kyc", f.id, `Unterlage ${d.id}: ${ergebnis}`);
+   594	    } else if (aktion === "risiko") {
+   595	      const st = v.auswahl(daten.stufe, ["niedrig", "mittel", "hoch"], "");
+   596	      const begr = v.mehrzeilig(daten.begruendung, 600);
+   597	      v.pflicht(st, "Bitte Risikostufe wählen.");
+   598	      v.pflicht(begr.length >= 5, "Bitte begründen Sie die manuelle Einstufung.");
+   599	      const regel = kycRisiko(f, e);
+   600	      f.risiko = { ...regel, stufe: st, manuell: true, begruendung: begr, regelStufe: regel.stufe, vonId: n.id, am: jetzt() };
+   601	      protokoll(db, n, "kyc_risiko", "kyc", f.id, `Risiko manuell: ${st} (Regel: ${regel.stufe})`);
+   602	    } else if (aktion === "abgleich") {
+   603	      const s = abgleichAusfuehren(db, f, n, "manuell");
+   604	      if (!f.risiko?.manuell) f.risiko = { ...kycRisiko(f, e), manuell: false };
+   605	      if (f.status === "verifiziert" && s.status === "treffer_pruefen") {
+   606	        f.status = "in_pruefung";
+   607	        verlauf(f, "in_pruefung", n, "compliance", "Erneute Prüfung nach Sanktionsabgleich.", { oeffentlich: false });
+   608	      }
+   609	      hinweis = s.treffer.length ? `${s.treffer.length} möglicher Treffer – manuelle Prüfung erforderlich.` : "Kein Treffer.";
+   610	    } else if (aktion === "treffer") {
+   611	      const t = (f.sanktionen?.treffer || []).find((x) => x.eintragId === String(daten.eintragId || "") && (!daten.prueflingName || x.prueflingName === daten.prueflingName));
+   612	      if (!t) throw nichtGefunden("Treffer nicht gefunden.");
+   613	      const bew = v.auswahl(daten.bewertung, ["ausgeschlossen", "bestaetigt"], "");
+   614	      const begr = v.mehrzeilig(daten.begruendung, 1000);
+   615	      v.pflicht(bew, "Bitte bewerten Sie den Treffer.");
+   616	      v.pflicht(begr.length >= 10, "Bitte dokumentieren Sie die Begründung (mind. 10 Zeichen).");
+   617	      Object.assign(t, { bewertung: bew, begruendung: begr, bewertetVon: n.id, bewertetAm: jetzt() });
+   618	      const liste = f.sanktionen.treffer;
+   619	      f.sanktionen.status = liste.some((x) => x.bewertung === "bestaetigt") ? "bestaetigt" : liste.some((x) => !x.bewertung) ? "treffer_pruefen" : "ausgeschlossen";
+   620	      if (!f.risiko?.manuell) f.risiko = { ...kycRisiko(f, e), manuell: false };
+   621	      protokoll(db, n, "kyc_treffer", "kyc", f.id, `Sanktionstreffer ${t.eintragId} (${t.prueflingName}): ${bew}`);
+   622	      if (bew === "bestaetigt") hinweis = "Treffer bestätigt: Geldwäschebeauftragten informieren, keine Mittel bereitstellen, Meldepflicht prüfen (§ 43 GwG). Den Kunden nicht informieren (§ 47 GwG).";
+   623	    } else if (aktion === "entscheiden" || aktion === "zweitfreigabe") {
+   624	      const ergebnis = v.auswahl(daten.ergebnis, ERGEBNISSE, "");
+   625	      const grund = v.mehrzeilig(daten.grund, 1500);
+   626	      v.pflicht(ergebnis, "Bitte wählen Sie ein Ergebnis.");
+   627	      if (aktion === "zweitfreigabe") {
+   628	        if (f.status !== "zweitpruefung") throw konflikt("Der Fall wartet nicht auf eine Zweitfreigabe.");
+   629	        if (f.pruefung.erstPrueferId === n.id) throw konflikt("Vier-Augen-Prinzip: Die Zweitfreigabe muss eine andere Person erteilen.");
+   630	      } else if (!["eingereicht", "in_pruefung"].includes(f.status)) throw konflikt("Der Fall ist nicht in Prüfung.");
+   631	      if (ergebnis === "nachgefordert") v.pflicht(grund.length >= 5, "Bitte nennen Sie, was nachzureichen ist (wird dem Nutzer angezeigt).");
+   632	      if (ergebnis === "abgelehnt") v.pflicht(grund.length >= 5, "Bitte begründen Sie die Ablehnung (intern).");
+   633	      if (ergebnis === "verifiziert") {
+   634	        if (["treffer_pruefen", "bestaetigt"].includes(f.sanktionen?.status)) throw konflikt("Offener oder bestätigter Sanktionstreffer – eine Verifizierung ist nicht möglich.");
+   635	        const ungeprueft = dokumenteVon(db, f).filter((d) => d.status === "neu");
+   636	        if (ungeprueft.length) throw konflikt(`Bitte zuerst alle Unterlagen prüfen (Prüfliste): ${ungeprueft.map((d) => KYC_DOKUMENTE[d.art]?.label || d.art).join(", ")}`);
+   637	        const fp = kycFortschritt(anforderungenVon(db, f, { nurGeprueft: true }));
+   638	        if (fp.fehlend.length) throw konflikt(`Pflichtangaben/-unterlagen fehlen oder sind nicht geprüft: ${fp.fehlend.map((x) => x.label).join(" · ")}`);
+   639	      }
+   640	      const vierAugen = vierAugenNoetig(f, e);
+   641	      if (ergebnis === "verifiziert" && aktion === "entscheiden" && vierAugen) {
+   642	        f.pruefung.erstPrueferId = n.id;
+   643	        f.pruefung.erstAm = jetzt();
+   644	        f.pruefung.erstGrund = grund;
+   645	        statusSetzen(db, f, "zweitpruefung", n, "compliance", "Erstprüfung positiv – Zweitfreigabe (Vier-Augen) erforderlich.", { oeffentlich: false });
+   646	        complianceMelden(db, f, `Zweitfreigabe nötig: ${f.id}`, "Hohes Risiko – bitte als zweite Person prüfen.", { ohneId: n.id });
+   647	        hinweis = "Zweitfreigabe angefordert (Vier-Augen-Prinzip).";
+   648	      } else {
+   649	        if (aktion === "zweitfreigabe") {
+   650	          f.pruefung.zweitPrueferId = n.id;
+   651	          f.pruefung.zweitAm = jetzt();
+   652	        } else {
+   653	          f.pruefung.erstPrueferId = n.id;
+   654	          f.pruefung.erstAm = jetzt();
+   655	        }
+   656	        f.entscheidung = { ergebnis, grund, vonId: n.id, am: jetzt() };
+   657	        if (ergebnis === "verifiziert") {
+   658	          statusSetzen(db, f, "verifiziert", n, "compliance", "Verifizierung abgeschlossen.");
+   659	          f.verifiziertAm = jetzt();
+   660	          f.naechstePruefung = monateSpaeter(heuteIso(), e.wiederholungMonate?.[f.risiko?.stufe || "mittel"] || 24);
+   661	          if (f.bank?.iban) {
+   662	            f.bank.ibanOk = ibanPruefen(f.bank.iban).ok;
+   663	            f.bank.inhaberPasst = kontoinhaberPasst(f.bank.kontoinhaber, f.kontotyp === "unternehmen" ? { firma: f.firma?.name } : { vorname: f.person?.vorname, nachname: f.person?.nachname });
+   664	            f.bank.geprueft = f.bank.ibanOk && f.bank.inhaberPasst;
+   665	          }
+   666	          f.erinnerungen = {};
+   667	          nutzerMelden(db, f, "Verifizierung abgeschlossen", "Ihre Identität ist bestätigt. Alle Funktionen stehen Ihnen offen.");
+   668	        } else if (ergebnis === "nachgefordert") {
+   669	          f.nachforderung = grund;
+   670	          statusSetzen(db, f, "nachgefordert", n, "compliance", grund);
+   671	          nutzerMelden(db, f, "Bitte Unterlagen ergänzen", "Für Ihre Verifizierung benötigen wir noch Angaben oder Unterlagen.");
+   672	        } else {
+   673	          statusSetzen(db, f, "abgelehnt", n, "compliance", "Die Verifizierung konnte nicht abgeschlossen werden.");
+   674	          f.pruefung.ablehnGrund = grund;
+   675	          f.loeschenAb = loeschenAb(heuteIso(), e.aufbewahrungJahre || 5);
+   676	          nutzerMelden(db, f, "Verifizierung nicht abgeschlossen", "Ihre Verifizierung konnte nicht abgeschlossen werden. Bei Fragen schreiben Sie uns über „Nachrichten“.");
+   677	        }
+   678	      }
+   679	    } else if (aktion === "beziehungEnde") {
+   680	      const d = datum(daten.datum);
+   681	      v.pflicht(d, "Bitte geben Sie das Ende der Geschäftsbeziehung an (JJJJ-MM-TT).");
+   682	      f.beziehungEnde = d;
+   683	      f.loeschenAb = loeschenAb(d, e.aufbewahrungJahre || 5);
+   684	      protokoll(db, n, "kyc_frist", "kyc", f.id, `Geschäftsbeziehung beendet am ${d}, Löschung ab ${f.loeschenAb}`);
+   685	    } else if (aktion === "notiz") {
+   686	      const t = v.mehrzeilig(daten.text, 1000);
+   687	      v.pflicht(t.length >= 2, "Bitte Notiz eingeben.");
+   688	      verlauf(f, f.status, n, "compliance", t, { oeffentlich: false });
+   689	      protokoll(db, n, "kyc_notiz", "kyc", f.id, "Interne Notiz");
+   690	    }
+   691	    f.geaendertAm = jetzt();
+   692	    return { ok: true, status: f.status, hinweis };
+   693	  });
+   694	}
+   695	
+   696	export async function kycEinstellungen(n) {
+   697	  angemeldet(n);
+   698	  if (!complianceLesen(n)) throw verboten("Nur für die Compliance.");
+   699	  const db = await lesenBereit();
+   700	  const e = kycEinstellungenDb(db);
+   701	  return { ...e, geltungWirksam: kycGeltung(e, process.env), geltungUmgebung: process.env.PLATTFORM_KYC_GATING || null, schritte: KYC_SCHRITTE, pilotKonten: (e.pilotKonten || []).map((id) => ({ id, name: nameVon(db, id), email: nutzerById(db, id)?.email || "" })) };
+   702	}
+   703	
+   704	export async function kycEinstellungenSpeichern(n, daten = {}) {
+   705	  complianceNoetig(n);
+   706	  return aendernBereit((db) => {
+   707	    const e = kycEinstellungenDb(db);
+   708	    if (daten.gating && typeof daten.gating === "object") for (const s of KYC_SCHRITT_IDS) if (s in daten.gating) e.gating[s] = v.wahr(daten.gating[s]);
+   709	    if ("geltung" in daten) e.geltung = ["alle", "pilot", "aus"].includes(daten.geltung) ? daten.geltung : null;
+   710	    if ("vierAugenBeiHoch" in daten) e.vierAugenBeiHoch = v.wahr(daten.vierAugenBeiHoch);
+   711	    if ("vierAugenImmer" in daten) e.vierAugenImmer = v.wahr(daten.vierAugenImmer);
+   712	    if ("trefferSchwelle" in daten) e.trefferSchwelle = v.zahl(daten.trefferSchwelle, { min: 0.7, max: 0.99, stellen: 2 }) ?? e.trefferSchwelle;
+   713	    if (Array.isArray(daten.hochrisikoLaender)) e.hochrisikoLaender = [...new Set(daten.hochrisikoLaender.map(land).filter(Boolean))].slice(0, 80);
+   714	    if (daten.pilotKonto) {
+   715	      const u = nutzerById(db, v.kennung(daten.pilotKonto.id));
+   716	      if (!u) throw nichtGefunden("Konto nicht gefunden.");
+   717	      const set = new Set(e.pilotKonten || []);
+   718	      if (v.wahr(daten.pilotKonto.an)) set.add(u.id);
+   719	      else set.delete(u.id);
+   720	      e.pilotKonten = [...set].slice(-500);
+   721	    }
+   722	    db.kyc.einstellungen = e;
+   723	    protokoll(db, n, "kyc_einstellungen", "kyc", "einstellungen", "KYC-Einstellungen geändert");
+   724	    return { ok: true, einstellungen: e };
+   725	  });
+   726	}
+   727	
+   728	export async function kycSanktionsliste(n) {
+   729	  angemeldet(n);
+   730	  if (!complianceLesen(n)) throw verboten("Nur für die Compliance.");
+   731	  const l = sanktionsliste();
+   732	  return { quelle: l.quelle, stand: l.stand, importiertAm: l.importiertAm || null, anzahl: (l.eintraege || []).length, demo: !!l.demo, format: l.format || null };
+   733	}
+   734	
+   735	/** Einzelprüfung eines Namens (z. B. vor Aufnahme einer Geschäftsbeziehung) */
+   736	export async function kycSanktionPruefen(n, { name, geburtsdatum = "", art = "person" } = {}) {
+   737	  complianceNoetig(n);
+   738	  const nm = v.text(name, 160);
+   739	  v.pflicht(nm.length >= 3, "Bitte Namen angeben.");
+   740	  const db = await lesenBereit();
+   741	  const treffer = sanktionsAbgleich({ name: nm, geburtsdatum: datum(geburtsdatum), art: art === "organisation" ? "organisation" : "person" }, sanktionsliste().eintraege || [], { schwelle: kycEinstellungenDb(db).trefferSchwelle });
+   742	  await aendern((w) => protokoll(w, n, "kyc_abgleich", "kyc", "einzel", `Einzelabgleich: ${treffer.length} Treffer`));
+   743	  return { treffer };
+   744	}
+   745	
+   746	/**
+   747	 * Fristen-Lauf (täglich; Demo: manuell im Backoffice bzw. Test): Ausweis-Ablauf erinnern, Wiederholungsprüfung,
+   748	 * Sanktions-Neuabgleich bei neuem Listenstand, Löschung nach Aufbewahrungsfrist. `stichtag` nur für Tests/Vorschau.
+   749	 */
+   750	export async function kycFristen(n, { stichtag = null, fallId = null } = {}) {
+   751	  complianceNoetig(n);
+   752	  const zuLoeschen = [];
+   753	  const r = await aendernBereit((db) => {
+   754	    const e = kycEinstellungenDb(db);
+   755	    const heute = datum(stichtag) || heuteIso();
+   756	    const tage = (d) => (d ? Math.floor((new Date(`${d}T00:00:00Z`) - new Date(`${heute}T00:00:00Z`)) / 86400000) : null);
+   757	    const liste = sanktionsliste();
+   758	    const erg = { ausweisErinnert: 0, wiederholungErinnert: 0, abgelaufen: 0, neuAbgeglichen: 0, neueTreffer: 0, geloescht: 0 };
+   759	    for (const f of db.kyc.faelle) {
+   760	      if (f.status === "geloescht" || (fallId && f.id !== fallId)) continue;
+   761	      f.erinnerungen = f.erinnerungen || {};
+   762	      const gb = f.person?.ausweis?.gueltigBis;
+   763	      const t = tage(gb);
+   764	      if (f.status === "verifiziert" && t !== null && t <= (e.erinnerungAusweisTage || 30) && f.erinnerungen.ausweis !== gb) {
+   765	        f.erinnerungen.ausweis = gb;
+   766	        erg.ausweisErinnert++;
+   767	        nutzerMelden(db, f, t < 0 ? "Ausweis abgelaufen" : "Ausweis läuft bald ab", "Bitte aktualisieren Sie Ihre Ausweisdaten unter „Verifizierung“ (erneute Prüfung).");
+   768	        protokoll(db, n, "kyc_frist", "kyc", f.id, `Erinnerung Ausweis-Ablauf (${gb})`);
+   769	      }
+   770	      const w = tage(f.naechstePruefung);
+   771	      if (f.status === "verifiziert" && w !== null) {
+   772	        if (w <= 0) {
+   773	          f.status = "abgelaufen";
+   774	          verlauf(f, "abgelaufen", null, "system", "Wiederkehrende Überprüfung fällig.");
+   775	          erg.abgelaufen++;
+   776	          nutzerMelden(db, f, "Verifizierung erneuern", "Ihre regelmäßige Überprüfung ist fällig. Bitte bestätigen bzw. aktualisieren Sie Ihre Angaben.");
+   777	          protokoll(db, n, "kyc_frist", "kyc", f.id, "Wiederholungsprüfung fällig → abgelaufen");
+   778	        } else if (w <= 30 && f.erinnerungen.wiederholung !== f.naechstePruefung) {
+   779	          f.erinnerungen.wiederholung = f.naechstePruefung;
+   780	          erg.wiederholungErinnert++;
+   781	          nutzerMelden(db, f, "Überprüfung Ihrer Angaben steht an", "In den nächsten Wochen ist die regelmäßige Überprüfung fällig.");
+   782	        }
+   783	      }
+   784	      if (["verifiziert", "in_pruefung", "eingereicht", "zweitpruefung"].includes(f.status) && liste.stand && f.sanktionen?.listeStand !== liste.stand) {
+   785	        const vorher = (f.sanktionen?.treffer || []).length;
+   786	        const s = abgleichAusfuehren(db, f, null, "Neuer Listenstand");
+   787	        erg.neuAbgeglichen++;
+   788	        if (s.status === "treffer_pruefen" && s.treffer.length > vorher) {
+   789	          erg.neueTreffer++;
+   790	          if (f.status === "verifiziert") {
+   791	            f.status = "in_pruefung";
+   792	            verlauf(f, "in_pruefung", null, "system", "Möglicher Treffer bei Neuabgleich.", { oeffentlich: false });
+   793	          }
+   794	          complianceMelden(db, f, `Sanktionsabgleich: möglicher Treffer ${f.id}`, "Manuelle Prüfung erforderlich.");
+   795	        }
+   796	      }
+   797	      if (f.loeschenAb && f.loeschenAb <= heute) {
+   798	        for (const d of db.kyc.dokumente.filter((x) => x.fallId === f.id && !x.geloescht)) {
+   799	          d.geloescht = true;
+   800	          d.geloeschtAm = jetzt();
+   801	          d.name = "(gelöscht)";
+   802	          zuLoeschen.push(d.datei);
+   803	        }
+   804	        const rest = { id: f.id, kontoId: null, organisationId: null, kontotyp: f.kontotyp, status: "geloescht", verlauf: [], geloeschtAm: jetzt(), loeschenAb: f.loeschenAb, erstelltAm: f.erstelltAm };
+   805	        for (const k of Object.keys(f)) delete f[k];
+   806	        Object.assign(f, rest);
+   807	        erg.geloescht++;
+   808	        protokoll(db, n, "kyc_loeschung", "kyc", f.id, "Aufbewahrungsfrist abgelaufen – Unterlagen und personenbezogene Angaben gelöscht");
+   809	      }
+   810	    }
+   811	    return { ok: true, stichtag: heute, ...erg };
+   812	  });
+   813	  for (const d of zuLoeschen) await dateiLoeschen(d);
+   814	  return r;
+   815	}
+   816	
+   817	/** Nur Demo/Test: KYC-Bereich eines Kontos für Compliance-Übersicht in Nutzerlisten */
+   818	export async function kycKurz(n, kontoIds = []) {
+   819	  angemeldet(n);
+   820	  if (!complianceLesen(n)) return {};
+   821	  const db = await lesenBereit();
+   822	  return Object.fromEntries(kontoIds.map((id) => [id, kycStatusDb(db, { kontoId: id }).status]));
+   823	}
+   824	
+   825	export { ibanMaskiert };

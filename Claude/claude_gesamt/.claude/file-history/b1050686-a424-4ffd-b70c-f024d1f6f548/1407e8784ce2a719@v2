@@ -1,0 +1,46 @@
+import type { Metadata } from "next";
+import { Inter, Manrope } from "next/font/google";
+
+import "./globals.css";
+
+/**
+ * Dieselben Schriften wie im Auftritt von Ökovolt.
+ *
+ * Inter für alles, was gelesen wird - sie ist für Bildschirmgrößen
+ * gezeichnet und hält bei 12 Pixeln noch zusammen. Manrope nur für
+ * Überschriften und Kennzahlen: Ihre engen Ziffern geben großen
+ * Zahlen Gewicht, für Fließtext wäre sie zu eigenwillig.
+ */
+const inter = Inter({
+  variable: "--font-inter",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const manrope = Manrope({
+  variable: "--font-manrope",
+  subsets: ["latin"],
+  weight: ["600", "700", "800"],
+  display: "swap",
+});
+
+export const metadata: Metadata = {
+  title: {
+    default: "Ökovolt Energieportal",
+    template: "%s · Ökovolt",
+  },
+  description:
+    "Betriebsführung, Vermarktung und Nachweise für gewerbliche Photovoltaikanlagen",
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{ children: React.ReactNode }>) {
+  return (
+    <html lang="de">
+      <body className={`${inter.variable} ${manrope.variable} antialiased`}>
+        {children}
+      </body>
+    </html>
+  );
+}

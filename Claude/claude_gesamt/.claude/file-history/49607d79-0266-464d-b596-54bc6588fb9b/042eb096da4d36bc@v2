@@ -1,0 +1,161 @@
+import { beforeEach, describe, expect, it } from 'vitest'
+import { mockRequest, resetMockData } from '@/api/mock/server.js'
+
+const ruf = (url, params) => mockRequest({ url, params })
+
+beforeEach(() => {
+  resetMockData()
+})
+
+describe('frappe.client.get_list', () => {
+  it('liefert die angeforderten Felder und nichts sonst', async () => {
+    const zeilen = await ruf('frappe.client.get_list', {
+      doctype: 'Network Device',
+      fields: ['name', 'hostname'],
+      limit_page_length: 5,
+    })
+    expect(zeilen.length).toBe(5)
+    expect(Object.keys(zeilen[0]).sort()).toEqual(['hostname', 'name'])
+  })
+
+  it('sortiert nach order_by', async () => {
+    const zeilen = await ruf('frappe.client.get_list', {
+      doctype: 'Network Device',
+      fields: ['hostname'],
+      order_by: 'hostname asc',
+      limit_page_length: 0,
+    })
+    const sortiert = [...zeilen].sort((a, b) => (a.hostname > b.hostname ? 1 : -1))
+    expect(zeilen).toEqual(sortiert)
+  })
+
+  it('unterstützt beide Filterschreibweisen von Frappe', async () => {
+    const alsObjekt = await ruf('frappe.client.get_list', {
+      doctype: 'Network Device',
+      fields: ['name'],
+      filters: { device_role: 'Hypervisor' },
+      limit_page_length: 0,
+    })
+    const alsListe = await ruf('frappe.client.get_list', {
+      doctype: 'Network Device',
+      fields: ['name'],
+      filters: [['device_role', '=', 'Hypervisor']],
+      limit_page_length: 0,
+    })
+    expect(alsObjekt.length).toBe(2)
+    expect(alsListe).toEqual(alsObjekt)
+  })
+
+  it('beherrscht like, in und Vergleichsoperatoren', async () => {
+    const wie = await ruf('frappe.client.get_list', {
+      doctype: 'Network Device',
+      fields: ['hostname'],
+      filters: { hostname: ['like', 'SRV-%'] },
+      limit_page_length: 0,
+    })
+    expect(wie.map((z) => z.hostname).sort()).toEqual(['SRV-PBS-01', 'SRV-PVE-01', 'SRV-PVE-02'])
+
+    const drin = await ruf('frappe.client.get_list', {
+      doctype: 'VLAN',
+      fields: ['vid'],
+      filters: { vid: ['in', [10, 90]] },
+      limit_page_length: 0,
+    })
+    expect(drin.map((z) => z.vid).sort((a, b) => a - b)).toEqual([10, 90])
+
+    const groesser = await ruf('frappe.client.get_list', {
+      doctype: 'VLAN',
+      fields: ['vid'],
+      filters: { vid: ['>', 170] },
+      limit_page_length: 0,
+    })
+    expect(groesser.map((z) => z.vid)).toEqual([180])
+  })
+
+  it('blättert über limit_start und limit_page_length', async () => {
+    const alle = await ruf('frappe.client.get_list', {
+      doctype: 'VLAN',
+      fields: ['name'],
+      order_by: 'vid asc',
+      limit_page_length: 0,
+    })
+    const seite2 = await ruf('frappe.client.get_list', {
+      doctype: 'VLAN',
+      fields: ['name'],
+      order_by: 'vid asc',
+      limit_start: 5,
+      limit_page_length: 5,
+    })
+    expect(seite2).toEqual(alle.slice(5, 10))
+  })
+})
+
+describe('Schreiboperationen', () => {
+  it('legt an, ändert und löscht ein Dokument', async () => {
+    const angelegt = await ruf('frappe.client.insert', {
+      doc: {
+        doctype: 'Network Device',
+        hostname: 'SW-TEST-99',
+        device_role: 'Access Switch',
+        site: 'SITE-0003',
+        tenant: 'TEN-0001',
+      },
+    })
+    expect(angelegt.name).toBe('SW-TEST-99')
+    expect(angelegt.creation).toBeTruthy()
+
+    // frappe-ui schickt bei setValue ein Objekt als fieldname
+    const geaendert = await ruf('frappe.client.set_value', {
+      doctype: 'Network Device',
+      name: 'SW-TEST-99',
+      fieldname: { firmware: 'TSW 1.5.0', status: 'planned' },
+    })
+    expect(geaendert.firmware).toBe('TSW 1.5.0')
+    expect(geaendert.status).toBe('planned')
+
+    await ruf('frappe.client.delete', { doctype: 'Network Device', name: 'SW-TEST-99' })
+    await expect(
+      ruf('frappe.client.get', { doctype: 'Network Device', name: 'SW-TEST-99' }),
+    ).rejects.toThrow(/DoesNotExistError/)
+  })
+
+  it('setzt die Pflichtfelder aus CLAUDE.md auch ohne Angabe', async () => {
+    const angelegt = await ruf('frappe.client.insert', {
+      doc: { doctype: 'Site', site_name: 'Testraum', tenant: 'TEN-0001' },
+    })
+    expect(angelegt).toHaveProperty('tenant')
+    expect(angelegt).toHaveProperty('status', 'active')
+    expect(angelegt).toHaveProperty('description', '')
+  })
+
+  it('verweigert doppelte Namen', async () => {
+    await expect(
+      ruf('frappe.client.insert', {
+        doc: { doctype: 'Network Device', hostname: 'FW-OS-01', tenant: 'TEN-0001' },
+      }),
+    ).rejects.toThrow(/DuplicateEntryError/)
+  })
+})
+
+describe('Fehlerverhalten', () => {
+  it('meldet unbekannte DocTypes', async () => {
+    await expect(ruf('frappe.client.get_list', { doctype: 'Gibtsnicht' })).rejects.toThrow(
+      /Unbekannter DocType/,
+    )
+  })
+
+  it('meldet nicht registrierte Methoden mit Hinweis', async () => {
+    await expect(ruf('netops.api.gibtsnicht', {})).rejects.toThrow(/MethodNotFound/)
+  })
+})
+
+describe('Pflichtfelder der DocType-Definition', () => {
+  it('jeder DocType führt tenant, status und description', async () => {
+    const { PFLICHTFELDER, getDefinition, getDoctypes } = await import('@/api/mock/db.js')
+    for (const doctype of getDoctypes()) {
+      for (const feld of PFLICHTFELDER) {
+        expect(getDefinition(doctype).fields, doctype + ' → ' + feld).toContain(feld)
+      }
+    }
+  })
+})

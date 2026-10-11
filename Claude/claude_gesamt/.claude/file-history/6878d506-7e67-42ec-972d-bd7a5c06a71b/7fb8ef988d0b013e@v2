@@ -1,0 +1,99 @@
+import sys, os
+os.chdir(r"C:\Users\SALEADMIN\Downloads\crm-develop\crm-next")
+p = "src/components/forms.tsx"
+s = open(p, encoding="utf-8").read()
+start = s.index("export function NoteComposer(")
+end = s.index("// ---------- Aufgaben ----------")
+new = '''// Aktivität erfassen: Notiz, Anruf, Vor-Ort-Termin oder E-Mail – mit Ergebnis und optionaler Wiedervorlage
+const KIND_ICON = { note: StickyNote, call: Phone, visit: MapPin, mail: Mail };
+const FOLLOW_UPS = [
+  { d: 0, label: "Keine" },
+  { d: 1, label: "Morgen" },
+  { d: 3, label: "In 3 Tagen" },
+  { d: 7, label: "In 1 Woche" },
+  { d: 14, label: "In 2 Wochen" },
+];
+
+export function NoteComposer({ doctype, name }: { doctype: string; name: string }) {
+  const [state, action, pending] = useActionState<FormState, FormData>(logActivityAction.bind(null, doctype, name), {});
+  const [kind, setKind] = useState<ActivityKind>("note");
+  const ref = useResetOnSuccess(pending, state, `${ACTIVITY_KINDS[kind].label} gespeichert`);
+  const outcomes: readonly string[] = ACTIVITY_KINDS[kind].outcomes;
+
+  return (
+    <form ref={ref} action={action} className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xs transition focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-500/20">
+      <input type="hidden" name="kind" value={kind} />
+      <div className="flex gap-1 border-b border-gray-100 px-2 pt-2">
+        {(Object.keys(ACTIVITY_KINDS) as ActivityKind[]).map((k) => {
+          const Icon = KIND_ICON[k];
+          return (
+            <button
+              key={k}
+              type="button"
+              onClick={() => setKind(k)}
+              className={`-mb-px flex h-8 items-center gap-1.5 border-b-2 px-2 text-[12px] font-medium transition-colors ${
+                kind === k ? "border-brand-600 text-gray-900" : "border-transparent text-gray-500 hover:text-gray-900"
+              }`}
+            >
+              <Icon className="size-3.5" /> {ACTIVITY_KINDS[k].label}
+            </button>
+          );
+        })}
+      </div>
+      {outcomes.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 px-3 pt-2.5" role="radiogroup" aria-label="Ergebnis">
+          {outcomes.map((o, i) => (
+            <label key={o} className="cursor-pointer">
+              <input type="radio" name="outcome" value={o} defaultChecked={i === 0} className="peer sr-only" />
+              <span className="inline-flex h-6 items-center rounded-full border border-gray-200 px-2.5 text-[12px] text-gray-600 transition peer-checked:border-brand-600 peer-checked:bg-brand-50 peer-checked:text-brand-800 peer-focus-visible:ring-2 peer-focus-visible:ring-brand-500/30">
+                {o}
+              </span>
+            </label>
+          ))}
+        </div>
+      )}
+      <textarea
+        key={kind}
+        name="content"
+        rows={3}
+        placeholder={
+          kind === "call"
+            ? "Worum ging es im Telefonat?"
+            : kind === "visit"
+              ? "Ergebnis der Besichtigung: Dach, Zählerschrank, Verschattung …"
+              : kind === "mail"
+                ? "Betreff oder Inhalt der E-Mail …"
+                : "Notiz festhalten …"
+        }
+        className="block w-full resize-y px-3 py-2.5 leading-relaxed outline-none placeholder:text-gray-400"
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) e.currentTarget.form?.requestSubmit();
+        }}
+      />
+      <div className="flex flex-wrap items-center gap-3 border-t border-gray-100 bg-gray-25 px-2 py-1.5">
+        <label className="flex items-center gap-1.5 text-[12px] text-gray-500">
+          Wiedervorlage
+          <select name="followup" defaultValue="0" className="h-7 rounded-md border border-gray-200 bg-white px-1.5 text-[12px] text-gray-700 outline-none">
+            {FOLLOW_UPS.map((f) => (
+              <option key={f.d} value={f.d}>
+                {f.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <span className="ml-auto hidden text-[12px] text-gray-400 sm:inline">Strg + Enter</span>
+        <button disabled={pending} className={`${BTN.primary} h-7`}>
+          {pending ? "Speichern …" : `${ACTIVITY_KINDS[kind].label} speichern`}
+        </button>
+      </div>
+    </form>
+  );
+}
+
+'''
+s = s[:start] + new + s[end:]
+s = s.replace('import { ArrowRight, UserCheck } from "lucide-react";', 'import { ArrowRight, Mail, MapPin, Phone, StickyNote, UserCheck } from "lucide-react";')
+s = s.replace("  addNoteAction,\n", "  logActivityAction,\n")
+s = s.replace('import { STAGE_PROB } from "@/lib/insights";', 'import { STAGE_PROB } from "@/lib/insights";\nimport { ACTIVITY_KINDS, type ActivityKind } from "@/lib/activity";')
+open(p, "w", encoding="utf-8", newline="\n").write(s)
+print("ok")

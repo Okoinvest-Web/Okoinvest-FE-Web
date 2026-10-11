@@ -1,0 +1,285 @@
+import "server-only";
+
+import { alle } from "../db/verbindung.ts";
+import {
+  LADEKONTIERUNG,
+  debitorenkonto,
+  type Quellbeleg,
+} from "../finanzen/stapellauf.ts";
+
+/**
+ * Woher ein Buchungsstapel seine Belege nimmt.
+ *
+ * Gebucht wird nur, was festgeschrieben ist. Ein Abrechnungslauf im
+ * Entwurf kann sich noch ändern; wäre er schon gebucht, stünde in der
+ * Buchhaltung ein Betrag, den es so nie gegeben hat. Die Reihenfolge
+ * ist deshalb fest: Lauf festschreiben, dann buchen, dann übergeben -
+ * und jeder Schritt ist von hier aus sichtbar.
+ */
+
+/* ------------------------------------------------------------------ */
+/* Was bereits gebucht ist                                             */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Alle Belegnummern, die schon in einem Stapel stehen.
+ *
+ * Stornierte Stapel zählen nicht mit: Ihre Belege wurden nie
+ * eingespielt und müssen erneut gebucht werden können.
+ */
+export function ladeGebuchteNummern(): Set<string> {
+  const zeilen = alle<{ belegnummer: string }>(
+    `SELECT b.belegnummer
+       FROM buchung b
+       JOIN buchungsstapel s ON s.id = b.stapel_id
+      WHERE s.status <> 'Storniert'`,
+  );
+
+  return new Set(zeilen.map((z) => z.belegnummer));
+}
+
+/* ------------------------------------------------------------------ */
+/* Buchbare Zeiträume                                                  */
+/* ------------------------------------------------------------------ */
+
+export interface BuchbarerMonat {
+  /** "2026-06" */
+  schluessel: string;
+  jahr: number;
+  monat: number;
+  /** Belege, die noch in keinem Stapel stehen. */
+  offen: number;
+  /** Belege, die bereits übergeben wurden. */
+  gebucht: number;
+  netto_offen: number;
+  quellen: string[];
+  /** Bereits vorhandener Stapel für diesen Monat, falls es einen gibt. */
+  stapel_id: string | null;
+  stapel_status: string | null;
+}
+
+/**
+ * Zeilen aller buchbaren Belege, roh aus den Quellsystemen.
+ *
+ * Der Monat wird aus dem Beginn des Abrechnungszeitraums abgeleitet
+ * und um zwei Tage verschoben. Grund: Ein Zeitraum "Juni" beginnt in
+ * der Datenbank am 31. Mai um 22 Uhr UTC, weil Wien im Sommer zwei
+ * Stunden vor UTC liegt. Ohne die Verschiebung fiele der Juni-Lauf in
+ * den Mai.
+ */
+function rohbelege(): (Quellbeleg & { monat: string })[] {
+  const laden = alle<{
+    id: string;
+    nummer: string;
+    monat: string;
+    belegdatum: string;
+    netto: number;
+    kostenstelle: string;
+    belegart: string;
+    kartenart: string | null;
+    kartenname: string | null;
+    status: string;
+  }>(
+    `SELECT lb.id,
+            lb.nummer,
+            strftime('%Y-%m', la.zeitraum_von, '+2 days') AS monat,
+            date(la.zeitraum_bis, '-1 day')               AS belegdatum,
+            lb.netto,
+            lb.kostenstelle,
+            lb.art                                        AS belegart,
+            k.art                                         AS kartenart,
+            k.bezeichnung                                 AS kartenname,
+            lb.status
+       FROM ladebeleg lb
+       JOIN ladeabrechnung la ON la.id = lb.abrechnung_id
+       LEFT JOIN ladekarte k  ON k.id  = lb.karte_id
+      WHERE la.status = 'Festgeschrieben'
+      ORDER BY lb.nummer`,
+  );
+
+  const ausLaden = laden.map((z) => {
+    const kontierung = z.kartenart ? LADEKONTIERUNG[z.kartenart] : undefined;
+
+    // Ein Sachbezug ist kein Umsatz, sondern ein geldwerter Vorteil.
+    // Er geht über die Lohnverrechnung und hat in der Fakturierung
+    // nichts verloren - wer ihn hier bucht, versteuert ihn zweimal.
+    const nichtBuchbar =
+      z.status === "Storniert"
+        ? "Storniert - wurde nie zur Zahlung gestellt."
+        : z.belegart === "Sachbezug"
+          ? "Sachbezug - läuft über die Lohnverrechnung, nicht über die Fakturierung."
+          : !kontierung
+            ? `Kartenart "${z.kartenart ?? "unbekannt"}" hat keine hinterlegte Kontierung.`
+            : undefined;
+
+    return {
+      id: z.id,
+      nummer: z.nummer,
+      quelle: kontierung?.quelle ?? "laden_b2b",
+      belegdatum: z.belegdatum,
+      netto: z.netto,
+      text: `Ladeabrechnung ${z.kartenname ?? z.kostenstelle} ${z.monat}`,
+      partnerkonto: kontierung?.partnerkonto ?? "20900",
+      kostenstelle: z.kostenstelle,
+      belegverweis: z.id,
+      nichtBuchbar,
+      monat: z.monat,
+    } satisfies Quellbeleg & { monat: string };
+  });
+
+  const gemeinschaft = alle<{
+    id: string;
+    nummer: string;
+    monat: string;
+    belegdatum: string;
+    netto: number;
+    kunde_id: string | null;
+    firma: string | null;
+    zaehlpunkt_id: string;
+    anlage_id: string | null;
+    status: string;
+  }>(
+    `SELECT b.id,
+            b.nummer,
+            strftime('%Y-%m', b.zeitraum_von, '+2 days') AS monat,
+            b.ausgestellt_am                             AS belegdatum,
+            b.netto,
+            b.kunde_id,
+            k.firma,
+            b.zaehlpunkt_id,
+            z.anlage_id,
+            b.status
+       FROM beleg b
+       JOIN abrechnungslauf l ON l.id = b.lauf_id
+       LEFT JOIN kunde k      ON k.id = b.kunde_id
+       LEFT JOIN zaehlpunkt z ON z.id = b.zaehlpunkt_id
+      WHERE l.status = 'Festgeschrieben'
+      ORDER BY b.nummer`,
+  );
+
+  const ausGemeinschaft = gemeinschaft.map((z) => ({
+    id: z.id,
+    quelle: "gemeinschaft" as const,
+    nummer: z.nummer,
+    belegdatum: z.belegdatum,
+    netto: z.netto,
+    text: `Energiegemeinschaft ${z.firma ?? z.zaehlpunkt_id} ${z.monat}`,
+    partnerkonto: z.kunde_id ? debitorenkonto(z.kunde_id) : "20999",
+    kostenstelle: z.anlage_id ?? "EEG",
+    belegverweis: z.id,
+    nichtBuchbar:
+      z.status === "Storniert"
+        ? "Storniert - wurde nie zur Zahlung gestellt."
+        : undefined,
+    monat: z.monat,
+  }));
+
+  return [...ausLaden, ...ausGemeinschaft];
+}
+
+/** Die Belege eines Monats, fertig für den Lauf. */
+export function ladeQuellbelege(monat: string): Quellbeleg[] {
+  return rohbelege().filter((b) => b.monat === monat);
+}
+
+/**
+ * Alle Monate, für die es festgeschriebene Belege gibt.
+ *
+ * Auch die bereits vollständig gebuchten bleiben in der Liste. Wer
+ * einen Monat sucht und ihn nicht findet, weiß sonst nicht, ob nichts
+ * abzurechnen war oder ob er schon gebucht ist - und ruft an.
+ */
+export function ladeBuchbareMonate(): BuchbarerMonat[] {
+  const gebucht = ladeGebuchteNummern();
+  const belege = rohbelege();
+
+  const stapel = alle<{ id: string; status: string; schluessel: string }>(
+    `SELECT id, status, strftime('%Y-%m', zeitraum_von, '+2 days') AS schluessel
+       FROM buchungsstapel`,
+  );
+  const stapelJeMonat = new Map(stapel.map((s) => [s.schluessel, s]));
+
+  const gesammelt = new Map<string, BuchbarerMonat>();
+
+  for (const b of belege) {
+    let eintrag = gesammelt.get(b.monat);
+
+    if (!eintrag) {
+      const [jahr, monat] = b.monat.split("-");
+      const vorhandener = stapelJeMonat.get(b.monat);
+
+      eintrag = {
+        schluessel: b.monat,
+        jahr: Number(jahr),
+        monat: Number(monat),
+        offen: 0,
+        gebucht: 0,
+        netto_offen: 0,
+        quellen: [],
+        stapel_id: vorhandener?.id ?? null,
+        stapel_status: vorhandener?.status ?? null,
+      };
+      gesammelt.set(b.monat, eintrag);
+    }
+
+    if (gebucht.has(b.nummer)) {
+      eintrag.gebucht += 1;
+      continue;
+    }
+
+    // Was nicht buchbar ist, zählt weder als offen noch als gebucht -
+    // sonst stünde neben dem Monat dauerhaft eine Zahl, die sich
+    // durch keinen Lauf auf null bringen lässt.
+    if (b.nichtBuchbar) continue;
+
+    eintrag.offen += 1;
+    eintrag.netto_offen += b.netto;
+
+    const quelle = b.quelle;
+    if (!eintrag.quellen.includes(quelle)) eintrag.quellen.push(quelle);
+  }
+
+  return [...gesammelt.values()].sort((a, b) =>
+    b.schluessel.localeCompare(a.schluessel),
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Ein bestehender Stapel                                              */
+/* ------------------------------------------------------------------ */
+
+export interface GespeicherteBuchung {
+  belegnummer: string;
+  belegdatum: string;
+  konto: string;
+  gegenkonto: string;
+  text: string;
+  betrag: number;
+  steuersatz: number;
+  steuercode: string | null;
+  kostenstelle: string | null;
+  herkunft: string;
+}
+
+/** Die Zeilen eines Stapels, für die Prüfung vor der Übergabe. */
+export function ladeStapelbuchungen(stapelId: string): GespeicherteBuchung[] {
+  return alle<GespeicherteBuchung>(
+    `SELECT belegnummer, belegdatum, konto, gegenkonto, text, betrag,
+            steuersatz, steuercode, kostenstelle, herkunft
+       FROM buchung WHERE stapel_id = ? ORDER BY belegnummer`,
+    stapelId,
+  );
+}
+
+/** Belegnummern in anderen, nicht stornierten Stapeln. */
+export function ladeGebuchteNummernAusser(stapelId: string): Set<string> {
+  const zeilen = alle<{ belegnummer: string }>(
+    `SELECT b.belegnummer
+       FROM buchung b
+       JOIN buchungsstapel s ON s.id = b.stapel_id
+      WHERE s.status <> 'Storniert' AND s.id <> ?`,
+    stapelId,
+  );
+
+  return new Set(zeilen.map((z) => z.belegnummer));
+}

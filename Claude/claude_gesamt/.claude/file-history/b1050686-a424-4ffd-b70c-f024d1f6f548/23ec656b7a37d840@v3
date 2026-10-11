@@ -1,0 +1,74 @@
+/**
+ * Kleine Verlaufslinie ohne Achsen, fuer Tabellenzeilen und Kacheln.
+ *
+ * Bewusst ohne Interaktion: Sie zeigt die Form eines Verlaufs, nicht
+ * einzelne Werte. Wer Zahlen braucht, oeffnet die Detailansicht.
+ * Als Serverkomponente umgesetzt - sie braucht keinen Zustand.
+ */
+export function Sparkline({
+  werte,
+  farbe,
+  breite = 120,
+  hoehe = 32,
+  gefuellt = true,
+  beschreibung,
+}: {
+  werte: number[];
+  farbe: string;
+  breite?: number;
+  hoehe?: number;
+  gefuellt?: boolean;
+  beschreibung: string;
+}) {
+  if (werte.length < 2) {
+    return <div style={{ width: breite, height: hoehe }} aria-hidden />;
+  }
+
+  const maximum = Math.max(...werte);
+  const minimum = Math.min(...werte);
+  const spanne = maximum - minimum || 1;
+  const rand = 2;
+
+  const punkte = werte.map((wert, i) => {
+    const x = (i / (werte.length - 1)) * breite;
+    const y = hoehe - rand - ((wert - minimum) / spanne) * (hoehe - rand * 2);
+    return [x, y] as const;
+  });
+
+  const linie = punkte
+    .map(([x, y], i) => `${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`)
+    .join(" ");
+
+  const flaeche = `${linie} L${breite},${hoehe} L0,${hoehe} Z`;
+  const letzter = punkte[punkte.length - 1];
+
+  return (
+    <svg
+      viewBox={`0 0 ${breite} ${hoehe}`}
+      width={breite}
+      height={hoehe}
+      role="img"
+      aria-label={beschreibung}
+      className="overflow-visible"
+    >
+      {gefuellt && <path d={flaeche} fill={farbe} opacity="0.12" />}
+      <path
+        d={linie}
+        fill="none"
+        stroke={farbe}
+        strokeWidth="1.75"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      {/* Letzter Wert markiert - der aktuelle Stand ist der wichtigste. */}
+      <circle
+        cx={letzter[0]}
+        cy={letzter[1]}
+        r="2.5"
+        fill={farbe}
+        className="strich-ebene"
+        strokeWidth="1.5"
+      />
+    </svg>
+  );
+}

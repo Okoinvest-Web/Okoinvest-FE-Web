@@ -1,0 +1,455 @@
+/**
+ * DocTypes, die NICHT uns gehören: ERPNext und Frappe HR.
+ *
+ * Menschen, Abteilungen, Kostenstellen und Gesellschaften kommen aus
+ * ERPNext beziehungsweise Frappe HR. NetOps legt sie nicht an und ändert
+ * sie nicht - die App verlinkt nur darauf. Das ist keine Feinheit:
+ *
+ *   - Ein zweiter Personenstamm würde sofort auseinanderlaufen. Wer
+ *     austritt, tritt in HR aus; steht die Person bei uns weiter auf
+ *     „aktiv", zeigt das Inventar Geräte bei jemandem, der nicht mehr da
+ *     ist.
+ *   - Personaldaten unterliegen in HR bereits einem Berechtigungskonzept.
+ *     Eine Kopie daneben umgeht es.
+ *
+ * Diese Datei ist deshalb ein **Abbild zum Testen**, kein eigener Stamm.
+ * Feldnamen sind die echten aus ERPNext/Frappe HR, damit der Umstieg auf
+ * eine laufende Instanz nur den Fetcher betrifft und nicht das Modell:
+ *
+ *   Company        company_name, abbr, country, default_currency
+ *   Department     department_name, company, parent_department, is_group
+ *   Cost Center    cost_center_name, company, parent_cost_center, is_group
+ *   Designation    designation_name
+ *   Employee       employee_name, company, department, designation,
+ *                  user_id, company_email, cell_number, status,
+ *                  date_of_joining, relieving_date, reports_to
+ *   User           email, full_name, enabled, user_type
+ *
+ * Bewusst NICHT übernommen: Geburtsdatum, Geschlecht, Privatanschrift,
+ * Bankverbindung, Gehalt. Für „wer hat welches Gerät" braucht es nichts
+ * davon (Art. 5 Abs. 1 lit. c DSGVO, Datenminimierung). Beim Anschluss an
+ * ein echtes ERPNext muss die Feldauswahl in `frappe.client.get_list`
+ * genauso eng bleiben.
+ */
+import { defineDoctype } from './db.js'
+import { tageVersetzt } from './zeit.js'
+
+const AT = 'TEN-0001'
+const DE = 'TEN-0002'
+
+const OES = 'Ökovolt Solartechnik GmbH'
+const OGS = 'Ökovolt GmbH Solartechnik'
+
+// --- Gesellschaften --------------------------------------------------------
+
+defineDoctype('Company', {
+  naming: (doc) => doc.company_name,
+  titleField: 'company_name',
+  fields: ['company_name', 'abbr', 'country', 'default_currency'],
+  seed: [
+    { company_name: OES, abbr: 'ÖS', country: 'Austria', default_currency: 'EUR', tenant: AT },
+    { company_name: OGS, abbr: 'ÖGS', country: 'Germany', default_currency: 'EUR', tenant: DE },
+  ],
+})
+
+// --- Kostenstellen ---------------------------------------------------------
+
+// ERPNext benennt Kostenstellen als "<Name> - <Kürzel>". Das sieht
+// ungewohnt aus, ist aber der echte Schlüssel - und genau der steht
+// später in der laufenden Instanz.
+defineDoctype('Cost Center', {
+  naming: (doc) => doc.cost_center_name + ' - ' + doc.abbr,
+  titleField: 'cost_center_name',
+  fields: [
+    'cost_center_name',
+    'cost_center_number',
+    'company',
+    'parent_cost_center',
+    'is_group',
+    'abbr',
+    'disabled',
+  ],
+  seed: [
+    {
+      cost_center_name: 'Ökovolt Solartechnik GmbH',
+      company: OES,
+      abbr: 'ÖS',
+      is_group: 1,
+      tenant: AT,
+    },
+    {
+      cost_center_name: 'IT und Infrastruktur',
+      cost_center_number: '100',
+      company: OES,
+      parent_cost_center: 'Ökovolt Solartechnik GmbH - ÖS',
+      abbr: 'ÖS',
+      is_group: 0,
+      tenant: AT,
+    },
+    {
+      cost_center_name: 'Montage und Außendienst',
+      cost_center_number: '200',
+      company: OES,
+      parent_cost_center: 'Ökovolt Solartechnik GmbH - ÖS',
+      abbr: 'ÖS',
+      is_group: 0,
+      tenant: AT,
+    },
+    {
+      cost_center_name: 'Vertrieb',
+      cost_center_number: '300',
+      company: OES,
+      parent_cost_center: 'Ökovolt Solartechnik GmbH - ÖS',
+      abbr: 'ÖS',
+      is_group: 0,
+      tenant: AT,
+    },
+    {
+      cost_center_name: 'Verwaltung',
+      cost_center_number: '400',
+      company: OES,
+      parent_cost_center: 'Ökovolt Solartechnik GmbH - ÖS',
+      abbr: 'ÖS',
+      is_group: 0,
+      tenant: AT,
+    },
+    {
+      cost_center_name: 'Werk Passau',
+      cost_center_number: '500',
+      company: OGS,
+      abbr: 'ÖGS',
+      is_group: 0,
+      tenant: DE,
+    },
+  ],
+})
+
+// --- Abteilungen -----------------------------------------------------------
+
+defineDoctype('Department', {
+  naming: (doc) => doc.department_name + ' - ' + doc.abbr,
+  titleField: 'department_name',
+  fields: ['department_name', 'company', 'parent_department', 'is_group', 'abbr', 'disabled'],
+  seed: [
+    { department_name: 'All Departments', company: OES, abbr: 'ÖS', is_group: 1, tenant: AT },
+    {
+      department_name: 'IT',
+      company: OES,
+      parent_department: 'All Departments - ÖS',
+      abbr: 'ÖS',
+      is_group: 0,
+      tenant: AT,
+    },
+    {
+      department_name: 'Montage',
+      company: OES,
+      parent_department: 'All Departments - ÖS',
+      abbr: 'ÖS',
+      is_group: 0,
+      tenant: AT,
+    },
+    {
+      department_name: 'Vertrieb',
+      company: OES,
+      parent_department: 'All Departments - ÖS',
+      abbr: 'ÖS',
+      is_group: 0,
+      tenant: AT,
+    },
+    {
+      department_name: 'Verwaltung',
+      company: OES,
+      parent_department: 'All Departments - ÖS',
+      abbr: 'ÖS',
+      is_group: 0,
+      tenant: AT,
+    },
+    { department_name: 'Produktion', company: OGS, abbr: 'ÖGS', is_group: 0, tenant: DE },
+  ],
+})
+
+// --- Stellenbezeichnungen --------------------------------------------------
+
+defineDoctype('Designation', {
+  naming: (doc) => doc.designation_name,
+  titleField: 'designation_name',
+  fields: ['designation_name'],
+  seed: [
+    { designation_name: 'IT-Leitung', tenant: AT },
+    { designation_name: 'Systemadministration', tenant: AT },
+    { designation_name: 'Servicetechnik', tenant: AT },
+    { designation_name: 'Montageleitung', tenant: AT },
+    { designation_name: 'Monteur', tenant: AT },
+    { designation_name: 'Vertriebsleitung', tenant: AT },
+    { designation_name: 'Außendienst', tenant: AT },
+    { designation_name: 'Kaufmännische Leitung', tenant: AT },
+    { designation_name: 'Werksleitung', tenant: DE },
+    { designation_name: 'Werkstudentin', tenant: AT },
+  ],
+})
+
+// --- Anmeldekonten (Frappe Core) -------------------------------------------
+
+defineDoctype('User', {
+  naming: (doc) => doc.email,
+  titleField: 'full_name',
+  fields: ['email', 'full_name', 'enabled', 'user_type'],
+  seed: [
+    {
+      email: 'benny.hoefler@oekovolt.test',
+      full_name: 'Benny Höfler',
+      enabled: 1,
+      user_type: 'System User',
+      tenant: AT,
+    },
+    {
+      email: 'lena.steiner@oekovolt.test',
+      full_name: 'Lena Steiner',
+      enabled: 1,
+      user_type: 'System User',
+      tenant: AT,
+    },
+    {
+      email: 'jakob.pichler@oekovolt.test',
+      full_name: 'Jakob Pichler',
+      enabled: 1,
+      user_type: 'System User',
+      tenant: AT,
+    },
+    {
+      email: 'markus.reiter@oekovolt.test',
+      full_name: 'Markus Reiter',
+      enabled: 1,
+      user_type: 'System User',
+      tenant: AT,
+    },
+    {
+      email: 'sabine.gruber@oekovolt.test',
+      full_name: 'Sabine Gruber',
+      enabled: 1,
+      user_type: 'System User',
+      tenant: AT,
+    },
+    {
+      email: 'elisabeth.moser@oekovolt.test',
+      full_name: 'Elisabeth Moser',
+      enabled: 1,
+      user_type: 'System User',
+      tenant: AT,
+    },
+    {
+      email: 'thomas.bauer@oekovolt.test',
+      full_name: 'Thomas Bauer',
+      enabled: 1,
+      user_type: 'System User',
+      tenant: DE,
+    },
+    {
+      email: 'carina.fuchs@oekovolt.test',
+      full_name: 'Carina Fuchs',
+      enabled: 0,
+      user_type: 'System User',
+      tenant: AT,
+      description: 'Deaktiviert nach Austritt – das Gerät ist trotzdem noch offen',
+    },
+  ],
+})
+
+// --- Beschäftigte (Frappe HR) ----------------------------------------------
+
+/**
+ * `status` ist hier das echte HR-Feld: Active, Inactive, Suspended, Left.
+ * Es fällt zufällig mit dem Pflichtfeld aus CLAUDE.md Abschnitt 3 zusammen,
+ * was hier passt - eine ausgetretene Person ist auch für uns nicht aktiv.
+ */
+defineDoctype('Employee', {
+  naming: (doc, index) => `HR-EMP-${String(index).padStart(5, '0')}`,
+  titleField: 'employee_name',
+  fields: [
+    'employee_name',
+    'company',
+    'department',
+    'designation',
+    'branch',
+    'reports_to',
+    'user_id',
+    'company_email',
+    'cell_number',
+    'employment_type',
+    'date_of_joining',
+    'relieving_date',
+  ],
+  seed: [
+    {
+      employee_name: 'Benny Höfler',
+      company: OES,
+      department: 'IT - ÖS',
+      designation: 'IT-Leitung',
+      branch: 'Zentrale Linz',
+      user_id: 'benny.hoefler@oekovolt.test',
+      company_email: 'benny.hoefler@oekovolt.test',
+      cell_number: '+43 732 123456-10',
+      employment_type: 'Full-time',
+      date_of_joining: tageVersetzt(-2400).slice(0, 10),
+      status: 'Active',
+      tenant: AT,
+    },
+    {
+      employee_name: 'Lena Steiner',
+      company: OES,
+      department: 'IT - ÖS',
+      designation: 'Systemadministration',
+      branch: 'Zentrale Linz',
+      reports_to: 'HR-EMP-00001',
+      user_id: 'lena.steiner@oekovolt.test',
+      company_email: 'lena.steiner@oekovolt.test',
+      cell_number: '+43 732 123456-11',
+      employment_type: 'Full-time',
+      date_of_joining: tageVersetzt(-820).slice(0, 10),
+      status: 'Active',
+      tenant: AT,
+    },
+    {
+      employee_name: 'Jakob Pichler',
+      company: OES,
+      department: 'IT - ÖS',
+      designation: 'Servicetechnik',
+      branch: 'Zentrale Linz',
+      reports_to: 'HR-EMP-00001',
+      user_id: 'jakob.pichler@oekovolt.test',
+      company_email: 'jakob.pichler@oekovolt.test',
+      cell_number: '+43 732 123456-12',
+      employment_type: 'Full-time',
+      date_of_joining: tageVersetzt(-310).slice(0, 10),
+      status: 'Active',
+      tenant: AT,
+    },
+    {
+      employee_name: 'Markus Reiter',
+      company: OES,
+      department: 'Montage - ÖS',
+      designation: 'Montageleitung',
+      branch: 'Zentrale Linz',
+      user_id: 'markus.reiter@oekovolt.test',
+      company_email: 'markus.reiter@oekovolt.test',
+      cell_number: '+43 732 123456-20',
+      employment_type: 'Full-time',
+      date_of_joining: tageVersetzt(-1900).slice(0, 10),
+      status: 'Active',
+      tenant: AT,
+    },
+    {
+      employee_name: 'Andreas Holzer',
+      company: OES,
+      department: 'Montage - ÖS',
+      designation: 'Monteur',
+      branch: 'Zentrale Linz',
+      reports_to: 'HR-EMP-00004',
+      company_email: 'andreas.holzer@oekovolt.test',
+      cell_number: '+43 732 123456-21',
+      employment_type: 'Full-time',
+      date_of_joining: tageVersetzt(-640).slice(0, 10),
+      status: 'Active',
+      tenant: AT,
+      description: 'Kein Systemkonto – arbeitet ausschließlich im Feld',
+    },
+    {
+      employee_name: 'Sabine Gruber',
+      company: OES,
+      department: 'Vertrieb - ÖS',
+      designation: 'Vertriebsleitung',
+      branch: 'Zentrale Linz',
+      user_id: 'sabine.gruber@oekovolt.test',
+      company_email: 'sabine.gruber@oekovolt.test',
+      cell_number: '+43 732 123456-30',
+      employment_type: 'Full-time',
+      date_of_joining: tageVersetzt(-1500).slice(0, 10),
+      status: 'Active',
+      tenant: AT,
+    },
+    {
+      employee_name: 'Nina Wallner',
+      company: OES,
+      department: 'Vertrieb - ÖS',
+      designation: 'Außendienst',
+      branch: 'Zentrale Linz',
+      reports_to: 'HR-EMP-00006',
+      company_email: 'nina.wallner@oekovolt.test',
+      cell_number: '+43 732 123456-31',
+      employment_type: 'Full-time',
+      date_of_joining: tageVersetzt(-210).slice(0, 10),
+      status: 'Active',
+      tenant: AT,
+    },
+    {
+      employee_name: 'Elisabeth Moser',
+      company: OES,
+      department: 'Verwaltung - ÖS',
+      designation: 'Kaufmännische Leitung',
+      branch: 'Zentrale Linz',
+      user_id: 'elisabeth.moser@oekovolt.test',
+      company_email: 'elisabeth.moser@oekovolt.test',
+      cell_number: '+43 732 123456-40',
+      employment_type: 'Full-time',
+      date_of_joining: tageVersetzt(-2100).slice(0, 10),
+      status: 'Active',
+      tenant: AT,
+    },
+    {
+      employee_name: 'Erik Sandner',
+      company: OES,
+      department: 'IT - ÖS',
+      designation: 'Servicetechnik',
+      company_email: 'erik.sandner@netzwerk-partner.test',
+      cell_number: '+43 660 9988776',
+      employment_type: 'Contract',
+      date_of_joining: tageVersetzt(-95).slice(0, 10),
+      status: 'Active',
+      tenant: AT,
+      description: 'Externer Dienstleister – Vertrag befristet',
+    },
+    {
+      employee_name: 'Thomas Bauer',
+      company: OGS,
+      department: 'Produktion - ÖGS',
+      designation: 'Werksleitung',
+      branch: 'Werk Passau',
+      user_id: 'thomas.bauer@oekovolt.test',
+      company_email: 'thomas.bauer@oekovolt.test',
+      cell_number: '+49 851 998877-10',
+      employment_type: 'Full-time',
+      date_of_joining: tageVersetzt(-1200).slice(0, 10),
+      status: 'Active',
+      tenant: DE,
+    },
+    {
+      employee_name: 'Carina Fuchs',
+      company: OES,
+      department: 'IT - ÖS',
+      designation: 'Werkstudentin',
+      branch: 'Zentrale Linz',
+      reports_to: 'HR-EMP-00002',
+      user_id: 'carina.fuchs@oekovolt.test',
+      company_email: 'carina.fuchs@oekovolt.test',
+      cell_number: '+43 732 123456-13',
+      employment_type: 'Intern',
+      date_of_joining: tageVersetzt(-400).slice(0, 10),
+      relieving_date: tageVersetzt(-12).slice(0, 10),
+      status: 'Left',
+      tenant: AT,
+      description: 'Ausgetreten – Rückgabe des Notebooks offen',
+    },
+  ],
+})
+
+defineDoctype('Employment Type', {
+  naming: (doc) => doc.employee_type_name,
+  titleField: 'employee_type_name',
+  fields: ['employee_type_name'],
+  seed: [
+    { employee_type_name: 'Full-time', tenant: AT },
+    { employee_type_name: 'Part-time', tenant: AT },
+    { employee_type_name: 'Contract', tenant: AT },
+    { employee_type_name: 'Intern', tenant: AT },
+  ],
+})

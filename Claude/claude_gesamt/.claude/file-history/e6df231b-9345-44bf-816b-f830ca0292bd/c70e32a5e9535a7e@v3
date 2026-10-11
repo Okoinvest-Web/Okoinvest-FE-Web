@@ -1,0 +1,87 @@
+import { describe, expect, it } from 'vitest'
+
+import { bedingungLesen, istSichtbar, type Bezugswert } from './bedingung'
+
+function bezug(werte: Record<string, Bezugswert>) {
+  return (nummer: string) => werte[nummer]
+}
+
+describe('bedingungLesen', () => {
+  it('liest Nummer, Operator und Wert', () => {
+    expect(bedingungLesen('3.1 == Mangel schwer')).toEqual({
+      nummer: '3.1',
+      operator: '==',
+      wert: 'Mangel schwer',
+    })
+  })
+
+  it('kommt ohne Leerzeichen aus', () => {
+    expect(bedingungLesen('6.1>0')).toEqual({ nummer: '6.1', operator: '>', wert: '0' })
+  })
+
+  it('erkennt >= vor >', () => {
+    expect(bedingungLesen('2.2 >= 5')?.operator).toBe('>=')
+  })
+
+  it('liefert null bei unbrauchbarer Syntax', () => {
+    expect(bedingungLesen('irgendwas')).toBeNull()
+    expect(bedingungLesen('')).toBeNull()
+    expect(bedingungLesen(null)).toBeNull()
+  })
+})
+
+describe('istSichtbar', () => {
+  const werte = bezug({
+    '3.1': { text: 'Mangel schwer' },
+    '6.1': { zahl: 12 },
+    '2.4': { text: 'Reinigung empfohlen' },
+  })
+
+  it('zeigt Prüfpunkte ohne Bedingung', () => {
+    expect(istSichtbar(undefined, werte)).toBe(true)
+    expect(istSichtbar('   ', werte)).toBe(true)
+  })
+
+  it('vergleicht Text unabhängig von Groß- und Kleinschreibung', () => {
+    expect(istSichtbar('3.1 == mangel schwer', werte)).toBe(true)
+    expect(istSichtbar('3.1 == Mangel leicht', werte)).toBe(false)
+  })
+
+  it('wertet Ungleichheit aus', () => {
+    expect(istSichtbar('2.4 != keine Reinigung nötig', werte)).toBe(true)
+  })
+
+  it('vergleicht Zahlen', () => {
+    expect(istSichtbar('6.1 > 10', werte)).toBe(true)
+    expect(istSichtbar('6.1 > 20', werte)).toBe(false)
+    expect(istSichtbar('6.1 >= 12', werte)).toBe(true)
+    expect(istSichtbar('6.1 <= 11', werte)).toBe(false)
+  })
+
+  // Sicherheitsverhalten: lieber ein Prüfpunkt zu viel als ein fehlender Pflichtpunkt
+  it('zeigt an, wenn der Bezugsprüfpunkt fehlt', () => {
+    expect(istSichtbar('9.9 == irgendwas', werte)).toBe(true)
+  })
+
+  it('zeigt an, wenn die Bedingung unlesbar ist', () => {
+    expect(istSichtbar('kaputt', werte)).toBe(true)
+  })
+
+  it('zeigt an, wenn der Sollwert eines Zahlenvergleichs keine Zahl ist', () => {
+    expect(istSichtbar('6.1 > abc', werte)).toBe(true)
+  })
+
+  it('blendet aus, wenn der Bezugsprüfpunkt keine Zahl trägt', () => {
+    expect(istSichtbar('3.1 > 5', werte)).toBe(false)
+  })
+
+  it('zeigt an, wenn der Bezugswert noch leer ist', () => {
+    const leer = bezug({ '3.1': { text: '' } })
+    expect(istSichtbar('3.1 != Mangel schwer', leer)).toBe(true)
+  })
+
+  it('blendet aus, solange der leere Bezugswert nicht passt', () => {
+    const leer = bezug({ '3.1': { text: '' } })
+    expect(istSichtbar('3.1 == Mangel schwer', leer)).toBe(false)
+  })
+})

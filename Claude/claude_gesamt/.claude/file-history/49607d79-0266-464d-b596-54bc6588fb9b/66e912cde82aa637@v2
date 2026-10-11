@@ -1,0 +1,227 @@
+/**
+ * Tests für die Drift-Auswertung.
+ *
+ * Ein Drift-Befund ist nicht „Feld X hat einen anderen Wert". Er ist die
+ * Aussage: **hier ist die Wirklichkeit einen anderen Weg gegangen als die
+ * Dokumentation**. Die Frage dahinter ist immer dieselbe – gab es einen
+ * genehmigten Change?
+ *
+ * Diese Datei sichert drei Unterscheidungen, die eine reine Liste nicht
+ * treffen kann:
+ *
+ *   1. **Gedeckt** – ein Change erklärt die Abweichung, nur die
+ *      Dokumentation hinkt.
+ *   2. **Ungedeckt** – jemand hat am Freigabeprozess vorbei geändert.
+ *   3. **Vorzeitig** – es gab eine Genehmigung, aber das Fenster lag noch
+ *      in der Zukunft. Das ist schlimmer als (2): da war jemand im Ablauf
+ *      drin und ist trotzdem ausgeschert.
+ */
+import { beforeEach, describe, expect, it } from 'vitest'
+import { mockRequest, resetMockData } from '@/api/mock/server.js'
+
+const ruf = (url, params) => mockRequest({ url, params })
+const befunde = (p = {}) => ruf('netops.api.ops.drift_findings', p)
+const haeufungen = (p = {}) => ruf('netops.api.ops.drift_hotspots', p)
+const erledigen = (p) => ruf('netops.api.ops.drift_resolve', p)
+const sammelUebernahme = (p = {}) => ruf('netops.api.ops.drift_accept_covered', p)
+
+beforeEach(() => {
+  resetMockData()
+})
+
+describe('Die Frage hinter jedem Befund: gab es einen Change?', () => {
+  it('erkennt eine Abweichung, die ein Change erklärt', async () => {
+    const z = (await befunde()).rows.find((r) => r.object_name === 'IF-SRV-PVE-01-03')
+    expect(z.covered_by_change).toBeTruthy()
+    expect(z.level).toBe('ok')
+    expect(z.reasons.join(' ')).toMatch(/Dokumentation ist nur nicht nachgezogen/)
+  })
+
+  it('meldet eine Abweichung ohne Change', async () => {
+    const z = (await befunde()).rows.find((r) => r.object_name === '10.10.30.44/24')
+    expect(z.covered_by_change).toBeNull()
+    expect(z.reasons.join(' ')).toMatch(/am Freigabeprozess vorbei/)
+  })
+
+  it('unterscheidet „vorzeitig" von „ohne Change"', async () => {
+    // Der schärfste Fall: die Genehmigung gab es, das Fenster nicht.
+    const z = (await befunde()).rows.find((r) => r.object_name === 'FW-OS-01')
+    expect(z.early_change).toBeTruthy()
+    expect(z.covered_by_change).toBeNull()
+    expect(z.level).toBe('critical')
+    expect(z.reasons.join(' ')).toMatch(/Vor dem genehmigten Fenster ausgeführt/)
+    // Nicht mit der schwächeren Aussage vermischen.
+    expect(z.reasons.join(' ')).not.toMatch(/Kein genehmigter Change/)
+  })
+
+  it('zählt beides getrennt in der Zusammenfassung', async () => {
+    const s = (await befunde()).summary
+    expect(s.covered).toBeGreaterThan(0)
+    expect(s.uncovered).toBeGreaterThan(0)
+    expect(s.early).toBe(1)
+  })
+
+  it('sagt in einem Satz, worum es geht', async () => {
+    const s = (await befunde()).summary
+    expect(s.note).toMatch(/am Freigabeprozess vorbei/)
+  })
+
+  it('lässt einen abgelehnten Change nichts erklären', async () => {
+    // Ein abgelehnter Change erlaubt die Änderung nicht, er verbietet sie.
+    for (const z of (await befunde()).rows) {
+      if (!z.covered_by_change) continue
+      const c = await ruf('frappe.client.get', {
+        doctype: 'Change Request',
+        name: z.covered_by_change,
+      })
+      expect(['approved', 'implemented', 'verified']).toContain(c.change_state)
+    }
+  })
+})
+
+describe('Gewichtung', () => {
+  it('stuft die Perimeter-Firewall härter ein', async () => {
+    const z = (await befunde()).rows.find((r) => r.object_name === 'FW-OS-01')
+    expect(z.perimeter).toBe(true)
+    expect(z.level).toBe('critical')
+  })
+
+  it('erkennt Felder, die auf Erreichbarkeit oder Zugang wirken', async () => {
+    const z = (await befunde()).rows.find((r) => r.field === 'firmware')
+    expect(z.sensitive_field).toBe(true)
+  })
+
+  it('meldet einen Befund, der zu lange offen steht', async () => {
+    // Nach ein paar solcher Befunde liest niemand mehr hin.
+    const z = (await befunde()).rows.find((r) => r.age_days > 14 && r.open)
+    expect(z.reasons.join(' ')).toMatch(/pflegt niemand mehr nach/)
+  })
+
+  it('führt erledigte Befunde nicht mehr als Befund', async () => {
+    for (const z of (await befunde()).rows) {
+      if (!z.open) expect(z.level).toBe('neutral')
+    }
+  })
+
+  it('stellt die kritischen nach oben', async () => {
+    const rang = { critical: 4, warning: 3, ok: 2, neutral: 1 }
+    const r = (await befunde()).rows
+    for (let i = 1; i < r.length; i++) {
+      expect(rang[r[i - 1].level] >= rang[r[i].level]).toBe(true)
+    }
+  })
+
+  it('filtert nach gedeckt und ungedeckt', async () => {
+    for (const z of (await befunde({ covered: true })).rows) {
+      expect(z.covered_by_change).toBeTruthy()
+    }
+    for (const z of (await befunde({ covered: false })).rows) {
+      expect(z.covered_by_change).toBeNull()
+    }
+  })
+})
+
+describe('Erledigen', () => {
+  it('lässt einen gedeckten Befund ohne Begründung übernehmen', async () => {
+    const z = (await befunde()).rows.find((r) => r.covered_by_change && r.open)
+    const e = await erledigen({ name: z.name, state: 'accepted' })
+    expect(e.ok).toBe(true)
+    // Die Dokumentation wird nachgeführt - am Gerät ändert das nichts.
+    expect(e.note).toMatch(/Am Gerät ändert das nichts/)
+  })
+
+  it('verlangt bei einem ungedeckten Befund eine Begründung', async () => {
+    // Stillschweigend zu übernehmen hieße, eine Änderung am
+    // Freigabeprozess vorbei nachträglich gutzuheißen.
+    const z = (await befunde()).rows.find(
+      (r) => r.open && !r.covered_by_change && !r.perimeter && !r.early_change,
+    )
+    await expect(erledigen({ name: z.name, state: 'accepted' })).rejects.toThrow(
+      /braucht eine Begründung/,
+    )
+    const e = await erledigen({
+      name: z.name,
+      state: 'accepted',
+      reason: 'Gerät gehört zum Testaufbau, wird nachdokumentiert',
+    })
+    expect(e.ok).toBe(true)
+  })
+
+  it('weist eine vorzeitige Änderung ohne Begründung ab', async () => {
+    const z = (await befunde()).rows.find((r) => r.early_change)
+    await expect(erledigen({ name: z.name, state: 'accepted' })).rejects.toThrow(
+      /übergangener Ablauf/,
+    )
+  })
+
+  it('lässt die Perimeter-Firewall nicht per Häkchen übernehmen', async () => {
+    const z = (await befunde()).rows.find((r) => r.perimeter && r.open && !r.covered_by_change)
+    await expect(
+      erledigen({ name: z.name, state: 'accepted', reason: 'passt schon' }),
+    ).rejects.toThrow(/erst klären, wer sie gemacht hat/)
+  })
+
+  it('verlangt beim Verwerfen einen Grund', async () => {
+    // Verwerfen heißt: die Abweichung bleibt bestehen. Das gehört begründet.
+    const z = (await befunde()).rows.find((r) => r.open)
+    await expect(erledigen({ name: z.name, state: 'rejected' })).rejects.toThrow(
+      /gehört ins Protokoll/,
+    )
+  })
+
+  it('protokolliert mit Feld und Change-Bezug', async () => {
+    const z = (await befunde()).rows.find((r) => r.covered_by_change && r.open)
+    await erledigen({ name: z.name, state: 'accepted' })
+    const log = await ruf('netops.api.audit.audit_log', { object_name: z.name })
+    expect(log[0].action).toBe('drift_accepted')
+  })
+})
+
+describe('Sammelübernahme', () => {
+  it('übernimmt nur, was ein Change deckt', async () => {
+    // Wer zwanzig ungedeckte Abweichungen mit einem Klick wegräumt, hat
+    // sie nicht gelesen.
+    const vorher = (await befunde({ state: 'open' })).summary
+    const e = await sammelUebernahme()
+    expect(e.accepted).toBe(vorher.covered)
+    expect(e.skipped).toBe(vorher.uncovered)
+  })
+
+  it('nennt die übersprungenen beim Namen', async () => {
+    const e = await sammelUebernahme()
+    expect(e.skipped_names.length).toBe(e.skipped)
+    expect(e.note).toMatch(/gehören einzeln angesehen/)
+  })
+
+  it('lässt die ungedeckten offen', async () => {
+    await sammelUebernahme()
+    const danach = await befunde({ state: 'open' })
+    expect(danach.summary.covered).toBe(0)
+    expect(danach.summary.uncovered).toBeGreaterThan(0)
+  })
+})
+
+describe('Häufungen', () => {
+  it('nennt je Objekt, wie oft und wie oft ohne Change', async () => {
+    for (const h of await haeufungen()) {
+      expect(h.findings).toBeGreaterThan(0)
+      expect(h.uncovered).toBeLessThanOrEqual(h.findings)
+      expect(Array.isArray(h.fields)).toBe(true)
+    }
+  })
+
+  it('meldet erst ab drei Befunden ein Muster', async () => {
+    // Zwei Abweichungen sind Betrieb, drei sind ein Prozessproblem.
+    for (const h of await haeufungen()) {
+      if (h.findings < 3) expect(h.reasons).toEqual([])
+      else expect(h.reasons.join(' ')).toMatch(/entweder stimmt die Dokumentation nicht/)
+    }
+  })
+
+  it('sortiert die auffälligsten nach oben', async () => {
+    const h = await haeufungen()
+    for (let i = 1; i < h.length; i++) {
+      expect(h[i - 1].findings >= h[i].findings).toBe(true)
+    }
+  })
+})

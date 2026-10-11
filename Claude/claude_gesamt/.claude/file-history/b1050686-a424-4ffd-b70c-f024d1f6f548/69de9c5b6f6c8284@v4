@@ -1,0 +1,546 @@
+import Link from "next/link";
+import type { Metadata } from "next";
+
+import {
+  Summenzeile,
+  Tabelle,
+  Zeile,
+  Zelle,
+  ZelleMitZusatz,
+} from "@/components/tabelle";
+import {
+  Hinweis,
+  Kennzahl,
+  Kennzahlenleiste,
+  LeerZustand,
+  Seitenkopf,
+  Status,
+  Tafel,
+} from "@/components/ui";
+import { ladeBuchbareMonate } from "@/lib/daten/buchhaltung";
+import {
+  ladeEinzugslage,
+  ladeLastschriftlaeufe,
+} from "@/lib/daten/lastschrift";
+import {
+  ladeBuchungen,
+  ladeKontosummen,
+  ladeNachweisKennzahlen,
+  ladeStapel,
+} from "@/lib/daten/nachweise";
+import { KONTENRAHMEN } from "@/lib/finanzen/bmd";
+import { monatsname } from "@/lib/finanzen/stapellauf";
+import {
+  formatDatum,
+  formatDatumZeit,
+  formatGeld,
+  formatZahl,
+} from "@/lib/format";
+import { aktuelleRechte, requireRecht } from "@/lib/session";
+
+import {
+  Lastschriftlauf,
+  Sammlersteuerung,
+} from "./lastschrift-steuerung";
+import { Buchungslauf, Stapelfreigabe } from "./stapel-steuerung";
+
+export const metadata: Metadata = { title: "Buchhaltung" };
+
+/**
+ * Klartext zu einer Erlösquelle.
+ *
+ * Der Schlüssel steht so in der Datenbank; ungefiltert angezeigt sähe
+ * die Buchung aus wie ein Programmierfehler.
+ */
+const QUELLEN: Record<string, string> = {
+  hardware: "Hardwareverkauf",
+  installation: "Montage und Installation",
+  wartung: "Wartung und Betriebsführung",
+  laden_b2b: "Ladeinfrastruktur, Firmenkunden",
+  laden_adhoc: "Ladeinfrastruktur, Ad-hoc",
+  gemeinschaft: "Energiegemeinschaft",
+  einspeisung: "Stromeinspeisung",
+  arbitrage: "Stromgroßhandel",
+  regelleistung: "Regelleistung",
+  lieferant_hardware: "Wareneinkauf Hardware",
+  lieferant_wartung: "Fremdleistung Wartung",
+};
+
+/** Klartext zu einem Konto, soweit es im Kontenrahmen steht. */
+function kontoText(konto: string): string | null {
+  const treffer = Object.values(KONTENRAHMEN).find((k) => k.konto === konto);
+  return treffer?.bezeichnung ?? null;
+}
+
+function kontoHinweis(konto: string): string | null {
+  const treffer = Object.values(KONTENRAHMEN).find((k) => k.konto === konto);
+  return treffer?.hinweis ?? null;
+}
+
+export default async function FinanzenSeite({
+  searchParams,
+}: {
+  searchParams: Promise<{ stapel?: string }>;
+}) {
+  await requireRecht("finanzen.lesen");
+
+  const rechte = await aktuelleRechte();
+  const darfBuchen = rechte.has("finanzen.buchen");
+
+  const { stapel: gewaehlt } = await searchParams;
+
+  const kennzahlen = ladeNachweisKennzahlen();
+  const stapel = ladeStapel(12);
+  const aktiv = stapel.find((s) => s.id === gewaehlt) ?? stapel[0];
+
+  const buchungen = aktiv ? ladeBuchungen(aktiv.id) : [];
+  const summen = aktiv ? ladeKontosummen(aktiv.id) : [];
+
+  /**
+   * Die Umsatzsteuer entsteht je Buchungszeile und wird dort auf Cent
+   * gerundet. Erst die gerundeten Betraege werden summiert - sonst
+   * weicht die Gesamtsteuer von der Summe der angezeigten Zeilen ab,
+   * und der Stapel sieht falsch aus, obwohl er es nicht ist.
+   */
+  const aufCent = (betrag: number) => Math.round(betrag * 100) / 100;
+
+  const netto = aufCent(buchungen.reduce((s, b) => s + aufCent(b.betrag), 0));
+  const steuer = aufCent(
+    buchungen.reduce((s, b) => s + aufCent((b.betrag * b.steuersatz) / 100), 0),
+  );
+
+  const kostenstellen = [
+    ...new Set(buchungen.map((b) => b.kostenstelle).filter(Boolean)),
+  ];
+
+  const monate = ladeBuchbareMonate().map((m) => ({
+    schluessel: m.schluessel,
+    beschriftung:
+      `${monatsname(m.monat)} ${m.jahr} · ` +
+      (m.offen > 0
+        ? `${m.offen} offen`
+        : m.gebucht > 0
+          ? "vollständig gebucht"
+          : "nichts zu buchen"),
+    offen: m.offen,
+    netto_offen: m.netto_offen,
+    gebucht: m.gebucht,
+    stapel_status: m.stapel_status,
+  }));
+
+  const offeneBelege = monate.reduce((s, m) => s + m.offen, 0);
+
+  const einzug = ladeEinzugslage();
+  const sammler = ladeLastschriftlaeufe(8);
+  const offenerSammler = sammler.find((s) => s.status === "Erstellt");
+
+  return (
+    <div className="space-y-5">
+      <Seitenkopf
+        titel="Buchhaltung"
+        hinweis={`${kennzahlen.stapel} Stapel · ${kennzahlen.buchungenGesamt} Buchungen · Übergabe an BMD NTCS`}
+        aktion={
+          aktiv ? (
+            <a
+              href={`/api/finanzen/stapel/${aktiv.id}/bmd`}
+              className="knopf knopf-rand text-[0.75rem]"
+            >
+              Stapel als BMD-Datei
+            </a>
+          ) : undefined
+        }
+      />
+
+      {kennzahlen.stapelOffen > 0 && (
+        <Hinweis ton="hinweis" titel="Stapel noch nicht übergeben">
+          {kennzahlen.stapelOffen} Stapel steht als Entwurf. Ein Stapel wird
+          genau einmal übergeben – ein zweimal eingespielter Stapel
+          verdoppelt den Umsatz, und das fällt erst bei der
+          Umsatzsteuervoranmeldung auf.
+        </Hinweis>
+      )}
+
+      <Tafel
+        titel="Monatslauf"
+        hinweis={
+          offeneBelege > 0
+            ? `${offeneBelege} Belege warten auf einen Stapel`
+            : "alles gebucht"
+        }
+        fusszeile={
+          <p className="t-mikro leading-relaxed">
+            Gebucht wird nur, was festgeschrieben ist. Ein Abrechnungslauf
+            im Entwurf kann sich noch ändern; wäre er schon gebucht, stünde
+            in der Buchhaltung ein Betrag, den es so nie gegeben hat. Der
+            Lauf nimmt außerdem nichts mit, was bereits in einem früheren
+            Stapel übergeben wurde – ein zweiter Lauf über denselben Monat
+            bucht also die Nachzügler und nicht den Monat noch einmal.
+          </p>
+        }
+      >
+        <Buchungslauf monate={monate} darfBuchen={darfBuchen} />
+      </Tafel>
+
+      <Kennzahlenleiste>
+        <Kennzahl
+          label="Netto im Stapel"
+          wert={formatGeld(netto)}
+          hinweis={`${buchungen.length} Buchungen`}
+        />
+        <Kennzahl
+          label="Umsatzsteuer"
+          wert={formatGeld(steuer)}
+          hinweis="20 Prozent Regelsatz"
+        />
+        <Kennzahl
+          label="Brutto"
+          wert={formatGeld(netto + steuer)}
+          hinweis="Summe der Übergabe"
+          akzent
+        />
+        <Kennzahl
+          label="Kostenstellen"
+          wert={formatZahl(kostenstellen.length, 0)}
+          hinweis={kostenstellen.slice(0, 3).join(", ")}
+        />
+      </Kennzahlenleiste>
+
+      {/* ---------------- Lastschrift ---------------- */}
+      <Tafel
+        titel="Lastschrifteinzug"
+        hinweis={
+          einzug.einziehbar.length > 0
+            ? `${einzug.einziehbar.length} offene Belege einziehbar`
+            : "nichts einziehbar"
+        }
+        fusszeile={
+          <p className="t-mikro leading-relaxed">
+            Eingezogen wird, was offen ist und wofür ein unterschriebenes
+            Mandat vorliegt. Beides muss zutreffen: Eine Lastschrift ohne
+            Mandat holt sich der Zahler binnen acht Wochen zurück, ohne
+            Angabe von Gründen. Die Datei entsteht als pain.008 nach
+            ISO 20022; jede IBAN wird vorher gegen ihre Prüfziffer
+            gerechnet, weil die Bank einen fehlerhaften Sammler als Ganzes
+            zurückweist – und das erst am nächsten Tag.
+          </p>
+        }
+      >
+        <Lastschriftlauf
+          einziehbar={einzug.einziehbar.length}
+          summeEur={einzug.summeEur}
+          nichtEinziehbar={einzug.nichtEinziehbar.length}
+          darfBuchen={darfBuchen}
+        />
+
+        {offenerSammler && (
+          <div
+            className="mt-4 border-t pt-4"
+            style={{ borderColor: "var(--linie-zart)" }}
+          >
+            <p className="t-etikett mb-2">
+              {offenerSammler.id} · {offenerSammler.anzahl} Posten ·{" "}
+              {formatGeld(offenerSammler.summe_eur)} · fällig{" "}
+              {formatDatum(offenerSammler.faellig_am)}
+            </p>
+            <Sammlersteuerung
+              laufId={offenerSammler.id}
+              status={offenerSammler.status}
+              darfBuchen={darfBuchen}
+            />
+          </div>
+        )}
+
+        {einzug.nichtEinziehbar.length > 0 && (
+          <div
+            className="mt-4 border-t pt-4"
+            style={{ borderColor: "var(--linie-zart)" }}
+          >
+            <p className="t-etikett mb-2">Bleibt außen vor</p>
+            <ul className="space-y-1">
+              {einzug.nichtEinziehbar.slice(0, 8).map((n) => (
+                <li key={n.belegId} className="t-mikro leading-relaxed">
+                  {n.nummer} · {n.zahler} · {formatGeld(n.betragEur)} –{" "}
+                  {n.grund}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {sammler.length > 0 && (
+          <div className="mt-4">
+            <Tabelle
+              spalten={[
+                { titel: "Sammler" },
+                { titel: "Fällig", schmalAusblenden: true },
+                { titel: "Posten", zahl: true },
+                { titel: "Summe", zahl: true },
+                { titel: "Zustand" },
+              ]}
+              mindestbreite="48rem"
+            >
+              {sammler.map((l) => (
+                <Zeile key={l.id} gedaempft={l.status === "Storniert"}>
+                  <ZelleMitZusatz
+                    haupt={l.id}
+                    zusatz={`${formatDatumZeit(l.erstellt_am)}${l.erstellt_von ? ` · ${l.erstellt_von}` : ""}`}
+                  />
+                  <Zelle leise schmalAusblenden>
+                    {formatDatum(l.faellig_am)}
+                  </Zelle>
+                  <Zelle zahl leise>
+                    {l.anzahl}
+                  </Zelle>
+                  <Zelle zahl>{formatGeld(l.summe_eur)}</Zelle>
+                  <Zelle>
+                    <Status
+                      ton={
+                        l.status === "Eingereicht"
+                          ? "gut"
+                          : l.status === "Storniert"
+                            ? "neutral"
+                            : "hinweis"
+                      }
+                    >
+                      {l.status}
+                    </Status>
+                  </Zelle>
+                </Zeile>
+              ))}
+            </Tabelle>
+          </div>
+        )}
+      </Tafel>
+
+      {/* ---------------- Stapel ---------------- */}
+      <Tafel titel="Buchungsstapel" hinweis="Monatliche Übergabe" dicht>
+        {stapel.length === 0 ? (
+          <div className="p-4">
+            <LeerZustand text="Es wurde noch kein Stapel erzeugt." />
+          </div>
+        ) : (
+          <Tabelle
+            spalten={[
+              { titel: "Zeitraum" },
+              { titel: "Format", schmalAusblenden: true },
+              { titel: "Buchungen", zahl: true },
+              { titel: "Summe", zahl: true },
+              { titel: "Übergeben", schmalAusblenden: true },
+              { titel: "Status" },
+            ]}
+            mindestbreite="54rem"
+          >
+            {stapel.map((s) => (
+              <Zeile key={s.id} hervorgehoben={s.id === aktiv?.id}>
+                <ZelleMitZusatz
+                  haupt={
+                    <Link
+                      href={`/portal/finanzen?stapel=${s.id}`}
+                      className="hover:underline"
+                    >
+                      {s.bezeichnung}
+                    </Link>
+                  }
+                  zusatz={`${formatDatum(s.zeitraum_von)} bis ${formatDatum(s.zeitraum_bis)}`}
+                />
+                <Zelle leise schmalAusblenden>
+                  {s.format.replace("_", " ")}
+                </Zelle>
+                <Zelle zahl leise>
+                  {s.buchungen}
+                </Zelle>
+                <Zelle zahl>{formatGeld(s.summe_soll)}</Zelle>
+                <Zelle leise schmalAusblenden>
+                  {s.uebergeben_am ? formatDatum(s.uebergeben_am) : "–"}
+                </Zelle>
+                <Zelle>
+                  <Status
+                    ton={
+                      s.status === "Uebergeben"
+                        ? "gut"
+                        : s.status === "Storniert"
+                          ? "neutral"
+                          : "hinweis"
+                    }
+                  >
+                    {s.status === "Uebergeben" ? "Übergeben" : s.status}
+                  </Status>
+                </Zelle>
+              </Zeile>
+            ))}
+          </Tabelle>
+        )}
+      </Tafel>
+
+      {/* ---------------- Kontensummen ---------------- */}
+      {summen.length > 0 && (
+        <Tafel
+          titel="Summen je Konto"
+          hinweis="Was der Steuerberater zuerst prüft"
+          dicht
+          fusszeile={
+            <p className="t-mikro leading-relaxed">
+              Die Erlöse sind nach Quelle getrennt: Hardwareverkauf,
+              Wartung, Ladeinfrastruktur, Gemeinschaftsabrechnung,
+              Einspeisung und Börsenhandel stehen auf eigenen Konten.
+              Zusammengefasst wären sie steuerlich nicht mehr auseinander zu
+              halten – und die Deckungsbeitragsrechnung je Standort ginge
+              verloren.
+            </p>
+          }
+        >
+          <Tabelle
+            spalten={[
+              { titel: "Konto" },
+              { titel: "Buchungen", zahl: true, schmalAusblenden: true },
+              { titel: "Netto", zahl: true },
+              { titel: "Steuer", zahl: true },
+            ]}
+            mindestbreite="46rem"
+          >
+            {summen.map((s) => (
+              <Zeile key={s.konto}>
+                <ZelleMitZusatz
+                  haupt={`${s.konto} · ${kontoText(s.konto) ?? "Sachkonto"}`}
+                  zusatz={kontoHinweis(s.konto) ?? undefined}
+                />
+                <Zelle zahl leise schmalAusblenden>
+                  {s.buchungen}
+                </Zelle>
+                <Zelle zahl>{formatGeld(s.netto)}</Zelle>
+                <Zelle zahl leise>
+                  {formatGeld(s.steuer)}
+                </Zelle>
+              </Zeile>
+            ))}
+            <Summenzeile>
+              <Zelle>Summe</Zelle>
+              <Zelle zahl schmalAusblenden>
+                {buchungen.length}
+              </Zelle>
+              <Zelle zahl>{formatGeld(netto)}</Zelle>
+              <Zelle zahl>{formatGeld(steuer)}</Zelle>
+            </Summenzeile>
+          </Tabelle>
+        </Tafel>
+      )}
+
+      {/* ---------------- Freigabe des gewählten Stapels ---------------- */}
+      {aktiv && darfBuchen && (
+        <Tafel
+          titel={aktiv.bezeichnung}
+          hinweis={
+            aktiv.status === "Entwurf"
+              ? "steht zur Übergabe"
+              : aktiv.status === "Uebergeben"
+                ? `übergeben am ${aktiv.uebergeben_am ? formatDatum(aktiv.uebergeben_am) : "–"}`
+                : "storniert"
+          }
+        >
+          <Stapelfreigabe
+            stapelId={aktiv.id}
+            status={aktiv.status}
+            buchungen={buchungen.length}
+            darfBuchen={darfBuchen}
+          />
+        </Tafel>
+      )}
+
+      {/* ---------------- Buchungen ---------------- */}
+      {buchungen.length > 0 && (
+        <Tafel
+          titel={aktiv?.bezeichnung ?? "Buchungen"}
+          hinweis="Eine Zeile je Beleg"
+          dicht
+        >
+          <Tabelle
+            spalten={[
+              { titel: "Beleg" },
+              { titel: "Konto", schmalAusblenden: true },
+              { titel: "Kostenstelle", schmalAusblenden: true },
+              { titel: "Netto", zahl: true },
+              { titel: "Steuer", zahl: true, schmalAusblenden: true },
+              { titel: "Brutto", zahl: true },
+            ]}
+            mindestbreite="60rem"
+          >
+            {buchungen.map((b) => (
+              <Zeile key={b.id}>
+                <ZelleMitZusatz
+                  haupt={b.text}
+                  zusatz={`${b.belegnummer} · ${formatDatum(b.belegdatum)}`}
+                />
+                <Zelle leise schmalAusblenden>
+                  <span className="font-mono text-[0.6875rem]">
+                    {b.konto} an {b.gegenkonto}
+                  </span>
+                  <span className="t-mikro block">
+                    {kontoText(b.gegenkonto) ??
+                      QUELLEN[b.herkunft] ??
+                      b.herkunft}
+                  </span>
+                </Zelle>
+                <Zelle leise schmalAusblenden>
+                  {b.kostenstelle ?? "–"}
+                </Zelle>
+                <Zelle zahl>{formatGeld(b.betrag)}</Zelle>
+                <Zelle zahl leise schmalAusblenden>
+                  {formatGeld(aufCent((b.betrag * b.steuersatz) / 100))}
+                  <span className="t-mikro block">{b.steuercode}</span>
+                </Zelle>
+                <Zelle zahl>
+                  {formatGeld(
+                    aufCent(b.betrag) +
+                      aufCent((b.betrag * b.steuersatz) / 100),
+                  )}
+                </Zelle>
+              </Zeile>
+            ))}
+          </Tabelle>
+        </Tafel>
+      )}
+
+      <Tafel titel="Was beim Einspielen zählt">
+        <ol className="space-y-3">
+          {[
+            {
+              punkt: "Jede Belegnummer genau einmal",
+              text: "Eine doppelte Nummer heißt entweder doppelt gebucht oder eine Lücke in der Nummernfolge. Beides weist die Buchhaltung zurück, und die Prüfung schaut zuerst darauf.",
+            },
+            {
+              punkt: "Steuer passt zum Netto",
+              text: "Weicht sie ab, stimmt die Umsatzsteuervoranmeldung nicht. Der Stapel wird deshalb vor der Übergabe durchgerechnet und nicht erst beim Einspielen.",
+            },
+            {
+              punkt: "Kostenstelle an jeder Zeile",
+              text: "Ohne sie gibt es keine Deckungsbeitragsrechnung je Standort. Die Kennung der Anlage ist zugleich die Kostenstelle – damit braucht niemand eine zweite Zuordnungsliste.",
+            },
+            {
+              punkt: "Ein Stapel, eine Übergabe",
+              text: "Ein zweimal eingespielter Stapel verdoppelt den Umsatz. Deshalb trägt jeder Stapel einen Zustand und wird nach der Übergabe nicht mehr verändert.",
+            },
+          ].map((e, i) => (
+            <li key={e.punkt} className="flex gap-3">
+              <span
+                className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[0.6875rem] font-medium"
+                style={{
+                  background: "var(--f-belegt)",
+                  color: "var(--t-normal)",
+                }}
+                aria-hidden
+              >
+                {i + 1}
+              </span>
+              <span className="min-w-0">
+                <span className="block text-[0.8125rem] font-medium">
+                  {e.punkt}
+                </span>
+                <span className="t-mikro block leading-relaxed">{e.text}</span>
+              </span>
+            </li>
+          ))}
+        </ol>
+      </Tafel>
+    </div>
+  );
+}

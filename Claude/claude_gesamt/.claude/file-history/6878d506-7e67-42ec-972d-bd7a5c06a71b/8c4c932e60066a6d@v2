@@ -1,0 +1,54 @@
+// Screenshots über Chrome DevTools Protocol (ohne Zusatzpakete)
+import { spawn } from "node:child_process";
+import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { join } from "node:path";
+
+const dir = new URL(".", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1");
+const out = join(dir, "shots");
+mkdirSync(out, { recursive: true });
+const token = readFileSync(join(dir, "token.txt"), "utf8").trim();
+const pages = process.argv.slice(2);
+const W = 1440, H = 900;
+
+const chrome = spawn("C:/Program Files/Google/Chrome/Application/chrome.exe", [
+  "--headless=new", "--remote-debugging-port=9333", `--user-data-dir=${join(dir, "chrome-prof")}`, `--window-size=${W},${H}`, "--hide-scrollbars", "about:blank",
+]);
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+let ws;
+for (let i = 0; i < 40; i++) {
+  try {
+    const list = await (await fetch("http://127.0.0.1:9333/json")).json();
+    const p = list.find((x) => x.type === "page");
+    if (p) { ws = new WebSocket(p.webSocketDebuggerUrl); break; }
+  } catch {}
+  await sleep(250);
+}
+await new Promise((r) => ws.addEventListener("open", r));
+let id = 0; const pending = new Map();
+ws.addEventListener("message", (e) => { const m = JSON.parse(e.data); if (m.id && pending.has(m.id)) { pending.get(m.id)(m); pending.delete(m.id); } });
+const send = (method, params = {}) => new Promise((r) => { const i = ++id; pending.set(i, r); ws.send(JSON.stringify({ id: i, method, params })); });
+
+await send("Network.enable");
+await send("Network.setCookie", { name: "crm_session", value: token, domain: "localhost", path: "/" });
+await send("Emulation.setDeviceMetricsOverride", { width: W, height: H, deviceScaleFactor: 1, mobile: false });
+await send("Page.enable");
+for (const spec of pages) {
+  const [path, name, full] = spec.split("|");
+  if (path.startsWith("/login")) await send("Network.deleteCookies", { name: "crm_session", domain: "localhost" });
+  console.log(JSON.stringify(await send("Page.navigate", { url: `http://localhost:3000${path}` })));
+  await sleep(7000);
+  let clip;
+  if (full) {
+    const r = await send("Runtime.evaluate", { expression: "document.querySelector('main')?.scrollHeight || document.body.scrollHeight", returnByValue: true });
+    const h = Math.min(3000, r.result.result.value);
+    await send("Emulation.setDeviceMetricsOverride", { width: W, height: h, deviceScaleFactor: 1, mobile: false });
+    await sleep(800);
+  }
+  const dbg = await send("Runtime.evaluate", { expression: "JSON.stringify({u:location.href,t:document.title,len:document.body?.innerText.length,bg:getComputedStyle(document.body).backgroundColor,vis:document.body?.style.display, html:document.documentElement.outerHTML.slice(0,300)})", returnByValue: true }); console.log(dbg.result?.result?.value);
+  const shot = await send("Page.captureScreenshot", { format: "png", clip });
+  writeFileSync(join(out, `${name}.png`), Buffer.from(shot.result.data, "base64"));
+  await send("Emulation.setDeviceMetricsOverride", { width: W, height: H, deviceScaleFactor: 1, mobile: false });
+  console.log("ok", name);
+}
+ws.close(); chrome.kill();
+process.exit(0);

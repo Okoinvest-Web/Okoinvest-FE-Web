@@ -1,0 +1,330 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+
+import { Verlauf } from "@/components/diagramme/verlauf";
+import { IconPfeilLinks } from "@/components/icon";
+import {
+  Angabe,
+  Hinweis,
+  Kennzahl,
+  Kennzahlenleiste,
+  Seitenkopf,
+  Status,
+  Tafel,
+} from "@/components/ui";
+import {
+  ladeAlarm,
+  ladeAnlage,
+  ladeStrangTagesverlauf,
+  ladeTagesverlauf,
+  ladeVerguetung,
+} from "@/lib/daten/monitoring";
+import { ENERGIE_FARBEN } from "@/lib/farben";
+import {
+  formatDatumZeit,
+  formatGeld,
+  formatRelativ,
+  formatZahl,
+  formatZeit,
+} from "@/lib/format";
+import { requireRecht } from "@/lib/session";
+
+import { Massnahmen } from "./massnahmen";
+
+/**
+ * Abweichung vom Erwartungswert, mit echtem Minuszeichen.
+ *
+ * Der Bindestrich der Tastatur ist schmaler als das Minuszeichen und
+ * sitzt tiefer; in einer Kennzahlenzeile liest er sich wie ein
+ * Trennstrich.
+ */
+function abweichungText(ist: number, soll: number): string {
+  const prozent = ((ist - soll) / soll) * 100;
+  const gerundet = Math.round(prozent);
+  if (gerundet === 0) return "0 %";
+  return `${gerundet > 0 ? "+" : "−"}${Math.abs(gerundet)} %`;
+}
+
+function schweregradTon(grad: string) {
+  switch (grad) {
+    case "Kritisch":
+      return "kritisch" as const;
+    case "Hoch":
+      return "ernst" as const;
+    case "Mittel":
+      return "hinweis" as const;
+    case "Niedrig":
+      return "neutral" as const;
+    default:
+      return "akzent" as const;
+  }
+}
+
+/**
+ * Eine einzelne Meldung.
+ *
+ * Entscheidend ist der Verlauf des betroffenen Tages: Erst dort wird
+ * sichtbar, was tatsächlich passiert ist. Eine Meldung ohne Messdaten
+ * daneben lässt sich nicht beurteilen.
+ */
+export default async function AlarmDetail({
+  params,
+}: {
+  params: Promise<{ alarm: string }>;
+}) {
+  await requireRecht("monitoring.lesen");
+
+  const { alarm: alarmId } = await params;
+  const alarm = ladeAlarm(decodeURIComponent(alarmId));
+  if (!alarm) notFound();
+
+  const anlage = ladeAnlage(alarm.anlage_id);
+  const verguetung = anlage ? ladeVerguetung(anlage.id) : [];
+
+  const ausgeloest = new Date(alarm.ausgeloest_am);
+
+  // Bei einer Strangmeldung wird der betroffene Strang gegen seine
+  // Nachbarn gestellt, sonst die Anlage gegen ihren Erwartungswert.
+  // Die Summenkurve einer großen Anlage zeigt den Ausfall eines
+  // einzelnen Strangs nicht - er liegt unter dem Rauschen.
+  const strangVerlauf = alarm.strang_id
+    ? ladeStrangTagesverlauf(alarm.strang_id, ausgeloest)
+    : [];
+
+  const verlauf =
+    anlage && strangVerlauf.length === 0
+      ? ladeTagesverlauf(anlage.id, ausgeloest, anlage.leistung_kwp)
+      : [];
+
+  const dauerStunden = alarm.dauer_stunden;
+
+  const bester = verguetung[0]?.ct_kwh ?? 0;
+  const schaden =
+    alarm.ausfall_eur > 0
+      ? alarm.ausfall_eur
+      : (alarm.ausfall_kwh * bester) / 100;
+
+  return (
+    <div className="space-y-5">
+      <Seitenkopf
+        titel={alarm.titel}
+        hinweis={`${alarm.anlage}${alarm.wechselrichter ? ` · ${alarm.wechselrichter}` : ""}${alarm.strang ? ` · ${alarm.strang}` : ""} · ausgelöst ${formatRelativ(alarm.ausgeloest_am)}`}
+        zurueck={
+          <Link
+            href="/portal/alarme"
+            className="t-leise inline-flex items-center gap-1.5 hover:underline"
+          >
+            <IconPfeilLinks groesse={14} />
+            Alle Meldungen
+          </Link>
+        }
+        aktion={
+          <>
+            <Status ton={schweregradTon(alarm.schweregrad)}>
+              {alarm.schweregrad}
+            </Status>
+            <Status
+              ton={
+                alarm.status === "Behoben"
+                  ? "gut"
+                  : alarm.status === "Quittiert"
+                    ? "akzent"
+                    : "ernst"
+              }
+            >
+              {alarm.status}
+            </Status>
+          </>
+        }
+      />
+
+      {alarm.beschreibung && (
+        <Hinweis ton={schweregradTon(alarm.schweregrad)}>
+          {alarm.beschreibung}
+        </Hinweis>
+      )}
+
+      <Kennzahlenleiste>
+        <Kennzahl
+          label="Gemessen"
+          wert={formatZahl(alarm.ist_wert, 1)}
+          hinweis={alarm.art === "Temperatur" ? "Grad Celsius" : "kW"}
+        />
+        <Kennzahl
+          label="Erwartet"
+          wert={formatZahl(alarm.soll_wert, 1)}
+          hinweis={
+            alarm.soll_wert && alarm.ist_wert !== null && alarm.soll_wert > 0
+              ? `${abweichungText(alarm.ist_wert, alarm.soll_wert)} Abweichung`
+              : undefined
+          }
+        />
+        <Kennzahl
+          label="Ertragsausfall"
+          wert={formatZahl(alarm.ausfall_kwh, 0)}
+          einheit="kWh"
+          hinweis={schaden > 0 ? formatGeld(schaden) : undefined}
+          ton={alarm.ausfall_kwh > 0 ? "ernst" : undefined}
+        />
+        <Kennzahl
+          label="Dauer"
+          wert={
+            dauerStunden >= 24
+              ? formatZahl(dauerStunden / 24, 1)
+              : formatZahl(dauerStunden, 1)
+          }
+          einheit={dauerStunden >= 24 ? "Tage" : "Stunden"}
+          hinweis={alarm.beendet_am ? "abgeschlossen" : "läuft noch"}
+        />
+      </Kennzahlenleiste>
+
+      {/* ---------------- Strangvergleich am betroffenen Tag ---------------- */}
+      {strangVerlauf.length > 0 && (
+        <Tafel
+          titel="Betroffener Strang gegen seine Nachbarn"
+          hinweis={`${alarm.strang} an ${alarm.wechselrichter ?? "demselben Gerät"} · Strom je kWp Strangleistung`}
+        >
+          <Verlauf
+            beschriftungen={strangVerlauf.map((p) => formatZeit(p.zeitpunkt))}
+            einheit="A/kWp"
+            achsenSchritte={8}
+            nachkommastellen={2}
+            hoehe={240}
+            reihen={[
+              {
+                schluessel: "vergleich",
+                label: "Übrige Stränge am selben Gerät (Median)",
+                farbe: ENERGIE_FARBEN.netzbezug,
+                werte: strangVerlauf.map((p) => p.vergleich),
+                gestrichelt: true,
+              },
+              {
+                schluessel: "betroffen",
+                label: alarm.strang ?? "Betroffener Strang",
+                farbe: ENERGIE_FARBEN.erzeugung,
+                werte: strangVerlauf.map((p) => p.betroffen),
+                gefuellt: true,
+              },
+            ]}
+          />
+          <p className="t-mikro mt-3 leading-relaxed">
+            Die Nachbarstränge hängen am selben Wechselrichter, auf
+            derselben Dachfläche, mit derselben Ausrichtung. Was sie
+            gemeinsam erleben – Wolken, Jahreszeit, Temperatur – hebt sich
+            im Vergleich auf. Bleibt eine Lücke, liegt sie am Strang
+            selbst. Bezugsgröße ist der Median, nicht der Mittelwert: Der
+            ausgefallene Strang würde den Mittelwert nach unten ziehen und
+            damit seine eigene Abweichung verkleinern.
+          </p>
+        </Tafel>
+      )}
+
+      {/* ---------------- Verlauf am betroffenen Tag ---------------- */}
+      {verlauf.length > 0 && anlage && (
+        <Tafel
+          titel="Verlauf am Tag der Auslösung"
+          hinweis={`${anlage.bezeichnung} · gemessene Leistung gegen Erwartungswert`}
+        >
+          <Verlauf
+            beschriftungen={verlauf.map((p) => formatZeit(p.zeitpunkt))}
+            einheit="kW"
+            achsenSchritte={8}
+            hoehe={240}
+            reihen={[
+              {
+                schluessel: "leistung",
+                label: "Gemessene Leistung",
+                farbe: ENERGIE_FARBEN.erzeugung,
+                werte: verlauf.map((p) => p.leistung),
+                gefuellt: true,
+              },
+              {
+                schluessel: "erwartet",
+                label: "Erwartet aus Einstrahlung",
+                farbe: ENERGIE_FARBEN.netzbezug,
+                werte: verlauf.map((p) => p.erwartet),
+                gestrichelt: true,
+              },
+            ]}
+          />
+          <p className="t-mikro mt-3 leading-relaxed">
+            Läuft die gemessene Kurve deutlich unter der erwarteten, während die
+            Einstrahlung hoch war, liegt die Ursache in der Anlage. Folgen
+            beide Kurven einander, war es das Wetter.
+          </p>
+        </Tafel>
+      )}
+
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+        {/* ---------------- Maßnahmen ---------------- */}
+        <Tafel titel="Bearbeitung">
+          <Massnahmen
+            alarmId={alarm.id}
+            anlageId={alarm.anlage_id}
+            titel={alarm.titel}
+            status={alarm.status}
+            hatTicket={Boolean(alarm.notiz && alarm.status === "Behoben")}
+          />
+
+          {alarm.notiz && (
+            <div
+              className="mt-4 rounded-sm border p-3"
+              style={{
+                borderColor: "var(--linie-zart)",
+                background: "var(--f-vertieft)",
+              }}
+            >
+              <p className="t-mikro">Notiz</p>
+              <p className="mt-1 text-[0.8125rem] leading-relaxed">
+                {alarm.notiz}
+              </p>
+              {alarm.quittiert_von && (
+                <p className="t-mikro mt-1.5">
+                  {alarm.quittiert_von}
+                  {alarm.quittiert_am &&
+                    ` · ${formatDatumZeit(alarm.quittiert_am)}`}
+                </p>
+              )}
+            </div>
+          )}
+        </Tafel>
+
+        {/* ---------------- Einordnung ---------------- */}
+        <Tafel titel="Einordnung">
+          <dl className="space-y-0.5">
+            <Angabe label="Regel">{alarm.regel ?? alarm.art}</Angabe>
+            <Angabe label="Anlage">{alarm.anlage}</Angabe>
+            <Angabe label="Betroffen">
+              {[alarm.wechselrichter, alarm.strang]
+                .filter(Boolean)
+                .join(" · ") || "gesamte Anlage"}
+            </Angabe>
+            <Angabe label="Ausgelöst">
+              {formatDatumZeit(alarm.ausgeloest_am)}
+            </Angabe>
+            {alarm.beendet_am && (
+              <Angabe label="Beendet">
+                {formatDatumZeit(alarm.beendet_am)}
+              </Angabe>
+            )}
+          </dl>
+
+          {alarm.ausfall_kwh > 0 && verguetung.length > 0 && (
+            <div
+              className="mt-3 border-t pt-3"
+              style={{ borderColor: "var(--linie-zart)" }}
+            >
+              <p className="t-mikro leading-relaxed">
+                Der Ausfall von {formatZahl(alarm.ausfall_kwh, 0)} kWh entspricht
+                bei einem Satz von {formatZahl(bester, 2)} ct/kWh (
+                {verguetung[0]?.art}) rund {formatGeld(schaden)}. Wäre die
+                Energie eingespeist statt eigenverbraucht worden, fiele der
+                Betrag entsprechend niedriger aus.
+              </p>
+            </div>
+          )}
+        </Tafel>
+      </div>
+    </div>
+  );
+}

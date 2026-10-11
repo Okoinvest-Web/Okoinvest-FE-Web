@@ -1,0 +1,267 @@
+### Suchprofil (JSON am Konto)
+`{ mwpMin, mwpMax, phasen: [phaseId], laender: ["DE"|"AT"|"CH"], typen: [projektTyp], ticketMin, ticketMax, benachrichtigen: bool, schwelle: 50–100 }`
+`schwelle` = Mindest-Matching-Score für den Suchprofil-Alarm (Standard 70; Werte außerhalb 50–100 → 70).
+Phasen-IDs aus `PHASEN` (`src/lib/invest/markt.js`): `flaeche, netz, aufstellung, satzung, rtb, cod`.
+
+### Plattform Vorgang
+| Feld | Typ | Hinweis |
+|---|---|---|
+| id | Data | |
+| typ | Select | `flaeche, agri, investor, projekt, reststrom, energiegemeinschaft, genossenschaft, kommune, carport, speicher, kontakt` |
+| status | Select | Automat `vorgang` |
+| statusVerlauf | Table | `{status, am, vonId, vonRolle: admin|eigentuemer|system, kommentar}` |
+| nutzerId | Link Konto | leer bis zur Zuordnung |
+| email | Data | Kontakt-E-Mail (lowercase) |
+| kontakt | JSON | `{anrede, vorname, nachname, firma, email, telefon, plz, ort, land}` |
+| daten | JSON | freie Zusatzdaten je Typ (flach, max. 60 Felder, ≤ 20 KB) |
+| herkunft | JSON | Kampagnen-Zuordnung (`src/lib/herkunft.js`) |
+| ip | Data | nur Admin sichtbar |
+| einwilligung | JSON | `{am, ip, text}` |
+| zustaendigId | Link Konto (admin) | |
+| flaecheId | Link Fläche | bei typ flaeche/agri |
+| erstelltAm, geaendertAm | Datetime | |
+
+### Plattform Fläche
+`id, nutzerId, vorgangId, bezeichnung, land (DE|AT|CH), bundesland, plz, ort, gemarkung, flurstuecke [{gemarkung, flur, nummer}], ha, nutzung (acker|gruenland|konversion|gewerbe|sonstige|dach), agri (Check), eigentum (eigentum|miteigentum|verwaltung), hinweise, status, statusVerlauf, pachtangebot {euroProHaJahr, laufzeitJahre, verlaengerung, text, am}, ablehnGrund, zustaendigId, erstelltAm, geaendertAm`
+Ausgabe zusätzlich: `zustaendig {id, vorname, nachname, email, firma}`, `dokumente` (Anzahl), `checkliste` (s. u.), für Admin `eigentuemer {…}`.
+
+### Plattform Projekt
+| Feld | Öffentlich | Hinweis |
+|---|---|---|
+| id, slug | ja | slug = `slugify(titel)-<letzte 4 Zeichen der ID>`, fix nach erster Veröffentlichung |
+| titel | ja | anonym (keine Gemeinde) |
+| typ | ja | `freiflaeche, agri, carport, speicher, hybrid, dach` (Dach-PV Gewerbe/Halle, auch Bestandsanlagen) |
+| land, bundesland, region | ja | Region nur grob |
+| mwp, mwhSpeicher, flaecheHa | ja | |
+| phase | ja | PHASEN-ID |
+| netzanschluss | ja | `offen, angefragt, zusage, reserviert, vorhanden` |
+| codGeplant | ja | `JJJJ` oder `JJJJ-MM` |
+| preisModus, preis, preisProKwp | ja | `gesamt | proKwp | anfrage` |
+| beschreibung, highlights[] | ja | |
+| status, veroeffentlichtAm, demo | ja | |
+| vertraulich | **nein** | `{gemeinde, gemarkung, flurstuecke, netzbetreiber, einspeisepunkt, entfernungNetzKm, sicherung, planungsrecht, ertragKwhKwp, verguetung, details}` |
+| anbieterId | **nein** | |
+| provisionAkzeptiert | nein | `{am, ip, version, text}` |
+| provisionSatz | nein | 0.015–0.03, bei Veröffentlichung gesetzt |
+| ablehnGrund, aufrufe, zustaendigId, statusVerlauf, erstelltAm, geaendertAm | nein | |
+
+Öffentliche Projektion = Positivliste in `src/lib/plattform/oeffentlich.js` (`projektOeffentlich`). **Frappe muss dieselbe Positivliste verwenden.**
+In Börsenliste, Börsendetail und Exposé-Daten kommt als berechnetes Feld `datenraumQualitaet` (0–100, Vollständigkeit der Pflichtunterlagen, s. Checklisten) hinzu – nur die Kennzahl, keine Dokumentnamen.
+Ausgabe für Eigentümer/Admin zusätzlich: `statistik {aufrufe, merker, ndaAnfragen, lois}`, `dokumente` (Anzahl), `checkliste` (s. u.), `provision` (falls verkauft); Admin: `anbieter {…}`, `zustaendig {…}`.
+
+### Plattform Interesse
+`id, projektId, investorId, status, gemerkt (Check), statusVerlauf, nda {version, am, ip, userAgent}, loi {betrag, text, bedingungen, gueltigBis, am}, ablehnGrund, erstelltAm, geaendertAm`
+Genau ein Interesse je (Projekt, Investor). Ausgabe mit `projekt` (öffentliche Projektion); Admin zusätzlich `investor {…}`, `anbieter {…}`. Für Investoren ohne `nda.ip/userAgent`.
+
+### Plattform Provision
+`id, projektId, anbieterId, investorId, interesseId, kaufpreis, satz, betrag (= round(kaufpreis × satz)), status, statusVerlauf, erstelltAm`
+Wird **automatisch** beim Übergang Projekt → `verkauft` erzeugt.
+
+### Plattform Nachricht
+`id, bezugArt (vorgang|flaeche|projekt|interesse|nutzer), bezugId, vonId, vonAdmin (Check), system (Check), text (≤ 5000), am, gelesenNutzer (Check), gelesenAdmin (Check)`
+Threads = alle Nachrichten mit gleichem (bezugArt, bezugId).
+
+### Plattform Dokument
+`id, bezugArt, bezugId, name, mime (application/pdf|image/jpeg|image/png), groesse, datei (privates File), kategorie (allgemein|datenraum|vertrag|plan), checkliste (Schlüssel eines Checklisten-Punkts oder leer), hochgeladenVon, am, sha256`
+Dateien **privat** (`is_private = 1`). Größe ≤ 10 MB, Typ an den ersten Bytes geprüft (die Website prüft vorab, Frappe prüft erneut).
+
+### Plattform Aktivität (append-only)
+`id, am, nutzerId, aktion, objektArt, objektId, text, ip` – Login, Registrierung, Anfrage, Status, NDA, Upload, Download, Zuweisung, Nutzeränderung. Kein Update/Delete.
+
+### Dokumenten-Checklisten (berechnet, kein DocType)
+Tabelle: `src/lib/plattform/checkliste.js` = `plattform/checkliste.py` (identisch). Ein Dokument erfüllt einen Punkt, wenn sein Feld `checkliste` den Schlüssel trägt.
+- **Projekt** (erwartet ab Phase): `pacht`, `lageplan` (flaeche) · `netzzusage` (netz) · `aufstellung` (nicht carport), `gutachten` (aufstellung) · `satzung`, `ertrag` (nicht speicher) (satzung) · `baugenehmigung`, `eeg` (optional, nicht speicher) (rtb) · `betrieb` (cod). Bezeichnungen je Land (AT: Umwidmung/Grünland-PV, EAG; CH: Nutzungsplanung, Baubewilligung, Einmalvergütung).
+- **Fläche**: `grundbuch`, `flurkarte`, `vollmacht` (nur bei Miteigentum/Verwaltung), `pachtDritter` (optional).
+Ausgabe `checkliste = {punkte: [{id, label, text, pflicht, ab?, erwartet, vorhanden, dokumente: [{id, name, am}]}], erwartet, erfuellt, quote}`; `quote` = erfüllte / erwartete Pflichtpunkte in % (kaufmännisch gerundet, ohne erwartete Pflichtpunkte 100).
+
+### Plattform Benachrichtigung
+`id, nutzerId, art (status|nachricht|nda|suchprofil|anfrage|aufgabe), titel, text, link (nur `/portal…`), objektArt, objektId, am, gelesen, mail (per E-Mail gemeldet)`. Nach dem Anlegen ist nur `gelesen` änderbar. Entstehen:
+- aus jeder Nachricht für die Seite, die sie noch nicht gelesen hat (Eigentümer bei `gelesenNutzer = 0`, Backoffice bei `gelesenAdmin = 0` → zuständiges Admin-Konto, sonst alle aktiven Admins; nie an den Absender). Art: Systemnachricht „Status: …“ → `status` (an Interessen: `nda`), sonst `nachricht`. Willkommensnachricht nur in der Glocke, ohne E-Mail.
+- neue Anfrage → alle aktiven Admins (`anfrage`); Aufgabe zugewiesen / Wiedervorlage fällig → Zuständiger (`aufgabe`); Suchprofil-Treffer → Investor (`suchprofil`).
+- Lesen eines Threads (`nachricht.liste` mit `markieren`) markiert Benachrichtigungen (`status|nachricht|nda`) zum selben Objekt als gelesen.
+- E-Mail nur, wenn `mailEinstellungen[art]` nicht `false` ist; Inhalt nur Hinweis, bei `suchprofil`/`aufgabe` der (öffentliche bzw. interne) Titel, und Link ins Portal – nie Nachrichtentexte oder vertrauliche Projektdaten.
+
+### Plattform Aufgabe
+`id, titel (3–160), beschreibung, faelligAm (JJJJ-MM-TT, Pflicht), zustaendigId (aktives Admin-Konto), bezugArt? (vorgang|flaeche|projekt|interesse), bezugId?, status (offen|erledigt), erstelltVon, erstelltAm, erledigtAm, erledigtVon, erinnertAm`.
+Ausgabe zusätzlich: `zustaendig {…}`, `erstelltVonName`, `bezugTitel`, `bezugLink`, `ueberfaellig` (offen und fällig < heute, Europe/Vienna), `heuteFaellig`. Sortierung: offene nach Fälligkeit, dann erledigte (neueste zuerst). Verschieben oder Neuzuweisen setzt `erinnertAm` zurück.
+
+### Plattform Token
+`hash (SHA-256 des Tokens), art (email|reset), nutzerId, ablauf, benutzt` – das Token selbst wird nie gespeichert. Reset 1 h, E-Mail-Bestätigung 72 h, einmalig.
+
+## 4. Zustandsautomaten
+
+Quelle der Wahrheit: `PROZESSE` in `src/lib/plattform/prozesse.js`. Frappe übernimmt die Tabelle 1:1 (z. B. als Python-Dict). Ein Übergang ist erlaubt, wenn (von, nach, wer) in der Tabelle steht; `wer` ∈ `admin | eigentuemer | system`. Pflichtangaben (`pflicht`) fehlen → ValidationError. Bedingungen (`bedingung`) → ValidationError mit Liste fehlender Punkte.
+
+**Vorgang:** eingegangen → in_pruefung → qualifiziert → angebot → abgeschlossen (admin) · offen → abgelehnt (admin, `grund`) · abgelehnt/zurückgezogen → in_pruefung (admin) · offen → zurueckgezogen (eigentuemer)
+
+**Fläche:** entwurf → eingegangen (eigentuemer mit Bedingung `flaecheVollstaendig`: Bezeichnung, Land, PLZ, Ort, ha; oder admin) → vorpruefung → standortanalyse → pachtangebot (admin, `pachtangebot {euroProHaJahr 50–50000, laufzeitJahre 1–60}`) → vertrag (eigentuemer „annehmen“ oder admin) → planung → bau → betrieb (admin) · entwurf…planung → abgelehnt (admin, `grund`) · abgelehnt → vorpruefung (admin)
+
+**Projekt:** entwurf → pruefung (eigentuemer, Bedingung `projektEinreichbar`: Titel, Typ, Land, Bundesland, Region, MWp > 0, Phase, Beschreibung ≥ 80 Zeichen, Provisionsvereinbarung akzeptiert) · pruefung → entwurf (eigentuemer „zurückziehen“ oder admin mit `kommentar`) · pruefung → veroeffentlicht (admin, `provisionSatz` 1,5–3 %; Eingabe > 0,2 wird als Prozent interpretiert) · pruefung → abgelehnt (admin, `grund`) · abgelehnt → entwurf (eigentuemer) · veroeffentlicht → entwurf (eigentuemer „von der Börse nehmen“) · veroeffentlicht ↔ reserviert (admin) · veroeffentlicht/reserviert → verkauft (admin, `interesseId` + `kaufpreis`)
+
+**Interesse:** gemerkt → nda_angefragt (eigentuemer, nur über `interesse.nda_anfragen`, `ndaAkzeptiert`) → nda_freigegeben (admin) → loi_abgegeben (eigentuemer, `loi {text ≥ 10 Zeichen, betrag?, bedingungen?, gueltigBis?}`) → loi_angenommen (admin) → abgeschlossen (system) · nda_angefragt/nda_freigegeben/loi_abgegeben → abgelehnt (admin, `grund`) · offen → abgelehnt (system „anderweitig verkauft“)
+
+**Provision:** offen → in_rechnung → bezahlt (admin) · offen/in_rechnung → storniert (admin, `grund`)
+
+**Nebenwirkungen (müssen in Frappe identisch sein):**
+1. Jeder Übergang schreibt `statusVerlauf` und eine **System-Nachricht** in den Thread des Objekts: `Status: „<alt>“ → „<neu>“. <kommentar|grund>` (bei Admin: `gelesenNutzer = 0`; bei Eigentümer: `gelesenAdmin = 0`). Ausnahme: Provision.
+2. `grund` → `ablehnGrund`.
+3. Interesse → `loi_angenommen`: Projekt `veroeffentlicht` → `reserviert` (system).
+4. Projekt → `verkauft`: Provision anlegen (`satz = provisionSatz`, sonst Minimum), Käufer-Interesse → `abgeschlossen`, alle anderen offenen Interessen → `abgelehnt` („Projekt anderweitig verkauft.“).
+5. Projekt → `veroeffentlicht`: `veroeffentlichtAm` setzen (einmalig); **Suchprofil-Alarm**: Investoren mit `suchprofil.benachrichtigen` und Matching-Score ≥ `suchprofil.schwelle` (Standard 70) erhalten eine System-Nachricht im Thread `nutzer` (ohne eigene Benachrichtigung), eine Benachrichtigung `suchprofil` (Titel, Passung, Link `/portal/boerse/<id>`) und – je nach Einstellung – eine E-Mail mit öffentlichem Titel und Passung; Aktivität `suchprofil_treffer` (Score: `src/lib/plattform/matching.js`).
+6. Dokument-Upload erzeugt eine System-Nachricht „Dokument hochgeladen: <name>“ im Thread des Bezugs (Benachrichtigungsart `nachricht`).
+7. Jede Nachricht erzeugt Benachrichtigungen (s. Plattform Benachrichtigung). Neue Anfragen melden alle aktiven Admins.
+8. Wiedervorlagen: offene Aufgaben mit `faelligAm ≤ heute` und ohne `erinnertAm` werden einmalig als Benachrichtigung `aufgabe` gemeldet (Frappe: täglicher Scheduler `aufgaben.wiedervorlagen_erinnern` und beim Abruf von `benachrichtigung.liste` durch den Zuständigen; Demo: beim Abruf).
+9. Änderungen an Fläche/Projekt protokollieren die geänderten Felder („Fläche bearbeitet: Ort, Größe“).
+
+## 5. Frappe-Methoden
+
+`n` = Nutzer aus `als_benutzer`. „Recht“ = zusätzlich zu `ÖkoInvest API`.
+
+### auth
+| Methode | Argumente | Ergebnis | Recht |
+| `bedienung.onboarding_speichern` | `daten {status?, schritt?, erledigt?[], checklisteAus?}` | Zustand wie oben | nur eigenes Konto; Positivliste; `erledigt` wird ergänzt (nie entfernt); Status nie von `erledigt` zurück auf `neu`; Abschluss/Überspringen → Aktivität `onboarding` |
+
+Die Checkliste „Erste Schritte“ berechnet die Website aus echten Daten (Fläche/Projekt/Suchprofil/Telefon/E-Mail bestätigt) plus diesem Zustand (`src/lib/plattform/onboarding.js`).
+
+## 6. HTTP-APIs der Website
+
+Alle Antworten JSON mit `Cache-Control: no-store`. Fehler: `{ ok: false, error, code }`.
+**CSRF:** Jede Mutation (POST/PATCH/PUT/DELETE) braucht einen `Origin`-Header der eigenen Seite (oder aus `PLATTFORM_ORIGINS`) und `Content-Type: application/json`; Uploads `multipart/form-data` + Kopfzeile `X-Plattform-Upload: 1`. Sonst 403 bzw. 415.
+**Sitzung:** Cookie `oi_sitzung` (Produktion `__Host-oi_sitzung`), HttpOnly, SameSite=Lax, Secure in Produktion, 7 Tage.
+
+| Route | Methode | Auth | Body / Query | Antwort |
+|---|---|---|---|---|
+| `/api/anfrage` | POST | optional | `{typ, kontakt, daten, einwilligung: true, herkunft?}` (Vertrag BRIEFING) | `{ok, id, vorgang}` · Limit 10/h je IP |
+| `/api/auth/login` | POST | – | `{email, passwort}` | `{ok, nutzer}` + Cookie · Limit 10/15 min je IP, 8/15 min je E-Mail |
+| `/api/auth/logout` | POST | – | `{}` | `{ok}` |
+| `/api/auth/registrieren` | POST | – | `{email, passwort, vorname, nachname, firma?, telefon?, rollen[], vorgang?, agb: true}` | 201 `{ok, nutzer, vorgangVerknuepft}` + Cookie · 5/h |
+| `/api/auth/passwort-vergessen` | POST | – | `{email}` | `{ok}` immer · 5/h |
+| `/api/auth/passwort-setzen` | POST | – | `{token, passwort}` | `{ok, nutzer}` + Cookie |
+| `/api/auth/email-bestaetigen?token=` | GET | – | | 307 → `/portal?hinweis=email-bestaetigt` bzw. `/login?hinweis=link-ungueltig` |
+| `/api/auth/ich` | GET | optional | | `{ok, nutzer|null}` |
+| `/api/boerse` | GET | optional | `typ, land, phase, mwpMin, mwpMax` | `{ok, projekte, kennzahlen, demo}` |
+| `/api/boerse/[slug]` | GET | optional | slug oder id | `{ok, projekt, zugriff, interesse, vertraulich, dokumente}` |
+| `/api/portal/vorgaenge` | GET | ja | `status?` | `{ok, vorgaenge}` |
+| `/api/portal/vorgaenge/[id]` | GET | ja | | `{ok, vorgang}` |
+| `/api/portal/flaechen` | GET / POST | flaeche, landwirt | Fläche | `{ok, flaechen}` / `{ok, flaeche}` |
+| `/api/portal/flaechen/[id]` | GET / PATCH | ja | | `{ok, flaeche}` |
+| `/api/portal/projekte` | GET / POST | anbieter | Projekt | `{ok, projekte}` / `{ok, projekt}` |
+| `/api/portal/projekte/[id]` | GET / PATCH | ja | | `{ok, projekt}` |
+| `/api/portal/projekte/[id]/provision` | POST | anbieter | `{akzeptiert: true}` | `{ok, projekt}` |
+| `/api/portal/boerse/[id]/merken` | POST | investor | `{an}` | `{ok, interesse}` |
+| `/api/portal/boerse/[id]/nda` | POST | investor | `{akzeptiert: true}` | `{ok, interesse}` |
+| `/api/portal/interessen` | GET | investor | | `{ok, interessen}` |
+| `/api/portal/status` | POST | ja (Eigentümer) | `{art, id, nach, extra}` | `{ok, objekt {id, status}}` |
+| `/api/portal/nachrichten` | GET / POST | ja | GET `?bezug=art:id` · POST `{bezugArt, bezugId, text}` | `{ok, threads}` / `{ok, thread}` / `{ok, nachricht}` |
+| `/api/portal/dokumente` | GET / POST | ja | GET `?bezug=art:id` · POST multipart `datei, bezugArt, bezugId, kategorie` | `{ok, dokumente}` / `{ok, dokument}` |
+| `/api/portal/dokumente/[id]` | GET / DELETE | ja | `?anzeigen=1` inline | Datei / `{ok}` |
+| `/api/portal/profil` | GET / PATCH | ja | Stammdaten, rollen | `{ok, nutzer}` |
+| `/api/portal/passwort` | POST | ja | `{alt, neu}` | `{ok}` + neues Cookie |
+| `/api/portal/suchprofil` | PUT | investor | Suchprofil (inkl. `schwelle`) | `{ok, suchprofil}` |
+| `/api/portal/benachrichtigungen` | GET / POST / PUT | ja | GET `?ungelesen=1&limit=` · POST `{ids}` bzw. `{alle: true}` · PUT `{einstellungen}` | `{ok, eintraege, ungelesen, gesamt, einstellungen}` / `{ok, geaendert, ungelesen}` / `{ok, einstellungen}` |
+| `/api/portal/suche` | GET | ja | `?q=` (2–80 Zeichen), `&limit=` (1–20 je Art) · Rate-Limit je Nutzer | `{ok, q, treffer: [{art, id, titel, untertitel, href}]}` – nur Berechtigtes (siehe `bedienung.suchen`) |
+| `/api/portal/onboarding` | GET / PUT | ja | PUT `{status?, schritt?, erledigt?[], checklisteAus?}` (≤ 4 KB) | `{ok, zustand, liste {punkte[], erledigt, gesamt, quote, fertig}}` / `{ok, zustand}` |
+| `/api/portal/ki` | GET | ja | | `{ok, aktiv, faelle[], kontingent {limit, rest}}` |
+| `/api/portal/ki/[fall]` | POST | je Fall (siehe PLATTFORM.md) | `expose {projektId}` · `triage {vorgangId}` · `frage {projektId, frage, stream?}` · `flaeche {flaecheId, frage?, stream?}` · `nachricht {bezugArt, bezugId, stichpunkte?, stream?}` | `{ok, fall, modus (ki|regel), ergebnis, quellen, hinweis, kontingent}` bzw. NDJSON-Stream (`start`/`text`/`ersetzen`/`ende`) · fremdes Objekt 403/404 · Kontingent 429 `code: kontingent` |
+| `/api/portal/projekte/[id]/expose` | GET | ja (Rechte s. `boerse.expose`) | | PDF (Download, protokolliert) |
+| `/api/boerse/[slug]/teaser` | GET | – | | öffentlicher Teaser als PDF (nur Positivliste, `noindex`) |
+| `/api/admin/uebersicht` | GET | admin | | `{ok, uebersicht}` |
+| `/api/admin/vorgaenge` | GET | admin | `status, typ, q` | `{ok, vorgaenge}` |
+| `/api/admin/flaechen` | GET | admin | `status` | `{ok, flaechen}` |
+| `/api/admin/projekte` | GET | admin | `status` | `{ok, projekte}` |
+| `/api/admin/interessen` | GET | admin | `status=a,b` | `{ok, interessen}` |
+| `/api/admin/status` | POST | admin | `{art (+provision), id, nach, extra}` | `{ok, objekt}` |
+| `/api/admin/zuweisen` | POST | admin | `{art, id, zustaendigId}` | `{ok, ergebnis}` |
+| `/api/admin/nutzer` | GET | admin | `q, rolle` | `{ok, nutzer}` |
+| `/api/admin/nutzer/[id]` | PATCH | admin | `{rollen?, aktiv?}` | `{ok, nutzer}` |
+| `/api/admin/provisionen` | GET | admin | | `{ok, provisionen}` |
+| `/api/admin/aktivitaeten` | GET | admin | `limit, objekt, objekte=a,b` | `{ok, aktivitaeten}` |
+| `/api/admin/aufgaben` | GET / POST | admin | GET `?ansicht=meine|offen|ueberfaellig|erledigt|alle&bezug=art:id` · POST Aufgabe | `{ok, aufgaben}` / `{ok, aufgabe}` |
+| `/api/admin/aufgaben/[id]` | PATCH | admin | `{status?, titel?, beschreibung?, faelligAm?, zustaendigId?}` | `{ok, aufgabe}` |
+| `/api/admin/export/[art]` | GET | admin | `art` ∈ `vorgaenge, flaechen, projekte, interessen, provisionen` | CSV (UTF-8 mit BOM, Semikolon, CRLF, Dezimalkomma, Formel-Schutz), Export protokolliert |
+| `/api/admin/postausgang` | GET | admin | `limit` | `{ok, mails}` (nur Demo) |
+| `/api/admin/demo-links` | GET | admin | | `{ok, links}` (nur Demo) |
+
+Statuscodes: 401 nicht angemeldet · 403 Rolle/Eigentum/Herkunft · 404 · 409 Konflikt/Übergang nicht vorgesehen · 413 zu groß · 415 falscher Typ · 422 Validierung/Pflichtangabe · 429 Rate-Limit · 502 Backend nicht erreichbar · 503 Backend nicht konfiguriert.
+
+## 7. Deal-Room & Investoren (Q&A, Bieterverfahren, Datenraum 2.0, Pipeline, Cockpit)
+## 9. Backoffice: CRM, Akquise, Automationen, Vorlagen, Berichte, Rechte, Hash-Kette
+
+Referenz: `src/lib/plattform/backend/demo/{crm,akquise,automation,vorlagen,berichte,rechte,kette}.js` · Adapter `backend/frappe/backoffice.js` (Tabelle `BACKOFFICE_METHODEN`) · Frappe `plattform/api/{crm,automation,berichte}.py`, Motor `plattform/backoffice.py`, Rechte `plattform/rechte.py`, Kette `plattform/hashkette.py`.
+
+### Unterrollen (Rechte-Matrix)
+Backoffice-Konten (`admin`) tragen `backofficeRollen` (Konto-Feld `backoffice_rollen`, kommagetrennt): `leitung | akquise | transaktion | buchhaltung | lesen`; ohne Angabe gilt `leitung`. Stufen je Bereich 0/1/2 (kein Zugriff/lesen/schreiben), Tabelle `RECHTE_MATRIX` in `src/lib/plattform/rechte.js` = `plattform/rechte.py`. Die Website erzwingt die Matrix in **jeder** Admin-API (`server/route.js` → `server/rechte.js`, Bereich aus dem Pfad; `status`/`zuweisen` nach `body.art`; `export/[art]` braucht Export + Bereich) und auf jeder Admin-Seite (`portalNutzer({admin})` → 404); jede Backoffice-Methode prüft zusätzlich selbst (`recht_noetig`). Fehlende Rechte → 403.
+
+### Hash-Kette des Aktivitätsprotokolls
+`hash = SHA-256(prevHash + "\n" + JSON.stringify([["id",…],["am",ISO],["nutzerId",…],["aktion",…],["objektArt",…],["objektId",…],["text",…],["ip",…]]))`, Start 64 × `0`. Plattform Aktivitaet: `kette_nr, prev_hash, entry_hash, nachgesiegelt`; Kettenkopf Single `Plattform Kette` (Sperre `FOR UPDATE` beim Anhängen). Einführung: Patch `hashkette_einfuehren` siegelt den Altbestand nach. `berichte.kette_pruefen` = `verify_chain` (meldet geänderte, gelöschte, eingefügte/umsortierte und ungesicherte Einträge).
+
+### Methoden (alle mit `als_benutzer`, Rechte je Bereich)
+| Methode | Argumente | Ergebnis | Bereich |
+|---|---|---|---|
+| `crm.kontakte` | `q?, rolle?, tag?, organisationId?, zustaendigId?, quelle?, nurDubletten?, limit?` | `{kontakte, gesamt, tags, dubletten}` | crm lesen |
+| `crm.kontakt` | `id` | Kontakt + `bezuegeListe, aktivitaeten, verlauf, dubletten, organisationObjekt, konto` | crm lesen |
+| `crm.kontakt_speichern` | `id?, daten {…, trotzdem?}` | Kontakt (gleiche E-Mail → 409) | crm schreiben |
+| `crm.beziehung` | `kontaktId, art, id, rolle?, entfernen?` | `{ok, bezuege}` | crm schreiben |
+| `crm.organisationen` · `crm.organisation` · `crm.organisation_speichern` | `q?, art?` · `id` · `id?, daten` | Organisation(en) | crm |
+| `crm.aktivitaet_anlegen` | `daten {typ, betreff, text?, am?, kontaktId?, organisationId?, bezugArt?, bezugId?, wiedervorlageAm?, zustaendigId?}` | Aktivität (Wiedervorlage = Plattform Aufgabe) | crm schreiben |
+| `crm.dubletten` · `crm.zusammenfuehren` | – · `zielId, quelleId` | Paare `{a, b, score, gruende}` · Kontakt | crm |
+| `crm.massenaktion` | `ids[], tag?, tagEntfernen?, zustaendigId?, rolle?` | `{ok, geaendert}` | crm schreiben |
+| `crm.akquise` | `land?, prioritaet?, sla?, zustaendigId? ("ohne"), status?, q?, alle?` | `{flaechen, kennzahlen, konten, gebiete}` | akquise lesen |
+| `crm.akquise_setzen` | `flaecheId, daten {prioritaet?, besonderheiten?, netz?}` | Zeile | akquise schreiben |
+| `crm.gebiete` · `crm.gebiete_speichern` | – · `liste [{name, land, bundeslaender[], plz[], mitarbeiterId, aktiv}]` | Gebiete | akquise |
+| `crm.akquise_zuweisen` | `ids[], modus (gebiet, person), zustaendigId?, ueberschreiben?` | `{zugewiesen, uebersprungen, ohneGebiet}` | akquise + flaechen schreiben |
+| `automation.liste` | `protokollLimit?, regelId?` | `{regeln, protokoll, vorlagen, konten, statistik}` (prüft fällige Fristen) | automationen lesen |
+| `automation.speichern` · `automation.loeschen` | `id?, regel` · `id` | Regel | automationen schreiben |
+| `automation.testlauf` | `regelId` oder `regel`, `bezugArt?, bezugId?, score?, kategorie?` | mit Objekt `{protokoll, aenderungen}` ohne Wirkung, sonst Rückblick | automationen lesen |
+| `automation.fristen_pruefen` · `automation.tag_setzen` | – · `art, id, tag, an` | `{ausgeloest}` · `{tags}` | automationen · Bereich des Objekts |
+| `automation.vorlagen` · `vorlage_speichern` · `vorlage_wiederherstellen` · `vorlage_vorschau` · `vorlage_senden` | wie Demo | Vorlagen mit `versionen[]` | vorlagen (senden zusätzlich crm schreiben) |
+| `berichte.bericht` | `von?, bis?` (JJJJ-MM-TT, Standard 12 Monate) | `{zeitraum, kennzahlen, trichterZeit, kohorteTrichter, flaechenTrichter, quellen, pipelinePhasen, flaechenPipeline, provision, durchlauf, team}` | berichte lesen (Provisionsdetails nur mit provisionen lesen) |
+| `berichte.rechte` · `berichte.rollen_setzen` | – · `nutzerId, rollen[]` | Matrix + Konten · `{id, backofficeRollen}` (eigene Leitung → 409) | rechte |
+| `berichte.kette_pruefen` | `limit?` | `{ok, geprueft, fehler[], letzterHash, anker, eintraege[]}` | protokoll lesen |
+
+**Automationsregel:** `{name, aktiv, beschreibung, ausloeser {typ (vorgang_neu, status, frist, suchprofil, dokument), art?, von?, nach?, frist (sla_erstkontakt, status_dauer, aufgabe_ueberfaellig)?, status?, tage?}, bedingungen [{feld, op, wert}], aktionen [...]}` – Felder `typ, land, bundesland, plz, mwp, ha, score, kanal, status, kategorie, tag`; Operatoren `gleich, ungleich, in, min, max, enthaelt, beginnt`; Aktionen `zustaendig {mitarbeiterId | "gebiet"}`, `aufgabe {titel, faelligInTagen, zustaendig}`, `mail {vorlageId, an}`, `nachricht {vorlageId}`, `tag {tag}`, `status {nach, kommentar}`, `prioritaet {wert}`. Bereinigung `regelBereinigen` (`src/lib/plattform/automation.js`) = `regel_bereinigen` (Python). Statuswechsel nur über den Automaten (als admin, inkl. Pflichtangaben). **Schleifenschutz:** Kettentiefe ≤ 3, jede Regel je Objekt einmal je Ereigniskette, ≤ 3 Ausführungen je Regel/Objekt/Stunde; alles im Ausführungsprotokoll (`Plattform Automation Lauf`, append-only). **Ereignisse** aus dem Kern: neuer Vorgang (auch CRM-Lead), jeder Statuswechsel (inkl. System), Dokument-Upload, Suchprofil-Treffer; Fristen täglich (Scheduler `backoffice.fristen_taeglich`) und beim Öffnen von Automationen/Akquise.
+
+**Vorlagen-Platzhalter:** `PLATZHALTER` in `src/lib/plattform/vorlagen.js` (Kontakt, Vorgang, Fläche, Projekt – nur öffentliche Felder –, Zuständig, Portal-Link, Datum). Unbekannte Platzhalter → 422.
+
+### HTTP-APIs (alle `admin` + Rechte-Matrix, Mutationen JSON + Origin)
+`/api/admin/crm/kontakte` GET/POST · `/api/admin/crm/kontakte/[id]` GET/PATCH · `/api/admin/crm/kontakte/[id]/beziehung` POST · `/api/admin/crm/organisationen[/id]` GET/POST/PATCH · `/api/admin/crm/aktivitaeten` POST · `/api/admin/crm/dubletten` GET/POST · `/api/admin/crm/massenaktion` POST · `/api/admin/akquise` GET/POST · `/api/admin/akquise/[id]` PATCH · `/api/admin/akquise/gebiete` GET/PUT · `/api/admin/automationen` GET/POST · `/api/admin/automationen/[id]` PATCH/DELETE · `/api/admin/automationen/testlauf`, `…/fristen`, `…/tags` POST · `/api/admin/vorlagen` GET/POST · `/api/admin/vorlagen/[id]` PATCH · `/api/admin/vorlagen/[id]/wiederherstellen`, `/api/admin/vorlagen/vorschau`, `/api/admin/vorlagen/senden` POST · `/api/admin/berichte` GET · `/api/admin/berichte/csv` GET (CSV, protokolliert) · `/api/admin/berichte/pdf?monat=JJJJ-MM` GET (Monatsbericht-PDF mit Vormonatsvergleich, protokolliert) · `/api/admin/protokoll` GET · `/api/admin/rechte` GET · `/api/admin/rechte/[id]` PATCH.
+
+## 10. Anlagen & Monitoring (Contracting-Anlagen, MQTT, Störungen)
+
+Architektur, MQTT-Vertrag und Ingest-Dienst: [`docs/ANLAGEN-IOT.md`](./ANLAGEN-IOT.md). Referenz: `src/lib/plattform/backend/demo/anlagen.js` (Schnittstelle `backend/anlagen.js`, Adapter `backend/frappe/anlagen.js`), Regeln/Stammlisten `src/lib/plattform/anlagen.js` = `plattform/anlagen_kern.py`. Frappe-Methoden in `plattform/api/anlagen.py`. **Zeitreihen liefert nicht Frappe**, sondern der Ingest-Dienst (`src/lib/plattform/messdaten`).
+
+**Rechte:** Backoffice mit Bereich `anlagen` (Rechte-Matrix, neue Unterrolle `betrieb`: Anlagen schreiben, Cockpit/Nutzer lesen, Aufgaben schreiben; `leitung` schreiben; `buchhaltung`/`lesen` lesen; `akquise`/`transaktion` kein Zugriff). Kunde = Konto `kundeId` der Anlage oder Mitglied der `organisationId` (jede Teamrolle liest; kommentieren als Kundenkonto bzw. ab Teamrolle „Mitglied“). Fremde Anlage → 403 (Seite 404) – auch für Messdaten, Zähler und Live. Kunden sehen nie Gerätezugänge, interne Kommentare oder interne Wartungskosten. Störungen **quittieren/bearbeiten nur der Betrieb** (Kunde → 403).
+
+**DocTypes:** `Plattform Anlage` (AL) · `Plattform Anlagenkomponente` (AK) · `Plattform Messpunkt` (MP; `abrechnungsrelevant` nur mit `messstelle = geeicht`) · `Plattform Geraetezugang` (GZ; nur scrypt-Hash `scrypt$16384$8$1$salt$hash`) · `Plattform Stoerungsfall` (ST) · `Plattform Wartung` (WA) · `Plattform Contracting Vertrag` (CV, einer je Anlage) · `Plattform Zaehlerstand Monatswert` (ZM; Stand ≥ Vormonat, `menge` berechnet). Neue Benachrichtigungsart `stoerung` (Glocke + E-Mail ohne Inhalte, abbestellbar). Neue technische Rolle `ÖkoInvest Anlagen-Dienst` (nur `dienst_*`).
+
+| Methode | Argumente | Ergebnis | Recht |
+|---|---|---|---|
+| `anlagen.liste` | `q?, typ?, status?` | `[{id, name, typ, typLabel, status, land, bundesland, ort, regionId, kwp, speicherKwh, speicherKw, inbetriebnahme, lastprofil, lastJahrKwh, wechselrichterAnzahl, kunde, organisation, offeneStoerungen[], vertrag{strompreisCt, grundgebuehrMonat, status}, meinZugriff, darfBearbeiten}]` | Kunde: eigene/Organisation; Backoffice (lesen): alle |
+| `anlagen.holen` | `id` | Anlage + `vertrag` (voll), `komponenten[]`, `messpunkte[]`, `wartungen[]`, `stoerungen[]`, `geraete[]` (nur Backoffice), `datenVerbunden` | wie oben |
+| `anlagen.kunden` | – | `{konten[] (Rolle unternehmen), organisationen[], betrieb[]}` | Backoffice lesen |
+| `anlagen.anlegen` · `anlagen.aendern` | `daten {name, typ, status, land, bundesland, ort, kwp, speicherKwh, speicherKw, inbetriebnahme (Pflicht bei „betrieb“), lastprofil, lastJahrKwh, wechselrichterAnzahl, beschreibung, kundeId?, organisationId?}` · `id` | Anlage (Detail) | Backoffice schreiben |
+| `anlagen.eintrag_speichern` | `anlageId, art (komponente, messpunkt, wartung, vertrag, monatswert), id?, daten` | Eintrag | Backoffice schreiben |
+| `anlagen.eintrag_loeschen` | `anlageId, art, id` | `{ok}` (Messpunkt mit Monatswerten → 409) | Backoffice schreiben |
+| `anlagen.monatswerte` | `anlageId` | `[{id, monat, messpunktId, zaehlernummer, bezeichnung, register, registerLabel, stand, menge, quelle, geprueft}]` | wie `holen` |
+| `anlagen.geraet_anlegen` | `anlageId, bezeichnung` | `{zugang, passwort, einmalig: true, broker{host, port, tls}}` – **Passwort nur in dieser Antwort** | Backoffice schreiben |
+| `anlagen.geraet` | `id` | `{zugang{id, benutzer, topic, status (wartet, verbunden, gesperrt), letzteNachricht, hash{algorithmus, fingerabdruck}}, broker}` | Backoffice lesen |
+| `anlagen.geraet_aktion` | `id, daten {aktion: sperren, entsperren, neu}` (`neu` → neues Passwort einmalig; `testnachricht` → 409, nur Demo) | wie oben | Backoffice schreiben |
+| `anlagen.stoerungen` | `anlageId?, status (offen, behoben, alle), limit?` | Störungen nach Priorität (Schwere × 10 + Alter + unquittiert) | sichtbare Anlagen |
+| `anlagen.stoerung_anlegen` | `daten {anlageId, schwere, titel, text}` | Störung (Regel `manuell`) | Backoffice schreiben |
+| `anlagen.stoerung_aktion` | `id, daten {aktion: kommentar {text, intern?} · quittieren · status {status, text?} · zuweisen {zustaendigId} · schwere {schwere}}` | Störung | kommentar: Kunde/Team ab Mitglied/Betrieb; sonst nur Betrieb (2× quittieren → 409) |
+| `anlagen.leitstand` | – | `{stoerungen[], zaehler{offen, inArbeit, unquittiert, kritisch, anlagen, geraeteWartend, wartungenFaellig}}` | Backoffice lesen |
+| `anlagen.dienst_zugaenge` | – | `[{benutzer, passwortHash, anlageId, geraetId, gesperrt}]` | **nur** Rolle `ÖkoInvest Anlagen-Dienst` |
+| `anlagen.dienst_anlagen` | – | `[{id, status, kwp, speicherKw, regionId, geraete}]` | Anlagen-Dienst |
+| `anlagen.dienst_stoerung` | `befund {anlageId, geraetId?, regel, schwere, titel, text, schluessel}` | `{id, neu}` (offene Störung derselben Regel → zusammengefasst) | Anlagen-Dienst |
+| `anlagen.dienst_verbindung` | `geraetId, letzteNachricht` | `{ok}` (Status „verbunden“) | Anlagen-Dienst |
+
+`site_config.json`: `oekoinvest_mqtt_host`, `oekoinvest_mqtt_port` (Broker-Angaben im Assistenten).
+
+### HTTP-APIs der Website (Sitzung Pflicht, Mutationen JSON + Origin)
+- `GET /api/portal/anlagen?q=&typ=&status=` – sichtbare Anlagen mit `live`, `heute`, `monat`, `jahr`, `ampel {id: laeuft|warnung|stoerung|offline, grund}`, `veraltet`, dazu `summe` (Leistung jetzt, Energien, Quoten, CO₂), `ampeln`, `quelle` (dienst|simulator), `messfehler`
+- `GET /api/portal/anlagen/[id]` – Detail inkl. `kosten {monat, jahr: {arbeitEur, grundEur, gesamtEur, netzEur, ersparnisEur}}`, Quoten, CO₂
+- `GET /api/portal/anlagen/[id]/messdaten?von=&bis=&aufloesung=15min|1h|1d|1mon[&format=csv]` – Zeitreihe (1d/1mon mit `erwartetKwh` = Soll); Zeitraum zu lang → 422
+- `GET /api/portal/anlagen/[id]/live` – `text/event-stream`, `event: messwert` (max. 6 Ströme je Konto → 429)
+- `GET /api/portal/anlagen/[id]/zaehler[?format=csv&art=abrechnung|monitoring]` – Monatswerte (Abrechnung) und Monitoring-Stände
+- `GET /api/portal/anlagen/stoerungen?anlage=&status=` · `POST /api/portal/anlagen/stoerungen/[id]` `{aktion …}`
+- Backoffice (`admin` + Bereich `anlagen`): `GET /api/admin/anlagen` (Leitstand) · `POST /api/admin/anlagen` (anlegen, 201) · `PATCH /api/admin/anlagen/[id]` · `POST|DELETE /api/admin/anlagen/[id]/eintraege` · `POST /api/admin/anlagen/[id]/geraete` (201, Passwort einmalig, `no-store`) · `GET|POST /api/admin/anlagen/geraete/[gid]` (`testnachricht` nur Demo, sonst 409) · `POST /api/admin/anlagen/stoerungen` · `GET /api/admin/anlagen/kunden`

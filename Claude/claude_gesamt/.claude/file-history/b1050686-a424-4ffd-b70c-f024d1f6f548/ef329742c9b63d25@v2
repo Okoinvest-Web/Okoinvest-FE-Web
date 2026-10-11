@@ -1,0 +1,410 @@
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+
+import {
+  ISC_TOLERANZ_PROZENT,
+  MINDESTEINSTRAHLUNG_MESSUNG,
+  UOC_TOLERANZ_PROZENT,
+  erwarteteUoc,
+  erwarteterIsc,
+  isolationsStufe,
+  pruefeAbnahme,
+  type Abnahmeprotokoll,
+  type Strangmessung,
+} from "./abnahme.ts";
+
+/**
+ * Ein Prüfprotokoll ist ein Rechtsdokument. Ein falsch bestandener
+ * Punkt bedeutet, dass eine Anlage in Betrieb geht, die es nicht
+ * dürfte - und ein falsch beanstandeter, dass jemand umsonst noch
+ * einmal aufs Dach steigt.
+ */
+
+/** Ein Strang aus 20 Modulen mit 41,3 V und 13,9 A bei STC. */
+function strang(teil: Partial<Strangmessung> = {}): Strangmessung {
+  const grund: Strangmessung = {
+    bezeichnung: "Strang 1",
+    module: 20,
+    uocModulV: 41.3,
+    iscModulA: 13.9,
+    // Bei 25 Grad und 1000 W/m² genau die Erwartung.
+    gemesseneUocV: 20 * 41.3,
+    gemessenerIscA: 13.9,
+    isolationMOhm: 25,
+    pruefspannungV: 1000,
+    schutzleiterOhm: 0.3,
+    polaritaetRichtig: true,
+  };
+  return { ...grund, ...teil };
+}
+
+function protokoll(teil: Partial<Abnahmeprotokoll> = {}): Abnahmeprotokoll {
+  return {
+    anlage: "Produktionshalle St. Pölten",
+    geprueftAm: "2026-09-14",
+    pruefer: "M. Hofbauer",
+    systemspannungV: 1000,
+    bedingungen: { einstrahlung: 1000, modultemperatur: 25 },
+    straenge: [strang()],
+    schutz: {
+      rcdAusloesungMs: 24,
+      rcdBemessungMa: 30,
+      netzschutzGeprueft: true,
+      inselschutzGeprueft: true,
+    },
+    ...teil,
+  };
+}
+
+describe("Grenzwerte", () => {
+  it("wählt die Prüfspannung nach der Systemspannung", () => {
+    assert.equal(isolationsStufe(100).pruefspannung, 250);
+    assert.equal(isolationsStufe(400).pruefspannung, 500);
+    assert.equal(isolationsStufe(1000).pruefspannung, 1000);
+  });
+
+  it("nimmt für sehr hohe Spannungen die oberste Stufe", () => {
+    assert.equal(isolationsStufe(5000).pruefspannung, 1000);
+  });
+});
+
+describe("Temperaturkorrektur der Leerlaufspannung", () => {
+  it("liefert bei 25 Grad den Datenblattwert", () => {
+    assert.ok(Math.abs(erwarteteUoc(strang(), 25) - 826) < 0.01);
+  });
+
+  it("erwartet bei Kälte mehr Spannung", () => {
+    // Bei 5 Grad rund sechs Prozent ueber dem Datenblattwert.
+    const kalt = erwarteteUoc(strang(), 5);
+
+    assert.ok(kalt > 826);
+    assert.ok(Math.abs(kalt / 826 - 1.058) < 0.005);
+  });
+
+  it("erwartet bei Hitze weniger", () => {
+    assert.ok(erwarteteUoc(strang(), 55) < 826);
+  });
+});
+
+describe("Einstrahlungskorrektur des Kurzschlussstroms", () => {
+  it("ist nahezu linear", () => {
+    assert.ok(Math.abs(erwarteterIsc(strang(), 500) - 6.95) < 0.01);
+  });
+
+  it("ist bei Dunkelheit null", () => {
+    assert.equal(erwarteterIsc(strang(), 0), 0);
+  });
+});
+
+describe("Eine einwandfreie Anlage", () => {
+  it("wird abgenommen", () => {
+    const b = pruefeAbnahme(protokoll());
+
+    assert.equal(b.ergebnis, "bestanden", b.beanstandungen.join(" | "));
+    assert.equal(b.beanstandungen.length, 0);
+  });
+
+  it("führt jeden Prüfpunkt im Protokoll", () => {
+    const b = pruefeAbnahme(protokoll());
+
+    // Polaritaet, Isolation, Uoc, Isc, Schutzleiter, RCD.
+    assert.equal(b.befunde.length, 6);
+    assert.ok(b.befunde.every((x) => x.ergebnis === "bestanden"));
+  });
+
+  it("besteht auch bei kalter Witterung", () => {
+    // Der haeufigste Fehlalarm: Bei fuenf Grad liegt die Spannung
+    // sechs Prozent ueber dem Datenblatt und ist trotzdem richtig.
+    const kalt = protokoll({
+      bedingungen: { einstrahlung: 700, modultemperatur: 5 },
+      straenge: [
+        strang({
+          gemesseneUocV: erwarteteUoc(strang(), 5),
+          gemessenerIscA: erwarteterIsc(strang(), 700),
+        }),
+      ],
+    });
+
+    assert.equal(pruefeAbnahme(kalt).ergebnis, "bestanden");
+  });
+});
+
+describe("Isolationswiderstand", () => {
+  it("beanstandet einen zu geringen Wert", () => {
+    const b = pruefeAbnahme(
+      protokoll({ straenge: [strang({ isolationMOhm: 0.4 })] }),
+    );
+
+    assert.equal(b.ergebnis, "beanstandet");
+    assert.match(b.beanstandungen.join(" "), /Isolationswiderstand/);
+  });
+
+  it("verwirft eine Messung mit zu geringer Prüfspannung", () => {
+    // Wer einen 1000-Volt-String mit 250 Volt prueft, misst etwas,
+    // das mit der Norm nichts zu tun hat.
+    const b = pruefeAbnahme(
+      protokoll({ straenge: [strang({ pruefspannungV: 250 })] }),
+    );
+
+    assert.equal(b.ergebnis, "beanstandet");
+    assert.match(b.beanstandungen.join(" "), /Prüfspannung/);
+
+    const befund = b.befunde.find((x) => x.merkmal === "Isolationswiderstand");
+    assert.equal(befund?.ergebnis, "nicht_bewertbar");
+  });
+
+  it("nimmt eine höhere Prüfspannung an", () => {
+    const b = pruefeAbnahme(
+      protokoll({
+        systemspannungV: 400,
+        straenge: [strang({ pruefspannungV: 1000 })],
+      }),
+    );
+
+    assert.equal(b.ergebnis, "bestanden");
+  });
+});
+
+describe("Leerlaufspannung", () => {
+  it("erkennt ein fehlendes Modul und benennt es", () => {
+    // 19 statt 20 Module: fuenf Prozent zu wenig.
+    const b = pruefeAbnahme(
+      protokoll({ straenge: [strang({ gemesseneUocV: 19 * 41.3 })] }),
+    );
+
+    assert.equal(b.ergebnis, "beanstandet");
+    const befund = b.befunde.find((x) => x.merkmal === "Leerlaufspannung");
+    assert.match(befund!.bemerkung, /1 fehlenden Modulen/);
+  });
+
+  it("lässt eine Abweichung innerhalb der Toleranz durch", () => {
+    const knapp = 826 * (1 + (UOC_TOLERANZ_PROZENT - 1) / 100);
+    const b = pruefeAbnahme(
+      protokoll({ straenge: [strang({ gemesseneUocV: knapp })] }),
+    );
+
+    assert.equal(b.ergebnis, "bestanden");
+  });
+
+  it("nennt den temperaturkorrigierten Erwartungswert im Protokoll", () => {
+    const b = pruefeAbnahme(
+      protokoll({ bedingungen: { einstrahlung: 900, modultemperatur: 45 } }),
+    );
+
+    const befund = b.befunde.find((x) => x.merkmal === "Leerlaufspannung");
+    assert.match(befund!.erwartet, /45 °C/);
+  });
+});
+
+describe("Kurzschlussstrom", () => {
+  it("beanstandet eine zu große Abweichung", () => {
+    const b = pruefeAbnahme(
+      protokoll({
+        straenge: [
+          strang({ gemessenerIscA: 13.9 * (1 - (ISC_TOLERANZ_PROZENT + 5) / 100) }),
+        ],
+      }),
+    );
+
+    assert.equal(b.ergebnis, "beanstandet");
+    assert.match(b.beanstandungen.join(" "), /Kurzschlussstrom/);
+  });
+
+  it("bewertet unter der Mindesteinstrahlung gar nicht", () => {
+    const b = pruefeAbnahme(
+      protokoll({
+        bedingungen: {
+          einstrahlung: MINDESTEINSTRAHLUNG_MESSUNG - 50,
+          modultemperatur: 20,
+        },
+        straenge: [strang({ gemesseneUocV: erwarteteUoc(strang(), 20) })],
+      }),
+    );
+
+    assert.equal(b.ergebnis, "nicht_bewertbar");
+    assert.match(b.hinweise.join(" "), /nachgeholt/);
+  });
+
+  it("nennt das dann ausdrücklich so, nicht als bestanden", () => {
+    const b = pruefeAbnahme(
+      protokoll({
+        bedingungen: { einstrahlung: 200, modultemperatur: 20 },
+        straenge: [strang({ gemesseneUocV: erwarteteUoc(strang(), 20) })],
+      }),
+    );
+
+    const befund = b.befunde.find((x) => x.merkmal === "Kurzschlussstrom");
+    assert.equal(befund?.ergebnis, "nicht_bewertbar");
+  });
+});
+
+describe("Strangvergleich", () => {
+  it("findet ein fehlendes Modul, das die absolute Toleranz knapp besteht", () => {
+    // Bei zwanzig Modulen macht ein fehlendes genau fuenf Prozent -
+    // und liegt damit exakt auf der absoluten Grenze. Gegen die
+    // Nachbarn gemessen sticht es sofort heraus.
+    const gesund = strang();
+    const b = pruefeAbnahme(
+      protokoll({
+        straenge: [
+          strang({ bezeichnung: "Strang 1", gemesseneUocV: 19 * 41.3 }),
+          { ...gesund, bezeichnung: "Strang 2" },
+          { ...gesund, bezeichnung: "Strang 3" },
+          { ...gesund, bezeichnung: "Strang 4" },
+        ],
+      }),
+    );
+
+    assert.equal(b.ergebnis, "beanstandet");
+    const befund = b.befunde.find(
+      (x) => x.merkmal === "Vergleich mit den übrigen Strängen",
+    );
+    assert.ok(befund);
+    assert.match(befund.bemerkung, /1 Module weniger/);
+  });
+
+  it("beanstandet nicht, wenn alle Stränge gleich sind", () => {
+    const gleich = strang();
+    const b = pruefeAbnahme(
+      protokoll({
+        straenge: [
+          { ...gleich, bezeichnung: "A" },
+          { ...gleich, bezeichnung: "B" },
+          { ...gleich, bezeichnung: "C" },
+          { ...gleich, bezeichnung: "D" },
+        ],
+      }),
+    );
+
+    assert.equal(b.ergebnis, "bestanden", b.beanstandungen.join(" | "));
+  });
+
+  it("vergleicht je Modul, nicht je Strang", () => {
+    // Zwei kurze und zwei lange Straenge sind ohne Bezug auf die
+    // Modulzahl nicht vergleichbar.
+    const b = pruefeAbnahme(
+      protokoll({
+        straenge: [
+          strang({ bezeichnung: "A", module: 20, gemesseneUocV: 20 * 41.3 }),
+          strang({ bezeichnung: "B", module: 20, gemesseneUocV: 20 * 41.3 }),
+          strang({ bezeichnung: "C", module: 14, gemesseneUocV: 14 * 41.3 }),
+          strang({ bezeichnung: "D", module: 14, gemesseneUocV: 14 * 41.3 }),
+        ],
+      }),
+    );
+
+    assert.equal(b.ergebnis, "bestanden", b.beanstandungen.join(" | "));
+  });
+
+  it("vergleicht erst ab drei Strängen", () => {
+    // Bei zweien gibt es keine Mehrheit, gegen die man messen kann.
+    const b = pruefeAbnahme(
+      protokoll({
+        straenge: [
+          strang({ bezeichnung: "A", gemesseneUocV: 19 * 41.3 }),
+          strang({ bezeichnung: "B" }),
+        ],
+      }),
+    );
+
+    assert.ok(
+      !b.befunde.some((x) => x.merkmal === "Vergleich mit den übrigen Strängen"),
+    );
+  });
+});
+
+describe("Polarität und Schutzleiter", () => {
+  it("beanstandet einen verpolten Strang", () => {
+    const b = pruefeAbnahme(
+      protokoll({ straenge: [strang({ polaritaetRichtig: false })] }),
+    );
+
+    assert.equal(b.ergebnis, "beanstandet");
+    assert.match(b.beanstandungen.join(" "), /Polarität/);
+  });
+
+  it("beanstandet einen zu hohen Schutzleiterwiderstand", () => {
+    const b = pruefeAbnahme(
+      protokoll({ straenge: [strang({ schutzleiterOhm: 2.5 })] }),
+    );
+
+    assert.equal(b.ergebnis, "beanstandet");
+    assert.match(b.beanstandungen.join(" "), /Schutzleiter/);
+  });
+
+  it("weist auf eine fehlende Schutzleitermessung hin, ohne zu beanstanden", () => {
+    const b = pruefeAbnahme(
+      protokoll({ straenge: [strang({ schutzleiterOhm: undefined })] }),
+    );
+
+    assert.equal(b.ergebnis, "bestanden");
+    assert.match(b.hinweise.join(" "), /nicht gemessen/);
+  });
+});
+
+describe("Schutzeinrichtungen", () => {
+  it("beanstandet eine zu späte Auslösung", () => {
+    const b = pruefeAbnahme(
+      protokoll({
+        schutz: {
+          rcdAusloesungMs: 420,
+          netzschutzGeprueft: true,
+          inselschutzGeprueft: true,
+        },
+      }),
+    );
+
+    assert.equal(b.ergebnis, "beanstandet");
+  });
+
+  it("verlangt die Prüfung des Netz- und Anlagenschutzes", () => {
+    const b = pruefeAbnahme(
+      protokoll({
+        schutz: {
+          rcdAusloesungMs: 24,
+          netzschutzGeprueft: false,
+          inselschutzGeprueft: true,
+        },
+      }),
+    );
+
+    assert.equal(b.ergebnis, "beanstandet");
+    assert.match(b.beanstandungen.join(" "), /TOR Erzeuger/);
+  });
+
+  it("verlangt den Nachweis der Abschaltung bei Netzausfall", () => {
+    const b = pruefeAbnahme(
+      protokoll({
+        schutz: {
+          rcdAusloesungMs: 24,
+          netzschutzGeprueft: true,
+          inselschutzGeprueft: false,
+        },
+      }),
+    );
+
+    assert.equal(b.ergebnis, "beanstandet");
+    assert.match(b.beanstandungen.join(" "), /tote Netz/);
+  });
+});
+
+describe("Zusammenfassung", () => {
+  it("nennt bei Erfolg die Zahl der Prüfpunkte", () => {
+    assert.match(pruefeAbnahme(protokoll()).zusammenfassung, /6 Prüfpunkte/);
+  });
+
+  it("nennt bei Beanstandung deren Zahl", () => {
+    const b = pruefeAbnahme(
+      protokoll({ straenge: [strang({ polaritaetRichtig: false })] }),
+    );
+
+    assert.match(b.zusammenfassung, /nicht abgenommen/);
+  });
+
+  it("beanstandet ein Protokoll ohne Strangmessung", () => {
+    const b = pruefeAbnahme(protokoll({ straenge: [] }));
+
+    assert.equal(b.ergebnis, "beanstandet");
+    assert.match(b.beanstandungen.join(" "), /keine Strangmessung/);
+  });
+});

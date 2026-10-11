@@ -1,0 +1,117 @@
+// Feldnamen entsprechen den ERPNext-DocTypes, damit Mock und echte API austauschbar sind.
+
+export const LEAD_STATUSES = [
+  "Lead",
+  "Open",
+  "Replied",
+  "Opportunity",
+  "Quotation",
+  "Interested",
+  "Converted",
+  "Do Not Contact",
+] as const;
+export type LeadStatus = (typeof LEAD_STATUSES)[number];
+
+export type Lead = {
+  name: string; // ERPNext-ID, z. B. CRM-LEAD-2026-00001
+  first_name: string;
+  last_name?: string;
+  lead_name: string;
+  company_name?: string;
+  email_id?: string;
+  mobile_no?: string;
+  status: LeadStatus;
+  source?: string;
+  territory?: string;
+  lead_owner?: string;
+  notes?: string;
+  creation: string;
+  modified: string;
+};
+
+export const OPPORTUNITY_STAGES = [
+  "Prospecting",
+  "Qualification",
+  "Needs Analysis",
+  "Proposal/Price Quote",
+  "Negotiation/Review",
+] as const;
+
+export const OPPORTUNITY_STATUSES = [
+  "Open",
+  "Quotation",
+  "Replied",
+  "Converted",
+  "Lost",
+  "Closed",
+] as const;
+export type OpportunityStatus = (typeof OPPORTUNITY_STATUSES)[number];
+
+export type Opportunity = {
+  name: string;
+  opportunity_from: "Lead" | "Customer";
+  party_name: string;
+  customer_name?: string;
+  title?: string;
+  status: OpportunityStatus;
+  sales_stage: string;
+  opportunity_amount: number;
+  currency: string;
+  probability: number;
+  expected_closing?: string;
+  opportunity_owner?: string;
+  creation: string;
+  modified: string;
+};
+
+export type Customer = {
+  name: string;
+  customer_name: string;
+  customer_type: "Company" | "Individual";
+  customer_group: string;
+  territory: string;
+  email_id?: string;
+  mobile_no?: string;
+  website?: string;
+  disabled: 0 | 1;
+  creation: string;
+  modified: string;
+};
+
+export type Contact = {
+  name: string;
+  first_name: string;
+  last_name?: string;
+  full_name: string;
+  email_id?: string;
+  mobile_no?: string;
+  designation?: string;
+  company_name?: string;
+  links: { link_doctype: string; link_name: string }[];
+  creation: string;
+  modified: string;
+};
+
+export type ToDo = {
+  name: string;
+  description: string;
+  status: "Open" | "Closed" | "Cancelled";
+  priority: "Low" | "Medium" | "High";
+  date?: string;
+  allocated_to?: string;
+  reference_type?: string;
+  reference_name?: string;
+  creation: string;
+  modified: string;
+};
+
+export type ListOptions = {
+  search?: string;
+  filters?: Record<string, string | undefined>;
+  limit?: number;
+};
+
+export type NewLead = Pick<
+  Lead,
+  "first_name" | "last_name" | "company_name" | "email_id" | "mobile_no" | "source" | "status"
+>;

@@ -1,0 +1,298 @@
+"""Rendert das Eskalationsschreiben als Geschäftsbrief in die ÖKOVOLT-Briefvorlage."""
+import re, sys, copy
+from docx import Document
+from docx.shared import Pt, Cm, RGBColor
+from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_BREAK
+from docx.enum.table import WD_TABLE_ALIGNMENT
+from docx.oxml.ns import qn
+from docx.oxml import OxmlElement
+
+TPL, SRC, DST = sys.argv[1], sys.argv[2], sys.argv[3]
+ACCENT = RGBColor(0x0F, 0x47, 0x61)
+
+doc = Document(TPL)
+
+# ---------- Körper leeren, sectPr behalten ----------
+body = doc.element.body
+for child in list(body):
+    if child.tag != qn('w:sectPr'):
+        body.remove(child)
+
+# ---------- Grundformat ----------
+st = doc.styles['normal']
+st.font.size = Pt(10.5)
+st.paragraph_format.space_after = Pt(7)
+st.paragraph_format.line_spacing = 1.18
+st.element.get_or_add_pPr()
+
+def set_lang(run, lang='de-AT'):
+    rPr = run._r.get_or_add_rPr()
+    for t in rPr.findall(qn('w:lang')):
+        rPr.remove(t)
+    el = OxmlElement('w:lang')
+    el.set(qn('w:val'), lang)
+    rPr.append(el)
+
+def shade(cell, hexcolor):
+    tcPr = cell._tc.get_or_add_tcPr()
+    sh = OxmlElement('w:shd')
+    sh.set(qn('w:val'), 'clear'); sh.set(qn('w:fill'), hexcolor)
+    tcPr.append(sh)
+
+def borders(tbl):
+    tblPr = tbl._tbl.tblPr
+    el = OxmlElement('w:tblBorders')
+    for edge in ('top', 'left', 'bottom', 'right', 'insideH', 'insideV'):
+        e = OxmlElement('w:' + edge)
+        e.set(qn('w:val'), 'single'); e.set(qn('w:sz'), '4')
+        e.set(qn('w:space'), '0'); e.set(qn('w:color'), 'BFCBD3')
+        el.append(e)
+    tblPr.append(el)
+
+def left_bar(p, color='0F4761'):
+    pPr = p._p.get_or_add_pPr()
+    pbdr = OxmlElement('w:pBdr')
+    e = OxmlElement('w:left')
+    e.set(qn('w:val'), 'single'); e.set(qn('w:sz'), '12')
+    e.set(qn('w:space'), '10'); e.set(qn('w:color'), color)
+    pbdr.append(e); pPr.append(pbdr)
+
+def keep_next(p):
+    p._p.get_or_add_pPr().append(OxmlElement('w:keepNext'))
+
+INLINE = re.compile(r'(\*\*.+?\*\*|(?<!\*)\*[^*\n]+?\*(?!\*)|`[^`]+?`)')
+
+def add_runs(p, text, base_bold=False, base_italic=False):
+    for part in INLINE.split(text):
+        if not part:
+            continue
+        if part.startswith('**') and part.endswith('**'):
+            r = p.add_run(part[2:-2]); r.bold = True
+        elif part.startswith('*') and part.endswith('*') and len(part) > 2:
+            r = p.add_run(part[1:-1]); r.italic = True
+        elif part.startswith('`') and part.endswith('`'):
+            r = p.add_run(part[1:-1]); r.font.name = 'Consolas'; r.font.size = Pt(9.5)
+        else:
+            r = p.add_run(part)
+        if base_bold: r.bold = True
+        if base_italic: r.italic = True
+        set_lang(r)
+    return p
+
+def para(text='', style=None, align=None, space_before=None, space_after=None,
+         bold=False, italic=False, size=None, color=None, indent=None):
+    p = doc.add_paragraph(style=style) if style else doc.add_paragraph()
+    if text:
+        add_runs(p, text, bold, italic)
+    pf = p.paragraph_format
+    if align is not None: p.alignment = align
+    if space_before is not None: pf.space_before = Pt(space_before)
+    if space_after is not None: pf.space_after = Pt(space_after)
+    if indent is not None: pf.left_indent = Cm(indent)
+    for r in p.runs:
+        if size: r.font.size = Pt(size)
+        if color: r.font.color.rgb = color
+    return p
+
+# ---------- Markdown einlesen ----------
+md = open(SRC, encoding='utf-8').read().split('\n')
+
+# Kopfteil des Markdown (Absender/Empfänger) überspringen: ab "Sehr geehrte" beginnt der Fließtext
+start = 0
+for i, l in enumerate(md):
+    if l.startswith('Sehr geehrte Frau Landeshauptfrau'):
+        start = i
+        break
+
+# ---------- BRIEFKOPF ----------
+para(space_after=2)  # Luft unter dem Logo
+
+emp = ['An',
+       'Frau Landeshauptfrau Mag. Karoline Edtstadler, Land Salzburg',
+       'Herrn Bürgermeister Bernhard Auinger, Stadt Salzburg',
+       'den Vorstand der Energie AG Oberösterreich',
+       'Herrn Landeshauptmann a. D. Dr. Wilfried Haslauer,',
+       'Vorsitzender des Aufsichtsrates der Salzburg AG für Energie, Verkehr und Telekommunikation,',
+       'sowie die Mitglieder des Aufsichtsrates']
+for i, line in enumerate(emp):
+    para(line, space_after=0, size=10.5, bold=(i == 0))
+para('zur Kenntnis: den Vorstand der Salzburg AG', space_before=8, space_after=0, size=10.5, italic=True)
+
+para('VERTRAULICH – PERSÖNLICH – EIGENHÄNDIG', space_before=18, space_after=0,
+     bold=True, size=10.5, color=ACCENT)
+
+para('Ostermiething, am 20. September 2026', align=WD_ALIGN_PARAGRAPH.RIGHT,
+     space_before=16, space_after=18, size=10.5)
+
+betreff = ('Salzburg AG / ÖKOVOLT – Entscheidungen des Oberlandesgerichts München und des '
+           'Oberlandesgerichts Linz, forensische Untersuchung „Projekt SILICIUM", gerichtlich '
+           'festgehaltener Mindestschaden von EUR 10,5 Mio., Ablehnung des Vergleichs durch den '
+           'Vorstand am 11. September 2026 – Ersuchen um unverzügliches Eingreifen der Eigentümer '
+           'und des Aufsichtsrates')
+p = doc.add_paragraph()
+r = p.add_run('Betreff: '); r.bold = True; r.font.size = Pt(10.5); set_lang(r)
+r = p.add_run(betreff); r.bold = True; r.font.size = Pt(10.5); set_lang(r)
+p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+p.paragraph_format.space_after = Pt(16)
+
+# ---------- FLIESSTEXT ----------
+i = start
+in_anlagen = False
+while i < len(md):
+    line = md[i].rstrip()
+
+    if not line.strip():
+        i += 1; continue
+    if line.strip() == '---':
+        i += 1; continue
+
+    # Tabelle
+    if line.startswith('|'):
+        rows = []
+        while i < len(md) and md[i].startswith('|'):
+            raw = md[i].strip().strip('|')
+            if not re.fullmatch(r'[\s:\-|]+', raw):
+                rows.append([c.strip() for c in raw.split('|')])
+            i += 1
+        if rows:
+            ncol = max(len(r) for r in rows)
+            t = doc.add_table(rows=len(rows), cols=ncol)
+            t.alignment = WD_TABLE_ALIGNMENT.LEFT
+            t.autofit = True
+            borders(t)
+            for ri, row in enumerate(rows):
+                for ci in range(ncol):
+                    cell = t.cell(ri, ci)
+                    cell.text = ''
+                    cp = cell.paragraphs[0]
+                    cp.paragraph_format.space_after = Pt(1)
+                    cp.paragraph_format.space_before = Pt(1)
+                    add_runs(cp, row[ci] if ci < len(row) else '')
+                    for r in cp.runs:
+                        r.font.size = Pt(8.5)
+                        if ri == 0:
+                            r.bold = True
+                    if ri == 0:
+                        shade(cell, 'EAF0F4')
+            para(space_after=6)
+        continue
+
+    # Zitat
+    if line.startswith('>'):
+        buf = []
+        while i < len(md) and md[i].startswith('>'):
+            buf.append(md[i].lstrip('>').strip()); i += 1
+        chunks = [b for b in buf if b]
+        main = ' '.join(c for c in chunks if not c.startswith('*('))
+        src = next((c for c in chunks if c.startswith('*(')), None)
+        p = para(main, align=WD_ALIGN_PARAGRAPH.JUSTIFY, space_before=8, space_after=2,
+                 indent=0.7, size=10.5)
+        left_bar(p)
+        for r in p.runs:
+            r.italic = True
+        if src:
+            q = para(src.strip('*'), indent=0.7, space_after=10, size=9, italic=True,
+                     color=RGBColor(0x55, 0x5555 // 256, 0x55))
+            left_bar(q)
+        continue
+
+    # Überschrift
+    m = re.match(r'^(#{1,4})\s+(.*)', line)
+    if m:
+        lvl, txt = len(m.group(1)), m.group(2).replace('**', '')
+        if txt.startswith('Anlagenverzeichnis'):
+            in_anlagen = True
+            doc.add_paragraph().add_run().add_break(WD_BREAK.PAGE)
+        style = 'Heading 2' if lvl <= 2 else 'Heading 3'
+        p = doc.add_paragraph(style=style)
+        r = p.add_run(txt); set_lang(r)
+        r.font.size = Pt(12.5 if lvl <= 2 else 11)
+        r.bold = True
+        r.font.color.rgb = ACCENT
+        p.paragraph_format.space_before = Pt(16 if lvl <= 2 else 11)
+        p.paragraph_format.space_after = Pt(5)
+        keep_next(p)
+        i += 1; continue
+
+    # Aufzählung
+    m = re.match(r'^(\s*)[-*]\s+(.*)', line)
+    if m:
+        p = doc.add_paragraph(style='List Paragraph')
+        p.paragraph_format.left_indent = Cm(0.8)
+        p.paragraph_format.first_line_indent = Cm(-0.4)
+        p.paragraph_format.space_after = Pt(3)
+        p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+        r = p.add_run('–  '); set_lang(r); r.font.size = Pt(10.5)
+        add_runs(p, m.group(2))
+        for r in p.runs: r.font.size = Pt(10.5)
+        i += 1; continue
+
+    m = re.match(r'^(\s*)(\d+)\.\s+(.*)', line)
+    if m:
+        p = doc.add_paragraph(style='List Paragraph')
+        p.paragraph_format.left_indent = Cm(0.9)
+        p.paragraph_format.first_line_indent = Cm(-0.9)
+        p.paragraph_format.space_after = Pt(4)
+        p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+        r = p.add_run(f'{m.group(2)}.\t'); r.bold = True; set_lang(r); r.font.size = Pt(10.5)
+        add_runs(p, m.group(3))
+        for r in p.runs: r.font.size = Pt(10.5)
+        i += 1; continue
+
+    # Grußformel / Unterschrift
+    if line.strip() == 'Mit vorzüglicher Hochachtung':
+        para(space_after=0)
+        para('Mit vorzüglicher Hochachtung', space_before=10, space_after=0, size=10.5)
+        para(space_after=0); para(space_after=0); para(space_after=0)
+        i += 1; continue
+    if line.strip().startswith('**Andreas Wegscheider**'):
+        para('Andreas Wegscheider', bold=True, space_after=0, size=10.5)
+        i += 1
+        if i < len(md) and md[i].strip():
+            para(md[i].strip(), space_after=0, size=10.5)
+            i += 1
+        continue
+
+    # Anredezeilen eng setzen, linksbündig
+    low = line.strip().lower()
+    if low.startswith('sehr geehrte'):
+        nxt = md[i + 1].strip().lower() if i + 1 < len(md) else ''
+        last = not nxt.startswith('sehr geehrte')
+        p = doc.add_paragraph()
+        add_runs(p, line.strip())
+        p.paragraph_format.space_after = Pt(12 if last else 0)
+        for r in p.runs: r.font.size = Pt(10.5)
+        i += 1; continue
+
+    p = doc.add_paragraph()
+    p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+    add_runs(p, line.strip())
+    for r in p.runs:
+        if not r.font.size: r.font.size = Pt(10.5)
+    i += 1
+
+# ---------- Fußzeile: Seitenzahl + GF-Korrektur ----------
+sec = doc.sections[0]
+ft = sec.footer
+pnum = ft.paragraphs[0]
+pnum.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+pnum.paragraph_format.space_after = Pt(2)
+def field(p, instr):
+    r = p.add_run(); fc = OxmlElement('w:fldChar'); fc.set(qn('w:fldCharType'), 'begin'); r._r.append(fc)
+    r = p.add_run(); it = OxmlElement('w:instrText'); it.set(qn('xml:space'), 'preserve'); it.text = instr; r._r.append(it)
+    r = p.add_run(); fc = OxmlElement('w:fldChar'); fc.set(qn('w:fldCharType'), 'end'); r._r.append(fc)
+r = pnum.add_run('Seite '); r.font.size = Pt(8); set_lang(r)
+field(pnum, ' PAGE ')
+r = pnum.add_run(' von '); r.font.size = Pt(8); set_lang(r)
+field(pnum, ' NUMPAGES ')
+for r in pnum.runs:
+    r.font.size = Pt(8); r.font.color.rgb = RGBColor(0x66, 0x66, 0x66)
+
+cell = ft.tables[0].rows[0].cells[1]
+if 'Schiefer' in cell.text:
+    for p in cell.paragraphs:
+        for r in p.runs:
+            r.text = r.text.replace(' & Friedrich Schiefer', '')
+
+doc.save(DST)
+print('saved', DST)

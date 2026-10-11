@@ -1,0 +1,317 @@
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+
+import {
+  VERSIEGELTE_PARAMETER,
+  istVersiegelt,
+  pruefeDrift,
+  type Istwert,
+  type Sollwert,
+} from "./drift.ts";
+
+/**
+ * Diese Prüfung entscheidet, ob eine Anlage am Netz bleibt. Ein
+ * übersehener Befund heißt: Eine Anlage speist mit falschen
+ * Schutzparametern ein. Ein falscher Befund heißt: Eine gesunde
+ * Anlage wird grundlos abgeschaltet. Beides ist teuer.
+ */
+
+const GELESEN = new Date(2026, 8, 15, 9, 30);
+
+const SOLL: Sollwert[] = [
+  {
+    schluessel: "wirkleistung_grenze",
+    bezeichnung: "Wirkleistungsbegrenzung",
+    register: "40101",
+    sollwert: 70,
+    einheit: "%",
+    versiegelt: true,
+    toleranz: 0.5,
+    grundlage: "Netzzugangsvertrag NB-2024-118",
+  },
+  {
+    schluessel: "parkregler_sollwert",
+    bezeichnung: "Sollwert Parkregler",
+    register: "40110",
+    sollwert: 525,
+    einheit: "kW",
+    versiegelt: true,
+    toleranz: 1,
+    grundlage: "TOR Erzeuger Typ C",
+  },
+  {
+    schluessel: "frequenz_ueber_ab",
+    bezeichnung: "Abschaltung Überfrequenz",
+    register: "40140",
+    sollwert: 51.5,
+    einheit: "Hz",
+    versiegelt: true,
+    toleranz: 0.01,
+    grundlage: "TOR Erzeuger",
+  },
+  {
+    schluessel: "notstrom_reserve",
+    bezeichnung: "Notstromreserve",
+    register: "41010",
+    sollwert: 20,
+    einheit: "%",
+    versiegelt: false,
+    toleranz: 1,
+  },
+];
+
+function ist(werte: Record<string, number | null>): Istwert[] {
+  return Object.entries(werte).map(([schluessel, wert]) => ({
+    schluessel,
+    wert,
+    gelesenAm: GELESEN,
+  }));
+}
+
+describe("Sauberer Abgleich", () => {
+  it("meldet nichts, wenn alle Werte stimmen", () => {
+    const e = pruefeDrift(
+      SOLL,
+      ist({
+        wirkleistung_grenze: 70,
+        parkregler_sollwert: 525,
+        frequenz_ueber_ab: 51.5,
+        notstrom_reserve: 20,
+      }),
+    );
+
+    assert.equal(e.befunde.length, 0);
+    assert.equal(e.sperren, false);
+    assert.equal(e.hoechsteSchwere, null);
+    assert.equal(e.geprueft, 4);
+  });
+
+  it("lässt Abweichungen innerhalb der Toleranz durchgehen", () => {
+    // 524,98 kW gegen 525 kW ist die Auflösung des Registers, keine
+    // Manipulation. Ohne Toleranz meldete die Anlage jede Abfrage.
+    const e = pruefeDrift(
+      SOLL,
+      ist({
+        wirkleistung_grenze: 70.2,
+        parkregler_sollwert: 524.98,
+        frequenz_ueber_ab: 51.495,
+        notstrom_reserve: 20.4,
+      }),
+    );
+
+    assert.equal(e.befunde.length, 0);
+  });
+});
+
+describe("Versiegelte Parameter", () => {
+  it("sperrt die Anlage bei jeder Abweichung", () => {
+    // Jemand hat die Begrenzung von 70 auf 100 Prozent gesetzt.
+    const e = pruefeDrift(
+      SOLL,
+      ist({
+        wirkleistung_grenze: 100,
+        parkregler_sollwert: 525,
+        frequenz_ueber_ab: 51.5,
+        notstrom_reserve: 20,
+      }),
+    );
+
+    assert.equal(e.sperren, true);
+    assert.equal(e.hoechsteSchwere, "kritisch");
+
+    const befund = e.befunde[0];
+    assert.equal(befund.schluessel, "wirkleistung_grenze");
+    assert.equal(befund.massnahme, "sperren");
+    assert.equal(befund.istwert, 100);
+    assert.equal(befund.abweichung, 30);
+    assert.ok(befund.begruendung.includes("NB-2024-118"));
+  });
+
+  it("erkennt auch kleine Abweichungen an der Schutzschwelle", () => {
+    // 51,7 statt 51,5 Hz klingt nach wenig. Es heißt, dass die Anlage
+    // bei Überfrequenz zu spät abschaltet.
+    const e = pruefeDrift(
+      SOLL,
+      ist({
+        wirkleistung_grenze: 70,
+        parkregler_sollwert: 525,
+        frequenz_ueber_ab: 51.7,
+        notstrom_reserve: 20,
+      }),
+    );
+
+    assert.equal(e.sperren, true);
+    assert.equal(e.befunde[0].schluessel, "frequenz_ueber_ab");
+  });
+
+  it("meldet einen verschwundenen versiegelten Parameter", () => {
+    // Das Gerät liefert den Datenpunkt nicht mehr. Genau so sieht es
+    // aus, wenn jemand ihn entfernt hat.
+    const e = pruefeDrift(
+      SOLL,
+      ist({
+        wirkleistung_grenze: 70,
+        frequenz_ueber_ab: 51.5,
+        notstrom_reserve: 20,
+      }),
+    );
+
+    const befund = e.befunde.find(
+      (b) => b.schluessel === "parkregler_sollwert",
+    );
+    assert.ok(befund);
+    assert.equal(befund.schwere, "hoch");
+    assert.equal(befund.massnahme, "melden");
+    assert.equal(befund.istwert, null);
+    assert.equal(e.sperren, false);
+  });
+
+  it("sperrt nicht bei einem reinen Lesefehler", () => {
+    // Ein nicht antwortendes Register ist ein Kommunikationsproblem.
+    // Die Anlage deswegen abzuschalten, wäre unverhältnismäßig - ohne
+    // Lesewert steht gar nicht fest, dass etwas falsch ist.
+    const e = pruefeDrift(
+      SOLL,
+      ist({
+        wirkleistung_grenze: 70,
+        parkregler_sollwert: null,
+        frequenz_ueber_ab: 51.5,
+        notstrom_reserve: 20,
+      }),
+    );
+
+    assert.equal(e.sperren, false);
+    const befund = e.befunde.find(
+      (b) => b.schluessel === "parkregler_sollwert",
+    );
+    assert.ok(befund);
+    assert.equal(befund.schwere, "mittel");
+    assert.equal(befund.massnahme, "beobachten");
+  });
+});
+
+describe("Nicht versiegelte Parameter", () => {
+  it("meldet eine Abweichung, sperrt aber nicht", () => {
+    // Die Notstromreserve darf der Kunde einstellen. Weicht sie vom
+    // hinterlegten Wert ab, ist das eine Meldung, kein Vorfall.
+    const e = pruefeDrift(
+      SOLL,
+      ist({
+        wirkleistung_grenze: 70,
+        parkregler_sollwert: 525,
+        frequenz_ueber_ab: 51.5,
+        notstrom_reserve: 35,
+      }),
+    );
+
+    assert.equal(e.sperren, false);
+    assert.equal(e.befunde.length, 1);
+    assert.equal(e.befunde[0].schwere, "hoch");
+    assert.equal(e.befunde[0].massnahme, "melden");
+  });
+});
+
+describe("Unbekannte Register", () => {
+  it("meldet Parameter, die nicht im Sollstand stehen", () => {
+    // Ein zusätzliches Register ist immer verdächtig: Firmwarewechsel
+    // oder Eingriff - beides gehört angesehen.
+    const e = pruefeDrift(
+      SOLL,
+      ist({
+        wirkleistung_grenze: 70,
+        parkregler_sollwert: 525,
+        frequenz_ueber_ab: 51.5,
+        notstrom_reserve: 20,
+        fernsteuerung_freigabe: 1,
+      }),
+    );
+
+    assert.deepEqual(e.unbekannt, ["fernsteuerung_freigabe"]);
+
+    const befund = e.befunde.find(
+      (b) => b.schluessel === "fernsteuerung_freigabe",
+    );
+    assert.ok(befund);
+    assert.equal(befund.schwere, "hoch");
+    assert.equal(e.sperren, false);
+  });
+});
+
+describe("Reihenfolge und Einordnung", () => {
+  it("stellt den schwersten Befund voran", () => {
+    const e = pruefeDrift(
+      SOLL,
+      ist({
+        wirkleistung_grenze: 100,
+        parkregler_sollwert: 525,
+        frequenz_ueber_ab: 51.5,
+        notstrom_reserve: 35,
+        zusatzregister: 7,
+      }),
+    );
+
+    assert.equal(e.befunde[0].schwere, "kritisch");
+    assert.ok(e.befunde.length >= 3);
+  });
+
+  it("rechnet die Abweichung in Prozent des Sollwerts", () => {
+    const e = pruefeDrift(
+      SOLL,
+      ist({
+        wirkleistung_grenze: 70,
+        parkregler_sollwert: 630,
+        frequenz_ueber_ab: 51.5,
+        notstrom_reserve: 20,
+      }),
+    );
+
+    const befund = e.befunde[0];
+    assert.equal(befund.abweichung, 105);
+    assert.equal(befund.abweichungProzent, 20);
+  });
+
+  it("kommt ohne gelieferte Werte zurecht", () => {
+    const e = pruefeDrift(SOLL, []);
+
+    assert.equal(e.befunde.length, 4);
+    assert.equal(e.geprueft, 4);
+    // Ohne jeden Messwert wird nicht gesperrt: Das ist ein
+    // Kommunikationsausfall, kein Nachweis einer Manipulation.
+    assert.equal(e.sperren, false);
+  });
+
+  it("kommt ohne Sollstand zurecht", () => {
+    const e = pruefeDrift([], ist({ irgendwas: 1 }));
+
+    assert.equal(e.geprueft, 0);
+    assert.deepEqual(e.unbekannt, ["irgendwas"]);
+  });
+});
+
+describe("Versiegelter Parametersatz", () => {
+  it("umfasst die netzrelevanten Schutzgrößen", () => {
+    for (const schluessel of [
+      "wirkleistung_grenze",
+      "parkregler_sollwert",
+      "frequenz_ueber_ab",
+      "spannung_unter_ab",
+    ]) {
+      assert.ok(istVersiegelt(schluessel), schluessel);
+    }
+  });
+
+  it("führt frei einstellbare Größen nicht als versiegelt", () => {
+    // Diese darf der Kunde ändern - stünden sie hier, wäre jede
+    // legitime Einstellung ein kritischer Vorfall.
+    assert.equal(istVersiegelt("notstrom_reserve"), false);
+    assert.equal(istVersiegelt("eigenverbrauch_ziel"), false);
+    assert.equal(istVersiegelt("ladefreigabe"), false);
+  });
+
+  it("enthält keine doppelten Einträge", () => {
+    assert.equal(
+      new Set(VERSIEGELTE_PARAMETER).size,
+      VERSIEGELTE_PARAMETER.length,
+    );
+  });
+});

@@ -1,0 +1,213 @@
+-- ====================================================================
+-- Ladeinfrastruktur und ihre Abrechnung
+--
+-- Ein Gewerbebetrieb lädt an derselben Wallbox den Firmenwagen des
+-- Geschäftsführers, den Lieferwagen der Werkstatt und das Privatauto
+-- eines Mitarbeiters. Steuerlich, kostenrechnerisch und vertraglich
+-- sind das drei verschiedene Dinge. Deshalb hängt jeder Ladevorgang
+-- nicht am Ladepunkt, sondern an der Karte - und die Karte an einer
+-- Kostenstelle und einem Tarif.
+--
+-- Ohne diese Trennung lässt sich weder ein Sachbezug ermitteln noch
+-- eine Weiterverrechnung an eine Abteilung, und die Rückerstattung an
+-- Mitarbeiter, die zu Hause laden, ist nicht belegbar.
+-- ====================================================================
+
+-- --------------------------------------------------------------------
+-- Ladepunkte
+--
+-- Ein Ladepunkt ist genau ein Anschluss, an dem ein Fahrzeug laden
+-- kann - nicht die Säule. Eine Doppelsäule hat zwei Ladepunkte mit
+-- zwei EVSE-Kennungen, und abgerechnet wird je Ladepunkt.
+-- --------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS ladepunkt (
+  id               TEXT PRIMARY KEY,
+  anlage_id        TEXT REFERENCES anlage(id),
+  bezeichnung      TEXT NOT NULL,
+  -- EVSE-ID nach ISO 15118 / DIN SPEC 91286, etwa AT*OKV*E0001*1.
+  evse_id          TEXT UNIQUE,
+  -- Kennung im OCPP-Backend; darüber laufen Fernstart und Freigabe.
+  ocpp_id          TEXT,
+  hersteller       TEXT,
+  modell           TEXT,
+  seriennummer     TEXT,
+  firmware         TEXT,
+  leistung_kw      REAL NOT NULL,
+  strom_art        TEXT NOT NULL DEFAULT 'AC' CHECK (strom_art IN ('AC','DC')),
+  steckertyp       TEXT,
+  standort         TEXT,
+  -- Eichrechtskonform nach Mess- und Eichgesetz. Nur solche Zähler
+  -- dürfen Grundlage einer Rechnung an Dritte sein; ohne diese
+  -- Eigenschaft ist nur eine interne Kostenverteilung zulässig.
+  eichrecht        INTEGER NOT NULL DEFAULT 0,
+  -- Lastmanagement: Anteil, den der Ladepunkt von der
+  -- Anschlussleistung höchstens beziehen darf.
+  max_anteil       REAL NOT NULL DEFAULT 1,
+  status           TEXT NOT NULL DEFAULT 'Verfuegbar'
+                     CHECK (status IN ('Verfuegbar','Belegt','Gestoert','Wartung','Offline')),
+  inbetriebnahme   TEXT,
+  angelegt_am      TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_ladepunkt_anlage ON ladepunkt(anlage_id);
+
+-- --------------------------------------------------------------------
+-- Tarife
+--
+-- Ein reiner Arbeitspreis je Kilowattstunde reicht im Gewerbe nicht.
+-- Wer nach dem Laden stehen bleibt, blockiert den Ladepunkt für alle
+-- anderen; dagegen hilft nur eine Standgebühr. Umgekehrt darf sie
+-- nicht ab der ersten Minute greifen, sonst bestraft sie auch den, der
+-- gerade zum Auto unterwegs ist.
+-- --------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS ladetarif (
+  id                   TEXT PRIMARY KEY,
+  bezeichnung          TEXT NOT NULL,
+  beschreibung         TEXT,
+  -- Arbeitspreis in Cent je kWh.
+  ct_kwh               REAL NOT NULL DEFAULT 0,
+  -- Ermäßigter Arbeitspreis für den Anteil aus der eigenen Anlage.
+  -- Wer den eigenen Sonnenstrom lädt, zahlt nicht den Netzpreis.
+  ct_kwh_pv            REAL,
+  -- Zeitpreis in Cent je Minute, über die gesamte Ladedauer.
+  ct_minute            REAL NOT NULL DEFAULT 0,
+  -- Standgebühr: gilt erst ab dieser Minute nach Ladeende.
+  blocking_ab_minute   INTEGER,
+  ct_minute_blocking   REAL NOT NULL DEFAULT 0,
+  -- Obergrenze der Standgebühr je Vorgang, in Euro.
+  blocking_hoechst_eur REAL,
+  -- Monatliche Grundgebühr je Karte.
+  grundpreis_monat_eur REAL NOT NULL DEFAULT 0,
+  ust_satz             REAL NOT NULL DEFAULT 20,
+  gueltig_ab           TEXT,
+  gueltig_bis          TEXT,
+  aktiv                INTEGER NOT NULL DEFAULT 1
+);
+
+-- --------------------------------------------------------------------
+-- Ladekarten
+--
+-- Die Karte ist der Vertragspartner des Ladevorgangs. Sie trägt die
+-- Kostenstelle, den Tarif und die Verwendungsart - erst daraus wird
+-- entschieden, ob ein Vorgang verrechnet, weiterverrechnet oder als
+-- Sachbezug bewertet wird.
+-- --------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS ladekarte (
+  id            TEXT PRIMARY KEY,
+  -- UID des RFID-Mediums, wie sie der Ladepunkt meldet.
+  kennung       TEXT NOT NULL UNIQUE,
+  bezeichnung   TEXT NOT NULL,
+  inhaber       TEXT,
+  kennzeichen   TEXT,
+  fahrzeug      TEXT,
+  kostenstelle  TEXT NOT NULL DEFAULT 'Allgemein',
+  tarif_id      TEXT REFERENCES ladetarif(id),
+  art           TEXT NOT NULL DEFAULT 'Firmenfahrzeug'
+                  CHECK (art IN ('Firmenfahrzeug','Mitarbeiter','Gast','Fremdanbieter','Werkstatt')),
+  -- Bei Mitarbeiterfahrzeugen: geldwerter Vorteil je kWh in Cent,
+  -- Grundlage der lohnsteuerlichen Bewertung.
+  sachbezug_ct_kwh REAL,
+  aktiv         INTEGER NOT NULL DEFAULT 1,
+  gueltig_bis   TEXT,
+  angelegt_am   TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_ladekarte_kostenstelle ON ladekarte(kostenstelle);
+
+-- --------------------------------------------------------------------
+-- Ladevorgänge
+--
+-- Zählerstand am Anfang und am Ende werden mitgeführt, nicht nur die
+-- Differenz: Nur damit ist eine Rechnung gegenüber einem Dritten
+-- nachvollziehbar und im Streitfall belegbar.
+-- --------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS ladevorgang (
+  id               TEXT PRIMARY KEY,
+  ladepunkt_id     TEXT NOT NULL REFERENCES ladepunkt(id),
+  karte_id         TEXT REFERENCES ladekarte(id),
+  -- Transaktionsnummer des OCPP-Backends.
+  transaktion      TEXT,
+  beginn           TEXT NOT NULL,
+  ende             TEXT,
+  -- Zeitpunkt, zu dem die Leistung auf null ging. Zwischen diesem und
+  -- `ende` steht das Fahrzeug am Ladepunkt, ohne zu laden.
+  ladeende         TEXT,
+  zaehler_start    REAL,
+  zaehler_ende     REAL,
+  energie_kwh      REAL NOT NULL DEFAULT 0,
+  -- Anteil, der zeitgleich aus der eigenen Anlage kam.
+  pv_kwh           REAL NOT NULL DEFAULT 0,
+  hoechstleistung_kw REAL,
+  status           TEXT NOT NULL DEFAULT 'Beendet'
+                     CHECK (status IN ('Laeuft','Beendet','Abgebrochen','Fehler')),
+  -- Gesetzt, sobald der Vorgang in einer Abrechnung enthalten ist.
+  abrechnung_id    TEXT REFERENCES ladeabrechnung(id),
+  angelegt_am      TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_ladevorgang_beginn ON ladevorgang(beginn);
+CREATE INDEX IF NOT EXISTS idx_ladevorgang_karte  ON ladevorgang(karte_id);
+CREATE INDEX IF NOT EXISTS idx_ladevorgang_punkt  ON ladevorgang(ladepunkt_id);
+CREATE INDEX IF NOT EXISTS idx_ladevorgang_lauf   ON ladevorgang(abrechnung_id);
+
+-- --------------------------------------------------------------------
+-- Abrechnung
+--
+-- Wie beim Abrechnungslauf der Energiegemeinschaft gilt: Ein
+-- festgeschriebener Lauf wird nicht mehr verändert. Eine Korrektur
+-- erfolgt über eine Stornierung und einen neuen Lauf - alles andere
+-- macht Buchhaltung unprüfbar.
+-- --------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS ladeabrechnung (
+  id                TEXT PRIMARY KEY,
+  bezeichnung       TEXT NOT NULL,
+  zeitraum_von      TEXT NOT NULL,
+  zeitraum_bis      TEXT NOT NULL,
+  status            TEXT NOT NULL DEFAULT 'Entwurf'
+                      CHECK (status IN ('Entwurf','Festgeschrieben','Storniert')),
+  anzahl_vorgaenge  INTEGER NOT NULL DEFAULT 0,
+  energie_kwh       REAL NOT NULL DEFAULT 0,
+  netto             REAL NOT NULL DEFAULT 0,
+  ust_betrag        REAL NOT NULL DEFAULT 0,
+  brutto            REAL NOT NULL DEFAULT 0,
+  angelegt_am       TEXT NOT NULL DEFAULT (datetime('now')),
+  angelegt_von      TEXT,
+  festgeschrieben_am TEXT
+);
+
+-- Ein Beleg je Karte und Lauf. Die Kostenstelle wird mitgeschrieben
+-- und nicht nur über die Karte nachgeschlagen: Wechselt eine Karte
+-- später die Kostenstelle, muss der alte Beleg weiter zeigen, wohin
+-- die Kosten damals gingen.
+CREATE TABLE IF NOT EXISTS ladebeleg (
+  id                TEXT PRIMARY KEY,
+  abrechnung_id     TEXT NOT NULL REFERENCES ladeabrechnung(id),
+  karte_id          TEXT REFERENCES ladekarte(id),
+  nummer            TEXT NOT NULL UNIQUE,
+  kostenstelle      TEXT NOT NULL,
+  art               TEXT NOT NULL DEFAULT 'Rechnung'
+                      CHECK (art IN ('Rechnung','Gutschrift','Kostenumlage','Sachbezug')),
+  anzahl_vorgaenge  INTEGER NOT NULL DEFAULT 0,
+  energie_kwh       REAL NOT NULL DEFAULT 0,
+  pv_kwh            REAL NOT NULL DEFAULT 0,
+  arbeit_eur        REAL NOT NULL DEFAULT 0,
+  zeit_eur          REAL NOT NULL DEFAULT 0,
+  blocking_eur      REAL NOT NULL DEFAULT 0,
+  grundpreis_eur    REAL NOT NULL DEFAULT 0,
+  netto             REAL NOT NULL DEFAULT 0,
+  ust_satz          REAL NOT NULL DEFAULT 20,
+  ust_betrag        REAL NOT NULL DEFAULT 0,
+  brutto            REAL NOT NULL DEFAULT 0,
+  -- Nachrichtlich: geldwerter Vorteil bei Mitarbeiterfahrzeugen.
+  sachbezug_eur     REAL NOT NULL DEFAULT 0,
+  status            TEXT NOT NULL DEFAULT 'Offen'
+                      CHECK (status IN ('Offen','Bezahlt','Storniert'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_ladebeleg_lauf ON ladebeleg(abrechnung_id);
+

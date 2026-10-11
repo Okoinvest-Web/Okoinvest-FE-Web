@@ -1,0 +1,782 @@
+     1	// src/lib/plattform/backend/demo/sicherheit.js
+     2	//
+     3	// Login, Sicherheit & Konto im Demo-Backend – Referenz für die Frappe-App (plattform/api/sicherheit.py).
+     4	// Vertrag: docs/API.md, Abschnitt „sicherheit“.
+     5	//
+     6	//   db.sitzungen      { id S-…, nutzerId, version, erstelltAm, ablauf, letzteAktivitaet, ipGrob, ort, userAgent, geraet,
+     7	//                       mobil, geraetId, methode, zweiFaktor, organisationId, widerrufenAm }
+     8	//   db.geraete        { id G-…, nutzerId, hash (SHA-256 des Geräte-Cookies), label, ersteAnmeldung, letzteAnmeldung,
+     9	//                       vertrautBis (2FA „Gerät 30 Tage merken“), zweiFaktorVersion }
+    10	//   db.anmeldungen    { id AN-…, nutzerId, email, am, ok, methode, grund, ipGrob, ort, geraet }  (Historie, auch Fehlversuche)
+    11	//   db.zweiFaktor     { nutzerId, aktiv, geheimnis (AES-GCM), ausstehend, ausstehendAm, letzterSchritt, codes [SHA-256], aktiviertAm, version }
+    12	//   db.anmeldeSperren { <email>: { fehl, bis, zuletzt } }  – Kontosperre mit exponentiellem Backoff
+    13	//   db.einstellungen  { zweiFaktorPflicht: [rollen] }       – zusätzlich Umgebungsvariable PLATTFORM_2FA_PFLICHT
+    14	//
+    15	// Sitzungen: Das signierte Cookie trägt die Sitzungskennung; gültig nur, solange der Eintrag besteht, nicht
+    16	// widerrufen/abgelaufen ist und seine Version der Sitzungsversion des Kontos entspricht.
+    17	
+    18	import { PlattformFehler, konflikt, nichtGefunden, ungueltig, verboten } from "../../fehler";
+    19	import * as v from "../../validierung";
+    20	import { ALLE_ROLLEN_IDS } from "../../konstanten";
+    21	import { geraetAusUserAgent, ipGrob, ortGrob } from "../../geraet";
+    22	import {
+    23	  codeHash, codesErzeugen, entschluesseln, geheimnisErzeugen, istWiederherstellungscode, otpauthUri, totpPruefen, verschluesseln,
+    24	} from "../../totp";
+    25	import { komfortBereinigen, teamRolleLabel } from "../../organisation";
+    26	import { passwortPruefen } from "../../server/passwort";
+    27	import { SITZUNG_DAUER_S } from "../../sitzung";
+    28	import { jetzt, neueId, sha256, zufallsToken } from "./hilfen";
+    29	import { aendern, lesen } from "./speicher";
+    30	import { internSicherheit } from "./sicherheitWerkzeuge";
+    31	import { orgSammlungen, orgSeed, organisationenVon } from "./teams";
+    32	
+    33	export const SPERRE = { schwelle: 5, basisSekunden: 30, maxSekunden: 3600 };
+    34	export const MAGIC_LINK_MINUTEN = 15;
+    35	export const GERAET_MERKEN_TAGE = 30;
+    36	const AKTIVITAET_MS = 5 * 60e3; // letzte Aktivität höchstens alle 5 min schreiben (Schreiblast gering halten)
+    37	const EINRICHTUNG_MINUTEN = 30;
+    38	
+    39	// ================================================================ Helfer
+    40	
+    41	function sammlungen(db) {
+    42	  db.sitzungen ||= [];
+    43	  db.geraete ||= [];
+    44	  db.anmeldungen ||= [];
+    45	  db.zweiFaktor ||= [];
+    46	  db.anmeldeSperren ||= {};
+    47	  db.einstellungen ||= {};
+    48	  db.tokens ||= [];
+    49	  db.demoLinks ||= [];
+    50	  orgSammlungen(db);
+    51	  return db;
+    52	}
+    53	
+    54	const nutzerById = (db, id) => db.nutzer.find((u) => u.id === id) || null;
+    55	const zf = (db, nutzerId) => (db.zweiFaktor || []).find((z) => z.nutzerId === nutzerId) || null;
+    56	const nameVon = (u) => [u?.vorname, u?.nachname].filter(Boolean).join(" ");
+    57	const nichtAngemeldet = () => new PlattformFehler(401, "Bitte melden Sie sich an.");
+    58	
+    59	function adminNoetig(n) {
+    60	  if (!n) throw nichtAngemeldet();
+    61	  if (!n.rollen?.includes("admin")) throw verboten("Nur für das Backoffice.");
+    62	}
+    63	
+    64	/** Rollen mit Pflicht zur Zwei-Faktor-Anmeldung (Einstellung im Backoffice ∪ PLATTFORM_2FA_PFLICHT) */
+    65	export function pflichtRollen(db) {
+    66	  const env = String(process.env.PLATTFORM_2FA_PFLICHT || "").split(",").map((s) => s.trim()).filter((s) => ALLE_ROLLEN_IDS.includes(s));
+    67	  return [...new Set([...(db.einstellungen?.zweiFaktorPflicht || []), ...env])];
+    68	}
+    69	const pflichtFuer = (db, u) => pflichtRollen(db).some((r) => u?.rollen?.includes(r));
+    70	
+    71	/** Sicherheitsmeldung: Glocke + E-Mail (immer, unabhängig von den Benachrichtigungs-Einstellungen) */
+    72	function sicherheitMelden(db, u, { titel, text, betreff, mailText, glocke = true }) {
+    73	  if (!u) return;
+    74	  if (glocke) internSicherheit.benachrichtigen(db, u, { art: "sicherheit", titel, text, link: "/portal/sicherheit", objektArt: "nutzer", objektId: u.id }, { mail: false });
+    75	  internSicherheit.postausgangAnlegen(db, {
+    76	    an: u.email, anName: nameVon(u), nutzerId: u.id, art: "sicherheit", betreff, text: mailText || text, link: "/portal/sicherheit", linkText: "Sicherheit prüfen",
+    77	    hinweis: "Das waren nicht Sie? Ändern Sie sofort Ihr Passwort und beenden Sie unter „Sicherheit“ alle Sitzungen.",
+    78	  });
+    79	}
+    80	
+    81	function historie(db, { nutzer, email, ok, methode, grund = "", ip, userAgent, land }) {
+    82	  const g = geraetAusUserAgent(userAgent);
+    83	  db.anmeldungen.push({ id: neueId("AN"), nutzerId: nutzer?.id || null, email: email || nutzer?.email || "", am: jetzt(), ok, methode, grund, ipGrob: ipGrob(ip), ort: ortGrob(ip, land), geraet: g.label });
+    84	  if (db.anmeldungen.length > 5000) db.anmeldungen.splice(0, db.anmeldungen.length - 5000);
+    85	}
+    86	
+    87	// ================================================================ Kontosperre (exponentieller Backoff)
+    88	
+    89	/** Wartezeit in Sekunden nach `fehl` Fehlversuchen (0 = keine Sperre) */
+    90	export function sperrDauer(fehl) {
+    91	  if (fehl < SPERRE.schwelle) return 0;
+    92	  return Math.min(SPERRE.maxSekunden, SPERRE.basisSekunden * 2 ** (fehl - SPERRE.schwelle));
+    93	}
+    94	
+    95	const sperrText = (sek) => {
+    96	  const min = Math.ceil(sek / 60);
+    97	  return `Zu viele fehlgeschlagene Anmeldeversuche. Das Konto ist vorübergehend gesperrt – bitte versuchen Sie es in ${sek < 60 ? `${sek} Sekunden` : `${min} Minute${min === 1 ? "" : "n"}`} erneut oder melden Sie sich per E-Mail-Link an.`;
+    98	};
+    99	
+   100	/** Wirft 429 (code „gesperrt“), solange die E-Mail-Adresse gesperrt ist */
+   101	export function sperrePruefen(db, email) {
+   102	  const s = db.anmeldeSperren?.[email];
+   103	  if (!s?.bis) return;
+   104	  const rest = Math.ceil((new Date(s.bis).getTime() - Date.now()) / 1000);
+   105	  if (rest > 0) throw new PlattformFehler(429, sperrText(rest), "gesperrt");
+   106	}
+   107	
+   108	/** Fehlversuch zählen (Passwort oder 2FA-Code) – ab der Schwelle wächst die Sperre exponentiell */
+   109	export function fehlversuchBuchen(db, { email, nutzer, ip, userAgent, land, grund }) {
+   110	  sammlungen(db);
+   111	  if (email) {
+   112	    const s = db.anmeldeSperren[email] || { fehl: 0, bis: null };
+   113	    s.fehl += 1;
+   114	    s.zuletzt = jetzt();
+   115	    const dauer = sperrDauer(s.fehl);
+   116	    s.bis = dauer ? new Date(Date.now() + dauer * 1000).toISOString() : null;
+   117	    db.anmeldeSperren[email] = s;
+   118	    const schluessel = Object.keys(db.anmeldeSperren);
+   119	    if (schluessel.length > 2000) {
+   120	      schluessel.sort((a, b) => String(db.anmeldeSperren[a].zuletzt).localeCompare(String(db.anmeldeSperren[b].zuletzt)));
+   121	      for (const k of schluessel.slice(0, schluessel.length - 2000)) delete db.anmeldeSperren[k];
+   122	    }
+   123	    if (nutzer && dauer && s.fehl === SPERRE.schwelle) {
+   124	      sicherheitMelden(db, nutzer, {
+   125	        titel: "Konto vorübergehend gesperrt",
+   126	        text: `${SPERRE.schwelle} fehlgeschlagene Anmeldeversuche – die Anmeldung ist kurz gesperrt.`,
+   127	        betreff: "Mehrere fehlgeschlagene Anmeldeversuche – ÖkoInvest",
+   128	        mailText: `Für Ihr Konto gab es ${SPERRE.schwelle} fehlgeschlagene Anmeldeversuche. Die Anmeldung ist deshalb vorübergehend gesperrt; jede weitere Fehleingabe verlängert die Sperre. Über den E-Mail-Link auf der Anmeldeseite kommen Sie jederzeit in Ihr Konto.`,
+   129	      });
+   130	    }
+   131	  }
+   132	  if (nutzer) historie(db, { nutzer, email, ok: false, methode: grund === "2fa" ? "zwei-faktor" : "passwort", grund, ip, userAgent, land });
+   133	}
+   134	
+   135	// ================================================================ Sitzung (von nutzerFuerSitzung genutzt)
+   136	
+   137	/** Nutzer um Sitzung, Organisation, 2FA-Status und Komfort ergänzen */
+   138	export function nutzerAnreichern(db, u, s = null) {
+   139	  sammlungen(db);
+   140	  const orgs = organisationenVon(db, u.id);
+   141	  const org = s?.organisationId ? orgs.find((o) => o.id === s.organisationId) || null : null;
+   142	  const z = zf(db, u.id);
+   143	  const pflicht = pflichtFuer(db, u);
+   144	  const out = {
+   145	    ...u,
+   146	    sitzung: s ? { id: s.id, organisationId: org?.id || null, zweiFaktor: !!s.zweiFaktor } : null,
+   147	    organisation: org,
+   148	    organisationen: orgs,
+   149	    zweiFaktorAktiv: !!z?.aktiv,
+   150	    zweiFaktorPflicht: pflicht,
+   151	    zweiFaktorPflichtOffen: pflicht && !z?.aktiv,
+   152	    komfort: komfortBereinigen(u.komfort || {}),
+   153	  };
+   154	  if (org) {
+   155	    // Im Organisationskontext gilt das Team-Suchprofil
+   156	    out.suchprofilPersoenlich = u.suchprofil || null;
+   157	    out.suchprofil = db.organisationen.find((o) => o.id === org.id)?.suchprofil || null;
+   158	  }
+   159	  return out;
+   160	}
+   161	
+   162	function sitzungGueltig(s, u) {
+   163	  return !!s && s.nutzerId === u.id && !s.widerrufenAm && new Date(s.ablauf) > new Date() && (s.version || 0) === (u.sitzungVersion || 0);
+   164	}
+   165	
+   166	/**
+   167	 * Sitzung prüfen und Nutzer anreichern. Ohne Sitzungskennung (Token aus der Zeit vor den Sitzungslisten)
+   168	 * gilt nur die Sitzungsversion. Letzte Aktivität wird höchstens einmal pro Minute geschrieben.
+   169	 */
+   170	export async function sitzungNutzer(db, u, { sitzungId } = {}) {
+   171	  sammlungen(db);
+   172	  if (!sitzungId) return nutzerAnreichern(db, u, null);
+   173	  const s = db.sitzungen.find((x) => x.id === sitzungId);
+   174	  if (!sitzungGueltig(s, u)) return null;
+   175	  if (Date.now() - new Date(s.letzteAktivitaet).getTime() > AKTIVITAET_MS) {
+   176	    // nicht abwarten: die Anfrage soll nie auf die Schreibsperre warten
+   177	    aendern((d) => {
+   178	      const x = (d.sitzungen || []).find((y) => y.id === sitzungId);
+   179	      if (x) x.letzteAktivitaet = jetzt();
+   180	    }).catch(() => {});
+   181	  }
+   182	  return nutzerAnreichern(db, u, s);
+   183	}
+   184	
+   185	/** 2FA-Status für das Ergebnis von anmelden (steuert den zweiten Schritt) */
+   186	export const mitZweiFaktor = (db, u) => ({ ...u, zweiFaktorAktiv: !!zf(sammlungen(db), u.id)?.aktiv });
+   187	
+   188	// ================================================================ Operationen: Sitzungen & Geräte
+   189	
+   190	/**
+   191	 * Neue Sitzung nach vollständiger Anmeldung (Passwort/E-Mail-Link + ggf. 2FA). Setzt die Sperre zurück,
+   192	 * schreibt die Historie, erkennt neue Geräte (Benachrichtigung + E-Mail) und merkt das Gerät optional 30 Tage.
+   193	 * Liefert { sitzung: {id}, geraetToken (nur wenn neu erzeugt), neuesGeraet }.
+   194	 */
+   195	export async function sitzungAnlegen(n, { ip = "", userAgent = "", land = "", methode = "passwort", zweiFaktor = false, geraetToken = "", geraetMerken = false, ersetzt = null } = {}) {
+   196	  if (!n) throw nichtAngemeldet();
+   197	  return aendern((db) => {
+   198	    sammlungen(db);
+   199	    orgSeed(db);
+   200	    const u = nutzerById(db, n.id);
+   201	    if (!u || !u.aktiv) throw nichtAngemeldet();
+   202	    delete db.anmeldeSperren[u.email];
+   203	    const g = geraetAusUserAgent(userAgent);
+   204	    const grob = ipGrob(ip);
+   205	    const ort = ortGrob(ip, land);
+   206	    const tokenOk = /^[A-Za-z0-9_-]{30,100}$/.test(String(geraetToken || ""));
+   207	    let geraet = tokenOk ? db.geraete.find((x) => x.nutzerId === u.id && x.hash === sha256(geraetToken)) : null;
+   208	    const bekannt = !!geraet || db.anmeldungen.some((a) => a.nutzerId === u.id && a.ok && a.geraet === g.label && a.ipGrob === grob);
+   209	    let neuesToken = null;
+   210	    if (!geraet) {
+   211	      const token = tokenOk ? geraetToken : zufallsToken();
+   212	      if (!tokenOk) neuesToken = token;
+   213	      geraet = { id: neueId("G"), nutzerId: u.id, hash: sha256(token), label: g.label, mobil: g.mobil, ersteAnmeldung: jetzt(), letzteAnmeldung: jetzt(), vertrautBis: null, zweiFaktorVersion: null };
+   214	      db.geraete.push(geraet);
+   215	    }
+   216	    geraet.letzteAnmeldung = jetzt();
+   217	    geraet.label = g.label;
+   218	    const z = zf(db, u.id);
+   219	    if (geraetMerken && zweiFaktor && z?.aktiv) {
+   220	      geraet.vertrautBis = new Date(Date.now() + GERAET_MERKEN_TAGE * 86400e3).toISOString();
+   221	      geraet.zweiFaktorVersion = z.version;
+   222	    }
+   223	
+   224	    // Sitzungsrotation: eine ersetzte Sitzung (z. B. nach 2FA-Einrichtung) wird beendet, Kontext bleibt
+   225	    const alt = ersetzt ? db.sitzungen.find((x) => x.id === ersetzt && x.nutzerId === u.id) : null;
+   226	    if (alt && !alt.widerrufenAm) {
+   227	      alt.widerrufenAm = jetzt();
+   228	      alt.widerrufenGrund = "rotation";
+   229	    }
+   230	    const s = {
+   231	      id: neueId("S", 10), nutzerId: u.id, version: u.sitzungVersion || 0, erstelltAm: jetzt(),
+   232	      ablauf: new Date(Date.now() + SITZUNG_DAUER_S * 1000).toISOString(), letzteAktivitaet: jetzt(),
+   233	      ipGrob: grob, ort, userAgent: v.text(userAgent, 300), geraet: g.label, mobil: g.mobil, geraetId: geraet.id,
+   234	      methode, zweiFaktor: !!zweiFaktor, organisationId: alt?.organisationId || null, widerrufenAm: null,
+   235	    };
+   236	    db.sitzungen.push(s);
+   237	    // Aufräumen: abgelaufene/widerrufene Einträge nach 30 Tagen, höchstens 30 aktive Sitzungen je Konto
+   238	    const grenze = Date.now() - 30 * 86400e3;
+   239	    db.sitzungen = db.sitzungen.filter((x) => !((x.widerrufenAm && new Date(x.widerrufenAm).getTime() < grenze) || new Date(x.ablauf).getTime() < grenze));
+   240	    const aktive = db.sitzungen.filter((x) => sitzungGueltig(x, u)).sort((a, b) => a.letzteAktivitaet.localeCompare(b.letzteAktivitaet));
+   241	    for (const x of aktive.slice(0, Math.max(0, aktive.length - 30))) {
+   242	      x.widerrufenAm = jetzt();
+   243	      x.widerrufenGrund = "grenze";
+   244	    }
+   245	
+   246	    u.letzterLogin = jetzt();
+   247	    historie(db, { nutzer: u, ok: true, methode: `${methode}${zweiFaktor ? " + 2FA" : ""}`, ip, userAgent, land });
+   248	    if (!bekannt && !["registrierung"].includes(methode)) {
+   249	      sicherheitMelden(db, u, {
+   250	        titel: "Anmeldung von einem neuen Gerät",
+   251	        text: `${g.label} · ${ort || "Ort unbekannt"}`,
+   252	        betreff: "Neue Anmeldung bei Ihrem Konto – ÖkoInvest",
+   253	        mailText: `Ihr Konto im Portal von ÖkoInvest wurde soeben von einem neuen Gerät verwendet: ${g.label}, ${ort || "Ort unbekannt"}. Wenn Sie das waren, ist nichts zu tun.`,
+   254	      });
+   255	    }
+   256	    if (methode !== "passwort" || zweiFaktor) internSicherheit.protokoll(db, u, "login", "nutzer", u.id, `Anmeldung (${methode}${zweiFaktor ? ", 2FA" : ""}) · ${g.label}`, ip);
+   257	    return { sitzung: { id: s.id }, geraetToken: neuesToken, neuesGeraet: !bekannt };
+   258	  });
+   259	}
+   260	
+   261	/** Aktive Sitzungen des Kontos (aktuelle markiert) */
+   262	export async function sitzungen(n) {
+   263	  if (!n) throw nichtAngemeldet();
+   264	  const db = sammlungen(await lesen());
+   265	  const u = nutzerById(db, n.id);
+   266	  return db.sitzungen
+   267	    .filter((s) => sitzungGueltig(s, u))
+   268	    .sort((a, b) => b.letzteAktivitaet.localeCompare(a.letzteAktivitaet))
+   269	    .map((s) => ({
+   270	      id: s.id, geraet: s.geraet, mobil: !!s.mobil, ort: s.ort, erstelltAm: s.erstelltAm, letzteAktivitaet: s.letzteAktivitaet, methode: s.methode,
+   271	      zweiFaktor: !!s.zweiFaktor, aktuell: s.id === n.sitzung?.id, organisation: s.organisationId ? db.organisationen.find((o) => o.id === s.organisationId)?.name || null : null,
+   272	    }));
+   273	}
+   274	
+   275	/**
+   276	 * Sitzung(en) beenden: { id } eine eigene Sitzung (auch die aktuelle = Abmelden) oder { alleAnderen: true }.
+   277	 * „Alle anderen“ erhöht zusätzlich die Sitzungsversion (beendet auch ältere Token) – die aktuelle Sitzung
+   278	 * übernimmt die neue Version; die Website setzt dafür ein neues Cookie.
+   279	 */
+   280	export async function sitzungBeenden(n, { id, alleAnderen = false } = {}) {
+   281	  if (!n) throw nichtAngemeldet();
+   282	  return aendern((db) => {
+   283	    sammlungen(db);
+   284	    const u = nutzerById(db, n.id);
+   285	    let beendet = 0;
+   286	    if (alleAnderen) {
+   287	      for (const s of db.sitzungen) {
+   288	        if (s.nutzerId !== u.id || s.id === n.sitzung?.id || s.widerrufenAm) continue;
+   289	        s.widerrufenAm = jetzt();
+   290	        s.widerrufenGrund = "abgemeldet";
+   291	        beendet++;
+   292	      }
+   293	      u.sitzungVersion = (u.sitzungVersion || 0) + 1;
+   294	      const aktuell = db.sitzungen.find((s) => s.id === n.sitzung?.id);
+   295	      if (aktuell) aktuell.version = u.sitzungVersion;
+   296	      internSicherheit.protokoll(db, u, "sitzung", "nutzer", u.id, `Alle anderen Sitzungen beendet (${beendet})`);
+   297	      return { beendet, sitzungVersion: u.sitzungVersion, nutzer: internSicherheit.ohneGeheimnis(u) };
+   298	    }
+   299	    const s = db.sitzungen.find((x) => x.id === v.kennung(id));
+   300	    if (!s || s.nutzerId !== u.id) throw nichtGefunden("Sitzung nicht gefunden.");
+   301	    if (!s.widerrufenAm) {
+   302	      s.widerrufenAm = jetzt();
+   303	      s.widerrufenGrund = s.id === n.sitzung?.id ? "abmeldung" : "abgemeldet";
+   304	      beendet = 1;
+   305	      if (s.id !== n.sitzung?.id) internSicherheit.protokoll(db, u, "sitzung", "nutzer", u.id, `Sitzung beendet: ${s.geraet}`);
+   306	    }
+   307	    return { beendet, sitzungVersion: u.sitzungVersion || 0 };
+   308	  });
+   309	}
+   310	
+   311	/** Anmeldehistorie inkl. Fehlversuchen (neueste zuerst) */
+   312	export async function anmeldungen(n, { limit = 50 } = {}) {
+   313	  if (!n) throw nichtAngemeldet();
+   314	  const db = sammlungen(await lesen());
+   315	  return db.anmeldungen
+   316	    .filter((a) => a.nutzerId === n.id)
+   317	    .slice(-Math.min(200, Math.max(1, Number(limit) || 50)))
+   318	    .reverse()
+   319	    .map(({ id, am, ok, methode, grund, ort, geraet }) => ({ id, am, ok, methode, grund, ort, geraet }));
+   320	}
+   321	
+   322	export async function geraete(n, { geraetToken = "" } = {}) {
+   323	  if (!n) throw nichtAngemeldet();
+   324	  const db = sammlungen(await lesen());
+   325	  const z = zf(db, n.id);
+   326	  const h = geraetToken ? sha256(String(geraetToken)) : "";
+   327	  return db.geraete
+   328	    .filter((g) => g.nutzerId === n.id)
+   329	    .sort((a, b) => b.letzteAnmeldung.localeCompare(a.letzteAnmeldung))
+   330	    .map((g) => ({
+   331	      id: g.id, label: g.label, mobil: !!g.mobil, ersteAnmeldung: g.ersteAnmeldung, letzteAnmeldung: g.letzteAnmeldung,
+   332	      vertraut: !!(z?.aktiv && g.vertrautBis && new Date(g.vertrautBis) > new Date() && g.zweiFaktorVersion === z.version),
+   333	      vertrautBis: g.vertrautBis, aktuell: !!h && g.hash === h,
+   334	    }));
+   335	}
+   336	
+   337	/** Gerät vergessen: Eintrag löschen (2FA wird dort wieder abgefragt, neue Anmeldung gilt als neues Gerät) */
+   338	export async function geraetVergessen(n, id) {
+   339	  if (!n) throw nichtAngemeldet();
+   340	  return aendern((db) => {
+   341	    sammlungen(db);
+   342	    const g = db.geraete.find((x) => x.id === v.kennung(id) && x.nutzerId === n.id);
+   343	    if (!g) throw nichtGefunden("Gerät nicht gefunden.");
+   344	    db.geraete = db.geraete.filter((x) => x.id !== g.id);
+   345	    internSicherheit.protokoll(db, n, "geraet", "nutzer", n.id, `Gerät vergessen: ${g.label}`);
+   346	    return { ok: true };
+   347	  });
+   348	}
+   349	
+   350	/** Ist das Gerät (Cookie) für die Zwei-Faktor-Anmeldung dieses Kontos gemerkt? */
+   351	export async function geraetVertraut({ nutzerId, geraetToken } = {}) {
+   352	  if (!nutzerId || !/^[A-Za-z0-9_-]{30,100}$/.test(String(geraetToken || ""))) return false;
+   353	  const db = sammlungen(await lesen());
+   354	  const z = zf(db, nutzerId);
+   355	  const g = db.geraete.find((x) => x.nutzerId === nutzerId && x.hash === sha256(geraetToken));
+   356	  return !!(z?.aktiv && g?.vertrautBis && new Date(g.vertrautBis) > new Date() && g.zweiFaktorVersion === z.version);
+   357	}
+   358	
+   359	// ================================================================ Operationen: Zwei-Faktor (TOTP)
+   360	
+   361	function statusVon(db, u) {
+   362	  const z = zf(db, u.id);
+   363	  const vertraute = db.geraete.filter((g) => g.nutzerId === u.id && z?.aktiv && g.vertrautBis && new Date(g.vertrautBis) > new Date() && g.zweiFaktorVersion === z.version).length;
+   364	  return {
+   365	    aktiv: !!z?.aktiv,
+   366	    aktiviertAm: z?.aktiviertAm || null,
+   367	    codesUebrig: z?.aktiv ? (z.codes || []).length : 0,
+   368	    pflicht: pflichtFuer(db, u),
+   369	    einrichtungLaeuft: !!(z?.ausstehend && !z.aktiv),
+   370	    vertrauteGeraete: vertraute,
+   371	  };
+   372	}
+   373	
+   374	export async function zweiFaktorStatus(n) {
+   375	  if (!n) throw nichtAngemeldet();
+   376	  const db = sammlungen(await lesen());
+   377	  return statusVon(db, nutzerById(db, n.id));
+   378	}
+   379	
+   380	/** Einrichtung starten: neuer Schlüssel (noch nicht aktiv) → { geheimnis, uri } für QR-Code / manuelle Eingabe */
+   381	export async function zweiFaktorStarten(n) {
+   382	  if (!n) throw nichtAngemeldet();
+   383	  return aendern((db) => {
+   384	    sammlungen(db);
+   385	    const u = nutzerById(db, n.id);
+   386	    let z = zf(db, u.id);
+   387	    if (z?.aktiv) throw konflikt("Die Zwei-Faktor-Anmeldung ist bereits aktiv.");
+   388	    if (!z) {
+   389	      z = { nutzerId: u.id, aktiv: false, geheimnis: null, ausstehend: null, ausstehendAm: null, letzterSchritt: -1, codes: [], aktiviertAm: null, version: 0 };
+   390	      db.zweiFaktor.push(z);
+   391	    }
+   392	    const geheimnis = geheimnisErzeugen();
+   393	    z.ausstehend = verschluesseln(geheimnis);
+   394	    z.ausstehendAm = jetzt();
+   395	    return { geheimnis, uri: otpauthUri({ geheimnis, konto: u.email }) };
+   396	  });
+   397	}
+   398	
+   399	function neueCodes(z) {
+   400	  const codes = codesErzeugen();
+   401	  z.codes = codes.map(codeHash);
+   402	  return codes;
+   403	}
+   404	
+   405	/** Einrichtung bestätigen: erster Code aus der App → aktiv + 10 Wiederherstellungscodes (einmalig angezeigt) */
+   406	export async function zweiFaktorBestaetigen(n, { code } = {}) {
+   407	  if (!n) throw nichtAngemeldet();
+   408	  return aendern((db) => {
+   409	    sammlungen(db);
+   410	    const u = nutzerById(db, n.id);
+   411	    const z = zf(db, u.id);
+   412	    if (z?.aktiv) throw konflikt("Die Zwei-Faktor-Anmeldung ist bereits aktiv.");
+   413	    if (!z?.ausstehend || Date.now() - new Date(z.ausstehendAm).getTime() > EINRICHTUNG_MINUTEN * 60e3) throw ungueltig("Die Einrichtung ist abgelaufen. Bitte starten Sie sie erneut.");
+   414	    const geheimnis = entschluesseln(z.ausstehend);
+   415	    const schritt = totpPruefen(geheimnis, code);
+   416	    if (schritt === null) throw ungueltig("Der Code stimmt nicht. Prüfen Sie die Uhrzeit Ihres Telefons und geben Sie den aktuellen 6-stelligen Code ein.");
+   417	    z.aktiv = true;
+   418	    z.geheimnis = z.ausstehend;
+   419	    z.ausstehend = null;
+   420	    z.ausstehendAm = null;
+   421	    z.letzterSchritt = schritt;
+   422	    z.aktiviertAm = jetzt();
+   423	    z.version = (z.version || 0) + 1;
+   424	    const codes = neueCodes(z);
+   425	    sicherheitMelden(db, u, {
+   426	      titel: "Zwei-Faktor-Anmeldung aktiviert",
+   427	      text: "Ab sofort fragen wir bei der Anmeldung zusätzlich einen Code aus Ihrer Authenticator-App ab.",
+   428	      betreff: "Zwei-Faktor-Anmeldung aktiviert – ÖkoInvest",
+   429	    });
+   430	    internSicherheit.protokoll(db, u, "zwei_faktor", "nutzer", u.id, "Zwei-Faktor-Anmeldung aktiviert");
+   431	    return { codes, status: statusVon(db, u) };
+   432	  });
+   433	}
+   434	
+   435	/** Code prüfen (TOTP mit Replay-Schutz oder Wiederherstellungscode); verbraucht Wiederherstellungscodes */
+   436	function codeEinloesen(db, u, code, { wiederherstellung = true } = {}) {
+   437	  const z = zf(db, u.id);
+   438	  if (!z?.aktiv) return null;
+   439	  if (wiederherstellung && istWiederherstellungscode(code)) {
+   440	    const h = codeHash(code);
+   441	    const idx = (z.codes || []).indexOf(h);
+   442	    if (idx < 0) return null;
+   443	    z.codes.splice(idx, 1);
+   444	    return { methode: "wiederherstellung", codesUebrig: z.codes.length };
+   445	  }
+   446	  const schritt = totpPruefen(entschluesseln(z.geheimnis), code, { letzterSchritt: z.letzterSchritt ?? -1 });
+   447	  if (schritt === null) return null;
+   448	  z.letzterSchritt = schritt;
+   449	  return { methode: "totp", codesUebrig: (z.codes || []).length };
+   450	}
+   451	
+   452	export async function zweiFaktorDeaktivieren(n, { passwort, code } = {}) {
+   453	  if (!n) throw nichtAngemeldet();
+   454	  const db0 = sammlungen(await lesen());
+   455	  const u0 = nutzerById(db0, n.id);
+   456	  if (pflichtFuer(db0, u0)) throw konflikt("Für Ihre Rolle ist die Zwei-Faktor-Anmeldung Pflicht und kann nicht abgeschaltet werden.");
+   457	  if (!(await passwortPruefen(String(passwort || ""), u0?.passwortHash))) throw ungueltig("Das Passwort stimmt nicht.");
+   458	  return aendern((db) => {
+   459	    sammlungen(db);
+   460	    const u = nutzerById(db, n.id);
+   461	    const z = zf(db, u.id);
+   462	    if (!z?.aktiv) throw konflikt("Die Zwei-Faktor-Anmeldung ist nicht aktiv.");
+   463	    if (!codeEinloesen(db, u, code)) throw ungueltig("Der Code ist ungültig.");
+   464	    z.aktiv = false;
+   465	    z.geheimnis = null;
+   466	    z.codes = [];
+   467	    z.aktiviertAm = null;
+   468	    z.version = (z.version || 0) + 1; // gemerkte Geräte verlieren ihre Gültigkeit
+   469	    sicherheitMelden(db, u, {
+   470	      titel: "Zwei-Faktor-Anmeldung abgeschaltet",
+   471	      text: "Die Anmeldung erfolgt wieder nur mit Passwort bzw. E-Mail-Link.",
+   472	      betreff: "Zwei-Faktor-Anmeldung abgeschaltet – ÖkoInvest",
+   473	    });
+   474	    internSicherheit.protokoll(db, u, "zwei_faktor", "nutzer", u.id, "Zwei-Faktor-Anmeldung abgeschaltet");
+   475	    return statusVon(db, u);
+   476	  });
+   477	}
+   478	
+   479	/** Neue Wiederherstellungscodes (alte werden ungültig) – nur mit aktuellem App-Code */
+   480	export async function wiederherstellungscodesNeu(n, { code } = {}) {
+   481	  if (!n) throw nichtAngemeldet();
+   482	  return aendern((db) => {
+   483	    sammlungen(db);
+   484	    const u = nutzerById(db, n.id);
+   485	    const z = zf(db, u.id);
+   486	    if (!z?.aktiv) throw konflikt("Die Zwei-Faktor-Anmeldung ist nicht aktiv.");
+   487	    if (!codeEinloesen(db, u, code, { wiederherstellung: false })) throw ungueltig("Bitte geben Sie den aktuellen Code aus Ihrer Authenticator-App ein.");
+   488	    const codes = neueCodes(z);
+   489	    internSicherheit.protokoll(db, u, "zwei_faktor", "nutzer", u.id, "Neue Wiederherstellungscodes erzeugt");
+   490	    return { codes, status: statusVon(db, u) };
+   491	  });
+   492	}
+   493	
+   494	/**
+   495	 * Zweiter Schritt der Anmeldung. Fehlversuche zählen zur Kontosperre. Liefert das Konto
+   496	 * (+ zweiFaktorMethode, codesUebrig) oder wirft 401 (code „zwei_faktor“) bzw. 429 (gesperrt).
+   497	 */
+   498	export async function zweiFaktorPruefen({ nutzerId, code, ip = "", userAgent = "", land = "" } = {}) {
+   499	  return aendern((db) => {
+   500	    sammlungen(db);
+   501	    const u = nutzerById(db, nutzerId);
+   502	    if (!u || !u.aktiv) throw nichtAngemeldet();
+   503	    sperrePruefen(db, u.email);
+   504	    const r = codeEinloesen(db, u, code);
+   505	    if (!r) {
+   506	      fehlversuchBuchen(db, { email: u.email, nutzer: u, ip, userAgent, land, grund: "2fa" });
+   507	      throw new PlattformFehler(401, "Der Code ist ungültig oder wurde bereits verwendet.", "zwei_faktor");
+   508	    }
+   509	    if (r.methode === "wiederherstellung") {
+   510	      sicherheitMelden(db, u, {
+   511	        titel: "Wiederherstellungscode verwendet",
+   512	        text: `Noch ${r.codesUebrig} Wiederherstellungscode(s) übrig.`,
+   513	        betreff: "Wiederherstellungscode verwendet – ÖkoInvest",
+   514	        mailText: `Für die Anmeldung wurde einer Ihrer Wiederherstellungscodes verwendet. Es sind noch ${r.codesUebrig} Code(s) übrig. Erzeugen Sie bei Bedarf unter „Sicherheit“ neue Codes.`,
+   515	      });
+   516	    }
+   517	    return { ...mitZweiFaktor(db, internSicherheit.ohneGeheimnis(u)), zweiFaktorMethode: r.methode, codesUebrig: r.codesUebrig };
+   518	  });
+   519	}
+   520	
+   521	// ================================================================ Operationen: E-Mail-Link (passwortlos)
+   522	
+   523	/** Immer { ok: true } (keine Enumeration). Aktive Konten erhalten einen Link (15 min, einmalig, nur Hash gespeichert). */
+   524	export async function magicLinkAnfordern({ email, basisUrl, ip = "" } = {}) {
+   525	  const e = v.email(email);
+   526	  if (!e) return { ok: true };
+   527	  await aendern((db) => {
+   528	    sammlungen(db);
+   529	    const u = db.nutzer.find((x) => x.email === e && x.aktiv);
+   530	    if (!u) return;
+   531	    const token = internSicherheit.tokenAnlegen(db, "magic", u.id, MAGIC_LINK_MINUTEN / 60);
+   532	    const link = `${basisUrl}/login/link?token=${token}`;
+   533	    db.demoLinks.unshift({ am: jetzt(), art: "magic", email: e, link });
+   534	    db.demoLinks = db.demoLinks.slice(0, 50);
+   535	    console.info(`[plattform-demo] Anmelde-Link für ${e}: ${link}`);
+   536	    internSicherheit.postausgangAnlegen(db, {
+   537	      an: e, anName: nameVon(u), nutzerId: u.id, art: "magic", betreff: "Ihr Anmelde-Link – ÖkoInvest",
+   538	      text: `Mit dem folgenden Link melden Sie sich ohne Passwort im Portal von ÖkoInvest an. Er ist ${MAGIC_LINK_MINUTEN} Minuten gültig und funktioniert nur einmal. Ist die Zwei-Faktor-Anmeldung aktiv, fragen wir danach zusätzlich Ihren Code ab.`,
+   539	      link, linkText: "Jetzt anmelden", hinweis: "Sie haben keinen Link angefordert? Dann ignorieren Sie diese E-Mail – ohne den Link ist keine Anmeldung möglich.",
+   540	    });
+   541	    internSicherheit.protokoll(db, u, "magic_link", "nutzer", u.id, "Anmelde-Link angefordert", ip);
+   542	  });
+   543	  return { ok: true };
+   544	}
+   545	
+   546	/** Link einlösen → Konto (E-Mail gilt als bestätigt). 2FA prüft danach die Website. */
+   547	export async function magicLinkEinloesen({ token } = {}) {
+   548	  return aendern((db) => {
+   549	    sammlungen(db);
+   550	    const u = internSicherheit.tokenEinloesen(db, "magic", token);
+   551	    if (!u.emailBestaetigt) {
+   552	      u.emailBestaetigt = true;
+   553	      internSicherheit.verknuepfen(db, u);
+   554	    }
+   555	    return mitZweiFaktor(db, internSicherheit.ohneGeheimnis(u));
+   556	  });
+   557	}
+   558	
+   559	// ================================================================ Operationen: Pflicht-2FA (Backoffice)
+   560	
+   561	export async function zweiFaktorPflicht(n) {
+   562	  adminNoetig(n);
+   563	  const db = sammlungen(await lesen());
+   564	  const env = String(process.env.PLATTFORM_2FA_PFLICHT || "").split(",").map((s) => s.trim()).filter((s) => ALLE_ROLLEN_IDS.includes(s));
+   565	  const ohne = db.nutzer.filter((u) => u.aktiv && pflichtFuer(db, u) && !zf(db, u.id)?.aktiv).length;
+   566	  return { rollen: db.einstellungen.zweiFaktorPflicht || [], umgebung: env, wirksam: pflichtRollen(db), kontenOhne2fa: ohne };
+   567	}
+   568	
+   569	export async function zweiFaktorPflichtSpeichern(n, { rollen } = {}) {
+   570	  adminNoetig(n);
+   571	  const r = v.mehrfach(rollen, ALLE_ROLLEN_IDS);
+   572	  return aendern((db) => {
+   573	    sammlungen(db);
+   574	    db.einstellungen.zweiFaktorPflicht = r;
+   575	    internSicherheit.protokoll(db, n, "einstellung", "nutzer", n.id, `Pflicht-2FA für: ${r.join(", ") || "niemand"}`);
+   576	    return { rollen: r, wirksam: pflichtRollen(db) };
+   577	  });
+   578	}
+   579	
+   580	// ================================================================ Operationen: Konto-Komfort, E-Mail ändern
+   581	
+   582	export async function komfortSpeichern(n, daten = {}) {
+   583	  if (!n) throw nichtAngemeldet();
+   584	  return aendern((db) => {
+   585	    const u = nutzerById(db, n.id);
+   586	    u.komfort = komfortBereinigen(daten, komfortBereinigen(u.komfort || {}));
+   587	    internSicherheit.protokoll(db, u, "profil", "nutzer", u.id, "Konto-Einstellungen gespeichert");
+   588	    return internSicherheit.ohneGeheimnis(u);
+   589	  });
+   590	}
+   591	
+   592	/** Neue Anmeldeadresse anfordern: Bestätigungslink an die NEUE Adresse (24 h), Hinweis an die alte */
+   593	export async function emailAendernAnfordern(n, { neu, passwort, basisUrl } = {}) {
+   594	  if (!n) throw nichtAngemeldet();
+   595	  const e = v.email(neu);
+   596	  v.pflicht(e, "Bitte geben Sie eine gültige E-Mail-Adresse an.");
+   597	  const db0 = await lesen();
+   598	  const u0 = nutzerById(db0, n.id);
+   599	  v.pflicht(e !== u0.email, "Das ist bereits Ihre Anmeldeadresse.");
+   600	  if (!(await passwortPruefen(String(passwort || ""), u0?.passwortHash))) throw ungueltig("Das Passwort stimmt nicht.");
+   601	  return aendern((db) => {
+   602	    sammlungen(db);
+   603	    if (db.nutzer.some((x) => x.email === e)) throw konflikt("Für diese E-Mail-Adresse besteht bereits ein Konto.");
+   604	    const u = nutzerById(db, n.id);
+   605	    const token = internSicherheit.tokenAnlegen(db, "email_neu", u.id, 24);
+   606	    const t = db.tokens.find((x) => x.hash === sha256(token));
+   607	    t.neueEmail = e;
+   608	    const link = `${basisUrl}/api/auth/email-aendern?token=${token}`;
+   609	    db.demoLinks.unshift({ am: jetzt(), art: "email_neu", email: e, link });
+   610	    db.demoLinks = db.demoLinks.slice(0, 50);
+   611	    console.info(`[plattform-demo] E-Mail-Änderung für ${u.email} → ${e}: ${link}`);
+   612	    internSicherheit.postausgangAnlegen(db, {
+   613	      an: e, anName: nameVon(u), nutzerId: u.id, art: "email_neu", betreff: "Neue E-Mail-Adresse bestätigen – ÖkoInvest",
+   614	      text: "Sie möchten diese Adresse künftig für die Anmeldung im Portal von ÖkoInvest verwenden. Bitte bestätigen Sie sie über den folgenden Link (24 Stunden gültig).",
+   615	      link, linkText: "Neue Adresse bestätigen", hinweis: "Sie haben keine Änderung angefordert? Dann ignorieren Sie diese E-Mail.",
+   616	    });
+   617	    sicherheitMelden(db, u, {
+   618	      titel: "Änderung der E-Mail-Adresse angefordert",
+   619	      text: `Neue Adresse: ${e} – wirksam nach Bestätigung.`,
+   620	      betreff: "Änderung Ihrer E-Mail-Adresse angefordert – ÖkoInvest",
+   621	      mailText: `Für Ihr Konto wurde die Änderung der Anmeldeadresse auf ${e} angefordert. Sie wird erst wirksam, wenn die neue Adresse bestätigt ist.`,
+   622	    });
+   623	    internSicherheit.protokoll(db, u, "email_aendern", "nutzer", u.id, `Neue Adresse angefordert: ${e}`);
+   624	    return { ok: true, an: e };
+   625	  });
+   626	}
+   627	
+   628	export async function emailAendernBestaetigen({ token } = {}) {
+   629	  return aendern((db) => {
+   630	    sammlungen(db);
+   631	    const t = db.tokens.find((x) => x.hash === sha256(String(token || "")) && x.art === "email_neu");
+   632	    const u = internSicherheit.tokenEinloesen(db, "email_neu", token);
+   633	    const neu = t?.neueEmail;
+   634	    if (!neu) throw ungueltig("Der Link ist ungültig oder abgelaufen.");
+   635	    if (db.nutzer.some((x) => x.email === neu && x.id !== u.id)) throw konflikt("Für diese E-Mail-Adresse besteht bereits ein Konto.");
+   636	    const alt = u.email;
+   637	    const sperre = db.anmeldeSperren[alt];
+   638	    u.email = neu;
+   639	    u.emailBestaetigt = true;
+   640	    if (sperre) {
+   641	      db.anmeldeSperren[neu] = sperre;
+   642	      delete db.anmeldeSperren[alt];
+   643	    }
+   644	    internSicherheit.postausgangAnlegen(db, {
+   645	      an: alt, anName: nameVon(u), nutzerId: u.id, art: "sicherheit", betreff: "Ihre Anmeldeadresse wurde geändert – ÖkoInvest",
+   646	      text: `Die Anmeldeadresse Ihres Kontos wurde auf ${neu} geändert. An diese Adresse senden wir keine Nachrichten mehr.`, link: "/login", linkText: "Zur Anmeldung",
+   647	      hinweis: "Das waren nicht Sie? Bitte wenden Sie sich umgehend über das Kontaktformular an uns.",
+   648	    });
+   649	    internSicherheit.verknuepfen(db, u);
+   650	    internSicherheit.protokoll(db, u, "email_aendern", "nutzer", u.id, `Anmeldeadresse geändert: ${alt} → ${neu}`);
+   651	    return internSicherheit.ohneGeheimnis(u);
+   652	  });
+   653	}
+   654	
+   655	// ================================================================ Operationen: DSGVO (Auskunft/Export, Löschung)
+   656	
+   657	const ohne = (o, felder) => {
+   658	  if (!o) return o;
+   659	  const x = { ...o };
+   660	  for (const f of felder) delete x[f];
+   661	  return x;
+   662	};
+   663	
+   664	/**
+   665	 * Datenexport (Art. 15 / Art. 20 DSGVO): ausschließlich Daten, die das Konto selbst betreffen –
+   666	 * eigene Stammdaten, eigene Objekte, eigene Nachrichten-Threads, eigene Aktivitäten. Keine Geheimnisse
+   667	 * (Passwort-Hash, 2FA-Schlüssel, Token), keine internen Notizen, keine personenbezogenen Daten Dritter.
+   668	 */
+   669	export async function datenExport(n) {
+   670	  if (!n) throw nichtAngemeldet();
+   671	  const db = sammlungen(await lesen());
+   672	  const u = nutzerById(db, n.id);
+   673	  const eigene = {
+   674	    vorgaenge: db.vorgaenge.filter((x) => x.nutzerId === u.id),
+   675	    flaechen: db.flaechen.filter((x) => x.nutzerId === u.id),
+   676	    projekte: db.projekte.filter((x) => x.anbieterId === u.id),
+   677	    interessen: db.interessen.filter((x) => x.investorId === u.id),
+   678	  };
+   679	  const bezuege = new Set([
+   680	    `nutzer:${u.id}`,
+   681	    ...eigene.vorgaenge.map((x) => `vorgang:${x.id}`),
+   682	    ...eigene.flaechen.map((x) => `flaeche:${x.id}`),
+   683	    ...eigene.projekte.map((x) => `projekt:${x.id}`),
+   684	    ...eigene.interessen.map((x) => `interesse:${x.id}`),
+   685	  ]);
+   686	  const intern = ["zustaendigId", "description", "kaeuferInteresseId", "kaufpreis"];
+   687	  const verlauf = (liste) => (liste || []).map((e) => ({ status: e.status, am: e.am, von: e.vonId === u.id ? "Sie" : e.vonRolle === "admin" ? "ÖkoInvest" : "System", kommentar: e.kommentar }));
+   688	  const z = zf(db, u.id);
+   689	  const daten = {
+   690	    export: {
+   691	      format: "oekoinvest-datenexport-1",
+   692	      erstelltAm: jetzt(),
+   693	      hinweis: "Auskunft über Ihre personenbezogenen Daten (Art. 15 DSGVO) in einem maschinenlesbaren Format (Art. 20 DSGVO). Dateien des Datenraums sind als Metadaten enthalten und im Portal abrufbar.",
+   694	    },
+   695	    konto: {
+   696	      ...ohne(internSicherheit.ohneGeheimnis(u), ["sitzungVersion", "demo"]),
+   697	      komfort: komfortBereinigen(u.komfort || {}),
+   698	    },
+   699	    sicherheit: {
+   700	      zweiFaktor: { aktiv: !!z?.aktiv, aktiviertAm: z?.aktiviertAm || null, wiederherstellungscodesUebrig: z?.aktiv ? (z.codes || []).length : 0 },
+   701	      sitzungen: db.sitzungen.filter((s) => s.nutzerId === u.id).map((s) => ohne(s, ["nutzerId", "version", "geraetId"])),
+   702	      geraete: db.geraete.filter((g) => g.nutzerId === u.id).map((g) => ohne(g, ["hash", "nutzerId", "zweiFaktorVersion"])),
+   703	      anmeldungen: db.anmeldungen.filter((a) => a.nutzerId === u.id).map((a) => ohne(a, ["nutzerId"])),
+   704	    },
+   705	    organisationen: db.mitgliedschaften
+   706	      .filter((m) => m.nutzerId === u.id)
+   707	      .map((m) => {
+   708	        const o = db.organisationen.find((x) => x.id === m.organisationId);
+   709	        return { organisation: o?.name || m.organisationId, art: o?.art || "", rolle: teamRolleLabel(m.rolle), seit: m.seit };
+   710	      }),
+   711	    vorgaenge: eigene.vorgaenge.map((x) => ({ ...ohne(x, intern), statusVerlauf: verlauf(x.statusVerlauf) })),
+   712	    flaechen: eigene.flaechen.map((x) => ({ ...ohne(x, intern), statusVerlauf: verlauf(x.statusVerlauf) })),
+   713	    projekte: eigene.projekte.map((x) => ({ ...ohne(x, intern), statusVerlauf: verlauf(x.statusVerlauf) })),
+   714	    interessen: eigene.interessen.map((x) => ({ ...ohne(x, intern), statusVerlauf: verlauf(x.statusVerlauf) })),
+   715	    provisionen: db.provisionen.filter((x) => x.anbieterId === u.id).map((x) => ({ id: x.id, projektId: x.projektId, satz: x.satz, betrag: x.betrag, status: x.status, erstelltAm: x.erstelltAm })),
+   716	    nachrichten: db.nachrichten
+   717	      .filter((m) => bezuege.has(`${m.bezugArt}:${m.bezugId}`))
+   718	      .map((m) => ({ id: m.id, bezug: `${m.bezugArt}:${m.bezugId}`, am: m.am, von: m.vonId === u.id && !m.system ? "Sie" : m.system ? "System" : m.vonAdmin ? "ÖkoInvest" : "Teammitglied", text: m.text })),
+   719	    dokumente: db.dokumente
+   720	      .filter((d) => d.hochgeladenVon === u.id || bezuege.has(`${d.bezugArt}:${d.bezugId}`))
+   721	      .map((d) => ({ id: d.id, bezug: `${d.bezugArt}:${d.bezugId}`, name: d.name, mime: d.mime, groesse: d.groesse, kategorie: d.kategorie, am: d.am, vonIhnen: d.hochgeladenVon === u.id })),
+   722	    benachrichtigungen: (db.benachrichtigungen || []).filter((b) => b.nutzerId === u.id).map((b) => ohne(b, ["nutzerId"])),
+   723	    einladungen: db.einladungen.filter((e) => e.email === u.email).map((e) => ({ organisation: db.organisationen.find((o) => o.id === e.organisationId)?.name || "", rolle: teamRolleLabel(e.rolle), status: e.status, erstelltAm: e.erstelltAm })),
+   724	    aktivitaeten: db.aktivitaeten.filter((a) => a.nutzerId === u.id).map((a) => ohne(a, ["nutzerId", "prevHash", "hash"])),
+   725	  };
+   726	  await aendern((d) => internSicherheit.protokoll(d, u, "datenexport", "nutzer", u.id, "Datenexport (Art. 15/20 DSGVO) heruntergeladen"));
+   727	  // E-Mail-Adressen Dritter (z. B. in Protokolltexten „Einladung an …“) nur maskiert ausgeben
+   728	  const maske = (x) => (x.toLowerCase() === u.email ? x : `${x[0]}•••@${x.split("@")[1]}`);
+   729	  return JSON.parse(JSON.stringify(daten).replace(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+[.][A-Za-z]{2,}/g, maske));
+   730	}
+   731	
+   732	/**
+   733	 * Konto löschen (Art. 17 DSGVO): Passwort + Bestätigung „LÖSCHEN“. Das Konto wird anonymisiert und gesperrt,
+   734	 * Sitzungen, Geräte, 2FA, Token, Benachrichtigungen und Mitgliedschaften entfallen, Entwürfe werden gelöscht.
+   735	 * Unterlagen mit Aufbewahrungspflicht (Provisionen, NDA-/Einwilligungsnachweise, Vorgänge) bleiben – ohne
+   736	 * Zugang – bis zum Fristablauf erhalten; das Backoffice wird informiert.
+   737	 */
+   738	export async function kontoLoeschen(n, { passwort, bestaetigung } = {}) {
+   739	  if (!n) throw nichtAngemeldet();
+   740	  v.pflicht(["LÖSCHEN", "LOESCHEN"].includes(String(bestaetigung || "").trim().toUpperCase()), "Bitte bestätigen Sie mit dem Wort LÖSCHEN.");
+   741	  const db0 = await lesen();
+   742	  const u0 = nutzerById(db0, n.id);
+   743	  if (!(await passwortPruefen(String(passwort || ""), u0?.passwortHash))) throw ungueltig("Das Passwort stimmt nicht.");
+   744	  return aendern((db) => {
+   745	    sammlungen(db);
+   746	    const u = nutzerById(db, n.id);
+   747	    if (u.rollen.includes("admin") && db.nutzer.filter((x) => x.aktiv && x.rollen.includes("admin")).length <= 1) {
+   748	      throw konflikt("Das letzte Backoffice-Konto kann nicht gelöscht werden.");
+   749	    }
+   750	    const inhaberMitTeam = db.mitgliedschaften.filter((m) => m.nutzerId === u.id && m.rolle === "inhaber").filter((m) => db.mitgliedschaften.some((x) => x.organisationId === m.organisationId && x.nutzerId !== u.id));
+   751	    if (inhaberMitTeam.length) throw konflikt("Sie sind Inhaber einer Organisation mit weiteren Mitgliedern. Bitte übertragen Sie zuerst die Inhaberschaft.");
+   752	    // Organisationen, in denen das Konto allein ist, entfallen (Objekte werden wieder persönlich)
+   753	    for (const m of db.mitgliedschaften.filter((x) => x.nutzerId === u.id && x.rolle === "inhaber")) {
+   754	      for (const liste of [db.flaechen, db.projekte, db.interessen]) for (const o of liste) if (o.organisationId === m.organisationId) o.organisationId = null;
+   755	      db.organisationen = db.organisationen.filter((o) => o.id !== m.organisationId);
+   756	      db.einladungen = db.einladungen.filter((e) => e.organisationId !== m.organisationId);
+   757	    }
+   758	    db.mitgliedschaften = db.mitgliedschaften.filter((m) => m.nutzerId !== u.id && db.organisationen.some((o) => o.id === m.organisationId));
+   759	    const entwuerfeF = db.flaechen.filter((f) => f.nutzerId === u.id && f.status === "entwurf" && !f.organisationId).map((f) => f.id);
+   760	    const entwuerfeP = db.projekte.filter((p) => p.anbieterId === u.id && p.status === "entwurf" && !p.organisationId).map((p) => p.id);
+   761	    db.flaechen = db.flaechen.filter((f) => !entwuerfeF.includes(f.id));
+   762	    db.projekte = db.projekte.filter((p) => !entwuerfeP.includes(p.id));
+   763	    const alteEmail = u.email;
+   764	    db.einladungen = db.einladungen.filter((e) => e.email !== alteEmail);
+   765	    db.zweiFaktor = db.zweiFaktor.filter((z) => z.nutzerId !== u.id);
+   766	    db.sitzungen = db.sitzungen.filter((s) => s.nutzerId !== u.id);
+   767	    db.geraete = db.geraete.filter((g) => g.nutzerId !== u.id);
+   768	    db.anmeldungen = db.anmeldungen.filter((a) => a.nutzerId !== u.id);
+   769	    db.tokens = db.tokens.filter((t) => t.nutzerId !== u.id);
+   770	    db.benachrichtigungen = (db.benachrichtigungen || []).filter((b) => b.nutzerId !== u.id);
+   771	    delete db.anmeldeSperren[alteEmail];
+   772	    Object.assign(u, {
+   773	      email: `geloescht-${u.id.toLowerCase()}@geloescht.invalid`, vorname: "Gelöschtes", nachname: "Konto", firma: "", telefon: "", passwortHash: null,
+   774	      aktiv: false, emailBestaetigt: false, suchprofil: null, komfort: null, mailEinstellungen: null, sitzungVersion: (u.sitzungVersion || 0) + 1, geloeschtAm: jetzt(),
+   775	    });
+   776	    for (const a of db.nutzer.filter((x) => x.aktiv && x.rollen.includes("admin"))) {
+   777	      internSicherheit.benachrichtigen(db, a, { art: "status", titel: "Konto gelöscht", text: `Konto ${u.id} wurde auf eigenen Wunsch gelöscht (${entwuerfeF.length + entwuerfeP.length} Entwürfe entfernt). Offene Vorgänge bitte prüfen.`, link: "/portal/admin/nutzer", objektArt: "nutzer", objektId: u.id }, { mail: false });
+   778	    }
+   779	    internSicherheit.protokoll(db, { id: u.id }, "konto_geloescht", "nutzer", u.id, `Konto gelöscht (anonymisiert), ${entwuerfeF.length} Flächen- und ${entwuerfeP.length} Projekt-Entwürfe entfernt`);
+   780	    return { ok: true };
+   781	  });
+   782	}

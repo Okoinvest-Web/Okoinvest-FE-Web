@@ -1,0 +1,225 @@
+<template>
+  <div>
+    <PageHeader title="Strompfad" :subtitle="untertitel" />
+
+    <div class="p-6">
+      <div v-if="strom.data" class="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <div
+          v-for="kachel in kacheln"
+          :key="kachel.label"
+          class="rounded-lg border border-outline-gray-2 bg-surface-white p-4"
+        >
+          <p class="text-sm text-ink-gray-6">{{ kachel.label }}</p>
+          <p class="mt-1 text-2xl font-semibold text-ink-gray-9">{{ kachel.wert }}</p>
+          <StatusDot v-if="kachel.hinweis" class="mt-1" :level="kachel.level" :text="kachel.hinweis" klein />
+        </div>
+      </div>
+
+      <!-- Ausfallsimulation zuerst: das ist die Frage vor der Wartung -->
+      <section class="mb-8 rounded-lg border border-outline-gray-2 bg-surface-white p-4">
+        <h2 class="mb-3 text-base font-semibold text-ink-gray-8">
+          Was passiert, wenn eine Quelle ausfällt?
+        </h2>
+        <div class="flex flex-wrap items-end gap-3">
+          <FormControl v-model="quelle" label="Quelle" type="select" :options="quellenOptionen" />
+          <Button variant="solid" :loading="ausfall.loading" @click="ausfall.fetch()">
+            Simulieren
+          </Button>
+        </div>
+
+        <div v-if="ausfall.data" class="mt-4 grid grid-cols-1 gap-6 md:grid-cols-2">
+          <div>
+            <StatusDot
+              :level="ausfall.data.fails.length ? 'critical' : 'ok'"
+              :text="ausfall.data.fails.length + ' Geräte fallen aus'"
+            />
+            <ul class="mt-2 space-y-1">
+              <li v-for="g in ausfall.data.fails" :key="g.device" class="text-sm">
+                <RouterLink
+                  :to="'/devices/' + g.device"
+                  class="text-ink-gray-8 underline decoration-outline-gray-3 underline-offset-2"
+                >
+                  {{ g.device }}
+                </RouterLink>
+              </li>
+              <li v-if="!ausfall.data.fails.length" class="text-sm text-ink-gray-5">
+                Kein Gerät verliert die Versorgung.
+              </li>
+            </ul>
+          </div>
+          <div>
+            <StatusDot level="ok" :text="ausfall.data.survives.length + ' Geräte laufen weiter'" />
+            <ul class="mt-2 space-y-1">
+              <li v-for="g in ausfall.data.survives" :key="g.device" class="text-sm text-ink-gray-7">
+                {{ g.device }}
+                <span class="text-ink-gray-4">
+                  ({{ g.remaining_psu }} Netzteil{{ g.remaining_psu === 1 ? '' : 'e' }} übrig)
+                </span>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <p v-if="ausfall.data" class="mt-3 text-xs text-ink-gray-4">
+          Betroffene Quellen: {{ ausfall.data.affected_sources.join(', ') }}. Beim
+          Ausfall einer USV fallen die PDUs desselben Strangs mit aus.
+        </p>
+      </section>
+
+      <section class="mb-8">
+        <h2 class="mb-3 text-base font-semibold text-ink-gray-8">Stromquellen</h2>
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div
+            v-for="q in strom.data?.sources || []"
+            :key="q.name"
+            class="rounded-lg border border-outline-gray-2 bg-surface-white p-4"
+          >
+            <div class="flex items-start justify-between gap-2">
+              <div>
+                <p class="text-base font-medium text-ink-gray-9">{{ q.source_name }}</p>
+                <p class="text-sm text-ink-gray-6">
+                  {{ ART[q.source_kind] }} · Strang {{ q.feed }} · {{ q.connected_devices }} Geräte
+                </p>
+              </div>
+              <StatusDot :level="q.level" :text="q.level === 'ok' ? 'in Ordnung' : 'Befund'" klein />
+            </div>
+
+            <div class="mt-3 flex items-center gap-2">
+              <div class="h-2.5 flex-1" style="background: var(--viz-neutral-soft)">
+                <div
+                  class="h-full"
+                  :style="{
+                    width: Math.min(100, q.load_pct) + '%',
+                    background: balkenFarbe(q.level),
+                    borderTopRightRadius: '4px',
+                    borderBottomRightRadius: '4px',
+                  }"
+                />
+              </div>
+              <span class="w-24 shrink-0 text-right text-sm tabular-nums text-ink-gray-7">
+                {{ q.load_w }} / {{ q.capacity_w }} W
+              </span>
+            </div>
+
+            <p v-if="q.battery_minutes !== null" class="mt-2 text-sm text-ink-gray-6">
+              Batterielaufzeit {{ q.battery_minutes }} Minuten
+            </p>
+
+            <ul v-if="q.reasons.length" class="mt-2 space-y-0.5">
+              <li v-for="grund in q.reasons" :key="grund" class="text-sm text-ink-gray-6">
+                {{ grund }}
+              </li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2 class="mb-3 text-base font-semibold text-ink-gray-8">Geräte und ihre Einspeisung</h2>
+        <DataTable :columns="spalten" :rows="strom.data?.devices || []" :loading="strom.loading">
+          <template #zelle-device="{ zeile }">
+            <RouterLink
+              :to="'/devices/' + zeile.device"
+              class="font-medium text-ink-gray-9 underline decoration-outline-gray-3 underline-offset-2"
+            >
+              {{ zeile.device }}
+            </RouterLink>
+          </template>
+          <template #zelle-netzteile="{ zeile }">
+            <ul class="space-y-0.5">
+              <li v-for="a in zeile.connections" :key="a.psu_label" class="text-sm">
+                <span class="text-ink-gray-8">{{ a.psu_label }}</span>
+                <span class="text-ink-gray-5">
+                  → {{ a.path.map((p) => p.name).join(' → ') }}
+                </span>
+                <span class="text-ink-gray-4">· Strang {{ a.feed }}</span>
+              </li>
+            </ul>
+          </template>
+          <template #zelle-redundant="{ zeile }">
+            <StatusDot
+              :level="zeile.redundant ? 'ok' : 'critical'"
+              :text="zeile.redundant ? 'redundant' : zeile.reasons[0]"
+              klein
+            />
+          </template>
+          <template #zelle-total_draw_w="{ zeile }">{{ zeile.total_draw_w }} W</template>
+        </DataTable>
+      </section>
+
+      <p class="mt-6 text-xs text-ink-gray-4">
+        Zwei Netzteile allein sind keine Redundanz – sie müssen an
+        verschiedenen Strängen hängen. Genau diesen Fall zeigt die Prüfung:
+        SRV-PVE-02 hat zwei Netzteile, beide auf Strang A.
+      </p>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed, ref, watch } from 'vue'
+import { Button, FormControl, createResource } from 'frappe-ui'
+import PageHeader from '@/components/PageHeader.vue'
+import DataTable from '@/components/DataTable.vue'
+import StatusDot from '@/components/StatusDot.vue'
+
+const ART = { ups: 'USV', pdu: 'PDU' }
+
+const quelle = ref('USV-A')
+
+const strom = createResource({ url: 'netops.api.power.power_overview', auto: true })
+
+const ausfall = createResource({
+  url: 'netops.api.power.power_impact',
+  makeParams: () => ({ source: quelle.value }),
+  auto: true,
+})
+
+watch(quelle, () => ausfall.fetch())
+
+const quellenOptionen = computed(() =>
+  (strom.data?.sources || []).map((q) => ({
+    label: q.source_name + ' (' + ART[q.source_kind] + ', Strang ' + q.feed + ')',
+    value: q.name,
+  })),
+)
+
+const spalten = [
+  { key: 'device', label: 'Gerät', width: '170px' },
+  { key: 'device_role', label: 'Rolle', muted: true, width: '140px' },
+  { key: 'netzteile', label: 'Strompfad' },
+  { key: 'total_draw_w', label: 'Last', align: 'right', numeric: true, width: '100px' },
+  { key: 'redundant', label: 'Redundanz', width: '260px' },
+]
+
+const kacheln = computed(() => {
+  const z = strom.data?.summary
+  if (!z) return []
+  return [
+    { label: 'Redundant versorgt', wert: z.redundant, level: 'ok', hinweis: 'zwei Stränge' },
+    {
+      label: 'Ohne Redundanz',
+      wert: z.not_redundant,
+      level: 'critical',
+      hinweis: z.not_redundant ? 'Einzelfehlerpunkt' : null,
+    },
+    {
+      label: 'Quellen mit Befund',
+      wert: z.sources_with_findings,
+      level: 'warning',
+      hinweis: z.sources_with_findings ? 'prüfen' : null,
+    },
+    { label: 'Gesamtlast', wert: z.total_draw_w + ' W' },
+  ]
+})
+
+const untertitel = computed(() => {
+  const z = strom.data?.summary
+  if (!z) return ''
+  return z.sources + ' Quellen · ' + z.devices + ' Geräte · ' + z.total_draw_w + ' W'
+})
+
+function balkenFarbe(level) {
+  return { ok: 'var(--viz-seq-400)', warning: 'var(--viz-warning)', critical: 'var(--viz-critical)' }[level]
+}
+</script>

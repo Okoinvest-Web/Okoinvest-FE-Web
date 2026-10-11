@@ -1,0 +1,57 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+
+import { protokolliere } from "@/lib/sicherheit/audit";
+import { requireRecht } from "@/lib/session";
+
+export interface VollmachtErgebnis {
+  ok: boolean;
+  meldung: string;
+}
+
+/**
+ * Erteilt oder widerruft eine Vollmacht.
+ *
+ * Eine Vollmacht ist eine rechtsgeschaeftliche Erklaerung - deshalb
+ * verlangt sie ein eigenes Recht, wird protokolliert und muss ausdruecklich
+ * bestaetigt werden. Ein versehentlicher Klick soll niemanden binden.
+ */
+export async function aendereVollmacht(
+  _vorher: VollmachtErgebnis | null,
+  formular: FormData,
+): Promise<VollmachtErgebnis> {
+  const benutzer = await requireRecht("vollmacht.erteilen");
+
+  const vollmacht = String(formular.get("vollmacht") ?? "");
+  const absicht = String(formular.get("absicht") ?? "");
+  const bestaetigt = formular.get("bestaetigung") === "ja";
+
+  if (!bestaetigt) {
+    return {
+      ok: false,
+      meldung:
+        "Bitte bestätigen Sie ausdrücklich, dass Sie die Vollmacht ändern möchten.",
+    };
+  }
+
+  const istWiderruf = absicht === "widerrufen";
+
+  await protokolliere({
+    kategorie: "vollmacht",
+    aktion: istWiderruf ? "Vollmacht widerrufen" : "Vollmacht erteilt",
+    ergebnis: "erfolg",
+    objekt: vollmacht,
+    nachher: istWiderruf ? "Widerrufen" : "Erteilt",
+    begruendung: `Durch ${benutzer.vollname} (${benutzer.id})`,
+  });
+
+  revalidatePath("/portal/zertifikate");
+
+  return {
+    ok: true,
+    meldung: istWiderruf
+      ? "Die Vollmacht wurde widerrufen. Der Bevollmächtigte wird benachrichtigt; bereits abgeschlossene Geschäfte bleiben davon unberührt."
+      : "Die Vollmacht wurde erteilt und ist ab sofort wirksam.",
+  };
+}

@@ -1,0 +1,192 @@
+import re
+from docx import Document
+from docx.shared import Pt, RGBColor, Cm
+from docx.enum.table import WD_TABLE_ALIGNMENT
+from docx.oxml.ns import qn
+from docx.oxml import OxmlElement
+
+OUT = "Presseaussendung_Oekovolt_FINAL.docx"
+ACCENT = RGBColor(0x1F, 0x4E, 0x3D)
+GREY = RGBColor(0x5F, 0x5F, 0x5F)
+PH = RGBColor(0xC0, 0x00, 0x00)
+WHO = "[Name], [Funktion] der Ökovolt-Gruppe"
+
+doc = Document()
+s = doc.sections[0]
+s.left_margin = s.right_margin = Cm(2.0)
+s.top_margin = s.bottom_margin = Cm(1.4)
+n = doc.styles["Normal"]
+n.font.name = "Calibri"
+n.font.size = Pt(10.5)
+n.paragraph_format.space_after = Pt(5)
+n.paragraph_format.line_spacing = 1.1
+
+
+def add(p, text, bold=False, size=None, color=None, italic=False):
+    for part in re.split(r"(\[[^\]]+\])", text):
+        if not part:
+            continue
+        r = p.add_run(part)
+        r.bold, r.italic = bold, italic
+        if size:
+            r.font.size = Pt(size)
+        if part.startswith("["):
+            r.font.color.rgb, r.bold = PH, True
+        elif color:
+            r.font.color.rgb = color
+    return p
+
+
+def para(text="", container=None, **kw):
+    after = kw.pop("after", None)
+    p = add((container or doc).add_paragraph(), text, **kw)
+    if after is not None:
+        p.paragraph_format.space_after = Pt(after)
+    return p
+
+
+def head(text):
+    p = para(text, bold=True, size=11, color=ACCENT, after=2)
+    p.paragraph_format.space_before = Pt(7)
+    p.paragraph_format.keep_with_next = True
+
+
+def shade(cell, hexcolor):
+    tcPr = cell._tc.get_or_add_tcPr()
+    sh = OxmlElement("w:shd")
+    sh.set(qn("w:val"), "clear")
+    sh.set(qn("w:color"), "auto")
+    sh.set(qn("w:fill"), hexcolor)
+    tcPr.append(sh)
+
+
+def cell_text(cell, text, **kw):
+    cell.paragraphs[0].text = ""
+    p = add(cell.paragraphs[0], text, **kw)
+    p.paragraph_format.space_after = Pt(1)
+
+
+def sager(text):
+    p = doc.add_paragraph()
+    p.paragraph_format.left_indent = Cm(0.5)
+    p.paragraph_format.space_after = Pt(7)
+    pPr = p._p.get_or_add_pPr()
+    b = OxmlElement("w:pBdr")
+    l = OxmlElement("w:left")
+    for k, v in (("w:val", "single"), ("w:sz", "24"), ("w:space", "8"), ("w:color", "1F4E3D")):
+        l.set(qn(k), v)
+    b.append(l)
+    pPr.append(b)
+    add(p, f"„{text}“", bold=True, italic=True, size=11, color=ACCENT)
+    add(p, f", sagt {WHO}.", size=9.5, color=GREY)
+
+
+# ---------- Kopf ----------
+para("PRESSEINFORMATION  |  Ostermiething, [Datum]", bold=True, size=9, color=ACCENT, after=6)
+para("Salzburg AG und die Wahrheit: Tochter hatte beim Hofer-Auftrag keinen Gewerbeschein", bold=True, size=19, after=3)
+para("Registerdaten widerlegen Darstellung des Landesenergieversorgers – Ökovolt fragt: Was sollen Salzburgs "
+     "Stromkunden einem Unternehmen noch glauben, das vor Gericht anders spricht als in der Öffentlichkeit?",
+     italic=True, size=11, color=GREY, after=9)
+
+# ---------- Lead ----------
+para("Die Salzburg AG bestreitet öffentlich jede Grundlage für die Vorwürfe rund um den Photovoltaik-Großauftrag des "
+     "Diskonters Hofer. Firmenbuch, Gewerbeinformationssystem Austria (GISA) und deutsche Gerichtsentscheidungen "
+     "zeichnen ein anderes Bild: Die Salzburg-AG-Tochter one2zero GmbH, die den Auftrag übernahm, besaß zu "
+     "Projektbeginn keine einzige Gewerbeberechtigung. Und vor dem Landgericht Memmingen hat die Salzburg AG selbst "
+     "eingeräumt, das Know-how von Ökovolt genutzt zu haben.", bold=True)
+para("Die WKStA ermittelt wegen des Verdachts des schweren Betrugs gegen die Salzburg AG und eine natürliche Person; "
+     "Ökovolt beziffert den Schaden mit mehr als 20 Millionen Euro. Zum Ermittlungsverfahren selbst äußert sich Ökovolt "
+     "nicht. Es gilt die Unschuldsvermutung.")
+
+# ---------- Chronologie ----------
+head("Die Chronologie laut öffentlichen Registern und Berichten")
+rows = [
+    ("18.10.2021", "Salzburg AG gründet die one2zero GmbH (FN 567399k)", "Firmenbuch"),
+    ("18.11.2021", "Salzburg AG beteiligt sich mit 49 % an Ökovolt", "Unternehmensmeldung"),
+    ("30.06.2022", "one2zero wird präsentiert – angekündigt: PV-Anlagen für eine große Handelskette", "brutkasten.com"),
+    ("28.11.2022", "Erste Gewerbeberechtigung von one2zero: Unternehmensberatung", "GISA 35453048"),
+    ("02.08.2023", "Gewerbeberechtigung Elektrotechnik eingetragen", "GISA 35939931"),
+    ("[Datum]", "Landgericht Memmingen: Salzburg AG räumt Nutzung des Ökovolt-Know-hows ein", "[Az.]"),
+    ("[Datum]", "Oberlandesgericht München bestätigt Anteilsentzug – neunte Entscheidung", "[Az.]"),
+    ("24.09.2026", "WKStA bestätigt Ermittlungen gegen die Salzburg AG", "ORF Salzburg"),
+]
+t = doc.add_table(rows=len(rows), cols=3)
+t.alignment = WD_TABLE_ALIGNMENT.CENTER
+t.style = "Table Grid"
+for i, (d, e, q) in enumerate(rows):
+    c = t.rows[i].cells
+    cell_text(c[0], d, bold=True, size=9.5, color=ACCENT)
+    cell_text(c[1], e, size=9.5)
+    cell_text(c[2], q, size=8.5, color=GREY)
+    if i % 2 == 0:
+        for x in c:
+            shade(x, "EEF3F1")
+for row in t.rows:
+    row.cells[0].width, row.cells[1].width, row.cells[2].width = Cm(2.4), Cm(11.4), Cm(3.2)
+para("", after=2)
+
+sager("Jeder Elektriker in Salzburg braucht einen Gewerbeschein, bevor er eine Steckdose montiert. Die Tochter der "
+      "Salzburg AG hatte zu Beginn dieses Millionenprojekts überhaupt keinen")
+
+# ---------- Faktencheck ----------
+head("Was die Salzburg AG sagt – und was belegt ist")
+fc = [
+    ("Die Salzburg AG spricht von einem Gesellschafterstreit.",
+     "In Deutschland wurden der Salzburg AG die Anteile an der Ökovolt-Schwestergesellschaft entzogen, weil sie "
+     "Know-how der Gruppe verwendet hat – vor dem Landgericht Memmingen von ihrer Rechtsabteilung eingeräumt, in "
+     "neun Entscheidungen bestätigt."),
+    ("Die Salzburg AG sieht für die Vorwürfe „keine Grundlage“.",
+     "Die WKStA hat ein Ermittlungsverfahren wegen Verdachts des schweren Betrugs eingeleitet."),
+    ("Den Auftrag erhielt eine Tochter der Salzburg AG.",
+     "Diese Tochter war kein befugter Fachbetrieb; die Anlagen errichteten Subunternehmen – darunter einer der "
+     "größten Mitbewerber von Ökovolt."),
+]
+t2 = doc.add_table(rows=len(fc) + 1, cols=2)
+t2.style = "Table Grid"
+for j, h in enumerate(("Darstellung der Salzburg AG", "Dokumentierte Fakten")):
+    cell_text(t2.rows[0].cells[j], h, bold=True, size=9.5, color=RGBColor(0xFF, 0xFF, 0xFF))
+    shade(t2.rows[0].cells[j], "1F4E3D")
+for i, (a, b) in enumerate(fc, start=1):
+    cell_text(t2.rows[i].cells[0], a, size=9.5, italic=True)
+    cell_text(t2.rows[i].cells[1], b, size=9.5)
+    shade(t2.rows[i].cells[0], "F5F5F5")
+for row in t2.rows:
+    row.cells[0].width, row.cells[1].width = Cm(6.2), Cm(10.8)
+para("", after=2)
+
+sager("Was die Salzburg AG in Memmingen vor Gericht eingeräumt hat, kann sie in Salzburg nicht mit einer "
+      "Presseaussendung zurücknehmen")
+
+# ---------- Stromkunden ----------
+head("Die Rechnung zahlen die Stromkunden")
+para("Die Salzburg AG ist kein gewöhnliches Unternehmen. Sie gehört zu knapp drei Vierteln dem Land und der Stadt "
+     "Salzburg und versorgt Hunderttausende Haushalte mit Strom. Ihre Glaubwürdigkeit ist nicht zum ersten Mal "
+     "Thema: 2023 verlangte Landeshauptmann und Aufsichtsratschef Wilfried Haslauer öffentlich Transparenz über die "
+     "Strompreiskalkulation. Im September 2023 einigte sich die Salzburg AG mit der Arbeiterkammer außergerichtlich auf "
+     "ein Entlastungspaket von 39 Millionen Euro für Kunden, die von der Strompreiserhöhung betroffen waren.")
+para("Nun führt derselbe Versorger kostspielige Verfahren gegen ein heimisches Mittelstandsunternehmen mit mehr als "
+     "30 Beschäftigten. Bezahlt wird das aus den Erlösen eines Unternehmens, das den Salzburgerinnen und Salzburgern "
+     "gehört – und das von seinen Stromkunden lebt.")
+sager("Die Salzburger zahlen ihre Stromrechnung pünktlich. Sie haben ein Recht darauf, dass mit diesem Geld ehrlich "
+      "umgegangen wird – vor Gericht und in der Öffentlichkeit")
+
+# ---------- Forderung ----------
+head("Land und Stadt müssen jetzt handeln")
+para("Ökovolt fordert Land und Stadt Salzburg als Eigentümer sowie den Aufsichtsrat auf, die Vergabe des Hofer-Projekts "
+     "unabhängig und vollständig aufklären zu lassen und das Ergebnis offenzulegen.")
+sager("Ein Vorstand, der all das weiß und trotzdem nicht aufklärt, muss sich fragen lassen, ob er noch das Vertrauen "
+      "seiner Eigentümer und seiner Kunden verdient")
+sager("Unsere Leute machen die Energiewende auf dem Dach, bei Wind und Wetter. Die Salzburg AG führt sie im "
+      "Gerichtssaal – mit dem Geld der Salzburgerinnen und Salzburger")
+
+# ---------- Fuß ----------
+para("Gerichtsentscheidungen sowie Firmenbuch- und GISA-Auszüge stellt Ökovolt Medienvertretern auf Anfrage zur "
+     "Verfügung.", italic=True, size=9, after=6)
+para("Über Ökovolt: Die Ökovolt-Gruppe mit Sitz in Ostermiething (Bezirk Braunau) plant und errichtet seit 2012 "
+     "Photovoltaik-Großanlagen in Österreich und Deutschland und beschäftigt mehr als 30 Mitarbeiterinnen und "
+     "Mitarbeiter.", size=8.5, color=GREY, after=3)
+para("Rückfragen: [Name, Funktion] · Ökovolt Solartechnik GmbH · Gewerbegebiet 10, 5121 Ostermiething · "
+     "[Telefon] · [E-Mail]", size=8.5, color=GREY)
+
+doc.save(OUT)
+print("ok")

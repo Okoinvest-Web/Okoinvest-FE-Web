@@ -1,0 +1,312 @@
+/**
+ * Grenzen für das Regelwerk der Überwachung.
+ *
+ * Eine Meldeschwelle lässt sich in zwei Richtungen falsch stellen, und
+ * beide enden gleich:
+ *
+ * - Zu eng: Die Anlage meldet jede vorbeiziehende Wolke. Nach einer
+ *   Woche liest niemand mehr die Meldungen, und die eine echte geht
+ *   mit unter.
+ * - Zu weit: Ein Strang steht zwei Monate still, und es fällt erst
+ *   bei der Jahresabrechnung auf.
+ *
+ * Deshalb prüft diese Datei jede Änderung gegen fachliche Grenzen -
+ * nicht gegen Geschmack. Die Grenzen stammen aus dem, was physikalisch
+ * unterscheidbar ist: Eine Ertragsabweichung unter drei Prozent liegt
+ * innerhalb der Messunsicherheit von Einstrahlungssensor und Zähler,
+ * eine Meldung darüber wäre geraten.
+ *
+ * Der zweite Teil ist die Rückschau. Wie oft eine Regel in der
+ * Vergangenheit ausgelöst hat, sagt mehr über ihre Brauchbarkeit als
+ * jede Grenze: Eine Regel, die täglich meldet, ist keine Regel,
+ * sondern ein Rauschen.
+ */
+
+export type Regelart =
+  | "Nullertrag"
+  | "Minderertrag"
+  | "Strangabweichung"
+  | "Kommunikation"
+  | "Wechselrichterstoerung"
+  | "Performance"
+  | "Temperatur"
+  | "Abregelung";
+
+export type Schweregrad = "Info" | "Niedrig" | "Mittel" | "Hoch" | "Kritisch";
+
+export const SCHWEREGRADE: Schweregrad[] = [
+  "Info",
+  "Niedrig",
+  "Mittel",
+  "Hoch",
+  "Kritisch",
+];
+
+export interface Grenzen {
+  /** Einheit des Schwellwerts, für die Anzeige. */
+  einheit: string;
+  /** Zulässiger Bereich des Schwellwerts. */
+  von: number;
+  bis: number;
+  /** Mindestdauer in Minuten, die eine Bedingung anhalten muss. */
+  dauerVon: number;
+  dauerBis: number;
+  /** Warum die untere Grenze dort liegt. */
+  begruendung: string;
+  /** Ob die Art überhaupt einen Schwellwert trägt. */
+  mitSchwelle: boolean;
+}
+
+export const GRENZEN: Record<Regelart, Grenzen> = {
+  Nullertrag: {
+    einheit: "%",
+    von: 0,
+    bis: 10,
+    dauerVon: 30,
+    dauerBis: 720,
+    begruendung:
+      "Ein Ertrag nahe null ist eindeutig. Die Dauer verhindert, dass eine Wolkenlücke am Morgen meldet.",
+    mitSchwelle: true,
+  },
+  Minderertrag: {
+    einheit: "%",
+    von: 3,
+    bis: 50,
+    dauerVon: 60,
+    dauerBis: 2880,
+    begruendung:
+      "Unter drei Prozent liegt die Abweichung in der Messunsicherheit von Einstrahlungssensor und Zähler.",
+    mitSchwelle: true,
+  },
+  Strangabweichung: {
+    einheit: "%",
+    von: 2.5,
+    bis: 40,
+    dauerVon: 30,
+    dauerBis: 1440,
+    begruendung:
+      "Stränge desselben Wechselrichters streuen fertigungsbedingt um bis zu zweieinhalb Prozent.",
+    mitSchwelle: true,
+  },
+  Kommunikation: {
+    einheit: "min",
+    von: 5,
+    bis: 1440,
+    dauerVon: 5,
+    dauerBis: 1440,
+    begruendung:
+      "Unter fünf Minuten meldet jeder Mobilfunkwechsel. Der Datenpunkt fehlt deswegen noch nicht.",
+    mitSchwelle: false,
+  },
+  Wechselrichterstoerung: {
+    einheit: "–",
+    von: 0,
+    bis: 0,
+    dauerVon: 0,
+    dauerBis: 240,
+    begruendung:
+      "Eine Störmeldung des Geräts ist ein Zustand, kein Messwert. Sie braucht keine Schwelle.",
+    mitSchwelle: false,
+  },
+  Performance: {
+    einheit: "%",
+    von: 60,
+    bis: 95,
+    dauerVon: 1440,
+    dauerBis: 43200,
+    begruendung:
+      "Die Performance Ratio schwankt tageweise stark. Beurteilbar wird sie erst über mindestens einen Tag.",
+    mitSchwelle: true,
+  },
+  Temperatur: {
+    einheit: "°C",
+    von: 45,
+    bis: 90,
+    dauerVon: 15,
+    dauerBis: 720,
+    begruendung:
+      "Module erreichen im Sommer regelmäßig 65 °C. Erst darüber wird es für die Elektronik eng.",
+    mitSchwelle: true,
+  },
+  Abregelung: {
+    einheit: "%",
+    von: 1,
+    bis: 40,
+    dauerVon: 30,
+    dauerBis: 2880,
+    begruendung:
+      "Kurze Kappungen an Spitzentagen sind gewollt. Gemeldet wird, was darüber hinausgeht.",
+    mitSchwelle: true,
+  },
+};
+
+/* ------------------------------------------------------------------ */
+/* Änderung prüfen                                                     */
+/* ------------------------------------------------------------------ */
+
+export interface Regelaenderung {
+  art: Regelart;
+  schwellwert: number | null;
+  dauerMinuten: number;
+  schweregrad: Schweregrad;
+  minEinstrahlung: number | null;
+  nurTagsueber: boolean;
+  aktiv: boolean;
+}
+
+export interface Pruefung {
+  ok: boolean;
+  /** Was die Änderung verhindert. */
+  fehler: string[];
+  /** Was zulässig, aber bedenklich ist. */
+  warnungen: string[];
+}
+
+/** Mindesteinstrahlung, unterhalb derer ein Vergleich nichts aussagt. */
+export const MINDESTEINSTRAHLUNG = 100;
+
+export function pruefeAenderung(aenderung: Regelaenderung): Pruefung {
+  const fehler: string[] = [];
+  const warnungen: string[] = [];
+
+  const grenzen = GRENZEN[aenderung.art];
+  if (!grenzen) {
+    return { ok: false, fehler: ["Unbekannte Regelart."], warnungen: [] };
+  }
+
+  /* ---------- Schwellwert ---------- */
+
+  if (grenzen.mitSchwelle) {
+    const wert = aenderung.schwellwert;
+
+    if (wert === null || !Number.isFinite(wert)) {
+      fehler.push("Diese Regel braucht einen Schwellwert.");
+    } else if (wert < grenzen.von || wert > grenzen.bis) {
+      fehler.push(
+        `Der Schwellwert muss zwischen ${grenzen.von} und ${grenzen.bis} ${grenzen.einheit} liegen. ${grenzen.begruendung}`,
+      );
+    }
+  }
+
+  /* ---------- Dauer ---------- */
+
+  if (!Number.isInteger(aenderung.dauerMinuten)) {
+    fehler.push("Die Mindestdauer muss eine ganze Zahl von Minuten sein.");
+  } else if (
+    aenderung.dauerMinuten < grenzen.dauerVon ||
+    aenderung.dauerMinuten > grenzen.dauerBis
+  ) {
+    fehler.push(
+      `Die Mindestdauer muss zwischen ${grenzen.dauerVon} und ${grenzen.dauerBis} Minuten liegen.`,
+    );
+  }
+
+  /* ---------- Einstrahlung ---------- */
+
+  const brauchtEinstrahlung =
+    aenderung.art === "Minderertrag" ||
+    aenderung.art === "Strangabweichung" ||
+    aenderung.art === "Performance";
+
+  if (brauchtEinstrahlung) {
+    if (!aenderung.nurTagsueber) {
+      fehler.push(
+        "Eine Ertragsregel ohne Tageslichtbedingung meldet jede Nacht einen Nullertrag.",
+      );
+    }
+
+    const strahlung = aenderung.minEinstrahlung ?? 0;
+    if (strahlung < MINDESTEINSTRAHLUNG) {
+      fehler.push(
+        `Unter ${MINDESTEINSTRAHLUNG} W/m² ist ein Ertragsvergleich nicht aussagekräftig – bei diffusem Licht weicht jede Anlage ab.`,
+      );
+    }
+  }
+
+  /* ---------- Schwere ---------- */
+
+  if (!SCHWEREGRADE.includes(aenderung.schweregrad)) {
+    fehler.push("Unzulässige Einstufung der Schwere.");
+  }
+
+  if (
+    aenderung.schweregrad === "Kritisch" &&
+    (aenderung.art === "Abregelung" || aenderung.art === "Temperatur")
+  ) {
+    warnungen.push(
+      "Als kritisch eingestufte Meldungen wecken die Bereitschaft. Abregelung und Modultemperatur sind selten ein Fall für die Nacht.",
+    );
+  }
+
+  if (!aenderung.aktiv) {
+    warnungen.push(
+      "Eine abgeschaltete Regel meldet nichts mehr – auch nicht den Fall, für den sie angelegt wurde.",
+    );
+  }
+
+  return { ok: fehler.length === 0, fehler, warnungen };
+}
+
+/* ------------------------------------------------------------------ */
+/* Rückschau                                                           */
+/* ------------------------------------------------------------------ */
+
+export type Rauschurteil = "stumm" | "brauchbar" | "laut";
+
+export interface Rauschbefund {
+  urteil: Rauschurteil;
+  /** Auslösungen je 30 Tage. */
+  jeMonat: number;
+  text: string;
+}
+
+/**
+ * Wie sich eine Regel in der Vergangenheit verhalten hat.
+ *
+ * Die Zahlen stammen aus der Praxis der Anlagenüberwachung und nicht
+ * aus einer Norm: Mehr als eine Meldung je Anlage und Woche liest
+ * niemand durch; keine einzige in einem halben Jahr heißt entweder,
+ * dass nichts passiert ist, oder dass die Regel nie greift. Beides
+ * gehört angesehen.
+ */
+export function bewerteRauschen(
+  ausloesungen: number,
+  tage: number,
+  anlagen = 1,
+): Rauschbefund {
+  if (tage <= 0 || anlagen <= 0) {
+    return {
+      urteil: "brauchbar",
+      jeMonat: 0,
+      text: "Kein Beobachtungszeitraum.",
+    };
+  }
+
+  const jeMonat =
+    Math.round(((ausloesungen / tage) * 30) / anlagen * 100) / 100;
+
+  if (jeMonat > 4) {
+    return {
+      urteil: "laut",
+      jeMonat,
+      text: `Diese Regel meldet rund ${jeMonat.toFixed(1).replace(".", ",")} Mal je Monat und Anlage. Bei dieser Häufigkeit wird sie überlesen – Schwelle oder Mindestdauer gehören hinaufgesetzt.`,
+    };
+  }
+
+  if (ausloesungen === 0 && tage >= 180) {
+    return {
+      urteil: "stumm",
+      jeMonat: 0,
+      text: "Diese Regel hat in einem halben Jahr nie ausgelöst. Das kann heißen, dass alles in Ordnung war – oder dass sie so eng gestellt ist, dass sie nie greift.",
+    };
+  }
+
+  return {
+    urteil: "brauchbar",
+    jeMonat,
+    text:
+      ausloesungen === 0
+        ? "Noch nicht ausgelöst."
+        : `Rund ${jeMonat.toFixed(1).replace(".", ",")} Meldungen je Monat und Anlage.`,
+  };
+}

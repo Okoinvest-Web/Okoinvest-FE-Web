@@ -1,0 +1,618 @@
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+
+import {
+  erstelleFahrplan,
+  type Marktintervall,
+  type Netzanschluss,
+  type Speicher,
+} from "./fahrplan.ts";
+
+/**
+ * Dieser Fahrplan fährt einen Speicher im Megawattbereich. Ein Fehler
+ * in der Ladestandsrechnung ist kein Rundungsproblem, sondern eine
+ * Anlage, die mittags an der Untergrenze steht, wenn die Lastspitze
+ * der Produktion kommt.
+ */
+
+const SPEICHER: Speicher = {
+  kapazitaetKwh: 800,
+  ladeleistungKw: 400,
+  entladeleistungKw: 400,
+  wirkungsgradLaden: 0.95,
+  wirkungsgradEntladen: 0.95,
+  notstromReserve: 0.1,
+  startLadestandKwh: 400,
+  zykluskostenEurKwh: 0.02,
+};
+
+const NETZ: Netzanschluss = {
+  bezugsgrenzeKw: 800,
+  spitzenzielKw: 400,
+  einspeisegrenzeKw: 600,
+  arbeitspreisBezugCtKwh: 21.8,
+  einspeiseverguetungCtKwh: 7.9,
+  leistungspreisEurKwMonat: 5.2,
+};
+
+/** Baut einen Tag aus 96 Viertelstunden. */
+function tag(
+  bauer: (viertel: number) => Partial<Marktintervall>,
+): Marktintervall[] {
+  return Array.from({ length: 96 }, (_, i) => ({
+    zeitpunkt: new Date(2026, 5, 15, Math.floor(i / 4), (i % 4) * 15),
+    preisEurMwh: 80,
+    erzeugungKwh: 0,
+    verbrauchKwh: 0,
+    ...bauer(i),
+  }));
+}
+
+/** Ladestand aus den Bewegungen nachgerechnet - unabhängig vom Modul. */
+function ladestandNachgerechnet(
+  schritte: { ladenKwh: number; entladenKwh: number }[],
+  speicher: Speicher,
+): number[] {
+  let stand = speicher.startLadestandKwh;
+  return schritte.map((s) => {
+    stand += s.ladenKwh * speicher.wirkungsgradLaden;
+    stand -= s.entladenKwh / speicher.wirkungsgradEntladen;
+    return stand;
+  });
+}
+
+describe("Grundregeln jedes Fahrplans", () => {
+  const intervalle = tag((i) => ({
+    // Preistal in der Nacht, Spitze am Abend.
+    preisEurMwh: i < 24 ? 20 : i > 68 && i < 84 ? 210 : 90,
+    erzeugungKwh: i > 32 && i < 72 ? 60 : 0,
+    verbrauchKwh: i > 28 && i < 76 ? 40 : 8,
+  }));
+
+  const plan = erstelleFahrplan(intervalle, SPEICHER, NETZ);
+
+  it("lädt und entlädt nie im selben Intervall", () => {
+    // Physikalisch unmöglich und in jedem Modell ein Zeichen dafür,
+    // dass zwei Stufen unabhängig voneinander gerechnet haben.
+    for (const s of plan.schritte) {
+      assert.ok(
+        s.ladenKwh === 0 || s.entladenKwh === 0,
+        `${s.zeitpunkt.toISOString()}: ${s.ladenKwh} geladen und ${s.entladenKwh} entladen`,
+      );
+    }
+  });
+
+  it("hält den Ladestand zwischen Notstromreserve und Kapazität", () => {
+    const grenze = SPEICHER.kapazitaetKwh * SPEICHER.notstromReserve;
+
+    for (const s of plan.schritte) {
+      assert.ok(
+        s.ladestandKwh >= grenze - 0.01,
+        `Ladestand ${s.ladestandKwh} unter der Reserve ${grenze}`,
+      );
+      assert.ok(
+        s.ladestandKwh <= SPEICHER.kapazitaetKwh + 0.01,
+        `Ladestand ${s.ladestandKwh} über der Kapazität`,
+      );
+    }
+  });
+
+  it("führt den Ladestand widerspruchsfrei fort", () => {
+    const erwartet = ladestandNachgerechnet(plan.schritte, SPEICHER);
+
+    for (let i = 0; i < plan.schritte.length; i++) {
+      assert.ok(
+        Math.abs(plan.schritte[i].ladestandKwh - erwartet[i]) < 0.01,
+        `Intervall ${i}: ${plan.schritte[i].ladestandKwh} statt ${erwartet[i]}`,
+      );
+    }
+  });
+
+  it("überschreitet weder Lade- noch Entladeleistung", () => {
+    const grenzeLaden = SPEICHER.ladeleistungKw * 0.25;
+    const grenzeEntladen = SPEICHER.entladeleistungKw * 0.25;
+
+    for (const s of plan.schritte) {
+      assert.ok(s.ladenKwh <= grenzeLaden + 0.01, `Laden ${s.ladenKwh}`);
+      assert.ok(
+        s.entladenKwh <= grenzeEntladen + 0.01,
+        `Entladen ${s.entladenKwh}`,
+      );
+    }
+  });
+
+  it("hält die Energiebilanz jedes Intervalls ein", () => {
+    // Erzeugung + Bezug + Entladung = Verbrauch + Einspeisung + Ladung
+    for (const s of plan.schritte) {
+      const zu = s.erzeugungKwh + s.netzbezugKwh + s.entladenKwh;
+      const ab = s.verbrauchKwh + s.einspeisungKwh + s.ladenKwh;
+
+      assert.ok(
+        Math.abs(zu - ab) < 0.01,
+        `${s.zeitpunkt.toISOString()}: zu ${zu.toFixed(3)}, ab ${ab.toFixed(3)}`,
+      );
+    }
+  });
+
+  it("bezieht nie mehr als die Anschlussleistung", () => {
+    for (const s of plan.schritte) {
+      assert.ok(
+        s.netzbezugKwh / 0.25 <= NETZ.bezugsgrenzeKw + 0.01,
+        `Bezug ${s.netzbezugKwh / 0.25} kW`,
+      );
+    }
+  });
+});
+
+describe("Stufe 1 - Lastspitzenkappung", () => {
+  it("senkt die höchste Bezugsleistung", () => {
+    // Ein einzelner harter Lastspitzenblock ohne Erzeugung.
+    const intervalle = tag((i) => ({
+      preisEurMwh: 90,
+      verbrauchKwh: i >= 40 && i < 44 ? 200 : 20,
+    }));
+
+    const plan = erstelleFahrplan(intervalle, SPEICHER, NETZ);
+
+    assert.ok(
+      plan.bilanz.spitzeMitSpeicherKw < plan.bilanz.spitzeOhneSpeicherKw,
+      `${plan.bilanz.spitzeMitSpeicherKw} statt unter ${plan.bilanz.spitzeOhneSpeicherKw}`,
+    );
+    assert.ok(plan.bilanz.spitzenkappungEur > 0);
+  });
+
+  it("geht dem Handel vor", () => {
+    // Die Lastspitze liegt genau in der teuersten Stunde: Der Handel
+    // würde dort verkaufen wollen, die Kappung braucht die Energie.
+    // Vorrang hat die Kappung - eine Viertelstunde bestimmt den
+    // Leistungspreis für zwölf Monate.
+    const intervalle = tag((i) => ({
+      preisEurMwh: i >= 40 && i < 44 ? 400 : 30,
+      verbrauchKwh: i >= 40 && i < 44 ? 200 : 20,
+    }));
+
+    const plan = erstelleFahrplan(intervalle, SPEICHER, NETZ);
+
+    for (let i = 40; i < 44; i++) {
+      assert.equal(
+        plan.schritte[i].belegung,
+        "spitzenkappung",
+        `Intervall ${i} wurde für ${plan.schritte[i].belegung} verwendet`,
+      );
+    }
+  });
+
+  it("kappt zuerst die höchste Spitze", () => {
+    // Zwei Spitzen, aber nur Energie für eine. Die höhere bestimmt
+    // den Leistungspreis und muss zuerst bedient werden.
+    const knapp: Speicher = { ...SPEICHER, startLadestandKwh: 200 };
+
+    const intervalle = tag((i) => ({
+      preisEurMwh: 90,
+      verbrauchKwh: i === 40 ? 300 : i === 60 ? 150 : 20,
+    }));
+
+    const plan = erstelleFahrplan(intervalle, knapp, NETZ);
+
+    assert.ok(
+      plan.schritte[40].entladenKwh > 0,
+      "Die höhere Spitze wurde nicht gekappt",
+    );
+  });
+});
+
+describe("Stufe 2 - Eigenverbrauch", () => {
+  it("nimmt Überschuss auf und setzt ihn später ein", () => {
+    const leer: Speicher = { ...SPEICHER, startLadestandKwh: 80 };
+
+    // Vormittags Überschuss, abends Bedarf. Preis flach, damit kein
+    // Handel stattfindet.
+    const intervalle = tag((i) => ({
+      preisEurMwh: 60,
+      erzeugungKwh: i >= 32 && i < 56 ? 80 : 0,
+      verbrauchKwh: i >= 64 && i < 84 ? 60 : 5,
+    }));
+
+    const plan = erstelleFahrplan(intervalle, leer, NETZ);
+
+    const geladen = plan.schritte
+      .slice(32, 56)
+      .reduce((s, x) => s + x.ladenKwh, 0);
+    const entladen = plan.schritte
+      .slice(64, 84)
+      .reduce((s, x) => s + x.entladenKwh, 0);
+
+    assert.ok(geladen > 0, "Es wurde kein Überschuss aufgenommen");
+    assert.ok(entladen > 0, "Der Speicher wurde abends nicht eingesetzt");
+    assert.ok(plan.bilanz.eigenverbrauchEur > 0);
+  });
+
+  it("bleibt untätig, wenn der Preisvorteil die Alterung nicht deckt", () => {
+    // Vergütung fast so hoch wie der Arbeitspreis: Die Umschichtung
+    // lohnt sich nicht, der Speicher soll dann nichts tun.
+    const knappesNetz: Netzanschluss = {
+      ...NETZ,
+      arbeitspreisBezugCtKwh: 9,
+      einspeiseverguetungCtKwh: 7.9,
+      spitzenzielKw: 10000,
+    };
+
+    const intervalle = tag(() => ({
+      preisEurMwh: 60,
+      erzeugungKwh: 80,
+      verbrauchKwh: 40,
+    }));
+
+    const plan = erstelleFahrplan(intervalle, SPEICHER, knappesNetz);
+
+    const bewegt = plan.schritte.filter(
+      (s) => s.belegung === "eigenverbrauch",
+    );
+    assert.equal(bewegt.length, 0);
+  });
+});
+
+describe("Stufe 3 - Börsenhandel", () => {
+  it("kauft günstig und verkauft teuer", () => {
+    // Große Spanne, keine Last, keine Erzeugung: nur Handel möglich.
+    const intervalle = tag((i) => ({
+      preisEurMwh: i < 20 ? 5 : i >= 72 && i < 80 ? 450 : 120,
+      verbrauchKwh: 0,
+      erzeugungKwh: 0,
+    }));
+
+    const plan = erstelleFahrplan(intervalle, SPEICHER, NETZ);
+
+    const kauf = plan.schritte.slice(0, 20).reduce((s, x) => s + x.ladenKwh, 0);
+    const verkauf = plan.schritte
+      .slice(72, 80)
+      .reduce((s, x) => s + x.entladenKwh, 0);
+
+    assert.ok(kauf > 0, "Es wurde nicht eingekauft");
+    assert.ok(verkauf > 0, "Es wurde nicht verkauft");
+    assert.ok(plan.bilanz.handelEur > 0, "Der Handel war nicht einträglich");
+  });
+
+  it("handelt nicht bei zu kleiner Spanne", () => {
+    // Zehn Euro Unterschied decken weder Umlaufverluste noch die
+    // Zykluskosten von zwei Cent je Kilowattstunde.
+    //
+    // Der Speicher startet an der Untergrenze: Sonst verkaufte die
+    // Stufe des Bestandsverkaufs den vorhandenen Ladestand, und der
+    // Test prüfte nicht mehr die Paarbildung.
+    const intervalle = tag((i) => ({
+      preisEurMwh: i < 48 ? 100 : 110,
+      verbrauchKwh: 0,
+      erzeugungKwh: 0,
+    }));
+
+    const plan = erstelleFahrplan(
+      intervalle,
+      { ...SPEICHER, startLadestandKwh: 80 },
+      NETZ,
+    );
+
+    assert.equal(
+      plan.schritte.filter((s) => s.belegung === "handel").length,
+      0,
+    );
+  });
+
+  it("rechnet das Netzentgelt in den Einkaufspreis", () => {
+    // Ein negativer Börsenpreis allein macht den Einkauf nicht
+    // günstig: Auf jede bezogene Kilowattstunde kommt das
+    // Netznutzungsentgelt. Bei minus 9 Cent Börse und 21,8 Cent
+    // Entgelt kostet der Einkauf 12,8 Cent - ein Verkauf zu 15 Cent
+    // deckt nach Umlaufverlusten und Alterung die Kosten nicht.
+    const intervalle = tag((i) => ({
+      preisEurMwh: i >= 40 && i < 48 ? -90 : 150,
+      verbrauchKwh: 0,
+      erzeugungKwh: 0,
+    }));
+
+    const plan = erstelleFahrplan(
+      intervalle,
+      { ...SPEICHER, startLadestandKwh: 80 },
+      NETZ,
+    );
+
+    assert.equal(
+      plan.schritte.filter((s) => s.belegung === "handel").length,
+      0,
+      "Es wurde gehandelt, obwohl die Spanne die Kosten nicht deckt",
+    );
+  });
+
+  it("nutzt negative Preise, sobald die Spanne trägt", () => {
+    // Dieselben minus 9 Cent, aber ein Abendpreis von 45 Cent: Jetzt
+    // trägt die Spanne, und der Speicher lädt in den negativen Stunden.
+    const intervalle = tag((i) => ({
+      preisEurMwh: i >= 40 && i < 48 ? -90 : i >= 72 && i < 80 ? 450 : 150,
+      verbrauchKwh: 0,
+      erzeugungKwh: 0,
+    }));
+
+    const plan = erstelleFahrplan(intervalle, SPEICHER, NETZ);
+    const geladen = plan.schritte
+      .slice(40, 48)
+      .reduce((s, x) => s + x.ladenKwh, 0);
+
+    assert.ok(geladen > 0, "Die negativen Stunden blieben ungenutzt");
+  });
+
+  it("verkauft nie, bevor gekauft wurde", () => {
+    const intervalle = tag((i) => ({
+      preisEurMwh: i < 48 ? 400 : 10,
+      verbrauchKwh: 0,
+      erzeugungKwh: 0,
+    }));
+
+    // Speicher startet an der Untergrenze: Es gibt nichts zu verkaufen,
+    // und der teure Zeitraum liegt vor dem günstigen.
+    const leer: Speicher = { ...SPEICHER, startLadestandKwh: 80 };
+    const plan = erstelleFahrplan(intervalle, leer, NETZ);
+
+    const frueh = plan.schritte
+      .slice(0, 48)
+      .reduce((s, x) => s + x.entladenKwh, 0);
+    assert.ok(frueh < 0.01, `Es wurden ${frueh} kWh aus dem Nichts verkauft`);
+  });
+
+  it("überschreitet die Einspeisegrenze nicht", () => {
+    const enges: Netzanschluss = { ...NETZ, einspeisegrenzeKw: 100 };
+
+    const intervalle = tag((i) => ({
+      preisEurMwh: i < 20 ? 5 : 500,
+      verbrauchKwh: 0,
+      erzeugungKwh: 0,
+    }));
+
+    const plan = erstelleFahrplan(intervalle, SPEICHER, enges);
+
+    for (const s of plan.schritte) {
+      assert.ok(
+        s.einspeisungKwh / 0.25 <= enges.einspeisegrenzeKw + 0.01,
+        `Einspeisung ${s.einspeisungKwh / 0.25} kW`,
+      );
+    }
+  });
+});
+
+describe("Bilanz", () => {
+  it("summiert die Stufen widerspruchsfrei", () => {
+    const intervalle = tag((i) => ({
+      preisEurMwh: i < 24 ? 15 : i > 68 && i < 84 ? 260 : 95,
+      erzeugungKwh: i > 32 && i < 72 ? 70 : 0,
+      verbrauchKwh: i > 28 && i < 76 ? 90 : 10,
+    }));
+
+    const plan = erstelleFahrplan(intervalle, SPEICHER, NETZ);
+    const b = plan.bilanz;
+
+    const summe =
+      b.eigenverbrauchEur +
+      b.handelEur +
+      b.spitzenkappungEur +
+      b.zykluskostenEur;
+
+    assert.ok(
+      Math.abs(summe - b.gesamtEur) < 0.02,
+      `Summe ${summe} gegen ausgewiesene ${b.gesamtEur}`,
+    );
+  });
+
+  it("weist die Zykluskosten als Abzug aus", () => {
+    const intervalle = tag((i) => ({
+      preisEurMwh: i < 20 ? 5 : 450,
+    }));
+
+    const plan = erstelleFahrplan(intervalle, SPEICHER, NETZ);
+
+    assert.ok(plan.bilanz.durchsatzKwh > 0);
+    assert.ok(
+      plan.bilanz.zykluskostenEur < 0,
+      "Zykluskosten müssen negativ ausgewiesen sein",
+    );
+  });
+
+  it("kommt mit einem leeren Tag zurecht", () => {
+    const plan = erstelleFahrplan([], SPEICHER, NETZ);
+
+    assert.equal(plan.schritte.length, 0);
+    assert.equal(plan.bilanz.gesamtEur, 0);
+    assert.equal(plan.bilanz.vollzyklen, 0);
+  });
+});
+
+describe("Vorgehaltene Regelleistung", () => {
+  it("nimmt die Vorhaltung aus der handelbaren Leistung heraus", () => {
+    const intervalle = tag((i) => ({
+      preisEurMwh: i < 20 ? 5 : 500,
+      verbrauchKwh: 0,
+      erzeugungKwh: 0,
+    }));
+
+    const ohne = erstelleFahrplan(intervalle, SPEICHER, NETZ);
+    const mit = erstelleFahrplan(
+      intervalle,
+      { ...SPEICHER, vorhaltungKw: 300 },
+      NETZ,
+    );
+
+    // Von 400 kW bleiben 100 kW für den Handel.
+    for (const s of mit.schritte) {
+      assert.ok(
+        s.ladenKwh <= 100 * 0.25 + 0.01,
+        `Es wurde mit ${s.ladenKwh / 0.25} kW geladen`,
+      );
+      assert.ok(s.entladenKwh <= 100 * 0.25 + 0.01);
+    }
+
+    assert.ok(
+      mit.bilanz.durchsatzKwh < ohne.bilanz.durchsatzKwh,
+      "Die Vorhaltung hat den Handel nicht eingeschränkt",
+    );
+  });
+
+  it("hält Energie für den Abruf zurück", () => {
+    // Wer 200 kW Regelleistung zusagt, muss sie liefern können. Der
+    // Ladestand darf deshalb nicht bis auf die Notstromreserve
+    // sinken.
+    const intervalle = tag(() => ({
+      preisEurMwh: 400,
+      verbrauchKwh: 300,
+      erzeugungKwh: 0,
+    }));
+
+    const plan = erstelleFahrplan(
+      intervalle,
+      { ...SPEICHER, vorhaltungKw: 200, startLadestandKwh: 700 },
+      NETZ,
+    );
+
+    const grenze = SPEICHER.kapazitaetKwh * SPEICHER.notstromReserve + 200;
+    for (const s of plan.schritte) {
+      assert.ok(
+        s.ladestandKwh >= grenze - 0.01,
+        `Ladestand ${s.ladestandKwh} unter ${grenze}`,
+      );
+    }
+  });
+
+  it("lässt Platz für einen Abruf nach unten", () => {
+    const intervalle = tag((i) => ({
+      preisEurMwh: i < 60 ? 5 : 600,
+      verbrauchKwh: 0,
+      erzeugungKwh: 0,
+    }));
+
+    const plan = erstelleFahrplan(
+      intervalle,
+      { ...SPEICHER, vorhaltungKw: 200, startLadestandKwh: 100 },
+      NETZ,
+    );
+
+    const obergrenze = SPEICHER.kapazitaetKwh - 200;
+    for (const s of plan.schritte) {
+      assert.ok(
+        s.ladestandKwh <= obergrenze + 0.01,
+        `Ladestand ${s.ladestandKwh} über ${obergrenze}`,
+      );
+    }
+  });
+});
+
+describe("Verkauf aus dem Bestand", () => {
+  it("vermarktet gespeicherten Überschuss, der sonst ungenutzt bliebe", () => {
+    // Vormittags viel Erzeugung, kein Verbrauch, abends hohe Preise.
+    // Der Speicher nimmt den Überschuss auf und verkauft ihn teurer,
+    // als die Einspeisevergütung bringt.
+    const intervalle = tag((i) => ({
+      preisEurMwh: i >= 72 && i < 84 ? 240 : 60,
+      erzeugungKwh: i >= 32 && i < 60 ? 90 : 0,
+      verbrauchKwh: 0,
+    }));
+
+    const plan = erstelleFahrplan(intervalle, SPEICHER, NETZ);
+
+    const verkauft = plan.schritte
+      .slice(72, 84)
+      .reduce((s, x) => s + x.entladenKwh, 0);
+
+    assert.ok(verkauft > 0, "Der gespeicherte Überschuss blieb im Speicher");
+    assert.ok(plan.bilanz.handelEur > 0);
+  });
+
+  it("verkauft nicht unter der Einspeisevergütung", () => {
+    // Bei 60 Euro je Megawattstunde sind das 6 Cent - weniger als die
+    // Vergütung von 7,9 Cent. Dann ist Einspeisen besser.
+    const intervalle = tag(() => ({
+      preisEurMwh: 60,
+      erzeugungKwh: 90,
+      verbrauchKwh: 0,
+    }));
+
+    const plan = erstelleFahrplan(intervalle, SPEICHER, NETZ);
+
+    assert.equal(
+      plan.schritte.filter((s) => s.belegung === "handel").length,
+      0,
+    );
+  });
+
+  it("hält die Notstromreserve auch beim Bestandsverkauf ein", () => {
+    const intervalle = tag((i) => ({
+      preisEurMwh: i >= 80 ? 400 : 50,
+      erzeugungKwh: 0,
+      verbrauchKwh: 0,
+    }));
+
+    const plan = erstelleFahrplan(intervalle, SPEICHER, NETZ);
+    const grenze = SPEICHER.kapazitaetKwh * SPEICHER.notstromReserve;
+
+    for (const s of plan.schritte) {
+      assert.ok(s.ladestandKwh >= grenze - 0.01, `${s.ladestandKwh}`);
+    }
+  });
+});
+
+describe("Handel rechnet sich nie schlecht", () => {
+  it("weist niemals einen Verlust aus dem Handel aus", () => {
+    // Der Handel ist freiwillig. Ein Fahrplan, der ihn mit Verlust
+    // ausführt, hat einen Fehler in der Mengenrechnung - typisch:
+    // Der Einkauf wird voll gebucht, der Verkauf nur teilweise.
+    // Auch mit knappem Speicher: Dort konkurrieren viele Paare um
+    // denselben Ueberschuss, und genau dabei trat der Fehler auf.
+    const speicherVarianten = [
+      SPEICHER,
+      {
+        ...SPEICHER,
+        kapazitaetKwh: 180,
+        ladeleistungKw: 90,
+        entladeleistungKw: 90,
+        notstromReserve: 0.05,
+      },
+    ];
+
+    for (const basis of speicherVarianten)
+    for (const start of [10, 80, 200, 400, 700]) {
+      for (const last of [0, 30, 90]) {
+        const intervalle = tag((i) => ({
+          preisEurMwh: i < 24 ? 10 : i > 68 && i < 84 ? 280 : 90,
+          erzeugungKwh: i > 32 && i < 72 ? 70 : 0,
+          verbrauchKwh: last,
+        }));
+
+        const plan = erstelleFahrplan(
+          intervalle,
+          {
+            ...basis,
+            startLadestandKwh: Math.min(start, basis.kapazitaetKwh * 0.9),
+          },
+          NETZ,
+        );
+
+        assert.ok(
+          plan.bilanz.handelEur >= -0.01,
+          `Kapazität ${basis.kapazitaetKwh}, Start ${start} kWh, Last ${last} kWh: Handel ${plan.bilanz.handelEur} EUR`,
+        );
+      }
+    }
+  });
+
+  it("hält die Energiebilanz auch beim Überschusshandel ein", () => {
+    const intervalle = tag((i) => ({
+      preisEurMwh: i > 68 && i < 84 ? 280 : 40,
+      erzeugungKwh: i > 32 && i < 72 ? 120 : 0,
+      verbrauchKwh: 0,
+    }));
+
+    const plan = erstelleFahrplan(intervalle, SPEICHER, NETZ);
+
+    for (const s of plan.schritte) {
+      const zu = s.erzeugungKwh + s.netzbezugKwh + s.entladenKwh;
+      const ab = s.verbrauchKwh + s.einspeisungKwh + s.ladenKwh;
+      assert.ok(Math.abs(zu - ab) < 0.01, `${zu} gegen ${ab}`);
+    }
+  });
+});

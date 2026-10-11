@@ -1,0 +1,273 @@
+/**
+ * Sicherung: prüfen statt vermuten.
+ *
+ * `backup_status` beantwortet „läuft der Job?". Das ist die kleinere Hälfte.
+ * Die größere lautet: **kommen wir im Ernstfall zurück, und schnell genug?**
+ * Dafür rechnet diese Datei vier Dinge:
+ *
+ *   1. **3-2-1-Regel** - drei Kopien, zwei verschiedene Medien, eine außer
+ *      Haus. Der Industriestandard, und der einzige Schutz gegen den Fall,
+ *      dass die Verschlüsselung auch die Sicherung erwischt.
+ *   2. **Wiederherstellungstest** - eine Sicherung ohne Restore-Test ist
+ *      eine Vermutung. Der Test ist das, was sie zur Sicherung macht.
+ *   3. **Versprechen gegen Wirklichkeit** - der Geschäftsdienst verspricht
+ *      RPO und RTO. Das Sicherungsalter ist der tatsächliche RPO, die
+ *      Wiederherstellungsdauer der tatsächliche RTO. Wo beides
+ *      auseinanderläuft, ist das Versprechen nicht gedeckt.
+ *   4. **Aufbewahrung** - gesetzliche Fristen (Buchhaltung sieben Jahre)
+ *      gegen die tatsächlich eingestellte Aufbewahrung.
+ *
+ * Für die Portierung: `frappe.has_permission`, Mandantenfilter. Die
+ * PBS-Token bleiben laut CLAUDE.md Abschnitt 6.3 ohne Lösch- und
+ * Prune-Rechte - diese Methoden lesen ausschließlich.
+ */
+import { table } from '../db.js'
+import { alterStunden, tageVersetzt } from '../zeit.js'
+
+/**
+ * Wie lange darf ein Wiederherstellungstest her sein?
+ *
+ * Halbjährlich ist die übliche Anforderung; kritische Dienste vierteljährlich.
+ * Beides sind Konventionen, keine Naturgesetze - deshalb stehen sie hier
+ * sichtbar und nicht verstreut im Code.
+ */
+const TESTFRIST_TAGE = { critical: 90, high: 180, medium: 365, low: 365 }
+
+/**
+ * Gesetzliche Mindestaufbewahrung je Art des Inhalts, in Tagen.
+ *
+ * Österreich und Deutschland verlangen für Buchhaltungsunterlagen sieben
+ * Jahre (§ 132 BAO, § 147 AO). Der Rest ist betriebliche Festlegung.
+ */
+const AUFBEWAHRUNG_SOLL = {
+  accounting: 2555,
+  mail: 2555,
+  default: 30,
+}
+
+/** Woran erkennt man buchhaltungsnahe Inhalte? Am verknüpften Dienst. */
+function aufbewahrungSoll(objekt, dienst) {
+  const text = `${objekt.business_service || ''} ${dienst?.service_name || ''}`.toLowerCase()
+  if (/buchhalt|accounting|bmd|lohn/.test(text)) return AUFBEWAHRUNG_SOLL.accounting
+  if (/mail|archiv/.test(text)) return AUFBEWAHRUNG_SOLL.mail
+  return AUFBEWAHRUNG_SOLL.default
+}
+
+/**
+ * Prüft die 3-2-1-Regel für ein Sicherungsobjekt.
+ *
+ * Bewusst getrennt in drei Einzelbefunde statt einer Ja/Nein-Antwort: „3-2-1
+ * verletzt" sagt nicht, woran es liegt, und die drei Teile haben ganz
+ * verschiedene Abhilfen.
+ */
+function pruefe321(o) {
+  const medien = String(o.media_types || '')
+    .split(',')
+    .map((m) => m.trim())
+    .filter(Boolean)
+
+  const kopien = o.copies || 0
+  const offsite = o.offsite_age_hours !== null && o.offsite_age_hours !== undefined
+
+  const teile = [
+    {
+      key: 'copies',
+      label: '3 Kopien',
+      erfuellt: kopien >= 3,
+      ist: kopien + (kopien === 1 ? ' Kopie' : ' Kopien'),
+      abhilfe: 'Zweites Ziel im Sicherungsplan ergänzen',
+    },
+    {
+      key: 'media',
+      label: '2 Medien',
+      erfuellt: medien.length >= 2,
+      ist: medien.length ? medien.join(' und ') : 'keines erfasst',
+      // Der Sinn der zwei Medien ist, dass ein Fehler nicht beide trifft -
+      // zweimal dieselbe Plattenart zählt deshalb nicht.
+      abhilfe: 'Zweite Medienart ergänzen (Band oder Cloud)',
+    },
+    {
+      key: 'offsite',
+      label: '1 außer Haus',
+      erfuellt: offsite,
+      ist: offsite ? `vor ${Math.round(o.offsite_age_hours)} h` : 'keine Kopie außer Haus',
+      abhilfe: 'Replikation an einen zweiten Ort einrichten',
+    },
+  ]
+
+  const fehlend = teile.filter((t) => !t.erfuellt)
+  return {
+    parts: teile,
+    ok: !fehlend.length,
+    missing: fehlend.map((t) => t.key),
+    // Ohne Kopie außer Haus ist die Lage kritisch - genau dieser Fall ist
+    // der, für den es die Regel gibt.
+    level: !offsite ? 'critical' : fehlend.length ? 'warning' : 'ok',
+  }
+}
+
+/**
+ * Das Versprechen des Geschäftsdienstes gegen die Wirklichkeit der Sicherung.
+ */
+function pruefeZiele(o, dienst, alterStd) {
+  if (!dienst) return null
+
+  const rpoSoll = dienst.rpo_hours ?? null
+  const rtoSoll = dienst.rto_hours ?? null
+  const rpoIst = alterStd
+  const rtoIst = o.restore_minutes ? o.restore_minutes / 60 : null
+
+  // Nicht jede Verfehlung wiegt gleich. Ein RPO von einer Stunde, der bei
+  // 1,5 Stunden liegt, ist knapp daneben; einer, der bei 40 Stunden liegt,
+  // heisst: es gibt keine stuendliche Sicherung und hat sie nie gegeben.
+  // Die Grenze bei Faktor 2 trennt "nachjustieren" von "Zusage stimmt nicht".
+  const FAKTOR_KRITISCH = 2
+
+  const befunde = []
+  let schwer = false
+
+  if (rpoSoll !== null && rpoIst !== null && rpoIst > rpoSoll) {
+    const faktor = rpoIst / rpoSoll
+    if (faktor >= FAKTOR_KRITISCH) schwer = true
+    befunde.push(
+      `RPO ${faktor >= FAKTOR_KRITISCH ? 'deutlich verfehlt' : 'knapp verfehlt'}: ` +
+        `zugesagt ${rpoSoll} h, letzte Sicherung vor ${Math.round(rpoIst)} h`,
+    )
+  }
+  if (rtoSoll !== null && rtoIst !== null && rtoIst > rtoSoll) {
+    const faktor = rtoIst / rtoSoll
+    if (faktor >= FAKTOR_KRITISCH) schwer = true
+    befunde.push(
+      `RTO ${faktor >= FAKTOR_KRITISCH ? 'deutlich verfehlt' : 'knapp verfehlt'}: ` +
+        `zugesagt ${rtoSoll} h, Wiederherstellung dauert ${rtoIst.toFixed(1)} h`,
+    )
+  }
+
+  return {
+    rpo_hours: rpoSoll,
+    rto_hours: rtoSoll,
+    rpo_actual_hours: rpoIst === null ? null : Math.round(rpoIst * 10) / 10,
+    rto_actual_hours: rtoIst === null ? null : Math.round(rtoIst * 10) / 10,
+    // Eine unbekannte Wiederherstellungsdauer ist kein erfülltes Ziel,
+    // sondern ein ungeprüftes.
+    rto_unknown: rtoIst === null,
+    findings: befunde,
+    severe: schwer,
+    level: schwer ? 'critical' : befunde.length || rtoIst === null ? 'warning' : 'ok',
+  }
+}
+
+/**
+ * Wiederherstellungstest: wann zuletzt, mit welchem Ergebnis, ist die Frist
+ * überschritten?
+ */
+function pruefeTest(o, dienst) {
+  const kritikalitaet = dienst?.criticality || 'medium'
+  const frist = TESTFRIST_TAGE[kritikalitaet] ?? 365
+
+  const alterStd = o.last_restore_test ? alterStunden(o.last_restore_test) : null
+  const alterTage = alterStd === null ? null : Math.round(alterStd / 24)
+
+  const nie = !o.last_restore_test
+  const fehlgeschlagen = o.restore_test_result === 'failed'
+  const ueberfaellig = alterTage !== null && alterTage > frist
+
+  const gruende = []
+  if (nie) gruende.push('Nie wiederhergestellt – die Sicherung ist ungeprüft')
+  if (fehlgeschlagen) gruende.push('Letzter Test fehlgeschlagen')
+  if (ueberfaellig) gruende.push(`Test vor ${alterTage} Tagen, Frist sind ${frist} Tage`)
+
+  return {
+    last_test: o.last_restore_test || null,
+    result: o.restore_test_result || 'none',
+    age_days: alterTage,
+    due_days: frist,
+    due_on: o.last_restore_test ? tageVersetzt(frist - alterTage) : null,
+    never: nie,
+    overdue: ueberfaellig,
+    reasons: gruende,
+    level: fehlgeschlagen || nie ? 'critical' : ueberfaellig ? 'warning' : 'ok',
+  }
+}
+
+// --- Öffentliche Methode ---------------------------------------------------
+
+export function backup_assurance({ tenant = null } = {}) {
+  const dienste = new Map(table('Business Service').map((d) => [d.business_service || d.name, d]))
+
+  const zeilen = table('Backup Object')
+    .filter((o) => !tenant || o.tenant === tenant)
+    .map((o) => {
+      const dienst = o.business_service ? dienste.get(o.business_service) : null
+      const alterStd = o.last_backup ? alterStunden(o.last_backup) : null
+
+      const regel = pruefe321(o)
+      const test = pruefeTest(o, dienst)
+      const ziele = pruefeZiele(o, dienst, alterStd)
+
+      const sollTage = aufbewahrungSoll(o, dienst)
+      const aufbewahrung = {
+        days: o.retention_days || 0,
+        required_days: sollTage,
+        ok: (o.retention_days || 0) >= sollTage,
+        // Sieben Jahre sind kein Richtwert, sondern § 132 BAO.
+        reason:
+          (o.retention_days || 0) >= sollTage
+            ? null
+            : `${o.retention_days || 0} statt ${sollTage} Tagen`,
+      }
+
+      const gruende = [
+        ...regel.parts.filter((p) => !p.erfuellt).map((p) => p.label + ' fehlt'),
+        ...test.reasons,
+        ...(ziele?.findings || []),
+        aufbewahrung.ok ? null : 'Aufbewahrung zu kurz: ' + aufbewahrung.reason,
+        o.encrypted ? null : 'Sicherung nicht verschlüsselt',
+      ].filter(Boolean)
+
+      const stufen = [regel.level, test.level, ziele?.level, aufbewahrung.ok ? 'ok' : 'warning']
+      const rang = { critical: 3, warning: 2, ok: 1 }
+      const stufe = stufen.filter(Boolean).reduce((a, b) => (rang[b] > rang[a] ? b : a), 'ok')
+
+      return {
+        ...o,
+        service_name: dienst?.service_name || o.business_service || null,
+        criticality: dienst?.criticality || null,
+        backup_age_hours: alterStd === null ? null : Math.round(alterStd),
+        rule_321: regel,
+        restore_test: test,
+        objectives: ziele,
+        retention: aufbewahrung,
+        reasons: gruende,
+        level: stufe,
+      }
+    })
+    .sort((a, b) => {
+      const rang = { critical: 3, warning: 2, ok: 1 }
+      return rang[b.level] - rang[a.level] || b.reasons.length - a.reasons.length
+    })
+
+  const zaehle = (pruefung) => zeilen.filter(pruefung).length
+
+  return {
+    summary: {
+      total: zeilen.length,
+      critical: zaehle((z) => z.level === 'critical'),
+      warning: zaehle((z) => z.level === 'warning'),
+      // Die drei Zahlen, nach denen eine Revision fragt.
+      rule_321_ok: zaehle((z) => z.rule_321.ok),
+      no_offsite: zaehle((z) => z.rule_321.missing.includes('offsite')),
+      never_tested: zaehle((z) => z.restore_test.never),
+      test_failed: zaehle((z) => z.restore_test.result === 'failed'),
+      test_overdue: zaehle((z) => z.restore_test.overdue),
+      objectives_missed: zaehle((z) => (z.objectives?.findings.length || 0) > 0),
+      retention_short: zaehle((z) => !z.retention.ok),
+      unencrypted: zaehle((z) => !z.encrypted),
+      // Wie lange dauert die Wiederherstellung von allem zusammen? Die Zahl
+      // steht in keinem Notfallplan, obwohl sie dort hingehoert.
+      total_restore_hours:
+        Math.round((zeilen.reduce((s, z) => s + (z.restore_minutes || 0), 0) / 60) * 10) / 10,
+    },
+    rows: zeilen,
+  }
+}

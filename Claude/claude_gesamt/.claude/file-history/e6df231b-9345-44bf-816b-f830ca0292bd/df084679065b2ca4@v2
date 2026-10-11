@@ -1,0 +1,141 @@
+"""PV Anlage (Pruefobjekt): Stammdaten, Karte, QR-Code, ERPNext-Uebernahme (FA-080 bis FA-085)."""
+
+from __future__ import annotations
+
+import frappe
+from frappe import _
+from frappe.model.document import Document
+from frappe.utils import add_months, cstr, get_url
+
+
+class PVAnlage(Document):
+	def validate(self):
+		self.koordinaten_pruefen()
+		self.typ_abhaengige_felder_pruefen()
+		if not self.naechste_wartung and self.inbetriebnahme_datum and self.wartungsintervall_monate:
+			self.naechste_wartung = add_months(self.inbetriebnahme_datum, self.wartungsintervall_monate)
+
+	def koordinaten_pruefen(self):
+		if self.gps_lat and not -90 <= self.gps_lat <= 90:
+			frappe.throw(_("Breitengrad muss zwischen -90 und 90 liegen."))
+		if self.gps_lng and not -180 <= self.gps_lng <= 180:
+			frappe.throw(_("Laengengrad muss zwischen -180 und 180 liegen."))
+
+	def typ_abhaengige_felder_pruefen(self):
+		if self.anlagen_typ in ("Batteriespeicher", "Kombi") and not self.kwh_speicher:
+			frappe.msgprint(
+				_("Hinweis: Fuer diesen Anlagentyp ist die Speicherkapazitaet nicht gepflegt."),
+				indicator="orange", alert=True,
+			)
+		if self.anlagen_typ in ("Ladestation", "Kombi") and not self.ladepunkte:
+			frappe.msgprint(
+				_("Hinweis: Fuer diesen Anlagentyp ist die Anzahl Ladepunkte nicht gepflegt."),
+				indicator="orange", alert=True,
+			)
+
+	@frappe.whitelist()
+	def qr_ziel(self) -> str:
+		"""Deep-Link fuer den QR-Code-Aufkleber an der Anlage (FA-084)."""
+		return f"{get_url()}/baudoku/anlagen/{self.name}"
+
+	@frappe.whitelist()
+	def uebersicht(self) -> dict:
+		"""Anlagen-Detail: Protokolle, Maengel, Tagesberichte auf einen Blick (FA-081)."""
+		return {
+			"protokolle": frappe.get_all(
+				"Pruefprotokoll",
+				filters={"anlage": self.name},
+				fields=["name", "vorlage_typ", "status", "pruef_datum", "pruefer",
+				        "gesamtbewertung", "fortschritt"],
+				order_by="pruef_datum desc",
+				limit_page_length=20,
+			),
+			"maengel": frappe.get_all(
+				"Mangel",
+				filters={"anlage": self.name},
+				fields=["name", "titel", "kategorie", "schweregrad", "status",
+				        "faellig_am", "ueberfaellig", "zugewiesen_an"],
+				order_by="schweregrad asc, faellig_am asc",
+				limit_page_length=50,
+			),
+			"tagesberichte": frappe.get_all(
+				"Tagesbericht",
+				filters={"anlage": self.name},
+				fields=["name", "datum", "bericht_typ", "status", "fortschritt_prozent", "ersteller"],
+				order_by="datum desc",
+				limit_page_length=20,
+			),
+		}
+
+
+@frappe.whitelist()
+def karte(anlagen_typ: str | None = None, status: str | None = None,
+          customer: str | None = None) -> list[dict]:
+	"""Anlagen mit Koordinaten fuer die Leaflet-Kartenansicht (FA-083)."""
+	filters: dict = {"gps_lat": ["!=", 0], "gps_lng": ["!=", 0]}
+	if anlagen_typ:
+		filters["anlagen_typ"] = anlagen_typ
+	if status:
+		filters["status"] = status
+	if customer:
+		filters["customer"] = customer
+
+	return frappe.get_all(
+		"PV Anlage",
+		filters=filters,
+		fields=["name", "anlage_name", "anlagen_typ", "status", "customer", "ort",
+		        "adresse", "kwp", "gps_lat", "gps_lng", "offene_maengel",
+		        "letzte_pruefung", "naechste_wartung"],
+		limit_page_length=0,
+	)
+
+
+@frappe.whitelist()
+def aus_projekt_anlegen(project: str) -> str:
+	"""Legt eine Anlage aus einem bestehenden ERPNext-Projekt vor (FA-085)."""
+	if frappe.db.exists("PV Anlage", {"project": project}):
+		return frappe.db.get_value("PV Anlage", {"project": project}, "name")
+
+	projekt = frappe.get_doc("Project", project)
+	if not projekt.customer:
+		frappe.throw(_("Dem Projekt {0} ist kein Kunde zugeordnet.").format(project))
+
+	kundenadresse = frappe.db.get_value(
+		"Dynamic Link",
+		{"link_doctype": "Customer", "link_name": projekt.customer, "parenttype": "Address"},
+		"parent",
+	)
+	adresse = frappe.get_doc("Address", kundenadresse) if kundenadresse else None
+
+	anlage = frappe.new_doc("PV Anlage")
+	anlage.update({
+		"anlage_name": projekt.project_name,
+		"anlagen_typ": "PV",
+		"status": "In Bau",
+		"customer": projekt.customer,
+		"project": project,
+		"kwp": 0,
+		"adresse": cstr(adresse.address_line1) if adresse else projekt.project_name,
+		"plz": cstr(adresse.pincode) if adresse else None,
+		"ort": cstr(adresse.city) if adresse else None,
+	})
+	anlage.insert()
+	return anlage.name
+
+
+@frappe.whitelist()
+def anstehende_wartungen(tage: int = 30) -> list[dict]:
+	"""Dashboard: Anlagen mit faelliger Wartung."""
+	from frappe.utils import add_days, today
+
+	return frappe.get_all(
+		"PV Anlage",
+		filters={
+			"naechste_wartung": ["<=", add_days(today(), int(tage))],
+			"status": "In Betrieb",
+		},
+		fields=["name", "anlage_name", "customer", "ort", "kwp", "naechste_wartung",
+		        "letzte_pruefung", "offene_maengel"],
+		order_by="naechste_wartung asc",
+		limit_page_length=50,
+	)

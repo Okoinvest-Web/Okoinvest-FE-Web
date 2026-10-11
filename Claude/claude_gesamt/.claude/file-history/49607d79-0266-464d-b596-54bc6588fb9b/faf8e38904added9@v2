@@ -1,0 +1,40 @@
+<template>
+  <div role="alert" class="rounded-lg border border-outline-red-2 bg-surface-red-1 p-4">
+    <!--
+      Fehleranzeige. Vorher stand die rohe Ausnahme im Bildschirm, also etwa
+      "DoesNotExistError: Network Device GIBTSNICHT existiert nicht". Der
+      Klassenname gehört ins Protokoll, nicht vor die Person am Schirm.
+    -->
+    <StatusDot level="critical" :text="titel" />
+    <p class="mt-1 text-sm text-ink-gray-7">{{ fehlerText(error) }}</p>
+
+    <div v-if="$slots.default || onRetry" class="mt-3 flex flex-wrap gap-2">
+      <Button v-if="onRetry" @click="onRetry">Erneut versuchen</Button>
+      <slot />
+    </div>
+
+    <!-- Die vollständige Meldung bleibt erreichbar, nur nicht im Weg. -->
+    <details v-if="zeigtDetails" class="mt-3">
+      <summary class="cursor-pointer text-xs text-ink-gray-5">Technische Meldung</summary>
+      <pre class="mt-1 whitespace-pre-wrap text-xs text-ink-gray-6">{{ rohtext }}</pre>
+    </details>
+  </div>
+</template>
+
+<script setup>
+import { computed } from 'vue'
+import { Button } from 'frappe-ui'
+import StatusDot from '@/components/StatusDot.vue'
+import { fehlerText } from '@/viz'
+
+const props = defineProps({
+  error: { type: [Object, String, Error], default: null },
+  titel: { type: String, default: 'Konnte nicht geladen werden' },
+  onRetry: { type: Function, default: null },
+})
+
+const rohtext = computed(() => String(props.error?.message || props.error || ''))
+
+// Nur anzeigen, wenn die Rohmeldung mehr sagt als der aufbereitete Text.
+const zeigtDetails = computed(() => rohtext.value && rohtext.value !== fehlerText(props.error))
+</script>

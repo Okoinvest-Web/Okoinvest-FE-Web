@@ -1,0 +1,483 @@
+// src/lib/plattform/backend/eg.js
+//
+// Fassade des Moduls Energiegemeinschaften (ElWG §§ 65–72). EINE Schnittstelle für alle Arbeitspakete; jedes Paket
+// implementiert seine Operationen in eigenen Dateien (Demo und Frappe mit identischen Signaturen):
+//   WP1 Stamm      backend/demo/eg-stamm.js      · backend/frappe/eg-stamm.js      (Frappe: plattform/api/eg_stamm.py)
+//   WP2 EDA        backend/demo/eg-eda.js        · backend/frappe/eg-eda.js        (plattform/api/eg_eda.py)
+//   WP3 Energie    backend/demo/eg-energie.js    · backend/frappe/eg-energie.js    (plattform/api/eg_energie.py)
+//   WP4 Abrechnung backend/demo/eg-abrechnung.js · backend/frappe/eg-abrechnung.js (plattform/api/eg_abrechnung.py)
+//   WP5 Gründung   backend/demo/eg-gruendung.js  · backend/frappe/eg-gruendung.js  (plattform/api/eg_gruendung.py)
+//   WP6 Portale    backend/demo/eg-portal.js     · backend/frappe/eg-portal.js     (plattform/api/eg_portal.py)
+// Vertrag (Signaturen, Rückgaben, Rechte): docs/EG-SCHNITTSTELLEN.md und docs/API.md, Abschnitt „Energiegemeinschaften“.
+// Datenmodell: src/lib/plattform/eg/modell.js. Diese Datei pflegt WP1; andere Pakete ändern nur ihre Zeile in EG_OPERATIONEN
+// per Patch (docs/eg/<paket>.md).
+//
+// Auswahl wie backend(): Frappe bei PLATTFORM_BACKEND=frappe, sonst Demo (503 im Produktions-Build ohne PLATTFORM_DEMO=1).
+// n = angemeldeter Nutzer (aus route()/portalNutzer), SYSTEM-Aufrufe (Scheduler, Ereignisse) mit egSystem().
+// Nur serverseitig verwenden.
+
+import * as demoStamm from "./demo/eg-stamm";
+import * as demoEda from "./demo/eg-eda";
+import * as demoEnergie from "./demo/eg-energie";
+import * as demoAbrechnung from "./demo/eg-abrechnung";
+import * as demoGruendung from "./demo/eg-gruendung";
+import * as demoPortal from "./demo/eg-portal";
+import * as frappeStamm from "./frappe/eg-stamm";
+import * as frappeEda from "./frappe/eg-eda";
+import * as frappeEnergie from "./frappe/eg-energie";
+import * as frappeAbrechnung from "./frappe/eg-abrechnung";
+import * as frappeGruendung from "./frappe/eg-gruendung";
+import * as frappePortal from "./frappe/eg-portal";
+import { backendName, KONFIG_FEHLER } from "./index";
+import { PlattformFehler } from "../fehler";
+import { EG_EREIGNISSE } from "../eg/modell";
+
+/**
+ * Operationen je Paket (Signaturen: docs/EG-SCHNITTSTELLEN.md, Abschnitt 4).
+ *
+ * WP1 Stamm (Lesen für alle Pakete, Schreiben Stammdaten):
+ *   egKontext(n,{gemeinschaftId?}) → {gemeinschaften:[{id,name,modell,status,rollen[]}]}  Rollen des Kontos je Gemeinschaft
+ *   egGemeinschaften(n,{status?,modell?,q?}) → {gemeinschaften[], kennzahlen, darfSchreiben}   Backoffice-Liste mit Kennzahlen
+ *   egGemeinschaft(n,id) → {gemeinschaft, organe[], mitglieder[], zaehlpunkte[], teilnahmen[], anlagen[], tarife[], verteilschluessel[], netzbetreiber[], rollen[], rechte{}, hinweise[]}
+ *   egGemeinschaftSpeichern(n,{id?,daten}) → gemeinschaft          egGemeinschaftStatus(n,id,{nach,grund?}) → gemeinschaft
+ *   egOrganSpeichern(n,{gemeinschaftId,id?,daten}) → organ         egOrganBeenden(n,id,{bis}) → organ
+ *   egMitgliedSpeichern(n,{gemeinschaftId,id?,daten}) → mitglied   egMitgliedStatus(n,id,{nach,grund?,zum?}) → mitglied
+ *   egZaehlpunktSpeichern(n,{gemeinschaftId,id?,daten}) → zaehlpunkt
+ *   egTeilnahmeSpeichern(n,{gemeinschaftId,id?,daten}) → teilnahme   (nur Entwurf bzw. TF-Wunsch; Status nur per Übergang)
+ *   egTeilnahmeUebergang(n,teilnahmeId,{ereignis,datum?,consentId?,teilnahmefaktor?,responsecode?,prozessId?,grund?}) → teilnahme
+ *   egAnlageSpeichern(n,{gemeinschaftId,id?,daten}) → anlage       egTarifSpeichern(n,{gemeinschaftId,id?,daten}) → tarif
+ *   egVerteilschluesselSpeichern(n,{gemeinschaftId,id?,daten}) → verteilschluessel
+ *   egMassenaktion(n,gemeinschaftId,{aktion,ids[],werte{}}) → {geaendert, fehler[]}
+ *   egCsvImport(n,gemeinschaftId,{art,csv,ausfuehren}) → {vorschau[], fehler[], angelegt, geaendert}
+ *   egCsvExport(n,gemeinschaftId,{art}) → {dateiname, csv}
+ *   egNetzbetreiber(n) → {netzbetreiber[]}                         egNetzentgeltRegeln(n,{stichtag?}) → {regeln[]}
+ *   egVerwaltung(n,gemeinschaftId) → Organe-Sicht (Vorstand/Kassier/Schriftführung/Rechnungsprüfung)
+ *   egMigrationVorschau(n) · egMigrationAusfuehren(n) → {gemeinschaften, mitglieder, zaehlpunkte, teilnahmen, warnungen[]}
+ * WP2 EDA:
+ *   edaProzesse(n,gemeinschaftId,{status?,code?}) · edaProzess(n,id) · edaAnmelden(n,gemeinschaftId,{teilnahmeIds[],offline?})
+ *   edaTfAendern(n,gemeinschaftId,{aenderungen:[{teilnahmeId,teilnahmefaktor,ab}]}) · edaAbmelden(n,gemeinschaftId,{teilnahmeIds[],zum})
+ *   edaVerteilschluesselSenden(n,verteilschluesselId) · edaPodlistAnfordern(n,gemeinschaftId) · edaNachforderung(n,{zaehlpunktId,von,bis})
+ *   edaNachrichtEingang(sys,{xml,quelle}) · edaFristenLauf(sys) · edaGemeinschaftBereit(sys,{gemeinschaftId})
+ * WP3 Energie:
+ *   enMessreihen(n,{gemeinschaftId,zaehlpunktId?,von,bis,groessen?}) · enEnergiedatenEmpfangen(sys,payload)
+ *   enPeriodenwerte(n,gemeinschaftId,von,bis) → {zaehlpunkte:[{zaehlpunktId,teilnahmeId,groessen{groesse:kWh},vollstaendig,anteilL3}]}
+ *   enQualitaet(n,gemeinschaftId,{monat}) · enAbweichungsbericht(n,gemeinschaftId,{monat}) · enCsvImport(n,gemeinschaftId,{csv})
+ *   enSimulation(n,{daten}) · enSimulationen(n,{gemeinschaftId?}) · enPrognose(n,gemeinschaftId) · enOptimierung(n,{zaehlpunktId})
+ * WP4 Abrechnung:
+ *   abPerioden(n,gemeinschaftId) · abPeriodeAnlegen(n,gemeinschaftId,{von,bis,art}) · abPeriodeAktion(n,id,{aktion,…})
+ *   abBelege(n,{gemeinschaftId?,mitgliedId?,periodeId?}) · abBelegPdf(n,id) · abZahlungslauf(n,gemeinschaftId,{art,belegIds[]})
+ *   abCamtImport(n,gemeinschaftId,{xml}) · abMahnlauf(n,gemeinschaftId) · abBuchungen(n,gemeinschaftId,{jahr})
+ *   abExport(n,gemeinschaftId,{art,jahr}) · abKleinunternehmer(n,gemeinschaftId) · abJahresbescheinigung(n,mitgliedId,{jahr})
+ * WP5 Gründung:
+ *   grAuftraege(n) · grAuftrag(n,id) · grAuftragAnlegen(n,{daten}) · grAuftragAktion(n,id,{aktion,…}) · grSchrittAktion(n,id,{schritt,aktion,…})
+ *   grDokumentErzeugen(n,{gemeinschaftId,vorlage,daten}) · grImportVorschau(n,gemeinschaftId,{csv}) · grImportAusfuehren(n,importId)
+ *   grFoerdercheck(n,{gemeinschaftId?,daten}) · grVersammlungen(n,gemeinschaftId) · grAufloesung(n,gemeinschaftId,{aktion})
+ * WP6 Portale:
+ *   ptUebersicht(n) · ptGemeinschaft(n,gemeinschaftId) · ptBeitrittAntrag(n,gemeinschaftId,{daten},{ip}) · ptKuendigung(n,mitgliedId,{zum})
+ *   ptTfWunsch(n,teilnahmeId,{teilnahmefaktor}) · ptInteresse(null|n,{daten},{ip}) · ptGemeindeSicht(n) · ptDatenauskunft(n)
+ *   ptRechner(null,{daten}) (öffentlich, ohne Personendaten) · ptBelege(n) · ptEnergie(n,{zaehlpunktId,von,bis})
+ */
+export const EG_OPERATIONEN = {
+  stamm: [
+    "egKontext", "egGemeinschaften", "egGemeinschaft", "egGemeinschaftSpeichern", "egGemeinschaftStatus", "egOrganSpeichern", "egOrganBeenden",
+    "egMitgliedSpeichern", "egMitgliedStatus", "egZaehlpunktSpeichern", "egTeilnahmeSpeichern", "egTeilnahmeUebergang", "egAnlageSpeichern",
+    "egTarifSpeichern", "egVerteilschluesselSpeichern", "egMassenaktion", "egCsvImport", "egCsvExport", "egNetzbetreiber", "egNetzentgeltRegeln",
+    "egVerwaltung", "egMigrationVorschau", "egMigrationAusfuehren",
+  ],
+  eda: ["edaProzesse", "edaProzess", "edaAnmelden", "edaTfAendern", "edaAbmelden", "edaVerteilschluesselSenden", "edaPodlistAnfordern", "edaNachforderung", "edaNachrichtEingang", "edaFristenLauf", "edaGemeinschaftBereit"],
+  energie: ["enMessreihen", "enEnergiedatenEmpfangen", "enPeriodenwerte", "enQualitaet", "enAbweichungsbericht", "enCsvImport", "enSimulation", "enSimulationen", "enPrognose", "enOptimierung"],
+  abrechnung: ["abPerioden", "abPeriodeAnlegen", "abPeriodeAktion", "abBelege", "abBelegPdf", "abZahlungslauf", "abCamtImport", "abMahnlauf", "abBuchungen", "abExport", "abKleinunternehmer", "abJahresbescheinigung"],
+  gruendung: ["grAuftraege", "grAuftrag", "grAuftragAnlegen", "grAuftragAktion", "grSchrittAktion", "grDokumentErzeugen", "grImportVorschau", "grImportAusfuehren", "grFoerdercheck", "grVersammlungen", "grAufloesung"],
+  portal: ["ptUebersicht", "ptGemeinschaft", "ptBeitrittAntrag", "ptKuendigung", "ptTfWunsch", "ptInteresse", "ptGemeindeSicht", "ptDatenauskunft", "ptRechner", "ptBelege", "ptEnergie"],
+};
+export const EG_ALLE_OPERATIONEN = Object.values(EG_OPERATIONEN).flat();
+
+const DEMO = { ...demoStamm, ...demoEda, ...demoEnergie, ...demoAbrechnung, ...demoGruendung, ...demoPortal };
+const FRAPPE = { ...frappeStamm, ...frappeEda, ...frappeEnergie, ...frappeAbrechnung, ...frappeGruendung, ...frappePortal };
+
+if (process.env.NODE_ENV !== "production") {
+  for (const [name, impl] of [["demo", DEMO], ["frappe", FRAPPE]]) {
+    const fehlt = EG_ALLE_OPERATIONEN.filter((op) => typeof impl[op] !== "function");
+    if (fehlt.length) console.warn(`[plattform] Energiegemeinschaften ${name}: fehlende Operationen ${fehlt.join(", ")}`);
+  }
+}
+
+/** Aktive Implementierung (alle Pakete) oder 503 */
+export function egBackend() {
+  const n = backendName();
+  if (n === "frappe") return FRAPPE;
+  if (n === "demo") return DEMO;
+  throw new PlattformFehler(503, KONFIG_FEHLER);
+}
+
+/** Systemkonto für Scheduler und Ereignisse (wirkt wie Backoffice-Leitung; Operationen protokollieren „System“) */
+export const egSystem = () => ({ id: "system-eg", rollen: ["admin"], backofficeRollen: ["leitung"], system: true });
+
+/**
+ * Ereignis an das zuständige Paket weiterreichen (modell.js EG_EREIGNISSE). Ohne Empfänger-Operation (nur Information)
+ * → { zugestellt: false }. Fehler des Empfängers werden NICHT verschluckt (Absender entscheidet über Wiederholung).
+ */
+export async function egEreignisSenden(name, payload = {}) {
+  const e = EG_EREIGNISSE[name];
+  if (!e) throw new PlattformFehler(422, `Unbekanntes Ereignis „${name}“.`);
+  if (!e.operation) return { zugestellt: false };
+  const b = egBackend();
+  return { zugestellt: true, ergebnis: await b[e.operation](egSystem(), payload) };
+}
+// src/lib/plattform/backend/demo/eg-eda.js
+//
+// STUB WP2 „EDA-Marktkommunikation“ (Demo-Backend) – angelegt von WP1 als Platzhalter, damit die Fassade
+// backend/eg.js vollständig ist. WP2 ersetzt diese Datei vollständig durch die echte Implementierung (gleiche Exporte,
+// Signaturen laut docs/EG-SCHNITTSTELLEN.md, Abschnitt 4). Bis dahin antwortet jede Operation mit 501.
+
+import { PlattformFehler } from "../../fehler";
+
+const offen = (op) => async () => {
+  throw new PlattformFehler(501, `Energiegemeinschaften: „${op}“ ist noch nicht umgesetzt (WP2).`);
+};
+
+export const edaProzesse = offen("edaProzesse");
+export const edaProzess = offen("edaProzess");
+export const edaAnmelden = offen("edaAnmelden");
+export const edaTfAendern = offen("edaTfAendern");
+export const edaAbmelden = offen("edaAbmelden");
+export const edaVerteilschluesselSenden = offen("edaVerteilschluesselSenden");
+export const edaPodlistAnfordern = offen("edaPodlistAnfordern");
+export const edaNachforderung = offen("edaNachforderung");
+export const edaNachrichtEingang = offen("edaNachrichtEingang");
+export const edaFristenLauf = offen("edaFristenLauf");
+export const edaGemeinschaftBereit = offen("edaGemeinschaftBereit");
+// src/lib/plattform/backend/frappe/eg-eda.js
+//
+// STUB WP2 „EDA-Marktkommunikation“ (Frappe-Adapter) – angelegt von WP1 als Platzhalter, damit die Fassade
+// backend/eg.js vollständig ist. WP2 ersetzt diese Datei vollständig durch die echte Implementierung (gleiche Exporte,
+// Signaturen laut docs/EG-SCHNITTSTELLEN.md, Abschnitt 4). Bis dahin antwortet jede Operation mit 501.
+// Vorgesehene Frappe-Methoden (oekoinvest_app.plattform.api.eg_eda): edaProzesse → eg_eda.prozesse, edaProzess → eg_eda.prozess, edaAnmelden → eg_eda.anmelden, edaTfAendern → eg_eda.tf_aendern, edaAbmelden → eg_eda.abmelden, edaVerteilschluesselSenden → eg_eda.verteilschluessel_senden, edaPodlistAnfordern → eg_eda.podlist_anfordern, edaNachforderung → eg_eda.nachforderung, edaNachrichtEingang → eg_eda.nachricht_eingang, edaFristenLauf → eg_eda.fristen_lauf, edaGemeinschaftBereit → eg_eda.gemeinschaft_bereit.
+// Muster: backend/frappe/eg-stamm.js (Object.assign(METHODEN, …) + aufruf).
+
+import { PlattformFehler } from "../../fehler";
+
+const offen = (op) => async () => {
+  throw new PlattformFehler(501, `Energiegemeinschaften: „${op}“ ist im Frappe-Backend noch nicht umgesetzt (WP2).`);
+};
+
+export const edaProzesse = offen("edaProzesse");
+export const edaProzess = offen("edaProzess");
+export const edaAnmelden = offen("edaAnmelden");
+export const edaTfAendern = offen("edaTfAendern");
+export const edaAbmelden = offen("edaAbmelden");
+export const edaVerteilschluesselSenden = offen("edaVerteilschluesselSenden");
+export const edaPodlistAnfordern = offen("edaPodlistAnfordern");
+export const edaNachforderung = offen("edaNachforderung");
+export const edaNachrichtEingang = offen("edaNachrichtEingang");
+export const edaFristenLauf = offen("edaFristenLauf");
+export const edaGemeinschaftBereit = offen("edaGemeinschaftBereit");
+// src/lib/plattform/backend/frappe/eg-stamm.js
+//
+// Frappe-Adapter WP1 „Kern-Stammdaten“ des Moduls Energiegemeinschaften. Methoden in oekoinvest_app.plattform.api.eg_stamm –
+// Signaturen identisch zu backend/demo/eg-stamm.js (Vertrag: docs/EG-SCHNITTSTELLEN.md). Frappe prüft Rolle, Kontext-Rolle
+// je Gemeinschaft (eg_stamm_kern.rollen_von) und Bereich „eg“ der Rechte-Matrix selbst.
+
+import { METHODEN, frappeAufruf as aufruf } from "../frappe";
+
+Object.assign(METHODEN, {
+  egKontext: "eg_stamm.kontext",
+  egGemeinschaften: "eg_stamm.gemeinschaften",
+  egGemeinschaft: "eg_stamm.gemeinschaft",
+  egGemeinschaftSpeichern: "eg_stamm.gemeinschaft_speichern",
+  egGemeinschaftStatus: "eg_stamm.gemeinschaft_status",
+  egOrganSpeichern: "eg_stamm.organ_speichern",
+  egOrganBeenden: "eg_stamm.organ_beenden",
+  egMitgliedSpeichern: "eg_stamm.mitglied_speichern",
+  egMitgliedStatus: "eg_stamm.mitglied_status",
+  egZaehlpunktSpeichern: "eg_stamm.zaehlpunkt_speichern",
+  egTeilnahmeSpeichern: "eg_stamm.teilnahme_speichern",
+  egTeilnahmeUebergang: "eg_stamm.teilnahme_uebergang",
+  egAnlageSpeichern: "eg_stamm.anlage_speichern",
+  egTarifSpeichern: "eg_stamm.tarif_speichern",
+  egVerteilschluesselSpeichern: "eg_stamm.verteilschluessel_speichern",
+  egMassenaktion: "eg_stamm.massenaktion",
+  egCsvImport: "eg_stamm.csv_import",
+  egCsvExport: "eg_stamm.csv_export",
+  egNetzbetreiber: "eg_stamm.netzbetreiber",
+  egNetzentgeltRegeln: "eg_stamm.netzentgelt_regeln",
+  egVerwaltung: "eg_stamm.verwaltung",
+  egMigrationVorschau: "eg_stamm.migration_vorschau",
+  egMigrationAusfuehren: "eg_stamm.migration_ausfuehren",
+});
+
+export const egKontext = (n, { gemeinschaftId = "" } = {}) => aufruf("egKontext", { gemeinschaftId }, n);
+export const egGemeinschaften = (n, filter = {}) => aufruf("egGemeinschaften", { filter }, n);
+export const egGemeinschaft = (n, id) => aufruf("egGemeinschaft", { id }, n);
+export const egGemeinschaftSpeichern = (n, { id = null, daten = {} } = {}) => aufruf("egGemeinschaftSpeichern", { id, daten }, n);
+export const egGemeinschaftStatus = (n, id, daten = {}) => aufruf("egGemeinschaftStatus", { id, daten }, n);
+export const egOrganSpeichern = (n, { gemeinschaftId = "", id = null, daten = {} } = {}) => aufruf("egOrganSpeichern", { gemeinschaftId, id, daten }, n);
+export const egOrganBeenden = (n, id, daten = {}) => aufruf("egOrganBeenden", { id, daten }, n);
+export const egMitgliedSpeichern = (n, { gemeinschaftId = "", id = null, daten = {} } = {}) => aufruf("egMitgliedSpeichern", { gemeinschaftId, id, daten }, n);
+export const egMitgliedStatus = (n, id, daten = {}) => aufruf("egMitgliedStatus", { id, daten }, n);
+export const egZaehlpunktSpeichern = (n, { gemeinschaftId = "", id = null, daten = {} } = {}) => aufruf("egZaehlpunktSpeichern", { gemeinschaftId, id, daten }, n);
+export const egTeilnahmeSpeichern = (n, { gemeinschaftId = "", id = null, daten = {} } = {}) => aufruf("egTeilnahmeSpeichern", { gemeinschaftId, id, daten }, n);
+export const egTeilnahmeUebergang = (n, teilnahmeId, daten = {}) => aufruf("egTeilnahmeUebergang", { teilnahmeId, daten }, n);
+export const egAnlageSpeichern = (n, { gemeinschaftId = "", id = null, daten = {} } = {}) => aufruf("egAnlageSpeichern", { gemeinschaftId, id, daten }, n);
+export const egTarifSpeichern = (n, { gemeinschaftId = "", id = null, daten = {} } = {}) => aufruf("egTarifSpeichern", { gemeinschaftId, id, daten }, n);
+export const egVerteilschluesselSpeichern = (n, { gemeinschaftId = "", id = null, daten = {} } = {}) => aufruf("egVerteilschluesselSpeichern", { gemeinschaftId, id, daten }, n);
+export const egMassenaktion = (n, gemeinschaftId, daten = {}) => aufruf("egMassenaktion", { gemeinschaftId, daten }, n);
+export const egCsvImport = (n, gemeinschaftId, daten = {}) => aufruf("egCsvImport", { gemeinschaftId, daten }, n);
+export const egCsvExport = (n, gemeinschaftId, { art = "" } = {}) => aufruf("egCsvExport", { gemeinschaftId, art }, n);
+export const egNetzbetreiber = (n) => aufruf("egNetzbetreiber", {}, n);
+export const egNetzentgeltRegeln = (n, { stichtag = "" } = {}) => aufruf("egNetzentgeltRegeln", { stichtag }, n);
+export const egVerwaltung = (n, gemeinschaftId) => aufruf("egVerwaltung", { gemeinschaftId }, n);
+export const egMigrationVorschau = (n) => aufruf("egMigrationVorschau", {}, n);
+export const egMigrationAusfuehren = (n) => aufruf("egMigrationAusfuehren", {}, n);
+// src/lib/plattform/eg/rechte.js
+//
+// Rechte je Gemeinschaft (Kontext-Rollen, Fachkonzept Abschnitt 5) – reine Funktionen, client- und serverseitig.
+// Eigentümer: WP1. Python-Spiegel: plattform/eg_stamm_kern.py (EG_RECHTE, rollen_von, stufe_von) – Abgleich im Test.
+//
+// Zwei Ebenen:
+//  1. Backoffice (Rolle admin): Bereich „eg“ der Rechte-Matrix (src/lib/plattform/rechte.js; Unterrolle „eg“ =
+//     Betriebsführung Energiegemeinschaften). Daraus entstehen die Kontext-Rollen „organisator“ (Gemeinschaft mit aktivem
+//     Dienstleistungs-/AV-Vertrag) bzw. „gruendung“ (Gemeinschaft vor dem Status „aktiv“). Ohne Schreibrecht im Bereich „eg“
+//     wirken sie höchstens lesend.
+//  2. Portal: Organ-Einträge (vorstand, kassier, schriftfuehrer, rechnungspruefer – Teamrollen innerhalb der Gemeinschaft,
+//     analog Bank-Team) und Mitglied-Einträge mit Bezug zum Konto (mitglied, gemeinde, interessent). Das globale Konto kann
+//     jede Portal-Rolle haben (mitglied, landwirt, unternehmen, kommune …) – maßgeblich ist der Eintrag in der Gemeinschaft.
+//
+// Stufen: 0 kein Zugriff, 1 lesen bzw. vorbereiten/vorschlagen, 2 ausführen/schreiben.
+
+import { darfLesen, darfSchreiben } from "../rechte.js";
+import { EG_TEAMROLLEN, GEMEINSCHAFT_STATUS, MITGLIED_AKTIV, ORGAN_FUNKTIONEN } from "./modell.js";
+
+const R = Object.keys(EG_TEAMROLLEN); // interessent, mitglied, gemeinde, vorstand, kassier, schriftfuehrer, rechnungspruefer, organisator, gruendung
+
+/**
+ * Rechte-Matrix je Gemeinschaft. Spalten in der Reihenfolge von EG_TEAMROLLEN:
+ * interessent, mitglied, gemeinde, vorstand, kassier, schriftfuehrer, rechnungspruefer, organisator, gruendung
+ */
+const M = {
+  eigene_daten: { label: "Eigene Daten, Zählpunkte, Belege, Dashboard", s: [1, 2, 2, 2, 2, 2, 2, 0, 0] },
+  beitritt: { label: "Beitritt beantragen, TF-Wunsch, Kündigung", s: [2, 2, 2, 0, 0, 0, 0, 0, 0] },
+  mitgliederliste: { label: "Mitgliederliste (Name, Status)", s: [0, 0, 0, 2, 2, 2, 1, 2, 1] },
+  mitglied_aufnehmen: { label: "Mitglied aufnehmen bzw. ablehnen (1 = vorbereiten)", s: [0, 0, 0, 2, 0, 0, 0, 1, 0] },
+  stammdaten: { label: "Zählpunkte, Anlagen, Mitgliederdaten pflegen", s: [0, 0, 0, 2, 1, 2, 1, 2, 2] },
+  organe_statuten: { label: "Statuten, Organe, Rechtsdaten der Gemeinschaft (1 = vorbereiten)", s: [0, 1, 1, 2, 0, 2, 0, 1, 2] },
+  eda_ausloesen: { label: "EDA-Prozesse auslösen (Anmeldung, TF, Abmeldung)", s: [0, 0, 0, 0, 0, 0, 0, 2, 2] },
+  eda_freigeben: { label: "EDA-Massenvorgänge freigeben (Vier-Augen)", s: [0, 0, 0, 2, 0, 0, 0, 0, 0] },
+  qh_aggregiert: { label: "Viertelstundenwerte aggregiert", s: [0, 0, 0, 1, 1, 0, 1, 1, 0] },
+  qh_einzeln: { label: "Viertelstundenwerte einzelner Mitglieder (Zweckbindung, protokolliert)", s: [0, 0, 0, 1, 0, 0, 0, 1, 0] },
+  tarife: { label: "Tarife und Preisblatt (1 = Vorschlag/vorbereiten)", s: [0, 0, 0, 2, 1, 0, 0, 1, 0] },
+  abrechnung_vorschau: { label: "Abrechnungslauf: Vorschau", s: [0, 0, 0, 1, 1, 0, 1, 2, 0] },
+  abrechnung_freigabe_1: { label: "Abrechnung freigeben (1. Auge)", s: [0, 0, 0, 0, 2, 0, 0, 0, 0] },
+  abrechnung_freigabe_2: { label: "Abrechnung freigeben (2. Auge)", s: [0, 0, 0, 2, 0, 0, 0, 0, 0] },
+  abrechnung_versand: { label: "Belege versenden", s: [0, 0, 0, 0, 0, 0, 0, 2, 0] },
+  sepa: { label: "SEPA-Dateien erzeugen, Zahlungen abgleichen", s: [0, 0, 0, 0, 2, 0, 1, 2, 0] },
+  buchhaltung: { label: "Buchhaltung, UVA-Vorbereitung, Jahresabschluss", s: [0, 0, 0, 1, 2, 0, 1, 2, 0] },
+  buchhaltung_pruefen: { label: "Rechnungsprüfung (Prüfpfad, Prüfvermerk)", s: [0, 0, 0, 0, 0, 0, 2, 0, 0] },
+  gv: { label: "GV einberufen, Protokoll (Mitglieder: Teilnahme und Stimme)", s: [0, 1, 1, 2, 0, 2, 1, 1, 0] },
+  gruendungsauftrag: { label: "Gründungsauftrag", s: [2, 0, 2, 2, 0, 0, 0, 0, 2] },
+  audit: { label: "Audit-Log der Gemeinschaft", s: [0, 0, 0, 1, 1, 0, 1, 1, 0] },
+};
+
+/** { recht: { label, rollen: { rolle: stufe } } } */
+export const EG_RECHTE = Object.fromEntries(Object.entries(M).map(([k, z]) => [k, { label: z.label, rollen: Object.fromEntries(R.map((r, i) => [r, z.s[i]])) }]));
+export const EG_RECHTE_IDS = Object.keys(EG_RECHTE);
+const BACKOFFICE_ROLLEN = ["organisator", "gruendung"];
+/**
+ * Stammdatenpflege durch das Backoffice (Bereich „eg“) auch ohne Kontext-Rolle – jede Änderung wird protokolliert.
+ * EDA, Abrechnungsfreigaben, Zahlungen, Rechnungsprüfung und Einzelwerte bleiben an die Kontext-Rollen gebunden.
+ */
+export const BACKOFFICE_PFLEGE = ["mitgliederliste", "stammdaten", "organe_statuten", "mitglied_aufnehmen", "tarife", "audit", "qh_aggregiert"];
+/** Vor diesen Status gilt Backoffice-Arbeit als Gründungsberatung */
+const VOR_BETRIEB = ["interesse", "machbarkeit", "in_gruendung", "rechtsperson", "marktpartner", "vertrag_nb", "eda_bereit"];
+
+const tag = (v) => String(v || "").slice(0, 10);
+/** Organ am Stichtag wirksam? */
+export function organWirksam(o, heute) {
+  if (!o || o.status === "beendet") return false;
+  const h = tag(heute);
+  return (!o.von || tag(o.von) <= h) && (!o.bis || tag(o.bis) >= h);
+}
+
+/**
+ * Kontext-Rollen eines Kontos in einer Gemeinschaft.
+ * @param {{nutzer:object, gemeinschaft:object, organe?:object[], mitglieder?:object[], heute:string}} k
+ * @returns {{rollen:string[], backofficeStufe:number}}
+ */
+export function egRollen({ nutzer, gemeinschaft, organe = [], mitglieder = [], heute } = {}) {
+  const rollen = new Set();
+  let backofficeStufe = 0;
+  if (!nutzer || !gemeinschaft) return { rollen: [], backofficeStufe };
+  const gid = gemeinschaft.id;
+  for (const o of organe) {
+    if (o.gemeinschaftId === gid && o.kontoId && o.kontoId === nutzer.id && organWirksam(o, heute)) {
+      const r = ORGAN_FUNKTIONEN[o.funktion]?.teamrolle;
+      if (r) rollen.add(r);
+    }
+  }
+  for (const m of mitglieder) {
+    if (m.gemeinschaftId !== gid || !m.kontoId || m.kontoId !== nutzer.id) continue;
+    if (MITGLIED_AKTIV.includes(m.status)) rollen.add(m.art === "gemeinde" ? "gemeinde" : "mitglied");
+    else if (["interessent", "antrag", "geprueft"].includes(m.status)) rollen.add("interessent");
+  }
+  if (nutzer.rollen?.includes("admin") && darfLesen(nutzer, "eg")) {
+    backofficeStufe = darfSchreiben(nutzer, "eg") ? 2 : 1;
+    if (VOR_BETRIEB.includes(gemeinschaft.status) || !GEMEINSCHAFT_STATUS[gemeinschaft.status]) rollen.add("gruendung");
+    if (gemeinschaft.dienstleistung?.aktiv) rollen.add("organisator");
+  }
+  return { rollen: R.filter((r) => rollen.has(r)), backofficeStufe };
+}
+
+/** Stufe (0–2) eines Rollen-Kontexts für ein Recht; Backoffice-Rollen gedeckelt auf die Stufe im Bereich „eg“ */
+export function egStufe(kontext, recht) {
+  const z = EG_RECHTE[recht]?.rollen;
+  if (!z || !kontext) return 0;
+  const aus = (kontext.rollen || []).reduce((m, r) => Math.max(m, BACKOFFICE_ROLLEN.includes(r) ? Math.min(z[r] || 0, kontext.backofficeStufe || 0) : z[r] || 0), 0);
+  return BACKOFFICE_PFLEGE.includes(recht) ? Math.max(aus, kontext.backofficeStufe || 0) : aus;
+}
+export const egDarf = (kontext, recht, stufe = 1) => egStufe(kontext, recht) >= stufe;
+
+/** Alle Rechte eines Kontexts als { recht: stufe } (für Seiten: Knöpfe ein-/ausblenden – geprüft wird serverseitig) */
+export const egRechteVon = (kontext) => Object.fromEntries(EG_RECHTE_IDS.map((r) => [r, egStufe(kontext, r)]));
+
+/** Organ-Einstieg: hat das Konto eine Organ-Rolle (Vorstand, Kassier, Schriftführung, Rechnungsprüfung)? */
+export const istOrgan = (kontext) => (kontext?.rollen || []).some((r) => EG_TEAMROLLEN[r]?.art === "organ");
+// src/lib/plattform/eg/navigation.js
+//
+// Seiten und Reiter des Moduls Energiegemeinschaften – EINE Liste für Menü (PortalRahmen.js), Reiterleiste je Gemeinschaft
+// (components/Portal/EG/Stamm/EgReiter.js) und Brotkrumen. Eigentümer: WP1; neue Seiten melden die Pakete per Patch.
+// `recht`: Kontext-Recht aus eg/rechte.js, ab dem der Reiter erscheint (Portal); Backoffice sieht alle Reiter mit Bereich „eg“.
+
+/** Reiter je Gemeinschaft im Backoffice: /portal/admin/eg/[id]/<pfad> (pfad "" = Stammdaten-Seite von WP1) */
+export const EG_ADMIN_REITER = [
+  { id: "stammdaten", label: "Stammdaten", pfad: "", wp: "WP1" },
+  { id: "mitglieder", label: "Mitglieder & Zählpunkte", pfad: "?reiter=mitglieder", wp: "WP1" },
+  { id: "anlagen", label: "Anlagen & Tarife", pfad: "?reiter=anlagen", wp: "WP1" },
+  { id: "organe", label: "Organe", pfad: "/organe", wp: "WP5" },
+  { id: "versammlungen", label: "Versammlungen", pfad: "/versammlungen", wp: "WP5" },
+  { id: "eda", label: "EDA", pfad: "/eda", wp: "WP2" },
+  { id: "energiedaten", label: "Energiedaten", pfad: "/energiedaten", wp: "WP3" },
+  { id: "abrechnung", label: "Abrechnung", pfad: "/abrechnung", wp: "WP4" },
+  { id: "buchhaltung", label: "Buchhaltung", pfad: "/buchhaltung", wp: "WP4" },
+];
+
+/** Reiter der Organe-Sicht /portal/eg/[id]/<pfad> (Vorstand, Kassier, Schriftführung, Rechnungsprüfung) */
+export const EG_ORGAN_REITER = [
+  { id: "verwaltung", label: "Verwaltung", pfad: "/verwaltung", recht: "mitgliederliste", wp: "WP1" },
+  { id: "abrechnung", label: "Abrechnung & Freigaben", pfad: "/abrechnung", recht: "abrechnung_vorschau", wp: "WP4" },
+  { id: "kasse", label: "Kassa & Buchhaltung", pfad: "/kasse", recht: "buchhaltung", wp: "WP4" },
+  { id: "versammlungen", label: "Versammlungen", pfad: "/versammlungen", recht: "gv", wp: "WP5" },
+  { id: "energie", label: "Energiedaten", pfad: "/energie", recht: "qh_aggregiert", wp: "WP3" },
+];
+
+/** Seiten außerhalb einer Gemeinschaft */
+export const EG_SEITEN = {
+  adminListe: { href: "/portal/admin/eg", label: "Energiegemeinschaften", wp: "WP1" },
+  adminNetz: { href: "/portal/admin/eg/netzbetreiber", label: "Netzbetreiber & Netzentgelte", wp: "WP1" },
+  adminGruendung: { href: "/portal/admin/eg/gruendung", label: "Gründungsaufträge", wp: "WP5" },
+  adminSimulation: { href: "/portal/admin/eg/simulation", label: "Simulation", wp: "WP3" },
+  portal: { href: "/portal/eg", label: "Energiegemeinschaft", wp: "WP6" },
+  portalGruendung: { href: "/portal/eg/gruendung", label: "Gemeinschaft gründen", wp: "WP5" },
+  oeffentlichRechner: { href: "/energiegemeinschaften/rechner", label: "Rechner Energiegemeinschaft", wp: "WP6" },
+};
+
+/** Brotkrumen-Bezeichnungen (Pfadteile) – PortalRahmen.js übernimmt sie in LABELS */
+export const EG_BROTKRUMEN = {
+  eg: "Energiegemeinschaften",
+  stammdaten: "Stammdaten",
+  mitglieder: "Mitglieder",
+  organe: "Organe",
+  versammlungen: "Versammlungen",
+  eda: "EDA",
+  energiedaten: "Energiedaten",
+  abrechnung: "Abrechnung",
+  buchhaltung: "Buchhaltung",
+  simulation: "Simulation",
+  gruendung: "Gründung",
+  netzbetreiber: "Netzbetreiber",
+  verwaltung: "Verwaltung",
+  kasse: "Kassa",
+};
+// src/lib/plattform/eg/status.js
+//
+// Zustandswechsel der Kern-Entitäten (Fachkonzept 3.4, 3.6, 3.8): Gemeinschaft, Mitglied, Teilnahme. Reine Funktionen.
+// WP2 (EDA) schreibt Teilnahme-Status AUSSCHLIESSLICH über teilnahmeUebergang() (Backend: egTeilnahmeUebergang).
+// Python-Spiegel: plattform/eg_stamm_kern.py (gleiche Testvektoren: eg/testdaten/stamm/uebergaenge.json).
+
+import { fehler, konfliktFehler, datum as datumPruefen, plusTage, text, ganz } from "../mitglied/basis.js";
+import { GEMEINSCHAFT_STATUS, MITGLIED_STATUS, TEILNAHME_STATUS, TF_MAX, TF_MIN, ZUSTIMMUNG_FRIST_TAGE } from "./modell.js";
+
+const tag = (v) => String(v || "").slice(0, 10);
+
+/** Gemeinschaft: erlaubter Folgezustand? Wirft 409 sonst. Pflichtangaben je Ziel (ZVR/FN, Marktpartner-ID, Gemeinschafts-ID). */
+export function gemeinschaftUebergang(g, nach, { grund = "" } = {}) {
+  const von = g?.status || "interesse";
+  if (!GEMEINSCHAFT_STATUS[nach]) throw fehler("Unbekannter Status der Gemeinschaft.", "status");
+  if (von === nach) return { status: nach };
+  if (!GEMEINSCHAFT_STATUS[von]?.naechste.includes(nach)) throw konfliktFehler(`Wechsel von „${GEMEINSCHAFT_STATUS[von]?.label || von}“ nach „${GEMEINSCHAFT_STATUS[nach].label}“ ist nicht vorgesehen.`);
+  if (nach === "rechtsperson" && g.rechtsform !== "keine" && !(g.zvrZahl || g.firmenbuchnummer)) throw fehler("Für den Status „Rechtsperson“ bitte ZVR-Zahl bzw. Firmenbuchnummer eintragen.", "zvrZahl");
+  if (nach === "marktpartner" && !g.marktpartnerId) throw fehler("Für den Status „Marktpartner“ bitte die Marktpartner-ID (ebUtilities) eintragen.", "marktpartnerId");
+  if (nach === "vertrag_nb" && !g.gemeinschaftsId) throw fehler("Für den Status „Vertrag mit dem Netzbetreiber“ bitte die Gemeinschafts-ID eintragen.", "gemeinschaftsId");
+  if (["aufgeloest", "in_aufloesung"].includes(nach) && !text(grund, 500)) throw fehler("Bitte den Beschluss bzw. Grund angeben.", "grund");
+  return { status: nach };
+}
+
+/** Mitglied: erlaubter Folgezustand; Kündigung braucht `zum`, Ausschluss/Ablehnung einen Grund */
+export function mitgliedUebergang(m, nach, { grund = "", zum = "" } = {}) {
+  const von = m?.status || "interessent";
+  if (!MITGLIED_STATUS[nach]) throw fehler("Unbekannter Mitgliedsstatus.", "status");
+  if (von === nach) return { status: nach };
+  if (!MITGLIED_STATUS[von]?.naechste.includes(nach)) throw konfliktFehler(`Wechsel von „${MITGLIED_STATUS[von]?.label || von}“ nach „${MITGLIED_STATUS[nach].label}“ ist nicht vorgesehen.`);
+  if (nach === "gekuendigt" && !datumPruefen(zum)) throw fehler("Bitte das Austrittsdatum (Kündigung zum) angeben.", "zum");
+  if (["abgelehnt", "ausgeschlossen"].includes(nach) && !text(grund, 500)) throw fehler("Bitte einen Grund angeben.", "grund");
+  return { status: nach, ...(nach === "gekuendigt" ? { austrittZum: datumPruefen(zum) } : {}) };
+}
+
+/**
+ * Teilnahme-Übergang anhand eines Ereignisses (TEILNAHME_STATUS[…].ereignisse).
+ * @param {object} t Teilnahme (EgTeilnahme)
+ * @param {string} ereignis z. B. senden, anforderung_econ, zustimmung_econ, abschluss_econ, tf_geaendert, cm_rev_sp, cm_rev_cus …
+ * @param {{heute:string, datum?:string, consentId?:string, teilnahmefaktor?:number, responsecode?:string, prozessId?:string, grund?:string, von?:string|null}} o
+ * @returns {object} neue Teilnahme (Kopie) mit Verlaufseintrag
+ */
+export function teilnahmeUebergang(t, ereignis, o = {}) {
+  const von = t?.status || "entwurf";
+  const ziel = TEILNAHME_STATUS[von]?.ereignisse?.[ereignis];
+  if (!ziel) throw konfliktFehler(`Ereignis „${ereignis}“ ist im Status „${TEILNAHME_STATUS[von]?.label || von}“ nicht vorgesehen.`);
+  const heute = tag(o.heute);
+  const d = datumPruefen(o.datum) || heute;
+  const neu = { ...t, status: ziel, tfHistorie: [...(t.tfHistorie || [])], verlauf: [...(t.verlauf || [])] };
+  if (o.responsecode !== undefined) neu.responsecode = text(o.responsecode, 40);
+  if (ereignis === "anforderung_econ") neu.fristBis = plusTage(d, ZUSTIMMUNG_FRIST_TAGE);
+  if (ereignis === "zustimmung_econ") {
+    neu.consentId = text(o.consentId, 80) || t.consentId || "";
+    neu.fristBis = "";
+  }
+  if (ereignis === "abschluss_econ") {
+    if (!datumPruefen(o.datum)) throw fehler("Für die Aktivierung bitte das Aktivierungsdatum laut ABSCHLUSS_ECON angeben.", "datum");
+    neu.gueltigAb = d;
+    neu.gueltigBis = "";
+    neu.tfHistorie.push({ gueltigAb: d, tf: t.teilnahmefaktor, prozessId: text(o.prozessId, 40) });
+  }
+  if (ereignis === "tf_geaendert") {
+    const tf = ganz(o.teilnahmefaktor, TF_MIN, TF_MAX);
+    if (tf === null) throw fehler(`Der Teilnahmefaktor ist eine ganze Zahl von ${TF_MIN} bis ${TF_MAX} %.`, "teilnahmefaktor");
+    if (neu.tfHistorie.some((h) => h.gueltigAb === d)) throw konfliktFehler("Je Gemeinschaft und Zählpunkt ist derzeit nur eine Änderung des Teilnahmefaktors pro Tag möglich.");
+    neu.teilnahmefaktor = tf;
+    neu.tfHistorie.push({ gueltigAb: d, tf, prozessId: text(o.prozessId, 40) });
+  }
+  if (ereignis === "cm_rev_sp") {
+    if (d < heute) throw konfliktFehler("Eine Abmeldung ist nicht rückwirkend möglich (Prozessdatum frühestens heute).");
+    neu.gueltigBis = d;
+  }
+  if (["abmeldung_ok", "cm_rev_cus", "cm_rev_imp"].includes(ereignis)) {
+    neu.gueltigBis = ereignis === "abmeldung_ok" ? t.gueltigBis || d : d;
+    neu.beendetGrund = ereignis === "cm_rev_cus" ? "widerruf" : ereignis === "cm_rev_imp" ? "implizit" : "abmeldung";
+  }
+  if (ereignis === "abmeldung_abgelehnt") neu.gueltigBis = "";
+  if (ereignis === "erneut") Object.assign(neu, { consentId: "", fristBis: "", responsecode: "" });
+  neu.verlauf.push({ am: o.am || `${heute}T12:00:00.000Z`, von, nach: ziel, ereignis, prozessId: text(o.prozessId, 40), text: text(o.grund, 300), vonKonto: o.von ?? null });
+  return neu;
+}
+
+/** Erlaubte Ereignisse einer Teilnahme (für Knöpfe der Korrektur-Ansicht) */
+export const teilnahmeEreignisse = (t) => Object.keys(TEILNAHME_STATUS[t?.status || "entwurf"]?.ereignisse || {});

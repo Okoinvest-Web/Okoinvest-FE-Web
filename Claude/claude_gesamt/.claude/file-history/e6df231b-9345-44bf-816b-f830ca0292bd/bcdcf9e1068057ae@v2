@@ -1,0 +1,154 @@
+import pathlib
+
+FE = pathlib.Path(r"C:\Users\SALEADMIN\Documents\Servicetechniker APP\frontend")
+
+
+def patch(pfad, paare, basis=FE):
+    p = basis / pfad
+    s = p.read_text(encoding="utf-8")
+    for alt, neu in paare:
+        if alt not in s:
+            raise SystemExit(f"NICHT GEFUNDEN in {pfad}:\n---\n{alt[:220]}\n---")
+        s = s.replace(alt, neu, 1)
+    p.write_text(s, encoding="utf-8")
+    print("ok", pfad)
+
+
+# ---------------------------------------------------------------- API-Kurznamen
+patch(
+    "src/lib/api.ts",
+    [
+        (
+            """  offeneFreigaben: () =>""",
+            """  mangelSammelaktion: (namen: string[], felder: Record<string, unknown>) =>
+    methode('oekovolt_baudoku.api.mangel.sammelaktion', { namen, felder }),
+  zustaendige: () => methode('oekovolt_baudoku.api.mangel.zustaendige', {}, 'GET'),
+  meineAufgaben: () => methode('oekovolt_baudoku.api.mangel.meine_aufgaben', {}, 'GET'),
+
+  offeneFreigaben: () =>""",
+        )
+    ],
+)
+
+# ---------------------------------------------- Kamera-zuerst bei Fotoaufnahme
+patch(
+    "src/components/FotoAufnahme.vue",
+    [
+        (
+            """import { onBeforeUnmount, ref } from 'vue'""",
+            """import { onBeforeUnmount, onMounted, ref } from 'vue'""",
+        ),
+        (
+            """    gehoertZu?: string
+    titel?: string
+  }>(),
+  { pflicht: false, max: 12, gehoertZu: undefined, titel: 'Fotos' },
+)""",
+            """    gehoertZu?: string
+    titel?: string
+    /** Kamera direkt beim Einblenden oeffnen (schnelle Mangelerfassung). */
+    sofortAufnehmen?: boolean
+  }>(),
+  { pflicht: false, max: 12, gehoertZu: undefined, titel: 'Fotos', sofortAufnehmen: false },
+)""",
+        ),
+        (
+            """onBeforeUnmount(() => {
+  vorschauen.forEach((url) => URL.revokeObjectURL(url))
+  vorschauen.clear()
+})""",
+            """onMounted(() => {
+  if (props.sofortAufnehmen && !props.modelValue.length) void aufnehmen(true)
+})
+
+onBeforeUnmount(() => {
+  vorschauen.forEach((url) => URL.revokeObjectURL(url))
+  vorschauen.clear()
+})""",
+        ),
+    ],
+)
+
+# ------------------------------------- Schnellaktion "Mangel" oeffnet die Kamera
+patch(
+    "src/App.vue",
+    [
+        (
+            """const schnellaktionen = [
+  { titel: 'Protokoll', symbol: 'protokoll', ziel: 'protokoll-neu' },
+  { titel: 'Mangel', symbol: 'mangel', ziel: 'mangel-neu' },
+  { titel: 'Tagesbericht', symbol: 'bericht', ziel: 'tagesbericht-neu' },
+]
+const aktionsmenueOffen = ref(false)
+
+function schnellaktion(ziel: string) {
+  aktionsmenueOffen.value = false
+  void router.push({ name: ziel })
+}""",
+            """interface Schnellaktion {
+  titel: string
+  symbol: string
+  ziel: string
+  /** Kapitel 6.1: "Neuer Mangel - schnelle Mangelerfassung mit Kamera". */
+  query?: Record<string, string>
+}
+
+const schnellaktionen: Schnellaktion[] = [
+  { titel: 'Protokoll', symbol: 'protokoll', ziel: 'protokoll-neu' },
+  { titel: 'Mangel mit Foto', symbol: 'kamera', ziel: 'mangel-neu', query: { kamera: '1' } },
+  { titel: 'Mangel', symbol: 'mangel', ziel: 'mangel-neu' },
+  { titel: 'Tagesbericht', symbol: 'bericht', ziel: 'tagesbericht-neu' },
+]
+const aktionsmenueOffen = ref(false)
+
+function schnellaktion(aktion: Schnellaktion) {
+  aktionsmenueOffen.value = false
+  void router.push({ name: aktion.ziel, query: aktion.query })
+}""",
+        ),
+        (
+            """          <button
+            v-for="aktion in schnellaktionen"
+            :key="aktion.ziel"
+            class="flex items-center gap-2 rounded-full bg-white py-2.5 pl-4 pr-5 text-sm font-semibold
+                   shadow-karte dark:bg-slate-800"
+            @click="schnellaktion(aktion.ziel)"
+          >""",
+            """          <button
+            v-for="aktion in schnellaktionen"
+            :key="aktion.titel"
+            class="flex items-center gap-2 rounded-full bg-white py-2.5 pl-4 pr-5 text-sm font-semibold
+                   shadow-karte dark:bg-slate-800"
+            @click="schnellaktion(aktion)"
+          >""",
+        ),
+    ],
+)
+
+# ------------------------------------------- Mangelformular: Kamera durchreichen
+patch(
+    "src/views/MangelFormularView.vue",
+    [
+        (
+            """      <FotoAufnahme
+        :model-value="mangel.fotos ?? []"
+        titel="Fotos des Mangels"
+        :gehoert-zu="mangel.lokale_id"
+        @update:model-value="(f) => (mangel!.fotos = f)"
+      />""",
+            """      <FotoAufnahme
+        :model-value="mangel.fotos ?? []"
+        titel="Fotos des Mangels"
+        :gehoert-zu="mangel.lokale_id"
+        :sofort-aufnehmen="kameraZuerst"
+        @update:model-value="(f) => (mangel!.fotos = f)"
+      />""",
+        ),
+        (
+            """const istNeu = computed(() => !props.lokaleId)""",
+            """const istNeu = computed(() => !props.lokaleId)
+/** Aus der Schnellaktion heraus: erst fotografieren, dann beschreiben. */
+const kameraZuerst = computed(() => istNeu.value && route.query.kamera === '1')""",
+        ),
+    ],
+)

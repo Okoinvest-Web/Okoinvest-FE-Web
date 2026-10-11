@@ -1,0 +1,858 @@
+/**
+ * Sicherungsziele und Schutzobjekte anlegen und pflegen.
+ *
+ * ## Warum das eine eigene Datei ist
+ *
+ * `backup-steuerung.js` stößt Läufe an. Hier wird festgelegt, **was
+ * überhaupt gilt**: wo Sicherungen liegen dürfen, was gesichert gehört, wie
+ * lange es aufbewahrt werden muss – und wann zuletzt jemand nachgesehen
+ * hat, ob sich das Ganze zurückholen lässt.
+ *
+ * Ohne diese Ebene wäre die Backup-Seite eine Anzeige mit Knöpfen: Die
+ * Prüfung meldete „nie getestet – kritisch", und es gäbe keinen Weg, das je
+ * zu erledigen. Ein Befund, den niemand abarbeiten kann, wird ignoriert,
+ * und mit ihm die daneben.
+ *
+ * ## Die Trennung, auf der alles steht: erklärt gegen gemessen
+ *
+ * Ein Feld gehört in genau eine der beiden Welten.
+ *
+ *   **Erklärt** – ein Mensch legt es fest. Wo liegen die Sicherungen, was
+ *   muss geschützt werden, wie lange aufbewahrt. Das ist die Zusage.
+ *
+ *   **Gemessen** – ein Konnektor liest es aus dem Zielsystem. Wann zuletzt
+ *   gesichert, wie viele Kopien, wie voll das Ziel, geprüft oder nicht.
+ *   Das ist die Wirklichkeit.
+ *
+ * `backup_assurance` vergleicht die beiden. Genau daraus bezieht die Seite
+ * ihren Wert. Ließe sich „copies: 3" von Hand eintragen, wäre die Prüfung
+ * keine Prüfung mehr, sondern eine Selbstauskunft – und die fällt erfah-
+ * rungsgemäß immer gut aus. Deshalb weist jede Methode hier gemessene
+ * Felder ausdrücklich ab, statt sie still zu übernehmen.
+ *
+ * Die einzige Ausnahme ist der Wiederherstellungstest: den führt ein Mensch
+ * durch, also trägt ihn auch ein Mensch ein. Er ist eine Messung, die nur
+ * über die Tastatur hereinkommt – und wird entsprechend streng geprüft.
+ *
+ * ## Abschalten statt löschen
+ *
+ * Wie bei den Konnektoren. Ein gelöschtes Ziel nimmt seine
+ * Wiederherstellungspunkte mit, und die Frage „was lag da eigentlich?"
+ * lässt sich danach nicht mehr beantworten.
+ *
+ * ## Für die Portierung
+ *
+ * In Python vor jede Methode `frappe.has_permission` und einen
+ * Mandantenfilter. Die Zuordnung Ziel → Konnektor sollte dort zusätzlich
+ * gegen die tatsächlichen Rechte des Tokens geprüft werden: ein Ziel
+ * anzulegen, das der Konnektor gar nicht erreicht, erzeugt eine Zusage
+ * ohne Deckung.
+ */
+import { FrappeMockError, SESSION_USER, table, touch } from '../db.js'
+import { alterStunden, jetzt, parse } from '../zeit.js'
+import { protokolliere } from './audit.js'
+import { workflow_actions } from './workflow.js'
+import { VERBEN, VERBOTEN, zielart, zielarten } from './backup-steuerung.js'
+
+// --- Was erklärt werden darf, und was nicht ---------------------------------
+
+/**
+ * Felder, die ein Mensch am Sicherungsziel festlegt.
+ *
+ * Positivliste, kein Muster: derselbe Grund wie bei den Konnektoren. Ein
+ * Muster lässt das durch, woran beim Schreiben niemand gedacht hat.
+ */
+const ZIEL_ERKLAERT = new Set([
+  'name',
+  'target_name',
+  'kind',
+  'connector',
+  'location',
+  'capacity_tb',
+  'immutable',
+  'encrypted',
+  'offsite',
+  'retention_days',
+  'tenant',
+  'description',
+])
+
+/** Felder am Ziel, die der Konnektor liest. Von Hand gesetzt wären sie erfunden. */
+const ZIEL_GEMESSEN = {
+  used_tb: 'Belegung',
+  last_sync: 'Zeitpunkt des letzten Abgleichs',
+  target_state: 'Zustand des Ziels',
+  snapshot_count: 'Anzahl der Wiederherstellungspunkte',
+}
+
+const OBJEKT_ERKLAERT = new Set([
+  'name',
+  'backup_object',
+  'service',
+  'business_service',
+  'datastore',
+  'retention_days',
+  'encrypted',
+  'immutable',
+  'tenant',
+  'description',
+])
+
+const OBJEKT_GEMESSEN = {
+  last_backup: 'Zeitpunkt der letzten Sicherung',
+  last_verify: 'Zeitpunkt der letzten Prüfung',
+  verify_status: 'Prüfergebnis',
+  size_gb: 'Größe',
+  copies: 'Anzahl der Kopien',
+  media_types: 'Medienarten',
+  offsite_age_hours: 'Alter der Kopie außer Haus',
+  protected: 'Schutzkennzeichen',
+  // Der Test wird eingetragen - aber über backup_restore_test, damit die
+  // Prüfungen darauf greifen.
+  last_restore_test: 'Wiederherstellungstest',
+  restore_test_result: 'Ergebnis des Wiederherstellungstests',
+  restore_minutes: 'Dauer der Wiederherstellung',
+}
+
+/**
+ * Weist gemessene und unbekannte Felder ab.
+ *
+ * Die Meldung nennt den Weg, auf dem der Wert richtig hereinkommt - sonst
+ * versucht es jemand beim nächsten Mal mit einem anderen Feldnamen.
+ */
+function pruefeFelder(eingabe, erlaubt, gemessen, quelle) {
+  for (const feld of Object.keys(eingabe)) {
+    if (gemessen[feld]) {
+      throw new FrappeMockError(
+        `ValidationError: „${gemessen[feld]}" wird gemessen, nicht erklärt. ` +
+          `Der Wert kommt ${quelle}. Stünde er hier von Hand, vergliche die ` +
+          'Sicherungsprüfung die Zusage mit sich selbst.',
+      )
+    }
+    if (!erlaubt.has(feld)) {
+      throw new FrappeMockError(
+        `ValidationError: Das Feld „${feld}" ist hier nicht vorgesehen. ` +
+          'Möglich sind: ' +
+          [...erlaubt].filter((f) => f !== 'name').join(', '),
+      )
+    }
+  }
+}
+
+function jaNein(wert, standard = 0) {
+  if (wert === undefined || wert === null || wert === '') return standard
+  return wert ? 1 : 0
+}
+
+function zahl(wert, feld, { min = 0, max = Infinity, pflicht = false } = {}) {
+  if (wert === undefined || wert === null || wert === '') {
+    if (pflicht) throw new FrappeMockError(`ValidationError: ${feld} fehlt`)
+    return null
+  }
+  const n = Number(wert)
+  if (!Number.isFinite(n)) {
+    throw new FrappeMockError(`ValidationError: ${feld} muss eine Zahl sein`)
+  }
+  if (n < min || n > max) {
+    throw new FrappeMockError(`ValidationError: ${feld} liegt außerhalb des Bereichs ${min}–${max}`)
+  }
+  return n
+}
+
+// --- Sicherungsziele --------------------------------------------------------
+
+/**
+ * Ziel anlegen oder ändern.
+ *
+ * Ein Aufruf mit `name` ändert, ohne legt an. Bewusst eine Methode: eine
+ * Regel, die nur beim Anlegen greift, lässt sich durch
+ * Anlegen-und-sofort-Ändern umgehen.
+ */
+export function backup_target_save(eingabe = {}) {
+  pruefeFelder(eingabe, ZIEL_ERKLAERT, ZIEL_GEMESSEN, 'über den Konnektor aus dem Zielsystem')
+
+  const bestand = table('Backup Target')
+  const vorhanden = eingabe.name ? bestand.find((t) => t.name === eingabe.name) : null
+  if (eingabe.name && !vorhanden) {
+    throw new FrappeMockError(
+      `DoesNotExistError: Backup Target ${eingabe.name} existiert nicht`,
+      404,
+    )
+  }
+
+  const name = eingabe.target_name ?? vorhanden?.target_name
+  if (!name || !/^[a-z0-9-]+$/.test(name)) {
+    throw new FrappeMockError(
+      'ValidationError: Der Name darf nur Kleinbuchstaben, Ziffern und Bindestriche enthalten',
+    )
+  }
+  if (bestand.some((t) => t.target_name === name && t !== vorhanden)) {
+    throw new FrappeMockError(`ValidationError: Ein Ziel namens ${name} existiert bereits`)
+  }
+
+  const art = eingabe.kind ?? vorhanden?.kind
+  if (!zielart(art)) {
+    throw new FrappeMockError(
+      'ValidationError: Unbekannte Zielart. Möglich sind: ' + Object.keys(zielarten()).join(', '),
+    )
+  }
+
+  // --- Das Ziel hängt am Konnektor, nicht umgekehrt
+  const konnektorName = eingabe.connector ?? vorhanden?.connector
+  if (!konnektorName) {
+    throw new FrappeMockError(
+      'ValidationError: Ohne Konnektor kommt an dieses Ziel nichts heran – ' +
+        'es wäre ein Eintrag über einen Ort, von dem niemand etwas erfährt.',
+    )
+  }
+  const konnektor = table('Connector').find((c) => c.name === konnektorName)
+  if (!konnektor) {
+    throw new FrappeMockError(`DoesNotExistError: Konnektor ${konnektorName} existiert nicht`, 404)
+  }
+  // Ein PBS-Ziel über einen Zabbix-Konnektor zu führen ergibt eine Zusage
+  // ohne Deckung: der Abgleich läuft nie, und niemandem fällt es auf.
+  if (konnektor.kind !== art) {
+    throw new FrappeMockError(
+      `ValidationError: ${konnektorName} spricht ${konnektor.kind}, das Ziel ist ${art}. ` +
+        'Der Abgleich käme nie zustande.',
+    )
+  }
+
+  const aufbewahrung = zahl(
+    eingabe.retention_days ?? vorhanden?.retention_days,
+    'Aufbewahrung in Tagen',
+    { min: 1, max: 36500, pflicht: true },
+  )
+  const kapazitaet = zahl(eingabe.capacity_tb ?? vorhanden?.capacity_tb, 'Kapazität in TB', {
+    min: 0,
+    max: 100000,
+  })
+
+  const ausserHaus = jaNein(eingabe.offsite, vorhanden?.offsite ?? 0)
+  const verschluesselt = jaNein(eingabe.encrypted, vorhanden?.encrypted ?? 1)
+  const unveraenderlich = jaNein(eingabe.immutable, vorhanden?.immutable ?? 0)
+
+  const werte = {
+    target_name: name,
+    kind: art,
+    connector: konnektorName,
+    location: eingabe.location ?? vorhanden?.location ?? null,
+    capacity_tb: kapazitaet,
+    immutable: unveraenderlich,
+    encrypted: verschluesselt,
+    offsite: ausserHaus,
+    retention_days: aufbewahrung,
+    tenant: eingabe.tenant ?? vorhanden?.tenant ?? konnektor.tenant ?? null,
+    description: eingabe.description ?? vorhanden?.description ?? null,
+  }
+
+  if (vorhanden) {
+    Object.assign(vorhanden, werte)
+    touch(vorhanden)
+    protokolliere({
+      action: 'backup_target_updated',
+      object_type: 'Backup Target',
+      object_name: vorhanden.name,
+      payload: werte,
+    })
+    return { ok: true, target: vorhanden.name, created: false, ...hinweise(werte) }
+  }
+
+  const eintrag = {
+    doctype: 'Backup Target',
+    name,
+    ...werte,
+    // Gemessenes beginnt leer. „Noch nie abgeglichen" ist eine ehrliche
+    // Aussage; eine erfundene Null wäre es nicht.
+    used_tb: 0,
+    last_sync: null,
+    target_state: 'unknown',
+    status: 'active',
+    owner: SESSION_USER,
+    creation: jetzt(),
+    modified: jetzt(),
+    modified_by: SESSION_USER,
+  }
+  bestand.push(eintrag)
+
+  protokolliere({
+    action: 'backup_target_created',
+    object_type: 'Backup Target',
+    object_name: name,
+    payload: werte,
+  })
+
+  return { ok: true, target: name, created: true, ...hinweise(werte) }
+}
+
+/**
+ * Was an diesem Ziel auffällt, bevor es jemand im Betrieb merkt.
+ *
+ * Keine Fehler - das Ziel darf so angelegt werden. Aber eine unver-
+ * schlüsselte Sicherung außer Haus ist eine Kopie der Firma bei jemand
+ * anderem, und das sollte beim Speichern jemand gesagt haben.
+ */
+function hinweise(werte) {
+  const liste = []
+  if (!werte.encrypted && werte.offsite) {
+    liste.push(
+      'Unverschlüsselt und außer Haus: die Sicherung liegt lesbar an einem Ort, ' +
+        'der nicht unter eigener Kontrolle steht.',
+    )
+  } else if (!werte.encrypted) {
+    liste.push('Unverschlüsselt – wer an das Ziel kommt, kommt an die Daten.')
+  }
+  if (!werte.offsite) {
+    liste.push(
+      'Nicht außer Haus. Für die 3-2-1-Regel braucht es mindestens ein Ziel an einem zweiten Ort.',
+    )
+  }
+  if (!werte.immutable && werte.offsite) {
+    liste.push(
+      'Veränderlich: eine Verschlüsselung, die bis hierher durchkommt, erwischt auch die Sicherung.',
+    )
+  }
+  return {
+    notes: liste,
+    next_step: 'Der Konnektor meldet Belegung und Zustand beim nächsten Lauf.',
+  }
+}
+
+/**
+ * Ziel außer Dienst stellen.
+ *
+ * Kein Löschen: die Wiederherstellungspunkte bleiben zugeordnet, sonst
+ * ließe sich später nicht mehr sagen, wo etwas lag.
+ */
+export function backup_target_retire({ name = null, reason = null } = {}) {
+  const ziel = table('Backup Target').find((t) => t.name === name)
+  if (!ziel) {
+    throw new FrappeMockError(`DoesNotExistError: Backup Target ${name} existiert nicht`, 404)
+  }
+  if (!reason) {
+    throw new FrappeMockError(
+      'ValidationError: Ein Ziel außer Dienst zu stellen braucht einen Grund – ' +
+        'die Sicherungen dort altern danach still vor sich hin',
+    )
+  }
+
+  const punkte = table('Backup Snapshot').filter((s) => s.target === name)
+  ziel.status = 'retired'
+  ziel.target_state = 'retired'
+  touch(ziel)
+
+  protokolliere({
+    action: 'backup_target_retired',
+    object_type: 'Backup Target',
+    object_name: name,
+    payload: { reason, snapshots: punkte.length },
+  })
+
+  return {
+    ok: true,
+    target: name,
+    snapshots_kept: punkte.length,
+    note: punkte.length
+      ? `${punkte.length} Wiederherstellungspunkte bleiben erhalten und weiterhin sichtbar. ` +
+        'Gelöscht wird dort nichts – auch nicht von hier aus.'
+      : 'Keine Wiederherstellungspunkte betroffen.',
+  }
+}
+
+// --- Schutzobjekte ----------------------------------------------------------
+
+/**
+ * Festlegen, dass etwas gesichert gehört.
+ *
+ * Das ist die Zusage, gegen die `backup_assurance` prüft. Ohne Eintrag
+ * hier taucht ein System in keiner Prüfung auf - und **nicht geprüft sieht
+ * aus wie in Ordnung**. Deshalb ist das Anlegen der eigentliche Hebel auf
+ * dieser Seite, nicht die Knöpfe.
+ */
+export function backup_object_save(eingabe = {}) {
+  pruefeFelder(
+    eingabe,
+    OBJEKT_ERKLAERT,
+    OBJEKT_GEMESSEN,
+    'über den Konnektor aus dem Sicherungssystem',
+  )
+
+  const bestand = table('Backup Object')
+  const vorhanden = eingabe.name ? bestand.find((o) => o.name === eingabe.name) : null
+  if (eingabe.name && !vorhanden) {
+    throw new FrappeMockError(
+      `DoesNotExistError: Backup Object ${eingabe.name} existiert nicht`,
+      404,
+    )
+  }
+
+  const kennung = eingabe.backup_object ?? vorhanden?.backup_object
+  if (!kennung) {
+    throw new FrappeMockError(
+      'ValidationError: Ohne die Kennung aus dem Sicherungssystem (etwa „vm/101-erp") ' +
+        'lässt sich der Eintrag später keinem Wiederherstellungspunkt zuordnen',
+    )
+  }
+  if (bestand.some((o) => o.backup_object === kennung && o !== vorhanden)) {
+    throw new FrappeMockError(`ValidationError: ${kennung} ist bereits erfasst`)
+  }
+
+  // --- Der Geschäftsdienst trägt die Kritikalität und die Zusagen
+  const dienst = eingabe.business_service ?? vorhanden?.business_service ?? null
+  if (dienst) {
+    const gefunden = table('Business Service').find(
+      (d) => d.name === dienst || d.business_service === dienst,
+    )
+    if (!gefunden) {
+      throw new FrappeMockError(`DoesNotExistError: Geschäftsdienst ${dienst} existiert nicht`, 404)
+    }
+  }
+
+  // --- Das Ziel muss es geben, sonst zeigt die Sicherung ins Leere
+  const ablage = eingabe.datastore ?? vorhanden?.datastore ?? null
+  if (ablage) {
+    const ziele = table('Backup Target')
+    if (!ziele.some((t) => t.name === ablage || t.target_name === ablage)) {
+      throw new FrappeMockError(
+        `DoesNotExistError: Es gibt kein Sicherungsziel „${ablage}". ` +
+          'Bekannt sind: ' +
+          ziele.map((t) => t.target_name).join(', '),
+      )
+    }
+  }
+
+  const aufbewahrung = zahl(
+    eingabe.retention_days ?? vorhanden?.retention_days,
+    'Aufbewahrung in Tagen',
+    { min: 1, max: 36500, pflicht: true },
+  )
+
+  const werte = {
+    backup_object: kennung,
+    service: eingabe.service ?? vorhanden?.service ?? null,
+    business_service: dienst,
+    datastore: ablage,
+    retention_days: aufbewahrung,
+    encrypted: jaNein(eingabe.encrypted, vorhanden?.encrypted ?? 1),
+    immutable: jaNein(eingabe.immutable, vorhanden?.immutable ?? 0),
+    tenant: eingabe.tenant ?? vorhanden?.tenant ?? null,
+    description: eingabe.description ?? vorhanden?.description ?? null,
+  }
+
+  if (vorhanden) {
+    Object.assign(vorhanden, werte)
+    touch(vorhanden)
+    protokolliere({
+      action: 'backup_object_updated',
+      object_type: 'Backup Object',
+      object_name: vorhanden.name,
+      payload: werte,
+    })
+    return { ok: true, backup_object: vorhanden.name, created: false }
+  }
+
+  const eintrag = {
+    doctype: 'Backup Object',
+    name: kennung,
+    ...werte,
+    // Alles Gemessene beginnt leer. Die Prüfung meldet das Objekt damit
+    // sofort als kritisch - richtig so: es ist erklärt, aber noch nie
+    // gesichert worden.
+    last_backup: null,
+    last_verify: null,
+    verify_status: 'none',
+    size_gb: null,
+    copies: 0,
+    media_types: null,
+    offsite_age_hours: null,
+    protected: 0,
+    last_restore_test: null,
+    restore_test_result: 'none',
+    restore_minutes: null,
+    status: 'active',
+    owner: SESSION_USER,
+    creation: jetzt(),
+    modified: jetzt(),
+    modified_by: SESSION_USER,
+  }
+  bestand.push(eintrag)
+
+  protokolliere({
+    action: 'backup_object_created',
+    object_type: 'Backup Object',
+    object_name: kennung,
+    payload: werte,
+  })
+
+  return {
+    ok: true,
+    backup_object: kennung,
+    created: true,
+    note:
+      'Bis der Konnektor den ersten Wiederherstellungspunkt meldet, führt die ' +
+      'Prüfung dieses Objekt als kritisch. Das ist beabsichtigt: es ist zugesagt, aber ungedeckt.',
+  }
+}
+
+export function backup_object_retire({ name = null, reason = null } = {}) {
+  const objekt = table('Backup Object').find((o) => o.name === name)
+  if (!objekt) {
+    throw new FrappeMockError(`DoesNotExistError: Backup Object ${name} existiert nicht`, 404)
+  }
+  if (!reason) {
+    throw new FrappeMockError(
+      'ValidationError: Ein Schutzobjekt stillzulegen braucht einen Grund – danach ' +
+        'prüft niemand mehr, ob dieses System zurückzuholen ist',
+    )
+  }
+  objekt.status = 'retired'
+  touch(objekt)
+  protokolliere({
+    action: 'backup_object_retired',
+    object_type: 'Backup Object',
+    object_name: name,
+    payload: { reason },
+  })
+  return {
+    ok: true,
+    backup_object: name,
+    note: 'Der Eintrag bleibt in der Historie, fällt aber aus der Sicherungsprüfung heraus.',
+  }
+}
+
+// --- Wiederherstellungstest -------------------------------------------------
+
+/**
+ * Einen durchgeführten Wiederherstellungstest eintragen.
+ *
+ * Die einzige Messung, die über die Tastatur hereinkommt - ein Mensch hat
+ * die Sicherung zurückgespielt und weiß, ob es geklappt hat und wie lange
+ * es gedauert hat. Ohne diesen Weg bliebe „nie getestet" für immer stehen.
+ *
+ * Deshalb hier strenger geprüft als anderswo: ein geschönter Testeintrag
+ * ist schlimmer als gar keiner, weil er die Warnung wegnimmt, ohne dass
+ * jemand etwas getan hätte.
+ */
+export function backup_restore_test({
+  backup_object = null,
+  tested_at = null,
+  result = null,
+  minutes = null,
+  note = null,
+  tested_by = null,
+} = {}) {
+  const objekt = table('Backup Object').find(
+    (o) => o.name === backup_object || o.backup_object === backup_object,
+  )
+  if (!objekt) {
+    throw new FrappeMockError(
+      `DoesNotExistError: Backup Object ${backup_object} existiert nicht`,
+      404,
+    )
+  }
+
+  if (!['ok', 'failed'].includes(result)) {
+    throw new FrappeMockError(
+      'ValidationError: Das Ergebnis ist „ok" oder „failed". Ein Test ohne klares ' +
+        'Ergebnis ist kein Test – dann lieber keinen Eintrag.',
+    )
+  }
+
+  const zeitpunkt = tested_at || jetzt()
+  const alter = alterStunden(zeitpunkt)
+  if (!parse(zeitpunkt)) {
+    throw new FrappeMockError('ValidationError: Der Zeitpunkt ist kein gültiges Datum')
+  }
+  // Ein Test in der Zukunft ist ein Tippfehler oder eine Absicht. Beides
+  // gehört aufgehalten, bevor es die Frist zurücksetzt.
+  if (alter < -1) {
+    throw new FrappeMockError('ValidationError: Der Zeitpunkt liegt in der Zukunft')
+  }
+
+  let dauer = null
+  if (result === 'ok') {
+    // Die gemessene Dauer IST der tatsächliche RTO. Ohne sie bleibt die
+    // Wiederanlaufzusage ungedeckt, und der Test hätte die halbe Frage
+    // offen gelassen.
+    dauer = zahl(minutes, 'Dauer in Minuten', { min: 1, max: 100000, pflicht: true })
+  } else if (minutes !== null && minutes !== undefined && minutes !== '') {
+    dauer = zahl(minutes, 'Dauer in Minuten', { min: 1, max: 100000 })
+  }
+
+  const vorher = {
+    last_restore_test: objekt.last_restore_test,
+    restore_test_result: objekt.restore_test_result,
+    restore_minutes: objekt.restore_minutes,
+  }
+
+  objekt.last_restore_test = zeitpunkt
+  objekt.restore_test_result = result
+  // Bei einem Fehlschlag bleibt die alte Dauer stehen: eine gescheiterte
+  // Wiederherstellung hat keine Dauer, und 0 zu schreiben ließe den RTO
+  // hervorragend aussehen.
+  if (dauer !== null) objekt.restore_minutes = dauer
+  touch(objekt)
+
+  protokolliere({
+    action: 'backup_restore_test',
+    object_type: 'Backup Object',
+    object_name: objekt.name,
+    payload: { result, minutes: dauer, tested_at: zeitpunkt, tested_by, note, vorher },
+  })
+
+  return {
+    ok: true,
+    backup_object: objekt.name,
+    result,
+    minutes: objekt.restore_minutes,
+    tested_at: zeitpunkt,
+    note:
+      result === 'ok'
+        ? `Eingetragen. ${dauer} Minuten sind ab jetzt der tatsächliche Wiederanlaufwert dieses Objekts.`
+        : 'Eingetragen. Die Prüfung führt das Objekt weiter als kritisch – ein fehlgeschlagener ' +
+          'Test ist kein erledigter Test.',
+  }
+}
+
+// --- Auswahllisten für die Formulare ---------------------------------------
+
+/**
+ * Was das Formular anbieten darf.
+ *
+ * Kommt vom Server, nicht aus der Oberfläche: eine Liste, die nur das
+ * Frontend kennt, läuft beim nächsten neuen Zielsystem auseinander.
+ */
+export function backup_admin_options() {
+  const konnektoren = table('Connector')
+  return {
+    kinds: Object.entries(zielarten()).map(([wert, a]) => ({
+      value: wert,
+      label: a.label,
+      actions: a.erlaubt,
+      // Nur Konnektoren dieser Art können ein solches Ziel bedienen.
+      connectors: konnektoren
+        .filter((c) => c.kind === wert)
+        .map((c) => ({ value: c.name, label: c.connector_name, enabled: !!c.enabled })),
+    })),
+    targets: table('Backup Target')
+      .filter((t) => t.status !== 'retired')
+      .map((t) => ({ value: t.name, label: t.target_name, kind: t.kind })),
+    services: table('Business Service').map((d) => ({
+      value: d.business_service || d.name,
+      label: d.service_name || d.business_service || d.name,
+      criticality: d.criticality || null,
+    })),
+    measured: {
+      target: ZIEL_GEMESSEN,
+      object: OBJEKT_GEMESSEN,
+    },
+  }
+}
+
+// --- Zielarten: ein neues System anbinden -----------------------------------
+
+/**
+ * Eine Zielart anlegen oder ändern – etwa ein neu gebuchter Google Drive.
+ *
+ * Der Sinn der ganzen Umstellung auf `Backup Target Kind`: einen weiteren
+ * Speicher anzubinden soll heißen, einen Konnektor mit Token anzulegen und
+ * hier eine Zeile einzutragen. Nicht, eine Datei zu ändern.
+ *
+ * ## Zwei Böden, die nicht konfigurierbar sind
+ *
+ * 1. **`VERBOTEN`** – Löschen, Prune, Forget, Aufbewahrung ändern,
+ *    Auftrag löschen, Schutz aufheben. Stünde diese Liste in der
+ *    Datenbank, trüge sie sich irgendwann jemand hier ein.
+ * 2. **Der Verbkatalog `VERBEN`** – jedes Verb braucht eine Umsetzung.
+ *    Ein Verb ohne Code wäre eine Schaltfläche, die nichts tut.
+ *
+ * Wer also Google Drive anbindet, wählt aus den vorhandenen Verben. Er
+ * erfindet keine.
+ */
+export function backup_kind_save({
+  kind = null,
+  label = null,
+  allowed_actions = null,
+  durations = null,
+  browsable = undefined,
+  never_writable = undefined,
+  default_interval_minutes = null,
+  api_style = null,
+  description = null,
+} = {}) {
+  if (!kind || !/^[a-z0-9-]+$/.test(kind)) {
+    throw new FrappeMockError(
+      'ValidationError: Das Kürzel darf nur Kleinbuchstaben, Ziffern und Bindestriche enthalten',
+    )
+  }
+
+  const bestand = table('Backup Target Kind')
+  const vorhanden = bestand.find((a) => a.kind === kind)
+
+  const verben = String(allowed_actions ?? vorhanden?.allowed_actions ?? '')
+    .split(',')
+    .map((x) => x.trim())
+    .filter(Boolean)
+
+  if (!verben.length) {
+    throw new FrappeMockError(
+      'ValidationError: Ohne erlaubte Aktion ist die Zielart ein Eintrag, der nichts kann. ' +
+        'Möglich sind: ' +
+        Object.keys(VERBEN).join(', '),
+    )
+  }
+
+  for (const v of verben) {
+    // Der erste Boden: was die Anwendung bewusst nicht kann.
+    if (VERBOTEN[v]) {
+      throw new FrappeMockError(
+        `ValidationError: „${VERBOTEN[v]}" lässt sich keiner Zielart zuweisen. ` +
+          'Diese Anwendung kann Sicherungen nicht löschen oder ausdünnen – ' +
+          'daran ändert auch eine neue Zielart nichts.',
+      )
+    }
+    // Der zweite Boden: was es an Umsetzung gibt.
+    if (!VERBEN[v]) {
+      throw new FrappeMockError(
+        `ValidationError: „${v}" ist kein bekanntes Verb. Möglich sind: ` +
+          Object.keys(VERBEN).join(', '),
+      )
+    }
+  }
+
+  // Dauerangaben nur für Verben, die diese Art auch anbietet.
+  const dauern = []
+  for (const paar of String(durations ?? vorhanden?.durations ?? '').split(',')) {
+    const [verb, minuten] = paar.split(':').map((x) => (x || '').trim())
+    if (!verb) continue
+    if (!verben.includes(verb)) {
+      throw new FrappeMockError(
+        `ValidationError: Dauer für „${verb}" angegeben, aber diese Zielart bietet die Aktion nicht an`,
+      )
+    }
+    const n = zahl(minuten, `Dauer für ${verb}`, { min: 1, max: 100000, pflicht: true })
+    dauern.push(`${verb}:${n}`)
+  }
+
+  const werte = {
+    kind,
+    label: label ?? vorhanden?.label ?? kind,
+    allowed_actions: verben.join(','),
+    durations: dauern.join(','),
+    browsable: jaNein(browsable, vorhanden?.browsable ?? 0),
+    never_writable: jaNein(never_writable, vorhanden?.never_writable ?? 0),
+    default_interval_minutes: zahl(
+      default_interval_minutes ?? vorhanden?.default_interval_minutes ?? 60,
+      'Takt in Minuten',
+      { min: 1, max: 10080 },
+    ),
+    api_style: api_style ?? vorhanden?.api_style ?? null,
+    description: description ?? vorhanden?.description ?? null,
+  }
+
+  if (vorhanden) {
+    Object.assign(vorhanden, werte)
+    touch(vorhanden)
+    protokolliere({
+      action: 'backup_kind_updated',
+      object_type: 'Backup Target Kind',
+      object_name: kind,
+      payload: werte,
+    })
+    return { ok: true, kind, created: false, actions: verben }
+  }
+
+  bestand.push({
+    doctype: 'Backup Target Kind',
+    name: kind,
+    ...werte,
+    tenant: null,
+    status: 'active',
+    owner: SESSION_USER,
+    creation: jetzt(),
+    modified: jetzt(),
+    modified_by: SESSION_USER,
+  })
+
+  protokolliere({
+    action: 'backup_kind_created',
+    object_type: 'Backup Target Kind',
+    object_name: kind,
+    payload: werte,
+  })
+
+  return {
+    ok: true,
+    kind,
+    created: true,
+    actions: verben,
+    next_step:
+      `Jetzt einen Konnektor der Art „${kind}" anlegen (Adresse, Token-Kennung, ` +
+      'Passbolt-Verweis), danach ein Ziel darauf.',
+  }
+}
+
+/** Die Zielarten mit allem, was die Oberfläche zum Anlegen braucht. */
+export function backup_kinds() {
+  const arten = zielarten()
+  const ziele = table('Backup Target')
+  return {
+    // Was überhaupt zuweisbar ist - und was ausdrücklich nicht.
+    verbs: Object.entries(VERBEN).map(([value, label]) => ({ value, label })),
+    withheld: Object.entries(VERBOTEN).map(([value, label]) => ({ value, label })),
+    rows: Object.entries(arten).map(([kind, a]) => ({
+      kind,
+      ...a,
+      targets: ziele.filter((t) => t.kind === kind).length,
+      connectors: table('Connector').filter((c) => c.kind === kind).length,
+    })),
+  }
+}
+
+// --- Anträge ----------------------------------------------------------------
+
+/**
+ * Die Sicherungsanträge mit den Übergängen, die dieser Person offenstehen.
+ *
+ * Eine Methode statt einer Liste plus einem Aufruf je Zeile: die Oberfläche
+ * holte sonst für zwanzig Anträge einundzwanzig Mal. Und die Entscheidung,
+ * wer was darf, bleibt an einer Stelle.
+ */
+export function backup_requests({ state = null, user = SESSION_USER, tenant = null } = {}) {
+  const zeilen = table('Backup Action Request')
+    .filter((a) => (!state || a.workflow_state === state) && (!tenant || a.tenant === tenant))
+    .map((a) => {
+      const w = workflow_actions({ doctype: 'Backup Action Request', name: a.name, user })
+      return {
+        ...a,
+        label: VERBEN[a.action] || a.action,
+        actions: w.actions,
+        blocked: w.blocked,
+        doc_status: w.doc_status,
+        open: !['done', 'failed', 'rejected'].includes(a.workflow_state),
+        // Wer wartet, wartet auf jemanden - das gehört in die Zeile.
+        waiting_for:
+          a.workflow_state === 'requested'
+            ? 'Genehmigung durch NetOps Backup Approver'
+            : a.workflow_state === 'approved'
+              ? 'Start durch NetOps Operator'
+              : null,
+      }
+    })
+    .sort(
+      (a, b) =>
+        Number(b.open) - Number(a.open) ||
+        String(b.requested_on).localeCompare(String(a.requested_on)),
+    )
+
+  return {
+    summary: {
+      total: zeilen.length,
+      open: zeilen.filter((z) => z.open).length,
+      waiting_approval: zeilen.filter((z) => z.workflow_state === 'requested').length,
+      // Was diese Person gerade tun kann - die Zahl, die an den Reiter gehört.
+      actionable: zeilen.filter((z) => z.actions.length).length,
+    },
+    rows: zeilen,
+  }
+}

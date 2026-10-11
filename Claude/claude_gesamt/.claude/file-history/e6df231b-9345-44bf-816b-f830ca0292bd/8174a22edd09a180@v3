@@ -1,0 +1,279 @@
+<script setup lang="ts">
+/**
+ * Vorlageneditor: Sektionen und Prüfpunkte bearbeiten (FA-010, FA-013 bis FA-017).
+ *
+ * Veröffentlichte Vorlagen sind eingefroren — Änderungen erfordern eine neue
+ * Revision. Der Editor zeigt das deutlich an und sperrt die Eingabefelder.
+ */
+import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
+
+import AppIcon from '@/components/AppIcon.vue'
+import { baudoku, resource } from '@/lib/api'
+import type { Feldtyp, Pruefpunkt, Sektion, Vorlage } from '@/lib/typen'
+import { useStammdaten } from '@/stores/stammdaten'
+import { useUi } from '@/stores/ui'
+
+const props = defineProps<{ name: string }>()
+
+const router = useRouter()
+const stammdaten = useStammdaten()
+const ui = useUi()
+
+const vorlage = ref<(Vorlage & { status: string; sektionen: Sektion[] }) | null>(null)
+const laedt = ref(true)
+const speichert = ref(false)
+const offeneSektion = ref<number | null>(0)
+
+const FELDTYPEN: Feldtyp[] = [
+  'Bewertung', 'Zahlenwert', 'Text', 'Auswahl', 'Foto', 'Ja-Nein', 'Datum', 'Ueberschrift',
+]
+
+const gesperrt = computed(() => vorlage.value?.status === 'Veroeffentlicht')
+
+const anzahlPruefpunkte = computed(() =>
+  (vorlage.value?.sektionen ?? []).reduce((summe, s) => summe + s.pruefpunkte.length, 0),
+)
+
+function sektionHinzufuegen() {
+  vorlage.value?.sektionen.push({
+    sektion_name: 'Neue Sektion',
+    sektion_key: '',
+    sortierung: ((vorlage.value.sektionen.at(-1)?.sortierung ?? 0) + 10),
+    pruefpunkte: [],
+  })
+  offeneSektion.value = (vorlage.value?.sektionen.length ?? 1) - 1
+}
+
+function punktHinzufuegen(sektion: Sektion) {
+  const index = vorlage.value?.sektionen.indexOf(sektion) ?? 0
+  sektion.pruefpunkte.push({
+    pruefpunkt_key: '',
+    nummer: `${index + 1}.${sektion.pruefpunkte.length + 1}`,
+    titel: '',
+    feldtyp: 'Bewertung',
+    bewertungsoptionen: 'in Ordnung|Mangel leicht|Mangel schwer|nicht zutreffend',
+    pflichtfeld: 0,
+    foto_erforderlich: 0,
+  } as Pruefpunkt)
+}
+
+async function speichern() {
+  if (!vorlage.value) return
+  speichert.value = true
+  try {
+    // `modified` mitschicken: Frappe lehnt das Speichern ab, wenn jemand anderes
+    // die Vorlage zwischenzeitlich geändert hat. Ohne diesen Zeitstempel würden
+    // sich zwei Projektleiter stillschweigend überschreiben.
+    const gespeichert = (await resource.aktualisieren('Checklistenvorlage', props.name, {
+      titel: vorlage.value.titel,
+      vorlage_typ: vorlage.value.vorlage_typ,
+      anlagen_typ: vorlage.value.anlagen_typ,
+      beschreibung: vorlage.value.beschreibung,
+      sektionen: vorlage.value.sektionen,
+      modified: vorlage.value.modified,
+    })) as { modified?: string }
+
+    vorlage.value.modified = gespeichert?.modified ?? vorlage.value.modified
+    ui.erfolg('Vorlage gespeichert.')
+  } catch (fehler) {
+    const text = (fehler as Error).message
+    ui.fehler(
+      /TimestampMismatch|modified/i.test(text)
+        ? 'Die Vorlage wurde zwischenzeitlich von jemand anderem geändert. ' +
+            'Bitte die Seite neu laden und die Änderung wiederholen.'
+        : text,
+    )
+  } finally {
+    speichert.value = false
+  }
+}
+
+async function neueRevision() {
+  try {
+    const neu = (await baudoku.dokumentMethode(
+      'Checklistenvorlage',
+      props.name,
+      'neue_revision',
+    )) as string
+    ui.erfolg('Neue Revision angelegt.')
+    await router.replace({ name: 'vorlage-editor', params: { name: neu } })
+  } catch (fehler) {
+    ui.fehler((fehler as Error).message)
+  }
+}
+
+onMounted(async () => {
+  try {
+    vorlage.value = (await resource.lesen('Checklistenvorlage', props.name)) as typeof vorlage.value
+  } catch (fehler) {
+    ui.fehler(`Vorlage konnte nicht geladen werden: ${(fehler as Error).message}`)
+  } finally {
+    laedt.value = false
+  }
+})
+</script>
+
+<template>
+  <p v-if="laedt" class="py-8 text-center text-sm text-slate-500">Vorlage wird geladen …</p>
+
+  <div v-else-if="!vorlage" class="karte p-6 text-center text-sm text-slate-500">
+    Vorlage nicht verfügbar. Der Editor benötigt eine Serververbindung.
+  </div>
+
+  <div v-else class="space-y-4">
+    <div v-if="gesperrt"
+         class="flex flex-wrap items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 p-3
+                text-sm dark:border-amber-900 dark:bg-amber-900/30">
+      <AppIcon name="warnung" :groesse="20" class="text-warnung" />
+      <p class="flex-1 text-amber-900 dark:text-amber-200">
+        Diese Vorlage ist veröffentlicht und damit eingefroren. Für Änderungen eine neue Revision anlegen.
+      </p>
+      <button class="knopf-primaer px-3 text-sm" @click="neueRevision">Neue Revision</button>
+    </div>
+
+    <!-- Kopfdaten -->
+    <div class="karte space-y-3 p-4">
+      <label>
+        <span class="beschriftung">Titel</span>
+        <input v-model="vorlage.titel" class="feld" :disabled="gesperrt" />
+      </label>
+      <div class="grid gap-3 tablet:grid-cols-3">
+        <label>
+          <span class="beschriftung">Vorlagentyp</span>
+          <select v-model="vorlage.vorlage_typ" class="feld" :disabled="gesperrt">
+            <option>IBN</option><option>DC-Abnahme</option><option>Wartung</option>
+            <option>Schadenaufnahme</option><option>Sonstige</option>
+          </select>
+        </label>
+        <label>
+          <span class="beschriftung">Anlagentyp</span>
+          <select v-model="vorlage.anlagen_typ" class="feld" :disabled="gesperrt">
+            <option>PV</option><option>Batteriespeicher</option><option>Ladestation</option>
+            <option>Kombi</option><option>Alle</option>
+          </select>
+        </label>
+        <div>
+          <span class="beschriftung">Umfang</span>
+          <p class="feld flex items-center bg-slate-50 dark:bg-slate-800">
+            {{ vorlage.sektionen.length }} Sektionen · {{ anzahlPruefpunkte }} Prüfpunkte
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sektionen -->
+    <div v-for="(sektion, si) in vorlage.sektionen" :key="si" class="karte overflow-hidden">
+      <button
+        class="flex w-full items-center gap-3 px-4 py-3 text-left"
+        @click="offeneSektion = offeneSektion === si ? null : si"
+      >
+        <AppIcon :name="offeneSektion === si ? 'pfeilUnten' : 'pfeilRechts'" :groesse="18"
+                 class="text-slate-400" />
+        <span class="flex-1 font-semibold">{{ sektion.sektion_name }}</span>
+        <span class="text-xs text-slate-400">{{ sektion.pruefpunkte.length }} Prüfpunkte</span>
+      </button>
+
+      <div v-if="offeneSektion === si" class="space-y-3 border-t border-slate-200 p-4 dark:border-slate-800">
+        <div class="grid gap-3 tablet:grid-cols-3">
+          <label>
+            <span class="beschriftung">Sektionsname</span>
+            <input v-model="sektion.sektion_name" class="feld" :disabled="gesperrt" />
+          </label>
+          <label>
+            <span class="beschriftung">Sortierung</span>
+            <input v-model.number="sektion.sortierung" class="feld tabular-nums" :disabled="gesperrt" />
+          </label>
+          <label>
+            <span class="beschriftung">Nur für Anlagentyp</span>
+            <select v-model="sektion.nur_fuer_anlagen_typ" class="feld" :disabled="gesperrt">
+              <option value="">alle</option>
+              <option>PV</option><option>Batteriespeicher</option>
+              <option>Ladestation</option><option>Kombi</option>
+            </select>
+          </label>
+        </div>
+
+        <!-- Prüfpunkte -->
+        <div v-for="(punkt, pi) in sektion.pruefpunkte" :key="pi"
+             class="rounded-xl border border-slate-200 p-3 dark:border-slate-800">
+          <div class="grid gap-2 tablet:grid-cols-[80px_1fr_160px]">
+            <input v-model="punkt.nummer" class="feld text-sm" placeholder="Nr." :disabled="gesperrt" />
+            <input v-model="punkt.titel" class="feld text-sm" placeholder="Prüfpunkt" :disabled="gesperrt" />
+            <select v-model="punkt.feldtyp" class="feld text-sm" :disabled="gesperrt">
+              <option v-for="typ in FELDTYPEN" :key="typ" :value="typ">{{ typ }}</option>
+            </select>
+          </div>
+
+          <div v-if="punkt.feldtyp === 'Bewertung'" class="mt-2">
+            <input v-model="punkt.bewertungsoptionen" class="feld text-sm" :disabled="gesperrt"
+                   placeholder="Optionen mit | getrennt" />
+          </div>
+          <div v-else-if="punkt.feldtyp === 'Auswahl'" class="mt-2">
+            <input v-model="punkt.auswahloptionen" class="feld text-sm" :disabled="gesperrt"
+                   placeholder="Optionen mit | getrennt" />
+          </div>
+          <div v-else-if="punkt.feldtyp === 'Zahlenwert'" class="mt-2 grid grid-cols-3 gap-2">
+            <input v-model="punkt.einheit" class="feld text-sm" placeholder="Einheit" :disabled="gesperrt" />
+            <input v-model.number="punkt.min_wert" class="feld text-sm tabular-nums" placeholder="min"
+                   :disabled="gesperrt" />
+            <input v-model.number="punkt.max_wert" class="feld text-sm tabular-nums" placeholder="max"
+                   :disabled="gesperrt" />
+          </div>
+
+          <div class="mt-2 grid gap-2 tablet:grid-cols-2">
+            <input v-model="punkt.hilfetext" class="feld text-sm" placeholder="Hilfetext für den Techniker"
+                   :disabled="gesperrt" />
+            <input v-model="punkt.normverweis" class="feld text-sm" placeholder="Normverweis"
+                   :disabled="gesperrt" />
+            <input v-model="punkt.sichtbar_wenn" class="feld text-sm" :disabled="gesperrt"
+                   placeholder="Sichtbar wenn, z. B. 3.1 == Mangel schwer" />
+            <select v-model="punkt.mangelkategorie" class="feld text-sm" :disabled="gesperrt">
+              <option value="">Mangelkategorie (Vorgabe)</option>
+              <option v-for="k in stammdaten.kategorien" :key="k.name" :value="k.name">
+                {{ k.kategorie_name }}
+              </option>
+            </select>
+          </div>
+
+          <div class="mt-2 flex flex-wrap items-center gap-4 text-sm">
+            <label class="flex items-center gap-2">
+              <input v-model="punkt.pflichtfeld" type="checkbox" class="h-5 w-5" :true-value="1"
+                     :false-value="0" :disabled="gesperrt" />
+              Pflichtfeld
+            </label>
+            <label class="flex items-center gap-2">
+              <input v-model="punkt.foto_erforderlich" type="checkbox" class="h-5 w-5" :true-value="1"
+                     :false-value="0" :disabled="gesperrt" />
+              Foto erforderlich
+            </label>
+            <button class="ml-auto rounded p-1.5 text-slate-400 hover:text-fehler" :disabled="gesperrt"
+                    aria-label="Prüfpunkt entfernen" @click="sektion.pruefpunkte.splice(pi, 1)">
+              <AppIcon name="muell" :groesse="16" />
+            </button>
+          </div>
+        </div>
+
+        <div class="flex gap-2">
+          <button class="knopf-sekundaer px-3 text-sm" :disabled="gesperrt" @click="punktHinzufuegen(sektion)">
+            <AppIcon name="plus" :groesse="16" /> Prüfpunkt
+          </button>
+          <button class="knopf-geist px-3 text-sm text-fehler" :disabled="gesperrt"
+                  @click="vorlage.sektionen.splice(si, 1)">
+            Sektion löschen
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex gap-2 pb-4">
+      <button class="knopf-sekundaer flex-1" :disabled="gesperrt" @click="sektionHinzufuegen">
+        <AppIcon name="plus" :groesse="18" /> Sektion
+      </button>
+      <button class="knopf-primaer flex-[2]" :disabled="gesperrt || speichert" @click="speichern">
+        <AppIcon name="check" :groesse="20" />
+        {{ speichert ? 'Wird gespeichert …' : 'Vorlage speichern' }}
+      </button>
+    </div>
+  </div>
+</template>

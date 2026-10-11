@@ -1,0 +1,211 @@
+<section class="hero">
+  <div class="wrap hero-in">
+    <div class="hero-grid">
+      <div>
+        <span class="kicker s">Repowering</span>
+        <h1>Auf derselben Fläche steckt heute die <span class="gl">doppelte Leistung</span>.</h1>
+        <p class="lede">Module aus dem Jahr 2010 liefern rund 145 Watt je Quadratmeter, heutige über 210. Wer eine alte Anlage tauscht, gewinnt Leistung, ohne einen Zentimeter Dach dazuzunehmen.</p>
+        <div class="hero-acts">
+          <a class="btn btn-v" href="#tool">Anlage prüfen</a>
+          <a class="btn btn-o" href="#details">Ablauf &amp; Entsorgung</a>
+        </div>
+      </div>
+      <div class="chips">
+        <div class="chip s"><div><i>Leistungsdichte</i><p>Moderne Module je Quadratmeter Fläche</p></div><b>210–220<span class="unit">Wp/m²</span></b></div>
+        <div class="chip v"><div><i>Degradation</i><p>Jährlicher Leistungsverlust im Normalbetrieb</p></div><b>0,4–0,6<span class="unit">%</span></b></div>
+        <div class="chip c"><div><i>Recyclingquote</i><p>Verwertbarer Anteil eines Altmoduls</p></div><b>&gt;90<span class="unit">%</span></b></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="tool">
+  <div class="wrap">
+    <div class="sec-head">
+      <div><span class="kicker">Anlagen-Check</span><h2>Läuft Ihre Anlage noch so, wie sie soll?</h2></div>
+      <p class="lede">Geben Sie Baujahr, Leistung und den tatsächlichen Jahresertrag ein. Der Check vergleicht ihn mit dem Sollwert nach Degradation und rechnet, was ein Repowering auf derselben Fläche brächte.</p>
+    </div>
+
+    <div class="console glass chamf">
+      <div class="con-t"><span><span class="pulse"></span>Bestandsanalyse</span><span id="stamp">Baujahr 2011 · 14 Jahre in Betrieb</span></div>
+      <div class="con-l">
+        <div class="field">
+          <div class="field-h"><label for="yr">Baujahr</label><span class="field-v" id="v-yr">2011</span></div>
+          <input id="yr" type="range" min="2004" max="2017" step="1" value="2011">
+          <div class="scale"><span>2004</span><span>2017</span></div>
+        </div>
+        <div class="field">
+          <div class="field-h"><label for="kwp">Installierte Leistung</label><span class="field-v" id="v-kwp">80<span class="unit">kWp</span></span></div>
+          <input id="kwp" type="range" min="5" max="1000" step="5" value="80">
+          <div class="scale"><span>5</span><span>1.000 kWp</span></div>
+        </div>
+        <div class="field">
+          <div class="field-h"><label for="act">Jahresertrag Ist</label><span class="field-v" id="v-act">66.000<span class="unit">kWh</span></span></div>
+          <input id="act" type="range" min="1000" max="1200000" step="1000" value="66000">
+          <div class="scale"><span>1k</span><span>1,2 Mio kWh</span></div>
+        </div>
+        <div class="field">
+          <div class="field-h"><label for="extra">Zusätzlich freie Dachfläche</label><span class="field-v" id="v-extra">0<span class="unit">m²</span></span></div>
+          <input id="extra" type="range" min="0" max="4000" step="50" value="0">
+          <div class="scale"><span>0</span><span>4.000 m²</span></div>
+        </div>
+        <div class="field">
+          <div class="field-h"><label for="val">Wert je kWh</label><span class="field-v" id="v-val">15,0<span class="unit">ct</span></span></div>
+          <input id="val" type="range" min="4" max="35" step="0.5" value="15">
+          <div class="scale"><span>4</span><span>35 ct/kWh</span></div>
+        </div>
+        <details class="as">
+          <summary>Rechenannahmen</summary>
+          <ul>
+            <li>Leistungsdichte der Altmodule 110 bis 180 Wp/m² je nach Baujahr</li>
+            <li>Sollertrag 1.000 kWh/kWp im ersten Jahr, danach 0,5 % Degradation</li>
+            <li>Neue Module 215 Wp/m², spezifischer Ertrag 1.030 kWh/kWp</li>
+            <li>Investition 950 €/kWp neu, Demontage und Entsorgung 60 €/kWp alt</li>
+            <li>Der Wert je Kilowattstunde bildet den Mix aus Eigenverbrauch und Einspeisung ab</li>
+            <li>Bestehende Unterkonstruktion wird als weiterverwendbar angenommen</li>
+          </ul>
+        </details>
+      </div>
+
+      <div class="con-r">
+        <div class="stats">
+          <div class="stat"><i>Sollertrag heute</i><b id="o-soll">—<span class="unit">kWh</span></b><small id="o-deg">nach — Jahren Degradation</small></div>
+          <div class="stat"><i>Abweichung</i><b id="o-dev">—<span class="unit">%</span></b><small id="o-devs">—</small></div>
+          <div class="stat"><i>Belegte Fläche</i><b id="o-area">—<span class="unit">m²</span></b><small id="o-dens">— Wp/m²</small></div>
+          <div class="stat v"><i>Neue Leistung</i><b id="o-new">—<span class="unit">kWp</span></b><small id="o-fac">— fache Leistung</small></div>
+          <div class="stat s"><i>Mehrertrag</i><b id="o-gain">—<span class="unit">kWh/a</span></b><small id="o-gain2">—</small></div>
+          <div class="stat v"><i>Amortisation</i><b id="o-pay">—<span class="unit">Jahre</span></b><small id="o-inv">Investition —</small></div>
+        </div>
+
+        <div class="panel dk">
+          <div class="panel-h"><h4>Ertrag im Vergleich</h4><span id="c-note">—</span></div>
+          <svg id="ch" viewBox="0 0 760 180" role="img" aria-label="Vergleich von Sollertrag, Istertrag und Ertrag nach Repowering"></svg>
+        </div>
+
+        <div class="panel">
+          <div class="panel-h"><h4>Leistung über die Betriebsjahre</h4><span id="c-cv">—</span></div>
+          <svg id="cv" viewBox="0 0 760 180" role="img" aria-label="Degradationsverlauf mit gemessenem Istwert"></svg>
+          <div class="legend">
+            <span><i style="background:#45E0FF;height:3px"></i>Sollverlauf nach Degradation</span>
+            <span><i style="background:#FF6B8A"></i>Ihr gemessener Istwert</span>
+          </div>
+        </div>
+        <p class="fine">Ein Ist unter dem Soll hat viele Ursachen: Verschattung durch Bewuchs, defekte Bypassdioden, Wechselrichterausfälle oder Verschmutzung. Die Thermografie klärt, welche davon zutrifft.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="details">
+  <div class="wrap">
+    <div class="sec-head">
+      <div><span class="kicker c">Ablauf</span><h2>Was beim Repowering tatsächlich passiert.</h2></div>
+      <p class="lede">Ein Repowering ist kein Neubau. Unterkonstruktion und Kabelwege bleiben meist bestehen, getauscht werden Module und Leistungselektronik.</p>
+    </div>
+    <div class="cards">
+      <article class="card">
+        <span class="n">SCHRITT 1</span>
+        <svg class="ic" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="14" cy="14" r="9"/><path d="M21 21l7 7M14 10v8M10 14h8"/></svg>
+        <h3>Befundung und Thermografie</h3>
+        <p>Vor jeder Entscheidung steht die Messung. Kennlinienaufnahme je String und Thermografie zeigen, ob einzelne Module das Problem sind oder die Anlage flächig nachgelassen hat.</p>
+        <ul><li>Kennlinienmessung je String</li><li>Thermografie aus der Luft</li><li>Auswertung der Ertragshistorie</li></ul>
+      </article>
+      <article class="card">
+        <span class="n">SCHRITT 2</span>
+        <svg class="ic" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 26h24M8 26V12h16v14"/><path d="M8 19h16M16 12v14"/></svg>
+        <h3>Tausch mit Bestandsnutzung</h3>
+        <p>Wo Statik und Schienensystem es zulassen, bleibt die Unterkonstruktion. Das spart Zeit, Kosten und meist auch die neuerliche statische Bewertung des gesamten Dachs.</p>
+        <ul><li>Unterkonstruktion prüfen</li><li>Modulmaße abgleichen</li><li>Neue Wechselrichter auslegen</li></ul>
+      </article>
+      <article class="card">
+        <span class="n">SCHRITT 3</span>
+        <svg class="ic" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M16 4a12 12 0 1 1-8.5 3.5"/><path d="M7 4v5h5M12 18l3 3 6-7"/></svg>
+        <h3>Altmodule verwerten</h3>
+        <p>Funktionsfähige Module gehen in den Zweitmarkt, der Rest in die stoffliche Verwertung. Glas, Aluminium und Silizium sind gut recycelbar, die Nachweise gehören zur Projektdokumentation.</p>
+        <ul><li>Zweitmarkt prüfen</li><li>Zertifizierte Entsorgung</li><li>Nachweise dokumentieren</li></ul>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="faq">
+  <div class="wrap">
+    <div class="sec-head"><div><span class="kicker">Häufige Fragen</span><h2>Fragen zum Repowering.</h2></div></div>
+    <div class="faq">
+      <details class="qa" open><summary>Ab wann lohnt sich ein Repowering?</summary><p>Meist ab dem zwölften bis fünfzehnten Betriebsjahr, besonders wenn ohnehin der Wechselrichtertausch ansteht. Entscheidend ist weniger das Alter als die Leistungsdichte der alten Module. Je älter sie sind, desto größer der Sprung auf derselben Fläche.</p></details>
+      <details class="qa"><summary>Verliere ich bestehende Tarife oder Förderungen?</summary><p>Das hängt am jeweiligen Vertrag. Läuft noch ein geförderter Einspeisetarif, kann ein Leistungszubau die Konditionen für den geförderten Anlagenteil berühren. Wir prüfen das vor dem Umbau, damit die Rechnung nachher noch stimmt.</p></details>
+      <details class="qa"><summary>Was, wenn der Istertrag deutlich unter dem Soll liegt?</summary><p>Dann steht vor dem Repowering die Ursachenklärung. Ein defekter Wechselrichter oder ein abgeschatteter String lässt sich oft für einen Bruchteil der Repowering-Kosten beheben. Erst wenn die Module flächig nachgelassen haben, ist der Tausch die richtige Antwort.</p></details>
+      <details class="qa"><summary>Kann ich gleichzeitig erweitern?</summary><p>Ja, und das ist meist sinnvoll. Wenn ohnehin Kran, Gerüst und Montagetrupp am Dach sind, kostet die zusätzliche Fläche deutlich weniger als ein eigenes Projekt. Im Rechner setzen Sie dafür die freie Zusatzfläche an.</p></details>
+    </div>
+  </div>
+</section>
+
+<script>
+(function(){
+"use strict";
+var $=function(i){return document.getElementById(i);},
+de=function(n,d){d=d||0;return Number(n).toLocaleString("de-AT",{minimumFractionDigits:d,maximumFractionDigits:d});};
+var NOW=2026,NEWD=215,NEWY=1030,COST=950,DISP=60;
+
+function render(){
+ var yr=+$("yr").value,kwp=+$("kwp").value,act=+$("act").value,extra=+$("extra").value,val=+$("val").value/100;
+ var age=NOW-yr,dens=110+(yr-2004)*5.4;
+ var area=kwp*1000/dens;
+ var soll=Math.round(kwp*1000*Math.pow(1-.005,age));
+ var dev=soll>0?(act-soll)/soll*100:0;
+ var newKwp=Math.round((area+extra)*NEWD/1000);
+ var newY=Math.round(newKwp*NEWY);
+ var gain=newY-act;
+ var inv=Math.round(newKwp*COST+kwp*DISP);
+ var pay=gain>0?inv/(gain*val):0;
+
+ $("v-yr").textContent=yr;
+ $("v-kwp").innerHTML=de(kwp)+'<span class="unit">kWp</span>';
+ $("v-act").innerHTML=de(act)+'<span class="unit">kWh</span>';
+ $("v-extra").innerHTML=de(extra)+'<span class="unit">m²</span>';
+ $("v-val").innerHTML=de(val*100,1)+'<span class="unit">ct</span>';
+ $("stamp").textContent="Baujahr "+yr+" · "+age+" Jahre in Betrieb";
+
+ $("o-soll").innerHTML=de(soll)+'<span class="unit">kWh</span>';
+ $("o-deg").textContent="nach "+age+" Jahren Degradation";
+ $("o-dev").innerHTML=(dev>=0?"+":"−")+de(Math.abs(dev),1)+'<span class="unit">%</span>';
+ $("o-dev").parentNode.className="stat "+(dev>=-5?"v":(dev>=-15?"s":"r"));
+ $("o-devs").textContent=dev>=-5?"im erwarteten Bereich":(dev>=-15?"auffällig, Befundung sinnvoll":"deutlich zu niedrig");
+ $("o-area").innerHTML=de(area)+'<span class="unit">m²</span>';
+ $("o-dens").textContent=de(dens)+" Wp/m² damals";
+ $("o-new").innerHTML=de(newKwp)+'<span class="unit">kWp</span>';
+ $("o-fac").textContent=de(newKwp/Math.max(kwp,1),1)+" fache Leistung";
+ $("o-gain").innerHTML=(gain>=0?"+":"−")+de(Math.abs(gain))+'<span class="unit">kWh/a</span>';
+ $("o-gain2").textContent=de(Math.round(gain*val))+" € Mehrwert im Jahr";
+ $("o-pay").innerHTML=(gain>0?de(pay,1):"—")+'<span class="unit">Jahre</span>';
+ $("o-inv").textContent="Investition "+de(inv)+" €";
+ $("c-note").textContent="Fläche "+de(area+extra)+" m² nach Repowering";
+
+ var rows=[["Sollertrag heute",soll,"#3A4C66"],["Ihr Istertrag",act,"#FF6B8A"],["Nach Repowering",newY,"#8CE04B"]];
+ var W=760,H=180,L=150,R=110,T=16,mx=Math.max.apply(null,rows.map(function(r){return r[1];}))||1,pw=W-L-R,s="",i;
+ for(i=0;i<3;i++){
+  var y=T+i*46,w=Math.max(2,pw*rows[i][1]/mx);
+  s+='<text x="'+(L-10)+'" y="'+(y+22)+'" text-anchor="end" fill="#9FB4CE" font-family="JetBrains Mono, monospace" font-size="11">'+rows[i][0]+'</text>';
+  s+='<rect x="'+L+'" y="'+(y+5)+'" width="'+w.toFixed(1)+'" height="26" fill="'+rows[i][2]+'"><title>'+rows[i][0]+': '+de(rows[i][1])+' kWh</title></rect>';
+  s+='<text x="'+(L+w+9).toFixed(1)+'" y="'+(y+23)+'" fill="#EDF4FF" font-family="JetBrains Mono, monospace" font-size="11">'+de(rows[i][1]/1000,1)+' MWh</text>';
+ }
+ $("ch").innerHTML=s;
+
+ var W2=760,H2=180,L2=52,R2=16,T2=16,B2=30,pw2=W2-L2-R2,ph2=H2-T2-B2,N=25;
+ var yv=function(v){return T2+ph2*(1-(v-70)/32);},xv=function(i){return L2+pw2*i/N;};
+ var d="",s2="",i2;
+ for(i2=0;i2<=N;i2++)d+=(i2?"L":"M")+xv(i2).toFixed(1)+" "+yv(100*Math.pow(1-.005,i2)).toFixed(1)+" ";
+ for(i2=70;i2<=100;i2+=10)s2+='<line x1="'+L2+'" y1="'+yv(i2).toFixed(1)+'" x2="'+(W2-R2)+'" y2="'+yv(i2).toFixed(1)+'" stroke="rgba(150,180,220,.11)"/><text x="'+(L2-7)+'" y="'+(yv(i2)+3.5).toFixed(1)+'" text-anchor="end" fill="#617595" font-family="JetBrains Mono, monospace" font-size="9.5">'+i2+'%</text>';
+ s2+='<path d="'+d+'" fill="none" stroke="#45E0FF" stroke-width="2"/>';
+ var rel=soll>0?100*act/(kwp*1000):100;
+ s2+='<line x1="'+xv(age).toFixed(1)+'" y1="'+T2+'" x2="'+xv(age).toFixed(1)+'" y2="'+(T2+ph2)+'" stroke="rgba(237,244,255,.28)" stroke-dasharray="3 4"/>';
+ s2+='<circle cx="'+xv(age).toFixed(1)+'" cy="'+yv(Math.max(70,Math.min(105,rel))).toFixed(1)+'" r="5" fill="#FF6B8A"/>';
+ s2+='<text x="'+(xv(age)+9).toFixed(1)+'" y="'+(yv(Math.max(70,Math.min(105,rel)))+4).toFixed(1)+'" fill="#FF6B8A" font-family="JetBrains Mono, monospace" font-size="10">'+de(rel,1)+' %</text>';
+ for(i2=0;i2<=N;i2+=5)s2+='<text x="'+xv(i2).toFixed(1)+'" y="'+(H2-9)+'" text-anchor="middle" fill="#617595" font-family="JetBrains Mono, monospace" font-size="9.5">J '+i2+'</text>';
+ $("cv").innerHTML=s2;
+ $("c-cv").textContent="Relativer Ertrag bezogen auf 1.000 kWh/kWp im ersten Jahr";
+}
+["yr","kwp","act","extra","val"].forEach(function(i){$(i).addEventListener("input",render);});
+render();
+})();
+</script>

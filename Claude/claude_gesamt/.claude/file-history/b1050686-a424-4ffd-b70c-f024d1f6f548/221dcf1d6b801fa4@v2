@@ -1,0 +1,148 @@
+"use client";
+
+import { useActionState } from "react";
+
+import { meldeStoerung, type MeldungsErgebnis } from "./aktionen";
+
+const FELD =
+  "mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/30 dark:border-slate-700 dark:bg-slate-950";
+
+/**
+ * Formular zur Stoerungsmeldung.
+ *
+ * Die Prioritaet erklaert ihre Folgen direkt am Feld - sonst waehlen
+ * Meldende im Zweifel immer "Kritisch", und die Einstufung verliert
+ * ihren Wert.
+ */
+export function Meldeformular({
+  anlagen,
+}: {
+  anlagen: { name: string; label: string }[];
+}) {
+  const [ergebnis, aktion, laeuft] = useActionState<
+    MeldungsErgebnis | null,
+    FormData
+  >(meldeStoerung, null);
+
+  if (ergebnis?.ok) {
+    return (
+      <div
+        role="status"
+        className="rounded-lg bg-emerald-50 px-4 py-3 dark:bg-emerald-950/60"
+      >
+        <p className="text-sm leading-relaxed text-emerald-800 dark:text-emerald-300">
+          {ergebnis.meldung}
+        </p>
+        <button
+          type="button"
+          onClick={() => window.location.reload()}
+          className="mt-2 text-xs font-medium text-emerald-700 underline dark:text-emerald-400"
+        >
+          Weitere Meldung erfassen
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <form action={aktion} className="space-y-4">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="sm:col-span-2">
+          <label
+            htmlFor="betreff"
+            className="block text-sm font-medium text-slate-700 dark:text-slate-300"
+          >
+            Was ist aufgefallen?
+          </label>
+          <input
+            id="betreff"
+            name="betreff"
+            required
+            maxLength={140}
+            placeholder="z. B. Wechselrichter 3 zeigt seit gestern Fehlercode"
+            className={FELD}
+          />
+        </div>
+
+        <div>
+          <label
+            htmlFor="anlage"
+            className="block text-sm font-medium text-slate-700 dark:text-slate-300"
+          >
+            Betroffene Anlage
+          </label>
+          <select id="anlage" name="anlage" className={FELD}>
+            <option value="">– noch nicht zuordenbar –</option>
+            {anlagen.map((anlage) => (
+              <option key={anlage.name} value={anlage.name}>
+                {anlage.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label
+            htmlFor="prioritaet"
+            className="block text-sm font-medium text-slate-700 dark:text-slate-300"
+          >
+            Dringlichkeit
+          </label>
+          <select
+            id="prioritaet"
+            name="prioritaet"
+            defaultValue="Mittel"
+            className={FELD}
+          >
+            <option value="Niedrig">Niedrig – kein Ertragsausfall</option>
+            <option value="Mittel">Mittel – Teilausfall</option>
+            <option value="Hoch">Hoch – Anlage steht</option>
+            <option value="Kritisch">Kritisch – Gefahr im Verzug</option>
+          </select>
+        </div>
+
+        <div className="sm:col-span-2">
+          <label
+            htmlFor="beschreibung"
+            className="block text-sm font-medium text-slate-700 dark:text-slate-300"
+          >
+            Beschreibung
+          </label>
+          <textarea
+            id="beschreibung"
+            name="beschreibung"
+            rows={4}
+            placeholder="Seit wann tritt es auf? Gibt es einen Fehlercode? Was wurde bereits versucht?"
+            className={FELD}
+          />
+          <p className="mt-1 text-xs text-slate-400">
+            Fehlercode und Zeitpunkt helfen uns, den Einsatz vorzubereiten.
+          </p>
+        </div>
+      </div>
+
+      {ergebnis && !ergebnis.ok && (
+        <p
+          role="alert"
+          className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-800 dark:bg-rose-950/60 dark:text-rose-300"
+        >
+          {ergebnis.meldung}
+        </p>
+      )}
+
+      <div className="flex flex-wrap items-center gap-3">
+        <button
+          type="submit"
+          disabled={laeuft}
+          className="rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-emerald-700 disabled:opacity-60"
+        >
+          {laeuft ? "Wird übermittelt …" : "Meldung absenden"}
+        </button>
+        <p className="text-xs text-slate-500 dark:text-slate-400">
+          Bei Gefahr im Verzug – Brand, Rauch, beschädigte Leitungen – rufen Sie
+          bitte zuerst an und trennen Sie die Anlage nicht selbst.
+        </p>
+      </div>
+    </form>
+  );
+}

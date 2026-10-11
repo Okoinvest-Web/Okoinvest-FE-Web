@@ -1,0 +1,320 @@
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+
+import {
+  ZWECK_HOECHSTLAENGE,
+  alsPain008,
+  fasseSammlerZusammen,
+  fruehesteFaelligkeit,
+  istBankarbeitstag,
+  normiereIban,
+  pruefeIban,
+  pruefeSammler,
+  type Einreicher,
+  type Lastschrift,
+} from "./sepa.ts";
+
+/**
+ * Die Bank nimmt eine Datei ganz oder gar nicht. Ein einziger
+ * Zahlendreher in einer IBAN weist den ganzen Sammler zurück - und
+ * das merkt man erst am nächsten Tag. Deshalb steht hier die Prüfung.
+ */
+
+const EINREICHER: Einreicher = {
+  name: "Ökovolt Energie GmbH",
+  // Beispiel-IBAN der Oesterreichischen Nationalbank.
+  iban: "AT61 1904 3002 3457 3201",
+  bic: "GIBAATWWXXX",
+  glaeubigerId: "AT12ZZZ00000000001",
+};
+
+function zahlung(teil: Partial<Lastschrift> = {}): Lastschrift {
+  return {
+    endeZuEnde: "RE-2026-0001",
+    zahler: "Steiner Holzbau GmbH",
+    iban: "AT61 1904 3002 3457 3201",
+    betragEur: 1234.56,
+    mandat: "MND-0001",
+    mandatVom: "2024-03-15",
+    sequenz: "RCUR",
+    verwendungszweck: "Ladeabrechnung August 2026, Rechnung LAD-2026-08-0001",
+    ...teil,
+  };
+}
+
+const EINGEREICHT = new Date(2026, 8, 14); // Montag, 14. September 2026
+
+describe("IBAN", () => {
+  it("nimmt eine gültige österreichische IBAN an", () => {
+    assert.ok(pruefeIban("AT61 1904 3002 3457 3201"));
+  });
+
+  it("nimmt sie auch ohne Leerzeichen an", () => {
+    assert.ok(pruefeIban("AT611904300234573201"));
+  });
+
+  it("nimmt eine deutsche IBAN an", () => {
+    assert.ok(pruefeIban("DE89 3704 0044 0532 0130 00"));
+  });
+
+  it("erkennt einen Zahlendreher", () => {
+    // Zwei vertauschte Ziffern - die haeufigste Fehleingabe ueberhaupt.
+    assert.equal(pruefeIban("AT61 1904 3002 3457 3210"), false);
+  });
+
+  it("erkennt eine falsche Prüfziffer", () => {
+    assert.equal(pruefeIban("AT62 1904 3002 3457 3201"), false);
+  });
+
+  it("erkennt eine zu kurze IBAN", () => {
+    // Ohne Laengenpruefung geht sie durch, wenn die Pruefziffer
+    // zufaellig passt - und das kommt bei einer von 97 vor.
+    assert.equal(pruefeIban("AT61 1904 3002 3457 320"), false);
+  });
+
+  it("weist ein unbekanntes Format zurück", () => {
+    assert.equal(pruefeIban("nicht eine IBAN"), false);
+    assert.equal(pruefeIban(""), false);
+    assert.equal(pruefeIban("6161 1904 3002 3457 3201"), false);
+  });
+
+  it("rechnet auch bei langen IBAN richtig", () => {
+    // Als Zahl gerechnet waere das laengst ungenau.
+    assert.ok(pruefeIban("HU42 1177 3016 1111 1018 0000 0000"));
+  });
+
+  it("normiert Schreibweisen", () => {
+    assert.equal(normiereIban("at61 1904 3002 3457 3201"), "AT611904300234573201");
+  });
+});
+
+describe("Bankarbeitstage", () => {
+  it("zählt Samstag und Sonntag nicht", () => {
+    assert.equal(istBankarbeitstag(new Date(2026, 8, 12)), false);
+    assert.equal(istBankarbeitstag(new Date(2026, 8, 13)), false);
+    assert.ok(istBankarbeitstag(new Date(2026, 8, 14)));
+  });
+
+  it("zählt österreichische Feiertage nicht", () => {
+    // 26. Oktober, Nationalfeiertag - 2026 ein Montag.
+    assert.equal(istBankarbeitstag(new Date(2026, 9, 26)), false);
+  });
+
+  it("schiebt die Fälligkeit über das Wochenende", () => {
+    // Freitag eingereicht, ein Bankarbeitstag Vorlauf: Montag.
+    const faellig = fruehesteFaelligkeit(new Date(2026, 8, 11), "RCUR");
+
+    assert.equal(faellig.getDate(), 14);
+    assert.equal(faellig.getMonth(), 8);
+  });
+
+  it("schiebt auch über einen Feiertag", () => {
+    // Freitag, 23. Oktober 2026. Montag ist Nationalfeiertag.
+    const faellig = fruehesteFaelligkeit(new Date(2026, 9, 23), "FRST");
+
+    assert.equal(faellig.getDate(), 27);
+  });
+});
+
+describe("Prüfung des Sammlers", () => {
+  it("lässt einen sauberen Sammler durch", () => {
+    const p = pruefeSammler(EINREICHER, [zahlung()], EINGEREICHT);
+
+    assert.ok(p.gueltig, p.beanstandungen.join(" | "));
+    assert.equal(p.anzahl, 1);
+    assert.equal(p.summeEur, 1234.56);
+  });
+
+  it("beanstandet eine ungültige IBAN mit Zeilennummer", () => {
+    const p = pruefeSammler(
+      EINREICHER,
+      [zahlung(), zahlung({ endeZuEnde: "RE-2", iban: "AT61 0000 0000 0000 0000" })],
+      EINGEREICHT,
+    );
+
+    assert.equal(p.gueltig, false);
+    assert.match(p.beanstandungen.join(" "), /Zeile 2/);
+  });
+
+  it("beanstandet eine fehlende Mandatsreferenz", () => {
+    const p = pruefeSammler(EINREICHER, [zahlung({ mandat: "  " })], EINGEREICHT);
+
+    assert.equal(p.gueltig, false);
+    assert.match(p.beanstandungen.join(" "), /unberechtigt/);
+  });
+
+  it("beanstandet ein Mandat aus der Zukunft", () => {
+    const p = pruefeSammler(
+      EINREICHER,
+      [zahlung({ mandatVom: "2027-01-01" })],
+      EINGEREICHT,
+    );
+
+    assert.equal(p.gueltig, false);
+    assert.match(p.beanstandungen.join(" "), /Zukunft/);
+  });
+
+  it("beanstandet eine doppelte Ende-zu-Ende-Kennung", () => {
+    // Bei einer Rueckgabe waere nicht mehr zuzuordnen, welche
+    // Rechnung gemeint ist.
+    const p = pruefeSammler(
+      EINREICHER,
+      [zahlung(), zahlung({ zahler: "Andere GmbH" })],
+      EINGEREICHT,
+    );
+
+    assert.equal(p.gueltig, false);
+    assert.match(p.beanstandungen.join(" "), /mehrfach/);
+  });
+
+  it("beanstandet einen Betrag von null", () => {
+    const p = pruefeSammler(EINREICHER, [zahlung({ betragEur: 0 })], EINGEREICHT);
+
+    assert.equal(p.gueltig, false);
+  });
+
+  it("beanstandet einen zu langen Verwendungszweck", () => {
+    const p = pruefeSammler(
+      EINREICHER,
+      [zahlung({ verwendungszweck: "x".repeat(ZWECK_HOECHSTLAENGE + 1) })],
+      EINGEREICHT,
+    );
+
+    assert.equal(p.gueltig, false);
+    assert.match(p.beanstandungen.join(" "), /141 Zeichen/);
+  });
+
+  it("beanstandet eine falsche Gläubigerkennung", () => {
+    const p = pruefeSammler(
+      { ...EINREICHER, glaeubigerId: "12345" },
+      [zahlung()],
+      EINGEREICHT,
+    );
+
+    assert.equal(p.gueltig, false);
+    assert.match(p.beanstandungen.join(" "), /Gläubiger/);
+  });
+
+  it("beanstandet einen leeren Sammler", () => {
+    const p = pruefeSammler(EINREICHER, [], EINGEREICHT);
+
+    assert.equal(p.gueltig, false);
+    assert.match(p.beanstandungen.join(" "), /keine Zahlung/);
+  });
+
+  it("warnt bei einem sehr alten Mandat, ohne zu beanstanden", () => {
+    // Ein ueber drei Jahre ungenutztes Mandat ist erloschen - ob es
+    // genutzt wurde, sagt das Datum allein nicht.
+    const p = pruefeSammler(
+      EINREICHER,
+      [zahlung({ mandatVom: "2020-01-02" })],
+      EINGEREICHT,
+    );
+
+    assert.ok(p.gueltig);
+    assert.match(p.warnungen.join(" "), /erloschen/);
+  });
+
+  it("nennt den frühesten Fälligkeitstag", () => {
+    const p = pruefeSammler(EINREICHER, [zahlung()], EINGEREICHT);
+
+    assert.equal(p.faelligAm, "2026-09-15");
+  });
+});
+
+describe("Die Datei", () => {
+  const angaben = {
+    nachrichtId: "MSG-2026-09-0001",
+    auftragId: "AUF-2026-09",
+    erstelltAm: new Date(Date.UTC(2026, 8, 14, 9, 30, 0)),
+    eingereichtAm: EINGEREICHT,
+  };
+
+  it("nennt die richtige Namensraumfassung", () => {
+    const xml = alsPain008(EINREICHER, [zahlung()], angaben);
+
+    assert.match(xml, /pain\.008\.001\.08/);
+  });
+
+  it("führt Anzahl und Kontrollsumme im Kopf", () => {
+    const xml = alsPain008(
+      EINREICHER,
+      [zahlung(), zahlung({ endeZuEnde: "RE-2", betragEur: 100 })],
+      angaben,
+    );
+
+    assert.match(xml, /<NbOfTxs>2<\/NbOfTxs>/);
+    assert.match(xml, /<CtrlSum>1334\.56<\/CtrlSum>/);
+  });
+
+  it("schreibt Beträge mit Punkt, wie es die Norm verlangt", () => {
+    const xml = alsPain008(EINREICHER, [zahlung()], angaben);
+
+    assert.match(xml, /<InstdAmt Ccy="EUR">1234\.56<\/InstdAmt>/);
+  });
+
+  it("trennt Erst- und Folgelastschrift in eigene Blöcke", () => {
+    // Eine gemischte Datei nehmen viele Banken an und buchen sie
+    // falsch - das ist schlimmer als eine Rueckweisung.
+    const xml = alsPain008(
+      EINREICHER,
+      [zahlung(), zahlung({ endeZuEnde: "RE-2", sequenz: "FRST" })],
+      angaben,
+    );
+
+    assert.equal((xml.match(/<PmtInf>/g) ?? []).length, 2);
+    assert.match(xml, /<SeqTp>RCUR<\/SeqTp>/);
+    assert.match(xml, /<SeqTp>FRST<\/SeqTp>/);
+  });
+
+  it("maskiert Sonderzeichen im Namen", () => {
+    const xml = alsPain008(
+      EINREICHER,
+      [zahlung({ zahler: "Meier & Söhne <GmbH>" })],
+      angaben,
+    );
+
+    assert.match(xml, /Meier &amp; Söhne &lt;GmbH&gt;/);
+    assert.ok(!xml.includes("<GmbH>"));
+  });
+
+  it("entfernt Leerzeichen aus den IBAN", () => {
+    const xml = alsPain008(EINREICHER, [zahlung()], angaben);
+
+    assert.match(xml, /<IBAN>AT611904300234573201<\/IBAN>/);
+  });
+
+  it("setzt NOTPROVIDED, wenn keine BIC vorliegt", () => {
+    const xml = alsPain008(EINREICHER, [zahlung()], angaben);
+
+    assert.match(xml, /NOTPROVIDED/);
+  });
+
+  it("trägt Mandat und Unterschriftsdatum", () => {
+    const xml = alsPain008(EINREICHER, [zahlung()], angaben);
+
+    assert.match(xml, /<MndtId>MND-0001<\/MndtId>/);
+    assert.match(xml, /<DtOfSgntr>2024-03-15<\/DtOfSgntr>/);
+  });
+
+  it("setzt den Fälligkeitstag je Block", () => {
+    const xml = alsPain008(EINREICHER, [zahlung()], angaben);
+
+    assert.match(xml, /<ReqdColltnDt>2026-09-15<\/ReqdColltnDt>/);
+  });
+});
+
+describe("Zusammenfassung", () => {
+  it("nennt Anzahl, Summe und Fälligkeit", () => {
+    const p = pruefeSammler(EINREICHER, [zahlung()], EINGEREICHT);
+
+    assert.match(fasseSammlerZusammen(p), /1 Lastschriften über 1234,56 Euro/);
+    assert.match(fasseSammlerZusammen(p), /15\.09\.2026/);
+  });
+
+  it("sagt bei Beanstandungen, dass nichts erzeugt wurde", () => {
+    const p = pruefeSammler(EINREICHER, [], EINGEREICHT);
+
+    assert.match(fasseSammlerZusammen(p), /nicht erzeugt/);
+  });
+});

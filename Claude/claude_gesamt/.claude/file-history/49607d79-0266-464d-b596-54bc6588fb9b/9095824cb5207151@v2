@@ -1,0 +1,587 @@
+/**
+ * Alarme: Korrelation, Rauschunterdrückung, Bearbeitung.
+ *
+ * Eine Alarmliste ist schnell gebaut. Was sie brauchbar macht, ist das, was
+ * sie *nicht* zeigt - und warum:
+ *
+ *   - **Korrelation.** Fünf Meldungen zu einem überlasteten Host sind ein
+ *     Vorfall, nicht fünf. Ohne Gruppierung arbeitet man fünfmal dasselbe ab.
+ *   - **Rauschen benennen.** Ein Port, der 214-mal in einem Tag flappt, ist
+ *     kein Befund, sondern ein Defekt an der Meldung selbst. Wer ihn wie
+ *     einen Befund behandelt, hört irgendwann auf hinzusehen.
+ *   - **Stummschaltung mit Ablauf.** Während einer Wartung sollen Alarme
+ *     nicht stören - aber eine Stummschaltung ohne Ende ist eine Abschaltung
+ *     mit besserem Namen. Deshalb hat jede hier ein Ablaufdatum.
+ *   - **MTTA und MTTR.** Wie lange bis jemand hinsieht, wie lange bis es weg
+ *     ist. Das sind die zwei Zahlen, an denen man merkt, ob Alarmarbeit
+ *     funktioniert.
+ *
+ * Für die Portierung: `frappe.has_permission` je Methode, Mandantenfilter,
+ * und die Stummschaltung gehört serverseitig durchgesetzt - nicht in der
+ * Anzeige. Ein Alarm, den nur die Oberfläche versteckt, ist nicht stumm.
+ */
+import { FrappeMockError, SESSION_USER, table, touch } from '../db.js'
+import { alterStunden, jetzt, parse, stundenVersetzt } from '../zeit.js'
+import { protokolliere } from './audit.js'
+
+const SCHWEREGRAD_RANG = { critical: 0, high: 1, medium: 2, low: 3 }
+
+/**
+ * Ab wann gilt ein Alarm als Rauschen?
+ *
+ * Nicht die reine Anzahl entscheidet, sondern die Rate: 200 Meldungen über
+ * ein Jahr sind normal, 200 an einem Tag sind ein Defekt. Die Schwelle liegt
+ * bei zwei Meldungen je Stunde über mindestens sechs Stunden - darunter wäre
+ * jeder kurze Ausschlag betroffen.
+ */
+const RAUSCH_RATE = 2
+const RAUSCH_MINDESTDAUER = 6
+
+function beschaeftigte() {
+  return new Map(table('Employee').map((e) => [e.name, e]))
+}
+
+/** Stunden zwischen zwei Zeitstempeln, auf eine Nachkommastelle. */
+function stundenZwischen(von, bis) {
+  const a = parse(von)
+  const b = parse(bis)
+  if (!a || !b) return null
+  return Math.round(((b.getTime() - a.getTime()) / 3600000) * 10) / 10
+}
+
+// --- Stummschaltung --------------------------------------------------------
+
+/**
+ * Greift für diesen Alarm gerade eine Stummschaltung?
+ *
+ * Eine Stummschaltung trifft entweder ein Objekt, eine Quelle oder einen
+ * Korrelationsschlüssel. Abgelaufene zählen nicht - das ist der ganze Sinn
+ * des Ablaufdatums.
+ */
+function stummschaltungFuer(alarm, stummschaltungen, jetztText) {
+  return (
+    stummschaltungen.find(
+      (s) =>
+        s.active &&
+        s.until > jetztText &&
+        ((s.match_kind === 'object' && s.match_value === alarm.object_name) ||
+          (s.match_kind === 'source' && s.match_value === alarm.source) ||
+          (s.match_kind === 'correlation' && s.match_value === alarm.correlation_key)),
+    ) || null
+  )
+}
+
+export function silence_list({ include_expired = false, tenant = null } = {}) {
+  const jetztText = jetzt()
+  const mitarbeitende = beschaeftigte()
+
+  return table('Alert Silence')
+    .filter((s) => !tenant || s.tenant === tenant)
+    .map((s) => {
+      const abgelaufen = s.until <= jetztText
+      return {
+        ...s,
+        expired: abgelaufen,
+        hours_left: abgelaufen ? 0 : stundenZwischen(jetztText, s.until),
+        created_by_name: mitarbeitende.get(s.created_by)?.employee_name || s.created_by,
+        level: !s.active || abgelaufen ? 'neutral' : 'warning',
+      }
+    })
+    .filter((s) => include_expired || (!s.expired && s.active))
+    .sort((a, b) => String(a.until).localeCompare(String(b.until)))
+}
+
+export function create_silence({
+  match_kind = null,
+  match_value = null,
+  hours = 4,
+  reason = null,
+  created_by = null,
+} = {}) {
+  const erlaubt = ['object', 'source', 'correlation']
+  if (!erlaubt.includes(match_kind)) {
+    throw new FrappeMockError('ValidationError: Art muss eine von ' + erlaubt.join(', ') + ' sein')
+  }
+  if (!match_value) {
+    throw new FrappeMockError('ValidationError: Ohne Ziel wäre alles stumm')
+  }
+  if (!reason) {
+    throw new FrappeMockError(
+      'ValidationError: Eine Stummschaltung ohne Begründung ist nicht nachvollziehbar',
+    )
+  }
+
+  const dauer = Number(hours)
+  if (!Number.isFinite(dauer) || dauer <= 0) {
+    throw new FrappeMockError('ValidationError: Die Dauer muss größer als null sein')
+  }
+  // Eine Stummschaltung ohne Ende ist eine Abschaltung mit besserem Namen.
+  if (dauer > 720) {
+    throw new FrappeMockError(
+      'ValidationError: Höchstens 30 Tage – wer länger braucht, schaltet die Regel ab statt sie stummzuschalten',
+    )
+  }
+
+  const rows = table('Alert Silence')
+  const eintrag = {
+    doctype: 'Alert Silence',
+    name: 'STUMM-' + String(rows.length + 1).padStart(5, '0'),
+    match_kind,
+    match_value,
+    reason,
+    until: stundenVersetzt(dauer),
+    active: 1,
+    created_by: created_by || null,
+    tenant: null,
+    owner: SESSION_USER,
+    creation: jetzt(),
+    modified: jetzt(),
+    modified_by: SESSION_USER,
+  }
+  rows.push(eintrag)
+
+  protokolliere({
+    action: 'alert_silenced',
+    object_type: 'Alert Silence',
+    object_name: eintrag.name,
+    payload: { match_kind, match_value, hours: dauer, reason },
+  })
+
+  return { ok: true, silence: eintrag.name, until: eintrag.until }
+}
+
+export function end_silence({ name = null } = {}) {
+  const doc = table('Alert Silence').find((s) => s.name === name)
+  if (!doc) {
+    throw new FrappeMockError(`DoesNotExistError: Alert Silence ${name} existiert nicht`, 404)
+  }
+  doc.active = 0
+  touch(doc)
+  protokolliere({ action: 'alert_unsilenced', object_type: 'Alert Silence', object_name: name })
+  return { ok: true }
+}
+
+// --- Anreicherung ----------------------------------------------------------
+
+/**
+ * Ein Alarm mit allem, was die Oberfläche über ihn wissen muss.
+ */
+function reichereAn(alarm, stummschaltungen, jetztText, mitarbeitende) {
+  const alterH = alterStunden(alarm.last_seen)
+  const laufzeit = stundenZwischen(alarm.first_seen, alarm.last_seen) || 0
+  const rate = laufzeit > 0 ? alarm.occurrences / laufzeit : alarm.occurrences
+
+  const rauschen =
+    laufzeit >= RAUSCH_MINDESTDAUER && rate >= RAUSCH_RATE && alarm.alert_state !== 'closed'
+
+  const stumm = stummschaltungFuer(alarm, stummschaltungen, jetztText)
+
+  const bisAck = alarm.acknowledged_at
+    ? stundenZwischen(alarm.first_seen, alarm.acknowledged_at)
+    : null
+  const bisZu = alarm.resolved_at ? stundenZwischen(alarm.first_seen, alarm.resolved_at) : null
+
+  // Zwei verschiedene Alter, und die Unterscheidung ist wichtig:
+  // `age_hours` ist "wann zuletzt gemeldet", `unattended_hours` ist "wie
+  // lange schon da, ohne dass jemand hingesehen hat". Ein Alarm, der seit
+  // 26 Stunden laeuft und vor fuenf Minuten zuletzt meldete, ist frisch im
+  // ersten und ueberfaellig im zweiten Sinn.
+  const unbeachtet =
+    alarm.alert_state !== 'closed' && !alarm.acknowledged_at ? alterStunden(alarm.first_seen) : null
+
+  const gruende = []
+  if (rauschen)
+    gruende.push(`${Math.round(rate)} Meldungen je Stunde seit ${Math.round(laufzeit)} h`)
+  if (stumm) gruende.push('stummgeschaltet bis ' + stumm.until.slice(0, 16))
+  if (unbeachtet !== null && unbeachtet > 24) {
+    gruende.push(`seit ${Math.round(unbeachtet)} h unbeachtet`)
+  }
+
+  return {
+    ...alarm,
+    open: alarm.alert_state !== 'closed',
+    age_hours: alterH,
+    unattended_hours: unbeachtet,
+    duration_hours: laufzeit,
+    rate_per_hour: Math.round(rate * 10) / 10,
+    // Rauschen ist eine Eigenschaft der Meldung, nicht ihrer Schwere.
+    noisy: rauschen,
+    silenced: !!stumm,
+    silenced_by: stumm?.name || null,
+    silence_reason: stumm?.reason || null,
+    silence_until: stumm?.until || null,
+    acknowledged: !!alarm.acknowledged_at,
+    ack_hours: bisAck,
+    resolve_hours: bisZu,
+    assignee_name: mitarbeitende.get(alarm.assignee)?.employee_name || null,
+    acknowledged_by_name: mitarbeitende.get(alarm.acknowledged_by)?.employee_name || null,
+    reasons: gruende,
+    level:
+      alarm.alert_state === 'closed'
+        ? 'neutral'
+        : stumm
+          ? 'neutral'
+          : alarm.severity === 'critical'
+            ? 'critical'
+            : alarm.severity === 'high'
+              ? 'serious'
+              : alarm.severity === 'medium'
+                ? 'warning'
+                : 'neutral',
+  }
+}
+
+// --- Liste und Gruppierung -------------------------------------------------
+
+export function alert_list_v2({
+  state = null,
+  severity = null,
+  source = null,
+  tenant = null,
+  include_silenced = false,
+  only_noisy = false,
+  limit = 500,
+} = {}) {
+  const stummschaltungen = table('Alert Silence').filter((s) => s.active)
+  const jetztText = jetzt()
+  const mitarbeitende = beschaeftigte()
+
+  let alarme = table('Alert').map((a) => reichereAn(a, stummschaltungen, jetztText, mitarbeitende))
+
+  if (state) alarme = alarme.filter((a) => a.alert_state === state)
+  if (severity) alarme = alarme.filter((a) => a.severity === severity)
+  if (source) alarme = alarme.filter((a) => a.source === source)
+  if (tenant) alarme = alarme.filter((a) => a.tenant === tenant)
+  if (!include_silenced) alarme = alarme.filter((a) => !a.silenced)
+  if (only_noisy) alarme = alarme.filter((a) => a.noisy)
+
+  return alarme
+    .sort(
+      (a, b) =>
+        Number(b.open) - Number(a.open) ||
+        (SCHWEREGRAD_RANG[a.severity] ?? 9) - (SCHWEREGRAD_RANG[b.severity] ?? 9) ||
+        String(b.last_seen).localeCompare(String(a.last_seen)),
+    )
+    .slice(0, limit)
+}
+
+/**
+ * Alarme zu Gruppen zusammenfassen.
+ *
+ * Gruppiert wird nach Korrelationsschlüssel, ersatzweise nach Objekt. Eine
+ * Gruppe trägt die höchste Schwere ihrer Mitglieder - sonst versteckt sich
+ * ein kritischer Alarm hinter vier harmlosen.
+ */
+export function alert_groups({ tenant = null, include_silenced = false } = {}) {
+  const alarme = alert_list_v2({ tenant, include_silenced }).filter((a) => a.open)
+
+  const gruppen = new Map()
+  for (const a of alarme) {
+    const schluessel = a.correlation_key || `${a.object_type}:${a.object_name}`
+    const g = gruppen.get(schluessel) || {
+      key: schluessel,
+      correlated: !!a.correlation_key,
+      object_type: a.object_type,
+      object_name: a.object_name,
+      members: [],
+    }
+    g.members.push(a)
+    gruppen.set(schluessel, g)
+  }
+
+  return [...gruppen.values()]
+    .map((g) => {
+      const schwerste = g.members.reduce((x, y) =>
+        (SCHWEREGRAD_RANG[y.severity] ?? 9) < (SCHWEREGRAD_RANG[x.severity] ?? 9) ? y : x,
+      )
+      const quellen = [...new Set(g.members.map((m) => m.source))]
+      return {
+        ...g,
+        title:
+          g.members.length === 1
+            ? schwerste.title
+            : `${g.members.length} Meldungen zu ${g.object_name}`,
+        severity: schwerste.severity,
+        level: schwerste.level,
+        count: g.members.length,
+        occurrences: g.members.reduce((s, m) => s + (m.occurrences || 0), 0),
+        sources: quellen,
+        first_seen: g.members.reduce((x, m) => (m.first_seen < x ? m.first_seen : x), '9999'),
+        last_seen: g.members.reduce((x, m) => (m.last_seen > x ? m.last_seen : x), ''),
+        noisy: g.members.every((m) => m.noisy),
+        acknowledged: g.members.every((m) => m.acknowledged),
+        members: g.members.sort(
+          (x, y) => (SCHWEREGRAD_RANG[x.severity] ?? 9) - (SCHWEREGRAD_RANG[y.severity] ?? 9),
+        ),
+      }
+    })
+    .sort(
+      (a, b) =>
+        (SCHWEREGRAD_RANG[a.severity] ?? 9) - (SCHWEREGRAD_RANG[b.severity] ?? 9) ||
+        b.count - a.count,
+    )
+}
+
+// --- Übersicht -------------------------------------------------------------
+
+/**
+ * Kennzahlen, Verteilungen und Lärmquellen.
+ */
+export function alert_overview({ tenant = null, hours = 48 } = {}) {
+  const alle = alert_list_v2({ tenant, include_silenced: true, limit: 2000 })
+  const offen = alle.filter((a) => a.open && !a.silenced)
+  const stumm = alle.filter((a) => a.silenced && a.open)
+  const geschlossen = alle.filter((a) => !a.open)
+
+  // MTTA und MTTR nur aus Alarmen, die tatsächlich bearbeitet wurden -
+  // ein Durchschnitt über unbearbeitete wäre geschönt.
+  const mitAck = alle.filter((a) => a.ack_hours !== null)
+  const mitLoesung = alle.filter((a) => a.resolve_hours !== null)
+  const mittel = (liste, feld) =>
+    liste.length
+      ? Math.round((liste.reduce((s, a) => s + a[feld], 0) / liste.length) * 10) / 10
+      : null
+
+  const jeQuelle = new Map()
+  for (const a of alle) {
+    const e = jeQuelle.get(a.source) || {
+      source: a.source,
+      total: 0,
+      open: 0,
+      occurrences: 0,
+      noisy: 0,
+    }
+    e.total += 1
+    if (a.open) e.open += 1
+    e.occurrences += a.occurrences || 0
+    if (a.noisy) e.noisy += 1
+    jeQuelle.set(a.source, e)
+  }
+
+  const jeSchwere = {}
+  for (const s of ['critical', 'high', 'medium', 'low']) {
+    jeSchwere[s] = offen.filter((a) => a.severity === s).length
+  }
+
+  // Stundenweiser Verlauf: wann kam was herein?
+  const eimer = new Map()
+  for (let i = hours - 1; i >= 0; i--) {
+    const stunde = stundenVersetzt(-i).slice(0, 13)
+    eimer.set(stunde, { stunde, anzahl: 0, kritisch: 0 })
+  }
+  for (const a of alle) {
+    const e = eimer.get(String(a.first_seen).slice(0, 13))
+    if (!e) continue
+    e.anzahl += 1
+    if (a.severity === 'critical') e.kritisch += 1
+  }
+
+  return {
+    summary: {
+      open: offen.length,
+      critical: offen.filter((a) => a.severity === 'critical').length,
+      unacknowledged: offen.filter((a) => !a.acknowledged).length,
+      stale: offen.filter((a) => a.unattended_hours !== null && a.unattended_hours > 24).length,
+      silenced: stumm.length,
+      noisy: alle.filter((a) => a.noisy && a.open).length,
+      closed: geschlossen.length,
+      mtta_hours: mittel(mitAck, 'ack_hours'),
+      mttr_hours: mittel(mitLoesung, 'resolve_hours'),
+      // Wie viele Einzelmeldungen stecken hinter den offenen Alarmen? Der
+      // Unterschied zwischen 15 Alarmen und 400 Meldungen ist der Grund,
+      // warum Korrelation nötig ist.
+      occurrences_open: offen.reduce((s, a) => s + (a.occurrences || 0), 0),
+    },
+    by_severity: jeSchwere,
+    by_source: [...jeQuelle.values()].sort((a, b) => b.occurrences - a.occurrences),
+    noise: alle
+      .filter((a) => a.noisy && a.open)
+      .sort((a, b) => b.rate_per_hour - a.rate_per_hour)
+      .slice(0, 5)
+      .map((a) => ({
+        name: a.name,
+        title: a.title,
+        object_name: a.object_name,
+        source: a.source,
+        occurrences: a.occurrences,
+        rate_per_hour: a.rate_per_hour,
+        duration_hours: Math.round(a.duration_hours),
+        correlation_key: a.correlation_key,
+      })),
+    timeline: [...eimer.values()],
+  }
+}
+
+// --- Einzelner Alarm -------------------------------------------------------
+
+/**
+ * Ein Alarm mit Kontext: was hängt am betroffenen Objekt, wie sah es beim
+ * letzten Mal aus, was steht im Runbook.
+ *
+ * Die Frage „was ist noch betroffen?" ist bei einem Alarm die erste - und
+ * die Antwort steckt schon im Beziehungsgraphen der App.
+ */
+export function alert_detail({ name = null } = {}) {
+  const roh = table('Alert').find((a) => a.name === name)
+  if (!roh) {
+    throw new FrappeMockError(`DoesNotExistError: Alert ${name} existiert nicht`, 404)
+  }
+
+  const stummschaltungen = table('Alert Silence').filter((s) => s.active)
+  const alarm = reichereAn(roh, stummschaltungen, jetzt(), beschaeftigte())
+
+  // Was hängt am betroffenen Objekt? Dieselben Kanten wie in der
+  // Auswirkungsanalyse - hier nur eine Ebene, das reicht zur Einordnung.
+  const kanten = table('Object Relation')
+  const betroffen = kanten
+    .filter((r) => r.to_type === alarm.object_type && r.to_name === alarm.object_name)
+    .map((r) => ({ type: r.from_type, name: r.from_name, relation: r.relation_type }))
+
+  // Ähnliche Alarme in der Vergangenheit: gleiche Ursache oder gleicher
+  // Titel am selben Objekt. Wie wurde es das letzte Mal gelöst?
+  const aehnlich = table('Alert')
+    .filter(
+      (a) =>
+        a.name !== alarm.name &&
+        a.alert_state === 'closed' &&
+        ((alarm.correlation_key && a.correlation_key === alarm.correlation_key) ||
+          (a.title === alarm.title && a.object_name === alarm.object_name)),
+    )
+    .map((a) => ({
+      name: a.name,
+      title: a.title,
+      resolved_at: a.resolved_at,
+      resolution: a.resolution,
+      resolve_hours: stundenZwischen(a.first_seen, a.resolved_at),
+    }))
+    .sort((a, b) => String(b.resolved_at).localeCompare(String(a.resolved_at)))
+    .slice(0, 3)
+
+  const runbook = alarm.runbook
+    ? table('NetOps Document').find((d) => d.name === alarm.runbook) || null
+    : null
+
+  // Geschwister aus derselben Korrelationsgruppe.
+  const gruppe = alarm.correlation_key
+    ? table('Alert')
+        .filter((a) => a.correlation_key === alarm.correlation_key && a.name !== alarm.name)
+        .map((a) => ({
+          name: a.name,
+          title: a.title,
+          severity: a.severity,
+          alert_state: a.alert_state,
+          object_name: a.object_name,
+        }))
+    : []
+
+  // Zeitleiste aus dem Protokoll: was ist mit diesem Alarm passiert?
+  const verlauf = table('Audit Entry')
+    .filter((e) => e.object_type === 'Alert' && e.object_name === alarm.name)
+    .map((e) => ({ timestamp: e.timestamp, action: e.action, user: e.user }))
+
+  return {
+    ...alarm,
+    impacted: betroffen,
+    similar_past: aehnlich,
+    group_members: gruppe,
+    runbook_doc: runbook ? { name: runbook.name, title: runbook.title } : null,
+    history: verlauf,
+  }
+}
+
+// --- Bearbeitung -----------------------------------------------------------
+
+const ZUSTAENDE = ['new', 'ack', 'closed']
+
+export function set_alert_state({
+  name = null,
+  state = null,
+  assignee = null,
+  resolution = null,
+  actor = null,
+} = {}) {
+  if (!ZUSTAENDE.includes(state)) {
+    throw new FrappeMockError(
+      'ValidationError: Zustand muss einer von ' + ZUSTAENDE.join(', ') + ' sein',
+    )
+  }
+
+  const doc = table('Alert').find((a) => a.name === name)
+  if (!doc) {
+    throw new FrappeMockError(`DoesNotExistError: Alert ${name} existiert nicht`, 404)
+  }
+
+  // Ein Alarm ohne Lösungsnotiz zu schließen verliert genau die Information,
+  // die beim nächsten Mal hilft. Deshalb ist sie Pflicht.
+  if (state === 'closed' && !resolution && !doc.resolution) {
+    throw new FrappeMockError(
+      'ValidationError: Zum Schließen gehört eine Notiz, was die Ursache war',
+    )
+  }
+
+  const vorher = doc.alert_state
+  doc.alert_state = state
+
+  if (state === 'ack' && !doc.acknowledged_at) {
+    doc.acknowledged_at = jetzt()
+    doc.acknowledged_by = actor || null
+  }
+  if (state === 'closed') {
+    doc.resolved_at = jetzt()
+    if (resolution) doc.resolution = resolution
+    // Wer direkt schließt, hat den Alarm auch gesehen.
+    if (!doc.acknowledged_at) {
+      doc.acknowledged_at = jetzt()
+      doc.acknowledged_by = actor || null
+    }
+  }
+  if (state === 'new') {
+    doc.resolved_at = null
+    doc.resolution = null
+  }
+  if (assignee !== null) doc.assignee = assignee
+
+  touch(doc)
+
+  protokolliere({
+    action: 'alert_' + state,
+    object_type: 'Alert',
+    object_name: name,
+    payload: { from: vorher, to: state, assignee, resolution },
+  })
+
+  return { ok: true, alert: name, alert_state: doc.alert_state }
+}
+
+/**
+ * Sammelaktion.
+ *
+ * Gibt je Alarm zurück, ob es geklappt hat - eine Sammelaktion, die beim
+ * ersten Fehler abbricht, lässt die Liste halb bearbeitet zurück.
+ */
+export function bulk_alert_action({
+  names = [],
+  state = null,
+  resolution = null,
+  actor = null,
+} = {}) {
+  if (!Array.isArray(names) || !names.length) {
+    throw new FrappeMockError('ValidationError: Ohne Auswahl gibt es nichts zu tun')
+  }
+
+  const ergebnisse = names.map((n) => {
+    try {
+      const r = set_alert_state({ name: n, state, resolution, actor })
+      return { alert: n, ok: true, alert_state: r.alert_state }
+    } catch (fehler) {
+      return { alert: n, ok: false, reason: String(fehler.message || fehler) }
+    }
+  })
+
+  return {
+    ok: ergebnisse.every((e) => e.ok),
+    done: ergebnisse.filter((e) => e.ok).length,
+    failed: ergebnisse.filter((e) => !e.ok),
+    results: ergebnisse,
+  }
+}

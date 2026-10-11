@@ -1,0 +1,112 @@
+"""Subunternehmer Mitarbeiter: die Personen hinter der Firma.
+
+Warum diese Personen ueberhaupt im System stehen: Fuer Drittstaatsangehoerige
+muss taeglich gemeldet werden, wer auf der Baustelle ist, und bei einer
+Kontrolle sind Identitaet und Bewilligung nachzuweisen. Ohne benannte Personen
+waere weder die Meldung noch die Zeiterfassung je Person moeglich.
+"""
+
+from __future__ import annotations
+
+import frappe
+from frappe import _
+from frappe.model.document import Document
+from frappe.utils import getdate, today
+
+# EU, EWR und Schweiz — fuer diese gilt die Drittstaat-Meldepflicht nicht.
+# Die Liste haengt an den Laendernamen des ERPNext-Stammes.
+EU_EWR_CH = {
+	"Austria", "Belgium", "Bulgaria", "Croatia", "Cyprus", "Czech Republic", "Czechia",
+	"Denmark", "Estonia", "Finland", "France", "Germany", "Greece", "Hungary", "Ireland",
+	"Italy", "Latvia", "Lithuania", "Luxembourg", "Malta", "Netherlands", "Poland",
+	"Portugal", "Romania", "Slovakia", "Slovenia", "Spain", "Sweden",
+	"Iceland", "Liechtenstein", "Norway", "Switzerland",
+}
+
+
+class SubunternehmerMitarbeiter(Document):
+	def validate(self):
+		self.vollname = f"{self.vorname} {self.nachname}".strip()
+		self.drittstaat = 0 if self.staatsangehoerigkeit in EU_EWR_CH else 1
+		self.polier_pruefen()
+		self.nachweise_pruefen()
+
+	def polier_pruefen(self):
+		if self.ist_polier and not self.benutzer:
+			frappe.msgprint(
+				_("Poliere brauchen ein Benutzerkonto, um stempeln und Personal melden zu koennen."),
+				indicator="orange", alert=True,
+			)
+
+	def nachweise_pruefen(self):
+		"""Hinweis statt Sperre — fehlende Papiere sind ein Fall fuer den Einkauf."""
+		if not self.drittstaat or not self.aktiv:
+			return
+		fehlend = []
+		if not self.ausweisnummer:
+			fehlend.append(_("Ausweisnummer"))
+		if not self.bewilligung_art or self.bewilligung_art == "nicht erforderlich":
+			fehlend.append(_("Bewilligung"))
+		if fehlend:
+			frappe.msgprint(
+				_("Fuer Drittstaatsangehoerige fehlen noch: {0}").format(", ".join(fehlend)),
+				indicator="orange", alert=True,
+			)
+
+	def nachweise_gueltig(self) -> tuple[bool, str]:
+		"""Sind Ausweis und Bewilligung heute gueltig?"""
+		if not self.drittstaat:
+			return True, ""
+
+		heute = getdate(today())
+		maengel = []
+		if not self.ausweisnummer:
+			maengel.append(_("Ausweis fehlt"))
+		elif self.ausweis_gueltig_bis and getdate(self.ausweis_gueltig_bis) < heute:
+			maengel.append(_("Ausweis abgelaufen"))
+
+		if not self.bewilligung_art or self.bewilligung_art == "nicht erforderlich":
+			maengel.append(_("Bewilligung fehlt"))
+		elif self.bewilligung_gueltig_bis and getdate(self.bewilligung_gueltig_bis) < heute:
+			maengel.append(_("Bewilligung abgelaufen"))
+
+		return (not maengel), ", ".join(maengel)
+
+
+@frappe.whitelist()
+def kolonne(supplier: str, nur_aktive: int = 1) -> list[dict]:
+	"""Die Leute einer Firma — Grundlage fuer Personalmeldung und Stempeluhr."""
+	filters: dict = {"supplier": supplier}
+	if int(nur_aktive):
+		filters["aktiv"] = 1
+
+	return frappe.get_all(
+		"Subunternehmer Mitarbeiter",
+		filters=filters,
+		fields=["name", "vollname", "drittstaat", "ist_polier", "qualifikation",
+		        "ausweis_gueltig_bis", "bewilligung_gueltig_bis"],
+		order_by="ist_polier desc, nachname asc",
+		limit_page_length=0,
+	)
+
+
+def ablaufende_nachweise_pruefen():
+	"""Scheduler: Ausweise und Bewilligungen, die in 30 Tagen ablaufen."""
+	from frappe.utils import add_days
+
+	grenze = add_days(today(), 30)
+	betroffen = frappe.get_all(
+		"Subunternehmer Mitarbeiter",
+		filters={"aktiv": 1, "drittstaat": 1},
+		or_filters=[
+			{"ausweis_gueltig_bis": ["between", [today(), grenze]]},
+			{"bewilligung_gueltig_bis": ["between", [today(), grenze]]},
+		],
+		fields=["name", "vollname", "supplier", "ausweis_gueltig_bis", "bewilligung_gueltig_bis"],
+		limit_page_length=0,
+	)
+	if betroffen:
+		frappe.logger("baudoku").info(
+			f"{len(betroffen)} Subunternehmer-Nachweise laufen in den naechsten 30 Tagen ab"
+		)
+	return betroffen

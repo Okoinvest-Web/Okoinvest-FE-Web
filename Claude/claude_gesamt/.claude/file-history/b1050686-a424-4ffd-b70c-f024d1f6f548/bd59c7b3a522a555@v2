@@ -1,0 +1,138 @@
+import io
+
+p = "src/app/globals.css"
+s = io.open(p, encoding="utf-8").read()
+
+# ------------------------------------------------------------------
+# 1. Der gefuellte Knopf
+# ------------------------------------------------------------------
+# Weiss auf ov-500 ergibt 3,4 zu 1 - zu wenig fuer Text dieser Groesse.
+# Im Hellen wird der Verlauf deshalb dunkler; im Dunkeln waere ein noch
+# dunkleres Gruen auf dunklem Grund unsichtbar, dort kehrt der Knopf
+# sich um: helle Flaeche, dunkle Schrift.
+
+alt = """  --akzent-verlauf: linear-gradient(
+    135deg,
+    var(--color-ov-500),
+    var(--color-ov-700)
+  );
+"""
+neu = """  /*
+   * Der Verlauf des gefuellten Knopfes.
+   *
+   * Er beginnt bei ov-600 und nicht bei ov-500: Weiss auf ov-500
+   * ergibt 3,4 zu 1 und verfehlt damit die 4,5, die fuer Text dieser
+   * Groesse verlangt sind. Gemessen, nicht geschaetzt - der hellste
+   * Punkt des Verlaufs entscheidet.
+   */
+  --akzent-verlauf: linear-gradient(
+    135deg,
+    var(--color-ov-600),
+    var(--color-ov-800)
+  );
+  --akzent-knopf-text: #ffffff;
+"""
+assert alt in s
+s = s.replace(alt, neu, 1)
+
+# Beide Dunkelfassungen: helle Flaeche, dunkle Schrift.
+alt_dunkel = """    --akzent-verlauf: linear-gradient(
+      135deg,
+      var(--color-ov-400),
+      var(--color-ov-600)
+    );
+"""
+neu_dunkel = """    /*
+     * Im Dunkeln kehrt der Knopf sich um: Ein dunkles Gruen auf
+     * dunklem Grund verschwindet, ein helles mit dunkler Schrift
+     * steht klar da. Dieselbe Farbe, andere Rollenverteilung.
+     */
+    --akzent-verlauf: linear-gradient(
+      135deg,
+      var(--color-ov-300),
+      var(--color-ov-500)
+    );
+    --akzent-knopf-text: var(--color-ink-1000);
+"""
+assert alt_dunkel in s
+s = s.replace(alt_dunkel, neu_dunkel, 1)
+
+alt_dunkel2 = """  --akzent-verlauf: linear-gradient(
+    135deg,
+    var(--color-ov-400),
+    var(--color-ov-600)
+  );
+"""
+neu_dunkel2 = """  --akzent-verlauf: linear-gradient(
+    135deg,
+    var(--color-ov-300),
+    var(--color-ov-500)
+  );
+  --akzent-knopf-text: var(--color-ink-1000);
+"""
+assert alt_dunkel2 in s
+s = s.replace(alt_dunkel2, neu_dunkel2, 1)
+
+s = s.replace("""[data-thema="dunkel"] .knopf-voll,
+.knopf-voll {
+  color: #ffffff;
+}""", """.knopf-voll {
+  color: var(--akzent-knopf-text);
+}""", 1)
+s = s.replace("""  background: var(--akzent-verlauf);
+  color: #ffffff;
+  border: 1px solid transparent;""",
+"""  background: var(--akzent-verlauf);
+  color: var(--akzent-knopf-text);
+  border: 1px solid transparent;""", 1)
+
+# ------------------------------------------------------------------
+# 2. Der Warnknopf
+# ------------------------------------------------------------------
+# Das feste #b3261e ist im Dunkeln zu dunkel. Er nutzt jetzt den
+# Zustandston, der beide Erscheinungsbilder kennt.
+
+alt = """.knopf-warnung {
+  background: transparent;
+  color: #b3261e;
+  border: 1px solid color-mix(in srgb, #b3261e, transparent 70%);
+}
+
+.knopf-warnung:hover:not(:disabled) {
+  background: color-mix(in srgb, #b3261e, transparent 92%);
+}"""
+neu = """/*
+ * Der Warnknopf traegt den Zustandston "kritisch" - und damit dessen
+ * Fassung fuer den Dunkelmodus. Vorher stand hier ein festes Rot, das
+ * auf hellem Grund gut aussah und auf dunklem 2,8 zu 1 ergab.
+ */
+.knopf-warnung {
+  background: transparent;
+  color: var(--ton-kritisch);
+  border: 1px solid var(--ton-kritisch-rand);
+}
+
+.knopf-warnung:hover:not(:disabled) {
+  background: var(--ton-kritisch-flaeche);
+}"""
+assert alt in s
+s = s.replace(alt, neu, 1)
+
+# ------------------------------------------------------------------
+# 3. Der leiseste Textton
+# ------------------------------------------------------------------
+# ink-500 auf Weiss ergibt 4,4 zu 1 - knapp unter der Grenze, und die
+# Kleinschrift trifft es zuerst. Eine Stufe dunkler reicht.
+
+alt = """  --t-zart: var(--color-ink-500);"""
+neu = """  /*
+   * Eine Stufe dunkler als frueher: ink-500 auf Weiss ergibt 4,4 zu 1
+   * und verfehlt die 4,5 knapp - ausgerechnet bei der Kleinschrift,
+   * die ihn am haeufigsten traegt.
+   */
+  --t-zart: #5f6879;"""
+assert alt in s
+s = s.replace(alt, neu, 1)
+
+io.open(p, "w", encoding="utf-8").write(s)
+print("Kontrastmarken angepasst")

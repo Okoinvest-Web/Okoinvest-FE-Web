@@ -1,0 +1,283 @@
+/**
+ * Der Buchungslauf: aus Belegen wird ein Stapel.
+ *
+ * Zwischen "es gibt Rechnungen" und "die Buchhaltung kann sie
+ * einspielen" liegen die Entscheidungen, die diese Datei trifft:
+ * welcher Beleg mitkommt, welcher nicht, auf welches Konto er geht
+ * und ob der fertige Stapel überhaupt vorgelegt werden darf.
+ *
+ * Bewusst ohne Datenbank. Der Lauf ist die Stelle, an der ein Fehler
+ * am teuersten wird - ein doppelt eingespielter Stapel verdoppelt den
+ * Umsatz und fällt erst bei der Umsatzsteuervoranmeldung auf. Was
+ * ohne Datenbank prüfbar ist, wird auch ohne Datenbank geprüft.
+ */
+
+import {
+  fasseStapelZusammen,
+  kontiere,
+  pruefeStapel,
+  type Buchungszeile,
+  type Erlosquelle,
+  type Stapelpruefung,
+  type Stapelsumme,
+} from "./bmd.ts";
+
+/**
+ * Ein Beleg, so wie er aus einem Abrechnungslauf kommt.
+ *
+ * Alles hier steht bereits auf dem Beleg - nichts wird zur Buchung
+ * nachgeschlagen. Wechselt eine Ladekarte später die Kostenstelle,
+ * muss die Buchung von damals weiter dorthin zeigen, wohin die Kosten
+ * damals gingen.
+ */
+export interface Quellbeleg {
+  /** Kennung im Quellsystem, für den Rückweg vom Konto zum Beleg. */
+  id: string;
+  nummer: string;
+  quelle: Erlosquelle;
+  /** ISO-Datum, Tagesgenauigkeit genügt. */
+  belegdatum: string;
+  /** Netto in Euro. Negativ bei einer Gutschrift. */
+  netto: number;
+  text: string;
+  /** Debitor, Kreditor oder Verrechnungskonto. */
+  partnerkonto: string;
+  kostenstelle: string;
+  /** Verweis auf den hinterlegten Beleg im Archiv. */
+  belegverweis: string;
+  /**
+   * Gesetzt, wenn dieser Beleg nicht gebucht werden darf - mit dem
+   * Grund im Klartext. Ein stornierter Beleg wurde nie zur Zahlung
+   * gestellt; ein Sachbezug geht ueber die Lohnverrechnung und nie
+   * ueber die Fakturierung. Beides ist kein Fehler, sondern eine
+   * Entscheidung, die der Lauf sichtbar machen muss.
+   */
+  nichtBuchbar?: string;
+}
+
+export interface Uebersprungen {
+  nummer: string;
+  grund: string;
+}
+
+export interface Stapelentwurf {
+  zeilen: Buchungszeile[];
+  uebersprungen: Uebersprungen[];
+  pruefung: Stapelpruefung;
+  summe: Stapelsumme;
+}
+
+/**
+ * Stellt aus Belegen einen Stapel zusammen.
+ *
+ * `bereitsGebucht` sind die Belegnummern, die in einem früheren
+ * Stapel bereits das Haus verlassen haben. Sie werden übersprungen
+ * und nicht etwa als Fehler gemeldet: Ein zweiter Lauf über denselben
+ * Zeitraum ist ein normaler Vorgang - etwa wenn eine Abrechnung
+ * nachträglich festgeschrieben wurde -, und er soll das Nachgereichte
+ * buchen, nicht an dem scheitern, was schon gebucht ist.
+ */
+export function stelleStapelZusammen(
+  belege: Quellbeleg[],
+  bereitsGebucht: ReadonlySet<string>,
+): Stapelentwurf {
+  const zeilen: Buchungszeile[] = [];
+  const uebersprungen: Uebersprungen[] = [];
+
+  // Innerhalb eines Laufs darf dieselbe Nummer ebenfalls nur einmal
+  // vorkommen. Zwei Quellsysteme mit derselben Nummernfolge sind
+  // selten, aber wenn es passiert, ist es hier zu finden und nicht
+  // erst beim Einspielen.
+  const imLauf = new Set<string>();
+
+  for (const beleg of belege) {
+    if (beleg.nichtBuchbar) {
+      uebersprungen.push({ nummer: beleg.nummer, grund: beleg.nichtBuchbar });
+      continue;
+    }
+
+    if (bereitsGebucht.has(beleg.nummer)) {
+      uebersprungen.push({
+        nummer: beleg.nummer,
+        grund: "Bereits in einem früheren Stapel übergeben.",
+      });
+      continue;
+    }
+
+    if (imLauf.has(beleg.nummer)) {
+      uebersprungen.push({
+        nummer: beleg.nummer,
+        grund: "Nummer kommt in diesem Lauf zweimal vor.",
+      });
+      continue;
+    }
+
+    // Ein Nullbetrag ist keine Buchung. Er entsteht etwa, wenn eine
+    // Ladekarte im Zeitraum angemeldet, aber nie benutzt wurde.
+    if (Math.abs(beleg.netto) < 0.005) {
+      uebersprungen.push({
+        nummer: beleg.nummer,
+        grund: "Betrag ist null - nichts zu buchen.",
+      });
+      continue;
+    }
+
+    const datum = new Date(beleg.belegdatum);
+    if (Number.isNaN(datum.getTime())) {
+      uebersprungen.push({
+        nummer: beleg.nummer,
+        grund: `Belegdatum "${beleg.belegdatum}" ist nicht lesbar.`,
+      });
+      continue;
+    }
+
+    imLauf.add(beleg.nummer);
+
+    zeilen.push(
+      kontiere({
+        quelle_id: beleg.id,
+        quelle: beleg.quelle,
+        belegdatum: datum,
+        belegnummer: beleg.nummer,
+        nettoEur: beleg.netto,
+        buchungstext: beleg.text,
+        partnerkonto: beleg.partnerkonto,
+        kostenstelle: beleg.kostenstelle,
+        belegverweis: beleg.belegverweis,
+      }),
+    );
+  }
+
+  return {
+    zeilen,
+    uebersprungen,
+    pruefung: pruefeStapel(zeilen),
+    summe: fasseStapelZusammen(zeilen),
+  };
+}
+
+/**
+ * Gegenkonto und Erloesquelle zu einer Ladekarte.
+ *
+ * Die Kartenart entscheidet, nicht die Belegart: Ein Firmenfahrzeug
+ * erzeugt eine innerbetriebliche Umlage, ein Mitarbeiter eine
+ * Forderung gegen die Person, ein Gast einen Ad-hoc-Umsatz und ein
+ * Roamingpartner eine Forderung gegen den fremden Anbieter. Dieselbe
+ * Kilowattstunde geht damit auf vier verschiedene Konten - fasst man
+ * sie zusammen, ist der Ad-hoc-Umsatz nach AFIR nicht mehr getrennt
+ * ausweisbar und die Deckungsbeitragsrechnung je Kostenstelle ist
+ * verloren.
+ */
+export const LADEKONTIERUNG: Record<
+  string,
+  { quelle: Erlosquelle; partnerkonto: string; partnername: string }
+> = {
+  Firmenfahrzeug: {
+    quelle: "laden_b2b",
+    partnerkonto: "35000",
+    partnername: "Innerbetriebliche Verrechnung",
+  },
+  Werkstatt: {
+    quelle: "laden_b2b",
+    partnerkonto: "35000",
+    partnername: "Innerbetriebliche Verrechnung",
+  },
+  Mitarbeiter: {
+    quelle: "laden_b2b",
+    partnerkonto: "20800",
+    partnername: "Forderungen Mitarbeiter",
+  },
+  Gast: {
+    quelle: "laden_adhoc",
+    partnerkonto: "20900",
+    partnername: "Sammeldebitor Ad-hoc-Laden",
+  },
+  Fremdanbieter: {
+    quelle: "laden_adhoc",
+    partnerkonto: "21000",
+    partnername: "Forderungen Roamingpartner",
+  },
+};
+
+/**
+ * Debitorenkonto eines Kunden.
+ *
+ * Die Kundennummer traegt das Konto: KD-0002 wird zu 20002. Eine
+ * zweite Zuordnungsliste, die jemand pflegen muesste, gaebe es sonst
+ * genau so lange, bis sie das erste Mal nicht gepflegt wird.
+ */
+export function debitorenkonto(kundeId: string): string {
+  const ziffern = kundeId.replace(/\D/g, "").slice(-4).padStart(4, "0");
+  return `2${ziffern}`;
+}
+
+/**
+ * Darf dieser Entwurf übergeben werden?
+ *
+ * Getrennt vom Zusammenstellen, weil die Frage zweimal gestellt wird:
+ * beim Erzeugen und noch einmal unmittelbar vor der Übergabe. Zwischen
+ * beiden Zeitpunkten können Tage liegen, und in dieser Zeit kann ein
+ * zweiter Stapel dieselben Belege mitgenommen haben.
+ */
+export function darfUebergebenWerden(
+  zeilen: Buchungszeile[],
+  bereitsGebucht: ReadonlySet<string>,
+): Stapelpruefung {
+  const pruefung = pruefeStapel(zeilen);
+  const beanstandungen = [...pruefung.beanstandungen];
+
+  if (zeilen.length === 0) {
+    beanstandungen.push("Der Stapel ist leer.");
+  }
+
+  for (const z of zeilen) {
+    if (bereitsGebucht.has(z.belegnummer)) {
+      beanstandungen.push(
+        `Belegnummer ${z.belegnummer} wurde zwischenzeitlich in einem anderen Stapel übergeben.`,
+      );
+    }
+  }
+
+  return { gueltig: beanstandungen.length === 0, beanstandungen };
+}
+
+/**
+ * Benennt einen Stapel nach seinem Zeitraum.
+ *
+ * Der Name steht später in der Buchhaltung und muss dort ohne das
+ * Portal verständlich sein - "BST-2026-06" allein ist es nicht.
+ */
+export function stapelbezeichnung(jahr: number, monat: number): string {
+  return `Buchungsstapel ${monatsname(monat)} ${jahr}`;
+}
+
+/**
+ * Monatsnamen in oesterreichischer Schreibweise.
+ *
+ * Der erste Monat heisst hier Jänner, nicht Januar. Wer eine
+ * Anwendung fuer oesterreichische Betriebe baut und Januar schreibt,
+ * hat sie nicht fuer oesterreichische Betriebe gebaut.
+ */
+export const MONATSNAMEN = [
+  "Jänner",
+  "Februar",
+  "März",
+  "April",
+  "Mai",
+  "Juni",
+  "Juli",
+  "August",
+  "September",
+  "Oktober",
+  "November",
+  "Dezember",
+] as const;
+
+export function monatsname(monat: number): string {
+  return MONATSNAMEN[monat - 1] ?? String(monat);
+}
+
+/** Kennung im Stil "BST-2026-06". */
+export function stapelkennung(jahr: number, monat: number): string {
+  return `BST-${jahr}-${String(monat).padStart(2, "0")}`;
+}

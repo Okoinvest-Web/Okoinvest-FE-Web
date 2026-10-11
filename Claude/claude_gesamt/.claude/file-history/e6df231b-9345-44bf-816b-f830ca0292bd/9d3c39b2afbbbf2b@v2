@@ -1,0 +1,288 @@
+"""Pruefprotokoll: Ausfuehrung, Plausibilitaet, Mangelanlage, Abschluss (FA-030 bis FA-055)."""
+
+from __future__ import annotations
+
+import frappe
+from frappe import _
+from frappe.model.document import Document
+from frappe.utils import add_months, cint, flt, get_datetime, getdate, now_datetime, today
+
+from oekovolt_baudoku.utils.plausibilitaet import (
+	FEHLER,
+	WARNUNG,
+	Grenzwerte,
+	pruefe_string,
+	pruefe_zahlenwert,
+)
+
+MANGEL_STICHWORT = "mangel"
+
+
+class Pruefprotokoll(Document):
+	def validate(self):
+		self.vorlage_revision_festhalten()
+		self.plausibilitaet_pruefen()
+		self.fortschritt_berechnen()
+		self.dauer_berechnen()
+		self.gesamtbewertung_pruefen()
+
+	def on_update(self):
+		if self.status in ("Abgeschlossen", "Verifiziert"):
+			self.anlage_aktualisieren()
+
+	# ---------------------------------------------------------------- Validate
+
+	def vorlage_revision_festhalten(self):
+		if self.vorlage and not self.vorlage_revision:
+			self.vorlage_revision = frappe.db.get_value("Checklistenvorlage", self.vorlage, "revision")
+
+	def _grenzwerte(self) -> Grenzwerte:
+		settings = frappe.get_cached_doc("Baudoku Settings")
+		return Grenzwerte(
+			riso_pro_modul_kohm=flt(settings.riso_pro_modul_kohm) or 40.0,
+			riso_minimum_kohm=flt(settings.riso_minimum_kohm) or 1000.0,
+			uoc_toleranz_prozent=flt(settings.uoc_toleranz_prozent) or 10.0,
+			isc_toleranz_prozent=flt(settings.isc_toleranz_prozent) or 15.0,
+		)
+
+	def plausibilitaet_pruefen(self):
+		"""Setzt Status und Meldung je Ergebniszeile und je Messdatenzeile.
+
+		Der Client rechnet dieselbe Logik offline; der Server ist die
+		massgebliche Instanz und ueberschreibt die Client-Werte.
+		"""
+		grenzwerte = self._grenzwerte()
+		modul_uoc, modul_isc = frappe.db.get_value(
+			"PV Anlage", self.anlage, ["modul_uoc", "modul_isc"]
+		) or (None, None)
+
+		vorlagen_punkte = self._vorlagen_punkte()
+
+		for zeile in self.ergebnisse:
+			punkt = vorlagen_punkte.get(zeile.pruefpunkt_key, {})
+			if zeile.feldtyp == "Zahlenwert":
+				zeile.einheit = zeile.einheit or punkt.get("einheit")
+				befund = pruefe_zahlenwert(
+					zeile.wert_zahl, punkt.get("min_wert"), punkt.get("max_wert"), zeile.einheit or ""
+				)
+				zeile.plausi_meldung = befund.meldung
+				zeile.status = self._status_mit_uebersteuerung(zeile, befund.status)
+			elif zeile.feldtyp == "Bewertung" and zeile.bewertung:
+				zeile.status = "Fehler" if MANGEL_STICHWORT in zeile.bewertung.lower() else "OK"
+			elif self._zeile_befuellt(zeile):
+				zeile.status = "OK"
+
+		for zeile in self.messdaten:
+			befund = pruefe_string(
+				uoc=zeile.uoc,
+				isc=zeile.isc,
+				riso=zeile.riso,
+				anzahl_module=zeile.anzahl_module,
+				modul_uoc=modul_uoc,
+				modul_isc=modul_isc,
+				grenzwerte=grenzwerte,
+			)
+			zeile.plausi_meldung = befund.meldung
+			zeile.status = self._status_mit_uebersteuerung(zeile, befund.status)
+
+	def _status_mit_uebersteuerung(self, zeile, status: str) -> str:
+		"""Uebersteuerung (FA-054) macht aus Warnung/Fehler ein dokumentiertes OK."""
+		if status in (WARNUNG, FEHLER) and zeile.uebersteuert:
+			if not zeile.uebersteuerung_grund:
+				frappe.throw(_("Zur Uebersteuerung ist eine Begruendung erforderlich."))
+			return "OK"
+		return status
+
+	@staticmethod
+	def _zeile_befuellt(zeile) -> bool:
+		return bool(
+			zeile.bewertung
+			or zeile.wert_text
+			or zeile.wert_datum
+			or zeile.wert_ja_nein
+			or zeile.wert_zahl not in (None, 0)
+			or zeile.fotos
+		)
+
+	def _vorlagen_punkte(self) -> dict[str, dict]:
+		if not self.vorlage:
+			return {}
+		vorlage = frappe.get_cached_doc("Checklistenvorlage", self.vorlage)
+		punkte = {}
+		for sektion in vorlage.sektionen:
+			for punkt in sektion.pruefpunkte:
+				punkte[punkt.pruefpunkt_key] = {
+					"min_wert": punkt.min_wert,
+					"max_wert": punkt.max_wert,
+					"einheit": punkt.einheit,
+					"pflichtfeld": punkt.pflichtfeld,
+					"foto_erforderlich": punkt.foto_erforderlich,
+					"mangelkategorie": punkt.mangelkategorie,
+					"sektion": sektion.sektion_name,
+					"titel": punkt.titel,
+					"nummer": punkt.nummer,
+				}
+		return punkte
+
+	def fortschritt_berechnen(self):
+		self.anzahl_pruefpunkte = len(self.ergebnisse)
+		self.anzahl_erledigt = sum(
+			1 for z in self.ergebnisse
+			if z.status != "Offen" or self._zeile_befuellt(z)
+		)
+		self.fortschritt = (
+			flt(self.anzahl_erledigt) / self.anzahl_pruefpunkte * 100
+			if self.anzahl_pruefpunkte else 0
+		)
+
+	def dauer_berechnen(self):
+		if self.pruef_datum and self.abschluss_datum:
+			delta = get_datetime(self.abschluss_datum) - get_datetime(self.pruef_datum)
+			self.dauer_minuten = max(0, int(delta.total_seconds() // 60))
+
+	def gesamtbewertung_pruefen(self):
+		"""'Bestanden' ist bei abnahmeblockierenden Maengeln nicht zulaessig."""
+		if self.gesamtbewertung != "Bestanden":
+			return
+		blockierend = [
+			z.bewertung for z in self.ergebnisse
+			if z.bewertung and MANGEL_STICHWORT in z.bewertung.lower() and "leicht" not in z.bewertung.lower()
+		]
+		if blockierend:
+			frappe.throw(
+				_("Das Protokoll enthaelt {0} schwere Maengel und kann nicht mit "
+				  "'Bestanden' bewertet werden. Bitte 'Bestanden mit Auflagen' oder "
+				  "'Nicht bestanden' waehlen.").format(len(blockierend)),
+				title=_("Gesamtbewertung nicht zulaessig"),
+			)
+
+	# ----------------------------------------------------------------- Aktionen
+
+	@frappe.whitelist()
+	def pflichtfelder_offen(self) -> list[dict]:
+		"""Liefert alle nicht erfuellten Pflichtpruefpunkte (FA-041)."""
+		punkte = self._vorlagen_punkte()
+		offen = []
+		for zeile in self.ergebnisse:
+			punkt = punkte.get(zeile.pruefpunkt_key, {})
+			if punkt.get("pflichtfeld") and not self._zeile_befuellt(zeile):
+				offen.append({"nummer": zeile.nummer, "titel": zeile.titel, "grund": "Pflichtfeld leer"})
+			elif punkt.get("foto_erforderlich") and not zeile.fotos:
+				offen.append({"nummer": zeile.nummer, "titel": zeile.titel, "grund": "Foto fehlt"})
+		return offen
+
+	@frappe.whitelist()
+	def abschliessen(self, gesamtbewertung: str | None = None, zusammenfassung: str | None = None):
+		"""Schliesst das Protokoll ab, erzeugt Maengel und aktualisiert die Anlage."""
+		if self.status in ("Abgeschlossen", "Verifiziert"):
+			return {"status": self.status, "maengel": []}
+
+		offen = self.pflichtfelder_offen()
+		if offen:
+			frappe.throw(
+				_("{0} Pflichtangaben fehlen, z. B. {1}.").format(
+					len(offen), ", ".join(f"{o['nummer']} ({o['grund']})" for o in offen[:3])
+				),
+				title=_("Protokoll unvollstaendig"),
+			)
+
+		if not any(u.rolle in ("Techniker", "Pruefer") for u in self.unterschriften):
+			frappe.throw(_("Die Unterschrift des Technikers fehlt."), title=_("Unterschrift fehlt"))
+
+		if gesamtbewertung:
+			self.gesamtbewertung = gesamtbewertung
+		if zusammenfassung:
+			self.zusammenfassung = zusammenfassung
+
+		maengel = self.maengel_erzeugen()
+		self.anzahl_maengel = len(maengel) + cint(self.anzahl_maengel)
+		self.abschluss_datum = now_datetime()
+		self.status = "Abgeschlossen"
+		self.save()
+
+		return {"status": self.status, "maengel": maengel}
+
+	def maengel_erzeugen(self) -> list[str]:
+		"""Legt je Mangel-Bewertung einen Mangel an (FA-036/FA-061)."""
+		punkte = self._vorlagen_punkte()
+		standard_kategorie = frappe.db.get_value("Mangelkategorie", {"aktiv": 1}, "name")
+		erzeugt = []
+
+		for zeile in self.ergebnisse:
+			if not zeile.bewertung or MANGEL_STICHWORT not in zeile.bewertung.lower():
+				continue
+			if zeile.mangel:
+				continue
+
+			punkt = punkte.get(zeile.pruefpunkt_key, {})
+			schweregrad = self.schweregrad_aus_bewertung(zeile.bewertung)
+			mangel = frappe.new_doc("Mangel")
+			mangel.update({
+				"titel": f"{zeile.nummer or ''} {zeile.titel}".strip()[:140],
+				"anlage": self.anlage,
+				"kategorie": punkt.get("mangelkategorie") or standard_kategorie,
+				"schweregrad": schweregrad,
+				"status": "Offen",
+				"pruefprotokoll": self.name,
+				"pruefpunkt_ref": f"{zeile.sektion} / {zeile.nummer} {zeile.titel}",
+				"beschreibung": zeile.bemerkung or zeile.titel,
+				"gemeldet_am": today(),
+				"zugewiesen_an": self.pruefer,
+			})
+			for foto in zeile.fotos:
+				mangel.append("fotos", {
+					"bild": foto.bild,
+					"beschriftung": foto.beschriftung,
+					"aufgenommen_am": foto.aufgenommen_am,
+					"gps_lat": foto.gps_lat,
+					"gps_lng": foto.gps_lng,
+					"hash": foto.hash,
+				})
+			mangel.insert(ignore_permissions=True)
+			zeile.db_set("mangel", mangel.name, update_modified=False)
+			erzeugt.append(mangel.name)
+
+		return erzeugt
+
+	@staticmethod
+	def schweregrad_aus_bewertung(bewertung: str) -> str:
+		"""'Mangel schwer' -> A, 'Mangel leicht' -> C, sonst B."""
+		text = (bewertung or "").lower()
+		code = "A" if "schwer" in text else "C" if "leicht" in text else "B"
+		if frappe.db.exists("Mangel Schweregrad", code):
+			return code
+		return frappe.db.get_value("Mangel Schweregrad", {}, "name") or code
+
+	@frappe.whitelist()
+	def verifizieren(self):
+		"""Abgeschlossen -> Verifiziert durch Bauleiter/Projektleiter (FA-041)."""
+		if self.status != "Abgeschlossen":
+			frappe.throw(_("Nur abgeschlossene Protokolle koennen verifiziert werden."))
+
+		erlaubt = {"Baudoku Bauleiter", "Baudoku Projektleiter", "Baudoku Admin", "System Manager"}
+		if not erlaubt & set(frappe.get_roles()):
+			frappe.throw(_("Keine Berechtigung zur Verifizierung."), frappe.PermissionError)
+
+		self.status = "Verifiziert"
+		self.verifiziert_von = frappe.session.user
+		self.verifiziert_am = now_datetime()
+		self.save()
+		return self.name
+
+	def anlage_aktualisieren(self):
+		"""Letzte Pruefung und naechsten Wartungstermin fortschreiben."""
+		anlage = frappe.get_doc("PV Anlage", self.anlage)
+		pruef_tag = getdate(self.abschluss_datum or self.pruef_datum)
+		werte = {}
+
+		if not anlage.letzte_pruefung or getdate(anlage.letzte_pruefung) < pruef_tag:
+			werte["letzte_pruefung"] = pruef_tag
+			if self.vorlage_typ == "Wartung" and anlage.wartungsintervall_monate:
+				werte["naechste_wartung"] = add_months(pruef_tag, anlage.wartungsintervall_monate)
+
+		if self.vorlage_typ == "IBN" and not anlage.inbetriebnahme_datum:
+			werte["inbetriebnahme_datum"] = pruef_tag
+			werte["status"] = "In Betrieb"
+
+		if werte:
+			frappe.db.set_value("PV Anlage", self.anlage, werte, update_modified=False)

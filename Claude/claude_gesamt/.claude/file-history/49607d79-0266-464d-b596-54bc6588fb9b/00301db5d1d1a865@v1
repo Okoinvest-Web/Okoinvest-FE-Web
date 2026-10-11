@@ -1,0 +1,22 @@
+<template>
+  <header
+    class="flex items-center justify-between border-b border-outline-gray-2 bg-surface-white px-6 py-4"
+  >
+    <div class="min-w-0">
+      <h1 class="truncate text-lg font-semibold text-ink-gray-9">{{ title }}</h1>
+      <p v-if="subtitle" class="mt-0.5 truncate text-sm text-ink-gray-6">
+        {{ subtitle }}
+      </p>
+    </div>
+    <div class="flex shrink-0 items-center gap-2">
+      <slot name="actions" />
+    </div>
+  </header>
+</template>
+
+<script setup>
+defineProps({
+  title: { type: String, required: true },
+  subtitle: { type: String, default: '' },
+})
+</script>

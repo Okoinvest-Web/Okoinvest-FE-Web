@@ -1,0 +1,74 @@
+"use client";
+
+import Link from "next/link";
+import { useOptimistic, useState, useTransition } from "react";
+import { setOpportunityStageAction } from "@/lib/actions";
+import { money, date, STAGE_LABEL } from "@/lib/format";
+import type { Opportunity } from "@/lib/types";
+
+// Chancen per Drag & Drop zwischen Vertriebsphasen verschieben.
+export function Kanban({ stages, items }: { stages: readonly string[]; items: Opportunity[] }) {
+  const [, start] = useTransition();
+  const [over, setOver] = useState<string | null>(null);
+  const [opps, move] = useOptimistic(items, (state, { name, stage }: { name: string; stage: string }) =>
+    state.map((o) => (o.name === name ? { ...o, sales_stage: stage } : o)),
+  );
+
+  function drop(stage: string, name: string) {
+    setOver(null);
+    const current = opps.find((o) => o.name === name);
+    if (!current || current.sales_stage === stage) return;
+    start(async () => {
+      move({ name, stage });
+      await setOpportunityStageAction(name, stage);
+    });
+  }
+
+  return (
+    <div className="flex min-h-0 flex-1 gap-3 overflow-x-auto p-5">
+      {stages.map((stage) => {
+        const col = opps.filter((o) => o.sales_stage === stage);
+        const sum = col.reduce((s, o) => s + o.opportunity_amount, 0);
+        return (
+          <section
+            key={stage}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setOver(stage);
+            }}
+            onDragLeave={() => setOver((s) => (s === stage ? null : s))}
+            onDrop={(e) => drop(stage, e.dataTransfer.getData("text/plain"))}
+            className={`flex w-72 shrink-0 flex-col rounded-lg p-2 transition-colors ${over === stage ? "bg-gray-200" : "bg-gray-50"}`}
+          >
+            <div className="flex items-baseline justify-between px-1.5 pb-2">
+              <h2 className="font-medium text-gray-900">
+                {STAGE_LABEL[stage] ?? stage} <span className="ml-1 text-gray-400">{col.length}</span>
+              </h2>
+              <span className="text-xs text-gray-500">{money(sum)}</span>
+            </div>
+            <div className="flex flex-col gap-2">
+              {col.map((o) => (
+                <Link
+                  key={o.name}
+                  href={`/opportunities/${encodeURIComponent(o.name)}`}
+                  draggable
+                  onDragStart={(e) => e.dataTransfer.setData("text/plain", o.name)}
+                  className="cursor-grab rounded-md border border-gray-200 bg-white p-3 shadow-sm hover:border-gray-300 active:cursor-grabbing"
+                >
+                  <div className="font-medium text-gray-900">{o.title ?? o.name}</div>
+                  <div className="mt-0.5 text-xs text-gray-500">{o.customer_name ?? o.party_name}</div>
+                  <div className="mt-3 flex items-center justify-between text-xs">
+                    <span className="font-medium text-gray-900">{money(o.opportunity_amount, o.currency)}</span>
+                    <span className="text-gray-500">
+                      {o.probability} % · {date(o.expected_closing)}
+                    </span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+        );
+      })}
+    </div>
+  );
+}

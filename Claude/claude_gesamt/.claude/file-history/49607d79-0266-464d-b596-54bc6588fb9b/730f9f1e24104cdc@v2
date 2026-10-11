@@ -1,0 +1,45 @@
+import { spawn } from 'node:child_process'
+import { mkdtempSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+const EDGE = 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'
+const port = 9372
+const profil = mkdtempSync(join(tmpdir(), 'edge-cdp-'))
+const kind = spawn(EDGE, ['--headless=new','--disable-gpu','--no-first-run','--no-default-browser-check','--window-size=1500,1100',`--remote-debugging-port=${port}`,`--user-data-dir=${profil}`,'about:blank'], { stdio: 'ignore' })
+const schlafe = (ms) => new Promise((r) => setTimeout(r, ms))
+let ziel = null
+for (let i = 0; i < 40 && !ziel; i++) { await schlafe(250); try { ziel = (await (await fetch(`http://127.0.0.1:${port}/json/list`)).json()).find((t) => t.type === 'page') } catch {} }
+const ws = new WebSocket(ziel.webSocketDebuggerUrl); await new Promise((r) => (ws.onopen = r))
+let id = 0; const offen = new Map()
+ws.onmessage = (ev) => { const m = JSON.parse(ev.data); if (m.id && offen.has(m.id)) { offen.get(m.id)(m.result); offen.delete(m.id) } }
+const sende = (me, p = {}) => new Promise((r) => { const n = ++id; offen.set(n, r); ws.send(JSON.stringify({ id: n, method: me, params: p })) })
+const js = async (a) => (await sende('Runtime.evaluate', { returnByValue: true, expression: a, awaitPromise: true })).result.value
+await sende('Runtime.enable'); await sende('Page.enable')
+await sende('Page.navigate', { url: 'http://localhost:8080/backup' })
+for (let i = 0; i < 80; i++) { if ((await js('document.body.innerText.trim().length')) > 500) break; await schlafe(250) }
+await schlafe(800)
+
+console.log('SELECTS:')
+console.log(await js(`JSON.stringify([...document.querySelectorAll('select')].map((s,i)=>({i, opts:[...s.options].map(o=>o.value+'/'+o.text).slice(0,8), value:s.value})), null, 1)`))
+
+// Ansicht umschalten ueber den Select, dessen Optionen 'ziele' kennen
+console.log('\nUMSCHALTEN auf dateien:')
+console.log(await js(`(() => {
+  const s = [...document.querySelectorAll('select')].find(x => [...x.options].some(o => o.value === 'dateien'))
+  if (!s) return 'kein passender Select'
+  s.value = 'dateien'; s.dispatchEvent(new Event('change', { bubbles: true }))
+  return 'gesetzt'
+})()`))
+await schlafe(1600)
+console.log('Zeilen:', await js("document.querySelectorAll('tbody tr').length"))
+console.log('Text:', (await js("document.querySelector('main')?.innerText || document.body.innerText")).replace(/\\n+/g,' ').slice(0, 600))
+
+console.log('\nDIALOG oeffnen:')
+await js(`(() => { const s=[...document.querySelectorAll('select')].find(x=>[...x.options].some(o=>o.value==='ziele')); s.value='ziele'; s.dispatchEvent(new Event('change',{bubbles:true})) })()`)
+await schlafe(1200)
+await js(`[...document.querySelectorAll('button')].find(x => x.innerText.trim() === 'Jetzt sichern')?.click()`)
+await schlafe(1000)
+console.log('role=dialog:', await js("document.querySelectorAll('[role=dialog]').length"))
+console.log('HeadlessUI:', await js("document.querySelectorAll('[id^=headlessui-dialog]').length"))
+console.log('Overlay-Text:', (await js("[...document.querySelectorAll('body > div')].map(d=>d.innerText.trim()).filter(t=>t&&t.length<600).join(' ### ')")).slice(0,700))
+ws.close(); kind.kill()

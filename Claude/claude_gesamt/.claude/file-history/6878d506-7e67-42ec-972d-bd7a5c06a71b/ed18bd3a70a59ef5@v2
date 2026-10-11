@@ -1,0 +1,70 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import { ChevronDown, Mail, ShieldAlert } from "lucide-react";
+import { logEmailAction } from "@/lib/actions";
+import { EMAIL_TEMPLATES, fillTemplate, type TemplateContext } from "@/lib/templates";
+import { BTN } from "@/components/ui";
+import { toast } from "@/components/Toaster";
+
+// E-Mail mit Vorlage: öffnet das Mailprogramm mit ausgefülltem Text und protokolliert die Aktivität
+export function EmailMenu({
+  to,
+  doctype,
+  name,
+  context,
+  consentMissing,
+}: {
+  to: string;
+  doctype: string;
+  name: string;
+  context: TemplateContext;
+  consentMissing?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: MouseEvent) => !ref.current?.contains(e.target as Node) && setOpen(false);
+    window.addEventListener("mousedown", close);
+    return () => window.removeEventListener("mousedown", close);
+  }, [open]);
+
+  async function send(id: string) {
+    const t = EMAIL_TEMPLATES.find((x) => x.id === id)!;
+    if (t.marketing && consentMissing && !confirm("Für diesen Kontakt ist keine Einwilligung dokumentiert. Werbliche E-Mails an Privatkunden sind ohne Einwilligung unzulässig. Trotzdem senden?")) return;
+    const { subject, body } = fillTemplate(t, context);
+    setOpen(false);
+    window.location.assign(`mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
+    const res = await logEmailAction(doctype, name, t.id, subject);
+    if (res.error) toast(res.error, "error");
+    else toast("E-Mail als Aktivität erfasst");
+  }
+
+  return (
+    <div ref={ref} className="relative">
+      <button type="button" onClick={() => setOpen((o) => !o)} className={BTN.secondary} aria-haspopup="menu" aria-expanded={open}>
+        <Mail /> E-Mail <ChevronDown className="text-gray-400" />
+      </button>
+      {open && (
+        <div role="menu" className="fade-in absolute right-0 z-30 mt-1 w-72 overflow-hidden rounded-lg border border-gray-200 bg-white p-1 shadow-pop">
+          <div className="px-2.5 pb-1 pt-1.5 text-[11px] font-medium text-gray-400">Vorlage wählen</div>
+          {EMAIL_TEMPLATES.map((t) => (
+            <button key={t.id} role="menuitem" type="button" onClick={() => send(t.id)} className="flex w-full flex-col items-start rounded-md px-2.5 py-2 text-left hover:bg-gray-50">
+              <span className="flex items-center gap-1.5 font-medium text-gray-900">
+                {t.label}
+                {t.marketing && consentMissing && <ShieldAlert className="size-3.5 text-amber-600" aria-label="Einwilligung fehlt" />}
+              </span>
+              <span className="text-[12px] text-gray-500">{t.hint}</span>
+            </button>
+          ))}
+          <div className="my-1 h-px bg-gray-100" />
+          <a href={`mailto:${to}`} className="block rounded-md px-2.5 py-2 text-gray-600 hover:bg-gray-50">
+            Leere E-Mail
+          </a>
+        </div>
+      )}
+    </div>
+  );
+}

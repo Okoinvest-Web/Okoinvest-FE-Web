@@ -1,0 +1,84 @@
+"use client";
+
+/**
+ * Der Fall, in dem das Grundgerüst selbst scheitert.
+ *
+ * Diese Datei ersetzt das Wurzel-Layout und rendert ein eigenes
+ * Dokument. Das heißt auch: Die Stilvorlage des Portals ist hier nicht
+ * geladen und die Themenwahl greift nicht. Deshalb steht der Stil
+ * unmittelbar im Element und folgt dem Erscheinungsbild des
+ * Betriebssystems - lieber schlicht und lesbar als gar nichts.
+ *
+ * Erwartet wird das nie. Genau deshalb gibt es die Datei: Was nie
+ * erwartet wird, hat sonst keine Oberfläche.
+ */
+export default function GlobalError({
+  error,
+  retry,
+}: {
+  error: Error & { digest?: string };
+  retry: () => void;
+}) {
+  return (
+    <html lang="de">
+      <body
+        style={{
+          margin: 0,
+          minHeight: "100vh",
+          display: "grid",
+          placeItems: "center",
+          padding: "2rem",
+          colorScheme: "light dark",
+          fontFamily:
+            'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif',
+        }}
+      >
+        <title>Störung · Ökovolt</title>
+
+        <main style={{ maxWidth: "32rem", textAlign: "center" }}>
+          <h1
+            style={{
+              fontSize: "1.25rem",
+              fontWeight: 600,
+              letterSpacing: "-0.01em",
+              margin: 0,
+            }}
+          >
+            Das Portal lässt sich gerade nicht laden
+          </h1>
+
+          <p style={{ marginTop: "0.75rem", lineHeight: 1.6, opacity: 0.8 }}>
+            Die Störung betrifft die Anwendung selbst, nicht Ihre Anlagen. Die
+            Messdaten werden weiter aufgezeichnet und stehen nach dem Ende der
+            Störung vollständig zur Verfügung.
+          </p>
+
+          <button
+            type="button"
+            onClick={() => retry()}
+            style={{
+              marginTop: "1.5rem",
+              padding: "0.55rem 1.1rem",
+              borderRadius: "0.5rem",
+              border: "1px solid currentColor",
+              background: "transparent",
+              font: "inherit",
+              cursor: "pointer",
+            }}
+          >
+            Erneut versuchen
+          </button>
+
+          {error.digest && (
+            <p style={{ marginTop: "1.5rem", fontSize: "0.8125rem", opacity: 0.6 }}>
+              Kennung des Vorfalls:{" "}
+              <span style={{ fontFamily: "ui-monospace, monospace" }}>
+                {error.digest}
+              </span>
+            </p>
+          )}
+        </main>
+      </body>
+    </html>
+  );
+}

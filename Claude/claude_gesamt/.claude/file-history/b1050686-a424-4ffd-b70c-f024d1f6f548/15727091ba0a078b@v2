@@ -1,0 +1,162 @@
+import type { Recht } from "./sicherheit/rollen";
+
+/**
+ * Aufbau des Portalbereichs.
+ *
+ * Jeder Eintrag nennt das Recht, das ihn sichtbar macht. Die Navigation
+ * blendet aus, was der Benutzer nicht darf - die eigentliche Absicherung
+ * passiert aber serverseitig auf der Seite selbst. Ein ausgeblendeter
+ * Menuepunkt ist Bequemlichkeit, kein Schutz.
+ */
+
+export interface NavEintrag {
+  pfad: string;
+  label: string;
+  zeichen: string;
+  recht: Recht;
+  beschreibung: string;
+}
+
+export interface NavGruppe {
+  titel: string;
+  eintraege: NavEintrag[];
+}
+
+export const NAVIGATION: NavGruppe[] = [
+  {
+    titel: "Betrieb",
+    eintraege: [
+      {
+        pfad: "/portal",
+        label: "Übersicht",
+        zeichen: "◫",
+        recht: "monitoring.lesen",
+        beschreibung: "Kennzahlen aller Anlagen",
+      },
+      {
+        pfad: "/portal/anlagen",
+        label: "Anlagen",
+        zeichen: "☀",
+        recht: "anlagen.lesen",
+        beschreibung: "Portfolio und Einzelanlagen",
+      },
+      {
+        pfad: "/portal/energie",
+        label: "Energie & Markt",
+        zeichen: "⌁",
+        recht: "monitoring.lesen",
+        beschreibung: "Erträge, Börsenpreise, Prognose",
+      },
+      {
+        pfad: "/portal/steuerung",
+        label: "Steuerung",
+        zeichen: "⚙",
+        recht: "steuerung.lesen",
+        beschreibung: "Regelung und Betriebsstrategie",
+      },
+    ],
+  },
+  {
+    titel: "Gemeinschaft & Handel",
+    eintraege: [
+      {
+        pfad: "/portal/gemeinschaft",
+        label: "Energiegemeinschaft",
+        zeichen: "⬡",
+        recht: "gemeinschaft.lesen",
+        beschreibung: "EEG, Mitglieder, Aufteilung",
+      },
+      {
+        pfad: "/portal/zertifikate",
+        label: "CO₂-Zertifikate",
+        zeichen: "♻",
+        recht: "zertifikate.lesen",
+        beschreibung: "Zertifizierung, Handel, Vollmacht",
+      },
+    ],
+  },
+  {
+    titel: "Mobilität",
+    eintraege: [
+      {
+        pfad: "/portal/mobilitaet",
+        label: "Ladeinfrastruktur",
+        zeichen: "⌁",
+        recht: "mobilitaet.lesen",
+        beschreibung: "Ladepunkte, Vorgänge, Tankkarten",
+      },
+    ],
+  },
+  {
+    titel: "Kaufmännisches",
+    eintraege: [
+      {
+        pfad: "/portal/belege",
+        label: "Belege",
+        zeichen: "▤",
+        recht: "belege.lesen",
+        beschreibung: "Rechnungen und Lieferscheine",
+      },
+      {
+        pfad: "/portal/shop",
+        label: "Leistungen",
+        zeichen: "▣",
+        recht: "shop.bestellen",
+        beschreibung: "Wartung, Zubehör, Erweiterungen",
+      },
+    ],
+  },
+  {
+    titel: "Service & Sicherheit",
+    eintraege: [
+      {
+        pfad: "/portal/support",
+        label: "Support",
+        zeichen: "✆",
+        recht: "support.melden",
+        beschreibung: "Störungen und Anfragen",
+      },
+      {
+        pfad: "/portal/dokumentation",
+        label: "Dokumentation",
+        zeichen: "❑",
+        recht: "anlagen.lesen",
+        beschreibung: "Anlagendoku nach ÖNORM",
+      },
+      {
+        pfad: "/portal/fernwartung",
+        label: "Fernwartung",
+        zeichen: "⇄",
+        recht: "fernwartung.anfordern",
+        beschreibung: "Zugänge und Sitzungen",
+      },
+      {
+        pfad: "/portal/sicherheit",
+        label: "Cybersicherheit",
+        zeichen: "⛨",
+        recht: "sicherheit.lesen",
+        beschreibung: "NIS2, Protokoll, Vorfälle",
+      },
+      {
+        pfad: "/portal/einstellungen",
+        label: "Einstellungen",
+        zeichen: "⚒",
+        recht: "monitoring.lesen",
+        beschreibung: "Stammdaten und Benutzer",
+      },
+    ],
+  },
+];
+
+/** Alle Eintraege flach - fuer die Suche nach dem aktiven Pfad. */
+export const ALLE_EINTRAEGE = NAVIGATION.flatMap((g) => g.eintraege);
+
+/**
+ * Ist der Eintrag fuer den aktuellen Pfad aktiv?
+ * "/portal" nur exakt, sonst waere es auf jeder Unterseite markiert.
+ */
+export function istAktiv(eintrag: NavEintrag, pfad: string): boolean {
+  return eintrag.pfad === "/portal"
+    ? pfad === "/portal"
+    : pfad.startsWith(eintrag.pfad);
+}

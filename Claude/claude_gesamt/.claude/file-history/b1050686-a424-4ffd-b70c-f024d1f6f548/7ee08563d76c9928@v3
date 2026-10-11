@@ -1,0 +1,96 @@
+import "server-only";
+
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+
+import {
+  FULLNAME_COOKIE,
+  ROLLE_COOKIE,
+  SID_COOKIE,
+  USER_COOKIE,
+  istAngemeldet,
+} from "./cookies.ts";
+import { frappeFetch } from "./frappe.ts";
+import { hatRecht, rechteVon, type Recht } from "./sicherheit/rollen.ts";
+
+export interface PortalUser {
+  /** Frappe-Benutzer-ID, in der Regel die E-Mail-Adresse. */
+  id: string;
+  vollname: string;
+  rolle: string;
+  /** True, wenn die Session aus dem Demonstrationsbetrieb stammt. */
+  demo: boolean;
+}
+
+/**
+ * Liest den angemeldeten Benutzer aus den Cookies.
+ * Gibt `null` zurueck, wenn keine Session existiert.
+ */
+export async function getCurrentUser(): Promise<PortalUser | null> {
+  const speicher = await cookies();
+  const sid = speicher.get(SID_COOKIE)?.value;
+  const id = speicher.get(USER_COOKIE)?.value;
+
+  // Gleiches Kriterium wie im Proxy - sonst schaukeln sich die
+  // Weiterleitungen zwischen /portal und /login auf.
+  if (!istAngemeldet(sid, id) || !id) return null;
+
+  return {
+    id,
+    vollname: speicher.get(FULLNAME_COOKIE)?.value || id,
+    rolle: speicher.get(ROLLE_COOKIE)?.value || "betrachter",
+    demo: sid === "demo-session",
+  };
+}
+
+/**
+ * Wie `getCurrentUser`, leitet aber zum Login um, statt `null` zu liefern.
+ * Fuer alle Seiten unterhalb von /portal.
+ */
+export async function requireUser(): Promise<PortalUser> {
+  const benutzer = await getCurrentUser();
+  if (!benutzer) redirect("/login");
+  return benutzer;
+}
+
+/**
+ * Verlangt ein bestimmtes Recht.
+ *
+ * Wird in Server Actions und auf Seiten aufgerufen, bevor etwas
+ * geschrieben oder Vertrauliches gelesen wird. Fehlt das Recht, endet
+ * die Verarbeitung hier - das ist die serverseitige Durchsetzung, die
+ * ausgeblendete Menuepunkte allein nicht leisten.
+ */
+export async function requireRecht(recht: Recht): Promise<PortalUser> {
+  const benutzer = await requireUser();
+
+  if (!hatRecht([benutzer.rolle], recht)) {
+    redirect("/portal?fehlendes_recht=" + encodeURIComponent(recht));
+  }
+
+  return benutzer;
+}
+
+/** Alle Rechte des angemeldeten Benutzers - fuer die Navigation. */
+export async function aktuelleRechte(): Promise<Set<Recht>> {
+  const benutzer = await getCurrentUser();
+  return benutzer ? rechteVon([benutzer.rolle]) : new Set<Recht>();
+}
+
+/**
+ * Prueft die Session direkt gegen Frappe statt nur gegen das Cookie.
+ * Noetig, weil ein Cookie noch da sein kann, nachdem Frappe die Session
+ * serverseitig bereits verworfen hat.
+ */
+export async function verifySession(): Promise<string | null> {
+  try {
+    const ergebnis = await frappeFetch<{ message: string }>(
+      "/api/method/frappe.auth.get_logged_user",
+    );
+    return ergebnis.message && ergebnis.message !== "Guest"
+      ? ergebnis.message
+      : null;
+  } catch {
+    return null;
+  }
+}

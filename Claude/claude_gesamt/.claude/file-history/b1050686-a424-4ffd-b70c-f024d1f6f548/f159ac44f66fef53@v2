@@ -1,0 +1,269 @@
+import { istArbeitsfrei } from "../at/feiertage.ts";
+
+/**
+ * Fristen aus Wartungs- und Betriebsführungsverträgen.
+ *
+ * Reaktions- und Behebungszeiten werden in Arbeitsstunden vereinbart,
+ * nicht in Kalenderstunden. Eine Meldung am Freitag um 16 Uhr mit vier
+ * Stunden Reaktionszeit ist am Montagmittag fällig, nicht am
+ * Freitagabend. Wer das mit einer einfachen Addition rechnet, meldet
+ * jeden Montagmorgen eine Reihe überschrittener Fristen, die keine
+ * sind - und niemand schaut mehr hin.
+ *
+ * Die Servicezeiten sind bewusst als Eingabe geführt und nicht fest
+ * verdrahtet: Ein Vertrag über eine Megawattanlage kann rund um die
+ * Uhr laufen, einer über ein Bürodach nur werktags.
+ */
+
+export interface Servicezeit {
+  /** Beginn des Arbeitstags in Stunden nach Mitternacht, etwa 8. */
+  beginnStunde: number;
+  /** Ende des Arbeitstags, etwa 17. */
+  endeStunde: number;
+  /**
+   * Durchgehender Betrieb: Jede Stunde zählt, auch nachts und an
+   * Feiertagen. Für Anlagen mit Rundumbetreuung.
+   */
+  durchgehend?: boolean;
+}
+
+/** Übliche Servicezeit im Gewerbe: werktags 8 bis 17 Uhr. */
+export const WERKTAGS: Servicezeit = { beginnStunde: 8, endeStunde: 17 };
+
+/** Rund um die Uhr, für Anlagen mit entsprechendem Vertrag. */
+export const DURCHGEHEND: Servicezeit = {
+  beginnStunde: 0,
+  endeStunde: 24,
+  durchgehend: true,
+};
+
+export interface SlaStufe {
+  prioritaet: string;
+  /** Zeit bis zur ersten Rückmeldung, in Arbeitsstunden. */
+  reaktionStunden: number;
+  /** Zeit bis zur Behebung, in Arbeitsstunden. */
+  loesungStunden: number;
+  beschreibung: string;
+}
+
+/**
+ * Fristen nach Dringlichkeit.
+ *
+ * Die Einstufung richtet sich nach dem Ertragsausfall, nicht nach der
+ * Aufregung des Meldenden. Eine stillstehende Anlage kostet je
+ * Sonnenstunde Geld; ein Schreibfehler in der Anlagenbezeichnung
+ * kostet nichts.
+ */
+export const SLA_STUFEN: SlaStufe[] = [
+  {
+    prioritaet: "Kritisch",
+    reaktionStunden: 2,
+    loesungStunden: 8,
+    beschreibung:
+      "Anlage steht vollständig oder es besteht Gefahr für Personen und Sachwerte.",
+  },
+  {
+    prioritaet: "Hoch",
+    reaktionStunden: 4,
+    loesungStunden: 24,
+    beschreibung:
+      "Ein wesentlicher Teil der Anlage liefert nicht - etwa ein Wechselrichter oder die Datenverbindung.",
+  },
+  {
+    prioritaet: "Mittel",
+    reaktionStunden: 8,
+    loesungStunden: 72,
+    beschreibung:
+      "Minderertrag oder eine Störung, die den Betrieb nicht unterbricht.",
+  },
+  {
+    prioritaet: "Niedrig",
+    reaktionStunden: 24,
+    loesungStunden: 240,
+    beschreibung: "Anfragen, Auskünfte und Änderungen an den Stammdaten.",
+  },
+];
+
+export function slaFuer(prioritaet: string): SlaStufe {
+  return (
+    SLA_STUFEN.find((s) => s.prioritaet === prioritaet) ??
+    SLA_STUFEN[SLA_STUFEN.length - 1]
+  );
+}
+
+function istArbeitszeit(zeitpunkt: Date, zeit: Servicezeit): boolean {
+  if (zeit.durchgehend) return true;
+  if (istArbeitsfrei(zeitpunkt)) return false;
+
+  const stunde = zeitpunkt.getHours();
+  return stunde >= zeit.beginnStunde && stunde < zeit.endeStunde;
+}
+
+/**
+ * Schiebt einen Zeitpunkt auf den nächsten Beginn der Servicezeit.
+ *
+ * Liegt er bereits innerhalb, bleibt er unverändert.
+ */
+export function naechsteArbeitszeit(
+  zeitpunkt: Date,
+  zeit: Servicezeit = WERKTAGS,
+): Date {
+  if (zeit.durchgehend) return new Date(zeitpunkt);
+
+  const zeiger = new Date(zeitpunkt);
+
+  // Höchstens ein Jahr vorwärts suchen. Ohne diese Grenze liefe die
+  // Schleife bei einer unsinnigen Servicezeit - etwa 17 bis 8 Uhr -
+  // endlos, und die Anwendung bliebe ohne Fehlermeldung stehen.
+  for (let versuch = 0; versuch < 400; versuch++) {
+    if (istArbeitsfrei(zeiger)) {
+      zeiger.setDate(zeiger.getDate() + 1);
+      zeiger.setHours(zeit.beginnStunde, 0, 0, 0);
+      continue;
+    }
+
+    if (zeiger.getHours() < zeit.beginnStunde) {
+      zeiger.setHours(zeit.beginnStunde, 0, 0, 0);
+      return zeiger;
+    }
+
+    if (zeiger.getHours() >= zeit.endeStunde) {
+      zeiger.setDate(zeiger.getDate() + 1);
+      zeiger.setHours(zeit.beginnStunde, 0, 0, 0);
+      continue;
+    }
+
+    return zeiger;
+  }
+
+  return zeiger;
+}
+
+/**
+ * Fälligkeit nach einer Anzahl Arbeitsstunden.
+ *
+ * Gerechnet wird minutenweise. Das ist gröber als eine geschlossene
+ * Formel, aber es bleibt richtig, wenn jemand die Servicezeiten ändert
+ * oder ein Feiertag dazukommt - und eine Frist ist ohnehin nie auf die
+ * Minute genau gemeint.
+ */
+export function frist(
+  beginn: Date,
+  arbeitsstunden: number,
+  zeit: Servicezeit = WERKTAGS,
+): Date {
+  if (arbeitsstunden <= 0) return new Date(beginn);
+
+  if (zeit.durchgehend) {
+    return new Date(beginn.getTime() + arbeitsstunden * 3600000);
+  }
+
+  const zeiger = naechsteArbeitszeit(beginn, zeit);
+  let verbleibend = arbeitsstunden * 60;
+
+  // Geprüft wird der Zeitpunkt vor dem Vorrücken, nicht danach: Eine
+  // Arbeitsminute ist das Intervall, das bei `zeiger` beginnt. Wer
+  // erst vorrückt und dann prüft, verliert die letzte Minute vor
+  // Dienstschluss - der Zeitpunkt 17:00 liegt bereits außerhalb.
+  //
+  // Die Schrittgrenze entspricht bei neun Arbeitsstunden am Tag rund
+  // acht Jahren; sie schützt nur davor, dass eine unsinnige
+  // Servicezeit die Anwendung stehen lässt.
+  for (let schritt = 0; schritt < 1_000_000 && verbleibend > 0; schritt++) {
+    if (istArbeitszeit(zeiger, zeit)) {
+      zeiger.setMinutes(zeiger.getMinutes() + 1);
+      verbleibend -= 1;
+    } else {
+      const weiter = naechsteArbeitszeit(zeiger, zeit);
+      zeiger.setTime(weiter.getTime());
+    }
+  }
+
+  return zeiger;
+}
+
+/**
+ * Arbeitsstunden zwischen zwei Zeitpunkten.
+ *
+ * Negativ, wenn `bis` vor `von` liegt - so lässt sich damit auch eine
+ * Überschreitung ausdrücken.
+ */
+export function arbeitsstundenZwischen(
+  von: Date,
+  bis: Date,
+  zeit: Servicezeit = WERKTAGS,
+): number {
+  if (zeit.durchgehend) {
+    return (bis.getTime() - von.getTime()) / 3600000;
+  }
+
+  const rueckwaerts = bis < von;
+  const start = new Date(rueckwaerts ? bis : von);
+  const ende = rueckwaerts ? von : bis;
+
+  let minuten = 0;
+  const zeiger = new Date(start);
+
+  for (
+    let schritt = 0;
+    schritt < 1_000_000 && zeiger < ende;
+    schritt++
+  ) {
+    if (istArbeitszeit(zeiger, zeit)) {
+      minuten += 1;
+      zeiger.setMinutes(zeiger.getMinutes() + 1);
+    } else {
+      const weiter = naechsteArbeitszeit(zeiger, zeit);
+      if (weiter > ende) break;
+      zeiger.setTime(weiter.getTime());
+    }
+  }
+
+  const stunden = minuten / 60;
+  return rueckwaerts ? -stunden : stunden;
+}
+
+export interface Fristenstand {
+  /** Fälligkeitszeitpunkt. */
+  faellig: Date;
+  /** Verbleibende Arbeitsstunden; negativ bedeutet überschritten. */
+  verbleibendStunden: number;
+  ueberschritten: boolean;
+  /** Anteil der verbrauchten Frist, 0 bis über 1. */
+  verbraucht: number;
+}
+
+/**
+ * Stand einer laufenden oder erledigten Frist.
+ *
+ * `erledigtAm` ist der Zeitpunkt, zu dem reagiert beziehungsweise
+ * behoben wurde. Fehlt er, wird gegen `jetzt` gemessen.
+ *
+ * `jetzt` wird bewusst übergeben und nicht in der Funktion ermittelt:
+ * Sonst liefert dieselbe Eingabe bei jedem Aufruf ein anderes
+ * Ergebnis, und die Funktion ließe sich weder prüfen noch während
+ * eines Renderdurchlaufs verwenden.
+ */
+export function fristenstand(
+  beginn: Date,
+  arbeitsstunden: number,
+  jetzt: Date,
+  erledigtAm?: Date | null,
+  zeit: Servicezeit = WERKTAGS,
+): Fristenstand {
+  const faellig = frist(beginn, arbeitsstunden, zeit);
+  const bezug = erledigtAm ?? jetzt;
+
+  const verbleibend = arbeitsstundenZwischen(bezug, faellig, zeit);
+  const verbraucht =
+    arbeitsstunden > 0
+      ? arbeitsstundenZwischen(beginn, bezug, zeit) / arbeitsstunden
+      : 0;
+
+  return {
+    faellig,
+    verbleibendStunden: Number(verbleibend.toFixed(2)),
+    ueberschritten: bezug > faellig,
+    verbraucht: Number(verbraucht.toFixed(3)),
+  };
+}

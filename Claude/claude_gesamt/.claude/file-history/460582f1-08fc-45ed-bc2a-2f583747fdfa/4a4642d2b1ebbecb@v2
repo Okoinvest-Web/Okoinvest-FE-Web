@@ -1,0 +1,73 @@
+import os
+from PIL import Image, ImageDraw
+
+SRC = r"C:\Users\SALEAD~1\AppData\Local\Temp\claude\C--Users-SALEADMIN-AppData-Roaming-Claude-scratch-workspaces-425cbda1-5a07-435d-8861-12372e8f6f40-a6253768-8123-463b-9100-96b85287bca0-scratch-2026-09-24-3b344a\460582f1-08fc-45ed-bc2a-2f583747fdfa\scratchpad\mails"
+OUT = r"C:\Users\SALEADMIN\Desktop\Presse\5_Website\img"
+os.makedirs(OUT, exist_ok=True)
+BLACK = (20, 20, 20)
+
+
+def build(src, redactions, pieces, name, highlight=None):
+    im = Image.open(os.path.join(SRC, src)).convert("RGB")
+    dr = ImageDraw.Draw(im)
+    if highlight:
+        ov = Image.new("RGB", im.size, (255, 255, 255))
+        od = ImageDraw.Draw(ov)
+        for box in highlight:
+            od.rectangle(box, fill=(255, 236, 170))
+        im = Image.composite(im, Image.blend(im, ov, 0.0), Image.new("L", im.size, 255))
+        # Markierung: gelber Balken hinter Text (multiplizieren)
+        hl = Image.new("RGB", im.size, (255, 255, 255))
+        hd = ImageDraw.Draw(hl)
+        for box in highlight:
+            hd.rectangle(box, fill=(255, 232, 150))
+        from PIL import ImageChops
+        im = ImageChops.multiply(im, hl)
+        dr = ImageDraw.Draw(im)
+    for box in redactions:
+        dr.rectangle(box, fill=BLACK)
+    crops = [im.crop(b) for b in pieces]
+    pad, gap = 24, 14
+    w = max(c.width for c in crops) + 2 * pad
+    h = sum(c.height for c in crops) + gap * (len(crops) - 1) + 2 * pad
+    canvas = Image.new("RGB", (w, h), "white")
+    y = pad
+    cd = ImageDraw.Draw(canvas)
+    for i, c in enumerate(crops):
+        canvas.paste(c, (pad, y))
+        y += c.height
+        if i < len(crops) - 1:
+            cd.text((pad, y), "[…]", fill=(140, 140, 140))
+            y += gap
+    cd.rectangle([0, 0, w - 1, h - 1], outline=(210, 214, 222), width=2)
+    fn = os.path.join(OUT, name)
+    canvas.save(fn, optimize=True)
+    print(fn, canvas.size)
+
+
+# A) 05.02.2021 – eigene Mail Wegscheider: Rückzug abgesprochen (ohne Preise)
+build("m1_0502_p1.png",
+      redactions=[(160, 690, 600, 710)],                       # Empfänger (SAG-Konzern) schwärzen
+      pieces=[(80, 645, 880, 732), (80, 1036, 880, 1082)],
+      highlight=[(84, 1038, 880, 1080)],
+      name="mail_2021-02-05_rueckzug.png")
+
+# B) 10.06.2021 – „vereinbartes Ziel … Leuchtturmprojekt … Ökovolt bevorzugt“
+build("m3_1006_p1.png",
+      redactions=[(175, 487, 880, 509), (138, 532, 880, 581), (118, 584, 880, 622)],
+      pieces=[(70, 486, 890, 672), (70, 876, 890, 922)],
+      name="mail_2021-06-10_leuchtturmprojekt.png")
+
+# C) 10.12.2021 – nach Gründung one2zero: Bitte um Aktualisierung Hofer-Angebot
+build("m4_1012_p1.png",
+      redactions=[(136, 187, 470, 207), (136, 259, 500, 280)],
+      pieces=[(80, 138, 880, 283), (80, 318, 880, 378), (80, 436, 880, 464), (80, 478, 880, 505)],
+      highlight=[(128, 438, 740, 462)],
+      name="mail_2021-12-10_aktualisierung_hofer.png")
+
+# D) 14.12.2021 – Dank für aktualisiertes Hofer-Angebot
+build("m5_1412_p1.png",
+      redactions=[(136, 187, 500, 207), (136, 259, 870, 280)],
+      pieces=[(80, 138, 880, 283), (80, 488, 880, 514)],
+      highlight=[(84, 490, 700, 512)],
+      name="mail_2021-12-14_dank_hofer_angebot.png")

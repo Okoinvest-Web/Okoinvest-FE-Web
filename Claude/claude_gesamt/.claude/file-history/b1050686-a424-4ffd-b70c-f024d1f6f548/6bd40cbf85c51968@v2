@@ -1,0 +1,173 @@
+import { Tabelle, Zeile, Zelle } from "@/components/tabelle";
+import type { DossierZeile } from "@/lib/daten/nachweise";
+import { formatDatum, formatDateigroesse } from "@/lib/format";
+import {
+  fasseDossier,
+  fasseDossierZusammen,
+  ordneDossier,
+  type Gueltigkeitsstand,
+  type Unterlage,
+} from "@/lib/unterlagen";
+
+import { Hinweis, Status } from "./ui";
+
+/**
+ * Das Dossier einer Anlage.
+ *
+ * Jede Zeile nennt die Kennung im führenden System. Das sieht nach
+ * technischem Beiwerk aus und ist der Kern der Sache: Eine
+ * Dokumentenliste, die ihre Herkunft verschweigt, wird zur zweiten
+ * Wahrheit neben dem ERP - und spätestens beim ersten Widerspruch
+ * glaubt niemand mehr einer von beiden.
+ */
+
+function gueltigTon(stand: Gueltigkeitsstand, pflicht: boolean) {
+  switch (stand) {
+    case "abgelaufen":
+      return pflicht ? ("kritisch" as const) : ("ernst" as const);
+    case "laeuft_ab":
+      return "hinweis" as const;
+    case "unbefristet":
+      return "neutral" as const;
+    default:
+      return "gut" as const;
+  }
+}
+
+function gueltigWort(stand: Gueltigkeitsstand, tage: number): string {
+  switch (stand) {
+    case "abgelaufen":
+      return `seit ${Math.abs(tage)} Tagen abgelaufen`;
+    case "laeuft_ab":
+      return tage === 0 ? "läuft heute ab" : `läuft in ${tage} Tagen ab`;
+    case "unbefristet":
+      return "unbefristet";
+    default:
+      return "gültig";
+  }
+}
+
+export function Dossiertafel({
+  zeilen,
+  unterlagen,
+  heute,
+}: {
+  zeilen: DossierZeile[];
+  unterlagen: Unterlage[];
+  heute: Date;
+}) {
+  const gruppen = ordneDossier(unterlagen, heute);
+  const stand = fasseDossier(unterlagen, heute);
+
+  const zeileJe = new Map(zeilen.map((z) => [z.id, z]));
+
+  const abgelaufenePflicht = gruppen
+    .flatMap((g) => g.unterlagen)
+    .filter((u) => u.pflicht && u.gueltigkeit.stand === "abgelaufen");
+
+  return (
+    <div className="space-y-4">
+      {abgelaufenePflicht.length > 0 && (
+        <Hinweis
+          ton="kritisch"
+          titel={
+            abgelaufenePflicht.length === 1
+              ? "Eine Pflichtunterlage ist abgelaufen"
+              : `${abgelaufenePflicht.length} Pflichtunterlagen sind abgelaufen`
+          }
+        >
+          {abgelaufenePflicht.map((u) => u.bezeichnung).join("; ")}. Bis zur
+          Erneuerung ist die Anlagendokumentation unvollständig – das fällt bei
+          einer Prüfung als Erstes auf.
+        </Hinweis>
+      )}
+
+      <p className="t-mikro leading-relaxed">{fasseDossierZusammen(stand)}</p>
+
+      {gruppen.map((gruppe) => (
+        <div key={gruppe.gruppe}>
+          <p className="t-etikett mb-1.5">{gruppe.name}</p>
+
+          <Tabelle
+            spalten={[
+              { titel: "Unterlage" },
+              { titel: "Art", schmalAusblenden: true },
+              { titel: "Im System", schmalAusblenden: true },
+              { titel: "Ausgestellt", zahl: true, schmalAusblenden: true },
+              { titel: "Umfang", zahl: true, schmalAusblenden: true },
+              { titel: "Gültigkeit" },
+            ]}
+            mindestbreite="60rem"
+          >
+            {gruppe.unterlagen.map((u) => {
+              const zeile = zeileJe.get(u.id);
+
+              return (
+                <Zeile key={u.id}>
+                  <Zelle>
+                    <span className="block" style={{ color: "var(--t-stark)" }}>
+                      {u.bezeichnung}
+                    </span>
+                    {u.pflicht && (
+                      <span className="t-mikro block">
+                        Pflichtunterlage
+                        {zeile?.norm ? ` · ${zeile.norm}` : ""}
+                      </span>
+                    )}
+                  </Zelle>
+
+                  <Zelle leise schmalAusblenden>
+                    {u.art}
+                  </Zelle>
+
+                  <Zelle leise schmalAusblenden>
+                    {zeile?.erp_kennung ? (
+                      <>
+                        <span className="block font-mono text-[0.75rem]">
+                          {zeile.erp_kennung}
+                        </span>
+                        <span className="t-mikro block">
+                          {zeile.erp_doctype}
+                        </span>
+                      </>
+                    ) : (
+                      "–"
+                    )}
+                  </Zelle>
+
+                  <Zelle zahl leise schmalAusblenden>
+                    {zeile?.ausgestellt_am
+                      ? formatDatum(zeile.ausgestellt_am)
+                      : "–"}
+                  </Zelle>
+
+                  <Zelle zahl leise schmalAusblenden>
+                    {zeile?.seiten ? `${zeile.seiten} Seiten` : "–"}
+                    {zeile?.dateigroesse ? (
+                      <span className="t-mikro block">
+                        {formatDateigroesse(zeile.dateigroesse)}
+                      </span>
+                    ) : null}
+                  </Zelle>
+
+                  <Zelle>
+                    <Status
+                      ton={gueltigTon(u.gueltigkeit.stand, u.pflicht)}
+                    >
+                      {gueltigWort(u.gueltigkeit.stand, u.gueltigkeit.tage)}
+                    </Status>
+                    {zeile && zeile.sync_stand !== "Aktuell" && (
+                      <span className="t-mikro block">
+                        Übernahme: {zeile.sync_stand}
+                      </span>
+                    )}
+                  </Zelle>
+                </Zeile>
+              );
+            })}
+          </Tabelle>
+        </div>
+      ))}
+    </div>
+  );
+}

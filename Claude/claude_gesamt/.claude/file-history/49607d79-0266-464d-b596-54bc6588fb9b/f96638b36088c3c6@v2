@@ -1,0 +1,257 @@
+/**
+ * Tests für das LTO-Bandarchiv.
+ *
+ * Der Satz, den diese Datei absichert:
+ *
+ *   **Ein ausgeworfenes Band, das im Serverraum liegen bleibt, ist kein
+ *   Airgap – es sieht nur so aus.**
+ *
+ * Deshalb liegt der Schwerpunkt nicht auf dem Auswerfen, sondern auf dem,
+ * was danach kommt: die Erinnerungsschleife und die Quittung. Ein Ablauf,
+ * der beim Auswurf endet, erzeugt genau das Gefühl von Sicherheit, das im
+ * Ernstfall trägt – bis man vor dem leeren Schrank steht.
+ */
+import { beforeEach, describe, expect, it } from 'vitest'
+import { mockRequest, resetMockData } from '@/api/mock/server.js'
+
+const ruf = (url, params) => mockRequest({ url, params })
+const bestand = (p = {}) => ruf('netops.api.tape.tape_inventory', p)
+const saetze = (p = {}) => ruf('netops.api.tape.tape_pools', p)
+const pruefEtikett = (p) => ruf('netops.api.tape.tape_label_check', p)
+const erzeugeEtiketten = (p) => ruf('netops.api.tape.tape_label_generate', p)
+const aufnehmen = (p) => ruf('netops.api.tape.tape_register', p)
+const auswurfPruefen = (p) => ruf('netops.api.tape.tape_eject_check', p)
+const auswerfen = (p) => ruf('netops.api.tape.tape_eject', p)
+const quittieren = (p) => ruf('netops.api.tape.tape_confirm_change', p)
+const auftraege = (p = {}) => ruf('netops.api.tape.tape_change_requests', p)
+const erinnerungen = (p = {}) => ruf('netops.api.tape.tape_reminders_due', p)
+
+beforeEach(() => {
+  resetMockData()
+})
+
+describe('Etiketten', () => {
+  it('erzeugt gültige LTO-9-Etiketten und nennt die Drucklage', async () => {
+    const e = await erzeugeEtiketten({ pool: 'woche', count: 3 })
+    expect(e.labels).toHaveLength(3)
+    for (const l of e.labels) expect(l).toMatch(/^[A-Z0-9]{6}L9$/)
+    expect(e.barcode_symbology).toBe('Code 39')
+    // Am Schrank liest niemand einen Scanner.
+    expect(e.print_note).toMatch(/Klartext/)
+  })
+
+  it('vergibt keine Nummer zweimal', async () => {
+    // Eine wiederverwendete Nummer macht jede Historie mehrdeutig - und
+    // genau die braucht man bei dem Band von vor drei Jahren.
+    const vergeben = new Set((await bestand()).rows.map((t) => t.label))
+    const e = await erzeugeEtiketten({ prefix: 'OEK', count: 5 })
+    for (const l of e.labels) expect(vergeben.has(l)).toBe(false)
+  })
+
+  it('weist ein Präfix ab, das nicht drei Zeichen hat', async () => {
+    await expect(erzeugeEtiketten({ prefix: 'OEKO' })).rejects.toThrow(/drei Zeichen/)
+  })
+
+  it('erkennt beim Scannen ein bekanntes Band und sagt, wo es liegt', async () => {
+    const e = await pruefEtikett({ label: 'oek039l9' })
+    expect(e.ok).toBe(true)
+    expect(e.label).toBe('OEK039L9')
+    expect(e.known).toBe(true)
+    expect(e.note).toMatch(/Laufwerk/)
+  })
+
+  it('bricht bei einem Fehlgriff nicht ab, sondern nennt den Grund', async () => {
+    // Beim Scannen ist der Fehlgriff der Normalfall. Eine Ausnahme wäre
+    // hier die falsche Antwort.
+    const kurz = await pruefEtikett({ label: 'OEK39L9' })
+    expect(kurz.ok).toBe(false)
+    expect(kurz.reason).toMatch(/acht Zeichen/)
+
+    const falschesMedium = await pruefEtikett({ label: 'OEK039L4' })
+    expect(falschesMedium.ok).toBe(false)
+    expect(falschesMedium.reason).toMatch(/Medienkürzel/)
+  })
+
+  it('nimmt ein neues Band auf, aber kein zweites Mal dasselbe', async () => {
+    const e = await erzeugeEtiketten({ pool: 'woche', count: 1 })
+    await aufnehmen({ label: e.labels[0], pool: 'woche', location: 'Medienschrank A.01' })
+    await expect(aufnehmen({ label: e.labels[0], pool: 'woche' })).rejects.toThrow(
+      /bereits im Bestand/,
+    )
+  })
+})
+
+describe('Auswerfen', () => {
+  it('sperrt ein Band, dessen Prüfung fehlgeschlagen ist', async () => {
+    // Ein unlesbares Band auszulagern verschiebt nur den Schaden.
+    const p = await auswurfPruefen({ label: 'OEK031L9' })
+    expect(p.allowed).toBe(false)
+    expect(p.blockers.join(' ')).toMatch(/Prüfung ist fehlgeschlagen/)
+  })
+
+  it('sperrt ein Band, auf dem nichts steht', async () => {
+    const p = await auswurfPruefen({ label: 'OEK040L9' })
+    expect(p.allowed).toBe(false)
+  })
+
+  it('lässt ein beschriebenes und geprüftes Band durch', async () => {
+    const p = await auswurfPruefen({ label: 'OEK039L9' })
+    expect(p.allowed).toBe(true)
+    expect(p.blockers).toEqual([])
+    // Wohin es soll, steht am Satz - nicht im Kopf der Person davor.
+    expect(p.destination).toMatch(/Bankschließfach/)
+  })
+
+  it('sagt beim Auswerfen ausdrücklich, dass es noch kein Airgap ist', async () => {
+    const e = await auswerfen({ request: 'TCR-00001', reason: 'Wochenwechsel KW39' })
+    expect(e.note).toMatch(/noch im Haus/)
+    expect(e.note).toMatch(/bestätigt/)
+  })
+
+  it('macht aus dem Auftrag danach einen kritischen Befund', async () => {
+    await auswerfen({ request: 'TCR-00001', reason: 'Wochenwechsel' })
+    const a = (await auftraege({ open_only: true })).find((x) => x.name === 'TCR-00001')
+    expect(a.workflow_state).toBe('ejected')
+    // Ausgeworfen und nicht quittiert ist der gefährlichste Zustand des
+    // ganzen Ablaufs, nicht der beruhigendste.
+    expect(a.level).toBe('critical')
+    expect(a.reasons.join(' ')).toMatch(/kein Airgap/)
+  })
+})
+
+describe('Die Erinnerungsschleife', () => {
+  it('erinnert auch dann, wenn niemand ausgeworfen hat', async () => {
+    // Der Fall, der am längsten unbemerkt bleibt. Hinge die Schleife am
+    // Auswurf, käme hier nie eine Mail.
+    const d = await erinnerungen()
+    expect(d.due).toBe(1)
+    expect(d.messages[0].subject).toMatch(/noch nicht ausgeworfen/)
+  })
+
+  it('schreibt nach dem Auswurf eine andere Mail', async () => {
+    await auswerfen({ request: 'TCR-00001', reason: 'Wochenwechsel' })
+    const d = await erinnerungen()
+    expect(d.messages[0].subject).toMatch(/liegt noch im Serverraum/)
+    expect(d.messages[0].body).toMatch(/außerhalb der Reichweite/)
+  })
+
+  it('geht an die Adresse aus dem Bandsatz', async () => {
+    const d = await erinnerungen()
+    expect(d.messages[0].to).toBe('it-betrieb@oekovolt.test')
+  })
+
+  it('wiederholt sich nicht vor Ablauf des Takts', async () => {
+    await erinnerungen({ send: true })
+    expect((await erinnerungen()).due).toBe(0)
+  })
+
+  it('zählt die Versuche hoch', async () => {
+    const erste = await erinnerungen({ send: true })
+    expect(erste.messages[0].attempt).toBe(1)
+    const a = (await auftraege()).find((x) => x.name === 'TCR-00001')
+    expect(a.reminders_sent).toBe(1)
+  })
+
+  it('hört mit der Quittung auf', async () => {
+    // Der eigentliche Zweck. Eine Schleife, die auch nach dem Wechsel
+    // weiterläuft, wird nach zwei Wochen weggefiltert - und dann fehlt sie
+    // beim nächsten Mal.
+    await auswerfen({ request: 'TCR-00001', reason: 'Wochenwechsel' })
+    await erinnerungen({ send: true })
+    await quittieren({
+      request: 'TCR-00001',
+      new_location: 'Bankschließfach Sparkasse Linz, Fach 2213',
+      actor: 'lena.steiner@oekovolt.test',
+    })
+    const d = await erinnerungen()
+    expect(d.due).toBe(0)
+    expect(d.note).toBe('Nichts fällig.')
+  })
+
+  it('verschickt nichts, solange nicht ausdrücklich gesendet wird', async () => {
+    // Die Methode sagt, was zu verschicken wäre. Der Versand gehört ins
+    // Backend, nicht in einen Browser-Mock.
+    const d = await erinnerungen()
+    expect(d.sent).toBe(0)
+    expect((await auftraege()).find((x) => x.name === 'TCR-00001').reminders_sent).toBe(0)
+  })
+})
+
+describe('Die Quittung', () => {
+  it('verlangt einen Lagerort', async () => {
+    await auswerfen({ request: 'TCR-00001', reason: 'x' })
+    await expect(quittieren({ request: 'TCR-00001' })).rejects.toThrow(/Ohne Lagerort/)
+  })
+
+  it('weist ein falsch gescanntes Band ab', async () => {
+    // Ein verwechseltes Band fällt sonst erst bei der Wiederherstellung auf.
+    await auswerfen({ request: 'TCR-00001', reason: 'x' })
+    await expect(
+      quittieren({ request: 'TCR-00001', new_location: 'Schließfach', scanned_label: 'OEK040L9' }),
+    ).rejects.toThrow(/Gescannt wurde OEK040L9, erwartet OEK039L9/)
+  })
+
+  it('setzt das Band auf außer Haus und legt den Nachfolger ein', async () => {
+    await auswerfen({ request: 'TCR-00001', reason: 'x' })
+    const e = await quittieren({
+      request: 'TCR-00001',
+      new_location: 'Bankschließfach Sparkasse Linz, Fach 2213',
+      scanned_label: 'OEK039L9',
+      actor: 'lena.steiner@oekovolt.test',
+    })
+    expect(e.next_tape).toBe('OEK040L9')
+
+    const b = (await bestand()).rows
+    const alt = b.find((t) => t.label === 'OEK039L9')
+    const neu = b.find((t) => t.label === 'OEK040L9')
+    expect(alt.tape_state).toBe('ausser_haus')
+    expect(alt.location).toMatch(/Bankschließfach/)
+    expect(neu.tape_state).toBe('im_laufwerk')
+    // Der Ladezähler ist die einzige Verschleißgröße am Band.
+    expect(neu.load_count).toBe(25)
+  })
+
+  it('warnt, wenn kein Nachfolgeband eingelegt wird', async () => {
+    // Sonst findet der nächste Lauf kein Medium - und das merkt man
+    // frühestens in der Nacht darauf.
+    await auswerfen({ request: 'TCR-00001', reason: 'x' })
+    const e = await quittieren({
+      request: 'TCR-00001',
+      new_location: 'Schließfach',
+      next_tape: 'GIBTSNICHT',
+      actor: 'lena.steiner@oekovolt.test',
+    })
+    expect(e.note).toMatch(/Kein Nachfolgeband/)
+  })
+})
+
+describe('Bestand und Sätze', () => {
+  it('zählt beschriebene Bänder im Haus getrennt von denen außer Haus', async () => {
+    // Die Zahl, um die es geht: was ist beschrieben, aber noch erreichbar?
+    const s = (await bestand()).summary
+    expect(s.not_yet_offsite).toBe(1)
+    expect(s.offsite).toBe(2)
+  })
+
+  it('meldet ein beschriebenes Band im Haus als Befund', async () => {
+    const t = (await bestand()).rows.find((x) => x.label === 'OEK039L9')
+    expect(t.reasons.join(' ')).toMatch(/kein Airgap/)
+  })
+
+  it('führt ein Band mit fehlgeschlagener Prüfung als kritisch', async () => {
+    const t = (await bestand()).rows.find((x) => x.label === 'OEK031L9')
+    expect(t.level).toBe('critical')
+  })
+
+  it('nennt den Rotationsplan im Klartext', async () => {
+    // So, wie er auch in der Arbeitsanweisung steht.
+    const w = (await saetze()).find((p) => p.pool_name === 'woche')
+    expect(w.plan).toMatch(/Montag schreiben, Dienstag 06:00 wechseln/)
+    expect(w.plan).toMatch(/alle 1 h/)
+  })
+
+  it('warnt, wenn im Satz kein freies Band mehr liegt', async () => {
+    const w = (await saetze()).find((p) => p.pool_name === 'monat')
+    if (!w.free) expect(w.reasons.join(' ')).toMatch(/kein freies Band/i)
+  })
+})

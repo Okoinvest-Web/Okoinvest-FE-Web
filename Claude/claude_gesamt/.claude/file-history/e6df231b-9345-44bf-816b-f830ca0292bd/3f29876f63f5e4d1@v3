@@ -1,0 +1,106 @@
+/**
+ * Service-Worker-Registrierung und Aktualisierungshinweis (NFA-010, NFA-015).
+ *
+ * **Geltungsbereich:** Ein Service Worker kontrolliert nur Seiten unterhalb
+ * seines eigenen Pfades. Das Bundle liegt unter
+ * `/assets/oekovolt_baudoku/frontend/`, die App läuft aber unter `/baudoku` —
+ * von dort aus registriert, hätte der Worker die App nie erreicht. Der Build
+ * legt ihn deshalb zusätzlich als `www/sw.js` ab; Frappe liefert das unter
+ * `/sw.js` aus, womit der Geltungsbereich die ganze Site umfasst und auf
+ * `/baudoku/` eingeschränkt werden kann.
+ *
+ * **Aktualisierung:** Eine neue Fassung übernimmt *nicht* von selbst. Ein
+ * Reload mitten in einem Prüfprotokoll wäre im Feld unzumutbar — stattdessen
+ * meldet sich die App und der Techniker entscheidet.
+ */
+
+import { ref } from 'vue'
+
+export const aktualisierungVerfuegbar = ref(false)
+export const offlineBereit = ref(false)
+export const registrierungsFehler = ref<string | null>(null)
+
+/**
+ * Pfad und Geltungsbereich des ausgelieferten Workers.
+ *
+ * Der Geltungsbereich wird als Zeichenketten-Präfix verglichen — **ohne**
+ * abschließenden Schrägstrich. Mit `/baudoku/` läge ausgerechnet die
+ * Einstiegsadresse `/baudoku` außerhalb, und der Worker übernähme die Seite nie.
+ */
+const SW_PFAD = '/sw.js'
+const SW_BEREICH = '/baudoku'
+
+let wartenderWorker: ServiceWorker | null = null
+let aktualisierungAusloesen: ((neuLaden?: boolean) => Promise<void>) | null = null
+
+export async function serviceWorkerRegistrieren(): Promise<void> {
+  if (!('serviceWorker' in navigator)) {
+    registrierungsFehler.value = 'Dieser Browser unterstützt keine Offline-Nutzung.'
+    return
+  }
+
+  // Im Dev-Server liefert vite-plugin-pwa einen eigenen Worker im Wurzelpfad;
+  // die virtuelle Registrierung kennt dessen Adresse.
+  if (import.meta.env.DEV) {
+    try {
+      const { registerSW } = await import('virtual:pwa-register')
+      aktualisierungAusloesen = registerSW({
+        immediate: true,
+        onNeedRefresh: () => (aktualisierungVerfuegbar.value = true),
+        onOfflineReady: () => (offlineBereit.value = true),
+      })
+    } catch {
+      /* Ohne aktivierte devOptions gibt es im Dev-Server keinen Worker. */
+    }
+    return
+  }
+
+  try {
+    const registrierung = await navigator.serviceWorker.register(SW_PFAD, { scope: SW_BEREICH })
+
+    if (registrierung.waiting) neueFassungGefunden(registrierung.waiting)
+    if (registrierung.active && !navigator.serviceWorker.controller) offlineBereit.value = true
+
+    registrierung.addEventListener('updatefound', () => {
+      const neuer = registrierung.installing
+      if (!neuer) return
+      neuer.addEventListener('statechange', () => {
+        if (neuer.state !== 'installed') return
+        // Ohne vorhandenen Controller ist es die Erstinstallation, keine Aktualisierung.
+        if (navigator.serviceWorker.controller) neueFassungGefunden(neuer)
+        else offlineBereit.value = true
+      })
+    })
+
+    // Übernimmt ein neuer Worker die Kontrolle, muss die Seite neu laden —
+    // sonst liefe altes JavaScript gegen neue Caches.
+    let neuladen = false
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (neuladen) return
+      neuladen = true
+      window.location.reload()
+    })
+
+    aktualisierungAusloesen = async () => {
+      wartenderWorker?.postMessage({ type: 'SKIP_WAITING' })
+    }
+  } catch (fehler) {
+    registrierungsFehler.value = (fehler as Error)?.message ?? 'unbekannter Fehler'
+    console.warn('Service Worker konnte nicht registriert werden:', fehler)
+  }
+}
+
+function neueFassungGefunden(worker: ServiceWorker) {
+  wartenderWorker = worker
+  aktualisierungVerfuegbar.value = true
+}
+
+/** Übernimmt die neue Fassung; der Reload folgt über `controllerchange`. */
+export async function jetztAktualisieren(): Promise<void> {
+  aktualisierungVerfuegbar.value = false
+  await aktualisierungAusloesen?.(true)
+}
+
+export function aktualisierungVerschieben(): void {
+  aktualisierungVerfuegbar.value = false
+}

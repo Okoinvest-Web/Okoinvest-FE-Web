@@ -1,0 +1,38 @@
+# -*- coding: utf-8 -*-
+import io
+p='SCHRIFTSATZ_18St14-26m_VOLLSTAENDIG.md'
+t=io.open(p,encoding='utf-8').read()
+def rep(o,n,c=1):
+    global t
+    assert o in t, o[:70]
+    t=t.replace(o,n,c)
+
+# --- B.1: Punkt 8 ---
+rep("""7. das Geldflussdiagramm des Landeskriminalamts Tirol vom 10.07.2026, GZ PAD/26/397356/KRIM.""",
+"""7. das Geldflussdiagramm des Landeskriminalamts Tirol vom 10.07.2026, GZ PAD/26/397356/KRIM,
+8. sämtliche Eingaben, Anfragen, Vermerke und Korrespondenzen, aus denen hervorgeht, **wann und auf welchem Weg die Zweitanzeiger — schobel digital GmbH und Ricardo Schobel, MA — sowie deren Vertretung von der Einleitung dieses Verfahrens und von der Geschäftszahl 18 St 14/26m Kenntnis erlangt haben.**
+
+**Zur Begründung von Punkt 8.** Das Verfahren wurde mit Verfügung vom **02.02.2026** eingeleitet (ON 1.1). Die Sachverhaltsdarstellung der Zweitanzeiger ist mit **06.02.2026** datiert und nimmt einleitend auf die Geschäftszahl Bezug:
+
+> „Nachdem gegen den Verdächtigen ein Ermittlungsverfahren zu **18 St 14/26m** bei der Staatsanwaltschaft Innsbruck behängt, erachten es die Anzeiger für zweckmäßig, die ggst. Sachverhaltsdarstellung zu eben dieser Geschäftszahl einzubringen."
+
+Zwischen Registrierung und Abfassung liegen **vier Tage**. Aus welcher Quelle diese Kenntnis stammt, ist dem Beschuldigten nicht bekannt und aus dem ihm vorliegenden Akt nicht ersichtlich. Insbesondere ergibt sie sich nicht aus den öffentlich zugänglichen Quellen des Insolvenzverfahrens:
+
+- Die **Insolvenzdatei nach § 75 IO** weist lediglich das Aktenzeichen 7 S 50/24y, den Schuldner, den Masseverwalter sowie Fristen und Tagsatzungen aus. Ein strafrechtliches Verfahren ist dort nicht verzeichnet.
+- Die **Berichte des Masseverwalters** im Konkursakt datieren vom 16.08.2024, 24.09.2024, 09.12.2024, 19.02.2025, 13.06.2025 und 06.10.2025. Der letzte liegt drei Monate **vor** der Anzeige vom 14.01.2026; keiner erwähnt eine Strafanzeige.
+- Die Zweitanzeiger sind im Anmeldungsverzeichnis **ON 2.15 nicht als Gläubiger verzeichnet**. Der Masseverwalter ordnet ihre Klage zu 55 C 771/24h in ON 2.5 ausdrücklich als **„Schuldnerprozess"** ein — sie richtet sich gegen den Beschuldigten persönlich und betrifft die Masse nicht. Eine Beteiligtenstellung im Insolvenzverfahren, aus der sich ein Akteneinsichtsrecht nach § 219 ZPO iVm § 252 IO ergäbe, besteht daher nicht.
+
+**Der Beschuldigte erhebt hierzu ausdrücklich keinen Vorwurf.** Es mag unauffällige Erklärungen geben. Er beantragt allein die Offenlegung des Vorgangs. Das Begehren steht im Zusammenhang mit den unter Teil L.3 und L.5 erhobenen Rügen: Derselbe Anzeigenstrang, dessen Einleitung mit Verfügung vom 11.02.2026 abgelehnt wurde, verblieb mit rund neunzig Seiten im Akt, und dessen Vertretung wurde mit Verfügung vom 16.04.2026 **dauerhaft zur elektronischen Akteneinsicht freigeschaltet**.""")
+
+# --- L.5 Querverweis ---
+rep("""Die unter Punkt N.1 beantragte Akteneinsicht dient der Herstellung dieses Gleichgewichts.""",
+"""Hinzu tritt ein Umstand, der die Entstehung dieses Ungleichgewichts betrifft. Die Sachverhaltsdarstellung der Zweitanzeiger vom **06.02.2026** nimmt auf die Geschäftszahl 18 St 14/26m Bezug, obwohl das Verfahren erst am **02.02.2026** eingeleitet wurde. Woher diese Kenntnis stammt, ist aus dem Akt nicht ersichtlich; sie ergibt sich weder aus der Insolvenzdatei noch aus den Berichten des Masseverwalters, und eine Beteiligtenstellung der Zweitanzeiger im Insolvenzverfahren besteht nicht (näher Teil B.1, Punkt 8). Vier Tage nach Registrierung verfügte die Gegenseite über die Geschäftszahl; der Beschuldigte erfuhr vom Verfahren erst am 16.07.2026.
+
+Die unter Punkt N.1 beantragte Akteneinsicht dient der Herstellung dieses Gleichgewichts.""")
+
+# --- Antrag 1 präzisieren ---
+rep("""**1.** dem Beschuldigten bzw. seinem Verteidiger **Einsicht in den vollständigen und aktuellen Akt** gemäß §§ 51, 52 StPO gewähren, insbesondere in die unter Teil B.1 bezeichneten Aktenstücke;""",
+"""**1.** dem Beschuldigten bzw. seinem Verteidiger **Einsicht in den vollständigen und aktuellen Akt** gemäß §§ 51, 52 StPO gewähren, insbesondere in die unter Teil B.1 Punkt 1 bis 8 bezeichneten Aktenstücke — einschließlich der Offenlegung, wann und auf welchem Weg die Zweitanzeiger und deren Vertretung von der Geschäftszahl 18 St 14/26m Kenntnis erlangt haben;""")
+
+io.open(p,'w',encoding='utf-8').write(t)
+print('B.1 Punkt 8, L.5 und Antrag 1 eingebaut')

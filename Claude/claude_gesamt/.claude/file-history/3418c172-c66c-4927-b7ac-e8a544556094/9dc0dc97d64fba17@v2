@@ -1,0 +1,147 @@
+import "server-only";
+import type { DataSource } from "./source";
+import type { Contact, Customer, Lead, ListOptions, Opportunity, ToDo } from "@/lib/types";
+
+// Beispieldaten im Aufbau der ERPNext-DocTypes. Liegen im Speicher und
+// überleben Hot-Reload über globalThis; ein Neustart setzt sie zurück.
+
+const d = (daysAgo: number) => new Date(Date.now() - daysAgo * 86_400_000).toISOString();
+const day = (daysAhead: number) => new Date(Date.now() + daysAhead * 86_400_000).toISOString().slice(0, 10);
+
+function seed() {
+  const leads: Lead[] = [
+    { name: "CRM-LEAD-2026-00001", first_name: "Anna", last_name: "Berger", lead_name: "Anna Berger", company_name: "Berger Solartechnik GmbH", email_id: "a.berger@berger-solar.example", mobile_no: "+49 170 1234567", status: "Open", source: "Website", territory: "Deutschland", lead_owner: "max@firma.example", notes: "Interesse an Wartungsvertrag für 3 Standorte.", creation: d(12), modified: d(1) },
+    { name: "CRM-LEAD-2026-00002", first_name: "Jonas", last_name: "Keller", lead_name: "Jonas Keller", company_name: "Keller Logistik AG", email_id: "jonas.keller@keller-log.example", mobile_no: "+41 79 555 12 34", status: "Replied", source: "Messe", territory: "Schweiz", lead_owner: "lisa@firma.example", creation: d(20), modified: d(3) },
+    { name: "CRM-LEAD-2026-00003", first_name: "Fatma", last_name: "Yilmaz", lead_name: "Fatma Yilmaz", company_name: "Yilmaz Bau", email_id: "info@yilmaz-bau.example", status: "Lead", source: "Empfehlung", territory: "Deutschland", lead_owner: "max@firma.example", creation: d(2), modified: d(2) },
+    { name: "CRM-LEAD-2026-00004", first_name: "Lukas", last_name: "Huber", lead_name: "Lukas Huber", company_name: "Huber Energie KG", email_id: "l.huber@huber-energie.example", mobile_no: "+43 664 7788990", status: "Interested", source: "Kaltakquise", territory: "Österreich", lead_owner: "lisa@firma.example", creation: d(30), modified: d(5) },
+    { name: "CRM-LEAD-2026-00005", first_name: "Sophie", last_name: "Wagner", lead_name: "Sophie Wagner", company_name: "Wagner & Söhne", email_id: "sophie@wagner-soehne.example", status: "Opportunity", source: "Website", territory: "Deutschland", lead_owner: "max@firma.example", creation: d(45), modified: d(7) },
+    { name: "CRM-LEAD-2026-00006", first_name: "Marco", last_name: "Rossi", lead_name: "Marco Rossi", company_name: "Rossi Impianti Srl", email_id: "m.rossi@rossi-impianti.example", status: "Do Not Contact", source: "Messe", territory: "Italien", creation: d(60), modified: d(40) },
+    { name: "CRM-LEAD-2026-00007", first_name: "Elena", last_name: "Novak", lead_name: "Elena Novak", company_name: "Novak IT Services", email_id: "elena@novak-it.example", mobile_no: "+49 151 2233445", status: "Open", source: "LinkedIn", territory: "Deutschland", lead_owner: "lisa@firma.example", creation: d(4), modified: d(0) },
+  ];
+
+  const customers: Customer[] = [
+    { name: "Stadtwerke Nordheim", customer_name: "Stadtwerke Nordheim", customer_type: "Company", customer_group: "Öffentlich", territory: "Deutschland", email_id: "einkauf@sw-nordheim.example", website: "https://sw-nordheim.example", disabled: 0, creation: d(400), modified: d(10) },
+    { name: "Alpenwind AG", customer_name: "Alpenwind AG", customer_type: "Company", customer_group: "Gewerblich", territory: "Österreich", email_id: "office@alpenwind.example", mobile_no: "+43 1 555 000", disabled: 0, creation: d(300), modified: d(15) },
+    { name: "Wagner & Söhne", customer_name: "Wagner & Söhne", customer_type: "Company", customer_group: "Gewerblich", territory: "Deutschland", email_id: "info@wagner-soehne.example", disabled: 0, creation: d(40), modified: d(7) },
+    { name: "Klara Fischer", customer_name: "Klara Fischer", customer_type: "Individual", customer_group: "Privat", territory: "Deutschland", email_id: "klara.fischer@mail.example", disabled: 0, creation: d(90), modified: d(60) },
+  ];
+
+  const opportunities: Opportunity[] = [
+    { name: "CRM-OPP-2026-00001", opportunity_from: "Customer", party_name: "Stadtwerke Nordheim", customer_name: "Stadtwerke Nordheim", title: "Netzausbau Phase 2", status: "Open", sales_stage: "Needs Analysis", opportunity_amount: 185000, currency: "EUR", probability: 40, expected_closing: day(45), opportunity_owner: "max@firma.example", creation: d(25), modified: d(2) },
+    { name: "CRM-OPP-2026-00002", opportunity_from: "Customer", party_name: "Alpenwind AG", customer_name: "Alpenwind AG", title: "Wartungsvertrag 2027", status: "Quotation", sales_stage: "Proposal/Price Quote", opportunity_amount: 64000, currency: "EUR", probability: 65, expected_closing: day(20), opportunity_owner: "lisa@firma.example", creation: d(35), modified: d(4) },
+    { name: "CRM-OPP-2026-00003", opportunity_from: "Lead", party_name: "CRM-LEAD-2026-00005", customer_name: "Wagner & Söhne", title: "PV-Anlage Hallendach", status: "Open", sales_stage: "Negotiation/Review", opportunity_amount: 92000, currency: "EUR", probability: 80, expected_closing: day(10), opportunity_owner: "max@firma.example", creation: d(15), modified: d(1) },
+    { name: "CRM-OPP-2026-00004", opportunity_from: "Lead", party_name: "CRM-LEAD-2026-00004", customer_name: "Huber Energie KG", title: "Speicherlösung 500 kWh", status: "Open", sales_stage: "Qualification", opportunity_amount: 240000, currency: "EUR", probability: 20, expected_closing: day(90), opportunity_owner: "lisa@firma.example", creation: d(8), modified: d(3) },
+    { name: "CRM-OPP-2026-00005", opportunity_from: "Lead", party_name: "CRM-LEAD-2026-00002", customer_name: "Keller Logistik AG", title: "Ladeinfrastruktur Fuhrpark", status: "Open", sales_stage: "Prospecting", opportunity_amount: 38000, currency: "EUR", probability: 10, expected_closing: day(120), opportunity_owner: "lisa@firma.example", creation: d(3), modified: d(3) },
+    { name: "CRM-OPP-2026-00006", opportunity_from: "Customer", party_name: "Klara Fischer", customer_name: "Klara Fischer", title: "Wallbox Einfamilienhaus", status: "Converted", sales_stage: "Negotiation/Review", opportunity_amount: 2400, currency: "EUR", probability: 100, expected_closing: day(-5), opportunity_owner: "max@firma.example", creation: d(50), modified: d(5) },
+  ];
+
+  const contacts: Contact[] = [
+    { name: "Petra Lang-Stadtwerke Nordheim", first_name: "Petra", last_name: "Lang", full_name: "Petra Lang", email_id: "p.lang@sw-nordheim.example", mobile_no: "+49 7131 55501", designation: "Leitung Einkauf", company_name: "Stadtwerke Nordheim", links: [{ link_doctype: "Customer", link_name: "Stadtwerke Nordheim" }], creation: d(380), modified: d(10) },
+    { name: "Thomas Gruber-Alpenwind AG", first_name: "Thomas", last_name: "Gruber", full_name: "Thomas Gruber", email_id: "t.gruber@alpenwind.example", mobile_no: "+43 664 1112233", designation: "Technischer Leiter", company_name: "Alpenwind AG", links: [{ link_doctype: "Customer", link_name: "Alpenwind AG" }], creation: d(290), modified: d(15) },
+    { name: "Sophie Wagner", first_name: "Sophie", last_name: "Wagner", full_name: "Sophie Wagner", email_id: "sophie@wagner-soehne.example", designation: "Geschäftsführerin", company_name: "Wagner & Söhne", links: [{ link_doctype: "Customer", link_name: "Wagner & Söhne" }, { link_doctype: "Lead", link_name: "CRM-LEAD-2026-00005" }], creation: d(45), modified: d(7) },
+    { name: "Klara Fischer", first_name: "Klara", last_name: "Fischer", full_name: "Klara Fischer", email_id: "klara.fischer@mail.example", links: [{ link_doctype: "Customer", link_name: "Klara Fischer" }], creation: d(90), modified: d(60) },
+  ];
+
+  const todos: ToDo[] = [
+    { name: "TD-0001", description: "Angebot Wartungsvertrag an Alpenwind nachfassen", status: "Open", priority: "High", date: day(1), allocated_to: "lisa@firma.example", reference_type: "Opportunity", reference_name: "CRM-OPP-2026-00002", creation: d(4), modified: d(4) },
+    { name: "TD-0002", description: "Rückruf Anna Berger – Standortliste anfordern", status: "Open", priority: "Medium", date: day(0), allocated_to: "max@firma.example", reference_type: "Lead", reference_name: "CRM-LEAD-2026-00001", creation: d(1), modified: d(1) },
+    { name: "TD-0003", description: "Vor-Ort-Termin Wagner & Söhne vorbereiten", status: "Open", priority: "High", date: day(3), allocated_to: "max@firma.example", reference_type: "Opportunity", reference_name: "CRM-OPP-2026-00003", creation: d(2), modified: d(2) },
+    { name: "TD-0004", description: "Referenzliste an Huber Energie senden", status: "Closed", priority: "Low", date: day(-2), allocated_to: "lisa@firma.example", reference_type: "Lead", reference_name: "CRM-LEAD-2026-00004", creation: d(6), modified: d(2) },
+    { name: "TD-0005", description: "Erstgespräch mit Elena Novak terminieren", status: "Open", priority: "Medium", date: day(2), allocated_to: "lisa@firma.example", reference_type: "Lead", reference_name: "CRM-LEAD-2026-00007", creation: d(0), modified: d(0) },
+  ];
+
+  return { leads, customers, opportunities, contacts, todos, leadCounter: leads.length };
+}
+
+type Store = ReturnType<typeof seed>;
+const g = globalThis as unknown as { __crmMock?: Store };
+const store = (g.__crmMock ??= seed());
+
+function applyList<T extends { modified: string }>(rows: T[], opts: ListOptions = {}, searchKeys: (keyof T)[]) {
+  let out = rows;
+  for (const [k, v] of Object.entries(opts.filters ?? {})) {
+    if (v) out = out.filter((r) => String(r[k as keyof T]) === v);
+  }
+  if (opts.search) {
+    const q = opts.search.toLowerCase();
+    out = out.filter((r) => searchKeys.some((k) => String(r[k] ?? "").toLowerCase().includes(q)));
+  }
+  return [...out].sort((a, b) => b.modified.localeCompare(a.modified)).slice(0, opts.limit ?? 100);
+}
+
+// Kleine künstliche Latenz, damit Ladezustände sichtbar werden
+const tick = () => new Promise((r) => setTimeout(r, 120));
+
+export const mockSource: DataSource = {
+  kind: "mock",
+
+  async listLeads(o) {
+    await tick();
+    return applyList(store.leads, o, ["lead_name", "company_name", "email_id", "mobile_no"]);
+  },
+  async getLead(n) {
+    await tick();
+    return store.leads.find((l) => l.name === n) ?? null;
+  },
+  async createLead(data) {
+    await tick();
+    store.leadCounter += 1;
+    const now = new Date().toISOString();
+    const lead: Lead = {
+      ...data,
+      name: `CRM-LEAD-2026-${String(store.leadCounter).padStart(5, "0")}`,
+      lead_name: [data.first_name, data.last_name].filter(Boolean).join(" "),
+      status: data.status ?? "Lead",
+      creation: now,
+      modified: now,
+    };
+    store.leads.push(lead);
+    return lead;
+  },
+  async setLeadStatus(n, status) {
+    const l = store.leads.find((x) => x.name === n);
+    if (!l) throw new Error("Lead nicht gefunden");
+    l.status = status;
+    l.modified = new Date().toISOString();
+  },
+
+  async listOpportunities(o) {
+    await tick();
+    return applyList(store.opportunities, o, ["title", "customer_name", "party_name"]);
+  },
+  async getOpportunity(n) {
+    await tick();
+    return store.opportunities.find((x) => x.name === n) ?? null;
+  },
+  async setOpportunityStage(n, stage) {
+    const o = store.opportunities.find((x) => x.name === n);
+    if (!o) throw new Error("Opportunity nicht gefunden");
+    o.sales_stage = stage;
+    o.modified = new Date().toISOString();
+  },
+
+  async listCustomers(o) {
+    await tick();
+    return applyList(store.customers, o, ["customer_name", "email_id", "territory"]);
+  },
+  async getCustomer(n) {
+    await tick();
+    return store.customers.find((x) => x.name === n) ?? null;
+  },
+
+  async listContacts(o) {
+    await tick();
+    return applyList(store.contacts, o, ["full_name", "email_id", "company_name", "mobile_no"]);
+  },
+
+  async listToDos(o) {
+    await tick();
+    return applyList(store.todos, o, ["description", "reference_name"]);
+  },
+  async setToDoStatus(n, status) {
+    const t = store.todos.find((x) => x.name === n);
+    if (!t) throw new Error("Aufgabe nicht gefunden");
+    t.status = status;
+    t.modified = new Date().toISOString();
+  },
+};

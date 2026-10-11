@@ -1,0 +1,296 @@
+"use client";
+
+import { ENERGIE_FARBEN } from "@/lib/farben";
+import { formatLeistung } from "@/lib/format";
+
+/**
+ * Energiefluss der Anlage im Augenblick.
+ *
+ * Vier Knoten um eine Mitte: Erzeugung oben, Speicher links, Verbrauch
+ * unten, Netz rechts. Die Staerke einer Leitung entspricht der Leistung,
+ * die laufenden Punkte zeigen die Flussrichtung.
+ *
+ * Die Bewegung ist hier nicht Schmuck: Ob Strom gerade ins Netz geht
+ * oder aus dem Netz kommt, ist die Kernaussage - und eine Richtung
+ * laesst sich schwer anders als durch Bewegung zeigen. Bei reduzierter
+ * Bewegungseinstellung steht sie still, die Werte bleiben lesbar.
+ */
+
+export interface Flusswerte {
+  /** Momentane Erzeugung in kW. */
+  erzeugung: number;
+  /** Momentaner Verbrauch in kW. */
+  verbrauch: number;
+  /** Positiv = Einspeisung ins Netz, negativ = Bezug aus dem Netz. */
+  netz: number;
+  /** Positiv = Speicher wird geladen, negativ = Speicher entlaedt. */
+  speicher: number;
+  /** Ladezustand des Speichers in Prozent. */
+  speicherSoc?: number;
+}
+
+/**
+ * Anordnung der Knoten.
+ *
+ * Der obere und der untere Knoten brauchen Platz fuer ihre Beschriftung
+ * ausserhalb des Kreises - deshalb sitzen sie nicht am Rand des
+ * Zeichenbereichs, sondern mit Abstand dazu.
+ */
+const MITTE = { x: 200, y: 168 };
+const KNOTEN = {
+  erzeugung: { x: 200, y: 64 },
+  speicher: { x: 52, y: 168 },
+  verbrauch: { x: 200, y: 272 },
+  netz: { x: 348, y: 168 },
+};
+
+const KNOTEN_RADIUS = 24;
+
+function leitungsstaerke(leistung: number, maximum: number): number {
+  if (Math.abs(leistung) < 0.05) return 0;
+  const anteil = Math.min(1, Math.abs(leistung) / Math.max(1, maximum));
+  // Mindeststaerke, damit auch kleine Fluesse sichtbar bleiben.
+  return 2.5 + anteil * 7.5;
+}
+
+export function Energiefluss({ werte }: { werte: Flusswerte }) {
+  // Formatierung hier statt als Prop: Serverkomponenten duerfen keine
+  // Funktionen an Clientkomponenten uebergeben.
+  const zeige = (kw: number) => {
+    const l = formatLeistung(kw);
+    return `${l.wert} ${l.einheit}`;
+  };
+
+  const maximum = Math.max(
+    werte.erzeugung,
+    werte.verbrauch,
+    Math.abs(werte.netz),
+    Math.abs(werte.speicher),
+    1,
+  );
+
+  const leitungen = [
+    {
+      schluessel: "erzeugung",
+      von: KNOTEN.erzeugung,
+      nach: MITTE,
+      leistung: werte.erzeugung,
+      farbe: ENERGIE_FARBEN.erzeugung,
+      // Richtung: true = von "von" nach "nach".
+      hinein: true,
+    },
+    {
+      schluessel: "verbrauch",
+      von: MITTE,
+      nach: KNOTEN.verbrauch,
+      leistung: werte.verbrauch,
+      farbe: ENERGIE_FARBEN.eigenverbrauch,
+      hinein: true,
+    },
+    {
+      schluessel: "netz",
+      von: MITTE,
+      nach: KNOTEN.netz,
+      leistung: Math.abs(werte.netz),
+      farbe: werte.netz >= 0 ? ENERGIE_FARBEN.einspeisung : ENERGIE_FARBEN.netzbezug,
+      hinein: werte.netz >= 0,
+    },
+    {
+      schluessel: "speicher",
+      von: MITTE,
+      nach: KNOTEN.speicher,
+      leistung: Math.abs(werte.speicher),
+      farbe: ENERGIE_FARBEN.speicher,
+      hinein: werte.speicher >= 0,
+    },
+  ];
+
+  return (
+    <div className="flex flex-col items-center">
+      <svg
+        viewBox="0 0 400 350"
+        className="w-full max-w-lg"
+        role="img"
+        aria-label={
+          `Energiefluss: Erzeugung ${zeige(werte.erzeugung)}, ` +
+          `Verbrauch ${zeige(werte.verbrauch)}, ` +
+          `${werte.netz >= 0 ? "Einspeisung" : "Netzbezug"} ${zeige(Math.abs(werte.netz))}, ` +
+          `Speicher ${werte.speicher >= 0 ? "lädt" : "entlädt"} ${zeige(Math.abs(werte.speicher))}`
+        }
+      >
+        {/* Leitungen im Ruhezustand */}
+        {leitungen.map((leitung) => (
+          <line
+            key={`grund-${leitung.schluessel}`}
+            x1={leitung.von.x}
+            y1={leitung.von.y}
+            x2={leitung.nach.x}
+            y2={leitung.nach.y}
+            className="strich-linie"
+            strokeWidth="10"
+            strokeLinecap="round"
+          />
+        ))}
+
+        {/* Aktive Leitungen mit laufenden Punkten */}
+        {leitungen.map((leitung) => {
+          const staerke = leitungsstaerke(leitung.leistung, maximum);
+          if (staerke === 0) return null;
+
+          const von = leitung.hinein ? leitung.von : leitung.nach;
+          const nach = leitung.hinein ? leitung.nach : leitung.von;
+
+          return (
+            <g key={leitung.schluessel}>
+              <line
+                x1={von.x}
+                y1={von.y}
+                x2={nach.x}
+                y2={nach.y}
+                stroke={leitung.farbe}
+                strokeWidth={staerke}
+                strokeLinecap="round"
+                opacity="0.25"
+              />
+              <line
+                x1={von.x}
+                y1={von.y}
+                x2={nach.x}
+                y2={nach.y}
+                stroke={leitung.farbe}
+                strokeWidth={staerke}
+                strokeLinecap="round"
+                strokeDasharray="4 20"
+                style={{
+                  animation: "fliessen 1.1s linear infinite",
+                }}
+              />
+            </g>
+          );
+        })}
+
+        {/* Mittelknoten */}
+        <circle
+          cx={MITTE.x}
+          cy={MITTE.y}
+          r="26"
+          className="fuellung-ebene strich-linie"
+          strokeWidth="2"
+        />
+        <text
+          x={MITTE.x}
+          y={MITTE.y}
+          textAnchor="middle"
+          dominantBaseline="middle"
+          className="fuellung-zart text-[10px]"
+        >
+          Verteilung
+        </text>
+
+        <Knoten
+          position={KNOTEN.erzeugung}
+          zeichen="☀"
+          label="Erzeugung"
+          wert={zeige(werte.erzeugung)}
+          farbe={ENERGIE_FARBEN.erzeugung}
+          aktiv={werte.erzeugung > 0.05}
+        />
+        <Knoten
+          position={KNOTEN.verbrauch}
+          zeichen="⌂"
+          label="Verbrauch"
+          wert={zeige(werte.verbrauch)}
+          farbe={ENERGIE_FARBEN.eigenverbrauch}
+          aktiv={werte.verbrauch > 0.05}
+        />
+        <Knoten
+          position={KNOTEN.netz}
+          zeichen="⇅"
+          label={werte.netz >= 0 ? "Einspeisung" : "Netzbezug"}
+          wert={zeige(Math.abs(werte.netz))}
+          farbe={
+            werte.netz >= 0 ? ENERGIE_FARBEN.einspeisung : ENERGIE_FARBEN.netzbezug
+          }
+          aktiv={Math.abs(werte.netz) > 0.05}
+        />
+        <Knoten
+          position={KNOTEN.speicher}
+          zeichen="▮"
+          label={
+            werte.speicherSoc !== undefined
+              ? `Speicher ${Math.round(werte.speicherSoc)} %`
+              : "Speicher"
+          }
+          wert={zeige(Math.abs(werte.speicher))}
+          farbe={ENERGIE_FARBEN.speicher}
+          aktiv={Math.abs(werte.speicher) > 0.05}
+        />
+      </svg>
+    </div>
+  );
+}
+
+function Knoten({
+  position,
+  zeichen,
+  label,
+  wert,
+  farbe,
+  aktiv,
+}: {
+  position: { x: number; y: number };
+  zeichen: string;
+  label: string;
+  wert: string;
+  farbe: string;
+  aktiv: boolean;
+}) {
+  // Beschriftung immer ausserhalb des Kreises: oberhalb beim oberen
+  // Knoten, sonst unterhalb. Der Abstand ist der Radius plus Zeilenhoehe.
+  const nachOben = position.y < MITTE.y;
+  const textX = position.x;
+  const textY = nachOben
+    ? position.y - KNOTEN_RADIUS - 20
+    : position.y + KNOTEN_RADIUS + 16;
+
+  return (
+    <g>
+      <circle
+        cx={position.x}
+        cy={position.y}
+        r={KNOTEN_RADIUS}
+        className="fuellung-ebene"
+        stroke={aktiv ? farbe : "currentColor"}
+        strokeWidth={aktiv ? 2.5 : 1.5}
+        opacity={aktiv ? 1 : 0.5}
+      />
+      <text
+        x={position.x}
+        y={position.y}
+        textAnchor="middle"
+        dominantBaseline="middle"
+        style={{ fill: aktiv ? farbe : undefined }}
+        className={aktiv ? "text-base" : "fuellung-zart text-base"}
+      >
+        {zeichen}
+      </text>
+
+      <text
+        x={textX}
+        y={textY}
+        textAnchor="middle"
+        className="fuellung-leise text-[10px]"
+      >
+        {label}
+      </text>
+      <text
+        x={textX}
+        y={textY + 13}
+        textAnchor="middle"
+        className="fuellung-stark zahl text-[12px] font-semibold"
+      >
+        {wert}
+      </text>
+    </g>
+  );
+}

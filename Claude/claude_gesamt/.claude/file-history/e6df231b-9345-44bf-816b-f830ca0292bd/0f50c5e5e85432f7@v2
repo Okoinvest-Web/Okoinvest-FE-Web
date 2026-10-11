@@ -1,0 +1,283 @@
+<script setup lang="ts">
+/**
+ * Bauvertragsmeldung nach ÖNORM B 2110.
+ *
+ * Bewusst kein Freitextfeld: Behinderungsanzeige und Bedenkenanmeldung sind
+ * formgebundene Erklärungen mit Rechtsfolgen. Die Oberfläche führt deshalb
+ * durch die Angaben, die es braucht — und sagt klar, dass der Sachverhalt nach
+ * dem Absenden nicht mehr geändert werden kann.
+ */
+import { computed, onMounted, ref } from 'vue'
+import { useRoute } from 'vue-router'
+
+import AppIcon from '@/components/AppIcon.vue'
+import FotoAufnahme from '@/components/FotoAufnahme.vue'
+import StatusAbzeichen from '@/components/StatusAbzeichen.vue'
+import { resource } from '@/lib/api'
+import { datumZeit, frappeDatetime } from '@/lib/format'
+import type { Foto } from '@/lib/typen'
+import { usePortal } from '@/stores/portal'
+import { useUi } from '@/stores/ui'
+
+const route = useRoute()
+const store = usePortal()
+const ui = useUi()
+
+interface Meldung {
+  name: string
+  art: string
+  betreff: string
+  anlage: string
+  status: string
+  eingetreten_am: string
+  gemeldet_am: string
+  verzoegerung_stunden?: number
+  auswirkung_frist_tage?: number
+  antwort?: string
+  anerkannte_frist_tage?: number
+}
+
+const ARTEN = [
+  {
+    wert: 'Behinderungsanzeige',
+    titel: 'Behinderung',
+    hinweis:
+      'Etwas hindert Sie an der Ausführung — fehlendes Material, gesperrter Zugang, ' +
+      'Vorleistung nicht fertig. Unverzüglich anzuzeigen.',
+  },
+  {
+    wert: 'Bedenkenanmeldung',
+    titel: 'Bedenken',
+    hinweis:
+      'Eine Anordnung, ein Plan oder ein Material erscheint Ihnen untauglich. ' +
+      'Die Anmeldung wahrt Ihre Rechte.',
+  },
+  {
+    wert: 'Mehrkostenankuendigung',
+    titel: 'Mehrkosten',
+    hinweis:
+      'Eine Leistungsabweichung verursacht Mehrkosten. Dem Grunde nach jetzt ankündigen, ' +
+      'die Höhe kann nachgereicht werden.',
+  },
+  {
+    wert: 'Leistungsabweichung',
+    titel: 'Abweichung',
+    hinweis: 'Die tatsächliche Leistung weicht vom Auftrag ab.',
+  },
+  { wert: 'Sonstige Mitteilung', titel: 'Sonstiges', hinweis: 'Alles Übrige.' },
+]
+
+const bisherige = ref<Meldung[]>([])
+const laedt = ref(true)
+const speichert = ref(false)
+
+const art = ref('Behinderungsanzeige')
+const anlage = ref('')
+const auftrag = ref((route.query.auftrag as string) ?? '')
+const betreff = ref('')
+const eingetretenAm = ref(frappeDatetime().slice(0, 16).replace(' ', 'T'))
+const sachverhalt = ref('')
+const auswirkungLeistung = ref('')
+const fristTage = ref<number | null>(null)
+const kosten = ref<number | null>(null)
+const kostenDemGrunde = ref(false)
+const fotos = ref<Foto[]>([])
+
+const gewaehlteArt = computed(() => ARTEN.find((a) => a.wert === art.value))
+const istMehrkosten = computed(() => art.value === 'Mehrkostenankuendigung')
+
+const kannAbsenden = computed(
+  () =>
+    anlage.value &&
+    betreff.value.trim() &&
+    sachverhalt.value.trim() &&
+    eingetretenAm.value &&
+    (!istMehrkosten.value || kostenDemGrunde.value),
+)
+
+async function laden() {
+  laedt.value = true
+  try {
+    bisherige.value = await resource.liste<Meldung>('Bauvertragsmeldung', {
+      fields: ['name', 'art', 'betreff', 'anlage', 'status', 'eingetreten_am', 'gemeldet_am',
+               'verzoegerung_stunden', 'auswirkung_frist_tage', 'antwort', 'anerkannte_frist_tage'],
+      order_by: 'gemeldet_am desc',
+      limit_page_length: 30,
+    })
+  } catch {
+    // Offline: Formular bleibt nutzbar.
+  } finally {
+    laedt.value = false
+  }
+}
+
+async function absenden() {
+  if (!store.daten) return
+  speichert.value = true
+  try {
+    await resource.anlegen('Bauvertragsmeldung', {
+      doctype: 'Bauvertragsmeldung',
+      art: art.value,
+      supplier: store.daten.supplier,
+      anlage: anlage.value,
+      auftrag: auftrag.value || undefined,
+      status: 'Eingegangen',
+      betreff: betreff.value,
+      eingetreten_am: eingetretenAm.value.replace('T', ' ') + ':00',
+      sachverhalt: sachverhalt.value,
+      auswirkung_leistung: auswirkungLeistung.value,
+      auswirkung_frist_tage: fristTage.value ?? 0,
+      auswirkung_kosten: kosten.value ?? 0,
+      kosten_dem_grunde_nach: kostenDemGrunde.value ? 1 : 0,
+      fotos: fotos.value.map(({ vorschau: _v, ...foto }) => foto),
+    })
+    ui.erfolg('Meldung abgesetzt. Die Bauleitung wurde benachrichtigt.')
+    betreff.value = ''
+    sachverhalt.value = ''
+    auswirkungLeistung.value = ''
+    fristTage.value = null
+    kosten.value = null
+    fotos.value = []
+    await laden()
+  } catch (fehler) {
+    ui.fehler((fehler as Error).message)
+  } finally {
+    speichert.value = false
+  }
+}
+
+onMounted(async () => {
+  if (!store.geladen) await store.laden()
+  anlage.value = store.aktuelleBaustelle || store.baustellen[0]?.name || ''
+  await laden()
+})
+</script>
+
+<template>
+  <div class="mx-auto max-w-feld space-y-4">
+    <header>
+      <h2 class="text-xl font-bold">Meldung an die Bauleitung</h2>
+      <p class="text-sm text-slate-500">
+        Behinderung, Bedenken oder Mehrkosten nach ÖNORM B 2110.
+      </p>
+    </header>
+
+    <!-- Art der Meldung -->
+    <section class="karte p-4">
+      <span class="beschriftung">Worum geht es?</span>
+      <div class="grid gap-2 tablet:grid-cols-2">
+        <button
+          v-for="eintrag in ARTEN"
+          :key="eintrag.wert"
+          type="button"
+          class="min-h-[52px] rounded-xl border-2 px-4 text-left text-base font-semibold"
+          :class="
+            art === eintrag.wert
+              ? 'border-marke-600 bg-marke-50 text-marke-800 dark:bg-marke-900/40 dark:text-marke-200'
+              : 'border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-900'
+          "
+          @click="art = eintrag.wert"
+        >
+          {{ eintrag.titel }}
+        </button>
+      </div>
+      <p class="mt-2 text-sm text-slate-600 dark:text-slate-300">{{ gewaehlteArt?.hinweis }}</p>
+    </section>
+
+    <section class="karte space-y-3 p-4">
+      <div class="grid gap-3 tablet:grid-cols-2">
+        <label>
+          <span class="beschriftung">Baustelle</span>
+          <select v-model="anlage" class="feld">
+            <option value="">– bitte wählen –</option>
+            <option v-for="b in store.baustellen" :key="b.name" :value="b.name">
+              {{ b.anlage_name }}
+            </option>
+          </select>
+        </label>
+        <label>
+          <span class="beschriftung">Eingetreten am</span>
+          <input v-model="eingetretenAm" class="feld" type="datetime-local" />
+        </label>
+      </div>
+      <p class="text-xs text-slate-500">
+        Der Zeitpunkt des Ereignisses ist entscheidend: Behinderung und Bedenken sind
+        unverzüglich anzuzeigen. Der Abstand zur Meldung wird festgehalten.
+      </p>
+
+      <label>
+        <span class="beschriftung">Betreff</span>
+        <input v-model="betreff" class="feld" placeholder="Kurz und eindeutig" />
+      </label>
+
+      <label>
+        <span class="beschriftung">Sachverhalt</span>
+        <textarea v-model="sachverhalt" class="feld min-h-[140px]" rows="5"
+                  placeholder="Was ist geschehen, welche Leistung ist betroffen, seit wann?" />
+      </label>
+
+      <label>
+        <span class="beschriftung">Betroffene Leistung</span>
+        <input v-model="auswirkungLeistung" class="feld"
+               placeholder="z. B. Modulmontage Feld C" />
+      </label>
+
+      <div class="grid gap-3 tablet:grid-cols-2">
+        <label>
+          <span class="beschriftung">Geltend gemachte Fristverlängerung (Tage)</span>
+          <input v-model.number="fristTage" class="feld tabular-nums" inputmode="numeric" />
+        </label>
+        <label v-if="istMehrkosten">
+          <span class="beschriftung">Geschätzte Mehrkosten (EUR)</span>
+          <input v-model.number="kosten" class="feld tabular-nums" inputmode="decimal" />
+        </label>
+      </div>
+
+      <label v-if="istMehrkosten" class="flex items-start gap-3 rounded-lg bg-amber-50 p-3
+                   text-sm dark:bg-amber-900/30">
+        <input v-model="kostenDemGrunde" type="checkbox" class="mt-0.5 h-5 w-5 shrink-0" />
+        <span class="text-amber-900 dark:text-amber-200">
+          Ich kündige Mehrkosten dem Grunde nach an. Die Höhe reiche ich nach.
+        </span>
+      </label>
+    </section>
+
+    <section class="karte p-4">
+      <FotoAufnahme v-model="fotos" titel="Fotos zum Sachverhalt" />
+    </section>
+
+    <div class="rounded-xl border border-slate-300 bg-slate-50 p-3 text-sm
+                dark:border-slate-700 dark:bg-slate-800">
+      <AppIcon name="warnung" :groesse="16" class="inline text-slate-500" />
+      Nach dem Absenden ist der Sachverhalt unveränderlich. Ergänzungen erfolgen als
+      weitere Meldung.
+    </div>
+
+    <button class="knopf-primaer w-full" :disabled="!kannAbsenden || speichert" @click="absenden">
+      <AppIcon name="check" :groesse="20" />
+      {{ speichert ? 'Wird gesendet …' : 'Meldung absenden' }}
+    </button>
+
+    <section v-if="bisherige.length">
+      <h3 class="mb-2 font-semibold">Bisherige Meldungen</h3>
+      <ul class="space-y-2 pb-4">
+        <li v-for="m in bisherige" :key="m.name" class="karte p-3">
+          <div class="flex items-center gap-2">
+            <span class="flex-1 truncate text-sm font-semibold">{{ m.betreff }}</span>
+            <StatusAbzeichen :wert="m.status === 'Eingegangen' ? 'Offen' : m.status" klein />
+          </div>
+          <div class="text-xs text-slate-500">
+            {{ m.art }} · gemeldet {{ datumZeit(m.gemeldet_am) }}
+            <span v-if="m.verzoegerung_stunden"> · {{ m.verzoegerung_stunden }} h nach Eintritt</span>
+          </div>
+          <p v-if="m.antwort" class="mt-1 text-xs text-slate-600 dark:text-slate-300">
+            {{ m.antwort }}
+            <span v-if="m.anerkannte_frist_tage" class="font-semibold text-ok">
+              (+{{ m.anerkannte_frist_tage }} Tage anerkannt)
+            </span>
+          </p>
+        </li>
+      </ul>
+    </section>
+  </div>
+</template>

@@ -1,0 +1,300 @@
+// @vitest-environment happy-dom
+/**
+ * Tests für die Bausteine, die auf jeder Seite vorkommen.
+ *
+ * Die Logikschicht war schon abgedeckt, die Oberfläche gar nicht - und
+ * genau dort lagen die Fehler, die zweimal an Build und Tests vorbei sind
+ * (leere Seite ohne Konsolenfehler). Diese Tests prüfen deshalb das, was
+ * am Schirm ankommt: Text, Rollen, Beschriftungen.
+ */
+import { beforeEach, describe, expect, it } from 'vitest'
+import { mount } from '@vue/test-utils'
+import { RouterLinkStub } from '@vue/test-utils'
+import { createPinia, setActivePinia } from 'pinia'
+
+import StatCard from '@/components/StatCard.vue'
+import StatusDot from '@/components/StatusDot.vue'
+import ErrorState from '@/components/ErrorState.vue'
+import DataTable from '@/components/DataTable.vue'
+import PageHeader from '@/components/PageHeader.vue'
+
+const global = { stubs: { RouterLink: RouterLinkStub } }
+
+// DataTable merkt sich Sortierung und Spaltenwahl in einem Pinia-Store,
+// sobald sie eine `tabellenId` bekommt.
+beforeEach(() => {
+  setActivePinia(createPinia())
+  localStorage.clear()
+})
+
+describe('StatCard', () => {
+  it('zeigt Beschriftung und Wert', () => {
+    const w = mount(StatCard, { props: { label: 'Geräte', wert: 9 }, global })
+    expect(w.text()).toContain('Geräte')
+    expect(w.text()).toContain('9')
+  })
+
+  it('zeigt einen Gedankenstrich statt einer leeren Zahl', () => {
+    const w = mount(StatCard, { props: { label: 'Geräte', wert: null }, global })
+    expect(w.text()).toContain('–')
+  })
+
+  it('zeigt die Null als Null, nicht als fehlenden Wert', () => {
+    // Häufiger Fehlgriff: 0 ist falsy, aber eine gültige Kennzahl.
+    const w = mount(StatCard, { props: { label: 'Kritisch', wert: 0 }, global })
+    expect(w.text()).toContain('0')
+    expect(w.text()).not.toContain('–')
+  })
+
+  it('ist ohne Ziel kein Link - ein Link ins Leere wäre eine Tastaturfalle', () => {
+    const w = mount(StatCard, { props: { label: 'Geräte', wert: 9 }, global })
+    expect(w.findComponent(RouterLinkStub).exists()).toBe(false)
+  })
+
+  it('wird mit Ziel zum Link', () => {
+    const w = mount(StatCard, { props: { label: 'Alarme', wert: 3, to: '/alerts' }, global })
+    expect(w.findComponent(RouterLinkStub).props().to).toBe('/alerts')
+  })
+
+  it('zeigt einen Hinweis nur, wenn es einen gibt', () => {
+    const ohne = mount(StatCard, { props: { label: 'A', wert: 1 }, global })
+    expect(ohne.findComponent(StatusDot).exists()).toBe(false)
+    const mit = mount(StatCard, {
+      props: { label: 'A', wert: 1, hinweis: 'prüfen', level: 'warning' },
+      global,
+    })
+    expect(mit.text()).toContain('prüfen')
+  })
+})
+
+describe('StatusDot', () => {
+  it('nennt den Zustand im Text, nicht nur in der Farbe', () => {
+    // Die Regel aus dem Datenvisualisierungs-Leitfaden: Farbe trägt den
+    // Zustand, Text trägt die Bedeutung. Farbe allein ist für rund acht
+    // Prozent der Männer nicht unterscheidbar.
+    const w = mount(StatusDot, { props: { level: 'critical', text: 'Verify fehlgeschlagen' } })
+    expect(w.text()).toContain('Verify fehlgeschlagen')
+  })
+})
+
+describe('ErrorState', () => {
+  it('meldet sich als Alarm an die Hilfstechnik', () => {
+    const w = mount(ErrorState, { props: { error: 'irgendwas' } })
+    expect(w.attributes('role')).toBe('alert')
+  })
+
+  it('übersetzt die rohe Ausnahme in einen verständlichen Satz', () => {
+    const w = mount(ErrorState, {
+      props: { error: new Error('DoesNotExistError: Network Device XY existiert nicht') },
+    })
+    expect(w.text()).toContain('Nicht gefunden')
+    // Der Klassenname gehört ins Protokoll, nicht in die Hauptmeldung.
+    expect(w.find('p').text()).not.toContain('DoesNotExistError')
+  })
+
+  it('hält die technische Meldung erreichbar, aber eingeklappt', () => {
+    const w = mount(ErrorState, {
+      props: { error: new Error('PermissionError: kein Zugriff') },
+    })
+    const details = w.find('details')
+    expect(details.exists()).toBe(true)
+    expect(details.text()).toContain('PermissionError')
+  })
+
+  it('bietet einen erneuten Versuch an, wenn einer möglich ist', async () => {
+    let gerufen = 0
+    const w = mount(ErrorState, {
+      props: { error: 'x', onRetry: () => (gerufen += 1) },
+    })
+    await w.find('button').trigger('click')
+    expect(gerufen).toBe(1)
+  })
+})
+
+describe('DataTable', () => {
+  const spalten = [
+    { key: 'hostname', label: 'Hostname' },
+    { key: 'ip', label: 'IP', numeric: true },
+  ]
+  const zeilen = [
+    { name: 'a', hostname: 'SW-CORE-01', ip: '10.0.0.1' },
+    { name: 'b', hostname: 'FW-OS-01', ip: '' },
+  ]
+
+  it('schreibt Kopfzeilen als th mit scope - sonst ordnet ein Screenreader nichts zu', () => {
+    const w = mount(DataTable, { props: { columns: spalten, rows: zeilen } })
+    const kopf = w.findAll('th')
+    expect(kopf).toHaveLength(2)
+    expect(kopf[0].attributes('scope')).toBe('col')
+  })
+
+  it('zeigt leere Zellen als Gedankenstrich', () => {
+    const w = mount(DataTable, { props: { columns: spalten, rows: zeilen } })
+    expect(w.findAll('tbody tr')[1].text()).toContain('–')
+  })
+
+  it('meldet eine leere Liste im Klartext', () => {
+    const w = mount(DataTable, {
+      props: { columns: spalten, rows: [], emptyText: 'Kein Gerät gefunden.' },
+    })
+    expect(w.text()).toContain('Kein Gerät gefunden.')
+  })
+
+  it('zeigt beim Laden keine Leermeldung - das wäre eine falsche Aussage', () => {
+    const w = mount(DataTable, {
+      props: { columns: spalten, rows: [], loading: true, emptyText: 'Kein Gerät gefunden.' },
+    })
+    expect(w.text()).toContain('Wird geladen')
+    expect(w.text()).not.toContain('Kein Gerät gefunden.')
+  })
+
+  it('reicht die Zeile an den Klick weiter', async () => {
+    let getroffen = null
+    const w = mount(DataTable, {
+      props: { columns: spalten, rows: zeilen, onRowClick: (z) => (getroffen = z) },
+    })
+    await w.findAll('tbody tr')[0].trigger('click')
+    expect(getroffen.hostname).toBe('SW-CORE-01')
+  })
+})
+
+describe('DataTable – Sortieren, Wählen, Ausgeben', () => {
+  const spalten = [
+    { key: 'host', label: 'Host' },
+    { key: 'last', label: 'Last', numeric: true },
+    { key: 'befund', label: 'Befund' },
+  ]
+  const zeilen = [
+    { name: 'c', host: 'SW-03', last: 30 },
+    { name: 'a', host: 'SW-01', last: 100 },
+    { name: 'b', host: 'SW-02', last: 9 },
+  ]
+
+  const spaltenKoepfe = (w) => w.findAll('thead th')
+  const ersteSpalte = (w) => w.findAll('tbody tr').map((r) => r.findAll('td')[0].text())
+
+  it('bietet Sortierung nur für Spalten mit einem echten Wert an', () => {
+    // „Befund" steht in keiner Zeile - danach gäbe es nichts zu vergleichen.
+    const w = mount(DataTable, { props: { columns: spalten, rows: zeilen } })
+    const koepfe = spaltenKoepfe(w)
+    expect(koepfe[0].find('button').exists()).toBe(true)
+    expect(koepfe[2].find('button').exists()).toBe(false)
+  })
+
+  it('sortiert auf, ab und wieder zurück in die Ausgangsreihenfolge', async () => {
+    // Der dritte Klick stellt die Reihenfolge der Server-Methode wieder her;
+    // die ist meistens die fachlich richtige (Kritisches zuerst).
+    const w = mount(DataTable, { props: { columns: spalten, rows: zeilen } })
+    const knopf = () => spaltenKoepfe(w)[0].find('button')
+
+    await knopf().trigger('click')
+    expect(ersteSpalte(w)).toEqual(['SW-01', 'SW-02', 'SW-03'])
+    await knopf().trigger('click')
+    expect(ersteSpalte(w)).toEqual(['SW-03', 'SW-02', 'SW-01'])
+    await knopf().trigger('click')
+    expect(ersteSpalte(w)).toEqual(['SW-03', 'SW-01', 'SW-02'])
+  })
+
+  it('sortiert Zahlen numerisch, nicht als Zeichenkette', async () => {
+    // Als Text käme 100 vor 30 - der häufigste Sortierfehler überhaupt.
+    const w = mount(DataTable, { props: { columns: spalten, rows: zeilen } })
+    await spaltenKoepfe(w)[1].find('button').trigger('click')
+    expect(w.findAll('tbody tr').map((r) => r.findAll('td')[1].text())).toEqual(['9', '30', '100'])
+  })
+
+  it('meldet die Sortierrichtung an die Hilfstechnik', async () => {
+    const w = mount(DataTable, { props: { columns: spalten, rows: zeilen } })
+    expect(spaltenKoepfe(w)[0].attributes('aria-sort')).toBe('none')
+    await spaltenKoepfe(w)[0].find('button').trigger('click')
+    expect(spaltenKoepfe(w)[0].attributes('aria-sort')).toBe('ascending')
+  })
+
+  it('schiebt Leerwerte ans Ende, egal in welche Richtung sortiert wird', async () => {
+    const mitLuecke = [...zeilen, { name: 'd', host: '', last: null }]
+    const w = mount(DataTable, { props: { columns: spalten, rows: mitLuecke } })
+    await spaltenKoepfe(w)[0].find('button').trigger('click')
+    expect(ersteSpalte(w).at(-1)).toBe('–')
+    await spaltenKoepfe(w)[0].find('button').trigger('click')
+    expect(ersteSpalte(w).at(-1)).toBe('–')
+  })
+
+  it('meldet die gewählten Zeilen nach außen', async () => {
+    const w = mount(DataTable, { props: { columns: spalten, rows: zeilen, waehlbar: true } })
+    await w.findAll('tbody input[type=checkbox]')[1].setValue(true)
+    const gemeldet = w.emitted('auswahl').at(-1)[0]
+    expect(gemeldet).toHaveLength(1)
+    expect(gemeldet[0].host).toBe('SW-01')
+  })
+
+  it('wählt und entwählt alle sichtbaren Zeilen auf einmal', async () => {
+    const w = mount(DataTable, { props: { columns: spalten, rows: zeilen, waehlbar: true } })
+    const alle = w.find('thead input[type=checkbox]')
+    await alle.setValue(true)
+    expect(w.emitted('auswahl').at(-1)[0]).toHaveLength(3)
+    await alle.setValue(false)
+    expect(w.emitted('auswahl').at(-1)[0]).toHaveLength(0)
+  })
+
+  it('verwirft die Auswahl von Zeilen, die ein Filter entfernt hat', async () => {
+    // Sonst träfe eine Sammelaktion etwas, das niemand mehr sieht.
+    const w = mount(DataTable, { props: { columns: spalten, rows: zeilen, waehlbar: true } })
+    await w.find('thead input[type=checkbox]').setValue(true)
+    await w.setProps({ rows: [zeilen[0]] })
+    expect(w.emitted('auswahl').at(-1)[0]).toHaveLength(1)
+  })
+
+  it('blättert, sobald mehr Zeilen da sind als eine Seite fasst', async () => {
+    const viele = Array.from({ length: 12 }, (_, i) => ({
+      name: String(i),
+      host: 'H' + i,
+      last: i,
+    }))
+    const w = mount(DataTable, { props: { columns: spalten, rows: viele, seitengroesse: 5 } })
+    expect(w.findAll('tbody tr')).toHaveLength(5)
+    expect(w.text()).toContain('1 / 3')
+  })
+
+  it('blendet Spalten aus und lässt die letzte stehen', async () => {
+    // Die Werkzeugleiste erscheint erst ab sechs Zeilen - darüber wäre sie
+    // mehr Zierrat als Hilfe.
+    const genug = Array.from({ length: 8 }, (_, i) => ({ name: String(i), host: 'H' + i, last: i }))
+    const w = mount(DataTable, {
+      props: { columns: spalten, rows: genug, tabellenId: 'test-spalten' },
+    })
+    await w
+      .findAll('button')
+      .find((b) => b.text().startsWith('Spalten'))
+      .trigger('click')
+    const haken = w.findAll('input[type=checkbox]')
+    await haken[0].trigger('change')
+    expect(spaltenKoepfe(w)).toHaveLength(2)
+  })
+
+  it('merkt sich die Sortierung unter der Tabellenkennung', async () => {
+    const eins = mount(DataTable, {
+      props: { columns: spalten, rows: zeilen, tabellenId: 'test-merken' },
+    })
+    await spaltenKoepfe(eins)[0].find('button').trigger('click')
+
+    // Zweite Tabelle mit derselben Kennung übernimmt die Einstellung.
+    const zwei = mount(DataTable, {
+      props: { columns: spalten, rows: zeilen, tabellenId: 'test-merken' },
+    })
+    expect(ersteSpalte(zwei)).toEqual(['SW-01', 'SW-02', 'SW-03'])
+  })
+
+  it('läuft ohne Tabellenkennung auch ohne Pinia', () => {
+    // Eine reine Anzeigetabelle soll keinen Store voraussetzen.
+    setActivePinia(undefined)
+    const w = mount(DataTable, { props: { columns: spalten, rows: zeilen } })
+    expect(w.findAll('tbody tr')).toHaveLength(3)
+  })
+})
+
+describe('PageHeader', () => {
+  it('setzt genau eine Überschrift erster Ordnung', () => {
+    const w = mount(PageHeader, { props: { title: 'Geräte', subtitle: '9 Geräte' } })
+    expect(w.findAll('h1')).toHaveLength(1)
+    expect(w.find('h1').text()).toBe('Geräte')
+  })
+})

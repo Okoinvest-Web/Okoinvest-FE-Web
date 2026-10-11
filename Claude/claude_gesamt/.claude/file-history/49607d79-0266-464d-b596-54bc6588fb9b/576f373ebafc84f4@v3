@@ -1,0 +1,174 @@
+import { beforeEach, describe, expect, it } from 'vitest'
+import { createHash } from 'node:crypto'
+import { mockRequest, resetMockData } from '@/api/mock/server.js'
+import { kanonisch, sha256 } from '@/api/mock/sha256.js'
+import { GENESIS_HASH, berechneHash } from '@/api/mock/methods/audit.js'
+import { seedAuditLog } from '@/api/mock/seed-audit.js'
+import { table } from '@/api/mock/db.js'
+
+const ruf = (url, params) => mockRequest({ url, params })
+
+beforeEach(() => {
+  resetMockData()
+  seedAuditLog()
+})
+
+describe('SHA-256', () => {
+  // Offizielle Testvektoren aus FIPS 180-4.
+  it.each([
+    ['', 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'],
+    ['abc', 'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad'],
+    [
+      'abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq',
+      '248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1',
+    ],
+  ])('entspricht dem Testvektor für %s', (eingabe, erwartet) => {
+    expect(sha256(eingabe)).toBe(erwartet)
+  })
+
+  it('stimmt mit Node für UTF-8, lange Eingaben und Emoji überein', () => {
+    const faelle = [
+      'Ökovolt Solartechnik',
+      'a'.repeat(1000),
+      'Präfix 10.10.0.0/16 · Dose A02-D14 🔌',
+      'x'.repeat(55), // direkt an der Blockgrenze
+      'x'.repeat(56),
+      'x'.repeat(64),
+    ]
+    for (const text of faelle) {
+      expect(sha256(text), text.slice(0, 20)).toBe(
+        createHash('sha256').update(text, 'utf8').digest('hex'),
+      )
+    }
+  })
+})
+
+describe('Kanonische JSON-Form', () => {
+  it('ist unabhängig von der Schlüsselreihenfolge', () => {
+    expect(kanonisch({ b: 1, a: 2 })).toBe(kanonisch({ a: 2, b: 1 }))
+  })
+
+  it('unterscheidet aber unterschiedliche Werte', () => {
+    expect(kanonisch({ a: 1 })).not.toBe(kanonisch({ a: 2 }))
+  })
+
+  it('behält die Reihenfolge in Listen bei', () => {
+    expect(kanonisch([1, 2])).not.toBe(kanonisch([2, 1]))
+  })
+})
+
+describe('netops.api.audit.verify_chain', () => {
+  it('bestätigt eine unversehrte Kette', async () => {
+    const ergebnis = await ruf('netops.api.audit.verify_chain', {})
+    expect(ergebnis.ok).toBe(true)
+    expect(ergebnis.length).toBeGreaterThan(5)
+    expect(ergebnis.broken_at).toBeNull()
+  })
+
+  it('beginnt mit dem Genesis-Hash', () => {
+    expect(table('Audit Entry')[0].prev_hash).toBe(GENESIS_HASH)
+  })
+
+  it('verkettet jeden Eintrag mit seinem Vorgänger', () => {
+    const eintraege = table('Audit Entry')
+    for (let i = 1; i < eintraege.length; i++) {
+      expect(eintraege[i].prev_hash).toBe(eintraege[i - 1].entry_hash)
+    }
+  })
+
+  it('erkennt einen nachträglich veränderten Eintrag', async () => {
+    const eintraege = table('Audit Entry')
+    eintraege[4].object_name = 'MANIPULIERT'
+
+    const ergebnis = await ruf('netops.api.audit.verify_chain', {})
+    expect(ergebnis.ok).toBe(false)
+    expect(ergebnis.broken_at).toBe(eintraege[4].name)
+    expect(ergebnis.reason).toMatch(/verändert/)
+    expect(ergebnis.checked_until).toBe(4)
+  })
+
+  it('erkennt einen entfernten Eintrag', async () => {
+    const eintraege = table('Audit Entry')
+    const entferntesName = eintraege[3].name
+    eintraege.splice(3, 1)
+
+    const ergebnis = await ruf('netops.api.audit.verify_chain', {})
+    expect(ergebnis.ok).toBe(false)
+    expect(ergebnis.broken_at).not.toBe(entferntesName)
+    expect(ergebnis.reason).toMatch(/entfernt|umgehängt/)
+  })
+
+  it('erkennt einen gefälschten Hash', async () => {
+    const eintraege = table('Audit Entry')
+    eintraege[2].entry_hash = 'f'.repeat(64)
+
+    const ergebnis = await ruf('netops.api.audit.verify_chain', {})
+    expect(ergebnis.ok).toBe(false)
+    expect(ergebnis.broken_at).toBe(eintraege[2].name)
+  })
+
+  it('der Hash hängt an jedem geschützten Feld', () => {
+    const basis = {
+      timestamp: '2026-09-18 10:00:00',
+      user: 'a@b.test',
+      action: 'insert',
+      object_type: 'Network Device',
+      object_name: 'FW-OS-01',
+      payload_hash: 'abc',
+      prev_hash: GENESIS_HASH,
+    }
+    const original = berechneHash(basis)
+
+    for (const feld of Object.keys(basis)) {
+      const veraendert = { ...basis, [feld]: basis[feld] + 'X' }
+      expect(berechneHash(veraendert), feld).not.toBe(original)
+    }
+  })
+})
+
+describe('Audit als append-only', () => {
+  it('protokolliert jeden Schreibvorgang', async () => {
+    const vorher = (await ruf('netops.api.audit.verify_chain', {})).length
+
+    await ruf('frappe.client.insert', {
+      doc: { doctype: 'Site', site_name: 'Testraum B', tenant: 'TEN-0001' },
+    })
+
+    const nachher = await ruf('netops.api.audit.verify_chain', {})
+    expect(nachher.length).toBe(vorher + 1)
+    expect(nachher.ok).toBe(true)
+
+    const log = await ruf('netops.api.audit.audit_log', { limit: 1 })
+    expect(log[0].action).toBe('insert')
+    expect(log[0].object_type).toBe('Site')
+  })
+
+  it('verweigert das Ändern eines Eintrags', async () => {
+    const name = table('Audit Entry')[0].name
+    await expect(
+      ruf('frappe.client.set_value', {
+        doctype: 'Audit Entry',
+        name,
+        fieldname: { action: 'gefälscht' },
+      }),
+    ).rejects.toThrow(/append-only/)
+  })
+
+  it('verweigert das Löschen eines Eintrags', async () => {
+    const name = table('Audit Entry')[0].name
+    await expect(ruf('frappe.client.delete', { doctype: 'Audit Entry', name })).rejects.toThrow(
+      /append-only/,
+    )
+  })
+
+  it('speichert nur den Hash der Nutzlast, nie die Nutzlast selbst', async () => {
+    await ruf('frappe.client.insert', {
+      doc: { doctype: 'Site', site_name: 'Geheimer Raum', tenant: 'TEN-0001' },
+    })
+
+    const log = await ruf('netops.api.audit.audit_log', { limit: 1 })
+    const alsText = JSON.stringify(log[0])
+    expect(alsText).not.toContain('Geheimer Raum')
+    expect(log[0].payload_hash).toMatch(/^[0-9a-f]{64}$/)
+  })
+})

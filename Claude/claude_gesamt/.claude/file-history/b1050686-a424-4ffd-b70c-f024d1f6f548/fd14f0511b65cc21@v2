@@ -1,0 +1,231 @@
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+
+import {
+  FAKTOREN,
+  bewerte,
+  pruefeNachvollziehbarkeit,
+  stelleBilanzAuf,
+  type Bilanzposition,
+} from "./ccf.ts";
+
+/**
+ * Diese Zahlen gehen in einen Nachhaltigkeitsbericht, den ein
+ * Wirtschaftsprüfer bestätigt. Eine doppelt gezählte Gutschrift ist
+ * dort kein Rundungsfehler, sondern eine falsche Angabe.
+ */
+
+function position(teil: Partial<Bilanzposition> = {}): Bilanzposition {
+  return {
+    scope: 2,
+    kategorie: "Bezogener Strom",
+    bezeichnung: "Netzbezug Produktionshalle",
+    menge: 100_000,
+    einheit: "kWh",
+    faktor: FAKTOREN.strommix_at.faktor,
+    faktorEinheit: FAKTOREN.strommix_at.einheit,
+    faktorQuelle: FAKTOREN.strommix_at.quelle,
+    herkunft: "Gemessen",
+    ...teil,
+  };
+}
+
+describe("bewerte", () => {
+  it("multipliziert Menge mit Faktor", () => {
+    const p = bewerte(position({ menge: 1000, faktor: 0.158 }));
+    assert.equal(p.emissionKg, 158);
+  });
+
+  it("lässt negative Mengen zu", () => {
+    // Eine nachträglich berichtigte Rechnung mindert die Menge.
+    const p = bewerte(position({ menge: -500, faktor: 0.2 }));
+    assert.equal(p.emissionKg, -100);
+  });
+});
+
+describe("stelleBilanzAuf", () => {
+  it("summiert je Scope getrennt", () => {
+    const b = stelleBilanzAuf([
+      position({ scope: 1, menge: 1000, faktor: 2.67, kategorie: "Diesel" }),
+      position({ scope: 2, menge: 100_000, faktor: 0.158 }),
+      position({ scope: 3, menge: 5000, faktor: 0.158, kategorie: "Pendeln" }),
+    ]);
+
+    assert.equal(b.scope1Kg, 2670);
+    assert.equal(b.scope2StandortKg, 15800);
+    assert.equal(b.scope3Kg, 790);
+  });
+
+  it("berichtet Scope 2 standortbasiert und marktbasiert getrennt", () => {
+    // Beide Zahlen sind richtig und beantworten verschiedene Fragen.
+    // Nach ESRS E1 müssen beide ausgewiesen werden.
+    const b = stelleBilanzAuf([
+      position({ scope: 2, menge: 100_000, faktor: 0.158 }),
+      position({
+        scope: 2,
+        menge: 100_000,
+        faktor: 0,
+        marktbasiert: true,
+        faktorQuelle: FAKTOREN.oekostrom.quelle,
+      }),
+    ]);
+
+    assert.equal(b.scope2StandortKg, 15800);
+    assert.equal(b.scope2MarktKg, 0);
+  });
+
+  it("nimmt ohne Marktnachweis den standortbasierten Wert", () => {
+    // Die konservative Annahme: Ohne Nachweis über das bezogene
+    // Produkt darf niemand einen besseren Faktor ansetzen.
+    const b = stelleBilanzAuf([
+      position({ scope: 2, menge: 100_000, faktor: 0.158 }),
+    ]);
+
+    assert.equal(b.scope2MarktKg, 15800);
+    assert.equal(b.gesamtKg, 15800);
+  });
+
+  it("rechnet die Gesamtsumme mit dem marktbasierten Scope 2", () => {
+    const b = stelleBilanzAuf([
+      position({ scope: 1, menge: 100, faktor: 2.67 }),
+      position({ scope: 2, menge: 100_000, faktor: 0.158 }),
+      position({
+        scope: 2,
+        menge: 100_000,
+        faktor: 0.02,
+        marktbasiert: true,
+      }),
+      position({ scope: 3, menge: 1000, faktor: 0.1 }),
+    ]);
+
+    // 267 + 2000 + 100
+    assert.equal(b.gesamtKg, 2367);
+  });
+
+  it("verrechnet vermiedene Emissionen nicht mit der Bilanz", () => {
+    // Wer Sonnenstrom selbst verbraucht, hat weniger Scope 2 - das
+    // steht dort schon drin. Die vermiedene Menge nochmals abzuziehen,
+    // zählte sie doppelt.
+    const b = stelleBilanzAuf(
+      [position({ scope: 2, menge: 100_000, faktor: 0.158 })],
+      40_000,
+    );
+
+    assert.equal(b.vermiedenKg, 40_000);
+    assert.equal(b.gesamtKg, 15800);
+    assert.ok(b.gesamtKg > 0, "Die Bilanz darf nicht negativ werden");
+  });
+
+  it("rechnet die Gesamtsumme in Tonnen um", () => {
+    const b = stelleBilanzAuf([
+      position({ scope: 1, menge: 1000, faktor: 2.67 }),
+    ]);
+
+    assert.equal(b.gesamtT, 2.67);
+  });
+
+  it("bestimmt den Anteil gemessener Positionen", () => {
+    const b = stelleBilanzAuf([
+      position({ herkunft: "Gemessen" }),
+      position({ herkunft: "Gemessen" }),
+      position({ herkunft: "Geschaetzt" }),
+      position({ herkunft: "ERP" }),
+    ]);
+
+    assert.equal(b.messanteil, 0.5);
+  });
+
+  it("zählt Positionen ohne belegte Faktorquelle", () => {
+    const b = stelleBilanzAuf([
+      position(),
+      position({ faktorQuelle: "" }),
+      position({ faktorQuelle: "   " }),
+    ]);
+
+    assert.equal(b.ohneQuelle, 2);
+  });
+
+  it("kommt mit einer leeren Bilanz zurecht", () => {
+    const b = stelleBilanzAuf([]);
+
+    assert.equal(b.gesamtKg, 0);
+    assert.equal(b.messanteil, 0);
+    assert.equal(b.positionen.length, 0);
+  });
+});
+
+describe("pruefeNachvollziehbarkeit", () => {
+  it("beanstandet fehlende Faktorquellen", () => {
+    const b = stelleBilanzAuf([position({ faktorQuelle: "" })]);
+    const p = pruefeNachvollziehbarkeit(b);
+
+    assert.equal(p.faktorenBelegt, false);
+    assert.ok(p.bewertung.includes("nicht ausreichend"));
+  });
+
+  it("bewertet eine überwiegend gemessene Bilanz positiv", () => {
+    const b = stelleBilanzAuf([
+      position({ herkunft: "Gemessen" }),
+      position({ herkunft: "Gemessen" }),
+      position({ herkunft: "Gemessen" }),
+      position({ herkunft: "ERP" }),
+    ]);
+
+    const p = pruefeNachvollziehbarkeit(b);
+    assert.equal(p.faktorenBelegt, true);
+    assert.ok(p.messanteil >= 0.7);
+    assert.ok(p.bewertung.includes("Messwerten"));
+  });
+
+  it("benennt die geschätzten Positionen", () => {
+    const b = stelleBilanzAuf([
+      position({ herkunft: "Gemessen" }),
+      position({ herkunft: "Geschaetzt", bezeichnung: "Geschäftsreisen" }),
+    ]);
+
+    const p = pruefeNachvollziehbarkeit(b);
+    assert.deepEqual(p.geschaetzt, ["Geschäftsreisen"]);
+  });
+});
+
+describe("Emissionsfaktoren", () => {
+  it("führt für jeden Faktor eine Quelle", () => {
+    for (const [name, f] of Object.entries(FAKTOREN)) {
+      assert.ok(f.quelle.length > 5, `${name} ohne Quellenangabe`);
+      assert.ok(f.einheit.includes("CO₂e"), `${name} ohne Einheit`);
+    }
+  });
+
+  it("setzt Strom mit Herkunftsnachweis auf null", () => {
+    assert.equal(FAKTOREN.oekostrom.faktor, 0);
+  });
+
+  it("bewertet den Residualmix höher als den Strommix", () => {
+    // Was übrig bleibt, wenn die Herkunftsnachweise abgezogen sind,
+    // ist zwangsläufig schmutziger als der Durchschnitt.
+    assert.ok(FAKTOREN.residualmix_at.faktor > FAKTOREN.strommix_at.faktor);
+  });
+});
+
+describe("Marktbasiertes Scope 2 mit Wert null", () => {
+  it("meldet null, wenn der Strom vollständig aus Herkunftsnachweisen stammt", () => {
+    // Genau dieser Fall stand zuerst falsch im Code: Eine Summe von
+    // null wurde als "keine Marktdaten" gelesen, und die Bilanz wies
+    // stattdessen den Netzmix aus - also das Gegenteil dessen, was
+    // der Liefervertrag belegt.
+    const b = stelleBilanzAuf([
+      position({ scope: 2, menge: 250_000, faktor: 0.158 }),
+      position({
+        scope: 2,
+        menge: 250_000,
+        faktor: FAKTOREN.oekostrom.faktor,
+        marktbasiert: true,
+        faktorQuelle: FAKTOREN.oekostrom.quelle,
+      }),
+    ]);
+
+    assert.equal(b.scope2StandortKg, 39500);
+    assert.equal(b.scope2MarktKg, 0);
+    assert.equal(b.gesamtKg, 0);
+  });
+});

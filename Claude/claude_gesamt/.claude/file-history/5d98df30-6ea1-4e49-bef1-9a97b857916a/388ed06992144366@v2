@@ -1,0 +1,95 @@
+# Prüfung: Wie weit kann der Masseverwalter zurückgehen?
+
+## 1. Zwei Dinge sind zu trennen
+
+**Die Strafanzeige** unterliegt keiner zeitlichen Beschränkung. Jedermann kann der Staatsanwaltschaft Sachverhalte aus beliebiger Vergangenheit mitteilen. Ob verfolgt werden darf, entscheidet allein die **strafrechtliche Verjährung** nach §§ 57, 58 StGB — bei § 156 Abs 1 und § 147 Abs 2 StGB fünf Jahre.
+
+**Die zivilrechtliche Rückholung** von Zahlungen durch den Insolvenzverwalter — die Anfechtung nach §§ 27 ff IO — ist dagegen **doppelt befristet**: nach der Rückreichweite und nach der Klagefrist.
+
+---
+
+## 2. Die Rückreichweite der Anfechtung
+
+| Anfechtungstatbestand | Voraussetzung | Reicht zurück |
+|---|---|---|
+| § 28 Z 1 IO | Benachteiligungsabsicht, dem Anfechtungsgegner **bekannt** | **10 Jahre** vor Eröffnung |
+| § 28 Z 2 IO | Absicht musste bekannt sein | 2 Jahre |
+| § 28 Z 3 IO | naher Angehöriger, Beweislastumkehr | 2 Jahre |
+| § 29 IO | unentgeltliche Verfügung | 2 Jahre |
+| § 30 IO | Begünstigung eines Gläubigers | 1 Jahr |
+| § 31 IO | Kenntnis der Zahlungsunfähigkeit | 6 Monate |
+
+Konkurseröffnung war der **04.07.2024**. Daraus folgt für die beanstandeten Zahlungen:
+
+| Zahlung | Datum | Abstand zur Eröffnung | Erreichbar über |
+|---|---|---|---|
+| tyb Beteiligungs GmbH, 3 × 30.000 € | 28.12.2020 | 3 Jahre 6 Monate | nur § 28 Z 1 IO |
+| Mikic, 42.500 € | 28.12.2020 | 3 Jahre 6 Monate | nur § 28 Z 1 IO |
+| Mikic, 74.500 € | 04.01.2021 | 3 Jahre 6 Monate | nur § 28 Z 1 IO |
+| Mikic, letzte Überweisung | 24.01.2022 | 2 Jahre 5 Monate | nur § 28 Z 1 IO |
+
+Sämtliche beanstandeten Zahlungen liegen **außerhalb der Zweijahresfrist**. Sie wären ausschließlich über § 28 Z 1 IO anfechtbar gewesen — und der verlangt den Nachweis, dass der Schuldner in Benachteiligungsabsicht handelte **und** dass der Empfänger diese Absicht kannte.
+
+Das ist im Kern dieselbe subjektive Tatseite, die nun strafrechtlich behauptet wird.
+
+---
+
+## 3. Die Klagefrist ist abgelaufen
+
+**§ 43 Abs 2 IO:** Die Anfechtungsklage muss **binnen einem Jahr nach Eröffnung des Insolvenzverfahrens** gerichtlich geltend gemacht werden, widrigens der Anspruch **erlischt**.
+
+Konkurseröffnung 04.07.2024 → **Frist abgelaufen am 04.07.2025.**
+
+(Die Geltendmachung durch Einrede ist zeitlich nicht beschränkt; für die Rückholung bereits geflossener Zahlungen ist jedoch eine Klage erforderlich.)
+
+---
+
+## 4. Was der Masseverwalter tatsächlich getan hat
+
+| Datum | Vorgang | Fundstelle |
+|---|---|---|
+| 04.07.2024 | Konkurseröffnung | ON 2.12 |
+| **16.08.2024** | 1. Bericht, Punkt 10 „Anfechtungen": „Der Masseverwalter geht vom Bestehen von Anfechtungsansprüchen, insbesondere gegen das Amt der Tiroler Landesregierung (Abteilung Tourismus) sowie Roto Frank DST Vertriebs-GmbH" | ON 2.3 |
+| **24.09.2024** | 2. Bericht, Punkt 5: „Aufgrund einer Anfechtung langte bislang folgende Zahlung am Massekonto ein: Roto Frank DST Vertriebs-GmbH € 900,00. **Ob weitere Anfechtungsansprüche bestehen, wird derzeit noch geprüft.**" | ON 2.4 |
+| 09.12.2024 | 3. Bericht — keine Erwähnung der Anfechtung | ON 2.5 |
+| 19.02.2025 | 4. Bericht — keine Erwähnung | ON 2.6 |
+| 13.06.2025 | 5. Bericht — keine Erwähnung | ON 2.7 |
+| **04.07.2025** | **Klagefrist des § 43 Abs 2 IO abgelaufen** | |
+| 06.10.2025 | 6. Bericht — keine Erwähnung | ON 2.8 |
+| **14.01.2026** | Strafanzeige wegen eben jener Zahlungen | ON 2.2 |
+
+**Der Masseverwalter hat die Anfechtung wegen 900,00 € betrieben.** Hinsichtlich der Zahlungen von 90.000,00 € an die tyb Beteiligungs GmbH und 145.613,00 € an Daniela Mikic — jener Zahlungen, die er später als Beiseiteschaffen von Vermögen zur Anzeige brachte — hat er nach der Aktenlage **keine Anfechtung erhoben**. Der 5. Bericht vom 13.06.2025, drei Wochen vor Fristablauf, erwähnt das Thema nicht.
+
+Die Strafanzeige erfolgte **sechs Monate nach Erlöschen des Anfechtungsanspruchs**.
+
+---
+
+## 5. Bewertung
+
+### 5.1 Was daraus folgt
+
+Der Masseverwalter verfügte über ein zivilrechtliches Instrument, um genau jene Beträge zurückzuholen, deren Verbleib er nun strafrechtlich beanstandet. Er hat es identifiziert, in einem Fall über 900,00 € genutzt und im Übrigen verstreichen lassen.
+
+Für die Insolvenzmasse bedeutet das: Selbst wenn sich der strafrechtliche Vorwurf bestätigte, könnten die Beträge zivilrechtlich nicht mehr zurückgeholt werden — der Anspruch ist nach § 43 Abs 2 IO erloschen.
+
+### 5.2 Was daraus **nicht** folgt
+
+Die unterbliebene Anfechtung beweist **nicht**, dass keine betrügerische Krida vorliegt. Anfechtung und § 156 StGB sind voneinander unabhängig: unterschiedliche Tatbestände, unterschiedliche Beweisanforderungen, unterschiedliche Verfahren. Ein Masseverwalter kann eine Anfechtung aus Kostengründen, wegen Uneinbringlichkeit beim Empfänger oder wegen Beweisschwierigkeiten unterlassen, ohne dass dies den strafrechtlichen Verdacht entkräftet.
+
+Der Punkt ist daher **als Frage zu stellen, nicht als Beweis zu führen**.
+
+### 5.3 Wo er hingehört
+
+**In die Aufsichtsbeschwerde nach § 84 IO** — dort ist er stark. Das Insolvenzgericht überwacht die Tätigkeit des Verwalters; das Verstreichenlassen einer Frist, durch die ein Anspruch der Masse erlischt, ist ein klassischer Prüfgegenstand im Rahmen des § 81 Abs 1 IO. Die Frage, ob die Masse dadurch einen Nachteil erlitten hat, betrifft § 81 Abs 3 IO.
+
+**Im Strafverfahren** nur als Randbemerkung. Er zeigt, dass die Beträge auch dem Anzeiger nicht so eindeutig erschienen, dass er das naheliegende zivilrechtliche Mittel ergriffen hätte — mehr nicht. Als tragendes Argument wäre er angreifbar.
+
+---
+
+## 6. Zur Ausgangsfrage
+
+**Fünf Jahre zurückgehen kann der Masseverwalter — aber nur unter zwei Bedingungen**: Es müsste sich um eine Anfechtung nach § 28 Z 1 IO handeln (Rückreichweite zehn Jahre), und die Klage hätte binnen eines Jahres ab Konkurseröffnung, also bis **04.07.2025**, eingebracht werden müssen.
+
+Beide Voraussetzungen zusammen bedeuten: **Heute kann er nichts mehr anfechten.** Der Anspruch ist erloschen.
+
+Unbeschränkt bleibt allein seine Möglichkeit, Sachverhalte zur Anzeige zu bringen. Dort setzt nicht die IO die Grenze, sondern die strafrechtliche Verjährung nach § 57 StGB — und die ist, wie in Teil C des Schriftsatzes dargelegt, für die tragenden Tatkomplexe bereits eingetreten.

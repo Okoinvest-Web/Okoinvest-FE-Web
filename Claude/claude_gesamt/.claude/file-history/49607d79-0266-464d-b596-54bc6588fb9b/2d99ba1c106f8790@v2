@@ -1,0 +1,124 @@
+/**
+ * Betrieb: Konnektor-Status, Drift und Alarme (Fachkonzept 2.8, 2.10, Kap. 5).
+ *
+ * Konnektoren schreiben nie ins Soll. Abweichungen erscheinen als
+ * `Drift Finding` und werden von Menschen übernommen oder verworfen
+ * (CLAUDE.md Abschnitt 5).
+ */
+import { FrappeMockError, table, touch } from '../db.js'
+import { protokolliere } from './audit.js'
+import { alterStunden, jetzt as jetztText } from '../zeit.js'
+
+/** Konnektoren mit Laufzeitstatus und offenen Befunden. */
+export function connector_status({ tenant = null } = {}) {
+  const laeufe = table('Connector Run')
+  const drift = table('Drift Finding')
+  const jetzt = Date.now()
+
+  return table('Connector')
+    .filter((c) => !tenant || c.tenant === tenant)
+    .map((c) => {
+      const eigeneLaeufe = laeufe
+        .filter((r) => r.connector === c.name)
+        .sort((a, b) => (a.started < b.started ? 1 : -1))
+      const letzter = eigeneLaeufe[0] || null
+
+      const alter = alterStunden(c.last_run, jetzt)
+
+      // Überfällig heißt: mehr als das Doppelte des eigenen Intervalls her.
+      const ueberfaellig = Boolean(
+        c.enabled && (alter === null || alter > (c.interval_minutes * 2) / 60),
+      )
+
+      return {
+        ...c,
+        last_run_age_hours: alter === null ? null : Math.round(alter * 10) / 10,
+        overdue: ueberfaellig,
+        health: !c.enabled ? 'disabled' : ueberfaellig ? 'stale' : c.last_status,
+        last_duration_ms: letzter ? letzter.duration_ms : null,
+        last_objects_read: letzter ? letzter.objects_read : null,
+        open_findings: drift.filter((d) => d.connector === c.name && d.state === 'open').length,
+        runs: eigeneLaeufe.slice(0, 5),
+      }
+    })
+    .sort((a, b) => a.connector_name.localeCompare(b.connector_name))
+}
+
+/** Soll/Ist-Abweichungen. */
+export function drift_list({ state = null, connector = null, tenant = null } = {}) {
+  let befunde = table('Drift Finding')
+  if (state) befunde = befunde.filter((d) => d.state === state)
+  if (connector) befunde = befunde.filter((d) => d.connector === connector)
+  if (tenant) befunde = befunde.filter((d) => d.tenant === tenant)
+
+  return [...befunde]
+    .sort((a, b) => (a.detected < b.detected ? 1 : -1))
+    .map((d) => ({ ...d }))
+}
+
+/**
+ * Übernehmen oder Verwerfen eines Befunds.
+ *
+ * Wichtig für die Portierung: "Übernehmen" bedeutet hier nur, den Befund als
+ * erledigt zu markieren. Das Soll-Dokument ändert diese Methode bewusst
+ * nicht - dafür gibt es den Change-Workflow.
+ */
+export function set_drift_state({ name, state } = {}) {
+  const erlaubt = ['open', 'accepted', 'rejected']
+  if (!erlaubt.includes(state)) {
+    throw new FrappeMockError('ValidationError: Zustand muss einer von ' + erlaubt.join(', ') + ' sein')
+  }
+
+  const befund = table('Drift Finding').find((d) => d.name === name)
+  if (!befund) {
+    throw new FrappeMockError('DoesNotExistError: Drift Finding ' + name + ' existiert nicht', 404)
+  }
+
+  befund.state = state
+  befund.resolved = state === 'open' ? null : jetztText()
+  touch(befund)
+  protokolliere({
+    action: 'drift_' + state,
+    object_type: 'Drift Finding',
+    object_name: name,
+    payload: { state },
+  })
+
+  return { ...befund }
+}
+
+const SCHWEREGRAD_RANG = { critical: 0, high: 1, medium: 2, low: 3 }
+
+/** Alarme, sortiert nach Schweregrad und Aktualität. */
+export function alert_list({ state = null, severity = null, tenant = null, limit = 100 } = {}) {
+  let alarme = table('Alert')
+  if (state) alarme = alarme.filter((a) => a.alert_state === state)
+  if (severity) alarme = alarme.filter((a) => a.severity === severity)
+  if (tenant) alarme = alarme.filter((a) => a.tenant === tenant)
+
+  return [...alarme]
+    .sort(
+      (a, b) =>
+        (SCHWEREGRAD_RANG[a.severity] ?? 9) - (SCHWEREGRAD_RANG[b.severity] ?? 9) ||
+        (a.last_seen < b.last_seen ? 1 : -1),
+    )
+    .slice(0, limit)
+    .map((a) => ({ ...a }))
+}
+
+/** Zusammenfassung für das Lagebild. */
+export function ops_overview({ tenant = null } = {}) {
+  const alarme = alert_list({ tenant, limit: 1000 })
+  const offen = alarme.filter((a) => a.alert_state !== 'closed')
+  const konnektoren = connector_status({ tenant })
+
+  return {
+    alerts_open: offen.length,
+    alerts_critical: offen.filter((a) => a.severity === 'critical').length,
+    alerts_high: offen.filter((a) => a.severity === 'high').length,
+    drift_open: drift_list({ state: 'open', tenant }).length,
+    connectors_total: konnektoren.length,
+    connectors_healthy: konnektoren.filter((c) => c.health === 'ok').length,
+    connectors_attention: konnektoren.filter((c) => ['warning', 'stale', 'error'].includes(c.health)).length,
+  }
+}

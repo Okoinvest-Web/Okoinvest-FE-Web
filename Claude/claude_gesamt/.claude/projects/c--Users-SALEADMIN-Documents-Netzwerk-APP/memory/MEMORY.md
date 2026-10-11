@@ -1,0 +1,3 @@
+- [Verifikation im Browser](verifikation-im-browser.md) — Build und Tests waren zweimal grün, während die Seite leer blieb.
+- [frappe-ui unter Vitest](frappe-ui-unter-vitest.md) — warum Komponententests gegen ein Testdouble laufen.
+- [Automatisierung über Frappe Workflow](automatisierung-ueber-frappe-workflow.md) — Aktionen sind Dokumente mit Zuständen, nicht RPC-Knöpfe.

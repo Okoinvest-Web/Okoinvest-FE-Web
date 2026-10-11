@@ -1,0 +1,142 @@
+"use client";
+
+import { useActionState, useState } from "react";
+
+import { Meldung } from "@/components/ui";
+
+import { FREIGABE_DAUERN, gibZugangFrei, type ZugangErgebnis } from "./aktionen";
+
+/**
+ * Befristete Freigabe eines Fernwartungszugangs.
+ *
+ * Techniker, Grund und Dauer sind Pflichtangaben. Sie stehen spaeter im
+ * Protokoll - und genau diese drei Angaben fehlen erfahrungsgemaess,
+ * wenn im Nachhinein geklaert werden soll, wer wann was getan hat.
+ */
+export function FreigabeFormular({
+  zugang,
+  geraet,
+  darfFreigeben,
+}: {
+  zugang: string;
+  geraet: string;
+  darfFreigeben: boolean;
+}) {
+  const [offen, setOffen] = useState(false);
+  const [ergebnis, aktion, laeuft] = useActionState<
+    ZugangErgebnis | null,
+    FormData
+  >(gibZugangFrei, null);
+
+  if (!darfFreigeben) {
+    return (
+      <p className="t-mikro leading-relaxed">
+        Die Freigabe eines Fernzugangs ist der technischen Leitung vorbehalten.
+      </p>
+    );
+  }
+
+  if (ergebnis?.ok) {
+    return <Meldung ton="gut">{ergebnis.meldung}</Meldung>;
+  }
+
+  if (!offen) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOffen(true)}
+        className="knopf knopf-rand"
+      >
+        Zugang freigeben
+      </button>
+    );
+  }
+
+  return (
+    <form
+      action={aktion}
+      className="rounded-sm border p-4"
+      style={{ borderColor: "var(--linie)", background: "var(--f-vertieft)" }}
+    >
+      <input type="hidden" name="zugang" value={zugang} />
+
+      <p className="t-mikro mb-3 leading-relaxed">
+        Freigabe für <strong className="font-medium">{geraet}</strong>. Alle
+        Angaben werden protokolliert.
+      </p>
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="min-w-0">
+          <label htmlFor={`tk-${zugang}`} className="t-etikett mb-1 block">
+            Techniker
+          </label>
+          <input
+            id={`tk-${zugang}`}
+            name="techniker"
+            required
+            minLength={3}
+            className="feld"
+          />
+        </div>
+
+        <div className="min-w-0">
+          <label htmlFor={`fa-${zugang}`} className="t-etikett mb-1 block">
+            Firma
+          </label>
+          <input id={`fa-${zugang}`} name="firma" className="feld" />
+        </div>
+
+        <div className="min-w-0 sm:col-span-2">
+          <label htmlFor={`gr-${zugang}`} className="t-etikett mb-1 block">
+            Grund des Zugriffs
+          </label>
+          <input
+            id={`gr-${zugang}`}
+            name="grund"
+            required
+            minLength={10}
+            placeholder="Etwa: Fehlersuche Wechselrichter 2, Störung STOE-0007"
+            className="feld"
+          />
+        </div>
+
+        <div className="min-w-0">
+          <label htmlFor={`da-${zugang}`} className="t-etikett mb-1 block">
+            Freigabedauer
+          </label>
+          <select
+            id={`da-${zugang}`}
+            name="dauer"
+            defaultValue="4"
+            className="feld"
+          >
+            {FREIGABE_DAUERN.map((stunden) => (
+              <option key={stunden} value={stunden}>
+                {stunden} Stunden
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {ergebnis && !ergebnis.ok && (
+        <div className="mt-2.5">
+          <Meldung ton="kritisch">{ergebnis.meldung}</Meldung>
+        </div>
+      )}
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        <button type="submit" disabled={laeuft} className="knopf knopf-voll">
+          {laeuft ? "Wird freigegeben …" : "Befristet freigeben"}
+        </button>
+        <button
+          type="button"
+          onClick={() => setOffen(false)}
+          className="knopf knopf-leise"
+        >
+          Abbrechen
+        </button>
+      </div>
+    </form>
+  );
+}

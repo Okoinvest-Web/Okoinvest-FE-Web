@@ -1,0 +1,170 @@
+import type { ReactNode } from "react";
+
+/**
+ * Datentabelle.
+ *
+ * Dichter gesetzt als zuvor: In einer Betriebsanwendung zaehlt, wie
+ * viele Zeilen ohne Scrollen lesbar sind. Zahlenspalten fluchten durch
+ * tabellarische Ziffern.
+ *
+ * Die Kopfzeile klebt bewusst nicht. Breite Tabellen liegen in einem
+ * waagrecht scrollenden Behaelter; sobald eine Achse scrollt, wird der
+ * Behaelter auch senkrecht zum Scrollbereich. Eine klebende Kopfzeile
+ * bezieht sich dann auf diesen Behaelter - der senkrecht nie scrollt,
+ * weil er so hoch ist wie die Tabelle. Sie klebte also nie, zaehlte
+ * aber mit ihrer vollen Breite zum Dokument: Auf dem Mobilgeraet liess
+ * sich die Seite dadurch um mehrere hundert Pixel seitwaerts schieben,
+ * und der halbe Inhalt rutschte aus dem Bild.
+ */
+
+export interface Spalte {
+  titel: string;
+  /** Rechtsbuendig - fuer Zahlen. */
+  zahl?: boolean;
+  /** Auf schmalen Bildschirmen ausblenden. */
+  schmalAusblenden?: boolean;
+  breite?: string;
+}
+
+export function Tabelle({
+  spalten,
+  children,
+  mindestbreite = "44rem",
+}: {
+  spalten: Spalte[];
+  children: ReactNode;
+  mindestbreite?: string;
+}) {
+  /*
+   * `relative` ist hier kein Schmuck.
+   *
+   * Ein abschneidender Behaelter klammert nur Nachkommen, die sich auf
+   * ihn beziehen. Ein absolut positioniertes Kind - etwa ein
+   * `sr-only`-Etikett in einer Bedienzelle - bezieht sich ohne
+   * positionierten Vorfahr auf das Dokument und entkommt der Klammer:
+   * Es steht dann rechnerisch dort, wo es in der breiten Tabelle
+   * laege, und macht die ganze Seite so breit. Auf dem Mobilgeraet
+   * liess sich die Seite dadurch um 497 Pixel seitwaerts schieben.
+   */
+  return (
+    <div className="relative min-w-0 overflow-x-auto">
+      <table
+        className="w-full border-collapse text-[0.8125rem]"
+        style={{ minWidth: mindestbreite }}
+      >
+        <thead>
+          <tr>
+            {spalten.map((spalte, i) => (
+              <th
+                key={`${spalte.titel}-${i}`}
+                scope="col"
+                className={`t-etikett border-b px-3 py-1.5 whitespace-nowrap ${
+                  spalte.zahl ? "text-right" : "text-left"
+                } ${spalte.schmalAusblenden ? "hidden md:table-cell" : ""}`}
+                style={{
+                  background: "var(--f-vertieft)",
+                  borderColor: "var(--linie)",
+                  width: spalte.breite,
+                }}
+              >
+                {spalte.titel}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>{children}</tbody>
+      </table>
+    </div>
+  );
+}
+
+export function Zeile({
+  children,
+  hervorgehoben = false,
+  gedaempft = false,
+}: {
+  children: ReactNode;
+  hervorgehoben?: boolean;
+  gedaempft?: boolean;
+}) {
+  return (
+    <tr
+      className="group border-b transition-colors last:border-0 hover:[background:var(--f-vertieft)]"
+      style={{
+        borderColor: "var(--linie-zart)",
+        background: hervorgehoben ? "var(--ton-kritisch-flaeche)" : undefined,
+        /* Die hervorgehobene Zeile traegt zusaetzlich einen Streifen an
+           der Kante: Auf einem dunklen Grund ist eine leicht getoente
+           Flaeche zu wenig Unterschied, um sie im Vorbeisehen zu
+           bemerken. */
+        boxShadow: hervorgehoben
+          ? "inset 2px 0 0 0 var(--ton-kritisch)"
+          : undefined,
+        opacity: gedaempft ? 0.5 : undefined,
+      }}
+    >
+      {children}
+    </tr>
+  );
+}
+
+export function Zelle({
+  children,
+  zahl = false,
+  leise = false,
+  schmalAusblenden = false,
+  einrueckung = false,
+}: {
+  children: ReactNode;
+  zahl?: boolean;
+  leise?: boolean;
+  schmalAusblenden?: boolean;
+  /** Fuer untergeordnete Zeilen, etwa Belegpositionen. */
+  einrueckung?: boolean;
+}) {
+  return (
+    <td
+      className={`px-3 py-1.5 align-middle ${zahl ? "zahl text-right" : ""} ${
+        schmalAusblenden ? "hidden md:table-cell" : ""
+      } ${einrueckung ? "pl-8" : ""}`}
+      style={{ color: leise ? "var(--t-leise)" : undefined }}
+    >
+      {children}
+    </td>
+  );
+}
+
+/** Zweizeilige Zelle: Hauptwert oben, Zusatz darunter. */
+export function ZelleMitZusatz({
+  haupt,
+  zusatz,
+  zahl = false,
+}: {
+  haupt: ReactNode;
+  zusatz?: ReactNode;
+  zahl?: boolean;
+}) {
+  return (
+    <td className={`px-3 py-1.5 align-middle ${zahl ? "zahl text-right" : ""}`}>
+      <span className="block" style={{ color: "var(--t-stark)" }}>
+        {haupt}
+      </span>
+      {zusatz && <span className="t-mikro block">{zusatz}</span>}
+    </td>
+  );
+}
+
+/** Zusammenfassungszeile am Tabellenende. */
+export function Summenzeile({ children }: { children: ReactNode }) {
+  return (
+    <tr
+      className="border-t font-medium"
+      style={{
+        borderColor: "var(--linie-stark)",
+        background: "var(--f-vertieft)",
+      }}
+    >
+      {children}
+    </tr>
+  );
+}

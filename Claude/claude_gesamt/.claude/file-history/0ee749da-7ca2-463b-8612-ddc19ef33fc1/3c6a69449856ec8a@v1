@@ -1,0 +1,118 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    /* Sichere Bereiche auf Geräten mit Notch */
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Eingaben nie kleiner als 16px — sonst zoomt iOS beim Fokus hinein. */
+  input,
+  select,
+  textarea {
+    font-size: max(16px, 1rem);
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-marke-500 ring-offset-2 ring-offset-white dark:ring-offset-slate-950;
+  }
+}
+
+@layer components {
+  /* Mindestgröße für Touch-Ziele mit Arbeitshandschuhen (NFA-023) */
+  .tap {
+    @apply min-h-tap min-w-tap;
+  }
+
+  .karte {
+    @apply rounded-xl border border-slate-200 bg-white shadow-karte dark:border-slate-800 dark:bg-slate-900;
+  }
+
+  .knopf {
+    @apply tap inline-flex items-center justify-center gap-2 rounded-xl px-4 text-base font-semibold
+           transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .knopf-primaer {
+    @apply knopf bg-marke-600 text-white hover:bg-marke-700;
+  }
+
+  .knopf-sekundaer {
+    @apply knopf border border-slate-300 bg-white text-slate-700
+           hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200
+           dark:hover:bg-slate-800;
+  }
+
+  .knopf-gefahr {
+    @apply knopf bg-fehler text-white hover:bg-red-700;
+  }
+
+  .knopf-geist {
+    @apply knopf text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800;
+  }
+
+  .feld {
+    @apply tap w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-base text-slate-900
+           placeholder:text-slate-400 focus:border-marke-500 focus:ring-0
+           dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500;
+  }
+
+  .beschriftung {
+    @apply mb-1 block text-sm font-medium text-slate-600 dark:text-slate-300;
+  }
+
+  .abzeichen {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold;
+  }
+
+  .tabelle {
+    @apply w-full border-collapse text-sm;
+  }
+
+  .tabelle th {
+    @apply border-b border-slate-200 px-3 py-2 text-left font-semibold text-slate-600
+           dark:border-slate-800 dark:text-slate-300;
+  }
+
+  .tabelle td {
+    @apply border-b border-slate-100 px-3 py-2 align-top dark:border-slate-800/60;
+  }
+}
+
+@layer utilities {
+  .scrollbar-schmal::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .scrollbar-schmal::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-slate-300 dark:bg-slate-700;
+  }
+
+  /* Horizontale Wischnavigation zwischen Prüfpunkten */
+  .wisch {
+    touch-action: pan-y;
+  }
+}
+
+/* Leaflet-Grundlayout ohne das komplette Theme zu importieren */
+.leaflet-container {
+  @apply h-full w-full rounded-xl;
+  background: #e2e8f0;
+}
+
+.dark .leaflet-container {
+  background: #1e293b;
+}
+
+.dark .leaflet-tile {
+  filter: brightness(0.75) contrast(1.05);
+}

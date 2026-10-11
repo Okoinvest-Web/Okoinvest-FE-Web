@@ -1,0 +1,191 @@
+"""Arbeitstag: die aus den Stempelungen abgeleitete Tagesbilanz.
+
+Zwei Ebenen mit Absicht: Die Stempelungen sind unveraenderlicher Rohbestand,
+der Arbeitstag ist die daraus errechnete Auswertung. Wird eine Stempelung
+korrigiert, rechnet sich der Tag neu — es gibt keinen Weg, die Bilanz an den
+Stempelungen vorbei zu veraendern.
+
+Freigegeben wird der Tag vom Bauleiter. Erst danach ist er Abrechnungsgrundlage.
+"""
+
+from __future__ import annotations
+
+import frappe
+from frappe import _
+from frappe.model.document import Document
+from frappe.utils import add_days, get_datetime, getdate, now_datetime
+
+from oekovolt_baudoku.utils.arbeitszeit import (
+	Ereignis,
+	Grenzwerte,
+	auswerten,
+	wochensumme_ueberschritten,
+)
+
+FREIGEBER_ROLLEN = {"Baudoku Bauleiter", "Baudoku Projektleiter", "Baudoku Admin", "System Manager"}
+
+
+class Arbeitstag(Document):
+	def validate(self):
+		self.freigabe_pruefen()
+
+	def freigabe_pruefen(self):
+		vorher = self.get_doc_before_save()
+		wechselt = not vorher or vorher.status != self.status
+
+		if self.status in ("Freigegeben", "Beanstandet", "Abgerechnet") and wechselt:
+			if not FREIGEBER_ROLLEN & set(frappe.get_roles()):
+				frappe.throw(
+					_("Arbeitszeiten gibt der Bauleiter frei."), frappe.PermissionError
+				)
+			if self.status == "Freigegeben":
+				if not self.vollstaendig_genug():
+					frappe.throw(
+						_("Der Tag ist unvollstaendig: {0}").format(self.hinweise or "-"),
+						title=_("Freigabe nicht moeglich"),
+					)
+				self.freigegeben_von = frappe.session.user
+				self.freigegeben_am = now_datetime()
+
+	def vollstaendig_genug(self) -> bool:
+		return self.status != "Offen" and bool(self.beginn and self.ende)
+
+	@frappe.whitelist()
+	def freigeben(self):
+		self.status = "Freigegeben"
+		self.save()
+		return self.name
+
+	@frappe.whitelist()
+	def beanstanden(self, grund: str):
+		if not grund:
+			frappe.throw(_("Bitte die Beanstandung begruenden."))
+		self.status = "Beanstandet"
+		self.beanstandung = grund
+		self.save()
+		return self.name
+
+
+def _grenzwerte() -> Grenzwerte:
+	settings = frappe.get_cached_doc("Baudoku Settings")
+	return Grenzwerte(
+		tag_minuten=settings.azg_tag_minuten or 600,
+		woche_minuten=settings.azg_woche_minuten or 3000,
+		pause_ab_minuten=settings.pause_ab_minuten or 360,
+		pause_mindestens_minuten=settings.pause_mindestens_minuten or 30,
+	)
+
+
+def tag_aktualisieren(mitarbeiter: str, datum, anlage: str | None = None) -> str | None:
+	"""Rechnet den Arbeitstag aus den gueltigen Stempelungen neu.
+
+	Ein bereits freigegebener Tag wird nicht stillschweigend ueberschrieben: Eine
+	nachtraegliche Korrektur setzt ihn zurueck auf 'Vollstaendig', damit der
+	Bauleiter die geaenderte Zeit erneut freigeben muss.
+	"""
+	datum = getdate(datum)
+	stempelungen = frappe.get_all(
+		"Stempelung",
+		filters={"mitarbeiter": mitarbeiter, "datum": datum, "ungueltig": 0},
+		fields=["richtung", "zeitpunkt", "anlage"],
+		order_by="zeitpunkt asc",
+	)
+	if not stempelungen:
+		return None
+
+	auswertung = auswerten(
+		[Ereignis(richtung=s.richtung, zeitpunkt=get_datetime(s.zeitpunkt)) for s in stempelungen],
+		_grenzwerte(),
+	)
+
+	name = frappe.db.get_value("Arbeitstag", {"mitarbeiter": mitarbeiter, "datum": datum}, "name")
+	doc = frappe.get_doc("Arbeitstag", name) if name else frappe.new_doc("Arbeitstag")
+
+	war_freigegeben = bool(name) and doc.status in ("Freigegeben", "Abgerechnet")
+
+	doc.update({
+		"mitarbeiter": mitarbeiter,
+		"datum": datum,
+		"anlage": anlage or stempelungen[0].anlage,
+		"beginn": auswertung.beginn,
+		"ende": auswertung.ende,
+		"anwesenheit_minuten": auswertung.anwesenheit_minuten,
+		"pause_minuten": auswertung.pause_minuten,
+		"arbeitszeit_minuten": auswertung.arbeitszeit_minuten,
+		"arbeitszeit_stunden": auswertung.arbeitszeit_stunden,
+		"pause_ausreichend": 1 if auswertung.pause_ausreichend else 0,
+		"ueber_tagesgrenze": 1 if auswertung.ueber_tagesgrenze else 0,
+		"ueber_wochengrenze": 1 if _wochengrenze_erreicht(mitarbeiter, datum, auswertung.arbeitszeit_minuten) else 0,
+		"hinweise": auswertung.hinweis,
+		"stempelungen": ", ".join(f"{s.richtung} {get_datetime(s.zeitpunkt):%H:%M}" for s in stempelungen),
+	})
+
+	if doc.status in ("Offen", "Vollstaendig") or war_freigegeben:
+		doc.status = "Vollstaendig" if auswertung.vollstaendig else "Offen"
+	if war_freigegeben:
+		doc.freigegeben_von = None
+		doc.freigegeben_am = None
+
+	doc.save(ignore_permissions=True)
+	return doc.name
+
+
+def _wochengrenze_erreicht(mitarbeiter: str, datum, minuten_heute: int) -> bool:
+	"""Summe der Woche einschliesslich des gerade gerechneten Tages."""
+	wochenbeginn = add_days(datum, -getdate(datum).weekday())
+	andere = frappe.db.sql(
+		"""
+		select coalesce(sum(arbeitszeit_minuten), 0)
+		from `tabArbeitstag`
+		where mitarbeiter = %(mitarbeiter)s
+		  and datum between %(von)s and %(bis)s
+		  and datum != %(heute)s
+		""",
+		{"mitarbeiter": mitarbeiter, "von": wochenbeginn, "bis": add_days(wochenbeginn, 6),
+		 "heute": datum},
+	)[0][0]
+	return wochensumme_ueberschritten(int(andere) + minuten_heute, _grenzwerte())
+
+
+@frappe.whitelist()
+def zur_freigabe(supplier: str | None = None, anlage: str | None = None) -> list[dict]:
+	"""Arbeitstage, die auf die Freigabe des Bauleiters warten."""
+	filters = {"status": "Vollstaendig"}
+	if supplier:
+		filters["supplier"] = supplier
+	if anlage:
+		filters["anlage"] = anlage
+
+	return frappe.get_all(
+		"Arbeitstag",
+		filters=filters,
+		fields=["name", "mitarbeiter", "supplier", "anlage", "datum", "beginn", "ende",
+		        "arbeitszeit_stunden", "pause_minuten", "pause_ausreichend",
+		        "ueber_tagesgrenze", "ueber_wochengrenze", "hinweise"],
+		order_by="datum asc",
+		limit_page_length=200,
+	)
+
+
+@frappe.whitelist()
+def sammelfreigabe(namen: str | list) -> dict:
+	"""Gibt mehrere Tage auf einmal frei — der Bauleiter prueft eine Woche am Stueck."""
+	import json
+
+	if isinstance(namen, str):
+		namen = json.loads(namen)
+	if not FREIGEBER_ROLLEN & set(frappe.get_roles()):
+		frappe.throw(_("Arbeitszeiten gibt der Bauleiter frei."), frappe.PermissionError)
+
+	erfolgreich, fehlgeschlagen = [], []
+	for name in namen[:200]:
+		try:
+			frappe.get_doc("Arbeitstag", name).freigeben()
+			frappe.db.commit()
+			erfolgreich.append(name)
+		# Ein unvollstaendiger Tag darf die uebrigen nicht blockieren.
+		except Exception as fehler:
+			frappe.db.rollback()
+			fehlgeschlagen.append({"name": name, "meldung": str(fehler)})
+
+	return {"erfolgreich": erfolgreich, "fehlgeschlagen": fehlgeschlagen}

@@ -1,0 +1,461 @@
+import Link from "next/link";
+import type { Metadata } from "next";
+
+import { Balkendiagramm } from "@/components/diagramme/balken";
+import { Tabelle, Zeile, Zelle, ZelleMitZusatz } from "@/components/tabelle";
+import {
+  Balken,
+  Hinweis,
+  Kennzahl,
+  Kennzahlenleiste,
+  LeerZustand,
+  Seitenkopf,
+  Status,
+  Tafel,
+} from "@/components/ui";
+import {
+  ladeAbrechenbareMonate,
+  ladeAbrechnungen,
+  ladeKennzahlenLaden,
+  ladeKostenstellen,
+  ladeLadepunkte,
+  ladeTagesverteilung,
+  letzteTageLaden,
+} from "@/lib/daten/laden";
+import { ENERGIE_FARBEN } from "@/lib/farben";
+import {
+  formatDatum,
+  formatEnergie,
+  formatGeld,
+  formatProzent,
+  formatZahl,
+} from "@/lib/format";
+import { monatsname } from "@/lib/finanzen/stapellauf";
+import { aktuelleRechte, requireRecht } from "@/lib/session";
+
+import { Ladelauf } from "./lauf-steuerung";
+
+export const metadata: Metadata = { title: "Ladeinfrastruktur" };
+
+function punktTon(status: string) {
+  switch (status) {
+    case "Verfuegbar":
+      return "gut" as const;
+    case "Belegt":
+      return "akzent" as const;
+    case "Wartung":
+      return "hinweis" as const;
+    case "Gestoert":
+    case "Offline":
+      return "kritisch" as const;
+    default:
+      return "neutral" as const;
+  }
+}
+
+function punktText(status: string) {
+  return status === "Verfuegbar"
+    ? "Verfügbar"
+    : status === "Gestoert"
+      ? "Gestört"
+      : status;
+}
+
+export default async function MobilitaetSeite({
+  searchParams,
+}: {
+  searchParams: Promise<{ zeitraum?: string }>;
+}) {
+  await requireRecht("mobilitaet.lesen");
+
+  const { zeitraum } = await searchParams;
+  const tage = Number(zeitraum) > 0 ? Number(zeitraum) : 30;
+  const fenster = letzteTageLaden(tage);
+
+  const kennzahlen = ladeKennzahlenLaden(fenster);
+  const punkte = ladeLadepunkte(fenster);
+  const verteilung = ladeTagesverteilung(fenster);
+  const kostenstellen = ladeKostenstellen(fenster);
+  const abrechnungen = ladeAbrechnungen(6);
+
+  const rechte = await aktuelleRechte();
+  const darfVerwalten = rechte.has("mobilitaet.verwalten");
+
+  const monate = ladeAbrechenbareMonate(12).map((m) => ({
+    schluessel: m.schluessel,
+    beschriftung:
+      `${monatsname(m.monat)} ${m.jahr} · ` +
+      (m.lauf_status === "Festgeschrieben"
+        ? "festgeschrieben"
+        : m.offen > 0
+          ? `${m.offen} Vorgänge offen, ${m.energie_kwh.toFixed(0)} kWh`
+          : m.lauf_status
+            ? `Lauf im ${m.lauf_status}`
+            : "nichts abzurechnen"),
+    gesperrt: m.lauf_status === "Festgeschrieben",
+  }));
+
+  const energie = formatEnergie(kennzahlen.energieKwh);
+
+  // Nur Stunden zeigen, in denen überhaupt geladen wurde - sonst
+  // bestehen zwei Drittel des Diagramms aus leeren Nachtstunden.
+  const erste = verteilung.findIndex((s) => s.vorgaenge > 0);
+  const letzte = verteilung.map((s) => s.vorgaenge > 0).lastIndexOf(true);
+  const gezeigt =
+    erste >= 0 ? verteilung.slice(Math.max(0, erste - 1), letzte + 2) : [];
+
+  const groessteKostenstelle = kostenstellen[0];
+  const gesamtKostenstellen = kostenstellen.reduce(
+    (s, k) => s + k.energieKwh,
+    0,
+  );
+
+  return (
+    <div className="space-y-5">
+      <Seitenkopf
+        titel="Ladeinfrastruktur"
+        hinweis={`${kennzahlen.ladepunkte} Ladepunkte · ${kennzahlen.aktiveKarten} Karten im Zeitraum aktiv`}
+        aktion={<ZeitraumWahl aktiv={tage} />}
+      />
+
+      {kennzahlen.gestoerteLadepunkte > 0 && (
+        <Hinweis
+          ton="kritisch"
+          titel={`${kennzahlen.gestoerteLadepunkte} Ladepunkt${kennzahlen.gestoerteLadepunkte > 1 ? "e" : ""} nicht verfügbar`}
+        >
+          {punkte
+            .filter((p) => p.status === "Gestoert" || p.status === "Offline")
+            .map((p) => `${p.bezeichnung} (${p.standort ?? "ohne Standort"})`)
+            .join(", ")}
+          .
+        </Hinweis>
+      )}
+
+      <Kennzahlenleiste>
+        <Kennzahl
+          label="Geladen"
+          wert={energie.wert}
+          einheit={energie.einheit}
+          hinweis={`${formatZahl(kennzahlen.vorgaenge, 0)} Vorgänge`}
+        />
+        <Kennzahl
+          label="Aus eigener Erzeugung"
+          wert={formatProzent(kennzahlen.pvAnteil * 100, 0)}
+          hinweis={`${formatZahl(kennzahlen.pvKwh, 0)} kWh`}
+          akzent
+        />
+        <Kennzahl
+          label="Ladezeit an Belegung"
+          wert={formatProzent(kennzahlen.ladeanteil * 100, 0)}
+          hinweis={`${formatZahl(kennzahlen.belegtStunden, 0)} h belegt`}
+        />
+        <Kennzahl
+          label="Höchste Ladeleistung"
+          wert={formatZahl(kennzahlen.hoechstleistungKw, 0)}
+          einheit="kW"
+          hinweis="an einem einzelnen Punkt"
+        />
+      </Kennzahlenleiste>
+
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[2fr_1fr]">
+        {/* ---------------- Wann geladen wird ---------------- */}
+        <Tafel
+          titel="Wann geladen wird"
+          hinweis="Geladene Energie nach Stunde des Ladebeginns, Ortszeit"
+          fusszeile={
+            <p className="t-mikro leading-relaxed">
+              Der Anteil aus der eigenen Anlage entscheidet sich an der
+              Uhrzeit, nicht an der Anlagengröße: Wer um 17 Uhr ansteckt,
+              lädt aus dem Netz, auch wenn mittags Überschuss ins Netz ging.
+              Die Abendspitze aus dem Lieferverkehr ist der Hebel – jede
+              Stunde, um die sich ein Ladevorgang nach vorne verschieben
+              lässt, senkt den Netzbezug und die Anschlussleistung.
+            </p>
+          }
+        >
+          {gezeigt.length === 0 ? (
+            <LeerZustand text="Im gewählten Zeitraum wurde nicht geladen." />
+          ) : (
+            <Balkendiagramm
+              beschriftungen={gezeigt.map((s) => `${s.stunde}`)}
+              einheit="kWh"
+              kompakt
+              hoehe={230}
+              reihen={[
+                {
+                  schluessel: "pv",
+                  label: "Aus eigener Erzeugung",
+                  farbe: ENERGIE_FARBEN.erzeugung,
+                  werte: gezeigt.map((s) => s.pvKwh),
+                },
+                {
+                  schluessel: "netz",
+                  label: "Aus dem Netz",
+                  farbe: ENERGIE_FARBEN.netzbezug,
+                  werte: gezeigt.map((s) =>
+                    Number((s.energieKwh - s.pvKwh).toFixed(1)),
+                  ),
+                },
+              ]}
+            />
+          )}
+        </Tafel>
+
+        {/* ---------------- Kostenstellen ---------------- */}
+        <Tafel
+          titel="Kostenstellen"
+          hinweis="Wohin die Energie fließt"
+          fusszeile={
+            <p className="t-mikro leading-relaxed">
+              Die Zuordnung entsteht über die Ladekarte, nicht über den
+              Ladepunkt. Am selben Stellplatz lädt heute ein Lieferwagen
+              der Montage und morgen der Wagen eines Mitarbeiters –
+              buchhalterisch sind das zwei verschiedene Vorgänge.
+            </p>
+          }
+        >
+          {kostenstellen.length === 0 ? (
+            <LeerZustand text="Keine Kostenstellen hinterlegt." />
+          ) : (
+            <div className="space-y-2.5">
+              {kostenstellen.map((k) => (
+                <Balken
+                  key={k.kostenstelle}
+                  label={`${k.kostenstelle} · ${k.karten} Karte${k.karten > 1 ? "n" : ""}`}
+                  anteil={
+                    gesamtKostenstellen > 0
+                      ? (k.energieKwh / gesamtKostenstellen) * 100
+                      : 0
+                  }
+                  wertText={`${formatZahl(k.energieKwh, 0)} kWh`}
+                  farbe={ENERGIE_FARBEN.eigenverbrauch}
+                />
+              ))}
+              {groessteKostenstelle && gesamtKostenstellen > 0 && (
+                <p className="t-mikro pt-1 leading-relaxed">
+                  Größter Posten ist {groessteKostenstelle.kostenstelle} mit{" "}
+                  {formatProzent(
+                    (groessteKostenstelle.energieKwh / gesamtKostenstellen) *
+                      100,
+                    0,
+                  )}{" "}
+                  der geladenen Energie.
+                </p>
+              )}
+            </div>
+          )}
+        </Tafel>
+      </div>
+
+      {/* ---------------- Ladepunkte ---------------- */}
+      <Tafel
+        titel="Ladepunkte"
+        hinweis="Belegung und tatsächliche Ladezeit"
+        dicht
+        fusszeile={
+          <p className="t-mikro leading-relaxed">
+            Belegt heißt nicht ausgelastet. Ein Ladepunkt, der acht
+            Stunden belegt ist und zwei davon lädt, ist sechs Stunden
+            lang für alle anderen gesperrt. Wer nur die Belegung misst,
+            errichtet den nächsten Ladepunkt, obwohl eine Standgebühr
+            gereicht hätte.
+          </p>
+        }
+      >
+        <Tabelle
+          spalten={[
+            { titel: "Ladepunkt" },
+            { titel: "Leistung", zahl: true },
+            { titel: "Vorgänge", zahl: true, schmalAusblenden: true },
+            { titel: "Geladen", zahl: true },
+            { titel: "Ladezeit", zahl: true },
+            { titel: "Status" },
+          ]}
+          mindestbreite="46rem"
+        >
+          {punkte.map((p) => {
+            const anteil =
+              p.belegt_stunden > 0 ? p.ladestunden / p.belegt_stunden : 0;
+
+            return (
+              <Zeile key={p.id} gedaempft={p.status === "Gestoert"}>
+                <ZelleMitZusatz
+                  haupt={p.bezeichnung}
+                  zusatz={`${p.evse_id ?? p.id} · ${p.hersteller ?? ""} ${p.modell ?? ""}`}
+                />
+                <Zelle zahl>
+                  {formatZahl(p.leistung_kw, 0)}
+                  <span className="t-mikro"> kW {p.strom_art}</span>
+                </Zelle>
+                <Zelle zahl leise schmalAusblenden>
+                  {p.vorgaenge}
+                </Zelle>
+                <Zelle zahl>
+                  {formatZahl(p.energie_kwh, 0)}
+                  <span className="t-mikro"> kWh</span>
+                  {p.energie_kwh > 0 && (
+                    <span className="t-mikro block">
+                      {formatProzent((p.pv_kwh / p.energie_kwh) * 100, 0)} PV
+                    </span>
+                  )}
+                </Zelle>
+                <Zelle zahl leise>
+                  {p.belegt_stunden > 0 ? (
+                    <>
+                      {formatProzent(anteil * 100, 0)}
+                      <span className="t-mikro block">
+                        {formatZahl(p.ladestunden, 0)} von{" "}
+                        {formatZahl(p.belegt_stunden, 0)} h
+                      </span>
+                    </>
+                  ) : (
+                    <span style={{ color: "var(--t-zart)" }}>–</span>
+                  )}
+                </Zelle>
+                <Zelle>
+                  <Status ton={punktTon(p.status)}>
+                    {punktText(p.status)}
+                  </Status>
+                  {p.eichrecht === 0 && (
+                    <span className="t-mikro block">nicht eichrechtlich</span>
+                  )}
+                </Zelle>
+              </Zeile>
+            );
+          })}
+        </Tabelle>
+      </Tafel>
+
+      {/* ---------------- Monatslauf ---------------- */}
+      {monate.length > 0 && (
+        <Tafel
+          titel="Abrechnungslauf"
+          hinweis="Vorgänge zu Belegen zusammenfassen"
+          fusszeile={
+            <p className="t-mikro leading-relaxed">
+              Der Lauf nimmt jeden beendeten Vorgang des Monats, der noch
+              keiner Abrechnung angehört, und fasst ihn je Karte zu einem
+              Beleg zusammen. Ein Firmenfahrzeug bekommt dabei eine
+              Kostenumlage, ein Mitarbeiter oder Gast eine Rechnung – die
+              Trennung entscheidet über die steuerliche Behandlung und
+              wird deshalb nicht erst in der Buchhaltung gezogen.
+            </p>
+          }
+        >
+          <Ladelauf monate={monate} darfVerwalten={darfVerwalten} />
+        </Tafel>
+      )}
+
+      {/* ---------------- Abrechnungen ---------------- */}
+      <Tafel
+        titel="Abrechnungen"
+        hinweis="Monatliche Läufe über alle Karten"
+        dicht
+        aktion={
+          <Link
+            href="/portal/mobilitaet/karten"
+            className="knopf knopf-rand text-[0.75rem]"
+          >
+            Karten und Tarife
+          </Link>
+        }
+        fusszeile={
+          <p className="t-mikro leading-relaxed">
+            Ein festgeschriebener Lauf wird nicht mehr verändert. Eine
+            Korrektur erfolgt über eine Stornierung und einen neuen Lauf –
+            alles andere macht die Buchhaltung unprüfbar.
+          </p>
+        }
+      >
+        {abrechnungen.length === 0 ? (
+          <LeerZustand
+            text="Es wurde noch nicht abgerechnet."
+            hinweis="Ein Lauf fasst alle Ladevorgänge eines Monats je Karte zu einem Beleg zusammen."
+          />
+        ) : (
+          <Tabelle
+            spalten={[
+              { titel: "Zeitraum" },
+              { titel: "Vorgänge", zahl: true, schmalAusblenden: true },
+              { titel: "Energie", zahl: true },
+              { titel: "Netto", zahl: true },
+              { titel: "Brutto", zahl: true },
+              { titel: "Belege", zahl: true, schmalAusblenden: true },
+              { titel: "Status" },
+            ]}
+            mindestbreite="48rem"
+          >
+            {abrechnungen.map((a) => (
+              <Zeile key={a.id} gedaempft={a.status === "Storniert"}>
+                <ZelleMitZusatz
+                  haupt={
+                    <Link
+                      href={`/portal/mobilitaet/abrechnung/${a.id}`}
+                      className="hover:underline"
+                    >
+                      {a.bezeichnung}
+                    </Link>
+                  }
+                  zusatz={`${formatDatum(a.zeitraum_von)} bis ${formatDatum(a.zeitraum_bis)}`}
+                />
+                <Zelle zahl leise schmalAusblenden>
+                  {a.anzahl_vorgaenge}
+                </Zelle>
+                <Zelle zahl>
+                  {formatZahl(a.energie_kwh, 0)}
+                  <span className="t-mikro"> kWh</span>
+                </Zelle>
+                <Zelle zahl leise>
+                  {formatGeld(a.netto)}
+                </Zelle>
+                <Zelle zahl>{formatGeld(a.brutto)}</Zelle>
+                <Zelle zahl leise schmalAusblenden>
+                  {a.belege}
+                </Zelle>
+                <Zelle>
+                  <Status
+                    ton={
+                      a.status === "Festgeschrieben"
+                        ? "gut"
+                        : a.status === "Storniert"
+                          ? "neutral"
+                          : "hinweis"
+                    }
+                  >
+                    {a.status}
+                  </Status>
+                </Zelle>
+              </Zeile>
+            ))}
+          </Tabelle>
+        )}
+      </Tafel>
+    </div>
+  );
+}
+
+function ZeitraumWahl({ aktiv }: { aktiv: number }) {
+  const stufen = [7, 30, 90, 365];
+
+  return (
+    <div
+      className="flex overflow-hidden rounded-lg border"
+      style={{ borderColor: "var(--linie)" }}
+    >
+      {stufen.map((tage) => (
+        <Link
+          key={tage}
+          href={`/portal/mobilitaet?zeitraum=${tage}`}
+          className="px-2.5 py-1.5 text-[0.75rem] transition-colors"
+          style={{
+            background: aktiv === tage ? "var(--f-belegt)" : "var(--f-ebene)",
+            color: aktiv === tage ? "var(--t-stark)" : "var(--t-leise)",
+            fontWeight: aktiv === tage ? 500 : 400,
+          }}
+        >
+          {tage === 365 ? "1 Jahr" : `${tage} Tage`}
+        </Link>
+      ))}
+    </div>
+  );
+}

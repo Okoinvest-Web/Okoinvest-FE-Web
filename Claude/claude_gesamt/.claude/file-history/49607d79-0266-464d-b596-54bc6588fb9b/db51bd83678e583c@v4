@@ -1,0 +1,118 @@
+<template>
+  <div>
+    <PageHeader title="Audit" subtitle="Änderungshistorie mit Hash-Kette">
+      <template #actions>
+        <Button :loading="pruefung.loading" @click="pruefe">Kette prüfen</Button>
+      </template>
+    </PageHeader>
+
+    <div class="p-6">
+      <div
+        v-if="pruefung.data"
+        class="mb-6 rounded-lg border p-4"
+        :class="
+          pruefung.data.ok
+            ? 'border-outline-gray-2 bg-surface-white'
+            : 'border-outline-red-2 bg-surface-red-1'
+        "
+      >
+        <StatusDot
+          :level="pruefung.data.ok ? 'ok' : 'critical'"
+          :text="pruefung.data.ok ? 'Kette unversehrt' : 'Kette gebrochen'"
+        />
+        <p class="mt-1 text-sm text-ink-gray-6">
+          <template v-if="pruefung.data.ok">
+            {{ pruefung.data.length }} Einträge geprüft, jeder Hash passt zu seinem Vorgänger.
+          </template>
+          <template v-else>
+            Bruch bei {{ pruefung.data.broken_at }} nach {{ pruefung.data.checked_until }} von
+            {{ pruefung.data.length }} Einträgen: {{ pruefung.data.reason }}
+          </template>
+        </p>
+      </div>
+
+      <DataTable
+        tabellen-id="AuditView"
+        :columns="spalten"
+        :rows="eintraege.data || []"
+        :loading="eintraege.loading"
+        empty-text="Noch keine Einträge."
+      >
+        <template #zelle-action="{ zeile }">
+          <Badge :theme="themaFuer(zeile.action)">{{ AKTION[zeile.action] || zeile.action }}</Badge>
+        </template>
+        <template #zelle-object="{ zeile }">
+          <span class="block text-ink-gray-8">{{ zeile.object_name }}</span>
+          <span class="block text-sm text-ink-gray-5">{{ zeile.object_type }}</span>
+        </template>
+        <template #zelle-kette="{ zeile }">
+          <span class="block font-mono text-xs text-ink-gray-5">
+            ← {{ zeile.prev_hash_short }}
+          </span>
+          <span class="block font-mono text-xs text-ink-gray-8">
+            {{ zeile.entry_hash_short }}
+          </span>
+        </template>
+      </DataTable>
+
+      <p class="mt-3 text-xs text-ink-gray-4">
+        Jeder Eintrag enthält den Hash seines Vorgängers (SHA-256 über Vorgängerhash und Inhalt).
+        Wird ein Eintrag verändert oder entfernt, bricht die Kette genau dort. Der DocType ist
+        append-only – Ändern und Löschen lehnt der Server ab. Im Audit steht nur der Hash der
+        Nutzlast, nie die Nutzlast selbst.
+      </p>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { Badge, Button, createResource, toast } from 'frappe-ui'
+import PageHeader from '@/components/PageHeader.vue'
+import DataTable from '@/components/DataTable.vue'
+import StatusDot from '@/components/StatusDot.vue'
+
+const AKTION = {
+  insert: 'Angelegt',
+  set_value: 'Geändert',
+  delete: 'Gelöscht',
+  drift_accepted: 'Drift übernommen',
+  drift_rejected: 'Drift verworfen',
+  drift_open: 'Drift geöffnet',
+  screen_approved: 'Screen freigegeben',
+  screen_rejected: 'Screen abgelehnt',
+  screen_revoked: 'Screen widerrufen',
+}
+
+const eintraege = createResource({
+  url: 'netops.api.audit.audit_log',
+  params: { limit: 200 },
+  auto: true,
+})
+
+const pruefung = createResource({ url: 'netops.api.audit.verify_chain', auto: true })
+
+const spalten = [
+  { key: 'timestamp', label: 'Zeitpunkt', numeric: true, muted: true, width: '190px' },
+  { key: 'user', label: 'Benutzer', muted: true, width: '230px' },
+  { key: 'action', label: 'Aktion', width: '160px' },
+  { key: 'object', label: 'Objekt' },
+  { key: 'kette', label: 'Hash-Kette', width: '170px' },
+]
+
+async function pruefe() {
+  await pruefung.fetch()
+  toast.create({
+    message: pruefung.data.ok
+      ? 'Kette unversehrt'
+      : 'Kette gebrochen bei ' + pruefung.data.broken_at,
+    type: pruefung.data.ok ? 'success' : 'error',
+  })
+}
+
+function themaFuer(aktion) {
+  if (aktion.startsWith('delete')) return 'red'
+  if (aktion.startsWith('insert')) return 'green'
+  if (aktion.startsWith('screen')) return 'blue'
+  return 'gray'
+}
+</script>

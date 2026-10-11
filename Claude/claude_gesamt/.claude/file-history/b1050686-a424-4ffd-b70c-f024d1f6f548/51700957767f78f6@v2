@@ -1,0 +1,262 @@
+import "server-only";
+
+import { alle, eine, skalar } from "../db/verbindung.ts";
+import { messStempel, verschiebeTage } from "../datum.ts";
+
+/**
+ * Auswertungen der Speichervermarktung.
+ *
+ * Der Fahrplan selbst wird im Rechenkern erzeugt; hier wird nur
+ * gelesen, was dabei herauskam. Die Belegung jedes Intervalls ist
+ * mitgeschrieben - im Streitfall ist das die entscheidende Angabe.
+ */
+
+export interface SpeicherZeile {
+  id: string;
+  anlage_id: string;
+  anlage: string;
+  bezeichnung: string;
+  hersteller: string | null;
+  modell: string | null;
+  kapazitaet_kwh: number;
+  ladeleistung_kw: number;
+  entladeleistung_kw: number;
+  wirkungsgrad_laden: number;
+  wirkungsgrad_entladen: number;
+  notstrom_reserve: number;
+  zykluskosten_eur_kwh: number;
+  zyklen_garantie: number | null;
+  zyklen_verbraucht: number;
+  status: string;
+  /** Für Regelleistung vorgehaltene Leistung, kW. */
+  vorhaltung_kw: number;
+}
+
+export function ladeSpeicher(): SpeicherZeile[] {
+  return alle<SpeicherZeile>(
+    `SELECT s.*, a.bezeichnung AS anlage,
+            COALESCE((SELECT SUM(r.leistung_kw) FROM regelleistung r
+                       WHERE r.speicher_id = s.id
+                         AND r.status = 'Bezuschlagt'), 0) AS vorhaltung_kw
+       FROM speicher s
+       JOIN anlage a ON a.id = s.anlage_id
+      ORDER BY s.kapazitaet_kwh DESC`,
+  );
+}
+
+export interface FahrplanZeile {
+  id: string;
+  speicher_id: string;
+  speicher: string;
+  anlage: string;
+  tag: string;
+  status: string;
+  eigenverbrauch_eur: number;
+  handel_eur: number;
+  spitzenkappung_eur: number;
+  zykluskosten_eur: number;
+  gesamt_eur: number;
+  spitze_ohne_kw: number | null;
+  spitze_mit_kw: number | null;
+  durchsatz_kwh: number;
+  vollzyklen: number;
+  gerechnet_am: string;
+  freigegeben_am: string | null;
+}
+
+export function ladeFahrplaene(grenze = 30): FahrplanZeile[] {
+  return alle<FahrplanZeile>(
+    `SELECT f.*, s.bezeichnung AS speicher, a.bezeichnung AS anlage
+       FROM fahrplan f
+       JOIN speicher s ON s.id = f.speicher_id
+       JOIN anlage a   ON a.id = s.anlage_id
+      ORDER BY f.tag DESC, s.kapazitaet_kwh DESC
+      LIMIT ?`,
+    grenze,
+  );
+}
+
+export function ladeFahrplan(id: string): FahrplanZeile | null {
+  return eine<FahrplanZeile>(
+    `SELECT f.*, s.bezeichnung AS speicher, a.bezeichnung AS anlage
+       FROM fahrplan f
+       JOIN speicher s ON s.id = f.speicher_id
+       JOIN anlage a   ON a.id = s.anlage_id
+      WHERE f.id = ?`,
+    id,
+  );
+}
+
+export interface FahrplanSchritt {
+  zeitpunkt: string;
+  preis_eur_mwh: number;
+  erzeugung_kwh: number;
+  verbrauch_kwh: number;
+  laden_kwh: number;
+  entladen_kwh: number;
+  netzbezug_kwh: number;
+  einspeisung_kwh: number;
+  ladestand_kwh: number;
+  belegung: string;
+  ergebnis_eur: number;
+}
+
+export function ladeFahrplanSchritte(fahrplanId: string): FahrplanSchritt[] {
+  return alle<FahrplanSchritt>(
+    `SELECT zeitpunkt, preis_eur_mwh, erzeugung_kwh, verbrauch_kwh,
+            laden_kwh, entladen_kwh, netzbezug_kwh, einspeisung_kwh,
+            ladestand_kwh, belegung, ergebnis_eur
+       FROM fahrplan_schritt
+      WHERE fahrplan_id = ?
+      ORDER BY zeitpunkt`,
+    fahrplanId,
+  );
+}
+
+export interface Preispunkt {
+  zeitpunkt: string;
+  preis_eur_mwh: number;
+}
+
+/** Börsenpreise eines Tages, Viertelstundenwerte. */
+export function ladePreise(tag: Date): Preispunkt[] {
+  const beginn = new Date(tag);
+  beginn.setHours(0, 0, 0, 0);
+
+  return alle<Preispunkt>(
+    `SELECT zeitpunkt, preis_eur_mwh FROM marktpreis
+      WHERE markt = 'EPEX_AT_DA' AND zeitpunkt >= ? AND zeitpunkt < ?
+      ORDER BY zeitpunkt`,
+    messStempel(beginn),
+    messStempel(verschiebeTage(beginn, 1)),
+  );
+}
+
+export interface RegelleistungZeile {
+  id: string;
+  speicher_id: string;
+  speicher: string;
+  produkt: string;
+  von: string;
+  bis: string;
+  leistung_kw: number;
+  preis_eur_mw_h: number | null;
+  status: string;
+}
+
+export function ladeRegelleistung(): RegelleistungZeile[] {
+  return alle<RegelleistungZeile>(
+    `SELECT r.*, s.bezeichnung AS speicher
+       FROM regelleistung r
+       JOIN speicher s ON s.id = r.speicher_id
+      ORDER BY r.von DESC`,
+  );
+}
+
+export interface HandelKennzahlen {
+  speicher: number;
+  kapazitaetKwh: number;
+  leistungKw: number;
+  vorhaltungKw: number;
+  /** Ergebnis der gefahrenen Fahrpläne, Euro. */
+  ergebnisGefahren: number;
+  /** Ergebnis der Fahrpläne, die noch laufen oder anstehen. */
+  ergebnisGeplant: number;
+  eigenverbrauchEur: number;
+  handelEur: number;
+  spitzenkappungEur: number;
+  zykluskostenEur: number;
+  durchsatzKwh: number;
+  /** Niedrigster und höchster Börsenpreis des Folgetags. */
+  preisMin: number | null;
+  preisMax: number | null;
+  /** Stunden mit negativem Preis am Folgetag. */
+  negativeStunden: number;
+}
+
+export function ladeHandelKennzahlen(): HandelKennzahlen {
+  const s = eine<{
+    anzahl: number;
+    kapazitaet: number;
+    leistung: number;
+  }>(
+    `SELECT COUNT(*) AS anzahl,
+            COALESCE(SUM(kapazitaet_kwh), 0) AS kapazitaet,
+            COALESCE(SUM(entladeleistung_kw), 0) AS leistung
+       FROM speicher`,
+  );
+
+  const f = eine<{
+    gefahren: number;
+    geplant: number;
+    ev: number;
+    handel: number;
+    spitze: number;
+    zyklen: number;
+    durchsatz: number;
+  }>(
+    `SELECT COALESCE(SUM(CASE WHEN status = 'Gefahren' THEN gesamt_eur END), 0)
+              AS gefahren,
+            COALESCE(SUM(CASE WHEN status IN ('Freigegeben','Entwurf')
+                              THEN gesamt_eur END), 0) AS geplant,
+            COALESCE(SUM(eigenverbrauch_eur), 0)  AS ev,
+            COALESCE(SUM(handel_eur), 0)          AS handel,
+            COALESCE(SUM(spitzenkappung_eur), 0)  AS spitze,
+            COALESCE(SUM(zykluskosten_eur), 0)    AS zyklen,
+            COALESCE(SUM(durchsatz_kwh), 0)       AS durchsatz
+       FROM fahrplan`,
+  );
+
+  const morgen = verschiebeTage(new Date(), 1);
+  morgen.setHours(0, 0, 0, 0);
+
+  const preise = ladePreise(morgen);
+  const werte = preise.map((p) => p.preis_eur_mwh);
+
+  return {
+    speicher: s?.anzahl ?? 0,
+    kapazitaetKwh: Number((s?.kapazitaet ?? 0).toFixed(0)),
+    leistungKw: Number((s?.leistung ?? 0).toFixed(0)),
+    vorhaltungKw:
+      skalar<number>(
+        `SELECT COALESCE(SUM(leistung_kw), 0) FROM regelleistung
+          WHERE status = 'Bezuschlagt'`,
+      ) ?? 0,
+    ergebnisGefahren: Number((f?.gefahren ?? 0).toFixed(2)),
+    ergebnisGeplant: Number((f?.geplant ?? 0).toFixed(2)),
+    eigenverbrauchEur: Number((f?.ev ?? 0).toFixed(2)),
+    handelEur: Number((f?.handel ?? 0).toFixed(2)),
+    spitzenkappungEur: Number((f?.spitze ?? 0).toFixed(2)),
+    zykluskostenEur: Number((f?.zyklen ?? 0).toFixed(2)),
+    durchsatzKwh: Number((f?.durchsatz ?? 0).toFixed(0)),
+    preisMin: werte.length > 0 ? Math.min(...werte) : null,
+    preisMax: werte.length > 0 ? Math.max(...werte) : null,
+    negativeStunden: Number(
+      (preise.filter((p) => p.preis_eur_mwh < 0).length / 4).toFixed(1),
+    ),
+  };
+}
+
+export interface BelegungsAnteil {
+  belegung: string;
+  intervalle: number;
+  entladenKwh: number;
+  ladenKwh: number;
+  ergebnisEur: number;
+}
+
+/** Wie sich die Intervalle eines Fahrplans auf die Stufen verteilen. */
+export function ladeBelegung(fahrplanId: string): BelegungsAnteil[] {
+  return alle<BelegungsAnteil>(
+    `SELECT belegung,
+            COUNT(*)                              AS intervalle,
+            ROUND(SUM(entladen_kwh), 1)           AS entladenKwh,
+            ROUND(SUM(laden_kwh), 1)              AS ladenKwh,
+            ROUND(SUM(ergebnis_eur), 2)           AS ergebnisEur
+       FROM fahrplan_schritt
+      WHERE fahrplan_id = ?
+      GROUP BY belegung
+      ORDER BY ergebnisEur DESC`,
+    fahrplanId,
+  );
+}

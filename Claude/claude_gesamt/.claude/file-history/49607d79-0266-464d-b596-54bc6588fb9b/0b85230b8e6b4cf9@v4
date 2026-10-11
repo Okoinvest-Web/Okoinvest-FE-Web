@@ -1,0 +1,210 @@
+<template>
+  <div>
+    <PageHeader title="Externe Angriffsfläche" :subtitle="untertitel" />
+
+    <div class="p-6">
+      <div v-if="aussen.data" class="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <StatCard
+          v-for="kachel in kacheln"
+          :key="kachel.label"
+          :label="kachel.label"
+          :wert="kachel.wert"
+          :hinweis="kachel.hinweis"
+          :level="kachel.level"
+        />
+      </div>
+
+      <section class="mb-8">
+        <h2 class="mb-3 text-base font-semibold text-ink-gray-8">Öffentlich erreichbare Dienste</h2>
+        <DataTable
+          tabellen-id="ExposureView-1"
+          :columns="dienstSpalten"
+          :rows="aussen.data?.services || []"
+          :loading="aussen.loading"
+        >
+          <template #zelle-service_name="{ zeile }">
+            <span class="block text-ink-gray-9">{{ zeile.service_name }}</span>
+            <span class="block text-sm text-ink-gray-5">{{ zeile.banner || '–' }}</span>
+          </template>
+          <template #zelle-documented="{ zeile }">
+            <StatusDot
+              :level="zeile.documented ? 'ok' : 'critical'"
+              :text="zeile.documented ? 'dokumentiert' : 'nicht dokumentiert'"
+              klein
+            />
+          </template>
+        </DataTable>
+        <p class="mt-2 text-xs text-ink-gray-4">
+          Abgleich der von außen sichtbaren Dienste gegen die dokumentierten Freigaben. Was hier als
+          „nicht dokumentiert“ steht, ist entweder ungewollt offen oder fehlt in der Doku – beides
+          muss aufgelöst werden.
+        </p>
+      </section>
+
+      <section class="mb-8">
+        <h2 class="mb-3 text-base font-semibold text-ink-gray-8">Zertifikate</h2>
+        <DataTable
+          tabellen-id="ExposureView-2"
+          :columns="zertSpalten"
+          :rows="aussen.data?.certificates || []"
+        >
+          <template #zelle-common_name="{ zeile }">
+            <span class="block font-mono text-sm text-ink-gray-9">{{ zeile.common_name }}</span>
+            <span class="block text-sm text-ink-gray-5">{{ zeile.issuer }}</span>
+          </template>
+          <template #zelle-in_dns_doc="{ zeile }">
+            <StatusDot
+              :level="zeile.in_dns_doc ? 'ok' : 'warning'"
+              :text="zeile.in_dns_doc ? 'in der Doku' : 'unbekannte Subdomain'"
+              klein
+            />
+          </template>
+          <template #zelle-befund="{ zeile }">
+            <StatusDot v-if="!zeile.reasons.length" level="ok" text="gültig" klein />
+            <ul v-else class="space-y-0.5">
+              <li v-for="grund in zeile.reasons" :key="grund" class="text-sm text-ink-gray-6">
+                {{ grund }}
+              </li>
+            </ul>
+          </template>
+        </DataTable>
+      </section>
+
+      <div class="grid grid-cols-1 gap-8 xl:grid-cols-2">
+        <section>
+          <h2 class="mb-3 text-base font-semibold text-ink-gray-8">Threat Intel</h2>
+          <DataTable
+            tabellen-id="ExposureView-3"
+            :columns="iocSpalten"
+            :rows="aussen.data?.indicators || []"
+          >
+            <template #zelle-indicator="{ zeile }">
+              <span class="font-mono text-sm text-ink-gray-9">{{ zeile.indicator }}</span>
+            </template>
+            <template #zelle-matched="{ zeile }">
+              <StatusDot
+                v-if="zeile.matched"
+                level="critical"
+                :text="'Treffer: ' + zeile.matched_object"
+                klein
+              />
+              <StatusDot v-else level="ok" text="kein Treffer" klein />
+            </template>
+            <template #zelle-confidence="{ zeile }">{{ zeile.confidence }} %</template>
+          </DataTable>
+        </section>
+
+        <section>
+          <h2 class="mb-3 text-base font-semibold text-ink-gray-8">Scan-Fenster</h2>
+          <DataTable
+            tabellen-id="ExposureView-4"
+            :columns="scanSpalten"
+            :rows="aussen.data?.scan_windows || []"
+          >
+            <template #zelle-window_name="{ zeile }">
+              <span class="block text-ink-gray-9">{{ zeile.window_name }}</span>
+              <span class="block font-mono text-sm text-ink-gray-5">{{ zeile.target_prefix }}</span>
+            </template>
+            <template #zelle-zeit="{ zeile }">
+              {{ zeile.weekday }} {{ zeile.start_time }} · {{ zeile.duration_minutes }} min
+            </template>
+            <template #zelle-befund="{ zeile }">
+              <StatusDot v-if="!zeile.reasons.length" level="ok" text="angemeldet" klein />
+              <ul v-else class="space-y-0.5">
+                <li v-for="grund in zeile.reasons" :key="grund" class="text-sm text-ink-gray-6">
+                  {{ grund }}
+                </li>
+              </ul>
+            </template>
+          </DataTable>
+          <p class="mt-2 text-xs text-ink-gray-4">
+            Scans werden mit fester Quell-IP und festem Zeitfenster vorab beim Wachhund angemeldet.
+            OT-Feldgeräte und SCADA-Server vertragen nur schonende Profile – aggressive Scans
+            bringen sie zum Absturz.
+          </p>
+        </section>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed } from 'vue'
+import { createResource } from 'frappe-ui'
+import PageHeader from '@/components/PageHeader.vue'
+import DataTable from '@/components/DataTable.vue'
+import StatCard from '@/components/StatCard.vue'
+
+const aussen = createResource({ url: 'netops.api.exposure.exposure_overview', auto: true })
+
+const dienstSpalten = [
+  { key: 'public_ip', label: 'IP', numeric: true, width: '150px' },
+  { key: 'port', label: 'Port', align: 'right', numeric: true, width: '80px' },
+  { key: 'protocol', label: 'Proto', muted: true, width: '80px' },
+  { key: 'service_name', label: 'Dienst', width: '220px' },
+  { key: 'source', label: 'Quelle', muted: true, width: '130px' },
+  { key: 'last_seen', label: 'Zuletzt gesehen', numeric: true, muted: true, width: '150px' },
+  { key: 'documented', label: 'Abgleich' },
+]
+
+const zertSpalten = [
+  { key: 'common_name', label: 'Zertifikat', width: '300px' },
+  { key: 'not_after', label: 'Gültig bis', numeric: true, width: '130px' },
+  { key: 'san_count', label: 'SANs', align: 'right', numeric: true, width: '80px' },
+  { key: 'source', label: 'Quelle', muted: true, width: '110px' },
+  { key: 'in_dns_doc', label: 'DNS-Doku', width: '210px' },
+  { key: 'befund', label: 'Befund' },
+]
+
+const iocSpalten = [
+  { key: 'indicator', label: 'Indikator', width: '210px' },
+  { key: 'indicator_kind', label: 'Art', muted: true, width: '80px' },
+  { key: 'source', label: 'Quelle', muted: true, width: '120px' },
+  { key: 'confidence', label: 'Güte', align: 'right', numeric: true, width: '80px' },
+  { key: 'matched', label: 'Abgleich' },
+]
+
+const scanSpalten = [
+  { key: 'window_name', label: 'Fenster', width: '200px' },
+  { key: 'zeit', label: 'Zeitpunkt', width: '200px' },
+  { key: 'profile', label: 'Profil', muted: true, width: '140px' },
+  { key: 'befund', label: 'Befund' },
+]
+
+const kacheln = computed(() => {
+  const z = aussen.data?.summary
+  if (!z) return []
+  return [
+    {
+      label: 'Nicht dokumentiert',
+      wert: z.undocumented,
+      level: 'critical',
+      hinweis: z.undocumented ? 'sofort klären' : null,
+    },
+    {
+      label: 'Zertifikate mit Befund',
+      wert: z.certificates_expiring,
+      level: 'warning',
+      hinweis: z.certificates_expiring ? 'erneuern oder erfassen' : null,
+    },
+    {
+      label: 'IoC-Treffer',
+      wert: z.indicators_matched,
+      level: 'critical',
+      hinweis: z.indicators_matched ? 'im eigenen Netz gesehen' : null,
+    },
+    {
+      label: 'Scan-Fenster mit Befund',
+      wert: z.scan_windows_problematic,
+      level: 'critical',
+      hinweis: z.scan_windows_problematic ? 'nicht zulässig' : null,
+    },
+  ]
+})
+
+const untertitel = computed(() => {
+  const z = aussen.data?.summary
+  if (!z) return ''
+  return z.services + ' öffentliche Dienste · ' + z.undocumented + ' nicht dokumentiert'
+})
+</script>

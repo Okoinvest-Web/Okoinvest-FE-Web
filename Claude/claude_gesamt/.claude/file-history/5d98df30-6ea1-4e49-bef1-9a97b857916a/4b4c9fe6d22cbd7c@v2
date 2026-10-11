@@ -1,0 +1,32 @@
+# -*- coding: utf-8 -*-
+import re, io, os
+SP = os.path.dirname(os.path.abspath(__file__))
+t = io.open(os.path.join(SP, 'akt.txt'), encoding='utf-8').read()
+BOILER = re.compile(r'Erstellt für Stefan ZAJIC am 16\.04\.2026 um 14:35:57 durch Verrechnungsstelle')
+
+def extract(on, nxt):
+    starts = [m.start() for m in re.finditer(r'ON ' + re.escape(on) + r', \d+', t)]
+    end = t.find('ON ' + nxt + ', 1', starts[-1])
+    raw = t[starts[0]: end if end > 0 else starts[-1] + 12000]
+    raw = BOILER.sub(' ', raw)
+    raw = re.sub(r'ON \d+\.\d+, \d+', ' ', raw)
+    raw = re.sub(r'816 018 ST 14/26 m', ' ', raw)
+    raw = re.sub(r'-\s*\n\s*', '', raw)
+    return re.sub(r'\s+', ' ', raw).strip()
+
+A = extract('2.2', '2.3'); B = extract('4.2', '4.3')
+
+def zeig(titel, txt, muster, vor=340, nach=340, max_n=4):
+    print('\n' + '=' * 76); print(titel); print('=' * 76)
+    n = 0
+    for m in re.finditer(muster, txt, re.I):
+        print('  …' + txt[max(0, m.start()-vor): m.end()+nach].strip() + '…\n')
+        n += 1
+        if n >= max_n: break
+    if n == 0: print('  (kein Treffer)')
+
+zeig('GEMEINSAME WENDUNG — ON 2.2 (Demetz)', A, r'strafrechtliche[nr]? Relevanz')
+zeig('GEMEINSAME WENDUNG — ON 4.2 (LF LAW / schobel)', B, r'strafrechtliche[nr]? Relevanz')
+zeig('WEGSCHEIDER in ON 4.2', B, r'Wegscheider', 420, 420)
+zeig('IMMOBILIENVERWALTUNGS in ON 4.2', B, r'Immobilienverwaltungs', 380, 380, 3)
+zeig('Womit ON 4.2 Höfler belastet', B, r'Verdächtige', 60, 400, 3)

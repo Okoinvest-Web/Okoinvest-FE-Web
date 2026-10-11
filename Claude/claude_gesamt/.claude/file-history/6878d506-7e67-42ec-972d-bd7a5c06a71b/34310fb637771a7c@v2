@@ -1,0 +1,100 @@
+import sys, os
+os.chdir(r"C:\Users\SALEADMIN\Downloads\crm-develop\crm-next")
+p = "src/lib/actions.ts"
+s = open(p, encoding="utf-8").read()
+
+def rep(a, b):
+    global s
+    if a not in s:
+        sys.exit("fehlt: " + a[:90])
+    s = s.replace(a, b, 1)
+
+rep("import { LEAD_SOURCES, LEAD_STATUSES, LOST_REASONS,", "import { CONSENT_SOURCES, COUNTRIES, LEAD_SOURCES, LEAD_STATUSES, LOST_REASONS, type Country,")
+rep('import { parseAmount } from "@/lib/format";', 'import { parseAmount } from "@/lib/format";\nimport { TAX_OPTIONS } from "@/lib/tax";')
+
+# Neuer Lead: Land + Einwilligung
+rep('''  const lead = await db().createLead({
+    first_name,''', '''  const country = (str(form, "country") || "Germany") as Country;
+  if (!COUNTRIES.includes(country)) return { error: "Ungültiges Land." };
+  const consent = str(form, "custom_consent");
+  if (consent && consent !== "Ja" && consent !== "Nein") return { error: "Ungültige Angabe zur Einwilligung." };
+  const consentSource = opt(form, "custom_consent_source");
+  if (consentSource && !CONSENT_SOURCES.includes(consentSource)) return { error: "Ungültige Quelle der Einwilligung." };
+
+  const lead = await db().createLead({
+    country,
+    custom_consent: (consent || undefined) as "Ja" | "Nein" | undefined,
+    // Datum der Einwilligung dokumentieren (Nachweispflicht nach DSGVO)
+    custom_consent_date: consent === "Ja" ? new Date().toISOString().slice(0, 10) : undefined,
+    custom_consent_source: consent === "Ja" ? consentSource : undefined,
+    first_name,''')
+
+# Inline-Felder am Lead erweitern
+rep('''const LEAD_FIELDS = ["first_name", "last_name", "company_name", "email_id", "mobile_no", "source", "territory", "notes"];''',
+    '''const LEAD_FIELDS = ["first_name", "last_name", "company_name", "email_id", "mobile_no", "source", "territory", "notes", "country", "custom_consent", "custom_consent_source"];''')
+rep('''  if (field === "source" && v && !LEAD_SOURCES.includes(v)) return { error: "Ungültige Quelle." };''',
+    '''  if (field === "source" && v && !LEAD_SOURCES.includes(v)) return { error: "Ungültige Quelle." };
+  if (field === "country" && !(COUNTRIES as readonly string[]).includes(v)) return { error: "Ungültiges Land." };
+  if (field === "custom_consent" && v && v !== "Ja" && v !== "Nein") return { error: "Ungültige Angabe." };
+  if (field === "custom_consent_source" && v && !CONSENT_SOURCES.includes(v)) return { error: "Ungültige Quelle." };''')
+rep('''  await db().updateLead(name, { [field]: v } as LeadUpdate);''', '''  const update = { [field]: v } as LeadUpdate;
+  // Einwilligung erteilt → Datum festhalten; entzogen → Datum und Quelle leeren
+  if (field === "custom_consent") {
+    update.custom_consent_date = v === "Ja" ? new Date().toISOString().slice(0, 10) : "";
+    if (v !== "Ja") update.custom_consent_source = "";
+  }
+  await db().updateLead(name, update);''')
+
+s += '''
+// ---------- Angebote ----------
+
+type QuoteLine = { item_code: string; qty: number; rate: number };
+
+export async function createQuotationAction(_prev: FormState, form: FormData): Promise<FormState> {
+  const user = await requireUser();
+  const oppName = str(form, "opportunity");
+  const opp = oppName ? await db().getOpportunity(oppName) : null;
+  if (!opp) return { error: "Chance nicht gefunden." };
+
+  let lines: QuoteLine[];
+  try {
+    lines = JSON.parse(str(form, "items") || "[]");
+  } catch {
+    return { error: "Positionen sind ungültig." };
+  }
+  if (!Array.isArray(lines) || lines.length === 0) return { error: "Bitte mindestens eine Position hinzufügen." };
+  if (lines.length > 100) return { error: "Zu viele Positionen." };
+
+  // Nur Artikel aus dem Katalog, Mengen und Preise plausibel
+  const catalog = new Map((await db().listItems({ limit: 1000 })).map((i) => [i.item_code, i]));
+  for (const l of lines) {
+    if (!catalog.has(l.item_code)) return { error: `Unbekannter Artikel: ${String(l.item_code).slice(0, 40)}` };
+    if (!(typeof l.qty === "number" && l.qty > 0 && l.qty <= 100000)) return { error: "Menge ist ungültig." };
+    if (!(typeof l.rate === "number" && l.rate >= 0 && l.rate <= 10_000_000)) return { error: "Preis ist ungültig." };
+  }
+
+  const country = (str(form, "country") || "Germany") as Country;
+  if (!COUNTRIES.includes(country)) return { error: "Ungültiges Land." };
+  const taxRate = Number(str(form, "tax_rate"));
+  if (!TAX_OPTIONS[country].some((t) => t.rate === taxRate)) return { error: "Ungültiger Steuersatz." };
+  const validTill = str(form, "valid_till");
+  if (!DATE.test(validTill)) return { error: "Bitte ein gültiges Datum für „gültig bis“ wählen." };
+
+  const q = await db().createQuotation(
+    {
+      quotation_to: opp.opportunity_from,
+      party_name: opp.party_name,
+      opportunity: opp.name,
+      title: str(form, "title").slice(0, 140) || opp.title,
+      valid_till: validTill,
+      tax_rate: taxRate,
+      items: lines.map((l) => ({ item_code: l.item_code, qty: l.qty, rate: l.rate })),
+    },
+    user.user,
+  );
+  revalidatePath("/", "layout");
+  redirect(`/quotations/${encodeURIComponent(q.name)}`);
+}
+'''
+open(p, "w", encoding="utf-8", newline="\n").write(s)
+print("ok")

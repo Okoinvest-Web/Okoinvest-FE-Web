@@ -1,0 +1,80 @@
+import pathlib
+
+ROOT = pathlib.Path(r"C:\Users\SALEADMIN\Documents\Servicetechniker APP")
+
+
+def patch(pfad, paare):
+    p = ROOT / pfad
+    s = p.read_text(encoding="utf-8")
+    for alt, neu in paare:
+        if alt not in s:
+            raise SystemExit(f"NICHT GEFUNDEN in {pfad}:\n---\n{alt[:300]}\n---")
+        s = s.replace(alt, neu, 1)
+    p.write_text(s, encoding="utf-8")
+    print("ok", pfad)
+
+
+KOMPONENTE = '''
+KOMPONENTENTYPEN = ("Modul\\nWechselrichter\\nLeistungsoptimierer\\nBatteriespeicher\\n"
+                    "Wallbox\\nZaehler\\nRundsteuerempfaenger\\nSonstiges")
+
+ANLAGENKOMPONENTE = doctype(
+    "Anlagenkomponente",
+    [
+        f("komponententyp", "Select", "Typ", options=KOMPONENTENTYPEN, reqd=1,
+          in_list_view=1, columns=2),
+        f("seriennummer", "Data", "Seriennummer", reqd=1, in_list_view=1, columns=3),
+        f("item", "Link", "Artikel", options="Item", in_list_view=1, columns=2),
+        f("position", "Data", "Einbauort", in_list_view=1, columns=3,
+          description="z. B. Feld B, Reihe 4, Position 7"),
+        cb("cb_komp"),
+        f("serial_no", "Link", "ERPNext-Seriennummer", options="Serial No", read_only=1,
+          description="Wird gesetzt, sobald die Nummer im Artikelstamm gefunden wird."),
+        f("hersteller", "Data", "Hersteller"),
+        f("eingebaut_am", "Date", "Eingebaut am"),
+        f("garantie_bis", "Date", "Garantie bis"),
+        f("foto", "Attach Image", "Foto Typenschild"),
+        f("bemerkung", "Small Text", "Bemerkung"),
+        f("erfasst_am", "Datetime", "Erfasst am", read_only=1),
+        f("erfasst_von", "Link", "Erfasst von", options="User", read_only=1),
+    ],
+    istable=1,
+)
+
+'''
+
+# --- Generator erweitern ----------------------------------------------------
+patch(
+    "scripts/generate_doctypes.py",
+    [
+        (
+            """# ----------------------------------------------------------------------------------
+# Checklistenvorlage
+# ----------------------------------------------------------------------------------""",
+            KOMPONENTE
+            + """# ----------------------------------------------------------------------------------
+# Checklistenvorlage
+# ----------------------------------------------------------------------------------""",
+        ),
+        (
+            """        sb("sb_medien", "Medien & Notizen"),
+        f("bild", "Attach Image", "Anlagenfoto"),
+        f("notizen", "Text Editor", "Anmerkungen"),""",
+            """        sb("sb_komponenten", "Verbaute Komponenten"),
+        f("komponenten", "Table", "Komponenten", options="Anlagenkomponente",
+          description="Seriennummern der verbauten Module, Wechselrichter und Speicher "
+                      "(Kapitel 2.2 ERPNext-Integration)."),
+        sb("sb_medien", "Medien & Notizen"),
+        f("bild", "Attach Image", "Anlagenfoto"),
+        f("notizen", "Text Editor", "Anmerkungen"),""",
+        ),
+        (
+            """DOCTYPES = [
+    MANGELKATEGORIE, MANGEL_SCHWEREGRAD, MESSMITTELTYP, MESSMITTEL, PDF_PROFIL, SETTINGS,
+    PV_ANLAGE, PRUEFPUNKT, CHECKLISTENSEKTION, CHECKLISTENVORLAGE,""",
+            """DOCTYPES = [
+    MANGELKATEGORIE, MANGEL_SCHWEREGRAD, MESSMITTELTYP, MESSMITTEL, PDF_PROFIL, SETTINGS,
+    ANLAGENKOMPONENTE, PV_ANLAGE, PRUEFPUNKT, CHECKLISTENSEKTION, CHECKLISTENVORLAGE,""",
+        ),
+    ],
+)

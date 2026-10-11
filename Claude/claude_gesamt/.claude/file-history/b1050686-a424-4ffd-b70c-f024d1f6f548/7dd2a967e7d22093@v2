@@ -1,0 +1,168 @@
+/**
+ * Gesetzliche Feiertage in Österreich.
+ *
+ * Gebraucht werden sie überall dort, wo eine Frist läuft: Reaktions-
+ * und Behebungszeiten aus Wartungsverträgen zählen Arbeitsstunden, und
+ * an einem Feiertag arbeitet niemand. Wer stattdessen Kalenderstunden
+ * zählt, verspricht dem Kunden eine Behebung am 26. Oktober.
+ *
+ * Grundlage ist das Arbeitsruhegesetz. Der Karfreitag steht nicht in
+ * der Liste: Er ist seit 2019 kein gesetzlicher Feiertag mehr, sondern
+ * ein persönlicher Feiertag auf Verlangen. Der 24. und der 31. Dezember
+ * sind ebenfalls keine gesetzlichen Feiertage, auch wenn in den meisten
+ * Betrieben nicht gearbeitet wird - wer das berücksichtigen will,
+ * hinterlegt sie als betriebliche Ausnahme, nicht hier.
+ */
+
+/**
+ * Ostersonntag nach der gregorianischen Osterformel.
+ *
+ * Der Algorithmus stammt von Gauß in der Fassung von Butcher und gilt
+ * ohne Ausnahme für den gesamten gregorianischen Kalender. An Ostern
+ * hängen vier der dreizehn österreichischen Feiertage.
+ */
+export function ostersonntag(jahr: number): Date {
+  const a = jahr % 19;
+  const b = Math.floor(jahr / 100);
+  const c = jahr % 100;
+  const d = Math.floor(b / 4);
+  const e = b % 4;
+  const f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3);
+  const h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4);
+  const k = c % 4;
+  const l = (32 + 2 * e + 2 * i - h - k) % 7;
+  const m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const monat = Math.floor((h + l - 7 * m + 114) / 31);
+  const tag = ((h + l - 7 * m + 114) % 31) + 1;
+
+  return new Date(jahr, monat - 1, tag);
+}
+
+function tageSpaeter(datum: Date, tage: number): Date {
+  const neu = new Date(datum);
+  neu.setDate(neu.getDate() + tage);
+  return neu;
+}
+
+export interface Feiertag {
+  datum: Date;
+  bezeichnung: string;
+  /** Ostern-abhängig, also jedes Jahr an einem anderen Datum. */
+  beweglich: boolean;
+}
+
+/** Alle gesetzlichen Feiertage eines Jahres, chronologisch. */
+export function feiertage(jahr: number): Feiertag[] {
+  const ostern = ostersonntag(jahr);
+
+  const liste: Feiertag[] = [
+    { datum: new Date(jahr, 0, 1), bezeichnung: "Neujahr", beweglich: false },
+    {
+      datum: new Date(jahr, 0, 6),
+      bezeichnung: "Heilige Drei Könige",
+      beweglich: false,
+    },
+    {
+      datum: tageSpaeter(ostern, 1),
+      bezeichnung: "Ostermontag",
+      beweglich: true,
+    },
+    {
+      datum: new Date(jahr, 4, 1),
+      bezeichnung: "Staatsfeiertag",
+      beweglich: false,
+    },
+    {
+      datum: tageSpaeter(ostern, 39),
+      bezeichnung: "Christi Himmelfahrt",
+      beweglich: true,
+    },
+    {
+      datum: tageSpaeter(ostern, 50),
+      bezeichnung: "Pfingstmontag",
+      beweglich: true,
+    },
+    {
+      datum: tageSpaeter(ostern, 60),
+      bezeichnung: "Fronleichnam",
+      beweglich: true,
+    },
+    {
+      datum: new Date(jahr, 7, 15),
+      bezeichnung: "Mariä Himmelfahrt",
+      beweglich: false,
+    },
+    {
+      datum: new Date(jahr, 9, 26),
+      bezeichnung: "Nationalfeiertag",
+      beweglich: false,
+    },
+    {
+      datum: new Date(jahr, 10, 1),
+      bezeichnung: "Allerheiligen",
+      beweglich: false,
+    },
+    {
+      datum: new Date(jahr, 11, 8),
+      bezeichnung: "Mariä Empfängnis",
+      beweglich: false,
+    },
+    {
+      datum: new Date(jahr, 11, 25),
+      bezeichnung: "Christtag",
+      beweglich: false,
+    },
+    {
+      datum: new Date(jahr, 11, 26),
+      bezeichnung: "Stefanitag",
+      beweglich: false,
+    },
+  ];
+
+  return liste.sort((a, b) => a.datum.getTime() - b.datum.getTime());
+}
+
+/** Tagesschlüssel in Ortszeit, etwa "2026-10-26". */
+function schluessel(datum: Date): string {
+  const m = String(datum.getMonth() + 1).padStart(2, "0");
+  const t = String(datum.getDate()).padStart(2, "0");
+  return `${datum.getFullYear()}-${m}-${t}`;
+}
+
+/**
+ * Zwischenspeicher der Feiertagsschlüssel je Jahr.
+ *
+ * Eine Fristenrechnung fragt für jeden Tag des Zeitraums nach; die
+ * Liste jedes Mal neu aufzubauen, hieße die Osterformel hundertfach zu
+ * rechnen.
+ */
+const jahresSpeicher = new Map<number, Set<string>>();
+
+function schluesselDesJahres(jahr: number): Set<string> {
+  let menge = jahresSpeicher.get(jahr);
+  if (!menge) {
+    menge = new Set(feiertage(jahr).map((f) => schluessel(f.datum)));
+    jahresSpeicher.set(jahr, menge);
+  }
+  return menge;
+}
+
+export function istFeiertag(datum: Date): boolean {
+  return schluesselDesJahres(datum.getFullYear()).has(schluessel(datum));
+}
+
+/** Name des Feiertags, sonst `null`. */
+export function feiertagName(datum: Date): string | null {
+  const treffer = feiertage(datum.getFullYear()).find(
+    (f) => schluessel(f.datum) === schluessel(datum),
+  );
+  return treffer?.bezeichnung ?? null;
+}
+
+/** Samstag, Sonntag oder gesetzlicher Feiertag. */
+export function istArbeitsfrei(datum: Date): boolean {
+  const tag = datum.getDay();
+  return tag === 0 || tag === 6 || istFeiertag(datum);
+}

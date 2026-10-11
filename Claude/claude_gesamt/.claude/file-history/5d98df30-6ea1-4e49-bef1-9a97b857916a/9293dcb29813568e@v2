@@ -1,0 +1,117 @@
+# -*- coding: utf-8 -*-
+"""Forensisch-linguistischer Abgleich ON 2.2 (Demetz, 14.01.2026) / ON 4.2 (LF LAW, 06.02.2026)"""
+import re, collections, sys, io, os
+
+SP = os.path.dirname(os.path.abspath(__file__))
+t = io.open(os.path.join(SP, 'akt.txt'), encoding='utf-8').read()
+
+BOILER = re.compile(r'Erstellt für Stefan ZAJIC am 16\.04\.2026 um 14:35:57 durch Verrechnungsstelle')
+
+def extract(on, naechste):
+    pat = r'ON ' + re.escape(on) + r', \d+'
+    starts = [m.start() for m in re.finditer(pat, t)]
+    end = t.find('ON ' + naechste + ', 1', starts[-1])
+    if end == -1:
+        end = starts[-1] + 12000
+    raw = t[starts[0]:end]
+    raw = BOILER.sub(' ', raw)
+    raw = re.sub(r'ON \d+\.\d+, \d+', ' ', raw)
+    raw = re.sub(r'816 018 ST 14/26 m', ' ', raw)
+    raw = re.sub(r'-\s*\n\s*', '', raw)          # Silbentrennung
+    raw = re.sub(r'\s+', ' ', raw)
+    return raw.strip()
+
+A = extract('2.2', '2.3')   # Masseverwalter
+B = extract('4.2', '4.3')   # schobel digital
+
+print('ON 2.2  Zeichen:', len(A), ' Wörter:', len(A.split()))
+print('ON 4.2  Zeichen:', len(B), ' Wörter:', len(B.split()))
+print()
+
+def norm(s):
+    s = s.lower()
+    s = s.replace('„', '"').replace('"', '"').replace('’', "'")
+    s = re.sub(r'[^a-zäöüß0-9 ]', ' ', s)
+    return re.sub(r'\s+', ' ', s).strip()
+
+wa, wb = norm(A).split(), norm(B).split()
+
+def ngrams(w, n):
+    return collections.Counter(tuple(w[i:i+n]) for i in range(len(w)-n+1))
+
+print('=' * 74)
+print('1. WÖRTLICHE ÜBEREINSTIMMUNGEN (gemeinsame Wortfolgen)')
+print('=' * 74)
+for n in (10, 8, 7, 6, 5):
+    ga, gb = ngrams(wa, n), ngrams(wb, n)
+    gem = set(ga) & set(gb)
+    print(f'\n-- {n}-Gramme: {len(gem)} gemeinsam --')
+    if not gem:
+        print('   keine')
+        continue
+    for g in sorted(gem)[:14]:
+        print('   "' + ' '.join(g) + '"')
+    if n <= 6 and len(gem) > 14:
+        print(f'   ... und {len(gem)-14} weitere')
+    if gem and n >= 7:
+        break
+
+print()
+print('=' * 74)
+print('2. SELTENES GEMEINSAMES VOKABULAR (ohne Allerweltswörter)')
+print('=' * 74)
+STOP = set('''der die das den dem des ein eine einer eines einem einen und oder aber
+auch als am an auf aus bei bis dass er es für hat habe haben hatte im in ist nach
+nicht noch nur sich sie so um von vor war wird wurde wurden zu zum zur über mit
+dieser diese dieses diesem diesen wenn werden worden sowie durch wie dann kann
+könne könnte sei seien seine seiner seinem seinen ihr ihre ihrer ihrem daher
+bereits jedoch dabei damit dazu darauf hierzu somit selbst weiters ferner
+gemäß vom zwar sondern''')
+sa = {w for w in wa if len(w) > 6 and w not in STOP}
+sb = {w for w in wb if len(w) > 6 and w not in STOP}
+gem = sorted(sa & sb)
+ca, cb = collections.Counter(wa), collections.Counter(wb)
+juristisch = [w for w in gem if ca[w] >= 2 or cb[w] >= 2]
+print(f'gemeinsame Types (>6 Zeichen): {len(gem)}')
+print()
+print(f'{"Wort":32s} {"ON 2.2":>7s} {"ON 4.2":>7s}')
+for w in sorted(juristisch, key=lambda x: -(ca[x]+cb[x]))[:34]:
+    print(f'{w:32s} {ca[w]:7d} {cb[w]:7d}')
+
+print()
+print('=' * 74)
+print('3. STILMERKMALE')
+print('=' * 74)
+def stil(name, txt, w):
+    saetze = [s for s in re.split(r'(?<=[.!?]) ', txt) if len(s.split()) > 2]
+    ln = [len(s.split()) for s in saetze]
+    print(f'{name}')
+    print(f'   Sätze: {len(saetze)}   Ø Satzlänge: {sum(ln)/len(ln):.1f} Wörter   '
+          f'längster: {max(ln)}')
+    print(f'   Types/Tokens: {len(set(w))}/{len(w)} = {len(set(w))/len(w):.3f}')
+    for marker, pat in [('„Verdacht"', r'verdacht'), ('„zu prüfen"', r'zu prüfen'),
+                        ('„nicht auszuschließen"', r'nicht auszuschließen'),
+                        ('„Schutzbehauptung"', r'schutzbehauptung'),
+                        ('„Prozessbetrug"', r'prozessbetrug'),
+                        ('„Nachweis(e)"', r'nachweis'),
+                        ('„vorgelegt"', r'vorgelegt'),
+                        ('„Verdächtige(r)"', r'verdächtig')]:
+        print(f'      {marker:24s} {len(re.findall(pat, txt.lower())):3d}')
+stil('ON 2.2  (Demetz, 14.01.2026)', A, wa)
+print()
+stil('ON 4.2  (LF LAW / schobel, 06.02.2026)', B, wb)
+
+print()
+print('=' * 74)
+print('4. GEMEINSAME EIGENNAMEN UND SACHVERHALTE')
+print('=' * 74)
+namen = ['Höfler','Hoefler','Demetz','Schobesberger','Schobel','Zajic','Wegscheider',
+         'Messmer','Mikic','Klepsch','JB Technology','tyb','adplac','Partl','Lederer',
+         'MW Immobilien','SM Immobilien','Ökovolt','Gefion','HUS','Kosov','schobel digital',
+         'Ermacora','Längle','Roto Frank','Four Telecom','Bösch','hjpe']
+print(f'{"Begriff":26s} {"ON 2.2":>7s} {"ON 4.2":>7s}   Bewertung')
+for nm in namen:
+    x, y = A.lower().count(nm.lower()), B.lower().count(nm.lower())
+    if x or y:
+        b = 'BEIDE' if (x and y) else ('nur 2.2' if x else 'nur 4.2')
+        print(f'{nm:26s} {x:7d} {y:7d}   {b}')

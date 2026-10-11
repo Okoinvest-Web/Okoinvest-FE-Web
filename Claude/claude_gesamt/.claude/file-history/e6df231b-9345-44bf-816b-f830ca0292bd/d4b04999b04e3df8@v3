@@ -1,0 +1,84 @@
+/**
+ * Listen aus lokalem Bestand und Serverbestand zusammenführen.
+ *
+ * Alle Übersichten (Protokolle, Mängel, Tagesberichte) brauchen dasselbe:
+ * lokale Dokumente zuerst — sie sind der aktuellere Stand und offline die
+ * einzige Quelle —, danach die Serverdokumente, die lokal nicht vorliegen.
+ * Schlägt der Serverabruf fehl, bleibt die Liste nutzbar und sagt das auch.
+ */
+
+import { onBeforeUnmount, onMounted, ref, shallowRef } from 'vue'
+
+import { ApiFehler, resource } from '@/lib/api'
+import { tabelleFuer, type Dokumenttyp } from '@/lib/db'
+import { PULL_EREIGNIS } from '@/lib/sync'
+
+export interface ListenZeile {
+  /** Eindeutiger Schlüssel für `v-for` — lokale UUID oder Servername. */
+  schluessel: string
+  lokale_id?: string
+  name?: string
+  /** Noch nicht übertragen: In der Liste als „nur lokal“ gekennzeichnet. */
+  nurLokal: boolean
+}
+
+export interface ListenKonfiguration {
+  doctype: Dokumenttyp
+  /** Felder, die vom Server geholt werden. */
+  felder: string[]
+  orderBy?: string
+  limit?: number
+}
+
+export function useDokumentenliste<T extends object>(konfiguration: ListenKonfiguration) {
+  const zeilen = shallowRef<(T & ListenZeile)[]>([])
+  const laedt = ref(true)
+  /** Serverliste nicht erreichbar — angezeigt wird nur der lokale Bestand. */
+  const nurLokalerBestand = ref(false)
+
+  async function laden(): Promise<void> {
+    laedt.value = true
+    try {
+      const lokal = await tabelleFuer(konfiguration.doctype).toArray()
+      const lokaleZeilen = lokal.map((eintrag) => ({
+        ...(eintrag as unknown as T),
+        schluessel: (eintrag as { lokale_id: string }).lokale_id,
+        nurLokal: !(eintrag as { name?: string }).name,
+      })) as (T & ListenZeile)[]
+
+      let serverZeilen: (T & ListenZeile)[] = []
+      try {
+        const daten = await resource.liste<T & { name: string }>(konfiguration.doctype, {
+          fields: konfiguration.felder,
+          order_by: konfiguration.orderBy,
+          limit_page_length: konfiguration.limit ?? 150,
+        })
+        // Lokale Fassung gewinnt: Sie kann Änderungen enthalten, die noch in
+        // der Warteschlange stehen.
+        const bekannt = new Set(lokaleZeilen.map((z) => z.name).filter(Boolean))
+        serverZeilen = daten
+          .filter((eintrag) => !bekannt.has(eintrag.name))
+          .map((eintrag) => ({ ...eintrag, schluessel: eintrag.name, nurLokal: false }))
+        nurLokalerBestand.value = false
+      } catch (fehler) {
+        // Offline ist ein normaler Betriebszustand, kein Fehler.
+        nurLokalerBestand.value = fehler instanceof ApiFehler && fehler.istNetzfehler
+        if (!nurLokalerBestand.value) {
+          console.warn(`${konfiguration.doctype}-Liste vom Server:`, fehler)
+          nurLokalerBestand.value = true
+        }
+      }
+
+      zeilen.value = [...lokaleZeilen, ...serverZeilen]
+    } finally {
+      laedt.value = false
+    }
+  }
+
+  // Nach einem Sync-Lauf können sich Zuweisungen und Status geändert haben.
+  const beiPull = () => void laden()
+  onMounted(() => window.addEventListener(PULL_EREIGNIS, beiPull))
+  onBeforeUnmount(() => window.removeEventListener(PULL_EREIGNIS, beiPull))
+
+  return { zeilen, laedt, nurLokalerBestand, laden }
+}

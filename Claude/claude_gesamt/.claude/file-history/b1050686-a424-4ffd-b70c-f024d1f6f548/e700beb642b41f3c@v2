@@ -1,0 +1,206 @@
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+
+import {
+  DURCHGEHEND,
+  SLA_STUFEN,
+  arbeitsstundenZwischen,
+  frist,
+  fristenstand,
+  naechsteArbeitszeit,
+  slaFuer,
+} from "./frist.ts";
+
+/**
+ * An diesen Fristen wird gemessen, ob ein Wartungsvertrag erfüllt ist.
+ * Wer Kalenderstunden statt Arbeitsstunden zählt, meldet jeden Montag
+ * Überschreitungen, die keine sind - und nach zwei Wochen schaut
+ * niemand mehr hin.
+ *
+ * Die Bezugswoche: Montag, 14. September 2026 bis Sonntag, 20. September.
+ * Kein Feiertag, keine Zeitumstellung.
+ */
+const MO = (stunde: number, minute = 0) =>
+  new Date(2026, 8, 14, stunde, minute, 0, 0);
+const FR = (stunde: number, minute = 0) =>
+  new Date(2026, 8, 18, stunde, minute, 0, 0);
+const SA = (stunde: number, minute = 0) =>
+  new Date(2026, 8, 19, stunde, minute, 0, 0);
+
+describe("naechsteArbeitszeit", () => {
+  it("lässt einen Zeitpunkt innerhalb der Servicezeit unverändert", () => {
+    const z = naechsteArbeitszeit(MO(10, 30));
+    assert.equal(z.getTime(), MO(10, 30).getTime());
+  });
+
+  it("schiebt vor Dienstbeginn auf den Beginn desselben Tages", () => {
+    const z = naechsteArbeitszeit(MO(6));
+    assert.equal(z.getTime(), MO(8).getTime());
+  });
+
+  it("schiebt nach Dienstschluss auf den nächsten Morgen", () => {
+    const z = naechsteArbeitszeit(MO(19));
+    assert.equal(z.getTime(), new Date(2026, 8, 15, 8).getTime());
+  });
+
+  it("überspringt das Wochenende", () => {
+    const z = naechsteArbeitszeit(SA(10));
+    // Montag, 21. September, 8 Uhr.
+    assert.equal(z.getTime(), new Date(2026, 8, 21, 8).getTime());
+  });
+
+  it("überspringt einen Feiertag", () => {
+    // 26. Oktober 2026 ist ein Montag und Nationalfeiertag.
+    const z = naechsteArbeitszeit(new Date(2026, 9, 26, 9));
+    assert.equal(z.getTime(), new Date(2026, 9, 27, 8).getTime());
+  });
+
+  it("lässt bei durchgehendem Betrieb alles unverändert", () => {
+    const z = naechsteArbeitszeit(SA(3), DURCHGEHEND);
+    assert.equal(z.getTime(), SA(3).getTime());
+  });
+});
+
+describe("frist", () => {
+  it("addiert innerhalb eines Arbeitstags einfach", () => {
+    assert.equal(frist(MO(9), 4).getTime(), MO(13).getTime());
+  });
+
+  it("trägt die Restzeit auf den nächsten Tag", () => {
+    // Ab 15 Uhr sind nur noch zwei Stunden übrig, die dritte fällt auf
+    // den Folgetag um 8 Uhr.
+    const f = frist(MO(15), 3);
+    assert.equal(f.getTime(), new Date(2026, 8, 15, 9).getTime());
+  });
+
+  it("rechnet über das Wochenende hinweg", () => {
+    // Freitag 16 Uhr, vier Stunden Reaktionszeit: eine Stunde am
+    // Freitag, drei am Montag - also Montag 11 Uhr.
+    const f = frist(FR(16), 4);
+    assert.equal(f.getTime(), new Date(2026, 8, 21, 11).getTime());
+  });
+
+  it("beginnt bei einer Meldung außerhalb der Servicezeit erst am nächsten Morgen", () => {
+    // Samstagnacht gemeldet, zwei Stunden Reaktionszeit: Montag 10 Uhr.
+    const f = frist(SA(23), 2);
+    assert.equal(f.getTime(), new Date(2026, 8, 21, 10).getTime());
+  });
+
+  it("überspringt einen Feiertag", () => {
+    // Freitag, 23. Oktober 2026, 16 Uhr. Montag ist Nationalfeiertag,
+    // also zählt erst Dienstag: eine Stunde Freitag, eine Dienstag früh.
+    const f = frist(new Date(2026, 9, 23, 16), 2);
+    assert.equal(f.getTime(), new Date(2026, 9, 27, 9).getTime());
+  });
+
+  it("zählt bei durchgehendem Betrieb jede Stunde", () => {
+    const f = frist(SA(22), 4, DURCHGEHEND);
+    assert.equal(f.getTime(), new Date(2026, 8, 20, 2).getTime());
+  });
+
+  it("gibt bei einer Frist von null den Beginn zurück", () => {
+    assert.equal(frist(MO(9), 0).getTime(), MO(9).getTime());
+  });
+
+  it("liegt für eine längere Frist immer nach einer kürzeren", () => {
+    const kurz = frist(MO(9), 4);
+    const lang = frist(MO(9), 24);
+    assert.ok(lang > kurz);
+  });
+});
+
+describe("arbeitsstundenZwischen", () => {
+  it("zählt innerhalb eines Tages", () => {
+    assert.equal(arbeitsstundenZwischen(MO(9), MO(14)), 5);
+  });
+
+  it("zählt die Zeit außerhalb der Servicezeit nicht mit", () => {
+    // Montag 16 Uhr bis Dienstag 9 Uhr: eine Stunde am Montag, eine
+    // am Dienstag - nicht siebzehn.
+    const stunden = arbeitsstundenZwischen(
+      MO(16),
+      new Date(2026, 8, 15, 9),
+    );
+    assert.equal(stunden, 2);
+  });
+
+  it("ergibt über ein Wochenende null", () => {
+    assert.equal(arbeitsstundenZwischen(SA(0), new Date(2026, 8, 21, 0)), 0);
+  });
+
+  it("wird negativ, wenn das Ende vor dem Beginn liegt", () => {
+    assert.equal(arbeitsstundenZwischen(MO(14), MO(9)), -5);
+  });
+
+  it("ist die Umkehrung von frist", () => {
+    // Was die Frist an Arbeitsstunden vorwärts geht, muss die Zählung
+    // rückwärts wiederfinden.
+    for (const stunden of [1, 4, 8, 24, 72]) {
+      const faellig = frist(MO(9), stunden);
+      const gemessen = arbeitsstundenZwischen(MO(9), faellig);
+      assert.ok(
+        Math.abs(gemessen - stunden) < 0.02,
+        `${stunden} h ergab ${gemessen} h`,
+      );
+    }
+  });
+});
+
+describe("SLA_STUFEN", () => {
+  it("staffelt die Reaktionszeit nach Dringlichkeit", () => {
+    for (let i = 1; i < SLA_STUFEN.length; i++) {
+      assert.ok(
+        SLA_STUFEN[i].reaktionStunden >= SLA_STUFEN[i - 1].reaktionStunden,
+        `${SLA_STUFEN[i].prioritaet} reagiert schneller als ${SLA_STUFEN[i - 1].prioritaet}`,
+      );
+    }
+  });
+
+  it("lässt für die Lösung immer mehr Zeit als für die Reaktion", () => {
+    for (const stufe of SLA_STUFEN) {
+      assert.ok(stufe.loesungStunden > stufe.reaktionStunden, stufe.prioritaet);
+    }
+  });
+
+  it("fällt bei unbekannter Dringlichkeit auf die niedrigste Stufe zurück", () => {
+    // Eine unbekannte Einstufung darf keine Zwei-Stunden-Frist auslösen.
+    assert.equal(slaFuer("Irgendwas").prioritaet, "Niedrig");
+    assert.equal(slaFuer("Kritisch").reaktionStunden, 2);
+  });
+});
+
+describe("fristenstand", () => {
+  it("meldet eine laufende Frist als nicht überschritten", () => {
+    const stand = fristenstand(MO(9), 4, MO(11));
+
+    assert.equal(stand.ueberschritten, false);
+    assert.equal(stand.verbleibendStunden, 2);
+    assert.equal(stand.verbraucht, 0.5);
+  });
+
+  it("meldet eine überschrittene Frist mit negativer Restzeit", () => {
+    const stand = fristenstand(MO(9), 4, MO(15));
+
+    assert.equal(stand.ueberschritten, true);
+    assert.equal(stand.verbleibendStunden, -2);
+    assert.ok(stand.verbraucht > 1);
+  });
+
+  it("misst eine erledigte Frist am Erledigungszeitpunkt, nicht an jetzt", () => {
+    // Behoben am Montag um 11 Uhr; dass inzwischen Freitag ist, darf
+    // die Bewertung nicht mehr ändern.
+    const stand = fristenstand(MO(9), 4, FR(16), MO(11));
+
+    assert.equal(stand.ueberschritten, false);
+    assert.equal(stand.verbleibendStunden, 2);
+  });
+
+  it("bewertet eine Meldung vom Wochenende ab Montag", () => {
+    // Samstag 10 Uhr gemeldet, zwei Stunden Reaktionszeit, geprüft am
+    // Montag um 9 Uhr: eine Stunde verbraucht, eine übrig.
+    const stand = fristenstand(SA(10), 2, new Date(2026, 8, 21, 9));
+
+    assert.equal(stand.ueberschritten, false);
+    assert.equal(stand.verbleibendStunden, 1);
+  });
+});

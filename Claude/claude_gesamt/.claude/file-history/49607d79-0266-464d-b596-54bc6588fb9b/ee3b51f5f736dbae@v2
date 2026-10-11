@@ -1,0 +1,176 @@
+/**
+ * Prueft die Oberflaeche auf Dinge, die im Alltag stoeren:
+ * schmales Fenster, fehlende Beschriftungen, Verhalten bei Fehlern.
+ */
+import { spawn } from 'node:child_process'
+import { mkdtempSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+
+const EDGE = 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'
+const port = 9380
+const profil = mkdtempSync(join(tmpdir(), 'edge-cdp-'))
+const ausgabe = process.argv[2]
+const basis = process.argv[3] || 'http://localhost:4220'
+
+const kind = spawn(
+  EDGE,
+  [
+    '--headless=new', '--disable-gpu', '--no-first-run', '--no-default-browser-check',
+    `--remote-debugging-port=${port}`, `--user-data-dir=${profil}`, 'about:blank',
+  ],
+  { stdio: 'ignore' },
+)
+const schlafe = (ms) => new Promise((r) => setTimeout(r, ms))
+
+let ziel = null
+for (let i = 0; i < 40 && !ziel; i++) {
+  await schlafe(250)
+  try {
+    ziel = (await (await fetch(`http://127.0.0.1:${port}/json/list`)).json()).find((t) => t.type === 'page')
+  } catch {}
+}
+const ws = new WebSocket(ziel.webSocketDebuggerUrl)
+await new Promise((r) => (ws.onopen = r))
+
+let id = 0
+const offen = new Map()
+ws.onmessage = (ev) => {
+  const m = JSON.parse(ev.data)
+  if (m.id && offen.has(m.id)) {
+    offen.get(m.id)(m.result)
+    offen.delete(m.id)
+  }
+}
+const sende = (me, p = {}) =>
+  new Promise((r) => {
+    const n = ++id
+    offen.set(n, r)
+    ws.send(JSON.stringify({ id: n, method: me, params: p }))
+  })
+const evaluiere = async (expr) => {
+  const { result } = await sende('Runtime.evaluate', {
+    expression: expr,
+    returnByValue: true,
+    awaitPromise: true,
+  })
+  return result.value
+}
+
+/**
+ * Wartet, bis die App wirklich etwas gezeichnet hat. Ein festes schlafe()
+ * hat hier zweimal eine leere Seite gemessen und "kein Fehler" gemeldet -
+ * das Ergebnis war dann trivial richtig und damit wertlos.
+ */
+async function warteAufSeite(mindestens = 300, grenze = 25000) {
+  const start = Date.now()
+  for (;;) {
+    const laenge = await evaluiere(
+      `(document.querySelector('main')?.innerText || '').trim().length`)
+    if (laenge >= mindestens) return laenge
+    if (Date.now() - start > grenze) throw new Error('Seite blieb leer: ' + laenge)
+    await schlafe(250)
+  }
+}
+
+await sende('Runtime.enable')
+await sende('Page.enable')
+
+// --- Schmales Fenster (Telefon) -------------------------------------------
+await sende('Emulation.setDeviceMetricsOverride', {
+  width: 390, height: 844, deviceScaleFactor: 2, mobile: true,
+})
+await sende('Page.navigate', { url: basis + '/devices' })
+await warteAufSeite()
+
+const mobil = await evaluiere(`JSON.stringify({
+  seitenBreite: document.documentElement.scrollWidth,
+  fensterBreite: window.innerWidth,
+  waagrechtScroll: document.documentElement.scrollWidth > window.innerWidth + 1,
+  seitenleisteSichtbar: (() => { const a = document.querySelector('aside'); if (!a) return false; const r = a.getBoundingClientRect(); return r.right > 4 && r.left < window.innerWidth - 4 })(),
+  seitenleisteBreite: document.querySelector('aside')?.getBoundingClientRect().width || 0,
+  inhaltBreite: document.querySelector('main')?.getBoundingClientRect().width || 0,
+  seiteGetroffen: !/Seite nicht gefunden/.test(document.body.innerText),
+})`)
+console.log('SCHMALES FENSTER (390px):', mobil)
+
+const { data } = await sende('Page.captureScreenshot', { format: 'png' })
+writeFileSync(ausgabe, Buffer.from(data, 'base64'))
+console.log('Screenshot: mobil.png')
+
+// --- Barrierefreiheit ------------------------------------------------------
+await sende('Emulation.setDeviceMetricsOverride', {
+  width: 1500, height: 1000, deviceScaleFactor: 1, mobile: false,
+})
+await sende('Page.navigate', { url: basis + '/devices/SW-CORE-01' })
+await warteAufSeite()
+
+const a11y = await evaluiere(`(() => {
+  const knoepfeOhneText = [...document.querySelectorAll('button')]
+    .filter(b => !b.innerText.trim() && !b.getAttribute('aria-label') && !b.getAttribute('title'))
+    .map(b => b.outerHTML.slice(0, 80))
+  const bilderOhneAlt = [...document.querySelectorAll('img')].filter(i => !i.alt).length
+  const tabellenOhneUeberschrift = [...document.querySelectorAll('table')]
+    .filter(t => !t.querySelector('th') && !t.caption).length
+  const selectsOhneLabel = [...document.querySelectorAll('select')]
+    .filter(s => !s.getAttribute('aria-label') && !s.labels?.length).length
+  const h1 = document.querySelectorAll('h1').length
+  const sprache = document.documentElement.lang
+  const seiteGetroffen = !/Seite nicht gefunden/.test(document.body.innerText)
+  return JSON.stringify({ seiteGetroffen, knoepfeOhneText, bilderOhneAlt, tabellenOhneUeberschrift, selectsOhneLabel, h1, sprache })
+})()`)
+console.log('BARRIEREFREIHEIT:', a11y)
+
+// --- Fokus sichtbar? -------------------------------------------------------
+// Tastatur wirklich benutzen: :focus-visible greift bei el.focus() nicht
+// verlaesslich, weil der Browser dafuer eine Tastatur-Interaktion sehen will.
+await sende('Input.dispatchKeyEvent', {
+  type: 'rawKeyDown', key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9, nativeVirtualKeyCode: 9,
+})
+await sende('Input.dispatchKeyEvent', {
+  type: 'keyUp', key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9, nativeVirtualKeyCode: 9,
+})
+await schlafe(300)
+
+const fokus = await evaluiere(`(() => {
+  const el = document.activeElement
+  const s = getComputedStyle(el)
+  return JSON.stringify({
+    element: el.tagName + (el.className ? '.' + String(el.className).split(' ')[0] : ''),
+    text: (el.innerText || '').trim().slice(0, 40),
+    trifftFocusVisible: el.matches(':focus-visible'),
+    outline: s.outlineStyle + ' ' + s.outlineWidth + ' ' + s.outlineColor,
+  })
+})()`)
+console.log('ERSTES TAB:', fokus)
+
+// Und ein paar Tabs weiter, um die Navigation zu erreichen
+for (let i = 0; i < 4; i++) {
+  await sende('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9, nativeVirtualKeyCode: 9 })
+  await sende('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9, nativeVirtualKeyCode: 9 })
+}
+await schlafe(300)
+const fokus2 = await evaluiere(`(() => {
+  const el = document.activeElement
+  const s = getComputedStyle(el)
+  return JSON.stringify({
+    element: el.tagName,
+    text: (el.innerText || el.getAttribute('aria-label') || '').trim().slice(0, 40),
+    trifftFocusVisible: el.matches(':focus-visible'),
+    outline: s.outlineStyle + ' ' + s.outlineWidth + ' ' + s.outlineColor,
+  })
+})()`)
+console.log('FUENFTES TAB:', fokus2)
+
+// --- Verhalten bei Fehler --------------------------------------------------
+await sende('Page.navigate', { url: basis + '/devices/GIBTSNICHT' })
+await warteAufSeite(100)
+const fehler = await evaluiere(`JSON.stringify({
+  textLaenge: document.body.innerText.trim().length,
+  zeigtFehler: /existiert nicht|nicht gefunden|Fehler/i.test(document.body.innerText),
+  ausschnitt: document.querySelector('main')?.innerText.slice(0, 160)
+})`)
+console.log('UNBEKANNTES GERAET:', fehler)
+
+ws.close()
+kind.kill()

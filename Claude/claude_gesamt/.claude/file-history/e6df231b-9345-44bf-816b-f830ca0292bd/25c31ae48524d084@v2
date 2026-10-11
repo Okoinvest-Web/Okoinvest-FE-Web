@@ -1,0 +1,205 @@
+<script setup lang="ts">
+/** Protokollsuche über lokale und serverseitige Protokolle (FA-062-Analogon). */
+import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
+
+import AppIcon from '@/components/AppIcon.vue'
+import LeereListe from '@/components/LeereListe.vue'
+import StatusAbzeichen from '@/components/StatusAbzeichen.vue'
+import { baudoku, resource } from '@/lib/api'
+import { db } from '@/lib/db'
+import { datumZeit, prozent } from '@/lib/format'
+import { useProtokoll } from '@/stores/protokoll'
+import { useStammdaten } from '@/stores/stammdaten'
+import { useUi } from '@/stores/ui'
+
+interface Zeile {
+  schluessel: string
+  lokale_id?: string
+  name?: string
+  anlage: string
+  vorlage_typ?: string
+  status: string
+  pruef_datum: string
+  fortschritt?: number
+  gesamtbewertung?: string
+  nurLokal: boolean
+}
+
+const router = useRouter()
+const stammdaten = useStammdaten()
+const store = useProtokoll()
+const ui = useUi()
+
+const zeilen = ref<Zeile[]>([])
+const laedt = ref(true)
+const suche = ref('')
+const status = ref('')
+const typ = ref('')
+
+const gefiltert = computed(() =>
+  zeilen.value.filter((z) => {
+    if (status.value && z.status !== status.value) return false
+    if (typ.value && z.vorlage_typ !== typ.value) return false
+    const text = suche.value.trim().toLowerCase()
+    if (!text) return true
+    const anlagenName = stammdaten.anlage(z.anlage)?.anlage_name ?? z.anlage
+    return `${anlagenName} ${z.name ?? ''} ${z.vorlage_typ ?? ''}`.toLowerCase().includes(text)
+  }),
+)
+
+async function laden() {
+  laedt.value = true
+  try {
+    const lokal = await db.protokolle.toArray()
+    const lokaleZeilen: Zeile[] = lokal.map((p) => ({
+      schluessel: p.lokale_id,
+      lokale_id: p.lokale_id,
+      name: p.name,
+      anlage: p.anlage,
+      vorlage_typ: p.vorlage_typ,
+      status: p.status,
+      pruef_datum: p.pruef_datum,
+      fortschritt: p.fortschritt,
+      gesamtbewertung: p.gesamtbewertung ?? undefined,
+      nurLokal: !p.name,
+    }))
+
+    let serverZeilen: Zeile[] = []
+    try {
+      const daten = await resource.liste<{
+        name: string
+        anlage: string
+        vorlage_typ: string
+        status: string
+        pruef_datum: string
+        fortschritt: number
+        gesamtbewertung: string
+      }>('Pruefprotokoll', {
+        fields: ['name', 'anlage', 'vorlage_typ', 'status', 'pruef_datum', 'fortschritt', 'gesamtbewertung'],
+        order_by: 'pruef_datum desc',
+        limit_page_length: 100,
+      })
+      serverZeilen = daten
+        .filter((d) => !lokaleZeilen.some((l) => l.name === d.name))
+        .map((d) => ({ schluessel: d.name, ...d, nurLokal: false }))
+    } catch {
+      // Offline: nur lokale Protokolle anzeigen.
+    }
+
+    zeilen.value = [...lokaleZeilen, ...serverZeilen].sort((a, b) =>
+      String(b.pruef_datum).localeCompare(String(a.pruef_datum)),
+    )
+  } finally {
+    laedt.value = false
+  }
+}
+
+async function oeffnen(zeile: Zeile) {
+  if (zeile.lokale_id) {
+    const ziel = ['Entwurf', 'In Arbeit'].includes(zeile.status)
+      ? 'protokoll-ausfuehren'
+      : 'protokoll-detail'
+    await router.push({ name: ziel, params: { lokaleId: zeile.lokale_id } })
+    return
+  }
+  if (!zeile.name) return
+  try {
+    const protokoll = await store.vomServerHolen(zeile.name)
+    await router.push({ name: 'protokoll-detail', params: { lokaleId: protokoll.lokale_id } })
+  } catch (fehler) {
+    ui.fehler(`Protokoll konnte nicht geladen werden: ${(fehler as Error).message}`)
+  }
+}
+
+async function verifizieren(zeile: Zeile) {
+  if (!zeile.name) return
+  try {
+    await baudoku.dokumentMethode('Pruefprotokoll', zeile.name, 'verifizieren')
+    ui.erfolg(`${zeile.name} verifiziert.`)
+    await laden()
+  } catch (fehler) {
+    ui.fehler((fehler as Error).message)
+  }
+}
+
+onMounted(laden)
+</script>
+
+<template>
+  <div class="space-y-4">
+    <div class="flex flex-wrap items-center gap-2">
+      <div class="relative min-w-[180px] flex-1">
+        <AppIcon name="suche" :groesse="20" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+        <input v-model="suche" class="feld pl-10" type="search" placeholder="Anlage oder Nummer …" />
+      </div>
+      <select v-model="typ" class="feld w-auto">
+        <option value="">Alle Typen</option>
+        <option>Wartung</option>
+        <option>IBN</option>
+        <option>DC-Abnahme</option>
+        <option>Schadenaufnahme</option>
+      </select>
+      <select v-model="status" class="feld w-auto">
+        <option value="">Alle Status</option>
+        <option>Entwurf</option>
+        <option>In Arbeit</option>
+        <option>Abgeschlossen</option>
+        <option>Verifiziert</option>
+      </select>
+      <button class="knopf-primaer px-4" @click="router.push({ name: 'protokoll-neu' })">
+        <AppIcon name="plus" :groesse="18" /> Neu
+      </button>
+    </div>
+
+    <p v-if="laedt" class="py-8 text-center text-sm text-slate-500">Protokolle werden geladen …</p>
+
+    <LeereListe
+      v-else-if="!gefiltert.length"
+      symbol="protokoll"
+      titel="Kein Protokoll gefunden"
+      text="Starten Sie ein neues Prüfprotokoll für eine Anlage."
+      aktion-text="Protokoll starten"
+      @aktion="router.push({ name: 'protokoll-neu' })"
+    />
+
+    <ul v-else class="space-y-2">
+      <li v-for="zeile in gefiltert" :key="zeile.schluessel">
+        <div class="karte flex items-center gap-3 p-3">
+          <button class="min-w-0 flex-1 text-left" @click="oeffnen(zeile)">
+            <div class="flex items-center gap-2">
+              <span class="truncate font-semibold">
+                {{ stammdaten.anlage(zeile.anlage)?.anlage_name ?? zeile.anlage }}
+              </span>
+              <span v-if="zeile.nurLokal" class="abzeichen bg-amber-100 text-amber-900">nur lokal</span>
+            </div>
+            <div class="text-xs text-slate-500">
+              {{ zeile.vorlage_typ }} · {{ datumZeit(zeile.pruef_datum) }}
+              <span v-if="zeile.name"> · {{ zeile.name }}</span>
+            </div>
+            <div
+              v-if="['Entwurf', 'In Arbeit'].includes(zeile.status)"
+              class="mt-2 h-1.5 w-full max-w-[200px] overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700"
+            >
+              <div class="h-full rounded-full bg-marke-500" :style="{ width: `${zeile.fortschritt ?? 0}%` }" />
+            </div>
+          </button>
+
+          <div class="flex shrink-0 flex-col items-end gap-1">
+            <StatusAbzeichen :wert="zeile.gesamtbewertung || zeile.status" klein />
+            <span v-if="['Entwurf', 'In Arbeit'].includes(zeile.status)" class="text-xs tabular-nums text-slate-400">
+              {{ prozent(zeile.fortschritt) }}
+            </span>
+            <button
+              v-if="stammdaten.istBauleiter && zeile.status === 'Abgeschlossen' && zeile.name"
+              class="text-xs font-semibold text-marke-600 hover:underline"
+              @click="verifizieren(zeile)"
+            >
+              verifizieren
+            </button>
+          </div>
+        </div>
+      </li>
+    </ul>
+  </div>
+</template>

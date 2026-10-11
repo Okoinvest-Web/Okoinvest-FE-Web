@@ -1,0 +1,280 @@
+<template>
+  <div class="p-6">
+    <!--
+      Die Übersicht beantwortet eine Frage: liegt hier gerade etwas an?
+
+      Deshalb steht oben, was jemand tun muss, und erst darunter, wie es
+      insgesamt aussieht. Eine Kennzahlenwand ohne Handlungshinweis liest
+      man drei Tage lang und danach nicht mehr.
+    -->
+    <section v-if="offeneSachen.length" class="mb-6">
+      <h2 class="mb-3 text-base font-semibold text-ink-gray-8">Was jetzt ansteht</h2>
+      <ul class="space-y-2">
+        <li
+          v-for="s in offeneSachen"
+          :key="s.text"
+          class="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-surface-white p-3"
+          :class="s.level === 'critical' ? 'border-outline-red-2' : 'border-outline-amber-2'"
+        >
+          <div class="flex min-w-0 items-center gap-2">
+            <StatusDot :level="s.level" :text="s.text" />
+          </div>
+          <RouterLink :to="s.to">
+            <Button variant="subtle">{{ s.knopf }}</Button>
+          </RouterLink>
+        </li>
+      </ul>
+    </section>
+
+    <section v-else class="mb-6 rounded-lg border border-outline-green-2 bg-surface-green-1 p-4">
+      <StatusDot level="ok" text="Nichts offen" />
+      <p class="mt-1 text-sm text-ink-gray-7">
+        Alle Systeme melden, kein Band liegt im Haus, kein Antrag wartet. Das heißt nicht, dass
+        alles gedeckt ist – dafür ist die Prüfung da.
+      </p>
+    </section>
+
+    <h2 class="mb-3 text-base font-semibold text-ink-gray-8">Lage</h2>
+    <div class="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-3 2xl:grid-cols-6">
+      <StatCard
+        v-for="k in kacheln"
+        :key="k.label"
+        :label="k.label"
+        :wert="k.wert"
+        :hinweis="k.hinweis"
+        :level="k.level"
+        :to="k.to"
+      />
+    </div>
+
+    <!-- Die Kette: von der Quelle bis außer Haus -->
+    <section class="rounded-lg border border-outline-gray-2 bg-surface-white p-4">
+      <h3 class="mb-1 text-sm font-medium text-ink-gray-8">Der Weg einer Sicherung</h3>
+      <p class="mb-4 text-sm text-ink-gray-6">
+        Vier Stufen. Bricht eine, reichen die dahinter nicht mehr – deshalb stehen sie nebeneinander
+        und nicht in vier getrennten Kacheln.
+      </p>
+      <ol class="flex flex-wrap gap-2">
+        <li
+          v-for="(k, i) in kette"
+          :key="k.label"
+          class="min-w-[150px] flex-1 rounded border p-3"
+          :class="rahmen(k.level)"
+        >
+          <p class="text-xs text-ink-gray-5">Stufe {{ i + 1 }}</p>
+          <StatusDot :level="k.level" :text="k.label" klein />
+          <p class="mt-1 text-sm text-ink-gray-7">{{ k.text }}</p>
+        </li>
+      </ol>
+    </section>
+  </div>
+</template>
+
+<script setup>
+import { computed } from 'vue'
+import { Button, createResource } from 'frappe-ui'
+import StatCard from '@/components/StatCard.vue'
+import StatusDot from '@/components/StatusDot.vue'
+import { useUiStore } from '@/stores/ui'
+
+const props = defineProps({
+  gesundheit: { type: Object, default: null },
+})
+
+const ui = useUiStore()
+
+const bestand = createResource({
+  url: 'netops.api.backup.backup_inventory',
+  makeParams: () => ({ tenant: ui.mandant || null }),
+  auto: true,
+})
+const pruefung = createResource({
+  url: 'netops.api.backup.backup_assurance',
+  makeParams: () => ({ tenant: ui.mandant || null }),
+  auto: true,
+})
+const baender = createResource({ url: 'netops.api.tape.tape_inventory', auto: true })
+const wechsel = createResource({
+  url: 'netops.api.tape.tape_change_requests',
+  makeParams: () => ({ open_only: true }),
+  auto: true,
+})
+const antraege = createResource({
+  url: 'netops.api.backup.backup_requests',
+  makeParams: () => ({}),
+  auto: true,
+})
+
+const g = computed(() => props.gesundheit?.data?.summary || null)
+
+/** Nur, was jemand tun muss – nicht, was es alles gibt. */
+const offeneSachen = computed(() => {
+  const liste = []
+
+  if (g.value?.unreachable) {
+    liste.push({
+      level: 'critical',
+      text: `${g.value.unreachable} System${g.value.unreachable > 1 ? 'e melden' : ' meldet'} nicht mehr – die Zahlen hier sind dort veraltet`,
+      to: '/backup/systeme',
+      knopf: 'Systeme',
+    })
+  }
+
+  for (const w of (wechsel.data || []).filter((x) => x.open)) {
+    liste.push({
+      level: w.level === 'critical' ? 'critical' : 'warning',
+      text:
+        w.workflow_state === 'ejected'
+          ? `Band ${w.tape} ist ausgeworfen, aber nicht als gewechselt bestätigt – kein Airgap`
+          : `Band ${w.tape} wartet auf den Auswurf`,
+      to: '/backup/band',
+      knopf: 'Bandarchiv',
+    })
+  }
+
+  const wartend = antraege.data?.summary?.waiting_approval || 0
+  if (wartend) {
+    liste.push({
+      level: 'warning',
+      text: `${wartend} Antrag${wartend > 1 ? 'e warten' : ' wartet'} auf Genehmigung`,
+      to: '/backup/auftraege',
+      knopf: 'Aufträge',
+    })
+  }
+
+  const p = pruefung.data?.summary
+  if (p?.never_tested) {
+    liste.push({
+      level: 'critical',
+      text: `${p.never_tested} Sicherung${p.never_tested > 1 ? 'en wurden' : ' wurde'} nie zurückgespielt – eine ungetestete Sicherung ist eine Vermutung`,
+      to: '/backup/pruefung',
+      knopf: 'Prüfung',
+    })
+  }
+  if (p?.no_offsite) {
+    liste.push({
+      level: 'critical',
+      text: `${p.no_offsite} ohne Kopie außer Haus`,
+      to: '/backup/pruefung',
+      knopf: 'Prüfung',
+    })
+  }
+
+  if (g.value?.errors_24h) {
+    liste.push({
+      level: 'warning',
+      text: `${g.value.errors_24h} Fehlermeldungen in 24 Stunden`,
+      to: '/backup/meldungen',
+      knopf: 'Meldungen',
+    })
+  }
+
+  return liste
+})
+
+/**
+ * Vier rote Ränder nebeneinander lesen sich wie ein Totalausfall.
+ * Abstufen: kritisch rot, Warnung bernstein, in Ordnung grau.
+ */
+function rahmen(level) {
+  return (
+    {
+      critical: 'border-outline-red-2',
+      warning: 'border-outline-amber-2',
+    }[level] || 'border-outline-gray-2'
+  )
+}
+
+const kacheln = computed(() => {
+  const b = bestand.data?.summary
+  const p = pruefung.data?.summary
+  const t = baender.data?.summary
+  return [
+    {
+      label: 'Punkte gesamt',
+      wert: b?.snapshots ?? '–',
+      hinweis: b ? `${b.objects} Systeme · ${Math.round(b.total_gb / 1024)} TB` : null,
+      level: 'neutral',
+      to: '/backup/punkte',
+    },
+    {
+      label: 'Systeme erreichbar',
+      wert: g.value ? `${g.value.reachable} / ${g.value.systems}` : '–',
+      hinweis: g.value?.unreachable ? 'nicht alle melden' : 'alle melden',
+      level: g.value?.unreachable ? 'critical' : 'ok',
+      to: '/backup/systeme',
+    },
+    {
+      label: '3-2-1 erfüllt',
+      wert: p ? `${p.rule_321_ok} / ${p.total}` : '–',
+      hinweis: p?.no_offsite ? `${p.no_offsite} ohne Kopie außer Haus` : 'alle außer Haus',
+      level: p?.no_offsite ? 'critical' : p && p.rule_321_ok < p.total ? 'warning' : 'ok',
+      to: '/backup/pruefung',
+    },
+    {
+      label: 'Nie getestet',
+      wert: p?.never_tested ?? '–',
+      hinweis: p?.test_failed ? `${p.test_failed} fehlgeschlagen` : 'keine Fehlschläge',
+      level: p?.never_tested || p?.test_failed ? 'critical' : 'ok',
+      to: '/backup/pruefung',
+    },
+    {
+      label: 'Bänder außer Haus',
+      wert: t ? `${t.offsite} / ${t.tapes}` : '–',
+      hinweis: t?.not_yet_offsite ? `${t.not_yet_offsite} noch im Haus` : 'alle ausgelagert',
+      level: t?.not_yet_offsite ? 'warning' : 'ok',
+      to: '/backup/band',
+    },
+    {
+      label: 'Alles zurückholen',
+      wert: p ? `${p.total_restore_hours} h` : '–',
+      hinweis: 'Summe aller Wiederherstellungen',
+      level: 'neutral',
+      to: '/backup/pruefung',
+    },
+  ]
+})
+
+/**
+ * Die vier Stufen als Kette, nicht als vier Kacheln.
+ *
+ * Eine Sicherung, die läuft, aber nie geprüft wurde, ist nichts wert. Eine
+ * geprüfte, die nie zurückgespielt wurde, auch nicht. Nebeneinander sieht
+ * man, wo es abreißt.
+ */
+const kette = computed(() => {
+  const p = pruefung.data?.summary
+  const t = baender.data?.summary
+  const b = bestand.data?.summary
+  return [
+    {
+      label: 'Läuft',
+      text: g.value ? `${g.value.reachable} von ${g.value.systems} Systemen melden` : '–',
+      level: g.value?.unreachable ? 'critical' : 'ok',
+    },
+    {
+      label: 'Geprüft',
+      // Nicht an den Fehlermeldungen messen: ein Syslog-Eintrag über ein
+      // volles Laufwerk sagt nichts darüber, ob die Punkte lesbar sind.
+      text: b
+        ? b.failed
+          ? `${b.failed} Punkte mit fehlgeschlagener Prüfung`
+          : b.unverified
+            ? `${b.unverified} von ${b.snapshots} Punkten noch ungeprüft`
+            : `alle ${b.snapshots} Punkte geprüft`
+        : '–',
+      level: b?.failed ? 'critical' : b?.unverified ? 'warning' : 'ok',
+    },
+    {
+      label: 'Außer Haus',
+      text: t ? `${t.offsite} Bänder ausgelagert, ${t.not_yet_offsite} noch im Haus` : '–',
+      level: p?.no_offsite ? 'critical' : t?.not_yet_offsite ? 'warning' : 'ok',
+    },
+    {
+      label: 'Zurückgeholt',
+      text: p ? `${p.total - p.never_tested} von ${p.total} getestet` : '–',
+      level: p?.never_tested ? 'critical' : 'ok',
+    },
+  ]
+})
+</script>

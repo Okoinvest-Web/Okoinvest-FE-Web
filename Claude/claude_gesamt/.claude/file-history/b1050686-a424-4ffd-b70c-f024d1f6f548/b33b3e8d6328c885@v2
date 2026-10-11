@@ -1,0 +1,480 @@
+import "server-only";
+
+import { alle, imBlock, schreibe, skalar } from "../db/verbindung.ts";
+import {
+  fasseZusammen,
+  teileViertelstundeAuf,
+  type Aufteilungsmodell,
+  type TeilnehmerWerte,
+  type ViertelstundenErgebnis,
+} from "./aufteilung.ts";
+import {
+  belegnummer,
+  erzeugeBelege,
+  fasseLaufZusammen,
+  quartalVon,
+  type AbrechnungsVorgaben,
+  type LaufUebersicht,
+} from "./abrechnung.ts";
+
+/**
+ * Durchfuehrung eines Abrechnungslaufs.
+ *
+ * Verbindet die drei Teile: Lastgangdaten lesen, je Viertelstunde
+ * aufteilen, Belege schreiben. Der Lauf ist die Stelle, an der aus
+ * Messwerten Geld wird - entsprechend vorsichtig ist er gebaut:
+ *
+ *   - Alles oder nichts. Aufteilung und Belege entstehen in einem
+ *     Schreibblock. Ein halb gerechneter Lauf waere schlimmer als gar
+ *     keiner, weil er plausibel aussieht.
+ *   - Ein festgeschriebener Lauf wird nie veraendert. Korrekturen
+ *     laufen ueber Storno und Neuberechnung, damit jeder ausgegebene
+ *     Beleg nachvollziehbar bleibt.
+ *   - Fehlende Messdaten brechen den Lauf ab, statt mit Luecken zu
+ *     rechnen. Eine Abrechnung auf unvollstaendiger Datenbasis faellt
+ *     erst auf, wenn der Netzbetreiber die echten Werte nachliefert.
+ */
+
+export interface LaufDaten {
+  id: string;
+  gemeinschaft_id: string;
+  zeitraum_von: string;
+  zeitraum_bis: string;
+  modell: Aufteilungsmodell;
+  status: "Entwurf" | "Berechnet" | "Festgeschrieben" | "Storniert";
+  preis_ct_kwh: number;
+  erzeuger_ct_kwh: number;
+  ust_satz: number;
+  berechnet_am: string | null;
+  festgeschrieben_am: string | null;
+  storniert_am: string | null;
+  storno_grund: string | null;
+  angelegt_am: string;
+}
+
+interface TeilnahmeZeile {
+  zaehlpunkt_id: string;
+  rolle: string;
+  anteil_prozent: number | null;
+  teilnahmefaktor: number;
+  gueltig_von: string;
+  gueltig_bis: string | null;
+}
+
+interface LastgangZeile {
+  zeitpunkt: string;
+  zaehlpunkt_id: string;
+  richtung: "Bezug" | "Einspeisung";
+  wert_kwh: number;
+}
+
+export interface LaufErgebnis {
+  intervalle: number;
+  verteilt: number;
+  ueberschuss: number;
+  ungedeckt: number;
+  uebersicht: LaufUebersicht;
+}
+
+/**
+ * Prueft, ob fuer den Zeitraum durchgehend Messdaten vorliegen.
+ *
+ * Ein Zaehlpunkt mit Viertelstundenmessung muss je Tag 96 Werte haben.
+ * Weniger bedeutet, dass Daten fehlen - etwa weil der Netzbetreiber sie
+ * noch nicht geliefert hat.
+ */
+export interface Datenluecke {
+  zaehlpunktId: string;
+  bezeichnung: string;
+  erwartet: number;
+  vorhanden: number;
+}
+
+export function pruefeDatenbestand(
+  gemeinschaftId: string,
+  von: string,
+  bis: string,
+): Datenluecke[] {
+  const teilnahmen = alle<TeilnahmeZeile & { bezeichnung: string }>(
+    `SELECT t.zaehlpunkt_id, t.rolle, t.anteil_prozent, t.teilnahmefaktor,
+            t.gueltig_von, t.gueltig_bis, z.bezeichnung
+       FROM teilnahme t
+       JOIN zaehlpunkt z ON z.id = t.zaehlpunkt_id
+      WHERE t.gemeinschaft_id = ?
+        AND t.gueltig_von <= ?
+        AND (t.gueltig_bis IS NULL OR t.gueltig_bis >= ?)`,
+    gemeinschaftId,
+    bis,
+    von,
+  );
+
+  // Anzahl der Viertelstunden im Zeitraum.
+  const vonZeit = new Date(von).getTime();
+  const bisZeit = new Date(bis).getTime();
+  const erwartet = Math.max(0, Math.round((bisZeit - vonZeit) / 900000));
+
+  const luecken: Datenluecke[] = [];
+
+  for (const teilnahme of teilnahmen) {
+    const vorhanden =
+      skalar<number>(
+        `SELECT COUNT(DISTINCT zeitpunkt) FROM lastgang
+          WHERE zaehlpunkt_id = ? AND zeitpunkt >= ? AND zeitpunkt < ?`,
+        teilnahme.zaehlpunkt_id,
+        von,
+        bis,
+      ) ?? 0;
+
+    if (vorhanden < erwartet) {
+      luecken.push({
+        zaehlpunktId: teilnahme.zaehlpunkt_id,
+        bezeichnung: teilnahme.bezeichnung,
+        erwartet,
+        vorhanden,
+      });
+    }
+  }
+
+  return luecken;
+}
+
+/**
+ * Rechnet einen Lauf durch und schreibt Aufteilung und Belege.
+ *
+ * Vorhandene Ergebnisse eines frueheren Durchgangs werden verworfen -
+ * ein Lauf im Entwurf darf beliebig oft neu gerechnet werden.
+ */
+export function rechneLauf(laufId: string, benutzer: string): LaufErgebnis {
+  const lauf = holeLauf(laufId);
+
+  if (lauf.status === "Festgeschrieben") {
+    throw new Error(
+      "Ein festgeschriebener Lauf kann nicht neu gerechnet werden. Bitte stornieren und neu anlegen.",
+    );
+  }
+  if (lauf.status === "Storniert") {
+    throw new Error("Ein stornierter Lauf kann nicht gerechnet werden.");
+  }
+
+  const gemeinschaft = eineGemeinschaft(lauf.gemeinschaft_id);
+
+  const teilnahmen = alle<TeilnahmeZeile>(
+    `SELECT zaehlpunkt_id, rolle, anteil_prozent, teilnahmefaktor,
+            gueltig_von, gueltig_bis
+       FROM teilnahme
+      WHERE gemeinschaft_id = ?
+        AND gueltig_von <= ?
+        AND (gueltig_bis IS NULL OR gueltig_bis >= ?)`,
+    lauf.gemeinschaft_id,
+    lauf.zeitraum_bis,
+    lauf.zeitraum_von,
+  );
+
+  if (teilnahmen.length === 0) {
+    throw new Error("Die Gemeinschaft hat im Zeitraum keine Teilnehmer.");
+  }
+
+  const zaehlpunkte = teilnahmen.map((t) => t.zaehlpunkt_id);
+  const platzhalter = zaehlpunkte.map(() => "?").join(",");
+
+  /**
+   * Der gesamte Lastgang des Zeitraums auf einmal, nach Zeitpunkt
+   * sortiert. Bei einem Quartal und zehn Zaehlpunkten sind das rund
+   * 90.000 Zeilen - das laesst sich in einem Zug verarbeiten und ist
+   * deutlich schneller als eine Abfrage je Viertelstunde.
+   */
+  const zeilen = alle<LastgangZeile>(
+    `SELECT zeitpunkt, zaehlpunkt_id, richtung, wert_kwh
+       FROM lastgang
+      WHERE zaehlpunkt_id IN (${platzhalter})
+        AND zeitpunkt >= ? AND zeitpunkt < ?
+      ORDER BY zeitpunkt`,
+    ...zaehlpunkte,
+    lauf.zeitraum_von,
+    lauf.zeitraum_bis,
+  );
+
+  if (zeilen.length === 0) {
+    throw new Error(
+      "Für den gewählten Zeitraum liegen keine Messdaten vor. Bitte zuerst Lastgangdaten anfordern oder einspielen.",
+    );
+  }
+
+  // --- Aufteilung je Viertelstunde --------------------------------
+  const ergebnisse: ViertelstundenErgebnis[] = [];
+  const aufteilungsZeilen: {
+    zeitpunkt: string;
+    zaehlpunktId: string;
+    bezogen: number;
+    geliefert: number;
+    restNetz: number;
+  }[] = [];
+
+  let laufenderZeitpunkt = zeilen[0].zeitpunkt;
+  let werte = new Map<string, { bezug: number; einspeisung: number }>();
+
+  const verarbeite = (zeitpunkt: string) => {
+    const teilnehmer = baueTeilnehmer(teilnahmen, werte, zeitpunkt);
+    if (teilnehmer.length === 0) return;
+
+    const ergebnis = teileViertelstundeAuf(teilnehmer, lauf.modell);
+    ergebnisse.push(ergebnis);
+
+    for (const zuteilung of ergebnis.zuteilungen) {
+      // Nur speichern, wo tatsaechlich etwas passiert ist - sonst
+      // waechst die Tabelle mit Nullzeilen zu.
+      if (
+        zuteilung.bezogen > 0 ||
+        zuteilung.geliefert > 0 ||
+        zuteilung.restNetz > 0
+      ) {
+        aufteilungsZeilen.push({
+          zeitpunkt,
+          zaehlpunktId: zuteilung.zaehlpunktId,
+          bezogen: zuteilung.bezogen,
+          geliefert: zuteilung.geliefert,
+          restNetz: zuteilung.restNetz,
+        });
+      }
+    }
+  };
+
+  for (const zeile of zeilen) {
+    if (zeile.zeitpunkt !== laufenderZeitpunkt) {
+      verarbeite(laufenderZeitpunkt);
+      laufenderZeitpunkt = zeile.zeitpunkt;
+      werte = new Map();
+    }
+
+    const vorher = werte.get(zeile.zaehlpunkt_id) ?? {
+      bezug: 0,
+      einspeisung: 0,
+    };
+    if (zeile.richtung === "Bezug") vorher.bezug += zeile.wert_kwh;
+    else vorher.einspeisung += zeile.wert_kwh;
+    werte.set(zeile.zaehlpunkt_id, vorher);
+  }
+  verarbeite(laufenderZeitpunkt);
+
+  const zusammenfassung = fasseZusammen(ergebnisse);
+
+  // --- Belege -----------------------------------------------------
+  const vorgaben: AbrechnungsVorgaben = {
+    preisCtKwh: lauf.preis_ct_kwh,
+    erzeugerCtKwh: lauf.erzeuger_ct_kwh,
+    ustSatz: lauf.ust_satz,
+    reichweite: gemeinschaft.reichweite ?? "Lokal",
+    art: gemeinschaft.art,
+  };
+
+  const entwuerfe = erzeugeBelege(
+    zusammenfassung.jeZaehlpunkt.values(),
+    vorgaben,
+  );
+  const uebersicht = fasseLaufZusammen(entwuerfe);
+
+  const jahr = new Date(lauf.zeitraum_von).getFullYear();
+  const quartal = quartalVon(new Date(lauf.zeitraum_von));
+
+  // --- Schreiben, alles oder nichts -------------------------------
+  imBlock(() => {
+    schreibe("DELETE FROM aufteilung WHERE lauf_id = ?", laufId);
+    schreibe("DELETE FROM beleg WHERE lauf_id = ?", laufId);
+
+    for (const zeile of aufteilungsZeilen) {
+      schreibe(
+        `INSERT INTO aufteilung
+           (lauf_id, zeitpunkt, zaehlpunkt_id, bezogen_kwh, geliefert_kwh, rest_netz_kwh)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        laufId,
+        zeile.zeitpunkt,
+        zeile.zaehlpunktId,
+        zeile.bezogen,
+        zeile.geliefert,
+        zeile.restNetz,
+      );
+    }
+
+    let nummer = 0;
+    for (const entwurf of entwuerfe) {
+      nummer += 1;
+      const kundeId = skalar<string>(
+        "SELECT kunde_id FROM zaehlpunkt WHERE id = ?",
+        entwurf.zaehlpunktId,
+      );
+
+      schreibe(
+        `INSERT INTO beleg
+           (id, lauf_id, zaehlpunkt_id, kunde_id, art, nummer,
+            zeitraum_von, zeitraum_bis, menge_kwh, netto, ust_satz,
+            ust_betrag, brutto, netzentgelt_ersparnis)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `BEL-${laufId}-${String(nummer).padStart(4, "0")}`,
+        laufId,
+        entwurf.zaehlpunktId,
+        kundeId,
+        entwurf.art,
+        belegnummer(
+          entwurf.art === "Rechnung" ? "RE" : "GS",
+          jahr,
+          quartal,
+          nummer,
+        ),
+        lauf.zeitraum_von,
+        lauf.zeitraum_bis,
+        entwurf.mengeKwh,
+        entwurf.netto,
+        entwurf.ustSatz,
+        entwurf.ustBetrag,
+        entwurf.brutto,
+        entwurf.netzentgeltErsparnis,
+      );
+    }
+
+    schreibe(
+      `UPDATE abrechnungslauf
+          SET status = 'Berechnet', berechnet_am = datetime('now')
+        WHERE id = ?`,
+      laufId,
+    );
+
+    schreibe(
+      `INSERT INTO audit (benutzer, kategorie, aktion, ergebnis, objekt, begruendung)
+       VALUES (?, 'abrechnung', ?, 'erfolg', ?, ?)`,
+      benutzer,
+      "Abrechnungslauf berechnet",
+      laufId,
+      `${zusammenfassung.intervalle} Viertelstunden, ${entwuerfe.length} Belege`,
+    );
+  });
+
+  return {
+    intervalle: zusammenfassung.intervalle,
+    verteilt: zusammenfassung.verteilt,
+    ueberschuss: zusammenfassung.ueberschuss,
+    ungedeckt: zusammenfassung.ungedeckt,
+    uebersicht,
+  };
+}
+
+/**
+ * Baut die Teilnehmerliste einer Viertelstunde.
+ * Beruecksichtigt, wer zu diesem Zeitpunkt Mitglied war - Ein- und
+ * Austritte mitten im Zeitraum sind der Normalfall.
+ */
+function baueTeilnehmer(
+  teilnahmen: TeilnahmeZeile[],
+  werte: Map<string, { bezug: number; einspeisung: number }>,
+  zeitpunkt: string,
+): TeilnehmerWerte[] {
+  const ergebnis: TeilnehmerWerte[] = [];
+
+  for (const teilnahme of teilnahmen) {
+    if (teilnahme.gueltig_von > zeitpunkt) continue;
+    if (teilnahme.gueltig_bis && teilnahme.gueltig_bis < zeitpunkt) continue;
+
+    const messwert = werte.get(teilnahme.zaehlpunkt_id);
+    if (!messwert) continue;
+
+    ergebnis.push({
+      zaehlpunktId: teilnahme.zaehlpunkt_id,
+      einspeisung: messwert.einspeisung,
+      bezug: messwert.bezug,
+      anteil: (teilnahme.anteil_prozent ?? 0) / 100,
+      teilnahmefaktor: teilnahme.teilnahmefaktor,
+    });
+  }
+
+  return ergebnis;
+}
+
+/** Schreibt einen Lauf fest. Danach ist er unveraenderlich. */
+export function schreibeLaufFest(laufId: string, benutzer: string): void {
+  const lauf = holeLauf(laufId);
+
+  if (lauf.status !== "Berechnet") {
+    throw new Error(
+      "Nur ein berechneter Lauf kann festgeschrieben werden. Bitte zuerst die Berechnung ausführen.",
+    );
+  }
+
+  imBlock(() => {
+    schreibe(
+      `UPDATE abrechnungslauf
+          SET status = 'Festgeschrieben', festgeschrieben_am = datetime('now')
+        WHERE id = ?`,
+      laufId,
+    );
+    schreibe(
+      `INSERT INTO audit (benutzer, kategorie, aktion, ergebnis, objekt, begruendung)
+       VALUES (?, 'abrechnung', 'Abrechnungslauf festgeschrieben', 'erfolg', ?, ?)`,
+      benutzer,
+      laufId,
+      "Belege sind ab jetzt unveränderlich",
+    );
+  });
+}
+
+/** Storniert einen Lauf samt seiner Belege. */
+export function storniereLauf(
+  laufId: string,
+  grund: string,
+  benutzer: string,
+): void {
+  const lauf = holeLauf(laufId);
+
+  if (lauf.status === "Storniert") {
+    throw new Error("Der Lauf ist bereits storniert.");
+  }
+  if (grund.trim().length < 5) {
+    throw new Error("Bitte einen nachvollziehbaren Stornogrund angeben.");
+  }
+
+  imBlock(() => {
+    schreibe(
+      `UPDATE abrechnungslauf
+          SET status = 'Storniert', storniert_am = datetime('now'), storno_grund = ?
+        WHERE id = ?`,
+      grund,
+      laufId,
+    );
+    schreibe(
+      "UPDATE beleg SET status = 'Storniert' WHERE lauf_id = ?",
+      laufId,
+    );
+    schreibe(
+      `INSERT INTO audit (benutzer, kategorie, aktion, ergebnis, objekt, begruendung)
+       VALUES (?, 'abrechnung', 'Abrechnungslauf storniert', 'erfolg', ?, ?)`,
+      benutzer,
+      laufId,
+      grund,
+    );
+  });
+}
+
+export function holeLauf(laufId: string): LaufDaten {
+  const lauf = alle<LaufDaten>(
+    "SELECT * FROM abrechnungslauf WHERE id = ?",
+    laufId,
+  )[0];
+
+  if (!lauf) throw new Error(`Abrechnungslauf ${laufId} existiert nicht.`);
+  return lauf;
+}
+
+function eineGemeinschaft(id: string): {
+  id: string;
+  art: string;
+  reichweite: string | null;
+  bezeichnung: string;
+} {
+  const gemeinschaft = alle<{
+    id: string;
+    art: string;
+    reichweite: string | null;
+    bezeichnung: string;
+  }>("SELECT id, art, reichweite, bezeichnung FROM gemeinschaft WHERE id = ?", id)[0];
+
+  if (!gemeinschaft) throw new Error(`Gemeinschaft ${id} existiert nicht.`);
+  return gemeinschaft;
+}

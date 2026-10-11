@@ -1,0 +1,114 @@
+/**
+ * Sucht eine Palette, die in hell UND dunkel alle Pruefungen besteht.
+ *
+ * Die Semantik gibt den Farbton grob vor (Bernstein = Erzeugung,
+ * Gruen = Eigenverbrauch, ...). Gesucht werden Helligkeit und Buntheit
+ * je Slot, die zusammen die CVD-Trennung und den Kontrast erfuellen.
+ */
+import { validate } from "file:///C:/Users/SALEAD~1/AppData/Local/Temp/claude/bundled-skills/2.1.270/49d628d1d9a56340540cbfbb3ca64951/dataviz/scripts/validate_palette.js";
+import { oklchToHex } from "./palette.mjs";
+
+// Farbton je Serie bleibt fest - er traegt die Bedeutung.
+const SLOTS = [
+  { name: "erzeugung", hue: [58, 64, 70] },
+  { name: "eigenverbrauch", hue: [150, 158, 165] },
+  { name: "einspeisung", hue: [228, 236, 244] },
+  { name: "netzbezug", hue: [270, 280, 290] },
+  { name: "speicher", hue: [315, 325, 335] },
+  { name: "stoerung", hue: [20, 27, 34] },
+];
+
+const L_WERTE = [0.44, 0.48, 0.52, 0.56, 0.6, 0.64, 0.68, 0.72, 0.76];
+const C_WERTE = [0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.22];
+
+const HELL = "#fcfcfb";
+const DUNKEL = "#1a1a19";
+
+function bewerte(hexListe) {
+  const hell = validate(hexListe, { mode: "light", surface: HELL });
+  const dunkel = validate(hexListe, { mode: "dark", surface: DUNKEL });
+
+  const harteFehler = [...hell.report, ...dunkel.report].filter(
+    ([, status]) => status === "fail",
+  ).length;
+
+  const warnungen = [...hell.report, ...dunkel.report].filter(
+    ([, status]) => status === "warn" || status === "relief",
+  ).length;
+
+  return { harteFehler, warnungen, hell, dunkel };
+}
+
+/**
+ * Greedy je Slot: fuer jeden Slot die Variante waehlen, die zusammen
+ * mit den bereits gesetzten Slots am wenigsten Fehler erzeugt.
+ * Danach mehrere Durchlaeufe zur Nachbesserung.
+ */
+let aktuell = SLOTS.map((s) => ({
+  hue: s.hue[1],
+  L: 0.58,
+  C: 0.15,
+}));
+
+function alsHex(zustand) {
+  return zustand.map((s) => oklchToHex(s.L, s.C, s.hue));
+}
+
+let bestesErgebnis = bewerte(alsHex(aktuell));
+
+for (let runde = 0; runde < 6; runde++) {
+  let verbessert = false;
+
+  for (let i = 0; i < SLOTS.length; i++) {
+    let besterSlot = { ...aktuell[i] };
+    let besteBewertung = bestesErgebnis;
+
+    for (const hue of SLOTS[i].hue) {
+      for (const L of L_WERTE) {
+        for (const C of C_WERTE) {
+          const kandidat = aktuell.map((s, idx) =>
+            idx === i ? { hue, L, C } : s,
+          );
+          const ergebnis = bewerte(alsHex(kandidat));
+
+          const besser =
+            ergebnis.harteFehler < besteBewertung.harteFehler ||
+            (ergebnis.harteFehler === besteBewertung.harteFehler &&
+              ergebnis.warnungen < besteBewertung.warnungen);
+
+          if (besser) {
+            besterSlot = { hue, L, C };
+            besteBewertung = ergebnis;
+            verbessert = true;
+          }
+        }
+      }
+    }
+
+    aktuell[i] = besterSlot;
+    bestesErgebnis = besteBewertung;
+  }
+
+  if (!verbessert) break;
+}
+
+const hex = alsHex(aktuell);
+
+console.log("\n=== Gefundene Palette ===");
+SLOTS.forEach((slot, i) => {
+  const { L, C, hue } = aktuell[i];
+  console.log(
+    `${slot.name.padEnd(16)} oklch(${L} ${C} ${hue})`.padEnd(46) + hex[i],
+  );
+});
+console.log("\n" + hex.join(","));
+
+for (const [modus, ergebnis] of [
+  ["hell", bestesErgebnis.hell],
+  ["dunkel", bestesErgebnis.dunkel],
+]) {
+  console.log(`\n--- ${modus} ---`);
+  for (const [pruefung, status, text] of ergebnis.report) {
+    console.log(`  [${status.toUpperCase().padEnd(6)}] ${pruefung}: ${text}`);
+  }
+}

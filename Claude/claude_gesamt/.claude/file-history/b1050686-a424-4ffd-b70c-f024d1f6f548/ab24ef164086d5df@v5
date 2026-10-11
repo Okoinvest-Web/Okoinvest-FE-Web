@@ -1,0 +1,280 @@
+import type { Metadata } from "next";
+
+import { Tabelle, Zeile, Zelle } from "@/components/tabelle";
+import {
+  Angabe,
+  Tafel,
+  Kennzahl,
+  LeerZustand,
+  LivePunkt,
+  Seitenkopf,
+  Status,
+  STATUS_FARBEN,
+} from "@/components/ui";
+import { formatDatumZeit, formatRelativ, formatZahl } from "@/lib/format";
+import { hatRecht } from "@/lib/sicherheit/rollen";
+import {
+  ladeAnlagen,
+  ladeFernwartung,
+  ladeFernwartungsSitzungen,
+  ladeKomponenten,
+} from "@/lib/portal-daten";
+import { requireRecht } from "@/lib/session";
+
+import { FreigabeFormular } from "./freigabe-formular";
+
+export const metadata: Metadata = { title: "Fernwartung" };
+
+function sitzungTon(status: string | undefined) {
+  switch (status) {
+    case "Aktiv":
+      return "hinweis" as const;
+    case "Beendet":
+      return "gut" as const;
+    case "Abgelehnt":
+      return "kritisch" as const;
+    case "Freigegeben":
+      return "hinweis" as const;
+    default:
+      return "neutral" as const;
+  }
+}
+
+export default async function FernwartungSeite() {
+  const benutzer = await requireRecht("fernwartung.anfordern");
+  const darfFreigeben = hatRecht([benutzer.rolle], "fernwartung.freigeben");
+
+  const [zugaenge, sitzungen, anlagen, komponenten] = await Promise.all([
+    ladeFernwartung(),
+    ladeFernwartungsSitzungen(),
+    ladeAnlagen(),
+    ladeKomponenten(),
+  ]);
+
+  const aktive = zugaenge.filter((z) => z.aktiv === 1);
+  const laufendeSitzungen = sitzungen.filter((s) => s.status === "Aktiv");
+  const abgelehnte = sitzungen.filter((s) => s.status === "Abgelehnt");
+
+  const veralteteFirmware = komponenten.filter(
+    (k) => k.kategorie === "Router" && k.firmware_aktuell === 0,
+  );
+
+  const anlagenName = (name: string | undefined) =>
+    anlagen.find((a) => a.name === name)?.anlagen_name ?? name;
+
+  return (
+    <div className="space-y-6">
+      <Seitenkopf
+        titel="Fernwartung"
+        hinweis="Kontrollierter Fernzugriff für Techniker über Zero-Trust-Tunnel"
+      />
+
+      <div className="rounded-sm border rand-linie flaeche-ebene p-4">
+        <p className="text-sm leading-relaxed farbe-normal">
+          <strong className="font-medium farbe-stark">
+            Geschlossen, sofern nicht ausdrücklich geöffnet.
+          </strong>{" "}
+          Die Anlagennetze sind von außen nicht erreichbar – es gibt keine
+          offenen Ports und keine Portweiterleitung. Ein Techniker erhält Zugriff
+          nur über einen Zero-Trust-Tunnel, für einen benannten Anlass, eine
+          bestimmte Person und eine begrenzte Zeit. Danach schließt der Zugang
+          automatisch. Jede Freigabe, jeder Zugriff und jeder abgelehnte Versuch
+          wird protokolliert.
+        </p>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Kennzahl
+          label="Zugänge"
+          wert={formatZahl(zugaenge.length, 0)}
+          hinweis={`${aktive.length} derzeit offen`}
+        />
+        <Kennzahl
+          label="Laufende Sitzungen"
+          wert={formatZahl(laufendeSitzungen.length, 0)}
+        />
+        <Kennzahl
+          label="Abgewiesene Versuche"
+          wert={formatZahl(abgelehnte.length, 0)}
+          hinweis="im erfassten Zeitraum"
+        />
+        <Kennzahl
+          label="Geräte mit Update"
+          wert={formatZahl(veralteteFirmware.length, 0)}
+          hinweis="veraltete Firmware"
+        />
+      </div>
+
+      {laufendeSitzungen.length > 0 && (
+        <Tafel titel="Laufende Sitzungen">
+          <ul className="space-y-3">
+            {laufendeSitzungen.map((sitzung) => (
+              <li
+                key={sitzung.name}
+                className="rounded-sm border p-4"
+                style={{
+                  borderColor: STATUS_FARBEN.hinweis.rand,
+                  background: STATUS_FARBEN.hinweis.flaeche,
+                }}
+              >
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p
+                      className="flex items-center gap-2 font-medium"
+                      style={{ color: STATUS_FARBEN.hinweis.text }}
+                    >
+                      <LivePunkt aktiv />
+                      {sitzung.techniker} · {sitzung.firma}
+                    </p>
+                    <p className="mt-1 text-[0.8125rem] farbe-normal">
+                      {sitzung.grund}
+                    </p>
+                    <dl className="mt-2.5 grid gap-x-6 gap-y-1 text-xs sm:grid-cols-2">
+                      <Angabe label="Anlage">
+                        {anlagenName(sitzung.anlage)}
+                      </Angabe>
+                      <Angabe label="Freigegeben von">
+                        {sitzung.freigegeben_von ?? "–"}
+                      </Angabe>
+                      <Angabe label="Begonnen">
+                        {formatDatumZeit(sitzung.gestartet_am)}
+                      </Angabe>
+                      <Angabe label="Läuft ab">
+                        {formatRelativ(sitzung.gueltig_bis)}
+                      </Angabe>
+                    </dl>
+                  </div>
+                  <Status ton="hinweis">Aktiv</Status>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </Tafel>
+      )}
+
+      <Tafel titel="Zugänge">
+        {zugaenge.length === 0 ? (
+          <LeerZustand text="Es sind keine Fernwartungszugänge eingerichtet." />
+        ) : (
+          <ul className="space-y-4">
+            {zugaenge.map((zugang) => (
+              <li
+                key={zugang.name}
+                className="rounded-sm border rand-linie p-4"
+              >
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-medium farbe-stark">
+                      {zugang.geraet}
+                    </p>
+                    <p className="text-xs farbe-leise">
+                      {anlagenName(zugang.anlage)}
+                    </p>
+                  </div>
+                  <Status ton={zugang.aktiv === 1 ? "hinweis" : "gut"}>
+                    {zugang.aktiv === 1 ? "Offen" : "Geschlossen"}
+                  </Status>
+                </div>
+
+                <dl className="mt-3 grid gap-x-8 gap-y-1.5 text-sm sm:grid-cols-2">
+                  <Angabe label="Gerät">
+                    {zugang.hersteller} {zugang.modell}
+                  </Angabe>
+                  <Angabe label="Seriennummer">
+                    <span className="font-mono text-xs">
+                      {zugang.seriennummer}
+                    </span>
+                  </Angabe>
+                  <Angabe label="Zugangsart">{zugang.zugangsart}</Angabe>
+                  <Angabe label="Firmware">
+                    <span className="font-mono text-xs">{zugang.firmware}</span>
+                  </Angabe>
+                  <Angabe label="Letzte Verbindung">
+                    {formatRelativ(zugang.letzte_verbindung)}
+                  </Angabe>
+                </dl>
+
+                <div className="mt-3.5">
+                  <FreigabeFormular
+                    zugang={zugang.name}
+                    geraet={zugang.geraet ?? zugang.name}
+                    darfFreigeben={darfFreigeben}
+                  />
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Tafel>
+
+      <Tafel
+        titel="Zugriffsprotokoll"
+        hinweis="Nachweis nach NIS2: wer wann worauf zugegriffen hat"
+      >
+        <Tabelle
+          spalten={[{ titel: "Techniker" }, { titel: "Anlage" }, { titel: "Grund" }, { titel: "Beginn" }, { titel: "Ende" }, { titel: "Status" }]}
+        >
+          {sitzungen.map((sitzung) => (
+            <Zeile
+              key={sitzung.name}
+              hervorgehoben={sitzung.status === "Abgelehnt"}
+            >
+              <Zelle>
+                <span className="font-medium">{sitzung.techniker}</span>
+                <span className="block text-xs farbe-leise">
+                  {sitzung.firma}
+                </span>
+              </Zelle>
+              <Zelle leise>{anlagenName(sitzung.anlage)}</Zelle>
+              <Zelle leise>
+                <span className="text-xs">{sitzung.grund}</span>
+              </Zelle>
+              <Zelle leise>
+                {sitzung.gestartet_am
+                  ? formatDatumZeit(sitzung.gestartet_am)
+                  : "–"}
+              </Zelle>
+              <Zelle leise>
+                {sitzung.beendet_am ? formatDatumZeit(sitzung.beendet_am) : "–"}
+              </Zelle>
+              <Zelle>
+                <Status ton={sitzungTon(sitzung.status)}>
+                  {sitzung.status ?? "–"}
+                </Status>
+              </Zelle>
+            </Zeile>
+          ))}
+        </Tabelle>
+      </Tafel>
+
+      <Tafel titel="Technische Umsetzung">
+        <div className="space-y-3 text-sm leading-relaxed farbe-normal">
+          <p>
+            Jede Anlage hängt an einem Mobilfunkrouter, der ausschließlich
+            ausgehende Verbindungen aufbaut. Es gibt keine eingehende Route,
+            keinen offenen Port und keine öffentliche IP-Adresse – von außen ist
+            das Anlagennetz nicht adressierbar.
+          </p>
+          <p>
+            Der Techniker meldet sich stattdessen beim Zugangsdienst an. Erst
+            wenn dort eine gültige, zeitlich befristete Freigabe für genau diese
+            Person und dieses Gerät vorliegt, wird der Tunnel durchgeschaltet.
+            Die Identitätsprüfung erfolgt vor dem Netzzugang, nicht danach.
+          </p>
+          <p>
+            Anlagensteuerung und Router liegen in getrennten Netzsegmenten. Ein
+            Techniker erreicht nur die Komponenten, die für seine Aufgabe
+            freigegeben sind – nicht das gesamte Betriebsnetz.
+          </p>
+        </div>
+
+        <p className="mt-4 rounded-sm flaeche-vertieft px-3 py-2.5 text-xs leading-relaxed farbe-leise dark:farbe-zart">
+          Die Anbindung an den Zugangsdienst ist im Portal vorbereitet, aber noch
+          nicht mit einer Instanz verknüpft. Bis dahin bildet diese Seite den
+          Freigabeprozess ab und protokolliert ihn; die Durchschaltung selbst
+          erfolgt im Zugangsdienst.
+        </p>
+      </Tafel>
+    </div>
+  );
+}

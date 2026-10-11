@@ -1,0 +1,201 @@
+import "server-only";
+
+import { alle, eine } from "../db/verbindung.ts";
+import {
+  berechneKennzahl,
+  pruefeTaetigkeit,
+  TAETIGKEITEN,
+  type Einstufung,
+  type Kennzahlart,
+  type Nachweislage,
+  type Nachweisstand,
+} from "../esg/taxonomie.ts";
+
+/**
+ * Lesezugriffe zur EU-Taxonomie.
+ *
+ * Gerechnet wird hier nichts. Die Einstufung einer Tätigkeit ist eine
+ * Rechtsfrage und steht in `lib/esg/taxonomie.ts`, wo sie geprüft
+ * werden kann; diese Datei holt nur die Zahlen und die Nachweise.
+ */
+
+export interface TaxonomiePruefung {
+  id: string;
+  kunde_id: string;
+  jahr: number;
+  bezeichnung: string;
+  status: "Entwurf" | "Geprueft" | "Freigegeben";
+  umsatz_gesamt: number;
+  capex_gesamt: number;
+  opex_gesamt: number;
+  bemerkung: string | null;
+  freigegeben_am: string | null;
+  freigegeben_von: string | null;
+}
+
+export function ladeTaxonomiePruefung(jahr?: number): TaxonomiePruefung | null {
+  if (jahr === undefined) {
+    return (
+      eine<TaxonomiePruefung>(
+        "SELECT * FROM taxonomie_pruefung ORDER BY jahr DESC LIMIT 1",
+      ) ?? null
+    );
+  }
+
+  return (
+    eine<TaxonomiePruefung>(
+      "SELECT * FROM taxonomie_pruefung WHERE jahr = ?",
+      jahr,
+    ) ?? null
+  );
+}
+
+export function ladeTaxonomieJahre(): number[] {
+  return alle<{ jahr: number }>(
+    "SELECT jahr FROM taxonomie_pruefung ORDER BY jahr DESC",
+  ).map((z) => z.jahr);
+}
+
+export interface TaxonomiePositionZeile {
+  id: string;
+  art: "Umsatz" | "CapEx" | "OpEx";
+  /** Abschnitt im Anhang; leer heißt: nicht taxonomiefähig. */
+  taetigkeit: string;
+  bezeichnung: string;
+  betrag: number;
+  herkunft: string;
+  konto: string | null;
+  bemerkung: string | null;
+}
+
+export function ladeTaxonomiePositionen(
+  pruefungId: string,
+): TaxonomiePositionZeile[] {
+  return alle<TaxonomiePositionZeile>(
+    `SELECT id, art, taetigkeit, bezeichnung, betrag, herkunft, konto, bemerkung
+       FROM taxonomie_position
+      WHERE pruefung_id = ?
+      ORDER BY art, betrag DESC`,
+    pruefungId,
+  );
+}
+
+export interface TaxonomieNachweisZeile {
+  kriterium: string;
+  stand: Nachweisstand;
+  beleg: string | null;
+  geprueft_am: string | null;
+  geprueft_von: string | null;
+  bemerkung: string | null;
+}
+
+export function ladeTaxonomieNachweise(
+  pruefungId: string,
+): TaxonomieNachweisZeile[] {
+  return alle<TaxonomieNachweisZeile>(
+    `SELECT kriterium, stand, beleg, geprueft_am, geprueft_von, bemerkung
+       FROM taxonomie_nachweis
+      WHERE pruefung_id = ?
+      ORDER BY kriterium`,
+    pruefungId,
+  );
+}
+
+/**
+ * Die Nachweise als Nachschlagewerk für die Prüfung.
+ *
+ * Was nicht in der Tabelle steht, fehlt - und "fehlt" ist in der
+ * Taxonomie nicht dasselbe wie "nicht erfüllt". Deshalb wird hier
+ * nichts aufgefüllt: Der Katalog entscheidet, welche Kriterien es
+ * gibt, und die Prüfung behandelt einen fehlenden Eintrag als offen.
+ */
+export function alsNachweislage(zeilen: TaxonomieNachweisZeile[]): Nachweislage {
+  const lage: Nachweislage = {};
+  for (const zeile of zeilen) lage[zeile.kriterium] = zeile.stand;
+  return lage;
+}
+
+/* ------------------------------------------------------------------ */
+/* Überblick                                                           */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Die Taxonomie in vier Zahlen.
+ *
+ * Für Seiten, die nur darauf verweisen. Gerechnet wird mit demselben
+ * Kern wie auf der Taxonomie-Seite selbst - zwei Wege zur selben Zahl
+ * laufen früher oder später auseinander, und dann steht auf der
+ * Übersicht etwas anderes als im Bericht.
+ */
+export interface TaxonomieUeberblick {
+  id: string;
+  jahr: number;
+  status: string;
+  konformAnteil: Record<Kennzahlart, number>;
+  faehigAnteil: Record<Kennzahlart, number>;
+  /** Tätigkeiten, zu denen dieser Betrieb Beträge führt. */
+  taetigkeiten: { schluessel: string; einstufung: Einstufung }[];
+  offeneKriterien: number;
+  verletzteKriterien: number;
+}
+
+export function ladeTaxonomieUeberblick(
+  jahr?: number,
+): TaxonomieUeberblick | null {
+  const pruefung = ladeTaxonomiePruefung(jahr);
+  if (!pruefung) return null;
+
+  const positionen = ladeTaxonomiePositionen(pruefung.id);
+  const lage = alsNachweislage(ladeTaxonomieNachweise(pruefung.id));
+
+  const befunde = TAETIGKEITEN.filter((t) =>
+    positionen.some((p) => p.taetigkeit === t.schluessel),
+  ).map((t) => pruefeTaetigkeit(t, lage));
+
+  const einstufungJe = new Map(
+    befunde.map((b) => [b.taetigkeit.schluessel, b.einstufung]),
+  );
+
+  const nenner: Record<Kennzahlart, number> = {
+    Umsatz: pruefung.umsatz_gesamt,
+    CapEx: pruefung.capex_gesamt,
+    OpEx: pruefung.opex_gesamt,
+  };
+
+  const konformAnteil = {} as Record<Kennzahlart, number>;
+  const faehigAnteil = {} as Record<Kennzahlart, number>;
+
+  for (const art of ["Umsatz", "CapEx", "OpEx"] as const) {
+    const ergebnis = berechneKennzahl(
+      art,
+      nenner[art],
+      positionen
+        .filter((p) => p.art === art)
+        .map((p) => ({
+          taetigkeit: p.taetigkeit,
+          bezeichnung: p.bezeichnung,
+          betrag: p.betrag,
+          einstufung: p.taetigkeit
+            ? (einstufungJe.get(p.taetigkeit) ?? "offen")
+            : ("nicht_faehig" as const),
+        })),
+    );
+
+    konformAnteil[art] = ergebnis.konformAnteil;
+    faehigAnteil[art] = ergebnis.faehigAnteil;
+  }
+
+  return {
+    id: pruefung.id,
+    jahr: pruefung.jahr,
+    status: pruefung.status,
+    konformAnteil,
+    faehigAnteil,
+    taetigkeiten: befunde.map((b) => ({
+      schluessel: b.taetigkeit.schluessel,
+      einstufung: b.einstufung,
+    })),
+    offeneKriterien: befunde.reduce((s, b) => s + b.offen.length, 0),
+    verletzteKriterien: befunde.reduce((s, b) => s + b.verletzt.length, 0),
+  };
+}

@@ -1,0 +1,173 @@
+"""Bauvertragsmeldung nach OENORM B 2110.
+
+Behinderungsanzeige, Bedenkenanmeldung und Mehrkostenankuendigung sind keine
+Notizen, sondern formgebundene Erklaerungen mit Rechtsfolgen. Wer sie wie eine
+Chatnachricht behandelt, verliert im Streitfall genau den Nachweis, fuer den
+das System gebaut wurde.
+
+Daraus folgen drei Festlegungen:
+
+* Der Sachverhalt ist nach dem Absenden **unveraenderlich**. Nur die
+  Stellungnahme des Auftraggebers kommt hinzu.
+* Der Eingangszeitpunkt wird vom Server gesetzt, nicht vom Geraet.
+* Der Abstand zwischen Eintritt des Umstands und Meldung wird festgehalten —
+  die Unverzueglichkeit ist im Streit die erste Frage.
+
+Die rechtliche Bewertung bleibt bei euch; das System dokumentiert nur sauber.
+"""
+
+from __future__ import annotations
+
+import frappe
+from frappe import _
+from frappe.model.document import Document
+from frappe.utils import get_datetime, now_datetime
+
+BAULEITER_ROLLEN = {"Baudoku Bauleiter", "Baudoku Projektleiter", "Baudoku Admin", "System Manager"}
+
+# Meldungsarten, die nach B 2110 unverzueglich zu erstatten sind.
+UNVERZUEGLICH = {"Behinderungsanzeige", "Bedenkenanmeldung"}
+
+# Felder, die auch nach dem Absenden noch gesetzt werden duerfen.
+ANTWORTFELDER = {
+	"status", "antwort", "beantwortet_von", "beantwortet_am",
+	"anerkannte_frist_tage", "gesperrt", "modified", "modified_by",
+}
+
+
+class Bauvertragsmeldung(Document):
+	def validate(self):
+		self.eingang_festhalten()
+		self.unveraenderlichkeit_pruefen()
+		self.pflichtangaben_pruefen()
+		self.antwort_pruefen()
+
+	def after_insert(self):
+		self.bauleiter_benachrichtigen()
+
+	# ---------------------------------------------------------------- Validate
+
+	def eingang_festhalten(self):
+		"""Der Eingangszeitpunkt kommt vom Server — die Uhr des Geraets zaehlt nicht."""
+		if not self.gemeldet_am:
+			self.gemeldet_am = now_datetime()
+			self.gesperrt = 1
+
+		if self.eingetreten_am:
+			if get_datetime(self.eingetreten_am) > get_datetime(self.gemeldet_am):
+				frappe.throw(_("Der Umstand kann nicht nach der Meldung eingetreten sein."))
+			abstand = get_datetime(self.gemeldet_am) - get_datetime(self.eingetreten_am)
+			self.verzoegerung_stunden = int(abstand.total_seconds() // 3600)
+
+	def unveraenderlichkeit_pruefen(self):
+		vorher = self.get_doc_before_save()
+		if not vorher or not vorher.gesperrt:
+			return
+
+		geaendert = [
+			feld.fieldname
+			for feld in self.meta.fields
+			if feld.fieldname not in ANTWORTFELDER
+			and self.get(feld.fieldname) != vorher.get(feld.fieldname)
+		]
+		if geaendert:
+			frappe.throw(
+				_("Der Sachverhalt einer abgesendeten Meldung ist unveraenderlich. "
+				  "Geaendert wurde: {0}. Bitte eine ergaenzende Meldung erfassen.").format(
+					", ".join(geaendert)
+				),
+				title=_("Aenderung nicht zulaessig"),
+			)
+
+	def pflichtangaben_pruefen(self):
+		if self.art == "Mehrkostenankuendigung" and not self.kosten_dem_grunde_nach:
+			frappe.throw(
+				_("Eine Mehrkostenankuendigung ist dem Grunde nach zu erklaeren. "
+				  "Die Hoehe kann nachgereicht werden."),
+			)
+		if self.art in UNVERZUEGLICH and not self.eingetreten_am:
+			frappe.throw(_("Bitte angeben, wann der Umstand eingetreten ist."))
+
+	def antwort_pruefen(self):
+		vorher = self.get_doc_before_save()
+		wechselt = not vorher or vorher.status != self.status
+		entschieden = {"Anerkannt", "Teilweise anerkannt", "Zurueckgewiesen"}
+
+		if self.status in entschieden and wechselt:
+			if not BAULEITER_ROLLEN & set(frappe.get_roles()):
+				frappe.throw(
+					_("Ueber Meldungen entscheidet der Bauleiter."), frappe.PermissionError
+				)
+			if not self.antwort:
+				frappe.throw(_("Bitte die Entscheidung begruenden."))
+			self.beantwortet_von = frappe.session.user
+			self.beantwortet_am = now_datetime()
+
+			if self.status in ("Anerkannt", "Teilweise anerkannt") and self.anerkannte_frist_tage:
+				self.frist_verlaengern()
+
+	# ----------------------------------------------------------------- Aktionen
+
+	def frist_verlaengern(self):
+		"""Anerkannte Behinderung verschiebt die Fertigstellungsfrist des Auftrags."""
+		if not self.auftrag or not self.anerkannte_frist_tage:
+			return
+		from frappe.utils import add_days
+
+		frist = frappe.db.get_value("Subunternehmerauftrag", self.auftrag, "frist")
+		if not frist:
+			return
+		frappe.db.set_value(
+			"Subunternehmerauftrag", self.auftrag, "frist",
+			add_days(frist, int(self.anerkannte_frist_tage)), update_modified=False,
+		)
+		frappe.msgprint(
+			_("Die Frist des Auftrags {0} wurde um {1} Tage verlaengert.").format(
+				self.auftrag, self.anerkannte_frist_tage
+			),
+			indicator="blue", alert=True,
+		)
+
+	def bauleiter_benachrichtigen(self):
+		"""Eine Behinderung, die niemand liest, ist keine Behinderungsanzeige."""
+		empfaenger = frappe.get_all(
+			"Has Role", filters={"role": "Baudoku Bauleiter", "parenttype": "User"}, pluck="parent"
+		)
+		empfaenger = [e for e in empfaenger if e not in ("Administrator", "Guest")]
+		if not empfaenger:
+			return
+
+		frappe.sendmail(
+			recipients=empfaenger,
+			subject=_("{0} von {1}: {2}").format(self.art, self.supplier, self.betreff),
+			message=frappe.render_template(
+				"""<p><b>{{ doc.art }}</b> zur Baustelle {{ doc.anlage }}</p>
+				<p>Eingetreten: {{ doc.eingetreten_am }}<br>
+				   Gemeldet: {{ doc.gemeldet_am }} ({{ doc.verzoegerung_stunden }} h danach)</p>
+				<p>{{ doc.sachverhalt }}</p>
+				{% if doc.auswirkung_frist_tage %}
+				<p>Geltend gemachte Fristverlaengerung: {{ doc.auswirkung_frist_tage }} Tage</p>
+				{% endif %}""",
+				{"doc": self},
+			),
+			reference_doctype=self.doctype,
+			reference_name=self.name,
+		)
+
+
+@frappe.whitelist()
+def offene_meldungen(supplier: str | None = None) -> list[dict]:
+	"""Meldungen, die auf eine Stellungnahme warten."""
+	filters = {"status": ["in", ["Eingegangen", "In Pruefung"]]}
+	if supplier:
+		filters["supplier"] = supplier
+
+	return frappe.get_all(
+		"Bauvertragsmeldung",
+		filters=filters,
+		fields=["name", "art", "betreff", "supplier", "anlage", "auftrag", "status",
+		        "eingetreten_am", "gemeldet_am", "verzoegerung_stunden",
+		        "auswirkung_frist_tage", "auswirkung_kosten"],
+		order_by="gemeldet_am asc",
+		limit_page_length=100,
+	)

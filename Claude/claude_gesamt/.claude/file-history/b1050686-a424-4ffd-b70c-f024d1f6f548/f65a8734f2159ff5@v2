@@ -1,0 +1,313 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+
+import { alle, eine, imBlock, schreibe, skalar } from "@/lib/db/verbindung";
+import { messStempel, verschiebeTage } from "@/lib/datum";
+import {
+  erstelleFahrplan,
+  type Marktintervall,
+} from "@/lib/handel/fahrplan";
+import { protokolliere } from "@/lib/sicherheit/audit";
+import { requireRecht } from "@/lib/session";
+
+export interface HandelErgebnis {
+  ok: boolean;
+  meldung: string;
+}
+
+/**
+ * Gibt einen Fahrplan für den Betrieb frei.
+ *
+ * Ein Entwurf wird gerechnet, aber nicht gefahren. Erst die Freigabe
+ * macht ihn verbindlich - und danach wird er nicht mehr verändert.
+ * Wer einen laufenden Fahrplan nachträglich umschreibt, kann am
+ * Abend nicht mehr sagen, warum der Speicher getan hat, was er tat.
+ */
+export async function gibFahrplanFrei(
+  _vorher: HandelErgebnis | null,
+  formular: FormData,
+): Promise<HandelErgebnis> {
+  const benutzer = await requireRecht("handel.freigeben");
+
+  const planId = String(formular.get("plan") ?? "");
+
+  const plan = eine<{ id: string; status: string; tag: string }>(
+    "SELECT id, status, tag FROM fahrplan WHERE id = ?",
+    planId,
+  );
+
+  if (!plan) {
+    return { ok: false, meldung: "Dieser Fahrplan ist nicht vorhanden." };
+  }
+
+  if (plan.status !== "Entwurf") {
+    return {
+      ok: false,
+      meldung: `Der Fahrplan steht auf "${plan.status}" und lässt sich nicht mehr freigeben.`,
+    };
+  }
+
+  schreibe(
+    `UPDATE fahrplan
+        SET status = 'Freigegeben',
+            freigegeben_am = ?,
+            freigegeben_von = ?
+      WHERE id = ?`,
+    new Date().toISOString(),
+    benutzer.vollname,
+    planId,
+  );
+
+  await protokolliere({
+    kategorie: "steuerung",
+    aktion: `Fahrplan ${plan.tag} freigegeben`,
+    ergebnis: "erfolg",
+    objekt: planId,
+    begruendung: `Freigegeben durch ${benutzer.vollname}`,
+  });
+
+  revalidatePath("/portal/handel");
+
+  return {
+    ok: true,
+    meldung:
+      "Freigegeben. Der Steuerrechner übernimmt den Fahrplan zum nächsten Tageswechsel.",
+  };
+}
+
+/**
+ * Verwirft einen Fahrplan.
+ *
+ * Ohne freigegebenen Fahrplan fährt der Speicher seine
+ * Grundeinstellung aus der Steuerung - er steht also nicht still.
+ */
+export async function verwerfeFahrplan(
+  _vorher: HandelErgebnis | null,
+  formular: FormData,
+): Promise<HandelErgebnis> {
+  const benutzer = await requireRecht("handel.freigeben");
+
+  const planId = String(formular.get("plan") ?? "");
+  const plan = eine<{ status: string; tag: string }>(
+    "SELECT status, tag FROM fahrplan WHERE id = ?",
+    planId,
+  );
+
+  if (!plan) {
+    return { ok: false, meldung: "Dieser Fahrplan ist nicht vorhanden." };
+  }
+
+  if (plan.status === "Gefahren") {
+    return {
+      ok: false,
+      meldung:
+        "Ein bereits gefahrener Fahrplan wird nicht verworfen - er ist Teil des Betriebsprotokolls.",
+    };
+  }
+
+  schreibe("UPDATE fahrplan SET status = 'Verworfen' WHERE id = ?", planId);
+
+  await protokolliere({
+    kategorie: "steuerung",
+    aktion: `Fahrplan ${plan.tag} verworfen`,
+    ergebnis: "erfolg",
+    objekt: planId,
+    begruendung: `Verworfen durch ${benutzer.vollname}`,
+  });
+
+  revalidatePath("/portal/handel");
+
+  return {
+    ok: true,
+    meldung:
+      "Verworfen. Der Speicher fährt die Grundeinstellung aus der Steuerung.",
+  };
+}
+
+/**
+ * Rechnet den Fahrplan für einen Speicher neu.
+ *
+ * Gerechnet wird mit demselben Kern, der auch im Betrieb läuft -
+ * nicht mit einer vereinfachten Fassung für die Anzeige. Ein
+ * freigegebener oder gefahrener Plan wird dabei nicht angerührt:
+ * Neurechnen ist etwas anderes als Ändern.
+ */
+export async function rechneFahrplanNeu(
+  _vorher: HandelErgebnis | null,
+  formular: FormData,
+): Promise<HandelErgebnis> {
+  const benutzer = await requireRecht("handel.freigeben");
+
+  const speicherId = String(formular.get("speicher") ?? "");
+  const tag = String(formular.get("tag") ?? "");
+
+  const s = eine<Record<string, number | string>>(
+    `SELECT s.*, n.bezugsgrenze_kw, n.spitzenziel_kw, n.einspeisegrenze_kw,
+            n.arbeitspreis_ct_kwh, n.einspeiseverguetung_ct_kwh,
+            n.leistungspreis_eur_kw_monat, a.leistung_kwp, a.bezeichnung
+       FROM speicher s
+       JOIN netzanschluss n ON n.anlage_id = s.anlage_id
+       JOIN anlage a        ON a.id = s.anlage_id
+      WHERE s.id = ?`,
+    speicherId,
+  );
+
+  if (!s) {
+    return { ok: false, meldung: "Dieser Speicher ist nicht vorhanden." };
+  }
+
+  const planId = `FP-${speicherId}-${tag}`;
+  const vorhanden = eine<{ status: string }>(
+    "SELECT status FROM fahrplan WHERE id = ?",
+    planId,
+  );
+
+  if (vorhanden && vorhanden.status !== "Entwurf") {
+    return {
+      ok: false,
+      meldung: `Der Fahrplan steht auf "${vorhanden.status}". Nur ein Entwurf wird neu gerechnet.`,
+    };
+  }
+
+  const beginn = new Date(`${tag}T00:00:00`);
+  if (Number.isNaN(beginn.getTime())) {
+    return { ok: false, meldung: "Ungültiger Tag." };
+  }
+
+  const preise = alle<{ zeitpunkt: string; preis_eur_mwh: number }>(
+    `SELECT zeitpunkt, preis_eur_mwh FROM marktpreis
+      WHERE markt = 'EPEX_AT_DA' AND zeitpunkt >= ? AND zeitpunkt < ?
+      ORDER BY zeitpunkt`,
+    messStempel(beginn),
+    messStempel(verschiebeTage(beginn, 1)),
+  );
+
+  if (preise.length === 0) {
+    return {
+      ok: false,
+      meldung:
+        "Für diesen Tag liegen noch keine Börsenpreise vor. Die Auktion wird um 12:45 Uhr veröffentlicht.",
+    };
+  }
+
+  // Erzeugung und Verbrauch aus dem bisherigen Plan übernehmen,
+  // soweit vorhanden - die Prognose ändert sich beim Neurechnen der
+  // Optimierung nicht.
+  const bisher = new Map(
+    alle<{
+      zeitpunkt: string;
+      erzeugung_kwh: number;
+      verbrauch_kwh: number;
+    }>(
+      `SELECT zeitpunkt, erzeugung_kwh, verbrauch_kwh
+         FROM fahrplan_schritt WHERE fahrplan_id = ?`,
+      planId,
+    ).map((z) => [z.zeitpunkt, z]),
+  );
+
+  const intervalle: Marktintervall[] = preise.map((p) => {
+    const alt = bisher.get(p.zeitpunkt);
+    return {
+      zeitpunkt: new Date(p.zeitpunkt),
+      preisEurMwh: p.preis_eur_mwh,
+      erzeugungKwh: alt?.erzeugung_kwh ?? 0,
+      verbrauchKwh: alt?.verbrauch_kwh ?? 0,
+    };
+  });
+
+  const vorhaltung =
+    skalar<number>(
+      `SELECT COALESCE(SUM(leistung_kw), 0) FROM regelleistung
+        WHERE speicher_id = ? AND status = 'Bezuschlagt'`,
+      speicherId,
+    ) ?? 0;
+
+  const plan = erstelleFahrplan(
+    intervalle,
+    {
+      kapazitaetKwh: Number(s.kapazitaet_kwh),
+      ladeleistungKw: Number(s.ladeleistung_kw),
+      entladeleistungKw: Number(s.entladeleistung_kw),
+      wirkungsgradLaden: Number(s.wirkungsgrad_laden),
+      wirkungsgradEntladen: Number(s.wirkungsgrad_entladen),
+      notstromReserve: Number(s.notstrom_reserve),
+      startLadestandKwh:
+        Number(s.kapazitaet_kwh) * Number(s.notstrom_reserve) * 1.5,
+      zykluskostenEurKwh: Number(s.zykluskosten_eur_kwh),
+      vorhaltungKw: vorhaltung,
+    },
+    {
+      bezugsgrenzeKw: Number(s.bezugsgrenze_kw),
+      spitzenzielKw: Number(s.spitzenziel_kw),
+      einspeisegrenzeKw: Number(s.einspeisegrenze_kw),
+      arbeitspreisBezugCtKwh: Number(s.arbeitspreis_ct_kwh),
+      einspeiseverguetungCtKwh: Number(s.einspeiseverguetung_ct_kwh),
+      leistungspreisEurKwMonat: Number(s.leistungspreis_eur_kw_monat),
+    },
+  );
+
+  imBlock(() => {
+    schreibe("DELETE FROM fahrplan_schritt WHERE fahrplan_id = ?", planId);
+    schreibe("DELETE FROM fahrplan WHERE id = ?", planId);
+
+    schreibe(
+      `INSERT INTO fahrplan
+         (id, speicher_id, tag, status, eigenverbrauch_eur, handel_eur,
+          spitzenkappung_eur, zykluskosten_eur, gesamt_eur, spitze_ohne_kw,
+          spitze_mit_kw, durchsatz_kwh, vollzyklen, gerechnet_am)
+       VALUES (?, ?, ?, 'Entwurf', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      planId,
+      speicherId,
+      tag,
+      plan.bilanz.eigenverbrauchEur,
+      plan.bilanz.handelEur,
+      plan.bilanz.spitzenkappungEur,
+      plan.bilanz.zykluskostenEur,
+      plan.bilanz.gesamtEur,
+      plan.bilanz.spitzeOhneSpeicherKw,
+      plan.bilanz.spitzeMitSpeicherKw,
+      plan.bilanz.durchsatzKwh,
+      plan.bilanz.vollzyklen,
+      new Date().toISOString(),
+    );
+
+    for (const schritt of plan.schritte) {
+      schreibe(
+        `INSERT INTO fahrplan_schritt
+           (fahrplan_id, zeitpunkt, preis_eur_mwh, erzeugung_kwh,
+            verbrauch_kwh, laden_kwh, entladen_kwh, netzbezug_kwh,
+            einspeisung_kwh, ladestand_kwh, belegung, ergebnis_eur)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        planId,
+        messStempel(schritt.zeitpunkt),
+        schritt.preisEurMwh,
+        schritt.erzeugungKwh,
+        schritt.verbrauchKwh,
+        schritt.ladenKwh,
+        schritt.entladenKwh,
+        schritt.netzbezugKwh,
+        schritt.einspeisungKwh,
+        schritt.ladestandKwh,
+        schritt.belegung,
+        schritt.ergebnisEur,
+      );
+    }
+  });
+
+  await protokolliere({
+    kategorie: "steuerung",
+    aktion: `Fahrplan ${tag} neu gerechnet`,
+    ergebnis: "erfolg",
+    objekt: planId,
+    nachher: `${plan.bilanz.gesamtEur} EUR`,
+    begruendung: `Neu gerechnet durch ${benutzer.vollname}`,
+  });
+
+  revalidatePath("/portal/handel");
+
+  return {
+    ok: true,
+    meldung: `Neu gerechnet: ${plan.bilanz.gesamtEur.toLocaleString("de-AT", { style: "currency", currency: "EUR" })} erwartetes Ergebnis, ${plan.bilanz.vollzyklen} Vollzyklen.`,
+  };
+}

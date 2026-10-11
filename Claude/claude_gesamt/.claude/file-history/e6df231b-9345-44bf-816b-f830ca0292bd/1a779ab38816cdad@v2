@@ -1,0 +1,107 @@
+import pathlib
+
+FE = pathlib.Path(r"C:\Users\SALEADMIN\Documents\Servicetechniker APP\frontend")
+
+
+def patch(pfad, paare):
+    p = FE / pfad
+    s = p.read_text(encoding="utf-8")
+    for alt, neu in paare:
+        if alt not in s:
+            raise SystemExit(f"NICHT GEFUNDEN in {pfad}:\n---\n{alt[:240]}\n---")
+        s = s.replace(alt, neu, 1)
+    p.write_text(s, encoding="utf-8")
+    print("ok", pfad)
+
+
+IMPORT_ALT = """import { db, neueId } from '@/lib/db'"""
+IMPORT_NEU = """import { resource } from '@/lib/api'
+import { db, neueId } from '@/lib/db'"""
+
+LADEN_ALT = """onMounted(async () => {
+  if (props.lokaleId) {
+    mangel.value = (await db.maengel.get(props.lokaleId)) ?? null
+    if (!mangel.value) ui.warnung('Mangel lokal nicht gefunden.')
+  } else {"""
+
+LADEN_NEU = """/**
+ * Holt einen Mangel, der nur auf dem Server liegt, in den lokalen Bestand.
+ *
+ * Ein frisch zugewiesener Mangel ist auf diesem Gerät noch nie gespeichert
+ * worden — ohne diesen Weg wäre er aus dem Dashboard heraus nicht zu öffnen.
+ */
+async function vomServerHolen(name: string): Promise<Mangel | null> {
+  try {
+    const doc = (await resource.lesen<Mangel>('Mangel', name)) as Mangel
+    const geholt: Mangel = { ...doc, lokale_id: doc.lokale_id || neueId() }
+    await db.maengel.put(geholt)
+    return geholt
+  } catch (fehler) {
+    ui.warnung(
+      `Mangel ${name} ist weder lokal vorhanden noch abrufbar: ${(fehler as Error).message}`,
+    )
+    return null
+  }
+}
+
+onMounted(async () => {
+  if (props.lokaleId) {
+    mangel.value =
+      (await db.maengel.get(props.lokaleId)) ??
+      (await db.maengel.where('name').equals(props.lokaleId).first()) ??
+      (await vomServerHolen(props.lokaleId))
+  } else {"""
+
+patch(
+    "src/views/MangelFormularView.vue",
+    [(IMPORT_ALT, IMPORT_NEU), (LADEN_ALT, LADEN_NEU)],
+)
+
+# Demo: einzelnen Mangel abrufbar machen
+patch(
+    "src/lib/demo.ts",
+    [
+        (
+            """/** Ersatz für `/api/resource`-Listen im Demo-Modus. */""",
+            """/** Ersatz für den Einzelabruf `/api/resource/<doctype>/<name>` im Demo-Modus. */
+export function demoDokument(doctype: string, name: string): unknown | undefined {
+  const treffer = demoListe(doctype).find(
+    (eintrag) => (eintrag as { name?: string }).name === name,
+  )
+  if (!treffer) return undefined
+  return doctype === 'Mangel'
+    ? { ...treffer, beschreibung: 'Demo-Mangel aus der Serverfassung.', fotos: [], erledigt_fotos: [] }
+    : treffer
+}
+
+/** Ersatz für `/api/resource`-Listen im Demo-Modus. */""",
+        )
+    ],
+)
+
+patch(
+    "src/lib/api.ts",
+    [
+        (
+            """import { demoAktiv, demoAntwort, demoListe } from './demo'""",
+            """import { demoAktiv, demoAntwort, demoDokument, demoListe } from './demo'""",
+        ),
+        (
+            """  lesen<T = Record<string, unknown>>(doctype: string, name: string): Promise<T> {
+    return anfrage<T>(`/api/resource/${encodeURIComponent(doctype)}/${encodeURIComponent(name)}`, {
+      method: 'GET',
+    })
+  },""",
+            """  lesen<T = Record<string, unknown>>(doctype: string, name: string): Promise<T> {
+    if (demoAktiv()) {
+      const treffer = demoDokument(doctype, name)
+      if (treffer) return Promise.resolve(treffer as T)
+      return Promise.reject(new ApiFehler(`${doctype} ${name} nicht gefunden`, 404))
+    }
+    return anfrage<T>(`/api/resource/${encodeURIComponent(doctype)}/${encodeURIComponent(name)}`, {
+      method: 'GET',
+    })
+  },""",
+        ),
+    ],
+)

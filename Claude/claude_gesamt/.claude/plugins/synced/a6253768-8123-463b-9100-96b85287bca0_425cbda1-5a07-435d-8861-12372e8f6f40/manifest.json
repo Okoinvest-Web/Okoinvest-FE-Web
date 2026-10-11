@@ -1,0 +1,164 @@
+{
+  "lastUpdated": 1790536985899,
+  "plugins": [
+    {
+      "pluginId": "plugin_011v5h6QUzBZvas64y44XLhy",
+      "name": "pdf-viewer",
+      "description": "View, annotate, and sign PDFs in a live interactive viewer. Mark up contracts, fill forms with visual feedback, stamp approvals, and place signatures — then download the annotated copy.",
+      "version": "0038",
+      "updatedAt": "2026-09-22T20:19:47.287557Z",
+      "marketplaceName": "knowledge-work-plugins",
+      "installationPreference": "available",
+      "generation": 3
+    },
+    {
+      "pluginId": "plugin_019TBdWa5NQJJuDFmEc4k6BJ",
+      "name": "operations",
+      "description": "Optimize business operations — vendor management, process documentation, change management, capacity planning, and compliance tracking. Keep your organization running efficiently.",
+      "version": "0040",
+      "updatedAt": "2026-09-22T20:19:50.975367Z",
+      "marketplaceName": "knowledge-work-plugins",
+      "installationPreference": "available",
+      "generation": 2
+    },
+    {
+      "pluginId": "plugin_01XXJmxLXPEhPMmnxmrgntNw",
+      "name": "design",
+      "description": "Accelerate design workflows — critique, design system management, UX writing, accessibility audits, research synthesis, and dev handoff. From exploration to pixel-perfect specs.",
+      "version": "0040",
+      "updatedAt": "2026-09-22T20:19:51.058908Z",
+      "marketplaceName": "knowledge-work-plugins",
+      "installationPreference": "available",
+      "generation": 3
+    },
+    {
+      "pluginId": "plugin_01FTLa86dhbVJ3HB1LdHdhN7",
+      "name": "engineering",
+      "description": "Streamline engineering workflows — standups, code review, architecture decisions, incident response, and technical documentation. Works with your existing tools or standalone.",
+      "version": "0040",
+      "updatedAt": "2026-09-22T20:19:51.222284Z",
+      "marketplaceName": "knowledge-work-plugins",
+      "installationPreference": "available",
+      "generation": 2
+    },
+    {
+      "pluginId": "plugin_01BYoFffWxgV8R5TZ6fEVCih",
+      "name": "human-resources",
+      "description": "Streamline people operations — recruiting, onboarding, performance reviews, compensation analysis, and policy guidance. Maintain compliance and keep your team running smoothly.",
+      "version": "0040",
+      "updatedAt": "2026-09-22T20:19:51.131896Z",
+      "marketplaceName": "knowledge-work-plugins",
+      "installationPreference": "available",
+      "generation": 2
+    },
+    {
+      "pluginId": "plugin_014WxCYbLf7f3uw2isHFR9US",
+      "name": "productivity",
+      "description": "Manage tasks, plan your day, and build up memory of important context about your work. Syncs with your calendar, email, and chat to keep everything organized and on track.",
+      "version": "0041",
+      "updatedAt": "2026-09-22T20:19:52.784341Z",
+      "marketplaceName": "knowledge-work-plugins",
+      "installationPreference": "available",
+      "generation": 2
+    },
+    {
+      "pluginId": "plugin_01AYHYqVLaZRH2Vi6aHgDwEw",
+      "name": "product-management",
+      "description": "Write feature specs, plan roadmaps, and synthesize user research faster. Keep stakeholders updated and stay ahead of the competitive landscape.",
+      "version": "0040",
+      "updatedAt": "2026-09-22T20:19:51.741626Z",
+      "marketplaceName": "knowledge-work-plugins",
+      "installationPreference": "available",
+      "generation": 2
+    },
+    {
+      "pluginId": "plugin_012ABz1xjgtJYWKrcJkXW6ad",
+      "name": "legal",
+      "description": "Speed up contract review, NDA triage, and compliance workflows for in-house legal teams. Draft legal briefs, organize precedent research, and manage institutional knowledge.",
+      "version": "0040",
+      "updatedAt": "2026-09-22T20:19:52.300216Z",
+      "marketplaceName": "knowledge-work-plugins",
+      "installationPreference": "available",
+      "generation": 2
+    },
+    {
+      "pluginId": "plugin_01Eeb9y5m4iFuY3yRtytYfdc",
+      "name": "marketing",
+      "description": "Create content, plan campaigns, and analyze performance across marketing channels. Maintain brand voice consistency, track competitors, and report on what's working.",
+      "version": "0040",
+      "updatedAt": "2026-09-22T20:19:52.298451Z",
+      "marketplaceName": "knowledge-work-plugins",
+      "installationPreference": "available",
+      "generation": 2
+    },
+    {
+      "pluginId": "plugin_01KmRfL8EXGF3PeqMRzef1TR",
+      "name": "finance",
+      "description": "Streamline finance and accounting workflows, from journal entries and reconciliation to financial statements and variance analysis. Speed up audit prep, month-end close, and keeping your books clean.",
+      "version": "0040",
+      "updatedAt": "2026-09-22T20:19:52.553225Z",
+      "marketplaceName": "knowledge-work-plugins",
+      "installationPreference": "available",
+      "generation": 2
+    },
+    {
+      "pluginId": "plugin_01SfWJSiw6JtGbsuW75PKvPK",
+      "name": "sales",
+      "description": "Prep calls, summarize and follow up, research accounts, review deals and pipeline, and write the forecast, using the CRM, email, calendar and chat tools your team already uses, or uploaded files. Updates records, drafts or sends email, posts to chat and books meetings when you ask.",
+      "version": "0042",
+      "updatedAt": "2026-09-22T20:19:52.764961Z",
+      "marketplaceName": "knowledge-work-plugins",
+      "installationPreference": "available",
+      "generation": 2
+    },
+    {
+      "pluginId": "plugin_01VyNDLNYUZHHyKf7A691D7V",
+      "name": "enterprise-search",
+      "description": "Search across all of your company's tools in one place. Find anything across email, chat, documents, and wikis without switching between apps.",
+      "version": "0040",
+      "updatedAt": "2026-09-22T20:19:52.798101Z",
+      "marketplaceName": "knowledge-work-plugins",
+      "installationPreference": "available",
+      "generation": 2
+    },
+    {
+      "pluginId": "plugin_016kCmK4LhtWJEFSRVcTBZeB",
+      "name": "customer-support",
+      "description": "Triage tickets, draft responses, escalate issues, and build your knowledge base. Research customer context and turn resolved issues into self-service content.",
+      "version": "0040",
+      "updatedAt": "2026-09-22T20:19:51.954515Z",
+      "marketplaceName": "knowledge-work-plugins",
+      "installationPreference": "available",
+      "generation": 2
+    },
+    {
+      "pluginId": "plugin_01VTbvGZYaCVU2CNSvhDCnkg",
+      "name": "data",
+      "description": "Write SQL, explore datasets, and generate insights faster. Build visualizations and dashboards, and turn raw data into clear stories for stakeholders.",
+      "version": "0040",
+      "updatedAt": "2026-09-22T20:19:52.398980Z",
+      "marketplaceName": "knowledge-work-plugins",
+      "installationPreference": "available",
+      "generation": 2
+    },
+    {
+      "pluginId": "plugin_017zncz89kmhdPgdpZQZm5Dj",
+      "name": "small-business",
+      "description": "Pre-built small business workflows to help you run and grow your business. Supports a majority of the tools you already use. You approve every step that touches money or customers. Install and then ask Claude to help you get onboarded.",
+      "version": "0039",
+      "updatedAt": "2026-09-22T20:19:52.298772Z",
+      "marketplaceName": "knowledge-work-plugins",
+      "installationPreference": "available",
+      "generation": 2
+    },
+    {
+      "pluginId": "plugin_01S1HcuzG4CPx8bTxZDQAguG",
+      "name": "desktop-commander",
+      "description": "MCP server for terminal commands, process management, and file operations across text, code, PDF, DOCX, Excel, images, and structured data.",
+      "version": "0021",
+      "updatedAt": "2026-09-22T20:19:46.725281Z",
+      "marketplaceName": "knowledge-work-plugins",
+      "installationPreference": "available"
+    }
+  ]
+}

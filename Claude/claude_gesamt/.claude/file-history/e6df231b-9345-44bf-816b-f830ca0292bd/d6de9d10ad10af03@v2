@@ -1,0 +1,84 @@
+/**
+ * Minimalserver für die Offline-E2E-Tests.
+ *
+ * Bildet nach, wie Frappe den Produktionsbuild ausliefert — nur so lässt sich
+ * die Offline-Kette überhaupt prüfen: Der Dev-Server kennt weder Precache noch
+ * die Pfadaufteilung zwischen `/assets/...` und `/`.
+ *
+ *   /assets/oekovolt_baudoku/frontend/*  → Bundle
+ *   /sw.js, /workbox-*.js                → Service Worker im Wurzelpfad
+ *   /baudoku*                            → Einstiegsseite (Frappe rendert sie sonst)
+ *   /api/*                               → 503, damit der Demo-Modus greift
+ */
+
+import { createReadStream, existsSync, statSync } from 'node:fs'
+import { createServer } from 'node:http'
+import { extname, join, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const HIER = fileURLToPath(new URL('.', import.meta.url))
+// Der Demo-Build aus `e2e/build.mjs`, nicht der auslieferbare Produktionsbuild.
+const APP = resolve(HIER, '../.e2e-build')
+const BUNDLE = join(APP, 'public/frontend')
+const WWW = join(APP, 'www')
+const ASSET_PRAEFIX = '/assets/oekovolt_baudoku/frontend/'
+const PORT = Number(process.env.E2E_PORT ?? 8081)
+
+const TYPEN = {
+  '.html': 'text/html; charset=utf-8',
+  '.js': 'text/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.json': 'application/json; charset=utf-8',
+  '.svg': 'image/svg+xml',
+  '.webmanifest': 'application/manifest+json',
+  '.map': 'application/json',
+  '.woff2': 'font/woff2',
+}
+
+if (!existsSync(join(BUNDLE, 'index.html')) || !existsSync(join(WWW, 'sw.js'))) {
+  console.error('Demo-Build fehlt. Bitte zuerst `node e2e/build.mjs` ausführen.')
+  process.exit(1)
+}
+
+function ausliefern(antwort, pfad) {
+  if (!existsSync(pfad) || !statSync(pfad).isFile()) {
+    antwort.writeHead(404).end('nicht gefunden')
+    return
+  }
+  antwort.writeHead(200, {
+    'Content-Type': TYPEN[extname(pfad)] ?? 'application/octet-stream',
+    // Der Service Worker darf die ganze Site kontrollieren.
+    'Service-Worker-Allowed': '/',
+    'Cache-Control': 'no-cache',
+  })
+  createReadStream(pfad).pipe(antwort)
+}
+
+createServer((anfrage, antwort) => {
+  const pfad = decodeURIComponent(new URL(anfrage.url, 'http://localhost').pathname)
+
+  if (pfad.startsWith('/api/')) {
+    // Kein Backend: Der Demo-Modus beantwortet alles aus dem Speicher.
+    antwort.writeHead(503).end('kein Backend im E2E-Betrieb')
+    return
+  }
+
+  if (pfad.startsWith(ASSET_PRAEFIX)) {
+    ausliefern(antwort, join(BUNDLE, pfad.slice(ASSET_PRAEFIX.length)))
+    return
+  }
+
+  if (pfad === '/sw.js' || /^\/workbox-[\w-]+\.js$/.test(pfad)) {
+    ausliefern(antwort, join(WWW, pfad.slice(1)))
+    return
+  }
+
+  if (pfad === '/baudoku' || pfad.startsWith('/baudoku/')) {
+    ausliefern(antwort, join(WWW, 'baudoku.html'))
+    return
+  }
+
+  antwort.writeHead(404).end('nicht gefunden')
+}).listen(PORT, () => {
+  console.log(`E2E-Server für den Produktionsbuild: http://localhost:${PORT}/baudoku`)
+})

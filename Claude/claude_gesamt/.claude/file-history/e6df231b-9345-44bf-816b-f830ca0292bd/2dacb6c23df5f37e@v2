@@ -1,0 +1,195 @@
+import pathlib
+
+BASIS = pathlib.Path(r"C:\Users\SALEADMIN\Documents\Servicetechniker APP\frontend")
+
+
+def patch(pfad, paare):
+    p = BASIS / pfad
+    s = p.read_text(encoding="utf-8")
+    for alt, neu in paare:
+        if alt not in s:
+            raise SystemExit(f"NICHT GEFUNDEN in {pfad}:\n---\n{alt[:220]}\n---")
+        s = s.replace(alt, neu, 1)
+    p.write_text(s, encoding="utf-8")
+    print("ok", pfad)
+
+
+KOPF_ALT = """import AnlagenKarte from '@/components/AnlagenKarte.vue'
+import AppIcon from '@/components/AppIcon.vue'
+import LeereListe from '@/components/LeereListe.vue'
+import StatusAbzeichen from '@/components/StatusAbzeichen.vue'
+import { datum, zahl } from '@/lib/format'
+import type { Anlage } from '@/lib/typen'
+import { useStammdaten } from '@/stores/stammdaten'
+
+const router = useRouter()
+const stammdaten = useStammdaten()
+
+const suche = ref('')
+const typ = ref('')
+const status = ref('')
+const ansicht = ref<'liste' | 'karte'>('liste')
+
+const gefiltert = computed(() =>
+  stammdaten.anlagenSuche(suche.value, { typ: typ.value || undefined, status: status.value || undefined }),
+)
+
+function oeffnen(anlage: Anlage) {
+  void router.push({ name: 'anlage-detail', params: { name: anlage.name } })
+}"""
+
+KOPF_NEU = """import AnlagenKarte from '@/components/AnlagenKarte.vue'
+import AppIcon from '@/components/AppIcon.vue'
+import BasisDialog from '@/components/BasisDialog.vue'
+import CodeScanner from '@/components/CodeScanner.vue'
+import LeereListe from '@/components/LeereListe.vue'
+import StatusAbzeichen from '@/components/StatusAbzeichen.vue'
+import { anlagenNameAusCode } from '@/lib/code'
+import { datum, zahl } from '@/lib/format'
+import { entfernung, positionEinmalig, type Position } from '@/lib/geo'
+import type { Anlage } from '@/lib/typen'
+import { useStammdaten } from '@/stores/stammdaten'
+import { useUi } from '@/stores/ui'
+
+const router = useRouter()
+const stammdaten = useStammdaten()
+const ui = useUi()
+
+const suche = ref('')
+const typ = ref('')
+const status = ref('')
+const ansicht = ref<'liste' | 'karte'>('liste')
+const scannerOffen = ref(false)
+
+const standort = ref<Position | null>(null)
+const standortLaedt = ref(false)
+
+const gefiltert = computed(() => {
+  const treffer = stammdaten.anlagenSuche(suche.value, {
+    typ: typ.value || undefined,
+    status: status.value || undefined,
+  })
+  if (!standort.value) return treffer
+
+  // Nach Entfernung sortieren; Anlagen ohne Koordinaten ans Ende.
+  return [...treffer].sort((a, b) => (abstand(a) ?? Infinity) - (abstand(b) ?? Infinity))
+})
+
+/** Luftlinie zum aktuellen Standort in Metern. */
+function abstand(anlage: Anlage): number | null {
+  if (!standort.value || !anlage.gps_lat || !anlage.gps_lng) return null
+  return entfernung(standort.value, { lat: anlage.gps_lat, lng: anlage.gps_lng })
+}
+
+function abstandText(anlage: Anlage): string {
+  const meter = abstand(anlage)
+  if (meter === null) return ''
+  return meter < 1000 ? `${meter} m entfernt` : `${(meter / 1000).toFixed(1)} km entfernt`
+}
+
+/** Die Tagestour beginnt mit der naechstgelegenen Baustelle. */
+async function standortBestimmen() {
+  if (standort.value) {
+    standort.value = null
+    return
+  }
+  standortLaedt.value = true
+  try {
+    standort.value = await positionEinmalig()
+  } catch (fehler) {
+    ui.warnung((fehler as Error).message)
+  } finally {
+    standortLaedt.value = false
+  }
+}
+
+function codeErkannt(code: string) {
+  scannerOffen.value = false
+  const name = anlagenNameAusCode(code)
+  if (name && stammdaten.anlage(name)) {
+    void router.push({ name: 'anlage-detail', params: { name } })
+    return
+  }
+  ui.warnung(
+    name
+      ? `Zu \u201e${name}\u201c ist lokal keine Anlage vorhanden. Bitte synchronisieren.`
+      : 'Der Code gehoert zu keiner Anlage.',
+  )
+}
+
+function oeffnen(anlage: Anlage) {
+  void router.push({ name: 'anlage-detail', params: { name: anlage.name } })
+}"""
+
+WERKZEUG_ALT = """      <div class="flex overflow-hidden rounded-xl border border-slate-300 dark:border-slate-700">
+        <button
+          class="tap px-3 text-sm font-medium"
+          :class="ansicht === 'liste' ? 'bg-marke-600 text-white' : ''"
+          @click="ansicht = 'liste'"
+        >
+          Liste
+        </button>"""
+
+WERKZEUG_NEU = """      <button
+        class="tap flex items-center gap-1.5 rounded-xl border px-3 text-sm font-medium"
+        :class="
+          standort
+            ? 'border-marke-600 bg-marke-50 text-marke-700 dark:bg-marke-900/40 dark:text-marke-300'
+            : 'border-slate-300 dark:border-slate-700'
+        "
+        :disabled="standortLaedt"
+        :title="standort ? 'Sortierung nach Entfernung aufheben' : 'Nach Entfernung sortieren'"
+        @click="standortBestimmen"
+      >
+        <AppIcon name="karte" :groesse="18" />
+        {{ standortLaedt ? 'Ortung \u2026' : 'In der N\u00e4he' }}
+      </button>
+      <button class="knopf-sekundaer px-3" title="QR-Code scannen" @click="scannerOffen = true">
+        <AppIcon name="qr" :groesse="20" />
+      </button>
+      <div class="flex overflow-hidden rounded-xl border border-slate-300 dark:border-slate-700">
+        <button
+          class="tap px-3 text-sm font-medium"
+          :class="ansicht === 'liste' ? 'bg-marke-600 text-white' : ''"
+          @click="ansicht = 'liste'"
+        >
+          Liste
+        </button>"""
+
+ORT_ALT = """            <p class="mt-1 text-sm text-slate-500">{{ anlage.customer }}</p>
+            <p class="text-xs text-slate-400">{{ anlage.plz }} {{ anlage.ort }}</p>"""
+
+ORT_NEU = """            <p class="mt-1 text-sm text-slate-500">{{ anlage.customer }}</p>
+            <p class="text-xs text-slate-400">
+              {{ anlage.plz }} {{ anlage.ort }}
+              <span v-if="abstandText(anlage)" class="font-medium text-marke-600">
+                \u00b7 {{ abstandText(anlage) }}
+              </span>
+            </p>"""
+
+SCHLUSS_ALT = """    </template>
+  </div>
+</template>"""
+
+SCHLUSS_NEU = """    </template>
+
+    <BasisDialog :offen="scannerOffen" titel="QR-Code scannen" @schliessen="scannerOffen = false">
+      <CodeScanner
+        :formate="['qr_code']"
+        hinweis="Aufkleber am Wechselrichter scannen"
+        @erkannt="codeErkannt"
+        @abbrechen="scannerOffen = false"
+      />
+    </BasisDialog>
+  </div>
+</template>"""
+
+patch(
+    "src/views/AnlagenView.vue",
+    [
+        (KOPF_ALT, KOPF_NEU),
+        (WERKZEUG_ALT, WERKZEUG_NEU),
+        (ORT_ALT, ORT_NEU),
+        (SCHLUSS_ALT, SCHLUSS_NEU),
+    ],
+)

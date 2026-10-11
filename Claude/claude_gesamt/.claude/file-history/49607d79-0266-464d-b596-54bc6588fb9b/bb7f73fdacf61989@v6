@@ -1,0 +1,259 @@
+<template>
+  <div class="flex h-screen w-screen overflow-hidden bg-surface-gray-1">
+    <!-- Kopfzeile nur auf schmalen Schirmen. Darüber trägt die Seitenleiste
+         alles, was hier sonst doppelt stünde. -->
+    <header
+      class="fixed inset-x-0 top-0 z-20 flex h-14 items-center gap-2 border-b border-outline-gray-2 bg-surface-white px-3 lg:hidden"
+    >
+      <button
+        class="rounded p-2 text-ink-gray-7 hover:bg-surface-gray-2"
+        aria-label="Navigation öffnen"
+        :aria-expanded="navOffen"
+        aria-controls="hauptnavigation"
+        @click="navOffen = true"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path
+            d="M4 7h16M4 12h16M4 17h16"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+          />
+        </svg>
+      </button>
+
+      <p class="min-w-0 flex-1 truncate text-base font-medium text-ink-gray-9">
+        {{ $route.meta.title || 'NetOps' }}
+      </p>
+
+      <button
+        class="rounded p-2 text-ink-gray-7 hover:bg-surface-gray-2"
+        aria-label="Suchen"
+        @click="suche.open()"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8" />
+          <path
+            d="m20 20-3.5-3.5"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+          />
+        </svg>
+      </button>
+    </header>
+
+    <!-- Abdunklung hinter der Schublade -->
+    <div
+      v-if="navOffen"
+      class="fixed inset-0 z-30 bg-black/40 lg:hidden"
+      aria-hidden="true"
+      @click="navOffen = false"
+    />
+
+    <aside
+      id="hauptnavigation"
+      class="fixed inset-y-0 left-0 z-40 flex w-60 shrink-0 flex-col border-r border-outline-gray-2 bg-surface-white transition-transform lg:static lg:translate-x-0"
+      :class="navOffen ? 'translate-x-0' : '-translate-x-full'"
+    >
+      <div class="flex items-center gap-2 px-4 py-4">
+        <div
+          class="flex size-8 shrink-0 items-center justify-center rounded bg-surface-gray-4 text-xs font-semibold text-ink-gray-8"
+          aria-hidden="true"
+        >
+          OV
+        </div>
+        <div class="min-w-0 flex-1">
+          <p class="truncate text-base font-medium text-ink-gray-8">NetOps</p>
+          <p class="truncate text-xs text-ink-gray-5">{{ session.user || '–' }}</p>
+        </div>
+        <button
+          class="shrink-0 rounded p-1 text-ink-gray-5 hover:bg-surface-gray-2"
+          :aria-label="
+            ui.thema === 'dark'
+              ? 'Zum hellen Farbschema wechseln'
+              : 'Zum dunklen Farbschema wechseln'
+          "
+          @click="ui.wechsleThema()"
+        >
+          <span aria-hidden="true">{{ ui.thema === 'dark' ? '☀' : '☾' }}</span>
+        </button>
+        <button
+          class="shrink-0 rounded p-1 text-ink-gray-5 hover:bg-surface-gray-2 lg:hidden"
+          aria-label="Navigation schließen"
+          @click="navOffen = false"
+        >
+          <span aria-hidden="true">✕</span>
+        </button>
+      </div>
+
+      <!-- Mandantenwahl. Sie wirkt zentral im Fetcher, nicht je Seite. -->
+      <div class="px-2 pb-2">
+        <label for="mandantenwahl" class="sr-only">Mandant auswählen</label>
+        <select
+          id="mandantenwahl"
+          v-model="ui.mandant"
+          class="w-full rounded border border-outline-gray-2 bg-surface-gray-2 px-2 py-1.5 text-base text-ink-gray-7 focus:ring-0"
+        >
+          <option value="">Alle Mandanten</option>
+          <option v-for="m in mandanten.data || []" :key="m.name" :value="m.name">
+            {{ m.tenant_name }}
+          </option>
+        </select>
+      </div>
+
+      <div class="px-2 pb-2">
+        <button
+          class="flex w-full items-center justify-between rounded border border-outline-gray-2 bg-surface-gray-2 px-2 py-1.5 text-left text-base text-ink-gray-5 hover:bg-surface-gray-3"
+          @click="suche.open()"
+        >
+          <span>Suchen …</span>
+          <kbd class="rounded bg-surface-white px-1 text-xs text-ink-gray-6">Strg K</kbd>
+        </button>
+      </div>
+
+      <nav class="flex-1 overflow-y-auto px-2" aria-label="Hauptnavigation">
+        <template v-for="gruppe in navigation" :key="gruppe.titel">
+          <p class="px-2 pb-1 pt-3 text-xs font-medium uppercase text-ink-gray-4">
+            {{ gruppe.titel }}
+          </p>
+          <RouterLink
+            v-for="eintrag in gruppe.eintraege"
+            :key="eintrag.label"
+            :to="eintrag.to"
+            class="block rounded px-2 py-1.5 text-base text-ink-gray-7 hover:bg-surface-gray-2"
+            active-class="bg-surface-gray-3 font-medium text-ink-gray-9"
+            @click="navOffen = false"
+          >
+            {{ eintrag.label }}
+          </RouterLink>
+        </template>
+      </nav>
+
+      <div v-if="USE_MOCK" class="border-t border-outline-gray-2 p-3">
+        <p class="mb-2 text-xs leading-4 text-ink-gray-5">
+          Testdaten im Browser. Kein Backend verbunden.
+        </p>
+        <Button size="sm" class="w-full" @click="setzeZurueck">Daten zurücksetzen</Button>
+      </div>
+    </aside>
+
+    <main class="flex-1 overflow-y-auto pt-14 lg:pt-0">
+      <slot />
+    </main>
+
+    <GlobalSearch ref="suche" />
+  </div>
+</template>
+
+<script setup>
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
+import { Button, createResource, toast } from 'frappe-ui'
+import GlobalSearch from '@/components/GlobalSearch.vue'
+import { useSessionStore } from '@/stores/session'
+import { useUiStore } from '@/stores/ui'
+import { USE_MOCK } from '@/api'
+
+const route = useRoute()
+const session = useSessionStore()
+const ui = useUiStore()
+const suche = ref(null)
+const navOffen = ref(false)
+
+const mandanten = createResource({
+  url: 'frappe.client.get_list',
+  params: { doctype: 'Tenant', fields: ['name', 'tenant_name'], limit_page_length: 0 },
+  auto: true,
+})
+
+// Aufbau nach Fachkonzept Kapitel 6.
+const navigation = [
+  {
+    titel: 'Betrieb',
+    eintraege: [
+      { label: 'Lage', to: '/' },
+      { label: 'Alarme', to: '/alerts' },
+      { label: 'Drift', to: '/drift' },
+      { label: 'Backup', to: '/backup' },
+      { label: 'Dienste', to: '/services' },
+      { label: 'Changes', to: '/changes' },
+      { label: 'Tickets', to: '/tickets' },
+      { label: 'Audit', to: '/audit' },
+    ],
+  },
+  {
+    titel: 'DCIM',
+    eintraege: [
+      { label: 'Geräte', to: '/devices' },
+      { label: 'Racks', to: '/racks' },
+      { label: 'Verkabelung', to: '/cables' },
+      { label: 'Topologie', to: '/topology' },
+      { label: 'Virtualisierung', to: '/virtualization' },
+      { label: 'Cloud', to: '/cloud' },
+      { label: 'Strompfad', to: '/power' },
+      { label: 'Grundrisse', to: '/floorplan' },
+      { label: 'Fernwartung', to: '/remote' },
+    ],
+  },
+  {
+    titel: 'IPAM & Firewall',
+    eintraege: [
+      { label: 'Präfixe', to: '/ipam' },
+      { label: 'VLANs', to: '/vlans' },
+      { label: 'Pfadanalyse', to: '/path' },
+      { label: 'Regelwerk', to: '/firewall' },
+      { label: 'Matrix', to: '/matrix' },
+      { label: 'Netzdienste', to: '/netservices' },
+    ],
+  },
+  {
+    titel: 'Dokumentation',
+    eintraege: [
+      { label: 'Dokumente', to: '/documents' },
+      { label: 'Checklisten', to: '/checklists' },
+      { label: 'Verträge', to: '/contracts' },
+      { label: 'Compliance', to: '/compliance' },
+    ],
+  },
+  {
+    titel: 'Security',
+    eintraege: [
+      { label: 'Schwachstellen', to: '/vulnerabilities' },
+      { label: 'Angriffsfläche', to: '/exposure' },
+      { label: 'Identitäten', to: '/identities' },
+      { label: 'Vorfälle', to: '/incidents' },
+      { label: 'E-Mail', to: '/mail' },
+      { label: 'Leitstand', to: '/control-room' },
+    ],
+  },
+]
+
+// Beim Seitenwechsel schließt sich die Schublade – sonst verdeckt sie genau
+// das, wohin man gerade wollte.
+watch(
+  () => route.fullPath,
+  () => {
+    navOffen.value = false
+  },
+)
+
+function tastatur(event) {
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+    event.preventDefault()
+    suche.value?.open()
+  }
+  if (event.key === 'Escape') navOffen.value = false
+}
+
+onMounted(() => window.addEventListener('keydown', tastatur))
+onBeforeUnmount(() => window.removeEventListener('keydown', tastatur))
+
+async function setzeZurueck() {
+  const { resetMockData } = await import('@/api/mock/server.js')
+  resetMockData()
+  toast.create({ message: 'Testdaten zurückgesetzt', type: 'success' })
+  // Einfachster Weg, alle gecachten Resourcen zu verwerfen.
+  window.location.reload()
+}
+</script>

@@ -1,0 +1,106 @@
+# -*- coding: utf-8 -*-
+"""Erweitert Backup Object um die Felder, die eine Sicherung pruefbar machen.
+
+Die 3-2-1-Regel und der Wiederherstellungstest sind der Unterschied zwischen
+"es laeuft ein Job" und "wir kommen im Ernstfall zurueck".
+"""
+import io, re
+
+p = 'src/api/mock/fixtures-ops.js'
+s = io.open(p, encoding='utf-8').read()
+
+# --- 1. Felder ergaenzen
+alt = """    'size_gb',
+    'offsite_age_hours',"""
+neu = """    'size_gb',
+    'offsite_age_hours',
+    // 3-2-1: drei Kopien, zwei verschiedene Medien, eine ausser Haus.
+    'copies',
+    'media_types',
+    // Eine Sicherung ohne Wiederherstellungstest ist eine Vermutung.
+    'last_restore_test',
+    'restore_test_result',
+    'restore_minutes',
+    'retention_days',
+    'encrypted',
+    'immutable',"""
+assert alt in s, 'Backup-Object-Felder nicht gefunden'
+s = s.replace(alt, neu, 1)
+io.open(p, 'w', encoding='utf-8').write(s)
+print('Felder ergaenzt')
+
+# --- 2. Seeds anreichern: je Objekt passende Werte
+ANREICHERUNG = {
+    'vm/101-erp': """      copies: 3,
+      media_types: 'disk,tape',
+      last_restore_test: tageVersetzt(-24),
+      restore_test_result: 'ok',
+      restore_minutes: 95,
+      retention_days: 90,
+      encrypted: 1,
+      immutable: 1,""",
+    'vm/102-bmd': """      copies: 2,
+      media_types: 'disk',
+      last_restore_test: tageVersetzt(-210),
+      restore_test_result: 'ok',
+      restore_minutes: 180,
+      retention_days: 30,
+      encrypted: 1,
+      immutable: 0,""",
+    'vm/103-dc01': """      copies: 2,
+      media_types: 'disk',
+      restore_test_result: 'none',
+      restore_minutes: 45,
+      retention_days: 30,
+      encrypted: 1,
+      immutable: 0,""",
+    'vm/104-mail': """      copies: 3,
+      media_types: 'disk,cloud',
+      last_restore_test: tageVersetzt(-40),
+      restore_test_result: 'ok',
+      restore_minutes: 240,
+      retention_days: 3650,
+      encrypted: 1,
+      immutable: 1,""",
+    'ct/201-monitoring': """      copies: 1,
+      media_types: 'disk',
+      restore_test_result: 'none',
+      restore_minutes: 20,
+      retention_days: 14,
+      encrypted: 0,
+      immutable: 0,""",
+    'vm/105-scada': """      copies: 2,
+      media_types: 'disk,cloud',
+      last_restore_test: tageVersetzt(-8),
+      restore_test_result: 'ok',
+      restore_minutes: 15,
+      retention_days: 180,
+      encrypted: 1,
+      immutable: 0,""",
+    'vm/301-web-de': """      copies: 2,
+      media_types: 'disk',
+      last_restore_test: tageVersetzt(-95),
+      restore_test_result: 'failed',
+      restore_minutes: 320,
+      retention_days: 2555,
+      encrypted: 1,
+      immutable: 0,""",
+}
+
+treffer = 0
+for name, block in ANREICHERUNG.items():
+    # Finde die Seed-Zeile "backup_object: '<name>'," und haenge den Block
+    # direkt danach an.
+    muster = "backup_object: '" + name + "',"
+    if muster not in s:
+        print('  nicht gefunden:', name)
+        continue
+    s = s.replace(muster, muster + '\n' + block, 1)
+    treffer += 1
+
+io.open(p, 'w', encoding='utf-8').write(s)
+print(treffer, 'Backup-Objekte angereichert')
+
+# Liste der vorhandenen Objektnamen ausgeben, falls welche fehlen
+namen = re.findall(r"backup_object: '([^']+)'", s)
+print('Im Seed vorhanden:', namen)

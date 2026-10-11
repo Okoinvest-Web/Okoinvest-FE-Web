@@ -1,0 +1,469 @@
+/**
+ * Alarmauswertung.
+ *
+ * Der häufigste Fehler in Monitoringsystemen ist die Alarmflut. Wenn
+ * jede Anlage jede Nacht "kein Ertrag" meldet und jede vorbeiziehende
+ * Wolke einen Minderertrag auslöst, liest nach einer Woche niemand mehr
+ * die Meldungen - und dann fällt auch der echte Ausfall nicht auf.
+ *
+ * Drei Bedingungen verhindern das:
+ *
+ *   1. SONNENSTAND. Ertragsregeln greifen nur, wenn die Sonne hoch
+ *      genug steht, dass überhaupt Ertrag zu erwarten wäre.
+ *   2. MINDESTEINSTRAHLUNG. Bei diffusem Licht sind Abweichungen normal
+ *      und ohne Aussagekraft.
+ *   3. MINDESTDAUER. Eine Bedingung muss anhalten, bevor sie meldet.
+ *      Eine einzelne Wolke ist kein Ereignis.
+ *
+ * Diese Datei enthält die reine Auswertung ohne Datenbankzugriff, damit
+ * das Regelverhalten vollständig prüfbar bleibt.
+ */
+
+import { istTag } from "./sonnenstand.ts";
+import { erwarteteLeistung, vergleicheStraenge, type StrangWert } from "./kennzahlen.ts";
+
+export type AlarmArt =
+  | "Nullertrag"
+  | "Minderertrag"
+  | "Strangabweichung"
+  | "Kommunikation"
+  | "Wechselrichterstoerung"
+  | "Performance"
+  | "Temperatur"
+  | "Abregelung";
+
+export type Schweregrad = "Info" | "Niedrig" | "Mittel" | "Hoch" | "Kritisch";
+
+export interface Alarmregel {
+  id: string;
+  bezeichnung: string;
+  art: AlarmArt;
+  schweregrad: Schweregrad;
+  /** Bedeutung je nach Art: Prozent, Grad Celsius oder Minuten. */
+  schwellwert: number;
+  /** Erst auslösen, wenn die Bedingung so lange anhält. */
+  dauerMinuten: number;
+  nurTagsueber: boolean;
+  minEinstrahlung: number;
+  aktiv: boolean;
+}
+
+export interface Zeitpunktwerte {
+  zeitpunkt: Date;
+  /** Gemessene Leistung der Anlage, kW. */
+  leistungKw: number;
+  einstrahlung: number;
+  modultemperatur?: number;
+  /** Betriebszustand der Wechselrichter. */
+  wechselrichter?: {
+    id: string;
+    bezeichnung: string;
+    leistungKw: number;
+    zustand: string;
+    temperatur?: number;
+  }[];
+  straenge?: StrangWert[];
+  /** Kamen in diesem Intervall überhaupt Daten an? */
+  datenEmpfangen?: boolean;
+}
+
+export interface Anlagenstamm {
+  id: string;
+  bezeichnung: string;
+  nennleistungKwp: number;
+  breite: number;
+  laenge: number;
+  systemwirkungsgrad?: number;
+}
+
+export interface Befund {
+  regelId: string;
+  art: AlarmArt;
+  schweregrad: Schweregrad;
+  titel: string;
+  beschreibung: string;
+  istWert: number;
+  sollWert: number;
+  von: Date;
+  bis: Date;
+  /** Betroffene Komponente, sofern eingrenzbar. */
+  wechselrichterId?: string;
+  strangId?: string;
+  ausfallKwh: number;
+}
+
+/** Ist dieser Zeitpunkt für eine Ertragsregel überhaupt auswertbar? */
+function auswertbar(
+  regel: Alarmregel,
+  werte: Zeitpunktwerte,
+  anlage: Anlagenstamm,
+): boolean {
+  if (regel.nurTagsueber && !istTag(werte.zeitpunkt, anlage.breite, anlage.laenge)) {
+    return false;
+  }
+  if (werte.einstrahlung < regel.minEinstrahlung) return false;
+  return true;
+}
+
+/**
+ * Wertet eine Regel über eine Zeitreihe aus.
+ *
+ * Zusammenhängende Verstöße werden zu einem Befund zusammengefasst.
+ * Zwanzig Einzelmeldungen für einen zweistündigen Ausfall wären
+ * schlimmer als keine Meldung.
+ */
+export function werteRegelAus(
+  regel: Alarmregel,
+  reihe: Zeitpunktwerte[],
+  anlage: Anlagenstamm,
+  /** Länge eines Intervalls in Minuten. */
+  intervallMinuten = 15,
+): Befund[] {
+  if (!regel.aktiv || reihe.length === 0) return [];
+
+  const befunde: Befund[] = [];
+
+  let laufend: {
+    von: Date;
+    bis: Date;
+    intervalle: number;
+    istSumme: number;
+    sollSumme: number;
+    ausfallKwh: number;
+    komponente?: { wechselrichterId?: string; strangId?: string; name?: string };
+  } | null = null;
+
+  const abschliessen = () => {
+    if (!laufend) return;
+
+    const dauer = laufend.intervalle * intervallMinuten;
+    if (dauer >= regel.dauerMinuten) {
+      befunde.push(baueBefund(regel, anlage, laufend));
+    }
+    laufend = null;
+  };
+
+  for (const werte of reihe) {
+    if (!auswertbar(regel, werte, anlage)) {
+      abschliessen();
+      continue;
+    }
+
+    const verstoss = pruefe(regel, werte, anlage);
+
+    if (!verstoss) {
+      abschliessen();
+      continue;
+    }
+
+    // Wechselt die betroffene Komponente, beginnt ein neuer Befund -
+    // sonst würde ein Strangfehler in einen Wechselrichterfehler
+    // übergehen und beides unkenntlich machen.
+    const andereKomponente =
+      laufend &&
+      (laufend.komponente?.wechselrichterId !== verstoss.wechselrichterId ||
+        laufend.komponente?.strangId !== verstoss.strangId);
+
+    if (andereKomponente) abschliessen();
+
+    const ausfall = Math.max(0, verstoss.soll - verstoss.ist) * (intervallMinuten / 60);
+
+    if (!laufend) {
+      laufend = {
+        von: werte.zeitpunkt,
+        bis: werte.zeitpunkt,
+        intervalle: 1,
+        istSumme: verstoss.ist,
+        sollSumme: verstoss.soll,
+        ausfallKwh: ausfall,
+        komponente: {
+          wechselrichterId: verstoss.wechselrichterId,
+          strangId: verstoss.strangId,
+          name: verstoss.name,
+        },
+      };
+    } else {
+      laufend.bis = werte.zeitpunkt;
+      laufend.intervalle += 1;
+      laufend.istSumme += verstoss.ist;
+      laufend.sollSumme += verstoss.soll;
+      laufend.ausfallKwh += ausfall;
+    }
+  }
+
+  abschliessen();
+  return befunde;
+}
+
+interface Verstoss {
+  ist: number;
+  soll: number;
+  wechselrichterId?: string;
+  strangId?: string;
+  name?: string;
+}
+
+/** Prüft eine Regel an einem einzelnen Zeitpunkt. */
+function pruefe(
+  regel: Alarmregel,
+  werte: Zeitpunktwerte,
+  anlage: Anlagenstamm,
+): Verstoss | null {
+  const soll = erwarteteLeistung(
+    anlage.nennleistungKwp,
+    werte.einstrahlung,
+    werte.modultemperatur,
+    anlage.systemwirkungsgrad ?? 0.84,
+  );
+
+  switch (regel.art) {
+    case "Kommunikation": {
+      return werte.datenEmpfangen === false
+        ? { ist: 0, soll: 0 }
+        : null;
+    }
+
+    case "Nullertrag": {
+      // Erwartungswert muss nennenswert sein, sonst ist "null Ertrag"
+      // keine Aussage.
+      if (soll < anlage.nennleistungKwp * 0.05) return null;
+      return werte.leistungKw <= 0.001 ? { ist: 0, soll } : null;
+    }
+
+    case "Minderertrag": {
+      if (soll <= 0) return null;
+      const anteil = (werte.leistungKw / soll) * 100;
+      return anteil < 100 - regel.schwellwert
+        ? { ist: werte.leistungKw, soll }
+        : null;
+    }
+
+    case "Wechselrichterstoerung": {
+      const gestoert = werte.wechselrichter?.find(
+        (wr) => wr.zustand === "Stoerung" || wr.zustand === "Aus",
+      );
+      if (!gestoert) return null;
+
+      // Erwartung für diesen Wechselrichter: anteilig an der Anlage.
+      const anzahl = werte.wechselrichter?.length ?? 1;
+      return {
+        ist: gestoert.leistungKw,
+        soll: soll / anzahl,
+        wechselrichterId: gestoert.id,
+        name: gestoert.bezeichnung,
+      };
+    }
+
+    case "Abregelung": {
+      const abgeregelt = werte.wechselrichter?.find(
+        (wr) => wr.zustand === "Abgeregelt",
+      );
+      if (!abgeregelt) return null;
+
+      const anzahl = werte.wechselrichter?.length ?? 1;
+      return {
+        ist: abgeregelt.leistungKw,
+        soll: soll / anzahl,
+        wechselrichterId: abgeregelt.id,
+        name: abgeregelt.bezeichnung,
+      };
+    }
+
+    case "Temperatur": {
+      const heiss = werte.wechselrichter?.find(
+        (wr) => (wr.temperatur ?? 0) > regel.schwellwert,
+      );
+      if (!heiss) return null;
+
+      return {
+        ist: heiss.temperatur ?? 0,
+        soll: regel.schwellwert,
+        wechselrichterId: heiss.id,
+        name: heiss.bezeichnung,
+      };
+    }
+
+    case "Strangabweichung": {
+      if (!werte.straenge || werte.straenge.length < 3) return null;
+
+      const befunde = vergleicheStraenge(werte.straenge, regel.schwellwert);
+      const auffaellig = befunde.find((b) => b.auffaellig);
+      if (!auffaellig) return null;
+
+      // Anteiliger Ausfall dieses Strangs an der Anlagenleistung.
+      const anteilAnAnlage =
+        anlage.nennleistungKwp > 0
+          ? auffaellig.leistungKwp / anlage.nennleistungKwp
+          : 0;
+      const strangSoll = soll * anteilAnAnlage;
+
+      return {
+        ist: strangSoll * (1 + auffaellig.abweichung / 100),
+        soll: strangSoll,
+        strangId: auffaellig.strangId,
+        name: auffaellig.bezeichnung,
+      };
+    }
+
+    case "Performance":
+      // Wird über einen längeren Zeitraum bewertet, nicht je Zeitpunkt.
+      return null;
+
+    default:
+      return null;
+  }
+}
+
+function baueBefund(
+  regel: Alarmregel,
+  anlage: Anlagenstamm,
+  laufend: {
+    von: Date;
+    bis: Date;
+    intervalle: number;
+    istSumme: number;
+    sollSumme: number;
+    ausfallKwh: number;
+    komponente?: { wechselrichterId?: string; strangId?: string; name?: string };
+  },
+): Befund {
+  const ist = laufend.istSumme / laufend.intervalle;
+  const soll = laufend.sollSumme / laufend.intervalle;
+  const abweichung = soll > 0 ? ((ist - soll) / soll) * 100 : 0;
+  const komponente = laufend.komponente?.name;
+
+  const texte: Record<AlarmArt, { titel: string; text: string }> = {
+    Nullertrag: {
+      titel: "Kein Ertrag trotz Einstrahlung",
+      text: `Die Anlage liefert nichts, obwohl bei der gemessenen Einstrahlung rund ${soll.toFixed(1)} kW zu erwarten wären.`,
+    },
+    Minderertrag: {
+      titel: "Minderertrag",
+      text: `Die Leistung liegt bei ${ist.toFixed(1)} kW statt der erwarteten ${soll.toFixed(1)} kW – eine Abweichung von ${abweichung.toFixed(1)} Prozent.`,
+    },
+    Strangabweichung: {
+      titel: `Strangabweichung${komponente ? `: ${komponente}` : ""}`,
+      text: `${komponente ?? "Ein Strang"} liefert deutlich weniger als die Vergleichsstränge. Typische Ursachen sind Verschattung, Verschmutzung oder eine schadhafte Steckverbindung.`,
+    },
+    Kommunikation: {
+      titel: "Keine Daten empfangen",
+      text: "Von der Anlage kommen keine Messwerte an. Ohne Daten ist weder Überwachung noch Abrechnung möglich.",
+    },
+    Wechselrichterstoerung: {
+      titel: `Wechselrichterstörung${komponente ? `: ${komponente}` : ""}`,
+      text: `${komponente ?? "Ein Wechselrichter"} meldet einen Störungszustand und speist nicht ein.`,
+    },
+    Performance: {
+      titel: "Performance Ratio unter Schwellwert",
+      text: "Die Anlagengüte liegt unter dem vereinbarten Wert.",
+    },
+    Temperatur: {
+      titel: `Übertemperatur${komponente ? `: ${komponente}` : ""}`,
+      text: `Die Innentemperatur liegt bei ${ist.toFixed(0)} Grad und damit über dem Schwellwert von ${soll.toFixed(0)} Grad. Anhaltende Übertemperatur führt zur Leistungsreduktion und verkürzt die Lebensdauer.`,
+    },
+    Abregelung: {
+      titel: `Abregelung${komponente ? `: ${komponente}` : ""}`,
+      text: `${komponente ?? "Ein Wechselrichter"} wird abgeregelt. Bei häufigem Auftreten sollte die Auslegung geprüft werden.`,
+    },
+  };
+
+  const text = texte[regel.art];
+
+  return {
+    regelId: regel.id,
+    art: regel.art,
+    schweregrad: regel.schweregrad,
+    titel: text.titel,
+    beschreibung: `${text.text} Anlage: ${anlage.bezeichnung}.`,
+    istWert: Number(ist.toFixed(3)),
+    sollWert: Number(soll.toFixed(3)),
+    von: laufend.von,
+    bis: laufend.bis,
+    wechselrichterId: laufend.komponente?.wechselrichterId,
+    strangId: laufend.komponente?.strangId,
+    ausfallKwh: Number(laufend.ausfallKwh.toFixed(2)),
+  };
+}
+
+/** Standardregelwerk, wie es eine Betriebsführung üblicherweise ansetzt. */
+export const STANDARDREGELN: Alarmregel[] = [
+  {
+    id: "REG-0001",
+    bezeichnung: "Kein Ertrag trotz Einstrahlung",
+    art: "Nullertrag",
+    schweregrad: "Kritisch",
+    schwellwert: 0,
+    dauerMinuten: 45,
+    nurTagsueber: true,
+    minEinstrahlung: 150,
+    aktiv: true,
+  },
+  {
+    id: "REG-0002",
+    bezeichnung: "Minderertrag über 25 Prozent",
+    art: "Minderertrag",
+    schweregrad: "Hoch",
+    schwellwert: 25,
+    dauerMinuten: 120,
+    nurTagsueber: true,
+    minEinstrahlung: 300,
+    aktiv: true,
+  },
+  {
+    id: "REG-0003",
+    bezeichnung: "Strangabweichung über 10 Prozent",
+    art: "Strangabweichung",
+    schweregrad: "Mittel",
+    schwellwert: 10,
+    dauerMinuten: 180,
+    nurTagsueber: true,
+    minEinstrahlung: 400,
+    aktiv: true,
+  },
+  {
+    id: "REG-0004",
+    bezeichnung: "Wechselrichter gestört",
+    art: "Wechselrichterstoerung",
+    schweregrad: "Hoch",
+    schwellwert: 0,
+    dauerMinuten: 30,
+    nurTagsueber: true,
+    minEinstrahlung: 100,
+    aktiv: true,
+  },
+  {
+    id: "REG-0005",
+    bezeichnung: "Keine Datenverbindung",
+    art: "Kommunikation",
+    schweregrad: "Mittel",
+    schwellwert: 0,
+    dauerMinuten: 120,
+    // Auch nachts prüfen: Ein Kommunikationsabbruch besteht unabhängig
+    // von der Tageszeit und sollte am Morgen nicht überraschen.
+    nurTagsueber: false,
+    minEinstrahlung: 0,
+    aktiv: true,
+  },
+  {
+    id: "REG-0006",
+    bezeichnung: "Übertemperatur Wechselrichter",
+    art: "Temperatur",
+    schweregrad: "Niedrig",
+    schwellwert: 70,
+    dauerMinuten: 60,
+    nurTagsueber: true,
+    minEinstrahlung: 200,
+    aktiv: true,
+  },
+  {
+    id: "REG-0007",
+    bezeichnung: "Abregelung",
+    art: "Abregelung",
+    schweregrad: "Info",
+    schwellwert: 0,
+    dauerMinuten: 60,
+    nurTagsueber: true,
+    minEinstrahlung: 600,
+    aktiv: true,
+  },
+];

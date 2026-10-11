@@ -1,0 +1,373 @@
+import Link from "next/link";
+import type { Metadata } from "next";
+
+import { Balkendiagramm } from "@/components/diagramme/balken";
+import { Energiefluss } from "@/components/diagramme/energiefluss";
+import { Ringdiagramm } from "@/components/diagramme/ring";
+import { Sparkline } from "@/components/diagramme/sparkline";
+import { Verlauf } from "@/components/diagramme/verlauf";
+import {
+  Hinweis,
+  Tafel,
+  Kennzahl,
+  LeerZustand,
+  LivePunkt,
+  Seitenkopf,
+  Status,
+} from "@/components/ui";
+import {
+  autarkiegrad,
+  eigenverbrauchsquote,
+  gesamtLeistung,
+  gesamtSpeicher,
+  imZeitraum,
+  letzteTage,
+  momentanwert,
+  monatsSummen,
+  summiere,
+  tagesReihe,
+  veraenderung,
+  vermiedenesCo2,
+} from "@/lib/auswertung";
+import { messwerte as demoMesswerte } from "@/lib/demo/quelle";
+import { ENERGIE_FARBEN } from "@/lib/farben";
+import {
+  formatCo2,
+  formatEnergie,
+  formatProzent,
+  formatZahl,
+  formatZeit,
+} from "@/lib/format";
+import { ladeAnlagen, ladeErtraege, ladeStoerungen } from "@/lib/portal-daten";
+import { findeRolle } from "@/lib/sicherheit/rollen";
+import { requireUser } from "@/lib/session";
+
+export const metadata: Metadata = { title: "Übersicht" };
+
+export default async function PortalUebersicht({
+  searchParams,
+}: {
+  searchParams: Promise<{ fehlendes_recht?: string }>;
+}) {
+  const benutzer = await requireUser();
+  const { fehlendes_recht: fehlendesRecht } = await searchParams;
+
+  const [anlagen, ertraege, stoerungen] = await Promise.all([
+    ladeAnlagen(),
+    ladeErtraege(undefined, 400),
+    ladeStoerungen(),
+  ]);
+
+  // --- Kennzahlen -------------------------------------------------
+  const heute = letzteTage(1);
+  const dreissig = letzteTage(30);
+  const vorherige30 = {
+    von: new Date(dreissig.von.getTime() - 30 * 86400000),
+    bis: new Date(dreissig.von.getTime() - 1),
+  };
+
+  const summeHeute = summiere(ertraege.filter((e) => imZeitraum(e, heute)));
+  const summe30 = summiere(ertraege.filter((e) => imZeitraum(e, dreissig)));
+  const summeVor30 = summiere(ertraege.filter((e) => imZeitraum(e, vorherige30)));
+
+  const leistung = gesamtLeistung(anlagen);
+  const speicher = gesamtSpeicher(anlagen);
+  const co2 = vermiedenesCo2(summe30.erzeugung);
+
+  const ertragHeute = formatEnergie(summeHeute.erzeugung);
+  const ertrag30 = formatEnergie(summe30.erzeugung);
+  const co2Wert = formatCo2(co2);
+
+  const offeneStoerungen = stoerungen.filter((s) => s.status !== "Geschlossen");
+
+  // --- Momentaufnahme der groessten Anlage ------------------------
+  const hauptanlage =
+    [...anlagen].sort((a, b) => (b.leistung_kwp ?? 0) - (a.leistung_kwp ?? 0))[0] ??
+    null;
+
+  const messwerte = hauptanlage ? demoMesswerte(hauptanlage.name) : [];
+  const jetzt = momentanwert(messwerte);
+
+  // --- Diagrammdaten ----------------------------------------------
+  const tagesVerlauf = messwerte.filter((_, i) => i % 2 === 0);
+  const monate = monatsSummen(ertraege, 12);
+
+  return (
+    <div className="space-y-6">
+      <Seitenkopf
+        titel={`Guten Tag, ${benutzer.vollname.split(" ")[0]}`}
+        hinweis={`${anlagen.length} Anlagen · ${formatZahl(leistung, 1)} kWp installierte Leistung · ${formatZahl(speicher, 0)} kWh Speicher`}
+      />
+
+      {fehlendesRecht && (
+        <Hinweis ton="hinweis" titel="Bereich nicht freigegeben">
+          {`Ihre Rolle "${findeRolle(benutzer.rolle)?.bezeichnung ?? benutzer.rolle}" umfasst das Recht "${fehlendesRecht}" nicht. Wenden Sie sich an die Geschäftsführung, wenn Sie Zugriff benötigen.`}
+        </Hinweis>
+      )}
+
+      {offeneStoerungen.length > 0 && (
+        <Tafel
+          titel="Offene Meldungen"
+          aktion={
+            <Link
+              href="/portal/support"
+              className="text-sm text-emerald-700 hover:underline dark:text-emerald-400"
+            >
+              Alle ansehen
+            </Link>
+          }
+        >
+          <ul className="space-y-2">
+            {offeneStoerungen.slice(0, 3).map((stoerung) => (
+              <li
+                key={stoerung.name}
+                className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-slate-50 px-3 py-2 dark:bg-slate-800/50"
+              >
+                <span className="min-w-0">
+                  <span className="block truncate text-sm font-medium">
+                    {stoerung.betreff}
+                  </span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400">
+                    {anlagen.find((a) => a.name === stoerung.anlage)
+                      ?.anlagen_name ?? "Ohne Anlagenbezug"}
+                  </span>
+                </span>
+                <Status
+                  ton={
+                    stoerung.prioritaet === "Kritisch"
+                      ? "kritisch"
+                      : stoerung.prioritaet === "Hoch"
+                        ? "ernst"
+                        : "hinweis"
+                  }
+                >
+                  {stoerung.prioritaet ?? "Offen"}
+                </Status>
+              </li>
+            ))}
+          </ul>
+        </Tafel>
+      )}
+
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Kennzahl
+          label="Ertrag heute"
+          wert={ertragHeute.wert}
+          einheit={ertragHeute.einheit}
+          hinweis="alle Anlagen"
+        />
+        <Kennzahl
+          label="Ertrag 30 Tage"
+          wert={ertrag30.wert}
+          einheit={ertrag30.einheit}
+          trend={{
+            wert: veraenderung(summe30.erzeugung, summeVor30.erzeugung),
+          }}
+        />
+        <Kennzahl
+          label="Eigenverbrauchsquote"
+          wert={formatProzent(eigenverbrauchsquote(summe30), 1)}
+          hinweis={`Autarkie ${formatProzent(autarkiegrad(summe30), 0)}`}
+        />
+        <Kennzahl
+          label="CO₂ vermieden"
+          wert={co2Wert.wert}
+          einheit={co2Wert.einheit}
+          hinweis="30 Tage, österreichischer Strommix"
+        />
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-5">
+        <Tafel
+          klasse="lg:col-span-3"
+          titel="Tagesverlauf"
+          hinweis={hauptanlage?.anlagen_name}
+          aktion={
+            jetzt && (
+              <span className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                <LivePunkt aktiv />
+                {formatZeit(jetzt.zeitpunkt)}
+              </span>
+            )
+          }
+        >
+          {tagesVerlauf.length === 0 ? (
+            <LeerZustand text="Für heute liegen noch keine Messwerte vor." />
+          ) : (
+            <Verlauf
+              beschriftungen={tagesVerlauf.map((m) => formatZeit(m.zeitpunkt))}
+              einheit="kW"
+              achsenSchritte={7}
+              reihen={[
+                {
+                  schluessel: "erzeugung",
+                  label: "Erzeugung",
+                  farbe: ENERGIE_FARBEN.erzeugung,
+                  werte: tagesVerlauf.map((m) => m.erzeugung_kw ?? 0),
+                  gefuellt: true,
+                },
+                {
+                  schluessel: "verbrauch",
+                  label: "Verbrauch",
+                  farbe: ENERGIE_FARBEN.eigenverbrauch,
+                  werte: tagesVerlauf.map((m) => m.verbrauch_kw ?? 0),
+                },
+              ]}
+            />
+          )}
+        </Tafel>
+
+        <Tafel
+          klasse="lg:col-span-2"
+          titel="Energiefluss"
+          hinweis="Momentaufnahme"
+        >
+          {jetzt ? (
+            <Energiefluss
+              werte={{
+                erzeugung: jetzt.erzeugung_kw ?? 0,
+                verbrauch: jetzt.verbrauch_kw ?? 0,
+                netz: (jetzt.einspeisung_kw ?? 0) - (jetzt.netzbezug_kw ?? 0),
+                speicher: jetzt.speicher_kw ?? 0,
+                speicherSoc: jetzt.speicher_soc,
+              }}
+            />
+          ) : (
+            <LeerZustand text="Keine Momentandaten verfügbar." />
+          )}
+        </Tafel>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-5">
+        <Tafel
+          klasse="lg:col-span-3"
+          titel="Monatserträge"
+          hinweis="Eigenverbrauch und Einspeisung, letzte 12 Monate"
+        >
+          <Balkendiagramm
+            beschriftungen={monate.map((m) => m.label)}
+            einheit="kWh"
+            reihen={[
+              {
+                schluessel: "eigenverbrauch",
+                label: "Eigenverbrauch",
+                farbe: ENERGIE_FARBEN.eigenverbrauch,
+                werte: monate.map((m) => m.eigenverbrauch),
+              },
+              {
+                schluessel: "einspeisung",
+                label: "Einspeisung",
+                farbe: ENERGIE_FARBEN.einspeisung,
+                werte: monate.map((m) => m.einspeisung),
+              },
+            ]}
+            kompakt
+          />
+        </Tafel>
+
+        <Tafel
+          klasse="lg:col-span-2"
+          titel="Verwendung der Erzeugung"
+          hinweis="letzte 30 Tage"
+        >
+          <Ringdiagramm
+            einheit="kWh"
+            mitteWert={ertrag30.wert}
+            mitteEinheit={ertrag30.einheit}
+            mitteLabel="Erzeugung"
+            nachkommastellen={0}
+            abschnitte={[
+              {
+                label: "Eigenverbrauch",
+                wert: summe30.eigenverbrauch,
+                farbe: ENERGIE_FARBEN.eigenverbrauch,
+              },
+              {
+                label: "Einspeisung",
+                wert: summe30.einspeisung,
+                farbe: ENERGIE_FARBEN.einspeisung,
+              },
+            ]}
+          />
+        </Tafel>
+      </div>
+
+      <Tafel
+        titel="Anlagen"
+        aktion={
+          <Link
+            href="/portal/anlagen"
+            className="text-sm text-emerald-700 hover:underline dark:text-emerald-400"
+          >
+            Alle ansehen
+          </Link>
+        }
+      >
+        <ul className="divide-y divide-slate-100 dark:divide-slate-800">
+          {anlagen.map((anlage) => {
+            const eigene = ertraege.filter((e) => e.anlage === anlage.name);
+            const reihe = tagesReihe(eigene, 30);
+            const summe = summiere(eigene.filter((e) => imZeitraum(e, dreissig)));
+            const wert = formatEnergie(summe.erzeugung);
+
+            return (
+              <li key={anlage.name}>
+                <Link
+                  href={`/portal/anlagen/${encodeURIComponent(anlage.name)}`}
+                  className="flex flex-wrap items-center gap-4 py-3 transition-opacity hover:opacity-75"
+                >
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-medium">
+                      {anlage.anlagen_name}
+                    </span>
+                    <span className="block truncate text-sm text-slate-500 dark:text-slate-400">
+                      {anlage.ort} · {formatZahl(anlage.leistung_kwp, 1)} kWp
+                    </span>
+                  </span>
+
+                  {/*
+                    Auf schmalen Bildschirmen entfaellt die Verlaufslinie:
+                    Der Anlagenname ist dort die wichtigere Information und
+                    braucht die Breite.
+                  */}
+                  <span className="hidden sm:block">
+                    <Sparkline
+                      werte={reihe}
+                      farbe={ENERGIE_FARBEN.erzeugung}
+                      beschreibung={`Ertragsverlauf ${anlage.anlagen_name}, letzte 30 Tage`}
+                    />
+                  </span>
+
+                  <span className="w-24 text-right text-sm font-medium tabular-nums">
+                    {wert.wert}
+                    <span className="ml-0.5 text-xs font-normal text-slate-400">
+                      {wert.einheit}
+                    </span>
+                  </span>
+
+                  <Status ton={statusTon(anlage.status)}>
+                    {anlage.status ?? "Unbekannt"}
+                  </Status>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </Tafel>
+    </div>
+  );
+}
+
+export function statusTon(status: string | undefined) {
+  switch (status) {
+    case "Aktiv":
+      return "gut" as const;
+    case "Wartung":
+    case "In Bau":
+      return "hinweis" as const;
+    case "Gestört":
+      return "kritisch" as const;
+    default:
+      return "neutral" as const;
+  }
+}

@@ -1,0 +1,150 @@
+/**
+ * Tests für die Change-Auswertung.
+ *
+ * `change_list` sagt, in welchem Zustand ein Antrag ist. Das ist die
+ * leichtere Hälfte. Diese Datei prüft die Fragen, die im Betrieb
+ * tatsächlich anstehen:
+ *
+ *   - Was blockiert diesen Change? (Sonst merkt man es erst beim Versuch,
+ *     ihn weiterzuschieben – und dann fehlt die Zeit.)
+ *   - Kollidieren zwei Fenster am selben Objekt?
+ *   - Ist ein genehmigtes Fenster verstrichen, ohne dass etwas passiert ist?
+ *   - Weicht am Objekt schon etwas ab, **bevor** das Fenster beginnt?
+ *
+ * Die letzte ist der Gegenpart zu `drift.test.js`: dort wird von der
+ * Abweichung aus nach dem Change gefragt, hier vom Change aus nach der
+ * Abweichung. Zusammen ergeben die beiden einen Nachweis statt zweier
+ * Listen.
+ */
+import { beforeEach, describe, expect, it } from 'vitest'
+import { mockRequest, resetMockData } from '@/api/mock/server.js'
+
+const ruf = (url, params) => mockRequest({ url, params })
+const board = (p = {}) => ruf('netops.api.change.change_board', p)
+const kalender = (p = {}) => ruf('netops.api.change.change_calendar', p)
+
+beforeEach(() => {
+  resetMockData()
+})
+
+describe('Was blockiert diesen Change?', () => {
+  it('nennt fehlende Pflichtangaben einzeln', async () => {
+    const z = (await board()).rows.find((r) => r.blockers.length)
+    expect(z.blockers.length).toBeGreaterThan(0)
+    for (const b of z.blockers) expect(b).toBeTruthy()
+  })
+
+  it('meldet hohes Risiko ohne Wartungsfenster', async () => {
+    const z = (await board()).rows.find((r) => r.risk === 'high' && !r.window_start && r.open)
+    expect(z.blockers.join(' ')).toMatch(/Hohes Risiko ohne Wartungsfenster/)
+  })
+
+  it('sagt zu jedem offenen Change, was als Nächstes ansteht', async () => {
+    // Der Satz steht sonst im Kopf der zuständigen Person.
+    for (const z of (await board()).rows) {
+      if (z.open) expect(z.next_step).toBeTruthy()
+      else expect(z.next_step).toBeNull()
+    }
+  })
+
+  it('führt abgeschlossene Changes nicht als Befund', async () => {
+    for (const z of (await board()).rows) {
+      if (!z.open) expect(z.level).toBe('neutral')
+    }
+  })
+})
+
+describe('Der Rückbezug auf Drift', () => {
+  it('erkennt eine Abweichung vor dem genehmigten Fenster', async () => {
+    // Freigabe eingeholt, Fenster ignoriert. Das ist der schärfste Befund
+    // dieser Seite.
+    const z = (await board()).rows.find((r) => r.drift_before_window.length)
+    expect(z).toBeTruthy()
+    expect(z.change_state).toBe('approved')
+    expect(z.level).toBe('critical')
+    expect(z.reasons.join(' ')).toMatch(/vor der Freigabe gearbeitet/)
+  })
+
+  it('stimmt mit der Drift-Seite überein', async () => {
+    // Beide Richtungen müssen dasselbe Paar finden, sonst widersprechen
+    // sich zwei Seiten derselben Anwendung.
+    const c = (await board()).rows.find((r) => r.drift_before_window.length)
+    const d = (await ruf('netops.api.ops.drift_findings', {})).rows.find((r) => r.early_change)
+    expect(d.early_change).toBe(c.name)
+    expect(c.drift_before_window).toContain(d.name)
+  })
+
+  it('sagt es in der Zusammenfassung', async () => {
+    const s = (await board()).summary
+    expect(s.before_window).toBe(1)
+    expect(s.note).toMatch(/Fenster ignoriert/)
+  })
+})
+
+describe('Fenster', () => {
+  it('meldet zwei Changes am selben Objekt im selben Fenster', async () => {
+    // Zwei Arbeiten zur selben Stunde sind ein Ausfall, kein Zeitgewinn.
+    for (const z of (await board()).rows) {
+      if (z.collisions.length) {
+        expect(z.level).toBe('critical')
+        expect(z.reasons.join(' ')).toMatch(/überschneidet sich/)
+      }
+    }
+  })
+
+  it('rechnet das Alter des Fensters aus', async () => {
+    for (const z of (await board()).rows) {
+      if (z.window_start) expect(typeof z.window_age_hours).toBe('number')
+      else expect(z.window_age_hours).toBeNull()
+    }
+  })
+
+  it('bündelt den Kalender nach Tagen', async () => {
+    const k = await kalender()
+    for (const t of k.rows) {
+      expect(t.count).toBe(t.changes.length)
+      expect(t.day).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+    }
+  })
+
+  it('sortiert den Kalender vorwärts', async () => {
+    const r = (await kalender()).rows
+    for (let i = 1; i < r.length; i++) expect(r[i - 1].day <= r[i].day).toBe(true)
+  })
+
+  it('markiert einen vollen Tag', async () => {
+    // Drei Changes in einer Nacht sind planbar, aber nur mit Reihenfolge.
+    for (const t of (await kalender()).rows) {
+      if (t.count > 2) expect(['warning', 'critical']).toContain(t.level)
+    }
+  })
+})
+
+describe('Reihenfolge und Zusammenfassung', () => {
+  it('stellt die kritischen nach oben', async () => {
+    const rang = { critical: 4, warning: 3, ok: 2, neutral: 1 }
+    const r = (await board()).rows
+    for (let i = 1; i < r.length; i++) {
+      expect(rang[r[i - 1].level] >= rang[r[i].level]).toBe(true)
+    }
+  })
+
+  it('zählt offene und blockierte getrennt', async () => {
+    const s = (await board()).summary
+    expect(s.open).toBeLessThanOrEqual(s.total)
+    expect(s.blocked).toBeLessThanOrEqual(s.open)
+  })
+
+  it('filtert nach Zustand', async () => {
+    for (const z of (await board({ state: 'approved' })).rows) {
+      expect(z.change_state).toBe('approved')
+    }
+  })
+
+  it('sagt „Nichts hängt", wenn nichts hängt', async () => {
+    // Die Zusammenfassung muss auch den guten Fall benennen können,
+    // sonst liest man sie nur als Fehlerliste.
+    const s = (await board({ state: 'verified' })).summary
+    expect(s.note).toBe('Nichts hängt.')
+  })
+})

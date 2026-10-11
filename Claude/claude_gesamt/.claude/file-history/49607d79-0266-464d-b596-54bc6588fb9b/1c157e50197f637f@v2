@@ -1,0 +1,192 @@
+# -*- coding: utf-8 -*-
+"""Hängt die Change-Seite an die Auswertung.
+
+Die Karten bleiben, wie sie sind - die funktionieren. Dazu kommen die
+Kennzahlen, die Befunde je Antrag und der Fensterkalender.
+"""
+import io
+
+p = 'src/pages/ChangeView.vue'
+s = io.open(p, encoding='utf-8').read()
+
+# --- 1. Kennzahlen und Hinweis vor die Ablaufleiste
+alt = u'''    <div class="p-6">
+      <!-- Der Ablauf als Leiste, damit klar ist, wo ein Antrag steht -->'''
+neu = u'''    <div class="p-6">
+      <div v-if="board.data" class="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <StatCard
+          label="Offen"
+          :wert="board.data.summary.open"
+          :hinweis="board.data.summary.awaiting_approval + ' warten auf Freigabe'"
+          level="neutral"
+        />
+        <StatCard
+          label="Hängen"
+          :wert="board.data.summary.blocked"
+          hinweis="kommen ohne Nacharbeit nicht weiter"
+          :level="board.data.summary.blocked ? 'warning' : 'ok'"
+        />
+        <StatCard
+          label="Fenster verstrichen"
+          :wert="board.data.summary.overdue"
+          hinweis="genehmigt, aber nicht umgesetzt"
+          :level="board.data.summary.overdue ? 'warning' : 'ok'"
+        />
+        <StatCard
+          label="Vor der Freigabe gemacht"
+          :wert="board.data.summary.before_window"
+          hinweis="Abweichung vor dem Fenster"
+          :level="board.data.summary.before_window ? 'critical' : 'ok'"
+        />
+      </div>
+
+      <p v-if="board.data" class="mb-6 text-sm text-ink-gray-6">{{ board.data.summary.note }}</p>
+
+      <!-- Der Ablauf als Leiste, damit klar ist, wo ein Antrag steht -->'''
+assert alt in s
+s = s.replace(alt, neu, 1)
+
+# --- 2. Karten aus dem Board speisen und Rand nach Stufe
+alt = u'''        <article
+          v-for="antrag in antraege.data || []"
+          :key="antrag.name"
+          class="rounded-lg border border-outline-gray-2 bg-surface-white p-4"
+        >'''
+neu = u'''        <article
+          v-for="antrag in board.data?.rows || []"
+          :key="antrag.name"
+          class="rounded-lg border bg-surface-white p-4"
+          :class="
+            antrag.level === 'critical'
+              ? 'border-outline-red-2'
+              : antrag.level === 'warning'
+                ? 'border-outline-amber-2'
+                : 'border-outline-gray-2'
+          "
+        >'''
+assert alt in s
+s = s.replace(alt, neu, 1)
+
+# --- 3. Befunde statt der drei Einzelhinweise
+alt = u'''          <div class="mt-3 flex flex-wrap items-center gap-3 border-t border-outline-gray-2 pt-3">
+            <StatusDot
+              v-if="antrag.perimeter"
+              level="warning"
+              text="Perimeter – Umsetzung ausschließlich manuell"
+              klein
+            />
+            <StatusDot
+              v-if="antrag.missing.length"
+              level="warning"
+              :text="'Fehlt: ' + antrag.missing.join(', ')"
+              klein
+            />
+            <StatusDot
+              v-if="antrag.needs_second_approver && !antrag.has_second_approver"
+              level="warning"
+              text="Vier-Augen-Freigabe erforderlich"
+              klein
+            />
+
+            <div class="ml-auto flex flex-wrap gap-2">'''
+neu = u'''          <!--
+            Was diesen Antrag aufhält, steht am Antrag. Sonst erfährt man
+            es erst beim Versuch, ihn weiterzuschieben - und dann fehlt die
+            Zeit.
+          -->
+          <ul v-if="antrag.reasons.length" class="mt-3 border-t border-outline-gray-2 pt-3">
+            <li v-for="g in antrag.reasons" :key="g" class="text-sm text-ink-gray-7">· {{ g }}</li>
+          </ul>
+
+          <div class="mt-3 flex flex-wrap items-center gap-3 border-t border-outline-gray-2 pt-3">
+            <StatusDot
+              v-if="antrag.next_step"
+              level="neutral"
+              :text="'Als Nächstes: ' + antrag.next_step"
+              klein
+            />
+            <RouterLink
+              v-if="antrag.drift_before_window.length || antrag.drift_after.length"
+              to="/drift"
+              class="text-sm font-medium text-ink-gray-8 underline"
+            >
+              {{ (antrag.drift_before_window.length || antrag.drift_after.length) }} Abweichung(en)
+              am Objekt
+            </RouterLink>
+
+            <div class="ml-auto flex flex-wrap gap-2">'''
+assert alt in s
+s = s.replace(alt, neu, 1)
+
+# --- 4. Leer- und Ladezustand auf das Board umstellen
+s = s.replace(
+    u'<p v-if="antraege.loading" class="py-8 text-center text-sm text-ink-gray-5">Wird geladen …</p>',
+    u'<p v-if="board.loading" class="py-8 text-center text-sm text-ink-gray-5">Wird geladen …</p>',
+    1,
+)
+s = s.replace(
+    u'<p v-else-if="!(antraege.data || []).length" class="py-8 text-center text-sm text-ink-gray-5">',
+    u'<p v-else-if="!(board.data?.rows || []).length" class="py-8 text-center text-sm text-ink-gray-5">',
+    1,
+)
+
+# --- 5. Kalender vor den Schlusstext
+alt = u'''      <p class="mt-6 text-xs text-ink-gray-4">
+        Ablauf nach Fachkonzept 2.10:'''
+neu = u'''      <!--
+        Drei Changes in einer Nacht sind planbar - aber nur mit
+        Reihenfolge. Drei am selben Gerät sind es nicht.
+      -->
+      <section v-if="kalender.data?.rows?.length" class="mt-8">
+        <h2 class="mb-1 text-base font-semibold text-ink-gray-8">Wartungsfenster</h2>
+        <p class="mb-3 text-sm text-ink-gray-6">
+          Was in derselben Nacht ansteht. {{ kalender.data.summary.windows }} Fenster an
+          {{ kalender.data.summary.days }} Tagen.
+        </p>
+        <ol class="space-y-2">
+          <li
+            v-for="tag in kalender.data.rows"
+            :key="tag.day"
+            class="rounded-lg border p-3"
+            :class="
+              tag.level === 'critical'
+                ? 'border-outline-red-2'
+                : tag.level === 'warning'
+                  ? 'border-outline-amber-2'
+                  : 'border-outline-gray-2'
+            "
+          >
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <p class="font-medium tabular-nums text-ink-gray-9">{{ tag.day }}</p>
+              <StatusDot
+                :level="tag.level"
+                :text="tag.count + ' Fenster · ' + tag.objects.join(', ')"
+                klein
+              />
+            </div>
+            <ul class="mt-2 space-y-1">
+              <li v-for="c in tag.changes" :key="c.name" class="text-sm text-ink-gray-7">
+                <span class="tabular-nums text-ink-gray-5">
+                  {{ String(c.window_start).slice(11, 16) }}
+                </span>
+                <span class="font-mono text-ink-gray-5">{{ c.name }}</span>
+                {{ c.title }}
+                <Badge class="ml-1" :theme="c.risk === 'high' ? 'red' : 'gray'">
+                  {{ c.risk_label }}
+                </Badge>
+                <span v-if="c.collisions.length" class="text-ink-red-3">
+                  · kollidiert mit {{ c.collisions.join(', ') }}
+                </span>
+              </li>
+            </ul>
+          </li>
+        </ol>
+      </section>
+
+      <p class="mt-6 max-w-3xl text-xs text-ink-gray-4">
+        Ablauf nach Fachkonzept 2.10:'''
+assert alt in s
+s = s.replace(alt, neu, 1)
+
+io.open(p, 'w', encoding='utf-8').write(s)
+print('Vorlage angepasst')

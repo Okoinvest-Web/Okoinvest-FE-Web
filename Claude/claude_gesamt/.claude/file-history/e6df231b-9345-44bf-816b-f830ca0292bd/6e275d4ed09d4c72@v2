@@ -1,0 +1,129 @@
+/**
+ * Zustand des Subunternehmerportals.
+ *
+ * Bewusst getrennt vom Stammdaten-Store: Ein Subunternehmer bekommt gar nicht
+ * erst das Anlagenverzeichnis geladen, sondern nur, was ihm zugeteilt ist.
+ */
+
+import { defineStore } from 'pinia'
+import { computed, ref } from 'vue'
+
+import { stammdatenLesen, stammdatenSchreiben } from '@/lib/db'
+import { positionEinmalig } from '@/lib/geo'
+import {
+  portal,
+  type Auftrag,
+  type Baustelle,
+  type Kolonnenmitglied,
+  type PortalBootstrap,
+  type Stempelrichtung,
+  type Tagesuebersicht,
+} from '@/lib/portal'
+
+export const usePortal = defineStore('portal', () => {
+  const daten = ref<PortalBootstrap | null>(null)
+  const uebersicht = ref<Tagesuebersicht | null>(null)
+  const auftraege = ref<Auftrag[]>([])
+  const geladen = ref(false)
+  const ausCache = ref(false)
+  const fehler = ref<string | null>(null)
+
+  /** Auf welcher Baustelle wird gerade gearbeitet — steuert Stempeluhr und Meldung. */
+  const aktuelleBaustelle = ref<string>('')
+
+  const firmenname = computed(() => daten.value?.firmenname ?? '')
+  const kolonne = computed<Kolonnenmitglied[]>(() => daten.value?.kolonne ?? [])
+  const istPolier = computed(() => Boolean(daten.value?.ist_polier))
+  const meldepflichtig = computed(() => Boolean(daten.value?.meldepflicht?.pflichtig))
+  const baustellen = computed<Baustelle[]>(() => daten.value?.baustellen ?? [])
+
+  const baustelle = (name: string): Baustelle | undefined =>
+    baustellen.value.find((b) => b.name === name)
+
+  /** Aufträge, bei denen die Frist läuft oder überschritten ist. */
+  const dringend = computed(() =>
+    auftraege.value.filter((a) => a.verzug || a.fristwarnung_aktiv),
+  )
+
+  async function laden(): Promise<void> {
+    fehler.value = null
+    try {
+      const antwort = await portal.bootstrap()
+      daten.value = antwort
+      ausCache.value = false
+      await stammdatenSchreiben('portal', antwort)
+      if (!aktuelleBaustelle.value && antwort.baustellen.length === 1) {
+        aktuelleBaustelle.value = antwort.baustellen[0].name
+      }
+    } catch (ausnahme) {
+      const cache = await stammdatenLesen<PortalBootstrap>('portal')
+      if (cache) {
+        daten.value = cache
+        ausCache.value = true
+        fehler.value = 'Offline – Anzeige vom letzten Abruf.'
+      } else {
+        fehler.value = (ausnahme as Error).message
+        throw ausnahme
+      }
+    } finally {
+      geladen.value = true
+    }
+  }
+
+  async function auftraegeLaden(mitErledigten = false): Promise<void> {
+    auftraege.value = await portal.auftraege({ mit_erledigten: mitErledigten ? 1 : 0 })
+  }
+
+  async function uebersichtLaden(): Promise<void> {
+    uebersicht.value = await portal.tagesuebersicht(aktuelleBaustelle.value || undefined)
+  }
+
+  /**
+   * Stempelt eine Person ein oder aus.
+   *
+   * Der Standort wird nur in diesem Augenblick abgefragt, nicht laufend — und
+   * eine fehlende Ortung verhindert die Stempelung nicht: In einer Halle gibt
+   * es kein GPS, und der Arbeitsbeginn darf daran nicht scheitern.
+   */
+  async function stempeln(
+    mitarbeiter: string,
+    richtung: Stempelrichtung,
+    anlage?: string,
+    auftrag?: string,
+  ) {
+    const ziel = anlage || aktuelleBaustelle.value
+    if (!ziel) throw new Error('Bitte zuerst die Baustelle wählen.')
+
+    const position = await positionEinmalig().catch(() => null)
+    return portal.stempeln({
+      mitarbeiter,
+      anlage: ziel,
+      richtung,
+      auftrag,
+      gps_lat: position?.lat,
+      gps_lng: position?.lng,
+      lokale_id: crypto.randomUUID(),
+    })
+  }
+
+  return {
+    daten,
+    uebersicht,
+    auftraege,
+    geladen,
+    ausCache,
+    fehler,
+    aktuelleBaustelle,
+    firmenname,
+    kolonne,
+    istPolier,
+    meldepflichtig,
+    baustellen,
+    dringend,
+    baustelle,
+    laden,
+    auftraegeLaden,
+    uebersichtLaden,
+    stempeln,
+  }
+})

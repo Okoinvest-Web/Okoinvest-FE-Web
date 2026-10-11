@@ -1,0 +1,385 @@
+"""Eskalationsschreiben als Geschaeftsbrief nach DIN 5008 / DIN 676 Form B."""
+import re, sys
+from docx import Document
+from docx.shared import Pt, Mm, RGBColor
+from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_BREAK, WD_LINE_SPACING
+from docx.enum.table import WD_TABLE_ALIGNMENT
+from docx.enum.section import WD_SECTION
+from docx.oxml.ns import qn
+from docx.oxml import OxmlElement, parse_xml
+
+TPL, SRC, DST = sys.argv[1], sys.argv[2], sys.argv[3]
+EMPF = sys.argv[4] if len(sys.argv) > 4 else 'land'
+ACCENT = RGBColor(0x0F, 0x47, 0x61)
+GREY = RGBColor(0x59, 0x59, 0x59)
+BODY_PT = 11          # DIN 5008: mind. 10 pt, empfohlen 11 pt
+LINE_MM = 4.66        # eine Zeile bei 11 pt, einzeilig
+
+EMPFAENGER = {
+ 'land': ['Land Salzburg', 'Frau Landeshauptfrau', 'Mag. Karoline Edtstadler',
+          '[Straße und Hausnummer]', '5010 Salzburg'],
+ 'stadt': ['Stadt Salzburg', 'Herrn Bürgermeister', 'Bernhard Auinger',
+           '[Straße und Hausnummer]', '5020 Salzburg'],
+ 'eag': ['Energie AG Oberösterreich', 'den Vorstand',
+         '[Straße und Hausnummer]', '[PLZ] Linz'],
+ 'ar': ['Salzburg AG für Energie, Verkehr und Telekommunikation',
+        'Herrn Landeshauptmann a. D.', 'Dr. Wilfried Haslauer',
+        'Vorsitzender des Aufsichtsrates',
+        'Bayerhamerstraße 16', '5020 Salzburg'],
+}
+TITEL = {'land': 'Land_Edtstadler', 'stadt': 'Stadt_Auinger',
+         'eag': 'EnergieAG_Vorstand', 'ar': 'Aufsichtsrat_Haslauer'}
+
+doc = Document(TPL)
+body = doc.element.body
+for child in list(body):
+    if child.tag != qn('w:sectPr'):
+        body.remove(child)
+
+# ---------- Satzspiegel nach DIN 676 Form B ----------
+s = doc.sections[0]
+s.left_margin, s.right_margin = Mm(25), Mm(20)
+s.top_margin, s.bottom_margin = Mm(45), Mm(30)
+s.header_distance, s.footer_distance = Mm(12.5), Mm(12.5)
+
+st = doc.styles['normal']
+st.font.size = Pt(BODY_PT)
+pf = st.paragraph_format
+pf.space_after = Pt(BODY_PT)           # DIN: Absatzabstand = eine Leerzeile
+pf.space_before = Pt(0)
+pf.line_spacing_rule = WD_LINE_SPACING.SINGLE
+
+# ---------- Hilfsfunktionen ----------
+def set_lang(run, lang='de-AT'):
+    rPr = run._r.get_or_add_rPr()
+    for t in rPr.findall(qn('w:lang')):
+        rPr.remove(t)
+    el = OxmlElement('w:lang'); el.set(qn('w:val'), lang); rPr.append(el)
+
+def exact_gap(mm_height):
+    """Absatz mit exakt vorgegebener Hoehe (fuer DIN-Zonen)."""
+    p = doc.add_paragraph()
+    p.paragraph_format.space_before = Pt(0)
+    p.paragraph_format.space_after = Pt(0)
+    p.paragraph_format.line_spacing_rule = WD_LINE_SPACING.EXACTLY
+    p.paragraph_format.line_spacing = Pt(mm_height * 2.83465)
+    return p
+
+def no_borders(tbl):
+    el = OxmlElement('w:tblBorders')
+    for edge in ('top', 'left', 'bottom', 'right', 'insideH', 'insideV'):
+        e = OxmlElement('w:' + edge); e.set(qn('w:val'), 'none'); e.set(qn('w:sz'), '0')
+        el.append(e)
+    tbl._tbl.tblPr.append(el)
+
+def grid(tbl):
+    el = OxmlElement('w:tblBorders')
+    for edge in ('top', 'left', 'bottom', 'right', 'insideH', 'insideV'):
+        e = OxmlElement('w:' + edge)
+        e.set(qn('w:val'), 'single'); e.set(qn('w:sz'), '4')
+        e.set(qn('w:space'), '0'); e.set(qn('w:color'), 'B4C2CC')
+        el.append(e)
+    tbl._tbl.tblPr.append(el)
+
+def shade(cell, hexcolor):
+    sh = OxmlElement('w:shd'); sh.set(qn('w:val'), 'clear'); sh.set(qn('w:fill'), hexcolor)
+    cell._tc.get_or_add_tcPr().append(sh)
+
+def left_bar(p):
+    pPr = p._p.get_or_add_pPr(); pbdr = OxmlElement('w:pBdr')
+    e = OxmlElement('w:left')
+    e.set(qn('w:val'), 'single'); e.set(qn('w:sz'), '12')
+    e.set(qn('w:space'), '12'); e.set(qn('w:color'), '0F4761')
+    pbdr.append(e); pPr.append(pbdr)
+
+def keep_next(p):
+    p._p.get_or_add_pPr().append(OxmlElement('w:keepNext'))
+
+def keep_lines(p):
+    p._p.get_or_add_pPr().append(OxmlElement('w:keepLines'))
+
+INLINE = re.compile(r'(\*\*.+?\*\*|(?<!\*)\*[^*\n]+?\*(?!\*)|`[^`]+?`)')
+
+def add_runs(p, text, size=BODY_PT):
+    for part in INLINE.split(text):
+        if not part:
+            continue
+        if part.startswith('**') and part.endswith('**'):
+            r = p.add_run(part[2:-2]); r.bold = True
+        elif part.startswith('*') and part.endswith('*') and len(part) > 2:
+            r = p.add_run(part[1:-1]); r.italic = True
+        elif part.startswith('`') and part.endswith('`'):
+            r = p.add_run(part[1:-1]); r.font.name = 'Consolas'
+        else:
+            r = p.add_run(part)
+        r.font.size = Pt(size); set_lang(r)
+    return p
+
+# ---------- Falz- und Lochmarken (DIN 676) ----------
+def marke(top_mm, laenge_mm=8.0, staerke='0.75pt'):
+    return (f'<w:r xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" '
+            f'xmlns:v="urn:schemas-microsoft-com:vml"><w:pict><v:line '
+            f'from="5mm,{top_mm}mm" to="{5 + laenge_mm}mm,{top_mm}mm" '
+            f'strokecolor="#9AA5AD" strokeweight="{staerke}" '
+            f'style="position:absolute;z-index:-251658240;'
+            f'mso-position-horizontal-relative:page;'
+            f'mso-position-vertical-relative:page;mso-wrap-style:none"/></w:pict></w:r>')
+
+hp = s.header.paragraphs[-1]
+for top, ln in ((87.0, 8.0), (148.5, 10.0), (192.0, 8.0)):   # Falz / Loch / Falz
+    hp._p.append(parse_xml(marke(top, ln)))
+
+# ---------- Anschriftfeld + Informationsblock (DIN 5008, Form B) ----------
+tbl = doc.add_table(rows=1, cols=2)
+tbl.alignment = WD_TABLE_ALIGNMENT.LEFT
+tbl.autofit = False
+no_borders(tbl)
+tbl.columns[0].width = Mm(85)      # Anschriftfeld: 85 mm breit
+tbl.columns[1].width = Mm(80)
+for c, w in zip(tbl.rows[0].cells, (Mm(85), Mm(80))):
+    c.width = w
+
+# -- linke Zelle: Zusatz-/Vermerkzone (5 Zeilen) + Anschriftzone (6 Zeilen)
+anschrift = tbl.cell(0, 0)
+anschrift.text = ''
+p = anschrift.paragraphs[0]
+p.paragraph_format.space_after = Pt(0)
+r = p.add_run('EINSCHREIBEN MIT RÜCKSCHEIN')
+r.font.size = Pt(8); r.font.color.rgb = GREY; set_lang(r)
+p2 = anschrift.add_paragraph()
+p2.paragraph_format.space_after = Pt(0)
+r = p2.add_run('VERTRAULICH – PERSÖNLICH – EIGENHÄNDIG')
+r.font.size = Pt(8); r.bold = True; r.font.color.rgb = ACCENT; set_lang(r)
+
+gap = anschrift.add_paragraph()
+gap.paragraph_format.space_after = Pt(0)
+gap.paragraph_format.line_spacing_rule = WD_LINE_SPACING.EXACTLY
+gap.paragraph_format.line_spacing = Pt(3 * LINE_MM * 2.83465)   # Rest der Vermerkzone
+
+for line in EMPFAENGER[EMPF]:
+    pa = anschrift.add_paragraph()
+    pa.paragraph_format.space_after = Pt(0)
+    r = pa.add_run(line); r.font.size = Pt(BODY_PT); set_lang(r)
+
+# -- rechte Zelle: Informationsblock
+info = tbl.cell(0, 1)
+info.text = ''
+rows = [('Unser Zeichen', 'GF/AW – SAG/ÖKOVOLT'),
+        ('Ansprechpartner', 'Andreas Wegscheider'),
+        ('E-Mail', 'office@oekovolt.com'),
+        ('Datum', '20. September 2026')]
+first = True
+for label, value in rows:
+    pa = info.paragraphs[0] if first else info.add_paragraph()
+    first = False
+    pa.paragraph_format.space_after = Pt(0)
+    r = pa.add_run(label); r.font.size = Pt(8); r.font.color.rgb = GREY; set_lang(r)
+    pb = info.add_paragraph(); pb.paragraph_format.space_after = Pt(2)
+    r = pb.add_run(value); r.font.size = Pt(9); set_lang(r)
+
+# Anschriftfeld endet laut DIN bei 90 mm; Betreff beginnt bei 116,4 mm
+exact_gap(116.4 - 90.0)
+
+# ---------- Betreffzeile (DIN 5008: ohne das Wort "Betreff") ----------
+betreff = ('Salzburg AG / ÖKOVOLT – Entscheidungen des Oberlandesgerichts München und des '
+           'Oberlandesgerichts Linz, forensische Untersuchung „Projekt SILICIUM", gerichtlich '
+           'festgehaltener Mindestschaden von EUR 10,5 Mio., Ablehnung des Vergleichs durch den '
+           'Vorstand am 11. September 2026 – Ersuchen um unverzügliches Eingreifen der '
+           'Eigentümer und des Aufsichtsrates')
+p = doc.add_paragraph()
+r = p.add_run(betreff); r.bold = True; r.font.size = Pt(BODY_PT); set_lang(r)
+p.paragraph_format.space_after = Pt(2 * BODY_PT)   # 2 Leerzeilen bis zur Anrede
+keep_next(p)
+
+# ---------- Fliesstext ----------
+md = open(SRC, encoding='utf-8').read().split('\n')
+start = next(i for i, l in enumerate(md) if l.startswith('Sehr geehrte Frau Landeshauptfrau'))
+in_vertretung = False
+
+def emit_vermerke():
+    """Anlagen- und Verteilervermerk nach DIN 5008."""
+    p = doc.add_paragraph(); r = p.add_run('Anlagen')
+    r.bold = True; r.font.size = Pt(BODY_PT); set_lang(r)
+    p.paragraph_format.space_before = Pt(2 * BODY_PT)
+    p.paragraph_format.space_after = Pt(0)
+    p = doc.add_paragraph()
+    add_runs(p, 'Anlagenverzeichnis ./1 bis ./50 (gesondert beigeschlossen)')
+    p.paragraph_format.space_after = Pt(BODY_PT)
+    p = doc.add_paragraph(); r = p.add_run('Verteiler')
+    r.bold = True; r.font.size = Pt(BODY_PT); set_lang(r)
+    p.paragraph_format.space_after = Pt(0)
+    for v in ['Frau Landeshauptfrau Mag. Karoline Edtstadler, Land Salzburg',
+              'Herrn Bürgermeister Bernhard Auinger, Stadt Salzburg',
+              'den Vorstand der Energie AG Oberösterreich',
+              'Herrn Landeshauptmann a. D. Dr. Wilfried Haslauer sowie die Mitglieder '
+              'des Aufsichtsrates der Salzburg AG']:
+        p = doc.add_paragraph(); add_runs(p, v)
+        p.paragraph_format.left_indent = Mm(8)
+        p.paragraph_format.first_line_indent = Mm(-8)
+        p.paragraph_format.space_after = Pt(0)
+
+i = start
+while i < len(md):
+    line = md[i].rstrip()
+    if not line.strip() or line.strip() == '---':
+        i += 1; continue
+
+    # Tabellen
+    if line.startswith('|'):
+        rws = []
+        while i < len(md) and md[i].startswith('|'):
+            raw = md[i].strip().strip('|')
+            if not re.fullmatch(r'[\s:\-|]+', raw):
+                rws.append([c.strip() for c in raw.split('|')])
+            i += 1
+        if rws:
+            ncol = max(len(r) for r in rws)
+            t = doc.add_table(rows=len(rws), cols=ncol)
+            t.alignment = WD_TABLE_ALIGNMENT.LEFT
+            grid(t)
+            for ri, row in enumerate(rws):
+                for ci in range(ncol):
+                    cell = t.cell(ri, ci); cell.text = ''
+                    cp = cell.paragraphs[0]
+                    cp.paragraph_format.space_before = Pt(2)
+                    cp.paragraph_format.space_after = Pt(2)
+                    add_runs(cp, row[ci] if ci < len(row) else '', size=9)
+                    if ri == 0:
+                        for r in cp.runs: r.bold = True
+                        shade(cell, 'EDF2F6')
+            g = doc.add_paragraph(); g.paragraph_format.space_after = Pt(BODY_PT)
+        continue
+
+    # Zitate
+    if line.startswith('>'):
+        buf = []
+        while i < len(md) and md[i].startswith('>'):
+            buf.append(md[i].lstrip('>').strip()); i += 1
+        chunks = [b for b in buf if b]
+        main = ' '.join(c for c in chunks if not c.startswith('*('))
+        src = next((c for c in chunks if c.startswith('*(')), None)
+        p = doc.add_paragraph()
+        p.paragraph_format.left_indent = Mm(8)
+        p.paragraph_format.space_before = Pt(BODY_PT)
+        p.paragraph_format.space_after = Pt(3 if src else BODY_PT)
+        add_runs(p, main)
+        for r in p.runs: r.italic = True
+        left_bar(p); keep_lines(p)
+        if src:
+            q = doc.add_paragraph()
+            q.paragraph_format.left_indent = Mm(8)
+            q.paragraph_format.space_after = Pt(BODY_PT)
+            r = q.add_run(src.strip('*')); r.font.size = Pt(9); r.italic = True
+            r.font.color.rgb = GREY; set_lang(r)
+            left_bar(q)
+        continue
+
+    # Ueberschriften
+    m = re.match(r'^(#{1,4})\s+(.*)', line)
+    if m:
+        lvl, txt = len(m.group(1)), m.group(2).replace('**', '')
+        if txt.startswith('Rechtsvertretung'):
+            in_vertretung = True
+        if txt.startswith('Anlagenverzeichnis'):
+            in_vertretung = False
+            emit_vermerke()
+            doc.add_paragraph().add_run().add_break(WD_BREAK.PAGE)
+        p = doc.add_paragraph(style='Heading 2' if lvl <= 2 else 'Heading 3')
+        r = p.add_run(txt); set_lang(r)
+        r.font.size = Pt(12 if lvl <= 2 else 11)
+        r.bold = True; r.font.color.rgb = ACCENT
+        p.paragraph_format.space_before = Pt(18 if lvl <= 2 else 13)
+        p.paragraph_format.space_after = Pt(5)
+        keep_next(p); keep_lines(p)
+        i += 1; continue
+
+    # Listen
+    m = re.match(r'^\s*[-*]\s+(.*)', line)
+    if m:
+        p = doc.add_paragraph()
+        p.paragraph_format.left_indent = Mm(8)
+        p.paragraph_format.first_line_indent = Mm(-8)
+        p.paragraph_format.space_after = Pt(4)
+        r = p.add_run('–\t'); r.font.size = Pt(BODY_PT); set_lang(r)
+        add_runs(p, m.group(1))
+        i += 1; continue
+
+    m = re.match(r'^\s*(\d+)\.\s+(.*)', line)
+    if m:
+        p = doc.add_paragraph()
+        p.paragraph_format.left_indent = Mm(9)
+        p.paragraph_format.first_line_indent = Mm(-9)
+        p.paragraph_format.space_after = Pt(6)
+        r = p.add_run(f'{m.group(1)}.\t'); r.bold = True; r.font.size = Pt(BODY_PT); set_lang(r)
+        add_runs(p, m.group(2))
+        i += 1; continue
+
+    # Anrede: einzeilig, danach eine Leerzeile
+    if line.strip().lower().startswith('sehr geehrte'):
+        nxt = md[i + 1].strip().lower() if i + 1 < len(md) else ''
+        p = doc.add_paragraph()
+        add_runs(p, line.strip())
+        p.paragraph_format.space_after = Pt(BODY_PT if not nxt.startswith('sehr geehrte') else 0)
+        i += 1; continue
+
+    # Grussformel + Unterschriftszone (DIN: 3 Leerzeilen)
+    if line.strip() == 'Mit vorzüglicher Hochachtung':
+        p = doc.add_paragraph(); add_runs(p, 'Mit vorzüglicher Hochachtung')
+        p.paragraph_format.space_after = Pt(0)
+        g = doc.add_paragraph()
+        g.paragraph_format.space_after = Pt(0)
+        g.paragraph_format.line_spacing_rule = WD_LINE_SPACING.EXACTLY
+        g.paragraph_format.line_spacing = Pt(3 * BODY_PT * 1.15)
+        keep_lines(g)
+        i += 1; continue
+
+    if line.strip().startswith('**Andreas Wegscheider**'):
+        p = doc.add_paragraph(); r = p.add_run('Andreas Wegscheider')
+        r.bold = True; r.font.size = Pt(BODY_PT); set_lang(r)
+        p.paragraph_format.space_after = Pt(0)
+        i += 1
+        if i < len(md) and md[i].strip():
+            p = doc.add_paragraph(); add_runs(p, md[i].strip())
+            p.paragraph_format.space_after = Pt(BODY_PT)
+            i += 1
+        continue
+
+    # Block "Rechtsvertretung": eng gesetzt, Kategoriezeilen abgesetzt
+    if in_vertretung:
+        kategorie = line.strip().startswith('**') and line.strip().endswith('**')
+        p = doc.add_paragraph()
+        add_runs(p, line.strip(), size=10)
+        p.paragraph_format.space_before = Pt(8 if kategorie else 0)
+        p.paragraph_format.space_after = Pt(0)
+        p.paragraph_format.left_indent = Mm(0 if kategorie else 4)
+        keep_lines(p)
+        i += 1; continue
+
+    p = doc.add_paragraph()
+    add_runs(p, line.strip())
+    i += 1
+
+# ---------- Fusszeile: Seitenzahl, GF-Korrektur ----------
+ft = s.footer
+pn = ft.paragraphs[0]
+pn.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+pn.paragraph_format.space_after = Pt(2)
+
+def field(p, instr):
+    r = p.add_run(); e = OxmlElement('w:fldChar'); e.set(qn('w:fldCharType'), 'begin'); r._r.append(e)
+    r = p.add_run(); e = OxmlElement('w:instrText'); e.set(qn('xml:space'), 'preserve')
+    e.text = instr; r._r.append(e)
+    r = p.add_run(); e = OxmlElement('w:fldChar'); e.set(qn('w:fldCharType'), 'end'); r._r.append(e)
+
+pn.add_run('Seite '); field(pn, ' PAGE '); pn.add_run(' von '); field(pn, ' NUMPAGES ')
+for r in pn.runs:
+    r.font.size = Pt(8); r.font.color.rgb = GREY; set_lang(r)
+
+cell = ft.tables[0].rows[0].cells[1]
+if 'Schiefer' in cell.text:
+    for p in cell.paragraphs:
+        for r in p.runs:
+            r.text = r.text.replace(' & Friedrich Schiefer', '')
+
+doc.save(DST)
+print('saved', DST)

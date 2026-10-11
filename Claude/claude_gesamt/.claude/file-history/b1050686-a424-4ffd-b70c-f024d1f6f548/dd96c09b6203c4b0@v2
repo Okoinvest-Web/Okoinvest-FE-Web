@@ -1,0 +1,228 @@
+"use client";
+
+import { useActionState, useState } from "react";
+
+import { IconHaken, IconKreuz, IconRechnen } from "@/components/icon";
+import { Hinweis } from "@/components/ui";
+
+import {
+  laufFestschreiben,
+  laufRechnen,
+  laufStornieren,
+  type Rueckmeldung,
+} from "../../aktionen";
+
+/**
+ * Handlungen an einem Abrechnungslauf.
+ *
+ * Welche moeglich sind, haengt vom Status ab - das ist keine Kosmetik,
+ * sondern bildet den Ablauf ab: Ein festgeschriebener Lauf laesst sich
+ * nicht neu rechnen, weil seine Belege bereits ausgegeben sind. Die
+ * Oberflaeche blendet solche Handlungen aus, der Server lehnt sie
+ * zusaetzlich ab.
+ */
+export function LaufAktionen({
+  laufId,
+  status,
+}: {
+  laufId: string;
+  status: string;
+}) {
+  const [dialog, setDialog] = useState<"festschreiben" | "storno" | null>(null);
+
+  const [rechenErgebnis, rechnen, rechnet] = useActionState<
+    Rueckmeldung | null,
+    FormData
+  >(laufRechnen, null);
+
+  const kannRechnen = status === "Entwurf" || status === "Berechnet";
+  const kannFestschreiben = status === "Berechnet";
+  const kannStornieren =
+    status === "Berechnet" || status === "Festgeschrieben";
+
+  return (
+    <div className="flex flex-wrap items-start gap-2">
+      {kannRechnen && (
+        <form action={rechnen}>
+          <input type="hidden" name="lauf" value={laufId} />
+          <button type="submit" className="knopf knopf-rand" disabled={rechnet}>
+            <IconRechnen groesse={15} />
+            {rechnet ? "Rechnet …" : "Neu rechnen"}
+          </button>
+        </form>
+      )}
+
+      {kannFestschreiben && (
+        <button
+          type="button"
+          className="knopf knopf-voll"
+          onClick={() => setDialog(dialog === "festschreiben" ? null : "festschreiben")}
+        >
+          <IconHaken groesse={15} />
+          Festschreiben
+        </button>
+      )}
+
+      {kannStornieren && (
+        <button
+          type="button"
+          className="knopf knopf-warnung"
+          onClick={() => setDialog(dialog === "storno" ? null : "storno")}
+        >
+          <IconKreuz groesse={15} />
+          Stornieren
+        </button>
+      )}
+
+      {rechenErgebnis && (
+        <div className="w-full">
+          <Hinweis ton={rechenErgebnis.ok ? "gut" : "kritisch"}>
+            {rechenErgebnis.meldung}
+          </Hinweis>
+        </div>
+      )}
+
+      {dialog === "festschreiben" && (
+        <FestschreibDialog laufId={laufId} schliessen={() => setDialog(null)} />
+      )}
+      {dialog === "storno" && (
+        <StornoDialog laufId={laufId} schliessen={() => setDialog(null)} />
+      )}
+    </div>
+  );
+}
+
+function FestschreibDialog({
+  laufId,
+  schliessen,
+}: {
+  laufId: string;
+  schliessen: () => void;
+}) {
+  const [ergebnis, aktion, laeuft] = useActionState<Rueckmeldung | null, FormData>(
+    laufFestschreiben,
+    null,
+  );
+
+  if (ergebnis?.ok) {
+    return (
+      <div className="w-full">
+        <Hinweis ton="gut">{ergebnis.meldung}</Hinweis>
+      </div>
+    );
+  }
+
+  return (
+    <form
+      action={aktion}
+      className="w-full rounded-lg border p-3.5"
+      style={{ borderColor: "var(--linie)", background: "var(--f-vertieft)" }}
+    >
+      <input type="hidden" name="lauf" value={laufId} />
+
+      <p className="text-[0.8125rem] leading-relaxed">
+        Mit dem Festschreiben werden die Belege unveränderlich. Eine Korrektur
+        ist danach nur über einen Storno und einen neuen Lauf möglich – so
+        bleibt jeder ausgegebene Beleg nachvollziehbar.
+      </p>
+
+      <label className="mt-2.5 flex items-start gap-2 text-[0.8125rem]">
+        <input
+          type="checkbox"
+          name="bestaetigung"
+          value="ja"
+          required
+          className="mt-0.5"
+        />
+        <span>
+          Ich habe die Belege geprüft und gebe sie zur Ausgabe frei.
+        </span>
+      </label>
+
+      {ergebnis && !ergebnis.ok && (
+        <p
+          className="t-mikro mt-2"
+          style={{ color: "oklch(0.52 0.19 25)" }}
+          role="alert"
+        >
+          {ergebnis.meldung}
+        </p>
+      )}
+
+      <div className="mt-3 flex gap-2">
+        <button type="submit" className="knopf knopf-voll" disabled={laeuft}>
+          {laeuft ? "Wird festgeschrieben …" : "Verbindlich festschreiben"}
+        </button>
+        <button type="button" className="knopf knopf-rand" onClick={schliessen}>
+          Abbrechen
+        </button>
+      </div>
+    </form>
+  );
+}
+
+function StornoDialog({
+  laufId,
+  schliessen,
+}: {
+  laufId: string;
+  schliessen: () => void;
+}) {
+  const [ergebnis, aktion, laeuft] = useActionState<Rueckmeldung | null, FormData>(
+    laufStornieren,
+    null,
+  );
+
+  if (ergebnis?.ok) {
+    return (
+      <div className="w-full">
+        <Hinweis ton="neutral">{ergebnis.meldung}</Hinweis>
+      </div>
+    );
+  }
+
+  return (
+    <form
+      action={aktion}
+      className="w-full rounded-lg border p-3.5"
+      style={{ borderColor: "var(--linie)", background: "var(--f-vertieft)" }}
+    >
+      <input type="hidden" name="lauf" value={laufId} />
+
+      <p className="text-[0.8125rem] leading-relaxed">
+        Alle Belege dieses Laufs werden als storniert gekennzeichnet. Der Grund
+        wird im Protokoll festgehalten und ist später nachvollziehbar.
+      </p>
+
+      <label className="mt-2.5 block">
+        <span className="t-mikro mb-1 block">Grund des Stornos</span>
+        <input
+          name="grund"
+          className="feld"
+          minLength={5}
+          required
+          placeholder="z. B. Netzbetreiber hat korrigierte Messwerte nachgeliefert"
+        />
+      </label>
+
+      {ergebnis && !ergebnis.ok && (
+        <p
+          className="t-mikro mt-2"
+          style={{ color: "oklch(0.52 0.19 25)" }}
+          role="alert"
+        >
+          {ergebnis.meldung}
+        </p>
+      )}
+
+      <div className="mt-3 flex gap-2">
+        <button type="submit" className="knopf knopf-warnung" disabled={laeuft}>
+          {laeuft ? "Wird storniert …" : "Storno durchführen"}
+        </button>
+        <button type="button" className="knopf knopf-rand" onClick={schliessen}>
+          Abbrechen
+        </button>
+      </div>
+    </form>
+  );
+}

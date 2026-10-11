@@ -1,0 +1,131 @@
+# Beweismittelsichtung – Ergebnis (korrigierte Fassung)
+
+Geprüft: 395 Dateien, 364 PDFs im Volltext, zwei ZIP-Archive, zusätzlich Bildrendering und manuelle Sichtung aller PDFs ohne Textebene.
+
+> **Korrektur gegenüber der ersten Fassung dieses Berichts.** Meine erste Prüfung stützte sich auf eine Volltextsuche. Zwei Dateien mit den nichtssagenden Namen `20210316102953 (1).pdf` und `20210316103002 (2).pdf` sind reine Bildscans ohne Textebene und wurden dabei nicht erfasst. Sie enthalten den **unterfertigten Kaufvertrag adplac.es®** und den **Inhaberwechselantrag für die Domain**. Meine Feststellung, der Kaufvertrag, die Punkt-II-Klausel und die DPMA-Registernummer existierten nicht, war damit falsch. Diese drei Angaben des ursprünglichen Entwurfs sind zutreffend.
+
+---
+
+## A. Prüfergebnis zu den behaupteten Beweismitteln
+
+| Behauptetes Beweismittel | Status |
+|---|---|
+| **Kaufvertrag adplac.es mit „Punkt II Platzhalter-Regelung"** | **Vorhanden und unterfertigt** – `20210316102953 (1).pdf`, 6 Seiten |
+| **DPMA-Marke RegNr. 302019235852** | **Bestätigt** – in Punkt III des Kaufvertrags wörtlich genannt |
+| **hjpe GmbH** | **Bestätigt** – Vertragspartei, GF Timo Bösch |
+| **Zahlung durch Ökovolt Solartechnik GmbH** | **Bestätigt** – Punkt IV des Kaufvertrags, Zahlung am 26.01.2021 |
+| Schriftliche Stellungnahme Andreas Wegscheider | **Nicht vorhanden.** 0 Treffer, auch nicht in den Bildscans |
+| Schriftliche Stellungnahme Susanne Messmer | **Nicht vorhanden.** 0 Treffer |
+| Ökovolt-Rückforderungsschreiben 26.02./18.03.2024 | **Nicht vorhanden.** 0 Treffer für beide Daten |
+| Qualifizierte Rangrücktritte nach § 67 IO | **Nicht vorhanden.** 0 Treffer |
+| Anwaltliche Treuhandabwicklung Kanzlei Schobesberger | **Teilweise.** Keine Treuhandvereinbarung, aber zwei Buchungen mit ausdrücklichem Treuhandbezug (siehe B.6) |
+
+**Die wörtlichen Zitate der beiden Stellungnahmen bleiben unbelegt und dürfen nicht verwendet werden.** Alles Übrige ist verifiziert.
+
+---
+
+## B. Die verifizierte Beweislage
+
+### B.1 Kaufvertrag „adplac.es®" – die zentrale Urkunde
+
+Unterfertigt in Innsbruck/Visselhövede im März 2021, Vertragsparteien:
+
+- **hjpe® Unternehmensgruppe GmbH & Co KG**, vertreten durch Geschäftsführer Timo Bösch, sowie **Timo Bösch persönlich**, Goethestr. 2, 27374 Visselhövede – „Programmierer"
+- **Benjamin Höfler**, Kapuzinergasse 32, 6020 Innsbruck – „Käufer"
+
+Unterschriften beider Parteien liegen vor (hjpe® GmbH und Timo Bösch auf Seite 5, Benjamin Höfler auf Seite 6), zusätzlich Paraphen auf jeder Seite.
+
+**Punkt I – Präambel.** Der Programmierer hat die Plattform adplac.es als App, Desktop-Anwendung und Website entwickelt. Gegenstand ist die Vermittlung von Verträgen über die Anmietung von Werbegelegenheiten. „Für die Umsetzung des Projektes beabsichtigt der Käufer eine eigene Kapitalgesellschaft zu gründen. In weiterer Folge wird der Käufer sämtliche Rechte aus diesem Vertrag auf die noch zu gründende Kapitalgesellschaft übertragen."
+
+**Punkt II – Kaufvereinbarung.** Kaufpreis **EUR 100.000,-** für die Applikation „samt allen dazugehörenden Assets wie Marken- und Urheberrecht, Internetdomain, etc. sowie jeglicher hinter der Applikation stehender Software". Ausdrücklich festgehaltene Tranchen:
+
+> am 22.07.2020 — EUR 10.000,- bezahlt an die hjpe GmbH
+> am 28.12.2020 — EUR 90.000,- bezahlt an die Typ Beteiligungs GmbH
+
+Und die entscheidende Klausel:
+
+> **„Da wie unter Punkt I. angeführt, vom Käufer eine eigene Kapitalgesellschaft gegründet werden wird, wurden bei sämtlichen Zahlungen als Verwendungszweck ‚Darlehen' angeführt. Sobald die Kapitalgesellschaft im Firmenbuch des Landesgerichtes Innsbruck eingetragen ist, verpflichtet sich der Programmierer über sämtliche erhaltene Zahlungen an die Kapitalgesellschaft Rechnung zu legen."**
+
+**Punkt III – Übertragung.** Verpflichtung zur Übergabe von Software, Lasten-/Pflichtenheft, Logos und Grafiken sowie zur Übertragung der **„zu Registernummer 302019235852 des Deutschen Patent- und Markenamtes registrierten Marke ‚adplac.es'"**, der Internet-Domain und der Datenbankrechte.
+
+**Punkt IV – weitere Entwicklung.** Das Angebot vom 24.11.2020, Nr. 2020-11.04, über EUR 200.000,- wurde vom Käufer angenommen. Weiter wörtlich:
+
+> **„Der zur Fertigstellung erforderliche Betrag wurde im Auftrag des Käufers am 26.01.2021 durch die Fa. Ökovolt Solartechnik GmbH an den Programmierer bzw. dessen Firma Typ Beteiligungs GmbH zur Auszahlung gebracht. Auch diese Zahlung erfolgte aufgrund der noch nicht gegründeten Kapitalgesellschaft mit dem Verwendungszweck ‚Darlehen Nr. 221-hjpe-01'."**
+
+Ferner: monatlicher Pauschalbetrag von EUR 15.000,- für Wartung und Weiterentwicklung angeboten.
+
+**Punkt IX.** Österreichisches Recht, Gerichtsstand Innsbruck.
+
+### B.2 Inhaberwechselantrag Domain
+
+`20210316103002 (2).pdf`, eine Seite, unterfertigt von beiden Parteien: Übertragung sämtlicher Rechte und Pflichten an der Domain **www.adplac.es** von hjpe® GmbH / Timo Bösch auf Benjamin Höfler als neuen Domaininhaber. Die Erfüllung des Kaufvertrags ist damit belegt.
+
+### B.3 Angebot hjpe GmbH vom 24.11.2020
+
+Angebot Nr. 2020-11.04 an die JB Technology GmbH über EUR 200.000,- netto für „www.adplac.es – Restarbeiten zur Markteinführung". Ausdrücklich: „Die Abrechnung und Steuerung übernimmt unsere Gesellschaft: tyb Beteiligungs GmbH". Geschäftsführung Timo Bösch.
+
+### B.4 Zahlungsbelege – lückenlose Kette
+
+| Datum | Betrag | Empfänger | Verwendungszweck laut Beleg | Beleg |
+|---|---:|---|---|---|
+| 20.07.2020 | 20.000,00 | hjpe GmbH | Eilüberweisung | Übernahmebestätigung |
+| 22.07.2020 | 10.000,00 | hjpe GmbH | **„Darlehen"** | Buchungsbestätigung |
+| 07.12.2020 | 14.800,00 | tyb Beteiligungs GmbH | **„im Auftrag von JB Technology GmbH"** | Übernahmebestätigung (Konto Mikic) |
+| 28.12.2020 | 30.000,00 | tyb Beteiligungs GmbH | „Darlehen bis Jänner 2021" | Buchungsbestätigung |
+| 28.12.2020 | 30.000,00 | tyb Beteiligungs GmbH | „Darlehens-Teilbetrag 02 bis Jänner 2021" | Buchungsbestätigung |
+| 28.12.2020 | 30.000,00 | tyb Beteiligungs GmbH | „Darlehens-Teilbetrag 03 bis Jänner 2021" | Buchungsbestätigung |
+| 26.01.2021 | 200.000,00 | tyb Beteiligungs GmbH | „Darlehen Nr. 221-hjpe-01", gezahlt durch Ökovolt | Kaufvertrag Punkt IV |
+
+Die Zahlung vom 22.07.2020 über EUR 10.000,- trägt tatsächlich den Verwendungszweck „Darlehen" – **genau wie im Kaufvertrag beschrieben**. Die Platzhalter-Klausel ist damit nicht bloß behauptet, sondern durch den Bankbeleg bestätigt.
+
+### B.5 Vermögensverzeichnis-Abgleich
+
+Im Einvernahmeprotokoll vom 20.02.2024 (ON 2.13) ist angeführt: **„Timo Bösch in Höhe von Euro 90.000.- (Darlehen)"**. Das entspricht exakt den drei Zahlungen vom 28.12.2020. Die Position wurde offengelegt.
+
+### B.6 Treuhandbezug
+
+Zwei Buchungen mit ausdrücklichem Treuhandbezug: „Bareinzahlung Treuhandschaft" EUR 15.000,- am 07.12.2020 auf dem Konto Mikic sowie „MMag. Dr. Roman Schobesberger – Treuhand Rückerstattung Kosten" EUR 2.092,- am 04.01.2021. Eine Treuhandvereinbarung selbst liegt nicht vor.
+
+### B.7 GEFION-Gruppe
+
+Präsentation vom 28.04.2021, Board of Directors: Benjamin Höfler (CIPO), **Susanne Messmer (CEO)**, **Andreas Wegscheider (CFO)**, MMag. Dr. Roman Schobesberger (CDO), Mag. Christoph Partl, Alexander Messmer (CLO). adplac.es als Vorhaben der Gruppe.
+
+### B.8 Lohnverrechnung JB Technology GmbH
+
+Vollständige Auszahlungsjournale 2021. Einzige Dienstnehmerin bis Juli 2021 ist **Daniela Mikic**, ab August 2021 zusätzlich **Marko Mikic**. Auszahlungsart durchgehend **KASSA**, also bar. Monatsbeträge zwischen EUR 208,33 (Jänner 2021) und EUR 3.460,40 (November 2021), Gesamtaufwand 2021 rund EUR 32.515,-.
+
+Zwei Folgerungen: Daniela Mikic stand in einem **Dienstverhältnis** zur JB Technology GmbH, war also nicht nur Lebensgefährtin. Und die Gesellschaft zahlte Löhne **systematisch in bar**, was Barbehebungen grundsätzlich einen legitimen Rahmen gibt. Für Dezember 2020 existieren allerdings **keine** Lohnunterlagen (Ordner `2020/DN` ist leer).
+
+---
+
+## C. Was weiterhin fehlt
+
+**Erstens die Vereinbarung vom 22.12.2020.** Der Eingang der EUR 250.000,- der SM Immobilienverwaltung GmbH am 28.12.2020 trägt im Buchungstext den Vermerk „Vereinbarung vom 22.12.2020". Diese Vereinbarung liegt nicht vor. Sie ist das wichtigste fehlende Dokument, weil sie darüber entscheidet, ob es sich um ein Darlehen oder um eine Projektfinanzierung handelte.
+
+**Zweitens ein Verwendungsnachweis für EUR 65.000,- Bargeld**, behoben am 11.01.2021 vom Konto Mikic. Kein Beleg, kein Buchungstext, keine korrespondierende Zahlung. Dazu EUR 4.631,- (18.11.2020) sowie EUR 15.000,- vom Konto des Beschuldigten am 28.12.2020 mit den unbelegten Vermerken „Mitarbeiter Lohnzahlungen" (EUR 10.000,-) und „Anzahlung Quelle" (EUR 5.000,-). In Summe **EUR 84.631,- ohne Nachweis**.
+
+**Drittens Kontounterlagen nach dem 21.05.2021.** Alle Auszüge enden an diesem Tag. Die Darlehen Messmer vom 03.08. und 04.10.2021, das SM-Darlehen vom 02.06.2021 und das Wegscheider-Darlehen vom 04.05.2022 sind vollständig unbelegt; 19,4 % des behaupteten Tatzeitraums sind nicht abgedeckt.
+
+**Viertens die Stellungnahmen Wegscheider und Messmer.** Sie existieren nicht. Als echte, unterfertigte Erklärungen wären sie das wirksamste Beweismittel überhaupt – einzuholen wären sie über den Verteidiger.
+
+---
+
+## D. Risikohinweis zum Ökovolt-Material
+
+Das Archiv `Ökovolt.zip` enthält die Aktenabschriften der Verfahren **3 St 70/25 m** und **3 St 287/25 y** der Staatsanwaltschaft Ried im Innkreis, erstellt für die CERHA HEMPEL Rechtsanwälte GmbH. Gegenstand ist eine Auseinandersetzung zwischen der Ökovolt Solartechnik GmbH und der Salzburg AG. 3 St 70/25 wurde am 02.03.2026 nach § 190 StPO eingestellt, am 16.03.2026 folgte ein Fortführungsantrag nach § 195 Abs 1 Z 3 StPO.
+
+In der eidesstättigen Erklärung des MMag. Dr. Roman Schobesberger vom 18.11.2025 wird der Beschuldigte für den 10.10.2025 als **„der Mitarbeiter der Gesellschaft, Herr Benjamin Höfler"** der Ökovolt bezeichnet. Der Ordner enthält zudem ein auf den 20.09.2026 datiertes, 60-seitiges Schreiben der Ökovolt, gezeichnet von Andreas Wegscheider.
+
+Das stützt das Argument, dass Wegscheider den Beschuldigten nicht als Betrüger behandelt. Es belegt zugleich eine fortdauernde Tätigkeit für die Ökovolt, nach der der Masseverwalter in den Berichten ON 2.6 bis ON 2.8 wiederholt vergeblich gefragt hat. Über die Verwendung ist gesondert und bewusst zu entscheiden.
+
+---
+
+## E. Bewertung
+
+Die Beweislage hat sich durch die Sichtung der Bildscans **grundlegend zugunsten des Beschuldigten verändert**.
+
+Der Kaufvertrag beantwortet die zentrale Frage des Krida-Vorwurfs. Die drei Zahlungen von je EUR 30.000,- an die tyb Beteiligungs GmbH waren kein Darlehen ohne Sicherheit und ohne Rechtsgrund, sondern **die zweite Kaufpreistranche für ein Softwareprodukt samt Marken-, Domain- und Datenbankrechten**. Der Verwendungszweck „Darlehen" ist im Vertrag selbst als buchhalterischer Platzhalter erklärt – und dieser Erklärung entspricht der Bankbeleg vom 22.07.2020, der denselben Vermerk trägt. Dem Geldabfluss stand ein Vermögenszugang gegenüber. Ein Aktivtausch ist keine Vermögensverringerung im Sinne des § 156 StGB. Der Inhaberwechselantrag belegt, dass die Gegenleistung auch tatsächlich erbracht wurde.
+
+Der Vorwurf des Masseverwalters, es gebe „keine schriftlichen Darlehensverträge", trifft zu – aber aus dem Grund, dass es kein Darlehen war. Dass der Masseverwalter diesen Vertrag nie erhalten hat, bleibt allerdings ein Versäumnis, das dem Beschuldigten zuzurechnen ist.
+
+Nicht verändert hat sich die Lage bei den **EUR 84.631,- Bargeld**. Dieser Punkt bleibt der tragfähigste Anknüpfungspunkt der Anklage und wird durch die verbesserte Beweislage im Übrigen eher noch stärker hervorgehoben.

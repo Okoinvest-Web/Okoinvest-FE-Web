@@ -1,0 +1,705 @@
+  --shadow-e2: 0 1px 2px rgba(3, 18, 43, 0.04), 0 4px 12px -4px rgba(3, 18, 43, 0.08);
+  --shadow-e3: 0 2px 4px -1px rgba(3, 18, 43, 0.05), 0 12px 28px -10px rgba(3, 18, 43, 0.16);
+  --shadow-e4: 0 4px 8px -2px rgba(3, 18, 43, 0.06), 0 24px 48px -16px rgba(3, 18, 43, 0.22);
+  --shadow-e5: 0 8px 16px -4px rgba(3, 18, 43, 0.08), 0 40px 80px -24px rgba(3, 18, 43, 0.32);
+  --shadow-gruen: 0 8px 24px -8px rgba(85, 130, 39, 0.55);
+  --shadow-navy: 0 10px 30px -12px rgba(0, 52, 115, 0.55);
+  --shadow-kante: inset 0 1px 0 rgba(255, 255, 255, 0.07);
+
+  /* Kurven (als Utilities: ease-ov-out, ease-ov-in-out, ease-ov-feder, ease-ov-betont) */
+  --ease-ov-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-ov-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-ov-feder: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-ov-betont: cubic-bezier(0.2, 0, 0, 1);
+  --ease-ov-in: cubic-bezier(0.4, 0, 1, 1);
+
+  --radius-6xl: 3rem;
+
+  --animate-ov-einblenden: ov-einblenden var(--ov-dauer-m, 240ms) var(--ease-ov-out) both;
+  --animate-ov-auftauchen: ov-auftauchen var(--ov-dauer-l, 420ms) var(--ease-ov-out) both;
+  --animate-ov-skalieren: ov-skalieren var(--ov-dauer-m, 240ms) var(--ease-ov-out) both;
+  --animate-ov-ping: ov-ping 1.8s var(--ease-ov-out) infinite;
+  --animate-ov-drehen: ov-drehen 0.8s linear infinite;
+}
+
+@keyframes ov-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+@keyframes ov-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+@keyframes ov-pulse-dot {
+  0% { box-shadow: 0 0 0 0 rgba(140, 186, 88, 0.7); }
+  70% { box-shadow: 0 0 0 10px rgba(140, 186, 88, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(140, 186, 88, 0); }
+}
+@keyframes ov-shimmer {
+  from { background-position: -200% 0; }
+  to { background-position: 200% 0; }
+}
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+
+----
+}
+
+/* Kein grauer Tap-Blitz auf Mobilgeräten. */
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Spürbares Drücken auf den Haupt-Handlungsaufrufen. `scale` statt
+   `transform`, damit bestehende translate-Hover-Effekte erhalten bleiben. */
+@media (prefers-reduced-motion: no-preference) {
+  a[style*="669933"],
+  button[style*="669933"] {
+    transition-property: background-color, color, scale, box-shadow;
+  }
+  a[style*="669933"]:active,
+  button[style*="669933"]:active {
+    scale: 0.98;
+  }
+}
+
+/* Dezente Scrollleiste im Markenton (dort, wo das System sie zeigt). */
+html {
+  scrollbar-color: #b9cda3 transparent;
+}
+
+/* Aufzählungszeichen in Markenfarbe, wo Listen welche zeigen. */
+main li::marker {
+  color: var(--ov-gruen);
+}
+
+/* ------------------------------------------------------------------
+   SICHTBARER TASTATURFOKUS
+
+   Vorher hatte KEIN einziges fokussierbares Element einen sichtbaren
+   Fokusring (gemessen: 0 von 40). Wer per Tastatur navigiert, sah nicht,
+   wo er steht – ein Verstoß gegen WCAG 2.4.7.
+
+   :focus-visible greift nur bei Tastatur-/Programmfokus, nicht beim
+   Mausklick. Der weiße Schatten unter dem grünen Ring sorgt dafür, dass
+   der Fokus auch auf grünen und dunkelblauen Flächen sichtbar bleibt.
+   ------------------------------------------------------------------ */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 3px solid var(--ov-gruen);
+  outline-offset: 2px;
+  border-radius: 4px;
+  box-shadow: 0 0 0 5px rgba(255, 255, 255, 0.9);
+}
+
+/* Auf dunklen Flächen den Ring aufhellen, damit er nicht im Grün verschwindet. */
+:where(.bg-\[\#669933\], .bg-ov-600, .bg-\[\#003473\], .bg-\[\#0a1e35\])
+  :where(a, button):focus-visible {
+  outline-color: #ffffff;
+  box-shadow: 0 0 0 5px rgba(0, 0, 0, 0.45);
+}
+
+/* ------------------------------------------------------------------
+   LESBARE ZEILENLÄNGE
+   Gemessen wurden bis zu 142 Zeichen pro Zeile – rund doppelt so viel
+   wie lesbar ist. .ov-measure begrenzt den Fließtext, ohne das Layout
+   der umgebenden Container anzufassen.
+   ------------------------------------------------------------------ */
+.ov-measure {
+  max-width: var(--ov-measure);
+}
+
+/* ------------------------------------------------------------------
+   BEWEGUNG REDUZIEREN
+   114 Elemente animieren. Wer im Betriebssystem „Bewegung reduzieren"
+   eingestellt hat, bekam das bisher trotzdem zu sehen.
+   ------------------------------------------------------------------ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* ------------------------------------------------------------------
+   FORTSCHRITTSBALKEN DES HERO-SLIDERS
+   Zeigt, wie lange der aktuelle Slide noch steht. Unter
+   prefers-reduced-motion läuft kein Autoplay, also auch kein Balken –
+   der Block oben setzt die Dauer dort ohnehin auf 0.
+   ------------------------------------------------------------------ */
+@keyframes ov-hero-fortschritt {
+  from { width: 0%; }
+  to { width: 100%; }
+}
+.ov-hero-fortschritt {
+  animation-name: ov-hero-fortschritt;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+/* Weicher Tab-Wechsel. Startet bei 0.001 statt 0 Deckkraft und endet
+   garantiert voll deckend – die alte Animation konnte bei opacity 0 hängen. */
+@media (prefers-reduced-motion: no-preference) {
+  .ov-tab-panel { animation: ov-tab-ein 220ms ease-out both; }
+}
+@keyframes ov-tab-ein {
+  from { opacity: 0.001; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* Mobile CTA-Leiste sichtbar: Zurück-nach-oben-Button darüber anheben.
+   Der Button setzt seine Position inline, deshalb !important. */
+@media (max-width: 1023px) {
+  body.ov-cta-sichtbar button[aria-label="Nach oben"] {
+    bottom: 96px !important;
+  }
+  /* Rückruf-Icon (links unten) ebenfalls über die Leiste heben */
+  body.ov-cta-sichtbar .ov-rueckruf-launcher {
+----
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.06;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+
+/* Glas-Karte für Inhalte auf Bildern / dunklen Flächen */
+.ov-glass {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+}
+
+/* Karten mit Licht-Kante beim Hover */
+/* 2.0: Schatten nicht mehr als box-shadow animiert, sondern über ein
+   Pseudo-Element per opacity (wie .ov-lift). Karten mit overflow-hidden
+   würden das Pseudo-Element abschneiden – dort steht der Schatten direkt
+   am Element, ohne Übergang (nur die Bewegung animiert). */
+.ov-card-hover {
+  position: relative;
+  isolation: isolate;
+  transition: transform 350ms cubic-bezier(0.22, 1, 0.36, 1), border-color 350ms;
+}
+.ov-card-hover::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  box-shadow: 0 2px 6px -2px rgba(15, 23, 42, 0.06), 0 24px 48px -16px rgba(15, 23, 42, 0.18);
+  opacity: 0;
+  transition: opacity 350ms cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+}
+@media (hover: hover) {
+  .ov-card-hover:hover::before { opacity: 1; }
+  .ov-card-hover.overflow-hidden:hover {
+    box-shadow: 0 2px 6px -2px rgba(15, 23, 42, 0.06), 0 24px 48px -16px rgba(15, 23, 42, 0.18);
+  }
+}
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .ov-card-hover:hover {
+    transform: translateY(-4px);
+  }
+}
+
+/* Reveal-Animation (gesteuert von <Reveal/>). Ohne JS bleibt alles sichtbar. */
+.ov-reveal {
+  /* 2.0: nur transform/opacity (kein filter: blur – teuer beim Scrollen) */
+  transition:
+    opacity 700ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 700ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: var(--ov-delay, 0ms);
+}
+.js-ready .ov-reveal:not(.is-visible) {
+  opacity: 0;
+  transform: translate3d(0, 24px, 0);
+}
+.js-ready .ov-reveal[data-dir="left"]:not(.is-visible) { transform: translate3d(-32px, 0, 0); }
+.js-ready .ov-reveal[data-dir="right"]:not(.is-visible) { transform: translate3d(32px, 0, 0); }
+.js-ready .ov-reveal[data-dir="scale"]:not(.is-visible) { transform: scale(0.96); }
+@media (prefers-reduced-motion: reduce) {
+  .js-ready .ov-reveal:not(.is-visible) { opacity: 1; transform: none; }
+}
+
+/* Schieberegler im Markenstil – für alle Rechner */
+.ov-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 8px;
+  border-radius: 9999px;
+  background: linear-gradient(to right, #669933 0%, #669933 var(--ov-fill, 50%), #dfe3ea var(--ov-fill, 50%), #dfe3ea 100%);
+  outline: none;
+}
+.ov-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 9999px;
+  background: #fff;
+  border: 2px solid #669933;
+  box-shadow: 0 2px 10px rgba(21, 26, 36, 0.2);
+  cursor: grab;
+  transition: transform 150ms;
+}
+.ov-range::-webkit-slider-thumb:active { transform: scale(1.12); cursor: grabbing; }
+.ov-range::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+  border-radius: 9999px;
+  background: #fff;
+  border: 2px solid #669933;
+  box-shadow: 0 2px 10px rgba(21, 26, 36, 0.2);
+  cursor: grab;
+}
+.ov-range:focus-visible {
+  box-shadow: 0 0 0 4px rgba(102, 153, 51, 0.3);
+  /* sichtbarer Fokusring (WCAG 2.4.7) – überschreibt `outline: none` oben */
+  outline: 3px solid var(--color-ov-600);
+  outline-offset: 4px;
+}
+
+/* Zahlen in Kennzahlen immer gleich breit */
+.ov-num { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+
+/* Scrollbare Leisten ohne sichtbare Scrollbar */
+.ov-no-scrollbar { scrollbar-width: none; }
+.ov-no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* Fließtext-Artikel (Ratgeber, Lexikon, Rechtstexte) */
+.ov-prose { color: var(--color-ink-700); font-size: 1.0625rem; line-height: 1.75; }
+.ov-prose > * + * { margin-top: 1.1em; }
+.ov-prose h2 { font-size: clamp(1.5rem, 1.2rem + 1vw, 2rem); font-weight: 800; color: var(--color-ink-900); margin-top: 2em; line-height: 1.2; }
+.ov-prose h3 { font-size: 1.25rem; font-weight: 700; color: var(--color-ink-900); margin-top: 1.6em; }
+.ov-prose a { color: var(--color-ov-700); text-decoration: underline; text-decoration-color: var(--color-ov-300); }
+.ov-prose a:hover { text-decoration-color: currentColor; }
+.ov-prose ul { list-style: disc; padding-left: 1.25em; }
+.ov-prose ol { list-style: decimal; padding-left: 1.25em; }
+.ov-prose strong { color: var(--color-ink-900); }
+
+/* Hero-Einstieg beim Laden (unabhängig vom Scroll-Observer) */
+@keyframes ov-hero-in {
+  from { opacity: 0.001; transform: translate3d(0, 22px, 0); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .ov-hero-in { animation: ov-hero-in 900ms cubic-bezier(0.22, 1, 0.36, 1) both; animation-delay: var(--ov-delay, 0ms); }
+}
+
+/* Schrittwechsel in Wizards (Konfigurator, Förder-Check) */
+@keyframes ov-step-vor { from { opacity: 0.001; transform: translate3d(24px, 0, 0); } to { opacity: 1; transform: none; } }
+@keyframes ov-step-zurueck { from { opacity: 0.001; transform: translate3d(-24px, 0, 0); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: no-preference) {
+  .ov-step-vor { animation: ov-step-vor 450ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .ov-step-zurueck { animation: ov-step-zurueck 450ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+}
+
+/* Rechtstexte: bestehendes Markup typografisch vereinheitlichen */
+.ov-legal { color: var(--color-ink-700); font-size: 16px; line-height: 1.75; }
+.ov-legal > div { max-width: none !important; padding: 0 !important; margin: 0 !important; }
+.ov-legal h2 { font-family: var(--font-display); font-size: clamp(1.35rem, 1.15rem + 0.8vw, 1.75rem) !important; font-weight: 800; color: var(--color-ink-900) !important; letter-spacing: -0.02em; margin-top: 2.2em; margin-bottom: 0.7em !important; line-height: 1.25; }
+.ov-legal section:first-child h2, .ov-legal h2:first-child { margin-top: 0; }
+.ov-legal h3 { font-family: var(--font-display); font-size: 1.15rem !important; font-weight: 700; color: var(--color-ink-900); margin-top: 1.6em !important; }
+.ov-legal section { margin-bottom: 0 !important; }
+.ov-legal a { color: var(--color-ov-700); text-decoration: underline; text-decoration-color: var(--color-ov-300); overflow-wrap: anywhere; }
+.ov-legal ul { list-style: disc; padding-left: 1.25em; }
+.ov-legal ol { list-style: decimal; padding-left: 1.25em; }
+.ov-legal strong { color: var(--color-ink-900); }
+.ov-legal p + p { margin-top: 0.75em; }
+
+/* Lange deutsche Komposita ("Energiemanagementsystem") sprengen auf dem Handy
+   sonst die Überschrift. Nur auf schmalen Bildschirmen trennen. */
+@media (max-width: 640px) {
+  h1, h2, h3, .ov-display, .ov-h1, .ov-h2 {
+    -webkit-hyphens: auto;
+    hyphens: auto;
+    hyphenate-limit-chars: 12 5 5;
+    overflow-wrap: anywhere;
+  }
+}
+
+/* ==================================================================
+   DESIGN-SYSTEM 2.0 – Motion, Flächen, Zahlen-Typo, Primitives
+   Regelwerk: docs/DESIGN.md. Alles hier animiert nur transform und
+   opacity (Ausnahme: stroke-dashoffset beim Linien-Einlauf, einmalig).
+   Unter prefers-reduced-motion greift der globale Block oben
+   (Dauer 0.01 ms) – Endzustände sind per fill-mode gesichert.
+   ================================================================== */
+
+:root {
+  /* Dauern */
+  --ov-dauer-xs: 120ms;    /* Farbe, Fokus */
+  --ov-dauer-s: 180ms;     /* Hover, Press, Tooltip */
+  --ov-dauer-m: 240ms;     /* Dialog, Toast, Tabs, Panels */
+  --ov-dauer-l: 420ms;     /* Abschnittswechsel, Stagger-Element */
+  --ov-dauer-xl: 700ms;    /* Reveal beim Scrollen, Diagramm-Einlauf */
+  --ov-dauer-zahl: 1400ms; /* Zahlen hochzählen */
+  --ov-stagger: 60ms;      /* Versatz je Element */
+
+  --ov-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ov-ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ov-ease-feder: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Elevation als Variablen (für Inline-Styles) – identisch zu shadow-e1 … e5 */
+  --ov-e1: 0 1px 2px rgba(3, 18, 43, 0.04), 0 1px 1px rgba(3, 18, 43, 0.02);
+  --ov-e2: 0 1px 2px rgba(3, 18, 43, 0.04), 0 4px 12px -4px rgba(3, 18, 43, 0.08);
+  --ov-e3: 0 2px 4px -1px rgba(3, 18, 43, 0.05), 0 12px 28px -10px rgba(3, 18, 43, 0.16);
+  --ov-e4: 0 4px 8px -2px rgba(3, 18, 43, 0.06), 0 24px 48px -16px rgba(3, 18, 43, 0.22);
+  --ov-e5: 0 8px 16px -4px rgba(3, 18, 43, 0.08), 0 40px 80px -24px rgba(3, 18, 43, 0.32);
+
+  /* Dunkle Flächen (Navy-Familie, von tief nach erhaben) */
+  --ov-nacht-0: #020b1c;  /* Leitstand, Footer-Grund */
+  --ov-nacht-1: #03122b;  /* = navy-950, Standard-Dunkelfläche */
+  --ov-nacht-2: #071c3d;  /* Karte auf Dunkel */
+  --ov-nacht-3: #0c2650;  /* Hover/aktiv auf Dunkel */
+  --ov-nacht-linie: rgba(255, 255, 255, 0.1);
+
+  /* Abstände (4er-Raster) – Rhythmus fluid */
+  --ov-abstand-abschnitt: clamp(4rem, 2.6rem + 5.5vw, 8rem);
+  --ov-abstand-block: clamp(2rem, 1.5rem + 2vw, 3.5rem);
+  --ov-abstand-karte: clamp(1.25rem, 1rem + 0.8vw, 2rem);
+}
+
+/* Klassen in @layer components: Tailwind-Utilities (z. B. rounded-2xl,
+   bg-*, w-*) dürfen sie im Markup überschreiben. */
+@layer components {
+/* ---------- Typo-Skala (Ergänzung zu ov-display/h1/h2/h3/lead) ---------- */
+.ov-h4 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(1.05rem, 1rem + 0.25vw, 1.2rem);
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+.ov-text { font-size: clamp(0.95rem, 0.92rem + 0.12vw, 1.0625rem); line-height: 1.65; }
+.ov-klein { font-size: 0.875rem; line-height: 1.55; }
+.ov-mikro { font-size: 0.78rem; line-height: 1.45; letter-spacing: 0.005em; }
+.ov-overline {
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+/* Zahlen-Typo: tabellarisch, Display-Schrift, enge Laufweite.
+   Einheit (span.ov-einheit) kleiner und leichter, damit die Zahl führt. */
+.ov-kpi, .ov-kpi-l, .ov-kpi-xl {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+.ov-kpi { font-size: clamp(1.5rem, 1.3rem + 0.8vw, 2rem); }
+.ov-kpi-l { font-size: clamp(2rem, 1.6rem + 1.6vw, 3rem); }
+.ov-kpi-xl { font-size: clamp(2.6rem, 1.8rem + 3.4vw, 4.5rem); letter-spacing: -0.04em; }
+.ov-einheit { font-size: 0.55em; font-weight: 700; letter-spacing: -0.01em; margin-left: 0.18em; opacity: 0.72; }
+
+/* ---------- Flächen ---------- */
+.ov-flaeche {
+  background: #fff;
+  border-radius: 1.5rem;
+  box-shadow: var(--ov-e1), 0 0 0 1px rgba(223, 227, 234, 0.8);
+}
+.ov-flaeche-erhaben {
+  background: #fff;
+  border-radius: 1.5rem;
+  box-shadow: var(--ov-e3), 0 0 0 1px rgba(223, 227, 234, 0.6);
+}
+.ov-flaeche-ruhig {
+  background: var(--color-sand-50);
+  border-radius: 1.5rem;
+  box-shadow: 0 0 0 1px rgba(235, 231, 216, 0.9);
+}
+.ov-flaeche-dunkel {
+  background: var(--ov-nacht-2);
+  color: #fff;
+  border-radius: 1.5rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 0 0 1px var(--ov-nacht-linie);
+}
+/* Marken-Verläufe für Hero-Kacheln und „Nächster Schritt“ */
+.ov-verlauf-nacht {
+  background:
+    radial-gradient(120% 80% at 0% 0%, rgba(102, 153, 51, 0.22), transparent 55%),
+    radial-gradient(90% 70% at 100% 100%, rgba(31, 90, 161, 0.35), transparent 60%),
+    var(--ov-nacht-1);
+}
+.ov-verlauf-gruen {
+  background:
+    radial-gradient(100% 90% at 100% 0%, rgba(174, 208, 131, 0.35), transparent 55%),
+    linear-gradient(135deg, var(--color-ov-600), var(--color-ov-800));
+}
+/* Haarlinie, die zu den Rändern ausläuft */
+.ov-trenner {
+  height: 1px;
+  border: 0;
+  background: linear-gradient(90deg, transparent, var(--color-ink-200) 15%, var(--color-ink-200) 85%, transparent);
+}
+
+/* ---------- Motion-Muster ---------- */
+
+/* Hover-Lift: Bewegung per transform, Schatten über Pseudo-Element per
+   opacity (kein box-shadow-Repaint). Nicht mit .ov-noise kombinieren. */
+.ov-lift {
+  position: relative;
+  isolation: isolate;
+  transition: transform var(--ov-dauer-s) var(--ov-ease-out);
+}
+.ov-lift::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  box-shadow: var(--ov-e4);
+  opacity: 0;
+  transition: opacity var(--ov-dauer-m) var(--ov-ease-out);
+  pointer-events: none;
+}
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .ov-lift:hover { transform: translate3d(0, -3px, 0); }
+}
+@media (hover: hover) {
+  .ov-lift:hover::before { opacity: 1; }
+}
+.ov-lift:focus-visible::before { opacity: 1; }
+
+/* Press: kurzes Eindrücken bei allem Klickbaren */
+.ov-press { transition: transform var(--ov-dauer-s) var(--ov-ease-out); }
+@media (prefers-reduced-motion: no-preference) {
+  .ov-press:active { transform: scale(0.975); transition-duration: 60ms; }
+}
+
+/* Stagger: Kinder erscheinen nacheinander, sobald der Elternblock sichtbar
+   wird (RevealObserver setzt is-visible). Der Elternblock selbst bleibt
+   stehen. Index automatisch bis 12 Kinder oder per style="--i: n". */
+.ov-stagger > * {
+  transition:
+    opacity var(--ov-dauer-l) var(--ov-ease-out),
+    transform var(--ov-dauer-l) var(--ov-ease-out);
+  transition-delay: calc(var(--i, 0) * var(--ov-stagger) + var(--ov-delay, 0ms));
+}
+.ov-stagger > :nth-child(2) { --i: 1; }
+.ov-stagger > :nth-child(3) { --i: 2; }
+.ov-stagger > :nth-child(4) { --i: 3; }
+.ov-stagger > :nth-child(5) { --i: 4; }
+.ov-stagger > :nth-child(6) { --i: 5; }
+.ov-stagger > :nth-child(7) { --i: 6; }
+.ov-stagger > :nth-child(8) { --i: 7; }
+.ov-stagger > :nth-child(9) { --i: 8; }
+.ov-stagger > :nth-child(10) { --i: 9; }
+.ov-stagger > :nth-child(11) { --i: 10; }
+.ov-stagger > :nth-child(n + 12) { --i: 11; }
+.js-ready .ov-stagger:not(.is-visible) > * { opacity: 0; transform: translate3d(0, 16px, 0); }
+@media (prefers-reduced-motion: reduce) {
+  .js-ready .ov-stagger:not(.is-visible) > * { opacity: 1; transform: none; }
+}
+
+/* Einmalige Einstiege (beim Mounten, ohne Observer) */
+@keyframes ov-einblenden { from { opacity: 0.001; } to { opacity: 1; } }
+@keyframes ov-auftauchen { from { opacity: 0.001; transform: translate3d(0, 12px, 0); } to { opacity: 1; transform: none; } }
+@keyframes ov-skalieren { from { opacity: 0.001; transform: scale(0.96); } to { opacity: 1; transform: none; } }
+@keyframes ov-ping { 0% { transform: scale(1); opacity: 0.55; } 80%, 100% { transform: scale(2.6); opacity: 0; } }
+@keyframes ov-drehen { to { transform: rotate(360deg); } }
+.ov-ein { animation: ov-auftauchen var(--ov-dauer-l) var(--ov-ease-out) both; animation-delay: var(--ov-delay, 0ms); }
+
+/* Live-Punkt mit Ping (transform statt box-shadow) */
+.ov-live-punkt { position: relative; display: inline-block; width: 0.5rem; height: 0.5rem; border-radius: 9999px; background: var(--color-ov-400); }
+.ov-live-punkt::after { content: ""; position: absolute; inset: 0; border-radius: inherit; background: inherit; animation: ov-ping 1.8s var(--ov-ease-out) infinite; }
+
+/* Skeleton: Grundfläche + wandernder Lichtstreifen (transform) */
+.ov-skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--color-ink-100);
+  border-radius: 0.6rem;
+}
+.ov-skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.65), transparent);
+  animation: ov-skeleton 1.5s var(--ov-ease-in-out) infinite;
+}
+.ov-skeleton-dunkel { background: rgba(255, 255, 255, 0.08); }
+.ov-skeleton-dunkel::after { background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent); }
+@keyframes ov-skeleton { to { transform: translateX(100%); } }
+@media (prefers-reduced-motion: reduce) { .ov-skeleton::after { display: none; } }
+
+/* Diagramm-Einlauf: Balken wachsen (scale), Linien zeichnen sich.
+   Linien brauchen pathLength="1". Start, sobald ein Elternelement
+   .is-visible trägt (Reveal), oder sofort mit .ov-sofort. */
+@keyframes ov-wachsen-y { from { transform: scaleY(0); } to { transform: none; } }
+@keyframes ov-wachsen-x { from { transform: scaleX(0); } to { transform: none; } }
+@keyframes ov-zeichnen { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+.ov-balken-y { transform-box: fill-box; transform-origin: 50% 100%; }
+.ov-balken-x { transform-box: fill-box; transform-origin: 0% 50%; }
+.ov-linie { stroke-dasharray: 1; stroke-dashoffset: 0; }
+@media (prefers-reduced-motion: no-preference) {
+  .js-ready .ov-reveal:not(.is-visible) .ov-balken-y { transform: scaleY(0); }
+  .js-ready .ov-reveal:not(.is-visible) .ov-balken-x { transform: scaleX(0); }
+  .js-ready .ov-reveal:not(.is-visible) .ov-linie { stroke-dashoffset: 1; }
+  .js-ready .ov-reveal:not(.is-visible) .ov-flaeche-ein { opacity: 0; }
+  .is-visible .ov-balken-y, .ov-sofort .ov-balken-y, .ov-balken-y.ov-sofort {
+    animation: ov-wachsen-y var(--ov-dauer-xl) var(--ov-ease-out) both;
+    animation-delay: calc(var(--i, 0) * 40ms + var(--ov-delay, 0ms));
+  }
+  .is-visible .ov-balken-x, .ov-sofort .ov-balken-x, .ov-balken-x.ov-sofort {
+    animation: ov-wachsen-x var(--ov-dauer-xl) var(--ov-ease-out) both;
+    animation-delay: calc(var(--i, 0) * 40ms + var(--ov-delay, 0ms));
+  }
+  .is-visible .ov-linie, .ov-sofort .ov-linie, .ov-linie.ov-sofort {
+    animation: ov-zeichnen 1100ms var(--ov-ease-in-out) both;
+    animation-delay: var(--ov-delay, 0ms);
+  }
+  .is-visible .ov-flaeche-ein, .ov-sofort .ov-flaeche-ein {
+    animation: ov-einblenden 600ms var(--ov-ease-out) 500ms both;
+  }
+}
+
+/* Fortschrittsring: Kreis mit pathLength="1", --ov-p = Anteil 0…1 */
+  @keyframes ov-ring { from { stroke-dashoffset: var(--ov-p, 0); } to { stroke-dashoffset: 0; } }
+  .ov-ring-wert { stroke-dasharray: var(--ov-p, 0) 1; stroke-dashoffset: 0; transition: stroke-dasharray var(--ov-dauer-xl) var(--ov-ease-out); }
+  @media (prefers-reduced-motion: no-preference) {
+    .js-ready .ov-reveal:not(.is-visible) .ov-ring-wert { stroke-dashoffset: var(--ov-p, 0); }
+    .is-visible .ov-ring-wert, .ov-sofort .ov-ring-wert { animation: ov-ring 1100ms var(--ov-ease-out) both; animation-delay: var(--ov-delay, 0ms); }
+  }
+
+  /* Fortschritt per scaleX (kein width-Repaint) */
+.ov-fortschritt { transform-origin: 0 50%; transition: transform var(--ov-dauer-xl) var(--ov-ease-out); }
+
+/* Erfolgs-Feedback: Kreis federt, Haken zeichnet sich */
+@keyframes ov-erfolg-pop { 0% { transform: scale(0.6); opacity: 0.001; } 60% { transform: scale(1.06); opacity: 1; } 100% { transform: none; opacity: 1; } }
+.ov-erfolg { animation: ov-erfolg-pop 520ms var(--ov-ease-out) both; }
+.ov-erfolg .ov-linie { animation: ov-zeichnen 420ms var(--ov-ease-out) 220ms both; }
+
+/* Overlays: Dialog (natives <dialog>), Toast, Tooltip */
+@keyframes ov-dialog-ein { from { opacity: 0.001; transform: translate3d(0, 12px, 0) scale(0.98); } to { opacity: 1; transform: none; } }
+@keyframes ov-blatt-ein { from { transform: translate3d(0, 100%, 0); } to { transform: none; } }
+@keyframes ov-toast-ein { from { opacity: 0.001; transform: translate3d(0, 16px, 0) scale(0.97); } to { opacity: 1; transform: none; } }
+@keyframes ov-toast-aus { to { opacity: 0; transform: translate3d(0, 8px, 0) scale(0.97); } }
+@keyframes ov-tooltip-ein { from { opacity: 0.001; transform: translate3d(0, 4px, 0); } to { opacity: 1; transform: none; } }
+
+dialog.ov-dialog {
+  margin: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  max-width: min(var(--ov-dialog-breite, 36rem), calc(100vw - 2rem));
+  width: 100%;
+  overflow: visible;
+  color: inherit;
+}
+dialog.ov-dialog::backdrop {
+  background: rgba(3, 18, 43, 0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+dialog.ov-dialog[open] { animation: ov-dialog-ein var(--ov-dauer-m) var(--ov-ease-out) both; }
+dialog.ov-dialog[open]::backdrop { animation: ov-einblenden var(--ov-dauer-m) var(--ov-ease-out) both; }
+@media (max-width: 639px) {
+  dialog.ov-dialog.ov-dialog-blatt { margin: auto 0 0; max-width: 100vw; }
+  dialog.ov-dialog.ov-dialog-blatt[open] { animation: ov-blatt-ein 320ms var(--ov-ease-out) both; }
+}
+body:has(dialog.ov-dialog[open]) { overflow: hidden; }
+
+.ov-toast-ein { animation: ov-toast-ein 320ms var(--ov-ease-out) both; }
+.ov-toast-aus { animation: ov-toast-aus 200ms var(--ov-ease-in-out) both; }
+.ov-tooltip { animation: ov-tooltip-ein var(--ov-dauer-s) var(--ov-ease-out) both; }
+
+/* Tabs: Indikator gleitet per transform (Breite per scaleX) */
+.ov-tab-indikator {
+  position: absolute;
+  left: 0;
+  width: 100px;
+  transform-origin: 0 50%;
+  transition: transform var(--ov-dauer-m) var(--ov-ease-out);
+}
+}
+
+/* Muss den (ungelayerten) Reveal-Startzustand schlagen: Stagger-Eltern und
+   reine Auslöser (Reveal dir="ohne", z. B. um Diagramme) bleiben stehen. */
+.js-ready .ov-reveal[data-dir="ohne"]:not(.is-visible) { opacity: 1; transform: none; }
+.js-ready .ov-reveal.ov-stagger:not(.is-visible) { opacity: 1; transform: none; }
+
+/* View Transitions: weicher Seitenwechsel (Dokument-Navigation und
+   document.startViewTransition über mitUebergang aus ui/motion.js) */
+@view-transition { navigation: auto; }
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(root) { animation: 160ms var(--ov-ease-in-out) both ov-vt-aus; }
+  ::view-transition-new(root) { animation: 280ms var(--ov-ease-out) 60ms both ov-vt-ein; }
+}
+@keyframes ov-vt-aus { to { opacity: 0; } }
+@keyframes ov-vt-ein { from { opacity: 0; transform: translate3d(0, 6px, 0); } }
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
+}
+
+/* Fokus-Ring als Klasse und für dunkle Container (.ov-dunkel) */
+.ov-fokus:focus-visible {
+  outline: 3px solid var(--color-ov-600);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 5px rgba(255, 255, 255, 0.9);
+}
+.ov-dunkel :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline-color: #fff;
+  box-shadow: 0 0 0 5px rgba(0, 0, 0, 0.45);
+}
+
+/* ==================================================================
+   2.0 KONTRAST-SICHERUNGEN (UX-Audit P0, zentral statt 250 Einzelstellen)
+   In @layer utilities und mit niedriger Spezifität: hover:/focus:-Varianten
+   im Markup gewinnen weiterhin.
+   ================================================================== */
+@layer utilities {
+  /* Weiße Schrift auf Markengrün 500 (3,4:1) → Fläche ov-600 (4,6:1).
+     Große Schrift/Icons wären mit 3:1 erlaubt, kleine Labels nicht. */
+  .text-white.bg-ov-500 {
+    background-color: var(--color-ov-600);
+  }
+
+  /* Feldgrenzen ≥ 3:1 (WCAG 1.4.11): helle Rahmen an Eingabefeldern
+     werden auf ink-350 angehoben. Checkboxen/Radios/Regler ausgenommen.
+     Spezifität (0,1,1): schlägt ring-ink-200, verliert gegen focus:/hover:. */
+  input.ring-ink-100:where(:not([type="checkbox"], [type="radio"], [type="range"], [type="hidden"])),
+  select.ring-ink-100,
+  textarea.ring-ink-100,
+  input.ring-ink-200:where(:not([type="checkbox"], [type="radio"], [type="range"], [type="hidden"])),
+  select.ring-ink-200,
+  textarea.ring-ink-200,
+  input.ring-ink-300:where(:not([type="checkbox"], [type="radio"], [type="range"], [type="hidden"])),
+  select.ring-ink-300,
+  textarea.ring-ink-300 {
+    --tw-ring-color: var(--color-ink-350);
+  }
+  input.border-ink-100:where(:not([type="checkbox"], [type="radio"], [type="range"], [type="hidden"])),
+  select.border-ink-100,
+  textarea.border-ink-100,
+  input.border-ink-200:where(:not([type="checkbox"], [type="radio"], [type="range"], [type="hidden"])),
+  select.border-ink-200,
+  textarea.border-ink-200,
+  input.border-ink-300:where(:not([type="checkbox"], [type="radio"], [type="range"], [type="hidden"])),
+  select.border-ink-300,
+  textarea.border-ink-300 {
+    border-color: var(--color-ink-350);
+  }
+}

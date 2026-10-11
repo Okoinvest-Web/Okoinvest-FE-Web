@@ -1,0 +1,275 @@
+<template>
+  <div>
+    <PageHeader title="Reservierungen und Schäden" :subtitle="untertitel" />
+
+    <div class="p-6">
+      <section class="mb-8">
+        <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <h2 class="text-base font-semibold text-ink-gray-8">Reservierungen</h2>
+          <FormControl v-model="nurKommend" type="select" :options="zeitOptionen" />
+        </div>
+
+        <!-- Belegung als Balken über die nächsten vier Wochen -->
+        <div
+          v-if="kommende.length"
+          class="mb-4 rounded-lg border border-outline-gray-2 bg-surface-white p-4"
+        >
+          <div class="mb-2 flex gap-2 text-xs text-ink-gray-5">
+            <span class="w-44 shrink-0">Gegenstand</span>
+            <span class="flex-1">heute bis in {{ TAGE_FENSTER }} Tagen</span>
+          </div>
+          <div class="space-y-1.5">
+            <div v-for="r in kommende" :key="r.name" class="flex items-center gap-2">
+              <span class="w-44 shrink-0 truncate text-sm text-ink-gray-8" :title="r.asset_name">
+                {{ r.asset_name }}
+              </span>
+              <div class="relative h-5 flex-1 rounded" style="background: var(--viz-neutral-soft)">
+                <div
+                  class="absolute inset-y-0 rounded"
+                  :style="{
+                    left: anteil(r.from_date) + '%',
+                    width: Math.max(2, anteil(r.to_date) - anteil(r.from_date)) + '%',
+                    background: balkenFarbe(r.level),
+                  }"
+                  :title="r.employee_name + ': ' + r.from_date + ' bis ' + r.to_date"
+                />
+              </div>
+              <span class="w-36 shrink-0 truncate text-xs text-ink-gray-6">
+                {{ r.employee_name }}
+              </span>
+            </div>
+          </div>
+          <p class="mt-2 text-xs text-ink-gray-4">
+            Überschneidungen sind eingefärbt wie eine Warnung – zwei bestätigte Reservierungen
+            desselben Geräts lösen sich nicht von selbst auf.
+          </p>
+        </div>
+
+        <DataTable
+          :columns="resSpalten"
+          :rows="gefilterteReservierungen"
+          :loading="reservierungen.loading"
+          empty-text="Keine Reservierung."
+        >
+          <template #zelle-asset_name="{ zeile }">
+            <RouterLink
+              :to="'/inventory/' + zeile.asset"
+              class="text-ink-gray-9 underline decoration-outline-gray-3 underline-offset-2"
+            >
+              {{ zeile.asset_name }}
+            </RouterLink>
+          </template>
+          <template #zelle-zeitraum="{ zeile }">
+            {{ zeile.from_date }} <span class="text-ink-gray-4">bis</span> {{ zeile.to_date }}
+          </template>
+          <template #zelle-reservation_state="{ zeile }">
+            <Badge :theme="resThema(zeile.reservation_state)">
+              {{ RES[zeile.reservation_state] || zeile.reservation_state }}
+            </Badge>
+          </template>
+          <template #zelle-befund="{ zeile }">
+            <StatusDot
+              v-if="zeile.conflict_with"
+              level="warning"
+              :text="'überschneidet sich mit ' + zeile.conflict_with"
+              klein
+            />
+            <span v-else class="text-sm text-ink-gray-5">frei</span>
+          </template>
+          <template #zelle-aktion="{ zeile }">
+            <div class="flex flex-wrap gap-1">
+              <Button
+                v-if="zeile.reservation_state === 'requested'"
+                size="sm"
+                @click="setze(zeile.name, 'confirmed')"
+              >
+                Bestätigen
+              </Button>
+              <Button
+                v-if="['requested', 'confirmed'].includes(zeile.reservation_state)"
+                size="sm"
+                variant="subtle"
+                @click="setze(zeile.name, 'cancelled')"
+              >
+                Absagen
+              </Button>
+            </div>
+          </template>
+        </DataTable>
+      </section>
+
+      <section>
+        <h2 class="mb-3 text-base font-semibold text-ink-gray-8">Schäden</h2>
+        <DataTable
+          :columns="schadenSpalten"
+          :rows="schaeden.data || []"
+          :loading="schaeden.loading"
+          empty-text="Kein Schaden gemeldet."
+        >
+          <template #zelle-asset_name="{ zeile }">
+            <RouterLink
+              :to="'/inventory/' + zeile.asset_tag"
+              class="text-ink-gray-9 underline decoration-outline-gray-3 underline-offset-2"
+            >
+              {{ zeile.asset_name }}
+            </RouterLink>
+          </template>
+          <template #zelle-severity="{ zeile }">
+            <StatusDot
+              :level="schweregradStufe(zeile.severity)"
+              :text="GRAD[zeile.severity]"
+              klein
+            />
+          </template>
+          <template #zelle-repair_cost_cents="{ zeile }">
+            {{ euro(zeile.repair_cost_cents) }}
+          </template>
+          <template #zelle-damage_state="{ zeile }">
+            <Badge :theme="schadenThema(zeile.damage_state)">
+              {{ SCHADEN[zeile.damage_state] || zeile.damage_state }}
+            </Badge>
+          </template>
+          <template #zelle-aktion="{ zeile }">
+            <div v-if="zeile.open" class="flex flex-wrap gap-1">
+              <Button size="sm" @click="setzeSchaden(zeile.name, 'repaired')">Repariert</Button>
+              <Button size="sm" variant="subtle" @click="setzeSchaden(zeile.name, 'written_off')">
+                Abschreiben
+              </Button>
+            </div>
+          </template>
+        </DataTable>
+        <p class="mt-3 text-xs text-ink-gray-4">
+          „Repariert“ stellt den Gegenstand zurück ins Lager, „Abschreiben“ mustert ihn aus. Ohne
+          diesen Schritt hängen Geräte dauerhaft in „In Reparatur“ – der häufigste stille
+          Bestandsfehler.
+        </p>
+      </section>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed, ref } from 'vue'
+import { Badge, Button, FormControl, createResource, toast } from 'frappe-ui'
+import PageHeader from '@/components/PageHeader.vue'
+import DataTable from '@/components/DataTable.vue'
+import StatusDot from '@/components/StatusDot.vue'
+import { balkenFarbe, euro, fehlerText, schweregradStufe } from '@/viz'
+
+const TAGE_FENSTER = 28
+
+const RES = {
+  requested: 'Angefragt',
+  confirmed: 'Bestätigt',
+  cancelled: 'Abgesagt',
+  fulfilled: 'Erledigt',
+}
+const GRAD = { high: 'Schwer', medium: 'Mittel', low: 'Leicht' }
+const SCHADEN = {
+  new: 'Neu',
+  in_repair: 'In Reparatur',
+  repaired: 'Repariert',
+  accepted: 'Hingenommen',
+  written_off: 'Abgeschrieben',
+}
+
+const nurKommend = ref('kommend')
+
+const reservierungen = createResource({ url: 'netops.api.inventar.reservation_list', auto: true })
+const schaeden = createResource({ url: 'netops.api.inventar.damage_list', auto: true })
+const zustandSetzen = createResource({ url: 'netops.api.inventar.set_reservation_state' })
+const schadenSetzen = createResource({ url: 'netops.api.inventar.set_damage_state' })
+
+const zeitOptionen = [
+  { label: 'Laufende und kommende', value: 'kommend' },
+  { label: 'Alle', value: '' },
+]
+
+const gefilterteReservierungen = computed(() => {
+  const liste = reservierungen.data || []
+  return nurKommend.value === 'kommend' ? liste.filter((r) => r.upcoming) : liste
+})
+
+const kommende = computed(() =>
+  (reservierungen.data || []).filter(
+    (r) => r.upcoming && ['confirmed', 'requested'].includes(r.reservation_state),
+  ),
+)
+
+const resSpalten = [
+  { key: 'asset_name', label: 'Gegenstand', width: '240px' },
+  { key: 'employee_name', label: 'Für', width: '180px' },
+  { key: 'zeitraum', label: 'Zeitraum', numeric: true, width: '220px' },
+  { key: 'purpose', label: 'Zweck', muted: true },
+  { key: 'reservation_state', label: 'Stand', width: '130px' },
+  { key: 'befund', label: 'Konflikt', width: '230px' },
+  { key: 'aktion', label: '', width: '200px' },
+]
+
+const schadenSpalten = [
+  { key: 'asset_name', label: 'Gegenstand', width: '230px' },
+  { key: 'summary', label: 'Schaden' },
+  { key: 'severity', label: 'Schwere', width: '120px' },
+  { key: 'age_days', label: 'Alter (T)', align: 'right', numeric: true, width: '100px' },
+  { key: 'repair_cost_cents', label: 'Kosten', align: 'right', numeric: true, width: '120px' },
+  { key: 'damage_state', label: 'Stand', width: '150px' },
+  { key: 'aktion', label: '', width: '200px' },
+]
+
+const untertitel = computed(() => {
+  const r = (reservierungen.data || []).filter((x) => x.upcoming).length
+  const s = (schaeden.data || []).filter((x) => x.open).length
+  return r + ' laufende Reservierungen · ' + s + ' offene Schäden'
+})
+
+/** Anteil eines Datums am Fenster von heute bis in TAGE_FENSTER Tagen. */
+function anteil(datum) {
+  const heute = new Date()
+  heute.setHours(12, 0, 0, 0)
+  const ziel = new Date(String(datum) + 'T12:00:00')
+  const tage = (ziel.getTime() - heute.getTime()) / 86400000
+  return Math.max(0, Math.min(100, (tage / TAGE_FENSTER) * 100))
+}
+
+async function setze(name, zustand) {
+  try {
+    await zustandSetzen.submit({ name, state: zustand })
+    toast.create({ message: 'Reservierung ' + (RES[zustand] || zustand), type: 'success' })
+    await reservierungen.fetch()
+  } catch (fehler) {
+    toast.create({ message: fehlerText(fehler), type: 'error' })
+  }
+}
+
+async function setzeSchaden(name, zustand) {
+  try {
+    const ergebnis = await schadenSetzen.submit({ name, state: zustand })
+    toast.create({
+      message:
+        'Schaden ' +
+        (SCHADEN[zustand] || zustand) +
+        ', Gegenstand: ' +
+        (ergebnis.asset_state || '–'),
+      type: 'success',
+    })
+    await schaeden.fetch()
+  } catch (fehler) {
+    toast.create({ message: fehlerText(fehler), type: 'error' })
+  }
+}
+
+function resThema(wert) {
+  return (
+    { requested: 'orange', confirmed: 'green', cancelled: 'gray', fulfilled: 'blue' }[wert] ||
+    'gray'
+  )
+}
+
+function schadenThema(wert) {
+  return (
+    { new: 'orange', in_repair: 'orange', repaired: 'green', accepted: 'gray', written_off: 'red' }[
+      wert
+    ] || 'gray'
+  )
+}
+</script>

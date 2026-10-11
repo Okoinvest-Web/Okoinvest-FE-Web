@@ -1,0 +1,187 @@
+<script setup lang="ts">
+/**
+ * Stempeluhr des Subunternehmerportals.
+ *
+ * Das meistbenutzte Element der ganzen App: zweimal täglich, oft mit
+ * Handschuhen, oft in Eile. Deshalb genau eine große Fläche pro Aktion und
+ * keine Auswahl, die man erst treffen muss — für den Polier steht die Kolonne
+ * als Liste darunter.
+ *
+ * Der Standort wird nur im Augenblick des Stempelns abgefragt. Fehlt er, wird
+ * die Stempelung trotzdem angenommen und gekennzeichnet: In einer Halle gibt es
+ * kein GPS, und der Arbeitsbeginn darf daran nicht scheitern.
+ */
+import { computed, onMounted, ref } from 'vue'
+
+import AppIcon from '@/components/AppIcon.vue'
+import { datumZeit } from '@/lib/format'
+import { portal, type Kolonnenmitglied, type Stempelrichtung } from '@/lib/portal'
+import { usePortal } from '@/stores/portal'
+import { useUi } from '@/stores/ui'
+
+const props = defineProps<{ auftrag?: string }>()
+
+const store = usePortal()
+const ui = useUi()
+
+interface Zustand {
+  eingestempelt: boolean
+  in_pause: boolean
+  seit?: string
+}
+
+const zustaende = ref<Record<string, Zustand>>({})
+const laeuft = ref<string>('')
+
+const ich = computed(() => store.daten?.ich ?? null)
+
+/** Ohne Polierrolle stempelt jeder nur sich selbst. */
+const stempelbar = computed<Kolonnenmitglied[]>(() => {
+  if (store.istPolier) return store.kolonne
+  return store.kolonne.filter((person) => person.name === ich.value?.name)
+})
+
+function zustand(person: string): Zustand {
+  return zustaende.value[person] ?? { eingestempelt: false, in_pause: false }
+}
+
+async function zustandLaden(person: string) {
+  try {
+    zustaende.value = { ...zustaende.value, [person]: await portal.stempelStatus(person) }
+  } catch {
+    // Offline: Der zuletzt bekannte Zustand bleibt stehen.
+  }
+}
+
+async function stempeln(person: Kolonnenmitglied, richtung: Stempelrichtung) {
+  if (laeuft.value) return
+  laeuft.value = person.name
+  try {
+    const ergebnis = await store.stempeln(person.name, richtung, undefined, props.auftrag)
+
+    if (ergebnis.ortung_verweigert) {
+      ui.warnung(`${richtung} erfasst — ohne Ortung. Der Eintrag ist gekennzeichnet.`)
+    } else if (!ergebnis.innerhalb_geofence) {
+      ui.warnung(
+        `${richtung} erfasst, aber ${ergebnis.entfernung_m} m von der Baustelle entfernt.`,
+      )
+    } else {
+      ui.erfolg(`${person.vollname}: ${richtung} um ${datumZeit(ergebnis.zeitpunkt).slice(-5)}`)
+    }
+    await zustandLaden(person.name)
+  } catch (fehler) {
+    ui.fehler((fehler as Error).message)
+  } finally {
+    laeuft.value = ''
+  }
+}
+
+onMounted(() => {
+  for (const person of stempelbar.value) void zustandLaden(person.name)
+})
+</script>
+
+<template>
+  <section class="space-y-3">
+    <div v-if="!store.aktuelleBaustelle" class="karte p-4">
+      <label class="beschriftung" for="stempel-baustelle">Baustelle</label>
+      <select id="stempel-baustelle" v-model="store.aktuelleBaustelle" class="feld">
+        <option value="">– bitte wählen –</option>
+        <option v-for="b in store.baustellen" :key="b.name" :value="b.name">
+          {{ b.anlage_name }}
+        </option>
+      </select>
+      <p class="mt-2 text-xs text-slate-500">
+        Ohne Baustelle kann nicht gestempelt werden — der Standort wird gegen sie geprüft.
+      </p>
+    </div>
+
+    <template v-else>
+      <div class="flex items-center gap-2 text-sm text-slate-500">
+        <AppIcon name="anlage" :groesse="18" />
+        <span class="flex-1 truncate">{{ store.baustelle(store.aktuelleBaustelle)?.anlage_name }}</span>
+        <button class="text-xs font-medium text-marke-600 hover:underline"
+                @click="store.aktuelleBaustelle = ''">
+          wechseln
+        </button>
+      </div>
+
+      <article v-for="person in stempelbar" :key="person.name" class="karte p-4">
+        <div class="mb-3 flex items-center gap-2">
+          <span class="flex-1 font-semibold">{{ person.vollname }}</span>
+          <span v-if="person.drittstaat" class="abzeichen bg-slate-100 text-slate-600
+                       dark:bg-slate-800 dark:text-slate-300" title="Meldepflichtig">
+            Drittstaat
+          </span>
+          <span
+            class="abzeichen"
+            :class="
+              zustand(person.name).in_pause
+                ? 'bg-amber-100 text-amber-900'
+                : zustand(person.name).eingestempelt
+                  ? 'bg-green-100 text-green-800'
+                  : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'
+            "
+          >
+            {{
+              zustand(person.name).in_pause
+                ? 'in Pause'
+                : zustand(person.name).eingestempelt
+                  ? 'anwesend'
+                  : 'abwesend'
+            }}
+          </span>
+        </div>
+
+        <p v-if="zustand(person.name).seit" class="mb-3 text-xs text-slate-400">
+          seit {{ datumZeit(zustand(person.name).seit) }}
+        </p>
+
+        <!-- Genau eine große Fläche je möglicher Aktion -->
+        <div class="grid gap-2" :class="zustand(person.name).eingestempelt ? 'grid-cols-2' : ''">
+          <button
+            v-if="!zustand(person.name).eingestempelt && !zustand(person.name).in_pause"
+            class="min-h-[64px] rounded-xl bg-ok text-lg font-bold text-white active:scale-[0.98]"
+            :disabled="laeuft === person.name"
+            @click="stempeln(person, 'Ein')"
+          >
+            Einstempeln
+          </button>
+
+          <template v-if="zustand(person.name).eingestempelt">
+            <button
+              class="min-h-[64px] rounded-xl border-2 border-warnung text-base font-semibold
+                     text-warnung active:scale-[0.98]"
+              :disabled="laeuft === person.name"
+              @click="stempeln(person, 'Pause Beginn')"
+            >
+              Pause
+            </button>
+            <button
+              class="min-h-[64px] rounded-xl bg-slate-700 text-lg font-bold text-white
+                     active:scale-[0.98]"
+              :disabled="laeuft === person.name"
+              @click="stempeln(person, 'Aus')"
+            >
+              Ausstempeln
+            </button>
+          </template>
+
+          <button
+            v-if="zustand(person.name).in_pause"
+            class="min-h-[64px] rounded-xl bg-marke-600 text-lg font-bold text-white
+                   active:scale-[0.98]"
+            :disabled="laeuft === person.name"
+            @click="stempeln(person, 'Pause Ende')"
+          >
+            Pause beenden
+          </button>
+        </div>
+      </article>
+
+      <p v-if="!stempelbar.length" class="karte p-6 text-center text-sm text-slate-500">
+        Für dieses Konto ist keine Person hinterlegt. Bitte bei ÖKOVOLT melden.
+      </p>
+    </template>
+  </section>
+</template>

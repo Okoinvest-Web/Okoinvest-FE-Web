@@ -1,0 +1,236 @@
+<script setup lang="ts">
+/**
+ * Tägliche Personalmeldung — Pflicht bei Drittstaatsangehörigen.
+ *
+ * Die Meldung geht der Arbeit voraus: Wer nicht gemeldet ist, kann nicht
+ * eingestempelt werden. Deshalb ist sie bewusst in wenigen Sekunden erledigt —
+ * Häkchen setzen, absenden. Die Nachweise prüft der Server und zeigt hier an,
+ * wo etwas fehlt.
+ */
+import { computed, onMounted, ref } from 'vue'
+
+import AppIcon from '@/components/AppIcon.vue'
+import { resource } from '@/lib/api'
+import { datum, datumZeit, isoDatum, tageBis } from '@/lib/format'
+import { usePortal } from '@/stores/portal'
+import { useUi } from '@/stores/ui'
+
+const store = usePortal()
+const ui = useUi()
+
+interface MeldungZeile {
+  mitarbeiter: string
+  vollname?: string
+  drittstaat?: 0 | 1
+  taetigkeit?: string
+  geplante_stunden?: number
+  nachweis_vollstaendig?: 0 | 1
+  hinweis?: string
+}
+
+interface Meldung {
+  name?: string
+  supplier: string
+  anlage: string
+  datum: string
+  status: string
+  zeilen: MeldungZeile[]
+  gemeldet_am?: string
+  alle_nachweise_gueltig?: 0 | 1
+}
+
+const meldung = ref<Meldung | null>(null)
+const ausgewaehlt = ref<Set<string>>(new Set())
+const laedt = ref(true)
+const speichert = ref(false)
+
+const bereitsGemeldet = computed(() => meldung.value?.status === 'Gemeldet')
+
+/** Nachweise, die heute oder demnächst ablaufen — der Polier soll es früh wissen. */
+function nachweisHinweis(person: { ausweis_gueltig_bis?: string; bewilligung_gueltig_bis?: string; drittstaat: 0 | 1 }) {
+  if (!person.drittstaat) return null
+  const fristen = [person.ausweis_gueltig_bis, person.bewilligung_gueltig_bis].filter(Boolean)
+  if (!fristen.length) return { text: 'Nachweise fehlen', klasse: 'text-fehler' }
+
+  const kleinste = Math.min(...fristen.map((f) => tageBis(f) ?? 9999))
+  if (kleinste < 0) return { text: 'Nachweis abgelaufen', klasse: 'text-fehler' }
+  if (kleinste <= 30) return { text: `Nachweis läuft in ${kleinste} Tagen ab`, klasse: 'text-warnung' }
+  return null
+}
+
+function umschalten(person: string) {
+  const neu = new Set(ausgewaehlt.value)
+  if (neu.has(person)) neu.delete(person)
+  else neu.add(person)
+  ausgewaehlt.value = neu
+}
+
+async function heutigeLaden() {
+  laedt.value = true
+  try {
+    if (!store.aktuelleBaustelle || !store.daten) return
+    const treffer = await resource.liste<Meldung & { name: string }>('Personalmeldung', {
+      fields: ['name', 'supplier', 'anlage', 'datum', 'status', 'gemeldet_am',
+               'alle_nachweise_gueltig'],
+      filters: {
+        supplier: store.daten.supplier,
+        anlage: store.aktuelleBaustelle,
+        datum: isoDatum(),
+      },
+      limit_page_length: 1,
+    })
+
+    if (treffer.length) {
+      meldung.value = (await resource.lesen('Personalmeldung', treffer[0].name)) as Meldung
+      ausgewaehlt.value = new Set(meldung.value.zeilen.map((z) => z.mitarbeiter))
+    } else {
+      meldung.value = null
+      // Vorbelegung: wer gestern gemeldet war, ist meist auch heute da.
+      ausgewaehlt.value = new Set(store.kolonne.map((p) => p.name))
+    }
+  } catch (fehler) {
+    ui.warnung(`Meldung konnte nicht geladen werden: ${(fehler as Error).message}`)
+  } finally {
+    laedt.value = false
+  }
+}
+
+async function absenden() {
+  if (!store.daten || !store.aktuelleBaustelle) return
+  if (!ausgewaehlt.value.size) {
+    ui.warnung('Bitte mindestens eine Person auswählen.')
+    return
+  }
+
+  speichert.value = true
+  try {
+    const zeilen = [...ausgewaehlt.value].map((mitarbeiter) => ({ mitarbeiter }))
+    const daten = {
+      doctype: 'Personalmeldung',
+      supplier: store.daten.supplier,
+      anlage: store.aktuelleBaustelle,
+      datum: isoDatum(),
+      status: 'Gemeldet',
+      zeilen,
+    }
+
+    if (meldung.value?.name) {
+      await resource.aktualisieren('Personalmeldung', meldung.value.name, daten)
+    } else {
+      await resource.anlegen('Personalmeldung', daten)
+    }
+
+    ui.erfolg(`${zeilen.length} Personen gemeldet.`)
+    await heutigeLaden()
+    await store.uebersichtLaden()
+  } catch (fehler) {
+    ui.fehler((fehler as Error).message)
+  } finally {
+    speichert.value = false
+  }
+}
+
+onMounted(async () => {
+  if (!store.geladen) await store.laden()
+  await heutigeLaden()
+})
+</script>
+
+<template>
+  <div class="mx-auto max-w-feld space-y-4">
+    <header>
+      <h2 class="text-xl font-bold">Personalmeldung</h2>
+      <p class="text-sm text-slate-500">{{ datum(new Date()) }} · {{ store.firmenname }}</p>
+    </header>
+
+    <p
+      v-if="!store.meldepflichtig"
+      class="karte p-4 text-sm text-slate-600 dark:text-slate-300"
+    >
+      Für Ihr Unternehmen besteht keine tägliche Meldepflicht.
+      <span class="block text-xs text-slate-400">{{ store.daten?.meldepflicht.grund }}</span>
+    </p>
+
+    <template v-else>
+      <div v-if="!store.aktuelleBaustelle" class="karte p-4">
+        <label class="beschriftung" for="pm-baustelle">Baustelle</label>
+        <select id="pm-baustelle" v-model="store.aktuelleBaustelle" class="feld"
+                @change="heutigeLaden">
+          <option value="">– bitte wählen –</option>
+          <option v-for="b in store.baustellen" :key="b.name" :value="b.name">
+            {{ b.anlage_name }}
+          </option>
+        </select>
+      </div>
+
+      <template v-else>
+        <div
+          v-if="bereitsGemeldet"
+          class="flex items-center gap-3 rounded-xl border-2 border-ok bg-green-50 p-4
+                 dark:bg-green-900/30"
+        >
+          <AppIcon name="check" :groesse="22" class="shrink-0 text-ok" />
+          <div class="flex-1 text-sm">
+            <p class="font-semibold text-green-900 dark:text-green-200">
+              Für heute gemeldet
+            </p>
+            <p class="text-green-800 dark:text-green-300">
+              {{ datumZeit(meldung?.gemeldet_am) }} · {{ meldung?.zeilen.length }} Personen
+            </p>
+          </div>
+        </div>
+
+        <p v-if="laedt" class="py-6 text-center text-sm text-slate-500">Wird geladen …</p>
+
+        <ul v-else class="space-y-2">
+          <li v-for="person in store.kolonne" :key="person.name">
+            <label
+              class="karte flex items-center gap-3 p-3"
+              :class="ausgewaehlt.has(person.name) ? 'border-marke-500' : ''"
+            >
+              <input
+                type="checkbox"
+                class="h-6 w-6 shrink-0"
+                :checked="ausgewaehlt.has(person.name)"
+                @change="umschalten(person.name)"
+              />
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-2">
+                  <span class="truncate font-semibold">{{ person.vollname }}</span>
+                  <span v-if="person.ist_polier"
+                        class="abzeichen bg-marke-100 text-marke-700">Polier</span>
+                </div>
+                <div class="text-xs text-slate-500">
+                  {{ person.qualifikation || (person.drittstaat ? 'Drittstaat' : 'EU/EWR') }}
+                </div>
+                <div v-if="nachweisHinweis(person)" class="text-xs font-medium"
+                     :class="nachweisHinweis(person)!.klasse">
+                  {{ nachweisHinweis(person)!.text }}
+                </div>
+              </div>
+            </label>
+          </li>
+        </ul>
+
+        <p v-if="!store.kolonne.length" class="karte p-6 text-center text-sm text-slate-500">
+          Für Ihr Unternehmen sind keine Mitarbeiter hinterlegt. Bitte bei ÖKOVOLT melden.
+        </p>
+
+        <button
+          v-if="store.kolonne.length"
+          class="knopf-primaer w-full"
+          :disabled="speichert || !ausgewaehlt.size"
+          @click="absenden"
+        >
+          <AppIcon name="check" :groesse="20" />
+          {{ speichert ? 'Wird gemeldet …' : `${ausgewaehlt.size} Personen melden` }}
+        </button>
+
+        <p class="pb-4 text-xs text-slate-400">
+          Nur gemeldete Personen können heute eingestempelt werden. Eine Ergänzung im
+          Laufe des Tages ist möglich.
+        </p>
+      </template>
+    </template>
+  </div>
+</template>

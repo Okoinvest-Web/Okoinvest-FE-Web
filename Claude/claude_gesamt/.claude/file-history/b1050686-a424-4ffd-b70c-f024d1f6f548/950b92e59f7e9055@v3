@@ -1,0 +1,320 @@
+import "server-only";
+
+import {
+  DOCTYPE,
+  getCount,
+  getList,
+  type Artikel,
+  type Co2Zertifikat,
+  type DeliveryNote,
+  type EgMitglied,
+  type Energiegemeinschaft,
+  type Fernwartungssitzung,
+  type Fernwartungszugang,
+  type FrappeFile,
+  type Ladepunkt,
+  type PortalBenutzer,
+  type PvAnlage,
+  type PvAnlagendoku,
+  type PvErtrag,
+  type PvKomponente,
+  type PvPruefbefund,
+  type PvStoerung,
+  type PvWartung,
+  type SalesInvoice,
+  type Sicherheitsvorfall,
+  type SupportTicket,
+  type Tankkarte,
+  type Vollmacht,
+} from "./doctypes.ts";
+import { istDemoModus } from "./demo/modus.ts";
+import * as demo from "./demo/quelle.ts";
+
+/**
+ * Datenzugriff fuer den Portalbereich.
+ *
+ * Jede Funktion hat zwei Wege: den Demonstrationsbetrieb mit
+ * Beispieldaten und den Regelbetrieb gegen Frappe. Die Seiten sehen
+ * davon nichts - sie bekommen in beiden Faellen dieselben Typen.
+ *
+ * Im Regelbetrieb wird bewusst NICHT nach Kunde gefiltert: Frappe wendet
+ * die Berechtigungen des angemeldeten Benutzers serverseitig an. Die
+ * Zuordnung "Benutzer sieht nur seine Anlagen" gehoert als User
+ * Permission nach Frappe - ein Filter hier waere nur Kosmetik.
+ */
+
+export async function ladeAnlagen(limit = 50): Promise<PvAnlage[]> {
+  if (istDemoModus()) return demo.anlagen();
+
+  return getList<PvAnlage>(DOCTYPE.anlage, {
+    fields: [
+      "name",
+      "anlagen_name",
+      "kunde",
+      "standort",
+      "plz",
+      "ort",
+      "zaehlpunkt",
+      "netzbetreiber",
+      "netzebene",
+      "tor_typ",
+      "leistung_kwp",
+      "speicher_kwh",
+      "inbetriebnahme",
+      "status",
+      "soll_ertrag_kwh",
+    ],
+    orderBy: "anlagen_name asc",
+    limit,
+  });
+}
+
+export async function ladeAnlage(name: string): Promise<PvAnlage | null> {
+  if (istDemoModus()) return demo.anlage(name);
+
+  const treffer = await getList<PvAnlage>(DOCTYPE.anlage, {
+    filters: [["name", "=", name]],
+    limit: 1,
+  });
+  return treffer[0] ?? null;
+}
+
+export async function ladeKomponenten(anlage?: string): Promise<PvKomponente[]> {
+  if (istDemoModus()) return demo.komponenten(anlage);
+
+  return getList<PvKomponente>(DOCTYPE.komponente, {
+    filters: anlage ? [["anlage", "=", anlage]] : undefined,
+    orderBy: "kategorie asc",
+    limit: 200,
+  });
+}
+
+export async function ladeErtraege(
+  anlage?: string,
+  limit = 365,
+): Promise<PvErtrag[]> {
+  if (istDemoModus()) return demo.ertraege(anlage, limit);
+
+  return getList<PvErtrag>(DOCTYPE.ertrag, {
+    fields: [
+      "name",
+      "anlage",
+      "datum",
+      "ertrag_kwh",
+      "eigenverbrauch_kwh",
+      "einspeisung_kwh",
+      "netzbezug_kwh",
+      "spezifisch_kwh_kwp",
+      "performance_ratio",
+    ],
+    filters: anlage ? [["anlage", "=", anlage]] : undefined,
+    orderBy: "datum desc",
+    limit,
+  });
+}
+
+export async function ladeStoerungen(limit = 30): Promise<PvStoerung[]> {
+  if (istDemoModus()) return demo.stoerungen();
+
+  return getList<PvStoerung>(DOCTYPE.stoerung, {
+    orderBy: "modified desc",
+    limit,
+  });
+}
+
+export async function ladeWartungen(): Promise<PvWartung[]> {
+  if (istDemoModus()) return demo.wartungen();
+
+  return getList<PvWartung>(DOCTYPE.wartung, {
+    orderBy: "faellig_am asc",
+    limit: 50,
+  });
+}
+
+export async function ladeRechnungen(limit = 30): Promise<SalesInvoice[]> {
+  if (istDemoModus()) return demo.rechnungen();
+
+  return getList<SalesInvoice>(DOCTYPE.rechnung, {
+    fields: [
+      "name",
+      "customer",
+      "posting_date",
+      "due_date",
+      "grand_total",
+      "outstanding_amount",
+      "currency",
+      "status",
+    ],
+    orderBy: "posting_date desc",
+    limit,
+  });
+}
+
+export async function ladeLieferscheine(limit = 30): Promise<DeliveryNote[]> {
+  if (istDemoModus()) return demo.lieferscheine();
+
+  return getList<DeliveryNote>(DOCTYPE.lieferschein, {
+    fields: ["name", "customer", "posting_date", "status", "grand_total", "currency"],
+    orderBy: "posting_date desc",
+    limit,
+  });
+}
+
+export async function ladeDokumente(limit = 60): Promise<FrappeFile[]> {
+  if (istDemoModus()) return demo.dokumente();
+
+  return getList<FrappeFile>(DOCTYPE.dokument, {
+    fields: [
+      "name",
+      "file_name",
+      "file_url",
+      "file_size",
+      "attached_to_doctype",
+      "attached_to_name",
+      "is_private",
+      "creation",
+    ],
+    orderBy: "creation desc",
+    limit,
+  });
+}
+
+export async function ladeLadepunkte(): Promise<Ladepunkt[]> {
+  if (istDemoModus()) return demo.ladepunkte();
+
+  return getList<Ladepunkt>(DOCTYPE.ladepunkt, {
+    orderBy: "bezeichnung asc",
+    limit: 100,
+  });
+}
+
+export async function ladeLadevorgaenge(limit = 60) {
+  if (istDemoModus()) return demo.ladevorgaenge(limit);
+
+  return getList(DOCTYPE.ladevorgang, {
+    orderBy: "start desc",
+    limit,
+  });
+}
+
+export async function ladeTankkarten(): Promise<Tankkarte[]> {
+  if (istDemoModus()) return demo.tankkarten();
+
+  return getList<Tankkarte>(DOCTYPE.tankkarte, {
+    orderBy: "kartennummer asc",
+    limit: 100,
+  });
+}
+
+export async function ladeZertifikate(): Promise<Co2Zertifikat[]> {
+  if (istDemoModus()) return demo.zertifikate();
+
+  return getList<Co2Zertifikat>(DOCTYPE.zertifikat, {
+    orderBy: "zeitraum_von desc",
+    limit: 40,
+  });
+}
+
+export async function ladeVollmachten(): Promise<Vollmacht[]> {
+  if (istDemoModus()) return demo.vollmachten();
+
+  return getList<Vollmacht>(DOCTYPE.vollmacht, {
+    orderBy: "erteilt_am desc",
+    limit: 20,
+  });
+}
+
+export async function ladeGemeinschaft(): Promise<Energiegemeinschaft | null> {
+  if (istDemoModus()) return demo.gemeinschaft();
+
+  const treffer = await getList<Energiegemeinschaft>(DOCTYPE.gemeinschaft, {
+    limit: 1,
+  });
+  return treffer[0] ?? null;
+}
+
+export async function ladeGemeinschaftsMitglieder(): Promise<EgMitglied[]> {
+  if (istDemoModus()) return demo.gemeinschaftsMitglieder();
+
+  return getList<EgMitglied>(DOCTYPE.gemeinschaftsmitglied, {
+    orderBy: "anteil_prozent desc",
+    limit: 100,
+  });
+}
+
+export async function ladeAnlagendoku(anlage?: string): Promise<PvAnlagendoku[]> {
+  if (istDemoModus()) return demo.anlagendoku(anlage);
+
+  return getList<PvAnlagendoku>(DOCTYPE.anlagendoku, {
+    filters: anlage ? [["anlage", "=", anlage]] : undefined,
+    limit: 100,
+  });
+}
+
+export async function ladePruefbefunde(): Promise<PvPruefbefund[]> {
+  if (istDemoModus()) return demo.pruefbefunde();
+
+  return getList<PvPruefbefund>(DOCTYPE.pruefbefund, {
+    orderBy: "geprueft_am desc",
+    limit: 40,
+  });
+}
+
+export async function ladeFernwartung(): Promise<Fernwartungszugang[]> {
+  if (istDemoModus()) return demo.fernwartung();
+
+  return getList<Fernwartungszugang>(DOCTYPE.fernwartung, { limit: 50 });
+}
+
+export async function ladeFernwartungsSitzungen(): Promise<Fernwartungssitzung[]> {
+  if (istDemoModus()) return demo.fernwartungsSitzungen();
+
+  return getList<Fernwartungssitzung>(DOCTYPE.fernwartungssitzung, {
+    orderBy: "modified desc",
+    limit: 50,
+  });
+}
+
+export async function ladeVorfaelle(): Promise<Sicherheitsvorfall[]> {
+  if (istDemoModus()) return demo.vorfaelle();
+
+  return getList<Sicherheitsvorfall>(DOCTYPE.vorfall, {
+    orderBy: "bekannt_seit desc",
+    limit: 40,
+  });
+}
+
+export async function ladePortalBenutzer(): Promise<PortalBenutzer[]> {
+  if (istDemoModus()) return demo.portalBenutzer();
+
+  return getList<PortalBenutzer>(DOCTYPE.portalbenutzer, { limit: 100 });
+}
+
+export async function ladeTickets(): Promise<SupportTicket[]> {
+  if (istDemoModus()) return demo.tickets();
+
+  return getList<SupportTicket>(DOCTYPE.ticket, {
+    orderBy: "modified desc",
+    limit: 40,
+  });
+}
+
+export async function ladeArtikel(): Promise<Artikel[]> {
+  if (istDemoModus()) return demo.artikel();
+
+  return getList<Artikel>(DOCTYPE.artikel, {
+    filters: [["disabled", "=", 0]],
+    orderBy: "item_group asc",
+    limit: 100,
+  });
+}
+
+export async function zaehleOffeneStoerungen(): Promise<number> {
+  if (istDemoModus()) {
+    return demo
+      .stoerungen()
+      .filter((s) => s.status !== "Geschlossen").length;
+  }
+
+  return getCount(DOCTYPE.stoerung, [["status", "!=", "Geschlossen"]]);
+}

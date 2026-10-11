@@ -1,0 +1,154 @@
+/**
+ * Klickt die Backup-Seite durch: alle fünf Ansichten, ein Aktionsdialog
+ * mit Grund, und die Sperre ohne Grund.
+ *
+ * frappe-ui 0.1.278 rendert `FormControl type="select"` als Combobox-Knopf
+ * mit Popup-Liste, nicht als natives <select>. Deshalb wird geklickt.
+ */
+import { spawn } from 'node:child_process'
+import { mkdtempSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+
+const EDGE = 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'
+const port = 9374
+const profil = mkdtempSync(join(tmpdir(), 'edge-cdp-'))
+const kind = spawn(
+  EDGE,
+  ['--headless=new','--disable-gpu','--no-first-run','--no-default-browser-check',
+   '--window-size=1500,1150', `--remote-debugging-port=${port}`, `--user-data-dir=${profil}`, 'about:blank'],
+  { stdio: 'ignore' },
+)
+const schlafe = (ms) => new Promise((r) => setTimeout(r, ms))
+let ziel = null
+for (let i = 0; i < 40 && !ziel; i++) {
+  await schlafe(250)
+  try { ziel = (await (await fetch(`http://127.0.0.1:${port}/json/list`)).json()).find((t) => t.type === 'page') } catch {}
+}
+const ws = new WebSocket(ziel.webSocketDebuggerUrl)
+await new Promise((r) => (ws.onopen = r))
+let id = 0
+const offen = new Map()
+let konsole = []
+ws.onmessage = (ev) => {
+  const m = JSON.parse(ev.data)
+  if (m.id && offen.has(m.id)) { offen.get(m.id)(m.result); offen.delete(m.id) }
+  if (m.method === 'Runtime.consoleAPICalled' && m.params.type === 'error')
+    konsole.push(m.params.args.map((a) => a.description || a.value).join(' ').split('\n')[0])
+  if (m.method === 'Runtime.exceptionThrown')
+    konsole.push('exception: ' + String(m.params.exceptionDetails.exception?.description || m.params.exceptionDetails.text).split('\n')[0])
+}
+const sende = (me, p = {}) => new Promise((r) => { const n = ++id; offen.set(n, r); ws.send(JSON.stringify({ id: n, method: me, params: p })) })
+const js = async (a) => (await sende('Runtime.evaluate', { returnByValue: true, expression: a, awaitPromise: true })).result.value
+await sende('Runtime.enable'); await sende('Page.enable')
+const SCRATCH = process.env.SCRATCH || '.'
+async function schuss(name) {
+  const d = await sende('Page.captureScreenshot', { format: 'png' })
+  writeFileSync(join(SCRATCH, name), Buffer.from(d.data, 'base64'))
+}
+
+/**
+ * Echter Mausklick per CDP. `.click()` im DOM reicht nicht: die Combobox
+ * hoert auf pointerdown, nicht auf click.
+ */
+async function klick(ausdruck) {
+  const r = await js(`(() => { const e = ${ausdruck}; if (!e) return null;
+    e.scrollIntoView({ block: 'center' });
+    const b = e.getBoundingClientRect();
+    return JSON.stringify({ x: b.x + b.width / 2, y: b.y + b.height / 2 }) })()`)
+  if (!r) return 'nicht gefunden'
+  const { x, y } = JSON.parse(r)
+  // mouseMoved zuerst und `buttons` mitgeben: ohne beides erzeugt Chrome
+  // kein click-Ereignis, und die Vue-Handler laufen nie an.
+  await sende('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y })
+  await sende('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', buttons: 1, clickCount: 1 })
+  await sende('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', buttons: 0, clickCount: 1 })
+  return 'geklickt'
+}
+
+/**
+ * Popup-Eintraege haengen direkt unter <body>, ausserhalb von #inhalt -
+ * darueber lassen sie sich sicher von gleichnamigem Seiteninhalt trennen.
+ */
+const IM_POPUP = (bedingung) =>
+  `[...document.querySelectorAll('body > div *')].filter(e =>
+     e.children.length === 0 && !e.closest('#inhalt') && (${bedingung})).at(-1)`
+const TEXT = (t) => IM_POPUP(`e.textContent.trim() === ${JSON.stringify(t)}`)
+
+/** Waehlt eine Ansicht ueber die Combobox im Seitenkopf. */
+async function ansicht(beschriftung) {
+  await klick("[...document.querySelectorAll('[role=combobox]')].find(b => b.closest('header'))")
+  await schlafe(600)
+  const ok = await klick(TEXT(beschriftung))
+  await schlafe(1500)
+  return ok
+}
+
+await sende('Page.navigate', { url: 'http://localhost:8080/backup' })
+for (let i = 0; i < 80; i++) { if ((await js('document.body.innerText.trim().length')) > 500) break; await schlafe(250) }
+await schlafe(900)
+
+const ANSICHTEN = ['Ziele', 'Wiederherstellungspunkte', 'Dateien', 'Aufträge und Läufe', 'Prüfung']
+for (const a of ANSICHTEN) {
+  konsole = []
+  const ok = await ansicht(a)
+  const inhalt = await js("document.querySelector('#inhalt > div > div.p-6')?.innerText || ''")
+  const zeilen = await js("document.querySelectorAll('tbody tr').length")
+  console.log(`\n=== ${a} === (${ok}) Zeichen ${inhalt.length} · Tabellenzeilen ${zeilen}`)
+  console.log('  ', inhalt.replace(/\n+/g, ' | ').slice(0, 520))
+  if (konsole.length) console.log('   FEHLER:', konsole.join(' ; '))
+  await schuss(`bu-${ANSICHTEN.indexOf(a)}.png`)
+}
+
+// --- Dateien: Ziel auf S3 umstellen, nicht herunterladbare Zeile prüfen
+console.log('\n=== Dateien: S3 ===')
+await ansicht('Dateien')
+await klick("[...document.querySelectorAll('[role=combobox]')].filter(b => !b.closest('header')).at(-1)")
+await schlafe(600)
+console.log('Zielauswahl:', (await js("[...document.querySelectorAll('body > div *')].filter(e=>e.children.length===0 && !e.closest('#inhalt') && e.textContent.trim()).map(e=>e.textContent.trim()).join(' / ')")).slice(0, 300))
+await klick(IM_POPUP('/s3/i.test(e.textContent)'))
+await schlafe(1500)
+console.log('S3-Tabelle:', (await js("document.querySelector('tbody')?.innerText || 'leer'")).replace(/\n+/g, ' | ').slice(0, 520))
+
+// --- Aktionsdialog
+console.log('\n=== Aktionsdialog ===')
+await ansicht('Ziele')
+konsole = []
+console.log('Gesperrte „Jetzt sichern"-Knoepfe:', await js("[...document.querySelectorAll('button')].filter(x=>x.innerText.trim()==='Jetzt sichern' && x.disabled).length"))
+console.log('Klick:', await klick("[...document.querySelectorAll('button')].find(x => x.innerText.trim() === 'Jetzt sichern' && !x.disabled)"))
+await schlafe(1000)
+const dialogText = await js(`(() => {
+  const d = [...document.querySelectorAll('div')].filter(e => e.className && String(e.className).includes('fixed') && e.innerText.includes('Grund'))
+  return d.length ? d[d.length-1].innerText : 'KEIN DIALOG'
+})()`)
+console.log('Dialog:', dialogText.replace(/\n+/g, ' | ').slice(0, 420))
+const gesperrt = await js(`(() => {
+  const b = [...document.querySelectorAll('button')].filter(x => x.innerText.trim() === 'Starten')
+  return b.length ? b.at(-1).disabled : null
+})()`)
+console.log('Starten ohne Grund gesperrt:', gesperrt)
+await schuss('bu-dialog.png')
+
+await js(`(() => {
+  const i = [...document.querySelectorAll('input[type=text]')].at(-1)
+  const setzen = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set
+  setzen.call(i, 'Vor dem Update auf 2026.1')
+  i.dispatchEvent(new Event('input', { bubbles: true }))
+})()`)
+await schlafe(600)
+console.log('Starten mit Grund frei:', await js("![...document.querySelectorAll('button')].filter(x=>x.innerText.trim()==='Starten').at(-1)?.disabled"))
+await klick("[...document.querySelectorAll('button')].filter(x=>x.innerText.trim()==='Starten').at(-1)")
+await schlafe(1800)
+const meldung = await js("[...document.querySelectorAll('body *')].map(e=>e.textContent).find(t=>t && t.length<200 && /Angesto|f\\u00fchrt aus/.test(t)) || '(keine Meldung)'")
+console.log('Rückmeldung:', String(meldung).replace(/\n+/g, ' ').slice(0, 220))
+await schuss('bu-danach.png')
+
+// --- Der Lauf muss unter "von Hand" mit Grund auftauchen
+console.log('\n=== Läufe danach ===')
+await ansicht('Aufträge und Läufe')
+console.log('Läufe „von Hand":', await js("[...document.querySelectorAll('tbody tr')].filter(r=>r.innerText.includes('von Hand')).length"))
+console.log('Grund sichtbar:', await js("document.body.innerText.includes('Vor dem Update auf 2026.1')"))
+if (konsole.length) console.log('FEHLER:', konsole.join(' ; '))
+await schuss('bu-lauf.png')
+
+ws.close(); kind.kill()

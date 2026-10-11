@@ -1,0 +1,433 @@
+     1	// src/lib/plattform/finanzen/pacht.js
+     2	//
+     3	// Pachtabrechnung (Gutschrift an den Eigentümer) je Fälligkeit – reine Funktionen.
+     4	//
+     5	// Vertrag (Auszug, camelCase wie im Backend):
+     6	//   modell           fest | indexiert | umsatz
+     7	//   pachtJahr        Jahrespacht in € (fest/indexiert; bei Umsatzbeteiligung ohne Bedeutung)
+     8	//   index            { reihe, basisJahr, basisIndex?, schwellePct, anteilPct, nurErhoehung }   (nur indexiert)
+     9	//   umsatz           { anteil (0,04 = 4 %), erloesCtKwh, mindestJahr }                          (nur umsatz)
+    10	//   reservierungJahr Reservierungsprämie in €/Jahr bis zum Pachtbeginn
+    11	//   flaecheHa        nur für Texte (€/ha)
+    12	//
+    13	// Ergebnis { positionen[{art, artikel, text, menge, einheit, preis, betrag}], netto, erklaerung[], klaerung|null, basis{…} }
+    14	
+    15	import { indexErklaerung, indexiertePacht } from "./indexierung.js";
+    16	import { INDEX_REIHEN } from "./konstanten.js";
+    17	import { datumDe, jahrVon, rund, rund2, summe, zahlDe } from "./basis.js";
+    18	
+    19	const zeitraumText = (f) => `${datumDe(f.von)} – ${datumDe(f.bis)}${f.anteil < 0.9999 ? ` (anteilig ${f.tage}/${f.tageVoll} Tage)` : ""}`;
+    20	
+    21	/** Umsatzbeteiligung einer Periode: max(Anteil × Erlös, Mindestpacht anteilig) */
+    22	export function umsatzbeteiligung({ ertragKwh, erloesCtKwh, anteil, mindestJahr = 0, faktorJahr = 1 }) {
+    23	  const erloesEur = rund2((Number(ertragKwh) || 0) * (Number(erloesCtKwh) || 0) / 100);
+    24	  const anteilEur = rund2(erloesEur * (Number(anteil) || 0));
+    25	  const mindestEur = rund2((Number(mindestJahr) || 0) * faktorJahr);
+    26	  const betrag = Math.max(anteilEur, mindestEur);
+    27	  return { erloesEur, anteilEur, mindestEur, betrag: rund2(betrag), mindestGreift: mindestEur > anteilEur };
+    28	}
+    29	
+    30	/**
+    31	 * Positionen einer fälligen Periode.
+    32	 * f:  Fälligkeit aus faelligkeiten() { phase, von, bis, anteil, faktorJahr, … }
+    33	 * kontext: { indexTabelle: [{reihe, jahr, wert}], ertragKwh (nur umsatz: Erzeugung der Periode lt. Monatswerten), ertragFehlt: [monate] }
+    34	 */
+    35	export function pachtPositionen(vertrag, f, { indexTabelle = [], ertragKwh = null, ertragFehlt = [] } = {}) {
+    36	  const positionen = [];
+    37	  const erklaerung = [];
+    38	  let klaerung = null;
+    39	  const ha = Number(vertrag.flaecheHa) || 0;
+    40	  const jahr = jahrVon(f.von);
+    41	
+    42	  if (f.phase === "reservierung") {
+    43	    const betrag = rund2(Number(vertrag.reservierungJahr) * f.faktorJahr);
+    44	    positionen.push({ art: "reservierung", artikel: "PACHT-RES", text: `Reservierungsprämie ${zeitraumText(f)}`, menge: rund(f.faktorJahr, 4), einheit: "Jahr", preis: rund2(vertrag.reservierungJahr), betrag });
+    45	    erklaerung.push(`Bis zum Pachtbeginn erhalten Sie eine Reservierungsprämie von ${zahlDe(vertrag.reservierungJahr, 2)} € pro Jahr${ha ? ` (${zahlDe(vertrag.reservierungJahr / ha, 2)} €/ha)` : ""}, abgerechnet nach Ablauf jedes Zeitraums.`);
+    46	    return { positionen, netto: summe(positionen, "betrag"), erklaerung, klaerung, basis: { jahresbetrag: rund2(vertrag.reservierungJahr) } };
+    47	  }
+    48	
+    49	  if (vertrag.modell === "umsatz") {
+    50	    const u = vertrag.umsatz || {};
+    51	    if (ertragKwh === null || ertragFehlt.length) {
+    52	      klaerung = `Ertragsdaten der Anlage fehlen für ${ertragFehlt.length ? ertragFehlt.join(", ") : "den Zeitraum"} – Umsatzbeteiligung kann nicht berechnet werden.`;
+    53	      return { positionen, netto: 0, erklaerung, klaerung, basis: {} };
+    54	    }
+    55	    const r = umsatzbeteiligung({ ertragKwh, erloesCtKwh: u.erloesCtKwh, anteil: u.anteil, mindestJahr: u.mindestJahr, faktorJahr: f.faktorJahr });
+    56	    positionen.push({
+    57	      art: "umsatz", artikel: "PACHT-UMSATZ",
+    58	      text: `Umsatzbeteiligung ${rund(u.anteil * 100, 2)} % ${zeitraumText(f)} – Erlös ${zahlDe(r.erloesEur, 2)} € (${zahlDe(ertragKwh)} kWh × ${zahlDe(u.erloesCtKwh, 3)} ct/kWh)`,
+    59	      menge: 1, einheit: "Pauschale", preis: r.anteilEur, betrag: r.anteilEur,
+    60	    });
+    61	    if (r.mindestGreift) positionen.push({ art: "mindest", artikel: "PACHT-UMSATZ", text: `Aufstockung auf die Mindestpacht (${zahlDe(u.mindestJahr, 2)} €/Jahr, anteilig ${zahlDe(r.mindestEur, 2)} €)`, menge: 1, einheit: "Pauschale", preis: rund2(r.mindestEur - r.anteilEur), betrag: rund2(r.mindestEur - r.anteilEur) });
+    62	    erklaerung.push(`Sie erhalten ${rund(u.anteil * 100, 2)} % der Stromerlöse der Anlage, mindestens ${zahlDe(u.mindestJahr, 2)} € pro Jahr. Grundlage sind die geeichten Zählerstände (Erzeugung) und ein vereinbarter Erlös von ${zahlDe(u.erloesCtKwh, 3)} ct/kWh.`);
+    63	    if (r.mindestGreift) erklaerung.push("In diesem Zeitraum lag der Erlösanteil unter der Mindestpacht – ausgezahlt wird die Mindestpacht.");
+    64	    return { positionen, netto: summe(positionen, "betrag"), erklaerung, klaerung, basis: { ...r, ertragKwh } };
+    65	  }
+    66	
+    67	  // fest bzw. indexiert: Jahrespacht × Anteil der Periode
+    68	  let jahresbetrag = rund2(vertrag.pachtJahr);
+    69	  if (vertrag.modell === "indexiert") {
+    70	    const regel = { ...vertrag.index, basisBetrag: vertrag.pachtJahr, tabelle: indexTabelle };
+    71	    const verlauf = indexiertePacht(regel, jahr);
+    72	    if (verlauf.fehlt?.length) klaerung = `Indexwert fehlt (${INDEX_REIHEN[regel.reihe]?.label || regel.reihe}, ${verlauf.fehlt.join(", ")}) – bitte unter „Index (VPI)“ nachtragen.`;
+    73	    jahresbetrag = verlauf.betrag;
+    74	    erklaerung.push(...indexErklaerung(regel, verlauf, INDEX_REIHEN[regel.reihe]?.label));
+    75	    erklaerung.push(`Jahrespacht ${jahr}: ${zahlDe(jahresbetrag, 2)} € (Ausgangswert ${zahlDe(vertrag.pachtJahr, 2)} €).`);
+    76	  } else {
+    77	    erklaerung.push(`Feste Jahrespacht ${zahlDe(jahresbetrag, 2)} €${ha ? ` (${zahlDe(jahresbetrag / ha, 2)} €/ha bei ${zahlDe(ha, 2)} ha)` : ""}.`);
+    78	  }
+    79	  const betrag = rund2(jahresbetrag * f.faktorJahr);
+    80	  positionen.push({ art: vertrag.modell === "indexiert" ? "index" : "pacht", artikel: "PACHT", text: `${vertrag.modell === "indexiert" ? "Pacht (wertgesichert)" : "Pacht"} ${zeitraumText(f)}`, menge: rund(f.faktorJahr, 4), einheit: "Jahr", preis: jahresbetrag, betrag });
+    81	  return { positionen, netto: summe(positionen, "betrag"), erklaerung, klaerung, basis: { jahresbetrag } };
+    82	}
+    83	
+    84	/** Monate („JJJJ-MM“) eines Zeitraums – für die Ertragssumme der Umsatzbeteiligung */
+    85	export function monateImZeitraum(von, bis) {
+    86	  const liste = [];
+    87	  let [j, m] = [jahrVon(von), Number(String(von).slice(5, 7))];
+    88	  const [jb, mb] = [jahrVon(bis), Number(String(bis).slice(5, 7))];
+    89	  while (j < jb || (j === jb && m <= mb)) {
+    90	    liste.push(`${j}-${String(m).padStart(2, "0")}`);
+    91	    m += 1;
+    92	    if (m > 12) {
+    93	      m = 1;
+    94	      j += 1;
+    95	    }
+    96	  }
+    97	  return liste;
+    98	}
+    99	
+   100	/**
+   101	 * Erzeugung (kWh) einer Periode aus Zählerstand-Monatswerten (nur Register 2.8.0 der Erzeugungszähler).
+   102	 * Teilmonate am Rand werden taggenau anteilig gerechnet. Rückgabe { kwh, fehlt: [monat…] }
+   103	 */
+   104	export function ertragAusMonatswerten(zeilen, messpunkte, von, bis) {
+   105	  const erz = new Set((messpunkte || []).filter((m) => m.art === "erzeugung" && m.abrechnungsrelevant).map((m) => m.id));
+   106	  const fehlt = [];
+   107	  let kwh = 0;
+   108	  if (!erz.size) return { kwh: null, fehlt: ["kein abrechnungsrelevanter Erzeugungszähler"] };
+   109	  for (const monat of monateImZeitraum(von, bis)) {
+   110	    const werte = (zeilen || []).filter((z) => z.monat === monat && erz.has(z.messpunktId) && z.register === "2.8.0");
+   111	    if (werte.length < erz.size || werte.some((w) => w.menge === null || w.menge === undefined)) {
+   112	      fehlt.push(monat);
+   113	      continue;
+   114	    }
+   115	    const [j, mm] = monat.split("-").map(Number);
+   116	    const tageMonat = new Date(Date.UTC(j, mm, 0)).getUTCDate();
+   117	    const start = monat === String(von).slice(0, 7) ? Number(String(von).slice(8)) : 1;
+   118	    const ende = monat === String(bis).slice(0, 7) ? Number(String(bis).slice(8)) : tageMonat;
+   119	    kwh += werte.reduce((s, w) => s + Number(w.menge), 0) * ((ende - start + 1) / tageMonat);
+   120	  }
+   121	  return { kwh: fehlt.length ? null : Math.round(kwh), fehlt };
+   122	}
+   123	// src/lib/plattform/finanzen/provision.js
+   124	//
+   125	// Provisionsrechnung, Zahlungsstatus und Mahnhinweis – reine Funktionen.
+   126	
+   127	import { MAHNSTUFEN } from "./konstanten.js";
+   128	import { datumDe, rund, rund2, tageZwischen, zahlDe } from "./basis.js";
+   129	
+   130	/** Positionen der Provisionsrechnung an den Anbieter (Verkäuferprovision bei Abschluss) */
+   131	export function provisionPositionen(provision, projektTitel = "") {
+   132	  const satz = Number(provision.satz) || 0;
+   133	  const kaufpreis = Number(provision.kaufpreis) || 0;
+   134	  const betrag = rund2(Number(provision.betrag) || kaufpreis * satz);
+   135	  return [
+   136	    {
+   137	      art: "provision", artikel: "PROVISION",
+   138	      text: `Vermittlungsprovision Projektbörse ${rund(satz * 100, 2).toLocaleString("de-DE")} % auf den Kaufpreis von ${zahlDe(kaufpreis, 2)} €${projektTitel ? ` – Projekt „${projektTitel}“` : ""} (${provision.projektId || ""})`,
+   139	      menge: 1, einheit: "Pauschale", preis: betrag, betrag,
+   140	    },
+   141	  ];
+   142	}
+   143	
+   144	/** offen | ueberfaellig | angewiesen | bezahlt | storniert */
+   145	export function zahlungsstatus(beleg, heute) {
+   146	  if (!beleg) return "offen";
+   147	  if (beleg.status === "bezahlt" || beleg.status === "storniert" || beleg.status === "angewiesen") return beleg.status;
+   148	  if (beleg.faelligAm && heute && beleg.faelligAm < heute) return "ueberfaellig";
+   149	  return "offen";
+   150	}
+   151	
+   152	/** Mahnhinweis (nur Vorschlag): Stufe nach Tagen über Fälligkeit, null = keiner */
+   153	export function mahnhinweis(beleg, heute, stufen = MAHNSTUFEN) {
+   154	  if (zahlungsstatus(beleg, heute) !== "ueberfaellig") return null;
+   155	  const tage = tageZwischen(beleg.faelligAm, heute);
+   156	  const erreicht = stufen.filter((s) => tage >= s.tage).pop();
+   157	  const letzte = Math.max(0, ...(beleg.mahnungen || []).map((m) => Number(m.stufe) || 0));
+   158	  if (!erreicht) return { tage, stufe: 0, label: "Überfällig – noch keine Mahnstufe", faellig: false };
+   159	  return { tage, stufe: erreicht.stufe, label: erreicht.label, faellig: erreicht.stufe > letzte, text: `Seit ${tage} Tagen überfällig (fällig ${datumDe(beleg.faelligAm)}) – empfohlen: ${erreicht.label}` };
+   160	}
+   161	
+   162	/** Provisionsstatus aus dem Zahlungsstatus der Rechnung (Plattform Provision: offen → in_rechnung → bezahlt) */
+   163	export function provisionStatusAusRechnung(rechnung) {
+   164	  if (!rechnung || rechnung.status === "storniert") return "offen";
+   165	  if (rechnung.status === "bezahlt") return "bezahlt";
+   166	  return "in_rechnung";
+   167	}
+   168	// src/lib/plattform/finanzen/sepa.js
+   169	//
+   170	// IBAN/BIC prüfen und SEPA-Überweisungsdatei (pain.001.001.09, ISO 20022) erzeugen – reine Funktionen.
+   171	// Die Datei wird im Online-Banking bzw. per EBICS eingereicht; die App führt selbst KEINE Zahlung aus.
+   172	// Version 09 wird von österreichischen und deutschen Banken (DK-Verfahren ab 3.7) angenommen – vor dem ersten Einsatz
+   173	// mit der Hausbank abstimmen (Testeinreichung).
+   174	
+   175	import { rund2 } from "./basis.js";
+   176	
+   177	/** Länge der IBAN je Land (Auszug SEPA-Raum) */
+   178	export const IBAN_LAENGE = {
+   179	  AT: 20, BE: 16, BG: 22, CH: 21, CY: 28, CZ: 24, DE: 22, DK: 18, EE: 20, ES: 24, FI: 18, FR: 27, GB: 22, GR: 27, HR: 21, HU: 28, IE: 22,
+   180	  IS: 26, IT: 27, LI: 21, LT: 20, LU: 20, LV: 21, MC: 27, MT: 31, NL: 18, NO: 15, PL: 28, PT: 25, RO: 24, SE: 24, SI: 19, SK: 24, SM: 27,
+   181	};
+   182	
+   183	export const ibanNormalisieren = (s) => String(s || "").replace(/\s+/g, "").toUpperCase();
+   184	
+   185	function mod97(ziffern) {
+   186	  let rest = 0;
+   187	  for (let i = 0; i < ziffern.length; i += 7) rest = Number(String(rest) + ziffern.slice(i, i + 7)) % 97;
+   188	  return rest;
+   189	}
+   190	const alsZiffern = (s) => s.replace(/[A-Z]/g, (c) => String(c.charCodeAt(0) - 55));
+   191	
+   192	/** IBAN gültig (Länge je Land, nur A–Z/0–9, Prüfziffer mod 97 = 1) */
+   193	export function ibanPruefen(iban) {
+   194	  const i = ibanNormalisieren(iban);
+   195	  if (!/^[A-Z]{2}\d{2}[A-Z0-9]{8,30}$/.test(i)) return false;
+   196	  const laenge = IBAN_LAENGE[i.slice(0, 2)];
+   197	  if (!laenge || i.length !== laenge) return false;
+   198	  return mod97(alsZiffern(i.slice(4) + i.slice(0, 4))) === 1;
+   199	}
+   200	
+   201	/** IBAN aus Land + BBAN mit korrekter Prüfziffer (für Test- und Demodaten) */
+   202	export function ibanBauen(land, bban) {
+   203	  const b = ibanNormalisieren(bban);
+   204	  const pz = 98 - mod97(alsZiffern(`${b}${land.toUpperCase()}00`));
+   205	  return `${land.toUpperCase()}${String(pz).padStart(2, "0")}${b}`;
+   206	}
+   207	
+   208	export const bicPruefen = (bic) => /^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$/.test(String(bic || "").toUpperCase());
+   209	
+   210	/** IBAN für Anzeige maskieren: AT61 **** **** **** 3201 */
+   211	export function ibanMaskieren(iban) {
+   212	  const i = ibanNormalisieren(iban);
+   213	  if (i.length < 8) return i ? "****" : "";
+   214	  const mitte = i.slice(4, -4).replace(/./g, "*");
+   215	  return `${i.slice(0, 4)}${mitte}${i.slice(-4)}`.replace(/(.{4})/g, "$1 ").trim();
+   216	}
+   217	
+   218	/**
+   219	 * Text auf den SEPA-Zeichensatz (EPC: a–z A–Z 0–9 / - ? : ( ) . , ' + Leerzeichen) bringen: Umlaute umschreiben,
+   220	 * alles andere durch Leerzeichen ersetzen, kürzen.
+   221	 */
+   222	export function sepaText(s, max = 140) {
+   223	  const t = String(s ?? "")
+   224	    .replace(/Ä/g, "Ae").replace(/Ö/g, "Oe").replace(/Ü/g, "Ue").replace(/ä/g, "ae").replace(/ö/g, "oe").replace(/ü/g, "ue").replace(/ß/g, "ss")
+   225	    .replace(/&/g, "+").replace(/[„“”"]/g, "'").replace(/[–—]/g, "-").replace(/€/g, "EUR")
+   226	    .normalize("NFKD").replace(/[̀-ͯ]/g, "")
+   227	    .replace(/[^A-Za-z0-9/\-?:().,'+ ]/g, " ")
+   228	    .replace(/\s{2,}/g, " ")
+   229	    .trim();
+   230	  return t.slice(0, max).trim();
+   231	}
+   232	
+   233	/** Kennung für MsgId/PmtInfId/EndToEndId: max. 35 Zeichen, nur A–Z 0–9 - */
+   234	export const sepaId = (s) => String(s || "").toUpperCase().replace(/[^A-Z0-9-]/g, "").slice(0, 35);
+   235	
+   236	const xml = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;");
+   237	const betragText = (x) => rund2(x).toFixed(2);
+   238	
+   239	/**
+   240	 * pain.001.001.09 erzeugen.
+   241	 * auftrag: { nachrichtId, erstelltAm (ISO), ausfuehrungAm (JJJJ-MM-TT), auftraggeber: {name, iban, bic?},
+   242	 *           zahlungen: [{ endToEndId, betrag, name, iban, bic?, verwendungszweck }] }
+   243	 * Wirft Error bei ungültigen Daten (IBAN, Betrag ≤ 0, leere Liste) – die Aufrufer prüfen vorher und melden verständlich.
+   244	 */
+   245	export function pain001(auftrag) {
+   246	  const { nachrichtId, erstelltAm, ausfuehrungAm, auftraggeber, zahlungen } = auftrag;
+   247	  if (!zahlungen?.length) throw new Error("Keine Zahlungen");
+   248	  if (!ibanPruefen(auftraggeber?.iban)) throw new Error("IBAN des Auftraggebers ungültig");
+   249	  if (!/^\d{4}-\d{2}-\d{2}$/.test(ausfuehrungAm || "")) throw new Error("Ausführungsdatum ungültig");
+   250	  for (const z of zahlungen) {
+   251	    if (!ibanPruefen(z.iban)) throw new Error(`IBAN ungültig (${z.endToEndId})`);
+   252	    if (!(rund2(z.betrag) > 0)) throw new Error(`Betrag ungültig (${z.endToEndId})`);
+   253	    if (z.bic && !bicPruefen(z.bic)) throw new Error(`BIC ungültig (${z.endToEndId})`);
+   254	  }
+   255	  const anzahl = zahlungen.length;
+   256	  const summe = betragText(zahlungen.reduce((s, z) => s + rund2(z.betrag), 0));
+   257	  const msgId = sepaId(nachrichtId);
+   258	  const zeit = String(erstelltAm || new Date().toISOString()).replace(/\.\d{3}Z$/, "Z");
+   259	  const agBic = auftraggeber.bic && bicPruefen(auftraggeber.bic) ? `<FinInstnId><BICFI>${xml(auftraggeber.bic.toUpperCase())}</BICFI></FinInstnId>` : "<FinInstnId><Othr><Id>NOTPROVIDED</Id></Othr></FinInstnId>";
+   260	  const tx = zahlungen
+   261	    .map((z) => {
+   262	      const cdtrAgt = z.bic && bicPruefen(z.bic) ? `\n        <CdtrAgt><FinInstnId><BICFI>${xml(z.bic.toUpperCase())}</BICFI></FinInstnId></CdtrAgt>` : "";
+   263	      return `      <CdtTrfTxInf>
+   264	        <PmtId><EndToEndId>${xml(sepaId(z.endToEndId) || "NOTPROVIDED")}</EndToEndId></PmtId>
+   265	        <Amt><InstdAmt Ccy="EUR">${betragText(z.betrag)}</InstdAmt></Amt>${cdtrAgt}
+   266	        <Cdtr><Nm>${xml(sepaText(z.name, 70))}</Nm></Cdtr>
+   267	        <CdtrAcct><Id><IBAN>${xml(ibanNormalisieren(z.iban))}</IBAN></Id></CdtrAcct>
+   268	        <RmtInf><Ustrd>${xml(sepaText(z.verwendungszweck, 140))}</Ustrd></RmtInf>
+   269	      </CdtTrfTxInf>`;
+   270	    })
+   271	    .join("\n");
+   272	  return `<?xml version="1.0" encoding="UTF-8"?>
+   273	<Document xmlns="urn:iso:std:iso:20022:tech:xsd:pain.001.001.09" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:iso:std:iso:20022:tech:xsd:pain.001.001.09 pain.001.001.09.xsd">
+   274	  <CstmrCdtTrfInitn>
+   275	    <GrpHdr>
+   276	      <MsgId>${xml(msgId)}</MsgId>
+   277	      <CreDtTm>${xml(zeit)}</CreDtTm>
+   278	      <NbOfTxs>${anzahl}</NbOfTxs>
+   279	      <CtrlSum>${summe}</CtrlSum>
+   280	      <InitgPty><Nm>${xml(sepaText(auftraggeber.name, 70))}</Nm></InitgPty>
+   281	    </GrpHdr>
+   282	    <PmtInf>
+   283	      <PmtInfId>${xml(sepaId(`${msgId}-1`))}</PmtInfId>
+   284	      <PmtMtd>TRF</PmtMtd>
+   285	      <BtchBookg>true</BtchBookg>
+   286	      <NbOfTxs>${anzahl}</NbOfTxs>
+   287	      <CtrlSum>${summe}</CtrlSum>
+   288	      <PmtTpInf><SvcLvl><Cd>SEPA</Cd></SvcLvl></PmtTpInf>
+   289	      <ReqdExctnDt><Dt>${xml(ausfuehrungAm)}</Dt></ReqdExctnDt>
+   290	      <Dbtr><Nm>${xml(sepaText(auftraggeber.name, 70))}</Nm></Dbtr>
+   291	      <DbtrAcct><Id><IBAN>${xml(ibanNormalisieren(auftraggeber.iban))}</IBAN></Id></DbtrAcct>
+   292	      <DbtrAgt>${agBic}</DbtrAgt>
+   293	      <ChrgBr>SLEV</ChrgBr>
+   294	${tx}
+   295	    </PmtInf>
+   296	  </CstmrCdtTrfInitn>
+   297	</Document>
+   298	`;
+   299	}
+   300	
+   301	/**
+   302	 * Strukturprüfung einer pain.001-Datei (ohne XSD): Namespace, Pflichtelemente, Anzahl/Kontrollsumme, IBANs,
+   303	 * Beträge mit zwei Nachkommastellen, Kennungen ≤ 35 Zeichen. Liefert Liste der Fehler (leer = in Ordnung).
+   304	 */
+   305	export function pain001Pruefen(text) {
+   306	  const f = [];
+   307	  const s = String(text || "");
+   308	  if (!s.startsWith('<?xml version="1.0" encoding="UTF-8"?>')) f.push("XML-Deklaration fehlt");
+   309	  if (!s.includes('xmlns="urn:iso:std:iso:20022:tech:xsd:pain.001.001.09"')) f.push("Namespace pain.001.001.09 fehlt");
+   310	  for (const tag of ["CstmrCdtTrfInitn", "GrpHdr", "MsgId", "CreDtTm", "NbOfTxs", "CtrlSum", "InitgPty", "PmtInf", "PmtInfId", "PmtMtd", "ReqdExctnDt", "Dbtr", "DbtrAcct", "DbtrAgt", "ChrgBr"]) {
+   311	    if (!new RegExp(`<${tag}[ >]`).test(s)) f.push(`Element ${tag} fehlt`);
+   312	  }
+   313	  const auf = (s.match(/<[A-Za-z]+[ >]/g) || []).length;
+   314	  const zu = (s.match(/<\/[A-Za-z]+>/g) || []).length;
+   315	  if (auf !== zu) f.push("Elemente nicht ausgeglichen geöffnet/geschlossen");
+   316	  const txs = s.match(/<CdtTrfTxInf>[\s\S]*?<\/CdtTrfTxInf>/g) || [];
+   317	  const betraege = [...s.matchAll(/<InstdAmt Ccy="EUR">([^<]+)<\/InstdAmt>/g)].map((m) => m[1]);
+   318	  const nb = [...s.matchAll(/<NbOfTxs>(\d+)<\/NbOfTxs>/g)].map((m) => Number(m[1]));
+   319	  const ctrl = [...s.matchAll(/<CtrlSum>([^<]+)<\/CtrlSum>/g)].map((m) => m[1]);
+   320	  if (!txs.length) f.push("Keine Transaktionen");
+   321	  if (nb.some((x) => x !== txs.length)) f.push("NbOfTxs passt nicht zur Anzahl der Transaktionen");
+   322	  if (betraege.some((b) => !/^\d+\.\d{2}$/.test(b) || Number(b) <= 0)) f.push("Betrag nicht im Format 0.00 oder ≤ 0");
+   323	  const summe = betraege.reduce((a, b) => a + Number(b), 0).toFixed(2);
+   324	  if (ctrl.some((c) => c !== summe)) f.push("CtrlSum passt nicht zur Summe der Beträge");
+   325	  for (const m of s.matchAll(/<IBAN>([^<]+)<\/IBAN>/g)) if (!ibanPruefen(m[1])) f.push(`IBAN ungültig: ${m[1].slice(0, 4)}…`);
+   326	  for (const tag of ["MsgId", "PmtInfId", "EndToEndId"]) for (const m of s.matchAll(new RegExp(`<${tag}>([^<]*)</${tag}>`, "g"))) if (!m[1] || m[1].length > 35) f.push(`${tag} leer oder länger als 35 Zeichen`);
+   327	  for (const m of s.matchAll(/<(Nm|Ustrd)>([^<]*)<\/\1>/g)) if (/[^A-Za-z0-9/\-?:().,'+ &;]/.test(m[2])) f.push(`Unzulässige Zeichen in ${m[1]}`);
+   328	  return f;
+   329	}
+   330	// src/lib/plattform/finanzen/steuer.js
+   331	//
+   332	// Umsatzsteuer je Land und Vorgang als KONFIGURIERBARE VORLAGEN – reine Funktionen.
+   333	//
+   334	// WICHTIG: Die Zuordnung ist ein Vorschlag nach aktuellem Stand und ersetzt keine Steuerberatung. Jede Vorlage trägt
+   335	// den Hinweis „mit Steuerberatung abstimmen“; je Vertrag/Beleg kann das Backoffice eine andere Vorlage wählen.
+   336	// In ERPNext entsprechen die Vorlagen „Sales/Purchase Taxes and Charges Template“ (Setup-Assistent legt sie an).
+   337	//
+   338	// Leistender/Empfänger aus Sicht der ÖkoInvest GmbH (Sitz Österreich):
+   339	//   pacht        Eigentümer verpachtet an ÖkoInvest → Gutschrift (Leistungsort: Lage des Grundstücks)
+   340	//   contracting  ÖkoInvest liefert Strom an ein Unternehmen (Lieferort in der Regel: Ort des Verbrauchs)
+   341	//   provision    ÖkoInvest erbringt eine Vermittlungsleistung an den Anbieter (B2B-Grundregel: Sitz des Empfängers;
+   342	//                bei Grundstücksbezug kann der Leistungsort am Grundstück liegen)
+   343	
+   344	import { HINWEIS_STEUERBERATUNG } from "./konstanten.js";
+   345	import { rund2 } from "./basis.js";
+   346	
+   347	export const STEUERVORLAGEN = {
+   348	  "AT-USt-20": { land: "AT", satz: 0.2, art: "ust", label: "AT Umsatzsteuer 20 %", text: "", rechtsgrundlage: "§ 10 Abs. 1 UStG 1994" },
+   349	  "AT-Pacht-frei": { land: "AT", satz: 0, art: "steuerfrei", label: "AT Pacht steuerfrei (Grundstück)", text: "Steuerfreie Grundstücksvermietung gemäß § 6 Abs. 1 Z 16 UStG 1994.", rechtsgrundlage: "§ 6 Abs. 1 Z 16 UStG 1994" },
+   350	  "AT-Pacht-Option": { land: "AT", satz: 0.2, art: "ust", label: "AT Pacht mit Option zur Steuerpflicht 20 %", text: "Option zur Steuerpflicht gemäß § 6 Abs. 2 UStG 1994.", rechtsgrundlage: "§ 6 Abs. 2 UStG 1994" },
+   351	  "AT-Kleinunternehmer": { land: "AT", satz: 0, art: "kleinunternehmer", label: "AT Kleinunternehmer (ohne USt)", text: "Umsatzsteuerbefreit – Kleinunternehmer gemäß § 6 Abs. 1 Z 27 UStG 1994.", rechtsgrundlage: "§ 6 Abs. 1 Z 27 UStG 1994" },
+   352	  "AT-RC-EU": { land: "AT", satz: 0, art: "reverse_charge", label: "Reverse Charge EU (B2B-Dienstleistung)", text: "Übergang der Steuerschuld auf den Leistungsempfänger (Reverse Charge). UID des Empfängers siehe oben.", rechtsgrundlage: "§ 3a Abs. 6 UStG 1994, Art. 196 MwSt-Richtlinie" },
+   353	  "AT-Drittland": { land: "AT", satz: 0, art: "nicht_steuerbar", label: "Nicht steuerbar in AT (Drittland)", text: "Nicht im Inland steuerbare Leistung (Leistungsort beim Empfänger im Drittland).", rechtsgrundlage: "§ 3a Abs. 6 UStG 1994" },
+   354	  "DE-USt-19": { land: "DE", satz: 0.19, art: "ust", label: "DE Umsatzsteuer 19 %", text: "", rechtsgrundlage: "§ 12 Abs. 1 UStG" },
+   355	  "DE-Pacht-frei": { land: "DE", satz: 0, art: "steuerfrei", label: "DE Pacht steuerfrei (Grundstück)", text: "Steuerfreie Verpachtung gemäß § 4 Nr. 12 Buchst. a UStG.", rechtsgrundlage: "§ 4 Nr. 12 Buchst. a UStG" },
+   356	  "DE-Pacht-Option": { land: "DE", satz: 0.19, art: "ust", label: "DE Pacht mit Option zur Steuerpflicht 19 %", text: "Verzicht auf die Steuerbefreiung gemäß § 9 UStG.", rechtsgrundlage: "§ 9 UStG" },
+   357	  "DE-Kleinunternehmer": { land: "DE", satz: 0, art: "kleinunternehmer", label: "DE Kleinunternehmer (ohne USt)", text: "Steuerfreier Umsatz nach § 19 Abs. 1 UStG (Kleinunternehmer).", rechtsgrundlage: "§ 19 UStG" },
+   358	  "DE-RC-13b": { land: "DE", satz: 0, art: "reverse_charge", label: "DE Steuerschuldnerschaft des Leistungsempfängers", text: "Steuerschuldnerschaft des Leistungsempfängers (§ 13b UStG).", rechtsgrundlage: "§ 13b Abs. 2 Nr. 5 Buchst. a UStG (Elektrizität durch im Ausland ansässigen Unternehmer)" },
+   359	  "CH-MWST-81": { land: "CH", satz: 0.081, art: "ust", label: "CH MWST 8,1 %", text: "", rechtsgrundlage: "Art. 25 MWSTG" },
+   360	  "CH-Pacht-ausgenommen": { land: "CH", satz: 0, art: "steuerfrei", label: "CH Pacht von der MWST ausgenommen", text: "Von der Steuer ausgenommene Überlassung von Grundstücken (Art. 21 Abs. 2 Ziff. 21 MWSTG).", rechtsgrundlage: "Art. 21 Abs. 2 Ziff. 21 MWSTG" },
+   361	  "CH-Pacht-Option": { land: "CH", satz: 0.081, art: "ust", label: "CH Pacht mit Option 8,1 %", text: "Option für die Versteuerung gemäß Art. 22 MWSTG.", rechtsgrundlage: "Art. 22 MWSTG" },
+   362	};
+   363	
+   364	/**
+   365	 * Vorschlag der Steuervorlage.
+   366	 * vorgang: pacht | contracting | provision
+   367	 * land:    pacht = Lage des Grundstücks; contracting = Land der Anlage (Verbrauch); provision = Sitz des Anbieters
+   368	 * optionen: { option (Pacht: Option zur Steuerpflicht), kleinunternehmer (Eigentümer), grundstuecksbezug (Provision) }
+   369	 * Rückgabe { vorlage, hinweise[] }
+   370	 */
+   371	export function steuerVorschlag(vorgang, land, { option = false, kleinunternehmer = false, grundstuecksbezug = false } = {}) {
+   372	  const L = ["AT", "DE", "CH"].includes(land) ? land : "AT";
+   373	  const hinweise = [HINWEIS_STEUERBERATUNG];
+   374	  if (vorgang === "pacht") {
+   375	    if (kleinunternehmer && L !== "CH") return { vorlage: `${L}-Kleinunternehmer`, hinweise };
+   376	    if (option) {
+   377	      hinweise.push(L === "DE" ? "Option nach § 9 UStG nur, wenn der Pächter das Grundstück für steuerpflichtige Umsätze nutzt – Erklärung des Eigentümers erforderlich." : "Option zur Steuerpflicht nur mit ausdrücklicher Erklärung des Eigentümers.");
+   378	      return { vorlage: `${L}-Pacht-Option`, hinweise };
+   379	    }
+   380	    if (L !== "AT") hinweise.push("Grundstück außerhalb Österreichs: Leistungsort ist die Lage des Grundstücks – ggf. Registrierung/Vorsteuervergütung prüfen.");
+   381	    return { vorlage: L === "CH" ? "CH-Pacht-ausgenommen" : `${L}-Pacht-frei`, hinweise };
+   382	  }
+   383	  if (vorgang === "contracting") {
+   384	    if (L === "AT") return { vorlage: "AT-USt-20", hinweise };
+   385	    if (L === "DE") {
+   386	      hinweise.push("Stromlieferung an ein Unternehmen in Deutschland durch einen im Ausland ansässigen Unternehmer: Steuerschuld geht nach § 13b UStG über – entfällt, wenn eine deutsche Betriebsstätte beteiligt ist.");
+   387	      return { vorlage: "DE-RC-13b", hinweise };
+   388	    }
+   389	    hinweise.push("Lieferung in der Schweiz: MWST-Pflicht in der Schweiz (Registrierung/Steuervertretung) prüfen.");
+   390	    return { vorlage: "CH-MWST-81", hinweise };
+   391	  }
+   392	  // provision
+   393	  if (grundstuecksbezug) hinweise.push("Vermittlung mit Grundstücksbezug: Leistungsort kann am Grundstück liegen (Art. 31a MwSt-Durchführungsverordnung).");
+   394	  if (L === "AT") return { vorlage: "AT-USt-20", hinweise };
+   395	  if (L === "CH") return { vorlage: "AT-Drittland", hinweise };
+   396	  hinweise.push("Reverse Charge nur mit gültiger UID des Empfängers (Stufe-2-Abfrage) und Angabe beider UID auf der Rechnung.");
+   397	  return { vorlage: "AT-RC-EU", hinweise };
+   398	}
+   399	
+   400	/** Steuer auf einen Nettobetrag nach Vorlage (unbekannte Vorlage → 0 % mit Hinweis) */
+   401	export function steuerBerechnen(netto, vorlageId, vorlagen = STEUERVORLAGEN) {
+   402	  const v = vorlagen[vorlageId];
+   403	  const n = rund2(netto);
+   404	  if (!v) return { vorlage: vorlageId || null, label: "Keine Steuervorlage", satz: 0, art: "unbekannt", betrag: 0, netto: n, brutto: n, text: "Steuerliche Behandlung ungeklärt – bitte Steuervorlage wählen.", rechtsgrundlage: "" };
+   405	  const betrag = rund2(n * v.satz);
+   406	  return { vorlage: vorlageId, label: v.label, satz: v.satz, art: v.art, betrag, netto: n, brutto: rund2(n + betrag), text: v.text, rechtsgrundlage: v.rechtsgrundlage };
+   407	}
+   408	
+   409	/**
+   410	 * Pflichtangaben einer Rechnung/Gutschrift (§ 14 Abs. 4 UStG DE, § 11 Abs. 1 UStG 1994 AT; Gutschrift § 14 Abs. 2
+   411	 * UStG bzw. § 11 Abs. 7 UStG 1994) – prüft einen Beleg und liefert fehlende Punkte (leere Liste = vollständig).
+   412	 */
+   413	export function pflichtangabenPruefen(beleg) {
+   414	  const fehlt = [];
+   415	  const a = beleg.aussteller || {};
+   416	  const e = beleg.empfaenger || {};
+   417	  if (!a.name || !a.anschrift) fehlt.push("Name und Anschrift des leistenden Unternehmers");
+   418	  if (!e.name) fehlt.push("Name des Leistungsempfängers");
+   419	  if (!e.anschrift) fehlt.push("Anschrift des Leistungsempfängers");
+   420	  if (!a.uid && !a.steuernummer && beleg.art !== "pacht") fehlt.push("UID bzw. Steuernummer des Ausstellers");
+   421	  if (!beleg.nummer) fehlt.push("Fortlaufende Rechnungsnummer");
+   422	  if (!beleg.rechnungsdatum) fehlt.push("Ausstellungsdatum");
+   423	  if (!beleg.zeitraum?.von || !beleg.zeitraum?.bis) fehlt.push("Leistungszeitraum");
+   424	  if (!beleg.positionen?.length) fehlt.push("Menge und Art der Leistung");
+   425	  if (!Number.isFinite(Number(beleg.netto))) fehlt.push("Entgelt (netto)");
+   426	  if (!beleg.steuer?.vorlage) fehlt.push("Steuersatz bzw. Hinweis auf Steuerbefreiung");
+   427	  if (beleg.steuer && beleg.steuer.satz === 0 && !beleg.steuer.text) fehlt.push("Hinweis auf Steuerbefreiung / Reverse Charge");
+   428	  if (beleg.steuer?.art === "reverse_charge" && !e.uid) fehlt.push("UID des Leistungsempfängers (Reverse Charge)");
+   429	  if (beleg.beleg === "gutschrift" && !/gutschrift/i.test(beleg.titel || "")) fehlt.push("Bezeichnung „Gutschrift“");
+   430	  // AT: Rechnungen über 10.000 € brutto brauchen die UID des Empfängers (§ 11 Abs. 1 Z 3 lit. i UStG 1994)
+   431	  if (beleg.aussteller?.land === "AT" && Number(beleg.brutto) > 10000 && beleg.beleg !== "gutschrift" && !e.uid) fehlt.push("UID des Empfängers (AT: Rechnungsbetrag über 10.000 €)");
+   432	  return fehlt;
+   433	}

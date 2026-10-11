@@ -1,0 +1,161 @@
+# -*- coding: utf-8 -*-
+"""Traegt den Eintrag fuer die Sicherungsverwaltung in den Changelog ein."""
+import io
+
+EINTRAG = u"""# Änderungsverlauf
+
+## 2026-09-19 (7) – Sicherung wird eine Verwaltung
+
+Bisher konnte die Backup-Seite lesen und Knoepfe drücken. Jetzt lassen
+sich Ziele und Schutzobjekte anlegen, Abläufe einstellen, Systeme
+überwachen, Meldungen lesen und ein LTO-Bandarchiv führen. Die Seite ist
+in **neun Unterseiten** zerlegt – ein Auswahlfeld verbirgt seinen Inhalt,
+bis man es aufklappt, und bei neun Ansichten sah niemand mehr, was es
+überhaupt gibt.
+
+### Die Trennung, auf der alles steht: erklärt gegen gemessen
+
+Ein Feld gehört in genau eine der beiden Welten. **Erklärt** legt ein
+Mensch fest – wo Sicherungen liegen dürfen, was geschützt gehört, wie
+lange aufbewahrt. **Gemessen** liest ein Konnektor aus dem Zielsystem –
+wann zuletzt gesichert, wie viele Kopien, wie voll das Ziel.
+
+`backup_assurance` vergliche sonst die Zusage mit sich selbst. Ließe sich
+„copies: 3" von Hand eintragen, wäre die Prüfung keine Prüfung mehr,
+sondern eine Selbstauskunft – und die fällt erfahrungsgemäß immer gut aus.
+Die Schreibmethoden weisen gemessene Felder deshalb **ausdrücklich ab**,
+statt sie still zu übernehmen.
+
+### Ein Befund, den niemand abarbeiten konnte
+
+Die Prüfung meldete „nie getestet – kritisch", und es gab keinen Weg, das
+je zu erledigen. Ein Befund ohne Abhilfe wird ignoriert, und mit ihm die
+daneben. `backup_restore_test` schließt die Schleife: Ergebnis nur `ok`
+oder `failed`, bei Erfolg ist die gemessene Dauer Pflicht – sie **ist** der
+tatsächliche RTO –, kein Datum in der Zukunft, und ein Fehlschlag
+überschreibt die bisherige Dauer nicht. Null Minuten sähen hervorragend
+aus.
+
+### Automatisierung gehört nach Frappe
+
+Eine Aktion ist kein direkter Aufruf mehr, sondern ein **Dokument mit
+Zustand**: Entwurf → beantragt → genehmigt → läuft → erledigt. Zustände,
+Übergänge und erlaubte Rollen stehen in `Workflow`,
+`Workflow Document State` und `Workflow Transition` – genau den DocTypes,
+die Frappe dafür hat. Wer einstellen will, dass ein Verify-Lauf ohne
+Genehmigung durchgeht, ändert eine Zeile und baut dabei nicht versehentlich
+die Sperre für `backup_now` mit ab.
+
+Nachgebaut sind Rollenprüfung je Übergang, `allow_self_approval`
+(Vier-Augen-Prinzip), `condition` und `doc_status`. Die `condition` ist hier
+ein Name aus einer Positivliste statt eines Python-Ausdrucks – einen
+Ausdruck aus den Daten auszuwerten hieße `eval` auf Inhalten, die über die
+API hereinkommen.
+
+### Neue Systeme sind eine Zeile, kein Umbau
+
+Die Zielarten liegen jetzt in `Backup Target Kind`. Ein neu gebuchter
+Google Drive wird eingetragen, ist sofort als Konnektorart wählbar, und
+darauf lässt sich ein Ziel anlegen.
+
+**Zwei Böden bleiben im Code**, und das ist Absicht:
+
+- **`VERBOTEN`** – Löschen, Prune, Forget, Aufbewahrung ändern, Auftrag
+  löschen, Schutz aufheben. Stünde diese Liste in der Datenbank, trüge sie
+  sich irgendwann jemand als Zielart-Aktion ein.
+- **Der Verbkatalog** – jedes Verb braucht eine Umsetzung. Ein Verb ohne
+  Code wäre eine Schaltfläche, die nichts tut.
+
+Geprüft: `delete`, `prune` und `unprotect` werden auch über den neuen Weg
+abgewiesen.
+
+### Gesundheit und Meldungen
+
+**Erreichbarkeit** steht jetzt über allem und auf jeder Unterseite. Der
+Grund: sämtliche Zahlen dieses Bereichs stammen aus dem, was die
+Konnektoren zuletzt gemeldet haben. Antwortet ein System nicht mehr, zeigen
+die Seiten weiter die alten Werte – und sehen dabei genauso aus wie vorher.
+Der gefährlichste Zustand einer Überwachung ist nicht der rote Punkt,
+sondern der grüne, der eingefroren ist.
+
+**Meldungen** aus zwei Quellen in einer Liste: das Aufgabenprotokoll des
+Systems und **rsyslog**. Das erste sagt, *dass* etwas schiefging; das zweite
+oft, *warum*. Ein PBS meldet „verify group vm/102 failed", und die
+erklärende Zeile daneben ist `critical medium error, dev sdd`. Wer dafür
+zwei Fenster aufmachen muss, liest das zweite nicht. Ein Klick auf eine
+Meldung zeigt alles aus beiden Quellen im Umkreis von 30 Minuten.
+
+### LTO-9-Bandarchiv
+
+Die Airgap-Sicherung. Alle vier anderen Ziele sind über ein Netz
+erreichbar; wer die Verwaltung übernimmt, erreicht sie auch.
+
+> Ein ausgeworfenes Band, das im Serverraum liegen bleibt, ist kein Airgap
+> – es sieht nur so aus.
+
+Daraus folgt der ganze Ablauf:
+
+- **Etiketten** erzeugen (Code 39, sechs Stellen plus `L9`) und drucken,
+  mit Klartext unter den Balken – am Medienschrank steht selten jemand mit
+  einem Scanner. Vergebene Nummern werden übersprungen, auch die
+  ausgesonderter Bänder.
+- **Scannen** beantwortet: kenne ich das Band, und was ist es? Ohne
+  Ausnahme bei einem Fehlgriff – der ist beim Scannen der Normalfall.
+- **Auswerfen** ist gesperrt, solange der Schreiblauf läuft, die Prüfung
+  fehlgeschlagen oder ausstehend ist oder das Band unverschlüsselt ist.
+  Sperren, keine Warnungen: alle vier Fälle fallen sonst erst im Ernstfall
+  auf.
+- **Erinnerung** ab dem Fälligkeitstermin, stündlich, an die Adresse aus
+  dem Bandsatz – und zwar auch dann, wenn niemand ausgeworfen hat. Hätte
+  die Schleife am Auswurf gehängt, käme im häufigsten Fall nie eine Mail.
+- **Quittung** verlangt einen Lagerort („irgendwo sicher" findet im
+  Ernstfall niemand) und weist ein falsch gescanntes Band ab. Erst hier
+  gilt das Band als außer Haus, erst hier endet die Erinnerung, und hier
+  rückt das Nachfolgeband nach.
+
+### Zwei Papiere
+
+- [`docs/backup-konzept.md`](docs/backup-konzept.md) – Rollenverteilung,
+  Sicherheitsgrenze, Scheduler und Workflow, `hooks.py`-Beispiele
+- [`docs/bandarchiv-konzept.md`](docs/bandarchiv-konzept.md) – der
+  Bandablauf im Detail
+
+### Nebenbei behoben
+
+- **Der Dunkelmodus ignorierte die Systemeinstellung.** Voreinstellung war
+  immer hell; wer sein Betriebssystem dunkel gestellt hatte, bekam beim
+  ersten Aufruf eine weiße Seite. Jetzt gilt ohne eigene Wahl die
+  Systemvorgabe.
+- **Die Kette „Der Weg einer Sicherung" war viermal rot.** Stufe „Geprüft"
+  hängte an den Fehlermeldungen statt an fehlgeschlagenen Prüfungen – ein
+  Syslog-Eintrag über ein volles Laufwerk sagt nichts darüber, ob die
+  Punkte lesbar sind. Die Ränder sind jetzt dreistufig.
+- **Die Antragsliste war leer**: `frappe.client.get_list` liefert ohne
+  `fields` nur den Namen. Jetzt eine eigene Methode, die die möglichen
+  Übergänge gleich mitliefert – das spart auch einen Aufruf je Zeile.
+- **Konnektortakte waren zu eng**: Drive und S3 wurden alle 60 bzw. 120
+  Minuten abgefragt und galten dadurch ständig als überfällig. Bei
+  Ablagezielen erzeugt das nur Last; einmal am Tag reicht.
+- **`ops.test.js`** prüfte die Zahl der Seed-Konnektoren auf genau vier –
+  ein Test, der die Seed-Datei prüfte statt die Methode.
+- **README und Changelog** enthielten den Abschnitt „Konnektoren anlegen"
+  doppelt.
+
+### Geprüft
+
+- 607 Tests (82 neue), ESLint und Prettier sauber
+- 56 Routen im Browser ohne Konsolenfehler, hell und dunkel
+- Im Browser durchgeklickt: Antrag genehmigen (Zustand wechselt auf
+  „Genehmigt"), Wiederherstellungstest eintragen („nie durchgeführt"
+  verschwindet), vier Etiketten mit gezeichnetem Code-39-Barcode,
+  Bandwechsel von Hand – ohne Grund gesperrt, falsch gescanntes Band
+  abgewiesen, nach der Quittung OEK039L9 außer Haus und OEK040L9 im
+  Laufwerk
+"""
+
+p = 'CHANGELOG.md'
+s = io.open(p, encoding='utf-8').read()
+kopf = u'# Änderungsverlauf\n'
+assert s.startswith(kopf)
+io.open(p, 'w', encoding='utf-8').write(EINTRAG + '\n' + s[len(kopf):].lstrip('\n'))
+print('CHANGELOG ergaenzt')

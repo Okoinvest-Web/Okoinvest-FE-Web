@@ -1,0 +1,283 @@
+"use client";
+
+import Link from "next/link";
+import { useActionState, useMemo, useState } from "react";
+import { AlertTriangle, Info, Package, Plus, Sparkles, Trash2, Wand2 } from "lucide-react";
+import { createQuotationAction, type FormState } from "@/lib/actions";
+import { COUNTRY_LABEL, type Country, type Item } from "@/lib/types";
+import { calcTotals, suggestTax, TAX_OPTIONS } from "@/lib/tax";
+import { money2 } from "@/lib/format";
+import { BTN, INPUT } from "@/components/ui";
+
+type Line = { item_code: string; qty: number; rate: number };
+
+// Häufige Anlagen als Startpunkt – Mengen in Stück bzw. kWp
+const PACKAGES: { label: string; hint: string; lines: [string, number][] }[] = [
+  { label: "Einfamilienhaus 10 kWp", hint: "ohne Speicher", lines: [["MOD-440", 23], ["WR-10H", 1], ["MON-UK", 10.1], ["MON-DC", 10.1], ["MON-AC", 1], ["SV-MON", 1]] },
+  { label: "Einfamilienhaus 10 kWp + Speicher", hint: "10 kWh", lines: [["MOD-440", 23], ["WR-10H", 1], ["SP-10", 1], ["MON-UK", 10.1], ["MON-DC", 10.1], ["MON-AC", 1], ["SV-MON", 1]] },
+  { label: "Komplett: PV + Speicher + Wallbox", hint: "12 kWp · 10 kWh · 11 kW", lines: [["MOD-450-BLK", 27], ["WR-10H", 1], ["SP-10", 1], ["WB-11", 1], ["MON-UK", 12.2], ["MON-DC", 12.2], ["MON-AC", 1], ["SV-MON", 1]] },
+  { label: "Gewerbe 50 kWp", hint: "Hallendach", lines: [["MOD-440", 114], ["WR-20", 3], ["MON-UK", 50.2], ["MON-DC", 50.2], ["MON-AC", 1]] },
+];
+
+const fmtKwp = (n: number) => n.toLocaleString("de-DE", { maximumFractionDigits: 2 });
+
+export function QuoteBuilder({
+  opportunity,
+  title,
+  customerName,
+  items,
+  country: initialCountry,
+  isPrivate,
+}: {
+  opportunity: string;
+  title: string;
+  customerName: string;
+  items: Item[];
+  country: Country;
+  isPrivate: boolean;
+}) {
+  const [state, action, pending] = useActionState<FormState, FormData>(createQuotationAction, {});
+  const catalog = useMemo(() => new Map(items.map((i) => [i.item_code, i])), [items]);
+  const [lines, setLines] = useState<Line[]>([]);
+  const [country, setCountry] = useState<Country>(initialCountry);
+  const [taxRate, setTaxRate] = useState<number | null>(null); // null = Vorschlag übernehmen
+  const [picker, setPicker] = useState("");
+
+  const kwp = lines.reduce((s, l) => s + (catalog.get(l.item_code)?.kwp ?? 0) * l.qty, 0);
+  const suggestion = suggestTax(country, isPrivate, kwp);
+  const rate = taxRate ?? suggestion.rate;
+  const totals = calcTotals(lines, rate);
+  const listTotal = lines.reduce((s, l) => s + (catalog.get(l.item_code)?.rate ?? 0) * l.qty, 0);
+  const discount = listTotal - totals.net;
+  const kwpLines = lines.filter((l) => catalog.get(l.item_code)?.stock_uom === "kWp");
+  const kwpMismatch = kwp > 0 && kwpLines.some((l) => Math.abs(l.qty - kwp) > 0.05);
+  const shortage = lines.filter((l) => {
+    const it = catalog.get(l.item_code);
+    return it?.stock_qty !== undefined && l.qty > it.stock_qty;
+  });
+
+  const setLine = (i: number, patch: Partial<Line>) => setLines((ls) => ls.map((l, j) => (j === i ? { ...l, ...patch } : l)));
+  const add = (code: string, qty = 1) => {
+    const it = catalog.get(code);
+    if (it) setLines((ls) => [...ls, { item_code: code, qty, rate: it.rate }]);
+  };
+  const applyPackage = (spec: [string, number][]) =>
+    setLines(spec.filter(([c]) => catalog.has(c)).map(([c, qty]) => ({ item_code: c, qty, rate: catalog.get(c)!.rate })));
+
+  // Standard: 30 Tage gültig (einmalig beim Öffnen berechnet)
+  const [validTill] = useState(() => new Date(Date.now() + 30 * 86_400_000).toISOString().slice(0, 10));
+  const groups = [...new Set(items.map((i) => i.item_group))];
+
+  return (
+    <form action={action} className="mx-auto grid max-w-5xl gap-6">
+      <input type="hidden" name="opportunity" value={opportunity} />
+      <input type="hidden" name="items" value={JSON.stringify(lines)} />
+      <input type="hidden" name="tax_rate" value={rate} />
+      <input type="hidden" name="country" value={country} />
+
+      {/* Kopf */}
+      <div className="grid gap-4 sm:grid-cols-[1fr_180px_180px]">
+        <label className="flex flex-col gap-1.5">
+          <span className="text-[12px] font-medium text-gray-700">Angebotstitel</span>
+          <input name="title" defaultValue={title} className={INPUT} />
+        </label>
+        <label className="flex flex-col gap-1.5">
+          <span className="text-[12px] font-medium text-gray-700">Land</span>
+          <select value={country} onChange={(e) => { setCountry(e.target.value as Country); setTaxRate(null); }} className={INPUT}>
+            {(Object.keys(COUNTRY_LABEL) as Country[]).map((c) => (
+              <option key={c} value={c}>
+                {COUNTRY_LABEL[c]}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="flex flex-col gap-1.5">
+          <span className="text-[12px] font-medium text-gray-700">Gültig bis</span>
+          <input name="valid_till" type="date" defaultValue={validTill} className={INPUT} />
+        </label>
+      </div>
+
+      {/* Paketvorlagen */}
+      <div>
+        <div className="mb-2 flex items-center gap-1.5 text-[12px] font-medium text-gray-500">
+          <Sparkles className="size-3.5 text-brand-600" /> Schnellstart mit Paket für {customerName}
+        </div>
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          {PACKAGES.map((p) => (
+            <button
+              key={p.label}
+              type="button"
+              onClick={() => applyPackage(p.lines)}
+              className="rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-left shadow-xs transition hover:border-brand-300 hover:bg-brand-50/40"
+            >
+              <div className="font-medium text-gray-900">{p.label}</div>
+              <div className="text-[12px] text-gray-500">{p.hint}</div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Positionen */}
+      <div className="overflow-hidden rounded-xl border border-gray-200">
+        <div className="hidden grid-cols-[1fr_110px_120px_110px_36px] gap-3 border-b border-gray-150 bg-gray-25 px-4 py-2 text-[12px] font-medium text-gray-500 sm:grid">
+          <span>Artikel</span>
+          <span className="text-right">Menge</span>
+          <span className="text-right">Einzelpreis netto</span>
+          <span className="text-right">Gesamt</span>
+          <span />
+        </div>
+        {lines.length === 0 && (
+          <div className="flex items-center gap-3 px-4 py-6 text-gray-500">
+            <Package className="size-4 text-gray-400" /> Paket wählen oder Artikel hinzufügen.
+          </div>
+        )}
+        <ul className="divide-y divide-gray-100">
+          {lines.map((l, i) => {
+            const it = catalog.get(l.item_code)!;
+            const low = it.stock_qty !== undefined && l.qty > it.stock_qty;
+            return (
+              <li key={i} className="grid grid-cols-[1fr_auto] items-center gap-3 px-4 py-2.5 sm:grid-cols-[1fr_110px_120px_110px_36px]">
+                <div className="min-w-0">
+                  <div className="truncate font-medium text-gray-900">{it.item_name}</div>
+                  <div className="text-[12px] text-gray-500">
+                    {it.item_code} · {it.item_group}
+                    {it.stock_qty !== undefined && <span className={low ? "text-rose-600" : ""}> · Lager {it.stock_qty}</span>}
+                    {l.rate < it.rate && <span className="text-amber-700"> · {Math.round((1 - l.rate / it.rate) * 100)} % Rabatt</span>}
+                  </div>
+                </div>
+                <div className="relative">
+                  <input
+                    type="number"
+                    min={0}
+                    step={it.stock_uom === "kWp" ? 0.1 : 1}
+                    value={l.qty}
+                    onChange={(e) => setLine(i, { qty: parseFloat(e.target.value) || 0 })}
+                    className={`${INPUT} w-full pr-10 text-right tabular-nums`}
+                    aria-label="Menge"
+                  />
+                  <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[11px] text-gray-400">{it.stock_uom}</span>
+                </div>
+                <input
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  value={l.rate}
+                  onChange={(e) => setLine(i, { rate: parseFloat(e.target.value) || 0 })}
+                  className={`${INPUT} w-full text-right tabular-nums`}
+                  aria-label="Einzelpreis"
+                />
+                <span className="tnum text-right font-medium text-gray-900">{money2(l.qty * l.rate)}</span>
+                <button type="button" onClick={() => setLines((ls) => ls.filter((_, j) => j !== i))} aria-label="Position entfernen" className="justify-self-end rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-rose-600">
+                  <Trash2 className="size-4" />
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+        <div className="flex flex-wrap items-center gap-2 border-t border-gray-150 bg-gray-25 px-4 py-2.5">
+          <select value={picker} onChange={(e) => setPicker(e.target.value)} className={`${INPUT} min-w-64 flex-1`} aria-label="Artikel wählen">
+            <option value="">Artikel hinzufügen …</option>
+            {groups.map((g) => (
+              <optgroup key={g} label={g}>
+                {items
+                  .filter((i) => i.item_group === g)
+                  .map((i) => (
+                    <option key={i.item_code} value={i.item_code}>
+                      {i.item_name} – {money2(i.rate)}/{i.stock_uom}
+                      {i.stock_qty === 0 ? " (nicht vorrätig)" : ""}
+                    </option>
+                  ))}
+              </optgroup>
+            ))}
+          </select>
+          <button
+            type="button"
+            disabled={!picker}
+            onClick={() => {
+              add(picker, catalog.get(picker)?.stock_uom === "kWp" ? Math.round(kwp * 10) / 10 || 1 : 1);
+              setPicker("");
+            }}
+            className={BTN.secondary}
+          >
+            <Plus /> Hinzufügen
+          </button>
+        </div>
+      </div>
+
+      {/* Hinweise */}
+      {(kwpMismatch || shortage.length > 0) && (
+        <div className="grid gap-2">
+          {kwpMismatch && (
+            <div className="flex flex-wrap items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-amber-900">
+              <AlertTriangle className="size-4" />
+              <span className="flex-1">Montagepositionen passen nicht zur Anlagengröße von {fmtKwp(kwp)} kWp.</span>
+              <button
+                type="button"
+                onClick={() => setLines((ls) => ls.map((l) => (catalog.get(l.item_code)?.stock_uom === "kWp" ? { ...l, qty: Math.round(kwp * 100) / 100 } : l)))}
+                className={BTN.secondary}
+              >
+                <Wand2 /> Angleichen
+              </button>
+            </div>
+          )}
+          {shortage.length > 0 && (
+            <div className="flex items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-gray-700">
+              <Info className="size-4 text-gray-500" />
+              Nicht genug Lagerbestand für {shortage.map((l) => catalog.get(l.item_code)?.item_name).join(", ")} – Liefertermin mit dem Innendienst abstimmen.
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Summen + Steuer */}
+      <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
+        <div className="rounded-xl border border-gray-200 p-4">
+          <div className="text-[12px] font-medium text-gray-500">Umsatzsteuer</div>
+          <div className="mt-2 grid gap-1.5">
+            {TAX_OPTIONS[country].map((t) => (
+              <label key={t.rate} className={`flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 ${rate === t.rate ? "bg-gray-100" : "hover:bg-gray-50"}`}>
+                <input type="radio" checked={rate === t.rate} onChange={() => setTaxRate(t.rate)} className="accent-brand-600" />
+                <span className="flex-1">{t.label}</span>
+                {t.rate === suggestion.rate && <span className="rounded bg-brand-50 px-1.5 text-[11px] font-medium text-brand-700">Vorschlag</span>}
+              </label>
+            ))}
+          </div>
+          <p className="mt-3 flex gap-2 text-[12px] leading-relaxed text-gray-500">
+            <Info className="mt-0.5 size-3.5 shrink-0" />
+            <span>
+              {suggestion.reason} Steuersatz im Zweifel mit der Buchhaltung abstimmen.
+            </span>
+          </p>
+        </div>
+        <dl className="rounded-xl border border-gray-200 p-4">
+          {[
+            ["Anlagengröße", kwp ? `${fmtKwp(kwp)} kWp` : "–"],
+            ["Listenpreis netto", money2(listTotal)],
+            ...(discount > 0.5 ? [["Rabatt", `– ${money2(discount)}`]] : []),
+            ["Netto", money2(totals.net)],
+            [`USt ${rate} %`, money2(totals.tax)],
+          ].map(([k, v]) => (
+            <div key={k} className="flex justify-between py-1">
+              <dt className="text-gray-500">{k}</dt>
+              <dd className="tnum">{v}</dd>
+            </div>
+          ))}
+          <div className="mt-2 flex justify-between border-t border-gray-150 pt-3 text-[15px] font-semibold">
+            <dt>Gesamt brutto</dt>
+            <dd className="tnum">{money2(totals.gross)}</dd>
+          </div>
+        </dl>
+      </div>
+
+      <div className="flex items-center justify-end gap-2 border-t border-gray-150 pt-5">
+        {state.error && <p className="mr-auto rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-rose-700">{state.error}</p>}
+        <Link href={`/opportunities/${encodeURIComponent(opportunity)}`} className={BTN.secondary}>
+          Abbrechen
+        </Link>
+        <button disabled={pending || lines.length === 0} className={BTN.primary}>
+          {pending ? "Speichern …" : "Angebot als Entwurf anlegen"}
+        </button>
+      </div>
+    </form>
+  );
+}

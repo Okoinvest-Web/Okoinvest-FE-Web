@@ -1,0 +1,443 @@
+/**
+ * SEPA-Lastschrift nach ISO 20022, Nachricht pain.008.
+ *
+ * Der Weg vom Beleg zum Geld. Was die Bank annimmt, ist eine
+ * XML-Datei mit einer sehr bestimmten Struktur - und sie nimmt sie
+ * ganz oder gar nicht. Ein einziger falscher IBAN-Prüfrest, ein
+ * fehlendes Mandatsdatum, ein Fälligkeitstag am Wochenende: Die Bank
+ * weist die ganze Datei zurück, nicht die eine Zeile.
+ *
+ * Deshalb liegt die Prüfung hier und nicht bei der Bank. Geprüft wird
+ * vor allem:
+ *
+ * - *IBAN*: Prüfziffer nach ISO 7064 Modulo 97-10 und die für das
+ *   Land vorgeschriebene Länge. Ein Zahlendreher fällt damit auf,
+ *   bevor er das Haus verlässt.
+ * - *Mandat*: Jede Lastschrift braucht eines, mit Datum. Ohne Mandat
+ *   ist der Einzug unberechtigt, und der Zahler holt sich das Geld
+ *   binnen acht Wochen zurück - ohne Angabe von Gründen.
+ * - *Fälligkeit*: Ein Bankarbeitstag, nicht Samstag, Sonntag oder
+ *   Feiertag, und mit der Vorlauffrist der Sequenz.
+ * - *Ende-zu-Ende-Kennung*: Eindeutig je Zahlung. Bei zwei gleichen
+ *   kann niemand mehr zuordnen, welche Rückgabe zu welcher Rechnung
+ *   gehört.
+ *
+ * Erzeugt wird pain.008.001.08 - die Fassung, die seit der SEPA-
+ * Umstellung 2023 gilt. Die ältere .02 nehmen viele Banken noch an;
+ * neu gebaut wird sie nicht mehr.
+ */
+
+import { istFeiertag } from "../at/feiertage.ts";
+import { alsKomma } from "../zahl.ts";
+
+/** Vorlauffristen in Bankarbeitstagen, nach Sequenzart. */
+export const VORLAUF_TAGE = {
+  /** Erstlastschrift und einmalige: ein Bankarbeitstag. */
+  FRST: 1,
+  OOFF: 1,
+  /** Folgelastschrift: ebenfalls ein Bankarbeitstag seit 2016. */
+  RCUR: 1,
+  FNAL: 1,
+} as const;
+
+export type Sequenz = keyof typeof VORLAUF_TAGE;
+
+export interface Lastschrift {
+  /** Eindeutig je Zahlung, erscheint auf dem Kontoauszug beider Seiten. */
+  endeZuEnde: string;
+  /** Name des Zahlungspflichtigen. */
+  zahler: string;
+  iban: string;
+  bic?: string;
+  betragEur: number;
+  /** Mandatsreferenz, wie sie auf dem Mandat steht. */
+  mandat: string;
+  /** Datum der Unterschrift, ISO. */
+  mandatVom: string;
+  sequenz: Sequenz;
+  /** Verwendungszweck, höchstens 140 Zeichen. */
+  verwendungszweck: string;
+}
+
+export interface Einreicher {
+  name: string;
+  iban: string;
+  bic?: string;
+  /** Gläubiger-Identifikationsnummer, in Österreich "AT..". */
+  glaeubigerId: string;
+}
+
+export interface Sammlerpruefung {
+  gueltig: boolean;
+  beanstandungen: string[];
+  warnungen: string[];
+  summeEur: number;
+  anzahl: number;
+  /** Frühestmöglicher Fälligkeitstag über alle Zahlungen. */
+  faelligAm: string | null;
+}
+
+/* ------------------------------------------------------------------ */
+/* IBAN                                                                */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Vorgeschriebene IBAN-Länge je Land.
+ *
+ * Ohne Längenprüfung geht eine um eine Stelle verkürzte IBAN durch,
+ * wenn die Prüfziffer zufällig passt - und das kommt bei einer von
+ * siebenundneunzig vor.
+ */
+export const IBAN_LAENGE: Record<string, number> = {
+  AT: 20,
+  DE: 22,
+  CH: 21,
+  LI: 21,
+  IT: 27,
+  SI: 19,
+  SK: 24,
+  CZ: 24,
+  HU: 28,
+  PL: 28,
+  NL: 18,
+  BE: 16,
+  FR: 27,
+  ES: 24,
+  LU: 20,
+};
+
+/** Entfernt Leerzeichen und macht gross. */
+export function normiereIban(iban: string): string {
+  return iban.replace(/\s+/g, "").toUpperCase();
+}
+
+/**
+ * Prüft eine IBAN nach ISO 7064 Modulo 97-10.
+ *
+ * Die ersten vier Zeichen wandern ans Ende, Buchstaben werden zu
+ * Zahlen (A = 10 … Z = 35), und der Rest der Division durch 97 muss
+ * eins sein. Gerechnet wird stückweise, weil die Zahl sonst die
+ * Genauigkeit einer Gleitkommazahl überschreitet - genau daran
+ * scheitern die meisten schnell hingeschriebenen Prüfungen.
+ */
+export function pruefeIban(iban: string): boolean {
+  const wert = normiereIban(iban);
+
+  if (!/^[A-Z]{2}[0-9]{2}[A-Z0-9]+$/.test(wert)) return false;
+
+  const land = wert.slice(0, 2);
+  const erwartet = IBAN_LAENGE[land];
+  if (erwartet !== undefined && wert.length !== erwartet) return false;
+  if (wert.length < 15 || wert.length > 34) return false;
+
+  const umgestellt = wert.slice(4) + wert.slice(0, 4);
+
+  let rest = 0;
+  for (const zeichen of umgestellt) {
+    const ziffern =
+      zeichen >= "A" && zeichen <= "Z"
+        ? String(zeichen.charCodeAt(0) - 55)
+        : zeichen;
+
+    for (const ziffer of ziffern) {
+      rest = (rest * 10 + Number(ziffer)) % 97;
+    }
+  }
+
+  return rest === 1;
+}
+
+/* ------------------------------------------------------------------ */
+/* Fälligkeit                                                          */
+/* ------------------------------------------------------------------ */
+
+/** Ist der Tag ein Bankarbeitstag in Österreich? */
+export function istBankarbeitstag(datum: Date): boolean {
+  const wochentag = datum.getDay();
+  if (wochentag === 0 || wochentag === 6) return false;
+  return !istFeiertag(datum);
+}
+
+/**
+ * Der früheste zulässige Fälligkeitstag.
+ *
+ * Gezählt werden Bankarbeitstage ab dem Einreichungstag. Ein
+ * Fälligkeitstag, der auf ein Wochenende fällt, wird von der Bank
+ * nicht abgewiesen, sondern verschoben - und dann stimmt der
+ * Kontoauszug nicht mit dem überein, was im Portal steht.
+ */
+export function fruehesteFaelligkeit(
+  eingereichtAm: Date,
+  sequenz: Sequenz,
+): Date {
+  const tag = new Date(eingereichtAm);
+  tag.setHours(0, 0, 0, 0);
+
+  let offen = VORLAUF_TAGE[sequenz];
+
+  while (offen > 0) {
+    tag.setDate(tag.getDate() + 1);
+    if (istBankarbeitstag(tag)) offen -= 1;
+  }
+
+  return tag;
+}
+
+/* ------------------------------------------------------------------ */
+/* Prüfung des Sammlers                                                */
+/* ------------------------------------------------------------------ */
+
+/** Höchstlänge des Verwendungszwecks nach ISO 20022. */
+export const ZWECK_HOECHSTLAENGE = 140;
+
+function alsIsoTag(datum: Date): string {
+  const z = (n: number) => String(n).padStart(2, "0");
+  return `${datum.getFullYear()}-${z(datum.getMonth() + 1)}-${z(datum.getDate())}`;
+}
+
+/**
+ * Prüft einen Lastschriftsammler, bevor er zur Bank geht.
+ *
+ * Die Bank weist eine fehlerhafte Datei als Ganzes zurück. Es ist
+ * deutlich billiger, den Fehler hier zu finden - und deutlich
+ * schneller, denn eine Rückweisung bemerkt man erst am nächsten Tag.
+ */
+export function pruefeSammler(
+  einreicher: Einreicher,
+  zahlungen: Lastschrift[],
+  eingereichtAm: Date,
+): Sammlerpruefung {
+  const beanstandungen: string[] = [];
+  const warnungen: string[] = [];
+
+  if (!pruefeIban(einreicher.iban)) {
+    beanstandungen.push(
+      `Die IBAN des Einreichers ist ungültig: ${einreicher.iban}`,
+    );
+  }
+
+  if (!/^[A-Z]{2}[0-9]{2}[A-Z0-9]{3}[A-Z0-9]+$/.test(einreicher.glaeubigerId)) {
+    beanstandungen.push(
+      `Die Gläubiger-Identifikationsnummer "${einreicher.glaeubigerId}" hat nicht die vorgeschriebene Form.`,
+    );
+  }
+
+  if (zahlungen.length === 0) {
+    beanstandungen.push("Der Sammler enthält keine Zahlung.");
+  }
+
+  const kennungen = new Set<string>();
+  let summe = 0;
+  let spaeteste: Date | null = null;
+
+  for (const [i, z] of zahlungen.entries()) {
+    const nummer = i + 1;
+
+    if (!pruefeIban(z.iban)) {
+      beanstandungen.push(
+        `Zeile ${nummer} (${z.zahler}): Die IBAN ${z.iban} ist ungültig.`,
+      );
+    }
+
+    if (z.betragEur <= 0) {
+      beanstandungen.push(
+        `Zeile ${nummer} (${z.zahler}): Der Betrag ist null oder negativ.`,
+      );
+    }
+
+    if (z.betragEur > 999999999.99) {
+      beanstandungen.push(
+        `Zeile ${nummer} (${z.zahler}): Der Betrag überschreitet den zulässigen Höchstwert.`,
+      );
+    }
+
+    if (!z.mandat.trim()) {
+      beanstandungen.push(
+        `Zeile ${nummer} (${z.zahler}): Ohne Mandatsreferenz ist der Einzug unberechtigt.`,
+      );
+    }
+
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(z.mandatVom)) {
+      beanstandungen.push(
+        `Zeile ${nummer} (${z.zahler}): Das Mandatsdatum "${z.mandatVom}" ist kein gültiges Datum.`,
+      );
+    } else if (z.mandatVom > alsIsoTag(eingereichtAm)) {
+      beanstandungen.push(
+        `Zeile ${nummer} (${z.zahler}): Das Mandat trägt ein Datum in der Zukunft.`,
+      );
+    }
+
+    if (kennungen.has(z.endeZuEnde)) {
+      beanstandungen.push(
+        `Die Ende-zu-Ende-Kennung "${z.endeZuEnde}" kommt mehrfach vor. Bei einer Rückgabe wäre nicht mehr zuzuordnen, welche Rechnung gemeint ist.`,
+      );
+    }
+    kennungen.add(z.endeZuEnde);
+
+    if (z.verwendungszweck.length > ZWECK_HOECHSTLAENGE) {
+      beanstandungen.push(
+        `Zeile ${nummer} (${z.zahler}): Der Verwendungszweck ist ${z.verwendungszweck.length} Zeichen lang, zulässig sind ${ZWECK_HOECHSTLAENGE}.`,
+      );
+    }
+
+    // Eine Mandatsreferenz, die älter als 36 Monate ist und seither
+    // nicht genutzt wurde, erlischt. Das Datum allein sagt nicht, ob
+    // sie genutzt wurde - deshalb eine Warnung, keine Beanstandung.
+    const alter =
+      (eingereichtAm.getTime() - Date.parse(z.mandatVom + "T00:00:00Z")) /
+      (1000 * 60 * 60 * 24 * 30.44);
+
+    if (Number.isFinite(alter) && alter > 36) {
+      warnungen.push(
+        `Zeile ${nummer} (${z.zahler}): Das Mandat ist über drei Jahre alt. Wurde es seither nicht genutzt, ist es erloschen.`,
+      );
+    }
+
+    summe += z.betragEur;
+
+    const faellig = fruehesteFaelligkeit(eingereichtAm, z.sequenz);
+    if (!spaeteste || faellig > spaeteste) spaeteste = faellig;
+  }
+
+  return {
+    gueltig: beanstandungen.length === 0,
+    beanstandungen,
+    warnungen,
+    summeEur: Math.round(summe * 100) / 100,
+    anzahl: zahlungen.length,
+    faelligAm: spaeteste ? alsIsoTag(spaeteste) : null,
+  };
+}
+
+/* ------------------------------------------------------------------ */
+/* Die Datei                                                           */
+/* ------------------------------------------------------------------ */
+
+/** Maskiert die fünf Zeichen, die in XML nicht roh stehen dürfen. */
+function x(wert: string): string {
+  return wert
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&apos;");
+}
+
+/** Betrag mit Punkt als Dezimaltrenner - so will es die Norm. */
+function betrag(wert: number): string {
+  return wert.toFixed(2);
+}
+
+export interface Dateiangaben {
+  /** Kennung der Nachricht, eindeutig beim Einreicher. */
+  nachrichtId: string;
+  /** Kennung des Sammelauftrags. */
+  auftragId: string;
+  erstelltAm: Date;
+  eingereichtAm: Date;
+}
+
+/**
+ * Erzeugt die pain.008-Datei.
+ *
+ * Je Sequenzart ein eigener Zahlungsblock: Erst- und Folgelastschrift
+ * dürfen nicht im selben stehen, weil sie verschiedene Fälligkeiten
+ * haben. Viele Banken nehmen eine gemischte Datei an und buchen sie
+ * falsch - das ist schlimmer als eine Rückweisung.
+ */
+export function alsPain008(
+  einreicher: Einreicher,
+  zahlungen: Lastschrift[],
+  angaben: Dateiangaben,
+): string {
+  const zeitstempel = angaben.erstelltAm.toISOString().slice(0, 19);
+  const summe = zahlungen.reduce((s, z) => s + z.betragEur, 0);
+
+  const nachSequenz = new Map<Sequenz, Lastschrift[]>();
+  for (const z of zahlungen) {
+    nachSequenz.set(z.sequenz, [...(nachSequenz.get(z.sequenz) ?? []), z]);
+  }
+
+  const bloecke = [...nachSequenz.entries()].map(([sequenz, liste], i) => {
+    const faellig = alsIsoTag(
+      fruehesteFaelligkeit(angaben.eingereichtAm, sequenz),
+    );
+    const teilsumme = liste.reduce((s, z) => s + z.betragEur, 0);
+
+    const posten = liste
+      .map(
+        (z) => `      <DrctDbtTxInf>
+        <PmtId><EndToEndId>${x(z.endeZuEnde)}</EndToEndId></PmtId>
+        <InstdAmt Ccy="EUR">${betrag(z.betragEur)}</InstdAmt>
+        <DrctDbtTx>
+          <MndtRltdInf>
+            <MndtId>${x(z.mandat)}</MndtId>
+            <DtOfSgntr>${x(z.mandatVom)}</DtOfSgntr>
+          </MndtRltdInf>
+        </DrctDbtTx>
+        <DbtrAgt>${
+          z.bic
+            ? `<FinInstnId><BICFI>${x(z.bic)}</BICFI></FinInstnId>`
+            : "<FinInstnId><Othr><Id>NOTPROVIDED</Id></Othr></FinInstnId>"
+        }</DbtrAgt>
+        <Dbtr><Nm>${x(z.zahler)}</Nm></Dbtr>
+        <DbtrAcct><Id><IBAN>${x(normiereIban(z.iban))}</IBAN></Id></DbtrAcct>
+        <RmtInf><Ustrd>${x(z.verwendungszweck)}</Ustrd></RmtInf>
+      </DrctDbtTxInf>`,
+      )
+      .join("\n");
+
+    return `    <PmtInf>
+      <PmtInfId>${x(angaben.auftragId)}-${i + 1}</PmtInfId>
+      <PmtMtd>DD</PmtMtd>
+      <BtchBookg>true</BtchBookg>
+      <NbOfTxs>${liste.length}</NbOfTxs>
+      <CtrlSum>${betrag(teilsumme)}</CtrlSum>
+      <PmtTpInf>
+        <SvcLvl><Cd>SEPA</Cd></SvcLvl>
+        <LclInstrm><Cd>CORE</Cd></LclInstrm>
+        <SeqTp>${sequenz}</SeqTp>
+      </PmtTpInf>
+      <ReqdColltnDt>${faellig}</ReqdColltnDt>
+      <Cdtr><Nm>${x(einreicher.name)}</Nm></Cdtr>
+      <CdtrAcct><Id><IBAN>${x(normiereIban(einreicher.iban))}</IBAN></Id></CdtrAcct>
+      <CdtrAgt>${
+        einreicher.bic
+          ? `<FinInstnId><BICFI>${x(einreicher.bic)}</BICFI></FinInstnId>`
+          : "<FinInstnId><Othr><Id>NOTPROVIDED</Id></Othr></FinInstnId>"
+      }</CdtrAgt>
+      <ChrgBr>SLEV</ChrgBr>
+      <CdtrSchmeId>
+        <Id><PrvtId><Othr>
+          <Id>${x(einreicher.glaeubigerId)}</Id>
+          <SchmeNm><Prtry>SEPA</Prtry></SchmeNm>
+        </Othr></PrvtId></Id>
+      </CdtrSchmeId>
+${posten}
+    </PmtInf>`;
+  });
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<Document xmlns="urn:iso:std:iso:20022:tech:xsd:pain.008.001.08">
+  <CstmrDrctDbtInitn>
+    <GrpHdr>
+      <MsgId>${x(angaben.nachrichtId)}</MsgId>
+      <CreDtTm>${zeitstempel}</CreDtTm>
+      <NbOfTxs>${zahlungen.length}</NbOfTxs>
+      <CtrlSum>${betrag(summe)}</CtrlSum>
+      <InitgPty><Nm>${x(einreicher.name)}</Nm></InitgPty>
+    </GrpHdr>
+${bloecke.join("\n")}
+  </CstmrDrctDbtInitn>
+</Document>
+`;
+}
+
+/** Kurzfassung für die Anzeige. */
+export function fasseSammlerZusammen(pruefung: Sammlerpruefung): string {
+  if (!pruefung.gueltig) {
+    return `${pruefung.beanstandungen.length} Beanstandungen – die Datei wurde nicht erzeugt.`;
+  }
+
+  return `${pruefung.anzahl} Lastschriften über ${alsKomma(pruefung.summeEur, 2)} Euro, fällig am ${pruefung.faelligAm ? pruefung.faelligAm.split("-").reverse().join(".") : "–"}.`;
+}

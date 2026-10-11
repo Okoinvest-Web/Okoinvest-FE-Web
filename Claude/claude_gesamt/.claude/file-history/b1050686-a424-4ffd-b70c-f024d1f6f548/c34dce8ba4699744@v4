@@ -1,0 +1,302 @@
+import type { SVGProps } from "react";
+
+/**
+ * Strichzeichnungen statt Schriftzeichen.
+ *
+ * Zuvor standen hier Unicode-Symbole wie ☀ und ⇅. Die sehen auf jedem
+ * Betriebssystem anders aus, lassen sich nicht in Staerke oder Groesse
+ * abstimmen und wirken zusammengesucht. Diese Zeichnungen teilen sich
+ * ein Raster von 24 Einheiten, eine Strichstaerke von 1,5 und runde
+ * Enden - dadurch sitzen sie ruhig neben dem Text.
+ *
+ * Sie erben die Textfarbe, tragen also nie eigene Farbigkeit.
+ */
+
+type IconProps = SVGProps<SVGSVGElement> & {
+  /** Kantenlaenge in Pixeln. */
+  groesse?: number;
+};
+
+function Rahmen({ groesse = 16, children, ...rest }: IconProps) {
+  return (
+    <svg
+      width={groesse}
+      height={groesse}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      focusable="false"
+      {...rest}
+    >
+      {children}
+    </svg>
+  );
+}
+
+/* ---- Navigation ---------------------------------------------------- */
+
+export const IconUebersicht = (p: IconProps) => (
+  <Rahmen {...p}>
+    <rect x="3" y="3" width="7" height="9" rx="1" />
+    <rect x="14" y="3" width="7" height="5" rx="1" />
+    <rect x="14" y="12" width="7" height="9" rx="1" />
+    <rect x="3" y="16" width="7" height="5" rx="1" />
+  </Rahmen>
+);
+
+export const IconAnlage = (p: IconProps) => (
+  <Rahmen {...p}>
+    <path d="M4 14h16l-1.6-8.4a1 1 0 0 0-1-.6H6.6a1 1 0 0 0-1 .6L4 14Z" />
+    <path d="M12 5.2V14M4.9 9.6h14.2M12 14v5M9 19h6" />
+  </Rahmen>
+);
+
+export const IconEnergie = (p: IconProps) => (
+  <Rahmen {...p}>
+    <path d="M13 2 4.5 13.2a.6.6 0 0 0 .5 1h6L11 22l8.5-11.2a.6.6 0 0 0-.5-1h-6L13 2Z" />
+  </Rahmen>
+);
+
+export const IconSteuerung = (p: IconProps) => (
+  <Rahmen {...p}>
+    <path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h10M18 18h2" />
+    <circle cx="16" cy="6" r="2" />
+    <circle cx="10" cy="12" r="2" />
+    <circle cx="16" cy="18" r="2" />
+  </Rahmen>
+);
+
+export const IconGemeinschaft = (p: IconProps) => (
+  <Rahmen {...p}>
+    <circle cx="12" cy="12" r="2.6" />
+    <circle cx="12" cy="4.2" r="2" />
+    <circle cx="19" cy="16" r="2" />
+    <circle cx="5" cy="16" r="2" />
+    <path d="M12 6.2v3.2M14.2 13.6l3 1.2M9.8 13.6l-3 1.2" />
+  </Rahmen>
+);
+
+export const IconZertifikat = (p: IconProps) => (
+  <Rahmen {...p}>
+    <circle cx="12" cy="9" r="5.5" />
+    <path d="m8.5 13.8-1.3 7 4.8-2.4 4.8 2.4-1.3-7" />
+    <path d="m10 9 1.5 1.6L14.4 7" />
+  </Rahmen>
+);
+
+export const IconLaden = (p: IconProps) => (
+  <Rahmen {...p}>
+    <rect x="4" y="3" width="11" height="18" rx="2" />
+    <path d="M10.5 8.2 8 12.4h3l-.6 3.6 2.6-4.2h-3l.5-3.6Z" />
+    <path d="M18 8h1.6a1.4 1.4 0 0 1 1.4 1.4V16a1.5 1.5 0 0 1-3 0v-4" />
+  </Rahmen>
+);
+
+export const IconBeleg = (p: IconProps) => (
+  <Rahmen {...p}>
+    <path d="M6 2.8h8.5L19 7.3V21a.8.8 0 0 1-.8.8H6a.8.8 0 0 1-.8-.8V3.6A.8.8 0 0 1 6 2.8Z" />
+    <path d="M14 3v4.5h4.6M8.5 12h7M8.5 15.5h7M8.5 19h4" />
+  </Rahmen>
+);
+
+export const IconShop = (p: IconProps) => (
+  <Rahmen {...p}>
+    <path d="M4 7h16l-1.2 12.1a1 1 0 0 1-1 .9H6.2a1 1 0 0 1-1-.9L4 7Z" />
+    <path d="M8.8 9.5V6a3.2 3.2 0 0 1 6.4 0v3.5" />
+  </Rahmen>
+);
+
+export const IconSupport = (p: IconProps) => (
+  <Rahmen {...p}>
+    <path d="M4 12a8 8 0 0 1 16 0" />
+    <rect x="3" y="12" width="4" height="7" rx="1.6" />
+    <rect x="17" y="12" width="4" height="7" rx="1.6" />
+    <path d="M20 19v.6a2.4 2.4 0 0 1-2.4 2.4H13" />
+  </Rahmen>
+);
+
+export const IconDokument = (p: IconProps) => (
+  <Rahmen {...p}>
+    <path d="M5.5 3.8h9L19 8.3V20a.8.8 0 0 1-.8.8H5.5a.8.8 0 0 1-.8-.8V4.6a.8.8 0 0 1 .8-.8Z" />
+    <path d="M14 4v4.5h4.6" />
+    <path d="m8 14.5 1.8 1.8 3.6-3.8" />
+  </Rahmen>
+);
+
+export const IconFernwartung = (p: IconProps) => (
+  <Rahmen {...p}>
+    <rect x="2.8" y="14" width="18.4" height="6" rx="1.6" />
+    <path d="M6.4 17h.01M10 17h.01" />
+    <path d="M6 10.6a8 8 0 0 1 12 0M9 7.8a4.4 4.4 0 0 1 6 0" />
+  </Rahmen>
+);
+
+export const IconSicherheit = (p: IconProps) => (
+  <Rahmen {...p}>
+    <path d="M12 2.6 4.5 5.5v5.9c0 4.5 3.1 8.7 7.5 10 4.4-1.3 7.5-5.5 7.5-10V5.5L12 2.6Z" />
+    <path d="m9 12 2 2 4-4.2" />
+  </Rahmen>
+);
+
+export const IconEinstellungen = (p: IconProps) => (
+  <Rahmen {...p}>
+    <circle cx="12" cy="12" r="2.8" />
+    <path d="M19.4 14.6a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5v.2a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1h.2a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1Z" />
+  </Rahmen>
+);
+
+export const IconAlarm = (p: IconProps) => (
+  <Rahmen {...p}>
+    <path d="M18 8.6a6 6 0 1 0-12 0c0 6-2.4 7.6-2.4 7.6h16.8S18 14.6 18 8.6Z" />
+    <path d="M13.7 20.2a2 2 0 0 1-3.4 0" />
+  </Rahmen>
+);
+
+export const IconZaehlpunkt = (p: IconProps) => (
+  <Rahmen {...p}>
+    <rect x="3.5" y="3.5" width="17" height="17" rx="2" />
+    <circle cx="12" cy="10.5" r="3.2" />
+    <path d="M8 17h8M12 7.3v3.2" />
+  </Rahmen>
+);
+
+/* ---- Handlungen ---------------------------------------------------- */
+
+export const IconPfeilRechts = (p: IconProps) => (
+  <Rahmen {...p}>
+    <path d="M5 12h14M13 6l6 6-6 6" />
+  </Rahmen>
+);
+
+export const IconPfeilLinks = (p: IconProps) => (
+  <Rahmen {...p}>
+    <path d="M19 12H5M11 18l-6-6 6-6" />
+  </Rahmen>
+);
+
+export const IconChevronUnten = (p: IconProps) => (
+  <Rahmen {...p}>
+    <path d="m6 9 6 6 6-6" />
+  </Rahmen>
+);
+
+export const IconPlus = (p: IconProps) => (
+  <Rahmen {...p}>
+    <path d="M12 5v14M5 12h14" />
+  </Rahmen>
+);
+
+export const IconSchloss = (p: IconProps) => (
+  <Rahmen {...p}>
+    <rect x="4.5" y="10.5" width="15" height="10" rx="2" />
+    <path d="M8 10.5V7a4 4 0 0 1 8 0v3.5" />
+  </Rahmen>
+);
+
+export const IconHaken = (p: IconProps) => (
+  <Rahmen {...p}>
+    <path d="m5 13 4.5 4.5L19 7" />
+  </Rahmen>
+);
+
+export const IconKreuz = (p: IconProps) => (
+  <Rahmen {...p}>
+    <path d="M6 6l12 12M18 6 6 18" />
+  </Rahmen>
+);
+
+export const IconWarnung = (p: IconProps) => (
+  <Rahmen {...p}>
+    <path d="M10.3 3.9 2.6 17.2a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" />
+    <path d="M12 9.5v4M12 17.2h.01" />
+  </Rahmen>
+);
+
+export const IconInfo = (p: IconProps) => (
+  <Rahmen {...p}>
+    <circle cx="12" cy="12" r="9.2" />
+    <path d="M12 11v5.2M12 7.8h.01" />
+  </Rahmen>
+);
+
+export const IconRechnen = (p: IconProps) => (
+  <Rahmen {...p}>
+    <rect x="4.5" y="2.8" width="15" height="18.4" rx="2" />
+    <path d="M8 7h8M8.2 11.5h.01M12 11.5h.01M15.8 11.5h.01M8.2 15.5h.01M12 15.5h.01M15.8 15.5v3" />
+  </Rahmen>
+);
+
+/**
+ * Regulierung: ein Paragraphenzeichen, gezeichnet statt gesetzt.
+ *
+ * Das Schriftzeichen § traegt in jeder Schrift eine andere Strichstaerke
+ * und sitzt neben den uebrigen Zeichnungen sichtbar fremd.
+ */
+export const IconParagraf = (p: IconProps) => (
+  <Rahmen {...p}>
+    <path d="M14.6 6.2a3 3 0 0 0-5.4 1.5c0 2.6 5.6 2.9 5.6 5.6a3 3 0 0 1-5.4 1.6" />
+    <path d="M9.4 17.8a3 3 0 0 0 5.4-1.5c0-2.6-5.6-2.9-5.6-5.6a3 3 0 0 1 5.4-1.6" />
+  </Rahmen>
+);
+
+export const IconHerunterladen = (p: IconProps) => (
+  <Rahmen {...p}>
+    <path d="M12 3v12M7.5 10.5 12 15l4.5-4.5" />
+    <path d="M4 17v2.4A1.6 1.6 0 0 0 5.6 21h12.8a1.6 1.6 0 0 0 1.6-1.6V17" />
+  </Rahmen>
+);
+
+export const IconUhr = (p: IconProps) => (
+  <Rahmen {...p}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 7v5.2l3.2 1.9" />
+  </Rahmen>
+);
+
+export const IconMenue = (p: IconProps) => (
+  <Rahmen {...p}>
+    <path d="M4 7h16M4 12h16M4 17h16" />
+  </Rahmen>
+);
+
+export const IconSuche = (p: IconProps) => (
+  <Rahmen {...p}>
+    <circle cx="11" cy="11" r="6.6" />
+    <path d="m16 16 4.2 4.2" />
+  </Rahmen>
+);
+
+/* ---- Energieflüsse -------------------------------------------------- */
+
+export const IconSonne = (p: IconProps) => (
+  <Rahmen {...p}>
+    <circle cx="12" cy="12" r="4" />
+    <path d="M12 2.6v2.2M12 19.2v2.2M4.4 4.4l1.6 1.6M18 18l1.6 1.6M2.6 12h2.2M19.2 12h2.2M4.4 19.6 6 18M18 6l1.6-1.6" />
+  </Rahmen>
+);
+
+export const IconBetrieb = (p: IconProps) => (
+  <Rahmen {...p}>
+    <path d="M3 20.5h18M4.5 20.5V9.2l7.5-5.7 7.5 5.7v11.3" />
+    <path d="M9.5 20.5v-5.6h5v5.6" />
+  </Rahmen>
+);
+
+export const IconNetz = (p: IconProps) => (
+  <Rahmen {...p}>
+    <path d="M8 4v16M16 4v16M5 8h14M5 16h14" />
+    <path d="M8 4 5 8M16 4l3 4M8 20l-3-4M16 20l3-4" />
+  </Rahmen>
+);
+
+export const IconSpeicher = (p: IconProps) => (
+  <Rahmen {...p}>
+    <rect x="3" y="7" width="16" height="10" rx="2" />
+    <path d="M21 10.5v3" />
+    <path d="M6.5 10.5v3M10 10.5v3" />
+  </Rahmen>
+);

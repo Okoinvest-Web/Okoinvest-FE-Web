@@ -1,0 +1,264 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+
+import { ladeEinreicher, ladeEinzugslage } from "@/lib/daten/lastschrift";
+import { eine, imBlock, schreibe, skalar } from "@/lib/db/verbindung";
+import { alsPain008, pruefeSammler } from "@/lib/finanzen/sepa";
+import { protokolliere } from "@/lib/sicherheit/audit";
+import { requireRecht } from "@/lib/session";
+import { alsDatum, alsKomma, mehrzahl } from "@/lib/zahl";
+
+export interface LastschriftErgebnis {
+  ok: boolean;
+  meldung: string;
+  hinweise?: string[];
+  lauf?: string;
+}
+
+/** Kennung im Stil "LS-2026-09-01". */
+function freieKennung(heute: Date): string {
+  const monat = `LS-${heute.getFullYear()}-${String(heute.getMonth() + 1).padStart(2, "0")}`;
+
+  for (let n = 1; n <= 99; n += 1) {
+    const kandidat = `${monat}-${String(n).padStart(2, "0")}`;
+    const belegt =
+      (skalar<number>(
+        "SELECT COUNT(*) FROM lastschriftlauf WHERE id = ?",
+        kandidat,
+      ) ?? 0) > 0;
+    if (!belegt) return kandidat;
+  }
+
+  return `${monat}-99`;
+}
+
+/**
+ * Erzeugt einen SEPA-Lastschriftsammler aus den offenen Belegen.
+ *
+ * Der Sammler entsteht als Datei und wird nicht sofort eingereicht.
+ * Zwischen beidem liegt bewusst ein zweiter Handgriff: Wer einzieht,
+ * soll vorher sehen, bei wem und über wie viel. Ein Lauf, der sofort
+ * einreicht, nimmt genau diese Möglichkeit - und eine Lastschrift,
+ * die zu Unrecht kommt, kostet mehr als eine Rückfrage.
+ */
+export async function erzeugeLastschrift(
+  _vorher: LastschriftErgebnis | null,
+  _formular: FormData,
+): Promise<LastschriftErgebnis> {
+  const benutzer = await requireRecht("finanzen.buchen");
+
+  const einreicher = ladeEinreicher();
+  const lage = ladeEinzugslage();
+
+  const uebersprungen = lage.nichtEinziehbar.map(
+    (n) => `${n.nummer} (${n.zahler}): ${n.grund}`,
+  );
+
+  if (lage.einziehbar.length === 0) {
+    return {
+      ok: false,
+      meldung:
+        uebersprungen.length > 0
+          ? "Es ist nichts einziehbar."
+          : "Es sind keine offenen Belege vorhanden.",
+      hinweise: uebersprungen,
+    };
+  }
+
+  const heute = new Date();
+  const pruefung = pruefeSammler(einreicher, lage.einziehbar, heute);
+
+  if (!pruefung.gueltig) {
+    await protokolliere({
+      kategorie: "abrechnung",
+      aktion: "Lastschriftlauf abgebrochen",
+      ergebnis: "abgelehnt",
+      begruendung: pruefung.beanstandungen.join(" | "),
+    });
+
+    return {
+      ok: false,
+      meldung:
+        "Der Sammler wurde nicht erzeugt. Die Bank weist eine fehlerhafte Datei als Ganzes zurück – hier gefunden ist sie billiger.",
+      hinweise: pruefung.beanstandungen,
+    };
+  }
+
+  const id = freieKennung(heute);
+  const nachrichtId = `${id}-${heute.getTime().toString(36).toUpperCase()}`;
+
+  const datei = alsPain008(einreicher, lage.einziehbar, {
+    nachrichtId,
+    auftragId: id,
+    erstelltAm: heute,
+    eingereichtAm: heute,
+  });
+
+  imBlock(() => {
+    schreibe(
+      `INSERT INTO lastschriftlauf
+         (id, bezeichnung, nachricht_id, erstellt_am, erstellt_von,
+          faellig_am, anzahl, summe_eur, status, datei)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Erstellt', ?)`,
+      id,
+      `Lastschriftlauf ${heute.toLocaleDateString("de-AT")}`,
+      nachrichtId,
+      heute.toISOString(),
+      benutzer.vollname,
+      pruefung.faelligAm,
+      pruefung.anzahl,
+      pruefung.summeEur,
+      datei,
+    );
+
+    for (const [i, z] of lage.einziehbar.entries()) {
+      schreibe(
+        `INSERT INTO lastschriftposten
+           (id, lauf_id, beleg_id, kunde_id, ende_zu_ende, iban, mandat,
+            sequenz, betrag_eur)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `${id}-${String(i + 1).padStart(3, "0")}`,
+        id,
+        z.belegId,
+        z.kundeId,
+        z.endeZuEnde,
+        z.iban.replace(/\s+/g, ""),
+        z.mandat,
+        z.sequenz,
+        z.betragEur,
+      );
+    }
+  });
+
+  await protokolliere({
+    kategorie: "abrechnung",
+    aktion: `Lastschriftlauf ${id} erzeugt`,
+    ergebnis: "erfolg",
+    objekt: id,
+    nachher: `${pruefung.anzahl} Posten über ${pruefung.summeEur.toFixed(2)} EUR`,
+    begruendung: `Durch ${benutzer.vollname}`,
+  });
+
+  revalidatePath("/portal/finanzen");
+
+  return {
+    ok: true,
+    meldung: `${id} steht bereit: ${mehrzahl(pruefung.anzahl, "Lastschrift", "Lastschriften")} über ${alsKomma(pruefung.summeEur, 2)} Euro, fällig am ${alsDatum(pruefung.faelligAm ?? "")}. Prüfen, dann einreichen.`,
+    hinweise: pruefung.warnungen.concat(uebersprungen),
+    lauf: id,
+  };
+}
+
+/**
+ * Markiert einen Sammler als bei der Bank eingereicht.
+ *
+ * Ab hier gilt er als abgegeben, und die Belege sind nicht mehr
+ * einziehbar. Ein zweimal eingereichter Sammler zieht zweimal ein -
+ * das fällt beim Zahler auf, nicht beim Einreicher.
+ */
+export async function reicheLastschriftEin(
+  _vorher: LastschriftErgebnis | null,
+  formular: FormData,
+): Promise<LastschriftErgebnis> {
+  const benutzer = await requireRecht("finanzen.buchen");
+
+  const id = String(formular.get("lauf") ?? "");
+  const lauf = eine<{ status: string; anzahl: number; summe_eur: number }>(
+    "SELECT status, anzahl, summe_eur FROM lastschriftlauf WHERE id = ?",
+    id,
+  );
+
+  if (!lauf) {
+    return { ok: false, meldung: "Dieser Lastschriftlauf ist nicht vorhanden." };
+  }
+
+  if (lauf.status !== "Erstellt") {
+    return {
+      ok: false,
+      meldung:
+        lauf.status === "Eingereicht"
+          ? "Dieser Sammler wurde bereits eingereicht. Ein zweites Mal abgegeben zöge er zweimal ein."
+          : "Ein stornierter Sammler wird nicht eingereicht.",
+    };
+  }
+
+  schreibe(
+    `UPDATE lastschriftlauf SET status = 'Eingereicht', eingereicht_am = ?
+      WHERE id = ? AND status = 'Erstellt'`,
+    new Date().toISOString(),
+    id,
+  );
+
+  await protokolliere({
+    kategorie: "abrechnung",
+    aktion: `Lastschriftlauf ${id} eingereicht`,
+    ergebnis: "erfolg",
+    objekt: id,
+    vorher: "Erstellt",
+    nachher: "Eingereicht",
+    begruendung: `${lauf.anzahl} Posten über ${lauf.summe_eur.toFixed(2)} EUR durch ${benutzer.vollname}`,
+  });
+
+  revalidatePath("/portal/finanzen");
+
+  return {
+    ok: true,
+    meldung:
+      "Eingereicht. Die Belege sind damit einem Einzug zugeordnet und kommen in keinen zweiten Sammler.",
+  };
+}
+
+/**
+ * Storniert einen noch nicht eingereichten Sammler.
+ *
+ * Die Belege werden dadurch wieder einziehbar. Ein bereits
+ * eingereichter Sammler lässt sich hier nicht stornieren - dafür ist
+ * die Bank zuständig, und dort heißt es Rückruf.
+ */
+export async function storniereLastschrift(
+  _vorher: LastschriftErgebnis | null,
+  formular: FormData,
+): Promise<LastschriftErgebnis> {
+  const benutzer = await requireRecht("finanzen.buchen");
+
+  const id = String(formular.get("lauf") ?? "");
+  const lauf = eine<{ status: string }>(
+    "SELECT status FROM lastschriftlauf WHERE id = ?",
+    id,
+  );
+
+  if (!lauf) {
+    return { ok: false, meldung: "Dieser Lastschriftlauf ist nicht vorhanden." };
+  }
+
+  if (lauf.status !== "Erstellt") {
+    return {
+      ok: false,
+      meldung:
+        "Nur ein noch nicht eingereichter Sammler lässt sich stornieren. Für einen abgegebenen ist die Bank zuständig; dort heißt es Rückruf.",
+    };
+  }
+
+  schreibe(
+    "UPDATE lastschriftlauf SET status = 'Storniert' WHERE id = ?",
+    id,
+  );
+
+  await protokolliere({
+    kategorie: "abrechnung",
+    aktion: `Lastschriftlauf ${id} storniert`,
+    ergebnis: "erfolg",
+    objekt: id,
+    vorher: "Erstellt",
+    nachher: "Storniert",
+    begruendung: `Durch ${benutzer.vollname}`,
+  });
+
+  revalidatePath("/portal/finanzen");
+
+  return {
+    ok: true,
+    meldung: "Storniert. Die Belege sind wieder einziehbar.",
+  };
+}

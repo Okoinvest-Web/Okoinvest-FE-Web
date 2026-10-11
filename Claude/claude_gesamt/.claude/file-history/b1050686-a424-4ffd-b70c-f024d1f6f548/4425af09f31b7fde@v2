@@ -1,0 +1,216 @@
+/**
+ * Das Dossier einer Anlage: welche Unterlage wo steht und wie lange
+ * sie gilt.
+ *
+ * Die Frage, die dieses Modul beantwortet, klingt banal und ist es
+ * nicht: Wo ist der Netzzugangsvertrag? Im Betrieb liegt er in einem
+ * Ordner, im ERP unter einer Kennung, beim Errichter in einer
+ * E-Mail - und wenn der Netzbetreiber anruft, findet ihn niemand.
+ *
+ * Zwei Eigenschaften unterscheiden eine Unterlage von einer Datei:
+ *
+ * 1. *Pflicht oder nicht.* Ohne Abnahmeprotokoll gibt es keine
+ *    Inbetriebnahmemeldung, ohne Einpolschema keine Prüfung. Eine
+ *    fehlende Pflichtunterlage ist ein Mangel, eine fehlende
+ *    Garantieurkunde ein Ärgernis.
+ * 2. *Befristet oder nicht.* Ein Vertrag gilt bis auf Weiteres, ein
+ *    Prüfprotokoll und eine Garantie laufen ab. Wer beides gleich
+ *    führt, merkt den Ablauf am Tag danach.
+ */
+
+export type Dokumentgruppe =
+  | "Rechtlich"
+  | "Technisch"
+  | "Kaufmaennisch"
+  | "Wartung"
+  | "Garantie";
+
+/** Reihenfolge der Gruppen in der Anzeige. */
+export const GRUPPEN: Dokumentgruppe[] = [
+  "Rechtlich",
+  "Technisch",
+  "Wartung",
+  "Garantie",
+  "Kaufmaennisch",
+];
+
+export const GRUPPENNAMEN: Record<Dokumentgruppe, string> = {
+  Rechtlich: "Rechtliches",
+  Technisch: "Technische Unterlagen",
+  Wartung: "Wartung und Betrieb",
+  Garantie: "Garantien",
+  Kaufmaennisch: "Kaufmännisches",
+};
+
+export type Gueltigkeitsstand =
+  | "unbefristet"
+  | "gueltig"
+  | "laeuft_ab"
+  | "abgelaufen";
+
+/** Tage vor dem Ablauf, ab denen gewarnt wird. */
+export const VORLAUF_TAGE = 60;
+
+const TAG_MS = 86_400_000;
+
+export interface Gueltigkeit {
+  stand: Gueltigkeitsstand;
+  /** Tage bis zum Ablauf; negativ, wenn vorbei. */
+  tage: number;
+}
+
+/**
+ * Wie lange eine Unterlage noch gilt.
+ *
+ * Ohne Ablaufdatum ist sie unbefristet - und nicht etwa "gültig".
+ * Der Unterschied trägt: Ein unbefristeter Vertrag braucht keine
+ * Erinnerung, eine Garantie mit unbekanntem Ende schon.
+ */
+export function bewerteGueltigkeit(
+  gueltigBis: Date | null,
+  heute: Date,
+  vorlaufTage = VORLAUF_TAGE,
+): Gueltigkeit {
+  if (!gueltigBis || Number.isNaN(gueltigBis.getTime())) {
+    return { stand: "unbefristet", tage: 0 };
+  }
+
+  const tage = Math.round(
+    (new Date(
+      gueltigBis.getFullYear(),
+      gueltigBis.getMonth(),
+      gueltigBis.getDate(),
+    ).getTime() -
+      new Date(
+        heute.getFullYear(),
+        heute.getMonth(),
+        heute.getDate(),
+      ).getTime()) /
+      TAG_MS,
+  );
+
+  if (tage < 0) return { stand: "abgelaufen", tage };
+  if (tage <= vorlaufTage) return { stand: "laeuft_ab", tage };
+  return { stand: "gueltig", tage };
+}
+
+export interface Unterlage {
+  id: string;
+  gruppe: Dokumentgruppe;
+  art: string;
+  bezeichnung: string;
+  pflicht: boolean;
+  gueltigBis: Date | null;
+  /** Stand der Übernahme aus dem führenden System. */
+  syncStand: string;
+}
+
+export interface Gruppenbefund {
+  gruppe: Dokumentgruppe;
+  name: string;
+  unterlagen: (Unterlage & { gueltigkeit: Gueltigkeit })[];
+}
+
+const RANG: Record<Gueltigkeitsstand, number> = {
+  abgelaufen: 0,
+  laeuft_ab: 1,
+  unbefristet: 2,
+  gueltig: 3,
+};
+
+/**
+ * Ordnet ein Dossier für die Anzeige.
+ *
+ * Innerhalb einer Gruppe steht vorn, was Aufmerksamkeit braucht:
+ * abgelaufen, dann ablaufend, dann der Rest. Pflichtunterlagen vor
+ * freiwilligen - bei gleichem Stand.
+ */
+export function ordneDossier(
+  unterlagen: Unterlage[],
+  heute: Date,
+): Gruppenbefund[] {
+  return GRUPPEN.map((gruppe) => ({
+    gruppe,
+    name: GRUPPENNAMEN[gruppe],
+    unterlagen: unterlagen
+      .filter((u) => u.gruppe === gruppe)
+      .map((u) => ({ ...u, gueltigkeit: bewerteGueltigkeit(u.gueltigBis, heute) }))
+      .sort(
+        (a, b) =>
+          RANG[a.gueltigkeit.stand] - RANG[b.gueltigkeit.stand] ||
+          Number(b.pflicht) - Number(a.pflicht) ||
+          a.bezeichnung.localeCompare(b.bezeichnung, "de-AT"),
+      ),
+  })).filter((g) => g.unterlagen.length > 0);
+}
+
+export interface Dossierstand {
+  gesamt: number;
+  pflicht: number;
+  abgelaufen: number;
+  laeuftAb: number;
+  /** Unterlagen, deren Übernahme aus dem führenden System hängt. */
+  nichtUebernommen: number;
+}
+
+export function fasseDossier(
+  unterlagen: Unterlage[],
+  heute: Date,
+): Dossierstand {
+  let abgelaufen = 0;
+  let laeuftAb = 0;
+
+  for (const u of unterlagen) {
+    const stand = bewerteGueltigkeit(u.gueltigBis, heute).stand;
+    if (stand === "abgelaufen") abgelaufen += 1;
+    else if (stand === "laeuft_ab") laeuftAb += 1;
+  }
+
+  return {
+    gesamt: unterlagen.length,
+    pflicht: unterlagen.filter((u) => u.pflicht).length,
+    abgelaufen,
+    laeuftAb,
+    nichtUebernommen: unterlagen.filter((u) => u.syncStand !== "Aktuell").length,
+  };
+}
+
+/**
+ * Ein Satz über den Stand des Dossiers.
+ *
+ * Er nennt zuerst das Abgelaufene. Ein Dossier, dessen Zusammenfassung
+ * mit der Zahl der Unterlagen beginnt, liest sich vollständig und ist
+ * es nicht.
+ */
+export function fasseDossierZusammen(stand: Dossierstand): string {
+  if (stand.gesamt === 0) {
+    return "Zu dieser Anlage ist keine Unterlage abgelegt.";
+  }
+
+  const teile: string[] = [];
+
+  if (stand.abgelaufen > 0) {
+    teile.push(
+      `${stand.abgelaufen} ${stand.abgelaufen === 1 ? "Unterlage ist abgelaufen" : "Unterlagen sind abgelaufen"}`,
+    );
+  }
+
+  if (stand.laeuftAb > 0) {
+    teile.push(
+      `${stand.laeuftAb} ${stand.laeuftAb === 1 ? "läuft" : "laufen"} in den nächsten ${VORLAUF_TAGE} Tagen ab`,
+    );
+  }
+
+  if (stand.nichtUebernommen > 0) {
+    teile.push(
+      `${stand.nichtUebernommen} ${stand.nichtUebernommen === 1 ? "wurde" : "wurden"} nicht aus dem führenden System übernommen`,
+    );
+  }
+
+  const kopf =
+    teile.length > 0
+      ? `${teile.join(", ")}.`
+      : "Alle Unterlagen sind gültig und übernommen.";
+
+  return `${kopf} ${stand.gesamt} Unterlagen abgelegt, davon ${stand.pflicht} verpflichtend.`;
+}

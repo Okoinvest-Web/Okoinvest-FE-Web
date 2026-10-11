@@ -1,0 +1,397 @@
+<template>
+  <div class="p-6">
+    <div class="mb-3 flex flex-wrap items-end justify-between gap-3">
+      <div class="max-w-3xl">
+        <h2 class="text-base font-semibold text-ink-gray-8">Sicherungsziele</h2>
+        <p class="text-sm text-ink-gray-6">
+          Wo Sicherungen liegen dürfen. Was jedes Ziel kann, steht an ihm selbst – die Oberfläche
+          rät nichts.
+        </p>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <Button variant="subtle" @click="artenOffen = true">Zielarten</Button>
+        <Button variant="solid" @click="zielFragen(null)">Ziel anlegen</Button>
+      </div>
+    </div>
+
+    <BackupTargets
+      :ziele="ziele.data || []"
+      @aktion="aktionFragen"
+      @dateien="(z) => $router.push('/backup/dateien')"
+      @punkte="() => $router.push('/backup/punkte')"
+    />
+
+    <div class="mt-4 flex flex-wrap gap-2">
+      <Button
+        v-for="z in (ziele.data || []).filter((x) => !x.retired)"
+        :key="z.name"
+        size="sm"
+        variant="subtle"
+        @click="zielFragen(z)"
+      >
+        {{ z.target_name }} bearbeiten
+      </Button>
+    </div>
+
+    <p class="mt-6 max-w-3xl text-xs text-ink-gray-4">
+      Belegung, Zustand und letzter Abgleich lassen sich hier nicht eintragen – die misst der
+      Konnektor. Stünden sie von Hand darin, verglichen die Prüfungen die Zusage mit sich selbst.
+    </p>
+
+    <!-- Ziel anlegen oder ändern -->
+    <Dialog
+      v-model="zielOffen"
+      :options="{ title: bearbeitet ? 'Ziel ändern' : 'Ziel anlegen', size: 'xl' }"
+    >
+      <template #body-content>
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <FormControl
+            v-model="form.target_name"
+            label="Name"
+            type="text"
+            placeholder="pbs-ds-zweitwerk"
+            :disabled="!!bearbeitet"
+          />
+          <FormControl
+            v-model="form.kind"
+            label="Zielart"
+            type="select"
+            :options="artOptionen"
+            :disabled="!!bearbeitet"
+          />
+          <FormControl
+            v-model="form.connector"
+            label="Konnektor"
+            type="select"
+            :options="konnektorOptionen"
+          />
+          <FormControl
+            v-model="form.location"
+            label="Ort"
+            type="text"
+            placeholder="Rechenzentrum Linz Nord"
+          />
+          <FormControl v-model="form.capacity_tb" label="Kapazität in TB" type="number" />
+          <FormControl v-model="form.retention_days" label="Aufbewahrung in Tagen" type="number" />
+        </div>
+
+        <div class="mt-3 flex flex-wrap gap-4">
+          <FormControl v-model="form.offsite" label="Außer Haus" type="checkbox" />
+          <FormControl v-model="form.encrypted" label="Verschlüsselt" type="checkbox" />
+          <FormControl v-model="form.immutable" label="Unveränderlich" type="checkbox" />
+        </div>
+
+        <FormControl
+          v-model="form.description"
+          label="Notiz"
+          type="textarea"
+          class="mt-3"
+          placeholder="Object Lock im Compliance-Modus, sieben Jahre."
+        />
+
+        <p v-if="!konnektorOptionen.length" class="mt-3 text-sm text-ink-red-3">
+          Für diese Zielart gibt es noch keinen Konnektor. Erst einen anlegen – ohne ihn kommt an
+          das Ziel nichts heran.
+        </p>
+
+        <!-- Hinweise beim Speichern, nicht hinterher als Befund -->
+        <ul v-if="hinweise.length" class="mt-3 rounded border border-outline-amber-2 p-3">
+          <li v-for="h in hinweise" :key="h" class="text-sm text-ink-gray-7">· {{ h }}</li>
+        </ul>
+      </template>
+      <template #actions>
+        <Button
+          variant="solid"
+          :disabled="!form.target_name || !form.connector"
+          :loading="speichern.loading"
+          @click="zielSpeichern"
+        >
+          {{ bearbeitet ? 'Ändern' : 'Anlegen' }}
+        </Button>
+      </template>
+    </Dialog>
+
+    <!-- Zielarten -->
+    <Dialog v-model="artenOffen" :options="{ title: 'Zielarten', size: '3xl' }">
+      <template #body-content>
+        <p class="mb-3 text-sm text-ink-gray-6">
+          Ein neu gebuchter Speicher wird hier eingetragen und ist danach als Konnektorart wählbar.
+          Die Aktionen kommen aus dem, was die Anwendung umsetzen kann – erfinden lässt sich keine.
+        </p>
+
+        <DataTable
+          :columns="artSpalten"
+          :rows="arten.data?.rows || []"
+          :loading="arten.loading"
+          :seiten-groesse="0"
+        >
+          <template #zelle-kind="{ zeile }">
+            <span class="font-mono text-sm text-ink-gray-9">{{ zeile.kind }}</span>
+          </template>
+          <template #zelle-erlaubt="{ zeile }">
+            <Badge v-for="a in zeile.erlaubt" :key="a" class="mr-1" theme="blue">
+              {{ verbName(a) }}
+            </Badge>
+          </template>
+          <template #zelle-nie_schreibend="{ zeile }">
+            <StatusDot
+              :level="zeile.nie_schreibend ? 'ok' : 'neutral'"
+              :text="zeile.nie_schreibend ? 'erzwungen lesend' : 'darf schreiben'"
+              klein
+            />
+          </template>
+        </DataTable>
+
+        <div class="mt-4 rounded border border-outline-gray-2 p-3">
+          <h3 class="mb-2 text-sm font-medium text-ink-gray-8">Neue Zielart</h3>
+          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <FormControl
+              v-model="artForm.kind"
+              label="Kürzel"
+              type="text"
+              placeholder="google-drive"
+            />
+            <FormControl
+              v-model="artForm.label"
+              label="Bezeichnung"
+              type="text"
+              placeholder="Google Drive"
+            />
+            <FormControl
+              v-model="artForm.allowed_actions"
+              label="Erlaubte Aktionen"
+              type="select"
+              :options="verbOptionen"
+            />
+            <FormControl
+              v-model="artForm.api_style"
+              label="API-Art"
+              type="text"
+              placeholder="Drive v3, OAuth2"
+            />
+          </div>
+          <div class="mt-3 flex flex-wrap gap-4">
+            <FormControl v-model="artForm.browsable" label="Dateien durchsehbar" type="checkbox" />
+            <FormControl
+              v-model="artForm.never_writable"
+              label="Nie schreibend anbindbar"
+              type="checkbox"
+            />
+          </div>
+          <Button class="mt-3" variant="solid" :loading="artSpeichern.loading" @click="artAnlegen">
+            Zielart anlegen
+          </Button>
+        </div>
+
+        <!-- Was sich keiner Zielart zuweisen lässt -->
+        <div class="mt-4 rounded border border-outline-gray-2 bg-surface-gray-1 p-3">
+          <p class="mb-1 text-sm font-medium text-ink-gray-8">
+            Diese Aktionen gibt es nicht – auch nicht für eine neue Zielart
+          </p>
+          <p class="text-sm text-ink-gray-6">
+            {{ (arten.data?.withheld || []).map((w) => w.label).join(' · ') }}
+          </p>
+          <p class="mt-1 text-xs text-ink-gray-5">
+            Stünde diese Liste in der Datenbank, trüge sie sich irgendwann jemand hier ein.
+          </p>
+        </div>
+      </template>
+    </Dialog>
+
+    <!-- Aktion anstoßen -->
+    <Dialog v-model="aktionOffen" :options="{ title: aktionTitel }">
+      <template #body-content>
+        <p class="mb-3 text-sm text-ink-gray-6">{{ aktionText }}</p>
+        <FormControl v-model="grund" label="Grund (kommt ins Protokoll)" type="text" />
+      </template>
+      <template #actions>
+        <Button variant="solid" :disabled="!grund" :loading="antrag.loading" @click="aktionStellen">
+          {{ brauchtGenehmigung ? 'Beantragen' : 'Starten' }}
+        </Button>
+      </template>
+    </Dialog>
+  </div>
+</template>
+
+<script setup>
+import { computed, ref } from 'vue'
+import { Badge, Button, Dialog, FormControl, createResource, toast } from 'frappe-ui'
+import BackupTargets from '@/components/BackupTargets.vue'
+import DataTable from '@/components/DataTable.vue'
+import StatusDot from '@/components/StatusDot.vue'
+import { useUiStore } from '@/stores/ui'
+import { fehlerText } from '@/viz'
+
+const emit = defineEmits(['neu-laden'])
+const ui = useUiStore()
+
+/** Ohne Genehmigung: was nur liest oder ablegt. */
+const HARMLOS = ['verify_now', 'sync_now', 'export_now', 'archive_now']
+
+const ziele = createResource({
+  url: 'netops.api.backup.backup_targets',
+  makeParams: () => ({ tenant: ui.mandant || null }),
+  auto: true,
+})
+const optionen = createResource({ url: 'netops.api.backup.backup_admin_options', auto: true })
+const arten = createResource({ url: 'netops.api.backup.backup_kinds', auto: true })
+const speichern = createResource({ url: 'netops.api.backup.backup_target_save' })
+const artSpeichern = createResource({ url: 'netops.api.backup.backup_kind_save' })
+const antrag = createResource({ url: 'netops.api.backup.backup_action' })
+
+const zielOffen = ref(false)
+const artenOffen = ref(false)
+const aktionOffen = ref(false)
+const bearbeitet = ref(null)
+const hinweise = ref([])
+const grund = ref('')
+const vorgang = ref(null)
+
+const form = ref(leeresZiel())
+const artForm = ref({
+  kind: '',
+  label: '',
+  allowed_actions: 'export_now',
+  api_style: '',
+  browsable: true,
+  never_writable: false,
+})
+
+function leeresZiel() {
+  return {
+    target_name: '',
+    kind: 'pbs',
+    connector: '',
+    location: '',
+    capacity_tb: '',
+    retention_days: 90,
+    offsite: false,
+    encrypted: true,
+    immutable: false,
+    description: '',
+  }
+}
+
+const artOptionen = computed(() =>
+  (optionen.data?.kinds || []).map((k) => ({ label: k.label, value: k.value })),
+)
+
+/** Nur Konnektoren, die diese Zielart überhaupt sprechen. */
+const konnektorOptionen = computed(() => {
+  const k = (optionen.data?.kinds || []).find((x) => x.value === form.value.kind)
+  return (k?.connectors || []).map((c) => ({ label: c.label, value: c.value }))
+})
+
+const verbOptionen = computed(() =>
+  (arten.data?.verbs || []).map((v) => ({ label: v.label, value: v.value })),
+)
+
+const artSpalten = [
+  { key: 'kind', label: 'Kürzel', width: '150px' },
+  { key: 'label', label: 'Bezeichnung', width: '230px' },
+  { key: 'erlaubt', label: 'Erlaubte Aktionen' },
+  { key: 'nie_schreibend', label: 'Schreibzugriff', width: '180px' },
+  { key: 'targets', label: 'Ziele', align: 'right', numeric: true, width: '80px' },
+]
+
+function verbName(a) {
+  return (arten.data?.verbs || []).find((v) => v.value === a)?.label || a
+}
+
+function zielFragen(z) {
+  bearbeitet.value = z
+  hinweise.value = []
+  form.value = z
+    ? {
+        target_name: z.target_name,
+        kind: z.kind,
+        connector: z.connector,
+        location: z.location || '',
+        capacity_tb: z.capacity_tb ?? '',
+        retention_days: z.retention_days,
+        offsite: !!z.offsite,
+        encrypted: !!z.encrypted,
+        immutable: !!z.immutable,
+        description: z.description || '',
+      }
+    : leeresZiel()
+  zielOffen.value = true
+}
+
+async function zielSpeichern() {
+  try {
+    const daten = { ...form.value }
+    if (bearbeitet.value) {
+      daten.name = bearbeitet.value.name
+      delete daten.target_name
+      delete daten.kind
+    }
+    for (const f of ['offsite', 'encrypted', 'immutable']) daten[f] = daten[f] ? 1 : 0
+    const e = await speichern.submit(daten)
+    hinweise.value = e.notes || []
+    toast.create({
+      message: (e.created ? 'Angelegt: ' : 'Geändert: ') + e.target,
+      type: 'success',
+    })
+    ziele.fetch()
+    optionen.fetch()
+    emit('neu-laden')
+    if (!e.notes?.length) zielOffen.value = false
+  } catch (f) {
+    toast.create({ message: fehlerText(f), type: 'error' })
+  }
+}
+
+async function artAnlegen() {
+  try {
+    const e = await artSpeichern.submit({
+      ...artForm.value,
+      browsable: artForm.value.browsable ? 1 : 0,
+      never_writable: artForm.value.never_writable ? 1 : 0,
+    })
+    toast.create({ message: e.next_step || 'Zielart gespeichert', type: 'success' })
+    arten.fetch()
+    optionen.fetch()
+    artForm.value = {
+      kind: '',
+      label: '',
+      allowed_actions: 'export_now',
+      api_style: '',
+      browsable: true,
+      never_writable: false,
+    }
+  } catch (f) {
+    toast.create({ message: fehlerText(f), type: 'error' })
+  }
+}
+
+const aktionTitel = computed(() => vorgang.value?.titel || '')
+const aktionText = computed(() => vorgang.value?.text || '')
+const brauchtGenehmigung = computed(
+  () => vorgang.value && !HARMLOS.includes(vorgang.value.daten.action),
+)
+
+function aktionFragen({ ziel, aktion }) {
+  vorgang.value = {
+    titel: verbName(aktion),
+    text: HARMLOS.includes(aktion)
+      ? `${verbName(aktion)} auf ${ziel.target_name}. Läuft ohne Genehmigung – es wird nur gelesen oder abgelegt.`
+      : `${verbName(aktion)} auf ${ziel.target_name}. Das erzeugt Last auf dem Produktivsystem und braucht deshalb eine Genehmigung.`,
+    daten: { action: aktion, target: ziel.name },
+  }
+  grund.value = ''
+  aktionOffen.value = true
+}
+
+async function aktionStellen() {
+  try {
+    const e = await antrag.submit({ ...vorgang.value.daten, reason: grund.value })
+    toast.create({ message: e.note || 'Angestoßen', type: 'success' })
+    aktionOffen.value = false
+    ziele.fetch()
+    emit('neu-laden')
+  } catch (f) {
+    toast.create({ message: fehlerText(f), type: 'error' })
+  }
+}
+</script>

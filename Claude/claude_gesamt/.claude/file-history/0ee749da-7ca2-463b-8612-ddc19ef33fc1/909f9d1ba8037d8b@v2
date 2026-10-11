@@ -1,0 +1,69 @@
+<script setup lang="ts">
+/** Einheitliche Statusfarben für Protokolle, Mängel, Berichte und Messwerte. */
+import { computed } from 'vue'
+
+const props = defineProps<{ wert?: string | null; klein?: boolean }>()
+
+/**
+ * Fünf Bedeutungen, fünf Stile — alles Weitere verweist darauf. Im dunklen
+ * Design steht der Ton als lasierte Fläche auf dem Navy, nicht als eigene
+ * dunkle Farbe: sonst verschwinden Blau und Grün im Hintergrund.
+ */
+const GUT = 'bg-ov-100 text-ov-800 dark:bg-ov-400/20 dark:text-ov-200'
+const ACHTUNG = 'bg-amber-100 text-amber-900 dark:bg-amber-400/20 dark:text-amber-100'
+const SCHLECHT = 'bg-red-100 text-red-800 dark:bg-red-400/20 dark:text-red-200'
+const INFO = 'bg-navy-100 text-navy-800 dark:bg-navy-300/20 dark:text-navy-200'
+const RUHIG = 'bg-ink-100 text-ink-600 dark:bg-white/10 dark:text-ink-300'
+const STILLGELEGT = 'bg-ink-100 text-ink-500 dark:bg-white/5 dark:text-ink-400'
+
+const STIL: Record<string, string> = {
+  // Prüfstatus
+  OK: GUT,
+  Warnung: ACHTUNG,
+  Fehler: SCHLECHT,
+  Offen: RUHIG,
+  Uebersprungen: STILLGELEGT,
+
+  // Protokoll
+  Entwurf: RUHIG,
+  'In Arbeit': INFO,
+  Abgeschlossen: GUT,
+  Verifiziert: GUT,
+  Storniert: `${STILLGELEGT} line-through`,
+
+  // Mangel
+  'In Bearbeitung': INFO,
+  Erledigt: GUT,
+  Verworfen: STILLGELEGT,
+
+  // Tagesbericht
+  Eingereicht: ACHTUNG,
+  Genehmigt: GUT,
+  Abgelehnt: SCHLECHT,
+
+  // Gesamtbewertung
+  Bestanden: GUT,
+  'Bestanden mit Auflagen': ACHTUNG,
+  'Nicht bestanden': SCHLECHT,
+
+  // Anlagenstatus
+  Geplant: RUHIG,
+  'In Bau': ACHTUNG,
+  'In Betrieb': GUT,
+  'Ausser Betrieb': STILLGELEGT,
+
+  // Schweregrade
+  A: SCHLECHT,
+  B: ACHTUNG,
+  C: INFO,
+}
+
+const klasse = computed(() => STIL[props.wert ?? ''] ?? RUHIG)
+const beschriftung = computed(() => (props.wert === 'Ausser Betrieb' ? 'Außer Betrieb' : props.wert))
+</script>
+
+<template>
+  <span v-if="wert" class="abzeichen" :class="[klasse, klein ? 'px-2 py-0 text-[10px]' : '']">
+    {{ beschriftung }}
+  </span>
+</template>

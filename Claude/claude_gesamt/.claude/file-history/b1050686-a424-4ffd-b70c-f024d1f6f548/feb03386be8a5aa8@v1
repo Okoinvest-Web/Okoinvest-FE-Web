@@ -1,0 +1,34 @@
+/**
+ * Cookie-Namen der Portal-Session.
+ *
+ * Bewusst ohne "server-only": auch der Proxy (Edge-Runtime) greift darauf
+ * zu. Proxy und `requireUser()` muessen dieselben Cookies pruefen, sonst
+ * entsteht eine Weiterleitungsschleife zwischen /portal und /login.
+ */
+
+/** Frappe-Session, httpOnly - nie aus Client-JS lesbar. */
+export const SID_COOKIE = "sid";
+/** Benutzer-ID (E-Mail) zur Anzeige und als Session-Indikator. */
+export const USER_COOKIE = "frappe_user";
+/** Anzeigename fuer die Navigation. */
+export const FULLNAME_COOKIE = "frappe_full_name";
+
+export const SESSION_COOKIES = [
+  SID_COOKIE,
+  USER_COOKIE,
+  FULLNAME_COOKIE,
+] as const;
+
+/**
+ * Gilt die Session anhand der Cookies als gueltig?
+ *
+ * Beide Cookies muessen da sein. Fehlt eines - etwa weil das nicht-httpOnly
+ * Benutzer-Cookie geloescht wurde, waehrend die sid blieb - ist die Session
+ * unbrauchbar und muss verworfen werden, statt sie halb gelten zu lassen.
+ */
+export function istAngemeldet(
+  sid: string | undefined,
+  benutzer: string | undefined,
+): boolean {
+  return Boolean(sid && benutzer && benutzer !== "Guest");
+}

@@ -1,0 +1,390 @@
+import pathlib
+
+FE = pathlib.Path(r"C:\Users\SALEADMIN\Documents\Servicetechniker APP\frontend")
+
+
+def patch(pfad, paare):
+    p = FE / pfad
+    s = p.read_text(encoding="utf-8")
+    for alt, neu in paare:
+        if alt not in s:
+            raise SystemExit(f"NICHT GEFUNDEN in {pfad}:\n---\n{alt[:300]}\n---")
+        s = s.replace(alt, neu, 1)
+    p.write_text(s, encoding="utf-8")
+    print("ok", pfad)
+
+
+# ===================================================== AnlageDetailView: Reiter
+SKRIPT_ALT = """import CodeScanner from '@/components/CodeScanner.vue'
+import QrCode from '@/components/QrCode.vue'"""
+
+SKRIPT_ALT2 = """import BasisDialog from '@/components/BasisDialog.vue'
+import QrCode from '@/components/QrCode.vue'"""
+
+SKRIPT_NEU2 = """import BasisDialog from '@/components/BasisDialog.vue'
+import CodeScanner from '@/components/CodeScanner.vue'
+import QrCode from '@/components/QrCode.vue'"""
+
+STATE_ALT = """const uebersicht = ref<Uebersicht>({ protokolle: [], maengel: [], tagesberichte: [] })
+const messwerte = ref<Messwert[]>([])
+const laedt = ref(true)
+const qrOffen = ref(false)
+const reiter = ref<'protokolle' | 'maengel' | 'berichte' | 'messwerte'>('protokolle')
+const messgroesse = ref<'riso' | 'uoc' | 'isc'>('riso')"""
+
+STATE_NEU = """interface Komponente {
+  komponententyp: string
+  seriennummer: string
+  item?: string | null
+  serial_no?: string | null
+  position?: string | null
+  hersteller?: string | null
+  eingebaut_am?: string | null
+  garantie_bis?: string | null
+  bemerkung?: string | null
+}
+
+const KOMPONENTENTYPEN = [
+  'Modul', 'Wechselrichter', 'Leistungsoptimierer', 'Batteriespeicher',
+  'Wallbox', 'Zaehler', 'Rundsteuerempfaenger', 'Sonstiges',
+]
+
+const uebersicht = ref<Uebersicht>({ protokolle: [], maengel: [], tagesberichte: [] })
+const messwerte = ref<Messwert[]>([])
+const komponenten = ref<Komponente[]>([])
+const laedt = ref(true)
+const qrOffen = ref(false)
+const reiter = ref<'protokolle' | 'maengel' | 'berichte' | 'messwerte' | 'komponenten'>('protokolle')
+const messgroesse = ref<'riso' | 'uoc' | 'isc'>('riso')
+
+// --- Seriennummernerfassung (Kapitel 2.2) ----------------------------------
+
+const erfassungOffen = ref(false)
+const scannerAktiv = ref(false)
+const erfassungLaeuft = ref(false)
+/** Typ und Einbauort bleiben zwischen den Scans stehen — beim Abgehen einer
+ *  Modulreihe ändert sich nur die Nummer. */
+const erfassungsTyp = ref('Modul')
+const erfassungsOrt = ref('')
+const erfasst = ref<{ komponententyp: string; seriennummer: string; position: string }[]>([])
+
+function seriennummerErkannt(code: string) {
+  const nummer = code.trim()
+  if (!nummer) return
+  if (erfasst.value.some((e) => e.seriennummer === nummer)) {
+    ui.warnung(`${nummer} ist in dieser Sitzung bereits erfasst.`)
+    return
+  }
+  if (komponenten.value.some((k) => k.seriennummer === nummer)) {
+    ui.warnung(`${nummer} ist an dieser Anlage bereits hinterlegt.`)
+    return
+  }
+  erfasst.value = [
+    ...erfasst.value,
+    { komponententyp: erfassungsTyp.value, seriennummer: nummer, position: erfassungsOrt.value },
+  ]
+}
+
+async function erfassungSpeichern() {
+  if (!erfasst.value.length) return
+  erfassungLaeuft.value = true
+  try {
+    const ergebnis = (await baudoku.komponentenErfassen(props.name, erfasst.value)) as {
+      hinzugefuegt: string[]
+      bereits_vorhanden: string[]
+    }
+    ui.erfolg(
+      `${ergebnis.hinzugefuegt.length} Komponente(n) erfasst` +
+        (ergebnis.bereits_vorhanden.length
+          ? `, ${ergebnis.bereits_vorhanden.length} waren schon vorhanden.`
+          : '.'),
+    )
+    erfasst.value = []
+    erfassungOffen.value = false
+    scannerAktiv.value = false
+    await komponentenLaden()
+  } catch (fehler) {
+    ui.fehler((fehler as Error).message)
+  } finally {
+    erfassungLaeuft.value = false
+  }
+}
+
+async function komponenteEntfernen(seriennummer: string) {
+  if (!window.confirm(`Seriennummer ${seriennummer} von dieser Anlage entfernen?`)) return
+  try {
+    await baudoku.komponenteEntfernen(props.name, seriennummer)
+    await komponentenLaden()
+  } catch (fehler) {
+    ui.fehler((fehler as Error).message)
+  }
+}
+
+async function komponentenLaden() {
+  try {
+    komponenten.value = (await baudoku.komponentenListe(props.name)) as Komponente[]
+  } catch {
+    // Offline: Komponenten liegen nur auf dem Server.
+  }
+}
+
+/** Garantiewarnung: In den letzten 90 Tagen lohnt die Reklamation noch. */
+function garantieHinweis(komponente: Komponente): { text: string; klasse: string } | null {
+  const tage = tageBis(komponente.garantie_bis)
+  if (tage === null) return null
+  if (tage < 0) return { text: 'Garantie abgelaufen', klasse: 'text-slate-400' }
+  if (tage <= 90) return { text: `Garantie endet in ${tage} Tagen`, klasse: 'text-warnung font-medium' }
+  return { text: `Garantie bis ${datum(komponente.garantie_bis)}`, klasse: 'text-slate-400' }
+}"""
+
+IMPORT_ALT = """import { datum, zahl } from '@/lib/format'"""
+IMPORT_NEU = """import { datum, tageBis, zahl } from '@/lib/format'"""
+
+UI_IMPORT_ALT = """import { useStammdaten } from '@/stores/stammdaten'"""
+UI_IMPORT_NEU = """import { useStammdaten } from '@/stores/stammdaten'
+import { useUi } from '@/stores/ui'"""
+
+STORE_ALT = """const router = useRouter()
+const stammdaten = useStammdaten()"""
+STORE_NEU = """const router = useRouter()
+const stammdaten = useStammdaten()
+const ui = useUi()"""
+
+MOUNT_ALT = """onMounted(async () => {
+  const [u, m] = await Promise.allSettled([
+    baudoku.anlagenUebersicht(props.name),
+    baudoku.messdatenTrend(props.name),
+  ])
+  // Offline zeigt die Detailansicht die Stammdaten aus dem Cache.
+  if (u.status === 'fulfilled') uebersicht.value = u.value as Uebersicht
+  if (m.status === 'fulfilled') messwerte.value = m.value as Messwert[]
+  laedt.value = false
+})"""
+
+MOUNT_NEU = """onMounted(async () => {
+  const [u, m, k] = await Promise.allSettled([
+    baudoku.anlagenUebersicht(props.name),
+    baudoku.messdatenTrend(props.name),
+    baudoku.komponentenListe(props.name),
+  ])
+  // Offline zeigt die Detailansicht die Stammdaten aus dem Cache.
+  if (u.status === 'fulfilled') uebersicht.value = u.value as Uebersicht
+  if (m.status === 'fulfilled') messwerte.value = m.value as Messwert[]
+  if (k.status === 'fulfilled') komponenten.value = k.value as Komponente[]
+  laedt.value = false
+})"""
+
+REITER_ALT = """          { schluessel: 'messwerte', titel: 'Messwerte', anzahl: trendReihen.length },
+        ]\""""
+
+REITER_NEU = """          { schluessel: 'messwerte', titel: 'Messwerte', anzahl: trendReihen.length },
+          { schluessel: 'komponenten', titel: 'Komponenten', anzahl: komponenten.length },
+        ]\""""
+
+ABSCHNITT_ALT = """    <ul v-else class="space-y-2">
+      <li v-for="b in uebersicht.tagesberichte" :key="b.name" class="karte flex items-center gap-3 p-3">"""
+
+ABSCHNITT_NEU = """    <section v-else-if="reiter === 'komponenten'" class="space-y-3">
+      <div class="flex flex-wrap items-center gap-2">
+        <p class="flex-1 text-sm text-slate-500">
+          Seriennummern der verbauten Geräte — Grundlage für Gewährleistung und Ersatzteile.
+        </p>
+        <button class="knopf-primaer px-3 text-sm" @click="erfassungOffen = true">
+          <AppIcon name="qr" :groesse="18" /> Erfassen
+        </button>
+      </div>
+
+      <p v-if="!komponenten.length" class="karte p-6 text-center text-sm text-slate-500">
+        Noch keine Komponenten erfasst.
+      </p>
+
+      <ul v-else class="space-y-2">
+        <li v-for="komponente in komponenten" :key="komponente.seriennummer"
+            class="karte flex items-center gap-3 p-3">
+          <div class="min-w-0 flex-1">
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="font-semibold">{{ komponente.komponententyp }}</span>
+              <span class="font-mono text-sm text-slate-600 dark:text-slate-300">
+                {{ komponente.seriennummer }}
+              </span>
+              <span v-if="komponente.serial_no" class="abzeichen bg-marke-100 text-marke-700"
+                    title="Im ERPNext-Artikelstamm gefunden">
+                ERPNext
+              </span>
+            </div>
+            <div class="truncate text-xs text-slate-500">
+              {{ komponente.hersteller || '–' }}
+              <span v-if="komponente.position"> · {{ komponente.position }}</span>
+            </div>
+            <div v-if="garantieHinweis(komponente)" class="text-xs"
+                 :class="garantieHinweis(komponente)!.klasse">
+              {{ garantieHinweis(komponente)!.text }}
+            </div>
+          </div>
+          <button class="shrink-0 rounded p-1.5 text-slate-400 hover:text-fehler"
+                  :aria-label="`${komponente.seriennummer} entfernen`"
+                  @click="komponenteEntfernen(komponente.seriennummer)">
+            <AppIcon name="muell" :groesse="16" />
+          </button>
+        </li>
+      </ul>
+    </section>
+
+    <ul v-else class="space-y-2">
+      <li v-for="b in uebersicht.tagesberichte" :key="b.name" class="karte flex items-center gap-3 p-3">"""
+
+DIALOG_ALT = """    <BasisDialog :offen="qrOffen" titel="QR-Code der Anlage" @schliessen="qrOffen = false">"""
+
+DIALOG_NEU = """    <BasisDialog
+      :offen="erfassungOffen"
+      titel="Seriennummern erfassen"
+      breit
+      @schliessen="erfassungOffen = false"
+    >
+      <div class="space-y-3">
+        <div class="grid gap-3 tablet:grid-cols-2">
+          <label>
+            <span class="beschriftung">Komponententyp</span>
+            <select v-model="erfassungsTyp" class="feld">
+              <option v-for="typ in KOMPONENTENTYPEN" :key="typ" :value="typ">{{ typ }}</option>
+            </select>
+          </label>
+          <label>
+            <span class="beschriftung">Einbauort</span>
+            <input v-model="erfassungsOrt" class="feld" placeholder="z. B. Feld B, Reihe 4" />
+          </label>
+        </div>
+        <p class="text-xs text-slate-500">
+          Typ und Einbauort bleiben stehen — beim Abgehen einer Modulreihe ändert sich
+          nur die Nummer.
+        </p>
+
+        <CodeScanner
+          v-if="scannerAktiv"
+          hinweis="Typenschild scannen"
+          @erkannt="seriennummerErkannt"
+          @abbrechen="scannerAktiv = false"
+        />
+        <button v-else class="knopf-sekundaer w-full" @click="scannerAktiv = true">
+          <AppIcon name="qr" :groesse="20" /> Scanner öffnen
+        </button>
+
+        <div v-if="erfasst.length">
+          <span class="beschriftung">{{ erfasst.length }} erfasst</span>
+          <ul class="max-h-48 space-y-1 overflow-y-auto scrollbar-schmal">
+            <li v-for="(eintrag, i) in erfasst" :key="eintrag.seriennummer"
+                class="flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 text-sm dark:bg-slate-800">
+              <span class="font-mono flex-1 truncate">{{ eintrag.seriennummer }}</span>
+              <span class="text-xs text-slate-500">{{ eintrag.komponententyp }}</span>
+              <button class="rounded p-1 text-slate-400 hover:text-fehler"
+                      :aria-label="`${eintrag.seriennummer} verwerfen`"
+                      @click="erfasst = erfasst.filter((_, j) => j !== i)">
+                <AppIcon name="kreuz" :groesse="14" />
+              </button>
+            </li>
+          </ul>
+        </div>
+
+        <div class="flex gap-2 pt-1">
+          <button class="knopf-sekundaer flex-1" @click="erfassungOffen = false">Abbrechen</button>
+          <button class="knopf-primaer flex-[2]" :disabled="!erfasst.length || erfassungLaeuft"
+                  @click="erfassungSpeichern">
+            {{ erfassungLaeuft ? 'Wird gespeichert …' : `${erfasst.length} übernehmen` }}
+          </button>
+        </div>
+      </div>
+    </BasisDialog>
+
+    <BasisDialog :offen="qrOffen" titel="QR-Code der Anlage" @schliessen="qrOffen = false">"""
+
+patch(
+    "src/views/AnlageDetailView.vue",
+    [
+        (SKRIPT_ALT2, SKRIPT_NEU2),
+        (IMPORT_ALT, IMPORT_NEU),
+        (UI_IMPORT_ALT, UI_IMPORT_NEU),
+        (STORE_ALT, STORE_NEU),
+        (STATE_ALT, STATE_NEU),
+        (MOUNT_ALT, MOUNT_NEU),
+        (REITER_ALT, REITER_NEU),
+        (ABSCHNITT_ALT, ABSCHNITT_NEU),
+        (DIALOG_ALT, DIALOG_NEU),
+    ],
+)
+
+# ============ AnlagenView: Scanner erkennt auch Seriennummern (Servicefall)
+patch(
+    "src/views/AnlagenView.vue",
+    [
+        (
+            """function codeErkannt(code: string) {
+  scannerOffen.value = false
+  const name = anlagenNameAusCode(code)
+  if (name && stammdaten.anlage(name)) {
+    void router.push({ name: 'anlage-detail', params: { name } })
+    return
+  }
+  ui.warnung(
+    name
+      ? `Zu „${name}“ ist lokal keine Anlage vorhanden. Bitte synchronisieren.`
+      : 'Der Code gehoert zu keiner Anlage.',
+  )
+}""",
+            """/**
+ * Ein gescannter Code ist entweder ein Anlagenaufkleber oder das Typenschild
+ * eines Geräts. Der zweite Fall ist der häufigere im Service: Ein defekter
+ * Wechselrichter liegt auf der Werkbank und niemand weiß, aus welcher Anlage
+ * er stammt.
+ */
+async function codeErkannt(code: string) {
+  scannerOffen.value = false
+  const name = anlagenNameAusCode(code)
+
+  if (name && stammdaten.anlage(name)) {
+    void router.push({ name: 'anlage-detail', params: { name } })
+    return
+  }
+
+  try {
+    const treffer = (await baudoku.seriennummerSuchen(code)) as {
+      anlage: { name: string; anlage_name: string }
+      komponente: { komponententyp: string }
+    } | null
+
+    if (treffer?.anlage) {
+      ui.erfolg(
+        `${treffer.komponente.komponententyp} ${code} gehört zu ${treffer.anlage.anlage_name}.`,
+      )
+      void router.push({ name: 'anlage-detail', params: { name: treffer.anlage.name } })
+      return
+    }
+  } catch {
+    // Offline lässt sich die Seriennummer nicht nachschlagen.
+  }
+
+  ui.warnung(
+    name
+      ? `Zu „${name}“ ist weder eine Anlage noch eine Seriennummer bekannt.`
+      : `Der Code „${code}“ gehört zu keiner bekannten Anlage oder Komponente.`,
+  )
+}""",
+        ),
+        (
+            """import { anlagenNameAusCode } from '@/lib/code'""",
+            """import { baudoku } from '@/lib/api'
+import { anlagenNameAusCode } from '@/lib/code'""",
+        ),
+        (
+            """        hinweis="Aufkleber am Wechselrichter scannen\"""",
+            """        :formate="['qr_code', 'code_128', 'code_39', 'data_matrix']"
+        hinweis="Anlagenaufkleber oder Typenschild scannen\"""",
+        ),
+        (
+            """      <CodeScanner
+        :formate="['qr_code']"
+""",
+            """      <CodeScanner
+""",
+        ),
+    ],
+)

@@ -1,0 +1,89 @@
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+
+import { BOM, dokument, feld, zahl, zeile } from "./csv.ts";
+
+/**
+ * Die Ausgabe landet in der Buchhaltung. Ein falsches Trennzeichen
+ * oder eine fehlende Byte-Order-Mark fällt dort erst auf, wenn jemand
+ * die Datei öffnet - und dann sind es Umlaute in jeder Zeile.
+ */
+describe("feld", () => {
+  it("gibt einfachen Text unverändert zurück", () => {
+    assert.equal(feld("Montage"), "Montage");
+  });
+
+  it("setzt Felder mit Semikolon in Anführungszeichen", () => {
+    assert.equal(feld("Krems; Hof"), '"Krems; Hof"');
+  });
+
+  it("verdoppelt Anführungszeichen im Text", () => {
+    assert.equal(feld('Ladepunkt "Nord"'), '"Ladepunkt ""Nord"""');
+  });
+
+  it("schützt Felder mit Zeilenumbruch", () => {
+    assert.equal(feld("Zeile1\nZeile2"), '"Zeile1\nZeile2"');
+  });
+
+  it("entschärft Werte, die als Formel gelesen würden", () => {
+    // Ohne diesen Schutz wertet Excel das Feld aus.
+    assert.equal(feld("=E-Transit"), "'=E-Transit");
+    assert.equal(feld("+43 664 1234567"), "'+43 664 1234567");
+    assert.equal(feld("-Montage"), "'-Montage");
+    assert.equal(feld("@karte"), "'@karte");
+  });
+
+  it("gibt für fehlende Werte ein leeres Feld aus", () => {
+    assert.equal(feld(null), "");
+    assert.equal(feld(undefined), "");
+  });
+
+  it("schreibt Zahlen mit Komma", () => {
+    assert.equal(feld(1234.5), "1234,50");
+  });
+});
+
+describe("zahl", () => {
+  it("verwendet das Komma und keinen Tausenderpunkt", () => {
+    // Ein Tausenderpunkt zerlegte den Wert in Excel in zwei Spalten.
+    assert.equal(zahl(12345.678), "12345,68");
+  });
+
+  it("beachtet die gewünschten Nachkommastellen", () => {
+    assert.equal(zahl(7.129, 3), "7,129");
+    assert.equal(zahl(7.129, 0), "7");
+  });
+
+  it("gibt für ungültige Zahlen ein leeres Feld aus", () => {
+    assert.equal(zahl(Number.NaN), "");
+    assert.equal(zahl(Number.POSITIVE_INFINITY), "");
+  });
+});
+
+describe("zeile und dokument", () => {
+  it("trennt mit Semikolon", () => {
+    assert.equal(
+      zeile(["LAD-2025-07-0001", "Montage", 412.5]),
+      "LAD-2025-07-0001;Montage;412,50",
+    );
+  });
+
+  it("beginnt mit der Byte-Order-Mark und endet mit CRLF", () => {
+    const text = dokument(["a;b", "c;d"]);
+
+    assert.ok(text.startsWith(BOM));
+    assert.equal(text, `${BOM}a;b\r\nc;d\r\n`);
+  });
+});
+
+describe("ganze Zahlen", () => {
+  it("gibt eine Anzahl ohne Nachkommastellen aus", () => {
+    // "18,00" in einer Spalte "Vorgaenge" liest sich wie ein Betrag.
+    assert.equal(feld(18), "18");
+    assert.equal(feld(0), "0");
+  });
+
+  it("behält bei gebrochenen Zahlen zwei Stellen", () => {
+    assert.equal(feld(18.5), "18,50");
+  });
+});

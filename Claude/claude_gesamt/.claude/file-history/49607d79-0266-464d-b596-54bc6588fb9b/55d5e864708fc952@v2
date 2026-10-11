@@ -1,0 +1,112 @@
+/**
+ * Gemerkte Tabelleneinstellungen: Sortierung, sichtbare Spalten, Dichte,
+ * Seitengröße - und benannte Ansichten.
+ *
+ * Warum überhaupt gemerkt: Wer die Geräteliste dreimal am Tag öffnet, will
+ * nicht dreimal dieselben vier Spalten ausblenden. Und wer eine bestimmte
+ * Sicht („nur Perimeter, nach Ablauf sortiert") regelmäßig braucht, soll
+ * sie benennen können statt sie nachzubauen.
+ *
+ * Bewusst im localStorage und nicht auf dem Server: das ist eine
+ * Bequemlichkeit pro Person und Gerät, kein Datenbestand. Mit einem echten
+ * Frappe wandern benannte Ansichten sinnvollerweise in einen DocType
+ * (dann auch teilbar) - die Schnittstelle hier bleibt dieselbe.
+ */
+import { defineStore } from 'pinia'
+import { ref } from 'vue'
+
+const SCHLUESSEL = 'netops:tabellen'
+
+function lade() {
+  try {
+    return JSON.parse(localStorage.getItem(SCHLUESSEL) || '{}')
+  } catch {
+    // Kaputter oder gesperrter Speicher darf die App nicht aufhalten.
+    return {}
+  }
+}
+
+export const useTabellenStore = defineStore('tabellen', () => {
+  const stand = ref(lade())
+
+  function sichern() {
+    try {
+      localStorage.setItem(SCHLUESSEL, JSON.stringify(stand.value))
+    } catch {
+      // Privates Fenster, voller Speicher: dann eben nur für diese Sitzung.
+    }
+  }
+
+  /** Einstellungen einer Tabelle, mit Vorgaben aufgefüllt. */
+  function einstellungen(id) {
+    return {
+      sortSpalte: null,
+      sortRichtung: 'asc',
+      versteckteSpalten: [],
+      dichte: 'normal',
+      seitengroesse: 50,
+      ...(stand.value[id]?.einstellungen || {}),
+    }
+  }
+
+  function setze(id, teil) {
+    const vorher = stand.value[id] || { einstellungen: {}, ansichten: [] }
+    stand.value = {
+      ...stand.value,
+      [id]: { ...vorher, einstellungen: { ...einstellungen(id), ...teil } },
+    }
+    sichern()
+  }
+
+  function zuruecksetzen(id) {
+    const vorher = stand.value[id]
+    if (!vorher) return
+    stand.value = { ...stand.value, [id]: { ...vorher, einstellungen: {} } }
+    sichern()
+  }
+
+  // --- Benannte Ansichten --------------------------------------------------
+
+  function ansichten(id) {
+    return stand.value[id]?.ansichten || []
+  }
+
+  /**
+   * Eine Ansicht hält Einstellungen UND Filter. Die Filter kennt nur die
+   * Seite, deshalb kommen sie als undurchsichtiges Objekt herein.
+   */
+  function ansichtSpeichern(id, name, filter) {
+    if (!name?.trim()) return null
+    const vorher = stand.value[id] || { einstellungen: {}, ansichten: [] }
+    const liste = (vorher.ansichten || []).filter((a) => a.name !== name.trim())
+    const neu = {
+      name: name.trim(),
+      filter: filter || {},
+      einstellungen: einstellungen(id),
+      gespeichert: new Date().toISOString(),
+    }
+    stand.value = { ...stand.value, [id]: { ...vorher, ansichten: [...liste, neu] } }
+    sichern()
+    return neu
+  }
+
+  function ansichtLoeschen(id, name) {
+    const vorher = stand.value[id]
+    if (!vorher) return
+    stand.value = {
+      ...stand.value,
+      [id]: { ...vorher, ansichten: (vorher.ansichten || []).filter((a) => a.name !== name) },
+    }
+    sichern()
+  }
+
+  return {
+    stand,
+    einstellungen,
+    setze,
+    zuruecksetzen,
+    ansichten,
+    ansichtSpeichern,
+    ansichtLoeschen,
+  }
+})

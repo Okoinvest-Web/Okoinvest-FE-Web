@@ -1,0 +1,207 @@
+/**
+ * Kontrastpruefung im laufenden Browser.
+ *
+ * Farbe ist die eine Eigenschaft einer Oberflaeche, die sich rechnen
+ * laesst - und deshalb gerechnet gehoert. "Sieht gut aus" ist bei
+ * Kontrast keine Aussage: Wer die Oberflaeche gebaut hat, kennt jeden
+ * Text auswendig und liest ihn auch dann, wenn er kaum noch da ist.
+ *
+ * Geprueft wird nach WCAG 2.1: 4,5 zu 1 fuer gewoehnlichen Text,
+ * 3 zu 1 fuer grossen (ab 24 Pixel, oder ab 18,7 Pixel bei fettem
+ * Schnitt). Ausgewertet wird der tatsaechlich gezeichnete Zustand im
+ * Browser, nicht die Absicht im Quelltext - durchscheinende Flaechen,
+ * Farbmischungen und geerbte Farben kommen so richtig heraus.
+ *
+ * Bewusst eine Funktion und keine Zeichenkette: In einer Vorlagen-
+ * zeichenkette verschluckt JavaScript einfache Rueckstriche, aus "\("
+ * wird "(" - der regulaere Ausdruck bleibt gueltig, bedeutet aber
+ * etwas anderes und findet still nichts mehr. Playwright kann eine
+ * Funktion selbst uebertragen; sie darf dafuer nur nichts aus ihrer
+ * Umgebung verwenden.
+ */
+export function pruefeKontrast() {
+  /** "rgb(1, 2, 3)" oder "rgba(1, 2, 3, .5)" zu Zahlen. */
+  function alsFarbe(wert) {
+    const treffer = wert.match(/rgba?\(([^)]+)\)/);
+    if (!treffer) return null;
+    const teile = treffer[1]
+      .split(/[,\s/]+/)
+      .filter(Boolean)
+      .map(Number);
+    if (teile.length < 3 || teile.some(Number.isNaN)) return null;
+    return {
+      r: teile[0],
+      g: teile[1],
+      b: teile[2],
+      a: teile.length > 3 ? teile[3] : 1,
+    };
+  }
+
+  /** Vordergrund mit Deckung ueber Hintergrund legen. */
+  function ueberlagere(vorn, hinten) {
+    const a = vorn.a;
+    return {
+      r: vorn.r * a + hinten.r * (1 - a),
+      g: vorn.g * a + hinten.g * (1 - a),
+      b: vorn.b * a + hinten.b * (1 - a),
+      a: 1,
+    };
+  }
+
+  function relativeHelligkeit(farbe) {
+    const kanal = (wert) => {
+      const v = wert / 255;
+      return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+    };
+    return (
+      0.2126 * kanal(farbe.r) +
+      0.7152 * kanal(farbe.g) +
+      0.0722 * kanal(farbe.b)
+    );
+  }
+
+  function kontrast(a, b) {
+    const la = relativeHelligkeit(a);
+    const lb = relativeHelligkeit(b);
+    return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+  }
+
+  /*
+   * Farbangaben in jeder Schreibweise.
+   *
+   * Ein Verlauf kann seine Stopps als oklch(), als Hexzahl oder als
+   * rgb() fuehren - je nachdem, wie sie im Stylesheet standen. Einen
+   * eigenen Farbparser dafuer zu schreiben waere Arbeit fuer einen
+   * Nachmittag und danach die Fehlerquelle; der Browser kann es
+   * ohnehin. Also fragt man ihn: Farbe an ein Probeelement setzen,
+   * Rueckgabe ablesen.
+   */
+  const probe = document.createElement("span");
+  probe.style.display = "none";
+  document.body.appendChild(probe);
+
+  function zuRgb(text) {
+    probe.style.color = "";
+    probe.style.color = text;
+    if (!probe.style.color) return null;
+    return alsFarbe(getComputedStyle(probe).color);
+  }
+
+  function alleFarben(wert) {
+    const muster =
+      /(?:rgba?|hsla?|oklch|oklab|lab|lch|color)\([^()]*(?:\([^()]*\)[^()]*)*\)|#[0-9a-fA-F]{3,8}/g;
+    const treffer = wert.match(muster) || [];
+    return treffer.map(zuRgb).filter(Boolean);
+  }
+
+  /**
+   * Die moeglichen Gruende hinter einem Element.
+   *
+   * Nach oben gesucht, bis eine deckende Flaeche kommt; alles
+   * Durchscheinende dazwischen wird uebereinandergelegt. Ohne das
+   * meldet jede halbtransparente Kachel einen falschen Wert.
+   *
+   * Ein Farbverlauf steht nicht in background-color, sondern in
+   * background-image. Wer ihn uebergeht, misst den Knopf gegen die
+   * Tafel dahinter und meldet Weiss auf Weiss - eins zu eins, bei
+   * einem Knopf, der in Wahrheit gruen ist. Deshalb kommen die
+   * Farbstopps als eigene Moeglichkeiten dazu, und geprueft wird
+   * gegen den schlechtesten davon.
+   */
+  function gruende(element) {
+    const schichten = [];
+    let verlauf = null;
+    let e = element;
+
+    while (e) {
+      const stil = getComputedStyle(e);
+
+      if (stil.backgroundImage && stil.backgroundImage !== "none") {
+        const stopps = alleFarben(stil.backgroundImage);
+        if (stopps.length > 0) {
+          verlauf = stopps;
+          break;
+        }
+      }
+
+      const farbe = alsFarbe(stil.backgroundColor);
+      if (farbe && farbe.a > 0) {
+        schichten.push(farbe);
+        if (farbe.a >= 0.999) break;
+      }
+      e = e.parentElement;
+    }
+
+    function stapeln(unterste) {
+      let grund = unterste;
+      for (let i = schichten.length - 1; i >= 0; i -= 1) {
+        grund = ueberlagere(schichten[i], grund);
+      }
+      return grund;
+    }
+
+    if (verlauf) return verlauf.map(stapeln);
+    return [stapeln({ r: 255, g: 255, b: 255, a: 1 })];
+  }
+
+  function hatEigenenText(element) {
+    for (const knoten of element.childNodes) {
+      if (knoten.nodeType === 3 && knoten.textContent.trim().length > 1) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  const befunde = [];
+
+  for (const element of document.querySelectorAll("body *")) {
+    if (!hatEigenenText(element)) continue;
+
+    const stil = getComputedStyle(element);
+    if (stil.visibility === "hidden" || stil.display === "none") continue;
+    if (Number(stil.opacity) < 0.9) continue;
+
+    const flaeche = element.getBoundingClientRect();
+    if (flaeche.width < 4 || flaeche.height < 4) continue;
+
+    const vordergrund = alsFarbe(stil.color);
+    if (!vordergrund) continue;
+
+    const groesse = parseFloat(stil.fontSize);
+    const fett = Number(stil.fontWeight) >= 700;
+    const gross = groesse >= 24 || (fett && groesse >= 18.66);
+    const grenze = gross ? 3 : 4.5;
+
+    // Bei einem Verlauf gilt der schlechteste Punkt.
+    let wert = Infinity;
+    for (const grund of gruende(element)) {
+      const gezeichnet =
+        vordergrund.a < 1 ? ueberlagere(vordergrund, grund) : vordergrund;
+      wert = Math.min(wert, kontrast(gezeichnet, grund));
+    }
+
+    if (wert + 0.005 < grenze) {
+      befunde.push({
+        text: (element.textContent || "").trim().slice(0, 45),
+        marke: element.tagName.toLowerCase(),
+        klasse: (element.className || "").toString().slice(0, 40),
+        kontrast: Math.round(wert * 100) / 100,
+        grenze,
+        groesse: Math.round(groesse * 10) / 10,
+      });
+    }
+  }
+
+  probe.remove();
+
+  // Gleiche Stellen nur einmal melden - eine Tabelle mit vierzig
+  // Zeilen erzeugt sonst vierzig identische Eintraege.
+  const gesehen = new Set();
+  return befunde.filter((b) => {
+    const schluessel = b.marke + "|" + b.klasse + "|" + b.kontrast;
+    if (gesehen.has(schluessel)) return false;
+    gesehen.add(schluessel);
+    return true;
+  });
+}

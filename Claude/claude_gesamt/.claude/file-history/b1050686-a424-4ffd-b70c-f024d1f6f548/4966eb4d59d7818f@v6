@@ -1,0 +1,1222 @@
+@import "tailwindcss";
+
+/* ==================================================================
+ * Designsprache
+ *
+ * Die Farben und Schriften kommen aus dem Auftritt von Ökovolt. Alles
+ * andere folgt dem, was eine Software heute leisten muss, wenn
+ * jemand acht Stunden am Tag hineinschaut:
+ *
+ *  1. LUFT. Die frühere Fassung presste Betriebsdaten in enge
+ *     Tabellen und 11-Pixel-Schrift. Das war dicht, aber es las sich
+ *     wie ein Kontoauszug. Grundgröße ist jetzt 15 Pixel, und die
+ *     Abstände sind so bemessen, dass das Auge Halt findet.
+ *
+ *  2. TIEFE STATT LINIEN. Flächen heben sich durch weiche,
+ *     mehrstufige Schatten voneinander ab, nicht durch Haarlinien.
+ *     Ein Kasten mit 1-Pixel-Rahmen wirkt gezeichnet; eine Fläche mit
+ *     Schatten wirkt, als läge sie da.
+ *
+ *  3. EINE ZAHL FÜHRT. Kennzahlen stehen groß, eng und in
+ *     Tabellenziffern. Wo früher vier gleich große Werte
+ *     nebeneinanderstanden, führt jetzt einer.
+ *
+ *  4. BEWEGUNG, DIE ETWAS SAGT. Inhalte kommen gestaffelt herein,
+ *     Karten heben sich unter dem Zeiger. Nichts blinkt, nichts
+ *     dreht sich - die Bewegung zeigt nur, was zusammengehört und
+ *     was anklickbar ist.
+ * ================================================================== */
+
+@theme {
+  /* ---- Neutrale Skala ("ink") ----------------------------------- */
+  --color-ink-50: #f7f8fa;
+  --color-ink-100: #eef0f4;
+  --color-ink-200: #dfe3ea;
+  --color-ink-300: #c4cad5;
+  --color-ink-400: #97a0b0;
+  --color-ink-500: #6b7486;
+  --color-ink-600: #4e5667;
+  --color-ink-700: #394050;
+  --color-ink-800: #252b37;
+  --color-ink-900: #151a24;
+  /* Der dunkle Modus braucht Tiefe unterhalb der Website-Skala.
+   * 950 ist die Arbeitsfläche, 1000 der Grund darunter. */
+  --color-ink-950: #12161e;
+  --color-ink-1000: #0a0d12;
+
+  /* ---- Marke: Ökovolt-Grün -------------------------------------- */
+  --color-ov-50: #f4f9ee;
+  --color-ov-100: #e6f1d8;
+  --color-ov-200: #cde3b1;
+  --color-ov-300: #aed083;
+  --color-ov-400: #8cba58;
+  --color-ov-500: #669933;
+  --color-ov-600: #558227;
+  --color-ov-700: #436621;
+  --color-ov-800: #37521e;
+  --color-ov-900: #2f461c;
+
+  /* ---- Sand: der warme Untergrund ------------------------------- */
+  --color-sand-50: #fbfaf6;
+  --color-sand-100: #f5f3ea;
+
+  --font-sans:
+    var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    sans-serif;
+  --font-display:
+    var(--font-manrope), var(--font-inter), ui-sans-serif, system-ui,
+    sans-serif;
+  --font-mono:
+    ui-monospace, "SF Mono", "Cascadia Code", "Liberation Mono", monospace;
+
+  /* ---- Bewegung --------------------------------------------------
+   * Zwei Kurven. Die erste für alles Normale: schnell an, sanft aus.
+   * Die zweite schießt leicht über das Ziel hinaus - nur für Dinge,
+   * die erscheinen, nie für Farbwechsel.
+   */
+  --ease-aus: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-weich: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-feder: cubic-bezier(0.34, 1.4, 0.64, 1);
+  /* Ruhig und gleichmaessig - fuer Linien, die sich zeichnen. Die
+     scharfe Kurve oben laesst einen Diagrammstrich zucken. */
+  --ease-ruhig: cubic-bezier(0.33, 1, 0.68, 1);
+
+  /* ---- Bewegungsklassen fuer Tailwind ----------------------------
+   * Diagramme greifen ueber `animate-*` darauf zu. Ohne diese
+   * Eintraege erzeugt Tailwind die Klassen nicht - die Animation
+   * fehlt dann stillschweigend, und das faellt niemandem auf, weil
+   * ein nicht animiertes Diagramm genauso aussieht wie ein fertig
+   * animiertes.
+   */
+  --animate-einblenden: einblenden 0.35s var(--ease-aus) both;
+  --animate-aufsteigen: aufsteigen 0.55s var(--ease-aus) both;
+  --animate-linie-zeichnen: linieZeichnen 0.9s var(--ease-ruhig) both;
+}
+
+/* ==================================================================
+ * Flächen und Text je Erscheinungsbild
+ * ================================================================== */
+
+:root,
+[data-thema="hell"] {
+  color-scheme: light;
+
+  --f-grund: var(--color-sand-50);
+  --f-ebene: #ffffff;
+  --f-ebene-hoch: #ffffff;
+  --f-vertieft: #fafbfc;
+  --f-belegt: var(--color-ink-100);
+  --f-glas: rgb(255 255 255 / 0.72);
+
+  --linie: var(--color-ink-200);
+  --linie-zart: var(--color-ink-100);
+  --linie-stark: var(--color-ink-300);
+
+  /* Gerechnet, nicht geschätzt: Die zarteste Stufe trägt die
+   * Kleinschrift und hält 4,5:1 gegen jede Fläche, auf der sie
+   * vorkommt. */
+  --t-stark: var(--color-ink-900);
+  --t-normal: var(--color-ink-700);
+  --t-leise: var(--color-ink-600);
+  /*
+   * Eine Stufe dunkler als frueher: ink-500 auf Weiss ergibt 4,4 zu 1
+   * und verfehlt die 4,5 knapp - ausgerechnet bei der Kleinschrift,
+   * die ihn am haeufigsten traegt.
+   */
+  --t-zart: #5f6879;
+
+  --akzent: var(--color-ov-600);
+  --akzent-flaeche: var(--color-ov-50);
+  --akzent-text: var(--color-ov-700);
+  /*
+   * Der Verlauf des gefuellten Knopfes.
+   *
+   * Er beginnt bei ov-600 und nicht bei ov-500: Weiss auf ov-500
+   * ergibt 3,4 zu 1 und verfehlt damit die 4,5, die fuer Text dieser
+   * Groesse verlangt sind. Gemessen, nicht geschaetzt - der hellste
+   * Punkt des Verlaufs entscheidet.
+   */
+  --akzent-verlauf: linear-gradient(
+    135deg,
+    var(--color-ov-600),
+    var(--color-ov-800)
+  );
+  --akzent-knopf-text: #ffffff;
+
+  --radius-tafel: 1.25rem;
+  --radius-kachel: 0.875rem;
+  --radius-feld: 0.75rem;
+
+  /*
+   * Schatten in drei Stufen, jede aus mehreren Lagen. Eine einzelne
+   * Lage sieht aus wie ein Aufkleber; erst der enge harte Anteil
+   * plus der weite weiche ergibt den Eindruck von Höhe.
+   */
+  --schatten-ruhe:
+    0 1px 2px rgb(21 26 36 / 0.04), 0 2px 6px -1px rgb(21 26 36 / 0.04);
+  --schatten-hoch:
+    0 1px 2px rgb(21 26 36 / 0.05), 0 6px 16px -4px rgb(21 26 36 / 0.08),
+    0 16px 32px -12px rgb(21 26 36 / 0.08);
+  --schatten-schwebend:
+    0 1px 2px rgb(21 26 36 / 0.06), 0 12px 28px -8px rgb(21 26 36 / 0.14),
+    0 32px 64px -16px rgb(21 26 36 / 0.16);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-thema="hell"]) {
+    color-scheme: dark;
+
+    --f-grund: var(--color-ink-1000);
+    --f-ebene: var(--color-ink-950);
+    --f-ebene-hoch: #181d27;
+    --f-vertieft: #0e1218;
+    --f-belegt: #222935;
+    --f-glas: rgb(18 22 30 / 0.72);
+
+    --linie: #242b38;
+    --linie-zart: #1b212c;
+    --linie-stark: #323a4a;
+
+    --t-stark: #f2f4f8;
+    --t-normal: var(--color-ink-300);
+    --t-leise: var(--color-ink-400);
+    /* ink-500 kommt auf dunklem Grund nur auf 3,93:1. */
+    --t-zart: #939cab;
+
+    --akzent: var(--color-ov-400);
+    --akzent-flaeche: #1e2b16;
+    --akzent-text: var(--color-ov-300);
+    /*
+     * Im Dunkeln kehrt der Knopf sich um: Ein dunkles Gruen auf
+     * dunklem Grund verschwindet, ein helles mit dunkler Schrift
+     * steht klar da. Dieselbe Farbe, andere Rollenverteilung.
+     */
+    --akzent-verlauf: linear-gradient(
+      135deg,
+      var(--color-ov-300),
+      var(--color-ov-500)
+    );
+    --akzent-knopf-text: var(--color-ink-1000);
+
+    --schatten-ruhe: 0 1px 2px rgb(0 0 0 / 0.4);
+    --schatten-hoch:
+      0 1px 2px rgb(0 0 0 / 0.5), 0 8px 24px -6px rgb(0 0 0 / 0.6);
+    --schatten-schwebend:
+      0 1px 2px rgb(0 0 0 / 0.6), 0 16px 40px -8px rgb(0 0 0 / 0.7);
+  }
+}
+
+/* Ausdrücklich gewählter dunkler Modus - schlägt die Systemeinstellung. */
+[data-thema="dunkel"] {
+  color-scheme: dark;
+
+  --f-grund: var(--color-ink-1000);
+  --f-ebene: var(--color-ink-950);
+  --f-ebene-hoch: #181d27;
+  --f-vertieft: #0e1218;
+  --f-belegt: #222935;
+  --f-glas: rgb(18 22 30 / 0.72);
+
+  --linie: #242b38;
+  --linie-zart: #1b212c;
+  --linie-stark: #323a4a;
+
+  --t-stark: #f2f4f8;
+  --t-normal: var(--color-ink-300);
+  --t-leise: var(--color-ink-400);
+  --t-zart: #939cab;
+
+  --akzent: var(--color-ov-400);
+  --akzent-flaeche: #1e2b16;
+  --akzent-text: var(--color-ov-300);
+  --akzent-verlauf: linear-gradient(
+    135deg,
+    var(--color-ov-300),
+    var(--color-ov-500)
+  );
+  --akzent-knopf-text: var(--color-ink-1000);
+
+  --schatten-ruhe: 0 1px 2px rgb(0 0 0 / 0.4);
+  --schatten-hoch:
+    0 1px 2px rgb(0 0 0 / 0.5), 0 8px 24px -6px rgb(0 0 0 / 0.6);
+  --schatten-schwebend:
+    0 1px 2px rgb(0 0 0 / 0.6), 0 16px 40px -8px rgb(0 0 0 / 0.7);
+}
+
+/* ==================================================================
+ * Grundlagen
+ * ================================================================== */
+
+* {
+  border-color: var(--linie);
+}
+
+body {
+  background: var(--f-grund);
+  color: var(--t-normal);
+  font-family: var(--font-sans);
+  /* 15 Pixel statt 14. Klingt nach wenig, ist über einen Arbeitstag
+   * der Unterschied zwischen Lesen und Entziffern. */
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* ==================================================================
+ * Typografische Skala
+ *
+ * Große Sprünge statt vieler ähnlicher Stufen. Wer fünf Größen
+ * zwischen 12 und 16 Pixeln verwendet, bekommt keine Hierarchie,
+ * sondern Unschärfe.
+ * ================================================================== */
+
+.t-display {
+  font-family: var(--font-display);
+  font-size: clamp(2.25rem, 1.6rem + 2.4vw, 3.5rem);
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: -0.042em;
+  color: var(--t-stark);
+  font-variant-numeric: tabular-nums;
+}
+
+.t-titel {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  line-height: 1.12;
+  font-weight: 800;
+  letter-spacing: -0.032em;
+  color: var(--t-stark);
+}
+
+.t-abschnitt {
+  font-family: var(--font-display);
+  font-size: 1.0625rem;
+  line-height: 1.25;
+  font-weight: 700;
+  letter-spacing: -0.022em;
+  color: var(--t-stark);
+}
+
+.t-leise {
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--t-leise);
+}
+
+.t-mikro {
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--t-zart);
+}
+
+.t-etikett {
+  font-size: 0.75rem;
+  line-height: 1;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--t-zart);
+}
+
+/* Kennzahl: groß, eng, tabellarisch. */
+.t-zahl {
+  font-family: var(--font-display);
+  font-size: 2.125rem;
+  line-height: 1.02;
+  font-weight: 800;
+  letter-spacing: -0.038em;
+  color: var(--t-stark);
+  font-variant-numeric: tabular-nums;
+}
+
+.t-zahl-gross {
+  font-family: var(--font-display);
+  font-size: 3.25rem;
+  line-height: 0.98;
+  font-weight: 800;
+  letter-spacing: -0.045em;
+  color: var(--t-stark);
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+ * Die Zwischenstufe.
+ *
+ * Zwischen 2,125rem und 1rem klafft eine Luecke, in die genau die
+ * Betraege fallen, die eine Kennzahl meistens hat: "€ 13.326,73".
+ * Ohne Zwischenstufe bleibt nur der Umbruch - und der trennt eine
+ * Zahl mitten in der Ziffernfolge.
+ */
+.t-zahl-mittel {
+  font-family: var(--font-display);
+  font-size: 1.625rem;
+  line-height: 1.06;
+  font-weight: 800;
+  letter-spacing: -0.032em;
+  color: var(--t-stark);
+  font-variant-numeric: tabular-nums;
+}
+
+.t-zahl-klein {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--t-stark);
+  font-variant-numeric: tabular-nums;
+}
+
+.zahl {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Die eine Zahl, auf die es ankommt - im Verlauf der Marke. */
+.t-verlauf {
+  background: var(--akzent-verlauf);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* ==================================================================
+ * Flächen
+ * ================================================================== */
+
+.tafel {
+  background: var(--f-ebene);
+  border-radius: var(--radius-tafel);
+  box-shadow: var(--schatten-ruhe);
+  /* Der Ring liegt außerhalb und verschiebt beim Farbwechsel nichts. */
+  outline: 1px solid var(--linie-zart);
+  outline-offset: -1px;
+}
+
+/* Anklickbare Flächen heben sich unter dem Zeiger. */
+.tafel-tastbar {
+  transition:
+    transform 0.35s var(--ease-aus),
+    box-shadow 0.35s var(--ease-aus),
+    outline-color 0.35s var(--ease-aus);
+}
+
+.tafel-tastbar:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--schatten-hoch);
+  outline-color: var(--linie);
+}
+
+/* Kopfleiste, die beim Blättern stehen bleibt. */
+.glas {
+  background: var(--f-glas);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+}
+
+/* ==================================================================
+ * Bewegung
+ * ================================================================== */
+
+@keyframes erscheinen {
+  from {
+    opacity: 0;
+    transform: translateY(0.875rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes einblenden {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes seitlich {
+  from {
+    opacity: 0;
+    transform: translateX(-0.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes schubladeAuf {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@keyframes atmen {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.25;
+    transform: scale(0.6);
+  }
+}
+
+@keyframes fliessen {
+  to {
+    stroke-dashoffset: -24;
+  }
+}
+
+/*
+ * Ein Balken waechst aus seiner Grundlinie.
+ *
+ * `transform-box: fill-box` ist bei SVG noetig: Ohne sie bezieht sich
+ * der Ursprung auf das Koordinatensystem des gesamten Diagramms, und
+ * der Balken waechst schraeg aus der linken oberen Ecke heraus.
+ */
+@keyframes aufsteigen {
+  from {
+    transform: scaleY(0);
+    opacity: 0.4;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+/*
+ * Eine Linie zeichnet sich von links nach rechts.
+ *
+ * Die Laenge kommt als `--laenge` aus dem Diagramm - sie muss die
+ * tatsaechliche Pfadlaenge uebersteigen, sonst bleibt ein Rest
+ * sichtbar, bevor die Animation beginnt.
+ */
+@keyframes linieZeichnen {
+  from {
+    stroke-dashoffset: var(--laenge, 2000);
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/*
+ * Ein Kreisabschnitt waechst von seinem Anfangspunkt aus.
+ *
+ * Anfang und Ende kommen als `--von` und `--bis` aus dem Diagramm,
+ * weil jeder Abschnitt an einer anderen Stelle des Rings beginnt.
+ */
+@keyframes bogenZeichnen {
+  from {
+    stroke-dashoffset: var(--von, 0);
+  }
+  to {
+    stroke-dashoffset: var(--bis, 0);
+  }
+}
+
+@keyframes zeichnen {
+  from {
+    stroke-dashoffset: var(--laenge, 2000);
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.a-erscheinen {
+  animation: erscheinen 0.5s var(--ease-aus) both;
+}
+
+.a-einblenden {
+  animation: einblenden 0.35s var(--ease-aus) both;
+}
+
+.a-seitlich {
+  animation: seitlich 0.45s var(--ease-aus) both;
+}
+
+.a-atmen {
+  animation: atmen 2.4s ease-in-out infinite;
+}
+
+.a-fliessen {
+  stroke-dasharray: 6 6;
+  animation: fliessen 1.4s linear infinite;
+}
+
+/* Der Ursprung eines wachsenden Balkens liegt an seiner Unterkante. */
+.animate-aufsteigen {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+}
+
+.a-zeichnen {
+  stroke-dasharray: var(--laenge, 2000);
+  animation: zeichnen 1.1s var(--ease-aus) both;
+}
+
+/*
+ * Gestaffelter Einzug.
+ *
+ * Die Kinder kommen nacheinander herein, 45 Millisekunden versetzt.
+ * Das dauert bei zwölf Kacheln eine halbe Sekunde und sagt dem Auge,
+ * in welcher Reihenfolge es lesen soll. Nach dem zwölften Kind wird
+ * nicht weiter verzögert - sonst wartet man auf die letzte Zeile
+ * einer langen Tabelle.
+ */
+.a-staffel > * {
+  animation: erscheinen 0.5s var(--ease-aus) both;
+}
+.a-staffel > *:nth-child(1) {
+  animation-delay: 0ms;
+}
+.a-staffel > *:nth-child(2) {
+  animation-delay: 45ms;
+}
+.a-staffel > *:nth-child(3) {
+  animation-delay: 90ms;
+}
+.a-staffel > *:nth-child(4) {
+  animation-delay: 135ms;
+}
+.a-staffel > *:nth-child(5) {
+  animation-delay: 180ms;
+}
+.a-staffel > *:nth-child(6) {
+  animation-delay: 225ms;
+}
+.a-staffel > *:nth-child(7) {
+  animation-delay: 270ms;
+}
+.a-staffel > *:nth-child(n + 8) {
+  animation-delay: 315ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ==================================================================
+ * Bedienelemente
+ * ================================================================== */
+
+.feld {
+  width: 100%;
+  background: var(--f-vertieft);
+  border: 1px solid var(--linie);
+  border-radius: var(--radius-feld);
+  padding: 0.625rem 0.875rem;
+  font-size: 0.875rem;
+  color: var(--t-stark);
+  transition:
+    border-color 0.25s var(--ease-weich),
+    background 0.25s var(--ease-weich),
+    box-shadow 0.25s var(--ease-weich);
+}
+
+/*
+ * Schmale Eingabe neben einem Schieberegler.
+ *
+ * `.feld` setzt volle Breite - das ist fuer Formulare richtig, drueckt
+ * hier aber den Regler auf null. Zwei Klassen schlagen eine.
+ */
+.feld.feld-schmal {
+  width: 6rem;
+  flex: none;
+  text-align: right;
+}
+
+.feld::placeholder {
+  color: var(--t-zart);
+}
+
+.feld:focus {
+  outline: none;
+  background: var(--f-ebene);
+  border-color: var(--akzent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--akzent), transparent 86%);
+}
+
+.feld:disabled {
+  background: var(--f-vertieft);
+  color: var(--t-leise);
+  cursor: not-allowed;
+}
+
+.knopf {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4375rem;
+  border-radius: 999px;
+  padding: 0.5625rem 1.125rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: -0.008em;
+  white-space: nowrap;
+  transition:
+    background 0.25s var(--ease-weich),
+    border-color 0.25s var(--ease-weich),
+    color 0.25s var(--ease-weich),
+    box-shadow 0.25s var(--ease-weich),
+    transform 0.25s var(--ease-weich);
+}
+
+.knopf:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.knopf:active:not(:disabled) {
+  transform: translateY(0) scale(0.98);
+}
+
+.knopf:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--akzent), transparent 78%);
+}
+
+.knopf:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/*
+ * Die eine Handlung, die gemeint ist.
+ *
+ * Auf ov-500 erreicht weiße Schrift nur 3,40:1 und bleibt unter der
+ * Anforderung; deshalb steht der Verlauf eine Stufe dunkler. Der
+ * Unterschied fällt nebeneinander kaum auf - der fehlende Kontrast
+ * dagegen jedem, der bei Sonnenlicht auf ein Tablet schaut.
+ */
+.knopf-voll {
+  background: var(--akzent-verlauf);
+  color: var(--akzent-knopf-text);
+  border: 1px solid transparent;
+  box-shadow: 0 1px 2px rgb(21 26 36 / 0.12);
+}
+
+.knopf-voll:hover:not(:disabled) {
+  box-shadow:
+    0 1px 2px rgb(21 26 36 / 0.12),
+    0 8px 20px -6px color-mix(in srgb, var(--color-ov-600), transparent 40%);
+}
+
+.knopf-voll {
+  color: var(--akzent-knopf-text);
+}
+
+.knopf-rand {
+  background: var(--f-ebene);
+  color: var(--t-stark);
+  border: 1px solid var(--linie);
+}
+
+.knopf-rand:hover:not(:disabled) {
+  border-color: var(--linie-stark);
+  color: var(--akzent-text);
+  box-shadow: var(--schatten-ruhe);
+}
+
+.knopf-leise {
+  background: transparent;
+  color: var(--t-leise);
+  border: 1px solid transparent;
+}
+
+.knopf-leise:hover:not(:disabled) {
+  background: var(--f-belegt);
+  color: var(--t-stark);
+}
+
+/*
+ * Der Warnknopf traegt den Zustandston "kritisch" - und damit dessen
+ * Fassung fuer den Dunkelmodus. Vorher stand hier ein festes Rot, das
+ * auf hellem Grund gut aussah und auf dunklem 2,8 zu 1 ergab.
+ */
+.knopf-warnung {
+  background: transparent;
+  color: var(--ton-kritisch);
+  border: 1px solid var(--ton-kritisch-rand);
+}
+
+.knopf-warnung:hover:not(:disabled) {
+  background: var(--ton-kritisch-flaeche);
+}
+
+/* ==================================================================
+ * Bildlaufleisten - schmal und zurückhaltend
+ * ================================================================== */
+
+@supports selector(::-webkit-scrollbar) {
+  ::-webkit-scrollbar {
+    height: 0.5rem;
+    width: 0.5rem;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--linie-stark);
+    border-radius: 999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--t-zart);
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
+
+::selection {
+  background: color-mix(in srgb, var(--akzent), transparent 78%);
+  color: var(--t-stark);
+}
+
+
+/* ==================================================================
+ * Tastenkappen
+ *
+ * Ein Kuerzel, das nur im Hilfetext steht, kennt niemand. Es gehoert
+ * neben den Knopf, den es ersetzt - und dann muss es aussehen wie
+ * eine Taste, sonst liest man es als Text.
+ * ================================================================== */
+
+.tastenkappe {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  padding: 0.0625rem 0.3125rem;
+  border: 1px solid var(--linie);
+  border-bottom-width: 2px;
+  border-radius: 0.375rem;
+  background: var(--f-ebene);
+  color: var(--t-zart);
+  font-family: var(--font-sans);
+  font-size: 0.625rem;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+/* ==================================================================
+ * Befehlspalette
+ * ================================================================== */
+
+@keyframes paletteAuf {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.a-palette {
+  animation: paletteAuf 0.26s var(--ease-aus) both;
+}
+
+/* ==================================================================
+ * Seitenwechsel
+ *
+ * Der Inhalt wechselt, die Leisten bleiben stehen. Ohne festen
+ * Bezugspunkt liest sich jeder Wechsel wie ein Neuladen; mit einem
+ * bleibt erkennbar, dass nur der Inhalt getauscht wurde.
+ *
+ * Bewusst sparsam: 200 Millisekunden und acht Pixel. Eine
+ * Betriebsanwendung wird stundenlang bedient, und was bei der ersten
+ * Betrachtung beeindruckt, stoert beim fuenfzigsten Wechsel.
+ * ================================================================== */
+
+::view-transition-old(.ueberblenden) {
+  animation: 0.12s var(--ease-aus) both ausblenden;
+}
+
+::view-transition-new(.ueberblenden) {
+  animation: 0.24s var(--ease-aus) 0.06s both inhaltAuf;
+}
+
+@keyframes ausblenden {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes inhaltAuf {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/*
+ * Waehrend eines Uebergangs faengt die Ueberblendschicht Klicks ab.
+ * Wer waehrend der Animation auf einen Knopf drueckt, drueckt sonst
+ * ins Leere - bei 240 Millisekunden passiert das oft genug.
+ */
+::view-transition {
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+  }
+}
+
+/* ==================================================================
+ * Zahlen, die hochzaehlen
+ *
+ * Nur beim ersten Erscheinen und nur ueber 600 Millisekunden. Eine
+ * Zahl, die bei jedem Datenwechsel durchlaeuft, ist nicht ablesbar -
+ * und in einer Anwendung, in der jemand Zahlen vergleicht, ist die
+ * Ablesbarkeit das Einzige, was zaehlt.
+ * ================================================================== */
+
+@keyframes zahlAuf {
+  from {
+    opacity: 0;
+    transform: translateY(0.25em);
+    filter: blur(2px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+
+.a-zahl {
+  animation: zahlAuf 0.6s var(--ease-aus) both;
+}
+
+/* ==================================================================
+ * Druckansicht
+ *
+ * Ein Betriebsbericht wird ausgedruckt und abgeheftet - fuer die
+ * Pruefung, fuer die Versicherung, fuer die Uebergabe an den
+ * Steuerberater. Ohne eigene Druckansicht kommt die Navigation
+ * mit aufs Blatt und der Inhalt haelt sich an keine Seitengrenze.
+ * ================================================================== */
+
+@media print {
+  :root {
+    --f-grund: #ffffff;
+    --f-ebene: #ffffff;
+    --f-vertieft: #ffffff;
+    --t-stark: #000000;
+    --t-normal: #1a1a1a;
+    --t-leise: #333333;
+    --t-zart: #555555;
+    --linie: #bbbbbb;
+    --linie-zart: #dddddd;
+  }
+
+  body {
+    background: #ffffff;
+  }
+
+  nav,
+  header,
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Der Inhalt nutzt die ganze Breite, wenn die Leiste fehlt. */
+  .lg\:pl-64 {
+    padding-left: 0 !important;
+  }
+
+  main {
+    max-width: none !important;
+    padding: 0 !important;
+  }
+
+  /* Eine Tafel wird nicht mitten durchgeschnitten. */
+  .tafel,
+  table,
+  tr {
+    break-inside: avoid;
+    box-shadow: none !important;
+  }
+
+  /* Gescrollte Tabellen drucken vollstaendig statt abgeschnitten. */
+  .overflow-x-auto {
+    overflow: visible !important;
+  }
+
+  a[href^="/"]::after {
+    content: "";
+  }
+
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* ==================================================================
+ * Farbmarken als Klassen
+ *
+ * Damit auch Stellen, die mit Klassennamen arbeiten - vor allem SVG
+ * in den Diagrammen -, die Marken benutzen koennen statt fester
+ * Grauwerte. Eine fest verdrahtete Farbe kennt den Dunkelmodus nur
+ * dort, wo jemand an jeder einzelnen Stelle daran gedacht hat, und
+ * genau das schlaegt zuverlaessig fehl.
+ * ================================================================== */
+
+.farbe-stark {
+  color: var(--t-stark);
+}
+.farbe-normal {
+  color: var(--t-normal);
+}
+.farbe-leise {
+  color: var(--t-leise);
+}
+.farbe-zart {
+  color: var(--t-zart);
+}
+
+.flaeche-ebene {
+  background: var(--f-ebene);
+}
+.flaeche-vertieft {
+  background: var(--f-vertieft);
+}
+.flaeche-belegt {
+  background: var(--f-belegt);
+}
+
+.rand-linie {
+  border-color: var(--linie);
+}
+.rand-zart {
+  border-color: var(--linie-zart);
+}
+.rand-stark {
+  border-color: var(--linie-stark);
+}
+
+/* Fuer SVG: Strich und Fuellung. */
+.strich-linie {
+  stroke: var(--linie);
+}
+.strich-zart {
+  stroke: var(--linie-zart);
+}
+.strich-leise {
+  stroke: var(--t-leise);
+}
+.strich-ebene {
+  stroke: var(--f-ebene);
+}
+
+.fuellung-stark {
+  fill: var(--t-stark);
+}
+.fuellung-normal {
+  fill: var(--t-normal);
+}
+.fuellung-leise {
+  fill: var(--t-leise);
+}
+.fuellung-zart {
+  fill: var(--t-zart);
+}
+.fuellung-vertieft {
+  fill: var(--f-vertieft);
+}
+
+/* ==================================================================
+ * Ankreuzfeld
+ *
+ * Der Browser zeichnet es in seiner eigenen Akzentfarbe - blau, und
+ * damit als einziges Element der Oberflaeche. `accent-color` reicht
+ * fuer die Farbe; Groesse und Abstand kommen dazu, weil das
+ * Standardmass fuer einen Finger zu klein ist.
+ * ================================================================== */
+
+.kreuz {
+  width: 1.0625rem;
+  height: 1.0625rem;
+  flex-shrink: 0;
+  accent-color: var(--akzent);
+  cursor: pointer;
+}
+
+.kreuz:focus-visible {
+  outline: 2px solid var(--akzent);
+  outline-offset: 2px;
+}
+
+.farbe-akzent {
+  color: var(--akzent-text);
+}
+.fuellung-ebene {
+  fill: var(--f-ebene);
+}
+/* Der Fadenkreuzstrich im Diagramm: sichtbar, aber nicht laut. */
+.strich-zeiger {
+  stroke: var(--t-zart);
+}
+
+.rand-akzent {
+  border-color: color-mix(in oklch, var(--akzent), transparent 55%);
+}
+.flaeche-akzent {
+  background: var(--akzent-flaeche);
+}
+
+/* ==================================================================
+ * Zustandsfarben
+ *
+ * Gut, Hinweis, Ernst, Kritisch - die vier Toene, mit denen die
+ * Oberflaeche einen Zustand faerbt.
+ *
+ * Sie brauchen eine eigene Fassung fuer den Dunkelmodus. Ein
+ * Dunkelgruen auf hellem Grund ist gut lesbar; dasselbe Dunkelgruen
+ * auf einer dunklen Flaeche ist es nicht. Wer die Toene nur einmal
+ * hell definiert und die Flaeche durchscheinen laesst, bekommt im
+ * Dunkeln Text, den man erahnen muss - und Zustand ist genau das,
+ * was man nicht erraten darf.
+ *
+ * Die Flaechen bleiben in beiden Faellen durchscheinende Mischungen:
+ * So tragen sie die Zeichnung der Ebene darunter mit und wirken nicht
+ * wie aufgeklebt.
+ * ================================================================== */
+
+:root {
+  --ton-gut: oklch(0.48 0.12 152);
+  --ton-gut-flaeche: color-mix(in oklch, oklch(0.55 0.14 152), transparent 90%);
+  --ton-gut-rand: color-mix(in oklch, oklch(0.55 0.14 152), transparent 72%);
+
+  --ton-hinweis: oklch(0.52 0.11 75);
+  --ton-hinweis-flaeche: color-mix(in oklch, oklch(0.65 0.14 75), transparent 88%);
+  --ton-hinweis-rand: color-mix(in oklch, oklch(0.65 0.14 75), transparent 70%);
+
+  --ton-ernst: oklch(0.54 0.15 45);
+  --ton-ernst-flaeche: color-mix(in oklch, oklch(0.62 0.17 45), transparent 89%);
+  --ton-ernst-rand: color-mix(in oklch, oklch(0.62 0.17 45), transparent 72%);
+
+  --ton-kritisch: oklch(0.52 0.19 25);
+  --ton-kritisch-flaeche: color-mix(in oklch, oklch(0.58 0.2 25), transparent 89%);
+  --ton-kritisch-rand: color-mix(in oklch, oklch(0.58 0.2 25), transparent 70%);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-thema="hell"]) {
+    --ton-gut: oklch(0.82 0.15 152);
+    --ton-gut-flaeche: color-mix(in oklch, oklch(0.62 0.14 152), transparent 86%);
+    --ton-gut-rand: color-mix(in oklch, oklch(0.68 0.14 152), transparent 66%);
+
+    --ton-hinweis: oklch(0.85 0.13 80);
+    --ton-hinweis-flaeche: color-mix(in oklch, oklch(0.7 0.13 75), transparent 86%);
+    --ton-hinweis-rand: color-mix(in oklch, oklch(0.75 0.13 75), transparent 66%);
+
+    --ton-ernst: oklch(0.8 0.15 48);
+    --ton-ernst-flaeche: color-mix(in oklch, oklch(0.66 0.16 45), transparent 86%);
+    --ton-ernst-rand: color-mix(in oklch, oklch(0.72 0.16 45), transparent 66%);
+
+    --ton-kritisch: oklch(0.78 0.17 25);
+    --ton-kritisch-flaeche: color-mix(in oklch, oklch(0.62 0.19 25), transparent 86%);
+    --ton-kritisch-rand: color-mix(in oklch, oklch(0.68 0.19 25), transparent 64%);
+  }
+}
+
+:root[data-thema="dunkel"] {
+  --ton-gut: oklch(0.82 0.15 152);
+  --ton-gut-flaeche: color-mix(in oklch, oklch(0.62 0.14 152), transparent 86%);
+  --ton-gut-rand: color-mix(in oklch, oklch(0.68 0.14 152), transparent 66%);
+
+  --ton-hinweis: oklch(0.85 0.13 80);
+  --ton-hinweis-flaeche: color-mix(in oklch, oklch(0.7 0.13 75), transparent 86%);
+  --ton-hinweis-rand: color-mix(in oklch, oklch(0.75 0.13 75), transparent 66%);
+
+  --ton-ernst: oklch(0.8 0.15 48);
+  --ton-ernst-flaeche: color-mix(in oklch, oklch(0.66 0.16 45), transparent 86%);
+  --ton-ernst-rand: color-mix(in oklch, oklch(0.72 0.16 45), transparent 66%);
+
+  --ton-kritisch: oklch(0.78 0.17 25);
+  --ton-kritisch-flaeche: color-mix(in oklch, oklch(0.62 0.19 25), transparent 86%);
+  --ton-kritisch-rand: color-mix(in oklch, oklch(0.68 0.19 25), transparent 64%);
+}
+
+/*
+ * Der Schleier hinter einem Dialog.
+ *
+ * In beiden Erscheinungsbildern dunkel, und das mit Absicht: Ein
+ * heller Schleier ueber hellem Inhalt trennt nichts. Deshalb keine
+ * eigene Fassung fuer den Dunkelmodus - nur eine Stelle, an der die
+ * Deckung steht.
+ */
+:root {
+  --f-schleier: oklch(0.18 0.012 260 / 0.45);
+}
+
+/* ==================================================================
+ * Platzhalter beim Laden
+ *
+ * Ein Platzhalter, der die Form des kommenden Inhalts hat, ist
+ * besser als ein Kreisel: Er sagt, was gleich da sein wird, und die
+ * Seite springt beim Eintreffen nicht.
+ *
+ * Der Schimmer laeuft langsam und mit geringem Kontrast. Ein
+ * schneller, harter Schimmer zieht den Blick genau dorthin, wo noch
+ * nichts steht - und macht das Warten laenger, nicht kuerzer.
+ * ================================================================== */
+
+@keyframes schimmer {
+  from {
+    background-position: 160% 0;
+  }
+  to {
+    background-position: -60% 0;
+  }
+}
+
+.skelett {
+  border-radius: 0.5rem;
+  background-color: var(--f-belegt);
+  background-image: linear-gradient(
+    100deg,
+    transparent 20%,
+    color-mix(in srgb, var(--f-ebene), transparent 45%) 50%,
+    transparent 80%
+  );
+  background-size: 220% 100%;
+  background-repeat: no-repeat;
+  animation: schimmer 1.8s var(--ease-weich) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skelett {
+    animation: none;
+  }
+}

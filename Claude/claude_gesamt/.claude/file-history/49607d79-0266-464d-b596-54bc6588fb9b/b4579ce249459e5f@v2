@@ -1,0 +1,37 @@
+/**
+ * Erzeugt eine Beispiel-Historie im Audit-Protokoll.
+ *
+ * Die Einträge werden nicht als Seed-Daten hinterlegt, sondern über
+ * `protokolliere()` erzeugt - sonst wäre die Hash-Kette nur abgeschrieben und
+ * würde beim ersten `verify_chain()` auffliegen.
+ */
+import { table } from './db.js'
+import { protokolliere } from './methods/audit.js'
+
+const VERLAUF = [
+  ['insert', 'Tenant', 'TEN-0001'],
+  ['insert', 'Site', 'SITE-0001'],
+  ['insert', 'Network Device', 'FW-OS-01'],
+  ['set_value', 'Network Device', 'FW-OS-01'],
+  ['insert', 'Network Device', 'SW-CORE-01'],
+  ['insert', 'IP Prefix', '10.10.0.0/16'],
+  ['insert', 'VLAN', 'VLAN-0090'],
+  ['set_value', 'Firewall Rule', 'FWR-00002'],
+  ['insert', 'Screen Pairing Request', 'PAIR-00001'],
+  ['set_value', 'Screen Pairing Request', 'PAIR-00001'],
+  ['insert', 'Drift Finding', 'DRIFT-00001'],
+  ['set_value', 'Backup Object', 'vm/103-dc01'],
+]
+
+export function seedAuditLog() {
+  if (table('Audit Entry').length) return
+
+  for (const [action, object_type, object_name] of VERLAUF) {
+    protokolliere({
+      action,
+      object_type,
+      object_name,
+      payload: { seed: true, object_name },
+    })
+  }
+}

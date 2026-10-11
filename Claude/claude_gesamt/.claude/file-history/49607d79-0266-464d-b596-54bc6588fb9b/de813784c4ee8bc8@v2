@@ -1,0 +1,131 @@
+<template>
+  <div>
+    <PageHeader title="IPAM" subtitle="Präfix-Hierarchie mit Auslastung">
+      <template #actions>
+        <FormControl v-model="vrf" type="select" :options="vrfOptionen" />
+      </template>
+    </PageHeader>
+
+    <div class="p-6">
+      <div class="overflow-hidden rounded-lg border border-outline-gray-2 bg-surface-white">
+        <table class="w-full text-left">
+          <thead class="border-b border-outline-gray-2 bg-surface-gray-1">
+            <tr class="text-sm text-ink-gray-6">
+              <th class="px-4 py-2 font-medium">{{ fieldLabel('prefix') }}</th>
+              <th class="px-4 py-2 font-medium">{{ fieldLabel('vlan') }}</th>
+              <th class="px-4 py-2 font-medium">{{ fieldLabel('prefix_role') }}</th>
+              <th class="w-48 px-4 py-2 font-medium">Auslastung</th>
+              <th class="px-4 py-2 text-right font-medium">Adressen</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-outline-gray-2">
+            <tr
+              v-for="knoten in flach"
+              :key="knoten.vrf + knoten.prefix"
+              :class="hervorgehoben === knoten.name ? 'bg-surface-amber-1' : ''"
+            >
+              <td class="px-4 py-2.5">
+                <span
+                  class="text-base tabular-nums text-ink-gray-8"
+                  :style="{ paddingLeft: knoten.depth * 20 + 'px' }"
+                >
+                  {{ knoten.prefix }}
+                </span>
+                <span v-if="knoten.description" class="ml-2 text-sm text-ink-gray-5">
+                  {{ knoten.description }}
+                </span>
+              </td>
+              <td class="px-4 py-2.5">
+                <Badge v-if="knoten.vlan_label" :theme="zoneTheme(knoten.security_zone)">
+                  {{ knoten.vlan_label }}
+                </Badge>
+                <span v-else class="text-ink-gray-4">–</span>
+              </td>
+              <td class="px-4 py-2.5 text-base text-ink-gray-7">
+                {{ valueLabel('prefix_role', knoten.prefix_role) }}
+              </td>
+              <td class="px-4 py-2.5">
+                <div class="flex items-center gap-2">
+                  <div class="h-2 flex-1 overflow-hidden rounded bg-surface-gray-2">
+                    <div
+                      class="h-full rounded"
+                      :class="balkenFarbe(knoten.utilization)"
+                      :style="{ width: Math.min(100, knoten.utilization) + '%' }"
+                    />
+                  </div>
+                  <span class="w-12 shrink-0 text-right text-sm tabular-nums text-ink-gray-6">
+                    {{ knoten.utilization }} %
+                  </span>
+                </div>
+              </td>
+              <!--
+                Container werden über ihre Teilnetze bewertet, Blattnetze über
+                die vergebenen Adressen. Die Zahlenspalte muss dieselbe Basis
+                zeigen wie der Balken, sonst widersprechen sich beide.
+              -->
+              <td class="px-4 py-2.5 text-right text-base tabular-nums text-ink-gray-7">
+                <template v-if="knoten.utilization_basis === 'children'">
+                  {{ knoten.child_count }} Teilnetze
+                </template>
+                <template v-else> {{ knoten.address_count }} / {{ knoten.usable }} </template>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p v-if="baum.loading" class="px-4 py-8 text-center text-sm text-ink-gray-5">
+          Wird geladen …
+        </p>
+        <p v-else-if="!flach.length" class="px-4 py-8 text-center text-sm text-ink-gray-5">
+          Keine Präfixe erfasst.
+        </p>
+      </div>
+
+      <p class="mt-3 text-xs text-ink-gray-4">
+        Auslastung von Containern ergibt sich aus der Summe der Kind-Präfixe,
+        bei Blattnetzen aus den vergebenen Adressen.
+      </p>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
+import { Badge, FormControl, createResource } from 'frappe-ui'
+import PageHeader from '@/components/PageHeader.vue'
+import { fieldLabel, valueLabel, zoneTheme } from '@/labels'
+
+const route = useRoute()
+const vrf = ref('')
+
+// Aus der globalen Suche kann ein Objekt zum Hervorheben mitkommen.
+const hervorgehoben = computed(() => route.query.q || null)
+
+const baum = createResource({
+  url: 'netops.api.ipam.prefix_list',
+  makeParams: () => ({ vrf: vrf.value || null }),
+  auto: true,
+})
+
+const vrfListe = createResource({
+  url: 'frappe.client.get_list',
+  params: { doctype: 'VRF', fields: ['name', 'vrf_name'], limit_page_length: 0 },
+  auto: true,
+})
+
+watch(vrf, () => baum.fetch())
+
+const flach = computed(() => baum.data || [])
+
+const vrfOptionen = computed(() => [
+  { label: 'Alle VRF', value: '' },
+  ...(vrfListe.data || []).map((v) => ({ label: v.vrf_name, value: v.name })),
+])
+
+function balkenFarbe(auslastung) {
+  if (auslastung >= 90) return 'bg-surface-red-5'
+  if (auslastung >= 70) return 'bg-surface-amber-3'
+  return 'bg-surface-gray-6'
+}
+</script>

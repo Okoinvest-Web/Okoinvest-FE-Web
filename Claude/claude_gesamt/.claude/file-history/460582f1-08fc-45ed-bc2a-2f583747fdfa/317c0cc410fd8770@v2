@@ -1,0 +1,382 @@
+import re, os
+from docx import Document
+from docx.shared import Pt, RGBColor, Cm
+from docx.enum.text import WD_BREAK
+from docx.oxml.ns import qn
+from docx.oxml import OxmlElement
+
+OUT_DIR = r"C:\Users\SALEADMIN\Desktop\Presse\4_Social_Media"
+os.makedirs(OUT_DIR, exist_ok=True)
+GREEN = RGBColor(0x1F, 0x4E, 0x3D)
+BLUE = RGBColor(0x1F, 0x3A, 0x5F)
+GREY = RGBColor(0x5F, 0x5F, 0x5F)
+RED = RGBColor(0xB0, 0x00, 0x00)
+PH = RGBColor(0xC0, 0x00, 0x00)
+WHITE = RGBColor(0xFF, 0xFF, 0xFF)
+LINK_AT = "[oekovolt.com/fakten]"
+LINK_DE = "[oekovolt.de/fakten]"
+
+
+def add(p, text, bold=False, size=None, color=None, italic=False):
+    for part in re.split(r"(\[[^\]]+\])", text):
+        if not part:
+            continue
+        r = p.add_run(part)
+        r.bold, r.italic = bold, italic
+        if size:
+            r.font.size = Pt(size)
+        if part.startswith("["):
+            r.font.color.rgb, r.bold = PH, True
+        elif color:
+            r.font.color.rgb = color
+    return p
+
+
+def shade(c, hexcolor):
+    tcPr = c._tc.get_or_add_tcPr()
+    sh = OxmlElement("w:shd")
+    sh.set(qn("w:val"), "clear")
+    sh.set(qn("w:fill"), hexcolor)
+    tcPr.append(sh)
+
+
+def new_doc():
+    d = Document()
+    s = d.sections[0]
+    s.left_margin = s.right_margin = Cm(2.0)
+    s.top_margin = s.bottom_margin = Cm(1.6)
+    n = d.styles["Normal"]
+    n.font.name = "Calibri"
+    n.font.size = Pt(10.5)
+    n.paragraph_format.space_after = Pt(4)
+    return d
+
+
+def h(d, t, size=13, color=GREEN, before=10):
+    p = add(d.add_paragraph(), t, bold=True, size=size, color=color)
+    p.paragraph_format.space_before = Pt(before)
+    p.paragraph_format.keep_with_next = True
+
+
+def box(d, label, text, color):
+    """Kanal-Label + Posttext in grauem Kasten (Tabelle 1x1)."""
+    p = add(d.add_paragraph(), label, bold=True, size=10, color=color)
+    p.paragraph_format.keep_with_next = True
+    p.paragraph_format.space_before = Pt(4)
+    t = d.add_table(rows=1, cols=1)
+    t.style = "Table Grid"
+    c = t.rows[0].cells[0]
+    shade(c, "F4F6F5")
+    c.paragraphs[0].text = ""
+    lines = text.split("\n")
+    for i, line in enumerate(lines):
+        para = c.paragraphs[0] if i == 0 else c.add_paragraph()
+        add(para, line, size=10)
+        para.paragraph_format.space_after = Pt(2)
+    d.add_paragraph().paragraph_format.space_after = Pt(2)
+
+
+def post_block(d, w, color, link):
+    h(d, f"{w['nr']} – {w['titel']}", color=color)
+    add(d.add_paragraph(), f"Zeitpunkt: {w['wann']}   ·   Grafik/Bild: {w['bild']}", italic=True, size=9.5, color=GREY)
+    box(d, "LinkedIn (persönliches Profil Geschäftsführer)", w["li"].replace("{L}", link), color)
+    box(d, "Facebook (Unternehmensseite)", w["fb"].replace("{L}", link), color)
+    ig = w["ig_caption"].replace("{L}", "Link in Bio")
+    slides = "\n".join(f"Folie {i}: {s}" for i, s in enumerate(w["ig_slides"], start=1))
+    box(d, "Instagram – Karussell (Folientexte)", slides, color)
+    box(d, "Instagram – Bildunterschrift", ig, color)
+    box(d, "X / Bluesky (max. 280 Zeichen)", w["x"].replace("{L}", link), color)
+
+
+# =====================================================================
+# ÖSTERREICH
+# =====================================================================
+AT = [
+    dict(nr="Welle 1", titel="Am selben Tag", wann="Tag der Aussendung, 9:00 Uhr (nach APA-OTS)",
+         bild="Zeitstrahl: links „18.10.2021 – Vertrag: Vermeidung von Wettbewerb“, rechts „18.10.2021 – Gründung one2zero“",
+         li="Am 18. Oktober 2021 haben wir mit der Salzburg AG einen Vertrag unterschrieben. Das gemeinsame Ziel darin: "
+            "„Vermeidung von Wettbewerbssituationen“. Wir sollten „bevorzugter Partner“ sein.\n\n"
+            "Am selben Tag hat die Salzburg AG die one2zero GmbH gegründet – eine eigene Tochter im selben Geschäft. So hält "
+            "es auch das Oberlandesgericht München in seinem Urteil fest.\n\n"
+            "Wir hatten uns davor auf Wunsch der Salzburg AG aus der Hofer-Ausschreibung zurückgezogen. Den Auftrag bekam die "
+            "neue Tochter.\n\n"
+            "Wir erzählen diese Geschichte nicht gern. Aber wir erzählen sie mit Belegen. Alle Dokumente: {L}\n\n"
+            "#Photovoltaik #Mittelstand #Salzburg #Energiewende",
+         fb="Partner auf dem Papier – Konkurrent am selben Tag.\n\nAm 18. Oktober 2021 hat die Salzburg AG mit uns "
+            "unterschrieben, Wettbewerb zu vermeiden. Am selben Tag hat sie ihre eigene Konkurrenz gegründet. Den "
+            "Hofer-Auftrag, für den wir uns zurückgezogen hatten, bekam diese neue Tochter.\n\nAlle Fakten und Belege: {L}",
+         ig_slides=["18. Oktober 2021.", "Die Salzburg AG unterschreibt: Wettbewerb zwischen uns soll vermieden werden.",
+                    "Am selben Tag gründet sie ihre eigene Photovoltaik-Firma.",
+                    "Den Hofer-Auftrag, für den wir uns zurückgezogen hatten, bekommt diese Firma.",
+                    "Partner auf dem Papier – Konkurrent am selben Tag. Alle Belege: Link in Bio"],
+         ig_caption="Wir haben vertraut. Am selben Tag wurde die Konkurrenz gegründet. Die ganze Geschichte mit allen "
+                    "Belegen: {L}\n#Photovoltaik #Salzburg #Innviertel #Mittelstand",
+         x="18.10.2021: Die Salzburg AG unterschreibt mit uns „Vermeidung von Wettbewerbssituationen“. Am selben Tag "
+           "gründet sie ihre eigene PV-Tochter one2zero – die später den Hofer-Auftrag bekommt. Belege: {L}"),
+    dict(nr="Welle 1b", titel="Die Eigentümer wissen es", wann="2–3 Tage nach Welle 1",
+         bild="Kalenderblatt „21. September“ mit Zähler „Tag X ohne Antwort“",
+         li="Am 21. September haben wir die Eigentümer der Salzburg AG – Land Salzburg, Stadt Salzburg und Energie AG "
+            "Oberösterreich – umfassend informiert: mit Urteilen, Gutachten und den Befunden zweier gerichtlich "
+            "zertifizierter Sachverständiger.\n\nUnsere Bitte war einfach: eine unabhängige Prüfung durch einen neutralen, "
+            "gerichtlich beeideten Sachverständigen. Die Frist ist verstrichen. Eine Antwort gibt es nicht.\n\n"
+            "Wir erwarten keine Entschuldigung. Wir erwarten eine unabhängige Prüfung.\n\n{L}\n\n#Salzburg #Governance",
+         fb="Seit 21. September haben die Eigentümer der Salzburg AG alle Unterlagen auf dem Tisch. Unsere Bitte: eine "
+            "unabhängige Prüfung. Eine Antwort gibt es bis heute nicht.\n\nDie Salzburg AG gehört den Salzburgerinnen und "
+            "Salzburgern. Sie haben ein Recht auf Aufklärung. {L}",
+         ig_slides=["Seit 21. September wissen es die Eigentümer.", "Urteile. Gutachten. Forensische Befunde.",
+                    "Unsere Bitte: eine unabhängige Prüfung.", "Antwort bis heute: keine.",
+                    "Wir erwarten keine Entschuldigung. Wir erwarten Aufklärung."],
+         ig_caption="Die Salzburg AG gehört den Salzburgern. Ihre Eigentümer haben seit 21. September alle Unterlagen. "
+                    "Wir warten auf eine Antwort. {L}\n#Salzburg #Aufklärung",
+         x="Seit 21.9. haben Land Salzburg, Stadt Salzburg und Energie AG OÖ Urteile, Gutachten und forensische Befunde "
+           "zur Salzburg AG auf dem Tisch. Unsere Bitte: unabhängige Prüfung. Antwort: keine. {L}"),
+    dict(nr="Welle 2", titel="Treuwidrig", wann="3–5 Tage nach Welle 1b; idealerweise um den 10.10. (Jahrestag)",
+         bild="Zitatkarte: „treuwidrig“ – Oberlandesgericht München",
+         li="Das Oberlandesgericht München hat entschieden – dreimal.\n\nIn allen drei Verfahren um die deutsche "
+            "Ökovolt ist die Salzburg AG gescheitert. Ihr Vorgehen bei unserer Generalversammlung am 10. Oktober 2025 hat "
+            "das Gericht als „treuwidrig“ bewertet: Das Protokoll war vorab geschrieben, die Versammlung wurde „im "
+            "Flüsterton“ fortgesetzt.\n\nAuch das österreichische Firmenbuchgericht hat die Eintragung der dort gefassten "
+            "Beschlüsse ausgesetzt.\n\nTreuwidrig ist kein Streit. Das ist ein Befund.\n\n{L}\n\n#Rechtsstaat #Salzburg",
+         fb="Dreimal vor dem Oberlandesgericht verloren. Vorgehen „treuwidrig“. Eintragung im Firmenbuch gestoppt.\n\n"
+            "Und die Salzburg AG spricht von einem „Gesellschafterstreit“. Die Urteile sprechen eine andere Sprache: {L}",
+         ig_slides=["10. Oktober 2025.", "Das Protokoll der Versammlung: schon vorher geschrieben.",
+                    "Fortgesetzt „im Flüsterton“.", "Oberlandesgericht München: „treuwidrig“.",
+                    "Dreimal verloren. Treuwidrig ist kein Streit – das ist ein Befund."],
+         ig_caption="Was ein Oberlandesgericht über das Vorgehen der Salzburg AG sagt. Alle Urteile: {L}\n#Salzburg",
+         x="OLG München: Das Vorgehen der Salzburg AG bei unserer Generalversammlung war „treuwidrig“ – Protokoll vorab "
+           "geschrieben, „im Flüsterton“ fortgesetzt. 3 Verfahren, 3 Niederlagen. {L}"),
+    dict(nr="Welle 2b", titel="Kopiert, eingeladen, angestellt", wann="5–7 Tage nach Welle 2",
+         bild="Drei Kacheln: „2.12.2024 – Daten kopiert“ · „2.12.2024 – Wechsel zur Tochter eingeleitet“ · „2025 – bei der Salzburg AG angestellt“",
+         li="Zwei allgemein beeidete und gerichtlich zertifizierte Sachverständige für IT-Forensik haben festgestellt: Am "
+            "2. Dezember 2024 wurde unser gesamter Controlling-Ordner kopiert – rund 1.150 Dateien.\n\nAm selben Tag wurde der "
+            "Wechsel des von der Salzburg AG entsandten Geschäftsführers zu ihrer Tochter one2zero eingeleitet. Nach seinem "
+            "Ausscheiden bei uns wurde er Angestellter der Salzburg AG.\n\nDas Oberlandesgericht München hält den Datenabzug "
+            "für glaubhaft gemacht. Es gilt die Unschuldsvermutung.\n\nAndere Unternehmen trennen sich von Mitarbeitern, "
+            "gegen die solche Befunde vorliegen. {L}",
+         fb="Daten kopiert. Am selben Tag zur Konzerntochter eingeladen. Danach beim Konzern angestellt.\n\nFestgestellt von "
+            "zwei gerichtlich zertifizierten Sachverständigen, gewürdigt vom Oberlandesgericht München. Es gilt die "
+            "Unschuldsvermutung. {L}",
+         ig_slides=["2. Dezember 2024.", "Unser Controlling-Ordner wird kopiert. 1.150 Dateien.",
+                    "Am selben Tag: Wechsel zur Salzburg-AG-Tochter eingeleitet.", "Danach: angestellt bei der Salzburg AG.",
+                    "Festgestellt von gerichtlich zertifizierten Sachverständigen. Es gilt die Unschuldsvermutung."],
+         ig_caption="Kopiert. Eingeladen. Angestellt. Was Forensiker gefunden haben: {L}\n#Salzburg",
+         x="2.12.2024: Unser Controlling-Ordner wird kopiert. Am selben Tag wird der Wechsel des entsandten GF zur "
+           "Salzburg-AG-Tochter eingeleitet. Danach: angestellt bei der Salzburg AG. OLG: glaubhaft. {L}"),
+    dict(nr="Welle 3", titel="Ohne Gewerbeschein", wann="Woche 2–3",
+         bild="Foto: Elektriker an Steckdose, Text „Jeder braucht einen Gewerbeschein. Fast jeder.“",
+         li="Jeder Elektriker in Salzburg braucht für jede Steckdose eine Gewerbeberechtigung.\n\nDie Salzburg-AG-Tochter "
+            "one2zero wurde 2021 gegründet. Laut Gewerbeinformationssystem kam ihre erste Gewerbeberechtigung im November "
+            "2022 – für Unternehmensberatung. Die Berechtigung für Elektrotechnik erst im August 2023.\n\nWir haben die "
+            "Bundeswettbewerbsbehörde um Prüfung ersucht und die Landesinnung informiert. Es geht um jeden Betrieb, der sich "
+            "an die Regeln hält. {L}\n\n#Elektrotechnik #Handwerk #Salzburg",
+         fb="Jeder kleine Elektriker braucht für jede Steckdose einen Gewerbeschein. Die Tochter des Landesversorgers hatte "
+            "anfangs gar keinen.\n\nWenn das Schule macht, hat das Salzburger Handwerk ein Problem. {L}",
+         ig_slides=["Jeder Elektriker braucht einen Gewerbeschein.", "Für jede Steckdose.",
+                    "Die Tochter der Salzburg AG: 2021 gegründet.", "Erste Gewerbeberechtigung: 2022. Elektrotechnik: 2023.",
+                    "Gleiche Regeln für alle. Auch für den Landesversorger."],
+         ig_caption="Gleiche Regeln für alle – oder nicht? {L}\n#Handwerk #Elektriker #Salzburg",
+         x="Jeder Elektriker in Salzburg braucht einen Gewerbeschein. Die PV-Tochter der Salzburg AG hatte laut GISA "
+           "erst ab 11/2022 überhaupt eine Gewerbeberechtigung, Elektrotechnik ab 08/2023. {L}"),
+    dict(nr="Welle 4", titel="Das Geld der Salzburger", wann="Woche 3–4",
+         bild="Zwei Balken: Ökovolt 2024 „+1,14 Mio. € Gewinn“ – one2zero „Verluste“ [Zahl nach Prüfung]",
+         li="Die Salzburg AG hält 49 % an Ökovolt. Wir haben 2024 unseren Gewinn mehr als verdoppelt.\n\nStatt diesen Wert "
+            "für Land, Stadt und Stromkunden zu sichern, führt die Salzburg AG Verfahren gegen das eigene "
+            "Beteiligungsunternehmen – und finanziert eine Tochter, die seit Jahren Verluste schreibt.\n\nIn Salzburg zahlt "
+            "der Stromkunde, in Wien kassieren die Anwälte. {L}",
+         fb="Eine Beteiligung, die Geld verdient – bekämpft. Eine Tochter, die Geld verliert – finanziert.\n\nBezahlt von "
+            "einem Unternehmen, das den Salzburgerinnen und Salzburgern gehört. {L}",
+         ig_slides=["Die Salzburg AG besitzt 49 % von Ökovolt.", "Ökovolt 2024: Gewinn mehr als verdoppelt.",
+                    "Die Salzburg AG: prozessiert dagegen.", "Ihre eigene Tochter: schreibt seit Jahren Verluste.",
+                    "Wer zahlt? Die Stromkunden."],
+         ig_caption="Wohin fließt das Geld der Salzburger Stromkunden? {L}\n#Salzburg #Strompreis",
+         x="Ökovolt hat 2024 den Gewinn mehr als verdoppelt – die Salzburg AG (49 %) prozessiert dagegen und finanziert "
+           "eine eigene Tochter mit Verlusten. Bezahlt mit dem Geld der Stromkunden. {L}"),
+    dict(nr="Welle 5", titel="Die Eigentümer schweigen", wann="Woche 4–5",
+         bild="Große Zahl: „[X] Tage“ – „seit die Eigentümer alle Unterlagen haben“",
+         li="Seit [X] Tagen haben die Eigentümer der Salzburg AG Urteile, Gutachten und forensische Befunde auf dem Tisch – "
+            "und schweigen.\n\nWir haben fünf Fragen gestellt. Wir haben eine unabhängige Prüfung vorgeschlagen, mit klaren "
+            "Standards: Prüfer von einer unabhängigen Stelle bestellt, voller Zugang, Ergebnis öffentlich.\n\nEine Prüfung, "
+            "bei der die Salzburg AG den Prüfer aussucht, ist keine Prüfung. Wer nichts zu verbergen hat, klärt auf. {L}",
+         fb="[X] Tage. Fünf Fragen. Keine Antwort.\n\nWir erwarten keine Entschuldigung. Wir erwarten eine unabhängige "
+            "Prüfung. Wer sie anordnet, zeigt Verantwortung. {L}",
+         ig_slides=["[X] Tage ohne Antwort.", "Frage 1: Warum wurde am Tag der Partnerschaft die Konkurrenz gegründet?",
+                    "Frage 2: Warum bekam die eigene Tochter den Auftrag?",
+                    "Frage 3: Warum war das Protokoll vorher geschrieben?", "Wer nichts zu verbergen hat, klärt auf."],
+         ig_caption="Fünf Fragen an die Salzburg AG und ihre Eigentümer. Alle fünf: {L}\n#Salzburg #Aufklärung",
+         x="[X] Tage haben die Eigentümer der Salzburg AG alle Unterlagen. 5 Fragen, 0 Antworten. Unsere Forderung: "
+           "unabhängige Prüfung, Prüfer von unabhängiger Stelle bestellt, Ergebnis öffentlich. {L}"),
+]
+
+# =====================================================================
+# DEUTSCHLAND
+# =====================================================================
+DE = [
+    dict(nr="D1", titel="Dreimal gescheitert", wann="parallel zu AT-Welle 2",
+         bild="Foto Team Türkheim; Text „3 Verfahren. 3 Entscheidungen. Oberlandesgericht München.“",
+         li="Das Oberlandesgericht München hat in drei Verfahren entschieden – jedes Mal gegen die Salzburg AG.\n\n"
+            "Der österreichische Landesversorger war 2021 bei uns eingestiegen. Die Gesellschafter haben seine Anteile 2025 "
+            "eingezogen; seine Anträge dagegen scheiterten. Das Gericht wertete sein Vorgehen bei einer Gesellschafterversammlung "
+            "als „treuwidrig“.\n\nWir haben einem Partner vertraut. Deutsche Gerichte haben entschieden. Die Hauptverhandlung "
+            "folgt in Memmingen. {L}\n\n#Mittelstand #Allgäu #Photovoltaik",
+         fb="Ein Familienunternehmen aus dem Unterallgäu gegen einen ausländischen Staatskonzern – und dreimal hat das "
+            "Oberlandesgericht München für uns entschieden.\n\nDanke an unser Team, das jeden Tag weiterarbeitet. {L}",
+         ig_slides=["Unterallgäu gegen Staatskonzern.", "Oberlandesgericht München.", "Drei Verfahren.",
+                    "Dreimal gegen die Salzburg AG.", "Danke an unser Team."],
+         ig_caption="Deutsche Gerichte haben entschieden. Die ganze Geschichte: {L}\n#Allgäu #Mittelstand #Solar",
+         x="OLG München weist die Salzburg AG in drei Verfahren ab. Vorgehen bei Gesellschafterversammlung „treuwidrig“. "
+           "Hauptverhandlung folgt beim LG Memmingen. {L}"),
+    dict(nr="D2", titel="Partner auf dem Papier", wann="Woche 2",
+         bild="Zeitstrahl 18.10.2021 (wie AT-Welle 1, auf Deutschland angepasst)",
+         li="Wer als Mittelständler einen strategischen Investor ins Haus holt, sollte diese Geschichte kennen.\n\nAm "
+            "18. Oktober 2021 stieg die Salzburg AG bei uns ein – mit dem vertraglichen Ziel, Wettbewerb zu vermeiden. Am "
+            "selben Tag gründete sie ihre eigene Photovoltaik-Tochter.\n\nDas OLG München: Dieses Verhalten müssten wir "
+            "„auch im hypothetischen Fall, dass ein Wettbewerbsverbot überhaupt nicht vereinbart worden wäre, nicht … "
+            "akzeptieren“. {L}\n\n#Beteiligung #Governance #Mittelstand",
+         fb="Partner auf dem Papier – Konkurrent am selben Tag. Was am 18. Oktober 2021 geschah: {L}",
+         ig_slides=["18. Oktober 2021.", "Einstieg bei uns: „Wettbewerb vermeiden“.", "Am selben Tag: eigene Konkurrenz gegründet.",
+                    "Partner auf dem Papier.", "Konkurrent am selben Tag."],
+         ig_caption="Was Mittelständler vor einer Beteiligung wissen sollten. {L}\n#Mittelstand",
+         x="18.10.2021: Die Salzburg AG steigt bei uns ein – Ziel: Wettbewerb vermeiden. Am selben Tag gründet sie ihre "
+           "eigene PV-Tochter. Partner auf dem Papier, Konkurrent am selben Tag. {L}"),
+    dict(nr="D3", titel="Im Flüsterton (Rechtspresse)", wann="Woche 3 – nur LinkedIn und X",
+         bild="Zitatkarte „im Flüsterton fortgesetzt“ – OLG München, Beschluss 18.06.2026",
+         li="„… nach Erscheinen der gegnerischen Mehrheitsgruppe im Flüsterton fortsetzte …“\n\nSo beschreibt das "
+            "Oberlandesgericht München das Vorgehen der Salzburg AG bei einer Gesellschafterversammlung. Der Senat hat auch "
+            "die Anhörungsrügen verworfen – die angeblich übergangenen Schriftsätze lagen der Akte gar nicht vor.\n\n"
+            "Die Eilverfahren sind abgeschlossen. Die Hauptsache verhandelt das LG Memmingen. {L}\n\n#Gesellschaftsrecht #OLG",
+         fb="(kein Facebook-Post – Thema für Fachpublikum)",
+         ig_slides=["(kein Instagram-Post – Thema für Fachpublikum)"],
+         ig_caption="–",
+         x="OLG München (14 U 3748/25): Salzburg AG habe die Versammlung „im Flüsterton“ fortgesetzt und das Verfahren der "
+           "Beschlussfassung „ausgehebelt“. Gehörsrügen verworfen. {L}"),
+    dict(nr="D4", titel="Wenn der Staatskonzern mitliest", wann="Woche 4",
+         bild="Checkliste „3 Lehren für Mittelständler bei strategischen Investoren“",
+         li="Drei Lehren aus unserem Fall für jeden Mittelständler, der über einen strategischen Investor nachdenkt:\n\n"
+            "1. Informationsrechte und Geschäftsführer-Entsendungen klar begrenzen.\n2. Eigene Aktivitäten des Investors im "
+            "Kerngeschäft ausschließen – „Wettbewerbsvermeidung“ reicht nicht.\n3. Zugriffe auf sensible Daten protokollieren.\n\n"
+            "Bei uns haben zwei gerichtlich zertifizierte Sachverständige festgestellt, dass unser Controlling-Ordner kopiert "
+            "wurde – am Tag, an dem der Wechsel des Managers zur Konzerntochter vorbereitet wurde. Es gilt die "
+            "Unschuldsvermutung. {L}",
+         fb="Wir erzählen das nicht, um uns zu beklagen. Wir erzählen es, damit anderen Familienunternehmen das nicht "
+            "passiert. {L}",
+         ig_slides=["3 Lehren für den Mittelstand.", "1. Informationsrechte begrenzen.", "2. Wettbewerb klar ausschließen.",
+                    "3. Datenzugriffe protokollieren.", "Damit anderen das nicht passiert."],
+         ig_caption="Was wir gelernt haben – damit andere es nicht lernen müssen. {L}\n#Mittelstand #Unternehmertum",
+         x="3 Lehren für Mittelständler mit strategischem Investor: Informationsrechte begrenzen, Wettbewerb ausschließen, "
+           "Datenzugriffe protokollieren. Warum wir das sagen: {L}"),
+    dict(nr="D5", titel="Hauptverhandlung Memmingen", wann="Terminhinweis 1 Woche vorher; Ergebnis am Verhandlungstag",
+         bild="Foto Landgericht Memmingen (außen), Team",
+         li="VORHER: Am [Datum] verhandelt das Landgericht Memmingen in der Hauptsache. Wir gehen mit Zuversicht und "
+            "Respekt vor dem Gericht in diese Verhandlung.\n\nNACH POSITIVEM URTEIL: Das Landgericht Memmingen hat entschieden. "
+            "[Kernaussage]. Danke an unser Team. Unsere Tür für eine faire Lösung bleibt offen.\n\nNACH UNGÜNSTIGEM URTEIL: "
+            "Wir nehmen die Entscheidung ernst und prüfen die nächsten Schritte in Ruhe. Für unsere Kunden ändert sich nichts.",
+         fb="Nur nach dem Urteil, Text wie LinkedIn (positiv oder ungünstig).",
+         ig_slides=["Nur nach positivem Urteil: Foto Team + „Entschieden. Danke an unser Team.“"],
+         ig_caption="Nur nach positivem Urteil.",
+         x="VORHER: LG Memmingen verhandelt am [Datum] die Hauptsache Salzburg AG ./. ÖKOVOLT. "
+           "NACHHER: je nach Ausgang – Vorlage D5b oder D5c."),
+]
+
+d = new_doc()
+add(d.add_paragraph(), "INTERN – Posts erst nach Versand der jeweiligen Presseaussendung veröffentlichen", bold=True,
+    size=9, color=RED)
+add(d.add_paragraph(), "Social-Media-Wellen Österreich und Deutschland", bold=True, size=22, color=GREEN)
+add(d.add_paragraph(), "Fertige Texte für LinkedIn, Facebook, Instagram und X/Bluesky – jede Welle passend zur Presseaussendung",
+    italic=True, size=11, color=GREY)
+
+h(d, "Regeln für alle Posts", size=13)
+for r in [
+    "Jeder Post erscheint erst, nachdem die zugehörige Presseaussendung verschickt ist – nie vorher.",
+    "Jeder Post verweist auf die Faktenseite. Social Media ist Zubringer, nicht Beweis.",
+    "Keine Namen von Beschuldigten oder Angestellten; bei Ermittlungen immer „Es gilt die Unschuldsvermutung“.",
+    "Keine Wörter, die nicht belegt sind: nicht „Spionage“, nicht „Betrug“, nicht „Lüge“, nicht „Diebstahl“.",
+    "LinkedIn postet der Geschäftsführer persönlich; Facebook, Instagram und X die Unternehmensseite.",
+    "Kommentare: sachlich antworten, Beleg verlinken, bei Beleidigungen nicht einsteigen, nur Strafbares löschen.",
+    "Bezahlte Reichweite nur offen als Ökovolt, regional (Salzburg, Innviertel, Unterallgäu), nie für Posts mit Vorwürfen "
+    "gegen Personen.",
+    "Keine Bots, keine Fake-Profile, keine bestellten Kommentare. Mitarbeitende teilen nur freiwillig.",
+    "Die Reserve-Wellen 6 und 7 bekommen erst Social-Media-Posts, wenn sie tatsächlich eingesetzt werden.",
+]:
+    add(d.add_paragraph(style="List Bullet"), r)
+
+h(d, "Posting-Rhythmus je Welle", size=13)
+t = d.add_table(rows=6, cols=3)
+t.style = "Table Grid"
+rows = [("Zeitpunkt", "Kanal", "Inhalt"),
+        ("Tag 0, 9:00", "X/Bluesky", "Kurzfassung + Link zur OTS/Faktenseite"),
+        ("Tag 0, 9:30", "LinkedIn (GF)", "Persönlicher Beitrag"),
+        ("Tag 0, 12:00", "Facebook", "Kurzfassung + Bild"),
+        ("Tag 0, 18:00", "Instagram", "Karussell + Bildunterschrift"),
+        ("Tag 1–2", "alle", "Medienberichte teilen („Danke an [Medium] für die Berichterstattung“), Kommentare beantworten")]
+for i, rr in enumerate(rows):
+    for j, txt in enumerate(rr):
+        c = t.rows[i].cells[j]
+        c.paragraphs[0].text = ""
+        add(c.paragraphs[0], txt, size=9.5, bold=(i == 0), color=WHITE if i == 0 else None)
+        if i == 0:
+            shade(c, "1F4E3D")
+
+d.add_page_break()
+h(d, "ÖSTERREICH", size=18, color=GREEN, before=0)
+for w in AT:
+    post_block(d, w, GREEN, LINK_AT)
+
+d.add_page_break()
+h(d, "DEUTSCHLAND", size=18, color=BLUE, before=0)
+for w in DE:
+    post_block(d, w, BLUE, LINK_DE)
+
+d.add_page_break()
+h(d, "Reel-Drehbücher (30 Sekunden)", size=16)
+for title, lines in [
+    ("Reel AT-1 „Am selben Tag“", [
+        "0–3 s: Totale Dach, Monteur setzt Modul. Einblendung „18. Oktober 2021“.",
+        "3–12 s: Monteur (mit Zustimmung): „An dem Tag hat die Salzburg AG unterschrieben, dass sie mit uns gemeinsam arbeitet.“",
+        "12–20 s: Geschäftsführer: „Am selben Tag hat sie ihre eigene Konkurrenz gegründet.“",
+        "20–27 s: Grafik Zeitstrahl – derselbe Tag leuchtet zweimal auf.",
+        "27–30 s: „Partner auf dem Papier – Konkurrent am selben Tag. Alle Fakten: Link in Bio“"]),
+    ("Reel AT-2b „Kopiert, eingeladen, angestellt“", [
+        "0–5 s: Kalenderblatt 2. Dezember 2024, Ton: Tastatur.",
+        "5–12 s: Text: „Controlling-Ordner kopiert. 1.150 Dateien.“",
+        "12–18 s: Text: „Am selben Tag: Wechsel zur Konzerntochter eingeleitet.“",
+        "18–25 s: Geschäftsführer: „Andere trennen sich von so jemandem. Die Salzburg AG hat ihn angestellt.“",
+        "25–30 s: „Festgestellt von gerichtlich zertifizierten Sachverständigen. Es gilt die Unschuldsvermutung.“"]),
+    ("Reel AT-5 „[X] Tage“", [
+        "0–5 s: Zähler läuft hoch bis [X].",
+        "5–15 s: Text: „So lange haben die Eigentümer der Salzburg AG alle Unterlagen.“",
+        "15–25 s: Geschäftsführer: „Wir erwarten keine Entschuldigung. Wir erwarten eine unabhängige Prüfung.“",
+        "25–30 s: „Wer nichts zu verbergen hat, klärt auf.“"]),
+    ("Reel DE-1 „Unterallgäu gegen Staatskonzern“", [
+        "0–5 s: Drohne über Firmengelände Türkheim.",
+        "5–15 s: Geschäftsführer: „Ein Staatskonzern wollte über unser Familienunternehmen bestimmen.“",
+        "15–25 s: Text: „Oberlandesgericht München: dreimal gegen die Salzburg AG.“",
+        "25–30 s: Team winkt vom Dach: „Danke an unser Team.“"]),
+]:
+    h(d, title, size=11.5)
+    for l in lines:
+        add(d.add_paragraph(style="List Bullet"), l, size=10)
+    add(d.add_paragraph(), "Alle Personen im Video nur mit schriftlicher Zustimmung.", italic=True, size=9, color=GREY)
+
+h(d, "Standardantworten für Kommentare", size=16)
+for q, a in [
+    ("„Ist doch nur ein Streit unter Gesellschaftern.“",
+     "Das Oberlandesgericht München hat das Vorgehen der Salzburg AG als treuwidrig gewertet. Die Urteile finden Sie hier: [Link]"),
+    ("„Euch geht’s doch nur ums Geld.“",
+     "Uns geht es um Aufklärung. Deshalb schlagen wir eine unabhängige Prüfung vor – mit einem Prüfer, den nicht wir aussuchen."),
+    ("„Warum geht ihr damit an die Öffentlichkeit?“",
+     "Weil die Salzburg AG öffentlich sagt, unsere Vorwürfe hätten keine Grundlage. Wir zeigen die Grundlage – mit Belegen: [Link]"),
+    ("„Wer ist der Beschuldigte?“", "Dazu äußern wir uns nicht. Es gilt die Unschuldsvermutung."),
+    ("Beleidigung oder Hetze gegen Personen", "Nicht antworten. Nur löschen, wenn strafbar; sonst stehen lassen."),
+    ("Frage von Journalisten per Direktnachricht", "Freundlich antworten und an [Pressekontakt] verweisen."),
+]:
+    p = d.add_paragraph()
+    add(p, "Kommentar: ", bold=True, color=GREEN, size=10)
+    add(p, q, bold=True, size=10)
+    p = d.add_paragraph()
+    p.paragraph_format.left_indent = Cm(0.5)
+    add(p, "Antwort: ", bold=True, color=GREEN, size=10)
+    add(p, a, size=10)
+
+fn = os.path.join(OUT_DIR, "Social_Media_Wellen_AT_DE.docx")
+d.save(fn)
+print("ok", fn)

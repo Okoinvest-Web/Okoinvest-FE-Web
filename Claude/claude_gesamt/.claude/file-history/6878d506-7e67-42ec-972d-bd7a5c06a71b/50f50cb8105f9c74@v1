@@ -1,0 +1,29 @@
+import { db } from "@/lib/data";
+import { LoginForm } from "@/components/forms";
+
+export const metadata = { title: "Anmelden" };
+
+export default async function LoginPage({ searchParams }: PageProps<"/login">) {
+  const next = (await searchParams).next;
+  const demo = db().kind === "mock";
+  return (
+    <div className="flex min-h-full items-center justify-center bg-gray-50 p-4">
+      <div className="w-full max-w-sm rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+        <div className="mb-6 flex items-center gap-2">
+          <div className="flex size-7 items-center justify-center rounded-md bg-gray-900 text-sm font-semibold text-white">C</div>
+          <h1 className="text-lg font-semibold">Anmelden</h1>
+        </div>
+        <LoginForm next={typeof next === "string" ? next : undefined} demo={demo} />
+        <p className="mt-4 text-xs text-gray-500">
+          {demo ? (
+            <>
+              Demo-Modus: <code>max@firma.example</code> oder <code>lisa@firma.example</code>, Passwort <code>demo</code>.
+            </>
+          ) : (
+            "Mit deinem ERPNext-Benutzer anmelden."
+          )}
+        </p>
+      </div>
+    </div>
+  );
+}

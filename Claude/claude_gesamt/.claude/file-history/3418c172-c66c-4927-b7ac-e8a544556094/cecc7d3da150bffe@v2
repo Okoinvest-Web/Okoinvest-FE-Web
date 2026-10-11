@@ -1,0 +1,13 @@
+import { PageHeader } from "@/components/ui";
+import { NewLeadForm } from "@/components/interactive";
+
+export const metadata = { title: "Neuer Lead" };
+
+export default function NewLeadPage() {
+  return (
+    <>
+      <PageHeader title="Neuer Lead" crumbs={[{ href: "/leads", label: "Leads" }]} />
+      <NewLeadForm />
+    </>
+  );
+}

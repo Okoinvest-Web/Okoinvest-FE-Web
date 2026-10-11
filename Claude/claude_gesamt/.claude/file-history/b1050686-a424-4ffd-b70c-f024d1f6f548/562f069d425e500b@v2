@@ -1,0 +1,29 @@
+import io, os, re
+
+# Relative Importe in der Bibliotheksschicht bekommen die .ts-Endung.
+# Grund: Next loest sie so oder so auf, Node verlangt sie - und die
+# Rechenkerne sollen sich direkt mit `node --test` pruefen lassen.
+muster = re.compile(r'(from\s+")(\.\.?/[^"]*?)(")')
+
+geaendert = []
+for wurzel, _, dateien in os.walk("src/lib"):
+    for name in dateien:
+        if not name.endswith(".ts") or name.endswith(".d.ts"):
+            continue
+        pfad = os.path.join(wurzel, name)
+        s = io.open(pfad, encoding="utf-8").read()
+
+        def ersetze(m):
+            ziel = m.group(2)
+            if ziel.endswith((".ts", ".json", ".sql")):
+                return m.group(0)
+            return m.group(1) + ziel + ".ts" + m.group(3)
+
+        neu = muster.sub(ersetze, s)
+        if neu != s:
+            io.open(pfad, "w", encoding="utf-8", newline="\n").write(neu)
+            geaendert.append(pfad.replace(os.sep, "/"))
+
+for p in geaendert:
+    print(" ", p)
+print(str(len(geaendert)) + " Dateien angepasst")

@@ -1,0 +1,182 @@
+"""Tagesbericht: Bauleiter und Subunternehmer, Genehmigungsworkflow (FA-070 bis FA-077)."""
+
+from __future__ import annotations
+
+import frappe
+from frappe import _
+from frappe.model.document import Document
+from frappe.utils import flt, get_datetime, now_datetime, today
+
+FREIGEBER_ROLLEN = {"Baudoku Bauleiter", "Baudoku Projektleiter", "Baudoku Admin", "System Manager"}
+
+
+class Tagesbericht(Document):
+	def validate(self):
+		self.arbeitszeit_pruefen()
+		self.stunden_summieren()
+		self.fortschritt_ableiten()
+		self.doppelten_bericht_pruefen()
+
+	# ---------------------------------------------------------------- Validate
+
+	def arbeitszeit_pruefen(self):
+		if self.arbeitsbeginn and self.arbeitsende:
+			beginn = get_datetime(f"{self.datum} {self.arbeitsbeginn}")
+			ende = get_datetime(f"{self.datum} {self.arbeitsende}")
+			if ende <= beginn:
+				frappe.throw(_("Das Arbeitsende muss nach dem Arbeitsbeginn liegen."))
+
+	def stunden_summieren(self):
+		aus_positionen = sum(flt(p.stunden) for p in self.positionen)
+		if aus_positionen:
+			self.arbeitsstunden_gesamt = aus_positionen
+		elif self.arbeitsbeginn and self.arbeitsende:
+			beginn = get_datetime(f"{self.datum} {self.arbeitsbeginn}")
+			ende = get_datetime(f"{self.datum} {self.arbeitsende}")
+			stunden = (ende - beginn).total_seconds() / 3600
+			self.arbeitsstunden_gesamt = round(
+				max(0.0, stunden - flt(self.ausfallstunden)) * max(1, self.personal_anzahl or 1), 2
+			)
+
+	def fortschritt_ableiten(self):
+		"""Ohne manuelle Angabe: Mittel der Positionsfortschritte."""
+		if self.fortschritt_prozent or not self.positionen:
+			return
+		werte = [flt(p.fortschritt) for p in self.positionen if p.fortschritt]
+		if werte:
+			self.fortschritt_prozent = round(sum(werte) / len(werte), 1)
+
+	def doppelten_bericht_pruefen(self):
+		filters = {
+			"anlage": self.anlage,
+			"datum": self.datum,
+			"bericht_typ": self.bericht_typ,
+			"ersteller": self.ersteller,
+			"status": ["!=", "Abgelehnt"],
+			"name": ["!=", self.name or ""],
+		}
+		if self.bericht_typ == "Subunternehmer":
+			filters["supplier"] = self.supplier
+		if frappe.db.exists("Tagesbericht", filters):
+			frappe.throw(
+				_("Fuer diese Baustelle, diesen Tag und diesen Ersteller existiert bereits ein Bericht."),
+				title=_("Doppelter Tagesbericht"),
+			)
+
+	# ----------------------------------------------------------------- Workflow
+
+	@frappe.whitelist()
+	def einreichen(self):
+		"""Entwurf -> Eingereicht (FA-074)."""
+		if self.status != "Entwurf":
+			frappe.throw(_("Nur Entwuerfe koennen eingereicht werden."))
+		if not self.positionen:
+			frappe.throw(_("Der Bericht enthaelt keine Leistungspositionen."))
+		if not self.unterschriften:
+			frappe.throw(_("Die Unterschrift des Berichterstatters fehlt (FA-073)."))
+
+		self.status = "Eingereicht"
+		self.eingereicht_am = now_datetime()
+		self.save()
+		self.freigeber_benachrichtigen()
+		return self.name
+
+	@frappe.whitelist()
+	def genehmigen(self):
+		"""Eingereicht -> Genehmigt (FA-074)."""
+		self._freigabe_berechtigung()
+		if self.status != "Eingereicht":
+			frappe.throw(_("Nur eingereichte Berichte koennen genehmigt werden."))
+
+		self.status = "Genehmigt"
+		self.genehmigt_von = frappe.session.user
+		self.genehmigt_am = now_datetime()
+		self.ablehnungsgrund = None
+		self.save()
+		return self.name
+
+	@frappe.whitelist()
+	def ablehnen(self, grund: str):
+		"""Eingereicht -> Abgelehnt, zurueck an den Ersteller (FA-074)."""
+		self._freigabe_berechtigung()
+		if not grund:
+			frappe.throw(_("Bitte einen Ablehnungsgrund angeben."))
+
+		self.status = "Abgelehnt"
+		self.ablehnungsgrund = grund
+		self.save()
+
+		ersteller_user = frappe.db.get_value("Employee", self.ersteller, "user_id")
+		if ersteller_user:
+			frappe.sendmail(
+				recipients=[ersteller_user],
+				subject=_("Tagesbericht {0} abgelehnt").format(self.name),
+				message=f"<p>Der Tagesbericht vom {self.datum} wurde abgelehnt.</p><p>{grund}</p>",
+				reference_doctype=self.doctype,
+				reference_name=self.name,
+			)
+		return self.name
+
+	def _freigabe_berechtigung(self):
+		if not FREIGEBER_ROLLEN & set(frappe.get_roles()):
+			frappe.throw(
+				_("Nur Bauleiter oder Projektleiter duerfen Tagesberichte freigeben."),
+				frappe.PermissionError,
+			)
+
+	def freigeber_benachrichtigen(self):
+		empfaenger = frappe.get_all(
+			"Has Role",
+			filters={"role": "Baudoku Bauleiter", "parenttype": "User"},
+			pluck="parent",
+		)
+		empfaenger = [e for e in empfaenger if e not in ("Administrator", "Guest")]
+		if not empfaenger:
+			return
+		anlage_name = frappe.db.get_value("PV Anlage", self.anlage, "anlage_name")
+		frappe.sendmail(
+			recipients=empfaenger,
+			subject=_("Tagesbericht zur Freigabe: {0} ({1})").format(anlage_name, self.datum),
+			message=_("Ein Tagesbericht wurde zur Genehmigung eingereicht: {0}").format(self.name),
+			reference_doctype=self.doctype,
+			reference_name=self.name,
+		)
+
+
+@frappe.whitelist()
+def fortschritts_timeline(anlage: str, limit: int = 60) -> list[dict]:
+	"""Zeitreihe der Tagesberichte je Baustelle (FA-076)."""
+	return frappe.get_all(
+		"Tagesbericht",
+		filters={"anlage": anlage, "status": ["!=", "Abgelehnt"]},
+		fields=[
+			"name", "datum", "bericht_typ", "status", "fortschritt_prozent",
+			"personal_anzahl", "arbeitsstunden_gesamt", "wetter", "supplier",
+		],
+		order_by="datum asc",
+		limit_page_length=int(limit),
+	)
+
+
+@frappe.whitelist()
+def offene_freigaben() -> list[dict]:
+	"""Dashboard-Kachel: eingereichte, noch nicht genehmigte Berichte."""
+	return frappe.get_all(
+		"Tagesbericht",
+		filters={"status": "Eingereicht"},
+		fields=["name", "anlage", "datum", "bericht_typ", "ersteller", "eingereicht_am"],
+		order_by="eingereicht_am asc",
+		limit_page_length=50,
+	)
+
+
+def erinnerung_fehlende_berichte():
+	"""Scheduler: Bauleiter an fehlende Tagesberichte laufender Baustellen erinnern."""
+	baustellen = frappe.get_all("PV Anlage", filters={"status": "In Bau"}, pluck="name")
+	fehlend = [
+		anlage for anlage in baustellen
+		if not frappe.db.exists("Tagesbericht", {"anlage": anlage, "datum": today()})
+	]
+	if not fehlend:
+		return
+	frappe.logger("baudoku").info(f"Tagesbericht fehlt fuer: {', '.join(fehlend)}")

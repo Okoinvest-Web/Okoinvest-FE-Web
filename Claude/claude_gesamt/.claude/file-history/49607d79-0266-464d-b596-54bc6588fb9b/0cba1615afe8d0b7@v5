@@ -1,0 +1,754 @@
+<template>
+  <div class="relative">
+    <!--
+      Pulsierender Rahmen, solange ein kritischer Alarm offen und nicht
+      angenommen ist. Er liegt über der ganzen Seite, nimmt aber keine
+      Klicks an. Sobald jemand den Alarm annimmt, hört er auf - der Puls
+      sagt „noch niemand kümmert sich", nicht „es gibt ein Problem".
+    -->
+    <div v-if="pulst" class="alarmpuls pointer-events-none fixed inset-0 z-20" aria-hidden="true" />
+
+    <PageHeader title="Alarme" :subtitle="untertitel">
+      <template #actions>
+        <FormControl v-model="ansicht" type="select" :options="ansichtOptionen" />
+        <FormControl v-model="zustand" type="select" :options="zustandOptionen" />
+        <FormControl v-model="quelle" type="select" :options="quellenOptionen" />
+      </template>
+    </PageHeader>
+
+    <div class="p-6">
+      <!-- Kennzahlen -->
+      <div v-if="uebersicht.data" class="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6">
+        <StatCard
+          v-for="kachel in kacheln"
+          :key="kachel.label"
+          :label="kachel.label"
+          :wert="kachel.wert"
+          :hinweis="kachel.hinweis"
+          :level="kachel.level"
+        />
+      </div>
+
+      <div v-if="uebersicht.data" class="mb-8 grid grid-cols-1 gap-6 xl:grid-cols-3">
+        <!-- Verlauf -->
+        <section class="rounded-lg border border-outline-gray-2 bg-surface-white p-4 xl:col-span-2">
+          <h2 class="mb-1 text-base font-semibold text-ink-gray-8">Eingang je Stunde</h2>
+          <p class="mb-3 text-sm text-ink-gray-6">
+            Letzte 48 Stunden. Ein Balken über die ganze Breite ist ein Sturm, nicht viele
+            Einzelfälle.
+          </p>
+          <div class="flex h-24 items-end gap-px" role="img" :aria-label="verlaufText">
+            <div
+              v-for="(s, i) in uebersicht.data.timeline"
+              :key="i"
+              class="flex-1"
+              :title="s.stunde.slice(11) + ' Uhr: ' + s.anzahl + ' Alarme'"
+            >
+              <div
+                class="w-full rounded-t"
+                :style="{
+                  height: balkenHoehe(s) + 'px',
+                  background: s.kritisch ? 'var(--viz-critical)' : 'var(--viz-series-1)',
+                }"
+              />
+            </div>
+          </div>
+          <div class="mt-1 flex justify-between text-xs tabular-nums text-ink-gray-5">
+            <span>vor 48 h</span>
+            <span>jetzt</span>
+          </div>
+        </section>
+
+        <!-- Lärmquellen -->
+        <section class="rounded-lg border border-outline-gray-2 bg-surface-white p-4">
+          <h2 class="mb-1 text-base font-semibold text-ink-gray-8">Rauschen</h2>
+          <p class="mb-3 text-sm text-ink-gray-6">
+            Hohe Rate über lange Zeit. Das ist ein Defekt an der Meldung, kein Befund.
+          </p>
+
+          <p v-if="!uebersicht.data.noise.length" class="text-sm text-ink-gray-5">
+            Keine Meldung fällt durch Dauerfeuer auf.
+          </p>
+
+          <div v-for="n in uebersicht.data.noise" :key="n.name" class="mb-3 last:mb-0">
+            <div class="flex items-baseline justify-between gap-2">
+              <span class="min-w-0 truncate text-sm text-ink-gray-8">{{ n.title }}</span>
+              <span class="shrink-0 text-sm tabular-nums text-ink-gray-7">
+                {{ n.rate_per_hour }}/h
+              </span>
+            </div>
+            <p class="text-sm text-ink-gray-5">
+              {{ n.object_name }} · {{ n.occurrences }} Meldungen in {{ n.duration_hours }} h
+            </p>
+            <Button size="sm" class="mt-1" @click="stummVorschlag(n)"> Stummschalten </Button>
+          </div>
+        </section>
+      </div>
+
+      <!-- ============ Gruppierte Ansicht ============ -->
+      <section v-if="ansicht === 'gruppen'">
+        <div class="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+          <h2 class="text-base font-semibold text-ink-gray-8">Gruppen</h2>
+          <p class="text-sm text-ink-gray-6">
+            {{ gruppen.data?.length || 0 }} Gruppen aus
+            {{ uebersicht.data?.summary.open || 0 }} offenen Alarmen
+          </p>
+        </div>
+
+        <p v-if="gruppen.loading" class="py-8 text-center text-sm text-ink-gray-5">
+          Wird geladen …
+        </p>
+        <p
+          v-else-if="!(gruppen.data || []).length"
+          class="rounded-lg border border-outline-gray-2 bg-surface-white py-8 text-center text-sm text-ink-gray-5"
+        >
+          Kein offener Alarm.
+        </p>
+
+        <div class="space-y-3">
+          <article
+            v-for="g in gruppen.data || []"
+            :key="g.key"
+            class="rounded-lg border bg-surface-white"
+            :class="g.level === 'critical' ? 'border-outline-red-2' : 'border-outline-gray-2'"
+          >
+            <div class="flex flex-wrap items-start justify-between gap-3 p-4">
+              <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-2">
+                  <StatusDot :level="g.level" :text="GRAD[g.severity] || g.severity" />
+                  <p class="font-medium text-ink-gray-9">{{ g.title }}</p>
+                  <Badge v-if="g.correlated && g.count > 1" theme="blue">korreliert</Badge>
+                  <Badge v-if="g.noisy" theme="gray">Rauschen</Badge>
+                  <Badge v-if="g.acknowledged" theme="green">angenommen</Badge>
+                </div>
+                <p class="mt-1 text-sm text-ink-gray-6">
+                  {{ g.object_name }} · {{ g.sources.join(', ') }} · {{ g.occurrences }} Meldungen ·
+                  zuletzt {{ kurz(g.last_seen) }}
+                </p>
+              </div>
+              <div class="flex shrink-0 flex-wrap items-center gap-2">
+                <Button v-if="g.count > 1" size="sm" @click="offen = offen === g.key ? '' : g.key">
+                  {{ offen === g.key ? 'Zuklappen' : g.count + ' Meldungen' }}
+                </Button>
+                <Button v-if="!g.acknowledged" size="sm" @click="gruppeAnnehmen(g)">
+                  Annehmen
+                </Button>
+              </div>
+            </div>
+
+            <!-- Mitglieder -->
+            <div v-if="offen === g.key || g.count === 1" class="border-t border-outline-gray-2">
+              <button
+                v-for="m in g.members"
+                :key="m.name"
+                class="flex w-full flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-outline-gray-2 px-4 py-2 text-left last:border-0 hover:bg-surface-gray-1"
+                @click="waehle(m.name)"
+              >
+                <StatusDot :level="m.level" :text="GRAD[m.severity]" klein />
+                <span class="min-w-0 flex-1 text-sm text-ink-gray-8">{{ m.title }}</span>
+                <span v-if="m.mitre_technique" class="text-sm text-ink-gray-5">
+                  {{ m.mitre_technique }}
+                </span>
+                <span class="text-sm tabular-nums text-ink-gray-5">
+                  {{ m.occurrences }}× · {{ kurz(m.last_seen) }}
+                </span>
+              </button>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <!-- ============ Tabellenansicht ============ -->
+      <section v-else-if="ansicht === 'liste'">
+        <DataTable
+          tabellen-id="AlertList"
+          :columns="spalten"
+          :rows="alarme.data || []"
+          :loading="alarme.loading"
+          waehlbar
+          export-name="alarme"
+          empty-text="Kein Alarm mit diesem Filter."
+          :on-row-click="(zeile) => waehle(zeile.name)"
+        >
+          <template #sammelaktionen="{ auswahl, leeren }">
+            <Button size="sm" @click="sammel(auswahl, 'ack', leeren)">Annehmen</Button>
+            <Button size="sm" @click="schliessenDialog(auswahl, leeren)">Schließen …</Button>
+          </template>
+
+          <template #zelle-severity="{ zeile }">
+            <StatusDot :level="zeile.level" :text="GRAD[zeile.severity] || zeile.severity" klein />
+          </template>
+          <template #zelle-title="{ zeile }">
+            <span class="font-medium text-ink-gray-9">{{ zeile.title }}</span>
+            <span v-if="zeile.mitre_technique" class="ml-2 text-sm text-ink-gray-5">
+              {{ zeile.mitre_technique }}
+            </span>
+            <StatusDot
+              v-if="zeile.reasons.length"
+              class="mt-0.5"
+              :level="zeile.noisy ? 'neutral' : 'warning'"
+              :text="zeile.reasons[0]"
+              klein
+            />
+          </template>
+          <template #zelle-object_name="{ zeile }">
+            <RouterLink
+              v-if="zeile.object_type === 'Network Device'"
+              :to="'/devices/' + zeile.object_name"
+              class="text-ink-gray-8 underline decoration-outline-gray-3 underline-offset-2"
+              @click.stop
+            >
+              {{ zeile.object_name }}
+            </RouterLink>
+            <span v-else>{{ zeile.object_name }}</span>
+          </template>
+          <template #zelle-alert_state="{ zeile }">
+            <Badge :theme="zustandThema(zeile.alert_state)">
+              {{ ZUSTAND[zeile.alert_state] || zeile.alert_state }}
+            </Badge>
+            <span v-if="zeile.assignee_name" class="ml-2 text-sm text-ink-gray-5">
+              {{ zeile.assignee_name }}
+            </span>
+          </template>
+          <template #zelle-unattended_hours="{ zeile }">
+            <span v-if="zeile.unattended_hours === null" class="text-ink-gray-4">–</span>
+            <span v-else :class="zeile.unattended_hours > 24 ? 'text-ink-gray-9' : ''">
+              {{ Math.round(zeile.unattended_hours) }} h
+            </span>
+          </template>
+        </DataTable>
+      </section>
+
+      <!-- ============ Stummschaltungen ============ -->
+      <section v-else>
+        <div class="grid grid-cols-1 gap-6 xl:grid-cols-3">
+          <div class="rounded-lg border border-outline-gray-2 bg-surface-white p-4">
+            <h2 class="mb-3 text-base font-semibold text-ink-gray-8">Neu stummschalten</h2>
+            <form class="space-y-3" @submit.prevent="stummSetzen">
+              <FormControl
+                v-model="stummArt"
+                label="Art"
+                type="select"
+                :options="stummArtOptionen"
+              />
+              <FormControl v-model="stummWert" label="Ziel" type="text" placeholder="NAS-TN-01" />
+              <FormControl v-model="stummDauer" label="Dauer (Stunden)" type="number" min="1" />
+              <FormControl
+                v-model="stummGrund"
+                label="Begründung"
+                type="text"
+                placeholder="Firmware-Update"
+              />
+              <Button
+                variant="solid"
+                type="submit"
+                class="w-full"
+                :loading="stummAnlegen.loading"
+                :disabled="!stummWert || !stummGrund"
+              >
+                Stummschalten
+              </Button>
+            </form>
+            <p class="mt-2 text-xs text-ink-gray-5">
+              Höchstens 30 Tage. Eine Stummschaltung ohne Ende ist eine Abschaltung mit besserem
+              Namen.
+            </p>
+          </div>
+
+          <div class="xl:col-span-2">
+            <DataTable
+              tabellen-id="AlertSilences"
+              :columns="stummSpalten"
+              :rows="stumm.data || []"
+              :loading="stumm.loading"
+              empty-text="Nichts stummgeschaltet."
+            >
+              <template #zelle-match_kind="{ zeile }">
+                <Badge theme="gray">{{ STUMM_ART[zeile.match_kind] || zeile.match_kind }}</Badge>
+              </template>
+              <template #zelle-hours_left="{ zeile }">
+                <StatusDot
+                  :level="zeile.level"
+                  :text="zeile.expired ? 'abgelaufen' : 'noch ' + zeile.hours_left + ' h'"
+                  klein
+                />
+              </template>
+              <template #zelle-aktion="{ zeile }">
+                <Button v-if="!zeile.expired" size="sm" @click="stummBeenden(zeile.name)">
+                  Beenden
+                </Button>
+              </template>
+            </DataTable>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ Detail ============ -->
+      <section
+        v-if="detail.data"
+        class="mt-8 rounded-lg border border-outline-gray-2 bg-surface-white p-4"
+      >
+        <div class="flex flex-wrap items-start justify-between gap-3">
+          <div class="min-w-0">
+            <div class="flex flex-wrap items-center gap-2">
+              <StatusDot :level="detail.data.level" :text="GRAD[detail.data.severity]" />
+              <h2 class="text-base font-semibold text-ink-gray-9">{{ detail.data.title }}</h2>
+            </div>
+            <p class="mt-1 text-sm text-ink-gray-6">
+              {{ detail.data.name }} · {{ detail.data.source }} · {{ detail.data.object_name }} ·
+              {{ detail.data.occurrences }} Meldungen seit {{ kurz(detail.data.first_seen) }}
+            </p>
+          </div>
+          <div class="flex shrink-0 flex-wrap gap-2">
+            <Button v-if="!detail.data.acknowledged" @click="setze(detail.data.name, 'ack')">
+              Annehmen
+            </Button>
+            <Button
+              v-if="detail.data.open"
+              variant="solid"
+              @click="schliessenEinzeln(detail.data.name)"
+            >
+              Schließen
+            </Button>
+            <Button variant="subtle" @click="gewaehlt = ''">Zuklappen</Button>
+          </div>
+        </div>
+
+        <div class="mt-4 grid grid-cols-1 gap-6 lg:grid-cols-3">
+          <!-- Was hängt daran -->
+          <div>
+            <h3 class="mb-2 text-sm font-medium text-ink-gray-7">
+              Was hängt am betroffenen Objekt
+            </h3>
+            <ul v-if="detail.data.impacted.length" class="space-y-1">
+              <li
+                v-for="(o, i) in detail.data.impacted"
+                :key="i"
+                class="flex items-center gap-2 text-sm"
+              >
+                <Badge theme="gray">{{ doctypeLabel(o.type) }}</Badge>
+                <span class="text-ink-gray-8">{{ o.name }}</span>
+              </li>
+            </ul>
+            <p v-else class="text-sm text-ink-gray-5">Nichts im Beziehungsgraphen verknüpft.</p>
+          </div>
+
+          <!-- Beim letzten Mal -->
+          <div>
+            <h3 class="mb-2 text-sm font-medium text-ink-gray-7">Beim letzten Mal</h3>
+            <div v-if="detail.data.similar_past.length" class="space-y-2">
+              <div
+                v-for="a in detail.data.similar_past"
+                :key="a.name"
+                class="rounded border border-outline-gray-2 px-3 py-2"
+              >
+                <p class="text-sm text-ink-gray-8">{{ a.resolution }}</p>
+                <p class="mt-0.5 text-sm text-ink-gray-5">
+                  {{ kurz(a.resolved_at) }} · nach {{ a.resolve_hours }} h
+                </p>
+              </div>
+            </div>
+            <p v-else class="text-sm text-ink-gray-5">
+              Dieser Alarm trat noch nie abgeschlossen auf.
+            </p>
+          </div>
+
+          <!-- Einordnung -->
+          <div>
+            <h3 class="mb-2 text-sm font-medium text-ink-gray-7">Einordnung</h3>
+            <dl class="space-y-1 text-sm">
+              <div class="flex justify-between gap-2">
+                <dt class="text-ink-gray-5">Rate</dt>
+                <dd class="tabular-nums text-ink-gray-8">
+                  {{ detail.data.rate_per_hour }} je Stunde
+                </dd>
+              </div>
+              <div class="flex justify-between gap-2">
+                <dt class="text-ink-gray-5">Läuft seit</dt>
+                <dd class="tabular-nums text-ink-gray-8">
+                  {{ Math.round(detail.data.duration_hours) }} h
+                </dd>
+              </div>
+              <div v-if="detail.data.ack_hours !== null" class="flex justify-between gap-2">
+                <dt class="text-ink-gray-5">Bis Annahme</dt>
+                <dd class="tabular-nums text-ink-gray-8">{{ detail.data.ack_hours }} h</dd>
+              </div>
+              <div v-if="detail.data.mitre_technique" class="flex justify-between gap-2">
+                <dt class="text-ink-gray-5">MITRE</dt>
+                <dd class="text-ink-gray-8">{{ detail.data.mitre_technique }}</dd>
+              </div>
+            </dl>
+
+            <RouterLink
+              v-if="detail.data.runbook_doc"
+              :to="'/documents'"
+              class="mt-3 inline-block text-sm text-ink-gray-8 underline decoration-outline-gray-3 underline-offset-2"
+            >
+              Runbook: {{ detail.data.runbook_doc.title }}
+            </RouterLink>
+          </div>
+        </div>
+      </section>
+
+      <p class="mt-6 text-xs text-ink-gray-4">
+        Quellen laut Fachkonzept 2.8: Wazuh, CrowdSec, Zabbix, GravityZone, Zenarmor, PMG und
+        IRONSCALES. Korrelation, Rauscherkennung und Stummschaltung rechnet die Server-Methode – ein
+        Alarm, den nur die Oberfläche versteckt, ist nicht stumm.
+      </p>
+    </div>
+
+    <!-- Schließen mit Notiz -->
+    <Dialog v-model="dialogOffen" :options="{ title: 'Alarm schließen' }">
+      <template #body-content>
+        <p class="mb-3 text-sm text-ink-gray-6">
+          {{ zuSchliessen.length }} Alarm{{ zuSchliessen.length === 1 ? '' : 'e' }} schließen. Die
+          Notiz ist das, was beim nächsten Mal hilft.
+        </p>
+        <FormControl
+          v-model="loesung"
+          label="Was war die Ursache?"
+          type="text"
+          placeholder="Datastore war voll, alte Snapshots entfernt"
+        />
+      </template>
+      <template #actions>
+        <Button variant="solid" :disabled="!loesung" @click="schliessenAusfuehren"
+          >Schließen</Button
+        >
+      </template>
+    </Dialog>
+  </div>
+</template>
+
+<script setup>
+import { computed, ref, watch } from 'vue'
+import { Badge, Button, Dialog, FormControl, createResource, toast } from 'frappe-ui'
+import PageHeader from '@/components/PageHeader.vue'
+import DataTable from '@/components/DataTable.vue'
+import StatCard from '@/components/StatCard.vue'
+import StatusDot from '@/components/StatusDot.vue'
+import { useUiStore } from '@/stores/ui'
+import { doctypeLabel } from '@/labels'
+import { fehlerText, mengeText } from '@/viz'
+
+const GRAD = { critical: 'Kritisch', high: 'Hoch', medium: 'Mittel', low: 'Niedrig' }
+const ZUSTAND = { new: 'Neu', ack: 'Angenommen', closed: 'Geschlossen' }
+const STUMM_ART = { object: 'Objekt', source: 'Quelle', correlation: 'Gruppe' }
+
+const ui = useUiStore()
+
+const ansicht = ref('gruppen')
+const zustand = ref('')
+const quelle = ref('')
+const offen = ref('')
+const gewaehlt = ref('')
+
+const dialogOffen = ref(false)
+const zuSchliessen = ref([])
+const loesung = ref('')
+let nachSchliessen = null
+
+const stummArt = ref('object')
+const stummWert = ref('')
+const stummDauer = ref(4)
+const stummGrund = ref('')
+
+const uebersicht = createResource({
+  url: 'netops.api.ops.alert_overview',
+  makeParams: () => ({ tenant: ui.mandant || null }),
+  auto: true,
+})
+
+const gruppen = createResource({
+  url: 'netops.api.ops.alert_groups',
+  makeParams: () => ({ tenant: ui.mandant || null }),
+  auto: true,
+})
+
+const alarme = createResource({
+  url: 'netops.api.ops.alert_list_v2',
+  makeParams: () => ({
+    tenant: ui.mandant || null,
+    state: zustand.value || null,
+    source: quelle.value || null,
+    include_silenced: true,
+  }),
+  auto: true,
+})
+
+const stumm = createResource({
+  url: 'netops.api.ops.silence_list',
+  params: { include_expired: true },
+  auto: true,
+})
+
+const detail = createResource({
+  url: 'netops.api.ops.alert_detail',
+  makeParams: () => ({ name: gewaehlt.value }),
+})
+
+const zustandSetzen = createResource({ url: 'netops.api.ops.set_alert_state' })
+const sammelAktion = createResource({ url: 'netops.api.ops.bulk_alert_action' })
+const stummAnlegen = createResource({ url: 'netops.api.ops.create_silence' })
+const stummEnde = createResource({ url: 'netops.api.ops.end_silence' })
+
+watch([zustand, quelle, () => ui.mandant], () => {
+  alarme.fetch()
+  gruppen.fetch()
+  uebersicht.fetch()
+})
+
+watch(gewaehlt, () => {
+  if (gewaehlt.value) detail.fetch()
+  else detail.reset?.()
+})
+
+// --- Puls ------------------------------------------------------------------
+
+/**
+ * Der Rahmen pulst nur, solange ein kritischer Alarm offen UND unbeachtet
+ * ist. Nach der Annahme hört er auf - er sagt „noch niemand kümmert sich",
+ * nicht „es gibt ein Problem". Sonst pulste er dauerhaft und würde damit
+ * zu dem Rauschen, das diese Seite gerade bekämpft.
+ */
+const pulst = computed(() =>
+  (alarme.data || []).some(
+    (a) => a.open && a.severity === 'critical' && !a.acknowledged && !a.silenced,
+  ),
+)
+
+// --- Anzeige ---------------------------------------------------------------
+
+const ansichtOptionen = [
+  { label: 'Gruppen', value: 'gruppen' },
+  { label: 'Alle Alarme', value: 'liste' },
+  { label: 'Stummschaltungen', value: 'stumm' },
+]
+
+const zustandOptionen = [
+  { label: 'Alle Zustände', value: '' },
+  ...Object.entries(ZUSTAND).map(([value, label]) => ({ label, value })),
+]
+
+const quellenOptionen = computed(() => [
+  { label: 'Alle Quellen', value: '' },
+  ...(uebersicht.data?.by_source || []).map((q) => ({ label: q.source, value: q.source })),
+])
+
+const stummArtOptionen = Object.entries(STUMM_ART).map(([value, label]) => ({ label, value }))
+
+const spalten = [
+  { key: 'severity', label: 'Schwere', width: '120px' },
+  { key: 'title', label: 'Alarm' },
+  { key: 'source', label: 'Quelle', muted: true, width: '120px' },
+  { key: 'object_name', label: 'Objekt', width: '160px' },
+  { key: 'occurrences', label: 'Meldungen', align: 'right', numeric: true, width: '110px' },
+  { key: 'unattended_hours', label: 'Unbeachtet', align: 'right', numeric: true, width: '120px' },
+  { key: 'alert_state', label: 'Zustand', width: '190px' },
+]
+
+const stummSpalten = [
+  { key: 'match_kind', label: 'Art', width: '110px' },
+  { key: 'match_value', label: 'Ziel', mono: true, width: '170px' },
+  { key: 'reason', label: 'Begründung' },
+  { key: 'created_by_name', label: 'Von', muted: true, width: '150px' },
+  { key: 'hours_left', label: 'Rest', width: '160px' },
+  { key: 'aktion', label: '', width: '110px' },
+]
+
+const kacheln = computed(() => {
+  const z = uebersicht.data?.summary
+  if (!z) return []
+  return [
+    {
+      label: 'Offen',
+      wert: z.open,
+      hinweis: z.occurrences_open + ' Einzelmeldungen',
+      level: 'neutral',
+    },
+    {
+      label: 'Kritisch',
+      wert: z.critical,
+      hinweis: z.critical ? 'sofort' : 'keine',
+      level: z.critical ? 'critical' : 'ok',
+    },
+    {
+      label: 'Unbeachtet',
+      wert: z.unacknowledged,
+      hinweis: z.stale ? z.stale + ' über 24 h' : 'keiner überfällig',
+      level: z.stale ? 'warning' : 'neutral',
+    },
+    {
+      label: 'Bis Annahme',
+      wert: z.mtta_hours === null ? '–' : z.mtta_hours + ' h',
+      hinweis: 'Mittel (MTTA)',
+      level: 'neutral',
+    },
+    {
+      label: 'Bis Abschluss',
+      wert: z.mttr_hours === null ? '–' : z.mttr_hours + ' h',
+      hinweis: 'Mittel (MTTR)',
+      level: 'neutral',
+    },
+    {
+      label: 'Rauschen',
+      wert: z.noisy,
+      hinweis: z.silenced ? z.silenced + ' stummgeschaltet' : 'nichts stumm',
+      level: z.noisy ? 'warning' : 'ok',
+    },
+  ]
+})
+
+const untertitel = computed(() => {
+  const z = uebersicht.data?.summary
+  if (!z) return ''
+  return (
+    mengeText(z.open, 'offener Alarm', 'offene Alarme') +
+    ' · ' +
+    z.occurrences_open +
+    ' Einzelmeldungen' +
+    (z.critical ? ' · ' + z.critical + ' kritisch' : '')
+  )
+})
+
+const verlaufText = computed(() => {
+  const t = uebersicht.data?.timeline || []
+  return 'Eingang je Stunde, Summe ' + t.reduce((s, x) => s + x.anzahl, 0) + ' Alarme in 48 Stunden'
+})
+
+function balkenHoehe(s) {
+  const hoechst = Math.max(1, ...(uebersicht.data?.timeline || []).map((x) => x.anzahl))
+  return s.anzahl ? Math.max(3, Math.round((s.anzahl / hoechst) * 90)) : 1
+}
+
+function kurz(zeit) {
+  return String(zeit || '')
+    .slice(0, 16)
+    .replace('T', ' ')
+}
+
+function zustandThema(wert) {
+  return { new: 'orange', ack: 'blue', closed: 'green' }[wert] || 'gray'
+}
+
+// --- Aktionen --------------------------------------------------------------
+
+function waehle(name) {
+  gewaehlt.value = gewaehlt.value === name ? '' : name
+}
+
+async function neuLaden() {
+  await Promise.all([alarme.fetch(), gruppen.fetch(), uebersicht.fetch()])
+  if (gewaehlt.value) detail.fetch()
+}
+
+async function setze(name, zustandWert, notiz = null) {
+  try {
+    await zustandSetzen.submit({ name, state: zustandWert, resolution: notiz })
+    toast.create({ message: 'Alarm ' + (ZUSTAND[zustandWert] || zustandWert), type: 'success' })
+    await neuLaden()
+  } catch (fehler) {
+    toast.create({ message: fehlerText(fehler), type: 'error' })
+  }
+}
+
+async function gruppeAnnehmen(g) {
+  try {
+    const e = await sammelAktion.submit({ names: g.members.map((m) => m.name), state: 'ack' })
+    toast.create({
+      message: mengeText(e.done, 'Alarm angenommen', 'Alarme angenommen'),
+      type: 'success',
+    })
+    await neuLaden()
+  } catch (fehler) {
+    toast.create({ message: fehlerText(fehler), type: 'error' })
+  }
+}
+
+async function sammel(auswahl, zustandWert, leeren) {
+  try {
+    const e = await sammelAktion.submit({
+      names: auswahl.map((a) => a.name),
+      state: zustandWert,
+    })
+    toast.create({
+      message: e.failed.length
+        ? `${e.done} bearbeitet, ${e.failed.length} nicht`
+        : mengeText(e.done, 'Alarm bearbeitet', 'Alarme bearbeitet'),
+      type: e.failed.length ? 'warning' : 'success',
+    })
+    leeren?.()
+    await neuLaden()
+  } catch (fehler) {
+    toast.create({ message: fehlerText(fehler), type: 'error' })
+  }
+}
+
+function schliessenDialog(auswahl, leeren) {
+  zuSchliessen.value = auswahl.map((a) => a.name)
+  nachSchliessen = leeren
+  loesung.value = ''
+  dialogOffen.value = true
+}
+
+function schliessenEinzeln(name) {
+  zuSchliessen.value = [name]
+  nachSchliessen = null
+  loesung.value = ''
+  dialogOffen.value = true
+}
+
+async function schliessenAusfuehren() {
+  try {
+    const e = await sammelAktion.submit({
+      names: zuSchliessen.value,
+      state: 'closed',
+      resolution: loesung.value,
+    })
+    toast.create({
+      message: mengeText(e.done, 'Alarm geschlossen', 'Alarme geschlossen'),
+      type: 'success',
+    })
+    dialogOffen.value = false
+    nachSchliessen?.()
+    await neuLaden()
+  } catch (fehler) {
+    toast.create({ message: fehlerText(fehler), type: 'error' })
+  }
+}
+
+function stummVorschlag(n) {
+  ansicht.value = 'stumm'
+  stummArt.value = n.correlation_key ? 'correlation' : 'object'
+  stummWert.value = n.correlation_key || n.object_name
+  stummGrund.value = `Dauerfeuer: ${n.rate_per_hour} Meldungen je Stunde`
+  stummDauer.value = 24
+}
+
+async function stummSetzen() {
+  try {
+    await stummAnlegen.submit({
+      match_kind: stummArt.value,
+      match_value: stummWert.value,
+      hours: Number(stummDauer.value),
+      reason: stummGrund.value,
+    })
+    toast.create({ message: 'Stummgeschaltet', type: 'success' })
+    stummWert.value = ''
+    stummGrund.value = ''
+    await Promise.all([stumm.fetch(), neuLaden()])
+  } catch (fehler) {
+    toast.create({ message: fehlerText(fehler), type: 'error' })
+  }
+}
+
+async function stummBeenden(name) {
+  try {
+    await stummEnde.submit({ name })
+    toast.create({ message: 'Stummschaltung beendet', type: 'success' })
+    await Promise.all([stumm.fetch(), neuLaden()])
+  } catch (fehler) {
+    toast.create({ message: fehlerText(fehler), type: 'error' })
+  }
+}
+</script>

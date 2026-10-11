@@ -1,0 +1,381 @@
+/**
+ * Tickets: bearbeiten statt nur ansehen.
+ *
+ * ## Was eine Ticketliste allein nicht leistet
+ *
+ * `ticket_list` sagt, welche Tickets offen sind und welche SLA überschritten
+ * ist. Beides ist richtig und beides hilft niemandem beim Arbeiten, solange
+ * man nichts tun kann. Ein Bildschirm, auf dem eine SLA rot wird, ohne dass
+ * es einen Weg gibt, sie zu bedienen, erzeugt genau ein Verhalten: man sieht
+ * weg.
+ *
+ * ## Die SLA-Uhr steht, wenn wir nicht am Zug sind
+ *
+ * Das ist die wichtigste Regel hier. Läuft die Frist weiter, während auf
+ * eine Antwort der meldenden Person gewartet wird, misst sie nicht die
+ * eigene Bearbeitung, sondern deren Postfach. Nach ein paar solcher
+ * Überschreitungen ist die Kennzahl wertlos – und mit ihr die, die daneben
+ * steht.
+ *
+ * Deshalb: im Zustand `waiting` läuft die Uhr nicht. Die Wartezeit wird
+ * mitgeführt und von der Frist abgezogen.
+ *
+ * ## Häufungen
+ *
+ * Fünf Tickets an demselben Switch sind kein Ticketproblem. Die Liste je
+ * Objekt ist das eigentliche Wartungssignal – sie beantwortet „was tauschen
+ * wir als Nächstes aus", und diese Frage stellt sonst niemand, bis das
+ * Gerät ausfällt.
+ *
+ * ## Für die Portierung
+ *
+ * In Python gehört vor jede Methode `frappe.has_permission` und ein
+ * Mandantenfilter. Die Zuweisung sollte dort gegen `frappe.get_roles`
+ * laufen: jemandem ein Ticket zuzuweisen, der es nicht bearbeiten darf,
+ * verschiebt es nur.
+ */
+import { FrappeMockError, SESSION_USER, table, touch } from '../db.js'
+import { alterStunden, jetzt } from '../zeit.js'
+import { protokolliere } from './audit.js'
+
+export const ZUSTAENDE = {
+  open: 'Offen',
+  in_progress: 'In Arbeit',
+  waiting: 'Wartet auf Rückmeldung',
+  closed: 'Geschlossen',
+}
+
+export const PRIORITAETEN = { critical: 'Kritisch', high: 'Hoch', medium: 'Mittel', low: 'Niedrig' }
+
+/**
+ * Erlaubte Zustandswechsel.
+ *
+ * Aus `closed` geht es zurück nach `open` – ein Ticket, das zu früh
+ * geschlossen wurde, soll nicht als zweites Ticket neu entstehen, sonst
+ * geht die Vorgeschichte verloren.
+ */
+const UEBERGAENGE = {
+  open: ['in_progress', 'waiting', 'closed'],
+  in_progress: ['waiting', 'closed', 'open'],
+  waiting: ['in_progress', 'closed'],
+  closed: ['open'],
+}
+
+const RANG = { critical: 0, high: 1, medium: 2, low: 3 }
+
+// --- Lesen -------------------------------------------------------------------
+
+/**
+ * Tickets mit gerechneter SLA und Befund.
+ *
+ * `mine` filtert auf die eigenen – die Liste, mit der man morgens anfängt.
+ */
+export function ticket_board({
+  state = null,
+  assignee = null,
+  object_name = null,
+  mine = false,
+  user = SESSION_USER,
+  tenant = null,
+} = {}) {
+  const zeilen = table('Ticket')
+    .filter((t) => (!state || t.ticket_state === state) && (!tenant || t.tenant === tenant))
+    .filter((t) => !object_name || t.object_name === object_name)
+    .filter((t) => (!assignee || t.assignee === assignee) && (!mine || t.assignee === user))
+    .map((t) => {
+      const offen = t.ticket_state !== 'closed'
+      const alter = alterStunden(t.opened)
+      // Wartezeit zählt nicht gegen uns.
+      const gewartet = Number(t.waiting_hours || 0)
+      const gerechnet = alter === null ? null : alter - gewartet
+      const verbleibend =
+        t.sla_hours !== null && gerechnet !== null ? t.sla_hours - gerechnet : null
+      const wartet = t.ticket_state === 'waiting'
+
+      const gruende = []
+      if (offen && verbleibend !== null && verbleibend < 0) {
+        gruende.push(`SLA um ${Math.abs(Math.round(verbleibend))} h überschritten`)
+      } else if (offen && verbleibend !== null && verbleibend < 8) {
+        gruende.push(`Noch ${Math.round(verbleibend)} h bis zur Frist`)
+      }
+      if (offen && !t.assignee) gruende.push('Niemandem zugewiesen – niemand fühlt sich zuständig')
+      if (wartet) {
+        gruende.push(
+          `Wartet seit ${Math.round(gewartet)} h auf Rückmeldung – die Frist steht solange`,
+        )
+      }
+      if (offen && alter !== null && alter > 24 * 30) {
+        gruende.push(`Seit ${Math.round(alter / 24)} Tagen offen`)
+      }
+
+      const stufe = !offen
+        ? 'neutral'
+        : verbleibend !== null && verbleibend < 0
+          ? 'critical'
+          : !t.assignee || (verbleibend !== null && verbleibend < 8)
+            ? 'warning'
+            : 'ok'
+
+      return {
+        ...t,
+        state_label: ZUSTAENDE[t.ticket_state] || t.ticket_state,
+        priority_label: PRIORITAETEN[t.priority] || t.priority,
+        open: offen,
+        waiting: wartet,
+        age_hours: alter === null ? null : Math.round(alter),
+        age_days: alter === null ? null : Math.round(alter / 24),
+        waiting_hours: Math.round(gewartet),
+        // Die Frist auf der Uhr, die tatsächlich läuft.
+        sla_remaining_hours: offen && verbleibend !== null ? Math.round(verbleibend) : null,
+        sla_breached: !!(offen && verbleibend !== null && verbleibend < 0),
+        sla_paused: wartet,
+        unassigned: offen && !t.assignee,
+        next_states: UEBERGAENGE[t.ticket_state] || [],
+        reasons: gruende,
+        level: stufe,
+      }
+    })
+    .sort(
+      (a, b) =>
+        Number(b.open) - Number(a.open) ||
+        Number(b.sla_breached) - Number(a.sla_breached) ||
+        (RANG[a.priority] ?? 9) - (RANG[b.priority] ?? 9) ||
+        String(a.opened).localeCompare(String(b.opened)),
+    )
+
+  const offen = zeilen.filter((z) => z.open)
+
+  return {
+    summary: {
+      total: zeilen.length,
+      open: offen.length,
+      breached: offen.filter((z) => z.sla_breached).length,
+      unassigned: offen.filter((z) => z.unassigned).length,
+      waiting: offen.filter((z) => z.waiting).length,
+      mine: zeilen.filter((z) => z.open && z.assignee === user).length,
+      // Die Frist, die als Nächstes reißt.
+      next_due:
+        offen
+          .filter((z) => !z.sla_breached && z.sla_remaining_hours !== null)
+          .sort((a, b) => a.sla_remaining_hours - b.sla_remaining_hours)[0]?.ticket_key || null,
+      level: offen.some((z) => z.sla_breached)
+        ? 'critical'
+        : offen.some((z) => z.level === 'warning')
+          ? 'warning'
+          : 'ok',
+      note: offen.filter((z) => z.unassigned).length
+        ? `${offen.filter((z) => z.unassigned).length} Tickets sind niemandem zugewiesen. ` +
+          'Ein Ticket ohne Namen daran bearbeitet niemand.'
+        : offen.filter((z) => z.sla_breached).length
+          ? `${offen.filter((z) => z.sla_breached).length} Fristen sind gerissen.`
+          : 'Alle offenen Tickets haben einen Namen und eine laufende Frist.',
+    },
+    rows: zeilen,
+  }
+}
+
+/**
+ * Welche Objekte erzeugen die meisten Tickets?
+ *
+ * Das eigentliche Wartungssignal. Fünf Tickets an demselben Switch sind
+ * kein Ticketproblem – sie beantworten die Frage „was tauschen wir als
+ * Nächstes aus", und die stellt sonst niemand, bis das Gerät ausfällt.
+ */
+export function ticket_hotspots({ days = 180, tenant = null } = {}) {
+  const alle = table('Ticket')
+    .filter((t) => !tenant || t.tenant === tenant)
+    .filter((t) => t.object_name && alterStunden(t.opened) <= days * 24)
+
+  const nachObjekt = new Map()
+  for (const t of alle) {
+    if (!nachObjekt.has(t.object_name)) {
+      nachObjekt.set(t.object_name, {
+        object_name: t.object_name,
+        object_type: t.object_type,
+        rows: [],
+      })
+    }
+    nachObjekt.get(t.object_name).rows.push(t)
+  }
+
+  return [...nachObjekt.values()]
+    .map((o) => {
+      const offen = o.rows.filter((t) => t.ticket_state !== 'closed').length
+      const kritisch = o.rows.filter((t) => ['critical', 'high'].includes(t.priority)).length
+      return {
+        object_name: o.object_name,
+        object_type: o.object_type,
+        tickets: o.rows.length,
+        open: offen,
+        high_priority: kritisch,
+        subjects: o.rows.map((t) => t.subject).slice(0, 5),
+        last_opened: o.rows
+          .map((t) => t.opened)
+          .sort()
+          .at(-1),
+        reasons:
+          o.rows.length >= 3
+            ? [
+                `${o.rows.length} Tickets in ${days} Tagen – das Gerät kostet mehr Zeit als ` +
+                  'sein Ersatz',
+              ]
+            : [],
+        level: o.rows.length >= 3 ? (kritisch ? 'critical' : 'warning') : 'ok',
+      }
+    })
+    .sort((a, b) => b.tickets - a.tickets || a.object_name.localeCompare(b.object_name))
+}
+
+// --- Bearbeiten --------------------------------------------------------------
+
+function holeTicket(key) {
+  const t = table('Ticket').find((x) => x.ticket_key === key || x.name === key)
+  if (!t) throw new FrappeMockError(`DoesNotExistError: Ticket ${key} existiert nicht`, 404)
+  return t
+}
+
+/**
+ * Zustand wechseln.
+ *
+ * Beim Wechsel nach `waiting` beginnt die Wartezeit, beim Wechsel zurück
+ * endet sie und wird aufaddiert. Genau daraus entsteht die Frist, die die
+ * eigene Bearbeitung misst und nicht das fremde Postfach.
+ */
+export function ticket_set_state({
+  ticket = null,
+  state = null,
+  note = null,
+  actor = SESSION_USER,
+} = {}) {
+  const t = holeTicket(ticket)
+  const erlaubt = UEBERGAENGE[t.ticket_state] || []
+
+  if (!erlaubt.includes(state)) {
+    throw new FrappeMockError(
+      `ValidationError: Von „${ZUSTAENDE[t.ticket_state]}" ist nur ` +
+        (erlaubt.map((z) => ZUSTAENDE[z]).join(', ') || 'kein Wechsel') +
+        ' möglich',
+    )
+  }
+
+  // Ein Ticket ohne Namen daran bearbeitet niemand.
+  if (state === 'in_progress' && !t.assignee) {
+    throw new FrappeMockError(
+      'ValidationError: „In Arbeit" ohne zugewiesene Person ist eine Absichtserklärung. ' +
+        'Erst zuweisen.',
+    )
+  }
+  // Ein Ticket, das ohne ein Wort geschlossen wird, hinterlässt nichts, was
+  // beim nächsten Mal hilft.
+  if (state === 'closed' && !note && !t.resolution) {
+    throw new FrappeMockError(
+      'ValidationError: Ohne ein Wort zur Lösung ist das Ticket beim nächsten gleichen ' +
+        'Vorfall wertlos. Kurz aufschreiben, was es war.',
+    )
+  }
+
+  const vorher = t.ticket_state
+
+  // --- Die Uhr
+  if (state === 'waiting') {
+    t.waiting_since = jetzt()
+  } else if (vorher === 'waiting' && t.waiting_since) {
+    t.waiting_hours = Number(t.waiting_hours || 0) + alterStunden(t.waiting_since)
+    t.waiting_since = null
+  }
+
+  t.ticket_state = state
+  t.closed = state === 'closed' ? jetzt() : null
+  if (state === 'closed' && note) t.resolution = note
+  touch(t)
+
+  protokolliere({
+    action: 'ticket_' + state,
+    object_type: 'Ticket',
+    object_name: t.ticket_key,
+    payload: { from: vorher, to: state, note, actor },
+  })
+
+  return {
+    ok: true,
+    ticket: t.ticket_key,
+    state,
+    state_label: ZUSTAENDE[state],
+    note:
+      state === 'waiting'
+        ? 'Die Frist steht, solange gewartet wird – sie misst die eigene Bearbeitung, nicht ' +
+          'das fremde Postfach.'
+        : vorher === 'waiting'
+          ? `Wartezeit von ${Math.round(t.waiting_hours)} h ist von der Frist abgezogen.`
+          : state === 'closed'
+            ? 'Geschlossen. Die Lösung steht am Ticket.'
+            : 'Zustand gewechselt.',
+  }
+}
+
+/**
+ * Zuweisen.
+ *
+ * Auch an niemanden – aber dann ausdrücklich, mit Grund. Ein Ticket
+ * stillschweigend freizugeben heißt, es in die Liste zurückzuwerfen, in
+ * der es schon niemand genommen hat.
+ */
+export function ticket_assign({
+  ticket = null,
+  assignee = null,
+  reason = null,
+  actor = SESSION_USER,
+} = {}) {
+  const t = holeTicket(ticket)
+
+  if (!assignee && !reason) {
+    throw new FrappeMockError(
+      'ValidationError: Ein Ticket abzugeben braucht einen Grund – sonst landet es ' +
+        'wieder in der Liste, in der es schon niemand genommen hat.',
+    )
+  }
+
+  if (assignee) {
+    const person = table('User').find((u) => u.name === assignee || u.email === assignee)
+    if (!person) {
+      throw new FrappeMockError(`DoesNotExistError: ${assignee} ist kein bekannter Benutzer`, 404)
+    }
+    if (!person.enabled) {
+      throw new FrappeMockError(
+        `ValidationError: ${assignee} ist abgeschaltet. Ein Ticket dorthin zuzuweisen ` +
+          'heißt, es verschwinden zu lassen.',
+      )
+    }
+  }
+
+  const vorher = t.assignee
+  t.assignee = assignee || null
+  touch(t)
+
+  protokolliere({
+    action: assignee ? 'ticket_assigned' : 'ticket_unassigned',
+    object_type: 'Ticket',
+    object_name: t.ticket_key,
+    payload: { from: vorher, to: assignee, reason, actor },
+  })
+
+  return {
+    ok: true,
+    ticket: t.ticket_key,
+    assignee: t.assignee,
+    note: assignee
+      ? `${t.ticket_key} liegt jetzt bei ${assignee}.`
+      : 'Zuweisung aufgehoben – das Ticket ist wieder ohne Namen.',
+  }
+}
+
+/** Wer kann Tickets übernehmen? */
+export function ticket_options() {
+  return {
+    states: Object.entries(ZUSTAENDE).map(([value, label]) => ({ value, label })),
+    priorities: Object.entries(PRIORITAETEN).map(([value, label]) => ({ value, label })),
+    assignees: table('User')
+      .filter((u) => u.enabled && u.user_type === 'System User')
+      .map((u) => ({ value: u.name, label: u.full_name || u.name })),
+  }
+}

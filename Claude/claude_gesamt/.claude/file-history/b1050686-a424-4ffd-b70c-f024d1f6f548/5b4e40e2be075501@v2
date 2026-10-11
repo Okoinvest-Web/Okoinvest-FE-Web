@@ -1,0 +1,196 @@
+import "server-only";
+
+import { alle, skalar } from "../db/verbindung.ts";
+
+/**
+ * Der Perimeter: Regelwerk, Sperrlisten, abgewehrte Zugriffe.
+ *
+ * Die Anlagen hängen nicht am offenen Internet. Von außen erreichbar
+ * ist nichts; der Steuerrechner baut den Tunnel selbst auf. Was hier
+ * gezählt wird, sind Versuche an der Außenhaut - und der Nachweis,
+ * dass die Sperrlisten auch auf den Geräten angekommen sind. Eine
+ * Sperrliste, die zentral aktuell und am Gateway drei Wochen alt ist,
+ * schützt nichts.
+ */
+
+export interface WafRegelZeile {
+  id: string;
+  anlage_id: string | null;
+  anlage: string | null;
+  art: string;
+  bezeichnung: string;
+  wert: string;
+  aktion: string;
+  aktiv: number;
+  treffer: number;
+  angelegt_von: string | null;
+  angelegt_am: string;
+}
+
+export function ladeWafRegeln(): WafRegelZeile[] {
+  return alle<WafRegelZeile>(
+    `SELECT r.*, a.bezeichnung AS anlage
+       FROM waf_regel r
+       LEFT JOIN anlage a ON a.id = r.anlage_id
+      ORDER BY r.aktiv DESC, r.treffer DESC, r.id`,
+  );
+}
+
+export interface SperrlistenZeile {
+  id: string;
+  quelle: string;
+  bezeichnung: string;
+  eintraege: number;
+  delta_neu: number;
+  delta_entfernt: number;
+  aktualisiert_am: string | null;
+  aktiv: number;
+  /** Geräte, auf denen die Liste aktuell ist. */
+  aktuell: number;
+  /** Geräte insgesamt, die sie bekommen sollen. */
+  geraete: number;
+  /** Geräte mit veraltetem oder fehlgeschlagenem Stand. */
+  hinterher: number;
+}
+
+export function ladeSperrlisten(): SperrlistenZeile[] {
+  return alle<SperrlistenZeile>(
+    `SELECT s.*,
+            (SELECT COUNT(*) FROM sperrliste_verteilung v
+              WHERE v.sperrliste_id = s.id AND v.stand = 'Aktuell')  AS aktuell,
+            (SELECT COUNT(*) FROM sperrliste_verteilung v
+              WHERE v.sperrliste_id = s.id)                          AS geraete,
+            (SELECT COUNT(*) FROM sperrliste_verteilung v
+              WHERE v.sperrliste_id = s.id AND v.stand <> 'Aktuell')  AS hinterher
+       FROM sperrliste s
+      ORDER BY s.eintraege DESC`,
+  );
+}
+
+export interface VerteilungZeile {
+  sperrliste: string;
+  quelle: string;
+  geraet_id: string;
+  /** Hersteller und Modell - ein eigenes Namensfeld gibt es nicht. */
+  geraet: string | null;
+  rolle: string | null;
+  anlage: string | null;
+  stand: string;
+  version: string | null;
+  uebertragen_am: string | null;
+  bytes: number | null;
+}
+
+/** Geräte, auf denen eine Sperrliste nicht aktuell ist. */
+export function ladeVerteilungsluecken(): VerteilungZeile[] {
+  return alle<VerteilungZeile>(
+    `SELECT s.bezeichnung AS sperrliste, s.quelle,
+            v.geraet_id,
+            g.hersteller || ' ' || g.modell AS geraet,
+            g.rolle,
+            a.bezeichnung AS anlage,
+            v.stand, v.version, v.uebertragen_am, v.bytes
+       FROM sperrliste_verteilung v
+       JOIN sperrliste s   ON s.id = v.sperrliste_id
+       LEFT JOIN edge_geraet g ON g.id = v.geraet_id
+       LEFT JOIN anlage a      ON a.id = g.anlage_id
+      WHERE v.stand <> 'Aktuell'
+      ORDER BY v.stand, s.quelle`,
+  );
+}
+
+export interface HerkunftZeile {
+  land: string;
+  anzahl: number;
+  quellen: number;
+  muster: string;
+}
+
+/**
+ * Abgewehrte Zugriffe je Herkunftsland.
+ *
+ * Das Muster ist das häufigste je Land, nicht das letzte: Ein
+ * einzelner ungewöhnlicher Versuch verschöbe sonst das Bild einer
+ * ganzen Woche.
+ */
+export function ladeHerkunft(tage = 14): HerkunftZeile[] {
+  return alle<HerkunftZeile>(
+    `SELECT land,
+            SUM(anzahl)            AS anzahl,
+            COUNT(DISTINCT quelle) AS quellen,
+            (SELECT muster FROM waf_ereignis i
+              WHERE i.land = e.land
+                AND i.zeitpunkt >= datetime('now', '-' || ? || ' days')
+              GROUP BY i.muster
+              ORDER BY SUM(i.anzahl) DESC LIMIT 1) AS muster
+       FROM waf_ereignis e
+      WHERE zeitpunkt >= datetime('now', '-' || ? || ' days')
+        AND land IS NOT NULL
+      GROUP BY land
+      ORDER BY anzahl DESC`,
+    tage,
+    tage,
+  );
+}
+
+export interface AbwehrTag {
+  tag: string;
+  anzahl: number;
+}
+
+/** Abgewehrte Zugriffe je Tag, für den Verlauf. */
+export function ladeAbwehrVerlauf(tage = 14): AbwehrTag[] {
+  return alle<AbwehrTag>(
+    `SELECT date(zeitpunkt) AS tag, SUM(anzahl) AS anzahl
+       FROM waf_ereignis
+      WHERE zeitpunkt >= datetime('now', '-' || ? || ' days')
+      GROUP BY tag
+      ORDER BY tag`,
+    tage,
+  );
+}
+
+export interface AbwehrKennzahlen {
+  regelnAktiv: number;
+  regelnGesamt: number;
+  treffer: number;
+  abgewehrt: number;
+  laender: number;
+  sperrlisteneintraege: number;
+  verteilungLuecken: number;
+  /** Anteil der Geräte mit aktueller Sperrliste, in Prozent. */
+  verteilungQuote: number;
+}
+
+export function ladeAbwehrKennzahlen(tage = 14): AbwehrKennzahlen {
+  const geraete =
+    skalar<number>("SELECT COUNT(*) FROM sperrliste_verteilung") ?? 0;
+  const aktuell =
+    skalar<number>(
+      "SELECT COUNT(*) FROM sperrliste_verteilung WHERE stand = 'Aktuell'",
+    ) ?? 0;
+
+  return {
+    regelnAktiv:
+      skalar<number>("SELECT COUNT(*) FROM waf_regel WHERE aktiv = 1") ?? 0,
+    regelnGesamt: skalar<number>("SELECT COUNT(*) FROM waf_regel") ?? 0,
+    treffer: skalar<number>("SELECT SUM(treffer) FROM waf_regel") ?? 0,
+    abgewehrt:
+      skalar<number>(
+        `SELECT SUM(anzahl) FROM waf_ereignis
+          WHERE zeitpunkt >= datetime('now', '-' || ? || ' days')`,
+        tage,
+      ) ?? 0,
+    laender:
+      skalar<number>(
+        `SELECT COUNT(DISTINCT land) FROM waf_ereignis
+          WHERE zeitpunkt >= datetime('now', '-' || ? || ' days')`,
+        tage,
+      ) ?? 0,
+    sperrlisteneintraege:
+      skalar<number>("SELECT SUM(eintraege) FROM sperrliste WHERE aktiv = 1") ??
+      0,
+    verteilungLuecken: geraete - aktuell,
+    verteilungQuote: geraete > 0 ? (aktuell / geraete) * 100 : 100,
+  };
+}

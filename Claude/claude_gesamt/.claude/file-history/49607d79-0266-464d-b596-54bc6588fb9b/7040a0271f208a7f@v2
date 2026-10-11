@@ -1,0 +1,741 @@
+/**
+ * Bandarchiv: Etiketten, Scannen, Auswerfen, Wechsel quittieren.
+ *
+ * ## Der eine Satz, aus dem der ganze Ablauf folgt
+ *
+ * **Ein ausgeworfenes Band, das im Laufwerk liegen bleibt, ist kein
+ * Airgap – es sieht nur so aus.**
+ *
+ * Deshalb endet der Vorgang nicht beim Auswurf, sondern bei der Quittung:
+ * jemand hat das Band herausgenommen, weiß wohin es kam, und hat das
+ * bestätigt. Bis dahin erinnert die Anwendung nach Plan.
+ *
+ * ## Warum das Auswerfen Bedingungen hat
+ *
+ * Ein Band vor dem Ende des Schreiblaufs auszuwerfen zerstört den Lauf. Ein
+ * ungeprüftes Band auszulagern heißt, sich auf etwas zu verlassen, das
+ * niemand gelesen hat. Beides wird hier abgewiesen – nicht als Warnung,
+ * sondern als Sperre, weil beides erst im Ernstfall auffällt.
+ *
+ * ## Etiketten
+ *
+ * LTO-Barcodes sind Code 39: sechs Stellen Seriennummer plus zwei Stellen
+ * Medienkürzel (`L9` für LTO-9). Groß­buchstaben und Ziffern, sonst nichts.
+ * Die Erzeugung zählt innerhalb eines Präfixes hoch und überspringt, was
+ * schon vergeben ist – auch an ausgesonderte Bänder, denn eine
+ * wiederverwendete Nummer macht die Historie mehrdeutig.
+ */
+import { FrappeMockError, SESSION_USER, table, touch } from '../db.js'
+import { alterStunden, jetzt, parse, stundenVersetzt } from '../zeit.js'
+import { protokolliere } from './audit.js'
+import { workflow_apply } from './workflow.js'
+
+/** Medienkürzel im Etikett je Generation. */
+const MEDIEN = {
+  'LTO-7': { suffix: 'L7', capacity_gb: 6000 },
+  'LTO-8': { suffix: 'L8', capacity_gb: 12000 },
+  'LTO-9': { suffix: 'L9', capacity_gb: 18000 },
+}
+
+export const ZUSTAENDE = {
+  frei: 'Frei',
+  im_laufwerk: 'Im Laufwerk',
+  beschrieben: 'Beschrieben',
+  ausgeworfen: 'Ausgeworfen',
+  ausser_haus: 'Außer Haus',
+  gesperrt: 'Gesperrt',
+  ausgesondert: 'Ausgesondert',
+}
+
+/** Code 39 erlaubt genau diese Zeichen in einem LTO-Etikett. */
+const ETIKETT = /^[A-Z0-9]{6}(L[5-9])$/
+
+// --- Etiketten --------------------------------------------------------------
+
+/**
+ * Ein Etikett prüfen – etwa nach dem Scannen.
+ *
+ * Gibt auch bei ungültigen Codes eine Antwort statt einer Ausnahme: beim
+ * Scannen ist ein Fehlgriff der Normalfall, und ein roter Kasten mit Grund
+ * hilft mehr als ein Abbruch.
+ */
+export function tape_label_check({ label = null } = {}) {
+  const roh = String(label || '')
+    .trim()
+    .toUpperCase()
+
+  if (!roh) return { ok: false, label: roh, reason: 'Kein Code gelesen' }
+  if (!ETIKETT.test(roh)) {
+    return {
+      ok: false,
+      label: roh,
+      reason:
+        roh.length === 8
+          ? `„${roh.slice(6)}" ist kein Medienkürzel. Erwartet wird L5 bis L9.`
+          : `Ein LTO-Etikett hat acht Zeichen, dieses hat ${roh.length}.`,
+    }
+  }
+
+  const band = table('Tape Cartridge').find((t) => t.label === roh)
+  return {
+    ok: true,
+    label: roh,
+    known: !!band,
+    media_type: 'LTO-' + roh.slice(7),
+    prefix: roh.slice(0, 3),
+    serial: roh.slice(3, 6),
+    tape: band || null,
+    // Der Satz, der beim Scannen zählt: kenne ich das Band, und was ist es?
+    note: band
+      ? `${ZUSTAENDE[band.tape_state] || band.tape_state}, ${band.location || 'Ort unbekannt'}`
+      : 'Unbekanntes Band – noch nicht im Bestand.',
+  }
+}
+
+/**
+ * Die nächsten freien Etiketten eines Präfixes erzeugen.
+ *
+ * Überspringt alles Vergebene, auch ausgesonderte Bänder: eine
+ * wiederverwendete Nummer macht jede Historie mehrdeutig, und genau die
+ * braucht man, wenn man wissen will, was auf dem Band von vor drei Jahren
+ * war.
+ */
+export function tape_label_generate({
+  prefix = null,
+  count = 1,
+  media_type = 'LTO-9',
+  pool = null,
+} = {}) {
+  const medium = MEDIEN[media_type]
+  if (!medium) {
+    throw new FrappeMockError(
+      'ValidationError: Unbekannte Medienart. Möglich sind: ' + Object.keys(MEDIEN).join(', '),
+    )
+  }
+
+  const satz = pool ? table('Tape Pool').find((p) => p.pool_name === pool) : null
+  const p = String(prefix || satz?.label_prefix || '')
+    .trim()
+    .toUpperCase()
+  if (!/^[A-Z0-9]{3}$/.test(p)) {
+    throw new FrappeMockError(
+      'ValidationError: Das Präfix hat genau drei Zeichen, Großbuchstaben oder Ziffern',
+    )
+  }
+
+  const wieViele = Number(count)
+  if (!Number.isFinite(wieViele) || wieViele < 1 || wieViele > 100) {
+    throw new FrappeMockError('ValidationError: Zwischen 1 und 100 Etiketten auf einmal')
+  }
+
+  const vergeben = new Set(table('Tape Cartridge').map((t) => t.label))
+  const neu = []
+  for (let n = 1; n <= 999 && neu.length < wieViele; n++) {
+    const kandidat = p + String(n).padStart(3, '0') + medium.suffix
+    if (!vergeben.has(kandidat)) neu.push(kandidat)
+  }
+  if (neu.length < wieViele) {
+    throw new FrappeMockError(
+      `ValidationError: Im Präfix ${p} sind nur noch ${neu.length} Nummern frei. ` +
+        'Ein zweites Präfix vergeben.',
+    )
+  }
+
+  return {
+    ok: true,
+    prefix: p,
+    media_type,
+    capacity_gb: medium.capacity_gb,
+    labels: neu,
+    // Was auf dem Aufkleber steht, ist das eine; was der Scanner liest,
+    // das andere. Beides gehört auf die Vorlage.
+    barcode_symbology: 'Code 39',
+    print_note:
+      'Code 39, Modulbreite mindestens 0,25 mm, Ruhezone 6 mm links und rechts. ' +
+      'Klartext unter den Balken drucken – am Schrank liest niemand einen Scanner.',
+  }
+}
+
+/**
+ * Ein Band in den Bestand aufnehmen.
+ *
+ * Der Weg nach dem Etikettendruck: aufkleben, scannen, hier eintragen.
+ */
+export function tape_register({
+  label = null,
+  pool = null,
+  location = null,
+  slot = null,
+  media_type = 'LTO-9',
+} = {}) {
+  const geprueft = tape_label_check({ label })
+  if (!geprueft.ok) {
+    throw new FrappeMockError(`ValidationError: ${geprueft.reason}`)
+  }
+  if (geprueft.known) {
+    throw new FrappeMockError(`ValidationError: ${geprueft.label} ist bereits im Bestand`)
+  }
+
+  const satz = table('Tape Pool').find((p) => p.pool_name === pool)
+  if (pool && !satz) {
+    throw new FrappeMockError(`DoesNotExistError: Bandsatz ${pool} existiert nicht`, 404)
+  }
+
+  const eintrag = {
+    doctype: 'Tape Cartridge',
+    name: geprueft.label,
+    label: geprueft.label,
+    pool: pool || null,
+    media_type,
+    tape_state: 'frei',
+    location: location || satz?.offsite_location || null,
+    slot: slot ?? null,
+    written_at: null,
+    written_gb: 0,
+    capacity_gb: MEDIEN[media_type]?.capacity_gb ?? null,
+    load_count: 0,
+    encrypted: satz?.encrypted ?? 1,
+    verify_status: 'none',
+    verified_at: null,
+    retention_until: null,
+    offsite_since: null,
+    content_summary: null,
+    first_used: null,
+    tenant: satz?.tenant ?? null,
+    status: 'active',
+    description: null,
+    owner: SESSION_USER,
+    creation: jetzt(),
+    modified: jetzt(),
+    modified_by: SESSION_USER,
+  }
+  table('Tape Cartridge').push(eintrag)
+
+  protokolliere({
+    action: 'tape_registered',
+    object_type: 'Tape Cartridge',
+    object_name: geprueft.label,
+    payload: { pool, location, media_type },
+  })
+
+  return { ok: true, label: geprueft.label, pool: pool || null }
+}
+
+// --- Bestand ----------------------------------------------------------------
+
+export function tape_inventory({ pool = null, state = null, tenant = null } = {}) {
+  const saetze = new Map(table('Tape Pool').map((p) => [p.pool_name, p]))
+
+  const zeilen = table('Tape Cartridge')
+    .filter((t) => (!pool || t.pool === pool) && (!state || t.tape_state === state))
+    .filter((t) => !tenant || t.tenant === tenant)
+    .map((t) => {
+      const satz = saetze.get(t.pool)
+      const belegung = t.capacity_gb ? Math.round((t.written_gb / t.capacity_gb) * 1000) / 10 : null
+      const restTage = t.retention_until
+        ? Math.round(-alterStunden(String(t.retention_until).slice(0, 10) + ' 12:00:00') / 24)
+        : null
+
+      const gruende = []
+      if (t.verify_status === 'failed') gruende.push('Prüfung fehlgeschlagen')
+      if (t.tape_state === 'gesperrt') gruende.push('Gesperrt – nicht wiederverwenden')
+      // Der eigentliche Befund dieser Seite.
+      if (t.tape_state === 'beschrieben' || t.tape_state === 'ausgeworfen') {
+        gruende.push('Beschrieben, aber noch nicht außer Haus – kein Airgap')
+      }
+      if (!t.encrypted && t.written_gb) gruende.push('Unverschlüsselt außer Haus')
+      if (restTage !== null && restTage < 0 && t.tape_state === 'ausser_haus') {
+        gruende.push(`Aufbewahrung seit ${-restTage} Tagen abgelaufen – kann zurück in den Umlauf`)
+      }
+      if (t.load_count > 18000) gruende.push(`${t.load_count} Ladezyklen – Ende der Spezifikation`)
+
+      return {
+        ...t,
+        state_label: ZUSTAENDE[t.tape_state] || t.tape_state,
+        pool_label: satz?.pool_name || t.pool,
+        used_pct: belegung,
+        written_tb: Math.round((t.written_gb / 1000) * 10) / 10,
+        retention_days_left: restTage,
+        age_days: t.written_at ? Math.round(alterStunden(t.written_at) / 24) : null,
+        offsite: t.tape_state === 'ausser_haus',
+        reasons: gruende,
+        level:
+          t.verify_status === 'failed' || t.tape_state === 'gesperrt'
+            ? 'critical'
+            : gruende.length
+              ? 'warning'
+              : 'ok',
+      }
+    })
+    .sort((a, b) => {
+      const rang = { critical: 3, warning: 2, ok: 1 }
+      return rang[b.level] - rang[a.level] || b.label.localeCompare(a.label)
+    })
+
+  return {
+    summary: {
+      tapes: zeilen.length,
+      free: zeilen.filter((z) => z.tape_state === 'frei').length,
+      offsite: zeilen.filter((z) => z.offsite).length,
+      // Die Zahl, die zählt: beschriebene Bänder, die noch im Haus sind.
+      not_yet_offsite: zeilen.filter((z) =>
+        ['beschrieben', 'ausgeworfen', 'im_laufwerk'].includes(z.tape_state),
+      ).length,
+      blocked: zeilen.filter((z) => z.tape_state === 'gesperrt').length,
+      written_tb: Math.round(zeilen.reduce((s, z) => s + z.written_gb, 0) / 100) / 10,
+      pools: [...saetze.keys()],
+    },
+    rows: zeilen,
+  }
+}
+
+export function tape_pools({ tenant = null } = {}) {
+  const baender = table('Tape Cartridge')
+  const WOCHENTAG = [
+    '',
+    'Montag',
+    'Dienstag',
+    'Mittwoch',
+    'Donnerstag',
+    'Freitag',
+    'Samstag',
+    'Sonntag',
+  ]
+
+  return table('Tape Pool')
+    .filter((p) => !tenant || p.tenant === tenant)
+    .map((p) => {
+      const meine = baender.filter((t) => t.pool === p.pool_name)
+      return {
+        ...p,
+        tapes: meine.length,
+        free: meine.filter((t) => t.tape_state === 'frei').length,
+        offsite: meine.filter((t) => t.tape_state === 'ausser_haus').length,
+        write_day_label: WOCHENTAG[p.write_day] || '–',
+        change_day_label: WOCHENTAG[p.change_day] || '–',
+        // Der Plan im Klartext - so steht er auch in der Arbeitsanweisung.
+        plan:
+          `${WOCHENTAG[p.write_day]} schreiben, ${WOCHENTAG[p.change_day]} ${p.change_time} wechseln. ` +
+          `Erinnerung alle ${p.remind_interval_hours} h an ${p.remind_email}, bis quittiert.`,
+        level: meine.filter((t) => t.tape_state === 'frei').length ? 'ok' : 'warning',
+        reasons: meine.filter((t) => t.tape_state === 'frei').length
+          ? []
+          : ['Kein freies Band im Satz – der nächste Lauf findet kein Medium'],
+      }
+    })
+}
+
+// --- Auswerfen --------------------------------------------------------------
+
+/**
+ * Prüft, ob ein Band ausgeworfen werden darf.
+ *
+ * Getrennt von der Aktion, damit die Oberfläche die Gründe zeigen kann,
+ * bevor jemand drückt – und damit diese Prüfung an genau einer Stelle
+ * steht.
+ */
+export function tape_eject_check({ label = null } = {}) {
+  const band = table('Tape Cartridge').find((t) => t.label === label)
+  if (!band) {
+    throw new FrappeMockError(`DoesNotExistError: Band ${label} existiert nicht`, 404)
+  }
+
+  const hindernisse = []
+  if (band.tape_state === 'im_laufwerk') {
+    hindernisse.push('Der Schreiblauf ist noch nicht abgeschlossen – Auswerfen zerstört ihn.')
+  }
+  if (band.tape_state === 'ausser_haus') hindernisse.push('Das Band ist bereits außer Haus.')
+  if (band.tape_state === 'frei') hindernisse.push('Auf dem Band steht nichts.')
+  if (band.verify_status !== 'ok') {
+    hindernisse.push(
+      band.verify_status === 'failed'
+        ? 'Die Prüfung ist fehlgeschlagen. Ein unlesbares Band auszulagern verschiebt nur den Schaden.'
+        : 'Das Band ist ungeprüft. Sich auf etwas zu verlassen, das niemand gelesen hat, ist keine Sicherung.',
+    )
+  }
+  if (!band.encrypted) {
+    hindernisse.push('Unverschlüsselt. Außer Haus wäre das eine lesbare Kopie der Firma.')
+  }
+
+  return {
+    label,
+    tape: band,
+    allowed: hindernisse.length === 0,
+    blockers: hindernisse,
+    // Wohin es danach soll, steht am Satz.
+    destination:
+      table('Tape Pool').find((p) => p.pool_name === band.pool)?.offsite_location || null,
+  }
+}
+
+/**
+ * Das Band auswerfen.
+ *
+ * Läuft über den Wechselauftrag, nicht daneben: sonst gäbe es einen
+ * Auswurf ohne Erinnerung, und genau der bleibt liegen.
+ */
+export function tape_eject({ request = null, actor = SESSION_USER, reason = null } = {}) {
+  const auftrag = table('Tape Change Request').find((r) => r.name === request)
+  if (!auftrag) {
+    throw new FrappeMockError(`DoesNotExistError: Wechselauftrag ${request} existiert nicht`, 404)
+  }
+
+  const pruefung = tape_eject_check({ label: auftrag.tape })
+  if (!pruefung.allowed) {
+    throw new FrappeMockError('ValidationError: ' + pruefung.blockers.join(' '))
+  }
+
+  // Der Zustandswechsel läuft durch den Workflow - mit Rollenprüfung.
+  workflow_apply({
+    doctype: 'Tape Change Request',
+    name: request,
+    action: 'Auswerfen',
+    user: actor,
+    comment: reason,
+  })
+
+  const band = pruefung.tape
+  band.tape_state = 'ausgeworfen'
+  band.location = 'Laufwerk st0 – entnommen, noch im Serverraum'
+  touch(band)
+
+  auftrag.ejected_at = jetzt()
+  // Ab jetzt läuft die Erinnerungsschleife.
+  auftrag.last_reminder_at = null
+  auftrag.reminders_sent = 0
+  touch(auftrag)
+
+  protokolliere({
+    action: 'tape_ejected',
+    object_type: 'Tape Cartridge',
+    object_name: band.label,
+    payload: { request, actor, reason },
+  })
+
+  return {
+    ok: true,
+    label: band.label,
+    request,
+    destination: pruefung.destination,
+    // Der wichtigste Satz der ganzen Methode.
+    note:
+      `${band.label} ist ausgeworfen – aber noch im Haus. Es zählt erst als Airgap, wenn es ` +
+      `in ${pruefung.destination || 'der Auslagerung'} liegt und der Wechsel hier bestätigt ist. ` +
+      `Bis dahin geht alle ${auftrag.remind_interval_hours} h eine Erinnerung an ${auftrag.remind_email}.`,
+  }
+}
+
+/**
+ * Den Wechsel quittieren.
+ *
+ * Das Ende des Vorgangs. Erst hier hört die Erinnerung auf, und erst hier
+ * gilt das Band als außer Haus.
+ */
+export function tape_confirm_change({
+  request = null,
+  new_location = null,
+  next_tape = null,
+  actor = SESSION_USER,
+  scanned_label = null,
+} = {}) {
+  const auftrag = table('Tape Change Request').find((r) => r.name === request)
+  if (!auftrag) {
+    throw new FrappeMockError(`DoesNotExistError: Wechselauftrag ${request} existiert nicht`, 404)
+  }
+  if (!new_location) {
+    throw new FrappeMockError(
+      'ValidationError: Ohne Lagerort ist die Quittung wertlos – „irgendwo sicher" ' +
+        'findet im Ernstfall niemand.',
+    )
+  }
+
+  // Wenn gescannt wurde, muss es auch das richtige Band sein. Ein
+  // verwechseltes Band fällt sonst erst bei der Wiederherstellung auf.
+  if (scanned_label) {
+    const gelesen = String(scanned_label).trim().toUpperCase()
+    if (gelesen !== auftrag.tape) {
+      throw new FrappeMockError(
+        `ValidationError: Gescannt wurde ${gelesen}, erwartet ${auftrag.tape}. ` +
+          'Entweder liegt das falsche Band vor, oder der Auftrag gehört zu einem anderen.',
+      )
+    }
+  }
+
+  workflow_apply({
+    doctype: 'Tape Change Request',
+    name: request,
+    action: 'Wechsel bestätigen',
+    user: actor,
+  })
+
+  const band = table('Tape Cartridge').find((t) => t.label === auftrag.tape)
+  if (band) {
+    band.tape_state = 'ausser_haus'
+    band.location = new_location
+    band.offsite_since = jetzt()
+    band.slot = null
+    touch(band)
+  }
+
+  // Das nächste Band rückt nach.
+  const nachfolger = next_tape || auftrag.next_tape
+  const neu = nachfolger ? table('Tape Cartridge').find((t) => t.label === nachfolger) : null
+  if (neu) {
+    neu.tape_state = 'im_laufwerk'
+    neu.location = 'Laufwerk st0, Serverraum A.01'
+    neu.load_count = (neu.load_count || 0) + 1
+    if (!neu.first_used) neu.first_used = jetzt()
+    touch(neu)
+  }
+
+  auftrag.confirmed_at = jetzt()
+  auftrag.new_location = new_location
+  touch(auftrag)
+
+  protokolliere({
+    action: 'tape_change_confirmed',
+    object_type: 'Tape Change Request',
+    object_name: request,
+    payload: { tape: auftrag.tape, new_location, next_tape: nachfolger, actor },
+  })
+
+  return {
+    ok: true,
+    request,
+    tape: auftrag.tape,
+    location: new_location,
+    next_tape: nachfolger || null,
+    reminders_sent: auftrag.reminders_sent || 0,
+    note: neu
+      ? `${auftrag.tape} liegt in ${new_location}. ${nachfolger} ist eingelegt – der nächste Lauf findet ein Medium.`
+      : `${auftrag.tape} liegt in ${new_location}. **Kein Nachfolgeband eingelegt** – der nächste Lauf findet keins.`,
+  }
+}
+
+// --- Wechselaufträge und Erinnerungen ---------------------------------------
+
+export function tape_change_requests({ open_only = false, tenant = null } = {}) {
+  const baender = new Map(table('Tape Cartridge').map((t) => [t.label, t]))
+  const erinnerungen = table('Tape Reminder')
+
+  return table('Tape Change Request')
+    .filter((r) => !tenant || r.tenant === tenant)
+    .filter((r) => !open_only || !['confirmed', 'cancelled'].includes(r.workflow_state))
+    .map((r) => {
+      const offen = !['confirmed', 'cancelled'].includes(r.workflow_state)
+      const faellig = r.due_at ? Math.round(alterStunden(r.due_at) * 10) / 10 : null
+      const seitAuswurf = r.ejected_at ? Math.round(alterStunden(r.ejected_at) * 10) / 10 : null
+
+      const gruende = []
+      if (r.workflow_state === 'ejected') {
+        gruende.push(
+          `Ausgeworfen vor ${seitAuswurf} h, Wechsel nicht bestätigt – bis dahin kein Airgap`,
+        )
+      }
+      if (r.workflow_state === 'ready' && faellig !== null && faellig > 0) {
+        gruende.push(`Seit ${faellig} h zum Auswerfen fällig`)
+      }
+      if (offen && !baender.get(r.next_tape)) gruende.push('Kein Nachfolgeband zugeordnet')
+
+      return {
+        ...r,
+        open: offen,
+        overdue_hours: faellig !== null && faellig > 0 ? faellig : null,
+        ejected_hours: seitAuswurf,
+        reminders: erinnerungen.filter((e) => e.request === r.name).length,
+        next_reminder_at: naechsteErinnerung(r),
+        tape_state: baender.get(r.tape)?.tape_state || null,
+        next_tape_state: baender.get(r.next_tape)?.tape_state || null,
+        reasons: gruende,
+        level:
+          r.workflow_state === 'ejected'
+            ? 'critical'
+            : gruende.length
+              ? 'warning'
+              : offen
+                ? 'neutral'
+                : 'ok',
+      }
+    })
+    .sort(
+      (a, b) => Number(b.open) - Number(a.open) || String(a.due_at).localeCompare(String(b.due_at)),
+    )
+}
+
+/** Wann geht die nächste Erinnerung raus? `null`, wenn keine mehr nötig ist. */
+/**
+ * Erinnert wird an offenen Aufträgen ab dem Fälligkeitstermin.
+ *
+ * Nicht ab dem Auswurf: wer gar nicht erst auswirft, bekommt sonst nie
+ * eine Mail – und genau das ist der Fall, der am längsten unbemerkt
+ * bleibt. Der Plan sagt „Dienstag 06:00"; ab da läuft die Schleife,
+ * unabhängig davon, wie weit jemand gekommen ist.
+ */
+function erinnerungFaellig(r) {
+  if (!['ready', 'ejected'].includes(r.workflow_state)) return false
+  // Vor dem Termin ist nichts zu erinnern.
+  if (r.due_at && alterStunden(r.due_at) < 0) return false
+  const takt = Number(r.remind_interval_hours) || 1
+  return !r.last_reminder_at || alterStunden(r.last_reminder_at) >= takt
+}
+
+/** Wann geht die nächste Erinnerung raus? `null`, wenn keine mehr nötig ist. */
+function naechsteErinnerung(r) {
+  if (!['ready', 'ejected'].includes(r.workflow_state)) return null
+  const takt = Number(r.remind_interval_hours) || 1
+  if (r.due_at && alterStunden(r.due_at) < 0) return r.due_at
+  if (!r.last_reminder_at) return jetzt()
+  const seither = alterStunden(r.last_reminder_at)
+  return seither >= takt ? jetzt() : stundenVersetzt(takt - seither)
+}
+
+/**
+ * Welche Erinnerungen wären jetzt fällig?
+ *
+ * Das ist die Methode, die in Frappe der stündliche Scheduler-Job aufruft.
+ * Sie verschickt nichts – sie sagt, was zu verschicken wäre. Der Versand
+ * gehört ins Backend, nicht in einen Browser-Mock.
+ */
+export function tape_reminders_due({ send = false, actor = SESSION_USER } = {}) {
+  const faellig = table('Tape Change Request').filter(erinnerungFaellig)
+
+  const nachrichten = faellig.map((r) => {
+    const versuch = (r.reminders_sent || 0) + 1
+    const ueberfaellig = r.due_at ? Math.round(alterStunden(r.due_at)) : 0
+    // Zwei verschiedene Lagen, zwei verschiedene Mails. „Bandwechsel
+    // offen" hilft niemandem, der noch gar nicht ausgeworfen hat.
+    const ausgeworfen = r.workflow_state === 'ejected'
+    return {
+      request: r.name,
+      to: r.remind_email,
+      attempt: versuch,
+      state: r.workflow_state,
+      overdue_hours: ueberfaellig,
+      subject: ausgeworfen
+        ? `Bandwechsel offen: ${r.tape} liegt noch im Serverraum`
+        : `Bandwechsel fällig: ${r.tape} ist noch nicht ausgeworfen`,
+      body: ausgeworfen
+        ? `${r.tape} ist ausgeworfen, aber noch nicht als gewechselt bestätigt – seit ` +
+          `${ueberfaellig} Stunden überfällig. Solange das Band im Serverraum liegt, gibt es ` +
+          `keine Sicherung außerhalb der Reichweite eines Angreifers. ` +
+          `Bitte das Band entnehmen, auslagern und den Wechsel in NetOps bestätigen.`
+        : `Der Wechsel von ${r.tape} war vor ${ueberfaellig} Stunden fällig und ist noch nicht ` +
+          `angestoßen. Bis das Band draußen ist, liegt keine Kopie außerhalb der Netzreichweite vor. ` +
+          `Bitte in NetOps auswerfen, Band entnehmen und den Wechsel bestätigen.`,
+    }
+  })
+
+  if (send) {
+    for (const n of nachrichten) {
+      const r = faellig.find((x) => x.name === n.request)
+      table('Tape Reminder').push({
+        doctype: 'Tape Reminder',
+        name: 'TRM-' + String(table('Tape Reminder').length + 1).padStart(6, '0'),
+        request: n.request,
+        sent_at: jetzt(),
+        sent_to: n.to,
+        attempt: n.attempt,
+        subject: n.subject,
+        tenant: r.tenant,
+        status: 'active',
+        description: null,
+        owner: SESSION_USER,
+        creation: jetzt(),
+        modified: jetzt(),
+        modified_by: SESSION_USER,
+      })
+      r.reminders_sent = n.attempt
+      r.last_reminder_at = jetzt()
+      touch(r)
+      protokolliere({
+        action: 'tape_reminder_sent',
+        object_type: 'Tape Change Request',
+        object_name: n.request,
+        payload: { to: n.to, attempt: n.attempt, actor },
+      })
+    }
+  }
+
+  return {
+    due: nachrichten.length,
+    sent: send ? nachrichten.length : 0,
+    messages: nachrichten,
+    // Damit auf der Seite steht, was der Scheduler tut, statt dass es
+    // jemand aus dem Verhalten erschließen muss.
+    note: nachrichten.length
+      ? 'In Frappe versendet das der stündliche Scheduler-Job. Die Schleife endet erst mit der Quittung.'
+      : 'Nichts fällig.',
+  }
+}
+
+/**
+ * Ein Wechselauftrag von Hand – etwa nach einem Lauf außer der Reihe.
+ *
+ * Der reguläre Weg ist der Scheduler nach dem Schreiblauf; diese Methode
+ * ist für den Fall, in dem jemand zusätzlich sichert.
+ */
+export function tape_change_request_create({
+  pool = null,
+  tape = null,
+  next_tape = null,
+  actor = SESSION_USER,
+} = {}) {
+  const satz = table('Tape Pool').find((p) => p.pool_name === pool)
+  if (!satz) {
+    throw new FrappeMockError(`DoesNotExistError: Bandsatz ${pool} existiert nicht`, 404)
+  }
+  const band = table('Tape Cartridge').find((t) => t.label === tape)
+  if (!band) {
+    throw new FrappeMockError(`DoesNotExistError: Band ${tape} existiert nicht`, 404)
+  }
+  const offen = table('Tape Change Request').find(
+    (r) => r.tape === tape && !['confirmed', 'cancelled'].includes(r.workflow_state),
+  )
+  if (offen) {
+    throw new FrappeMockError(
+      `ValidationError: Für ${tape} läuft bereits der Wechselauftrag ${offen.name}`,
+    )
+  }
+
+  const rows = table('Tape Change Request')
+  const eintrag = {
+    doctype: 'Tape Change Request',
+    name: 'TCR-' + String(rows.length + 1).padStart(5, '0'),
+    pool,
+    tape,
+    next_tape: next_tape || null,
+    target: satz.target,
+    // Beginnt vor dem Schreiblauf: erst wenn der durch ist, wird
+    // ausgeworfen.
+    workflow_state: band.verify_status === 'ok' ? 'ready' : 'waiting',
+    due_at: jetzt(),
+    ejected_at: null,
+    confirmed_at: null,
+    confirmed_by: null,
+    new_location: null,
+    remind_email: satz.remind_email,
+    remind_interval_hours: satz.remind_interval_hours,
+    reminders_sent: 0,
+    last_reminder_at: null,
+    requested_by: actor,
+    tenant: satz.tenant,
+    status: 'active',
+    description: null,
+    owner: SESSION_USER,
+    creation: jetzt(),
+    modified: jetzt(),
+    modified_by: SESSION_USER,
+  }
+  rows.push(eintrag)
+
+  protokolliere({
+    action: 'tape_change_requested',
+    object_type: 'Tape Change Request',
+    object_name: eintrag.name,
+    payload: { pool, tape, next_tape, actor },
+  })
+
+  return { ok: true, request: eintrag.name, state: eintrag.workflow_state }
+}
+
+void parse

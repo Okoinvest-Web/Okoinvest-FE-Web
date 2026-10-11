@@ -1,0 +1,168 @@
+/**
+ * Wartungsprofile und Prüftermine je Anlage.
+ *
+ * Der Bestand ist bewusst uneinheitlich, weil er in einem Betrieb
+ * dieser Größe uneinheitlich ist:
+ *
+ * - Das Bürogebäude ist gering beansprucht und darf nach ESV zehn
+ *   Jahre laufen - die Anlage sieht deshalb "überfällig" aus, wenn
+ *   man nur auf das Datum schaut, und ist es nicht.
+ * - Am Sägewerk gilt ein verkürzter Abstand: Holzstaub. Die Frist
+ *   steht dort deshalb auf drei Jahre und nicht auf fünf.
+ * - Beim Carport fehlt die Prüfung der entkuppelnden Schutz-
+ *   einrichtung. Das ist der Fall, der einen Netzzugang kostet, und
+ *   er soll auf der Oberfläche zu sehen sein.
+ * - Zur Lagerhalle ist zur Thermografie nichts abgelegt. Nicht
+ *   "in Ordnung", sondern unbekannt.
+ */
+function befuelleWartung(): number {
+  const anlagen = alle<{ id: string; inbetriebnahme: string | null }>(
+    "SELECT id, inbetriebnahme FROM anlage ORDER BY id",
+  );
+
+  const profile: Record<
+    string,
+    { umgebung: string; klasse: number | null; kritisch: number; bemerkung?: string }
+  > = {
+    "ANL-0001": { umgebung: "normal", klasse: 3, kritisch: 0 },
+    "ANL-0002": {
+      umgebung: "explosionsgefaehrdet",
+      klasse: 2,
+      kritisch: 1,
+      bemerkung:
+        "Holzstaub in der Späneabsaugung: Bereich nach ESV verkürzt geprüft, Blitzschutz als kritisches System geführt.",
+    },
+    "ANL-0003": { umgebung: "normal", klasse: 3, kritisch: 0 },
+    "ANL-0004": {
+      umgebung: "gering",
+      klasse: 4,
+      kritisch: 0,
+      bemerkung: "Reines Bürogebäude, keine Fertigung.",
+    },
+    "ANL-0005": { umgebung: "normal", klasse: 4, kritisch: 0 },
+  };
+
+  // Monate zurück, gerechnet von heute. `null` heißt: nichts abgelegt.
+  const termine: Record<string, Record<string, number | null>> = {
+    "ANL-0001": {
+      "esv-anlage": 26,
+      "pv-anlagenpruefung": 14,
+      "blitzschutz-sicht": 11,
+      "blitzschutz-umfassend": 23,
+      "na-schutz": 30,
+      "wechselrichter-wartung": 7,
+      thermografie: 15,
+      modulreinigung: 19,
+    },
+    "ANL-0002": {
+      // Verkürzter Abstand, letzte Prüfung 34 Monate her: überfällig.
+      "esv-anlage": 34,
+      "pv-anlagenpruefung": 9,
+      "blitzschutz-sicht": 8,
+      "blitzschutz-umfassend": 8,
+      "na-schutz": 22,
+      "wechselrichter-wartung": 4,
+      thermografie: 11,
+      modulreinigung: 26,
+    },
+    "ANL-0003": {
+      "esv-anlage": 41,
+      "pv-anlagenpruefung": 22,
+      "blitzschutz-sicht": 21,
+      "blitzschutz-umfassend": 44,
+      "na-schutz": 41,
+      "wechselrichter-wartung": 10,
+      thermografie: null,
+      modulreinigung: 27,
+    },
+    "ANL-0004": {
+      // Zehn Jahre Abstand: trotz 71 Monaten nicht fällig.
+      "esv-anlage": 71,
+      "pv-anlagenpruefung": 17,
+      "blitzschutz-sicht": 16,
+      "blitzschutz-umfassend": 30,
+      "na-schutz": 33,
+      "wechselrichter-wartung": 9,
+      thermografie: 20,
+      modulreinigung: 14,
+    },
+    "ANL-0005": {
+      "esv-anlage": 19,
+      "pv-anlagenpruefung": 20,
+      "blitzschutz-sicht": 22,
+      "blitzschutz-umfassend": 46,
+      // Nie geprüft - der Fall, der den Netzzugang kostet.
+      "na-schutz": null,
+      "wechselrichter-wartung": 6,
+      thermografie: 18,
+      modulreinigung: 8,
+    },
+  };
+
+  const pruefer: Record<string, string> = {
+    "esv-anlage": "Ing. M. Hofbauer, Ökovolt Technik",
+    "pv-anlagenpruefung": "Ing. M. Hofbauer, Ökovolt Technik",
+    "blitzschutz-sicht": "Blitzschutzbau Hofer GmbH",
+    "blitzschutz-umfassend": "Blitzschutzbau Hofer GmbH",
+    "na-schutz": "Ökovolt Technik, Protokoll an Netz NÖ",
+    "wechselrichter-wartung": "Werkskundendienst",
+    thermografie: "TÜV Austria, Thermografie",
+    modulreinigung: "Fassaden- und Anlagenreinigung Prem",
+  };
+
+  let anzahl = 0;
+
+  for (const anlage of anlagen) {
+    const profil = profile[anlage.id];
+    if (!profil) continue;
+
+    schreibe(
+      `INSERT INTO wartungsprofil
+         (anlage_id, umgebung, blitzschutzklasse, kritisch, bemerkung)
+       VALUES (?, ?, ?, ?, ?)`,
+      anlage.id,
+      profil.umgebung,
+      profil.klasse,
+      profil.kritisch,
+      profil.bemerkung ?? null,
+    );
+
+    const eintraege = termine[anlage.id] ?? {};
+
+    for (const [regel, monate] of Object.entries(eintraege)) {
+      const letzte =
+        monate === null
+          ? null
+          : (() => {
+              const d = new Date();
+              d.setHours(0, 0, 0, 0);
+              d.setMonth(d.getMonth() - monate);
+              return tagesSchluessel(d);
+            })();
+
+      schreibe(
+        `INSERT INTO wartungstermin
+           (id, anlage_id, regel, letzte_pruefung, intervall_monate, pruefer,
+            protokoll, befund, bemerkung)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `WAR-${anlage.id.slice(4)}-${regel}`,
+        anlage.id,
+        regel,
+        letzte,
+        // Am Sägewerk schreibt die Behörde drei Jahre vor.
+        anlage.id === "ANL-0002" && regel === "esv-anlage" ? 36 : null,
+        letzte ? pruefer[regel] : null,
+        letzte ? `PRO-${anlage.id.slice(4)}-${regel.toUpperCase()}` : null,
+        letzte ? "ohne Beanstandung" : null,
+        monate === null
+          ? "Zu dieser Prüfung ist nichts abgelegt."
+          : null,
+      );
+
+      anzahl += 1;
+    }
+  }
+
+  return anzahl;
+}
+

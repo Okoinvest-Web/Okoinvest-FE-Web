@@ -1,0 +1,133 @@
+import "server-only";
+
+import { alle, skalar } from "../db/verbindung.ts";
+import type { Dienstplaneintrag, Kanal } from "../melden/eskalation.ts";
+
+/**
+ * Alarmierung: Dienstplan, Benachrichtigungen, Zustellwege.
+ *
+ * Der teuerste Fehler in einem Alarmierungssystem ist die Meldung,
+ * die niemanden erreicht und von der alle annehmen, sie sei
+ * angekommen. Deshalb wird jeder Zustellversuch einzeln geführt - mit
+ * Weg, Empfänger, Zeitpunkt und Ausgang. Eine Push-Nachricht, die im
+ * Funkloch liegen blieb, sieht in der Übersicht sonst genauso aus wie
+ * eine gelesene.
+ */
+
+export interface BereitschaftZeile {
+  id: string;
+  bezeichnung: string;
+  wochentage: string;
+  von_stunde: number;
+  bis_stunde: number;
+  stufe: number;
+  empfaenger: string;
+  rolle: string | null;
+  telefon: string | null;
+  email: string | null;
+  kanal: string;
+  eskalation_nach_min: number;
+  auch_feiertags: number;
+  aktiv: number;
+}
+
+export function ladeBereitschaft(): BereitschaftZeile[] {
+  return alle<BereitschaftZeile>(
+    `SELECT * FROM bereitschaft
+      ORDER BY stufe, von_stunde, bezeichnung`,
+  );
+}
+
+/** Der Dienstplan in der Form, die der geprüfte Kern erwartet. */
+export function alsDienstplan(zeilen: BereitschaftZeile[]): Dienstplaneintrag[] {
+  return zeilen
+    .filter((z) => z.aktiv === 1)
+    .map((z) => ({
+      id: z.id,
+      bezeichnung: z.bezeichnung,
+      wochentage: z.wochentage,
+      vonStunde: z.von_stunde,
+      bisStunde: z.bis_stunde,
+      stufe: z.stufe,
+      empfaenger: z.empfaenger,
+      rolle: z.rolle ?? undefined,
+      kanal: z.kanal as Kanal,
+      aktiv: z.aktiv === 1,
+      auchFeiertags: z.auch_feiertags === 1,
+    }));
+}
+
+export interface BenachrichtigungZeile {
+  id: string;
+  anlage_id: string | null;
+  anlage: string | null;
+  quelle: string;
+  dringlichkeit: "Niedrig" | "Mittel" | "Hoch" | "Kritisch";
+  betreff: string;
+  text: string;
+  erzeugt_am: string;
+  bestaetigt_am: string | null;
+  bestaetigt_von: string | null;
+  stufe: number;
+  status: string;
+}
+
+export function ladeBenachrichtigungen(grenze = 20): BenachrichtigungZeile[] {
+  return alle<BenachrichtigungZeile>(
+    `SELECT b.*, a.bezeichnung AS anlage
+       FROM benachrichtigung b
+       LEFT JOIN anlage a ON a.id = b.anlage_id
+      ORDER BY b.erzeugt_am DESC
+      LIMIT ?`,
+    grenze,
+  );
+}
+
+export interface ZustellungZeile {
+  id: string;
+  benachrichtigung_id: string;
+  kanal: string;
+  empfaenger: string;
+  stufe: number;
+  versucht_am: string;
+  zugestellt_am: string | null;
+  gelesen_am: string | null;
+  status: string;
+  fehler: string | null;
+}
+
+export function ladeZustellungen(): ZustellungZeile[] {
+  return alle<ZustellungZeile>(
+    `SELECT * FROM zustellung ORDER BY versucht_am, stufe, kanal`,
+  );
+}
+
+export interface MeldewegKennzahlen {
+  offen: number;
+  eskaliert: number;
+  /** Zustellversuche, die fehlgeschlagen sind. */
+  fehlversuche: number;
+  /** Mittlere Zeit bis zur Bestätigung, in Minuten. */
+  bestaetigungMinuten: number | null;
+}
+
+export function ladeMeldewegKennzahlen(): MeldewegKennzahlen {
+  const zaehle = (sql: string) => skalar<number>(sql) ?? 0;
+
+  return {
+    offen: zaehle(
+      "SELECT COUNT(*) FROM benachrichtigung WHERE bestaetigt_am IS NULL",
+    ),
+    eskaliert: zaehle(
+      "SELECT COUNT(*) FROM benachrichtigung WHERE status = 'Eskaliert'",
+    ),
+    fehlversuche: zaehle("SELECT COUNT(*) FROM zustellung WHERE status = 'Fehler'"),
+    // In Minuten, in der Datenbank gerechnet: Ein Renderlauf muss bei
+    // gleichen Eingaben dasselbe ergeben.
+    bestaetigungMinuten:
+      skalar<number>(
+        `SELECT ROUND(AVG((julianday(bestaetigt_am) - julianday(erzeugt_am)) * 1440), 1)
+           FROM benachrichtigung WHERE bestaetigt_am IS NOT NULL`,
+      ) ?? null,
+  };
+}

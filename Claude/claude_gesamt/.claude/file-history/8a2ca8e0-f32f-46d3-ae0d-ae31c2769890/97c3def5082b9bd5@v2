@@ -1,0 +1,164 @@
+"""Live-Ansicht der Fahrtenbuch-Datenrekonstruktion (lokaler Dev-Server).
+
+Start:  python live_server.py   ->  http://127.0.0.1:8765
+Liest nur: Workflow-Journal, Agent-Transkripte, Ordner Ausgabe/.
+"""
+import ast
+import glob
+import http.server
+import json
+import os
+import time
+import urllib.parse
+
+PORT = 8765
+WF_DIR = os.path.expanduser(
+    r"~\.claude\projects\c--Users-SALEADMIN-Desktop-Datenrekonstruktion"
+    r"\8a2ca8e0-f32f-46d3-ae0d-ae31c2769890\subagents\workflows\wf_bdfd5932-2d2"
+)
+OUT_DIR = r"C:\Users\SALEADMIN\Desktop\Datenrekonstruktion\Ausgabe"
+HERE = os.path.dirname(os.path.abspath(__file__))
+
+PHASES = ["Belegextraktion", "Recherche", "Rekonstruktion", "Steuerpruefung", "Finanzamt", "HTML"]
+PLANNED = (
+    [f"Rekonstruktion 2023-{i}" for i in (1, 2)]
+    + [f"Rekonstruktion 2024-{i}" for i in (3, 4, 5)]
+    + [f"Rekonstruktion 2025-{i}" for i in (6, 7, 8)]
+    + ["Rekonstruktion Miet-/Buchungsbelege", "Recherche Recht/Sachbezug", "Recherche Fahrzeug/Verbrauch",
+       "Recherche Routen"]
+    + [f"Rekonstruktionsassistent {y}" for y in (2023, 2024, 2025)]
+    + [f"Steuerprüfer {y}" for y in (2023, 2024, 2025)]
+    + ["Finanzamt-Agent"]
+    + [f"HTML {y}" for y in (2023, 2024, 2025)] + ["HTML Übersicht"]
+)
+
+
+def parse_result(raw):
+    if isinstance(raw, (dict, list)):
+        return raw
+    if not isinstance(raw, str):
+        return None
+    for loader in (json.loads, ast.literal_eval):
+        try:
+            return loader(raw)
+        except Exception:
+            pass
+    return raw
+
+
+def last_action(path):
+    """Letzte Tool-Aktion eines Agenten aus dem Transkript-Ende."""
+    try:
+        with open(path, "rb") as f:
+            f.seek(0, 2)
+            size = f.tell()
+            f.seek(max(0, size - 400_000))
+            lines = f.read().decode("utf-8", "ignore").splitlines()
+    except OSError:
+        return ""
+    for line in reversed(lines):
+        try:
+            j = json.loads(line)
+        except Exception:
+            continue
+        content = (j.get("message") or {}).get("content")
+        if not isinstance(content, list):
+            continue
+        for c in reversed(content):
+            if c.get("type") == "tool_use":
+                inp = c.get("input") or {}
+                detail = (inp.get("description") or inp.get("file_path") or inp.get("query")
+                          or inp.get("url") or inp.get("pattern") or "")
+                detail = str(detail).replace("\\", "/").split("/")[-1] if "file_path" in inp else str(detail)
+                pages = f" S.{inp['pages']}" if inp.get("pages") else ""
+                return f"{c.get('name')}: {detail[:90]}{pages}"
+            if c.get("type") == "text" and c.get("text", "").strip():
+                return "Schreibt: " + c["text"].strip()[:90]
+    return ""
+
+
+def status():
+    agents, results, order = {}, {}, []
+    jpath = os.path.join(WF_DIR, "journal.jsonl")
+    if os.path.exists(jpath):
+        with open(jpath, encoding="utf-8") as f:
+            for line in f:
+                try:
+                    j = json.loads(line)
+                except Exception:
+                    continue
+                if j.get("type") == "started":
+                    aid = j["agentId"]
+                    agents[aid] = {"id": aid, "label": j.get("label"), "phase": j.get("phase"), "done": False}
+                    order.append(aid)
+                elif j.get("type") == "result":
+                    aid = j.get("agentId")
+                    if aid in agents:
+                        agents[aid]["done"] = True
+                    results[aid] = parse_result(j.get("result"))
+    now = time.time()
+    for aid, a in agents.items():
+        p = os.path.join(WF_DIR, f"agent-{aid}.jsonl")
+        if os.path.exists(p):
+            a["idle_s"] = int(now - os.path.getmtime(p))
+            a["size_kb"] = os.path.getsize(p) // 1024
+            if not a["done"]:
+                a["action"] = last_action(p)
+        else:
+            a["idle_s"], a["size_kb"] = None, 0
+    # deduplizieren nach Label (Neustart -> neuester Eintrag zählt, fertige bevorzugt)
+    by_label = {}
+    for aid in order:
+        a = agents[aid]
+        prev = by_label.get(a["label"])
+        if prev is None or a["done"] or not prev["done"]:
+            by_label[a["label"]] = a
+    tx, misc = [], None
+    for aid, r in results.items():
+        if isinstance(r, dict) and "transaktionen" in r:
+            tx.extend(r["transaktionen"])
+        elif isinstance(r, dict) and "fahrzeuge" in r:
+            misc = r
+    tx.sort(key=lambda t: (t.get("datum", ""), t.get("uhrzeit") or ""))
+    texts = {a["label"]: results.get(a["id"]) for a in by_label.values()
+             if a["done"] and isinstance(results.get(a["id"]), str)}
+    outputs = sorted(os.path.basename(p) for p in glob.glob(os.path.join(OUT_DIR, "*.html")))
+    return {
+        "agents": list(by_label.values()), "planned": PLANNED, "phases": PHASES,
+        "tx": tx, "misc": misc, "texts": texts, "outputs": outputs, "ts": time.strftime("%H:%M:%S"),
+    }
+
+
+class Handler(http.server.BaseHTTPRequestHandler):
+    def log_message(self, *a):
+        pass
+
+    def send(self, code, body, ctype):
+        data = body if isinstance(body, bytes) else body.encode("utf-8")
+        self.send_response(code)
+        self.send_header("Content-Type", ctype)
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("Content-Length", str(len(data)))
+        self.end_headers()
+        self.wfile.write(data)
+
+    def do_GET(self):
+        path = urllib.parse.unquote(urllib.parse.urlparse(self.path).path)
+        if path in ("/", "/index.html"):
+            with open(os.path.join(HERE, "live.html"), encoding="utf-8") as f:
+                return self.send(200, f.read(), "text/html; charset=utf-8")
+        if path == "/api/status":
+            return self.send(200, json.dumps(status(), ensure_ascii=False, default=str),
+                             "application/json; charset=utf-8")
+        if path.startswith("/ausgabe/"):
+            name = os.path.basename(path)
+            p = os.path.join(OUT_DIR, name)
+            if name.endswith(".html") and os.path.isfile(p):
+                with open(p, "rb") as f:
+                    return self.send(200, f.read(), "text/html; charset=utf-8")
+        self.send(404, "nicht gefunden", "text/plain; charset=utf-8")
+
+
+if __name__ == "__main__":
+    print(f"Live-Rekonstruktion: http://127.0.0.1:{PORT}")
+    http.server.ThreadingHTTPServer(("127.0.0.1", PORT), Handler).serve_forever()

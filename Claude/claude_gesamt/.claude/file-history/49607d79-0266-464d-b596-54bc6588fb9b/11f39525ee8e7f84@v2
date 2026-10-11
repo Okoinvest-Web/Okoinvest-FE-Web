@@ -1,0 +1,120 @@
+import { beforeEach, describe, expect, it } from 'vitest'
+import { mockRequest, resetMockData } from '@/api/mock/server.js'
+
+const ruf = (url, params) => mockRequest({ url, params })
+const pfad = (source, destination, port, protocol = 'tcp') =>
+  ruf('netops.api.firewall.path_analysis', { source, destination, port, protocol })
+
+beforeEach(() => {
+  resetMockData()
+})
+
+describe('netops.api.firewall.path_analysis', () => {
+  it('lässt einen erlaubten Weg durch alle Ebenen passieren', async () => {
+    const ergebnis = await pfad('10.10.30.50', '10.10.20.10', 443)
+    expect(ergebnis.allowed).toBe(true)
+    expect(ergebnis.blocked_at).toBeNull()
+    expect(ergebnis.hops.map((h) => h.result)).toEqual(['allow', 'allow', 'allow'])
+  })
+
+  it('nennt je Ebene die greifende Regel', async () => {
+    const ergebnis = await pfad('10.10.30.50', '10.10.20.10', 443)
+    const perimeter = ergebnis.hops.find((h) => h.firewall === 'FW-OS-01')
+    expect(perimeter.rule.rule_index).toBe(30)
+    expect(perimeter.rule.rule_name).toBe('Clients → Server')
+    expect(perimeter.rule.ticket).toBe('TCK-1003')
+  })
+
+  it('blockiert am Perimeter und prüft danach nicht weiter', async () => {
+    const ergebnis = await pfad('10.10.30.50', '10.100.100.5', 502)
+    expect(ergebnis.allowed).toBe(false)
+    expect(ergebnis.blocked_at).toBe('FW-OS-01')
+    expect(ergebnis.hops).toHaveLength(1)
+    expect(ergebnis.not_evaluated).toEqual(['FW-NS-INT', 'FW-HOST-PVE'])
+  })
+
+  it('überspringt Ebenen, die nicht zwischen Quelle und Ziel liegen', async () => {
+    // Internet → DMZ läuft nicht über die interne Firewall. Ohne diese
+    // Prüfung würde deren Grundregel den Verkehr fälschlich verwerfen.
+    const ergebnis = await pfad('203.0.113.9', '10.10.70.10', 443)
+    expect(ergebnis.allowed).toBe(true)
+    const intern = ergebnis.hops.find((h) => h.firewall === 'FW-NS-INT')
+    expect(intern.result).toBe('not_in_path')
+    expect(intern.rule).toBeNull()
+  })
+
+  it('wendet die erste passende Regel an, nicht die spezifischste', async () => {
+    // Regel 20 (Management → alle) steht vor Regel 30 und greift zuerst.
+    const ergebnis = await pfad('10.10.10.5', '10.10.20.10', 22)
+    expect(ergebnis.hops[0].rule.rule_index).toBe(20)
+  })
+
+  it('verwirft, wenn keine Regel passt', async () => {
+    const ergebnis = await pfad('10.10.30.50', '10.10.20.10', 3389)
+    // Perimeter erlaubt alle TCP-Ports, die interne Ebene kennt 3389 nicht.
+    expect(ergebnis.allowed).toBe(false)
+    const intern = ergebnis.hops.find((h) => h.firewall === 'FW-NS-INT')
+    expect(intern.result).toBe('deny')
+  })
+
+  it('beachtet das Protokoll', async () => {
+    const tcp = await pfad('10.10.30.50', '10.10.20.10', 443, 'tcp')
+    const udp = await pfad('10.10.30.50', '10.10.20.10', 443, 'udp')
+    expect(tcp.allowed).toBe(true)
+    expect(udp.allowed).toBe(false)
+  })
+
+  it('weist ungültige Adressen mit klarer Meldung zurück', async () => {
+    await expect(pfad('keine-ip', '10.10.20.10', 443)).rejects.toThrow(/Quelle ist keine gültige/)
+    await expect(pfad('10.10.30.50', '999.1.1.1', 443)).rejects.toThrow(/Ziel ist keine gültige/)
+  })
+
+  it('verlangt Quelle und Ziel', async () => {
+    await expect(ruf('netops.api.firewall.path_analysis', { source: '10.10.30.50' })).rejects.toThrow(
+      /erforderlich/,
+    )
+  })
+})
+
+describe('netops.api.firewall.rule_hygiene', () => {
+  it('findet Regeln ohne Begründung, Verantwortlichen und Ticket', async () => {
+    const ergebnis = await ruf('netops.api.firewall.rule_hygiene', {})
+    const ohneBegruendung = ergebnis.findings.filter((f) => f.kind === 'no_justification')
+    expect(ohneBegruendung).toHaveLength(1)
+    expect(ohneBegruendung[0].rule_name).toBe('Altlast Testnetz')
+    expect(ergebnis.summary.no_owner).toBe(1)
+    expect(ergebnis.summary.no_ticket).toBe(1)
+  })
+
+  it('findet überfällige Reviews', async () => {
+    const ergebnis = await ruf('netops.api.firewall.rule_hygiene', {})
+    const ueberfaellig = ergebnis.findings.filter((f) => f.kind === 'review_overdue')
+    expect(ueberfaellig).toHaveLength(1)
+    expect(ueberfaellig[0].rule_index).toBe(20)
+  })
+
+  it('findet ungenutzte Regeln', async () => {
+    const ergebnis = await ruf('netops.api.firewall.rule_hygiene', {})
+    const ungenutzt = ergebnis.findings.filter((f) => f.kind === 'unused')
+    expect(ungenutzt.map((f) => f.rule_name)).toEqual(['Altlast Testnetz'])
+  })
+
+  it('findet zu weit gefasste Erlaubnisregeln', async () => {
+    const ergebnis = await ruf('netops.api.firewall.rule_hygiene', {})
+    const breit = ergebnis.findings.filter((f) => f.kind === 'too_broad')
+    expect(breit.length).toBeGreaterThan(0)
+    // Die Grundregel verwirft – sie darf nicht als zu weit gemeldet werden.
+    expect(breit.every((f) => f.action === 'allow')).toBe(true)
+  })
+
+  it('stellt die schwersten Befunde nach vorne', async () => {
+    const ergebnis = await ruf('netops.api.firewall.rule_hygiene', {})
+    expect(ergebnis.findings[0].kind).toBe('too_broad')
+  })
+
+  it('lässt sich auf eine Firewall einschränken', async () => {
+    const ergebnis = await ruf('netops.api.firewall.rule_hygiene', { firewall: 'FW-NS-INT' })
+    expect(ergebnis.findings.every((f) => f.firewall === 'FW-NS-INT')).toBe(true)
+    expect(ergebnis.rules_checked).toBe(4)
+  })
+})

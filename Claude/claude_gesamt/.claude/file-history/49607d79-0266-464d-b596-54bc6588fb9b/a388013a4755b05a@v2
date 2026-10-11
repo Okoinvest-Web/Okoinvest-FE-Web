@@ -1,0 +1,35 @@
+<template>
+  <!--
+    Statusanzeige. Die Farbe erscheint nie ohne Text - das ist die
+    Grundregel aus src/index.css und die Bedingung dafür, dass die
+    Statuspalette überhaupt verwendet werden darf.
+  -->
+  <span class="inline-flex items-center gap-1.5 whitespace-nowrap" :title="titel || undefined">
+    <span class="inline-block size-2 shrink-0 rounded-full" :style="{ background: farbe }" />
+    <span :class="textKlasse"><slot>{{ text }}</slot></span>
+  </span>
+</template>
+
+<script setup>
+import { computed } from 'vue'
+
+const props = defineProps({
+  /** ok | warning | serious | critical | neutral | info */
+  level: { type: String, default: 'neutral' },
+  text: { type: String, default: '' },
+  titel: { type: String, default: '' },
+  klein: { type: Boolean, default: false },
+})
+
+const FARBEN = {
+  ok: 'var(--viz-good)',
+  warning: 'var(--viz-warning)',
+  serious: 'var(--viz-serious)',
+  critical: 'var(--viz-critical)',
+  info: 'var(--viz-series-1)',
+  neutral: 'var(--viz-neutral)',
+}
+
+const farbe = computed(() => FARBEN[props.level] || FARBEN.neutral)
+const textKlasse = computed(() => (props.klein ? 'text-sm text-ink-gray-6' : 'text-base text-ink-gray-7'))
+</script>

@@ -1,0 +1,57 @@
+"use client";
+
+import { useOptimistic, useTransition } from "react";
+import { setLeadStatusAction, toggleToDoAction } from "@/lib/actions";
+import { LEAD_STATUSES } from "@/lib/types";
+import { LEAD_STATUS_LABEL } from "@/lib/format";
+import { INPUT } from "@/components/ui";
+import { toast } from "@/components/Toaster";
+
+export function LeadStatusSelect({ name, status }: { name: string; status: string }) {
+  const [pending, start] = useTransition();
+  const [value, setValue] = useOptimistic(status);
+
+  return (
+    <select
+      value={value}
+      disabled={pending}
+      aria-label="Status"
+      onChange={(e) => {
+        const next = e.target.value;
+        start(async () => {
+          setValue(next);
+          await setLeadStatusAction(name, next);
+          toast(`Status: ${LEAD_STATUS_LABEL[next] ?? next}`);
+        });
+      }}
+      className={`${INPUT} w-28 font-medium disabled:opacity-60 sm:w-36`}
+    >
+      {LEAD_STATUSES.map((s) => (
+        <option key={s} value={s}>
+          {LEAD_STATUS_LABEL[s]}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+export function ToDoCheck({ name, done }: { name: string; done: boolean }) {
+  const [, start] = useTransition();
+  const [checked, setChecked] = useOptimistic(done);
+  return (
+    <input
+      type="checkbox"
+      checked={checked}
+      onChange={(e) => {
+        const next = e.target.checked;
+        start(async () => {
+          setChecked(next);
+          await toggleToDoAction(name, next);
+          toast(next ? "Aufgabe erledigt" : "Aufgabe wieder offen");
+        });
+      }}
+      className="size-4 shrink-0 cursor-pointer rounded accent-brand-600"
+      aria-label="Erledigt"
+    />
+  );
+}

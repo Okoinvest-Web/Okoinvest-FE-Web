@@ -1,0 +1,169 @@
+/**
+ * Erzeugt aus `doctypes.spec.mjs` die DocType-JSON-Dateien fuer Frappe.
+ *
+ * Aufruf:  node frappe/erzeuge-doctypes.mjs
+ * Ergebnis: frappe/energieportal/energieportal/doctype/<name>/<name>.json
+ *
+ * Die erzeugte Struktur entspricht dem Verzeichnisaufbau einer
+ * Frappe-App. Sie laesst sich in eine bestehende App kopieren oder mit
+ * `bench new-app energieportal` als Grundlage verwenden.
+ */
+
+import { mkdir, writeFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+import { DOCTYPES, MODUL, ROLLEN } from "./doctypes.spec.mjs";
+
+const HIER = dirname(fileURLToPath(import.meta.url));
+const ZIEL = join(HIER, "energieportal", "energieportal", "doctype");
+
+const ZEITSTEMPEL = "2026-09-13 12:00:00.000000";
+
+/** Aus "PV Anlage" wird "pv_anlage" - so erwartet Frappe den Ordnernamen. */
+function schluessel(name) {
+  return name
+    .toLowerCase()
+    .replace(/[äöüß]/g, (z) => ({ ä: "ae", ö: "oe", ü: "ue", ß: "ss" })[z])
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_|_$/g, "");
+}
+
+function baueFeld([fieldname, label, fieldtype, extras = {}]) {
+  const feld = { fieldname, fieldtype, label };
+
+  // Abschnittstrenner tragen kein Label-Verhalten wie Datenfelder.
+  if (fieldtype === "Section Break" || fieldtype === "Column Break") {
+    return { fieldname, fieldtype, label };
+  }
+
+  return { ...feld, ...extras };
+}
+
+/**
+ * Berechtigungen.
+ *
+ * Der Portalkunde liest; schreiben darf er nur dort, wo das Portal es
+ * anbietet (Stoerungen, Tickets). Das Auditprotokoll darf niemand
+ * aendern oder loeschen - auch der Verwalter nicht.
+ */
+function bauePermissions(doctype) {
+  const schreibbarFuerKunde = ["PV Stoerung", "Support Ticket"];
+  const kundeDarfSchreiben = schreibbarFuerKunde.includes(doctype.name);
+
+  const eintraege = [
+    {
+      role: ROLLEN.verwaltung,
+      read: 1,
+      write: doctype.nurAnlegen ? 0 : 1,
+      create: 1,
+      delete: doctype.nurAnlegen ? 0 : 1,
+      report: 1,
+      export: 1,
+      share: 1,
+      print: 1,
+      email: 1,
+    },
+    {
+      role: ROLLEN.technik,
+      read: 1,
+      write: doctype.nurAnlegen ? 0 : 1,
+      create: doctype.nurAnlegen ? 1 : 1,
+      delete: 0,
+      report: 1,
+      export: 1,
+      print: 1,
+    },
+    {
+      role: ROLLEN.kunde,
+      read: 1,
+      write: kundeDarfSchreiben ? 1 : 0,
+      create: kundeDarfSchreiben ? 1 : 0,
+      delete: 0,
+      report: 1,
+      print: 1,
+    },
+  ];
+
+  return eintraege;
+}
+
+async function schreibeDocType(doctype) {
+  const key = schluessel(doctype.name);
+  const ordner = join(ZIEL, key);
+  await mkdir(ordner, { recursive: true });
+
+  const felder = doctype.felder.map(baueFeld);
+
+  const inhalt = {
+    actions: [],
+    allow_rename: 1,
+    autoname: doctype.autoname
+      ? doctype.autoname
+      : doctype.titelfeld
+        ? `field:${doctype.titelfeld}`
+        : "hash",
+    creation: ZEITSTEMPEL,
+    doctype: "DocType",
+    editable_grid: 1,
+    engine: "InnoDB",
+    field_order: felder.map((f) => f.fieldname),
+    fields: felder,
+    index_web_pages_for_search: 0,
+    links: [],
+    modified: ZEITSTEMPEL,
+    modified_by: "Administrator",
+    module: MODUL,
+    name: doctype.name,
+    owner: "Administrator",
+    permissions: bauePermissions(doctype),
+    sort_field: "modified",
+    sort_order: "DESC",
+    states: [],
+    track_changes: 1,
+  };
+
+  if (doctype.titelfeld) inhalt.title_field = doctype.titelfeld;
+
+  await writeFile(
+    join(ordner, `${key}.json`),
+    JSON.stringify(inhalt, null, 1) + "\n",
+    "utf8",
+  );
+
+  // Frappe erwartet neben der JSON-Datei ein Python-Modul je DocType.
+  const klasse = doctype.name.replace(/[^A-Za-z0-9]/g, "");
+  await writeFile(
+    join(ordner, `${key}.py`),
+    `# Copyright (c) 2026, Energieportal\n` +
+      `# For license information, please see license.txt\n\n` +
+      `from frappe.model.document import Document\n\n\n` +
+      `class ${klasse}(Document):\n\tpass\n`,
+    "utf8",
+  );
+
+  await writeFile(join(ordner, "__init__.py"), "", "utf8");
+
+  return { name: doctype.name, key, felder: felder.length };
+}
+
+const ergebnisse = [];
+for (const doctype of DOCTYPES) {
+  ergebnisse.push(await schreibeDocType(doctype));
+}
+
+// Modulordner mit __init__.py versehen, damit Python sie importieren kann.
+await writeFile(join(ZIEL, "__init__.py"), "", "utf8");
+
+console.log(`\n${ergebnisse.length} DocTypes erzeugt in`);
+console.log(`  ${ZIEL}\n`);
+for (const e of ergebnisse) {
+  console.log(`  ${e.name.padEnd(30)} ${String(e.felder).padStart(2)} Felder  (${e.key})`);
+}
+console.log(
+  `\nEinspielen:\n` +
+    `  1. bench new-app energieportal   (falls noch keine App besteht)\n` +
+    `  2. Inhalt von frappe/energieportal/ in die App kopieren\n` +
+    `  3. bench --site <site> install-app energieportal\n` +
+    `  4. bench --site <site> migrate\n`,
+);

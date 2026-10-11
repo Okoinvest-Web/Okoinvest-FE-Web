@@ -1,0 +1,138 @@
+<template>
+  <div class="flex h-screen w-screen overflow-hidden bg-surface-gray-1">
+    <aside
+      class="flex w-60 shrink-0 flex-col border-r border-outline-gray-2 bg-surface-white"
+    >
+      <div class="flex items-center gap-2 px-4 py-4">
+        <div
+          class="flex size-8 shrink-0 items-center justify-center rounded bg-surface-gray-4 text-xs font-semibold text-ink-gray-8"
+        >
+          OV
+        </div>
+        <div class="min-w-0">
+          <p class="truncate text-base font-medium text-ink-gray-8">NetOps</p>
+          <p class="truncate text-xs text-ink-gray-5">{{ session.user || '–' }}</p>
+        </div>
+      </div>
+
+      <div class="px-2 pb-2">
+        <button
+          class="flex w-full items-center justify-between rounded border border-outline-gray-2 bg-surface-gray-2 px-2 py-1.5 text-left text-base text-ink-gray-5 hover:bg-surface-gray-3"
+          @click="suche.open()"
+        >
+          <span>Suchen …</span>
+          <kbd class="rounded bg-surface-white px-1 text-xs text-ink-gray-6">Strg K</kbd>
+        </button>
+      </div>
+
+      <nav class="flex-1 overflow-y-auto px-2">
+        <template v-for="gruppe in navigation" :key="gruppe.titel">
+          <p class="px-2 pb-1 pt-3 text-xs font-medium uppercase text-ink-gray-4">
+            {{ gruppe.titel }}
+          </p>
+          <template v-for="eintrag in gruppe.eintraege" :key="eintrag.label">
+            <RouterLink
+              v-if="eintrag.to"
+              :to="eintrag.to"
+              class="block rounded px-2 py-1.5 text-base text-ink-gray-7 hover:bg-surface-gray-2"
+              active-class="bg-surface-gray-3 font-medium text-ink-gray-9"
+            >
+              {{ eintrag.label }}
+            </RouterLink>
+            <!-- Noch nicht gebaute Bereiche werden gezeigt, aber nicht vorgetäuscht. -->
+            <span
+              v-else
+              class="flex cursor-default items-center justify-between rounded px-2 py-1.5 text-base text-ink-gray-4"
+              title="Noch nicht umgesetzt"
+            >
+              {{ eintrag.label }}
+              <span class="text-xs">geplant</span>
+            </span>
+          </template>
+        </template>
+      </nav>
+
+      <div v-if="USE_MOCK" class="border-t border-outline-gray-2 p-3">
+        <p class="mb-2 text-xs leading-4 text-ink-gray-5">
+          Testdaten im Browser. Kein Backend verbunden.
+        </p>
+        <Button size="sm" class="w-full" @click="setzeZurueck">
+          Daten zurücksetzen
+        </Button>
+      </div>
+    </aside>
+
+    <main class="flex-1 overflow-y-auto">
+      <slot />
+    </main>
+
+    <GlobalSearch ref="suche" />
+  </div>
+</template>
+
+<script setup>
+import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { Button, toast } from 'frappe-ui'
+import GlobalSearch from '@/components/GlobalSearch.vue'
+import { useSessionStore } from '@/stores/session'
+import { USE_MOCK } from '@/api'
+
+const session = useSessionStore()
+const suche = ref(null)
+
+// Aufbau nach Fachkonzept Kapitel 6. Was noch nicht gebaut ist, steht ohne
+// Ziel in der Liste - so ist der geplante Umfang sichtbar, ohne tote Links.
+const navigation = [
+  {
+    titel: 'Betrieb',
+    eintraege: [
+      { label: 'Lage', to: '/' },
+      { label: 'Alarme' },
+      { label: 'Drift' },
+    ],
+  },
+  {
+    titel: 'DCIM',
+    eintraege: [
+      { label: 'Geräte', to: '/devices' },
+      { label: 'Racks' },
+      { label: 'Verkabelung' },
+      { label: 'Topologie' },
+    ],
+  },
+  {
+    titel: 'IPAM',
+    eintraege: [
+      { label: 'Präfixe', to: '/ipam' },
+      { label: 'VLANs' },
+      { label: 'Pfadanalyse' },
+    ],
+  },
+  {
+    titel: 'Dokumentation',
+    eintraege: [{ label: 'Dokumente' }, { label: 'Checklisten' }, { label: 'Verträge' }],
+  },
+  {
+    titel: 'Security',
+    eintraege: [{ label: 'Schwachstellen' }, { label: 'Vorfälle' }, { label: 'Leitstand' }],
+  },
+]
+
+function tastatur(event) {
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+    event.preventDefault()
+    suche.value?.open()
+  }
+}
+
+onMounted(() => window.addEventListener('keydown', tastatur))
+onBeforeUnmount(() => window.removeEventListener('keydown', tastatur))
+
+async function setzeZurueck() {
+  const { resetMockData } = await import('@/api/mock/server.js')
+  resetMockData()
+  toast.create({ message: 'Testdaten zurückgesetzt', type: 'success' })
+  // Einfachster Weg, alle gecachten Resourcen zu verwerfen.
+  window.location.reload()
+}
+</script>

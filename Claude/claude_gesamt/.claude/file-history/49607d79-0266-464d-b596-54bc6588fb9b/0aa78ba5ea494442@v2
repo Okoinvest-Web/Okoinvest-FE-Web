@@ -1,0 +1,68 @@
+<template>
+  <svg
+    :viewBox="`0 0 ${module} ${module}`"
+    :width="size"
+    :height="size"
+    role="img"
+    :aria-label="alt || 'QR-Code'"
+    shape-rendering="crispEdges"
+  >
+    <!--
+      Als SVG und nicht als Canvas: ein Etikett wird gedruckt, und ein
+      Canvas druckt in Bildschirmauflösung. Die weiße Fläche ist kein
+      Beiwerk - ohne sie hat der Code auf farbigem Grund keinen Kontrast
+      und ist nicht lesbar.
+    -->
+    <rect :width="module" :height="module" fill="#ffffff" />
+    <path :d="pfad" fill="#000000" />
+  </svg>
+</template>
+
+<script setup>
+import { computed } from 'vue'
+import qr from 'qrcode-generator'
+
+const props = defineProps({
+  /** Inhalt des Codes. */
+  value: { type: String, required: true },
+  /** Kantenlänge in Pixeln. */
+  size: { type: Number, default: 96 },
+  /**
+   * Fehlerkorrektur. 'M' ist der Standard und verträgt rund 15 % Verlust -
+   * genug für ein Etikett, das zerkratzt oder halb überklebt wird.
+   */
+  level: { type: String, default: 'M' },
+  /** Ruhezone in Modulen. Die Norm verlangt vier; weniger scannt schlecht. */
+  quiet: { type: Number, default: 4 },
+  alt: { type: String, default: '' },
+})
+
+const code = computed(() => {
+  // Typ 0 heißt: die Bibliothek wählt die kleinste passende Version selbst.
+  const c = qr(0, props.level)
+  c.addData(props.value)
+  c.make()
+  return c
+})
+
+const anzahl = computed(() => code.value.getModuleCount())
+const module = computed(() => anzahl.value + props.quiet * 2)
+
+/**
+ * Ein einziger Pfad statt tausend <rect>. Bei 33 × 33 Modulen wären das
+ * über 500 Elemente pro Etikett - bei 40 Etiketten auf einer Seite merkt
+ * man den Unterschied deutlich.
+ */
+const pfad = computed(() => {
+  const teile = []
+  const n = anzahl.value
+  for (let zeile = 0; zeile < n; zeile++) {
+    for (let spalte = 0; spalte < n; spalte++) {
+      if (code.value.isDark(zeile, spalte)) {
+        teile.push(`M${spalte + props.quiet} ${zeile + props.quiet}h1v1h-1z`)
+      }
+    }
+  }
+  return teile.join('')
+})
+</script>

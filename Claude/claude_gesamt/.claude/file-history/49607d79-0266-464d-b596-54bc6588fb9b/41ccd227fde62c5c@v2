@@ -1,0 +1,50 @@
+/**
+ * Testdouble für frappe-ui.
+ *
+ * Warum überhaupt: frappe-ui importiert intern `~icons/lucide/…`. Diese
+ * Aliase löst nur der frappeui-Vite-Plugin auf, und der blockiert unter
+ * Vitest (er wartet auf eine Frappe-Site). Der echte Plugin ist im
+ * Dev-Server und im Build aktiv - dort werden die Komponenten also mit dem
+ * echten frappe-ui geprüft.
+ *
+ * Was das heißt: diese Tests prüfen unsere eigenen Komponenten, nicht
+ * frappe-ui. Ändert frappe-ui seine API, fällt das hier NICHT auf -
+ * sondern erst im Build und beim Durchklicken im Browser. Beides läuft,
+ * siehe README.
+ */
+import { defineComponent, h } from 'vue'
+
+function einfach(name, tag = 'div') {
+  return defineComponent({
+    name,
+    inheritAttrs: true,
+    setup(_, { slots, attrs }) {
+      return () => h(tag, attrs, slots.default ? slots.default() : [])
+    },
+  })
+}
+
+export const Button = einfach('Button', 'button')
+export const Badge = einfach('Badge', 'span')
+export const Dialog = einfach('Dialog')
+export const FormControl = einfach('FormControl')
+export const FrappeUIProvider = einfach('FrappeUIProvider')
+export const ErrorMessage = einfach('ErrorMessage', 'p')
+
+export const toast = {
+  create: () => {},
+}
+
+export function createResource(optionen = {}) {
+  return {
+    data: optionen.initialData ?? null,
+    loading: false,
+    error: null,
+    fetch: () => {},
+    submit: async () => null,
+    reload: () => {},
+  }
+}
+
+export function setConfig() {}
+export function frappeRequest() {}

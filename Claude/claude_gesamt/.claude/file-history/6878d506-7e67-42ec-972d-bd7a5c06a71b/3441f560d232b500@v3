@@ -1,0 +1,101 @@
+"use client";
+
+import { useState } from "react";
+import { Calculator, Info } from "lucide-react";
+import { Card, CardHeader, INPUT } from "@/components/ui";
+import { money } from "@/lib/format";
+
+// Überschlagsrechnung fürs Kundengespräch. Richtwerte für Süddeutschland,
+// keine Ertragsprognose – die liefert die Anlagenplanung.
+const YIELD = 1050; // kWh je kWp und Jahr (Allgäu/Schwaben)
+const CO2 = 0.38; // kg CO₂ je kWh Netzstrom
+
+function calc(kwp: number, storage: number, use: number, price: number, feed: number, invest: number) {
+  const prod = kwp * YIELD;
+  const cover = use > 0 ? Math.min(prod / use, 1) : 0;
+  // Autarkie: ohne Speicher ~25–35 %, Speicher hebt um bis zu ~40 Punkte (sättigt bei ~1 kWh je MWh Verbrauch)
+  const base = 0.25 + 0.1 * cover;
+  const boost = 0.4 * Math.min(1, storage / Math.max(1, use / 1000));
+  const autarky = Math.min(0.9, base + boost, cover);
+  const self = autarky * use;
+  const export_ = Math.max(0, prod - self);
+  const saving = (self * price + export_ * feed) / 100;
+  return {
+    prod,
+    autarky,
+    selfShare: prod > 0 ? self / prod : 0,
+    saving,
+    payback: saving > 0 ? invest / saving : Infinity,
+    co2: (prod * CO2) / 1000,
+    over20: saving * 20 - invest,
+  };
+}
+
+function Num({ label, value, onChange, step = 1, suffix }: { label: string; value: number; onChange: (v: number) => void; step?: number; suffix: string }) {
+  return (
+    <label className="flex flex-col gap-1">
+      <span className="text-xs font-medium text-gray-600">{label}</span>
+      <div className="relative">
+        <input
+          type="number"
+          min={0}
+          step={step}
+          value={Number.isFinite(value) ? value : 0}
+          onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
+          className={`${INPUT} h-9 w-full pr-14 tabular-nums`}
+        />
+        <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">{suffix}</span>
+      </div>
+    </label>
+  );
+}
+
+export function PvCalculator({ kwp: k0 = 10, storage: s0 = 0, invest: i0 }: { kwp?: number; storage?: number; invest?: number }) {
+  const [kwp, setKwp] = useState(k0);
+  const [storage, setStorage] = useState(s0);
+  // Gewerbe: Verbrauch grob aus Anlagengröße, Privat: typischer Haushalt
+  const [use, setUse] = useState(k0 > 30 ? Math.round((k0 * YIELD * 0.8) / 1000) * 1000 : 5000);
+  const [price, setPrice] = useState(k0 > 30 ? 25 : 35);
+  const [feed, setFeed] = useState(7.9);
+  const [invest, setInvest] = useState(i0 && i0 > 0 ? i0 : Math.round(kwp * 1500 + storage * 700));
+
+  const r = calc(kwp, storage, use, price, feed, invest);
+  const fmt = (n: number, d = 0) => new Intl.NumberFormat("de-DE", { maximumFractionDigits: d }).format(n);
+
+  return (
+    <Card className="overflow-hidden">
+      <CardHeader title="PV-Schnellrechner" icon={Calculator} sub="Wirtschaftlichkeit fürs Kundengespräch" />
+      <div className="grid gap-3 p-5 sm:grid-cols-3">
+        <Num label="Anlagengröße" value={kwp} onChange={setKwp} step={0.1} suffix="kWp" />
+        <Num label="Speicher" value={storage} onChange={setStorage} step={0.5} suffix="kWh" />
+        <Num label="Verbrauch / Jahr" value={use} onChange={setUse} step={100} suffix="kWh" />
+        <Num label="Strompreis" value={price} onChange={setPrice} step={0.5} suffix="ct/kWh" />
+        <Num label="Einspeisevergütung" value={feed} onChange={setFeed} step={0.1} suffix="ct/kWh" />
+        <Num label="Investition" value={invest} onChange={setInvest} step={500} suffix="EUR" />
+      </div>
+      <div className="grid grid-cols-2 gap-px border-t border-gray-100 bg-gray-100 sm:grid-cols-4">
+        {[
+          { l: "Ertrag / Jahr", v: `${fmt(r.prod)} kWh` },
+          { l: "Autarkiegrad", v: `${fmt(r.autarky * 100)} %`, sub: `Eigenverbrauch ${fmt(r.selfShare * 100)} %` },
+          { l: "Ersparnis / Jahr", v: money(r.saving), accent: true },
+          { l: "Amortisation", v: Number.isFinite(r.payback) ? `${fmt(r.payback, 1)} Jahre` : "–" },
+        ].map((x) => (
+          <div key={x.l} className="bg-white px-5 py-3.5">
+            <div className="text-xs text-gray-500">{x.l}</div>
+            <div className={`mt-0.5 text-lg font-semibold tabular-nums ${x.accent ? "text-brand-700" : "text-gray-900"}`}>{x.v}</div>
+            {x.sub && <div className="text-xs text-gray-500">{x.sub}</div>}
+          </div>
+        ))}
+      </div>
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-gray-100 bg-brand-50/50 px-5 py-3 text-xs">
+        <span className="text-brand-800">
+          <strong className="font-semibold">{fmt(r.co2, 1)} t CO₂</strong> weniger pro Jahr · Überschuss nach 20 Jahren{" "}
+          <strong className="font-semibold">{money(r.over20)}</strong>
+        </span>
+        <span className="inline-flex items-center gap-1 text-gray-500">
+          <Info className="size-3.5" /> Richtwerte ({fmt(YIELD)} kWh/kWp), keine Ertragsprognose
+        </span>
+      </div>
+    </Card>
+  );
+}

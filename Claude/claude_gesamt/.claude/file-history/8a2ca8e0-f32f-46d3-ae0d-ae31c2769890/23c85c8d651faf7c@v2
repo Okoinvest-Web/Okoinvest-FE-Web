@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Live-Rekonstruktion Fahrtenbuch</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--fg:#1d2330;--mut:#6b7280;--line:#e3e6eb;--acc:#2f5bd3;
+  --ok:#1f8a4c;--okbg:#e3f4ea;--info:#2563eb;--infobg:#e3ecfd;--mod:#7c3aed;--modbg:#efe7fd;
+  --warn:#9a6700;--warnbg:#fdf3d8;--off:#555;--offbg:#eceef1;--bad:#c62828;--badbg:#fde4e4;--run:#e08a00}
+@media (prefers-color-scheme:dark){:root{--bg:#12151b;--card:#1b2029;--fg:#e6e9ef;--mut:#9aa3b2;--line:#2b323e;
+  --okbg:#173525;--infobg:#172a4d;--modbg:#2a1d46;--warnbg:#3a2f12;--offbg:#262b34;--badbg:#3d1a1a;--ok:#4cc37f;--info:#6aa1ff;--mod:#b18cff;--warn:#e0b44a;--off:#aab;--bad:#ff7b7b}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 system-ui,Segoe UI,Roboto,sans-serif}
+.banner{background:#7a1f1f;color:#fff;padding:10px 16px;font-weight:600;letter-spacing:.2px}
+.banner small{font-weight:400;opacity:.85;margin-left:8px}
+main{max-width:1400px;margin:0 auto;padding:16px}
+h1{font-size:20px;margin:4px 0 2px}
+h2{font-size:15px;margin:22px 0 8px;text-transform:uppercase;letter-spacing:.6px;color:var(--mut)}
+.sub{color:var(--mut)}
+.bar{height:10px;background:var(--line);border-radius:6px;overflow:hidden;margin:10px 0 4px}
+.bar>div{height:100%;background:var(--acc);transition:width .6s}
+.phases{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px}
+.ph{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px}
+.ph h3{margin:0 0 8px;font-size:13px}
+.ag{border-top:1px solid var(--line);padding:6px 0;font-size:12.5px}
+.ag:first-of-type{border-top:0}
+.ag b{font-weight:600}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:middle}
+.d-done{background:var(--ok)} .d-run{background:var(--run);animation:p 1.2s infinite} .d-wait{background:var(--line)}
+@keyframes p{50%{opacity:.35}}
+.act{color:var(--mut);font-size:11.5px;margin-left:15px;word-break:break-word}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px}
+.kpi .v{font-size:22px;font-weight:650;font-variant-numeric:tabular-nums}
+.kpi .l{color:var(--mut);font-size:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px}
+.tools{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+select,input{background:var(--card);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:5px 8px}
+.tw{overflow:auto;max-height:560px}
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+th,td{border-bottom:1px solid var(--line);padding:5px 6px;text-align:left;white-space:nowrap}
+th{position:sticky;top:0;background:var(--card);z-index:1}
+td.n{text-align:right;font-variant-numeric:tabular-nums}
+td.src{white-space:normal;color:var(--mut);font-size:11px;max-width:260px}
+.b{display:inline-block;padding:1px 7px;border-radius:9px;font-size:11px;font-weight:600}
+.b-ok{background:var(--okbg);color:var(--ok)}.b-info{background:var(--infobg);color:var(--info)}
+.b-mod{background:var(--modbg);color:var(--mod)}.b-warn{background:var(--warnbg);color:var(--warn)}
+.b-off{background:var(--offbg);color:var(--off)}.b-bad{background:var(--badbg);color:var(--bad)}
+tr.new td{animation:hl 2.5s}
+@keyframes hl{from{background:var(--warnbg)}}
+svg text{fill:var(--mut);font-size:10px}
+details{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin-bottom:8px}
+summary{cursor:pointer;font-weight:600}
+.md{white-space:pre-wrap;font:12px/1.5 ui-monospace,Consolas,monospace;max-height:520px;overflow:auto}
+.out a{display:inline-block;margin:4px 8px 4px 0;padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--acc);text-decoration:none}
+.legend span{margin-right:10px}
+.wm{position:fixed;inset:0;pointer-events:none;display:flex;align-items:center;justify-content:center;font-size:120px;font-weight:800;color:rgba(122,31,31,.05);transform:rotate(-25deg);z-index:0}
+@media (max-width:600px){main{padding:12px 16px}.wm{font-size:48px}}
+</style>
+</head>
+<body>
+<div class="wm">REKONSTRUKTION</div>
+<div class="banner">DATENREKONSTRUKTION nach Cyberangriff – kein Original-Fahrtenbuch<small>Live-Arbeitsansicht · Zwischenstände, nicht zur Abgabe</small></div>
+<main>
+  <h1>Fahrtenbuch-Rekonstruktion Ivan Kovacevic · GM-718IW / GM-297IW</h1>
+  <div class="sub">Wohnsitz Hall in Tirol · Firmenstandort Ostermiething · Zeitraum 04/2023 – 12/2025 · <span id="ts">–</span></div>
+  <div class="bar"><div id="prog" style="width:0"></div></div>
+  <div class="sub" id="progt"></div>
+
+  <h2>Agenten-Team</h2>
+  <div class="phases" id="phases"></div>
+
+  <h2>Kennzahlen aus den Belegen</h2>
+  <div class="kpis" id="kpis"></div>
+
+  <h2>Liter je Monat (Tankkarte)</h2>
+  <div class="card"><svg id="chart" width="100%" height="170"></svg>
+    <div class="legend sub"><span style="color:var(--acc)">■ GM-718IW</span><span style="color:var(--mod)">■ GM-297IW</span><span style="color:var(--info)">■ davon Lochau</span></div></div>
+
+  <h2>Ereignisprotokoll (live aus der Belegextraktion)</h2>
+  <div class="card">
+    <div class="tools">
+      <select id="fy"><option value="">alle Jahre</option><option>2023</option><option>2024</option><option>2025</option></select>
+      <select id="fk"><option value="">alle Kennzeichen</option><option>GM-718IW</option><option>GM-297IW</option></select>
+      <select id="fs"><option value="">alle Status</option><option value="km">mit km-Stand</option><option value="lochau">Lochau</option><option value="low">Lesesicherheit niedrig</option></select>
+      <input id="fq" placeholder="Ort / Produkt suchen">
+      <span class="sub" id="cnt"></span>
+    </div>
+    <div class="tw"><table><thead><tr><th>Datum</th><th>Zeit</th><th>Kennz.</th><th>Ort</th><th>Produkt</th><th>Menge</th><th>km-Stand</th><th>Status</th><th>Lesesich.</th><th>Quelle</th></tr></thead><tbody id="tb"></tbody></table></div>
+  </div>
+
+  <h2>Fahrzeuge lt. Mietrechnungen</h2>
+  <div class="card tw" id="veh">–</div>
+
+  <h2>Berichte der Agenten</h2>
+  <div id="texts"><div class="sub">erscheinen, sobald Agenten fertig sind</div></div>
+
+  <h2>Fertige HTML-Ausgaben</h2>
+  <div class="out" id="out"><span class="sub">noch keine</span></div>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let data=null, seen=new Set();
+const fmt=n=>n==null?'':Number(n).toLocaleString('de-AT',{maximumFractionDigits:2});
+function status(t){
+  if(/lochau/i.test(t.ort)) return '<span class="b b-info">ANGABE · MW Immobilien</span>';
+  if(t.km_stand) return '<span class="b b-ok">km BELEGT</span>';
+  return '<span class="b b-off">OFFEN (Zweck)</span>';
+}
+function renderAgents(d){
+  const by={}; d.agents.forEach(a=>by[a.label]=a);
+  const done=d.agents.filter(a=>a.done).length;
+  $('prog').style.width=(100*done/d.planned.length)+'%';
+  $('progt').textContent=`${done} von ${d.planned.length} Agenten fertig · ${d.agents.filter(a=>!a.done&&a.idle_s!=null&&a.idle_s<240).length} arbeiten gerade`;
+  const groups={}; d.phases.forEach(p=>groups[p]=[]);
+  d.planned.forEach(l=>{const a=by[l];const ph=a?.phase||(
+    l.startsWith('Rekonstruktionsassistent')?'Rekonstruktion':l.startsWith('Rekonstruktion')?'Belegextraktion':
+    l.startsWith('Recherche')?'Recherche':l.startsWith('Steuer')?'Steuerpruefung':l.startsWith('Finanz')?'Finanzamt':'HTML');
+    (groups[ph]=groups[ph]||[]).push({l,a});});
+  $('phases').innerHTML=Object.entries(groups).map(([p,xs])=>`<div class="ph"><h3>${esc(p==='Steuerpruefung'?'Steuerprüfung':p)}</h3>${
+    xs.map(({l,a})=>{const st=!a?'wait':a.done?'done':'run';
+      const txt=st==='done'?'fertig':st==='wait'?'wartet':(a.idle_s>240?`still seit ${a.idle_s}s`:'arbeitet');
+      return `<div class="ag"><span class="dot d-${st}"></span><b>${esc(l)}</b> <span class="sub">· ${txt}${a&&a.size_kb?` · ${a.size_kb} KB`:''}</span>${
+        st==='run'&&a.action?`<div class="act">${esc(a.action)}</div>`:''}</div>`}).join('')}</div>`).join('');
+}
+function renderKpis(tx){
+  const y=v=>tx.filter(t=>t.datum.startsWith(v));
+  const lit=a=>a.filter(t=>/diesel/i.test(t.produkt)).reduce((s,t)=>s+(t.menge||0),0);
+  const days=a=>new Set(a.filter(t=>/lochau/i.test(t.ort)).map(t=>t.datum)).size;
+  const k=[['Transaktionen',tx.length],['mit km-Stand',tx.filter(t=>t.km_stand).length],
+    ['Diesel 2023 (l)',fmt(lit(y('2023')))],['Diesel 2024 (l)',fmt(lit(y('2024')))],['Diesel 2025 (l)',fmt(lit(y('2025')))],
+    ['Lochau-Tage 23/24/25',`${days(y('2023'))} / ${days(y('2024'))} / ${days(y('2025'))}`],
+    ['Lesesicherheit niedrig',tx.filter(t=>t.lesesicherheit==='niedrig').length]];
+  $('kpis').innerHTML=k.map(([l,v])=>`<div class="kpi"><div class="v">${v}</div><div class="l">${l}</div></div>`).join('');
+}
+function renderChart(tx){
+  const m={};
+  tx.filter(t=>/diesel/i.test(t.produkt)).forEach(t=>{const k=t.datum.slice(0,7);m[k]=m[k]||{a:0,b:0,l:0};
+    if(t.kennzeichen==='GM-297IW')m[k].b+=t.menge||0;else m[k].a+=t.menge||0;if(/lochau/i.test(t.ort))m[k].l+=t.menge||0;});
+  const months=[];for(let y=2023;y<=2025;y++)for(let i=1;i<=12;i++){const k=`${y}-${String(i).padStart(2,'0')}`;if(k>='2023-04')months.push(k);}
+  const svg=$('chart'),W=svg.clientWidth||900,H=170,pad=24,bw=(W-pad*2)/months.length;
+  const max=Math.max(50,...months.map(k=>m[k]?m[k].a+m[k].b:0));
+  let s='';
+  months.forEach((k,i)=>{const v=m[k]||{a:0,b:0,l:0},x=pad+i*bw,sc=(H-40)/max;
+    const ha=v.a*sc,hb=v.b*sc,hl=v.l*sc;
+    s+=`<rect x="${x+1}" y="${H-20-ha}" width="${bw-2}" height="${ha}" fill="var(--acc)"><title>${k}: GM-718IW ${fmt(v.a)} l</title></rect>`;
+    s+=`<rect x="${x+1}" y="${H-20-ha-hb}" width="${bw-2}" height="${hb}" fill="var(--mod)"><title>${k}: GM-297IW ${fmt(v.b)} l</title></rect>`;
+    if(hl)s+=`<rect x="${x+bw/2-2}" y="${H-20-hl}" width="4" height="${hl}" fill="var(--info)" opacity=".9"><title>${k}: Lochau ${fmt(v.l)} l</title></rect>`;
+    if(k.endsWith('-01')||k==='2023-04')s+=`<text x="${x}" y="${H-5}">${k.slice(0,4)}</text>`;});
+  s+=`<text x="2" y="12">${fmt(max)} l</text>`;
+  svg.innerHTML=s;
+}
+function renderTable(){
+  if(!data)return;
+  const fy=$('fy').value,fk=$('fk').value,fs=$('fs').value,q=$('fq').value.toLowerCase();
+  const rows=data.tx.filter(t=>(!fy||t.datum.startsWith(fy))&&(!fk||t.kennzeichen===fk)&&
+    (!fs||(fs==='km'&&t.km_stand)||(fs==='lochau'&&/lochau/i.test(t.ort))||(fs==='low'&&t.lesesicherheit==='niedrig'))&&
+    (!q||(t.ort+' '+t.produkt).toLowerCase().includes(q)));
+  $('cnt').textContent=`${rows.length} Zeilen`;
+  $('tb').innerHTML=rows.map(t=>{const key=t.datum+t.uhrzeit+t.ort+t.produkt+t.menge;const isNew=seen.size&&!seen.has(key);
+    return `<tr class="${isNew?'new':''}"><td>${esc(t.datum.split('-').reverse().join('.'))}</td><td>${esc(t.uhrzeit)}</td><td>${esc(t.kennzeichen)}</td><td>${esc(t.ort)}</td><td>${esc(t.produkt)}</td><td class="n">${fmt(t.menge)}</td><td class="n">${t.km_stand?fmt(t.km_stand):'<span class="sub">nicht erfasst</span>'}</td><td>${status(t)}</td><td>${t.lesesicherheit==='niedrig'?'<span class="b b-warn">niedrig</span>':esc(t.lesesicherheit)}</td><td class="src">${esc(t.quelle)}${t.bemerkung?' · '+esc(t.bemerkung):''}</td></tr>`}).join('');
+  data.tx.forEach(t=>seen.add(t.datum+t.uhrzeit+t.ort+t.produkt+t.menge));
+}
+function renderRest(d){
+  if(d.misc){$('veh').innerHTML='<table><thead><tr><th>Kennzeichen</th><th>Modell</th><th>Zeitraum</th><th>Miete netto</th><th>Quelle / Bemerkung</th></tr></thead><tbody>'+
+    d.misc.fahrzeuge.map(f=>`<tr><td>${esc(f.kennzeichen)}</td><td>${esc(f.modell)}</td><td>${esc(f.zeitraum)}</td><td class="n">${fmt(f.monatsmiete_netto)}</td><td class="src">${esc(f.quelle)} ${esc(f.bemerkung||'')}</td></tr>`).join('')+'</tbody></table>'+
+    (d.misc.hinweise?.length?'<ul>'+d.misc.hinweise.map(h=>`<li>${esc(h)}</li>`).join('')+'</ul>':'');}
+  const open=new Set([...document.querySelectorAll('#texts details[open]')].map(e=>e.dataset.k));
+  const t=Object.entries(d.texts);
+  if(t.length)$('texts').innerHTML=t.map(([k,v])=>`<details data-k="${esc(k)}" ${open.has(k)?'open':''}><summary>${esc(k)}</summary><div class="md">${esc(v)}</div></details>`).join('');
+  if(d.outputs.length)$('out').innerHTML=d.outputs.map(o=>`<a href="/ausgabe/${encodeURIComponent(o)}" target="_blank">${esc(o)}</a>`).join('');
+}
+async function tick(){
+  try{const r=await fetch('/api/status',{cache:'no-store'});data=await r.json();
+    $('ts').textContent='aktualisiert '+data.ts;renderAgents(data);renderKpis(data.tx);renderChart(data.tx);renderTable();renderRest(data);}
+  catch(e){$('ts').textContent='Server nicht erreichbar';}
+}
+['fy','fk','fs'].forEach(i=>$(i).onchange=renderTable);$('fq').oninput=renderTable;
+tick();setInterval(tick,3000);
+</script>
+</body>
+</html>

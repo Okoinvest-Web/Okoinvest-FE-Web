@@ -1,0 +1,256 @@
+"use client";
+
+import { useActionState, useState } from "react";
+
+import { IconSchloss } from "@/components/icon";
+import { Meldung } from "@/components/ui";
+
+import {
+  setzeParameter,
+  setzeZurueck,
+  type SteuerErgebnis,
+} from "./aktionen";
+
+export interface FeldDefinition {
+  schluessel: string;
+  bezeichnung: string;
+  einheit?: string;
+  gesperrt: boolean;
+  grundlage?: string;
+  hinweis?: string;
+  min?: number;
+  max?: number;
+  optionen?: string[];
+  aktuellerWert: string;
+  /** Wer den Wert zuletzt gesetzt hat; leer heißt Werkseinstellung. */
+  gesetztVon?: string | null;
+  gesetztAm?: string | null;
+}
+
+/**
+ * Ein einzelner Steuerungsparameter.
+ *
+ * Gesperrte Parameter werden nicht versteckt, sondern sichtbar und
+ * schreibgeschützt dargestellt - mit der Rechtsgrundlage daneben. Wer
+ * den Wert kennen muss, sieht ihn; wer ihn ändern will, erfährt warum
+ * das nicht geht. Das Ausblenden wäre weder ehrlich noch sicherer,
+ * denn die eigentliche Sperre sitzt ohnehin auf dem Server.
+ *
+ * Die Eingabe schickt erst ab, wenn sich etwas geändert hat. Ein
+ * Formular, das bei jedem Klick einen Befehl an eine Anlage sendet,
+ * erzeugt ein Protokoll, in dem niemand mehr das Wesentliche findet.
+ */
+export function ParameterFeld({
+  feld,
+  anlage,
+  darfSchreiben,
+}: {
+  feld: FeldDefinition;
+  anlage: string;
+  darfSchreiben: boolean;
+}) {
+  const [ergebnis, aktion, laeuft] = useActionState<
+    SteuerErgebnis | null,
+    FormData
+  >(setzeParameter, null);
+
+  const [rueckErgebnis, rueckAktion, rueckLaeuft] = useActionState<
+    SteuerErgebnis | null,
+    FormData
+  >(setzeZurueck, null);
+
+  const [wert, setWert] = useState(feld.aktuellerWert);
+  const geaendert = wert !== feld.aktuellerWert;
+
+  /* ---------------- Gesperrt ---------------- */
+  if (feld.gesperrt) {
+    return (
+      <div
+        className="p-4"
+        style={{
+          background: "var(--f-vertieft)",
+          borderRadius: "var(--radius-kachel)",
+          outline: "1px solid var(--linie-zart)",
+          outlineOffset: "-1px",
+        }}
+      >
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p
+              className="flex items-center gap-1.5 text-[0.875rem] font-semibold"
+              style={{ color: "var(--t-stark)" }}
+            >
+              <span style={{ color: "var(--t-zart)" }}>
+                <IconSchloss groesse={14} />
+              </span>
+              {feld.bezeichnung}
+            </p>
+            {feld.grundlage && (
+              <p className="t-mikro mt-1">Vereinbart nach {feld.grundlage}</p>
+            )}
+          </div>
+
+          <p className="t-zahl-klein shrink-0">
+            {feld.aktuellerWert}
+            {feld.einheit && (
+              <span className="t-mikro ml-1 font-normal">{feld.einheit}</span>
+            )}
+          </p>
+        </div>
+
+        {feld.hinweis && (
+          <p className="t-mikro mt-2.5 leading-relaxed">{feld.hinweis}</p>
+        )}
+
+        <p className="t-mikro mt-2.5 leading-relaxed">
+          Dieser Wert wirkt vor dem Zählpunkt auf das öffentliche Netz. Er
+          ist im Steuerrechner versiegelt und lässt sich weder hier noch
+          am Gerät ändern.
+        </p>
+      </div>
+    );
+  }
+
+  /* ---------------- Einstellbar ---------------- */
+  const rueckmeldung = ergebnis ?? rueckErgebnis;
+
+  return (
+    <form
+      action={aktion}
+      className="p-4 transition-colors duration-300"
+      style={{
+        background: "var(--f-ebene)",
+        borderRadius: "var(--radius-kachel)",
+        outline: `1px solid ${geaendert ? "var(--akzent)" : "var(--linie)"}`,
+        outlineOffset: "-1px",
+      }}
+    >
+      <input type="hidden" name="anlage" value={anlage} />
+      <input type="hidden" name="parameter" value={feld.schluessel} />
+
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <label
+          htmlFor={`p-${feld.schluessel}`}
+          className="min-w-0 text-[0.875rem] font-semibold"
+          style={{ color: "var(--t-stark)" }}
+        >
+          {feld.bezeichnung}
+        </label>
+
+        {feld.gesetztVon && (
+          <span className="t-mikro shrink-0">
+            gesetzt von {feld.gesetztVon}
+          </span>
+        )}
+      </div>
+
+      {feld.hinweis && (
+        <p className="t-mikro mt-1.5 leading-relaxed">{feld.hinweis}</p>
+      )}
+
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        {feld.optionen ? (
+          <select
+            id={`p-${feld.schluessel}`}
+            name="wert"
+            value={wert}
+            onChange={(e) => setWert(e.target.value)}
+            disabled={!darfSchreiben || laeuft}
+            className="feld flex-1"
+          >
+            {feld.optionen.map((o) => (
+              <option key={o} value={o}>
+                {o}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <div className="flex flex-1 items-center gap-2">
+            {/*
+              Schieberegler und Zahlenfeld nebeneinander: Der Regler
+              zeigt die Spanne und lädt zum Ausprobieren ein, das Feld
+              erlaubt den genauen Wert. Nur eines von beiden zwingt
+              entweder zum Zielen oder zum Rechnen.
+            */}
+            {feld.min !== undefined && feld.max !== undefined && (
+              <input
+                type="range"
+                min={feld.min}
+                max={feld.max}
+                step={feld.max - feld.min > 20 ? 1 : 0.5}
+                value={wert}
+                onChange={(e) => setWert(e.target.value)}
+                disabled={!darfSchreiben || laeuft}
+                aria-label={`${feld.bezeichnung} einstellen`}
+                className="min-w-0 flex-1 accent-[var(--akzent)]"
+              />
+            )}
+            <input
+              id={`p-${feld.schluessel}`}
+              name="wert"
+              type="number"
+              inputMode="decimal"
+              min={feld.min}
+              max={feld.max}
+              step="any"
+              value={wert}
+              onChange={(e) => setWert(e.target.value)}
+              disabled={!darfSchreiben || laeuft}
+              className="feld feld-schmal zahl"
+            />
+            {feld.einheit && (
+              <span className="t-mikro shrink-0">{feld.einheit}</span>
+            )}
+          </div>
+        )}
+      </div>
+
+      {darfSchreiben && (
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <button
+            type="submit"
+            disabled={!geaendert || laeuft}
+            className="knopf knopf-voll"
+          >
+            {laeuft ? "Wird übertragen …" : "Übernehmen"}
+          </button>
+
+          {geaendert && (
+            <button
+              type="button"
+              onClick={() => setWert(feld.aktuellerWert)}
+              className="knopf knopf-leise"
+            >
+              Verwerfen
+            </button>
+          )}
+
+          {!geaendert && feld.gesetztVon && (
+            <button
+              type="submit"
+              formAction={rueckAktion}
+              disabled={rueckLaeuft}
+              className="knopf knopf-leise"
+            >
+              {rueckLaeuft ? "Wird zurückgesetzt …" : "Werkseinstellung"}
+            </button>
+          )}
+        </div>
+      )}
+
+      {!darfSchreiben && (
+        <p className="t-mikro mt-3">
+          Ihre Rolle erlaubt das Ansehen, nicht das Ändern.
+        </p>
+      )}
+
+      {rueckmeldung && (
+        <p className="mt-3">
+          <Meldung ton={rueckmeldung.ok ? "gut" : "kritisch"}>
+            {rueckmeldung.meldung}
+          </Meldung>
+        </p>
+      )}
+    </form>
+  );
+}

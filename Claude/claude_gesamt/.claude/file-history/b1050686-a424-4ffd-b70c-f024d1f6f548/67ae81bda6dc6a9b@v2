@@ -1,0 +1,147 @@
+import io
+
+p = "src/app/portal/finanzen/page.tsx"
+s = io.open(p, encoding="utf-8").read()
+
+s = s.replace('import { ladeBuchbareMonate } from "@/lib/daten/buchhaltung";',
+'''import { ladeBuchbareMonate } from "@/lib/daten/buchhaltung";
+import {
+  ladeEinzugslage,
+  ladeLastschriftlaeufe,
+} from "@/lib/daten/lastschrift";''', 1)
+
+s = s.replace('import { Buchungslauf, Stapelfreigabe } from "./stapel-steuerung";',
+'''import {
+  Lastschriftlauf,
+  Sammlersteuerung,
+} from "./lastschrift-steuerung";
+import { Buchungslauf, Stapelfreigabe } from "./stapel-steuerung";''', 1)
+
+s = s.replace('''  const offeneBelege = monate.reduce((s, m) => s + m.offen, 0);''',
+'''  const offeneBelege = monate.reduce((s, m) => s + m.offen, 0);
+
+  const einzug = ladeEinzugslage();
+  const sammler = ladeLastschriftlaeufe(8);
+  const offenerSammler = sammler.find((s) => s.status === "Erstellt");''', 1)
+
+anker = '''      {/* ---------------- Stapel ---------------- */}'''
+
+abschnitt = '''      {/* ---------------- Lastschrift ---------------- */}
+      <Tafel
+        titel="Lastschrifteinzug"
+        hinweis={
+          einzug.einziehbar.length > 0
+            ? `${einzug.einziehbar.length} offene Belege einziehbar`
+            : "nichts einziehbar"
+        }
+        fusszeile={
+          <p className="t-mikro leading-relaxed">
+            Eingezogen wird, was offen ist und wofür ein unterschriebenes
+            Mandat vorliegt. Beides muss zutreffen: Eine Lastschrift ohne
+            Mandat holt sich der Zahler binnen acht Wochen zurück, ohne
+            Angabe von Gründen. Die Datei entsteht als pain.008 nach
+            ISO 20022; jede IBAN wird vorher gegen ihre Prüfziffer
+            gerechnet, weil die Bank einen fehlerhaften Sammler als Ganzes
+            zurückweist – und das erst am nächsten Tag.
+          </p>
+        }
+      >
+        <Lastschriftlauf
+          einziehbar={einzug.einziehbar.length}
+          summeEur={einzug.summeEur}
+          nichtEinziehbar={einzug.nichtEinziehbar.length}
+          darfBuchen={darfBuchen}
+        />
+
+        {offenerSammler && (
+          <div
+            className="mt-4 border-t pt-4"
+            style={{ borderColor: "var(--linie-zart)" }}
+          >
+            <p className="t-etikett mb-2">
+              {offenerSammler.id} · {offenerSammler.anzahl} Posten ·{" "}
+              {formatGeld(offenerSammler.summe_eur)} · fällig{" "}
+              {formatDatum(offenerSammler.faellig_am)}
+            </p>
+            <Sammlersteuerung
+              laufId={offenerSammler.id}
+              status={offenerSammler.status}
+              darfBuchen={darfBuchen}
+            />
+          </div>
+        )}
+
+        {einzug.nichtEinziehbar.length > 0 && (
+          <div
+            className="mt-4 border-t pt-4"
+            style={{ borderColor: "var(--linie-zart)" }}
+          >
+            <p className="t-etikett mb-2">Bleibt außen vor</p>
+            <ul className="space-y-1">
+              {einzug.nichtEinziehbar.slice(0, 8).map((n) => (
+                <li key={n.belegId} className="t-mikro leading-relaxed">
+                  {n.nummer} · {n.zahler} · {formatGeld(n.betragEur)} –{" "}
+                  {n.grund}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {sammler.length > 0 && (
+          <div className="mt-4">
+            <Tabelle
+              spalten={[
+                { titel: "Sammler" },
+                { titel: "Fällig", schmalAusblenden: true },
+                { titel: "Posten", zahl: true },
+                { titel: "Summe", zahl: true },
+                { titel: "Zustand" },
+              ]}
+              mindestbreite="48rem"
+            >
+              {sammler.map((l) => (
+                <Zeile key={l.id} gedaempft={l.status === "Storniert"}>
+                  <ZelleMitZusatz
+                    haupt={l.id}
+                    zusatz={`${formatDatumZeit(l.erstellt_am)}${l.erstellt_von ? ` · ${l.erstellt_von}` : ""}`}
+                  />
+                  <Zelle leise schmalAusblenden>
+                    {formatDatum(l.faellig_am)}
+                  </Zelle>
+                  <Zelle zahl leise>
+                    {l.anzahl}
+                  </Zelle>
+                  <Zelle zahl>{formatGeld(l.summe_eur)}</Zelle>
+                  <Zelle>
+                    <Status
+                      ton={
+                        l.status === "Eingereicht"
+                          ? "gut"
+                          : l.status === "Storniert"
+                            ? "neutral"
+                            : "hinweis"
+                      }
+                    >
+                      {l.status}
+                    </Status>
+                  </Zelle>
+                </Zeile>
+              ))}
+            </Tabelle>
+          </div>
+        )}
+      </Tafel>
+
+'''
+
+assert anker in s
+s = s.replace(anker, abschnitt + anker, 1)
+
+# formatDatumZeit wird gebraucht.
+if "formatDatumZeit" not in s.split("export default")[0]:
+    s = s.replace('import { formatDatum, formatGeld, formatZahl } from "@/lib/format";',
+                  'import {\n  formatDatum,\n  formatDatumZeit,\n  formatGeld,\n  formatZahl,\n} from "@/lib/format";', 1)
+
+io.open(p, "w", encoding="utf-8").write(s)
+print("Lastschrifttafel eingebaut")

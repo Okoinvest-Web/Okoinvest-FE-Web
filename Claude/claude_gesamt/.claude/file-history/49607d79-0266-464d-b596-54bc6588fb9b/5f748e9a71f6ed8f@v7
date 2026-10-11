@@ -1,0 +1,365 @@
+# Änderungsverlauf
+
+## 2026-09-18 (5) – Qualitätsrunde
+
+Keine neuen Seiten. Diese Runde hat repariert und aufgeräumt, was beim Bauen
+liegen geblieben ist. Die Befunde stammen aus einer Messung im Browser über
+CDP, nicht aus einer Schätzung.
+
+### Behoben
+
+**Auf dem Telefon war die App unbenutzbar.** Bei 390 px Breite blieb die
+Seitenleiste mit 240 px stehen und ließ dem Inhalt 150 px. Die Seitenleiste ist
+jetzt unterhalb von `lg` eine Schublade hinter einer Kopfzeile; der Inhalt
+bekommt die volle Breite. Escape und ein Klick auf den Hintergrund schließen
+sie, ein Routenwechsel ebenfalls.
+
+**Keine sichtbare Tastaturführung.** Ein fokussierter Navigationslink zeigte
+`outline: none`. Es gibt jetzt eine globale `:focus-visible`-Regel (2 px) und
+einen Sprunglink „Zum Inhalt springen“ als ersten Tabulatorschritt. Nachgemessen
+mit echten Tab-Anschlägen – `element.focus()` löst `:focus-visible` nicht
+verlässlich aus und hätte ein falsches Ergebnis geliefert.
+
+**Die Mandantenauswahl hatte keinen zugänglichen Namen.** Jetzt mit `label`.
+
+**Rohe Ausnahmen im Bild.** Ein unbekanntes Gerät zeigte
+`DoesNotExistError: Network Device GIBTSNICHT existiert nicht`. Neu:
+`ErrorState.vue` mit `role="alert"`, deutschem Satz, Knopf für einen neuen
+Versuch und der technischen Meldung eingeklappt darunter.
+
+**Tabellen brachen auf schmalen Schirmen jede Zelle in Silben.** Sie behalten
+jetzt eine Mindestbreite und scrollen seitlich; ein Randverlauf zeigt an, dass
+dort noch etwas liegt, und verschwindet am Ende.
+
+**Der dunkelste Schritt der sequentiellen Rampe war im Dunkelmodus fast
+unsichtbar** (2,15:1 gegen die Fläche). Ersetzt durch einen Schritt, der 3:1
+schafft. Die Statusrampe good→warning→serious→critical fällt im
+All-Pairs-Test weiterhin durch – das ist erwartbar, sie ist eine geordnete
+Skala und keine kategoriale Palette. Getragen wird sie ohnehin nie von der
+Farbe allein: `StatusDot` erzwingt den Text, und ein Test hält das fest.
+
+**„1420 / 3600 W“ brach das „W“ in eine eigene Zeile** und machte die Karten
+ungleich hoch.
+
+### Aufgeräumt
+
+- **`src/viz.js`** bündelt, was elf Seiten je für sich kopiert hatten:
+  Schweregrad → Stufe, Risiko → Stufe, Stufe → Farbe, Auslastungsschwellen,
+  Fehlertexte.
+- **`StatCard.vue`** ersetzt dieselbe Kennzahlkachel aus 14 Seiten. Ohne `to`
+  ist sie ein Block, mit `to` ein Link – ein Link ohne Ziel wäre eine
+  Tastaturfalle.
+- **`DeviceList`** benutzt jetzt `DataTable` statt einer zweiten, von Hand
+  gebauten Tabelle.
+- Ein toter Import in `methods/change.js`, ein doppelt deklariertes Global im
+  Router und ein `v-for="cluster in cluster.data"`, das die gleichnamige
+  Ressource verdeckte.
+
+### Hinzugefügt
+
+- **ESLint und Prettier.** Der ganze Baum ist formatiert; `npm run check`
+  führt Lint, Formatprüfung, Tests und Build zusammen.
+- **17 Komponententests** (`komponenten.test.js`, happy-dom). Die Logik war
+  abgedeckt, die Oberfläche gar nicht – und genau dort lagen die Fehler, die
+  zweimal an Build und Tests vorbeigekommen sind. Geprüft wird, was am Schirm
+  ankommt: dass `0` als Null erscheint und nicht als fehlender Wert, dass
+  `th` ein `scope` trägt, dass beim Laden keine Leermeldung steht.
+- **`npm audit`** ist dokumentiert statt weggeschaut: vier moderate Befunde aus
+  `echarts` (über frappe-ui) und `@vitest/mocker`, beide mit Begründung, warum
+  sie offen stehen.
+
+### Geprüft
+
+- 282 Tests, ESLint ohne Befund, Prettier sauber, Build grün.
+- Alle 36 Routen im Browser ohne Konsolenfehler – nach der Formatierung des
+  gesamten Baums erneut.
+
+## 2026-09-18 (4) – Fachkonzept weitgehend abgedeckt
+
+36 Seiten, 71 Server-Methoden, 67 DocTypes, 258 Tests.
+
+### Hinzugefügt
+
+**Dienste und Auswirkungsanalyse** (Fachkonzept 2.9)
+
+- Die Kette Geschäftsdienst → VM → Host → Switch → Firewall → Provider steht
+  als Beziehungsgraph im Datenmodell.
+- `impact_analysis` beantwortet beide Richtungen: „Was fällt aus, wenn X
+  ausfällt?" und „Wovon hängt X ab?" – mit Weg, Entfernung, betroffenen
+  Diensten und Benutzerzahl. Objekte ohne Alternativweg werden als
+  Einzelfehlerpunkt markiert.
+
+**Kommunikationsmatrix** (Fachkonzept 2.4)
+
+- Wird aus den Regelwerken erzeugt statt von Hand gepflegt. Zonen kommen über
+  das VLAN des jeweiligen Präfix; die Trefferzahl daneben zeigt, ob eine
+  erlaubte Verbindung auch genutzt wird.
+
+**Virtualisierung und Speicher** (Fachkonzept 2.5)
+
+- Cluster mit Knoten und Quorum-Bewertung, Gäste mit Backup-Bezug, Pools und
+  Datasets mit Gesundheit, Scrub-Alter und Replikation.
+
+**E-Mail-Sicherheit** (Fachkonzept 2.15)
+
+- PMG-Kaskade und IRONSCALES in einer Ansicht. Die aussagekräftige Zahl ist
+  nicht die Summe beider, sondern was die Kaskade durchgelassen hat.
+- SPF, DKIM und DMARC im Soll/Ist-Vergleich.
+
+**Cloud und Zero Trust** (Fachkonzept 2.14)
+
+- Hetzner-Server, Cloud-Firewallregeln und Cloudflare-Access-Anwendungen
+  zusammengeführt. Erst dadurch fällt auf, dass ein Server mit offenem Port 22
+  den Tunnel aushebelt.
+
+**Identitäten** (Fachkonzept 2.13)
+
+- MFA-Abdeckung als Kennzahl, Token-Inventar mit Ablauf und Rotation.
+  Notfallzugänge gelten bewusst nicht als auffällig.
+
+**Externe Angriffsfläche** (Fachkonzept 2.13)
+
+- Öffentliche Dienste gegen die dokumentierten Freigaben, Zertifikate aus dem
+  CT-Log gegen die DNS-Doku, IoC-Treffer und Scan-Governance. Ein aggressives
+  Scanprofil auf einem OT-Netz wird beanstandet.
+
+**Change-Workflow** (Fachkonzept 2.10)
+
+- Antrag → Prüfung → Freigabe → Umsetzung → Verifikation mit erzwungenen
+  Übergängen. Niemand gibt seinen eigenen Antrag frei; hohes Risiko verlangt
+  zwei verschiedene Freigebende. Jeder Wechsel landet in der Audit-Kette.
+
+**Compliance** (Fachkonzept 2.12)
+
+- NIS2-Bericht, der jeden Nachweis aus den vorhandenen Daten zieht. Was sich
+  nicht belegen lässt, steht als „nicht belegbar" da, nicht als erfüllt.
+
+**Strompfad** (Fachkonzept 2.2)
+
+- USV → PDU → Netzteil mit Redundanzprüfung und Ausfallsimulation. Zwei
+  Netzteile am selben Strang werden als fehlende Redundanz erkannt – der Fall,
+  den eine reine Zählung übersieht.
+
+**Netzdienste** (Fachkonzept 2.3)
+
+- VPN mit Handshake-Alter und Erkennung schwacher Verfahren, WLAN mit
+  VLAN-Bezug, DNS im Abgleich gegen das IPAM, Routen mit Erkennung toter Wege
+  über getrennte Tunnel.
+
+**Grundriss, Tickets, Fernwartung**
+
+- Vereinfachte Raumgeometrie mit Dosen, Racks, Access Points und Glaswand;
+  eine Dose zeigt, worauf sie gepatcht ist.
+- Tickets mit Objektbezug und SLA-Bewertung.
+- Agenten und Sitzungen der Fernwartung mit Ticketbezug, Aufzeichnung und
+  Step-up als Pflichtnachweis.
+
+**Querschnitt**
+
+- Mandantenwahl in der Seitenleiste, zentral im Fetcher – dort, wo im echten
+  Frappe die Rechteregel sitzt.
+- Dunkles Farbschema über `data-theme`, durchgängig bis in die Frontplatte.
+- Leitstand-Screens 3, 5, 6 und 9 mit echten Daten statt Platzhaltern.
+
+### Behoben
+
+- **Dienste galten als ungesichert, obwohl sie gesichert sind.** Die
+  Verknüpfung lief über den Anzeigenamen; „BMD Buchhaltung" fand die Sicherung
+  „BMD" nicht. Jetzt über einen Schlüssel, mit Regressionstest.
+- **Firewall-Regelwerke verwiesen auf Netze, die im IPAM fehlten** (DMZ,
+  SECSOC, LAB). Die Kommunikationsmatrix zeigte dadurch eine Spalte „ohne
+  Zone". Präfixe ergänzt; Video und Gebäudetechnik bleiben bewusst ohne Netz,
+  damit der Befund „VLAN dokumentiert, aber nicht ausgerollt" erhalten bleibt.
+- **Zwei Quelldateien enthielten ein NUL-Byte** als Trennzeichen im
+  Graph-Schlüssel. Das ist gültiges JavaScript, lässt aber jedes Werkzeug die
+  Datei für binär halten – grep und Diffs verhalten sich dann anders als
+  erwartet. Ersetzt durch `::`.
+- Leere Achse „ohne Zone" in der Kommunikationsmatrix, wenn sie nicht vorkommt.
+- Nackter Farbpunkt ohne Beschriftung in den Leitstand-Kacheln.
+
+### Bewusst nicht gemacht
+
+- Echte Grundrisse als hinterlegte Pläne – die Geometrie ist vereinfacht und
+  stammt aus dem Datenmodell.
+- Logische und L3-Sicht der Topologie, MeshCentral-Einbettung, QR-Label.
+- Power-Aktionen auf Cloud-Servern: sie verlangen FIDO2-Step-up, Ticketbezug
+  und Audit-Eintrag und damit ein Backend.
+
+## 2026-09-18 (3) – Oberfläche vollständig
+
+Ab hier führt jeder Eintrag der Seitenleiste auf eine gebaute Seite. Offen
+bleibt nur, was ohne Backend nicht geht.
+
+### Hinzugefügt
+
+**Audit-Hash-Kette** (CLAUDE.md Abschnitt 7 Punkt 2)
+
+- Synchrone SHA-256 (`src/api/mock/sha256.js`), geprüft gegen die
+  FIPS-180-4-Testvektoren und gegen Nodes `crypto`. Synchron, weil Web Crypto
+  im Browser nur asynchron arbeitet und die Kette schon beim Seeden gebraucht wird.
+- `Audit Entry` ist append-only – der Server lehnt `set_value` und `delete` ab.
+- Jeder Schreibvorgang hängt einen Eintrag an; `verify_chain()` nennt bei einem
+  Bruch Eintrag und Grund. Im Audit steht nur der Hash der Nutzlast.
+- Seite **Audit** mit Prüfung auf Knopfdruck.
+
+**Pfadanalyse und Regelwerk** (Fachkonzept 2.4)
+
+- `path_analysis` rechnet „Quelle → Ziel : Port“ durch alle Firewall-Ebenen und
+  nennt je Ebene die greifende Regel samt Begründung und Ticket.
+- Eine Ebene wird nur bewertet, wenn sie laut Geltungsbereich im Pfad liegt –
+  sonst verwirft die Grundregel einer unbeteiligten Firewall fremden Verkehr.
+- `rule_hygiene` findet Schattenregeln, zu weit gefasste Regeln, ungenutzte
+  Regeln, fehlende Begründungen und überfällige Reviews.
+
+**Betrieb**
+
+- Alarme über alle Quellen, nach Schweregrad sortiert.
+- Konnektor-Status mit Überfälligkeitserkennung und Drift-Befunde zum
+  Übernehmen oder Verwerfen. „Übernehmen“ ändert das Soll bewusst nicht.
+- Backup-Ampel nach den Schwellen aus Fachkonzept 2.5, Datastores mit
+  Prognose „voll am“.
+
+**Security**
+
+- Schwachstellen mit Risikowert aus CVSS, aktiver Ausnutzung und EPSS,
+  Fristen 72 h / 7 Tage / 30 Tage.
+- Vorfälle mit Meldefristen-Assistent (NIS2 24 h und 72 h, DSGVO 72 h).
+
+**Dokumentation**
+
+- Dokumente mit Review-Fristen, Checklisten mit blockierenden Pflichtpunkten,
+  Verträge mit Kündigungsstichtag (Ende minus Frist) und Lizenzen.
+- **Objektdossier** am Gerät: Dokumente, Zugangsverweise, offene Alarme,
+  Schwachstellen, Drift und Beziehungen in einer Ansicht.
+
+**Verkabelung und IPAM**
+
+- Kabelliste mit End-to-End-Trace (`trace_path`), in beide Richtungen.
+- VLAN-Übersicht mit Verwendung und Erkennung ungenutzter Segmente.
+
+**Leitstand** (Fachkonzept 2.16)
+
+- Freigabe-Ablauf mit Bestätigungscode, Herkunftsprüfung, Freigeben, Ablehnen
+  und Widerrufen; Verlauf mit Herzschlag.
+- Screens `/screen/1` bis `/screen/10` ohne Rahmen, mit Uhr, Stand-Zeitstempel
+  und sichtbarer Markierung veralteter Daten.
+
+**Sonstiges**
+
+- Komponente `StatusDot`, die „Farbe nie ohne Text“ strukturell durchsetzt.
+- Globale Suche erfasst zusätzlich Regeln, CVEs, Alarme, Dokumente, Verträge
+  und Sicherungen.
+- 107 zusätzliche Tests, gesamt 169.
+
+### Behoben
+
+- **Zeitzonenfehler in allen Zeitstempeln.** Sie wurden mit `toISOString()` in
+  UTC erzeugt, aber von `new Date(...)` als Lokalzeit gelesen. Folge: ein
+  gerade gelaufener Konnektor galt als überfällig und ein eben erzeugter
+  Bestätigungscode als abgelaufen. Alle Zeitstempel laufen jetzt über
+  `src/api/mock/zeit.js`; ein Regressionstest hält das fest.
+- Ein nackter Farbpunkt ohne Beschriftung auf den Leitstand-Screens.
+- Leitstand-Screens füllten die Fläche nicht aus.
+
+### Bewusst nicht gemacht
+
+- Grundriss mit Dosen und APs – setzt hinterlegte Grundrisse und
+  Dateiablage im Backend voraus.
+- Logische und L3-Sicht der Topologie, MeshCentral-Einbettung, QR-Label.
+- Jede Form von Schreibzugriff auf angebundene Systeme.
+
+## 2026-09-18 (2)
+
+### Hinzugefügt
+
+- **Frontplatte** je Gerät: Portblöcke in physischer Anordnung, versetzte
+  Kupferports und SFP-Käfige als eigene Bauform, Zustand je Port, PoE-Kennzeichen,
+  VLAN als Zahl am Port, Tooltip mit Gegenstelle, Kabel, IP und MAC sowie
+  Hervorhebung eines einzelnen VLANs.
+- **Rack-Ansicht** mit Höheneinheiten, Belegung, Auslastung und Sprung ins
+  Gerät; im Gerätedetail steht das Rack mit markiertem Gerät neben den Stammdaten.
+- **Topologie** aus der dokumentierten Verkabelung (Vue Flow). Ebene ist der
+  Abstand vom Perimeter im Kabelgraph, die Anordnung folgt dem
+  Schwerpunktverfahren, Positionen berechnet der Server.
+- Portvorlagen je Gerätetyp (`src/api/mock/portlayout.js`); Schnittstellen
+  werden daraus erzeugt statt einzeln gepflegt – aus 15 wurden 55 realistische
+  Ports.
+- Neue Methoden `netops.api.dcim.device_front_panel`, `rack_elevation`,
+  `rack_list` und `topology`.
+- Farb-Token für die grafischen Ansichten in `src/index.css`, geprüft mit dem
+  Paletten-Validator gegen die helle Fläche.
+- 19 zusätzliche Tests (`tests/viz.test.js`), gesamt 66.
+
+### Geändert
+
+- Schnittstellen eines Geräts werden in der physischen Reihenfolge der
+  Frontplatte sortiert, nicht alphabetisch.
+- Auslastungsbalken in IPAM und Rack folgen der Mark-Spezifikation: 4px
+  gerundete Datenenden, eine Hue für die Größenordnung, Statusfarbe erst über
+  70 % bzw. 90 % – und dann immer mit dem Wort „hoch“ oder „kritisch“.
+- Geräte je Rolle auf der Lage-Seite als Einzelserie in einer Hue mit direktem
+  Wert am Balkenende.
+- Kantenbeschriftungen der Topologie erscheinen bei Berührung statt dauerhaft.
+
+### Bewusst nicht gemacht
+
+- **Kein Farbschema über VLANs oder Geräterollen.** Sechs Zonenfarben fallen im
+  All-Pairs-Test durch (Grün/Orange ΔE 3,2 unter Protanopie, Magenta/Orange
+  ΔE 12,9 mit vollem Farbsehen). Auf einer Frontplatte ist jeder Port mit jedem
+  vergleichbar, also gilt dieser Maßstab. VLAN und Rolle stehen deshalb als
+  Text am Objekt; die VLAN-Ansicht hebt genau ein Netz hervor.
+
+### Behoben
+
+- Gerätedetail stürzte beim Laden ab: ein Watch mit `immediate` griff auf ein
+  erst später deklariertes `computed` zu (Temporal Dead Zone). Im Produktionsbuild
+  sichtbar als leere Seite ohne Meldung.
+- Kantenbeschriftungen der Topologie lagen übereinander und auf fremden Knoten.
+  Ursache war die Ebene aus der Geräterolle – sie ließ Kanten Ebenen überspringen.
+  Ein Test hält jetzt fest, dass jede Kante genau eine Ebene überbrückt.
+- Beschriftung der oberen Portreihe lief in die Buchsen der unteren Reihe.
+- Die Frontplatte wurde auf Containerbreite gedehnt und mittig gestaucht statt
+  in natürlicher Größe gezeichnet.
+
+## 2026-09-18
+
+### Hinzugefügt
+
+- Vue-3-Frontend der App `netops` auf Vite 7 mit frappe-ui, vue-router und Pinia.
+  SPA-Route `/netops`, Assets unter `/assets/netops/frontend/`.
+- Browser-Mock der Frappe-RPCs (`src/api/mock/`), damit ohne laufende Bench
+  entwickelt werden kann. Umschaltung über `VITE_USE_MOCK`.
+- Phase-1-DocTypes als Mock-Fixtures: Tenant, Site, Manufacturer, Device Type,
+  Device Role, Rack, Network Device, Device Interface, Wall Outlet, Cable,
+  Security Zone, VRF, VLAN, IP Prefix, IP Address – englische Feldnamen,
+  ausschließlich Testdaten.
+- Serverseitige Methoden `netops.api.search.global_search`,
+  `netops.api.ipam.prefix_tree` / `prefix_list` / `prefix_addresses`,
+  `netops.api.dcim.device_list` / `device_detail` / `dashboard_counters`.
+- Oberfläche (MVP-Punkt 3): Layout mit Seitenleiste, globale Suche Strg+K,
+  Geräteliste, Gerätedetail mit Tabs, IPAM-Baum mit Auslastung, Lage-Seite.
+- Deutsche Beschriftungen zu den englischen Feldnamen in `src/labels.js`
+  (Übergangslösung bis zu den Frappe-Übersetzungsdateien).
+- Vitest-Suite mit 47 Tests als Ersatz für `bench run-tests`, solange keine
+  Bench existiert.
+
+### Behoben
+
+- `nextName()` im Mock lief endlos, wenn die Namensvergabe auf einem Feld
+  beruht (z. B. `hostname`) und der Name bereits vergeben war. Jetzt bricht
+  die Suche ab und der Aufrufer meldet `DuplicateEntryError`.
+- IPAM-Tabelle zeigte bei Container-Präfixen einen Auslastungsbalken aus den
+  Teilnetzen neben einer Adresszahl – zwei verschiedene Bezugsgrößen
+  nebeneinander. Container weisen jetzt die Zahl der Teilnetze aus.
+- Adressen eines Präfix wurden alphabetisch sortiert (`.11` vor `.2`) statt
+  numerisch.
+- Der Dev-Server blieb weiß: weil `frappe-ui` vom Pre-Bundling ausgenommen ist,
+  fand Vite dessen CommonJS-Abhängigkeiten nicht und der Default-Import von
+  `feather-icons` schlug fehl. Die betroffenen Pakete stehen jetzt in
+  `optimizeDeps.include`. Im Produktionsbuild trat der Fehler nicht auf.
+
+### Offen
+
+Noch nicht umgesetzt, jeweils weil das Backend fehlt: Audit-Hash-Kette,
+Konnektoren (OPNsense, Proxmox VE, PBS) und Drift-Ansicht, Backup-Ampel,
+Leitstand-Screens mit Freigabe-Ablauf, Offline-Export, Rollen und Rechte.

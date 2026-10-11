@@ -1,0 +1,32 @@
+/**
+ * Registrierung der NetOps-eigenen "whitelisted" Methoden.
+ *
+ * Die Pfade entsprechen exakt den spaeteren Python-Methoden in der App
+ * `netops`. Wenn das Backend existiert, verschwindet diese Datei ersatzlos -
+ * die aufrufenden Komponenten bleiben unveraendert.
+ *
+ * Achtung fuer die Portierung: jede dieser Methoden braucht in Python eine
+ * explizite Rechtepruefung (`frappe.has_permission`) und einen Mandantenfilter.
+ * Der Mock prueft keine Rechte - er bildet nur die Datenform ab.
+ */
+import { registerMethod } from '../server.js'
+import { device_detail, device_list, dashboard_counters } from './dcim.js'
+import { prefix_addresses, prefix_list, prefix_tree } from './ipam.js'
+import { global_search } from './search.js'
+import { device_front_panel, rack_elevation, rack_list, topology } from './viz.js'
+
+export function registerNetopsMethods() {
+  registerMethod('netops.api.dcim.device_list', device_list)
+  registerMethod('netops.api.dcim.device_detail', device_detail)
+  registerMethod('netops.api.dcim.dashboard_counters', dashboard_counters)
+  registerMethod('netops.api.dcim.device_front_panel', device_front_panel)
+  registerMethod('netops.api.dcim.rack_elevation', rack_elevation)
+  registerMethod('netops.api.dcim.rack_list', rack_list)
+  registerMethod('netops.api.dcim.topology', topology)
+
+  registerMethod('netops.api.ipam.prefix_tree', prefix_tree)
+  registerMethod('netops.api.ipam.prefix_list', prefix_list)
+  registerMethod('netops.api.ipam.prefix_addresses', prefix_addresses)
+
+  registerMethod('netops.api.search.global_search', global_search)
+}

@@ -1,0 +1,68 @@
+<template>
+  <div class="flex h-screen w-screen overflow-hidden bg-surface-gray-1">
+    <aside
+      class="flex w-60 shrink-0 flex-col border-r border-outline-gray-2 bg-surface-white"
+    >
+      <div class="flex items-center gap-2 px-4 py-4">
+        <div
+          class="flex size-8 items-center justify-center rounded bg-surface-gray-4 text-sm font-semibold text-ink-gray-8"
+        >
+          N
+        </div>
+        <div class="min-w-0">
+          <p class="truncate text-base font-medium text-ink-gray-8">Netzwerk</p>
+          <p class="truncate text-xs text-ink-gray-5">
+            {{ session.user || 'nicht angemeldet' }}
+          </p>
+        </div>
+      </div>
+
+      <nav class="flex flex-1 flex-col gap-1 px-2">
+        <RouterLink
+          v-for="item in navigation"
+          :key="item.to"
+          :to="item.to"
+          class="rounded px-2 py-1.5 text-base text-ink-gray-7 hover:bg-surface-gray-2"
+          active-class="bg-surface-gray-3 font-medium text-ink-gray-9"
+        >
+          {{ item.label }}
+        </RouterLink>
+      </nav>
+
+      <div v-if="USE_MOCK" class="border-t border-outline-gray-2 p-3">
+        <p class="mb-2 text-xs leading-4 text-ink-gray-5">
+          Demo-Daten im Browser. Kein Backend verbunden.
+        </p>
+        <Button size="sm" class="w-full" @click="onReset">
+          Daten zurücksetzen
+        </Button>
+      </div>
+    </aside>
+
+    <main class="flex-1 overflow-y-auto">
+      <slot />
+    </main>
+  </div>
+</template>
+
+<script setup>
+import { Button, toast } from 'frappe-ui'
+import { useSessionStore } from '@/stores/session'
+import { USE_MOCK } from '@/api'
+
+const session = useSessionStore()
+
+const navigation = [
+  { label: 'Übersicht', to: '/' },
+  { label: 'Kontakte', to: '/kontakte' },
+  { label: 'Organisationen', to: '/organisationen' },
+]
+
+async function onReset() {
+  const { resetMockData } = await import('@/api/mock/server.js')
+  resetMockData()
+  toast.create({ message: 'Demo-Daten zurückgesetzt', type: 'success' })
+  // Einfachster Weg, alle gecachten Resourcen zu verwerfen.
+  window.location.reload()
+}
+</script>

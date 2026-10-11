@@ -1,0 +1,372 @@
+<script setup lang="ts">
+/** Bauleiter- und Subunternehmer-Tagesbericht (FA-070 bis FA-075). */
+import { computed, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+
+import AnlagenWaehler from '@/components/AnlagenWaehler.vue'
+import AppIcon from '@/components/AppIcon.vue'
+import BasisDialog from '@/components/BasisDialog.vue'
+import FotoAufnahme from '@/components/FotoAufnahme.vue'
+import SignaturPad from '@/components/SignaturPad.vue'
+import StatusAbzeichen from '@/components/StatusAbzeichen.vue'
+import { baudoku } from '@/lib/api'
+import { db, neueId } from '@/lib/db'
+import { frappeDatetime, isoDatum } from '@/lib/format'
+import { speichernUndSynchronisieren } from '@/lib/sync'
+import type { BerichtPosition, Tagesbericht } from '@/lib/typen'
+import { useStammdaten } from '@/stores/stammdaten'
+import { useSync } from '@/stores/sync'
+import { useUi } from '@/stores/ui'
+
+const props = defineProps<{ lokaleId?: string }>()
+
+const route = useRoute()
+const router = useRouter()
+const stammdaten = useStammdaten()
+const sync = useSync()
+const ui = useUi()
+
+const bericht = ref<Tagesbericht | null>(null)
+const laedt = ref(true)
+const speichert = ref(false)
+const anlagenwahlOffen = ref(false)
+const signaturOffen = ref(false)
+
+const BEREICHE = [
+  'Module', 'Unterkonstruktion', 'DC-Kabel', 'AC-Kabel', 'Wechselrichter',
+  'Speicher', 'Wallbox', 'Erdung', 'Geruest', 'Sonstiges',
+]
+
+const istNeu = computed(() => !props.lokaleId)
+const anlage = computed(() => (bericht.value ? stammdaten.anlage(bericht.value.anlage) : undefined))
+const gesperrt = computed(() => ['Eingereicht', 'Genehmigt'].includes(bericht.value?.status ?? ''))
+
+const stundenSumme = computed(() =>
+  (bericht.value?.positionen ?? []).reduce((summe, p) => summe + (p.stunden ?? 0), 0),
+)
+
+const unterschrift = computed(() => bericht.value?.unterschriften[0])
+
+function leererBericht(): Tagesbericht {
+  return {
+    lokale_id: neueId(),
+    bericht_typ: stammdaten.istSubunternehmer ? 'Subunternehmer' : 'Bauleiter',
+    anlage: (route.query.anlage as string) ?? '',
+    datum: isoDatum(),
+    status: 'Entwurf',
+    ersteller: stammdaten.mitarbeiter,
+    positionen: [],
+    unterschriften: [],
+    fotos: [],
+    personal_anzahl: 1,
+  }
+}
+
+function positionHinzufuegen() {
+  bericht.value?.positionen.push({
+    beschreibung: '',
+    bereich: 'Module',
+    menge: null,
+    einheit: 'Stk',
+    fortschritt: null,
+    stunden: null,
+  } as BerichtPosition)
+}
+
+function positionEntfernen(index: number) {
+  bericht.value?.positionen.splice(index, 1)
+}
+
+function anlageUebernehmen(name: string) {
+  if (bericht.value) bericht.value.anlage = name
+  anlagenwahlOffen.value = false
+}
+
+async function speichern(einreichen = false) {
+  const doc = bericht.value
+  if (!doc) return
+
+  if (!doc.anlage) return ui.warnung('Bitte eine Baustelle wählen.')
+  if (einreichen) {
+    if (!doc.positionen.length) return ui.warnung('Der Bericht enthält keine Leistungspositionen.')
+    if (!doc.unterschriften.length) return ui.warnung('Die Unterschrift des Berichterstatters fehlt.')
+    doc.status = 'Eingereicht'
+  }
+
+  speichert.value = true
+  try {
+    await speichernUndSynchronisieren(
+      'Tagesbericht',
+      doc.lokale_id,
+      { doctype: 'Tagesbericht', ...doc },
+      doc.name ? 'update' : 'create',
+    )
+    await sync.zaehlerAktualisieren()
+    ui.erfolg(einreichen ? 'Tagesbericht eingereicht.' : 'Tagesbericht gespeichert.')
+    await router.replace({ name: 'tagesberichte' })
+  } catch (fehler) {
+    ui.fehler((fehler as Error).message)
+  } finally {
+    speichert.value = false
+  }
+}
+
+async function pdf() {
+  if (!bericht.value?.name) {
+    ui.warnung('PDF erst nach der Synchronisation möglich.')
+    return
+  }
+  try {
+    const ergebnis = (await baudoku.pdfErzeugen('Tagesbericht', bericht.value.name)) as {
+      file_url: string
+    }
+    if (ergebnis.file_url) window.open(ergebnis.file_url, '_blank')
+  } catch (fehler) {
+    ui.fehler((fehler as Error).message)
+  }
+}
+
+function signaturUebernehmen(nutzlast: { signatur: string; name_unterzeichner: string }) {
+  if (!bericht.value) return
+  bericht.value.unterschriften = [
+    {
+      rolle: bericht.value.bericht_typ === 'Subunternehmer' ? 'Subunternehmer' : 'Bauleiter',
+      ...nutzlast,
+      unterzeichnet_am: frappeDatetime(),
+    },
+  ]
+  signaturOffen.value = false
+  ui.erfolg('Unterschrift erfasst.')
+}
+
+onMounted(async () => {
+  bericht.value = props.lokaleId
+    ? ((await db.berichte.get(props.lokaleId)) ?? null)
+    : leererBericht()
+  laedt.value = false
+})
+</script>
+
+<template>
+  <p v-if="laedt" class="py-8 text-center text-sm text-slate-500">Wird geladen …</p>
+
+  <div v-else-if="bericht" class="mx-auto max-w-feld space-y-4">
+    <div v-if="!istNeu" class="flex flex-wrap items-center gap-2">
+      <StatusAbzeichen :wert="bericht.status" />
+      <span v-if="!bericht.name" class="abzeichen bg-amber-100 text-amber-900">nur lokal</span>
+      <button v-if="bericht.name" class="knopf-geist ml-auto px-3 text-sm" @click="pdf">
+        <AppIcon name="pdf" :groesse="18" /> PDF
+      </button>
+    </div>
+
+    <p v-if="bericht.status === 'Abgelehnt' && bericht.ablehnungsgrund"
+       class="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800
+              dark:border-red-900 dark:bg-red-900/30 dark:text-red-200">
+      Abgelehnt: {{ bericht.ablehnungsgrund }}
+    </p>
+
+    <!-- Kopf -->
+    <div class="karte space-y-3 p-4">
+      <div class="grid gap-3 tablet:grid-cols-2">
+        <label>
+          <span class="beschriftung">Berichtstyp</span>
+          <select v-model="bericht.bericht_typ" class="feld" :disabled="gesperrt">
+            <option>Bauleiter</option>
+            <option>Subunternehmer</option>
+          </select>
+        </label>
+        <label>
+          <span class="beschriftung">Berichtstag</span>
+          <input v-model="bericht.datum" class="feld" type="date" :disabled="gesperrt" />
+        </label>
+      </div>
+
+      <div>
+        <span class="beschriftung">Baustelle</span>
+        <button class="tap flex w-full items-center gap-2 rounded-xl border border-slate-300 px-3
+                       text-left disabled:opacity-60 dark:border-slate-700"
+                :disabled="gesperrt" @click="anlagenwahlOffen = true">
+          <span class="flex-1 truncate">{{ anlage?.anlage_name ?? 'Baustelle wählen …' }}</span>
+          <AppIcon name="pfeilRechts" :groesse="18" class="text-slate-400" />
+        </button>
+      </div>
+
+      <label v-if="bericht.bericht_typ === 'Subunternehmer'">
+        <span class="beschriftung">Subunternehmer</span>
+        <input v-model="bericht.supplier" class="feld" :disabled="gesperrt"
+               placeholder="Firmenname laut ERPNext-Lieferantenstamm" />
+      </label>
+    </div>
+
+    <!-- Rahmenbedingungen -->
+    <div class="karte space-y-3 p-4">
+      <h3 class="font-semibold">Rahmenbedingungen</h3>
+      <div class="grid gap-3 tablet:grid-cols-2">
+        <label>
+          <span class="beschriftung">Wetter</span>
+          <select v-model="bericht.wetter" class="feld" :disabled="gesperrt">
+            <option value="">– bitte wählen –</option>
+            <option>Sonnig</option><option>Leicht bewölkt</option><option>Bewölkt</option>
+            <option>Bedeckt</option><option>Regen</option><option>Schnee</option>
+            <option>Wind</option><option>Frost</option>
+          </select>
+        </label>
+        <label>
+          <span class="beschriftung">Temperatur (°C)</span>
+          <input v-model.number="bericht.temperatur" class="feld tabular-nums" inputmode="decimal"
+                 :disabled="gesperrt" />
+        </label>
+        <label>
+          <span class="beschriftung">Arbeitsbeginn</span>
+          <input v-model="bericht.arbeitsbeginn" class="feld" type="time" :disabled="gesperrt" />
+        </label>
+        <label>
+          <span class="beschriftung">Arbeitsende</span>
+          <input v-model="bericht.arbeitsende" class="feld" type="time" :disabled="gesperrt" />
+        </label>
+        <label>
+          <span class="beschriftung">Eingesetztes Personal</span>
+          <input v-model.number="bericht.personal_anzahl" class="feld tabular-nums" inputmode="numeric"
+                 :disabled="gesperrt" />
+        </label>
+        <label>
+          <span class="beschriftung">Gesamtfortschritt Baustelle (%)</span>
+          <input v-model.number="bericht.fortschritt_prozent" class="feld tabular-nums"
+                 inputmode="numeric" :disabled="gesperrt" />
+        </label>
+      </div>
+
+      <label class="flex items-center gap-2 text-sm">
+        <input v-model="bericht.witterungsbedingter_ausfall" type="checkbox" class="h-5 w-5"
+               :true-value="1" :false-value="0" :disabled="gesperrt" />
+        Witterungsbedingter Ausfall
+      </label>
+      <label v-if="bericht.witterungsbedingter_ausfall">
+        <span class="beschriftung">Ausfallstunden</span>
+        <input v-model.number="bericht.ausfallstunden" class="feld tabular-nums" inputmode="decimal"
+               :disabled="gesperrt" />
+      </label>
+    </div>
+
+    <!-- Leistungspositionen -->
+    <div class="karte p-4">
+      <div class="mb-3 flex items-center gap-2">
+        <h3 class="flex-1 font-semibold">Leistungspositionen</h3>
+        <span class="text-xs text-slate-400">{{ stundenSumme }} h erfasst</span>
+        <button class="knopf-sekundaer px-3 text-sm" :disabled="gesperrt" @click="positionHinzufuegen">
+          <AppIcon name="plus" :groesse="16" /> Position
+        </button>
+      </div>
+
+      <p v-if="!bericht.positionen.length" class="py-6 text-center text-sm text-slate-500">
+        Noch keine Position erfasst.
+      </p>
+
+      <div v-for="(position, i) in bericht.positionen" :key="i"
+           class="mb-3 rounded-xl border border-slate-200 p-3 dark:border-slate-800">
+        <div class="mb-2 flex items-center gap-2">
+          <span class="text-xs font-semibold text-slate-400">Position {{ i + 1 }}</span>
+          <button class="ml-auto rounded p-1 text-slate-400 hover:text-fehler"
+                  :disabled="gesperrt" aria-label="Position entfernen" @click="positionEntfernen(i)">
+            <AppIcon name="muell" :groesse="16" />
+          </button>
+        </div>
+
+        <input v-model="position.beschreibung" class="feld mb-2" placeholder="Tätigkeit"
+               :disabled="gesperrt" />
+
+        <div class="grid grid-cols-2 gap-2 tablet:grid-cols-4">
+          <label class="text-xs text-slate-500">
+            Bereich
+            <select v-model="position.bereich" class="feld mt-1 text-sm" :disabled="gesperrt">
+              <option v-for="b in BEREICHE" :key="b" :value="b">{{ b }}</option>
+            </select>
+          </label>
+          <label class="text-xs text-slate-500">
+            Menge
+            <div class="mt-1 flex gap-1">
+              <input v-model.number="position.menge" class="feld tabular-nums" inputmode="decimal"
+                     :disabled="gesperrt" />
+              <select v-model="position.einheit" class="feld w-20 text-sm" :disabled="gesperrt">
+                <option>Stk</option><option>m</option><option>m2</option>
+                <option>kWp</option><option>h</option><option>pauschal</option>
+              </select>
+            </div>
+          </label>
+          <label class="text-xs text-slate-500">
+            Stunden
+            <input v-model.number="position.stunden" class="feld mt-1 tabular-nums" inputmode="decimal"
+                   :disabled="gesperrt" />
+          </label>
+          <label class="text-xs text-slate-500">
+            Fortschritt (%)
+            <input v-model.number="position.fortschritt" class="feld mt-1 tabular-nums"
+                   inputmode="numeric" :disabled="gesperrt" />
+          </label>
+        </div>
+
+        <input v-model="position.anmerkung" class="feld mt-2 text-sm" placeholder="Anmerkung"
+               :disabled="gesperrt" />
+      </div>
+    </div>
+
+    <!-- Vorkommnisse und Fotos -->
+    <div class="karte space-y-3 p-4">
+      <label>
+        <span class="beschriftung">Besondere Vorkommnisse</span>
+        <textarea v-model="bericht.besondere_vorkommnisse" class="feld min-h-[96px]" rows="3"
+                  :disabled="gesperrt"
+                  placeholder="Störungen, Verzögerungen, Abweichungen vom Bauzeitplan" />
+      </label>
+      <label>
+        <span class="beschriftung">Materiallieferungen</span>
+        <input v-model="bericht.materiallieferungen" class="feld" :disabled="gesperrt"
+               placeholder="Was wurde angeliefert?" />
+      </label>
+      <FotoAufnahme
+        :model-value="bericht.fotos ?? []"
+        titel="Fortschrittsfotos"
+        :gehoert-zu="bericht.lokale_id"
+        @update:model-value="(f) => (bericht!.fotos = f)"
+      />
+    </div>
+
+    <!-- Unterschrift -->
+    <button class="karte flex w-full items-center gap-3 p-4 text-left" :disabled="gesperrt"
+            @click="signaturOffen = true">
+      <AppIcon name="unterschrift" :groesse="22" :class="unterschrift ? 'text-ok' : 'text-slate-400'" />
+      <span class="flex-1">
+        <span class="block font-semibold">Unterschrift Berichterstatter</span>
+        <span class="block text-xs text-slate-500">
+          {{ unterschrift?.name_unterzeichner ?? 'noch nicht unterschrieben' }}
+        </span>
+      </span>
+      <AppIcon name="pfeilRechts" :groesse="18" class="text-slate-400" />
+    </button>
+
+    <div class="flex gap-2 pb-4">
+      <button class="knopf-sekundaer flex-1" :disabled="speichert || gesperrt" @click="speichern(false)">
+        Entwurf speichern
+      </button>
+      <button class="knopf-primaer flex-[2]" :disabled="speichert || gesperrt" @click="speichern(true)">
+        <AppIcon name="check" :groesse="20" /> Einreichen
+      </button>
+    </div>
+
+    <BasisDialog :offen="anlagenwahlOffen" titel="Baustelle wählen" @schliessen="anlagenwahlOffen = false">
+      <AnlagenWaehler
+        :model-value="bericht.anlage"
+        @update:model-value="anlageUebernehmen"
+      />
+    </BasisDialog>
+
+    <BasisDialog :offen="signaturOffen" titel="Unterschrift" breit @schliessen="signaturOffen = false">
+      <SignaturPad
+        rolle="Berichterstatter"
+        :name="stammdaten.benutzer?.vollname ?? ''"
+        @bestaetigt="signaturUebernehmen"
+        @abbrechen="signaturOffen = false"
+      />
+    </BasisDialog>
+  </div>
+</template>

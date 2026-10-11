@@ -1,0 +1,582 @@
+import { BadgePercent, Coins, EyeOff, FileSignature, FolderLock, KeyRound, Languages, Search, ShieldCheck, UserPlus, Filter } from "lucide-react";
+
+import PageHero from "@/components/ui/PageHero";
+import Section from "@/components/ui/Section";
+import SectionHeading from "@/components/ui/SectionHeading";
+import Steps from "@/components/ui/Steps";
+import Faq from "@/components/ui/Faq";
+import Button from "@/components/ui/Button";
+import Reveal from "@/components/ui/Reveal";
+import Querverweise from "@/components/Reusable/Querverweise";
+import EnCta from "@/components/En/EnCta";
+import { PHASE_EN } from "@/components/En/PhaseModel";
+import { enMetadata, fmtEn } from "@/components/En/sprachpaare";
+import { SITE, abs } from "@/data/site";
+import { PHASEN, PROVISION } from "@/lib/invest/markt";
+
+const PFAD = "/en/project-exchange";
+const SPANNE = `${fmtEn(PROVISION.verkaeufer.min * 100, 1)}–${fmtEn(PROVISION.verkaeufer.max * 100)}%`;
+const BESCHREIBUNG =
+  "Solar parks, agri-PV, car park PV and battery storage in DACH: vetted projects at every stage, one-click NDA, digital data room – free for investors.";
+
+export const metadata = enMetadata({
+  pfad: PFAD,
+  title: "Solar project exchange DACH: buy & sell | ÖkoInvest",
+  description: BESCHREIBUNG,
+  keywords: ["solar project marketplace", "buy solar projects Germany", "sell PV project rights", "solar M&A DACH", "battery storage projects Germany"],
+  bild: { src: "/img/solarpark-reihen.jpg", alt: "Rows of modules in a solar park" },
+});
+
+const FAQ = [
+  {
+    q: "What does the project exchange cost?",
+    a: `For investors it is free of charge (search profile, NDA, data room). Sellers pay a success fee of ${SPANNE} of the purchase price, only on successful closing – no listing or data room fees.`,
+  },
+  {
+    q: "Why can't I see the exact location?",
+    a: "In public we only show region, federal state or canton and key data. Municipality, plots, grid operator and documents are visible to registered investors only after they have accepted the NDA and the back office has released the data room. This protects landowners and sellers.",
+  },
+  {
+    q: "How are projects reviewed?",
+    a: "Before publication, the back office checks the information and core documents for completeness and plausibility – such as land security, zoning status and grid connection. This does not replace a legal and technical due diligence, which remains the buyer's responsibility.",
+  },
+  {
+    q: "Which stages are listed?",
+    a: `We distinguish ${PHASEN.length} stages – from “${PHASE_EN[PHASEN[0].id].label}” to “${PHASE_EN[PHASEN[PHASEN.length - 1].id].label}”. The further a project has been developed, the lower the risk and the higher the price per kWp.`,
+  },
+  {
+    q: "Is the exchange available in English?",
+    a: "The listings and the portal are currently in German. Key figures (capacity, stage, country, region) are self-explanatory; for questions on a specific listing, contact us in English and quote the listing title.",
+  },
+];
+
+export default function EnProjectExchange() {
+  const schema = {
+    "@context": "https://schema.org",
+    "@type": "Service",
+    name: "ÖkoInvest project exchange",
+    serviceType: "Marketplace for solar and storage project rights and operating assets",
+    provider: { "@id": `${SITE.url}/#organization` },
+    areaServed: ["DE", "AT", "CH"],
+    url: abs(PFAD),
+    inLanguage: "en",
+    description: BESCHREIBUNG,
+  };
+
+  return (
+    <div>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
+
+      <PageHero
+        variant="dark"
+        eyebrow="Project exchange DACH"
+        title={
+          <>
+            Buy and sell solar projects – <span className="ov-text-gradient-light">vetted and confidential.</span>
+          </>
+        }
+        lead="Ground-mounted PV, agri-PV, car park PV and battery storage in Germany, Austria and Switzerland – from secured land to operating assets. Public as an anonymous teaser, details only after NDA."
+        actions={[
+          { label: "Open the exchange", href: "/projektboerse" },
+          { label: "Register as investor", href: "/registrieren?rolle=investor" },
+        ]}
+        points={["Free for investors", `Sellers: ${SPANNE} success fee`, "NDA in one click", "Logged data room"]}
+      />
+
+      {/* ---------------- What is listed ---------------- */}
+      <Section tone="white" space="lg">
+        <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:gap-16">
+          <SectionHeading
+            eyebrow="What you find"
+            title="Projects from our own development – and from other developers."
+            lead="The exchange lists projects developed by the ÖKOVOLT Group as well as projects offered by third-party developers. All listings go through the same review before publication."
+          >
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <Button href="/projektboerse" hrefLang="de" pfeil>
+                Browse listings
+              </Button>
+              <Button href="/en/investors#phases" variant="secondary">
+                Phase model & prices
+              </Button>
+            </div>
+            <p className="mt-4 flex items-center gap-2 text-[13.5px] text-ink-500">
+              <Languages aria-hidden="true" className="h-4 w-4 text-ov-600" /> Listings and filters are currently in German.
+            </p>
+          </SectionHeading>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Reveal className="rounded-3xl bg-sand-50 p-6 ring-1 ring-ink-200/70">
+              <Filter aria-hidden="true" className="h-6 w-6 text-ov-600" />
+              <h3 className="mt-4 font-display text-[18px] font-bold text-ink-900">Filter by</h3>
+              <ul className="mt-3 space-y-2 text-[15px] text-ink-700">
+                {["Technology: PV, agri-PV, car park PV, storage", "Country: Germany, Austria, Switzerland", "Development stage", "Capacity in MWp"].map((t) => (
+                  <li key={t} className="flex gap-2.5">
+                    <span aria-hidden="true" className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-ov-500" />
+                    {t}
+                  </li>
+                ))}
+              </ul>
+            </Reveal>
+            <Reveal delay={80} className="rounded-3xl bg-sand-50 p-6 ring-1 ring-ink-200/70">
+              <Search aria-hidden="true" className="h-6 w-6 text-ov-600" />
+              <h3 className="mt-4 font-display text-[18px] font-bold text-ink-900">Stages</h3>
+              <ol className="mt-3 space-y-2 text-[15px] text-ink-700">
+                {PHASEN.map((p, i) => (
+                  <li key={p.id} className="flex gap-2.5">
+                    <span className="ov-num w-5 shrink-0 font-semibold text-ov-700">{i + 1}</span>
+                    {PHASE_EN[p.id].kurz}
+                  </li>
+                ))}
+              </ol>
+            </Reveal>
+          </div>
+        </div>
+      </Section>
+
+      {/* ---------------- Process ---------------- */}
+      <Section tone="sand" space="lg">
+        <SectionHeading eyebrow="How it works" title="From teaser to closing – all in the portal" lead="One consistent, traceable process for both sides. Every step is logged." />
+        <Steps
+          className="mt-12"
+          items={[
+            { icon: UserPlus, title: "Register & search profile", text: "Free investor account with size, stages, countries and ticket. Matching projects are shown to you first." },
+            { icon: Search, title: "Review the teaser", text: "Key data, stage, grid connection and price indication – anonymous, without exact location." },
+            { icon: KeyRound, title: "One-click NDA", text: "Accept the non-disclosure agreement in the portal. After release, the data room opens." },
+            { icon: FileSignature, title: "LOI & closing", text: "Submit a letter of intent digitally, due diligence, SPA – supported by the back office." },
+          ]}
+        />
+      </Section>
+
+      {/* ---------------- Both sides ---------------- */}
+      <Section tone="ink" space="lg">
+        <div className="grid gap-5 lg:grid-cols-2">
+          <Reveal className="rounded-[2rem] bg-white p-8 ring-1 ring-ink-200/70 md:p-10">
+            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-ov-50 text-ov-600"><ShieldCheck aria-hidden="true" className="h-6 w-6" /></span>
+            <h2 className="ov-h3 mt-6 text-ink-900">For investors: free of charge</h2>
+            <p className="mt-3 text-[16px] leading-relaxed text-ink-600">Search profile, watch list, NDA and data room are free for investors. You see projects from the ÖKOVOLT Group’s development and from other developers.</p>
+            <ul className="mt-5 space-y-2 text-[15px] text-ink-700">
+              <li className="flex gap-2"><FolderLock aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-ov-600" /> Data room with download log</li>
+              <li className="flex gap-2"><Search aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-ov-600" /> Matching by search profile</li>
+            </ul>
+            <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+              <Button href="/registrieren?rolle=investor" pfeil>Create investor account</Button>
+              <Button href="/en/investors" variant="secondary">For investors</Button>
+            </div>
+          </Reveal>
+          <Reveal delay={100} className="ov-noise relative overflow-hidden rounded-[2rem] bg-navy-950 p-8 text-white md:p-10">
+            <div aria-hidden="true" className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-ov-500/30 blur-[90px]" />
+            <span className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 text-ov-300"><BadgePercent aria-hidden="true" className="h-6 w-6" /></span>
+            <h2 className="ov-h3 relative mt-6 text-white">For developers: fee only on success</h2>
+            <p className="relative mt-3 text-[16px] leading-relaxed text-white/70">List, get reviewed, market confidentially. The success fee is {SPANNE} of the purchase price, only on closing – no listing fees.</p>
+            <ul className="relative mt-5 space-y-2 text-[15px] text-white/80">
+              <li className="flex gap-2"><Coins aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-ov-300" /> Transparent statistics: views, watch-list saves, NDA requests</li>
+              <li className="flex gap-2"><EyeOff aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-ov-300" /> Anonymous teaser, data room only after NDA</li>
+            </ul>
+            <Button href="/en/sell-your-project" variant="white" className="relative mt-7" pfeil>Sell your project</Button>
+          </Reveal>
+        </div>
+      </Section>
+
+      <Section tone="white" space="lg">
+        <div className="grid gap-12 lg:grid-cols-[1fr_1.4fr]">
+          <SectionHeading eyebrow="FAQ" title="Project exchange: the essentials" />
+          <Faq items={FAQ} />
+        </div>
+      </Section>
+
+      <Querverweise
+        ueberschrift="Continue reading"
+        items={[
+          { href: "/en/investors", titel: "For investors", text: "Phase model with price ranges, due diligence checklist and process to closing." },
+          { href: "/en/sell-your-project", titel: "Sell your project", text: "What we review before publication and how the success fee works." },
+          { href: "/en/contact", titel: "Contact", text: "Questions about a listing? Write to us in English." },
+        ]}
+      />
+
+      <EnCta
+        eyebrow="Project exchange"
+        title="The right project not listed yet?"
+        text="Set up a search profile. New projects matching your criteria appear in your portal first."
+        primary={{ label: "Create search profile", href: "/registrieren?rolle=investor" }}
+        secondary={{ label: "Open the exchange", href: "/projektboerse" }}
+      />
+    </div>
+  );
+}
+import { BadgePercent, BarChart3, ClipboardCheck, EyeOff, FileCheck2, FolderLock, Handshake, LayoutList, Send, ShieldCheck, UserPlus, Users } from "lucide-react";
+
+import PageHero from "@/components/ui/PageHero";
+import Section from "@/components/ui/Section";
+import SectionHeading from "@/components/ui/SectionHeading";
+import FeatureGrid from "@/components/ui/FeatureGrid";
+import Steps from "@/components/ui/Steps";
+import Faq from "@/components/ui/Faq";
+import Button from "@/components/ui/Button";
+import Reveal from "@/components/ui/Reveal";
+import Querverweise from "@/components/Reusable/Querverweise";
+import EnCta from "@/components/En/EnCta";
+import ContactForm from "@/components/En/ContactForm";
+import { enMetadata, fmtEn, fmtEurEn } from "@/components/En/sprachpaare";
+import { SITE, abs } from "@/data/site";
+import { PHASEN, PROVISION } from "@/lib/invest/markt";
+
+const PFAD = "/en/sell-your-project";
+const SPANNE = `${fmtEn(PROVISION.verkaeufer.min * 100, 1)}–${fmtEn(PROVISION.verkaeufer.max * 100)}%`;
+const BESCHREIBUNG = `Sell your solar park or project rights in DACH: anonymous teaser, one-click NDA, digital data room. Success fee of ${SPANNE} only on closing – no listing fees.`;
+
+export const metadata = enMetadata({
+  pfad: PFAD,
+  title: "Sell your solar project in DACH | ÖkoInvest",
+  description: BESCHREIBUNG,
+  keywords: ["sell solar project", "sell PV project rights Germany", "solar project buyer Austria", "RTB solar project sale", "solar developer exit"],
+  bild: { src: "/img/planer-tablet.jpg", alt: "Project developer reviewing plans on a tablet" },
+});
+
+const RTB = PHASEN.find((p) => p.id === "rtb");
+const BEISPIEL_MWP = 10;
+const BEISPIEL_PREIS_KWP = Math.round((RTB.preisProKwp.min + RTB.preisProKwp.max) / 2);
+const BEISPIEL_KAUFPREIS = BEISPIEL_MWP * 1000 * BEISPIEL_PREIS_KWP;
+
+const FAQ = [
+  {
+    q: "What does it cost to list a project?",
+    a: `Nothing. There are no listing or data room fees. Only if an investor introduced via the project exchange acquires your project is a success fee of ${SPANNE} of the purchase price due.`,
+  },
+  {
+    q: "How is the fee rate set?",
+    a: `The rate lies between ${fmtEn(PROVISION.verkaeufer.min * 100, 1)}% and ${fmtEn(PROVISION.verkaeufer.max * 100)}% of the purchase price and usually depends on project size and effort. It is fixed before publication and visible in your portal. You accept the agreement when submitting – logged with a timestamp.`,
+  },
+  {
+    q: "Who sees my project data?",
+    a: "In public only an anonymous teaser appears: type, capacity, stage, region, federal state or canton and price indication. Municipality, plots, grid operator and documents are visible only to the back office and to investors whose NDA has been released. You can see views, watch-list saves and NDA requests at any time.",
+  },
+  {
+    q: "Which projects do you accept?",
+    a: "Ground-mounted PV, agri-PV, car park and carport PV as well as battery storage in Germany, Austria and Switzerland – from secured land to operating assets. We need traceable information on land security, planning status and grid connection.",
+  },
+  {
+    q: "Can I withdraw my project?",
+    a: "Yes. As long as no sale has been completed, you can remove the project from the exchange with one click and continue editing it as a draft.",
+  },
+  {
+    q: "Does ÖkoInvest itself act as a buyer?",
+    a: "The ÖKOVOLT Group develops and operates solar parks itself and may be interested in individual projects. We disclose this; on the exchange, the same rules apply to all interested parties.",
+  },
+];
+
+export default function EnSellYourProject() {
+  const schema = {
+    "@context": "https://schema.org",
+    "@type": "Service",
+    name: "Marketing of solar and storage projects to investors",
+    provider: { "@id": `${SITE.url}/#organization` },
+    areaServed: ["DE", "AT", "CH"],
+    audience: { "@type": "BusinessAudience", audienceType: "Project developers, landowners with project rights, asset owners" },
+    url: abs(PFAD),
+    inLanguage: "en",
+    description: BESCHREIBUNG,
+  };
+
+  return (
+    <div>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
+
+      <PageHero
+        eyebrow="For project developers"
+        title={
+          <>
+            Your solar project in front of the <span className="ov-text-gradient">right investors</span> – confidentially.
+          </>
+        }
+        lead={`Anonymous teaser, one-click NDA and a digital data room: you keep control, we bring buyers and sellers together. Success fee ${SPANNE} of the purchase price, only on closing.`}
+        image={{ src: "/img/planer-tablet.jpg", alt: "Project developer reviewing plans on a tablet" }}
+        actions={[
+          { label: "Register as seller", href: "/registrieren?rolle=anbieter" },
+          { label: "Send project details", href: "#enquiry" },
+        ]}
+        points={["No listing fees", "Anonymous until NDA", "Real-time statistics", "Across DACH"]}
+        badge={
+          <div>
+            <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-ov-700">Success fee</p>
+            <p className="ov-num mt-1 font-display text-[28px] font-extrabold text-ink-900">{SPANNE}</p>
+            <p className="text-[13px] text-ink-500">only on closing</p>
+          </div>
+        }
+      />
+
+      <Section tone="white" space="lg">
+        <SectionHeading
+          eyebrow="Why here"
+          title="Market your project without giving it out of your hands"
+          lead="The exchange is part of a group that has been planning, building and operating solar power plants since 2010. We know the questions buyers ask – and prepare your project accordingly."
+        />
+        <FeatureGrid
+          className="mt-12"
+          items={[
+            { icon: EyeOff, title: "Anonymous until NDA", text: "In public only region, capacity, stage and price indication. No municipality, no plots – landowners and municipalities are not approached prematurely." },
+            { icon: FolderLock, title: "Data room with log", text: "Only released investors see the documents. Every access is logged." },
+            { icon: BarChart3, title: "Transparent statistics", text: "Views, watch-list saves, NDA requests and LOIs in your portal – you see how your project is received." },
+            { icon: ShieldCheck, title: "Quality review", text: "We review every project before publication. That builds trust on the buyer side – and saves you follow-up questions." },
+            { icon: Users, title: "Investors with search profiles", text: "Registered investors set size, stages, countries and ticket. They see matching projects first." },
+            { icon: Handshake, title: "Support to closing", text: "From LOI through due diligence to the SPA, one fixed contact person in the back office supports you." },
+          ]}
+        />
+      </Section>
+
+      <Section tone="sand" space="lg">
+        <SectionHeading eyebrow="Process" title="Five steps to a reviewed listing" />
+        <Steps
+          className="mt-12"
+          cols={3}
+          items={[
+            { icon: UserPlus, title: "Create a seller account", text: "Register free of charge. Your account is ready to use immediately." },
+            { icon: LayoutList, title: "Enter the project", text: "Basic data, development stage, teaser and confidential details – every step is saved." },
+            { icon: BadgePercent, title: "Accept the fee", text: `Success fee ${SPANNE} of the purchase price, only on closing – digitally, with timestamp.` },
+            { icon: ClipboardCheck, title: "Back-office review", text: "We check information and documents and raise any questions in the portal." },
+            { icon: Send, title: "Publication & marketing", text: "Anonymous teaser on the exchange, data room after NDA, LOIs and closing in the portal." },
+          ]}
+        />
+        <p className="mt-8 text-[13.5px] text-ink-500">
+          The listing form in the portal is currently in German. Prefer to start in English? Send us the key data below and we will set up the listing with you.
+        </p>
+      </Section>
+
+      <Section tone="white" space="lg">
+        <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
+          <div>
+            <SectionHeading
+              eyebrow="Commission model"
+              title="Transparent – and only on success"
+              lead="No base fee, no minimum term, no exclusivity for the listing. The seller pays the fee only if an investor introduced via the exchange buys."
+            />
+            <ul className="mt-8 space-y-3 text-[15.5px] text-ink-700">
+              <li className="flex gap-3"><FileCheck2 aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-ov-600" /> Rate between {fmtEn(PROVISION.verkaeufer.min * 100, 1)}% and {fmtEn(PROVISION.verkaeufer.max * 100)}% of the purchase price</li>
+              <li className="flex gap-3"><FileCheck2 aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-ov-600" /> Fixed before publication, visible in the portal</li>
+              <li className="flex gap-3"><FileCheck2 aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-ov-600" /> Free of charge for investors (search profile, NDA, data room)</li>
+            </ul>
+          </div>
+          <Reveal className="ov-noise relative overflow-hidden rounded-[2rem] bg-navy-950 p-7 text-white md:p-10">
+            <div aria-hidden="true" className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-ov-500/30 blur-[100px]" />
+            <p className="relative text-[12px] font-semibold uppercase tracking-[0.16em] text-ov-300">Worked example</p>
+            <p className="relative mt-3 text-[15px] text-white/70">
+              Ready-to-build ground-mounted project with {BEISPIEL_MWP} MWp, purchase price in the middle of the usual range (€{fmtEn(BEISPIEL_PREIS_KWP)}/kWp):
+            </p>
+            <dl className="relative mt-6 space-y-4">
+              <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-white/10 pb-4">
+                <dt className="text-white/70">Purchase price, project rights</dt>
+                <dd className="ov-num font-display text-[24px] font-extrabold">{fmtEurEn(BEISPIEL_KAUFPREIS)}</dd>
+              </div>
+              <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                <dt className="text-white/70">Success fee ({SPANNE})</dt>
+                <dd className="ov-num font-display text-[24px] font-extrabold text-ov-300">
+                  {fmtEurEn(BEISPIEL_KAUFPREIS * PROVISION.verkaeufer.min)} – {fmtEurEn(BEISPIEL_KAUFPREIS * PROVISION.verkaeufer.max)}
+                </dd>
+              </div>
+            </dl>
+            <p className="relative mt-6 text-[12.5px] leading-relaxed text-white/50">
+              Example based on the market range for ready-to-build projects (€{fmtEn(RTB.preisProKwp.min)}–{fmtEn(RTB.preisProKwp.max)}/kWp, DACH). The actual price depends on grid connection, remuneration, location and negotiation.
+            </p>
+          </Reveal>
+        </div>
+      </Section>
+
+      <Section tone="ink" space="lg">
+        <div className="grid gap-10 lg:grid-cols-[1fr_1.2fr]">
+          <SectionHeading eyebrow="Quality review" title="What we check before publication" lead="Not a due diligence – but enough for investors to take your project seriously." />
+          <ul className="grid gap-3 sm:grid-cols-2">
+            {[
+              ["Land security", "Lease, option or use agreements and their term"],
+              ["Planning law", "Status of the zoning plan (B-Plan), zoning designation or permit"],
+              ["Grid connection", "Grid enquiry, commitment or reservation, distance to the point of connection"],
+              ["Plausibility", "Capacity vs. area, yield assumptions, schedule to COD"],
+              ["Price indication", "Benchmark against usual ranges for the respective stage"],
+              ["Anonymity", "Title and description without clues to the exact location"],
+            ].map(([t, x]) => (
+              <li key={t} className="rounded-2xl bg-white p-5 ring-1 ring-ink-200/70">
+                <p className="font-display text-[16px] font-bold text-ink-900">{t}</p>
+                <p className="mt-1 text-[14.5px] leading-relaxed text-ink-600">{x}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </Section>
+
+      {/* ---------------- Enquiry ---------------- */}
+      <Section tone="navy" space="lg" id="enquiry" className="scroll-mt-24">
+        <div className="grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16">
+          <div>
+            <SectionHeading
+              dark
+              eyebrow="Offer a project"
+              title="Send us the key data."
+              lead="Technology, capacity, country and region, development stage (land secured, grid commitment, zoning, RTB, COD) and your price expectation. We come back with an assessment and the next steps."
+            />
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row lg:flex-col xl:flex-row">
+              <Button href="/registrieren?rolle=anbieter" variant="white" pfeil>
+                Register as seller
+              </Button>
+              <Button href="/projektboerse/anbieten" hrefLang="de" variant="outlineLight">
+                Listing page (German)
+              </Button>
+            </div>
+          </div>
+          <div className="rounded-[2rem] bg-white/[0.04] p-6 ring-1 ring-white/10 md:p-8">
+            <ContactForm
+              dunkel
+              typ="projekt"
+              daten={{ quelle: "en/sell-your-project" }}
+              titel="Project offer"
+              text="No documents needed at this point – a short description is enough."
+              button="Send project details"
+            />
+          </div>
+        </div>
+      </Section>
+
+      <Section tone="white" space="lg">
+        <div className="grid gap-12 lg:grid-cols-[1fr_1.4fr]">
+          <SectionHeading eyebrow="FAQ" title="Selling via the exchange" />
+          <Faq items={FAQ} />
+        </div>
+      </Section>
+
+      <Querverweise
+        ueberschrift="Continue reading"
+        items={[
+          { href: "/en/project-exchange", titel: "Project exchange", text: "How teaser, NDA and data room work for both sides." },
+          { href: "/en/investors", titel: "For investors", text: "Phase model with price ranges and the buyer's due diligence checklist." },
+          { href: "/en/contact", titel: "Contact", text: "General questions in English to the team in Ostermiething." },
+        ]}
+      />
+
+      <EnCta
+        eyebrow="For developers"
+        title="List confidentially. Pay only on success."
+        text={`No listing fees, no exclusivity. Success fee of ${SPANNE} of the purchase price – only when an investor introduced via the exchange buys.`}
+        primary={{ label: "Register as seller", href: "/registrieren?rolle=anbieter" }}
+        secondary={{ label: "Project exchange", href: "/en/project-exchange" }}
+      />
+    </div>
+  );
+}
+import Link from "next/link";
+import { Building2, Clock, Languages, LineChart, MapPin, Tag } from "lucide-react";
+
+import PageHero from "@/components/ui/PageHero";
+import Section from "@/components/ui/Section";
+import Reveal from "@/components/ui/Reveal";
+import ContactForm from "@/components/En/ContactForm";
+import { enMetadata } from "@/components/En/sprachpaare";
+import { GESELLSCHAFT, KONTAKT, SITE, abs } from "@/data/site";
+
+const PFAD = "/en/contact";
+
+export const metadata = enMetadata({
+  pfad: PFAD,
+  title: "Contact – solar projects in DACH | ÖkoInvest",
+  description:
+    "Contact ÖkoInvest in Ostermiething, Austria: buying or selling solar projects, co-development and general enquiries in English – reply within two working days.",
+  keywords: ["ÖkoInvest contact", "solar project developer Austria contact", "solar investment enquiry"],
+});
+
+const THEMEN = [
+  { typ: "investor", label: "Buying projects / co-development" },
+  { typ: "projekt", label: "Selling a project" },
+  { typ: "flaeche", label: "Land for a solar park" },
+  { typ: "kontakt", label: "General enquiry" },
+];
+
+const TAGE_EN = { "Mo – Do": "Mon – Thu", Fr: "Fri", "Mo – Fr": "Mon – Fri" };
+
+const schema = {
+  "@context": "https://schema.org",
+  "@type": "ContactPage",
+  url: abs(PFAD),
+  name: "Contact ÖkoInvest",
+  inLanguage: "en",
+  about: { "@id": `${SITE.url}/#organization` },
+};
+
+export default function EnContact() {
+  return (
+    <div>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
+
+      <PageHero
+        variant="dark"
+        eyebrow="Contact"
+        title={
+          <>
+            Talk to the team – <span className="ov-text-gradient-light">in English.</span>
+          </>
+        }
+        lead="Buying or selling solar projects, co-development or a general question: send us a short message. We usually reply within two working days."
+      />
+
+      <Section tone="sand" space="lg">
+        <div className="grid gap-10 lg:grid-cols-[1.2fr_0.8fr] lg:gap-14">
+          <Reveal className="rounded-[2rem] bg-white p-6 shadow-xl ring-1 ring-ink-200/70 md:p-10">
+            <ContactForm themen={THEMEN} daten={{ quelle: "en/contact" }} titel="Your enquiry" text="Fields marked * are required." />
+          </Reveal>
+
+          <div className="space-y-5">
+            <Reveal className="rounded-3xl bg-white p-6 ring-1 ring-ink-200/70 md:p-8">
+              <p className="flex items-center gap-2 font-display text-[18px] font-bold text-ink-900">
+                <Building2 aria-hidden="true" className="h-5 w-5 text-ov-600" /> {GESELLSCHAFT.name}
+              </p>
+              <address className="mt-4 flex gap-3 not-italic text-[15.5px] leading-relaxed text-ink-700">
+                <MapPin aria-hidden="true" className="mt-1 h-4 w-4 shrink-0 text-ov-600" />
+                <span>
+                  {KONTAKT.strasse}
+                  <br />
+                  {KONTAKT.ort}
+                  <br />
+                  Austria
+                </span>
+              </address>
+              <p className="mt-4 text-[14px] text-ink-500">
+                Company register {GESELLSCHAFT.register}, Regional Court of Ried im Innkreis
+              </p>
+              {KONTAKT.oeffnungszeiten?.length > 0 && (
+                <div className="mt-5 border-t border-ink-100 pt-5">
+                  <p className="flex items-center gap-2 text-[13.5px] font-semibold text-ink-700">
+                    <Clock aria-hidden="true" className="h-4 w-4 text-ov-600" /> Office hours (CET/CEST)
+                  </p>
+                  <dl className="mt-2 space-y-1 text-[14.5px] text-ink-600">
+                    {KONTAKT.oeffnungszeiten.map((o) => (
+                      <div key={o.tage} className="flex justify-between gap-4">
+                        <dt>{TAGE_EN[o.tage] || o.tage}</dt>
+                        <dd className="ov-num">{o.zeit}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </div>
+              )}
+            </Reveal>
+
+            <Reveal delay={80} className="rounded-3xl bg-navy-950 p-6 text-white md:p-8">
+              <p className="font-display text-[18px] font-bold">Faster routes</p>
+              <ul className="mt-4 space-y-3 text-[15px] text-white/75">
+                <li className="flex gap-3">
+                  <LineChart aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-ov-300" />
+                  <span>
+                    Investors: <Link href="/en/investors#search-profile" className="font-semibold text-white underline underline-offset-2">send a search profile</Link>
+                  </span>
+                </li>
+                <li className="flex gap-3">
+                  <Tag aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-ov-300" />
+                  <span>
+                    Developers: <Link href="/en/sell-your-project#enquiry" className="font-semibold text-white underline underline-offset-2">offer a project</Link>
+                  </span>
+                </li>
+                <li className="flex gap-3">
+                  <Languages aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-ov-300" />
+                  <span>Portal and legal pages are currently in German.</span>
+                </li>
+              </ul>
+            </Reveal>
+          </div>
+        </div>
+      </Section>
+    </div>
+  );
+}

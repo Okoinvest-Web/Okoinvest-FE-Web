@@ -1,0 +1,45 @@
+@import "tailwindcss";
+
+/* Ökovolt-Markenfarben: Grün als Primärfarbe, Solar-Amber als Akzent */
+@theme inline {
+  --font-sans: var(--font-inter);
+
+  --color-brand-50: #eef9f2;
+  --color-brand-100: #d6f0df;
+  --color-brand-200: #afe0c3;
+  --color-brand-300: #7ccaa0;
+  --color-brand-400: #47ad7a;
+  --color-brand-500: #23915f;
+  --color-brand-600: #16754c;
+  --color-brand-700: #135e3f;
+  --color-brand-800: #124b34;
+  --color-brand-900: #0f3e2c;
+  --color-brand-950: #072318;
+
+  --color-sun-300: #fcd34d;
+  --color-sun-400: #fbbf24;
+  --color-sun-500: #f59e0b;
+
+  --shadow-card: 0 1px 2px 0 rgb(16 24 20 / 0.04), 0 1px 3px 0 rgb(16 24 20 / 0.06);
+  --shadow-pop: 0 12px 32px -8px rgb(7 35 24 / 0.25), 0 4px 8px -4px rgb(7 35 24 / 0.1);
+}
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  background: #f5f7f6;
+  color: #0f1a15;
+  font-feature-settings: "cv11", "ss01";
+}
+
+::selection {
+  background: var(--color-brand-200);
+}
+
+/* Dezente Scrollbars in Listen und Kanban */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #cfd8d3 transparent;
+}

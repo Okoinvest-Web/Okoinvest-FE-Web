@@ -1,0 +1,268 @@
+from docx import Document
+from docx.shared import Pt, RGBColor, Cm
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+
+OUT = "Presseaussendung_Oekovolt_Salzburg_AG.docx"
+ACCENT = RGBColor(0x1F, 0x4E, 0x3D)
+GREY = RGBColor(0x66, 0x66, 0x66)
+PH = RGBColor(0xC0, 0x00, 0x00)
+
+doc = Document()
+sec = doc.sections[0]
+sec.left_margin = sec.right_margin = Cm(2.3)
+sec.top_margin = Cm(2)
+st = doc.styles["Normal"]
+st.font.name = "Calibri"
+st.font.size = Pt(11)
+st.paragraph_format.space_after = Pt(8)
+st.paragraph_format.line_spacing = 1.2
+
+
+def para(text="", bold=False, size=None, color=None, italic=False, align=None, after=None):
+    p = doc.add_paragraph()
+    add(p, text, bold, size, color, italic)
+    if align:
+        p.alignment = align
+    if after is not None:
+        p.paragraph_format.space_after = Pt(after)
+    return p
+
+
+def add(p, text, bold=False, size=None, color=None, italic=False):
+    """Text mit [Platzhaltern] – Platzhalter werden rot markiert."""
+    import re
+    for part in re.split(r"(\[[^\]]+\])", text):
+        if not part:
+            continue
+        r = p.add_run(part)
+        r.bold = bold
+        r.italic = italic
+        if size:
+            r.font.size = Pt(size)
+        if part.startswith("["):
+            r.font.color.rgb = PH
+            r.bold = True
+        elif color:
+            r.font.color.rgb = color
+    return p
+
+
+def head(text):
+    p = para(text, bold=True, size=12.5, color=ACCENT, after=4)
+    p.paragraph_format.space_before = Pt(12)
+    p.paragraph_format.keep_with_next = True
+
+
+def sager(text, who="Andreas Wegscheider, Geschäftsführer der Ökovolt-Gruppe"):
+    """Hervorgehobenes Zitat (Pull-Quote) mit Akzentbalken links."""
+    from docx.oxml.ns import qn
+    from docx.oxml import OxmlElement
+    p = doc.add_paragraph()
+    p.paragraph_format.left_indent = Cm(0.6)
+    p.paragraph_format.space_before = Pt(4)
+    p.paragraph_format.space_after = Pt(10)
+    pPr = p._p.get_or_add_pPr()
+    bdr = OxmlElement("w:pBdr")
+    left = OxmlElement("w:left")
+    for k, v in (("w:val", "single"), ("w:sz", "24"), ("w:space", "10"), ("w:color", "1F4E3D")):
+        left.set(qn(k), v)
+    bdr.append(left)
+    pPr.append(bdr)
+    add(p, f"„{text}“", bold=True, size=12.5, color=ACCENT, italic=True)
+    add(p, f"\n– {who}", size=9.5, color=GREY)
+
+
+# Kopf
+para("PRESSEINFORMATION", bold=True, size=10, color=ACCENT, after=2)
+para("Ökovolt-Unternehmensgruppe · Ostermiething, [Datum]", size=9.5, color=GREY, after=16)
+
+para("Neun Gerichtsentscheidungen, ein Registerauszug: Die Fakten widerlegen die Darstellung der Salzburg AG",
+     bold=True, size=19, after=8)
+para("Ökovolt-Gruppe legt überprüfbare Belege vor – Salzburg AG vergab Millionenauftrag an eigene Tochter ohne "
+     "Elektrotechnik-Berechtigung, nachdem sie im Zuge einer Beteiligungsprüfung Zugang zum Know-how der Ökovolt-Gruppe erhalten hatte",
+     size=12, color=GREY, italic=True, after=16)
+
+# Lead
+add(doc.add_paragraph(),
+    "Ostermiething. Die Ökovolt-Unternehmensgruppe weist die jüngsten Darstellungen der Salzburg AG entschieden "
+    "zurück – beginnend mit dem Begriff „Gesellschafterstreit“ selbst. Der Sachverhalt ist längst nicht mehr eine Frage "
+    "unterschiedlicher Sichtweisen: Er ist in Deutschland in neun aufeinanderfolgenden Gerichtsentscheidungen bestätigt, "
+    "zuletzt durch das Oberlandesgericht München, und er ist in Österreich anhand öffentlicher Register für jede und "
+    "jeden nachprüfbar.", bold=True)
+
+add(doc.add_paragraph(),
+    "Mit [Beschluss] vom [Datum] hat das [Landesgericht für Strafsachen Wien] die Einleitung eines "
+    "Ermittlungsverfahrens durch die Wirtschafts- und Korruptionsstaatsanwaltschaft (WKStA) veranlasst. Aus Respekt "
+    "vor diesem Verfahren äußert sich die Ökovolt-Gruppe nicht zu dessen Inhalt. Gerade deshalb beschränkt sie sich im "
+    "Folgenden ausschließlich auf Tatsachen, die gerichtlich festgestellt oder öffentlich dokumentiert sind.")
+
+head("Es gibt keinen „Gesellschafterstreit“")
+add(doc.add_paragraph(),
+    "Die Salzburg AG bemüht sich sichtbar, das Bild eines Streits unter gleichrangigen Gesellschaftern zu zeichnen. "
+    "Dieses Bild ist falsch. Die Salzburg AG ist Minderheitsgesellschafterin der Ökovolt-Gruppe. Als solche hat sie "
+    "Handlungen gesetzt, die der Gesellschaft, an der sie selbst beteiligt ist, geschadet haben – so haben es die "
+    "deutschen Gerichte festgestellt. Der amtierende Vorstand der Salzburg AG hat davon nachweislich Kenntnis "
+    "[Beleg: Schreiben/Gerichtsakt vom …]. Statt die Vorgänge aufzuklären, duldet er sie.")
+add(doc.add_paragraph(),
+    "Stattdessen überzieht die Salzburg AG die Ökovolt-Gruppe mit Verfahren in Millionenhöhe [Anzahl Verfahren, "
+    "Streitwerte]. Ein Energiekonzern mit mehr als zwei Milliarden Euro Umsatz, finanziert von Land und Stadt Salzburg, "
+    "setzt damit seine Mittel gegen ein mittelständisches Unternehmen ein, dessen Know-how er zuvor genutzt hat. "
+    "Aus Sicht der Ökovolt-Gruppe verfolgt dieses Vorgehen ein erkennbares Ziel: den wirtschaftlichen Druck so zu "
+    "erhöhen, dass ein Mittelständler den Rechtsweg nicht bis zum Ende gehen kann.")
+sager("Wer von einem Gesellschafterstreit spricht, will verschleiern, worum es geht: Eine Minderheitsgesellschafterin "
+      "hat dem Unternehmen geschadet, an dem sie selbst beteiligt war.")
+
+head("Kein Ausweichen auf die Vorgänger")
+add(doc.add_paragraph(),
+    "Ebenso sachfremd ist das erkennbare Bemühen, die Vorgänge dem früheren Vorstand zuzuschreiben. Es ist ein "
+    "durchschaubares Manöver, um von der Verantwortung der heutigen Unternehmensführung abzulenken. Der amtierende "
+    "Vorstand ist seit Jänner 2023 im Amt. In seine Amtszeit fallen [die Vergabe des 35-Millionen-Auftrags an die "
+    "one2zero GmbH, die Planung von Anlagen ohne Elektrotechnik-Berechtigung bis August 2023, sämtliche Gerichtsverfahren "
+    "in Deutschland sowie das Eingeständnis vor dem Landgericht Memmingen]. Und unabhängig davon, wann ein Vorgang "
+    "begonnen hat: Wie die Salzburg AG heute damit umgeht – ob sie aufklärt oder duldet, ob sie Fehler korrigiert oder "
+    "Prozesse führt –, verantwortet allein der amtierende Vorstand.")
+sager("Man kann eine Verantwortung erben. Aber man kann sie nicht an die Vorgänger zurückschicken.")
+
+head("Due Diligence als Türöffner")
+add(doc.add_paragraph(),
+    "Im November 2021 beteiligte sich die Salzburg AG mit jeweils 49 Prozent an der Ökovolt Solartechnik GmbH in "
+    "Ostermiething und an der deutschen Schwestergesellschaft Ökovolt GmbH Solartechnik. Im Vorfeld dieser Beteiligung "
+    "erhielt ein Manager der Salzburg AG im Rahmen der Unternehmensprüfung (Due Diligence) umfassenden Einblick in "
+    "Know-how, Kalkulationen und Kundenbeziehungen der Ökovolt-Gruppe.")
+add(doc.add_paragraph(),
+    "Am [Datum] – am selben Tag und vor demselben Notar wie [der Beteiligungsvertrag] – wurde dieselbe Person "
+    "Geschäftsführer eines neuen Konkurrenzunternehmens, der [Firma, FN …]. Gegen diesen Geschäftsführer ermittelt "
+    "nun die WKStA. Für ihn gilt selbstverständlich die Unschuldsvermutung. Die zeitliche und personelle Abfolge ist "
+    "jedoch durch Firmenbuch und Notariatsakt dokumentiert.")
+
+head("Von der Salzburg AG selbst eingeräumt")
+add(doc.add_paragraph(),
+    "Dass die Salzburg AG dieses Know-how verwendet und damit den betreffenden Auftrag erlangt hat, ist keine "
+    "Behauptung der Ökovolt-Gruppe. Die Leiterin der Rechtsabteilung der Salzburg AG hat es vor dem Landgericht "
+    "Memmingen selbst eingeräumt [Az. …, Datum]. Dieser Umstand führte zur Einziehung der Geschäftsanteile der "
+    "Salzburg AG an der deutschen Schwestergesellschaft. Die deutschen Gerichte haben dies in neun aufeinanderfolgenden "
+    "Entscheidungen bestätigt, zuletzt das Oberlandesgericht München [Az. …, Datum].")
+add(doc.add_paragraph(),
+    "Das Oberlandesgericht hält dazu fest: [wörtliches Zitat aus der Entscheidung, 1–2 Sätze, mit Randnummer].", italic=True)
+sager("Was die Salzburg AG in Memmingen vor Gericht zugegeben hat, kann sie in Salzburg nicht in einer "
+      "Presseaussendung wieder zurücknehmen.")
+
+head("35 Millionen Euro für eine Unternehmensberatung")
+add(doc.add_paragraph(),
+    "Den Auftrag mit einem Volumen von mehr als 35 Millionen Euro vergab die Salzburg AG an die one2zero GmbH "
+    "(FN 567399k), eine hundertprozentige Tochter. Das Gewerbeinformationssystem Austria (GISA) weist für dieses "
+    "Unternehmen ab seiner Gründung Ende November 2022 ausschließlich eine Gewerbeberechtigung für "
+    "Unternehmensberatung aus – eingetragen zunächst an der Konzernadresse der Salzburg AG in der Bayerhamerstraße 16.")
+add(doc.add_paragraph(),
+    "Die für Planung und Errichtung elektrischer Anlagen erforderliche Gewerbeberechtigung für Elektrotechnik wurde "
+    "erst am 2. August 2023 eingetragen – [X Monate] nach der Auftragsvergabe am [Datum]. Zum Zeitpunkt der Vergabe "
+    "wies die one2zero GmbH laut veröffentlichtem Jahresabschluss zudem einen Bilanzverlust von rund 65.000 Euro aus.")
+add(doc.add_paragraph(),
+    "Im Klartext: Ein Unternehmen ohne Befugnis für Elektrotechnik und ohne wirtschaftliche Substanz erhielt einen "
+    "Auftrag in zweistelliger Millionenhöhe. Nach den Maßstäben, die für Aufträge aus öffentlicher Hand gelten, hätte "
+    "ein solcher Bieter gar nicht zum Zug kommen können.")
+sager("Jeder Elektriker in Salzburg braucht einen Gewerbeschein, bevor er eine Steckdose montiert. Die Salzburg AG hat "
+      "35 Millionen Euro an ein Unternehmen vergeben, das nur Unternehmensberatung durfte.")
+
+head("Die Folgen reichen bis zu den Kunden")
+add(doc.add_paragraph(),
+    "Die Tragweite zeigt sich auch bei Auftraggebern der one2zero GmbH. In den Jahren 2022 und 2023 wurden auf Dächern "
+    "der Hofer KG Photovoltaikanlagen [Anzahl, Standorte, kWp] errichtet, die von der one2zero GmbH geplant und von "
+    "weiteren Subunternehmen installiert wurden – zu einem Zeitpunkt, zu dem das planende Unternehmen keine "
+    "Gewerbeberechtigung für Elektrotechnik besaß. Die Unternehmensgruppe ALDI SÜD, zu der Hofer gehört, verpflichtet "
+    "sich in ihrem Verhaltenskodex zur Einhaltung von Recht und Gesetz und erwartet dies ausdrücklich auch von ihren "
+    "Geschäftspartnern. Die Ökovolt-Gruppe hat die betroffenen Auftraggeber über die Sachlage informiert.")
+
+head("Ein Fall ohne Beispiel")
+add(doc.add_paragraph(),
+    "Einem öffentlichen Energieversorger wurden die Geschäftsanteile an einem Unternehmen zwangsweise entzogen – wegen "
+    "schwerwiegender Verletzungen der gesellschaftsrechtlichen Treuepflicht und des Abzugs von Know-how durch von ihm "
+    "eingesetzte Geschäftsführer. Die Gerichte stellten zudem fest, dass den übrigen Gesellschafterinnen und "
+    "Gesellschaftern der Ökovolt-Gruppe ein Verbleib der Salzburg AG in der Gesellschaft nicht zumutbar ist "
+    "[Az. …, Fundstelle im Urteil]. Der Ökovolt-Gruppe ist kein vergleichbarer Fall eines österreichischen "
+    "Energieversorgers in öffentlicher Hand bekannt.")
+sager("Ein Gericht hat festgestellt, dass man mit der Salzburg AG als Gesellschafterin nicht mehr zusammenarbeiten "
+      "kann. Das sagt mehr als jede Presseaussendung.")
+
+head("Energiewende auf dem Dach – Millionen für Anwälte")
+add(doc.add_paragraph(),
+    "Mehr als 30 Mitarbeiterinnen und Mitarbeiter der Ökovolt-Gruppe stehen jeden Tag auf den Dächern – bei Wind und "
+    "Wetter, mit harter körperlicher Arbeit. Sie sind es, die die Energiewende tatsächlich umsetzen: Anlage für Anlage, "
+    "für Betriebe und Haushalte, die unter den hohen Energiepreisen leiden.")
+add(doc.add_paragraph(),
+    "Zur selben Zeit wendet ein Energieversorger im Eigentum von Land und Stadt Salzburg Millionen für Anwälte und "
+    "Verfahren auf [Beleg/Schätzung Verfahrenskosten]. Aus Sicht der Ökovolt-Gruppe dient dieser Aufwand vor allem "
+    "einem Zweck: ein Unternehmen zum Schweigen zu bringen, das auf Missstände hinweist. Es ist Geld, das den "
+    "Salzburgerinnen und Salzburgern gehört – und das bei der Senkung ihrer Energiekosten besser eingesetzt wäre.")
+sager("Unsere Leute machen die Energiewende auf dem Dach, bei minus fünf Grad und bei plus fünfunddreißig. "
+      "Die Salzburg AG macht sie im Gerichtssaal – mit dem Geld der Salzburger.")
+sager("[Zitat eines Mitarbeiters/Monteurs – nur mit dessen ausdrücklicher Freigabe]",
+      who="[Vorname Name, Funktion, seit … bei Ökovolt]")
+add(doc.add_paragraph(),
+    "Jede Salzburgerin und jeder Salzburger ist eingeladen, sich anhand der öffentlich zugänglichen Register und der "
+    "Gerichtsentscheidungen ein eigenes Bild zu machen.", bold=True)
+
+head("Anspruch und Wirklichkeit")
+add(doc.add_paragraph(),
+    "Die Salzburg AG hat sich einen eigenen Verhaltenskodex gegeben und erklärt öffentlich: „Wir fühlen uns unseren "
+    "Unternehmenswerten verpflichtet.“ Als Unternehmen, das zu fast drei Vierteln im Eigentum von Land und Stadt "
+    "Salzburg steht, unterliegt sie zudem den erhöhten Anforderungen an Transparenz, Leitung und Kontrolle, die der "
+    "Salzburg Corporate Governance Kodex (SCGK) für öffentliche Unternehmen festschreibt [Anwendung durch die "
+    "Salzburg AG im Geschäftsbericht prüfen].")
+add(doc.add_paragraph(),
+    "Gemessen an diesen Maßstäben ist die Diskrepanz offensichtlich: Wer sich zu Offenheit und Rechtstreue bekennt, "
+    "räumt vor einem deutschen Gericht die Nutzung fremden Know-hows ein – und bestreitet in Österreich öffentlich, "
+    "was dort bereits festgestellt wurde. Wer sich an Regeln für öffentliche Unternehmen messen lassen muss, vergibt "
+    "einen Auftrag über mehr als 35 Millionen Euro an eine Tochter ohne die dafür nötige Gewerbeberechtigung. "
+    "Die Ökovolt-Gruppe überlässt es der Öffentlichkeit, daraus ihre Schlüsse über die Glaubwürdigkeit der "
+    "Darstellungen der Salzburg AG zu ziehen.")
+sager("Ein Verhaltenskodex ist kein Hochglanzprospekt. Man muss ihn auch dann einhalten, wenn es unbequem wird.")
+
+head("Die Eigentümer sind am Zug")
+add(doc.add_paragraph(),
+    "Die Faktenlage ist eindeutig und lückenlos belegbar: Zugang zum Know-how der Ökovolt-Gruppe über die "
+    "Beteiligungsprüfung. Am selben Tag der Wechsel des zuständigen Managers an die Spitze einer Konkurrentin. Das "
+    "Eingeständnis der Know-how-Nutzung vor einem deutschen Gericht. Neun bestätigende Gerichtsentscheidungen. Und ein "
+    "Millionenauftrag an eine Tochter, die dafür nicht befugt war.")
+add(doc.add_paragraph(),
+    "Die Salzburg AG steht im Eigentum des Landes Salzburg, der Stadt Salzburg und der Energie AG Oberösterreich – und "
+    "damit mittelbar der Bürgerinnen und Bürger. Mit deren Geld werden Verfahren gegen ein heimisches "
+    "Mittelstandsunternehmen geführt, während die eigentlichen Vorgänge unaufgeklärt bleiben. Die Ökovolt-Gruppe "
+    "erwartet, dass Eigentümer und Aufsichtsrat ihrer Kontrollverantwortung nachkommen und diese Vorgänge vollständig "
+    "aufklären – statt zuzulassen, dass der Vorstand öffentlich ein Bild verbreitet, das der gerichtlich festgestellten "
+    "Sachlage widerspricht.")
+
+p = doc.add_paragraph()
+add(p, "„Es gibt keinen Gesellschafterstreit. Es gibt eine Minderheitsgesellschafterin, die unserem Unternehmen "
+       "geschadet hat, und einen Vorstand, der davon weiß und nicht handelt. Für mich ist das einer der größten "
+       "Skandale im österreichischen Energiesektor seit Bestehen der Zweiten Republik. Wir lassen nicht zu, dass Tatsachen, die "
+       "neun Gerichte bestätigt haben, in der Öffentlichkeit umgedeutet werden. Jede Aussage, die wir treffen, ist "
+       "belegt – und wir stellen diese Belege jedem Medium zur Verfügung“, ", italic=True)
+add(p, "so Andreas Wegscheider, Geschäftsführer der Ökovolt-Unternehmensgruppe.")
+p.paragraph_format.left_indent = Cm(0.8)
+
+add(doc.add_paragraph(),
+    "Die Ökovolt-Gruppe vertraut darauf, dass die österreichischen Behörden den Sachverhalt ebenso gründlich prüfen, wie "
+    "es die deutschen Gerichte bereits getan haben. Bis zum Abschluss des Verfahrens wird sie sich ausschließlich zu "
+    "überprüfbaren Tatsachen äußern.")
+
+head("Belege auf Anfrage")
+for b in ["Entscheidungen LG Memmingen und OLG München [Aktenzeichen]",
+          "GISA-Auszüge one2zero GmbH (GISA-Zahlen 35453048, 35939931) mit historischen Daten, Stichtag 25.09.2026",
+          "Firmenbuchauszüge one2zero GmbH (FN 567399k) und [Konkurrenzunternehmen, FN …]",
+          "Jahresabschluss one2zero GmbH zum [Stichtag]"]:
+    add(doc.add_paragraph(style="List Bullet"), b)
+
+head("Über die Ökovolt-Unternehmensgruppe")
+add(doc.add_paragraph(),
+    "Die Ökovolt-Unternehmensgruppe mit Sitz in Ostermiething (Oberösterreich) plant und errichtet seit 2012 "
+    "Photovoltaik-Großanlagen in Österreich und Deutschland. Mit mehr als 30 Mitarbeiterinnen und Mitarbeitern und "
+    "[aktuelle Zahl] realisierten Anlagen zählt sie zu den erfahrenen Fachbetrieben der Branche.", size=10)
+
+para("", after=4)
+para("Rückfragehinweis", bold=True, size=10, color=ACCENT, after=2)
+para("Andreas Wegscheider, Geschäftsführer\nÖkovolt-Unternehmensgruppe · Gewerbegebiet 10, 5121 Ostermiething\n[Telefon] · [E-Mail]",
+     size=10)
+
+doc.save(OUT)
+print("ok", OUT)

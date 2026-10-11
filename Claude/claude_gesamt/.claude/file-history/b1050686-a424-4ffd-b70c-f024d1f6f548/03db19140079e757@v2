@@ -1,0 +1,401 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+
+import { Balkendiagramm } from "@/components/diagramme/balken";
+import { Energiefluss } from "@/components/diagramme/energiefluss";
+import { Verlauf } from "@/components/diagramme/verlauf";
+import { Tabelle, Zeile, Zelle } from "@/components/tabelle";
+import {
+  Angabe,
+  Balken,
+  Karte,
+  Kennzahl,
+  LeerZustand,
+  LivePunkt,
+  Seitenkopf,
+  Status,
+} from "@/components/ui";
+import { findeNetzbetreiber, netzebeneText } from "@/lib/at/netzbetreiber";
+import { formatZaehlpunkt, zerlegeZaehlpunkt } from "@/lib/at/zaehlpunkt";
+import {
+  autarkiegrad,
+  eigenverbrauchsquote,
+  imZeitraum,
+  letzteTage,
+  momentanwert,
+  monatsSummen,
+  summiere,
+  vermiedenesCo2,
+} from "@/lib/auswertung";
+import { messwerte as demoMesswerte } from "@/lib/demo/quelle";
+import { ENERGIE_FARBEN } from "@/lib/farben";
+import {
+  formatCo2,
+  formatDatum,
+  formatEnergie,
+  formatProzent,
+  formatZahl,
+  formatZeit,
+} from "@/lib/format";
+import {
+  ladeAnlage,
+  ladeErtraege,
+  ladeKomponenten,
+  ladeStoerungen,
+} from "@/lib/portal-daten";
+import { requireRecht } from "@/lib/session";
+
+import { statusTon } from "../../page";
+
+export default async function AnlagenDetail({
+  params,
+}: {
+  params: Promise<{ name: string }>;
+}) {
+  await requireRecht("anlagen.lesen");
+
+  const { name } = await params;
+  const id = decodeURIComponent(name);
+
+  const anlage = await ladeAnlage(id);
+  if (!anlage) notFound();
+
+  const [ertraege, komponenten, stoerungen] = await Promise.all([
+    ladeErtraege(id, 400),
+    ladeKomponenten(id),
+    ladeStoerungen(),
+  ]);
+
+  const dreissig = letzteTage(30);
+  const jahr = letzteTage(365);
+
+  const summe30 = summiere(ertraege.filter((e) => imZeitraum(e, dreissig)));
+  const summeJahr = summiere(ertraege.filter((e) => imZeitraum(e, jahr)));
+
+  const messwerte = demoMesswerte(anlage.name);
+  const jetzt = momentanwert(messwerte);
+  const tagesVerlauf = messwerte.filter((_, i) => i % 2 === 0);
+  const monate = monatsSummen(ertraege, 12);
+
+  const kwp = anlage.leistung_kwp ?? 0;
+  const spezifisch = kwp > 0 ? summeJahr.erzeugung / kwp : 0;
+  const sollErtrag = anlage.soll_ertrag_kwh ?? 0;
+  const zielerreichung = sollErtrag > 0 ? (summeJahr.erzeugung / sollErtrag) * 100 : 0;
+
+  const zpTeile = anlage.zaehlpunkt ? zerlegeZaehlpunkt(anlage.zaehlpunkt) : null;
+  const netzbetreiber = zpTeile
+    ? findeNetzbetreiber(zpTeile.netzbetreiberKennzahl)
+    : undefined;
+
+  const ertrag30 = formatEnergie(summe30.erzeugung);
+  const ertragJahr = formatEnergie(summeJahr.erzeugung);
+  const co2 = formatCo2(vermiedenesCo2(summeJahr.erzeugung));
+
+  const eigeneStoerungen = stoerungen.filter(
+    (s) => s.anlage === anlage.name && s.status !== "Geschlossen",
+  );
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <Link
+          href="/portal/anlagen"
+          className="text-sm text-slate-500 hover:underline dark:text-slate-400"
+        >
+          ← Zurück zu den Anlagen
+        </Link>
+        <div className="mt-2">
+          <Seitenkopf
+            titel={anlage.anlagen_name}
+            beschreibung={`${anlage.standort ?? ""}${anlage.ort ? `, ${anlage.plz} ${anlage.ort}` : ""}`}
+            aktion={
+              <Status ton={statusTon(anlage.status)}>
+                {anlage.status ?? "Unbekannt"}
+              </Status>
+            }
+          />
+        </div>
+      </div>
+
+      {eigeneStoerungen.length > 0 && (
+        <Karte titel="Offene Störungen an dieser Anlage">
+          <ul className="space-y-2">
+            {eigeneStoerungen.map((stoerung) => (
+              <li
+                key={stoerung.name}
+                className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-slate-50 px-3 py-2 dark:bg-slate-800/50"
+              >
+                <span className="min-w-0">
+                  <span className="block text-sm font-medium">
+                    {stoerung.betreff}
+                  </span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400">
+                    gemeldet am {formatDatum(stoerung.gemeldet_am)}
+                    {stoerung.fehlercode && ` · Fehlercode ${stoerung.fehlercode}`}
+                  </span>
+                </span>
+                <Status
+                  ton={stoerung.prioritaet === "Hoch" ? "ernst" : "hinweis"}
+                >
+                  {stoerung.status}
+                </Status>
+              </li>
+            ))}
+          </ul>
+        </Karte>
+      )}
+
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Kennzahl
+          label="Nennleistung"
+          wert={formatZahl(kwp, 1)}
+          einheit="kWp"
+          hinweis={`${formatZahl(anlage.modul_anzahl, 0)} Module`}
+        />
+        <Kennzahl
+          label="Ertrag 30 Tage"
+          wert={ertrag30.wert}
+          einheit={ertrag30.einheit}
+          farbe={ENERGIE_FARBEN.erzeugung}
+          verzoegerung={60}
+        />
+        <Kennzahl
+          label="Spezifischer Ertrag"
+          wert={formatZahl(spezifisch, 0)}
+          einheit="kWh/kWp"
+          hinweis="12 Monate"
+          verzoegerung={120}
+        />
+        <Kennzahl
+          label="CO₂ vermieden"
+          wert={co2.wert}
+          einheit={co2.einheit}
+          hinweis="12 Monate"
+          verzoegerung={180}
+        />
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-5">
+        <Karte
+          klasse="lg:col-span-3"
+          titel="Tagesverlauf"
+          aktion={
+            jetzt && (
+              <span className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                <LivePunkt aktiv={anlage.status === "Aktiv"} />
+                {formatZeit(jetzt.zeitpunkt)}
+              </span>
+            )
+          }
+        >
+          <Verlauf
+            beschriftungen={tagesVerlauf.map((m) => formatZeit(m.zeitpunkt))}
+            einheit="kW"
+            achsenSchritte={7}
+            reihen={[
+              {
+                schluessel: "erzeugung",
+                label: "Erzeugung",
+                farbe: ENERGIE_FARBEN.erzeugung,
+                werte: tagesVerlauf.map((m) => m.erzeugung_kw ?? 0),
+                gefuellt: true,
+              },
+              {
+                schluessel: "verbrauch",
+                label: "Verbrauch",
+                farbe: ENERGIE_FARBEN.eigenverbrauch,
+                werte: tagesVerlauf.map((m) => m.verbrauch_kw ?? 0),
+              },
+            ]}
+          />
+        </Karte>
+
+        <Karte klasse="lg:col-span-2" titel="Energiefluss">
+          {jetzt ? (
+            <Energiefluss
+              werte={{
+                erzeugung: jetzt.erzeugung_kw ?? 0,
+                verbrauch: jetzt.verbrauch_kw ?? 0,
+                netz: (jetzt.einspeisung_kw ?? 0) - (jetzt.netzbezug_kw ?? 0),
+                speicher: jetzt.speicher_kw ?? 0,
+                speicherSoc: jetzt.speicher_soc,
+              }}
+            />
+          ) : (
+            <LeerZustand text="Keine Momentandaten verfügbar." />
+          )}
+        </Karte>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-3">
+        <Karte
+          klasse="lg:col-span-2"
+          titel="Monatserträge"
+          beschreibung={
+            sollErtrag > 0
+              ? `Sollwert laut Auslegung: ${formatZahl(sollErtrag / 12 / 1000, 1)} MWh je Monat im Mittel`
+              : undefined
+          }
+        >
+          <Balkendiagramm
+            beschriftungen={monate.map((m) => m.label)}
+            einheit="kWh"
+            reihen={[
+              {
+                schluessel: "eigenverbrauch",
+                label: "Eigenverbrauch",
+                farbe: ENERGIE_FARBEN.eigenverbrauch,
+                werte: monate.map((m) => m.eigenverbrauch),
+              },
+              {
+                schluessel: "einspeisung",
+                label: "Einspeisung",
+                farbe: ENERGIE_FARBEN.einspeisung,
+                werte: monate.map((m) => m.einspeisung),
+              },
+            ]}
+            kompakt
+          />
+        </Karte>
+
+        <Karte titel="Kennwerte" beschreibung="letzte 30 Tage">
+          <div className="space-y-4">
+            <Balken
+              label="Eigenverbrauchsquote"
+              anteil={eigenverbrauchsquote(summe30)}
+              wertText={formatProzent(eigenverbrauchsquote(summe30), 1)}
+              farbe={ENERGIE_FARBEN.eigenverbrauch}
+            />
+            <Balken
+              label="Autarkiegrad"
+              anteil={autarkiegrad(summe30)}
+              wertText={formatProzent(autarkiegrad(summe30), 1)}
+              farbe={ENERGIE_FARBEN.einspeisung}
+            />
+            {sollErtrag > 0 && (
+              <Balken
+                label="Zielerreichung 12 Monate"
+                anteil={zielerreichung}
+                wertText={formatProzent(zielerreichung, 0)}
+                farbe={ENERGIE_FARBEN.erzeugung}
+              />
+            )}
+
+            <dl className="space-y-2 border-t border-slate-100 pt-4 dark:border-slate-800">
+              <Angabe label="Ertrag 12 Monate">
+                {ertragJahr.wert} {ertragJahr.einheit}
+              </Angabe>
+              <Angabe label="Eingespeist">
+                {formatEnergie(summeJahr.einspeisung).wert}{" "}
+                {formatEnergie(summeJahr.einspeisung).einheit}
+              </Angabe>
+              <Angabe label="Netzbezug">
+                {formatEnergie(summeJahr.netzbezug).wert}{" "}
+                {formatEnergie(summeJahr.netzbezug).einheit}
+              </Angabe>
+            </dl>
+          </div>
+        </Karte>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Karte titel="Netzanschluss">
+          <dl className="space-y-2.5">
+            <Angabe label="Zählpunktbezeichnung">
+              <span className="font-mono text-xs">
+                {anlage.zaehlpunkt ? formatZaehlpunkt(anlage.zaehlpunkt) : "–"}
+              </span>
+            </Angabe>
+            <Angabe label="Netzbetreiber">
+              {netzbetreiber?.name ?? anlage.netzbetreiber ?? "–"}
+            </Angabe>
+            <Angabe label="Netzebene">
+              {netzebeneText(anlage.netzebene)}
+            </Angabe>
+            <Angabe label="Anschlusstyp">
+              {anlage.tor_typ
+                ? `TOR Erzeuger Typ ${anlage.tor_typ}`
+                : "–"}
+            </Angabe>
+            <Angabe label="Inbetriebnahme">
+              {formatDatum(anlage.inbetriebnahme)}
+            </Angabe>
+          </dl>
+
+          <p className="mt-4 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500 dark:bg-slate-800/50 dark:text-slate-400">
+            Die Zählpunktbezeichnung ist 33-stellig: Länderkennung, sechsstellige
+            Netzbetreiberkennzahl, Postleitzahl und Zählpunktnummer.
+          </p>
+        </Karte>
+
+        <Karte titel="Technische Ausführung">
+          <dl className="space-y-2.5">
+            <Angabe label="Module">{anlage.modul_typ ?? "–"}</Angabe>
+            <Angabe label="Anzahl Module">
+              {formatZahl(anlage.modul_anzahl, 0)}
+            </Angabe>
+            <Angabe label="Wechselrichter">
+              {anlage.wechselrichter_typ ?? "–"}
+            </Angabe>
+            <Angabe label="Speicher">
+              {anlage.speicher_kwh
+                ? `${formatZahl(anlage.speicher_kwh, 0)} kWh`
+                : "kein Speicher"}
+            </Angabe>
+            <Angabe label="Ausrichtung">
+              {anlage.ausrichtung ?? "–"}
+              {anlage.neigung !== undefined && `, ${anlage.neigung}° Neigung`}
+            </Angabe>
+            <Angabe label="Steuerung">{anlage.steuerung_typ ?? "–"}</Angabe>
+          </dl>
+        </Karte>
+      </div>
+
+      <Karte titel="Komponenten">
+        {komponenten.length === 0 ? (
+          <LeerZustand text="Für diese Anlage sind keine Komponenten erfasst." />
+        ) : (
+          <Tabelle
+            spalten={[
+              "Komponente",
+              "Hersteller / Modell",
+              "Seriennummer",
+              "Firmware",
+              "Garantie bis",
+            ]}
+          >
+            {komponenten.map((komponente) => (
+              <Zeile key={komponente.name}>
+                <Zelle>
+                  <span className="font-medium">{komponente.bezeichnung}</span>
+                  <span className="block text-xs text-slate-500 dark:text-slate-400">
+                    {komponente.kategorie}
+                  </span>
+                </Zelle>
+                <Zelle gedaempft>
+                  {komponente.hersteller} {komponente.modell}
+                </Zelle>
+                <Zelle gedaempft>
+                  <span className="font-mono text-xs">
+                    {komponente.seriennummer ?? "–"}
+                  </span>
+                </Zelle>
+                <Zelle>
+                  <span className="flex items-center gap-2">
+                    <span className="font-mono text-xs">
+                      {komponente.firmware ?? "–"}
+                    </span>
+                    {komponente.firmware_aktuell === 0 && (
+                      <Status ton="hinweis">Update verfügbar</Status>
+                    )}
+                  </span>
+                </Zelle>
+                <Zelle gedaempft>{formatDatum(komponente.garantie_bis)}</Zelle>
+              </Zeile>
+            ))}
+          </Tabelle>
+        )}
+      </Karte>
+    </div>
+  );
+}

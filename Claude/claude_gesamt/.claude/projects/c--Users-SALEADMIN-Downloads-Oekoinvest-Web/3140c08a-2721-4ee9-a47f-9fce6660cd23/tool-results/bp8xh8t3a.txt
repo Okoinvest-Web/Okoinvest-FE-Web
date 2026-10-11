@@ -1,0 +1,572 @@
+// src/app/(stamm)/rechner/gewerbestrom-check/page.js – Rechnungs-Check Gewerbestrom (Welle 3, Paket B5, Preisradar Schritt 1)
+//
+// Nur Deutschland (TOOLS: laender ["DE"]): Auf /at und /ch zeigt RechnerSeite den eigenen Länderhinweis
+// (AT: ab 2027 nach SNE-VO in Vorbereitung, CH: in Vorbereitung). Werte aus dem Faktenregister
+// (src/lib/fakten/daten/gewerbestrom-de.js), Rechenlogik src/lib/rechner/gewerbestrom.js.
+// noindex bis zur Fachprüfung (src/lib/land/seiten.js index: false; englisch src/lib/sprache/seiten.js).
+//
+// Sprachmodell: deutsche Texte in DE, englische in EN (gleiche Struktur; Regeln: src/lib/sprache/woerterbuch.js).
+
+import Link from "@/components/Land/Link";
+import RechnerSeite, { rechnerMetadata, rechnerMetadataEn } from "@/components/Rechner/RechnerSeite";
+import GewerbestromCheck from "@/components/Rechner/GewerbestromCheck";
+import { pfad as seitenPfad } from "@/lib/land";
+import { seitenLand, seitenMetadata, spracheDerAnfrage } from "@/lib/land/seite";
+import { faqFuerLand, NurDEBlock } from "@/components/Land/Laenderteile";
+import { uebersetze } from "@/lib/sprache/woerterbuch";
+import { formate } from "@/lib/sprache/zahlformat";
+import { boerseBase, werte } from "@/lib/rechner/gewerbestrom";
+
+const PFAD = seitenPfad("/rechner/gewerbestrom-check");
+
+const metadata = rechnerMetadata({
+  pfad: PFAD,
+  title: "Gewerbestrom-Rechnung prüfen: Rechnungs-Check | ÖkoInvest",
+  description:
+    "Stromrechnung Ihres Betriebs zerlegen: amtliche Umlagen, Stromsteuer, Konzessionsabgabe und Börsenwert (SMARD) gegen Ihren Energieanteil. Lastgang optional, nur im Browser ausgewertet.",
+  keywords: ["Gewerbestrom Rechnung prüfen", "Strompreis Gewerbe zusammensetzung", "Umlagen 2026 Strom", "Konzessionsabgabe Sondervertragskunde", "Stromsteuer Entlastung § 9b", "Lastgang auswerten"],
+});
+
+// Fachprüfung offen (Register index: false): auch die gemeinsame Seite trägt noindex
+metadata.robots = { index: false, follow: true };
+
+const metadataEn = rechnerMetadataEn({
+  title: "Check your commercial electricity bill | ÖkoInvest",
+  description:
+    "Break down your business electricity bill: official levies, electricity tax, concession fee and exchange value (SMARD) against your energy component. Load profile optional, analysed in your browser only.",
+  keywords: ["check commercial electricity bill Germany", "business electricity price breakdown", "German electricity levies 2026", "concession fee special contract", "electricity tax relief § 9b", "load profile analysis"],
+});
+
+const LAND_HINWEISE = {
+  AT: {
+    de: "Den Rechnungs-Check gibt es bisher nur für Deutschland. Für Österreich bauen wir ihn ab 2027 nach der neuen Systemnutzungsentgelte-Verordnung (SNE-VO) – er ist in Vorbereitung.",
+    en: "The bill check is currently available for Germany only. For Austria, we are building it from 2027 based on the new system usage charges ordinance (SNE-VO) – it is in preparation.",
+  },
+  CH: {
+    de: "Den Rechnungs-Check gibt es bisher nur für Deutschland. Eine Fassung für die Schweiz ist in Vorbereitung.",
+    en: "The bill check is currently available for Germany only. A version for Switzerland is in preparation.",
+  },
+};
+
+function annahmenZeilen(sprache) {
+  const w = werte();
+  const f = formate(sprache);
+  const ct = (x) => `${f.fmt(x, 3)} ct/kWh`;
+  const en = sprache === "en";
+  const tarif = w.kavTarif.wert.map((s) => f.fmt(s.ct, 2)).join(" · ");
+  const m = w.monate.wert;
+  return en
+    ? [
+        ["CHP levy (KWKG) 2026", ct(w.kwkg.wert)],
+        ["Offshore grid levy 2026", ct(w.offshore.wert)],
+        ["Surcharge for special grid use, first GWh", ct(w.aufschlagA.wert)],
+        ["… above 1 GWh (manufacturing > 4% costs)", `${ct(w.aufschlagB.wert)} (${f.fmt(w.aufschlagC.wert, 3)})`],
+        ["Electricity tax, standard rate", ct(w.stromsteuer.wert)],
+        ["Electricity tax relief § 9b", `${ct(w.entlastung.wert)}, above €${f.fmt(w.sockel.wert)}/yr`],
+        ["Concession fee, special contract", ct(w.kavSonder.wert)],
+        ["Concession fee, tariff customer", `${tarif} ct/kWh`],
+        ["Exchange value day-ahead (12 months)", `${f.fmt(boerseBase(m), 2)} ct/kWh`],
+        ["Usual mark-up over exchange value (estimate)", `${f.fmt(w.aufschlag.wert.min, 1)}–${f.fmt(w.aufschlag.wert.max, 1)} ct/kWh`],
+        ["Exchange data period", `${m[0].monat} to ${m[m.length - 1].monat}`],
+      ]
+    : [
+        ["KWKG-Umlage 2026", ct(w.kwkg.wert)],
+        ["Offshore-Netzumlage 2026", ct(w.offshore.wert)],
+        ["Aufschlag besondere Netznutzung, erste GWh", ct(w.aufschlagA.wert)],
+        ["… über 1 GWh (produzierend > 4 % Kosten)", `${ct(w.aufschlagB.wert)} (${f.fmt(w.aufschlagC.wert, 3)})`],
+        ["Stromsteuer Regelsatz", ct(w.stromsteuer.wert)],
+        ["Stromsteuer-Entlastung § 9b", `${ct(w.entlastung.wert)}, über ${f.fmt(w.sockel.wert)} €/Jahr`],
+        ["Konzessionsabgabe Sondervertrag", ct(w.kavSonder.wert)],
+        ["Konzessionsabgabe Tarifkunde", `${tarif} ct/kWh`],
+        ["Börsenwert Day-Ahead (12 Monate)", `${f.fmt(boerseBase(m), 2)} ct/kWh`],
+        ["Üblicher Aufschlag über Börse (Schätzung)", `${f.fmt(w.aufschlag.wert.min, 1)}–${f.fmt(w.aufschlag.wert.max, 1)} ct/kWh`],
+        ["Zeitraum Börsendaten", `${m[0].monat.split("-").reverse().join("/")} bis ${m[m.length - 1].monat.split("-").reverse().join("/")}`],
+      ];
+}
+
+const FAQ = [
+  {
+    q: "Welche Werte brauche ich aus meiner Stromrechnung?",
+    nurDE: "Rechnungsangaben",
+    a: "Jahresverbrauch in kWh, den Arbeitspreis in ct/kWh (netto), den Grundpreis und das Netzentgelt. Netzbetreiber und Lieferanten müssen das Netzentgelt und den Messstellenbetrieb auf der Rechnung getrennt ausweisen (§ 40 EnWG). Bei Leistungsmessung steht dort auch die höchste Leistung in kW.",
+  },
+  {
+    q: "Was ist „amtlich“, was „berechnet“, was „Schätzung“?",
+    nurDE: "Quellen",
+    a: "Amtlich sind Werte aus Gesetz oder amtlicher Veröffentlichung: Umlagen (netztransparenz.de), Stromsteuer (StromStG) und die Höchstbeträge der Konzessionsabgabe (KAV). Berechnet sind Ihr Energieanteil (Rechnung minus amtliche Bestandteile minus Netzentgelt) und der Börsenwert aus den SMARD-Daten der Bundesnetzagentur. Eine Schätzung ist nur der übliche Aufschlag der Lieferanten über dem Börsenwert – er ist als Spanne angegeben.",
+  },
+  {
+    q: "Warum steht bei mir „marktgerecht“?",
+    a: "Weil Ihr Energieanteil in der üblichen Spanne liegt. Das ist ein ehrliches Ergebnis: Nicht jeder Vertrag ist zu teuer. Achten Sie dann vor allem auf Laufzeit, Kündigungsfrist und Preisanpassungsklauseln.",
+  },
+  {
+    q: "Wird mein Lastgang hochgeladen?",
+    a: "Nein. Die Datei wird ausschließlich in Ihrem Browser gelesen und ausgewertet. Übrig bleiben Jahresverbrauch, Spitzenleistung und ein Profilfaktor. Nur wenn Sie einen Bericht anfordern, gehen diese drei Zahlen mit Ihren übrigen Eingaben an uns – nie die Datei selbst.",
+  },
+  {
+    q: "Wie hoch ist die Konzessionsabgabe für meinen Betrieb?",
+    nurDE: "Konzessionsabgabe",
+    a: "Das hängt von der Kundengruppe ab. Sondervertragskunden zahlen höchstens 0,11 ct/kWh. In Niederspannung gilt ein Betrieb als Tarifkunde, solange die gemessene Leistung nicht in mindestens zwei Monaten über 30 kW liegt und der Verbrauch nicht über 30.000 kWh im Jahr. Dann richtet sich der Höchstbetrag nach der Einwohnerzahl der Gemeinde (1,32 bis 2,39 ct/kWh).",
+  },
+  {
+    q: "Bekomme ich Stromsteuer zurück?",
+    nurDE: "Stromsteuer",
+    a: "Unternehmen des Produzierenden Gewerbes und der Land- und Forstwirtschaft erhalten auf Antrag beim Hauptzollamt 2,0 ct/kWh zurück (§ 9b StromStG), soweit der Betrag im Jahr 250 € übersteigt. Auf der Rechnung steht meist der Regelsatz von 2,05 ct/kWh – die Entlastung kommt nachträglich.",
+  },
+  {
+    q: "Was ist mit den Umlagen 2027?",
+    nurDE: "Umlagen",
+    a: "Die Übertragungsnetzbetreiber veröffentlichen KWKG-Umlage, Offshore-Netzumlage und Aufschlag für besondere Netznutzung für 2027 bis zum 25. Oktober 2026. Sobald sie veröffentlicht und geprüft sind, zeigt der Check, was sich für Ihren Verbrauch ändert.",
+  },
+  {
+    q: "Gibt es den Check auch für Österreich und die Schweiz?",
+    a: "Noch nicht. Für Österreich bauen wir ihn nach der neuen Systemnutzungsentgelte-Verordnung ab 2027, für die Schweiz ist er in Vorbereitung. Zahlen, Recht und Rechner bleiben dabei je Land getrennt.",
+  },
+];
+
+const FAQ_EN = [
+  {
+    q: "Which figures do I need from my electricity bill?",
+    nurDE: "Bill details",
+    a: "Annual consumption in kWh, the energy price in ct/kWh (net), the standing charge and the grid fee. Grid operators and suppliers must show the grid fee and metering separately on the bill (§ 40 EnWG). With metered demand, the peak demand in kW is shown there too.",
+  },
+  {
+    q: "What is “official”, what is “calculated”, what is an “estimate”?",
+    nurDE: "Sources",
+    a: "Official values come from law or official publications: levies (netztransparenz.de), electricity tax (StromStG) and the maximum concession fees (KAV). Calculated are your energy component (bill minus official components minus grid fee) and the exchange value from the Federal Network Agency’s SMARD data. Only the suppliers’ usual mark-up over the exchange value is an estimate – it is shown as a range.",
+  },
+  {
+    q: "Why does my result say “in line with the market”?",
+    a: "Because your energy component lies within the usual range. That is an honest result: not every contract is too expensive. In that case, pay particular attention to the term, notice period and price adjustment clauses.",
+  },
+  {
+    q: "Is my load profile uploaded?",
+    a: "No. The file is read and analysed exclusively in your browser. What remains is the annual consumption, peak demand and a profile factor. Only if you request a report are these three numbers sent to us with your other inputs – never the file itself.",
+  },
+  {
+    q: "How high is the concession fee for my business?",
+    nurDE: "Concession fee",
+    a: "That depends on the customer group. Special contract customers pay at most 0.11 ct/kWh. At low voltage, a business counts as a tariff customer unless its metered demand exceeds 30 kW in at least two months and its consumption exceeds 30,000 kWh a year. The maximum then depends on the municipality’s population (1.32 to 2.39 ct/kWh).",
+  },
+  {
+    q: "Can I get electricity tax back?",
+    nurDE: "Electricity tax",
+    a: "Manufacturing companies and agricultural and forestry businesses receive 2.0 ct/kWh back on application to the main customs office (§ 9b StromStG), insofar as the amount exceeds €250 a year. The bill usually shows the standard rate of 2.05 ct/kWh – the relief comes afterwards.",
+  },
+  {
+    q: "What about the 2027 levies?",
+    nurDE: "Levies",
+    a: "The transmission system operators publish the CHP levy, offshore grid levy and surcharge for special grid use for 2027 by 25 October 2026. As soon as they are published and checked, the tool shows what changes for your consumption.",
+  },
+  {
+    q: "Is the check also available for Austria and Switzerland?",
+    a: "Not yet. For Austria, we are building it based on the new system usage charges ordinance from 2027; for Switzerland it is in preparation. Figures, law and calculators remain separate for each country.",
+  },
+];
+
+const DE = {
+  breadcrumb: "Rechnungs-Check Gewerbestrom",
+  eyebrow: "Für Unternehmen · Rechnungs-Check",
+  title: (
+    <>
+      Ist Ihr Gewerbestrom <span className="ov-text-gradient-light">zu teuer?</span>
+    </>
+  ),
+  lead: "Werte aus der Stromrechnung eingeben: Wir ziehen amtliche Umlagen, Stromsteuer, Konzessionsabgabe und Ihr Netzentgelt ab und vergleichen Ihren Energieanteil mit dem Börsenwert. Ehrlich – auch wenn Ihr Vertrag marktgerecht ist.",
+  chips: ["Amtliche Werte mit Quelle", "Börsenwert aus SMARD", "Lastgang nur im Browser", "Ohne Anbieterranking"],
+  app: {
+    name: "Rechnungs-Check Gewerbestrom",
+    description: "Zerlegt den Strompreis eines Gewerbebetriebs in amtliche Bestandteile, Netzentgelt und Energieanteil und vergleicht den Energieanteil mit Börsenwert und üblichem Aufschlag.",
+    featureList: [
+      "Umlagen 2026, Stromsteuer und Konzessionsabgabe aus amtlichen Quellen",
+      "Energieanteil aus Ihrer Rechnung berechnet",
+      "Börsenwert Day-Ahead aus SMARD, gewichtet mit Lastprofil oder Lastgang",
+      "Qualitätsstufen amtlich, berechnet, Schätzung",
+      "Preisradar der amtlichen Bestandteile je Bundesland",
+      "Bericht mit Rechenweg und Annahmenbuch",
+    ],
+  },
+  quellen: [
+    { name: "netztransparenz.de – Umlagen", url: "https://www.netztransparenz.de/de-de/Erneuerbare-Energien-und-Umlagen/KWKG/KWKG-Umlage" },
+    { name: "StromStG §§ 3, 9b", url: "https://www.gesetze-im-internet.de/stromstg/__9b.html" },
+    { name: "KAV § 2", url: "https://www.gesetze-im-internet.de/kav/__2.html" },
+    { name: "Bundesnetzagentur | SMARD.de (CC BY 4.0)", url: "https://www.smard.de/home/marktdaten" },
+    { name: "Aufschlag: eigene Einschätzung ÖkoInvest" },
+  ],
+  faqTitel: "Rechnungs-Check – gut zu wissen",
+  querverweise: [
+    { href: seitenPfad("/reststrom"), titel: "Reststrom-Pool Mittelstand", text: "Gemeinsam und strukturiert beschaffen – Ablauf und Voraussetzungen." },
+    { href: seitenPfad("/rechner/ppa"), titel: "PPA-Rechner", text: "Solarstrom zum Festpreis: Ersparnis und Risiko in drei Szenarien." },
+    { href: seitenPfad("/energie-live"), titel: "Strommarkt live", text: "Börsenpreis, negative Preise und Solar-Capture-Rate in Echtzeit." },
+  ],
+  cta: {
+    eyebrow: "Reststrom-Pool",
+    title: "Vertrag läuft aus? Rechtzeitig vergleichen.",
+    text: "Schicken Sie uns Verbrauch oder Lastgang und Ihren Kündigungstermin. Wir prüfen Profil und Preisbestandteile – kostenlos und unverbindlich.",
+    primary: { label: "Pool-Angebot anfragen", href: seitenPfad("/reststrom#anfrage") },
+    secondary: { label: "Wie der Pool funktioniert", href: seitenPfad("/reststrom") },
+  },
+};
+
+const EN = {
+  breadcrumb: "Commercial electricity bill check",
+  eyebrow: "For businesses · bill check",
+  title: (
+    <>
+      Is your business electricity <span className="ov-text-gradient-light">too expensive?</span>
+    </>
+  ),
+  lead: "Enter the figures from your electricity bill: we deduct official levies, electricity tax, the concession fee and your grid fee and compare your energy component with the exchange value. Honestly – even if your contract is in line with the market.",
+  chips: ["Official values with source", "Exchange value from SMARD", "Load profile stays in your browser", "No supplier ranking"],
+  app: {
+    name: "Commercial electricity bill check",
+    description: "Breaks down a business’s electricity price into official components, grid fee and energy component and compares the energy component with the exchange value and the usual mark-up.",
+    featureList: [
+      "2026 levies, electricity tax and concession fee from official sources",
+      "Energy component calculated from your bill",
+      "Day-ahead exchange value from SMARD, weighted by load profile",
+      "Quality levels official, calculated, estimate",
+      "Price radar of official components by federal state",
+      "Report with calculation method and assumptions",
+    ],
+  },
+  quellen: [
+    { name: "netztransparenz.de – levies (German TSOs)" },
+    { name: "German Electricity Tax Act (StromStG) §§ 3, 9b" },
+    { name: "Concession Fee Ordinance (KAV) § 2" },
+    { name: "Bundesnetzagentur | SMARD.de (CC BY 4.0)" },
+    { name: "Mark-up: ÖkoInvest’s own estimate" },
+  ],
+  faqTitel: "Bill check – good to know",
+  querverweise: [
+    { titel: "Residual power pool for SMEs", text: "Procure together and in a structured way – process and requirements." },
+    { titel: "PPA calculator", text: "Solar power at a fixed price: savings and risk in three scenarios." },
+    { titel: "Power market live", text: "Exchange price, negative prices and solar capture rate in real time." },
+  ],
+  cta: {
+    eyebrow: "Residual power pool",
+    title: "Contract ending? Compare in good time.",
+    text: "Send us your consumption or load profile and your notice date. We check the profile and price components – free of charge and without obligation.",
+    primary: { label: "Request a pool offer" },
+    secondary: { label: "How the pool works" },
+  },
+};
+
+export default async function GewerbestromCheckPage({ params }) {
+  const land = await seitenLand(params);
+  const sprache = spracheDerAnfrage();
+  const en = sprache === "en";
+  const t = uebersetze({ de: DE, en: EN }, sprache);
+  return (
+    <RechnerSeite
+      pfad={PFAD}
+      toolId="gewerbestrom-check"
+      breadcrumb={t.breadcrumb}
+      eyebrow={t.eyebrow}
+      title={t.title}
+      lead={t.lead}
+      chips={t.chips}
+      app={t.app}
+      rechner={<GewerbestromCheck />}
+      landHinweise={LAND_HINWEISE}
+      erklaerung={
+        <NurDEBlock land={land} thema="Rechenwerte und Annahmen" themaEn="Figures and assumptions">
+          {en ? (
+            <div className="ov-prose">
+              <h2>How the bill check works</h2>
+              <p>
+                Your electricity price consists of parts you cannot influence and one part you can. <strong>Official</strong> and the same for every business: the levies under the Energy Financing Act, the surcharge for special grid use, the electricity tax and the concession fee, whose maximum depends on the customer group and the size of the municipality. Your <strong>grid fee</strong> is set by your grid operator – you take it from your bill.
+              </p>
+              <p>
+                What remains is your <strong>energy component</strong>: procurement, structuring, balancing and sales. We compare it with the <strong>exchange value</strong> – the day-ahead price of the last twelve months from the Federal Network Agency’s SMARD data, weighted with your load profile – plus the usual supplier mark-up. If your energy component lies within this range, your contract is in line with the market.
+              </p>
+              <h3>What the check cannot do</h3>
+              <ul>
+                <li>Assess your contract terms: term, notice period and price adjustment clauses are often more important than one cent.</li>
+                <li>Replace the forward market: a contract signed a year ago reflects the prices of that time.</li>
+                <li>Name suppliers: we deliberately do not rank providers.</li>
+              </ul>
+              <p>
+                If the result suggests that procurement is worthwhile, the <Link href={seitenPfad("/reststrom")}>residual power pool</Link> shows how businesses procure together.
+              </p>
+            </div>
+          ) : (
+            <div className="ov-prose">
+              <h2>So rechnet der Rechnungs-Check</h2>
+              <p>
+                Ihr Strompreis besteht aus Teilen, die Sie nicht beeinflussen können, und einem, den Sie verhandeln. <strong>Amtlich</strong> und für jeden Betrieb gleich sind die Umlagen nach
+                dem Energiefinanzierungsgesetz, der Aufschlag für besondere Netznutzung, die Stromsteuer und die Konzessionsabgabe, deren Höchstbetrag von Kundengruppe und Gemeindegröße abhängt.
+                Ihr <strong>Netzentgelt</strong> legt Ihr Netzbetreiber fest – Sie übernehmen es aus der Rechnung.
+              </p>
+              <p>
+                Übrig bleibt Ihr <strong>Energieanteil</strong>: Beschaffung, Strukturierung, Bilanzkreis und Vertrieb. Wir vergleichen ihn mit dem <strong>Börsenwert</strong> – dem Day-Ahead-Preis der
+                letzten zwölf Monate aus den SMARD-Daten der Bundesnetzagentur, gewichtet mit Ihrem Lastprofil – plus dem üblichen Aufschlag der Lieferanten. Liegt Ihr Energieanteil in dieser Spanne,
+                ist Ihr Vertrag marktgerecht.
+              </p>
+              <h3>Was der Check nicht kann</h3>
+              <ul>
+                <li>Ihre Vertragsbedingungen bewerten: Laufzeit, Kündigungsfrist und Preisanpassungsklauseln sind oft wichtiger als ein Cent.</li>
+                <li>Den Terminmarkt ersetzen: Ein Vertrag, der vor einem Jahr geschlossen wurde, spiegelt die Preise von damals.</li>
+                <li>Anbieter nennen: Wir erstellen bewusst keine Rangliste von Lieferanten.</li>
+              </ul>
+              <p>
+                Zeigt das Ergebnis, dass sich die Beschaffung lohnt, erklärt der <Link href={seitenPfad("/reststrom")}>Reststrom-Pool</Link>, wie Unternehmen gemeinsam beschaffen.
+              </p>
+            </div>
+          )}
+        </NurDEBlock>
+      }
+      annahmen={annahmenZeilen(sprache)}
+      quellen={t.quellen}
+      faq={faqFuerLand(uebersetze({ de: FAQ, en: FAQ_EN }, sprache), land, { sprache })}
+      faqTitel={t.faqTitel}
+      querverweise={t.querverweise}
+      cta={t.cta}
+    />
+  );
+}
+
+export const generateMetadata = seitenMetadata("/rechner/gewerbestrom-check", metadata, { en: metadataEn });
+// Länderfassung von /rechner/gewerbestrom-check (/de, /at, /ch) – erzeugt mit scripts/landfassungen.mjs, nicht von Hand ändern.
+// Dieselbe Seite wie src/app/(stamm)/rechner/gewerbestrom-check/page.js; das Land kommt aus params.land.
+export { default, generateMetadata } from "@/app/(stamm)/rechner/gewerbestrom-check/page";
+// Englische Fassung von /rechner/gewerbestrom-check (/en) – erzeugt mit scripts/landfassungen.mjs, nicht von Hand ändern.
+// Dieselbe Seite wie src/app/(stamm)/rechner/gewerbestrom-check/page.js; Sprache "en" über params.sprache.
+import Seite, { generateMetadata as metadaten } from "@/app/(stamm)/rechner/gewerbestrom-check/page";
+import { englisch, englischeMetadaten } from "@/lib/sprache/route";
+export default englisch(Seite);
+export const generateMetadata = englischeMetadaten(metadaten);
+// Englische Fassung von /rechner/gewerbestrom-check (/en/de, /en/at, /en/ch) – erzeugt mit scripts/landfassungen.mjs, nicht von Hand ändern.
+// Dieselbe Seite wie src/app/(stamm)/rechner/gewerbestrom-check/page.js; Sprache "en" über params.sprache, das Land aus params.land.
+import Seite, { generateMetadata as metadaten } from "@/app/(stamm)/rechner/gewerbestrom-check/page";
+import { englisch, englischeMetadaten } from "@/lib/sprache/route";
+export default englisch(Seite);
+export const generateMetadata = englischeMetadaten(metadaten);
+// src/lib/bericht/gewerbestrom.js – Bericht-Baustein für den Rechnungs-Check Gewerbestrom (Welle 3, Paket B5)
+//
+// Feldregeln (Positivliste der Eingaben) und Zusammenfassung für die Berichtsseite. Eingebunden in
+// src/lib/bericht/neuRechnen.js (RECHNER.gewerbestrom). Rechnet nicht selbst – nur gewerbestromCheck().
+// Nur Deutschland (AT nach SNE-VO 2027 und CH in Vorbereitung).
+// Der Lastgang verlässt den Browser nie: übermittelt werden nur Jahresverbrauch, Spitzenleistung und der
+// daraus im Browser berechnete Profilfaktor (eine Zahl zwischen 0,5 und 1,5).
+
+import { fmt, fmtEur } from "@/lib/rechner/annahmen";
+import { BUNDESLAENDER, KAV_GRUPPEN, LASTPROFILE, NETZ_MODI, PREISARTEN, SPANNUNGEN, STUFEN, gewerbestromCheck } from "@/lib/rechner/gewerbestrom";
+
+const ct = (x, s = 2) => `${fmt(x, s)} ct/kWh`;
+const monatText = (iso) => {
+  if (!iso) return "–";
+  const [j, m] = iso.split("-").map(Number);
+  return `${["Jan.", "Feb.", "März", "Apr.", "Mai", "Juni", "Juli", "Aug.", "Sept.", "Okt.", "Nov.", "Dez."][m - 1]} ${j}`;
+};
+const label = (liste, id) => liste.find((x) => x.id === id)?.label || id;
+const ids = (liste) => liste.map((x) => x.id);
+
+/** Feldregeln im Format von neuRechnen.js (zahl/wahl/bool werden dort gebaut und übergeben). */
+export function regelnGewerbestrom({ zahl, wahl, jaNein }) {
+  return {
+    verbrauchMwh: zahl(1, 200000),
+    leistungKw: zahl(0, 100000),
+    spannung: wahl(ids(SPANNUNGEN)),
+    preisArt: wahl(ids(PREISARTEN)),
+    arbeitspreisCt: zahl(0.5, 150),
+    grundpreisEurMonat: zahl(0, 10000),
+    netzModus: wahl(ids(NETZ_MODI)),
+    netzCt: zahl(0, 50),
+    netzFixEurJahr: zahl(0, 5e6),
+    kav: wahl(ids(KAV_GRUPPEN)),
+    gemeinde: wahl(["bis25", "bis100", "bis500", "ueber500"]),
+    produzierend: jaNein(),
+    gruppeC: jaNein(),
+    lastprofil: wahl(ids(LASTPROFILE)),
+    profilFaktor: zahl(0.5, 1.5),
+    bundesland: wahl(ids(BUNDESLAENDER)),
+  };
+}
+
+/** Urteil als Satz (deutsch, für Bericht und Rechner). */
+export function urteilText(r) {
+  const s = r.spanne;
+  switch (r.urteil.id) {
+    case "marktgerecht":
+      return `Ihr Energieanteil von ${ct(r.energie.ct)} liegt in der üblichen Spanne von ${ct(s.min)} bis ${ct(s.max)} (Börsenwert plus üblicher Lieferantenaufschlag). Ein Wechsel lohnt sich allein wegen des Preises kaum – prüfen Sie Laufzeit und Kündigungsfrist.`;
+    case "guenstig":
+      return `Ihr Energieanteil von ${ct(r.energie.ct)} liegt unter der üblichen Spanne (ab ${ct(s.min)}). Das kann ein früh abgeschlossener Vertrag sein – prüfen Sie aber, ob alle Bestandteile richtig eingetragen sind und wann der Vertrag endet.`;
+    case "etwas_ueber":
+      return `Ihr Energieanteil von ${ct(r.energie.ct)} liegt etwas über der üblichen Spanne (bis ${ct(s.max)}). Ein Vergleichsangebot zum nächsten Kündigungstermin kann sich lohnen.`;
+    case "deutlich_ueber":
+      return `Ihr Energieanteil von ${ct(r.energie.ct)} liegt deutlich über der üblichen Spanne (bis ${ct(s.max)}). Rechnerisch sind das ${fmtEur(r.differenz.minEur)} bis ${fmtEur(r.differenz.maxEur)} pro Jahr über dem Marktniveau – mit Blick auf Ihren Kündigungstermin lohnt sich ein Vergleich.`;
+    case "offen":
+      return "Ihr Arbeitspreis enthält das Netzentgelt. Ohne den Wert aus Ihrer Rechnung lässt sich der Energieanteil nicht vom Netzentgelt trennen – tragen Sie Netz-Arbeitspreis und Fixkosten aus der Rechnung ein.";
+    default:
+      return "Nach Abzug der amtlichen Bestandteile und des Netzentgelts bleibt kein Energieanteil übrig. Bitte prüfen Sie, ob der Arbeitspreis netto und ohne Umsatzsteuer eingetragen ist.";
+  }
+}
+
+const STUFE_URTEIL = { marktgerecht: "gut", guenstig: "gut", etwas_ueber: "pruefen", deutlich_ueber: "kritisch", offen: "info", pruefen: "info" };
+
+/** Zusammenfassung für die Berichtsseite (nur Formatierung der Rechnerergebnisse). */
+export function zusammenfassungGewerbestrom(r) {
+  const e = r.eingabe;
+  const b = r.boerse;
+  return {
+    urteil: { titel: r.urteil.titel, text: urteilText(r), stufe: STUFE_URTEIL[r.urteil.id] || "info" },
+    kennzahlen: [
+      ...(r.energie ? [{ label: "Ihr Energieanteil", wert: ct(r.energie.ct), zusatz: `${fmtEur(r.energie.eur)} pro Jahr · ${STUFEN.berechnet.label}` }] : []),
+      { label: "Marktspanne Energie", wert: `${fmt(r.spanne.min, 2)}–${fmt(r.spanne.max, 2)} ct/kWh`, zusatz: `Börsenwert ${ct(b.ct)} + Aufschlag ${fmt(r.spanne.aufschlag.min, 1)}–${fmt(r.spanne.aufschlag.max, 1)} ct (Schätzung)` },
+      { label: "Amtliche Bestandteile", wert: ct(r.amtlich.ct), zusatz: `${fmtEur(r.amtlich.eur)} pro Jahr · Umlagen, Konzessionsabgabe, Stromsteuer` },
+      ...(r.netz ? [{ label: "Netzentgelt (Ihre Angabe)", wert: ct(r.netz.ct), zusatz: `${fmtEur(r.netz.eur)} pro Jahr` }] : []),
+      ...(r.rechnung ? [{ label: "Rechnung netto", wert: fmtEur(r.rechnung.eur), zusatz: `${ct(r.rechnung.ct)} im Schnitt` }] : []),
+      ...(r.entlastung.eur > 0 ? [{ label: "Stromsteuer-Entlastung möglich", wert: fmtEur(r.entlastung.eur), zusatz: "pro Jahr, Antrag beim Hauptzollamt (§ 9b StromStG)" }] : []),
+    ],
+    eingabenText: [
+      ["Jahresverbrauch", `${fmt(r.kwh)} kWh`],
+      ["Spitzenleistung", e.leistungKw > 0 ? `${fmt(e.leistungKw)} kW${r.benutzungsstunden ? ` (${fmt(r.benutzungsstunden)} Benutzungsstunden)` : ""}` : "nicht angegeben"],
+      ["Spannungsebene", label(SPANNUNGEN, e.spannung)],
+      ["Arbeitspreis laut Rechnung", `${ct(e.arbeitspreisCt)} netto (${label(PREISARTEN, e.preisArt)})`],
+      ["Grundpreis", `${fmt(e.grundpreisEurMonat, 2)} € pro Monat`],
+      ["Netzentgelt", e.netzModus === "angegeben" ? `${ct(e.netzCt)} + ${fmtEur(e.netzFixEurJahr)} pro Jahr (Leistungs-, Grundpreis, Messung)` : "nicht angegeben"],
+      ["Konzessionsabgabe", r.kav.gruppe === "sonder" ? "Sondervertragskunde" : `Tarifkunde (${e.gemeinde === "bis25" ? "bis 25.000" : e.gemeinde === "bis100" ? "bis 100.000" : e.gemeinde === "bis500" ? "bis 500.000" : "über 500.000"} Einwohner)`],
+      ["Produzierendes Gewerbe / Land- und Forstwirtschaft", e.produzierend ? (e.gruppeC ? "ja, Stromkosten über 4 % des Umsatzes" : "ja") : "nein"],
+      ["Lastprofil", e.lastprofil === "lastgang" ? `eigener Lastgang (im Browser ausgewertet, Profilfaktor ${fmt(e.profilFaktor, 3)})` : label(LASTPROFILE, e.lastprofil)],
+      ...(e.bundesland ? [["Bundesland", label(BUNDESLAENDER, e.bundesland)]] : []),
+    ],
+    rechenweg: [
+      `Amtliche Bestandteile 2026 je kWh: KWKG-Umlage, Offshore-Netzumlage, Aufschlag für besondere Netznutzung (erste 1.000.000 kWh voll, darüber gestaffelt), Konzessionsabgabe nach KAV (${r.kav.gruppe === "sonder" ? "Sondervertrag" : "Tarifkunde"}) und Stromsteuer zum Regelsatz – zusammen ${ct(r.amtlich.ct)}.`,
+      e.preisArt === "gesamt"
+        ? "Energieanteil = Rechnungsbetrag (Arbeitspreis × Verbrauch + Grundpreis) − amtliche Bestandteile − Netzentgelt laut Rechnung."
+        : "Energieanteil = Arbeitspreis × Verbrauch + Grundpreis (Netzentgelt, Umlagen und Steuern stehen getrennt auf der Rechnung).",
+      `Börsenwert: Mittel der Day-Ahead-Preise ${monatText(b.von)} bis ${monatText(b.bis)} (${ct(b.baseCt)}), gewichtet mit Ihrem Lastprofil (Faktor ${fmt(b.faktor, 3)}) = ${ct(b.ct)}. Daten: Bundesnetzagentur | SMARD.de, Lizenz CC BY 4.0.`,
+      `Marktspanne: Börsenwert + üblicher Lieferantenaufschlag (Strukturierung, Bilanzkreis, Risiko, Vertrieb) von ${fmt(r.spanne.aufschlag.min, 1)} bis ${fmt(r.spanne.aufschlag.max, 1)} ct/kWh – eigene Einschätzung.`,
+    ],
+    tabelle: {
+      titel: "Zerlegung Ihres Strompreises",
+      spalten: ["Bestandteil", "ct/kWh", "€ pro Jahr", "Qualität"],
+      zeilen: r.zeilen.map((z) => [z.label, z.ct === null ? "–" : fmt(z.ct, 3), z.eur === null ? "–" : fmtEur(z.eur), STUFEN[z.stufe]?.label || z.stufe]),
+    },
+    listen: [],
+    hinweise: [
+      "Alle Werte netto ohne Umsatzsteuer. Orientierung, kein Angebot und keine Rechts- oder Steuerberatung.",
+      "Der Börsenwert bildet die vergangenen zwölf Monate ab. Ihr Vertragspreis hängt vom Terminmarkt zum Zeitpunkt des Abschlusses ab und kann deshalb auch bei fairer Beschaffung abweichen.",
+      "Begrenzungen für stromkostenintensive Unternehmen (§§ 30 ff. EnFG) und der Wegfall der Konzessionsabgabe unter dem Grenzpreis (§ 2 Abs. 4 KAV) sind nicht eingerechnet.",
+      ...(r.vorschau2027.offen ? [`Umlagen 2027: Die Übertragungsnetzbetreiber veröffentlichen sie bis 25.10.2026 – der Check rechnet bis dahin mit den Werten 2026.`] : []),
+    ],
+  };
+}
+
+/** Neuberechnung für den Bericht (Land nur DE). */
+export const rechneGewerbestrom = (e) => gewerbestromCheck(e);
+warning: in the working copy of 'docs/MASTERPLAN-DACH.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/app/(stamm)/freiflaeche/page.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/app/(stamm)/genossenschaft/page.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/app/(stamm)/kommunen/page.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/app/(stamm)/landwirte/page.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/app/(stamm)/marktdaten/page.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/app/(stamm)/rechner/page.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/app/(stamm)/regionen/[slug]/page.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/app/(stamm)/regionen/page.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/Agri/Seite/WegeBuehne.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/Agri/Seite/WegeKarten.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/Agri/WegeEntscheider.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/Agri/wege.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/Boerse/BoerseListe.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/Dach/Seite/Fakten.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/Dach/Seite/Vertrag.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/Energie/EnergieflussGrafik.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/Flaeche/FlaechenWizard.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/Gemeinschaft/Genossenschaft/Abschnitte.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/Gemeinschaft/Genossenschaft/Hero.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/Home/WerkzeugFinder.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/Investoren/DdCheckliste.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/Investoren/InvestorAnfrage.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/Investoren/Seite/Ablauf.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/Kommune/KommuneAnfrage.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/Kontakt/KontaktAnliegen.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/Navbar/navbar.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/Plattform/AnfrageFormular.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/Prozess/ProzessTabs.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/Rechner/RechnerSeite.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/Rechner/tools.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/Reusable/footer.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/Speicher/Seite/Netz.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/Sprache/SpracheKontext.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/Sprache/T.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/lib/bericht/neuRechnen.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/lib/fakten/daten/termine.test.mjs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/lib/fakten/index.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/lib/land/index.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/lib/land/inhalte.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/lib/land/land.test.mjs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/lib/land/routen.test.mjs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/lib/land/seite.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/lib/land/seiten.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/lib/sprache/seiten.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/lib/sprache/woerterbuch.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'uebergabe/UEBERGABE.md', LF will be replaced by CRLF the next time Git touches it
+ docs/MASTERPLAN-DACH.md                            |  2 +-
+ scripts/landfassungen.mjs                          |  5 +-
+ src/app/(laender)/[land]/layout.js                 |  5 +-
+ src/app/(stamm)/freiflaeche/page.js                |  4 +-
+ src/app/(stamm)/genossenschaft/page.js             |  8 ++-
+ src/app/(stamm)/kommunen/page.js                   |  7 ++-
+ src/app/(stamm)/landwirte/page.js                  |  2 +-
+ src/app/(stamm)/marktdaten/page.js                 |  7 +++
+ src/app/(stamm)/rechner/page.js                    |  2 +-
+ src/app/(stamm)/regionen/[slug]/page.js            | 18 ++++--
+ src/app/(stamm)/regionen/page.js                   |  8 ++-
+ src/app/api/land/route.js                          | 12 ----
+ src/components/Agri/Seite/WegeBuehne.js            |  4 +-
+ src/components/Agri/Seite/WegeKarten.js            |  4 +-
+ src/components/Agri/WegeEntscheider.js             |  8 ++-
+ src/components/Agri/wege.js                        | 38 +++++++++++-
+ src/components/Boerse/BoerseListe.js               |  3 +-
+ src/components/Dach/Seite/Fakten.js                |  8 ++-
+ src/components/Dach/Seite/Vertrag.js               |  6 +-
+ src/components/Energie/EnergieflussGrafik.js       |  7 ++-
+ src/components/Flaeche/FlaechenWizard.js           |  3 +-
+ .../Gemeinschaft/Genossenschaft/Abschnitte.js      | 69 +++++++++++++++++-----
+ src/components/Gemeinschaft/Genossenschaft/Hero.js | 10 +++-
+ src/components/Home/WerkzeugFinder.js              |  4 +-
+ src/components/Investoren/DdCheckliste.js          | 19 +++++-
+ src/components/Investoren/InvestorAnfrage.js       |  3 +-
+ src/components/Investoren/Seite/Ablauf.js          |  8 ++-
+ src/components/Kommune/KommuneAnfrage.js           |  2 +-
+ src/components/Kontakt/KontaktAnliegen.js          |  3 +-
+ src/components/Navbar/navbar.js                    |  6 +-
+ src/components/Plattform/AnfrageFormular.js        |  3 +-
+ src/components/Prozess/ProzessTabs.js              |  3 +-
+ src/components/Rechner/RechnerSeite.js             |  7 ++-
+ src/components/Rechner/tools.js                    | 14 +++--
+ src/components/Reusable/footer.js                  |  4 +-
+ src/components/Speicher/Seite/Netz.js              | 12 ++--
+ src/components/Sprache/SpracheKontext.js           |  6 +-
+ src/components/Sprache/T.js                        |  5 +-
+ src/lib/bericht/annahmenbuch.js                    | 19 +++++-
+ src/lib/bericht/neuRechnen.js                      | 17 +++++-
+ src/lib/bericht/neuRechnen.test.mjs                |  4 +-
+ src/lib/fakten/daten/termine.test.mjs              |  5 +-
+ src/lib/fakten/index.js                            |  4 +-
+ src/lib/land/index.js                              |  1 +
+ src/lib/land/inhalte.js                            |  5 +-
+ src/lib/land/land.test.mjs                         |  2 +-
+ src/lib/land/routen.test.mjs                       | 21 ++++++-
+ src/lib/land/seite.js                              | 11 +++-
+ src/lib/land/seiten.js                             |  4 ++
+ src/lib/sprache/seiten.js                          |  4 ++
+ src/lib/sprache/woerterbuch.js                     | 29 ++++++++-
+ uebergabe/UEBERGABE.md                             |  2 +
+ 52 files changed, 360 insertions(+), 107 deletions(-)
+src/lib/land/seiten.js:80:  "/rechner/gewerbestrom-check": { titel: "Rechnungs-Check Gewerbestrom", prio: 0.8, freq: "monthly", index: false },
+src/lib/sprache/seiten.js:125:  "/rechner/gewerbestrom-check": Object.freeze({ stand: "2026-10-09", grundlage: "Seite und Rechner über Wörterbücher übersetzt (Paket B5); Rechenlogik gemeinsam mit DE", pruefer: "TODO-E6", index: false }),
+src/components/Rechner/tools.js:32:  { id: "gewerbestrom-check", laender: ["DE"], href: pfad("/rechner/gewerbestrom-check"), titel: "Rechnungs-Check Gewerbestrom", kurz: "Stromrechnung zerlegen, Energiepreis einordnen", text: "Arbeitspreis, Grundpreis und Verbrauch eingeben – amtliche Umlagen, Steuern und Börsenwert (SMARD) gegen Ihren Energieanteil. Lastgang optional, wird nur im Browser ausgewertet.", icon: Receipt, zielgruppe: "Unternehmen", tag: "Neu" },
+src/components/Rechner/tools.js:55:  "gewerbestrom-check": { titel: "Commercial electricity bill check", kurz: "Break down your bill, place your energy price", text: "Enter energy price, standing charge and consumption – official levies, taxes and the exchange value (SMARD) against your energy component. Load profile optional, analysed in your browser only." },
+src/lib/fakten/index.js:24:import gewerbestromDe from "./daten/gewerbestrom-de.js";
+src/lib/fakten/index.js:26:export const DATENMODULE = [de, at, ch, termineDe, termineAt, termineCh, umlagenDe, umlagenAt, umlagenCh, netzentgelteDe, netzentgelteAt, netzentgelteCh, gewerbestromDe];
+src/lib/bericht/neuRechnen.js:27:import { regelnGewerbestrom, rechneGewerbestrom, zusammenfassungGewerbestrom } from "./gewerbestrom";
+src/lib/bericht/neuRechnen.js:361:  // Welle 3, Paket B5: Rechnungs-Check Gewerbestrom – nur Deutschland, ohne Region (src/lib/bericht/gewerbestrom.js)
+src/lib/bericht/neuRechnen.js:362:  gewerbestrom: Object.freeze({
+src/lib/bericht/neuRechnen.js:364:    pfad: seitenPfad("/rechner/gewerbestrom-check"),
+src/lib/bericht/annahmenbuch.js:18:import { annahmenGewerbestrom } from "@/lib/rechner/gewerbestrom";
+src/lib/bericht/annahmenbuch.js:71:  "gewerbestrom.lieferantenaufschlag": "Üblicher Lieferantenaufschlag über dem Börsenwert",
+src/lib/bericht/annahmenbuch.js:72:  "gewerbestrom.toleranzUeberMarkt": "Abstand für „etwas über Markt“",
+src/lib/bericht/annahmenbuch.js:75:const FUNKTION = { pacht: annahmenPacht, pachtangebot: annahmenPachtangebot, flaechencheck: annahmenFlaechencheck, kommune: annahmenKommune, gewerbestrom: annahmenGewerbestrom };

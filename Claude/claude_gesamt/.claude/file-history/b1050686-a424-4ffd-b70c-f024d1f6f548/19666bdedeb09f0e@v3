@@ -1,0 +1,103 @@
+import { Suspense } from "react";
+import type { Metadata } from "next";
+
+import { DEMO_KONTEN, DEMO_PASSWORT, istDemoModus } from "@/lib/demo/modus";
+
+import { LoginForm } from "./login-form";
+
+export const metadata: Metadata = {
+  title: "Anmelden",
+};
+
+export default function LoginSeite() {
+  const demo = istDemoModus();
+
+  return (
+    <main
+      className="relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-12"
+      style={{ background: "var(--f-grund)" }}
+    >
+      {/*
+        Zwei weiche Lichthöfe im Markengrün, wie auf der Website. Sie
+        liegen weit außerhalb des Inhalts und sind stark weichgezeichnet
+        - dadurch bleibt der Untergrund ruhig und das Formular steht
+        klar darauf.
+      */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -top-40 -left-40 h-[32rem] w-[32rem] rounded-full"
+        style={{
+          background: "var(--color-ov-500)",
+          opacity: 0.16,
+          filter: "blur(140px)",
+        }}
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -right-32 -bottom-32 h-[28rem] w-[28rem] rounded-full"
+        style={{
+          background: "var(--color-ov-400)",
+          opacity: 0.14,
+          filter: "blur(130px)",
+        }}
+      />
+
+      <div className="a-erscheinen relative w-full max-w-sm">
+        <div className="mb-8 text-center">
+          <div
+            className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl text-white"
+            style={{
+              background:
+                "linear-gradient(135deg, var(--color-ov-400), var(--color-ov-600))",
+              boxShadow: "0 12px 32px -12px var(--color-ov-600)",
+            }}
+          >
+            <svg
+              width="26"
+              height="26"
+              viewBox="0 0 24 24"
+              fill="none"
+              aria-hidden
+            >
+              <circle cx="12" cy="12" r="4.2" fill="currentColor" />
+              <path
+                d="M12 2.4v2.6M12 19v2.6M4.2 4.2l1.9 1.9M17.9 17.9l1.9 1.9M2.4 12H5M19 12h2.6M4.2 19.8l1.9-1.9M17.9 6.1l1.9-1.9"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+              />
+            </svg>
+          </div>
+
+          <h1 className="t-titel mt-4">Ökovolt Energieportal</h1>
+          <p className="t-leise mt-1.5">
+            Betriebsführung, Vermarktung und Nachweise
+          </p>
+        </div>
+
+        <div
+          className="p-6"
+          style={{
+            background: "var(--f-ebene)",
+            borderRadius: "var(--radius-tafel)",
+            boxShadow: "0 0 0 1px var(--linie), var(--schatten-blase)",
+          }}
+        >
+          {/* useSearchParams verlangt eine Suspense-Grenze beim Prerendern. */}
+          <Suspense fallback={null}>
+            <LoginForm
+              demoKonten={demo ? DEMO_KONTEN : []}
+              demoPasswort={DEMO_PASSWORT}
+            />
+          </Suspense>
+        </div>
+
+        <p className="t-mikro mt-6 text-center">
+          {demo
+            ? "Demonstrationsbetrieb mit Beispieldaten"
+            : "Anmeldung über Ihr ERPNext-Benutzerkonto"}
+        </p>
+      </div>
+    </main>
+  );
+}

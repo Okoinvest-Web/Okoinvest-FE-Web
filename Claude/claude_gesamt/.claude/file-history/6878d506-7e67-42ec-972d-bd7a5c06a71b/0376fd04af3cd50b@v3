@@ -1,0 +1,34 @@
+# Ohne ERPNEXT_URL läuft die App mit Beispieldaten (Demo-Modus).
+# Kopieren nach .env.local und ausfüllen – .env.local wird nicht eingecheckt.
+
+# Adresse des ERPNext-Servers
+ERPNEXT_URL=https://erp.example.com
+
+# Pflicht im Produktivbetrieb: mindestens 32 zufällige Zeichen.
+# Verschlüsselt das Sitzungs-Cookie (enthält die ERPNext-Sitzung des Nutzers).
+# Erzeugen z. B. mit: node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
+SESSION_SECRET=
+
+# Standard: Jeder Nutzer meldet sich mit seinem eigenen ERPNext-Benutzer an, ERPNext setzt
+# Rollen und Benutzerberechtigungen durch (Handelsvertreter sehen nur Eigenes).
+# Nur für rein interne Teams ohne Datentrennung: ERPNEXT_AUTH=token plus API-Key/Secret
+# eines Dienstkontos – dann sehen ALLE Nutzer ALLE Daten.
+# ERPNEXT_AUTH=token
+# ERPNEXT_API_KEY=
+# ERPNEXT_API_SECRET=
+
+# ---------- Verkauf ----------
+# Verkaufspreisliste für den Produktkatalog
+# ERPNEXT_PRICE_LIST=Standard Selling
+# Steuervorlagen je USt-Satz (Namen der "Sales Taxes and Charges Template" in ERPNext)
+# ERPNEXT_TAX_TEMPLATES={"0":"DE 0% PV","19":"DE 19%","7":"DE 7%","20":"AT 20%","10":"AT 10%"}
+# Handelsvertreter (Benutzer) → Vertriebspartner (Sales Partner auf Rechnungen) für Provision und Verrechnung
+# ERPNEXT_PARTNER_USERS={"m.huber@oekovolt.de":"Martin Huber"}
+# Absenderzeile für gedruckte Angebote
+# COMPANY_ADDRESS_LINE=Ökovolt Solartechnik · Musterstraße 1 · 00000 Ort
+
+# ---------- Lead-Börse ----------
+# Dienstkonto NUR für die Lead-Börse: liest freie Website-Leads (nur Vorschaufelder) und bucht Freischaltungen.
+# Rechte: Lead lesen/schreiben, "CRM Lead Charge" lesen/anlegen. Ohne diese Werte bleibt die Börse leer.
+# ERPNEXT_SERVICE_KEY=
+# ERPNEXT_SERVICE_SECRET=

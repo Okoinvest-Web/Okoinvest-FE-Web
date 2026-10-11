@@ -1,0 +1,19 @@
+import "server-only";
+import { cache } from "react";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import { SESSION_COOKIE, verifySession } from "@/lib/session-token";
+
+// Data Access Layer: jede Seite und jede Server Action prüft die Session selbst.
+// Der Proxy leitet nur vorab um und ist nicht die einzige Schutzschicht.
+
+export const getUser = cache(async () => {
+  const token = (await cookies()).get(SESSION_COOKIE)?.value;
+  return verifySession(token);
+});
+
+export async function requireUser() {
+  const user = await getUser();
+  if (!user) redirect("/login");
+  return user;
+}

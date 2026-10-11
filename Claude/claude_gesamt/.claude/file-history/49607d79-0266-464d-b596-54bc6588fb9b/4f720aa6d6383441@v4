@@ -1,0 +1,564 @@
+<template>
+  <div>
+    <!-- Werkzeugleiste. Erscheint nur, wenn es etwas zu bedienen gibt -
+         eine Leiste über einer Tabelle mit vier Zeilen wäre Zierrat. -->
+    <div v-if="zeigtLeiste" class="mb-2 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
+      <p v-if="auswahl.length" class="font-medium text-ink-gray-8">
+        {{ mengeText(auswahl.length, 'Zeile', 'Zeilen') }} gewählt
+      </p>
+      <div v-if="auswahl.length" class="flex flex-wrap items-center gap-2">
+        <slot name="sammelaktionen" :auswahl="gewaehlteZeilen" :leeren="auswahlLeeren" />
+        <Button size="sm" variant="subtle" @click="auswahlLeeren">Auswahl aufheben</Button>
+      </div>
+
+      <p v-if="!auswahl.length" class="text-ink-gray-6">
+        {{ mengeText(sortiert.length, 'Zeile', 'Zeilen') }}
+        <span v-if="sortiert.length !== rows.length" class="text-ink-gray-5">
+          von {{ rows.length }}
+        </span>
+      </p>
+
+      <div class="ml-auto flex flex-wrap items-center gap-2">
+        <!-- Spaltenwahl -->
+        <div v-if="spaltenwahl" class="relative">
+          <Button size="sm" :aria-expanded="spaltenOffen" @click="spaltenOffen = !spaltenOffen">
+            Spalten ({{ sichtbareSpalten.length }}/{{ columns.length }})
+          </Button>
+          <div
+            v-if="spaltenOffen"
+            class="absolute right-0 z-20 mt-1 max-h-80 w-60 overflow-y-auto rounded-lg border border-outline-gray-2 bg-surface-white p-2 shadow-lg"
+          >
+            <label
+              v-for="spalte in columns"
+              :key="spalte.key"
+              class="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-ink-gray-8 hover:bg-surface-gray-1"
+            >
+              <input
+                type="checkbox"
+                class="size-4"
+                :checked="!versteckt.includes(spalte.key)"
+                :disabled="!versteckt.includes(spalte.key) && sichtbareSpalten.length === 1"
+                @change="spalteUmschalten(spalte.key)"
+              />
+              {{ spalte.label || spalte.key }}
+            </label>
+            <button
+              class="mt-1 w-full rounded px-2 py-1.5 text-left text-sm text-ink-gray-6 hover:bg-surface-gray-1"
+              @click="alleSpalten"
+            >
+              Alle einblenden
+            </button>
+          </div>
+        </div>
+
+        <!-- Dichte -->
+        <Button
+          v-if="tabellenId"
+          size="sm"
+          :aria-pressed="dichte === 'kompakt'"
+          @click="dichteUmschalten"
+        >
+          {{ dichte === 'kompakt' ? 'Normal' : 'Kompakt' }}
+        </Button>
+
+        <!-- Export -->
+        <Button v-if="exportierbar" size="sm" @click="exportiereCsv">CSV</Button>
+      </div>
+    </div>
+
+    <div
+      ref="karte"
+      class="relative overflow-hidden rounded-lg border border-outline-gray-2 bg-surface-white"
+    >
+      <div ref="rahmen" class="overflow-x-auto" :style="hoehenStil" @scroll="messen">
+        <!--
+          min-w-... ist Absicht: ohne sie quetscht die Tabelle auf einem
+          Telefon jede Zelle in Silben ("AP-A02-\n01"). Lieber seitlich
+          schieben als unleserlich stapeln.
+        -->
+        <table
+          class="w-full min-w-[44rem] text-left"
+          :class="dichte === 'kompakt' ? 'text-sm' : ''"
+        >
+          <thead
+            class="border-b border-outline-gray-2 bg-surface-gray-1"
+            :class="festerKopf ? 'sticky top-0 z-10' : ''"
+          >
+            <tr class="text-sm text-ink-gray-6">
+              <th v-if="waehlbar" scope="col" class="w-10 px-3" :class="zellenPolster">
+                <input
+                  type="checkbox"
+                  class="size-4"
+                  :checked="alleGewaehlt"
+                  :indeterminate.prop="auswahl.length > 0 && !alleGewaehlt"
+                  aria-label="Alle sichtbaren Zeilen wählen"
+                  @change="alleUmschalten"
+                />
+              </th>
+              <th
+                v-for="spalte in sichtbareSpalten"
+                :key="spalte.key"
+                scope="col"
+                class="whitespace-nowrap px-4 font-medium"
+                :class="[zellenPolster, spalte.align === 'right' ? 'text-right' : '']"
+                :style="spalte.width ? { width: spalte.width } : undefined"
+                :aria-sort="ariaSortierung(spalte)"
+              >
+                <!--
+                  Sortieren nur, wo es Sinn ergibt. Eine Spalte, die einen
+                  Farbpunkt zeigt, sortiert man nicht nach ihrem Rohwert -
+                  dabei käme eine Reihenfolge heraus, die niemand erwartet.
+                -->
+                <button
+                  v-if="sortierbar(spalte)"
+                  class="-mx-1 inline-flex items-center gap-1 rounded px-1 hover:text-ink-gray-9"
+                  :class="spalte.align === 'right' ? 'flex-row-reverse' : ''"
+                  @click="sortiereNach(spalte.key)"
+                >
+                  {{ spalte.label }}
+                  <span
+                    class="text-xs"
+                    :class="sortSpalte === spalte.key ? 'text-ink-gray-8' : 'text-ink-gray-3'"
+                    aria-hidden="true"
+                  >
+                    {{ sortSpalte === spalte.key ? (sortRichtung === 'asc' ? '▲' : '▼') : '↕' }}
+                  </span>
+                </button>
+                <span v-else>{{ spalte.label }}</span>
+              </th>
+            </tr>
+          </thead>
+
+          <tbody class="divide-y divide-outline-gray-2">
+            <tr
+              v-for="(zeile, i) in seitenZeilen"
+              :key="zeile.name || i"
+              :class="[
+                onRowClick ? 'cursor-pointer hover:bg-surface-gray-1' : '',
+                istGewaehlt(zeile) ? 'bg-surface-gray-2' : '',
+              ]"
+              @click="onRowClick && onRowClick(zeile)"
+            >
+              <td v-if="waehlbar" class="px-3 align-top" :class="zellenPolster" @click.stop>
+                <input
+                  type="checkbox"
+                  class="size-4"
+                  :checked="istGewaehlt(zeile)"
+                  :aria-label="'Zeile ' + (zeile.name || i + 1) + ' wählen'"
+                  @change="zeileUmschalten(zeile)"
+                />
+              </td>
+              <td
+                v-for="spalte in sichtbareSpalten"
+                :key="spalte.key"
+                class="px-4 align-top"
+                :class="[
+                  zellenPolster,
+                  spalte.align === 'right' ? 'text-right' : '',
+                  spalte.mono ? 'font-mono text-sm' : dichte === 'kompakt' ? '' : 'text-base',
+                  spalte.numeric ? 'tabular-nums' : '',
+                  spalte.muted ? 'text-ink-gray-6' : 'text-ink-gray-8',
+                ]"
+              >
+                <slot :name="'zelle-' + spalte.key" :zeile="zeile" :wert="zeile[spalte.key]">
+                  <span v-if="leer(zeile[spalte.key])" class="text-ink-gray-4">–</span>
+                  <span v-else>{{ zeile[spalte.key] }}</span>
+                </slot>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!--
+        Randverlauf nur, solange in die Richtung noch etwas liegt. Eine
+        Tabelle, die seitlich weitergeht, sieht sonst aus wie eine, die zu
+        Ende ist.
+      -->
+      <div
+        v-if="mehrLinks"
+        class="pointer-events-none absolute inset-y-0 left-0 w-6 schatten-links"
+        aria-hidden="true"
+      />
+      <div
+        v-if="mehrRechts"
+        class="pointer-events-none absolute inset-y-0 right-0 w-6 schatten-rechts"
+        aria-hidden="true"
+      />
+
+      <p v-if="loading" class="px-4 py-8 text-center text-sm text-ink-gray-5">Wird geladen …</p>
+      <p v-else-if="!rows.length" class="px-4 py-8 text-center text-sm text-ink-gray-5">
+        {{ emptyText }}
+      </p>
+      <p v-else-if="!sortiert.length" class="px-4 py-8 text-center text-sm text-ink-gray-5">
+        Keine Zeile passt zum Filter.
+      </p>
+    </div>
+
+    <!-- Blättern. Erst ab der zweiten Seite, sonst ist es nur Rauschen. -->
+    <div
+      v-if="seitenAnzahl > 1"
+      class="mt-2 flex flex-wrap items-center justify-between gap-2 text-sm"
+    >
+      <p class="text-ink-gray-6">
+        {{ ersterIndex + 1 }}–{{ letzterIndex }} von {{ sortiert.length }}
+      </p>
+      <div class="flex items-center gap-1">
+        <Button size="sm" :disabled="seite === 1" aria-label="Erste Seite" @click="seite = 1">
+          «
+        </Button>
+        <Button size="sm" :disabled="seite === 1" @click="seite -= 1">Zurück</Button>
+        <span class="px-2 tabular-nums text-ink-gray-7">{{ seite }} / {{ seitenAnzahl }}</span>
+        <Button size="sm" :disabled="seite === seitenAnzahl" @click="seite += 1">Weiter</Button>
+        <Button
+          size="sm"
+          :disabled="seite === seitenAnzahl"
+          aria-label="Letzte Seite"
+          @click="seite = seitenAnzahl"
+        >
+          »
+        </Button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { Button } from 'frappe-ui'
+import { useTabellenStore } from '@/stores/tabellen'
+import { mengeText } from '@/viz'
+
+const props = defineProps({
+  /** @type {{key: string, label: string, align?: string, mono?: boolean, numeric?: boolean, muted?: boolean, width?: string, sortierbar?: boolean, sortWert?: Function, exportWert?: Function}[]} */
+  columns: { type: Array, required: true },
+  rows: { type: Array, required: true },
+  loading: { type: Boolean, default: false },
+  emptyText: { type: String, default: 'Keine Einträge.' },
+  onRowClick: { type: Function, default: null },
+
+  /**
+   * Kennung, unter der Sortierung, Spaltenwahl und Dichte gemerkt werden.
+   * Ohne sie verhält sich die Tabelle wie bisher - zustandslos.
+   */
+  tabellenId: { type: String, default: '' },
+  /** Mehrfachauswahl mit Sammelaktionen. */
+  waehlbar: { type: Boolean, default: false },
+  /** Spalten ein- und ausblenden. */
+  spaltenwahl: { type: Boolean, default: true },
+  /** CSV-Ausgabe der sichtbaren Spalten. */
+  exportierbar: { type: Boolean, default: true },
+  /** Dateiname ohne Endung. */
+  exportName: { type: String, default: 'netops-export' },
+  /** Ab dieser Zeilenzahl wird geblättert. 0 schaltet das Blättern ab. */
+  seitengroesse: { type: Number, default: 0 },
+  /** Höhe, ab der die Kopfzeile stehen bleibt und der Körper scrollt. */
+  maxHoehe: { type: String, default: '' },
+})
+
+const emit = defineEmits(['auswahl'])
+
+/**
+ * Den Store nur holen, wenn die Tabelle überhaupt etwas merken soll. Eine
+ * Tabelle ohne `tabellenId` bleibt damit eine reine Anzeigekomponente und
+ * läuft auch dort, wo kein Pinia eingerichtet ist - etwa in einem Test,
+ * der nur die Darstellung prüft.
+ */
+const tabellen = props.tabellenId ? useTabellenStore() : null
+
+const gemerkt = computed(() => (tabellen ? tabellen.einstellungen(props.tabellenId) : null))
+
+const sortSpalte = ref(gemerkt.value?.sortSpalte || null)
+const sortRichtung = ref(gemerkt.value?.sortRichtung || 'asc')
+const versteckt = ref(gemerkt.value?.versteckteSpalten || [])
+const dichte = ref(gemerkt.value?.dichte || 'normal')
+const seite = ref(1)
+const auswahl = ref([])
+const spaltenOffen = ref(false)
+
+const rahmen = ref(null)
+const karte = ref(null)
+const mehrLinks = ref(false)
+const mehrRechts = ref(false)
+
+// --- Spalten ---------------------------------------------------------------
+
+const sichtbareSpalten = computed(() =>
+  props.columns.filter((s) => !versteckt.value.includes(s.key)),
+)
+
+function spalteUmschalten(key) {
+  versteckt.value = versteckt.value.includes(key)
+    ? versteckt.value.filter((k) => k !== key)
+    : [...versteckt.value, key]
+  merke({ versteckteSpalten: versteckt.value })
+}
+
+function alleSpalten() {
+  versteckt.value = []
+  merke({ versteckteSpalten: [] })
+}
+
+// --- Sortierung ------------------------------------------------------------
+
+/**
+ * Sortierbar ist eine Spalte, wenn hinter ihr ein einfacher Wert steht.
+ *
+ * Am Slot festzumachen wäre falsch: die meisten Slots formatieren nur
+ * (eine Zahl als Euro, ein Kürzel als Abzeichen) - danach möchte man sehr
+ * wohl sortieren. Umgekehrt haben zusammengesetzte Spalten wie „Zeitraum"
+ * oder „Befund" gar kein eigenes Feld in den Daten; dort gäbe es nichts zu
+ * vergleichen. Genau das prüft diese Funktion.
+ */
+function sortierbar(spalte) {
+  if (spalte.sortierbar === false) return false
+  if (spalte.sortierbar === true || spalte.sortWert) return true
+
+  const probe = (props.rows || []).find((z) => !leer(z[spalte.key]))
+  if (!probe) return false
+  const wert = probe[spalte.key]
+  return typeof wert === 'string' || typeof wert === 'number' || typeof wert === 'boolean'
+}
+
+function sortiereNach(key) {
+  if (sortSpalte.value === key) {
+    // Dritter Klick hebt die Sortierung auf und stellt die Reihenfolge
+    // wieder her, die die Server-Methode vorgibt - die ist meistens die
+    // fachlich richtige (Kritisches zuerst).
+    if (sortRichtung.value === 'asc') sortRichtung.value = 'desc'
+    else {
+      sortSpalte.value = null
+      sortRichtung.value = 'asc'
+    }
+  } else {
+    sortSpalte.value = key
+    sortRichtung.value = 'asc'
+  }
+  seite.value = 1
+  merke({ sortSpalte: sortSpalte.value, sortRichtung: sortRichtung.value })
+}
+
+function ariaSortierung(spalte) {
+  if (!sortierbar(spalte)) return undefined
+  if (sortSpalte.value !== spalte.key) return 'none'
+  return sortRichtung.value === 'asc' ? 'ascending' : 'descending'
+}
+
+function sortWert(zeile, spalte) {
+  if (spalte.sortWert) return spalte.sortWert(zeile)
+  return zeile[spalte.key]
+}
+
+const sortiert = computed(() => {
+  const liste = props.rows || []
+  if (!sortSpalte.value) return liste
+
+  const spalte = props.columns.find((s) => s.key === sortSpalte.value)
+  if (!spalte) return liste
+
+  const richtung = sortRichtung.value === 'asc' ? 1 : -1
+  return [...liste].sort((a, b) => {
+    const x = sortWert(a, spalte)
+    const y = sortWert(b, spalte)
+    // Leerwerte immer ans Ende, egal in welche Richtung sortiert wird -
+    // eine Liste, die mit lauter Strichen beginnt, hilft niemandem.
+    if (leer(x) && leer(y)) return 0
+    if (leer(x)) return 1
+    if (leer(y)) return -1
+    if (typeof x === 'number' && typeof y === 'number') return (x - y) * richtung
+    return String(x).localeCompare(String(y), 'de', { numeric: true }) * richtung
+  })
+})
+
+// --- Blättern --------------------------------------------------------------
+
+const seitengroesseAktiv = computed(
+  () => props.seitengroesse || (props.rows.length > 200 ? 100 : 0),
+)
+
+const seitenAnzahl = computed(() =>
+  seitengroesseAktiv.value ? Math.ceil(sortiert.value.length / seitengroesseAktiv.value) : 1,
+)
+
+const ersterIndex = computed(() =>
+  seitengroesseAktiv.value ? (seite.value - 1) * seitengroesseAktiv.value : 0,
+)
+
+const letzterIndex = computed(() =>
+  seitengroesseAktiv.value
+    ? Math.min(sortiert.value.length, ersterIndex.value + seitengroesseAktiv.value)
+    : sortiert.value.length,
+)
+
+const seitenZeilen = computed(() =>
+  seitengroesseAktiv.value
+    ? sortiert.value.slice(ersterIndex.value, letzterIndex.value)
+    : sortiert.value,
+)
+
+// Filtert die Seite weg, bleibt die Seitenzahl sonst hinter dem Ende stehen.
+watch(seitenAnzahl, (n) => {
+  if (seite.value > n) seite.value = Math.max(1, n)
+})
+
+// --- Auswahl ---------------------------------------------------------------
+
+function schluessel(zeile) {
+  return zeile.name ?? JSON.stringify(zeile)
+}
+
+function istGewaehlt(zeile) {
+  return auswahl.value.includes(schluessel(zeile))
+}
+
+function zeileUmschalten(zeile) {
+  const k = schluessel(zeile)
+  auswahl.value = auswahl.value.includes(k)
+    ? auswahl.value.filter((x) => x !== k)
+    : [...auswahl.value, k]
+}
+
+const alleGewaehlt = computed(
+  () => seitenZeilen.value.length > 0 && seitenZeilen.value.every(istGewaehlt),
+)
+
+function alleUmschalten() {
+  if (alleGewaehlt.value) {
+    const aufSeite = new Set(seitenZeilen.value.map(schluessel))
+    auswahl.value = auswahl.value.filter((k) => !aufSeite.has(k))
+  } else {
+    auswahl.value = [...new Set([...auswahl.value, ...seitenZeilen.value.map(schluessel)])]
+  }
+}
+
+function auswahlLeeren() {
+  auswahl.value = []
+}
+
+const gewaehlteZeilen = computed(() =>
+  (props.rows || []).filter((z) => auswahl.value.includes(schluessel(z))),
+)
+
+watch(gewaehlteZeilen, (liste) => emit('auswahl', liste))
+
+// Verschwinden Zeilen durch einen Filter, darf ihre Auswahl nicht
+// weiterwirken - sonst trifft eine Sammelaktion Unsichtbares.
+watch(
+  () => props.rows,
+  () => {
+    const vorhanden = new Set((props.rows || []).map(schluessel))
+    auswahl.value = auswahl.value.filter((k) => vorhanden.has(k))
+  },
+)
+
+// --- Darstellung -----------------------------------------------------------
+
+const zellenPolster = computed(() => (dichte.value === 'kompakt' ? 'py-1' : 'py-2.5'))
+
+const festerKopf = computed(() => !!props.maxHoehe)
+
+const hoehenStil = computed(() =>
+  props.maxHoehe ? { maxHeight: props.maxHoehe, overflowY: 'auto' } : undefined,
+)
+
+function dichteUmschalten() {
+  dichte.value = dichte.value === 'kompakt' ? 'normal' : 'kompakt'
+  merke({ dichte: dichte.value })
+}
+
+const zeigtLeiste = computed(
+  () =>
+    props.waehlbar ||
+    (props.rows.length > 5 && (props.spaltenwahl || props.exportierbar || props.tabellenId)),
+)
+
+function merke(teil) {
+  tabellen?.setze(props.tabellenId, teil)
+}
+
+// --- Export ----------------------------------------------------------------
+
+/**
+ * CSV mit Semikolon und BOM: Excel in deutscher Einstellung erwartet das
+ * Semikolon als Trenner, und ohne BOM zeigt es Umlaute als Ã¤.
+ */
+function exportiereCsv() {
+  const spalten = sichtbareSpalten.value
+  const zeilen = auswahl.value.length ? gewaehlteZeilen.value : sortiert.value
+
+  const feld = (wert) => {
+    if (wert === null || wert === undefined) return ''
+    const text = Array.isArray(wert) ? wert.join(' | ') : String(wert)
+    return /[";\n]/.test(text) ? '"' + text.replace(/"/g, '""') + '"' : text
+  }
+
+  const kopf = spalten.map((s) => feld(s.label || s.key)).join(';')
+  const koerper = zeilen.map((z) =>
+    spalten.map((s) => feld(s.exportWert ? s.exportWert(z) : z[s.key])).join(';'),
+  )
+
+  const inhalt = '﻿' + [kopf, ...koerper].join('\r\n')
+  const blob = new Blob([inhalt], { type: 'text/csv;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `${props.exportName}-${new Date().toISOString().slice(0, 10)}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+// --- Seitlicher Verlauf ----------------------------------------------------
+
+function messen() {
+  const el = rahmen.value
+  if (!el) return
+  // 1 px Toleranz: Browser runden scrollLeft auf Bruchteile.
+  mehrLinks.value = el.scrollLeft > 1
+  mehrRechts.value = el.scrollLeft + el.clientWidth < el.scrollWidth - 1
+}
+
+let beobachter = null
+
+function aussenKlick(ereignis) {
+  if (spaltenOffen.value && !karte.value?.parentElement?.contains(ereignis.target)) {
+    spaltenOffen.value = false
+  }
+}
+
+onMounted(() => {
+  messen()
+  if (typeof ResizeObserver !== 'undefined') {
+    beobachter = new ResizeObserver(messen)
+    beobachter.observe(rahmen.value)
+  }
+  document.addEventListener('click', aussenKlick, true)
+})
+
+onBeforeUnmount(() => {
+  beobachter?.disconnect()
+  document.removeEventListener('click', aussenKlick, true)
+})
+
+watch(
+  () => props.rows,
+  () => nextTick(messen),
+  { deep: false },
+)
+
+function leer(wert) {
+  return wert === null || wert === undefined || wert === ''
+}
+
+defineExpose({ auswahlLeeren, exportiereCsv })
+</script>
+
+<style scoped>
+/* Über Tailwind ginge das auch, aber die Farbe muss die Flächenfarbe des
+   Kartenhintergrunds treffen - und die steht als Token im Theme. */
+.schatten-links {
+  background: linear-gradient(to right, rgb(0 0 0 / 0.08), transparent);
+}
+.schatten-rechts {
+  background: linear-gradient(to left, rgb(0 0 0 / 0.08), transparent);
+}
+</style>

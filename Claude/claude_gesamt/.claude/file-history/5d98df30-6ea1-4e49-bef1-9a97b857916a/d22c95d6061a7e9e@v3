@@ -1,0 +1,133 @@
+> ## ⚠ TEILWEISE ÜBERHOLT
+> Die Grundannahme dieses Papiers — die Staatsanwaltschaft kenne das Konto der Daniela Mikic nicht — ist **unrichtig**. Mit Anordnung vom 05.05.2026, gerichtlich bewilligt durch das LG Innsbruck (Dr. Georg Putz), wurde eine Konteneinschau zu IBAN AT94 5700 0300 5559 0335 für den Zeitraum 28.12.2020 bis 30.06.2022 durchgeführt.
+> Die Empfehlung, das Mikic-Konto zurückzuhalten, ist damit **gegenstandslos**. Maßgeblich ist `VERTRAULICH_Verfahrensstrategie.md`.
+
+> **VERTRAULICH — für den Beschuldigten und den Verteidiger. Nicht zur Vorlage.**
+
+# Was die Staatsanwaltschaft sieht — und was nicht
+
+## 1. Der Befund
+
+**Im Strafakt liegt genau ein Konto.**
+
+| Aktenstück | Inhalt |
+|---|---|
+| ON 2.10 | Umsatzliste Konto **30055459891**, 07.05.2019 bis 31.12.2020 |
+| ON 2.11 | Umsatzliste Konto **30055459891**, 01.01.2021 bis 11.12.2023 |
+
+Das ist das Konto **AT12 5700 0300 5545 9891** — das Privatkonto des Beschuldigten.
+
+**Nicht im Akt sind:**
+
+| Konto | Inhaber | Status |
+|---|---|---|
+| AT94 5700 0300 5559 0335 | **Daniela Mikic** | keine Auszüge im Akt |
+| AT25 5700 0300 5545 9948 | Benjamin Höfler (Zweitkonto) | keine Auszüge im Akt |
+| AT26 5700 0300 5542 3846 | JB Technology GmbH | keine Auszüge im Akt |
+| AT75 5700 0300 5545 9921 | JB Technology „Webshop" | keine Auszüge im Akt |
+
+Diese IBAN erscheinen im Akt ausschließlich **innerhalb der Buchungstexte** des Kontos 9891, also als Gegenkonten einzelner Überweisungen.
+
+Die Kontenregisterabfrage ON 7 weist lediglich aus, **welche Konten existieren** — nicht, welche Bewegungen darauf stattgefunden haben. Für die JB Technology GmbH endete sie überdies mit „Kein Ergebnis gefunden".
+
+Der Anlassbericht ON 5.2 bestätigt das ausdrücklich: ausgewertet wurde „eine erste, noch nicht abschließende Auswertung **des dem Beschuldigten zugeordneten Privatkontos**" — Einzahl.
+
+---
+
+## 2. Was daraus folgt
+
+### 2.1 Der Kernvorwurf beruht auf einer Lücke
+
+Der Masseverwalter behauptet in ON 2.2, für die Überweisungen an Daniela Mikic bestehe „kein nachvollziehbarer Rechtsgrund". Er konnte das gar nicht beurteilen: Als Insolvenzverwalter im Konkurs über das Vermögen des Beschuldigten hat er **keinen Zugriff auf das Konto einer dritten Person**. Er sah nur den Abfluss, nie die Verwendung.
+
+Dasselbe gilt für die Ermittlungsbehörde. Was auf dem Konto der Daniela Mikic geschah, ist bis heute unbekannt.
+
+### 2.2 Ein Zugriff bräuchte einen richterlichen Beschluss
+
+Für Auskünfte über Bankkonten einer dritten Person ist eine **Konteneinschau nach § 116 StPO** erforderlich. Diese setzt eine Anordnung der Staatsanwaltschaft **und deren gerichtliche Bewilligung** voraus. Eine solche ist nach der Aktenlage nicht ergangen.
+
+### 2.3 Die Verteidigung verfügt über Material, das die Behörde nicht hat
+
+Das ist der eigentliche Befund: Die entlastenden Beweise liegen ganz überwiegend auf Konten, die die Staatsanwaltschaft nicht kennt.
+
+---
+
+## 3. Bilanz: entlastend und belastend, getrennt nach Sichtbarkeit
+
+### 3.1 Der Behörde bereits bekannt (Konto 9891)
+
+| Umstand | Wirkung |
+|---|---|
+| Eingang 250.000 € „Vereinbarung vom 22.12.2020" | entlastend (Rechtsgrund) |
+| 3 × 30.000 € an tyb Beteiligungs GmbH | belastend in der Lesart der Anzeige |
+| 42.500 € und 74.500 € an Daniela Mikic | belastend in der Lesart der Anzeige |
+| Barbehebungen 10.000 € „Mitarbeiter Lohnzahlungen" und 5.000 € „Anzahlung Quelle" | belastend, unbelegt |
+| 10.000 € an Mag. Partl „Akonto für JB Technology" | entlastend |
+| 10.000 € und 2.092 € an Dr. Schobesberger | entlastend |
+| **132.194 € Gläubigerzahlungen am 09.05.2022** (S. 144–147) | **stark entlastend** |
+| 18 Buchungen mit Exekutionsbezug | entlastend |
+
+### 3.2 Der Behörde **nicht** bekannt
+
+| Umstand | Konto | Wirkung |
+|---|---|---|
+| 45,4 % der Mikic-Ausgänge = 79.975,58 € an Finanzamt, SVS, Miete, Exekutionen | Mikic | **stark entlastend** |
+| 14.800 € an tyb „im Auftrag von JB Technology GmbH" (07.12.2020) | Mikic | stark entlastend |
+| Fünf Exekutionszahlungen mit Registererledigung Februar 2021 | Mikic | stark entlastend |
+| Darlehen „Susanne Messmer" 7.000 € an Mikic (18.11.2020) | Mikic | entlastend (Verflechtung) |
+| Rückzahlungen an Thomas Klepsch 7.500 € | Höfler-9948 | **stark entlastend** |
+| Zahlungen an hjpe 20.000 € und 10.000 € mit Vermerk „Darlehen" | Höfler-9948 | **stark entlastend** (Platzhalter-Klausel) |
+| 18 Lieferantenzahlungen an Four Telecom | Höfler-9948 | entlastend |
+| **Barbehebung 65.000 € vom 11.01.2021** | **Mikic** | **stark belastend, derzeit unsichtbar** |
+| Barbehebung 4.631 € vom 18.11.2020 | Mikic | belastend |
+| Privatkonsum 11.870,52 € auf dem Mikic-Konto | Mikic | belastend |
+
+---
+
+## 4. Die Entscheidung, die zu treffen ist
+
+**Die Vorlage der Mikic-Kontoauszüge ist ein Paket. Sie lässt sich nicht aufteilen.**
+
+Wer die 79.975,58 € an Gläubigerzahlungen und die fünf durch das Exekutionsregister bestätigten Tilgungen vorlegt, legt zugleich die Barbehebung über 65.000 € offen, die die Staatsanwaltschaft derzeit nicht kennt und ohne richterlichen Beschluss auch nicht sehen kann.
+
+### Für die Vorlage spricht
+
+Der Vorwurf, für die Mikic-Überweisungen bestehe kein nachvollziehbarer Rechtsgrund, ist nur mit diesen Auszügen zu widerlegen. Ohne sie steht Behauptung gegen Behauptung — und die Beweislast trägt faktisch, wer entlasten will. Die Auszüge belegen 45,4 % der Ausgänge als Fremdverbindlichkeiten, fünf davon über das Register verifizierbar. Sie belegen ferner, dass das Konto bereits am 07.12.2020, also vor der ersten beanstandeten Überweisung, für Unternehmenszahlungen verwendet wurde.
+
+Kommt es später zu einer Konteneinschau nach § 116 StPO, wird die Behörde die 65.000 € ohnehin sehen — dann aber ohne den entlastenden Kontext und ohne vorbereitete Erklärung.
+
+### Gegen die Vorlage spricht
+
+Die 65.000 € sind nach der gesamten Durchsicht von 395 Dateien durch **nichts** belegt. Kein Kassabuch, keine Materialrechnung, keine Lohnquittung, keine korrespondierende Einzahlung über den Wiedereinlagen von 21.500 €. Die Barbehebung entspricht 44,6 % der gesamten beanstandeten Summe.
+
+Es besteht die Möglichkeit, dass das Verfahren ohne Konteneinschau eingestellt wird — insbesondere, wenn die Verjährungseinrede (Teil B des Schriftsatzes) durchdringt.
+
+### Meine Einschätzung
+
+Die entlastenden Positionen auf dem Mikic-Konto überwiegen die belastenden deutlich, **aber nur dann, wenn für die 65.000 € eine belegte Erklärung vorliegt.** Ohne eine solche Erklärung verschafft die Vorlage der Behörde ein Beweismittel, das sie sonst nicht hätte, und liefert ihr den einzigen Punkt, an dem der Krida-Vorwurf noch hängt.
+
+**Empfehlung:** Zuerst die Aufklärung der 65.000 € versuchen — Auszüge des Webshop-Kontos AT75 5700 0300 5545 9921, Kontoauszüge ab Juni 2021, Belege über Materialeinkäufe, Lohnquittungen. Erst wenn diese Frage beantwortet ist, über die Vorlage entscheiden.
+
+**Was ohne Risiko jetzt schon vorgelegt werden kann**, weil es ausschließlich entlastet und nicht auf dem Mikic-Konto liegt:
+
+- Kaufvertrag adplac.es und Inhaberwechselantrag
+- Angebot hjpe vom 24.11.2020
+- Buchungsbestätigungen der hjpe-Zahlungen vom 20. und 22.07.2020 (Konto 9948)
+- Rückzahlungen an Thomas Klepsch (Konto 9948)
+- Auszahlungsjournale JB Technology 2021
+- GEFION-Präsentation
+- Flavorex-Rechnung mit Prof. Schür
+- Stellungnahmen Wegscheider und Messmer
+- Der Verweis auf die Zahlungen vom 09.05.2022, die **bereits im Akt** liegen (ON 2.11, S. 144–147)
+
+Diese Beilagen tragen den Schriftsatz in den Teilen B bis E und G vollständig, ohne das Mikic-Konto zu öffnen.
+
+---
+
+## 5. Konsequenz für die Beweisanträge
+
+Beweisantrag K.9 des Gesamtschriftsatzes beantragt die Beischaffung der Kontoauszüge des Kontos 9891 für Juni 2021 bis Dezember 2023. Das ist unbedenklich — dieses Konto liegt ohnehin bereits vollständig im Akt.
+
+**Nicht** beantragt werden sollte die Beischaffung der Konten der Daniela Mikic. Ein solcher Antrag würde die Behörde auf eine Konteneinschau nach § 116 StPO hinführen, die bislang nicht angeordnet wurde.
+
+Der derzeitige Entwurf enthält keinen solchen Antrag. Das sollte so bleiben.

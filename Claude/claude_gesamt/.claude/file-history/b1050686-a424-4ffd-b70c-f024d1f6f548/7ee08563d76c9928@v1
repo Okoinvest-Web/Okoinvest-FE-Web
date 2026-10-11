@@ -1,0 +1,63 @@
+import "server-only";
+
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+
+import {
+  FULLNAME_COOKIE,
+  SID_COOKIE,
+  USER_COOKIE,
+  istAngemeldet,
+} from "./cookies";
+import { frappeFetch } from "./frappe";
+
+export interface PortalUser {
+  /** Frappe-Benutzer-ID, in der Regel die E-Mail-Adresse. */
+  id: string;
+  fullName: string;
+}
+
+/**
+ * Liest den angemeldeten Benutzer aus den Cookies.
+ * Gibt `null` zurueck, wenn keine Session existiert.
+ */
+export async function getCurrentUser(): Promise<PortalUser | null> {
+  const store = await cookies();
+  const sid = store.get(SID_COOKIE)?.value;
+  const id = store.get(USER_COOKIE)?.value;
+
+  // Gleiches Kriterium wie im Proxy - sonst schaukeln sich die
+  // Weiterleitungen zwischen /portal und /login auf.
+  if (!istAngemeldet(sid, id) || !id) return null;
+
+  return {
+    id,
+    fullName: store.get(FULLNAME_COOKIE)?.value || id,
+  };
+}
+
+/**
+ * Wie `getCurrentUser`, leitet aber zum Login um, statt `null` zu liefern.
+ * Fuer Seiten unterhalb von /portal.
+ */
+export async function requireUser(): Promise<PortalUser> {
+  const user = await getCurrentUser();
+  if (!user) redirect("/login");
+  return user;
+}
+
+/**
+ * Prueft die Session direkt gegen Frappe statt nur gegen das Cookie.
+ * Noetig, weil ein Cookie noch da sein kann, nachdem Frappe die Session
+ * serverseitig bereits verworfen hat.
+ */
+export async function verifySession(): Promise<string | null> {
+  try {
+    const result = await frappeFetch<{ message: string }>(
+      "/api/method/frappe.auth.get_logged_user",
+    );
+    return result.message && result.message !== "Guest" ? result.message : null;
+  } catch {
+    return null;
+  }
+}

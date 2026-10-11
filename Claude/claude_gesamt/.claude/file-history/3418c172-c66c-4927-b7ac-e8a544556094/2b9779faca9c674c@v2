@@ -1,0 +1,107 @@
+"use client";
+
+import { useActionState, useOptimistic, useTransition } from "react";
+import { createLeadAction, setLeadStatusAction, toggleToDoAction, type FormState } from "@/lib/actions";
+import { LEAD_STATUSES } from "@/lib/types";
+import { LEAD_STATUS_LABEL } from "@/lib/format";
+
+export function LeadStatusSelect({ name, status }: { name: string; status: string }) {
+  const [pending, start] = useTransition();
+  const [value, setValue] = useOptimistic(status);
+
+  return (
+    <select
+      value={value}
+      disabled={pending}
+      onChange={(e) => {
+        const next = e.target.value;
+        start(async () => {
+          setValue(next);
+          await setLeadStatusAction(name, next);
+        });
+      }}
+      className="h-8 rounded-md border border-gray-200 bg-white px-2 outline-none focus:ring-1 focus:ring-gray-300 disabled:opacity-60"
+    >
+      {LEAD_STATUSES.map((s) => (
+        <option key={s} value={s}>
+          {LEAD_STATUS_LABEL[s]}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+export function ToDoCheck({ name, done }: { name: string; done: boolean }) {
+  const [, start] = useTransition();
+  const [checked, setChecked] = useOptimistic(done);
+  return (
+    <input
+      type="checkbox"
+      checked={checked}
+      onChange={(e) => {
+        const next = e.target.checked;
+        start(async () => {
+          setChecked(next);
+          await toggleToDoAction(name, next);
+        });
+      }}
+      className="size-4 cursor-pointer accent-gray-900"
+      aria-label="Erledigt"
+    />
+  );
+}
+
+const input = "h-9 w-full rounded-md border border-gray-200 px-3 outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-300";
+
+export function NewLeadForm() {
+  const [state, action, pending] = useActionState<FormState, FormData>(createLeadAction, {});
+  return (
+    <form action={action} className="grid max-w-2xl grid-cols-2 gap-4 p-5">
+      <label className="flex flex-col gap-1.5">
+        <span className="text-gray-600">Vorname *</span>
+        <input name="first_name" required className={input} />
+      </label>
+      <label className="flex flex-col gap-1.5">
+        <span className="text-gray-600">Nachname</span>
+        <input name="last_name" className={input} />
+      </label>
+      <label className="col-span-2 flex flex-col gap-1.5">
+        <span className="text-gray-600">Firma</span>
+        <input name="company_name" className={input} />
+      </label>
+      <label className="flex flex-col gap-1.5">
+        <span className="text-gray-600">E-Mail</span>
+        <input name="email_id" type="email" className={input} />
+      </label>
+      <label className="flex flex-col gap-1.5">
+        <span className="text-gray-600">Mobil</span>
+        <input name="mobile_no" className={input} />
+      </label>
+      <label className="flex flex-col gap-1.5">
+        <span className="text-gray-600">Quelle</span>
+        <select name="source" className={input} defaultValue="">
+          <option value="">–</option>
+          {["Website", "Empfehlung", "Messe", "Kaltakquise", "LinkedIn"].map((s) => (
+            <option key={s}>{s}</option>
+          ))}
+        </select>
+      </label>
+      <label className="flex flex-col gap-1.5">
+        <span className="text-gray-600">Status</span>
+        <select name="status" className={input} defaultValue="Lead">
+          {LEAD_STATUSES.map((s) => (
+            <option key={s} value={s}>
+              {LEAD_STATUS_LABEL[s]}
+            </option>
+          ))}
+        </select>
+      </label>
+      {state.error && <p className="col-span-2 rounded-md bg-red-50 px-3 py-2 text-red-700">{state.error}</p>}
+      <div className="col-span-2">
+        <button disabled={pending} className="h-9 rounded-md bg-gray-900 px-4 font-medium text-white hover:bg-gray-800 disabled:opacity-60">
+          {pending ? "Speichern…" : "Lead anlegen"}
+        </button>
+      </div>
+    </form>
+  );
+}

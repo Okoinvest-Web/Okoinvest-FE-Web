@@ -1,0 +1,125 @@
+<template>
+  <div>
+    <PageHeader title="Vorfälle" :subtitle="untertitel" />
+
+    <div class="p-6">
+      <div class="space-y-4">
+        <article
+          v-for="vorfall in vorfaelle.data || []"
+          :key="vorfall.name"
+          class="rounded-lg border border-outline-gray-2 bg-surface-white p-4"
+        >
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <div class="min-w-0">
+              <p class="text-base font-medium text-ink-gray-9">{{ vorfall.title }}</p>
+              <p class="mt-0.5 text-sm text-ink-gray-6">{{ vorfall.summary }}</p>
+            </div>
+            <div class="flex shrink-0 items-center gap-3">
+              <StatusDot :level="gradStufe(vorfall.severity)" :text="GRAD[vorfall.severity]" />
+              <Badge :theme="zustandThema(vorfall.incident_state)">
+                {{ ZUSTAND[vorfall.incident_state] || vorfall.incident_state }}
+              </Badge>
+            </div>
+          </div>
+
+          <dl class="mt-3 grid grid-cols-2 gap-x-6 gap-y-1 text-sm lg:grid-cols-4">
+            <div>
+              <dt class="text-ink-gray-5">Eröffnet</dt>
+              <dd class="tabular-nums text-ink-gray-8">{{ vorfall.opened }}</dd>
+            </div>
+            <div>
+              <dt class="text-ink-gray-5">Betroffen</dt>
+              <dd class="text-ink-gray-8">{{ vorfall.affected_objects || '–' }}</dd>
+            </div>
+            <div>
+              <dt class="text-ink-gray-5">Meldung</dt>
+              <dd class="text-ink-gray-8">{{ vorfall.reporter }}</dd>
+            </div>
+            <div>
+              <dt class="text-ink-gray-5">Geschlossen</dt>
+              <dd class="tabular-nums text-ink-gray-8">{{ vorfall.closed || '–' }}</dd>
+            </div>
+          </dl>
+
+          <!-- Meldefristen-Assistent: NIS2 24 h / 72 h, DSGVO 72 h -->
+          <div v-if="vorfall.open" class="mt-3 border-t border-outline-gray-2 pt-3">
+            <p class="mb-2 text-sm font-medium text-ink-gray-7">Meldefristen</p>
+            <div class="flex flex-wrap gap-x-6 gap-y-2">
+              <StatusDot
+                v-for="frist in fristen(vorfall)"
+                :key="frist.label"
+                :level="frist.level"
+                :text="frist.label + ': ' + frist.text"
+                klein
+              />
+              <span v-if="!fristen(vorfall).length" class="text-sm text-ink-gray-5">
+                Keine Meldepflicht hinterlegt.
+              </span>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <p v-if="vorfaelle.loading" class="py-8 text-center text-sm text-ink-gray-5">Wird geladen …</p>
+      <p
+        v-else-if="!(vorfaelle.data || []).length"
+        class="py-8 text-center text-sm text-ink-gray-5"
+      >
+        Kein Vorfall erfasst.
+      </p>
+
+      <p class="mt-6 text-xs text-ink-gray-4">
+        Fristen nach Fachkonzept 2.13: NIS2 Frühwarnung 24 Stunden, Meldung
+        72 Stunden, Abschlussbericht ein Monat; DSGVO 72 Stunden an die
+        Datenschutzbehörde. Die Incident-Akte mit Zeitleiste und gehashten
+        Beweisobjekten setzt ein Backend voraus und fehlt hier.
+      </p>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed } from 'vue'
+import { Badge, createResource } from 'frappe-ui'
+import PageHeader from '@/components/PageHeader.vue'
+import StatusDot from '@/components/StatusDot.vue'
+
+const GRAD = { critical: 'Kritisch', high: 'Hoch', medium: 'Mittel', low: 'Niedrig' }
+const ZUSTAND = {
+  new: 'Neu',
+  analysis: 'In Analyse',
+  contained: 'Eingedämmt',
+  closed: 'Abgeschlossen',
+}
+
+const vorfaelle = createResource({ url: 'netops.api.security.incident_list', auto: true })
+
+const untertitel = computed(() => {
+  const liste = vorfaelle.data || []
+  return liste.length + ' Vorfälle · ' + liste.filter((i) => i.open).length + ' offen'
+})
+
+function fristen(vorfall) {
+  const eintraege = [
+    ['NIS2 Frühwarnung', vorfall.hours_to_early_warning],
+    ['NIS2 Meldung', vorfall.hours_to_report],
+    ['DSGVO', vorfall.hours_to_gdpr],
+  ]
+
+  return eintraege
+    .filter(([, stunden]) => stunden !== null && stunden !== undefined)
+    .map(([label, stunden]) => ({
+      label,
+      text: stunden < 0 ? 'seit ' + Math.abs(stunden) + ' h überschritten' : 'in ' + stunden + ' h',
+      level: stunden < 0 ? 'critical' : stunden < 24 ? 'warning' : 'ok',
+    }))
+}
+
+function gradStufe(grad) {
+  return { critical: 'critical', high: 'serious', medium: 'warning', low: 'neutral' }[grad] || 'neutral'
+}
+
+function zustandThema(zustand) {
+  return { new: 'orange', analysis: 'blue', contained: 'blue', closed: 'green' }[zustand] || 'gray'
+}
+</script>

@@ -1,0 +1,108 @@
+"""Maengelwerkzeuge fuer Bauleiter und Projektleiter (FA-060, FA-063, FA-065)."""
+
+from __future__ import annotations
+
+import json
+
+import frappe
+from frappe import _
+from frappe.utils import getdate, today
+
+# Nur diese Felder duerfen per Sammelaktion gesetzt werden. Beschreibung,
+# Massnahme und Nachweisfotos bleiben bewusst aussen vor: Sie beschreiben den
+# Einzelfall und lassen sich nicht sinnvoll auf viele Maengel anwenden.
+SAMMEL_FELDER = {"status", "zugewiesen_an", "faellig_am", "prioritaet", "schweregrad", "supplier"}
+
+FREIGEBER_ROLLEN = {"Baudoku Bauleiter", "Baudoku Projektleiter", "Baudoku Admin", "System Manager"}
+
+MAX_SAMMEL = 100
+
+
+@frappe.whitelist()
+def sammelaktion(namen: str | list, felder: str | dict) -> dict:
+	"""Setzt dieselben Felder auf mehreren Maengeln.
+
+	Der Bauleiter verteilt nach einer Begehung schnell zwanzig Maengel auf drei
+	Techniker — einzeln waere das zwanzig Formulare.
+
+	Jeder Mangel wird einzeln gespeichert, damit die Controllerlogik greift
+	(Frist aus dem SLA, ToDo-Zuweisung, Zaehler an der Anlage). Ein Fehlschlag
+	stoppt den Rest nicht, sondern wird zurueckgemeldet.
+	"""
+	if isinstance(namen, str):
+		namen = json.loads(namen)
+	if isinstance(felder, str):
+		felder = json.loads(felder)
+
+	if not FREIGEBER_ROLLEN & set(frappe.get_roles()):
+		frappe.throw(
+			_("Sammelaenderungen sind Bauleitern und Projektleitern vorbehalten."),
+			frappe.PermissionError,
+		)
+	if not namen:
+		frappe.throw(_("Es wurde kein Mangel ausgewaehlt."))
+	if len(namen) > MAX_SAMMEL:
+		frappe.throw(_("Maximal {0} Maengel je Sammelaktion.").format(MAX_SAMMEL))
+
+	unbekannt = set(felder) - SAMMEL_FELDER
+	if unbekannt:
+		frappe.throw(_("Diese Felder sind fuer Sammelaktionen nicht freigegeben: {0}")
+		             .format(", ".join(sorted(unbekannt))))
+
+	werte = {k: v for k, v in felder.items() if v not in (None, "")}
+	if not werte:
+		frappe.throw(_("Es wurde keine Aenderung angegeben."))
+
+	if werte.get("faellig_am") and getdate(werte["faellig_am"]) < getdate(today()):
+		frappe.msgprint(_("Das gesetzte Faelligkeitsdatum liegt in der Vergangenheit."),
+		                indicator="orange", alert=True)
+
+	erfolgreich: list[str] = []
+	fehlgeschlagen: list[dict] = []
+
+	for name in namen:
+		try:
+			doc = frappe.get_doc("Mangel", name)
+			doc.check_permission("write")
+			doc.update(werte)
+			doc.save()
+			frappe.db.commit()
+			erfolgreich.append(name)
+		# Ein einzelner Fehlschlag darf die uebrigen Maengel nicht blockieren.
+		except Exception as fehler:
+			frappe.db.rollback()
+			fehlgeschlagen.append({"name": name, "meldung": str(fehler)})
+
+	return {"erfolgreich": erfolgreich, "fehlgeschlagen": fehlgeschlagen}
+
+
+@frappe.whitelist()
+def zustaendige() -> list[dict]:
+	"""Mitarbeiter, denen Maengel zugewiesen werden koennen."""
+	return frappe.get_all(
+		"Employee",
+		filters={"status": "Active"},
+		fields=["name", "employee_name", "designation"],
+		order_by="employee_name asc",
+		limit_page_length=0,
+	)
+
+
+@frappe.whitelist()
+def meine_aufgaben() -> list[dict]:
+	"""Offene Maengel des angemeldeten Technikers, faelligste zuerst."""
+	mitarbeiter = frappe.db.get_value("Employee", {"user_id": frappe.session.user}, "name")
+	if not mitarbeiter:
+		return []
+
+	return frappe.get_all(
+		"Mangel",
+		filters={
+			"zugewiesen_an": mitarbeiter,
+			"status": ["in", ["Offen", "In Bearbeitung"]],
+		},
+		fields=["name", "titel", "anlage", "kategorie", "schweregrad", "status",
+		        "faellig_am", "ueberfaellig"],
+		order_by="ueberfaellig desc, faellig_am asc",
+		limit_page_length=50,
+	)

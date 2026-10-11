@@ -1,0 +1,78 @@
+import { defineConfig, devices } from '@playwright/test'
+
+/**
+ * Zwei Testsorten, zwei Server:
+ *
+ * - **Feldablauf** gegen den Dev-Server im Demo-Modus (Kapitel 6.2, AK-02).
+ * - **Offline** gegen den Produktionsbuild über `e2e/server.mjs` (AK-04,
+ *   NFA-010). Der Dev-Server taugt dafür nicht: Er kennt weder Precache noch
+ *   die Pfadaufteilung zwischen `/assets/...` und dem Wurzelpfad — und genau
+ *   dort entscheidet sich, ob der Service Worker die App überhaupt erreicht.
+ *
+ * Beide brauchen kein Frappe: Der Demo-Modus beantwortet alle Servermethoden.
+ */
+export default defineConfig({
+  testDir: './e2e',
+  timeout: 60_000,
+  expect: { timeout: 10_000 },
+  fullyParallel: false,
+  forbidOnly: Boolean(process.env.CI),
+  retries: process.env.CI ? 1 : 0,
+  workers: 1,
+  reporter: process.env.CI ? [['github'], ['list']] : [['list']],
+
+  use: {
+    trace: 'retain-on-failure',
+    screenshot: 'only-on-failure',
+    locale: 'de-AT',
+    timezoneId: 'Europe/Vienna',
+    // Ohne vorab erteilte Freigabe blockiert die Standortabfrage beim
+    // Protokollstart bis zum Zeitlimit.
+    permissions: ['geolocation'],
+    geolocation: { latitude: 48.0655, longitude: 12.8452 },
+  },
+
+  projects: [
+    {
+      name: 'tablet',
+      testIgnore: /offline\.spec\.ts/,
+      use: { ...devices['Galaxy Tab S4 landscape'], baseURL: 'http://localhost:8080' },
+    },
+    {
+      name: 'smartphone',
+      testIgnore: /offline\.spec\.ts/,
+      use: { ...devices['Pixel 5'], baseURL: 'http://localhost:8080' },
+    },
+    {
+      name: 'desktop',
+      testIgnore: /offline\.spec\.ts/,
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 1440, height: 900 },
+        baseURL: 'http://localhost:8080',
+      },
+    },
+    {
+      name: 'offline',
+      testMatch: /offline\.spec\.ts/,
+      use: { ...devices['Galaxy Tab S4 landscape'], baseURL: 'http://localhost:8081' },
+    },
+  ],
+
+  webServer: [
+    {
+      command: 'npm run dev',
+      url: 'http://localhost:8080/baudoku',
+      reuseExistingServer: !process.env.CI,
+      timeout: 120_000,
+      env: { VITE_DEMO: '1' },
+    },
+    {
+      // Baut den Demo-Stand und liefert ihn aus, wie Frappe es täte.
+      command: 'node e2e/build.mjs && node e2e/server.mjs',
+      url: 'http://localhost:8081/baudoku',
+      reuseExistingServer: !process.env.CI,
+      timeout: 60_000,
+    },
+  ],
+})

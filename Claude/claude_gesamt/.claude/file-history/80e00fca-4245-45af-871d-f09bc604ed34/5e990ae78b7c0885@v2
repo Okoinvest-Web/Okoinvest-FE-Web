@@ -1,0 +1,247 @@
+<section class="hero">
+  <div class="wrap hero-in">
+    <div class="hero-grid">
+      <div>
+        <span class="kicker s">Wärmepumpe</span>
+        <h1>Heizen mit dem Strom, den das <span class="gl">eigene Dach</span> liefert.</h1>
+        <p class="lede">Die Wärmepumpe macht aus einer Kilowattstunde Strom drei bis fünf Kilowattstunden Wärme. Der Rechner vergleicht sie mit Ihrem bestehenden System und zeigt, wo die Photovoltaik wirklich hilft.</p>
+        <div class="hero-acts">
+          <a class="btn btn-v" href="#tool">Heizkosten vergleichen</a>
+          <a class="btn btn-o" href="#details">Technik im Bestand</a>
+        </div>
+      </div>
+      <div class="chips">
+        <div class="chip v"><div><i>Jahresarbeitszahl</i><p>Erreichbar bei Flächenheizung</p></div><b>3,5–5,0</b></div>
+        <div class="chip s"><div><i>Vorlauftemperatur</i><p>Je 5 K weniger bringt rund 10 % Effizienz</p></div><b>35–55<span class="unit">°C</span></b></div>
+        <div class="chip c"><div><i>PV-Deckung</i><p>Anteil des Wärmestroms aus eigener Anlage</p></div><b>25–40<span class="unit">%</span></b></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="tool">
+  <div class="wrap">
+    <div class="sec-head">
+      <div><span class="kicker">Heizsystem-Vergleich</span><h2>Fünf Systeme, ein Gebäude, eine Rechnung.</h2></div>
+      <p class="lede">Der Vergleich rechnet mit Nutzwärmebedarf, nicht mit Brennstoffmenge. Damit sind Öl, Gas, Pellets, Direktstrom und Wärmepumpe auf derselben Grundlage vergleichbar.</p>
+    </div>
+
+    <div class="console glass chamf">
+      <div class="con-t"><span><span class="pulse"></span>Vergleichsrechnung</span><span id="stamp">Standard: Altbau teilsaniert</span></div>
+      <div class="con-l">
+        <div class="field">
+          <div class="field-h"><label for="area">Beheizte Fläche</label><span class="field-v" id="v-area">800<span class="unit">m²</span></span></div>
+          <input id="area" type="range" min="80" max="6000" step="20" value="800">
+          <div class="scale"><span>80</span><span>6.000 m²</span></div>
+        </div>
+        <div class="field">
+          <span class="lbl" id="sl">Gebäudestandard</span>
+          <div class="seg" role="group" aria-labelledby="sl">
+            <button type="button" data-s="alt" aria-pressed="false">Altbau unsaniert · 170 kWh/m²a</button>
+            <button type="button" data-s="teil" aria-pressed="true">Teilsaniert · 105 kWh/m²a</button>
+            <button type="button" data-s="neu" aria-pressed="false">Neubau · 45 kWh/m²a</button>
+          </div>
+        </div>
+        <div class="field">
+          <span class="lbl" id="cl">Bestehendes System</span>
+          <div class="seg c2" role="group" aria-labelledby="cl">
+            <button type="button" data-c="oel" aria-pressed="true">Ölkessel</button>
+            <button type="button" data-c="gas" aria-pressed="false">Gastherme</button>
+            <button type="button" data-c="pel" aria-pressed="false">Pellets</button>
+            <button type="button" data-c="str" aria-pressed="false">Direktstrom</button>
+          </div>
+        </div>
+        <div class="field">
+          <div class="field-h"><label for="jaz">Jahresarbeitszahl</label><span class="field-v" id="v-jaz">3,8</span></div>
+          <input id="jaz" type="range" min="2.4" max="5.2" step="0.1" value="3.8">
+          <div class="scale"><span>2,4 Heizkörper</span><span>5,2 Fläche</span></div>
+        </div>
+        <div class="field">
+          <div class="field-h"><label for="price">Strompreis</label><span class="field-v" id="v-price">24,0<span class="unit">ct/kWh</span></span></div>
+          <input id="price" type="range" min="8" max="45" step="0.5" value="24">
+          <div class="scale"><span>8</span><span>45 ct/kWh</span></div>
+        </div>
+        <div class="field">
+          <div class="field-h"><label for="pv">Anteil PV-Strom</label><span class="field-v" id="v-pv">30<span class="unit">%</span></span></div>
+          <input id="pv" type="range" min="0" max="70" step="5" value="30">
+          <div class="scale"><span>ohne PV</span><span>70 %</span></div>
+        </div>
+        <details class="as">
+          <summary>Rechenannahmen</summary>
+          <ul>
+            <li>Heizöl 1,05 €/l bei 10 kWh/l und 85 % Nutzungsgrad</li>
+            <li>Erdgas 11,0 ct/kWh bei 92 % Nutzungsgrad</li>
+            <li>Pellets 310 €/t bei 4,9 kWh/kg und 88 % Nutzungsgrad</li>
+            <li>PV-Strom mit 7 ct/kWh als entgangener Einspeiseerlös bewertet</li>
+            <li>Emissionen: Öl 310, Gas 200, Pellets 27, Strom 227 g CO₂/kWh</li>
+            <li>Mehrinvestition gegenüber Kesseltausch 600 €/kW Heizlast</li>
+          </ul>
+        </details>
+      </div>
+
+      <div class="con-r">
+        <div class="stats">
+          <div class="stat"><i>Nutzwärmebedarf</i><b id="o-heat">—<span class="unit">kWh/a</span></b><small id="o-load">Heizlast —</small></div>
+          <div class="stat c"><i>Stromverbrauch WP</i><b id="o-el">—<span class="unit">kWh/a</span></b><small id="o-elpv">davon PV —</small></div>
+          <div class="stat v"><i>Ersparnis p.a.</i><b id="o-save">—<span class="unit">€</span></b><small id="o-vs">gegenüber —</small></div>
+          <div class="stat s"><i>Wärmegestehung</i><b id="o-ct">—<span class="unit">ct/kWh</span></b><small id="o-ctold">bisher —</small></div>
+          <div class="stat c"><i>CO₂-Einsparung</i><b id="o-co2">—<span class="unit">t/a</span></b><small>gegenüber Bestand</small></div>
+          <div class="stat v"><i>Amortisation</i><b id="o-pay">—<span class="unit">Jahre</span></b><small id="o-inv">Mehrinvest —</small></div>
+        </div>
+
+        <div class="panel dk">
+          <div class="panel-h"><h4>Jahreskosten im Systemvergleich</h4><span id="c-note">—</span></div>
+          <svg id="ch" viewBox="0 0 760 210" role="img" aria-label="Jahreskosten der Heizsysteme im Vergleich"></svg>
+        </div>
+
+        <div class="panel">
+          <div class="panel-h"><h4>Wärmestrom und PV-Ertrag im Jahresverlauf</h4><span id="c-cov">—</span></div>
+          <svg id="mo" viewBox="0 0 760 190" role="img" aria-label="Monatlicher Strombedarf der Wärmepumpe gegenüber dem PV-Ertrag"></svg>
+          <div class="legend">
+            <span><i style="background:#45E0FF"></i>Strombedarf Wärmepumpe</span>
+            <span><i style="background:#FFB43D"></i>PV-Ertrag einer passenden Anlage</span>
+          </div>
+        </div>
+        <p class="fine">Die PV-Anlage im unteren Diagramm ist so bemessen, dass ihr Jahresertrag dem Jahresstrombedarf der Wärmepumpe entspricht. Sichtbar wird dabei die saisonale Lücke im Winter.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="details">
+  <div class="wrap">
+    <div class="sec-head">
+      <div><span class="kicker c">Im Bestand</span><h2>Woran ein Tausch im Betrieb tatsächlich hängt.</h2></div>
+      <p class="lede">Die Wärmepumpe ist selten das Problem. Entscheidend sind Vorlauftemperatur, Wärmequelle und die Frage, ob das vorhandene Verteilnetz die niedrigere Temperatur trägt.</p>
+    </div>
+    <div class="cards">
+      <article class="card">
+        <span class="n">PUNKT 1</span>
+        <svg class="ic" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M16 3v26M9 9l7-6 7 6M6 20h20M9 26h14"/></svg>
+        <h3>Vorlauftemperatur senken</h3>
+        <p>Jedes Grad weniger im Vorlauf verbessert die Arbeitszahl messbar. Oft genügen hydraulischer Abgleich und einzelne größere Heizflächen, um von 60 auf 45 Grad zu kommen.</p>
+        <ul><li>Hydraulischer Abgleich zuerst</li><li>Heizkurve nachführen</li><li>Einzelne Heizkörper tauschen</li></ul>
+      </article>
+      <article class="card">
+        <span class="n">PUNKT 2</span>
+        <svg class="ic" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="16" cy="16" r="7"/><path d="M16 3v4M16 25v4M3 16h4M25 16h4M7 7l3 3M22 22l3 3M25 7l-3 3M10 22l-3 3"/></svg>
+        <h3>Wärmequelle wählen</h3>
+        <p>Luft ist am einfachsten und am günstigsten, Erdreich liefert die stabilere Arbeitszahl im Winter. Bei Betrieben mit Abwärme aus Kälteanlagen oder Druckluft ist oft die dritte Variante die beste.</p>
+        <ul><li>Luft-Wasser ohne Genehmigung</li><li>Sole-Wasser mit Bohrbescheid</li><li>Abwärme aus dem Prozess</li></ul>
+      </article>
+      <article class="card">
+        <span class="n">PUNKT 3</span>
+        <svg class="ic" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="5" y="6" width="22" height="20"/><path d="M5 12h22M10 18h5M10 22h12"/></svg>
+        <h3>Mit der PV verschalten</h3>
+        <p>Der Energiemanager schaltet die Wärmepumpe vor, wenn Überschuss anliegt, und hebt die Speichertemperatur an. Damit wandert Mittagsstrom in den Pufferspeicher statt ins Netz.</p>
+        <ul><li>Überschussfreigabe über Smart Meter</li><li>Pufferspeicher als Wärmebatterie</li><li>Sperrzeiten des Netzbetreibers beachten</li></ul>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="faq">
+  <div class="wrap">
+    <div class="sec-head"><div><span class="kicker">Häufige Fragen</span><h2>Was Betriebe zur Wärmepumpe fragen.</h2></div></div>
+    <div class="faq">
+      <details class="qa" open><summary>Funktioniert eine Wärmepumpe auch mit Heizkörpern?</summary><p>Ja, aber die Arbeitszahl fällt. Mit klassischen Radiatoren und 55 Grad Vorlauf liegt sie eher bei drei, mit Flächenheizung und 35 Grad bei über vier. Der Rechner oben bildet genau diesen Unterschied über die Jahresarbeitszahl ab.</p></details>
+      <details class="qa"><summary>Deckt die Photovoltaik den Wärmestrom?</summary><p>Übers Jahr gerechnet oft ja, im Moment des Bedarfs meist nein. Der Bedarf liegt im Dezember und Jänner, der Ertrag im Juni und Juli. Realistisch sind fünfundzwanzig bis vierzig Prozent direkte Deckung, mit Pufferspeicher und Überschusssteuerung etwas mehr.</p></details>
+      <details class="qa"><summary>Was passiert an den kältesten Tagen?</summary><p>Die Anlage wird auf die Norm-Außentemperatur des Standorts ausgelegt. Bei richtiger Dimensionierung arbeitet sie auch dann monovalent. Ein Heizstab dient als Absicherung, nicht als Teil des Konzepts, und sollte im Jahresverlauf kaum Anteile übernehmen.</p></details>
+      <details class="qa"><summary>Lohnt sich der Tausch bei einem noch laufenden Kessel?</summary><p>Das hängt am Restwert. Die Rechnung oben zeigt die jährliche Ersparnis. Je näher der Kessel an seinem Lebensende ist, desto stärker fällt die Mehrinvestition ins Gewicht, weil der Ersatz ohnehin ansteht.</p></details>
+    </div>
+  </div>
+</section>
+
+<script>
+(function(){
+"use strict";
+var $=function(i){return document.getElementById(i);},
+de=function(n,d){d=d||0;return Number(n).toLocaleString("de-AT",{minimumFractionDigits:d,maximumFractionDigits:d});};
+var STD={alt:{v:170,n:"Altbau unsaniert"},teil:{v:105,n:"Altbau teilsaniert"},neu:{v:45,n:"Neubau"}};
+var SYS={oel:{n:"Ölkessel",ct:.1235,co2:.310/.85},gas:{n:"Gastherme",ct:.1196,co2:.200/.92},
+         pel:{n:"Pellets",ct:.0719,co2:.027/.88},str:{n:"Direktstrom",ct:null,co2:.227}};
+var HEAT=[17.5,15,12.5,8,3.5,1,.5,.5,2,7,14,18.5];
+var PVM=[2.8,4.6,8.3,11.2,12.9,13.0,13.5,12.0,9.2,6.5,3.4,2.6];
+var MN=["J","F","M","A","M","J","J","A","S","O","N","D"];
+var MF=["Jänner","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
+var std="teil",cur="oel",PVCT=.07,VBH=1800;
+
+function render(){
+ var area=+$("area").value,jaz=+$("jaz").value,pr=+$("price").value/100,pvs=+$("pv").value/100;
+ var heat=Math.round(area*STD[std].v),load=heat/VBH;
+ var el=Math.round(heat/jaz),elPv=Math.round(el*pvs);
+ var wpCt=(pr*(1-pvs)+PVCT*pvs)/jaz;
+ var wpCost=Math.round(el*(pr*(1-pvs)+PVCT*pvs));
+ var rows=[["Ölkessel",Math.round(heat*SYS.oel.ct),"#3A4C66"],
+           ["Gastherme",Math.round(heat*SYS.gas.ct),"#3A4C66"],
+           ["Pellets",Math.round(heat*SYS.pel.ct),"#3A4C66"],
+           ["Direktstrom",Math.round(heat*pr),"#3A4C66"],
+           ["Wärmepumpe",wpCost,"#8CE04B"]];
+ var idx={oel:0,gas:1,pel:2,str:3}[cur];
+ rows[idx][2]="#FFB43D";
+ var curCost=rows[idx][1],save=curCost-wpCost;
+ var curCt=cur==="str"?pr:SYS[cur].ct;
+ var co2Cur=heat*(cur==="str"?.227:SYS[cur].co2)/1000;
+ var co2Wp=el*(.227*(1-pvs))/1000;
+ var mehr=Math.round(load*600),pay=save>0?mehr/save:0;
+
+ $("v-area").innerHTML=de(area)+'<span class="unit">m²</span>';
+ $("v-jaz").textContent=de(jaz,1);
+ $("v-price").innerHTML=de(pr*100,1)+'<span class="unit">ct/kWh</span>';
+ $("v-pv").innerHTML=de(pvs*100)+'<span class="unit">%</span>';
+ $("stamp").textContent="Standard: "+STD[std].n;
+
+ $("o-heat").innerHTML=de(heat)+'<span class="unit">kWh/a</span>';
+ $("o-load").textContent="Heizlast "+de(load,1)+" kW";
+ $("o-el").innerHTML=de(el)+'<span class="unit">kWh/a</span>';
+ $("o-elpv").textContent="davon PV "+de(elPv)+" kWh";
+ $("o-save").innerHTML=(save>=0?"":"−")+de(Math.abs(save))+'<span class="unit">€</span>';
+ $("o-vs").textContent="gegenüber "+rows[idx][0];
+ $("o-ct").innerHTML=de(wpCt*100,1)+'<span class="unit">ct/kWh</span>';
+ $("o-ctold").textContent="bisher "+de(curCt*100,1)+" ct/kWh";
+ $("o-co2").innerHTML=de(Math.max(0,co2Cur-co2Wp),1)+'<span class="unit">t/a</span>';
+ $("o-pay").innerHTML=(save>0?de(pay,1):"—")+'<span class="unit">Jahre</span>';
+ $("o-inv").textContent="Mehrinvest "+de(mehr)+" €";
+ $("c-note").textContent="Nutzwärme "+de(heat)+" kWh im Jahr";
+
+ /* cost bars */
+ var W=760,H=210,L=118,R=90,T=14,mx=Math.max.apply(null,rows.map(function(r){return r[1];}))||1,pw=W-L-R,s="",i;
+ for(i=0;i<5;i++){
+  var y=T+i*37,w=Math.max(2,pw*rows[i][1]/mx);
+  s+='<text x="'+(L-10)+'" y="'+(y+18)+'" text-anchor="end" fill="'+(i===4?"#8CE04B":(i===idx?"#FFB43D":"#9FB4CE"))+'" font-family="JetBrains Mono, monospace" font-size="11">'+rows[i][0]+'</text>';
+  s+='<rect x="'+L+'" y="'+(y+3)+'" width="'+w.toFixed(1)+'" height="22" fill="'+rows[i][2]+'"><title>'+rows[i][0]+': '+de(rows[i][1])+' € pro Jahr</title></rect>';
+  s+='<text x="'+(L+w+8).toFixed(1)+'" y="'+(y+19)+'" fill="#EDF4FF" font-family="JetBrains Mono, monospace" font-size="11">'+de(rows[i][1])+' €</text>';
+ }
+ $("ch").innerHTML=s;
+
+ /* monthly */
+ var W2=760,H2=190,L2=52,R2=14,T2=12,B2=28,pw2=W2-L2-R2,ph2=H2-T2-B2,cw=pw2/12;
+ var elM=HEAT.map(function(v){return el*v/100;}),pvM=PVM.map(function(v){return el*v/100;});
+ var mx2=Math.max(Math.max.apply(null,elM),Math.max.apply(null,pvM))*1.1||1;
+ var y2=function(v){return T2+ph2*(1-v/mx2);},s2="";
+ for(i=0;i<=3;i++){var gv=mx2*i/3,gy=y2(gv);
+  s2+='<line x1="'+L2+'" y1="'+gy.toFixed(1)+'" x2="'+(W2-R2)+'" y2="'+gy.toFixed(1)+'" stroke="rgba(150,180,220,.11)"/>';
+  s2+='<text x="'+(L2-7)+'" y="'+(gy+3.5).toFixed(1)+'" text-anchor="end" fill="#617595" font-family="JetBrains Mono, monospace" font-size="9.5">'+de(gv)+'</text>';}
+ for(i=0;i<12;i++){
+  var x=L2+i*cw,bw=cw/2-3;
+  s2+='<rect x="'+(x+3).toFixed(1)+'" y="'+y2(elM[i]).toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+(ph2-(y2(elM[i])-T2)).toFixed(1)+'" fill="#45E0FF"><title>'+MF[i]+' Bedarf '+de(elM[i])+' kWh</title></rect>';
+  s2+='<rect x="'+(x+bw+5).toFixed(1)+'" y="'+y2(pvM[i]).toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+(ph2-(y2(pvM[i])-T2)).toFixed(1)+'" fill="#FFB43D"><title>'+MF[i]+' PV '+de(pvM[i])+' kWh</title></rect>';
+  s2+='<text x="'+(x+cw/2).toFixed(1)+'" y="'+(H2-9)+'" text-anchor="middle" fill="#617595" font-family="JetBrains Mono, monospace" font-size="9.5">'+MN[i]+'</text>';
+ }
+ s2+='<text x="'+(L2-7)+'" y="'+(T2-2)+'" text-anchor="end" fill="#617595" font-family="JetBrains Mono, monospace" font-size="9">kWh</text>';
+ $("mo").innerHTML=s2;
+ var win=0,wpv=0;[0,1,10,11].forEach(function(m){win+=elM[m];wpv+=pvM[m];});
+ $("c-cov").textContent="Winterhalbjahr: Bedarf "+de(win)+" kWh, Ertrag "+de(wpv)+" kWh";
+}
+["area","jaz","price","pv"].forEach(function(i){$(i).addEventListener("input",render);});
+Array.prototype.forEach.call(document.querySelectorAll("[data-s]"),function(b){
+ b.addEventListener("click",function(){
+  Array.prototype.forEach.call(document.querySelectorAll("[data-s]"),function(o){o.setAttribute("aria-pressed","false");});
+  b.setAttribute("aria-pressed","true");std=b.dataset.s;render();});});
+Array.prototype.forEach.call(document.querySelectorAll("[data-c]"),function(b){
+ b.addEventListener("click",function(){
+  Array.prototype.forEach.call(document.querySelectorAll("[data-c]"),function(o){o.setAttribute("aria-pressed","false");});
+  b.setAttribute("aria-pressed","true");cur=b.dataset.c;render();});});
+render();
+})();
+</script>

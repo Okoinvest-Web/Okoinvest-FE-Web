@@ -1,0 +1,375 @@
+import type {
+  Artikel,
+  Boersenpreis,
+  Co2Zertifikat,
+  DeliveryNote,
+  EgMitglied,
+  Energiegemeinschaft,
+  Fernwartungssitzung,
+  Fernwartungszugang,
+  FrappeFile,
+  Ladepunkt,
+  Ladevorgang,
+  PortalBenutzer,
+  PvAnlage,
+  PvAnlagendoku,
+  PvErtrag,
+  PvKomponente,
+  PvMesswert,
+  PvPruefbefund,
+  PvStoerung,
+  PvWartung,
+  SalesInvoice,
+  Sicherheitsvorfall,
+  SupportTicket,
+  Tankkarte,
+  Vollmacht,
+} from "../doctypes";
+import { ausTagesSchluessel, heute, tagesSchluessel } from "../datum";
+import {
+  bewoelkungAmTag,
+  boersenpreisEurMwh,
+  erzeugungKw,
+  startwertAus,
+  tagesertragKwh,
+  verbrauchKw,
+  zufallsfolge,
+} from "./generator";
+import {
+  DEMO_ANLAGEN,
+  DEMO_ANLAGENDOKU,
+  DEMO_ARTIKEL,
+  DEMO_BENUTZER,
+  DEMO_EG_MITGLIEDER,
+  DEMO_FERNWARTUNG,
+  DEMO_FW_SITZUNGEN,
+  DEMO_GEMEINSCHAFT,
+  DEMO_KOMPONENTEN,
+  DEMO_KUNDE,
+  DEMO_LADEPUNKTE,
+  DEMO_PRUEFBEFUNDE,
+  DEMO_STOERUNGEN,
+  DEMO_TANKKARTEN,
+  DEMO_TICKETS,
+  DEMO_VOLLMACHTEN,
+  DEMO_VORFAELLE,
+  DEMO_WARTUNGEN,
+  DEMO_ZERTIFIKATE,
+} from "./stammdaten";
+
+/**
+ * Beispieldaten fuer den Demonstrationsbetrieb.
+ *
+ * Stammdaten kommen aus `stammdaten.ts`, alle Zeitreihen entstehen hier
+ * aus dem Generator. Dadurch bleibt der Datensatz bei jedem Aufruf
+ * gleich, deckt aber trotzdem ein volles Jahr ab.
+ */
+
+export const anlagen = (): PvAnlage[] => DEMO_ANLAGEN;
+
+export const anlage = (name: string): PvAnlage | null =>
+  DEMO_ANLAGEN.find((a) => a.name === name) ?? null;
+
+export const komponenten = (anlage?: string): PvKomponente[] =>
+  anlage ? DEMO_KOMPONENTEN.filter((k) => k.anlage === anlage) : DEMO_KOMPONENTEN;
+
+export const stoerungen = (): PvStoerung[] => DEMO_STOERUNGEN;
+export const wartungen = (): PvWartung[] => DEMO_WARTUNGEN;
+export const ladepunkte = (): Ladepunkt[] => DEMO_LADEPUNKTE;
+export const tankkarten = (): Tankkarte[] => DEMO_TANKKARTEN;
+export const zertifikate = (): Co2Zertifikat[] => DEMO_ZERTIFIKATE;
+export const vollmachten = (): Vollmacht[] => DEMO_VOLLMACHTEN;
+export const gemeinschaft = (): Energiegemeinschaft => DEMO_GEMEINSCHAFT;
+export const gemeinschaftsMitglieder = (): EgMitglied[] => DEMO_EG_MITGLIEDER;
+export const pruefbefunde = (): PvPruefbefund[] => DEMO_PRUEFBEFUNDE;
+export const fernwartung = (): Fernwartungszugang[] => DEMO_FERNWARTUNG;
+export const fernwartungsSitzungen = (): Fernwartungssitzung[] => DEMO_FW_SITZUNGEN;
+export const vorfaelle = (): Sicherheitsvorfall[] => DEMO_VORFAELLE;
+export const portalBenutzer = (): PortalBenutzer[] => DEMO_BENUTZER;
+export const tickets = (): SupportTicket[] => DEMO_TICKETS;
+export const artikel = (): Artikel[] => DEMO_ARTIKEL;
+
+export const anlagendoku = (anlage?: string): PvAnlagendoku[] =>
+  anlage
+    ? DEMO_ANLAGENDOKU.filter((d) => d.anlage === anlage)
+    : DEMO_ANLAGENDOKU;
+
+
+/**
+ * Tagesertraege der letzten `tage` Tage.
+ * Ohne Anlagenangabe werden alle Anlagen zusammengefasst.
+ */
+export function ertraege(anlagenName?: string, tage = 365): PvErtrag[] {
+  const quelle = anlagenName
+    ? DEMO_ANLAGEN.filter((a) => a.name === anlagenName)
+    : DEMO_ANLAGEN;
+
+  const basis = heute();
+  const ergebnis: PvErtrag[] = [];
+
+  for (const a of quelle) {
+    const kwp = a.leistung_kwp ?? 0;
+
+    for (let versatz = 0; versatz < tage; versatz++) {
+      const datum = new Date(basis);
+      datum.setDate(datum.getDate() - versatz);
+
+      // Vor der Inbetriebnahme gibt es keine Werte.
+      if (a.inbetriebnahme && datum < ausTagesSchluessel(a.inbetriebnahme)) continue;
+
+      const ertrag = tagesertragKwh(kwp, datum, a.name);
+      const zufall = zufallsfolge(
+        startwertAus(`${a.name}-teilung-${tagesSchluessel(datum)}`),
+      );
+
+      // Gewerbe verbraucht viel selbst; am Wochenende weniger.
+      const wochenende = datum.getDay() === 0 || datum.getDay() === 6;
+      const eigenquote = wochenende
+        ? 0.28 + zufall() * 0.12
+        : 0.58 + zufall() * 0.18;
+
+      const eigenverbrauch = Number((ertrag * eigenquote).toFixed(1));
+      const einspeisung = Number((ertrag - eigenverbrauch).toFixed(1));
+
+      ergebnis.push({
+        name: `ERT-${a.name}-${tagesSchluessel(datum)}`,
+        anlage: a.name,
+        datum: tagesSchluessel(datum),
+        ertrag_kwh: ertrag,
+        eigenverbrauch_kwh: eigenverbrauch,
+        einspeisung_kwh: einspeisung,
+        netzbezug_kwh: Number(
+          (wochenende ? 180 + zufall() * 120 : 620 + zufall() * 480).toFixed(1),
+        ),
+        spezifisch_kwh_kwp: kwp > 0 ? Number((ertrag / kwp).toFixed(2)) : 0,
+        performance_ratio: Number((0.79 + zufall() * 0.09).toFixed(3)),
+      });
+    }
+  }
+
+  return ergebnis.sort((a, b) => (a.datum < b.datum ? 1 : -1));
+}
+
+/**
+ * Viertelstundenwerte eines Tages - die Aufloesung, in der im
+ * oesterreichischen Markt abgerechnet wird.
+ */
+export function messwerte(anlagenName: string, tag?: Date): PvMesswert[] {
+  const a = anlage(anlagenName);
+  if (!a) return [];
+
+  const datum = tag ? new Date(tag) : heute();
+  datum.setHours(0, 0, 0, 0);
+
+  const kwp = a.leistung_kwp ?? 0;
+  const bewoelkung = bewoelkungAmTag(datum, a.name);
+  const zufall = zufallsfolge(
+    startwertAus(`${a.name}-viertel-${tagesSchluessel(datum)}`),
+  );
+
+  // Lastprofil grob an der Anlagengroesse ausgerichtet.
+  const grundlast = kwp * 0.08;
+  const spitzenlast = kwp * 0.42;
+
+  const ergebnis: PvMesswert[] = [];
+
+  for (let viertel = 0; viertel < 96; viertel++) {
+    const zeitpunkt = new Date(datum);
+    zeitpunkt.setMinutes(viertel * 15);
+
+    const erzeugung = erzeugungKw(kwp, zeitpunkt, zufall, bewoelkung);
+    const verbrauch = verbrauchKw(grundlast, spitzenlast, zeitpunkt, zufall);
+
+    const ueberschuss = erzeugung - verbrauch;
+
+    // Speicher nimmt bis zu einem Viertel seiner Kapazitaet je Stunde auf.
+    const speicherGrenze = (a.speicher_kwh ?? 0) * 0.25;
+    let speicher = 0;
+    if (ueberschuss > 0) {
+      speicher = Math.min(ueberschuss * 0.65, speicherGrenze);
+    } else if (ueberschuss < 0) {
+      speicher = -Math.min(-ueberschuss * 0.5, speicherGrenze);
+    }
+
+    const netz = ueberschuss - speicher;
+
+    ergebnis.push({
+      name: `MW-${a.name}-${viertel}`,
+      anlage: a.name,
+      zeitpunkt: zeitpunkt.toISOString(),
+      erzeugung_kw: erzeugung,
+      verbrauch_kw: verbrauch,
+      einspeisung_kw: Number(Math.max(0, netz).toFixed(2)),
+      netzbezug_kw: Number(Math.max(0, -netz).toFixed(2)),
+      speicher_kw: Number(speicher.toFixed(2)),
+      speicher_soc: Number(
+        (
+          38 +
+          42 * Math.sin(((viertel - 24) / 96) * Math.PI * 2) +
+          zufall() * 6
+        ).toFixed(1),
+      ),
+    });
+  }
+
+  return ergebnis;
+}
+
+/** Day-Ahead-Preise fuer heute und morgen, stuendlich. */
+export function boersenpreise(stunden = 48): Boersenpreis[] {
+  const basis = heute();
+  const ergebnis: Boersenpreis[] = [];
+
+  for (let i = 0; i < stunden; i++) {
+    const zeitpunkt = new Date(basis);
+    zeitpunkt.setHours(i);
+
+    ergebnis.push({
+      name: `PREIS-${i}`,
+      zeitpunkt: zeitpunkt.toISOString(),
+      preis_eur_mwh: boersenpreisEurMwh(zeitpunkt),
+      marktgebiet: "AT",
+    });
+  }
+
+  return ergebnis;
+}
+
+/** Ladevorgaenge der letzten Wochen, verteilt auf Karten und Ladepunkte. */
+export function ladevorgaenge(anzahl = 60): Ladevorgang[] {
+  const zufall = zufallsfolge(startwertAus("ladevorgaenge"));
+  const basis = new Date();
+  const ergebnis: Ladevorgang[] = [];
+
+  const aktiveKarten = DEMO_TANKKARTEN.filter((k) => k.status === "Aktiv");
+
+  for (let i = 0; i < anzahl; i++) {
+    const karte = aktiveKarten[Math.floor(zufall() * aktiveKarten.length)];
+    const punkt = DEMO_LADEPUNKTE[Math.floor(zufall() * DEMO_LADEPUNKTE.length)];
+
+    const start = new Date(basis);
+    start.setDate(start.getDate() - Math.floor(zufall() * 28));
+    start.setHours(6 + Math.floor(zufall() * 13), Math.floor(zufall() * 60), 0, 0);
+
+    const dauerMinuten = 25 + Math.floor(zufall() * 200);
+    const ende = new Date(start.getTime() + dauerMinuten * 60000);
+
+    const maxLeistung = punkt.leistung_kw ?? 22;
+    const energie = Number(
+      (maxLeistung * (dauerMinuten / 60) * (0.4 + zufall() * 0.45)).toFixed(2),
+    );
+
+    // Tagsüber deckt die Anlage einen Teil des Ladestroms direkt.
+    const sonnig = start.getHours() >= 9 && start.getHours() <= 16;
+    const pvAnteil = Number(
+      (energie * (sonnig ? 0.45 + zufall() * 0.4 : zufall() * 0.12)).toFixed(2),
+    );
+
+    ergebnis.push({
+      name: `LV-${String(i + 1).padStart(4, "0")}`,
+      ladepunkt: punkt.name,
+      tankkarte: karte?.name,
+      fahrzeug: karte?.fahrzeug,
+      fahrer: karte?.inhaber,
+      kostenstelle: karte?.kostenstelle,
+      start: start.toISOString(),
+      ende: ende.toISOString(),
+      energie_kwh: energie,
+      pv_anteil_kwh: pvAnteil,
+      kosten: Number((energie * ((punkt.tarif_ct_kwh ?? 25) / 100)).toFixed(2)),
+      abgerechnet: start < new Date(basis.getFullYear(), basis.getMonth(), 1) ? 1 : 0,
+    });
+  }
+
+  return ergebnis.sort((a, b) => (a.start! < b.start! ? 1 : -1));
+}
+
+/** Rechnungen der letzten Monate. */
+export function rechnungen(): SalesInvoice[] {
+  const zufall = zufallsfolge(startwertAus("rechnungen"));
+  const ergebnis: SalesInvoice[] = [];
+  const heuteDatum = new Date();
+
+  for (let i = 0; i < 14; i++) {
+    const datum = new Date(heuteDatum);
+    datum.setMonth(datum.getMonth() - i);
+    datum.setDate(8);
+
+    const faellig = new Date(datum);
+    faellig.setDate(faellig.getDate() + 30);
+
+    const betrag = Number((1800 + zufall() * 14000).toFixed(2));
+    const offen = i === 0 ? betrag : i === 1 ? Number((betrag * 0.4).toFixed(2)) : 0;
+
+    ergebnis.push({
+      name: `RE-2026-${String(140 - i).padStart(4, "0")}`,
+      customer: DEMO_KUNDE.name,
+      posting_date: tagesSchluessel(datum),
+      due_date: tagesSchluessel(faellig),
+      grand_total: betrag,
+      outstanding_amount: offen,
+      currency: "EUR",
+      status: offen === 0 ? "Bezahlt" : faellig < heuteDatum ? "Überfällig" : "Offen",
+    });
+  }
+
+  return ergebnis;
+}
+
+export function lieferscheine(): DeliveryNote[] {
+  const zufall = zufallsfolge(startwertAus("lieferscheine"));
+  const ergebnis: DeliveryNote[] = [];
+  const heuteDatum = new Date();
+
+  for (let i = 0; i < 9; i++) {
+    const datum = new Date(heuteDatum);
+    datum.setDate(datum.getDate() - i * 23 - 4);
+
+    ergebnis.push({
+      name: `LS-2026-${String(88 - i).padStart(4, "0")}`,
+      customer: DEMO_KUNDE.name,
+      posting_date: tagesSchluessel(datum),
+      grand_total: Number((400 + zufall() * 9000).toFixed(2)),
+      currency: "EUR",
+      status: i < 2 ? "Unterwegs" : "Zugestellt",
+    });
+  }
+
+  return ergebnis;
+}
+
+/** Dokumente, die den Anlagen zugeordnet sind. */
+export function dokumente(): FrappeFile[] {
+  const vorlagen = [
+    ["Netzzugangsvertrag_Netz_NOE.pdf", "ANL-0001", 284_112],
+    ["Pruefbefund_EN62446_2025.pdf", "ANL-0001", 1_842_330],
+    ["Strangplan_Produktionshalle.pdf", "ANL-0001", 3_204_881],
+    ["Konformitaetserklaerung_SMA.pdf", "ANL-0001", 412_004],
+    ["Brandschutzkonzept_TRVB_E133.pdf", "ANL-0001", 2_118_764],
+    ["Statiknachweis_Dachaufbau.pdf", "ANL-0001", 5_442_119],
+    ["Netzzugangsvertrag_Saegewerk.pdf", "ANL-0002", 301_887],
+    ["Erstpruefung_Saegewerk_2023.pdf", "ANL-0002", 1_664_223],
+    ["Wartungsvertrag_2026.pdf", "ANL-0002", 188_442],
+    ["Versicherungspolizze_Elektronik.pdf", "ANL-0003", 622_190],
+    ["Foerderzusage_EAG_Investitionszuschuss.pdf", "ANL-0005", 214_663],
+    ["Vollmacht_Oekovolt_CO2.pdf", "ANL-0001", 96_338],
+  ] as const;
+
+  const basis = new Date();
+
+  return vorlagen.map(([dateiname, anlage, groesse], i) => {
+    const datum = new Date(basis);
+    datum.setDate(datum.getDate() - i * 37 - 12);
+
+    return {
+      name: `FILE-${String(i + 1).padStart(4, "0")}`,
+      file_name: dateiname,
+      file_url: `/files/${dateiname}`,
+      file_size: groesse,
+      attached_to_doctype: "PV Anlage",
+      attached_to_name: anlage,
+      is_private: 1,
+      creation: datum.toISOString(),
+    };
+  });
+}

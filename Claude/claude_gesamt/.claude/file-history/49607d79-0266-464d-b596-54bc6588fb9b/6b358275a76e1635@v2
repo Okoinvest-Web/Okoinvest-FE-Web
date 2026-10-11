@@ -1,0 +1,297 @@
+<template>
+  <div>
+    <PageHeader title="E-Mail-Sicherheit" :subtitle="untertitel" />
+
+    <div class="p-6">
+      <div v-if="mail.data" class="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <div
+          v-for="kachel in kacheln"
+          :key="kachel.label"
+          class="rounded-lg border border-outline-gray-2 bg-surface-white p-4"
+        >
+          <p class="text-sm text-ink-gray-6">{{ kachel.label }}</p>
+          <p class="mt-1 text-2xl font-semibold text-ink-gray-9">{{ kachel.wert }}</p>
+          <StatusDot v-if="kachel.hinweis" class="mt-1" :level="kachel.level" :text="kachel.hinweis" klein />
+        </div>
+      </div>
+
+      <!-- Der Mailweg als Kette: so sieht man, welche Stufe klemmt -->
+      <section v-if="mail.data" class="mb-8">
+        <h2 class="mb-3 text-base font-semibold text-ink-gray-8">Mailweg</h2>
+        <div class="flex flex-wrap items-stretch gap-2">
+          <template v-for="(gateway, i) in mail.data.gateways" :key="gateway.name">
+            <div class="min-w-[220px] flex-1 rounded-lg border border-outline-gray-2 bg-surface-white p-4">
+              <div class="flex items-start justify-between gap-2">
+                <div>
+                  <p class="text-base font-medium text-ink-gray-9">{{ gateway.gateway_name }}</p>
+                  <p class="text-sm text-ink-gray-6">
+                    Stufe {{ gateway.stage }} · {{ gateway.gateway_kind }}
+                  </p>
+                </div>
+                <StatusDot :level="gateway.level" :text="STUFE[gateway.level]" klein />
+              </div>
+
+              <dl class="mt-3 space-y-1 text-sm text-ink-gray-6">
+                <div class="flex justify-between gap-2">
+                  <dt>Warteschlange</dt>
+                  <dd class="tabular-nums">{{ gateway.queue_size }}</dd>
+                </div>
+                <div v-if="gateway.clamav_age_hours !== null" class="flex justify-between gap-2">
+                  <dt>ClamAV</dt>
+                  <dd class="tabular-nums">{{ gateway.clamav_age_hours }} h alt</dd>
+                </div>
+                <div class="flex justify-between gap-2">
+                  <dt>Cluster</dt>
+                  <dd>{{ gateway.cluster_state }}</dd>
+                </div>
+              </dl>
+
+              <ul v-if="gateway.reasons.length" class="mt-2 space-y-0.5">
+                <li v-for="grund in gateway.reasons" :key="grund" class="text-sm text-ink-gray-6">
+                  {{ grund }}
+                </li>
+              </ul>
+            </div>
+            <div
+              v-if="i < mail.data.gateways.length - 1"
+              class="flex items-center px-1 text-2xl text-ink-gray-4"
+            >
+              →
+            </div>
+          </template>
+        </div>
+      </section>
+
+      <!-- Mailvolumen: eine Serie je Kategorie, gestapelt wäre hier irreführend -->
+      <section v-if="mail.data" class="mb-8">
+        <h2 class="mb-3 text-base font-semibold text-ink-gray-8">
+          Volumen der letzten 7 Tage
+        </h2>
+        <div class="rounded-lg border border-outline-gray-2 bg-surface-white p-4">
+          <div
+            v-for="tag in mail.data.flow.days"
+            :key="tag.day"
+            class="flex items-center gap-3 py-1.5"
+          >
+            <span class="w-24 shrink-0 text-sm tabular-nums text-ink-gray-6">{{ tag.day }}</span>
+            <div class="flex h-3 flex-1 gap-0.5">
+              <!-- Zugestellt und Spam als zwei Abschnitte; 2px Lücke dazwischen,
+                   damit sie nicht verschmelzen. -->
+              <div
+                class="h-full"
+                :style="{
+                  width: anteil(tag.delivered, tag.total) + '%',
+                  background: 'var(--viz-seq-400)',
+                  borderTopLeftRadius: '4px',
+                  borderBottomLeftRadius: '4px',
+                }"
+                :title="'Zugestellt: ' + tag.delivered"
+              />
+              <div
+                class="h-full"
+                :style="{ width: anteil(tag.spam, tag.total) + '%', background: 'var(--viz-warning)' }"
+                :title="'Spam: ' + tag.spam"
+              />
+              <div
+                class="h-full"
+                :style="{
+                  width: anteil(tag.rejected, tag.total) + '%',
+                  background: 'var(--viz-neutral)',
+                  borderTopRightRadius: '4px',
+                  borderBottomRightRadius: '4px',
+                }"
+                :title="'Abgewiesen: ' + tag.rejected"
+              />
+            </div>
+            <span class="w-20 shrink-0 text-right text-sm tabular-nums text-ink-gray-7">
+              {{ tag.total.toLocaleString('de-AT') }}
+            </span>
+            <span class="w-16 shrink-0 text-right text-sm tabular-nums text-ink-gray-5">
+              {{ tag.spam_pct }} %
+            </span>
+          </div>
+
+          <div class="mt-3 flex flex-wrap gap-x-5 gap-y-2 border-t border-outline-gray-2 pt-3 text-sm text-ink-gray-6">
+            <span class="flex items-center gap-1.5">
+              <span class="inline-block size-3 rounded-sm" style="background: var(--viz-seq-400)" />
+              zugestellt
+            </span>
+            <span class="flex items-center gap-1.5">
+              <span class="inline-block size-3 rounded-sm" style="background: var(--viz-warning)" />
+              Spam
+            </span>
+            <span class="flex items-center gap-1.5">
+              <span class="inline-block size-3 rounded-sm" style="background: var(--viz-neutral)" />
+              abgewiesen
+            </span>
+            <span class="ml-auto">
+              Gesamt {{ mail.data.flow.totals.total.toLocaleString('de-AT') }} ·
+              Spamanteil {{ mail.data.flow.totals.spam_pct }} %
+            </span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Vorfälle im Postfach -->
+      <section class="mb-8">
+        <h2 class="mb-3 text-base font-semibold text-ink-gray-8">
+          Vorfälle im Postfach (IRONSCALES)
+        </h2>
+        <DataTable
+          :columns="vorfallSpalten"
+          :rows="mail.data?.incidents || []"
+          :loading="mail.loading"
+        >
+          <template #zelle-subject="{ zeile }">
+            <span class="block text-ink-gray-9">{{ zeile.subject }}</span>
+            <span class="block font-mono text-sm text-ink-gray-5">{{ zeile.sender }}</span>
+          </template>
+          <template #zelle-classification="{ zeile }">
+            <Badge :theme="klassifizierungThema(zeile.classification)">
+              {{ KLASSE[zeile.classification] || zeile.classification }}
+            </Badge>
+          </template>
+          <template #zelle-passed_gateway="{ zeile }">
+            <StatusDot
+              v-if="zeile.passed_gateway && zeile.classification !== 'false_positive'"
+              level="critical"
+              text="durchgelassen"
+              klein
+              titel="Die Kaskade hat diese Nachricht zugestellt – Regelvorschlag prüfen"
+            />
+            <StatusDot v-else level="ok" text="gestoppt" klein />
+          </template>
+          <template #zelle-reported_by="{ zeile }">
+            {{ MELDER[zeile.reported_by] || zeile.reported_by }}
+          </template>
+          <template #zelle-response_minutes="{ zeile }">
+            <span v-if="zeile.response_minutes === null" class="text-ink-gray-4">offen</span>
+            <span v-else class="tabular-nums">{{ zeile.response_minutes }} min</span>
+          </template>
+        </DataTable>
+      </section>
+
+      <!-- SPF, DKIM, DMARC -->
+      <section>
+        <h2 class="mb-3 text-base font-semibold text-ink-gray-8">Domains: Soll und Ist</h2>
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div
+            v-for="domain in mail.data?.domains || []"
+            :key="domain.name"
+            class="rounded-lg border border-outline-gray-2 bg-surface-white p-4"
+          >
+            <div class="flex items-start justify-between gap-2">
+              <p class="font-mono text-base text-ink-gray-9">{{ domain.domain_name }}</p>
+              <StatusDot
+                :level="domain.level"
+                :text="domain.findings.length ? domain.findings.length + ' Befunde' : 'in Ordnung'"
+                klein
+              />
+            </div>
+
+            <dl class="mt-3 space-y-2 text-sm">
+              <div v-for="eintrag in eintraege(domain)" :key="eintrag.label">
+                <dt class="flex items-center gap-2 text-ink-gray-6">
+                  {{ eintrag.label }}
+                  <StatusDot :level="eintrag.ok ? 'ok' : 'warning'" :text="eintrag.ok ? 'passt' : 'weicht ab'" klein />
+                </dt>
+                <dd class="break-all font-mono text-xs text-ink-gray-7">{{ eintrag.ist }}</dd>
+                <dd v-if="!eintrag.ok" class="break-all font-mono text-xs text-ink-gray-4">
+                  Soll: {{ eintrag.soll }}
+                </dd>
+              </div>
+            </dl>
+          </div>
+        </div>
+      </section>
+
+      <p class="mt-6 text-xs text-ink-gray-4">
+        Zwei Schutzschichten: die PMG-Kaskade vor der Zustellung und IRONSCALES
+        im Postfach. Die aussagekräftige Zahl ist nicht die Summe, sondern was
+        <strong>durchgelassen</strong> wurde – daraus entstehen die
+        Regelvorschläge für die Kaskade (Fachkonzept 2.15).
+      </p>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed } from 'vue'
+import { Badge, createResource } from 'frappe-ui'
+import PageHeader from '@/components/PageHeader.vue'
+import DataTable from '@/components/DataTable.vue'
+import StatusDot from '@/components/StatusDot.vue'
+
+const STUFE = { ok: 'in Ordnung', warning: 'prüfen', critical: 'kritisch' }
+const KLASSE = {
+  phishing: 'Phishing',
+  impersonation: 'Identitätsmissbrauch',
+  malware: 'Schadsoftware',
+  false_positive: 'Fehlalarm',
+}
+const MELDER = { mitarbeiter: 'Mitarbeiter', ironscales: 'IRONSCALES' }
+
+const mail = createResource({ url: 'netops.api.mail.mail_overview', auto: true })
+
+const vorfallSpalten = [
+  { key: 'subject', label: 'Nachricht', width: '340px' },
+  { key: 'classification', label: 'Einstufung', width: '180px' },
+  { key: 'affected_mailboxes', label: 'Postfächer', align: 'right', numeric: true, width: '110px' },
+  { key: 'passed_gateway', label: 'Kaskade', width: '170px' },
+  { key: 'reported_by', label: 'Gemeldet von', muted: true, width: '150px' },
+  { key: 'response_minutes', label: 'Reaktion', align: 'right', width: '110px' },
+]
+
+const kacheln = computed(() => {
+  const z = mail.data?.summary
+  if (!z) return []
+  return [
+    {
+      label: 'Durch die Kaskade',
+      wert: z.passed_gateway,
+      level: 'critical',
+      hinweis: z.passed_gateway ? 'Regelvorschlag prüfen' : null,
+    },
+    {
+      label: 'Betroffene Postfächer',
+      wert: z.affected_mailboxes,
+      level: 'warning',
+      hinweis: z.affected_mailboxes ? 'informiert?' : null,
+    },
+    {
+      label: 'Von Mitarbeitern gemeldet',
+      wert: z.reported_by_staff,
+      level: 'ok',
+      hinweis: 'Awareness wirkt',
+    },
+    {
+      label: 'Warteschlange',
+      wert: z.queue_total,
+      level: z.queue_total > 100 ? 'critical' : 'ok',
+      hinweis: z.queue_total > 100 ? 'staut sich' : null,
+    },
+  ]
+})
+
+const untertitel = computed(() => {
+  const z = mail.data?.summary
+  if (!z) return ''
+  return z.gateways_ok + ' von ' + (z.gateways_ok + z.gateways_attention) + ' Stufen in Ordnung'
+})
+
+function eintraege(domain) {
+  return [
+    { label: 'SPF', ist: domain.spf_ist, soll: domain.spf_soll, ok: domain.spf_ist === domain.spf_soll },
+    { label: 'DKIM (' + domain.dkim_selector + ')', ist: domain.dkim_ok ? 'gültig' : 'nicht gültig', soll: 'gültig', ok: !!domain.dkim_ok },
+    { label: 'DMARC', ist: domain.dmarc_ist, soll: domain.dmarc_soll, ok: domain.dmarc_ist === domain.dmarc_soll },
+  ]
+}
+
+function anteil(wert, gesamt) {
+  return gesamt ? (wert / gesamt) * 100 : 0
+}
+
+function klassifizierungThema(klasse) {
+  return { phishing: 'red', impersonation: 'orange', malware: 'red', false_positive: 'gray' }[klasse] || 'gray'
+}
+</script>

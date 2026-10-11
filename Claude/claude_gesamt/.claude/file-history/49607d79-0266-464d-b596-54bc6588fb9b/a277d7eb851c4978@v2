@@ -1,0 +1,173 @@
+import { beforeEach, describe, expect, it } from 'vitest'
+import { mockRequest, resetMockData } from '@/api/mock/server.js'
+import { seedAuditLog } from '@/api/mock/seed-audit.js'
+
+const ruf = (url, params) => mockRequest({ url, params })
+
+beforeEach(() => {
+  resetMockData()
+  seedAuditLog()
+})
+
+describe('netops.api.dcim.cable_list', () => {
+  it('löst beide Enden lesbar auf', async () => {
+    const liste = await ruf('netops.api.dcim.cable_list', {})
+    const uplink = liste.find((c) => c.label === 'P-0001')
+    expect(uplink.a.label).toBe('FW-OS-01 · ix0')
+    expect(uplink.b.label).toBe('SW-CORE-01 · SFP 1')
+  })
+
+  it('beschriftet eine Dose als Dose', async () => {
+    const liste = await ruf('netops.api.dcim.cable_list', {})
+    const zurDose = liste.find((c) => c.label === 'P-0007')
+    expect(zurDose.b.kind).toBe('Wall Outlet')
+    expect(zurDose.b.label).toBe('Dose A02-D14')
+  })
+
+  it('filtert nach Standort über beide Enden', async () => {
+    const leitstand = await ruf('netops.api.dcim.cable_list', { site: 'SITE-0004' })
+    expect(leitstand.map((c) => c.label)).toContain('P-0007')
+    expect(leitstand.every((c) => c.a.site === 'SITE-0004' || c.b.site === 'SITE-0004')).toBe(true)
+  })
+})
+
+describe('netops.api.dcim.trace_path', () => {
+  it('verfolgt vom Port zur Dose', async () => {
+    const trace = await ruf('netops.api.dcim.trace_path', { endpoint: 'IF-SW-ACC-01-05' })
+    expect(trace.hops.map((h) => h.label)).toEqual([
+      'SW-ACC-01 · Port 5',
+      'P-0007',
+      'Dose A02-D14',
+    ])
+    expect(trace.cable_count).toBe(1)
+    expect(trace.total_length_m).toBe(25)
+    expect(trace.complete).toBe(true)
+  })
+
+  it('verfolgt auch rückwärts von der Dose', async () => {
+    const trace = await ruf('netops.api.dcim.trace_path', {
+      endpoint: 'A02-D14',
+      endpoint_type: 'Wall Outlet',
+    })
+    expect(trace.hops[0].label).toBe('Dose A02-D14')
+    expect(trace.hops[trace.hops.length - 1].label).toBe('SW-ACC-01 · Port 5')
+  })
+
+  it('endet sauber an einem Port ohne Kabel', async () => {
+    const trace = await ruf('netops.api.dcim.trace_path', { endpoint: 'IF-SW-CORE-01-07' })
+    expect(trace.cable_count).toBe(0)
+    expect(trace.hops).toHaveLength(1)
+    expect(trace.complete).toBe(true)
+  })
+
+  it('meldet einen unbekannten Endpunkt', async () => {
+    await expect(ruf('netops.api.dcim.trace_path', { endpoint: 'IF-GIBTSNICHT' })).rejects.toThrow(
+      /DoesNotExistError/,
+    )
+  })
+})
+
+describe('netops.api.ipam.vlan_list', () => {
+  it('zählt Ports und Geräte je VLAN', async () => {
+    const liste = await ruf('netops.api.ipam.vlan_list', {})
+    const mgmt = liste.find((v) => v.vid === 10)
+    expect(mgmt.port_count).toBeGreaterThan(0)
+    expect(mgmt.devices.length).toBe(mgmt.device_count)
+    expect(mgmt.prefixes).toContain('10.10.10.0/24')
+  })
+
+  it('erkennt ungenutzte VLANs', async () => {
+    const liste = await ruf('netops.api.ipam.vlan_list', {})
+    const voip = liste.find((v) => v.vid === 40)
+    expect(voip.unused).toBe(true)
+
+    const server = liste.find((v) => v.vid === 20)
+    expect(server.unused).toBe(false)
+  })
+
+  it('sortiert nach VID', async () => {
+    const liste = await ruf('netops.api.ipam.vlan_list', {})
+    const vids = liste.map((v) => v.vid)
+    expect(vids).toEqual([...vids].sort((a, b) => a - b))
+  })
+
+  it('filtert nach Schutzzone', async () => {
+    const ot = await ruf('netops.api.ipam.vlan_list', { security_zone: 'ot' })
+    expect(ot.map((v) => v.vid).sort((a, b) => a - b)).toEqual([100, 110])
+  })
+})
+
+describe('netops.api.screen', () => {
+  it('kennzeichnet gekoppelte Screens', async () => {
+    const liste = await ruf('netops.api.screen.screen_list', {})
+    expect(liste).toHaveLength(10)
+    expect(liste.filter((s) => s.paired).map((s) => s.screen_no).sort((a, b) => a - b)).toEqual([1, 7])
+  })
+
+  it('erkennt Anfragen aus fremden Netzen', async () => {
+    const anfragen = await ruf('netops.api.screen.screen_pairings', {})
+    const fremd = anfragen.find((p) => p.client_ip === '10.10.30.77')
+    expect(fremd.from_control_room).toBe(false)
+
+    const leitstand = anfragen.find((p) => p.client_ip === '10.10.90.11')
+    expect(leitstand.from_control_room).toBe(true)
+  })
+
+  it('verweigert die Freigabe aus einem fremden Netz', async () => {
+    // Die Anfrage aus dem Clientnetz darf auch dann nicht freigegeben werden,
+    // wenn jemand versehentlich darauf klickt.
+    const anfragen = await ruf('netops.api.screen.screen_pairings', {})
+    const fremd = anfragen.find((p) => p.client_ip === '10.10.30.77')
+    await expect(
+      ruf('netops.api.screen.set_pairing_state', { name: fremd.name, state: 'approved' }),
+    ).rejects.toThrow(/Leitstand-Subnetz/)
+  })
+
+  it('gibt eine gültige Anfrage frei und protokolliert das', async () => {
+    const offen = (await ruf('netops.api.screen.screen_pairings', { state: 'pending' }))[0]
+    const ergebnis = await ruf('netops.api.screen.set_pairing_state', {
+      name: offen.name,
+      state: 'approved',
+    })
+    expect(ergebnis.pairing_state).toBe('approved')
+    expect(ergebnis.approved_by).toBeTruthy()
+    expect(ergebnis.expires).toBeNull()
+
+    const log = await ruf('netops.api.audit.audit_log', { limit: 1 })
+    expect(log[0].action).toBe('screen_approved')
+    expect((await ruf('netops.api.audit.verify_chain', {})).ok).toBe(true)
+  })
+
+  it('widerruft eine Freigabe', async () => {
+    const ergebnis = await ruf('netops.api.screen.set_pairing_state', {
+      name: 'PAIR-00001',
+      state: 'revoked',
+    })
+    expect(ergebnis.pairing_state).toBe('revoked')
+    expect(ergebnis.revoked_on).toBeTruthy()
+
+    const screens = await ruf('netops.api.screen.screen_list', {})
+    expect(screens.find((s) => s.screen_no === 1).paired).toBe(false)
+  })
+
+  it('liefert Screen-Inhalte ohne Geheimnisse', async () => {
+    const daten = await ruf('netops.api.screen.screen_data', { screen: 'screen1' })
+    expect(daten.screen_title).toBe('Gesamtlage')
+    expect(daten.tiles.length).toBe(4)
+
+    const alsText = JSON.stringify(daten)
+    expect(alsText).not.toMatch(/passbolt|password|secret/i)
+  })
+
+  it('sagt offen, wenn eine Kachel noch keine Datenquelle hat', async () => {
+    const daten = await ruf('netops.api.screen.screen_data', { screen: 'screen5' })
+    expect(daten.tiles.every((t) => t.placeholder)).toBe(true)
+    expect(daten.tiles[0].note).toMatch(/nicht angebunden/)
+  })
+
+  it('meldet einen unbekannten Screen', async () => {
+    await expect(ruf('netops.api.screen.screen_data', { screen: 'screen99' })).rejects.toThrow(
+      /DoesNotExistError/,
+    )
+  })
+})

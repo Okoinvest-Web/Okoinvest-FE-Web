@@ -1,0 +1,18 @@
+import { Stoerbild } from "@/components/stoerbild";
+
+/**
+ * Eine Adresse, zu der es keine Seite gibt.
+ *
+ * Greift außerhalb des Portals - etwa bei einem alten Lesezeichen aus
+ * der Zeit vor dem Umbau. Der Weg führt ins Portal und nicht auf eine
+ * Startseite, die es hier nicht gibt.
+ */
+export default function NichtGefunden() {
+  return (
+    <Stoerbild
+      titel="Diese Seite gibt es nicht"
+      text="Die Adresse führt ins Leere. Möglicherweise stammt sie aus einer früheren Fassung des Portals."
+      zurueck={{ pfad: "/portal", text: "Zum Portal" }}
+    />
+  );
+}

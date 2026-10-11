@@ -1,0 +1,265 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+
+import { quartalsZeitraum } from "@/lib/eeg/abrechnung";
+import {
+  rechneLauf,
+  schreibeLaufFest,
+  storniereLauf,
+  pruefeDatenbestand,
+} from "@/lib/eeg/lauf";
+import { legeLaufAn } from "@/lib/daten/eeg";
+import { messStempel } from "@/lib/datum";
+import { schreibe } from "@/lib/db/verbindung";
+import { requireRecht } from "@/lib/session";
+
+export interface Rueckmeldung {
+  ok: boolean;
+  meldung: string;
+  /** Kennung des betroffenen Laufs, fuer die Weiterleitung. */
+  laufId?: string;
+}
+
+/**
+ * Legt einen Abrechnungslauf an und rechnet ihn gleich durch.
+ *
+ * Beides in einem Schritt, weil ein leerer Lauf fuer sich nichts
+ * aussagt. Schlaegt die Berechnung fehl, bleibt der Lauf als Entwurf
+ * bestehen - dann laesst sich die Ursache ansehen und erneut rechnen.
+ */
+export async function laufAnlegen(
+  _vorher: Rueckmeldung | null,
+  formular: FormData,
+): Promise<Rueckmeldung> {
+  const benutzer = await requireRecht("gemeinschaft.verwalten");
+
+  const gemeinschaft = String(formular.get("gemeinschaft") ?? "");
+  const jahr = Number(formular.get("jahr"));
+  const quartal = Number(formular.get("quartal"));
+  const modell = String(formular.get("modell") ?? "Dynamisch");
+  const preis = Number(formular.get("preis"));
+  const erzeuger = Number(formular.get("erzeuger"));
+  const ust = Number(formular.get("ust"));
+
+  if (!Number.isInteger(jahr) || jahr < 2020 || jahr > 2100) {
+    return { ok: false, meldung: "Bitte ein gültiges Jahr wählen." };
+  }
+  if (![1, 2, 3, 4].includes(quartal)) {
+    return { ok: false, meldung: "Bitte ein Quartal zwischen 1 und 4 wählen." };
+  }
+  if (!Number.isFinite(preis) || preis < 0 || preis > 100) {
+    return { ok: false, meldung: "Der Bezugspreis muss zwischen 0 und 100 ct/kWh liegen." };
+  }
+  if (!Number.isFinite(erzeuger) || erzeuger < 0 || erzeuger > 100) {
+    return { ok: false, meldung: "Die Gutschrift muss zwischen 0 und 100 ct/kWh liegen." };
+  }
+  if (erzeuger > preis) {
+    return {
+      ok: false,
+      meldung:
+        "Die Erzeugergutschrift darf den Bezugspreis nicht übersteigen – sonst arbeitet die Gemeinschaft mit Verlust.",
+    };
+  }
+  if (![0, 10, 13, 20].includes(ust)) {
+    return { ok: false, meldung: "Unzulässiger Umsatzsteuersatz." };
+  }
+
+  const { von, bis } = quartalsZeitraum(jahr, quartal);
+
+  if (von > new Date()) {
+    return {
+      ok: false,
+      meldung: "Für einen künftigen Zeitraum liegen noch keine Messdaten vor.",
+    };
+  }
+
+  // Vorab pruefen, ob ueberhaupt Daten da sind - sonst entstuende ein
+  // Lauf, der sofort scheitert.
+  const luecken = pruefeDatenbestand(
+    gemeinschaft,
+    messStempel(von),
+    messStempel(new Date(bis.getTime() + 1)),
+  );
+
+  const vollstaendigLeer = luecken.some((l) => l.vorhanden === 0);
+  if (vollstaendigLeer) {
+    return {
+      ok: false,
+      meldung:
+        "Für mindestens einen Zählpunkt liegen im Zeitraum keine Messdaten vor. Bitte zuerst die Daten beim Netzbetreiber anfordern.",
+    };
+  }
+
+  const laufId = legeLaufAn(
+    gemeinschaft,
+    von,
+    bis,
+    modell === "Statisch" ? "Statisch" : "Dynamisch",
+    preis,
+    erzeuger,
+    ust,
+    benutzer.id,
+  );
+
+  try {
+    const ergebnis = rechneLauf(laufId, benutzer.id);
+
+    revalidatePath("/portal/gemeinschaft");
+
+    return {
+      ok: true,
+      laufId,
+      meldung:
+        `Lauf gerechnet: ${ergebnis.intervalle.toLocaleString("de-AT")} Viertelstunden, ` +
+        `${ergebnis.uebersicht.anzahlRechnungen + ergebnis.uebersicht.anzahlGutschriften} Belege.` +
+        (luecken.length > 0
+          ? ` Hinweis: bei ${luecken.length} Zählpunkten fehlen einzelne Messwerte.`
+          : ""),
+    };
+  } catch (fehler) {
+    return {
+      ok: false,
+      laufId,
+      meldung:
+        fehler instanceof Error
+          ? fehler.message
+          : "Die Berechnung ist fehlgeschlagen.",
+    };
+  }
+}
+
+/** Rechnet einen bestehenden Lauf erneut. */
+export async function laufRechnen(
+  _vorher: Rueckmeldung | null,
+  formular: FormData,
+): Promise<Rueckmeldung> {
+  const benutzer = await requireRecht("gemeinschaft.verwalten");
+  const laufId = String(formular.get("lauf") ?? "");
+
+  try {
+    const ergebnis = rechneLauf(laufId, benutzer.id);
+    revalidatePath(`/portal/gemeinschaft/abrechnung/${laufId}`);
+    revalidatePath("/portal/gemeinschaft");
+
+    return {
+      ok: true,
+      laufId,
+      meldung: `Neu gerechnet: ${ergebnis.uebersicht.anzahlRechnungen} Rechnungen, ${ergebnis.uebersicht.anzahlGutschriften} Gutschriften.`,
+    };
+  } catch (fehler) {
+    return {
+      ok: false,
+      meldung: fehler instanceof Error ? fehler.message : "Berechnung fehlgeschlagen.",
+    };
+  }
+}
+
+/** Schreibt einen Lauf fest - danach sind die Belege unveraenderlich. */
+export async function laufFestschreiben(
+  _vorher: Rueckmeldung | null,
+  formular: FormData,
+): Promise<Rueckmeldung> {
+  const benutzer = await requireRecht("gemeinschaft.verwalten");
+  const laufId = String(formular.get("lauf") ?? "");
+
+  if (formular.get("bestaetigung") !== "ja") {
+    return {
+      ok: false,
+      meldung: "Bitte bestätigen Sie, dass die Belege ausgegeben werden dürfen.",
+    };
+  }
+
+  try {
+    schreibeLaufFest(laufId, benutzer.id);
+    revalidatePath(`/portal/gemeinschaft/abrechnung/${laufId}`);
+    revalidatePath("/portal/gemeinschaft");
+
+    return {
+      ok: true,
+      laufId,
+      meldung:
+        "Der Lauf ist festgeschrieben. Die Belege sind ab jetzt unveränderlich; Korrekturen sind nur über einen Storno möglich.",
+    };
+  } catch (fehler) {
+    return {
+      ok: false,
+      meldung: fehler instanceof Error ? fehler.message : "Vorgang fehlgeschlagen.",
+    };
+  }
+}
+
+/** Storniert einen Lauf samt seiner Belege. */
+export async function laufStornieren(
+  _vorher: Rueckmeldung | null,
+  formular: FormData,
+): Promise<Rueckmeldung> {
+  const benutzer = await requireRecht("gemeinschaft.verwalten");
+  const laufId = String(formular.get("lauf") ?? "");
+  const grund = String(formular.get("grund") ?? "");
+
+  try {
+    storniereLauf(laufId, grund, benutzer.id);
+    revalidatePath(`/portal/gemeinschaft/abrechnung/${laufId}`);
+    revalidatePath("/portal/gemeinschaft");
+
+    return {
+      ok: true,
+      laufId,
+      meldung: "Der Lauf wurde storniert. Alle zugehörigen Belege sind als storniert gekennzeichnet.",
+    };
+  } catch (fehler) {
+    return {
+      ok: false,
+      meldung: fehler instanceof Error ? fehler.message : "Storno fehlgeschlagen.",
+    };
+  }
+}
+
+/**
+ * Aendert den Teilnahmefaktor eines Mitglieds.
+ *
+ * Wirkt erst auf kuenftige Laeufe - bereits gerechnete Zeitraeume
+ * bleiben unberuehrt. Das ist wichtig: Eine rueckwirkende Aenderung
+ * wuerde ausgegebene Belege unrichtig machen.
+ */
+export async function teilnahmeAendern(
+  _vorher: Rueckmeldung | null,
+  formular: FormData,
+): Promise<Rueckmeldung> {
+  const benutzer = await requireRecht("gemeinschaft.verwalten");
+
+  const teilnahmeId = String(formular.get("teilnahme") ?? "");
+  const faktor = Number(formular.get("faktor"));
+  const anteil = Number(formular.get("anteil"));
+
+  if (!Number.isFinite(faktor) || faktor < 0 || faktor > 100) {
+    return { ok: false, meldung: "Der Teilnahmefaktor muss zwischen 0 und 100 % liegen." };
+  }
+  if (!Number.isFinite(anteil) || anteil < 0 || anteil > 100) {
+    return { ok: false, meldung: "Der Anteil muss zwischen 0 und 100 % liegen." };
+  }
+
+  schreibe(
+    "UPDATE teilnahme SET teilnahmefaktor = ?, anteil_prozent = ? WHERE id = ?",
+    faktor / 100,
+    anteil,
+    teilnahmeId,
+  );
+
+  schreibe(
+    `INSERT INTO audit (benutzer, kategorie, aktion, ergebnis, objekt, wert_nachher)
+     VALUES (?, 'stammdaten', 'Teilnahme geändert', 'erfolg', ?, ?)`,
+    benutzer.id,
+    teilnahmeId,
+    `Faktor ${faktor} %, Anteil ${anteil} %`,
+  );
+
+  revalidatePath("/portal/gemeinschaft");
+
+  return {
+    ok: true,
+    meldung:
+      "Gespeichert. Die Änderung wirkt auf künftige Abrechnungsläufe; bereits gerechnete Zeiträume bleiben unverändert.",
+  };
+}

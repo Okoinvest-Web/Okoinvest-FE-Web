@@ -1,0 +1,999 @@
+/**
+ * Inventar, schreibende Vorgänge: Ausgabe, Rückgabe, Reservierung,
+ * Verbrauchsmaterial, Inventur, Schäden, Entsorgung, Austritt.
+ *
+ * Jeder Vorgang hier ändert Daten und wird protokolliert. Die Regeln
+ * stehen bewusst in der Methode und nicht in der Oberfläche - eine Regel,
+ * die nur ein Formular kennt, gilt beim nächsten API-Aufruf nicht mehr.
+ *
+ * Für die Portierung nach Python: zusätzlich zu `frappe.has_permission`
+ * braucht jede schreibende Methode hier eine Transaktion. Der Mock ist
+ * einfädig, ein echtes Frappe ist es nicht - „Gerät ausgeben" liest den
+ * Zustand und schreibt ihn, und dazwischen darf niemand dasselbe Gerät
+ * ausgeben.
+ */
+import { FrappeMockError, SESSION_USER, table, touch } from '../db.js'
+import { heute, jetzt } from '../zeit.js'
+import { protokolliere } from './audit.js'
+import { tageBis } from './inventar.js'
+
+// --- Hilfen ----------------------------------------------------------------
+
+function holeAsset(name) {
+  const doc = table('Asset').find((a) => a.name === name)
+  if (!doc) {
+    throw new FrappeMockError(`DoesNotExistError: Asset ${name} existiert nicht`, 404)
+  }
+  return doc
+}
+
+function holeBeschaeftigten(name) {
+  const doc = table('Employee').find((e) => e.name === name)
+  if (!doc) {
+    throw new FrappeMockError(`DoesNotExistError: Employee ${name} existiert nicht`, 404)
+  }
+  return doc
+}
+
+function naechsterName(doctype, praefix, stellen = 5) {
+  const rows = table(doctype)
+  return praefix + String(rows.length + 1).padStart(stellen, '0')
+}
+
+/** Überschneiden sich zwei Zeiträume? Randtage zählen als Überschneidung. */
+function ueberschneidet(vonA, bisA, vonB, bisB) {
+  return String(vonA) <= String(bisB) && String(vonB) <= String(bisA)
+}
+
+// --- Ausgabe und Rückgabe --------------------------------------------------
+
+/**
+ * Gerät an eine Person ausgeben.
+ *
+ * Die Prüfungen sind der eigentliche Wert dieser Methode:
+ *
+ * 1. Das Gerät muss verfügbar sein. Zweimal ausgeben ist die häufigste
+ *    Ursache für „Bestand stimmt nicht".
+ * 2. Ein Messgerät mit abgelaufener Prüfung darf nicht in den Einsatz.
+ *    Wer damit eine Anlage abnimmt, unterschreibt eine Messung, die nicht
+ *    gilt.
+ * 3. Ein Gerät mit offenem, schwerem Schaden bleibt gesperrt.
+ * 4. Eine bestätigte Reservierung einer anderen Person hat Vorrang.
+ * 5. An ausgetretene Personen wird nichts ausgegeben.
+ */
+export function assign_asset({
+  asset = null,
+  employee = null,
+  due_on = null,
+  purpose = null,
+  condition_out = null,
+  issued_by = null,
+  force = false,
+} = {}) {
+  const doc = holeAsset(asset)
+  const person = holeBeschaeftigten(employee)
+
+  const hindernisse = []
+
+  if (person.status !== 'Active') {
+    hindernisse.push({
+      kind: 'employee_inactive',
+      text: `${person.employee_name} ist im Personalstamm nicht aktiv (${person.status})`,
+      blocking: true,
+    })
+  }
+
+  if (doc.asset_state === 'disposed') {
+    hindernisse.push({ kind: 'disposed', text: 'Das Gerät ist entsorgt', blocking: true })
+  }
+
+  if (doc.asset_state === 'issued') {
+    const halter = table('Employee').find((e) => e.name === doc.holder)
+    hindernisse.push({
+      kind: 'already_issued',
+      text: `Bereits ausgegeben an ${halter?.employee_name || doc.holder}`,
+      blocking: true,
+    })
+  }
+
+  if (doc.asset_state === 'repair') {
+    hindernisse.push({ kind: 'in_repair', text: 'Das Gerät ist in Reparatur', blocking: true })
+  }
+
+  const pruefungIn = tageBis(doc.next_inspection)
+  if (pruefungIn !== null && pruefungIn < 0) {
+    hindernisse.push({
+      kind: 'inspection_overdue',
+      text: `Prüfung seit ${Math.abs(pruefungIn)} Tagen überfällig – Messungen mit diesem Gerät sind nicht verwertbar`,
+      blocking: true,
+    })
+  }
+
+  const schwererSchaden = table('Damage Report').find(
+    (s) =>
+      s.asset === doc.name &&
+      ['new', 'in_repair'].includes(s.damage_state) &&
+      s.severity === 'high',
+  )
+  if (schwererSchaden) {
+    hindernisse.push({
+      kind: 'damage_open',
+      text: 'Offener schwerer Schaden: ' + schwererSchaden.summary,
+      blocking: true,
+    })
+  }
+
+  const heuteDatum = heute()
+  const fremdeReservierung = table('Asset Reservation').find(
+    (r) =>
+      r.asset === doc.name &&
+      r.reservation_state === 'confirmed' &&
+      r.employee !== employee &&
+      ueberschneidet(heuteDatum, due_on || heuteDatum, r.from_date, r.to_date),
+  )
+  if (fremdeReservierung) {
+    const wer = table('Employee').find((e) => e.name === fremdeReservierung.employee)
+    hindernisse.push({
+      kind: 'reserved',
+      text: `Reserviert für ${wer?.employee_name || fremdeReservierung.employee} vom ${fremdeReservierung.from_date} bis ${fremdeReservierung.to_date}`,
+      blocking: true,
+    })
+  }
+
+  // `force` hebt nur die Hindernisse auf, die eine Person verantworten
+  // kann - eine überfällige Prüfung gehört nicht dazu. Diese Grenze ist
+  // der Grund, warum die Prüfung hier steht und nicht im Formular.
+  const unumgehbar = new Set(['inspection_overdue', 'disposed', 'employee_inactive'])
+  const blockiert = hindernisse.filter((h) => h.blocking && (!force || unumgehbar.has(h.kind)))
+
+  if (blockiert.length) {
+    return {
+      ok: false,
+      blocked: blockiert,
+      warnings: hindernisse.filter((h) => !blockiert.includes(h)),
+    }
+  }
+
+  const eintrag = {
+    doctype: 'Asset Assignment',
+    name: naechsterName('Asset Assignment', 'AUS-'),
+    asset: doc.name,
+    employee,
+    issued_on: jetzt(),
+    due_on: due_on || null,
+    returned_on: null,
+    issued_by: issued_by || null,
+    purpose: purpose || null,
+    condition_out: condition_out || null,
+    acknowledged: 0,
+    tenant: doc.tenant,
+    owner: SESSION_USER,
+    creation: jetzt(),
+    modified: jetzt(),
+    modified_by: SESSION_USER,
+  }
+  table('Asset Assignment').push(eintrag)
+
+  doc.asset_state = 'issued'
+  doc.holder = employee
+  touch(doc)
+
+  protokolliere({
+    action: 'asset_assigned',
+    object_type: 'Asset',
+    object_name: doc.name,
+    payload: { employee, due_on, purpose, forced: !!force },
+  })
+
+  return {
+    ok: true,
+    assignment: eintrag.name,
+    asset_state: doc.asset_state,
+    warnings: hindernisse,
+  }
+}
+
+/**
+ * Rückgabe.
+ *
+ * Wird ein Schaden gemeldet, geht das Gerät nicht ins Lager, sondern in
+ * Reparatur - sonst gibt es jemand anderes weiter aus.
+ */
+export function return_asset({
+  asset = null,
+  condition_in = null,
+  received_by = null,
+  damaged = false,
+  damage_summary = null,
+  damage_severity = 'medium',
+} = {}) {
+  const doc = holeAsset(asset)
+
+  const offen = table('Asset Assignment')
+    .filter((a) => a.asset === doc.name && !a.returned_on)
+    .sort((a, b) => String(b.issued_on).localeCompare(String(a.issued_on)))[0]
+
+  if (!offen) {
+    throw new FrappeMockError(
+      `ValidationError: Für ${doc.name} ist keine offene Ausgabe verzeichnet`,
+    )
+  }
+
+  offen.returned_on = jetzt()
+  offen.received_by = received_by || null
+  offen.condition_in = condition_in || null
+  touch(offen)
+
+  let schaden = null
+  if (damaged) {
+    if (!damage_summary) {
+      throw new FrappeMockError('ValidationError: Ein Schaden braucht eine Beschreibung')
+    }
+    schaden = {
+      doctype: 'Damage Report',
+      name: naechsterName('Damage Report', 'SCH-'),
+      asset: doc.name,
+      summary: damage_summary,
+      severity: damage_severity,
+      damage_state: 'new',
+      reported_on: jetzt(),
+      reported_by: received_by || null,
+      tenant: doc.tenant,
+      owner: SESSION_USER,
+      creation: jetzt(),
+      modified: jetzt(),
+      modified_by: SESSION_USER,
+    }
+    table('Damage Report').push(schaden)
+  }
+
+  doc.asset_state = damaged ? 'repair' : 'in_stock'
+  doc.holder = null
+  touch(doc)
+
+  protokolliere({
+    action: 'asset_returned',
+    object_type: 'Asset',
+    object_name: doc.name,
+    payload: { condition_in, damaged },
+  })
+
+  return {
+    ok: true,
+    assignment: offen.name,
+    asset_state: doc.asset_state,
+    damage: schaden?.name || null,
+    days_held: Math.abs(tageBis(String(offen.issued_on).slice(0, 10))),
+  }
+}
+
+// --- Reservierung ----------------------------------------------------------
+
+export function reserve_asset({
+  asset = null,
+  employee = null,
+  from_date = null,
+  to_date = null,
+  purpose = null,
+} = {}) {
+  const doc = holeAsset(asset)
+  holeBeschaeftigten(employee)
+
+  if (!from_date || !to_date) {
+    throw new FrappeMockError('ValidationError: Von- und Bis-Datum sind erforderlich')
+  }
+  if (String(to_date) < String(from_date)) {
+    throw new FrappeMockError('ValidationError: Das Bis-Datum liegt vor dem Von-Datum')
+  }
+
+  const kollisionen = table('Asset Reservation').filter(
+    (r) =>
+      r.asset === doc.name &&
+      ['confirmed', 'requested'].includes(r.reservation_state) &&
+      ueberschneidet(from_date, to_date, r.from_date, r.to_date),
+  )
+
+  const eintrag = {
+    doctype: 'Asset Reservation',
+    name: naechsterName('Asset Reservation', 'RES-'),
+    asset: doc.name,
+    employee,
+    from_date,
+    to_date,
+    // Bei Kollision nur angefragt: entscheiden muss ein Mensch, nicht die
+    // Reihenfolge der Klicks.
+    reservation_state: kollisionen.length ? 'requested' : 'confirmed',
+    purpose: purpose || null,
+    tenant: doc.tenant,
+    owner: SESSION_USER,
+    creation: jetzt(),
+    modified: jetzt(),
+    modified_by: SESSION_USER,
+  }
+  table('Asset Reservation').push(eintrag)
+
+  protokolliere({
+    action: 'asset_reserved',
+    object_type: 'Asset',
+    object_name: doc.name,
+    payload: { employee, from_date, to_date },
+  })
+
+  return {
+    ok: true,
+    reservation: eintrag.name,
+    state: eintrag.reservation_state,
+    conflicts: kollisionen.map((k) => ({
+      reservation: k.name,
+      employee: k.employee,
+      from_date: k.from_date,
+      to_date: k.to_date,
+    })),
+  }
+}
+
+export function reservation_list({ asset = null, upcoming_only = false, tenant = null } = {}) {
+  const mitarbeitende = new Map(table('Employee').map((e) => [e.name, e]))
+  const assets = new Map(table('Asset').map((a) => [a.name, a]))
+
+  let liste = table('Asset Reservation')
+  if (asset) liste = liste.filter((r) => r.asset === asset)
+  if (tenant) liste = liste.filter((r) => r.tenant === tenant)
+
+  return liste
+    .map((r) => {
+      const kollision = liste.find(
+        (x) =>
+          x.name !== r.name &&
+          x.asset === r.asset &&
+          ['confirmed', 'requested'].includes(x.reservation_state) &&
+          ['confirmed', 'requested'].includes(r.reservation_state) &&
+          ueberschneidet(r.from_date, r.to_date, x.from_date, x.to_date),
+      )
+      return {
+        ...r,
+        employee_name: mitarbeitende.get(r.employee)?.employee_name || r.employee,
+        asset_name: assets.get(r.asset)?.asset_name || r.asset,
+        days_until: tageBis(r.from_date),
+        upcoming: tageBis(r.to_date) >= 0,
+        conflict_with: kollision?.name || null,
+        level: kollision ? 'warning' : r.reservation_state === 'confirmed' ? 'ok' : 'neutral',
+      }
+    })
+    .filter((r) => !upcoming_only || r.upcoming)
+    .sort((a, b) => String(a.from_date).localeCompare(String(b.from_date)))
+}
+
+export function set_reservation_state({ name = null, state = null } = {}) {
+  const erlaubt = ['requested', 'confirmed', 'cancelled', 'fulfilled']
+  if (!erlaubt.includes(state)) {
+    throw new FrappeMockError(
+      'ValidationError: Zustand muss einer von ' + erlaubt.join(', ') + ' sein',
+    )
+  }
+  const doc = table('Asset Reservation').find((r) => r.name === name)
+  if (!doc) {
+    throw new FrappeMockError(`DoesNotExistError: Asset Reservation ${name} existiert nicht`, 404)
+  }
+
+  doc.reservation_state = state
+  touch(doc)
+  protokolliere({
+    action: 'reservation_' + state,
+    object_type: 'Asset Reservation',
+    object_name: name,
+    payload: { state },
+  })
+  return { ...doc }
+}
+
+// --- Verbrauchsmaterial ----------------------------------------------------
+
+export function consumable_list({ site = null, below_min = false, tenant = null } = {}) {
+  let liste = table('Consumable')
+  if (site) liste = liste.filter((c) => c.site === site)
+  if (tenant) liste = liste.filter((c) => c.tenant === tenant)
+
+  const orte = new Map(table('Site').map((s) => [s.name, s]))
+
+  return liste
+    .map((c) => {
+      const bestand = c.stock_qty || 0
+      const minimum = c.min_qty || 0
+      const stufe = bestand <= 0 ? 'critical' : bestand < minimum ? 'warning' : 'ok'
+      return {
+        ...c,
+        site_name: orte.get(c.site)?.site_name || c.site,
+        below_min: bestand < minimum,
+        shortfall: Math.max(0, minimum - bestand),
+        stock_value_cents: bestand * (c.unit_price_cents || 0),
+        level: stufe,
+        reason:
+          stufe === 'critical'
+            ? 'Bestand aufgebraucht'
+            : stufe === 'warning'
+              ? `unter Mindestbestand (${minimum})`
+              : null,
+      }
+    })
+    .filter((c) => !below_min || c.below_min)
+    .sort(
+      (a, b) =>
+        ({ critical: 2, warning: 1, ok: 0 })[b.level] -
+          { critical: 2, warning: 1, ok: 0 }[a.level] || a.item_name.localeCompare(b.item_name),
+    )
+}
+
+/**
+ * Bestandsbewegung.
+ *
+ * `correction` darf negativ sein, `in` und `out` nicht - sonst lässt sich
+ * eine Entnahme als Zugang tarnen und die Bewegungsliste erzählt etwas
+ * anderes als der Bestand.
+ */
+export function stock_move({
+  consumable = null,
+  kind = null,
+  qty = null,
+  reason = null,
+  employee = null,
+} = {}) {
+  const erlaubt = ['in', 'out', 'correction']
+  if (!erlaubt.includes(kind)) {
+    throw new FrappeMockError('ValidationError: Art muss einer von ' + erlaubt.join(', ') + ' sein')
+  }
+
+  const doc = table('Consumable').find((c) => c.name === consumable)
+  if (!doc) {
+    throw new FrappeMockError(`DoesNotExistError: Consumable ${consumable} existiert nicht`, 404)
+  }
+
+  const menge = Number(qty)
+  if (!Number.isFinite(menge) || menge === 0) {
+    throw new FrappeMockError('ValidationError: Menge muss eine Zahl ungleich null sein')
+  }
+  if (kind !== 'correction' && menge < 0) {
+    throw new FrappeMockError('ValidationError: Zu- und Abgang werden als positive Menge erfasst')
+  }
+  if (!reason) {
+    throw new FrappeMockError('ValidationError: Ein Grund ist erforderlich')
+  }
+
+  const vorher = doc.stock_qty || 0
+  const differenz = kind === 'in' ? menge : kind === 'out' ? -menge : menge
+
+  if (vorher + differenz < 0) {
+    throw new FrappeMockError(
+      `ValidationError: Bestand würde negativ (${vorher} vorhanden, ${menge} angefordert)`,
+    )
+  }
+
+  doc.stock_qty = vorher + differenz
+  touch(doc)
+
+  const bewegung = {
+    doctype: 'Stock Movement',
+    name: naechsterName('Stock Movement', 'BEW-'),
+    consumable,
+    movement_kind: kind,
+    qty: menge,
+    moved_on: jetzt(),
+    employee: employee || null,
+    reason,
+    tenant: doc.tenant,
+    owner: SESSION_USER,
+    creation: jetzt(),
+    modified: jetzt(),
+    modified_by: SESSION_USER,
+  }
+  table('Stock Movement').push(bewegung)
+
+  protokolliere({
+    action: 'stock_' + kind,
+    object_type: 'Consumable',
+    object_name: consumable,
+    payload: { qty: menge, reason, before: vorher, after: doc.stock_qty },
+  })
+
+  return {
+    ok: true,
+    movement: bewegung.name,
+    stock_qty: doc.stock_qty,
+    below_min: doc.stock_qty < (doc.min_qty || 0),
+  }
+}
+
+export function stock_movements({ consumable = null, limit = 50 } = {}) {
+  const mitarbeitende = new Map(table('Employee').map((e) => [e.name, e]))
+  const artikel = new Map(table('Consumable').map((c) => [c.name, c]))
+
+  let liste = table('Stock Movement')
+  if (consumable) liste = liste.filter((b) => b.consumable === consumable)
+
+  return [...liste]
+    .sort((a, b) => String(b.moved_on).localeCompare(String(a.moved_on)))
+    .slice(0, limit)
+    .map((b) => ({
+      ...b,
+      item_name: artikel.get(b.consumable)?.item_name || b.consumable,
+      employee_name: mitarbeitende.get(b.employee)?.employee_name || b.employee,
+    }))
+}
+
+// --- Inventur --------------------------------------------------------------
+
+/**
+ * Inventur starten.
+ *
+ * Beim Start wird der Sollbestand eingefroren: für jedes Asset im Umfang
+ * entsteht eine Zeile mit erwartetem Standort. Ohne dieses Einfrieren
+ * ließe sich am Ende nicht sagen, ob ein Gerät während der Zählung
+ * umgezogen ist oder schon vorher woanders stand.
+ */
+export function count_start({
+  count_name = null,
+  site = null,
+  scope_category = null,
+  started_by = null,
+} = {}) {
+  if (!count_name) {
+    throw new FrappeMockError('ValidationError: Die Inventur braucht eine Bezeichnung')
+  }
+
+  // Leerwerte vereinheitlichen: der Seed kennt `undefined`, ein Aufruf
+  // schickt `null`, und `null === undefined` ist falsch. Ohne das liesse
+  // sich dieselbe Inventur zweimal starten.
+  const gleich = (a, b) => (a || null) === (b || null)
+  const laufend = table('Inventory Count').find(
+    (z) =>
+      z.count_state === 'open' && gleich(z.site, site) && gleich(z.scope_category, scope_category),
+  )
+  if (laufend) {
+    throw new FrappeMockError(
+      `ValidationError: Für diesen Umfang läuft bereits die Inventur ${laufend.name}`,
+    )
+  }
+
+  const zaehlung = {
+    doctype: 'Inventory Count',
+    name: naechsterName('Inventory Count', 'INV-Z-', 4),
+    count_name,
+    site: site || null,
+    scope_category: scope_category || null,
+    started_on: jetzt(),
+    closed_on: null,
+    count_state: 'open',
+    started_by: started_by || null,
+    tenant: null,
+    owner: SESSION_USER,
+    creation: jetzt(),
+    modified: jetzt(),
+    modified_by: SESSION_USER,
+  }
+  table('Inventory Count').push(zaehlung)
+
+  const umfang = table('Asset').filter(
+    (a) =>
+      a.asset_state !== 'disposed' &&
+      (!site || a.site === site) &&
+      (!scope_category || a.category === scope_category),
+  )
+
+  const zeilen = table('Inventory Count Line')
+  for (const a of umfang) {
+    zeilen.push({
+      doctype: 'Inventory Count Line',
+      name: 'ZEILE-' + String(zeilen.length + 1).padStart(5, '0'),
+      count: zaehlung.name,
+      asset: a.name,
+      expected_site: a.site || null,
+      expected_room: a.room || null,
+      found_site: null,
+      found_room: null,
+      line_state: 'pending',
+      scanned_at: null,
+      scanned_by: null,
+      tenant: a.tenant,
+      owner: SESSION_USER,
+      creation: jetzt(),
+      modified: jetzt(),
+      modified_by: SESSION_USER,
+    })
+  }
+
+  protokolliere({
+    action: 'count_started',
+    object_type: 'Inventory Count',
+    object_name: zaehlung.name,
+    payload: { site, scope_category, lines: umfang.length },
+  })
+
+  return { ok: true, count: zaehlung.name, lines: umfang.length }
+}
+
+/**
+ * Ein Gerät während der Inventur erfassen - per Scan oder von Hand.
+ *
+ * Der Eingabewert ist die Inventarnummer vom Etikett. Wird ein Gerät
+ * gescannt, das nicht zum Umfang gehört, entsteht eine Zeile mit dem
+ * Zustand `unexpected` - genau die Fälle sucht eine Inventur.
+ */
+export function count_scan({
+  count = null,
+  asset_tag = null,
+  found_site = null,
+  found_room = null,
+  scanned_by = null,
+  note = null,
+} = {}) {
+  const zaehlung = table('Inventory Count').find((z) => z.name === count)
+  if (!zaehlung) {
+    throw new FrappeMockError(`DoesNotExistError: Inventory Count ${count} existiert nicht`, 404)
+  }
+  if (zaehlung.count_state !== 'open') {
+    throw new FrappeMockError('ValidationError: Diese Inventur ist abgeschlossen')
+  }
+
+  const gesucht = String(asset_tag || '').trim()
+  // Ein QR-Code enthält eine URL; der letzte Pfadteil ist die Nummer.
+  const nummer = gesucht.includes('/') ? decodeURIComponent(gesucht.split('/').pop()) : gesucht
+
+  const asset = table('Asset').find((a) => a.asset_tag === nummer || a.name === nummer)
+  if (!asset) {
+    return {
+      ok: false,
+      reason: 'unknown_tag',
+      text: `Zu "${nummer}" gibt es kein Inventarobjekt`,
+      scanned: nummer,
+    }
+  }
+
+  const zeilen = table('Inventory Count Line')
+  let zeile = zeilen.find((z) => z.count === count && z.asset === asset.name)
+
+  if (!zeile) {
+    zeile = {
+      doctype: 'Inventory Count Line',
+      name: 'ZEILE-' + String(zeilen.length + 1).padStart(5, '0'),
+      count,
+      asset: asset.name,
+      expected_site: asset.site || null,
+      expected_room: asset.room || null,
+      tenant: asset.tenant,
+      owner: SESSION_USER,
+      creation: jetzt(),
+    }
+    zeilen.push(zeile)
+  }
+
+  const zielOrt = found_site || zaehlung.site || asset.site
+  const zielRaum = found_room ?? asset.room
+
+  const ausserhalb = zaehlung.site && asset.site !== zaehlung.site
+  const verschoben = zielOrt !== zeile.expected_site || zielRaum !== zeile.expected_room
+
+  zeile.found_site = zielOrt
+  zeile.found_room = zielRaum
+  zeile.line_state = ausserhalb ? 'unexpected' : verschoben ? 'moved' : 'found'
+  zeile.scanned_at = jetzt()
+  zeile.scanned_by = scanned_by || null
+  zeile.note = note || null
+  touch(zeile)
+
+  protokolliere({
+    action: 'count_scanned',
+    object_type: 'Asset',
+    object_name: asset.name,
+    payload: { count, state: zeile.line_state },
+  })
+
+  return {
+    ok: true,
+    asset: asset.name,
+    asset_name: asset.asset_name,
+    line: zeile.name,
+    line_state: zeile.line_state,
+    expected_site: zeile.expected_site,
+    expected_room: zeile.expected_room,
+    found_site: zeile.found_site,
+    found_room: zeile.found_room,
+  }
+}
+
+export function count_detail({ name = null } = {}) {
+  const zaehlung = table('Inventory Count').find((z) => z.name === name)
+  if (!zaehlung) {
+    throw new FrappeMockError(`DoesNotExistError: Inventory Count ${name} existiert nicht`, 404)
+  }
+
+  const assets = new Map(table('Asset').map((a) => [a.name, a]))
+  const mitarbeitende = new Map(table('Employee').map((e) => [e.name, e]))
+  const orte = new Map(table('Site').map((s) => [s.name, s]))
+
+  const zeilen = table('Inventory Count Line')
+    .filter((z) => z.count === name)
+    .map((z) => {
+      const asset = assets.get(z.asset)
+      const halter = asset?.holder ? mitarbeitende.get(asset.holder) : null
+      return {
+        ...z,
+        asset_name: asset?.asset_name || z.asset,
+        asset_tag: asset?.asset_tag || z.asset,
+        category: asset?.category || null,
+        holder_name: halter?.employee_name || null,
+        // Ein Gerät, das bei jemandem ist, fehlt im Regal zu Recht.
+        explained_by_assignment: !!(asset?.asset_state === 'issued' && z.line_state === 'pending'),
+        expected_site_name: orte.get(z.expected_site)?.site_name || z.expected_site,
+        found_site_name: orte.get(z.found_site)?.site_name || z.found_site,
+        level:
+          z.line_state === 'found'
+            ? 'ok'
+            : z.line_state === 'moved'
+              ? 'warning'
+              : z.line_state === 'unexpected'
+                ? 'warning'
+                : asset?.asset_state === 'issued'
+                  ? 'neutral'
+                  : 'critical',
+      }
+    })
+
+  const zaehler = {}
+  for (const z of zeilen) zaehler[z.line_state] = (zaehler[z.line_state] || 0) + 1
+
+  const offen = zeilen.filter((z) => z.line_state === 'pending')
+
+  return {
+    ...zaehlung,
+    started_by_name: mitarbeitende.get(zaehlung.started_by)?.employee_name || zaehlung.started_by,
+    site_name: orte.get(zaehlung.site)?.site_name || zaehlung.site,
+    summary: {
+      total: zeilen.length,
+      by_state: zaehler,
+      counted: zeilen.length - offen.length,
+      progress_pct: zeilen.length
+        ? Math.round(((zeilen.length - offen.length) / zeilen.length) * 100)
+        : 0,
+      missing: offen.filter((z) => !z.explained_by_assignment).length,
+      explained: offen.filter((z) => z.explained_by_assignment).length,
+    },
+    lines: zeilen.sort(
+      (a, b) =>
+        ({ critical: 3, warning: 2, neutral: 1, ok: 0 })[b.level] -
+          { critical: 3, warning: 2, neutral: 1, ok: 0 }[a.level] ||
+        String(a.asset_tag).localeCompare(String(b.asset_tag)),
+    ),
+  }
+}
+
+/**
+ * Inventur abschließen.
+ *
+ * `apply_moves` übernimmt die gefundenen Standorte in den Stammdatensatz.
+ * Das ist der eigentliche Zweck einer Inventur - ohne diesen Schritt hat
+ * man gezählt und nichts korrigiert.
+ */
+export function count_close({ name = null, apply_moves = true } = {}) {
+  const zaehlung = table('Inventory Count').find((z) => z.name === name)
+  if (!zaehlung) {
+    throw new FrappeMockError(`DoesNotExistError: Inventory Count ${name} existiert nicht`, 404)
+  }
+  if (zaehlung.count_state !== 'open') {
+    throw new FrappeMockError('ValidationError: Diese Inventur ist bereits abgeschlossen')
+  }
+
+  const zeilen = table('Inventory Count Line').filter((z) => z.count === name)
+  const assets = new Map(table('Asset').map((a) => [a.name, a]))
+
+  let korrigiert = 0
+  if (apply_moves) {
+    for (const z of zeilen.filter(
+      (x) => x.line_state === 'moved' || x.line_state === 'unexpected',
+    )) {
+      const asset = assets.get(z.asset)
+      if (!asset) continue
+      asset.site = z.found_site
+      asset.room = z.found_room
+      touch(asset)
+      korrigiert += 1
+    }
+  }
+
+  zaehlung.count_state = 'closed'
+  zaehlung.closed_on = jetzt()
+  touch(zaehlung)
+
+  const fehlend = zeilen.filter(
+    (z) => z.line_state === 'pending' && assets.get(z.asset)?.asset_state !== 'issued',
+  )
+
+  protokolliere({
+    action: 'count_closed',
+    object_type: 'Inventory Count',
+    object_name: name,
+    payload: { corrected: korrigiert, missing: fehlend.length },
+  })
+
+  return {
+    ok: true,
+    count: name,
+    corrected: korrigiert,
+    missing: fehlend.map((z) => z.asset),
+  }
+}
+
+// --- Schäden ---------------------------------------------------------------
+
+export function damage_list({ damage_state = null, tenant = null } = {}) {
+  const assets = new Map(table('Asset').map((a) => [a.name, a]))
+  const mitarbeitende = new Map(table('Employee').map((e) => [e.name, e]))
+
+  let liste = table('Damage Report')
+  if (damage_state) liste = liste.filter((s) => s.damage_state === damage_state)
+  if (tenant) liste = liste.filter((s) => s.tenant === tenant)
+
+  return liste
+    .map((s) => ({
+      ...s,
+      asset_name: assets.get(s.asset)?.asset_name || s.asset,
+      asset_tag: assets.get(s.asset)?.asset_tag || s.asset,
+      reported_by_name: mitarbeitende.get(s.reported_by)?.employee_name || s.reported_by,
+      open: ['new', 'in_repair'].includes(s.damage_state),
+      age_days: Math.abs(tageBis(String(s.reported_on).slice(0, 10))),
+    }))
+    .sort(
+      (a, b) =>
+        Number(b.open) - Number(a.open) ||
+        String(b.reported_on).localeCompare(String(a.reported_on)),
+    )
+}
+
+export function set_damage_state({ name = null, state = null, repair_cost_cents = null } = {}) {
+  const erlaubt = ['new', 'in_repair', 'repaired', 'accepted', 'written_off']
+  if (!erlaubt.includes(state)) {
+    throw new FrappeMockError(
+      'ValidationError: Zustand muss einer von ' + erlaubt.join(', ') + ' sein',
+    )
+  }
+  const doc = table('Damage Report').find((s) => s.name === name)
+  if (!doc) {
+    throw new FrappeMockError(`DoesNotExistError: Damage Report ${name} existiert nicht`, 404)
+  }
+
+  doc.damage_state = state
+  if (repair_cost_cents !== null) doc.repair_cost_cents = repair_cost_cents
+  if (['repaired', 'accepted', 'written_off'].includes(state)) doc.resolved_on = jetzt()
+  touch(doc)
+
+  // Ein repariertes Gerät gehört zurück in den Bestand, ein abgeschriebenes
+  // nicht. Das hier zu vergessen ist der Grund, warum in vielen Systemen
+  // Geräte dauerhaft in „Reparatur" hängen.
+  const asset = table('Asset').find((a) => a.name === doc.asset)
+  if (asset && asset.asset_state === 'repair') {
+    if (['repaired', 'accepted'].includes(state)) {
+      asset.asset_state = 'in_stock'
+      touch(asset)
+    } else if (state === 'written_off') {
+      asset.asset_state = 'retired'
+      touch(asset)
+    }
+  }
+
+  protokolliere({
+    action: 'damage_' + state,
+    object_type: 'Damage Report',
+    object_name: name,
+    payload: { state },
+  })
+
+  return { ...doc, asset_state: asset?.asset_state || null }
+}
+
+// --- Entsorgung ------------------------------------------------------------
+
+/**
+ * Entsorgung mit Nachweis.
+ *
+ * Trägt das Gerät einen Datenträger, verlangt die Methode ein
+ * Löschverfahren und ein Datum der Bestätigung. Das ist kein Formalismus:
+ * Artikel 17 DSGVO verlangt den Nachweis der Löschung, und der Nachweis
+ * ist genau dieser Datensatz. Ohne ihn ist ein entsorgtes Notebook ein
+ * offener Punkt, kein erledigter.
+ */
+export function dispose_asset({
+  asset = null,
+  method = null,
+  recipient = null,
+  certificate_ref = null,
+  data_carrier = false,
+  erasure_method = null,
+  erasure_verified_on = null,
+  verified_by = null,
+  proceeds_cents = null,
+} = {}) {
+  const erlaubt = ['recycled', 'shredded', 'sold', 'returned', 'donated']
+  if (!erlaubt.includes(method)) {
+    throw new FrappeMockError(
+      'ValidationError: Verfahren muss eines von ' + erlaubt.join(', ') + ' sein',
+    )
+  }
+
+  const doc = holeAsset(asset)
+
+  if (doc.asset_state === 'issued') {
+    throw new FrappeMockError(
+      'ValidationError: Das Gerät ist noch ausgegeben – zuerst zurücknehmen',
+    )
+  }
+  if (doc.asset_state === 'disposed') {
+    throw new FrappeMockError('ValidationError: Das Gerät ist bereits entsorgt')
+  }
+
+  if (data_carrier) {
+    if (!erasure_method) {
+      throw new FrappeMockError(
+        'ValidationError: Bei einem Datenträger ist das Löschverfahren nachzuweisen',
+      )
+    }
+    if (!erasure_verified_on) {
+      throw new FrappeMockError(
+        'ValidationError: Bei einem Datenträger ist das Datum der Löschbestätigung erforderlich',
+      )
+    }
+  }
+
+  const nachweis = {
+    doctype: 'Disposal Record',
+    name: naechsterName('Disposal Record', 'ENT-'),
+    asset: doc.name,
+    disposed_on: heute(),
+    method,
+    recipient: recipient || null,
+    certificate_ref: certificate_ref || null,
+    data_carrier: data_carrier ? 1 : 0,
+    erasure_method: erasure_method || null,
+    erasure_verified_on: erasure_verified_on || null,
+    verified_by: verified_by || null,
+    proceeds_cents: proceeds_cents || null,
+    tenant: doc.tenant,
+    owner: SESSION_USER,
+    creation: jetzt(),
+    modified: jetzt(),
+    modified_by: SESSION_USER,
+  }
+  table('Disposal Record').push(nachweis)
+
+  doc.asset_state = 'disposed'
+  doc.holder = null
+  touch(doc)
+
+  protokolliere({
+    action: 'asset_disposed',
+    object_type: 'Asset',
+    object_name: doc.name,
+    payload: { method, data_carrier: !!data_carrier, certificate_ref },
+  })
+
+  return { ok: true, record: nachweis.name, asset_state: doc.asset_state }
+}
+
+export function disposal_list({ tenant = null } = {}) {
+  const assets = new Map(table('Asset').map((a) => [a.name, a]))
+  const mitarbeitende = new Map(table('Employee').map((e) => [e.name, e]))
+
+  let liste = table('Disposal Record')
+  if (tenant) liste = liste.filter((e) => e.tenant === tenant)
+
+  return liste
+    .map((e) => ({
+      ...e,
+      asset_name: assets.get(e.asset)?.asset_name || e.asset,
+      asset_tag: assets.get(e.asset)?.asset_tag || e.asset,
+      verified_by_name: mitarbeitende.get(e.verified_by)?.employee_name || e.verified_by,
+      // Ein Datenträger ohne dokumentierte Löschung ist ein Befund, kein
+      // erledigter Vorgang.
+      complete: !e.data_carrier || !!(e.erasure_method && e.erasure_verified_on),
+      level: !e.data_carrier || (e.erasure_method && e.erasure_verified_on) ? 'ok' : 'critical',
+    }))
+    .sort((a, b) => String(b.disposed_on).localeCompare(String(a.disposed_on)))
+}

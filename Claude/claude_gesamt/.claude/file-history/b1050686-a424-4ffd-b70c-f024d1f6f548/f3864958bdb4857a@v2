@@ -1,0 +1,271 @@
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+
+import {
+  BMD_SPALTEN,
+  KONTENRAHMEN,
+  alsBmdDatei,
+  fasseStapelZusammen,
+  kontiere,
+  pruefeStapel,
+  type Geschaeftsvorfall,
+} from "./bmd.ts";
+
+/**
+ * Diese Datei geht an den Steuerberater und wird dort eingespielt.
+ * Ein Fehler in der Kontierung landet im Jahresabschluss, ein Fehler
+ * im Format führt zur Zurückweisung des ganzen Stapels.
+ */
+
+function vorfall(teil: Partial<Geschaeftsvorfall> = {}): Geschaeftsvorfall {
+  return {
+    quelle_id: "LAD-2026-08-B001",
+    quelle: "laden_b2b",
+    belegdatum: new Date(2026, 7, 31),
+    belegnummer: "LAD-2026-08-0001",
+    nettoEur: 226.64,
+    buchungstext: "Ladeabrechnung August 2026, Fuhrpark 1",
+    partnerkonto: "20001",
+    partnername: "Steiner Holzbau GmbH",
+    kostenstelle: "ANL-0005",
+    ...teil,
+  };
+}
+
+describe("kontiere", () => {
+  it("bucht einen Erlös gegen das Debitorenkonto", () => {
+    const z = kontiere(vorfall());
+
+    // Forderung im Soll, Erlös im Haben.
+    assert.equal(z.konto, "20001");
+    assert.equal(z.gegenkonto, KONTENRAHMEN.laden_b2b.konto);
+    assert.equal(z.sollHaben, "S");
+  });
+
+  it("rechnet die Umsatzsteuer auf den Nettobetrag", () => {
+    const z = kontiere(vorfall({ nettoEur: 100 }));
+
+    assert.equal(z.nettoEur, 100);
+    assert.equal(z.steuerEur, 20);
+    assert.equal(z.betragBrutto, 120);
+    assert.equal(z.steuersatz, 20);
+  });
+
+  it("dreht die Richtung bei einer Gutschrift", () => {
+    // Eine Gutschrift mindert den Umsatz. Das Vorzeichen darf nicht
+    // stillschweigend verschwinden, sonst erhöht sie ihn.
+    const z = kontiere(vorfall({ nettoEur: -80 }));
+
+    assert.equal(z.sollHaben, "H");
+    assert.equal(z.betragBrutto, 96);
+    assert.equal(z.nettoEur, 80);
+  });
+
+  it("bucht einen Aufwand umgekehrt", () => {
+    const z = kontiere(
+      vorfall({
+        quelle: "lieferant_hardware",
+        partnerkonto: "33010",
+        buchungstext: "Teltonika TSW202, Lieferung",
+      }),
+    );
+
+    // Aufwand im Soll, Verbindlichkeit im Haben.
+    assert.equal(z.konto, KONTENRAHMEN.lieferant_hardware.konto);
+    assert.equal(z.gegenkonto, "33010");
+  });
+
+  it("trennt Handelserlöse von der Einspeisung", () => {
+    // Beides ist Stromverkauf, aber nur eines hat einen
+    // Erzeugungsbezug. Der Steuerberater braucht die Trennung.
+    const handel = kontiere(vorfall({ quelle: "arbitrage" }));
+    const einspeisung = kontiere(vorfall({ quelle: "einspeisung" }));
+
+    assert.notEqual(handel.gegenkonto, einspeisung.gegenkonto);
+  });
+
+  it("kürzt einen zu langen Buchungstext", () => {
+    // Die Schnittstelle nimmt nur eine begrenzte Länge an.
+    const z = kontiere(
+      vorfall({ buchungstext: "x".repeat(200) }),
+    );
+
+    assert.ok(z.buchungstext.length <= 70);
+  });
+
+  it("führt die Kostenstelle mit", () => {
+    const z = kontiere(vorfall({ kostenstelle: "ANL-0002" }));
+    assert.equal(z.kostenstelle, "ANL-0002");
+  });
+});
+
+describe("pruefeStapel", () => {
+  it("nimmt einen sauberen Stapel an", () => {
+    const zeilen = [
+      kontiere(vorfall({ belegnummer: "A-1" })),
+      kontiere(vorfall({ belegnummer: "A-2", nettoEur: 55 })),
+    ];
+
+    const p = pruefeStapel(zeilen);
+    assert.equal(p.gueltig, true, p.beanstandungen.join("; "));
+  });
+
+  it("beanstandet eine doppelte Belegnummer", () => {
+    // Zweimal dieselbe Nummer heißt entweder doppelt gebucht oder
+    // eine Nummernlücke - beides weist die Buchhaltung zurück.
+    const zeilen = [
+      kontiere(vorfall({ belegnummer: "A-1" })),
+      kontiere(vorfall({ belegnummer: "A-1" })),
+    ];
+
+    const p = pruefeStapel(zeilen);
+    assert.equal(p.gueltig, false);
+    assert.ok(p.beanstandungen.some((b) => b.includes("A-1")));
+  });
+
+  it("beanstandet einen Nullbetrag", () => {
+    const p = pruefeStapel([kontiere(vorfall({ nettoEur: 0 }))]);
+    assert.equal(p.gueltig, false);
+  });
+
+  it("beanstandet gleiches Konto und Gegenkonto", () => {
+    const zeile = kontiere(vorfall());
+    const p = pruefeStapel([{ ...zeile, gegenkonto: zeile.konto }]);
+
+    assert.equal(p.gueltig, false);
+    assert.ok(p.beanstandungen.some((b) => b.includes("Gegenkonto")));
+  });
+
+  it("beanstandet eine Steuer, die nicht zum Netto passt", () => {
+    // Genau das fällt sonst erst bei der Umsatzsteuervoranmeldung auf.
+    const zeile = kontiere(vorfall({ nettoEur: 100 }));
+    const p = pruefeStapel([{ ...zeile, steuerEur: 19 }]);
+
+    assert.equal(p.gueltig, false);
+    assert.ok(p.beanstandungen.some((b) => b.includes("Steuer")));
+  });
+
+  it("beanstandet ein ungültiges Belegdatum", () => {
+    const zeile = kontiere(vorfall());
+    const p = pruefeStapel([{ ...zeile, belegdatum: new Date("kaputt") }]);
+
+    assert.equal(p.gueltig, false);
+  });
+
+  it("nimmt einen leeren Stapel an", () => {
+    assert.equal(pruefeStapel([]).gueltig, true);
+  });
+});
+
+describe("alsBmdDatei", () => {
+  const zeilen = [
+    kontiere(vorfall({ belegnummer: "A-1" })),
+    kontiere(vorfall({ belegnummer: "A-2", nettoEur: -50 })),
+  ];
+
+  it("beginnt mit der Byte-Order-Mark", () => {
+    // Ohne sie liest das Zielsystem UTF-8 als Windows-1252.
+    assert.ok(alsBmdDatei(zeilen).startsWith("﻿"));
+  });
+
+  it("verwendet CRLF als Zeilenende", () => {
+    const text = alsBmdDatei(zeilen);
+    assert.ok(text.includes("\r\n"));
+    assert.ok(text.endsWith("\r\n"));
+  });
+
+  it("schreibt die Kopfzeile in der festgelegten Spaltenfolge", () => {
+    const erste = alsBmdDatei(zeilen).replace("﻿", "").split("\r\n")[0];
+    assert.equal(erste, BMD_SPALTEN.join(";"));
+  });
+
+  it("schreibt das Datum als TTMMJJJJ", () => {
+    const text = alsBmdDatei(zeilen, { mitKopfzeile: false });
+    // 31. August 2026.
+    assert.ok(text.includes("31082026"));
+  });
+
+  it("schreibt Beträge mit Komma", () => {
+    const text = alsBmdDatei(
+      [kontiere(vorfall({ nettoEur: 1234.5 }))],
+      { mitKopfzeile: false },
+    );
+
+    assert.ok(text.includes("1481,40"), text.slice(0, 200));
+  });
+
+  it("entfernt Semikolon und Umbrüche aus Textfeldern", () => {
+    // Ein Semikolon im Buchungstext verschiebt alle folgenden
+    // Spalten - der Betrag landete in der Kostenstelle.
+    const text = alsBmdDatei(
+      [
+        kontiere(
+          vorfall({ buchungstext: "Krems; Hof\nzweite Zeile" }),
+        ),
+      ],
+      { mitKopfzeile: false },
+    );
+
+    const spalten = text.replace("﻿", "").trim().split(";");
+    assert.equal(spalten.length, BMD_SPALTEN.length);
+  });
+
+  it("hat für jede Zeile genau so viele Felder wie Spalten", () => {
+    const zeilenText = alsBmdDatei(zeilen, { mitKopfzeile: false })
+      .replace("﻿", "")
+      .trim()
+      .split("\r\n");
+
+    for (const z of zeilenText) {
+      assert.equal(z.split(";").length, BMD_SPALTEN.length);
+    }
+  });
+});
+
+describe("fasseStapelZusammen", () => {
+  it("zieht Gutschriften vom Umsatz ab", () => {
+    const summe = fasseStapelZusammen([
+      kontiere(vorfall({ belegnummer: "A-1", nettoEur: 300 })),
+      kontiere(vorfall({ belegnummer: "A-2", nettoEur: -100 })),
+    ]);
+
+    assert.equal(summe.zeilen, 2);
+    assert.equal(summe.nettoEur, 200);
+    assert.equal(summe.steuerEur, 40);
+    assert.equal(summe.bruttoEur, 240);
+  });
+
+  it("gliedert nach Erlöskonto", () => {
+    const summe = fasseStapelZusammen([
+      kontiere(vorfall({ belegnummer: "A-1", quelle: "laden_b2b", nettoEur: 100 })),
+      kontiere(vorfall({ belegnummer: "A-2", quelle: "arbitrage", nettoEur: 250 })),
+      kontiere(vorfall({ belegnummer: "A-3", quelle: "arbitrage", nettoEur: 50 })),
+    ]);
+
+    assert.equal(summe.jeKonto.length, 2);
+    const arbitrage = summe.jeKonto.find(
+      (k) => k.konto === KONTENRAHMEN.arbitrage.konto,
+    );
+    assert.ok(arbitrage);
+    assert.equal(arbitrage.nettoEur, 300);
+  });
+});
+
+describe("Kontenrahmen", () => {
+  it("vergibt jeder Erlösquelle ein eigenes Konto", () => {
+    const erloese = Object.values(KONTENRAHMEN).filter((k) => !k.aufwand);
+    const konten = erloese.map((k) => k.konto);
+
+    assert.equal(new Set(konten).size, konten.length);
+  });
+
+  it("führt Aufwandskonten getrennt von Erlöskonten", () => {
+    for (const k of Object.values(KONTENRAHMEN)) {
+      if (k.aufwand) {
+        assert.ok(!k.konto.startsWith("4"), `${k.konto} ist ein Erlöskonto`);
+      } else {
+        assert.ok(k.konto.startsWith("4"), `${k.konto} ist kein Erlöskonto`);
+      }
+    }
+  });
+});

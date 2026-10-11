@@ -1,0 +1,28 @@
+import os, re, json, time, subprocess, imageio_ffmpeg
+HERE = os.path.dirname(os.path.abspath(__file__))
+FR = os.path.join(HERE, "frames")
+SM = r"C:\Users\SALEADMIN\Desktop\Presse\4_Social_Media"
+html = open(os.path.join(SM, "Animationen.html"), encoding="utf-8").read()
+items = json.loads(re.search(r"var ITEMS=(\[.*?\]);\n", html, re.S).group(1))
+FF = imageio_ffmpeg.get_ffmpeg_exe()
+todo = {i["id"]: i for i in items}
+deadline = time.time() + 3600
+while todo and time.time() < deadline:
+    for id_, it in list(todo.items()):
+        n = round(it["dur"] * 30)
+        d = os.path.join(FR, id_)
+        if not os.path.isdir(d) or len(os.listdir(d)) < n:
+            continue
+        time.sleep(1)
+        out = os.path.join(SM, "videos", it["fmt"], id_ + ".mp4")
+        os.makedirs(os.path.dirname(out), exist_ok=True)
+        cmd = [FF, "-y", "-loglevel", "error", "-framerate", "30", "-i", os.path.join(d, "f%05d.jpg"),
+               "-f", "lavfi", "-i", "anullsrc=channel_layout=stereo:sample_rate=44100",
+               "-c:v", "libx264", "-preset", "slow", "-crf", "18", "-vf", "scale=in_range=pc:out_range=tv,format=yuv420p", "-color_range", "tv",
+               "-colorspace", "bt709", "-color_primaries", "bt709", "-color_trc", "bt709", "-profile:v", "high",
+               "-c:a", "aac", "-b:a", "64k", "-shortest", "-movflags", "+faststart", out]
+        r = subprocess.run(cmd, capture_output=True, text=True)
+        print(id_, "OK" if r.returncode == 0 else "FEHLER " + r.stderr[-300:], flush=True)
+        del todo[id_]
+    time.sleep(3)
+print("fertig, offen:", list(todo), flush=True)

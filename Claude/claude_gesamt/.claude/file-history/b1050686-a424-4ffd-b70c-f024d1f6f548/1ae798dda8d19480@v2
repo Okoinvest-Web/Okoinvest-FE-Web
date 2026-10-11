@@ -1,0 +1,296 @@
+import type { Metadata } from "next";
+
+import { Ringdiagramm } from "@/components/diagramme/ring";
+import { Tabelle, Zeile, Zelle } from "@/components/tabelle";
+import {
+  Angabe,
+  Balken,
+  Karte,
+  Kennzahl,
+  LeerZustand,
+  Seitenkopf,
+  Status,
+} from "@/components/ui";
+import { imZeitraum, letzteTage, summiere } from "@/lib/auswertung";
+import { ENERGIE_FARBEN } from "@/lib/farben";
+import { formatDatum, formatEnergie, formatGeld, formatProzent, formatZahl } from "@/lib/format";
+import {
+  ladeErtraege,
+  ladeGemeinschaft,
+  ladeGemeinschaftsMitglieder,
+} from "@/lib/portal-daten";
+import { requireRecht } from "@/lib/session";
+
+export const metadata: Metadata = { title: "Energiegemeinschaft" };
+
+/**
+ * Erlaeuterung der drei oesterreichischen Modelle.
+ * Sie stehen hier, weil die Unterscheidung in der Praxis staendig fuer
+ * Rueckfragen sorgt - und weil sie ueber den Netzentgeltrabatt entscheidet.
+ */
+const MODELLE = [
+  {
+    kuerzel: "EEG",
+    name: "Erneuerbare-Energie-Gemeinschaft",
+    text: "Mitglieder müssen im selben Netzbereich liegen und ausschließlich erneuerbaren Strom nutzen. Lokale EEG erhalten den höchsten Rabatt auf das Netznutzungsentgelt.",
+    rabatt: "bis 57 % auf den Arbeitspreis",
+  },
+  {
+    kuerzel: "BEG",
+    name: "Bürgerenergiegemeinschaft",
+    text: "Nicht an geografische Nähe gebunden, Mitglieder können österreichweit verteilt sein. Dafür geringere Netzrabatte, dafür auch Strom aus anderen Quellen zulässig.",
+    rabatt: "kein Netzentgeltrabatt",
+  },
+  {
+    kuerzel: "GEA",
+    name: "Gemeinschaftliche Erzeugungsanlage",
+    text: "Einfachste Form: mehrere Teilnehmer im selben Gebäude oder auf demselben Grundstück teilen eine Anlage. Kein Verein, kein eigener Rechtsträger nötig.",
+    rabatt: "innerhalb des Objekts",
+  },
+];
+
+export default async function GemeinschaftSeite() {
+  await requireRecht("gemeinschaft.lesen");
+
+  const [gemeinschaft, mitglieder, ertraege] = await Promise.all([
+    ladeGemeinschaft(),
+    ladeGemeinschaftsMitglieder(),
+    ladeErtraege(undefined, 40),
+  ]);
+
+  if (!gemeinschaft) {
+    return (
+      <div className="space-y-6">
+        <Seitenkopf titel="Energiegemeinschaft" />
+        <Karte>
+          <LeerZustand
+            text="Sie sind derzeit in keiner Energiegemeinschaft eingetragen."
+            hinweis="Eine Erneuerbare-Energie-Gemeinschaft kann den Arbeitspreis des Netznutzungsentgelts deutlich senken."
+          />
+        </Karte>
+      </div>
+    );
+  }
+
+  const dreissig = letzteTage(30);
+  const summe = summiere(ertraege.filter((e) => imZeitraum(e, dreissig)));
+
+  // Anteil, der über die Gemeinschaft verteilt wird - im Demonstrations-
+  // betrieb aus der Einspeisung abgeleitet.
+  const verteilt = summe.einspeisung * 0.62;
+  const ersparnis = verteilt * 0.0574;
+
+  const verteiltWert = formatEnergie(verteilt);
+  const aktiveMitglieder = mitglieder.filter((m) => m.aktiv === 1);
+
+  return (
+    <div className="space-y-6">
+      <Seitenkopf
+        titel="Energiegemeinschaft"
+        beschreibung={gemeinschaft.bezeichnung}
+        aktion={
+          <Status ton={gemeinschaft.status === "Aktiv" ? "gut" : "hinweis"}>
+            {gemeinschaft.status ?? "–"}
+          </Status>
+        }
+      />
+
+      <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-4 dark:border-emerald-900/60 dark:bg-emerald-950/30">
+        <p className="text-sm leading-relaxed text-emerald-900 dark:text-emerald-200">
+          <strong className="font-medium">Neu ab 1. Oktober 2026:</strong> Mit dem
+          Elektrizitätswirtschaftsgesetz (ElWG) löst ein neuer Rechtsrahmen das
+          ElWOG ab. Bestehende Energiegemeinschaften werden automatisch
+          übergeführt – eine Neugründung ist nicht erforderlich. Wir informieren
+          Sie, sobald sich für Ihre Gemeinschaft konkret etwas ändert.
+        </p>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Kennzahl
+          label="Mitglieder"
+          wert={formatZahl(aktiveMitglieder.length, 0)}
+          hinweis={`von ${gemeinschaft.mitglieder_anzahl ?? aktiveMitglieder.length} eingetragen`}
+        />
+        <Kennzahl
+          label="Erzeugungsleistung"
+          wert={formatZahl(gemeinschaft.erzeugung_kwp, 1)}
+          einheit="kWp"
+          verzoegerung={60}
+        />
+        <Kennzahl
+          label="In der Gemeinschaft verteilt"
+          wert={verteiltWert.wert}
+          einheit={verteiltWert.einheit}
+          hinweis="letzte 30 Tage"
+          farbe={ENERGIE_FARBEN.eigenverbrauch}
+          verzoegerung={120}
+        />
+        <Kennzahl
+          label="Ersparnis Netzentgelt"
+          wert={formatGeld(ersparnis)}
+          hinweis="57 % Rabatt auf den Arbeitspreis"
+          verzoegerung={180}
+        />
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-5">
+        <Karte klasse="lg:col-span-2" titel="Stammdaten">
+          <dl className="space-y-2.5">
+            <Angabe label="Art">
+              {gemeinschaft.art} –{" "}
+              {MODELLE.find((m) => m.kuerzel === gemeinschaft.art)?.name}
+            </Angabe>
+            <Angabe label="Rechtsform">{gemeinschaft.rechtsform ?? "–"}</Angabe>
+            <Angabe label="Reichweite">{gemeinschaft.reichweite ?? "–"}</Angabe>
+            <Angabe label="Netzbetreiber">
+              {gemeinschaft.netzbetreiber ?? "–"}
+            </Angabe>
+            <Angabe label="Gegründet am">
+              {formatDatum(gemeinschaft.gegruendet_am)}
+            </Angabe>
+          </dl>
+
+          <p className="mt-4 rounded-lg bg-slate-50 px-3 py-2.5 text-xs leading-relaxed text-slate-600 dark:bg-slate-800/50 dark:text-slate-300">
+            Eine <strong>lokale</strong> EEG umfasst Teilnehmer, die über
+            dieselbe Trafostation versorgt werden, und erhält den höchsten
+            Rabatt. Bei <strong>regionaler</strong> Reichweite – innerhalb des
+            Umspannwerks – fällt der Rabatt geringer aus.
+          </p>
+        </Karte>
+
+        <Karte
+          klasse="lg:col-span-3"
+          titel="Aufteilung der Erzeugung"
+          beschreibung="Statische Aufteilung nach hinterlegten Anteilen"
+        >
+          <Ringdiagramm
+            einheit="%"
+            nachkommastellen={1}
+            mitteWert={formatZahl(aktiveMitglieder.length, 0)}
+            mitteLabel="Mitglieder"
+            groesse={180}
+            abschnitte={aktiveMitglieder.slice(0, 5).map((mitglied, i) => ({
+              label: mitglied.mitglied.split(" ").slice(0, 2).join(" "),
+              wert: mitglied.anteil_prozent ?? 0,
+              farbe: [
+                ENERGIE_FARBEN.erzeugung,
+                ENERGIE_FARBEN.eigenverbrauch,
+                ENERGIE_FARBEN.einspeisung,
+                ENERGIE_FARBEN.netzbezug,
+                ENERGIE_FARBEN.speicher,
+              ][i],
+            }))}
+          />
+        </Karte>
+      </div>
+
+      <Karte titel="Mitglieder">
+        <Tabelle
+          spalten={["Mitglied", "Rolle", "Beigetreten", "Anteil", "Status"]}
+          rechts={[3]}
+        >
+          {mitglieder.map((mitglied) => (
+            <Zeile key={mitglied.name}>
+              <Zelle>
+                <span className="font-medium">{mitglied.mitglied}</span>
+                {mitglied.zaehlpunkt && (
+                  <span className="block font-mono text-xs text-slate-500 dark:text-slate-400">
+                    {mitglied.zaehlpunkt.slice(0, 2)}…
+                    {mitglied.zaehlpunkt.slice(-8)}
+                  </span>
+                )}
+              </Zelle>
+              <Zelle gedaempft>{mitglied.rolle}</Zelle>
+              <Zelle gedaempft>{formatDatum(mitglied.beigetreten_am)}</Zelle>
+              <Zelle zahl>
+                <span className="inline-flex items-center gap-2">
+                  <span
+                    aria-hidden
+                    className="h-1.5 rounded-full"
+                    style={{
+                      width: `${Math.max(3, (mitglied.anteil_prozent ?? 0) * 1.6)}px`,
+                      background: ENERGIE_FARBEN.eigenverbrauch,
+                    }}
+                  />
+                  {formatProzent(mitglied.anteil_prozent, 1)}
+                </span>
+              </Zelle>
+              <Zelle>
+                <Status ton={mitglied.aktiv === 1 ? "gut" : "neutral"}>
+                  {mitglied.aktiv === 1 ? "Aktiv" : "Ruhend"}
+                </Status>
+              </Zelle>
+            </Zeile>
+          ))}
+        </Tabelle>
+      </Karte>
+
+      <Karte
+        titel="Die drei Modelle im Überblick"
+        beschreibung="Welche Form für welchen Zweck gedacht ist"
+      >
+        <div className="grid gap-4 md:grid-cols-3">
+          {MODELLE.map((modell) => {
+            const eigenes = modell.kuerzel === gemeinschaft.art;
+
+            return (
+              <div
+                key={modell.kuerzel}
+                className={`rounded-lg border p-4 ${
+                  eigenes
+                    ? "border-emerald-300 bg-emerald-50/50 dark:border-emerald-800 dark:bg-emerald-950/30"
+                    : "border-slate-200 dark:border-slate-800"
+                }`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-semibold text-slate-900 dark:text-slate-100">
+                    {modell.kuerzel}
+                  </span>
+                  {eigenes && <Status ton="gut">Ihre Form</Status>}
+                </div>
+                <p className="mt-0.5 text-xs font-medium text-slate-600 dark:text-slate-300">
+                  {modell.name}
+                </p>
+                <p className="mt-2 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+                  {modell.text}
+                </p>
+                <p className="mt-2.5 border-t border-slate-200 pt-2 text-xs font-medium text-slate-700 dark:border-slate-700 dark:text-slate-200">
+                  {modell.rabatt}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+      </Karte>
+
+      <Karte titel="Wirtschaftlicher Effekt" beschreibung="letzte 30 Tage">
+        <div className="space-y-4">
+          <Balken
+            label="Anteil der Einspeisung, der in der Gemeinschaft bleibt"
+            anteil={summe.einspeisung > 0 ? (verteilt / summe.einspeisung) * 100 : 0}
+            wertText={formatProzent(
+              summe.einspeisung > 0 ? (verteilt / summe.einspeisung) * 100 : 0,
+              1,
+            )}
+            farbe={ENERGIE_FARBEN.eigenverbrauch}
+          />
+          <dl className="grid gap-x-8 gap-y-2 sm:grid-cols-2">
+            <Angabe label="Eingespeist gesamt">
+              {formatEnergie(summe.einspeisung).wert}{" "}
+              {formatEnergie(summe.einspeisung).einheit}
+            </Angabe>
+            <Angabe label="In der Gemeinschaft verteilt">
+              {verteiltWert.wert} {verteiltWert.einheit}
+            </Angabe>
+            <Angabe label="Ersparnis Netznutzungsentgelt">
+              {formatGeld(ersparnis)}
+            </Angabe>
+            <Angabe label="Hochgerechnet auf ein Jahr">
+              {formatGeld(ersparnis * 12)}
+            </Angabe>
+          </dl>
+        </div>
+      </Karte>
+    </div>
+  );
+}

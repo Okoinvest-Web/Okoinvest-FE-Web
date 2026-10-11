@@ -1,0 +1,113 @@
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+
+import { jahresgang, sonnenfenster, tagesertragKwh } from "./generator.ts";
+
+/**
+ * Plausibilitaet der erzeugten Beispieldaten.
+ *
+ * Der Grund fuer diese Tests: Eine Vorfuehrung verliert ihre
+ * Glaubwuerdigkeit, wenn die Zahlen fachlich nicht stimmen koennen. Ein
+ * spezifischer Jahresertrag von 1 470 kWh/kWp ist in Niederoesterreich
+ * unmoeglich - das faellt jedem Fachkundigen sofort auf.
+ *
+ * Realistische Werte in Ostoesterreich liegen bei rund 1 000 bis
+ * 1 150 kWh je kWp und Jahr.
+ */
+
+const UNTERGRENZE = 950;
+const OBERGRENZE = 1200;
+
+function spezifischerJahresertrag(jahr: number, anlage = "PRUEF"): number {
+  // Auf 1 kWp gerechnet ergibt die Summe direkt den spezifischen Ertrag.
+  let summe = 0;
+  for (let tag = 0; tag < 365; tag++) {
+    const datum = new Date(jahr, 0, 1 + tag);
+    summe += tagesertragKwh(1, datum, anlage);
+  }
+  return summe;
+}
+
+describe("Spezifischer Jahresertrag", () => {
+  it("liegt im fuer Ostoesterreich plausiblen Bereich", () => {
+    const ertrag = spezifischerJahresertrag(2026);
+
+    assert.ok(
+      ertrag >= UNTERGRENZE && ertrag <= OBERGRENZE,
+      `${ertrag.toFixed(0)} kWh/kWp liegt ausserhalb von ${UNTERGRENZE}–${OBERGRENZE}`,
+    );
+  });
+
+  it("bleibt ueber mehrere Jahre stabil", () => {
+    for (const jahr of [2024, 2025, 2026]) {
+      const ertrag = spezifischerJahresertrag(jahr);
+      assert.ok(
+        ertrag >= UNTERGRENZE && ertrag <= OBERGRENZE,
+        `${jahr}: ${ertrag.toFixed(0)} kWh/kWp ausserhalb des Bereichs`,
+      );
+    }
+  });
+
+  it("faellt je Standort unterschiedlich aus, aber im selben Rahmen", () => {
+    for (const anlage of ["ANL-0001", "ANL-0002", "ANL-0005"]) {
+      const ertrag = spezifischerJahresertrag(2026, anlage);
+      assert.ok(
+        ertrag >= UNTERGRENZE && ertrag <= OBERGRENZE,
+        `${anlage}: ${ertrag.toFixed(0)} kWh/kWp ausserhalb des Bereichs`,
+      );
+    }
+  });
+});
+
+describe("Jahresgang", () => {
+  it("erreicht das Maximum im Juni und das Minimum im Dezember", () => {
+    const juni = jahresgang(new Date(2026, 5, 21));
+    const dezember = jahresgang(new Date(2026, 11, 21));
+    const maerz = jahresgang(new Date(2026, 2, 21));
+
+    assert.ok(juni > maerz, "Juni sollte ueber Maerz liegen");
+    assert.ok(maerz > dezember, "Maerz sollte ueber Dezember liegen");
+    assert.ok(juni > 0.9, "Juni sollte nahe am Maximum liegen");
+    assert.ok(dezember < 0.35, "Dezember sollte deutlich niedriger liegen");
+  });
+
+  it("liefert einen Tagesertrag auch im Winter", () => {
+    const dezember = tagesertragKwh(1000, new Date(2026, 11, 21), "PRUEF");
+    assert.ok(dezember > 0, "Auch im Dezember faellt Ertrag an");
+  });
+
+  it("liefert im Sommer ein Vielfaches des Winterwerts", () => {
+    const juni = tagesertragKwh(1000, new Date(2026, 5, 21), "PRUEF");
+    const dezember = tagesertragKwh(1000, new Date(2026, 11, 21), "PRUEF");
+    assert.ok(
+      juni > dezember * 3,
+      `Juni (${juni}) sollte deutlich ueber Dezember (${dezember}) liegen`,
+    );
+  });
+});
+
+describe("Sonnenfenster", () => {
+  it("ist im Juni laenger als im Dezember", () => {
+    const juni = sonnenfenster(new Date(2026, 5, 21));
+    const dezember = sonnenfenster(new Date(2026, 11, 21));
+
+    const laengeJuni = juni.unter - juni.auf;
+    const laengeDezember = dezember.unter - dezember.auf;
+
+    assert.ok(laengeJuni > 15, `Juni: ${laengeJuni.toFixed(1)} h zu kurz`);
+    assert.ok(laengeJuni < 17, `Juni: ${laengeJuni.toFixed(1)} h zu lang`);
+    assert.ok(
+      laengeDezember > 8 && laengeDezember < 10,
+      `Dezember: ${laengeDezember.toFixed(1)} h unplausibel`,
+    );
+  });
+
+  it("liegt symmetrisch um den Sonnenhoechststand", () => {
+    const tag = sonnenfenster(new Date(2026, 5, 21));
+    const mitte = (tag.auf + tag.unter) / 2;
+    assert.ok(
+      Math.abs(mitte - 13.1) < 0.01,
+      `Mitte bei ${mitte.toFixed(2)} statt 13,1 Uhr`,
+    );
+  });
+});

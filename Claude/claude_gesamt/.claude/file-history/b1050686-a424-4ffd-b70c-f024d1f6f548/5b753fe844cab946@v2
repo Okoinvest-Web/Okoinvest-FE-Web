@@ -1,0 +1,121 @@
+import { ladeAbrechnung, ladeLadebelege } from "@/lib/daten/laden";
+import { dokument, zahl, zeile } from "@/lib/laden/csv";
+import { requireRecht } from "@/lib/session";
+
+/**
+ * Ladeabrechnung als CSV.
+ *
+ * Bewusst eine Zeile je Beleg, nicht je Ladevorgang: Gebucht wird der
+ * Beleg. Wer die einzelnen Vorgänge braucht, findet sie in der
+ * Detailansicht - in der Buchhaltung will sie niemand sehen.
+ *
+ * Die Prüfung der Berechtigung steht vor jeder Datenabfrage. Ein
+ * Endpunkt, der Belege ausgibt, ist genauso schützenswert wie die
+ * Seite, die sie anzeigt - nur fällt ein fehlender Schutz hier nicht
+ * auf, weil niemand versehentlich darauf stößt.
+ */
+export async function GET(
+  _request: Request,
+  { params }: { params: Promise<{ lauf: string }> },
+) {
+  await requireRecht("mobilitaet.lesen");
+
+  const { lauf: laufId } = await params;
+  const lauf = ladeAbrechnung(decodeURIComponent(laufId));
+
+  if (!lauf) {
+    return new Response("Abrechnung nicht gefunden.", { status: 404 });
+  }
+
+  const belege = ladeLadebelege(lauf.id);
+
+  const zeilen = [
+    zeile([
+      "Belegnummer",
+      "Art",
+      "Kostenstelle",
+      "Karte",
+      "Inhaber",
+      "Fahrzeug",
+      "Tarif",
+      "Vorgaenge",
+      "Energie kWh",
+      "davon PV kWh",
+      "Arbeitspreis EUR",
+      "Zeitpreis EUR",
+      "Standgebuehr EUR",
+      "Grundpreis EUR",
+      "Netto EUR",
+      "USt Satz",
+      "USt EUR",
+      "Brutto EUR",
+      "Sachbezug EUR",
+      "Status",
+    ]),
+    ...belege.map((b) =>
+      zeile([
+        b.nummer,
+        b.art,
+        b.kostenstelle,
+        b.karte,
+        b.inhaber,
+        b.fahrzeug,
+        b.tarif,
+        b.anzahl_vorgaenge,
+        zahl(b.energie_kwh, 3),
+        zahl(b.pv_kwh, 3),
+        zahl(b.arbeit_eur),
+        zahl(b.zeit_eur),
+        zahl(b.blocking_eur),
+        zahl(b.grundpreis_eur),
+        zahl(b.netto),
+        zahl(b.ust_satz, 0),
+        zahl(b.ust_betrag),
+        zahl(b.brutto),
+        zahl(b.sachbezug_eur),
+        b.status,
+      ]),
+    ),
+    // Summenzeile: Die Buchhaltung prüft zuerst, ob die Datei mit dem
+    // Betrag zusammenpasst, den die Oberfläche nennt.
+    zeile([
+      "Summe",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      belege.reduce((s, b) => s + b.anzahl_vorgaenge, 0),
+      zahl(
+        belege.reduce((s, b) => s + b.energie_kwh, 0),
+        3,
+      ),
+      zahl(
+        belege.reduce((s, b) => s + b.pv_kwh, 0),
+        3,
+      ),
+      zahl(belege.reduce((s, b) => s + b.arbeit_eur, 0)),
+      zahl(belege.reduce((s, b) => s + b.zeit_eur, 0)),
+      zahl(belege.reduce((s, b) => s + b.blocking_eur, 0)),
+      zahl(belege.reduce((s, b) => s + b.grundpreis_eur, 0)),
+      zahl(lauf.netto),
+      "",
+      zahl(lauf.ust_betrag),
+      zahl(lauf.brutto),
+      zahl(belege.reduce((s, b) => s + b.sachbezug_eur, 0)),
+      lauf.status,
+    ]),
+  ];
+
+  return new Response(dokument(zeilen), {
+    headers: {
+      "Content-Type": "text/csv; charset=utf-8",
+      "Content-Disposition": `attachment; filename="${lauf.id}.csv"`,
+      // Eine Abrechnung ändert sich nach dem Festschreiben nicht mehr,
+      // ein Entwurf bei jedem Neurechnen. Zwischenspeicher sind hier
+      // mehr Risiko als Nutzen.
+      "Cache-Control": "no-store",
+    },
+  });
+}

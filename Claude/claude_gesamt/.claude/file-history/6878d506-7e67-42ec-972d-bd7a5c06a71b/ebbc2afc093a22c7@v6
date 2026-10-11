@@ -1,0 +1,136 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+import { BarChart3, Building2, CheckSquare, ClipboardList, Coins, FileText, Package, Receipt, Store, Wallet, Contact, Handshake, Home, LogOut, Search, Users } from "lucide-react";
+import { logoutAction } from "@/lib/actions";
+import type { SessionUser } from "@/lib/types";
+import { Avatar, LogoMark } from "@/components/ui";
+
+type Counts = { leads: number; opps: number; todos: number; pool: number };
+
+const NAV = [
+  {
+    group: "Vertrieb",
+    items: [
+      { href: "/", label: "Übersicht", icon: Home },
+      { href: "/leads", label: "Leads", icon: Users, count: "leads" as const },
+      { href: "/pool", label: "Lead-Börse", icon: Store, count: "pool" as const },
+      { href: "/opportunities", label: "Chancen", icon: Handshake, count: "opps" as const },
+      { href: "/todos", label: "Aufgaben", icon: CheckSquare, count: "todos" as const },
+      { href: "/reports", label: "Auswertung", icon: BarChart3 },
+    ],
+  },
+  {
+    group: "Verkauf",
+    items: [
+      { href: "/quotations", label: "Angebote", icon: FileText },
+      { href: "/orders", label: "Aufträge", icon: ClipboardList },
+      { href: "/invoices", label: "Rechnungen", icon: Receipt },
+      { href: "/commissions", label: "Provisionen", icon: Wallet },
+      { href: "/lead-costs", label: "Lead-Kosten", icon: Coins },
+    ],
+  },
+  {
+    group: "Stammdaten",
+    items: [
+      { href: "/customers", label: "Kunden", icon: Building2 },
+      { href: "/contacts", label: "Kontakte", icon: Contact },
+      { href: "/products", label: "Produkte", icon: Package },
+    ],
+  },
+];
+
+export function Sidebar({ source, user, counts }: { source: "mock" | "erpnext"; user: SessionUser; counts: Counts }) {
+  const pathname = usePathname();
+  // Auf kleinen Bildschirmen als ausklappbare Schublade
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    const show = () => setOpen(true);
+    const hide = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    window.addEventListener("open-nav", show);
+    window.addEventListener("keydown", hide);
+    return () => {
+      window.removeEventListener("open-nav", show);
+      window.removeEventListener("keydown", hide);
+    };
+  }, []);
+
+  return (
+    <>
+    {open && <div className="fade-in fixed inset-0 z-30 bg-gray-950/20 lg:hidden" onClick={() => setOpen(false)} />}
+    <aside
+      className={`fixed inset-y-0 left-0 z-40 flex w-[232px] shrink-0 flex-col border-r border-gray-150 bg-gray-50 transition-transform duration-200 lg:static lg:translate-x-0 ${
+        open ? "translate-x-0 shadow-pop" : "-translate-x-full"
+      }`}
+    >
+      <div className="flex h-[52px] items-center gap-2.5 px-4">
+        <LogoMark className="size-6" />
+        <div className="min-w-0 leading-none">
+          <div className="text-[13px] font-semibold text-gray-900">Ökovolt</div>
+          <div className="mt-0.5 text-[11px] text-gray-500">Vertrieb</div>
+        </div>
+      </div>
+
+      <div className="px-2.5 pb-2">
+        <button
+          onClick={() => window.dispatchEvent(new Event("open-search"))}
+          className="flex h-8 w-full items-center gap-2 rounded-md border border-gray-200 bg-white px-2.5 text-gray-500 shadow-xs transition hover:border-gray-300 hover:text-gray-800"
+        >
+          <Search className="size-3.5" />
+          <span>Suchen …</span>
+          <kbd className="ml-auto font-sans text-[11px] text-gray-400">Strg K</kbd>
+        </button>
+      </div>
+
+      <nav className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-2.5 py-2">
+        {NAV.map((g) => (
+          <div key={g.group}>
+            <div className="px-2 pb-1 text-[11px] font-medium text-gray-400">{g.group}</div>
+            <div className="flex flex-col gap-px">
+              {g.items.map((it) => {
+                const Icon = it.icon;
+                const active = it.href === "/" ? pathname === "/" : pathname.startsWith(it.href);
+                const n = "count" in it && it.count ? counts[it.count] : undefined;
+                return (
+                  <Link
+                    key={it.href}
+                    href={it.href}
+                    onClick={() => setOpen(false)}
+                    className={`flex h-8 items-center gap-2.5 rounded-md px-2 transition-colors ${
+                      active ? "bg-white font-medium text-gray-900 shadow-xs ring-1 ring-gray-200" : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                    }`}
+                  >
+                    <Icon className={`size-4 ${active ? "text-brand-700" : "text-gray-400"}`} strokeWidth={1.75} />
+                    {it.label}
+                    {n ? <span className="tnum ml-auto text-[12px] font-normal text-gray-400">{n}</span> : null}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </nav>
+
+      <div className="mt-auto border-t border-gray-150 p-2.5">
+        <div className="flex items-center gap-2.5 rounded-md px-1.5 py-1.5">
+          <Avatar name={user.fullName} size="md" />
+          <div className="min-w-0 flex-1 leading-tight">
+            <div className="truncate font-medium text-gray-900">{user.fullName}</div>
+            <div className="flex items-center gap-1.5 truncate text-[11px] text-gray-500">
+              <span className={`size-1.5 rounded-full ${source === "mock" ? "bg-amber-500" : "bg-brand-500"}`} />
+              {user.role === "manager" ? "Vertriebsleitung" : "Handelsvertreter"} · {source === "mock" ? "Demo" : "ERPNext"}
+            </div>
+          </div>
+          <form action={logoutAction}>
+            <button title="Abmelden" aria-label="Abmelden" className="rounded-md p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-900">
+              <LogOut className="size-4" />
+            </button>
+          </form>
+        </div>
+      </div>
+    </aside>
+    </>
+  );
+}

@@ -1,0 +1,434 @@
+import Link from "next/link";
+import type { Metadata } from "next";
+
+import { Tabelle, Zeile, Zelle, ZelleMitZusatz } from "@/components/tabelle";
+import {
+  Hinweis,
+  Kennzahl,
+  Kennzahlenleiste,
+  LeerZustand,
+  Seitenkopf,
+  Status,
+  Tafel,
+} from "@/components/ui";
+import {
+  ladeAlarme,
+  ladeAlarmregeln,
+  ladeAnlagen,
+} from "@/lib/daten/monitoring";
+import { formatGeld, formatRelativ, formatZahl } from "@/lib/format";
+import { bewerteRauschen, type Regelart } from "@/lib/melden/regelwerk";
+import { hatRecht } from "@/lib/sicherheit/rollen";
+import { requireRecht } from "@/lib/session";
+
+import { Regelformular } from "./regel-formular";
+
+export const metadata: Metadata = { title: "Meldungen" };
+
+/**
+ * Was die Meldung betrifft.
+ *
+ * Bei einer Strangmeldung ist beides nötig: Das Gerät sagt, wo im
+ * Schaltschrank zu suchen ist, der Strang, welcher Abgang. Nur eines
+ * von beiden schickt den Techniker auf die halbe Strecke.
+ */
+function betroffenText(
+  wechselrichter: string | null,
+  strang: string | null,
+): string {
+  if (wechselrichter && strang) return `${wechselrichter} · ${strang}`;
+  return wechselrichter ?? strang ?? "gesamte Anlage";
+}
+
+/**
+ * Über welchen Zeitraum die Auslösungen gezählt wurden.
+ *
+ * Der Bestand reicht zwei Jahre zurück; die Meldungen werden nicht
+ * gelöscht. Für die Beurteilung, ob eine Regel zu oft meldet, wird
+ * deshalb gegen diesen Zeitraum gerechnet und nicht gegen "seit
+ * jeher" - sonst sähe jede alte Regel laut aus.
+ */
+const BEOBACHTUNGSTAGE = 730;
+
+/**
+ * Ein Wort zur Häufigkeit - oder keines.
+ *
+ * Nur die beiden auffälligen Fälle werden benannt. Bei jeder
+ * brauchbaren Regel "brauchbar" zu schreiben, füllte die Spalte mit
+ * Rauschen über das Rauschen.
+ */
+function rauschwort(urteil: "stumm" | "brauchbar" | "laut"): string {
+  if (urteil === "laut") return "meldet oft";
+  if (urteil === "stumm") return "nie ausgelöst";
+  return "";
+}
+
+function schweregradTon(grad: string) {
+  switch (grad) {
+    case "Kritisch":
+      return "kritisch" as const;
+    case "Hoch":
+      return "ernst" as const;
+    case "Mittel":
+      return "hinweis" as const;
+    case "Niedrig":
+      return "neutral" as const;
+    default:
+      return "akzent" as const;
+  }
+}
+
+function statusTon(status: string) {
+  switch (status) {
+    case "Behoben":
+      return "gut" as const;
+    case "Quittiert":
+      return "akzent" as const;
+    case "Ignoriert":
+      return "neutral" as const;
+    default:
+      return "ernst" as const;
+  }
+}
+
+export default async function AlarmSeite({
+  searchParams,
+}: {
+  searchParams: Promise<{ anlage?: string; alle?: string }>;
+}) {
+  const benutzer = await requireRecht("monitoring.lesen");
+  const darfStellen = hatRecht([benutzer.rolle], "anlagen.bearbeiten");
+
+  const { anlage: anlagenFilter, alle: alleZeigen } = await searchParams;
+
+  const anlagen = ladeAnlagen();
+  const alarme = ladeAlarme({
+    anlageId: anlagenFilter,
+    nurOffene: alleZeigen !== "1",
+    grenze: 200,
+  });
+  const regeln = ladeAlarmregeln();
+
+  const offene = alarme.filter((a) => a.status === "Offen");
+  const ausfallKwh = alarme.reduce((s, a) => s + a.ausfall_kwh, 0);
+  const ausfallEur = alarme.reduce((s, a) => s + a.ausfall_eur, 0);
+
+  const kritische = offene.filter(
+    (a) => a.schweregrad === "Kritisch" || a.schweregrad === "Hoch",
+  );
+
+  return (
+    <div className="space-y-5">
+      <Seitenkopf
+        titel="Meldungen"
+        hinweis="Automatische Überwachung aller Anlagen"
+        aktion={
+          <>
+            <Link href="/portal/alarme/meldewege" className="knopf knopf-rand">
+              Alarmierung
+            </Link>
+            <div
+              className="flex overflow-hidden rounded-sm border"
+              style={{ borderColor: "var(--linie)" }}
+            >
+              <FilterLink
+                href={`/portal/alarme${anlagenFilter ? `?anlage=${anlagenFilter}` : ""}`}
+                aktiv={alleZeigen !== "1"}
+              >
+                Aktiv
+              </FilterLink>
+              <FilterLink
+                href={`/portal/alarme?alle=1${anlagenFilter ? `&anlage=${anlagenFilter}` : ""}`}
+                aktiv={alleZeigen === "1"}
+              >
+                Alle
+              </FilterLink>
+            </div>
+          </>
+        }
+      />
+
+      {kritische.length > 0 && (
+        <Hinweis ton="kritisch" titel={`${kritische.length} dringende Meldung${kritische.length > 1 ? "en" : ""}`}>
+          {kritische[0].titel} – {kritische[0].anlage}.
+          {kritische.length > 1 && ` Und ${kritische.length - 1} weitere.`}
+        </Hinweis>
+      )}
+
+      <Kennzahlenleiste>
+        <Kennzahl
+          label="Offen"
+          wert={formatZahl(offene.length, 0)}
+          hinweis={`${kritische.length} dringend`}
+          ton={offene.length > 0 ? "ernst" : undefined}
+        />
+        <Kennzahl
+          label="Ertragsausfall"
+          wert={formatZahl(ausfallKwh, 0)}
+          einheit="kWh"
+          hinweis="im angezeigten Zeitraum"
+        />
+        <Kennzahl
+          label="Wirtschaftlicher Schaden"
+          wert={formatGeld(ausfallEur)}
+          hinweis="bewertet nach Vergütung"
+        />
+        <Kennzahl
+          label="Aktive Regeln"
+          wert={formatZahl(regeln.filter((r) => r.aktiv === 1).length, 0)}
+          hinweis={`von ${regeln.length} hinterlegt`}
+        />
+      </Kennzahlenleiste>
+
+      {/* Filter nach Anlage */}
+      <div className="flex flex-wrap gap-1.5">
+        <FilterChip
+          href={`/portal/alarme${alleZeigen === "1" ? "?alle=1" : ""}`}
+          aktiv={!anlagenFilter}
+        >
+          Alle Anlagen
+        </FilterChip>
+        {anlagen.map((a) => (
+          <FilterChip
+            key={a.id}
+            href={`/portal/alarme?anlage=${a.id}${alleZeigen === "1" ? "&alle=1" : ""}`}
+            aktiv={anlagenFilter === a.id}
+          >
+            {a.bezeichnung}
+          </FilterChip>
+        ))}
+      </div>
+
+      <Tafel dicht>
+        {alarme.length === 0 ? (
+          <div className="p-4">
+            <LeerZustand
+              text={
+                alleZeigen === "1"
+                  ? "Es liegen keine Meldungen vor."
+                  : "Keine offenen oder quittierten Meldungen."
+              }
+              hinweis="Die Überwachung prüft laufend auf Nullertrag, Minderertrag, Strangabweichungen, Wechselrichterstörungen und Kommunikationsausfälle."
+            />
+          </div>
+        ) : (
+          <Tabelle
+            spalten={[
+              { titel: "Meldung" },
+              { titel: "Anlage", schmalAusblenden: true },
+              { titel: "Betroffen", schmalAusblenden: true },
+              { titel: "Ausfall", zahl: true },
+              { titel: "Seit" },
+              { titel: "Schwere" },
+              { titel: "Status" },
+            ]}
+            mindestbreite="52rem"
+          >
+            {alarme.map((alarm) => (
+              <Zeile
+                key={alarm.id}
+                gedaempft={alarm.status === "Behoben" || alarm.status === "Ignoriert"}
+                hervorgehoben={
+                  alarm.status === "Offen" &&
+                  (alarm.schweregrad === "Kritisch" || alarm.schweregrad === "Hoch")
+                }
+              >
+                <ZelleMitZusatz
+                  haupt={
+                    <Link
+                      href={`/portal/alarme/${alarm.id}`}
+                      className="hover:underline"
+                    >
+                      {alarm.titel}
+                    </Link>
+                  }
+                  zusatz={alarm.regel ?? alarm.art}
+                />
+                <Zelle leise schmalAusblenden>
+                  {alarm.anlage}
+                </Zelle>
+                <Zelle leise schmalAusblenden>
+                  {betroffenText(alarm.wechselrichter, alarm.strang)}
+                </Zelle>
+                <Zelle zahl>
+                  {alarm.ausfall_kwh > 0 ? (
+                    <>
+                      {formatZahl(alarm.ausfall_kwh, 0)}
+                      <span className="t-mikro"> kWh</span>
+                      {alarm.ausfall_eur > 0 && (
+                        <span className="t-mikro block">
+                          {formatGeld(alarm.ausfall_eur)}
+                        </span>
+                      )}
+                    </>
+                  ) : (
+                    <span style={{ color: "var(--t-zart)" }}>–</span>
+                  )}
+                </Zelle>
+                <Zelle leise>{formatRelativ(alarm.ausgeloest_am)}</Zelle>
+                <Zelle>
+                  <Status ton={schweregradTon(alarm.schweregrad)}>
+                    {alarm.schweregrad}
+                  </Status>
+                </Zelle>
+                <Zelle>
+                  <Status ton={statusTon(alarm.status)}>{alarm.status}</Status>
+                </Zelle>
+              </Zeile>
+            ))}
+          </Tabelle>
+        )}
+      </Tafel>
+
+      {/* ---------------- Regelwerk ---------------- */}
+      <Tafel
+        titel="Regelwerk"
+        hinweis="Welche Bedingungen eine Meldung auslösen"
+        dicht
+        fusszeile={
+          <p className="t-mikro leading-relaxed">
+            Jede Ertragsregel ist an den Sonnenstand gebunden und braucht eine
+            Mindesteinstrahlung sowie eine Mindestdauer. Ohne diese Bedingungen
+            meldete jede Anlage jede Nacht einen Nullertrag und jede
+            vorbeiziehende Wolke einen Minderertrag – nach einer Woche läse
+            niemand mehr die Meldungen.
+          </p>
+        }
+      >
+        <Tabelle
+          spalten={[
+            { titel: "Regel" },
+            { titel: "Schwelle", zahl: true, schmalAusblenden: true },
+            { titel: "Mindestdauer", zahl: true },
+            { titel: "Bedingungen" },
+            { titel: "Ausgelöst", zahl: true, schmalAusblenden: true },
+            { titel: "Schwere" },
+            { titel: "" },
+          ]}
+          mindestbreite="68rem"
+        >
+          {regeln.map((regel) => (
+            <Zeile key={regel.id} gedaempft={regel.aktiv !== 1}>
+              <ZelleMitZusatz
+                haupt={regel.bezeichnung}
+                zusatz={regel.beschreibung ?? undefined}
+              />
+              <Zelle zahl leise schmalAusblenden>
+                {regel.schwellwert
+                  ? regel.art === "Temperatur"
+                    ? `${regel.schwellwert} °C`
+                    : `${regel.schwellwert} %`
+                  : "–"}
+              </Zelle>
+              <Zelle zahl leise>
+                {regel.dauer_minuten >= 60
+                  ? `${(regel.dauer_minuten / 60).toLocaleString("de-AT", { maximumFractionDigits: 1 })} h`
+                  : `${regel.dauer_minuten} min`}
+              </Zelle>
+              <Zelle>
+                <span className="flex flex-wrap gap-1">
+                  {regel.nur_tagsueber === 1 ? (
+                    <Status ton="neutral" punkt={false}>
+                      nur tagsüber
+                    </Status>
+                  ) : (
+                    <Status ton="akzent" punkt={false}>
+                      rund um die Uhr
+                    </Status>
+                  )}
+                  {(regel.min_einstrahlung ?? 0) > 0 && (
+                    <Status ton="neutral" punkt={false}>
+                      ab {regel.min_einstrahlung} W/m²
+                    </Status>
+                  )}
+                </span>
+              </Zelle>
+              <Zelle zahl leise schmalAusblenden>
+                <span className="block">{regel.ausloesungen}</span>
+                <span className="t-mikro block leading-relaxed">
+                  {rauschwort(
+                    bewerteRauschen(
+                      regel.ausloesungen,
+                      BEOBACHTUNGSTAGE,
+                      anlagen.length,
+                    ).urteil,
+                  )}
+                </span>
+              </Zelle>
+              <Zelle>
+                <Status ton={schweregradTon(regel.schweregrad)}>
+                  {regel.schweregrad}
+                </Status>
+              </Zelle>
+              <Zelle>
+                {darfStellen && (
+                  <Regelformular
+                    regel={regel.id}
+                    art={regel.art as Regelart}
+                    bezeichnung={regel.bezeichnung}
+                    schwellwert={regel.schwellwert}
+                    dauerMinuten={regel.dauer_minuten}
+                    schweregrad={regel.schweregrad}
+                    minEinstrahlung={regel.min_einstrahlung}
+                    nurTagsueber={regel.nur_tagsueber === 1}
+                    aktiv={regel.aktiv === 1}
+                  />
+                )}
+              </Zelle>
+            </Zeile>
+          ))}
+        </Tabelle>
+      </Tafel>
+    </div>
+  );
+}
+
+function FilterLink({
+  href,
+  aktiv,
+  children,
+}: {
+  href: string;
+  aktiv: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      className="px-3 py-1.5 text-[0.75rem] transition-colors"
+      style={{
+        background: aktiv ? "var(--f-belegt)" : "var(--f-ebene)",
+        color: aktiv ? "var(--t-stark)" : "var(--t-leise)",
+        fontWeight: aktiv ? 500 : 400,
+      }}
+    >
+      {children}
+    </Link>
+  );
+}
+
+function FilterChip({
+  href,
+  aktiv,
+  children,
+}: {
+  href: string;
+  aktiv: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      className="rounded-sm border px-2.5 py-1 text-[0.75rem] transition-colors"
+      style={{
+        borderColor: aktiv ? "var(--akzent)" : "var(--linie)",
+        background: aktiv
+          ? "color-mix(in oklch, var(--akzent), transparent 90%)"
+          : "var(--f-ebene)",
+        color: aktiv ? "var(--akzent-text)" : "var(--t-leise)",
+      }}
+    >
+      {children}
+    </Link>
+  );
+}

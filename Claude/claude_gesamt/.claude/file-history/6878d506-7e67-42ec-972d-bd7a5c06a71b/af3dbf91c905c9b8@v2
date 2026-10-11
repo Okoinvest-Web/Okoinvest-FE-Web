@@ -1,0 +1,120 @@
+// Funktionstest über Chrome DevTools Protocol: klickt echte Abläufe durch und prüft das Ergebnis
+import { spawn } from "node:child_process";
+import { readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+
+const dir = new URL(".", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1");
+const token = readFileSync(join(dir, "token.txt"), "utf8").trim();
+const BASE = "http://localhost:3000";
+const chrome = spawn("C:/Program Files/Google/Chrome/Application/chrome.exe", [
+  "--headless=new", "--remote-debugging-port=9334", `--user-data-dir=${join(dir, "chrome-prof2")}`, "--window-size=1440,900", "about:blank",
+]);
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+let ws;
+for (let i = 0; i < 40 && !ws; i++) {
+  try {
+    const p = (await (await fetch("http://127.0.0.1:9334/json")).json()).find((x) => x.type === "page");
+    if (p) ws = new WebSocket(p.webSocketDebuggerUrl);
+  } catch {}
+  await sleep(250);
+}
+await new Promise((r) => ws.addEventListener("open", r));
+let id = 0;
+const pending = new Map();
+const errors = [];
+ws.addEventListener("message", (e) => {
+  const m = JSON.parse(e.data);
+  if (m.id && pending.has(m.id)) { pending.get(m.id)(m); pending.delete(m.id); }
+  if (m.method === "Runtime.exceptionThrown") errors.push(m.params.exceptionDetails?.exception?.description?.split("\n")[0]);
+});
+const send = (method, params = {}) => new Promise((r) => { const i = ++id; pending.set(i, r); ws.send(JSON.stringify({ id: i, method, params })); });
+const js = async (expr) => (await send("Runtime.evaluate", { expression: expr, awaitPromise: true, returnByValue: true })).result?.result?.value;
+const go = async (path) => { await send("Page.navigate", { url: BASE + path }); await sleep(3500); };
+const text = () => js("document.body.innerText");
+// Klick auf Button/Link mit sichtbarem Text
+const click = (label) => js(`(() => { const el = [...document.querySelectorAll('button,a,label')].find(e => e.innerText.trim() === ${JSON.stringify(label)} || e.getAttribute('title') === ${JSON.stringify(label)}); if (!el) return false; el.click(); return true; })()`);
+const results = [];
+const check = (name, ok, info = "") => { results.push({ name, ok, info }); console.log(`${ok ? "OK  " : "FAIL"} ${name}${info ? " – " + info : ""}`); };
+
+await send("Network.enable");
+await send("Runtime.enable");
+await send("Page.enable");
+await send("Network.setCookie", { name: "crm_session", value: token, domain: "localhost", path: "/" });
+
+// 1) Phase per Klick – Wahrscheinlichkeit zieht mit (Akquise 10 % -> Qualifizierung 25 %)
+await go("/opportunities/CRM-OPP-2026-00005");
+check("Phasenleiste klickbar", await click("Phase auf „Qualifizierung“ setzen"));
+await sleep(2500);
+await go("/opportunities/CRM-OPP-2026-00005");
+let t = await text();
+check("Phase + Wahrscheinlichkeit gespeichert", /Phase\s*Qualifizierung/.test(t) && /25 %/.test(t), (t.match(/Wahrscheinl\.\s*\n?\s*(\d+ %)/) || [])[1]);
+
+// 2) Verloren mit Grund
+check("Verloren-Dialog öffnen", await click("Verloren"));
+await sleep(400);
+check("Grund wählen", await click("Preis zu hoch"));
+await sleep(200);
+check("Als verloren markieren", await click("Als verloren markieren"));
+await sleep(2500);
+await go("/opportunities/CRM-OPP-2026-00005");
+t = await text();
+check("Status verloren + Grund sichtbar", t.includes("Grund: Preis zu hoch"));
+
+// 3) Wieder öffnen
+check("Wieder öffnen", await click("Wieder öffnen"));
+await sleep(2500);
+await go("/opportunities/CRM-OPP-2026-00005");
+t = await text();
+check("Chance wieder offen", !t.includes("Grund: Preis zu hoch") && t.includes("Gewonnen"));
+
+// 4) Inline-Bearbeitung Lead: Region ändern
+await go("/leads/CRM-LEAD-2026-00003");
+const opened = await js(`(() => { const dt = [...document.querySelectorAll('dt')].find(d => d.innerText === 'Region'); const b = dt?.nextElementSibling?.querySelector('button'); b?.click(); return !!b; })()`);
+check("Inline-Feld öffnen", opened);
+await sleep(300);
+await js(`(() => { const i = document.activeElement; const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set; set.call(i, 'Landsberg am Lech'); i.dispatchEvent(new Event('input', {bubbles:true})); i.dispatchEvent(new KeyboardEvent('keydown', {key:'Enter', bubbles:true})); })()`);
+await sleep(2500);
+await go("/leads/CRM-LEAD-2026-00003");
+t = await text();
+check("Inline gespeichert", t.includes("Landsberg am Lech"));
+
+// 5) Neue Chance mit deutschem Betrag "71.500"
+await go("/opportunities/new?from=Customer&party=Thomas%20Brandl");
+await js(`(() => {
+  const set = (sel, v) => { const el = document.querySelector(sel); const proto = el.tagName === 'SELECT' ? HTMLSelectElement.prototype : HTMLInputElement.prototype; Object.getOwnPropertyDescriptor(proto, 'value').set.call(el, v); el.dispatchEvent(new Event('input', {bubbles:true})); el.dispatchEvent(new Event('change', {bubbles:true})); };
+  set('input[name=title]', 'Funktionstest PV 10 kWp');
+  set('input[name=opportunity_amount]', '71.500');
+  set('select[name=sales_stage]', 'Needs Analysis');
+})()`);
+await sleep(300);
+const prob = await js("document.querySelector('input[name=probability]').value");
+check("Wahrscheinlichkeit folgt Phase", prob === "40", `Wert ${prob}`);
+await js("document.querySelector('form button[class*=bg-brand]').click()");
+await sleep(4000);
+t = await text();
+const url = await js("location.pathname");
+check("Chance angelegt + weitergeleitet", url.startsWith("/opportunities/CRM-OPP"), url);
+check("Betrag 71.500 € korrekt", /71\.500\s€/.test(t));
+
+// 6) Aufgabe anlegen (Toast) und Gruppierung
+await go("/todos");
+await js(`(() => { const i = document.querySelector('input[name=description]'); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(i,'Funktionstest Aufgabe'); i.dispatchEvent(new Event('input',{bubbles:true})); i.form.requestSubmit(); })()`);
+await sleep(2500);
+t = await text();
+check("Toast nach Aufgabe", t.includes("Aufgabe angelegt"));
+check("Gruppen sichtbar", t.includes("Überfällig") && t.includes("Heute"));
+await go("/todos?mine=1");
+t = await text();
+check("Filter Nur meine", !t.includes("Erstberatung Elena Novak"), "Lisas Aufgabe ausgeblendet");
+
+// 7) Tastaturkürzel G L
+await go("/");
+await js(`['g','l'].forEach(k => window.dispatchEvent(new KeyboardEvent('keydown', {key:k, bubbles:true})))`);
+await sleep(2500);
+check("Kürzel G L", (await js("location.pathname")) === "/leads");
+
+console.log("JS-Fehler im Browser:", errors.length ? errors : "keine");
+writeFileSync(join(dir, "functest.json"), JSON.stringify(results, null, 2));
+ws.close();
+chrome.kill();
+process.exit(results.every((r) => r.ok) ? 0 : 1);

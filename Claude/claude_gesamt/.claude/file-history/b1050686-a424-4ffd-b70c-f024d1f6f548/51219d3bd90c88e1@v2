@@ -1,0 +1,77 @@
+/**
+ * Verteilung des Jahresertrags über das Jahr.
+ *
+ * Ein Sollertrag wird immer als Jahreswert vereinbart - im Angebot, im
+ * Pachtvertrag, in der Ertragsprognose. Für jede kürzere Auswertung
+ * muss er auf den Zeitraum heruntergerechnet werden, und zwar nicht
+ * linear: In Ostösterreich liefert eine Anlage im Juli rund das
+ * Sechsfache eines Dezembers. Wer das Jahresziel gleichmäßig auf die
+ * Tage verteilt, bescheinigt jeder Anlage im Sommer 150 Prozent
+ * Zielerreichung und im Winter 40 - beides sagt nichts über die Anlage.
+ *
+ * Die Anteile unten sind ein typisches Profil für Ostösterreich bei
+ * südlicher Ausrichtung. Für eine Ost-West-Anlage oder einen stark
+ * verschatteten Standort liegt der Sommeranteil etwas niedriger; als
+ * Bezugsgröße für die Betriebsführung reicht das Profil.
+ */
+
+/**
+ * Anteil der Monate am Jahresertrag, Jänner bis Dezember, in Prozent.
+ *
+ * Die Summe ist auf genau 100 abgestimmt, damit sich über zwölf Monate
+ * wieder exakt der Jahreswert ergibt.
+ */
+export const MONATSANTEILE = [
+  2.7, 4.4, 7.8, 10.8, 12.7, 13.2, 13.7, 12.3, 9.7, 7.0, 3.4, 2.3,
+] as const;
+
+/** Tage je Monat; der Februar wird je nach Jahr angepasst. */
+function tageImMonat(jahr: number, monat: number): number {
+  return new Date(jahr, monat + 1, 0).getDate();
+}
+
+/**
+ * Anteil eines Zeitraums am Jahresertrag, 0 bis 1.
+ *
+ * Gerechnet wird tageweise: Jeder Tag trägt den Anteil seines Monats
+ * geteilt durch dessen Tageszahl. Ein Zeitraum über einen Jahreswechsel
+ * oder über mehrere Jahre ist zulässig und ergibt entsprechend mehr
+ * als 1.
+ *
+ * `bis` ist einschließlich - der letzte Tag zählt mit, weil ein
+ * Auswertungszeitraum umgangssprachlich so gemeint ist.
+ */
+export function jahresanteil(von: Date, bis: Date): number {
+  if (bis < von) return 0;
+
+  const tag = new Date(von.getFullYear(), von.getMonth(), von.getDate());
+  const ende = new Date(bis.getFullYear(), bis.getMonth(), bis.getDate());
+
+  let anteil = 0;
+  while (tag <= ende) {
+    const monat = tag.getMonth();
+    anteil +=
+      MONATSANTEILE[monat] / 100 / tageImMonat(tag.getFullYear(), monat);
+    tag.setDate(tag.getDate() + 1);
+  }
+
+  return anteil;
+}
+
+/**
+ * Der auf einen Zeitraum entfallende Teil eines Jahressollwerts.
+ *
+ * `null`, wenn kein Jahreswert hinterlegt ist: Ohne Sollwert gibt es
+ * keine Zielerreichung, und eine 0 wäre an dieser Stelle eine Aussage,
+ * die niemand getroffen hat.
+ */
+export function anteiligerSollwert(
+  jahreswert: number | null | undefined,
+  von: Date,
+  bis: Date,
+): number | null {
+  if (jahreswert === null || jahreswert === undefined) return null;
+  if (!Number.isFinite(jahreswert) || jahreswert <= 0) return null;
+
+  return jahreswert * jahresanteil(von, bis);
+}

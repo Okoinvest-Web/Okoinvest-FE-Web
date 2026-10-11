@@ -1,0 +1,148 @@
+import pathlib
+
+FE = pathlib.Path(r"C:\Users\SALEADMIN\Documents\Servicetechniker APP\frontend")
+
+
+def patch(pfad, paare):
+    p = FE / pfad
+    s = p.read_text(encoding="utf-8")
+    for alt, neu in paare:
+        if alt not in s:
+            raise SystemExit(f"NICHT GEFUNDEN in {pfad}:\n---\n{alt[:300]}\n---")
+        s = s.replace(alt, neu, 1)
+    p.write_text(s, encoding="utf-8")
+    print("ok", pfad)
+
+
+# ---------------------------------------------- Demo: pull beantwortet sich selbst
+patch(
+    "src/lib/demo.ts",
+    [
+        (
+            """    case 'oekovolt_baudoku.api.sync.foto_hochladen':""",
+            """    case 'oekovolt_baudoku.api.sync.pull':
+      // Im Demo-Modus gibt es keine fremden Änderungen.
+      return { daten: {}, anlagen: [], server_zeit: new Date().toISOString() }
+
+    case 'oekovolt_baudoku.api.sync.foto_hochladen':""",
+        )
+    ],
+)
+
+# ------------------------------ Listen bauen sich nach einem Pull neu auf
+patch(
+    "src/composables/dokumentenliste.ts",
+    [
+        (
+            """import { ref, shallowRef } from 'vue'
+
+import { ApiFehler, resource } from '@/lib/api'
+import { tabelleFuer, type Dokumenttyp } from '@/lib/db'""",
+            """import { onBeforeUnmount, onMounted, ref, shallowRef } from 'vue'
+
+import { ApiFehler, resource } from '@/lib/api'
+import { tabelleFuer, type Dokumenttyp } from '@/lib/db'
+import { PULL_EREIGNIS } from '@/lib/sync'""",
+        ),
+        (
+            """  return { zeilen, laedt, nurLokalerBestand, laden }
+}""",
+            """  // Nach einem Sync-Lauf können sich Zuweisungen und Status geändert haben.
+  const beiPull = () => void laden()
+  onMounted(() => window.addEventListener(PULL_EREIGNIS, beiPull))
+  onBeforeUnmount(() => window.removeEventListener(PULL_EREIGNIS, beiPull))
+
+  return { zeilen, laedt, nurLokalerBestand, laden }
+}""",
+        ),
+    ],
+)
+
+# ==================================================== Offline-Puffer begrenzen
+patch(
+    "src/lib/foto.ts",
+    [
+        (
+            """import { db, neueId, type FotoEintrag } from './db'
+import { positionEinmalig } from './geo'""",
+            """import { db, fotoPufferMb, neueId, type FotoEintrag } from './db'
+import { positionEinmalig } from './geo'""",
+        ),
+        (
+            """export interface AufnahmeOptionen extends Partial<KompressionsOptionen> {
+  beschriftung?: string
+  gehoertZu?: string
+  mitGps?: boolean
+}""",
+            """export interface AufnahmeOptionen extends Partial<KompressionsOptionen> {
+  beschriftung?: string
+  gehoertZu?: string
+  mitGps?: boolean
+  /** Grenze des Offline-Fotopuffers in MB (aus den Einstellungen). */
+  maxPufferMb?: number
+}
+
+/** Wird geworfen, wenn der Offline-Puffer voll ist. */
+export class PufferVollFehler extends Error {
+  constructor(
+    readonly belegtMb: number,
+    readonly grenzeMb: number,
+  ) {
+    super(
+      `Der Offline-Speicher ist mit ${belegtMb} von ${grenzeMb} MB belegt. ` +
+        'Bitte synchronisieren, bevor weitere Fotos aufgenommen werden.',
+    )
+    this.name = 'PufferVollFehler'
+  }
+}""",
+        ),
+        (
+            """export async function fotoErfassen(datei: Blob, optionen: AufnahmeOptionen = {}): Promise<FotoEintrag> {
+  const komprimiert = await komprimieren(datei, optionen)""",
+            """export async function fotoErfassen(datei: Blob, optionen: AufnahmeOptionen = {}): Promise<FotoEintrag> {
+  // Vor der Aufnahme prüfen: Läuft IndexedDB voll, bricht der Browser hart ab
+  // und nimmt im schlimmsten Fall bereits erfasste Fotos mit.
+  const grenze = optionen.maxPufferMb ?? 100
+  const belegt = await fotoPufferMb()
+  if (belegt >= grenze) throw new PufferVollFehler(belegt, grenze)
+
+  const komprimiert = await komprimieren(datei, optionen)""",
+        ),
+    ],
+)
+
+patch(
+    "src/components/FotoAufnahme.vue",
+    [
+        (
+            """import { dateienWaehlen, fotoErfassen, vorschauUrl } from '@/lib/foto'""",
+            """import { dateienWaehlen, fotoErfassen, PufferVollFehler, vorschauUrl } from '@/lib/foto'""",
+        ),
+        (
+            """      const eintrag = await fotoErfassen(datei, {
+        maxKantePx: stammdaten.einstellungen.foto_max_kante_px,
+        maxMb: stammdaten.einstellungen.max_foto_mb,
+        gehoertZu: props.gehoertZu,
+      })""",
+            """      const eintrag = await fotoErfassen(datei, {
+        maxKantePx: stammdaten.einstellungen.foto_max_kante_px,
+        maxMb: stammdaten.einstellungen.max_foto_mb,
+        maxPufferMb: stammdaten.einstellungen.offline_puffer_mb,
+        gehoertZu: props.gehoertZu,
+      })""",
+        ),
+        (
+            """  } catch (fehler) {
+    ui.fehler(`Foto konnte nicht verarbeitet werden: ${(fehler as Error).message}`)
+  } finally {
+    arbeitet.value = false
+  }""",
+            """  } catch (fehler) {
+    if (fehler instanceof PufferVollFehler) ui.warnung(fehler.message)
+    else ui.fehler(`Foto konnte nicht verarbeitet werden: ${(fehler as Error).message}`)
+  } finally {
+    arbeitet.value = false
+  }""",
+        ),
+    ],
+)

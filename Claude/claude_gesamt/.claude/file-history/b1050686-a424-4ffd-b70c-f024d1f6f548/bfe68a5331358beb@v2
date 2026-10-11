@@ -1,0 +1,507 @@
+/**
+ * Die Abnahmeprüfung einer Photovoltaikanlage.
+ *
+ * Rechtsgrundlage in Österreich ist ÖVE/ÖNORM E 8001-4-712 für die
+ * Errichtung und EN 62446-1 für Prüfung, Dokumentation und
+ * Instandhaltung. Was dort steht, ist keine Empfehlung: Ohne
+ * Prüfprotokoll gibt es keine Inbetriebnahmemeldung beim
+ * Netzbetreiber, keine Förderung und im Schadensfall keine
+ * Versicherungsleistung.
+ *
+ * Diese Datei rechnet ein Protokoll gegen die Grenzwerte der Norm und
+ * sagt, ob die Anlage abgenommen ist. Warum das Rechnen dazugehört:
+ *
+ * - *Isolationswiderstand*: Der Grenzwert hängt von der Systemspannung
+ *   ab, und gemessen wird mit einer davon abhängigen Prüfspannung. Wer
+ *   einen 1000-Volt-String mit 250 Volt prüft, misst etwas, das mit
+ *   der Norm nichts zu tun hat.
+ * - *Leerlaufspannung*: Sie ist stark temperaturabhängig. Ein an einem
+ *   kalten Märzmorgen gemessener Wert liegt weit über dem Datenblatt
+ *   und ist trotzdem richtig - wer ohne Temperaturkorrektur vergleicht,
+ *   beanstandet eine einwandfreie Anlage.
+ * - *Kurzschlussstrom*: Er hängt fast linear von der Einstrahlung ab.
+ *   Ohne Einstrahlungswert ist der Messwert nicht bewertbar, und unter
+ *   400 W/m² ist er nach EN 62446-1 gar nicht aussagekräftig.
+ *
+ * Ein Protokoll, das diese drei Korrekturen nicht führt, sieht aus wie
+ * ein Protokoll und ist keines.
+ */
+
+import { STC_EINSTRAHLUNG, STC_TEMPERATUR, medianVon } from "./kennzahlen.ts";
+import { alsKomma } from "../zahl.ts";
+
+/* ------------------------------------------------------------------ */
+/* Grenzwerte                                                          */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Isolationswiderstand nach EN 62446-1, Tabelle 3.
+ *
+ * Die Prüfspannung richtet sich nach der Systemspannung, und der
+ * Mindestwiderstand steigt mit ihr. Gemessen wird zwischen Plus und
+ * Erde, zwischen Minus und Erde - und bei kurzgeschlossenem String
+ * zwischen dem Strang und Erde.
+ */
+export const ISOLATION_GRENZEN: {
+  bisSystemspannung: number;
+  pruefspannung: number;
+  mindestMOhm: number;
+}[] = [
+  { bisSystemspannung: 120, pruefspannung: 250, mindestMOhm: 0.5 },
+  { bisSystemspannung: 500, pruefspannung: 500, mindestMOhm: 1 },
+  { bisSystemspannung: 1500, pruefspannung: 1000, mindestMOhm: 1 },
+];
+
+/** Temperaturkoeffizient der Leerlaufspannung, Prozent je Kelvin. */
+export const BETA_UOC = -0.29;
+
+/**
+ * Zulässige Abweichung der Leerlaufspannung vom Erwartungswert.
+ *
+ * EN 62446-1 nennt keine feste Zahl; üblich und vertretbar sind fünf
+ * Prozent. Darunter liegt Messunsicherheit, darüber liegt ein Modul
+ * zu wenig im String - und genau das ist der häufigste Fehler bei der
+ * Erstinbetriebnahme.
+ */
+export const UOC_TOLERANZ_PROZENT = 5;
+
+/** Zulässige Abweichung des Kurzschlussstroms. */
+export const ISC_TOLERANZ_PROZENT = 10;
+
+/**
+ * Kleinste Einstrahlung, bei der ein Strommesswert etwas aussagt.
+ *
+ * Darunter ist der Kurzschlussstrom so klein, dass Messunsicherheit
+ * und Wolkenzug alles überdecken. EN 62446-1 verlangt deshalb eine
+ * Mindesteinstrahlung für die Strommessung.
+ */
+export const MINDESTEINSTRAHLUNG_MESSUNG = 400;
+
+/** Höchstzulässiger Schutzleiterwiderstand in Ohm. */
+export const SCHUTZLEITER_HOECHST_OHM = 1;
+
+/**
+ * Zulässige Abweichung eines Strangs vom Mittel seiner Nachbarn.
+ *
+ * EN 62446-1 empfiehlt den Vergleich gleichartiger Stränge, und aus
+ * gutem Grund: Er ist deutlich empfindlicher als der Vergleich gegen
+ * das Datenblatt. Bei zwanzig Modulen macht ein fehlendes genau fünf
+ * Prozent aus - und liegt damit exakt auf der absoluten Toleranz.
+ * Gegen die Nachbarstränge gemessen sticht dasselbe Modul sofort
+ * heraus, weil die Nachbarn dieselbe Temperatur und dieselbe
+ * Einstrahlung hatten.
+ */
+export const STRANGVERGLEICH_TOLERANZ_PROZENT = 2.5;
+
+/* ------------------------------------------------------------------ */
+/* Eingaben                                                            */
+/* ------------------------------------------------------------------ */
+
+export interface Strangmessung {
+  bezeichnung: string;
+  /** Anzahl Module in Reihe. */
+  module: number;
+  /** Leerlaufspannung eines Moduls bei STC, Volt. */
+  uocModulV: number;
+  /** Kurzschlussstrom eines Moduls bei STC, Ampere. */
+  iscModulA: number;
+  /** Gemessene Leerlaufspannung des Strangs, Volt. */
+  gemesseneUocV: number;
+  /** Gemessener Kurzschlussstrom, Ampere. */
+  gemessenerIscA: number;
+  /** Gemessener Isolationswiderstand, Megaohm. */
+  isolationMOhm: number;
+  /** Prüfspannung, mit der gemessen wurde, Volt. */
+  pruefspannungV: number;
+  /** Gemessener Durchgangswiderstand des Schutzleiters, Ohm. */
+  schutzleiterOhm?: number;
+  /** Polarität richtig angeschlossen? */
+  polaritaetRichtig: boolean;
+}
+
+export interface Pruefbedingungen {
+  /** Einstrahlung in Modulebene während der Messung, W/m². */
+  einstrahlung: number;
+  /** Modultemperatur während der Messung, Grad Celsius. */
+  modultemperatur: number;
+}
+
+export interface Schutzpruefung {
+  /** Auslösezeit der Fehlerstromschutzeinrichtung, Millisekunden. */
+  rcdAusloesungMs?: number;
+  /** Bemessungsfehlerstrom der Schutzeinrichtung, Milliampere. */
+  rcdBemessungMa?: number;
+  /** Wurde der Netz- und Anlagenschutz nach TOR Erzeuger geprüft? */
+  netzschutzGeprueft: boolean;
+  /** Wurde die Abschaltung bei Netzausfall nachgewiesen? */
+  inselschutzGeprueft: boolean;
+}
+
+export interface Abnahmeprotokoll {
+  anlage: string;
+  geprueftAm: string;
+  pruefer: string;
+  /** Höchste Systemspannung der Anlage, Volt. */
+  systemspannungV: number;
+  bedingungen: Pruefbedingungen;
+  straenge: Strangmessung[];
+  schutz: Schutzpruefung;
+}
+
+/* ------------------------------------------------------------------ */
+/* Ergebnis                                                            */
+/* ------------------------------------------------------------------ */
+
+export type Pruefergebnis = "bestanden" | "beanstandet" | "nicht_bewertbar";
+
+export interface Einzelbefund {
+  strang: string;
+  merkmal: string;
+  ergebnis: Pruefergebnis;
+  /** Gemessener Wert mit Einheit, für das Protokoll. */
+  gemessen: string;
+  /** Grenz- oder Erwartungswert. */
+  erwartet: string;
+  bemerkung: string;
+}
+
+export interface Abnahmebefund {
+  ergebnis: Pruefergebnis;
+  befunde: Einzelbefund[];
+  /** Was der Abnahme entgegensteht. */
+  beanstandungen: string[];
+  /** Was zu prüfen bleibt, ohne die Abnahme zu verhindern. */
+  hinweise: string[];
+  /** Kurzfassung für das Protokoll. */
+  zusammenfassung: string;
+}
+
+/* ------------------------------------------------------------------ */
+/* Rechnen                                                             */
+/* ------------------------------------------------------------------ */
+
+/** Die Isolationsstufe zur Systemspannung. */
+export function isolationsStufe(systemspannungV: number) {
+  return (
+    ISOLATION_GRENZEN.find((g) => systemspannungV <= g.bisSystemspannung) ??
+    ISOLATION_GRENZEN[ISOLATION_GRENZEN.length - 1]!
+  );
+}
+
+/**
+ * Erwartete Leerlaufspannung bei der Messtemperatur.
+ *
+ * Das Datenblatt gilt bei 25 Grad. Bei fünf Grad liegt die Spannung
+ * rund sechs Prozent darüber - wer den Datenblattwert unkorrigiert
+ * vergleicht, beanstandet eine einwandfreie Anlage.
+ */
+export function erwarteteUoc(
+  strang: Strangmessung,
+  modultemperatur: number,
+): number {
+  const faktor = 1 + (BETA_UOC / 100) * (modultemperatur - STC_TEMPERATUR);
+  return strang.module * strang.uocModulV * faktor;
+}
+
+/**
+ * Erwarteter Kurzschlussstrom bei der Messeinstrahlung.
+ *
+ * Nahezu linear zur Einstrahlung. Der Temperatureinfluss liegt bei
+ * etwa 0,05 Prozent je Kelvin und wird hier vernachlässigt - er
+ * verschwindet in der Messunsicherheit einer Zangenmessung.
+ */
+export function erwarteterIsc(
+  strang: Strangmessung,
+  einstrahlung: number,
+): number {
+  return strang.iscModulA * (einstrahlung / STC_EINSTRAHLUNG);
+}
+
+function abweichungProzent(gemessen: number, erwartet: number): number {
+  if (erwartet === 0) return 0;
+  return ((gemessen - erwartet) / erwartet) * 100;
+}
+
+/**
+ * Prüft ein Abnahmeprotokoll gegen die Norm.
+ *
+ * Das Ergebnis ist dreiwertig, und das ist wesentlich: Zwischen
+ * "bestanden" und "beanstandet" liegt "nicht bewertbar" - der Fall,
+ * in dem gemessen wurde, der Messwert aber nichts aussagt. Ihn als
+ * bestanden zu führen wäre eine Gefälligkeitsprüfung, ihn als
+ * Beanstandung zu führen eine Unterstellung.
+ */
+export function pruefeAbnahme(protokoll: Abnahmeprotokoll): Abnahmebefund {
+  const befunde: Einzelbefund[] = [];
+  const beanstandungen: string[] = [];
+  const hinweise: string[] = [];
+
+  const stufe = isolationsStufe(protokoll.systemspannungV);
+  const { einstrahlung, modultemperatur } = protokoll.bedingungen;
+
+  if (protokoll.straenge.length === 0) {
+    beanstandungen.push("Das Protokoll enthält keine Strangmessung.");
+  }
+
+  for (const strang of protokoll.straenge) {
+    /* ---------- Polarität ---------- */
+
+    befunde.push({
+      strang: strang.bezeichnung,
+      merkmal: "Polarität",
+      ergebnis: strang.polaritaetRichtig ? "bestanden" : "beanstandet",
+      gemessen: strang.polaritaetRichtig ? "richtig" : "vertauscht",
+      erwartet: "richtig",
+      bemerkung: strang.polaritaetRichtig
+        ? ""
+        : "Ein verpolter Strang liefert keine Leistung und kann die Bypassdioden der Module zerstören.",
+    });
+
+    if (!strang.polaritaetRichtig) {
+      beanstandungen.push(
+        `${strang.bezeichnung}: Die Polarität ist vertauscht.`,
+      );
+    }
+
+    /* ---------- Isolationswiderstand ---------- */
+
+    const mitFalscherSpannung = strang.pruefspannungV < stufe.pruefspannung;
+
+    befunde.push({
+      strang: strang.bezeichnung,
+      merkmal: "Isolationswiderstand",
+      ergebnis: mitFalscherSpannung
+        ? "nicht_bewertbar"
+        : strang.isolationMOhm >= stufe.mindestMOhm
+          ? "bestanden"
+          : "beanstandet",
+      gemessen: `${alsKomma(strang.isolationMOhm, 2)} MΩ bei ${alsKomma(strang.pruefspannungV, 0)} V`,
+      erwartet: `≥ ${alsKomma(stufe.mindestMOhm, 1)} MΩ bei ${alsKomma(stufe.pruefspannung, 0)} V`,
+      bemerkung: mitFalscherSpannung
+        ? `Gemessen wurde mit ${alsKomma(strang.pruefspannungV, 0)} V; bei einer Systemspannung von ${alsKomma(protokoll.systemspannungV, 0)} V verlangt die Norm ${alsKomma(stufe.pruefspannung, 0)} V.`
+        : strang.isolationMOhm < stufe.mindestMOhm
+          ? "Ein zu geringer Isolationswiderstand deutet auf Feuchtigkeit in einem Stecker oder eine beschädigte Leitung. Die Anlage darf so nicht in Betrieb gehen."
+          : "",
+    });
+
+    if (mitFalscherSpannung) {
+      beanstandungen.push(
+        `${strang.bezeichnung}: Der Isolationswiderstand wurde mit zu geringer Prüfspannung gemessen und ist nicht verwertbar.`,
+      );
+    } else if (strang.isolationMOhm < stufe.mindestMOhm) {
+      beanstandungen.push(
+        `${strang.bezeichnung}: Isolationswiderstand ${alsKomma(strang.isolationMOhm, 2)} MΩ unter dem Grenzwert von ${alsKomma(stufe.mindestMOhm, 1)} MΩ.`,
+      );
+    }
+
+    /* ---------- Leerlaufspannung ---------- */
+
+    const sollUoc = erwarteteUoc(strang, modultemperatur);
+    const abwUoc = abweichungProzent(strang.gemesseneUocV, sollUoc);
+
+    const uocErgebnis: Pruefergebnis =
+      Math.abs(abwUoc) <= UOC_TOLERANZ_PROZENT ? "bestanden" : "beanstandet";
+
+    // Ein fehlendes Modul im String ist die haeufigste Ursache und
+    // laesst sich aus der Abweichung direkt ablesen.
+    const fehlendeModule = Math.round(
+      (sollUoc - strang.gemesseneUocV) / (sollUoc / strang.module),
+    );
+
+    befunde.push({
+      strang: strang.bezeichnung,
+      merkmal: "Leerlaufspannung",
+      ergebnis: uocErgebnis,
+      gemessen: `${alsKomma(strang.gemesseneUocV, 1)} V`,
+      erwartet: `${alsKomma(sollUoc, 1)} V bei ${alsKomma(modultemperatur, 0)} °C`,
+      bemerkung:
+        uocErgebnis === "bestanden"
+          ? ""
+          : fehlendeModule >= 1
+            ? `Die Abweichung entspricht ${alsKomma(fehlendeModule, 0)} fehlenden Modulen im Strang. Verkabelung prüfen.`
+            : `Abweichung ${alsKomma(abwUoc, 1)} Prozent vom temperaturkorrigierten Erwartungswert.`,
+    });
+
+    if (uocErgebnis === "beanstandet") {
+      beanstandungen.push(
+        `${strang.bezeichnung}: Leerlaufspannung weicht um ${alsKomma(abwUoc, 1)} Prozent ab.`,
+      );
+    }
+
+    /* ---------- Kurzschlussstrom ---------- */
+
+    if (einstrahlung < MINDESTEINSTRAHLUNG_MESSUNG) {
+      befunde.push({
+        strang: strang.bezeichnung,
+        merkmal: "Kurzschlussstrom",
+        ergebnis: "nicht_bewertbar",
+        gemessen: `${alsKomma(strang.gemessenerIscA, 2)} A`,
+        erwartet: "—",
+        bemerkung: `Bei ${alsKomma(einstrahlung, 0)} W/m² ist der Strommesswert nicht aussagekräftig. Die Norm verlangt mindestens ${MINDESTEINSTRAHLUNG_MESSUNG} W/m².`,
+      });
+
+      /*
+       * Einmal, nicht je Strang.
+       *
+       * Die Einstrahlung ist eine Eigenschaft der Messung, nicht des
+       * Strangs. Bei fuenfzig Straengen stuende derselbe Satz sonst
+       * fuenfzigmal da - und mit ihm fuenfzigmal derselbe Schluessel
+       * in der Liste, was React zu Recht beanstandet.
+       */
+      const satz = `Die Strommessung ist bei ${alsKomma(einstrahlung, 0)} W/m² nicht verwertbar und muss bei besserer Einstrahlung nachgeholt werden.`;
+      if (!hinweise.includes(satz)) hinweise.push(satz);
+    } else {
+      const sollIsc = erwarteterIsc(strang, einstrahlung);
+      const abwIsc = abweichungProzent(strang.gemessenerIscA, sollIsc);
+
+      const iscErgebnis: Pruefergebnis =
+        Math.abs(abwIsc) <= ISC_TOLERANZ_PROZENT ? "bestanden" : "beanstandet";
+
+      befunde.push({
+        strang: strang.bezeichnung,
+        merkmal: "Kurzschlussstrom",
+        ergebnis: iscErgebnis,
+        gemessen: `${alsKomma(strang.gemessenerIscA, 2)} A`,
+        erwartet: `${alsKomma(sollIsc, 2)} A bei ${alsKomma(einstrahlung, 0)} W/m²`,
+        bemerkung:
+          iscErgebnis === "bestanden"
+            ? ""
+            : `Abweichung ${alsKomma(abwIsc, 1)} Prozent. Bei zu geringem Strom ist meist ein Modul verschmutzt oder verschattet, bei zu hohem stimmt die Einstrahlungsmessung nicht.`,
+      });
+
+      if (iscErgebnis === "beanstandet") {
+        beanstandungen.push(
+          `${strang.bezeichnung}: Kurzschlussstrom weicht um ${alsKomma(abwIsc, 1)} Prozent ab.`,
+        );
+      }
+    }
+
+    /* ---------- Schutzleiter ---------- */
+
+    if (strang.schutzleiterOhm !== undefined) {
+      const ok = strang.schutzleiterOhm <= SCHUTZLEITER_HOECHST_OHM;
+
+      befunde.push({
+        strang: strang.bezeichnung,
+        merkmal: "Schutzleiterdurchgang",
+        ergebnis: ok ? "bestanden" : "beanstandet",
+        gemessen: `${alsKomma(strang.schutzleiterOhm, 2)} Ω`,
+        erwartet: `≤ ${alsKomma(SCHUTZLEITER_HOECHST_OHM, 1)} Ω`,
+        bemerkung: ok
+          ? ""
+          : "Ein zu hoher Übergangswiderstand macht den Potentialausgleich unwirksam - im Fehlerfall steht die Unterkonstruktion unter Spannung.",
+      });
+
+      if (!ok) {
+        beanstandungen.push(
+          `${strang.bezeichnung}: Schutzleiterwiderstand ${alsKomma(strang.schutzleiterOhm, 2)} Ω über dem Höchstwert.`,
+        );
+      }
+    } else {
+      hinweise.push(
+        `${strang.bezeichnung}: Der Schutzleiterdurchgang wurde nicht gemessen.`,
+      );
+    }
+  }
+
+  /* ---------- Strangvergleich ---------- */
+
+  /*
+   * Der empfindlichste Teil der Pruefung.
+   *
+   * Verglichen wird die Spannung je Modul - nur so sind Straenge
+   * unterschiedlicher Laenge vergleichbar. Der Median statt des
+   * Mittelwerts, damit ein einzelner Ausreisser nicht den Massstab
+   * verschiebt, gegen den er gemessen wird.
+   */
+  if (protokoll.straenge.length >= 3) {
+    const jeModul = protokoll.straenge.map(
+      (s) => s.gemesseneUocV / Math.max(1, s.module),
+    );
+    const mitte = medianVon(jeModul);
+
+    for (const [i, strang] of protokoll.straenge.entries()) {
+      const abweichung = abweichungProzent(jeModul[i]!, mitte);
+      if (Math.abs(abweichung) <= STRANGVERGLEICH_TOLERANZ_PROZENT) continue;
+
+      const fehlend = Math.round(
+        ((mitte - jeModul[i]!) / mitte) * strang.module,
+      );
+
+      befunde.push({
+        strang: strang.bezeichnung,
+        merkmal: "Vergleich mit den übrigen Strängen",
+        ergebnis: "beanstandet",
+        gemessen: `${alsKomma(jeModul[i]!, 2)} V je Modul`,
+        erwartet: `${alsKomma(mitte, 2)} V je Modul`,
+        bemerkung:
+          fehlend >= 1
+            ? `${alsKomma(fehlend, 0)} Module weniger als in den Nachbarsträngen. Verkabelung prüfen.`
+            : `Abweichung ${alsKomma(abweichung, 1)} Prozent vom Mittel der übrigen Stränge, gemessen unter denselben Bedingungen.`,
+      });
+
+      beanstandungen.push(
+        `${strang.bezeichnung}: weicht um ${alsKomma(abweichung, 1)} Prozent von den übrigen Strängen ab.`,
+      );
+    }
+  }
+
+  /* ---------- Schutzeinrichtungen ---------- */
+
+  if (protokoll.schutz.rcdAusloesungMs !== undefined) {
+    // Nach ÖVE/ÖNORM E 8001 muss eine Schutzeinrichtung des Typs A
+    // beim Bemessungsfehlerstrom binnen 300 Millisekunden ausloesen.
+    const ok = protokoll.schutz.rcdAusloesungMs <= 300;
+
+    befunde.push({
+      strang: "Anlage",
+      merkmal: "Fehlerstromschutz",
+      ergebnis: ok ? "bestanden" : "beanstandet",
+      gemessen: `${alsKomma(protokoll.schutz.rcdAusloesungMs, 0)} ms`,
+      erwartet: "≤ 300 ms",
+      bemerkung: ok
+        ? ""
+        : "Eine zu späte Auslösung schützt nicht. Die Schutzeinrichtung ist zu tauschen.",
+    });
+
+    if (!ok) {
+      beanstandungen.push(
+        `Die Fehlerstromschutzeinrichtung löst erst nach ${alsKomma(protokoll.schutz.rcdAusloesungMs, 0)} ms aus.`,
+      );
+    }
+  } else {
+    hinweise.push("Die Fehlerstromschutzeinrichtung wurde nicht geprüft.");
+  }
+
+  if (!protokoll.schutz.netzschutzGeprueft) {
+    beanstandungen.push(
+      "Der Netz- und Anlagenschutz nach TOR Erzeuger wurde nicht geprüft. Ohne diesen Nachweis erteilt der Netzbetreiber keine Zustimmung zur Inbetriebnahme.",
+    );
+  }
+
+  if (!protokoll.schutz.inselschutzGeprueft) {
+    beanstandungen.push(
+      "Die Abschaltung bei Netzausfall wurde nicht nachgewiesen. Eine Anlage, die ins tote Netz weiterspeist, gefährdet jeden, der daran arbeitet.",
+    );
+  }
+
+  /* ---------- Gesamtergebnis ---------- */
+
+  const nichtBewertbar = befunde.some((b) => b.ergebnis === "nicht_bewertbar");
+
+  const ergebnis: Pruefergebnis =
+    beanstandungen.length > 0
+      ? "beanstandet"
+      : nichtBewertbar
+        ? "nicht_bewertbar"
+        : "bestanden";
+
+  const zusammenfassung =
+    ergebnis === "bestanden"
+      ? `Alle ${befunde.length} Prüfpunkte an ${protokoll.straenge.length} Strängen liegen innerhalb der Grenzwerte. Die Anlage ist abgenommen.`
+      : ergebnis === "nicht_bewertbar"
+        ? "Es liegt keine Beanstandung vor, aber nicht alle Messwerte sind verwertbar. Die Abnahme ist erst mit den fehlenden Messungen vollständig."
+        : `${beanstandungen.length} Beanstandungen. Die Anlage ist nicht abgenommen.`;
+
+  return { ergebnis, befunde, beanstandungen, hinweise, zusammenfassung };
+}

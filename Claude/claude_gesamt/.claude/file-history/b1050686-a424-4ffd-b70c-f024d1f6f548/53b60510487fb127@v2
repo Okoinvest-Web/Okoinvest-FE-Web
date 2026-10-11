@@ -1,0 +1,213 @@
+/**
+ * Abrechnung einer Energiegemeinschaft.
+ *
+ * Aus dem Ergebnis der Aufteilungsrechnung entstehen Belege:
+ *
+ *   RECHNUNG an Verbraucher - fuer die aus der Gemeinschaft bezogene
+ *   Menge, zum vereinbarten Gemeinschaftspreis.
+ *
+ *   GUTSCHRIFT an Erzeuger - fuer die Menge, die tatsaechlich in der
+ *   Gemeinschaft geblieben ist. Was ins Netz ging, rechnet der Erzeuger
+ *   getrennt mit seinem Abnehmer ab und taucht hier nicht auf.
+ *
+ * Die Differenz zwischen Verbraucherpreis und Erzeugergutschrift deckt
+ * den Betrieb der Gemeinschaft - Abrechnung, Verwaltung, Mitgliedschaft
+ * beim Datenaustausch.
+ *
+ * Wieder ohne Datenbankzugriff, damit die Betragsermittlung fuer sich
+ * pruefbar bleibt.
+ */
+
+import type { ZaehlpunktSumme } from "./aufteilung.ts";
+
+/**
+ * Rabatt auf den Arbeitspreis des Netznutzungsentgelts.
+ *
+ * Gilt nur fuer Erneuerbare-Energie-Gemeinschaften und nur fuer die
+ * innerhalb der Gemeinschaft bezogene Menge. Buergerenergie-
+ * gemeinschaften erhalten keinen Rabatt, weil sie nicht an die
+ * raeumliche Naehe gebunden sind.
+ */
+export const NETZRABATT: Record<string, number> = {
+  Lokal: 0.57,
+  Regional: 0.28,
+  Bundesweit: 0,
+};
+
+/** Arbeitspreis des Netznutzungsentgelts in ct/kWh, Richtwert. */
+export const NETZ_ARBEITSPREIS_CT = 5.74;
+
+export interface AbrechnungsVorgaben {
+  /** Preis, den Verbraucher je kWh aus der Gemeinschaft zahlen. */
+  preisCtKwh: number;
+  /** Gutschrift, die Erzeuger je gelieferter kWh erhalten. */
+  erzeugerCtKwh: number;
+  /** Umsatzsteuersatz in Prozent. */
+  ustSatz: number;
+  /** Reichweite der Gemeinschaft - bestimmt den Netzentgeltrabatt. */
+  reichweite: string;
+  /** Art der Gemeinschaft; nur EEG erhalten den Rabatt. */
+  art: string;
+}
+
+export interface BelegEntwurf {
+  zaehlpunktId: string;
+  art: "Rechnung" | "Gutschrift";
+  mengeKwh: number;
+  netto: number;
+  ustSatz: number;
+  ustBetrag: number;
+  brutto: number;
+  /** Nachrichtlich: ersparte Netzkosten durch die Gemeinschaft. */
+  netzentgeltErsparnis: number;
+}
+
+/** Auf Cent runden - Betraege muessen exakt darstellbar sein. */
+function aufCent(betrag: number): number {
+  return Math.round(betrag * 100) / 100;
+}
+
+/**
+ * Ersparnis beim Netznutzungsentgelt.
+ *
+ * Sie entsteht nur fuer die in der Gemeinschaft bezogene Menge und nur
+ * bei einer EEG. Der Betrag ist keine Zahlung der Gemeinschaft, sondern
+ * eine geringere Rechnung des Netzbetreibers - deshalb wird er nur
+ * nachrichtlich ausgewiesen und nicht in die Belegsumme eingerechnet.
+ */
+export function netzentgeltErsparnis(
+  mengeKwh: number,
+  vorgaben: AbrechnungsVorgaben,
+): number {
+  if (vorgaben.art !== "EEG") return 0;
+
+  const rabatt = NETZRABATT[vorgaben.reichweite] ?? 0;
+  return aufCent((mengeKwh * NETZ_ARBEITSPREIS_CT * rabatt) / 100);
+}
+
+/**
+ * Erzeugt die Belegentwuerfe eines Abrechnungslaufs.
+ *
+ * Ein Zaehlpunkt kann beides zugleich sein - etwa ein Betrieb mit
+ * eigener Anlage, der zeitweise liefert und zeitweise bezieht. Dann
+ * entstehen zwei Belege, keine Verrechnung. Das ist steuerlich
+ * geboten: Lieferung und Bezug sind getrennte Umsaetze.
+ */
+export function erzeugeBelege(
+  summen: Iterable<ZaehlpunktSumme>,
+  vorgaben: AbrechnungsVorgaben,
+): BelegEntwurf[] {
+  const belege: BelegEntwurf[] = [];
+
+  for (const summe of summen) {
+    // Mengen unter einer Wattstunde ergeben keinen Beleg - der
+    // Verwaltungsaufwand stuende in keinem Verhaeltnis.
+    if (summe.bezogen >= 0.001) {
+      const netto = aufCent((summe.bezogen * vorgaben.preisCtKwh) / 100);
+      const ust = aufCent((netto * vorgaben.ustSatz) / 100);
+
+      belege.push({
+        zaehlpunktId: summe.zaehlpunktId,
+        art: "Rechnung",
+        mengeKwh: summe.bezogen,
+        netto,
+        ustSatz: vorgaben.ustSatz,
+        ustBetrag: ust,
+        brutto: aufCent(netto + ust),
+        netzentgeltErsparnis: netzentgeltErsparnis(summe.bezogen, vorgaben),
+      });
+    }
+
+    if (summe.geliefert >= 0.001) {
+      const netto = aufCent((summe.geliefert * vorgaben.erzeugerCtKwh) / 100);
+      const ust = aufCent((netto * vorgaben.ustSatz) / 100);
+
+      belege.push({
+        zaehlpunktId: summe.zaehlpunktId,
+        art: "Gutschrift",
+        mengeKwh: summe.geliefert,
+        netto,
+        ustSatz: vorgaben.ustSatz,
+        ustBetrag: ust,
+        brutto: aufCent(netto + ust),
+        netzentgeltErsparnis: 0,
+      });
+    }
+  }
+
+  return belege;
+}
+
+export interface LaufUebersicht {
+  anzahlRechnungen: number;
+  anzahlGutschriften: number;
+  mengeBezogen: number;
+  mengeGeliefert: number;
+  summeRechnungenNetto: number;
+  summeGutschriftenNetto: number;
+  /** Was der Gemeinschaft zur Deckung ihrer Kosten bleibt. */
+  deckungsbeitrag: number;
+  ersparnisGesamt: number;
+}
+
+export function fasseLaufZusammen(belege: BelegEntwurf[]): LaufUebersicht {
+  const rechnungen = belege.filter((b) => b.art === "Rechnung");
+  const gutschriften = belege.filter((b) => b.art === "Gutschrift");
+
+  const summeRechnungen = aufCent(
+    rechnungen.reduce((s, b) => s + b.netto, 0),
+  );
+  const summeGutschriften = aufCent(
+    gutschriften.reduce((s, b) => s + b.netto, 0),
+  );
+
+  return {
+    anzahlRechnungen: rechnungen.length,
+    anzahlGutschriften: gutschriften.length,
+    mengeBezogen: Number(
+      rechnungen.reduce((s, b) => s + b.mengeKwh, 0).toFixed(3),
+    ),
+    mengeGeliefert: Number(
+      gutschriften.reduce((s, b) => s + b.mengeKwh, 0).toFixed(3),
+    ),
+    summeRechnungenNetto: summeRechnungen,
+    summeGutschriftenNetto: summeGutschriften,
+    deckungsbeitrag: aufCent(summeRechnungen - summeGutschriften),
+    ersparnisGesamt: aufCent(
+      belege.reduce((s, b) => s + b.netzentgeltErsparnis, 0),
+    ),
+  };
+}
+
+/**
+ * Belegnummer im Format EEG-2026-Q3-0001.
+ *
+ * Fortlaufend je Gemeinschaft und Zeitraum. Eine erkennbare Systematik
+ * ist keine Spielerei: Sie erlaubt es, einen Beleg ohne Datenbank-
+ * zugriff zeitlich einzuordnen - was bei Rueckfragen zaehlt.
+ */
+export function belegnummer(
+  praefix: string,
+  jahr: number,
+  quartal: number,
+  laufendeNummer: number,
+): string {
+  return `${praefix}-${jahr}-Q${quartal}-${String(laufendeNummer).padStart(4, "0")}`;
+}
+
+/** Quartal eines Datums, 1 bis 4. */
+export function quartalVon(datum: Date): number {
+  return Math.floor(datum.getMonth() / 3) + 1;
+}
+
+/** Erster und letzter Tag eines Quartals. */
+export function quartalsZeitraum(
+  jahr: number,
+  quartal: number,
+): { von: Date; bis: Date } {
+  const ersterMonat = (quartal - 1) * 3;
+  const von = new Date(jahr, ersterMonat, 1, 0, 0, 0, 0);
+  // Tag 0 des Folgemonats ist der letzte Tag des Vormonats.
+  const bis = new Date(jahr, ersterMonat + 3, 0, 23, 59, 59, 999);
+  return { von, bis };
+}

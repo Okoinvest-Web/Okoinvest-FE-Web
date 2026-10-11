@@ -1,0 +1,217 @@
+<template>
+  <div>
+    <PageHeader title="Inventar" :subtitle="untertitel">
+      <template #actions>
+        <Button @click="$router.push('/labels')">Etiketten</Button>
+        <Button variant="solid" @click="$router.push('/stocktake')">Inventur</Button>
+      </template>
+    </PageHeader>
+
+    <div class="p-6">
+      <div v-if="uebersicht.data" class="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <StatCard
+          v-for="kachel in kacheln"
+          :key="kachel.label"
+          :label="kachel.label"
+          :wert="kachel.wert"
+          :hinweis="kachel.hinweis"
+          :level="kachel.level"
+        />
+      </div>
+
+      <div class="mb-4 flex flex-wrap items-end gap-3">
+        <FormControl
+          v-model="suchtext"
+          label="Suche"
+          type="text"
+          placeholder="Nummer, Name, Seriennummer …"
+        />
+        <FormControl
+          v-model="kategorie"
+          label="Kategorie"
+          type="select"
+          :options="kategorieOptionen"
+        />
+        <FormControl v-model="zustand" label="Zustand" type="select" :options="zustandOptionen" />
+        <FormControl
+          v-model="standort"
+          label="Standort"
+          type="select"
+          :options="standortOptionen"
+        />
+      </div>
+
+      <DataTable
+        :columns="spalten"
+        :rows="bestand.data || []"
+        :loading="bestand.loading"
+        empty-text="Kein Inventarobjekt mit diesem Filter."
+        :on-row-click="(zeile) => $router.push('/inventory/' + zeile.asset_tag)"
+      >
+        <template #zelle-asset_tag="{ zeile }">
+          <span class="block font-mono text-sm text-ink-gray-9">{{ zeile.asset_tag }}</span>
+        </template>
+        <template #zelle-asset_name="{ zeile }">
+          <span class="block font-medium text-ink-gray-9">{{ zeile.asset_name }}</span>
+          <span class="block text-sm text-ink-gray-5">
+            {{ [zeile.manufacturer, zeile.model].filter(Boolean).join(' ') }}
+          </span>
+        </template>
+        <template #zelle-asset_state="{ zeile }">
+          <Badge :theme="zustandThema(zeile.asset_state)">{{ ZUSTAND[zeile.asset_state] }}</Badge>
+        </template>
+        <template #zelle-holder_name="{ zeile }">
+          <span v-if="!zeile.holder_name" class="text-ink-gray-4">–</span>
+          <StatusDot
+            v-else-if="zeile.holder_active === false"
+            level="critical"
+            :text="zeile.holder_name + ' (ausgetreten)'"
+            klein
+          />
+          <span v-else class="text-sm">{{ zeile.holder_name }}</span>
+        </template>
+        <template #zelle-book_value_cents="{ zeile }">
+          <span v-if="zeile.book_value_cents === null" class="text-ink-gray-4">–</span>
+          <span v-else :class="zeile.fully_depreciated ? 'text-ink-gray-5' : ''">
+            {{ euro(zeile.book_value_cents) }}
+          </span>
+        </template>
+        <template #zelle-befund="{ zeile }">
+          <StatusDot :level="zeile.level" :text="zeile.reasons[0] || 'in Ordnung'" klein />
+        </template>
+      </DataTable>
+
+      <p class="mt-3 text-xs text-ink-gray-4">
+        Der Restbuchwert ist gerechnet, nicht erfasst: Anschaffungswert verteilt über die
+        Nutzungsdauer der Kategorie. Ein voll abgeschriebenes Gerät erscheint blass – es steht noch
+        da, kostet aber nichts mehr in der Bilanz.
+      </p>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed, ref, watch } from 'vue'
+import { Badge, Button, FormControl, createResource } from 'frappe-ui'
+import PageHeader from '@/components/PageHeader.vue'
+import DataTable from '@/components/DataTable.vue'
+import StatCard from '@/components/StatCard.vue'
+import StatusDot from '@/components/StatusDot.vue'
+import { euro } from '@/viz'
+
+const ZUSTAND = {
+  in_stock: 'Im Lager',
+  issued: 'Ausgegeben',
+  reserved: 'Reserviert',
+  repair: 'In Reparatur',
+  retired: 'Ausgemustert',
+  disposed: 'Entsorgt',
+}
+
+const suchtext = ref('')
+const kategorie = ref('')
+const zustand = ref('')
+const standort = ref('')
+
+const bestand = createResource({
+  url: 'netops.api.inventar.asset_list',
+  makeParams: () => ({
+    search: suchtext.value || null,
+    category: kategorie.value || null,
+    asset_state: zustand.value || null,
+    site: standort.value || null,
+  }),
+  auto: true,
+})
+
+const uebersicht = createResource({ url: 'netops.api.inventar.inventory_overview', auto: true })
+
+const kategorienListe = createResource({
+  url: 'frappe.client.get_list',
+  params: { doctype: 'Asset Category', fields: ['name'], limit_page_length: 0 },
+  auto: true,
+})
+const standorte = createResource({
+  url: 'frappe.client.get_list',
+  params: { doctype: 'Site', fields: ['name', 'site_name'], limit_page_length: 0 },
+  auto: true,
+})
+
+watch([suchtext, kategorie, zustand, standort], () => bestand.fetch())
+
+const kategorieOptionen = computed(() => [
+  { label: 'Alle Kategorien', value: '' },
+  ...(kategorienListe.data || []).map((k) => ({ label: k.name, value: k.name })),
+])
+
+const zustandOptionen = [
+  { label: 'Alle Zustände', value: '' },
+  ...Object.entries(ZUSTAND).map(([value, label]) => ({ label, value })),
+]
+
+const standortOptionen = computed(() => [
+  { label: 'Alle Standorte', value: '' },
+  ...(standorte.data || []).map((s) => ({ label: s.site_name, value: s.name })),
+])
+
+const spalten = [
+  { key: 'asset_tag', label: 'Nummer', width: '130px' },
+  { key: 'asset_name', label: 'Gegenstand', width: '260px' },
+  { key: 'category', label: 'Kategorie', muted: true, width: '150px' },
+  { key: 'asset_state', label: 'Zustand', width: '140px' },
+  { key: 'holder_name', label: 'Besitz', width: '200px' },
+  { key: 'site_name', label: 'Standort', muted: true, width: '160px' },
+  { key: 'book_value_cents', label: 'Restbuchwert', align: 'right', numeric: true, width: '140px' },
+  { key: 'befund', label: 'Befund', width: '260px' },
+]
+
+const kacheln = computed(() => {
+  const z = uebersicht.data?.summary
+  if (!z) return []
+  return [
+    {
+      label: 'Gegenstände',
+      wert: z.active,
+      hinweis: z.by_state.disposed ? z.by_state.disposed + ' entsorgt' : null,
+      level: 'neutral',
+    },
+    {
+      label: 'Ausgegeben',
+      wert: z.by_state.issued,
+      hinweis: z.by_state.in_stock + ' im Lager',
+      level: 'neutral',
+    },
+    {
+      label: 'Restbuchwert',
+      wert: euro(z.book_value_cents),
+      hinweis: 'Anschaffung ' + euro(z.purchase_value_cents),
+      level: 'neutral',
+    },
+    {
+      label: 'Befunde',
+      wert: z.critical + z.warning,
+      hinweis: z.critical ? z.critical + ' kritisch' : z.warning ? 'nur Warnungen' : 'keine',
+      level: z.critical ? 'critical' : z.warning ? 'warning' : 'ok',
+    },
+  ]
+})
+
+const untertitel = computed(() => {
+  const z = uebersicht.data?.summary
+  if (!z) return ''
+  return z.active + ' Gegenstände · ' + euro(z.book_value_cents) + ' Restbuchwert'
+})
+
+function zustandThema(wert) {
+  return (
+    {
+      in_stock: 'green',
+      issued: 'blue',
+      reserved: 'orange',
+      repair: 'orange',
+      retired: 'gray',
+      disposed: 'gray',
+    }[wert] || 'gray'
+  )
+}
+</script>

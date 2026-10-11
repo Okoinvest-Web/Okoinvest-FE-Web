@@ -1,0 +1,67 @@
+      <Tafel
+        titel="Prüftermine über alle Anlagen"
+        hinweis="ESV 2012, EN 62446-1, EN 62305-3, Netzzugang und Herstellergarantie"
+      >
+        {bedarf.length === 0 ? (
+          <LeerZustand
+            text={`Alle ${geprueft} Prüfungen sind aktuell.`}
+            hinweis="Sobald eine Frist in Sicht kommt, steht sie hier – und in den Aufgaben auf der Übersicht."
+          />
+        ) : (
+          <>
+            <Tabelle
+              spalten={[
+                { titel: "Anlage" },
+                { titel: "Prüfung" },
+                { titel: "Grundlage", schmalAusblenden: true },
+                { titel: "Zuletzt", zahl: true, schmalAusblenden: true },
+                { titel: "Fällig", zahl: true },
+                { titel: "Stand" },
+              ]}
+              mindestbreite="62rem"
+            >
+              {bedarf.map(({ anlageId, anlage, posten }) => (
+                <Zeile
+                  key={`${anlageId}-${posten.regel.schluessel}`}
+                  hervorgehoben={posten.befund.stand === "ueberfaellig"}
+                >
+                  <Zelle>{anlage}</Zelle>
+                  <Zelle>
+                    <span className="block" style={{ color: "var(--t-stark)" }}>
+                      {posten.regel.bezeichnung}
+                    </span>
+                    <span className="t-mikro block leading-relaxed">
+                      {posten.befund.stand === "unbekannt"
+                        ? posten.regel.folge
+                        : posten.regel.inhalt}
+                    </span>
+                  </Zelle>
+                  <Zelle leise schmalAusblenden>
+                    {posten.regel.grundlage}
+                  </Zelle>
+                  <Zelle zahl leise schmalAusblenden>
+                    {posten.letzte ? formatDatum(posten.letzte) : "–"}
+                  </Zelle>
+                  <Zelle zahl>
+                    {posten.befund.faellig
+                      ? formatDatum(posten.befund.faellig)
+                      : "–"}
+                  </Zelle>
+                  <Zelle>
+                    <Status ton={terminTon(posten)}>
+                      {terminWort(posten)}
+                    </Status>
+                  </Zelle>
+                </Zeile>
+              ))}
+            </Tabelle>
+
+            <p className="t-mikro mt-3 leading-relaxed">
+              {aktuell} von {geprueft} Prüfungen über alle Anlagen sind aktuell.
+              Die Termine stammen aus dem Wartungsplan der jeweiligen Anlage;
+              dort steht auch, wo eine Behörde oder der Netzbetreiber einen
+              kürzeren Abstand vorgeschrieben hat.
+            </p>
+          </>
+        )}
+      </Tafel>

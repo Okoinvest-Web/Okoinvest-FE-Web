@@ -1,0 +1,109 @@
+"""Testfaelle der Plausibilitaetspruefung (FA-050 bis FA-055).
+
+Spiegelbild zu `frontend/src/lib/plausibilitaet.test.ts`: Client und Server
+muessen dieselbe Bewertung liefern, sonst springt der Status nach dem Sync um.
+
+Laeuft ohne Frappe-Bench: `python -m pytest tests/`
+"""
+
+from __future__ import annotations
+
+import pathlib
+import sys
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
+
+from oekovolt_baudoku.utils.plausibilitaet import (
+    FEHLER,
+    OK,
+    WARNUNG,
+    pruefe_string,
+    pruefe_zahlenwert,
+)
+
+MODUL = {"modul_uoc": 41.5, "modul_isc": 13.9}
+
+
+# --------------------------------------------------------------------- Uoc
+
+def test_uoc_im_sollbereich():
+    befund = pruefe_string(uoc=830, isc=None, riso=2000, anzahl_module=20, **MODUL)
+    assert befund.status == OK
+
+
+def test_uoc_leicht_ausserhalb_warnt():
+    # Soll 830 V, Toleranz +/-10 % -> 747 bis 913
+    befund = pruefe_string(uoc=930, isc=None, riso=2000, anzahl_module=20, **MODUL)
+    assert befund.status == WARNUNG
+    assert "Uoc" in befund.meldung
+
+
+def test_uoc_stark_abweichend_ist_fehler():
+    befund = pruefe_string(uoc=600, isc=None, riso=2000, anzahl_module=20, **MODUL)
+    assert befund.status == FEHLER
+
+
+def test_uoc_ohne_datenblatt_warnt():
+    befund = pruefe_string(uoc=830, isc=None, riso=2000, anzahl_module=20)
+    assert befund.status == WARNUNG
+    assert "Uoc je Modul" in befund.meldung
+
+
+# -------------------------------------------------------------------- Riso
+
+def test_riso_unter_grenzwert_ist_fehler():
+    # 30 Module x 40 kOhm = 1200 kOhm Grenzwert (IEC 62446-1)
+    befund = pruefe_string(uoc=None, isc=None, riso=900, anzahl_module=30, **MODUL)
+    assert befund.status == FEHLER
+    assert "IEC 62446-1" in befund.meldung
+
+
+def test_riso_knapp_darueber_warnt():
+    befund = pruefe_string(uoc=None, isc=None, riso=1300, anzahl_module=30, **MODUL)
+    assert befund.status == WARNUNG
+
+
+def test_riso_deutlich_darueber_ist_ok():
+    befund = pruefe_string(uoc=None, isc=None, riso=5000, anzahl_module=30, **MODUL)
+    assert befund.status == OK
+
+
+def test_riso_ohne_modulzahl_nutzt_absolutminimum():
+    assert pruefe_string(uoc=None, isc=None, riso=800, anzahl_module=None).status == FEHLER
+    assert pruefe_string(uoc=None, isc=None, riso=5000, anzahl_module=None).status == OK
+
+
+# --------------------------------------------------------------------- Isc
+
+def test_isc_ausserhalb_toleranz_warnt():
+    befund = pruefe_string(uoc=None, isc=11.5, riso=5000, anzahl_module=20, **MODUL)
+    assert befund.status == WARNUNG
+
+
+def test_isc_innerhalb_toleranz_ist_ok():
+    befund = pruefe_string(uoc=None, isc=13.0, riso=5000, anzahl_module=20, **MODUL)
+    assert befund.status == OK
+
+
+# -------------------------------------------------------------- Zahlenwert
+
+def test_zahlenwert_ohne_eingabe_ist_neutral():
+    assert pruefe_zahlenwert(None, 8, 30).status == OK
+
+
+def test_zahlenwert_knapp_unter_minimum_warnt():
+    assert pruefe_zahlenwert(7.5, 8, 30, "Nm").status == WARNUNG
+
+
+def test_zahlenwert_deutlich_unter_minimum_ist_fehler():
+    assert pruefe_zahlenwert(2, 8, 30, "Nm").status == FEHLER
+
+
+def test_zahlenwert_deutlich_ueber_maximum_ist_fehler():
+    assert pruefe_zahlenwert(60, 8, 30, "Nm").status == FEHLER
+
+
+def test_mehrere_befunde_werden_zum_schwersten_aggregiert():
+    befund = pruefe_string(uoc=600, isc=13.9, riso=900, anzahl_module=30, **MODUL)
+    assert befund.status == FEHLER
+    assert len(befund.meldungen) >= 2

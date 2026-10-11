@@ -1,0 +1,67 @@
+import { ClipboardList } from "lucide-react";
+import { db } from "@/lib/data";
+import { date, daysUntil, money, ORDER_STATUS_LABEL } from "@/lib/format";
+import { Badge, Empty, PageHeader, Progress, Table, TD } from "@/components/ui";
+
+export const metadata = { title: "Aufträge" };
+
+// Aufträge (ERPNext Sales Order): Montagetermin, Montage- und Abrechnungsstand
+export default async function OrdersPage() {
+  const orders = await db().listSalesOrders({ limit: 200 });
+  const running = orders.filter((o) => !["Completed", "Cancelled"].includes(o.status));
+
+  return (
+    <>
+      <PageHeader
+        title="Aufträge"
+        subtitle={
+          <>
+            {running.length} in Umsetzung · <span className="font-medium text-gray-700">{money(running.reduce((s, o) => s + o.grand_total, 0))}</span> brutto
+          </>
+        }
+      />
+      {orders.length === 0 ? (
+        <Empty icon={ClipboardList}>Noch keine Aufträge.</Empty>
+      ) : (
+        <Table head={["Auftrag", "Status", "Montage", "Montiert", "Abgerechnet", "Betrag"]} align={{ 5: "right" }}>
+          {orders.map((o) => {
+            const n = daysUntil(o.delivery_date);
+            const pending = o.per_delivered < 100 && o.status !== "Cancelled";
+            return (
+              <tr key={o.name} className="hover:bg-gray-50">
+                <td className={TD}>
+                  <div className="font-medium text-gray-900">{o.title ?? o.name}</div>
+                  <div className="text-[12px] text-gray-500">
+                    {o.customer_name} · {o.name}
+                  </div>
+                </td>
+                <td className={TD}>
+                  <Badge value={o.status} label={ORDER_STATUS_LABEL[o.status] ?? o.status} />
+                </td>
+                <td className={`${TD} tnum whitespace-nowrap`}>
+                  {date(o.delivery_date)}
+                  {pending && n !== undefined && (
+                    <div className={`text-[12px] ${n < 0 ? "text-rose-600" : "text-gray-400"}`}>{n < 0 ? `${-n} T überfällig` : `in ${n} T`}</div>
+                  )}
+                </td>
+                <td className={TD}>
+                  <div className="flex items-center gap-2">
+                    <Progress value={o.per_delivered} className="w-16" />
+                    <span className="tnum text-[12px]">{Math.round(o.per_delivered)} %</span>
+                  </div>
+                </td>
+                <td className={TD}>
+                  <div className="flex items-center gap-2">
+                    <Progress value={o.per_billed} className="w-16" />
+                    <span className="tnum text-[12px]">{Math.round(o.per_billed)} %</span>
+                  </div>
+                </td>
+                <td className={`${TD} tnum text-right font-medium text-gray-900`}>{money(o.grand_total, o.currency)}</td>
+              </tr>
+            );
+          })}
+        </Table>
+      )}
+    </>
+  );
+}

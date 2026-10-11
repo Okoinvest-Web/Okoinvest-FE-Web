@@ -1,0 +1,156 @@
+/**
+ * Dokumentation: Dokumente, Checklisten, Verträge und das Objektdossier
+ * (Fachkonzept 2.6).
+ *
+ * Kernidee von IT Glue/Hudu, die hier übernommen wird: an jedem Objekt sieht
+ * man sofort alles, was damit zu tun hat. Das leistet `object_dossier` -
+ * Dokumente, Beziehungen, Zugangsverweise, Checklisten und Verträge zu einem
+ * Objekt in einem Aufruf.
+ */
+import { table } from '../db.js'
+import { heute, parse, tageVersetzt } from '../zeit.js'
+
+export function document_list({ document_type = null, approval_state = null, tenant = null } = {}) {
+  const heuteDatum = heute()
+  const beziehungen = table('Object Relation')
+
+  let dokumente = table('NetOps Document')
+  if (document_type) dokumente = dokumente.filter((d) => d.document_type === document_type)
+  if (approval_state) dokumente = dokumente.filter((d) => d.approval_state === approval_state)
+  if (tenant) dokumente = dokumente.filter((d) => d.tenant === tenant)
+
+  return [...dokumente]
+    .map((d) => ({
+      ...d,
+      review_overdue: !!(d.review_date && d.review_date < heuteDatum),
+      linked_objects: beziehungen
+        .filter((r) => r.from_type === 'NetOps Document' && r.from_name === d.name)
+        .map((r) => ({ type: r.to_type, name: r.to_name, relation_type: r.relation_type })),
+    }))
+    .sort(
+      (a, b) =>
+        Number(b.review_overdue) - Number(a.review_overdue) || a.title.localeCompare(b.title),
+    )
+}
+
+export function checklist_runs({ run_state = null, tenant = null } = {}) {
+  let laeufe = table('Checklist Run')
+  if (run_state) laeufe = laeufe.filter((c) => c.run_state === run_state)
+  if (tenant) laeufe = laeufe.filter((c) => c.tenant === tenant)
+
+  return [...laeufe]
+    .map((lauf) => {
+      const punkte = lauf.items || []
+      const erledigt = punkte.filter((p) => p.done).length
+      const offenePflicht = punkte.filter((p) => p.required && !p.done)
+
+      return {
+        ...lauf,
+        total_items: punkte.length,
+        done_items: erledigt,
+        progress: punkte.length ? Math.round((erledigt / punkte.length) * 100) : 0,
+        // Abschluss ist erst möglich, wenn alle Pflichtpunkte erledigt sind.
+        blocking_items: offenePflicht.map((p) => p.label),
+        can_finish: offenePflicht.length === 0,
+      }
+    })
+    .sort((a, b) => a.run_state.localeCompare(b.run_state) || a.progress - b.progress)
+}
+
+export function contract_list({ tenant = null } = {}) {
+  const heuteIso = heute()
+
+  const vertraege = table('Contract')
+    .filter((c) => !tenant || c.tenant === tenant)
+    .map((c) => {
+      const restTage = Math.round((parse(c.end_date + ' 00:00:00').getTime() - Date.now()) / 86400000)
+      // Kündigungsstichtag = Vertragsende minus Frist. Danach verlängert sich
+      // ein automatisch verlängernder Vertrag ungewollt.
+      const kuendigungBis = tageVersetzt(
+        -(c.notice_period_days || 0),
+        parse(c.end_date + ' 00:00:00'),
+      )
+
+      const fristVerpasst = c.auto_renew && kuendigungBis < heuteIso && restTage > 0
+
+      return {
+        ...c,
+        days_to_end: restTage,
+        notice_deadline: kuendigungBis,
+        notice_missed: !!fristVerpasst,
+        expired: restTage < 0,
+        level: fristVerpasst || restTage < 0 ? 'critical' : restTage < 90 ? 'warning' : 'ok',
+      }
+    })
+
+  const lizenzen = table('License')
+    .filter((l) => !tenant || l.tenant === tenant)
+    .map((l) => {
+      const restTage = Math.round((parse(l.expiry_date + ' 00:00:00').getTime() - Date.now()) / 86400000)
+      return {
+        ...l,
+        days_to_expiry: restTage,
+        expired: restTage < 0,
+        level: restTage < 0 ? 'critical' : restTage < 60 ? 'warning' : 'ok',
+      }
+    })
+
+  return {
+    contracts: vertraege.sort((a, b) => a.days_to_end - b.days_to_end),
+    licenses: lizenzen.sort((a, b) => a.days_to_expiry - b.days_to_expiry),
+    yearly_cost: vertraege.reduce((summe, c) => summe + (c.cost_per_year || 0), 0),
+  }
+}
+
+/**
+ * Alles zu einem Objekt in einem Aufruf: Dokumente, Beziehungen in beide
+ * Richtungen, Zugangsverweise, Checklisten, Alarme und Schwachstellen.
+ */
+export function object_dossier({ object_type, object_name } = {}) {
+  const beziehungen = table('Object Relation')
+  const dokumente = new Map(table('NetOps Document').map((d) => [d.name, d]))
+
+  const hin = beziehungen.filter((r) => r.from_type === object_type && r.from_name === object_name)
+  const her = beziehungen.filter((r) => r.to_type === object_type && r.to_name === object_name)
+
+  const zugehoerigeDokumente = her
+    .filter((r) => r.from_type === 'NetOps Document')
+    .map((r) => dokumente.get(r.from_name))
+    .filter(Boolean)
+
+  return {
+    object: { type: object_type, name: object_name },
+    documents: zugehoerigeDokumente.map((d) => ({
+      name: d.name,
+      title: d.title,
+      document_type: d.document_type,
+      version: d.version,
+      approval_state: d.approval_state,
+    })),
+    relations_out: hin.map((r) => ({ type: r.to_type, name: r.to_name, relation_type: r.relation_type })),
+    relations_in: her
+      .filter((r) => r.from_type !== 'NetOps Document')
+      .map((r) => ({ type: r.from_type, name: r.from_name, relation_type: r.relation_type })),
+    // Verweise auf Passbolt – Bezeichnung und Link, nie ein Geheimnis.
+    access_references: table('Access Reference')
+      .filter((a) => a.object_type === object_type && a.object_name === object_name)
+      .map((a) => ({
+        name: a.name,
+        label: a.label,
+        passbolt_url: a.passbolt_url,
+        access_kind: a.access_kind,
+      })),
+    checklists: table('Checklist Run')
+      .filter((c) => c.object_type === object_type && c.object_name === object_name)
+      .map((c) => ({ name: c.name, template: c.template, run_state: c.run_state })),
+    alerts: table('Alert')
+      .filter((a) => a.object_type === object_type && a.object_name === object_name && a.alert_state !== 'closed')
+      .map((a) => ({ name: a.name, title: a.title, severity: a.severity, alert_state: a.alert_state })),
+    vulnerabilities: table('Vulnerability')
+      .filter((v) => v.object_type === object_type && v.object_name === object_name && v.vuln_state === 'open')
+      .map((v) => ({ name: v.name, cve: v.cve, title: v.title, cvss: v.cvss, kev: v.kev })),
+    drift: table('Drift Finding')
+      .filter((d) => d.object_type === object_type && d.object_name === object_name && d.state === 'open')
+      .map((d) => ({ name: d.name, field: d.field, soll_value: d.soll_value, ist_value: d.ist_value })),
+  }
+}

@@ -1,0 +1,310 @@
+import "server-only";
+
+import { alle } from "../db/verbindung.ts";
+
+/**
+ * Zahlen in oesterreichischer Schreibweise.
+ *
+ * "1240.5 kWp" ist in einer deutschsprachigen Anwendung ein Fehler,
+ * kein Detail: Der Punkt ist bei uns das Tausenderzeichen, und
+ * jemand liest dort kurz 1,2 Millionen.
+ */
+function zahl(wert: number, stellen = 1): string {
+  return wert.toLocaleString("de-AT", {
+    minimumFractionDigits: stellen,
+    maximumFractionDigits: stellen,
+  });
+}
+
+/**
+ * Der Suchindex für die Befehlspalette.
+ *
+ * Was hier hineinkommt, entscheidet darüber, ob jemand die Palette
+ * benutzt: Wer einmal eine Anlage sucht und sie nicht findet, öffnet
+ * sie nie wieder. Deshalb stehen darin nicht nur Seiten, sondern die
+ * Gegenstände selbst - Anlagen, Wechselrichter, Meldungen,
+ * Ladekarten, Geräte, Abrechnungen.
+ *
+ * Der Index wird bei jedem Seitenaufbau frisch gelesen. Das ist
+ * vertretbar: Es sind einige hundert Zeilen aus einer Datei auf
+ * derselben Maschine, und ein Index, der einen Tag alt ist, führt
+ * genau dann ins Leere, wenn es darauf ankommt - bei der Anlage, die
+ * gestern dazugekommen ist.
+ */
+
+export interface Schnellziel {
+  /** Eindeutig, für den Listenschlüssel. */
+  id: string;
+  titel: string;
+  /** Rechte Spalte: was es ist und wo es hingehört. */
+  zusatz: string;
+  pfad: string;
+  gruppe: string;
+  /** Weitere Begriffe, unter denen es gefunden werden soll. */
+  stichworte: string[];
+  /** Recht, das den Eintrag sichtbar macht. */
+  recht: string;
+}
+
+export function ladeSchnellziele(): Schnellziel[] {
+  const ziele: Schnellziel[] = [];
+
+  /* ---------------- Anlagen ---------------- */
+  for (const a of alle<{
+    id: string;
+    bezeichnung: string;
+    ort: string | null;
+    leistung_kwp: number;
+    status: string;
+  }>(
+    `SELECT id, bezeichnung, ort, leistung_kwp, status
+       FROM anlage ORDER BY bezeichnung`,
+  )) {
+    ziele.push({
+      id: `anlage-${a.id}`,
+      titel: a.bezeichnung,
+      zusatz: `Anlage · ${a.ort ?? "–"} · ${zahl(a.leistung_kwp)} kWp`,
+      pfad: `/portal/anlagen/${a.id}`,
+      gruppe: "Anlagen",
+      stichworte: [a.id, a.ort ?? "", a.status, "Anlage", "Standort"],
+      recht: "anlagen.lesen",
+    });
+  }
+
+  /* ---------------- Wechselrichter ---------------- */
+  for (const w of alle<{
+    id: string;
+    anlage_id: string;
+    bezeichnung: string;
+    hersteller: string;
+    modell: string;
+    anlage: string;
+  }>(
+    `SELECT w.id, w.anlage_id, w.bezeichnung, w.hersteller, w.modell,
+            a.bezeichnung AS anlage
+       FROM wechselrichter w
+       JOIN anlage a ON a.id = w.anlage_id
+      ORDER BY w.id`,
+  )) {
+    ziele.push({
+      id: `wr-${w.id}`,
+      titel: `${w.bezeichnung} · ${w.anlage}`,
+      zusatz: `Wechselrichter · ${w.hersteller} ${w.modell}`,
+      pfad: `/portal/anlagen/${w.anlage_id}`,
+      gruppe: "Technik",
+      stichworte: [w.id, w.hersteller, w.modell, "Wechselrichter", "Inverter"],
+      recht: "anlagen.lesen",
+    });
+  }
+
+  /* ---------------- Offene Meldungen ---------------- */
+  for (const m of alle<{
+    id: string;
+    titel: string;
+    schweregrad: string;
+    status: string;
+    anlage: string | null;
+  }>(
+    `SELECT al.id, al.titel, al.schweregrad, al.status,
+            a.bezeichnung AS anlage
+       FROM alarm al
+       LEFT JOIN anlage a ON a.id = al.anlage_id
+      WHERE al.status <> 'Behoben'
+      ORDER BY al.ausgeloest_am DESC
+      LIMIT 40`,
+  )) {
+    ziele.push({
+      id: `alarm-${m.id}`,
+      titel: m.titel,
+      zusatz: `Meldung · ${m.schweregrad} · ${m.anlage ?? "alle Anlagen"}`,
+      pfad: `/portal/alarme/${m.id}`,
+      gruppe: "Meldungen",
+      stichworte: [m.id, m.schweregrad, m.status, "Alarm", "Störung"],
+      recht: "monitoring.lesen",
+    });
+  }
+
+  /* ---------------- Störungen ---------------- */
+  for (const s of alle<{
+    id: string;
+    betreff: string;
+    nummer: string | null;
+    status: string;
+    prioritaet: string;
+  }>(
+    `SELECT id, betreff, nummer, status, prioritaet FROM stoerung
+      WHERE status <> 'Geschlossen'
+      ORDER BY gemeldet_am DESC LIMIT 25`,
+  )) {
+    ziele.push({
+      id: `stoerung-${s.id}`,
+      titel: s.betreff,
+      zusatz: `Störungsmeldung · ${s.prioritaet} · ${s.status}`,
+      pfad: `/portal/support/${s.id}`,
+      gruppe: "Support",
+      stichworte: [
+        s.id,
+        s.nummer ?? "",
+        s.prioritaet,
+        s.status,
+        "Ticket",
+        "Störung",
+      ],
+      recht: "support.melden",
+    });
+  }
+
+  /* ---------------- Ladekarten ---------------- */
+  for (const k of alle<{
+    id: string;
+    bezeichnung: string;
+    inhaber: string | null;
+    kennzeichen: string | null;
+    art: string;
+    kostenstelle: string;
+  }>(
+    `SELECT id, bezeichnung, inhaber, kennzeichen, art, kostenstelle
+       FROM ladekarte ORDER BY bezeichnung`,
+  )) {
+    ziele.push({
+      id: `karte-${k.id}`,
+      titel: k.bezeichnung,
+      zusatz: `Ladekarte · ${k.art} · ${k.kostenstelle}`,
+      pfad: "/portal/mobilitaet/karten",
+      gruppe: "Mobilität",
+      stichworte: [
+        k.id,
+        k.inhaber ?? "",
+        k.kennzeichen ?? "",
+        k.art,
+        "Ladekarte",
+        "Tankkarte",
+      ],
+      recht: "mobilitaet.lesen",
+    });
+  }
+
+  /* ---------------- Ladeabrechnungen ---------------- */
+  for (const l of alle<{
+    id: string;
+    bezeichnung: string;
+    status: string;
+    brutto: number;
+  }>(
+    `SELECT id, bezeichnung, status, brutto FROM ladeabrechnung
+      ORDER BY zeitraum_von DESC LIMIT 12`,
+  )) {
+    ziele.push({
+      id: `ladelauf-${l.id}`,
+      titel: l.bezeichnung,
+      zusatz: `Ladeabrechnung · ${l.status}`,
+      pfad: `/portal/mobilitaet/abrechnung/${l.id}`,
+      gruppe: "Mobilität",
+      stichworte: [l.id, l.status, "Abrechnung", "Lauf"],
+      recht: "mobilitaet.lesen",
+    });
+  }
+
+  /* ---------------- Edge-Geräte ---------------- */
+  for (const g of alle<{
+    id: string;
+    rolle: string;
+    hersteller: string;
+    modell: string;
+    anlage: string;
+  }>(
+    `SELECT g.id, g.rolle, g.hersteller, g.modell, a.bezeichnung AS anlage
+       FROM edge_geraet g
+       JOIN anlage a ON a.id = g.anlage_id
+      ORDER BY g.id`,
+  )) {
+    ziele.push({
+      id: `geraet-${g.id}`,
+      titel: `${g.hersteller} ${g.modell}`,
+      zusatz: `${g.rolle} · ${g.anlage}`,
+      pfad: "/portal/netz",
+      gruppe: "Netz & Geräte",
+      stichworte: [g.id, g.rolle, g.hersteller, g.modell, "Gateway", "Edge"],
+      recht: "netz.lesen",
+    });
+  }
+
+  /* ---------------- Buchungsstapel ---------------- */
+  for (const b of alle<{ id: string; bezeichnung: string; status: string }>(
+    `SELECT id, bezeichnung, status FROM buchungsstapel
+      ORDER BY zeitraum_von DESC LIMIT 12`,
+  )) {
+    ziele.push({
+      id: `stapel-${b.id}`,
+      titel: b.bezeichnung,
+      zusatz: `Buchungsstapel · ${b.status === "Uebergeben" ? "Übergeben" : b.status}`,
+      pfad: `/portal/finanzen?stapel=${b.id}`,
+      gruppe: "Buchhaltung",
+      stichworte: [b.id, b.status, "BMD", "Stapel", "Buchung"],
+      recht: "finanzen.lesen",
+    });
+  }
+
+  /* ---------------- Energiegemeinschaften ---------------- */
+  for (const g of alle<{ id: string; bezeichnung: string; art: string }>(
+    `SELECT id, bezeichnung, art FROM gemeinschaft ORDER BY bezeichnung`,
+  )) {
+    ziele.push({
+      id: `eg-${g.id}`,
+      titel: g.bezeichnung,
+      zusatz: `Energiegemeinschaft · ${g.art}`,
+      pfad: "/portal/gemeinschaft",
+      gruppe: "Gemeinschaft",
+      stichworte: [g.id, g.art, "EEG", "BEG", "Gemeinschaft"],
+      recht: "gemeinschaft.lesen",
+    });
+  }
+
+  /* ---------------- Speicher ---------------- */
+  for (const s of alle<{
+    id: string;
+    bezeichnung: string;
+    kapazitaet_kwh: number;
+    anlage: string;
+  }>(
+    `SELECT s.id, s.bezeichnung, s.kapazitaet_kwh, a.bezeichnung AS anlage
+       FROM speicher s
+       JOIN anlage a ON a.id = s.anlage_id
+      ORDER BY s.bezeichnung`,
+  )) {
+    ziele.push({
+      id: `speicher-${s.id}`,
+      titel: s.bezeichnung,
+      zusatz: `Speicher · ${zahl(s.kapazitaet_kwh, 0)} kWh · ${s.anlage}`,
+      pfad: "/portal/handel",
+      gruppe: "Handel",
+      stichworte: [s.id, "Batterie", "Speicher", "Vermarktung"],
+      recht: "handel.lesen",
+    });
+  }
+
+  /* ---------------- EU-Taxonomie ---------------- */
+  for (const t of alle<{ id: string; jahr: number; bezeichnung: string }>(
+    `SELECT id, jahr, bezeichnung FROM taxonomie_pruefung ORDER BY jahr DESC`,
+  )) {
+    ziele.push({
+      id: `taxonomie-${t.id}`,
+      titel: t.bezeichnung,
+      zusatz: `EU-Taxonomie · Geschäftsjahr ${t.jahr}`,
+      pfad: `/portal/nachhaltigkeit/taxonomie?jahr=${t.jahr}`,
+      gruppe: "Nachhaltigkeit",
+      stichworte: [
+        t.id,
+        "Taxonomie",
+        "CSRD",
+        "DNSH",
+        "CapEx",
+        "OpEx",
+        "Mindestschutz",
+      ],
+      recht: "nachhaltigkeit.lesen",
+    });
+  }
+
+  return ziele;
+}

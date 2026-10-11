@@ -1,0 +1,365 @@
+import re
+from docx import Document
+from docx.shared import Pt, RGBColor, Cm
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.oxml.ns import qn
+from docx.oxml import OxmlElement
+
+ACCENT = RGBColor(0x1F, 0x4E, 0x3D)
+GREY = RGBColor(0x5F, 0x5F, 0x5F)
+RED = RGBColor(0xB0, 0x00, 0x00)
+WHITE = RGBColor(0xFF, 0xFF, 0xFF)
+PH = RGBColor(0xC0, 0x00, 0x00)
+
+d = Document()
+s = d.sections[0]
+s.left_margin = s.right_margin = Cm(2.0)
+s.top_margin = s.bottom_margin = Cm(1.6)
+n = d.styles["Normal"]
+n.font.name = "Calibri"
+n.font.size = Pt(10.5)
+n.paragraph_format.space_after = Pt(5)
+n.paragraph_format.line_spacing = 1.12
+
+
+def add(p, text, bold=False, size=None, color=None, italic=False):
+    for part in re.split(r"(\[[^\]]+\])", text):
+        if not part:
+            continue
+        r = p.add_run(part)
+        r.bold, r.italic = bold, italic
+        if size:
+            r.font.size = Pt(size)
+        if part.startswith("["):
+            r.font.color.rgb, r.bold = PH, True
+        elif color:
+            r.font.color.rgb = color
+    return p
+
+
+def h1(t):
+    p = add(d.add_paragraph(), t, bold=True, size=14, color=ACCENT)
+    p.paragraph_format.space_before = Pt(12)
+    p.paragraph_format.keep_with_next = True
+
+
+def h2(t):
+    p = add(d.add_paragraph(), t, bold=True, size=11.5, color=ACCENT)
+    p.paragraph_format.space_before = Pt(6)
+    p.paragraph_format.keep_with_next = True
+
+
+def para(t, **kw):
+    p = add(d.add_paragraph(), t, **kw)
+    p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+    return p
+
+
+def bullets(items):
+    for it in items:
+        p = d.add_paragraph(style="List Bullet")
+        if isinstance(it, tuple):
+            add(p, it[0] + " ", bold=True)
+            add(p, it[1])
+        else:
+            add(p, it)
+
+
+def shade(c, hexcolor):
+    tcPr = c._tc.get_or_add_tcPr()
+    sh = OxmlElement("w:shd")
+    sh.set(qn("w:val"), "clear")
+    sh.set(qn("w:fill"), hexcolor)
+    tcPr.append(sh)
+
+
+def table(header, rows, widths):
+    t = d.add_table(rows=len(rows) + 1, cols=len(header))
+    t.style = "Table Grid"
+    for j, hd in enumerate(header):
+        c = t.rows[0].cells[j]
+        c.paragraphs[0].text = ""
+        add(c.paragraphs[0], hd, bold=True, size=9.5, color=WHITE)
+        shade(c, "1F4E3D")
+    for i, r in enumerate(rows, start=1):
+        for j, txt in enumerate(r):
+            c = t.rows[i].cells[j]
+            c.paragraphs[0].text = ""
+            add(c.paragraphs[0], txt, size=9, bold=(j == 0))
+            if i % 2 == 0:
+                shade(c, "EEF3F1")
+    for row in t.rows:
+        for j, w in enumerate(widths):
+            row.cells[j].width = Cm(w)
+    d.add_paragraph()
+
+
+add(d.add_paragraph(), "INTERN – VERTRAULICH – NICHT WEITERGEBEN", bold=True, size=9, color=RED)
+add(d.add_paragraph(), "Medienstrategie Ökovolt ./. Salzburg AG", bold=True, size=22, color=ACCENT)
+add(d.add_paragraph(), "Wie man diese Auseinandersetzung in der österreichischen Öffentlichkeit gewinnt – "
+    "Frame, Botschaften, Medien, Politik, Zeitplan, Verteidigung", italic=True, size=11.5, color=GREY)
+
+# ------------------------------------------------------------------
+h1("1. Was „gewinnen“ heißt")
+para("Medial gewinnt man nicht durch die lauteste Schlagzeile, sondern wenn die Öffentlichkeit die Geschichte so "
+     "erzählt, wie man sie selbst erzählt – und wenn daraus ein Handlungsdruck auf jene entsteht, die entscheiden. "
+     "Für Ökovolt heißt das konkret:")
+bullets([
+    ("Frame gewonnen:", "Medien schreiben „Partnerbruch“ oder „Salzburg AG gründete Konkurrenz“ statt „Gesellschafterstreit“."),
+    ("Druck auf Entscheider:", "Land und Stadt als Eigentümer oder der Aufsichtsrat kündigen eine unabhängige Prüfung an."),
+    ("Politik aktiv:", "Mindestens eine Landtags- oder Gemeinderatsanfrage; Befassung durch Kontrollinstanzen."),
+    ("Verhandlungsposition:", "Die Salzburg AG hat ein eigenes Interesse, die Sache zu fairen Bedingungen zu beenden."),
+    ("Keine Eigentore:", "Keine Klage wegen Kreditschädigung oder übler Nachrede, die hält; keine Richtigstellung."),
+])
+
+# ------------------------------------------------------------------
+h1("2. Der Frame: kein Streit, sondern ein Partnerbruch")
+para("Die Salzburg AG hat den Begriff „Gesellschafterstreit“ gesetzt. Er ist ihre stärkste Waffe: Ein Streit hat zwei "
+     "Schuldige, langweilt nach drei Tagen und lädt Medien ein, beide Seiten gleich zu gewichten. Die ganze Kampagne "
+     "dient dazu, diesen Frame durch einen anderen zu ersetzen:")
+p = d.add_paragraph()
+p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+add(p, "„Partner auf dem Papier – Konkurrent am selben Tag.“", bold=True, size=15, color=ACCENT)
+para("Dieser Satz ist die Dachbotschaft. Er kommt in jedem Interview, jeder Aussendung und jedem Posting vor – "
+     "wortgleich. Wiederholung ist in der Medienarbeit keine Schwäche, sondern das Werkzeug.")
+
+h2("Das Botschaftshaus")
+table(["Ebene", "Botschaft", "Beleg"], [
+    ("Dach", "Partner auf dem Papier – Konkurrent am selben Tag.", "Syndikatsvertrag + one2zero-Gründung 18.10.2021"),
+    ("Säule 1 – Vertrauen missbraucht", "Wir haben uns aus der Hofer-Ausschreibung zurückgezogen, weil wir dem Partner "
+     "vertraut haben. Den Auftrag bekam die neue Tochter.", "Mail 05.02.2021, SAG-Mail „Leuchtturmprojekt“, LG Memmingen"),
+    ("Säule 2 – Gerichte haben entschieden", "Dreimal vor dem OLG verloren. Treuwidrig ist kein Streit, das ist ein Befund.",
+     "OLG München 14 U 3746/25, 3748/25, 295/26"),
+    ("Säule 3 – Die Salzburger zahlen", "Ein Landesversorger prozessiert mit Kundengeld gegen einen heimischen Betrieb, "
+     "statt aufzuklären.", "Eigentümerstruktur, Jahresabschlüsse, Verfahren"),
+    ("Fundament", "Jede Aussage ist belegt und für jeden überprüfbar.", "Faktenseite, Dokumente auf Anfrage"),
+], [3.6, 8.2, 5.2])
+
+h2("Die Rollen in der Geschichte")
+bullets([
+    ("Die Held:innen sind nicht Ökovolt als Firma,", "sondern die mehr als 30 Monteurinnen, Monteure und Angestellten "
+     "aus dem Innviertel, die auf den Dächern die Energiewende bauen. Sie bekommen Gesicht und Stimme (mit Zustimmung)."),
+    ("Der Gegenspieler ist nicht „Salzburg“,", "sondern die Entscheidungen des Konzernvorstands. Nie die Salzburger, nie "
+     "die Beschäftigten der Salzburg AG angreifen – sie sind Teil des Publikums."),
+    ("Das Publikum sind die Stromkundinnen und -kunden", "und damit die Eigentümer: Land und Stadt. Jede Botschaft "
+     "beantwortet die Frage „Was geht mich das an?“"),
+])
+
+# ------------------------------------------------------------------
+h1("3. Medien: Jedes Medium braucht etwas anderes")
+table(["Medium", "Was es braucht", "Was Ökovolt liefert"], [
+    ("ORF Salzburg / „Salzburg heute“", "Bilder, eine Person vor der Kamera, einen Satz unter 15 Sekunden",
+     "Dreh auf einer Baustelle mit Team; Sprecher mit Dachbotschaft; Grafik Zeitstrahl"),
+    ("Salzburger Nachrichten", "Dokumente, Einordnung, zweite Quelle", "Urteile, Syndikatsvertrag (Auszug), Hintergrundgespräch"),
+    ("Krone Salzburg / OÖ", "Emotion, „kleiner Betrieb gegen Konzern“, klare Schuldfrage",
+     "Mitarbeiterstimme, Steckdosen-Zitat, Stromkunden-Zitat"),
+    ("Der Standard / profil / Falter / Dossier", "Exklusives, Recherchetiefe, Dokumentenlage",
+     "Exklusiv Welle 2 (OLG-Urteile + GV) an EIN Medium mit Vorlauf"),
+    ("OÖN, Tips, BezirksRundschau Braunau", "Regionaler Bezug", "„Innviertler Betrieb gegen Salzburger Landesversorger“; "
+     "Energie AG OÖ ist Miteigentümerin der Salzburg AG"),
+    ("Salzburg24, MeinBezirk", "Tempo, kurze Texte, Bilder", "Kurzfassung jeder Welle, Foto, Zitat"),
+    ("Wirtschaftsmedien (trend, Presse, Kurier)", "Zahlen, Governance", "Welle 4: Gewinn Ökovolt vs. Verluste one2zero"),
+    ("Fachmedien Energie/PV", "Branchenrelevanz", "Welle 3: Gewerbeschein, Auswirkung auf die Elektrobranche"),
+    ("APA-OTS", "Verbreitung, Auffindbarkeit", "Jede Welle als OTS nach dem Exklusiv-Vorlauf"),
+], [4.3, 5.6, 7.1])
+
+h2("Instrumente, die Profis einsetzen")
+bullets([
+    ("Hintergrundgespräch vor Welle 1:", "Drei bis vier ausgewählte Journalist:innen (SN, ORF, Standard, Krone) "
+     "persönlich, unter drei (nur Hintergrund), mit Dokumentenmappe. Wer die Geschichte zuerst versteht, erzählt sie richtig."),
+    ("Exklusivität statt Gießkanne:", "Die stärksten Themen zuerst an ein Medium mit 24–48 Stunden Vorsprung. "
+     "Exklusivgeschichten werden größer gespielt und von anderen nachgezogen."),
+    ("Faktenseite online:", "Eine schlichte Seite (z. B. oekovolt.com/fakten) mit Zeitstrahl, Urteilen, Registerauszügen, "
+     "den offenen Fragen an die Salzburg AG – und der Stellungnahme der Salzburg AG, verlinkt. Das signalisiert Souveränität."),
+    ("Eine Grafik:", "Zeitstrahl 2020–2026 mit dem 18.10.2021 in der Mitte: links „Syndikatsvertrag: Vermeidung von "
+     "Wettbewerb“, rechts „Gründung one2zero“. Diese eine Grafik erklärt den Fall in fünf Sekunden."),
+    ("B-Roll für TV:", "Fertiges Bildmaterial von Montage, Team, Firmengelände – Fernsehen nimmt, was es leicht bekommt."),
+    ("LinkedIn des Geschäftsführers:", "Persönliche, ruhige Beiträge zu jeder Welle; keine Angriffe, Einladung zur Faktenseite."),
+    ("Pressekonferenz erst später:", "Nur mit starkem Anlass (z. B. Ablauf der Eigentümerfrist oder neue Entscheidung) – "
+     "eine halbleere PK schadet mehr als keine."),
+])
+
+# ------------------------------------------------------------------
+h1("4. Politik und Institutionen – die zweite Bühne")
+para("Medien berichten ein zweites und drittes Mal, wenn Institutionen reagieren. Deshalb läuft parallel zur "
+     "Pressearbeit eine sachliche Information der Entscheidungsträger – immer mit denselben Fakten, nie mit Forderungen "
+     "nach Rücktritten oder Schuldsprüchen.")
+table(["Adressat", "Ziel", "Zeitpunkt"], [
+    ("Landtagsklubs (insb. Opposition)", "Schriftliche Anfrage an die Landesregierung als Eigentümervertreterin", "Nach Welle 2"),
+    ("Gemeinderatsfraktionen Stadt Salzburg", "Anfrage an den Bürgermeister als Eigentümervertreter", "Nach Welle 2"),
+    ("Landesrechnungshof Salzburg", "Anregung einer Prüfung von Beteiligungs- und Vergabevorgängen", "Nach Welle 4"),
+    ("Bundeswettbewerbsbehörde", "Prüfung der Marktstellung / Zusammenschlussangaben", "Mit Welle 3"),
+    ("Landesinnung Elektrotechnik (WKS)", "Information, eigene Einschätzung der Branche", "Mit Welle 3"),
+    ("Oberösterreich: Energie AG, Landespolitik OÖ", "Miteigentümerin der Salzburg AG; Innviertler Betrieb betroffen", "Mit Welle 5"),
+    ("Aufsichtsrat Salzburg AG", "Jede Welle vorab schriftlich zur Kenntnis – dokumentiert, dass er informiert war", "Laufend"),
+], [5.5, 7.5, 4.0])
+
+# ------------------------------------------------------------------
+h1("5. Zeitplan mit Ankern")
+table(["Zeitpunkt", "Maßnahme", "Anker / Begründung"], [
+    ("KW 40", "Hintergrundgespräche; Faktenseite online; Welle 1 „Am selben Tag“", "Nach Ablauf der Eigentümerfrist 30.09."),
+    ("KW 41", "Welle 2 „Treuwidrig“ exklusiv, danach OTS; Info an Landtag und Gemeinderat",
+     "Jahrestag der Generalversammlung 10.10."),
+    ("KW 42–43", "Welle 3 „Ohne Gewerbeschein“; BWB-Eingabe; Landesinnung", "Nimmt die Branche mit"),
+    ("KW 44–45", "Welle 4 „Das Geld der Salzburger“", "Vor Budget- und Tarifdebatten im Herbst"),
+    ("KW 46–47", "Welle 5 „Die Eigentümer schweigen“; gegebenenfalls Pressekonferenz", "Vor Aufsichtsrat / Landtagssitzung [Termin prüfen]"),
+    ("12.12.2026", "Keine eigene Welle; nur Reaktion auf Verhandlungsergebnis", "Hauptverhandlung Deutschland"),
+    ("Weihnachten", "Pause", "Keine Aufmerksamkeit, wirkt aggressiv"),
+], [2.8, 8.2, 6.0])
+para("Versandzeit: Dienstag bis Donnerstag, 7:30–9:00 Uhr. Nie Freitagnachmittag, nie vor Feiertagen.", italic=True, size=9.5)
+
+# ------------------------------------------------------------------
+h1("6. Der Sprecher – das wichtigste Werkzeug")
+bullets([
+    ("Eine Person,", "immer dieselbe, mit derselben Funktion wie im ORF-Bericht. Kurzes Medientraining vor Welle 1."),
+    ("Drei Sätze auswendig:", "„Partner auf dem Papier – Konkurrent am selben Tag.“ · „Dreimal vor dem Oberlandesgericht "
+     "verloren – das ist kein Streit, das ist ein Befund.“ · „Wer nichts zu verbergen hat, klärt auf.“"),
+    ("Brückentechnik:", "Jede unangenehme Frage kurz beantworten und mit „Entscheidend ist …“ zur Dachbotschaft zurück."),
+    ("Ton:", "ruhig, verletzt, entschlossen – nie wütend. Wut verliert vor der Kamera, Enttäuschung gewinnt."),
+    ("Nie:", "über das WKStA-Verfahren spekulieren, Personen namentlich angreifen, Beträge aus Vergleichsgesprächen nennen, "
+     "„kein Kommentar“ sagen."),
+])
+
+# ------------------------------------------------------------------
+h1("7. Der Gegenschlag – vorbereitet sein")
+table(["Die Salzburg AG wird sagen …", "Antwort (ein Satz, dann zurück zur Dachbotschaft)"], [
+    ("„Es gab kein Wettbewerbsverbot.“", "„Richtig – es gab etwas Stärkeres: die schriftliche Zusage, Wettbewerb zu vermeiden, "
+     "und uns als bevorzugten Partner heranzuziehen. Am selben Tag wurde die Konkurrenz gegründet.“"),
+    ("„Die Staatsanwaltschaft Ried hat eingestellt.“", "„Das Oberlandesgericht München hat den Sachverhalt anders gewürdigt, und "
+     "in Wien hat ein Gericht die Einleitung von Ermittlungen aufgetragen.“"),
+    ("„Ökovolt überzieht uns mit Anzeigen und Klagen.“", "„Wir haben vor Gericht dreimal recht bekommen. Wer gewinnt, überzieht "
+     "niemanden.“"),
+    ("„Es geht nur ums Geld / Millionenforderung.“", "„Es geht darum, dass ein Landesunternehmen einem heimischen Betrieb "
+     "einen Auftrag weggenommen hat. Über den Schaden entscheiden Gerichte.“"),
+    ("„Es geht um unser Nominierungsrecht.“", "„Das Oberlandesgericht hat sich mit dem Verhalten des nominierten "
+     "Geschäftsführers befasst – und es nicht zu unseren Lasten gewürdigt.“"),
+    ("„Alles Eilverfahren, nichts entschieden.“", "„Dreimal hat die Salzburg AG verloren. Wir freuen uns auf die Hauptverhandlung.“"),
+    ("Klagsdrohung wegen Kreditschädigung", "Keine öffentliche Reaktion; Anwalt. Deshalb ist jede Aussage vorab belegt."),
+], [6.0, 11.0])
+
+# ------------------------------------------------------------------
+h1("8. Rote Linien – warum sie gewinnen helfen")
+para("Kampagnen in Österreich scheitern selten an zu wenig Schärfe, sondern fast immer an einem einzigen falschen Satz, "
+     "den die Gegenseite dann wochenlang zitiert. Diese Linien schützen die Glaubwürdigkeit, von der alles abhängt:")
+bullets([
+    "Nur Aussagen aus der Faktenbasis des Kampagnenplans. Keine Zahl, die nicht belegt ist.",
+    "Keine Namen oder erkennbaren Beschreibungen von Beschuldigten; Unschuldsvermutung bei jedem Hinweis auf Ermittlungen.",
+    "Keine vertraulichen Unterlagen (Vergleichsgespräche, Grant-Thornton-Berichte, Tonaufnahmen).",
+    "Keine anonymen Konten, keine bestellten Leserbriefe oder Kommentare, keine „Leaks“ ohne Absender – fliegt so etwas auf, "
+    "ist die Kampagne vorbei.",
+    "Keine Angriffe auf Journalist:innen, auch nicht bei unfreundlicher Berichterstattung – freundlich korrigieren, Beleg schicken.",
+    "Jede Welle vor Versand anwaltlich freigeben.",
+])
+
+# ------------------------------------------------------------------
+h1("9. Erfolg messen")
+bullets([
+    "Anteil der Berichte, die „am selben Tag“ / „Konkurrenz gegründet“ übernehmen, statt nur „Gesellschafterstreit“.",
+    "Wie oft wird die Stellungnahme der Salzburg AG defensiv (erklärend) statt angreifend?",
+    "Politische Anfragen, Stellungnahmen von Eigentümervertretern, Befassung des Aufsichtsrats.",
+    "Anfragen von Journalist:innen nach Dokumenten – das ist das beste Zeichen, dass recherchiert wird.",
+])
+
+# ==================================================================
+h1("10. Wie Menschen Nachrichten verarbeiten – und was daraus folgt")
+para("Die folgenden Erkenntnisse aus Kommunikationswissenschaft, Sozial- und Verhaltenspsychologie sind gut belegt. "
+     "Sie wirken nur zugunsten von Ökovolt, wenn sie mit wahren, belegten Aussagen eingesetzt werden – mit falschen "
+     "wirken sie früher oder später gegen den Absender.")
+table(["Prinzip", "Was die Forschung zeigt", "Anwendung für Ökovolt"], [
+    ("Framing", "Menschen bewerten denselben Sachverhalt je nach Rahmen völlig anders. Wer den Rahmen setzt, setzt die Bewertung.",
+     "„Partnerbruch“ statt „Gesellschafterstreit“. Den Begriff der Gegenseite nie wiederholen, auch nicht verneinend "
+     "(„kein Streit“ aktiviert „Streit“) – besser: „Das ist ein Befund.“"),
+    ("Verrat wiegt schwerer als Verlust", "Vertrauensbruch löst stärkere moralische Empörung aus als ein gleich großer "
+     "materieller Schaden (Betrayal Aversion).", "Nicht die 20 Millionen erzählen, sondern den Moment: „Wir haben "
+     "vertraut und uns zurückgezogen.“ Der Schaden ist Folge, nicht Kern."),
+    ("David gegen Goliath (Underdog-Effekt)", "Sympathie gilt dem Schwächeren – aber nur, wenn er Leidenschaft "
+     "und Anstand zeigt, nicht Bitterkeit.", "30 Monteure, Familienbetrieb, Innviertel – gegen Konzern mit "
+     "Milliardenumsatz. Ton: enttäuscht, nicht wütend."),
+    ("Konkretes schlägt Abstraktes", "Bilder, Daten und Einzelfälle werden besser erinnert als Zahlen und Begriffe "
+     "(Bildüberlegenheit, Identifiable-Victim-Effekt).", "„Am selben Tag“ statt „zeitnah“. Ein Monteur mit Namen statt "
+     "„Arbeitsplätze“. Eine Steckdose statt „Gewerberecht“."),
+    ("Wiederholung", "Oft gehörte Aussagen wirken glaubwürdiger (Illusory-Truth-Effekt) – das gilt für wahre wie falsche Sätze.",
+     "Die Dachbotschaft wortgleich in jedem Kanal, jeder Welle, jedem Interview. Deshalb muss sie hundertprozentig stimmen."),
+    ("Offene Fragen ziehen", "Unbeantwortete Fragen bleiben im Gedächtnis (Zeigarnik-Effekt); Schweigen wird als "
+     "Antwort gelesen.", "Jede Welle endet mit einer Ja/Nein-Frage an die Salzburg AG. Ihr Schweigen ist die nächste Meldung."),
+    ("Autorität und Dritte", "Aussagen neutraler Instanzen wirken stärker als eigene (Third-Party-Validation).",
+     "Das OLG sagt „treuwidrig“ – nicht Ökovolt. Gerichte, Register, Landesinnung, Rechnungshof sprechen lassen."),
+    ("Glaubwürdiger Bote", "Die Glaubwürdigkeit des Sprechers entscheidet oft mehr als das Argument.",
+     "Der Geschäftsführer für Fakten; ein Monteur für das Gefühl (mit Zustimmung); nie ein Anwalt vor der Kamera."),
+    ("Impfung gegen Gegenargumente (Prebunking)", "Wer ein Gegenargument vorher kennt und widerlegt bekommt, ist "
+     "dagegen immun (Inoculation Theory).", "Das stärkste Argument der Salzburg AG selbst ansprechen: „Ja, es gab kein "
+     "Wettbewerbsverbot – es gab etwas Stärkeres: die Zusage, Wettbewerb zu vermeiden.“"),
+    ("Reaktanz", "Zu viel Druck, Übertreibung und Schuldzuweisung erzeugen Widerstand beim Publikum.",
+     "Keine Rücktrittsforderungen, keine Superlative, keine Beschimpfungen. Das Publikum soll selbst urteilen."),
+    ("Regionale Identität", "Menschen reagieren stark auf „wir“ und „unser“ (Soziale Identität).",
+     "„Unser Landesversorger“, „das Geld der Salzburgerinnen und Salzburger“, „ein heimischer Betrieb“."),
+    ("Verlustaversion", "Verluste wiegen etwa doppelt so schwer wie gleich große Gewinne.",
+     "„Die Salzburger verlieren Gewinnanteile“ statt „die Salzburg AG könnte verdienen“."),
+    ("Dreierregel", "Drei Punkte werden erinnert, fünf nicht.", "Pro Welle höchstens drei Fakten; im Interview drei Sätze."),
+    ("Nachrichtenzyklus", "Ein Thema lebt 48–72 Stunden; es braucht neue Anlässe, um wiederzukehren (Agenda-Setting).",
+     "Wellen im Abstand von 5–10 Tagen; jede mit neuem Fakt, nicht mit Wiederholung."),
+    ("Hostile-Media-Effekt / Streisand-Effekt", "Parteien empfinden neutrale Berichte als feindlich; Angriffe auf "
+     "Medien vergrößern das Unerwünschte.", "Nie über Berichte beschweren, nie gegen Journalisten vorgehen – "
+     "Beleg schicken, bedanken, weitermachen."),
+], [3.6, 6.2, 7.2])
+
+# ==================================================================
+h1("11. Die Psychologie der Gegenseite – die goldene Brücke")
+para("Ein Konflikt ist gewonnen, wenn die Gegenseite einlenkt – nicht, wenn sie gedemütigt ist. Wer in die Ecke gedrängt "
+     "wird, kämpft weiter, weil Einlenken Gesichtsverlust bedeutet. Deshalb braucht jede Kampagne einen Ausweg, den die "
+     "Entscheider ohne Gesichtsverlust gehen können.")
+bullets([
+    ("Adressat des Drucks sind die Eigentümer, nicht der Vorstand.", "Land und Stadt können eine unabhängige Prüfung anordnen, "
+     "ohne dass sie damit einen Fehler zugeben – sie handeln verantwortungsvoll."),
+    ("Die goldene Brücke formulieren:", "„Wir erwarten keine Entschuldigung. Wir erwarten eine unabhängige Prüfung. "
+     "Wer sie anordnet, zeigt Verantwortung.“ Dieser Satz gehört ab Welle 5 in jede Aussendung."),
+    ("Kosten des Weitermachens sichtbar machen:", "Jede Welle erhöht den öffentlichen Preis des Schweigens – "
+     "die goldene Brücke senkt den Preis des Einlenkens. Beides zusammen bewegt Entscheider."),
+    ("Persönliche Angriffe vermeiden:", "Wer Personen angreift, zwingt sie zur Verteidigung – und schließt sie aus jeder Lösung aus."),
+])
+
+# ==================================================================
+h1("12. Social Media")
+table(["Kanal", "Zielgruppe", "Format", "Rhythmus"], [
+    ("LinkedIn (Geschäftsführer persönlich)", "Wirtschaft, Politik, Journalist:innen", "Ruhige Texte, Dokumentfoto, Zeitstrahl-Grafik",
+     "Zu jeder Welle 1 Beitrag"),
+    ("Facebook (Unternehmensseite)", "Salzburg/Innviertel, 40+, Stromkunden", "Kurzer Text, Foto vom Team, Link zur Faktenseite",
+     "Zu jeder Welle 1 Beitrag"),
+    ("Instagram / Reels", "Regional, jünger, Fachkräfte", "30-Sekunden-Video vom Dach, Team spricht", "2 Reels je Woche"),
+    ("YouTube / Website", "Recherchierende", "90-Sekunden-Erklärvideo mit Zeitstrahl", "Einmal, dann verlinken"),
+    ("X / Bluesky", "Journalist:innen, Politik", "Link zur OTS, Grafik", "Zu jeder Welle"),
+], [4.6, 4.4, 5.2, 2.8])
+h2("Regeln")
+bullets([
+    "Jeder Beitrag verweist auf die Faktenseite – Social Media ist Zubringer, nicht Beweis.",
+    "Community-Management: sachlich antworten, Belege verlinken, bei Beleidigungen nicht einsteigen; keine Kommentare löschen, "
+    "außer strafbare.",
+    "Bezahlte Reichweite nur offen als Ökovolt (Absender sichtbar), regional auf Salzburg und Innviertel.",
+    "Keine Bots, keine Fake-Profile, keine bezahlten Influencer ohne Kennzeichnung – das ist rechtlich riskant und "
+    "würde die Glaubwürdigkeit vernichten.",
+    "Mitarbeitende nur freiwillig einbinden; niemand wird gedrängt, zu posten.",
+])
+h2("Beispiel Reel (30 Sekunden, Welle 1)")
+for line in [
+    "0–3 s: Totale Dach, Monteur setzt Modul. Text-Einblendung: „18. Oktober 2021“.",
+    "3–12 s: Monteur in die Kamera: „An dem Tag hat die Salzburg AG unterschrieben, dass sie mit uns gemeinsam arbeitet.“",
+    "12–20 s: Schnitt Geschäftsführer: „Am selben Tag hat sie ihre eigene Konkurrenz gegründet.“",
+    "20–27 s: Grafik Zeitstrahl, links Vertrag, rechts Gründung, derselbe Tag leuchtet auf.",
+    "27–30 s: Text: „Partner auf dem Papier – Konkurrent am selben Tag. Alle Fakten: oekovolt.com/fakten“",
+]:
+    add(d.add_paragraph(style="List Bullet"), line, size=10)
+h2("Beispiel LinkedIn-Beitrag (Welle 1)")
+para("„Vor fünf Jahren haben wir der Salzburg AG vertraut. Wir haben ihr unsere Bücher geöffnet und uns auf ihren Wunsch "
+     "aus einer großen Ausschreibung zurückgezogen. Am 18. Oktober 2021 haben wir einen Vertrag unterschrieben, der "
+     "Wettbewerb zwischen uns vermeiden sollte. Am selben Tag wurde die one2zero gegründet – die Tochter, die später "
+     "den Auftrag bekam. Wir erzählen diese Geschichte nicht gern. Aber wir erzählen sie mit Belegen. Alle Dokumente: "
+     "[Link]“", italic=True)
+
+# ==================================================================
+h1("13. Ethik als Strategie")
+para("Die stärkste Position in einer öffentlichen Auseinandersetzung ist die, bei der jede Aussage einer Prüfung "
+     "standhält. Die Salzburg AG hat mehr Geld, mehr Anwälte und mehr Kontakte. Ökovolt hat einen Vorteil, den Geld "
+     "nicht kaufen kann: Die Fakten sind belegt. Diesen Vorteil verspielt man mit einer einzigen Übertreibung. Deshalb "
+     "ist Genauigkeit hier keine moralische Pflicht neben der Strategie – sie ist die Strategie.", bold=True)
+d.save("INTERN_Medienstrategie_Playbook.docx")
+print("ok")

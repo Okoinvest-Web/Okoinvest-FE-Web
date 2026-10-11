@@ -1,0 +1,79 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+
+import { DOCTYPE, createDoc } from "@/lib/doctypes";
+import { istDemoModus } from "@/lib/demo/modus";
+import { protokolliere } from "@/lib/sicherheit/audit";
+import { requireRecht } from "@/lib/session";
+
+export interface MeldungsErgebnis {
+  ok: boolean;
+  meldung: string;
+}
+
+/**
+ * Legt eine Stoerungsmeldung an.
+ *
+ * Im Demonstrationsbetrieb wird nur protokolliert; im Regelbetrieb
+ * entsteht ein Datensatz im DocType "PV Stoerung".
+ */
+export async function meldeStoerung(
+  _vorher: MeldungsErgebnis | null,
+  formular: FormData,
+): Promise<MeldungsErgebnis> {
+  const benutzer = await requireRecht("support.melden");
+
+  const betreff = String(formular.get("betreff") ?? "").trim();
+  const beschreibung = String(formular.get("beschreibung") ?? "").trim();
+  const anlage = String(formular.get("anlage") ?? "").trim();
+  const prioritaet = String(formular.get("prioritaet") ?? "Mittel");
+
+  if (betreff.length < 5) {
+    return {
+      ok: false,
+      meldung: "Bitte geben Sie einen aussagekraeftigen Betreff an.",
+    };
+  }
+
+  const datensatz = {
+    betreff,
+    beschreibung,
+    prioritaet,
+    status: "Offen",
+    // Leeres Link-Feld nicht mitsenden - Frappe lehnt "" bei Links ab.
+    ...(anlage ? { anlage } : {}),
+    gemeldet_am: new Date().toISOString().slice(0, 10),
+  };
+
+  if (!istDemoModus()) {
+    try {
+      await createDoc(DOCTYPE.stoerung, datensatz);
+    } catch {
+      return {
+        ok: false,
+        meldung:
+          "Die Meldung konnte nicht gespeichert werden. Bitte versuchen Sie es erneut oder rufen Sie uns an.",
+      };
+    }
+  }
+
+  await protokolliere({
+    kategorie: "sicherheitsvorfall",
+    aktion: `Stoerung gemeldet: ${betreff}`,
+    ergebnis: "erfolg",
+    objekt: anlage,
+    begruendung: `Prioritaet ${prioritaet}, gemeldet von ${benutzer.vollname}`,
+  });
+
+  revalidatePath("/portal/support");
+  revalidatePath("/portal");
+
+  return {
+    ok: true,
+    meldung:
+      prioritaet === "Kritisch"
+        ? "Ihre Meldung ist eingegangen und wurde als kritisch eingestuft. Ein Techniker meldet sich innerhalb von zwei Stunden."
+        : "Ihre Meldung ist eingegangen. Sie erhalten eine Rueckmeldung innerhalb der vereinbarten Reaktionszeit.",
+  };
+}

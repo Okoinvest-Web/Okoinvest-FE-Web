@@ -1,0 +1,277 @@
+"use client";
+
+import { useActionState, useState } from "react";
+
+import { Hinweis, Meldung } from "@/components/ui";
+
+import {
+  erzeugeStapel,
+  storniereStapel,
+  uebergebeStapel,
+  type BuchhaltungErgebnis,
+} from "./aktionen";
+
+export interface MonatsAuswahl {
+  schluessel: string;
+  beschriftung: string;
+  offen: number;
+  netto_offen: number;
+  gebucht: number;
+  stapel_status: string | null;
+}
+
+/**
+ * Rückmeldung eines Laufs.
+ *
+ * Die Hinweiszeilen sind der eigentliche Wert: Sie beantworten die
+ * Frage, warum ein Beleg nicht im Stapel steht - bevor jemand sie
+ * telefonisch stellt.
+ */
+function Rueckmeldung({ ergebnis }: { ergebnis: BuchhaltungErgebnis }) {
+  const [offen, setOffen] = useState(false);
+  const hinweise = ergebnis.hinweise ?? [];
+
+  return (
+    <Hinweis
+      ton={ergebnis.ok ? "gut" : "kritisch"}
+      titel={ergebnis.ok ? "Lauf abgeschlossen" : "Nicht ausgeführt"}
+    >
+      <span className="block">{ergebnis.meldung}</span>
+
+      {hinweise.length > 0 && (
+        <>
+          <button
+            type="button"
+            onClick={() => setOffen((w) => !w)}
+            className="mt-2 text-[0.75rem] font-medium underline underline-offset-2"
+          >
+            {offen
+              ? "Einzelheiten ausblenden"
+              : `${hinweise.length} Beleg${hinweise.length === 1 ? "" : "e"} nicht übernommen – ansehen`}
+          </button>
+
+          {offen && (
+            <ul className="mt-2 space-y-1">
+              {hinweise.map((h) => (
+                <li key={h} className="t-mikro leading-relaxed">
+                  {h}
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
+      )}
+    </Hinweis>
+  );
+}
+
+/**
+ * Der Monatslauf.
+ *
+ * Nur ein Monat und ein Knopf. Was in den Stapel kommt, entscheidet
+ * nicht die Bedienung, sondern der Zustand der Abrechnungsläufe -
+ * eine Auswahl einzelner Belege von Hand wäre schneller falsch
+ * bedient, als sie Zeit spart.
+ */
+export function Buchungslauf({
+  monate,
+  darfBuchen,
+}: {
+  monate: MonatsAuswahl[];
+  darfBuchen: boolean;
+}) {
+  const [ergebnis, aktion, laeuft] = useActionState<
+    BuchhaltungErgebnis | null,
+    FormData
+  >(erzeugeStapel, null);
+
+  const erster = monate.find((m) => m.offen > 0) ?? monate[0];
+  const [monat, setMonat] = useState(erster?.schluessel ?? "");
+
+  const gewaehlt = monate.find((m) => m.schluessel === monat);
+
+  if (!darfBuchen) {
+    return (
+      <p className="t-mikro leading-relaxed">
+        Ihre Rolle erlaubt das Ansehen der Buchhaltung, nicht das Buchen.
+        Stapel erzeugt und übergibt die Buchhaltung oder die
+        Geschäftsführung.
+      </p>
+    );
+  }
+
+  if (monate.length === 0) {
+    return (
+      <p className="t-mikro leading-relaxed">
+        Es gibt keinen festgeschriebenen Abrechnungslauf. Ein Lauf im
+        Entwurf kann sich noch ändern und wird deshalb nicht gebucht –
+        erst festschreiben, dann buchen.
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <form action={aktion} className="flex flex-wrap items-end gap-2">
+        <div className="min-w-0">
+          <label htmlFor="lauf-monat" className="t-etikett mb-1 block">
+            Abrechnungsmonat
+          </label>
+          <select
+            id="lauf-monat"
+            name="monat"
+            value={monat}
+            onChange={(e) => setMonat(e.target.value)}
+            className="feld"
+            style={{ width: "16rem", maxWidth: "100%" }}
+          >
+            {monate.map((m) => (
+              <option key={m.schluessel} value={m.schluessel}>
+                {m.beschriftung}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <button
+          type="submit"
+          disabled={laeuft || (gewaehlt?.offen ?? 0) === 0}
+          className="knopf knopf-voll"
+        >
+          {laeuft ? "Wird gerechnet …" : "Stapel erzeugen"}
+        </button>
+      </form>
+
+      {gewaehlt && (
+        <p className="t-mikro leading-relaxed">
+          {gewaehlt.offen === 0
+            ? `In diesem Monat ist alles gebucht: ${gewaehlt.gebucht} Belege stehen bereits in einem Stapel.`
+            : `${gewaehlt.offen} Beleg${gewaehlt.offen === 1 ? "" : "e"} offen, ${gewaehlt.netto_offen.toFixed(2)} Euro netto. ${
+                gewaehlt.gebucht > 0
+                  ? `${gewaehlt.gebucht} sind bereits gebucht und bleiben außen vor.`
+                  : ""
+              }`}
+        </p>
+      )}
+
+      {ergebnis && <Rueckmeldung ergebnis={ergebnis} />}
+    </div>
+  );
+}
+
+/**
+ * Übergabe und Stornierung eines einzelnen Stapels.
+ *
+ * Die Übergabe ist der Punkt ohne Rückweg. Deshalb steht sie nicht
+ * in der Tabellenzeile, sondern unter dem Stapel, den man gerade
+ * ansieht - mit seiner Summe daneben.
+ */
+export function Stapelfreigabe({
+  stapelId,
+  status,
+  buchungen,
+  darfBuchen,
+}: {
+  stapelId: string;
+  status: string;
+  buchungen: number;
+  darfBuchen: boolean;
+}) {
+  const [uebergeben, uebergabeAktion, uebergabeLaeuft] = useActionState<
+    BuchhaltungErgebnis | null,
+    FormData
+  >(uebergebeStapel, null);
+
+  const [storniert, stornoAktion, stornoLaeuft] = useActionState<
+    BuchhaltungErgebnis | null,
+    FormData
+  >(storniereStapel, null);
+
+  const [stornoOffen, setStornoOffen] = useState(false);
+
+  const ergebnis = uebergeben ?? storniert;
+
+  if (!darfBuchen) return null;
+
+  if (status === "Uebergeben") {
+    return (
+      <p className="t-mikro leading-relaxed">
+        Übergeben. Der Stapel wird nicht mehr verändert; eine Korrektur
+        läuft über die Buchhaltung.
+      </p>
+    );
+  }
+
+  if (status === "Storniert") {
+    return (
+      <p className="t-mikro leading-relaxed">
+        Storniert. Die Belege sind wieder offen.
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <form action={uebergabeAktion}>
+          <input type="hidden" name="stapel" value={stapelId} />
+          <button
+            type="submit"
+            disabled={uebergabeLaeuft || stornoLaeuft || buchungen === 0}
+            className="knopf knopf-voll"
+          >
+            {uebergabeLaeuft
+              ? "Wird übergeben …"
+              : `${buchungen} Buchungen übergeben`}
+          </button>
+        </form>
+
+        <button
+          type="button"
+          onClick={() => setStornoOffen((w) => !w)}
+          className="knopf knopf-leise"
+        >
+          {stornoOffen ? "Abbrechen" : "Stapel verwerfen"}
+        </button>
+      </div>
+
+      {stornoOffen && (
+        <form action={stornoAktion} className="space-y-2">
+          <input type="hidden" name="stapel" value={stapelId} />
+          <label htmlFor={`grund-${stapelId}`} className="t-etikett block">
+            Warum wird verworfen?
+          </label>
+          <input
+            id={`grund-${stapelId}`}
+            name="grund"
+            type="text"
+            placeholder="Etwa: Abrechnung Juni wurde nachträglich korrigiert."
+            className="feld"
+          />
+          <button
+            type="submit"
+            disabled={stornoLaeuft}
+            className="knopf knopf-warnung"
+          >
+            {stornoLaeuft ? "Wird verworfen …" : "Verwerfen und Belege freigeben"}
+          </button>
+        </form>
+      )}
+
+      <p className="t-mikro leading-relaxed">
+        Nach der Übergabe wird der Stapel nicht mehr verändert. Vor der
+        Übergabe wird noch einmal geprüft, ob eine Belegnummer
+        zwischenzeitlich in einem anderen Stapel gelandet ist.
+      </p>
+
+      {ergebnis &&
+        (ergebnis.hinweise?.length ? (
+          <Rueckmeldung ergebnis={ergebnis} />
+        ) : (
+          <Meldung ton={ergebnis.ok ? "gut" : "kritisch"}>
+            {ergebnis.meldung}
+          </Meldung>
+        ))}
+    </div>
+  );
+}

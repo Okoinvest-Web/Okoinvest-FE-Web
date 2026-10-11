@@ -1,0 +1,227 @@
+import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
+
+/**
+ * Die App läuft unter `/baudoku`. Alle Views sind lazy — der Startbildschirm
+ * soll auch auf 4G unter drei Sekunden interaktiv sein (NFA-030).
+ */
+const routen: RouteRecordRaw[] = [
+  {
+    path: '/',
+    name: 'dashboard',
+    component: () => import('@/views/DashboardView.vue'),
+    meta: { titel: 'Dashboard', navigation: true, symbol: 'haus' },
+  },
+
+  // --- Anlagen -------------------------------------------------------------
+  {
+    path: '/anlagen',
+    name: 'anlagen',
+    component: () => import('@/views/AnlagenView.vue'),
+    meta: { titel: 'Anlagen', navigation: true, symbol: 'anlage' },
+  },
+  {
+    path: '/anlagen/:name',
+    name: 'anlage-detail',
+    component: () => import('@/views/AnlageDetailView.vue'),
+    props: true,
+    meta: { titel: 'Anlage' },
+  },
+  {
+    path: '/karte',
+    name: 'karte',
+    component: () => import('@/views/KarteView.vue'),
+    meta: { titel: 'Karte', navigation: true, symbol: 'karte' },
+  },
+
+  // --- Prüfprotokolle ------------------------------------------------------
+  {
+    path: '/protokolle',
+    name: 'protokolle',
+    component: () => import('@/views/ProtokolleView.vue'),
+    meta: { titel: 'Protokolle', navigation: true, symbol: 'protokoll' },
+  },
+  {
+    path: '/protokolle/neu',
+    name: 'protokoll-neu',
+    component: () => import('@/views/ProtokollStartView.vue'),
+    meta: { titel: 'Neues Protokoll', schlank: true },
+  },
+  {
+    path: '/protokolle/:lokaleId/ausfuehren',
+    name: 'protokoll-ausfuehren',
+    component: () => import('@/views/ProtokollAusfuehrenView.vue'),
+    props: true,
+    // Vollbild: im Feld zählt jeder Pixel (Kapitel 6.2, Schritt 4)
+    meta: { titel: 'Protokoll', vollbild: true },
+  },
+  {
+    path: '/protokolle/:lokaleId',
+    name: 'protokoll-detail',
+    component: () => import('@/views/ProtokollDetailView.vue'),
+    props: true,
+    meta: { titel: 'Protokoll' },
+  },
+
+  // --- Mängel --------------------------------------------------------------
+  {
+    path: '/maengel',
+    name: 'maengel',
+    component: () => import('@/views/MaengelView.vue'),
+    meta: { titel: 'Mängel', navigation: true, symbol: 'mangel' },
+  },
+  {
+    path: '/maengel/neu',
+    name: 'mangel-neu',
+    component: () => import('@/views/MangelFormularView.vue'),
+    meta: { titel: 'Neuer Mangel', schlank: true },
+  },
+  {
+    path: '/maengel/:lokaleId',
+    name: 'mangel-detail',
+    component: () => import('@/views/MangelFormularView.vue'),
+    props: true,
+    meta: { titel: 'Mangel' },
+  },
+
+  // --- Tagesberichte -------------------------------------------------------
+  {
+    path: '/tagesberichte',
+    name: 'tagesberichte',
+    component: () => import('@/views/TagesberichteView.vue'),
+    meta: { titel: 'Tagesberichte', navigation: true, symbol: 'bericht' },
+  },
+  {
+    path: '/tagesberichte/neu',
+    name: 'tagesbericht-neu',
+    component: () => import('@/views/TagesberichtFormularView.vue'),
+    meta: { titel: 'Neuer Tagesbericht', schlank: true },
+  },
+  {
+    path: '/tagesberichte/:lokaleId',
+    name: 'tagesbericht-detail',
+    component: () => import('@/views/TagesberichtFormularView.vue'),
+    props: true,
+    meta: { titel: 'Tagesbericht' },
+  },
+
+  // --- Verwaltung ----------------------------------------------------------
+  {
+    path: '/vorlagen',
+    name: 'vorlagen',
+    component: () => import('@/views/VorlagenView.vue'),
+    meta: { titel: 'Vorlagen', navigation: true, symbol: 'vorlage', rolle: 'projektleiter' },
+  },
+  {
+    path: '/vorlagen/:name',
+    name: 'vorlage-editor',
+    component: () => import('@/views/VorlagenEditorView.vue'),
+    props: true,
+    meta: { titel: 'Vorlage bearbeiten', rolle: 'projektleiter' },
+  },
+  // --- Subunternehmerportal ------------------------------------------------
+  {
+    path: '/portal',
+    name: 'portal',
+    component: () => import('@/views/PortalStartView.vue'),
+    meta: { titel: 'Start', portal: true, symbol: 'haus' },
+  },
+  {
+    path: '/portal/auftraege',
+    name: 'portal-auftraege',
+    component: () => import('@/views/PortalAuftraegeView.vue'),
+    meta: { titel: 'Aufträge', portal: true, symbol: 'bericht' },
+  },
+  {
+    path: '/portal/auftraege/:name',
+    name: 'portal-auftrag',
+    component: () => import('@/views/PortalAuftragView.vue'),
+    props: true,
+    meta: { titel: 'Auftrag', portal: true },
+  },
+  {
+    path: '/portal/personalmeldung',
+    name: 'portal-personalmeldung',
+    component: () => import('@/views/PortalPersonalmeldungView.vue'),
+    meta: { titel: 'Personal', portal: true, symbol: 'person' },
+  },
+  {
+    path: '/portal/zeiten',
+    name: 'portal-zeiten',
+    component: () => import('@/views/PortalZeitenView.vue'),
+    meta: { titel: 'Zeiten', portal: true, symbol: 'uhr' },
+  },
+  {
+    path: '/portal/material',
+    name: 'portal-material',
+    component: () => import('@/views/PortalMaterialView.vue'),
+    meta: { titel: 'Material', portal: true, symbol: 'plus' },
+  },
+  {
+    path: '/portal/meldung',
+    name: 'portal-meldung',
+    component: () => import('@/views/PortalMeldungView.vue'),
+    meta: { titel: 'Meldung', portal: true, symbol: 'warnung' },
+  },
+
+  // --- Bauleitung ----------------------------------------------------------
+  {
+    path: '/zeitfreigabe',
+    name: 'zeitfreigabe',
+    component: () => import('@/views/ZeitfreigabeView.vue'),
+    meta: { titel: 'Zeitfreigabe', navigation: true, symbol: 'uhr', rolle: 'bauleiter' },
+  },
+  {
+    path: '/analysen',
+    name: 'analysen',
+    component: () => import('@/views/AnalysenView.vue'),
+    meta: { titel: 'Analysen', navigation: true, symbol: 'analyse', rolle: 'bauleiter' },
+  },
+  {
+    path: '/einstellungen',
+    name: 'einstellungen',
+    component: () => import('@/views/EinstellungenView.vue'),
+    meta: { titel: 'Einstellungen', navigation: true, symbol: 'zahnrad' },
+  },
+
+  { path: '/:pfad(.*)*', name: 'nicht-gefunden', component: () => import('@/views/NichtGefundenView.vue') },
+]
+
+export const router = createRouter({
+  history: createWebHistory('/baudoku'),
+  routes: routen,
+  scrollBehavior(_zu, _von, gespeichert) {
+    return gespeichert ?? { top: 0 }
+  },
+})
+
+router.afterEach((zu) => {
+  const titel = (zu.meta.titel as string) ?? 'Baudoku'
+  document.title = `${titel} · ÖKOVOLT Baudoku`
+})
+
+/**
+ * Nach einem Deployment zeigt der alte Einstiegspunkt auf Chunks, die es nicht
+ * mehr gibt. Einmalig neu laden holt die aktuelle Fassung; die Markierung
+ * verhindert eine Schleife, falls das Laden aus einem anderen Grund scheitert.
+ */
+const NEULADEN_SCHLUESSEL = 'baudoku-chunk-neuladen'
+
+router.onError((fehler, zu) => {
+  const text = String((fehler as Error)?.message ?? '')
+  const istChunkFehler =
+    /Failed to fetch dynamically imported module|Importing a module script failed|error loading dynamically imported module/i.test(
+      text,
+    )
+  if (!istChunkFehler) return
+
+  if (sessionStorage.getItem(NEULADEN_SCHLUESSEL)) {
+    sessionStorage.removeItem(NEULADEN_SCHLUESSEL)
+    return
+  }
+  sessionStorage.setItem(NEULADEN_SCHLUESSEL, '1')
+  window.location.assign(zu.fullPath)
+})
+
+router.afterEach(() => sessionStorage.removeItem(NEULADEN_SCHLUESSEL))
+
+export default router

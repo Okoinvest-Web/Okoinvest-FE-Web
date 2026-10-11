@@ -1,0 +1,102 @@
+/**
+ * Eine Zahl aus einem fertig formatierten Text herausschälen.
+ *
+ * Für das Hochzählen einer Kennzahl. Die Kacheln bekommen ihren Wert
+ * bereits formatiert - als "€ 11.953,56", "1 483,1" oder "57,0 %".
+ * Statt jede Aufrufstelle umzubauen und Zahl, Einheit und Format
+ * einzeln durchzureichen, wird die Zahl hier aus dem Text gelesen und
+ * beim Zählen wieder in denselben Text gesetzt.
+ *
+ * Das hat einen zweiten Vorteil: Das Ergebnis der Animation ist
+ * zwangsläufig genau der Text, der ohne sie dastünde. Ein zweiter
+ * Formatierungsweg könnte abweichen - und dann zeigte die Kachel nach
+ * der Animation eine andere Zahl als davor.
+ *
+ * Österreichische Schreibweise: Komma als Dezimalzeichen, Punkt oder
+ * schmales Leerzeichen als Tausendertrennung. Beide Trennzeichen
+ * kommen vor - `Intl` setzt in de-AT ein schmales geschütztes
+ * Leerzeichen, von Hand geschriebene Werte tragen oft einen Punkt.
+ */
+
+/** Alles, was zwischen Tausendergruppen stehen kann. */
+const TRENNER = /[.    ]/g;
+
+export interface Zahlenfund {
+  /** Text vor der Zahl, etwa "€ ". */
+  vorn: string;
+  wert: number;
+  /** Nachkommastellen, wie sie im Text stehen. */
+  nachkomma: number;
+  /** Text nach der Zahl, etwa " %". */
+  hinten: string;
+}
+
+/**
+ * Sucht die erste Zahl im Text.
+ *
+ * `null`, wenn keine da ist - "Geprüft" oder "–" sind Kennzahlen
+ * ohne Zahl, und die zählen nicht hoch.
+ */
+export function zerlegeZahl(text: string): Zahlenfund | null {
+  // Eine Ziffernfolge, optional mit Tausendertrennung, optional mit
+  // Nachkommastellen. Das Vorzeichen gehoert dazu: -3,2 % zaehlt nach
+  // unten, nicht nach oben.
+  const muster = /-?\d[\d.    ]*(?:,\d+)?/;
+  const treffer = muster.exec(text);
+  if (!treffer) return null;
+
+  const roh = treffer[0];
+  const [ganz, bruch = ""] = roh.split(",");
+  const ziffern = ganz!.replace(TRENNER, "");
+
+  const wert = Number(`${ziffern}.${bruch || "0"}`);
+  if (!Number.isFinite(wert)) return null;
+
+  return {
+    vorn: text.slice(0, treffer.index),
+    wert,
+    nachkomma: bruch.length,
+    hinten: text.slice(treffer.index + roh.length),
+  };
+}
+
+const FORMATE = new Map<number, Intl.NumberFormat>();
+
+function format(nachkomma: number): Intl.NumberFormat {
+  let vorhanden = FORMATE.get(nachkomma);
+  if (!vorhanden) {
+    vorhanden = new Intl.NumberFormat("de-AT", {
+      minimumFractionDigits: nachkomma,
+      maximumFractionDigits: nachkomma,
+    });
+    FORMATE.set(nachkomma, vorhanden);
+  }
+  return vorhanden;
+}
+
+/**
+ * Setzt einen Zwischenwert in denselben Text zurück.
+ *
+ * `anteil` läuft von 0 bis 1. Bei 1 kommt der Ausgangstext heraus -
+ * darauf verlässt sich die Animation, damit am Ende nichts springt.
+ */
+export function setzeZahl(fund: Zahlenfund, anteil: number, text: string): string {
+  if (anteil >= 1) return text;
+
+  const zwischen = fund.wert * Math.max(0, anteil);
+  return `${fund.vorn}${format(fund.nachkomma).format(zwischen)}${fund.hinten}`;
+}
+
+/**
+ * Lohnt sich das Hochzählen?
+ *
+ * Bei einer 3 sieht man nur ein Flackern, und bei einer Zahl mit drei
+ * Nachkommastellen wird das Zählen zum Zappeln. Beides ist schlechter
+ * als gar keine Bewegung.
+ */
+export function lohntZaehlen(fund: Zahlenfund | null): boolean {
+  if (!fund) return false;
+  if (!Number.isFinite(fund.wert)) return false;
+  if (fund.nachkomma > 2) return false;
+  return Math.abs(fund.wert) >= 10;
+}

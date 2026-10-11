@@ -1,0 +1,476 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type ReactNode,
+} from "react";
+
+import { filtere, zerlege } from "@/lib/suche";
+
+import { Dialogflaeche, useDialog } from "./dialog";
+
+/**
+ * Die Befehlspalette.
+ *
+ * Eine Anwendung mit zwanzig Seiten und hunderten Gegenständen
+ * braucht einen Weg, der nicht über das Menü führt. Wer weiß, wonach
+ * er sucht, soll es tippen können - "sägewerk" statt Anlagen, Liste,
+ * scrollen, klicken.
+ *
+ * Drei Entscheidungen, die den Unterschied machen:
+ *
+ * - Die Palette enthält Gegenstände, nicht nur Seiten. Eine Palette,
+ *   die nur Menüpunkte kennt, ist ein zweites Menü.
+ * - Sie merkt sich, was zuletzt geöffnet wurde, und zeigt das ohne
+ *   Eingabe. Der häufigste Fall ist der Rücksprung.
+ * - Sie ist vollständig mit der Tastatur bedienbar, einschließlich
+ *   des Öffnens. Wer die Maus nehmen muss, um sie zu öffnen, hätte
+ *   auch gleich klicken können.
+ */
+
+export interface Palettenziel {
+  id: string;
+  titel: string;
+  zusatz: string;
+  pfad: string;
+  gruppe: string;
+  stichworte: string[];
+}
+
+export interface Palettenbefehl {
+  id: string;
+  titel: string;
+  zusatz: string;
+  gruppe: string;
+  stichworte: string[];
+  /** Ausgeführt statt einer Navigation. */
+  tun: () => void;
+}
+
+type Eintrag =
+  | (Palettenziel & { art: "ziel" })
+  | (Palettenbefehl & { art: "befehl" });
+
+const ZULETZT_SCHLUESSEL = "oekovolt.zuletzt";
+const ZULETZT_ANZAHL = 6;
+
+function leseZuletzt(): string[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const roh = window.localStorage.getItem(ZULETZT_SCHLUESSEL);
+    const liste: unknown = roh ? JSON.parse(roh) : [];
+    return Array.isArray(liste)
+      ? liste.filter((x): x is string => typeof x === "string")
+      : [];
+  } catch {
+    // Ein privates Fenster oder gesperrte Seitendaten sind kein
+    // Grund, die Palette nicht zu öffnen.
+    return [];
+  }
+}
+
+function merkeZuletzt(id: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    const liste = [id, ...leseZuletzt().filter((x) => x !== id)].slice(
+      0,
+      ZULETZT_ANZAHL,
+    );
+    window.localStorage.setItem(ZULETZT_SCHLUESSEL, JSON.stringify(liste));
+  } catch {
+    /* Ohne Gedächtnis ist die Palette immer noch brauchbar. */
+  }
+}
+
+/** Hebt die Trefferstellen im Titel hervor. */
+function Hervorgehoben({
+  text,
+  stellen,
+}: {
+  text: string;
+  stellen: number[];
+}): ReactNode {
+  return zerlege(text, stellen).map((stueck, i) =>
+    stueck.treffer ? (
+      <mark
+        key={i}
+        className="rounded-[3px] px-px"
+        style={{
+          background: "var(--akzent-flaeche)",
+          color: "var(--akzent-text)",
+          fontWeight: 650,
+        }}
+      >
+        {stueck.text}
+      </mark>
+    ) : (
+      <span key={i}>{stueck.text}</span>
+    ),
+  );
+}
+
+export function Befehlspalette({
+  ziele,
+  befehle,
+}: {
+  ziele: Palettenziel[];
+  befehle: Palettenbefehl[];
+}) {
+  const router = useRouter();
+
+  const [offen, setOffen] = useState(false);
+  const [muster, setMuster] = useState("");
+  const [zeiger, setZeiger] = useState(0);
+  const [zuletzt, setZuletzt] = useState<string[]>([]);
+
+  const feld = useRef<HTMLInputElement>(null);
+  const liste = useRef<HTMLDivElement>(null);
+  const kasten = useRef<HTMLDivElement>(null);
+
+  const alle = useMemo<Eintrag[]>(
+    () => [
+      ...befehle.map((b) => ({ ...b, art: "befehl" as const })),
+      ...ziele.map((z) => ({ ...z, art: "ziel" as const })),
+    ],
+    [befehle, ziele],
+  );
+
+  /*
+   * Ohne Eingabe steht das zuletzt Geöffnete oben. Das ist der
+   * häufigste Fall: Man springt zwischen zwei Anlagen hin und her,
+   * nicht durch zwanzig verschiedene.
+   */
+  const gezeigt = useMemo(() => {
+    if (muster.trim() === "") {
+      const vorn = zuletzt
+        .map((id) => alle.find((e) => e.id === id))
+        .filter((e): e is Eintrag => e !== undefined);
+
+      const rest = alle.filter((e) => !zuletzt.includes(e.id));
+      return [...vorn, ...rest]
+        .slice(0, 40)
+        .map((e) => ({ ...e, stellen: [] as number[] }));
+    }
+
+    return filtere(alle, muster).slice(0, 40);
+  }, [alle, muster, zuletzt]);
+
+  /*
+   * Wo eine Gruppenueberschrift steht, wird hier entschieden und
+   * nicht beim Zeichnen. Eine Variable, die sich waehrend des
+   * Renderns fortschreibt, haelt beim zweiten Durchlauf nicht mehr,
+   * was sie beim ersten versprochen hat.
+   *
+   * Bei einer Suche zaehlt die Bewertung, nicht die Gruppe - dieselbe
+   * Gruppe kann deshalb mehrfach auftauchen. Das ist richtig so: Die
+   * Reihenfolge ist die Aussage.
+   */
+  const mitKoepfen = useMemo(
+    () =>
+      gezeigt.map((eintrag, i) => ({
+        eintrag,
+        kopf: i === 0 || gezeigt[i - 1]!.gruppe !== eintrag.gruppe,
+      })),
+    [gezeigt],
+  );
+
+  const schliesse = useCallback(() => {
+    setOffen(false);
+    setMuster("");
+    setZeiger(0);
+  }, []);
+
+  /*
+   * Das Gedaechtnis wird beim Oeffnen gelesen, nicht in einem Effekt
+   * nach dem Oeffnen. Ein Effekt, der Zustand setzt, erzeugt einen
+   * zweiten Durchlauf - die Palette waere fuer einen Bildaufbau ohne
+   * ihre Vorschlaege zu sehen.
+   */
+  const oeffne = useCallback(() => {
+    setZuletzt(leseZuletzt());
+    setZeiger(0);
+    setOffen(true);
+  }, []);
+
+  const waehle = useCallback(
+    (eintrag: Eintrag | undefined) => {
+      if (!eintrag) return;
+      merkeZuletzt(eintrag.id);
+      schliesse();
+
+      if (eintrag.art === "befehl") {
+        eintrag.tun();
+        return;
+      }
+      router.push(eintrag.pfad);
+    },
+    [router, schliesse],
+  );
+
+  /* Öffnen mit Strg+K oder ⌘K. Esc, Fokus und Rollbremse: siehe useDialog. */
+  useEffect(() => {
+    function taste(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        if (offen) schliesse();
+        else oeffne();
+      }
+    }
+
+    window.addEventListener("keydown", taste);
+    return () => window.removeEventListener("keydown", taste);
+  }, [offen, oeffne, schliesse]);
+
+  useDialog({ offen, schliessen: schliesse, behaelter: kasten });
+
+  /* Nach dem Öffnen steht der Schreibzeiger im Suchfeld. */
+  useEffect(() => {
+    if (!offen) return;
+    const zeit = window.setTimeout(() => feld.current?.focus(), 20);
+    return () => window.clearTimeout(zeit);
+  }, [offen]);
+
+  /* Der ausgewählte Eintrag bleibt im Bild. */
+  useEffect(() => {
+    if (!offen) return;
+    const el = liste.current?.querySelector<HTMLElement>(
+      '[data-ausgewaehlt="ja"]',
+    );
+    el?.scrollIntoView({ block: "nearest" });
+  }, [zeiger, offen]);
+
+  function feldTaste(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setZeiger((z) => (gezeigt.length === 0 ? 0 : (z + 1) % gezeigt.length));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setZeiger((z) =>
+        gezeigt.length === 0 ? 0 : (z - 1 + gezeigt.length) % gezeigt.length,
+      );
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      waehle(gezeigt[zeiger]);
+    } else if (e.key === "Home") {
+      e.preventDefault();
+      setZeiger(0);
+    } else if (e.key === "End") {
+      e.preventDefault();
+      setZeiger(Math.max(0, gezeigt.length - 1));
+    }
+  }
+
+  return (
+    <>
+      <PalettenKnopf beiKlick={oeffne} />
+
+      {offen && (
+        <div
+          className="fixed inset-0 z-50 flex items-start justify-center px-4 pt-[12vh]"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Suche und Befehle"
+        >
+          <Dialogflaeche beiKlick={schliesse} />
+
+          <div
+            ref={kasten}
+            className="a-palette relative flex w-full max-w-[40rem] flex-col overflow-hidden"
+            style={{
+              maxHeight: "min(28rem, 70vh)",
+              background: "var(--f-ebene)",
+              border: "1px solid var(--linie)",
+              borderRadius: "var(--radius-tafel)",
+              boxShadow: "var(--schatten-schwebend)",
+            }}
+          >
+            <div
+              className="flex items-center gap-2.5 border-b px-4"
+              style={{ borderColor: "var(--linie-zart)" }}
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                aria-hidden
+                style={{ color: "var(--t-zart)", flexShrink: 0 }}
+              >
+                <circle
+                  cx="11"
+                  cy="11"
+                  r="6.5"
+                  stroke="currentColor"
+                  strokeWidth="1.7"
+                />
+                <path
+                  d="m16 16 4 4"
+                  stroke="currentColor"
+                  strokeWidth="1.7"
+                  strokeLinecap="round"
+                />
+              </svg>
+
+              <input
+                ref={feld}
+                value={muster}
+                onChange={(e) => {
+                  setMuster(e.target.value);
+                  setZeiger(0);
+                }}
+                onKeyDown={feldTaste}
+                placeholder="Anlage, Meldung, Seite oder Befehl …"
+                aria-label="Suchen"
+                aria-autocomplete="list"
+                aria-controls="palettenliste"
+                className="w-full bg-transparent py-3.5 text-[0.9375rem] outline-none"
+                style={{ color: "var(--t-stark)" }}
+              />
+
+              <kbd className="tastenkappe shrink-0">Esc</kbd>
+            </div>
+
+            <div
+              ref={liste}
+              id="palettenliste"
+              role="listbox"
+              aria-label="Ergebnisse"
+              className="min-h-0 flex-1 overflow-y-auto py-1.5"
+            >
+              {gezeigt.length === 0 && (
+                <p className="t-mikro px-4 py-6 text-center">
+                  Nichts gefunden. Auch Kennungen wie ANL-0002 oder
+                  Ortsnamen führen zum Ziel.
+                </p>
+              )}
+
+              {mitKoepfen.map(({ eintrag, kopf }, i) => {
+                const ausgewaehlt = i === zeiger;
+
+                return (
+                  <div key={eintrag.id}>
+                    {kopf && (
+                      <p className="t-etikett px-4 pt-2.5 pb-1">
+                        {eintrag.gruppe}
+                      </p>
+                    )}
+
+                    <div
+                      role="option"
+                      aria-selected={ausgewaehlt}
+                      data-ausgewaehlt={ausgewaehlt ? "ja" : "nein"}
+                      onMouseMove={() => setZeiger(i)}
+                      onClick={() => waehle(eintrag)}
+                      className="mx-1.5 flex cursor-pointer items-center gap-3 rounded-lg px-2.5 py-2"
+                      style={{
+                        background: ausgewaehlt
+                          ? "var(--akzent-flaeche)"
+                          : undefined,
+                      }}
+                    >
+                      <span className="min-w-0 flex-1">
+                        <span
+                          className="block truncate text-[0.8125rem]"
+                          style={{
+                            color: ausgewaehlt
+                              ? "var(--akzent-text)"
+                              : "var(--t-stark)",
+                            fontWeight: ausgewaehlt ? 600 : 500,
+                          }}
+                        >
+                          <Hervorgehoben
+                            text={eintrag.titel}
+                            stellen={eintrag.stellen}
+                          />
+                        </span>
+                        <span className="t-mikro block truncate">
+                          {eintrag.zusatz}
+                        </span>
+                      </span>
+
+                      {ausgewaehlt && (
+                        <kbd className="tastenkappe shrink-0">↵</kbd>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div
+              className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t px-4 py-2"
+              style={{ borderColor: "var(--linie-zart)" }}
+            >
+              <span className="t-mikro flex items-center gap-1.5">
+                <kbd className="tastenkappe">↑</kbd>
+                <kbd className="tastenkappe">↓</kbd> wählen
+              </span>
+              <span className="t-mikro flex items-center gap-1.5">
+                <kbd className="tastenkappe">↵</kbd> öffnen
+              </span>
+              <span className="t-mikro ml-auto">
+                {gezeigt.length} von {alle.length}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+/**
+ * Der Knopf, der die Palette öffnet.
+ *
+ * Er nennt das Tastenkürzel, weil sonst niemand erfährt, dass es
+ * eines gibt - und ein Kürzel, das niemand kennt, ist keines.
+ */
+function PalettenKnopf({ beiKlick }: { beiKlick: () => void }) {
+  /*
+   * Welche Taste angezeigt wird, haengt am Geraet und ist am Server
+   * nicht bekannt. `useSyncExternalStore` mit einer leeren Anmeldung
+   * ist dafuer der richtige Weg: ein Wert, der einmal gelesen wird
+   * und sich danach nie aendert - ohne zweiten Durchlauf, in dem
+   * kurz die falsche Taste steht.
+   */
+  const apfel = useSyncExternalStore(
+    () => () => {},
+    () => /Mac|iPhone|iPad/.test(navigator.platform ?? ""),
+    () => false,
+  );
+
+  return (
+    <button
+      type="button"
+      onClick={beiKlick}
+      className="flex w-full items-center gap-2 rounded-full border px-3 py-1.5 text-left transition-colors duration-300"
+      style={{ borderColor: "var(--linie)", background: "var(--f-vertieft)" }}
+      aria-keyshortcuts="Control+K Meta+K"
+    >
+      <svg
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+        aria-hidden
+        style={{ color: "var(--t-zart)", flexShrink: 0 }}
+      >
+        <circle cx="11" cy="11" r="6.5" stroke="currentColor" strokeWidth="1.8" />
+        <path
+          d="m16 16 4 4"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+        />
+      </svg>
+      <span className="t-mikro flex-1 truncate">Suchen …</span>
+      <kbd className="tastenkappe shrink-0">{apfel ? "⌘" : "Strg"} K</kbd>
+    </button>
+  );
+}

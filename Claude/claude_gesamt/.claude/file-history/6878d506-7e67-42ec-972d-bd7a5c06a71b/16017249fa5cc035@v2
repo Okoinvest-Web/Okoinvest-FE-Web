@@ -1,0 +1,61 @@
+import { Receipt } from "lucide-react";
+import { db } from "@/lib/data";
+import { date, daysUntil, INVOICE_STATUS_LABEL, money2 } from "@/lib/format";
+import { Badge, Empty, PageBody, PageHeader, Stat, StatBand, Table, TD } from "@/components/ui";
+
+export const metadata = { title: "Rechnungen" };
+
+// Rechnungen (ERPNext Sales Invoice) mit Zahlstatus – Grundlage für Nachhaken beim Kunden und die Provision
+export default async function InvoicesPage() {
+  const invoices = (await db().listInvoices({ limit: 500 })).filter((i) => i.status !== "Draft" && i.status !== "Cancelled");
+  const open = invoices.filter((i) => i.outstanding_amount > 0);
+  const overdue = open.filter((i) => (daysUntil(i.due_date) ?? 0) < 0);
+  const sum = (xs: typeof invoices) => xs.reduce((s, i) => s + i.outstanding_amount, 0);
+
+  return (
+    <>
+      <PageHeader title="Rechnungen" subtitle="Zahlstatus der Kundenrechnungen" />
+      <PageBody className="pb-0">
+        <StatBand>
+          <Stat label="Offen" value={money2(sum(open))} hint={`${open.length} Rechnungen`} />
+          <Stat label="Überfällig" value={<span className={overdue.length ? "text-rose-600" : ""}>{money2(sum(overdue))}</span>} hint={`${overdue.length} Rechnungen`} />
+          <Stat label="Bezahlt" value={invoices.filter((i) => i.status === "Paid").length} hint="Rechnungen" />
+          <Stat label="Umsatz netto" value={money2(invoices.reduce((s, i) => s + i.net_total, 0))} hint="alle Rechnungen" />
+        </StatBand>
+      </PageBody>
+      <div className="mt-6 border-t border-gray-150">
+        {invoices.length === 0 ? (
+          <Empty icon={Receipt}>Noch keine Rechnungen.</Empty>
+        ) : (
+          <Table head={["Rechnung", "Status", "Rechnungsdatum", "Fällig", "Brutto", "Offen"]} align={{ 4: "right", 5: "right" }}>
+            {invoices.map((i) => {
+              const n = daysUntil(i.due_date);
+              return (
+                <tr key={i.name} className="hover:bg-gray-50">
+                  <td className={TD}>
+                    <div className="font-medium text-gray-900">{i.customer_name}</div>
+                    <div className="text-[12px] text-gray-500">{i.name}</div>
+                  </td>
+                  <td className={TD}>
+                    <Badge value={i.status} label={INVOICE_STATUS_LABEL[i.status] ?? i.status} />
+                  </td>
+                  <td className={`${TD} tnum whitespace-nowrap`}>{date(i.posting_date)}</td>
+                  <td className={`${TD} tnum whitespace-nowrap`}>
+                    {date(i.due_date)}
+                    {i.outstanding_amount > 0 && n !== undefined && (
+                      <div className={`text-[12px] ${n < 0 ? "text-rose-600" : "text-gray-400"}`}>{n < 0 ? `${-n} T überfällig` : `in ${n} T`}</div>
+                    )}
+                  </td>
+                  <td className={`${TD} tnum text-right`}>{money2(i.grand_total, i.currency)}</td>
+                  <td className={`${TD} tnum text-right font-medium ${i.outstanding_amount > 0 ? "text-gray-900" : "text-gray-400"}`}>
+                    {money2(i.outstanding_amount, i.currency)}
+                  </td>
+                </tr>
+              );
+            })}
+          </Table>
+        )}
+      </div>
+    </>
+  );
+}

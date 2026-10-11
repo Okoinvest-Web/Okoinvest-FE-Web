@@ -1,0 +1,338 @@
+import { istFeiertag } from "../at/feiertage.ts";
+
+/**
+ * Wer wird wann über welchen Weg benachrichtigt - und was geschieht,
+ * wenn niemand reagiert.
+ *
+ * Der teuerste Fehler in einem Alarmierungssystem ist nicht die
+ * fehlende Meldung, sondern die Meldung, die niemanden erreicht und
+ * von der alle annehmen, sie sei angekommen. Deshalb gilt hier:
+ *
+ *   - Eine Meldung gilt erst als erledigt, wenn ein Mensch sie
+ *     bestätigt hat. Eine zugestellte Nachricht ist keine Bestätigung.
+ *   - Je kritischer, desto mehr Wege gleichzeitig. Wer im Funkloch
+ *     steht, bekommt die Push-Nachricht nicht - das Telefon klingelt
+ *     trotzdem, sobald es wieder Netz hat.
+ *   - Ohne Bestätigung wird eskaliert, und zwar bis zu einer Stelle,
+ *     die rund um die Uhr besetzt ist.
+ *
+ * Reine Planungslogik: Hier wird entschieden, wer was bekommt. Das
+ * Versenden selbst geschieht anderswo.
+ */
+
+export type Dringlichkeit = "Niedrig" | "Mittel" | "Hoch" | "Kritisch";
+
+export type Kanal =
+  | "Push"
+  | "WhatsApp"
+  | "SMS"
+  | "Anruf"
+  | "E-Mail"
+  | "Webhook";
+
+export interface Kanalplan {
+  dringlichkeit: Dringlichkeit;
+  /** Wege, die sofort bedient werden. */
+  sofort: Kanal[];
+  /** Wege, die bei der ersten Eskalation dazukommen. */
+  stufe2: Kanal[];
+  /** Wege der letzten Stufe. */
+  stufe3: Kanal[];
+  /** Minuten ohne Bestätigung bis zur nächsten Stufe. */
+  fristMinuten: number;
+  begruendung: string;
+}
+
+/**
+ * Wege und Fristen je Dringlichkeit.
+ *
+ * Der Sprachanruf steht bewusst erst ab "Hoch" und dann sofort: Er
+ * ist der einzige Weg, der jemanden aus dem Schlaf holt, und der
+ * einzige, der ohne Datenverbindung funktioniert. Wer ihn bei jeder
+ * Meldung einsetzt, erreicht nach zwei Wochen niemanden mehr.
+ */
+export const KANALPLAENE: Record<Dringlichkeit, Kanalplan> = {
+  Kritisch: {
+    dringlichkeit: "Kritisch",
+    sofort: ["Push", "WhatsApp", "SMS", "Anruf"],
+    stufe2: ["Anruf", "SMS"],
+    stufe3: ["Anruf", "E-Mail", "Webhook"],
+    fristMinuten: 10,
+    begruendung:
+      "Anlagenstillstand, Netztrennung oder ein Eingriff in die Schutzparameter. Alle Wege gleichzeitig, weil ein einzelner ausfallen kann.",
+  },
+  Hoch: {
+    dringlichkeit: "Hoch",
+    sofort: ["Push", "WhatsApp"],
+    stufe2: ["Anruf", "SMS"],
+    stufe3: ["Anruf", "E-Mail"],
+    fristMinuten: 15,
+    begruendung:
+      "Ein wesentlicher Anlagenteil liefert nicht. Zuerst die stillen Wege, der Anruf erst, wenn niemand reagiert.",
+  },
+  Mittel: {
+    dringlichkeit: "Mittel",
+    sofort: ["Push"],
+    stufe2: ["WhatsApp", "E-Mail"],
+    stufe3: ["E-Mail"],
+    fristMinuten: 60,
+    begruendung:
+      "Minderertrag oder eine Störung ohne Betriebsunterbrechung. Kein Anruf - das wäre gegenüber der Sache unverhältnismäßig.",
+  },
+  Niedrig: {
+    dringlichkeit: "Niedrig",
+    sofort: ["E-Mail"],
+    stufe2: ["E-Mail"],
+    stufe3: ["E-Mail"],
+    fristMinuten: 480,
+    begruendung:
+      "Hinweise und Auskünfte. Erreichen den Empfänger zur Arbeitszeit; nachts weckt sie niemand.",
+  },
+};
+
+/**
+ * Aktionen, die direkt aus einer Nachricht ausgelöst werden können.
+ *
+ * Sie sparen den Weg ins Portal. Der entscheidende Punkt ist der
+ * erste Eintrag: Wer bestätigt, stoppt die Eskalation - und kann das
+ * mit einem Fingertipp tun, während er im Auto sitzt.
+ */
+export const AKTIONEN = [
+  { schluessel: "annehmen", label: "Ticket annehmen" },
+  { schluessel: "rueckruf", label: "Rückruf anfordern" },
+  { schluessel: "fernwartung", label: "Fernwartung für 1 h freigeben" },
+] as const;
+
+export interface Dienstplaneintrag {
+  id: string;
+  bezeichnung: string;
+  /** Wochentage als Ziffern, 1 = Montag bis 7 = Sonntag. */
+  wochentage: string;
+  /** Beginn und Ende in Stunden. Ende kleiner als Beginn heißt: über Mitternacht. */
+  vonStunde: number;
+  bisStunde: number;
+  /** 1 wird zuerst gerufen, dann 2, dann 3. */
+  stufe: number;
+  empfaenger: string;
+  rolle?: string;
+  /** Bevorzugter Weg dieser Stufe; ergänzt den Kanalplan. */
+  kanal: Kanal;
+  aktiv: boolean;
+  /**
+   * Gilt dieser Eintrag auch an gesetzlichen Feiertagen?
+   *
+   * Ohne dieses Merkmal klingelt am Nationalfeiertag das Telefon
+   * derjenigen, die eigentlich Werktagsdienst haben - und der
+   * Bereitschaftsdienst erfährt nichts.
+   */
+  auchFeiertags: boolean;
+}
+
+/** Deckt der Eintrag diesen Zeitpunkt ab? */
+export function hatDienst(
+  eintrag: Dienstplaneintrag,
+  zeitpunkt: Date,
+): boolean {
+  if (!eintrag.aktiv) return false;
+
+  const feiertag = istFeiertag(zeitpunkt);
+
+  // An Feiertagen gilt der Feiertagsdienst - und nur er. Ein
+  // Werktagsdienst, der zufällig den Wochentag trifft, greift nicht.
+  if (feiertag !== eintrag.auchFeiertags) return false;
+
+  if (!feiertag) {
+    // getDay liefert 0 für Sonntag; im Plan steht 7.
+    const tag = zeitpunkt.getDay() === 0 ? 7 : zeitpunkt.getDay();
+    if (!eintrag.wochentage.includes(String(tag))) return false;
+  }
+
+  const stunde = zeitpunkt.getHours();
+
+  // Ein Dienst von 22 bis 6 Uhr läuft über Mitternacht.
+  if (eintrag.bisStunde <= eintrag.vonStunde) {
+    return stunde >= eintrag.vonStunde || stunde < eintrag.bisStunde;
+  }
+
+  return stunde >= eintrag.vonStunde && stunde < eintrag.bisStunde;
+}
+
+/**
+ * Wer zum gegebenen Zeitpunkt Dienst hat, nach Stufe geordnet.
+ *
+ * Mehrere Einträge derselben Stufe sind zulässig - etwa zwei
+ * Techniker, die sich eine Schicht teilen.
+ */
+export function werHatDienst(
+  plan: Dienstplaneintrag[],
+  zeitpunkt: Date,
+): Dienstplaneintrag[] {
+  return plan
+    .filter((e) => hatDienst(e, zeitpunkt))
+    .sort((a, b) => a.stufe - b.stufe || a.bezeichnung.localeCompare(b.bezeichnung, "de-AT"));
+}
+
+export interface Zustellauftrag {
+  kanal: Kanal;
+  empfaenger: string;
+  stufe: number;
+  /** Ab wann versucht werden soll. */
+  faelligAb: Date;
+  /** Warum dieser Weg gewählt wurde - für das Protokoll. */
+  begruendung: string;
+}
+
+export interface Meldung {
+  id: string;
+  dringlichkeit: Dringlichkeit;
+  erzeugtAm: Date;
+  /** Zeitpunkt der Bestätigung durch einen Menschen. */
+  bestaetigtAm?: Date | null;
+  /** Bereits erreichte Stufe. */
+  stufe: number;
+}
+
+/**
+ * Wohin eine Meldung als Nächstes geht.
+ *
+ * Gibt eine leere Liste zurück, wenn bestätigt wurde - dann ist
+ * nichts mehr zu tun. Das ist der Normalfall und muss der billigste
+ * sein.
+ *
+ * `jetzt` wird übergeben und nicht ermittelt: Sonst liefert dieselbe
+ * Eingabe bei jedem Aufruf ein anderes Ergebnis, und die Funktion
+ * ließe sich nicht prüfen.
+ */
+export function planeZustellung(
+  meldung: Meldung,
+  plan: Dienstplaneintrag[],
+  jetzt: Date,
+): Zustellauftrag[] {
+  if (meldung.bestaetigtAm) return [];
+
+  const kanalplan = KANALPLAENE[meldung.dringlichkeit];
+  const stufe = Math.max(1, meldung.stufe);
+
+  const diensthabende = werHatDienst(plan, jetzt);
+
+  const kanaele =
+    stufe === 1
+      ? kanalplan.sofort
+      : stufe === 2
+        ? kanalplan.stufe2
+        : kanalplan.stufe3;
+
+  // Stufe 1 und 2 gehen an die Diensthabenden der jeweiligen Stufe,
+  // Stufe 3 an alle - dort ist die Frage nicht mehr, wer zuständig
+  // ist, sondern dass überhaupt jemand reagiert.
+  const empfaenger =
+    stufe >= 3
+      ? diensthabende
+      : diensthabende.filter((e) => e.stufe === stufe);
+
+  // Hat auf dieser Stufe niemand Dienst, wird nicht übersprungen,
+  // sondern an alle Diensthabenden zugestellt. Eine Lücke im
+  // Dienstplan darf keine Meldung verschlucken.
+  const ziel = empfaenger.length > 0 ? empfaenger : diensthabende;
+
+  const auftraege: Zustellauftrag[] = [];
+
+  for (const person of ziel) {
+    // Der im Dienstplan hinterlegte Weg kommt hinzu, falls er im
+    // Kanalplan dieser Stufe nicht ohnehin vorgesehen ist.
+    const wege = new Set<Kanal>([...kanaele, person.kanal]);
+
+    for (const kanal of wege) {
+      auftraege.push({
+        kanal,
+        empfaenger: person.empfaenger,
+        stufe,
+        faelligAb: jetzt,
+        begruendung: `${meldung.dringlichkeit}, Stufe ${stufe}: ${kanalplan.begruendung}`,
+      });
+    }
+  }
+
+  return auftraege;
+}
+
+export interface Eskalationsentscheidung {
+  /** Soll jetzt eskaliert werden? */
+  eskalieren: boolean;
+  /** Die Stufe, auf die gehoben wird. */
+  neueStufe: number;
+  /** Verstrichene Minuten seit der Meldung. */
+  verstrichenMinuten: number;
+  /** Minuten bis zur nächsten Stufe; negativ heißt überfällig. */
+  bisNaechsteMinuten: number;
+  begruendung: string;
+}
+
+/** Höchste Stufe. Darüber gibt es nichts mehr - dort sitzt der Notdienst. */
+export const HOECHSTE_STUFE = 3;
+
+/**
+ * Entscheidet, ob eine Meldung auf die nächste Stufe gehoben wird.
+ *
+ * Die Fristen verdoppeln sich nicht je Stufe, sie bleiben gleich: Bei
+ * einer kritischen Meldung sind nach zehn Minuten ohne Reaktion die
+ * ersten zehn Minuten verloren, nach zwanzig die nächsten. Eine
+ * wachsende Frist würde die Eskalation genau dann verlangsamen, wenn
+ * sie dringlicher wird.
+ */
+export function pruefeEskalation(
+  meldung: Meldung,
+  jetzt: Date,
+): Eskalationsentscheidung {
+  const kanalplan = KANALPLAENE[meldung.dringlichkeit];
+  const verstrichen =
+    (jetzt.getTime() - meldung.erzeugtAm.getTime()) / 60000;
+  const stufe = Math.max(1, meldung.stufe);
+
+  if (meldung.bestaetigtAm) {
+    return {
+      eskalieren: false,
+      neueStufe: stufe,
+      verstrichenMinuten: Number(verstrichen.toFixed(1)),
+      bisNaechsteMinuten: 0,
+      begruendung: "Die Meldung wurde bestätigt.",
+    };
+  }
+
+  if (stufe >= HOECHSTE_STUFE) {
+    return {
+      eskalieren: false,
+      neueStufe: HOECHSTE_STUFE,
+      verstrichenMinuten: Number(verstrichen.toFixed(1)),
+      bisNaechsteMinuten: 0,
+      begruendung:
+        "Die Meldung liegt beim Notdienst. Eine weitere Stufe gibt es nicht.",
+    };
+  }
+
+  const faelligNach = kanalplan.fristMinuten * stufe;
+  const bisNaechste = faelligNach - verstrichen;
+
+  if (bisNaechste > 0) {
+    return {
+      eskalieren: false,
+      neueStufe: stufe,
+      verstrichenMinuten: Number(verstrichen.toFixed(1)),
+      bisNaechsteMinuten: Number(bisNaechste.toFixed(1)),
+      begruendung: `Noch ${Math.ceil(bisNaechste)} Minuten bis zur Stufe ${stufe + 1}.`,
+    };
+  }
+
+  const neueStufe = stufe + 1;
+
+  return {
+    eskalieren: true,
+    neueStufe,
+    verstrichenMinuten: Number(verstrichen.toFixed(1)),
+    bisNaechsteMinuten: Number(bisNaechste.toFixed(1)),
+    begruendung:
+      neueStufe >= HOECHSTE_STUFE
+        ? `Nach ${Math.round(verstrichen)} Minuten ohne Bestätigung übernimmt der Notdienst.`
+        : `Nach ${Math.round(verstrichen)} Minuten ohne Bestätigung geht die Meldung an die Stellvertretung.`,
+  };
+}

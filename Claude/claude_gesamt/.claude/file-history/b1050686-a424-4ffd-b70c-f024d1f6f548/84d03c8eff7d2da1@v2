@@ -1,0 +1,520 @@
+import "server-only";
+
+import { alle, skalar } from "../db/verbindung.ts";
+import { REGELUNGEN, tageBis, wirksamkeit } from "../at/elwg.ts";
+import { mehrzahl } from "../zahl.ts";
+import { ladeWartungsstand } from "./wartung.ts";
+import { ladeGeraetefreigaben } from "./netz.ts";
+
+/**
+ * Was heute zu tun ist.
+ *
+ * Ein Portal mit zwanzig Seiten hat ein Problem, das keine einzelne
+ * Seite lösen kann: Niemand öffnet zwanzig Seiten, um zu sehen, ob
+ * irgendwo etwas liegen geblieben ist. Also bleibt etwas liegen - der
+ * Abrechnungslauf im Entwurf, die Fernwartungsanfrage vom Freitag, der
+ * Buchungsstapel, den niemand übergeben hat.
+ *
+ * Diese Liste fragt jeden Bereich einmal und bringt zusammen, was
+ * einen Handgriff braucht. Zwei Regeln halten sie brauchbar:
+ *
+ * 1. Nur Offenes. Was erledigt ist, steht nicht darin - auch nicht als
+ *    grüner Haken. Eine Liste, die zur Hälfte aus Erledigtem besteht,
+ *    liest nach zwei Wochen niemand mehr.
+ * 2. Jeder Eintrag führt an die Stelle, an der er erledigt wird. Ein
+ *    Hinweis ohne Weg dorthin ist eine Belästigung.
+ */
+
+export type Dringlichkeit = "sofort" | "diese_woche" | "wenn_zeit";
+
+export interface Aufgabe {
+  id: string;
+  titel: string;
+  /** Was genau ansteht, in einem Satz. */
+  zusatz: string;
+  pfad: string;
+  bereich: string;
+  dringlichkeit: Dringlichkeit;
+  /** Recht, das den Eintrag sichtbar macht. */
+  recht: string;
+}
+
+const RANG: Record<Dringlichkeit, number> = {
+  sofort: 0,
+  diese_woche: 1,
+  wenn_zeit: 2,
+};
+
+export function ladeAufgaben(): Aufgabe[] {
+  const aufgaben: Aufgabe[] = [];
+
+  const zaehle = (sql: string, ...werte: (string | number)[]) =>
+    skalar<number>(sql, ...werte) ?? 0;
+
+  /* ---------------- Betrieb ---------------- */
+
+  const gesperrt = alle<{ anlage_id: string; bezeichnung: string }>(
+    `SELECT d.anlage_id, a.bezeichnung
+       FROM driftlauf d
+       JOIN anlage a ON a.id = d.anlage_id
+      WHERE d.gesperrt = 1
+        AND d.gelaufen_am = (SELECT MAX(gelaufen_am) FROM driftlauf x
+                              WHERE x.anlage_id = d.anlage_id)`,
+  );
+
+  for (const g of gesperrt) {
+    aufgaben.push({
+      id: `sperre-${g.anlage_id}`,
+      titel: `${g.bezeichnung} ist gesperrt`,
+      zusatz:
+        "Ein Schutzparameter weicht vom versiegelten Sollstand ab. Die Anlage bleibt gesperrt, bis der Wert geprüft und die Sperre begründet aufgehoben ist.",
+      pfad: "/portal/netz",
+      bereich: "Netz & Geräte",
+      dringlichkeit: "sofort",
+      recht: "netz.lesen",
+    });
+  }
+
+  const kritischeAlarme = zaehle(
+    `SELECT COUNT(*) FROM alarm
+      WHERE status <> 'Behoben' AND schweregrad IN ('Kritisch','Hoch')`,
+  );
+
+  if (kritischeAlarme > 0) {
+    aufgaben.push({
+      id: "alarme-kritisch",
+      titel: mehrzahl(kritischeAlarme, "schwere Meldung", "schwere Meldungen"),
+      zusatz:
+        "Kritisch oder hoch eingestuft und noch nicht behoben. Jede davon kostet Ertrag, solange sie offen ist.",
+      pfad: "/portal/alarme",
+      bereich: "Betrieb",
+      dringlichkeit: "sofort",
+      recht: "monitoring.lesen",
+    });
+  }
+
+  const ueberfaellig = zaehle(
+    `SELECT COUNT(*) FROM stoerung
+      WHERE status <> 'Geschlossen'
+        AND loesung_bis IS NOT NULL
+        AND loesung_bis < datetime('now')`,
+  );
+
+  if (ueberfaellig > 0) {
+    aufgaben.push({
+      id: "stoerung-ueberfaellig",
+      titel: mehrzahl(
+        ueberfaellig,
+        "Störung über der Frist",
+        "Störungen über der Frist",
+      ),
+      zusatz:
+        "Die zugesagte Lösungsfrist ist überschritten. Wer zuerst anruft, ist der Kunde.",
+      pfad: "/portal/support",
+      bereich: "Service",
+      dringlichkeit: "sofort",
+      recht: "support.melden",
+    });
+  }
+
+  /* ---------------- Zugriffe ---------------- */
+
+  const anfragen = zaehle(
+    "SELECT COUNT(*) FROM zt_sitzung WHERE status = 'Angefragt'",
+  );
+
+  if (anfragen > 0) {
+    aufgaben.push({
+      id: "fernwartung-anfragen",
+      titel: mehrzahl(
+        anfragen,
+        "Fernwartungsanfrage offen",
+        "Fernwartungsanfragen offen",
+      ),
+      zusatz:
+        "Ein Techniker wartet auf die Freigabe. Solange niemand entscheidet, steht die Arbeit - und eine Freigabe am Abend wird gern zu einem Dauerzugang.",
+      pfad: "/portal/netz",
+      bereich: "Netz & Geräte",
+      dringlichkeit: "sofort",
+      recht: "fernwartung.freigeben",
+    });
+  }
+
+  const verteilung = zaehle(
+    "SELECT COUNT(*) FROM sperrliste_verteilung WHERE stand <> 'Aktuell'",
+  );
+
+  if (verteilung > 0) {
+    aufgaben.push({
+      id: "sperrliste-verteilung",
+      titel: mehrzahl(
+        verteilung,
+        "Gateway mit veralteter Sperrliste",
+        "Gateways mit veralteter Sperrliste",
+      ),
+      zusatz:
+        "Eine Sperrliste, die zentral aktuell und am Gerät drei Wochen alt ist, schützt nichts.",
+      pfad: "/portal/sicherheit",
+      bereich: "Sicherheit",
+      dringlichkeit: "diese_woche",
+      recht: "sicherheit.lesen",
+    });
+  }
+
+  const inaktiveRegeln = zaehle("SELECT COUNT(*) FROM waf_regel WHERE aktiv = 0");
+
+  if (inaktiveRegeln > 0) {
+    aufgaben.push({
+      id: "waf-regeln-offen",
+      titel: mehrzahl(
+        inaktiveRegeln,
+        "Perimeterregel nicht scharf",
+        "Perimeterregeln nicht scharf",
+      ),
+      zusatz:
+        "Angelegt, aber nicht eingeschaltet. Eine Regel, die nicht wirkt, schützt niemanden und verstellt die Übersicht.",
+      pfad: "/portal/sicherheit",
+      bereich: "Sicherheit",
+      dringlichkeit: "wenn_zeit",
+      recht: "sicherheit.verwalten",
+    });
+  }
+
+  /* ---------------- Steuerung ---------------- */
+
+  const unterwegs = zaehle(
+    `SELECT COUNT(*) FROM steuerbefehl
+      WHERE status IN ('Übertragen','Angenommen')`,
+  );
+
+  if (unterwegs > 0) {
+    aufgaben.push({
+      id: "steuerbefehle-offen",
+      titel: mehrzahl(
+        unterwegs,
+        "Steuerbefehl unbestätigt",
+        "Steuerbefehle unbestätigt",
+      ),
+      zusatz:
+        "Das Portal zeigt den Sollwert, die Anlage aber noch den alten. Erst die Bestätigung der Anlage macht einen Befehl wirksam.",
+      pfad: "/portal/steuerung",
+      bereich: "Betrieb",
+      dringlichkeit: "diese_woche",
+      recht: "steuerung.lesen",
+    });
+  }
+
+  /* ---------------- Handel ---------------- */
+
+  const entwurfsplaene = zaehle(
+    "SELECT COUNT(*) FROM fahrplan WHERE status = 'Entwurf'",
+  );
+
+  if (entwurfsplaene > 0) {
+    aufgaben.push({
+      id: "fahrplan-entwurf",
+      titel: mehrzahl(
+        entwurfsplaene,
+        "Fahrplan im Entwurf",
+        "Fahrpläne im Entwurf",
+      ),
+      zusatz:
+        "Ein nicht freigegebener Fahrplan wird nicht gefahren. Der Speicher läuft dann auf der Grundeinstellung aus der Steuerung.",
+      pfad: "/portal/handel",
+      bereich: "Handel",
+      dringlichkeit: "diese_woche",
+      recht: "handel.freigeben",
+    });
+  }
+
+  /* ---------------- Kaufmännisches ---------------- */
+
+  const ladeEntwuerfe = alle<{ id: string; bezeichnung: string }>(
+    "SELECT id, bezeichnung FROM ladeabrechnung WHERE status = 'Entwurf'",
+  );
+
+  for (const l of ladeEntwuerfe) {
+    aufgaben.push({
+      id: `ladelauf-${l.id}`,
+      titel: `${l.bezeichnung} nicht festgeschrieben`,
+      zusatz:
+        "Solange der Lauf Entwurf ist, sind seine Belege in der Buchhaltung nicht buchbar.",
+      pfad: `/portal/mobilitaet/abrechnung/${l.id}`,
+      bereich: "Mobilität",
+      dringlichkeit: "diese_woche",
+      recht: "mobilitaet.verwalten",
+    });
+  }
+
+  const eegEntwuerfe = zaehle(
+    `SELECT COUNT(*) FROM abrechnungslauf
+      WHERE status IN ('Entwurf','Berechnet')`,
+  );
+
+  if (eegEntwuerfe > 0) {
+    aufgaben.push({
+      id: "eeg-entwurf",
+      titel: mehrzahl(
+        eegEntwuerfe,
+        "Abrechnungslauf offen",
+        "Abrechnungsläufe offen",
+      ),
+      zusatz:
+        "Der Lauf der Energiegemeinschaft ist gerechnet, aber nicht festgeschrieben. Erst danach entstehen Belege, die eingezogen werden können.",
+      pfad: "/portal/gemeinschaft",
+      bereich: "Gemeinschaft",
+      dringlichkeit: "diese_woche",
+      recht: "gemeinschaft.verwalten",
+    });
+  }
+
+  const stapelEntwuerfe = zaehle(
+    "SELECT COUNT(*) FROM buchungsstapel WHERE status = 'Entwurf'",
+  );
+
+  if (stapelEntwuerfe > 0) {
+    aufgaben.push({
+      id: "stapel-entwurf",
+      titel: mehrzahl(
+        stapelEntwuerfe,
+        "Buchungsstapel nicht übergeben",
+        "Buchungsstapel nicht übergeben",
+      ),
+      zusatz:
+        "Der Stapel steht als Entwurf. Bis zur Übergabe fehlt der Umsatz in der Buchhaltung.",
+      pfad: "/portal/finanzen",
+      bereich: "Buchhaltung",
+      dringlichkeit: "diese_woche",
+      recht: "finanzen.buchen",
+    });
+  }
+
+  const sammler = zaehle(
+    "SELECT COUNT(*) FROM lastschriftlauf WHERE status = 'Erstellt'",
+  );
+
+  if (sammler > 0) {
+    aufgaben.push({
+      id: "lastschrift-offen",
+      titel: mehrzahl(
+        sammler,
+        "Lastschriftsammler nicht eingereicht",
+        "Lastschriftsammler nicht eingereicht",
+      ),
+      zusatz:
+        "Die Datei ist erzeugt, aber noch nicht bei der Bank. Bis dahin kommt kein Geld.",
+      pfad: "/portal/finanzen",
+      bereich: "Buchhaltung",
+      dringlichkeit: "diese_woche",
+      recht: "finanzen.buchen",
+    });
+  }
+
+  const einziehbar = zaehle(
+    `SELECT COUNT(*) FROM beleg b
+       JOIN kunde k ON k.id = b.kunde_id
+      WHERE b.status = 'Offen' AND b.art = 'Rechnung'
+        AND k.iban IS NOT NULL AND k.mandat IS NOT NULL
+        AND NOT EXISTS (
+          SELECT 1 FROM lastschriftposten p
+            JOIN lastschriftlauf l ON l.id = p.lauf_id
+           WHERE p.beleg_id = b.id AND l.status <> 'Storniert')`,
+  );
+
+  if (einziehbar > 0) {
+    aufgaben.push({
+      id: "lastschrift-einziehbar",
+      titel: mehrzahl(
+        einziehbar,
+        "offene Rechnung einziehbar",
+        "offene Rechnungen einziehbar",
+      ),
+      zusatz:
+        "Mandat liegt vor, Beleg ist offen, in keinem Sammler. Jede Woche ohne Einzug ist eine Woche ohne Geld.",
+      pfad: "/portal/finanzen",
+      bereich: "Buchhaltung",
+      dringlichkeit: "diese_woche",
+      recht: "finanzen.buchen",
+    });
+  }
+
+  /* ---------------- Stammdaten ---------------- */
+
+  const ohneMandat = zaehle(
+    `SELECT COUNT(*) FROM kunde
+      WHERE (iban IS NULL OR mandat IS NULL)
+        AND EXISTS (SELECT 1 FROM beleg b
+                     WHERE b.kunde_id = kunde.id AND b.status = 'Offen')`,
+  );
+
+  if (ohneMandat > 0) {
+    aufgaben.push({
+      id: "mandat-fehlt",
+      titel: mehrzahl(
+        ohneMandat,
+        "Kunde ohne Lastschriftmandat",
+        "Kunden ohne Lastschriftmandat",
+      ),
+      zusatz:
+        "Ein offener Beleg ohne Mandat muss überwiesen werden - und wird es erfahrungsgemäß spät.",
+      pfad: "/portal/einstellungen",
+      bereich: "Stammdaten",
+      dringlichkeit: "wenn_zeit",
+      recht: "benutzer.verwalten",
+    });
+  }
+
+  /* ---------------- Regulierung ---------------- */
+
+  /*
+   * Der juengste Lastgangwert als Stichtag.
+   *
+   * Ohne die Funktion um den Wert herum: `MAX(date(zeitpunkt, ...))`
+   * kann den Index nicht nutzen und liest 384.000 Zeilen - das kostete
+   * hier allein 140 Millisekunden. `MAX(zeitpunkt)` greift den
+   * Indexrand ab, das Umrechnen erledigt danach die Anwendung.
+   */
+  const juengster = skalar<string>("SELECT MAX(zeitpunkt) FROM lastgang");
+  const stichtag = juengster
+    ? new Date(juengster.endsWith("Z") ? juengster : juengster + "Z")
+        .toISOString()
+        .slice(0, 10)
+    : null;
+
+  if (stichtag) {
+    for (const regelung of REGELUNGEN) {
+      if (wirksamkeit(regelung, stichtag) !== "kommt") continue;
+
+      const tage = tageBis(regelung, stichtag);
+      if (tage > 120) continue;
+
+      aufgaben.push({
+        id: `regel-${regelung.schluessel}`,
+        titel: `${regelung.titel} in ${mehrzahl(tage, "Tag", "Tagen")}`,
+        zusatz: regelung.handlung,
+        pfad: "/portal/regulierung",
+        bereich: "Regulierung",
+        dringlichkeit: tage <= 30 ? "diese_woche" : "wenn_zeit",
+        recht: "monitoring.lesen",
+      });
+    }
+  }
+
+  /* ---------------- Unbestaetigte Alarmierung ---------------- */
+
+  /*
+   * Eine zugestellte Nachricht ist keine Bestaetigung. Solange
+   * niemand uebernommen hat, laeuft die Eskalation weiter - und der
+   * Notdienst wird geweckt, obwohl im Haus jemand am Schreibtisch
+   * sitzt.
+   */
+  const unbestaetigt = alle<{ id: string; betreff: string; dringlichkeit: string }>(
+    `SELECT id, betreff, dringlichkeit
+       FROM benachrichtigung
+      WHERE bestaetigt_am IS NULL
+        AND dringlichkeit IN ('Kritisch','Hoch')
+      ORDER BY erzeugt_am`,
+  );
+
+  if (unbestaetigt.length > 0) {
+    aufgaben.push({
+      id: "alarmierung-unbestaetigt",
+      titel: mehrzahl(
+        unbestaetigt.length,
+        "Meldung ohne Bestätigung",
+        "Meldungen ohne Bestätigung",
+      ),
+      zusatz: `${unbestaetigt[0]!.betreff} (${unbestaetigt[0]!.dringlichkeit}). Bis jemand übernimmt, wird weiter eskaliert – am Ende bis zum Notdienst.`,
+      pfad: "/portal/alarme/meldewege",
+      bereich: "Betrieb",
+      dringlichkeit: "sofort",
+      recht: "monitoring.lesen",
+    });
+  }
+
+  /* ---------------- Freigabe der Geraete ---------------- */
+
+  /*
+   * Ein Geraet, das die Freigabe nicht erfuellt, ist kein
+   * Schoenheitsfehler: Ein ablaufendes Zertifikat nimmt die Anlage aus
+   * der Ueberwachung, eine Portweiterleitung oeffnet sie. Beides
+   * gehoert nach oben und nicht in eine Liste, die man aufklappen
+   * muss.
+   */
+  const abgelehnt = ladeGeraetefreigaben().filter(
+    (f) => f.befund.freigabe === "verweigert",
+  );
+
+  if (abgelehnt.length > 0) {
+    /*
+     * Zusammengefasst und nicht je Geraet: Drei Zeilen mit demselben
+     * Weg und demselben Ziel sind drei Zeilen zu viel. Genannt wird
+     * das, was am ehesten schadet - die uebrigen stehen auf der Seite.
+     */
+    const erstes = abgelehnt[0]!;
+    const punkt = erstes.befund.punkte.find(
+      (p) => p.verbindlich && p.stand === "verletzt",
+    );
+
+    aufgaben.push({
+      id: "freigabe-geraete",
+      titel: mehrzahl(
+        abgelehnt.length,
+        "Gerät erfüllt die Freigabe nicht",
+        "Geräte erfüllen die Freigabe nicht",
+      ),
+      zusatz: punkt
+        ? `${erstes.geraet}: ${punkt.punkt.titel} – ${punkt.befund} ${punkt.punkt.folge}`
+        : erstes.befund.begruendung,
+      pfad: "/portal/netz",
+      bereich: "Netz & Geräte",
+      dringlichkeit: "sofort",
+      recht: "netz.lesen",
+    });
+  }
+
+  /* ---------------- Wiederkehrende Pruefungen ---------------- */
+
+  /*
+   * Versaeumte Pruefungen stehen ganz oben, und zwar getrennt nach
+   * Verbindlichkeit. Eine ueberfaellige Verordnung ist keine Aufgabe
+   * "wenn Zeit ist": Ohne gueltigen Befund haftet die Geschaeftsfuehrung
+   * persoenlich, und der Versicherer kann im Schadensfall kuerzen.
+   */
+  for (const anlage of ladeWartungsstand()) {
+    if (anlage.ueberfaellig > 0) {
+      const pflicht =
+        anlage.dringend?.regel.art === "vorschrift" ||
+        anlage.dringend?.regel.art === "vertrag";
+
+      aufgaben.push({
+        id: `wartung-${anlage.anlage_id}`,
+        titel: `${anlage.anlage}: ${mehrzahl(anlage.ueberfaellig, "Prüfung überfällig", "Prüfungen überfällig")}`,
+        zusatz: anlage.dringend
+          ? `${anlage.dringend.regel.bezeichnung} nach ${anlage.dringend.regel.grundlage}. ${anlage.dringend.regel.folge}`
+          : "Die Fristen der wiederkehrenden Prüfungen sind überschritten.",
+        pfad: `/portal/anlagen/${anlage.anlage_id}`,
+        bereich: "Prüfungen",
+        dringlichkeit: pflicht ? "sofort" : "diese_woche",
+        recht: "anlagen.lesen",
+      });
+    } else if (anlage.unbekannt > 0) {
+      aufgaben.push({
+        id: `wartung-offen-${anlage.anlage_id}`,
+        titel: `${anlage.anlage}: ${mehrzahl(anlage.unbekannt, "Prüfung ohne Nachweis", "Prüfungen ohne Nachweis")}`,
+        zusatz:
+          "Zu diesen Prüfungen ist nichts abgelegt. Ob sie stattgefunden haben, lässt sich nicht sagen – im Schadensfall zählt nur, was belegt ist.",
+        pfad: `/portal/anlagen/${anlage.anlage_id}`,
+        bereich: "Prüfungen",
+        dringlichkeit: "wenn_zeit",
+        recht: "anlagen.lesen",
+      });
+    }
+  }
+
+  return aufgaben.sort(
+    (a, b) =>
+      RANG[a.dringlichkeit] - RANG[b.dringlichkeit] ||
+      a.bereich.localeCompare(b.bereich, "de-AT"),
+  );
+}

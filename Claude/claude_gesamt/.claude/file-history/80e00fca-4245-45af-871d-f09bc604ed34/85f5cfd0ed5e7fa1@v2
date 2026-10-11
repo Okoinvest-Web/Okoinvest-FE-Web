@@ -1,0 +1,838 @@
+<title>ÖKOVOLT Solartechnik</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Source+Sans+3:wght@400;600&display=swap">
+<style>
+:root{
+  --bg:#EDF0F4; --surface:#FFFFFF; --surface-2:#F5F8FA; --inset:#E4E9EF;
+  --ink:#0A1A2F; --ink-2:#33465F; --muted:#6A7C93;
+  --rule:#D5DCE6; --rule-2:#B7C3D2;
+  --navy:#003473; --on-navy:#EAF1FA; --on-navy-dim:#A6BEDC;
+  --accent:#669933; --accent-ink:#446E1D; --accent-soft:#E8F1DD; --accent-line:#A9CB7E;
+  --solar:#C9820C; --solar-soft:#FAF0DB;
+  --shadow:0 1px 2px rgba(10,26,47,.05),0 14px 30px -18px rgba(10,26,47,.28);
+  --f-disp:"Archivo","Segoe UI",system-ui,sans-serif;
+  --f-body:"Source Sans 3","Segoe UI",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"Cascadia Mono",monospace;
+  --pad:clamp(20px,5vw,64px);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#07101D; --surface:#0D1A2B; --surface-2:#122336; --inset:#0A1626;
+  --ink:#E7EEF7; --ink-2:#B0C1D5; --muted:#7C91AB;
+  --rule:#1D2F47; --rule-2:#2B4262;
+  --navy:#0A2B52; --on-navy:#EAF1FA; --on-navy-dim:#A6BEDC;
+  --accent:#7FB93E; --accent-ink:#9FD05C; --accent-soft:#17281B; --accent-line:#3C6021;
+  --solar:#E6A63C; --solar-soft:#2A1E0A;
+  --shadow:0 1px 2px rgba(0,0,0,.5),0 16px 36px -20px rgba(0,0,0,.8);
+}}
+:root[data-theme="dark"]{
+  --bg:#07101D; --surface:#0D1A2B; --surface-2:#122336; --inset:#0A1626;
+  --ink:#E7EEF7; --ink-2:#B0C1D5; --muted:#7C91AB;
+  --rule:#1D2F47; --rule-2:#2B4262;
+  --navy:#0A2B52; --on-navy:#EAF1FA; --on-navy-dim:#A6BEDC;
+  --accent:#7FB93E; --accent-ink:#9FD05C; --accent-soft:#17281B; --accent-line:#3C6021;
+  --solar:#E6A63C; --solar-soft:#2A1E0A;
+  --shadow:0 1px 2px rgba(0,0,0,.5),0 16px 36px -20px rgba(0,0,0,.8);
+}
+*,*::before,*::after{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.6;-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{font-family:var(--f-disp);font-weight:700;letter-spacing:-.02em;line-height:1.1;text-wrap:balance;margin:0}
+p{margin:0}
+a{color:inherit}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:2px}
+.wrap{max-width:1240px;margin:0 auto;padding-inline:var(--pad)}
+.eyebrow{font-family:var(--f-mono);font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:10px}
+.eyebrow::before{content:"";width:22px;height:1px;background:var(--accent);flex:none}
+.lede{font-size:clamp(17px,1.5vw,19.5px);color:var(--ink-2);max-width:62ch}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+
+/* header */
+.top{position:sticky;top:0;z-index:60;background:var(--bg);border-bottom:1px solid var(--rule)}
+.top-in{display:flex;align-items:center;gap:26px;height:66px}
+.brand{display:flex;align-items:center;gap:11px;font-family:var(--f-disp);font-weight:700;font-size:19px;letter-spacing:-.03em;text-decoration:none;flex:none}
+.mark{width:30px;height:30px;border-radius:7px;background:var(--accent);display:grid;place-items:center;flex:none}
+.mark svg{width:16px;height:16px;display:block}
+.brand small{font-family:var(--f-mono);font-weight:400;font-size:9px;letter-spacing:.2em;color:var(--muted);display:block;text-transform:uppercase;margin-top:-2px}
+.nav{display:flex;gap:22px;margin-left:auto;font-size:14.5px}
+.nav a{text-decoration:none;color:var(--ink-2);padding:6px 0;border-bottom:1.5px solid transparent}
+.nav a:hover{color:var(--ink);border-bottom-color:var(--accent)}
+.top-cta{display:flex;align-items:center;gap:14px;flex:none;margin-left:auto}
+.nav+.top-cta{margin-left:0}
+.tel{font-family:var(--f-mono);font-size:13.5px;text-decoration:none;color:var(--ink-2);white-space:nowrap}
+.tel:hover{color:var(--accent-ink)}
+.btn{display:inline-flex;align-items:center;gap:9px;border:1px solid transparent;border-radius:3px;padding:11px 20px;font-family:var(--f-disp);font-weight:600;font-size:14.5px;letter-spacing:-.01em;text-decoration:none;cursor:pointer;transition:transform .12s ease,background .15s ease,border-color .15s ease}
+.btn-pri{background:var(--accent);color:#fff}
+.btn-pri:hover{background:var(--accent-ink);transform:translateY(-1px)}
+.btn-gho{background:transparent;color:var(--ink);border-color:var(--rule-2)}
+.btn-gho:hover{border-color:var(--ink);transform:translateY(-1px)}
+.btn-lt{background:#fff;color:#003473}
+.btn-lt:hover{transform:translateY(-1px)}
+.themer{background:none;border:1px solid var(--rule);border-radius:3px;width:34px;height:34px;display:grid;place-items:center;cursor:pointer;color:var(--ink-2);flex:none}
+.themer:hover{border-color:var(--rule-2);color:var(--ink)}
+@media(max-width:1100px){.nav,.tel{display:none}}
+
+/* hero */
+.hero{border-bottom:1px solid var(--rule);background:var(--surface)}
+.hero-in{display:grid;grid-template-columns:1.08fr .92fr;gap:clamp(28px,4vw,60px);padding-block:clamp(44px,6vw,76px);align-items:start}
+h1{font-size:clamp(35px,5vw,62px);letter-spacing:-.035em;line-height:1.04}
+h1 em{font-style:normal;color:var(--accent-ink)}
+.hero-copy{display:flex;flex-direction:column;gap:24px}
+.hero-acts{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.hero-note{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.sig{border:1px solid var(--rule);border-radius:4px;background:var(--surface-2);overflow:hidden}
+.sig-h{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--rule);font-family:var(--f-mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--accent);display:inline-block;margin-right:7px;vertical-align:middle}
+.sig-row{display:grid;grid-template-columns:1fr auto;gap:18px;align-items:center;padding:16px;border-bottom:1px solid var(--rule)}
+.sig-row b{font-family:var(--f-disp);font-size:clamp(26px,3vw,36px);font-weight:700;letter-spacing:-.04em;font-variant-numeric:tabular-nums;line-height:1;text-align:right}
+.sig-row b u{text-decoration:none;font-size:.5em;letter-spacing:0;color:var(--muted);margin-left:3px}
+.sig-row span{font-size:14.5px;color:var(--ink-2);line-height:1.35}
+.sig-row i{font-style:normal;font-family:var(--f-mono);font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:5px}
+.sig-foot{padding:12px 16px;font-family:var(--f-mono);font-size:11px;color:var(--muted);background:var(--inset)}
+@media(max-width:900px){.hero-in{grid-template-columns:1fr}}
+
+/* client strip */
+.strip{border-bottom:1px solid var(--rule)}
+.strip-in{display:flex;align-items:center;gap:clamp(16px,3vw,40px);flex-wrap:wrap;padding-block:18px}
+.strip-in p{font-family:var(--f-mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.strip-in span{font-family:var(--f-disp);font-weight:600;font-size:15.5px;letter-spacing:-.01em;color:var(--ink-2)}
+
+/* section frame */
+.sec{border-bottom:1px solid var(--rule);padding-block:clamp(52px,7vw,92px)}
+.sec-head{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:clamp(20px,4vw,56px);align-items:end;margin-bottom:clamp(28px,4vw,46px)}
+.sec-head h2{font-size:clamp(27px,3.3vw,41px)}
+.sec-head .eyebrow{margin-bottom:14px}
+@media(max-width:860px){.sec-head{grid-template-columns:1fr}}
+
+/* calculator */
+.calc{display:grid;grid-template-columns:360px minmax(0,1fr);gap:0;border:1px solid var(--rule);border-radius:5px;background:var(--surface);box-shadow:var(--shadow);overflow:hidden}
+.calc-in{border-right:1px solid var(--rule);padding:26px 24px;display:flex;flex-direction:column;gap:26px;background:var(--surface-2)}
+.calc-out{padding:26px 24px;display:flex;flex-direction:column;gap:26px;min-width:0}
+@media(max-width:940px){.calc{grid-template-columns:1fr}.calc-in{border-right:0;border-bottom:1px solid var(--rule)}}
+.field{display:flex;flex-direction:column;gap:9px}
+.field-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.field-top label{font-family:var(--f-mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
+.field-val{font-family:var(--f-disp);font-weight:700;font-size:21px;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.field-val u{text-decoration:none;font-size:12px;font-family:var(--f-mono);font-weight:400;color:var(--muted);margin-left:4px;letter-spacing:0}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:22px;background:transparent;cursor:pointer;margin:0}
+input[type=range]::-webkit-slider-runnable-track{height:3px;background:var(--rule-2);border-radius:2px}
+input[type=range]::-moz-range-track{height:3px;background:var(--rule-2);border-radius:2px}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:17px;height:17px;border-radius:50%;background:var(--accent);border:3px solid var(--surface-2);box-shadow:0 0 0 1px var(--accent);margin-top:-7px}
+input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:var(--accent);border:3px solid var(--surface-2);box-shadow:0 0 0 1px var(--accent)}
+.scale{display:flex;justify-content:space-between;font-family:var(--f-mono);font-size:10.5px;color:var(--muted)}
+.seg{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.seg button{background:var(--surface);border:1px solid var(--rule);border-radius:3px;padding:10px 4px 9px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;font-family:var(--f-mono);font-size:10.5px;letter-spacing:.04em;color:var(--ink-2);transition:border-color .15s,background .15s}
+.seg button svg{width:30px;height:17px;display:block}
+.seg button:hover{border-color:var(--rule-2)}
+.seg button[aria-pressed=true]{border-color:var(--accent);background:var(--accent-soft);color:var(--accent-ink)}
+.readout{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;background:var(--rule);border:1px solid var(--rule);border-radius:4px;overflow:hidden}
+.cell{background:var(--surface);padding:15px 16px}
+.cell i{font-style:normal;font-family:var(--f-mono);font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:7px}
+.cell b{font-family:var(--f-disp);font-weight:700;font-size:clamp(23px,2.5vw,30px);letter-spacing:-.04em;font-variant-numeric:tabular-nums;line-height:1;display:block}
+.cell b u{text-decoration:none;font-size:.46em;color:var(--muted);margin-left:4px;letter-spacing:0}
+.cell.hi{background:var(--accent-soft)}
+.cell.hi b{color:var(--accent-ink)}
+.cell small{display:block;margin-top:6px;font-size:12.5px;color:var(--muted);line-height:1.35}
+.flow{border:1px solid var(--rule);border-radius:4px;background:var(--inset);padding:8px}
+.flow svg{width:100%;height:auto;display:block}
+.chart-box{border:1px solid var(--rule);border-radius:4px;background:var(--surface);padding:16px 16px 10px}
+.chart-h{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:14px}
+.chart-h h4{font-size:15px;letter-spacing:-.01em}
+.chart-h span{font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+.bars{display:grid;grid-template-columns:repeat(12,1fr);gap:5px;align-items:end;height:112px}
+.bar{position:relative;background:var(--accent);border-radius:3px 3px 0 0;min-height:3px;transition:height .35s cubic-bezier(.2,.7,.3,1);cursor:default}
+.bar:hover{background:var(--accent-ink)}
+.bar span{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);font-family:var(--f-mono);font-size:11px;padding:5px 8px;border-radius:3px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .12s;z-index:5}
+.bar:hover span,.bar:focus-visible span{opacity:1}
+.bar-x{display:grid;grid-template-columns:repeat(12,1fr);gap:5px;margin-top:7px;border-top:1px solid var(--rule);padding-top:7px}
+.bar-x i{font-style:normal;font-family:var(--f-mono);font-size:10px;color:var(--muted);text-align:center}
+details.assum{border-top:1px solid var(--rule);padding-top:14px}
+details.assum summary{font-family:var(--f-mono);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);cursor:pointer}
+details.assum summary:hover{color:var(--ink-2)}
+details.assum ul{margin:12px 0 0;padding-left:18px;font-size:13.5px;color:var(--ink-2);line-height:1.6}
+details.assum li{margin-bottom:4px}
+
+/* services */
+.svcs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:var(--rule);border-block:1px solid var(--rule)}
+@media(max-width:900px){.svcs{grid-template-columns:1fr}}
+.svc{background:var(--surface);padding:28px 26px 30px;display:flex;flex-direction:column;gap:15px}
+.svc-i{width:36px;height:36px;color:var(--accent);}
+.svc h3{font-size:20px}
+.svc p{font-size:15.5px;color:var(--ink-2)}
+.svc ul{margin:auto 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:7px;padding-top:6px}
+.svc li{font-family:var(--f-mono);font-size:12.5px;color:var(--ink-2);display:flex;gap:9px;align-items:baseline}
+.svc li::before{content:"";width:5px;height:5px;border-radius:1px;background:var(--accent);flex:none;transform:translateY(-2px)}
+
+/* process */
+.steps{display:flex;flex-direction:column}
+.step{display:grid;grid-template-columns:58px minmax(0,1fr) 170px;gap:clamp(16px,3vw,40px);padding:22px 0;border-top:1px solid var(--rule);align-items:start}
+.step:last-child{border-bottom:1px solid var(--rule)}
+.step-n{font-family:var(--f-mono);font-size:13px;color:var(--accent-ink);padding-top:3px;letter-spacing:.06em}
+.step h3{font-size:19px;margin-bottom:6px}
+.step p{font-size:15.5px;color:var(--ink-2);max-width:60ch}
+.step-t{font-family:var(--f-mono);font-size:12.5px;color:var(--muted);text-align:right;padding-top:4px}
+@media(max-width:760px){.step{grid-template-columns:44px 1fr}.step-t{grid-column:2;text-align:left;padding-top:0}}
+
+/* refs + foerderung */
+.two{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+@media(max-width:900px){.two{grid-template-columns:1fr}}
+.ref{border:1px solid var(--rule);border-radius:4px;background:var(--surface);padding:22px;display:flex;flex-direction:column;gap:14px}
+.ref h3{font-size:18px}
+.ref .branch{font-family:var(--f-mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.ref dl{margin:0;display:grid;grid-template-columns:1fr auto;gap:9px 12px;font-size:14px;border-top:1px solid var(--rule);padding-top:14px}
+.ref dt{color:var(--muted);font-size:13.5px}
+.ref dd{margin:0;font-family:var(--f-mono);font-variant-numeric:tabular-nums;text-align:right;color:var(--ink-2)}
+.tag{align-self:flex-start;font-family:var(--f-mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--solar);background:var(--solar-soft);border:1px solid var(--solar);border-radius:2px;padding:3px 7px}
+.fund{width:100%;border-collapse:collapse;font-size:15px}
+.fund th{text-align:left;font-family:var(--f-mono);font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);font-weight:400;padding:0 14px 10px 0;border-bottom:1px solid var(--rule-2)}
+.fund td{padding:15px 14px 15px 0;border-bottom:1px solid var(--rule);vertical-align:top;color:var(--ink-2)}
+.fund td:first-child{color:var(--ink);font-family:var(--f-disp);font-weight:600;letter-spacing:-.01em;width:26%}
+.fund td:last-child{padding-right:0}
+.table-scroll{overflow-x:auto}
+
+/* faq */
+.faq{border-top:1px solid var(--rule);max-width:900px}
+.qa{border-bottom:1px solid var(--rule)}
+.qa summary{display:flex;justify-content:space-between;align-items:center;gap:20px;padding:19px 0;cursor:pointer;font-family:var(--f-disp);font-weight:600;font-size:17.5px;letter-spacing:-.015em;list-style:none}
+.qa summary::-webkit-details-marker{display:none}
+.qa summary::after{content:"+";font-family:var(--f-mono);font-size:19px;color:var(--accent-ink);flex:none;line-height:1}
+.qa[open] summary::after{content:"–"}
+.qa p{padding-bottom:20px;font-size:15.5px;color:var(--ink-2);max-width:72ch}
+
+/* cta / form */
+.cta{background:var(--navy);color:var(--on-navy);border-bottom:1px solid var(--rule)}
+.cta-in{display:grid;grid-template-columns:minmax(0,1fr) 420px;gap:clamp(28px,4vw,64px);padding-block:clamp(48px,6vw,80px);align-items:start}
+@media(max-width:940px){.cta-in{grid-template-columns:1fr}}
+.cta h2{font-size:clamp(28px,3.4vw,42px);color:#fff}
+.cta .eyebrow{color:var(--on-navy-dim)}
+.cta .eyebrow::before{background:var(--on-navy-dim)}
+.cta-lede{color:var(--on-navy-dim);font-size:18px;max-width:50ch;margin-top:16px}
+.contacts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px;margin-top:34px;padding-top:26px;border-top:1px solid rgba(255,255,255,.16)}
+.contacts div i{font-style:normal;font-family:var(--f-mono);font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--on-navy-dim);display:block;margin-bottom:7px}
+.contacts a,.contacts p{color:#fff;text-decoration:none;font-size:15.5px;line-height:1.5}
+.contacts a:hover{text-decoration:underline}
+.form{background:var(--surface);border-radius:5px;padding:24px;display:flex;flex-direction:column;gap:16px;color:var(--ink)}
+.form h3{font-size:19px}
+.form label.lbl{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:8px}
+.form input[type=text],.form input[type=email],.form select{width:100%;background:var(--surface-2);border:1px solid var(--rule);border-radius:3px;padding:11px 12px;font-size:15px}
+.form input:focus,.form select:focus{border-color:var(--accent);outline:none}
+.form .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form .fine{font-size:12.5px;color:var(--muted);line-height:1.45}
+.sent{display:none;border:1px solid var(--accent-line);background:var(--accent-soft);border-radius:3px;padding:14px;font-size:14px;color:var(--accent-ink)}
+.sent.on{display:block}
+.sent b{display:block;font-family:var(--f-disp);margin-bottom:5px}
+.sent code{font-family:var(--f-mono);font-size:12.5px;color:var(--ink-2);display:block;margin-top:8px;line-height:1.6}
+
+/* footer */
+footer{background:var(--bg);padding-block:clamp(40px,5vw,60px) 26px}
+.f-grid{display:grid;grid-template-columns:1.4fr repeat(3,1fr);gap:clamp(20px,3vw,40px)}
+@media(max-width:860px){.f-grid{grid-template-columns:1fr 1fr}}
+.f-grid h4{font-family:var(--f-mono);font-weight:500;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:14px}
+.f-grid ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:9px}
+.f-grid a{text-decoration:none;color:var(--ink-2);font-size:14.5px}
+.f-grid a:hover{color:var(--accent-ink)}
+.f-addr{font-size:14.5px;color:var(--ink-2);line-height:1.6;margin-top:14px}
+.f-bot{display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap;margin-top:clamp(32px,4vw,50px);padding-top:20px;border-top:1px solid var(--rule);font-family:var(--f-mono);font-size:11.5px;color:var(--muted)}
+.f-bot a{text-decoration:none}
+.f-bot a:hover{color:var(--ink-2)}
+.disclaim{max-width:1240px;margin:0 auto;padding:0 var(--pad) 30px;font-family:var(--f-mono);font-size:11px;line-height:1.7;color:var(--muted)}
+
+@media (prefers-reduced-motion:reduce){*{animation-duration:.001ms !important;transition-duration:.001ms !important}}
+</style>
+
+<header class="top">
+  <div class="wrap top-in">
+    <a class="brand" href="#top">
+      <span class="mark"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M13.5 2 4 13.5h6L9.5 22 20 10.5h-6.5L13.5 2Z" fill="#fff"/></svg></span>
+      <span>ÖKOVOLT<small>Solartechnik</small></span>
+    </a>
+    <nav class="nav" aria-label="Hauptnavigation">
+      <a href="#leistungen">Leistungen</a>
+      <a href="#rechner">Ertragsrechner</a>
+      <a href="#ablauf">Ablauf</a>
+      <a href="#referenzen">Referenzen</a>
+      <a href="#foerderungen">Förderungen</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+    <div class="top-cta">
+      <a class="tel" href="tel:+43627871030">+43 6278 71030</a>
+      <a class="btn btn-pri" href="#kontakt">Anfrage stellen</a>
+      <button class="themer" id="themer" type="button" aria-label="Farbschema wechseln">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 1.5v2.5M12 20v2.5M3.9 3.9l1.8 1.8M18.3 18.3l1.8 1.8M1.5 12H4M20 12h2.5M3.9 20.1l1.8-1.8M18.3 5.7l1.8-1.8"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main id="top">
+<section class="hero">
+  <div class="wrap hero-in">
+    <div class="hero-copy">
+      <p class="eyebrow">Photovoltaik für Gewerbe &amp; Industrie · Österreich</p>
+      <h1>Ihr Hallendach ist das <em>günstigste Kraftwerk</em>, das Sie bereits besitzen.</h1>
+      <p class="lede">ÖKOVOLT plant, errichtet und betreut Photovoltaikanlagen für produzierende Betriebe, Logistik und Handel. Von der Lastganganalyse über Netzzutritt und Förderung bis zur Direktvermarktung des Überschussstroms.</p>
+      <div class="hero-acts">
+        <a class="btn btn-pri" href="#rechner">Ertrag für mein Dach berechnen
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"/></svg></a>
+        <a class="btn btn-gho" href="#referenzen">Referenzanlagen ansehen</a>
+      </div>
+      <p class="hero-note">Standort Ostermiething · Montage in ganz Österreich · Eigenes Service-Team</p>
+    </div>
+
+    <div class="sig">
+      <div class="sig-h"><span><span class="dot"></span>Anlagenportfolio</span><span>Stand 2026</span></div>
+      <div class="sig-row">
+        <span><i>Errichtete Anlagen</i>PV-Kraftwerke für Gewerbe, Industrie und Private</span>
+        <b>5.000</b>
+      </div>
+      <div class="sig-row">
+        <span><i>Installierte Leistung</i>Summe der Generatorleistung aller Anlagen</span>
+        <b>340.000<u>kWp</u></b>
+      </div>
+      <div class="sig-row">
+        <span><i>Vermiedene Emissionen</i>Gerechnet über die Anlagenlebensdauer</span>
+        <b>112.000<u>t CO₂</u></b>
+      </div>
+      <div class="sig-foot">Kennzahlen laut ÖKOVOLT Solartechnik GmbH</div>
+    </div>
+  </div>
+</section>
+
+<section class="strip">
+  <div class="wrap strip-in">
+    <p>Realisierte Projekte für</p>
+    <span>Alpla Werke Alwin Lehner</span>
+    <span>Andritz Fabrics and Rolls</span>
+    <span>Aumayr GmbH</span>
+  </div>
+</section>
+
+<!-- ============ RECHNER ============ -->
+<section class="sec" id="rechner">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <p class="eyebrow">Ertragsrechner</p>
+        <h2>Was Ihr Dach im Jahr liefert – in 20 Sekunden.</h2>
+      </div>
+      <p class="lede">Vier Angaben genügen für eine belastbare erste Einschätzung: Anlagengröße, Jahresertrag, Eigenverbrauchsanteil und Amortisationsdauer. Alle Annahmen sind offengelegt und für Oberösterreich und Salzburg hinterlegt.</p>
+    </div>
+
+    <div class="calc">
+      <div class="calc-in">
+        <div class="field">
+          <div class="field-top"><label for="area">Nutzbare Dachfläche</label><span class="field-val" id="v-area">1.800<u>m²</u></span></div>
+          <input id="area" type="range" min="200" max="20000" step="100" value="1800">
+          <div class="scale"><span>200 m²</span><span>20.000 m²</span></div>
+        </div>
+
+        <div class="field">
+          <label class="lbl" style="font-family:var(--f-mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)" id="roof-lbl">Dachform</label>
+          <div class="seg" role="group" aria-labelledby="roof-lbl">
+            <button type="button" data-roof="flach" aria-pressed="true">
+              <svg viewBox="0 0 40 22" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 8h32v10H4z"/><path d="M10 8V5h8v3M22 8V5h8v3" stroke-dasharray="2 2"/></svg>Flachdach</button>
+            <button type="button" data-roof="pult" aria-pressed="false">
+              <svg viewBox="0 0 40 22" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 18V10l32-6v14z"/></svg>Pultdach</button>
+            <button type="button" data-roof="sattel" aria-pressed="false">
+              <svg viewBox="0 0 40 22" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 18 20 5l16 13z"/><path d="M20 5v13"/></svg>Satteldach</button>
+            <button type="button" data-roof="sonst" aria-pressed="false">
+              <svg viewBox="0 0 40 22" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 18V9l9-4 9 4v9"/><path d="M22 18v-6h14v6z"/></svg>Sonstige</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="field-top"><label for="use">Jahresstromverbrauch</label><span class="field-val" id="v-use">620<u>MWh</u></span></div>
+          <input id="use" type="range" min="20" max="5000" step="10" value="620">
+          <div class="scale"><span>20 MWh</span><span>5.000 MWh</span></div>
+        </div>
+
+        <div class="field">
+          <div class="field-top"><label for="price">Strompreis netto</label><span class="field-val" id="v-price">21,0<u>ct/kWh</u></span></div>
+          <input id="price" type="range" min="8" max="40" step="0.5" value="21">
+          <div class="scale"><span>8 ct</span><span>40 ct</span></div>
+        </div>
+
+        <details class="assum">
+          <summary>Rechenannahmen</summary>
+          <ul>
+            <li>Spezifischer Ertrag 950–1.080 kWh/kWp je nach Dachform (Oberösterreich/Salzburg).</li>
+            <li>Flächenbedarf 1,95 m²/kWp bei dachparalleler Montage, 2,6 m²/kWp bei Ost-West-Aufständerung am Flachdach.</li>
+            <li>Nutzbarer Flächenanteil nach Abzug von Lichtkuppeln, Aufbauten und Verschattung.</li>
+            <li>Investitionskosten 740–1.300 €/kWp, degressiv nach Anlagengröße, ohne Förderung.</li>
+            <li>Erlös für Überschussstrom 6,0 ct/kWh (Direktvermarktung, Marktpreisrisiko).</li>
+            <li>Emissionsfaktor 227 g CO₂/kWh für den österreichischen Strommix.</li>
+            <li>Amortisation ohne Finanzierung, Degradation, Preissteigerung und Steuereffekte.</li>
+          </ul>
+        </details>
+      </div>
+
+      <div class="calc-out">
+        <div class="readout">
+          <div class="cell"><i>Empfohlene Anlagengröße</i><b id="o-kwp">519<u>kWp</u></b><small id="o-mod">ca. 1.155 Module</small></div>
+          <div class="cell"><i>Jahresertrag</i><b id="o-yield">535.000<u>kWh</u></b><small id="o-spec">1.030 kWh je kWp</small></div>
+          <div class="cell hi"><i>Stromkostenersparnis p.a.</i><b id="o-save">70.400<u>€</u></b><small id="o-save-sub">inkl. Erlös aus Überschusseinspeisung</small></div>
+          <div class="cell hi"><i>Amortisation</i><b id="o-pay">5,9<u>Jahre</u></b><small id="o-invest">Investition ca. 415.000 €</small></div>
+          <div class="cell"><i>Eigenverbrauchsquote</i><b id="o-ev">48<u>%</u></b><small id="o-ev-sub">deckt 41 % Ihres Strombedarfs</small></div>
+          <div class="cell"><i>CO₂-Einsparung p.a.</i><b id="o-co2">121<u>t</u></b><small>entspricht dem Strommix Österreich</small></div>
+        </div>
+
+        <div class="flow" aria-hidden="true">
+          <svg viewBox="0 0 720 250" role="img">
+            <defs>
+              <marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" fill="currentColor"/></marker>
+            </defs>
+            <g id="flow-paths" fill="none" stroke-linecap="round">
+              <path d="M150 125 H252" stroke="var(--solar)" stroke-width="8" opacity=".22"/>
+              <path id="p1" d="M150 125 H252" stroke="var(--solar)" stroke-width="8" stroke-dasharray="10 16"/>
+              <path d="M340 112 C 400 112 412 66 468 66" stroke="var(--accent)" stroke-width="8" opacity=".22"/>
+              <path id="p2" d="M340 112 C 400 112 412 66 468 66" stroke="var(--accent)" stroke-width="8" stroke-dasharray="10 16"/>
+              <path d="M340 140 C 400 140 412 194 468 194" stroke="var(--solar)" stroke-width="8" opacity=".22"/>
+              <path id="p3" d="M340 140 C 400 140 412 194 468 194" stroke="var(--solar)" stroke-width="8" stroke-dasharray="10 16"/>
+              <path id="p4" d="M560 160 V 104" stroke="var(--muted)" stroke-width="4" stroke-dasharray="6 8"/>
+            </g>
+            <g font-family="IBM Plex Mono, monospace" font-size="12">
+              <rect x="20" y="92" width="130" height="66" rx="4" fill="var(--surface)" stroke="var(--rule-2)"/>
+              <text x="85" y="118" text-anchor="middle" fill="var(--ink)" font-size="12.5">PV-Generator</text>
+              <text x="85" y="138" text-anchor="middle" fill="var(--muted)" id="f-kwp">519 kWp</text>
+
+              <rect x="252" y="98" width="88" height="54" rx="4" fill="var(--surface)" stroke="var(--rule-2)"/>
+              <text x="296" y="120" text-anchor="middle" fill="var(--ink)" font-size="11.5">Wechsel-</text>
+              <text x="296" y="136" text-anchor="middle" fill="var(--ink)" font-size="11.5">richter</text>
+
+              <rect x="468" y="34" width="200" height="66" rx="4" fill="var(--accent-soft)" stroke="var(--accent-line)"/>
+              <text x="484" y="60" fill="var(--ink)" font-size="12.5">Eigenverbrauch Betrieb</text>
+              <text x="484" y="82" fill="var(--accent-ink)" id="f-ev">255.000 kWh/a</text>
+
+              <rect x="468" y="160" width="200" height="66" rx="4" fill="var(--surface)" stroke="var(--rule-2)"/>
+              <text x="484" y="186" fill="var(--ink)" font-size="12.5">Einspeisung ins Netz</text>
+              <text x="484" y="208" fill="var(--solar)" id="f-feed">280.000 kWh/a</text>
+
+              <text x="196" y="112" text-anchor="middle" fill="var(--muted)" font-size="10.5">DC</text>
+              <text x="600" y="132" text-anchor="middle" fill="var(--muted)" font-size="10.5" id="f-grid">Restbezug 365.000 kWh/a</text>
+            </g>
+          </svg>
+        </div>
+
+        <div class="chart-box">
+          <div class="chart-h">
+            <h4>Monatlicher Ertrag</h4>
+            <span id="chart-peak">Spitze Juli · 72.200 kWh</span>
+          </div>
+          <div class="bars" id="bars"></div>
+          <div class="bar-x" id="barsx"></div>
+        </div>
+
+        <p class="hero-note">Richtwerte auf Basis der oben genannten Annahmen. Verbindliche Aussagen folgen nach Lastganganalyse und Dachbegehung.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ LEISTUNGEN ============ -->
+<section class="sec" id="leistungen" style="padding-bottom:0">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <p class="eyebrow">Leistungen</p>
+        <h2>Planung, Errichtung und Betrieb aus einer Hand.</h2>
+      </div>
+      <p class="lede">Ein Ansprechpartner über die gesamte Anlagenlebensdauer – von der ersten Wirtschaftlichkeitsrechnung bis zur Entstörung im laufenden Betrieb.</p>
+    </div>
+  </div>
+  <div class="svcs">
+    <article class="svc">
+      <svg class="svc-i" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 25h26M7 25 10 9h12l3 16"/><path d="M9 17h14M11.5 9 10 25M18 9l2 16"/></svg>
+      <h3>Photovoltaik-Aufdachanlagen</h3>
+      <p>Auslegung nach Lastgang statt nach Dachfläche. Wir dimensionieren auf maximale Eigenverbrauchsquote, prüfen die Dachstatik und übernehmen den Netzzutrittsantrag beim Netzbetreiber.</p>
+      <ul>
+        <li>Lastganganalyse im 15-Minuten-Raster</li>
+        <li>Statiknachweis und Ballastierungsplan</li>
+        <li>Ost-West-Aufständerung oder dachparallel</li>
+        <li>Netzzutritt und Zählpunktabwicklung</li>
+      </ul>
+    </article>
+    <article class="svc">
+      <svg class="svc-i" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="5" y="7" width="22" height="18" rx="2"/><path d="M10 4v3M22 4v3M10 19v-8l4 5 4-5v8"/><path d="M20 15h4"/></svg>
+      <h3>Speicher, Notstrom &amp; Lastmanagement</h3>
+      <p>Batteriespeicher rechnen sich im Gewerbe vor allem über Spitzenlastkappung. Wir bewerten, ob sich der Speicher über das Netzentgelt trägt – und wo eine Notstromumschaltung sinnvoller ist.</p>
+      <ul>
+        <li>Spitzenlastkappung und Netzentgeltoptimierung</li>
+        <li>Notstrombox mit automatischer Umschaltung</li>
+        <li>Ladeinfrastruktur und Wärmepumpen-Einbindung</li>
+        <li>Dynamische Tarife und Direktvermarktung</li>
+      </ul>
+    </article>
+    <article class="svc">
+      <svg class="svc-i" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 20l6-7 5 5 4-6 9 8"/><path d="M4 26h24M4 6v20"/><circle cx="24" cy="9" r="2.5"/></svg>
+      <h3>Service, Wartung &amp; Ökosys</h3>
+      <p>Jede Anlage läuft im Monitoring. Ökosys vergleicht Ist- und Sollertrag je String, meldet Abweichungen automatisch und macht Minderertrag sichtbar, bevor er auf der Abrechnung auftaucht.</p>
+      <ul>
+        <li>Ertragsüberwachung je String in Echtzeit</li>
+        <li>Wiederkehrende Prüfung nach ÖVE/ÖNORM</li>
+        <li>Thermografie und Modultausch</li>
+        <li>Eigenes Servicenetz in ganz Österreich</li>
+      </ul>
+    </article>
+  </div>
+</section>
+
+<!-- ============ ABLAUF ============ -->
+<section class="sec" id="ablauf">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <p class="eyebrow">Projektablauf</p>
+        <h2>Fünf Schritte vom Erstgespräch zur Einspeisung.</h2>
+      </div>
+      <p class="lede">Die Dauer bestimmt in der Praxis nicht die Montage, sondern das Netzzutrittsverfahren. Deshalb starten wir das Verfahren parallel zur Detailplanung.</p>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <span class="step-n">01</span>
+        <div><h3>Lastgang- und Dachanalyse</h3><p>Wir werten Ihre Viertelstundenwerte aus und prüfen Dachaufbau, Statikreserve und Verschattung vor Ort.</p></div>
+        <span class="step-t">1–2 Wochen</span>
+      </div>
+      <div class="step">
+        <span class="step-n">02</span>
+        <div><h3>Konzept und Wirtschaftlichkeit</h3><p>Anlagenauslegung, Ertragsprognose, Cashflow über 20 Jahre und Vergleich der Varianten mit und ohne Speicher.</p></div>
+        <span class="step-t">ca. 2 Wochen</span>
+      </div>
+      <div class="step">
+        <span class="step-n">03</span>
+        <div><h3>Förderung und Netzzutritt</h3><p>Antragstellung im Fördercall, Netzzutrittsantrag und Abstimmung mit dem Netzbetreiber. Hier liegt der längste Hebel im Zeitplan.</p></div>
+        <span class="step-t">4–12 Wochen</span>
+      </div>
+      <div class="step">
+        <span class="step-n">04</span>
+        <div><h3>Montage im laufenden Betrieb</h3><p>Unterkonstruktion, Module, Verkabelung und Wechselrichter. Produktionsunterbrechungen werden vorab abgestimmt.</p></div>
+        <span class="step-t">1–4 Wochen</span>
+      </div>
+      <div class="step">
+        <span class="step-n">05</span>
+        <div><h3>Inbetriebnahme und Monitoring</h3><p>Abnahmeprüfung, Anmeldung des Einspeisezählpunkts, Einschulung und Aufschaltung auf Ökosys.</p></div>
+        <span class="step-t">laufend</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ REFERENZEN ============ -->
+<section class="sec" id="referenzen">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <p class="eyebrow">Referenzen</p>
+        <h2>Anlagen, die seit Jahren im Industriebetrieb laufen.</h2>
+      </div>
+      <p class="lede">Drei Beispiele aus dem Portfolio. Die Anlagenkennzahlen sind in dieser Vorschau als Platzhalter gesetzt und vor Veröffentlichung durch die echten Projektdaten zu ersetzen.</p>
+    </div>
+    <div class="two">
+      <article class="ref">
+        <span class="branch">Kunststoffverpackung</span>
+        <h3>Alpla Werke Alwin Lehner GmbH &amp; Co KG</h3>
+        <span class="tag">Platzhalterdaten</span>
+        <dl>
+          <dt>Generatorleistung</dt><dd>— kWp</dd>
+          <dt>Jahresertrag</dt><dd>— kWh</dd>
+          <dt>Eigenverbrauchsquote</dt><dd>— %</dd>
+          <dt>Inbetriebnahme</dt><dd>—</dd>
+        </dl>
+      </article>
+      <article class="ref">
+        <span class="branch">Industrietechnik</span>
+        <h3>Andritz Fabrics and Rolls GmbH</h3>
+        <span class="tag">Platzhalterdaten</span>
+        <dl>
+          <dt>Generatorleistung</dt><dd>— kWp</dd>
+          <dt>Jahresertrag</dt><dd>— kWh</dd>
+          <dt>Eigenverbrauchsquote</dt><dd>— %</dd>
+          <dt>Inbetriebnahme</dt><dd>—</dd>
+        </dl>
+      </article>
+      <article class="ref">
+        <span class="branch">Bau &amp; Transport</span>
+        <h3>Aumayr GmbH</h3>
+        <span class="tag">Platzhalterdaten</span>
+        <dl>
+          <dt>Generatorleistung</dt><dd>— kWp</dd>
+          <dt>Jahresertrag</dt><dd>— kWh</dd>
+          <dt>Eigenverbrauchsquote</dt><dd>— %</dd>
+          <dt>Inbetriebnahme</dt><dd>—</dd>
+        </dl>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FÖRDERUNGEN ============ -->
+<section class="sec" id="foerderungen">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <p class="eyebrow">Förderungen Österreich</p>
+        <h2>Welche Töpfe für Ihren Betrieb infrage kommen.</h2>
+      </div>
+      <p class="lede">Fördersätze und Fristen ändern sich mit jedem Call. Wir prüfen die aktuelle Lage im Zuge der Angebotslegung und übernehmen die Antragstellung.</p>
+    </div>
+    <div class="table-scroll">
+      <table class="fund">
+        <thead><tr><th>Instrument</th><th>Wer</th><th>Worauf es ankommt</th></tr></thead>
+        <tbody>
+          <tr><td>EAG-Investitionszuschuss</td><td>Bund / EAG-Abwicklungsstelle</td><td>Vergabe über zeitlich begrenzte Fördercalls mit Leistungskategorien. Die Anlage darf vor Antragstellung nicht in Bau gehen – der Zeitpunkt entscheidet.</td></tr>
+          <tr><td>Landesförderungen</td><td>Bundesländer</td><td>Zusätzliche Zuschüsse, teils für Speicher oder Ladeinfrastruktur. Kumulierung mit Bundesförderung ist nicht immer zulässig.</td></tr>
+          <tr><td>Investitionsfreibetrag</td><td>Steuerlich</td><td>Erhöhter Satz für ökologische Investitionen, wirkt über die Steuererklärung und nicht über einen Antrag.</td></tr>
+          <tr><td>Direktvermarktung</td><td>Marktteilnahme</td><td>Überschussstrom wird am Spotmarkt vermarktet statt zu einem fixen Abnahmepreis. Erlös schwankt mit dem Marktpreis.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FAQ ============ -->
+<section class="sec" id="faq">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <p class="eyebrow">Häufige Fragen</p>
+        <h2>Was Betriebe vor der Entscheidung wissen wollen.</h2>
+      </div>
+    </div>
+    <div class="faq">
+      <details class="qa" open>
+        <summary>Wie lange dauert eine Gewerbeanlage von der Zusage bis zur Einspeisung?</summary>
+        <p>In der Regel drei bis sechs Monate. Die Montage selbst dauert je nach Größe ein bis vier Wochen. Den Takt gibt das Netzzutrittsverfahren vor, deshalb reichen wir den Antrag ein, sobald die Auslegung fixiert ist.</p>
+      </details>
+      <details class="qa">
+        <summary>Hält mein Hallendach die zusätzliche Last aus?</summary>
+        <p>Das klärt ein Statiknachweis vor der Planung. Bei Flachdächern kommt zur Modul- und Unterkonstruktionslast die Ballastierung gegen Windsog dazu. Wo die Reserve knapp ist, arbeiten wir mit leichteren Systemen oder reduzieren den belegten Bereich.</p>
+      </details>
+      <details class="qa">
+        <summary>Brauche ich einen Batteriespeicher?</summary>
+        <p>Im Gewerbe selten wegen der Nacht, häufig wegen der Lastspitze. Wenn Ihr Netzentgelt am Leistungspreis hängt, kann die Spitzenlastkappung den Speicher tragen. Die Entscheidung fällt anhand Ihres Lastgangs, nicht anhand einer Faustregel.</p>
+      </details>
+      <details class="qa">
+        <summary>Was passiert mit dem Strom, den wir nicht selbst verbrauchen?</summary>
+        <p>Er wird ins Netz eingespeist und vermarktet. Über die Direktvermarktung folgt der Erlös dem Spotmarktpreis, was in ertragsstarken Mittagsstunden niedriger ausfallen kann als der Jahresschnitt. Deshalb rechnen wir konservativ.</p>
+      </details>
+      <details class="qa">
+        <summary>Läuft die Anlage bei einem Netzausfall weiter?</summary>
+        <p>Nicht automatisch. Ein normaler Wechselrichter schaltet sich bei Netzausfall ab. Für Weiterbetrieb braucht es eine Notstromfunktion mit Netztrennstelle, die wir als Notstrombox mit automatischer Umschaltung ausführen.</p>
+      </details>
+      <details class="qa">
+        <summary>Wie lange hält die Anlage und was fällt an Wartung an?</summary>
+        <p>Module sind auf 25 bis 30 Jahre Betriebsdauer ausgelegt, Wechselrichter erreichen meist 10 bis 15 Jahre. Laufend fallen die wiederkehrende Prüfung, die Sichtkontrolle der Unterkonstruktion und bei Bedarf eine Thermografie an.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ============ KONTAKT ============ -->
+<section class="cta" id="kontakt">
+  <div class="wrap cta-in">
+    <div>
+      <p class="eyebrow">Kontakt</p>
+      <h2>Schicken Sie uns Ihr Dach – wir schicken die Zahlen zurück.</h2>
+      <p class="cta-lede">Sie erhalten eine erste Auslegung mit Ertragsprognose und Amortisationsrechnung. Unverbindlich und ohne Vor-Ort-Termin.</p>
+      <div class="contacts">
+        <div><i>Telefon</i><a href="tel:+43627871030">+43 6278 71030</a></div>
+        <div><i>E-Mail</i><a href="mailto:office@oekovolt.at">office@oekovolt.at</a></div>
+        <div><i>Standort</i><p>Gewerbegebiet 10<br>5121 Ostermiething, Österreich</p></div>
+        <div><i>Öffnungszeiten</i><p>Mo–Do 08:00–16:00<br>Fr 08:00–13:00</p></div>
+      </div>
+    </div>
+
+    <form class="form" id="form" novalidate>
+      <h3>Unverbindliche Anfrage</h3>
+      <div>
+        <label class="lbl" for="f-roof">Dachform</label>
+        <select id="f-roof"><option>Flachdach</option><option>Pultdach</option><option>Satteldach</option><option>Sonstige</option></select>
+      </div>
+      <div class="row">
+        <div><label class="lbl" for="f-area">Dachfläche m²</label><input id="f-area" type="text" inputmode="numeric" placeholder="1800"></div>
+        <div><label class="lbl" for="f-use">Verbrauch MWh/a</label><input id="f-use" type="text" inputmode="numeric" placeholder="620"></div>
+      </div>
+      <div><label class="lbl" for="f-comp">Unternehmen</label><input id="f-comp" type="text" placeholder="Musterbetrieb GmbH"></div>
+      <div class="row">
+        <div><label class="lbl" for="f-name">Ansprechpartner</label><input id="f-name" type="text" placeholder="Vor- und Nachname"></div>
+        <div><label class="lbl" for="f-mail">E-Mail</label><input id="f-mail" type="email" placeholder="name@betrieb.at"></div>
+      </div>
+      <button class="btn btn-pri" type="submit" style="justify-content:center">Auslegung anfordern</button>
+      <p class="fine">Wir melden uns innerhalb eines Werktags. Ihre Angaben werden ausschließlich zur Bearbeitung der Anfrage verwendet.</p>
+      <div class="sent" id="sent" role="status"></div>
+    </form>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="f-grid">
+      <div>
+        <a class="brand" href="#top">
+          <span class="mark"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M13.5 2 4 13.5h6L9.5 22 20 10.5h-6.5L13.5 2Z" fill="#fff"/></svg></span>
+          <span>ÖKOVOLT<small>Solartechnik</small></span>
+        </a>
+        <p class="f-addr">Ökovolt Solartechnik GmbH<br>Gewerbegebiet 10, 5121 Ostermiething<br>Österreich</p>
+      </div>
+      <div>
+        <h4>Leistungen</h4>
+        <ul>
+          <li><a href="#leistungen">Photovoltaik</a></li>
+          <li><a href="#leistungen">Stromspeicher</a></li>
+          <li><a href="#leistungen">Notstrom</a></li>
+          <li><a href="#leistungen">Wallbox &amp; Wärmepumpe</a></li>
+          <li><a href="#leistungen">Agri-Photovoltaik</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Service</h4>
+        <ul>
+          <li><a href="#leistungen">Ökosys Monitoring</a></li>
+          <li><a href="#leistungen">Wartung</a></li>
+          <li><a href="#leistungen">Repowering</a></li>
+          <li><a href="#leistungen">Direktvermarktung</a></li>
+          <li><a href="#foerderungen">Förderungen</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Unternehmen</h4>
+        <ul>
+          <li><a href="#referenzen">Referenzen</a></li>
+          <li><a href="#kontakt">Kontakt</a></li>
+          <li><a href="#faq">FAQ</a></li>
+          <li><a href="#kontakt">Jobs</a></li>
+          <li><a href="#kontakt">Hinweisgebersystem</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="f-bot">
+      <span>© 2026 Ökovolt Solartechnik GmbH</span>
+      <span><a href="#kontakt">Impressum</a> · <a href="#kontakt">Datenschutz</a> · <a href="#kontakt">AGB</a></span>
+    </div>
+  </div>
+</footer>
+<p class="disclaim">Designstudie. Inhalte und Kennzahlen stammen von oekovolt.com, Projektkennzahlen in den Referenzen sind Platzhalter. Der Ertragsrechner liefert Richtwerte nach den offengelegten Annahmen und ersetzt keine Anlagenplanung.</p>
+
+<script>
+(function(){
+  "use strict";
+  var root=document.documentElement, tb=document.getElementById("themer");
+  function cur(){ var s=root.getAttribute("data-theme"); if(s) return s;
+    return window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"; }
+  tb.addEventListener("click",function(){ root.setAttribute("data-theme", cur()==="dark"?"light":"dark"); });
+
+  var ROOF={
+    flach:{m2:2.6, use:.75, y:1030, label:"Flachdach"},
+    pult:{m2:1.95, use:.80, y:1080, label:"Pultdach"},
+    sattel:{m2:1.95, use:.70, y:1060, label:"Satteldach"},
+    sonst:{m2:2.2, use:.60, y:950, label:"Sonstige"}
+  };
+  var MONTH=[2.8,4.6,8.3,11.2,12.9,13.0,13.5,12.0,9.2,6.5,3.4,2.6];
+  var MN=["J","F","M","A","M","J","J","A","S","O","N","D"];
+  var MFULL=["Jänner","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
+  var FEED=0.06, CO2=0.227, MODW=0.45;
+
+  var roof="flach";
+  var elArea=document.getElementById("area"), elUse=document.getElementById("use"), elPrice=document.getElementById("price");
+  var $=function(id){return document.getElementById(id);};
+  var de=function(n,d){ return Number(n).toLocaleString("de-AT",{minimumFractionDigits:d||0,maximumFractionDigits:d||0}); };
+
+  function costPerKwp(k){ if(k<30)return 1300; if(k<100)return 1100; if(k<300)return 950; if(k<1000)return 820; return 740; }
+
+  var barsBuilt=false;
+  function buildBars(){
+    var b=$("bars"), x=$("barsx"), i;
+    for(i=0;i<12;i++){
+      var d=document.createElement("div"); d.className="bar"; d.tabIndex=0;
+      var s=document.createElement("span"); s.id="bt"+i; d.appendChild(s); b.appendChild(d);
+      var t=document.createElement("i"); t.textContent=MN[i]; x.appendChild(t);
+    }
+    barsBuilt=true;
+  }
+
+  function render(){
+    var r=ROOF[roof];
+    var area=+elArea.value, useMWh=+elUse.value, price=+elPrice.value/100;
+    var useKwh=useMWh*1000;
+
+    var kwp=Math.round(area*r.use/r.m2);
+    var yieldKwh=Math.round(kwp*r.y);
+    var ratio=useKwh>0?yieldKwh/useKwh:99;
+    var evq=Math.max(.12, Math.min(.95, .95*Math.exp(-0.8*ratio)));
+    var evKwh=Math.round(yieldKwh*evq);
+    var feedKwh=yieldKwh-evKwh;
+    var rest=Math.max(0,useKwh-evKwh);
+    var save=Math.round(evKwh*price+feedKwh*FEED);
+    var invest=Math.round(kwp*costPerKwp(kwp));
+    var pay=save>0?invest/save:0;
+    var co2=Math.round(yieldKwh*CO2/1000);
+    var cover=useKwh>0?Math.round(evKwh/useKwh*100):0;
+
+    $("v-area").innerHTML=de(area)+"<u>m²</u>";
+    $("v-use").innerHTML=de(useMWh)+"<u>MWh</u>";
+    $("v-price").innerHTML=de(price*100,1)+"<u>ct/kWh</u>";
+
+    $("o-kwp").innerHTML=de(kwp)+"<u>kWp</u>";
+    $("o-mod").textContent="ca. "+de(Math.round(kwp/MODW))+" Module · "+r.label;
+    $("o-yield").innerHTML=de(yieldKwh)+"<u>kWh</u>";
+    $("o-spec").textContent=de(r.y)+" kWh je kWp und Jahr";
+    $("o-save").innerHTML=de(save)+"<u>€</u>";
+    $("o-save-sub").textContent="davon "+de(Math.round(evKwh*price))+" € vermiedener Strombezug";
+    $("o-pay").innerHTML=de(pay,1)+"<u>Jahre</u>";
+    $("o-invest").textContent="Investition ca. "+de(invest)+" € ohne Förderung";
+    $("o-ev").innerHTML=de(Math.round(evq*100))+"<u>%</u>";
+    $("o-ev-sub").textContent="deckt "+cover+" % Ihres Strombedarfs";
+    $("o-co2").innerHTML=de(co2)+"<u>t</u>";
+
+    $("f-kwp").textContent=de(kwp)+" kWp";
+    $("f-ev").textContent=de(evKwh)+" kWh/a";
+    $("f-feed").textContent=de(feedKwh)+" kWh/a";
+    $("f-grid").textContent="Restbezug "+de(rest)+" kWh/a";
+    var p2=document.getElementById("p2"), p3=document.getElementById("p3");
+    p2.setAttribute("stroke-width", (3+11*evq).toFixed(1));
+    p3.setAttribute("stroke-width", (3+11*(1-evq)).toFixed(1));
+
+    if(!barsBuilt) buildBars();
+    var bars=$("bars").children, max=Math.max.apply(null,MONTH), i, peak=0, pi=0;
+    for(i=0;i<12;i++){
+      var v=Math.round(yieldKwh*MONTH[i]/100);
+      bars[i].style.height=(MONTH[i]/max*100)+"%";
+      bars[i].setAttribute("aria-label", MFULL[i]+": "+de(v)+" kWh");
+      document.getElementById("bt"+i).textContent=MFULL[i]+" · "+de(v)+" kWh";
+      if(v>peak){peak=v;pi=i;}
+    }
+    $("chart-peak").textContent="Spitze "+MFULL[pi]+" · "+de(peak)+" kWh";
+  }
+
+  [elArea,elUse,elPrice].forEach(function(el){ el.addEventListener("input",render); });
+  Array.prototype.forEach.call(document.querySelectorAll(".seg button"),function(b){
+    b.addEventListener("click",function(){
+      Array.prototype.forEach.call(document.querySelectorAll(".seg button"),function(o){o.setAttribute("aria-pressed","false");});
+      b.setAttribute("aria-pressed","true"); roof=b.dataset.roof; render();
+    });
+  });
+  render();
+
+  if(!window.matchMedia("(prefers-reduced-motion: reduce)").matches){
+    var off=0;
+    setInterval(function(){ off=(off-1.6)%26;
+      ["p1","p2","p3"].forEach(function(id){ document.getElementById(id).setAttribute("stroke-dashoffset",off); });
+      document.getElementById("p4").setAttribute("stroke-dashoffset",-off*0.5);
+    },40);
+  }
+
+  document.getElementById("form").addEventListener("submit",function(e){
+    e.preventDefault();
+    var s=$("sent");
+    s.className="sent on";
+    s.innerHTML="<b>Vorschau – es wurde nichts versendet.</b>Dieses Formular ist in der Designstudie noch nicht angebunden. Für den Livebetrieb an CRM oder Postfach koppeln.<code>Dachform: "+$("f-roof").value+"<br>Fläche: "+($("f-area").value||"–")+" m²<br>Verbrauch: "+($("f-use").value||"–")+" MWh/a<br>Unternehmen: "+($("f-comp").value||"–")+"</code>";
+  });
+
+  document.querySelectorAll('a[href^="#"]').forEach(function(a){
+    a.addEventListener("click",function(e){
+      var t=document.querySelector(a.getAttribute("href"));
+      if(t){ e.preventDefault(); t.scrollIntoView({behavior:"smooth",block:"start"}); }
+    });
+  });
+})();
+</script>

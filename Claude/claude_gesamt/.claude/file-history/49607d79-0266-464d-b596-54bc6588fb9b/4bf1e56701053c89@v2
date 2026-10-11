@@ -1,0 +1,220 @@
+/**
+ * Tests für die Sicherungsprüfung.
+ *
+ * „Läuft der Job?" ist leicht zu prüfen. Diese Tests decken die schwerere
+ * Frage ab: kommen wir zurück, und schnell genug? Jede Regel hier hat einen
+ * Grund, der im Ernstfall Geld oder Daten kostet, wenn sie fehlt.
+ */
+import { beforeEach, describe, expect, it } from 'vitest'
+import { mockRequest, resetMockData } from '@/api/mock/server.js'
+
+const ruf = (url, params) => mockRequest({ url, params })
+const pruefung = (params = {}) => ruf('netops.api.backup.backup_assurance', params)
+
+beforeEach(() => {
+  resetMockData()
+})
+
+describe('3-2-1-Regel', () => {
+  it('prüft drei Teile einzeln statt eine Ja-Nein-Antwort zu geben', async () => {
+    // „3-2-1 verletzt" sagt nicht, woran es liegt - und die drei Teile
+    // haben ganz verschiedene Abhilfen.
+    const p = await pruefung()
+    for (const z of p.rows) {
+      expect(z.rule_321.parts.map((t) => t.key)).toEqual(['copies', 'media', 'offsite'])
+      for (const teil of z.rule_321.parts) {
+        expect(teil.label).toBeTruthy()
+        expect(teil.ist).toBeTruthy()
+        if (!teil.erfuellt) expect(teil.abhilfe).toBeTruthy()
+      }
+    }
+  })
+
+  it('zählt zweimal dieselbe Medienart nicht als zwei Medien', async () => {
+    const p = await pruefung()
+    for (const z of p.rows) {
+      const medien = String(z.media_types || '')
+        .split(',')
+        .filter(Boolean)
+      const teil = z.rule_321.parts.find((t) => t.key === 'media')
+      expect(teil.erfuellt).toBe(new Set(medien).size >= 2)
+    }
+  })
+
+  it('stuft eine fehlende Kopie außer Haus als kritisch ein', async () => {
+    // Das ist genau der Fall, für den es die Regel gibt.
+    const p = await pruefung()
+    for (const z of p.rows) {
+      if (z.rule_321.missing.includes('offsite')) expect(z.rule_321.level).toBe('critical')
+    }
+  })
+
+  it('stuft fehlende Kopien oder Medien nur als Warnung ein', async () => {
+    const p = await pruefung()
+    for (const z of p.rows) {
+      const nurKopienOderMedien =
+        z.rule_321.missing.length && !z.rule_321.missing.includes('offsite')
+      if (nurKopienOderMedien) expect(z.rule_321.level).toBe('warning')
+    }
+  })
+
+  it('meldet erfüllt nur, wenn alle drei Teile stimmen', async () => {
+    const p = await pruefung()
+    for (const z of p.rows) {
+      expect(z.rule_321.ok).toBe(z.rule_321.parts.every((t) => t.erfuellt))
+    }
+  })
+})
+
+describe('Wiederherstellungstest', () => {
+  it('behandelt eine nie getestete Sicherung als kritisch', async () => {
+    // Eine Sicherung ohne Restore-Test ist eine Vermutung.
+    const p = await pruefung()
+    for (const z of p.rows) {
+      if (z.restore_test.never) expect(z.restore_test.level).toBe('critical')
+    }
+  })
+
+  it('behandelt einen fehlgeschlagenen Test als kritisch', async () => {
+    const p = await pruefung()
+    const fehl = p.rows.find((z) => z.restore_test.result === 'failed')
+    expect(fehl).toBeTruthy()
+    expect(fehl.restore_test.level).toBe('critical')
+  })
+
+  it('setzt die Testfrist nach Kritikalität des Dienstes', async () => {
+    // Kritische Dienste vierteljährlich, der Rest seltener.
+    const p = await pruefung()
+    const FRIST = { critical: 90, high: 180, medium: 365, low: 365 }
+    for (const z of p.rows) {
+      if (z.criticality) expect(z.restore_test.due_days).toBe(FRIST[z.criticality])
+    }
+  })
+
+  it('meldet einen überfälligen Test als Warnung, nicht als Ausfall', async () => {
+    const p = await pruefung()
+    for (const z of p.rows) {
+      if (z.restore_test.overdue && !z.restore_test.never && z.restore_test.result !== 'failed') {
+        expect(z.restore_test.level).toBe('warning')
+      }
+    }
+  })
+})
+
+describe('Zugesagte Ziele gegen die Wirklichkeit', () => {
+  it('nimmt das Sicherungsalter als tatsächlichen RPO', async () => {
+    const p = await pruefung()
+    for (const z of p.rows) {
+      if (z.objectives && z.backup_age_hours !== null) {
+        expect(Math.round(z.objectives.rpo_actual_hours)).toBe(z.backup_age_hours)
+      }
+    }
+  })
+
+  it('nimmt die Wiederherstellungsdauer als tatsächlichen RTO', async () => {
+    const p = await pruefung()
+    for (const z of p.rows) {
+      if (z.objectives && z.restore_minutes) {
+        // Die Methode rundet bewusst auf eine Nachkommastelle - dagegen
+        // wird geprueft, nicht gegen den ungerundeten Bruch.
+        expect(z.objectives.rto_actual_hours).toBe(Math.round((z.restore_minutes / 60) * 10) / 10)
+      }
+    }
+  })
+
+  it('unterscheidet knapp verfehlt von deutlich verfehlt', async () => {
+    // Ein RPO von 1 h, der bei 1,5 h liegt, ist nachzujustieren. Einer, der
+    // bei 40 h liegt, heißt: die Zusage stimmt nicht.
+    const p = await pruefung()
+    const deutlich = p.rows.find((z) => z.objectives?.severe)
+    expect(deutlich).toBeTruthy()
+    expect(deutlich.objectives.findings.join(' ')).toMatch(/deutlich verfehlt/)
+    expect(deutlich.objectives.level).toBe('critical')
+  })
+
+  it('wertet eine unbekannte Wiederherstellungsdauer als ungeprüft, nicht als erfüllt', async () => {
+    const p = await pruefung()
+    for (const z of p.rows) {
+      if (z.objectives?.rto_unknown) expect(z.objectives.level).not.toBe('ok')
+    }
+  })
+
+  it('lässt Objekte ohne Geschäftsdienst ohne Zielprüfung', async () => {
+    const p = await pruefung()
+    for (const z of p.rows) {
+      if (!z.business_service) expect(z.objectives).toBeNull()
+    }
+  })
+})
+
+describe('Aufbewahrung', () => {
+  it('verlangt für Buchhaltung sieben Jahre', async () => {
+    // § 132 BAO und § 147 AO - keine betriebliche Festlegung.
+    const p = await pruefung()
+    const buchhaltung = p.rows.find((z) => /buchhalt|bmd/i.test(z.service_name || ''))
+    expect(buchhaltung.retention.required_days).toBe(2555)
+  })
+
+  it('meldet zu kurze Aufbewahrung mit Soll und Ist', async () => {
+    const p = await pruefung()
+    for (const z of p.rows) {
+      if (!z.retention.ok) {
+        expect(z.retention.reason).toContain(String(z.retention.required_days))
+      }
+    }
+  })
+})
+
+describe('Gesamtbild', () => {
+  it('nennt die Zahlen, nach denen eine Revision fragt', async () => {
+    const p = await pruefung()
+    for (const feld of [
+      'rule_321_ok',
+      'no_offsite',
+      'never_tested',
+      'test_failed',
+      'objectives_missed',
+      'retention_short',
+      'unencrypted',
+    ]) {
+      expect(typeof p.summary[feld]).toBe('number')
+    }
+  })
+
+  it('summiert die Dauer, um alles zurückzuholen', async () => {
+    // Diese Zahl steht in keinem Notfallplan, obwohl sie dort hingehört.
+    const p = await pruefung()
+    const erwartet = p.rows.reduce((s, z) => s + (z.restore_minutes || 0), 0) / 60
+    expect(p.summary.total_restore_hours).toBe(Math.round(erwartet * 10) / 10)
+  })
+
+  it('sortiert Kritisches nach vorn', async () => {
+    const p = await pruefung()
+    const rang = { critical: 3, warning: 2, ok: 1 }
+    const werte = p.rows.map((z) => rang[z.level])
+    expect([...werte].sort((a, b) => b - a)).toEqual(werte)
+  })
+
+  it('zeigt einen glaubwürdigen Mix statt lauter Rot', async () => {
+    // Eine Ampel, die immer rot ist, liest bald niemand mehr.
+    const p = await pruefung()
+    expect(p.summary.critical).toBeLessThan(p.summary.total)
+    expect(p.rows.some((z) => z.level === 'ok')).toBe(true)
+  })
+
+  it('nimmt für jede Zeile die schlimmste Teilstufe', async () => {
+    const p = await pruefung()
+    const rang = { critical: 3, warning: 2, ok: 1 }
+    for (const z of p.rows) {
+      const teile = [z.rule_321.level, z.restore_test.level, z.objectives?.level].filter(Boolean)
+      expect(rang[z.level]).toBeGreaterThanOrEqual(Math.max(...teile.map((t) => rang[t])))
+    }
+  })
+
+  it('filtert nach Mandant', async () => {
+    const at = await pruefung({ tenant: 'TEN-0001' })
+    const de = await pruefung({ tenant: 'TEN-0002' })
+    expect(at.rows.every((z) => z.tenant === 'TEN-0001')).toBe(true)
+    expect(de.rows.length).toBeGreaterThan(0)
+  })
+})

@@ -1,0 +1,281 @@
+/**
+ * Treibhausgasbilanz eines Betriebs nach dem Greenhouse Gas Protocol.
+ *
+ * Drei Regeln bestimmen den Aufbau, und alle drei werden in der Praxis
+ * regelmäßig verletzt:
+ *
+ *   1. **Vermiedene Emissionen gehören nicht in die Bilanz.** Wer
+ *      Sonnenstrom erzeugt und ihn selbst verbraucht, hat weniger
+ *      Scope-2-Emissionen - das steht dort schon drin. Die zusätzlich
+ *      "vermiedene" Menge nochmals abzuziehen, zählt sie doppelt. Sie
+ *      wird deshalb getrennt ausgewiesen und nie verrechnet.
+ *
+ *   2. **Scope 2 wird doppelt berichtet.** Standortbasiert mit dem
+ *      Emissionsfaktor des Netzes, marktbasiert mit dem Faktor des
+ *      tatsächlich bezogenen Produkts. Beide Zahlen sind richtig und
+ *      beantworten verschiedene Fragen. Nur eine zu zeigen, ist
+ *      nach ESRS E1 nicht zulässig.
+ *
+ *   3. **Der Faktor gehört zum Wert.** Der Emissionsfaktor des
+ *      österreichischen Strommixes ändert sich jährlich. Eine Bilanz
+ *      für 2024 muss auch 2027 dieselbe Zahl ergeben - deshalb wird
+ *      der verwendete Faktor samt Quelle mitgeschrieben und nicht
+ *      beim Anzeigen nachgeschlagen.
+ *
+ * Gerechnet wird in Kilogramm CO₂-Äquivalent und erst zum Schluss in
+ * Tonnen umgerechnet: Bei einem Fuhrpark mit wenigen hundert Litern
+ * Diesel gehen in Tonnen zu viele Stellen verloren.
+ */
+
+export type Scope = 1 | 2 | 3;
+
+/** Woher die Menge stammt - entscheidend für die Prüfbarkeit. */
+export type Herkunft = "Gemessen" | "ERP" | "Erfasst" | "Geschaetzt";
+
+export interface Bilanzposition {
+  scope: Scope;
+  /** Kategorie nach GHG Protocol, bei Scope 3 mit Nummer. */
+  kategorie: string;
+  bezeichnung: string;
+  /** Verbrauchte Menge. */
+  menge: number;
+  einheit: string;
+  /** Emissionsfaktor in kg CO₂e je Einheit. */
+  faktor: number;
+  faktorEinheit: string;
+  /** Fundstelle des Faktors. Ohne sie ist der Wert nicht prüfbar. */
+  faktorQuelle: string;
+  herkunft: Herkunft;
+  /**
+   * Nur für Scope 2: Ist das der marktbasierte Faktor?
+   *
+   * Standortbasiert rechnet mit dem Netzmix, marktbasiert mit dem
+   * bezogenen Produkt - etwa einem Liefervertrag mit
+   * Herkunftsnachweisen.
+   */
+  marktbasiert?: boolean;
+  bemerkung?: string;
+}
+
+export interface BewertetePosition extends Bilanzposition {
+  /** Emission in Kilogramm CO₂-Äquivalent. */
+  emissionKg: number;
+}
+
+export interface Bilanz {
+  positionen: BewertetePosition[];
+  scope1Kg: number;
+  /** Scope 2 mit dem Emissionsfaktor des Netzes. */
+  scope2StandortKg: number;
+  /** Scope 2 mit dem Faktor des bezogenen Produkts. */
+  scope2MarktKg: number;
+  scope3Kg: number;
+  /**
+   * Summe nach ESRS: Scope 1 + marktbasiertes Scope 2 + Scope 3.
+   *
+   * Marktbasiert, weil das der Wert ist, den das Unternehmen durch
+   * seine Beschaffung tatsächlich beeinflusst.
+   */
+  gesamtKg: number;
+  /** In Tonnen, für die Berichterstattung. */
+  gesamtT: number;
+  /** Nachrichtlich, nie in der Summe enthalten. */
+  vermiedenKg: number;
+  /** Anteil der Positionen, die auf Messwerten beruhen. */
+  messanteil: number;
+  /** Positionen ohne belegte Faktorquelle. */
+  ohneQuelle: number;
+}
+
+function kg(wert: number): number {
+  return Math.round(wert * 1000) / 1000;
+}
+
+/**
+ * Bewertet eine einzelne Position.
+ *
+ * Negative Mengen sind zulässig - etwa eine Korrektur aus einer
+ * nachträglich berichtigten Rechnung.
+ */
+export function bewerte(position: Bilanzposition): BewertetePosition {
+  return {
+    ...position,
+    emissionKg: kg(position.menge * position.faktor),
+  };
+}
+
+/**
+ * Stellt die Bilanz auf.
+ *
+ * `vermiedenKg` wird getrennt übergeben und nicht aus den Positionen
+ * abgeleitet: Wer es als Position führte, liefe Gefahr, dass es
+ * irgendwann in eine Summe gerät.
+ */
+export function stelleBilanzAuf(
+  positionen: Bilanzposition[],
+  vermiedenKg = 0,
+): Bilanz {
+  const bewertet = positionen.map(bewerte);
+
+  let scope1 = 0;
+  let scope2Standort = 0;
+  let scope2Markt = 0;
+  let scope3 = 0;
+  let gemessen = 0;
+  let ohneQuelle = 0;
+
+  // Ob ueberhaupt eine marktbasierte Position vorliegt, wird
+  // gesondert vermerkt und nicht am Betrag abgelesen: Strom mit
+  // Herkunftsnachweis ergibt rechtmaessig null Kilogramm. Wer das an
+  // der Summe misst, haelt eine vollstaendig gruene Beschaffung fuer
+  // fehlende Daten und weist stattdessen den Netzmix aus - das waere
+  // genau der falsche Wert.
+  let marktbasiertVorhanden = false;
+
+  for (const p of bewertet) {
+    if (p.herkunft === "Gemessen") gemessen += 1;
+    if (!p.faktorQuelle.trim()) ohneQuelle += 1;
+
+    switch (p.scope) {
+      case 1:
+        scope1 += p.emissionKg;
+        break;
+      case 2:
+        if (p.marktbasiert) {
+          scope2Markt += p.emissionKg;
+          marktbasiertVorhanden = true;
+        } else {
+          scope2Standort += p.emissionKg;
+        }
+        break;
+      case 3:
+        scope3 += p.emissionKg;
+        break;
+    }
+  }
+
+  // Fehlt die marktbasierte Betrachtung, gilt der standortbasierte
+  // Wert. Das ist die konservative Annahme: Ohne Nachweis über das
+  // bezogene Produkt darf niemand einen besseren Faktor ansetzen.
+  const marktWirksam = marktbasiertVorhanden ? scope2Markt : scope2Standort;
+  const gesamt = scope1 + marktWirksam + scope3;
+
+  return {
+    positionen: bewertet,
+    scope1Kg: kg(scope1),
+    scope2StandortKg: kg(scope2Standort),
+    scope2MarktKg: kg(marktWirksam),
+    scope3Kg: kg(scope3),
+    gesamtKg: kg(gesamt),
+    gesamtT: Math.round((gesamt / 1000) * 1000) / 1000,
+    vermiedenKg: kg(vermiedenKg),
+    messanteil:
+      bewertet.length > 0
+        ? Number((gemessen / bewertet.length).toFixed(3))
+        : 0,
+    ohneQuelle,
+  };
+}
+
+/**
+ * Emissionsfaktoren, die immer wieder gebraucht werden.
+ *
+ * Die Werte stammen aus öffentlich zugänglichen Quellen und sind für
+ * eine Demonstration gedacht. Für eine testierte Bilanz sind die
+ * jeweils gültigen Faktoren des Berichtsjahres zu hinterlegen - der
+ * Strommix ändert sich merklich von Jahr zu Jahr.
+ */
+export const FAKTOREN = {
+  /** Österreichischer Strommix, kg CO₂e je kWh. */
+  strommix_at: {
+    faktor: 0.158,
+    einheit: "kg CO₂e/kWh",
+    quelle: "Umweltbundesamt, Strommix Österreich",
+  },
+  /** Residualmix - was übrig bleibt, wenn Herkunftsnachweise abgezogen sind. */
+  residualmix_at: {
+    faktor: 0.325,
+    einheit: "kg CO₂e/kWh",
+    quelle: "AIB European Residual Mix",
+  },
+  /** Strom aus Lieferverträgen mit Herkunftsnachweis. */
+  oekostrom: {
+    faktor: 0,
+    einheit: "kg CO₂e/kWh",
+    quelle: "Liefervertrag mit Herkunftsnachweisen",
+  },
+  diesel: {
+    faktor: 2.67,
+    einheit: "kg CO₂e/l",
+    quelle: "Umweltbundesamt, Emissionsfaktoren Kraftstoffe",
+  },
+  erdgas: {
+    faktor: 0.201,
+    einheit: "kg CO₂e/kWh",
+    quelle: "Umweltbundesamt, Emissionsfaktoren Brennstoffe",
+  },
+  /** Graue Energie einer Lithium-Eisenphosphat-Zelle. */
+  batteriezelle: {
+    faktor: 75,
+    einheit: "kg CO₂e/kWh Kapazität",
+    quelle: "Ökobilanzdatenbank, LFP-Zellfertigung",
+  },
+  /** Graue Energie eines Photovoltaikmoduls. */
+  pv_modul: {
+    faktor: 480,
+    einheit: "kg CO₂e/kWp",
+    quelle: "Ökobilanzdatenbank, Modulfertigung Europa",
+  },
+} as const;
+
+export type Faktorschluessel = keyof typeof FAKTOREN;
+
+export interface Nachvollziehbarkeit {
+  /** Alle Positionen haben eine belegte Faktorquelle. */
+  faktorenBelegt: boolean;
+  /** Anteil gemessener statt geschätzter Mengen. */
+  messanteil: number;
+  /** Positionen, die auf Schätzung beruhen. */
+  geschaetzt: string[];
+  /** Für den Prüfer zusammengefasst. */
+  bewertung: string;
+}
+
+/**
+ * Bewertet, wie belastbar die Bilanz ist.
+ *
+ * Eine Wirtschaftsprüferin fragt nicht zuerst nach der Zahl, sondern
+ * danach, worauf sie beruht. Eine Bilanz, die zu drei Vierteln aus
+ * Schätzungen besteht, ist keine schlechtere Bilanz - sie muss es
+ * nur sagen.
+ */
+export function pruefeNachvollziehbarkeit(
+  bilanz: Bilanz,
+): Nachvollziehbarkeit {
+  const geschaetzt = bilanz.positionen
+    .filter((p) => p.herkunft === "Geschaetzt")
+    .map((p) => p.bezeichnung);
+
+  const faktorenBelegt = bilanz.ohneQuelle === 0;
+
+  let bewertung: string;
+  if (!faktorenBelegt) {
+    bewertung = `${bilanz.ohneQuelle} Position${bilanz.ohneQuelle > 1 ? "en" : ""} ohne belegte Faktorquelle. Für eine Prüfung nicht ausreichend.`;
+  } else if (bilanz.messanteil >= 0.7) {
+    bewertung =
+      "Überwiegend auf Messwerten beruhend; die Faktoren sind durchgehend belegt.";
+  } else if (bilanz.messanteil >= 0.4) {
+    bewertung =
+      "Teils gemessen, teils aus Belegen abgeleitet. Für die Berichterstattung tragfähig.";
+  } else {
+    bewertung =
+      "Überwiegend aus Belegen und Schätzungen. Der Messanteil sollte erhöht werden.";
+  }
+
+  return {
+    faktorenBelegt,
+    messanteil: bilanz.messanteil,
+    geschaetzt,
+    bewertung,
+  };
+}

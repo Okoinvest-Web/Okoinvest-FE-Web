@@ -1,0 +1,551 @@
+gewinnung leisten. Gerade in wärmeren Jahren und trockenen Regionen ist auch eine reduzierte  
+Bodenwasserverdunstung in der Anlage durch die Beschattung zu erwarten. Diesem Aspekt wird in Zukunft, 
+mit Hinblick auf den Klimawandel, noch größere Bedeutung beigemessen werden. 
+Die Agri- PV Systemtechnik hat sich in den letzten Jahrzehnten von einer Ide e ( 1981), zu einer Invention 
+(2016) und weiter zu einer Innovation ( 2019) entwickelt. Forschungs - und Demonstrationsprojekte in 
+Deutschland und weltweit haben die Funktionsfähigkeit der Technik unter Beweis gestellt. Der nächste 
+notwendige Schritt im Agri- PV-Innovationsprozess ist die Durchführung einer Agri- PV-Kleinserie in 
+Deutschland. Die Agri -PV-Kleinserie, bspw. ein 40-Agri-PV-Äckerprogramm im Rahmen einer 80  MWp 
+(Megawatt Peak ) Agri-PV-Auktion, soll durch ein Mess - und Auswerteprogramm (MAP) wissensch aftlich 
+begleitet werden, damit die unterschiedlichen technologischen, ökonomischen und pflanzenphysiologischen 
+Ansätze der einzelnen, von der Industrie umgesetzten Agri-PV-Projekte miteinander verglichen, ausgewertet 
+und veröffentlicht werden können. 
+Ziel dieses Dokuments  ist es, ein Prüfverfahren für Agri -PV-Anlagen vorzubereiten, das hinsichtlich der 
+Agri-PV-Messzahlen, für das Berichtswesen und der Projektdokumentation gegenüber dem Gesetz - und 
+Fördermittelgeber und den Genehmigungsbehörden, sowie für d ie Nachprüfung und Beglaubigung von 
+Agri-PV-Anlagen durch Sachverständige und Zertifizierungsorganisationen einen Standard bietet. Dadurch 
+soll das technische Risiko für alle Projektbeteiligten signifikant reduziert werden. Dies gilt besonders für den 
+Landwirt als Landnutzer unter der Agri -PV-Anlage, dem EPC -Unternehmer (Planung, Beschaffung und Bau ; 
+en: Engineering, Procurement and Construction ) als Errichter und Vermarkter der Agri -PV-Anlage und die 
+kommunale Verwaltung in ihrer Rolle als Genehmigungsbehörde. Durch die Veröffentlichung von Hinweisen 
+zur Agri-PV-Projektdokumentation soll den Sachverständigen und Prüf - und Zertifizierungsorganisationen 
+die Möglichkeit gegeben werden, einen langfristigen Betrieb der Agri-PV-Anlagen gegenüber dem Gesetz- und 
+Fördermittelgeber, den Investoren und Versicherungen sicherzustellen. Dieses Dokument  soll zur 
+standardisierten Projektdokumentation führen, das Berichtswesen von Agri-PV-Anlagen vereinheitlichen, bei 
+Betreiberwechsel Betriebsführung und Wartung unterstützen und somit insgesamt qualitätsfördernd wirken. 
+Ein wichtiger Aspekt ist außerdem, dass die ses Dokument  durch die Festlegung der Anforderungen an 
+Agri-PV-Anlagen das Risiko von missbräuchlichen Agri-PV-Systemen und damit verbundene Mitnahmeeffekte 
+sowie Agri-PV-Akzeptanzverluste in der Bevölkerung minimieren helfen soll. 
+Normen-Download-Beuth-No Planet B GmbH-KdNr.8314729-ID.nP2_wz0Uw74vPUMphf8aLG_et2sdvm66C4xBix4H-2023-07-28 14:10:11
+DIN SPEC 91434:2021-05 
+7 
+1 Anwendungsbereich 
+Dieses Dokument  legt Anforderungen an die landwirtschaftliche Hauptnutzung im Bereich der 
+Agri-Photovoltaik (Agri -PV) fest. Dabei werden  Anforderungen an die Planung, den Betrieb, die 
+Dokumentation und die Betriebsüberwachung sowie Messkennzahlen für das Prüfverfahren zur 
+Qualitätssicherung von Agri-PV-Anlagen definiert. 
+Alle Anforderungen und Kennzahlen beziehen sich hierbei auf die landw irtschaftliche Nutzung. 
+Anforderungen der landwirtschaftlichen Hauptnutzung sind z. B. die Lichtintensität und Lichtverteilung unter 
+der Agri-PV-Anlage, die zudem auch an die Bedürfnisse der jeweiligen Kultur angepasst werden. 
+Dieses Dokument ist nicht anzuwenden für den Bereich der  klassischen Freiflächen Photovoltaik -Anlagen 
+(PV-FFA), da hierfür bereits entsprechende Normen existieren. Wo immer auf bestehende elektrotechnische 
+Größen sowie technische Vorgaben und Vorgaben zur elektrischen Installation Bezug genommen wird, gelten 
+die bereits existierenden Normen und Regularien.  
+Die Kombination von Gewächshäusern und Solarmod ulen, sowie das Anbaukonzept der vertikalen 
+Landwirtschaft (vertical farming) sind nicht Gegenstand dieses Dokument. 
+2 Normative Verweisungen 
+Die folgenden Dokumente werden im Text in solcher Weise in Bezug genommen, dass einige Teile davon oder 
+ihr gesamter Inhalt Anforderungen des vorliegenden Dokuments darstellen. Bei datierten Verweisungen gilt 
+nur die in B ezug genommene Ausgabe. Bei undatierten Verweisungen gilt die letzte Ausgabe des in Bezug 
+genommenen Dokuments (einschließlich aller Änderungen). 
+DIN VDE 0100-520 (VDE 0100-520), Errichten von Niederspannungsanlagen — Teil 5-52: Auswahl und 
+Errichtung elektrischer Betriebsmittel — Kabel- und Leitungsanlagen 
+3 Begriffe 
+Für die Anwendung dieses Dokuments gelten folgenden Begriffe. 
+DIN und DKE stellen terminologische Datenbanken für die Verwendung in der Normung unter den folgenden 
+Adressen bereit: 
+— DIN-TERMinologieportal: verfügbar unter https://www.din.de/go/din-term 
+— DKE-IEV: verfügbar unter http://www.dke.de/DKE-IEV 
+ISO und IEC stellen terminologische Datenbanken für die Verwendung in der Normung unter den folgenden 
+Adressen bereit: 
+— ISO Online Browsing Platform: verfügbar unter https://www.iso.org/obp 
+— IEC Electropedia: verfügbar unter http://www.electropedia.org/ 
+3.1 
+Agri-Photovoltaik 
+Agri-PV 
+APV 
+kombinierte Nutzung ein und derselben Landfläche für landwirtschaftliche Produktion als Hauptnutzung und 
+für Stromproduktion mittels einer PV-Anlage als Sekundärnutzung 
+3.2 
+landwirtschaftliche Fläche 
+als Ackerland, Dauergrünland und Dauerweideland oder mit Dauerkulturen genutzte Fläche 
+[QUELLE: EU-Verordnung Nr. 1307/2013, Artikel 4(1)(e) [1]] 
+Normen-Download-Beuth-No Planet B GmbH-KdNr.8314729-ID.nP2_wz0Uw74vPUMphf8aLG_et2sdvm66C4xBix4H-2023-07-28 14:10:11
+DIN SPEC 91434:2021-05 
+8 
+3.3 
+Gesamtprojektfläche 
+Landwirtschaftliche Fläche vor dem Bau der Agri -PV-Anlage, auf der, nach dem Bau der Anlage, gleichzeitig 
+landwirtschaftliche Nutzung und Nutzung zur Stromerzeugung betrieben wird 
+Anmerkung 1 zum Begriff: Randbereiche, wie z. B. Vorgewende, sind hierbei eingeschlossen. 
+Anmerkung 2 zum Begriff: Nach dem Bau der Agri -PV-Anlage wird zwisc hen landwirtschaftlich nutzbarer und 
+landwirtschaftlich nicht nutzbarer Fläche unterschieden. 
+3.4 
+landwirtschaftlich nutzbare Fläche 
+Flächenanteil des Schlages, der ohne bauliche Maßnahmen und technische Einschränkungen nach dem Bau 
+der Agri-PV-Anlage weiterhin landwirtschaftlich genutzt werden kann 
+3.5 
+landwirtschaftlich nicht nutzbare Fläche 
+Flächenanteil des Schlages, der vor dem Bau der Agri-PV-Anlage bewirtschaftet wurde, nach dem Bau jedoch 
+nicht mehr für eine landwirtschaftliche Nutzung zur Verfügung steht 
+BEISPIEL Die Definition umfasst dabei Bereiche, die z.B. durch Aufständerung oder Rammschutz nicht mehr zur 
+Verfügung stehen oder durch gängige landwirtschaftliche Maschinen nicht mehr erreicht werden. 
+3.6 
+landwirtschaftliche Erzeugnisse 
+Produkte, d ie durch landwirtschaftliche Tätigkeit erzeugt wurden, vermarktet werden oder zum 
+Eigenverbrauch dienen 
+3.7 
+Lichtverfügbarkeit 
+Globalstrahlung abzüglich der nachgewiesenen Verschattung und zuzüglich künstlicher Lichtquellen auf der 
+landwirtschaftlich nutzbaren Fläche 
+Anmerkung 1 zum Begriff: Die Globalstrahlung wird in kWh/m2 angegeben. 
+3.8 
+Lichthomogenität 
+gleichmäßige Verteilung des auf die landwirtschaftlich nutzbare Fläche treffenden Lichts unter 
+Berücksichtigung der Beschattung durch die Agri-PV-Anlage 
+3.9 
+lichte Höhe 
+freier vertikaler Bereich zwischen dem Grund der landwirtschaftlichen Nutzungsfläche und der Unterkante 
+des niedrigsten Konstruktionselements unter Eigengewichtsverformung 
+3.10 
+Lichtraumprofil 
+Sicherstellung des Raums, der für die uneingeschränkte Durchfahrt von Fahrzeugen oder Durchgang von 
+Personen mit bestimmten Eigenschaften und Abmessungen freigehalten wird 
+3.11 
+BOS-Komponenten 
+Balance of System-Komponenten 
+alle Komponenten einer Photovoltaikanlage umfassend mit Ausnahme von Photovoltaikmodulen 
+Normen-Download-Beuth-No Planet B GmbH-KdNr.8314729-ID.nP2_wz0Uw74vPUMphf8aLG_et2sdvm66C4xBix4H-2023-07-28 14:10:11
+DIN SPEC 91434:2021-05 
+9 
+4 Kategorisierung von Agri-PV-Systemen 
+Im Rahmen diese s Dokuments werden Agri-PV-Anlagen für zwei Kategorien definiert: Agri- PV-Anlagen mit 
+einer Aufständer ung mit lichter Höhe (Kategorie  I) und Agri -PV-Anlagen mit einer bodennahen Auf -
+ständerung (Kategorie II). 
+Auf Basis der Vorgaben zu beihilfefähigen landwirtschaftlichen Nutzungsflächen können Agri -PV-Anlagen 
+beider Kategorien  in vier Nutzungskategorien unterteilt werden: (A) Dauerkulturen und mehrjährige 
+Kulturen, (B) einjährige und überjährige Kulturen, (C) Dauergrünland mit Schnittnutzung und (D) 
+Dauergrünland mit Weidenutzung (nach Tabelle 1). 
+Zu den Dauerkulturen zählen Kulturen, die nicht in die Fruchtfolge integriert sind, mindestens fünf Jahre auf 
+den Flächen verbleiben und wiederkehrende Erträge liefern. 
+Neben den Dauerkulturen handelt es sich auch beim Dauergrünland um Flächen, die mindestens fünf Jahre 
+nicht Bestandteil d er Fruchtfolge sind und dabei zum Anbau von Gras oder anderen Grünfutterpflanzen 
+dienen. Anforderungen an die Tierhaltung in Agri- PV-Anlagen bei einer Weidenutzung des Dauergrünlands 
+(Kategorien 1D und 2D) sind nicht Gegenstand dieses Dokument. 
+Grundsätzlich gilt, dass die Flächen der Agri-PV-Anlage für eine landwirtschaftliche Tätigkeit genutzt werden 
+müssen (siehe 5.1 ). Die landwirtschaftliche Tätigk eit umfasst dabei die Erzeugung oder den Anbau 
+landwirtschaftlicher Erzeugnisse bzw. die Erhaltung von Flächen in einem guten landwirtschaftlichen (und 
+ökologischen) Zustand wie in den Cross Compliance Vorschriften der Europäischen Union [2]  und den 
+jeweiligen Länderregelungen niedergelegt. Genauere Ausführungen zur landwirtschaftlichen Tätigkeit auf 
+den Agri-PV-Flächen müssen in einem landwirtschaftlichen Nutzungskonzept festgehalten werden, das in der 
+Planungsphase vor dem Bau der Agri -PV-Anlage erstellt werden muss ( 5.2). Abweichungen von oben 
+genannten Kategorien (z. B. eine Kombination beider Kategorien) sind möglich, müssen aber trotzdem den 
+Anforderungen des landwirtschaftlichen Nutzungskonzeptes entsprechen. 
+Normen-Download-Beuth-No Planet B GmbH-KdNr.8314729-ID.nP2_wz0Uw74vPUMphf8aLG_et2sdvm66C4xBix4H-2023-07-28 14:10:11
+DIN SPEC 91434:2021-05 
+10 
+Tabelle 1 — Darstellung der landwirtschaftlichen Nutzungsmöglichkeiten in Agri-PV-Anlagen der 
+Kategorie I (Aufständerung mit lichter Höhe) und Kategorie II (bodennahe Aufständerung) 
+Agri-PV-Systeme Nutzung Beispiele 
+Kategorie I: 
+Aufständerung mit lichter Höhe 
+Bewirtschaftung unter der Agri-PV-Anlage 
+(Bild 1) 
+1A: 
+Dauerkulturen und mehrjährige 
+Kulturen 
+Obstbau, Beerenobstbau, 
+Weinbau, Hopfen 
+1B: 
+Einjährige und überjährige Kulturen 
+Ackerkulturen, 
+Gemüsekulturen, 
+Wechselgrünland, Ackerfutter 
+1C: 
+Dauergrünland mit Schnittnutzung 
+Intensives 
+Wirtschaftsgrünland, extensiv 
+genutztes Grünland 
+1D: 
+Dauergrünland mit Weidenutzung 
+Dauerweide, Portionsweide 
+(z. B. Rinder, Geflügel, Schafe, 
+Schweine und Ziegen) 
+Kategorie II: 
+Bodennahe Aufständerung 
+Bewirtschaftung zwischen den Agri-PV-
+Anlagenreihen 
+(Bild 3 und Bild 4) 
+2A: 
+Dauerkulturen und mehrjährige 
+Kulturen 
+Obstbau, Beerenobstbau, 
+Weinbau, Hopfen 
+2B: 
+Einjährige und überjährige Kulturen 
+Ackerkulturen, 
+Gemüsekulturen, 
+Wechselgrünland, Ackerfutter 
+2C: 
+Dauergrünland mit Schnittnutzung 
+Intensives 
+Wirtschaftsgrünland, 
+Extensiv genutztes Grünland 
+2D: 
+Dauergrünland mit Weidenutzung 
+Dauerweide, Portionsweide 
+(z. B. Rinder, Geflügel, Schafe, 
+Schweine und Ziegen) 
+Eine Agri-PV-Anlage nach Kategorie I (Bild 1) ist gekennzeichnet durch eine Aufständerung mit lichter Höhe 
+(mindestens 2,10 m) und einer landwirtschaftlichen Bewirtschaftung unter der Anlage (Bild 1). Dabei können 
+die Solarmodule in unterschiedlichen Winkeln und Positionen angebracht werden und teilweise oder 
+komplett die landwirtschaftlich nutzbare Fläche ( AL) überdachen. Die landwirtschaftlich nicht nutzbare 
+Fläche (AN) beschränkt sich auf die Fläche der Aufständerung und Bereiche, die im Zuge der Bearbeitung des 
+Felds, entsprechend des landwirtschaftlichen Nutzungskonzepts ( 5.2), für eine herkömmliche Bearbeitung 
+nicht mehr zur Verfügung stehen. In Bild 2 ist die Ansicht verschiedener Agri-PV-Anlagen von oben dargestellt. 
+Normen-Download-Beuth-No Planet B GmbH-KdNr.8314729-ID.nP2_wz0Uw74vPUMphf8aLG_et2sdvm66C4xBix4H-2023-07-28 14:10:11
+DIN SPEC 91434:2021-05 
+11 
+Legende 
+AL landwirtschaftlich nutzbare Fläche 
+AN landwirtschaftlich nicht nutzbare Fläche 
+h2 lichte Höhe über 2,10 m 
+1 Beispiele zu Solarmodulen 
+2 Verstrebung 
+3 Aufständerung 
+4 bis 7 Beispiele landwirtschaftlicher Kulturen 
+Bild 1 — Darstellung zu Kategorie I 
+Normen-Download-Beuth-No Planet B GmbH-KdNr.8314729-ID.nP2_wz0Uw74vPUMphf8aLG_et2sdvm66C4xBix4H-2023-07-28 14:10:11
+DIN SPEC 91434:2021-05 
+12 
+Legende 
+AL landwirtschaftlich nutzbare Fläche 
+AN landwirtschaftlich nicht nutzbare Fläche 
+1 und 2 Bodennahe Anlagen (Kategorie II) oder hoch aufgeständerte Anlagen (Kategorie I) mit 
+unterschiedlicher Breite und nur einer Bearbeitungsrichtung 
+3 Hoch aufgeständerte Anlagen (Kategorie I) mit Bearbeitbarkeit in alle Richtungen 
+Bild 2 — Ansicht verschiedener Agri-PV-Anlagen von oben 
+Agri-PV-Anlagen der Kategorie  II sind bodennah aufgeständerte An lagen, bei denen die landwirtschaftliche 
+Bewirtschaftung zwischen den Anlagenreihen stattfindet ( Bild 3 und Bild 4). Hier wird zwischen Agri- PV-
+Anlagen unterschieden, bei denen die Solarmodule in einem bestimmten Winkel auf einem oder zwei Pfosten 
+fest installiert sind ( Bild 3, Variante  1), oder Agri -PV-Anlagen, bei denen die Solarmodule senkrecht bzw. 
+verstellbar (Nachführung/Tracking) auf einem Pfosten aufgeständert sind (Bild 4, Variante 2). Grundsätzlich 
+ist die Fläche unter Modulen mit einer lichten Höhe unter 2,10 m als landwirtschaftlich nicht nutzbare Fläche 
+(AN) anzusehen. Wenn im landwirtschaftlichen Nutzungskonzept (5.2) definiert ist, dass eine Bearbeitung 
+auch unter einer lichten Höhe vom 2 ,10 m stattfindet und unter dieser Fläche ein Ertrag von 66 % erreicht 
+wird, dann reduziert sich AN entsprechend. Alle anderen erforderlichen  Anforderungen unter 5.2 an die 
+landwirtschaftliche Nutzbarkeit müssen auch auf dieser Fläche unter den Modulen erfüllt sein. Wenn die 
+technischen Ge gebenheiten vorliegen, kann die Bewirtschaftung bis zur Stützkonstruktion durchgeführt 
+werden. Im landwirtschaftlichen Nutzungskonzept ( 5.2) muss darg elegt werden, wie die Bearbeitung der 
+Fläche erfolgt. 
+Normen-Download-Beuth-No Planet B GmbH-KdNr.8314729-ID.nP2_wz0Uw74vPUMphf8aLG_et2sdvm66C4xBix4H-2023-07-28 14:10:11
+DIN SPEC 91434:2021-05 
+13 
+Legende 
+AL landwirtschaftlich nutzbare Fläche 
+AN landwirtschaftlich nicht nutzbare Fläche 
+h1 lichte Höhe unter 2,10 m 
+h2 lichte Höhe über 2,10 m 
+1 Beispiele zu Solarmodulen 
+2 Aufständerung 
+3 bis 6 Beispiele landwirtschaftlicher Kulturen 
+Bild 3 — Darstellung zu Kategorie II, Variante 1 
+Legende 
+AL landwirtschaftlich nutzbare Fläche 
+AN landwirtschaftlich nicht nutzbare Fläche 
+h1 lichte Höhe unter 2,10 m 
+h2 lichte Höhe über 2,10 m 
+1 Beispiele zu Solarmodulen 
+2 Aufständerung; 
+3 bis 6 Beispiele landwirtschaftlicher Kulturen 
+Bild 4 — Darstellung zu Kategorie II, Variante 2 
+Normen-Download-Beuth-No Planet B GmbH-KdNr.8314729-ID.nP2_wz0Uw74vPUMphf8aLG_et2sdvm66C4xBix4H-2023-07-28 14:10:11
+DIN SPEC 91434:2021-05 
+14 
+5 Kriterien und Anforderungen an die landwirtschaftliche Hauptnutzung 
+5.1 Landwirtschaftliche Nutzbarkeit der Fläche 
+Die bisherige landwirtschaftliche Nut zbarkeit der Fläche muss unter Berücksichtigung des Flächenverlusts 
+erhalten bleiben. Die geplante Landnutzungsform und Pflanzenproduktion muss in einem Konzept zur 
+landwirtschaftlichen Nutzbarkeit dargelegt werden, das die nächsten 3 Jahre oder einen Fruc htfolgezyklus 
+umfasst (5.2). Die Möglichkeiten zur Bewirtschaftung der Fläche müssen an die Kulturen angepasst sein und 
+entsprechend im landwirtschaf tlichen Nutzungskonzept aufgeführt werden ( 5.2). Eine Nutzungsänderung 
+gleichzeitig mit dem Bau der Agri-PV-Anlage ist möglich, jedoch keine Nutzungsänderung von 1A und 1B, bzw. 
+2A und 2 B zu 1 C und 1 D, bzw. 2 C und 2 D (Abschnitt  4). Wird die landwirtschaftliche Nutzung auf der 
+Gesamtprojektfläche dadurch optimiert, ist der Wechsel zwischen den Kategorien  1A, 1B, 2A, 2B, 1C, 1D, 2C 
+und 2D möglich, so lange die Flächenanteile der Nutzungsarten auf der Gesamtprojektfläche der vorherigen 
+Nutzung entsprechen. 
+Über die Schlagkartei, oder im Rahmen anderer Kontrollen kann  die kontinuierliche landwirtschaftliche 
+Nutzbarkeit der Fläche überprüft werden. 
+5.2 Anforderungen an das Konzept zur landwirtschaftlichen Nutzbarkeit 
+5.2.1 Allgemeines 
+Um eine Nutzung der landwirtschaftlich nutzbaren Fläche nach Installation der Agri-PV-Anlage sicherstellen 
+zu können, muss während der Planung der Anlage ein Konzept zur landwirtschaftlichen Nutzung der Fläche 
+ausgearbeitet werden. Das landwirtschaftliche Nutzungskonzept muss die Inhalte und die Struktur nach  der 
+Formatvorlage in Anhang A enthalten. Das landwirtschaftliche Nutzungskonzept wird vom Landnutzer 
+(Landwirt, Pächter) und dem EPC Unternehmer (Agri -PV-Errichter) gemeinsam erstellt (gezeichnet) und ist 
+der Projektdokumentation beizufügen. Neben allgemeinen Informationen zum Landwirtschaftsbetrieb (z.  B. 
+Besitzverhältnisse, Betriebsgröße und aktuelle Produktion) muss innerhalb dieses Nutzungskonzeptes auch 
+ein Nutzungsplan vorgelegt werden, der detailliert beschreibt, welche Art der Nutzung in den drei Jahren nach 
+Aufbau der Agri-PV-Anlage, bzw. innerhalb eines Fruchtfolgezyklus, geplant ist. Besonderes Augenmerk muss 
+bei der Ausarbeitung auf folgende Punkte gelegt werden: 
+— Aufständerung, 
+— Flächenverlust, 
+— Bearbeitbarkeit, 
+— Lichtverfügbarkeit und –homogenität, 
+— Wasserverfügbarkeit, 
+— Bodenerosion, 
+— Rückstandlose Auf- und Rückbaubarkeit, 
+— Kalkulation der Wirtschaftlichkeit, 
+— Landnutzungseffizienz. 
+Details zu den jeweiligen Anforderungen finden sich in den folgenden Abschnitten. 
+Normen-Download-Beuth-No Planet B GmbH-KdNr.8314729-ID.nP2_wz0Uw74vPUMphf8aLG_et2sdvm66C4xBix4H-2023-07-28 14:10:11
+DIN SPEC 91434:2021-05 
+15 
+5.2.2 Aufständerung 
+Die PV-Module von Anlagen beider Kategorien müssen gleichmäßig auf der Gesamtprojektfläche installiert 
+und verteilt werden sodass die bisherige Nutzung der Fläche weiterhin möglich ist. Der Abstand zwischen den 
+einzelnen Pfosten relativ zur Bearbeitungsrichtung muss so groß sein, dass die bisherige Landnutzungsform 
+und Pflanzenproduktion erhalten bleiben kann. 
+Die lichte Höhe für Agri- PV-Anlagen der Kategorie  I muss der Arbeitsschutzgeset zgebung entsprechen. Für 
+Agri-PV-Anlagen der Kategorie II ist keine Aufständerung mit lichter Höhe nötig. 
+Die Art der Aufständerung muss die Bearbeitbarkeit der Fläche sicherstellen. 
+5.2.3 Flächenverlust 
+Der Verlust an landwirtschaftlich nutzbarer Fläche durch Aufbauten und Unterkonstruktionen darf höchstens 
+10 % der Gesamtprojektfläche bei Kategorie I und höchstens 15 % bei Kategorie II betragen. 
+5.2.4 Bearbeitbarkeit 
+Die Bearbeitbarkeit der Fläche muss sichergestellt sein, sodass die gesamte landwirtschaftlich nutzbare Fläche 
+bewirtschaftet und ggf. befahren werden kann. 
+5.2.5 Lichtverfügbarkeit und –homogenität 
+Sowohl Pflanzenwachstum generell, als auch gleiche Erntezeitpunkte und eine gute landwirtschaftliche Praxis 
+sollten durch eine möglichst hohe Lichthomogenität und eine adäquate Lichtverfügbarkeit sichergestellt sein. 
+Die Lichtintensität bzw. Beschattung und die Lichthomogenität sowie Randef fekte müssen geprüft werden 
+und an die jeweiligen Bedürfnisse der landwirtschaftlichen Erzeugnisse angepasst werden. 
+Wenn diese Kriterien der Anforderungen nicht erfüllt werden, muss das landwirtschaftliche Nutzungskonzept 
+belegen, dass die landwirtschaftliche Nutzung dennoch sichergestellt ist. 
+5.2.6 Wasserverfügbarkeit 
+Die Wasserverfügbarkeit in der Agri -PV-Anlage muss an die Wachstumsb edingungen der Kultur angepasst 
+sein. Dabei ist auf eine homogene Verteilung des Niederschlagswassers auf die Kultur unter der Agri -PV-
+Anlage zu achten. 
+Um die Wasserverfügbarkeit für die landwirtschaftlich nutzbare Fläche und die geplante Bauart der Agri-PV-
+Anlage zu überprüfen, können folgende Ansätze herangezogen werden: 
+— das Vorhandensein einer technischen Bewässerungseinrichtung, die die ausreichende Bewässerung der 
+landwirtschaftlich nutzbaren Fläche sicherstellt; 
+— eine anlagendesign- und kulturbezogene Einzelfallbetrachtung, nach der der Wasserbedarf der Kultur 
+unter den üblichen klimatischen Bedingungen des Standortes ( en: Typical Meteorological Year , TMY) 
+gedeckt werden kann. 
+5.2.7 Bodenerosion und Verschlämmung des Oberbodens 
+Durch das Abtropfen von Wasser von den Modulen kann es zu einer Abtropfkante und damit verbundenen 
+Abschwemmen des Bodens kommen. Bei allen Agri -PV-Anlagen muss das Auftreten von Erosion und 
+Verschlämmung auf Grund von Wasserabtropfkanten durch die Konstru ktion der Anlage minimiert werden. 
+Es können der Kultur angepasste Auffangeinrichtungen für Regenwasser, Regenwasserverteiler, oder ähnlich 
+geeignete Konstruktionen genutzt werden. 
+Normen-Download-Beuth-No Planet B GmbH-KdNr.8314729-ID.nP2_wz0Uw74vPUMphf8aLG_et2sdvm66C4xBix4H-2023-07-28 14:10:11
+DIN SPEC 91434:2021-05 
+16 
+5.2.8 Rückstandslose Auf- und Rückbaubarkeit 
+Die Rückbaubarkeit des Agri -PV-Systems, insbesondere der Fundamentierung und Verankerung, muss 
+sichergestellt werden, sodass die landwirtschaftliche Nutzungsmöglichkeit nach dem Abbau der Anlage 
+weiterhin im ursprünglichen Zustand erhalten bleibt. 
+Kommt es beim Aufbau und/oder Abbau der Anla ge zu einer Verschlechterung der Bodenstruktur, sollten 
+nachfolgend geeignete Maßnahmen zur Wiederherstellung der ursprünglichen Bodenstruktur ergriffen 
+werden. 
+5.2.9 Kalkulation der Wirtschaftlichkeit 
+Im Rahmen des Konzeptes zur landwirtschaftlichen Nutzung muss ein wirtschaftlich tragfähiges Konzept zur 
+landwirtschaftlichen Nutzung aus Perspektive des Landwirts vorgelegt werden. 
+5.2.10 Landnutzungseffizienz 
+Es muss sichergestellt sein, dass der Ertrag der Kulturpflanze(n) auf der Gesamtprojektfläche nach dem Bau 
+der Agri-PV-Anlage mindestens 66 % des Referenzertrages beträgt. Die Ertragsreduktion der landwirtschaft-
+lichen Kulturen ergibt sich aus dem Verlust an landwirtschaftlich nutzbarer Fläche durch die Aufbauten/
+Unterkonstruktionen der Agri -PV-Anlage und aus der V erringerung des Ertrages durch Beschattung, 
+verminderter Wasserverfügbarkeit usw. 
+5.2.11 Ermittlung des Referenzertrags 
+Die Ertragsreduktion muss im landwirtschaftlichen Nutzungskonzept erfasst werden. Dazu muss der 
+Referenzertrag festgestellt werden. Dies kann folgendermaßen erfolgen: 
+a) Kultur/Kulturen wurden bereits auf der Gesamtprojektfläche oder auf anderen Fläche des Betriebes 
+angebaut: Bei Dauerkulturen und Grünland wird der Ertrag der letzten 3  Jahre gemittelt. In 
+Ackerbaufruchtfolgen muss der Ertrag der ein zelnen Kulturen über 3  Fruchtfolgezyklen gemittelt 
+werden. 
+b) Kultur/Kulturen wurden noch nicht auf dem Betrieb angebaut: Durchschnittserträge der letzten drei 
+Jahre aus einschlägigen Veröffentlichungen (z. B. destatis, Agrarstatistiken der Bundesländer) werden als 
+Referenzerträge festgelegt. 
+5.2.12 Ermittlung der Ertragsreduktion der auf der Gesamtprojektfläche angebauten Kulturen  
+Die maximale Ertragsreduktion von einem Drittel des Referenzertrages errechnet sich aus dem Flächenverlust 
+durch die Aufständerung und a us einer Abschätzung des Ertragsverlustes, der durch Beschattung, 
+ungleichmäßige Wasserverteilung, Veränderung des Mikroklimas und anderen ertragswirksamen Umwelt -
+wirkungen, die durch die Agri-PV-Anlage erzeugt werden. Die Abschätzung der Ertragsreduktion kann durch 
+qualifiziertes Fachpersonal vorgenommen werden. 
+6 Planerische und technische Anforderungen an Agri-PV-Anlagen 
+6.1 Lichtverfügbarkeit und -homogenität 
+Die Lichtverfügbarkeit und - homogenität müssen bei der gesamten Anlagenplanung beachtet und 
+entsprechend dem landwirtschaftlichen Nutzungskonzept geprüft werden. Beim Nachweis müssen alle Teile 
+der Photovoltaikmodule und der Tragwerkskonstruktion berücksichtig t werden, welche die Licht -
+verfügbarkeit erheblich beeinflussen. 
+Verglasung und Verkapselungsmaterialien zwischen den PV -Zellen können als zellfreier Raum mit einem 
+Transmissionsgrad von 100 % definiert werden, um die Komplexität der Berechnung zu verringern. 
+Normen-Download-Beuth-No Planet B GmbH-KdNr.8314729-ID.nP2_wz0Uw74vPUMphf8aLG_et2sdvm66C4xBix4H-2023-07-28 14:10:11
+DIN SPEC 91434:2021-05 
+17 
+6.2 Anforderungen an das Tragwerk und die Standsicherheit der Aufständerung 
+In Deutschland sind Tragwerke nach dem semiprobabilistischen Sicherheitskonzept des Eurocodes 
+auszulegen. Hierbei kann eine Anpassung der Nutzungskategorie und der Nutzungsdauer erfolgen, um ein der 
+Nutzung entsprechendes, wirtschaftliches Sicherheitsniveau zu erzielen welches  eine geringere 
+Nutzungsdauer und insbesondere geringe Schadensfolge berücksichtigt. 
+6.3 Anforderungen an die PV-Modultechnik 
+Bei Agri-PV-Anlagen können verschiedene PV-Modultechniken und Bauformen verwendet werden. Allerdings 
+müssen die Planung der Modultechnik, Zellzwischenräume und Verkapselungsmaterialen sowie die 
+Ausrichtung der Module an die Lichtverfügbarkeit und damit an die landwirtschaftliche Nutzung der Fläche 
+angepasst sein. Die Module müssen gleichmäßig auf der landwirtschaftlich genutzten Fläche verteilt werden, 
+um eine möglichst hohe Lichthomogenität sicherzustellen (5.2.5). 
+6.4 Anforderungen an die Aufständerung 
+6.4.1 Allgemeines 
+Unabhängig von der Art der Aufständerung der Agri -PV-Anlage dürfen verschiedene Bautechniken und 
+Bauformen sowie Werkstoffe verwendet werden. 
+6.4.2 Anlagendimension bei hoch aufgeständerten Anlagen 
+Die Größe und Höhe der Anlagen der Kategorie I sollte an die Art der Bewirtschaftung der landwirtschaftlichen 
+Fläche angepasst sein. 
+Über der landwirtschaftlich genutzten Fläche muss eine lichte Höhe von mindestens 2,10 m sichergestellt sein, 
+sodass die bisherige N utzung der Fläche unbeeinträchtigt bleibt. Die lichte Höhe ist als freier vertikaler 
+Bereich zwischen dem Grund der landwirtschaftlichen Nutzungsfläche und der Unterkante des niedrigsten 
+Konstruktionselements unter Eigengewichtsverformung definiert. Bei beweglichen Konstruktionselementen 
+ist die niedrigste Unterkante im Zustand mit maximaler lichter Höhe zu messen. 
+Die landwirtschaftlich nicht mehr nutzbare Fläche muss nach Agri-PV-Anlagen Installation weniger als 10 % 
+der Gesamtfläche betragen (5.2). 
+Bei der Anlagenplanung muss das Lichtraumprofil beachtet werden, sodass die Bewirtschaftung durch 
+Arbeitskräfte oder Maschinen gefahrenlos möglich ist. Bei Planungen zur maschinellen Bewirtschaftung muss 
+auch das Vorgewende beachtet werden, um ein Wenden der Landmaschinen sicherzustellen. 
+6.4.3 Anlagendimension bei bodennahen Anlagen 
+Die Größe und Höhe der Anlagen der Kategorie II sollte an die Art der Bewirtschaftung der 
+landwirtschaftlichen Fläche angepasst sein. 
+Die landwirtschaftlich nicht mehr nutzbare Fläche muss nach Agri-PV-Anlagen Installation weniger als 15 % 
+der Gesamtfläche betragen. 
+6.4.4 Modulreihen 
+Die Ausrichtung und Abstände zwischen den Modulreihen sin d nicht festgelegt. Diese müssen allerdings 
+entsprechend der Lichtverfügbarkeit und -homogenität geplant und ausgerichtet werden. 
+Die Abstände sollten so gewählt werden, dass der techno-ökologische Synergieeffekt durch Beschattung und 
+die Lichthomogenität möglichst hoch ist und negative Auswirkungen auf das Pflanzenwachstum vermieden 
+werden. 
+Normen-Download-Beuth-No Planet B GmbH-KdNr.8314729-ID.nP2_wz0Uw74vPUMphf8aLG_et2sdvm66C4xBix4H-2023-07-28 14:10:11
+DIN SPEC 91434:2021-05 
+18 
+6.4.5 Schutz der Haupttragstruktur der Agri-PV-Anlagen vor mechanischer Beschädigung 
+Einer mechanischen Beschädigung der Haupttragstruktur der Agri- PV-Anlage durch Landmaschinen sollte 
+vorgebeugt werden. Dazu kann zum Beispiel ein Rammschutz um die Pfosten angebracht werden. Dieser sollte 
+jedoch unabhängig von den Pfosten im Boden befestigt werden. 
+6.5 Anforderungen an weitere BOS-Komponenten 
+BOS-Komponenten dürfen die landwirtschaftliche Nutzung nicht beeinträchtigen. Dies gilt insbesondere für 
+den Standort der Generatoranschlusskästen und Wechselrichter. 
+Die Erdverlegung von Kabeln muss mit einer Mindesttiefe nach DIN VDE 0100-520 (VDE 0100-520) erfolgen, 
+sodass diese sicher vor dem Pflug und anderen Landmaschinen sind. 
+7 Anforderungen an die Installation, den Betrieb und die Instandhaltung 
+7.1 Agri-PV spezifische Anforderungen bei der Installation 
+Damit die landwirtschaftliche Hauptnutzung der Fläche langfristig sichergestell t bleibt, müssen bei der 
+Installation der Agri-PV-Anlage spezielle Anforderungen beachtet werden. 
+Beim Auf- und Rückbau der Anlage sollte es nicht zu einer Verschlechterung des Bodens durch Verdichtung 
+kommen. Es darf nicht zu einer Einschränkung der Nutzung durch Rückstände des Agri-PV-Systems kommen. 
+Aufgrund der landwirtschaftlichen Nutzung ist besonders auf den Schutz vor auslaufenden Betriebsstoffen zu 
+achten. 
+Es wird empfohlen, bei Auf - und Rückbau der Anlage spezielle Reifen oder Maschinen und/oder m obile 
+Fahrstraßen zu verwenden, welche die Bodenverdichtung vermindern. Außerdem sollte der Zeitpunkt des 
+Anlagenbaus so gewählt werden (z. B. trockener Boden), dass Bodenschäden vermieden werden. 
+7.2 Abnahme und Inbetriebnahme des Agri-PV-Systems 
+Für die Anwendung dieses Dokuments gelten die bestehenden elektrotechnischen und statischen Regularien 
+sowie entsprechende Prüfanforderungen aus dem Bereich Photovoltaikanlagen (siehe Literaturhinweise), die 
+für Agri-Photovoltaik-Anlagen ebenso relevant sind. 
+Folgende Punkte müssen beim Aufbau von Agri-PV-Anlagen besonders beachtet und dokumentiert werden: 
+— die Einhaltung des landwirtschaftlichen Nutzungskonzeptes; 
+— die Verlegung der Kabel und Leitungen in einer vor dem Pflug  und anderen Landmaschinen sicheren 
+Tiefe; 
+— maximaler Flächenverlust durch Bebauung; 
+— Montagehöhe der Module mit lichter Höhe; 
+— Sicherheit des Tragwerks. 
+Normen-Download-Beuth-No Planet B GmbH-KdNr.8314729-ID.nP2_wz0Uw74vPUMphf8aLG_et2sdvm66C4xBix4H-2023-07-28 14:10:11
+DIN SPEC 91434:2021-05 
+19 
+7.3 Anforderungen an Betrieb und Wartung von Agri-PV-Anlagen 
+7.3.1 Allgemeines 
+Die notwendigen Wartungsarbeiten müssen vom Errichter der Anlage im Betriebshandbuch festgehalten und 
+vom Betreiber beachtet werden. Bei der Wartung von Agri -PV-Anlagen ist besondere Sorgfalt geboten, da 
+Personen auf der Fläche arbeiten und eine (starke) landwirtschaftliche Nutzung stattfinden kann, wodurch 
+das Risiko für Beschädigungen und Verschmutzungen erhöht ist. 
+Eine Reihe von Vorschriften muss bei der Wartung von allen Photovoltaikanlagen beachtet werden. Es wird 
+empfohlen die überprüften Kenngrößen in einem anlagenspezifischen Betriebsprotokoll festzuhalten. 
+Bei Extre mwetterereignissen wie Vereisung und Eiszapfenbildung sowie bei extremen Wind - und 
+Schneelasten sollte aus Sicherheitsgründen nicht unter der Anlage gearbeitet werden. Durch Systeme zur 
+Regenwasserverteilung kann die Eiszapfenbildung verhindert werden. 
+7.3.2 Anforderungen an die Reinigung 
+Die Agri- PV-Anlage bzw. die PV -Module sollten bei starken Verschmutzungen gereinigt werden, um 
+Ertragsverluste zu minimieren. Durch landwirtschaftliche Bodenbearbeitung und das Ausbringen von 
+Pflanzenschutzmitteln kann es zu sol chen Verschmutzungen kommen, weshalb eine anlagenspezifische, 
+regelmäßige Überprüfung der Sauberkeit empfohlen wird. Allgemein sollte nur gereinigt werden, wenn dies 
+wirklich notwendig ist, um unnötige Belastungen oder versehentliche Beschädigung der PV -Anlage zu 
+vermeiden. Falls es zur Verwendung eines Reinigungsmittels kommt, müssen die Lebensmittel-, Futtermittel- 
+und Arzneimittelrechtlichen Bestimmungen beachtet werden. 
+Normen-Download-Beuth-No Planet B GmbH-KdNr.8314729-ID.nP2_wz0Uw74vPUMphf8aLG_et2sdvm66C4xBix4H-2023-07-28 14:10:11
+DIN SPEC 91434:2021-05 
+20 
+Anhang A 
+(normativ) 
+Formularvorlage für ein landwirtschaftliches Nutzungskonzept 
+ANMERKUNG Die im Folgenden in Klammern aufgeführten Abschnittsnummern und die genannten Bezeichnungen 
+der Kategorien von Agri-PV-Anlagen beziehen sich auf DIN SPEC 91434. 
+1. Allgemeine Betriebsinformationen 
+  Name und Adresse des Unternehmens:   
+  Name und Adresse der Kontaktperson:   
+  Zutreffendes bitte ankreuzen: ◻ Eigentümer ◻ Pächter 
+  Betriebstyp nach Agrarstrukturerhebung (Mehrfachnennung möglich): 
+  ◻ Ackerbaubetrieb ◻ Gemüsebaubetrieb ◻ Dauerkulturbetrieb 
+  ◻ Futterbaubetrieb ◻ Veredlungsbetrieb ◻ Gemischtbetrieb 
+  ◻ Sonstiges     
+  Betriebsgröße:   
+2. Informationen zur Agri-PV-Anlage 
+  Name und Adresse des Besitzers (falls nicht Eigentümer des Landwirtschaftsbetriebs): 
+  Name und Adresse des Betreibers der Agri-PV-Anlage: 
+  Kategorie der Agri-PV-Anlage (Aufständerung und Nutzung, siehe Abschnitt 4): 
+  Lichte Höhe der Agri-PV-Anlage (5.2.2):  
+  Spezifische PV-Leistung in (kWp DC):  
+3. Informationen zur Gesamtprojektfläche 
+  Größe der Gesamtprojektfläche (Ort, Größe, Schlagnummer) (siehe Definition 3.3): 
+  Voraussichtlicher Flächenverlust, der sich durch die Errichtung der Agri-PV-Anlage ergibt (5.2.3): 
+  Größe der landwirtschaftlich nutzbaren Fläche (siehe Definition 3.4): 
+Normen-Download-Beuth-No Planet B GmbH-KdNr.8314729-ID.nP2_wz0Uw74vPUMphf8aLG_et2sdvm66C4xBix4H-2023-07-28 14:10:11
+DIN SPEC 91434:2021-05 
+21 
+4. Nutzungsplan für die landwirtschaftliche Fläche mit Agri-PV-Anlage 
+(für drei Jahre oder einen Fruchtfolgezyklus) 
+Auszufüllen bei landwirtschaftlicher Nutzung nach Kategorie 1A, 1B, 1C, 1D oder 2A, 2B, 2C, 2D: 
+  Listung der geplanten Fruchtfolge bzw. Dauerkultur(en) und deren Aussaat-/Erntezeitpunkte: 
+  Listung der geplanten Pflanzenschutzmaßnahmen (unter Berücksichtigung möglicher Beschädigungen 
+der Agri-PV-Anlage durch z. B. Korrosion): 
+  Geplante Maschinen- und Arbeitsbreiten (Berücksichtigung des Wendekreises/Vorgewende und der 
+Arbeitshöhen) (5.2.4): 
+  Ist die Bearbeitbarkeit mit den benötigten Maschinen in Bezug auf das Anlagendesign sichergestellt? 
+(5.2.4) 
+  Lichtbedürfnis der Kulturpflanzen (5.2.5): 
+  Ist das Lichtbedürfnis der Kulturpflanzen aufgrund des Anlagendesigns sichergestellt (5.2.5)? 
+Erläuterungen hinzufügen 
+  Wasserbedürfnis der Kulturpflanzen (5.2.6): 
+  Ist die optimale Wasserversorgung in aufgrund des Anlagendesign sichergestellt (5.2.6)? Erläuterungen 
+hinzufügen 
+Zusätzlich auszufüllen bei landwirtschaftlicher Nutzung nach Kategorie 1D oder 2D: 
+  Tierart und deren Nutzung:  
+  Fläche und Zeitraum der Weidenutzung:   
+  Spezifische Voraussetzungen für die Tierhaltung (Umzäunung, Unterstand usw.): 
+5. Bodenerosion und Verschlämmung des Oberbodens 
+ Maßnahmen zur Reduzierung von Bodenerosion und Oberbodenverschlämmung (5.2.7): 
+Normen-Download-Beuth-No Planet B GmbH-KdNr.8314729-ID.nP2_wz0Uw74vPUMphf8aLG_et2sdvm66C4xBix4H-2023-07-28 14:10:11
+DIN SPEC 91434:2021-05 
+22 
+6. Rückstandslose Auf- und Rückbaubarkeit 
+  Maßnahmen zur Reduzierung dauerhafter Beschädigung der landwirtschaftlichen Fläche (5.2.8): 
+7. Kalkulation der Wirtschaftlichkeit (5.2.9) 
+  Referenzertrag (dt/ha):   
+  Prognose des Ernteertrags (dt/ha):   
+  Prognose des Stromertrags (kWh/ha):   
+  Erläuterungen zu den Prognosen (z. B. Qualitätsminderungen/Qualitätssteigerung): 
+  Wirtschaftlichkeit aus Sicht des Landwirts: 
+8. Landnutzungseffizienz (5.2.10) 
+Normen-Download-Beuth-No Planet B GmbH-KdNr.8314729-ID.nP2_wz0Uw74vPUMphf8aLG_et2sdvm66C4xBix4H-2023-07-28 14:10:11
+DIN SPEC 91434:2021-05 
+23 
+Literaturhinweise 
+[1] Verordnung (EU) Nr. 1307/2013 des Europäischen Parlaments und des Rates, Artikel 4(1)2 

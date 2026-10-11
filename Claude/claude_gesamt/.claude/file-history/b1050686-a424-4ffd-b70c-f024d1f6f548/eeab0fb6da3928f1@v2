@@ -1,0 +1,326 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+
+import { eine, schreibe } from "@/lib/db/verbindung";
+import {
+  pruefeAenderung,
+  type Regelaenderung,
+  type Regelart,
+  type Schweregrad,
+} from "@/lib/melden/regelwerk";
+import { protokolliere } from "@/lib/sicherheit/audit";
+import { requireRecht } from "@/lib/session";
+
+export interface AlarmErgebnis {
+  ok: boolean;
+  meldung: string;
+}
+
+/**
+ * Quittieren heisst: gesehen und bewertet, aber noch nicht behoben.
+ *
+ * Die Unterscheidung ist wichtig fuer die Betriebsfuehrung. Ein
+ * quittierter Alarm verschwindet nicht aus der Liste, sondern zeigt,
+ * dass sich jemand darum kuemmert - und wer. Ohne diesen Zwischenstand
+ * bleiben Meldungen entweder offen liegen oder werden vorschnell
+ * geschlossen.
+ */
+export async function quittiere(
+  _vorher: AlarmErgebnis | null,
+  formular: FormData,
+): Promise<AlarmErgebnis> {
+  const benutzer = await requireRecht("anlagen.bearbeiten");
+
+  const alarmId = String(formular.get("alarm") ?? "");
+  const notiz = String(formular.get("notiz") ?? "").trim();
+
+  if (notiz.length < 5) {
+    return {
+      ok: false,
+      meldung:
+        "Bitte vermerken Sie kurz, wie die Meldung eingeschaetzt wird. Ohne Notiz ist spaeter nicht nachvollziehbar, warum quittiert wurde.",
+    };
+  }
+
+  schreibe(
+    `UPDATE alarm
+        SET status = 'Quittiert', quittiert_am = datetime('now'),
+            quittiert_von = ?, notiz = ?
+      WHERE id = ? AND status = 'Offen'`,
+    benutzer.id,
+    notiz,
+    alarmId,
+  );
+
+  schreibe(
+    `INSERT INTO audit (benutzer, kategorie, aktion, ergebnis, objekt, begruendung)
+     VALUES (?, 'sicherheitsvorfall', 'Meldung quittiert', 'erfolg', ?, ?)`,
+    benutzer.id,
+    alarmId,
+    notiz,
+  );
+
+  revalidatePath(`/portal/alarme/${alarmId}`);
+  revalidatePath("/portal/alarme");
+
+  return { ok: true, meldung: "Die Meldung ist quittiert." };
+}
+
+/** Schliesst eine Meldung als behoben. */
+export async function behebe(
+  _vorher: AlarmErgebnis | null,
+  formular: FormData,
+): Promise<AlarmErgebnis> {
+  const benutzer = await requireRecht("anlagen.bearbeiten");
+
+  const alarmId = String(formular.get("alarm") ?? "");
+  const notiz = String(formular.get("notiz") ?? "").trim();
+
+  if (notiz.length < 5) {
+    return {
+      ok: false,
+      meldung: "Bitte halten Sie fest, was die Ursache war und was getan wurde.",
+    };
+  }
+
+  schreibe(
+    `UPDATE alarm
+        SET status = 'Behoben', beendet_am = datetime('now'), notiz = ?
+      WHERE id = ?`,
+    notiz,
+    alarmId,
+  );
+
+  schreibe(
+    `INSERT INTO audit (benutzer, kategorie, aktion, ergebnis, objekt, begruendung)
+     VALUES (?, 'sicherheitsvorfall', 'Meldung behoben', 'erfolg', ?, ?)`,
+    benutzer.id,
+    alarmId,
+    notiz,
+  );
+
+  revalidatePath(`/portal/alarme/${alarmId}`);
+  revalidatePath("/portal/alarme");
+
+  return { ok: true, meldung: "Die Meldung ist als behoben geschlossen." };
+}
+
+/**
+ * Erzeugt aus einer Meldung ein Serviceticket.
+ *
+ * Der Uebergang von der automatischen Erkennung zum Einsatz ist die
+ * Stelle, an der Monitoring erst nuetzlich wird. Ohne ihn bleibt jede
+ * Meldung folgenlos.
+ */
+export async function erzeugeTicket(
+  _vorher: AlarmErgebnis | null,
+  formular: FormData,
+): Promise<AlarmErgebnis> {
+  const benutzer = await requireRecht("support.melden");
+
+  const alarmId = String(formular.get("alarm") ?? "");
+  const anlageId = String(formular.get("anlage") ?? "");
+  const betreff = String(formular.get("betreff") ?? "").trim();
+  const beschreibung = String(formular.get("beschreibung") ?? "").trim();
+  const prioritaet = String(formular.get("prioritaet") ?? "Mittel");
+
+  if (betreff.length < 5) {
+    return { ok: false, meldung: "Bitte einen Betreff angeben." };
+  }
+
+  const id = "STOE-" + Date.now().toString(36).toUpperCase();
+
+  schreibe(
+    `INSERT INTO stoerung
+       (id, anlage_id, betreff, beschreibung, status, prioritaet, gemeldet_von)
+     VALUES (?, ?, ?, ?, 'Offen', ?, ?)`,
+    id,
+    anlageId,
+    betreff,
+    beschreibung,
+    prioritaet,
+    benutzer.id,
+  );
+
+  schreibe(
+    `INSERT INTO stoerung_eintrag (id, stoerung_id, verfasser, intern, text)
+     VALUES (?, ?, ?, 0, ?)`,
+    id + "-E1",
+    id,
+    benutzer.vollname,
+    `Aus der Meldung ${alarmId} erzeugt.` +
+      (beschreibung ? ` ${beschreibung}` : ""),
+  );
+
+  schreibe("UPDATE alarm SET stoerung_id = ? WHERE id = ?", id, alarmId);
+
+  revalidatePath(`/portal/alarme/${alarmId}`);
+  revalidatePath("/portal/support");
+
+  return {
+    ok: true,
+    meldung: `Serviceticket ${id} wurde eroeffnet und mit dieser Meldung verknuepft.`,
+  };
+}
+
+/* ------------------------------------------------------------------ */
+/* Regelwerk                                                           */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Ändern des Meldewerks.
+ *
+ * Eine Meldeschwelle ist keine Einstellungssache. Wer sie zu weit
+ * stellt, schaltet die Überwachung faktisch ab - und merkt es erst
+ * bei der Jahresabrechnung. Deshalb gilt hier dieselbe Ordnung wie
+ * bei der Steuerung:
+ *
+ *   1. Recht des Benutzers.
+ *   2. Fachliche Zulässigkeit - geprüft im Kern, nicht im Formular.
+ *      Wer das Formular umgeht, kommt keinen Schritt weiter.
+ *   3. Schreiben.
+ *   4. Protokollieren, mit altem und neuem Wert. Auch der abgelehnte
+ *      Versuch: Gerade er ist im Nachweis interessant.
+ */
+
+export interface RegelErgebnis {
+  ok: boolean;
+  meldung: string;
+  /** Hinweise, die die Änderung nicht verhindern. */
+  warnungen?: string[];
+  regel?: string;
+}
+
+interface RegelZeile {
+  id: string;
+  bezeichnung: string;
+  art: string;
+  schweregrad: string;
+  schwellwert: number | null;
+  dauer_minuten: number;
+  nur_tagsueber: number;
+  min_einstrahlung: number | null;
+  aktiv: number;
+}
+
+/** Liest eine Zahl aus dem Formular; leer wird zu `null`. */
+function zahl(wert: FormDataEntryValue | null): number | null {
+  const text = String(wert ?? "").trim().replace(",", ".");
+  if (text === "") return null;
+  const n = Number(text);
+  return Number.isFinite(n) ? n : Number.NaN;
+}
+
+function fasseZusammen(a: Regelaenderung): string {
+  return [
+    a.schwellwert === null ? "ohne Schwelle" : `Schwelle ${a.schwellwert}`,
+    `${a.dauerMinuten} min`,
+    a.schweregrad,
+    a.minEinstrahlung === null ? "ohne Einstrahlung" : `ab ${a.minEinstrahlung} W/m²`,
+    a.nurTagsueber ? "nur tagsüber" : "rund um die Uhr",
+    a.aktiv ? "aktiv" : "abgeschaltet",
+  ].join(", ");
+}
+
+export async function regelAendern(
+  _vorher: RegelErgebnis | null,
+  formular: FormData,
+): Promise<RegelErgebnis> {
+  // Dasselbe Recht wie beim Quittieren: Wer eine Meldung bewerten
+  // darf, darf auch die Schwelle stellen, an der sie entsteht.
+  const benutzer = await requireRecht("anlagen.bearbeiten");
+
+  const id = String(formular.get("regel") ?? "");
+
+  const bestand = eine<RegelZeile>(
+    `SELECT id, bezeichnung, art, schweregrad, schwellwert, dauer_minuten,
+            nur_tagsueber, min_einstrahlung, aktiv
+       FROM alarmregel WHERE id = ?`,
+    id,
+  );
+
+  if (!bestand) {
+    return { ok: false, meldung: "Diese Regel gibt es nicht." };
+  }
+
+  const aenderung: Regelaenderung = {
+    // Die Art bleibt, wie sie ist. Sie zu ändern hieße, eine andere
+    // Regel zu haben - dafür gibt es das Anlegen.
+    art: bestand.art as Regelart,
+    schwellwert: zahl(formular.get("schwellwert")),
+    dauerMinuten: Number(formular.get("dauer")),
+    schweregrad: String(formular.get("schwere") ?? "") as Schweregrad,
+    minEinstrahlung: zahl(formular.get("einstrahlung")),
+    nurTagsueber: formular.get("tagsueber") === "ja",
+    aktiv: formular.get("aktiv") === "ja",
+  };
+
+  const pruefung = pruefeAenderung(aenderung);
+
+  const vorher: Regelaenderung = {
+    art: bestand.art as Regelart,
+    schwellwert: bestand.schwellwert,
+    dauerMinuten: bestand.dauer_minuten,
+    schweregrad: bestand.schweregrad as Schweregrad,
+    minEinstrahlung: bestand.min_einstrahlung,
+    nurTagsueber: bestand.nur_tagsueber === 1,
+    aktiv: bestand.aktiv === 1,
+  };
+
+  if (!pruefung.ok) {
+    await protokolliere({
+      kategorie: "stammdaten",
+      aktion: `Meldeschwelle "${bestand.bezeichnung}"`,
+      ergebnis: "abgelehnt",
+      objekt: bestand.id,
+      vorher: fasseZusammen(vorher),
+      nachher: fasseZusammen(aenderung),
+      begruendung: pruefung.fehler.join(" "),
+    });
+
+    return { ok: false, meldung: pruefung.fehler.join(" "), regel: id };
+  }
+
+  if (fasseZusammen(vorher) === fasseZusammen(aenderung)) {
+    return {
+      ok: true,
+      meldung: "Die Regel steht bereits so.",
+      warnungen: pruefung.warnungen,
+      regel: id,
+    };
+  }
+
+  schreibe(
+    `UPDATE alarmregel
+        SET schwellwert = ?, dauer_minuten = ?, schweregrad = ?,
+            min_einstrahlung = ?, nur_tagsueber = ?, aktiv = ?
+      WHERE id = ?`,
+    aenderung.schwellwert,
+    aenderung.dauerMinuten,
+    aenderung.schweregrad,
+    aenderung.minEinstrahlung,
+    aenderung.nurTagsueber ? 1 : 0,
+    aenderung.aktiv ? 1 : 0,
+    id,
+  );
+
+  await protokolliere({
+    kategorie: "stammdaten",
+    aktion: `Meldeschwelle "${bestand.bezeichnung}"`,
+    ergebnis: "erfolg",
+    objekt: bestand.id,
+    vorher: fasseZusammen(vorher),
+    nachher: fasseZusammen(aenderung),
+  });
+
+  revalidatePath("/portal/alarme");
+  revalidatePath("/portal");
+
+  return {
+    ok: true,
+    meldung: `"${bestand.bezeichnung}" geändert durch ${benutzer.vollname}. Die Regel greift ab der nächsten Auswertung.`,
+    warnungen: pruefung.warnungen,
+    regel: id,
+  };
+}

@@ -1,0 +1,4 @@
+- [Energieportal: Ziel und Kontext](energieportal-projektziel.md) — PV-Gewerbekunden Österreich, Wettbewerbsbeitrag, fachliche Genauigkeit zählt
+- [Node portable installiert](node-portable-installation.md) — ~/nodejs, im Bash-Tool PATH-Export nötig
+- [Kein Git-Repo](kein-git-repo.md) — Write überschreibt endgültig; Rettung nur aus .next-Sourcemaps
+- [Heredoc frisst Backslashes](heredoc-frisst-backslashes.md) — TS-Dateien mit Write schreiben, nicht per cat-Heredoc

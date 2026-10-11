@@ -1,0 +1,602 @@
+/**
+ * Kompakte Beschreibung aller Custom DocTypes des Energieportals.
+ *
+ * Aus dieser Datei erzeugt `erzeuge-doctypes.mjs` die JSON-Dateien, die
+ * Frappe erwartet. Der Umweg lohnt sich: Frappes DocType-JSON ist sehr
+ * ausfuehrlich, hier bleibt das Schema auf einen Blick lesbar - und es
+ * kann gegen `src/lib/doctypes.ts` abgeglichen werden.
+ *
+ * Feldtypen entsprechen den Frappe-Fieldtypes.
+ * Kurzschreibweise je Feld: [fieldname, label, fieldtype, optionen?]
+ */
+
+export const MODUL = "Energieportal";
+export const APP = "energieportal";
+
+/** Rollen, die auf die Portal-DocTypes zugreifen. */
+export const ROLLEN = {
+  kunde: "Portalkunde",
+  technik: "Portaltechnik",
+  verwaltung: "System Manager",
+};
+
+export const DOCTYPES = [
+  {
+    name: "PV Anlage",
+    /** Feld, das den Datensatz benennt. */
+    titelfeld: "anlagen_name",
+    /** Ueber dieses Link-Feld greift die User Permission auf den Kunden. */
+    felder: [
+      ["anlagen_name", "Anlagenname", "Data", { reqd: 1, in_list_view: 1 }],
+      ["kunde", "Kunde", "Link", { options: "Customer", reqd: 1, in_standard_filter: 1 }],
+      ["abschnitt_standort", "Standort", "Section Break"],
+      ["standort", "Adresse", "Data"],
+      ["plz", "PLZ", "Data"],
+      ["ort", "Ort", "Data", { in_list_view: 1 }],
+      ["bundesland", "Bundesland", "Select", {
+        options: "\nBurgenland\nKärnten\nNiederösterreich\nOberösterreich\nSalzburg\nSteiermark\nTirol\nVorarlberg\nWien",
+      }],
+      ["latitude", "Breitengrad", "Float", { precision: "6" }],
+      ["longitude", "Längengrad", "Float", { precision: "6" }],
+      ["abschnitt_netz", "Netzanschluss", "Section Break"],
+      ["zaehlpunkt", "Zählpunktbezeichnung", "Data", {
+        length: 33,
+        description: "33-stellig: AT + 6 Stellen Netzbetreiber + 5 Stellen PLZ + 20 Stellen Zählpunkt",
+        unique: 1,
+      }],
+      ["netzbetreiber", "Netzbetreiber", "Data"],
+      ["netzebene", "Netzebene", "Int", { description: "1 bis 7 nach österreichischer Systematik" }],
+      ["tor_typ", "TOR-Erzeuger-Typ", "Select", { options: "\nA\nB\nC\nD" }],
+      ["abschnitt_technik", "Technische Daten", "Section Break"],
+      ["leistung_kwp", "Nennleistung", "Float", { precision: "2", in_list_view: 1, description: "kWp" }],
+      ["wechselrichter_kw", "Wechselrichterleistung", "Float", { precision: "2", description: "kW" }],
+      ["speicher_kwh", "Speicherkapazität", "Float", { precision: "2", description: "kWh" }],
+      ["modul_typ", "Modultyp", "Data"],
+      ["modul_anzahl", "Anzahl Module", "Int"],
+      ["wechselrichter_typ", "Wechselrichtertyp", "Data"],
+      ["steuerung_typ", "Anlagensteuerung", "Data"],
+      ["ausrichtung", "Ausrichtung", "Data"],
+      ["neigung", "Neigung", "Float", { precision: "1", description: "Grad" }],
+      ["abschnitt_betrieb", "Betrieb", "Section Break"],
+      ["inbetriebnahme", "Inbetriebnahme", "Date"],
+      ["status", "Status", "Select", {
+        options: "Aktiv\nIn Bau\nGestört\nWartung\nAußer Betrieb",
+        default: "Aktiv",
+        in_list_view: 1,
+        in_standard_filter: 1,
+      }],
+      ["soll_ertrag_kwh", "Erwarteter Jahresertrag", "Float", {
+        precision: "0",
+        description: "kWh laut Auslegung, Grundlage des Soll-Ist-Vergleichs",
+      }],
+    ],
+  },
+
+  {
+    name: "PV Komponente",
+    titelfeld: "bezeichnung",
+    felder: [
+      ["bezeichnung", "Bezeichnung", "Data", { reqd: 1, in_list_view: 1 }],
+      ["anlage", "Anlage", "Link", { options: "PV Anlage", reqd: 1, in_standard_filter: 1 }],
+      ["kategorie", "Kategorie", "Select", {
+        options: "Wechselrichter\nModul\nSpeicher\nZähler\nSteuerung\nRouter\nSonstiges",
+        in_list_view: 1,
+      }],
+      ["hersteller", "Hersteller", "Data", { in_list_view: 1 }],
+      ["modell", "Modell", "Data"],
+      ["seriennummer", "Seriennummer", "Data"],
+      ["abschnitt_wartung", "Wartung und Sicherheit", "Section Break"],
+      ["firmware", "Firmwarestand", "Data"],
+      ["firmware_aktuell", "Firmware aktuell", "Check", {
+        default: "1",
+        description: "Abgehakt, wenn kein Sicherheitsupdate aussteht",
+      }],
+      ["ip_adresse", "IP-Adresse", "Data"],
+      ["eingebaut_am", "Eingebaut am", "Date"],
+      ["garantie_bis", "Garantie bis", "Date"],
+    ],
+  },
+
+  {
+    name: "PV Ertrag",
+    titelfeld: null,
+    autoname: "hash",
+    felder: [
+      ["anlage", "Anlage", "Link", { options: "PV Anlage", reqd: 1, in_list_view: 1, in_standard_filter: 1 }],
+      ["datum", "Datum", "Date", { reqd: 1, in_list_view: 1 }],
+      ["ertrag_kwh", "Ertrag", "Float", { precision: "2", in_list_view: 1, description: "kWh" }],
+      ["eigenverbrauch_kwh", "Eigenverbrauch", "Float", { precision: "2", description: "kWh" }],
+      ["einspeisung_kwh", "Einspeisung", "Float", { precision: "2", description: "kWh" }],
+      ["netzbezug_kwh", "Netzbezug", "Float", { precision: "2", description: "kWh" }],
+      ["spezifisch_kwh_kwp", "Spezifischer Ertrag", "Float", { precision: "2", description: "kWh/kWp" }],
+      ["performance_ratio", "Performance Ratio", "Float", { precision: "3" }],
+      ["einstrahlung_kwh_m2", "Einstrahlung", "Float", { precision: "2", description: "kWh/m²" }],
+    ],
+  },
+
+  {
+    name: "PV Messwert",
+    titelfeld: null,
+    autoname: "hash",
+    felder: [
+      ["anlage", "Anlage", "Link", { options: "PV Anlage", reqd: 1, in_standard_filter: 1 }],
+      ["zeitpunkt", "Zeitpunkt", "Datetime", { reqd: 1, in_list_view: 1 }],
+      ["erzeugung_kw", "Erzeugung", "Float", { precision: "2", in_list_view: 1 }],
+      ["verbrauch_kw", "Verbrauch", "Float", { precision: "2" }],
+      ["einspeisung_kw", "Einspeisung", "Float", { precision: "2" }],
+      ["netzbezug_kw", "Netzbezug", "Float", { precision: "2" }],
+      ["speicher_kw", "Speicherleistung", "Float", { precision: "2", description: "positiv = laden" }],
+      ["speicher_soc", "Ladezustand", "Float", { precision: "1", description: "%" }],
+    ],
+  },
+
+  {
+    name: "PV Stoerung",
+    titelfeld: "betreff",
+    felder: [
+      ["betreff", "Betreff", "Data", { reqd: 1, in_list_view: 1 }],
+      ["anlage", "Anlage", "Link", { options: "PV Anlage", in_standard_filter: 1 }],
+      ["komponente", "Komponente", "Link", { options: "PV Komponente" }],
+      ["status", "Status", "Select", {
+        options: "Offen\nIn Bearbeitung\nWarten auf Kunde\nGeschlossen",
+        default: "Offen",
+        in_list_view: 1,
+        in_standard_filter: 1,
+      }],
+      ["prioritaet", "Dringlichkeit", "Select", {
+        options: "Niedrig\nMittel\nHoch\nKritisch",
+        default: "Mittel",
+        in_list_view: 1,
+      }],
+      ["abschnitt_details", "Details", "Section Break"],
+      ["beschreibung", "Beschreibung", "Small Text"],
+      ["fehlercode", "Fehlercode", "Data"],
+      ["ausfall_kwh", "Geschätzter Ertragsausfall", "Float", { precision: "1", description: "kWh" }],
+      ["abschnitt_bearbeitung", "Bearbeitung", "Section Break"],
+      ["gemeldet_am", "Gemeldet am", "Date"],
+      ["techniker", "Techniker", "Data"],
+      ["behoben_am", "Behoben am", "Date"],
+    ],
+  },
+
+  {
+    name: "PV Wartung",
+    titelfeld: null,
+    autoname: "hash",
+    felder: [
+      ["anlage", "Anlage", "Link", { options: "PV Anlage", reqd: 1, in_list_view: 1 }],
+      ["art", "Art", "Select", {
+        options: "Sichtprüfung\nWiederkehrende Prüfung\nReinigung\nInstandsetzung",
+        in_list_view: 1,
+      }],
+      ["faellig_am", "Fällig am", "Date", { in_list_view: 1 }],
+      ["durchgefuehrt_am", "Durchgeführt am", "Date" ],
+      ["techniker", "Techniker", "Data"],
+      ["ergebnis", "Ergebnis", "Small Text"],
+      ["naechste_faellig", "Nächste Fälligkeit", "Date"],
+    ],
+  },
+
+  {
+    name: "PV Anlagendokumentation",
+    titelfeld: "kapitel",
+    felder: [
+      ["anlage", "Anlage", "Link", { options: "PV Anlage", reqd: 1, in_standard_filter: 1 }],
+      ["kapitel", "Kapitel", "Data", { reqd: 1, in_list_view: 1 }],
+      ["norm", "Norm", "Data", { in_list_view: 1 }],
+      ["pflicht", "Pflichtdokument", "Check", { default: "1" }],
+      ["vorhanden", "Vorhanden", "Check", { in_list_view: 1 }],
+      ["datei", "Datei", "Attach"],
+      ["geprueft_am", "Geprüft am", "Date"],
+      ["geprueft_von", "Geprüft von", "Data"],
+      ["bemerkung", "Bemerkung", "Small Text"],
+    ],
+  },
+
+  {
+    name: "PV Pruefbefund",
+    titelfeld: null,
+    autoname: "hash",
+    felder: [
+      ["anlage", "Anlage", "Link", { options: "PV Anlage", reqd: 1, in_list_view: 1 }],
+      ["art", "Art", "Select", {
+        options: "Erstprüfung\nAußerordentliche Erstprüfung\nWiederkehrende Prüfung",
+        in_list_view: 1,
+      }],
+      ["norm", "Norm", "Data", { default: "ÖVE/ÖNORM EN 62446-1" }],
+      ["geprueft_am", "Geprüft am", "Date", { in_list_view: 1 }],
+      ["pruefer", "Prüfer", "Data"],
+      ["befund", "Befund", "Select", {
+        options: "Mängelfrei\nGeringe Mängel\nSchwere Mängel",
+        in_list_view: 1,
+      }],
+      ["naechste_pruefung", "Nächste Prüfung", "Date"],
+      ["datei", "Prüfprotokoll", "Attach"],
+    ],
+  },
+
+  {
+    name: "PV Steuerprofil",
+    titelfeld: null,
+    autoname: "hash",
+    felder: [
+      ["anlage", "Anlage", "Link", { options: "PV Anlage", reqd: 1, in_list_view: 1 }],
+      ["parameter", "Parameter", "Data", { reqd: 1, in_list_view: 1 }],
+      ["wert", "Wert", "Data", { in_list_view: 1 }],
+      ["einheit", "Einheit", "Data"],
+      ["gesperrt", "Netzseitig vorgegeben", "Check", {
+        description: "Gesetzt, wenn der Wert vom Netzbetreiber stammt und im Portal nicht änderbar ist",
+      }],
+      ["quelle", "Quelle", "Select", { options: "Kunde\nNetzbetreiber\nErrichter" }],
+      ["geaendert_am", "Geändert am", "Datetime"],
+      ["geaendert_von", "Geändert von", "Data"],
+    ],
+  },
+
+  {
+    name: "PV Steuerbefehl",
+    titelfeld: null,
+    autoname: "hash",
+    felder: [
+      ["anlage", "Anlage", "Link", { options: "PV Anlage", reqd: 1, in_list_view: 1 }],
+      ["parameter", "Parameter", "Data", { reqd: 1, in_list_view: 1 }],
+      ["wert_vorher", "Wert vorher", "Data"],
+      ["wert_nachher", "Wert nachher", "Data", { in_list_view: 1 }],
+      ["status", "Status", "Select", {
+        options: "Angenommen\nAbgelehnt\nÜbertragen\nBestätigt\nFehler",
+        in_list_view: 1,
+      }],
+      ["begruendung", "Begründung", "Small Text"],
+      ["benutzer", "Benutzer", "Link", { options: "User" }],
+      ["gesendet_am", "Gesendet am", "Datetime"],
+      ["bestaetigt_am", "Bestätigt am", "Datetime"],
+    ],
+  },
+
+  {
+    name: "Fernwartungszugang",
+    titelfeld: "geraet",
+    felder: [
+      ["geraet", "Gerät", "Data", { reqd: 1, in_list_view: 1 }],
+      ["anlage", "Anlage", "Link", { options: "PV Anlage", reqd: 1, in_standard_filter: 1 }],
+      ["hersteller", "Hersteller", "Data"],
+      ["modell", "Modell", "Data", { in_list_view: 1 }],
+      ["seriennummer", "Seriennummer", "Data"],
+      ["zugangsart", "Zugangsart", "Select", {
+        options: "Zero Trust Tunnel\nVPN\nKein Fernzugriff",
+        default: "Zero Trust Tunnel",
+        in_list_view: 1,
+      }],
+      ["aktiv", "Derzeit offen", "Check", { in_list_view: 1 }],
+      ["firmware", "Firmwarestand", "Data"],
+      ["letzte_verbindung", "Letzte Verbindung", "Datetime"],
+    ],
+  },
+
+  {
+    name: "Fernwartungssitzung",
+    titelfeld: null,
+    autoname: "hash",
+    felder: [
+      ["zugang", "Zugang", "Link", { options: "Fernwartungszugang", reqd: 1 }],
+      ["anlage", "Anlage", "Link", { options: "PV Anlage", in_standard_filter: 1 }],
+      ["techniker", "Techniker", "Data", { reqd: 1, in_list_view: 1 }],
+      ["firma", "Firma", "Data", { in_list_view: 1 }],
+      ["grund", "Grund des Zugriffs", "Small Text", { reqd: 1 }],
+      ["status", "Status", "Select", {
+        options: "Angefragt\nFreigegeben\nAktiv\nBeendet\nAbgelehnt",
+        in_list_view: 1,
+        in_standard_filter: 1,
+      }],
+      ["freigegeben_von", "Freigegeben von", "Data"],
+      ["gueltig_bis", "Gültig bis", "Datetime", {
+        description: "Nach diesem Zeitpunkt schließt der Zugang automatisch",
+      }],
+      ["gestartet_am", "Gestartet am", "Datetime"],
+      ["beendet_am", "Beendet am", "Datetime"],
+      ["protokoll", "Sitzungsprotokoll", "Long Text"],
+    ],
+  },
+
+  {
+    name: "Ladepunkt",
+    titelfeld: "bezeichnung",
+    felder: [
+      ["bezeichnung", "Bezeichnung", "Data", { reqd: 1, in_list_view: 1 }],
+      ["anlage", "Anlage", "Link", { options: "PV Anlage", in_standard_filter: 1 }],
+      ["standort", "Standort", "Data"],
+      ["evse_id", "EVSE-ID", "Data", { unique: 1 }],
+      ["leistung_kw", "Ladeleistung", "Float", { precision: "1", in_list_view: 1, description: "kW" }],
+      ["steckertyp", "Steckertyp", "Select", { options: "\nTyp 2\nCCS\nCHAdeMO\nSchuko" }],
+      ["status", "Status", "Select", {
+        options: "Frei\nLädt\nBelegt\nStörung\nOffline",
+        in_list_view: 1,
+        in_standard_filter: 1,
+      }],
+      ["ocpp_version", "OCPP-Version", "Data"],
+      ["oeffentlich", "Öffentlich zugänglich", "Check"],
+      ["tarif_ct_kwh", "Tarif", "Float", { precision: "2", description: "ct/kWh" }],
+    ],
+  },
+
+  {
+    name: "Ladevorgang",
+    titelfeld: null,
+    autoname: "hash",
+    felder: [
+      ["ladepunkt", "Ladepunkt", "Link", { options: "Ladepunkt", reqd: 1, in_list_view: 1 }],
+      ["tankkarte", "Tankkarte", "Link", { options: "Tankkarte", in_standard_filter: 1 }],
+      ["fahrzeug", "Fahrzeug", "Data"],
+      ["fahrer", "Fahrer", "Data"],
+      ["kostenstelle", "Kostenstelle", "Data", { in_standard_filter: 1 }],
+      ["abschnitt_werte", "Messwerte", "Section Break"],
+      ["start", "Beginn", "Datetime", { in_list_view: 1 }],
+      ["ende", "Ende", "Datetime"],
+      ["energie_kwh", "Geladene Energie", "Float", { precision: "2", in_list_view: 1, description: "kWh" }],
+      ["pv_anteil_kwh", "Davon aus PV", "Float", { precision: "2", description: "kWh" }],
+      ["kosten", "Kosten", "Currency"],
+      ["abgerechnet", "Abgerechnet", "Check"],
+    ],
+  },
+
+  {
+    name: "Tankkarte",
+    titelfeld: "kartennummer",
+    felder: [
+      ["kartennummer", "Kartennummer", "Data", { reqd: 1, unique: 1, in_list_view: 1 }],
+      ["inhaber", "Inhaber", "Data", { in_list_view: 1 }],
+      ["fahrzeug", "Fahrzeug", "Data"],
+      ["kennzeichen", "Kennzeichen", "Data"],
+      ["kostenstelle", "Kostenstelle", "Data", { in_standard_filter: 1 }],
+      ["rfid_uid", "RFID-Kennung", "Data"],
+      ["status", "Status", "Select", {
+        options: "Aktiv\nGesperrt\nVerloren",
+        default: "Aktiv",
+        in_list_view: 1,
+        in_standard_filter: 1,
+      }],
+      ["gueltig_bis", "Gültig bis", "Date"],
+      ["limit_kwh_monat", "Monatslimit", "Float", { precision: "0", description: "kWh" }],
+    ],
+  },
+
+  {
+    name: "CO2 Zertifikat",
+    titelfeld: "zertifikatsnummer",
+    felder: [
+      ["kunde", "Kunde", "Link", { options: "Customer", reqd: 1, in_standard_filter: 1 }],
+      ["anlage", "Anlage", "Link", { options: "PV Anlage" }],
+      ["zertifikatsnummer", "Zertifikatsnummer", "Data", { in_list_view: 1 }],
+      ["zeitraum_von", "Zeitraum von", "Date", { reqd: 1, in_list_view: 1 }],
+      ["zeitraum_bis", "Zeitraum bis", "Date", { reqd: 1 }],
+      ["erzeugung_kwh", "Zugrunde liegende Erzeugung", "Float", { precision: "0", description: "kWh" }],
+      ["co2_vermieden_kg", "Vermiedenes CO₂", "Float", { precision: "0", description: "kg" }],
+      ["menge_t", "Handelbare Menge", "Float", { precision: "0", in_list_view: 1, description: "t" }],
+      ["status", "Status", "Select", {
+        options: "Entwurf\nZertifiziert\nZum Handel freigegeben\nVerkauft",
+        default: "Entwurf",
+        in_list_view: 1,
+        in_standard_filter: 1,
+      }],
+      ["registriert_am", "Registriert am", "Date"],
+    ],
+  },
+
+  {
+    name: "CO2 Handel",
+    titelfeld: null,
+    autoname: "hash",
+    felder: [
+      ["zertifikat", "Zertifikat", "Link", { options: "CO2 Zertifikat", reqd: 1, in_list_view: 1 }],
+      ["menge_t", "Menge", "Float", { precision: "0", in_list_view: 1, description: "t" }],
+      ["preis_je_t", "Preis je Tonne", "Currency"],
+      ["erloes", "Erlös", "Currency", { in_list_view: 1 }],
+      ["handelspartner", "Handelspartner", "Data"],
+      ["status", "Status", "Select", { options: "Angeboten\nAbgeschlossen\nStorniert" }],
+      ["handelsdatum", "Handelsdatum", "Date"],
+      ["abgerechnet", "Abgerechnet", "Check"],
+    ],
+  },
+
+  {
+    name: "Vollmacht",
+    titelfeld: "bevollmaechtigter",
+    felder: [
+      ["kunde", "Vollmachtgeber", "Link", { options: "Customer", reqd: 1, in_standard_filter: 1 }],
+      ["bevollmaechtigter", "Bevollmächtigter", "Data", { reqd: 1, in_list_view: 1 }],
+      ["zweck", "Zweck", "Data", { in_list_view: 1 }],
+      ["umfang", "Umfang", "Small Text"],
+      ["status", "Status", "Select", {
+        options: "Entwurf\nErteilt\nWiderrufen\nAbgelaufen",
+        default: "Entwurf",
+        in_list_view: 1,
+        in_standard_filter: 1,
+      }],
+      ["abschnitt_zeiten", "Gültigkeit", "Section Break"],
+      ["erteilt_am", "Erteilt am", "Date"],
+      ["gueltig_bis", "Gültig bis", "Date"],
+      ["widerrufen_am", "Widerrufen am", "Date"],
+      ["unterzeichner", "Unterzeichner", "Data"],
+      ["dokument", "Unterzeichnete Vollmacht", "Attach"],
+    ],
+  },
+
+  {
+    name: "Energiegemeinschaft",
+    titelfeld: "bezeichnung",
+    felder: [
+      ["bezeichnung", "Bezeichnung", "Data", { reqd: 1, in_list_view: 1 }],
+      ["art", "Art", "Select", {
+        options: "EEG\nBEG\nGEA",
+        in_list_view: 1,
+        in_standard_filter: 1,
+        description: "EEG = Erneuerbare-Energie-Gemeinschaft, BEG = Bürgerenergiegemeinschaft, GEA = Gemeinschaftliche Erzeugungsanlage",
+      }],
+      ["rechtsform", "Rechtsform", "Data"],
+      ["reichweite", "Reichweite", "Select", {
+        options: "Lokal\nRegional\nBundesweit",
+        description: "Bestimmt den Rabatt auf das Netznutzungsentgelt",
+      }],
+      ["netzbetreiber", "Netzbetreiber", "Data"],
+      ["gegruendet_am", "Gegründet am", "Date"],
+      ["mitglieder_anzahl", "Anzahl Mitglieder", "Int"],
+      ["erzeugung_kwp", "Erzeugungsleistung", "Float", { precision: "2", description: "kWp" }],
+      ["status", "Status", "Select", { options: "In Gründung\nAktiv\nRuhend", in_list_view: 1 }],
+    ],
+  },
+
+  {
+    name: "EG Mitglied",
+    titelfeld: "mitglied",
+    felder: [
+      ["gemeinschaft", "Gemeinschaft", "Link", { options: "Energiegemeinschaft", reqd: 1, in_standard_filter: 1 }],
+      ["mitglied", "Mitglied", "Data", { reqd: 1, in_list_view: 1 }],
+      ["zaehlpunkt", "Zählpunktbezeichnung", "Data", { length: 33 }],
+      ["rolle", "Rolle", "Select", {
+        options: "Erzeuger\nVerbraucher\nErzeuger und Verbraucher",
+        in_list_view: 1,
+      }],
+      ["beigetreten_am", "Beigetreten am", "Date"],
+      ["anteil_prozent", "Anteil", "Float", { precision: "2", in_list_view: 1, description: "%" }],
+      ["aktiv", "Aktiv", "Check", { default: "1" }],
+    ],
+  },
+
+  {
+    name: "EG Aufteilung",
+    titelfeld: null,
+    autoname: "hash",
+    felder: [
+      ["gemeinschaft", "Gemeinschaft", "Link", { options: "Energiegemeinschaft", reqd: 1, in_list_view: 1 }],
+      ["zeitraum_von", "Zeitraum von", "Date", { in_list_view: 1 }],
+      ["zeitraum_bis", "Zeitraum bis", "Date"],
+      ["modell", "Aufteilungsmodell", "Select", { options: "Statisch\nDynamisch" }],
+      ["erzeugung_kwh", "Erzeugung", "Float", { precision: "2", description: "kWh" }],
+      ["verteilt_kwh", "In der Gemeinschaft verteilt", "Float", { precision: "2", description: "kWh" }],
+      ["ueberschuss_kwh", "Überschuss", "Float", { precision: "2", description: "kWh" }],
+      ["ersparnis_netzentgelt", "Ersparnis Netzentgelt", "Currency"],
+    ],
+  },
+
+  {
+    name: "Boersenpreis",
+    titelfeld: null,
+    autoname: "hash",
+    felder: [
+      ["zeitpunkt", "Zeitpunkt", "Datetime", { reqd: 1, in_list_view: 1 }],
+      ["preis_eur_mwh", "Preis", "Float", { precision: "2", in_list_view: 1, description: "EUR/MWh" }],
+      ["marktgebiet", "Marktgebiet", "Data", { default: "AT" }],
+    ],
+  },
+
+  {
+    name: "Audit Protokoll",
+    titelfeld: null,
+    autoname: "hash",
+    /**
+     * Nur anlegen, nie aendern oder loeschen - das ist der Kern der
+     * Nachweisfuehrung nach NIS2.
+     */
+    nurAnlegen: true,
+    felder: [
+      ["zeitpunkt", "Zeitpunkt", "Datetime", { reqd: 1, in_list_view: 1 }],
+      ["benutzer", "Benutzer", "Data", { in_list_view: 1, in_standard_filter: 1 }],
+      ["kategorie", "Kategorie", "Select", {
+        options: "anmeldung\nsteuerung\nfernwartung\nvollmacht\nstammdaten\nberechtigung\nabrechnung\nsicherheitsvorfall",
+        in_list_view: 1,
+        in_standard_filter: 1,
+      }],
+      ["aktion", "Vorgang", "Data", { in_list_view: 1 }],
+      ["ergebnis", "Ergebnis", "Select", {
+        options: "erfolg\nabgelehnt\nfehler",
+        in_list_view: 1,
+        in_standard_filter: 1,
+      }],
+      ["objekt", "Betroffenes Objekt", "Data"],
+      ["wert_vorher", "Wert vorher", "Data"],
+      ["wert_nachher", "Wert nachher", "Data"],
+      ["begruendung", "Begründung", "Small Text"],
+      ["ip_adresse", "IP-Adresse", "Data"],
+    ],
+  },
+
+  {
+    name: "Sicherheitsvorfall",
+    titelfeld: "betreff",
+    felder: [
+      ["betreff", "Betreff", "Data", { reqd: 1, in_list_view: 1 }],
+      ["anlage", "Anlage", "Link", { options: "PV Anlage", in_standard_filter: 1 }],
+      ["kategorie", "Kategorie", "Select", {
+        options: "Unbefugter Zugriff\nSchadsoftware\nAusfall\nDatenabfluss\nManipulation\nSonstiges",
+        in_list_view: 1,
+      }],
+      ["schweregrad", "Schweregrad", "Select", {
+        options: "Gering\nMittel\nHoch\nKritisch",
+        in_list_view: 1,
+        in_standard_filter: 1,
+      }],
+      ["status", "Status", "Select", {
+        options: "Erkannt\nIn Bearbeitung\nGemeldet\nBehoben",
+        default: "Erkannt",
+        in_list_view: 1,
+      }],
+      ["abschnitt_meldung", "Meldepflicht nach NIS2", "Section Break"],
+      ["bekannt_seit", "Bekannt seit", "Datetime", {
+        reqd: 1,
+        description: "Ab diesem Zeitpunkt laufen die Meldefristen von 24 und 72 Stunden",
+      }],
+      ["meldepflichtig", "Meldepflichtig", "Check"],
+      ["fruehwarnung_am", "Frühwarnung abgegeben am", "Datetime"],
+      ["meldung_am", "Vorfallsmeldung abgegeben am", "Datetime"],
+      ["abschluss_am", "Abschlussbericht abgegeben am", "Datetime"],
+      ["abschnitt_inhalt", "Beschreibung", "Section Break"],
+      ["beschreibung", "Beschreibung", "Small Text"],
+      ["massnahmen", "Ergriffene Maßnahmen", "Small Text"],
+    ],
+  },
+
+  {
+    name: "Portal Benutzer",
+    titelfeld: "vollname",
+    felder: [
+      ["benutzer", "Benutzer", "Link", { options: "User", reqd: 1, unique: 1, in_list_view: 1 }],
+      ["kunde", "Kunde", "Link", { options: "Customer", reqd: 1, in_standard_filter: 1 }],
+      ["vollname", "Vollständiger Name", "Data", { in_list_view: 1 }],
+      ["rolle", "Portalrolle", "Select", {
+        options: "geschaeftsfuehrung\ntechnik\nbuchhaltung\nfuhrpark\nbetrachter",
+        in_list_view: 1,
+        in_standard_filter: 1,
+      }],
+      ["telefon", "Telefon", "Data"],
+      ["aktiv", "Aktiv", "Check", { default: "1" }],
+      ["mfa_aktiv", "Zwei-Faktor-Anmeldung", "Check" ],
+      ["letzte_anmeldung", "Letzte Anmeldung", "Datetime"],
+    ],
+  },
+
+  {
+    name: "Support Ticket",
+    titelfeld: "betreff",
+    felder: [
+      ["betreff", "Betreff", "Data", { reqd: 1, in_list_view: 1 }],
+      ["anlage", "Anlage", "Link", { options: "PV Anlage", in_standard_filter: 1 }],
+      ["kategorie", "Kategorie", "Data", { in_list_view: 1 }],
+      ["status", "Status", "Select", {
+        options: "Offen\nIn Bearbeitung\nWarten auf Kunde\nGeschlossen",
+        default: "Offen",
+        in_list_view: 1,
+        in_standard_filter: 1,
+      }],
+      ["prioritaet", "Dringlichkeit", "Select", {
+        options: "Niedrig\nMittel\nHoch\nKritisch",
+        default: "Mittel",
+      }],
+      ["beschreibung", "Beschreibung", "Small Text"],
+      ["abschnitt_bearbeitung", "Bearbeitung", "Section Break"],
+      ["eroeffnet_am", "Eröffnet am", "Date"],
+      ["sla_reaktion_bis", "Reaktion zugesagt bis", "Datetime"],
+      ["bearbeiter", "Bearbeiter", "Data"],
+      ["geschlossen_am", "Geschlossen am", "Date"],
+    ],
+  },
+];

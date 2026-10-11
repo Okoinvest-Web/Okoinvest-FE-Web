@@ -1,0 +1,153 @@
+import { beforeEach, describe, expect, it } from 'vitest'
+import { mockRequest, resetMockData } from '@/api/mock/server.js'
+import { seedAuditLog } from '@/api/mock/seed-audit.js'
+
+const ruf = (url, params) => mockRequest({ url, params })
+
+beforeEach(() => {
+  resetMockData()
+  seedAuditLog()
+})
+
+describe('netops.api.ops.connector_status', () => {
+  it('liefert je Konnektor Zustand und offene Befunde', async () => {
+    const liste = await ruf('netops.api.ops.connector_status', {})
+    expect(liste).toHaveLength(4)
+
+    const opnsense = liste.find((c) => c.connector_name === 'opnsense-fw-os-01')
+    expect(opnsense.health).toBe('ok')
+    expect(opnsense.open_findings).toBe(2)
+    expect(opnsense.read_only).toBe(1)
+  })
+
+  it('kennzeichnet abgeschaltete Konnektoren getrennt von gesunden', async () => {
+    const liste = await ruf('netops.api.ops.connector_status', {})
+    const truenas = liste.find((c) => c.connector_name === 'truenas-nas-tn-01')
+    expect(truenas.health).toBe('disabled')
+    expect(truenas.overdue).toBe(false)
+  })
+
+  it('meldet einen überfälligen Konnektor', async () => {
+    // Intervall 30 min, letzter Lauf über eine Stunde her → überfällig.
+    const liste = await ruf('netops.api.ops.connector_status', {})
+    const pbs = liste.find((c) => c.connector_name === 'pbs-srv-pbs-01')
+    expect(pbs.overdue).toBe(true)
+    expect(pbs.health).toBe('stale')
+  })
+})
+
+describe('netops.api.ops.drift_list und set_drift_state', () => {
+  it('filtert nach Zustand', async () => {
+    const offen = await ruf('netops.api.ops.drift_list', { state: 'open' })
+    expect(offen.length).toBe(3)
+    expect(offen.every((d) => d.state === 'open')).toBe(true)
+  })
+
+  it('übernimmt einen Befund und protokolliert das', async () => {
+    const vorher = (await ruf('netops.api.audit.verify_chain', {})).length
+
+    const ergebnis = await ruf('netops.api.ops.set_drift_state', {
+      name: 'DRIFT-00001',
+      state: 'accepted',
+    })
+    expect(ergebnis.state).toBe('accepted')
+    expect(ergebnis.resolved).toBeTruthy()
+
+    const kette = await ruf('netops.api.audit.verify_chain', {})
+    expect(kette.length).toBe(vorher + 1)
+    expect(kette.ok).toBe(true)
+
+    const log = await ruf('netops.api.audit.audit_log', { limit: 1 })
+    expect(log[0].action).toBe('drift_accepted')
+  })
+
+  it('ändert das Soll-Dokument nicht', async () => {
+    const vorher = await ruf('frappe.client.get', {
+      doctype: 'Network Device',
+      name: 'FW-OS-01',
+    })
+    await ruf('netops.api.ops.set_drift_state', { name: 'DRIFT-00001', state: 'accepted' })
+    const nachher = await ruf('frappe.client.get', {
+      doctype: 'Network Device',
+      name: 'FW-OS-01',
+    })
+    // DRIFT-00001 betrifft die Firmware. "Übernehmen" schließt nur den Befund.
+    expect(nachher.firmware).toBe(vorher.firmware)
+  })
+
+  it('weist unbekannte Zustände zurück', async () => {
+    await expect(
+      ruf('netops.api.ops.set_drift_state', { name: 'DRIFT-00001', state: 'egal' }),
+    ).rejects.toThrow(/Zustand muss/)
+  })
+})
+
+describe('netops.api.ops.alert_list', () => {
+  it('sortiert nach Schweregrad', async () => {
+    const liste = await ruf('netops.api.ops.alert_list', {})
+    expect(liste[0].severity).toBe('critical')
+    const raenge = { critical: 0, high: 1, medium: 2, low: 3 }
+    for (let i = 1; i < liste.length; i++) {
+      expect(raenge[liste[i].severity]).toBeGreaterThanOrEqual(raenge[liste[i - 1].severity])
+    }
+  })
+
+  it('filtert nach Zustand und Mandant', async () => {
+    const neu = await ruf('netops.api.ops.alert_list', { state: 'new' })
+    expect(neu.every((a) => a.alert_state === 'new')).toBe(true)
+
+    const de = await ruf('netops.api.ops.alert_list', { tenant: 'TEN-0002' })
+    expect(de.every((a) => a.tenant === 'TEN-0002')).toBe(true)
+    expect(de.length).toBe(1)
+  })
+})
+
+describe('netops.api.backup.backup_status', () => {
+  it('stuft einen fehlgeschlagenen Verify als kritisch ein, auch bei frischem Backup', async () => {
+    const ampel = await ruf('netops.api.backup.backup_status', {})
+    const dc = ampel.objects.find((o) => o.backup_object === 'vm/103-dc01')
+    expect(dc.backup_age_hours).toBeLessThan(24)
+    expect(dc.verify_status).toBe('failed')
+    expect(dc.level).toBe('critical')
+    expect(dc.reasons.join(' ')).toMatch(/ungültig/)
+  })
+
+  it('meldet ein zu altes Backup als Warnung', async () => {
+    const ampel = await ruf('netops.api.backup.backup_status', {})
+    const mail = ampel.objects.find((o) => o.backup_object === 'vm/104-mail')
+    expect(mail.level).toBe('warning')
+    expect(mail.reasons.some((r) => r.includes('Letzte Sicherung'))).toBe(true)
+  })
+
+  it('meldet einen veralteten Offsite-Stand', async () => {
+    const ampel = await ruf('netops.api.backup.backup_status', {})
+    const monitoring = ampel.objects.find((o) => o.backup_object === 'ct/201-monitoring')
+    expect(monitoring.reasons.some((r) => r.includes('Offsite'))).toBe(true)
+  })
+
+  it('stuft ein nie gesichertes Objekt als kritisch ein', async () => {
+    const ampel = await ruf('netops.api.backup.backup_status', {})
+    const web = ampel.objects.find((o) => o.backup_object === 'vm/301-web-de')
+    expect(web.level).toBe('critical')
+    expect(web.backup_age_hours).toBeNull()
+  })
+
+  it('sortiert die kritischen Objekte nach oben', async () => {
+    const ampel = await ruf('netops.api.backup.backup_status', {})
+    expect(ampel.objects[0].level).toBe('critical')
+  })
+
+  it('warnt bei Datastores über 80 Prozent und rechnet "voll am"', async () => {
+    const ampel = await ruf('netops.api.backup.backup_status', {})
+    const offsite = ampel.datastores.find((d) => d.datastore_name === 'ds-offsite')
+    expect(offsite.level).toBe('warning')
+    expect(offsite.days_until_full).toBeGreaterThan(0)
+    expect(offsite.full_on).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+  })
+
+  it('zählt die Ampel konsistent', async () => {
+    const ampel = await ruf('netops.api.backup.backup_status', {})
+    const z = ampel.summary
+    expect(z.ok + z.warning + z.critical).toBe(z.total)
+  })
+})

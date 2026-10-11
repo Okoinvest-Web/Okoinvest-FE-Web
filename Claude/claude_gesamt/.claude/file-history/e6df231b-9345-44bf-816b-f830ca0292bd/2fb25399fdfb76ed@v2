@@ -1,0 +1,261 @@
+<script setup lang="ts">
+/**
+ * Mangel erfassen und bearbeiten (FA-060, FA-063, FA-064).
+ *
+ * Dient zugleich der schnellen Erfassung mit Kamera vom Dashboard aus und der
+ * Behebungsdokumentation samt Nachweisfoto.
+ */
+import { computed, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+
+import AnlagenWaehler from '@/components/AnlagenWaehler.vue'
+import AppIcon from '@/components/AppIcon.vue'
+import BasisDialog from '@/components/BasisDialog.vue'
+import FotoAufnahme from '@/components/FotoAufnahme.vue'
+import StatusAbzeichen from '@/components/StatusAbzeichen.vue'
+import { db, neueId } from '@/lib/db'
+import { datum, isoDatum } from '@/lib/format'
+import { positionEinmalig } from '@/lib/geo'
+import { speichernUndSynchronisieren } from '@/lib/sync'
+import type { Mangel } from '@/lib/typen'
+import { useStammdaten } from '@/stores/stammdaten'
+import { useSync } from '@/stores/sync'
+import { useUi } from '@/stores/ui'
+
+const props = defineProps<{ lokaleId?: string }>()
+
+const route = useRoute()
+const router = useRouter()
+const stammdaten = useStammdaten()
+const sync = useSync()
+const ui = useUi()
+
+const mangel = ref<Mangel | null>(null)
+const laedt = ref(true)
+const speichert = ref(false)
+const anlagenwahlOffen = ref(false)
+
+const istNeu = computed(() => !props.lokaleId)
+const anlage = computed(() => (mangel.value ? stammdaten.anlage(mangel.value.anlage) : undefined))
+
+const istErledigt = computed(() =>
+  ['Erledigt', 'Verifiziert'].includes(mangel.value?.status ?? ''),
+)
+
+function leererMangel(): Mangel {
+  return {
+    lokale_id: neueId(),
+    titel: '',
+    anlage: (route.query.anlage as string) ?? '',
+    kategorie: stammdaten.kategorien[0]?.name ?? '',
+    schweregrad: 'B',
+    status: 'Offen',
+    prioritaet: 'Mittel',
+    beschreibung: '',
+    gemeldet_am: isoDatum(),
+    zugewiesen_an: stammdaten.mitarbeiter,
+    fotos: [],
+    erledigt_fotos: [],
+  }
+}
+
+/** Fälligkeit aus dem SLA des Schweregrads ableiten (FA-102). */
+function fristNeuBerechnen() {
+  if (!mangel.value) return
+  const sla = stammdaten.schweregrad(mangel.value.schweregrad)?.sla_tage ?? 14
+  mangel.value.faellig_am = isoDatum(new Date(Date.now() + sla * 86_400_000))
+}
+
+function anlageUebernehmen(name: string) {
+  if (mangel.value) mangel.value.anlage = name
+  anlagenwahlOffen.value = false
+}
+
+async function speichern() {
+  const doc = mangel.value
+  if (!doc) return
+
+  if (!doc.titel.trim()) return ui.warnung('Bitte einen Titel angeben.')
+  if (!doc.anlage) return ui.warnung('Bitte eine Anlage wählen.')
+  if (!doc.beschreibung.trim()) return ui.warnung('Bitte eine Beschreibung angeben.')
+  if (istErledigt.value) {
+    if (!doc.massnahme?.trim()) return ui.warnung('Bitte die durchgeführte Maßnahme dokumentieren.')
+    if (stammdaten.einstellungen.nachweisfoto_pflicht && !doc.erledigt_fotos?.length) {
+      return ui.warnung('Zur Erledigung ist mindestens ein Nachweisfoto erforderlich.')
+    }
+    if (!doc.erledigt_am) doc.erledigt_am = isoDatum()
+  }
+
+  speichert.value = true
+  try {
+    await speichernUndSynchronisieren(
+      'Mangel',
+      doc.lokale_id,
+      { doctype: 'Mangel', ...doc },
+      doc.name ? 'update' : 'create',
+    )
+    await sync.zaehlerAktualisieren()
+    ui.erfolg(istNeu.value ? 'Mangel erfasst.' : 'Mangel gespeichert.')
+    await router.replace({ name: 'maengel' })
+  } catch (fehler) {
+    ui.fehler((fehler as Error).message)
+  } finally {
+    speichert.value = false
+  }
+}
+
+onMounted(async () => {
+  if (props.lokaleId) {
+    mangel.value = (await db.maengel.get(props.lokaleId)) ?? null
+    if (!mangel.value) ui.warnung('Mangel lokal nicht gefunden.')
+  } else {
+    mangel.value = leererMangel()
+    fristNeuBerechnen()
+    const position = await positionEinmalig().catch(() => null)
+    if (position && mangel.value) {
+      mangel.value.gps_lat = position.lat
+      mangel.value.gps_lng = position.lng
+    }
+  }
+  laedt.value = false
+})
+</script>
+
+<template>
+  <p v-if="laedt" class="py-8 text-center text-sm text-slate-500">Wird geladen …</p>
+
+  <div v-else-if="mangel" class="mx-auto max-w-feld space-y-4">
+    <div v-if="!istNeu" class="flex flex-wrap items-center gap-2">
+      <StatusAbzeichen :wert="mangel.schweregrad" />
+      <StatusAbzeichen :wert="mangel.status" />
+      <span v-if="!mangel.name" class="abzeichen bg-amber-100 text-amber-900">noch nicht synchronisiert</span>
+      <span class="ml-auto text-xs text-slate-400">
+        gemeldet {{ datum(mangel.gemeldet_am) }}
+        <template v-if="mangel.name"> · {{ mangel.name }}</template>
+      </span>
+    </div>
+
+    <!-- Anlage -->
+    <div class="karte p-4">
+      <span class="beschriftung">Anlage</span>
+      <button class="tap flex w-full items-center gap-2 rounded-xl border border-slate-300 px-3
+                     text-left dark:border-slate-700"
+              @click="anlagenwahlOffen = true">
+        <span class="flex-1 truncate">
+          {{ anlage?.anlage_name ?? 'Anlage wählen …' }}
+        </span>
+        <AppIcon name="pfeilRechts" :groesse="18" class="text-slate-400" />
+      </button>
+    </div>
+
+    <!-- Grunddaten -->
+    <div class="karte space-y-3 p-4">
+      <label>
+        <span class="beschriftung">Titel</span>
+        <input v-model="mangel.titel" class="feld" placeholder="Kurz und eindeutig" />
+      </label>
+
+      <label>
+        <span class="beschriftung">Beschreibung</span>
+        <textarea v-model="mangel.beschreibung" class="feld min-h-[110px]" rows="4"
+                  placeholder="Was wurde festgestellt? Wo genau? Welche Auswirkung?" />
+      </label>
+
+      <div class="grid gap-3 tablet:grid-cols-2">
+        <label>
+          <span class="beschriftung">Kategorie</span>
+          <select v-model="mangel.kategorie" class="feld">
+            <option v-for="k in stammdaten.kategorien" :key="k.name" :value="k.name">
+              {{ k.kategorie_name }}
+            </option>
+          </select>
+        </label>
+        <label>
+          <span class="beschriftung">Schweregrad</span>
+          <select v-model="mangel.schweregrad" class="feld" @change="fristNeuBerechnen">
+            <option v-for="s in stammdaten.schweregrade" :key="s.code" :value="s.code">
+              {{ s.code }} – {{ s.bezeichnung }} (SLA {{ s.sla_tage }} Tage)
+            </option>
+          </select>
+        </label>
+        <label>
+          <span class="beschriftung">Status</span>
+          <select v-model="mangel.status" class="feld">
+            <option>Offen</option>
+            <option>In Bearbeitung</option>
+            <option>Erledigt</option>
+            <option v-if="stammdaten.istBauleiter">Verifiziert</option>
+            <option v-if="stammdaten.istBauleiter">Verworfen</option>
+          </select>
+        </label>
+        <label>
+          <span class="beschriftung">Fällig am</span>
+          <input v-model="mangel.faellig_am" class="feld" type="date" />
+        </label>
+        <label>
+          <span class="beschriftung">Betroffene Komponente</span>
+          <input v-model="mangel.komponente" class="feld" placeholder="z. B. WR2, String 7, Modul B-14" />
+        </label>
+        <label>
+          <span class="beschriftung">Priorität</span>
+          <select v-model="mangel.prioritaet" class="feld">
+            <option>Niedrig</option>
+            <option>Mittel</option>
+            <option>Hoch</option>
+            <option>Kritisch</option>
+          </select>
+        </label>
+      </div>
+    </div>
+
+    <!-- Fotos -->
+    <div class="karte p-4">
+      <FotoAufnahme
+        :model-value="mangel.fotos ?? []"
+        titel="Fotos des Mangels"
+        :gehoert-zu="mangel.lokale_id"
+        @update:model-value="(f) => (mangel!.fotos = f)"
+      />
+    </div>
+
+    <!-- Behebung -->
+    <div v-if="istErledigt || mangel.status === 'In Bearbeitung'" class="karte space-y-3 p-4">
+      <h3 class="font-semibold">Behebung</h3>
+      <label>
+        <span class="beschriftung">Durchgeführte Maßnahme</span>
+        <textarea v-model="mangel.massnahme" class="feld min-h-[96px]" rows="3"
+                  placeholder="Was wurde gemacht? Welches Material wurde verbaut?" />
+      </label>
+      <label v-if="istErledigt">
+        <span class="beschriftung">Erledigt am</span>
+        <input v-model="mangel.erledigt_am" class="feld" type="date" />
+      </label>
+      <FotoAufnahme
+        :model-value="mangel.erledigt_fotos ?? []"
+        titel="Nachweisfotos"
+        :pflicht="istErledigt && Boolean(stammdaten.einstellungen.nachweisfoto_pflicht)"
+        :gehoert-zu="mangel.lokale_id"
+        @update:model-value="(f) => (mangel!.erledigt_fotos = f)"
+      />
+    </div>
+
+    <div class="flex gap-2">
+      <button class="knopf-sekundaer flex-1" @click="router.back()">Abbrechen</button>
+      <button class="knopf-primaer flex-[2]" :disabled="speichert" @click="speichern">
+        <AppIcon name="check" :groesse="20" />
+        {{ speichert ? 'Wird gespeichert …' : 'Speichern' }}
+      </button>
+    </div>
+
+    <p class="pb-4 text-center text-xs text-slate-400">
+      Wird lokal gespeichert und bei Verbindung automatisch übertragen.
+    </p>
+
+    <BasisDialog :offen="anlagenwahlOffen" titel="Anlage wählen" @schliessen="anlagenwahlOffen = false">
+      <AnlagenWaehler
+        :model-value="mangel.anlage"
+        @update:model-value="anlageUebernehmen"
+      />
+    </BasisDialog>
+  </div>
+</template>

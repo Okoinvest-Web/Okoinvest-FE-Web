@@ -1,0 +1,176 @@
+<template>
+  <div>
+    <PageHeader title="Fernwartung" :subtitle="untertitel" />
+
+    <div class="p-6">
+      <div v-if="fern.data" class="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <StatCard
+          v-for="kachel in kacheln"
+          :key="kachel.label"
+          :label="kachel.label"
+          :wert="kachel.wert"
+          :hinweis="kachel.hinweis"
+          :level="kachel.level"
+        />
+      </div>
+
+      <section class="mb-8">
+        <h2 class="mb-3 text-base font-semibold text-ink-gray-8">Agenten</h2>
+        <DataTable
+          tabellen-id="RemoteView-1"
+          :columns="agentSpalten"
+          :rows="fern.data?.agents || []"
+          :loading="fern.loading"
+        >
+          <template #zelle-agent_name="{ zeile }">
+            <span class="block font-medium text-ink-gray-9">{{ zeile.agent_name }}</span>
+            <RouterLink
+              v-if="zeile.device"
+              :to="'/devices/' + zeile.device"
+              class="block text-sm text-ink-gray-5 underline decoration-outline-gray-3 underline-offset-2"
+            >
+              {{ zeile.device }}
+            </RouterLink>
+          </template>
+          <template #zelle-online="{ zeile }">
+            <StatusDot
+              :level="zeile.online ? 'ok' : 'warning'"
+              :text="zeile.online ? 'online' : 'offline'"
+              klein
+            />
+          </template>
+          <template #zelle-aktion="{ zeile }">
+            <div class="flex justify-end gap-2">
+              <Button size="sm" :disabled="!zeile.online" @click="hinweis(zeile, 'terminal')">
+                Terminal
+              </Button>
+              <Button size="sm" :disabled="!zeile.online" @click="hinweis(zeile, 'desktop')">
+                Desktop
+              </Button>
+            </div>
+          </template>
+        </DataTable>
+      </section>
+
+      <section>
+        <h2 class="mb-3 text-base font-semibold text-ink-gray-8">Sitzungen</h2>
+        <DataTable
+          tabellen-id="RemoteView-2"
+          :columns="sitzungSpalten"
+          :rows="fern.data?.sessions || []"
+        >
+          <template #zelle-session_kind="{ zeile }">
+            <Badge theme="gray">{{ ART[zeile.session_kind] || zeile.session_kind }}</Badge>
+            <StatusDot v-if="zeile.running" class="ml-2" level="ok" text="läuft" klein />
+          </template>
+          <template #zelle-dauer="{ zeile }">
+            <span v-if="zeile.duration_minutes === null" class="text-ink-gray-4">läuft</span>
+            <span v-else class="tabular-nums">{{ zeile.duration_minutes }} min</span>
+          </template>
+          <template #zelle-ticket="{ zeile }">
+            <StatusDot v-if="!zeile.ticket" level="warning" text="ohne Ticket" klein />
+            <span v-else class="font-mono text-sm">{{ zeile.ticket }}</span>
+          </template>
+          <template #zelle-nachweis="{ zeile }">
+            <div class="flex flex-wrap gap-x-4 gap-y-1">
+              <StatusDot
+                :level="zeile.recorded ? 'ok' : 'critical'"
+                :text="zeile.recorded ? 'aufgezeichnet' : 'ohne Aufzeichnung'"
+                klein
+              />
+              <StatusDot
+                :level="zeile.step_up_ok ? 'ok' : 'critical'"
+                :text="zeile.step_up_ok ? 'Step-up' : 'ohne Step-up'"
+                klein
+              />
+            </div>
+          </template>
+        </DataTable>
+      </section>
+
+      <p class="mt-6 text-xs text-ink-gray-4">
+        Nach Fachkonzept 2.7 wird MeshCentral eingebunden, nicht nachgebaut: Sitzungen starten per
+        SSO aus dem Gerätedatensatz, jede Sitzung wird mit Benutzer, Zeitpunkt, Gerät und Ticket
+        protokolliert und aufgezeichnet. Der Start einer Sitzung braucht die Einbettung und den
+        Step-up und ist deshalb hier nicht ausführbar – die Schaltflächen sagen das auch.
+      </p>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed } from 'vue'
+import { Badge, Button, createResource, toast } from 'frappe-ui'
+import PageHeader from '@/components/PageHeader.vue'
+import DataTable from '@/components/DataTable.vue'
+import StatCard from '@/components/StatCard.vue'
+
+const ART = { terminal: 'Terminal', desktop: 'Desktop', file: 'Dateien' }
+
+const fern = createResource({ url: 'netops.api.netsvc.remote_overview', auto: true })
+
+const agentSpalten = [
+  { key: 'agent_name', label: 'Agent', width: '220px' },
+  { key: 'platform', label: 'Plattform', muted: true, width: '160px' },
+  { key: 'agent_version', label: 'Version', muted: true, width: '110px' },
+  { key: 'agent_ip', label: 'IP', numeric: true, width: '140px' },
+  { key: 'online', label: 'Zustand', width: '130px' },
+  { key: 'session_count', label: 'Sitzungen', align: 'right', numeric: true, width: '110px' },
+  { key: 'aktion', label: '', align: 'right', width: '210px' },
+]
+
+const sitzungSpalten = [
+  { key: 'device', label: 'Gerät', width: '160px' },
+  { key: 'session_kind', label: 'Art', width: '170px' },
+  { key: 'operator', label: 'Benutzer', muted: true, width: '230px' },
+  { key: 'started', label: 'Start', numeric: true, muted: true, width: '170px' },
+  { key: 'dauer', label: 'Dauer', align: 'right', width: '100px' },
+  { key: 'ticket', label: 'Ticket', width: '150px' },
+  { key: 'nachweis', label: 'Nachweis' },
+]
+
+const kacheln = computed(() => {
+  const z = fern.data?.summary
+  if (!z) return []
+  return [
+    { label: 'Agenten online', wert: z.online, level: 'ok', hinweis: 'von ' + z.agents },
+    {
+      label: 'Offline',
+      wert: z.offline,
+      level: 'warning',
+      hinweis: z.offline ? 'nicht erreichbar' : null,
+    },
+    {
+      label: 'Laufende Sitzungen',
+      wert: z.running,
+      level: 'ok',
+      hinweis: z.running ? 'aktiv' : null,
+    },
+    {
+      label: 'Ohne Ticketbezug',
+      wert: z.without_ticket,
+      level: 'warning',
+      hinweis: z.without_ticket ? 'nachtragen' : null,
+    },
+  ]
+})
+
+const untertitel = computed(() => {
+  const z = fern.data?.summary
+  if (!z) return ''
+  return z.agents + ' Agenten · ' + z.sessions + ' Sitzungen · ' + z.today + ' heute'
+})
+
+function hinweis(agent, art) {
+  // Ehrlicher als eine Schaltfläche, die nichts tut.
+  toast.create({
+    message:
+      'Sitzung (' +
+      ART[art] +
+      ') auf ' +
+      agent.agent_name +
+      ' braucht die MeshCentral-Einbettung per SSO und einen FIDO2-Step-up – beides gehört ins Backend.',
+    type: 'info',
+  })
+}
+</script>

@@ -1,0 +1,726 @@
+/**
+ * DocTypes für Virtualisierung, Speicher, Geschäftsdienste und E-Mail-Sicherheit
+ * (Fachkonzept 2.5, 2.9 und 2.15).
+ *
+ * Gleiche Regeln wie in den übrigen Fixtures: englische Namen, deutsche
+ * Oberfläche, ausschliesslich erfundene Testdaten, keine Geheimnisse.
+ */
+import { defineDoctype } from './db.js'
+import { stundenVersetzt, tageVersetzt } from './zeit.js'
+
+const AT = 'TEN-0001'
+const DE = 'TEN-0002'
+
+// --- Virtualisierung und Speicher (Fachkonzept 2.5) ------------------------
+
+defineDoctype('Cluster', {
+  naming: (doc) => doc.cluster_name,
+  titleField: 'cluster_name',
+  fields: ['cluster_name', 'cluster_kind', 'node_count', 'quorum_ok', 'version'],
+  seed: [
+    {
+      cluster_name: 'pve-linz',
+      cluster_kind: 'proxmox-ve',
+      node_count: 2,
+      quorum_ok: 1,
+      version: '8.2.4',
+      tenant: AT,
+      description: 'Zwei Knoten – bei Ausfall eines Knotens kein Quorum ohne Zeugen.',
+    },
+  ],
+})
+
+defineDoctype('Virtual Machine', {
+  naming: (doc) => doc.vmid,
+  titleField: 'vm_name',
+  fields: [
+    'vmid',
+    'vm_name',
+    'vm_kind',
+    'cluster',
+    'host',
+    'vcpu',
+    'memory_gb',
+    'disk_gb',
+    'vm_state',
+    'ha_managed',
+    'bridge',
+    'vlan_tag',
+    'ip_address',
+    'os',
+  ],
+  seed: [
+    {
+      vmid: 'vm/101',
+      vm_name: 'erp01',
+      vm_kind: 'qemu',
+      cluster: 'pve-linz',
+      host: 'SRV-PVE-01',
+      vcpu: 8,
+      memory_gb: 32,
+      disk_gb: 420,
+      vm_state: 'running',
+      ha_managed: 1,
+      bridge: 'vmbr0',
+      vlan_tag: 20,
+      ip_address: '10.10.20.13',
+      os: 'Debian 12',
+      tenant: AT,
+    },
+    {
+      vmid: 'vm/102',
+      vm_name: 'bmd01',
+      vm_kind: 'qemu',
+      cluster: 'pve-linz',
+      host: 'SRV-PVE-01',
+      vcpu: 4,
+      memory_gb: 16,
+      disk_gb: 260,
+      vm_state: 'running',
+      ha_managed: 1,
+      bridge: 'vmbr0',
+      vlan_tag: 20,
+      ip_address: '10.10.20.14',
+      os: 'Windows Server 2022',
+      tenant: AT,
+    },
+    {
+      vmid: 'vm/103',
+      vm_name: 'dc01',
+      vm_kind: 'qemu',
+      cluster: 'pve-linz',
+      host: 'SRV-PVE-02',
+      vcpu: 4,
+      memory_gb: 8,
+      disk_gb: 90,
+      vm_state: 'running',
+      ha_managed: 1,
+      bridge: 'vmbr0',
+      vlan_tag: 20,
+      ip_address: '10.10.20.12',
+      os: 'Windows Server 2022',
+      tenant: AT,
+    },
+    {
+      vmid: 'vm/104',
+      vm_name: 'mailrelay',
+      vm_kind: 'qemu',
+      cluster: 'pve-linz',
+      host: 'SRV-PVE-02',
+      vcpu: 2,
+      memory_gb: 8,
+      disk_gb: 55,
+      vm_state: 'running',
+      ha_managed: 0,
+      bridge: 'vmbr0',
+      vlan_tag: 70,
+      ip_address: '10.10.70.11',
+      os: 'Debian 12',
+      tenant: AT,
+    },
+    {
+      vmid: 'vm/105',
+      vm_name: 'scada01',
+      vm_kind: 'qemu',
+      cluster: 'pve-linz',
+      host: 'SRV-PVE-01',
+      vcpu: 4,
+      memory_gb: 16,
+      disk_gb: 180,
+      vm_state: 'running',
+      ha_managed: 1,
+      bridge: 'vmbr1',
+      vlan_tag: 110,
+      ip_address: '10.100.110.10',
+      os: 'Windows Server 2019',
+      tenant: AT,
+      description: 'SRVSCADA – keine aggressiven Scans.',
+    },
+    {
+      vmid: 'ct/201',
+      vm_name: 'zabbix',
+      vm_kind: 'lxc',
+      cluster: 'pve-linz',
+      host: 'SRV-PVE-02',
+      vcpu: 2,
+      memory_gb: 4,
+      disk_gb: 30,
+      vm_state: 'running',
+      ha_managed: 0,
+      bridge: 'vmbr0',
+      vlan_tag: 80,
+      ip_address: '10.10.80.20',
+      os: 'Debian 12',
+      tenant: AT,
+    },
+    {
+      vmid: 'ct/202',
+      vm_name: 'graylog',
+      vm_kind: 'lxc',
+      cluster: 'pve-linz',
+      host: 'SRV-PVE-02',
+      vcpu: 4,
+      memory_gb: 12,
+      disk_gb: 200,
+      vm_state: 'running',
+      ha_managed: 0,
+      bridge: 'vmbr0',
+      vlan_tag: 80,
+      ip_address: '10.10.80.21',
+      os: 'Debian 12',
+      tenant: AT,
+    },
+    {
+      vmid: 'ct/203',
+      vm_name: 'testlab',
+      vm_kind: 'lxc',
+      cluster: 'pve-linz',
+      host: 'SRV-PVE-01',
+      vcpu: 2,
+      memory_gb: 4,
+      disk_gb: 40,
+      vm_state: 'stopped',
+      ha_managed: 0,
+      bridge: 'vmbr0',
+      vlan_tag: 150,
+      ip_address: '10.10.150.10',
+      os: 'Ubuntu 24.04',
+      tenant: AT,
+    },
+  ],
+})
+
+defineDoctype('Storage Pool', {
+  naming: (doc) => doc.pool_name,
+  titleField: 'pool_name',
+  fields: [
+    'pool_name',
+    'server',
+    'raid_level',
+    'total_tb',
+    'used_pct',
+    'health',
+    'scrub_date',
+    'disk_count',
+    'disks_faulted',
+  ],
+  seed: [
+    {
+      pool_name: 'tank',
+      server: 'NAS-TN-01',
+      raid_level: 'raidz2',
+      total_tb: 60,
+      used_pct: 58.2,
+      health: 'ONLINE',
+      scrub_date: tageVersetzt(-12),
+      disk_count: 8,
+      disks_faulted: 0,
+      tenant: AT,
+    },
+    {
+      pool_name: 'fast',
+      server: 'NAS-TN-01',
+      raid_level: 'mirror',
+      total_tb: 4,
+      used_pct: 71.5,
+      health: 'DEGRADED',
+      scrub_date: tageVersetzt(-40),
+      disk_count: 2,
+      disks_faulted: 1,
+      tenant: AT,
+      description: 'Eine Platte ausgefallen – keine Redundanz mehr.',
+    },
+  ],
+})
+
+defineDoctype('Storage Dataset', {
+  naming: (doc) => doc.dataset_path,
+  titleField: 'dataset_path',
+  fields: [
+    'dataset_path',
+    'pool',
+    'used_gb',
+    'quota_gb',
+    'share_kind',
+    'snapshot_count',
+    'last_snapshot',
+    'replication_target',
+    'replication_age_hours',
+  ],
+  seed: [
+    {
+      dataset_path: 'tank/vmdata',
+      pool: 'tank',
+      used_gb: 18200,
+      quota_gb: 30000,
+      share_kind: 'nfs',
+      snapshot_count: 168,
+      last_snapshot: stundenVersetzt(-1),
+      replication_target: 'offsite',
+      replication_age_hours: 12,
+      tenant: AT,
+    },
+    {
+      dataset_path: 'tank/fileshare',
+      pool: 'tank',
+      used_gb: 9100,
+      quota_gb: 15000,
+      share_kind: 'smb',
+      snapshot_count: 720,
+      last_snapshot: stundenVersetzt(-2),
+      replication_target: 'offsite',
+      replication_age_hours: 14,
+      tenant: AT,
+    },
+    {
+      dataset_path: 'tank/archiv',
+      pool: 'tank',
+      used_gb: 6400,
+      quota_gb: 10000,
+      share_kind: 'smb',
+      snapshot_count: 52,
+      last_snapshot: stundenVersetzt(-170),
+      replication_target: null,
+      replication_age_hours: null,
+      tenant: AT,
+      description: 'Keine Replikation eingerichtet.',
+    },
+    {
+      dataset_path: 'fast/db',
+      pool: 'fast',
+      used_gb: 2900,
+      quota_gb: 4000,
+      share_kind: 'iscsi',
+      snapshot_count: 96,
+      last_snapshot: stundenVersetzt(-1),
+      replication_target: 'offsite',
+      replication_age_hours: 10,
+      tenant: AT,
+    },
+  ],
+})
+
+// --- Geschäftsdienste und Abhängigkeiten (Fachkonzept 2.9) -----------------
+
+/**
+ * Ein Geschäftsdienst ist das, was Menschen benutzen. Die Abhängigkeitskette
+ * darunter (Anwendung → VM → Host → Switchport → Uplink → Firewall → Provider)
+ * steht als `Object Relation` und wird von `impact_analysis` durchlaufen.
+ */
+defineDoctype('Business Service', {
+  naming: (doc) => doc.service_key,
+  titleField: 'service_name',
+  fields: [
+    'service_key',
+    'service_name',
+    'criticality',
+    'service_owner',
+    'user_count',
+    'rto_hours',
+    'rpo_hours',
+  ],
+  seed: [
+    {
+      service_key: 'erp',
+      service_name: 'ERPNext',
+      criticality: 'critical',
+      service_owner: 'benny.hoefler@oekovolt.test',
+      user_count: 78,
+      rto_hours: 4,
+      rpo_hours: 1,
+      tenant: AT,
+    },
+    {
+      service_key: 'bmd',
+      service_name: 'BMD Buchhaltung',
+      criticality: 'high',
+      service_owner: 'benny.hoefler@oekovolt.test',
+      user_count: 12,
+      rto_hours: 8,
+      rpo_hours: 4,
+      tenant: AT,
+    },
+    {
+      service_key: 'mail',
+      service_name: 'E-Mail',
+      criticality: 'critical',
+      service_owner: 'benny.hoefler@oekovolt.test',
+      user_count: 85,
+      rto_hours: 2,
+      rpo_hours: 1,
+      tenant: AT,
+    },
+    {
+      service_key: 'directory',
+      service_name: 'Verzeichnisdienst',
+      criticality: 'critical',
+      service_owner: 'benny.hoefler@oekovolt.test',
+      user_count: 85,
+      rto_hours: 2,
+      rpo_hours: 1,
+      tenant: AT,
+    },
+    {
+      service_key: 'scada',
+      service_name: 'Anlagensteuerung',
+      criticality: 'critical',
+      service_owner: 'benny.hoefler@oekovolt.test',
+      user_count: 6,
+      rto_hours: 1,
+      rpo_hours: 1,
+      tenant: AT,
+    },
+    {
+      service_key: 'monitoring',
+      service_name: 'Monitoring',
+      criticality: 'medium',
+      service_owner: 'benny.hoefler@oekovolt.test',
+      user_count: 3,
+      rto_hours: 24,
+      rpo_hours: 24,
+      tenant: AT,
+    },
+    {
+      service_key: 'web-de',
+      service_name: 'Website DE',
+      criticality: 'low',
+      service_owner: 'benny.hoefler@oekovolt.test',
+      user_count: 0,
+      rto_hours: 48,
+      rpo_hours: 24,
+      tenant: DE,
+    },
+  ],
+})
+
+defineDoctype('Provider Link', {
+  naming: (doc) => doc.link_name,
+  titleField: 'link_name',
+  fields: [
+    'link_name',
+    'provider',
+    'bandwidth_mbps',
+    'link_kind',
+    'public_prefix',
+    'interface',
+    'link_state',
+  ],
+  seed: [
+    {
+      link_name: 'WAN 1',
+      provider: 'Magenta',
+      bandwidth_mbps: 1000,
+      link_kind: 'fiber',
+      public_prefix: '198.51.100.0/29',
+      interface: 'igb0',
+      link_state: 'up',
+      tenant: AT,
+    },
+    {
+      link_name: 'WAN 2',
+      provider: 'Energie AG',
+      bandwidth_mbps: 300,
+      link_kind: 'fiber',
+      public_prefix: '203.0.113.0/29',
+      interface: 'igb1',
+      link_state: 'up',
+      tenant: AT,
+      description: 'Reserveleitung.',
+    },
+    {
+      link_name: 'WAN Passau',
+      provider: 'Telekom',
+      bandwidth_mbps: 250,
+      link_kind: 'vdsl',
+      public_prefix: '192.0.2.0/30',
+      interface: 'wan',
+      link_state: 'degraded',
+      tenant: DE,
+    },
+  ],
+})
+
+// --- E-Mail-Sicherheit (Fachkonzept 2.15) ----------------------------------
+
+defineDoctype('Mail Gateway', {
+  naming: (doc) => doc.gateway_name,
+  titleField: 'gateway_name',
+  fields: [
+    'gateway_name',
+    'gateway_kind',
+    'stage',
+    'cluster_state',
+    'version',
+    'clamav_age_hours',
+    'spamassassin_age_hours',
+    'queue_size',
+  ],
+  seed: [
+    {
+      gateway_name: 'PMG-01',
+      gateway_kind: 'pmg',
+      stage: 1,
+      cluster_state: 'synced',
+      version: '8.1',
+      clamav_age_hours: 2,
+      spamassassin_age_hours: 5,
+      queue_size: 3,
+      tenant: AT,
+    },
+    {
+      gateway_name: 'PMG-02',
+      gateway_kind: 'pmg',
+      stage: 2,
+      cluster_state: 'synced',
+      version: '8.1',
+      clamav_age_hours: 38,
+      spamassassin_age_hours: 41,
+      queue_size: 214,
+      tenant: AT,
+      description: 'Signaturen veraltet, Warteschlange wächst.',
+    },
+    {
+      gateway_name: 'EXO-AT',
+      gateway_kind: 'exchange-online',
+      stage: 3,
+      cluster_state: 'n/a',
+      version: 'M365',
+      clamav_age_hours: null,
+      spamassassin_age_hours: null,
+      queue_size: 0,
+      tenant: AT,
+    },
+  ],
+})
+
+defineDoctype('Mail Flow Stat', {
+  naming: (doc, i) => 'MFS-' + String(i).padStart(5, '0'),
+  titleField: 'day',
+  fields: ['day', 'total', 'spam', 'virus', 'bounced', 'rejected', 'delivered'],
+  seed: Array.from({ length: 7 }, (_, i) => {
+    const tag = 6 - i
+    const gesamt = 4200 + tag * 130
+    const spam = Math.round(gesamt * 0.31)
+    const virus = 4 + (tag % 3)
+    const abgewiesen = Math.round(gesamt * 0.12)
+    return {
+      day: tageVersetzt(-tag),
+      total: gesamt,
+      spam,
+      virus,
+      bounced: 18 + tag,
+      rejected: abgewiesen,
+      delivered: gesamt - spam - virus - abgewiesen,
+      tenant: AT,
+    }
+  }),
+})
+
+/**
+ * Vorfälle aus IRONSCALES – also nach der Zustellung, im Postfach.
+ * Der Abgleich mit der PMG-Kaskade zeigt, was durchgerutscht ist.
+ */
+defineDoctype('Mail Incident', {
+  naming: (doc, i) => 'MAIL-' + String(i).padStart(5, '0'),
+  titleField: 'subject',
+  fields: [
+    'subject',
+    'classification',
+    'sender',
+    'sender_reputation',
+    'affected_mailboxes',
+    'reported_by',
+    'detected',
+    'mitigated',
+    'passed_gateway',
+    'attachment_hash',
+  ],
+  seed: [
+    {
+      subject: 'Rechnung 2026-4471 offen',
+      classification: 'phishing',
+      sender: 'buchhaltung@lieferant-test.example',
+      sender_reputation: 'bad',
+      affected_mailboxes: 4,
+      reported_by: 'mitarbeiter',
+      detected: stundenVersetzt(-20),
+      mitigated: stundenVersetzt(-19),
+      passed_gateway: 1,
+      attachment_hash: '9f2c4a7b1e08',
+      tenant: AT,
+      description: 'Kam durch die Kaskade – Regelvorschlag prüfen.',
+    },
+    {
+      subject: 'Ihre Zugangsdaten laufen ab',
+      classification: 'phishing',
+      sender: 'no-reply@m365-test.example',
+      sender_reputation: 'bad',
+      affected_mailboxes: 11,
+      reported_by: 'ironscales',
+      detected: stundenVersetzt(-52),
+      mitigated: stundenVersetzt(-52),
+      passed_gateway: 1,
+      attachment_hash: '',
+      tenant: AT,
+    },
+    {
+      subject: 'Geschäftsführung: dringende Überweisung',
+      classification: 'impersonation',
+      sender: 'b.hoefler@oekovoIt.test',
+      sender_reputation: 'bad',
+      affected_mailboxes: 2,
+      reported_by: 'mitarbeiter',
+      detected: stundenVersetzt(-96),
+      mitigated: stundenVersetzt(-95),
+      passed_gateway: 1,
+      attachment_hash: '',
+      tenant: AT,
+      description: 'Typosquatting: großes I statt kleinem l.',
+    },
+    {
+      subject: 'Angebot Solarmodule',
+      classification: 'false_positive',
+      sender: 'vertrieb@partner-test.example',
+      sender_reputation: 'good',
+      affected_mailboxes: 1,
+      reported_by: 'mitarbeiter',
+      detected: stundenVersetzt(-30),
+      mitigated: null,
+      passed_gateway: 0,
+      attachment_hash: '',
+      tenant: AT,
+    },
+    {
+      subject: 'Lieferschein anbei',
+      classification: 'malware',
+      sender: 'versand@spedition-test.example',
+      sender_reputation: 'bad',
+      affected_mailboxes: 1,
+      reported_by: 'ironscales',
+      detected: stundenVersetzt(-140),
+      mitigated: stundenVersetzt(-140),
+      passed_gateway: 0,
+      attachment_hash: 'c71e0d3a55b9',
+      tenant: AT,
+    },
+  ],
+})
+
+defineDoctype('Mail Domain', {
+  naming: (doc) => doc.domain_name,
+  titleField: 'domain_name',
+  fields: [
+    'domain_name',
+    'spf_soll',
+    'spf_ist',
+    'dkim_selector',
+    'dkim_ok',
+    'dmarc_soll',
+    'dmarc_ist',
+    'mx_ok',
+  ],
+  seed: [
+    {
+      domain_name: 'oekovolt.test',
+      spf_soll: 'v=spf1 include:_spf.pmg.test -all',
+      spf_ist: 'v=spf1 include:_spf.pmg.test -all',
+      dkim_selector: 'pmg1',
+      dkim_ok: 1,
+      dmarc_soll: 'v=DMARC1; p=reject; rua=mailto:dmarc@oekovolt.test',
+      dmarc_ist: 'v=DMARC1; p=reject; rua=mailto:dmarc@oekovolt.test',
+      mx_ok: 1,
+      tenant: AT,
+    },
+    {
+      domain_name: 'oekovolt-de.test',
+      spf_soll: 'v=spf1 include:_spf.pmg.test -all',
+      spf_ist: 'v=spf1 include:_spf.pmg.test ~all',
+      dkim_selector: 'pmg1',
+      dkim_ok: 0,
+      dmarc_soll: 'v=DMARC1; p=reject',
+      dmarc_ist: 'v=DMARC1; p=none',
+      mx_ok: 1,
+      tenant: DE,
+      description: 'SPF zu weich, DKIM fehlt, DMARC nur auf none.',
+    },
+  ],
+})
+
+// --- Abhängigkeitskette (Fachkonzept 2.9) ----------------------------------
+
+/**
+ * Die Kette Geschäftsdienst → Anwendung → VM → Host → Switch → Firewall →
+ * Provider als Beziehungen. Sie wird in fixtures-ops.js an den DocType
+ * `Object Relation` angehängt und von `impact_analysis` durchlaufen.
+ *
+ * Leserichtung ist immer gleich: "from hängt ab von to". Nur so lässt sich
+ * der Graph in beide Richtungen sinnvoll auswerten.
+ */
+const kette = (fromType, fromName, toType, toName, relationType, tenant = AT) => ({
+  from_type: fromType,
+  from_name: fromName,
+  to_type: toType,
+  to_name: toName,
+  relation_type: relationType,
+  tenant,
+})
+
+export const ABHAENGIGKEITEN = [
+  // Geschäftsdienst auf Anwendung bzw. VM
+  kette('Business Service', 'erp', 'Virtual Machine', 'vm/101', 'runs_on'),
+  kette('Business Service', 'bmd', 'Virtual Machine', 'vm/102', 'runs_on'),
+  kette('Business Service', 'directory', 'Virtual Machine', 'vm/103', 'runs_on'),
+  kette('Business Service', 'mail', 'Virtual Machine', 'vm/104', 'runs_on'),
+  kette('Business Service', 'mail', 'Mail Gateway', 'EXO-AT', 'depends_on'),
+  kette('Business Service', 'scada', 'Virtual Machine', 'vm/105', 'runs_on'),
+  kette('Business Service', 'monitoring', 'Virtual Machine', 'ct/201', 'runs_on'),
+
+  // Fast jeder Dienst braucht das Verzeichnis
+  kette('Business Service', 'erp', 'Business Service', 'directory', 'depends_on'),
+  kette('Business Service', 'bmd', 'Business Service', 'directory', 'depends_on'),
+  kette('Business Service', 'mail', 'Business Service', 'directory', 'depends_on'),
+
+  // VM auf Host
+  kette('Virtual Machine', 'vm/101', 'Network Device', 'SRV-PVE-01', 'runs_on'),
+  kette('Virtual Machine', 'vm/102', 'Network Device', 'SRV-PVE-01', 'runs_on'),
+  kette('Virtual Machine', 'vm/103', 'Network Device', 'SRV-PVE-02', 'runs_on'),
+  kette('Virtual Machine', 'vm/104', 'Network Device', 'SRV-PVE-02', 'runs_on'),
+  kette('Virtual Machine', 'vm/105', 'Network Device', 'SRV-PVE-01', 'runs_on'),
+  kette('Virtual Machine', 'ct/201', 'Network Device', 'SRV-PVE-02', 'runs_on'),
+  kette('Virtual Machine', 'ct/202', 'Network Device', 'SRV-PVE-02', 'runs_on'),
+
+  // VM auf Speicher
+  kette('Virtual Machine', 'vm/101', 'Storage Dataset', 'tank/vmdata', 'stores_on'),
+  kette('Virtual Machine', 'vm/102', 'Storage Dataset', 'tank/vmdata', 'stores_on'),
+  kette('Virtual Machine', 'vm/103', 'Storage Dataset', 'tank/vmdata', 'stores_on'),
+  kette('Virtual Machine', 'vm/104', 'Storage Dataset', 'tank/vmdata', 'stores_on'),
+  kette('Virtual Machine', 'vm/105', 'Storage Dataset', 'fast/db', 'stores_on'),
+  kette('Storage Dataset', 'tank/vmdata', 'Storage Pool', 'tank', 'stores_on'),
+  kette('Storage Dataset', 'tank/fileshare', 'Storage Pool', 'tank', 'stores_on'),
+  kette('Storage Dataset', 'tank/archiv', 'Storage Pool', 'tank', 'stores_on'),
+  kette('Storage Dataset', 'fast/db', 'Storage Pool', 'fast', 'stores_on'),
+  kette('Storage Pool', 'tank', 'Network Device', 'NAS-TN-01', 'runs_on'),
+  kette('Storage Pool', 'fast', 'Network Device', 'NAS-TN-01', 'runs_on'),
+
+  // Netzweg
+  kette('Network Device', 'SRV-PVE-01', 'Network Device', 'SW-CORE-01', 'connected_via'),
+  kette('Network Device', 'SRV-PVE-02', 'Network Device', 'SW-CORE-01', 'connected_via'),
+  kette('Network Device', 'NAS-TN-01', 'Network Device', 'SW-CORE-01', 'connected_via'),
+  kette('Network Device', 'SRV-PBS-01', 'Network Device', 'SW-CORE-01', 'connected_via'),
+  kette('Network Device', 'SW-ACC-01', 'Network Device', 'SW-CORE-01', 'connected_via'),
+  kette('Network Device', 'AP-A02-01', 'Network Device', 'SW-ACC-01', 'connected_via'),
+  kette('Network Device', 'SW-CORE-01', 'Network Device', 'FW-OS-01', 'connected_via'),
+
+  // Perimeter auf Provider
+  kette('Network Device', 'FW-OS-01', 'Provider Link', 'WAN 1', 'depends_on'),
+  kette('Network Device', 'FW-OS-01', 'Provider Link', 'WAN 2', 'depends_on'),
+
+  // Mailfluss als Kaskade
+  kette('Mail Gateway', 'EXO-AT', 'Mail Gateway', 'PMG-02', 'depends_on'),
+  kette('Mail Gateway', 'PMG-02', 'Mail Gateway', 'PMG-01', 'depends_on'),
+  kette('Mail Gateway', 'PMG-01', 'Network Device', 'FW-OS-01', 'connected_via'),
+
+  // Standort Passau
+  kette('Business Service', 'web-de', 'Provider Link', 'WAN Passau', 'depends_on', DE),
+  kette('Network Device', 'SW-ACC-PA-01', 'Provider Link', 'WAN Passau', 'depends_on', DE),
+]

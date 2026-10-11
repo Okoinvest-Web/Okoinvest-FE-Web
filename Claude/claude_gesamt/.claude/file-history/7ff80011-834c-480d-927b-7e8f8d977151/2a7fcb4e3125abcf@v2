@@ -1,0 +1,376 @@
+param(
+  [Parameter(Mandatory=$true)][string]$Path,
+  [string]$Out,
+  [switch]$Quiet
+)
+
+$ErrorActionPreference = 'Continue'
+Add-Type -AssemblyName System.IO.Compression -ErrorAction SilentlyContinue
+$latin = [System.Text.Encoding]::GetEncoding(28591)
+
+function Inflate-Bytes {
+  param([byte[]]$Data)
+  foreach ($skip in 2,0) {
+    $outMs = New-Object System.IO.MemoryStream
+    try {
+      if ($Data.Length -le $skip) { continue }
+      $ms = New-Object System.IO.MemoryStream(,$Data)
+      $ms.Position = $skip
+      $ds = New-Object System.IO.Compression.DeflateStream($ms, [System.IO.Compression.CompressionMode]::Decompress)
+      $buf = New-Object byte[] 65536
+      while (($n = $ds.Read($buf,0,$buf.Length)) -gt 0) { $outMs.Write($buf,0,$n) }
+      $ds.Dispose(); $ms.Dispose()
+    } catch { }
+    if ($outMs.Length -gt 0) { $r = $outMs.ToArray(); $outMs.Dispose(); return $r }
+    $outMs.Dispose()
+  }
+  return $null
+}
+
+$bytes = [System.IO.File]::ReadAllBytes($Path)
+$raw = $latin.GetString($bytes)
+
+# ---------- 1. scan indirect objects ----------
+$objDict = @{}   # objnum -> @{ head=string; sStart=int; sLen=int }
+$rx = [regex]'(?<![0-9])(\d{1,8})\s+(\d{1,5})\s+obj\b'
+foreach ($m in $rx.Matches($raw)) {
+  $num = [int]$m.Groups[1].Value
+  $bodyStart = $m.Index + $m.Length
+  $end = $raw.IndexOf('endobj', $bodyStart)
+  if ($end -lt 0) { $end = [Math]::Min($raw.Length, $bodyStart + 200000) }
+  $sIdx = $raw.IndexOf('stream', $bodyStart)
+  $head = $null; $sStart = -1; $sLen = 0
+  if ($sIdx -ge 0 -and $sIdx -lt $end) {
+    $head = $raw.Substring($bodyStart, $sIdx - $bodyStart)
+    $p = $sIdx + 6
+    if ($p -lt $raw.Length -and $raw[$p] -eq "`r") { $p++ }
+    if ($p -lt $raw.Length -and $raw[$p] -eq "`n") { $p++ }
+    $e = $raw.IndexOf('endstream', $p)
+    if ($e -lt 0) { $e = $end }
+    $sStart = $p; $sLen = $e - $p
+  } else {
+    $head = $raw.Substring($bodyStart, $end - $bodyStart)
+  }
+  $objDict[$num] = @{ head = $head; sStart = $sStart; sLen = $sLen }
+}
+
+function Get-ObjStreamBytes {
+  param([int]$num)
+  $o = $objDict[$num]
+  if ($o -eq $null -or $o.sStart -lt 0 -or $o.sLen -le 0) { return $null }
+  $chunk = New-Object byte[] $o.sLen
+  [Array]::Copy($bytes, $o.sStart, $chunk, 0, $o.sLen)
+  if ($o.head -match 'FlateDecode') { return (Inflate-Bytes $chunk) }
+  return $chunk
+}
+
+# ---------- 2. expand object streams (ObjStm) ----------
+foreach ($k in @($objDict.Keys)) {
+  $o = $objDict[$k]
+  if ($o.head -notmatch '/Type\s*/ObjStm') { continue }
+  $data = Get-ObjStreamBytes $k
+  if ($data -eq $null) { continue }
+  $txt = $latin.GetString($data)
+  $nMatch = [regex]::Match($o.head, '/N\s+(\d+)')
+  $fMatch = [regex]::Match($o.head, '/First\s+(\d+)')
+  if (-not ($nMatch.Success -and $fMatch.Success)) { continue }
+  $N = [int]$nMatch.Groups[1].Value
+  $First = [int]$fMatch.Groups[1].Value
+  if ($First -gt $txt.Length) { continue }
+  $hdr = $txt.Substring(0, $First)
+  $nums = [regex]::Matches($hdr, '\d+') | ForEach-Object { [int]$_.Value }
+  for ($i = 0; $i -lt $N; $i++) {
+    if (($i*2+1) -ge $nums.Count) { break }
+    $onum = $nums[$i*2]; $ooff = $nums[$i*2+1]
+    $start = $First + $ooff
+    if ($start -ge $txt.Length) { continue }
+    if (($i*2+3) -lt $nums.Count) { $nextOff = $First + $nums[$i*2+3] } else { $nextOff = $txt.Length }
+    if ($nextOff -gt $txt.Length) { $nextOff = $txt.Length }
+    if ($nextOff -le $start) { continue }
+    if (-not $objDict.ContainsKey($onum)) {
+      $objDict[$onum] = @{ head = $txt.Substring($start, $nextOff - $start); sStart = -1; sLen = 0 }
+    }
+  }
+}
+
+# ---------- 3. ToUnicode CMap parsing ----------
+$cmapCache = @{}
+function Parse-CMap {
+  param([int]$num)
+  if ($cmapCache.ContainsKey($num)) { return $cmapCache[$num] }
+  $map = @{}
+  $data = Get-ObjStreamBytes $num
+  if ($data -ne $null) {
+    $t = $latin.GetString($data)
+    foreach ($blk in [regex]::Matches($t, 'beginbfchar([\s\S]*?)endbfchar')) {
+      foreach ($mm in [regex]::Matches($blk.Groups[1].Value, '<([0-9A-Fa-f]+)>\s*<([0-9A-Fa-f]+)>')) {
+        $src = [Convert]::ToInt32($mm.Groups[1].Value, 16)
+        $dstHex = $mm.Groups[2].Value
+        $s = ''
+        for ($i = 0; $i + 3 -lt $dstHex.Length + 1; $i += 4) {
+          if ($i + 4 -le $dstHex.Length) { $s += [char][Convert]::ToInt32($dstHex.Substring($i,4),16) }
+        }
+        if ($s -ne '') { $map[$src] = $s }
+      }
+    }
+    foreach ($blk in [regex]::Matches($t, 'beginbfrange([\s\S]*?)endbfrange')) {
+      $body = $blk.Groups[1].Value
+      foreach ($mm in [regex]::Matches($body, '<([0-9A-Fa-f]+)>\s*<([0-9A-Fa-f]+)>\s*<([0-9A-Fa-f]+)>')) {
+        $lo = [Convert]::ToInt32($mm.Groups[1].Value,16)
+        $hi = [Convert]::ToInt32($mm.Groups[2].Value,16)
+        $dst = [Convert]::ToInt32($mm.Groups[3].Value,16)
+        if ($hi - $lo -gt 65535) { continue }
+        for ($c = $lo; $c -le $hi; $c++) { $map[$c] = [char]($dst + ($c - $lo)) }
+      }
+      foreach ($mm in [regex]::Matches($body, '<([0-9A-Fa-f]+)>\s*<([0-9A-Fa-f]+)>\s*\[([\s\S]*?)\]')) {
+        $lo = [Convert]::ToInt32($mm.Groups[1].Value,16)
+        $items = [regex]::Matches($mm.Groups[3].Value, '<([0-9A-Fa-f]+)>')
+        for ($i = 0; $i -lt $items.Count; $i++) {
+          $dstHex = $items[$i].Groups[1].Value
+          $s = ''
+          for ($j = 0; $j + 4 -le $dstHex.Length; $j += 4) { $s += [char][Convert]::ToInt32($dstHex.Substring($j,4),16) }
+          if ($s -ne '') { $map[$lo + $i] = $s }
+        }
+      }
+    }
+  }
+  $cmapCache[$num] = $map
+  return $map
+}
+
+# ---------- 4. fonts ----------
+# fontObj -> @{ map = hashtable; twoByte = bool }
+$fontCache = @{}
+function Get-FontInfo {
+  param([int]$num)
+  if ($fontCache.ContainsKey($num)) { return $fontCache[$num] }
+  $o = $objDict[$num]
+  $info = @{ map = @{}; twoByte = $false }
+  if ($o -ne $null) {
+    $h = $o.head
+    if ($h -match '/Encoding\s*/Identity-H' -or $h -match '/Type0') { $info.twoByte = $true }
+    $tu = [regex]::Match($h, '/ToUnicode\s+(\d+)\s+\d+\s+R')
+    if ($tu.Success) { $info.map = Parse-CMap ([int]$tu.Groups[1].Value) }
+    # descendant font may also matter for 2-byte detection
+    if ($h -match '/DescendantFonts') { $info.twoByte = $true }
+  }
+  $fontCache[$num] = $info
+  return $info
+}
+
+# ---------- 5. pages ----------
+$pages = @()
+foreach ($k in ($objDict.Keys | Sort-Object)) {
+  $h = $objDict[$k].head
+  if ($h -match '/Type\s*/Page\b' -and $h -notmatch '/Type\s*/Pages') { $pages += $k }
+}
+
+function Resolve-Resources {
+  param([string]$head, [int]$depth = 0)
+  # returns font name -> objnum
+  $fonts = @{}
+  $resMatch = [regex]::Match($head, '/Resources\s*(\d+)\s+\d+\s+R')
+  $resText = $null
+  if ($resMatch.Success) {
+    $ro = $objDict[[int]$resMatch.Groups[1].Value]
+    if ($ro) { $resText = $ro.head }
+  } else {
+    $i = $head.IndexOf('/Resources')
+    if ($i -ge 0) { $resText = $head.Substring($i, [Math]::Min(4000, $head.Length - $i)) }
+  }
+  if ($resText) {
+    $fi = $resText.IndexOf('/Font')
+    if ($fi -ge 0) {
+      $sub = $resText.Substring($fi, [Math]::Min(4000, $resText.Length - $fi))
+      $fref = [regex]::Match($sub, '/Font\s+(\d+)\s+\d+\s+R')
+      if ($fref.Success) {
+        $fo = $objDict[[int]$fref.Groups[1].Value]
+        if ($fo) { $sub = $fo.head }
+      }
+      foreach ($mm in [regex]::Matches($sub, '/([A-Za-z0-9#_\.\-\+]+)\s+(\d+)\s+\d+\s+R')) {
+        $fonts[$mm.Groups[1].Value] = [int]$mm.Groups[2].Value
+      }
+    }
+  }
+  if ($fonts.Count -eq 0 -and $depth -lt 4) {
+    $par = [regex]::Match($head, '/Parent\s+(\d+)\s+\d+\s+R')
+    if ($par.Success) {
+      $po = $objDict[[int]$par.Groups[1].Value]
+      if ($po) { return Resolve-Resources $po.head ($depth+1) }
+    }
+  }
+  return $fonts
+}
+
+function Decode-PdfLiteral {
+  param([string]$s)
+  $sb = New-Object System.Text.StringBuilder
+  $i = 0
+  while ($i -lt $s.Length) {
+    $c = $s[$i]
+    if ($c -eq '\') {
+      $i++
+      if ($i -ge $s.Length) { break }
+      $n = $s[$i]
+      switch ($n) {
+        'n' { [void]$sb.Append("`n"); $i++ }
+        'r' { [void]$sb.Append("`r"); $i++ }
+        't' { [void]$sb.Append("`t"); $i++ }
+        'b' { $i++ }
+        'f' { $i++ }
+        '(' { [void]$sb.Append('('); $i++ }
+        ')' { [void]$sb.Append(')'); $i++ }
+        '\' { [void]$sb.Append('\'); $i++ }
+        "`n" { $i++ }
+        "`r" { $i++ }
+        default {
+          if ($n -match '[0-7]') {
+            $oct = ''
+            while ($i -lt $s.Length -and $s[$i] -match '[0-7]' -and $oct.Length -lt 3) { $oct += $s[$i]; $i++ }
+            [void]$sb.Append([char][Convert]::ToInt32($oct, 8))
+          } else { [void]$sb.Append($n); $i++ }
+        }
+      }
+    } else { [void]$sb.Append($c); $i++ }
+  }
+  return $sb.ToString()
+}
+
+$winAnsiFix = @{
+  128=[char]0x20AC; 130=[char]0x201A; 131=[char]0x0192; 132=[char]0x201E; 133=[char]0x2026;
+  134=[char]0x2020; 135=[char]0x2021; 136=[char]0x02C6; 137=[char]0x2030; 138=[char]0x0160;
+  139=[char]0x2039; 140=[char]0x0152; 142=[char]0x017D; 145=[char]0x2018; 146=[char]0x2019;
+  147=[char]0x201C; 148=[char]0x201D; 149=[char]0x2022; 150=[char]0x2013; 151=[char]0x2014;
+  152=[char]0x02DC; 153=[char]0x2122; 154=[char]0x0161; 155=[char]0x203A; 156=[char]0x0153;
+  158=[char]0x017E; 159=[char]0x0178
+}
+
+function Show-Text {
+  param($rawStr, [bool]$isHex, $fontInfo)
+  $sb = New-Object System.Text.StringBuilder
+  if ($isHex) {
+    $hex = ($rawStr -replace '[^0-9A-Fa-f]','')
+    if ($fontInfo -ne $null -and $fontInfo.twoByte) {
+      for ($i = 0; $i + 4 -le $hex.Length; $i += 4) {
+        $code = [Convert]::ToInt32($hex.Substring($i,4),16)
+        if ($fontInfo.map.ContainsKey($code)) { [void]$sb.Append($fontInfo.map[$code]) }
+        elseif ($code -ge 32 -and $code -lt 127) { [void]$sb.Append([char]$code) }
+        else { [void]$sb.Append('') }
+      }
+    } else {
+      for ($i = 0; $i + 2 -le $hex.Length; $i += 2) {
+        $code = [Convert]::ToInt32($hex.Substring($i,2),16)
+        if ($fontInfo -ne $null -and $fontInfo.map.ContainsKey($code)) { [void]$sb.Append($fontInfo.map[$code]) }
+        elseif ($code -ge 32) { [void]$sb.Append([char]$code) }
+      }
+    }
+  } else {
+    $dec = Decode-PdfLiteral $rawStr
+    if ($fontInfo -ne $null -and $fontInfo.twoByte) {
+      for ($i = 0; $i + 1 -lt $dec.Length; $i += 2) {
+        $code = ([int][char]$dec[$i]) * 256 + [int][char]$dec[$i+1]
+        if ($fontInfo.map.ContainsKey($code)) { [void]$sb.Append($fontInfo.map[$code]) }
+      }
+    } else {
+      foreach ($ch in $dec.ToCharArray()) {
+        $code = [int][char]$ch
+        if ($fontInfo -ne $null -and $fontInfo.map.Count -gt 0 -and $fontInfo.map.ContainsKey($code)) { [void]$sb.Append($fontInfo.map[$code]) }
+        elseif ($winAnsiFix.ContainsKey($code)) { [void]$sb.Append($winAnsiFix[$code]) }
+        else { [void]$sb.Append($ch) }
+      }
+    }
+  }
+  return $sb.ToString()
+}
+
+$tokPattern = @'
+(?<hex><[0-9A-Fa-f\s]*>)\s*(?:Tj|TJ|'|")|(?<lit>\((?:\\.|[^\\()]|\((?:\\.|[^\\()])*\))*\))\s*(?:Tj|TJ|'|")|(?<arr>\[(?:[^\[\]\\]|\\.)*\])\s*TJ|/(?<fname>[A-Za-z0-9#_.+-]+)\s+[\d.\-]+\s+Tf|[\d.\-eE]+\s+[\d.\-eE]+\s+[\d.\-eE]+\s+[\d.\-eE]+\s+[\d.\-eE]+\s+(?<tmy>[\d.\-eE]+)\s+Tm|(?<tdx>[\d.\-eE]+)\s+(?<tdy>[\d.\-eE]+)\s+(?<tdop>Td|TD)|(?<tstar>T\*)|(?<tl>[\d.\-eE]+)\s+TL
+'@.Trim()
+$tokRx = New-Object System.Text.RegularExpressions.Regex($tokPattern)
+
+$result = New-Object System.Text.StringBuilder
+$pageNo = 0
+
+foreach ($pnum in $pages) {
+  $pageNo++
+  $ph = $objDict[$pnum].head
+  $fonts = Resolve-Resources $ph
+  $contentNums = @()
+  $cm = [regex]::Match($ph, '/Contents\s+(\d+)\s+\d+\s+R')
+  if ($cm.Success) { $contentNums += [int]$cm.Groups[1].Value }
+  else {
+    $cma = [regex]::Match($ph, '/Contents\s*\[([^\]]*)\]')
+    if ($cma.Success) {
+      foreach ($mm in [regex]::Matches($cma.Groups[1].Value, '(\d+)\s+\d+\s+R')) { $contentNums += [int]$mm.Groups[1].Value }
+    }
+  }
+  $content = ''
+  foreach ($cn in $contentNums) {
+    $d = Get-ObjStreamBytes $cn
+    if ($d -ne $null) { $content += $latin.GetString($d) + "`n" }
+  }
+  if ($content -eq '') { continue }
+
+  [void]$result.AppendLine("")
+  [void]$result.AppendLine("========== [Seite $pageNo] ==========")
+
+  $curFont = $null
+  $y = [double]0
+  $lastY = [double]::NaN
+  $leading = [double]0
+  $line = New-Object System.Text.StringBuilder
+
+  foreach ($m in $tokRx.Matches($content)) {
+    if ($m.Groups['fname'].Success) {
+      $fn = $m.Groups['fname'].Value
+      if ($fonts.ContainsKey($fn)) { $curFont = Get-FontInfo $fonts[$fn] } else { $curFont = $null }
+      continue
+    }
+    $newY = $null
+    if ($m.Groups['tmy'].Success) { $newY = [double]$m.Groups['tmy'].Value }
+    elseif ($m.Groups['tdop'].Success) { $newY = $y + [double]$m.Groups['tdy'].Value; if ($m.Groups['tdop'].Value -eq 'TD') { $leading = -[double]$m.Groups['tdy'].Value } }
+    elseif ($m.Groups['tstar'].Success) { $newY = $y - $leading }
+    elseif ($m.Groups['tl'].Success) { $leading = [double]$m.Groups['tl'].Value; continue }
+    if ($newY -ne $null) {
+      if (-not [double]::IsNaN($lastY) -and [Math]::Abs($newY - $lastY) -gt 0.6) {
+        [void]$result.AppendLine($line.ToString().TrimEnd())
+        $line = New-Object System.Text.StringBuilder
+      }
+      $y = $newY; $lastY = $newY
+      continue
+    }
+    if ($m.Groups['hex'].Success) {
+      [void]$line.Append((Show-Text $m.Groups['hex'].Value $true $curFont))
+      continue
+    }
+    if ($m.Groups['lit'].Success) {
+      $inner = $m.Groups['lit'].Value
+      $inner = $inner.Substring(1, $inner.Length - 2)
+      [void]$line.Append((Show-Text $inner $false $curFont))
+      continue
+    }
+    if ($m.Groups['arr'].Success) {
+      $arr = $m.Groups['arr'].Value
+      foreach ($em in [regex]::Matches($arr, '\((?:\\.|[^\\()])*\)|<[0-9A-Fa-f\s]*>|-?[\d\.]+')) {
+        $v = $em.Value
+        if ($v.StartsWith('(')) { [void]$line.Append((Show-Text $v.Substring(1,$v.Length-2) $false $curFont)) }
+        elseif ($v.StartsWith('<')) { [void]$line.Append((Show-Text $v $true $curFont)) }
+        else { if ([double]$v -lt -180) { [void]$line.Append(' ') } }
+      }
+      continue
+    }
+  }
+  if ($line.Length -gt 0) { [void]$result.AppendLine($line.ToString().TrimEnd()) }
+}
+
+$text = $result.ToString()
+$text = [regex]::Replace($text, '[ \t]+(\r?\n)', '$1')
+$text = [regex]::Replace($text, '(\r?\n){3,}', "`r`n`r`n")
+
+if (-not $Out) { $Out = [System.IO.Path]::ChangeExtension($Path, '.txt') }
+$od = [System.IO.Path]::GetDirectoryName($Out)
+if ($od -and -not (Test-Path $od)) { New-Item -ItemType Directory -Force -Path $od | Out-Null }
+[System.IO.File]::WriteAllText($Out, $text, (New-Object System.Text.UTF8Encoding($false)))
+if (-not $Quiet) {
+  Write-Output ("objects={0} pages={1} fonts={2} chars={3} out={4}" -f $objDict.Count, $pages.Count, $fontCache.Count, $text.Length, $Out)
+}

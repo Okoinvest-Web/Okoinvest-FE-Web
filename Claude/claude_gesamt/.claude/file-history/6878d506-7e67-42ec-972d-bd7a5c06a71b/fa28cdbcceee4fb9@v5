@@ -1,0 +1,171 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { Mail, Phone, Plus } from "lucide-react";
+import { db } from "@/lib/data";
+import { date, LEAD_STATUS_LABEL, money, STAGE_LABEL } from "@/lib/format";
+import { Avatar, Badge, BTN, Field, PageHeader, Tabs } from "@/components/ui";
+import { Timeline } from "@/components/Timeline";
+
+export async function generateMetadata({ params }: PageProps<"/customers/[name]">) {
+  const c = await db().getCustomer(decodeURIComponent((await params).name));
+  return { title: c?.customer_name ?? "Kunde" };
+}
+
+export default async function CustomerPage({ params, searchParams }: PageProps<"/customers/[name]">) {
+  const customer = await db().getCustomer(decodeURIComponent((await params).name));
+  if (!customer) notFound();
+  const tab = (await searchParams).tab;
+
+  const [opps, contacts] = await Promise.all([
+    db().listOpportunities({ filters: { customer_name: customer.customer_name } }),
+    db().listContacts({ filters: { company_name: customer.customer_name } }),
+  ]);
+  const won = opps.filter((o) => o.status === "Converted").reduce((s, o) => s + o.opportunity_amount, 0);
+  const openVol = opps.filter((o) => o.status === "Open" || o.status === "Quotation").reduce((s, o) => s + o.opportunity_amount, 0);
+  const isCompany = customer.customer_type === "Company";
+  const base = `/customers/${encodeURIComponent(customer.name)}`;
+  const active = typeof tab === "string" && ["kontakte", "aktivitaet"].includes(tab) ? tab : "chancen";
+
+  return (
+    <>
+      <PageHeader
+        title={customer.customer_name}
+        crumbs={[{ href: "/customers", label: "Kunden" }]}
+        actions={
+          <Link href={`/opportunities/new?from=Customer&party=${encodeURIComponent(customer.name)}`} className={BTN.primary}>
+            <Plus /> Chance
+          </Link>
+        }
+      />
+      <div className="grid grid-cols-1 min-h-0 flex-1 xl:grid-cols-[1fr_320px]">
+        <div className="min-w-0 px-4 py-6 sm:px-8 sm:py-7">
+          <div className="flex flex-wrap items-center gap-4">
+            <Avatar name={customer.customer_name} size="lg" square={isCompany} />
+            <div className="min-w-0 flex-1">
+              <h2 className="truncate text-[22px] font-semibold tracking-[-0.02em] text-gray-900">{customer.customer_name}</h2>
+              <p className="mt-0.5 text-gray-500">
+                {isCompany ? "Firma" : "Privatperson"} · {customer.customer_group} · {customer.territory}
+              </p>
+            </div>
+            <div className="flex basis-full gap-2 sm:basis-auto">
+              {customer.email_id && (
+                <a href={`mailto:${customer.email_id}`} className={BTN.secondary}>
+                  <Mail /> E-Mail
+                </a>
+              )}
+              {customer.mobile_no && (
+                <a href={`tel:${customer.mobile_no.replace(/\s/g, "")}`} className={BTN.primary}>
+                  <Phone /> Anrufen
+                </a>
+              )}
+            </div>
+          </div>
+
+          {/* Kennzahlen als ruhige Zeile */}
+          <dl className="mt-7 grid grid-cols-3 divide-x divide-gray-150 rounded-xl border border-gray-200">
+            {[
+              { l: "Offene Pipeline", v: money(openVol) },
+              { l: "Umsatz gewonnen", v: money(won) },
+              { l: "Kunde seit", v: date(customer.creation) },
+            ].map((k) => (
+              <div key={k.l} className="px-4 py-3.5">
+                <dt className="text-[12px] font-medium text-gray-500">{k.l}</dt>
+                <dd className="tnum mt-1 text-[18px] font-semibold tracking-[-0.01em] text-gray-900">{k.v}</dd>
+              </div>
+            ))}
+          </dl>
+
+          <div className="mt-7">
+            <Tabs
+              base={base}
+              active={active}
+              tabs={[
+                { id: "chancen", label: "Chancen", count: opps.length },
+                { id: "kontakte", label: "Ansprechpartner", count: contacts.length },
+                { id: "aktivitaet", label: "Aktivität" },
+              ]}
+            />
+          </div>
+
+          <div className="pt-6">
+            {active === "chancen" &&
+              (opps.length === 0 ? (
+                <p className="text-gray-400">Keine Chancen.</p>
+              ) : (
+                <ul className="divide-y divide-gray-100 rounded-lg border border-gray-200">
+                  {opps.map((o) => (
+                    <li key={o.name}>
+                      <Link href={`/opportunities/${encodeURIComponent(o.name)}`} className="flex h-14 items-center gap-4 px-4 transition-colors hover:bg-gray-50">
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate font-medium text-gray-900">{o.title}</div>
+                          <div className="text-[12px] text-gray-500">
+                            {STAGE_LABEL[o.sales_stage]} · Abschluss {date(o.expected_closing)}
+                          </div>
+                        </div>
+                        <Badge value={o.status} label={LEAD_STATUS_LABEL[o.status]} />
+                        <span className="tnum w-24 text-right font-medium text-gray-900">{money(o.opportunity_amount, o.currency)}</span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              ))}
+
+            {active === "kontakte" &&
+              (contacts.length === 0 ? (
+                <p className="text-gray-400">Keine Ansprechpartner.</p>
+              ) : (
+                <ul className="divide-y divide-gray-100 rounded-lg border border-gray-200">
+                  {contacts.map((c) => (
+                    <li key={c.name} className="flex h-14 items-center gap-3 px-4">
+                      <Avatar name={c.full_name} />
+                      <div className="min-w-0 flex-1">
+                        <div className="font-medium text-gray-900">{c.full_name}</div>
+                        <div className="text-[12px] text-gray-500">{c.designation ?? "–"}</div>
+                      </div>
+                      {c.email_id && (
+                        <a href={`mailto:${c.email_id}`} className="text-gray-600 hover:underline">
+                          {c.email_id}
+                        </a>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              ))}
+
+            {active === "aktivitaet" && <Timeline doctype="Customer" name={customer.name} />}
+          </div>
+        </div>
+
+        <aside className="border-t border-gray-150 bg-gray-25 px-6 py-7 xl:border-l xl:border-t-0">
+          <div className="mb-2 text-[12px] font-medium text-gray-500">Eigenschaften</div>
+          <dl>
+            <Field label="Typ">
+              <Badge value={customer.customer_type} label={isCompany ? "Firma" : "Privatperson"} tone={isCompany ? "blue" : "violet"} />
+            </Field>
+            <Field label="Gruppe">{customer.customer_group}</Field>
+            <Field label="Region">{customer.territory}</Field>
+            <Field label="E-Mail">
+              {customer.email_id && (
+                <a href={`mailto:${customer.email_id}`} className="hover:underline">
+                  {customer.email_id}
+                </a>
+              )}
+            </Field>
+            <Field label="Telefon">{customer.mobile_no}</Field>
+            <Field label="Website">
+              {customer.website && (
+                <a href={customer.website} target="_blank" rel="noreferrer" className="hover:underline">
+                  {customer.website.replace(/^https?:\/\//, "")}
+                </a>
+              )}
+            </Field>
+            <Field label="Kunde seit">{date(customer.creation)}</Field>
+            <Field label="ID">
+              <span className="font-mono text-[12px] text-gray-500">{customer.name}</span>
+            </Field>
+          </dl>
+        </aside>
+      </div>
+    </>
+  );
+}

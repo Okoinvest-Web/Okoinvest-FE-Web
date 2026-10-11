@@ -1,0 +1,517 @@
+// src/lib/newsletter/texte.js – Wortlaute des Newsletters (Welle 3, Paket NL)
+//
+// ┌──────────────────────────────────────────────────────────────────────────────────────────────┐
+// │ ENTWURF · Prüfung Rechtsabteilung (Strang R). Alle Einwilligungs- und Hinweistexte hier sind  │
+// │ bestmöglich formuliert, aber nicht freigegeben. Jede Textänderung → NEWSLETTER_TEXT_VERSION    │
+// │ erhöhen: Der SHA-256 des gezeigten Wortlauts steht im Einwilligungsprotokoll.                  │
+// └──────────────────────────────────────────────────────────────────────────────────────────────┘
+//
+// Rechtliche Linie (zu prüfen durch die Rechtsabteilung, je Land):
+//  - E-Mail-Werbung nur mit vorheriger, ausdrücklicher Einwilligung: DE § 7 Abs. 2 Nr. 2 UWG, AT § 174 Abs. 3 TKG 2021
+//    (auch B2B), CH Art. 3 Abs. 1 lit. o UWG. Nachweis über Double-Opt-in (Protokoll art "einwilligung" + "doi").
+//  - Die Einwilligung ist die Anmeldung selbst (eigene Handlung „Anmelden“), Themen-Häkchen sind nie vorbelegt.
+//  - Abmeldung jederzeit, kostenlos, mit einem Klick (Link in jeder E-Mail, RFC 8058 List-Unsubscribe-Post).
+//  - Die Bestätigungs-Mail enthält keine Werbung.
+// Rein, ohne Abhängigkeiten (Browser, Server, node:test).
+
+import { THEMEN, themaIn } from "./themen.js";
+
+export const NEWSLETTER_TEXT_VERSION = "ENTWURF-2026-10-09";
+export const KENNZEICHNUNG_RECHT = "Entwurf · Prüfung Rechtsabteilung";
+
+/** Bestätigungslink gültig (Stunden) – danach werden die Angaben gelöscht. TODO Datenschutz: Frist bestätigen. */
+export const DOI_STUNDEN = 48;
+
+const LAND = {
+  de: { DE: "Deutschland", AT: "Österreich", CH: "die Schweiz" },
+  en: { DE: "Germany", AT: "Austria", CH: "Switzerland" },
+};
+
+const liste = (teile, und) => (teile.length > 1 ? `${teile.slice(0, -1).join(", ")} ${und} ${teile.at(-1)}` : teile[0] || "");
+
+/** Ausgewählte Themen als Satzteil („Fristen & Förderung und Marktdaten“) */
+export function themenSatz(themen, sprache = "de") {
+  const titel = THEMEN.filter((t) => themen.includes(t.id)).map((t) => themaIn(t, sprache).titel);
+  return liste(titel, sprache === "en" ? "and" : "und");
+}
+
+/**
+ * Einwilligungstext genau so, wie er beim Absenden gilt (Hash → Protokoll art "einwilligung", zweck "newsletter").
+ * Land und Themen sind Teil des Wortlauts – der Nachweis zeigt so, wofür eingewilligt wurde.
+ */
+export function einwilligungsText({ land, themen, sprache = "de" }) {
+  if (sprache === "en") {
+    return `I would like to receive the ÖkoInvest newsletter for ${LAND.en[land] || "my country"} by e-mail on the topics ${themenSatz(themen, "en")}. I will confirm my subscription via the link in an e-mail. I can unsubscribe at any time with one click via the link in every e-mail.`;
+  }
+  return `Ich möchte den Newsletter von ÖkoInvest für ${LAND.de[land] || "mein Land"} per E-Mail zu den Themen ${themenSatz(themen, "de")} erhalten. Die Anmeldung bestätige ich über den Link in einer E-Mail. Abmelden kann ich mich jederzeit mit einem Klick über den Link in jeder E-Mail.`;
+}
+
+/** Hinweis unter dem Formular (Information, keine eigene Einwilligung) */
+export const HINWEIS = Object.freeze({
+  de: {
+    kern: "Wir nutzen Ihre E-Mail-Adresse nur für diesen Newsletter und speichern Ihre Einwilligung als Nachweis. Ohne Bestätigung löschen wir die Adresse nach 48 Stunden.",
+    verweisVor: "Einzelheiten und Ihre Rechte finden Sie in der",
+    verweisLink: "Datenschutzerklärung",
+  },
+  en: {
+    kern: "We only use your e-mail address for this newsletter and keep a record of your consent. Without confirmation, we delete the address after 48 hours.",
+    verweisVor: "Details and your rights are set out in our",
+    verweisLink: "privacy policy",
+  },
+});
+
+/** Bestätigungsseite (Hash → Protokoll art "doi") */
+export const DOI = Object.freeze({
+  textId: "newsletter_doi",
+  de: { titel: "Newsletter bestätigen", text: "Ja, ich habe diesen Newsletter bestellt und bestätige meine E-Mail-Adresse.", knopf: "Anmeldung bestätigen" },
+  en: { titel: "Confirm newsletter", text: "Yes, I subscribed to this newsletter and confirm my e-mail address.", knopf: "Confirm subscription" },
+});
+
+export const ANMELDUNG_TEXT_ID = "newsletter_anmeldung";
+export const ABMELDUNG_TEXT_ID = "newsletter_abmeldung";
+
+/** Bestätigungs-Mail: keine Werbung, kein Ergebnis, keine Personendaten außer der Adresse selbst */
+export function bestaetigungsMail({ link, sprache = "de", land }) {
+  if (sprache === "en") {
+    return {
+      betreff: "Please confirm: ÖkoInvest newsletter",
+      text: `You subscribed to the ÖkoInvest newsletter for ${LAND.en[land] || "your country"} on our website. Please open the link and confirm your e-mail address there. Only then will you receive the newsletter. The link is valid for ${DOI_STUNDEN} hours. If you did not subscribe, please ignore this e-mail – your details will then be deleted automatically.`,
+      link,
+      linkText: "Confirm subscription",
+    };
+  }
+  return {
+    betreff: "Bitte bestätigen: Newsletter von ÖkoInvest",
+    text: `Sie haben auf unserer Website den Newsletter von ÖkoInvest für ${LAND.de[land] || "Ihr Land"} bestellt. Bitte öffnen Sie den Link und bestätigen Sie dort Ihre E-Mail-Adresse. Erst danach erhalten Sie den Newsletter. Der Link ist ${DOI_STUNDEN} Stunden gültig. Haben Sie nichts bestellt, ignorieren Sie diese E-Mail bitte – dann verfallen Ihre Angaben automatisch.`,
+    link,
+    linkText: "Anmeldung bestätigen",
+  };
+}
+
+/** Begrüßung nach der Bestätigung – enthält den Abmeldelink (wie jede spätere Ausgabe) */
+export function willkommensMail({ link, abmeldeUrl, sprache = "de", land, themen }) {
+  if (sprache === "en") {
+    return {
+      betreff: "Welcome: ÖkoInvest newsletter",
+      text: `Thank you for confirming. You will receive the newsletter for ${LAND.en[land] || "your country"} on the topics ${themenSatz(themen, "en")}. You can unsubscribe at any time with one click via the link in every e-mail.`,
+      link,
+      linkText: "Manage or unsubscribe",
+      kopfzeilen: { "List-Unsubscribe": `<${abmeldeUrl}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" },
+    };
+  }
+  return {
+    betreff: "Willkommen: Newsletter von ÖkoInvest",
+    text: `Danke für Ihre Bestätigung. Sie erhalten den Newsletter für ${LAND.de[land] || "Ihr Land"} zu den Themen ${themenSatz(themen, "de")}. Abmelden können Sie sich jederzeit mit einem Klick über den Link in jeder E-Mail.`,
+    link,
+    linkText: "Verwalten oder abmelden",
+    kopfzeilen: { "List-Unsubscribe": `<${abmeldeUrl}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" },
+  };
+}
+
+/** Antworttexte der API (ohne Personendaten; gleich, ob die Adresse schon angemeldet ist – keine Ausforschung) */
+export const ANTWORT = Object.freeze({
+  de: { angefordert: `Fast geschafft: Wir haben Ihnen einen Bestätigungslink geschickt. Bitte öffnen Sie ihn innerhalb von ${DOI_STUNDEN} Stunden – erst dann ist die Anmeldung aktiv.`, aus: "Der Newsletter startet mit dem Livegang." },
+  en: { angefordert: `Almost done: we have sent you a confirmation link. Please open it within ${DOI_STUNDEN} hours – only then is your subscription active.`, aus: "The newsletter starts when the site goes live." },
+});
+// src/lib/verifizierung.js – Bestätigungscodes für Google Search Console und Bing Webmaster Tools (Welle 3, Paket NL)
+//
+// Die Codes kommen NUR aus Umgebungsvariablen (.env.example): NEXT_PUBLIC_GSC_VERIFICATION, NEXT_PUBLIC_BING_VERIFICATION.
+// Ohne Wert entsteht kein Meta-Tag. Ein Wert wird nur übernommen, wenn er wie ein Bestätigungscode aussieht
+// (Buchstaben, Ziffern, „-“ und „_“, 6–100 Zeichen) – versehentlich eingefügte ganze Meta-Tags, Anführungszeichen
+// oder Leerzeichen erzeugen kein kaputtes oder fremdes Markup. Es wird nichts extern angemeldet: Die Anmeldung der
+// Domain in Search Console und Bing macht der Inhaber nach dem Domainkauf (dann Wert setzen, neu bauen).
+// Rein, ohne Importe (node:test).
+
+const CODE = /^[A-Za-z0-9_-]{6,100}$/;
+
+/** Wert prüfen: gültiger Code oder null */
+export function verifizierungsCode(wert) {
+  const s = typeof wert === "string" ? wert.trim() : "";
+  return CODE.test(s) ? s : null;
+}
+
+/**
+ * Next.js-Metadaten `verification` aus den Umgebungswerten – oder {} ohne gültigen Code.
+ * @param {{ google?: string, bing?: string }} werte  process.env.NEXT_PUBLIC_GSC_VERIFICATION / …_BING_VERIFICATION
+ */
+export function verifizierungMetadaten({ google, bing } = {}) {
+  const g = verifizierungsCode(google);
+  const b = verifizierungsCode(bing);
+  if (!g && !b) return {};
+  return { verification: { ...(g ? { google: g } : {}), ...(b ? { other: { "msvalidate.01": b } } : {}) } };
+}
+warning: in the working copy of 'src/data/site.js', LF will be replaced by CRLF the next time Git touches it
+diff --git a/.env.example b/.env.example
+index 1e7d17b..b470a49 100644
+--- a/.env.example
++++ b/.env.example
+@@ -19,7 +19,14 @@ NEXT_PUBLIC_SITE_URL=
+ # Alles andere (auch ein fehlender Wert) liefert noindex und robots.txt „Disallow: /“.
+ NEXT_PUBLIC_SITE_ENV=
+ 
+-# Bestätigungscodes Google Search Console / Bing Webmaster Tools (öffentlich, optional)
++# Bestätigungscodes Google Search Console / Bing Webmaster Tools (öffentlich, optional; Welle 3, Paket NL)
++# Nur der Code aus dem content-Attribut, NICHT das ganze Meta-Tag – erlaubt sind Buchstaben, Ziffern, „-“, „_“
++# (6–100 Zeichen, src/lib/verifizierung.js). Ohne Wert entsteht kein Meta-Tag. Wirksam nach neuem Build.
++# Ablauf (Inhaber, nach Domainkauf): Property „https://www.oekoinvest.com“ in Search Console bzw. Bing anlegen,
++# Methode „HTML-Tag“ wählen, Code hier eintragen, bauen, dann bestätigen. Bing kann die Search-Console-Property
++# auch importieren (dann bleibt NEXT_PUBLIC_BING_VERIFICATION leer). Sitemap: https://www.oekoinvest.com/sitemap.xml
++#   Google: <meta name="google-site-verification" content="CODE">  → NEXT_PUBLIC_GSC_VERIFICATION=CODE
++#   Bing:   <meta name="msvalidate.01" content="CODE">              → NEXT_PUBLIC_BING_VERIFICATION=CODE
+ NEXT_PUBLIC_GSC_VERIFICATION=
+ NEXT_PUBLIC_BING_VERIFICATION=
+ 
+diff --git a/src/app/(stamm)/marktdaten/page.js b/src/app/(stamm)/marktdaten/page.js
+index d87b4fe..bc0b57b 100644
+--- a/src/app/(stamm)/marktdaten/page.js
++++ b/src/app/(stamm)/marktdaten/page.js
+@@ -39,13 +39,18 @@ import { PACHT, ERLOESE, FREIFLAECHE } from "@/lib/invest/markt";
+ import { fmt } from "@/lib/rechner/annahmen";
+ import { getEnergySnapshot } from "@/lib/energy";
+ import JsonLd from "@/components/JsonLd";
++import { NewsletterBand } from "@/components/Newsletter/NewsletterAnmeldung";
+ import { pfad as seitenPfad } from "@/lib/land";
+-import { seitenLand, seitenMetadata, spracheDerAnfrage } from "@/lib/land/seite";
++import { seitenLand, seitenMetadata, spracheDerAnfrage, landDerAnfrage } from "@/lib/land/seite";
+ import { uebersetze } from "@/lib/sprache/woerterbuch";
+ import { formate } from "@/lib/sprache/zahlformat";
+ import { datumText } from "@/lib/sprache/format";
+ import { GiltFuer, LandHinweis } from "@/components/Land/LandHinweis";
+ import { faqFuerLand } from "@/components/Land/Laenderteile";
++import { schreibweiseBaum } from "@/components/Land/SchweizerSchreibweise";
++
++// Schweiz (/ch, /en/ch): fest geschriebene Texte ohne „ß“ (W3-0, src/components/Land/SchweizerSchreibweise.js)
++const chBaum = (el) => schreibweiseBaum(el, landDerAnfrage());
+ 
+ export const revalidate = 900;
+ 
+@@ -320,7 +325,7 @@ const webPageSchema = {
+ /* ------------------------------------------------------------------ */
+ 
+ function Tabelle({ caption, kopf, zeilen, rechtsAb = 1, minBreite = 560, markiert }) {
+-  return (
++  return chBaum(
+     <div className="overflow-x-auto rounded-3xl bg-white ring-1 ring-ink-200/70" tabIndex={0} role="region" aria-label={`${caption} (horizontal scrollbar)`}>
+       <table className="w-full border-collapse text-left text-[14px]" style={{ minWidth: minBreite }}>
+         <caption className="px-5 pt-5 text-left text-[13px] font-semibold text-ink-600 md:px-6">{caption}</caption>
+@@ -356,7 +361,7 @@ function Tabelle({ caption, kopf, zeilen, rechtsAb = 1, minBreite = 560, markier
+ }
+ 
+ function TextLink({ href, children }) {
+-  return (
++  return chBaum(
+     <Link href={href} className="font-medium text-ov-700 underline decoration-ov-300 underline-offset-2 hover:decoration-current">
+       {children}
+     </Link>
+@@ -397,7 +402,7 @@ export default async function MarktdatenPage({ params }) {
+     ...[...MARKTWERT_SOLAR_FRUEHER].reverse().map((m) => [`${m.jahr}*`, "–", fmt(m.solar, 2), "–"]),
+   ];
+ 
+-  return (
++  return chBaum(
+     <div>
+       <JsonLd daten={webPageSchema} />
+       <JsonLd daten={datasetSchema} />
+@@ -469,6 +474,9 @@ export default async function MarktdatenPage({ params }) {
+                 <p>
+                   For our calculators we currently assume {ct(ERLOESE.eegFreiflaecheCt, 1)}. How to prepare a bid and which land is eligible is explained in the guide <TextLink href="/ratgeber/eeg-ausschreibung-freiflaeche">EEG tender for ground-mounted PV</TextLink>. Next regular <TextLink href="/wissen/lexikon#gebotstermin">bidding date</TextLink>: {nGebot}.
+                 </p>
++                <p>
++                  All dates and results for Germany, Austria and Switzerland – including the second segment, innovation tenders, EAG and Pronovo – are in the <TextLink href="/marktdaten/ausschreibungen">tender monitor</TextLink>.
++                </p>
+                 <Link
+                   href={seitenPfad("/rechner/solarpark")}
+                   className="inline-flex items-center gap-2 rounded-2xl bg-ov-600 px-5 py-3 text-[14.5px] font-semibold text-white transition-colors hover:bg-ov-700"
+@@ -491,6 +499,10 @@ export default async function MarktdatenPage({ params }) {
+               sind, erklärt der Ratgeber <TextLink href="/ratgeber/eeg-ausschreibung-freiflaeche">EEG-Ausschreibung Freifläche</TextLink>. Nächster
+               regulärer <TextLink href="/wissen/lexikon#gebotstermin">Gebotstermin</TextLink>: {NAECHSTER_GEBOTSTERMIN}.
+             </p>
++            <p>
++              Alle Termine und Ergebnisse für Deutschland, Österreich und die Schweiz – auch zweites Segment, Innovationsausschreibung, EAG und Pronovo – zeigt der{" "}
++              <TextLink href="/marktdaten/ausschreibungen">Ausschreibungs-Monitor</TextLink>.
++            </p>
+             <Link
+               href={seitenPfad("/rechner/solarpark")}
+               className="inline-flex items-center gap-2 rounded-2xl bg-ov-600 px-5 py-3 text-[14.5px] font-semibold text-white transition-colors hover:bg-ov-700"
+@@ -835,6 +847,9 @@ export default async function MarktdatenPage({ params }) {
+         </div>
+       </Section>
+ 
++      {/* Welle 3, Paket NL: Newsletter je Land (nur sichtbar, solange er Anmeldungen annimmt) */}
++      <NewsletterBand quelle="marktdaten" tone="sand" />
++
+       <Querverweise items={uebersetze({ de: QUERVERWEISE, en: EN.querverweise }, sprache)} />
+       <CtaBand
+         eyebrow={en ? "From the market situation to a project" : "Von der Marktlage zum Projekt"}
+diff --git a/src/app/(stamm)/ratgeber/page.js b/src/app/(stamm)/ratgeber/page.js
+index a20e057..6bd9ba2 100644
+--- a/src/app/(stamm)/ratgeber/page.js
++++ b/src/app/(stamm)/ratgeber/page.js
+@@ -12,10 +12,15 @@ import { AGRI, KOMMUNE, PACHT, PROVISION, STAND } from "@/lib/invest/markt";
+ import { formate } from "@/lib/sprache/zahlformat";
+ import { SITE, abs } from "@/data/site";
+ import JsonLd from "@/components/JsonLd";
++import { NewsletterBand } from "@/components/Newsletter/NewsletterAnmeldung";
+ import { pfad } from "@/lib/land";
+-import { seitenLand, seitenMetadata, spracheDerAnfrage } from "@/lib/land/seite";
++import { seitenLand, seitenMetadata, spracheDerAnfrage, landDerAnfrage } from "@/lib/land/seite";
+ import { ertragFuerLand, foerderwegFuerLand } from "@/components/Land/Laenderteile";
+ import { landHinweisText, landHinweisTextEn } from "@/lib/land";
++import { schreibweiseBaum } from "@/components/Land/SchweizerSchreibweise";
++
++// Schweiz (/ch, /en/ch): fest geschriebene Texte ohne „ß“ (W3-0, src/components/Land/SchweizerSchreibweise.js)
++const chBaum = (el) => schreibweiseBaum(el, landDerAnfrage());
+ 
+ const PAGE_URL = abs("/ratgeber");
+ 
+@@ -175,7 +180,7 @@ export default async function RatgeberPage({ params }) {
+     provision,
+   ];
+ 
+-  return (
++  return chBaum(
+     <>
+       <JsonLd daten={jsonLd} />
+ 
+@@ -224,6 +229,9 @@ export default async function RatgeberPage({ params }) {
+         />
+       </Section>
+ 
++      {/* Welle 3, Paket NL: Newsletter je Land (nur sichtbar, solange er Anmeldungen annimmt) */}
++      <NewsletterBand quelle="ratgeber" tone="white" />
++
+       <WeiterWissen begriffe={BEGRIFFE.length} />
+ 
+       <CtaBand
+diff --git a/src/components/Reusable/footer.js b/src/components/Reusable/footer.js
+index 2bd8c12..a89324f 100644
+--- a/src/components/Reusable/footer.js
++++ b/src/components/Reusable/footer.js
+@@ -6,11 +6,14 @@ import { ArrowUpRight, Building2, Clock, Mail, MapPin, Phone } from "lucide-reac
+ 
+ import CookieBanner from "../Cookies/cookiecomponent";
+ import { navigationFuer } from "@/data/navigation";
++import { useSeitenLand } from "@/components/Land/LandKontext";
++import { schreibweiseFuer } from "@/lib/land/schreibweise";
+ import { useSprache, useTexte } from "@/components/Sprache/SpracheKontext";
+ import { GESELLSCHAFT, KONTAKT, SITE } from "@/data/site";
+ import LiveTicker from "@/components/ui/LiveTicker";
+ import Logo from "@/components/ui/Logo";
+ import Stagger from "@/components/ui/Stagger";
++import { NewsletterFussleiste } from "@/components/Newsletter/NewsletterAnmeldung";
+ 
+ // Texte des Fußbereichs (Sprachmodell, src/lib/sprache/woerterbuch.js)
+ const TEXTE = {
+@@ -117,7 +120,7 @@ export default function Footer() {
+   const jahr = new Date().getFullYear();
+   const sprache = useSprache();
+   const t = useTexte(TEXTE);
+-  const SPALTEN = spalten(navigationFuer(sprache), t, sprache);
++  const SPALTEN = spalten(schreibweiseFuer(navigationFuer(sprache), useSeitenLand()), t, sprache); // Schweiz: ohne „ß“
+ 
+   return (
+     <footer role="contentinfo" aria-label={t.fuss} className="ov-noise relative isolate overflow-hidden bg-navy-950 text-white">
+@@ -212,6 +215,9 @@ export default function Footer() {
+           ))}
+         </Stagger>
+ 
++        {/* Welle 3, Paket NL: Newsletter je Land – nur sichtbar, solange er Anmeldungen annimmt */}
++        <NewsletterFussleiste />
++
+         {/* Live-Leiste */}
+         <div className="flex flex-col gap-4 rounded-2xl bg-white/[0.04] px-5 py-4 ring-1 ring-white/10 md:flex-row md:items-center md:justify-between">
+           <LiveTicker />
+diff --git a/src/components/Wurzel/Wurzel.js b/src/components/Wurzel/Wurzel.js
+index 4071395..bd91c7c 100644
+--- a/src/components/Wurzel/Wurzel.js
++++ b/src/components/Wurzel/Wurzel.js
+@@ -20,6 +20,7 @@ import JsonLd from "@/components/JsonLd";
+ import { LandProvider } from "@/components/Land/LandKontext";
+ import { SpracheProvider } from "@/components/Sprache/SpracheKontext";
+ import { LAND_AUS_PFAD } from "@/lib/land/laender";
++import { verifizierungMetadaten } from "@/lib/verifizierung";
+ 
+ export { LAND_AUS_PFAD };
+ 
+@@ -144,15 +145,8 @@ export function basisMetadata({ ogLocale = "de_DE", sprache = "de" } = {}) {
+       apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+     },
+     // Bestätigungscodes für Google Search Console / Bing Webmaster Tools – erst
+-    // nach Festlegung der Produktivdomain über Umgebungsvariablen setzen.
+-    ...(process.env.NEXT_PUBLIC_GSC_VERIFICATION || process.env.NEXT_PUBLIC_BING_VERIFICATION
+-      ? {
+-          verification: {
+-            ...(process.env.NEXT_PUBLIC_GSC_VERIFICATION ? { google: process.env.NEXT_PUBLIC_GSC_VERIFICATION } : {}),
+-            ...(process.env.NEXT_PUBLIC_BING_VERIFICATION ? { other: { "msvalidate.01": process.env.NEXT_PUBLIC_BING_VERIFICATION } } : {}),
+-          },
+-        }
+-      : {}),
++    // nach Festlegung der Produktivdomain über Umgebungsvariablen setzen (nur gültige Codes, src/lib/verifizierung.js).
++    ...verifizierungMetadaten({ google: process.env.NEXT_PUBLIC_GSC_VERIFICATION, bing: process.env.NEXT_PUBLIC_BING_VERIFICATION }),
+     openGraph: {
+       type: "website",
+       locale: ogLocale,
+diff --git a/src/data/site.js b/src/data/site.js
+index 0d01378..db83c03 100644
+--- a/src/data/site.js
++++ b/src/data/site.js
+@@ -97,6 +97,19 @@ export const KENNZAHLEN = {
+ 
+ export const SOCIAL = [];
+ 
++/**
++ * Pressekontakt (Welle 3, Paket NL – Newsroom /newsroom). Bis der Inhaber eine eigene Ansprechperson bzw. ein
++ * Pressepostfach freigibt, gelten die allgemeinen Kontaktdaten. TODO-Inhaber: ansprechpartner/funktion/email
++ * (z. B. presse@…) festlegen; null-Werte blendet die Seite aus.
++ */
++export const PRESSE = {
++  ansprechpartner: null,
++  funktion: null,
++  email: KONTAKT.email,
++  telefon: KONTAKT.telefon,
++  telefonHref: KONTAKT.telefonHref,
++};
++
+ /**
+  * Länderangaben für das Länderrouting (Welle 2): einzige Quelle für Ländernamen und
+  * länderbezogene Kontaktangaben. src/lib/land/laender.js setzt daraus Präfix, Sprache
+diff --git a/src/lib/land/seiten.js b/src/lib/land/seiten.js
+index 6ad9ac1..65b2b74 100644
+--- a/src/lib/land/seiten.js
++++ b/src/lib/land/seiten.js
+@@ -41,6 +41,9 @@ export const SEITEN = Object.freeze({
+   "/dachflaeche-verpachten": { titel: "Dachfläche verpachten", prio: 0.9, freq: "monthly" },
+   "/landwirte": { titel: "Landwirte", prio: 0.8, freq: "monthly" },
+   "/kommunen": { titel: "Kommunen", prio: 0.8, freq: "monthly" },
++  // Welle 3, Paket B8: Kommunal 2.0 – noindex bis zur Fachprüfung (Team Deutschland/Österreich, E6), nicht in der Sitemap
++  "/kommunen/ratsvorlage": { titel: "Ratsvorlage Solarpark", prio: 0.7, freq: "monthly", index: false },
++  "/kommunen/widmungskit": { titel: "Widmungskit Österreich", prio: 0.6, freq: "monthly", index: false },
+   "/investoren": { titel: "Investoren", prio: 0.9, freq: "monthly" },
+   "/bestandsanlagen": { titel: "Bestandsanlagen", prio: 0.8, freq: "monthly" },
+   "/regionen": { titel: "Regionen", prio: 0.8, freq: "monthly" },
+@@ -50,6 +53,9 @@ export const SEITEN = Object.freeze({
+   "/projektboerse/anbieten": { titel: "Projekt anbieten", prio: 0.7, freq: "monthly" },
+   "/projektboerse/karte": { titel: "Börse auf der Karte", prio: 0.7, freq: "daily" },
+   "/projektboerse/[slug]": { titel: "Exposé", dynamisch: true, sitemap: false },
++  // Welle 3, Paket B10: Neutralität der Börse – noindex bis zur Prüfung (Rechtsabteilung je Land, E6), nicht in der Sitemap
++  "/projektboerse/neutralitaet": { titel: "Neutralität & Regeln", prio: 0.6, freq: "monthly", index: false },
++  "/projektboerse/muster-nda": { titel: "Muster-NDA für Projektanbieter", prio: 0.3, freq: "yearly", index: false },
+   // Strom & Gemeinschaft
+   "/virtuelles-kraftwerk": { titel: "Virtuelles Kraftwerk", prio: 0.8, freq: "monthly" },
+   "/reststrom": { titel: "Reststrom-Pool", prio: 0.8, freq: "monthly" },
+@@ -57,6 +63,10 @@ export const SEITEN = Object.freeze({
+   "/energiegemeinschaften": { titel: "Energiegemeinschaften", prio: 0.8, freq: "monthly" },
+   "/energiegemeinschaften/rechner": { titel: "Energiegemeinschaft-Rechner", prio: 0.7, freq: "monthly" },
+   "/energiegemeinschaften/software": { titel: "Software für Energiegemeinschaften", prio: 0.8, freq: "monthly" },
++  // Welle 3, Paket B7: EG-Software Österreich – noindex bis zur Fachprüfung (Team Österreich, E6) und Preisfreigabe (Inhaber)
++  "/energiegemeinschaften/software/preise": { titel: "Preisblatt EG-Software", prio: 0.6, freq: "monthly", index: false },
++  "/energiegemeinschaften/software/wechsel-check": { titel: "Wechsel-Check Energiegemeinschaft", prio: 0.6, freq: "monthly", index: false },
++  "/energiegemeinschaften/software/white-label": { titel: "White-Label für Stadtwerke", prio: 0.6, freq: "monthly", index: false },
+   "/genossenschaft": { titel: "Genossenschaft", prio: 0.7, freq: "monthly" },
+   // Rechner & Werkzeuge
+   "/flaechencheck": { titel: "Flächencheck", prio: 0.9, freq: "monthly" },
+@@ -76,16 +86,27 @@ export const SEITEN = Object.freeze({
+   "/rechner/energy-sharing": { titel: "Energy-Sharing-Rechner", prio: 0.6, freq: "monthly" },
+   "/rechner/dachpacht": { titel: "Dachpacht-Rechner", prio: 0.8, freq: "monthly" },
+   "/rechner/bestandsanlage": { titel: "Bestandsanlage bewerten", prio: 0.8, freq: "monthly" },
++  // Welle 3, Paket B5: noindex bis zur Fachprüfung (Team Deutschland, E6) – nicht in der Sitemap
++  "/rechner/gewerbestrom-check": { titel: "Rechnungs-Check Gewerbestrom", prio: 0.8, freq: "monthly", index: false },
++  // Welle 3, Paket B6: Flächenpass Stufe 1 – noindex bis zur Fachprüfung (E6), nicht in der Sitemap
++  "/rechner/flaechenpass": { titel: "Flächenpass", prio: 0.8, freq: "monthly", index: false },
+   // Markt & Wissen
+   "/marktdaten": { titel: "Marktdaten Solar", prio: 0.8, freq: "weekly" },
+   "/marktdaten/fristen": { titel: "Fristen und Termine", prio: 0.6, freq: "weekly", index: false },
++  // Welle 3, Paket B9: noindex bis zur fachlichen Zweitprüfung (E6)
++  "/marktdaten/ausschreibungen": { titel: "Ausschreibungs-Monitor", prio: 0.6, freq: "weekly", index: false },
+   "/ratgeber": { titel: "Ratgeber", prio: 0.8, freq: "weekly" },
+   "/ratgeber/[slug]": { titel: "Ratgeber-Artikel", dynamisch: true, sitemap: false },
+   "/wissen/lexikon": { titel: "Lexikon", prio: 0.7, freq: "monthly", lexikon: true },
+   "/faq": { titel: "FAQ", prio: 0.6, freq: "monthly" },
++  // Welle 3, Paket NL: Newsletter je Land – noindex bis Strang R die Texte freigibt und der Versand (B0) steht
++  "/newsletter": { titel: "Newsletter", prio: 0.5, freq: "monthly", index: false },
+   // Unternehmen & Kontakt
+   "/unternehmen": { titel: "Über ÖkoInvest", prio: 0.6, freq: "monthly" },
+   "/referenzen": { titel: "Referenzen", prio: 0.6, freq: "monthly" },
++  // Welle 3, Paket NL: Newsroom – keine Presse vor Freigabe durch den Inhaber (Masterplan Abschnitt 7): noindex, nicht in Navigation/Sitemap
++  "/newsroom": { titel: "Newsroom", prio: 0.5, freq: "weekly", index: false },
++  "/newsroom/[slug]": { titel: "Meldung", dynamisch: true, sitemap: false, index: false },
+   "/kontakt": { titel: "Kontakt", prio: 0.6, freq: "yearly" },
+   "/termin": { titel: "Termin", prio: 0.6, freq: "monthly" },
+   // Rechtstexte (Entwürfe filtert die Sitemap über src/lib/indexsteuerung.js)
+diff --git a/src/lib/land/zonen.js b/src/lib/land/zonen.js
+index 0aba93f..a5115af 100644
+--- a/src/lib/land/zonen.js
++++ b/src/lib/land/zonen.js
+@@ -17,6 +17,7 @@ export const OHNE_LAND = Object.freeze([
+   "/einladung",
+   "/angebot",
+   "/bericht",
++  "/newsletter/abo", // Welle 3, Paket NL: Token-Seite (Bestätigen/Abmelden), keine Länderfassung
+   "/p",
+   "/api",
+   "/design",
+diff --git a/src/lib/sprache/seiten.js b/src/lib/sprache/seiten.js
+index 8c9360c..c45307d 100644
+--- a/src/lib/sprache/seiten.js
++++ b/src/lib/sprache/seiten.js
+@@ -69,11 +69,19 @@ export const UEBERSETZT = Object.freeze({
+   "/projektboerse/anbieten": VERMERK_EN_G1,
+   "/projektboerse/karte": VERMERK_EN_G1,
+   "/projektboerse/[slug]": VERMERK_EN_G1,
++  // Welle 3, Paket B10: Inhalt englisch, aber noindex wie die deutsche Fassung (Prüfung Rechtsabteilung offen;
++  // Muster-NDA als Übersetzung zur Information, maßgeblich ist die deutsche Fassung)
++  "/projektboerse/neutralitaet": Object.freeze({ stand: "2026-10-09", grundlage: "Seite, Bühne und Badges mit englischen Texten (Paket B10); Rechtsrahmen je Land englisch in src/lib/boerse/neutralitaet.js", pruefer: "TODO-E6 + Rechtsabteilung", index: false }),
++  "/projektboerse/muster-nda": Object.freeze({ stand: "2026-10-09", grundlage: "Muster-NDA übersetzt (Paket B10) – Übersetzung zur Information, Prüfung Rechtsabteilung offen", pruefer: "TODO-E6 + Rechtsabteilung", index: false }),
+   "/bestandsanlagen": VERMERK_EN_G1,
+   "/kontakt": VERMERK_EN_G1,
+   "/termin": VERMERK_EN_G1,
+   "/unternehmen": VERMERK_EN_G1,
+   "/referenzen": VERMERK_EN_G1,
++  // Welle 3, Paket NL: Inhalt englisch, aber noindex wie die deutschen Fassungen (Strang R / Freigabe Inhaber offen);
++  // /newsroom/[slug] bleibt „nicht übersetzt“ (Meldungen deutsch)
++  "/newsletter": Object.freeze({ stand: "2026-10-09", grundlage: "Seite und Newsletter-Baustein mit englischen Texten (Paket NL); Einwilligungswortlaut englisch mit eigenem Hash", pruefer: "TODO-E6 + Rechtsabteilung", index: false }),
++  "/newsroom": Object.freeze({ stand: "2026-10-09", grundlage: "Seite mit englischen Texten (Paket NL); Kurzprofil aus src/data/site.js", pruefer: "TODO-E6", index: false }),
+   "/warum-oekoinvest": VERMERK_EN_G1,
+   "/prozess": VERMERK_EN_G1,
+   // Gruppe 1 – Recht (noindex bis Freigabe Rechtsabteilung)
+@@ -94,6 +102,9 @@ export const UEBERSETZT = Object.freeze({
+   "/dachflaeche-verpachten": VERMERK_EN_G2,
+   "/landwirte": VERMERK_EN_G2,
+   "/kommunen": VERMERK_EN_G2,
++  // Welle 3, Paket B8: Kommunal 2.0 – Inhalt englisch (Ratsvorlage selbst deutsch), noindex wie die deutsche Fassung (Fachprüfung offen)
++  "/kommunen/ratsvorlage": Object.freeze({ stand: "2026-10-09", grundlage: "Seite und Werkzeug englisch (Paket B8); Landesregeln und Widmung mit englischen Texten bzw. Regionsdaten aus src/data/regionen/en; Rechenlogik gemeinsam mit DE", pruefer: "TODO-E6", index: false }),
++  "/kommunen/widmungskit": Object.freeze({ stand: "2026-10-09", grundlage: "Seite und Checkliste englisch (Paket B8); Prüfpunkte aus src/data/regionen/en", pruefer: "TODO-E6", index: false }),
+   "/flaechencheck": VERMERK_EN_G2,
+   "/regionen": VERMERK_EN_G2,
+   "/regionen/[slug]": VERMERK_EN_G2,
+@@ -102,6 +113,10 @@ export const UEBERSETZT = Object.freeze({
+   "/energie-live": VERMERK_EN_G2,
+   "/energiegemeinschaften": VERMERK_EN_G2,
+   "/energiegemeinschaften/software": VERMERK_EN_G2,
++  // Welle 3, Paket B7: Inhalt englisch, aber noindex wie die deutsche Fassung (Fachprüfung und Preisfreigabe offen)
++  "/energiegemeinschaften/software/preise": Object.freeze({ stand: "2026-10-09", grundlage: "Seite und Bausteine mit englischen Texten (Paket B7); keine Beträge", pruefer: "TODO-E6", index: false }),
++  "/energiegemeinschaften/software/wechsel-check": Object.freeze({ stand: "2026-10-09", grundlage: "Seite und Wechsel-Check mit englischen Texten (Paket B7); Fakten-Wortlaut englisch in src/lib/eg-angebot/fakten.js", pruefer: "TODO-E6", index: false }),
++  "/energiegemeinschaften/software/white-label": Object.freeze({ stand: "2026-10-09", grundlage: "Seite mit englischen Texten (Paket B7)", pruefer: "TODO-E6", index: false }),
+   "/energiegemeinschaften/rechner": VERMERK_EN_G2,
+   "/genossenschaft": VERMERK_EN_G2,
+   // Gruppe 3 – Rechner und Marktdaten
+@@ -121,6 +136,10 @@ export const UEBERSETZT = Object.freeze({
+   "/rechner/bestandsanlage": VERMERK_EN_G3,
+   "/rechner/reststrom": VERMERK_EN_G3,
+   "/rechner/solarcarport": VERMERK_EN_G3,
++  // Welle 3, Paket B5: Inhalt englisch, aber noindex wie die deutsche Fassung (Fachprüfung offen)
++  "/rechner/gewerbestrom-check": Object.freeze({ stand: "2026-10-09", grundlage: "Seite und Rechner über Wörterbücher übersetzt (Paket B5); Rechenlogik gemeinsam mit DE", pruefer: "TODO-E6", index: false }),
++  // Welle 3, Paket B6: Flächenpass – Inhalt englisch, aber noindex wie die deutsche Fassung (Fachprüfung offen)
++  "/rechner/flaechenpass": Object.freeze({ stand: "2026-10-09", grundlage: "Seite, Assistent und Texte englisch (Paket B6); Regionsdaten aus src/data/regionen/en; Bewertungslogik gemeinsam mit DE", pruefer: "TODO-E6", index: false }),
+   "/marktdaten": VERMERK_EN_G3,
+   // Gruppe 3 – Wissen
+   "/faq": VERMERK_EN_G3,
+@@ -128,6 +147,8 @@ export const UEBERSETZT = Object.freeze({
+   "/ratgeber": VERMERK_EN_G3,
+   // Entwurf, Prüfung Rechtsabteilung offen: Inhalt englisch, aber nicht indexieren (wie die deutsche Fassung)
+   "/marktdaten/fristen": Object.freeze({ ...VERMERK_EN_G3, index: false }),
++  // Welle 3, Paket B9: Ausschreibungs-Monitor – Inhalt englisch, aber noindex bis zur Fachprüfung (wie die deutsche Fassung)
++  "/marktdaten/ausschreibungen": Object.freeze({ stand: "2026-10-09", grundlage: "Seite und Monitor-Baustein mit englischen Texten (Paket B9); Daten unverändert", pruefer: "TODO-E6", index: false }),
+ });
+ 
+ /**

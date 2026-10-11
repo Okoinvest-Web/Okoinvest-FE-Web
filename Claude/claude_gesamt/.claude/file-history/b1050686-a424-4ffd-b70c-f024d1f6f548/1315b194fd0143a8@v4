@@ -1,0 +1,288 @@
+"use client";
+
+import { useMemo, useState } from "react";
+
+import { Legende } from "@/components/ui";
+import { formatZahl } from "@/lib/format";
+
+/**
+ * Gestapeltes Balkendiagramm, etwa fuer Monatsertraege.
+ *
+ * Zwischen den gestapelten Abschnitten bleibt eine schmale Luecke in
+ * Flaechenfarbe. Sie trennt die Abschnitte auch dann, wenn die Farben
+ * bei Farbfehlsichtigkeit nahe beieinander liegen.
+ */
+
+export interface BalkenReihe {
+  schluessel: string;
+  label: string;
+  farbe: string;
+  werte: number[];
+}
+
+export function Balkendiagramm({
+  beschriftungen,
+  reihen,
+  einheit,
+  kompakt = false,
+  hoehe = 240,
+  /** Vergleichslinie, etwa der Sollwert aus der Auslegung. */
+  sollwert,
+  sollLabel = "Soll",
+}: {
+  beschriftungen: string[];
+  reihen: BalkenReihe[];
+  einheit: string;
+  /**
+   * Kuerzt grosse Zahlen auf Tausender ("12k"). Als Schalter statt als
+   * Funktion, weil Serverkomponenten keine Funktionen an
+   * Clientkomponenten uebergeben duerfen.
+   */
+  kompakt?: boolean;
+  hoehe?: number;
+  sollwert?: number;
+  sollLabel?: string;
+}) {
+  const [aktiv, setAktiv] = useState<number | null>(null);
+
+  const formatWert = (wert: number) =>
+    kompakt && Math.abs(wert) >= 1000
+      ? `${formatZahl(wert / 1000, 0)}k`
+      : formatZahl(wert, 0);
+
+  const BREITE = 720;
+  const RAND = { oben: 12, rechts: 8, unten: 26, links: 48 };
+
+  const { maximum, skalaY, balkenBreite, schritt, teilstriche } =
+    useMemo(() => {
+      const summen = beschriftungen.map((_, i) =>
+        reihen.reduce((s, r) => s + (r.werte[i] ?? 0), 0),
+      );
+      const roh = Math.max(1, ...summen, sollwert ?? 0);
+      const stufe = 10 ** Math.floor(Math.log10(roh));
+      const maximum = Math.ceil(roh / (stufe / 2)) * (stufe / 2);
+
+      const innenH = hoehe - RAND.oben - RAND.unten;
+      const innenB = BREITE - RAND.links - RAND.rechts;
+      const schritt = innenB / beschriftungen.length;
+
+      return {
+        maximum,
+        skalaY: (wert: number) =>
+          RAND.oben + innenH - (wert / maximum) * innenH,
+        balkenBreite: Math.min(46, schritt * 0.62),
+        schritt,
+        teilstriche: Array.from({ length: 5 }, (_, i) => (maximum / 4) * i),
+      };
+    }, [
+      beschriftungen,
+      reihen,
+      hoehe,
+      sollwert,
+      RAND.links,
+      RAND.oben,
+      RAND.rechts,
+      RAND.unten,
+    ]);
+
+  const nullLinie = skalaY(0);
+
+  return (
+    <div>
+      {reihen.length >= 2 && (
+        <div className="mb-3">
+          <Legende
+            eintraege={reihen.map((r) => ({ farbe: r.farbe, label: r.label }))}
+          />
+        </div>
+      )}
+
+      <div className="relative">
+        {/*
+        Mindestbreite mit eigenem Querlauf: Auf schmalen Bildschirmen
+        wuerde das SVG sonst so weit herunterskaliert, dass die
+        Achsenbeschriftung unleserlich wird. Gescrollt wird nur das
+        Diagramm, nicht die Seite.
+      */}
+        <div className="-mx-5 min-w-0 overflow-x-auto px-5">
+          <svg
+            viewBox={`0 0 ${BREITE} ${hoehe}`}
+            className="w-full"
+            style={{ height: hoehe, minWidth: 560 }}
+            role="img"
+            aria-label={`Balkendiagramm: ${reihen.map((r) => r.label).join(", ")} in ${einheit}`}
+            onPointerLeave={() => setAktiv(null)}
+          >
+            {teilstriche.map((wert) => (
+              <g key={wert}>
+                <line
+                  x1={RAND.links}
+                  y1={skalaY(wert)}
+                  x2={BREITE - RAND.rechts}
+                  y2={skalaY(wert)}
+                  className="strich-linie"
+                  strokeWidth="1"
+                />
+                <text
+                  x={RAND.links - 8}
+                  y={skalaY(wert)}
+                  textAnchor="end"
+                  dominantBaseline="middle"
+                  className="fuellung-zart text-[11px] tabular-nums"
+                >
+                  {formatWert(wert)}
+                </text>
+              </g>
+            ))}
+
+            {sollwert !== undefined && (
+              <g>
+                <line
+                  x1={RAND.links}
+                  y1={skalaY(sollwert)}
+                  x2={BREITE - RAND.rechts}
+                  y2={skalaY(sollwert)}
+                  className="strich-leise"
+                  strokeWidth="1.5"
+                  strokeDasharray="6 4"
+                />
+                <text
+                  x={BREITE - RAND.rechts}
+                  y={skalaY(sollwert) - 5}
+                  textAnchor="end"
+                  className="fuellung-leise text-[11px]"
+                >
+                  {sollLabel}
+                </text>
+              </g>
+            )}
+
+            {beschriftungen.map((beschriftung, i) => {
+              const mitte = RAND.links + schritt * (i + 0.5);
+              const x = mitte - balkenBreite / 2;
+              let unterkante = nullLinie;
+
+              return (
+                <g
+                  key={`${beschriftung}-${i}`}
+                  onPointerEnter={() => setAktiv(i)}
+                  className="cursor-default"
+                >
+                  {/* Grosszuegige Trefferflaeche, unabhaengig von der Balkenhoehe. */}
+                  <rect
+                    x={mitte - schritt / 2}
+                    y={RAND.oben}
+                    width={schritt}
+                    height={hoehe - RAND.oben - RAND.unten}
+                    fill="transparent"
+                  />
+
+                  {aktiv === i && (
+                    <rect
+                      x={mitte - schritt / 2}
+                      y={RAND.oben}
+                      width={schritt}
+                      height={hoehe - RAND.oben - RAND.unten}
+                      className="fuellung-vertieft"
+                    />
+                  )}
+
+                  {reihen.map((reihe, reihenIndex) => {
+                    const wert = reihe.werte[i] ?? 0;
+                    if (wert <= 0) return null;
+
+                    const hoeheAbschnitt =
+                      (wert / maximum) * (hoehe - RAND.oben - RAND.unten);
+                    // 2 px Luecke zwischen den Abschnitten.
+                    const luecke = reihenIndex === 0 ? 0 : 2;
+                    const y = unterkante - hoeheAbschnitt;
+                    unterkante = y - luecke;
+
+                    const obersterAbschnitt = reihenIndex === reihen.length - 1;
+
+                    return (
+                      <rect
+                        key={reihe.schluessel}
+                        x={x}
+                        y={y}
+                        width={balkenBreite}
+                        height={Math.max(0, hoeheAbschnitt)}
+                        fill={reihe.farbe}
+                        // Nur oben runden, damit der Stapel geschlossen wirkt.
+                        rx={obersterAbschnitt ? 4 : 0}
+                        className="animate-aufsteigen"
+                        style={{ animationDelay: `${i * 25}ms` }}
+                      />
+                    );
+                  })}
+
+                  <text
+                    x={mitte}
+                    y={hoehe - 8}
+                    textAnchor="middle"
+                    className={`text-[11px] ${
+                      aktiv === i
+                        ? "fuellung-normal"
+                        : "fuellung-zart"
+                    }`}
+                  >
+                    {beschriftung}
+                  </text>
+                </g>
+              );
+            })}
+          </svg>
+        </div>
+
+        {aktiv !== null && (
+          <div
+            className="animate-einblenden pointer-events-none absolute top-2 right-2 z-10 min-w-[9rem] rounded-sm border rand-linie glas p-2.5"
+            role="status"
+          >
+            <p className="mb-1.5 text-xs font-medium farbe-leise">
+              {beschriftungen[aktiv]}
+            </p>
+            <ul className="space-y-1">
+              {reihen.map((reihe) => (
+                <li
+                  key={reihe.schluessel}
+                  className="flex items-center justify-between gap-3 text-xs"
+                >
+                  <span className="flex items-center gap-1.5 farbe-normal">
+                    <span
+                      aria-hidden
+                      className="h-2 w-2 shrink-0 rounded-[2px]"
+                      style={{ background: reihe.farbe }}
+                    />
+                    {reihe.label}
+                  </span>
+                  <span className="font-medium zahl farbe-stark">
+                    {formatWert(reihe.werte[aktiv] ?? 0)}
+                    <span className="ml-0.5 font-normal farbe-zart">
+                      {einheit}
+                    </span>
+                  </span>
+                </li>
+              ))}
+              {reihen.length > 1 && (
+                <li className="flex items-center justify-between gap-3 border-t rand-linie pt-1 text-xs">
+                  <span className="farbe-leise">
+                    Gesamt
+                  </span>
+                  <span className="font-semibold zahl farbe-stark">
+                    {formatWert(
+                      reihen.reduce((s, r) => s + (r.werte[aktiv] ?? 0), 0),
+                    )}
+                    <span className="ml-0.5 font-normal farbe-zart">
+                      {einheit}
+                    </span>
+                  </span>
+                </li>
+              )}
+            </ul>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

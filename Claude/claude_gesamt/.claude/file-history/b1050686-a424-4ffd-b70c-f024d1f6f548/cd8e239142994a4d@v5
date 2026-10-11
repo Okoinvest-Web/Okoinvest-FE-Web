@@ -1,0 +1,513 @@
+import type { Metadata } from "next";
+
+import { Balkendiagramm } from "@/components/diagramme/balken";
+import { Ringdiagramm } from "@/components/diagramme/ring";
+import { Verlauf } from "@/components/diagramme/verlauf";
+import { Tabelle, Zeile, Zelle } from "@/components/tabelle";
+import {
+  Angabe,
+  Balken,
+  Tafel,
+  Kennzahl,
+  Seitenkopf,
+  Status,
+  STATUS_FARBEN,
+} from "@/components/ui";
+import {
+  autarkiegrad,
+  eigenverbrauchsquote,
+  gesamtLeistung,
+  imZeitraum,
+  jahresgang,
+  letzteTage,
+  monatsSummen,
+  summiere,
+  veraenderung,
+} from "@/lib/auswertung";
+import { boersenpreise } from "@/lib/demo/quelle";
+import { ENERGIE_FARBEN } from "@/lib/farben";
+import {
+  formatCentProKwh,
+  formatDatum,
+  formatEnergie,
+  formatProzent,
+  formatZahl,
+  formatZeit,
+} from "@/lib/format";
+import { ladeAnlagen, ladeErtraege } from "@/lib/portal-daten";
+import { jahresprognose, prognose, wetterText } from "@/lib/prognose";
+import { requireRecht } from "@/lib/session";
+
+export const metadata: Metadata = { title: "Energie & Markt" };
+
+export default async function EnergieSeite() {
+  await requireRecht("monitoring.lesen");
+
+  const [anlagen, ertraege] = await Promise.all([
+    ladeAnlagen(),
+    ladeErtraege(undefined, 400),
+  ]);
+
+  const jahr = letzteTage(365);
+  const dreissig = letzteTage(30);
+  const vorherige30 = {
+    von: new Date(dreissig.von.getTime() - 30 * 86400000),
+    bis: new Date(dreissig.von.getTime() - 1),
+  };
+
+  const summeJahr = summiere(ertraege.filter((e) => imZeitraum(e, jahr)));
+  const summe30 = summiere(ertraege.filter((e) => imZeitraum(e, dreissig)));
+  const summeVor30 = summiere(
+    ertraege.filter((e) => imZeitraum(e, vorherige30)),
+  );
+
+  const monate = monatsSummen(ertraege, 12);
+  const gang = jahresgang(monate);
+  const leistung = gesamtLeistung(anlagen);
+  const spezifisch = leistung > 0 ? summeJahr.erzeugung / leistung : 0;
+
+  const preise = boersenpreise(48);
+  const preiseHeute = preise.slice(0, 24);
+  const mittelpreis =
+    preiseHeute.reduce((s, p) => s + (p.preis_eur_mwh ?? 0), 0) /
+    Math.max(1, preiseHeute.length);
+
+  const teuerste = [...preiseHeute].sort(
+    (a, b) => (b.preis_eur_mwh ?? 0) - (a.preis_eur_mwh ?? 0),
+  )[0];
+  const guenstigste = [...preiseHeute].sort(
+    (a, b) => (a.preis_eur_mwh ?? 0) - (b.preis_eur_mwh ?? 0),
+  )[0];
+
+  const ertragJahr = formatEnergie(summeJahr.erzeugung);
+
+  // Ertrag je Anlage im Jahr, absteigend.
+  const jeAnlage = anlagen
+    .map((anlage) => {
+      const eigene = summiere(
+        ertraege.filter((e) => e.anlage === anlage.name && imZeitraum(e, jahr)),
+      );
+      const kwp = anlage.leistung_kwp ?? 0;
+      return {
+        anlage,
+        summe: eigene,
+        spezifisch: kwp > 0 ? eigene.erzeugung / kwp : 0,
+      };
+    })
+    .sort((a, b) => b.summe.erzeugung - a.summe.erzeugung);
+
+  const besterSpezifisch = Math.max(...jeAnlage.map((a) => a.spezifisch), 1);
+
+  // --- Prognose ---------------------------------------------------
+  const groesste = [...anlagen].sort(
+    (a, b) => (b.leistung_kwp ?? 0) - (a.leistung_kwp ?? 0),
+  )[0];
+
+  const wochenprognose = groesste ? prognose(groesste, 7) : [];
+  const jahr12 = groesste ? jahresprognose(groesste, ertraege) : null;
+  const summePrognose = wochenprognose.reduce((s, p) => s + p.erwartet, 0);
+  const prognoseWert = formatEnergie(summePrognose);
+
+  return (
+    <div className="space-y-6">
+      <Seitenkopf
+        titel="Energie & Markt"
+        hinweis="Erträge, Verwendung und Börsenpreise im Marktgebiet Österreich"
+      />
+
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Kennzahl
+          label="Ertrag 12 Monate"
+          wert={ertragJahr.wert}
+          einheit={ertragJahr.einheit}
+        />
+        <Kennzahl
+          label="Spezifischer Ertrag"
+          wert={formatZahl(spezifisch, 0)}
+          einheit="kWh/kWp"
+          hinweis="Vergleichswert Ostösterreich: 1 000–1 150"
+        />
+        <Kennzahl
+          label="Eigenverbrauchsquote"
+          wert={formatProzent(eigenverbrauchsquote(summe30), 1)}
+          trend={{
+            wert: veraenderung(
+              eigenverbrauchsquote(summe30),
+              eigenverbrauchsquote(summeVor30),
+            ),
+          }}
+        />
+        <Kennzahl
+          label="Mittlerer Börsenpreis"
+          wert={formatZahl(mittelpreis, 2)}
+          einheit="EUR/MWh"
+          hinweis={`heute, entspricht ${formatCentProKwh(mittelpreis / 1000)}/kWh`}
+        />
+      </div>
+
+      <Tafel
+        titel="Day-Ahead-Preise"
+        hinweis="Marktgebiet Österreich, heute und morgen"
+      >
+        <Verlauf
+          beschriftungen={preise.map((p) => formatZeit(p.zeitpunkt))}
+          einheit="EUR/MWh"
+          nachkommastellen={0}
+          achsenSchritte={8}
+          hoehe={220}
+          reihen={[
+            {
+              schluessel: "preis",
+              label: "Day-Ahead-Preis",
+              farbe: ENERGIE_FARBEN.netzbezug,
+              werte: preise.map((p) => p.preis_eur_mwh ?? 0),
+              gefuellt: true,
+            },
+          ]}
+        />
+
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <div
+            className="rounded-lg px-3 py-2.5"
+            style={{ background: STATUS_FARBEN.gut.flaeche }}
+          >
+            <p
+              className="text-[0.6875rem]"
+              style={{ color: STATUS_FARBEN.gut.text }}
+            >
+              Günstigste Stunde heute
+            </p>
+            <p className="zahl mt-0.5 font-medium farbe-stark">
+              {formatZeit(guenstigste?.zeitpunkt)} ·{" "}
+              {formatZahl(guenstigste?.preis_eur_mwh, 2)} EUR/MWh
+            </p>
+          </div>
+          <div
+            className="rounded-lg px-3 py-2.5"
+            style={{ background: STATUS_FARBEN.hinweis.flaeche }}
+          >
+            <p
+              className="text-[0.6875rem]"
+              style={{ color: STATUS_FARBEN.hinweis.text }}
+            >
+              Teuerste Stunde heute
+            </p>
+            <p className="zahl mt-0.5 font-medium farbe-stark">
+              {formatZeit(teuerste?.zeitpunkt)} ·{" "}
+              {formatZahl(teuerste?.preis_eur_mwh, 2)} EUR/MWh
+            </p>
+          </div>
+        </div>
+      </Tafel>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
+        <Tafel
+          klasse="lg:col-span-3"
+          titel="Monatserträge"
+          hinweis="Eigenverbrauch und Einspeisung, letzte 12 Monate"
+        >
+          <Balkendiagramm
+            beschriftungen={monate.map((m) => m.label)}
+            einheit="kWh"
+            kompakt
+            hoehe={300}
+            reihen={[
+              {
+                schluessel: "eigenverbrauch",
+                label: "Eigenverbrauch",
+                farbe: ENERGIE_FARBEN.eigenverbrauch,
+                werte: monate.map((m) => m.eigenverbrauch),
+              },
+              {
+                schluessel: "einspeisung",
+                label: "Einspeisung",
+                farbe: ENERGIE_FARBEN.einspeisung,
+                werte: monate.map((m) => m.einspeisung),
+              },
+            ]}
+          />
+
+          {gang.bester && gang.schwaechster && (
+            <div className="mt-5 space-y-3 border-t rand-zart pt-4">
+              {/*
+                Etikett oben, Wert darunter: In drei schmalen Spalten
+                bricht ein Paar aus Etikett und Wert nebeneinander
+                mitten im Wert um - "Dez -" ueber "52,5 MWh" liest
+                sich als zwei Angaben.
+              */}
+              <dl className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3">
+                {[
+                  {
+                    label: "Stärkster Monat",
+                    wert: `${gang.bester.label} · ${formatZahl(gang.bester.erzeugung / 1000, 1)} MWh`,
+                  },
+                  {
+                    label: "Schwächster Monat",
+                    wert: `${gang.schwaechster.label} · ${formatZahl(gang.schwaechster.erzeugung / 1000, 1)} MWh`,
+                  },
+                  {
+                    label: "Sommerhalbjahr",
+                    wert: `${formatProzent(gang.sommeranteil * 100, 0)} des Jahres`,
+                  },
+                ].map((eintrag) => (
+                  <div key={eintrag.label} className="min-w-0">
+                    <dt className="t-etikett">{eintrag.label}</dt>
+                    <dd
+                      className="mt-0.5 text-[0.8125rem] font-medium"
+                      style={{ color: "var(--t-stark)" }}
+                    >
+                      {eintrag.wert}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+              <p className="text-xs leading-relaxed farbe-leise">
+                Der beste Monat trägt das{" "}
+                {formatZahl(gang.spreizung, 1)}-Fache des schwächsten. Diese
+                Spreizung ist der Grund, warum eine Anlage nie nach einem
+                einzelnen Monat beurteilt werden kann – und warum der Bezug im
+                Winter eingeplant gehört, nicht der Überschuss.
+              </p>
+            </div>
+          )}
+        </Tafel>
+
+        <Tafel
+          klasse="lg:col-span-2"
+          titel="Energiebilanz"
+          hinweis="letzte 12 Monate"
+        >
+          <Ringdiagramm
+            einheit="kWh"
+            mitteWert={ertragJahr.wert}
+            mitteEinheit={ertragJahr.einheit}
+            mitteLabel="erzeugt"
+            abschnitte={[
+              {
+                label: "Eigenverbrauch",
+                wert: summeJahr.eigenverbrauch,
+                farbe: ENERGIE_FARBEN.eigenverbrauch,
+              },
+              {
+                label: "Einspeisung",
+                wert: summeJahr.einspeisung,
+                farbe: ENERGIE_FARBEN.einspeisung,
+              },
+            ]}
+          />
+
+          <div className="mt-5 space-y-3 border-t rand-zart pt-4">
+            <Balken
+              label="Eigenverbrauchsquote"
+              anteil={eigenverbrauchsquote(summeJahr)}
+              wertText={formatProzent(eigenverbrauchsquote(summeJahr), 1)}
+            />
+            <Balken
+              label="Autarkiegrad"
+              anteil={autarkiegrad(summeJahr)}
+              wertText={formatProzent(autarkiegrad(summeJahr), 1)}
+            />
+            <p className="text-xs leading-relaxed farbe-leise">
+              Die Eigenverbrauchsquote misst, wie viel der eigenen Erzeugung im
+              Betrieb bleibt. Der Autarkiegrad misst, wie viel des Bedarfs aus
+              eigener Erzeugung gedeckt wird. Beide Werte werden häufig
+              verwechselt.
+            </p>
+          </div>
+        </Tafel>
+      </div>
+
+      {groesste && wochenprognose.length > 0 && (
+        <Tafel
+          titel="Ertragsprognose"
+          hinweis={`${groesste.anlagen_name} · kommende sieben Tage`}
+          aktion={
+            <span className="text-sm font-medium zahl farbe-stark">
+              {prognoseWert.wert}
+              <span className="ml-0.5 text-xs font-normal farbe-zart">
+                {prognoseWert.einheit}
+              </span>
+            </span>
+          }
+        >
+          <Verlauf
+            beschriftungen={wochenprognose.map((p) =>
+              formatDatum(p.datum).slice(0, 5),
+            )}
+            einheit="kWh"
+            nachkommastellen={0}
+            achsenSchritte={7}
+            hoehe={200}
+            reihen={[
+              {
+                schluessel: "obergrenze",
+                label: "obere Bandbreite",
+                farbe: ENERGIE_FARBEN.erzeugung,
+                werte: wochenprognose.map((p) => p.obergrenze),
+                gestrichelt: true,
+              },
+              {
+                schluessel: "erwartet",
+                label: "erwarteter Ertrag",
+                farbe: ENERGIE_FARBEN.erzeugung,
+                werte: wochenprognose.map((p) => p.erwartet),
+                gefuellt: true,
+              },
+              {
+                schluessel: "untergrenze",
+                label: "untere Bandbreite",
+                farbe: ENERGIE_FARBEN.netzbezug,
+                werte: wochenprognose.map((p) => p.untergrenze),
+                gestrichelt: true,
+              },
+            ]}
+          />
+
+          <ul className="mt-4 grid gap-2 sm:grid-cols-4 xl:grid-cols-7">
+            {wochenprognose.map((tag) => (
+              <li
+                key={tag.datum}
+                className="rounded-lg flaeche-vertieft px-3 py-2"
+              >
+                <p className="text-xs farbe-leise">
+                  {formatDatum(tag.datum).slice(0, 5)}
+                </p>
+                <p className="mt-0.5 text-sm font-medium zahl farbe-stark">
+                  {formatZahl(tag.erwartet / 1000, 1)}
+                  <span className="text-xs font-normal farbe-zart">
+                    {" "}
+                    MWh
+                  </span>
+                </p>
+                <p className="mt-0.5 text-[11px] leading-tight farbe-zart">
+                  {wetterText(tag.bewoelkung)}
+                </p>
+              </li>
+            ))}
+          </ul>
+
+          <p className="mt-4 text-xs leading-relaxed farbe-leise">
+            Die Bandbreite wächst mit dem Abstand zum heutigen Tag – eine
+            Prognose ohne ausgewiesene Unsicherheit würde eine Genauigkeit
+            vortäuschen, die bei Wetterabhängigkeit nicht erreichbar ist.
+            Grundlage ist derzeit der modellierte Jahresgang; im Regelbetrieb
+            tritt an dessen Stelle eine Wettervorhersage.
+          </p>
+        </Tafel>
+      )}
+
+      {jahr12 && (
+        <Tafel
+          titel="Jahreshochrechnung"
+          hinweis={`${groesste?.anlagen_name} · laufendes Kalenderjahr`}
+          aktion={
+            jahr12.abweichung !== undefined && (
+              <Status
+                ton={
+                  jahr12.abweichung >= -2
+                    ? "gut"
+                    : jahr12.abweichung >= -10
+                      ? "hinweis"
+                      : "ernst"
+                }
+              >
+                {jahr12.abweichung >= 0 ? "+" : ""}
+                {formatZahl(jahr12.abweichung, 1)} % zum Sollwert
+              </Status>
+            )
+          }
+        >
+          <div className="space-y-4">
+            {jahr12.soll && (
+              <Balken
+                label="Erreicht vom erwarteten Jahresertrag"
+                anteil={(jahr12.bisher / jahr12.soll) * 100}
+                wertText={formatProzent((jahr12.bisher / jahr12.soll) * 100, 1)}
+              />
+            )}
+
+            <dl className="grid gap-x-8 gap-y-2 sm:grid-cols-2">
+              <Angabe label="Bisher erzeugt">
+                {formatEnergie(jahr12.bisher).wert}{" "}
+                {formatEnergie(jahr12.bisher).einheit}
+              </Angabe>
+              <Angabe label="Erwartet bis Jahresende">
+                {formatEnergie(jahr12.erwartetRest).wert}{" "}
+                {formatEnergie(jahr12.erwartetRest).einheit}
+              </Angabe>
+              <Angabe label="Hochrechnung Gesamtjahr">
+                {formatEnergie(jahr12.erwartetGesamt).wert}{" "}
+                {formatEnergie(jahr12.erwartetGesamt).einheit}
+              </Angabe>
+              {jahr12.soll && (
+                <Angabe label="Sollwert laut Auslegung">
+                  {formatEnergie(jahr12.soll).wert}{" "}
+                  {formatEnergie(jahr12.soll).einheit}
+                </Angabe>
+              )}
+            </dl>
+
+            <p className="text-xs leading-relaxed farbe-leise">
+              Die Hochrechnung gewichtet die verbleibenden Tage nach dem
+              Jahresgang: Ein Dezembertag trägt deutlich weniger bei als ein
+              Junitag. Eine lineare Fortschreibung würde im Winter zu
+              optimistisch und im Sommer zu pessimistisch ausfallen.
+            </p>
+          </div>
+        </Tafel>
+      )}
+
+      <Tafel
+        titel="Anlagenvergleich"
+        hinweis="Der spezifische Ertrag macht unterschiedlich große Anlagen vergleichbar"
+      >
+        <Tabelle
+          spalten={[{ titel: "Anlage" }, { titel: "Leistung", zahl: true }, { titel: "Ertrag 12 Monate", zahl: true }, { titel: "Spezifisch", zahl: true }, { titel: "Im Vergleich" }]}
+        >
+          {jeAnlage.map(({ anlage, summe, spezifisch: spez }) => {
+            const wert = formatEnergie(summe.erzeugung);
+            return (
+              <Zeile key={anlage.name}>
+                <Zelle>
+                  <span className="font-medium">{anlage.anlagen_name}</span>
+                  <span className="block text-xs farbe-leise">
+                    {anlage.ausrichtung}
+                    {anlage.neigung !== undefined && `, ${anlage.neigung}°`}
+                  </span>
+                </Zelle>
+                <Zelle zahl>
+                  {formatZahl(anlage.leistung_kwp, 1)}
+                  <span className="text-xs farbe-zart"> kWp</span>
+                </Zelle>
+                <Zelle zahl>
+                  {wert.wert}
+                  <span className="text-xs farbe-zart">
+                    {" "}
+                    {wert.einheit}
+                  </span>
+                </Zelle>
+                <Zelle zahl>
+                  {formatZahl(spez, 0)}
+                  <span className="text-xs farbe-zart"> kWh/kWp</span>
+                </Zelle>
+                <Zelle>
+                  <span className="block max-w-[10rem]">
+                    <span
+                      className="block h-1.5 rounded-full transition-all"
+                      style={{
+                        width: `${(spez / besterSpezifisch) * 100}%`,
+                        background: ENERGIE_FARBEN.erzeugung,
+                      }}
+                      role="img"
+                      aria-label={`${formatZahl(spez, 0)} kWh je kWp`}
+                    />
+                  </span>
+                </Zelle>
+              </Zeile>
+            );
+          })}
+        </Tabelle>
+      </Tafel>
+    </div>
+  );
+}

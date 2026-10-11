@@ -1,0 +1,247 @@
+import os, sys
+sys.path.insert(0, os.path.dirname(__file__))
+from dok import Doc, ROOT
+
+# =====================================================================
+# 1. MITARBEITERINFO
+# =====================================================================
+d = Doc("INTERN – NUR FÜR MITARBEITERINNEN UND MITARBEITER", "Information an das Team",
+        "Ausgabe am Tag vor dem Start (Tag −1), am besten in einer kurzen Teambesprechung mit dem Geschäftsführer. "
+        "Österreich (Ostermiething) und Deutschland (Türkheim) erhalten denselben Text; Platzhalter je Standort anpassen.")
+d.box("Hinweis für die Geschäftsführung", [
+    "Schreiben Sie diesen Brief so, als würde er morgen in der Zeitung stehen. Interne Schreiben landen erfahrungsgemäß bei Journalisten.",
+    "Deshalb: keine Namen, keine Vorwürfe gegen Personen, keine Aussagen zu Geld oder Vergleich.",
+    "Die Aussage zu den Arbeitsplätzen nur stehen lassen, wenn sie stimmt. Ein gebrochenes Versprechen schadet mehr als keines.",
+    "Übergeben Sie den Brief persönlich und beantworten Sie Fragen sofort. Mitarbeitende sollen es von Ihnen erfahren, nicht aus dem Radio."], "FFF4E5")
+d.h1("Brief")
+d.p("Liebe Kolleginnen und Kollegen,")
+d.p("ab morgen, [Datum], wird über Ökovolt in den Medien berichtet werden. Ich möchte, dass Sie es zuerst von mir erfahren und wissen, was passiert und was es für Sie bedeutet.")
+d.h2("Worum es geht")
+d.p("Seit 2021 ist die Salzburg AG an Ökovolt beteiligt. Seit einiger Zeit gibt es zwischen den Gesellschaftern schwere Meinungsverschiedenheiten, die vor Gerichten in Österreich und Deutschland ausgetragen werden. Das Oberlandesgericht München hat in drei Verfahren zu unseren Gunsten entschieden. Ab morgen informieren wir die Öffentlichkeit über diese Entscheidungen und über unsere Forderung: eine unabhängige Prüfung durch einen neutralen Sachverständigen.")
+d.p("Alle Belege finden Sie auf unserer Faktenseite: [Link zur Faktenseite].")
+d.h2("Was das für Sie bedeutet")
+d.bullets([
+    ("Ihr Arbeitsplatz:", "[Nur wenn zutreffend: Ihre Arbeitsplätze sind nicht betroffen. Unsere Auftragslage ist gut, alle laufenden Projekte werden wie geplant umgesetzt.]"),
+    ("Ihre Arbeit:", "Für Kundinnen und Kunden ändert sich nichts. Termine, Montagen und Service laufen normal weiter."),
+    ("Ihre Rolle:", "Sie müssen nichts erklären und nichts verteidigen. Dafür gibt es eine zuständige Person."),
+])
+d.h2("Drei Bitten")
+d.nums([
+    "Wenn Journalistinnen oder Journalisten Sie ansprechen, anrufen oder schreiben: freundlich bleiben, nichts zur Sache sagen, an [Name Sprecher/in, Telefon, E-Mail] verweisen. Das gilt auch für „nur kurz“ und „inoffiziell“.",
+    "Auf Social Media: Sie dürfen unsere offiziellen Beiträge gern teilen. Bitte schreiben Sie keine eigenen Kommentare über die Salzburg AG, die one2zero oder einzelne Personen, auch nicht in privaten Gruppen oder auf WhatsApp.",
+    "Unterlagen, E-Mails und Informationen aus dem Unternehmen bleiben im Unternehmen. Das schützt die laufenden Verfahren und damit auch uns alle.",
+])
+d.h2("Wenn Kunden fragen")
+d.p("Manche Kundinnen und Kunden werden nachfragen. Sie können ganz einfach antworten:")
+d.quote(["„Ja, darüber wird gerade berichtet. Für Ihr Projekt ändert sich nichts, wir sind wie gewohnt für Sie da. Wenn Sie mehr wissen möchten, finden Sie alles auf unserer Website unter [Link zur Faktenseite], oder ich verbinde Sie gern mit [Name].“"])
+d.p("Wenn Sie unsicher sind oder etwas Ungewöhnliches erleben, melden Sie sich bitte direkt bei mir oder bei [Name].")
+d.p("Danke für Ihre Arbeit und Ihr Vertrauen. Ökovolt hat in den letzten Jahren viel erreicht, und das verdanken wir Ihnen.")
+d.p("[Ort], [Datum]")
+d.p("Andreas Wegscheider\nGeschäftsführer")
+d.h1("Fragen und Antworten für das Team")
+d.table(["Frage", "Antwort"], [
+    ["Ist Ökovolt in Gefahr?", "[Nur wenn zutreffend:] Nein. Ökovolt hat 2024 einen Gewinn erwirtschaftet, die Auftragslage ist gut."],
+    ["Warum geht Ökovolt an die Öffentlichkeit?", "Weil die Eigentümer der Salzburg AG seit dem 21.09.2026 alle Unterlagen haben und bisher nicht geantwortet haben. Wir wollen eine unabhängige Prüfung."],
+    ["Darf ich mit Kolleginnen/Kollegen bei der Salzburg AG oder one2zero reden?", "Privat natürlich. Über das Thema bitte nicht, und keine Unterlagen weitergeben."],
+    ["Was, wenn mich jemand der Salzburg AG oder der one2zero kontaktiert und ein Jobangebot macht oder Fragen stellt?", "Bitte sofort [Name] informieren. Das ist keine Kontrolle, es schützt Sie und uns."],
+    ["Darf ich Beiträge liken und teilen?", "Ja, die offiziellen Beiträge von Ökovolt. Keine eigenen Kommentare zu Personen."],
+    ["An wen wende ich mich?", "[Name, Telefon, E-Mail]"],
+])
+d.h1("Telefonleitfaden Büro / Empfang")
+d.table(["Anrufer", "Antwort", "Weiter an"], [
+    ["Presse, Radio, TV", "„Danke für Ihren Anruf. Für Presseanfragen ist [Name] zuständig, ich gebe Ihnen die Nummer / ich verbinde Sie.“ Name, Medium, Nummer und Frist notieren.", "Sprecher/in, sofort"],
+    ["Kunde, besorgt", "„Für Ihr Projekt ändert sich nichts. Alle Informationen finden Sie unter [Link].“", "Projektleitung, falls weitere Fragen"],
+    ["Bank, Versicherung, Lieferant", "„Unser Geschäftsführer meldet sich heute noch bei Ihnen.“", "Geschäftsführer, gleicher Tag"],
+    ["Salzburg AG, one2zero, Anwälte der Gegenseite", "Keine Auskunft. „Ich leite Ihre Nachricht weiter.“ Name und Anliegen notieren.", "Geschäftsführer und Anwalt, sofort"],
+    ["Anonyme Hinweise", "Freundlich zuhören, Kontakt anbieten, nichts versprechen.", "Geschäftsführer"],
+    ["Aggressive Anrufe", "Höflich beenden. Uhrzeit und Nummer notieren.", "Geschäftsführer"],
+])
+d.save(r"7_Interne_Kommunikation\Mitarbeiterinfo_Brief_FAQ_Telefonleitfaden.docx")
+
+# =====================================================================
+# 2. KUNDEN- UND PARTNERBRIEFE
+# =====================================================================
+d = Doc("VORLAGEN – VOR VERSAND ANWALTLICH FREIGEBEN", "Briefe an Kunden, Banken und Partner",
+        "Drei Fassungen: A Kundinnen und Kunden, B Banken, Versicherer und Förderstellen, C Lieferanten und Partnerbetriebe. "
+        "Versand am Starttag, frühestens eine Stunde nach der Presseaussendung. Jeweils für Österreich und Deutschland verwendbar.")
+d.box("Grundsätze für alle drei Briefe", [
+    "Beruhigen, nicht mobilisieren: Kunden sollen wissen, dass ihr Projekt sicher ist. Sie sollen nicht Partei ergreifen müssen.",
+    "Keine Vorwürfe gegen die Salzburg AG oder Personen im Brief, nur der Verweis auf die Faktenseite. Jede Behauptung über die Gegenseite in einem Kundenbrief kann als Anschwärzung (§ 7 UWG Österreich, § 4 Nr. 2 UWG Deutschland) angegriffen werden.",
+    "Kunden, die zugleich Stromkunden der Salzburg AG sind, sind keine Zielgruppe für Kampagnen. Keine Aufforderung zum Anbieterwechsel.",
+    "Wirtschaftliche Aussagen nur, wenn sie belegbar sind (Jahresabschluss 2024)."], "FFF4E5")
+d.h1("A – Kundinnen und Kunden")
+d.p("Betreff: Ökovolt in den Medien – was das für Ihr Projekt bedeutet")
+d.p("Sehr geehrte/r [Anrede Name],")
+d.p("vielleicht haben Sie in den letzten Tagen über Ökovolt gelesen oder gehört. Wir möchten Sie direkt informieren: Für Ihre Anlage und Ihr Projekt ändert sich nichts. Montage, Service und Garantie laufen wie vereinbart weiter, und Ihre Ansprechpersonen bleiben dieselben.")
+d.p("In den Berichten geht es um eine Auseinandersetzung zwischen den Gesellschaftern unseres Unternehmens. Diese wird vor Gericht geklärt. Wenn Sie sich selbst ein Bild machen möchten, finden Sie alle Entscheidungen und Unterlagen unter [Link zur Faktenseite].")
+d.p("Bei Fragen erreichen Sie uns wie gewohnt unter [Telefon] oder [E-Mail].")
+d.p("Danke für Ihr Vertrauen.\n\nMit freundlichen Grüßen\n[Name]\n[Funktion], Ökovolt")
+d.h1("B – Banken, Versicherer, Förderstellen")
+d.p("Betreff: Persönliche Information zur aktuellen Berichterstattung")
+d.p("Sehr geehrte/r [Anrede Name],")
+d.p("ab heute wird über eine Auseinandersetzung zwischen den Gesellschaftern der Ökovolt berichtet. Ich möchte Sie vorab und persönlich informieren, damit Sie nichts aus der Zeitung erfahren müssen.")
+d.bullets([
+    ("Wirtschaftliche Lage:", "Ökovolt hat das Geschäftsjahr 2024 mit einem Gewinn von rund 1,14 Mio. € abgeschlossen. [Aktuelle Kennzahlen 2025/2026 einsetzen, z. B. Auftragsstand, Liquidität.] Alle Verpflichtungen werden wie vereinbart bedient."),
+    ("Verfahren:", "Das Oberlandesgericht München hat in drei Verfahren zu unseren Gunsten entschieden. Die Hauptverhandlung vor dem Landgericht Memmingen ist für [Datum] angesetzt."),
+    ("Unser Ziel:", "eine sachliche Klärung durch eine unabhängige Prüfung. Die Veröffentlichung dient der Transparenz, nicht der Eskalation."),
+])
+d.p("Gern stelle ich Ihnen die Lage in einem kurzen Gespräch persönlich dar, auch gemeinsam mit unserem Steuerberater. Ich rufe Sie in den nächsten Tagen an, um einen Termin zu vereinbaren.")
+d.p("Mit freundlichen Grüßen\nAndreas Wegscheider\nGeschäftsführer")
+d.h1("C – Lieferanten und Partnerbetriebe")
+d.p("Betreff: Kurze Information – Zusammenarbeit läuft unverändert weiter")
+d.p("Sehr geehrte/r [Anrede Name],")
+d.p("Sie werden in den Medien über Ökovolt lesen. In aller Kürze: Unsere Zusammenarbeit läuft unverändert weiter. Bestellungen, Zahlungen und Termine sind nicht betroffen.")
+d.p("Es handelt sich um eine Auseinandersetzung zwischen den Gesellschaftern, die vor Gericht geklärt wird. Die Hintergründe finden Sie unter [Link zur Faktenseite]. Bei Fragen melden Sie sich jederzeit bei mir.")
+d.p("Mit freundlichen Grüßen\n[Name]\n[Funktion], Ökovolt")
+d.h1("Versandplan")
+d.table(["Wer", "Wie", "Wann", "Verantwortlich"], [
+    ["Hausbank(en), Leasing, Versicherer", "Persönlicher Anruf, danach Brief B per E-Mail", "Tag 0, vor 9:00 (vor der Aussendung)", "Geschäftsführer"],
+    ["Förderstellen", "Brief B per E-Mail", "Tag 0", "Geschäftsführer"],
+    ["Großkunden, Gewerbekunden, laufende Projekte", "Brief A, bei wichtigen Kunden zusätzlich Anruf", "Tag 0, ab 10:00", "Projektleitung"],
+    ["Privatkunden mit laufendem Projekt", "Brief A per E-Mail", "Tag 0–1", "Büro"],
+    ["Alle übrigen Kunden", "Kein Rundschreiben. Nur auf Nachfrage Brief A.", "–", "–"],
+    ["Wichtige Lieferanten, Subunternehmer", "Brief C", "Tag 0–1", "Einkauf"],
+])
+d.p("Warum kein Rundschreiben an alle Kunden: Ein Massenversand macht das Thema bei Menschen groß, die sonst nie davon erfahren hätten, und kann als Aufruf gegen die Salzburg AG verstanden werden.", italic=True)
+d.save(r"7_Interne_Kommunikation\Briefe_Kunden_Banken_Partner.docx")
+
+# =====================================================================
+# 3. COMMUNITY-MANAGEMENT
+# =====================================================================
+d = Doc("INTERN – FÜR DIE SOCIAL-MEDIA-BETREUUNG", "Leitfaden Kommentare und Moderation",
+        "Wie wir auf Kommentare reagieren, was wir stehen lassen, was wir ausblenden, und warum.")
+d.box("Die wichtigste Regel", [
+    "Auf unseren eigenen Seiten haften wir für fremde Kommentare, sobald wir sie kennen (Österreich: § 16 E-Commerce-Gesetz; Deutschland: Art. 6 Digital Services Act). "
+    "Ein Kommentar, der Personen der Salzburg AG oder der one2zero eine Straftat unterstellt, muss deshalb sofort ausgeblendet werden, auch wenn er „auf unserer Seite“ ist und uns inhaltlich gefällt."], "FDE2E2")
+d.h1("Ampel: Wie wir mit Kommentaren umgehen")
+d.table(["", "Beispiele", "Was wir tun"], [
+    ["GRÜN – antworten", "Sachliche Fragen, Zustimmung, sachliche Kritik, Fragen von Kunden", "Innerhalb von 2 Stunden (Werktag 8–20 Uhr) mit Vorlage antworten. Kritik stehen lassen."],
+    ["GELB – Fakten verlinken", "„Das ist doch nur Rache“, „Ihr wollt nur Geld“, Halbwahrheiten, Gerüchte", "Einmal ruhig mit Fakten und Link antworten. Keine zweite Runde, keine Diskussion."],
+    ["ROT – ausblenden", "Beleidigungen, Namen von Mitarbeitern der Salzburg AG/one2zero, Straftatvorwürfe gegen Personen („Betrüger“, „Dieb“, „korrupt“), Drohungen, Rassismus, Spam", "Screenshot mit Uhrzeit sichern, dann ausblenden (nicht löschen). Im Protokoll eintragen. Nicht antworten."],
+    ["SCHWARZ – eskalieren", "Drohungen gegen Personen, Hinweise auf konkrete Straftaten, Journalisten im Kommentar, Anwälte der Gegenseite, angebliche Insider mit Unterlagen", "Screenshot sichern, sofort Sprecher/in und Geschäftsführer informieren. Nichts öffentlich antworten."],
+])
+d.h1("Was wir nie tun")
+d.bullets([
+    "Kritische, aber sachliche Kommentare löschen. Das wird fotografiert und wird zur eigenen Geschichte.",
+    "Mit Namen antworten oder Namen bestätigen („Ja, Herr X war das“).",
+    "Mitarbeitende, Familie oder Freunde bitten, unter Fantasienamen zu kommentieren. Das ist irreführende Werbung und fliegt auf.",
+    "Kommentare auf Seiten der Salzburg AG, der one2zero, von Politikern oder in Zeitungsforen schreiben.",
+    "Über Geld, Schadenersatz, Vergleich oder Strafverfahren im Detail sprechen.",
+    "Nach 20 Uhr oder emotional antworten. Im Zweifel bis zum nächsten Morgen warten.",
+])
+d.h1("Angepinnter Hinweis (Netiquette)")
+d.quote(["Wir freuen uns über Fragen und Meinungen, auch kritische. Bitte bleiben Sie sachlich. Kommentare mit Beleidigungen, Namen einzelner Personen oder Vorwürfen gegen Personen blenden wir aus. Für die Personen gilt die Unschuldsvermutung. Alle Unterlagen: [Link zur Faktenseite]"])
+d.h1("Antwortvorlagen")
+V = [
+    ("Ihr wollt doch nur Geld.", "Wir fordern eine unabhängige Prüfung durch einen neutralen Sachverständigen. Alles Weitere klären die Gerichte. Die Entscheidungen finden Sie hier: [Link]"),
+    ("Das ist doch nur Rache / beleidigte Leberwurst.", "Das Oberlandesgericht München hat in drei Verfahren entschieden. Wir veröffentlichen die Entscheidungen, damit sich jede und jeder selbst ein Bild machen kann: [Link]"),
+    ("Warum habt ihr euch mit der Salzburg AG eingelassen?", "Wir haben 2021 einer Partnerschaft vertraut, die ausdrücklich Wettbewerb vermeiden sollte. Wie es weiterging, zeigt der Zeitstrahl: [Link]"),
+    ("Was sagt die Salzburg AG dazu?", "Die Salzburg AG hat die Möglichkeit, Stellung zu nehmen. Ihre Sicht verlinken wir auf unserer Faktenseite, sobald sie vorliegt: [Link]"),
+    ("Wer war das? Nennt Namen!", "Uns geht es um Entscheidungen eines Unternehmens, nicht um einzelne Personen. Für alle Beteiligten gilt die Unschuldsvermutung."),
+    ("Ich bin Kunde, ist meine Anlage sicher?", "Ja. Für Ihre Anlage, Garantie und Service ändert sich nichts. Schreiben Sie uns gern eine Nachricht, dann meldet sich Ihre Ansprechperson direkt."),
+    ("Geht Ökovolt pleite?", "Nein. [Nur wenn zutreffend:] Ökovolt hat 2024 einen Gewinn erzielt und die Auftragslage ist gut."),
+    ("Ich wechsle jetzt meinen Stromanbieter!", "Danke für Ihre Unterstützung. Uns geht es nicht um Strom oder Anbieter, sondern um eine unabhängige Prüfung."),
+    ("Das sind Fake News / alles gelogen.", "Jede Aussage auf unserer Faktenseite ist mit Urteil oder Dokument belegt. Wenn Sie einen Fehler finden, schreiben Sie uns, dann prüfen wir das und korrigieren es öffentlich: [Link]"),
+    ("Warum geht ihr an die Öffentlichkeit statt vor Gericht?", "Wir sind vor Gericht, und zwar erfolgreich. Wir gehen an die Öffentlichkeit, weil die Eigentümer seit dem 21. September nicht geantwortet haben."),
+    ("Frage eines Journalisten im Kommentar", "Danke für Ihr Interesse. Bitte schreiben Sie uns an [Presse-E-Mail], dann meldet sich [Name] bei Ihnen."),
+    ("Angeblicher Insider bietet Unterlagen an", "Danke. Bitte schreiben Sie uns eine Nachricht an [E-Mail]. (Dann Eskalation SCHWARZ, nichts öffentlich)"),
+]
+d.table(["Kommentar", "Antwort"], [list(v) for v in V])
+d.h1("Organisation")
+d.table(["Was", "Regel"], [
+    ["Betreuungszeiten", "Werktage 8–20 Uhr, Wochenende 2× täglich prüfen. In den ersten 3 Tagen nach jeder Welle stündlich."],
+    ["Protokoll", "Jeder ausgeblendete Kommentar: Datum, Uhrzeit, Plattform, Screenshot-Dateiname, Grund. Tabelle: 6_Medienversand/Medienbeobachtung_Log.xlsx, Blatt „Kommentare“."],
+    ["Freigabe", "Vorlagen dürfen ohne Rückfrage verwendet werden. Alles andere: Sprecher/in gibt frei."],
+    ["Direktnachrichten", "Kunden: Projektleitung. Presse: Sprecher/in. Gegenseite/Anwälte: Geschäftsführer, nicht antworten."],
+    ["Anzeigen/Werbung", "Bezahlte Reichweite nur offen als Ökovolt, keine Zielgruppe „Mitarbeiter der Salzburg AG“ oder einzelne Personen."],
+])
+d.save(r"4_Social_Media\Leitfaden_Kommentare_Moderation.docx")
+
+# =====================================================================
+# 4. MEDIENBEOBACHTUNG
+# =====================================================================
+d = Doc("INTERN", "Medienbeobachtung einrichten",
+        "Einmal einrichten, dann täglich 15 Minuten. Ziel: jede Reaktion am selben Tag sehen.")
+d.h1("1. Kostenlos, sofort einrichten (30 Minuten)")
+d.h2("Google Alerts (google.com/alerts)")
+d.p("Einstellungen: „So oft wie möglich“, Quellen „Automatisch“, Sprache „Deutsch“, Region „Alle Regionen“, „Alle Ergebnisse“. Je Suchbegriff ein eigener Alert:")
+d.table(["Suchbegriff", "Wofür"], [
+    ['"Ökovolt"', "alles über uns"],
+    ['"one2zero"', "Tochter der Salzburg AG"],
+    ['"Salzburg AG" Photovoltaik', "Branchenberichte"],
+    ['"Salzburg AG" Aufsichtsrat OR Vorstand', "Reaktionen der Führung"],
+    ['"Salzburg AG" WKStA OR Ermittlungen', "Justiz"],
+    ['"Oberlandesgericht München" "Salzburg AG"', "Rechtspresse"],
+    ['"Landgericht Memmingen" Photovoltaik', "Hauptverfahren"],
+    ['"Energie AG" "Salzburg AG" Beteiligung', "Miteigentümer"],
+])
+d.p("Tipp: Zusätzlich Talkwalker Alerts (kostenlos) mit denselben Begriffen. Es findet mehr Foren und Blogs.")
+d.h2("Social Media manuell (täglich)")
+d.bullets([
+    "X / Bluesky: Suche nach „Ökovolt“, „one2zero“, „Salzburg AG“ – Reiter „Neueste“.",
+    "LinkedIn: Suche „Ökovolt“ → Filter „Beiträge“ → „Neueste“.",
+    "Facebook: Seiten Salzburger Nachrichten, ORF Salzburg, Kronen Zeitung Salzburg, Allgäuer Zeitung: Kommentare unter Artikeln zum Thema.",
+    "Website Salzburg AG → Presse/News und Seite der one2zero: täglich auf Stellungnahmen prüfen.",
+    "Landtag Salzburg (Anfragen) und Gemeinderat Stadt Salzburg: wöchentlich.",
+])
+d.h1("2. Professionell (empfohlen ab Tag 0)")
+d.table(["Anbieter", "Stärke", "Kosten ca."], [
+    ["APA-Comm / APA-Observer (AT)", "Alle österreichischen Print-, Online-, Radio- und TV-Beiträge, auch ORF-Regional", "[Angebot einholen]"],
+    ["Landau Media oder pressrelations (DE)", "Deutsche Print- und Onlinemedien, Allgäu, Fachpresse", "[Angebot einholen]"],
+    ["Meltwater / Talkwalker (beide Länder)", "Online + Social Media in Echtzeit", "[Angebot einholen]"],
+])
+d.p("Für drei Monate reicht meist ein Paket „Stichwort-Beobachtung“ mit 5 Suchbegriffen. Bis zum Start mindestens Google Alerts laufen lassen.")
+d.h1("3. Täglicher Ablauf")
+d.table(["Uhrzeit", "Was", "Wer"], [
+    ["8:00", "Alerts und Beobachtungsdienst lesen, neue Beiträge in die Log-Tabelle eintragen, Artikel als PDF sichern", "[Name]"],
+    ["8:30", "Kurzmeldung an GF und Sprecher/in: neue Beiträge, Ton (positiv/neutral/negativ), Handlungsbedarf", "[Name]"],
+    ["12:00 / 17:00", "Social Media und Kommentare prüfen (siehe Leitfaden Kommentare)", "Social Media"],
+    ["bei Bedarf", "Schwellenwert erreicht → Reaktionsplan (3_Strategie_INTERN/INTERN_Reaktionsplan_Gegenreaktion.docx)", "Sprecher/in"],
+])
+d.h1("4. Sofort melden (Schwellenwerte)")
+d.bullets([
+    "Stellungnahme der Salzburg AG, der Eigentümer oder der one2zero (auch in einem Nebensatz eines Artikels).",
+    "Anfrage oder Beitrag von ORF, APA, Krone, SN, Standard, Presse, Profil, Falter, Süddeutscher Zeitung, Allgäuer Zeitung, Handelsblatt.",
+    "Jeder Beitrag mit falschen Fakten über Ökovolt.",
+    "Politische Reaktionen: Landtag, Gemeinderat, Parteien.",
+    "Mehr als 20 negative Kommentare in einer Stunde auf einer unserer Seiten.",
+])
+d.h1("5. Sichern für Gerichte und Medienspiegel")
+d.p("Jeden Artikel als PDF speichern (Browser → Drucken → Als PDF) und im Ordner [Pfad Medienspiegel] nach dem Schema JJJJ-MM-TT_Medium_Titel.pdf ablegen. Bei Online-Artikeln zusätzlich auf web.archive.org → „Save Page Now“ archivieren, weil Artikel nachträglich geändert werden. Radio- und TV-Beiträge: Link und Sendezeit notieren; Mitschnitt nur über den Beobachtungsdienst.")
+d.save(r"6_Medienversand\Medienbeobachtung_Anleitung.docx")
+
+# =====================================================================
+# 5. LOG-TABELLE
+# =====================================================================
+from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill, Alignment
+from openpyxl.worksheet.datavalidation import DataValidation
+wb = Workbook()
+sheets = {
+    "Medienspiegel": ["Datum", "Medium", "Land", "Art (Print/Online/Radio/TV/Social)", "Titel", "Link", "Ton (positiv/neutral/negativ)", "Salzburg AG zitiert? (ja/nein)", "Falsche Fakten? Welche", "Handlungsbedarf", "PDF gesichert (ja/nein)", "Erledigt von"],
+    "Kommentare": ["Datum", "Uhrzeit", "Plattform", "Beitrag", "Ampel (grün/gelb/rot/schwarz)", "Kurzinhalt (ohne Namen)", "Maßnahme", "Screenshot-Datei", "Erledigt von"],
+    "Anfragen": ["Datum", "Uhrzeit", "Medium", "Journalist/in", "Kontakt", "Thema/Frage", "Frist", "Antwort durch", "Beantwortet am", "Ergebnis/Beitrag"],
+}
+fill = PatternFill("solid", fgColor="1F4E3D")
+first = True
+for name, cols in sheets.items():
+    ws = wb.active if first else wb.create_sheet()
+    first = False
+    ws.title = name
+    ws.append(cols)
+    for i, c in enumerate(ws[1], start=1):
+        c.font = Font(bold=True, color="FFFFFF")
+        c.fill = fill
+        c.alignment = Alignment(wrap_text=True, vertical="top")
+        ws.column_dimensions[c.column_letter].width = 22 if i > 1 else 12
+    ws.freeze_panes = "A2"
+    ws.auto_filter.ref = f"A1:{ws.cell(1, len(cols)).column_letter}1"
+    ws.row_dimensions[1].height = 34
+ws = wb["Kommentare"]
+dv = DataValidation(type="list", formula1='"grün,gelb,rot,schwarz"', allow_blank=True)
+ws.add_data_validation(dv); dv.add("E2:E1000")
+ws = wb["Medienspiegel"]
+dv2 = DataValidation(type="list", formula1='"positiv,neutral,negativ"', allow_blank=True)
+ws.add_data_validation(dv2); dv2.add("G2:G1000")
+wb.save(os.path.join(ROOT, r"6_Medienversand\Medienbeobachtung_Log.xlsx"))
+print("ok Medienbeobachtung_Log.xlsx")

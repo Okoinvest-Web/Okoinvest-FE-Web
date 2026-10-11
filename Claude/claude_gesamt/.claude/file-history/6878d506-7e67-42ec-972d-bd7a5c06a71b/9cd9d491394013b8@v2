@@ -1,0 +1,27 @@
+import { Sidebar } from "@/components/Sidebar";
+import { CommandPalette } from "@/components/CommandPalette";
+import { requireUser } from "@/lib/auth";
+import { db } from "@/lib/data";
+
+export default async function CrmLayout({ children }: { children: React.ReactNode }) {
+  const user = await requireUser();
+  // Zähler für die Navigation: neue Leads, offene Chancen, offene Aufgaben
+  const [leads, opps, todos] = await Promise.all([
+    db().listLeads({ filters: { status: "Lead" }, limit: 500 }),
+    db().listOpportunities({ limit: 500 }),
+    db().listToDos({ filters: { status: "Open" }, limit: 500 }),
+  ]);
+  const counts = {
+    leads: leads.length,
+    opps: opps.filter((o) => o.status === "Open" || o.status === "Quotation").length,
+    todos: todos.length,
+  };
+
+  return (
+    <div className="flex h-full">
+      <Sidebar source={db().kind} user={user} counts={counts} />
+      <main className="flex min-w-0 flex-1 flex-col overflow-y-auto bg-white">{children}</main>
+      <CommandPalette />
+    </div>
+  );
+}

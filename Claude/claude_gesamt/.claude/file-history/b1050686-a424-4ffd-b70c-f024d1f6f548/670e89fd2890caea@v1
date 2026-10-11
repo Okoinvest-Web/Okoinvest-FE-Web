@@ -1,0 +1,75 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { useState } from "react";
+
+const punkte = [
+  { href: "/portal", label: "Übersicht" },
+  { href: "/portal/anlagen", label: "Anlagen" },
+  { href: "/portal/rechnungen", label: "Rechnungen" },
+  { href: "/portal/dokumente", label: "Dokumente" },
+  { href: "/portal/stoerungen", label: "Störungen" },
+];
+
+export function PortalNav({ benutzer }: { benutzer: string }) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const [meldetAb, setMeldetAb] = useState(false);
+
+  async function abmelden() {
+    setMeldetAb(true);
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.replace("/login");
+    router.refresh();
+  }
+
+  return (
+    <header className="border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-3 px-4 py-3">
+        <Link href="/portal" className="font-semibold whitespace-nowrap">
+          ☀️ Kundenportal
+        </Link>
+
+        <nav className="flex flex-wrap gap-1 text-sm">
+          {punkte.map((punkt) => {
+            // "/portal" nur exakt aktiv, sonst waere es auf jeder Unterseite markiert.
+            const aktiv =
+              punkt.href === "/portal"
+                ? pathname === punkt.href
+                : pathname.startsWith(punkt.href);
+
+            return (
+              <Link
+                key={punkt.href}
+                href={punkt.href}
+                aria-current={aktiv ? "page" : undefined}
+                className={`rounded-lg px-3 py-1.5 transition ${
+                  aktiv
+                    ? "bg-emerald-50 font-medium text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
+                    : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+                }`}
+              >
+                {punkt.label}
+              </Link>
+            );
+          })}
+        </nav>
+
+        <div className="ml-auto flex items-center gap-3 text-sm">
+          <span className="hidden text-slate-500 sm:inline dark:text-slate-400">
+            {benutzer}
+          </span>
+          <button
+            type="button"
+            onClick={abmelden}
+            disabled={meldetAb}
+            className="rounded-lg border border-slate-300 px-3 py-1.5 text-slate-600 transition hover:bg-slate-100 disabled:opacity-60 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+          >
+            {meldetAb ? "…" : "Abmelden"}
+          </button>
+        </div>
+      </div>
+    </header>
+  );
+}

@@ -1,0 +1,273 @@
+# Briefing ÖkoInvest-Website (für alle Mitwirkenden)
+
+Projekt: `C:\Users\SALEADMIN\Downloads\Oekoinvest-Web` – Next.js 15 (App Router, JavaScript, Tailwind 4).
+Entstanden als Kopie der Website von Ökovolt Deutschland (`C:\Users\SALEADMIN\Downloads\Oekovolt-Web-DE\Oekovolt-Web-DE`, **nur lesen, nie ändern**). Qualitätsmaßstab ist genau diese Seite: Schau Dir dort bei Bedarf Seiten wie `src/app/page.js`, `src/app/landwirtschaft/page.js`, `src/components/Rechner/StromspeicherRechner.js`, `src/components/Foerdercheck/FoerderWizard.js` an.
+
+Dev-Server läuft bereits auf http://localhost:3100 (NICHT neu starten, NICHT `next build` im Projektordner ausführen – das zerschießt den laufenden Server. Für einen Build: `NEXT_DIST_DIR=.next-verify npx next build`).
+
+## Unternehmen
+
+- **ÖkoInvest GmbH**, Gewerbegebiet 10, 5121 Ostermiething (AT), FN 541505g, LG Ried im Innkreis, eingetragen 10.09.2020. GF: Andreas Wegscheider, Manuel Thaler. Teil der **ÖKOVOLT Gruppe** (seit 2010, Muttergesellschaft ÖKOVOLT GmbH Solartechnik in Türkheim/Bayern; Schwester ÖKOVOLT Solartechnik GmbH in AT). Beteiligungen: GFL – PV-Kraftwerk GmbH (100 %), HIL PV Kraftwerk GmbH (50 %, mit Prime Energy Solutions GmbH). Die Gruppe betreibt eigene Solarparks seit 2012 (z. B. Irsingen, Artern, Tilleda) und hat eigene Rammtechnik (Deutsche Solar & Rammtechnik GmbH).
+- Geschäft: Projektentwicklung **Freiflächen-PV, Agri-PV, Solarcarports/Parkplätze, Großspeicher**; Contracting & PPA. Entwickelt **rund 50 MWp pro Jahr neu** (Baureife erst Jahre später – ehrlich kommunizieren).
+- Plattform-Ziel: führende Seite im DACH-Raum, Markt durch Digitalisierung erschließen. Einnahmen über **Provision** (Projektbörse: Verkäuferprovision 1,5–3 % nur bei Abschluss; für Investoren und Flächeneigentümer kostenfrei).
+- Zielgruppen: Flächeneigentümer, Landwirte (Agri-PV: verpachten / selbst investieren / Investor betreibt + Landwirt ist Mitglied in der Genossenschaft), Investoren (Projekte kaufen, Suchprofil), Projektentwickler/Anbieter (Projekte in die Börse stellen), Unternehmen/Mittelstand (**Reststrom-Pool**: die Firmen, denen die Muttergesellschaft ÖKOVOLT PV + Speicher baut, beziehen den Strom, den sie trotzdem noch kaufen müssen, gebündelt über das virtuelle Kraftwerk von ÖkoInvest → Preise drücken), Kommunen, Bürger (Genossenschaft, Energiegemeinschaften).
+- Kontakt: Telefon und E-Mail sind noch **nicht freigegeben** → `KONTAKT.telefon`/`email` sind `null`, nie eine Nummer oder Adresse erfinden. Kontaktwege sind Formulare und das Portal.
+
+## Harte Regeln
+
+1. **Corporate Design nicht zerstören.** Nur die vorhandenen Tokens/Klassen: Farben `ov-*` (Grün, 600 für Buttons), `navy-*`, `ink-*`, `sand-*`, `sun-*` (sparsam). Schriften: Überschriften Manrope (`font-display`, `ov-h1/ov-h2/ov-h3/ov-display`), Text Inter. Klassen `ov-container`, `ov-lead`, `ov-text-gradient(-light)`, `ov-glass`, `ov-noise`, `ov-grid-bg(-light)`, `ov-card-hover`, `ov-num`, `ov-range`, `ov-prose`. Radien groß (rounded-3xl / rounded-[2rem]). Keine neuen Farben, keine anderen Fonts, keine Emojis im UI.
+2. **Bausteine wiederverwenden** (`src/components/ui`): `PageHero` (variant split | immersive | dark), `Section` (tone white|sand|ink|green|navy, space), `SectionHeading` (+ `Eyebrow`), `Button` (primary|navy|secondary|ghost|white|outlineLight|sun), `FeatureGrid`, `Steps`, `Faq` (liefert FAQPage-Schema), `CtaBand` (Props: eyebrow,title,text,primary,secondary), `Reveal`, `CountUp`, `Breadcrumbs`, `SplitMedia`, `Marquee`. Rechner: `src/components/Rechner/bausteine.js` (`Zahl`, `Regler`, `Auswahl`, `Schalter`, `Gruppe`, `Kennzahl`, `Tooltip`, `useBreite`) und `RechnerSeite.js` (Seitenrahmen jedes Rechners, Props siehe Datei, `querverweise=[{href,titel,text}]`). `Querverweise` nimmt `items`.
+3. **Zahlen nur aus `src/lib/invest/markt.js`** importieren (REGIONEN, BAUART, FREIFLAECHE, ERLOESE, FINANZIERUNG, PACHT, AGRI, CARPORT, SPEICHER, STROM, KOMMUNE, PHASEN, PROVISION, GEMEINSCHAFTEN, npv, irr, annuitaet, STAND). Formatierung aus `src/lib/rechner/annahmen.js` (fmt, fmtEur, fmtMio, fmtPct, fmtCt). Fehlt ein Wert, ergänze ihn dort **am Ende der passenden Konstante** mit Quelle als Kommentar (nicht umbenennen/löschen – andere nutzen die Datei parallel).
+4. **Fachlich tief und korrekt, DACH-weit.** Deutschland: EEG 2023 (Ausschreibungen, § 6 Kommunalbeteiligung 0,2 ct/kWh, § 48 Randstreifen 500 m an Autobahnen/Schienen, benachteiligte Gebiete/Länderöffnungsklausel), BauGB § 35 (Privilegierung 200-m-Korridor an Autobahnen/zweigleisigen Schienen; Agri-PV bis 2,5 ha mit Hofbezug), B-Plan-Verfahren (Aufstellungsbeschluss, frühzeitige Beteiligung, Satzungsbeschluss), DIN SPEC 91434, GAP (Agri-PV: 85 % bleiben förderfähig), Erbschaft-/Grundsteuer (Achtung: § 158 Abs. 2 BewG erfasst nach Wortlaut nur die Überlassung zur Pflanzen-/Tiererzeugung – für klassische Freiflächen-PV gibt es KEINE Sonderregel, verpachtete Flächen können aus dem land- und forstwirtschaftlichen Vermögen fallen; vorsichtig formulieren, Steuerberatung empfehlen), Energy Sharing § 42c EnWG, Stromsteuer 0,05 ct für produzierendes Gewerbe ab 2026. Österreich: EAG, Marktprämie/Investitionszuschüsse, Flächenwidmung „Grünland-Photovoltaik“ je Bundesland, EEG/BEG (Erneuerbare-Energie-Gemeinschaften), UVP ab bestimmter Größe. Schweiz: Solarexpress (alpine Anlagen), Einmalvergütung, ZEV/vZEV, LEG seit 2026. **Unsichere Details vorsichtig formulieren** („in der Regel“, „nach aktuellem Stand“) statt erfinden. Keine erfundenen Referenzprojekte, Kunden, Zitate, Auszeichnungen oder Kennzahlen über ÖkoInvest. Belegt nur: siehe „Unternehmen“.
+5. **Sprache:** Deutsch, Sie-Form, sachlich-selbstbewusst, keine Werbefloskeln. Echte Umlaute (ä, ö, ü, ß) in allen Texten. Code-Bezeichner und Kommentare deutsch wie im Bestand.
+6. **SEO/Barrierefreiheit wie im Bestand:** `export const metadata` mit title (≤ 60 Z., Muster „… | ÖkoInvest“), description (140–160 Z.), `alternates.canonical` via `abs(pfad)` aus `@/data/site`, openGraph (siteName „ÖkoInvest“, Bild z. B. `/img/solarpark-himmel.jpg`). JSON-LD wo sinnvoll (Service, WebApplication, FAQPage über `Faq`). Semantische Überschriften, `aria-*`, Tastaturbedienung, `prefers-reduced-motion` respektieren (globals.css tut das meist schon).
+7. **Mobil zuerst prüfen:** Nichts darf bei 360–390 px horizontal überlaufen.
+8. **Bilder:** nur aus `/public/img` (Liste: solarpark-himmel, solarpark-reihen, solarpark-baeume, freiflaeche-begehung, investoren-vor-ort, montage-freiflaeche, planer-tablet, pv-wind-abend, module-sonne, module-raster, floating-pv, floating-pv-montage, gewerbedach, dach-drohne, techniker, team-praesentation, firmensitz, speicher – alle `.jpg`). Für Agri-PV, Carports, Karten, Prozesse: **eigene Inline-SVG-Illustrationen** im Markenstil (Grün/Navy/Sand, flach, sauber) statt fremder Bilder.
+9. **Server-Komponenten bevorzugen**, `"use client"` nur für interaktive Teile.
+10. **Keine neuen npm-Pakete** ohne zwingenden Grund.
+
+## Vertrag Formulare / Plattform (wird vom Plattform-Team gebaut)
+
+- `POST /api/anfrage` – JSON `{ typ, kontakt: { anrede?, vorname, nachname, firma?, email, telefon?, plz?, ort?, land? }, daten: {…frei je typ…}, einwilligung: true, herkunft? }`.
+  `typ` ∈ `flaeche | agri | investor | projekt | reststrom | energiegemeinschaft | genossenschaft | kommune | carport | speicher | kontakt`.
+  Antwort `{ ok: true, id, vorgang }` oder `{ ok:false, error }`. Die Anfrage wird als Vorgang gespeichert und erscheint im Portal, wenn sich die Person mit derselben E-Mail registriert.
+- Wiederverwendbare Client-Komponente: `@/components/Plattform/AnfrageFormular` – Props `{ typ, daten = {}, titel?, text?, felder?: ["firma","telefon","plz", …], button?, erfolgText? }`. Darf ab sofort importiert werden (wird parallel gebaut; bis dahin existiert ein funktionsfähiger Stub).
+- Portal-Routen: `/login`, `/registrieren?rolle=flaeche|landwirt|investor|anbieter|unternehmen|mitglied`, `/portal` (Dashboard je Rolle), `/portal/flaechen`, `/portal/projekte`, `/portal/boerse`, `/portal/anfragen`, `/portal/nachrichten`, `/portal/dokumente`, `/portal/profil`, `/portal/admin`.
+- Öffentliche Projektbörse: `/projektboerse` (Liste mit Filtern), `/projektboerse/[slug]` (Exposé-Teaser, Details nach Login+NDA), `/projektboerse/anbieten`.
+
+## Seitenlandkarte (öffentlich)
+
+`/` · `/freiflaeche` · `/agri-pv` · `/solarcarport` · `/grossspeicher` · `/prozess` · `/kommunen` · `/flaeche-verpachten` · `/landwirte` · `/investoren` · `/projektboerse` (+ `/anbieten`, `/[slug]`) · `/virtuelles-kraftwerk` · `/reststrom` · `/energiegemeinschaften` · `/genossenschaft` · `/energie-live` · `/rechner` · `/flaechencheck` · `/rechner/pacht` · `/rechner/agri-pv` · `/rechner/solarpark` · `/rechner/projektbewertung` · `/rechner/reststrom` · `/rechner/solarcarport` · `/rechner/kommune` · `/ratgeber` (+ `/[slug]`) · `/wissen/lexikon` · `/faq` · `/unternehmen` · `/kontakt` · `/impressum` · `/datenschutz` · `/nutzungsbedingungen` · `/barrierefreiheit`.
+
+Nur auf existierende oder in dieser Liste geplante Routen verlinken.
+
+## Visuelle Kontrolle
+
+Screenshot-Werkzeug (Playwright, bereits installiert):
+```
+cd "C:/Users/SALEAD~1/AppData/Local/Temp/claude/c--Users-SALEADMIN-Downloads-Oekovolt-Web-DE-Oekovolt-Web-DE/6ac8640b-bab4-4de9-9c07-3a24f91b0e42/scratchpad/pw"
+MSYS_NO_PATHCONV=1 node shot.mjs /pfad 1440 1 name   # Desktop, ganze Seite
+MSYS_NO_PATHCONV=1 node shot.mjs /pfad 390 1 name    # Mobil
+```
+Bild liegt dann unter `shots/<name>_<breite>.png` (mit dem Read-Werkzeug ansehen). Ausgabe zeigt HTTP-Status und Konsolen-/Laufzeitfehler. **Jede Seite muss mit Status 200, ohne Laufzeitfehler, in beiden Breiten sauber aussehen**, bevor sie als fertig gilt. Sehr lange Seiten ggf. zusätzlich mit `0` (nur sichtbarer Bereich) prüfen.
+
+## Ausbaustufe 2 – Ergänzungen
+
+- Stand: Alle Seiten der Stufe 1 existieren (siehe `src/app/`). Vor dem Verlinken prüfen, dass die Route existiert.
+- Gemeinsame Dateien `src/data/navigation.js`, `src/components/Rechner/tools.js`, `src/app/sitemap.js`, `src/components/Reusable/footer.js` pflegt der Koordinator. Neue Routen/Tools im Abschlussbericht melden (mit Titel, Kurztext, Icon-Vorschlag aus lucide-react).
+- Metadaten für Nicht-Rechner-Seiten: `rechnerMetadata` aus `@/components/Rechner/RechnerSeite` funktioniert allgemein.
+- Rechner-Layout mit fixierter Ergebnisspalte: `@/components/Rechner/InvestTeile` (RechnerRahmen, Hinweise, Legende).
+- Formular mit Chips davor: `@/components/Carport/AuswahlAnfrage`.
+- Qualitäts-Audit (alle Sitemap-Routen: Status, Laufzeitfehler, Überlauf 390 px, tote Links): `MSYS_NO_PATHCONV=1 node audit.mjs` im Scratchpad-Ordner `pw`. Eigene Skripte dort mit eigenem Präfix benennen, fremde nicht überschreiben.
+- Dev-Server kann durch parallele Arbeit langsam sein (bis 30 s je Erstaufruf) – Timeouts großzügig setzen, nicht neu starten.
+
+## Plattform-Teams (Ausbaustufe 3) – Spielregeln
+
+Mehrere Teams arbeiten GLEICHZEITIG an der Plattform im selben Arbeitsverzeichnis.
+- **Neue Funktionen in NEUE Dateien:** Demo-Logik unter `src/lib/plattform/backend/demo/<thema>.js`, Frappe-Adapter-Teil unter `src/lib/plattform/backend/frappe/<thema>.js` (oder klar abgegrenzter Block), API-Routen unter `src/app/api/<bereich>/<thema>/…`, Seiten unter `src/app/portal/<thema>/…`, Komponenten unter `src/components/Portal/<Thema>/…`, Frappe unter `Backend-Import/oekoinvest_app/oekoinvest_app/plattform/api/<thema>.py` + eigene DocTypes.
+- **Gemeinsame Dateien** (`backend/index.js`, `backend/demo.js`, `backend/frappe.js`, `prozesse.js`, `konstanten.js`, `server/route.js`, `sitzung.js`, `src/app/portal/layout.js`, `PortalRahmen.js`, `docs/API.md`, `docs/PLATTFORM.md`, `scripts/plattform-test.mjs`, `Backend-Import/.../hooks.py`): nur kleine, gezielte Einfügungen (Registrierung, Import, Menüpunkt, Abschnitt). **Direkt vor jeder Änderung neu lesen**, nie ganze Dateien neu schreiben, nichts Fremdes umformatieren oder entfernen.
+- Tests: eigene Prüfungen als eigene Datei `scripts/plattform-test-<thema>.mjs` (gleiches Muster wie `plattform-test.mjs`); die Haupttests müssen grün bleiben.
+- Demo-Daten: eigene Seed-Ergänzungen in eigener Datei, im Seed nur registrieren. `.data/` nicht löschen, solange andere testen – eigene Testkonten mit eigenem Präfix anlegen.
+- Sicherheit: jede neue API prüft Rolle UND Eigentum; Mutationen nur per JSON + Origin-Prüfung (bestehender `route()`-Helfer); keine Geheimnisse im Code; keine neuen npm-Pakete.
+- Bedienung: „einfach zu bedienen, aber brutal mächtig“ – klare Standardwege, Profi-Funktionen per Tastatur, Filter, Massenaktionen; mobil voll nutzbar; Design-System wie überall.
+
+## Ressourcen (WICHTIG – der Rechner hat nur 7,6 GB RAM, neun Teams teilen sich einen Dev-Server)
+1. Den großen `scripts/plattform-test.mjs` NICHT mehr selbst laufen lassen – der Koordinator fährt ihn zentral. Nur die eigenen Testdateien, und nie zwei Testläufe gleichzeitig.
+2. Höchstens EIN Playwright-Browser gleichzeitig pro Team, nach jedem Skript `browser.close()` (auch im Fehlerfall: try/finally). Keine Parallel-Screenshots.
+3. Visuelle Prüfungen bündeln (wenige, gezielte Aufnahmen statt Serien). Wenn der Server langsam ist (> 60 s): 5 Minuten warten statt erneut feuern.
+4. Timeouts großzügig (180 s), `waitUntil: "load"` statt `networkidle`.
+5. **Keine awaited Dateizugriffe (`fs.promises`) in Pfaden, die beim Rendern laufen** – React 19 übernimmt im Dev-Modus deren Rückgabewerte ins HTML (so war die komplette Demo-DB inkl. Passwort-Hashes öffentlich sichtbar). Synchron lesen (`readFileSync`) oder außerhalb des Renderns.
+
+## Ausbaustufe 4 – Frappe/ERPNext-Ökosystem (Stand nach Stufe 3: 724 Plattform-Prüfungen grün)
+
+Zielbild: **Frappe/`oekoinvest_app` = Kern**, **ERPNext** = Finanzen (Sales/Purchase Invoice, Payment Entry, Subscription), Projekte (Project/Task/Timesheet), Anlagenbuchhaltung (Asset); **HRMS** = Employee, Holiday List, Leave Application, Timesheet; **Frappe Drive** = Dokumentenablage; **Helpdesk** = HD Ticket; **Insights** = BI. Next.js bleibt das Portal für Externe.
+Regeln:
+- Jede Integration **optional**: nur aktiv, wenn die App installiert ist (`"erpnext" in frappe.get_installed_apps()` bzw. `hrms`, `drive`, `helpdesk`) und ein Schalter in `site_config` gesetzt ist. Ohne die App läuft alles wie bisher. Kein harter `required_apps`-Eintrag.
+- Nur dokumentierte Standard-DocTypes/Felder von Frappe v15 / ERPNext v15 / HRMS v15 verwenden; wo unsicher (v. a. Drive, Helpdesk), Zugriff über eine kleine Adapter-Schicht mit klarer Fehlermeldung kapseln und in der Doku als „vor Einsatz gegen installierte Version prüfen“ markieren.
+- Keine Bench vorhanden: Python mit `py_compile`, JSON mit `json.tool`, Logik soweit möglich als reine Funktionen mit `python -m unittest` (Frappe-Stub) testen; FrappeTestCase-Tests zusätzlich schreiben.
+- Demo-Backend bildet die neuen Funktionen realistisch nach (ohne ERPNext), damit das Portal vollständig vorführbar bleibt.
+- Weiterhin gelten alle Spielregeln und Ressourcenregeln oben. **Dev-Server sparsam**: erst Frappe/Logik, am Ende wenige gezielte Screenshots; den großen Test fährt der Koordinator.
+
+### Stufe 4 – Ablage und Go-live
+- **Sämtlicher Backend-Code liegt in `Backend-Import/`** (Frappe-App `Backend-Import/oekoinvest_app/`, Dienste unter `Backend-Import/dienste/`). Der Kunde importiert diesen Ordner auf einen **eigenen Backend-Server** (getrennt vom Next.js-Frontend). Alles, was für den Livegang nötig ist, gehört dorthin: DocTypes, Controller, Hooks, Rollen, Role Profiles, Workspaces (Desk), Druckformate (Jinja), E-Mail-Vorlagen, Notifications, Workflows, Reports, Dashboards/Number Cards, Custom Fields für ERPNext/HRMS, Fixtures, Patches, Übersetzungen, Installations-/Migrationshelfer, Doku.
+- `hooks.py`, `fixtures`-Liste und `patches.txt` pflegt das Team „Go-live-Paket“; andere Teams tragen dort nur gezielt ihre Einträge ein (neu lesen, kleine Einfügung).
+- Neue Pflicht-Querschnittsfunktion **KYC/KYB** (Identität, Handelsregister/Firmenbuch, wirtschaftlich Berechtigte, Sanktions-/PEP-Prüfung, IBAN, Eigentumsnachweis) – andere Module prüfen den KYC-Status über die Funktion `kyc_status(konto)` bzw. JS `kycStatus(nutzer)` des KYC-Teams, bevor sie Datenraum, LOI/Zuschlag, Auszahlungen freigeben.
+# Handbücher ÖkoInvest-Plattform
+
+Stand: 30.09.2026 · Praxisnahe Anleitungen je Rolle. Grundlage sind die Funktionen, die in `docs/PLATTFORM.md` beschrieben sind; Pfade beziehen sich auf die Website (z. B. `/portal/flaechen`).
+
+> Die Handbücher erklären die Bedienung. Sie sind keine Rechts-, Steuer- oder Anlageberatung. Verbindlich sind die Verträge, die [Nutzungsbedingungen](../../src/app/nutzungsbedingungen/page.js), die besonderen Bedingungen unter `/bedingungen/*` und die [Datenschutzerklärung](../../src/app/datenschutz/page.js).
+
+## Externe Rollen (Portal)
+
+| Handbuch | Für wen | Einstieg |
+|---|---|---|
+| [Eigentümer, Landwirte, Dachflächen](./rolle-eigentuemer.md) | Flächen- und Dacheigentümer, Landwirte (Agri-PV) | `/flaeche-verpachten`, `/landwirte`, `/dachflaeche-verpachten` |
+| [Investor](./rolle-investor.md) | Fonds, Stadtwerke, IPP, Family Offices, Privatinvestoren | `/investoren`, `/projektboerse` |
+| [Anbieter / Verkäufer](./rolle-anbieter.md) | Projektentwickler, Verkäufer von Projekten und Bestandsanlagen | `/projektboerse/anbieten`, `/bestandsanlagen` |
+| [Contracting-Kunde](./rolle-contracting-kunde.md) | Unternehmen mit Anlage von ÖkoInvest auf dem Dach/Gelände | Portal „Mein Solarstrom“ |
+| [Energiebeschaffung](./rolle-energiebeschaffung-kunde.md) | Unternehmen, die Reststrom über ÖkoInvest einkaufen | `/reststrom`, Portal „Energiebeschaffung“ |
+| [Kommune](./rolle-kommune.md) | Gemeinden, Städte, Stadtwerke | `/kommunen` |
+| [Gutachter / Planer](./rolle-gutachter.md) | eingeladene Fachleute der Projektentwicklung | Einladungslink |
+| [Energieversorger](./rolle-lieferant.md) | eingeladene Lieferanten | Einladungslink |
+| [Bank](./rolle-bank.md) | eingeladene Banken / Finanzierungspartner | Einladungslink |
+| [Mitglied / Bürger](./rolle-mitglied.md) | Interessierte an Genossenschaft und Energiegemeinschaft | `/genossenschaft`, `/energiegemeinschaften` |
+
+## Backoffice (Unterrollen)
+
+| Handbuch | Schwerpunkt |
+|---|---|
+| [Leitung](./backoffice-leitung.md) | Steuerung, Freigaben, Rechte, Bankentscheidung, Geschäftsmodell |
+| [Akquise](./backoffice-akquise.md) | Anfragen, Flächen-Pipeline, Akquise-Karte, Grundbuch, CRM |
+| [Transaktion](./backoffice-transaktion.md) | Projekt-Freigabe, NDA/LOI, Deal-Room, Bieterverfahren, Closing |
+| [Buchhaltung](./backoffice-buchhaltung.md) | Pacht, Contracting-Rechnungen, Provision, SEPA, Anlagenbuchhaltung |
+| [Betrieb](./backoffice-betrieb.md) | Anlagen, Störungen, Geräte, Zähler, Support |
+| [Compliance](./backoffice-compliance.md) | KYC/KYB, Sanktionsabgleich, Bonität, Register, Datenschutzanfragen |
+| [Energie](./backoffice-energie.md) | Handelsdesk, Wechselanalyse, Ausschreibungen, Lieferanten, Pool |
+| [Projektleitung](./backoffice-projektleitung.md) | Entwicklungsprojekte, Gantt, Risiken, Gutachter, Übergaben |
+
+**Prozesse end-to-end:** [PROZESSLANDKARTE.md](./PROZESSLANDKARTE.md) (Mermaid-Diagramme mit Rollen, Status, Übergaben und Systemen).
+
+## Für alle: Bedienung in 60 Sekunden
+
+| Aktion | Tasten |
+|---|---|
+| Befehlspalette (Suche, Aktionen, Navigation) | `Strg` + `K` (Mac `⌘` + `K`) oder `/` |
+| Übersicht der Tastenkürzel | `?` |
+| Neu anlegen (je Rolle: Fläche, Projekt, Anliegen …) | `n` |
+| Springen: Übersicht · Anfragen · Flächen · Projekte · Börse · Nachrichten · Hilfe | `g d` · `g a` · `g f` · `g p` · `g b` · `g n` · `g h` |
+| Backoffice: Cockpit · Aufgaben · Vorgänge | `g c` · `g t` · `g v` |
+| In Listen: wählen · öffnen · neuer Tab · schließen | `↑` `↓` · `Enter` · `Strg` + `Enter` · `Esc` |
+
+Einzeltasten-Kürzel lassen sich unter `/portal/hilfe` abschalten; in Eingabefeldern greifen sie nie. Das Portal kann als App installiert werden (Hinweis auf der Übersicht).
+
+## Schulung mit Demo-Konten
+
+Im Demo-Betrieb (nicht in Produktion) sind die Konten aus `docs/PLATTFORM.md` („Demo-Konten“) mit dem dort genannten Passwort vorbelegt, z. B. `flaeche@example.com`, `investor@example.com`, `bo-akquise@example.com`. Alle Daten sind fiktiv.
+# Ausbaustufe 5 – Führende Plattform DACH (Auftrag vom 30.09.2026, Zeitrahmen 20 h)
+
+Rechner: 7,6 GB RAM → Arbeit in Wellen. Stand wird hier gepflegt, damit nach Unterbrechungen weitergearbeitet werden kann.
+
+## Laufend (Stufe 4)
+- [x] Go-live-Paket Backend (Backend-Import komplett: Desk, Rollen, Druckformate, Notifications, Workflows, Reports, Installation, GO-LIVE.md)
+- [x] KYC/KYB (manuelle Prüfung, Verschlüsselung, Sanktionsabgleich, Gating) – Testlauf zentral wiederholen
+- [x] Projektentwicklung (Entwicklungsakte, Gantt, Risiken, Portfolio, Gutachter-Rolle)
+- [x] ERPNext-Finanzen (Pacht, Contracting, Provisionsrechnung, Assets, Controlling)
+- [x] Dokumente/Signatur/Termine/Helpdesk/HR
+- [x] Fachprüfung A (Fläche, Landwirt, Dach, Kommune) – eigene Rolle `kommune` + Menüpunkt /portal/kommune erledigt (B1)
+- [x] Fachprüfung B (Investor, Anbieter, Unternehmen, Mitglied) + Anlagen-Eigentum ÖkoInvest/SPV, Kundensicht „Mein Solarstrom“
+
+## Welle A (sofort, überwiegend Backend – wenig Dev-Server)
+- [x] **A1 Geodaten & Akquise-Engine** – Österreich zuerst: Kataster (BEV DKM, OGD), INVEKOS-Schläge (AMA, OGD), Umspannwerke/Trafos (OpenStreetMap power=substation/transformer, ODbL; ggf. Netzbetreiber-Kapazitätskarten), Geländeneigung (DGM, OGD), Schutzgebiete (Natura 2000/Nationalparks/Landschaftsschutz), Siedlungsabstand; PostGIS-Pipeline in `Backend-Import/dienste/geodaten`; Flächen-Scoring + Leitungslänge/Netzanschlusskosten zum nächsten Umspannwerk; Akquise-Cockpit mit Karte (basemap.at, Leaflet) im Backoffice; später DE/CH.
+- [x] **A2 Firmen-, Bonitäts- & Identitätsdienste** – Adapter: Identitätsprüfung (IDnow/Veriff/Sumsub, Webhooks) + automatische MRZ-Prüfung (ICAO 9303) als Vorprüfung; Bonität (KSV1870, Creditreform, CRIF); Firmenbuch AT (über Verrechnungsstelle), Handelsregister DE, Zefix CH (öffentliche API); Anbindung an KYC-Fall. SPV-/GmbH-Gründungsassistent AT/DE/CH (Dokumente, Notartermin, Firmenbuch-/Handelsregister-Anmeldung, Transparenz-/WiEReG-Meldung, UID/Steuernummer, Bankkonto) – Notariate haben keine offene API: Workflow + Dokumentenpaket + Terminbuchung.
+
+- [x] **A3 Energiebeschaffung & Versorger-Ausschreibung** – Backoffice-Handelsdesk: Spot (EPEX via Energy-Charts) und Terminmarkt (EEX Cal/Q/M – Lizenzfrage, manuelle/lizenzierte Einspielung), Beschaffungsstrategien (Tranchen, Hedge-Quote, Spot-Anteil), Lastgang-Analysen je Kunde, **Ausschreibung/Bieterwettbewerb unter Energieversorgern** (neue Rolle Lieferant/Energieversorger mit eigenem Portal; anonymisierte Lastgänge, Preisblatt, Frist, mehrere Runden, Vergleich, Zuschlag, Vertrag; Versand an Versorger ohne Portal per E-Mail mit Angebotslink), **laufende Wechselanalyse** je Kunde (Vertrag vs. Marktpreis-Forward, Kündigungsfristen-Alarm, Empfehlung), Pool-Bündelung mehrerer Kunden (Reststrom-Pool)
+
+- [x] **A1b Akquise DE/CH + Kampagnen + Gemeinde-Screening** – DE-Scoring (EEG-Kulisse, § 35 BauGB, Moor), CH-Adapter, Demo Unterallgäu, Kampagnen (Grundbuch-Aufgaben, Serienbrief-PDF, Angebotsseite /angebot/[code], Nachfassen, Sperrliste), Gemeinde-Screening; Test `plattform-test-akquise2.mjs` 115 grün. Offen: Datenschutzerklärung (Flächenakquise per Brief/Angebotsseite), `SPERRLISTE_PFEFFER`, robots/Sitemap-Ausschluss /angebot, Bench-Tests `test_akquise_kampagne.py`
+
+## Welle B (nach Stufe 4)
+- [x] **B0 Eigenbetrieb & Bankfinanzierung** (zusammen mit B2) – Geschäftsmodelle je Projekt: Build-to-Sell (ÖKOVOLT baut für Investor, EPC-Übergabe), Eigenbetrieb durch ÖkoInvest/SPV mit **Bankfinanzierung** (Finanzierungsanfrage an mehrere Banken, Bankenpaket mit Financial Model/Ertragsgutachten/Verträgen, Term-Sheet-Vergleich, DSCR/LLCR-Covenants, Auszahlungsvoraussetzungen, Covenant-Monitoring im Betrieb aus Anlagen-Messdaten), reine Verpachtung
+- [x] **B0b Dach-Contracting mit Dienstbarkeit** – Dachnutzungs-/Servitutsvertrag (AT Servitut, DE beschränkte persönliche Dienstbarkeit, CH Dienstbarkeit), Grundbuch-Eintragungsablauf (Vertrag, Beglaubigung/Notar, Grundbuchsgesuch, Rang, Rangrücktritt Bank, Eintragungsbestätigung), Fristen, Verknüpfung mit Contracting-Vertrag und Anlage
+- [x] **B1 Onboarding-Assistenten je Rolle und Unterrolle** (+ eigene Rolle `kommune` mit Menü /portal/kommune) (Investor je Typ, Anbieter/Verkäufer Projekt & Bestandsanlage, Flächen-/Dach-Eigentümer, Landwirt, Contracting-Kunde, Reststrom-Kunde, Kommune, Gutachter, Backoffice je Unterrolle)
+- [x] **B2 Investor-Finanzierungscockpit** – ROI je Projekt nach Login, Finanzierungsvergleich (Eigenkapital, Annuitätenkredit, Förderkredit KfW/aws/OeKB, Leasing, Mietkauf), Förder-Check je Land (EEG/EAG/Einmalvergütung/Investitionszuschüsse), Steuern (AfA), Szenarien speichern, PDF
+- [x] **B3 Planungsdateien & Projektkosten** – DWG/DXF-Upload mit Vorschau (DXF im Browser, DWG → Konvertierungsdienst), Projektkostenkalkulation nach Gewerken inkl. Netzanschluss aus Akquise-Distanz, Anbindung Projektentwicklung/ERPNext
+- [x] **B4 Deal-Abschluss end-to-end** – Kaufvertrag-Vorlagen (SPA Asset/Share Deal), Signatur, Notartermin, Closing-Checkliste, Kaufpreiszahlung/Treuhand-Hinweis, automatische Provisionsrechnung, Übergabe
+
+## Nacharbeiten aus Berichten (in der Integrationsphase erledigen)
+- [x] Bottom-Navigation mobil: Einträge für Gutachter, Kommune, Lieferant, Bank
+- [ ] `notFound()` im Portal liefert wegen `portal/loading.js` HTTP 200 statt 404 – prüfen, ob `loading.js` auf Unterbereiche beschränkt werden kann (Inhalt ist korrekt, Status nicht) – bewusst offen: sauber nur über Route-Groups (~30 Bereiche) oder Ladeanzeige per useLinkStatus in PortalRahmen und danach loading.js entfernen; kein SEO-/Sicherheitsrisiko (Portal noindex, APIs 403/404)
+- [x] Zentral: `plattform-test-bedienung.mjs` nach Onboarding-Umbau mitlaufen lassen
+- [x] Co-Development-Freigabe (Projektentwicklung) mit `kycFreigabe` absichern
+- [x] Desk-Workspace-Kacheln + Role Profile „ÖkoInvest Projektleitung“, KYC- und Entwicklungs-DocTypes in Rechte-Matrix/Workspaces prüfen (`pruefen.py`)
+- [x] Projektdatenblatt ins Exposé-PDF; Hinweise auf /investoren und /projektboerse/anbieten
+- [x] Investorentyp aus Suchprofil in den KYC-Fall übernehmen
+- [ ] Demo-Aufräumen: Testkonten `fk-test-*`, `ki-*`, `deal-*` und Vorgang V-26-SMUL97 – durch frische Demo-DB vor Vorführung
+- [ ] Demo-Entwicklungsprojekte mit vollständigen Meilenstein-Vorlagen (frische Demo-DB)
+- [x] `/energiegemeinschaften` und `/regionen/nordrhein-westfalen` auf ruhigem Server nachprüfen (Audit-Timeout)
+- [x] KYC-Testreihe zentral grün fahren (lief nur unter Last)
+- [ ] Geodaten-Test verbraucht Demo-Kandidaten (Akquise-Ziel je Lauf) → Test aufräumen lassen bzw. frische Demo-DB
+- [x] Frappe: Ansichten müssen Flächen ohne Eigentümerkonto vertragen (Akquise-Übernahme)
+- [x] Mobile Ansicht /portal/admin/gesellschaften nach Organigramm-Umbau prüfen
+- [x] `pruefen.py`: allow_guest-Ausnahme für Identitäts-Webhook bestätigen
+- [ ] Testdaten-Präfixe `dienste-test-*`, `fz-test-*`, Finanzen-Testverträge → frische Demo-DB
+- [x] UI-Politur Handelsdesk: Kennzahl-Kacheln abgeschnitten, X-Achsen-Labels überlappen, Tabelle rechts abgeschnitten, Brotkrumen „Energie & Lastgang“ auf Admin-Handelsdesk falsch
+- [x] `pruefen.py` Warnungen: 6 DocTypes in desk_rechte.py (Abnahmestelle, Akquise Ziel, Beteiligung Interesse, Bewertung Szenario, Lastgang, Netzkapazitaet), 106 Übersetzungen, doc_events Payment Entry Guard
+- [x] Login-Seite: neue Demo-Konten (lieferant@, bank@, kommune@, gutachter@, bo-*@) in der Demo-Schnellauswahl
+- [x] Frappe: `energie_quellen.historie_laden` einmalig nach Installation (GO-LIVE.md)
+- [x] `rechte.py`: Spalte `projektleitung` ergänzen (finanzen=1, passend zu rechte.js)
+- [ ] Steuer-/Rechtspunkte Finanzen (Backend-Import/FINANZEN-ERPNEXT.md) mit Steuerberatung klären; UID eintragen
+- [x] Datenschutzerklärung: Abschnitte für Geodaten/Akquise-Direktwerbung, Energiebeschaffung (Lastgänge an Lieferanten anonymisiert), Bank-Portal, Signatur, Terminbuchung (Recht-Team, anwaltliche Prüfung offen)
+- [x] Nutzungsbedingungen §§ 1–22, Besondere Bedingungen unter /bedingungen/* (Entwurf, noindex), Handbücher je Rolle und Backoffice-Unterrolle, Prozesslandkarte (docs/handbuch/)
+- [ ] Nach anwaltlicher Freigabe: `FREIGEGEBEN = true` in src/app/bedingungen/_teile.js, dann /bedingungen/* in Footer (Rechtliches) und Sitemap aufnehmen; Platzhalter (Vergütung, Fristen, Anbieter, Gerichtsstand) füllen; offene Rechtsfragen (GwG-Verpflichteter, Art. 9 Online-Ident, Grundbuch-Direktansprache, Drittland KI, WAG/KWG/§ 34c GewO, MaklerG) klären
+
+- [x] Finanzierungsmodul: `p.kostenkalkulation?.finanzierungsbedarf` aus der Projektkostenkalkulation statt Standard-Capex verwenden (fzAuswahl/eingabenAusBezug)
+- [ ] CAD-Konverter: LibreDWG-Version und SHA-256/GPG gegen ftp.gnu.org prüfen, `LIBREDWG_SHA256` setzen; ODA nur nach Lizenzprüfung
+- [ ] Demo-DB: Testdaten plan-test-*, T-PLAN-* entfernen
+- [ ] Akquise-Kampagnen vor erstem Versand: Zweckbindung der nach § 43a GBV eingesehenen Grundbuchdaten für Werbebriefe durch Datenschutzberatung klären; Datenschutzerklärung „Flächenakquise per Brief und Angebotsseite“ prüfen; `oekoinvest_sperrliste_pfeffer` geheim setzen (nie ändern)
+- [x] Zentral: plattform-test-geodaten.mjs erneut (Demo enthält jetzt DE-Kandidaten)
+- [ ] Muster-Verträge Grundbuch/Closing je Land anwaltlich/notariell freigeben, Gebührentabellen (GNotKG, GGG/GebG, kantonal) aktualisieren – siehe docs/GRUNDBUCH-CLOSING.md Abschnitt 9
+
+## Abschluss
+- [x] Zentrale Tests aller Testreihen (21 Reihen, 2.323 Prüfungen), Backend-Konsistenzprüfer (0/0), Produktions-Build, Seiten-Audit (123 öffentlich, 20 Rollen im Portal), npm audit 0, Commit
+# Handbuch: Mitglied / Bürger
+
+Stand: 30.09.2026 · Rolle `mitglied` · Demo: `mitglied@example.com`, `landwirt@example.com` (zusätzlich Mitglied)
+
+**Worum es geht:** Interesse an der Bürgergenossenschaft (im Aufbau) und an Energiegemeinschaften (AT: EEG/BEG, DE: Energy Sharing § 42c EnWG, CH: ZEV/vZEV/LEG) vormerken und den Stand verfolgen.
+
+## Auf einen Blick
+
+| Menü | Wofür |
+|---|---|
+| Genossenschaft & Gemeinschaft (`/portal/beteiligung`) | Vormerkung mit Anteilen (Beispielwert), Art, Interessen; Teilnahmeformular Energiegemeinschaft je Land |
+| Meine Anfragen, Nachrichten | Stand und Rückfragen |
+
+## Schritt für Schritt
+
+1. **Genossenschaft vormerken:** Anzahl Anteile (Beispiel), Art der Beteiligung, Interessen; vier Pflichtbestätigungen je Land (u. a. Nachschusspflicht, Kündigung, Auszahlung, „keine Anlageberatung“). Badge „im Aufbau“ – **keine Zeichnung**, die Vormerkung ist unverbindlich.
+2. **Energiegemeinschaft:** AT – 33-stellige Zählpunktnummern (Bezug, ggf. eigene Einspeisung), Netzbetreiber, lokal (Netzebene 6–7) oder regional (4–5), Smart Meter und Datenfreigabe; DE – MaLo, intelligentes Messsystem; CH – LEG/ZEV-Angaben.
+3. **Benachrichtigungen** aktivieren, um über Gründung und Beitritt informiert zu werden.
+
+## Typische Fehler
+
+| Problem | Lösung |
+|---|---|
+| Zählpunkt abgelehnt | Format prüfen (AT 33 Zeichen, beginnt mit `AT`) |
+| „Kann ich jetzt zeichnen?“ | Nein – Beitritt erst nach Gründung auf Basis der Satzung |
+
+## Recht kurz
+
+Keine öffentliche Anlage- oder Anteilsofferte über die Plattform (Nutzungsbedingungen § 13 Abs. 2). Mitglieder können Verbraucher sein – ihre gesetzlichen Rechte bleiben unberührt.
+# Handbuch: Kommune / Gemeinde
+
+Stand: 30.09.2026 · Rolle `kommune` · Demo: `kommune@example.com`
+
+**Worum es geht:** Gemeinden begleiten Solarprojekte im Gemeindegebiet – Bauleitplanung, Beteiligung (DE § 6 EEG: bis 0,2 ct/kWh), Bürgerbeteiligung, Gewerbesteuer – und können eigene Flächen einbringen.
+
+## Auf einen Blick
+
+| Menü | Wofür |
+|---|---|
+| Gemeinde (`/portal/kommune`) | Projekte im Gemeindegebiet ab Planung (vereinfacht, ohne Eigentümer/Flurstücke/Pacht), § 6-Schätzung, Ansprechpartner |
+| Termine | Gemeindetermin buchen (auch öffentlich unter `/termin?art=…`) |
+| Nachrichten, Dokumente | Abstimmung, Unterlagen zur Bauleitplanung |
+| Flächen | gemeindeeigene Flächen anbieten (wie Eigentümer) |
+
+## Schritt für Schritt
+
+1. **Strukturierte Anfrage** auf `/kommunen`: Gemeinde, Gemeindeschlüssel (DE AGS, AT Gemeindekennziffer, CH BFS-Nr.), Funktion, gemeindeeigene Flächen, Interesse an § 6, Bürgerbeteiligung, Planungsstand, Kriterienkatalog.
+2. **Freischaltung:** Das Backoffice bestätigt die Berechtigung unabhängig (Rückruf über die Gemeindeverwaltung). Erst danach ist die Gemeinde-Sicht sichtbar.
+3. **Projekte verfolgen:** Meilensteine der Bauleitplanung (Aufstellungsbeschluss, frühzeitige Beteiligung, Offenlage, Satzungsbeschluss bzw. AT Umwidmung, CH Nutzungsplanung).
+4. **Beteiligung:** § 6 EEG-Vereinbarung (DE), Beteiligungsmodelle (Genossenschaft, Energiegemeinschaft) im Gespräch klären.
+
+## Typische Fehler
+
+| Problem | Lösung |
+|---|---|
+| Menü zeigt „Mein Solarstrom“ | Konto hat noch die alte Rolle „Unternehmen“ – Backoffice um Rolle `kommune` bitten |
+| Gemeinde-Sicht leer | Noch nicht freigeschaltet oder keine Projekte ab Planung |
+| Energiebeschaffung für die Gemeinde | Vergaberecht! Die Angebotsanfrage ersetzt kein Vergabeverfahren (nur Markterkundung) |
+
+## Recht kurz
+
+Nicht öffentliche Projektangaben nur im Rahmen gesetzlicher Pflichten weitergeben (Nutzungsbedingungen § 12 Abs. 3).

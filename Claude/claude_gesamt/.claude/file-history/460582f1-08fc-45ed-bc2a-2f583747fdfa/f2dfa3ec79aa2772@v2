@@ -1,0 +1,285 @@
+import re
+from docx import Document
+from docx.shared import Pt, RGBColor, Cm
+from docx.enum.section import WD_ORIENT
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.oxml.ns import qn
+from docx.oxml import OxmlElement
+
+ACCENT = RGBColor(0x1F, 0x3A, 0x5F)
+GREY = RGBColor(0x5F, 0x5F, 0x5F)
+RED = RGBColor(0xB0, 0x00, 0x00)
+PH = RGBColor(0xC0, 0x00, 0x00)
+WHITE = RGBColor(0xFF, 0xFF, 0xFF)
+WHO_DE = "[Name], Geschäftsführer der ÖKOVOLT GmbH Solartechnik"
+
+
+def add(p, text, bold=False, size=None, color=None, italic=False):
+    for part in re.split(r"(\[[^\]]+\])", text):
+        if not part:
+            continue
+        r = p.add_run(part)
+        r.bold, r.italic = bold, italic
+        if size:
+            r.font.size = Pt(size)
+        if part.startswith("["):
+            r.font.color.rgb, r.bold = PH, True
+        elif color:
+            r.font.color.rgb = color
+    return p
+
+
+def shade(c, hexcolor):
+    tcPr = c._tc.get_or_add_tcPr()
+    sh = OxmlElement("w:shd")
+    sh.set(qn("w:val"), "clear")
+    sh.set(qn("w:fill"), hexcolor)
+    tcPr.append(sh)
+
+
+def new_doc(landscape=False, size=10.5):
+    d = Document()
+    s = d.sections[0]
+    if landscape:
+        s.orientation = WD_ORIENT.LANDSCAPE
+        s.page_width, s.page_height = s.page_height, s.page_width
+    s.left_margin = s.right_margin = Cm(1.9)
+    s.top_margin = s.bottom_margin = Cm(1.5)
+    n = d.styles["Normal"]
+    n.font.name = "Calibri"
+    n.font.size = Pt(size)
+    n.paragraph_format.space_after = Pt(5)
+    n.paragraph_format.line_spacing = 1.12
+    return d
+
+
+def table(d, header, rows, widths, size=9):
+    t = d.add_table(rows=len(rows) + 1, cols=len(header))
+    t.style = "Table Grid"
+    for j, h in enumerate(header):
+        c = t.rows[0].cells[j]
+        c.paragraphs[0].text = ""
+        add(c.paragraphs[0], h, bold=True, size=size + 0.5, color=WHITE)
+        shade(c, "1F3A5F")
+    for i, r in enumerate(rows, start=1):
+        for j, txt in enumerate(r):
+            c = t.rows[i].cells[j]
+            c.paragraphs[0].text = ""
+            add(c.paragraphs[0], txt, size=size, bold=(j == 0))
+            if i % 2 == 0:
+                shade(c, "EDF1F6")
+    for row in t.rows:
+        for j, w in enumerate(widths):
+            row.cells[j].width = Cm(w)
+    d.add_paragraph()
+
+
+def h(d, t, size=13):
+    p = add(d.add_paragraph(), t, bold=True, size=size, color=ACCENT)
+    p.paragraph_format.space_before = Pt(10)
+    p.paragraph_format.keep_with_next = True
+
+
+def para(d, t, **kw):
+    p = add(d.add_paragraph(), t, **kw)
+    p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+    return p
+
+
+def bullets(d, items):
+    for it in items:
+        p = d.add_paragraph(style="List Bullet")
+        if isinstance(it, tuple):
+            add(p, it[0] + " ", bold=True)
+            add(p, it[1])
+        else:
+            add(p, it)
+
+
+# =====================================================================
+# MEDIENPLAN DEUTSCHLAND
+# =====================================================================
+d = new_doc(landscape=True)
+add(d.add_paragraph(), "INTERN – VERTRAULICH – NICHT WEITERGEBEN", bold=True, size=9, color=RED)
+add(d.add_paragraph(), "Medienplan Deutschland – ÖKOVOLT GmbH Solartechnik (Türkheim)", bold=True, size=20, color=ACCENT)
+add(d.add_paragraph(), "Ergänzung zur Österreich-Kampagne · Absender: die deutsche Gesellschaft · Stand [Datum]",
+    italic=True, size=10, color=GREY)
+
+h(d, "1. Warum Deutschland eine eigene Geschichte braucht")
+para(d, "Deutsche Leserinnen und Leser kennen die Salzburg AG nicht, und der Hofer-Auftrag in Österreich betrifft sie "
+     "nicht. In Deutschland funktioniert eine andere Geschichte – und sie ist für Ökovolt sogar stärker, weil sie auf "
+     "Entscheidungen deutscher Gerichte beruht: Das Landgericht Memmingen und das Oberlandesgericht München haben in "
+     "drei Verfahren zugunsten der deutschen Ökovolt entschieden. Die Hauptverhandlung findet am 12. Dezember 2026 in "
+     "Memmingen statt – vor der Haustür.")
+
+h(d, "2. Der Frame: Staatskonzern gegen Mittelständler – deutsche Gerichte geben dem Mittelständler recht")
+p = d.add_paragraph()
+p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+add(p, "„Ein ausländischer Staatskonzern wollte ein Allgäuer Familienunternehmen übernehmen. "
+       "Deutsche Gerichte haben ihn gestoppt.“", bold=True, size=14, color=ACCENT)
+para(d, "Warum „Staatskonzern“ und nicht „die Österreicher“: Der Konflikt Deutschland–Österreich zieht Aufmerksamkeit, "
+     "kippt aber schnell ins Klischee und würde in Österreich als Stimmungsmache zurückschlagen – dort, wo die "
+     "Entscheider sitzen. Die Linie „öffentlicher Versorger mit Staatsgeld gegen privaten Mittelstand“ trägt dieselbe "
+     "Empörung, ist sachlich richtig (Land und Stadt Salzburg halten knapp drei Viertel) und funktioniert in beiden "
+     "Ländern. Die Herkunft wird genannt, nicht betont: „der österreichische Landesenergieversorger Salzburg AG“.",
+     size=10)
+h(d, "Botschaftshaus Deutschland", size=11.5)
+table(d, ["Ebene", "Botschaft", "Beleg"], [
+    ("Dach", "Ein ausländischer Staatskonzern wollte ein Allgäuer Familienunternehmen übernehmen. Deutsche Gerichte "
+     "haben ihn gestoppt.", "OLG München 14 U 3746/25, 3748/25, 295/26; Beschlüsse 18.06.2026"),
+    ("Säule 1 – Rechtsstaat", "Dreimal gescheitert vor dem OLG München; Vorgehen „treuwidrig“; Rügen verworfen.",
+     "Urteile 21.05.2026, Beschlüsse 18.06.2026"),
+    ("Säule 2 – Mittelstand", "Eine Beteiligung, die als Partnerschaft begann – und am selben Tag eine eigene "
+     "Konkurrentin des Staatskonzerns.", "Syndikatsvertrag 18.10.2021; OLG-Tatbestand (one2zero)"),
+    ("Säule 3 – Daten", "Das OLG hält für glaubhaft, dass Geschäftsdaten auch der deutschen Gesellschaft für den "
+     "Staatskonzern kopiert wurden.", "14 U 3746/25; forensische Befunde (nicht weitergeben)"),
+    ("Fundament", "Alles, was wir sagen, haben deutsche Gerichte geprüft.", "Urteile auf Anfrage"),
+], [3.8, 13.5, 8.2])
+
+h(d, "3. Was in Deutschland belegt ist – und was nicht")
+table(d, ["Aussage", "Status", "Formulierung"], [
+    ("SAG scheitert in drei Eilverfahren vor dem OLG München", "belegt", "„dreimal vor dem Oberlandesgericht München gescheitert“"),
+    ("Einziehung der SAG-Anteile an der deutschen GmbH", "durch Gesellschafterbeschluss vollzogen; Eilanträge der SAG "
+     "abgewiesen; Hauptsache offen (LG Memmingen, 1 HK O 1771/25)", "„Die Gesellschafter haben die Anteile eingezogen; "
+     "die Gerichte haben die Anträge der Salzburg AG dagegen abgewiesen.“ NICHT „Gericht entzieht Anteile“"),
+    ("Generalversammlung 10.10.2025 „treuwidrig“, „im Flüsterton“", "belegt (OLG)", "wörtlich zitieren"),
+    ("Datenkopie „für die Klägerin und/oder die one2zero“ glaubhaft", "belegt (OLG, Eilverfahren)", "immer „nach "
+     "Würdigung des OLG im Eilverfahren glaubhaft gemacht“"),
+    ("Strafverfahren StA Memmingen gegen den früheren GF", "läuft", "nur „ermittelt“, kein Name, Unschuldsvermutung"),
+    ("WKStA Wien", "betrifft NUR die österreichische Gesellschaft; Antrag der deutschen GmbH zurückgewiesen",
+     "in Deutschland nur als Hintergrund erwähnen, nie als „Ermittlung zugunsten der deutschen Ökovolt“"),
+    ("Hofer-Auftrag", "österreichisches Projekt, vom OLG offengelassen", "in Deutschland nur am Rande"),
+], [7.5, 8.0, 10.0])
+
+h(d, "4. Medien in Deutschland")
+table(d, ["Medium", "Was es braucht", "Angebot"], [
+    ("Allgäuer Zeitung / Mindelheimer Zeitung / Augsburger Allgemeine", "Lokaler Bezug, Arbeitsplätze, Gesichter",
+     "Betriebsbesuch Türkheim, Team, GF-Interview; Exklusiv D1"),
+    ("BR – BR24, Abendschau, Schwaben-Studio; Radio", "Bilder, O-Ton, Gerichtstermin", "Dreh auf Baustelle; O-Ton vor "
+     "dem Landgericht Memmingen am 12.12."),
+    ("dpa-Landesdienst Bayern (lby)", "Kurz, faktisch, Gerichtsbezug", "Meldung zu D1 und zum 12.12."),
+    ("Süddeutsche Zeitung (Bayern/Wirtschaft)", "Recherche, Dokumente, Einordnung", "Hintergrundgespräch mit Urteilen"),
+    ("Handelsblatt / FAZ / WirtschaftsWoche", "Konzern-/Governance-Geschichte, grenzüberschreitend", "D2: „Partner auf "
+     "dem Papier“; Staatskonzern im Nachbarland"),
+    ("JUVE / Legal Tribune Online (LTO)", "Verfahren, Kanzleien, Prozesstaktik", "D3: Generalversammlung, Gehörsrügen; "
+     "Kanzleinamen nennen diese Medien selbst"),
+    ("pv magazine / Photon / energate / BSW-Solar", "Branchenrelevanz", "D4: Staatskonzern verdrängt Mittelstand"),
+    ("IHK Schwaben, BVMW, Wirtschaftsmagazine Bayern", "Mittelstandsthemen", "Gastbeitrag GF, Veranstaltung"),
+    ("Österreichische Medien (Echo)", "„Salzburg AG in deutschen Medien“", "Deutsche Berichte gezielt an ORF/SN weitergeben"),
+], [7.0, 7.5, 11.0])
+
+h(d, "5. Die Wellen in Deutschland")
+table(d, ["Welle", "Titel / Thema", "Kern", "Medien", "Zeitpunkt"], [
+    ("D1", "„Dreimal gescheitert: Österreichischer Landesversorger unterliegt Allgäuer Solarunternehmen vor dem OLG München“",
+     "Drei Verfahren, treuwidrig, Rügen verworfen; Hauptverhandlung 12.12.", "Allgäuer Zeitung exklusiv, dann BR, dpa lby",
+     "parallel zu AT-Welle 2"),
+    ("D2", "„Partner auf dem Papier“", "Syndikatsvertrag + Gründung one2zero am selben Tag; Staatskonzern steigt in "
+     "den PV-Markt ein", "Handelsblatt/SZ exklusiv", "Woche 2"),
+    ("D3", "„Die Versammlung im Flüsterton“", "Vorab geschriebenes Protokoll, Separat-Versammlung, Gehörsrügen verworfen, "
+     "angeblich übergangene Schriftsätze waren nicht in der Akte", "JUVE, LTO", "Woche 3"),
+    ("D4", "„Wie ein Staatskonzern den Mittelstand verdrängt“", "Datenkopie laut OLG glaubhaft, Wechsel zur "
+     "Staatskonzern-Tochter geplant, danach dort angestellt", "pv magazine, energate, Wirtschaftspresse", "Woche 4"),
+    ("D5", "Hauptverhandlung LG Memmingen", "Vorbericht (Termin), Pressestatement vor Gericht, Ergebnis",
+     "BR, Allgäuer Zeitung, dpa, SZ", "10.–12.12.2026"),
+], [1.4, 7.2, 8.2, 5.2, 3.5])
+
+h(d, "6. Psychologie und Sprache für Deutschland")
+bullets(d, [
+    ("Mittelstand ist Identität:", "„Familienunternehmen aus dem Unterallgäu“, „Arbeitsplätze in der Region“ – nicht "
+     "„Ökovolt GmbH“."),
+    ("Rechtsstaat als Held:", "Nicht Ökovolt hat gewonnen, „deutsche Gerichte haben entschieden“. Das wirkt neutral und "
+     "unangreifbar."),
+    ("Staatsgeld gegen Privatkapital:", "„finanziert von Land und Stadt Salzburg“ – Fairness-Empfinden: Der Staat "
+     "soll nicht gegen den Mittelstand konkurrieren."),
+    ("Nüchterner Ton:", "Deutsche Wirtschafts- und Rechtsmedien reagieren allergisch auf Pathos. Weniger Adjektive, "
+     "mehr Aktenzeichen."),
+    ("Keine Nationalklischees:", "Nie „die Österreicher“, nie Spott; die Kampagne muss in Salzburg zitierfähig bleiben."),
+])
+
+h(d, "7. Politik und Verbände in Deutschland")
+bullets(d, [
+    "Bayerisches Staatsministerium für Wirtschaft, Landesentwicklung und Energie – Information als Mittelstandsfall.",
+    "Abgeordnete aus dem Unterallgäu (Landtag, Bundestag) – Betriebsbesuch anbieten.",
+    "IHK Schwaben, BVMW, Bundesverband Solarwirtschaft – Einordnung als Branchenthema.",
+    "Optional nach anwaltlicher Prüfung: Frage an das Bundeskartellamt zur Marktstellung ausländischer öffentlicher "
+    "Versorger im deutschen PV-Markt.",
+])
+
+h(d, "8. Rechtliche Leitplanken in Deutschland")
+bullets(d, [
+    ("Anschwärzung (§ 4 Nr. 2 UWG) und Kreditgefährdung (§ 824 BGB):", "one2zero und Salzburg AG sind Mitbewerber. "
+     "Jede Tatsachenbehauptung muss beweisbar wahr sein – sonst drohen Unterlassung und Schadenersatz."),
+    ("Üble Nachrede / Verleumdung (§§ 186, 187 StGB):", "keine Vorwürfe gegen Personen, die über OLG-Feststellungen hinausgehen."),
+    ("Verdachtsberichterstattung:", "Journalisten müssen die Salzburg AG anhören. Stellungnahme der Salzburg AG "
+     "gleich mitliefern oder darauf verweisen – das erhöht die Chance auf Veröffentlichung."),
+    ("Beschuldigte:", "Der frühere Geschäftsführer ist bei der StA Memmingen Beschuldigter – kein Name, keine "
+     "erkennbare Beschreibung, Unschuldsvermutung."),
+    ("Absender:", "Pressemitteilungen kommen von der ÖKOVOLT GmbH Solartechnik (Türkheim) – vertreten durch ihre "
+     "eingetragene Geschäftsführung [prüfen]."),
+    ("Abstimmung:", "Jede deutsche Welle vor Versand mit dem deutschen Prozessanwalt abstimmen – die Hauptverhandlung "
+     "am 12.12. darf nicht belastet werden (keine Richterschelte, keine Vorwegnahme)."),
+])
+
+h(d, "9. Zusammenspiel mit Österreich")
+bullets(d, [
+    "Deutsche Wellen zeitlich so legen, dass österreichische Medien sie aufgreifen können („deutsche Medien berichten“).",
+    "Botschaften dürfen sich nie widersprechen – Zahlen, Daten und Formulierungen aus derselben Faktenbasis.",
+    "Ein gewonnenes Hauptverfahren am 12.12. ist die stärkste Meldung in beiden Ländern: zuerst in Deutschland, "
+    "am selben Tag in Österreich.",
+])
+d.save("INTERN_Medienplan_Deutschland.docx")
+
+# =====================================================================
+# PRESSEMITTEILUNG D1
+# =====================================================================
+d = new_doc(size=11)
+d.styles["Normal"].paragraph_format.line_spacing = 1.18
+d.styles["Normal"].paragraph_format.space_after = Pt(8)
+add(d.add_paragraph(), "PRESSEMITTEILUNG  |  Türkheim, [Datum]", bold=True, size=9, color=ACCENT)
+p = add(d.add_paragraph(), "Dreimal gescheitert: Österreichischer Landesversorger unterliegt Allgäuer Solarunternehmen "
+        "vor dem Oberlandesgericht München", bold=True, size=19)
+p.paragraph_format.space_after = Pt(4)
+p = add(d.add_paragraph(), "Salzburg AG wollte Einfluss auf Familienunternehmen aus dem Unterallgäu sichern – das OLG "
+        "wertet ihr Vorgehen als „treuwidrig“. Hauptverhandlung am 12. Dezember in Memmingen.", italic=True, size=11.5,
+        color=GREY)
+p.paragraph_format.space_after = Pt(12)
+para(d, "Die Salzburg AG, ein Energieversorger im Eigentum des Landes und der Stadt Salzburg, ist vor dem "
+     "Oberlandesgericht München in drei Verfahren gegen die ÖKOVOLT GmbH Solartechnik aus Türkheim gescheitert. Mit "
+     "Urteilen vom 21. Mai 2026 wies der 14. Zivilsenat ihre Berufungen zurück; im Juni verwarf er auch ihre Rügen. "
+     "Die Hauptverhandlung findet am 12. Dezember 2026 vor dem Landgericht Memmingen statt.", bold=True)
+para(d, "Die Salzburg AG war 2021 mit 49 Prozent bei ÖKOVOLT eingestiegen. Die Gesellschafter zogen ihre Anteile im "
+     "Oktober 2025 aus wichtigem Grund ein. Die Salzburg AG versuchte, das mit einstweiligen Verfügungen zu stoppen – "
+     "ohne Erfolg. Das Oberlandesgericht hielt einen wichtigen Grund in ihrer Person im Eilverfahren für glaubhaft gemacht.")
+para(d, "Nach Würdigung des Gerichts ist glaubhaft, dass der von der Salzburg AG entsandte Geschäftsführer geheime Daten "
+     "der ÖKOVOLT-Unternehmen kopierte, um sie für die Salzburg AG und/oder deren Tochtergesellschaft one2zero zu "
+     "verwenden. Wörtlich heißt es im Urteil: „Dass [der Geschäftsführer] ohne Mitwirkung der Klägerin gehandelt hätte, "
+     "ist zwar vorstellbar; es erscheint jedoch deutlich weniger wahrscheinlich.“ Die Staatsanwaltschaft Memmingen "
+     "ermittelt gegen den früheren Geschäftsführer; es gilt die Unschuldsvermutung.")
+p = d.add_paragraph()
+p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+add(p, "„Ein Staatskonzern aus dem Nachbarland wollte über ein Familienunternehmen aus dem Unterallgäu bestimmen. "
+       "Deutsche Gerichte haben dem einen Riegel vorgeschoben. Für uns zeigt das: Auch ein großer Konzern muss sich an "
+       "die Regeln halten, die für jeden Mittelständler gelten“", bold=True, color=ACCENT)
+add(p, f", sagt {WHO_DE}.")
+para(d, "Auch zu einer Gesellschafterversammlung der österreichischen Schwestergesellschaft am 10. Oktober 2025 äußerte "
+     "sich das Gericht deutlich: Die Vertreter der Salzburg AG hätten das Protokoll bereits vor der Versammlung verfasst "
+     "und die Versammlung nach Eintreffen der Mehrheitsgesellschafter „im Flüsterton“ fortgesetzt. Das sei als "
+     "„treuwidrig“ zu bewerten.")
+p = d.add_paragraph()
+p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+add(p, "„Wir haben einem Partner vertraut. Heute stehen unsere Mitarbeiterinnen und Mitarbeiter jeden Tag auf den "
+       "Dächern und bauen die Energiewende – und wir müssen unser Unternehmen gegen einen Konzern verteidigen, der mit "
+       "öffentlichem Geld prozessiert“", bold=True, color=ACCENT)
+add(p, f", sagt {WHO_DE}.")
+para(d, "Die Salzburg AG bestreitet die Vorwürfe. Die Entscheidungen ergingen im Eilverfahren; über die Einziehung wird "
+     "im Hauptsacheverfahren entschieden (LG Memmingen, 1 HK O 1771/25).")
+p = add(d.add_paragraph(), "Die Urteile des OLG München (14 U 3746/25, 14 U 3748/25, 14 U 295/26) stellt ÖKOVOLT "
+        "Medienvertreterinnen und -vertretern auf Anfrage zur Verfügung.", italic=True, size=9.5)
+p.paragraph_format.space_before = Pt(10)
+add(d.add_paragraph(), "Über ÖKOVOLT: Die ÖKOVOLT GmbH Solartechnik mit Sitz in Türkheim (Landkreis Unterallgäu) plant "
+    "und errichtet Photovoltaik-Großanlagen für Gewerbe und Industrie. [Gründungsjahr, Mitarbeiterzahl Deutschland, "
+    "Referenzen]", size=9, color=GREY)
+add(d.add_paragraph(), "Pressekontakt: [Name, Funktion] · ÖKOVOLT GmbH Solartechnik · [Adresse Türkheim] · [Telefon] · "
+    "[E-Mail]", size=9, color=GREY)
+d.save("Pressemitteilung_DE1_Dreimal_gescheitert.docx")
+print("ok", len(" ".join(p.text for p in d.paragraphs).split()), "Woerter DE1")

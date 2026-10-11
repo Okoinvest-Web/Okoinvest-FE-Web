@@ -1,0 +1,493 @@
+import "server-only";
+
+import { alle, eine, schreibe, skalar } from "../db/verbindung.ts";
+import { messStempel } from "../datum.ts";
+import type { Aufteilungszeile } from "../eeg/messmeldung.ts";
+
+/**
+ * Lesezugriffe rund um die Energiegemeinschaft.
+ *
+ * Die Abfragen liegen hier gebuendelt, damit die Seiten kein SQL
+ * enthalten. Gerechnet wird nach Moeglichkeit in der Datenbank -
+ * hunderttausend Lastgangzeilen in die Anwendung zu laden, nur um sie
+ * dort zu summieren, waere Verschwendung.
+ */
+
+export interface Gemeinschaft {
+  id: string;
+  bezeichnung: string;
+  art: "EEG" | "BEG" | "GEA";
+  rechtsform: string | null;
+  reichweite: "Lokal" | "Regional" | "Bundesweit" | null;
+  netzbetreiber_kz: string | null;
+  gegruendet_am: string | null;
+  aufteilungsmodell: "Statisch" | "Dynamisch";
+  status: string;
+}
+
+export interface TeilnehmerZeile {
+  teilnahme_id: string;
+  zaehlpunkt_id: string;
+  bezeichnung: string;
+  rolle: string;
+  anteil_prozent: number | null;
+  teilnahmefaktor: number;
+  gueltig_von: string;
+  gueltig_bis: string | null;
+  firma: string | null;
+  kunde_id: string | null;
+  ort: string | null;
+  art: string;
+  anlage_bezeichnung: string | null;
+  leistung_kwp: number | null;
+}
+
+export interface LaufZeile {
+  id: string;
+  gemeinschaft_id: string;
+  zeitraum_von: string;
+  zeitraum_bis: string;
+  modell: string;
+  status: string;
+  preis_ct_kwh: number;
+  erzeuger_ct_kwh: number;
+  ust_satz: number;
+  berechnet_am: string | null;
+  festgeschrieben_am: string | null;
+  storniert_am: string | null;
+  storno_grund: string | null;
+  angelegt_am: string;
+  /** Aus den Belegen abgeleitet. */
+  anzahl_belege: number;
+  menge_bezogen: number;
+  summe_rechnungen: number;
+  summe_gutschriften: number;
+}
+
+export interface BelegZeile {
+  id: string;
+  lauf_id: string;
+  nummer: string;
+  art: string;
+  zaehlpunkt_id: string;
+  bezeichnung: string;
+  firma: string | null;
+  menge_kwh: number;
+  netto: number;
+  ust_satz: number;
+  ust_betrag: number;
+  brutto: number;
+  netzentgelt_ersparnis: number;
+  status: string;
+  zeitraum_von: string;
+  zeitraum_bis: string;
+  ausgestellt_am: string;
+}
+
+export interface EdaZeile {
+  id: string;
+  zaehlpunkt_id: string;
+  bezeichnung: string;
+  firma: string | null;
+  art: string;
+  status: string;
+  referenz: string | null;
+  zeitraum_von: string | null;
+  zeitraum_bis: string | null;
+  ablehnungsgrund: string | null;
+  gesendet_am: string | null;
+  beantwortet_am: string | null;
+  angelegt_am: string;
+}
+
+export function ladeGemeinschaft(id = "EEG-0001"): Gemeinschaft | null {
+  return eine<Gemeinschaft>("SELECT * FROM gemeinschaft WHERE id = ?", id);
+}
+
+export function ladeTeilnehmer(gemeinschaftId: string): TeilnehmerZeile[] {
+  return alle<TeilnehmerZeile>(
+    `SELECT t.id AS teilnahme_id, t.zaehlpunkt_id, t.rolle, t.anteil_prozent,
+            t.teilnahmefaktor, t.gueltig_von, t.gueltig_bis,
+            z.bezeichnung, z.art, z.ort,
+            k.firma, k.id AS kunde_id,
+            a.bezeichnung AS anlage_bezeichnung, a.leistung_kwp
+       FROM teilnahme t
+       JOIN zaehlpunkt z ON z.id = t.zaehlpunkt_id
+       LEFT JOIN kunde k ON k.id = z.kunde_id
+       LEFT JOIN anlage a ON a.id = z.anlage_id
+      WHERE t.gemeinschaft_id = ?
+      ORDER BY t.rolle, k.firma`,
+    gemeinschaftId,
+  );
+}
+
+export function ladeLaeufe(gemeinschaftId: string): LaufZeile[] {
+  return alle<LaufZeile>(
+    `SELECT l.*,
+            (SELECT COUNT(*) FROM beleg b WHERE b.lauf_id = l.id) AS anzahl_belege,
+            COALESCE((SELECT SUM(menge_kwh) FROM beleg b
+                       WHERE b.lauf_id = l.id AND b.art = 'Rechnung'), 0) AS menge_bezogen,
+            COALESCE((SELECT SUM(netto) FROM beleg b
+                       WHERE b.lauf_id = l.id AND b.art = 'Rechnung'), 0) AS summe_rechnungen,
+            COALESCE((SELECT SUM(netto) FROM beleg b
+                       WHERE b.lauf_id = l.id AND b.art = 'Gutschrift'), 0) AS summe_gutschriften
+       FROM abrechnungslauf l
+      WHERE l.gemeinschaft_id = ?
+      ORDER BY l.zeitraum_von DESC`,
+    gemeinschaftId,
+  );
+}
+
+export function ladeLauf(laufId: string): LaufZeile | null {
+  return (
+    alle<LaufZeile>(
+      `SELECT l.*,
+              (SELECT COUNT(*) FROM beleg b WHERE b.lauf_id = l.id) AS anzahl_belege,
+              COALESCE((SELECT SUM(menge_kwh) FROM beleg b
+                         WHERE b.lauf_id = l.id AND b.art = 'Rechnung'), 0) AS menge_bezogen,
+              COALESCE((SELECT SUM(netto) FROM beleg b
+                         WHERE b.lauf_id = l.id AND b.art = 'Rechnung'), 0) AS summe_rechnungen,
+              COALESCE((SELECT SUM(netto) FROM beleg b
+                         WHERE b.lauf_id = l.id AND b.art = 'Gutschrift'), 0) AS summe_gutschriften
+         FROM abrechnungslauf l
+        WHERE l.id = ?`,
+      laufId,
+    )[0] ?? null
+  );
+}
+
+export function ladeBelege(laufId: string): BelegZeile[] {
+  return alle<BelegZeile>(
+    `SELECT b.*, z.bezeichnung, k.firma
+       FROM beleg b
+       JOIN zaehlpunkt z ON z.id = b.zaehlpunkt_id
+       LEFT JOIN kunde k ON k.id = b.kunde_id
+      WHERE b.lauf_id = ?
+      ORDER BY b.art DESC, b.netto DESC`,
+    laufId,
+  );
+}
+
+export function ladeBeleg(belegId: string): BelegZeile | null {
+  return eine<BelegZeile>(
+    `SELECT b.*, z.bezeichnung, k.firma
+       FROM beleg b
+       JOIN zaehlpunkt z ON z.id = b.zaehlpunkt_id
+       LEFT JOIN kunde k ON k.id = b.kunde_id
+      WHERE b.id = ?`,
+    belegId,
+  );
+}
+
+/**
+ * Tagesverlauf eines Belegs.
+ *
+ * Zeigt, aus welchen Viertelstunden sich die abgerechnete Menge
+ * zusammensetzt - hier auf Tagesebene verdichtet, weil ein Quartal
+ * sonst 8.736 Zeilen ergaebe. Von hier aus laesst sich weiter in die
+ * Viertelstunden hineinsehen.
+ */
+export interface TagesAufteilung {
+  tag: string;
+  bezogen: number;
+  geliefert: number;
+  rest_netz: number;
+}
+
+export function ladeTagesAufteilung(
+  laufId: string,
+  zaehlpunktId: string,
+): TagesAufteilung[] {
+  // Der Zeitstempel liegt in UTC; fuer die Tagesgruppierung wird er in
+  // Ortszeit umgerechnet. SQLite kennt keine Zeitzonen, deshalb
+  // uebernimmt 'localtime' die Umrechnung anhand der Systemzone.
+  return alle<TagesAufteilung>(
+    `SELECT date(zeitpunkt, 'localtime') AS tag,
+            ROUND(SUM(bezogen_kwh), 3)   AS bezogen,
+            ROUND(SUM(geliefert_kwh), 3) AS geliefert,
+            ROUND(SUM(rest_netz_kwh), 3) AS rest_netz
+       FROM aufteilung
+      WHERE lauf_id = ? AND zaehlpunkt_id = ?
+      GROUP BY tag
+      ORDER BY tag`,
+    laufId,
+    zaehlpunktId,
+  );
+}
+
+/** Viertelstundenwerte eines einzelnen Tages - die unterste Ebene. */
+export interface ViertelstundenZeile {
+  zeitpunkt: string;
+  bezogen: number;
+  geliefert: number;
+  rest_netz: number;
+}
+
+export function ladeViertelstunden(
+  laufId: string,
+  zaehlpunktId: string,
+  tag: string,
+): ViertelstundenZeile[] {
+  return alle<ViertelstundenZeile>(
+    `SELECT zeitpunkt, bezogen_kwh AS bezogen, geliefert_kwh AS geliefert,
+            rest_netz_kwh AS rest_netz
+       FROM aufteilung
+      WHERE lauf_id = ? AND zaehlpunkt_id = ?
+        AND date(zeitpunkt, 'localtime') = ?
+      ORDER BY zeitpunkt`,
+    laufId,
+    zaehlpunktId,
+    tag,
+  );
+}
+
+export function ladeEdaProzesse(gemeinschaftId: string): EdaZeile[] {
+  return alle<EdaZeile>(
+    `SELECT e.*, z.bezeichnung, k.firma
+       FROM eda_prozess e
+       JOIN zaehlpunkt z ON z.id = e.zaehlpunkt_id
+       LEFT JOIN kunde k ON k.id = z.kunde_id
+      WHERE e.gemeinschaft_id = ?
+      ORDER BY e.angelegt_am DESC`,
+    gemeinschaftId,
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Kennzahlen der Gemeinschaft                                         */
+/* ------------------------------------------------------------------ */
+
+export interface GemeinschaftsKennzahlen {
+  teilnehmer: number;
+  erzeuger: number;
+  erzeugungKwp: number;
+  /** Bisher insgesamt in der Gemeinschaft verteilte Menge. */
+  verteiltGesamt: number;
+  ersparnisGesamt: number;
+  offeneLaeufe: number;
+}
+
+export function ladeKennzahlen(gemeinschaftId: string): GemeinschaftsKennzahlen {
+  const teilnehmer =
+    skalar<number>(
+      `SELECT COUNT(*) FROM teilnahme
+        WHERE gemeinschaft_id = ? AND (gueltig_bis IS NULL OR gueltig_bis > datetime('now'))`,
+      gemeinschaftId,
+    ) ?? 0;
+
+  const erzeuger =
+    skalar<number>(
+      `SELECT COUNT(*) FROM teilnahme
+        WHERE gemeinschaft_id = ? AND rolle IN ('Erzeuger','Beides')`,
+      gemeinschaftId,
+    ) ?? 0;
+
+  const erzeugungKwp =
+    skalar<number>(
+      `SELECT COALESCE(SUM(a.leistung_kwp), 0)
+         FROM teilnahme t
+         JOIN zaehlpunkt z ON z.id = t.zaehlpunkt_id
+         JOIN anlage a ON a.id = z.anlage_id
+        WHERE t.gemeinschaft_id = ?`,
+      gemeinschaftId,
+    ) ?? 0;
+
+  const verteiltGesamt =
+    skalar<number>(
+      `SELECT COALESCE(SUM(b.menge_kwh), 0)
+         FROM beleg b
+         JOIN abrechnungslauf l ON l.id = b.lauf_id
+        WHERE l.gemeinschaft_id = ? AND b.art = 'Rechnung' AND b.status <> 'Storniert'`,
+      gemeinschaftId,
+    ) ?? 0;
+
+  const ersparnisGesamt =
+    skalar<number>(
+      `SELECT COALESCE(SUM(b.netzentgelt_ersparnis), 0)
+         FROM beleg b
+         JOIN abrechnungslauf l ON l.id = b.lauf_id
+        WHERE l.gemeinschaft_id = ? AND b.status <> 'Storniert'`,
+      gemeinschaftId,
+    ) ?? 0;
+
+  const offeneLaeufe =
+    skalar<number>(
+      `SELECT COUNT(*) FROM abrechnungslauf
+        WHERE gemeinschaft_id = ? AND status IN ('Entwurf','Berechnet')`,
+      gemeinschaftId,
+    ) ?? 0;
+
+  return {
+    teilnehmer,
+    erzeuger,
+    erzeugungKwp,
+    verteiltGesamt,
+    ersparnisGesamt,
+    offeneLaeufe,
+  };
+}
+
+/* ------------------------------------------------------------------ */
+/* Verfuegbare Messdaten                                               */
+/* ------------------------------------------------------------------ */
+
+export interface Datenbestand {
+  fruehester: string | null;
+  spaetester: string | null;
+  zeilen: number;
+}
+
+export function ladeDatenbestand(gemeinschaftId: string): Datenbestand {
+  const zeile = eine<Datenbestand>(
+    `SELECT MIN(l.zeitpunkt) AS fruehester,
+            MAX(l.zeitpunkt) AS spaetester,
+            COUNT(*)         AS zeilen
+       FROM lastgang l
+      WHERE l.zaehlpunkt_id IN (
+              SELECT zaehlpunkt_id FROM teilnahme WHERE gemeinschaft_id = ?)`,
+    gemeinschaftId,
+  );
+
+  return zeile ?? { fruehester: null, spaetester: null, zeilen: 0 };
+}
+
+/**
+ * Legt einen Abrechnungslauf an.
+ * Gibt die Kennung zurueck; das Rechnen erfolgt getrennt.
+ */
+export function legeLaufAn(
+  gemeinschaftId: string,
+  von: Date,
+  bis: Date,
+  modell: "Statisch" | "Dynamisch",
+  preisCt: number,
+  erzeugerCt: number,
+  ustSatz: number,
+  benutzer: string,
+): string {
+  const jahr = von.getFullYear();
+  const quartal = Math.floor(von.getMonth() / 3) + 1;
+  let id = `LAUF-${jahr}Q${quartal}`;
+
+  // Bei mehreren Laeufen fuer denselben Zeitraum - etwa nach einem
+  // Storno - wird durchnummeriert.
+  let versuch = 1;
+  while (skalar<number>("SELECT COUNT(*) FROM abrechnungslauf WHERE id = ?", id)) {
+    versuch += 1;
+    id = `LAUF-${jahr}Q${quartal}-${versuch}`;
+  }
+
+  schreibe(
+    `INSERT INTO abrechnungslauf
+       (id, gemeinschaft_id, zeitraum_von, zeitraum_bis, modell,
+        preis_ct_kwh, erzeuger_ct_kwh, ust_satz, angelegt_von)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    id,
+    gemeinschaftId,
+    messStempel(von),
+    messStempel(new Date(bis.getTime() + 1)),
+    modell,
+    preisCt,
+    erzeugerCt,
+    ustSatz,
+    benutzer,
+  );
+
+  return id;
+}
+
+/* ------------------------------------------------------------------ */
+/* Messdatenmeldung                                                    */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Die Aufteilung eines Laufs, aufbereitet für eine Marktnachricht.
+ *
+ * Gelesen wird die Zählpunktbezeichnung, nicht die interne Kennung:
+ * Ein Marktpartner kennt "ANL-0003" nicht, sondern nur die 33 Stellen.
+ *
+ * Die Güte stammt aus dem Lastgang. Steht dort zu einer Viertelstunde
+ * ein Ersatzwert, gilt der aufgeteilte Wert ebenfalls als Ersatzwert -
+ * er ist aus ihm gerechnet. Ihn als gemessen zu melden hieße, eine
+ * Genauigkeit zu behaupten, die das Ausgangsmaterial nicht hat.
+ *
+ * Viertelstunden ohne Fluss bleiben in der Abfrage, damit sich die
+ * Vollständigkeit gegen den Zeitraum prüfen lässt; erst die
+ * Zusammenstellung lässt sie weg.
+ */
+export function ladeMeldungszeilen(laufId: string): Aufteilungszeile[] {
+  return alle<Aufteilungszeile>(
+    `SELECT z.bezeichnung AS zaehlpunkt,
+            a.zeitpunkt,
+            a.bezogen_kwh   AS bezogenKwh,
+            a.geliefert_kwh AS geliefertKwh,
+            CASE WHEN EXISTS (
+                   SELECT 1 FROM lastgang l
+                    WHERE l.zaehlpunkt_id = a.zaehlpunkt_id
+                      AND l.zeitpunkt = a.zeitpunkt
+                      AND l.qualitaet <> 'Gemessen')
+                 THEN 'Ersatzwert' ELSE 'Gemessen' END AS qualitaet
+       FROM aufteilung a
+       JOIN zaehlpunkt z ON z.id = a.zaehlpunkt_id
+      WHERE a.lauf_id = ?
+      ORDER BY z.bezeichnung, a.zeitpunkt`,
+    laufId,
+  );
+}
+
+/**
+ * Was in einer Meldung stecken würde - ohne sie zu bauen.
+ *
+ * Die Seite soll vor dem Abruf zeigen, worüber sie spricht. Dafür
+ * hunderttausend Zeilen zu laden, nur um sie zu zählen, wäre
+ * Verschwendung: Die Datenbank kann das, und zwar über den
+ * Primärschlüssel des Laufs.
+ */
+export interface Meldungsuebersicht {
+  zaehlpunkte: number;
+  intervalle: number;
+  /** Zeilen insgesamt, also Zählpunkt-Viertelstunden. */
+  zeilen: number;
+  werte: number;
+  bezugKwh: number;
+  einspeisungKwh: number;
+  ersatzwerte: number;
+}
+
+export function ladeMeldungsuebersicht(laufId: string): Meldungsuebersicht {
+  const zeile = eine<Meldungsuebersicht>(
+    `SELECT COUNT(DISTINCT zaehlpunkt_id) AS zaehlpunkte,
+            COUNT(DISTINCT zeitpunkt)     AS intervalle,
+            COUNT(*)                      AS zeilen,
+            SUM(CASE WHEN bezogen_kwh   > 0 THEN 1 ELSE 0 END)
+          + SUM(CASE WHEN geliefert_kwh > 0 THEN 1 ELSE 0 END) AS werte,
+            ROUND(SUM(bezogen_kwh), 3)   AS bezugKwh,
+            ROUND(SUM(geliefert_kwh), 3) AS einspeisungKwh
+       FROM aufteilung
+      WHERE lauf_id = ?`,
+    laufId,
+  );
+
+  const ersatzwerte =
+    skalar<number>(
+      `SELECT COUNT(*)
+         FROM aufteilung a
+        WHERE a.lauf_id = ?
+          AND (a.bezogen_kwh > 0 OR a.geliefert_kwh > 0)
+          AND EXISTS (SELECT 1 FROM lastgang l
+                       WHERE l.zaehlpunkt_id = a.zaehlpunkt_id
+                         AND l.zeitpunkt = a.zeitpunkt
+                         AND l.qualitaet <> 'Gemessen')`,
+      laufId,
+    ) ?? 0;
+
+  return {
+    zaehlpunkte: zeile?.zaehlpunkte ?? 0,
+    intervalle: zeile?.intervalle ?? 0,
+    zeilen: zeile?.zeilen ?? 0,
+    werte: zeile?.werte ?? 0,
+    bezugKwh: zeile?.bezugKwh ?? 0,
+    einspeisungKwh: zeile?.einspeisungKwh ?? 0,
+    ersatzwerte,
+  };
+}

@@ -1,0 +1,152 @@
+import pathlib
+
+ROOT = pathlib.Path(r"C:\Users\SALEADMIN\Documents\Servicetechniker APP")
+
+
+def patch(pfad, paare):
+    p = ROOT / pfad
+    s = p.read_text(encoding="utf-8")
+    for alt, neu in paare:
+        if alt not in s:
+            raise SystemExit(f"NICHT GEFUNDEN in {pfad}:\n---\n{alt[:300]}\n---")
+        s = s.replace(alt, neu, 1)
+    p.write_text(s, encoding="utf-8")
+    print("ok", pfad)
+
+
+# ------------------------------------------------------------------ CI-Job
+patch(
+    ".github/workflows/ci.yml",
+    [
+        (
+            """      - name: Produktionsbundle
+        run: npm run build:only""",
+            """      - name: Produktionsbundle
+        run: npm run build:only
+
+  e2e:
+    name: Feldablauf und Offline (E2E)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - name: Browser installieren
+        run: npx playwright install --with-deps chromium
+      - name: E2E-Tests
+        run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-bericht
+          path: frontend/playwright-report/
+          retention-days: 7""",
+        )
+    ],
+)
+
+# -------------------------------------------------------------------- README
+patch(
+    "README.md",
+    [
+        (
+            """```bash
+python -m pytest tests/              # Plausibilitätslogik Server
+cd frontend
+npm run typecheck                    # vue-tsc, strikt
+npm test                             # Plausibilitätslogik Client
+npm run lint
+npm run build                        # Produktionsbundle nach ../oekovolt_baudoku/public/frontend
+```""",
+            """```bash
+python -m pytest tests/              # Plausibilität, bedingte Sichtbarkeit
+cd frontend
+npm run typecheck                    # vue-tsc, strikt
+npm test                             # Einheitentests
+npm run test:e2e                     # Feldablauf und Offline-Betrieb
+npm run lint
+npm run build                        # Produktionsbundle nach ../oekovolt_baudoku/public/frontend
+```
+
+### Integrationstests am Server
+
+Die heikelsten Stellen — Abschlussprüfung, Rollenbindung der Verifizierung und
+die Auflösung der lokalen UUIDs — brauchen eine laufende Bench:
+
+```bash
+bench --site <site> run-tests --app oekovolt_baudoku
+```
+
+### E2E-Tests
+
+`npm run test:e2e` startet zwei Server und braucht kein Frappe:
+
+* **Feldablauf** gegen den Dev-Server im Demo-Modus, auf Tablet-, Smartphone-
+  und Desktop-Profil (AK-02).
+* **Offline** gegen einen Demo-*Produktionsbuild*, ausgeliefert wie von Frappe
+  (AK-04). Der Dev-Server taugt dafür nicht: Erst im Produktionsbuild gibt es
+  Precache und die Pfadtrennung zwischen `/assets/…` und dem Wurzelpfad — und
+  genau dort entscheidet sich, ob der Service Worker die App erreicht.""",
+        ),
+        (
+            """0. **Installieren**: Die App meldet sich als PWA. Der Service Worker hält die
+   App-Shell vor; eine neue Fassung übernimmt **nicht** von selbst, sondern
+   fragt — ein Reload mitten im Protokoll wäre im Feld unzumutbar.""",
+            """0. **Installieren**: Die App meldet sich als PWA. Der Service Worker hält die
+   App-Shell vor; eine neue Fassung übernimmt **nicht** von selbst, sondern
+   fragt — ein Reload mitten im Protokoll wäre im Feld unzumutbar.
+
+   Der Worker wird beim Build zusätzlich nach `www/sw.js` gelegt und von dort
+   registriert. Das ist keine Kosmetik: Ein Service Worker kontrolliert nur
+   Seiten **unterhalb seines eigenen Pfades**. Aus
+   `/assets/oekovolt_baudoku/frontend/` heraus registriert, erreichte er die App
+   unter `/baudoku` nie. Aus demselben Grund lautet der Geltungsbereich
+   `/baudoku` ohne Schrägstrich — mit `/baudoku/` läge die Einstiegsadresse
+   selbst außerhalb.""",
+        ),
+    ],
+)
+
+# ------------------------------------------------------- Anforderungsabdeckung
+patch(
+    "docs/anforderungsabdeckung.md",
+    [
+        (
+            """## Offene Punkte für die Abnahme
+
+Die drei Performance-Kriterien (NFA-030, NFA-032, NFA-033) und die Feldtests
+**AK-02** und **AK-04** sind Messungen auf dem Referenzgerät und auf drei realen
+Baustellen — sie lassen sich nicht aus dem Code heraus belegen.""",
+            """## Abnahmekriterien
+
+| Nr. | Kriterium | Stand | Nachweis |
+|---|---|---|---|
+| AK-01 | Alle MUSS-Anforderungen erfüllt | ✔ | diese Tabelle |
+| AK-02 | DC-Wartungscheckliste durchführbar | ◑ | E2E-Test deckt Start, Ausführung und Unterbrechung ab; der Feldtest auf drei Baustellen bleibt |
+| AK-03 | PDF mit Fotos und Unterschriften | ◑ | Fotos werden eingebettet (`bild_daten`); visueller Abgleich an einer Bench offen |
+| AK-04 | Offline-Sync zuverlässig | ◑ | E2E belegt Start ohne Netz, Erfassung und Persistenz; die Übertragung nach Wiederverbindung braucht eine Bench |
+| AK-05 | Mängel korrekt mit Protokoll verknüpft | ✔ | `test_pruefprotokoll.py::test_mangel_wird_nachtraeglich_mit_protokoll_verknuepft` |
+| AK-06 | Tagesbericht-Workflow | ✔ | `statuswechsel_pruefen` mit Rollenbindung |
+| AK-07 | Rollenkonzept greift | ✔ | `test_techniker_darf_nicht_verifizieren`, Zeilensichtbarkeit in `api/berechtigung.py` |
+| AK-08 | Performance TTI < 3 s | ○ | Messung auf dem Referenzgerät ausständig |
+| AK-09 | Bedienbar auf 5,5″ | ✔ | E2E läuft auch im Smartphone-Profil |
+| AK-10 | ERPNext-Integration sichtbar | ◑ | Verknüpfungen umgesetzt; Datenabgleich an einer Bench offen |
+
+## Offene Punkte für die Abnahme
+
+Die Performance-Kriterien (NFA-030, NFA-032, NFA-033, AK-08) sind Messungen auf
+dem Referenzgerät. Was eine laufende Bench braucht: der visuelle PDF-Abgleich
+(AK-03), der Datenabgleich mit ERPNext (AK-10) und der Sync gegen einen echten
+Server — die Integrationstests dafür liegen in
+`oekovolt_baudoku/baudoku/doctype/pruefprotokoll/test_pruefprotokoll.py` und
+laufen mit `bench run-tests`.""",
+        )
+    ],
+)

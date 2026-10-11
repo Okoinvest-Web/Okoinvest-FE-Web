@@ -1,0 +1,139 @@
+import pathlib
+
+FE = pathlib.Path(r"C:\Users\SALEADMIN\Documents\Servicetechniker APP\frontend")
+
+
+def patch(pfad, paare):
+    p = FE / pfad
+    s = p.read_text(encoding="utf-8")
+    for alt, neu in paare:
+        if alt not in s:
+            raise SystemExit(f"NICHT GEFUNDEN in {pfad}:\n---\n{alt[:300]}\n---")
+        s = s.replace(alt, neu, 1)
+    p.write_text(s, encoding="utf-8")
+    print("ok", pfad)
+
+
+# ------------------------- Service Worker für E2E auch im Dev-Server aktivieren
+patch(
+    "vite.config.ts",
+    [
+        (
+            """      devOptions: { enabled: false },""",
+            """      // Im Dev-Server ist der Service Worker normalerweise aus — sonst kämpft
+            // man beim Entwickeln gegen den Cache. Für die E2E-Tests wird er
+            // gezielt eingeschaltet, denn ohne ihn lässt sich der Offlinebetrieb
+            // gar nicht prüfen (AK-04).
+      devOptions: { enabled: process.env.VITE_PWA_DEV === '1', type: 'module' },""",
+        )
+    ],
+)
+
+# ------------------------------------------------ Playwright: SW einschalten
+patch(
+    "playwright.config.ts",
+    [
+        (
+            """    env: { VITE_DEMO: '1' },""",
+            """    // `VITE_PWA_DEV` aktiviert den Service Worker, ohne den sich der
+            // Offlinebetrieb nicht prüfen ließe.
+    env: { VITE_DEMO: '1', VITE_PWA_DEV: '1' },""",
+        )
+    ],
+)
+
+# ------------------------------------------------------ Testselektoren schärfen
+patch(
+    "e2e/feldablauf.spec.ts",
+    [
+        (
+            """    await page.getByPlaceholder('Beobachtung eintragen').fill('Ostermiething, Halle Nord')
+    await page.getByRole('button', { name: 'Weiter' }).click()
+
+    // Fortschritt muss sich bewegt haben
+    await expect(page.getByText('Prüfpunkt 2 von')).toBeVisible()
+
+    // Unterbrechen — der Zwischenstand gehört auf das Dashboard
+    await page.getByRole('button', { name: 'Unterbrechen' }).click()
+    await expect(page.getByRole('heading', { name: 'Angefangene Protokolle' })).toBeVisible()
+    await expect(page.getByText('Aumayr GmbH Dachanlage')).toBeVisible()
+  })""",
+            """    await page.getByPlaceholder('Beobachtung eintragen').fill('Ostermiething, Halle Nord')
+    await page.getByRole('button', { name: 'Weiter', exact: true }).click()
+
+    // Fortschritt muss sich bewegt haben
+    await expect(page.getByText('Prüfpunkt 2 von')).toBeVisible()
+
+    // Unterbrechen — der Zwischenstand gehört auf das Dashboard
+    await page.getByRole('button', { name: 'Unterbrechen' }).click()
+    const angefangen = page.locator('section').filter({ hasText: 'Angefangene Protokolle' })
+    await expect(angefangen.getByText('Aumayr GmbH Dachanlage')).toBeVisible()
+    await expect(angefangen.getByText('Wartung')).toBeVisible()
+  })""",
+        ),
+        (
+            """    await page.getByRole('button', { name: /Abschnitte öffnen/ }).click()
+    await page.getByRole('button', { name: /Unterkonstruktion/ }).click()
+    await page.getByRole('button', { name: 'Weiter' }).click()
+
+    await expect(page.getByRole('heading', { name: /Drehmoment/ })).toBeVisible()
+    await page.getByPlaceholder('0').fill('2')
+
+    // Deutlich unter dem Minimum: Fehler, nicht nur Warnung
+    await expect(page.getByRole('status').filter({ hasText: /unter Minimum/ })).toBeVisible()
+    await expect(page.getByText('Messwert bewusst übernehmen')).toBeVisible()
+  })""",
+            """    await page.getByRole('button', { name: /Abschnitte öffnen/ }).click()
+    await page.getByRole('button', { name: /Unterkonstruktion/ }).click()
+    await page.getByRole('button', { name: 'Weiter', exact: true }).click()
+
+    await expect(page.getByRole('heading', { name: /Drehmoment/ })).toBeVisible()
+    await page.getByPlaceholder('0').fill('2')
+
+    // Deutlich unter dem Minimum: Fehler, nicht nur Warnung
+    await expect(page.getByText(/unter Minimum/)).toBeVisible()
+    await expect(page.getByText('Messwert bewusst übernehmen')).toBeVisible()
+  })""",
+        ),
+        (
+            """test.describe('Offline-Betrieb (AK-04)', () => {
+  test('erfasst ohne Netz und kennzeichnet den Zustand', async ({ page, context }) => {
+    await appOeffnen(page, '/baudoku')
+
+    await context.setOffline(true)
+    await appOeffnen(page, '/baudoku/maengel/neu')
+
+    await page.getByRole('button', { name: /Anlage wählen/ }).click()""",
+            """/**
+ * Diese Gruppe braucht den Service Worker; der Dev-Server startet ihn nur mit
+ * `VITE_PWA_DEV=1` (setzt die Playwright-Konfiguration).
+ */
+test.describe('Offline-Betrieb (AK-04)', () => {
+  /** Wartet, bis der Service Worker die App-Shell übernommen hat. */
+  async function serviceWorkerBereit(page: Page) {
+    await page.waitForFunction(() => navigator.serviceWorker?.controller !== null, null, {
+      timeout: 20_000,
+    })
+  }
+
+  test('erfasst ohne Netz und kennzeichnet den Zustand', async ({ page, context }) => {
+    await appOeffnen(page, '/baudoku/maengel/neu')
+    await serviceWorkerBereit(page)
+
+    await context.setOffline(true)
+    await page.reload()
+    await expect(page.getByText('Baudoku wird geladen')).toBeHidden({ timeout: 20_000 })
+
+    await page.getByRole('button', { name: /Anlage wählen/ }).click()""",
+        ),
+        (
+            """  test('übersteht ein Neuladen ohne Netz', async ({ page, context }) => {
+    await appOeffnen(page, '/baudoku/maengel/neu')
+    await page.getByRole('button', { name: /Anlage wählen/ }).click()""",
+            """  test('übersteht ein Neuladen ohne Netz', async ({ page, context }) => {
+    await appOeffnen(page, '/baudoku/maengel/neu')
+    await serviceWorkerBereit(page)
+    await page.getByRole('button', { name: /Anlage wählen/ }).click()""",
+        ),
+    ],
+)

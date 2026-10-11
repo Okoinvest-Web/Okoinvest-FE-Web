@@ -1,0 +1,168 @@
+# Anforderungsabdeckung
+
+Zuordnung der Anforderungen aus dem Pflichtenheft v1.0 zur Umsetzung.
+Grundlage für Abnahmekriterium **AK-01** (alle MUSS-Anforderungen erfüllt).
+
+Legende: **✔** umgesetzt · **◑** Grundlage vorhanden, Feinschliff offen · **○** offen (spätere Phase)
+
+---
+
+## 4.1 Checklistenvorlagen-Verwaltung
+
+| Nr. | Anforderung | Prio | Stand | Umsetzung |
+|---|---|---|---|---|
+| FA-010 | Vorlagen anlegen, bearbeiten, kopieren | MUSS | ✔ | `Checklistenvorlage.duplizieren`, `VorlagenEditorView.vue` |
+| FA-011 | Statusworkflow Entwurf → Veröffentlicht → Deaktiviert | MUSS | ✔ | `Checklistenvorlage.veroeffentlichen`, Reiter in `VorlagenView.vue` |
+| FA-012 | Revisionierung veröffentlichter Vorlagen | MUSS | ✔ | `neue_revision`, Sperre in `before_save` |
+| FA-013 | Prüfpunkttypen (Bewertung, Zahl, Text, Foto, Ja/Nein, Signatur) | MUSS | ✔ | Feld `feldtyp`, `PruefpunktKarte.vue` |
+| FA-014 | Plausibilitätsgrenzen für Zahlenwerte | MUSS | ✔ | `min_wert`/`max_wert`, `pruefe_zahlenwert` |
+| FA-015 | Bedingte Sichtbarkeit von Prüfpunkten | SOLL | ✔ | `lib/bedingung.ts` und `utils/bedingung.py` — identische Regeln, geteilte Testfälle, Zweifelsfall = anzeigen |
+| FA-016 | Foto-Pflichtmarkierung je Prüfpunkt | MUSS | ✔ | `foto_erforderlich`, blockiert den Abschluss |
+| FA-017 | Hilfetexte und Normenverweise | SOLL | ✔ | `hilfetext`, `normverweis`, in der Prüfpunktkarte sichtbar |
+| FA-018 | Mehrsprachigkeit DE/EN | KANN | ○ | Feld `sprache` vorhanden, Oberfläche derzeit deutsch |
+| FA-019 | Druckvorschau der unausgefüllten Vorlage | MUSS | ✔ | `api/pdf.vorschau_html`, `templates/vorlage_vorschau.html` |
+
+## 4.2 Mitgelieferte Vorlagen
+
+| Vorlage | Stand | Umsetzung |
+|---|---|---|
+| DC-Wartungscheckliste (8 Sektionen) | ✔ | `setup/vorlagen.py` → `DC_WARTUNG` |
+| Inbetriebnahmeprotokoll (7 Sektionen) | ✔ | `IBN` — inkl. Speicher- und Ladestation-IBN |
+| DC-Abnahmeprotokoll (6 Sektionen) | ✔ | `DC_ABNAHME` |
+| Schadenaufnahmeprotokoll (6 Sektionen) | ✔ | `SCHADEN` — drei Pflichtfotos |
+
+Die Vorlagen werden bei `after_install` angelegt und veröffentlicht.
+
+## 4.3 Prüfprotokoll-Ausführung
+
+| Nr. | Anforderung | Prio | Stand | Umsetzung |
+|---|---|---|---|---|
+| FA-030 | Protokoll starten: Anlage → Vorlage → Ausführen | MUSS | ✔ | `ProtokollStartView.vue`, drei Schritte |
+| FA-031 | Sektionen sequentiell mit Fortschrittsanzeige | MUSS | ✔ | Fortschrittsbalken, Sektionsübersicht |
+| FA-032 | Bewertung per Radio-Buttons | MUSS | ✔ | Große Flächen statt Radios (Handschuhe) |
+| FA-033 | Zahlenwerte mit Warnung (gelb) und Fehler (rot) | MUSS | ✔ | `pruefeZahlenwert`, farbiges Meldungsfeld |
+| FA-034 | Kamera direkt aus der App, GPS-Tagging, Zeitstempel | MUSS | ✔ | `lib/foto.ts`, `FotoAufnahme.vue` |
+| FA-035 | Text-Prüfpunkte als Freitext oder Auswahlliste | MUSS | ✔ | Feldtypen `Text` und `Auswahl` |
+| FA-036 | Mangel direkt aus einem Prüfpunkt | MUSS | ✔ | Dialog in `ProtokollAusfuehrenView`, Schweregrad aus Bewertung; nicht erfasste Mängel trägt der Server beim Abschluss nach |
+| FA-037 | Zwischenspeichern und fortsetzen | MUSS | ✔ | Jede Eingabe schreibt nach IndexedDB |
+| FA-038 | Vollständige Ausführung offline | MUSS | ✔ | Siehe NFA-010 ff. |
+| FA-039 | Automatische GPS-Erfassung beim Start | SOLL | ✔ | `positionEinmalig()` in `starten()` |
+| FA-040 | Digitale Unterschrift auf dem Gerät | MUSS | ✔ | `SignaturPad.vue` (Pointer Events) |
+| FA-041 | Abschluss → optional Verifizierung | MUSS | ✔ | `abschliessen()`, `verifizieren()` mit Rollenprüfung; die Abschlussprüfung greift auch auf dem Sync-Weg (`validate`) |
+
+## 4.4 String-Messdaten
+
+| Nr. | Anforderung | Prio | Stand | Umsetzung |
+|---|---|---|---|---|
+| FA-050 | Tabelle je String: Uoc, Isc, Riso, Module | MUSS | ✔ | `Messdaten String`, `MessdatenTabelle.vue` |
+| FA-051 | Uoc gegen Module × Uoc_Modul ± 10 % | MUSS | ✔ | `pruefe_string` / `pruefeString` |
+| FA-052 | Isc gegen Isc_Modul ± 15 % | SOLL | ✔ | dito |
+| FA-053 | Riso > 40 kΩ × Module (IEC 62446) | MUSS | ✔ | zusätzlich Absolutminimum 1000 kΩ |
+| FA-054 | Übersteuerung mit Begründung | MUSS | ✔ | `uebersteuert` + Pflichtbegründung |
+| FA-055 | Messdaten im PDF | MUSS | ✔ | Print Format `Pruefprotokoll OEKOVOLT` |
+
+## 4.5 Mängelmanagement
+
+| Nr. | Anforderung | Prio | Stand | Umsetzung |
+|---|---|---|---|---|
+| FA-060 | Mangel erfassen mit allen Feldern | MUSS | ✔ | `MangelFormularView.vue` |
+| FA-061 | Mangel aus Protokoll mit Kontextübernahme | MUSS | ✔ | `mangel_aus_pruefpunkt`, Fotos werden kopiert |
+| FA-062 | Suche und Filter | MUSS | ✔ | `MaengelView.vue` |
+| FA-063 | Statusworkflow Offen → … → Verifiziert | MUSS | ✔ | `Mangel.status_pruefen` |
+| FA-064 | Nachweisfoto bei Behebung | MUSS | ✔ | erzwungen, wenn `nachweisfoto_pflicht` |
+| FA-065 | ToDo-Zuweisung an den Zuständigen | MUSS | ✔ | `Mangel.todo_anlegen` |
+| FA-066 | E-Mail bei neuen und überfälligen Mängeln | SOLL | ✔ | `benachrichtigen`, `taeglich_eskalieren` (Scheduler) |
+
+## 4.6 Tagesberichtwesen
+
+| Nr. | Anforderung | Prio | Stand | Umsetzung |
+|---|---|---|---|---|
+| FA-070 | Bauleiter-Tagesbericht | MUSS | ✔ | `TagesberichtFormularView.vue` |
+| FA-071 | Subunternehmer-Tagesbericht | MUSS | ✔ | Typ-Umschaltung, Pflichtfeld `supplier` |
+| FA-072 | Leistungspositionen | MUSS | ✔ | `Tagesbericht Position` |
+| FA-073 | Digitale Unterschrift | MUSS | ✔ | `SignaturPad.vue` |
+| FA-074 | Genehmigungsworkflow | MUSS | ✔ | `einreichen`/`genehmigen`/`ablehnen` |
+| FA-075 | PDF-Export mit Fotos | MUSS | ✔ | Print Format `Tagesbericht OEKOVOLT` |
+| FA-076 | Fortschrittstimeline je Baustelle | SOLL | ✔ | `fortschritts_timeline`, Balkenverlauf in der Liste |
+| FA-077 | Offline erstellen und synchronisieren | MUSS | ✔ | wie Protokolle |
+
+## 4.7 Anlagenverwaltung
+
+| Nr. | Anforderung | Prio | Stand | Umsetzung |
+|---|---|---|---|---|
+| FA-080 | Anlagen anlegen und bearbeiten | MUSS | ✔ | Doctype `PV Anlage` (Desk + API) |
+| FA-081 | Detail mit Protokollen, Mängeln, Berichten | MUSS | ✔ | `PVAnlage.uebersicht`, `AnlageDetailView.vue` |
+| FA-082 | Suche und Filterung | MUSS | ✔ | `anlagenSuche` im Stammdaten-Store |
+| FA-083 | Leaflet-/OSM-Karte mit Statusfärbung | MUSS | ✔ | `AnlagenKarte.vue`, Mängelring am Marker |
+| FA-084 | QR-Code je Anlage | SOLL | ✔ | Deep-Link `qr_ziel`, lokal erzeugtes SVG in `QrCode.vue` (offlinefähig) |
+| FA-085 | Anlage aus ERPNext-Projekt vorausfüllen | SOLL | ✔ | `aus_projekt_anlegen` inkl. Adressübernahme |
+
+## 4.8 Reporting
+
+| Nr. | Anforderung | Prio | Stand | Umsetzung |
+|---|---|---|---|---|
+| FA-090 | PDF-Protokoll mit Fotos und Unterschriften | MUSS | ✔ | `api/pdf.erzeuge_pdf` |
+| FA-091 | PDF-Tagesbericht | MUSS | ✔ | dito |
+| FA-092 | Mangel-Dashboard | MUSS | ✔ | `mangel_dashboard`, `AnalysenView.vue` |
+| FA-093 | Baufortschritts-Dashboard | SOLL | ✔ | `baufortschritt` |
+| FA-094 | Messdaten-Trend über Wartungszyklen | KANN | ✔ | `messdaten_trend` + `VerlaufsDiagramm.vue`, Reiter „Messwerte“ mit IEC-Grenzwertlinie |
+| FA-095 | Export als Excel/CSV | MUSS | ✔ | Frappe-Standardexport über die Doctype-Listen |
+| FA-096 | Konfigurierbare Analyse-Dashboards | KANN | ◑ | feste Auswertungen umgesetzt, freie Konfiguration offen |
+
+## 4.9 Administration
+
+| Nr. | Anforderung | Prio | Stand | Umsetzung |
+|---|---|---|---|---|
+| FA-100 | Prüfobjekttypen | MUSS | ✔ | Auswahlfeld `anlagen_typ` |
+| FA-101 | Mangelkategorien | MUSS | ✔ | Doctype `Mangelkategorie`, zehn Vorgaben |
+| FA-102 | Schweregrade mit Farbe und SLA | MUSS | ✔ | Doctype `Mangel Schweregrad` (A/B/C) |
+| FA-103 | PDF-Protokollprofile | MUSS | ✔ | Doctype `PDF Protokollprofil` |
+| FA-104 | Workflows definieren | SOLL | ◑ | Statuslogik in den Controllern; Frappe-Workflow-Engine nutzbar |
+| FA-105 | Benutzer, Gruppen, Rollen | MUSS | ✔ | Frappe-Standard + sechs App-Rollen |
+| FA-106 | Benutzerdefinierte Felder ohne Code | SOLL | ✔ | Frappe-Standard (Custom Field) |
+| FA-107 | Messmitteltypen | KANN | ✔ | Doctypes `Messmitteltyp` und `Messmittel` mit Kalibriernachweis |
+
+---
+
+## 5 Nicht-funktionale Anforderungen
+
+| Nr. | Anforderung | Stand | Umsetzung |
+|---|---|---|---|
+| NFA-010 | PWA mit Service Worker | ✔ | `vite-plugin-pwa`, Registrierung in `lib/pwa.ts`, App-Shell im Precache, Aktualisierung nur auf Zustimmung |
+| NFA-011 | IndexedDB-Speicher | ✔ | `lib/db.ts` (Dexie, 7 Tabellen) |
+| NFA-012 | Bidirektionale Sync mit Konfliktlösung | ✔ | `lib/sync.ts`, `api/sync.py` — Server gewinnt, lokale Fassung gesichert |
+| NFA-012a | Verweise zwischen offline erzeugten Dokumenten | ✔ | `mangel_lokal` / `pruefprotokoll_lokal`, Auflösung in `_verweise_aufloesen` (AK-05) |
+| NFA-013 | Fotos puffern, max. 2 MB | ✔ | `komprimieren()` mit iterativer Qualitätsreduktion |
+| NFA-014 | Offline-Indikator | ✔ | `SyncIndikator.vue` in Kopfzeile und Seitenleiste |
+| NFA-015 | Vorlagen offline vorhalten | ✔ | `vorlagenVorladen()`, Einstellungen → Vorladen |
+| NFA-020 | Mobile-first, 10″-Tablet primär | ✔ | Breakpoints `tablet` (768) / `desktop` (1180) |
+| NFA-021 | Smartphone 5,5″ bedienbar | ✔ | Tab-Leiste, Messdaten als Karten statt Tabelle |
+| NFA-022 | Desktop mit Seitenleiste | ✔ | `App.vue` |
+| NFA-023 | Touch-Ziele ≥ 44 × 44 px | ✔ | Utility `.tap`, Bewertungsflächen 56 px |
+| NFA-024 | Kamera-Integration | ✔ | `capture="environment"` |
+| NFA-025 | Dark Mode | ✔ | Klassenbasiert, folgt der Systemvorgabe |
+| NFA-026 | max. 3 Taps bis zur Ausführung | ✔ | Schnellaktionsknopf → Anlage → Vorlage |
+| NFA-030 | TTI < 3 s auf 4G | ◑ | Lazy Routes, Vendor-Chunks — Messung auf Referenzgerät ausständig |
+| NFA-031 | Sektionswechsel < 1 s | ✔ | rein lokaler Zustand, kein Serverzugriff |
+| NFA-032 | Foto-Upload < 5 s | ◑ | Kompression umgesetzt, Feldmessung ausständig |
+| NFA-033 | Sync < 30 s für 50 Punkte + 10 Fotos | ◑ | Batchgröße 25, Feldmessung ausständig |
+| NFA-040 | HTTPS-only | ✔ | Betriebsseitig durch die Bench-Konfiguration |
+| NFA-041 | Session + 2FA | ✔ | Frappe-Session; 2FA über die bestehende privacyIDEA-Anbindung |
+| NFA-042 | Rollenbasierte Zugriffskontrolle | ✔ | Doctype-Permissions + `api/berechtigung.py` |
+| NFA-043 | Audit-Trail | ✔ | `track_changes` auf allen Transaktions-Doctypes, `Baudoku Sync Log` |
+| NFA-044 | Foto-Hash | ✔ | SHA-256 client- und serverseitig |
+| NFA-045 | Unterschrift mit Zeitstempel und IP | ✔ | `api/protokoll.unterschreiben` |
+
+---
+
+## Offene Punkte für die Abnahme
+
+Die drei Performance-Kriterien (NFA-030, NFA-032, NFA-033) und die Feldtests
+**AK-02** und **AK-04** sind Messungen auf dem Referenzgerät und auf drei realen
+Baustellen — sie lassen sich nicht aus dem Code heraus belegen.
+
+Ebenfalls noch offen: konfigurierbare Dashboards (FA-096) und Mehrsprachigkeit
+(FA-018) — beides KANN und dem Umsetzungsplan nach Phase 5 zugeordnet. Die
+Statuslogik der Workflows (FA-104) steckt in den Controllern; wer sie fachlich
+konfigurierbar braucht, hängt die Frappe-Workflow-Engine an die vorhandenen
+Statusfelder.

@@ -1,0 +1,75 @@
+# -*- coding: utf-8 -*-
+import io
+p='SCHRIFTSATZ_18St14-26m_VOLLSTAENDIG.md'
+t=io.open(p,encoding='utf-8').read()
+def rep(o,n,c=1):
+    global t
+    assert o in t, o[:70]
+    t=t.replace(o,n,c)
+
+# ---------- H.1a ----------
+rep("## H.2 Gemeinsames Unternehmensvorhaben",
+"""## H.1a Die wirtschaftliche Lage des Beschuldigten war den Darlehensgebern bekannt
+
+Der Vorwurf nach § 146 StGB setzt voraus, dass die Darlehensgeber über die Zahlungsfähigkeit des Beschuldigten geirrt haben. Das ist ausgeschlossen. Die anhängigen Exekutionsverfahren und die Abgabenrückstände waren ihnen vor der Mittelgewährung bekannt.
+
+Das folgt bereits aus dem **Verhalten der Beteiligten** und bedarf keiner nachträglichen Erklärung:
+
+1. **Das Zahlungsmuster.** Die Valuta vom 04.05.2022 wurde binnen fünf Tagen zu 66,1 % an das Oberlandesgericht Innsbruck und an das Finanzamt weitergeleitet, jeweils unter Angabe der Exekutionsgeschäftszahl (Teil F). Ein Darlehensgeber, der von laufenden Exekutionen nichts gewusst hätte, hätte spätestens hier Erklärungsbedarf gehabt. Ein solcher ist nie entstanden.
+2. **Das fortbestehende Vertrauensverhältnis.** Andreas Wegscheider ließ sich vom Beschuldigten noch im August und November 2024 — nach Konkurseröffnung und nach eigener Forderungsanmeldung über 215.463,58 € — in eigenen Gerichtsverfahren vertreten (Teil H.5). Das ist mit der Annahme, er sehe sich über die wirtschaftliche Lage des Beschuldigten getäuscht, nicht vereinbar.
+3. **Die Stellung der Darlehensgeber.** Als Chief Executive Officer und Chief Financial Officer desselben Vorhabens verfügten sie über denselben Informationsstand wie der Beschuldigte (Teil H.2, Beilage ./5).
+4. **Die eigene unmittelbare Zahlung.** Die von Wegscheider geführte Ökovolt Solartechnik GmbH zahlte am 26.01.2021 selbst und unmittelbar an den Projektlieferanten (Teil H.3).
+
+Die Gespräche, in denen die wirtschaftliche Lage offengelegt wurde, fanden im Beisein des damaligen Rechtsvertreters MMag. Dr. Roman Schobesberger statt. Seine Einvernahme wird beantragt (Beweisantrag 6). Auf die unter Teil H.0a offengelegte Interessenlage sämtlicher Beteiligter — einschließlich seiner eigenen Stellung in der Unternehmenspräsentation Beilage ./5 — wird ausdrücklich verwiesen; die Würdigung obliegt der Behörde.
+
+**Rechtliche Folge.** Wer einem Darlehensnehmer Mittel gewährt, dessen laufende Exekutionsverfahren und Abgabenrückstände er kennt, unterliegt keinem Irrtum über dessen Zahlungsfähigkeit. Damit fehlt es am Tatbestandsmerkmal des § 146 StGB.
+
+## H.2 Gemeinsames Unternehmensvorhaben""")
+
+# ---------- I.6 erweitern ----------
+rep("""Eine Vermögensverringerung kann nach der Rechtsprechung auch gegenüber künftigen Gläubigern tatbildlich sein, wenn der Täter deren Schädigung von vornherein in Kauf nimmt. Ein solcher Vorsatz wird in ON 2.2 und ON 5.2 **nicht behauptet** und wäre gesondert festzustellen.""",
+"""Eine Vermögensverringerung kann nach der Rechtsprechung auch gegenüber **künftigen** Gläubigern tatbildlich sein, wenn der Täter deren Schädigung von vornherein in Kauf nimmt. Ein solcher Vorsatz wird in ON 2.2 und ON 5.2 **nicht behauptet** und wäre gesondert festzustellen.
+
+Er liegt auch fern: Wer im Mai 2022 zwei Drittel einer soeben erhaltenen Valuta zur Tilgung fremder Verbindlichkeiten verwendet, nimmt die Schädigung künftiger Gläubiger nicht in Kauf — er reduziert den Schuldenstand.""")
+
+# ---------- I.7 ----------
+rep("""---
+
+# J. MÄNGEL DER SACHVERHALTSDARSTELLUNG ON 2.2""",
+"""## I.7 Zusammenfassende rechtliche Würdigung
+
+### I.7.1 § 156 StGB — der Erfolg fehlt
+
+| Komplex | Befund | Folge |
+|---|---|---|
+| 90.000 € an tyb | Kaufpreis, Gegenleistung erbracht, Forderung im Vermögensverzeichnis deklariert (Teil E) | **Aktivtausch** — keine Vermögensverringerung |
+| 132.194 € vom 09.05.2022 | Tilgung von 13 Exekutionen und drei Rückstandsausweisen, Registererledigung in allen 13 Fällen (Teil F) | **Befriedigung**, nicht Schmälerung |
+| 145.613 € an Daniela Mikic | 45,4 % der Ausgänge dieses Kontos sind belegte Fremdverbindlichkeiten; fünf Exekutionszahlungen aus dem Akt selbst verifizierbar; Zweck durch die Zeugin bestätigt (Teil G) | betriebliche Zahlungen und Gläubigerbefriedigung |
+| Barbehebungen | offengelegt; 21.500 € nachweislich rückgeführt; 22.278,44 € Barlöhne urkundlich belegt; der verbleibende Betrag durch den auf den Konten fehlenden Reiseaufwand erklärt (Teile G.6, G.6a, G.6b) | **kein Entzug festgestellt** |
+
+Hinzu tritt, dass ein **Befriedigungsausfall** — der Erfolg des Delikts — bis heute weder dem Grunde noch der Höhe nach, weder bezogen auf einen bestimmten Gläubiger noch auf eine bestimmte Tathandlung festgestellt ist (Teil A.5.3). Die Konteneinschau bei vier Konten hat keinen Vermögenswert zutage gefördert, auf den die Mittel geflossen wären (Teil G.6a Punkt 8).
+
+### I.7.2 §§ 146, 147 StGB — es fehlt am Irrtum
+
+1. Der größte Darlehensgeber hat gegenüber dem ermittelnden Beamten erklärt, sich **nicht als Geschädigter** zu betrachten (Teil H.0).
+2. Beide Hauptdarlehensgeber erklären, das Ausfallsrisiko **bis zum Totalverlust** gekannt und bewusst übernommen zu haben (Teil H.1).
+3. Die wirtschaftliche Lage des Beschuldigten — laufende Exekutionen, Abgabenrückstände — war ihnen vor der Mittelgewährung bekannt (Teil H.1a).
+4. Beide waren CEO und CFO desselben Unternehmensvorhabens und damit auf demselben Informationsstand (Teil H.2).
+5. Die Mittelverwendung war vereinbart; Susanne Messmer erklärt dies ausdrücklich (Teil H.1).
+6. Das Verhalten nach Erhalt widerlegt einen Täuschungsvorsatz: 66,1 % der Valuta binnen fünf Tagen an Gläubiger (Teil F).
+7. Rückzahlungen sind belegt: 7.500,00 € an Thomas Klepsch (Teil F.4).
+
+### I.7.3 Ergebnis
+
+Es fehlt bei **§ 156 StGB am Erfolg**, bei **§§ 146, 147 StGB am Irrtum**, bei beiden an einem festgestellten Schaden. Ein Auffangtatbestand greift nicht ein (Teil F.4a). Die einzige verbleibende Verdachtsgrundlage — das Fehlen von Nachweisen — beruht nach dem eigenen Vorbringen des Anzeigers auf einer von ihm selbst getroffenen Entscheidung (Teile J.1, J.2).
+
+Damit besteht kein tatsächlicher Grund zur weiteren Verfolgung. Die Einstellung hat nach **§ 190 Z 2 StPO** zu erfolgen; hilfsweise, soweit dem nicht gefolgt wird, nach **§ 190 Z 1 StPO** hinsichtlich der verjährten Tatkomplexe (Teil C).
+
+---
+
+# J. MÄNGEL DER SACHVERHALTSDARSTELLUNG ON 2.2""")
+
+t=t.replace("| **I** | Gläubigerstruktur und zeitliche Zuordnung |",
+            "| **I** | Gläubigerstruktur, zeitliche Zuordnung und zusammenfassende rechtliche Würdigung |",1)
+io.open(p,'w',encoding='utf-8').write(t)
+print('H.1a, I.6 erweitert, I.7 eingebaut')

@@ -1,0 +1,302 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+
+import { eine, schreibe } from "@/lib/db/verbindung";
+import {
+  holeLadelauf,
+  legeLadelaufAn,
+  rechneLadelauf,
+  schreibeLadelaufFest,
+  storniereLadelauf,
+} from "@/lib/laden/lauf";
+import { protokolliere } from "@/lib/sicherheit/audit";
+import { requireRecht } from "@/lib/session";
+
+export interface LadenErgebnis {
+  ok: boolean;
+  meldung: string;
+  /** Kennung des betroffenen Laufs, für einen Sprung auf die Seite. */
+  lauf?: string;
+}
+
+/**
+ * Legt einen Abrechnungslauf an und rechnet ihn sofort durch.
+ *
+ * Anlegen und Rechnen sind hier ein Schritt. Ein leerer Lauf, der erst
+ * durch einen zweiten Klick Inhalt bekommt, ist ein Zustand, in dem
+ * niemand etwas sehen kann - und über den prompt jemand stolpert, der
+ * ihn im Entwurf liegen lässt.
+ */
+export async function legeLaufAn(
+  _vorher: LadenErgebnis | null,
+  formular: FormData,
+): Promise<LadenErgebnis> {
+  const benutzer = await requireRecht("mobilitaet.verwalten");
+
+  const schluessel = String(formular.get("monat") ?? "");
+  const [jahrText, monatText] = schluessel.split("-");
+  const jahr = Number(jahrText);
+  const monat = Number(monatText);
+
+  if (!Number.isInteger(jahr) || monat < 1 || monat > 12) {
+    return { ok: false, meldung: "Bitte wählen Sie einen Monat." };
+  }
+
+  const laufId = legeLadelaufAn(jahr, monat);
+  const vorhanden = holeLadelauf(laufId);
+
+  if (vorhanden.status === "Festgeschrieben") {
+    return {
+      ok: false,
+      meldung: `${vorhanden.bezeichnung} ist bereits festgeschrieben und wird nicht neu gerechnet.`,
+      lauf: laufId,
+    };
+  }
+
+  const ergebnis = rechneLadelauf(laufId, benutzer.vollname);
+
+  await protokolliere({
+    kategorie: "abrechnung",
+    aktion: `Ladeabrechnung ${laufId} gerechnet`,
+    ergebnis: "erfolg",
+    objekt: laufId,
+    nachher: `${ergebnis.belege} Belege, ${ergebnis.brutto.toFixed(2)} EUR brutto`,
+    begruendung: `Lauf durch ${benutzer.vollname}`,
+  });
+
+  revalidatePath("/portal/mobilitaet");
+  revalidatePath(`/portal/mobilitaet/abrechnung/${laufId}`);
+
+  if (ergebnis.belege === 0) {
+    return {
+      ok: false,
+      meldung:
+        "In diesem Monat gibt es keine beendeten Ladevorgänge, die noch nicht abgerechnet sind.",
+      lauf: laufId,
+    };
+  }
+
+  return {
+    ok: true,
+    meldung:
+      `${ergebnis.belege} Belege über ${ergebnis.brutto.toFixed(2)} Euro brutto, ` +
+      `${ergebnis.vorgaenge} Ladevorgänge, ${ergebnis.energieKwh.toFixed(1)} kWh.` +
+      (ergebnis.ohneKarte > 0
+        ? ` ${ergebnis.ohneKarte} Vorgänge ohne zuordenbare Karte blieben außen vor.`
+        : ""),
+    lauf: laufId,
+  };
+}
+
+/** Rechnet einen Entwurf neu - etwa nach einer Tarifänderung. */
+export async function rechneLaufNeu(
+  _vorher: LadenErgebnis | null,
+  formular: FormData,
+): Promise<LadenErgebnis> {
+  const benutzer = await requireRecht("mobilitaet.verwalten");
+
+  const laufId = String(formular.get("lauf") ?? "");
+  const lauf = holeLadelauf(laufId);
+
+  if (lauf.status !== "Entwurf") {
+    return {
+      ok: false,
+      meldung:
+        lauf.status === "Festgeschrieben"
+          ? "Ein festgeschriebener Lauf wird nicht neu gerechnet. Eine Korrektur läuft über eine Stornierung und einen neuen Lauf."
+          : "Ein stornierter Lauf wird nicht neu gerechnet.",
+    };
+  }
+
+  const ergebnis = rechneLadelauf(laufId, benutzer.vollname);
+
+  await protokolliere({
+    kategorie: "abrechnung",
+    aktion: `Ladeabrechnung ${laufId} neu gerechnet`,
+    ergebnis: "erfolg",
+    objekt: laufId,
+    nachher: `${ergebnis.belege} Belege, ${ergebnis.brutto.toFixed(2)} EUR brutto`,
+    begruendung: `Durch ${benutzer.vollname}`,
+  });
+
+  revalidatePath(`/portal/mobilitaet/abrechnung/${laufId}`);
+  revalidatePath("/portal/mobilitaet");
+
+  return {
+    ok: true,
+    meldung: `Neu gerechnet: ${ergebnis.belege} Belege über ${ergebnis.brutto.toFixed(2)} Euro brutto. Die Belegnummern wurden dabei neu vergeben.`,
+  };
+}
+
+/**
+ * Schreibt einen Lauf fest.
+ *
+ * Ab hier ist er unveränderlich und darf gebucht werden. Genau in
+ * dieser Reihenfolge: Was noch Entwurf ist, kann sich ändern - stünde
+ * es schon in der Buchhaltung, stünde dort ein Betrag, den es so nie
+ * gegeben hat.
+ */
+export async function schreibeLaufFest(
+  _vorher: LadenErgebnis | null,
+  formular: FormData,
+): Promise<LadenErgebnis> {
+  const benutzer = await requireRecht("mobilitaet.verwalten");
+
+  const laufId = String(formular.get("lauf") ?? "");
+  const lauf = holeLadelauf(laufId);
+
+  if (lauf.status === "Festgeschrieben") {
+    return { ok: false, meldung: "Dieser Lauf ist bereits festgeschrieben." };
+  }
+  if (lauf.status === "Storniert") {
+    return { ok: false, meldung: "Ein stornierter Lauf wird nicht festgeschrieben." };
+  }
+  if (lauf.anzahl_vorgaenge === 0) {
+    return {
+      ok: false,
+      meldung:
+        "Ein Lauf ohne abgerechnete Vorgänge wird nicht festgeschrieben. Rechnen Sie ihn zuerst.",
+    };
+  }
+
+  schreibeLadelaufFest(laufId);
+
+  await protokolliere({
+    kategorie: "abrechnung",
+    aktion: `Ladeabrechnung ${laufId} festgeschrieben`,
+    ergebnis: "erfolg",
+    objekt: laufId,
+    vorher: lauf.status,
+    nachher: "Festgeschrieben",
+    begruendung: `Durch ${benutzer.vollname}`,
+  });
+
+  revalidatePath(`/portal/mobilitaet/abrechnung/${laufId}`);
+  revalidatePath("/portal/mobilitaet");
+  revalidatePath("/portal/finanzen");
+
+  return {
+    ok: true,
+    meldung:
+      "Festgeschrieben. Die Belege sind jetzt in der Buchhaltung buchbar und werden hier nicht mehr verändert.",
+  };
+}
+
+/**
+ * Storniert einen Lauf.
+ *
+ * Die Belege bleiben stehen und werden nur gekennzeichnet. Ein
+ * gelöschter Beleg hinterlässt eine Lücke in der Nummernfolge, und
+ * darauf schaut jede Prüfung zuerst.
+ */
+export async function storniereLauf(
+  _vorher: LadenErgebnis | null,
+  formular: FormData,
+): Promise<LadenErgebnis> {
+  const benutzer = await requireRecht("mobilitaet.verwalten");
+
+  const laufId = String(formular.get("lauf") ?? "");
+  const grund = String(formular.get("grund") ?? "").trim();
+
+  if (grund.length < 10) {
+    return {
+      ok: false,
+      meldung:
+        "Bitte halten Sie fest, warum storniert wird. Der Grund steht später am Lauf und beantwortet die Rückfrage, bevor sie gestellt wird.",
+    };
+  }
+
+  const lauf = holeLadelauf(laufId);
+
+  if (lauf.status === "Storniert") {
+    return { ok: false, meldung: "Dieser Lauf ist bereits storniert." };
+  }
+
+  storniereLadelauf(laufId, grund);
+
+  await protokolliere({
+    kategorie: "abrechnung",
+    aktion: `Ladeabrechnung ${laufId} storniert`,
+    ergebnis: "erfolg",
+    objekt: laufId,
+    vorher: lauf.status,
+    nachher: "Storniert",
+    begruendung: `${benutzer.vollname}: ${grund}`,
+  });
+
+  revalidatePath(`/portal/mobilitaet/abrechnung/${laufId}`);
+  revalidatePath("/portal/mobilitaet");
+  revalidatePath("/portal/finanzen");
+
+  return {
+    ok: true,
+    meldung:
+      "Storniert. Die Vorgänge sind wieder frei und können in einen neuen Lauf; die Belege bleiben als storniert stehen.",
+  };
+}
+
+/**
+ * Sperrt eine Ladekarte oder gibt sie wieder frei.
+ *
+ * Der häufigste Anlass ist ein Mitarbeiter, der das Unternehmen
+ * verlässt, oder eine verlorene Karte. Beides muss sofort gehen und
+ * darf nicht über einen Techniker laufen - eine Karte, die erst am
+ * nächsten Werktag gesperrt wird, lädt bis dahin weiter.
+ *
+ * Gesperrt wird die Karte, nicht ihre Vergangenheit: Bereits
+ * gefahrene Vorgänge bleiben abrechenbar.
+ */
+export async function setzeKarteAktiv(
+  _vorher: LadenErgebnis | null,
+  formular: FormData,
+): Promise<LadenErgebnis> {
+  const benutzer = await requireRecht("mobilitaet.verwalten");
+
+  const karteId = String(formular.get("karte") ?? "");
+  const aktiv = String(formular.get("aktiv") ?? "") === "1";
+
+  const karte = eine<{ bezeichnung: string; aktiv: number; inhaber: string | null }>(
+    "SELECT bezeichnung, aktiv, inhaber FROM ladekarte WHERE id = ?",
+    karteId,
+  );
+
+  if (!karte) {
+    return { ok: false, meldung: "Diese Karte ist nicht vorhanden." };
+  }
+
+  if ((karte.aktiv === 1) === aktiv) {
+    return {
+      ok: false,
+      meldung: aktiv
+        ? "Diese Karte ist bereits freigegeben."
+        : "Diese Karte ist bereits gesperrt.",
+    };
+  }
+
+  schreibe(
+    "UPDATE ladekarte SET aktiv = ? WHERE id = ?",
+    aktiv ? 1 : 0,
+    karteId,
+  );
+
+  await protokolliere({
+    kategorie: "stammdaten",
+    aktion: `Ladekarte ${karte.bezeichnung} ${aktiv ? "freigegeben" : "gesperrt"}`,
+    ergebnis: "erfolg",
+    objekt: karteId,
+    vorher: karte.aktiv === 1 ? "aktiv" : "gesperrt",
+    nachher: aktiv ? "aktiv" : "gesperrt",
+    begruendung: `Durch ${benutzer.vollname}${karte.inhaber ? `, Inhaber: ${karte.inhaber}` : ""}`,
+  });
+
+  revalidatePath("/portal/mobilitaet/karten");
+  revalidatePath("/portal/mobilitaet");
+
+  return {
+    ok: true,
+    meldung: aktiv
+      ? `${karte.bezeichnung} ist wieder freigegeben.`
+      : `${karte.bezeichnung} ist gesperrt. Der nächste Ladeversuch wird abgewiesen.`,
+  };
+}

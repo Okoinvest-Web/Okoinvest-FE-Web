@@ -1,0 +1,15 @@
+/**
+ * Erzeugt einen Demo-Produktionsbuild für die Offline-Tests.
+ *
+ * Bewusst in ein eigenes Verzeichnis (`.e2e-build`) statt in
+ * `oekovolt_baudoku/public/frontend`: Sonst läge nach einem Testlauf ein Build
+ * mit Demodaten dort, wo der echte hingehört — und würde womöglich ausgeliefert.
+ */
+
+process.env.VITE_DEMO = '1'
+process.env.E2E_OUT = '.e2e-build'
+
+const { build } = await import('vite')
+await build()
+
+console.log('\n  Demo-Produktionsbuild unter frontend/.e2e-build erzeugt\n')

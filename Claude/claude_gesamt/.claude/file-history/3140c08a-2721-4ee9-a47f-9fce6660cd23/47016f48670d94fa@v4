@@ -1,0 +1,82 @@
+// Dev-Server-Wächter: prüft alle 20 s, ob localhost:3100 antwortet, und startet den Server bei Absturz sofort neu.
+// Hängt der Server (Port offen, aber 3 Prüfungen in Folge ohne Antwort), wird er beendet und neu gestartet.
+// Schreibt seinen Zustand nach waechter.json (für das Dashboard) und ein Protokoll nach waechter.log.
+import { execSync, spawnSync } from "node:child_process";
+import { appendFileSync, writeFileSync } from "node:fs";
+
+const PROJEKT = "C:\\Users\\SALEADMIN\\Downloads\\Oekoinvest-Web";
+const PRUEF_URL = "http://localhost:3100/robots.txt";
+const SEITEN_URL = "http://localhost:3100/impressum";
+const DIR = { pfad: decodeURIComponent(new URL(".", import.meta.url).pathname).replace(/^\/([A-Za-z]:)/, "$1") };
+const status = { gestartet: new Date().toISOString(), letztePruefung: null, zustand: "unbekannt", neustarts: 0, letzterNeustart: null, fehlerInFolge: 0, antwortMs: null };
+
+const log = (t) => { const z = `${new Date().toLocaleString("de-AT")} ${t}`; console.log(z); appendFileSync(DIR.pfad + "waechter.log", z + "\n"); };
+const speichern = () => writeFileSync(DIR.pfad + "waechter.json", JSON.stringify(status, null, 2));
+
+function portPid() {
+  try {
+    const out = execSync('powershell -NoProfile -Command "(Get-NetTCPConnection -LocalPort 3100 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1).OwningProcess"', { encoding: "utf8" }).trim();
+    return out ? Number(out) : null;
+  } catch { return null; }
+}
+function starten() {
+  // bewährte Startmethode: PowerShell Start-Process öffnet ein eigenes, minimiertes Fenster mit dem Dev-Server
+  const ps = `Start-Process -FilePath cmd.exe -ArgumentList '/k','title OekoInvest Dev-Server && npm run dev' -WorkingDirectory '${PROJEKT}' -WindowStyle Minimized`;
+  // synchron aufrufen: als abgekoppelter, versteckter Prozess startet PowerShell unter Windows nicht zuverlässig
+  const r = spawnSync("powershell.exe", ["-NoProfile", "-Command", ps], { encoding: "utf8" });
+  if (r.status !== 0) log(`Start fehlgeschlagen: ${(r.stderr || r.error || "").toString().slice(0, 200)}`);
+  status.neustarts++; status.letzterNeustart = new Date().toISOString();
+  log("Dev-Server gestartet");
+}
+async function pruefen() {
+  const t0 = Date.now();
+  try {
+    const r = await fetch(PRUEF_URL, { signal: AbortSignal.timeout(60000) });
+    status.antwortMs = Date.now() - t0;
+    // Zusätzlich eine echte Seite prüfen: ein kaputter Turbopack-Cache liefert dort 500, robots.txt aber 200
+    const s = await fetch(SEITEN_URL, { signal: AbortSignal.timeout(120000) }).then((x) => x.status, () => 0);
+    if (r.ok && s === 500) {
+      status.cache500 = (status.cache500 || 0) + 1;
+      status.zustand = `Seiten liefern 500 (${status.cache500}/3, evtl. kaputter Cache)`;
+      if (status.cache500 >= 3) {
+        log("Seiten liefern dauerhaft 500 – Server beenden, .next-Cache löschen, neu starten");
+        const pid = portPid();
+        if (pid) { try { execSync(`taskkill /PID ${pid} /T /F`); } catch {} }
+        await new Promise((res) => setTimeout(res, 4000));
+        try { execSync(`powershell -NoProfile -Command "Remove-Item -Recurse -Force '${PROJEKT}\\.next' -ErrorAction SilentlyContinue"`); } catch {}
+        starten();
+        status.cache500 = 0;
+        await new Promise((res) => setTimeout(res, 90000));
+      }
+    } else {
+      status.cache500 = 0;
+      status.zustand = r.ok ? "läuft" : `antwortet mit ${r.status}`;
+    }
+    status.fehlerInFolge = 0;
+  } catch {
+    status.fehlerInFolge++;
+    status.antwortMs = null;
+    const pid = portPid();
+    if (!pid) {
+      status.zustand = "abgestürzt – Neustart";
+      log("Kein Prozess auf Port 3100 – Neustart");
+      starten();
+      await new Promise((r) => setTimeout(r, 60000));
+    } else if (status.fehlerInFolge >= 3) {
+      status.zustand = "hängt – wird neu gestartet";
+      log(`Server hängt (PID ${pid}) – beenden und neu starten`);
+      try { execSync(`taskkill /PID ${pid} /T /F`); } catch {}
+      await new Promise((r) => setTimeout(r, 3000));
+      starten();
+      status.fehlerInFolge = 0;
+      await new Promise((r) => setTimeout(r, 60000));
+    } else {
+      status.zustand = `keine Antwort (${status.fehlerInFolge}/3, kompiliert evtl.)`;
+    }
+  }
+  status.letztePruefung = new Date().toISOString();
+  speichern();
+}
+log("Wächter aktiv");
+speichern();
+for (;;) { await pruefen(); await new Promise((r) => setTimeout(r, 20000)); }

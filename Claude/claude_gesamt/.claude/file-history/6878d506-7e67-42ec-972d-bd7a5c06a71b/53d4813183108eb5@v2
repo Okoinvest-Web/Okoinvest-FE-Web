@@ -1,0 +1,122 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { CalendarDays, Check, CheckSquare, FileText, Percent, Wallet } from "lucide-react";
+import { db } from "@/lib/data";
+import { OPPORTUNITY_STAGES } from "@/lib/types";
+import { date, LEAD_STATUS_LABEL, money, STAGE_LABEL } from "@/lib/format";
+import { Badge, Card, CardHeader, Field, PageBody, PageHeader, Progress, Stat } from "@/components/ui";
+import { ToDoForm } from "@/components/forms";
+import { Timeline } from "@/components/Timeline";
+import { TodoList } from "@/components/TodoList";
+import { HealthDot, NextSteps } from "@/components/Insights";
+import { PvCalculator } from "@/components/PvCalculator";
+import { dealHealth, parsePv } from "@/lib/insights";
+
+export async function generateMetadata({ params }: PageProps<"/opportunities/[name]">) {
+  const opp = await db().getOpportunity(decodeURIComponent((await params).name));
+  return { title: opp?.title ?? "Chance" };
+}
+
+export default async function OpportunityPage({ params }: PageProps<"/opportunities/[name]">) {
+  const opp = await db().getOpportunity(decodeURIComponent((await params).name));
+  if (!opp) notFound();
+  const todos = await db().listToDos({ filters: { reference_name: opp.name } });
+
+  const partyHref = opp.opportunity_from === "Lead" ? `/leads/${encodeURIComponent(opp.party_name)}` : `/customers/${encodeURIComponent(opp.party_name)}`;
+  const stageIdx = OPPORTUNITY_STAGES.indexOf(opp.sales_stage as (typeof OPPORTUNITY_STAGES)[number]);
+  const weighted = (opp.opportunity_amount * opp.probability) / 100;
+  const health = dealHealth(opp, todos);
+  const pv = parsePv(opp.title);
+  const isOpen = opp.status === "Open" || opp.status === "Quotation";
+
+  return (
+    <>
+      <PageHeader
+        title={opp.title ?? opp.name}
+        subtitle={
+          <Link href={partyHref} className="hover:text-brand-700 hover:underline">
+            {opp.customer_name ?? opp.party_name}
+          </Link>
+        }
+        crumbs={[{ href: "/opportunities", label: "Chancen" }]}
+        actions={
+          <>
+            {isOpen && <HealthDot h={health} />}
+            <Badge value={opp.status} label={LEAD_STATUS_LABEL[opp.status]} />
+          </>
+        }
+      />
+      <PageBody className="grid gap-6">
+        {/* Phasen-Stepper */}
+        <Card className="p-2">
+          <ol className="grid grid-cols-5 gap-1">
+            {OPPORTUNITY_STAGES.map((s, i) => {
+              const done = i < stageIdx;
+              const current = i === stageIdx;
+              return (
+                <li
+                  key={s}
+                  className={`flex items-center gap-2.5 rounded-lg px-3 py-2.5 ${current ? "bg-brand-600 text-white shadow-sm" : done ? "bg-brand-50 text-brand-800" : "text-gray-500"}`}
+                >
+                  <span
+                    className={`flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
+                      current ? "bg-white text-brand-700" : done ? "bg-brand-600 text-white" : "bg-gray-100 text-gray-500 ring-1 ring-gray-200"
+                    }`}
+                  >
+                    {done ? <Check className="size-3.5" /> : i + 1}
+                  </span>
+                  <span className="truncate text-sm font-medium">{STAGE_LABEL[s]}</span>
+                </li>
+              );
+            })}
+          </ol>
+        </Card>
+
+        <div className="grid gap-4 sm:grid-cols-3">
+          <Stat label="Auftragswert" value={money(opp.opportunity_amount, opp.currency)} icon={Wallet} hint={`Gewichtet ${money(weighted, opp.currency)}`} />
+          <Stat
+            label="Wahrscheinlichkeit"
+            value={`${opp.probability} %`}
+            icon={Percent}
+            accent="sun"
+            hint={<Progress value={opp.probability} className="mt-1" />}
+          />
+          <Stat label="Erwarteter Abschluss" value={date(opp.expected_closing)} icon={CalendarDays} accent="sky" />
+        </div>
+
+        <div className="grid items-start gap-6 xl:grid-cols-[1fr_340px]">
+          <div className="grid min-w-0 gap-6">
+            {isOpen && <NextSteps hints={health.hints} title="Deal-Check" />}
+            <PvCalculator kwp={pv.kwp} storage={pv.storage} invest={opp.opportunity_amount} />
+            <Card>
+              <CardHeader title="Aufgaben" icon={CheckSquare} sub={`${todos.filter((t) => t.status === "Open").length} offen`} />
+              <div className="border-b border-gray-100 px-5 py-3">
+                <ToDoForm referenceType="Opportunity" referenceName={opp.name} compact />
+              </div>
+              <TodoList todos={todos} />
+            </Card>
+            <Timeline doctype="Opportunity" name={opp.name} />
+          </div>
+
+          <Card>
+            <CardHeader title="Details" icon={FileText} />
+            <dl className="px-5 py-2">
+              <Field label="ID">
+                <span className="font-mono text-xs">{opp.name}</span>
+              </Field>
+              <Field label={opp.opportunity_from === "Lead" ? "Lead" : "Kunde"}>
+                <Link href={partyHref} className="text-brand-700 hover:underline">
+                  {opp.customer_name ?? opp.party_name}
+                </Link>
+              </Field>
+              <Field label="Phase">{STAGE_LABEL[opp.sales_stage] ?? opp.sales_stage}</Field>
+              <Field label="Berater">{opp.opportunity_owner}</Field>
+              <Field label="Angelegt">{date(opp.creation)}</Field>
+              <Field label="Geändert">{date(opp.modified)}</Field>
+            </dl>
+          </Card>
+        </div>
+      </PageBody>
+    </>
+  );
+}

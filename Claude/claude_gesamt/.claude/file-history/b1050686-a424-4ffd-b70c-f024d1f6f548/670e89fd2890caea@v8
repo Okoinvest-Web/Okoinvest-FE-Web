@@ -1,0 +1,297 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { useState, type ComponentType } from "react";
+
+import {
+  istAktiv,
+  type IconSchluessel,
+  type NavGruppe,
+} from "@/lib/navigation";
+
+import {
+  IconAlarm,
+  IconAnlage,
+  IconBeleg,
+  IconDokument,
+  IconEinstellungen,
+  IconEnergie,
+  IconFernwartung,
+  IconGemeinschaft,
+  IconLaden,
+  IconMenue,
+  IconNetz,
+  IconParagraf,
+  IconRechnen,
+  IconShop,
+  IconSicherheit,
+  IconSonne,
+  IconSpeicher,
+  IconSteuerung,
+  IconSupport,
+  IconUebersicht,
+  IconZertifikat,
+} from "./icon";
+
+const ZEICHNUNG: Record<IconSchluessel, ComponentType<{ groesse?: number }>> = {
+  uebersicht: IconUebersicht,
+  alarm: IconAlarm,
+  anlage: IconAnlage,
+  energie: IconEnergie,
+  steuerung: IconSteuerung,
+  gemeinschaft: IconGemeinschaft,
+  zertifikat: IconZertifikat,
+  laden: IconLaden,
+  beleg: IconBeleg,
+  shop: IconShop,
+  support: IconSupport,
+  dokument: IconDokument,
+  fernwartung: IconFernwartung,
+  sicherheit: IconSicherheit,
+  einstellungen: IconEinstellungen,
+  netz: IconNetz,
+  paragraf: IconParagraf,
+  speicher: IconSpeicher,
+  sonne: IconSonne,
+  rechnen: IconRechnen,
+};
+
+/**
+ * Die Leiste des Leitstands.
+ *
+ * Schmal, dicht, rechtwinklig. Der aktive Eintrag traegt drei Zeichen
+ * fuer denselben Zustand: einen Balken an der Kante, eine belegte
+ * Flaeche und hellere Schrift. Auf einem dunklen Grund traegt eine
+ * Farbaenderung allein zu wenig - und wer die Leiste aus zwei Metern
+ * Abstand ansieht, soll trotzdem erkennen, wo er steht.
+ *
+ * Rundungen gibt es keine: Eine Liste aus zwanzig Pillen liest sich
+ * langsamer als eine aus zwanzig Zeilen.
+ *
+ * Der Inhalt kommt fertig gefiltert vom Server; der Client entscheidet
+ * nicht darueber, was jemand sehen darf.
+ */
+export function PortalNav({
+  gruppen,
+  benutzer,
+  rollenBezeichnung,
+  firma,
+  demo,
+}: {
+  gruppen: NavGruppe[];
+  benutzer: string;
+  rollenBezeichnung: string;
+  firma: string;
+  demo: boolean;
+}) {
+  const pfad = usePathname();
+  const router = useRouter();
+  const [offen, setOffen] = useState(false);
+  const [meldetAb, setMeldetAb] = useState(false);
+
+  async function abmelden() {
+    setMeldetAb(true);
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.replace("/login");
+    router.refresh();
+  }
+
+  return (
+    <>
+      {/* Kopfzeile nur auf schmalen Bildschirmen */}
+      <header
+        className="glas sticky top-0 z-30 flex items-center gap-3 border-b px-3 py-2 lg:hidden"
+        style={{ borderColor: "var(--linie)" }}
+      >
+        <button
+          type="button"
+          onClick={() => setOffen((o) => !o)}
+          aria-expanded={offen}
+          aria-controls="hauptnavigation"
+          className="knopf knopf-rand px-2"
+        >
+          <IconMenue groesse={15} />
+          <span className="sr-only">
+            Navigation {offen ? "schließen" : "öffnen"}
+          </span>
+        </button>
+        <span
+          className="text-[0.8125rem] font-semibold tracking-[0.14em] uppercase"
+          style={{ color: "var(--t-stark)" }}
+        >
+          Ökovolt
+        </span>
+      </header>
+
+      {offen && (
+        <div
+          className="a-einblenden fixed inset-0 z-30 lg:hidden"
+          style={{ background: "var(--f-schleier)" }}
+          onClick={() => setOffen(false)}
+          aria-hidden
+        />
+      )}
+
+      {/*
+        Geschlossen wird die Leiste ausgeblendet, nicht nur zur Seite
+        geschoben. Eine verschobene Leiste zaehlt weiter zur Breite des
+        Dokuments und laesst die ganze Seite waagrecht scrollen.
+      */}
+      <nav
+        id="hauptnavigation"
+        className={`fixed inset-y-0 left-0 z-40 w-56 flex-col border-r lg:flex ${
+          offen ? "flex" : "hidden"
+        }`}
+        style={{
+          borderColor: "var(--linie)",
+          background: "var(--f-ebene)",
+          boxShadow: offen ? "var(--schatten-schwebend)" : undefined,
+          animation: offen ? "schubladeAuf .22s var(--ease-aus)" : undefined,
+        }}
+      >
+        <div
+          className="flex items-center gap-2.5 border-b px-3 py-2.5"
+          style={{
+            borderColor: "var(--linie)",
+            background: "var(--f-vertieft)",
+          }}
+        >
+          <span
+            className="flex h-7 w-7 shrink-0 items-center justify-center"
+            style={{
+              background: "var(--akzent)",
+              color: "var(--akzent-knopf-text)",
+              borderRadius: "var(--radius-feld)",
+            }}
+            aria-hidden
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="4.2" fill="currentColor" />
+              <path
+                d="M12 2.4v2.6M12 19v2.6M4.2 4.2l1.9 1.9M17.9 17.9l1.9 1.9M2.4 12H5M19 12h2.6M4.2 19.8l1.9-1.9M17.9 6.1l1.9-1.9"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+              />
+            </svg>
+          </span>
+          <span className="min-w-0">
+            <span
+              className="block truncate text-[0.8125rem] font-semibold tracking-[0.14em] uppercase"
+              style={{ color: "var(--t-stark)" }}
+            >
+              Ökovolt
+            </span>
+            <span className="t-mikro block truncate">{firma}</span>
+          </span>
+        </div>
+
+        <div className="flex-1 overflow-y-auto py-2">
+          {gruppen.map((gruppe) => (
+            <div key={gruppe.titel} className="mb-3 last:mb-0">
+              <p className="t-etikett mb-1 px-3">{gruppe.titel}</p>
+              <ul>
+                {gruppen.length > 0 &&
+                  gruppe.eintraege.map((eintrag) => {
+                    const aktiv = istAktiv(eintrag, pfad);
+                    const Zeichnung = ZEICHNUNG[eintrag.icon];
+
+                    return (
+                      <li key={eintrag.pfad}>
+                        <Link
+                          href={eintrag.pfad}
+                          onClick={() => setOffen(false)}
+                          aria-current={aktiv ? "page" : undefined}
+                          className="flex items-center gap-2.5 border-l-2 px-3 py-1.5 text-[0.8125rem] transition-colors duration-150"
+                          style={{
+                            color: aktiv ? "var(--t-stark)" : "var(--t-leise)",
+                            background: aktiv ? "var(--f-belegt)" : undefined,
+                            borderColor: aktiv ? "var(--akzent)" : "transparent",
+                            fontWeight: aktiv ? 600 : 450,
+                          }}
+                        >
+                          <span
+                            className="shrink-0"
+                            style={{
+                              color: aktiv ? "var(--akzent)" : "var(--t-zart)",
+                            }}
+                          >
+                            <Zeichnung groesse={15} />
+                          </span>
+                          <span className="truncate">{eintrag.label}</span>
+                        </Link>
+                      </li>
+                    );
+                  })}
+              </ul>
+            </div>
+          ))}
+        </div>
+
+        <div
+          className="border-t p-2"
+          style={{
+            borderColor: "var(--linie)",
+            background: "var(--f-vertieft)",
+          }}
+        >
+          {demo && (
+            <p
+              className="t-etikett mb-2 px-2 py-1 text-center"
+              style={{
+                background: "var(--akzent-flaeche)",
+                color: "var(--akzent-text)",
+                borderRadius: "var(--radius-feld)",
+              }}
+            >
+              Demonstrationsbetrieb
+            </p>
+          )}
+
+          <div className="flex items-center gap-2.5 px-1 py-1">
+            <span
+              className="flex h-7 w-7 shrink-0 items-center justify-center text-[0.625rem] font-semibold"
+              style={{
+                background: "var(--f-belegt)",
+                color: "var(--t-normal)",
+                borderRadius: "var(--radius-feld)",
+                fontFamily: "var(--font-mono)",
+              }}
+            >
+              {initialen(benutzer)}
+            </span>
+            <span className="min-w-0 flex-1">
+              <span
+                className="block truncate text-[0.8125rem] font-medium"
+                style={{ color: "var(--t-stark)" }}
+              >
+                {benutzer}
+              </span>
+              <span className="t-mikro block truncate">
+                {rollenBezeichnung}
+              </span>
+            </span>
+          </div>
+
+          <button
+            type="button"
+            onClick={abmelden}
+            disabled={meldetAb}
+            className="knopf knopf-leise mt-1 w-full justify-start"
+          >
+            {meldetAb ? "Wird abgemeldet …" : "Abmelden"}
+          </button>
+        </div>
+      </nav>
+    </>
+  );
+}
+
+function initialen(name: string): string {
+  const teile = name.trim().split(/\s+/);
+  if (teile.length >= 2) {
+    return (teile[0][0] + teile[teile.length - 1][0]).toUpperCase();
+  }
+  return name.slice(0, 2).toUpperCase();
+}

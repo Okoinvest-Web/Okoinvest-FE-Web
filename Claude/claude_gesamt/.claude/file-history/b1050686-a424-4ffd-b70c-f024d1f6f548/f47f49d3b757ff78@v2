@@ -1,0 +1,232 @@
+import io
+
+p = "src/lib/daten/befunde.ts"
+s = io.open(p, encoding="utf-8").read()
+
+# Alles ab "Tagesausbeuten über einen Zeitraum" ersetzen.
+anfang = s.index("/**\n * Tagesausbeuten über einen Zeitraum.")
+kopf = s[:anfang]
+
+neu = '''/* ------------------------------------------------------------------ */
+/* Ein Zeitraum, einmal gelesen                                        */
+/* ------------------------------------------------------------------ */
+
+export interface Tagesreihe {
+  /** Ortstag als "2026-09-13". */
+  tag: string;
+  punkte: Tagespunkt[];
+}
+
+/**
+ * Mehrere Tage in Viertelstunden, in einem Zug gelesen.
+ *
+ * Die Anlagenseite braucht denselben Zeitraum zweimal: einmal für die
+ * Ausbeute je Tag und einmal für die Befunde je Tag. Zweimal gelesen
+ * kostete das auf der größten Anlage eine halbe Sekunde zu viel - und
+ * eine halbe Sekunde ist bei einer Seite, die jemand fünfzigmal am
+ * Tag öffnet, keine Kleinigkeit.
+ *
+ * Gruppiert wird nach Ortstag, nicht nach UTC-Tag: Ein Messwert vom
+ * 1. Oktober um 00:30 in Wien steht als 30. September 22:30 in der
+ * Ablage und gehört trotzdem zum Oktober.
+ */
+export function ladeTagesreihen(anlageId: string, tage = 30): Tagesreihe[] {
+  const grenze = eine<{ ab: string }>(
+    `SELECT MIN(tag) AS ab FROM (
+       SELECT DISTINCT date(zeitpunkt, '+2 hours') AS tag
+         FROM sensor_messwert WHERE anlage_id = ?
+        ORDER BY tag DESC LIMIT ?
+     )`,
+    anlageId,
+    tage,
+  );
+
+  if (!grenze?.ab) return [];
+
+  const [von] = tagesgrenzen(grenze.ab);
+
+  const zeilen = alle<{
+    zeitpunkt: string;
+    einstrahlung: number | null;
+    modultemperatur: number | null;
+    leistung_kw: number | null;
+  }>(
+    `SELECT s.zeitpunkt,
+            s.einstrahlung_w_m2 AS einstrahlung,
+            s.modultemperatur,
+            g.leistung          AS leistung_kw
+       FROM sensor_messwert s
+       LEFT JOIN (
+         SELECT m.zeitpunkt, SUM(m.leistung_kw) AS leistung
+           FROM wr_messwert m
+           JOIN wechselrichter w ON w.id = m.wechselrichter_id
+          WHERE w.anlage_id = ? AND m.zeitpunkt >= ?
+          GROUP BY m.zeitpunkt
+       ) g ON g.zeitpunkt = s.zeitpunkt
+      WHERE s.anlage_id = ? AND s.zeitpunkt >= ?
+      ORDER BY s.zeitpunkt`,
+    anlageId,
+    von,
+    anlageId,
+    von,
+  );
+
+  const jeTag = new Map<string, Tagespunkt[]>();
+
+  for (const z of zeilen) {
+    const zeit = ausMessStempel(z.zeitpunkt);
+    const tag = tagesschluessel(zeit);
+
+    const liste = jeTag.get(tag) ?? [];
+    liste.push({
+      minute: zeit.getHours() * 60 + zeit.getMinutes(),
+      einstrahlung: z.einstrahlung ?? 0,
+      modultemperatur: z.modultemperatur ?? 25,
+      leistungKw: z.leistung_kw ?? 0,
+    });
+    jeTag.set(tag, liste);
+  }
+
+  return [...jeTag.entries()].map(([tag, punkte]) => ({ tag, punkte }));
+}
+
+/**
+ * Ausbeute je Tag aus bereits gelesenen Reihen.
+ *
+ * Die Ausbeute ist die Performance Ratio nach IEC 61724: erzeugte
+ * Energie geteilt durch das Produkt aus Nennleistung und
+ * Einstrahlungsstunden. Tage ohne nennenswerte Einstrahlung fallen
+ * heraus - eine PR aus einem Nebeltag ist eine Zahl ohne Aussage und
+ * verzerrt jeden Trend.
+ */
+export function ausbeutenAus(
+  reihen: Tagesreihe[],
+  kwp: number,
+): Tagesausbeute[] {
+  const stunden = 0.25;
+
+  return reihen
+    .map(({ tag, punkte }) => {
+      const einstrahlungKwh = punkte.reduce(
+        (summe, p) => summe + (p.einstrahlung / 1000) * stunden,
+        0,
+      );
+      const ertragKwh = punkte.reduce(
+        (summe, p) => summe + p.leistungKw * stunden,
+        0,
+      );
+
+      return { tag, einstrahlungKwh, ertragKwh };
+    })
+    .filter((t) => t.einstrahlungKwh > 1 && t.ertragKwh > 0)
+    .map((t) => ({ tag: t.tag, pr: t.ertragKwh / (kwp * t.einstrahlungKwh) }))
+    .sort((a, b) => a.tag.localeCompare(b.tag));
+}
+
+export interface Befundhaeufigkeit {
+  art: string;
+  titel: string;
+  /** An wie vielen der untersuchten Tage trat der Befund auf? */
+  tage: number;
+  /** Summe der Verluste über alle Tage, kWh. */
+  verlustKwh: number;
+  mangel: boolean;
+}
+
+/**
+ * Zählt, an wie vielen Tagen ein Befund auftrat.
+ *
+ * Ein einzelner Schattentag kostet zwanzig Kilowattstunden - das
+ * klingt nach nichts. Derselbe Schatten an dreißig Tagen kostet
+ * sechshundert, und im Jahr ein Vielfaches. Erst die Häufigkeit macht
+ * aus einer Beobachtung eine Entscheidungsgrundlage: Ein Baum, der
+ * jeden Morgen Geld kostet, wird geschnitten.
+ */
+export function haeufigkeitenAus(
+  reihen: Tagesreihe[],
+  kontext: Anlagenkontext,
+): { haeufigkeiten: Befundhaeufigkeit[]; untersuchteTage: number } {
+  const gesammelt = new Map<string, Befundhaeufigkeit>();
+
+  for (const { punkte } of reihen) {
+    for (const befund of untersucheTag(punkte, kontext)) {
+      if (befund.art === "unauffaellig") continue;
+
+      const eintrag = gesammelt.get(befund.art) ?? {
+        art: befund.art,
+        titel: befund.titel,
+        tage: 0,
+        verlustKwh: 0,
+        mangel: befund.mangel,
+      };
+
+      eintrag.tage += 1;
+      eintrag.verlustKwh += befund.verlustKwh;
+      gesammelt.set(befund.art, eintrag);
+    }
+  }
+
+  return {
+    haeufigkeiten: [...gesammelt.values()]
+      .map((h) => ({ ...h, verlustKwh: Number(h.verlustKwh.toFixed(0)) }))
+      .sort((a, b) => b.verlustKwh - a.verlustKwh),
+    untersuchteTage: reihen.length,
+  };
+}
+
+/**
+ * Arbeitspreis der Anlage in Cent je Kilowattstunde.
+ *
+ * Er bewertet einen Ertragsverlust: Eine fehlende Kilowattstunde ist
+ * genau dann den Arbeitspreis wert, wenn sie sonst selbst verbraucht
+ * worden wäre - und bei einem Gewerbebetrieb mit hohem Eigenverbrauch
+ * ist das der Regelfall. Die Einspeisevergütung wäre der untere Rand
+ * der Bewertung, der Arbeitspreis der obere.
+ */
+export function ladeArbeitspreis(anlageId: string): number | null {
+  const zeile = eine<{ arbeitspreis_ct_kwh: number | null }>(
+    "SELECT arbeitspreis_ct_kwh FROM netzanschluss WHERE anlage_id = ?",
+    anlageId,
+  );
+
+  return zeile?.arbeitspreis_ct_kwh ?? null;
+}
+'''
+
+io.open(p, "w", encoding="utf-8").write(kopf + neu)
+print("befunde.ts zusammengelegt")
+
+# --- Seite anpassen -------------------------------------------------
+p = "src/app/portal/anlagen/[name]/page.tsx"
+s = io.open(p, encoding="utf-8").read()
+s = s.replace('''import {
+  ladeAnlagenkontext,
+  ladeTagesausbeuten,
+  ladeTagespunkte,
+  zaehleBefunde,
+} from "@/lib/daten/befunde";''',
+'''import {
+  ausbeutenAus,
+  haeufigkeitenAus,
+  ladeAnlagenkontext,
+  ladeTagespunkte,
+  ladeTagesreihen,
+} from "@/lib/daten/befunde";''', 1)
+
+alt = '''  const verlaufsbefund = untersucheVerlauf(ladeTagesausbeuten(anlage.id, 30));
+  const haeufigkeit = zaehleBefunde(anlage.id, 30);
+  const arbeitspreis = ladeArbeitspreis(anlage.id) ?? undefined;'''
+neu = '''  // Ein Lesevorgang für beides: die Ausbeute je Tag und die Befunde
+  // je Tag brauchen denselben Zeitraum.
+  const reihen = ladeTagesreihen(anlage.id, 30);
+
+  const verlaufsbefund = untersucheVerlauf(
+    ausbeutenAus(reihen, anlage.leistung_kwp),
+  );
+  const haeufigkeit = kontext
+    ? haeufigkeitenAus(reihen, kontext)
+    : { haeufigkeiten: [], untersuchteTage: 0 };
+  const arbeitspreis = ladeArbeitspreis(anlage.id) ?? undefined;'''
+assert alt in s
+io.open(p, "w", encoding="utf-8").write(s.replace(alt, neu, 1))
+print("Seite angepasst")

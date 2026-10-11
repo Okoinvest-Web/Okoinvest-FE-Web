@@ -1,0 +1,64 @@
+<template>
+  <div>
+    <PageHeader title="Topologie" :subtitle="untertitel">
+      <template #actions>
+        <FormControl v-model="standort" type="select" :options="standortOptionen" />
+      </template>
+    </PageHeader>
+
+    <div class="p-6">
+      <p v-if="graph.loading" class="text-sm text-ink-gray-5">Wird geladen …</p>
+
+      <TopologyGraph v-else-if="graph.data" :graph="graph.data" @select="oeffne" />
+
+      <p class="mt-3 text-xs text-ink-gray-4">
+        Physische Sicht aus der dokumentierten Verkabelung. Die Ebene ist der Abstand vom Perimeter
+        im Kabelgraph; die Anordnung berechnet der Server, damit der Plan bei jedem Aufruf gleich
+        aussieht. Geräte ohne dokumentiertes Kabel stehen unten für sich. Logische Sicht und L3
+        folgen später.
+      </p>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
+import { FormControl, createResource } from 'frappe-ui'
+import PageHeader from '@/components/PageHeader.vue'
+import TopologyGraph from '@/components/TopologyGraph.vue'
+
+const router = useRouter()
+const standort = ref('')
+
+const graph = createResource({
+  url: 'netops.api.dcim.topology',
+  makeParams: () => ({ site: standort.value || null }),
+  auto: true,
+})
+
+const standorte = createResource({
+  url: 'frappe.client.get_list',
+  params: { doctype: 'Site', fields: ['name', 'site_name'], limit_page_length: 0 },
+  auto: true,
+})
+
+watch(standort, () => graph.fetch())
+
+const standortOptionen = computed(() => [
+  { label: 'Alle Standorte', value: '' },
+  ...(standorte.data || []).map((s) => ({ label: s.site_name, value: s.name })),
+])
+
+const untertitel = computed(() => {
+  const d = graph.data
+  if (!d) return ''
+  return d.nodes.length + ' Objekte · ' + d.edges.length + ' Verbindungen'
+})
+
+function oeffne(knoten) {
+  if (knoten.data?.kind === 'device') {
+    router.push('/devices/' + knoten.id)
+  }
+}
+</script>

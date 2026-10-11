@@ -1,0 +1,212 @@
+import "server-only";
+
+import { alle, eine } from "../db/verbindung.ts";
+import { ausTagesSchluessel } from "../datum.ts";
+import {
+  blitzschutzFristen,
+  planeWartung,
+  type Pruefstand,
+  type Umgebung,
+  type Wartungsposten,
+} from "../pv/wartung.ts";
+
+/**
+ * Prüftermine je Anlage.
+ *
+ * Die Fristen stehen im Katalog, die Termine in der Ablage, und die
+ * Rechnung führt der geprüfte Kern. Diese Datei setzt beides zusammen
+ * und übersetzt dabei die Datumsangaben: In der Ablage stehen
+ * Kalendertage als "JJJJ-MM-TT"; `new Date()` läse sie als UTC und
+ * verschöbe sie westlich von Greenwich um einen Tag.
+ */
+
+export interface Wartungsprofil {
+  anlage_id: string;
+  umgebung: Umgebung;
+  blitzschutzklasse: number | null;
+  kritisch: number;
+  bemerkung: string | null;
+}
+
+export interface WartungsterminZeile {
+  id: string;
+  anlage_id: string;
+  regel: string;
+  letzte_pruefung: string | null;
+  intervall_monate: number | null;
+  pruefer: string | null;
+  protokoll: string | null;
+  befund: string | null;
+  bemerkung: string | null;
+}
+
+export function ladeWartungsprofil(anlageId: string): Wartungsprofil | null {
+  return (
+    eine<Wartungsprofil>(
+      "SELECT * FROM wartungsprofil WHERE anlage_id = ?",
+      anlageId,
+    ) ?? null
+  );
+}
+
+export function ladeWartungstermine(anlageId: string): WartungsterminZeile[] {
+  return alle<WartungsterminZeile>(
+    "SELECT * FROM wartungstermin WHERE anlage_id = ? ORDER BY regel",
+    anlageId,
+  );
+}
+
+/**
+ * Der Wartungsplan einer Anlage.
+ *
+ * Die Schutzklasse des Blitzschutzsystems greift in zwei Fristen ein.
+ * Sie steht im Profil und nicht im Katalog, weil sie aus der
+ * Risikoanalyse des Gebäudes stammt - ein Katalog kann sie nicht
+ * kennen.
+ */
+export function ladeWartungsplan(
+  anlageId: string,
+  heute = new Date(),
+): { plan: Wartungsposten[]; profil: Wartungsprofil | null } {
+  const profil = ladeWartungsprofil(anlageId);
+  const zeilen = ladeWartungstermine(anlageId);
+
+  const blitz = blitzschutzFristen(
+    (profil?.blitzschutzklasse as 1 | 2 | 3 | 4) ?? 3,
+    profil?.kritisch === 1,
+  );
+
+  const staende: Pruefstand[] = zeilen.map((z) => {
+    const ausProfil =
+      z.regel === "blitzschutz-sicht"
+        ? blitz.sicht
+        : z.regel === "blitzschutz-umfassend"
+          ? blitz.umfassend
+          : undefined;
+
+    return {
+      schluessel: z.regel,
+      letzte: z.letzte_pruefung ? ausTagesSchluessel(z.letzte_pruefung) : null,
+      // Der Eintrag der Anlage schlägt das Profil, das Profil schlägt
+      // den Katalog.
+      ...(z.intervall_monate ?? ausProfil
+        ? { monate: z.intervall_monate ?? ausProfil }
+        : {}),
+      pruefer: z.pruefer ?? undefined,
+      protokoll: z.protokoll ?? undefined,
+    };
+  });
+
+  return {
+    plan: planeWartung(staende, heute, profil?.umgebung ?? "normal"),
+    profil,
+  };
+}
+
+export interface WartungsUeberblick {
+  anlage_id: string;
+  anlage: string;
+  ueberfaellig: number;
+  stehtAn: number;
+  unbekannt: number;
+  /** Der dringendste Posten, für die Anzeige. */
+  dringend: Wartungsposten | null;
+}
+
+/**
+ * Der Stand über alle Anlagen - für die Übersicht und die Aufgaben.
+ *
+ * Gerechnet wird je Anlage mit demselben Kern wie auf der
+ * Anlagenseite. Eine zweite, schnellere Rechnung in SQL wäre möglich
+ * und liefe irgendwann auseinander: Die Fristen hängen an Umgebung,
+ * Schutzklasse und Übersteuerung, und das alles noch einmal in SQL
+ * nachzubilden hieße, es zweimal richtig zu halten.
+ */
+export function ladeWartungsstand(heute = new Date()): WartungsUeberblick[] {
+  const anlagen = alle<{ id: string; bezeichnung: string }>(
+    "SELECT id, bezeichnung FROM anlage ORDER BY bezeichnung",
+  );
+
+  return anlagen.map((anlage) => {
+    const { plan } = ladeWartungsplan(anlage.id, heute);
+
+    const ueberfaellig = plan.filter((p) => p.befund.stand === "ueberfaellig");
+    const stehtAn = plan.filter((p) => p.befund.stand === "steht_an");
+    const unbekannt = plan.filter((p) => p.befund.stand === "unbekannt");
+
+    return {
+      anlage_id: anlage.id,
+      anlage: anlage.bezeichnung,
+      ueberfaellig: ueberfaellig.length,
+      stehtAn: stehtAn.length,
+      unbekannt: unbekannt.length,
+      dringend: plan[0] ?? null,
+    };
+  });
+}
+
+export interface Wartungsbedarf {
+  anlageId: string;
+  anlage: string;
+  posten: Wartungsposten;
+}
+
+/**
+ * Was über alle Anlagen hinweg ansteht.
+ *
+ * Nur, was einen Handgriff braucht: überfällig, in Sicht, oder ohne
+ * Nachweis. Was aktuell ist, steht auf der Anlagenseite - eine
+ * Übersicht, die zu vier Fünfteln aus "in Ordnung" besteht, wird nach
+ * zwei Wochen nicht mehr gelesen.
+ */
+export function ladeWartungsbedarf(heute = new Date()): {
+  bedarf: Wartungsbedarf[];
+  geprueft: number;
+  aktuell: number;
+} {
+  const anlagen = alle<{ id: string; bezeichnung: string }>(
+    "SELECT id, bezeichnung FROM anlage ORDER BY bezeichnung",
+  );
+
+  const bedarf: Wartungsbedarf[] = [];
+  let geprueft = 0;
+  let aktuell = 0;
+
+  for (const anlage of anlagen) {
+    const { plan } = ladeWartungsplan(anlage.id, heute);
+
+    for (const posten of plan) {
+      geprueft += 1;
+      if (posten.befund.stand === "erledigt") {
+        aktuell += 1;
+        continue;
+      }
+      bedarf.push({
+        anlageId: anlage.id,
+        anlage: anlage.bezeichnung,
+        posten,
+      });
+    }
+  }
+
+  // Die Reihenfolge steht bereits je Anlage fest; hier wird sie über
+  // die Anlagen hinweg zusammengeführt: zuerst Versäumtes, dann
+  // Unbekanntes, dann was in Sicht ist.
+  const rang: Record<string, number> = {
+    ueberfaellig: 0,
+    unbekannt: 1,
+    steht_an: 2,
+    erledigt: 3,
+  };
+
+  return {
+    bedarf: bedarf.sort(
+      (a, b) =>
+        rang[a.posten.befund.stand]! - rang[b.posten.befund.stand]! ||
+        a.posten.befund.tage - b.posten.befund.tage ||
+        a.anlage.localeCompare(b.anlage, "de-AT"),
+    ),
+    geprueft,
+    aktuell,
+  };
+}

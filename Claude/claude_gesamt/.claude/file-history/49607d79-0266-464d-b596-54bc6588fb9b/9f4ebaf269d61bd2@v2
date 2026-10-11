@@ -1,0 +1,278 @@
+/**
+ * Changes auswerten: was hängt, was kollidiert, was ist danach passiert.
+ *
+ * ## Was `change_list` nicht beantwortet
+ *
+ * Die Liste sagt, in welchem Zustand ein Antrag ist. Die Fragen, die im
+ * Betrieb anstehen, sind andere:
+ *
+ *   - **Was blockiert diesen Change?** Man erfährt es sonst erst beim
+ *     Versuch, ihn weiterzuschieben – und dann fehlt die Zeit.
+ *   - **Kollidieren zwei Fenster?** Zwei Arbeiten am selben Gerät zur
+ *     selben Stunde sind keine zwei Changes, sondern ein Ausfall.
+ *   - **Ist das Fenster verstrichen?** Ein genehmigter Change, dessen
+ *     Fenster vor zwei Wochen war, ist keine Planung mehr, sondern ein
+ *     offener Posten.
+ *   - **Was ist danach passiert?** Ein Change, nach dem keine Abweichung
+ *     gemeldet wurde, ist entweder sauber umgesetzt – oder es hat ihn
+ *     niemand gemacht.
+ *
+ * ## Der Rückbezug auf Drift
+ *
+ * `drift.js` fragt von der Abweichung aus: gab es einen Change? Hier
+ * läuft es andersherum: zu welchen Abweichungen hat dieser Change geführt.
+ * Beides zusammen macht aus zwei Listen einen Nachweis.
+ *
+ * Der interessante Fall ist der Change im Zustand „genehmigt", zu dem es
+ * **schon Abweichungen gibt** – dann wurde vor dem Fenster gearbeitet.
+ *
+ * ## Für die Portierung
+ *
+ * Diese Datei liest nur. Die Zustandswechsel bleiben in `change.js`, damit
+ * es genau eine Stelle gibt, an der die Regeln des Ablaufs stehen.
+ */
+import { table } from '../db.js'
+import { alterStunden, jetzt, parse } from '../zeit.js'
+import { ABLAUF } from './change.js'
+
+export const ZUSTAENDE = {
+  draft: 'Entwurf',
+  review: 'In Prüfung',
+  approved: 'Genehmigt',
+  implemented: 'Umgesetzt',
+  verified: 'Abgenommen',
+  rejected: 'Abgelehnt',
+}
+
+export const RISIKO = { high: 'Hoch', medium: 'Mittel', low: 'Niedrig' }
+
+/** Was im jeweiligen Zustand als Nächstes ansteht – und von wem. */
+const NAECHSTER_SCHRITT = {
+  draft: 'Antragsteller vervollständigt und schickt in die Prüfung',
+  review: 'Freigebende Person prüft und gibt frei',
+  approved: 'Umsetzung im Wartungsfenster',
+  implemented: 'Verifikation und Abnahme',
+  verified: null,
+  rejected: null,
+}
+
+/** Überlappen sich zwei Zeitfenster? */
+function ueberlappt(a, b) {
+  const a1 = parse(a.window_start)
+  const a2 = parse(a.window_end) || a1
+  const b1 = parse(b.window_start)
+  const b2 = parse(b.window_end) || b1
+  if (!a1 || !b1) return false
+  return a1 <= b2 && b1 <= a2
+}
+
+/**
+ * Das Board: jeder Change mit dem, was ihn aufhält.
+ */
+export function change_board({ state = null, tenant = null } = {}) {
+  const alle = table('Change Request').filter((c) => !tenant || c.tenant === tenant)
+  const befunde = table('Drift Finding')
+
+  const zeilen = alle
+    .filter((c) => !state || c.change_state === state)
+    .map((c) => {
+      const offen = !['verified', 'rejected'].includes(c.change_state)
+      const fensterStart = parse(c.window_start)
+      const fensterAlter = c.window_start ? alterStunden(c.window_start) : null
+
+      // --- Was fehlt noch, um weiterzukommen?
+      const blocker = []
+      if (!c.rollback_plan) blocker.push('Rückfallplan fehlt')
+      if (!c.verification) blocker.push('Verifikation nicht beschrieben')
+      if (!c.ticket) blocker.push('Kein Ticket verknüpft')
+      if (c.risk === 'high' && !c.window_start) blocker.push('Hohes Risiko ohne Wartungsfenster')
+      if (c.change_state === 'review' && c.risk === 'high' && !c.second_approver) {
+        blocker.push('Zweite Freigabe fehlt (hohes Risiko)')
+      }
+
+      // --- Fenster verstrichen?
+      const verstrichen =
+        offen && c.change_state === 'approved' && fensterAlter !== null && fensterAlter > 0
+      // --- Fenster läuft gerade?
+      const laeuft =
+        c.change_state === 'approved' &&
+        fensterStart &&
+        fensterAlter !== null &&
+        fensterAlter <= 0 &&
+        fensterAlter > -24
+
+      // --- Kollisionen am selben Objekt
+      const kollisionen = alle
+        .filter((x) => x.name !== c.name && x.target_object === c.target_object)
+        .filter((x) => ['approved', 'review'].includes(x.change_state) && offen)
+        .filter((x) => ueberlappt(c, x))
+        .map((x) => x.name)
+
+      // --- Was ist nach dem Change passiert?
+      const folgen = befunde
+        .filter((d) => d.object_name === c.target_object)
+        .filter((d) => {
+          if (!c.window_start) return false
+          const abstand = alterStunden(c.window_start) - alterStunden(d.detected)
+          return abstand >= 0 && abstand <= 24
+        })
+        .map((d) => d.name)
+
+      // --- Abweichungen VOR dem Fenster: dann wurde zu früh gearbeitet
+      const vorzeitigeFolgen = befunde
+        .filter((d) => d.object_name === c.target_object)
+        .filter((d) => {
+          if (!c.window_start || c.change_state !== 'approved') return false
+          // Die Abweichung ist jünger als der Fensterbeginn in der Zukunft.
+          return alterStunden(c.window_start) < 0 && alterStunden(d.detected) >= 0
+        })
+        .map((d) => d.name)
+
+      const gruende = []
+      if (vorzeitigeFolgen.length) {
+        gruende.push(
+          `Am Objekt weicht schon etwas ab, obwohl das Fenster erst ${String(c.window_start).slice(0, 16)} ` +
+            'beginnt – hier wurde vor der Freigabe gearbeitet',
+        )
+      }
+      if (kollisionen.length) {
+        gruende.push(
+          `Fenster überschneidet sich mit ${kollisionen.join(', ')} am selben Objekt – ` +
+            'zwei Arbeiten zur selben Stunde sind ein Ausfall, kein Zeitgewinn',
+        )
+      }
+      if (verstrichen) {
+        gruende.push(
+          `Fenster liegt ${Math.round(fensterAlter / 24)} Tage zurück und der Change ist noch nicht umgesetzt`,
+        )
+      }
+      if (c.perimeter) gruende.push('Perimeter – Umsetzung ausschließlich von Hand')
+      for (const b of blocker) gruende.push(b)
+      if (laeuft) gruende.push('Fenster läuft gerade')
+
+      const stufe = !offen
+        ? 'neutral'
+        : vorzeitigeFolgen.length || kollisionen.length
+          ? 'critical'
+          : verstrichen || blocker.length
+            ? 'warning'
+            : 'ok'
+
+      return {
+        ...c,
+        state_label: ZUSTAENDE[c.change_state] || c.change_state,
+        risk_label: RISIKO[c.risk] || c.risk,
+        open: offen,
+        blockers: blocker,
+        // Der Satz, der sonst im Kopf der zuständigen Person steht.
+        next_step: NAECHSTER_SCHRITT[c.change_state],
+        window_overdue: verstrichen,
+        window_running: laeuft,
+        window_age_hours: fensterAlter === null ? null : Math.round(fensterAlter),
+        collisions: kollisionen,
+        drift_after: folgen,
+        drift_before_window: vorzeitigeFolgen,
+        needs_second_approver: c.risk === 'high',
+        has_second_approver: !!c.second_approver,
+        reasons: gruende,
+        level: stufe,
+      }
+    })
+    .sort((a, b) => {
+      const rang = { critical: 4, warning: 3, ok: 2, neutral: 1 }
+      return (
+        rang[b.level] - rang[a.level] ||
+        ABLAUF.indexOf(a.change_state) - ABLAUF.indexOf(b.change_state) ||
+        String(b.requested_on).localeCompare(String(a.requested_on))
+      )
+    })
+
+  const offen = zeilen.filter((z) => z.open)
+
+  return {
+    summary: {
+      total: zeilen.length,
+      open: offen.length,
+      blocked: offen.filter((z) => z.blockers.length).length,
+      overdue: offen.filter((z) => z.window_overdue).length,
+      running: offen.filter((z) => z.window_running).length,
+      colliding: offen.filter((z) => z.collisions.length).length,
+      // Der schärfste Befund dieser Seite.
+      before_window: offen.filter((z) => z.drift_before_window.length).length,
+      awaiting_approval: offen.filter((z) => z.change_state === 'review').length,
+      level: offen.some((z) => z.level === 'critical')
+        ? 'critical'
+        : offen.some((z) => z.level === 'warning')
+          ? 'warning'
+          : 'ok',
+      note: offen.filter((z) => z.drift_before_window.length).length
+        ? 'An mindestens einem Objekt weicht schon etwas ab, bevor das genehmigte Fenster ' +
+          'begonnen hat. Freigabe eingeholt, Fenster ignoriert.'
+        : offen.filter((z) => z.collisions.length).length
+          ? 'Zwei Changes teilen sich ein Fenster am selben Objekt.'
+          : offen.filter((z) => z.blockers.length).length
+            ? `${offen.filter((z) => z.blockers.length).length} Anträge kommen ohne Nacharbeit nicht weiter.`
+            : 'Nichts hängt.',
+    },
+    rows: zeilen,
+  }
+}
+
+/**
+ * Der Kalender der nächsten Fenster.
+ *
+ * Damit sichtbar wird, was in derselben Nacht ansteht. Drei Changes in
+ * einem Fenster sind planbar; drei am selben Gerät sind es nicht.
+ */
+export function change_calendar({ days = 30, tenant = null } = {}) {
+  const board = change_board({ tenant })
+
+  const mitFenster = board.rows
+    .filter((c) => c.window_start && c.open)
+    .filter((c) => {
+      const alter = alterStunden(c.window_start)
+      // Rückwärts nur das Verstrichene, vorwärts den Planungszeitraum.
+      return alter > -days * 24 && alter < days * 24
+    })
+    .sort((a, b) => String(a.window_start).localeCompare(String(b.window_start)))
+
+  const nachTag = new Map()
+  for (const c of mitFenster) {
+    const tag = String(c.window_start).slice(0, 10)
+    if (!nachTag.has(tag)) nachTag.set(tag, [])
+    nachTag.get(tag).push(c)
+  }
+
+  return {
+    summary: {
+      windows: mitFenster.length,
+      days: nachTag.size,
+      // Ein Tag mit mehreren Changes braucht eine Reihenfolge.
+      busiest: [...nachTag.entries()].sort((a, b) => b[1].length - a[1].length)[0]?.[0] || null,
+      now: jetzt(),
+    },
+    rows: [...nachTag.entries()].map(([tag, liste]) => ({
+      day: tag,
+      count: liste.length,
+      objects: [...new Set(liste.map((c) => c.target_object))],
+      changes: liste.map((c) => ({
+        name: c.name,
+        title: c.title,
+        target_object: c.target_object,
+        window_start: c.window_start,
+        window_end: c.window_end,
+        risk: c.risk,
+        risk_label: c.risk_label,
+        state_label: c.state_label,
+        level: c.level,
+        collisions: c.collisions,
+      })),
+      // Mehrere Changes am selben Objekt in einer Nacht.
+      level: liste.some((c) => c.collisions.length)
+        ? 'critical'
+        : liste.length > 2
+          ? 'warning'
+          : 'ok',
+    })),
+  }
+}

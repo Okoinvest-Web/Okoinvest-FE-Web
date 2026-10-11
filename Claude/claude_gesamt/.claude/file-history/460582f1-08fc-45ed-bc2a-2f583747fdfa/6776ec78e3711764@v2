@@ -1,0 +1,302 @@
+import os, sys
+sys.path.insert(0, os.path.dirname(__file__))
+from dok import Doc
+
+# =====================================================================
+# 1. REAKTIONSPLAN
+# =====================================================================
+d = Doc("INTERN – VERTRAULICH – NUR GF, SPRECHER/IN, ANWALT", "Reaktionsplan: Was tun, wenn die Salzburg AG reagiert",
+        "Für jedes Szenario: wer entscheidet, bis wann, was sagen wir. Ausgedruckt neben das Telefon legen.")
+d.h1("Krisenteam und Erreichbarkeit")
+d.table(["Rolle", "Name", "Mobil", "Vertretung"], [
+    ["Entscheidung (Geschäftsführer)", "Andreas Wegscheider", "[Mobil]", "[Name]"],
+    ["Sprecher/in", "[Name]", "[Mobil]", "[Name]"],
+    ["Anwalt Österreich", "[Name, Kanzlei]", "[Mobil]", "[Name]"],
+    ["Anwalt Deutschland", "[Name, Kanzlei]", "[Mobil]", "[Name]"],
+    ["Website (Faktenseite ändern/offline)", "[Name]", "[Mobil]", "[Name]"],
+    ["Social Media", "[Name]", "[Mobil]", "[Name]"],
+])
+d.p("Regel: Das Krisenteam ist an Starttag und Folgetagen jeweils 7–22 Uhr erreichbar. Entscheidungen fallen in einer 15-minütigen Telefonkonferenz, nicht per Chat.", bold=True)
+d.h1("Übersicht der Szenarien")
+d.table(["Nr.", "Szenario", "Reaktion in", "Entscheidet"], [
+    ["A", "Die Salzburg AG oder die Eigentümer bieten Gespräche an", "1 Stunde", "GF + Anwalt"],
+    ["B", "Öffentliche Stellungnahme / Gegendarstellung der Salzburg AG", "3 Stunden", "Sprecher/in + Anwalt"],
+    ["C", "Abmahnung, Unterlassungsaufforderung, einstweilige Verfügung", "2 Stunden (Anwalt)", "Anwalt + GF"],
+    ["D", "Strafanzeige gegen Ökovolt oder den GF (z. B. üble Nachrede, Kreditschädigung)", "gleicher Tag", "Anwalt"],
+    ["E", "Angriff auf die wirtschaftliche Lage oder die Person des GF", "gleicher Tag", "GF + Sprecher/in"],
+    ["F", "Politische Reaktion (Landesregierung, Landtag, Gemeinderat, Parteien)", "gleicher Tag", "GF + Sprecher/in"],
+    ["G", "Medien berichten kaum", "nächste Welle laut Plan", "Sprecher/in"],
+    ["H", "Journalist hat vertrauliche Unterlagen (Gutachten, Aufnahmen, E-Mails)", "sofort", "Anwalt + Sprecher/in"],
+    ["I", "Mitarbeitende äußern sich öffentlich / Unterlagen tauchen auf", "gleicher Tag", "GF"],
+    ["J", "Welle von negativen Kommentaren (Shitstorm)", "2 Stunden", "Sprecher/in"],
+    ["K", "Fehler auf unserer Seite entdeckt", "sofort", "Sprecher/in + Anwalt"],
+])
+
+d.h1("A – Gesprächsangebot (das Ziel)")
+d.box("Das ist der Erfolgsfall. Jetzt nichts verderben.", [
+    "Ein Gesprächsangebot ist das, worauf die gesamte Kampagne hinarbeitet. Die größte Gefahr ist jetzt ein Triumphgefühl in der Öffentlichkeit."])
+d.nums([
+    "Innerhalb von 1 Stunde: alle geplanten Wellen, Posts und Mails stoppen (auch zeitgesteuerte Posts in Meta Business Suite / LinkedIn prüfen!).",
+    "Anwalt antwortet schriftlich und positiv innerhalb von 24 Stunden, mit Terminvorschlag innerhalb von 7 Tagen.",
+    "Keine Veröffentlichung, dass es Gespräche gibt, solange die Gegenseite nicht selbst darüber spricht.",
+    "Faktenseite bleibt online und unverändert. Löschen wirkt wie Schuldeingeständnis. Nur der Status bei „Fragen“ wird nicht mehr als „ausständig“ gezählt, sobald eine schriftliche Antwort vorliegt (dann: „Gespräche vereinbart“).",
+    "Stillhaltevereinbarung vorschlagen (Muster unten): beide Seiten verzichten für die Dauer der Gespräche auf neue Veröffentlichungen.",
+    "Keine Verbindung zwischen Kampagne und Geld herstellen. Die Kampagne wird nicht „gegen“ etwas eingestellt, sie pausiert, weil geredet wird.",
+])
+d.quote([
+    "Mögliche Antwort auf Anfrage von Medien, falls Gespräche bekannt werden:",
+    "„Wir begrüßen, dass es Gespräche gibt. Unsere Forderung bleibt dieselbe: eine unabhängige Prüfung durch einen neutralen Sachverständigen. Während der Gespräche äußern wir uns nicht zu Einzelheiten.“"])
+d.quote([
+    "Muster Stillhaltevereinbarung (über die Anwälte):",
+    "„Die Parteien führen ab [Datum] Gespräche über eine einvernehmliche Lösung einschließlich einer unabhängigen Prüfung. Für die Dauer der Gespräche, längstens bis [Datum], verzichten beide Parteien auf neue öffentliche Äußerungen zum Gegenstand der Gespräche. Bereits veröffentlichte Inhalte bleiben unberührt. Laufende gerichtliche Verfahren und Pflichten gegenüber Behörden bleiben unberührt.“"])
+
+d.h1("B – Stellungnahme oder Gegendarstellung der Salzburg AG")
+d.nums([
+    "Stellungnahme vollständig sichern (PDF, Screenshot, Uhrzeit).",
+    "Sprecher/in und Anwalt prüfen innerhalb von 2 Stunden: Welche Aussage ist falsch, welche richtig, welche bestätigt unsere Darstellung ungewollt?",
+    "Die Stellungnahme auf der Faktenseite im Abschnitt „Die Sicht der Salzburg AG“ verlinken, im Änderungsverlauf vermerken. Fairness macht glaubwürdig.",
+    "Antwort nur zu belegbaren Punkten, maximal drei Sätze, immer mit Beleg. Kein Schlagabtausch über Tage.",
+    "Förmliche Gegendarstellung (Österreich: § 9 Mediengesetz; Deutschland: Landespressegesetz, Bayern Art. 10 BayPrG) an ein Medium: nur der Anwalt entscheidet. Fristen sind kurz.",
+])
+d.quote(["„Wir haben die Stellungnahme der Salzburg AG gelesen und auf unserer Faktenseite verlinkt. Zu [Punkt] verweisen wir auf [Urteil/Dokument]. Unsere Forderung bleibt: eine unabhängige Prüfung durch einen neutralen Sachverständigen.“"])
+d.p("Wenn die Salzburg AG „Falschbehauptungen“ vorwirft, ohne sie zu nennen:", bold=True)
+d.quote(["„Wir laden die Salzburg AG ein, uns jeden Punkt zu nennen, den sie für falsch hält. Wir prüfen ihn und korrigieren ihn öffentlich, falls er nicht stimmt.“"])
+
+d.h1("C – Abmahnung, Unterlassung, einstweilige Verfügung")
+d.nums([
+    "Schreiben sofort an den Anwalt, Fristen notieren (oft nur 2–5 Tage, bei einstweiliger Verfügung auch ohne Anhörung).",
+    "Nicht öffentlich kommentieren, nicht „trotzdem“ weiter verbreiten.",
+    "Nur die konkret beanstandete Aussage vorläufig entfernen oder umformulieren, wenn der Anwalt dazu rät. Nicht die ganze Seite. Im Änderungsverlauf neutral vermerken („Formulierung angepasst“).",
+    "Alle Versionen der Faktenseite und aller Aussendungen mit Datum sichern (dieser Ordner ist die Dokumentation).",
+    "Belegmappe zur beanstandeten Aussage für den Anwalt zusammenstellen: Urteil, Firmenbuch, GISA, E-Mail, Gutachten.",
+    "Weitere Wellen bis zur Klärung aussetzen, wenn sie dieselbe Aussage enthalten.",
+])
+d.quote(["Falls Medien fragen: „Die Salzburg AG hat den Rechtsweg gewählt. Das respektieren wir. Zu laufenden Verfahren äußern wir uns nicht. Alle Belege liegen dem Gericht vor.“"])
+
+d.h1("D – Strafanzeige gegen Ökovolt oder den Geschäftsführer")
+d.bullets([
+    "Keine Aussage ohne Anwalt, auch nicht gegenüber Polizei oder Staatsanwaltschaft am Telefon.",
+    "Öffentlich nur: „Uns ist keine Anzeige bekannt“ oder, wenn bekannt: „Wir sehen dem gelassen entgegen. Jede unserer Aussagen ist belegt.“",
+    "Keine Gegenanzeige als Reaktion. Das wirkt wie Rache und schadet dem Vergleich.",
+])
+
+d.h1("E – Angriff auf die wirtschaftliche Lage oder die Person")
+d.bullets([
+    "Banken, Versicherer, wichtige Kunden am selben Tag persönlich anrufen (Brief B aus 7_Interne_Kommunikation).",
+    "Mit Zahlen antworten, nicht mit Gefühlen: Jahresabschluss 2024, Auftragsstand.",
+    "Persönliche Angriffe gegen den GF nicht persönlich beantworten. Die Sprecherin/der Sprecher antwortet sachlich.",
+    "Anwalt prüft Kreditschädigung (§ 1330 ABGB, § 824 BGB) – aber keine eigene Klage ohne Abstimmung mit der Vergleichsstrategie.",
+])
+
+d.h1("F – Politische Reaktion")
+d.bullets([
+    "Positiv aufgreifen, niemanden vorführen: „Wir begrüßen, dass sich [Stelle] mit dem Thema befasst.“",
+    "Für Anfragen von Abgeordneten: sachliches Informationspaket (Faktenseite als PDF, Urteile). Keine parteipolitische Nähe, alle Parteien gleich behandeln.",
+    "Die Landeshauptfrau, den Bürgermeister und die Energie AG nie als persönlich schuldig darstellen. Sie sind die Adressaten der goldenen Brücke.",
+])
+d.quote(["„Die Eigentümer haben es in der Hand, mit einer unabhängigen Prüfung für Klarheit zu sorgen. Das schützt auch die Salzburg AG.“"])
+
+d.h1("G – Kaum Berichterstattung")
+d.bullets([
+    "Nicht eskalieren. Nicht schärfer formulieren, nicht die Reserve-Wellen 6 oder 7 vorziehen.",
+    "Hintergrundgespräche nachfassen (Mailvorlage D), Fachmedien und Deutschland stärker nutzen.",
+    "Nächste Welle laut Kampagnenplan. Auch wenig Berichterstattung erzeugt Druck bei Eigentümern und Aufsichtsrat, weil sie wissen, was noch kommt.",
+])
+
+d.h1("H – Journalist hat vertrauliche Unterlagen")
+d.bullets([
+    "Weder bestätigen noch dementieren. Nicht fragen, woher.",
+    "Nie selbst Gutachten mit Veröffentlichungsverbot, Aufnahmen oder interne E-Mails weitergeben oder „zur Einordnung“ zeigen.",
+])
+d.quote(["„Zu Unterlagen aus laufenden Verfahren äußern wir uns nicht. Was wir öffentlich belegen können, finden Sie auf unserer Faktenseite.“"])
+
+d.h1("I – Mitarbeitende oder Unterlagen")
+d.bullets([
+    "Ruhig bleiben, das Gespräch suchen, keine arbeitsrechtlichen Schritte ohne Anwalt.",
+    "Hinweisgeber (auch ehemalige) sind nach dem HinweisgeberInnenschutzgesetz bzw. Hinweisgeberschutzgesetz geschützt. Niemanden unter Druck setzen.",
+])
+
+d.h1("J – Shitstorm")
+d.bullets([
+    "Leitfaden Kommentare anwenden (4_Social_Media). Eine sachliche Antwort, angepinnt, dann nicht weiter diskutieren.",
+    "Prüfen: Ist an der Kritik etwas dran? Dann korrigieren und sagen, dass wir korrigiert haben.",
+    "Werbeanzeigen für 48 Stunden pausieren.",
+])
+
+d.h1("K – Eigener Fehler")
+d.p("Ein Fehler, der schnell und offen korrigiert wird, stärkt die Glaubwürdigkeit. Ein Fehler, den die Gegenseite findet, zerstört sie.", bold=True)
+d.nums([
+    "Sofort korrigieren (Website, Social Media, Mail an Medien, die die Aussage übernommen haben).",
+    "Im Änderungsverlauf der Faktenseite vermerken: „Korrektur: [alt] → [neu]“.",
+    "Kurz und ohne Ausreden: „Uns ist ein Fehler unterlaufen. Richtig ist … Wir haben ihn korrigiert.“",
+])
+
+d.h1("Holding Statement (für jede unklare Lage)")
+d.quote(["„Wir nehmen das zur Kenntnis und prüfen es. Unsere Position ist unverändert: Wir fordern eine unabhängige Prüfung durch einen neutralen Sachverständigen. Alle Belege finden Sie unter [Link]. Wir melden uns heute bis [Uhrzeit] bei Ihnen.“"])
+d.save(r"3_Strategie_INTERN\INTERN_Reaktionsplan_Gegenreaktion.docx")
+
+# =====================================================================
+# 2. FREIGABE-CHECKLISTE ANWALT
+# =====================================================================
+d = Doc("VERTRAULICH – ANWALTLICHE PRÜFUNG", "Freigabe-Checkliste für den Anwalt",
+        "Alle Dokumente der Kampagne mit den Punkten, die aus unserer Sicht besonders geprüft werden sollten. "
+        "Bitte je Zeile Freigabe erteilen, mit Auflagen freigeben oder ablehnen.")
+d.box("Allgemeine Prüffragen (vorab)", [
+    "1. Kopplungsverbot: Gibt es irgendwo – Eigentümerschreiben vom 21.09.2026, Fristsetzung, Wellenplan, Mailvorlagen – eine Verknüpfung zwischen Veröffentlichung und Geld/Vergleich, die als Nötigung oder Erpressung (§§ 105, 144 StGB; § 240, § 253 dStGB) ausgelegt werden kann?",
+    "2. Medieninhaber und Impressum der Faktenseite: Offenlegung nach § 25 MedienG (Österreich), Impressum nach § 5 DDG / § 18 MStV (Deutschland). Wer ist Medieninhaber: die österreichische oder die deutsche Gesellschaft?",
+    "3. Vertretungsbefugnis: Darf die jeweilige Gesellschaft (bzw. der GF) angesichts der Gesellschafterstreitigkeiten und der ausgesetzten Firmenbucheintragung im eigenen Namen veröffentlichen? Braucht es einen Gesellschafterbeschluss?",
+    "4. Verschwiegenheit/Treuepflicht: Verstoßen Inhalte gegen Verschwiegenheitspflichten aus Syndikatsvertrag, Gesellschaftsvertrag oder Geschäftsführervertrag?",
+    "5. Laufende Verfahren: Könnte eine Veröffentlichung die Verfahren in München/Memmingen oder die Ermittlungen der WKStA beeinträchtigen (z. B. Zeugenbeeinflussung, Vorwegnahme)?",
+    "6. Veröffentlichungsverbote: Ist sicher, dass keine Inhalte aus Gutachten mit Veröffentlichungsverbot (Grant Thornton) oder aus Aufnahmen stammen?"], "FFF4E5")
+R = [
+    ["0", "Eigentümerschreiben 21.09.2026 (bereits versandt)", "Rückwirkend prüfen: Fristsetzung + Ankündigung der Öffentlichkeit = Kopplung?"],
+    ["1", "Welle 1 – Am selben Tag", "Zitat aus E-Mail vom 10.06.2021 (Briefschutz § 77 UrhG, Vertraulichkeit); Framing „Konkurrent am selben Tag“ als Werturteil zulässig?"],
+    ["1b", "Welle 1b – Eigentümer informiert", "Nennung der Adressaten (Landeshauptfrau, Bürgermeister, Energie AG); Formulierung zu Gutachten und Forensik (korrigiert am 27.09.)"],
+    ["2", "Welle 2 – Generalversammlung", "„treuwidrig“ korrekt zitiert und Kontext Eilverfahren klar? Aussetzung Firmenbuch – Beschluss vorhanden? WKStA „auf gerichtlichen Auftrag“ korrekt?"],
+    ["2b", "Welle 2b – Forensik", "HOCH: Person nicht genannt, aber für Insider erkennbar (Identifizierbarkeit, Unschuldsvermutung, Kreditschädigung). Datenschutz: Verwertung forensischer Daten."],
+    ["3", "Welle 3 – Gewerbeschein", "Daten aus GISA korrekt, „151 Tage“ richtig berechnet; Subunternehmer-Einwand berücksichtigt?"],
+    ["4", "Welle 4 – Geld / Rechner", "Verlustzahlen one2zero aus Firmenbuch belegt? „Vermögensnachteil“-Kasten: kein impliziter Untreuevorwurf?"],
+    ["5", "Welle 5 – Eigentümer schweigen", "„schweigen“ zulässig, solange keine Antwort vorliegt; 6 Standards für eine Prüfung"],
+    ["6", "RESERVE Welle 6 – Hinweisgeber", "HOCH: schriftliche Zustimmungen der Betroffenen und des Betriebsrats; HinweisgeberInnenschutzgesetz"],
+    ["7", "RESERVE Welle 7 – Prüfung abgelehnt", "SEHR HOCH: stützt sich auf Zeugenaussagen; nur nach gesonderter Prüfung"],
+    ["DE1–DE4", "Pressemitteilungen Deutschland", "§ 4 Nr. 2 UWG (Anschwärzung), § 824 BGB; Aktenzeichen und Zitate korrekt"],
+    ["DE5a–c", "Terminhinweis / Vorlagen Urteil", "Termin 12.12.2026 ist ein Samstag – prüfen; Vorlagen erst nach Urteil freigeben"],
+    ["W", "Faktenseite fakten.html (+ oekovolt.at-Fassung)", "E-Mail-Screenshots (Schwärzungen ausreichend? Briefschutz), ORF-Videos (Nutzungsrecht), „Antwort ausständig“-Zähler, Zeitstrahl, FAQ, Impressum"],
+    ["S", "Social-Media-Texte und 72 Grafiken", "Verkürzungen in Grafiken (z. B. „3 : 0“, „Kopiert. Eingeladen. Angestellt.“) noch zutreffend?"],
+    ["M", "Mailvorlagen Journalisten, Verteiler", "Keine Zusagen von Exklusivität mit Unterlagen aus Verfahren"],
+    ["K", "Briefe Kunden, Banken, Partner", "Keine Anschwärzung; wirtschaftliche Angaben richtig"],
+    ["I", "Mitarbeiterinfo", "Arbeitsrecht: Hinweise zu Social Media und Verschwiegenheit zulässig formuliert"],
+]
+d.table(["Nr.", "Dokument", "Besonders prüfen", "Frei", "Mit Auflage", "Nein"], [r + ["☐", "☐", "☐"] for r in R], [1.2, 4.2, 7.6, 1.2, 1.6, 1.2])
+d.h2("Auflagen und Anmerkungen des Anwalts")
+for _ in range(6):
+    d.p("_____________________________________________________________________________________________")
+d.p("Freigabe erteilt am [Datum] durch [Name, Kanzlei]  ·  Unterschrift: ______________________")
+d.save(r"3_Strategie_INTERN\INTERN_Anwalt_Freigabe_Checkliste.docx")
+
+# =====================================================================
+# 3. SPRECHERTRAINING
+# =====================================================================
+d = Doc("INTERN", "Sprechertraining und Probeinterview",
+        "Zwei Stunden, am besten mit einer Person, die die Rolle der kritischen Journalistin übernimmt, und mit Handy-Kamera. "
+        "Ergänzt das Dokument INTERN_Antworten_Journalistenfragen.")
+d.h1("Die drei Kernbotschaften (auswendig)")
+d.nums([
+    "„Partner auf dem Papier, Konkurrent am selben Tag: Am 18. Oktober 2021 hat sich die Salzburg AG an uns beteiligt, um Wettbewerb zu vermeiden, und am selben Tag die eigene Konkurrenz gegründet.“",
+    "„Das Oberlandesgericht München hat in drei Verfahren gegen die Salzburg AG entschieden und ihr Vorgehen als treuwidrig bezeichnet.“",
+    "„Wir wollen keine Entschuldigung. Wir wollen eine unabhängige Prüfung durch einen neutralen Sachverständigen.“",
+])
+d.p("Jede Antwort endet, wenn möglich, bei Botschaft 3. Das ist die goldene Brücke für die Eigentümer.", italic=True)
+d.h1("Technik")
+d.table(["Technik", "So geht es", "Beispiel"], [
+    ["Brücke", "Frage kurz beantworten, dann zur Botschaft", "„Das entscheiden die Gerichte. Entscheidend ist aber …“"],
+    ["Beleg statt Behauptung", "Jede Aussage mit Quelle", "„Das steht im Beschluss des Oberlandesgerichts vom 18. Juni.“"],
+    ["Nicht wiederholen", "Negative Wörter der Frage nicht aufgreifen", "Frage „Ist das Rache?“ – nicht: „Das ist keine Rache“, sondern: „Es geht um Fakten, die ein Gericht festgestellt hat.“"],
+    ["20 Sekunden", "TV-/Radioantworten kurz halten; ein Gedanke pro Antwort", "Satzlänge: max. 15 Wörter"],
+    ["Pause", "Bei Überrumpelung erst atmen, dann antworten", "„Gute Frage. …“ (2 Sekunden Denkzeit)"],
+    ["Grenze", "Klar sagen, was man nicht sagt, und warum", "„Zu laufenden Verfahren äußere ich mich nicht.“"],
+])
+d.h1("Ablauf des Trainings")
+d.table(["Runde", "Dauer", "Inhalt"], [
+    ["1 – Freundlich", "20 Min.", "Regionalzeitung, offene Fragen. Ziel: Kernbotschaften flüssig und in eigenen Worten."],
+    ["2 – Kritisch", "30 Min.", "Wirtschaftsredaktion, harte Nachfragen (Liste unten, Fragen 1–12)."],
+    ["3 – Feindlich", "20 Min.", "Unterbrechen, Suggestivfragen, Schweigen aushalten (Fragen 13–20)."],
+    ["4 – TV-Statement", "15 Min.", "Stehend vor der Kamera, 3 × 20-Sekunden-Antwort; Aufnahme ansehen."],
+    ["5 – Telefonüberfall", "10 Min.", "Unangekündigter Anruf „nur kurz eine Frage“. Ziel: freundlich Termin vereinbaren statt spontan antworten."],
+    ["Auswertung", "25 Min.", "Video gemeinsam ansehen, Bewertungsbogen ausfüllen."],
+])
+d.h1("Harte Fragen mit Antwortlinie")
+Q = [
+    ("Sie wollen doch nur Geld. Wie hoch ist Ihre Forderung?", "Über Ansprüche reden unsere Anwälte, nicht die Öffentlichkeit. Öffentlich fordern wir eine unabhängige Prüfung."),
+    ("Ist Ihre Kampagne nicht ein Druckmittel für einen Vergleich?", "Nein. Wir veröffentlichen Gerichtsentscheidungen. Die gelten, egal ob es einen Vergleich gibt oder nicht."),
+    ("Sie haben der Salzburg AG selbst 49 % verkauft. Selbst schuld?", "Wir haben einer Partnerschaft vertraut, die ausdrücklich Wettbewerb vermeiden sollte. Am selben Tag wurde die Konkurrenz gegründet. Das konnten wir nicht wissen."),
+    ("Warum jetzt, kurz vor der Hauptverhandlung?", "Weil die Eigentümer seit 21. September alle Unterlagen haben und nicht geantwortet haben."),
+    ("Die Salzburg AG sagt, Ihre Darstellung ist falsch.", "Dann soll sie sagen, welcher Punkt. Jede Aussage auf unserer Seite ist belegt. Wir korrigieren jeden Fehler öffentlich."),
+    ("Wer ist verantwortlich? Nennen Sie Namen.", "Es geht um Entscheidungen eines Unternehmens. Für alle Personen gilt die Unschuldsvermutung."),
+    ("Ihr eigener Geschäftsführer hat Daten kopiert. Warum haben Sie das nicht bemerkt?", "Das haben wir bemerkt, und zwei gerichtlich zertifizierte Forensiker haben es festgestellt. Zu Personen und laufenden Ermittlungen äußere ich mich nicht."),
+    ("Ist die Landeshauptfrau verantwortlich?", "Die Eigentümer haben es in der Hand, für Klarheit zu sorgen. Wir laden sie ein, eine unabhängige Prüfung zu veranlassen."),
+    ("Zahlen die Salzburger Stromkunden für Ihren Streit?", "Die Salzburg AG gehört den Salzburgerinnen und Salzburgern. Deshalb braucht es eine unabhängige Prüfung. Sie schützt auch die Kunden."),
+    ("Geht es Ökovolt wirtschaftlich schlecht?", "[Nur wenn zutreffend:] Nein. Ökovolt hat 2024 einen Gewinn von 1,14 Millionen Euro erzielt."),
+    ("Die one2zero hatte doch Subunternehmer mit Gewerbeschein.", "Entscheidend ist: Das Großprojekt wurde angekündigt, als die one2zero keine einzige Gewerbeberechtigung hatte. Das zeigt das Gewerberegister."),
+    ("Das OLG hat nur im Eilverfahren entschieden, oder?", "Ja, und in allen drei Verfahren gegen die Salzburg AG. Die Hauptverhandlung folgt in Memmingen."),
+    ("Haben Sie Gespräche heimlich aufgenommen?", "Zu Beweismitteln in laufenden Verfahren äußere ich mich nicht. (Nicht bestätigen, nicht dementieren. Nicht lügen.)"),
+    ("Sie verbreiten Verschwörungstheorien über einen Landeskonzern.", "Ich verbreite Gerichtsentscheidungen. Die können Sie auf unserer Seite nachlesen."),
+    ("Sind Sie nicht einfach ein schlechter Verlierer, der den Auftrag nicht bekommen hat?", "Wir haben vor Gericht gewonnen, nicht verloren. Es geht um eine schriftliche Zusage, die nicht eingehalten wurde."),
+    ("Werden Sie auch gegen einzelne Vorstände vorgehen?", "Unser Ziel ist eine unabhängige Prüfung, nicht Köpfe."),
+    ("Was ist, wenn die Prüfung gegen Sie ausfällt?", "Dann akzeptieren wir das. Genau darum geht es bei einer unabhängigen Prüfung."),
+    ("Stimmt es, dass die WKStA gegen Vorstände ermittelt?", "Die WKStA hat auf gerichtlichen Auftrag Ermittlungen eingeleitet. Gegen wen, dazu äußere ich mich nicht. Es gilt die Unschuldsvermutung."),
+    ("(Schweigen des Journalisten nach Ihrer Antwort)", "Nicht weiterreden. Aushalten. Oder: Kernbotschaft 3 wiederholen."),
+    ("„Unter uns, ganz inoffiziell: Was ist da wirklich los?“", "Es gibt kein „inoffiziell“. „Alles, was ich sagen kann, sage ich Ihnen auch offiziell.“"),
+]
+d.table(["Nr.", "Frage", "Antwortlinie"], [[str(i + 1), q, a] for i, (q, a) in enumerate(Q)], [1, 7, 9])
+d.h1("Nie sagen")
+d.bullets([
+    "„Betrug“, „Spionage“, „Diebstahl“, „Lüge“, „kriminell“, „Korruption“, „Skandal der 2. Republik“.",
+    "Namen von Mitarbeitenden, Geschäftsführern oder Vorständen der Salzburg AG oder der one2zero.",
+    "Beträge von Forderungen, Vergleichsangeboten oder Schäden.",
+    "„Kein Kommentar“ (klingt nach Verstecken) – besser: „Dazu äußere ich mich wegen des laufenden Verfahrens nicht.“",
+    "Vermutungen: „Ich glaube“, „wahrscheinlich“, „man hört“.",
+    "Etwas über Aufnahmen, das Grant-Thornton-Gutachten oder den Inhalt von Zeugenaussagen.",
+])
+d.h1("Bewertungsbogen")
+d.table(["Kriterium", "1–5", "Notiz"], [
+    ["Kernbotschaften in jeder Runde untergebracht", "", ""],
+    ["Antworten kurz (TV: unter 20 Sekunden)", "", ""],
+    ["Keine Namen, keine verbotenen Wörter", "", ""],
+    ["Ruhig bei Provokation, keine Rechtfertigung", "", ""],
+    ["Belege genannt (Gericht, Datum, Register)", "", ""],
+    ["Körpersprache: Blick, Hände, Sitzen/Stehen", "", ""],
+    ["Telefonüberfall: Termin statt Spontanantwort", "", ""],
+])
+d.save(r"3_Strategie_INTERN\INTERN_Sprechertraining_Probeinterview.docx")
+
+# =====================================================================
+# 4. BEWEISNOTIZ ANWALT
+# =====================================================================
+d = Doc("STRENG VERTRAULICH – NUR FÜR DEN ANWALT – NICHT VERÖFFENTLICHEN", "Beweisnotiz: E-Mail vom 27.11.2024 und zeitliche Abfolge",
+        "Arbeitsgrundlage für RA [Name] zur Verwendung gegenüber WKStA, StA Memmingen und im Hauptverfahren. "
+        "Stand der Auswertung: [Datum]. Rot markierte Stellen bitte aus dem Forensikbericht ergänzen.")
+d.h1("1. Zweck")
+d.p("Die Notiz fasst ein aus unserer Sicht zentrales Indiz zusammen: Am 27.11.2024 übermittelte der damalige, von der Salzburg AG entsandte Geschäftsführer der Ökovolt, Herr Schiefer, eine Hofer-Kalkulationsdatei an Herrn Wiener, Geschäftsführer der one2zero. Fünf Tage später wurde der Controlling-Ordner kopiert. Die Notiz soll dem Anwalt helfen, dieses Indiz im Zusammenhang darzustellen, und benennt offen die Schwächen.")
+d.h1("2. Zeitliche Abfolge")
+d.table(["Datum", "Ereignis", "Beleg", "Belegstärke"], [
+    ["10.06.2021", "E-Mail der Salzburg-AG-Seite: „vereinbartes Ziel … Ökovolt als Errichtungspartner bevorzugt einzusetzen“", "E-Mail (liegt vor)", "hoch"],
+    ["18.10.2021", "Beteiligung der Salzburg AG an Ökovolt (Ziel: Vermeidung von Wettbewerbssituationen) und am selben Tag Gründung der one2zero; Herr Wiener (zuvor Strategieabteilung Salzburg AG) GF der one2zero seit Gründung", "Syndikatsvertrag, Firmenbuch", "hoch"],
+    ["30.06.2022", "Ankündigung des Großprojekts (Hofer) durch one2zero", "[Quelle]", "hoch"],
+    ["28.11.2022", "Erste Gewerbeberechtigung der one2zero", "GISA 35453048", "hoch"],
+    ["09.01.2023", "Herr Schiefer wird Geschäftsführer der Ökovolt (entsandt von der Salzburg AG)", "Firmenbuch", "hoch"],
+    ["02.08.2023", "Gewerbeberechtigung Elektrotechnik der one2zero", "GISA 35939931", "hoch"],
+    ["27.11.2024", "E-Mail Schiefer → Wiener mit Anhang „Hofer 120 Kwp Muster.xlsx“; Betreff: [Betreff laut Forensikbericht]; Wortlaut: [Wortlaut]", "Forensikbericht [Fundstelle, Seite]", "hoch (forensisch belegt)"],
+    ["02.12.2024", "Kopie des Controlling-Ordners (ca. 1.150 Dateien); am selben Tag Wechsel zur Salzburg-AG-Tochter [one2zero – bitte anhand Bericht bestätigen] eingeleitet; E-Mail Gradl", "Forensikbericht [Fundstelle]", "hoch"],
+    ["29.01.2025", "Telefonat Schiefer – Gradl", "[Beleg]", "[prüfen]"],
+    ["03.02.2025", "Ausscheiden Schiefer als GF der Ökovolt", "Firmenbuch", "hoch"],
+    ["2025", "Anstellung bzw. Beratertätigkeit bei der Salzburg AG", "[Beleg]", "mittel"],
+    ["18.06.2026", "Beschluss OLG München 14 U 3748/25: Vorgehen „treuwidrig“; forensische Befunde als glaubhaft gewürdigt", "Beschluss", "hoch"],
+])
+d.h1("3. Das Kernargument")
+d.box("„Wozu braucht der Auftragnehmer die Kalkulation des Konkurrenten?“", [
+    "Die one2zero hatte den Hofer-Auftrag zu diesem Zeitpunkt bereits und wickelte ihn ab. Eine Hofer-Kalkulation der Ökovolt hatte für sie nur dann einen Wert, wenn sie für Folgeaufträge, Nachkalkulationen oder Angebote gegenüber Dritten Know-how der Ökovolt nutzen wollte.",
+    "Die Übermittlung erfolgte durch den Geschäftsführer der Ökovolt an den Geschäftsführer eines Konkurrenten, fünf Tage vor der Kopie des Controlling-Ordners und vor dem Wechsel in den Konzern der Salzburg AG.",
+    "Die Abfolge (Datei an späteren Konzern → Datenkopie → Wechsel → Anstellung) stützt die Feststellungen des OLG München."])
+d.h1("4. Schwächen und Gegenargumente (offen benennen)")
+d.table(["Einwand der Gegenseite", "Einschätzung", "Mögliche Antwort"], [
+    ["„Nur ein Muster ohne Preise“ (vgl. Bericht April)", "ernst zu nehmen", "Struktur, Mengen, Positionen und Kalkulationslogik sind ebenfalls Geschäftsgeheimnis; Sachverständigen-Stellungnahme zum Wert der Datei einholen"],
+    ["„Übliche Abstimmung zwischen Konzernunternehmen“", "mittel", "Ökovolt ist kein Konzernunternehmen der Salzburg AG (49 %); Treuepflicht des GF gegenüber Ökovolt"],
+    ["„Herr Wiener hat die Datei nie geöffnet/verwendet“", "offen", "Sicherstellung/Auswertung bei one2zero beantragen"],
+    ["Dass Herr Wiener Ökovolt 2021 zum Verzicht auf die Hofer-Ausschreibung bewogen habe, und die „20 Eskalationspfade“ (Anlage ./42)", "NICHT belegt", "Nicht als Tatsache vortragen; nur als Zeugenaussage, wenn Zeugen vorhanden"],
+])
+d.h1("5. Vorschläge für das weitere Vorgehen (Entscheidung des Anwalts)")
+d.nums([
+    "Vorlage der E-Mail vom 27.11.2024 samt Fundstelle an die WKStA (Hofer-Komplex) und an die StA Memmingen, mit ausdrücklichem Hinweis auf die zeitliche Nähe zum 02.12.2024.",
+    "Antrag auf Vernehmung von Herrn Schiefer, Herrn Wiener und Herrn Gradl als Zeugen bzw. Beschuldigte.",
+    "Antrag auf Sicherstellung und Auswertung des E-Mail-Postfachs von Herrn Wiener/one2zero zum Verbleib der Datei.",
+    "Prüfung zivilrechtlicher Ansprüche wegen Verletzung von Geschäftsgeheimnissen (§§ 26a ff. UWG Österreich; GeschGehG Deutschland) gegen one2zero – auch als Verhandlungsposition im Vergleich.",
+    "Im Vergleichsgespräch: vertraulich vorlegen, nicht öffentlich.",
+])
+d.h1("6. Was ausdrücklich NICHT geschieht")
+d.bullets([
+    "Keine Veröffentlichung der E-Mail, der Namen oder der Abfolge mit Personenbezug (Unschuldsvermutung, Identitätsschutz, Zeugen würden verloren gehen).",
+    "Keine Verwendung von Inhalten des Grant-Thornton-Berichts außerhalb der Verfahren (Veröffentlichungsverbot).",
+    "Aufnahmen von Gesprächen: Verwertbarkeit und Strafbarkeit (§ 120 StGB) vor jeder Verwendung durch den Anwalt prüfen lassen.",
+])
+d.save(r"3_Strategie_INTERN\VERTRAULICH_Beweisnotiz_Anwalt_27-11-2024.docx")

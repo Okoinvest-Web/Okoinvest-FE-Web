@@ -1,0 +1,99 @@
+import { expect, test, type Page } from '@playwright/test'
+
+/**
+ * Offline-Betrieb gegen den **Produktionsbuild** (AK-04, NFA-010, NFA-015).
+ *
+ * Diese Tests laufen bewusst nicht gegen den Dev-Server: Dort gibt es keinen
+ * Precache und keine Trennung zwischen `/assets/...` und dem Wurzelpfad. Genau
+ * in dieser Aufteilung steckt aber die Fehlerquelle — ein Service Worker
+ * kontrolliert nur Seiten unterhalb seines eigenen Pfades.
+ */
+
+/**
+ * Wartet, bis der Worker fertig aktiviert ist, und lädt dann neu.
+ *
+ * `navigator.serviceWorker.ready` ist hier das richtige Mittel: Es löst erst
+ * auf, wenn ein *aktivierter* Worker für diesen Geltungsbereich bereitsteht.
+ * Ein Client, der während `activating` lädt, wird nie übernommen und bliebe
+ * für seine gesamte Lebensdauer unkontrolliert.
+ *
+ * (`waitForFunction` mit einer async-Prüffunktion taugt dafür nicht — das
+ * zurückgegebene Promise gilt als wahr, die Bedingung wäre sofort erfüllt.)
+ */
+async function serviceWorkerUebernimmt(page: Page) {
+  await page.evaluate(() => navigator.serviceWorker.ready.then(() => undefined))
+  await page.reload()
+  await page.waitForFunction(() => navigator.serviceWorker.controller !== null, null, {
+    timeout: 30_000,
+  })
+  await expect(page.getByText('Baudoku wird geladen')).toBeHidden({ timeout: 20_000 })
+}
+
+test.describe('Offline (Produktionsbuild)', () => {
+  test('Service Worker übernimmt die App unter /baudoku', async ({ page }) => {
+    await page.goto('/baudoku?demo=1')
+    await serviceWorkerUebernimmt(page)
+
+    // Der Geltungsbereich muss die App umfassen — sonst ist der Worker wirkungslos.
+    const bereich = await page.evaluate(async () => {
+      const registrierung = await navigator.serviceWorker.getRegistration()
+      return registrierung?.scope ?? ''
+    })
+    expect(bereich).toContain('/baudoku')
+  })
+
+  test('App startet ohne Netz aus dem Cache', async ({ page, context }) => {
+    await page.goto('/baudoku?demo=1')
+    await serviceWorkerUebernimmt(page)
+
+    await context.setOffline(true)
+    await page.reload()
+
+    // Die App-Shell muss aus dem Precache kommen, nicht aus dem Netz.
+    await expect(page.getByText('Baudoku wird geladen')).toBeHidden({ timeout: 20_000 })
+    await expect(page.getByRole('heading', { name: /Servus/ })).toBeVisible()
+
+    await context.setOffline(false)
+  })
+
+  test('erfasst ohne Netz und kennzeichnet den Zustand', async ({ page, context }) => {
+    await page.goto('/baudoku/maengel/neu?demo=1')
+    await serviceWorkerUebernimmt(page)
+
+    await context.setOffline(true)
+    await page.reload()
+    await expect(page.getByText('Baudoku wird geladen')).toBeHidden({ timeout: 20_000 })
+
+    await page.getByRole('button', { name: /Anlage wählen/ }).click()
+    await page.getByRole('button', { name: /Wohnpark Ostermiething/ }).click()
+    await page.getByPlaceholder('Kurz und eindeutig').fill('Offline erfasster Mangel')
+    await page.getByPlaceholder('Was wurde festgestellt').fill('Ohne Netzverbindung angelegt.')
+    await page.getByRole('button', { name: 'Speichern' }).click()
+
+    await expect(page).toHaveURL(/\/maengel/)
+    await expect(page.getByText('Offline erfasster Mangel')).toBeVisible()
+    await expect(page.getByText('nur lokal').first()).toBeVisible()
+
+    await context.setOffline(false)
+  })
+
+  test('Erfasstes übersteht ein Neuladen ohne Netz', async ({ page, context }) => {
+    await page.goto('/baudoku/maengel/neu?demo=1')
+    await serviceWorkerUebernimmt(page)
+
+    await page.getByRole('button', { name: /Anlage wählen/ }).click()
+    await page.getByRole('button', { name: /Aumayr GmbH Dachanlage/ }).click()
+    await page.getByPlaceholder('Kurz und eindeutig').fill('Bleibt erhalten')
+    await page.getByPlaceholder('Was wurde festgestellt').fill('Test auf Persistenz.')
+    await page.getByRole('button', { name: 'Speichern' }).click()
+    await expect(page.getByText('Bleibt erhalten')).toBeVisible()
+
+    // Verbindungsabbruch mitten in der Arbeit — nichts darf verloren gehen
+    await context.setOffline(true)
+    await page.reload()
+    await expect(page.getByText('Baudoku wird geladen')).toBeHidden({ timeout: 20_000 })
+    await expect(page.getByText('Bleibt erhalten')).toBeVisible()
+
+    await context.setOffline(false)
+  })
+})

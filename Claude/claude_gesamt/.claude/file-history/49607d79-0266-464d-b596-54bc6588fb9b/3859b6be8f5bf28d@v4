@@ -1,0 +1,173 @@
+/**
+ * In-Memory-Datenbank, die das Verhalten von Frappe-Dokumenten nachbildet.
+ *
+ * Sie kennt DocTypes, Dokumente mit den Frappe-Standardfeldern
+ * (name, owner, creation, modified, ...) und speichert alles im localStorage.
+ *
+ * CLAUDE.md Abschnitt 3 verlangt an jedem DocType die Felder `tenant`,
+ * `status` und `description`. Das erzwingt defineDoctype() strukturell -
+ * ein DocType ohne diese Felder laesst sich hier gar nicht definieren.
+ */
+
+import { jetzt } from './zeit.js'
+
+const STORAGE_KEY = 'netops:mock-db'
+
+// Hochzaehlen, wenn sich die Seed-Daten aendern - dann verwirft der Browser
+// beim naechsten Laden den alten Stand.
+const SEED_VERSION = 7
+
+/** Pflichtfelder laut Projektkonvention. */
+export const PFLICHTFELDER = ['tenant', 'status', 'description']
+
+/**
+ * @typedef {{
+ *   fields: string[],
+ *   naming: (doc: any, index: number) => string,
+ *   titleField: string,
+ *   seed: any[],
+ * }} DoctypeDefinition
+ */
+
+/** @type {Map<string, DoctypeDefinition>} */
+const doctypes = new Map()
+
+/** @type {Record<string, any[]>} */
+let tables = {}
+
+export const SESSION_USER = 'benny.hoefler@oekovolt.test'
+
+export function defineDoctype(name, { fields = [], naming, titleField = 'name', seed = [] } = {}) {
+  const vollstaendig = [...new Set([...fields, ...PFLICHTFELDER])]
+
+  doctypes.set(name, {
+    fields: vollstaendig,
+    naming: naming || ((doc, index) => `${slug(name)}-${String(index).padStart(5, '0')}`),
+    titleField,
+    seed,
+  })
+}
+
+export function getDoctypes() {
+  return [...doctypes.keys()]
+}
+
+export function getDefinition(doctype) {
+  return doctypes.get(doctype)
+}
+
+export function table(doctype) {
+  if (!doctypes.has(doctype)) {
+    throw new FrappeMockError(`DoesNotExistError: Unbekannter DocType "${doctype}"`, 404)
+  }
+  if (!tables[doctype]) tables[doctype] = []
+  return tables[doctype]
+}
+
+export function nextName(doctype, doc) {
+  const def = doctypes.get(doctype)
+  const rows = table(doctype)
+  const vergeben = new Set(rows.map((row) => row.name))
+
+  let index = rows.length + 1
+  let kandidat = def.naming(doc, index)
+
+  while (vergeben.has(kandidat)) {
+    const naechster = def.naming(doc, ++index)
+    // Feldbasierte Namensgebung (z. B. hostname) ignoriert den Index. Dann
+    // gibt es keinen freien Namen - der Aufrufer meldet den Konflikt.
+    if (naechster === kandidat) break
+    kandidat = naechster
+  }
+
+  return kandidat
+}
+
+export function standardFields(overrides = {}) {
+  const jetzt = zeitstempel()
+  return {
+    owner: SESSION_USER,
+    creation: jetzt,
+    modified: jetzt,
+    modified_by: SESSION_USER,
+    docstatus: 0,
+    idx: 0,
+    ...overrides,
+  }
+}
+
+export function touch(doc) {
+  doc.modified = zeitstempel()
+  doc.modified_by = SESSION_USER
+  return doc
+}
+
+export class FrappeMockError extends Error {
+  constructor(message, status = 417) {
+    super(message)
+    this.name = 'FrappeMockError'
+    this.status = status
+    // frappe-ui liest bei Fehlern `messages` aus - gleiche Form wie echtes Frappe
+    this.messages = [message]
+    this.exc_type = message.split(':')[0]
+  }
+}
+
+export function persist() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: SEED_VERSION, tables }))
+  } catch {
+    // Privater Modus / voller Speicher: die App laeuft dann nur fluechtig weiter.
+  }
+}
+
+export function resetDatabase() {
+  tables = {}
+  for (const [doctype, def] of doctypes) {
+    tables[doctype] = def.seed.map((doc, i) => baueDokument(doctype, def, doc, i + 1))
+  }
+  persist()
+  return tables
+}
+
+export function loadDatabase() {
+  let gespeichert = null
+  try {
+    gespeichert = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null')
+  } catch {
+    gespeichert = null
+  }
+
+  if (!gespeichert || gespeichert.version !== SEED_VERSION) {
+    return resetDatabase()
+  }
+
+  tables = gespeichert.tables || {}
+  // DocTypes, die nach dem letzten Speichern dazugekommen sind, nachziehen.
+  for (const [doctype, def] of doctypes) {
+    if (!tables[doctype]) {
+      tables[doctype] = def.seed.map((doc, i) => baueDokument(doctype, def, doc, i + 1))
+    }
+  }
+  persist()
+  return tables
+}
+
+function baueDokument(doctype, def, doc, index) {
+  return {
+    doctype,
+    name: doc.name || def.naming(doc, index),
+    ...standardFields(),
+    status: 'active',
+    description: '',
+    ...doc,
+  }
+}
+
+function zeitstempel() {
+  return jetzt()
+}
+
+function slug(value) {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+}

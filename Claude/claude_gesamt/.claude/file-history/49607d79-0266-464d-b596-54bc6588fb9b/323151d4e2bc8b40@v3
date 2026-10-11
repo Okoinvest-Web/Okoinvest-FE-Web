@@ -1,0 +1,206 @@
+<template>
+  <div>
+    <PageHeader title="Leitstand" :subtitle="untertitel" />
+
+    <div class="p-6">
+      <!-- Der Sicherheitshinweis steht bewusst oben und nicht im Kleingedruckten -->
+      <div class="mb-6 rounded-lg border border-outline-amber-2 bg-surface-amber-1 p-4">
+        <StatusDot level="warning" text="Ablauf ohne Absicherung" />
+        <p class="mt-1 text-sm text-ink-gray-7">
+          Diese Ansicht zeigt den Freigabe-Ablauf, nicht seine Absicherung. Ohne Backend fehlen:
+          Subnetzprüfung, Ratenbegrenzung, gerätegebundenes HttpOnly-Cookie, FIDO2-Step-up und der
+          sofort wirkende Widerruf über ein Realtime-Ereignis. Vor dem Produktivgang muss das alles
+          serverseitig existieren (Fachkonzept 2.16).
+        </p>
+      </div>
+
+      <section class="mb-8">
+        <h2 class="mb-3 text-base font-semibold text-ink-gray-8">Offene Anfragen</h2>
+        <div v-if="offene.length" class="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <article
+            v-for="anfrage in offene"
+            :key="anfrage.name"
+            class="rounded-lg border border-outline-gray-2 bg-surface-white p-4"
+          >
+            <p class="text-sm text-ink-gray-6">{{ anfrage.screen }}</p>
+            <!-- Der Code wird am Fernseher verglichen – deshalb groß und in
+                 gleichbreiten Ziffern. -->
+            <p class="mt-1 font-mono text-3xl font-semibold tracking-widest text-ink-gray-9">
+              {{ anfrage.code }}
+            </p>
+            <dl class="mt-3 space-y-1 text-sm text-ink-gray-6">
+              <div class="flex justify-between gap-2">
+                <dt>IP</dt>
+                <dd class="tabular-nums">{{ anfrage.client_ip }}</dd>
+              </div>
+              <div class="flex justify-between gap-2">
+                <dt>Gerät</dt>
+                <dd class="truncate">{{ anfrage.user_agent }}</dd>
+              </div>
+              <div class="flex justify-between gap-2">
+                <dt>Angefragt</dt>
+                <dd class="tabular-nums">{{ anfrage.requested }}</dd>
+              </div>
+            </dl>
+
+            <StatusDot
+              class="mt-3"
+              :level="anfrage.from_control_room ? 'ok' : 'critical'"
+              :text="
+                anfrage.from_control_room
+                  ? 'Aus dem Leitstand-VLAN'
+                  : 'Fremdes Netz – nicht freigeben'
+              "
+              klein
+            />
+            <StatusDot
+              v-if="anfrage.expired"
+              class="mt-1"
+              level="warning"
+              text="Code abgelaufen"
+              klein
+            />
+
+            <div class="mt-4 flex gap-2">
+              <Button
+                variant="solid"
+                class="flex-1"
+                :disabled="!anfrage.from_control_room || anfrage.expired"
+                @click="setze(anfrage, 'approved')"
+              >
+                Freigeben
+              </Button>
+              <Button class="flex-1" @click="setze(anfrage, 'rejected')">Ablehnen</Button>
+            </div>
+          </article>
+        </div>
+        <p v-else class="text-sm text-ink-gray-5">Keine offene Anfrage.</p>
+      </section>
+
+      <section class="mb-8">
+        <h2 class="mb-3 text-base font-semibold text-ink-gray-8">Screens</h2>
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
+          <article
+            v-for="screen in screens.data || []"
+            :key="screen.name"
+            class="rounded-lg border border-outline-gray-2 bg-surface-white p-4"
+          >
+            <div class="flex items-start justify-between gap-2">
+              <p class="text-base font-medium text-ink-gray-9">{{ screen.screen_no }}</p>
+              <StatusDot
+                :level="!screen.paired ? 'neutral' : screen.stale ? 'warning' : 'ok'"
+                :text="
+                  !screen.paired ? 'nicht gekoppelt' : screen.stale ? 'kein Herzschlag' : 'aktiv'
+                "
+                klein
+              />
+            </div>
+            <p class="mt-0.5 truncate text-sm text-ink-gray-6">{{ screen.screen_title }}</p>
+            <p v-if="screen.pairing" class="mt-2 text-sm tabular-nums text-ink-gray-5">
+              {{ screen.pairing.client_ip }}
+            </p>
+
+            <div class="mt-3 flex gap-2">
+              <RouterLink
+                :to="'/screen/' + screen.screen_no"
+                class="flex-1 rounded border border-outline-gray-2 px-2 py-1 text-center text-sm text-ink-gray-7 hover:bg-surface-gray-2"
+              >
+                Vorschau
+              </RouterLink>
+              <Button
+                v-if="screen.paired"
+                size="sm"
+                @click="setze({ name: screen.pairing.name }, 'revoked')"
+              >
+                Widerrufen
+              </Button>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section>
+        <h2 class="mb-3 text-base font-semibold text-ink-gray-8">Verlauf der Freigaben</h2>
+        <DataTable :columns="spalten" :rows="freigaben.data || []" :loading="freigaben.loading">
+          <template #zelle-pairing_state="{ zeile }">
+            <Badge :theme="zustandThema(zeile.pairing_state)">
+              {{ ZUSTAND[zeile.pairing_state] || zeile.pairing_state }}
+            </Badge>
+          </template>
+          <template #zelle-from_control_room="{ zeile }">
+            <StatusDot
+              :level="zeile.from_control_room ? 'ok' : 'critical'"
+              :text="zeile.from_control_room ? 'Leitstand' : 'fremdes Netz'"
+              klein
+            />
+          </template>
+          <template #zelle-heartbeat_age_minutes="{ zeile }">
+            <span v-if="zeile.heartbeat_age_minutes === null" class="text-ink-gray-4">–</span>
+            <span v-else class="tabular-nums">{{ zeile.heartbeat_age_minutes }} min</span>
+          </template>
+        </DataTable>
+      </section>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed } from 'vue'
+import { Badge, Button, createResource, toast } from 'frappe-ui'
+import { fehlerText } from '@/viz'
+import PageHeader from '@/components/PageHeader.vue'
+import DataTable from '@/components/DataTable.vue'
+import StatusDot from '@/components/StatusDot.vue'
+
+const ZUSTAND = {
+  pending: 'Wartet',
+  approved: 'Freigegeben',
+  rejected: 'Abgelehnt',
+  revoked: 'Widerrufen',
+}
+
+const screens = createResource({ url: 'netops.api.screen.screen_list', auto: true })
+const freigaben = createResource({ url: 'netops.api.screen.screen_pairings', auto: true })
+const setzen = createResource({ url: 'netops.api.screen.set_pairing_state' })
+
+const offene = computed(() => (freigaben.data || []).filter((p) => p.pairing_state === 'pending'))
+
+const spalten = [
+  { key: 'screen', label: 'Screen', width: '110px' },
+  { key: 'code', label: 'Code', mono: true, width: '110px' },
+  { key: 'client_ip', label: 'IP', numeric: true, width: '140px' },
+  { key: 'from_control_room', label: 'Herkunft', width: '160px' },
+  { key: 'pairing_state', label: 'Zustand', width: '140px' },
+  { key: 'requested', label: 'Angefragt', numeric: true, muted: true, width: '180px' },
+  { key: 'heartbeat_age_minutes', label: 'Herzschlag', align: 'right', width: '130px' },
+]
+
+const untertitel = computed(() => {
+  const liste = screens.data || []
+  return (
+    liste.length +
+    ' Screens · ' +
+    liste.filter((s) => s.paired).length +
+    ' gekoppelt · ' +
+    offene.value.length +
+    ' offene Anfragen'
+  )
+})
+
+async function setze(anfrage, zustand) {
+  try {
+    await setzen.submit({ name: anfrage.name, state: zustand })
+    toast.create({ message: 'Freigabe: ' + (ZUSTAND[zustand] || zustand), type: 'success' })
+  } catch (fehler) {
+    toast.create({ message: fehlerText(fehler), type: 'error' })
+  }
+  freigaben.fetch()
+  screens.fetch()
+}
+
+function zustandThema(zustand) {
+  return (
+    { approved: 'green', pending: 'orange', rejected: 'red', revoked: 'gray' }[zustand] || 'gray'
+  )
+}
+</script>

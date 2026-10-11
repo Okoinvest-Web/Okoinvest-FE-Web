@@ -1,0 +1,158 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+
+import { schreibe } from "@/lib/db/verbindung";
+import { requireRecht } from "@/lib/session";
+
+export interface AlarmErgebnis {
+  ok: boolean;
+  meldung: string;
+}
+
+/**
+ * Quittieren heisst: gesehen und bewertet, aber noch nicht behoben.
+ *
+ * Die Unterscheidung ist wichtig fuer die Betriebsfuehrung. Ein
+ * quittierter Alarm verschwindet nicht aus der Liste, sondern zeigt,
+ * dass sich jemand darum kuemmert - und wer. Ohne diesen Zwischenstand
+ * bleiben Meldungen entweder offen liegen oder werden vorschnell
+ * geschlossen.
+ */
+export async function quittiere(
+  _vorher: AlarmErgebnis | null,
+  formular: FormData,
+): Promise<AlarmErgebnis> {
+  const benutzer = await requireRecht("anlagen.bearbeiten");
+
+  const alarmId = String(formular.get("alarm") ?? "");
+  const notiz = String(formular.get("notiz") ?? "").trim();
+
+  if (notiz.length < 5) {
+    return {
+      ok: false,
+      meldung:
+        "Bitte vermerken Sie kurz, wie die Meldung eingeschaetzt wird. Ohne Notiz ist spaeter nicht nachvollziehbar, warum quittiert wurde.",
+    };
+  }
+
+  schreibe(
+    `UPDATE alarm
+        SET status = 'Quittiert', quittiert_am = datetime('now'),
+            quittiert_von = ?, notiz = ?
+      WHERE id = ? AND status = 'Offen'`,
+    benutzer.id,
+    notiz,
+    alarmId,
+  );
+
+  schreibe(
+    `INSERT INTO audit (benutzer, kategorie, aktion, ergebnis, objekt, begruendung)
+     VALUES (?, 'sicherheitsvorfall', 'Meldung quittiert', 'erfolg', ?, ?)`,
+    benutzer.id,
+    alarmId,
+    notiz,
+  );
+
+  revalidatePath(`/portal/alarme/${alarmId}`);
+  revalidatePath("/portal/alarme");
+
+  return { ok: true, meldung: "Die Meldung ist quittiert." };
+}
+
+/** Schliesst eine Meldung als behoben. */
+export async function behebe(
+  _vorher: AlarmErgebnis | null,
+  formular: FormData,
+): Promise<AlarmErgebnis> {
+  const benutzer = await requireRecht("anlagen.bearbeiten");
+
+  const alarmId = String(formular.get("alarm") ?? "");
+  const notiz = String(formular.get("notiz") ?? "").trim();
+
+  if (notiz.length < 5) {
+    return {
+      ok: false,
+      meldung: "Bitte halten Sie fest, was die Ursache war und was getan wurde.",
+    };
+  }
+
+  schreibe(
+    `UPDATE alarm
+        SET status = 'Behoben', beendet_am = datetime('now'), notiz = ?
+      WHERE id = ?`,
+    notiz,
+    alarmId,
+  );
+
+  schreibe(
+    `INSERT INTO audit (benutzer, kategorie, aktion, ergebnis, objekt, begruendung)
+     VALUES (?, 'sicherheitsvorfall', 'Meldung behoben', 'erfolg', ?, ?)`,
+    benutzer.id,
+    alarmId,
+    notiz,
+  );
+
+  revalidatePath(`/portal/alarme/${alarmId}`);
+  revalidatePath("/portal/alarme");
+
+  return { ok: true, meldung: "Die Meldung ist als behoben geschlossen." };
+}
+
+/**
+ * Erzeugt aus einer Meldung ein Serviceticket.
+ *
+ * Der Uebergang von der automatischen Erkennung zum Einsatz ist die
+ * Stelle, an der Monitoring erst nuetzlich wird. Ohne ihn bleibt jede
+ * Meldung folgenlos.
+ */
+export async function erzeugeTicket(
+  _vorher: AlarmErgebnis | null,
+  formular: FormData,
+): Promise<AlarmErgebnis> {
+  const benutzer = await requireRecht("support.melden");
+
+  const alarmId = String(formular.get("alarm") ?? "");
+  const anlageId = String(formular.get("anlage") ?? "");
+  const betreff = String(formular.get("betreff") ?? "").trim();
+  const beschreibung = String(formular.get("beschreibung") ?? "").trim();
+  const prioritaet = String(formular.get("prioritaet") ?? "Mittel");
+
+  if (betreff.length < 5) {
+    return { ok: false, meldung: "Bitte einen Betreff angeben." };
+  }
+
+  const id = "STOE-" + Date.now().toString(36).toUpperCase();
+
+  schreibe(
+    `INSERT INTO stoerung
+       (id, anlage_id, betreff, beschreibung, status, prioritaet, gemeldet_von)
+     VALUES (?, ?, ?, ?, 'Offen', ?, ?)`,
+    id,
+    anlageId,
+    betreff,
+    beschreibung,
+    prioritaet,
+    benutzer.id,
+  );
+
+  schreibe(
+    `INSERT INTO stoerung_eintrag (id, stoerung_id, verfasser, intern, text)
+     VALUES (?, ?, ?, 0, ?)`,
+    id + "-E1",
+    id,
+    benutzer.vollname,
+    `Aus der Meldung ${alarmId} erzeugt.` +
+      (beschreibung ? ` ${beschreibung}` : ""),
+  );
+
+  schreibe("UPDATE alarm SET stoerung_id = ? WHERE id = ?", id, alarmId);
+
+  revalidatePath(`/portal/alarme/${alarmId}`);
+  revalidatePath("/portal/support");
+
+  return {
+    ok: true,
+    meldung: `Serviceticket ${id} wurde eroeffnet und mit dieser Meldung verknuepft.`,
+  };
+}

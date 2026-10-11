@@ -1,0 +1,116 @@
+<script setup lang="ts">
+/**
+ * Anlagensuche mit „zuletzt verwendet“ oben (Kapitel 6.2, Schritt 1)
+ * und QR-Code-Hinweis für den Aufkleber an der Anlage (FA-084).
+ */
+import { computed, ref } from 'vue'
+
+import AppIcon from '@/components/AppIcon.vue'
+import StatusAbzeichen from '@/components/StatusAbzeichen.vue'
+import type { Anlage } from '@/lib/typen'
+import { useStammdaten } from '@/stores/stammdaten'
+
+const props = withDefaults(defineProps<{ modelValue?: string; nurTyp?: string }>(), {
+  modelValue: '',
+  nurTyp: '',
+})
+
+const emit = defineEmits<{ (e: 'update:modelValue', name: string): void }>()
+
+const stammdaten = useStammdaten()
+const suche = ref('')
+
+const ZULETZT_SCHLUESSEL = 'baudoku-zuletzt-anlagen'
+
+function zuletztVerwendet(): string[] {
+  try {
+    return JSON.parse(localStorage.getItem(ZULETZT_SCHLUESSEL) ?? '[]') as string[]
+  } catch {
+    return []
+  }
+}
+
+function merken(name: string) {
+  const liste = [name, ...zuletztVerwendet().filter((n) => n !== name)].slice(0, 5)
+  localStorage.setItem(ZULETZT_SCHLUESSEL, JSON.stringify(liste))
+}
+
+const treffer = computed(() => {
+  const gefiltert = stammdaten.anlagenSuche(suche.value, { typ: props.nurTyp || undefined })
+  if (suche.value.trim()) return gefiltert.slice(0, 30)
+
+  const zuletzt = zuletztVerwendet()
+  return [...gefiltert]
+    .sort((a, b) => {
+      const ia = zuletzt.indexOf(a.name)
+      const ib = zuletzt.indexOf(b.name)
+      if (ia === -1 && ib === -1) return a.anlage_name.localeCompare(b.anlage_name)
+      if (ia === -1) return 1
+      if (ib === -1) return -1
+      return ia - ib
+    })
+    .slice(0, 30)
+})
+
+const istZuletzt = (anlage: Anlage) => !suche.value && zuletztVerwendet().includes(anlage.name)
+
+function waehlen(anlage: Anlage) {
+  merken(anlage.name)
+  emit('update:modelValue', anlage.name)
+}
+</script>
+
+<template>
+  <div class="space-y-3">
+    <div class="relative">
+      <AppIcon name="suche" :groesse="20" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+      <input
+        v-model="suche"
+        class="feld pl-10"
+        type="search"
+        placeholder="Anlage, Kunde oder Ort suchen …"
+        autocomplete="off"
+      />
+    </div>
+
+    <p v-if="!stammdaten.anlagen.length" class="rounded-lg bg-slate-50 px-3 py-6 text-center text-sm
+              text-slate-500 dark:bg-slate-800">
+      Keine Anlagen im lokalen Speicher. Bitte einmal online synchronisieren.
+    </p>
+
+    <ul v-else class="space-y-2">
+      <li v-for="anlage in treffer" :key="anlage.name">
+        <button
+          type="button"
+          class="tap flex w-full items-center gap-3 rounded-xl border p-3 text-left transition"
+          :class="
+            modelValue === anlage.name
+              ? 'border-marke-600 bg-marke-50 dark:bg-marke-900/30'
+              : 'border-slate-200 bg-white hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900'
+          "
+          @click="waehlen(anlage)"
+        >
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-2">
+              <span class="truncate font-semibold">{{ anlage.anlage_name }}</span>
+              <AppIcon v-if="istZuletzt(anlage)" name="uhr" :groesse="14" class="shrink-0 text-slate-400" />
+            </div>
+            <div class="mt-0.5 truncate text-xs text-slate-500">
+              {{ anlage.customer }} · {{ anlage.ort || anlage.adresse }} · {{ anlage.kwp }} kWp
+            </div>
+          </div>
+          <div class="flex shrink-0 flex-col items-end gap-1">
+            <StatusAbzeichen :wert="anlage.status" klein />
+            <span v-if="anlage.offene_maengel" class="text-[10px] font-semibold text-fehler">
+              {{ anlage.offene_maengel }} Mängel
+            </span>
+          </div>
+        </button>
+      </li>
+    </ul>
+
+    <p v-if="suche && !treffer.length" class="py-6 text-center text-sm text-slate-500">
+      Keine Anlage gefunden.
+    </p>
+  </div>
+</template>

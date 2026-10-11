@@ -1,0 +1,157 @@
+<template>
+  <div>
+    <PageHeader title="Backup" subtitle="Ampel je Dienst aus dem Proxmox Backup Server" />
+
+    <div class="p-6">
+      <div v-if="ampel.data" class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <StatCard
+          v-for="kachel in kacheln"
+          :key="kachel.label"
+          :label="kachel.label"
+          :wert="kachel.wert"
+          :hinweis="kachel.hinweis"
+          :level="kachel.level"
+        />
+      </div>
+
+      <section v-if="ampel.data" class="mt-8">
+        <h2 class="mb-3 text-base font-semibold text-ink-gray-8">Dienste</h2>
+        <DataTable :columns="spalten" :rows="ampel.data.objects" :loading="ampel.loading">
+          <template #zelle-level="{ zeile }">
+            <StatusDot :level="zeile.level" :text="STUFE[zeile.level]" />
+          </template>
+          <template #zelle-service="{ zeile }">
+            <span class="block font-medium text-ink-gray-9">{{ zeile.service }}</span>
+            <span class="block font-mono text-sm text-ink-gray-5">{{ zeile.backup_object }}</span>
+          </template>
+          <template #zelle-verify_status="{ zeile }">
+            <StatusDot
+              :level="
+                zeile.verify_status === 'ok'
+                  ? 'ok'
+                  : zeile.verify_status === 'failed'
+                    ? 'critical'
+                    : 'warning'
+              "
+              :text="VERIFY[zeile.verify_status] || zeile.verify_status"
+              klein
+            />
+          </template>
+          <template #zelle-protected="{ zeile }">
+            <Badge :theme="zeile.protected ? 'green' : 'gray'">
+              {{ zeile.protected ? 'geschützt' : 'nein' }}
+            </Badge>
+          </template>
+          <template #zelle-reasons="{ zeile }">
+            <span v-if="!zeile.reasons.length" class="text-ink-gray-4">–</span>
+            <ul v-else class="space-y-0.5">
+              <li v-for="grund in zeile.reasons" :key="grund" class="text-sm text-ink-gray-6">
+                {{ grund }}
+              </li>
+            </ul>
+          </template>
+        </DataTable>
+      </section>
+
+      <section v-if="ampel.data" class="mt-8">
+        <h2 class="mb-3 text-base font-semibold text-ink-gray-8">Datastores</h2>
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div
+            v-for="ds in ampel.data.datastores"
+            :key="ds.name"
+            class="rounded-lg border border-outline-gray-2 bg-surface-white p-4"
+          >
+            <div class="flex items-start justify-between gap-2">
+              <p class="text-base font-medium text-ink-gray-9">{{ ds.datastore_name }}</p>
+              <StatusDot :level="ds.level" :text="STUFE[ds.level]" klein />
+            </div>
+            <p class="mt-0.5 text-sm text-ink-gray-6">
+              {{ ds.total_tb }} TB · Wachstum {{ ds.growth_gb_per_day }} GB/Tag
+            </p>
+
+            <div class="mt-3 flex items-center gap-2">
+              <div class="h-2.5 flex-1" style="background: var(--viz-neutral-soft)">
+                <div
+                  class="h-full"
+                  :style="{
+                    width: ds.used_pct + '%',
+                    background: balkenFarbe(ds.level),
+                    borderTopRightRadius: '4px',
+                    borderBottomRightRadius: '4px',
+                  }"
+                />
+              </div>
+              <span class="w-14 shrink-0 text-right text-sm tabular-nums text-ink-gray-7">
+                {{ ds.used_pct }} %
+              </span>
+            </div>
+
+            <p class="mt-2 text-sm text-ink-gray-6">
+              Voraussichtlich voll am
+              <span class="tabular-nums text-ink-gray-8">{{ ds.full_on || 'unbekannt' }}</span>
+              <span v-if="ds.days_until_full !== null"> ({{ ds.days_until_full }} Tage)</span>
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <p class="mt-8 text-xs text-ink-gray-4">
+        Schwellen aus Fachkonzept 2.5: kein Backup über 24 h, Verify fehlgeschlagen, kein
+        Offsite-Stand, Datastore über 80 %. Ein Backup gilt erst als gültig, wenn es verifiziert ist
+        – ein fehlgeschlagener Verify ist deshalb kritisch, auch wenn die Sicherung frisch ist.
+        Löschen, Prune und Wiederherstellung sind aus der Plattform bewusst nicht möglich.
+      </p>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed } from 'vue'
+import { Badge, createResource } from 'frappe-ui'
+import PageHeader from '@/components/PageHeader.vue'
+import DataTable from '@/components/DataTable.vue'
+import StatusDot from '@/components/StatusDot.vue'
+import StatCard from '@/components/StatCard.vue'
+import { balkenFarbe } from '@/viz'
+
+const STUFE = { ok: 'In Ordnung', warning: 'Warnung', critical: 'Kritisch' }
+const VERIFY = { ok: 'Verifiziert', failed: 'Fehlgeschlagen', none: 'Nicht verifiziert' }
+
+const ampel = createResource({ url: 'netops.api.backup.backup_status', auto: true })
+
+const kacheln = computed(() => {
+  const z = ampel.data?.summary
+  if (!z) return []
+  return [
+    { label: 'Dienste gesichert', wert: z.ok, level: 'ok', hinweis: 'ohne Beanstandung' },
+    {
+      label: 'Mit Warnung',
+      wert: z.warning,
+      level: z.warning ? 'warning' : 'ok',
+      hinweis: z.warning ? 'prüfen' : 'keine',
+    },
+    {
+      label: 'Kritisch',
+      wert: z.critical,
+      level: z.critical ? 'critical' : 'ok',
+      hinweis: z.critical ? 'sofort prüfen' : 'keine',
+    },
+    {
+      label: 'Nicht verifiziert',
+      wert: z.unverified,
+      level: z.unverified ? 'warning' : 'ok',
+      hinweis: 'gilt als ungültig',
+    },
+  ]
+})
+
+const spalten = [
+  { key: 'level', label: 'Ampel', width: '150px' },
+  { key: 'service', label: 'Dienst', width: '220px' },
+  { key: 'backup_age_hours', label: 'Alter (h)', align: 'right', numeric: true, width: '110px' },
+  { key: 'verify_status', label: 'Verify', width: '170px' },
+  { key: 'offsite_age_hours', label: 'Offsite (h)', align: 'right', numeric: true, width: '120px' },
+  { key: 'protected', label: 'Schutz', width: '120px' },
+  { key: 'reasons', label: 'Befund' },
+]
+</script>

@@ -1,0 +1,397 @@
+# -*- coding: utf-8 -*-
+"""Baut die Unterseiten aus den ausgeschnittenen Bloecken.
+
+Die Vorlagenteile stehen als Dateien daneben; hier kommt nur der Rahmen
+und das Skript dazu. So bleibt der Text, den die alte Seite schon hatte,
+unveraendert - beim Abschreiben geht sonst eine Kleinigkeit verloren.
+"""
+import io
+import os
+import re
+
+SP = os.environ['TMP_SP']
+
+
+def teil(n):
+    p = os.path.join(SP, 'teil-%s.html' % n)
+    return io.open(p, encoding='utf-8').read().rstrip()
+
+
+def entferne_vif(t):
+    """Die v-if des alten Umschalters fallen weg: jede Seite ist jetzt
+    ihre eigene Route."""
+    t = re.sub(r'<section v-if="ansicht === \'[a-z]+\'">', '<section>', t)
+    t = re.sub(r'<section v-else-if="ansicht === \'[a-z]+\'">', '<section>', t)
+    t = re.sub(
+        r'<section v-else-if="ansicht === \'[a-z]+\' && pruefung\.data">',
+        '<section v-if="pruefung.data">',
+        t,
+    )
+    return t
+
+
+SCHLUSS = (
+    '      <p class="mt-6 max-w-3xl text-xs text-ink-gray-4">\n'
+    '        Diese Plattform kann Sicherungen <strong>nicht löschen oder ausdünnen</strong> –\n'
+    '        auch nicht mit Nachdruck. Wer die Verwaltung übernimmt, löscht sonst zuerst die\n'
+    '        Sicherungen und verschlüsselt dann in Ruhe. Aufbewahrung und Bereinigung bleiben im\n'
+    '        jeweiligen Sicherungssystem.\n'
+    '      </p>'
+)
+
+
+def schreibe(pfad, vorlage, skript):
+    inhalt = '<template>\n  <div class="p-6">\n' + vorlage + '\n' + SCHLUSS + '\n  </div>\n'
+    inhalt += skript
+    io.open(pfad, 'w', encoding='utf-8').write(inhalt)
+    print(os.path.basename(pfad))
+
+
+# ---------------------------------------------------------------- Punkte
+PUNKTE_SKRIPT = u'''
+  <Dialog v-model="dialogOffen" :options="{ title: 'Punkt schützen' }">
+    <template #body-content>
+      <p class="mb-3 text-sm text-ink-gray-6">{{ dialogText }}</p>
+      <FormControl v-model="grund" label="Grund (kommt ins Protokoll)" type="text" />
+      <p class="mt-2 text-xs text-ink-gray-5">
+        Der Schutz lässt sich hier nicht wieder aufheben – das geht nur im Sicherungssystem
+        selbst.
+      </p>
+    </template>
+    <template #actions>
+      <Button variant="solid" :disabled="!grund" :loading="aktion.loading" @click="ausfuehren">
+        Schützen
+      </Button>
+    </template>
+  </Dialog>
+</template>
+
+<script setup>
+import { computed, ref, watch } from 'vue'
+import { Badge, Button, Dialog, FormControl, createResource, toast } from 'frappe-ui'
+import DataTable from '@/components/DataTable.vue'
+import StatusDot from '@/components/StatusDot.vue'
+import { useUiStore } from '@/stores/ui'
+import { fehlerText, mengeText } from '@/viz'
+
+const emit = defineEmits(['neu-laden'])
+const VERIFY = { ok: 'geprüft', failed: 'fehlgeschlagen', none: 'ungeprüft' }
+
+const ui = useUiStore()
+const objektFilter = ref('')
+const dialogOffen = ref(false)
+const dialogText = ref('')
+const grund = ref('')
+const gewaehlt = ref(null)
+
+const bestand = createResource({
+  url: 'netops.api.backup.backup_inventory',
+  makeParams: () => ({ tenant: ui.mandant || null }),
+  auto: true,
+})
+const punkte = createResource({
+  url: 'netops.api.backup.backup_snapshots',
+  makeParams: () => ({ backup_object: objektFilter.value || null, tenant: ui.mandant || null }),
+})
+const aktion = createResource({ url: 'netops.api.backup.backup_action' })
+
+watch(objektFilter, () => {
+  if (objektFilter.value) punkte.fetch()
+})
+
+const bestandSpalten = [
+  { key: 'backup_object', label: 'System', width: '190px' },
+  { key: 'count', label: 'Punkte', align: 'right', numeric: true, width: '90px' },
+  { key: 'spanne', label: 'Reicht zurück', width: '220px' },
+  { key: 'total_label', label: 'Größe', align: 'right', width: '170px' },
+  { key: 'pruefung', label: 'Prüfung', width: '170px' },
+  { key: 'befund', label: 'Befund' },
+]
+
+const punktSpalten = [
+  { key: 'source_ref', label: 'Kennung im System', width: '300px' },
+  { key: 'taken_at', label: 'Zeitpunkt', width: '170px' },
+  { key: 'size_label', label: 'Größe', align: 'right', width: '140px' },
+  { key: 'verify_status', label: 'Prüfung', width: '140px' },
+  { key: 'retention_days_left', label: 'Rest (T)', align: 'right', numeric: true, width: '100px' },
+  { key: 'lage', label: 'Lage', width: '220px' },
+  { key: 'aktion', label: '', width: '110px' },
+]
+
+const objektOptionen = computed(() => [
+  { label: 'Alle Systeme', value: '' },
+  ...(bestand.data?.rows || []).map((z) => ({ label: z.backup_object, value: z.backup_object })),
+])
+
+const punkteZahlen = computed(() => {
+  const z = punkte.data?.summary
+  if (!z) return []
+  return [
+    { label: 'Punkte', wert: z.count },
+    { label: 'Reicht zurück', wert: tage(z.span_days) },
+    { label: 'Belegt', wert: z.total_label },
+    { label: 'Geprüft', wert: z.verified + ' / ' + z.count },
+    { label: 'Außer Haus', wert: z.offsite_count },
+  ]
+})
+
+const verlaufText = computed(() => {
+  const z = punkte.data?.summary
+  return z ? `${z.count} Punkte, ${z.full_count} vollständig, insgesamt ${z.total_label}` : ''
+})
+
+function balkenHoehe(p) {
+  const hoechst = Math.max(1, ...(punkte.data?.rows || []).map((x) => x.size_gb || 0))
+  return Math.max(2, Math.round(((p.size_gb || 0) / hoechst) * 72))
+}
+
+function kurz(zeit) {
+  return String(zeit || '').slice(0, 16)
+}
+
+function tage(n) {
+  return mengeText(n, 'Tag', 'Tage')
+}
+
+function vorTagen(n) {
+  if (!n) return 'heute'
+  return 'vor ' + (n === 1 ? 'einem Tag' : n + ' Tagen')
+}
+
+function schuetzenFragen(p) {
+  gewaehlt.value = p
+  dialogText.value = `${p.source_ref} vor automatischer Bereinigung schützen.`
+  grund.value = ''
+  dialogOffen.value = true
+}
+
+async function ausfuehren() {
+  try {
+    const e = await aktion.submit({
+      action: 'protect',
+      target: gewaehlt.value.target,
+      backup_object: gewaehlt.value.name,
+      reason: grund.value,
+    })
+    toast.create({ message: e.note, type: 'success' })
+    dialogOffen.value = false
+    punkte.fetch()
+    emit('neu-laden')
+  } catch (f) {
+    toast.create({ message: fehlerText(f), type: 'error' })
+  }
+}
+</script>
+'''
+
+# --------------------------------------------------------------- Dateien
+DATEIEN_SKRIPT = u'''
+  <Dialog v-model="dialogOffen" :options="{ title: 'Datei herunterladen' }">
+    <template #body-content>
+      <p class="mb-3 text-sm text-ink-gray-6">{{ dialogText }}</p>
+      <FormControl v-model="grund" label="Grund (kommt ins Protokoll)" type="text" />
+      <p class="mt-2 text-xs text-ink-gray-5">
+        Wer eine Sicherungsdatei herunterlädt, holt sich den Datenbestand auf den Arbeitsplatz.
+      </p>
+    </template>
+    <template #actions>
+      <Button variant="solid" :disabled="!grund" :loading="download.loading" @click="ausfuehren">
+        Link erzeugen
+      </Button>
+    </template>
+  </Dialog>
+</template>
+
+<script setup>
+import { computed, ref, watch } from 'vue'
+import { Button, Dialog, FormControl, createResource, toast } from 'frappe-ui'
+import DataTable from '@/components/DataTable.vue'
+import StatusDot from '@/components/StatusDot.vue'
+import ErrorState from '@/components/ErrorState.vue'
+import { useUiStore } from '@/stores/ui'
+import { fehlerText } from '@/viz'
+
+const ui = useUiStore()
+const dateiZiel = ref('drive-betriebsdoku')
+const dialogOffen = ref(false)
+const dialogText = ref('')
+const grund = ref('')
+const gewaehlt = ref(null)
+
+const ziele = createResource({
+  url: 'netops.api.backup.backup_targets',
+  makeParams: () => ({ tenant: ui.mandant || null }),
+  auto: true,
+})
+const dateien = createResource({
+  url: 'netops.api.backup.backup_files',
+  makeParams: () => ({ target: dateiZiel.value }),
+  auto: true,
+})
+const download = createResource({ url: 'netops.api.backup.backup_download_url' })
+
+watch(dateiZiel, () => dateien.fetch())
+
+// Welche Ziele sich durchsehen lassen, sagt der Server - nicht eine Liste
+// in der Oberflaeche, die beim naechsten neuen Speicher veraltet ist.
+const dateiZielOptionen = computed(() =>
+  (ziele.data || [])
+    .filter((z) => z.browsable)
+    .map((z) => ({ label: z.target_name + ' · ' + z.label, value: z.name })),
+)
+
+const dateiSpalten = [
+  { key: 'file_name', label: 'Datei', width: '340px' },
+  { key: 'size_label', label: 'Größe', align: 'right', width: '140px' },
+  { key: 'modified_at', label: 'Geändert', width: '170px' },
+  { key: 'checksum', label: 'Prüfsumme', width: '180px' },
+  { key: 'aktion', label: '', width: '230px' },
+]
+
+function kurz(zeit) {
+  return String(zeit || '').slice(0, 16)
+}
+
+function vorTagen(n) {
+  if (!n) return 'heute'
+  return 'vor ' + (n === 1 ? 'einem Tag' : n + ' Tagen')
+}
+
+function downloadFragen(datei) {
+  gewaehlt.value = datei
+  dialogText.value =
+    `${datei.file_name} (${datei.size_label}). Der Link gilt 15 Minuten und wird protokolliert.`
+  grund.value = ''
+  dialogOffen.value = true
+}
+
+async function ausfuehren() {
+  try {
+    const e = await download.submit({ file: gewaehlt.value.name, reason: grund.value })
+    toast.create({
+      message: `Link für ${e.file} erzeugt, gültig ${e.expires_in_minutes} min`,
+      type: 'success',
+    })
+    window.open(e.url, '_blank', 'noopener')
+    dialogOffen.value = false
+  } catch (f) {
+    toast.create({ message: fehlerText(f), type: 'error' })
+  }
+}
+</script>
+'''
+
+# -------------------------------------------------------------- Pruefung
+PRUEFUNG_SKRIPT = u'''
+  <Dialog v-model="testOffen" :options="{ title: 'Wiederherstellungstest eintragen' }">
+    <template #body-content>
+      <p class="mb-3 text-sm text-ink-gray-6">
+        {{ gewaehlt?.service_name || gewaehlt?.backup_object }} zurückgespielt. Die gemessene
+        Dauer ist ab dann der tatsächliche Wiederanlaufwert dieses Objekts.
+      </p>
+      <FormControl
+        v-model="testErgebnis"
+        label="Ergebnis"
+        type="select"
+        :options="ERGEBNISSE"
+        class="mb-3"
+      />
+      <FormControl
+        v-if="testErgebnis === 'ok'"
+        v-model="testMinuten"
+        label="Gemessene Dauer in Minuten"
+        type="number"
+        class="mb-3"
+      />
+      <FormControl v-model="testNotiz" label="Notiz (freiwillig)" type="text" />
+      <p class="mt-2 text-xs text-ink-gray-5">
+        Ein fehlgeschlagener Test überschreibt die bisherige Dauer nicht – null Minuten
+        sähen hervorragend aus.
+      </p>
+    </template>
+    <template #actions>
+      <Button
+        variant="solid"
+        :disabled="testErgebnis === 'ok' && !testMinuten"
+        :loading="test.loading"
+        @click="testSpeichern"
+      >
+        Eintragen
+      </Button>
+    </template>
+  </Dialog>
+</template>
+
+<script setup>
+import { ref } from 'vue'
+import { Badge, Button, Dialog, FormControl, createResource, toast } from 'frappe-ui'
+import StatusDot from '@/components/StatusDot.vue'
+import { useUiStore } from '@/stores/ui'
+import { fehlerText } from '@/viz'
+
+const emit = defineEmits(['neu-laden'])
+const STUFE = { ok: 'in Ordnung', warning: 'Warnung', critical: 'kritisch', neutral: '–' }
+const TEST = { ok: 'bestanden', failed: 'fehlgeschlagen', none: 'nie' }
+const KRIT = { critical: 'Kritisch', high: 'Hoch', medium: 'Mittel', low: 'Niedrig' }
+const ERGEBNISSE = [
+  { label: 'Bestanden', value: 'ok' },
+  { label: 'Fehlgeschlagen', value: 'failed' },
+]
+
+const ui = useUiStore()
+const testOffen = ref(false)
+const gewaehlt = ref(null)
+const testErgebnis = ref('ok')
+const testMinuten = ref('')
+const testNotiz = ref('')
+
+const pruefung = createResource({
+  url: 'netops.api.backup.backup_assurance',
+  makeParams: () => ({ tenant: ui.mandant || null }),
+  auto: true,
+})
+const test = createResource({ url: 'netops.api.backup.backup_restore_test' })
+
+function kritThema(wert) {
+  return { critical: 'red', high: 'orange', medium: 'blue', low: 'gray' }[wert] || 'gray'
+}
+
+function vorTagen(n) {
+  if (!n) return 'heute'
+  return 'vor ' + (n === 1 ? 'einem Tag' : n + ' Tagen')
+}
+
+function tage(n) {
+  return n === 1 ? '1 Tag' : n + ' Tage'
+}
+
+function testFragen(z) {
+  gewaehlt.value = z
+  testErgebnis.value = 'ok'
+  testMinuten.value = z.restore_minutes || ''
+  testNotiz.value = ''
+  testOffen.value = true
+}
+
+async function testSpeichern() {
+  try {
+    const e = await test.submit({
+      backup_object: gewaehlt.value.backup_object,
+      result: testErgebnis.value,
+      minutes: testErgebnis.value === 'ok' ? Number(testMinuten.value) : null,
+      note: testNotiz.value || null,
+    })
+    toast.create({ message: e.note, type: 'success' })
+    testOffen.value = false
+    pruefung.fetch()
+    emit('neu-laden')
+  } catch (f) {
+    toast.create({ message: fehlerText(f), type: 'error' })
+  }
+}
+</script>
+'''
+
+schreibe('src/pages/backup/BackupPunkte.vue', entferne_vif(teil('punkte')), PUNKTE_SKRIPT)
+schreibe('src/pages/backup/BackupDateien.vue', entferne_vif(teil('dateien')), DATEIEN_SKRIPT)
+schreibe('src/pages/backup/BackupPruefung.vue', entferne_vif(teil('pruefung')), PRUEFUNG_SKRIPT)

@@ -1,0 +1,335 @@
+/**
+ * Dienste: wo trägt ein einzelnes Objekt zu viel.
+ *
+ * ## Die Umkehrung, die fehlt
+ *
+ * `impact_analysis` beantwortet „was fällt aus, wenn **dieses** Objekt
+ * ausfällt". Das ist die richtige Frage, wenn man schon weiß, welches
+ * Objekt gemeint ist – also im Störungsfall.
+ *
+ * Vorher braucht man die andere Richtung: **welches Objekt sollten wir
+ * redundant auslegen?** Die Antwort steht nicht in der Geräteliste und
+ * nicht in der Dienstliste, sondern erst dazwischen: das Objekt, an dem
+ * die meisten und die kritischsten Dienste hängen.
+ *
+ * Ohne diese Zahl wird Redundanz danach beschafft, was gerade ausgefallen
+ * ist. Mit ihr danach, was als Nächstes weh täte.
+ *
+ * ## Deckungslücken
+ *
+ * Ein kritischer Dienst ohne Sicherung, ohne Ansprechpartner oder mit
+ * einer Wiederanlaufzusage, die die eigene Kette nicht hergibt. Das sind
+ * drei verschiedene Lücken, und sie brauchen drei verschiedene Leute –
+ * deshalb stehen sie einzeln.
+ *
+ * ## Für die Portierung
+ *
+ * Diese Datei liest nur. Der Graph kommt aus `services.js`; hier wird er
+ * ausgewertet, nicht gebaut.
+ */
+import { table } from '../db.js'
+import { alterStunden } from '../zeit.js'
+import { impact_analysis, service_list } from './services.js'
+
+const KRIT_RANG = { critical: 0, high: 1, medium: 2, low: 3 }
+const KRIT = { critical: 'Kritisch', high: 'Hoch', medium: 'Mittel', low: 'Niedrig' }
+
+/** Gewicht eines Dienstes für die Tragfähigkeitsrechnung. */
+const GEWICHT = { critical: 8, high: 4, medium: 2, low: 1 }
+
+/**
+ * Je Dienst: was fehlt, damit die Zusage gedeckt ist.
+ */
+export function service_assurance({ tenant = null } = {}) {
+  const dienste = service_list({ tenant })
+  const sicherungen = table('Backup Object')
+  const tickets = table('Ticket')
+
+  const zeilen = dienste.map((d) => {
+    const backup = sicherungen.find((b) => b.business_service === d.name)
+    const offeneTickets = tickets.filter(
+      (t) => t.ticket_state !== 'closed' && d.devices?.includes(t.object_name),
+    ).length
+
+    const luecken = []
+    if (!backup) {
+      luecken.push('Keine Sicherung zugeordnet – im Ernstfall gibt es nichts zurückzuholen')
+    } else if (backup.verify_status === 'failed') {
+      luecken.push('Die Sicherung hat die letzte Prüfung nicht bestanden')
+    } else if (backup.verify_status === 'none') {
+      luecken.push('Die Sicherung ist ungeprüft')
+    }
+    if (!d.service_owner) {
+      luecken.push('Kein Ansprechpartner – im Ernstfall sucht man zuerst eine Person')
+    }
+    if (!d.dependency_count) {
+      luecken.push('Keine Abhängigkeiten erfasst – die Kette ist nicht dokumentiert')
+    }
+    // Eine Zusage über einer ungetesteten Wiederherstellung ist geraten.
+    if (d.rto_hours && backup && !backup.last_restore_test) {
+      luecken.push(`RTO von ${d.rto_hours} h zugesagt, aber nie zurückgespielt`)
+    }
+    if (backup?.restore_minutes && d.rto_hours && backup.restore_minutes / 60 > d.rto_hours) {
+      luecken.push(
+        `Wiederherstellung dauert ${Math.round(backup.restore_minutes / 60)} h, zugesagt sind ${d.rto_hours} h`,
+      )
+    }
+
+    const stufe =
+      d.criticality === 'critical' && luecken.length
+        ? 'critical'
+        : luecken.length
+          ? 'warning'
+          : 'ok'
+
+    return {
+      ...d,
+      criticality_label: KRIT[d.criticality] || d.criticality,
+      backup_object: backup?.name || null,
+      backup_verify: backup?.verify_status || null,
+      restore_tested: !!backup?.last_restore_test,
+      open_tickets: offeneTickets,
+      gaps: luecken,
+      reasons: luecken,
+      level: stufe,
+    }
+  })
+
+  const kritisch = zeilen.filter((z) => z.criticality === 'critical')
+
+  return {
+    summary: {
+      services: zeilen.length,
+      critical: kritisch.length,
+      with_gaps: zeilen.filter((z) => z.gaps.length).length,
+      critical_with_gaps: kritisch.filter((z) => z.gaps.length).length,
+      without_backup: zeilen.filter((z) => !z.backup_object).length,
+      users: zeilen.reduce((n, z) => n + (z.user_count || 0), 0),
+      level: kritisch.some((z) => z.gaps.length)
+        ? 'critical'
+        : zeilen.some((z) => z.gaps.length)
+          ? 'warning'
+          : 'ok',
+      note: kritisch.filter((z) => z.gaps.length).length
+        ? `${kritisch.filter((z) => z.gaps.length).length} als kritisch eingestufte Dienste haben ` +
+          'eine offene Lücke.'
+        : zeilen.filter((z) => z.gaps.length).length
+          ? 'Lücken nur bei nachrangigen Diensten.'
+          : 'Jeder Dienst hat Sicherung, Ansprechpartner und eine dokumentierte Kette.',
+    },
+    rows: zeilen.sort(
+      (a, b) =>
+        (KRIT_RANG[a.criticality] ?? 9) - (KRIT_RANG[b.criticality] ?? 9) ||
+        b.gaps.length - a.gaps.length,
+    ),
+  }
+}
+
+/**
+ * Die Umkehrung: welches Objekt trägt wie viel.
+ *
+ * Für jedes Objekt, das in irgendeiner Dienstkette vorkommt, die Frage
+ * „wie viele und welche Dienste reißt sein Ausfall mit". Das ist die
+ * Liste, nach der Redundanz beschafft gehört.
+ */
+export function service_risk_objects({ tenant = null, limit = 25 } = {}) {
+  const dienste = service_list({ tenant })
+
+  // Jedes Objekt, das in mindestens einer Kette vorkommt.
+  const kandidaten = new Map()
+  for (const d of dienste) {
+    for (const [typ, liste] of [
+      ['Network Device', d.devices || []],
+      ['Virtual Machine', d.vms || []],
+      ['Provider Link', d.provider_links || []],
+    ]) {
+      for (const name of liste) {
+        const schluessel = typ + '::' + name
+        if (!kandidaten.has(schluessel)) {
+          kandidaten.set(schluessel, { object_type: typ, object_name: name, services: [] })
+        }
+        kandidaten.get(schluessel).services.push(d)
+      }
+    }
+  }
+
+  const geraete = new Map(table('Network Device').map((g) => [g.name, g]))
+  const befunde = table('Drift Finding')
+  const tickets = table('Ticket')
+
+  const zeilen = [...kandidaten.values()]
+    .map((k) => {
+      // Die Auswirkungsanalyse liefert die belastbare Zahl, die Ketten
+      // oben nur die direkte Zuordnung.
+      let betroffen = k.services
+      let benutzer = k.services.reduce((n, d) => n + (d.user_count || 0), 0)
+      try {
+        const wirkung = impact_analysis({
+          object_type: k.object_type,
+          object_name: k.object_name,
+        })
+        if (wirkung.services?.length) {
+          betroffen = wirkung.services
+          benutzer = wirkung.affected_users ?? benutzer
+        }
+      } catch {
+        // Ein Objekt ohne Kante ist kein Fehler, nur uninteressant.
+      }
+
+      const kritische = betroffen.filter((d) => d.criticality === 'critical').length
+      const last = betroffen.reduce((n, d) => n + (GEWICHT[d.criticality] || 1), 0)
+      const geraet = geraete.get(k.object_name)
+
+      const gruende = []
+      if (kritische > 1) {
+        gruende.push(
+          `Trägt ${kritische} kritische Dienste allein – ein Ausfall nimmt sie gleichzeitig mit`,
+        )
+      } else if (kritische === 1 && betroffen.length > 2) {
+        gruende.push(`Trägt einen kritischen und ${betroffen.length - 1} weitere Dienste`)
+      }
+      if (geraet && geraet.lifecycle_state === 'eol') {
+        gruende.push('Gerät ist abgekündigt – Ersatz ist nicht mehr beschaffbar')
+      }
+      const offeneBefunde = befunde.filter(
+        (d) => d.object_name === k.object_name && d.state === 'open',
+      ).length
+      if (offeneBefunde) {
+        gruende.push(`${offeneBefunde} offene Abweichung(en) an einem tragenden Objekt`)
+      }
+      const offeneTickets = tickets.filter(
+        (t) => t.object_name === k.object_name && t.ticket_state !== 'closed',
+      ).length
+      if (offeneTickets > 1) {
+        gruende.push(`${offeneTickets} offene Tickets – das Objekt macht schon Arbeit`)
+      }
+
+      return {
+        object_type: k.object_type,
+        object_name: k.object_name,
+        services: betroffen.length,
+        critical_services: kritische,
+        affected_users: benutzer,
+        // Gewichtete Last: ein kritischer Dienst wiegt achtmal so viel wie
+        // ein nachrangiger. Sonst gewinnt in der Liste, wer viele
+        // unwichtige Dienste trägt.
+        load: last,
+        service_names: betroffen.map((d) => d.service_name || d.name).slice(0, 6),
+        lifecycle: geraet?.lifecycle_state || null,
+        open_findings: offeneBefunde,
+        open_tickets: offeneTickets,
+        reasons: gruende,
+        level: kritische > 1 ? 'critical' : kritische === 1 || gruende.length ? 'warning' : 'ok',
+      }
+    })
+    .sort((a, b) => b.load - a.load || b.affected_users - a.affected_users)
+
+  const spitze = zeilen[0]
+  // Wie viele Objekte teilen sich die höchste Last?
+  const gleichauf = spitze ? zeilen.filter((z) => z.load === spitze.load).length : 0
+
+  return {
+    summary: {
+      objects: zeilen.length,
+      carrying_critical: zeilen.filter((z) => z.critical_services).length,
+      // Das eine Objekt, bei dem Redundanz am meisten bringt.
+      top: spitze?.object_name || null,
+      top_services: spitze?.services || 0,
+      top_users: spitze?.affected_users || 0,
+      tied_at_top: gleichauf,
+      /**
+       * Die Grenze dieser Rechnung, im Klartext.
+       *
+       * Der Abhängigkeitsgraph kennt keine Redundanz: zwei WAN-Leitungen
+       * sehen darin aus wie zwei einzelne Ausfallpunkte, obwohl sie sich
+       * vertreten sollen. Stehen mehrere Objekte gleichauf, ist das meist
+       * der Grund - und dann wäre eine Rangfolge eine erfundene Genauigkeit.
+       */
+      redundancy_unknown: gleichauf > 2,
+      caveat:
+        gleichauf > 2
+          ? `${gleichauf} Objekte tragen rechnerisch dieselbe Last. In der Kette ist keine ` +
+            'Redundanz hinterlegt – zwei Leitungen, die sich vertreten, sehen hier aus wie zwei ' +
+            'einzelne Ausfallpunkte. Die Rangfolge darunter ist deshalb keine.'
+          : null,
+      level: zeilen.some((z) => z.level === 'critical') ? 'critical' : 'warning',
+      note: spitze
+        ? gleichauf > 2
+          ? `${gleichauf} Objekte tragen je ${spitze.services} Dienste mit ${spitze.affected_users} ` +
+            'Personen. Solange die Kette keine Redundanz kennt, ist jedes davon ein einzelner ' +
+            'Ausfallpunkt.'
+          : `${spitze.object_name} trägt ${spitze.services} Dienste mit ${spitze.affected_users} ` +
+            'Personen. Dort bringt Redundanz am meisten – nicht dort, wo zuletzt etwas ' +
+            'ausgefallen ist.'
+        : 'Keine Abhängigkeiten erfasst.',
+    },
+    rows: zeilen.slice(0, limit),
+  }
+}
+
+/**
+ * Was ist an den Diensten zuletzt passiert?
+ *
+ * Für die Frage vor einer Störungsmeldung: gab es eine Änderung, eine
+ * Abweichung oder ein Ticket an etwas, das diesen Dienst trägt?
+ */
+export function service_timeline({ service = null, hours = 72, tenant = null } = {}) {
+  const dienste = service_list({ tenant })
+  const d = service ? dienste.find((x) => x.name === service || x.service_key === service) : null
+  if (!d) return { summary: { service: null, events: 0 }, rows: [] }
+
+  const objekte = new Set([...(d.devices || []), ...(d.vms || []), ...(d.provider_links || [])])
+
+  const ereignisse = []
+
+  for (const f of table('Drift Finding')) {
+    if (!objekte.has(f.object_name) || alterStunden(f.detected) > hours) continue
+    ereignisse.push({
+      at: f.detected,
+      kind: 'drift',
+      kind_label: 'Abweichung',
+      object_name: f.object_name,
+      text: `${f.field}: ${f.soll_value || '–'} → ${f.ist_value || '–'}`,
+      level: f.state === 'open' ? 'warning' : 'neutral',
+    })
+  }
+  for (const c of table('Change Request')) {
+    if (!objekte.has(c.target_object)) continue
+    const wann = c.window_start || c.requested_on
+    if (!wann || Math.abs(alterStunden(wann)) > hours) continue
+    ereignisse.push({
+      at: wann,
+      kind: 'change',
+      kind_label: 'Change',
+      object_name: c.target_object,
+      text: `${c.name}: ${c.title}`,
+      level: c.change_state === 'implemented' ? 'neutral' : 'ok',
+    })
+  }
+  for (const t of table('Ticket')) {
+    if (!objekte.has(t.object_name) || alterStunden(t.opened) > hours) continue
+    ereignisse.push({
+      at: t.opened,
+      kind: 'ticket',
+      kind_label: 'Ticket',
+      object_name: t.object_name,
+      text: `${t.ticket_key}: ${t.subject}`,
+      level: t.ticket_state === 'closed' ? 'neutral' : 'warning',
+    })
+  }
+
+  ereignisse.sort((a, b) => String(b.at).localeCompare(String(a.at)))
+
+  return {
+    summary: {
+      service: d.service_name,
+      objects: objekte.size,
+      events: ereignisse.length,
+      hours,
+      note: ereignisse.length
+        ? `${ereignisse.length} Ereignisse an ${objekte.size} tragenden Objekten in ${hours} Stunden.`
+        : `An den ${objekte.size} tragenden Objekten war in ${hours} Stunden nichts.`,
+    },
+    rows: ereignisse,
+  }
+}

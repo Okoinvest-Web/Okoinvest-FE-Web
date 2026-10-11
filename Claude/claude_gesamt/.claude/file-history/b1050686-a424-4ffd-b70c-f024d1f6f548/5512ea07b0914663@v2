@@ -1,0 +1,109 @@
+"use client";
+
+import { useActionState, useState } from "react";
+
+import { teilnahmeAendern, type Rueckmeldung } from "./aktionen";
+
+/**
+ * Teilnahmefaktor und Anteil eines Mitglieds aendern.
+ *
+ * Oeffnet sich in der Zeile selbst, statt auf eine eigene Seite zu
+ * fuehren - die Aenderung ist klein und der Zusammenhang zur Zeile
+ * geht sonst verloren.
+ */
+export function TeilnahmeFormular({
+  teilnahmeId,
+  mitglied,
+  faktor,
+  anteil,
+}: {
+  teilnahmeId: string;
+  mitglied: string;
+  faktor: number;
+  anteil: number;
+}) {
+  const [offen, setOffen] = useState(false);
+  const [ergebnis, aktion, laeuft] = useActionState<Rueckmeldung | null, FormData>(
+    teilnahmeAendern,
+    null,
+  );
+
+  if (!offen) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOffen(true)}
+        className="knopf knopf-leise text-[0.75rem]"
+      >
+        Bearbeiten
+      </button>
+    );
+  }
+
+  return (
+    <form action={aktion} className="min-w-[14rem] space-y-2 py-1">
+      <input type="hidden" name="teilnahme" value={teilnahmeId} />
+
+      <p className="t-mikro">{mitglied}</p>
+
+      <label className="flex items-center gap-2">
+        <span className="t-mikro w-20 shrink-0">Teilnahme</span>
+        <input
+          name="faktor"
+          type="number"
+          min="0"
+          max="100"
+          step="1"
+          defaultValue={faktor}
+          className="feld zahl py-1"
+          required
+        />
+        <span className="t-mikro">%</span>
+      </label>
+
+      <label className="flex items-center gap-2">
+        <span className="t-mikro w-20 shrink-0">Anteil</span>
+        <input
+          name="anteil"
+          type="number"
+          min="0"
+          max="100"
+          step="0.1"
+          defaultValue={anteil}
+          className="feld zahl py-1"
+          required
+        />
+        <span className="t-mikro">%</span>
+      </label>
+
+      {ergebnis && (
+        <p
+          className="t-mikro leading-relaxed"
+          style={{
+            color: ergebnis.ok ? "oklch(0.5 0.13 152)" : "oklch(0.52 0.19 25)",
+          }}
+          role="status"
+        >
+          {ergebnis.meldung}
+        </p>
+      )}
+
+      <div className="flex gap-1.5">
+        <button
+          type="submit"
+          className="knopf knopf-voll py-1 text-[0.75rem]"
+          disabled={laeuft}
+        >
+          {laeuft ? "…" : "Speichern"}
+        </button>
+        <button
+          type="button"
+          className="knopf knopf-leise py-1 text-[0.75rem]"
+          onClick={() => setOffen(false)}
+        >
+          Schließen
+        </button>
+      </div>
+    </form>
+  );
+}

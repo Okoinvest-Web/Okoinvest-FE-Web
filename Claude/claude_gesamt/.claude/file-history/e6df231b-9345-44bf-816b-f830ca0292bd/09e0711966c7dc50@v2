@@ -1,0 +1,221 @@
+<script setup lang="ts">
+/**
+ * Protokoll starten in drei Schritten (Kapitel 6.2):
+ * Anlage wählen → Vorlage wählen → Kopfdaten → Ausführen.
+ */
+import { computed, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+
+import AnlagenWaehler from '@/components/AnlagenWaehler.vue'
+import AppIcon from '@/components/AppIcon.vue'
+import { frappeDatetime } from '@/lib/format'
+import { useProtokoll } from '@/stores/protokoll'
+import { useStammdaten } from '@/stores/stammdaten'
+import { useUi } from '@/stores/ui'
+
+const route = useRoute()
+const router = useRouter()
+const stammdaten = useStammdaten()
+const protokollStore = useProtokoll()
+const ui = useUi()
+
+const schritt = ref<1 | 2 | 3>(1)
+const anlage = ref<string>((route.query.anlage as string) ?? '')
+const vorlage = ref('')
+const wetter = ref('')
+const temperatur = ref<string>('')
+const anwesende = ref('')
+const startet = ref(false)
+
+const passendeVorlagen = computed(() => (anlage.value ? stammdaten.vorlagenFuer(anlage.value) : []))
+
+const gewaehlteAnlage = computed(() => stammdaten.anlage(anlage.value))
+const gewaehlteVorlage = computed(() => stammdaten.vorlage(vorlage.value))
+
+const TYP_SYMBOL: Record<string, string> = {
+  Wartung: 'zahnrad',
+  IBN: 'blitz',
+  'DC-Abnahme': 'check',
+  Schadenaufnahme: 'warnung',
+  Sonstige: 'protokoll',
+}
+
+function anlageGewaehlt(name: string) {
+  anlage.value = name
+  vorlage.value = ''
+  schritt.value = 2
+}
+
+function vorlageGewaehlt(name: string) {
+  vorlage.value = name
+  schritt.value = 3
+}
+
+async function starten() {
+  if (!anlage.value || !vorlage.value) return
+  startet.value = true
+  try {
+    const protokoll = await protokollStore.starten(anlage.value, vorlage.value)
+    if (protokollStore.aktuell) {
+      protokollStore.aktuell.wetter = wetter.value || undefined
+      protokollStore.aktuell.temperatur = temperatur.value ? Number(temperatur.value) : null
+      protokollStore.aktuell.anwesende_personen = anwesende.value || undefined
+      await protokollStore.speichern()
+    }
+    await router.replace({
+      name: 'protokoll-ausfuehren',
+      params: { lokaleId: protokoll.lokale_id },
+    })
+  } catch (fehler) {
+    ui.fehler(`Protokoll konnte nicht gestartet werden: ${(fehler as Error).message}`)
+  } finally {
+    startet.value = false
+  }
+}
+
+onMounted(() => {
+  if (anlage.value) schritt.value = 2
+  if (!stammdaten.mitarbeiter) {
+    ui.warnung('Zu Ihrem Benutzer ist kein Mitarbeiter hinterlegt — bitte in ERPNext ergänzen.')
+  }
+})
+</script>
+
+<template>
+  <div class="mx-auto max-w-feld space-y-5">
+    <!-- Schrittanzeige -->
+    <ol class="flex items-center gap-2 text-sm">
+      <li
+        v-for="(titel, i) in ['Anlage', 'Vorlage', 'Start']"
+        :key="titel"
+        class="flex flex-1 items-center gap-2"
+      >
+        <span
+          class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold"
+          :class="
+            schritt > i + 1
+              ? 'bg-marke-600 text-white'
+              : schritt === i + 1
+                ? 'bg-marke-100 text-marke-700 ring-2 ring-marke-500 dark:bg-marke-900/50 dark:text-marke-300'
+                : 'bg-slate-200 text-slate-500 dark:bg-slate-800'
+          "
+        >
+          <AppIcon v-if="schritt > i + 1" name="check" :groesse="14" />
+          <template v-else>{{ i + 1 }}</template>
+        </span>
+        <span class="hidden font-medium tablet:inline" :class="schritt === i + 1 ? '' : 'text-slate-400'">
+          {{ titel }}
+        </span>
+        <span v-if="i < 2" class="h-px flex-1 bg-slate-200 dark:bg-slate-800" />
+      </li>
+    </ol>
+
+    <!-- Schritt 1: Anlage -->
+    <section v-if="schritt === 1">
+      <h2 class="mb-3 text-lg font-bold">Anlage wählen</h2>
+      <AnlagenWaehler :model-value="anlage" @update:model-value="anlageGewaehlt" />
+    </section>
+
+    <!-- Schritt 2: Vorlage -->
+    <section v-else-if="schritt === 2">
+      <button class="mb-3 flex items-center gap-1 text-sm text-slate-500" @click="schritt = 1">
+        <AppIcon name="pfeilLinks" :groesse="16" /> {{ gewaehlteAnlage?.anlage_name }}
+      </button>
+      <h2 class="mb-3 text-lg font-bold">Vorlage wählen</h2>
+
+      <p v-if="!passendeVorlagen.length" class="karte p-4 text-sm text-slate-500">
+        Für den Anlagentyp „{{ gewaehlteAnlage?.anlagen_typ }}“ ist keine veröffentlichte Vorlage
+        vorhanden. Bitte im Vorlagenbereich prüfen.
+      </p>
+
+      <ul class="space-y-2">
+        <li v-for="eintrag in passendeVorlagen" :key="eintrag.name">
+          <button
+            type="button"
+            class="tap flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-white p-3
+                   text-left transition hover:border-marke-400 dark:border-slate-800 dark:bg-slate-900"
+            @click="vorlageGewaehlt(eintrag.name)"
+          >
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-marke-50
+                         text-marke-700 dark:bg-marke-900/40 dark:text-marke-300">
+              <AppIcon :name="TYP_SYMBOL[eintrag.vorlage_typ] ?? 'protokoll'" :groesse="20" />
+            </span>
+            <span class="min-w-0 flex-1">
+              <span class="block truncate font-semibold">{{ eintrag.titel }}</span>
+              <span class="block text-xs text-slate-500">
+                {{ eintrag.vorlage_typ }} · Rev. {{ eintrag.revision }} ·
+                {{ eintrag.anzahl_pruefpunkte ?? '?' }} Prüfpunkte
+              </span>
+            </span>
+            <AppIcon name="pfeilRechts" :groesse="18" class="shrink-0 text-slate-400" />
+          </button>
+        </li>
+      </ul>
+    </section>
+
+    <!-- Schritt 3: Kopfdaten -->
+    <section v-else class="space-y-4">
+      <button class="flex items-center gap-1 text-sm text-slate-500" @click="schritt = 2">
+        <AppIcon name="pfeilLinks" :groesse="16" /> {{ gewaehlteVorlage?.titel }}
+      </button>
+
+      <div class="karte p-4">
+        <h2 class="mb-3 text-lg font-bold">Kopfdaten</h2>
+
+        <dl class="mb-4 space-y-1 text-sm">
+          <div class="flex justify-between">
+            <dt class="text-slate-500">Anlage</dt>
+            <dd class="font-medium">{{ gewaehlteAnlage?.anlage_name }}</dd>
+          </div>
+          <div class="flex justify-between">
+            <dt class="text-slate-500">Vorlage</dt>
+            <dd class="font-medium">{{ gewaehlteVorlage?.titel }}</dd>
+          </div>
+          <div class="flex justify-between">
+            <dt class="text-slate-500">Prüfer</dt>
+            <dd class="font-medium">{{ stammdaten.benutzer?.vollname }}</dd>
+          </div>
+          <div class="flex justify-between">
+            <dt class="text-slate-500">Beginn</dt>
+            <dd class="font-medium tabular-nums">{{ frappeDatetime() }}</dd>
+          </div>
+        </dl>
+
+        <div class="grid gap-3 tablet:grid-cols-2">
+          <label>
+            <span class="beschriftung">Wetter</span>
+            <select v-model="wetter" class="feld">
+              <option value="">– bitte wählen –</option>
+              <option>Sonnig</option>
+              <option>Leicht bewölkt</option>
+              <option>Bewölkt</option>
+              <option>Bedeckt</option>
+              <option>Regen</option>
+              <option>Schnee</option>
+              <option>Wind</option>
+            </select>
+          </label>
+          <label>
+            <span class="beschriftung">Temperatur (°C)</span>
+            <input v-model="temperatur" class="feld tabular-nums" inputmode="decimal" placeholder="18" />
+          </label>
+        </div>
+
+        <label class="mt-3 block">
+          <span class="beschriftung">Anwesende Personen</span>
+          <textarea v-model="anwesende" class="feld min-h-[72px]" rows="2"
+                    placeholder="Namen der anwesenden Personen" />
+        </label>
+
+        <p class="mt-3 text-xs text-slate-400">
+          Die GPS-Position wird beim Start automatisch erfasst, sofern das Gerät sie freigibt.
+        </p>
+      </div>
+
+      <button class="knopf-primaer w-full" :disabled="startet" @click="starten">
+        <AppIcon name="check" :groesse="20" />
+        {{ startet ? 'Wird vorbereitet …' : 'Protokoll starten' }}
+      </button>
+    </section>
+  </div>
+</template>

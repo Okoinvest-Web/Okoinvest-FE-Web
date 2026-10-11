@@ -1,0 +1,70 @@
+import Link from "next/link";
+import { Suspense } from "react";
+import { Contact } from "lucide-react";
+import { db } from "@/lib/data";
+import { Avatar, Empty, PageHeader, Table, TD } from "@/components/ui";
+import { ListToolbar } from "@/components/ListToolbar";
+
+export const metadata = { title: "Kontakte" };
+
+export default async function ContactsPage({ searchParams }: PageProps<"/contacts">) {
+  const sp = await searchParams;
+  const contacts = await db().listContacts({ search: typeof sp.q === "string" ? sp.q : undefined });
+
+  return (
+    <>
+      <PageHeader title="Kontakte" subtitle="Ansprechpartner bei Kunden" />
+      <div>
+          <Suspense>
+            <ListToolbar count={contacts.length} />
+          </Suspense>
+          {contacts.length === 0 ? (
+            <Empty icon={Contact}>Keine Kontakte gefunden.</Empty>
+          ) : (
+            <Table head={["Name", "Firma", "E-Mail", "Mobil"]}>
+              {contacts.map((c) => (
+                <tr key={c.name} className="transition-colors hover:bg-gray-50">
+                  <td className={TD}>
+                    <span className="flex items-center gap-3">
+                      <Avatar name={c.full_name} />
+                      <span className="min-w-0">
+                        <span className="block font-medium text-gray-900">{c.full_name}</span>
+                        <span className="block text-xs text-gray-500">{c.designation ?? "–"}</span>
+                      </span>
+                    </span>
+                  </td>
+                  <td className={TD}>
+                    {c.company_name ? (
+                      <Link href={`/customers/${encodeURIComponent(c.company_name)}`} className="hover:text-brand-700 hover:underline">
+                        {c.company_name}
+                      </Link>
+                    ) : (
+                      "–"
+                    )}
+                  </td>
+                  <td className={TD}>
+                    {c.email_id ? (
+                      <a href={`mailto:${c.email_id}`} className="hover:text-brand-700 hover:underline">
+                        {c.email_id}
+                      </a>
+                    ) : (
+                      "–"
+                    )}
+                  </td>
+                  <td className={`${TD} whitespace-nowrap`}>
+                    {c.mobile_no ? (
+                      <a href={`tel:${c.mobile_no.replace(/\s/g, "")}`} className="hover:text-brand-700 hover:underline">
+                        {c.mobile_no}
+                      </a>
+                    ) : (
+                      "–"
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </Table>
+          )}
+      </div>
+    </>
+  );
+}

@@ -1,0 +1,150 @@
+"""Kennzahlen und Auswertungen (FA-090 bis FA-096)."""
+
+from __future__ import annotations
+
+from collections import defaultdict
+
+import frappe
+from frappe.utils import add_days, flt, today
+
+
+@frappe.whitelist()
+def kennzahlen() -> dict:
+	"""Startseiten-KPIs (Kapitel 6.1, Menuepunkt Dashboard)."""
+	mitarbeiter = frappe.db.get_value("Employee", {"user_id": frappe.session.user}, "name")
+
+	return {
+		"offene_maengel": frappe.db.count("Mangel", {"status": ["in", ["Offen", "In Bearbeitung"]]}),
+		"ueberfaellige_maengel": frappe.db.count("Mangel", {
+			"status": ["in", ["Offen", "In Bearbeitung"]], "faellig_am": ["<", today()],
+		}),
+		"meine_maengel": frappe.db.count("Mangel", {
+			"zugewiesen_an": mitarbeiter, "status": ["in", ["Offen", "In Bearbeitung"]],
+		}) if mitarbeiter else 0,
+		"protokolle_in_arbeit": frappe.db.count("Pruefprotokoll", {
+			"status": ["in", ["Entwurf", "In Arbeit"]],
+		}),
+		"protokolle_zu_verifizieren": frappe.db.count("Pruefprotokoll", {"status": "Abgeschlossen"}),
+		"berichte_zur_freigabe": frappe.db.count("Tagesbericht", {"status": "Eingereicht"}),
+		"anlagen_in_bau": frappe.db.count("PV Anlage", {"status": "In Bau"}),
+		"anlagen_gesamt": frappe.db.count("PV Anlage"),
+		"wartungen_faellig": frappe.db.count("PV Anlage", {
+			"naechste_wartung": ["<=", add_days(today(), 30)], "status": "In Betrieb",
+		}),
+	}
+
+
+@frappe.whitelist()
+def mangel_dashboard(von: str | None = None, bis: str | None = None,
+                     anlage: str | None = None) -> dict:
+	"""Verteilung offener Maengel nach Anlage, Kategorie und Zustaendigem (FA-092)."""
+	filters: dict = {"status": ["in", ["Offen", "In Bearbeitung"]]}
+	if anlage:
+		filters["anlage"] = anlage
+	if von and bis:
+		filters["gemeldet_am"] = ["between", [von, bis]]
+
+	maengel = frappe.get_all(
+		"Mangel", filters=filters,
+		fields=["name", "anlage", "kategorie", "schweregrad", "status", "faellig_am",
+		        "zugewiesen_an", "ueberfaellig", "titel"],
+		limit_page_length=0,
+	)
+
+	nach_anlage: dict[str, int] = defaultdict(int)
+	nach_kategorie: dict[str, int] = defaultdict(int)
+	nach_schweregrad: dict[str, int] = defaultdict(int)
+	nach_zustaendigem: dict[str, int] = defaultdict(int)
+
+	for m in maengel:
+		nach_anlage[m.anlage] += 1
+		nach_kategorie[m.kategorie or "ohne Kategorie"] += 1
+		nach_schweregrad[m.schweregrad or "?"] += 1
+		nach_zustaendigem[m.zugewiesen_an or "nicht zugewiesen"] += 1
+
+	return {
+		"gesamt": len(maengel),
+		"ueberfaellig": sum(1 for m in maengel if m.ueberfaellig),
+		"nach_anlage": _top(nach_anlage),
+		"nach_kategorie": _top(nach_kategorie),
+		"nach_schweregrad": _top(nach_schweregrad, sortiert=False),
+		"nach_zustaendigem": _top(nach_zustaendigem),
+		"aelteste": sorted(
+			[m for m in maengel if m.faellig_am], key=lambda m: m.faellig_am
+		)[:10],
+	}
+
+
+def _top(zaehler: dict[str, int], limit: int = 12, sortiert: bool = True) -> list[dict]:
+	paare = zaehler.items()
+	if sortiert:
+		paare = sorted(paare, key=lambda kv: kv[1], reverse=True)
+	else:
+		paare = sorted(paare)
+	return [{"label": k, "wert": v} for k, v in list(paare)[:limit]]
+
+
+@frappe.whitelist()
+def baufortschritt(tage: int = 60) -> list[dict]:
+	"""Fortschritt je Baustelle, aggregiert aus den Tagesberichten (FA-093)."""
+	seit = add_days(today(), -int(tage))
+	berichte = frappe.get_all(
+		"Tagesbericht",
+		filters={"datum": [">=", seit], "status": ["!=", "Abgelehnt"]},
+		fields=["anlage", "datum", "fortschritt_prozent", "arbeitsstunden_gesamt",
+		        "personal_anzahl", "bericht_typ"],
+		order_by="datum asc", limit_page_length=0,
+	)
+
+	je_anlage: dict[str, dict] = {}
+	for b in berichte:
+		eintrag = je_anlage.setdefault(b.anlage, {
+			"anlage": b.anlage, "berichte": 0, "stunden": 0.0,
+			"fortschritt": 0.0, "letzter_bericht": None, "verlauf": [],
+		})
+		eintrag["berichte"] += 1
+		eintrag["stunden"] += flt(b.arbeitsstunden_gesamt)
+		eintrag["letzter_bericht"] = str(b.datum)
+		if b.fortschritt_prozent:
+			eintrag["fortschritt"] = flt(b.fortschritt_prozent)
+			eintrag["verlauf"].append({"datum": str(b.datum), "wert": flt(b.fortschritt_prozent)})
+
+	namen = list(je_anlage)
+	titel = {
+		a.name: a.anlage_name
+		for a in frappe.get_all("PV Anlage", filters={"name": ["in", namen]},
+		                        fields=["name", "anlage_name"])
+	} if namen else {}
+
+	for name, eintrag in je_anlage.items():
+		eintrag["anlage_name"] = titel.get(name, name)
+
+	return sorted(je_anlage.values(), key=lambda e: e["fortschritt"], reverse=True)
+
+
+@frappe.whitelist()
+def protokoll_statistik(jahr: int | None = None) -> dict:
+	"""Protokolle je Typ und Monat fuer das Analysemodul (FA-096)."""
+	jahr = int(jahr or today()[:4])
+	zeilen = frappe.db.sql(
+		"""
+		select month(pruef_datum) as monat, vorlage_typ, gesamtbewertung, count(*) as anzahl
+		from `tabPruefprotokoll`
+		where year(pruef_datum) = %(jahr)s and status in ('Abgeschlossen', 'Verifiziert')
+		group by month(pruef_datum), vorlage_typ, gesamtbewertung
+		""",
+		{"jahr": jahr}, as_dict=True,
+	)
+
+	monate = {m: defaultdict(int) for m in range(1, 13)}
+	bewertungen: dict[str, int] = defaultdict(int)
+	for zeile in zeilen:
+		monate[zeile.monat][zeile.vorlage_typ] += zeile.anzahl
+		bewertungen[zeile.gesamtbewertung or "ohne Bewertung"] += zeile.anzahl
+
+	return {
+		"jahr": jahr,
+		"je_monat": [{"monat": m, "werte": dict(v)} for m, v in monate.items()],
+		"bewertungen": [{"label": k, "wert": v} for k, v in sorted(bewertungen.items())],
+		"gesamt": sum(z.anzahl for z in zeilen),
+	}

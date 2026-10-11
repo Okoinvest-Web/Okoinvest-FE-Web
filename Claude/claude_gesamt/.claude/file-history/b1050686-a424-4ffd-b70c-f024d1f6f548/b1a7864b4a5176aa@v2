@@ -1,0 +1,260 @@
+# Energieportal
+
+Kundenportal für **Photovoltaik-Gewerbekunden in Österreich**.
+Next.js als Frontend, **Frappe Framework als Backend** — alle Daten liegen in
+Frappe-DocTypes, diese Anwendung hält keine eigene Datenbank.
+
+## Schnellstart
+
+```bash
+npm install
+npm run dev          # http://localhost:3000
+```
+
+Der Demonstrationsbetrieb ist voreingestellt (`DEMO_MODUS=1` in `.env.local`),
+es wird also keine laufende Frappe-Instanz benötigt.
+
+**Demo-Zugänge** — Passwort für alle: `demo`
+
+| E-Mail | Rolle | Sieht |
+| --- | --- | --- |
+| `m.steiner@steiner-holzbau.at` | Geschäftsführung | alles |
+| `m.hofbauer@steiner-holzbau.at` | Technische Leitung | Betrieb, Steuerung, Fernwartung |
+| `a.gruber@steiner-holzbau.at` | Buchhaltung | Belege, Abrechnung, Leistungen |
+| `t.leitner@steiner-holzbau.at` | Fuhrparkleitung | Ladepunkte, Tankkarten |
+
+Die Konten stehen auf der Anmeldeseite als Schaltflächen bereit. Sie zeigen
+zugleich, wie die Rollentrennung wirkt: Meldet man sich als Fuhrparkleitung an,
+sind Steuerung, Cybersicherheit und Zertifikate weder sichtbar noch über die
+Adresszeile erreichbar.
+
+## Prüfen
+
+```bash
+npm run pruefen      # TypeScript, ESLint und Tests in einem Durchlauf
+npm test             # nur die Tests (41 Stück)
+npm run build        # Produktionsbuild
+npm run bilder       # Bildschirmaufnahmen aller Seiten, hell/dunkel/mobil
+npm run doctypes     # Frappe-DocType-Dateien neu erzeugen
+```
+
+`npm run bilder` fährt alle Seiten in drei Ansichten an, meldet
+Konsolenfehler und waagrechten Überlauf und legt die Aufnahmen ab. Drei
+Fehler dieser Arbeit fielen erst dadurch auf — unter anderem ein
+Zeitzonenfehler, durch den „Ertrag heute" dauerhaft 0 kWh anzeigte.
+
+## Architektur
+
+```
+Browser  ──►  Next.js (Server)  ──►  Frappe REST API
+             hält die Session         DocTypes, Rechte,
+             im httpOnly-Cookie       Geschäftslogik
+```
+
+Der Browser spricht **nie** direkt mit Frappe. Der Next.js-Server hält die
+Frappe-Session (`sid`) in einem httpOnly-Cookie und reicht sie serverseitig
+weiter. Das umgeht CORS- und SameSite-Probleme und hält das Session-Token aus
+dem Client-JavaScript heraus.
+
+### Module
+
+| Bereich | Inhalt |
+| --- | --- |
+| Übersicht | Kennzahlen, Tagesverlauf, Energiefluss, Anlagenliste |
+| Anlagen | Portfolio und Einzelanlage mit Zählpunkt, Komponenten, Erträgen |
+| Energie & Markt | Erträge, Bilanz, Day-Ahead-Preise, Ertragsprognose, Jahreshochrechnung, Anlagenvergleich |
+| Steuerung | Betriebsstrategie — mit gesperrten Netzparametern |
+| Energiegemeinschaft | EEG/BEG/GEA, Mitglieder, Aufteilung, Netzentgeltrabatt |
+| CO₂-Zertifikate | Zertifizierung, Handel, Vollmacht an Dritte |
+| Ladeinfrastruktur | Ladepunkte, Ladevorgänge, Tankkarten, Kostenstellen |
+| Belege | Rechnungen, Lieferscheine, Dokumente |
+| Leistungen | Wartung, Prüfungen, Zubehör als Anfrage |
+| Support | Störungsmeldung, Tickets, Wartungsplan |
+| Dokumentation | Vollständigkeit nach ÖVE/ÖNORM, Prüfbefunde |
+| Fernwartung | Befristete Zugangsfreigabe, Zugriffsprotokoll |
+| Cybersicherheit | NIS2-Meldefristen, Vorfälle, Audit-Protokoll |
+| Einstellungen | Stammdaten, Benutzer, Rollen, Zählpunkte |
+
+## Zwei Entwurfsentscheidungen, die tragen
+
+### Gesetzliche Regelparameter sind serverseitig gesperrt
+
+Ein Teil der Regelparameter einer PV-Anlage ist netzbetreiber- bzw. normseitig
+vorgegeben: Wirkleistungsbegrenzung, Parkregler-Sollwert,
+Blindleistungskennlinie und die Einstellungen des Netz- und Anlagenschutzes.
+Diese darf ein Anlagenbetreiber nicht verändern — eine Änderung kann den
+Netzparallelbetrieb unzulässig machen und Menschen bei Arbeiten am Netz
+gefährden.
+
+Die Sperre sitzt deshalb in [`src/lib/sicherheit/regelgrenzen.ts`](src/lib/sicherheit/regelgrenzen.ts)
+im Servercode, nicht in der Oberfläche. Ein ausgeblendetes Eingabefeld ließe
+sich umgehen, ein serverseitig abgelehnter Schreibvorgang nicht. Der Katalog
+ist eine **Positivliste**: Was nicht ausdrücklich freigegeben ist, wird
+abgelehnt — auch unbekannte Schlüssel.
+
+[`regelgrenzen.test.ts`](src/lib/sicherheit/regelgrenzen.test.ts) sichert das
+mit 14 Tests ab, die genau den Weg nehmen, den auch jemand nähme, der das
+Formular umgeht.
+
+Gesperrte Parameter werden trotzdem **sichtbar** dargestellt — mit der
+Rechtsgrundlage daneben. Wer den Wert kennen muss, sieht ihn; wer ihn ändern
+will, erfährt warum das nicht geht.
+
+### Berechtigungen werden zweifach durchgesetzt
+
+Die Navigation blendet aus, was eine Rolle nicht darf. Das ist Bequemlichkeit,
+kein Schutz. Die eigentliche Prüfung passiert serverseitig über `requireRecht()`
+auf jeder Seite — und im Regelbetrieb ein drittes Mal in Frappe selbst, das
+jede API-Anfrage gegen Rollen und User Permissions prüft.
+
+## Frappe-Backend einrichten
+
+Die DocType-Definitionen werden aus einer kompakten Spezifikation erzeugt:
+
+```bash
+node frappe/erzeuge-doctypes.mjs
+```
+
+Das schreibt 26 DocTypes nach `frappe/energieportal/`. Einspielen:
+
+```bash
+bench new-app energieportal              # falls noch keine App besteht
+# Inhalt von frappe/energieportal/ in die App kopieren
+bench --site <site> install-app energieportal
+bench --site <site> migrate
+```
+
+Danach `.env.local` anpassen:
+
+```
+FRAPPE_URL=http://localhost:8000
+DEMO_MODUS=0
+```
+
+### Verwendete DocTypes
+
+Standard aus Frappe/ERPNext: `Customer`, `Contact`, `Address`, `File`,
+`Sales Invoice`, `Delivery Note`, `Item`, `Sales Order`, `User`.
+
+Eigene: `PV Anlage`, `PV Komponente`, `PV Ertrag`, `PV Messwert`,
+`PV Stoerung`, `PV Wartung`, `PV Anlagendokumentation`, `PV Pruefbefund`,
+`PV Steuerprofil`, `PV Steuerbefehl`, `Fernwartungszugang`,
+`Fernwartungssitzung`, `Ladepunkt`, `Ladevorgang`, `Tankkarte`,
+`CO2 Zertifikat`, `CO2 Handel`, `Vollmacht`, `Energiegemeinschaft`,
+`EG Mitglied`, `EG Aufteilung`, `Boersenpreis`, `Audit Protokoll`,
+`Sicherheitsvorfall`, `Portal Benutzer`, `Support Ticket`.
+
+Die Zuordnung steht zentral in
+[`src/lib/doctype-namen.ts`](src/lib/doctype-namen.ts). Weicht Ihr Schema ab,
+passen Sie **nur diese Datei** an.
+
+[`schema.test.ts`](src/lib/schema.test.ts) gleicht das erzeugte Frappe-Schema
+gegen die Abfragen der Anwendung ab. Wird ein Feld im DocType umbenannt, ohne
+die Abfrage anzupassen, schlägt der Test an — statt dass das Portal
+stillschweigend leere Werte anzeigt.
+
+### Berechtigungen in Frappe
+
+Die Anwendung filtert Daten **nicht** nach Kunde. Das ist Absicht: Frappe wendet
+die Berechtigungen des angemeldeten Benutzers serverseitig an. Ein Filter im
+Frontend wäre nur Kosmetik.
+
+1. Rollen `Portalkunde` und `Portaltechnik` anlegen (die erzeugten DocTypes
+   verweisen bereits darauf).
+2. Pro Portalbenutzer eine **User Permission** auf den passenden
+   `Customer`-Datensatz setzen.
+3. `PV Anlage.kunde` ist ein Link auf `Customer` — dadurch greift die User
+   Permission auf alle abhängigen Datensätze durch.
+
+Ohne Schritt 2 sieht jeder angemeldete Benutzer alle Anlagen.
+
+## Österreich-Bezug
+
+- **Zählpunktbezeichnung** 33-stellig, mit Zerlegung nach Netzbetreiberkennzahl
+  und Postleitzahl ([`src/lib/at/zaehlpunkt.ts`](src/lib/at/zaehlpunkt.ts))
+- **Netzebenen 1–7** und **TOR Erzeuger Typ A–D**
+- **Energiegemeinschaften** nach EAG: EEG, BEG und GEA mit ihren
+  unterschiedlichen Netzentgeltrabatten; Hinweis auf das **ElWG ab 1. Oktober 2026**
+- **Normen**: ÖVE/ÖNORM E 8001-4-712, ÖVE/ÖNORM EN 62446-1, ÖVE/ÖNORM E 8101,
+  ÖVE/ÖNORM EN 62305, TRVB E 133
+- **NIS2 / NISG** mit den Meldefristen 24 h, 72 h und ein Monat
+- Formatierung durchgängig `de-AT` — inklusive „Jänner“ und dem in Österreich
+  üblichen Leerzeichen als Tausendertrenner
+
+### Beispieldaten sind fachlich kalibriert
+
+Eine Vorführung verliert ihre Glaubwürdigkeit, wenn die Zahlen fachlich
+nicht stimmen können. Der Ertragsgenerator ist deshalb auf rund
+1 060 kWh je kWp und Jahr eingestellt — den für Ostösterreich üblichen
+Bereich. [`generator.test.ts`](src/lib/demo/generator.test.ts) hält das fest
+und schlägt an, wenn eine Änderung die Werte aus dem plausiblen Bereich
+schiebt. Ein erster Entwurf lag bei 1 470 kWh/kWp; das wäre jedem
+Fachkundigen sofort aufgefallen.
+
+## Gestaltung
+
+Die Farbzuordnung der Energiedaten ist **gerechnet, nicht geschätzt**: Sie wurde
+gegen Helligkeitsband, Buntheitsuntergrenze, Unterscheidbarkeit bei Protanopie,
+Deuteranopie und Tritanopie sowie Kontrast geprüft — in hellem und dunklem
+Erscheinungsbild. Eine Palette trägt beide Modi und besteht alle Prüfpunkte.
+Begründung und die zwei zulässigen Grenzfälle stehen in
+[`src/lib/farben.ts`](src/lib/farben.ts).
+
+Die Diagramme sind eigenentwickelt (SVG, keine Diagrammbibliothek). Das hält die
+Ladezeit klein und erlaubt durchgängige Farbzuordnung, Bedienung per Tastatur und
+zurückhaltende Animation. Wer im Betriebssystem reduzierte Bewegung eingestellt
+hat, bekommt keine.
+
+## Projektstruktur
+
+```
+src/
+├── proxy.ts                  Schützt /portal (Next.js 16, früher middleware.ts)
+├── lib/
+│   ├── frappe.ts             REST-Client, Fehlerbehandlung, Session-Weitergabe
+│   ├── doctype-namen.ts      DocType-Zuordnung (einzige Stelle für Schemaänderungen)
+│   ├── doctypes.ts           Typen und CRUD-Helfer
+│   ├── portal-daten.ts       Fachliche Abfragen, Weiche Demo/Regelbetrieb
+│   ├── auswertung.ts         Kennzahlen: Eigenverbrauchsquote, Autarkie, CO₂
+│   ├── farben.ts             Geprüfte Farbzuordnung
+│   ├── format.ts             de-AT-Formatierung
+│   ├── navigation.ts         Portalstruktur mit Rechtezuordnung
+│   ├── session.ts            requireUser(), requireRecht()
+│   ├── at/                   Zählpunkt, Netzbetreiber, Netzebenen
+│   ├── sicherheit/           Regelgrenzen, Rollen, Audit-Protokoll
+│   └── demo/                 Beispieldaten und Zeitreihengenerator
+├── components/
+│   ├── diagramme/            Verlauf, Balken, Ring, Sparkline, Energiefluss
+│   └── …                     Karten, Kennzahlen, Tabellen, Navigation
+└── app/
+    ├── login/                Anmeldung
+    ├── api/auth/             Login und Logout (Session-Proxy)
+    └── portal/               14 Module
+frappe/
+├── doctypes.spec.mjs         Kompakte Schemabeschreibung
+├── erzeuge-doctypes.mjs      Generator für die Frappe-JSON-Dateien
+└── energieportal/            Erzeugte App-Struktur
+```
+
+## Noch nicht angebunden
+
+Diese Teile sind als Oberfläche und Adapterschicht vorhanden, aber nicht mit
+einem echten Fremdsystem verbunden — dafür fehlen Zugänge und Schlüssel:
+
+- **Anlagensteuerung** (Tridium JACE 9000): Die Prüfung und Protokollierung
+  läuft, die Übertragung des Befehls an die Steuerung fehlt.
+- **Fernwartungstunnel** (Teltonika RUT142 über Zero-Trust-Zugang): Der
+  Freigabeprozess ist vollständig abgebildet und protokolliert; die
+  Durchschaltung erfolgt im Zugangsdienst.
+- **Zertifikatehandel**: Vollmacht und Bestandsführung laufen im Portal, die
+  Anbindung an den Handelspartner fehlt.
+- **Ladepunkte über OCPP**: Datenmodell und Abrechnung stehen, die Live-Anbindung
+  an die Ladepunkte fehlt.
+- **Day-Ahead-Preise**: derzeit modelliert, nicht von der Börse bezogen.
+- **Wettervorhersage**: Die Ertragsprognose rechnet mit dem modellierten
+  Jahresgang. Die Schnittstelle in [`src/lib/prognose.ts`](src/lib/prognose.ts)
+  ist so geschnitten, dass an dieser Stelle eine echte Vorhersage eintreten
+  kann.
+
+An allen Stellen ist der Einstiegspunkt vorbereitet — es fehlt jeweils nur der
+Endpunkt und die Zugangsdaten.

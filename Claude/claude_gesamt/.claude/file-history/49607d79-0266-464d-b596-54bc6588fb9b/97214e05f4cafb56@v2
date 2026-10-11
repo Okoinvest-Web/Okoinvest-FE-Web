@@ -1,0 +1,214 @@
+<template>
+  <div>
+    <PageHeader title="Fristen" :subtitle="untertitel">
+      <template #actions>
+        <FormControl v-model="fenster" type="select" :options="fensterOptionen" />
+        <FormControl v-model="art" type="select" :options="artOptionen" />
+      </template>
+    </PageHeader>
+
+    <div class="p-6">
+      <div v-if="fristen.data" class="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <StatCard
+          v-for="kachel in kacheln"
+          :key="kachel.label"
+          :label="kachel.label"
+          :wert="kachel.wert"
+          :hinweis="kachel.hinweis"
+          :level="kachel.level"
+        />
+      </div>
+
+      <!-- Zeitstrahl: eine Zeile je Frist, Abstand nach Tagen -->
+      <section
+        v-if="gefiltert.length"
+        class="mb-6 rounded-lg border border-outline-gray-2 bg-surface-white p-4"
+      >
+        <h2 class="mb-3 text-base font-semibold text-ink-gray-8">Zeitlicher Verlauf</h2>
+        <div class="space-y-1.5">
+          <div
+            v-for="e in gefiltert.slice(0, 20)"
+            :key="e.kind + e.object_name"
+            class="flex items-center gap-2"
+          >
+            <span class="w-24 shrink-0 text-right text-xs text-ink-gray-5">
+              {{ e.kind_label }}
+            </span>
+            <div class="relative h-5 flex-1 rounded" style="background: var(--viz-neutral-soft)">
+              <!-- Heute als Markierung, damit Überfälliges links davon liegt -->
+              <div
+                class="absolute inset-y-0 w-px"
+                :style="{ left: heuteAnteil + '%', background: 'var(--viz-ink-muted)' }"
+                aria-hidden="true"
+              />
+              <div
+                class="absolute inset-y-0 rounded"
+                :style="{
+                  left: Math.min(heuteAnteil, position(e)) + '%',
+                  width: Math.max(1.5, Math.abs(position(e) - heuteAnteil)) + '%',
+                  background: balkenFarbe(e.level),
+                }"
+                :title="e.title + ': ' + e.text"
+              />
+            </div>
+            <span class="w-40 shrink-0 truncate text-xs text-ink-gray-7" :title="e.title">
+              {{ e.title }}
+            </span>
+            <span class="w-36 shrink-0 text-right text-xs tabular-nums text-ink-gray-6">
+              {{ e.text }}
+            </span>
+          </div>
+        </div>
+        <p class="mt-2 text-xs text-ink-gray-4">
+          Die senkrechte Linie ist heute. Balken links davon sind überfällig.
+        </p>
+      </section>
+
+      <DataTable
+        :columns="spalten"
+        :rows="gefiltert"
+        :loading="fristen.loading"
+        empty-text="Keine Frist in diesem Zeitraum."
+      >
+        <template #zelle-kind_label="{ zeile }">
+          <Badge :theme="artThema(zeile.kind)">{{ zeile.kind_label }}</Badge>
+        </template>
+        <template #zelle-title="{ zeile }">
+          <RouterLink
+            v-if="ziel(zeile)"
+            :to="ziel(zeile)"
+            class="text-ink-gray-9 underline decoration-outline-gray-3 underline-offset-2"
+          >
+            {{ zeile.title }}
+          </RouterLink>
+          <span v-else class="text-ink-gray-9">{{ zeile.title }}</span>
+        </template>
+        <template #zelle-befund="{ zeile }">
+          <StatusDot :level="zeile.level" :text="zeile.text" klein />
+        </template>
+      </DataTable>
+
+      <p class="mt-3 text-xs text-ink-gray-4">
+        Garantie und Prüfung stammen aus dem Inventar, Lizenzen, Verträge und Zertifikate aus der
+        Dokumentation. Eine reine Inventarsoftware kennt die letzten drei nicht und braucht dafür
+        eine zweite Liste.
+      </p>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed, ref, watch } from 'vue'
+import { Badge, FormControl, createResource } from 'frappe-ui'
+import PageHeader from '@/components/PageHeader.vue'
+import DataTable from '@/components/DataTable.vue'
+import StatCard from '@/components/StatCard.vue'
+import StatusDot from '@/components/StatusDot.vue'
+import { balkenFarbe } from '@/viz'
+
+const fenster = ref('90')
+const art = ref('')
+
+const fristen = createResource({
+  url: 'netops.api.inventar.deadline_overview',
+  makeParams: () => ({ days: Number(fenster.value) }),
+  auto: true,
+})
+
+watch(fenster, () => fristen.fetch())
+
+const fensterOptionen = [
+  { label: 'Nächste 30 Tage', value: '30' },
+  { label: 'Nächste 90 Tage', value: '90' },
+  { label: 'Nächste 180 Tage', value: '180' },
+  { label: 'Nächstes Jahr', value: '365' },
+]
+
+const artOptionen = [
+  { label: 'Alle Arten', value: '' },
+  { label: 'Garantie', value: 'warranty' },
+  { label: 'Prüfung', value: 'inspection' },
+  { label: 'Lizenz', value: 'license' },
+  { label: 'Vertrag', value: 'contract' },
+  { label: 'Zertifikat', value: 'certificate' },
+]
+
+const gefiltert = computed(() => {
+  const liste = fristen.data?.entries || []
+  return art.value ? liste.filter((e) => e.kind === art.value) : liste
+})
+
+const spalten = [
+  { key: 'kind_label', label: 'Art', width: '130px' },
+  { key: 'title', label: 'Gegenstand' },
+  { key: 'due_date', label: 'Fällig am', numeric: true, muted: true, width: '140px' },
+  { key: 'befund', label: 'Stand', width: '240px' },
+]
+
+const kacheln = computed(() => {
+  const z = fristen.data?.summary
+  if (!z) return []
+  return [
+    { label: 'Fristen im Zeitraum', wert: z.total, level: 'neutral' },
+    {
+      label: 'Überfällig',
+      wert: z.overdue,
+      hinweis: z.overdue ? 'sofort ansehen' : 'keine',
+      level: z.overdue ? 'critical' : 'ok',
+    },
+    {
+      label: 'In 30 Tagen',
+      wert: z.within_30,
+      hinweis: z.within_30 ? 'einplanen' : 'nichts',
+      level: z.within_30 ? 'warning' : 'ok',
+    },
+    {
+      label: 'Prüftermine',
+      wert: z.by_kind.inspection || 0,
+      hinweis: 'Werkzeug und Messtechnik',
+      level: 'neutral',
+    },
+  ]
+})
+
+const untertitel = computed(() => {
+  const z = fristen.data?.summary
+  if (!z) return ''
+  return z.total + ' Fristen · ' + z.overdue + ' überfällig'
+})
+
+/**
+ * Der Zeitstrahl beginnt beim ältesten überfälligen Eintrag und endet am
+ * Ende des Fensters. Heute liegt irgendwo dazwischen.
+ */
+const spanne = computed(() => {
+  const tage = gefiltert.value.map((e) => e.days)
+  const von = Math.min(0, ...tage)
+  const bis = Math.max(Number(fenster.value), ...tage)
+  return { von, bis, breite: bis - von || 1 }
+})
+
+const heuteAnteil = computed(() => ((0 - spanne.value.von) / spanne.value.breite) * 100)
+
+function position(eintrag) {
+  return ((eintrag.days - spanne.value.von) / spanne.value.breite) * 100
+}
+
+function artThema(kind) {
+  return (
+    {
+      warranty: 'blue',
+      inspection: 'orange',
+      license: 'green',
+      contract: 'gray',
+      certificate: 'blue',
+    }[kind] || 'gray'
+  )
+}
+
+function ziel(eintrag) {
+  if (eintrag.object_type === 'Asset') return '/inventory/' + eintrag.object_name
+  if (eintrag.object_type === 'Contract') return '/contracts'
+  return null
+}
+</script>

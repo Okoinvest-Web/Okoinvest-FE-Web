@@ -1,0 +1,189 @@
+/**
+ * Registrierung der NetOps-eigenen "whitelisted" Methoden.
+ *
+ * Die Pfade entsprechen exakt den spaeteren Python-Methoden in der App
+ * `netops`. Wenn das Backend existiert, verschwindet diese Datei ersatzlos -
+ * die aufrufenden Komponenten bleiben unveraendert.
+ *
+ * Achtung fuer die Portierung: jede dieser Methoden braucht in Python eine
+ * explizite Rechtepruefung (`frappe.has_permission`) und einen Mandantenfilter.
+ * Der Mock prueft keine Rechte - er bildet nur die Datenform ab.
+ */
+import { registerMethod } from '../server.js'
+import { device_detail, device_list, dashboard_counters } from './dcim.js'
+import { prefix_addresses, prefix_list, prefix_tree } from './ipam.js'
+import { global_search } from './search.js'
+import { device_front_panel, rack_elevation, rack_list, topology } from './viz.js'
+import { audit_log, verify_chain } from './audit.js'
+import { firewall_rules, path_analysis, rule_hygiene } from './firewall.js'
+import { alert_list, connector_status, drift_list, set_drift_state } from './ops.js'
+import { backup_status } from './backup.js'
+import { incident_list, security_overview, vulnerability_list } from './security.js'
+import { cable_list, trace_path, vlan_list } from './infra.js'
+import { checklist_runs, contract_list, document_list, object_dossier } from './docs.js'
+import { screen_data, screen_list, screen_pairings, set_pairing_state } from './screens.js'
+import { impact_analysis, service_chain, service_list } from './services.js'
+import { communication_matrix } from './matrix.js'
+import { cluster_overview, host_detail, storage_overview, vm_list } from './virt.js'
+import { domain_check, flow_stats, gateway_status, mail_incidents, mail_overview } from './mail.js'
+import { cloud_overview, exposure_overview, identity_overview } from './cloud.js'
+import { change_list, compliance_report, compliance_summary, set_change_state } from './change.js'
+import { power_impact, power_overview } from './power.js'
+import {
+  floor_plan,
+  floor_plan_list,
+  network_services,
+  remote_overview,
+  ticket_list,
+} from './netsvc.js'
+
+import {
+  asset_detail,
+  asset_list,
+  deadline_overview,
+  depreciation_schedule,
+  inventory_overview,
+  label_payload,
+} from './inventar.js'
+import {
+  assign_asset,
+  consumable_list,
+  count_close,
+  count_detail,
+  count_scan,
+  count_start,
+  damage_list,
+  dispose_asset,
+  disposal_list,
+  reservation_list,
+  reserve_asset,
+  return_asset,
+  set_damage_state,
+  set_reservation_state,
+  stock_move,
+  stock_movements,
+} from './inventar-ops.js'
+import {
+  bundle_list,
+  employee_equipment,
+  employee_list,
+  offboarding_check,
+  offboarding_overview,
+  onboarding_plan,
+} from './personal.js'
+
+export function registerNetopsMethods() {
+  registerMethod('netops.api.dcim.device_list', device_list)
+  registerMethod('netops.api.dcim.device_detail', device_detail)
+  registerMethod('netops.api.dcim.dashboard_counters', dashboard_counters)
+  registerMethod('netops.api.dcim.device_front_panel', device_front_panel)
+  registerMethod('netops.api.dcim.rack_elevation', rack_elevation)
+  registerMethod('netops.api.dcim.rack_list', rack_list)
+  registerMethod('netops.api.dcim.topology', topology)
+
+  registerMethod('netops.api.ipam.prefix_tree', prefix_tree)
+  registerMethod('netops.api.ipam.prefix_list', prefix_list)
+  registerMethod('netops.api.ipam.prefix_addresses', prefix_addresses)
+
+  registerMethod('netops.api.search.global_search', global_search)
+
+  registerMethod('netops.api.audit.verify_chain', verify_chain)
+  registerMethod('netops.api.audit.audit_log', audit_log)
+
+  registerMethod('netops.api.firewall.path_analysis', path_analysis)
+  registerMethod('netops.api.firewall.rule_hygiene', rule_hygiene)
+  registerMethod('netops.api.firewall.firewall_rules', firewall_rules)
+
+  registerMethod('netops.api.ops.connector_status', connector_status)
+  registerMethod('netops.api.ops.drift_list', drift_list)
+  registerMethod('netops.api.ops.set_drift_state', set_drift_state)
+  registerMethod('netops.api.ops.alert_list', alert_list)
+
+  registerMethod('netops.api.backup.backup_status', backup_status)
+
+  registerMethod('netops.api.security.vulnerability_list', vulnerability_list)
+  registerMethod('netops.api.security.incident_list', incident_list)
+  registerMethod('netops.api.security.security_overview', security_overview)
+
+  registerMethod('netops.api.dcim.cable_list', cable_list)
+  registerMethod('netops.api.dcim.trace_path', trace_path)
+  registerMethod('netops.api.ipam.vlan_list', vlan_list)
+
+  registerMethod('netops.api.docs.document_list', document_list)
+  registerMethod('netops.api.docs.checklist_runs', checklist_runs)
+  registerMethod('netops.api.docs.contract_list', contract_list)
+  registerMethod('netops.api.docs.object_dossier', object_dossier)
+
+  registerMethod('netops.api.screen.screen_list', screen_list)
+  registerMethod('netops.api.screen.screen_pairings', screen_pairings)
+  registerMethod('netops.api.screen.set_pairing_state', set_pairing_state)
+  registerMethod('netops.api.screen.screen_data', screen_data)
+
+  registerMethod('netops.api.services.service_list', service_list)
+  registerMethod('netops.api.services.service_chain', service_chain)
+  registerMethod('netops.api.services.impact_analysis', impact_analysis)
+
+  registerMethod('netops.api.firewall.communication_matrix', communication_matrix)
+
+  registerMethod('netops.api.virt.cluster_overview', cluster_overview)
+  registerMethod('netops.api.virt.vm_list', vm_list)
+  registerMethod('netops.api.virt.host_detail', host_detail)
+  registerMethod('netops.api.virt.storage_overview', storage_overview)
+
+  registerMethod('netops.api.mail.mail_overview', mail_overview)
+  registerMethod('netops.api.mail.gateway_status', gateway_status)
+  registerMethod('netops.api.mail.flow_stats', flow_stats)
+  registerMethod('netops.api.mail.mail_incidents', mail_incidents)
+  registerMethod('netops.api.mail.domain_check', domain_check)
+
+  registerMethod('netops.api.cloud.cloud_overview', cloud_overview)
+  registerMethod('netops.api.identity.identity_overview', identity_overview)
+  registerMethod('netops.api.exposure.exposure_overview', exposure_overview)
+
+  registerMethod('netops.api.change.change_list', change_list)
+  registerMethod('netops.api.change.set_change_state', set_change_state)
+  registerMethod('netops.api.compliance.compliance_report', compliance_report)
+  registerMethod('netops.api.compliance.compliance_summary', compliance_summary)
+
+  registerMethod('netops.api.power.power_overview', power_overview)
+  registerMethod('netops.api.power.power_impact', power_impact)
+
+  registerMethod('netops.api.netsvc.network_services', network_services)
+  registerMethod('netops.api.netsvc.floor_plan', floor_plan)
+  registerMethod('netops.api.netsvc.floor_plan_list', floor_plan_list)
+  registerMethod('netops.api.netsvc.ticket_list', ticket_list)
+  registerMethod('netops.api.netsvc.remote_overview', remote_overview)
+  // --- Inventar (Bestand, Abschreibung, Fristen) ---
+  registerMethod('netops.api.inventar.asset_list', asset_list)
+  registerMethod('netops.api.inventar.asset_detail', asset_detail)
+  registerMethod('netops.api.inventar.inventory_overview', inventory_overview)
+  registerMethod('netops.api.inventar.depreciation_schedule', depreciation_schedule)
+  registerMethod('netops.api.inventar.deadline_overview', deadline_overview)
+  registerMethod('netops.api.inventar.label_payload', label_payload)
+
+  // --- Inventar (schreibend) ---
+  registerMethod('netops.api.inventar.assign_asset', assign_asset)
+  registerMethod('netops.api.inventar.return_asset', return_asset)
+  registerMethod('netops.api.inventar.reserve_asset', reserve_asset)
+  registerMethod('netops.api.inventar.reservation_list', reservation_list)
+  registerMethod('netops.api.inventar.set_reservation_state', set_reservation_state)
+  registerMethod('netops.api.inventar.consumable_list', consumable_list)
+  registerMethod('netops.api.inventar.stock_move', stock_move)
+  registerMethod('netops.api.inventar.stock_movements', stock_movements)
+  registerMethod('netops.api.inventar.count_start', count_start)
+  registerMethod('netops.api.inventar.count_scan', count_scan)
+  registerMethod('netops.api.inventar.count_detail', count_detail)
+  registerMethod('netops.api.inventar.count_close', count_close)
+  registerMethod('netops.api.inventar.damage_list', damage_list)
+  registerMethod('netops.api.inventar.set_damage_state', set_damage_state)
+  registerMethod('netops.api.inventar.dispose_asset', dispose_asset)
+  registerMethod('netops.api.inventar.disposal_list', disposal_list)
+
+  // --- Beschäftigte (Frappe HR als Quelle, siehe personal.js) ---
+  registerMethod('netops.api.personal.employee_list', employee_list)
+  registerMethod('netops.api.personal.employee_equipment', employee_equipment)
+  registerMethod('netops.api.personal.offboarding_check', offboarding_check)
+  registerMethod('netops.api.personal.offboarding_overview', offboarding_overview)
+  registerMethod('netops.api.personal.onboarding_plan', onboarding_plan)
+  registerMethod('netops.api.personal.bundle_list', bundle_list)
+}

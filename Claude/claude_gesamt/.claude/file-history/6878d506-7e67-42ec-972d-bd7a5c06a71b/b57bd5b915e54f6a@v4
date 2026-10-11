@@ -1,0 +1,210 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { ArrowDownWideNarrow, Building2, CheckSquare, Columns3, Contact, CornerDownLeft, Handshake, LayoutDashboard, Plus, Search, UserPlus, Users } from "lucide-react";
+import type { SearchHit } from "@/lib/types";
+
+const ICON = { Lead: Users, Chance: Handshake, Kunde: Building2, Kontakt: Contact };
+
+type Command = { title: string; subtitle?: string; href: string; icon: typeof Users; group: string; keys?: string };
+
+// Ohne Suchbegriff: Schnellaktionen und Sprungziele
+const COMMANDS: Command[] = [
+  { group: "Schnellaktionen", title: "Neuen Lead erfassen", subtitle: "Anfrage aufnehmen", href: "/leads/new", icon: UserPlus, keys: "N L" },
+  { group: "Schnellaktionen", title: "Neue Chance anlegen", subtitle: "Projekt mit Auftragswert", href: "/opportunities/new", icon: Plus, keys: "N C" },
+  { group: "Schnellaktionen", title: "Heißeste Leads zuerst", subtitle: "Nach Lead-Score sortiert", href: "/leads?sort=score", icon: ArrowDownWideNarrow },
+  { group: "Springen zu", title: "Übersicht", href: "/", icon: LayoutDashboard, keys: "G Ü" },
+  { group: "Springen zu", title: "Leads", href: "/leads", icon: Users, keys: "G L" },
+  { group: "Springen zu", title: "Pipeline (Kanban)", href: "/opportunities", icon: Columns3, keys: "G C" },
+  { group: "Springen zu", title: "Aufgaben", href: "/todos", icon: CheckSquare, keys: "G A" },
+  { group: "Springen zu", title: "Meine Chancen", subtitle: "Kanban, nur eigene", href: "/opportunities?owner=me", icon: Handshake },
+  { group: "Springen zu", title: "Kunden", href: "/customers", icon: Building2, keys: "G K" },
+];
+
+// Zweistufige Kürzel wie in Linear: erst G/N, dann Zielbuchstabe
+const CHORDS: Record<string, string> = Object.fromEntries(
+  COMMANDS.filter((c) => c.keys).map((c) => [c.keys!.toLowerCase().replace(" ", ""), c.href]),
+);
+CHORDS["gu"] = "/"; // Ü ist nicht auf jeder Tastatur bequem
+
+function isTyping(e: KeyboardEvent) {
+  const t = e.target as HTMLElement | null;
+  return !!t && (t.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(t.tagName));
+}
+
+// Globale Suche: Strg+K / ⌘K öffnet, Pfeiltasten wählen, Enter öffnet.
+export function CommandPalette() {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [q, setQ] = useState("");
+  const [hits, setHits] = useState<SearchHit[]>([]);
+  const [active, setActive] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  function close() {
+    setOpen(false);
+    setQ("");
+    setHits([]);
+    setActive(0);
+  }
+
+  useEffect(() => {
+    let lead = "";
+    let leadTimer: ReturnType<typeof setTimeout> | undefined;
+    function onKey(e: KeyboardEvent) {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setOpen((o) => !o);
+        return;
+      }
+      if (e.key === "Escape") close();
+      if (e.ctrlKey || e.metaKey || e.altKey || isTyping(e)) return;
+      const k = e.key.toLowerCase();
+      if (lead) {
+        const href = CHORDS[lead + k];
+        lead = "";
+        clearTimeout(leadTimer);
+        if (href) {
+          e.preventDefault();
+          router.push(href);
+        }
+      } else if (k === "g" || k === "n") {
+        lead = k;
+        leadTimer = setTimeout(() => (lead = ""), 1200);
+      }
+    }
+    function onOpen() {
+      setOpen(true);
+    }
+    window.addEventListener("keydown", onKey);
+    window.addEventListener("open-search", onOpen);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("open-search", onOpen);
+      clearTimeout(leadTimer);
+    };
+  }, [router]);
+
+  useEffect(() => {
+    if (open) setTimeout(() => inputRef.current?.focus(), 0);
+  }, [open]);
+
+  const searching = q.trim().length >= 2;
+
+  useEffect(() => {
+    if (!searching) return;
+    const ctrl = new AbortController();
+    const t = setTimeout(async () => {
+      setLoading(true);
+      try {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`, { signal: ctrl.signal });
+        if (res.ok) {
+          setHits(((await res.json()) as { hits: SearchHit[] }).hits);
+          setActive(0);
+        }
+      } catch {
+        /* abgebrochen */
+      } finally {
+        setLoading(false);
+      }
+    }, 150);
+    return () => {
+      clearTimeout(t);
+      ctrl.abort();
+    };
+  }, [q, searching]);
+
+  // Eine Liste für Tastaturnavigation: Treffer beim Suchen, sonst Befehle
+  const items: Command[] = searching
+    ? hits.map((h) => ({ title: h.title, subtitle: h.subtitle, href: h.href, icon: ICON[h.type], group: h.type }))
+    : COMMANDS.filter((c) => !q.trim() || c.title.toLowerCase().includes(q.trim().toLowerCase()));
+
+  function go(item: Command | undefined) {
+    if (!item) return;
+    close();
+    router.push(item.href);
+  }
+
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-start justify-center bg-brand-950/30 p-4 pt-[12vh] backdrop-blur-[2px]" onMouseDown={close}>
+      <div className="w-full max-w-xl overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-pop" onMouseDown={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-2 border-b border-gray-200 px-4">
+          <Search className="size-5 text-brand-600" />
+          <input
+            ref={inputRef}
+            value={q}
+            onChange={(e) => {
+              setQ(e.target.value);
+              setActive(0);
+              if (e.target.value.trim().length < 2) setHits([]);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "ArrowDown") {
+                e.preventDefault();
+                setActive((a) => Math.min(a + 1, items.length - 1));
+              } else if (e.key === "ArrowUp") {
+                e.preventDefault();
+                setActive((a) => Math.max(a - 1, 0));
+              } else if (e.key === "Enter") {
+                go(items[active]);
+              }
+            }}
+            placeholder="Suchen oder Befehl eingeben…"
+            className="h-14 flex-1 text-[15px] outline-none placeholder:text-gray-400"
+          />
+          <kbd className="rounded border border-gray-200 px-1.5 text-[10px] text-gray-500">Esc</kbd>
+        </div>
+        <ul className="max-h-96 overflow-y-auto p-2">
+          {items.map((it, i) => {
+            const Icon = it.icon;
+            const header = !searching && (i === 0 || items[i - 1].group !== it.group);
+            return (
+              <li key={it.href + i}>
+                {header && <div className="px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wider text-gray-400">{it.group}</div>}
+                <button
+                  onMouseEnter={() => setActive(i)}
+                  onClick={() => go(it)}
+                  className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left ${i === active ? "bg-brand-50" : ""}`}
+                >
+                  <span className={`flex size-8 shrink-0 items-center justify-center rounded-md ${i === active ? "bg-brand-100 text-brand-700" : "bg-gray-100 text-gray-500"}`}>
+                    <Icon className="size-4" strokeWidth={1.75} />
+                  </span>
+                  <span className="truncate font-medium text-gray-900">{it.title}</span>
+                  {it.subtitle && <span className="truncate text-gray-500">{it.subtitle}</span>}
+                  {searching ? (
+                    <span className="ml-auto shrink-0 rounded bg-gray-100 px-1.5 py-0.5 text-[11px] font-medium text-gray-500">{it.group}</span>
+                  ) : it.keys ? (
+                    <span className="ml-auto flex shrink-0 gap-1">
+                      {it.keys.split(" ").map((k) => (
+                        <kbd key={k} className="flex h-5 min-w-5 items-center justify-center rounded border border-gray-200 bg-white px-1 font-sans text-[11px] text-gray-500">
+                          {k}
+                        </kbd>
+                      ))}
+                    </span>
+                  ) : (
+                    i === active && <CornerDownLeft className="ml-auto size-3.5 shrink-0 text-gray-400" />
+                  )}
+                </button>
+              </li>
+            );
+          })}
+          {searching && !loading && hits.length === 0 && <li className="px-4 py-6 text-center text-gray-500">Keine Treffer</li>}
+          {!searching && items.length === 0 && <li className="px-4 py-6 text-center text-gray-400">Mindestens 2 Zeichen für die Suche eingeben</li>}
+        </ul>
+        <div className="flex items-center gap-4 border-t border-gray-100 bg-gray-50/70 px-4 py-2 text-[11px] text-gray-500">
+          <span>
+            <kbd className="rounded border border-gray-200 bg-white px-1">↑</kbd> <kbd className="rounded border border-gray-200 bg-white px-1">↓</kbd> auswählen
+          </span>
+          <span>
+            <kbd className="rounded border border-gray-200 bg-white px-1">Enter</kbd> öffnen
+          </span>
+          <span className="ml-auto">Leads · Chancen · Kunden · Kontakte</span>
+        </div>
+      </div>
+    </div>
+  );
+}

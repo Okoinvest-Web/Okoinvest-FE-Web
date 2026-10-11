@@ -1,0 +1,124 @@
+<template>
+  <!--
+    Code 39 als SVG. Das ist die Symbolik, die LTO-Etiketten verwenden -
+    kein QR-Code, weil die Laufwerksleser in den Wechslern Code 39 lesen und
+    sonst nichts.
+
+    Der Klartext steht unter den Balken, und das ist kein Beiwerk: am
+    Medienschrank steht selten jemand mit einem Scanner. Ein Etikett, das
+    nur eine Maschine lesen kann, zwingt zum Einlegen, bevor man weiß, was
+    man einlegt.
+  -->
+  <figure class="inline-block">
+    <svg
+      :width="breite"
+      :height="hoehe + 18"
+      :viewBox="`0 0 ${breite} ${hoehe + 18}`"
+      role="img"
+      :aria-label="'Strichcode ' + wert"
+    >
+      <rect :width="breite" :height="hoehe + 18" fill="#fff" />
+      <g fill="#000">
+        <rect v-for="(b, i) in balken" :key="i" :x="b.x" y="0" :width="b.w" :height="hoehe" />
+      </g>
+      <text
+        :x="breite / 2"
+        :y="hoehe + 14"
+        text-anchor="middle"
+        font-family="ui-monospace, monospace"
+        font-size="12"
+        fill="#000"
+        letter-spacing="1.5"
+      >
+        {{ wert }}
+      </text>
+    </svg>
+  </figure>
+</template>
+
+<script setup>
+import { computed } from 'vue'
+
+const props = defineProps({
+  wert: { type: String, required: true },
+  /** Breite des schmalen Moduls. LTO-Vorgabe: mindestens 0,25 mm. */
+  modul: { type: Number, default: 2 },
+  hoehe: { type: Number, default: 40 },
+})
+
+/**
+ * Code 39, Teilmenge: Ziffern, Großbuchstaben, Bindestrich.
+ *
+ * Neun Elemente je Zeichen (fünf Striche, vier Lücken), davon genau drei
+ * breit - daher der Name. `n` schmal, `w` breit, abwechselnd Strich und
+ * Lücke, beginnend mit Strich.
+ */
+const MUSTER = {
+  0: 'nnnwwnwnn',
+  1: 'wnnwnnnnw',
+  2: 'nnwwnnnnw',
+  3: 'wnwwnnnnn',
+  4: 'nnnwwnnnw',
+  5: 'wnnwwnnnn',
+  6: 'nnwwwnnnn',
+  7: 'nnnwnnwnw',
+  8: 'wnnwnnwnn',
+  9: 'nnwwnnwnn',
+  A: 'wnnnnwnnw',
+  B: 'nnwnnwnnw',
+  C: 'wnwnnwnnn',
+  D: 'nnnnwwnnw',
+  E: 'wnnnwwnnn',
+  F: 'nnwnwwnnn',
+  G: 'nnnnnwwnw',
+  H: 'wnnnnwwnn',
+  I: 'nnwnnwwnn',
+  J: 'nnnnwwwnn',
+  K: 'wnnnnnnww',
+  L: 'nnwnnnnww',
+  M: 'wnwnnnnwn',
+  N: 'nnnnwnnww',
+  O: 'wnnnwnnwn',
+  P: 'nnwnwnnwn',
+  Q: 'nnnnnnwww',
+  R: 'wnnnnnwwn',
+  S: 'nnwnnnwwn',
+  T: 'nnnnwnwwn',
+  U: 'wwnnnnnnw',
+  V: 'nwwnnnnnw',
+  W: 'wwwnnnnnn',
+  X: 'nwnnwnnnw',
+  Y: 'wwnnwnnnn',
+  Z: 'nwwnwnnnn',
+  '-': 'nwnnnnwnw',
+  // Start- und Stoppzeichen. Ohne sie liest kein Scanner.
+  '*': 'nwnnwnwnn',
+}
+
+const zeichen = computed(() => ('*' + String(props.wert).toUpperCase() + '*').split(''))
+
+const balken = computed(() => {
+  const breitModul = props.modul * 3
+  const liste = []
+  let x = 0
+  for (const z of zeichen.value) {
+    const muster = MUSTER[z]
+    // Unbekannte Zeichen still zu überspringen erzeugte einen Code, der
+    // sich lesen lässt und etwas anderes bedeutet.
+    if (!muster) continue
+    for (let i = 0; i < muster.length; i++) {
+      const w = muster[i] === 'w' ? breitModul : props.modul
+      if (i % 2 === 0) liste.push({ x, w })
+      x += w
+    }
+    // Zwischenraum zwischen den Zeichen, ein schmales Modul.
+    x += props.modul
+  }
+  return liste
+})
+
+const breite = computed(() => {
+  const letzte = balken.value.at(-1)
+  return letzte ? letzte.x + letzte.w + props.modul : 0
+})
+</script>

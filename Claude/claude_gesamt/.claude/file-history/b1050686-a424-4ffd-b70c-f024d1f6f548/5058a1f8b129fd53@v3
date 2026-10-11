@@ -1,0 +1,214 @@
+import "server-only";
+
+import { alle, eine, skalar } from "../db/verbindung.ts";
+
+/**
+ * Nachhaltigkeitsbilanz und Buchhaltungsübergabe.
+ *
+ * Beides sind Nachweise gegenüber Dritten - einem Wirtschaftsprüfer
+ * und einem Steuerberater. Entsprechend wird mitgeführt, woher jede
+ * Zahl stammt: bei der Bilanz der Emissionsfaktor samt Quelle, bei
+ * der Buchung das Konto und der Beleg.
+ */
+
+/* ------------------------------------------------------------------ */
+/* Treibhausgasbilanz                                                  */
+/* ------------------------------------------------------------------ */
+
+export interface EsgPeriode {
+  id: string;
+  kunde_id: string;
+  jahr: number;
+  bezeichnung: string;
+  standard: string;
+  status: string;
+  scope1_t: number;
+  scope2_markt_t: number;
+  scope2_standort_t: number;
+  scope3_t: number;
+  vermieden_t: number;
+  freigegeben_am: string | null;
+  positionen: number;
+}
+
+export function ladeEsgPerioden(): EsgPeriode[] {
+  return alle<EsgPeriode>(
+    `SELECT p.*, (SELECT COUNT(*) FROM esg_position x
+                   WHERE x.periode_id = p.id) AS positionen
+       FROM esg_periode p
+      ORDER BY p.jahr DESC`,
+  );
+}
+
+export function ladeEsgPeriode(id: string): EsgPeriode | null {
+  return eine<EsgPeriode>(
+    `SELECT p.*, (SELECT COUNT(*) FROM esg_position x
+                   WHERE x.periode_id = p.id) AS positionen
+       FROM esg_periode p WHERE p.id = ?`,
+    id,
+  );
+}
+
+export interface EsgPositionZeile {
+  id: string;
+  scope: number;
+  kategorie: string;
+  bezeichnung: string;
+  menge: number;
+  einheit: string;
+  faktor: number;
+  faktor_einheit: string;
+  faktor_quelle: string | null;
+  emission_t: number;
+  herkunft: string;
+  bemerkung: string | null;
+}
+
+export function ladeEsgPositionen(periodeId: string): EsgPositionZeile[] {
+  return alle<EsgPositionZeile>(
+    `SELECT * FROM esg_position WHERE periode_id = ?
+      ORDER BY scope, kategorie, bezeichnung`,
+    periodeId,
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Buchhaltung                                                         */
+/* ------------------------------------------------------------------ */
+
+export interface StapelZeile {
+  id: string;
+  bezeichnung: string;
+  zeitraum_von: string;
+  zeitraum_bis: string;
+  format: string;
+  status: string;
+  buchungen: number;
+  summe_soll: number;
+  summe_haben: number;
+  erzeugt_am: string;
+  uebergeben_am: string | null;
+  erzeugt_von: string | null;
+}
+
+export function ladeStapel(grenze = 12): StapelZeile[] {
+  return alle<StapelZeile>(
+    `SELECT * FROM buchungsstapel ORDER BY zeitraum_von DESC LIMIT ?`,
+    grenze,
+  );
+}
+
+export function ladeStapelEinzeln(id: string): StapelZeile | null {
+  return eine<StapelZeile>("SELECT * FROM buchungsstapel WHERE id = ?", id);
+}
+
+export interface BuchungZeile {
+  id: string;
+  belegdatum: string;
+  belegnummer: string;
+  konto: string;
+  gegenkonto: string;
+  kostenstelle: string | null;
+  text: string;
+  betrag: number;
+  steuersatz: number;
+  steuercode: string | null;
+  herkunft: string;
+}
+
+export function ladeBuchungen(stapelId: string): BuchungZeile[] {
+  return alle<BuchungZeile>(
+    `SELECT * FROM buchung WHERE stapel_id = ?
+      ORDER BY gegenkonto, belegnummer`,
+    stapelId,
+  );
+}
+
+export interface KontoSumme {
+  konto: string;
+  buchungen: number;
+  netto: number;
+  steuer: number;
+}
+
+/**
+ * Summen je Gegenkonto.
+ *
+ * Das ist die Zahl, die der Steuerberater zuerst anschaut: Stimmt die
+ * Summe je Erlöskonto mit dem überein, was die Anwendung nennt, ist
+ * der Stapel in Ordnung.
+ *
+ * Gerundet wird je Zeile, dann summiert - nicht erst summiert und
+ * dann gerundet. Die Umsatzsteuer entsteht an der einzelnen Buchung;
+ * wer zuerst summiert, bekommt eine Summe, die um Cents von der Summe
+ * der angezeigten Zeilen abweicht. Auf genau diese Differenz schaut
+ * die Prüfung zuerst.
+ */
+export function ladeKontosummen(stapelId: string): KontoSumme[] {
+  return alle<KontoSumme>(
+    `SELECT gegenkonto AS konto,
+            COUNT(*)                                  AS buchungen,
+            ROUND(SUM(ROUND(betrag, 2)), 2)           AS netto,
+            ROUND(SUM(ROUND(betrag * steuersatz / 100, 2)), 2) AS steuer
+       FROM buchung
+      WHERE stapel_id = ?
+      GROUP BY gegenkonto
+      ORDER BY gegenkonto`,
+    stapelId,
+  );
+}
+
+export interface NachweisKennzahlen {
+  esgJahr: number | null;
+  esgGesamtT: number;
+  esgVermiedenT: number;
+  esgPositionen: number;
+  esgMessanteil: number;
+  stapel: number;
+  stapelOffen: number;
+  buchungenGesamt: number;
+  umsatzNetto: number;
+}
+
+export function ladeNachweisKennzahlen(): NachweisKennzahlen {
+  const periode = eine<EsgPeriode>(
+    `SELECT p.*, (SELECT COUNT(*) FROM esg_position x
+                   WHERE x.periode_id = p.id) AS positionen
+       FROM esg_periode p ORDER BY p.jahr DESC LIMIT 1`,
+  );
+
+  const gemessen = periode
+    ? (skalar<number>(
+        `SELECT COUNT(*) FROM esg_position
+          WHERE periode_id = ? AND herkunft = 'Gemessen'`,
+        periode.id,
+      ) ?? 0)
+    : 0;
+
+  return {
+    esgJahr: periode?.jahr ?? null,
+    esgGesamtT: periode
+      ? Number(
+          (
+            periode.scope1_t +
+            periode.scope2_markt_t +
+            periode.scope3_t
+          ).toFixed(2),
+        )
+      : 0,
+    esgVermiedenT: periode?.vermieden_t ?? 0,
+    esgPositionen: periode?.positionen ?? 0,
+    esgMessanteil:
+      periode && periode.positionen > 0 ? gemessen / periode.positionen : 0,
+    stapel: skalar<number>("SELECT COUNT(*) FROM buchungsstapel") ?? 0,
+    stapelOffen:
+      skalar<number>(
+        "SELECT COUNT(*) FROM buchungsstapel WHERE status = 'Entwurf'",
+      ) ?? 0,
+    buchungenGesamt: skalar<number>("SELECT COUNT(*) FROM buchung") ?? 0,
+    umsatzNetto:
+      skalar<number>(
+        "SELECT COALESCE(SUM(betrag), 0) FROM buchung WHERE konto LIKE '2%'",
+      ) ?? 0,
+  };
+}

@@ -1,0 +1,446 @@
+{
+  "titel": "ÖkoInvest Agenten-Armee · Masterplan DACH",
+  "agenten": [
+    {
+      "label": "Team Österreich · Marktanalyst AT",
+      "team": "Team Österreich",
+      "rolle": "Marktanalyst AT",
+      "auftrag": "Wettbewerber in AT (PV-Projektierer, Flächenvermittler, Agri-PV, EG-Plattformen, Energie-Crowdinvesting), deren Websites, Angebote, Lead-Mechaniken; Suchnachfrage; Lücken, die wir besetzen können.",
+      "art": "analyst"
+    },
+    {
+      "label": "Team Österreich · Regulierung & Förderung AT",
+      "team": "Team Österreich",
+      "rolle": "Regulierung & Förderung AT",
+      "auftrag": "EAG, ElWG, Förderungen (EAG-Investitionszuschuss, Marktprämie), Netzentgelte, Landesrecht; was davon als einzigartiger Mehrwert auf die Website gehört; prüfe unsere AT-Inhalte im Code auf Richtigkeit, Aktualität und Vermischung mit DE/CH.",
+      "art": "analyst"
+    },
+    {
+      "label": "Team Österreich · Raumordnung, Netze & Landwirtschaft AT",
+      "team": "Team Österreich",
+      "rolle": "Raumordnung, Netze & Landwirtschaft AT",
+      "auftrag": "Widmung/Raumordnung je Bundesland (PV-Zonen, Grünland), Netzanschluss-Situation je Netzbetreiber, Landwirtschaftskammern, Pachtgepflogenheiten; welche Daten je Bundesland/Bezirk wir legal nutzen und zeigen können.",
+      "art": "analyst"
+    },
+    {
+      "label": "Team Österreich · Energieversorger AT",
+      "team": "Team Österreich",
+      "rolle": "Energieversorger AT",
+      "auftrag": "Websites von Verbund, Wien Energie, EVN, Energie AG, Kelag, Salzburg AG, TIWAG, illwerke vkw, Energie Steiermark: Inhalte, Rechner, Gewerbe-/PV-/Gemeinschafts-Angebote, Lücken; woher deren Traffic kommt und wie wir legitim davon profitieren.",
+      "art": "analyst"
+    },
+    {
+      "label": "Team Österreich · Team-Lead",
+      "team": "Team Österreich",
+      "rolle": "Team-Lead",
+      "auftrag": "Ergebnisse des Teams bündeln, Konflikte auflösen, Top-Initiativen priorisieren",
+      "art": "lead"
+    },
+    {
+      "label": "Team Deutschland · Marktanalyst DE",
+      "team": "Team Deutschland",
+      "rolle": "Marktanalyst DE",
+      "auftrag": "Wettbewerber in DE (Projektierer, Flächenportale, Pachtvermittler, Agri-PV, Speicher), Lead-Mechaniken der Marktführer, Suchnachfrage, Lücken.",
+      "art": "analyst"
+    },
+    {
+      "label": "Team Deutschland · Regulierung & Förderung DE",
+      "team": "Team Deutschland",
+      "rolle": "Regulierung & Förderung DE",
+      "auftrag": "EEG/Solarpaket, § 35 BauGB-Privilegierung, Flächenkulisse, § 6 EEG Kommunalbeteiligung, Energy Sharing § 42c EnWG; prüfe DE-Inhalte im Code auf Richtigkeit und Vermischung.",
+      "art": "analyst"
+    },
+    {
+      "label": "Team Deutschland · Netze & Flächenkulisse DE",
+      "team": "Team Deutschland",
+      "rolle": "Netze & Flächenkulisse DE",
+      "auftrag": "Netzanschluss-Engpässe, benachteiligte Gebiete je Bundesland, Ausschreibungen BNetzA; welche offenen Daten (Marktstammdatenregister, Destatis) wir für Seiten je Landkreis/Gemeinde nutzen können.",
+      "art": "analyst"
+    },
+    {
+      "label": "Team Deutschland · Energieversorger DE",
+      "team": "Team Deutschland",
+      "rolle": "Energieversorger DE",
+      "auftrag": "EnBW, E.ON, RWE, Stadtwerke: Inhalte, Rechner, Lead-Strecken, Gewerbe-Angebote, Lücken bei Mittelstand/Landwirten/Kommunen; legitime Hebel für uns.",
+      "art": "analyst"
+    },
+    {
+      "label": "Team Deutschland · Team-Lead",
+      "team": "Team Deutschland",
+      "rolle": "Team-Lead",
+      "auftrag": "Ergebnisse des Teams bündeln, Konflikte auflösen, Top-Initiativen priorisieren",
+      "art": "lead"
+    },
+    {
+      "label": "Team Schweiz · Marktanalyst CH",
+      "team": "Team Schweiz",
+      "rolle": "Marktanalyst CH",
+      "auftrag": "Markt für Freiflächen-/Alpin-PV, Wettbewerber, Suchnachfrage, Lücken; prüfe, ob unsere CH-Inhalte heute eigenständig genug sind.",
+      "art": "analyst"
+    },
+    {
+      "label": "Team Schweiz · Regulierung CH",
+      "team": "Team Schweiz",
+      "rolle": "Regulierung CH",
+      "auftrag": "Mantelerlass/StromVG, LEG ab 2026, ZEV, Einmalvergütung, kantonale Unterschiede (Raumplanung, Bewilligungen); Richtigkeit unserer CH-Inhalte.",
+      "art": "analyst"
+    },
+    {
+      "label": "Team Schweiz · Sprache & Kultur CH",
+      "team": "Team Schweiz",
+      "rolle": "Sprache & Kultur CH",
+      "auftrag": "Ansprache in der Schweiz (Helvetismen, Franken, Konsens-Kultur, Gemeindeautonomie), Bedarf an FR/IT-Inhalten, Vertrauenssignale, die in CH zählen.",
+      "art": "analyst"
+    },
+    {
+      "label": "Team Schweiz · Energieversorger CH",
+      "team": "Team Schweiz",
+      "rolle": "Energieversorger CH",
+      "auftrag": "Axpo, BKW, Alpiq, EKZ, CKW, Stadtwerke: Inhalte, Angebote, Lücken; ElCom-Tarifdaten als Chance; legitime Hebel.",
+      "art": "analyst"
+    },
+    {
+      "label": "Team Schweiz · Team-Lead",
+      "team": "Team Schweiz",
+      "rolle": "Team-Lead",
+      "auftrag": "Ergebnisse des Teams bündeln, Konflikte auflösen, Top-Initiativen priorisieren",
+      "art": "lead"
+    },
+    {
+      "label": "Technik & Ingenieurwesen · Elektrotechnik & Netzanschluss",
+      "team": "Technik & Ingenieurwesen",
+      "rolle": "Elektrotechnik & Netzanschluss",
+      "auftrag": "Netzanschluss (Mittel-/Hochspannung, Trafo, Umspannwerk-Entfernung, Netzebenen AT/DE/CH), Einspeisebegrenzung, Netzverträglichkeit; prüfe den Netzanschluss-Rechner und die Aussagen dazu fachlich; welche Netz-Inhalte/Tools wären einzigartig?",
+      "art": "analyst"
+    },
+    {
+      "label": "Technik & Ingenieurwesen · PV-Systemingenieur",
+      "team": "Technik & Ingenieurwesen",
+      "rolle": "PV-Systemingenieur",
+      "auftrag": "Ertrag (spezifischer Ertrag je Region, PVGIS), Auslegung (Modulreihen, Abstand, Ost-West vs. Süd, bifazial, Tracker), Flächenbedarf je MWp; prüfe die Rechenannahmen in src/lib/invest/markt.js und src/lib/rechner auf fachliche Richtigkeit je Land.",
+      "art": "analyst"
+    },
+    {
+      "label": "Technik & Ingenieurwesen · Speicher-Ingenieur",
+      "team": "Technik & Ingenieurwesen",
+      "rolle": "Speicher-Ingenieur",
+      "auftrag": "Batteriegroßspeicher (Co-Location, Stand-alone, Netzdienstleistungen, Arbitrage, Brandschutz, Netzanschluss); prüfe Großspeicher-Seite und -Rechner fachlich; was fehlt Interessenten?",
+      "art": "analyst"
+    },
+    {
+      "label": "Technik & Ingenieurwesen · Bau- & Statik-Ingenieur",
+      "team": "Technik & Ingenieurwesen",
+      "rolle": "Bau- & Statik-Ingenieur",
+      "auftrag": "Dachflächen (Statik, Dachzustand, Brandschutz), Solarcarports (Fundamente, Ladeinfrastruktur), Freiflächen-Bau (Rammprofile, Zaun, Rückbau); prüfe Dach-/Carport-Inhalte und -Rechner fachlich.",
+      "art": "analyst"
+    },
+    {
+      "label": "Technik & Ingenieurwesen · Umwelt & Genehmigung",
+      "team": "Technik & Ingenieurwesen",
+      "rolle": "Umwelt & Genehmigung",
+      "auftrag": "Naturschutz, Biodiversität im Solarpark, UVP-Schwellen, Blendgutachten, Bodenschutz, Rückbau; Genehmigungswege je Land; welche Inhalte schaffen Vertrauen bei Eigentümern und Gemeinden?",
+      "art": "analyst"
+    },
+    {
+      "label": "Technik & Ingenieurwesen · Team-Lead",
+      "team": "Technik & Ingenieurwesen",
+      "rolle": "Team-Lead",
+      "auftrag": "Ergebnisse des Teams bündeln, Konflikte auflösen, Top-Initiativen priorisieren",
+      "art": "lead"
+    },
+    {
+      "label": "Zukunft & Strategie · Zukunftsforscher",
+      "team": "Zukunft & Strategie",
+      "rolle": "Zukunftsforscher",
+      "auftrag": "Trends 2027–2032 mit Belegen (Regulierung, Netzengpässe, Speicherboom, dynamische Tarife, PPA, Agri-PV, KI-Suche verändert Traffic). Was JETZT bauen, um 2028 vorne zu sein?",
+      "art": "analyst"
+    },
+    {
+      "label": "Zukunft & Strategie · Strategieberater",
+      "team": "Zukunft & Strategie",
+      "rolle": "Strategieberater",
+      "auftrag": "Positionierung und Burggraben: Netzwerkeffekte (Flächen, Projekte, Investoren, Abnehmer), Datenvorsprung, Marke; ehrlich priorisiert. Lies docs/ und Projektbörse/Portal.",
+      "art": "analyst"
+    },
+    {
+      "label": "Zukunft & Strategie · M&A-Berater",
+      "team": "Zukunft & Strategie",
+      "rolle": "M&A-Berater",
+      "auftrag": "Was brauchen Investoren/Fonds/Stadtwerke beim Kauf von Projektrechten/RTB/Bestand? Projektbörse als Dealflow-Magnet (Teaser, Datenraum-Vorschau, Bewertungsindikatoren, NDA-Flow); Verkäufer-Leads.",
+      "art": "analyst"
+    },
+    {
+      "label": "Zukunft & Strategie · Partnerschafts-Stratege",
+      "team": "Zukunft & Strategie",
+      "rolle": "Partnerschafts-Stratege",
+      "auftrag": "Reichweite großer Versorger LEGAL nutzen: Abnahme/PPA, Direktvermarktung, Co-Marketing, Versorger als Investoren in der Börse, Stadtwerke, Verbände (PV Austria, BSW, Swissolar), Gemeindebund, Landwirtschaftskammern; konkrete Partner-Pakete.",
+      "art": "analyst"
+    },
+    {
+      "label": "Zukunft & Strategie · Finanz- & Business-Analyst",
+      "team": "Zukunft & Strategie",
+      "rolle": "Finanz- & Business-Analyst",
+      "auftrag": "Unit Economics: Wert eines Leads je Zielgruppe (Fläche, Projekt, Investor, Gewerbestrom), Abschlussquoten, Kosten je Kanal, Budget-Empfehlung, Business Case der Initiativen; realistische Zahlen mit Quellen.",
+      "art": "analyst"
+    },
+    {
+      "label": "Zukunft & Strategie · Team-Lead",
+      "team": "Zukunft & Strategie",
+      "rolle": "Team-Lead",
+      "auftrag": "Ergebnisse des Teams bündeln, Konflikte auflösen, Top-Initiativen priorisieren",
+      "art": "lead"
+    },
+    {
+      "label": "Mensch & Conversion · Entscheidungspsychologe",
+      "team": "Mensch & Conversion",
+      "rolle": "Entscheidungspsychologe",
+      "auftrag": "Ängste, Vertrauensanker, Verlustaversion je Zielgruppe (Eigentümer, Landwirte, Gemeinden, Investoren, Mittelstand); ethische Hebel; 3–4 Kernseiten ansehen.",
+      "art": "analyst"
+    },
+    {
+      "label": "Mensch & Conversion · UX- und Conversion-Forscher",
+      "team": "Mensch & Conversion",
+      "rolle": "UX- und Conversion-Forscher",
+      "auftrag": "Lead-Magneten: freies Kernergebnis plus Mehrwert gegen Name/E-Mail/Telefon (PDF-Bericht, Pachtangebot-Check, Gemeinde-Report, Preisalarm), Progressive Profiling, Double-Opt-in; prüfe die 16 Rechner und Formulare; Trichter je Zielgruppe und Land.",
+      "art": "analyst"
+    },
+    {
+      "label": "Mensch & Conversion · Vertriebsexperte",
+      "team": "Mensch & Conversion",
+      "rolle": "Vertriebsexperte",
+      "auftrag": "Lead-Scoring, Speed-to-Lead (Rückruf, /termin), CRM-Übergabe (src/lib/plattform/crm.js), Nachfass-Sequenzen, Qualifizierungsfragen, Vertriebsunterlagen.",
+      "art": "analyst"
+    },
+    {
+      "label": "Mensch & Conversion · Customer Success",
+      "team": "Mensch & Conversion",
+      "rolle": "Customer Success",
+      "auftrag": "Von der Registrierung zur aktiven Nutzung des Portals: Onboarding, Aktivierung, Wiederkehr, Empfehlungen (echte, mit Einwilligung).",
+      "art": "analyst"
+    },
+    {
+      "label": "Mensch & Conversion · Agrar-Experte",
+      "team": "Mensch & Conversion",
+      "rolle": "Agrar-Experte",
+      "auftrag": "Landwirte als Zielgruppe: Hofübergabe, Pachtverträge, Förderungen (GAP, Agri-PV-Anrechnung), Bewirtschaftung unter Modulen, Ansprache über Kammern/Maschinenringe/Fachpresse.",
+      "art": "analyst"
+    },
+    {
+      "label": "Mensch & Conversion · Kommunal-Experte",
+      "team": "Mensch & Conversion",
+      "rolle": "Kommunal-Experte",
+      "auftrag": "Gemeinden: Gremienprozesse, Beteiligungsmodelle, Wertschöpfung, Bürgerbeteiligung, was Bürgermeister brauchen (z. B. Gemeinderats-Vorlage als PDF), DE/AT/CH getrennt.",
+      "art": "analyst"
+    },
+    {
+      "label": "Mensch & Conversion · Team-Lead",
+      "team": "Mensch & Conversion",
+      "rolle": "Team-Lead",
+      "auftrag": "Ergebnisse des Teams bündeln, Konflikte auflösen, Top-Initiativen priorisieren",
+      "art": "lead"
+    },
+    {
+      "label": "Marketing & Content · Marktkommunikation",
+      "team": "Marketing & Content",
+      "rolle": "Marktkommunikation",
+      "auftrag": "Markenstory und Botschaften je Land/Zielgruppe, PR-Anlässe (Studien, Indizes), Newsletter, Events/Webinare; was macht uns zur Referenzquelle?",
+      "art": "analyst"
+    },
+    {
+      "label": "Marketing & Content · Content-Redaktion & Copywriting",
+      "team": "Marketing & Content",
+      "rolle": "Content-Redaktion & Copywriting",
+      "auftrag": "Redaktionsplan 12 Monate je Land, Formate (Ratgeber, Daten-Reports, echte Fallstudien), Tonalität, Qualitätsregeln gegen KI-Einheitsbrei.",
+      "art": "analyst"
+    },
+    {
+      "label": "Marketing & Content · Video & Social Content",
+      "team": "Marketing & Content",
+      "rolle": "Video & Social Content",
+      "auftrag": "Erklärvideos, Drohnen-/Baustellen-Content (nur echt), Shorts, YouTube-SEO, LinkedIn-Formate; Produktionsplan mit kleinem Budget.",
+      "art": "analyst"
+    },
+    {
+      "label": "Marketing & Content · Team-Lead",
+      "team": "Marketing & Content",
+      "rolle": "Team-Lead",
+      "auftrag": "Ergebnisse des Teams bündeln, Konflikte auflösen, Top-Initiativen priorisieren",
+      "art": "lead"
+    },
+    {
+      "label": "SEO & SEM · SEO-Stratege",
+      "team": "SEO & SEM",
+      "rolle": "SEO-Stratege",
+      "auftrag": "Keyword-Universum DE/AT/CH getrennt (Begriffe unterscheiden sich), Content-Cluster, Lücken, Kannibalisierung, Länder-URL-Struktur und hreflang de-AT/de-DE/de-CH.",
+      "art": "analyst"
+    },
+    {
+      "label": "SEO & SEM · Programmatic & Local SEO",
+      "team": "SEO & SEM",
+      "rolle": "Programmatic & Local SEO",
+      "auftrag": "Programmatische Seiten nur mit echtem Mehrwert und echten Daten je Bundesland/Bezirk/Gemeinde/Kanton/Netzbetreiber; Datenquellen, Qualitätsregeln gegen Thin Content, Google Business Profile.",
+      "art": "analyst"
+    },
+    {
+      "label": "SEO & SEM · KI-Suche (GEO)",
+      "team": "SEO & SEM",
+      "rolle": "KI-Suche (GEO)",
+      "auftrag": "Sichtbarkeit in ChatGPT Search, Perplexity, Google AI Overviews, Copilot: wer wird heute zitiert (testen), welche Inhalte/Daten/Struktur führen zu Zitaten.",
+      "art": "analyst"
+    },
+    {
+      "label": "SEO & SEM · Linkaufbau & Digital PR",
+      "team": "SEO & SEM",
+      "rolle": "Linkaufbau & Digital PR",
+      "auftrag": "White-Hat-Backlinks: Daten-Studien/Indizes, Verbände, Gemeinden, Kammern, Hochschulen, Fachmedien, einbettbare Widgets; konkrete Ziele und Ansprache.",
+      "art": "analyst"
+    },
+    {
+      "label": "SEO & SEM · Google-Ads-Experte",
+      "team": "SEO & SEM",
+      "rolle": "Google-Ads-Experte",
+      "auftrag": "Kampagnen je Land, Keyword-Cluster mit Intent, negative Keywords, Landingpages, Offline-Conversions aus CRM, realistische CPCs/Budgets (recherchieren); Grenzen bei Marken-Keywords.",
+      "art": "analyst"
+    },
+    {
+      "label": "SEO & SEM · B2B-Social & LinkedIn Ads",
+      "team": "SEO & SEM",
+      "rolle": "B2B-Social & LinkedIn Ads",
+      "auftrag": "LinkedIn (Investoren, Gemeinden, Mittelstand), Meta regional (Landwirte, Eigentümer), YouTube; Zielgruppen, Formate, Lead-Formulare vs. Landingpages.",
+      "art": "analyst"
+    },
+    {
+      "label": "SEO & SEM · Tracking & Attribution",
+      "team": "SEO & SEM",
+      "rolle": "Tracking & Attribution",
+      "auftrag": "Consent Mode v2, serverseitiges Tagging, Conversion-Ereignisse, Lead-Wert, Offline-Import, Dashboards; DSGVO/TKG AT/revDSG CH; prüfe vorhandenes Setup im Code.",
+      "art": "analyst"
+    },
+    {
+      "label": "SEO & SEM · Team-Lead",
+      "team": "SEO & SEM",
+      "rolle": "Team-Lead",
+      "auftrag": "Ergebnisse des Teams bündeln, Konflikte auflösen, Top-Initiativen priorisieren",
+      "art": "lead"
+    },
+    {
+      "label": "Daten & Software · Daten-Architekt Preisradar",
+      "team": "Daten & Software",
+      "rolle": "Daten-Architekt Preisradar",
+      "auftrag": "Gewerbestrompreis-Vergleich je Bundesland (AT), Netzgebiet/PLZ (DE), Gemeinde/Netzbetreiber (CH): legale Quellen (E-Control, ElCom Open Data, BNetzA/Monitoring, veröffentlichte Preisblätter, EPEX) mit Lizenz, Abdeckung, Aktualität; Grenzen (Gewerbetarife oft individuell); Architektur (Jobs, ISR, Kennzeichnung) und Verknüpfung mit dem Reststrom-Pool als Lead-Quelle. Datenquellen-Tabelle.",
+      "art": "analyst"
+    },
+    {
+      "label": "Daten & Software · JavaScript-Architekt",
+      "team": "Daten & Software",
+      "rolle": "JavaScript-Architekt",
+      "auftrag": "Strikte Ländertrennung: Routing (/at /de /ch oder Domains), Länderkontext, getrennte Inhalte/Rechenlogik (src/lib/invest/markt.js, src/lib/rechner), Migration ohne SEO-Verlust, hreflang, Geo-Hinweis ohne Zwang; Lead-Pipeline mit PDF (src/lib/plattform/server/pdf.js); Aufwand.",
+      "art": "analyst"
+    },
+    {
+      "label": "Daten & Software · Performance-Engineer",
+      "team": "Daten & Software",
+      "rolle": "Performance-Engineer",
+      "auftrag": "Core Web Vitals im Produktions-Szenario: Bundle-Größen, Client-Komponenten, Bilder, Schriften, Animationen; Budget und konkrete Maßnahmen (Code lesen, kein next build ausführen).",
+      "art": "analyst"
+    },
+    {
+      "label": "Daten & Software · Data Scientist",
+      "team": "Daten & Software",
+      "rolle": "Data Scientist",
+      "auftrag": "Eigene Datenprodukte als Burggraben: Pachtpreis-Index, Netzanschluss-Index, Flächenpotenzial-Karte, Lead-Scoring-Modell; Datenquellen, Methodik, Veröffentlichung.",
+      "art": "analyst"
+    },
+    {
+      "label": "Daten & Software · KI-Produkt",
+      "team": "Daten & Software",
+      "rolle": "KI-Produkt",
+      "auftrag": "Sinnvolle KI-Funktionen auf der Website (Flächen-Assistent, Fragen zum eigenen Ergebnis, Dokumenten-Check) – ehrlich, sicher, mit Kosten; was ist vorhanden (src/lib/plattform/ki)?",
+      "art": "analyst"
+    },
+    {
+      "label": "Daten & Software · IT-Security",
+      "team": "Daten & Software",
+      "rolle": "IT-Security",
+      "auftrag": "Nur lesend: API-Routen (Validierung, Rate-Limit, Bot-Schutz, Spam), Security-Header/CSP, Lead-Daten, npm audit lokal, Datenjobs (SSRF), Admin-Zugänge; priorisierte Befunde.",
+      "art": "analyst"
+    },
+    {
+      "label": "Daten & Software · Team-Lead",
+      "team": "Daten & Software",
+      "rolle": "Team-Lead",
+      "auftrag": "Ergebnisse des Teams bündeln, Konflikte auflösen, Top-Initiativen priorisieren",
+      "art": "lead"
+    },
+    {
+      "label": "Recht & Qualität · Recht & Compliance",
+      "team": "Recht & Qualität",
+      "rolle": "Recht & Compliance",
+      "auftrag": "Vergleichswerbung (UWG/öUWG/CH-UWG) bei Preisradar und Versorger-Vergleichen, Markenrecht in Inhalten/Ads, Datenbankrecht beim Datenbezug, Haftung für Rechner/PDF-Berichte, KMG/AltFG bei Investor-Inhalten; je Initiative typische Risiken und saubere Lösung.",
+      "art": "analyst"
+    },
+    {
+      "label": "Recht & Qualität · Datenschutz",
+      "team": "Recht & Qualität",
+      "rolle": "Datenschutz",
+      "auftrag": "Lead-Gating, Telefon (Kaltakquise-Regeln je Land), Einwilligungen, Double-Opt-in, Auftragsverarbeiter, Speicherfristen, Betroffenenrechte; prüfe Formulare/Datenschutzerklärung im Code.",
+      "art": "analyst"
+    },
+    {
+      "label": "Recht & Qualität · Qualitätsmanagement-Lead",
+      "team": "Recht & Qualität",
+      "rolle": "Qualitätsmanagement-Lead",
+      "auftrag": "Qualitätssystem für alle Umsetzungswellen: Definition of Done, Prüfautomatik (check.mjs/film.mjs, ESLint, Lighthouse-Kriterien), Freigabe-Prozess, Fehlerkategorien; was fehlt heute?",
+      "art": "analyst"
+    },
+    {
+      "label": "Recht & Qualität · Faktencheck",
+      "team": "Recht & Qualität",
+      "rolle": "Faktencheck",
+      "auftrag": "Prüfe stichprobenhaft Fachaussagen und Zahlen der Website (src/lib/invest/markt.js, Ratgeber, Länderseiten) gegen Primärquellen; Liste veralteter, falscher oder vermischter Aussagen je Land.",
+      "art": "analyst"
+    },
+    {
+      "label": "Recht & Qualität · Barrierefreiheit",
+      "team": "Recht & Qualität",
+      "rolle": "Barrierefreiheit",
+      "auftrag": "WCAG 2.2 AA und European Accessibility Act: Prüfung der Kernseiten und Formulare, Befunde, Pflichtumfang.",
+      "art": "analyst"
+    },
+    {
+      "label": "Recht & Qualität · Visuelle Kontrolle & UI",
+      "team": "Recht & Qualität",
+      "rolle": "Visuelle Kontrolle & UI",
+      "auftrag": "Kernseiten in 1440/390 ansehen und mit Weltklasse vergleichen (Stripe, Linear, Vercel, Tesla Energy, Octopus Energy, Enpal, 1KOMMA5°): wo fehlen Wow, Klarheit, Vertrauen, Tempo?",
+      "art": "analyst"
+    },
+    {
+      "label": "Recht & Qualität · Team-Lead",
+      "team": "Recht & Qualität",
+      "rolle": "Team-Lead",
+      "auftrag": "Ergebnisse des Teams bündeln, Konflikte auflösen, Top-Initiativen priorisieren",
+      "art": "lead"
+    },
+    {
+      "label": "Strategie-Rat · Masterplan",
+      "team": "Strategie-Rat",
+      "rolle": "Masterplan",
+      "auftrag": "Team-Ergebnisse zum Masterplan verdichten",
+      "art": "rat"
+    },
+    {
+      "label": "Strategie-Rat · Red Team",
+      "team": "Strategie-Rat",
+      "rolle": "Red Team",
+      "auftrag": "Plan angreifen: rechtlich, wirtschaftlich, technisch, Ehrlichkeit",
+      "art": "rat"
+    },
+    {
+      "label": "Strategie-Rat · Masterplan final",
+      "team": "Strategie-Rat",
+      "rolle": "Masterplan final",
+      "auftrag": "Plan nach Kritik überarbeiten, Umsetzungswellen festlegen",
+      "art": "rat"
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+import { Suspense } from "react";
+import { db } from "@/lib/data";
+import { Card, PageBody, PageHeader } from "@/components/ui";
+import { ListToolbar } from "@/components/ListToolbar";
+import { ToDoForm } from "@/components/forms";
+import { TodoList } from "@/components/TodoList";
+
+export const metadata = { title: "Aufgaben" };
+
+const STATUS_LABEL = { Open: "Offen", Closed: "Erledigt", Cancelled: "Abgebrochen" };
+
+export default async function ToDosPage({ searchParams }: PageProps<"/todos">) {
+  const sp = await searchParams;
+  const status = typeof sp.status === "string" ? sp.status : undefined;
+  const todos = await db().listToDos({ search: typeof sp.q === "string" ? sp.q : undefined, filters: { status } });
+
+  return (
+    <>
+      <PageHeader title="Aufgaben" subtitle="Rückrufe, Vor-Ort-Termine und Nachfassaktionen" />
+      <PageBody className="grid gap-4">
+        <ToDoForm />
+        <Card className="overflow-hidden">
+          <Suspense>
+            <ListToolbar statuses={["Open", "Closed", "Cancelled"]} labels={STATUS_LABEL} count={todos.length} />
+          </Suspense>
+          <TodoList todos={todos} showRef showOwner empty="Keine Aufgaben gefunden." />
+        </Card>
+      </PageBody>
+    </>
+  );
+}

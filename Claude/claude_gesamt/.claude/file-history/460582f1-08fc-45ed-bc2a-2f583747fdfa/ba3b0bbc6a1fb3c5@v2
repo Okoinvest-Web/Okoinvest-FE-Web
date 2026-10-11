@@ -1,0 +1,18 @@
+import http.server, os, functools
+ROOT = r"C:\Users\SALEADMIN\Desktop\Presse\4_Social_Media"
+GRAF = os.path.join(ROOT, "grafiken")
+
+
+class H(http.server.SimpleHTTPRequestHandler):
+    def do_PUT(self):
+        rel = self.path.lstrip("/").replace("/", os.sep)
+        target = os.path.normpath(os.path.join(ROOT, rel))
+        if not (target.startswith(GRAF + os.sep) and target.endswith(".png")):
+            self.send_response(403); self.end_headers(); return
+        data = self.rfile.read(int(self.headers["Content-Length"]))
+        os.makedirs(os.path.dirname(target), exist_ok=True)
+        open(target, "wb").write(data)
+        self.send_response(201); self.end_headers()
+
+
+http.server.ThreadingHTTPServer(("127.0.0.1", 8766), functools.partial(H, directory=ROOT)).serve_forever()

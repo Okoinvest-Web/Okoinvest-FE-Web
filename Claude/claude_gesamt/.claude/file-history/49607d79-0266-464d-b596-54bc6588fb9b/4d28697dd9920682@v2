@@ -1,0 +1,253 @@
+<template>
+  <div>
+    <PageHeader title="Etiketten" :subtitle="untertitel">
+      <template #actions>
+        <Button variant="solid" @click="drucken">Drucken</Button>
+      </template>
+    </PageHeader>
+
+    <div class="p-6">
+      <section
+        class="mb-6 rounded-lg border border-outline-gray-2 bg-surface-white p-4 nicht-drucken"
+      >
+        <div class="flex flex-wrap items-end gap-3">
+          <FormControl
+            v-model="kategorie"
+            label="Kategorie"
+            type="select"
+            :options="kategorieOptionen"
+          />
+          <FormControl
+            v-model="standort"
+            label="Standort"
+            type="select"
+            :options="standortOptionen"
+          />
+          <FormControl
+            v-model="groesse"
+            label="Etikettengröße"
+            type="select"
+            :options="groesseOptionen"
+          />
+          <Button @click="alleWaehlen">Alle wählen</Button>
+          <Button variant="subtle" @click="auswahl = []">Auswahl leeren</Button>
+        </div>
+        <p class="mt-2 text-sm text-ink-gray-6">
+          {{ auswahl.length }} von {{ gefiltert.length }} ausgewählt.
+        </p>
+      </section>
+
+      <!-- Auswahl -->
+      <section class="mb-6 nicht-drucken">
+        <DataTable
+          :columns="spalten"
+          :rows="gefiltert"
+          :loading="bestand.loading"
+          empty-text="Kein Inventarobjekt mit diesem Filter."
+        >
+          <template #zelle-wahl="{ zeile }">
+            <label class="flex items-center gap-2">
+              <input
+                type="checkbox"
+                class="size-4"
+                :checked="auswahl.includes(zeile.name)"
+                :aria-label="'Etikett für ' + zeile.asset_tag"
+                @change="umschalten(zeile.name)"
+              />
+            </label>
+          </template>
+          <template #zelle-asset_tag="{ zeile }">
+            <span class="font-mono text-sm text-ink-gray-9">{{ zeile.asset_tag }}</span>
+          </template>
+        </DataTable>
+      </section>
+
+      <!-- Druckbogen -->
+      <section>
+        <h2 class="mb-3 text-base font-semibold text-ink-gray-8 nicht-drucken">Vorschau</h2>
+        <div class="etikettenbogen" :class="'groesse-' + groesse">
+          <div v-for="e in etiketten" :key="e.asset" class="etikett">
+            <QrCode :value="e.qr_content" :size="qrGroesse" :alt="'QR-Code ' + e.asset_tag" />
+            <div class="etikett-text">
+              <p class="etikett-nummer">{{ e.line_1 }}</p>
+              <p class="etikett-zeile">{{ e.line_2 }}</p>
+              <p class="etikett-zeile etikett-schwach">{{ e.line_3 }}</p>
+            </div>
+          </div>
+        </div>
+
+        <p v-if="!etiketten.length" class="text-sm text-ink-gray-5 nicht-drucken">
+          Nichts ausgewählt.
+        </p>
+      </section>
+
+      <p class="mt-6 text-xs text-ink-gray-4 nicht-drucken">
+        Der Code führt auf die Detailseite dieser Instanz. Er enthält weder Seriennummer noch den
+        Namen der besitzenden Person: ein Etikett hängt sichtbar am Gerät, und wer es fotografiert,
+        soll daraus nichts über Menschen erfahren. Die Auflösung passiert erst nach der Anmeldung.
+      </p>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed, ref, watch } from 'vue'
+import { Button, FormControl, createResource } from 'frappe-ui'
+import PageHeader from '@/components/PageHeader.vue'
+import DataTable from '@/components/DataTable.vue'
+import QrCode from '@/components/QrCode.vue'
+
+const kategorie = ref('')
+const standort = ref('')
+const groesse = ref('mittel')
+const auswahl = ref([])
+
+const bestand = createResource({ url: 'netops.api.inventar.asset_list', auto: true })
+const etikettenDaten = createResource({
+  url: 'netops.api.inventar.label_payload',
+  makeParams: () => ({ assets: auswahl.value }),
+})
+
+const kategorien = createResource({
+  url: 'frappe.client.get_list',
+  params: { doctype: 'Asset Category', fields: ['name'], limit_page_length: 0 },
+  auto: true,
+})
+const standorte = createResource({
+  url: 'frappe.client.get_list',
+  params: { doctype: 'Site', fields: ['name', 'site_name'], limit_page_length: 0 },
+  auto: true,
+})
+
+watch(auswahl, () => {
+  if (auswahl.value.length) etikettenDaten.fetch()
+})
+
+const gefiltert = computed(() =>
+  (bestand.data || []).filter(
+    (a) =>
+      a.asset_state !== 'disposed' &&
+      (!kategorie.value || a.category === kategorie.value) &&
+      (!standort.value || a.site === standort.value),
+  ),
+)
+
+const etiketten = computed(() => (auswahl.value.length ? etikettenDaten.data?.labels || [] : []))
+
+const kategorieOptionen = computed(() => [
+  { label: 'Alle Kategorien', value: '' },
+  ...(kategorien.data || []).map((k) => ({ label: k.name, value: k.name })),
+])
+
+const standortOptionen = computed(() => [
+  { label: 'Alle Standorte', value: '' },
+  ...(standorte.data || []).map((s) => ({ label: s.site_name, value: s.name })),
+])
+
+const groesseOptionen = [
+  { label: 'Klein (38 × 20 mm)', value: 'klein' },
+  { label: 'Mittel (50 × 25 mm)', value: 'mittel' },
+  { label: 'Groß (70 × 35 mm)', value: 'gross' },
+]
+
+const qrGroesse = computed(() => ({ klein: 52, mittel: 68, gross: 96 })[groesse.value] || 68)
+
+const spalten = [
+  { key: 'wahl', label: '', width: '50px' },
+  { key: 'asset_tag', label: 'Nummer', width: '130px' },
+  { key: 'asset_name', label: 'Gegenstand' },
+  { key: 'category', label: 'Kategorie', muted: true, width: '150px' },
+  { key: 'site_name', label: 'Standort', muted: true, width: '170px' },
+]
+
+const untertitel = computed(
+  () => auswahl.value.length + ' Etiketten · ' + gefiltert.value.length + ' zur Auswahl',
+)
+
+function umschalten(name) {
+  auswahl.value = auswahl.value.includes(name)
+    ? auswahl.value.filter((x) => x !== name)
+    : [...auswahl.value, name]
+}
+
+function alleWaehlen() {
+  auswahl.value = gefiltert.value.map((a) => a.name)
+}
+
+function drucken() {
+  window.print()
+}
+</script>
+
+<style scoped>
+.etikettenbogen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4mm;
+}
+
+.etikett {
+  display: flex;
+  align-items: center;
+  gap: 2mm;
+  padding: 2mm;
+  border: 1px solid var(--viz-chassis-line, #d1d0c5);
+  border-radius: 1mm;
+  background: #ffffff;
+  /* Etiketten sind physisch weiß bedruckt - dunkler Grund wäre hier
+     falsch, auch im Dunkelmodus. */
+  color: #000000;
+  break-inside: avoid;
+}
+
+.groesse-klein .etikett {
+  width: 38mm;
+  height: 20mm;
+}
+.groesse-mittel .etikett {
+  width: 50mm;
+  height: 25mm;
+}
+.groesse-gross .etikett {
+  width: 70mm;
+  height: 35mm;
+}
+
+.etikett-text {
+  min-width: 0;
+  flex: 1;
+}
+
+.etikett-nummer {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 2.6mm;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.etikett-zeile {
+  overflow: hidden;
+  font-size: 2.2mm;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.etikett-schwach {
+  color: #555555;
+}
+
+/* Im Druck bleibt nur der Bogen übrig. Ohne das kämen Navigation,
+   Filter und Tabelle mit aufs Papier. */
+@media print {
+  :global(aside),
+  :global(header),
+  .nicht-drucken {
+    display: none !important;
+  }
+
+  .etikettenbogen {
+    gap: 2mm;
+  }
+}
+</style>

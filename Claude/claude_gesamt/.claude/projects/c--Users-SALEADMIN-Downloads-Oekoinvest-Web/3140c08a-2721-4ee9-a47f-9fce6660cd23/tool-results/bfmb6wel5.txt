@@ -1,0 +1,385 @@
+=== projektboerse
+// src/app/bedingungen/projektboerse/page.js
+//
+// Besondere Bedingungen Projektbörse (Rahmen der Provisionsvereinbarung,
+// Umgehungsschutz, optionale Exklusivität) – ENTWURF zur anwaltlichen
+// Prüfung, noindex bis zur Freigabe (siehe ../_teile.js).
+// Provisionsspanne ausschließlich aus src/lib/invest/markt.js (PROVISION).
+// Offene Punkte: Doppeltätigkeit/Interessenwahrung nach MaklerG (AT) bzw.
+// §§ 652 ff. BGB (DE), Entstehungszeitpunkt (Signing/Closing), Bemessungs-
+// grundlage bei Share Deals (Eigenkapitalwert/EV, Earn-out), Vertragsstrafe,
+// Alleinvermittlungsauftrag (§ 14 f. MaklerG), Aufsichtsrecht (siehe
+// Kopfkommentar der Nutzungsbedingungen).
+const PFAD = "/bedingungen/projektboerse";
+export const metadata = bedingungenMetadata({
+  pfad: PFAD,
+  titel: "Besondere Bedingungen Projektbörse | ÖkoInvest",
+  beschreibung:
+    "Entwurf der Besonderen Bedingungen der Projektbörse: Rahmen der Provisionsvereinbarung, Entstehen und Fälligkeit, Umgehungsschutz und optionale Exklusivität.",
+  bild: "/img/investoren-vor-ort.jpg",
+  bildAlt: "Investoren bei einer Besichtigung vor Ort",
+});
+const G = GESELLSCHAFT;
+const provVon = fmt(PROVISION.verkaeufer.min * 100, 1);
+const provBis = fmt(PROVISION.verkaeufer.max * 100);
+export default function BedingungenProjektboersePage() {
+  return (
+    <LegalShell
+      titel="Besondere Bedingungen Projektbörse"
+      pfad={PFAD}
+      stand={STAND_BEDINGUNGEN}
+      lead="Rahmen für die Provisionsvereinbarung mit Projektanbietern, den Umgehungsschutz gegenüber Anbietern und Investoren und eine optionale Exklusivität."
+    >
+      <EntwurfHinweis />
+      § 1 Geltung
+        (1) Diese Bedingungen gelten für Projektanbieter, die ein Projekt über die Projektbörse der {G.name} („ÖkoInvest“) anbieten, und – soweit
+        sie Investoren betreffen (§ 5) – für Investoren. Sie bilden den Rahmen der Provisionsvereinbarung, die der Anbieter vor
+        der Veröffentlichung eines Projekts im Portal abschließt. Die im Einzelfall vereinbarten Werte (insbesondere der Provisionssatz) gehen
+        diesen Bedingungen vor.
+        (2) Für Investoren und Flächeneigentümer ist die Nutzung der Projektbörse kostenfrei. ÖkoInvest wird im Auftrag des Anbieters tätig.{" "}
+        <Platzhalter>Prüfen und ggf. regeln: Hinweis auf Tätigkeit auch im Interesse der Investoren (Doppeltätigkeit)</Platzhalter>
+      § 2 Leistungen von ÖkoInvest
+        Prüfung des Projekts auf Plausibilität und Vollständigkeit, anonymisierter Teaser und vertrauliches Exposé,
+        Veröffentlichung in der Projektbörse und Hinweis an Investoren mit passendem Suchprofil,
+        Abschluss der Vertraulichkeitsvereinbarungen, Freigabe von Datenraum-Stufen, Moderation von Fragen und Antworten,
+        auf Wunsch Durchführung eines Bieterverfahrens mit verdeckten Geboten und Unterstützung bis zum Abschluss (Closing-Raum).
+        ÖkoInvest schuldet den Nachweis bzw. die Vermittlung von Interessenten, keinen Verkaufserfolg. Rechts-, Steuer- und technische
+        Beratung sind nicht Teil der Leistung.
+      § 3 Provision
+        (1) Kommt zwischen dem Anbieter und einem von ÖkoInvest nachgewiesenen oder vermittelten Investor ein Vertrag über das Projekt zustande,
+        schuldet der Anbieter die vereinbarte Provision. Der Satz liegt je nach Projekt zwischen {provVon} und {provBis} % und
+        wird bei der Freigabe des Projekts festgelegt.
+        (2) Vertrag über das Projekt ist jeder Vertrag, durch den der Investor das Projekt ganz oder teilweise erwirbt oder
+        wirtschaftlich übernimmt – insbesondere Kauf von Projektrechten oder der Anlage (Asset Deal), Erwerb von Anteilen an der
+        Projektgesellschaft (Share Deal), Co-Entwicklung mit Erwerbsoption sowie gleichwertige Gestaltungen.
+        (3) Bemessungsgrundlage ist der Kaufpreis einschließlich vom Investor übernommener oder abgelöster Verbindlichkeiten
+        gegenüber dem Anbieter; beim Share Deal <Platzhalter>Eigenkapitalwert oder Unternehmenswert (EV) festlegen</Platzhalter>. Bedingte und
+        gestaffelte Zahlungen (Meilensteine, Earn-out) gehören dazu, sobald sie fällig werden.
+        (4) Entstehen und Fälligkeit: Der Anspruch entsteht mit wirksamem Abschluss des Vertrags; hängt dieser von
+        aufschiebenden Bedingungen ab, mit deren Eintritt. Die Provision ist <Platzhalter>14 Tage nach Rechnung</Platzhalter> fällig, bei
+        gestaffelten Kaufpreiszahlungen anteilig mit jeder Zahlung. Beträge verstehen sich zuzüglich Umsatzsteuer, soweit diese anfällt.
+        (5) Der Anbieter teilt ÖkoInvest den Vertragsabschluss innerhalb von fünf Werktagen mit und legt die für die Berechnung erforderlichen
+        Angaben (Kaufpreis, Zahlungsplan, Vollzugsbedingungen) offen.
+      § 4 Nachweis und Vorkenntnis
+        (1) Als von ÖkoInvest nachgewiesen gilt ein Investor, dem die Projektdetails über die Plattform freigeschaltet wurden (NDA-Freigabe)
+        oder der über den Deal-Room mit dem Anbieter in Kontakt gekommen ist.
+        (2) War dem Anbieter der Investor als Interessent für genau dieses Projekt bereits bekannt, teilt er dies unter Nachweis innerhalb von{" "}
+        zehn Werktagen mit, nachdem ihm der Interessent (auch pseudonym mit Kennzeichen) angezeigt wurde. Ohne rechtzeitige
+        Mitteilung gilt der Nachweis durch ÖkoInvest als erbracht, soweit gesetzlich zulässig.
+      § 5 Umgehungsschutz
+        (1) Der Provisionsanspruch besteht auch, wenn der Vertrag unter Umgehung der Plattform geschlossen wird – unmittelbar oder über
+        verbundene Unternehmen, Gesellschafter, Treuhänder oder sonstige Dritte –, sofern der Investor dem Anbieter erstmals über die Plattform
+        bekannt geworden ist und der Abschluss innerhalb von 24 Monaten nach Freischaltung der Projektdetails erfolgt. Das gilt
+        auch für Verträge über andere Projekte desselben Anbieters, die im selben Zeitraum über die Plattform nachgewiesen wurden.
+        (2) Investoren verpflichten sich, den Anbieter bis zur Kontaktfreigabe nicht außerhalb der Plattform zu kontaktieren und über die
+        Plattform erlangte Kontakte nicht zur Umgehung zu nutzen. Verletzt ein Investor diese Pflicht und entgeht ÖkoInvest dadurch die
+        Provision, haftet er auf Ersatz des entgangenen Betrags.
+        (3) Besteht ein begründeter Verdacht auf Umgehung, erteilen Anbieter und Investor auf Anfrage Auskunft über Zustandekommen und
+        Bedingungen eines Vertrags über das Projekt. <Platzhalter>Vertragsstrafe ja/nein und Höhe</Platzhalter>
+      § 6 Exklusivität (optional)
+        (1) Anbieter und ÖkoInvest können für ein Projekt eine Exklusivität vereinbaren (Alleinvermittlungsauftrag). Sie gilt nur,
+        wenn sie im Portal oder schriftlich ausdrücklich vereinbart ist, für die vereinbarte Dauer von{" "}
+        <Platzhalter>z. B. 6 Monaten, danach monatlich kündbar</Platzhalter>.
+        (2) Während der Exklusivität bietet der Anbieter das Projekt nicht über andere Vermittler oder Plattformen an und leitet eigene
+        Interessenten an ÖkoInvest weiter. ÖkoInvest verpflichtet sich im Gegenzug zu aktiver Vermarktung, insbesondere gezielter Ansprache
+        passender Investoren und regelmäßigen Berichten über Zugriffe und Interessenten.
+        (3) Ob und in welcher Höhe bei einem Abschluss ohne Mitwirkung von ÖkoInvest während der Exklusivität eine Provision anfällt, regelt die
+        Exklusivitätsvereinbarung im Rahmen des gesetzlich Zulässigen. <Platzhalter>Regelung nach § 15 MaklerG bzw. dem anwendbaren Recht</Platzhalter>
+      § 7 Pflichten des Anbieters
+        Es gelten die Pflichten nach § 5 der Nutzungsbedingungen (richtige und vollständige Angaben, Verfügungsbefugnis, Rechte Dritter,
+        Aktualisierung). Zusätzlich hält der Anbieter den Datenraum aktuell, beantwortet moderierte Fragen fristgerecht und gibt Informationen
+        allen zugelassenen Interessenten gleichermaßen.
+      § 8 Rückzug und Beendigung
+        (1) Der Anbieter kann sein Projekt jederzeit von der Börse nehmen; ÖkoInvest kann die Veröffentlichung nach § 6 der Nutzungsbedingungen
+        beenden. Laufende verbindliche Bieterrunden sind, soweit möglich, geordnet abzuschließen oder abzubrechen.
+        (2) Ansprüche aus bereits nachgewiesenen Investoren und der Umgehungsschutz (§ 5) bestehen nach Rückzug oder Beendigung fort.
+      § 9 Haftung
+        ÖkoInvest haftet nicht für Angaben des Anbieters oder der Investoren, für deren Bonität und Vertragstreue oder für das Zustandekommen und
+        die Erfüllung von Verträgen. Im Übrigen gilt die Haftungsregelung der Nutzungsbedingungen (§ 16).
+      <WeitereBedingungen pfad={PFAD} />
+    </LegalShell>
+  );
+}
+=== energiebeschaffung
+// src/app/bedingungen/energiebeschaffung/page.js
+//
+// Servicevertrag Energiebeschaffung (Besondere Bedingungen) – ENTWURF zur
+// anwaltlichen Prüfung, noindex bis zur Freigabe (siehe ../_teile.js).
+// Fachgrundlage: docs/ENERGIEBESCHAFFUNG.md, Vollmachtstext
+// src/lib/plattform/energie/texte.js (VOLLMACHT_TEXT – Inhalte hier nicht
+// widersprechen; bei Änderungen beide Stellen angleichen).
+// Offene Punkte: Vergütungsmodell (Platzhalter), Haftungshöchstbetrag,
+// Laufzeit/Kündigung, Gewerbe-/Registrierungspflicht als Energieberater
+// bzw. -vermittler (AT/DE), Offenlegung etwaiger Versorgerprovisionen.
+const PFAD = "/bedingungen/energiebeschaffung";
+export const metadata = bedingungenMetadata({
+  pfad: PFAD,
+  titel: "Servicevertrag Energiebeschaffung | ÖkoInvest",
+  beschreibung:
+    "Entwurf des Servicevertrags Energiebeschaffung: Leistungen, Beschaffungsvollmacht, Mitwirkung, Vergütung, Vertraulichkeit, Haftung und Laufzeit für Unternehmen.",
+  bild: "/img/gewerbedach.jpg",
+  bildAlt: "Gewerbedach mit Photovoltaikanlage",
+});
+const G = GESELLSCHAFT;
+export default function ServicevertragEnergiePage() {
+  return (
+    <LegalShell
+      titel="Servicevertrag Energiebeschaffung"
+      pfad={PFAD}
+      stand={STAND_BEDINGUNGEN}
+      lead="Besondere Bedingungen für Unternehmen, die ihren Strom über die ÖkoInvest-Plattform einkaufen lassen – einzeln oder gebündelt im Reststrom-Pool."
+    >
+      <EntwurfHinweis />
+      § 1 Vertragsgegenstand
+        (1) Die {G.name} („ÖkoInvest“) unterstützt den Kunden beim Einkauf von Strom für die im Portal benannten Abnahmestellen. Sie holt dazu
+        Angebote von Energieversorgern ein, wertet sie aus und begleitet den Wechsel. ÖkoInvest ist dabei Dienstleisterin des
+        Kunden; sie wird weder Stromlieferantin noch Vertragspartei des Liefervertrags.
+        (2) Der Vertrag richtet sich an Unternehmer. Öffentliche Auftraggeber beachten § 9. Der Vertrag kommt durch Bestätigung im Portal bzw.
+        durch Unterzeichnung zustande; die Beschaffungsvollmacht (§ 4) ist Voraussetzung jeder Angebotsanfrage.
+      § 2 Leistungsumfang
+      (1) ÖkoInvest erbringt – je nach Beauftragung im Portal – folgende Leistungen:
+          Datenaufnahme: Erfassung der Abnahmestellen, Messart, Spannungsebene, laufenden Verträge und Kündigungsfristen;
+          Import und Prüfung des Lastgangs (Viertelstundenwerte).
+          Analyse: Verbrauchsprofil, Einfluss eigener PV- und Speicheranlagen, Kosten verschiedener Beschaffungsmodelle
+          (Festpreis, Tranchen, Spot-Index) rückblickend und als Prognose; Empfehlung zum Zeitpunkt (ausschreiben, abwarten, verlängern).
+          Angebotsanfrage: Auswahl und Einladung geeigneter Energieversorger, anonymisierte Unterlagen (Los, gerundete Kennzahlen,
+          normiertes Profil), Fristen, Fragen und Antworten, bei Bedarf weitere Runden.
+          Auswertung: Vergleich der Angebote auf einheitlicher Basis (Energiepreis je Verbrauchsprofil, Vertragsbedingungen,
+          Risiken), Sensitivitäten und ein begründeter Zuschlagsvorschlag.
+          Abschluss und Wechsel: nach Freigabe durch den Kunden Übermittlung des Zuschlags, Weitergabe der Vertragsdaten an den
+          ausgewählten Versorger und Unterstützung bei Kündigung des bisherigen Vertrags und Lieferantenwechsel.
+          Laufende Betreuung: Überwachung von Vertragslaufzeit und Kündigungsfristen mit Erinnerungen, regelmäßige
+          Wechselanalyse gegenüber dem Terminmarkt.
+          Pool (optional): Bündelung mit anderen Kunden, um bessere Konditionen zu erzielen. Der Liefervertrag wird dennoch
+          je Kunde geschlossen, sofern nicht ausdrücklich anders vereinbart.
+        (2) Nicht geschuldet sind insbesondere ein bestimmter Preis oder eine Ersparnis, Rechts- und Steuerberatung, der Handel
+        auf eigene Rechnung, die Übernahme von Bilanzkreis-, Preis- oder Mengenrisiken, die Zahlungsabwicklung mit dem Versorger sowie die
+        Durchführung förmlicher Vergabeverfahren.
+      § 3 Mitwirkung des Kunden
+        vollständige und richtige Angaben zu Abnahmestellen, Verbrauch, laufenden Verträgen und Kündigungsfristen sowie ein verwertbarer Lastgang,
+        rechtzeitige Mitteilung wesentlicher Änderungen (z. B. neue Anlage, Standortschließung, Schichtmodell, Verbrauchssprung),
+        Benennung einer entscheidungsbefugten Ansprechperson,
+          Entscheidung über den Zuschlagsvorschlag innerhalb der Bindefrist der Angebote – nach Ablauf der Bindefrist ist der Versorger nicht
+          mehr gebunden,
+        Prüfung und Unterzeichnung des Liefervertrags bzw. der Auftragsbestätigung des Versorgers.
+        Verzögerungen oder Nachteile, die auf fehlender oder verspäteter Mitwirkung beruhen – etwa eine versäumte Kündigungsfrist wegen
+        falscher Angaben –, gehen nicht zulasten von ÖkoInvest.
+      § 4 Beschaffungsvollmacht
+        (1) Der Kunde bevollmächtigt ÖkoInvest im Portal (versionierter Text, Zeitpunkt, IP-Adresse; auf Wunsch zusätzlich mit elektronischer
+        Unterschrift), Angebote einzuholen, dafür anonymisierte Verbrauchsdaten weiterzugeben und nach seiner ausdrücklichen Freigabe den Zuschlag
+        zu übermitteln sowie den Lieferantenwechsel einschließlich Kündigung des bisherigen Vertrags in seinem Namen einzuleiten.
+        (2) Ohne Freigabe des Kunden im Portal kommt kein Liefervertrag zustande. Name, Anschrift und Lokations-IDs erhält nur
+        der bezuschlagte Versorger, und erst nach der Freigabe.
+        (3) Der Kunde kann die Vollmacht jederzeit im Portal widerrufen. Bereits erteilte Zuschläge und abgeschlossene Lieferverträge bleiben
+        davon unberührt; laufende Angebotsanfragen werden beendet.
+      § 5 Vergütung
+        (1) Die Vergütung wird je Kunde im Portal bzw. im Angebot festgelegt. Mögliche Bestandteile:
+          Servicefee je gelieferter MWh über die Vertragslaufzeit: <Platzhalter>Betrag in €/MWh</Platzhalter>
+          Erfolgshonorar als Anteil an der Ersparnis gegenüber einer vorab festgelegten Referenz (z. B. Verlängerungsangebot
+          des bisherigen Versorgers): <Platzhalter>Prozentsatz, Referenz und Berechnungszeitraum</Platzhalter>
+          Mindest- bzw. Pauschalentgelt für Analyse ohne Zuschlag: <Platzhalter>Betrag oder „entfällt“</Platzhalter>
+        (2) Fälligkeit und Abrechnung: <Platzhalter>z. B. jährlich bzw. nach Lieferbeginn, Zahlungsziel 14 Tage</Platzhalter>. Alle Beträge
+        verstehen sich zuzüglich Umsatzsteuer.
+        (3) Transparenz: Erhält ÖkoInvest von einem Versorger eine Vergütung im Zusammenhang mit dem Auftrag des Kunden, legt
+        ÖkoInvest dies dem Kunden vor dem Zuschlag offen. <Platzhalter>Festlegung, ob Versorgerprovisionen grundsätzlich ausgeschlossen sind</Platzhalter>
+      § 6 Neutralität und Gleichbehandlung
+        ÖkoInvest behandelt alle eingeladenen Versorger nach denselben, vorab bekanntgegebenen Regeln und empfiehlt nach nachvollziehbaren
+        Kriterien (Preis, Vertragsbedingungen, Bonität und Leistungsfähigkeit des Versorgers). Bestehen Verbindungen zu einem Versorger – etwa
+        über Gesellschaften der ÖKOVOLT Gruppe –, wird dies im Vergleich kenntlich gemacht.
+      § 7 Vertraulichkeit und Daten
+        (1) Beide Seiten behandeln die im Rahmen des Vertrags erhaltenen Informationen vertraulich. Versorger erhalten in der Angebotsphase nur
+        anonymisierte Kennzahlen, keine Namen, Orte, Lokations-IDs oder Zeitreihen. Angebote der Versorger sind für den Kunden bestimmt und
+        dürfen nicht an Versorger weitergegeben werden.
+        (2) ÖkoInvest darf anonymisierte und aggregierte Daten (z. B. Preisniveaus, Profilkennzahlen) für die eigene Marktbeobachtung und die
+        Verbesserung der Analysen nutzen, sofern kein Rückschluss auf den Kunden möglich ist. Die Verarbeitung personenbezogener Daten richtet
+        sich nach der Datenschutzerklärung (Abschnitt „Energiebeschaffung“).
+      § 8 Haftung
+        (1) Marktanalysen, Prognosen und Empfehlungen beruhen auf Marktdaten mit Stand und auf Annahmen; sie sind Einschätzungen und
+        keine Zusage künftiger Preise oder Ersparnisse. Die Entscheidung über den Zuschlag trifft der Kunde.
+        (2) ÖkoInvest haftet nicht für die Vertragserfüllung, Lieferfähigkeit oder Insolvenz des Versorgers und nicht für Preisbestandteile, die
+        nicht Gegenstand des Wettbewerbs sind (Netzentgelte, Steuern, Abgaben, Umlagen).
+        (3) Im Übrigen haftet ÖkoInvest nur für Vorsatz und grobe Fahrlässigkeit; die Beschränkung gilt nicht für Personenschäden und die
+        Verletzung wesentlicher Vertragspflichten im Rahmen des vorhersehbaren, typischen Schadens. Die Haftung für leichte Fahrlässigkeit ist –
+        soweit zulässig – der Höhe nach begrenzt auf <Platzhalter>Höchstbetrag, z. B. die Vergütung der letzten 12 Monate</Platzhalter>.
+      § 9 Öffentliche Auftraggeber
+        Kommunen, Zweckverbände und kommunale Unternehmen unterliegen bei der Strombeschaffung dem Vergaberecht (in Deutschland insbesondere
+        GWB/VgV bzw. unterhalb der Schwellenwerte UVgO und Landesrecht, in Österreich das BVergG 2018). Die Angebotsanfrage ersetzt kein
+        förmliches Vergabeverfahren. Für öffentliche Auftraggeber erbringt ÖkoInvest die Leistungen nur als Markterkundung oder in Abstimmung mit
+        dem Vergabeverfahren des Auftraggebers; die vergaberechtliche Verantwortung bleibt beim Auftraggeber.
+      § 10 Laufzeit und Kündigung
+        (1) Laufzeit: <Platzhalter>z. B. 12 Monate, Verlängerung um jeweils 12 Monate, Kündigungsfrist 3 Monate zum Laufzeitende</Platzhalter>.
+        Das Recht zur Kündigung aus wichtigem Grund bleibt unberührt.
+        (2) Mit Vertragsende erlischt die Beschaffungsvollmacht. Laufende Angebotsanfragen werden beendet, sofern die Parteien nicht vereinbaren,
+        sie abzuschließen. Vergütungsansprüche für Lieferverträge, die während der Laufzeit zustande gekommen sind, bleiben bestehen.
+      <WeitereBedingungen pfad={PFAD} />
+    </LegalShell>
+  );
+}
+=== lieferanten
+// src/app/bedingungen/lieferanten/page.js
+//
+// Teilnahmebedingungen für Energieversorger (Angebotsanfragen der
+// Energiebeschaffung) – ENTWURF zur anwaltlichen Prüfung, noindex bis zur
+// Freigabe (siehe ../_teile.js). Kurzfassung im Portal:
+// src/lib/plattform/energie/texte.js (LIEFERANT_BEDINGUNGEN) – Inhalte hier
+// nicht widersprechen. Offene Punkte: Vergütung durch Versorger (Platzhalter),
+// Dauer des Direktansprache-Verbots, Kartellrechtsklausel prüfen.
+const PFAD = "/bedingungen/lieferanten";
+export const metadata = bedingungenMetadata({
+  pfad: PFAD,
+  titel: "Teilnahmebedingungen Energieversorger | ÖkoInvest",
+  beschreibung:
+    "Entwurf der Teilnahmebedingungen für Energieversorger: Einladung, verdeckte Angebote, Fristen und Bindefrist, Zuschlag nur mit Kundenfreigabe, Vertraulichkeit.",
+  bild: "/img/pv-wind-abend.jpg",
+  bildAlt: "Photovoltaik und Windkraft am Abend",
+});
+const G = GESELLSCHAFT;
+export default function TeilnahmebedingungenLieferantenPage() {
+  return (
+    <LegalShell
+      titel="Teilnahmebedingungen für Energieversorger"
+      pfad={PFAD}
+      stand={STAND_BEDINGUNGEN}
+      lead="Regeln für Energieversorger, die ÖkoInvest zu Angebotsanfragen für die Stromlieferung an Unternehmen einlädt – im Versorger-Portal oder per Angebotslink."
+    >
+      <EntwurfHinweis />
+      § 1 Teilnahme
+        (1) Die {G.name} („ÖkoInvest“) holt im Auftrag ihrer Kunden Angebote für die Stromlieferung ein. Teilnehmen können nur Energieversorger,
+        die ÖkoInvest einlädt – über ein Konto im Versorger-Portal oder einen persönlichen Angebotslink. Mit der ersten Angebotsabgabe bzw. der
+        Annahme der Einladung erkennt der Versorger diese Bedingungen an.
+        (2) Der Versorger benennt eine vertretungsberechtigte Ansprechperson und wirkt an der Firmenprüfung (KYB) mit. Er versichert, über die
+        für die Belieferung erforderlichen Genehmigungen, Registrierungen und Bilanzkreisverträge im jeweiligen Land zu verfügen.
+      § 2 Verfahren
+        (1) Die Angebotsanfrage ist kein förmliches Vergabeverfahren. ÖkoInvest behandelt alle eingeladenen Versorger nach
+        denselben, vorab mitgeteilten Regeln: gleiche Unterlagen, gleiche Fristen, gleiche Informationen.
+        (2) Die Unterlagen bestehen aus einem Los-Kennzeichen, gerundeten Kennzahlen (Jahresmenge, Lastspitze), einem normierten Wochenprofil,
+        Monatsanteilen, Land, Spannungsebene, Messart, gewünschten Produktvarianten (z. B. Festpreis, Tranchen, Spot-Index), Lieferbeginn und
+        -ende sowie dem Preisblatt.
+        (3) Fragen stellt der Versorger über das Portal. Antworten gehen anonymisiert an alle eingeladenen Versorger. ÖkoInvest kann Unterlagen
+        nachreichen, Fristen verlängern und Folgerunden durchführen; in einer Folgerunde wird höchstens die vorab angekündigte Information
+        mitgeteilt (z. B. Rang, Abstand zum besten Angebot oder bester Preis) – nie Namen anderer Versorger.
+      § 3 Angebote
+        (1) Angebote werden ausschließlich über das Preisblatt abgegeben, mit allen Pflichtangaben: Arbeitspreis bzw. Aufschlag auf den Index,
+        Grundpreis, Herkunftsnachweise, Mengentoleranz, Bindefrist, Zahlungsziel und geforderte Sicherheiten. Abweichungen von den
+        Vorgaben und eigene Vertragsbedingungen sind im Angebot ausdrücklich zu benennen; nicht benannte Bedingungen werden nicht Teil des
+        Angebots.
+        (2) Angebote sind verdeckt: Kein Versorger sieht Angebote, Namen oder die Anzahl anderer Versorger. Je Runde gilt das
+        zuletzt abgegebene Angebot. Nach Ablauf der Angebotsfrist sind Angebote gesperrt.
+        (3) Angebote sind bis zum Ende der angegebenen Bindefrist verbindlich. Wird der Zuschlag innerhalb der Bindefrist
+        erteilt, ist der Versorger verpflichtet, den Liefervertrag zu den angebotenen Bedingungen abzuschließen.
+      § 4 Zuschlag und Vertrag
+        (1) Der Zuschlag setzt die Freigabe durch den Kunden voraus. Ein Anspruch auf Zuschlag, auf Erstattung von
+        Angebotskosten oder auf Mitteilung der Gründe besteht nicht; Kunden können das Verfahren ohne Zuschlag beenden.
+        (2) Nach dem Zuschlag erhält der bezuschlagte Versorger ein Zuschlagsschreiben sowie Firma, Anschrift, Ansprechperson und Lokations-IDs des
+        Kunden. Der Liefervertrag kommt unmittelbar zwischen Versorger und Kunde zustande. Nicht berücksichtigte Versorger werden
+        benachrichtigt.
+      § 5 Vertraulichkeit und Datennutzung
+          Unterlagen und Verbrauchsdaten sind vertraulich und dürfen nur für das jeweilige Angebot genutzt werden – nicht für
+          Werbung, Profilbildung oder andere Zwecke.
+        Versuche, Kunden aus den anonymisierten Daten zu identifizieren, sind untersagt.
+          Kunden einer laufenden Angebotsanfrage dürfen bezüglich dieser Anfrage nicht außerhalb der Plattform angesprochen werden; dies gilt
+          bis <Platzhalter>z. B. 12 Monate</Platzhalter> nach Ende der Anfrage. Bestehende Kundenbeziehungen bleiben unberührt.
+          Nicht bezuschlagte Versorger löschen die Unterlagen nach Ende der Anfrage, soweit keine Aufbewahrungspflicht besteht. Nach dem
+          Zuschlag verarbeitet der Versorger die Kundendaten als eigener Verantwortlicher nach den Datenschutzvorschriften.
+      § 6 Wettbewerb
+        Absprachen zwischen Versorgern über Preise, Angebote oder die Teilnahme sind unzulässig. Bei Anhaltspunkten für wettbewerbswidriges
+        Verhalten kann ÖkoInvest den Versorger vom Verfahren ausschließen.
+      § 7 Vergütung, Bewertung
+        (1) Die Teilnahme ist für Versorger kostenfrei. <Platzhalter>Festlegen, ob und welche Vergütung Versorger an ÖkoInvest leisten; jede
+        Vergütung wird dem Kunden offengelegt</Platzhalter>
+        (2) ÖkoInvest dokumentiert intern die Zusammenarbeit (z. B. Reaktionszeit, Vollständigkeit der Angebote, Vertragsumsetzung) und
+        berücksichtigt dies bei künftigen Einladungen.
+      § 8 Ausschluss und Haftung
+        (1) ÖkoInvest kann Versorger von einer Anfrage ausschließen, insbesondere bei unvollständigen oder verspäteten Angeboten, fehlender
+        Firmenprüfung, Verstößen gegen diese Bedingungen oder begründeten Zweifeln an der Lieferfähigkeit.
+        (2) Die Angaben in den Unterlagen beruhen auf den Daten des Kunden; ÖkoInvest übernimmt keine Gewähr für deren Richtigkeit. Im Übrigen gilt
+        die Haftungsregelung der Nutzungsbedingungen (§ 16).
+      <WeitereBedingungen pfad={PFAD} />
+    </LegalShell>
+  );
+}
+=== banken
+// src/app/bedingungen/banken/page.js
+//
+// Vertraulichkeitsbedingungen für Banken (Bank-Portal, Bankenpaket) –
+// ENTWURF zur anwaltlichen Prüfung, noindex bis zur Freigabe (siehe
+// ../_teile.js). Fachgrundlage: docs/FINANZIERUNG.md, docs/PLATTFORM.md
+// (Bank-Portal: Einladung mit persönlichem Link, nur freigegebene Bausteine,
+// Abrufe protokolliert). Offene Punkte: Dauer der Vertraulichkeit,
+// Weitergabe an Refinanzierer/Förderbanken, Verhältnis zu bankeigenen NDAs.
+const PFAD = "/bedingungen/banken";
+export const metadata = bedingungenMetadata({
+  pfad: PFAD,
+  titel: "Vertraulichkeitsbedingungen Banken | ÖkoInvest",
+  beschreibung:
+    "Entwurf der Vertraulichkeitsbedingungen für Banken im Bank-Portal: Nutzung des Bankenpakets, zulässige Weitergabe, Zugang, Protokoll, Datenschutz und Dauer.",
+  bild: "/img/team-praesentation.jpg",
+  bildAlt: "Team bei einer Präsentation",
+});
+const G = GESELLSCHAFT;
+export default function VertraulichkeitBankenPage() {
+  return (
+    <LegalShell
+      titel="Vertraulichkeitsbedingungen für Banken"
+      pfad={PFAD}
+      stand={STAND_BEDINGUNGEN}
+      lead="Regeln für Banken und Finanzierungspartner, die im Bank-Portal Finanzierungsanfragen der ÖkoInvest-Gruppe prüfen und das Bankenpaket abrufen."
+    >
+      <EntwurfHinweis />
+      § 1 Geltung und Zugang
+        (1) Die {G.name} bzw. die jeweilige Projektgesellschaft („Anfragende“) lädt Banken über einen persönlichen, befristeten Link zu einer
+        Finanzierungsanfrage ein. Mit dem ersten Abruf von Unterlagen erkennt die Bank diese Bedingungen an. Bestehende oder später
+        abgeschlossene individuelle Vertraulichkeitsvereinbarungen gehen vor.
+        (2) Der Zugang ist persönlich und an die eingeladene E-Mail-Adresse gebunden. Zugangsdaten und Links dürfen nicht weitergegeben werden;
+        weitere Personen der Bank werden auf Anforderung eingeladen. Die Bank teilt mit, wenn eine berechtigte Person ausscheidet.
+      § 2 Vertrauliche Informationen
+        Vertraulich sind alle Informationen, die der Bank im Zusammenhang mit der Anfrage zugänglich werden – insbesondere das{" "}
+        Bankenpaket (Projektsteckbrief, Finanzmodell, Ertragsgutachten, Verträge, Genehmigungen, Grundbuch- und
+        Dienstbarkeitsunterlagen), Rückfragen und Antworten sowie die Tatsache der Anfrage selbst. Ausgenommen sind Informationen, die öffentlich
+        bekannt sind oder werden, ohne dass die Bank dies zu vertreten hat, die der Bank nachweislich bereits bekannt waren oder die sie
+        rechtmäßig von Dritten ohne Vertraulichkeitspflicht erhalten hat.
+      § 3 Zweckbindung und zulässige Weitergabe
+        (1) Die Bank nutzt die Informationen ausschließlich zur Prüfung, Strukturierung, Entscheidung und Durchführung der angefragten
+        Finanzierung.
+      (2) Eine Weitergabe ist nur zulässig an
+        Organe, Mitarbeitende und Kreditgremien der Bank und ihrer Konzerngesellschaften, soweit sie die Informationen benötigen,
+        zur Verschwiegenheit verpflichtete Berater, Gutachter und Prüfer der Bank,
+          potenzielle Konsortialbanken, Förder- und Refinanzierungsinstitute sowie Kreditversicherer – nur nach vorheriger Zustimmung der
+          Anfragenden und bei gleichwertiger Vertraulichkeitspflicht,
+        Aufsichtsbehörden, Gerichte und Behörden, soweit die Bank rechtlich dazu verpflichtet ist.
+        Die Bank stellt sicher, dass Empfänger dieselben Pflichten einhalten. Bankgeheimnis und bankrechtliche Pflichten bleiben unberührt.
+      § 4 Kennzeichnung und Protokoll
+        Jeder Abruf von Unterlagen wird mit Person und Zeitpunkt protokolliert. Unterlagen können den Namen des Empfängers tragen. Die Bank
+        entfernt solche Kennzeichnungen nicht und lädt Unterlagen nicht automatisiert oder massenhaft herunter.
+      § 5 Personenbezogene Daten
+        (1) Das Bankenpaket kann personenbezogene Daten Dritter enthalten, etwa von Flächen- und Dacheigentümern (Pacht- und
+        Dienstbarkeitsverträge, Grundbuchauszüge) oder Stromabnehmern. Die Anfragenden geben nur weiter, was für Kreditentscheidung und
+        Besicherung erforderlich ist.
+        (2) Die Bank verarbeitet diese Daten als eigener Verantwortlicher nur für den Zweck nach § 3, schützt sie durch angemessene technische
+        und organisatorische Maßnahmen und löscht sie, sobald sie nicht mehr benötigt werden und keine Aufbewahrungspflicht besteht. Anfragen
+        betroffener Personen, die die Anfragenden betreffen, leitet sie weiter.
+      § 6 Unverbindlichkeit
+        (1) Die Anfrage ist keine Zusage, mit der Bank abzuschließen. Die Anfragenden sind frei, mehrere Banken anzufragen und Angebote abzulehnen.
+        Term Sheets gelten als indikativ, sofern sie nicht ausdrücklich als verbindlich bezeichnet sind.
+        (2) Kosten der Prüfung trägt jede Seite selbst, soweit nicht schriftlich anders vereinbart (z. B. Bearbeitungsentgelt im Term Sheet).
+      § 7 Keine Gewähr
+        Die Informationen werden nach bestem Wissen bereitgestellt. Finanzmodelle und Prognosen beruhen auf Annahmen mit Stand; eine Gewähr für
+        Vollständigkeit, Richtigkeit oder den Eintritt von Prognosen übernehmen die Anfragenden nur im Rahmen des späteren Kreditvertrags. Die
+        Bank nimmt ihre eigene Prüfung vor.
+      § 8 Rückgabe, Löschung und Dauer
+        (1) Kommt keine Finanzierung zustande, löscht die Bank auf Anforderung die erhaltenen Unterlagen bzw. gibt sie zurück; ausgenommen sind
+        Kopien, die sie aufgrund gesetzlicher oder aufsichtsrechtlicher Pflichten aufbewahren muss, und automatische Sicherungskopien – für diese
+        gilt die Vertraulichkeit fort.
+        (2) Die Pflichten gelten für die Dauer der Anfrage und darüber hinaus für{" "}
+        <Platzhalter>z. B. 3 Jahre nach Ende der Anfrage bzw. für die Laufzeit eines Kreditverhältnisses</Platzhalter>.
+        (3) Die Anfragenden können den Zugang jederzeit beenden, insbesondere nach Abschluss der Anfrage oder bei Verstößen gegen diese
+        Bedingungen.
+      <WeitereBedingungen pfad={PFAD} />
+    </LegalShell>
+  );
+}
+_teile.js
+banken
+energiebeschaffung
+lieferanten
+projektboerse

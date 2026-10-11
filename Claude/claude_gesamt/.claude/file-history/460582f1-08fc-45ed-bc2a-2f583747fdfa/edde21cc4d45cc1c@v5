@@ -1,0 +1,284 @@
+from reportlab.lib.pagesizes import A4
+from reportlab.lib import colors
+from reportlab.lib.units import mm
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+
+OUT = "Erhebungsbericht_Riebler_Fotos_SalzburgAG.pdf"
+
+ss = getSampleStyleSheet()
+H1 = ParagraphStyle("H1", parent=ss["Heading1"], fontSize=15, spaceAfter=6)
+H2 = ParagraphStyle("H2", parent=ss["Heading2"], fontSize=12, spaceBefore=10, spaceAfter=4)
+P = ParagraphStyle("P", parent=ss["BodyText"], fontSize=9.5, leading=13)
+C = ParagraphStyle("C", parent=P, fontSize=8, leading=10)
+S = ParagraphStyle("S", parent=P, fontSize=8, textColor=colors.grey)
+
+
+def link(url, text=None):
+    return f'<link href="{url}" color="blue"><u>{text or url}</u></link>'
+
+
+def table(header, rows, widths):
+    data = [[Paragraph(f"<b>{h}</b>", C) for h in header]]
+    data += [[Paragraph(str(c), C) for c in r] for r in rows]
+    t = Table(data, colWidths=[w * mm for w in widths], repeatRows=1)
+    t.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#e8e8e8")),
+        ("GRID", (0, 0), (-1, -1), 0.4, colors.grey),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 3),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 3),
+    ]))
+    return t
+
+
+s = []
+s.append(Paragraph("Erhebungsbericht – Open-Source-Recherche", H1))
+s.append(Paragraph("Betroffene Person: Marco Riebler, Salzburg<br/>"
+                   "Gegenstand: Kommerziell/öffentlich veröffentlichte Fotos sowie berufliche Verbindungen zur Salzburg AG<br/>"
+                   "Erhebungsdatum: 24.09.2026 &nbsp;&nbsp; Methode: Offene Internetquellen (Websuche, Direktabruf der Seiten)", P))
+s.append(Spacer(1, 4))
+s.append(Paragraph("Umfang: Erhoben wurden ausschließlich öffentlich zugängliche Angaben zur beruflichen Tätigkeit "
+                   "(Fotografie, Journalismus, Auftragsarbeiten). Private Daten (Wohnadresse, Familie, private Social-Media-Konten) "
+                   "wurden bewusst nicht erhoben. Fotos werden aus urheberrechtlichen Gründen nur verlinkt, nicht wiedergegeben.", S))
+
+s.append(Paragraph("1. Berufliche Stellung (öffentliche Angaben)", H2))
+s.append(Paragraph(
+    "• Journalist bei den <i>Salzburger Nachrichten</i> (SN); laut Salzburgwiki seit Oktober 2025 Ressortchef der SN-Lokalredaktion. "
+    f"Quelle: {link('https://wiki.sn.at/wiki/Marco_Riebler')}, {link('https://www.journalistin.at/singlenews/uid-975586/aufstieg-fuer-marco-riebler/')}<br/>"
+    f"• Autorenseite SN: {link('https://www.sn.at/autor/marco-riebler/112171969')}<br/>"
+    "• Tritt zusätzlich als Unternehmer und Fotograf auf; eigene Website marco-riebler.com („Print &amp; Photo Concepts“) – "
+    "am 24.09.2026 <b>nicht erreichbar</b> (DNS-Fehler); historische Stände siehe Abschnitt 5.<br/>"
+    "• Ausbildung laut Salzburgwiki: Kommunikationswissenschaft, Qualitätsjournalismus, General Management (BA, MA, MBA).", P))
+
+s.append(Paragraph("2. Fotos mit Urhebervermerk „Marco Riebler“", H2))
+rows = [
+    ["1", "Salzburger Festspiele – Pressefotos „Helga Rabl-Stadler“ (Foto-ID #107734, #107732)", "© SF/Marco Riebler", "nicht angegeben",
+     link("https://www.salzburgerfestspiele.at/en/photos/helga-rabl-stadler", "salzburgerfestspiele.at")],
+    ["2", "Die Salzburger Industrie – Bildergalerie", "photography marco riebler | marco-riebler.com", "01.07.2015",
+     link("https://www.die-salzburger-industrie.at/photography-marco-riebler-marco-riebler-com/", "die-salzburger-industrie.at")],
+    ["3", "Schauspielhaus Salzburg – Facebook-Foto", "Foto: Marco Riebler", "nur mit Login sichtbar",
+     link("https://m.facebook.com/Schauspielhaus.Salzburg/photos/foto-marco-riebler/10151295443955964/", "facebook.com")],
+    ["4", "German Speakers Association – Programm Winterkonferenz 2023", "Foto: SN/Marco Riebler", "ca. März 2023",
+     link("https://germanspeakers.org/veranstaltungen/gsa-winter-conference-2023-programm-09-03-2023/foto-sn-marco-riebler/", "germanspeakers.org")],
+    ["5", "Agentur Happy&amp;Ness GmbH – Galerie (Umfeld „karriereforum_salzburg_2017“), Porträtfoto", "Foto: SN/Marco Riebler", "nicht angegeben (Umfeld 2017)",
+     link("https://happyundness.at/foto-sn-marco-riebler/", "happyundness.at")],
+    ["6", "bier-entdecken.de – „Stieglbrauerei und Maisel &amp; Friends“ (abgebildet: Jeff Maisel, Dr. Heinrich Dieter Kiener)", "photography marco-riebler.com", "nicht angegeben",
+     link("https://www.bier-entdecken.de/stieglbrauerei-und-maisel-friends/photography-marco-riebler-com/", "bier-entdecken.de")],
+]
+s.append(table(["Nr.", "Veröffentlichung / Inhalt", "Urhebervermerk", "Datum", "Quelle"], rows, [9, 62, 38, 26, 35]))
+s.append(Spacer(1, 3))
+s.append(Paragraph("Hinweis: Der Vermerk „SN/…“ deutet auf eine Aufnahme im Auftrag der Salzburger Nachrichten hin; "
+                   "Nutzungsrechte liegen dann voraussichtlich beim Verlag. „SF/…“ steht für Salzburger Festspiele als Rechteinhaber/Verwender.", S))
+
+s.append(Paragraph("3. Öffentliche Fotos, die die Person zeigen", H2))
+s.append(table(["Nr.", "Inhalt", "Fotograf", "Datum", "Quelle"], [
+    ["7", "Moderation einer Wahldiskussion in Salzburg als SN-Redakteur (Bild-ID 2WH31EJ, nur redaktionelle Nutzung)",
+     "Manfred Siebinger (IMAGO)", "06.02.2024",
+     link("https://www.alamy.de/marco-riebler-moderator-bei-wahldiskussion-redakteur-salzburger-nachrichten-salzburg-manfred-siebinger-marco-riebler-wahlmoderator-redakteur-salzburger-nachrichten-salzburg-manfred-siebinger-image595668714.html", "alamy.de")],
+    ["8", "Instagram-Beitrag der Salzburger Nachrichten „Fotograf Marco Riebler beim …“", "–", "nicht geprüft",
+     link("https://www.instagram.com/p/31gm_GOjh5/?hl=de", "instagram.com")],
+], [9, 70, 35, 22, 34]))
+
+s.append(Paragraph("4. Verbindungen zur Salzburg AG", H2))
+s.append(Paragraph(
+    "<b>4.1 Fotos auf der Salzburg-AG-Unternehmensseite von „Die Salzburger Industrie“.</b> Die Websuche weist zwei nach "
+    "„marco-riebler“ benannte Bildseiten unter der Salzburg-AG-Unternehmensseite aus:<br/>"
+    "– https://www.die-salzburger-industrie.at/unternehmen/salzburg-ag-fuer-energie-verkehr-und-telekommunikation/marco-riebler-3564/<br/>"
+    "– https://www.die-salzburger-industrie.at/unternehmen/salzburg-ag-fuer-energie-verkehr-und-telekommunikation/marco-riebler-3771/<br/>"
+    "Beide lieferten am 24.09.2026 <b>HTTP 404</b> (entfernt). Die Einträge sind nur noch im Suchindex nachweisbar. "
+    "Empfehlung: Abruf älterer Stände über das Internet Archive (web.archive.org) – aus dieser Umgebung nicht möglich.", P))
+s.append(Spacer(1, 3))
+s.append(Paragraph(
+    "<b>4.2 Auftragsarbeiten für die Salzburg AG – durch Archivabruf bestätigt (siehe Abschnitt 5).</b> "
+    "Die eigene Website führte die Salzburg AG in den Rubriken „cp“ (Corporate Publishing) und „ads“ (Werbung) "
+    "ausdrücklich als Kundin: Magazine „lebens.linien“ und „Insider“ sowie die Werbesujets „cablelink“ und "
+    "„altstadt shopping“. Belegt in Archivständen vom 23.08.2018, 18.07.2019 und 08.05.2021.", P))
+s.append(Spacer(1, 3))
+s.append(Paragraph(
+    "<b>4.3 Journalistische Berichterstattung.</b> Die SN berichten über die Salzburg AG, u. a. "
+    f"{link('https://www.sn.at/salzburg/wirtschaft/anzeigenflut-gegen-salzburg-ag-gesellschafterstreit-beschaeftigt-aufsichtsrat-art-674574', '„Anzeigenflut gegen Salzburg AG: Gesellschafterstreit beschäftigt Aufsichtsrat“')} "
+    "und „Energieversorger Salzburg AG erzielte 2025 weniger Umsatz, aber mehr Gewinn“. "
+    "Die Autorenschaft von Marco Riebler an diesen Artikeln ist <b>nicht geprüft</b>.", P))
+s.append(Spacer(1, 3))
+s.append(Paragraph(
+    "<b>4.4 Zweitbeschuldigte Person.</b> Mangels Angaben zur Identität der zweitbeschuldigten Person wurde kein "
+    "Personenabgleich vorgenommen. Abgleich mit den Auftragsunterlagen erforderlich.", P))
+
+WB = "https://web.archive.org/web/"
+s.append(Paragraph("5. Historische Abfrage marco-riebler.com (Internet Archive / Wayback Machine)", H2))
+s.append(Paragraph(
+    "Abfrage am 24.09.2026 über den CDX-Index des Internet Archive: 496 archivierte URLs, "
+    "Erstaufnahme 19.08.2013, letzte Aufnahme 10.02.2026.", P))
+s.append(Spacer(1, 3))
+s.append(Paragraph("<b>5.1 Chronologie der Domain</b>", P))
+s.append(table(["Zeitraum", "Befund", "Beleg (Archivstand)"], [
+    ["08/2013 – 2014", "Statische Fotografen-Website, Titel „PHOTOGRAPHY MARCO RIEBLER“ („latest pictures“)",
+     link(WB + "20130819005758/http://marco-riebler.com/", "19.08.2013")],
+    ["2014 – 2017", "WordPress-Portfolio (Theme „photolux“), Bild-Uploads 02–06/2014, u. a. „…©ServusTV_Marco_Riebler.jpg“ (Jedermannbühne), „red_rieb_sn_…“",
+     "CDX-Index, Uploads 2014/02–2014/06"],
+    ["07/2017 – 08/2021", "Neues Portfolio: Rubriken Chefs, cp, Faces, Ads, Theatre, Marco, About, Contact, Datenschutz, Impressum",
+     link(WB + "20210806022146/http://marco-riebler.com/", "06.08.2021")],
+    ["12/2021 – 06/2022", "Startseite leer (kein Inhalt archiviert) – vermutlich Website abgeschaltet",
+     link(WB + "20211217045456/http://marco-riebler.com/", "17.12.2021") + ", " + link(WB + "20220628095147/http://marco-riebler.com/", "28.06.2022")],
+    ["ab 04/2024", "<b>Domain in fremder Hand</b>: chinesische Firmen-/Spamseite („Jiuzhou Pingtai“), ab 10/2024 Glücksspiel-Spam-Unterseiten. Kein Bezug zur Person.",
+     link(WB + "20240416101739/https://www.marco-riebler.com/", "16.04.2024")],
+], [28, 100, 52]))
+s.append(Spacer(1, 3))
+s.append(Paragraph("Folgerung: Inhalte ab 2024 unter marco-riebler.com stammen <b>nicht</b> von der Person und sind der Person nicht zuzurechnen.", S))
+
+s.append(Paragraph("<b>5.2 Rubrik „cp“ – corporate publishing, contemporary journalism</b>", P))
+s.append(table(["Archivstand", "Einträge (wörtlich, gekürzt)"], [
+    [link(WB + "20180823164231/http://marco-riebler.com/work/cp/", "23.08.2018"),
+     "„pionier sein, lebens.linien – fotostil, umsetzung | client: salzburg ag“; „inhalt, lebens.linien – client: salzburg ag“; "
+     "„cover, story – client: salzburg ag“; „anders leben | lebens.linien – client: salzburg ag“ (2×); "
+     "„ceo | gerhard haider – corporate publishing employer branding – client: conova communications“; "
+     "„backup – employer branding – client: conova communications“. Bilddatei: uploads/2017/11/lebenslinien-Ausgabe-75_web-1.jpg"],
+    [link(WB + "20190718132659/http://marco-riebler.com/work/cp/", "18.07.2019"),
+     "„lebens.linien – client: Salzburg AG“ (4×); „Insider – Client: Salzburg AG“; „employer branding – client: Conova“; "
+     "„Salzburger Nachrichten – Dahoam kochen“ (2×); „Ensemble Porcia – Details“; „2019 Lürzer's Archive – 200 best ad photographers worldwide“"],
+    [link(WB + "20210508041411/http://marco-riebler.com/work/cp/", "08.05.2021"), "Inhalt unverändert gegenüber 18.07.2019"],
+], [28, 152]))
+
+s.append(Paragraph("<b>5.3 Rubrik „ads“ – Werbung</b>", P))
+s.append(table(["Archivstand", "Einträge (wörtlich, gekürzt)"], [
+    [link(WB + "20210508044522/http://marco-riebler.com/work/ads/", "08.05.2021"),
+     "„cablelink – client: Salzburg AG“ (2×); „altstadt shopping – client: salzburg ag“; „karriere.SN.at – client: salzburger nachrichten“ (3×); "
+     "„zeitungsmenschen – client: salzburger verlagshaus“ (6×); „ad campaigns – client: salzburger nachrichten / salzburger verlagshaus“; "
+     "„fundamental things – marina bay sands“. Bilddateien u. a. uploads/2017/11/sujet3 (karriere.SN.at), uploads/2018/09/marco_riebler-6942"],
+], [28, 152]))
+
+s.append(Paragraph("<b>5.4 Weitere Rubriken (Überblick, Stand 05/2021)</b>", P))
+s.append(Paragraph(
+    f"• {link(WB + '20210421014627/http://marco-riebler.com/work/chefs/', 'Chefs')}: Food-/Koch-Fotografie, u. a. Johanna Maier, Andreas Döllerer, "
+    "Obauer, Eckart Witzigmann (Ikarus), Walter Eselböck (Taubenkobel), Mario Gamba (Acquarello), Alain Passard (L'Arpège), Ritz-Carlton Vienna (DSTRIKT), "
+    "Blaue Gans, Mesnerhaus; Bildvermerke teils „sn foto: marco riebler“.<br/>"
+    f"• {link(WB + '20210508045146/http://marco-riebler.com/work/faces/', 'Faces')}: Porträts, u. a. Tobias Moretti (Festspiele Juli 2018), "
+    "Peter Simonischek, Stefanie Reinsperger, Felix Gottwald (SN-Sommergespräch), Thomas Bubendorfer, Thaddaeus Ropac, Karl Merkatz, Franz Beckenbauer, Karl-Markus Gauß.<br/>"
+    f"• {link(WB + '20210508045727/http://marco-riebler.com/work/theatre/', 'Theatre')}: Ensemble Porcia (Saisonen 2015, 2016, 2018), Vereinigte Bühnen Bozen (2016), Salzburger Straßentheater.<br/>"
+    f"• {link(WB + '20210508043541/http://marco-riebler.com/work/marco/', 'Marco')}: freie Arbeiten „since 2009“ (Singapur, Dolomiten 2017, Paris 2016, Dubai 2014), "
+    "Hotel Miramonti (Meran/Hafling), „der feine unterschied – lebens.linien 2018“.<br/>"
+    f"• {link(WB + '20210508044449/http://marco-riebler.com/about/', 'About')}: Essay „Rede über den Journalisten“; Selbstbeschreibung als "
+    "„Grenzgänger zwischen Journalismus, Fotografie und PR“.", P))
+
+SN = "https://www.sn.at/"
+s.append(Paragraph("6. Salzburg AG – Gesamterhebung der Verbindungen", H2))
+s.append(Paragraph("<b>6.1 Unternehmensdaten</b> (Quelle: " + link("https://www.salzburg-ag.at/servicemenue/impressum.html", "Impressum Salzburg AG") + ", Abruf 24.09.2026)", P))
+s.append(table(["Merkmal", "Angabe"], [
+    ["Firma", "Salzburg AG für Energie, Verkehr und Telekommunikation"],
+    ["Sitz / Firmenbuch", "Bayerhamerstraße 16, 5020 Salzburg; FN 51350s, Landesgericht Salzburg; UID ATU33790403"],
+    ["Eigentümer", "Land Salzburg 42,56 %; Stadt Salzburg 31,31 %; Energie AG Oberösterreich Service- und Beteiligungsverwaltungs-GmbH 26,13 %"],
+    ["Vorstand", "Michael Baminger (Vorsitzender), Herwig Struber"],
+    ["Aufsichtsratsvorsitz", "Dr. Wilfried Haslauer (Landeshauptmann a. D.)"],
+    ["Vorstandsvorsitz zuvor", "Leonhard Schitter (u. a. Vorstandsvorsitzender bei Einstieg Ökovolt 11/2021); Baminger CEO seit 01.01.2023"],
+], [38, 142]))
+
+s.append(Paragraph("<b>6.1a conova communications GmbH</b> (FN 064293z) – Kunde von M. Riebler laut Portfolio", P))
+s.append(Paragraph(
+    "• Gesellschafter laut Suchauszug (Salzburgwiki/North Data): je 50 % Salzburg AG und MAMDa Beteiligungs GmbH – <b>Firmenbuchauszug erforderlich</b>.<br/>"
+    "• Historie laut " + link("https://wiki.sn.at/wiki/Conova_Communications_GmbH", "Salzburgwiki") + ": 1988 Tech-Consult GesmbH; <b>1998 Beteiligung der Salzburger Nachrichten</b> an Tech-Consult; "
+    "2001 Fusion mit salzburg-online (Tochter der früheren Salzburger Stadtwerke) zu conova. Aktueller CEO laut Salzburgwiki: Robert Pumsenberger.<br/>"
+    "• <b>Gerhard Haider</b> laut " + link("https://www.northdata.com/conova%20communications%20GmbH,%20Salzburg/064293z", "North Data") +
+    ": Prokurist 15.01.2004 – 11.01.2005; Geschäftsführer 08.01.2019 – 05.06.2019. "
+    "Im Portfolio von M. Riebler bereits im Archivstand 23.08.2018 als „ceo | gerhard haider – employer branding – client: conova communications“ geführt.<br/>"
+    "• Bedeutung: conova ist sowohl mit der Salzburg AG (Gesellschafterin) als auch historisch mit den Salzburger Nachrichten (Arbeitgeber von M. Riebler) verbunden.", P))
+
+s.append(Paragraph("<b>6.1b Ökovolt – Gegenstand des Gesellschafterstreits (Artikel 24.09.2026)</b>", P))
+s.append(Paragraph(
+    "• 18.11.2021: Salzburg AG erwirbt je <b>49 %</b> an Ökovolt Solartechnik GmbH (Ostermiething) und Ökovolt GmbH Solartechnik (Deutschland); "
+    "zusammen 27 Mitarbeiter, ca. 4.800 errichtete PV-Anlagen. Zitat Vorstandsvorsitzender Leonhard Schitter. Quelle: "
+    + link("https://www.energynewsmagazine.at/2021/11/18/salzburg-ag-beteiligt-sich-an-zwei-firmen/", "energynewsmagazine.at") + ". "
+    "Gleichzeitig 80 % an celix Solutions GmbH (Wien, zuvor mehrheitlich Novomatic).<br/>"
+    "• Ökovolt Solartechnik GmbH: FN 375708m, LG Ried im Innkreis, gegründet 01.02.2012, Stammkapital 35.000 EUR, Gewerbegebiet 10, 5121 Ostermiething.<br/>"
+    "• Organe/Gesellschafter laut Drittquellen <b>widersprüchlich</b>: Andreas Wegscheider als Geschäftsführer und Mehrheitsgesellschafter (51 %) genannt "
+    "(Suchauszug Firmendatenbanken; Salzburgring-Pressetext: „CEO von Ökovolt“); North Data dagegen: Wegscheider GF bis 12.05.2016, Friedrich Schiefer GF 07.03.2023 – 06.03.2025, "
+    "Gesellschafterin ÖkoInvest GmbH (06/2023). Letzte Firmenbuchänderung 20.09.2025. <b>Aktueller Firmenbuchauszug zwingend erforderlich.</b><br/>"
+    "• Großprojekt Salzburgring (Plainfeld): Agri-PV 1,9 MWp, 3.264 Module, ca. 2,1 ha, Spatenstich 14.11.2024, Investition ca. 1,6 Mio. EUR, "
+    "Partner Salzburg AG, Land Salzburg, Salzburgring. Quellen: " + link("https://salzburgring.com/en/article/solar-kraftwerk-am-salzburgring", "salzburgring.com") + ", "
+    + link("https://www.salzburg24.at/news/salzburg/flachgau/startschuss-fuer-solarkraftwerk-am-salzburgring-art-281966", "salzburg24.at") + ".<br/>"
+    "• Nicht zu verwechseln: Schweizer „Ökovolt AG“ (Konkurs, Kanton St. Gallen) – kein nachgewiesener Zusammenhang.", P))
+
+s.append(Paragraph("<b>6.2 Auftragsarbeiten von M. Riebler für die Salzburg AG (Fotograf/Corporate Publishing)</b>", P))
+s.append(table(["Projekt", "Beleg", "Zeitraum"], [
+    ["Kundenmagazin „lebens.linien“ (6 Ausgaben/Jahr) – Fotografie", "Agentur „wir sind artisten“: „Fotografie: Marco Riebler“; Text: Gernot Stadler, Astrid Wurm-Millonigg – "
+     + link("https://wirsindartisten.com/projekte/lebens-linien/", "wirsindartisten.com") + "; eigenes Portfolio „client: Salzburg AG“ (Abschnitt 5.2)",
+     "mind. 11/2017 (Ausgabe 75) bis 2018 („lebens.linien 2018“); im Portfolio gelistet bis 05/2021"],
+    ["Mitarbeitermagazin „Insider“", "eigenes Portfolio: „Insider – Client: Salzburg AG“", "gelistet 07/2019 – 05/2021"],
+    ["Werbung „cablelink“ (Kabel-TV/Internet-Marke der Salzburg AG)", "eigenes Portfolio: „cablelink – client: Salzburg AG“ (2×)", "gelistet bis 05/2021"],
+    ["Werbung „altstadt shopping“", "eigenes Portfolio: „altstadt shopping – client: salzburg ag“", "gelistet bis 05/2021"],
+    ["Employer Branding conova communications", "eigenes Portfolio: „client: conova communications“, Eintrag „ceo | gerhard haider“", "gelistet 08/2018 – 05/2021"],
+    ["Fotos auf Salzburg-AG-Seite „Die Salzburger Industrie“", "zwei nach „marco-riebler“ benannte Bildseiten, heute HTTP 404 (Abschnitt 4.1)", "unbekannt"],
+], [48, 92, 40]))
+s.append(Spacer(1, 2))
+s.append(Paragraph("Auf der aktuellen Salzburg-AG-Seite zu „lebens.linien“ wird M. Riebler nicht genannt (dort nur Bildnachweis „© Stefan Wascher / Salzburg AG“).", S))
+
+s.append(Paragraph("<b>6.3 Berichterstattung von M. Riebler als SN-Journalist über die Salzburg AG</b> (Autorenschaft jeweils auf der Artikelseite geprüft)", P))
+s.append(table(["Datum", "Artikel", "Autor(en)"], [
+    ["26.02.2023", link(SN + "salzburg/politik/strompreis-haslauer-verschaerft-gangart-bei-der-salzburg-ag-art-485002", "Strompreis: Haslauer verschärft Gangart bei der Salzburg AG"), "Heidi Huber, Marco Riebler"],
+    ["18.05.2024", link(SN + "salzburg/wirtschaft/salzburg-ag-rekord-158570875", "Energieversorger Salzburg AG verbucht für 2023 ein Rekordergebnis"), "Marco Riebler"],
+    ["24.02.2026", link(SN + "salzburg/politik/salzburger-fpoe-landesrat-zieht-sich-aus-aufsichtsrat-der-salzburg-ag-zurueck-art-637327", "Salzburger FPÖ-Landesrat zieht sich aus Aufsichtsrat der Salzburg AG zurück"), "Marco Riebler"],
+    ["27.02.2026", link(SN + "salzburg/wirtschaft/salzburg-ag-plant-strompreissenkung-im-ersten-halbjahr-art-637923", "Salzburg AG plant Strompreissenkung im ersten Halbjahr"), "Marco Riebler"],
+    ["06.03.2026", link(SN + "salzburg/chronik/salzburg-ag-senkt-den-strompreis-und-gibt-mehrjaehrige-garantie-art-638971", "Salzburg AG senkt den Strompreis und gibt mehrjährige Garantie"), "Marco Riebler, Michael Minichberger"],
+    ["22.04.2026", link(SN + "wirtschaft/oesterreich/salzburg-ag-chef-soll-praesident-von-oesterreichs-energie-werden-art-646961", "Salzburg-AG-Chef soll Präsident von Oesterreichs Energie werden"), "Marco Riebler"],
+    ["19.05.2026", link(SN + "salzburg/wirtschaft/energieversorger-salzburg-ag-erzielte-2025-weniger-umsatz-aber-mehr-gewinn-art-651584", "Energieversorger Salzburg AG erzielte 2025 weniger Umsatz, aber mehr Gewinn"), "Marco Riebler"],
+    ["24.09.2026", link(SN + "salzburg/wirtschaft/anzeigenflut-gegen-salzburg-ag-gesellschafterstreit-beschaeftigt-aufsichtsrat-art-674574", "Anzeigenflut gegen Salzburg AG: Gesellschafterstreit beschäftigt Aufsichtsrat"), "Marco Riebler"],
+], [22, 128, 30]))
+s.append(Spacer(1, 3))
+s.append(Paragraph(
+    "Geprüft, aber <b>nicht</b> von M. Riebler: „Salzburg AG gehackt: Bekennerschreiben eingelangt“ (27.01.2014, Anton Prlić); "
+    "„Einigung zur Strompreiserhöhung…“ (08.09.2023, Simona Pinwinkler); „Salzburg AG investiert Millionen in Flächen-PV-Anlagen“ (17.09.2024, ohne Autor); "
+    "„Salzburg AG investiert in E-Mobilität und in ein umstrittenes Kraftwerksprojekt“ (23.09.2025, ohne Autor); "
+    "„Salzburg AG 2025 mit Umsatzminus und Ergebnisplus“ (19.05.2026, ohne Autor). Die SN-Autorenseite zeigt nur die jüngsten Artikel; "
+    "eine vollständige Liste erfordert das SN-Archiv (APA-/Pressedatenbank).", S))
+s.append(Spacer(1, 3))
+s.append(Paragraph(
+    "Inhalt Artikel vom 24.09.2026 (laut Abruf): Gesellschafterstreit aus einer Minderheitsbeteiligung der Salzburg AG (2021) an einem "
+    "Photovoltaik-Anlagenanbieter, u. a. Großprojekt am Salzburgring; Befassung des Aufsichtsrats. Im abrufbaren Teil keine Namen von Beschuldigten "
+    "und keine ermittelnde Behörde genannt (Artikel ggf. hinter Bezahlschranke – Volltext sichern).", P))
+s.append(Spacer(1, 3))
+s.append(Paragraph(
+    "<b>Befund:</b> M. Riebler war nachweislich (spätestens 2017–2021) als Fotograf/Corporate-Publishing-Dienstleister für die Salzburg AG "
+    "und deren Umfeld (conova) tätig und berichtet seit mindestens 2024 als SN-Journalist bzw. Ressortleiter laufend über die Salzburg AG. "
+    "Ob die Auftragstätigkeit beendet ist und ob sie in der Berichterstattung offengelegt wurde, ist aus offenen Quellen nicht feststellbar. "
+    "Eine rechtliche oder presseethische Bewertung ist nicht Gegenstand dieses Berichts.", P))
+
+s.append(Paragraph("<b>6.4 Zeitleiste Riebler – Salzburg AG / Umfeld</b>", P))
+s.append(table(["Datum", "Ereignis", "Quelle"], [
+    ["1998", "Salzburger Nachrichten beteiligen sich an Tech-Consult (später conova)", "Salzburgwiki"],
+    ["2001", "Gründung conova (Fusion mit salzburg-online / Salzburger Stadtwerke)", "Salzburgwiki"],
+    ["11/2017", "Bilddatei „lebenslinien-Ausgabe-75“ im Portfolio M. Riebler", "Archiv 5.2"],
+    ["08/2018", "Portfolio: lebens.linien (Salzburg AG), Employer Branding conova („ceo | gerhard haider“)", "Archiv 23.08.2018"],
+    ["01–06/2019", "Gerhard Haider Geschäftsführer conova", "North Data"],
+    ["07/2019", "Portfolio: lebens.linien, Insider (Salzburg AG), conova", "Archiv 18.07.2019"],
+    ["05/2021", "Portfolio zuletzt mit Salzburg-AG-Aufträgen (cp, ads) online", "Archiv 08.05.2021"],
+    ["06/2021", "lebens.linien Nr. 86 (Impressum S. 28 nicht eingesehen)", "yumpu.com"],
+    ["18.11.2021", "Salzburg AG steigt mit 49 % bei Ökovolt ein", "energynewsmagazine.at"],
+    ["12/2021", "Website marco-riebler.com ohne Inhalt", "Archiv"],
+    ["26.02.2023", "Erster geprüfter SN-Artikel Riebler über Salzburg AG (mit H. Huber)", "sn.at"],
+    ["04/2024", "Domain marco-riebler.com in fremder Hand", "Archiv"],
+    ["14.11.2024", "Spatenstich PV Salzburgring (Salzburg AG / Ökovolt)", "salzburg24.at"],
+    ["10/2025", "Riebler wird Ressortchef SN-Lokalredaktion", "Salzburgwiki"],
+    ["2026", "Fünf weitere Riebler-Artikel über Salzburg AG (Feb.–Mai)", "sn.at"],
+    ["24.09.2026", "Riebler-Artikel „Anzeigenflut gegen Salzburg AG“ (Ökovolt-Gesellschafterstreit)", "sn.at"],
+], [24, 116, 40]))
+
+s.append(Paragraph("7. Offene Punkte / empfohlene Folgeschritte", H2))
+s.append(Paragraph(
+    "• Beweissicherung: alle Quellseiten und Archivstände mit Zeitstempel sichern (PDF/Screenshot, Hashwert).<br/>"
+    "• Archivstand des Impressums (marco-riebler.com/impressum) auf Unternehmensbezeichnung prüfen.<br/>"
+    "• Zwei gelöschte Bildseiten auf die-salzburger-industrie.at (Abschnitt 4.1): im Internet Archive nicht gezielt abgefragt.<br/>"
+    "• Salzburg AG: Ausgaben „lebens.linien“ (u. a. Nr. 75, ca. 11/2017) und „Insider“ auf Nennung als Fotograf/Autor sowie Auftragszeitraum prüfen.<br/>"
+    "• Firmenbuch/GISA: Prüfung, ob unter „Print &amp; Photo Concepts“ o. Ä. ein Gewerbe/Unternehmen eingetragen ist.<br/>"
+    "• Autorenschaft der SN-Artikel über die Salzburg AG über die SN-Autorenseite verifizieren.<br/>"
+    "• Firmenbuchauszüge (aktuell + historisch): Ökovolt Solartechnik GmbH FN 375708m, conova communications GmbH FN 064293z, Salzburg AG FN 51350s.<br/>"
+    "• lebens.linien-Impressen (z. B. Nr. 75, Nr. 86 S. 28) auf Fotocredit und Agentur prüfen; Agentur „wir sind artisten“ zum Auftragszeitraum.<br/>"
+    "• Volltext SN-Artikel 24.09.2026 sichern (Bezahlschranke); SN-Archiv/APA-Datenbank nach allen Riebler-Artikeln zu Salzburg AG, Ökovolt, conova durchsuchen.<br/>"
+    "• Ediktsdatei: Insolvenz-/Exekutionsverfahren Ökovolt prüfen.", P))
+
+s.append(Spacer(1, 8))
+s.append(Paragraph("Alle Angaben beruhen auf öffentlich zugänglichen Internetquellen zum Erhebungszeitpunkt und stellen keine "
+                   "rechtliche Würdigung dar. Die Richtigkeit der Drittquellen wurde nicht unabhängig überprüft.", S))
+
+SimpleDocTemplate(OUT, pagesize=A4, leftMargin=15 * mm, rightMargin=15 * mm, topMargin=15 * mm, bottomMargin=15 * mm,
+                  title="Erhebungsbericht Riebler", author="").build(s)
+print("ok", OUT)

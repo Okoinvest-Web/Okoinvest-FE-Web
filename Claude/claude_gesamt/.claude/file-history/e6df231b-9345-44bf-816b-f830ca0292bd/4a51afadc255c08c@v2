@@ -1,0 +1,364 @@
+"""Mitgelieferte Checklistenvorlagen ab Werk (Pflichtenheft Kapitel 4.2).
+
+Kurzschreibweise je Pruefpunkt:
+
+``(Nummer, Titel, Feldtyp, Zusatz)``
+
+``Zusatz`` ist ein Dict mit den optionalen Feldern des Doctypes `Pruefpunkt`
+(``einheit``, ``min_wert``, ``max_wert``, ``pflichtfeld``, ``foto_erforderlich``,
+``hilfetext``, ``normverweis``, ``auswahloptionen``, ``sichtbar_wenn`` ...).
+"""
+
+from __future__ import annotations
+
+import frappe
+
+BEWERTUNG = "Bewertung"
+ZAHL = "Zahlenwert"
+TEXT = "Text"
+FOTO = "Foto"
+JANEIN = "Ja-Nein"
+AUSWAHL = "Auswahl"
+DATUM = "Datum"
+
+P = dict  # Kurzform fuer die Zusatzangaben
+
+
+# ============================================================================
+# 4.2.1 DC-Wartungscheckliste (aus Testify uebernommen und erweitert)
+# ============================================================================
+
+DC_WARTUNG = {
+	"titel": "Interne DC-Wartungscheckliste",
+	"vorlage_typ": "Wartung",
+	"anlagen_typ": "PV",
+	"beschreibung": "Abgeleitet aus dem OEKOVOLT-Formular 'Interne DC-Wartungscheckliste' V1.5 "
+	                "und der Testify-Vorlage, erweitert um Plausibilitaetsgrenzen und Normverweise.",
+	"sektionen": [
+		("Auftragsdaten", [
+			("1.1", "Ort der Anlage", TEXT, P(pflichtfeld=1)),
+			("1.2", "Datum der Wartung", DATUM, P(pflichtfeld=1)),
+			("1.3", "Anlagenleistung", ZAHL, P(einheit="kWp", min_wert=0, max_wert=50000, pflichtfeld=1)),
+			("1.4", "Auftraggeber", TEXT, P(pflichtfeld=1)),
+			("1.5", "Anwesende Personen", TEXT, P(hilfetext="Namen aller anwesenden Personen erfassen.")),
+			("1.6", "Wartungsintervall eingehalten", JANEIN, P()),
+		]),
+		("Module", [
+			("2.1", "Sichtpruefung auf Modulbruch", BEWERTUNG,
+			 P(foto_erforderlich=1, hilfetext="Gesamte Modulflaeche auf Glasbruch und Delamination pruefen.")),
+			("2.2", "Stringanfang gekennzeichnet", BEWERTUNG, P()),
+			("2.3", "Wassereintritt in Anschlussdosen", BEWERTUNG,
+			 P(foto_erforderlich=1, normverweis="IEC 62446-1, Abschnitt 4.2")),
+			("2.4", "Verschmutzungsgrad / Reinigungsempfehlung", AUSWAHL,
+			 P(auswahloptionen="keine Reinigung noetig|Reinigung empfohlen|Reinigung dringend")),
+			("2.5", "Hotspots / Verfaerbungen", BEWERTUNG, P(foto_erforderlich=1)),
+			("2.6", "Bypass-Dioden auffaellig", BEWERTUNG, P()),
+		]),
+		("Unterkonstruktion", [
+			("3.1", "Modulklemmen fest und korrekt positioniert", BEWERTUNG, P(pflichtfeld=1)),
+			("3.2", "Ballastierung vollstaendig", BEWERTUNG, P(foto_erforderlich=1)),
+			("3.3", "Brandschutzplaketten vorhanden", BEWERTUNG, P()),
+			("3.4", "Schrauben / Dachhaken fest", BEWERTUNG, P(pflichtfeld=1)),
+			("3.5", "Raupeneffekt / Wanderung der UK", BEWERTUNG,
+			 P(hilfetext="Verschiebung der Unterkonstruktion gegenueber der Erstmontage pruefen.")),
+			("3.6", "Drehmoment stichprobenartig geprueft", ZAHL,
+			 P(einheit="Nm", min_wert=8, max_wert=30,
+			   hilfetext="Herstellerangabe beachten, Stichprobe von mindestens 5 Klemmen.")),
+			("3.7", "Korrosion an UK-Teilen", BEWERTUNG, P(foto_erforderlich=1)),
+		]),
+		("DC-Kabelfuehrung", [
+			("4.1", "Kabel am Dach ordnungsgemaess verlegt", BEWERTUNG, P(foto_erforderlich=1)),
+			("4.2", "Kabelrinnen-Deckel vollstaendig", BEWERTUNG, P()),
+			("4.3", "Kabelbinder UV-bestaendig und intakt", BEWERTUNG, P()),
+			("4.4", "Kantenschutz vorhanden", BEWERTUNG, P()),
+			("4.5", "Kabeltasse sauber und frei", BEWERTUNG, P()),
+			("4.6", "Kreuzungen DC/AC vermieden", BEWERTUNG,
+			 P(normverweis="OEVE/OENORM E 8001-1")),
+			("4.7", "Strom je Strang gemessen", ZAHL, P(einheit="A", min_wert=0, max_wert=25)),
+			("4.8", "Dichtheit der Dachdurchfuehrung", BEWERTUNG, P(foto_erforderlich=1, pflichtfeld=1)),
+			("4.9", "Steckverbinder gleicher Hersteller", BEWERTUNG,
+			 P(hilfetext="Mischung unterschiedlicher MC4-Fabrikate ist unzulaessig.")),
+		]),
+		("Wechselrichter", [
+			("5.1", "Display / Statusanzeige ohne Fehler", BEWERTUNG, P(pflichtfeld=1)),
+			("5.2", "Beschriftungen vollstaendig und lesbar", BEWERTUNG, P()),
+			("5.3", "Foto WR-Standort", FOTO, P(pflichtfeld=1)),
+			("5.4", "Foto Typenschild", FOTO, P(pflichtfeld=1)),
+			("5.5", "Lueftung / Kuehlkoerper frei", BEWERTUNG, P()),
+			("5.6", "Fehlerspeicher ausgelesen", TEXT, P(hilfetext="Auffaellige Ereignisse notieren.")),
+		]),
+		("Messungen", [
+			("6.1", "Anzahl gemessener Strings", ZAHL, P(einheit="Stk", min_wert=1, max_wert=200, pflichtfeld=1)),
+			("6.2", "Isolationswiderstand niedrigster Wert", ZAHL,
+			 P(einheit="kOhm", min_wert=1000, pflichtfeld=1, normverweis="IEC 62446-1, Tabelle 3",
+			   hilfetext="Detailwerte je String in der Messdatentabelle erfassen.")),
+			("6.3", "Leerlaufspannung hoechster Wert", ZAHL, P(einheit="V", min_wert=0, max_wert=1500)),
+			("6.4", "Strangstrom Abweichung zwischen Strings", ZAHL,
+			 P(einheit="%", min_wert=0, max_wert=10,
+			   hilfetext="Abweichung ueber 10 % deutet auf Verschattung oder Defekt hin.")),
+			("6.5", "Foto Messprotokoll", FOTO, P(pflichtfeld=1)),
+			("6.6", "Messmittel kalibriert", JANEIN, P(pflichtfeld=1)),
+		]),
+		("Weiteres", [
+			("7.1", "Abgleich mit Strangplan erfolgt", BEWERTUNG, P()),
+			("7.2", "Kabelkanaele im Plan eingezeichnet", BEWERTUNG, P()),
+			("7.3", "Haupterdung geprueft", BEWERTUNG,
+			 P(pflichtfeld=1, normverweis="OEVE/OENORM E 8001-1")),
+			("7.4", "Thermaldrohnenbefliegung empfohlen", JANEIN, P()),
+			("7.5", "Allgemeine Anmerkungen", TEXT, P()),
+		]),
+		("Maengel", [
+			("8.1", "Mangel 1 - Beschreibung", TEXT, P()),
+			("8.2", "Mangel 1 - Foto", FOTO, P()),
+			("8.3", "Mangel 2 - Beschreibung", TEXT, P()),
+			("8.4", "Mangel 2 - Foto", FOTO, P()),
+			("8.5", "Mangel 3 - Beschreibung", TEXT, P()),
+			("8.6", "Mangel 3 - Foto", FOTO, P()),
+		]),
+	],
+}
+
+
+# ============================================================================
+# 4.2.2 Inbetriebnahme-Protokoll (IBN)
+# ============================================================================
+
+IBN = {
+	"titel": "Inbetriebnahmeprotokoll PV / Speicher / Ladestation",
+	"vorlage_typ": "IBN",
+	"anlagen_typ": "Alle",
+	"beschreibung": "Erst-Inbetriebnahme mit Sichtkontrolle, elektrischer Pruefung, "
+	                "Komponenten-IBN und Uebergabe an den Kunden.",
+	"sektionen": [
+		("Anlagendaten", [
+			("1.1", "Kunde / Anlagenbetreiber", TEXT, P(pflichtfeld=1)),
+			("1.2", "Standort", TEXT, P(pflichtfeld=1)),
+			("1.3", "Nennleistung", ZAHL, P(einheit="kWp", min_wert=0, pflichtfeld=1)),
+			("1.4", "Modultyp und Anzahl", TEXT, P(pflichtfeld=1)),
+			("1.5", "Wechselrichtertyp", TEXT, P(pflichtfeld=1)),
+			("1.6", "Seriennummern dokumentiert", JANEIN, P(pflichtfeld=1,
+			   hilfetext="Seriennummern werden im ERPNext-Artikelstamm gefuehrt.")),
+			("1.7", "Foto Gesamtanlage", FOTO, P(pflichtfeld=1)),
+		]),
+		("Sichtkontrolle", [
+			("2.1", "Modulbefestigung normgerecht", BEWERTUNG, P(pflichtfeld=1)),
+			("2.2", "Kabelfuehrung und Zugentlastung", BEWERTUNG, P(pflichtfeld=1)),
+			("2.3", "Erdung der Modulrahmen", BEWERTUNG, P(pflichtfeld=1,
+			   normverweis="OEVE/OENORM E 8001-1")),
+			("2.4", "Beschilderung und Warnhinweise", BEWERTUNG, P(foto_erforderlich=1)),
+			("2.5", "Potentialausgleich hergestellt", BEWERTUNG, P(pflichtfeld=1)),
+			("2.6", "Trennstellen zugaenglich und gekennzeichnet", BEWERTUNG, P()),
+		]),
+		("Elektrische Pruefung", [
+			("3.1", "Isolationswiderstand je String gemessen", JANEIN,
+			 P(pflichtfeld=1, normverweis="IEC 62446-1",
+			   hilfetext="Einzelwerte in der Messdatentabelle des Protokolls erfassen.")),
+			("3.2", "Leerlaufspannung je String gemessen", JANEIN, P(pflichtfeld=1)),
+			("3.3", "Kurzschlussstrom je String gemessen", JANEIN, P(pflichtfeld=1)),
+			("3.4", "Schutzleiterdurchgang", ZAHL,
+			 P(einheit="Ohm", min_wert=0, max_wert=1, pflichtfeld=1,
+			   normverweis="OEVE/OENORM E 8001-6")),
+			("3.5", "Polaritaet aller Strings korrekt", BEWERTUNG, P(pflichtfeld=1)),
+			("3.6", "RCD / FI-Test AC-seitig", BEWERTUNG, P()),
+			("3.7", "Foto Messprotokoll", FOTO, P(pflichtfeld=1)),
+		]),
+		("Wechselrichter-IBN", [
+			("4.1", "Firmware-Version", TEXT, P(pflichtfeld=1)),
+			("4.2", "Laenderparametersatz eingestellt", BEWERTUNG, P(pflichtfeld=1)),
+			("4.3", "Netzeinspeisung erfolgreich", BEWERTUNG, P(pflichtfeld=1)),
+			("4.4", "Rundsteuerempfaenger angeschlossen", BEWERTUNG, P()),
+			("4.5", "Wirkleistungsbegrenzung eingestellt", ZAHL, P(einheit="%", min_wert=0, max_wert=100)),
+			("4.6", "Monitoring-Anbindung aktiv", BEWERTUNG, P()),
+		]),
+		("Speicher-IBN", [
+			("5.1", "Speicher-Firmware", TEXT, P()),
+			("5.2", "Notstromtest durchgefuehrt", BEWERTUNG, P()),
+			("5.3", "Ladetest erfolgreich", BEWERTUNG, P()),
+			("5.4", "Entladetest erfolgreich", BEWERTUNG, P()),
+			("5.5", "Speicherkapazitaet bestaetigt", ZAHL, P(einheit="kWh", min_wert=0)),
+			("5.6", "Aufstellort belueftet und zulaessig", BEWERTUNG, P(foto_erforderlich=1)),
+		]),
+		("Ladestation-IBN", [
+			("6.1", "RFID-Test erfolgreich", BEWERTUNG, P()),
+			("6.2", "Ladekabel-Typ", AUSWAHL, P(auswahloptionen="Typ 2 fest|Typ 2 Steckdose|CCS|CHAdeMO")),
+			("6.3", "FI-Ausloesetest (Typ A EV / Typ B)", BEWERTUNG, P()),
+			("6.4", "Kommunikation Backend (OCPP)", BEWERTUNG, P()),
+			("6.5", "Ladeleistung gemessen", ZAHL, P(einheit="kW", min_wert=0, max_wert=400)),
+			("6.6", "Lastmanagement konfiguriert", BEWERTUNG, P()),
+		]),
+		("Uebergabe an Kunden", [
+			("7.1", "Einweisung durchgefuehrt", JANEIN, P(pflichtfeld=1)),
+			("7.2", "Unterlagen uebergeben", JANEIN, P(pflichtfeld=1,
+			   hilfetext="Anlagendokumentation, Datenblaetter, Strangplan, Pruefprotokolle.")),
+			("7.3", "App-Zugang eingerichtet", JANEIN, P()),
+			("7.4", "Notabschaltung erklaert", JANEIN, P(pflichtfeld=1)),
+			("7.5", "Offene Restarbeiten", TEXT, P()),
+		]),
+	],
+}
+
+
+# ============================================================================
+# 4.2.3 DC-Abnahme-Protokoll
+# ============================================================================
+
+DC_ABNAHME = {
+	"titel": "DC-Abnahmeprotokoll",
+	"vorlage_typ": "DC-Abnahme",
+	"anlagen_typ": "PV",
+	"beschreibung": "Gleichstromseitige Abnahmepruefung vor Netzanschluss nach IEC 62446-1 "
+	                "und OEVE/OENORM E 8001.",
+	"sektionen": [
+		("Allgemeines", [
+			("1.1", "Projektbezeichnung", TEXT, P(pflichtfeld=1)),
+			("1.2", "Datum der Pruefung", DATUM, P(pflichtfeld=1)),
+			("1.3", "Pruefer", TEXT, P(pflichtfeld=1)),
+			("1.4", "Messgeraet und Seriennummer", TEXT, P(pflichtfeld=1)),
+			("1.5", "Kalibriernachweis gueltig", JANEIN, P(pflichtfeld=1)),
+			("1.6", "Foto Kalibrierschein", FOTO, P()),
+		]),
+		("String-Vermessung", [
+			("2.1", "Alle Strings vermessen", JANEIN,
+			 P(pflichtfeld=1, hilfetext="Einzelwerte Uoc, Isc und Riso in der Messdatentabelle erfassen. "
+			                            "Die Plausibilitaet wird gegen das Moduldatenblatt geprueft.")),
+			("2.2", "Einstrahlung bei Messung", ZAHL,
+			 P(einheit="W/m2", min_wert=200, max_wert=1200,
+			   hilfetext="Unter 200 W/m2 ist die Isc-Messung nicht aussagekraeftig.")),
+			("2.3", "Modultemperatur", ZAHL, P(einheit="C", min_wert=-20, max_wert=80)),
+			("2.4", "Abweichungen dokumentiert", BEWERTUNG, P()),
+		]),
+		("Erdung und Potentialausgleich", [
+			("3.1", "Durchgaengigkeit Schutzleiter", BEWERTUNG, P(pflichtfeld=1)),
+			("3.2", "Widerstandsmessung Erdung", ZAHL,
+			 P(einheit="Ohm", min_wert=0, max_wert=1, pflichtfeld=1)),
+			("3.3", "PA-Schiene angeschlossen und beschriftet", BEWERTUNG, P(foto_erforderlich=1)),
+			("3.4", "Blitzschutz-Trennungsabstand eingehalten", BEWERTUNG,
+			 P(normverweis="OEVE/OENORM E 8049-1")),
+		]),
+		("Kabelpruefung", [
+			("4.1", "Kennzeichnung aller DC-Leitungen", BEWERTUNG, P(pflichtfeld=1)),
+			("4.2", "Querschnitt normgerecht", BEWERTUNG, P()),
+			("4.3", "Biegeradien eingehalten", BEWERTUNG, P()),
+			("4.4", "Zugentlastung an allen Steckern", BEWERTUNG, P(pflichtfeld=1)),
+			("4.5", "Steckverbinder korrekt gecrimpt", BEWERTUNG, P(foto_erforderlich=1)),
+		]),
+		("Ueberspannungsschutz", [
+			("5.1", "SPD Typ 1 vorhanden", BEWERTUNG, P()),
+			("5.2", "SPD Typ 2 vorhanden", BEWERTUNG, P(pflichtfeld=1)),
+			("5.3", "Anschluss und Leitungslaenge korrekt", BEWERTUNG,
+			 P(hilfetext="Anschlussleitung moeglichst kurz, maximal 0,5 m.")),
+			("5.4", "Ableiterverschleiss-Anzeige gruen", BEWERTUNG, P(foto_erforderlich=1)),
+		]),
+		("Abschluss", [
+			("6.1", "Strangplan liegt vor und stimmt", BEWERTUNG, P(pflichtfeld=1)),
+			("6.2", "Anlage freigeschaltet uebergeben", JANEIN, P()),
+			("6.3", "Auflagen fuer den Netzanschluss", TEXT, P()),
+		]),
+	],
+}
+
+
+# ============================================================================
+# 4.2.4 Schadenaufnahme-Protokoll
+# ============================================================================
+
+SCHADEN = {
+	"titel": "Schadenaufnahmeprotokoll",
+	"vorlage_typ": "Schadenaufnahme",
+	"anlagen_typ": "Alle",
+	"beschreibung": "Dokumentation eines Schadensereignisses mit Fotobeweis und Sofortmassnahmen.",
+	"sektionen": [
+		("Schadensmeldung", [
+			("1.1", "Datum der Feststellung", DATUM, P(pflichtfeld=1)),
+			("1.2", "Meldende Person", TEXT, P(pflichtfeld=1)),
+			("1.3", "Dringlichkeit", AUSWAHL,
+			 P(auswahloptionen="Sofortmassnahme noetig|Innerhalb 24 h|Innerhalb einer Woche|Planbar",
+			   pflichtfeld=1)),
+			("1.4", "Anlage weiter in Betrieb", JANEIN, P(pflichtfeld=1)),
+		]),
+		("Schadensort", [
+			("2.1", "Betroffene Komponente", AUSWAHL,
+			 P(auswahloptionen="Modul|Unterkonstruktion|DC-Kabel|AC-Kabel|Wechselrichter|"
+			                   "Speicher|Wallbox|Zaehlerschrank|Sonstiges", pflichtfeld=1)),
+			("2.2", "Seriennummer der Komponente", TEXT, P()),
+			("2.3", "Genaue Lage auf der Anlage", TEXT,
+			 P(pflichtfeld=1, hilfetext="Feldbezeichnung, Reihe, Modulposition oder Strangnummer.")),
+			("2.4", "GPS-Position erfasst", JANEIN, P(hilfetext="Wird von der App automatisch mitgeschrieben.")),
+		]),
+		("Schadensart", [
+			("3.1", "Kategorie", AUSWAHL,
+			 P(auswahloptionen="mechanisch|elektrisch|Brand|Wasser|Blitz|Sturm|Hagel|"
+			                   "Tierbiss|Vandalismus|Verschleiss", pflichtfeld=1)),
+			("3.2", "Beschreibung des Schadensbildes", TEXT, P(pflichtfeld=1)),
+			("3.3", "Vermutete Ursache", TEXT, P()),
+			("3.4", "Folgeschaeden erkennbar", BEWERTUNG, P()),
+		]),
+		("Fotodokumentation", [
+			("4.1", "Foto Uebersicht", FOTO, P(pflichtfeld=1, foto_erforderlich=1)),
+			("4.2", "Foto Detail", FOTO, P(pflichtfeld=1, foto_erforderlich=1)),
+			("4.3", "Foto Umgebung", FOTO, P(pflichtfeld=1, foto_erforderlich=1)),
+			("4.4", "Weitere Fotos", FOTO, P()),
+		]),
+		("Sofortmassnahmen", [
+			("5.1", "Anlage freigeschaltet", JANEIN, P(pflichtfeld=1)),
+			("5.2", "Bereich abgesichert", JANEIN, P()),
+			("5.3", "Durchgefuehrte Sicherungsmassnahmen", TEXT, P(pflichtfeld=1)),
+			("5.4", "Betreiber informiert", JANEIN, P(pflichtfeld=1)),
+		]),
+		("Bewertung", [
+			("6.1", "Einschaetzung", AUSWAHL,
+			 P(auswahloptionen="reparabel|Austausch noetig|Versicherungsfall|Gewaehrleistungsfall",
+			   pflichtfeld=1)),
+			("6.2", "Geschaetzte Reparaturkosten", ZAHL, P(einheit="EUR", min_wert=0)),
+			("6.3", "Empfohlene naechste Schritte", TEXT, P(pflichtfeld=1)),
+		]),
+	],
+}
+
+
+ALLE_VORLAGEN = [DC_WARTUNG, IBN, DC_ABNAHME, SCHADEN]
+
+
+def vorlage_anlegen(definition: dict, veroeffentlichen: bool = True) -> str | None:
+	"""Legt eine Vorlage an, sofern sie noch nicht existiert."""
+	if frappe.db.exists("Checklistenvorlage", {"titel": definition["titel"]}):
+		return None
+
+	doc = frappe.new_doc("Checklistenvorlage")
+	doc.update({
+		"titel": definition["titel"],
+		"vorlage_typ": definition["vorlage_typ"],
+		"anlagen_typ": definition["anlagen_typ"],
+		"beschreibung": definition.get("beschreibung"),
+		"status": "Entwurf",
+		"revision": 1,
+		"sprache": "DE",
+	})
+
+	for sortierung, (sektion_name, punkte) in enumerate(definition["sektionen"], start=1):
+		sektion = doc.append("sektionen", {
+			"sektion_name": sektion_name,
+			"sortierung": sortierung * 10,
+		})
+		for nummer, titel, feldtyp, zusatz in punkte:
+			sektion.append("pruefpunkte", {
+				"nummer": nummer,
+				"titel": titel,
+				"feldtyp": feldtyp,
+				**zusatz,
+			})
+
+	doc.insert(ignore_permissions=True)
+	if veroeffentlichen:
+		doc.veroeffentlichen()
+	return doc.name
+
+
+def standardvorlagen_anlegen() -> list[str]:
+	"""Alle mitgelieferten Vorlagen erzeugen (idempotent)."""
+	angelegt = []
+	for definition in ALLE_VORLAGEN:
+		name = vorlage_anlegen(definition)
+		if name:
+			angelegt.append(f"{name}: {definition['titel']}")
+	return angelegt

@@ -1,0 +1,63 @@
+// Umsatzsteuer und Provision für den Vertrieb in Deutschland und Österreich.
+// Die Vorschläge sind Arbeitshilfen – die steuerliche Einordnung im Einzelfall trifft die Buchhaltung.
+
+import type { Country, SalesInvoice } from "@/lib/types";
+
+export type TaxOption = { rate: number; label: string };
+
+export const TAX_OPTIONS: Record<Country, TaxOption[]> = {
+  Germany: [
+    { rate: 0, label: "0 % – Nullsteuersatz PV (§ 12 Abs. 3 UStG)" },
+    { rate: 19, label: "19 % – Regelsteuersatz" },
+    { rate: 7, label: "7 % – ermäßigter Satz" },
+  ],
+  Austria: [
+    { rate: 20, label: "20 % – Normalsteuersatz" },
+    { rate: 0, label: "0 % – nur bei geltender PV-Befreiung" },
+    { rate: 10, label: "10 % – ermäßigter Satz" },
+  ],
+};
+
+export const DEFAULT_TAX: Record<Country, number> = { Germany: 19, Austria: 20 };
+
+// Vorschlag für den Steuersatz eines PV-Angebots.
+// DE: 0 % für PV-Anlagen bis 30 kWp (brutto) auf/an Wohngebäuden inkl. Speicher und Montage (§ 12 Abs. 3 UStG).
+// AT: Regelsteuersatz; befristete Befreiungen für PV bitte aktuell prüfen.
+export function suggestTax(country: Country, isPrivate: boolean, kwp: number): { rate: number; reason: string } {
+  if (country === "Germany") {
+    if (isPrivate && kwp > 0 && kwp <= 30)
+      return { rate: 0, reason: `Privatkunde, PV-Anlage ${kwp.toLocaleString("de-DE", { maximumFractionDigits: 1 })} kWp ≤ 30 kWp – Nullsteuersatz möglich (Wohngebäude vorausgesetzt).` };
+    if (kwp > 30) return { rate: 19, reason: "Anlage über 30 kWp – Nullsteuersatz greift nicht pauschal, Regelsteuersatz." };
+    return { rate: 19, reason: isPrivate ? "Keine PV-Module im Angebot – Regelsteuersatz." : "Gewerbekunde – Regelsteuersatz (Vorsteuerabzug beim Kunden)." };
+  }
+  return { rate: 20, reason: "Österreich: Normalsteuersatz. Sonderregelungen für PV vor Angebotsversand prüfen." };
+}
+
+export function calcTotals(lines: { qty: number; rate: number }[], taxRate: number) {
+  const net = round2(lines.reduce((s, l) => s + l.qty * l.rate, 0));
+  const tax = round2((net * taxRate) / 100);
+  return { net, tax, gross: round2(net + tax) };
+}
+
+export const round2 = (n: number) => Math.round(n * 100) / 100;
+
+// ---------- Provision ----------
+
+// Provision je Rechnung: ERPNext-Wert, sonst Nettobetrag × Satz.
+// Verdient ist sie erst bei Zahlungseingang (übliche Regelung im Handelsvertretervertrag).
+export function commissionOf(inv: SalesInvoice) {
+  const amount = inv.total_commission ?? round2(((inv.net_total ?? 0) * (inv.commission_rate ?? 0)) / 100);
+  const earned = inv.status === "Paid";
+  // Bei Teilzahlung anteilig verdient
+  const paidShare = inv.grand_total > 0 ? Math.max(0, Math.min(1, 1 - inv.outstanding_amount / inv.grand_total)) : 0;
+  return { amount, earned: earned ? amount : inv.status === "Partly Paid" ? round2(amount * paidShare) : 0 };
+}
+
+export function monthKey(iso: string) {
+  return iso.slice(0, 7); // "2026-09"
+}
+
+export function monthLabel(key: string) {
+  const [y, m] = key.split("-").map(Number);
+  return new Intl.DateTimeFormat("de-DE", { month: "long", year: "numeric" }).format(new Date(y, m - 1, 1));
+}

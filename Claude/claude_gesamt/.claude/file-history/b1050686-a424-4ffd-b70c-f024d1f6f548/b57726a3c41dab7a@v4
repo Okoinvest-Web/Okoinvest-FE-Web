@@ -1,0 +1,2705 @@
+import "server-only";
+
+import { db, imBlock, schreibe, skalar } from "./verbindung.ts";
+import { messStempel, tagesSchluessel, verschiebeTage } from "../datum.ts";
+import { startwertAus, zufallsfolge } from "../demo/generator.ts";
+import {
+  haengeAn,
+  konfigurationsFingerabdruck,
+  type Protokolleintrag,
+} from "../sicherheit/kette.ts";
+import { pruefeDrift, type Istwert, type Sollwert } from "../ot/drift.ts";
+import {
+  erstelleFahrplan,
+  type Marktintervall,
+} from "../handel/fahrplan.ts";
+import { FAKTOREN } from "../esg/ccf.ts";
+
+/**
+ * Bestand der Plattformebene: Edge-Hardware, Netzsegmentierung,
+ * Sollstand und Drift, Firewall, Speichervermarktung, Dossier,
+ * Treibhausgasbilanz, Bereitschaft und Buchhaltung.
+ *
+ * Der Datensatz enthält bewusst einen echten Driftbefund und eine
+ * überschrittene Netzgrenze. Ein Bestand, in dem alles stimmt, zeigt
+ * nur, dass die Oberfläche grün darstellen kann.
+ */
+
+/* ------------------------------------------------------------------ */
+/* Edge-Hardware                                                       */
+/* ------------------------------------------------------------------ */
+
+interface GeraetVorlage {
+  id: string;
+  /** Abweichender Fernzugang; sonst nach Rolle. */
+  fernzugang?: "Zero-Trust" | "Portweiterleitung" | "keiner";
+  anlageId: string;
+  rolle: string;
+  hersteller: string;
+  modell: string;
+  prozessor?: string;
+  arbeitsspeicher?: string;
+  datenspeicher?: string;
+  betriebssystem?: string;
+  firmware: string;
+  temperaturVon?: number;
+  temperaturBis?: number;
+  montage?: string;
+  batterielos?: boolean;
+  secureBoot?: boolean;
+  ip?: string;
+  vlanNummer?: number;
+  mobilfunk?: string;
+  simPrimaer?: string;
+  simSekundaer?: string;
+  status?: string;
+  schnittstellen: {
+    art: string;
+    bezeichnung: string;
+    protokoll?: string;
+    belegt?: string;
+    bemerkung?: string;
+  }[];
+}
+
+/** Der Steuerrechner. Auf jeder Anlage derselbe Typ. */
+function jace(anlageId: string, nummer: number, ip: string): GeraetVorlage {
+  return {
+    id: `EG-${String(nummer).padStart(4, "0")}`,
+    anlageId,
+    rolle: "Steuerung",
+    hersteller: "Tridium",
+    modell: "Niagara JACE 9000",
+    prozessor: "NXP i.MX8M Plus, 4 × Cortex-A53, 1,6 GHz",
+    arbeitsspeicher: "2 GB LPDDR4",
+    datenspeicher: "8 GB eMMC",
+    betriebssystem: "Niagara 4",
+    firmware: "4.14.0.156",
+    temperaturVon: -20,
+    temperaturBis: 60,
+    montage: "Hutschiene EN 50022",
+    batterielos: true,
+    secureBoot: true,
+    ip,
+    vlanNummer: 20,
+    schnittstellen: [
+      {
+        art: "Ethernet",
+        bezeichnung: "ETH1",
+        protokoll: "Modbus TCP",
+        belegt: "Feldebene",
+      },
+      {
+        art: "Ethernet",
+        bezeichnung: "ETH2",
+        protokoll: "Niagara Fox",
+        belegt: "Automatisierung",
+      },
+      {
+        art: "RS485",
+        bezeichnung: "COM1",
+        protokoll: "Modbus RTU",
+        belegt: "Zähler Übergabe",
+      },
+      {
+        art: "RS485",
+        bezeichnung: "COM2",
+        bemerkung: "frei",
+      },
+    ],
+  };
+}
+
+const GERAETE: GeraetVorlage[] = [
+  // --- Produktionshalle St. Pölten: bauseitiges Breitband vorhanden ---
+  jace("ANL-0001", 1, "10.42.20.10"),
+  {
+    id: "EG-0002",
+    anlageId: "ANL-0001",
+    rolle: "Gateway",
+    hersteller: "Teltonika",
+    modell: "RUT142",
+    prozessor: "MediaTek MIPS 24KEc, 580 MHz",
+    arbeitsspeicher: "128 MB",
+    datenspeicher: "16 MB Flash",
+    betriebssystem: "RutOS",
+    firmware: "7.14.2",
+    temperaturVon: -40,
+    temperaturBis: 75,
+    montage: "Hutschiene",
+    secureBoot: true,
+    ip: "10.42.10.1",
+    vlanNummer: 10,
+    schnittstellen: [
+      {
+        art: "Ethernet",
+        bezeichnung: "WAN",
+        belegt: "Bauseitiges Breitband",
+      },
+      { art: "Ethernet", bezeichnung: "LAN1", belegt: "TSW202 Uplink" },
+      {
+        art: "RS232",
+        bezeichnung: "DB9",
+        protokoll: "Modbus RTU",
+        belegt: "Zentralwechselrichter SMA",
+      },
+    ],
+  },
+  {
+    id: "EG-0003",
+    anlageId: "ANL-0001",
+    rolle: "Switch",
+    hersteller: "Teltonika",
+    modell: "TSW202",
+    betriebssystem: "RutOS Switch",
+    firmware: "1.6.3",
+    temperaturVon: -40,
+    temperaturBis: 75,
+    montage: "Hutschiene",
+    ip: "10.42.20.2",
+    vlanNummer: 20,
+    schnittstellen: [
+      { art: "PoE", bezeichnung: "Port 1", belegt: "JACE 9000" },
+      { art: "PoE", bezeichnung: "Port 2", belegt: "HMI Schaltschrank" },
+      { art: "Ethernet", bezeichnung: "Port 3", belegt: "Wechselrichter 1–4" },
+      { art: "Ethernet", bezeichnung: "Port 4", belegt: "Zähler Übergabe" },
+      { art: "Ethernet", bezeichnung: "Port 5", bemerkung: "frei" },
+      { art: "Ethernet", bezeichnung: "Port 6", bemerkung: "frei" },
+      { art: "Ethernet", bezeichnung: "Port 7", bemerkung: "frei" },
+      { art: "Ethernet", bezeichnung: "Port 8", belegt: "Gateway RUT142" },
+      { art: "SFP", bezeichnung: "SFP1", bemerkung: "frei, Glasfaser" },
+      { art: "SFP", bezeichnung: "SFP2", bemerkung: "frei, Glasfaser" },
+    ],
+  },
+
+  // --- Sägewerk Amstetten: die größte Anlage ---
+  jace("ANL-0002", 4, "10.43.20.10"),
+  {
+    id: "EG-0005",
+    anlageId: "ANL-0002",
+    rolle: "Gateway",
+    hersteller: "Teltonika",
+    modell: "RUT142",
+    prozessor: "MediaTek MIPS 24KEc, 580 MHz",
+    arbeitsspeicher: "128 MB",
+    datenspeicher: "16 MB Flash",
+    betriebssystem: "RutOS",
+    firmware: "7.14.2",
+    temperaturVon: -40,
+    temperaturBis: 75,
+    montage: "Hutschiene",
+    secureBoot: true,
+    ip: "10.43.10.1",
+    vlanNummer: 10,
+    schnittstellen: [
+      { art: "Ethernet", bezeichnung: "WAN", belegt: "Glasfaser Betrieb" },
+      { art: "Ethernet", bezeichnung: "LAN1", belegt: "TSW202 Uplink" },
+      {
+        art: "RS232",
+        bezeichnung: "DB9",
+        protokoll: "Modbus RTU",
+        belegt: "Parkregler",
+      },
+    ],
+  },
+  {
+    id: "EG-0006",
+    anlageId: "ANL-0002",
+    rolle: "Switch",
+    hersteller: "Teltonika",
+    modell: "TSW202",
+    betriebssystem: "RutOS Switch",
+    firmware: "1.6.3",
+    temperaturVon: -40,
+    temperaturBis: 75,
+    montage: "Hutschiene",
+    ip: "10.43.20.2",
+    vlanNummer: 20,
+    schnittstellen: [
+      { art: "PoE", bezeichnung: "Port 1", belegt: "JACE 9000" },
+      { art: "Ethernet", bezeichnung: "Port 2", belegt: "Wechselrichter 1–5" },
+      { art: "Ethernet", bezeichnung: "Port 3", belegt: "Wechselrichter 6–10" },
+      { art: "Ethernet", bezeichnung: "Port 4", belegt: "Batteriemanagement" },
+      { art: "Ethernet", bezeichnung: "Port 5", belegt: "Zähler Übergabe" },
+      { art: "Ethernet", bezeichnung: "Port 6", bemerkung: "frei" },
+      { art: "Ethernet", bezeichnung: "Port 7", bemerkung: "frei" },
+      { art: "Ethernet", bezeichnung: "Port 8", belegt: "Gateway RUT142" },
+      { art: "SFP", bezeichnung: "SFP1", belegt: "Glasfaser Halle West" },
+      { art: "SFP", bezeichnung: "SFP2", bemerkung: "frei" },
+    ],
+  },
+
+  // --- Lagerhalle Krems: Trafostation ohne Anschluss, Mobilfunk ---
+  jace("ANL-0003", 7, "10.44.20.10"),
+  {
+    id: "EG-0008",
+    anlageId: "ANL-0003",
+    rolle: "Gateway",
+    hersteller: "Teltonika",
+    modell: "TRB256",
+    prozessor: "ARM Cortex-A7, 550 MHz",
+    arbeitsspeicher: "128 MB",
+    datenspeicher: "16 MB Flash",
+    betriebssystem: "RutOS",
+    firmware: "7.14.2",
+    temperaturVon: -40,
+    temperaturBis: 75,
+    montage: "Hutschiene",
+    secureBoot: true,
+    ip: "10.44.10.1",
+    vlanNummer: 10,
+    mobilfunk: "LTE Cat M1 / NB-IoT, EGPRS-Rückfall, Band 450 MHz",
+    simPrimaer: "A1 Telekom Austria, M2M",
+    simSekundaer: "Magenta, Rückfall",
+    schnittstellen: [
+      {
+        art: "RS485",
+        bezeichnung: "RS485",
+        protokoll: "Modbus RTU",
+        belegt: "Wechselrichter SMA",
+      },
+      {
+        art: "RS232",
+        bezeichnung: "RS232",
+        protokoll: "Modbus RTU",
+        belegt: "Zähler Übergabe",
+      },
+      {
+        art: "IO",
+        bezeichnung: "DI1",
+        belegt: "Türkontakt Trafostation",
+        bemerkung: "Meldet unbefugtes Öffnen",
+      },
+      {
+        art: "IO",
+        bezeichnung: "DI2",
+        belegt: "Brandmeldeanlage Sammelstörung",
+      },
+      { art: "IO", bezeichnung: "DO1", bemerkung: "frei" },
+    ],
+  },
+
+  // --- Bürogebäude St. Pölten ---
+  jace("ANL-0004", 9, "10.46.20.10"),
+  {
+    id: "EG-0010",
+    anlageId: "ANL-0004",
+    rolle: "Gateway",
+    hersteller: "Teltonika",
+    modell: "RUT142",
+    prozessor: "MediaTek MIPS 24KEc, 580 MHz",
+    arbeitsspeicher: "128 MB",
+    datenspeicher: "16 MB Flash",
+    betriebssystem: "RutOS",
+    firmware: "7.13.4",
+    temperaturVon: -40,
+    temperaturBis: 75,
+    montage: "Hutschiene",
+    secureBoot: true,
+    ip: "10.46.10.1",
+    vlanNummer: 10,
+    schnittstellen: [
+      { art: "Ethernet", bezeichnung: "WAN", belegt: "Firmen-LAN" },
+      { art: "RS232", bezeichnung: "DB9", bemerkung: "frei" },
+    ],
+  },
+
+  // --- Carport Krems: Mobilfunk, weil nur ein Zählerkasten steht ---
+  jace("ANL-0005", 11, "10.45.20.10"),
+  {
+    id: "EG-0012",
+    anlageId: "ANL-0005",
+    rolle: "Gateway",
+    hersteller: "Teltonika",
+    modell: "TRB256",
+    prozessor: "ARM Cortex-A7, 550 MHz",
+    arbeitsspeicher: "128 MB",
+    datenspeicher: "16 MB Flash",
+    betriebssystem: "RutOS",
+    firmware: "7.14.2",
+    temperaturVon: -40,
+    temperaturBis: 75,
+    montage: "Hutschiene",
+    secureBoot: true,
+    ip: "10.45.10.1",
+    vlanNummer: 10,
+    mobilfunk: "LTE Cat M1 / NB-IoT, Dual-SIM",
+    simPrimaer: "A1 Telekom Austria, M2M",
+    simSekundaer: "Drei, Rückfall",
+    // Absichtlicher Befund: eine Portweiterleitung, die fuer die
+    // Inbetriebnahme eingerichtet und nie entfernt wurde.
+    fernzugang: "Portweiterleitung",
+    status: "Wartung",
+    schnittstellen: [
+      {
+        art: "RS485",
+        bezeichnung: "RS485",
+        protokoll: "Modbus RTU",
+        belegt: "Ladepunktverteiler",
+      },
+      { art: "IO", bezeichnung: "DI1", belegt: "Not-Aus Carport" },
+    ],
+  },
+];
+
+/* ------------------------------------------------------------------ */
+/* Netzsegmentierung                                                   */
+/* ------------------------------------------------------------------ */
+
+const ZONEN = [
+  {
+    nummer: 10,
+    bezeichnung: "Uplink",
+    zweck: "Verbindung zum Gateway und ins Internet",
+    internet: 1,
+  },
+  {
+    nummer: 20,
+    bezeichnung: "Automatisierung",
+    zweck: "Steuerrechner und Bedienstellen",
+    internet: 0,
+  },
+  {
+    nummer: 30,
+    bezeichnung: "Feldebene",
+    zweck: "Wechselrichter, Umsetzer, Batteriemanagement",
+    internet: 0,
+  },
+];
+
+/**
+ * Die Regelmatrix.
+ *
+ * Die wichtigste Zeile ist eine Sperre: Aus der Feldebene führt kein
+ * Weg ins Internet. Ein Wechselrichter mit Firmware von 2019 gehört
+ * nicht ans offene Netz, und er braucht es auch nicht - der
+ * Steuerrechner holt die Daten und reicht sie weiter.
+ */
+const REGELN = [
+  {
+    von: 30,
+    nach: 10,
+    erlaubt: 0,
+    fest: 1,
+    dienste: "alle",
+    begruendung:
+      "Die Feldebene erreicht das Internet nicht. Geräte mit alter Firmware bleiben abgeschottet; der Steuerrechner holt ihre Daten.",
+  },
+  {
+    von: 10,
+    nach: 30,
+    erlaubt: 0,
+    fest: 1,
+    dienste: "alle",
+    begruendung:
+      "Aus dem Uplink führt kein Weg direkt auf die Feldebene. Fernwartung läuft über den Steuerrechner.",
+  },
+  {
+    von: 20,
+    nach: 30,
+    erlaubt: 1,
+    fest: 1,
+    dienste: "Modbus TCP 502, SunSpec",
+    begruendung:
+      "Der Steuerrechner muss die Feldgeräte lesen und regeln. Nur die dafür nötigen Dienste.",
+  },
+  {
+    von: 20,
+    nach: 10,
+    erlaubt: 1,
+    fest: 0,
+    dienste: "HTTPS 443, NTP 123",
+    begruendung:
+      "Der Steuerrechner meldet sich am Portal an und holt die Uhrzeit.",
+  },
+  {
+    von: 10,
+    nach: 20,
+    erlaubt: 1,
+    fest: 0,
+    dienste: "nur über Zero-Trust-Tunnel",
+    begruendung:
+      "Fernwartung erreicht den Steuerrechner ausschließlich über den ausgehenden Tunnel, nie über eine eingehende Verbindung.",
+  },
+  {
+    von: 30,
+    nach: 20,
+    erlaubt: 1,
+    fest: 1,
+    dienste: "Antworten auf bestehende Verbindungen",
+    begruendung:
+      "Feldgeräte antworten, bauen aber selbst keine Verbindung auf.",
+  },
+];
+
+/* ------------------------------------------------------------------ */
+/* Versiegelter Sollstand                                              */
+/* ------------------------------------------------------------------ */
+
+interface SollVorlage {
+  schluessel: string;
+  bezeichnung: string;
+  register: string;
+  sollwert: number;
+  einheit: string;
+  versiegelt: boolean;
+  toleranz: number;
+  grundlage?: string;
+}
+
+function sollstand(spitzeKw: number): SollVorlage[] {
+  return [
+    {
+      schluessel: "wirkleistung_grenze",
+      bezeichnung: "Wirkleistungsbegrenzung",
+      register: "40101",
+      sollwert: 70,
+      einheit: "%",
+      versiegelt: true,
+      toleranz: 0.5,
+      grundlage: "Netzzugangsvertrag, TOR Erzeuger",
+    },
+    {
+      schluessel: "parkregler_sollwert",
+      bezeichnung: "Sollwert Parkregler",
+      register: "40110",
+      sollwert: spitzeKw,
+      einheit: "kW",
+      versiegelt: true,
+      toleranz: 1,
+      grundlage: "Netzzugangsvertrag",
+    },
+    {
+      schluessel: "blindleistung_kennlinie",
+      bezeichnung: "Blindleistungskennlinie Q(U)",
+      register: "40120",
+      sollwert: 3,
+      einheit: "Kennlinie",
+      versiegelt: true,
+      toleranz: 0,
+      grundlage: "TOR Erzeuger Typ C",
+    },
+    {
+      schluessel: "frequenz_ueber_ab",
+      bezeichnung: "Abschaltung Überfrequenz",
+      register: "40140",
+      sollwert: 51.5,
+      einheit: "Hz",
+      versiegelt: true,
+      toleranz: 0.01,
+      grundlage: "TOR Erzeuger",
+    },
+    {
+      schluessel: "frequenz_unter_ab",
+      bezeichnung: "Abschaltung Unterfrequenz",
+      register: "40141",
+      sollwert: 47.5,
+      einheit: "Hz",
+      versiegelt: true,
+      toleranz: 0.01,
+      grundlage: "TOR Erzeuger",
+    },
+    {
+      schluessel: "spannung_ueber_ab",
+      bezeichnung: "Abschaltung Überspannung",
+      register: "40150",
+      sollwert: 115,
+      einheit: "% Un",
+      versiegelt: true,
+      toleranz: 0.5,
+      grundlage: "TOR Erzeuger",
+    },
+    {
+      schluessel: "spannung_unter_ab",
+      bezeichnung: "Abschaltung Unterspannung",
+      register: "40151",
+      sollwert: 80,
+      einheit: "% Un",
+      versiegelt: true,
+      toleranz: 0.5,
+      grundlage: "TOR Erzeuger",
+    },
+    {
+      schluessel: "wiederzuschaltung_verzoegerung",
+      bezeichnung: "Verzögerung der Wiederzuschaltung",
+      register: "40160",
+      sollwert: 60,
+      einheit: "s",
+      versiegelt: true,
+      toleranz: 1,
+      grundlage: "TOR Erzeuger",
+    },
+    {
+      schluessel: "notstrom_reserve",
+      bezeichnung: "Notstromreserve",
+      register: "41010",
+      sollwert: 20,
+      einheit: "%",
+      versiegelt: false,
+      toleranz: 1,
+    },
+    {
+      schluessel: "eigenverbrauch_ziel",
+      bezeichnung: "Ziel Eigenverbrauchsquote",
+      register: "41020",
+      sollwert: 85,
+      einheit: "%",
+      versiegelt: false,
+      toleranz: 2,
+    },
+  ];
+}
+
+/**
+ * Wie viel eigene Last ein Standort hat, bezogen auf seine
+ * Anlagenleistung.
+ *
+ * Ein Saegewerk verbraucht fast alles selbst; ein Carport verbraucht
+ * nichts. Genau dieser Unterschied entscheidet, ob sich Handel
+ * ueberhaupt lohnt - bei hoher Eigenlast schlaegt der vermiedene
+ * Arbeitspreis jeden Boersenpreis.
+ */
+const LASTFAKTOR: Record<string, number> = {
+  "ANL-0001": 1,
+  "ANL-0002": 1,
+  "ANL-0003": 0.6,
+  "ANL-0004": 0.8,
+  // Ein Parkplatz hat keine eigene Last. Was die Ladepunkte
+  // verbrauchen, wird im Lademodul gefuehrt und nicht hier - sonst
+  // stuende dieselbe Energie zweimal in der Bilanz.
+  "ANL-0005": 0,
+};
+
+/** Anlagen, deren Parkregler auf einen eigenen Wert gesetzt ist. */
+const PARKREGLER: Record<string, number> = {
+  "ANL-0001": 525,
+  "ANL-0002": 868,
+  "ANL-0003": 219,
+  "ANL-0004": 69,
+  "ANL-0005": 130,
+};
+
+/**
+ * Die Anlage mit dem eingebauten Befund.
+ *
+ * Auf ihr steht die Wirkleistungsbegrenzung auf 100 statt auf 70
+ * Prozent. Das ist der Fall, für den die ganze Drifterkennung gebaut
+ * ist - und ohne ihn ließe sich nicht zeigen, dass sie greift.
+ */
+const ANLAGE_MIT_DRIFT = "ANL-0003";
+
+export interface PlattformErgebnis {
+  geraete: number;
+  schnittstellen: number;
+  vlans: number;
+  sollparameter: number;
+  driftlaeufe: number;
+  protokoll: number;
+  wafRegeln: number;
+  wafEreignisse: number;
+  ztSitzungen: number;
+  marktpreise: number;
+  fahrplaene: number;
+  dokumente: number;
+  esgPositionen: number;
+  taxonomiePositionen: number;
+  benachrichtigungen: number;
+  buchungen: number;
+  dauerMs: number;
+}
+
+export function befuellePlattform(erzwingen = false): PlattformErgebnis {
+  const start = Date.now();
+
+  const vorhanden = skalar<number>("SELECT COUNT(*) FROM edge_geraet") ?? 0;
+  if (vorhanden > 0 && !erzwingen) {
+    return leer();
+  }
+
+  const zaehler = leer();
+
+  imBlock(() => {
+    if (erzwingen) {
+      for (const tabelle of [
+        "steuerbefehl",
+        "lastschriftposten",
+        "lastschriftlauf",
+        "buchung",
+        "buchungsstapel",
+        "zustellung",
+        "benachrichtigung",
+        "bereitschaft",
+        "taxonomie_nachweis",
+        "taxonomie_position",
+        "taxonomie_pruefung",
+        "esg_position",
+        "esg_periode",
+        "dossier_dokument",
+        "regelleistung",
+        "fahrplan_schritt",
+        "fahrplan",
+        "netzanschluss",
+        "speicher",
+        "marktpreis",
+        "zt_sitzung",
+        "waf_ereignis",
+        "sperrliste_verteilung",
+        "sperrliste",
+        "waf_regel",
+        "protokollkette",
+        "driftbefund",
+        "driftlauf",
+        "sollparameter",
+        "vlan_regel",
+        "vlan",
+        "edge_schnittstelle",
+        "edge_geraet",
+      ]) {
+        schreibe(`DELETE FROM ${tabelle}`);
+      }
+    }
+
+    befuelleNetzzonen(zaehler);
+    befuelleGeraete(zaehler);
+    befuelleSollstand(zaehler);
+    befuelleFirewall(zaehler);
+    befuelleZeroTrust(zaehler);
+    befuelleMarkt(zaehler);
+    befuelleDossier(zaehler);
+    befuelleEsg(zaehler);
+    befuelleTaxonomie(zaehler);
+    befuelleMeldewege(zaehler);
+    befuelleBuchhaltung(zaehler);
+    befuelleSteuerbefehle();
+  });
+
+  // Drift und Protokoll laufen nach dem Block: Sie schreiben eine
+  // Kette, deren Glieder aufeinander aufbauen.
+  const driftErgebnis = befuelleDrift();
+  zaehler.driftlaeufe = driftErgebnis.laeufe;
+  zaehler.protokoll = driftErgebnis.eintraege;
+
+  zaehler.dauerMs = Date.now() - start;
+  return zaehler;
+}
+
+function leer(): PlattformErgebnis {
+  return {
+    geraete: 0,
+    schnittstellen: 0,
+    vlans: 0,
+    sollparameter: 0,
+    driftlaeufe: 0,
+    protokoll: 0,
+    wafRegeln: 0,
+    wafEreignisse: 0,
+    ztSitzungen: 0,
+    marktpreise: 0,
+    fahrplaene: 0,
+    dokumente: 0,
+    esgPositionen: 0,
+    taxonomiePositionen: 0,
+    benachrichtigungen: 0,
+    buchungen: 0,
+    dauerMs: 0,
+  };
+}
+
+function anlagen(): { id: string; bezeichnung: string; kwp: number }[] {
+  return db()
+    .prepare("SELECT id, bezeichnung, leistung_kwp AS kwp FROM anlage ORDER BY id")
+    .all() as unknown as { id: string; bezeichnung: string; kwp: number }[];
+}
+
+function befuelleNetzzonen(z: PlattformErgebnis): void {
+  for (const anlage of anlagen()) {
+    const netz = anlage.id.slice(-1);
+
+    for (const zone of ZONEN) {
+      schreibe(
+        `INSERT INTO vlan (id, anlage_id, nummer, bezeichnung, zweck, subnetz, internet)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        `${anlage.id}-V${zone.nummer}`,
+        anlage.id,
+        zone.nummer,
+        zone.bezeichnung,
+        zone.zweck,
+        `10.4${netz}.${zone.nummer}.0/24`,
+        zone.internet,
+      );
+      z.vlans += 1;
+    }
+
+    for (const regel of REGELN) {
+      schreibe(
+        `INSERT INTO vlan_regel
+           (id, anlage_id, von_vlan, nach_vlan, erlaubt, dienste, begruendung, fest)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        `${anlage.id}-R${regel.von}-${regel.nach}`,
+        anlage.id,
+        regel.von,
+        regel.nach,
+        regel.erlaubt,
+        regel.dienste,
+        regel.begruendung,
+        regel.fest,
+      );
+    }
+  }
+}
+
+/**
+ * Ablauf des Geraetezertifikats.
+ *
+ * Gestaffelt ueber den Bestand, damit nicht alle am selben Tag
+ * ablaufen - und eines davon knapp, damit die Freigabepruefung etwas
+ * zu finden hat.
+ */
+function zertifikatBis(geraetId: string): string {
+  const tage = geraetId === "EG-0002" ? 19 : 120 + (startwertAus(geraetId) % 400);
+  const ablauf = new Date();
+  ablauf.setHours(0, 0, 0, 0);
+  ablauf.setDate(ablauf.getDate() + tage);
+  return tagesSchluessel(ablauf);
+}
+
+function befuelleGeraete(z: PlattformErgebnis): void {
+  const jetzt = new Date();
+
+  for (const g of GERAETE) {
+    schreibe(
+      `INSERT INTO edge_geraet
+         (id, anlage_id, rolle, hersteller, modell, seriennummer, prozessor,
+          arbeitsspeicher, datenspeicher, betriebssystem, firmware,
+          temperatur_von, temperatur_bis, montage, batterielos, secure_boot,
+          zertifikat_bis, fernzugang,
+          ip_adresse, vlan_id, mobilfunk_technik, sim_primaer, sim_sekundaer,
+          status, gesehen_am, inbetriebnahme)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+               (SELECT inbetriebnahme FROM anlage WHERE id = ?))`,
+      g.id,
+      g.anlageId,
+      g.rolle,
+      g.hersteller,
+      g.modell,
+      `${g.modell.replace(/\s/g, "")}-${startwertAus(g.id) % 1000000}`,
+      g.prozessor ?? null,
+      g.arbeitsspeicher ?? null,
+      g.datenspeicher ?? null,
+      g.betriebssystem ?? null,
+      g.firmware,
+      g.temperaturVon ?? null,
+      g.temperaturBis ?? null,
+      g.montage ?? null,
+      g.batterielos ? 1 : 0,
+      g.secureBoot ? 1 : 0,
+      /*
+       * Zertifikatslaufzeit: ein Jahr, gestaffelt ueber den Bestand.
+       * Ein Geraet laeuft bewusst in den naechsten Wochen ab - das ist
+       * der Fall, der eine Anlage an einem Sonntag aus der
+       * Ueberwachung nimmt, und er soll auf der Oberflaeche zu sehen
+       * sein, bevor er eintritt.
+       */
+      zertifikatBis(g.id),
+      g.fernzugang ?? (g.rolle === "Gateway" ? "Zero-Trust" : "keiner"),
+      g.ip ?? null,
+      g.vlanNummer ? `${g.anlageId}-V${g.vlanNummer}` : null,
+      g.mobilfunk ?? null,
+      g.simPrimaer ?? null,
+      g.simSekundaer ?? null,
+      g.status ?? "Online",
+      new Date(jetzt.getTime() - (startwertAus(g.id) % 240) * 1000).toISOString(),
+      g.anlageId,
+    );
+    z.geraete += 1;
+
+    for (const [i, s] of g.schnittstellen.entries()) {
+      schreibe(
+        `INSERT INTO edge_schnittstelle
+           (id, geraet_id, art, bezeichnung, protokoll, belegt_durch, bemerkung)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        `${g.id}-S${String(i + 1).padStart(2, "0")}`,
+        g.id,
+        s.art,
+        s.bezeichnung,
+        s.protokoll ?? null,
+        s.belegt ?? null,
+        s.bemerkung ?? null,
+      );
+      z.schnittstellen += 1;
+    }
+  }
+}
+
+function befuelleSollstand(z: PlattformErgebnis): void {
+  for (const anlage of anlagen()) {
+    for (const s of sollstand(PARKREGLER[anlage.id] ?? 100)) {
+      schreibe(
+        `INSERT INTO sollparameter
+           (id, anlage_id, schluessel, bezeichnung, register, sollwert,
+            einheit, versiegelt, toleranz, grundlage, gueltig_ab)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                 (SELECT inbetriebnahme FROM anlage WHERE id = ?))`,
+        `${anlage.id}-${s.schluessel}`,
+        anlage.id,
+        s.schluessel,
+        s.bezeichnung,
+        s.register,
+        s.sollwert,
+        s.einheit,
+        s.versiegelt ? 1 : 0,
+        s.toleranz,
+        s.grundlage ?? null,
+        anlage.id,
+      );
+      z.sollparameter += 1;
+    }
+  }
+}
+
+/**
+ * Führt für jede Anlage einen Abgleich durch und schreibt die
+ * Protokollkette.
+ *
+ * Auf einer Anlage steht die Wirkleistungsbegrenzung falsch. Der Lauf
+ * erkennt das, sperrt die Anlage und schreibt einen Eintrag, dessen
+ * Hash sich später nicht mehr unbemerkt ändern lässt.
+ */
+function befuelleDrift(): { laeufe: number; eintraege: number } {
+  const jetzt = new Date();
+  let laeufe = 0;
+  let eintraege = 0;
+
+  let vorheriger: Protokolleintrag | null = null;
+
+  for (const anlage of anlagen()) {
+    /*
+     * Jede Inbetriebnahme eines Geraets steht am Anfang der Kette.
+     * Ohne diesen Eintrag laesst sich spaeter nicht belegen, in
+     * welchem Zustand das Geraet uebergeben wurde - und die
+     * Freigabepruefung fuehrt den Punkt zu Recht als offen.
+     */
+    const geraete = db()
+      .prepare(
+        `SELECT id, rolle, hersteller, modell, firmware, seriennummer,
+                inbetriebnahme
+           FROM edge_geraet WHERE anlage_id = ? ORDER BY id`,
+      )
+      .all(anlage.id) as unknown as {
+      id: string;
+      rolle: string;
+      hersteller: string;
+      modell: string;
+      firmware: string;
+      seriennummer: string;
+      inbetriebnahme: string | null;
+    }[];
+
+    for (const g of geraete) {
+      // Das Geraet in Wartung wurde noch nicht uebergeben.
+      if (g.id === "EG-0012") continue;
+
+      vorheriger = haengeAn(vorheriger, {
+        zeitpunkt: `${g.inbetriebnahme ?? "2022-04-19"}T08:30:00.000Z`,
+        ereignis: "Inbetriebnahme",
+        urheber: "Ing. M. Hofbauer",
+        herkunft: "vor Ort",
+        inhalt: `${g.id}: ${g.hersteller} ${g.modell}, Seriennummer ${g.seriennummer}, Firmware ${g.firmware}, Rolle ${g.rolle}. Freigabe erteilt.`,
+      });
+
+      schreibe(
+        `INSERT INTO protokollkette
+           (anlage_id, zeitpunkt, ereignis, urheber, herkunft, inhalt,
+            vorgaenger, hash)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        anlage.id,
+        vorheriger.zeitpunkt,
+        vorheriger.ereignis,
+        vorheriger.urheber,
+        vorheriger.herkunft,
+        vorheriger.inhalt,
+        vorheriger.vorgaenger,
+        vorheriger.hash,
+      );
+      eintraege += 1;
+    }
+
+    const soll = db()
+      .prepare(
+        `SELECT schluessel, bezeichnung, register, sollwert, einheit,
+                versiegelt, toleranz, grundlage
+           FROM sollparameter WHERE anlage_id = ?`,
+      )
+      .all(anlage.id) as unknown as {
+      schluessel: string;
+      bezeichnung: string;
+      register: string;
+      sollwert: number;
+      einheit: string;
+      versiegelt: number;
+      toleranz: number;
+      grundlage: string | null;
+    }[];
+
+    const sollwerte: Sollwert[] = soll.map((s) => ({
+      schluessel: s.schluessel,
+      bezeichnung: s.bezeichnung,
+      register: s.register,
+      sollwert: s.sollwert,
+      einheit: s.einheit,
+      versiegelt: s.versiegelt === 1,
+      toleranz: s.toleranz,
+      grundlage: s.grundlage ?? undefined,
+    }));
+
+    // Der Istzustand entspricht dem Sollzustand - bis auf eine Anlage.
+    const istwerte: Istwert[] = sollwerte.map((s) => ({
+      schluessel: s.schluessel,
+      wert:
+        anlage.id === ANLAGE_MIT_DRIFT &&
+        s.schluessel === "wirkleistung_grenze"
+          ? 100
+          : s.sollwert,
+      gelesenAm: jetzt,
+    }));
+
+    const ergebnis = pruefeDrift(sollwerte, istwerte);
+
+    const sollHash = konfigurationsFingerabdruck(
+      sollwerte.map((s) => ({ schluessel: s.schluessel, wert: s.sollwert })),
+    );
+    const istHash = konfigurationsFingerabdruck(
+      istwerte.map((i) => ({ schluessel: i.schluessel, wert: i.wert })),
+    );
+
+    const laufId = `DL-${anlage.id}-${jetzt.getTime()}`;
+
+    imBlock(() => {
+      schreibe(
+        `INSERT INTO driftlauf
+           (id, anlage_id, gelaufen_am, soll_hash, ist_hash, geprueft,
+            befunde, hoechste_schwere, gesperrt, dauer_ms, ausloeser)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Worker')`,
+        laufId,
+        anlage.id,
+        jetzt.toISOString(),
+        sollHash,
+        istHash,
+        ergebnis.geprueft,
+        ergebnis.befunde.length,
+        ergebnis.hoechsteSchwere,
+        ergebnis.sperren ? 1 : 0,
+        40 + (startwertAus(anlage.id) % 60),
+      );
+
+      for (const [i, b] of ergebnis.befunde.entries()) {
+        schreibe(
+          `INSERT INTO driftbefund
+             (id, lauf_id, schluessel, bezeichnung, register, sollwert,
+              istwert, einheit, abweichung, versiegelt, schwere, massnahme,
+              begruendung)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          `${laufId}-B${i + 1}`,
+          laufId,
+          b.schluessel,
+          b.bezeichnung,
+          b.register,
+          Number.isFinite(b.sollwert) ? b.sollwert : null,
+          b.istwert,
+          b.einheit,
+          b.abweichung,
+          b.versiegelt ? 1 : 0,
+          b.schwere,
+          b.massnahme,
+          b.begruendung,
+        );
+      }
+    });
+
+    laeufe += 1;
+
+    // Protokolleinträge: der Lauf selbst, dann jeder Befund.
+    const geschehnisse: { ereignis: string; inhalt: string }[] = [
+      {
+        ereignis: "Konfigurationsabgleich",
+        inhalt: `${ergebnis.geprueft} Parameter geprüft, ${ergebnis.befunde.length} Abweichungen. Fingerabdruck Soll ${sollHash.slice(0, 12)}, Ist ${istHash.slice(0, 12)}.`,
+      },
+    ];
+
+    for (const b of ergebnis.befunde) {
+      geschehnisse.push({
+        ereignis:
+          b.massnahme === "sperren"
+            ? "Anlagensperre nach Drift"
+            : "Abweichung festgestellt",
+        inhalt: b.begruendung,
+      });
+    }
+
+    for (const g of geschehnisse) {
+      vorheriger = haengeAn(vorheriger, {
+        zeitpunkt: jetzt.toISOString(),
+        ereignis: g.ereignis,
+        urheber: "drift-worker",
+        herkunft: "10.0.7.14 (Cloud-Worker)",
+        inhalt: g.inhalt,
+      });
+
+      schreibe(
+        `INSERT INTO protokollkette
+           (anlage_id, zeitpunkt, ereignis, urheber, herkunft, inhalt,
+            vorgaenger, hash)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        anlage.id,
+        vorheriger.zeitpunkt,
+        vorheriger.ereignis,
+        vorheriger.urheber,
+        vorheriger.herkunft,
+        vorheriger.inhalt,
+        vorheriger.vorgaenger,
+        vorheriger.hash,
+      );
+      eintraege += 1;
+    }
+  }
+
+  return { laeufe, eintraege };
+}
+
+function befuelleFirewall(z: PlattformErgebnis): void {
+  const jetzt = new Date();
+
+  const regeln = [
+    {
+      anlage: null,
+      art: "Geosperre",
+      bezeichnung: "Herkunft Russische Föderation",
+      wert: "RU",
+      aktion: "blockieren",
+      treffer: 11204,
+    },
+    {
+      anlage: null,
+      art: "Geosperre",
+      bezeichnung: "Herkunft China",
+      wert: "CN",
+      aktion: "blockieren",
+      treffer: 7218,
+    },
+    {
+      anlage: null,
+      art: "Ratenbegrenzung",
+      bezeichnung: "Anmeldeversuche am Gateway",
+      wert: "10",
+      aktion: "begrenzen",
+      treffer: 2107,
+    },
+    {
+      anlage: "ANL-0001",
+      art: "Subnetzfreigabe",
+      bezeichnung: "IT-Abteilung Steiner Holzbau",
+      wert: "83.65.142.0/24",
+      aktion: "erlauben",
+      treffer: 940,
+    },
+    {
+      anlage: "ANL-0002",
+      art: "Subnetzfreigabe",
+      bezeichnung: "Leitwarte Sägewerk",
+      wert: "193.154.28.0/24",
+      aktion: "erlauben",
+      treffer: 3311,
+    },
+  ];
+
+  for (const [i, r] of regeln.entries()) {
+    schreibe(
+      `INSERT INTO waf_regel
+         (id, anlage_id, art, bezeichnung, wert, aktion, aktiv, treffer,
+          angelegt_von, angelegt_am)
+       VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, ?)`,
+      `WAF-${String(i + 1).padStart(4, "0")}`,
+      r.anlage,
+      r.art,
+      r.bezeichnung,
+      r.wert,
+      r.aktion,
+      r.treffer,
+      "m.hofbauer@steiner-holzbau.at",
+      verschiebeTage(jetzt, -120).toISOString(),
+    );
+    z.wafRegeln += 1;
+  }
+
+  const listen = [
+    {
+      id: "SL-0001",
+      quelle: "CrowdSec",
+      bezeichnung: "Verhaltensbasierte Sperrliste",
+      eintraege: 284_117,
+      neu: 3204,
+      entfernt: 2871,
+    },
+    {
+      id: "SL-0002",
+      quelle: "Spamhaus",
+      bezeichnung: "DROP und EDROP",
+      eintraege: 41_882,
+      neu: 118,
+      entfernt: 96,
+    },
+    {
+      id: "SL-0003",
+      quelle: "Oekovolt",
+      bezeichnung: "Eigene Beobachtungen aus dem Anlagenbestand",
+      eintraege: 1_244,
+      neu: 37,
+      entfernt: 4,
+    },
+  ];
+
+  for (const l of listen) {
+    schreibe(
+      `INSERT INTO sperrliste
+         (id, quelle, bezeichnung, eintraege, delta_neu, delta_entfernt,
+          aktualisiert_am, aktiv)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 1)`,
+      l.id,
+      l.quelle,
+      l.bezeichnung,
+      l.eintraege,
+      l.neu,
+      l.entfernt,
+      new Date(jetzt.getTime() - 22 * 60000).toISOString(),
+    );
+  }
+
+  // Verteilung auf die Gateways.
+  const gateways = GERAETE.filter((g) => g.rolle === "Gateway");
+  for (const l of listen) {
+    for (const g of gateways) {
+      // Ein Gateway hängt zurück - es steht in Wartung.
+      const veraltet = g.status === "Wartung";
+
+      schreibe(
+        `INSERT INTO sperrliste_verteilung
+           (id, sperrliste_id, geraet_id, stand, version, uebertragen_am, bytes)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        `${l.id}-${g.id}`,
+        l.id,
+        g.id,
+        veraltet ? "Veraltet" : "Aktuell",
+        veraltet ? "2026-09-04" : "2026-09-13",
+        veraltet
+          ? verschiebeTage(jetzt, -9).toISOString()
+          : new Date(jetzt.getTime() - 20 * 60000).toISOString(),
+        Math.round(l.eintraege * 0.7),
+      );
+    }
+  }
+
+  // Abgewehrte Zugriffe der letzten Tage.
+  const laender = [
+    ["CN", 0.31],
+    ["RU", 0.22],
+    ["US", 0.14],
+    ["BR", 0.09],
+    ["IN", 0.08],
+    ["VN", 0.06],
+    ["NL", 0.05],
+    ["DE", 0.05],
+  ] as const;
+
+  const muster = [
+    "SSH-Anmeldeversuche",
+    "Modbus-Abfrage an Port 502",
+    "HTTP-Suche nach Konfigurationsdateien",
+    "Portscan",
+    "Telnet-Anmeldeversuche",
+  ];
+
+  let nummer = 0;
+  for (const anlage of anlagen()) {
+    const zufall = zufallsfolge(startwertAus(`waf:${anlage.id}`));
+
+    for (let tag = 13; tag >= 0; tag--) {
+      const datum = verschiebeTage(jetzt, -tag);
+
+      for (const [land, anteil] of laender) {
+        const anzahl = Math.round(anteil * (40 + zufall() * 160));
+        if (anzahl <= 0) continue;
+
+        nummer += 1;
+        schreibe(
+          `INSERT INTO waf_ereignis
+             (id, anlage_id, zeitpunkt, land, quelle, regel, anzahl, muster)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          `WE-${String(nummer).padStart(6, "0")}`,
+          anlage.id,
+          messStempel(datum),
+          land,
+          `${Math.floor(zufall() * 223) + 1}.x.x.x`,
+          zufall() > 0.4 ? "Sperrliste CrowdSec" : "Geosperre",
+          anzahl,
+          muster[Math.floor(zufall() * muster.length)],
+        );
+        z.wafEreignisse += 1;
+      }
+    }
+  }
+}
+
+function befuelleZeroTrust(z: PlattformErgebnis): void {
+  const jetzt = new Date();
+
+  const sitzungen = [
+    {
+      anlage: "ANL-0002",
+      geraet: "EG-0004",
+      techniker: "J. Wallner",
+      firma: "Ökovolt Service",
+      ticket: "SRV-2026-0418",
+      zweck: "Firmwarestand des Steuerrechners prüfen",
+      status: "Beendet",
+      vorStunden: 52,
+      dauerMin: 38,
+    },
+    {
+      anlage: "ANL-0003",
+      geraet: "EG-0007",
+      techniker: "M. Kaltenbrunner",
+      firma: "Ökovolt Service",
+      ticket: "SRV-2026-0431",
+      zweck: "Drift an der Wirkleistungsbegrenzung untersuchen",
+      status: "Aktiv",
+      vorStunden: 1,
+      dauerMin: null,
+    },
+    {
+      anlage: "ANL-0001",
+      geraet: "EG-0001",
+      techniker: "Netz NÖ, Prüfstelle",
+      firma: "Netzbetreiber",
+      ticket: "SRV-2026-0402",
+      zweck: "Nachweis der Schutzeinstellungen für die Netzverträglichkeit",
+      status: "Beendet",
+      vorStunden: 340,
+      dauerMin: 65,
+    },
+    {
+      anlage: "ANL-0005",
+      geraet: "EG-0011",
+      techniker: "T. Aigner",
+      firma: "Ökovolt Service",
+      ticket: "SRV-2026-0440",
+      zweck: "Ladepunktverteiler nach Austausch neu einlesen",
+      status: "Angefragt",
+      vorStunden: 0.3,
+      dauerMin: null,
+    },
+    {
+      anlage: "ANL-0004",
+      geraet: "EG-0009",
+      techniker: "Externer Dienstleister",
+      firma: "Gebäudetechnik Kern",
+      ticket: "SRV-2026-0399",
+      zweck: "Zugriff auf die Gebäudeleittechnik",
+      status: "Abgelehnt",
+      vorStunden: 190,
+      dauerMin: null,
+    },
+  ];
+
+  for (const [i, s] of sitzungen.entries()) {
+    const angefragt = new Date(jetzt.getTime() - s.vorStunden * 3600000);
+    const freigegeben =
+      s.status === "Abgelehnt"
+        ? null
+        : new Date(angefragt.getTime() + 4 * 60000);
+
+    schreibe(
+      `INSERT INTO zt_sitzung
+         (id, anlage_id, geraet_id, techniker, techniker_firma, erp_ticket,
+          zweck, status, angefragt_am, freigegeben_am, freigegeben_von,
+          gueltig_bis, beendet_am, mfa_verfahren, quell_ip, massnahmen)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `ZT-${String(i + 1).padStart(4, "0")}`,
+      s.anlage,
+      s.geraet,
+      s.techniker,
+      s.firma,
+      s.ticket,
+      s.zweck,
+      s.status,
+      angefragt.toISOString(),
+      freigegeben?.toISOString() ?? null,
+      freigegeben ? "m.hofbauer@steiner-holzbau.at" : null,
+      // Hartes Zeitfenster von vier Stunden.
+      freigegeben
+        ? new Date(freigegeben.getTime() + 4 * 3600000).toISOString()
+        : null,
+      s.dauerMin && freigegeben
+        ? new Date(freigegeben.getTime() + s.dauerMin * 60000).toISOString()
+        : null,
+      s.status === "Abgelehnt" ? null : "Einmalkennung und Hardwaretoken",
+      s.status === "Abgelehnt" ? "unbekannt" : `10.0.${i + 1}.${20 + i}`,
+      s.status === "Beendet"
+        ? "Lesezugriff auf die Konfiguration, keine Änderungen vorgenommen."
+        : null,
+    );
+    z.ztSitzungen += 1;
+  }
+}
+
+function befuelleMarkt(z: PlattformErgebnis): void {
+  const heute = new Date();
+  heute.setHours(0, 0, 0, 0);
+
+  // --- Speicher und Netzanschluss ---
+  const speicher = [
+    {
+      id: "SP-0001",
+      anlage: "ANL-0002",
+      bezeichnung: "Speicher Sägewerk",
+      hersteller: "BYD",
+      modell: "Battery-Box Commercial",
+      kapazitaet: 860,
+      leistung: 400,
+      reserve: 0.15,
+      zyklen: 6000,
+      verbraucht: 742,
+    },
+    {
+      id: "SP-0002",
+      anlage: "ANL-0001",
+      bezeichnung: "Speicher Produktionshalle",
+      hersteller: "Tesvolt",
+      modell: "TS-I HV 80",
+      kapazitaet: 320,
+      leistung: 160,
+      reserve: 0.2,
+      zyklen: 8000,
+      verbraucht: 1104,
+    },
+    {
+      // Der Carport hat kaum eigene Last - ein Parkplatz verbraucht
+      // nichts. Hier hat der Ueberschuss nirgends hin, und erst
+      // dadurch lohnt sich die Vermarktung an der Boerse.
+      id: "SP-0003",
+      anlage: "ANL-0005",
+      bezeichnung: "Speicher Carport Krems",
+      hersteller: "Tesvolt",
+      modell: "TS-I HV 30",
+      kapazitaet: 180,
+      leistung: 90,
+      reserve: 0.05,
+      zyklen: 8000,
+      verbraucht: 386,
+    },
+  ];
+
+  for (const s of speicher) {
+    schreibe(
+      `INSERT INTO speicher
+         (id, anlage_id, bezeichnung, hersteller, modell, kapazitaet_kwh,
+          ladeleistung_kw, entladeleistung_kw, wirkungsgrad_laden,
+          wirkungsgrad_entladen, notstrom_reserve, zykluskosten_eur_kwh,
+          zyklen_garantie, zyklen_verbraucht, inbetriebnahme, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0.96, 0.96, ?, 0.018, ?, ?,
+               (SELECT inbetriebnahme FROM anlage WHERE id = ?), 'Aktiv')`,
+      s.id,
+      s.anlage,
+      s.bezeichnung,
+      s.hersteller,
+      s.modell,
+      s.kapazitaet,
+      s.leistung,
+      s.leistung,
+      s.reserve,
+      s.zyklen,
+      s.verbraucht,
+      s.anlage,
+    );
+  }
+
+  const anschluesse: Record<
+    string,
+    { bezug: number; ziel: number; einspeise: number; leistungspreis: number }
+  > = {
+    "ANL-0001": { bezug: 800, ziel: 420, einspeise: 525, leistungspreis: 5.2 },
+    "ANL-0002": { bezug: 1250, ziel: 700, einspeise: 868, leistungspreis: 4.9 },
+    "ANL-0003": { bezug: 400, ziel: 240, einspeise: 219, leistungspreis: 5.6 },
+    "ANL-0004": { bezug: 150, ziel: 95, einspeise: 69, leistungspreis: 6.1 },
+    "ANL-0005": { bezug: 300, ziel: 180, einspeise: 130, leistungspreis: 5.6 },
+  };
+
+  for (const anlage of anlagen()) {
+    const a = anschluesse[anlage.id];
+    if (!a) continue;
+
+    schreibe(
+      `INSERT INTO netzanschluss
+         (anlage_id, bezugsgrenze_kw, spitzenziel_kw, einspeisegrenze_kw,
+          arbeitspreis_ct_kwh, einspeiseverguetung_ct_kwh,
+          leistungspreis_eur_kw_monat, spitze_bisher_kw, spitze_bisher_am)
+       VALUES (?, ?, ?, ?, 21.8, 7.9, ?, ?, ?)`,
+      anlage.id,
+      a.bezug,
+      a.ziel,
+      a.einspeise,
+      a.leistungspreis,
+      Number((a.ziel * 1.08).toFixed(1)),
+      verschiebeTage(heute, -11).toISOString().slice(0, 10),
+    );
+  }
+
+  // --- Börsenpreise: vierzehn Tage rückwärts plus der Folgetag ---
+  const preisEinfuegen = db().prepare(
+    `INSERT OR REPLACE INTO marktpreis
+       (zeitpunkt, markt, preis_eur_mwh, veroeffentlicht_am)
+     VALUES (?, 'EPEX_AT_DA', ?, ?)`,
+  );
+
+  for (let tag = -14; tag <= 1; tag++) {
+    const datum = verschiebeTage(heute, tag);
+    const zufall = zufallsfolge(startwertAus(`preis:${datum.toDateString()}`));
+    const grundniveau = 70 + zufall() * 60;
+
+    for (let viertel = 0; viertel < 96; viertel++) {
+      const stunde = viertel / 4;
+
+      // Tagesform: Morgen- und Abendspitze, Mittagstal durch die
+      // Photovoltaik. An sonnigen Tagen wird das Tal negativ.
+      const morgen = Math.exp(-((stunde - 7.5) ** 2) / 6) * 55;
+      const abend = Math.exp(-((stunde - 19.5) ** 2) / 8) * 95;
+      const mittag = -Math.exp(-((stunde - 13) ** 2) / 10) * (70 + zufall() * 60);
+      const nacht = stunde < 5 || stunde > 22 ? -25 : 0;
+
+      const preis =
+        grundniveau + morgen + abend + mittag + nacht + (zufall() - 0.5) * 14;
+
+      preisEinfuegen.run(
+        messStempel(new Date(datum.getTime() + viertel * 900000)),
+        Number(preis.toFixed(2)),
+        verschiebeTage(datum, -1).toISOString().slice(0, 10) + "T12:45:00.000Z",
+      );
+      z.marktpreise += 1;
+    }
+  }
+
+  // --- Regelleistung: der große Speicher hält Primärregelleistung ---
+  schreibe(
+    `INSERT INTO regelleistung
+       (id, speicher_id, produkt, von, bis, leistung_kw, preis_eur_mw_h, status)
+     VALUES ('RL-0001', 'SP-0001', 'FCR', ?, ?, 120, 14.8, 'Bezuschlagt')`,
+    messStempel(heute),
+    messStempel(verschiebeTage(heute, 7)),
+  );
+
+  // --- Fahrpläne der letzten Tage und für morgen ---
+  z.fahrplaene = befuelleFahrplaene();
+}
+
+/**
+ * Rechnet für jeden Speicher echte Fahrpläne.
+ *
+ * Nicht ausgedacht, sondern mit demselben Rechenkern erzeugt, der
+ * später im Betrieb läuft - sonst zeigte die Oberfläche etwas
+ * anderes, als die Anlage täte.
+ */
+function befuelleFahrplaene(): number {
+  const heute = new Date();
+  heute.setHours(0, 0, 0, 0);
+
+  const speicher = db()
+    .prepare(
+      `SELECT s.*, n.bezugsgrenze_kw, n.spitzenziel_kw, n.einspeisegrenze_kw,
+              n.arbeitspreis_ct_kwh, n.einspeiseverguetung_ct_kwh,
+              n.leistungspreis_eur_kw_monat, a.leistung_kwp
+         FROM speicher s
+         JOIN netzanschluss n ON n.anlage_id = s.anlage_id
+         JOIN anlage a        ON a.id = s.anlage_id`,
+    )
+    .all() as unknown as Record<string, number | string>[];
+
+  let anzahl = 0;
+
+  const schrittEinfuegen = db().prepare(
+    `INSERT INTO fahrplan_schritt
+       (fahrplan_id, zeitpunkt, preis_eur_mwh, erzeugung_kwh, verbrauch_kwh,
+        laden_kwh, entladen_kwh, netzbezug_kwh, einspeisung_kwh,
+        ladestand_kwh, belegung, ergebnis_eur)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  );
+
+  for (const s of speicher) {
+    const anlageId = String(s.anlage_id);
+    const kwp = Number(s.leistung_kwp);
+
+    // Vorhaltung aus bezuschlagter Regelleistung.
+    const vorhaltung =
+      (skalar<number>(
+        `SELECT COALESCE(SUM(leistung_kw), 0) FROM regelleistung
+          WHERE speicher_id = ? AND status = 'Bezuschlagt'`,
+        String(s.id),
+      ) ?? 0) || 0;
+
+    for (let tag = -3; tag <= 1; tag++) {
+      const datum = verschiebeTage(heute, tag);
+      const zufall = zufallsfolge(
+        startwertAus(`plan:${s.id}:${datum.toDateString()}`),
+      );
+
+      const preise = db()
+        .prepare(
+          `SELECT zeitpunkt, preis_eur_mwh FROM marktpreis
+            WHERE markt = 'EPEX_AT_DA' AND zeitpunkt >= ? AND zeitpunkt < ?
+            ORDER BY zeitpunkt`,
+        )
+        .all(
+          messStempel(datum),
+          messStempel(verschiebeTage(datum, 1)),
+        ) as unknown as { zeitpunkt: string; preis_eur_mwh: number }[];
+
+      if (preise.length === 0) continue;
+
+      const intervalle: Marktintervall[] = preise.map((p, i) => {
+        const stunde = i / 4;
+
+        // Erzeugung als Tagesbogen, Verbrauch als Werktagsprofil mit
+        // einer Spitze am Nachmittag.
+        const sonne = Math.max(
+          0,
+          Math.sin(((stunde - 5.5) / 13) * Math.PI),
+        );
+        const erzeugung = sonne * kwp * 0.72 * 0.25 * (0.55 + zufall() * 0.5);
+
+        const werktag = datum.getDay() >= 1 && datum.getDay() <= 5;
+        const grundlast = werktag ? 0.16 : 0.05;
+        const schicht =
+          werktag && stunde >= 6 && stunde < 17 ? 0.34 : 0;
+        const spitze =
+          werktag && stunde >= 14 && stunde < 15.5 ? 0.42 : 0;
+
+        const verbrauch =
+          kwp *
+          (grundlast + schicht + spitze) *
+          (LASTFAKTOR[anlageId] ?? 1) *
+          0.25 *
+          (0.9 + zufall() * 0.25);
+
+        return {
+          zeitpunkt: new Date(datum.getTime() + i * 900000),
+          preisEurMwh: p.preis_eur_mwh,
+          erzeugungKwh: Number(erzeugung.toFixed(2)),
+          verbrauchKwh: Number(verbrauch.toFixed(2)),
+        };
+      });
+
+      const plan = erstelleFahrplan(
+        intervalle,
+        {
+          kapazitaetKwh: Number(s.kapazitaet_kwh),
+          ladeleistungKw: Number(s.ladeleistung_kw),
+          entladeleistungKw: Number(s.entladeleistung_kw),
+          wirkungsgradLaden: Number(s.wirkungsgrad_laden),
+          wirkungsgradEntladen: Number(s.wirkungsgrad_entladen),
+          notstromReserve: Number(s.notstrom_reserve),
+          startLadestandKwh:
+            Number(s.kapazitaet_kwh) * (0.3 + zufall() * 0.3),
+          zykluskostenEurKwh: Number(s.zykluskosten_eur_kwh),
+          vorhaltungKw: vorhaltung,
+        },
+        {
+          bezugsgrenzeKw: Number(s.bezugsgrenze_kw),
+          spitzenzielKw: Number(s.spitzenziel_kw),
+          einspeisegrenzeKw: Number(s.einspeisegrenze_kw),
+          arbeitspreisBezugCtKwh: Number(s.arbeitspreis_ct_kwh),
+          einspeiseverguetungCtKwh: Number(s.einspeiseverguetung_ct_kwh),
+          leistungspreisEurKwMonat: Number(s.leistungspreis_eur_kw_monat),
+        },
+      );
+
+      const planId = `FP-${s.id}-${datum.toISOString().slice(0, 10)}`;
+
+      // Ohne eigene Schreibklammer: Der Aufrufer haelt bereits eine,
+      // und SQLite kennt keine verschachtelten Transaktionen.
+      {
+        schreibe(
+          `INSERT INTO fahrplan
+             (id, speicher_id, tag, status, eigenverbrauch_eur, handel_eur,
+              spitzenkappung_eur, zykluskosten_eur, gesamt_eur,
+              spitze_ohne_kw, spitze_mit_kw, durchsatz_kwh, vollzyklen,
+              gerechnet_am, freigegeben_am, freigegeben_von)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          planId,
+          s.id,
+          datum.toISOString().slice(0, 10),
+          tag < 0 ? "Gefahren" : tag === 0 ? "Freigegeben" : "Entwurf",
+          plan.bilanz.eigenverbrauchEur,
+          plan.bilanz.handelEur,
+          plan.bilanz.spitzenkappungEur,
+          plan.bilanz.zykluskostenEur,
+          plan.bilanz.gesamtEur,
+          plan.bilanz.spitzeOhneSpeicherKw,
+          plan.bilanz.spitzeMitSpeicherKw,
+          plan.bilanz.durchsatzKwh,
+          plan.bilanz.vollzyklen,
+          verschiebeTage(datum, -1).toISOString(),
+          tag <= 0 ? verschiebeTage(datum, -1).toISOString() : null,
+          tag <= 0 ? "Automatische Freigabe" : null,
+        );
+
+        for (const schritt of plan.schritte) {
+          schrittEinfuegen.run(
+            planId,
+            messStempel(schritt.zeitpunkt),
+            schritt.preisEurMwh,
+            schritt.erzeugungKwh,
+            schritt.verbrauchKwh,
+            schritt.ladenKwh,
+            schritt.entladenKwh,
+            schritt.netzbezugKwh,
+            schritt.einspeisungKwh,
+            schritt.ladestandKwh,
+            schritt.belegung,
+            schritt.ergebnisEur,
+          );
+        }
+      }
+
+      anzahl += 1;
+    }
+  }
+
+  return anzahl;
+}
+
+function befuelleDossier(z: PlattformErgebnis): void {
+  const heute = new Date();
+
+  interface DokVorlage {
+    gruppe: string;
+    art: string;
+    bezeichnung: string;
+    doctype: string;
+    pflicht?: boolean;
+    norm?: string;
+    gueltigJahre?: number;
+  }
+
+  const jeAnlage: DokVorlage[] = [
+    {
+      gruppe: "Rechtlich",
+      art: "Netzzugangsvertrag",
+      bezeichnung: "Netzzugangsvertrag mit dem Verteilernetzbetreiber",
+      doctype: "Contract",
+      pflicht: true,
+    },
+    {
+      gruppe: "Rechtlich",
+      art: "Einspeisevertrag",
+      bezeichnung: "Einspeisevertrag und Vergütungsvereinbarung",
+      doctype: "Contract",
+      pflicht: true,
+    },
+    {
+      gruppe: "Technisch",
+      art: "Prüfprotokoll",
+      bezeichnung: "Erstprüfung der elektrischen Anlage",
+      doctype: "Quality Inspection",
+      pflicht: true,
+      norm: "ÖVE/ÖNORM E 8001-6",
+    },
+    {
+      gruppe: "Technisch",
+      art: "Prüfprotokoll",
+      bezeichnung: "Prüfung der Photovoltaikanlage nach Inbetriebnahme",
+      doctype: "Quality Inspection",
+      pflicht: true,
+      norm: "ÖVE/ÖNORM EN 62446-1",
+    },
+    {
+      gruppe: "Technisch",
+      art: "Abnahmeprotokoll",
+      bezeichnung: "Abnahme und Übergabe an den Betreiber",
+      doctype: "Delivery Note",
+      pflicht: true,
+    },
+    {
+      gruppe: "Technisch",
+      art: "Strangplan",
+      bezeichnung: "Strang- und Belegungsplan",
+      doctype: "File",
+    },
+    {
+      gruppe: "Technisch",
+      art: "Einpolschema",
+      bezeichnung: "Einpoliges Übersichtsschaltbild",
+      doctype: "File",
+      pflicht: true,
+    },
+    {
+      gruppe: "Wartung",
+      art: "Wartungsvertrag",
+      bezeichnung: "Betriebsführungs- und Wartungsvertrag",
+      doctype: "Contract",
+    },
+    {
+      gruppe: "Wartung",
+      art: "Wartungsbericht",
+      bezeichnung: "Jährliche Sichtprüfung und Messung",
+      doctype: "Maintenance Visit",
+      norm: "ÖVE/ÖNORM EN 62446-2",
+      gueltigJahre: 1,
+    },
+    {
+      gruppe: "Garantie",
+      art: "Herstellergarantie",
+      bezeichnung: "Produkt- und Leistungsgarantie der Module",
+      doctype: "Warranty Claim",
+      gueltigJahre: 25,
+    },
+    {
+      gruppe: "Garantie",
+      art: "Herstellergarantie",
+      bezeichnung: "Gerätegarantie der Wechselrichter",
+      doctype: "Warranty Claim",
+      gueltigJahre: 10,
+    },
+  ];
+
+  let nummer = 0;
+
+  for (const anlage of anlagen()) {
+    for (const d of jeAnlage) {
+      nummer += 1;
+
+      // Ein Pflichtdokument fehlt auf einer Anlage - genau das soll
+      // die Vollständigkeitsprüfung finden.
+      if (anlage.id === "ANL-0005" && d.art === "Einpolschema") continue;
+
+      const ausgestellt = verschiebeTage(
+        heute,
+        -(200 + (startwertAus(`${anlage.id}${d.art}`) % 900)),
+      );
+
+      schreibe(
+        `INSERT INTO dossier_dokument
+           (id, anlage_id, kunde_id, gruppe, art, bezeichnung, erp_kennung,
+            erp_doctype, ausgestellt_am, gueltig_bis, pflicht, norm,
+            dateigroesse, seiten, sync_stand, sync_am)
+         VALUES (?, ?, (SELECT kunde_id FROM anlage WHERE id = ?), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Aktuell', ?)`,
+        `DOK-${String(nummer).padStart(5, "0")}`,
+        anlage.id,
+        anlage.id,
+        d.gruppe,
+        d.art,
+        `${d.bezeichnung} – ${anlage.bezeichnung}`,
+        `${d.doctype.slice(0, 3).toUpperCase()}-2026-${String(nummer).padStart(5, "0")}`,
+        d.doctype,
+        ausgestellt.toISOString().slice(0, 10),
+        d.gueltigJahre
+          ? verschiebeTage(ausgestellt, d.gueltigJahre * 365)
+              .toISOString()
+              .slice(0, 10)
+          : null,
+        d.pflicht ? 1 : 0,
+        d.norm ?? null,
+        120_000 + (startwertAus(`${anlage.id}${d.bezeichnung}`) % 2_400_000),
+        1 + (startwertAus(d.bezeichnung) % 24),
+        verschiebeTage(heute, -2).toISOString(),
+      );
+      z.dokumente += 1;
+    }
+  }
+
+  // Kaufmännische Belege hängen am Kunden, nicht an der Anlage.
+  const kaufmaennisch = [
+    ["Rechnung", "Errichtung Photovoltaikanlage, Schlussrechnung"],
+    ["Rechnung", "Wartungspauschale Jahresbetrag"],
+    ["Gutschrift", "Einspeisevergütung Vorjahr"],
+    ["Gutschrift", "Erlösbeteiligung Speichervermarktung"],
+    ["Lieferschein", "Lieferung Wechselrichter und Zubehör"],
+    ["Abschlagsrechnung", "Zweite Teilzahlung nach Baufortschritt"],
+  ];
+
+  for (const [art, text] of kaufmaennisch) {
+    nummer += 1;
+    schreibe(
+      `INSERT INTO dossier_dokument
+         (id, kunde_id, gruppe, art, bezeichnung, erp_kennung, erp_doctype,
+          ausgestellt_am, pflicht, dateigroesse, seiten, sync_stand, sync_am)
+       VALUES (?, (SELECT id FROM kunde LIMIT 1), 'Kaufmaennisch', ?, ?, ?, ?, ?, 0, ?, ?, 'Aktuell', ?)`,
+      `DOK-${String(nummer).padStart(5, "0")}`,
+      art,
+      text,
+      `${art === "Rechnung" ? "SINV" : art === "Gutschrift" ? "CRNT" : "DNOT"}-2026-${String(nummer).padStart(5, "0")}`,
+      art === "Rechnung"
+        ? "Sales Invoice"
+        : art === "Gutschrift"
+          ? "Credit Note"
+          : "Delivery Note",
+      verschiebeTage(heute, -(30 + (nummer % 300))).toISOString().slice(0, 10),
+      90_000 + (startwertAus(text) % 700_000),
+      1 + (startwertAus(text) % 6),
+      verschiebeTage(heute, -2).toISOString(),
+    );
+    z.dokumente += 1;
+  }
+}
+
+function befuelleEsg(z: PlattformErgebnis): void {
+  const kunde = skalar<string>("SELECT id FROM kunde LIMIT 1");
+  if (!kunde) return;
+
+  const jahr = new Date().getFullYear() - 1;
+  const periodeId = `ESG-${jahr}`;
+
+  // Mengen, die zu einem Betrieb dieser Größe passen.
+  const positionen = [
+    {
+      scope: 1,
+      kategorie: "Stationäre Verbrennung",
+      bezeichnung: "Erdgas Hallenheizung",
+      menge: 412_000,
+      einheit: "kWh",
+      faktor: FAKTOREN.erdgas,
+      herkunft: "ERP",
+    },
+    {
+      scope: 1,
+      kategorie: "Mobile Verbrennung",
+      bezeichnung: "Diesel Fuhrpark und Stapler",
+      menge: 18_400,
+      einheit: "l",
+      faktor: FAKTOREN.diesel,
+      herkunft: "ERP",
+    },
+    {
+      scope: 1,
+      kategorie: "Notstromversorgung",
+      bezeichnung: "Diesel Notstromaggregat, Probeläufe",
+      menge: 640,
+      einheit: "l",
+      faktor: FAKTOREN.diesel,
+      herkunft: "Gemessen",
+    },
+    {
+      scope: 2,
+      kategorie: "Bezogener Strom",
+      bezeichnung: "Netzbezug aller Standorte, standortbasiert",
+      menge: 1_284_000,
+      einheit: "kWh",
+      faktor: FAKTOREN.strommix_at,
+      herkunft: "Gemessen",
+    },
+    {
+      scope: 2,
+      kategorie: "Bezogener Strom",
+      bezeichnung: "Netzbezug aller Standorte, marktbasiert",
+      menge: 1_284_000,
+      einheit: "kWh",
+      faktor: FAKTOREN.oekostrom,
+      herkunft: "ERP",
+      marktbasiert: true,
+    },
+    {
+      scope: 3,
+      kategorie: "Kategorie 6 – Geschäftsreisen",
+      bezeichnung: "Laden der Dienstfahrzeuge am Betriebsgelände",
+      menge: 84_200,
+      einheit: "kWh",
+      faktor: FAKTOREN.strommix_at,
+      herkunft: "Gemessen",
+    },
+    {
+      scope: 3,
+      kategorie: "Kategorie 7 – Arbeitsweg",
+      bezeichnung: "Heimladen der Dienstfahrzeuge, rückvergütet",
+      menge: 31_500,
+      einheit: "kWh",
+      faktor: FAKTOREN.strommix_at,
+      herkunft: "Erfasst",
+    },
+    {
+      scope: 3,
+      kategorie: "Kategorie 2 – Anlagegüter",
+      bezeichnung: "Graue Energie der errichteten Photovoltaikleistung",
+      menge: 2_587,
+      einheit: "kWp",
+      faktor: FAKTOREN.pv_modul,
+      herkunft: "ERP",
+    },
+    {
+      scope: 3,
+      kategorie: "Kategorie 2 – Anlagegüter",
+      bezeichnung: "Graue Energie der Batteriespeicher",
+      menge: 1_180,
+      einheit: "kWh Kapazität",
+      faktor: FAKTOREN.batteriezelle,
+      herkunft: "ERP",
+    },
+    {
+      scope: 3,
+      kategorie: "Kategorie 5 – Abfall",
+      bezeichnung: "Betriebsabfälle und Verpackung",
+      menge: 42,
+      einheit: "t",
+      faktor: { faktor: 21, einheit: "kg CO₂e/t", quelle: "Branchenwert" },
+      herkunft: "Geschaetzt",
+    },
+  ];
+
+  let scope1 = 0;
+  let scope2Standort = 0;
+  let scope2Markt = 0;
+  let scope3 = 0;
+
+  for (const p of positionen) {
+    const emission = (p.menge * p.faktor.faktor) / 1000;
+    if (p.scope === 1) scope1 += emission;
+    else if (p.scope === 2) {
+      if (p.marktbasiert) scope2Markt += emission;
+      else scope2Standort += emission;
+    } else scope3 += emission;
+  }
+
+  // Vermiedene Emissionen: der selbst verbrauchte Sonnenstrom.
+  const vermieden = (1_940_000 * FAKTOREN.strommix_at.faktor) / 1000;
+
+  schreibe(
+    `INSERT INTO esg_periode
+       (id, kunde_id, jahr, bezeichnung, standard, status, scope1_t,
+        scope2_markt_t, scope2_standort_t, scope3_t, vermieden_t,
+        freigegeben_am, freigegeben_von)
+     VALUES (?, ?, ?, ?, 'VSME', 'Geprueft', ?, ?, ?, ?, ?, NULL, NULL)`,
+    periodeId,
+    kunde,
+    jahr,
+    `Treibhausgasbilanz ${jahr}`,
+    Number(scope1.toFixed(3)),
+    Number(scope2Markt.toFixed(3)),
+    Number(scope2Standort.toFixed(3)),
+    Number(scope3.toFixed(3)),
+    Number(vermieden.toFixed(3)),
+  );
+
+  for (const [i, p] of positionen.entries()) {
+    schreibe(
+      `INSERT INTO esg_position
+         (id, periode_id, scope, kategorie, bezeichnung, menge, einheit,
+          faktor, faktor_einheit, faktor_quelle, emission_t, herkunft, bemerkung)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `${periodeId}-P${String(i + 1).padStart(3, "0")}`,
+      periodeId,
+      p.scope,
+      p.kategorie,
+      p.bezeichnung,
+      p.menge,
+      p.einheit,
+      p.faktor.faktor,
+      p.faktor.einheit,
+      p.faktor.quelle,
+      Number(((p.menge * p.faktor.faktor) / 1000).toFixed(4)),
+      p.herkunft,
+      p.marktbasiert
+        ? "Marktbasiert: Liefervertrag mit Herkunftsnachweisen."
+        : null,
+    );
+    z.esgPositionen += 1;
+  }
+}
+
+/**
+ * EU-Taxonomie: eine Prüfung, die etwas zu zeigen hat.
+ *
+ * Die Zahlen bilden einen Holzbaubetrieb mit eigener Photovoltaik ab -
+ * und damit den Fall, an dem sich die Wesentlichkeitsschwelle erklärt:
+ * Die Stromerlöse sind gemessen am Gesamtumsatz klein, die Investition
+ * in die Anlage ist gemessen am Gesamt-CapEx groß. Beim Umsatz ist die
+ * Tätigkeit unwesentlich, beim CapEx wesentlich.
+ *
+ * Ein Kriterium bleibt bewusst offen: Für die Ladeinfrastruktur fehlt
+ * die Biodiversitätsprüfung. Damit steht auf der Seite ein "offen" und
+ * nicht überall grün - eine Prüfung, in der alles stimmt, zeigt nur,
+ * dass die Oberfläche grün darstellen kann.
+ */
+function befuelleTaxonomie(z: PlattformErgebnis): void {
+  const kunde = skalar<string>("SELECT id FROM kunde LIMIT 1");
+  if (!kunde) return;
+
+  const jahr = new Date().getFullYear() - 1;
+  const id = `TAX-${jahr}`;
+
+  schreibe(
+    `INSERT INTO taxonomie_pruefung
+       (id, kunde_id, jahr, bezeichnung, status, umsatz_gesamt,
+        capex_gesamt, opex_gesamt, bemerkung)
+     VALUES (?, ?, ?, ?, 'Geprueft', ?, ?, ?, ?)`,
+    id,
+    kunde,
+    jahr,
+    `EU-Taxonomie ${jahr}`,
+    24_480_000,
+    2_860_000,
+    940_000,
+    "Nenner aus dem Jahresabschluss zum 31.12., geprüft durch die Steuerberatung.",
+  );
+
+  const positionen: {
+    art: "Umsatz" | "CapEx" | "OpEx";
+    taetigkeit: string;
+    bezeichnung: string;
+    betrag: number;
+    herkunft: "ERP" | "Erfasst" | "Geschaetzt";
+    konto?: string;
+    bemerkung?: string;
+  }[] = [
+    {
+      art: "Umsatz",
+      taetigkeit: "4.1",
+      bezeichnung: "Stromerlöse aus Einspeisung und Direktvermarktung",
+      betrag: 412_800,
+      herkunft: "ERP",
+      konto: "4200",
+    },
+    {
+      art: "Umsatz",
+      taetigkeit: "4.1",
+      bezeichnung: "Erlöse aus der Energiegemeinschaft",
+      betrag: 47_900,
+      herkunft: "ERP",
+      konto: "4210",
+    },
+    {
+      art: "Umsatz",
+      taetigkeit: "6.15",
+      bezeichnung: "Ladeentgelte Fremdfahrzeuge",
+      betrag: 18_400,
+      herkunft: "ERP",
+      konto: "4230",
+    },
+    {
+      art: "Umsatz",
+      taetigkeit: "",
+      bezeichnung: "Holzbau, Zimmerei und Handel",
+      betrag: 24_000_900,
+      herkunft: "ERP",
+      konto: "4000",
+      bemerkung:
+        "Keiner Tätigkeit des Anhangs zuzuordnen und damit nicht taxonomiefähig.",
+    },
+    {
+      art: "CapEx",
+      taetigkeit: "4.1",
+      bezeichnung: "Zubau Photovoltaik Lagerhalle Krems",
+      betrag: 1_246_000,
+      herkunft: "ERP",
+      konto: "0400",
+    },
+    {
+      art: "CapEx",
+      taetigkeit: "4.10",
+      bezeichnung: "Batteriespeicher 1,18 MWh",
+      betrag: 384_000,
+      herkunft: "ERP",
+      konto: "0410",
+    },
+    {
+      art: "CapEx",
+      taetigkeit: "6.15",
+      bezeichnung: "Ladepunkte Betriebsgelände und Fuhrpark",
+      betrag: 176_500,
+      herkunft: "ERP",
+      konto: "0420",
+    },
+    {
+      art: "CapEx",
+      taetigkeit: "",
+      bezeichnung: "Hallenkran, Fuhrpark, Betriebsausstattung",
+      betrag: 1_053_500,
+      herkunft: "ERP",
+      konto: "0600",
+    },
+    {
+      art: "OpEx",
+      taetigkeit: "7.6",
+      bezeichnung: "Wartung und Instandhaltung der Photovoltaikanlagen",
+      betrag: 96_400,
+      herkunft: "ERP",
+      konto: "7200",
+    },
+    {
+      art: "OpEx",
+      taetigkeit: "4.1",
+      bezeichnung: "Versicherung und Monitoring der Erzeugungsanlagen",
+      betrag: 28_600,
+      herkunft: "ERP",
+      konto: "7210",
+    },
+    {
+      art: "OpEx",
+      taetigkeit: "",
+      bezeichnung: "Übrige Instandhaltung, kurzfristige Mieten, Forschung",
+      betrag: 815_000,
+      herkunft: "ERP",
+      konto: "7000",
+    },
+  ];
+
+  for (const [i, p] of positionen.entries()) {
+    schreibe(
+      `INSERT INTO taxonomie_position
+         (id, pruefung_id, art, taetigkeit, bezeichnung, betrag, herkunft,
+          konto, bemerkung)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `${id}-P${String(i + 1).padStart(3, "0")}`,
+      id,
+      p.art,
+      p.taetigkeit,
+      p.bezeichnung,
+      p.betrag,
+      p.herkunft,
+      p.konto ?? null,
+      p.bemerkung ?? null,
+    );
+    z.taxonomiePositionen += 1;
+  }
+
+  const nachweise: {
+    kriterium: string;
+    stand: "erfuellt" | "nicht_erfuellt" | "offen";
+    beleg?: string;
+    bemerkung?: string;
+  }[] = [
+    {
+      kriterium: "4.1-beitrag",
+      stand: "erfuellt",
+      beleg: "Anlagenverzeichnis, Inbetriebnahmemeldungen 2019–2025",
+    },
+    {
+      kriterium: "4.1-anpassung",
+      stand: "erfuellt",
+      beleg: "Klimarisikoanalyse 2024, Szenarien RCP 4.5 und 8.5",
+      bemerkung:
+        "Hagelrisiko als wesentlich eingestuft; Module der Hagelklasse HW5, Nachrüstung der Wechselrichterstandorte abgeschlossen.",
+    },
+    {
+      kriterium: "4.1-kreislauf",
+      stand: "erfuellt",
+      beleg: "Rücknahmevereinbarung PV Austria, Demontagekonzept",
+    },
+    {
+      kriterium: "4.1-biodiversitaet",
+      stand: "erfuellt",
+      beleg: "Feststellungsbescheid BH Krems: keine UVP-Pflicht (Dachanlage)",
+    },
+    {
+      kriterium: "4.10-beitrag",
+      stand: "erfuellt",
+      beleg: "Speicherstammdaten, Zyklenprotokoll 2025",
+    },
+    {
+      kriterium: "4.10-anpassung",
+      stand: "erfuellt",
+      beleg: "Klimarisikoanalyse 2024",
+    },
+    {
+      kriterium: "4.10-kreislauf",
+      stand: "erfuellt",
+      beleg: "Herstellerrücknahme nach VO (EU) 2023/1542",
+    },
+    {
+      kriterium: "4.10-verschmutzung",
+      stand: "erfuellt",
+      beleg: "Sicherheitsdatenblätter, Löschkonzept der Betriebsfeuerwehr",
+    },
+    {
+      kriterium: "6.15-beitrag",
+      stand: "erfuellt",
+      beleg: "Ladepunktverzeichnis, Eichnachweise",
+    },
+    {
+      kriterium: "6.15-anpassung",
+      stand: "erfuellt",
+      beleg: "Klimarisikoanalyse 2024",
+    },
+    {
+      kriterium: "6.15-biodiversitaet",
+      stand: "offen",
+      bemerkung:
+        "Standortbeurteilung für die Ladepunkte am Nordgrundstück ist beauftragt, der Bericht ist ausständig.",
+    },
+    {
+      kriterium: "7.6-beitrag",
+      stand: "erfuellt",
+      beleg: "Wartungsverträge, Leistungsverzeichnis",
+    },
+    {
+      kriterium: "7.6-anpassung",
+      stand: "erfuellt",
+      beleg: "Klimarisikoanalyse 2024",
+    },
+    {
+      kriterium: "ms-oecd",
+      stand: "erfuellt",
+      beleg: "Sorgfaltspflichtenbericht 2025, Beschwerdestelle eingerichtet",
+    },
+    {
+      kriterium: "ms-arbeit",
+      stand: "erfuellt",
+      beleg:
+        "Verhaltenskodex, Lieferantenerklärungen über 94 % des Einkaufsvolumens",
+    },
+    {
+      kriterium: "ms-steuern",
+      stand: "erfuellt",
+      beleg: "Bestätigung der Geschäftsführung, keine offenen Verfahren",
+    },
+  ];
+
+  for (const n of nachweise) {
+    schreibe(
+      `INSERT INTO taxonomie_nachweis
+         (pruefung_id, kriterium, stand, beleg, geprueft_am, geprueft_von, bemerkung)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      id,
+      n.kriterium,
+      n.stand,
+      n.beleg ?? null,
+      n.stand === "offen" ? null : `${jahr + 1}-03-18`,
+      n.stand === "offen"
+        ? null
+        : "Mag. C. Weinberger, Nachhaltigkeitsbeauftragte",
+      n.bemerkung ?? null,
+    );
+  }
+}
+
+function befuelleMeldewege(z: PlattformErgebnis): void {
+  const jetzt = new Date();
+
+  const dienste = [
+    {
+      id: "BD-0001",
+      bezeichnung: "Tagdienst Technik",
+      wochentage: "12345",
+      von: 7,
+      bis: 17,
+      stufe: 1,
+      empfaenger: "Michael Hofbauer",
+      rolle: "Technische Leitung",
+      telefon: "+43 664 1234501",
+      email: "m.hofbauer@steiner-holzbau.at",
+      kanal: "Push",
+      frist: 15,
+    },
+    {
+      id: "BD-0002",
+      bezeichnung: "Stellvertretung Technik",
+      wochentage: "12345",
+      von: 7,
+      bis: 17,
+      stufe: 2,
+      empfaenger: "Anna Berger",
+      rolle: "Betriebsführung",
+      telefon: "+43 664 1234502",
+      email: "a.berger@steiner-holzbau.at",
+      kanal: "Anruf",
+      frist: 15,
+    },
+    {
+      id: "BD-0003",
+      bezeichnung: "Bereitschaft Ökovolt, Nacht",
+      wochentage: "1234567",
+      von: 17,
+      bis: 7,
+      stufe: 1,
+      empfaenger: "Bereitschaftsdienst Ökovolt",
+      rolle: "Servicetechnik",
+      telefon: "+43 664 9990001",
+      email: "bereitschaft@oekovolt.at",
+      kanal: "Anruf",
+      frist: 10,
+    },
+    {
+      id: "BD-0004",
+      bezeichnung: "Notdienst rund um die Uhr",
+      wochentage: "1234567",
+      von: 0,
+      bis: 24,
+      stufe: 3,
+      empfaenger: "Leitstelle Ökovolt",
+      rolle: "Rund um die Uhr besetzt",
+      telefon: "+43 1 9990000",
+      email: "leitstelle@oekovolt.at",
+      kanal: "Anruf",
+      frist: 10,
+    },
+  ];
+
+  for (const d of dienste) {
+    schreibe(
+      `INSERT INTO bereitschaft
+         (id, bezeichnung, wochentage, von_stunde, bis_stunde, stufe,
+          empfaenger, rolle, telefon, email, kanal, eskalation_nach_min,
+          auch_feiertags, aktiv)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
+      d.id,
+      d.bezeichnung,
+      d.wochentage,
+      d.von,
+      d.bis,
+      d.stufe,
+      d.empfaenger,
+      d.rolle,
+      d.telefon,
+      d.email,
+      d.kanal,
+      d.frist,
+      // Der Werktagsdienst hat am Feiertag frei; Bereitschaft und
+      // Notdienst sind rund ums Jahr besetzt.
+      d.wochentage === "1234567" ? 1 : 0,
+    );
+  }
+
+  const meldungen = [
+    {
+      anlage: ANLAGE_MIT_DRIFT,
+      quelle: "Drift",
+      dringlichkeit: "Kritisch",
+      betreff: "Wirkleistungsbegrenzung abweichend",
+      text: "Die versiegelte Begrenzung steht auf 100 statt auf 70 Prozent. Die Anlage wurde gesperrt.",
+      vorMinuten: 12,
+      bestaetigt: false,
+      stufe: 2,
+    },
+    {
+      anlage: "ANL-0002",
+      quelle: "Alarm",
+      dringlichkeit: "Mittel",
+      betreff: "Strangabweichung Strang 4",
+      text: "Strang 4 an WR 1 Halle Ost liefert 22 Prozent unter den Nachbarsträngen.",
+      vorMinuten: 3120,
+      bestaetigt: true,
+      stufe: 1,
+    },
+    {
+      anlage: "ANL-0005",
+      quelle: "Sicherheit",
+      dringlichkeit: "Hoch",
+      betreff: "Sperrliste auf dem Gateway veraltet",
+      text: "Das Gateway hat seit neun Tagen keine Sperrliste übernommen.",
+      vorMinuten: 95,
+      bestaetigt: false,
+      stufe: 2,
+    },
+    {
+      anlage: "ANL-0001",
+      quelle: "Markt",
+      dringlichkeit: "Niedrig",
+      betreff: "Negative Börsenpreise am Folgetag",
+      text: "Zwischen 11 und 15 Uhr sind negative Preise angekündigt. Der Fahrplan wurde angepasst.",
+      vorMinuten: 420,
+      bestaetigt: true,
+      stufe: 1,
+    },
+  ];
+
+  for (const [i, m] of meldungen.entries()) {
+    const erzeugt = new Date(jetzt.getTime() - m.vorMinuten * 60000);
+    const id = `BN-${String(i + 1).padStart(4, "0")}`;
+
+    schreibe(
+      `INSERT INTO benachrichtigung
+         (id, anlage_id, quelle, dringlichkeit, betreff, text, erzeugt_am,
+          bestaetigt_am, bestaetigt_von, stufe, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      id,
+      m.anlage,
+      m.quelle,
+      m.dringlichkeit,
+      m.betreff,
+      m.text,
+      erzeugt.toISOString(),
+      m.bestaetigt
+        ? new Date(erzeugt.getTime() + 6 * 60000).toISOString()
+        : null,
+      m.bestaetigt ? "Michael Hofbauer" : null,
+      m.stufe,
+      m.bestaetigt ? "Bestaetigt" : m.stufe > 1 ? "Eskaliert" : "Zugestellt",
+    );
+    z.benachrichtigungen += 1;
+
+    // Zustellversuche je Weg.
+    const wege =
+      m.dringlichkeit === "Kritisch"
+        ? ["Push", "WhatsApp", "SMS", "Anruf"]
+        : m.dringlichkeit === "Hoch"
+          ? ["Push", "WhatsApp"]
+          : m.dringlichkeit === "Mittel"
+            ? ["Push"]
+            : ["E-Mail"];
+
+    for (const [j, kanal] of wege.entries()) {
+      const versucht = new Date(erzeugt.getTime() + j * 1500);
+      const fehlgeschlagen = kanal === "SMS" && !m.bestaetigt;
+
+      schreibe(
+        `INSERT INTO zustellung
+           (id, benachrichtigung_id, kanal, empfaenger, stufe, versucht_am,
+            zugestellt_am, gelesen_am, status, fehler)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `${id}-Z${j + 1}`,
+        id,
+        kanal,
+        kanal === "Anruf" || kanal === "SMS"
+          ? "+43 664 1234501"
+          : "m.hofbauer@steiner-holzbau.at",
+        m.stufe,
+        versucht.toISOString(),
+        fehlgeschlagen
+          ? null
+          : new Date(versucht.getTime() + 2200).toISOString(),
+        m.bestaetigt
+          ? new Date(versucht.getTime() + 180000).toISOString()
+          : null,
+        fehlgeschlagen ? "Fehler" : m.bestaetigt ? "Gelesen" : "Zugestellt",
+        fehlgeschlagen ? "Zustellbericht des Netzbetreibers ausgeblieben" : null,
+      );
+    }
+  }
+}
+
+function befuelleBuchhaltung(z: PlattformErgebnis): void {
+  const heute = new Date();
+  const monat = new Date(heute.getFullYear(), heute.getMonth() - 1, 1);
+  const monatsEnde = new Date(heute.getFullYear(), heute.getMonth(), 0);
+
+  const stapelId = `BST-${monat.getFullYear()}-${String(monat.getMonth() + 1).padStart(2, "0")}`;
+
+  const buchungen = [
+    {
+      konto: "20001",
+      gegenkonto: "4100",
+      text: "Ladeabrechnung Fuhrpark und Montage",
+      betrag: 3022.41,
+      steuer: 20,
+      code: "UST20",
+      kostenstelle: "ANL-0005",
+      herkunft: "laden_b2b",
+    },
+    {
+      konto: "20001",
+      gegenkonto: "4110",
+      text: "Ad-hoc-Ladevorgänge Besucherparkplatz",
+      betrag: 271.63,
+      steuer: 20,
+      code: "UST20",
+      kostenstelle: "ANL-0004",
+      herkunft: "laden_adhoc",
+    },
+    {
+      konto: "20002",
+      gegenkonto: "4120",
+      text: "Abrechnung Energiegemeinschaft, Quartal",
+      betrag: 1764.2,
+      steuer: 20,
+      code: "UST20",
+      kostenstelle: "EEG-0001",
+      herkunft: "gemeinschaft",
+    },
+    {
+      konto: "20001",
+      gegenkonto: "4140",
+      text: "Erlöse Speichervermarktung EPEX Spot",
+      betrag: 2418.77,
+      steuer: 20,
+      code: "UST20",
+      kostenstelle: "ANL-0002",
+      herkunft: "arbitrage",
+    },
+    {
+      konto: "20001",
+      gegenkonto: "4150",
+      text: "Vergütung Primärregelleistung",
+      betrag: 894.6,
+      steuer: 20,
+      code: "UST20",
+      kostenstelle: "ANL-0002",
+      herkunft: "regelleistung",
+    },
+    {
+      konto: "20001",
+      gegenkonto: "4020",
+      text: "Wartungspauschale Betriebsführung",
+      betrag: 1450.0,
+      steuer: 20,
+      code: "UST20",
+      kostenstelle: "ANL-0001",
+      herkunft: "wartung",
+    },
+    {
+      konto: "5000",
+      gegenkonto: "33010",
+      text: "Teltonika TRB256 und TSW202, Lieferung",
+      betrag: 1284.0,
+      steuer: 20,
+      code: "VST20",
+      kostenstelle: "ANL-0003",
+      herkunft: "lieferant_hardware",
+    },
+  ];
+
+  const summeNetto = buchungen.reduce((s, b) => s + b.betrag, 0);
+  const summeSteuer = buchungen.reduce(
+    (s, b) => s + (b.betrag * b.steuer) / 100,
+    0,
+  );
+
+  schreibe(
+    `INSERT INTO buchungsstapel
+       (id, bezeichnung, zeitraum_von, zeitraum_bis, format, status,
+        buchungen, summe_soll, summe_haben, erzeugt_am, uebergeben_am, erzeugt_von)
+     VALUES (?, ?, ?, ?, 'BMD_NTCS', 'Uebergeben', ?, ?, ?, ?, ?, 'Automatischer Lauf')`,
+    stapelId,
+    `Buchungsstapel ${monat.toLocaleDateString("de-AT", { month: "long", year: "numeric" })}`,
+    monat.toISOString().slice(0, 10),
+    monatsEnde.toISOString().slice(0, 10),
+    buchungen.length,
+    Number((summeNetto + summeSteuer).toFixed(2)),
+    Number((summeNetto + summeSteuer).toFixed(2)),
+    verschiebeTage(monatsEnde, 2).toISOString(),
+    verschiebeTage(monatsEnde, 2).toISOString(),
+  );
+
+  for (const [i, b] of buchungen.entries()) {
+    schreibe(
+      `INSERT INTO buchung
+         (id, stapel_id, belegdatum, belegnummer, konto, gegenkonto,
+          kostenstelle, text, betrag, steuersatz, steuercode, waehrung, herkunft)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'EUR', ?)`,
+      `${stapelId}-${String(i + 1).padStart(4, "0")}`,
+      stapelId,
+      monatsEnde.toISOString().slice(0, 10),
+      `AR-${monat.getFullYear()}-${String(monat.getMonth() + 1).padStart(2, "0")}-${String(i + 1).padStart(4, "0")}`,
+      b.konto,
+      b.gegenkonto,
+      b.kostenstelle,
+      b.text,
+      b.betrag,
+      b.steuer,
+      b.code,
+      b.herkunft,
+    );
+    z.buchungen += 1;
+  }
+}
+
+/**
+ * Befehlsverlauf der Steuerung.
+ *
+ * Darunter zwei Fälle, die es im Betrieb gibt und die eine reine
+ * Erfolgsliste nicht zeigt: ein Befehl, der noch unterwegs ist, und
+ * ein abgelehnter Versuch an einem versiegelten Parameter. Der
+ * abgelehnte ist für einen Nachweis nach NIS 2 der aufschlussreichere
+ * von beiden.
+ */
+function befuelleSteuerbefehle(): void {
+  const jetzt = Date.now();
+  const stunde = 3600000;
+
+  const befehle = [
+    {
+      anlage: "ANL-0002",
+      parameter: "speicher_modus",
+      vorher: "Eigenverbrauch",
+      nachher: "Lastspitzenkappung",
+      status: "Bestätigt",
+      vorStunden: 52,
+      benutzer: "Michael Hofbauer",
+      grund: "Umstellung nach Auswertung der Lastspitzen",
+    },
+    {
+      anlage: "ANL-0002",
+      parameter: "speicher_reserve_soc",
+      vorher: "10",
+      nachher: "15",
+      status: "Bestätigt",
+      vorStunden: 51,
+      benutzer: "Michael Hofbauer",
+      grund: "Notstromreserve angehoben",
+    },
+    {
+      anlage: "ANL-0002",
+      parameter: "boerse_aktiv",
+      vorher: "nein",
+      nachher: "ja",
+      status: "Bestätigt",
+      vorStunden: 30,
+      benutzer: "Michael Hofbauer",
+      grund: "Börsenpreissteuerung eingeschaltet",
+    },
+    {
+      anlage: "ANL-0002",
+      parameter: "lade_lastmanagement",
+      vorher: "Statisch",
+      nachher: "Dynamisch",
+      status: "Übertragen",
+      vorStunden: 0.2,
+      benutzer: "Michael Hofbauer",
+      grund: "Umstellung auf dynamische Verteilung",
+    },
+    {
+      anlage: "ANL-0002",
+      parameter: "einspeise_wirkleistungsgrenze",
+      vorher: "70",
+      nachher: "100",
+      status: "Abgelehnt",
+      vorStunden: 26,
+      benutzer: "Michael Hofbauer",
+      grund:
+        "Der Parameter ist mit dem Netzbetreiber vereinbart und im Steuerrechner versiegelt. Eine Änderung ist nur durch den Netzbetreiber zulässig.",
+    },
+    {
+      anlage: "ANL-0001",
+      parameter: "eigenverbrauch_ziel",
+      vorher: "80",
+      nachher: "90",
+      status: "Bestätigt",
+      vorStunden: 96,
+      benutzer: "Michael Hofbauer",
+      grund: "Zielwert angehoben",
+    },
+    {
+      anlage: "ANL-0003",
+      parameter: "speicher_ladeleistung_max",
+      vorher: "120",
+      nachher: "90",
+      status: "Fehler",
+      vorStunden: 8,
+      benutzer: "Michael Hofbauer",
+      grund:
+        "Der Steuerrechner war zum Zeitpunkt der Übertragung nicht erreichbar.",
+    },
+  ];
+
+  for (const [i, b] of befehle.entries()) {
+    schreibe(
+      `INSERT INTO steuerbefehl
+         (id, anlage_id, parameter, wert_vorher, wert_nachher, status,
+          begruendung, benutzer, erstellt_am)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `SB-B${String(i + 1).padStart(4, "0")}`,
+      b.anlage,
+      b.parameter,
+      b.vorher,
+      b.nachher,
+      b.status,
+      b.grund,
+      b.benutzer,
+      new Date(jetzt - b.vorStunden * stunde).toISOString(),
+    );
+  }
+}

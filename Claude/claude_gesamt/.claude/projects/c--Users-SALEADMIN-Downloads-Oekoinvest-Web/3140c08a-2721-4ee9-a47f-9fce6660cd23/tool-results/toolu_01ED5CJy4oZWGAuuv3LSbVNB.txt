@@ -1,0 +1,122 @@
+src\data\faq.js:146:    a: "Eine Genossenschaftsbeteiligung ist unternehmerisches Kapital. Im schlechtesten Fall kann die Einlage ganz verloren gehen. Anteile sind nicht börsennotiert und nur eingeschränkt übertragbar; die Kündigung ist an Fristen gebunden, die die Satzung festlegt. Es gibt keine gesetzliche Einlagensicherung. Ausschüttungen sind nicht garantiert und hängen vom Ergebnis und von Beschlüssen der Generalversammlung ab.",
+src\data\faq.js:223:    a: `Üblich sind ${PACHT.laufzeit} Jahre ab Inbetriebnahme, häufig mit Verlängerungsoptionen (${PACHT.verlaengerung}). Der Vertrag regelt außerdem den vollständigen Rückbau nach Ende der Nutzung – abgesichert durch eine Rückbaubürgschaft oder Rücklage.`,
+src\data\lexikon.js:246:    verwandt: ["projektrechte", "rueckbauverpflichtung", "netzverknuepfungspunkt"],
+src\data\lexikon.js:380:    verwandt: ["dienstbarkeit", "rueckbauverpflichtung", "landwirtschaftliches-vermoegen", "agri-pv"],
+src\data\lexikon.js:658:    verwandt: ["randstreifen", "agri-pv", "bebauungsplan", "rueckbauverpflichtung"],
+src\data\lexikon.js:724:    id: "rueckbauverpflichtung",
+src\data\lexikon.js:725:    begriff: "Rückbauverpflichtung",
+src\data\lexikon.js:726:    kurz: "Die Rückbauverpflichtung ist die Pflicht des Betreibers, eine Anlage nach dauerhafter Nutzungsaufgabe vollständig zu entfernen und die Fläche in ihren ursprünglichen Zustand zu versetzen.",
+src\data\lexikon.js:727:    text: `Bei privilegierten Vorhaben ist sie in § 35 Abs. 5 BauGB vorgeschrieben, bei B-Plan-Projekten wird sie meist im städtebaulichen Vertrag und im Pachtvertrag geregelt. Üblich ist eine Absicherung über Bankbürgschaft oder Rücklage; die ÖkoInvest-Rechner kalkulieren dafür rund ${fmt(FREIFLAECHE.rueckbauProKwp)} €/kWp. Für Flächeneigentümer ist die Absicherung ein zentraler Prüfpunkt im Pachtvertrag.`,
+src\data\lexikon.js:729:    synonyme: ["Rückbaubürgschaft", "Rückbausicherheit"],
+src\data\lexikon.js:898:    text: "Bei privilegierten Solaranlagen im Außenbereich soll die Baugenehmigungsbehörde die Rückbauverpflichtung nach § 35 Abs. 5 BauGB durch eine nach Landesrecht vorgesehene Baulast oder in anderer Weise sicherstellen. Nicht alle Länder kennen die Baulast – in Bayern etwa gibt es kein Baulastenverzeichnis; dort wird der Rückbau in der Regel über eine Bürgschaft gesichert. Die Baulast ersetzt keine finanzielle Sicherheit für den Fall, dass der Betreiber ausfällt.",
+src\data\lexikon.js:900:    synonyme: ["Baulastenverzeichnis", "Rückbaubaulast"],
+src\data\lexikon.js:901:    verwandt: ["rueckbauverpflichtung", "privilegierung-aussenbereich", "dienstbarkeit"],
+src\data\lexikon.js:902:    link: { href: "/ratgeber/solarpark-rueckbau-rueckbaubuergschaft", label: "Rückbau und Rückbaubürgschaft" },
+src\data\lexikon.js:1018:    text: "Jeder erwartete Cashflow wird mit einer geforderten Rendite auf den heutigen Zeitpunkt abgezinst und aufsummiert. Bei Solarparks gehen Ertrag und Degradation, Vergütung oder PPA-Preis, Marktwert nach Förderende, Betriebskosten, Pacht und Rückbau jahresgenau ein; die Restlaufzeit begrenzen technische Lebensdauer, Pacht und Dienstbarkeit. Das DCF-Verfahren ist der Standard für die Bewertung von Bestandsanlagen; Kennzahlen wie Preis je kWp dienen nur der Plausibilisierung.",
+src\data\lexikon.js:1421:    kurz: "Die Endschaftsregelung legt fest, was am Ende eines Contracting- oder Pachtvertrags mit der Anlage geschieht – Kaufoption, Übergang, Verlängerung oder Rückbau.",
+src\data\lexikon.js:1422:    text: "Üblich sind eine Kaufoption des Kunden zum vereinbarten Restwert oder eine Verlängerung. Ohne klare Regelung drohen Streit über Rückbaukosten oder den Wert der Anlage. Für Banken ist die Endschaft Teil der Prüfung des Restwerts.",
+src\data\lexikon.js:1425:    verwandt: ["energie-contracting", "rueckbauverpflichtung"],
+src\data\regionen\baden-wuerttemberg.js:141:      a: "Die Pacht hängt von Größe, Netzanschluss und Genehmigungschancen ab. Flächen in einem regionalplanerischen PV-Gebiet mit Anschluss in der Nähe sind besonders gefragt. Achten Sie auf einen festen Mindestbetrag pro Hektar, Indexierung und eine Rückbausicherheit.",
+src\data\regionen\bayern.js:51:[Omitted long matching line]
+src\data\regionen\bayern.js:138:      text: "Nach den bayerischen Hinweisen entsteht unter einer reinen PV-Anlage mit Mahd oder Beweidung kein Dauergrünland im Sinne des Umwandlungsverbots. Die Fläche kann nach dem Rückbau grundsätzlich wieder als Acker genutzt werden; erst nach mindestens fünf Jahren Grünlandnutzung danach würde sie zu Dauergrünland.",
+src\components\Dach\Seite\Vertrag.js:11:    { icon: ShieldCheck, t: "Rückbau", x: "Rückbau und Wiederherstellung der Dachhaut sind Pflicht des Betreibers, bei größeren Anlagen mit Sicherheit (Bürgschaft)." },
+src\data\regionen\tirol.js:98:[Omitted long matching line]
+src\lib\rechner\solarpark.js:14://  - Kosten: Betriebskosten + Pacht (beide mit Inflation), Rückbau-Rücklage
+src\lib\rechner\solarpark.js:89:    const rueckbau = (kwp * FREIFLAECHE.rueckbauProKwp) / e.laufzeit;
+src\lib\rechner\solarpark.js:90:    const kosten = opex + pacht + rueckbau;
+src\lib\rechner\solarpark.js:91:    betrieb.push({ jahr: t, erzeugung, preisCt, marktCt, imVertrag, erloes, opex, pacht, rueckbau, kosten, ebitda: erloes - kosten });
+src\data\regionen\oberoesterreich.js:99:    "Für die Förderung gelten zusätzlich die EAG-Vorgaben: Anlagen auf Agrarflächen müssen rückstandslos rückbaubar sein, die Modulunterkante muss mindestens 80 cm über dem Boden liegen und die Reihenabstände müssen mindestens zwei Meter betragen (außer bei innovativen und nachgeführten Anlagen). Für Grünland- und Ackerbaubetriebe im Innviertel und Hausruckviertel kommen damit vor allem vertikale Anlagen oder weit gestellte Reihen mit Grünlandnutzung infrage.",
+src\lib\rechner\pachtangebot.js:37:  rueckbau: [
+src\lib\rechner\pachtangebot.js:43:  rueckbauAb: [
+src\lib\rechner\pachtangebot.js:95:  rueckbau: "konzern",
+src\lib\rechner\pachtangebot.js:96:  rueckbauAb: "baubeginn",
+src\lib\rechner\pachtangebot.js:273:  // 7 Rückbausicherheit
+src\lib\rechner\pachtangebot.js:274:  const rb = e.rueckbau;
+src\lib\rechner\pachtangebot.js:276:    id: "rueckbau",
+src\lib\rechner\pachtangebot.js:277:    titel: "Rückbausicherheit",
+src\lib\rechner\pachtangebot.js:278:    wert: `${opt("rueckbau", rb).label}${rb !== "keine" ? (e.rueckbauAb === "baubeginn" ? ", ab Baubeginn" : ", erst später") : ""}`,
+src\lib\rechner\pachtangebot.js:279:    ampel: rb === "keine" ? "kritisch" : rb === "buergschaft" && e.rueckbauAb === "baubeginn" ? "gut" : "pruefen",
+src\lib\rechner\pachtangebot.js:282:        ? `Ohne Sicherheit bleiben Sie im schlimmsten Fall auf dem Rückbau sitzen – Größenordnung ${fmtDe(Math.round(r.rueckbauKosten / 1000) * 1000)} € für diese Fläche. Eine Bankbürgschaft ist Standard.`
+src\lib\rechner\pachtangebot.js:284:          ? e.rueckbauAb === "baubeginn"
+src\lib\rechner\pachtangebot.js:285:            ? `Standard. Achten Sie auf eine unbefristete, selbstschuldnerische Bürgschaft eines Kreditinstituts oder Versicherers über mindestens die Rückbaukosten (Größenordnung ${fmtDe(Math.round(r.rueckbauKosten / 1000) * 1000)} €) und eine regelmäßige Anpassung.`
+src\lib\rechner\pachtangebot.js:290:    frage: "Wer stellt die Rückbausicherheit, in welcher Höhe, ab wann, und wie wird sie an steigende Kosten angepasst?",
+src\lib\rechner\pachtangebot.js:398:  "Wie ist der Zustand der Fläche nach dem Rückbau definiert (Fundamente, Kabel, Bodenverdichtung)?",
+src\lib\rechner\pachtangebot.js:425:  const rueckbauKosten = kwp * FREIFLAECHE.rueckbauProKwp;
+src\lib\rechner\pachtangebot.js:426:  const r = { kwp, kwh, region, jahre, summe, summeVorlauf, barwert: bw, proHaErstesJahr, rueckbauKosten };
+src\lib\rechner\pachtangebot.js:490:    proHa: 3500, indexArt: "vpi", reservierungProHa: 250, optionsfrist: 3, rueckbau: "buergschaft", rueckbauAb: "baubeginn", kuendigung: "befristet",
+src\lib\rechner\grossspeicher.js:18://  - Kein Restwert, keine Erweiterung (Augmentation), kein Rückbau.
+src\lib\rechner\bestandsanlage.js:19://    Wechselrichtertausch, Rückbau-Rücklage im letzten Jahr
+src\lib\rechner\bestandsanlage.js:53:  rueckbau: true,
+src\lib\rechner\bestandsanlage.js:80:    const rueckbau = e.rueckbau && i === restJahre - 1 ? e.kwp * FREIFLAECHE.rueckbauProKwp : 0;
+src\lib\rechner\bestandsanlage.js:81:    const cf = erloes - opex - pacht - wr - rueckbau;
+src\lib\rechner\bestandsanlage.js:82:    jahre.push({ jahr, t, kwh, preisCt, gefoerdert, erloes, opex, pacht, wr, rueckbau, cf });
+src\app\regionen\[slug]\page.js:487:          ...(r.land === "DE" ? [] : [{ href: "/flaeche-verpachten", titel: "Fläche verpachten", text: "Pachtmodelle, Vertrag, Rückbausicherheit und der Weg zur ersten Pacht." }]),
+src\content\ratgeber\solarpark-versicherung.js:285:[Omitted long matching line]
+src\content\ratgeber\solarpark-rueckbau-rueckbaubuergschaft.js:1:// Ratgeber: Rückbau von Solarparks – Rückbauverpflichtung, Rückbaubürgschaft, Kosten, Recycling
+src\content\ratgeber\solarpark-rueckbau-rueckbaubuergschaft.js:4:// Keine Rechtsberatung – Text bewusst vorsichtig formuliert. Vertieft den Rückbau-Abschnitt
+src\content\ratgeber\solarpark-rueckbau-rueckbaubuergschaft.js:12:// Verwertung mind. 85 %, Vorbereitung zur Wiederverwendung und Recycling mind. 80 %.
+src\content\ratgeber\solarpark-rueckbau-rueckbaubuergschaft.js:14:const ELEKTROG_RECYCLING = 0.8;
+src\content\ratgeber\solarpark-rueckbau-rueckbaubuergschaft.js:15:// Übliche Überprüfungsintervalle für die Höhe der Rückbausicherheit (Vertragspraxis, eigene Einordnung).
+src\content\ratgeber\solarpark-rueckbau-rueckbaubuergschaft.js:26:const RUECKBAU_HEUTE = KWP * FREIFLAECHE.rueckbauProKwp;
+src\content\ratgeber\solarpark-rueckbau-rueckbaubuergschaft.js:28:const RUECKBAU_ENDE = RUECKBAU_HEUTE * faktor(JAHRE);
+src\content\ratgeber\solarpark-rueckbau-rueckbaubuergschaft.js:30:const ANTEIL_CAPEX = RUECKBAU_HEUTE / CAPEX;
+src\content\ratgeber\solarpark-rueckbau-rueckbaubuergschaft.js:34:  slug: "solarpark-rueckbau-rueckbaubuergschaft",
+src\content\ratgeber\solarpark-rueckbau-rueckbaubuergschaft.js:35:  title: "Solarpark-Rückbau: Pflicht, Rückbaubürgschaft und echte Kosten",
+src\content\ratgeber\solarpark-rueckbau-rueckbaubuergschaft.js:36:  seoTitle: "Solarpark Rückbau & Rückbaubürgschaft | ÖkoInvest",
+src\content\ratgeber\solarpark-rueckbau-rueckbaubuergschaft.js:37:  kurzTitel: "Rückbau und Rückbaubürgschaft",
+src\content\ratgeber\solarpark-rueckbau-rueckbaubuergschaft.js:39:    "Solarpark-Rückbau: Wer zum Rückbau verpflichtet ist, wie hoch die Rückbaubürgschaft sein sollte, was bei Insolvenz passiert und was Recycling kostet.",
+src\content\ratgeber\solarpark-rueckbau-rueckbaubuergschaft.js:41:    "Nach 30 Jahren muss die Fläche wieder frei sein. Wer den Rückbau schuldet, welche Sicherheit wirklich trägt, wie sich die Kosten entwickeln und was mit den Modulen passiert.",
+src\content\ratgeber\solarpark-rueckbau-rueckbaubuergschaft.js:42:  hauptKeyword: "solarpark rückbau",
+src\content\ratgeber\solarpark-rueckbau-rueckbaubuergschaft.js:44:    "Solarpark Rückbau",
+src\content\ratgeber\solarpark-rueckbau-rueckbaubuergschaft.js:45:    "Rückbaubürgschaft Solarpark",
+src\content\ratgeber\solarpark-rueckbau-rueckbaubuergschaft.js:46:    "Rückbauverpflichtung Photovoltaik",
+src\content\ratgeber\solarpark-rueckbau-rueckbaubuergschaft.js:47:    "Rückbaukosten Freiflächenanlage",
+src\content\ratgeber\solarpark-rueckbau-rueckbaubuergschaft.js:48:    "Rückbausicherheit § 35 Abs. 5 BauGB",
+src\content\ratgeber\solarpark-rueckbau-rueckbaubuergschaft.js:49:    "PV-Module Recycling ElektroG",
+src\content\ratgeber\solarpark-rueckbau-rueckbaubuergschaft.js:50:    "Solarpark Insolvenz Rückbau",
+src\content\ratgeber\solarpark-rueckbau-rueckbaubuergschaft.js:57:  badge: { wert: `ca. ${fmt(FREIFLAECHE.rueckbauProKwp)} €/kWp`, text: "vorsichtige Rückbau-Kalkulation, heutiger Preisstand" },
+src\content\ratgeber\solarpark-rueckbau-rueckbaubuergschaft.js:60:    "**Den Rückbau schuldet der Betreiber** – im Außenbereich als Zulässigkeitsvoraussetzung nach § 35 Abs. 5 BauGB, beim Bebauungsplan meist über den städtebaulichen Vertrag und gegenüber dem Eigentümer über den Pachtvertrag.",
+src\content\ratgeber\solarpark-rueckbau-rueckbaubuergschaft.js:61:    `Wir kalkulieren den Rückbau vorsichtig mit rund **${fmt(FREIFLAECHE.rueckbauProKwp)} € je kWp** zum heutigen Preisstand – für einen ${MWP}-MWp-Park also etwa ${fmtEur(RUECKBAU_HEUTE)}, grob ${fmtPct(ANTEIL_CAPEX, 0)} der Errichtungskosten.`,
+src\content\ratgeber\solarpark-rueckbau-rueckbaubuergschaft.js:62:    `Ohne Anpassung verliert die Sicherheit an Wert: Bei ${fmtPct(FREIFLAECHE.inflation, 0)} Kostensteigerung pro Jahr wären nach ${JAHRE} Jahren rund **${fmtEur(rund(RUECKBAU_ENDE))}** nötig. Eine Indexierung oder regelmäßige Neubewertung gehört deshalb in jeden Vertrag.`,
+src\content\ratgeber\solarpark-rueckbau-rueckbaubuergschaft.js:70:      titel: "Wer muss einen Solarpark zurückbauen?",
+src\content\ratgeber\solarpark-rueckbau-rueckbaubuergschaft.js:75:          text: "**Zurückbauen muss der Betreiber der Anlage – und zwar vollständig, einschließlich Rammpfosten, Kabeln, Fundamenten und Zaun, sobald die Nutzung dauerhaft endet oder der Pachtvertrag ausläuft.** Diese Pflicht hat in Deutschland in der Regel drei Rechtsquellen, die nebeneinander bestehen: das Baurecht gegenüber der Genehmigungsbehörde, den städtebaulichen Vertrag gegenüber der Gemeinde und den Pacht- oder Nutzungsvertrag gegenüber dem Flächeneigentümer.",
+src\content\ratgeber\solarpark-rueckbau-rueckbaubuergschaft.js:79:          text: `Die Pflicht allein nützt wenig, wenn beim Betreiber nach ${JAHRE} Jahren kein Geld mehr da ist. Entscheidend ist deshalb die **Sicherheit**: eine Bürgschaft oder ein vergleichbares Instrument, auf das Behörde, Gemeinde oder Eigentümer notfalls zugreifen können. Die Grundzüge der Rückbauklausel im Pachtvertrag erklärt der Ratgeber [Pachtvertrag für Solarparks](/ratgeber/pachtvertrag-solarpark). Hier geht es um die Details: Höhe, Form, Anpassung, Insolvenz, Kosten und Recycling.`,
+src\content\ratgeber\solarpark-rueckbau-rueckbaubuergschaft.js:83:          wert: fmtEur(RUECKBAU_HEUTE),
+src\content\ratgeber\solarpark-rueckbau-rueckbaubuergschaft.js:84:          titel: `Rückbau-Kalkulation für einen ${MWP}-MWp-Park (heutiger Preisstand)`,
+src\content\ratgeber\solarpark-rueckbau-rueckbaubuergschaft.js:85:          text: `Rund ${fmt(FREIFLAECHE.rueckbauProKwp)} €/kWp, Fläche etwa ${fmt(HA)} ha. Nach ${JAHRE} Jahren mit ${fmtPct(FREIFLAECHE.inflation, 0)} Kostensteigerung pro Jahr: etwa ${fmtEur(rund(RUECKBAU_ENDE))}.`,
+src\content\ratgeber\solarpark-rueckbau-rueckbaubuergschaft.js:91:      titel: "Die drei Rechtsgrundlagen der Rückbauverpflichtung",
+src\content\ratgeber\solarpark-rueckbau-rueckbaubuergschaft.js:96:          text: "**Welche Rückbaupflicht greift, hängt vom Genehmigungsweg ab: Privilegierte Anlagen im Außenbereich trifft sie kraft Gesetzes, Anlagen im Bebauungsplan in der Regel über Verträge.** Für Flächeneigentümer ist wichtig: Die öffentlich-rechtliche Pflicht schützt zuerst die Allgemeinheit, nicht automatisch Ihre Fläche.",
+src\content\ratgeber\solarpark-rueckbau-rueckbaubuergschaft.js:100:          caption: `Rückbauverpflichtung nach Rechtsgrundlage, Deutschland, Stand ${STAND}`,
+src\content\ratgeber\solarpark-rueckbau-rueckbaubuergschaft.js:113:              "Rückbauklausel mit Bürgschaft; häufig Voraussetzung für den Satzungsbeschluss",
+src\content\ratgeber\solarpark-rueckbau-rueckbaubuergschaft.js:142:          text: "Bebauungsplan: Gemeinde regelt den Rückbau im Vertrag",
+src\content\ratgeber\solarpark-rueckbau-rueckbaubuergschaft.js:146:[Omitted long matching line]
+src\content\ratgeber\solarpark-rueckbau-rueckbaubuergschaft.js:152:      titel: "Wie hoch sollte die Rückbaubürgschaft sein?",
+src\content\ratgeber\solarpark-rueckbau-rueckbaubuergschaft.js:157:[Omitted long matching line]
+src\content\ratgeber\solarpark-rueckbau-rueckbaubuergschaft.js:161:          text: "Warum ohne Schrotterlöse? Weil die Sicherheit genau dann gebraucht wird, wenn etwas schiefgeht: Der Betreiber ist insolvent, die Anlage wurde nicht gewartet, Kupferkabel sind vielleicht schon ausgebaut, und die Metallpreise stehen im ungünstigen Moment tief. Eine Kalkulation, die den Rückbau durch Materialverkauf „kostenneutral“ rechnet, ist für den Sicherungszweck ungeeignet.",
+src\content\ratgeber\solarpark-rueckbau-rueckbaubuergschaft.js:165:          caption: `Beispiel: Rückbausicherheit für ${MWP} MWp bei ${fmtPct(FREIFLAECHE.inflation, 0)} Kostensteigerung pro Jahr`,
+src\content\ratgeber\solarpark-rueckbau-rueckbaubuergschaft.js:166:          kopf: ["Zeitpunkt", "Rückbaukosten (Schätzung)", "Sicherheit ohne Anpassung", "Deckungslücke"],
+src\content\ratgeber\solarpark-rueckbau-rueckbaubuergschaft.js:168:            const kosten = RUECKBAU_HEUTE * faktor(j);
+src\content\ratgeber\solarpark-rueckbau-rueckbaubuergschaft.js:172:              fmtEur(RUECKBAU_HEUTE),
+src\content\ratgeber\solarpark-rueckbau-rueckbaubuergschaft.js:173:              j === 0 ? "keine" : fmtEur(rund(kosten - RUECKBAU_HEUTE)),
+src\content\ratgeber\solarpark-rueckbau-rueckbaubuergschaft.js:179:          fussnote: `Annahmen: ${fmt(FREIFLAECHE.rueckbauProKwp)} €/kWp zum heutigen Preisstand, jährliche Kostensteigerung ${fmtPct(FREIFLAECHE.inflation, 0)} (Opex-Annahme der Website). Orientierungswerte, kein Kostengutachten.`,
+src\content\ratgeber\solarpark-rueckbau-rueckbaubuergschaft.js:183:[Omitted long matching line]
+src\content\ratgeber\solarpark-rueckbau-rueckbaubuergschaft.js:188:          titel: "Rückbau in der Projektrechnung",
+src\content\ratgeber\solarpark-rueckbau-rueckbaubuergschaft.js:189:          text: "Der Solarpark-Rechner berücksichtigt Errichtung, Betrieb, Pacht und Rückbau-Rücklage über die Laufzeit.",
+src\content\ratgeber\solarpark-rueckbau-rueckbaubuergschaft.js:205:          caption: "Formen der Rückbausicherheit im Vergleich",
+src\content\ratgeber\solarpark-rueckbau-rueckbaubuergschaft.js:221:            "**Unbefristet** oder mindestens bis zur Abnahme des Rückbaus – keine Bürgschaft, die vor Vertragsende ausläuft.",
+src\content\ratgeber\solarpark-rueckbau-rueckbaubuergschaft.js:231:          text: "Beim Kauf von Bestandsanlagen gehört die Rückbausicherheit in jede Prüfung: Wer eine Projektgesellschaft übernimmt, übernimmt auch die Rückbaupflicht. Worauf Käufer achten, erklären die Ratgeber [Projektrechte kaufen](/ratgeber/projektrechte-kaufen-due-diligence) und [Wert einer Bestandsanlage](/ratgeber/solarpark-bestandsanlage-wert).",
+src\content\ratgeber\solarpark-rueckbau-rueckbaubuergschaft.js:237:      titel: "Was passiert beim Rückbau, wenn der Betreiber insolvent ist?",
+src\content\ratgeber\solarpark-rueckbau-rueckbaubuergschaft.js:242:          text: "**Bei einer Insolvenz des Betreibers wird der Rückbauanspruch in der Regel nur zu einer Forderung gegen die Insolvenzmasse – deshalb zählt dann allein die Sicherheit eines Dritten.** Rücklagen in der Projektgesellschaft stehen dann meist allen Gläubigern zur Verfügung, nicht bevorzugt dem Eigentümer.",
+src\content\ratgeber\solarpark-rueckbau-rueckbaubuergschaft.js:252:          text: "Bleibt eine Anlage nach Aufgabe der Nutzung stehen, kann die Bauaufsicht nach Landesbauordnungsrecht unter Umständen auch den Grundstückseigentümer als Zustandsverantwortlichen heranziehen. Wie weit das im Einzelfall reicht, ist eine Frage des Landesrechts und der Umstände. Umso wichtiger ist eine Sicherheit, die Sie selbst ziehen dürfen, und ein vertragliches Recht, bei Verzug selbst zurückbauen zu lassen.",
+src\content\ratgeber\solarpark-rueckbau-rueckbaubuergschaft.js:256:          text: "Absichern lässt sich zusätzlich über das Grundbuch: Die [Dienstbarkeit](/wissen/lexikon#dienstbarkeit) für den Betreiber sollte eine Löschungspflicht nach Rückbau vorsehen, und die Rückbaupflicht sollte gegenüber Rechtsnachfolgern fortgelten. Details im Ratgeber [Dienstbarkeit im Grundbuch](/ratgeber/dienstbarkeit-grundbuch-pv-pacht).",
+src\content\ratgeber\solarpark-rueckbau-rueckbaubuergschaft.js:262:      titel: "Was kostet der Rückbau eines Solarparks?",
+src\content\ratgeber\solarpark-rueckbau-rueckbaubuergschaft.js:267:          text: `**Die Brutto-Rückbaukosten liegen nach unserer vorsichtigen Annahme bei rund ${fmt(FREIFLAECHE.rueckbauProKwp)} € je kWp zum heutigen Preisstand; Schrotterlöse aus Stahl, Aluminium und Kupfer können den Nettoaufwand deutlich senken.** Für den ${MWP}-MWp-Beispielpark auf rund ${fmt(HA)} ha entspricht das etwa ${fmtEur(RUECKBAU_HEUTE)} oder rund ${fmtPct(ANTEIL_CAPEX, 0)} der schlüsselfertigen Errichtung von durchschnittlich ${fmt(FREIFLAECHE.capexProKwp.mittel)} €/kWp.`,
+src\content\ratgeber\solarpark-rueckbau-rueckbaubuergschaft.js:271:          caption: "Kostentreiber und Erlöspositionen beim Rückbau",
+src\content\ratgeber\solarpark-rueckbau-rueckbaubuergschaft.js:283:          fussnote: "Qualitative Übersicht. Tatsächliche Kosten hängen von Anlagengröße, Bauweise, Bodenverhältnissen, Kabellängen und Entsorgungspreisen zum Rückbauzeitpunkt ab.",
+src\content\ratgeber\solarpark-rueckbau-rueckbaubuergschaft.js:291:          text: "Nicht jeder Rückbau ist ein Ende: Häufig wird ein Park nach 25 bis 30 Jahren mit neuen Modulen weiterbetrieben. Dann entfällt der Rückbau zunächst, die Rückbaupflicht wandert mit. Mehr dazu im Ratgeber [Repowering von Solarparks](/ratgeber/repowering-solarpark).",
+src\content\ratgeber\solarpark-rueckbau-rueckbaubuergschaft.js:296:      id: "recycling",
+src\content\ratgeber\solarpark-rueckbau-rueckbaubuergschaft.js:297:      titel: "Recycling: Was mit Modulen, Stahl und Kabeln passiert",
+src\content\ratgeber\solarpark-rueckbau-rueckbaubuergschaft.js:298:      tocLabel: "Recycling und ElektroG",
+src\content\ratgeber\solarpark-rueckbau-rueckbaubuergschaft.js:306:          text: `Für die Behandlung schreibt das Gesetz Quoten vor: Bei Großgeräten der Kategorie 4, zu der PV-Module gehören, müssen mindestens ${fmtPct(ELEKTROG_VERWERTUNG, 0)} verwertet und mindestens ${fmtPct(ELEKTROG_RECYCLING, 0)} zur Wiederverwendung vorbereitet oder recycelt werden (§ 22 ElektroG). Den Großteil des Modulgewichts machen Glas und Aluminiumrahmen aus; die Rückgewinnung von Silizium und Silber ist technisch möglich, aber bisher weniger verbreitet.`,
+
+[Showing results with pagination = limit: 120]

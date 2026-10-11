@@ -1,0 +1,72 @@
+/**
+ * Registrierung der NetOps-eigenen "whitelisted" Methoden.
+ *
+ * Die Pfade entsprechen exakt den spaeteren Python-Methoden in der App
+ * `netops`. Wenn das Backend existiert, verschwindet diese Datei ersatzlos -
+ * die aufrufenden Komponenten bleiben unveraendert.
+ *
+ * Achtung fuer die Portierung: jede dieser Methoden braucht in Python eine
+ * explizite Rechtepruefung (`frappe.has_permission`) und einen Mandantenfilter.
+ * Der Mock prueft keine Rechte - er bildet nur die Datenform ab.
+ */
+import { registerMethod } from '../server.js'
+import { device_detail, device_list, dashboard_counters } from './dcim.js'
+import { prefix_addresses, prefix_list, prefix_tree } from './ipam.js'
+import { global_search } from './search.js'
+import { device_front_panel, rack_elevation, rack_list, topology } from './viz.js'
+import { audit_log, verify_chain } from './audit.js'
+import { firewall_rules, path_analysis, rule_hygiene } from './firewall.js'
+import { alert_list, connector_status, drift_list, set_drift_state } from './ops.js'
+import { backup_status } from './backup.js'
+import { incident_list, security_overview, vulnerability_list } from './security.js'
+import { cable_list, trace_path, vlan_list } from './infra.js'
+import { checklist_runs, contract_list, document_list, object_dossier } from './docs.js'
+import { screen_data, screen_list, screen_pairings, set_pairing_state } from './screens.js'
+
+export function registerNetopsMethods() {
+  registerMethod('netops.api.dcim.device_list', device_list)
+  registerMethod('netops.api.dcim.device_detail', device_detail)
+  registerMethod('netops.api.dcim.dashboard_counters', dashboard_counters)
+  registerMethod('netops.api.dcim.device_front_panel', device_front_panel)
+  registerMethod('netops.api.dcim.rack_elevation', rack_elevation)
+  registerMethod('netops.api.dcim.rack_list', rack_list)
+  registerMethod('netops.api.dcim.topology', topology)
+
+  registerMethod('netops.api.ipam.prefix_tree', prefix_tree)
+  registerMethod('netops.api.ipam.prefix_list', prefix_list)
+  registerMethod('netops.api.ipam.prefix_addresses', prefix_addresses)
+
+  registerMethod('netops.api.search.global_search', global_search)
+
+  registerMethod('netops.api.audit.verify_chain', verify_chain)
+  registerMethod('netops.api.audit.audit_log', audit_log)
+
+  registerMethod('netops.api.firewall.path_analysis', path_analysis)
+  registerMethod('netops.api.firewall.rule_hygiene', rule_hygiene)
+  registerMethod('netops.api.firewall.firewall_rules', firewall_rules)
+
+  registerMethod('netops.api.ops.connector_status', connector_status)
+  registerMethod('netops.api.ops.drift_list', drift_list)
+  registerMethod('netops.api.ops.set_drift_state', set_drift_state)
+  registerMethod('netops.api.ops.alert_list', alert_list)
+
+  registerMethod('netops.api.backup.backup_status', backup_status)
+
+  registerMethod('netops.api.security.vulnerability_list', vulnerability_list)
+  registerMethod('netops.api.security.incident_list', incident_list)
+  registerMethod('netops.api.security.security_overview', security_overview)
+
+  registerMethod('netops.api.dcim.cable_list', cable_list)
+  registerMethod('netops.api.dcim.trace_path', trace_path)
+  registerMethod('netops.api.ipam.vlan_list', vlan_list)
+
+  registerMethod('netops.api.docs.document_list', document_list)
+  registerMethod('netops.api.docs.checklist_runs', checklist_runs)
+  registerMethod('netops.api.docs.contract_list', contract_list)
+  registerMethod('netops.api.docs.object_dossier', object_dossier)
+
+  registerMethod('netops.api.screen.screen_list', screen_list)
+  registerMethod('netops.api.screen.screen_pairings', screen_pairings)
+  registerMethod('netops.api.screen.set_pairing_state', set_pairing_state)
+  registerMethod('netops.api.screen.screen_data', screen_data)
+}

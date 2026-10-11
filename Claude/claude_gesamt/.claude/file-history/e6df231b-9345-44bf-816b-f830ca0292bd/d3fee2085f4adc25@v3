@@ -1,0 +1,288 @@
+/** Gemeinsame Typen der App — gespiegelt zu den Frappe-Doctypes. */
+
+export type AnlagenTyp = 'PV' | 'Batteriespeicher' | 'Ladestation' | 'Kombi'
+export type AnlagenStatus = 'Geplant' | 'In Bau' | 'In Betrieb' | 'Ausser Betrieb'
+export type VorlagenTyp = 'IBN' | 'DC-Abnahme' | 'Wartung' | 'Schadenaufnahme' | 'Sonstige'
+export type ProtokollStatus = 'Entwurf' | 'In Arbeit' | 'Abgeschlossen' | 'Verifiziert' | 'Storniert'
+export type MangelStatus = 'Offen' | 'In Bearbeitung' | 'Erledigt' | 'Verifiziert' | 'Verworfen'
+export type BerichtStatus = 'Entwurf' | 'Eingereicht' | 'Genehmigt' | 'Abgelehnt'
+export type PruefStatus = 'Offen' | 'OK' | 'Warnung' | 'Fehler' | 'Uebersprungen'
+
+export type Feldtyp =
+  | 'Bewertung'
+  | 'Zahlenwert'
+  | 'Text'
+  | 'Auswahl'
+  | 'Foto'
+  | 'Ja-Nein'
+  | 'Signatur'
+  | 'Datum'
+  | 'Ueberschrift'
+
+export interface Anlage {
+  name: string
+  anlage_name: string
+  anlagen_typ: AnlagenTyp
+  status: AnlagenStatus
+  customer: string
+  project?: string | null
+  kwp: number
+  kwh_speicher?: number
+  ladepunkte?: number
+  anzahl_strings?: number
+  modul_uoc?: number
+  modul_isc?: number
+  adresse: string
+  plz?: string
+  ort?: string
+  gps_lat?: number
+  gps_lng?: number
+  offene_maengel?: number
+  letzte_pruefung?: string | null
+  naechste_wartung?: string | null
+  modified?: string
+}
+
+export interface Pruefpunkt {
+  pruefpunkt_key: string
+  nummer?: string
+  titel: string
+  feldtyp: Feldtyp
+  bewertungsoptionen?: string
+  auswahloptionen?: string
+  einheit?: string
+  min_wert?: number | null
+  max_wert?: number | null
+  nachkommastellen?: number
+  pflichtfeld?: 0 | 1
+  foto_erforderlich?: 0 | 1
+  hilfetext?: string
+  normverweis?: string
+  sichtbar_wenn?: string
+  mangelkategorie?: string
+}
+
+export interface Sektion {
+  sektion_name: string
+  sektion_key: string
+  sortierung?: number
+  beschreibung?: string
+  nur_fuer_anlagen_typ?: string
+  pruefpunkte: Pruefpunkt[]
+}
+
+export interface Vorlage {
+  name: string
+  titel: string
+  vorlage_typ: VorlagenTyp
+  anlagen_typ: AnlagenTyp | 'Alle'
+  revision: number
+  status?: string
+  sprache?: string
+  beschreibung?: string
+  anzahl_pruefpunkte?: number
+  sektionen?: Sektion[]
+  modified?: string
+}
+
+export interface Foto {
+  bild: string
+  beschriftung?: string
+  aufgenommen_am?: string
+  gps_lat?: number
+  gps_lng?: number
+  hash?: string
+  lokale_id?: string
+  /** Nur lokal: Blob-URL, solange das Foto noch nicht hochgeladen ist. */
+  vorschau?: string
+}
+
+export interface Ergebnis {
+  sektion: string
+  nummer?: string
+  titel: string
+  feldtyp: Feldtyp
+  pruefpunkt_key: string
+  bewertung?: string
+  wert_zahl?: number | null
+  einheit?: string
+  wert_text?: string
+  wert_ja_nein?: 0 | 1
+  wert_datum?: string
+  status: PruefStatus
+  plausi_meldung?: string
+  uebersteuert?: 0 | 1
+  uebersteuerung_grund?: string
+  fotos?: Foto[]
+  /** Servername des Mangels — wird ausschließlich vom Server gesetzt. */
+  mangel?: string | null
+  /** Lokale UUID eines offline erfassten Mangels; der Sync löst sie auf. */
+  mangel_lokal?: string
+  bemerkung?: string
+  erfasst_am?: string
+}
+
+export interface Messzeile {
+  string_nr: string
+  wechselrichter?: string
+  anzahl_module: number
+  uoc?: number | null
+  isc?: number | null
+  riso?: number | null
+  strangstrom?: number | null
+  einstrahlung?: number | null
+  modultemperatur?: number | null
+  status: 'Offen' | 'OK' | 'Warnung' | 'Fehler'
+  plausi_meldung?: string
+  uebersteuert?: 0 | 1
+  uebersteuerung_grund?: string
+  bemerkung?: string
+}
+
+export interface Unterschrift {
+  rolle: 'Techniker' | 'Auftraggeber' | 'Bauleiter' | 'Subunternehmer' | 'Pruefer'
+  name_unterzeichner: string
+  signatur: string
+  unterzeichnet_am: string
+  gps?: string
+}
+
+export interface Protokoll {
+  name?: string
+  lokale_id: string
+  anlage: string
+  vorlage: string
+  vorlage_revision?: number
+  vorlage_typ?: VorlagenTyp
+  status: ProtokollStatus
+  pruefer: string
+  pruef_datum: string
+  abschluss_datum?: string | null
+  anwesende_personen?: string
+  wetter?: string
+  temperatur?: number | null
+  gps_koordinaten?: string
+  messmittel?: string
+  gesamtbewertung?: '' | 'Bestanden' | 'Bestanden mit Auflagen' | 'Nicht bestanden'
+  zusammenfassung?: string
+  fortschritt?: number
+  anzahl_pruefpunkte?: number
+  anzahl_erledigt?: number
+  ergebnisse: Ergebnis[]
+  messdaten: Messzeile[]
+  unterschriften: Unterschrift[]
+  modified?: string
+}
+
+export interface Mangel {
+  name?: string
+  lokale_id: string
+  titel: string
+  anlage: string
+  kategorie: string
+  schweregrad: string
+  status: MangelStatus
+  prioritaet?: string
+  beschreibung: string
+  pruefprotokoll?: string | null
+  /** Lokale UUID des Protokolls, solange dieses noch nicht synchronisiert ist. */
+  pruefprotokoll_lokal?: string
+  pruefpunkt_ref?: string
+  komponente?: string
+  zugewiesen_an?: string
+  gemeldet_am: string
+  faellig_am?: string
+  ueberfaellig?: 0 | 1
+  massnahme?: string
+  erledigt_am?: string
+  fotos?: Foto[]
+  erledigt_fotos?: Foto[]
+  gps_lat?: number
+  gps_lng?: number
+  modified?: string
+}
+
+export interface BerichtPosition {
+  beschreibung: string
+  bereich: string
+  menge?: number | null
+  einheit?: string
+  fortschritt?: number | null
+  stunden?: number | null
+  foto?: string
+  anmerkung?: string
+}
+
+export interface Tagesbericht {
+  name?: string
+  lokale_id: string
+  bericht_typ: 'Bauleiter' | 'Subunternehmer'
+  anlage: string
+  datum: string
+  status: BerichtStatus
+  ersteller: string
+  supplier?: string
+  wetter?: string
+  temperatur?: number | null
+  arbeitsbeginn?: string
+  arbeitsende?: string
+  personal_anzahl?: number | null
+  witterungsbedingter_ausfall?: 0 | 1
+  ausfallstunden?: number | null
+  arbeitsstunden_gesamt?: number | null
+  positionen: BerichtPosition[]
+  fortschritt_prozent?: number | null
+  besondere_vorkommnisse?: string
+  materiallieferungen?: string
+  fotos?: Foto[]
+  unterschriften: Unterschrift[]
+  ablehnungsgrund?: string
+  modified?: string
+}
+
+export interface Schweregrad {
+  name: string
+  code: string
+  bezeichnung: string
+  farbe?: string
+  sla_tage: number
+  blockiert_abnahme: 0 | 1
+}
+
+export interface Mangelkategorie {
+  name: string
+  kategorie_name: string
+  bereich: string
+  farbe?: string
+}
+
+export interface Einstellungen {
+  riso_pro_modul_kohm: number
+  riso_minimum_kohm: number
+  uoc_toleranz_prozent: number
+  isc_toleranz_prozent: number
+  uebersteuerung_erlaubt: 0 | 1
+  nachweisfoto_pflicht: 0 | 1
+  max_foto_mb: number
+  foto_max_kante_px: number
+  sync_batch_groesse: number
+  offline_puffer_mb: number
+}
+
+export interface Benutzer {
+  user: string
+  vollname: string
+  rollen: string[]
+  mitarbeiter?: { name: string; employee_name: string; designation?: string } | null
+  sprache?: string
+}
+
+export interface Bootstrap {
+  benutzer: Benutzer
+  einstellungen: Einstellungen
+  mangelkategorien: Mangelkategorie[]
+  schweregrade: Schweregrad[]
+  vorlagen: Vorlage[]
+  anlagen: Anlage[]
+  server_zeit: string
+}

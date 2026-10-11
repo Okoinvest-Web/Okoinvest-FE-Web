@@ -1,0 +1,43 @@
+# CRM (Next.js + ERPNext)
+
+CRM-Oberfläche in Next.js, die Daten aus ERPNext liest (Lead, Opportunity, Customer, Contact, ToDo).
+
+## Starten
+
+```bash
+npm install
+npm run dev   # http://localhost:3000
+```
+
+Ohne Konfiguration läuft die App im **Demo-Modus** mit Beispieldaten im Speicher (Neustart setzt sie zurück).
+
+Demo-Zugänge (Passwort `demo`): `max@firma.example` und `lisa@firma.example` (Handelsvertreter, sehen nur Eigenes), `leitung@firma.example` (Vertriebsleitung, sieht alles).
+
+## Mit ERPNext verbinden
+
+1. `.env.example` nach `.env.local` kopieren, `ERPNEXT_URL` und `SESSION_SECRET` (mind. 32 Zeichen) eintragen.
+2. Dev-Server neu starten und mit einem ERPNext-Benutzer anmelden. Unten in der Seitenleiste stehen dann Rolle und „ERPNext“.
+
+Jeder Nutzer meldet sich mit seinem **eigenen ERPNext-Benutzer** an. Die App fragt ERPNext mit dessen Sitzung ab – ERPNext entscheidet also selbst, was jemand sehen und ändern darf. Die ERPNext-Sitzung liegt verschlüsselt (AES-GCM) im HttpOnly-Cookie und gelangt nie in Browser-Code.
+
+### Handelsvertreter einrichten (Datentrennung)
+
+Für jeden selbstständigen Handelsvertreter in ERPNext:
+
+1. Benutzer anlegen mit Rolle **Sales User** (nicht *Sales Manager*).
+2. **Benutzerberechtigungen** (User Permission) setzen, damit nur eigene Datensätze sichtbar sind – z. B. Lead nach `lead_owner`, Kunde nach `account_manager`, Opportunity nach `opportunity_owner`. Alternativ in den Rollenberechtigungen „Nur wenn Ersteller“ aktivieren.
+3. Bei Kunden das Feld **Kundenbetreuer** (`account_manager`) auf den Vertreter setzen.
+
+Nutzer mit der Rolle **Sales Manager** oder **System Manager** gelten in der App als Vertriebsleitung (Filter „Alle/Meine“, Team-Auswertung).
+
+**Vor dem Produktivbetrieb mit echten Vertreter-Zugängen prüfen**, dass ein Vertreter über die ERPNext-Oberfläche und die API tatsächlich keine fremden Leads, Kunden und Chancen öffnen kann – die App verlässt sich auf diese Berechtigungen.
+
+Nur für rein interne Teams ohne Datentrennung: `ERPNEXT_AUTH=token` mit API-Key/Secret eines Dienstkontos. Dann sehen alle Nutzer alle Daten.
+
+## Aufbau
+
+- `src/lib/data/source.ts` – gemeinsame Schnittstelle
+- `src/lib/data/mock.ts` – Beispieldaten
+- `src/lib/data/erpnext.ts` – Frappe-REST-Client (`/api/resource/<DocType>`)
+- `src/lib/actions.ts` – Server Actions mit serverseitiger Prüfung
+- `src/app/(crm)/…` – Seiten

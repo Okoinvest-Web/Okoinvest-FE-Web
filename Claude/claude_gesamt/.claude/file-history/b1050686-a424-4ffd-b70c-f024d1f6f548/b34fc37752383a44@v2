@@ -1,0 +1,314 @@
+/**
+ * Was das neue Elektrizitätswirtschaftsgesetz für diese Anlagen bedeutet.
+ *
+ * Das ElWG ist Ende Dezember 2025 in Kraft getreten, wirkt aber in
+ * Stufen: Der Sozialtarif ab April 2026, die neuen Regeln für
+ * Energiegemeinschaften ab Oktober 2026, die neue Entgeltstruktur und
+ * der Versorgungsinfrastrukturbeitrag ab Jänner 2027.
+ *
+ * Warum das in ein Betriebsportal gehört: Für einen Betreiber ist die
+ * Frage nicht, was im Gesetz steht, sondern was seine Anlage ab wann
+ * kostet. Diese Datei rechnet das aus - aus den tatsächlich
+ * eingespeisten Kilowattstunden und der tatsächlichen Anlagenleistung,
+ * nicht aus einer Faustformel.
+ *
+ * Zur Belastbarkeit: Die Beträge stehen im Gesetz als Höchstwerte;
+ * die tatsächliche Höhe legt eine Verordnung fest. Wo eine Quelle
+ * mehrdeutig ist - etwa bei der Freigrenze des Netzanschlussentgelts,
+ * für die sich zwischen Entwurf und Fassung 7 und 15 kW finden -,
+ * steht das in der Ausgabe und wird nicht weggerundet. Ein Portal,
+ * das eine unsichere Zahl als sicher ausgibt, ist schlimmer als eines,
+ * das schweigt.
+ *
+ * Quellen: WKO Niederösterreich zum finalen ElWG; Oesterreichs
+ * Energie; Wiener Stadtwerke zur Struktur der Netzentgelte ab 2027.
+ */
+
+export type Wirksamkeit = "gilt" | "kommt";
+
+export interface Regelung {
+  schluessel: string;
+  titel: string;
+  /** Ab wann sie wirkt, als ISO-Datum. */
+  ab: string;
+  /** Was sie sagt, in einem Absatz. */
+  inhalt: string;
+  /** Was der Betrieb davon hat oder dagegen tun kann. */
+  handlung: string;
+  /** Wie belastbar die Zahl ist. */
+  belastbarkeit: "gesetzestext" | "verordnung offen" | "quellen uneinheitlich";
+  quelle: string;
+}
+
+/** Stichtag, ab dem der Versorgungsinfrastrukturbeitrag greift. */
+export const VIB_AB = "2027-01-01";
+
+/** Höchstsatz des Versorgungsinfrastrukturbeitrags in Cent je kWh. */
+export const VIB_CT_KWH = 0.05;
+
+/** Einspeiseleistung, bis zu der der Beitrag entfällt, in kW. */
+export const VIB_FREIGRENZE_KW = 20;
+
+/** Stichtag der dauerhaften Spitzenkappung. */
+export const SPITZENKAPPUNG_AB = "2027-01-01";
+
+/**
+ * Anteil der Modulleistung, unter den die Einspeisung nicht gedrückt
+ * werden darf.
+ *
+ * Umgekehrt gelesen: Oberhalb von 70 Prozent der Modulleistung darf
+ * entschädigungslos gekappt werden. Im Entwurf standen 60 Prozent -
+ * die Fassung ist für Betreiber günstiger ausgefallen.
+ */
+export const SPITZENKAPPUNG_ANTEIL = 0.7;
+
+/** Freigrenze des Netzanschlussentgelts in kW netzwirksamer Leistung. */
+export const ANSCHLUSS_FREIGRENZE_KW = 15;
+
+/**
+ * Netzanschlussentgelt je kW, gestaffelt nach netzwirksamer Leistung.
+ *
+ * Die Staffel ist im Gesetz nur an den Rändern beziffert; dazwischen
+ * wird interpoliert. Deshalb sind hier nur die belegten Stützstellen
+ * hinterlegt, und die Ausgabe nennt den Bereich statt eines Betrags,
+ * der genauer aussieht, als er ist.
+ */
+export const ANSCHLUSS_STUETZSTELLEN: { bisKw: number; euroJeKw: number }[] = [
+  { bisKw: 20, euroJeKw: 13 },
+  { bisKw: 20000, euroJeKw: 91 },
+];
+
+export const REGELUNGEN: Regelung[] = [
+  {
+    schluessel: "vib",
+    titel: "Versorgungsinfrastrukturbeitrag auf die Einspeisung",
+    ab: VIB_AB,
+    inhalt:
+      "Auf jede eingespeiste Kilowattstunde wird ein Beitrag von höchstens 0,05 Cent eingehoben. Er senkt die Netzkosten der Verbraucher. Einspeiser bis 20 kW netzwirksamer Leistung sind befreit.",
+    handlung:
+      "Jede Kilowattstunde, die im Betrieb bleibt, fällt nicht darunter. Der Beitrag ist klein, wirkt aber in dieselbe Richtung wie alles andere: Eigenverbrauch vor Einspeisung.",
+    belastbarkeit: "verordnung offen",
+    quelle: "ElWG, Höchstsatz laut WKO; Festlegung durch Verordnung",
+  },
+  {
+    schluessel: "spitzenkappung",
+    titel: "Entschädigungslose Spitzenkappung",
+    ab: SPITZENKAPPUNG_AB,
+    inhalt:
+      "Bei drohender Netzüberlastung darf die Einspeisung gekappt werden, ohne dass dafür Entschädigung fällig wird - bei Photovoltaik bis herunter auf 70 Prozent der Modulleistung. Im Entwurf waren es 60 Prozent.",
+    handlung:
+      "Die gekappte Energie ist nur zu retten, wenn sie vor dem Zähler bleibt: Speicher in den Mittagsstunden laden, Ladepunkte takten, Prozesswärme vorziehen. Bei einer Anlage mit Gleichstromüberbau ist der Hebel am größten.",
+    belastbarkeit: "gesetzestext",
+    quelle: "ElWG; WKO Niederösterreich",
+  },
+  {
+    schluessel: "netzanschluss",
+    titel: "Höheres Netzanschlussentgelt für Erzeugungsanlagen",
+    ab: "2025-12-24",
+    inhalt:
+      "Erzeugungsanlagen zahlen für den Netzanschluss nach netzwirksamer Leistung: 13 Euro je kW im unteren Bereich, 91 Euro je kW bei sehr großen Anlagen. Bis 15 kW entfällt das Entgelt; bei Nutzung eines bestehenden Anschlusses zählt nur die Leistung darüber.",
+    handlung:
+      "Betrifft Neuanschlüsse und Erweiterungen, nicht den laufenden Betrieb. Vor einer Erweiterung lohnt die Frage, ob sie am bestehenden Anschlusspunkt bleibt.",
+    belastbarkeit: "quellen uneinheitlich",
+    quelle: "WKO (15 kW); frühere Entwurfsfassungen nannten 7 kW",
+  },
+  {
+    schluessel: "flexibler_anschluss",
+    titel: "Flexibler Netzzugang als Übergang",
+    ab: "2025-12-24",
+    inhalt:
+      "Wo das Netz voll ist, kann der Anschluss vorübergehend mit verringerter Kapazität erfolgen - je nach Netzebene für 12, 18 oder 24 Monate. Danach besteht der volle Zugang. Der Netzbetreiber muss anschließen und ausbauen.",
+    handlung:
+      "Ein flexibler Anschluss ist einem abgelehnten vorzuziehen: Die Anlage geht früher in Betrieb. Für die Übergangszeit gilt dasselbe wie bei der Spitzenkappung - was nicht eingespeist werden darf, muss selbst verbraucht werden.",
+    belastbarkeit: "gesetzestext",
+    quelle: "ElWG; WKO Niederösterreich",
+  },
+  {
+    schluessel: "mehrere_standorte",
+    titel: "Erzeugung und Verbrauch an verschiedenen Standorten",
+    ab: "2026-10-01",
+    inhalt:
+      "Ein Unternehmen mit mehreren Standorten darf an einem erzeugen und an einem anderen verbrauchen, ohne dafür eine Energiegemeinschaft gründen oder eigene Verträge schließen zu müssen.",
+    handlung:
+      "Für einen Betrieb mit mehreren Standorten ist das die größte Änderung: Überschuss aus der Halle kann die Werkstatt versorgen, statt zur Einspeisevergütung wegzugehen.",
+    belastbarkeit: "gesetzestext",
+    quelle: "WKO Niederösterreich zum finalen ElWG",
+  },
+  {
+    schluessel: "entgeltstruktur",
+    titel: "Neue Struktur der Netzentgelte",
+    ab: "2027-01-01",
+    inhalt:
+      "Die Entgelte verschieben sich von rein verbrauchsabhängigen hin zu leistungsbezogenen Bestandteilen - im Kern zur vereinbarten Anschlusskapazität. Netzanschluss und Netzbereitstellung werden zu einem Entgelt zusammengefasst.",
+    handlung:
+      "Was heute die Lastspitze kostet, kostet künftig die bestellte Kapazität. Lastspitzenkappung wird dadurch nicht weniger wert, sondern mehr - und sie muss früher geplant werden, weil die Kapazität vereinbart wird.",
+    belastbarkeit: "verordnung offen",
+    quelle: "Wiener Stadtwerke; E-Control-Verordnung ausstehend",
+  },
+];
+
+/* ------------------------------------------------------------------ */
+/* Rechnen                                                             */
+/* ------------------------------------------------------------------ */
+
+export interface Anlagenlage {
+  bezeichnung: string;
+  kwp: number;
+  /** Netzwirksame Einspeiseleistung in kW. */
+  einspeiseleistungKw: number;
+  /** Eingespeiste Energie im Jahr, kWh. */
+  einspeisungKwhJahr: number;
+  /**
+   * Viertelstundenwerte der Einspeiseleistung eines Jahres, kW.
+   *
+   * Daraus wird die Spitzenkappung exakt gerechnet statt geschätzt.
+   * Fehlen sie, bleibt die Kappung unbeziffert - eine geschätzte
+   * Kappung wäre eine Zahl, die niemand gegenüber dem Netzbetreiber
+   * vertreten kann.
+   */
+  einspeisungViertelstunden?: number[];
+}
+
+export interface Betroffenheit {
+  schluessel: string;
+  titel: string;
+  ab: string;
+  /** Jährliche Belastung in Euro; null, wenn nicht bezifferbar. */
+  euroJahr: number | null;
+  /** Betroffene Energiemenge in kWh, soweit ermittelbar. */
+  kwhJahr: number | null;
+  begruendung: string;
+  handlung: string;
+}
+
+/** Rundet auf Cent. */
+function cent(betrag: number): number {
+  return Math.round(betrag * 100) / 100;
+}
+
+/**
+ * Der Versorgungsinfrastrukturbeitrag für eine Anlage.
+ *
+ * Die Freigrenze bezieht sich auf die netzwirksame Leistung, nicht
+ * auf die Modulleistung: Eine Anlage mit 30 kWp und einer auf 15 kW
+ * begrenzten Einspeisung bleibt darunter.
+ */
+export function versorgungsbeitrag(lage: Anlagenlage): Betroffenheit {
+  const befreit = lage.einspeiseleistungKw <= VIB_FREIGRENZE_KW;
+
+  return {
+    schluessel: "vib",
+    titel: "Versorgungsinfrastrukturbeitrag",
+    ab: VIB_AB,
+    euroJahr: befreit
+      ? 0
+      : cent((lage.einspeisungKwhJahr * VIB_CT_KWH) / 100),
+    kwhJahr: befreit ? 0 : Math.round(lage.einspeisungKwhJahr),
+    begruendung: befreit
+      ? `Die netzwirksame Einspeiseleistung liegt bei ${lage.einspeiseleistungKw.toFixed(0)} kW und damit unter der Freigrenze von ${VIB_FREIGRENZE_KW} kW. Der Beitrag fällt nicht an.`
+      : `${Math.round(lage.einspeisungKwhJahr).toLocaleString("de-AT")} kWh Einspeisung im Jahr, höchstens ${VIB_CT_KWH.toString().replace(".", ",")} Cent je kWh.`,
+    handlung: befreit
+      ? ""
+      : "Jede Kilowattstunde, die im Betrieb bleibt, fällt nicht darunter.",
+  };
+}
+
+/**
+ * Was die Spitzenkappung gekostet hätte.
+ *
+ * Gerechnet wird über die tatsächlichen Viertelstundenwerte: Alles
+ * über 70 Prozent der Modulleistung wäre im Kappungsfall verloren.
+ * Das ist eine Obergrenze - gekappt wird nur bei drohender
+ * Netzüberlastung, nicht immer. Genau deshalb steht die Zahl als
+ * "höchstens" da und nicht als Erwartungswert.
+ */
+export function spitzenkappung(
+  lage: Anlagenlage,
+  verguetungCtKwh: number,
+): Betroffenheit {
+  const grenzeKw = lage.kwp * SPITZENKAPPUNG_ANTEIL;
+  const werte = lage.einspeisungViertelstunden;
+
+  if (!werte || werte.length === 0) {
+    return {
+      schluessel: "spitzenkappung",
+      titel: "Spitzenkappung",
+      ab: SPITZENKAPPUNG_AB,
+      euroJahr: null,
+      kwhJahr: null,
+      begruendung: `Die Kappungsgrenze läge bei ${grenzeKw.toFixed(0)} kW. Ohne Viertelstundenwerte lässt sich nicht beziffern, wie viel darüber anfällt - und eine Schätzung wäre gegenüber dem Netzbetreiber wertlos.`,
+      handlung: "",
+    };
+  }
+
+  const ueber = werte.reduce(
+    (summe, kw) => summe + Math.max(0, kw - grenzeKw) * 0.25,
+    0,
+  );
+
+  const stunden = werte.filter((kw) => kw > grenzeKw).length * 0.25;
+  const hoechste = werte.reduce((m, kw) => Math.max(m, kw), 0);
+  const abstand = grenzeKw - hoechste;
+
+  if (ueber < 1) {
+    /*
+     * Kein Treffer ist hier die häufigste und die wichtigste Antwort.
+     *
+     * Anlagen mit einer vertraglich begrenzten Einspeisung liegen
+     * meist schon unter der neuen Grenze - für sie ändert sich
+     * nichts, und genau das gehört gesagt. Ohne den Abstand wäre die
+     * Aussage aber nur halb: Wer erweitert, verschiebt beide Grenzen
+     * unterschiedlich, und dann zählt, wie viel Luft heute da ist.
+     */
+    return {
+      schluessel: "spitzenkappung",
+      titel: "Spitzenkappung",
+      ab: SPITZENKAPPUNG_AB,
+      euroJahr: 0,
+      kwhJahr: 0,
+      begruendung: `Die Einspeisung erreichte im betrachteten Zeitraum höchstens ${hoechste.toFixed(0)} kW. Die Kappungsgrenze läge bei ${grenzeKw.toFixed(0)} kW, das sind ${(SPITZENKAPPUNG_ANTEIL * 100).toFixed(0)} Prozent der Modulleistung. Abstand: ${abstand.toFixed(0)} kW. Für diese Anlage ändert die Regelung nichts.`,
+      handlung:
+        abstand < grenzeKw * 0.15
+          ? "Der Abstand ist knapp. Vor einer Erweiterung sollte gerechnet werden: Die Kappungsgrenze wächst mit der Modulleistung, die vereinbarte Einspeisegrenze im Netzzugangsvertrag nicht."
+          : "",
+    };
+  }
+
+  return {
+    schluessel: "spitzenkappung",
+    titel: "Spitzenkappung",
+    ab: SPITZENKAPPUNG_AB,
+    euroJahr: cent((ueber * verguetungCtKwh) / 100),
+    kwhJahr: Math.round(ueber),
+    begruendung: `In ${stunden.toFixed(0)} Stunden lag die Einspeisung über ${grenzeKw.toFixed(0)} kW, in der Spitze bei ${hoechste.toFixed(0)} kW. Im Kappungsfall wären das höchstens ${Math.round(ueber).toLocaleString("de-AT")} kWh - gekappt wird nur bei drohender Netzüberlastung, nicht immer.`,
+    handlung:
+      "Diese Energie ist nur zu retten, wenn sie vor dem Zähler bleibt: Speicher in den Mittagsstunden laden, Ladepunkte takten, Prozesswärme vorziehen.",
+  };
+}
+
+/**
+ * Alle bezifferbaren Auswirkungen für eine Anlage.
+ *
+ * Sortiert nach Betrag, weil danach entschieden wird - und nicht nach
+ * Paragraphennummer.
+ */
+export function betroffenheit(
+  lage: Anlagenlage,
+  verguetungCtKwh: number,
+): Betroffenheit[] {
+  return [versorgungsbeitrag(lage), spitzenkappung(lage, verguetungCtKwh)].sort(
+    (a, b) => (b.euroJahr ?? -1) - (a.euroJahr ?? -1),
+  );
+}
+
+/** Steht die Regelung schon in Kraft, gemessen an einem Stichtag? */
+export function wirksamkeit(regelung: Regelung, heute: string): Wirksamkeit {
+  return regelung.ab <= heute ? "gilt" : "kommt";
+}
+
+/** Tage bis zum Inkrafttreten; negativ, wenn schon in Kraft. */
+export function tageBis(regelung: Regelung, heute: string): number {
+  const ab = Date.parse(regelung.ab + "T00:00:00Z");
+  const jetzt = Date.parse(heute + "T00:00:00Z");
+  return Math.round((ab - jetzt) / 86400000);
+}

@@ -1,0 +1,31 @@
+param([Parameter(Mandatory=$true)][string]$Path,[Parameter(Mandatory=$true)][string]$OutDir)
+if(-not (Test-Path $OutDir)){ New-Item -ItemType Directory -Force -Path $OutDir | Out-Null }
+$bytes=[IO.File]::ReadAllBytes($Path)
+$latin=[Text.Encoding]::GetEncoding(28591)
+$raw=$latin.GetString($bytes)
+$n=0
+$idx=0
+while($true){
+  $i=$raw.IndexOf('/Subtype /Image',$idx)
+  if($i -lt 0){ $i=$raw.IndexOf('/Subtype/Image',$idx) }
+  if($i -lt 0){ break }
+  $s=$raw.IndexOf('stream',$i)
+  if($s -lt 0){ break }
+  $p=$s+6
+  if($p -lt $raw.Length -and $raw[$p] -eq "`r"){$p++}
+  if($p -lt $raw.Length -and $raw[$p] -eq "`n"){$p++}
+  $e=$raw.IndexOf('endstream',$p)
+  if($e -lt 0){ break }
+  $len=$e-$p
+  # trailing EOL vor endstream abschneiden
+  while($len -gt 0 -and ($bytes[$p+$len-1] -eq 10 -or $bytes[$p+$len-1] -eq 13)){ $len-- }
+  if($len -gt 2000 -and $bytes[$p] -eq 0xFF -and $bytes[$p+1] -eq 0xD8){
+    $n++
+    $chunk=New-Object byte[] $len
+    [Array]::Copy($bytes,$p,$chunk,0,$len)
+    $f=Join-Path $OutDir ("p{0:D3}.jpg" -f $n)
+    [IO.File]::WriteAllBytes($f,$chunk)
+  }
+  $idx=$e+9
+}
+Write-Output "extracted=$n dir=$OutDir"

@@ -1,0 +1,389 @@
+import type { Metadata } from "next";
+
+import { Tabelle, Zeile, Zelle } from "@/components/tabelle";
+import {
+  Angabe,
+  Balken,
+  Karte,
+  Kennzahl,
+  LeerZustand,
+  Seitenkopf,
+  Status,
+} from "@/components/ui";
+import { ENERGIE_FARBEN } from "@/lib/farben";
+import {
+  formatDatumZeit,
+  formatProzent,
+  formatRelativ,
+  formatZahl,
+} from "@/lib/format";
+import {
+  ladeAnlagen,
+  ladeFernwartungsSitzungen,
+  ladeKomponenten,
+  ladePortalBenutzer,
+  ladeVorfaelle,
+} from "@/lib/portal-daten";
+import { berechneFristen, demoEintraege } from "@/lib/sicherheit/audit";
+import { findeRolle } from "@/lib/sicherheit/rollen";
+import { requireRecht } from "@/lib/session";
+
+export const metadata: Metadata = { title: "Cybersicherheit" };
+
+function schweregradTon(grad: string | undefined) {
+  switch (grad) {
+    case "Kritisch":
+      return "kritisch" as const;
+    case "Hoch":
+      return "ernst" as const;
+    case "Mittel":
+      return "hinweis" as const;
+    default:
+      return "neutral" as const;
+  }
+}
+
+export default async function SicherheitSeite() {
+  await requireRecht("sicherheit.lesen");
+
+  const [vorfaelle, komponenten, benutzer, sitzungen, anlagen] =
+    await Promise.all([
+      ladeVorfaelle(),
+      ladeKomponenten(),
+      ladePortalBenutzer(),
+      ladeFernwartungsSitzungen(),
+      ladeAnlagen(),
+    ]);
+
+  const protokoll = demoEintraege();
+
+  const offeneVorfaelle = vorfaelle.filter((v) => v.status !== "Behoben");
+  const meldepflichtige = vorfaelle.filter((v) => v.meldepflichtig === 1);
+
+  const veraltet = komponenten.filter((k) => k.firmware_aktuell === 0);
+  const firmwareQuote =
+    komponenten.length > 0
+      ? ((komponenten.length - veraltet.length) / komponenten.length) * 100
+      : 100;
+
+  const mitMfa = benutzer.filter((b) => b.mfa_aktiv === 1);
+  const mfaQuote =
+    benutzer.length > 0 ? (mitMfa.length / benutzer.length) * 100 : 0;
+
+  const abgewiesen = sitzungen.filter((s) => s.status === "Abgelehnt").length;
+
+  const anlagenName = (name: string | undefined) =>
+    anlagen.find((a) => a.name === name)?.anlagen_name ?? name;
+
+  return (
+    <div className="space-y-6">
+      <Seitenkopf
+        titel="Cybersicherheit"
+        beschreibung="Sicherheitslage, Nachweise und Meldepflichten nach NIS2 / NISG"
+      />
+
+      <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+        <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+          <strong className="font-medium text-slate-900 dark:text-slate-100">
+            Warum das hier steht.
+          </strong>{" "}
+          Energieanlagen zählen zu den Sektoren, für die NIS2 und das
+          österreichische Netz- und Informationssystemsicherheitsgesetz
+          verschärfte Pflichten vorsehen: Risikomanagement, Nachweis von
+          Zugriffen, und vor allem enge Meldefristen. Diese Seite bündelt, was
+          Sie dafür brauchen – und rechnet die Fristen aus, weil Verspätung der
+          häufigste Verstoß ist.
+        </p>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Kennzahl
+          label="Offene Vorfälle"
+          wert={formatZahl(offeneVorfaelle.length, 0)}
+          hinweis={`${meldepflichtige.length} meldepflichtig`}
+        />
+        <Kennzahl
+          label="Firmware aktuell"
+          wert={formatProzent(firmwareQuote, 0)}
+          hinweis={`${veraltet.length} Komponenten mit Update`}
+          farbe={ENERGIE_FARBEN.eigenverbrauch}
+          verzoegerung={60}
+        />
+        <Kennzahl
+          label="Zwei-Faktor-Anmeldung"
+          wert={formatProzent(mfaQuote, 0)}
+          hinweis={`${mitMfa.length} von ${benutzer.length} Konten`}
+          verzoegerung={120}
+        />
+        <Kennzahl
+          label="Abgewiesene Zugriffe"
+          wert={formatZahl(abgewiesen, 0)}
+          hinweis="Fernwartung"
+          verzoegerung={180}
+        />
+      </div>
+
+      <Karte
+        titel="Sicherheitsvorfälle"
+        beschreibung="Erkannte Ereignisse und ihre Meldefristen"
+      >
+        {vorfaelle.length === 0 ? (
+          <LeerZustand text="Es sind keine Sicherheitsvorfälle erfasst." />
+        ) : (
+          <ul className="space-y-4">
+            {vorfaelle.map((vorfall) => {
+              const fristen = vorfall.bekannt_seit
+                ? berechneFristen(vorfall.bekannt_seit)
+                : [];
+
+              return (
+                <li
+                  key={vorfall.name}
+                  className="rounded-lg border border-slate-200 p-4 dark:border-slate-800"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-medium text-slate-900 dark:text-slate-100">
+                        {vorfall.betreff}
+                      </p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        {vorfall.kategorie} · {anlagenName(vorfall.anlage)} ·
+                        bekannt seit {formatRelativ(vorfall.bekannt_seit)}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 gap-2">
+                      <Status ton={schweregradTon(vorfall.schweregrad)}>
+                        {vorfall.schweregrad ?? "–"}
+                      </Status>
+                      <Status
+                        ton={vorfall.status === "Behoben" ? "gut" : "hinweis"}
+                      >
+                        {vorfall.status ?? "–"}
+                      </Status>
+                    </div>
+                  </div>
+
+                  <p className="mt-2.5 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+                    {vorfall.beschreibung}
+                  </p>
+
+                  {vorfall.massnahmen && (
+                    <p className="mt-2 rounded-md bg-slate-50 px-3 py-2 text-xs leading-relaxed text-slate-600 dark:bg-slate-800/50 dark:text-slate-300">
+                      <strong className="font-medium">Maßnahmen:</strong>{" "}
+                      {vorfall.massnahmen}
+                    </p>
+                  )}
+
+                  {vorfall.meldepflichtig === 1 ? (
+                    <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                      {fristen.map((frist) => (
+                        <div
+                          key={frist.frist.schluessel}
+                          className={`rounded-md px-3 py-2 ${
+                            frist.ueberfaellig
+                              ? "bg-rose-50 dark:bg-rose-950/50"
+                              : frist.verbleibendeStunden < 12
+                                ? "bg-amber-50 dark:bg-amber-950/50"
+                                : "bg-slate-50 dark:bg-slate-800/50"
+                          }`}
+                        >
+                          <p className="text-xs font-medium text-slate-700 dark:text-slate-200">
+                            {frist.frist.bezeichnung}
+                          </p>
+                          <p
+                            className={`mt-0.5 text-xs tabular-nums ${
+                              frist.ueberfaellig
+                                ? "font-medium text-rose-700 dark:text-rose-300"
+                                : "text-slate-500 dark:text-slate-400"
+                            }`}
+                          >
+                            {frist.ueberfaellig
+                              ? "überfällig"
+                              : `noch ${formatZahl(frist.verbleibendeStunden, 0)} h`}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+                      Nicht meldepflichtig – keine erhebliche Auswirkung auf die
+                      Diensterbringung.
+                    </p>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </Karte>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Karte
+          titel="Zustand der Komponenten"
+          beschreibung="Veraltete Firmware ist das häufigste Einfallstor"
+        >
+          <div className="mb-4">
+            <Balken
+              label="Komponenten mit aktueller Firmware"
+              anteil={firmwareQuote}
+              wertText={`${komponenten.length - veraltet.length} von ${komponenten.length}`}
+              farbe={ENERGIE_FARBEN.eigenverbrauch}
+            />
+          </div>
+
+          {veraltet.length === 0 ? (
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              Alle erfassten Komponenten sind auf dem aktuellen Stand.
+            </p>
+          ) : (
+            <ul className="space-y-2">
+              {veraltet.map((komponente) => (
+                <li
+                  key={komponente.name}
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-amber-50 px-3 py-2 dark:bg-amber-950/40"
+                >
+                  <span className="min-w-0">
+                    <span className="block text-sm font-medium text-amber-900 dark:text-amber-200">
+                      {komponente.bezeichnung}
+                    </span>
+                    <span className="block text-xs text-amber-800 dark:text-amber-300">
+                      {komponente.hersteller} {komponente.modell} · Firmware{" "}
+                      {komponente.firmware}
+                    </span>
+                  </span>
+                  <Status ton="hinweis">Update verfügbar</Status>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Karte>
+
+        <Karte
+          titel="Konten und Anmeldung"
+          beschreibung="Zwei-Faktor-Anmeldung schützt auch bei erbeuteten Passwörtern"
+        >
+          <div className="mb-4">
+            <Balken
+              label="Konten mit Zwei-Faktor-Anmeldung"
+              anteil={mfaQuote}
+              wertText={`${mitMfa.length} von ${benutzer.length}`}
+              farbe={
+                mfaQuote === 100
+                  ? ENERGIE_FARBEN.eigenverbrauch
+                  : ENERGIE_FARBEN.erzeugung
+              }
+            />
+          </div>
+
+          <ul className="space-y-2">
+            {benutzer.map((konto) => (
+              <li
+                key={konto.name}
+                className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-slate-50 px-3 py-2 dark:bg-slate-800/50"
+              >
+                <span className="min-w-0">
+                  <span className="block text-sm font-medium">
+                    {konto.vollname}
+                  </span>
+                  <span className="block text-xs text-slate-500 dark:text-slate-400">
+                    {findeRolle(konto.rolle ?? "")?.bezeichnung ?? konto.rolle} ·
+                    zuletzt {formatRelativ(konto.letzte_anmeldung)}
+                  </span>
+                </span>
+                <Status ton={konto.mfa_aktiv === 1 ? "gut" : "ernst"}>
+                  {konto.mfa_aktiv === 1 ? "2FA aktiv" : "ohne 2FA"}
+                </Status>
+              </li>
+            ))}
+          </ul>
+        </Karte>
+      </div>
+
+      <Karte
+        titel="Protokoll"
+        beschreibung="Sicherheitsrelevante Vorgänge dieser Sitzung, neueste zuerst"
+      >
+        {protokoll.length === 0 ? (
+          <LeerZustand
+            text="In dieser Sitzung wurde noch kein Vorgang protokolliert."
+            hinweis="Sobald Sie eine Einstellung ändern, einen Fernzugang freigeben oder eine Vollmacht bearbeiten, erscheint der Vorgang hier."
+          />
+        ) : (
+          <Tabelle
+            spalten={["Zeitpunkt", "Benutzer", "Vorgang", "Objekt", "Ergebnis"]}
+          >
+            {protokoll.map((eintrag) => (
+              <Zeile
+                key={eintrag.name}
+                hervorgehoben={eintrag.ergebnis === "abgelehnt"}
+              >
+                <Zelle gedaempft>{formatDatumZeit(eintrag.zeitpunkt)}</Zelle>
+                <Zelle gedaempft>
+                  <span className="text-xs">{eintrag.benutzer ?? "–"}</span>
+                </Zelle>
+                <Zelle>
+                  <span className="font-medium">{eintrag.aktion}</span>
+                  {eintrag.begruendung && (
+                    <span className="block text-xs text-slate-500 dark:text-slate-400">
+                      {eintrag.begruendung}
+                    </span>
+                  )}
+                </Zelle>
+                <Zelle gedaempft>
+                  <span className="font-mono text-xs">
+                    {eintrag.objekt || "–"}
+                  </span>
+                </Zelle>
+                <Zelle>
+                  <Status
+                    ton={
+                      eintrag.ergebnis === "erfolg"
+                        ? "gut"
+                        : eintrag.ergebnis === "abgelehnt"
+                          ? "ernst"
+                          : "kritisch"
+                    }
+                  >
+                    {eintrag.ergebnis}
+                  </Status>
+                </Zelle>
+              </Zeile>
+            ))}
+          </Tabelle>
+        )}
+
+        <p className="mt-4 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+          Im Demonstrationsbetrieb liegt das Protokoll im Arbeitsspeicher und
+          endet mit dem Neustart des Servers. Im Regelbetrieb wird es in Frappe
+          geführt, wo Einträge nur angelegt, aber nicht geändert oder gelöscht
+          werden können. Das Portal bietet bewusst keine Funktion zum Bearbeiten
+          eines Protokolleintrags.
+        </p>
+      </Karte>
+
+      <Karte titel="Pflichten nach NIS2 im Überblick">
+        <dl className="grid gap-x-8 gap-y-3 sm:grid-cols-2">
+          <Angabe label="Frühwarnung" einspaltig>
+            binnen 24 Stunden ab Kenntnis
+          </Angabe>
+          <Angabe label="Vorfallsmeldung" einspaltig>
+            binnen 72 Stunden ab Kenntnis
+          </Angabe>
+          <Angabe label="Abschlussbericht" einspaltig>
+            binnen eines Monats
+          </Angabe>
+          <Angabe label="Nachweispflicht" einspaltig>
+            Zugriffe und Änderungen nachvollziehbar dokumentiert
+          </Angabe>
+        </dl>
+
+        <p className="mt-4 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+          Diese Übersicht ersetzt keine Rechtsberatung. Ob Ihr Unternehmen als
+          wesentliche oder wichtige Einrichtung gilt, hängt von Größe und
+          Sektorzuordnung ab – klären Sie das im Zweifel mit Ihrer
+          Rechtsvertretung.
+        </p>
+      </Karte>
+    </div>
+  );
+}

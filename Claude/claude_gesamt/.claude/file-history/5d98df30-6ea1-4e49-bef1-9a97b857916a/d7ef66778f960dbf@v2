@@ -1,0 +1,264 @@
+# -*- coding: utf-8 -*-
+"""Markdown -> Word (.docx) für die Schriftsätze zu 18 St 14/26m.
+Aufruf:  python md2docx.py DATEI.md [DATEI2.md ...]
+"""
+import re, sys, os
+from docx import Document
+from docx.shared import Pt, Cm, RGBColor
+from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_BREAK
+from docx.enum.table import WD_TABLE_ALIGNMENT
+from docx.enum.section import WD_SECTION
+from docx.oxml.ns import qn
+from docx.oxml import OxmlElement
+
+SERIF = 'Cambria'
+SANS = 'Calibri'
+ANTHRA = RGBColor(0x1F, 0x29, 0x33)
+BLAU = RGBColor(0x2C, 0x52, 0x82)
+GRAU = RGBColor(0x7B, 0x84, 0x94)
+
+
+def schattierung(zelle, hexfarbe):
+    el = OxmlElement('w:shd')
+    el.set(qn('w:val'), 'clear')
+    el.set(qn('w:fill'), hexfarbe)
+    zelle._tc.get_or_add_tcPr().append(el)
+
+
+def rahmen_links(absatz, hexfarbe='2C5282', groesse=18):
+    pPr = absatz._p.get_or_add_pPr()
+    pbdr = OxmlElement('w:pBdr')
+    left = OxmlElement('w:left')
+    left.set(qn('w:val'), 'single')
+    left.set(qn('w:sz'), str(groesse))
+    left.set(qn('w:space'), '8')
+    left.set(qn('w:color'), hexfarbe)
+    pbdr.append(left)
+    pPr.append(pbdr)
+
+
+def absatz_schatten(absatz, hexfarbe):
+    pPr = absatz._p.get_or_add_pPr()
+    shd = OxmlElement('w:shd')
+    shd.set(qn('w:val'), 'clear')
+    shd.set(qn('w:fill'), hexfarbe)
+    pPr.append(shd)
+
+
+INLINE = re.compile(r'(\*\*.+?\*\*|\*[^*]+?\*|`[^`]+?`)')
+
+
+def inline_runs(absatz, text, basis=SERIF, groesse=10.5, farbe=ANTHRA):
+    """Setzt **fett**, *kursiv*, `code` und normalen Text."""
+    text = text.replace('\\', '')
+    for teil in INLINE.split(text):
+        if not teil:
+            continue
+        r = absatz.add_run()
+        if teil.startswith('**') and teil.endswith('**'):
+            r.text = teil[2:-2]
+            r.bold = True
+        elif teil.startswith('*') and teil.endswith('*') and len(teil) > 2:
+            r.text = teil[1:-1]
+            r.italic = True
+        elif teil.startswith('`') and teil.endswith('`'):
+            r.text = teil[1:-1]
+            r.font.name = 'Consolas'
+            r.font.size = Pt(groesse - 1)
+            continue
+        else:
+            r.text = teil
+        r.font.name = basis
+        r.font.size = Pt(groesse)
+        r.font.color.rgb = farbe
+
+
+def tabelle_bauen(doc, zeilen):
+    kopf = [z.strip() for z in zeilen[0].strip().strip('|').split('|')]
+    daten = []
+    for z in zeilen[2:]:
+        daten.append([c.strip() for c in z.strip().strip('|').split('|')])
+    t = doc.add_table(rows=1, cols=len(kopf))
+    t.style = 'Table Grid'
+    t.alignment = WD_TABLE_ALIGNMENT.CENTER
+    for i, txt in enumerate(kopf):
+        z = t.rows[0].cells[i]
+        z.text = ''
+        p = z.paragraphs[0]
+        p.paragraph_format.space_before = Pt(2)
+        p.paragraph_format.space_after = Pt(2)
+        inline_runs(p, txt, SANS, 9, RGBColor(0xFF, 0xFF, 0xFF))
+        for r in p.runs:
+            r.bold = True
+        schattierung(z, '1F2933')
+    for nr, reihe in enumerate(daten):
+        zellen = t.add_row().cells
+        for i, txt in enumerate(reihe[:len(kopf)]):
+            zellen[i].text = ''
+            p = zellen[i].paragraphs[0]
+            p.paragraph_format.space_before = Pt(1.5)
+            p.paragraph_format.space_after = Pt(1.5)
+            inline_runs(p, txt, SANS, 9)
+            if nr % 2 == 1:
+                schattierung(zellen[i], 'F5F7F8')
+    doc.add_paragraph().paragraph_format.space_after = Pt(4)
+    return t
+
+
+def konvertieren(pfad):
+    md = open(pfad, encoding='utf-8').read()
+    doc = Document()
+
+    s = doc.sections[0]
+    s.page_width, s.page_height = Cm(21), Cm(29.7)
+    s.top_margin, s.bottom_margin = Cm(2.2), Cm(2.0)
+    s.left_margin, s.right_margin = Cm(2.4), Cm(2.0)
+
+    n = doc.styles['Normal']
+    n.font.name = SERIF
+    n.font.size = Pt(10.5)
+    n.font.color.rgb = ANTHRA
+    n.paragraph_format.space_after = Pt(6)
+    n.paragraph_format.line_spacing = 1.15
+
+    zeilen = md.split('\n')
+    i = 0
+    erste_h1 = True
+    while i < len(zeilen):
+        z = zeilen[i]
+        st = z.strip()
+
+        # Tabelle
+        if st.startswith('|') and i + 1 < len(zeilen) and re.match(r'^\|[\s:\-|]+\|$', zeilen[i+1].strip()):
+            block = []
+            while i < len(zeilen) and zeilen[i].strip().startswith('|'):
+                block.append(zeilen[i])
+                i += 1
+            tabelle_bauen(doc, block)
+            continue
+
+        # Bild
+        m = re.match(r'!\[([^\]]*)\]\(([^)]+)\)', st)
+        if m:
+            pfad_bild = m.group(2).replace('/', os.sep)
+            if os.path.exists(pfad_bild):
+                p = doc.add_paragraph()
+                p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                p.paragraph_format.space_before = Pt(8)
+                p.paragraph_format.space_after = Pt(10)
+                p.add_run().add_picture(pfad_bild, width=Cm(16.2))
+            i += 1
+            continue
+
+        # Überschriften
+        if st.startswith('#'):
+            grad = len(st) - len(st.lstrip('#'))
+            txt = st[grad:].strip()
+            p = doc.add_paragraph()
+            if grad == 1:
+                if not erste_h1:
+                    p.add_run().add_break(WD_BREAK.PAGE)
+                erste_h1 = False
+                p.paragraph_format.space_before = Pt(10)
+                p.paragraph_format.space_after = Pt(8)
+                inline_runs(p, txt, SANS, 15, ANTHRA)
+                pPr = p._p.get_or_add_pPr()
+                pbdr = OxmlElement('w:pBdr')
+                bot = OxmlElement('w:bottom')
+                bot.set(qn('w:val'), 'single'); bot.set(qn('w:sz'), '12')
+                bot.set(qn('w:space'), '4'); bot.set(qn('w:color'), '1F2933')
+                pbdr.append(bot); pPr.append(pbdr)
+            elif grad == 2:
+                p.paragraph_format.space_before = Pt(14)
+                p.paragraph_format.space_after = Pt(5)
+                inline_runs(p, txt, SANS, 12, BLAU)
+            else:
+                p.paragraph_format.space_before = Pt(10)
+                p.paragraph_format.space_after = Pt(4)
+                inline_runs(p, txt, SANS, 10.8, ANTHRA)
+            for r in p.runs:
+                r.bold = True
+            p.paragraph_format.keep_with_next = True
+            i += 1
+            continue
+
+        # Zitat
+        if st.startswith('>'):
+            block = []
+            while i < len(zeilen) and (zeilen[i].strip().startswith('>') or
+                                       (zeilen[i].strip() == '' and i + 1 < len(zeilen)
+                                        and zeilen[i+1].strip().startswith('>'))):
+                t2 = zeilen[i].strip().lstrip('>').strip()
+                if t2:
+                    block.append(t2)
+                i += 1
+            for nr, t2 in enumerate(block):
+                p = doc.add_paragraph()
+                p.paragraph_format.left_indent = Cm(0.7)
+                p.paragraph_format.right_indent = Cm(0.4)
+                p.paragraph_format.space_before = Pt(5 if nr == 0 else 1)
+                p.paragraph_format.space_after = Pt(5 if nr == len(block) - 1 else 1)
+                inline_runs(p, t2, SERIF, 10)
+                rahmen_links(p)
+                absatz_schatten(p, 'F4F6F8')
+            continue
+
+        # Trennlinie
+        if re.match(r'^-{3,}$', st):
+            p = doc.add_paragraph()
+            p.paragraph_format.space_before = Pt(6)
+            p.paragraph_format.space_after = Pt(6)
+            pPr = p._p.get_or_add_pPr()
+            pbdr = OxmlElement('w:pBdr')
+            bot = OxmlElement('w:bottom')
+            bot.set(qn('w:val'), 'single'); bot.set(qn('w:sz'), '6')
+            bot.set(qn('w:space'), '1'); bot.set(qn('w:color'), 'CBD2D9')
+            pbdr.append(bot); pPr.append(pbdr)
+            i += 1
+            continue
+
+        # Listen — Nummern werden wörtlich gesetzt, damit Word nicht neu zählt
+        m = re.match(r'^(\s*)([-*]|\d+\.)\s+(.*)$', z)
+        if m:
+            tief = len(m.group(1)) // 2
+            marke = m.group(2)
+            nummeriert = marke[0].isdigit()
+            p = doc.add_paragraph()
+            p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+            p.paragraph_format.left_indent = Cm(1.0 + 0.5 * tief)
+            p.paragraph_format.first_line_indent = Cm(-1.0)
+            p.paragraph_format.space_after = Pt(4)
+            p.paragraph_format.line_spacing = 1.12
+            r = p.add_run((marke if nummeriert else '–') + '\t')
+            r.font.name = SERIF
+            r.font.size = Pt(10.5)
+            r.font.color.rgb = ANTHRA
+            if nummeriert:
+                r.bold = True
+            from docx.enum.text import WD_TAB_ALIGNMENT
+            p.paragraph_format.tab_stops.add_tab_stop(Cm(1.0 + 0.5 * tief),
+                                                      WD_TAB_ALIGNMENT.LEFT)
+            inline_runs(p, m.group(3), SERIF, 10.5)
+            i += 1
+            continue
+
+        # Leerzeile
+        if not st:
+            i += 1
+            continue
+
+        # Fließtext
+        p = doc.add_paragraph()
+        p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+        inline_runs(p, st, SERIF, 10.5)
+        i += 1
+
+    ziel = os.path.splitext(pfad)[0] + '.docx'
+    doc.save(ziel)
+    return ziel
+
+
+if __name__ == '__main__':
+    for f in sys.argv[1:]:
+        z = konvertieren(f)
+        print(f'{z}  ({round(os.path.getsize(z)/1024)} KB)')

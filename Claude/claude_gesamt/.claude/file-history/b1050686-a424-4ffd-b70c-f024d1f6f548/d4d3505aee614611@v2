@@ -1,0 +1,108 @@
+/**
+ * Zweiter Anlauf.
+ *
+ * Zwei Korrekturen gegenueber dem ersten Versuch:
+ *   - "Stoerung" faellt aus der kategorialen Palette heraus. Es ist ein
+ *     Status, und Statusfarben sind reserviert, nicht Serie Nummer 6.
+ *   - "Netzbezug" bleibt bewusst dunkel und gedaempft. Fremdbezogener
+ *     Strom soll optisch zuruecktreten, nicht mit der Einspeisung
+ *     konkurrieren. Der Farbton ist deshalb fest vorgegeben.
+ */
+import { validate } from "file:///C:/Users/SALEAD~1/AppData/Local/Temp/claude/bundled-skills/2.1.270/49d628d1d9a56340540cbfbb3ca64951/dataviz/scripts/validate_palette.js";
+import { oklchToHex } from "./palette.mjs";
+
+const SLOTS = [
+  { name: "erzeugung", hue: [52, 58, 64, 70], fest: null },
+  { name: "eigenverbrauch", hue: [145, 152, 160, 168], fest: null },
+  { name: "einspeisung", hue: [220, 228, 236, 244], fest: null },
+  // Netzbezug fest: dunkel, knapp ueber dem Buntheits-Mindestwert.
+  { name: "netzbezug", hue: [288], fest: { L: 0.46, C: 0.1 } },
+  { name: "speicher", hue: [310, 320, 330, 340], fest: null },
+];
+
+const L_WERTE = [0.46, 0.5, 0.54, 0.58, 0.62, 0.66, 0.7, 0.74];
+const C_WERTE = [0.1, 0.12, 0.14, 0.16, 0.18, 0.2];
+
+const HELL = "#fcfcfb";
+const DUNKEL = "#1a1a19";
+
+function bewerte(hexListe) {
+  const hell = validate(hexListe, { mode: "light", surface: HELL });
+  const dunkel = validate(hexListe, { mode: "dark", surface: DUNKEL });
+  const alle = [...hell.report, ...dunkel.report];
+
+  const zaehle = (gesucht) =>
+    alle.filter(([, status]) => String(status) === gesucht).length;
+
+  return {
+    harteFehler: zaehle("fail"),
+    warnungen: zaehle("warn") + zaehle("relief"),
+    hell,
+    dunkel,
+  };
+}
+
+let aktuell = SLOTS.map((s) => ({
+  hue: s.hue[0],
+  L: s.fest?.L ?? 0.58,
+  C: s.fest?.C ?? 0.15,
+}));
+
+const alsHex = (zustand) => zustand.map((s) => oklchToHex(s.L, s.C, s.hue));
+
+let beste = bewerte(alsHex(aktuell));
+
+for (let runde = 0; runde < 8; runde++) {
+  let verbessert = false;
+
+  for (let i = 0; i < SLOTS.length; i++) {
+    const slot = SLOTS[i];
+    const lWerte = slot.fest ? [slot.fest.L] : L_WERTE;
+    const cWerte = slot.fest ? [slot.fest.C] : C_WERTE;
+
+    for (const hue of slot.hue) {
+      for (const L of lWerte) {
+        for (const C of cWerte) {
+          const kandidat = aktuell.map((s, idx) =>
+            idx === i ? { hue, L, C } : s,
+          );
+          const ergebnis = bewerte(alsHex(kandidat));
+
+          const besser =
+            ergebnis.harteFehler < beste.harteFehler ||
+            (ergebnis.harteFehler === beste.harteFehler &&
+              ergebnis.warnungen < beste.warnungen);
+
+          if (besser) {
+            aktuell[i] = { hue, L, C };
+            beste = ergebnis;
+            verbessert = true;
+          }
+        }
+      }
+    }
+  }
+
+  if (!verbessert) break;
+}
+
+const hex = alsHex(aktuell);
+
+console.log("\n=== Kategoriale Palette ===");
+SLOTS.forEach((slot, i) => {
+  const { L, C, hue } = aktuell[i];
+  console.log(
+    `${slot.name.padEnd(16)} oklch(${L} ${C} ${hue})`.padEnd(44) + hex[i],
+  );
+});
+console.log("\n" + hex.join(","));
+
+for (const [modus, ergebnis] of [
+  ["hell", beste.hell],
+  ["dunkel", beste.dunkel],
+]) {
+  console.log(`\n--- ${modus} ---  ok=${ergebnis.ok}`);
+  for (const zeile of ergebnis.report) {
+    console.log("  " + JSON.stringify(zeile));
+  }
+}

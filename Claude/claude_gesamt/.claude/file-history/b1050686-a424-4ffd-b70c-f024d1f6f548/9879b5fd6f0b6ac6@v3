@@ -1,0 +1,141 @@
+"use client";
+
+import { useActionState, useState } from "react";
+
+import { Meldung } from "@/components/ui";
+
+import { sendeAnfrage, type AnfrageErgebnis } from "./aktionen";
+
+/**
+ * Anfrage zu einer Leistung.
+ *
+ * Bewusst eine Anfrage und keine Bestellung: Die Leistungen brauchen
+ * fast alle einen Termin, eine Begehung oder eine technische Abklaerung.
+ * Ein Warenkorb mit Sofortkauf waere hier ein falsches Versprechen.
+ *
+ * Das Formular klappt erst auf Klick auf. Auf einer Seite mit einem
+ * Dutzend Leistungen waeren zwoelf offene Formulare untereinander
+ * nicht lesbar - und die Entscheidung faellt ohnehin vorher.
+ */
+export function AnfrageFormular({
+  artikel,
+  bezeichnung,
+  einheit,
+  anlagen,
+  vorgeoeffnet = false,
+  anlageVorgabe,
+}: {
+  artikel: string;
+  bezeichnung: string;
+  einheit?: string;
+  anlagen: { name: string; label: string }[];
+  /**
+   * Wer aus dem Pruefkalender kommt, hat sich bereits entschieden.
+   * Ihn noch einmal klicken zu lassen, waere eine Huerde ohne Zweck.
+   */
+  vorgeoeffnet?: boolean;
+  /** Anlage, aus deren Pruefkalender der Auftrag kommt. */
+  anlageVorgabe?: string;
+}) {
+  const [offen, setOffen] = useState(vorgeoeffnet);
+  const [ergebnis, aktion, laeuft] = useActionState<
+    AnfrageErgebnis | null,
+    FormData
+  >(sendeAnfrage, null);
+
+  if (ergebnis?.ok) {
+    return <Meldung ton="gut">{ergebnis.meldung}</Meldung>;
+  }
+
+  if (!offen) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOffen(true)}
+        className="knopf knopf-rand w-full justify-center"
+      >
+        Anfrage stellen
+      </button>
+    );
+  }
+
+  const feldId = `anfrage-${artikel}`;
+
+  return (
+    <form action={aktion} className="space-y-2.5">
+      <input type="hidden" name="artikel" value={artikel} />
+      <input type="hidden" name="bezeichnung" value={bezeichnung} />
+
+      <div className="flex flex-wrap gap-2">
+        <div className="min-w-0 flex-1">
+          <label htmlFor={`${feldId}-menge`} className="t-etikett mb-1 block">
+            Menge{einheit ? ` in ${einheit}` : ""}
+          </label>
+          <input
+            id={`${feldId}-menge`}
+            name="menge"
+            type="number"
+            min="1"
+            step="any"
+            defaultValue="1"
+            required
+            className="feld feld-schmal zahl"
+          />
+        </div>
+
+        <div className="min-w-0 flex-[2]">
+          <label htmlFor={`${feldId}-anlage`} className="t-etikett mb-1 block">
+            Anlage
+          </label>
+          <select
+            id={`${feldId}-anlage`}
+            name="anlage"
+            className="feld"
+            defaultValue={anlageVorgabe ?? ""}
+          >
+            <option value="">alle Anlagen</option>
+            {anlagen.map((anlage) => (
+              <option key={anlage.name} value={anlage.name}>
+                {anlage.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label htmlFor={`${feldId}-notiz`} className="t-etikett mb-1 block">
+          Anmerkung
+        </label>
+        <textarea
+          id={`${feldId}-notiz`}
+          name="anmerkung"
+          rows={2}
+          placeholder="Etwa: Termin bitte außerhalb der Produktionszeiten."
+          className="feld"
+        />
+      </div>
+
+      {ergebnis && !ergebnis.ok && (
+        <Meldung ton="kritisch">{ergebnis.meldung}</Meldung>
+      )}
+
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="submit"
+          disabled={laeuft}
+          className="knopf knopf-voll flex-1 justify-center"
+        >
+          {laeuft ? "Wird gesendet …" : "Absenden"}
+        </button>
+        <button
+          type="button"
+          onClick={() => setOffen(false)}
+          className="knopf knopf-leise"
+        >
+          Abbrechen
+        </button>
+      </div>
+    </form>
+  );
+}

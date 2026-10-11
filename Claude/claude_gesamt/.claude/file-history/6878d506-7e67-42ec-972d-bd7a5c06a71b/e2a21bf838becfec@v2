@@ -1,0 +1,25 @@
+// Skelett beim Seitenwechsel: gleiche Geometrie wie die echten Seiten, damit nichts springt
+export default function Loading() {
+  return (
+    <div aria-busy="true" aria-label="Wird geladen">
+      <div className="flex h-[52px] items-center gap-3 border-b border-gray-150 px-6">
+        <div className="skeleton h-4 w-32" />
+        <div className="skeleton ml-auto h-8 w-24" />
+      </div>
+      <div className="flex h-12 items-center gap-2 border-b border-gray-150 px-6">
+        <div className="skeleton h-8 w-64" />
+        <div className="skeleton h-8 w-32" />
+      </div>
+      <div className="divide-y divide-gray-100">
+        {Array.from({ length: 8 }).map((_, i) => (
+          <div key={i} className="flex h-12 items-center gap-4 px-6">
+            <div className="skeleton size-6 rounded-full" />
+            <div className="skeleton h-3.5" style={{ width: `${180 - (i % 3) * 30}px` }} />
+            <div className="skeleton ml-auto h-3.5 w-20" />
+            <div className="skeleton h-3.5 w-16" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}

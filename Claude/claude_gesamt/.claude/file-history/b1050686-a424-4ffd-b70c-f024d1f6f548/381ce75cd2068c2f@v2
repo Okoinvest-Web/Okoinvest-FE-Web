@@ -1,0 +1,68 @@
+## Gestaltung: ein Leitstand, kein Dashboard
+
+Die Oberfläche ist als **Arbeitsplatz** gebaut, nicht als Übersichtsseite. Wer
+eine Erzeugungsanlage führt, sitzt acht Stunden davor und liest Zahlen. Daraus
+folgen fünf Entscheidungen, und jede steht gegen das, was eine Marketingseite
+täte:
+
+**Dunkel zuerst.** Ein Leitstand steht in einem Raum, in dem auch nachts jemand
+sitzt. Wer nichts einstellt, bekommt die dunkle Fassung — auch auf einem hell
+eingestellten Rechner. Die helle Fassung bleibt vollwertig und ist eigens
+gerechnet; sie ist die Variante, nicht der Ausgangspunkt. Beide werden bei jedem
+`npm run bilder` gegen WCAG 2.1 AA geprüft.
+
+**Linien statt Schatten.** Eine Fläche ist eine Arbeitsfläche und schwebt nicht.
+Schatten gibt es nur dort, wo etwas wirklich über dem Inhalt liegt: Dialog und
+Befehlspalette. Getrennt wird mit Haarlinien; sie bilden ein Raster, und ein
+Raster lässt das Auge springen, ohne zu suchen. Radien liegen bei zwei bis vier
+Pixeln — runde Ecken machen eine Fläche freundlich, hier soll sie genau sein.
+
+**Zahlen in einer Zahlenschrift.** Text steht in Inter, jede Zahl in IBM Plex
+Mono mit gleicher Ziffernbreite. Der Grund ist nicht Geschmack: In einer Spalte
+mit fünfzig Strangwerten stehen Komma und Nachkommastellen dadurch übereinander,
+und ein Ausreißer fällt auf, ohne dass man ihn sucht. Eine Proportionalschrift
+verschiebt jede Zeile um ein paar Pixel — genau das macht Vergleichen zur Arbeit.
+
+**Dichte.** 14 Pixel Grundschrift, enge Tabellenzeilen, kleine Innenabstände, die
+volle Breite des Schirms. Ein Leitstand zeigt viel auf einmal; Blättern kostet
+mehr Aufmerksamkeit als Lesen. Fließtext bekommt trotzdem ein Maß von 84 Zeichen
+— eine Zeile über die Breite eines 27-Zoll-Schirms liest niemand.
+
+**Zustand vor Arbeit.** Die Übersicht zeigt zuerst, was die Anlagen gerade tun,
+und erst danach, was zu tun ist. Vorher stand die Aufgabenliste ganz oben; mit
+siebzehn Einträgen schob sie jede Zahl unter den Bildschirmrand.
+
+### Farbe ist Signal
+
+Das Ökovolt-Grün bleibt, ändert aber seine Rolle: Es heißt „in Ordnung“ oder
+„das ist die gemeinte Handlung“, sonst kommt es nicht vor. Die vier Zustandstöne
+— gut, Hinweis, ernst, kritisch — haben je eine eigene Fassung für hellen und
+dunklen Grund. Ein Dunkelrot auf Papier liest sich gut und verschwindet auf
+schwarzem Grund; Zustand ist genau das, was man nicht erraten darf. Jeder Ton
+tritt zusammen mit einem Wort auf, nie allein.
+
+Die Farbzuordnung der Energiedaten ist **gerechnet, nicht geschätzt**: geprüft
+gegen Helligkeitsband, Buntheitsuntergrenze, Unterscheidbarkeit bei Protanopie,
+Deuteranopie und Tritanopie sowie Kontrast — in beiden Erscheinungsbildern.
+Begründung und die zwei zulässigen Grenzfälle stehen in
+[`src/lib/farben.ts`](src/lib/farben.ts).
+
+### Bewegung, die etwas sagt
+
+Die Diagramme sind eigenentwickelt (SVG, keine Diagrammbibliothek). Das hält die
+Ladezeit klein und erlaubt durchgängige Farbzuordnung, Bedienung per Tastatur und
+zurückhaltende Animation: Balken wachsen aus ihrer Grundlinie, Linien zeichnen
+sich, Kennzahlen zählen hoch. Kürzer als üblich — in einer Anwendung, die
+stundenlang bedient wird, ist jede Animation eine Wartezeit. Wer im
+Betriebssystem reduzierte Bewegung eingestellt hat, bekommt nichts davon und
+sieht sofort den Endwert.
+
+Die Uhr in der Statusleiste ist kein Schmuck: In einem Betrieb, in dem
+Viertelstundenwerte gemessen und Fristen gezählt werden, ist die erste Frage bei
+jeder Zahl, von wann sie ist.
+
+Die Befehlspalette (`Strg`/`⌘` + `K`) durchsucht Anlagen, Wechselrichter,
+Meldungen, Belege, Geräte und Abrechnungen, nicht nur Seitennamen. Die
+Trefferbewertung läuft über eine vollständige Ausrichtung statt über den ersten
+passenden Buchstaben — sonst führt „eg“ in „Energiegemeinschaft“ auf das falsche
+„g“ und bewertet den Treffer schlechter als er ist.

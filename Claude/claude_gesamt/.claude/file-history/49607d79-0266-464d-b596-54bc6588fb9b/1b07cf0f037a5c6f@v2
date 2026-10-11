@@ -1,0 +1,50 @@
+import js from '@eslint/js'
+import vue from 'eslint-plugin-vue'
+import prettier from 'eslint-config-prettier'
+import globals from 'globals'
+
+/**
+ * Bewusst schmal gehalten: Regeln, die echte Fehler finden, bleiben an;
+ * Regeln über Geschmack bleiben aus, weil Prettier das Format ohnehin setzt.
+ */
+export default [
+  { ignores: ['dist/**', 'node_modules/**', 'scratchpad/**'] },
+
+  js.configs.recommended,
+  ...vue.configs['flat/recommended'],
+  prettier,
+
+  {
+    languageOptions: {
+      ecmaVersion: 2023,
+      sourceType: 'module',
+      globals: {
+        ...globals.browser,
+        __FRONTEND_ROUTE__: 'readonly',
+      },
+    },
+    rules: {
+      // Ungenutzte Importe waren hier schon mehrfach ein Thema.
+      'no-unused-vars': ['error', { argsIgnorePattern: '^_', caughtErrors: 'none' }],
+
+      // Die Oberfläche ist durchgehend deutsch benannt; mehrwortige
+      // Komponentennamen erzwingen hieße, jede Seite umzutaufen.
+      'vue/multi-word-component-names': 'off',
+
+      // Reihenfolge und Zeilenumbrüche in Vorlagen macht Prettier.
+      'vue/max-attributes-per-line': 'off',
+      'vue/singleline-html-element-content-newline': 'off',
+      'vue/html-self-closing': 'off',
+
+      // Das findet vertippte Props und fehlende Schlüssel in v-for.
+      'vue/require-v-for-key': 'error',
+      'vue/no-unused-components': 'error',
+      'vue/no-unused-vars': 'error',
+    },
+  },
+
+  {
+    files: ['tests/**/*.js', 'vitest.setup.js', '*.config.js'],
+    languageOptions: { globals: { ...globals.node, ...globals.browser } },
+  },
+]

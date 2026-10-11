@@ -1,0 +1,287 @@
+-- ====================================================================
+-- Anlagentechnik, Alarmierung und Wirtschaftlichkeit
+--
+-- Ohne diese Ebene lässt sich nicht sagen, WARUM eine Anlage weniger
+-- liefert. Ein Ertragsrückgang von acht Prozent kann Verschattung an
+-- einem Strang sein, ein defekter Wechselrichter, Verschmutzung der
+-- gesamten Fläche oder schlicht ein trübes Quartal. Erst der Vergleich
+-- einzelner Strangströme untereinander und der Bezug auf die gemessene
+-- Einstrahlung trennt diese Fälle.
+-- ====================================================================
+
+CREATE TABLE IF NOT EXISTS wechselrichter (
+  id                TEXT PRIMARY KEY,
+  anlage_id         TEXT NOT NULL REFERENCES anlage(id),
+  bezeichnung       TEXT NOT NULL,
+  hersteller        TEXT,
+  modell            TEXT,
+  seriennummer      TEXT,
+  firmware          TEXT,
+  -- Nennleistung wechselstromseitig in kW.
+  nennleistung_kw   REAL,
+  -- Angeschlossene Modulleistung in kWp. Das Verhältnis zur
+  -- Nennleistung ist der Auslegungsfaktor; über 1,15 ist mit
+  -- regelmäßiger Abregelung an klaren Sommertagen zu rechnen.
+  modulleistung_kwp REAL,
+  eingebaut_am      TEXT,
+  garantie_bis      TEXT,
+  ip_adresse        TEXT,
+  aktiv             INTEGER NOT NULL DEFAULT 1
+);
+
+CREATE INDEX IF NOT EXISTS idx_wr_anlage ON wechselrichter(anlage_id);
+
+CREATE TABLE IF NOT EXISTS strang (
+  id                TEXT PRIMARY KEY,
+  wechselrichter_id TEXT NOT NULL REFERENCES wechselrichter(id),
+  bezeichnung       TEXT NOT NULL,
+  -- MPP-Tracker, an dem der Strang hängt. Stränge am selben Tracker
+  -- beeinflussen sich gegenseitig - das ist bei der Fehlersuche
+  -- entscheidend.
+  tracker           INTEGER,
+  modul_anzahl      INTEGER,
+  leistung_kwp      REAL,
+  ausrichtung       TEXT,
+  neigung           REAL,
+  aktiv             INTEGER NOT NULL DEFAULT 1
+);
+
+CREATE INDEX IF NOT EXISTS idx_strang_wr ON strang(wechselrichter_id);
+
+-- Messwerte je Wechselrichter, viertelstündlich.
+CREATE TABLE IF NOT EXISTS wr_messwert (
+  wechselrichter_id TEXT NOT NULL REFERENCES wechselrichter(id),
+  zeitpunkt         TEXT NOT NULL,
+  -- Wechselstromseitige Leistung in kW.
+  leistung_kw       REAL NOT NULL DEFAULT 0,
+  -- Gleichstromseitige Leistung; die Differenz ergibt den Wirkungsgrad.
+  dc_leistung_kw    REAL,
+  -- Innentemperatur in Grad Celsius - steigt vor thermisch bedingter
+  -- Leistungsreduktion an.
+  temperatur        REAL,
+  -- Betriebszustand: Normal, Abgeregelt, Stoerung, Aus.
+  zustand           TEXT NOT NULL DEFAULT 'Normal',
+  PRIMARY KEY (wechselrichter_id, zeitpunkt)
+) WITHOUT ROWID;
+
+-- Strangströme, viertelstündlich.
+--
+-- Die Tabelle wächst schnell: 24 Stränge mal 35.040 Viertelstunden
+-- ergeben 840.000 Zeilen je Jahr und Anlage. Deshalb nur der Strom,
+-- keine abgeleiteten Größen.
+CREATE TABLE IF NOT EXISTS strang_messwert (
+  strang_id  TEXT NOT NULL REFERENCES strang(id),
+  zeitpunkt  TEXT NOT NULL,
+  strom_a    REAL NOT NULL DEFAULT 0,
+  spannung_v REAL,
+  PRIMARY KEY (strang_id, zeitpunkt)
+) WITHOUT ROWID;
+
+-- Sensorik je Anlage.
+--
+-- Die Einstrahlung ist die wichtigste Größe der Betriebsführung: Ohne
+-- sie lässt sich ein Minderertrag nicht vom schlechten Wetter
+-- unterscheiden. Die Performance Ratio nach IEC 61724 ist ohne
+-- Einstrahlungsmessung nicht berechenbar.
+CREATE TABLE IF NOT EXISTS sensor_messwert (
+  anlage_id           TEXT NOT NULL REFERENCES anlage(id),
+  zeitpunkt           TEXT NOT NULL,
+  -- Einstrahlung in der Modulebene, W/m².
+  einstrahlung_w_m2   REAL,
+  -- Modultemperatur und Umgebungstemperatur in Grad Celsius.
+  modultemperatur     REAL,
+  umgebungstemperatur REAL,
+  windgeschwindigkeit REAL,
+  PRIMARY KEY (anlage_id, zeitpunkt)
+) WITHOUT ROWID;
+
+-- ====================================================================
+-- Alarmierung
+--
+-- Der häufigste Fehler in Monitoringsystemen ist die Alarmflut: Wenn
+-- jede Anlage jede Nacht "kein Ertrag" meldet, liest niemand mehr die
+-- Meldungen. Deshalb trägt jede Regel Bedingungen, die den Sonnenstand
+-- und eine Mindestdauer berücksichtigen.
+-- ====================================================================
+
+CREATE TABLE IF NOT EXISTS alarmregel (
+  id               TEXT PRIMARY KEY,
+  bezeichnung      TEXT NOT NULL,
+  art              TEXT NOT NULL CHECK (art IN (
+                     'Nullertrag','Minderertrag','Strangabweichung',
+                     'Kommunikation','Wechselrichterstoerung',
+                     'Performance','Temperatur','Abregelung')),
+  schweregrad      TEXT NOT NULL DEFAULT 'Mittel'
+                     CHECK (schweregrad IN ('Info','Niedrig','Mittel','Hoch','Kritisch')),
+  -- Schwellwert, Bedeutung je nach Art (Prozent, W/m², Grad Celsius).
+  schwellwert      REAL,
+  -- Erst auslösen, wenn die Bedingung so viele Minuten anhält.
+  -- Verhindert Meldungen bei einer einzelnen Wolke.
+  dauer_minuten    INTEGER NOT NULL DEFAULT 60,
+  -- Nur bei Tageslicht prüfen. Ohne diese Bedingung meldet jede
+  -- Ertragsregel jede Nacht.
+  nur_tagsueber    INTEGER NOT NULL DEFAULT 1,
+  -- Mindesteinstrahlung, ab der die Regel greift. Bei diffusem Licht
+  -- im Winter sind Abweichungen normal und ohne Aussagekraft.
+  min_einstrahlung REAL DEFAULT 100,
+  aktiv            INTEGER NOT NULL DEFAULT 1,
+  beschreibung     TEXT
+);
+
+CREATE TABLE IF NOT EXISTS alarm (
+  id                TEXT PRIMARY KEY,
+  regel_id          TEXT REFERENCES alarmregel(id),
+  anlage_id         TEXT NOT NULL REFERENCES anlage(id),
+  -- Betroffene Komponente, sofern eingrenzbar.
+  wechselrichter_id TEXT REFERENCES wechselrichter(id),
+  strang_id         TEXT REFERENCES strang(id),
+  art               TEXT NOT NULL,
+  schweregrad       TEXT NOT NULL,
+  titel             TEXT NOT NULL,
+  beschreibung      TEXT,
+  -- Gemessener und erwarteter Wert zum Zeitpunkt der Auslösung.
+  ist_wert          REAL,
+  soll_wert         REAL,
+  status            TEXT NOT NULL DEFAULT 'Offen'
+                      CHECK (status IN ('Offen','Quittiert','Behoben','Ignoriert')),
+  -- Geschätzter Ertragsausfall, während der Alarm anstand.
+  ausfall_kwh       REAL DEFAULT 0,
+  ausfall_eur       REAL DEFAULT 0,
+  ausgeloest_am     TEXT NOT NULL,
+  -- Solange leer, steht der Alarm noch an.
+  beendet_am        TEXT,
+  quittiert_am      TEXT,
+  quittiert_von     TEXT,
+  notiz             TEXT,
+  -- Verknüpfung zum Serviceticket, falls eines eröffnet wurde.
+  stoerung_id       TEXT REFERENCES stoerung(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_alarm_anlage ON alarm(anlage_id, status);
+CREATE INDEX IF NOT EXISTS idx_alarm_zeit   ON alarm(ausgeloest_am DESC);
+
+-- ====================================================================
+-- Wirtschaftlichkeit
+-- ====================================================================
+
+-- Vergütungsmodell je Anlage. Bestimmt, was eine ausgefallene
+-- Kilowattstunde tatsächlich kostet.
+CREATE TABLE IF NOT EXISTS verguetung (
+  id          TEXT PRIMARY KEY,
+  anlage_id   TEXT NOT NULL REFERENCES anlage(id),
+  art         TEXT NOT NULL CHECK (art IN (
+                'Einspeisetarif','Marktpraemie','Direktvermarktung',
+                'Eigenverbrauch','Gemeinschaft')),
+  -- Cent je Kilowattstunde.
+  ct_kwh      REAL NOT NULL,
+  gueltig_von TEXT NOT NULL,
+  gueltig_bis TEXT,
+  bemerkung   TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_verguetung_anlage ON verguetung(anlage_id);
+
+CREATE TABLE IF NOT EXISTS betriebskosten (
+  id          TEXT PRIMARY KEY,
+  anlage_id   TEXT NOT NULL REFERENCES anlage(id),
+  art         TEXT NOT NULL,
+  betrag_jahr REAL NOT NULL,
+  bemerkung   TEXT
+);
+
+-- ====================================================================
+-- Abnahmepruefung nach OEVE/OENORM E 8001-4-712 und EN 62446-1
+--
+-- Ohne Pruefprotokoll gibt es keine Inbetriebnahmemeldung beim
+-- Netzbetreiber, keine Foerderung und im Schadensfall keine
+-- Versicherungsleistung. Deshalb werden nicht nur die Ergebnisse
+-- abgelegt, sondern die Messwerte selbst samt der Bedingungen, unter
+-- denen sie entstanden sind: Ein Spannungswert ohne Modultemperatur
+-- und ein Stromwert ohne Einstrahlung sind nicht bewertbar.
+-- ====================================================================
+
+CREATE TABLE IF NOT EXISTS abnahme (
+  id               TEXT PRIMARY KEY,
+  anlage_id        TEXT NOT NULL REFERENCES anlage(id),
+  geprueft_am      TEXT NOT NULL,
+  pruefer          TEXT NOT NULL,
+  pruefstelle      TEXT,
+  -- Hoechste Systemspannung der Anlage; sie bestimmt Pruefspannung
+  -- und Mindestisolationswiderstand.
+  systemspannung_v REAL NOT NULL,
+  -- Bedingungen waehrend der Messung.
+  einstrahlung     REAL NOT NULL,
+  modultemperatur  REAL NOT NULL,
+  -- Schutzeinrichtungen.
+  rcd_ausloesung_ms REAL,
+  rcd_bemessung_ma  REAL,
+  netzschutz_geprueft  INTEGER NOT NULL DEFAULT 0,
+  inselschutz_geprueft INTEGER NOT NULL DEFAULT 0,
+  bemerkung        TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_abnahme_anlage ON abnahme(anlage_id);
+
+CREATE TABLE IF NOT EXISTS abnahme_strang (
+  id                TEXT PRIMARY KEY,
+  abnahme_id        TEXT NOT NULL REFERENCES abnahme(id) ON DELETE CASCADE,
+  strang_id         TEXT REFERENCES strang(id),
+  bezeichnung       TEXT NOT NULL,
+  module            INTEGER NOT NULL,
+  uoc_modul_v       REAL NOT NULL,
+  isc_modul_a       REAL NOT NULL,
+  gemessene_uoc_v   REAL NOT NULL,
+  gemessener_isc_a  REAL NOT NULL,
+  isolation_mohm    REAL NOT NULL,
+  pruefspannung_v   REAL NOT NULL,
+  schutzleiter_ohm  REAL,
+  polaritaet_richtig INTEGER NOT NULL DEFAULT 1
+);
+
+CREATE INDEX IF NOT EXISTS idx_abnahme_strang ON abnahme_strang(abnahme_id);
+
+-- ====================================================================
+-- Wiederkehrende Pruefungen
+--
+-- Eine Anlage wird einmal abgenommen und danach jahrzehntelang
+-- betrieben. Was in dieser Zeit zu pruefen ist, verteilt sich auf
+-- Arbeitnehmerschutzrecht (ESV 2012), Normen (EN 62446-1, EN 62305-3),
+-- den Netzzugangsvertrag und die Herstellergarantie.
+--
+-- Abgelegt wird nur, was tatsaechlich stattgefunden hat. Die Fristen
+-- selbst stehen im Katalog in `lib/pv/wartung.ts`, wo sie geprueft
+-- werden koennen; hier steht je Anlage und Regel das Datum der letzten
+-- Pruefung und - falls ein Bescheid oder der Netzbetreiber etwas
+-- anderes vorschreibt - ein abweichender Abstand.
+-- ====================================================================
+
+CREATE TABLE IF NOT EXISTS wartungsprofil (
+  anlage_id         TEXT PRIMARY KEY REFERENCES anlage(id),
+  -- Einstufung nach § 9 Abs. 2 ESV 2012.
+  umgebung          TEXT NOT NULL DEFAULT 'normal'
+                      CHECK (umgebung IN ('gering','normal','explosionsgefaehrdet',
+                                          'aussergewoehnlich','baustelle','untertage')),
+  -- Schutzklasse des Blitzschutzsystems nach EN 62305.
+  blitzschutzklasse INTEGER CHECK (blitzschutzklasse BETWEEN 1 AND 4),
+  -- Ein System, dessen Ausfall Menschen gefaehrdet oder den Betrieb
+  -- stillstehen liesse: jaehrliche umfassende Pruefung.
+  kritisch          INTEGER NOT NULL DEFAULT 0,
+  bemerkung         TEXT
+);
+
+CREATE TABLE IF NOT EXISTS wartungstermin (
+  id               TEXT PRIMARY KEY,
+  anlage_id        TEXT NOT NULL REFERENCES anlage(id),
+  -- Schluessel aus dem Fristenkatalog, etwa 'esv-anlage'.
+  regel            TEXT NOT NULL,
+  letzte_pruefung  TEXT,
+  -- Abweichender Abstand in Monaten; NULL heisst: Katalogwert.
+  intervall_monate INTEGER,
+  pruefer          TEXT,
+  protokoll        TEXT,
+  befund           TEXT,
+  bemerkung        TEXT,
+  UNIQUE (anlage_id, regel)
+);
+
+CREATE INDEX IF NOT EXISTS idx_wartung_anlage ON wartungstermin(anlage_id);

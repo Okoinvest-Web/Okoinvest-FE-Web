@@ -1,0 +1,146 @@
+import "server-only";
+
+import { tagesSchluessel, verschiebeTage } from "./datum.ts";
+import type { PvAnlage, PvErtrag } from "./doctypes.ts";
+import {
+  bewoelkungAmTag,
+  erzeugungKw,
+  jahresgang,
+  startwertAus,
+  zufallsfolge,
+} from "./demo/generator.ts";
+
+/**
+ * Ertragsprognose.
+ *
+ * Grundlage ist der zu erwartende Jahresgang am Standort, gedaempft um
+ * die Bewoelkung des jeweiligen Tages. Im Regelbetrieb traete hier eine
+ * Wettervorhersage an die Stelle der modellierten Bewoelkung - die
+ * Schnittstelle ist dieselbe.
+ *
+ * Bewusst mit ausgewiesener Unsicherheit: Eine Prognose ohne Bandbreite
+ * suggeriert eine Genauigkeit, die es bei Wetterabhaengigkeit nicht gibt.
+ * Die Spanne waechst mit dem Abstand zum heutigen Tag.
+ */
+
+export interface Tagesprognose {
+  datum: string;
+  /** Erwarteter Ertrag in kWh. */
+  erwartet: number;
+  /** Untere Grenze der Bandbreite. */
+  untergrenze: number;
+  /** Obere Grenze der Bandbreite. */
+  obergrenze: number;
+  /** Anteil Bewoelkung, 0 = klar. */
+  bewoelkung: number;
+}
+
+/**
+ * Unsicherheitsband je Vorhersagetag.
+ * Am Folgetag liegt eine Wettervorhersage typischerweise deutlich
+ * naeher als eine Woche im Voraus.
+ */
+function spanne(tagVoraus: number): number {
+  return Math.min(0.45, 0.08 + tagVoraus * 0.055);
+}
+
+export function prognose(anlage: PvAnlage, tage = 7): Tagesprognose[] {
+  const kwp = anlage.leistung_kwp ?? 0;
+  const heute = new Date();
+  heute.setHours(0, 0, 0, 0);
+
+  const ergebnis: Tagesprognose[] = [];
+
+  for (let i = 1; i <= tage; i++) {
+    const datum = verschiebeTage(heute, i);
+    const bewoelkung = bewoelkungAmTag(datum, anlage.name);
+    const zufall = zufallsfolge(
+      startwertAus(`${anlage.name}-prognose-${tagesSchluessel(datum)}`),
+    );
+
+    let summe = 0;
+    for (let viertel = 0; viertel < 96; viertel++) {
+      const zeit = new Date(datum);
+      zeit.setHours(0, viertel * 15, 0, 0);
+      summe += erzeugungKw(kwp, zeit, zufall, bewoelkung) * 0.25;
+    }
+
+    const band = spanne(i);
+
+    ergebnis.push({
+      datum: tagesSchluessel(datum),
+      erwartet: Number(summe.toFixed(1)),
+      untergrenze: Number((summe * (1 - band)).toFixed(1)),
+      obergrenze: Number((summe * (1 + band * 0.6)).toFixed(1)),
+      bewoelkung,
+    });
+  }
+
+  return ergebnis;
+}
+
+/**
+ * Ertragserwartung bis zum Jahresende, aus dem bisherigen Verlauf und
+ * dem verbleibenden Jahresgang hochgerechnet.
+ */
+export interface Jahresprognose {
+  bisher: number;
+  erwartetRest: number;
+  erwartetGesamt: number;
+  /** Sollwert aus der Anlagenauslegung, sofern hinterlegt. */
+  soll?: number;
+  /** Abweichung vom Soll in Prozent. */
+  abweichung?: number;
+}
+
+export function jahresprognose(
+  anlage: PvAnlage,
+  ertraege: PvErtrag[],
+): Jahresprognose {
+  const jetzt = new Date();
+  const jahr = jetzt.getFullYear();
+
+  const diesesJahr = ertraege.filter(
+    (e) => e.anlage === anlage.name && e.datum.startsWith(String(jahr)),
+  );
+
+  const bisher = diesesJahr.reduce((s, e) => s + (e.ertrag_kwh ?? 0), 0);
+
+  // Der Jahresgang gewichtet die verbleibenden Tage: Ein Dezembertag
+  // traegt deutlich weniger bei als ein Junitag.
+  let gewichtRest = 0;
+  let gewichtGesamt = 0;
+
+  for (let tag = 0; tag < 365; tag++) {
+    const datum = new Date(jahr, 0, 1 + tag);
+    if (datum.getFullYear() !== jahr) break;
+
+    const gewicht = jahresgang(datum);
+    gewichtGesamt += gewicht;
+    if (datum > jetzt) gewichtRest += gewicht;
+  }
+
+  const gewichtBisher = gewichtGesamt - gewichtRest;
+  const erwartetRest =
+    gewichtBisher > 0 ? (bisher / gewichtBisher) * gewichtRest : 0;
+
+  const erwartetGesamt = bisher + erwartetRest;
+  const soll = anlage.soll_ertrag_kwh;
+
+  return {
+    bisher,
+    erwartetRest,
+    erwartetGesamt,
+    soll,
+    abweichung:
+      soll && soll > 0 ? ((erwartetGesamt - soll) / soll) * 100 : undefined,
+  };
+}
+
+/** Kurze Einordnung der Bewoelkung fuer die Anzeige. */
+export function wetterText(bewoelkung: number): string {
+  if (bewoelkung < 0.12) return "klar";
+  if (bewoelkung < 0.3) return "leicht bewölkt";
+  if (bewoelkung < 0.55) return "wechselnd bewölkt";
+  return "stark bewölkt";
+}

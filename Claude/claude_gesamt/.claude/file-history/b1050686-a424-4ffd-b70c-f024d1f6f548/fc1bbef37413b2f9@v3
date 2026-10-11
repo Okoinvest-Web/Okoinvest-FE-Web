@@ -1,0 +1,316 @@
+"use server";
+
+import { after } from "next/server";
+import { revalidatePath } from "next/cache";
+
+import { eine, imBlock, schreibe, skalar } from "@/lib/db/verbindung";
+import { haengeAn, type Protokolleintrag } from "@/lib/sicherheit/kette";
+import { protokolliere } from "@/lib/sicherheit/audit";
+import { findeParameter, pruefeParameter } from "@/lib/sicherheit/regelgrenzen";
+import { requireRecht } from "@/lib/session";
+
+export interface SteuerErgebnis {
+  ok: boolean;
+  meldung: string;
+  /** Parameter, auf den sich die Meldung bezieht. */
+  parameter?: string;
+  /** Kennung des erzeugten Befehls, für die Verfolgung. */
+  befehl?: string;
+}
+
+/** Hängt einen Eintrag an die fälschungssichere Protokollkette. */
+function protokollkette(
+  anlageId: string,
+  ereignis: string,
+  urheber: string,
+  herkunft: string,
+  inhalt: string,
+): void {
+  const letzter = eine<Protokolleintrag>(
+    `SELECT folge, zeitpunkt, ereignis, urheber, herkunft, inhalt,
+            vorgaenger, hash
+       FROM protokollkette ORDER BY folge DESC LIMIT 1`,
+  );
+
+  const neu = haengeAn(letzter, {
+    zeitpunkt: new Date().toISOString(),
+    ereignis,
+    urheber,
+    herkunft,
+    inhalt,
+  });
+
+  schreibe(
+    `INSERT INTO protokollkette
+       (anlage_id, zeitpunkt, ereignis, urheber, herkunft, inhalt,
+        vorgaenger, hash)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    anlageId,
+    neu.zeitpunkt,
+    neu.ereignis,
+    neu.urheber,
+    neu.herkunft,
+    neu.inhalt,
+    neu.vorgaenger,
+    neu.hash,
+  );
+}
+
+/**
+ * Ändert einen Steuerungsparameter.
+ *
+ * Die Reihenfolge der Prüfungen ist bewusst so gewählt:
+ *
+ *   1. Recht des Benutzers - darf diese Person überhaupt steuern?
+ *   2. Zulässigkeit des Parameters - ist er gesetzlich freigegeben?
+ *   3. Schreiben in einem Zug - Sollwert und Befehl gehören zusammen.
+ *   4. Protokollierung - jeder Versuch, auch der abgelehnte. Gerade
+ *      abgelehnte Versuche sind für den Nachweis interessant.
+ *
+ * Punkt 2 ist der Kern: Netzrelevante Werte wie Wirkleistungsbegrenzung,
+ * Parkregler-Sollwert oder die Schutzeinstellungen werden hier
+ * abgelehnt - unabhängig davon, was die Oberfläche anbietet. Wer das
+ * Formular umgeht und direkt an diese Funktion sendet, kommt keinen
+ * Schritt weiter.
+ *
+ * Der Befehl durchläuft dieselben Zustände wie im Betrieb:
+ * angenommen, übertragen, bestätigt. Die Bestätigung kommt nicht
+ * sofort - sie kommt von der Anlage. Deshalb wird sie nach der
+ * Antwort nachgetragen und nicht vorher behauptet.
+ */
+export async function setzeParameter(
+  _vorher: SteuerErgebnis | null,
+  formular: FormData,
+): Promise<SteuerErgebnis> {
+  const benutzer = await requireRecht("steuerung.schreiben");
+
+  const anlage = String(formular.get("anlage") ?? "");
+  const parameter = String(formular.get("parameter") ?? "");
+  const rohwert = formular.get("wert");
+
+  const pruefung = pruefeParameter(parameter, rohwert);
+
+  if (!pruefung.erlaubt) {
+    const befehlId = `SB-${Date.now()}`;
+
+    // Auch der abgelehnte Versuch wird festgehalten - mit Grund.
+    schreibe(
+      `INSERT INTO steuerbefehl
+         (id, anlage_id, parameter, wert_vorher, wert_nachher, status,
+          begruendung, benutzer, erstellt_am)
+       VALUES (?, ?, ?, ?, ?, 'Abgelehnt', ?, ?, ?)`,
+      befehlId,
+      anlage,
+      parameter,
+      skalar<string>(
+        "SELECT wert FROM steuerwert WHERE anlage_id = ? AND parameter = ?",
+        anlage,
+        parameter,
+      ) ?? null,
+      String(rohwert ?? ""),
+      pruefung.grund,
+      benutzer.vollname,
+      new Date().toISOString(),
+    );
+
+    await protokolliere({
+      kategorie: "steuerung",
+      aktion: `Änderung von "${parameter}"`,
+      ergebnis: "abgelehnt",
+      objekt: anlage,
+      nachher: String(rohwert),
+      begruendung: pruefung.grund,
+    });
+
+    return { ok: false, meldung: pruefung.grund, parameter };
+  }
+
+  const definition = findeParameter(parameter);
+  const vorher =
+    skalar<string>(
+      "SELECT wert FROM steuerwert WHERE anlage_id = ? AND parameter = ?",
+      anlage,
+      parameter,
+    ) ?? null;
+
+  const neuerWert = String(pruefung.wert);
+
+  if (vorher === neuerWert) {
+    return {
+      ok: true,
+      meldung: "Der Wert war bereits gesetzt.",
+      parameter,
+    };
+  }
+
+  const befehlId = `SB-${Date.now()}`;
+  const jetzt = new Date().toISOString();
+
+  try {
+    imBlock(() => {
+      // Sollwert und Befehl gehören zusammen. Bricht eines ab, darf
+      // auch das andere nicht stehen bleiben - sonst zeigt das Portal
+      // einen Wert, den die Anlage nie bekommen hat.
+      schreibe(
+        `INSERT INTO steuerwert
+           (anlage_id, parameter, wert, quelle, geaendert_von, geaendert_am)
+         VALUES (?, ?, ?, 'Kunde', ?, ?)
+         ON CONFLICT (anlage_id, parameter) DO UPDATE SET
+           wert = excluded.wert,
+           quelle = excluded.quelle,
+           geaendert_von = excluded.geaendert_von,
+           geaendert_am = excluded.geaendert_am`,
+        anlage,
+        parameter,
+        neuerWert,
+        benutzer.vollname,
+        jetzt,
+      );
+
+      schreibe(
+        `INSERT INTO steuerbefehl
+           (id, anlage_id, parameter, wert_vorher, wert_nachher, status,
+            begruendung, benutzer, erstellt_am)
+         VALUES (?, ?, ?, ?, ?, 'Übertragen', ?, ?, ?)`,
+        befehlId,
+        anlage,
+        parameter,
+        vorher,
+        neuerWert,
+        `Gesetzt über das Portal durch ${benutzer.vollname}`,
+        benutzer.vollname,
+        jetzt,
+      );
+
+      protokollkette(
+        anlage,
+        "Steuerungsparameter geändert",
+        benutzer.vollname,
+        "Portal",
+        `${definition?.bezeichnung ?? parameter}: ${vorher ?? "nicht gesetzt"} → ${neuerWert}${definition?.einheit ? " " + definition.einheit : ""}`,
+      );
+    });
+  } catch {
+    return {
+      ok: false,
+      meldung:
+        "Der Wert konnte nicht gespeichert werden. Bitte erneut versuchen.",
+      parameter,
+    };
+  }
+
+  await protokolliere({
+    kategorie: "steuerung",
+    aktion: `Änderung von "${parameter}"`,
+    ergebnis: "erfolg",
+    objekt: anlage,
+    vorher: vorher ?? undefined,
+    nachher: neuerWert,
+    begruendung: `Geändert durch ${benutzer.vollname}`,
+  });
+
+  /*
+   * Die Rückmeldung der Anlage kommt nach der Antwort.
+   *
+   * Im Betrieb quittiert der Steuerrechner den Befehl über den
+   * Tunnel; das dauert einen Regelzyklus. Hier wird derselbe Ablauf
+   * nachgebildet: Der Benutzer sieht "Übertragen", und beim nächsten
+   * Aufruf steht "Bestätigt". Sofort "Bestätigt" zu schreiben wäre
+   * bequemer und gelogen.
+   */
+  after(() => {
+    schreibe(
+      `UPDATE steuerbefehl SET status = 'Bestätigt' WHERE id = ?`,
+      befehlId,
+    );
+  });
+
+  revalidatePath("/portal/steuerung");
+  revalidatePath("/portal/netz");
+
+  return {
+    ok: true,
+    meldung: `Übertragen. Die Anlage bestätigt den Wert mit dem nächsten Regelzyklus.`,
+    parameter,
+    befehl: befehlId,
+  };
+}
+
+/**
+ * Setzt einen Parameter auf den Wert zurück, der bei der
+ * Inbetriebnahme eingestellt war.
+ *
+ * Gibt es keinen Ausgangswert, wird der Eintrag entfernt - dann gilt
+ * wieder, was im Gerät hinterlegt ist.
+ */
+export async function setzeZurueck(
+  _vorher: SteuerErgebnis | null,
+  formular: FormData,
+): Promise<SteuerErgebnis> {
+  const benutzer = await requireRecht("steuerung.schreiben");
+
+  const anlage = String(formular.get("anlage") ?? "");
+  const parameter = String(formular.get("parameter") ?? "");
+
+  const definition = findeParameter(parameter);
+  if (!definition || definition.gesperrt) {
+    return {
+      ok: false,
+      meldung: "Dieser Parameter lässt sich nicht zurücksetzen.",
+      parameter,
+    };
+  }
+
+  const vorher = skalar<string>(
+    "SELECT wert FROM steuerwert WHERE anlage_id = ? AND parameter = ?",
+    anlage,
+    parameter,
+  );
+
+  imBlock(() => {
+    schreibe(
+      "DELETE FROM steuerwert WHERE anlage_id = ? AND parameter = ?",
+      anlage,
+      parameter,
+    );
+
+    schreibe(
+      `INSERT INTO steuerbefehl
+         (id, anlage_id, parameter, wert_vorher, wert_nachher, status,
+          begruendung, benutzer, erstellt_am)
+       VALUES (?, ?, ?, ?, NULL, 'Übertragen', ?, ?, ?)`,
+      `SB-${Date.now()}`,
+      anlage,
+      parameter,
+      vorher ?? null,
+      `Zurückgesetzt durch ${benutzer.vollname}`,
+      benutzer.vollname,
+      new Date().toISOString(),
+    );
+
+    protokollkette(
+      anlage,
+      "Steuerungsparameter zurückgesetzt",
+      benutzer.vollname,
+      "Portal",
+      `${definition.bezeichnung}: ${vorher ?? "nicht gesetzt"} → Werkseinstellung`,
+    );
+  });
+
+  await protokolliere({
+    kategorie: "steuerung",
+    aktion: `Rücksetzen von "${parameter}"`,
+    ergebnis: "erfolg",
+    objekt: anlage,
+    vorher: vorher ?? undefined,
+    begruendung: `Zurückgesetzt durch ${benutzer.vollname}`,
+  });
+
+  revalidatePath("/portal/steuerung");
+
+  return {
+    ok: true,
+    meldung: "Zurückgesetzt. Es gilt wieder der im Gerät hinterlegte Wert.",
+    parameter,
+  };
+}

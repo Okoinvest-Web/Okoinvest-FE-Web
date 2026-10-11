@@ -1,0 +1,283 @@
+import assert from "node:assert/strict";
+import { readFileSync, readdirSync, existsSync } from "node:fs";
+import { join } from "node:path";
+import { describe, it } from "node:test";
+
+import { DOCTYPE } from "./doctype-namen.ts";
+
+/**
+ * Gleicht das Frappe-Schema mit dem ab, was die Anwendung erwartet.
+ *
+ * Der haeufigste Fehler beim Betrieb einer solchen Loesung ist, dass
+ * Backend und Frontend auseinanderlaufen: Ein Feld wird im DocType
+ * umbenannt, die Abfrage im Portal fragt es weiter an - und liefert
+ * stillschweigend leere Werte statt einer Fehlermeldung.
+ *
+ * Diese Tests schlagen an, bevor das passiert.
+ */
+
+const DOCTYPE_ORDNER = join(
+  process.cwd(),
+  "frappe",
+  "energieportal",
+  "energieportal",
+  "doctype",
+);
+
+interface FrappeFeld {
+  fieldname: string;
+  fieldtype: string;
+  options?: string;
+}
+
+interface FrappeDocType {
+  name: string;
+  fields: FrappeFeld[];
+  permissions: { role: string; write: number; delete: number }[];
+}
+
+function ladeAlleDocTypes(): Map<string, FrappeDocType> {
+  const gefunden = new Map<string, FrappeDocType>();
+  if (!existsSync(DOCTYPE_ORDNER)) return gefunden;
+
+  for (const ordner of readdirSync(DOCTYPE_ORDNER, { withFileTypes: true })) {
+    if (!ordner.isDirectory()) continue;
+    const datei = join(DOCTYPE_ORDNER, ordner.name, `${ordner.name}.json`);
+    if (!existsSync(datei)) continue;
+
+    const inhalt = JSON.parse(readFileSync(datei, "utf8")) as FrappeDocType;
+    gefunden.set(inhalt.name, inhalt);
+  }
+
+  return gefunden;
+}
+
+const SCHEMA = ladeAlleDocTypes();
+
+/** DocTypes, die aus Frappe bzw. ERPNext stammen und nicht hier definiert sind. */
+const FREMDE_DOCTYPES = new Set([
+  "Customer",
+  "Contact",
+  "Address",
+  "File",
+  "Sales Invoice",
+  "Delivery Note",
+  "Item",
+  "Sales Order",
+  "User",
+]);
+
+/**
+ * Felder, die die Anwendung je DocType abfragt.
+ * Entspricht den `fields`-Listen in src/lib/portal-daten.ts.
+ */
+const ABGEFRAGTE_FELDER: Record<string, string[]> = {
+  "PV Anlage": [
+    "anlagen_name",
+    "kunde",
+    "standort",
+    "plz",
+    "ort",
+    "zaehlpunkt",
+    "netzbetreiber",
+    "netzebene",
+    "tor_typ",
+    "leistung_kwp",
+    "speicher_kwh",
+    "inbetriebnahme",
+    "status",
+    "soll_ertrag_kwh",
+  ],
+  "PV Ertrag": [
+    "anlage",
+    "datum",
+    "ertrag_kwh",
+    "eigenverbrauch_kwh",
+    "einspeisung_kwh",
+    "netzbezug_kwh",
+    "spezifisch_kwh_kwp",
+    "performance_ratio",
+  ],
+  "PV Messwert": [
+    "anlage",
+    "zeitpunkt",
+    "erzeugung_kw",
+    "verbrauch_kw",
+    "einspeisung_kw",
+    "netzbezug_kw",
+    "speicher_kw",
+    "speicher_soc",
+  ],
+  "PV Stoerung": [
+    "betreff",
+    "anlage",
+    "status",
+    "prioritaet",
+    "beschreibung",
+    "gemeldet_am",
+    "fehlercode",
+    "ausfall_kwh",
+  ],
+  Ladepunkt: [
+    "bezeichnung",
+    "anlage",
+    "standort",
+    "evse_id",
+    "leistung_kw",
+    "steckertyp",
+    "status",
+    "tarif_ct_kwh",
+  ],
+  Ladevorgang: [
+    "ladepunkt",
+    "tankkarte",
+    "fahrzeug",
+    "kostenstelle",
+    "start",
+    "energie_kwh",
+    "pv_anteil_kwh",
+    "kosten",
+    "abgerechnet",
+  ],
+  "Audit Protokoll": [
+    "zeitpunkt",
+    "benutzer",
+    "kategorie",
+    "aktion",
+    "ergebnis",
+    "objekt",
+    "wert_vorher",
+    "wert_nachher",
+    "begruendung",
+    "ip_adresse",
+  ],
+  Sicherheitsvorfall: [
+    "betreff",
+    "anlage",
+    "kategorie",
+    "schweregrad",
+    "status",
+    "bekannt_seit",
+    "meldepflichtig",
+    "beschreibung",
+    "massnahmen",
+  ],
+};
+
+describe("Frappe-Schema", () => {
+  it("ist erzeugt worden", () => {
+    assert.ok(
+      SCHEMA.size > 0,
+      "Keine DocTypes gefunden. Bitte zuerst 'node frappe/erzeuge-doctypes.mjs' ausfuehren.",
+    );
+  });
+
+  it("enthaelt jeden DocType, den die Anwendung anspricht", () => {
+    for (const [schluessel, name] of Object.entries(DOCTYPE)) {
+      if (FREMDE_DOCTYPES.has(name)) continue;
+      assert.ok(
+        SCHEMA.has(name),
+        `DOCTYPE.${schluessel} verweist auf "${name}", das Schema kennt ihn nicht`,
+      );
+    }
+  });
+
+  it("enthaelt jedes Feld, das die Anwendung abfragt", () => {
+    for (const [doctype, felder] of Object.entries(ABGEFRAGTE_FELDER)) {
+      const definition = SCHEMA.get(doctype);
+      assert.ok(definition, `DocType "${doctype}" fehlt im Schema`);
+
+      const vorhanden = new Set(definition.fields.map((f) => f.fieldname));
+
+      for (const feld of felder) {
+        assert.ok(
+          vorhanden.has(feld),
+          `"${doctype}" hat kein Feld "${feld}" - die Abfrage im Portal liefe ins Leere`,
+        );
+      }
+    }
+  });
+
+  it("verweist mit Link-Feldern nur auf existierende DocTypes", () => {
+    for (const [name, definition] of SCHEMA) {
+      for (const feld of definition.fields) {
+        if (feld.fieldtype !== "Link") continue;
+
+        const ziel = feld.options;
+        assert.ok(ziel, `${name}.${feld.fieldname} ist ein Link ohne Ziel`);
+        assert.ok(
+          SCHEMA.has(ziel) || FREMDE_DOCTYPES.has(ziel),
+          `${name}.${feld.fieldname} verweist auf unbekannten DocType "${ziel}"`,
+        );
+      }
+    }
+  });
+
+  it("gibt Auswahlfeldern immer Optionen mit", () => {
+    for (const [name, definition] of SCHEMA) {
+      for (const feld of definition.fields) {
+        if (feld.fieldtype !== "Select") continue;
+        assert.ok(
+          feld.options && feld.options.length > 0,
+          `${name}.${feld.fieldname} ist ein Auswahlfeld ohne Optionen`,
+        );
+      }
+    }
+  });
+});
+
+describe("Auditprotokoll", () => {
+  it("ist fuer niemanden aenderbar oder loeschbar", () => {
+    const audit = SCHEMA.get("Audit Protokoll");
+    assert.ok(audit, "Audit Protokoll fehlt");
+
+    for (const recht of audit.permissions) {
+      assert.equal(
+        recht.write,
+        0,
+        `Rolle "${recht.role}" darf das Protokoll nicht aendern duerfen`,
+      );
+      assert.equal(
+        recht.delete,
+        0,
+        `Rolle "${recht.role}" darf das Protokoll nicht loeschen duerfen`,
+      );
+    }
+  });
+});
+
+describe("Berechtigungen", () => {
+  it("geben dem Portalkunden nur dort Schreibrecht, wo das Portal es anbietet", () => {
+    const erlaubt = new Set(["PV Stoerung", "Support Ticket"]);
+
+    for (const [name, definition] of SCHEMA) {
+      const kunde = definition.permissions.find(
+        (p) => p.role === "Portalkunde",
+      );
+      if (!kunde) continue;
+
+      if (!erlaubt.has(name)) {
+        assert.equal(
+          kunde.write,
+          0,
+          `Portalkunde sollte "${name}" nicht schreiben duerfen`,
+        );
+      }
+    }
+  });
+
+  it("erlauben dem Portalkunden nirgends das Loeschen", () => {
+    for (const [name, definition] of SCHEMA) {
+      const kunde = definition.permissions.find(
+        (p) => p.role === "Portalkunde",
+      );
+      if (!kunde) continue;
+
+      assert.equal(
+        kunde.delete,
+        0,
+        `Portalkunde sollte "${name}" nicht loeschen duerfen`,
+      );
+    }
+  });
+});

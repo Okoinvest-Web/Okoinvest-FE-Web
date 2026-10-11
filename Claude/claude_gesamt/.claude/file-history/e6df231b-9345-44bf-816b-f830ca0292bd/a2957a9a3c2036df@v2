@@ -1,0 +1,63 @@
+import pathlib
+
+FE = pathlib.Path(r"C:\Users\SALEADMIN\Documents\Servicetechniker APP\frontend")
+
+
+def patch(pfad, paare):
+    p = FE / pfad
+    s = p.read_text(encoding="utf-8")
+    for alt, neu in paare:
+        if alt not in s:
+            raise SystemExit(f"NICHT GEFUNDEN in {pfad}:\n---\n{alt[:300]}\n---")
+        s = s.replace(alt, neu, 1)
+    p.write_text(s, encoding="utf-8")
+    print("ok", pfad)
+
+
+patch(
+    "vite.config.ts",
+    [
+        (
+            """const BASE = '/assets/oekovolt_baudoku/frontend/'
+const APP_DIR = resolve(__dirname, '../oekovolt_baudoku')""",
+            """const BASE = '/assets/oekovolt_baudoku/frontend/'
+
+/**
+ * Zielverzeichnis des Builds. Die E2E-Tests bauen mit `E2E_OUT` in einen
+ * eigenen Ordner, damit kein Demo-Build dort landet, wo der echte hingehört.
+ */
+const APP_DIR = process.env.E2E_OUT
+  ? resolve(__dirname, process.env.E2E_OUT)
+  : resolve(__dirname, '../oekovolt_baudoku')""",
+        )
+    ],
+)
+
+patch(
+    "e2e/server.mjs",
+    [
+        (
+            """const HIER = fileURLToPath(new URL('.', import.meta.url))
+const APP = resolve(HIER, '../../oekovolt_baudoku')""",
+            """const HIER = fileURLToPath(new URL('.', import.meta.url))
+// Der Demo-Build aus `e2e/build.mjs`, nicht der auslieferbare Produktionsbuild.
+const APP = resolve(HIER, '../.e2e-build')""",
+        ),
+        (
+            """  console.error('Produktionsbuild fehlt. Bitte zuerst `npm run build:only` ausführen.')""",
+            """  console.error('Demo-Build fehlt. Bitte zuerst `node e2e/build.mjs` ausführen.')""",
+        ),
+    ],
+)
+
+patch(
+    "playwright.config.ts",
+    [
+        (
+            """      // Setzt einen vorhandenen Produktionsbuild voraus (`npm run build:only`).
+      command: 'node e2e/server.mjs',""",
+            """      // Baut den Demo-Stand und liefert ihn aus, wie Frappe es täte.
+      command: 'node e2e/build.mjs && node e2e/server.mjs',""",
+        )
+    ],
+)

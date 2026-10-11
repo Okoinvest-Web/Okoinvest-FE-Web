@@ -1,0 +1,184 @@
+/**
+ * Plausibilitätsprüfung der Messwerte (FA-050 bis FA-055) — offline-fähig.
+ *
+ * Spiegelt `oekovolt_baudoku/utils/plausibilitaet.py` Regel für Regel, damit der
+ * Techniker die Warnung sofort auf dem Gerät sieht und nicht erst nach dem Sync.
+ * Maßgeblich bleibt der Server; beim Speichern überschreibt er Status und Meldung.
+ */
+
+export type PlausiStatus = 'OK' | 'Warnung' | 'Fehler'
+
+const RANG: Record<PlausiStatus, number> = { OK: 0, Warnung: 1, Fehler: 2 }
+
+export interface Grenzwerte {
+  riso_pro_modul_kohm: number
+  riso_minimum_kohm: number
+  uoc_toleranz_prozent: number
+  isc_toleranz_prozent: number
+}
+
+export const STANDARD_GRENZWERTE: Grenzwerte = {
+  riso_pro_modul_kohm: 40,
+  riso_minimum_kohm: 1000,
+  uoc_toleranz_prozent: 10,
+  isc_toleranz_prozent: 15,
+}
+
+export interface Befund {
+  status: PlausiStatus
+  meldungen: string[]
+  meldung: string
+}
+
+class Sammler {
+  status: PlausiStatus = 'OK'
+  meldungen: string[] = []
+
+  add(status: PlausiStatus, text: string): void {
+    this.meldungen.push(text)
+    if (RANG[status] > RANG[this.status]) this.status = status
+  }
+
+  fertig(): Befund {
+    return { status: this.status, meldungen: this.meldungen, meldung: this.meldungen.join(' | ') }
+  }
+}
+
+function zahl(wert: unknown): number | null {
+  if (wert === null || wert === undefined || wert === '') return null
+  const n = typeof wert === 'number' ? wert : Number(wert)
+  return Number.isFinite(n) ? n : null
+}
+
+export interface StringPruefung {
+  uoc?: number | null
+  isc?: number | null
+  riso?: number | null
+  anzahl_module?: number | null
+  modul_uoc?: number | null
+  modul_isc?: number | null
+  grenzwerte?: Partial<Grenzwerte>
+}
+
+/** Prüft einen String gegen Moduldatenblatt und IEC 62446-1. */
+export function pruefeString(eingabe: StringPruefung): Befund {
+  const gw = { ...STANDARD_GRENZWERTE, ...(eingabe.grenzwerte ?? {}) }
+  const sammler = new Sammler()
+
+  const uoc = zahl(eingabe.uoc)
+  const isc = zahl(eingabe.isc)
+  const riso = zahl(eingabe.riso)
+  const module = Math.trunc(zahl(eingabe.anzahl_module) ?? 0)
+  const modulUoc = zahl(eingabe.modul_uoc)
+  const modulIsc = zahl(eingabe.modul_isc)
+
+  // Uoc gegen Anzahl Module × Uoc_Modul (FA-051)
+  if (uoc !== null && module && modulUoc) {
+    const soll = module * modulUoc
+    const tol = (soll * gw.uoc_toleranz_prozent) / 100
+    const abweichung = Math.abs(uoc - soll)
+    if (abweichung > tol * 2) {
+      sammler.add(
+        'Fehler',
+        `Uoc ${uoc.toFixed(1)} V weicht stark von Soll ${soll.toFixed(1)} V ab ` +
+          `(zulässig ±${gw.uoc_toleranz_prozent} %).`,
+      )
+    } else if (abweichung > tol) {
+      sammler.add(
+        'Warnung',
+        `Uoc ${uoc.toFixed(1)} V außerhalb Toleranz (Soll ${soll.toFixed(1)} V ±${gw.uoc_toleranz_prozent} %).`,
+      )
+    }
+  } else if (uoc !== null && module && !modulUoc) {
+    sammler.add('Warnung', 'Uoc nicht prüfbar: Uoc je Modul fehlt in den Anlagenstammdaten.')
+  }
+
+  // Isc gegen Isc_Modul (FA-052)
+  if (isc !== null && modulIsc) {
+    const tol = (modulIsc * gw.isc_toleranz_prozent) / 100
+    const abweichung = Math.abs(isc - modulIsc)
+    if (abweichung > tol * 2) {
+      sammler.add(
+        'Fehler',
+        `Isc ${isc.toFixed(2)} A weicht stark von Soll ${modulIsc.toFixed(2)} A ab ` +
+          `(zulässig ±${gw.isc_toleranz_prozent} %).`,
+      )
+    } else if (abweichung > tol) {
+      sammler.add(
+        'Warnung',
+        `Isc ${isc.toFixed(2)} A außerhalb Toleranz (Soll ${modulIsc.toFixed(2)} A ±${gw.isc_toleranz_prozent} %).`,
+      )
+    }
+  }
+
+  // Riso nach IEC 62446-1 (FA-053)
+  if (riso !== null) {
+    const grenze = module
+      ? Math.max(gw.riso_pro_modul_kohm * module, gw.riso_minimum_kohm)
+      : gw.riso_minimum_kohm
+    if (riso < grenze) {
+      sammler.add(
+        'Fehler',
+        `Riso ${riso.toFixed(0)} kΩ unterschreitet den Grenzwert ${grenze.toFixed(0)} kΩ (IEC 62446-1).`,
+      )
+    } else if (riso < grenze * 1.25) {
+      sammler.add('Warnung', `Riso ${riso.toFixed(0)} kΩ nur knapp über dem Grenzwert ${grenze.toFixed(0)} kΩ.`)
+    }
+  }
+
+  if (!sammler.meldungen.length) sammler.meldungen.push('Alle Messwerte plausibel.')
+  return sammler.fertig()
+}
+
+/** Prüft einen numerischen Prüfpunkt gegen die Vorlagengrenzen (FA-014, FA-033). */
+export function pruefeZahlenwert(
+  wert: unknown,
+  minWert?: number | null,
+  maxWert?: number | null,
+  einheit = '',
+): Befund {
+  const sammler = new Sammler()
+  const w = zahl(wert)
+  const min = zahl(minWert)
+  const max = zahl(maxWert)
+  const e = einheit ? ` ${einheit}` : ''
+
+  if (w === null) return sammler.fertig()
+
+  if (min !== null && w < min) {
+    const spanne = max !== null ? max - min : Math.abs(min) || 1
+    sammler.add(min - w > spanne * 0.1 ? 'Fehler' : 'Warnung', `Wert ${w}${e} unter Minimum ${min}${e}.`)
+  }
+  if (max !== null && w > max) {
+    const spanne = min !== null ? max - min : Math.abs(max) || 1
+    sammler.add(w - max > spanne * 0.1 ? 'Fehler' : 'Warnung', `Wert ${w}${e} über Maximum ${max}${e}.`)
+  }
+
+  return sammler.fertig()
+}
+
+/** Ein Prüfpunkt mit Mangelbewertung erzeugt beim Abschluss automatisch einen Mangel. */
+export function istMangelBewertung(bewertung?: string | null): boolean {
+  return Boolean(bewertung && bewertung.toLowerCase().includes('mangel'))
+}
+
+/** Ableitung des Schweregrads aus der Bewertung (identisch zum Server). */
+export function schweregradAusBewertung(bewertung?: string | null): 'A' | 'B' | 'C' {
+  const text = (bewertung ?? '').toLowerCase()
+  if (text.includes('schwer')) return 'A'
+  if (text.includes('leicht')) return 'C'
+  return 'B'
+}
+
+export function statusFarbe(status: PlausiStatus | string | undefined): string {
+  switch (status) {
+    case 'OK':
+      return '#16a34a'
+    case 'Warnung':
+      return '#f59e0b'
+    case 'Fehler':
+      return '#dc2626'
+    default:
+      return '#94a3b8'
+  }
+}

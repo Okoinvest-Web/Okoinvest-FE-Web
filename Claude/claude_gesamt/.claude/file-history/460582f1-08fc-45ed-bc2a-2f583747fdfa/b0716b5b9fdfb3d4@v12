@@ -1,0 +1,312 @@
+import re
+from docx import Document
+from docx.shared import Pt, RGBColor, Cm
+from docx.enum.section import WD_ORIENT
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.oxml.ns import qn
+from docx.oxml import OxmlElement
+
+ACCENT = RGBColor(0x1F, 0x4E, 0x3D)
+GREY = RGBColor(0x5F, 0x5F, 0x5F)
+PH = RGBColor(0xC0, 0x00, 0x00)
+RED = RGBColor(0xB0, 0x00, 0x00)
+WHITE = RGBColor(0xFF, 0xFF, 0xFF)
+WHO = "[Name], [Funktion] der Ökovolt-Gruppe"
+
+
+def new_doc(landscape=False, size=10.5):
+    d = Document()
+    s = d.sections[0]
+    if landscape:
+        s.orientation = WD_ORIENT.LANDSCAPE
+        s.page_width, s.page_height = s.page_height, s.page_width
+    s.left_margin = s.right_margin = Cm(1.8)
+    s.top_margin = s.bottom_margin = Cm(1.5)
+    n = d.styles["Normal"]
+    n.font.name = "Calibri"
+    n.font.size = Pt(size)
+    n.paragraph_format.space_after = Pt(6)
+    return d
+
+
+def add(p, text, bold=False, size=None, color=None, italic=False):
+    for part in re.split(r"(\[[^\]]+\])", text):
+        if not part:
+            continue
+        r = p.add_run(part)
+        r.bold, r.italic = bold, italic
+        if size:
+            r.font.size = Pt(size)
+        if part.startswith("["):
+            r.font.color.rgb, r.bold = PH, True
+        elif color:
+            r.font.color.rgb = color
+    return p
+
+
+def shade(c, hexcolor):
+    tcPr = c._tc.get_or_add_tcPr()
+    sh = OxmlElement("w:shd")
+    sh.set(qn("w:val"), "clear")
+    sh.set(qn("w:fill"), hexcolor)
+    tcPr.append(sh)
+
+
+def cell(c, text, **kw):
+    c.paragraphs[0].text = ""
+    add(c.paragraphs[0], text, **kw).paragraph_format.space_after = Pt(1)
+
+
+def table(d, header, rows, widths, size=9):
+    t = d.add_table(rows=len(rows) + 1, cols=len(header))
+    t.style = "Table Grid"
+    for j, h in enumerate(header):
+        cell(t.rows[0].cells[j], h, bold=True, size=size + 0.5, color=WHITE)
+        shade(t.rows[0].cells[j], "1F4E3D")
+    for i, r in enumerate(rows, start=1):
+        for j, txt in enumerate(r):
+            cell(t.rows[i].cells[j], txt, size=size, bold=(j == 0))
+            if i % 2 == 0:
+                shade(t.rows[i].cells[j], "EEF3F1")
+    for row in t.rows:
+        for j, w in enumerate(widths):
+            row.cells[j].width = Cm(w)
+    return t
+
+
+def h(d, text, size=13):
+    p = add(d.add_paragraph(), text, bold=True, size=size, color=ACCENT)
+    p.paragraph_format.space_before = Pt(10)
+    p.paragraph_format.keep_with_next = True
+
+
+# =====================================================================
+# KAMPAGNENPLAN
+# =====================================================================
+d = new_doc(landscape=True)
+add(d.add_paragraph(), "INTERN – VERTRAULICH – NICHT WEITERGEBEN", bold=True, color=RED, size=9)
+add(d.add_paragraph(), "Kommunikationsplan Ökovolt ./. Salzburg AG", bold=True, size=20, color=ACCENT)
+add(d.add_paragraph(), "Stand [Datum] · Grundlage: Sachverhaltsdarstellung an die WKStA, Syndikatsvertrag vom 18.10.2021, "
+    "Urteile und Beschlüsse OLG München (14 U 3746/25, 14 U 3748/25, 14 U 295/26), Beschluss LG für Strafsachen Wien "
+    "176 Bl 7/26w vom 27.08.2026, GISA- und Firmenbuchdaten, Jahresabschluss Ökovolt 2024, Medienberichte vom 24./25.09.2026.",
+    italic=True, size=9.5, color=GREY)
+
+h(d, "1. Die Geschichte in fünf Sätzen")
+for s in [
+    "Ab 2020 öffnete Ökovolt der Salzburg AG in Beteiligungsgesprächen und einer Due Diligence ihre Bücher – "
+    "einschließlich des Hofer-Projekts, an dem Ökovolt seit 2015 arbeitete.",
+    "Im Jänner 2021 zog sich Ökovolt nach Absprache mit der Salzburg AG aus der Hofer-Ausschreibung zurück („da wir ja zusammen dort aufschlagen wollten“); "
+    "die Salzburg AG bezeichnete Hofer intern als „erstes Leuchtturmprojekt“ der Kooperation.",
+    "Am 18.10.2021 unterschrieb die Salzburg AG den Syndikatsvertrag – mit dem Ziel der „Vermeidung von "
+    "Wettbewerbssituationen“ und Ökovolt als „bevorzugtem Partner“ – und gründete am selben Tag die one2zero GmbH.",
+    "Den Hofer-Bau erhielt nicht Ökovolt, sondern die one2zero; das LG Memmingen hielt einen Schaden von mindestens "
+    "10,5 Mio. € für glaubhaft, das LG für Strafsachen Wien trug der WKStA die Einleitung von Ermittlungen auf.",
+    "Vor dem OLG München verlor die Salzburg AG alle drei Verfahren um ihre Anteile an der deutschen Ökovolt – "
+    "das Gericht nannte ihr Vorgehen bei der Generalversammlung „treuwidrig“.",
+]:
+    add(d.add_paragraph(style="List Number"), s, size=10.5)
+
+h(d, "2. Faktenbasis – was öffentlich gesagt werden darf")
+facts = [
+    ("Syndikatsvertrag 18.10.2021: Ziel „Vermeidung von Wettbewerbssituationen“ (Pkt. 4.2), Ökovolt „bevorzugte Partner“ (Pkt. 4.3)",
+     "Syndikatsvertrag (Notariatsakt)", "stark", "JA – wörtlich zitieren"),
+    ("one2zero GmbH gegründet am 18.10.2021", "OLG München 14 U 3746/25, Tatbestand; Firmenbuch FN 567399k", "stark",
+     "JA – „am selben Tag“. „Beim selben Notar“ erst mit Notariatsakt one2zero [beschaffen]"),
+    ("Rückzug aus Hofer-Ausschreibung abgesprochen: „… da wir ja zusammen dort aufschlagen wollten“ (05.02.2021)", "E-Mail, Beil. ./BQ", "stark", "JA – wörtlich, nicht „vereinbarungsgemäß“"),
+    ("Hofer als „erstes Leuchtturmprojekt“ der Kooperation", "interne SAG-Mail 10.06.2021, Beil. ./BY", "stark",
+     "JA – Herkunft der Mail vorher anwaltlich klären"),
+    ("LG Memmingen: Schaden ≥ 10,5 Mio. € und Verstoß gegen Pkt. 4.3 glaubhaft gemacht", "Wiedergabe im OLG-Urteil 14 U 3746/25, S. 5",
+     "mittel", "JA – nur mit „im Eilverfahren glaubhaft gemacht“; OLG hat Hofer offengelassen"),
+    ("OLG München: SAG verliert alle drei Eilverfahren, Gehörsrügen abgewiesen", "Urteile 21.05.2026, Beschlüsse 18.06.2026",
+     "stark", "JA – „dreimal verloren“, NICHT „neun Urteile“"),
+    ("OLG: Generalversammlung 10.10.2025 „treuwidrig“, Beschlussverfahren „im Flüsterton“ „ausgehebelt“",
+     "14 U 3748/25, S. 20; Beschluss 18.06.2026, S. 3", "stark", "JA – wörtlich"),
+    ("OLG: Datenkopie glaubhaft, „ohne Mitwirkung der Klägerin … deutlich weniger wahrscheinlich“", "14 U 3746/25, S. 19, 21",
+     "stark (Eilverfahren)", "JA – ohne Namen des Geschäftsführers; Einstellung StA Ried erwähnen können"),
+    ("GV 10.10.2025: vorgefertigtes Protokoll mit Beschluss über Schadenersatz gegen Gründer Wegscheider (TOP 20); zugleich Ansprüche gegen SAG, one2zero und SAG-nominierten GF blockiert",
+     "OLG 14 U 3748/25, S. 2–3 (Protokoll, TOP 20); SVD S. 54–55; GV-Protokoll Beil. ./A", "stark (TOP 20) / mittel (Blockade)",
+     "JA – Blockade nur mit Protokollbeleg [TOP-Nummern, Abstimmung]; keine Beträge nennen"),
+    ("LG für Strafsachen Wien trägt WKStA Einleitung von Ermittlungen auf (Hofer)", "176 Bl 7/26w, 27.08.2026", "stark",
+     "JA – „Einleitung“, nur Hofer, Unschuldsvermutung"),
+    ("one2zero: erste Gewerbeberechtigung 28.11.2022, Elektrotechnik 02.08.2023", "GISA 35453048, 35939931", "stark (Register)",
+     "JA – als Frage; wer tatsächlich plante/baute (Eco-tec) offen"),
+    ("Ökovolt 2024: 1,14 Mio. € Jahresüberschuss (+154 %)", "geprüfter Jahresabschluss 2024", "stark", "JA"),
+    ("Vorstand bereitete 2024 Wechsel des nominierten GF zur one2zero vor (Einladung 22.11., Mail 02.12.2024 „im Auftrag des Vorstandes“)",
+     "Kalender/Mail laut Grant-Thornton-Bericht", "mittel", "NUR NACH ANWALT – GT-Bericht hat Veröffentlichungsverbot"),
+]
+table(d, ["Fakt", "Beleg", "Stärke", "Öffentlich verwendbar?"], facts, [9.5, 6.5, 2.4, 7.6])
+
+h(d, "3. Nicht verwenden – würde die Kampagne beschädigen")
+bad = [
+    ("„Rechtsabteilung hat in Memmingen den Know-how-Missbrauch eingeräumt“", "Steht in keiner Entscheidung. Nur mit wörtlichem Protokoll LG Memmingen 19.11.2025 [beschaffen]."),
+    ("„Neun Urteile bestätigen …“", "Drei Eilverfahren; drei Entscheidungen sind Verfahrensbeschlüsse. Ersatz: „dreimal vor dem OLG München verloren“."),
+    ("„Gericht hat der Salzburg AG die Anteile entzogen / Verbleib unzumutbar“", "Eingezogen haben die Gesellschafter; das OLG wies die Eilanträge der SAG ab."),
+    ("„Verstoß gegen das Wettbewerbsverbot“", "Pkt. 6 Syndikatsvertrag: SAG unterliegt „keinem Wettbewerbsverbot“. Ersatz: „Ziel Vermeidung von Wettbewerb“ + OLG-Zitat „auch im hypothetischen Fall …“."),
+    ("„Vertrag des one2zero-GF verlängert“", "Kein Beleg in den Unterlagen. Welle entfällt, bis Beleg vorliegt."),
+    ("„Vorstand hat den Datenabzug angeordnet / wusste davon“", "Nicht belegt; GT fand in Vorstandsmails „keine inhaltlichen Auffälligkeiten“."),
+    ("„35 Mio. €“ / wechselnde Summen", "In den Unterlagen: 21,5 Mio. € Schaden (SVD), 10,5 Mio. € glaubhaft (LG), 45,95 Mio. € Forderung. Öffentlich einheitlich: „mehr als 20 Mio. €“."),
+    ("338.000 Dateien / 500 GB", "Vom OLG auf 4,28 GB / 1.155 Dateien korrigiert."),
+    ("Namen von Beschuldigten (Wiener, Schiefer) oder erkennbare Umschreibungen", "Identitätsschutz nach Mediengesetz; Entschädigungsrisiko."),
+    ("Anzeige gegen Haslauer, Notare, Anwälte (§ 278 StGB), Disziplinaranzeige", "Wirkt überzogen, Kreditschädigungsrisiko, lenkt vom Kern ab."),
+    ("Vergleichsgespräche, Beträge, Mail vom 11.09.2026", "Vertraulich; Veröffentlichung schadet vor Gericht."),
+    ("Grant-Thornton-Berichte, Tonaufnahmen, Zeugenzitate („Köpfe rollen“ u. a.)", "Veröffentlichungsverbot bzw. nur Zeugenaussage; höchstens nach Anwaltsprüfung im Interview."),
+]
+table(d, ["Nicht sagen", "Warum / stattdessen"], bad, [9.5, 16.5])
+
+h(d, "4. Die Wellen")
+waves = [
+    ("Welle 1\nsofort",
+     "Am selben Tag",
+     "Syndikatsvertrag mit „Vermeidung von Wettbewerbssituationen“ und am selben Tag Gründung der one2zero; Hofer als "
+     "„vereinbarte Ziel … Ökovolt als Errichtungspartner bevorzugt einzusetzen“, Rückzug abgesprochen, Auftrag ging an one2zero; WKStA-Einleitung",
+     "„Am selben Tag, an dem die Salzburg AG uns schriftlich zusagte, Wettbewerb zu vermeiden, gründete sie ihre eigene Konkurrenz.“",
+     "ORF Salzburg, SN, Salzburg24, Krone, APA-OTS",
+     "Liegt vor (SV, OLG-Tatbestand, Mails). Offen: Beilagen-Herkunft anwaltlich klären"),
+    ("Welle 1b\n+2–3 Tage",
+     "Die Eigentümer wissen es",
+     "Eigentümer seit 21.09.2026 mit Urteilen, Gutachten, forensischen Befunden informiert; Frist 30.09. verstrichen; "
+     "Bitte um gerichtlich beeideten Sachverständigen. Ab jetzt in jeder Welle Zähler „Antwort steht seit X Tagen aus“",
+     "„Ab dem 21. September kann niemand mehr sagen, er habe es nicht gewusst.“",
+     "Alle Medien; parallel Landtagsklubs, Gemeinderat, OÖ-Medien (Energie AG)",
+     "Nur Tatsache und Art der Unterlagen nennen – Schreiben vertraulich, GT-Berichte mit Veröffentlichungsverbot"),
+    ("Welle 2\n+3–5 Tage",
+     "Dreimal verloren",
+     "Generalversammlung 10.10.2025: Protokoll vorab geschrieben, im „Flüsterton“ fortgesetzt, vom OLG „treuwidrig“ genannt. "
+     "Beschlossen: Schadenersatz gegen den Gründer – blockiert: Ansprüche gegen SAG, one2zero und SAG-nominierten GF. "
+     "Folge: dreimal vor dem OLG München verloren",
+     "„Schadenersatz gegen den Gründer ja – gegen die eigene Tochter und den eigenen Mann nein. So sieht Aufklärung bei der Salzburg AG aus.“",
+     "Exklusiv an ein Medium mit Urteilen (Standard, profil oder SN), danach breit",
+     "OLG-Urteile liegen vor; Blockade-Beschluss: GV-Protokoll [TOP, Abstimmung]; Kontext „Eilverfahren“ nennen"),
+    ("Welle 2b\n+5–7 Tage",
+     "Kopiert, eingeladen, angestellt",
+     "Forensik: Controlling-Ordner am 02.12.2024 kopiert; am selben Tag Wechsel zur one2zero eingeleitet; danach bei "
+     "der SAG angestellt (eigene Angabe der SAG vor dem OLG)",
+     "„Andere Unternehmen trennen sich von solchen Mitarbeitern. Die Salzburg AG hat ihn angestellt.“",
+     "Exklusiv an ein Medium, das Welle 2 nicht hatte",
+     "OLG-Urteil liegt vor; Mail 02.12.2024 anwaltlich prüfen; GT-Berichte NICHT weitergeben"),
+    ("Welle 3\nWoche 2",
+     "Ohne Gewerbeschein",
+     "one2zero: erste Gewerbeberechtigung 11/2022, Elektrotechnik 08/2023; Eingabe Bundeswettbewerbsbehörde; Schreiben Landesinnung",
+     "„Jeder Elektriker braucht für jede Steckdose einen Gewerbeschein. Die Tochter des Landesversorgers hatte am Anfang gar keinen.“",
+     "Krone, Bezirksblätter, WKS-Medien, Regionalradio",
+     "GISA liegt vor. Offen: wer plante/baute ab wann; BWB-Eingabe [einbringen]"),
+    ("Welle 4\nWoche 2–3",
+     "Das Geld der Salzburger",
+     "Ökovolt 2024: 1,14 Mio. € Gewinn, Anteil SAG rund 560.000 €; one2zero-Verluste; Verfahrenskosten als offene Frage",
+     "„In Salzburg zahlt der Stromkunde, in Wien kassieren die Anwälte.“",
+     "Wirtschaftsressorts SN, Standard, Kurier, Presse, trend",
+     "JA Ökovolt liegt vor; JA one2zero aus Firmenbuch [abrufen]"),
+    ("Welle 5\nnach Ablauf 30.09.",
+     "Die Eigentümer schweigen",
+     "Ökovolt hat Land, Stadt und Energie AG am 21.09.2026 um unabhängige Aufarbeitung ersucht – ohne Antwort; fünf Fragen öffentlich",
+     "„Wer nichts zu verbergen hat, klärt auf. Die Salzburg AG klagt.“",
+     "Alle Medien; parallel Landtagsklubs und Gemeinderatsfraktionen",
+     "Nur Tatsache des Schreibens und Forderung „unabhängige Prüfung“ – Brief selbst ist vertraulich"),
+    ("Welle 6\nRESERVE",
+     "Wer Missstände meldet, wird entfernt",
+     "Dienstanweisung 12.11.2025 (Genehmigungspflicht für Auskünfte an Kammern/Gericht); danach Compliance und "
+     "Rechtsabteilung ihrer Funktionen enthoben; Firmenbuch hat Eintragung ausgesetzt; HinweisgeberInnenschutzgesetz",
+     "„Wer Missstände meldet, wird entfernt. Bei wem Forensiker die Datenkopie finden, der wird angestellt.“",
+     "Exklusiv (ORF/profil); einsetzen, wenn die SAG reagiert oder das Thema abflaut",
+     "Dienstanweisung ./30, Abberufung/Entlassung ./31 mit Datum, Firmenbuchbeschluss; Zustimmung der Betroffenen; Anwalt"),
+    ("Welle 7\nRESERVE –\nletzte Stufe",
+     "Neutrale Prüfung abgelehnt",
+     "03.09.2025: Vorschlag gerichtlich beeideter Sachverständiger abgelehnt („Köpfe rollen“, „nicht ihr Geld“ – "
+     "Zeugenaussagen); danach GV 10.10., Kammer-Info, Entlassungen, WKStA",
+     "„Das Angebot steht bis heute. Wer nichts zu verbergen hat, sagt Ja.“",
+     "Nur als Antwort, falls die SAG „gescheiterte Vergleiche“ öffentlich spielt",
+     "Eidesstattliche Erklärungen mehrerer Teilnehmer; Stellungnahme der SAG einholen; Vertraulichkeitsabrede prüfen; Anwalt"),
+    ("Reserve",
+     "Der Vorstand und die Konkurrenz",
+     "2024 bereitete der Vorstand den Wechsel des von ihm nominierten Ökovolt-GF zur one2zero vor",
+     "–",
+     "Exklusiv, nur nach Anwaltsfreigabe",
+     "Belege außerhalb des GT-Berichts nötig (Kalender, Mail); kein Name"),
+]
+table(d, ["Welle", "Thema", "Kernfakt", "Zitat", "Medien", "Beleg / Voraussetzung"], waves, [2.2, 3.0, 7.2, 5.6, 4.0, 4.0])
+
+h(d, "5. Spielregeln")
+for r in [
+    "Eine Welle – ein Thema – ein Zitat. Die nächste Welle erst, wenn die vorige in den Medien war.",
+    "Jede Aussage muss auf einen Beleg aus Abschnitt 2 zeigen. Was in Abschnitt 3 steht, wird nie gesagt.",
+    "Gerichtsentscheidungen immer mit „im Eilverfahren“ bzw. „glaubhaft gemacht“; WKStA immer mit „Einleitung“ und Unschuldsvermutung.",
+    "Keine Namen von Beschuldigten, keine Namen von Angestellten. Kritik richtet sich an Entscheidungen von Vorstand und Eigentümern.",
+    "Eine Person spricht für Ökovolt – immer dieselbe, mit derselben Funktion wie gegenüber dem ORF.",
+    "Reaktion der Salzburg AG binnen zwei Stunden mit genau einem Fakt beantworten.",
+    "Bekannte Gegenargumente vorbereiten: kein Wettbewerbsverbot (Pkt. 6), Einstellung StA Ried, LG Ried/OLG Linz, Nominierungsrecht.",
+    "Jede Welle vor Versand anwaltlich freigeben (Hauptverhandlung Deutschland am 12.12.2026, WKStA-Verfahren läuft).",
+]:
+    add(d.add_paragraph(style="List Bullet"), r, size=10)
+d.save(r"C:\Users\SALEADMIN\Desktop\Presse\3_Strategie_INTERN\INTERN_Kampagnenplan_Wellen.docx")
+
+# =====================================================================
+# WELLE 1 – AM SELBEN TAG
+# =====================================================================
+d = new_doc(size=11)
+d.styles["Normal"].paragraph_format.line_spacing = 1.18
+d.styles["Normal"].paragraph_format.space_after = Pt(8)
+
+
+def para(text, **kw):
+    p = add(d.add_paragraph(), text, **kw)
+    p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+    return p
+
+
+def quote(text):
+    p = d.add_paragraph()
+    p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+    add(p, f"„{text}“", bold=True, color=ACCENT)
+    add(p, f", sagt {WHO}.")
+
+
+add(d.add_paragraph(), "PRESSEINFORMATION  |  Ostermiething, [Datum]", bold=True, size=9, color=ACCENT)
+p = add(d.add_paragraph(), "Am selben Tag: Salzburg AG unterschrieb Partnerschaft – und gründete die eigene Konkurrenz",
+        bold=True, size=20)
+p.paragraph_format.space_after = Pt(4)
+p = add(d.add_paragraph(), "Vertrag mit Ökovolt sah „Vermeidung von Wettbewerbssituationen“ vor. Den Hofer-Auftrag, für "
+        "den sich Ökovolt zurückgezogen hatte, erhielt die neue Tochter.", italic=True, size=11.5, color=GREY)
+p.paragraph_format.space_after = Pt(12)
+
+para("Am 18. Oktober 2021 beteiligte sich die Salzburg AG mit 49 Prozent an der Ökovolt-Gruppe und unterzeichnete einen "
+     "Syndikatsvertrag. Dessen erklärtes Ziel: die „Vermeidung von Wettbewerbssituationen“ und Ökovolt als „bevorzugter "
+     "Partner“ bei Photovoltaikprojekten der Salzburg AG. Am selben Tag gründete die Salzburg AG die one2zero GmbH – "
+     "eine hundertprozentige Tochter im selben Geschäftsfeld. Das hält auch das Oberlandesgericht München in seinem "
+     "Urteil vom 21. Mai 2026 fest.", bold=True)
+para("Die Vorgeschichte: Ab 2020 gewährte Ökovolt der Salzburg AG in Beteiligungsgesprächen umfassenden Einblick in das "
+     "Unternehmen – auch in das Photovoltaikprojekt für die Filialen des Diskonters Hofer, an dem Ökovolt seit 2015 "
+     "arbeitete. Im Jänner 2021 zog sich Ökovolt auf Wunsch der Salzburg AG aus der Hofer-Ausschreibung zurück, "
+     "Ökovolt schrieb damals: „… da wir ja zusammen dort aufschlagen wollten.“ Die Salzburg-AG-Seite hielt im "
+     "Juni 2021 fest: „Es ist das vereinbarte Ziel das Projekt Hofer zum ersten Leuchtturmprojekt für diese Partnerschaft "
+     "zu entwickeln und Ökovolt als Errichtungspartner bevorzugt einzusetzen.“ Den Bau erhielt schließlich nicht Ökovolt, sondern die neue Tochter one2zero.")
+quote("Am selben Tag, an dem uns die Salzburg AG schriftlich zusagte, Wettbewerb zu vermeiden, hat sie ihre eigene "
+      "Konkurrenz gegründet. Wir haben uns aus der Hofer-Ausschreibung zurückgezogen, weil wir unserem Partner vertraut "
+      "haben. Den Auftrag hat dann die neue Tochter bekommen")
+para("Das Landgericht Memmingen hielt im Eilverfahren einen Schaden von mindestens 10,5 Millionen Euro und einen Verstoß "
+     "gegen die Partnerschaftspflichten für glaubhaft gemacht. Auf Antrag der Ökovolt Solartechnik GmbH trug das "
+     "Landesgericht für Strafsachen Wien der Wirtschafts- und Korruptionsstaatsanwaltschaft (WKStA) am 27. August 2026 auf, "
+     "zum Hofer-Sachverhalt ein Ermittlungsverfahren einzuleiten. Zum Verfahren selbst äußert sich Ökovolt nicht; es gilt "
+     "die Unschuldsvermutung. Die Salzburg AG bestreitet die Vorwürfe.")
+para("Ökovolt ersucht die Salzburg AG um Antwort auf zwei Fragen:", bold=True)
+for i, q in enumerate([
+        "Warum gründete die Salzburg AG am Tag der Vertragsunterzeichnung mit Ökovolt ein eigenes Unternehmen im selben Geschäft?",
+        "Warum ging der Hofer-Auftrag an diese Tochter und nicht an den vertraglich „bevorzugten Partner“?"], start=1):
+    p = d.add_paragraph()
+    p.paragraph_format.left_indent = Cm(0.7)
+    p.paragraph_format.first_line_indent = Cm(-0.7)
+    add(p, f"{i}.  ", bold=True, color=ACCENT)
+    add(p, q, bold=True)
+quote("Man kann nicht eine Partnerschaft unterschreiben und am selben Tag die Konkurrenz gründen. Die Salzburger haben "
+      "ein Recht zu erfahren, warum ihr Landesversorger so mit einem heimischen Betrieb umgeht")
+
+p = add(d.add_paragraph(), "Syndikatsvertrag (Auszüge), OLG-Urteil und Firmenbuchdaten stellt Ökovolt Medienvertreterinnen "
+        "und -vertretern auf Anfrage zur Verfügung.", italic=True, size=9.5)
+p.paragraph_format.space_before = Pt(10)
+add(d.add_paragraph(), "Über Ökovolt: Die Ökovolt-Gruppe mit Sitz in Ostermiething (Bezirk Braunau) plant und errichtet "
+    "seit 2012 Photovoltaik-Großanlagen in Österreich und Deutschland und beschäftigt mehr als 30 Mitarbeiterinnen und "
+    "Mitarbeiter.", size=9, color=GREY)
+add(d.add_paragraph(), "Rückfragen: [Name, Funktion] · Ökovolt Solartechnik GmbH · Gewerbegebiet 10, 5121 Ostermiething · "
+    "[Telefon] · [E-Mail]", size=9, color=GREY)
+d.save(r"C:\Users\SALEADMIN\Desktop\Presse\1_Oesterreich_Wellen\Presseaussendung_Welle1_AmSelbenTag.docx")
+print("ok", len(" ".join(p.text for p in d.paragraphs).split()), "Woerter Welle 1")
+

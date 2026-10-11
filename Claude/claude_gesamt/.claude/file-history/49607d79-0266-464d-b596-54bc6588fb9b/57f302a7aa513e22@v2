@@ -1,0 +1,376 @@
+/**
+ * Workflow-Definitionen als Daten - nach dem Vorbild von Frappe Workflow.
+ *
+ * Die drei DocTypes entsprechen eins zu eins denen in Frappe. Beim
+ * Portieren werden daraus Datensätze in der Datenbank; es ist kein Code zu
+ * übersetzen, sondern eine Tabelle zu füllen.
+ *
+ *   Workflow                 welcher DocType, welches Zustandsfeld
+ *   Workflow Document State  die Zustände, ihr docstatus, wer bearbeiten darf
+ *   Workflow Transition      wer darf von wo nach wo, unter welcher Bedingung
+ *
+ * Genau das ist der Punkt: wer einstellen will, dass ein Verify-Lauf ohne
+ * Genehmigung durchgeht, ändert hier eine Zeile - und baut dabei nicht
+ * versehentlich die Sperre für `backup_now` mit ab.
+ */
+import { defineDoctype } from './db.js'
+import { stundenVersetzt, tageVersetzt } from './zeit.js'
+
+const AT = 'TEN-0001'
+
+// --- Die Workflow-Definition selbst ----------------------------------------
+
+defineDoctype('Workflow', {
+  naming: (doc) => doc.workflow_name,
+  titleField: 'workflow_name',
+  fields: ['workflow_name', 'document_type', 'workflow_state_field', 'is_active'],
+  seed: [
+    {
+      workflow_name: 'Sicherungsaktion',
+      document_type: 'Backup Action Request',
+      workflow_state_field: 'workflow_state',
+      is_active: 1,
+      tenant: AT,
+      description: 'Anträge auf Sicherungsläufe, Prüfungen und Schutz.',
+    },
+    {
+      workflow_name: 'Bandwechsel',
+      document_type: 'Tape Change Request',
+      workflow_state_field: 'workflow_state',
+      is_active: 1,
+      tenant: AT,
+      description: 'Auswurf und Wechsel von LTO-Bändern, mit Quittung.',
+    },
+  ],
+})
+
+defineDoctype('Workflow Document State', {
+  naming: (doc, i) => 'WDS-' + String(i).padStart(5, '0'),
+  titleField: 'state',
+  fields: ['parent', 'state', 'label', 'doc_status', 'allow_edit', 'update_field', 'update_value'],
+  seed: [
+    // --- Sicherungsaktion
+    {
+      parent: 'Sicherungsaktion',
+      state: 'draft',
+      label: 'Entwurf',
+      doc_status: 0,
+      allow_edit: 'NetOps Operator',
+      tenant: AT,
+    },
+    {
+      parent: 'Sicherungsaktion',
+      state: 'requested',
+      label: 'Beantragt',
+      doc_status: 0,
+      allow_edit: 'NetOps Backup Approver',
+      tenant: AT,
+    },
+    {
+      parent: 'Sicherungsaktion',
+      state: 'approved',
+      label: 'Genehmigt',
+      doc_status: 1,
+      allow_edit: 'NetOps Backup Approver',
+      // Frappe schreibt beim Zustandswechsel ein Feld mit. `__user` steht
+      // für die handelnde Person.
+      update_field: 'approved_by',
+      update_value: '__user',
+      tenant: AT,
+    },
+    {
+      parent: 'Sicherungsaktion',
+      state: 'rejected',
+      label: 'Abgelehnt',
+      doc_status: 2,
+      allow_edit: 'NetOps Backup Approver',
+      update_field: 'approved_by',
+      update_value: '__user',
+      tenant: AT,
+    },
+    {
+      parent: 'Sicherungsaktion',
+      state: 'running',
+      label: 'Läuft',
+      doc_status: 1,
+      allow_edit: null,
+      tenant: AT,
+    },
+    {
+      parent: 'Sicherungsaktion',
+      state: 'done',
+      label: 'Erledigt',
+      doc_status: 1,
+      allow_edit: null,
+      tenant: AT,
+    },
+    {
+      parent: 'Sicherungsaktion',
+      state: 'failed',
+      label: 'Fehlgeschlagen',
+      doc_status: 1,
+      allow_edit: null,
+      tenant: AT,
+    },
+
+    // --- Bandwechsel
+    {
+      parent: 'Bandwechsel',
+      state: 'waiting',
+      label: 'Wartet auf Schreiblauf',
+      doc_status: 0,
+      allow_edit: 'NetOps Operator',
+      tenant: AT,
+    },
+    {
+      parent: 'Bandwechsel',
+      state: 'ready',
+      label: 'Bereit zum Auswerfen',
+      doc_status: 0,
+      allow_edit: 'NetOps Operator',
+      tenant: AT,
+    },
+    {
+      parent: 'Bandwechsel',
+      state: 'ejected',
+      label: 'Ausgeworfen – Wechsel offen',
+      doc_status: 1,
+      allow_edit: 'NetOps Operator',
+      tenant: AT,
+    },
+    {
+      parent: 'Bandwechsel',
+      state: 'confirmed',
+      label: 'Wechsel bestätigt',
+      doc_status: 1,
+      allow_edit: null,
+      update_field: 'confirmed_by',
+      update_value: '__user',
+      tenant: AT,
+    },
+    {
+      parent: 'Bandwechsel',
+      state: 'cancelled',
+      label: 'Abgebrochen',
+      doc_status: 2,
+      allow_edit: null,
+      tenant: AT,
+    },
+  ],
+})
+
+defineDoctype('Workflow Transition', {
+  naming: (doc, i) => 'WFT-' + String(i).padStart(5, '0'),
+  titleField: 'action',
+  fields: [
+    'parent',
+    'state',
+    'action',
+    'next_state',
+    'allowed',
+    'allow_self_approval',
+    'condition',
+  ],
+  seed: [
+    // --- Sicherungsaktion: der harmlose Weg
+    {
+      parent: 'Sicherungsaktion',
+      state: 'draft',
+      action: 'Sofort ausführen',
+      next_state: 'approved',
+      allowed: 'NetOps Operator',
+      // Wer nur liest oder ablegt, braucht niemanden zu fragen. Deshalb
+      // darf hier auch selbst genehmigt werden.
+      allow_self_approval: 1,
+      condition: 'harmlos',
+      tenant: AT,
+    },
+    // --- Sicherungsaktion: der eingreifende Weg
+    {
+      parent: 'Sicherungsaktion',
+      state: 'draft',
+      action: 'Beantragen',
+      next_state: 'requested',
+      allowed: 'NetOps Operator',
+      allow_self_approval: 1,
+      condition: 'eingreifend',
+      tenant: AT,
+    },
+    {
+      parent: 'Sicherungsaktion',
+      state: 'requested',
+      action: 'Genehmigen',
+      next_state: 'approved',
+      allowed: 'NetOps Backup Approver',
+      // Vier-Augen-Prinzip. Das Häkchen fehlt bewusst - es ist genau für
+      // den Fall da, in dem es gerade eilig ist.
+      allow_self_approval: 0,
+      tenant: AT,
+    },
+    {
+      parent: 'Sicherungsaktion',
+      state: 'requested',
+      action: 'Ablehnen',
+      next_state: 'rejected',
+      allowed: 'NetOps Backup Approver',
+      allow_self_approval: 1,
+      tenant: AT,
+    },
+    {
+      parent: 'Sicherungsaktion',
+      state: 'approved',
+      action: 'Starten',
+      next_state: 'running',
+      allowed: 'NetOps Operator',
+      allow_self_approval: 1,
+      tenant: AT,
+    },
+    {
+      parent: 'Sicherungsaktion',
+      state: 'running',
+      action: 'Als erledigt melden',
+      next_state: 'done',
+      allowed: 'NetOps Operator',
+      allow_self_approval: 1,
+      tenant: AT,
+    },
+    {
+      parent: 'Sicherungsaktion',
+      state: 'running',
+      action: 'Als fehlgeschlagen melden',
+      next_state: 'failed',
+      allowed: 'NetOps Operator',
+      allow_self_approval: 1,
+      tenant: AT,
+    },
+
+    // --- Bandwechsel
+    {
+      parent: 'Bandwechsel',
+      state: 'waiting',
+      action: 'Schreiblauf ist fertig',
+      next_state: 'ready',
+      allowed: 'NetOps Operator',
+      allow_self_approval: 1,
+      tenant: AT,
+    },
+    {
+      parent: 'Bandwechsel',
+      state: 'ready',
+      action: 'Auswerfen',
+      next_state: 'ejected',
+      allowed: 'NetOps Operator',
+      allow_self_approval: 1,
+      tenant: AT,
+    },
+    {
+      parent: 'Bandwechsel',
+      state: 'ejected',
+      // Der eigentliche Zweck des ganzen Ablaufs: ein ausgeworfenes Band,
+      // das niemand aus dem Laufwerk nimmt, ist kein Airgap.
+      action: 'Wechsel bestätigen',
+      next_state: 'confirmed',
+      allowed: 'NetOps Operator',
+      allow_self_approval: 1,
+      tenant: AT,
+    },
+    {
+      parent: 'Bandwechsel',
+      state: 'waiting',
+      action: 'Abbrechen',
+      next_state: 'cancelled',
+      allowed: 'NetOps Admin',
+      allow_self_approval: 1,
+      tenant: AT,
+    },
+    {
+      parent: 'Bandwechsel',
+      state: 'ready',
+      action: 'Abbrechen',
+      next_state: 'cancelled',
+      allowed: 'NetOps Admin',
+      allow_self_approval: 1,
+      tenant: AT,
+    },
+  ],
+})
+
+// --- Das Antragsdokument ----------------------------------------------------
+
+/**
+ * Eine beantragte Sicherungsaktion.
+ *
+ * Früher war das ein direkter Aufruf: Knopf drücken, Lauf startet. Als
+ * Dokument bekommt es Genehmigung, Protokoll und Rollenprüfung geschenkt -
+ * und wer den Ablauf ändern will, stellt ihn in der Workflow-Tabelle ein,
+ * statt Code anzufassen.
+ */
+defineDoctype('Backup Action Request', {
+  naming: (doc, i) => 'BAR-' + String(i).padStart(5, '0'),
+  titleField: 'action',
+  fields: [
+    'action',
+    'target',
+    'job',
+    'backup_object',
+    'reason',
+    'requested_by',
+    'requested_on',
+    'approved_by',
+    'workflow_state',
+    'run',
+    'result',
+    'finished_at',
+  ],
+  seed: [
+    {
+      action: 'backup_now',
+      target: 'pbs-ds-main',
+      job: null,
+      reason: 'Vor dem Datenbank-Update auf 2026.1',
+      requested_by: 'jakob.pichler@oekovolt.test',
+      requested_on: stundenVersetzt(-3),
+      approved_by: 'lena.steiner@oekovolt.test',
+      workflow_state: 'done',
+      result: 'ok',
+      finished_at: stundenVersetzt(-2.5),
+      tenant: AT,
+    },
+    {
+      action: 'protect',
+      target: 'pbs-ds-offsite',
+      backup_object: 'vm/104-mail',
+      reason: 'Beweissicherung Vorfall 2026-014',
+      requested_by: 'jakob.pichler@oekovolt.test',
+      requested_on: stundenVersetzt(-1),
+      approved_by: null,
+      // Wartet auf jemanden mit der Genehmiger-Rolle - und nicht auf Jakob
+      // selbst.
+      workflow_state: 'requested',
+      tenant: AT,
+    },
+    {
+      action: 'verify_now',
+      target: 'pbs-ds-main',
+      reason: 'Stichprobe nach Firmware-Wechsel',
+      requested_by: 'benny.hoefler@oekovolt.test',
+      requested_on: stundenVersetzt(-20),
+      approved_by: 'benny.hoefler@oekovolt.test',
+      workflow_state: 'done',
+      result: 'ok',
+      finished_at: stundenVersetzt(-18),
+      tenant: AT,
+    },
+    {
+      action: 'backup_now',
+      target: 'nakivo-repo-01',
+      reason: 'Nachholen nach Ausfall der Nacht',
+      requested_by: 'lena.steiner@oekovolt.test',
+      requested_on: tageVersetzt(-2),
+      approved_by: null,
+      workflow_state: 'rejected',
+      tenant: AT,
+      description: 'Abgelehnt: der reguläre Lauf hatte inzwischen Erfolg.',
+    },
+  ],
+})

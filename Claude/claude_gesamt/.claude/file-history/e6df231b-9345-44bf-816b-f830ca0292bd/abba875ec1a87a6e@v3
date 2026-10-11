@@ -1,0 +1,348 @@
+#!/usr/bin/env python3
+"""Erzeugt die Print-Format-JSONs (PDF-Ausgabe, FA-090/FA-091).
+
+Die Jinja-Templates liegen als lesbares HTML in diesem Skript und werden in das
+von Frappe erwartete JSON-Format geschrieben.
+"""
+
+from __future__ import annotations
+
+import json
+import pathlib
+
+ROOT = pathlib.Path(__file__).resolve().parent.parent
+ZIEL = ROOT / "oekovolt_baudoku" / "baudoku" / "print_format"
+TS = "2026-09-15 08:00:00.000000"
+
+CSS = """
+.pf { font-family: "Inter", "Helvetica Neue", Arial, sans-serif; font-size: 9.5pt; color: #0f172a; }
+.pf h1 { font-size: 16pt; margin: 0 0 2mm; }
+.pf h2 { font-size: 11pt; margin: 6mm 0 2mm; padding-bottom: 1mm;
+         border-bottom: 1.5pt solid #0f172a; text-transform: uppercase; letter-spacing: .04em; }
+.pf .kopf { display: flex; justify-content: space-between; align-items: flex-start;
+            border-bottom: 2pt solid #0f172a; padding-bottom: 3mm; margin-bottom: 4mm; }
+.pf .kopf .firma { text-align: right; font-size: 8pt; color: #475569; line-height: 1.45; }
+.pf .kopf img { max-height: 16mm; }
+.pf table { width: 100%; border-collapse: collapse; }
+.pf td, .pf th { border: .5pt solid #cbd5e1; padding: 1.4mm 2mm; vertical-align: top; }
+.pf th { background: #f1f5f9; text-align: left; font-weight: 600; }
+.pf .stamm td { border: none; padding: .8mm 0; }
+.pf .stamm td.l { color: #64748b; width: 32mm; }
+.pf .badge { display: inline-block; padding: .4mm 2mm; border-radius: 2mm;
+             color: #fff; font-size: 7.5pt; font-weight: 600; }
+.pf .fotos { display: flex; flex-wrap: wrap; gap: 2mm; margin-top: 2mm; }
+.pf .foto { width: 52mm; }
+.pf .foto img { width: 100%; border: .5pt solid #cbd5e1; border-radius: 1mm; }
+.pf .foto .bu { font-size: 7pt; color: #475569; margin-top: .6mm; }
+.pf .sig { display: flex; gap: 8mm; margin-top: 6mm; }
+.pf .sig .feld { flex: 1; }
+.pf .sig img { height: 18mm; display: block; }
+.pf .sig .linie { border-top: .5pt solid #0f172a; margin-top: 1mm; padding-top: 1mm;
+                  font-size: 8pt; color: #475569; }
+.pf .fuss { margin-top: 8mm; padding-top: 2mm; border-top: .5pt solid #cbd5e1;
+            font-size: 7.5pt; color: #64748b; }
+.pf .hinweis { font-size: 8pt; color: #64748b; font-style: italic; }
+.pf tr { page-break-inside: avoid; }
+"""
+
+KOPF = """
+<div class="kopf">
+	<div>
+		<h1>{{ titel }}</h1>
+		<div class="hinweis">{{ untertitel }}</div>
+	</div>
+	<div class="firma">
+		<b>OEKOVOLT Solartechnik GmbH</b><br>
+		Gewerbegebiet 10<br>
+		5121 Ostermiething, Oesterreich<br>
+		Dokument {{ doc.name }}
+	</div>
+</div>
+"""
+
+PRUEFPROTOKOLL_HTML = """<div class="pf">
+""" + KOPF.replace("{{ titel }}", "{{ doc.vorlage_typ }}-Protokoll").replace(
+	"{{ untertitel }}", "{{ frappe.db.get_value('Checklistenvorlage', doc.vorlage, 'titel') }} "
+	                    "(Rev. {{ doc.vorlage_revision }})") + """
+<table class="stamm">
+	<tr>
+		<td class="l">Anlage</td>
+		<td><b>{{ frappe.db.get_value("PV Anlage", doc.anlage, "anlage_name") }}</b> ({{ doc.anlage }})</td>
+		<td class="l">Pruefer</td>
+		<td>{{ frappe.db.get_value("Employee", doc.pruefer, "employee_name") }}</td>
+	</tr>
+	<tr>
+		<td class="l">Auftraggeber</td><td>{{ doc.customer or "-" }}</td>
+		<td class="l">Beginn</td><td>{{ frappe.format(doc.pruef_datum, {"fieldtype": "Datetime"}) }}</td>
+	</tr>
+	<tr>
+		<td class="l">Projekt</td><td>{{ doc.project or "-" }}</td>
+		<td class="l">Ende</td><td>{{ frappe.format(doc.abschluss_datum, {"fieldtype": "Datetime"}) }}</td>
+	</tr>
+	<tr>
+		<td class="l">Wetter</td><td>{{ doc.wetter or "-" }}{% if doc.temperatur %}, {{ doc.temperatur }} C{% endif %}</td>
+		<td class="l">Messmittel</td><td>{{ doc.messmittel or "-" }}</td>
+	</tr>
+	<tr>
+		<td class="l">Anwesend</td><td colspan="3">{{ doc.anwesende_personen or "-" }}</td>
+	</tr>
+	{% if doc.gps_koordinaten %}
+	<tr><td class="l">GPS</td><td colspan="3">{{ doc.gps_koordinaten }}</td></tr>
+	{% endif %}
+</table>
+
+{% for gruppe in gruppiere_ergebnisse(doc.ergebnisse) %}
+<h2>{{ gruppe.sektion }}</h2>
+<table>
+	<tr><th style="width:12mm">Nr.</th><th>Pruefpunkt</th><th style="width:38mm">Ergebnis</th>
+		<th style="width:20mm">Status</th></tr>
+	{% for z in gruppe.zeilen %}
+	<tr>
+		<td>{{ z.nummer or "" }}</td>
+		<td>
+			{{ z.titel }}
+			{% if z.bemerkung %}<br><span class="hinweis">{{ z.bemerkung }}</span>{% endif %}
+			{% if z.plausi_meldung and z.status in ("Warnung", "Fehler") %}
+				<br><span class="hinweis">{{ z.plausi_meldung }}</span>
+			{% endif %}
+			{% if z.uebersteuert %}
+				<br><span class="hinweis">Uebersteuert: {{ z.uebersteuerung_grund }}</span>
+			{% endif %}
+			{% if z.mangel %}<br><b>Mangel {{ z.mangel }}</b>{% endif %}
+			{% if z.fotos %}
+			<div class="fotos">
+				{% for foto in z.fotos %}
+				<div class="foto">
+					<img src="{{ bild_daten(foto.bild) }}">
+					<div class="bu">{{ foto.beschriftung or "" }}
+						{{ frappe.format(foto.aufgenommen_am, {"fieldtype": "Datetime"}) }}</div>
+				</div>
+				{% endfor %}
+			</div>
+			{% endif %}
+		</td>
+		<td>
+			{%- if z.feldtyp == "Bewertung" -%}{{ z.bewertung or "-" }}
+			{%- elif z.feldtyp == "Zahlenwert" -%}{{ z.wert_zahl }} {{ z.einheit or "" }}
+			{%- elif z.feldtyp == "Ja-Nein" -%}{{ "Ja" if z.wert_ja_nein else "Nein" }}
+			{%- elif z.feldtyp == "Datum" -%}{{ frappe.format(z.wert_datum, {"fieldtype": "Date"}) }}
+			{%- elif z.feldtyp == "Foto" -%}{{ "siehe Foto" if z.fotos else "-" }}
+			{%- else -%}{{ z.wert_text or "-" }}{%- endif -%}
+		</td>
+		<td><span class="badge" style="background:{{ status_farbe(z.status) }}">{{ z.status }}</span></td>
+	</tr>
+	{% endfor %}
+</table>
+{% endfor %}
+
+{% if doc.messdaten %}
+<h2>String-Messdaten</h2>
+<table>
+	<tr><th>String</th><th>WR / MPPT</th><th>Module</th><th>Uoc (V)</th><th>Isc (A)</th>
+		<th>Riso (kOhm)</th><th>Status</th></tr>
+	{% for m in doc.messdaten %}
+	<tr>
+		<td>{{ m.string_nr }}</td><td>{{ m.wechselrichter or "-" }}</td><td>{{ m.anzahl_module }}</td>
+		<td>{{ m.uoc }}</td><td>{{ m.isc }}</td><td>{{ m.riso }}</td>
+		<td><span class="badge" style="background:{{ status_farbe(m.status) }}">{{ m.status }}</span></td>
+	</tr>
+	{% if m.plausi_meldung and m.status != "OK" %}
+	<tr><td colspan="7" class="hinweis">{{ m.plausi_meldung }}
+		{% if m.uebersteuert %} - uebersteuert: {{ m.uebersteuerung_grund }}{% endif %}</td></tr>
+	{% endif %}
+	{% endfor %}
+</table>
+{% endif %}
+
+<h2>Gesamtbewertung</h2>
+<p><span class="badge" style="background:{{ status_farbe(doc.gesamtbewertung) }}; font-size:10pt">
+	{{ doc.gesamtbewertung or "ohne Bewertung" }}</span></p>
+{% if doc.zusammenfassung %}<div>{{ doc.zusammenfassung }}</div>{% endif %}
+<p class="hinweis">{{ doc.anzahl_erledigt }} von {{ doc.anzahl_pruefpunkte }} Pruefpunkten erfasst,
+	{{ doc.anzahl_maengel or 0 }} Maengel dokumentiert.</p>
+
+{% if doc.unterschriften %}
+<h2>Unterschriften</h2>
+<div class="sig">
+	{% for u in doc.unterschriften %}
+	<div class="feld">
+		<img src="{{ u.signatur }}">
+		<div class="linie">
+			{{ u.name_unterzeichner }} ({{ u.rolle }})<br>
+			{{ frappe.format(u.unterzeichnet_am, {"fieldtype": "Datetime"}) }}
+			{% if u.ip_adresse %}<br>IP {{ u.ip_adresse }}{% endif %}
+		</div>
+	</div>
+	{% endfor %}
+</div>
+{% endif %}
+
+<div class="fuss">
+	Erstellt mit OEKOVOLT Baudoku - {{ frappe.utils.now() }}.
+	Dieses Protokoll wurde digital erfasst und ist ohne Unterschrift nur als Entwurf gueltig.
+</div>
+</div>
+"""
+
+TAGESBERICHT_HTML = """<div class="pf">
+""" + KOPF.replace("{{ titel }}", "Tagesbericht {{ doc.bericht_typ }}").replace(
+	"{{ untertitel }}", '{{ frappe.format(doc.datum, {"fieldtype": "Date"}) }}') + """
+<table class="stamm">
+	<tr>
+		<td class="l">Baustelle</td>
+		<td><b>{{ frappe.db.get_value("PV Anlage", doc.anlage, "anlage_name") }}</b></td>
+		<td class="l">Ersteller</td>
+		<td>{{ frappe.db.get_value("Employee", doc.ersteller, "employee_name") }}</td>
+	</tr>
+	<tr>
+		<td class="l">Projekt</td><td>{{ doc.project or "-" }}</td>
+		<td class="l">Subunternehmer</td><td>{{ doc.supplier or "-" }}</td>
+	</tr>
+	<tr>
+		<td class="l">Arbeitszeit</td>
+		<td>{{ doc.arbeitsbeginn or "-" }} bis {{ doc.arbeitsende or "-" }}</td>
+		<td class="l">Personal</td>
+		<td>{{ doc.personal_anzahl or 0 }} Personen, {{ doc.arbeitsstunden_gesamt or 0 }} h</td>
+	</tr>
+	<tr>
+		<td class="l">Wetter</td>
+		<td>{{ doc.wetter or "-" }}{% if doc.temperatur %}, {{ doc.temperatur }} C{% endif %}</td>
+		<td class="l">Fortschritt</td>
+		<td>{{ doc.fortschritt_prozent or 0 }} %</td>
+	</tr>
+	{% if doc.witterungsbedingter_ausfall %}
+	<tr><td class="l">Ausfall</td>
+		<td colspan="3">Witterungsbedingt, {{ doc.ausfallstunden or 0 }} h</td></tr>
+	{% endif %}
+</table>
+
+<h2>Leistungspositionen</h2>
+<table>
+	<tr><th style="width:8mm">#</th><th>Taetigkeit</th><th style="width:30mm">Bereich</th>
+		<th style="width:22mm">Menge</th><th style="width:16mm">Stunden</th>
+		<th style="width:20mm">Fortschritt</th></tr>
+	{% for p in doc.positionen %}
+	<tr>
+		<td>{{ loop.index }}</td>
+		<td>{{ p.beschreibung }}
+			{% if p.anmerkung %}<br><span class="hinweis">{{ p.anmerkung }}</span>{% endif %}
+			{% if p.foto %}<div class="fotos"><div class="foto"><img src="{{ bild_daten(p.foto) }}"></div></div>{% endif %}
+		</td>
+		<td>{{ p.bereich }}</td>
+		<td>{{ p.menge or "" }} {{ p.einheit or "" }}</td>
+		<td>{{ p.stunden or "" }}</td>
+		<td>{{ p.fortschritt or 0 }} %</td>
+	</tr>
+	{% endfor %}
+</table>
+
+{% if doc.besondere_vorkommnisse or doc.materiallieferungen %}
+<h2>Besondere Vorkommnisse</h2>
+{% if doc.besondere_vorkommnisse %}<div>{{ doc.besondere_vorkommnisse }}</div>{% endif %}
+{% if doc.materiallieferungen %}
+<p><b>Materiallieferungen:</b> {{ doc.materiallieferungen }}</p>{% endif %}
+{% endif %}
+
+{% if doc.fotos %}
+<h2>Fortschrittsfotos</h2>
+<div class="fotos">
+	{% for foto in doc.fotos %}
+	<div class="foto">
+		<img src="{{ bild_daten(foto.bild) }}">
+		<div class="bu">{{ foto.beschriftung or "" }}
+			{{ frappe.format(foto.aufgenommen_am, {"fieldtype": "Datetime"}) }}</div>
+	</div>
+	{% endfor %}
+</div>
+{% endif %}
+
+{% if doc.unterschriften %}
+<h2>Unterschrift</h2>
+<div class="sig">
+	{% for u in doc.unterschriften %}
+	<div class="feld">
+		<img src="{{ u.signatur }}">
+		<div class="linie">{{ u.name_unterzeichner }} ({{ u.rolle }})<br>
+			{{ frappe.format(u.unterzeichnet_am, {"fieldtype": "Datetime"}) }}</div>
+	</div>
+	{% endfor %}
+</div>
+{% endif %}
+
+<div class="fuss">
+	Status: {{ doc.status }}
+	{% if doc.genehmigt_von %} - genehmigt von {{ doc.genehmigt_von }} am
+		{{ frappe.format(doc.genehmigt_am, {"fieldtype": "Datetime"}) }}{% endif %}
+	<br>Erstellt mit OEKOVOLT Baudoku - {{ frappe.utils.now() }}.
+</div>
+</div>
+"""
+
+FORMATE = [
+	{
+		"name": "Pruefprotokoll OEKOVOLT",
+		"doc_type": "Pruefprotokoll",
+		"html": PRUEFPROTOKOLL_HTML,
+	},
+	{
+		"name": "Tagesbericht OEKOVOLT",
+		"doc_type": "Tagesbericht",
+		"html": TAGESBERICHT_HTML,
+	},
+]
+
+
+def scrub(name: str) -> str:
+	return name.lower().replace(" ", "_").replace("-", "_")
+
+
+def write_all():
+	for fmt in FORMATE:
+		doc = {
+			"absolute_value": 0,
+			"align_labels_right": 0,
+			"creation": TS,
+			"css": CSS,
+			"custom_format": 1,
+			"default_print_language": "de",
+			"disabled": 0,
+			"doc_type": fmt["doc_type"],
+			"docstatus": 0,
+			"doctype": "Print Format",
+			"font_size": 0,
+			"html": fmt["html"],
+			"idx": 0,
+			"line_breaks": 0,
+			"margin_bottom": 15.0,
+			"margin_left": 12.0,
+			"margin_right": 12.0,
+			"margin_top": 15.0,
+			"modified": TS,
+			"modified_by": "Administrator",
+			"module": "Baudoku",
+			"name": fmt["name"],
+			"owner": "Administrator",
+			"page_number": "Bottom Right",
+			"print_format_builder": 0,
+			"print_format_type": "Jinja",
+			"show_section_headings": 0,
+			"standard": "Yes",
+		}
+		folder = ZIEL / scrub(fmt["name"])
+		folder.mkdir(parents=True, exist_ok=True)
+		init = folder / "__init__.py"
+		if not init.exists():
+			init.write_text("", encoding="utf-8")
+		target = folder / f"{scrub(fmt['name'])}.json"
+		target.write_text(json.dumps(doc, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+		print(f"  {target.relative_to(ROOT)}")
+
+
+if __name__ == "__main__":
+	ZIEL.mkdir(parents=True, exist_ok=True)
+	init = ZIEL / "__init__.py"
+	if not init.exists():
+		init.write_text("", encoding="utf-8")
+	print(f"Schreibe {len(FORMATE)} Print Formats:")
+	write_all()
+	print("Fertig.")

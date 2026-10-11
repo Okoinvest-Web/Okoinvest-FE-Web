@@ -1,0 +1,169 @@
+"""Seriennummern der verbauten Komponenten (Kapitel 2.2, IBN-Pruefpunkt 1.6).
+
+Die ERPNext-Anbindung ist bewusst *weich*: Erfasst wird immer die gescannte
+Nummer als Klartext. Existiert dazu ein `Serial No` im Artikelstamm, wird er
+verknuepft — sonst bleibt die Nummer trotzdem dokumentiert.
+
+Der umgekehrte Weg waere im Feld unbrauchbar: Ein Techniker steht auf dem Dach
+vor einem Wechselrichter, dessen Seriennummer der Einkauf nie angelegt hat.
+Ihn dann an der Erfassung zu hindern, hilft niemandem.
+"""
+
+from __future__ import annotations
+
+import json
+
+import frappe
+from frappe import _
+from frappe.utils import now_datetime, today
+
+
+@frappe.whitelist()
+def erfassen(anlage: str, eintraege: str | list) -> dict:
+	"""Fuegt gescannte Komponenten zur Anlage hinzu (idempotent je Seriennummer)."""
+	if isinstance(eintraege, str):
+		eintraege = json.loads(eintraege)
+
+	doc = frappe.get_doc("PV Anlage", anlage)
+	doc.check_permission("write")
+
+	vorhanden = {k.seriennummer for k in doc.komponenten if k.seriennummer}
+	neu: list[str] = []
+	uebersprungen: list[str] = []
+
+	for eintrag in eintraege:
+		seriennummer = (eintrag.get("seriennummer") or "").strip()
+		if not seriennummer:
+			continue
+		if seriennummer in vorhanden:
+			uebersprungen.append(seriennummer)
+			continue
+
+		doc.append("komponenten", {
+			"komponententyp": eintrag.get("komponententyp") or "Sonstiges",
+			"seriennummer": seriennummer,
+			"item": eintrag.get("item"),
+			"position": eintrag.get("position"),
+			"hersteller": eintrag.get("hersteller"),
+			"eingebaut_am": eintrag.get("eingebaut_am") or today(),
+			"garantie_bis": eintrag.get("garantie_bis"),
+			"foto": eintrag.get("foto"),
+			"bemerkung": eintrag.get("bemerkung"),
+			"serial_no": _serial_no_finden(seriennummer),
+			"erfasst_am": now_datetime(),
+			"erfasst_von": frappe.session.user,
+		})
+		vorhanden.add(seriennummer)
+		neu.append(seriennummer)
+
+	if neu:
+		doc.save()
+
+	return {"hinzugefuegt": neu, "bereits_vorhanden": uebersprungen, "gesamt": len(doc.komponenten)}
+
+
+def _serial_no_finden(seriennummer: str) -> str | None:
+	"""Sucht die Nummer im ERPNext-Artikelstamm — ohne sie anzulegen."""
+	if frappe.db.exists("Serial No", seriennummer):
+		return seriennummer
+	return frappe.db.get_value("Serial No", {"serial_no": seriennummer}, "name")
+
+
+@frappe.whitelist()
+def entfernen(anlage: str, seriennummer: str) -> dict:
+	doc = frappe.get_doc("PV Anlage", anlage)
+	doc.check_permission("write")
+
+	vorher = len(doc.komponenten)
+	doc.komponenten = [k for k in doc.komponenten if k.seriennummer != seriennummer]
+	for index, zeile in enumerate(doc.komponenten, start=1):
+		zeile.idx = index
+
+	if len(doc.komponenten) == vorher:
+		frappe.throw(_("Seriennummer {0} ist an dieser Anlage nicht erfasst.").format(seriennummer))
+
+	doc.save()
+	return {"gesamt": len(doc.komponenten)}
+
+
+@frappe.whitelist()
+def suchen(seriennummer: str) -> dict | None:
+	"""Findet die Anlage zu einer Seriennummer.
+
+	Der haeufigste Anlass im Service: Ein defektes Geraet liegt auf der
+	Werkbank, auf dem Typenschild steht eine Nummer — und niemand weiss mehr,
+	aus welcher Anlage es stammt.
+	"""
+	seriennummer = (seriennummer or "").strip()
+	if not seriennummer:
+		return None
+
+	treffer = frappe.get_all(
+		"Anlagenkomponente",
+		filters={"seriennummer": seriennummer, "parenttype": "PV Anlage"},
+		fields=["parent", "komponententyp", "position", "item", "hersteller",
+		        "eingebaut_am", "garantie_bis"],
+		limit_page_length=1,
+	)
+	if not treffer:
+		return None
+
+	komponente = treffer[0]
+	anlage = frappe.db.get_value(
+		"PV Anlage", komponente.parent,
+		["name", "anlage_name", "customer", "ort", "adresse"], as_dict=True,
+	)
+	# Sichtbarkeitsregeln der Anlage gelten auch hier.
+	if not anlage or not frappe.has_permission("PV Anlage", doc=komponente.parent):
+		return None
+
+	return {"komponente": komponente, "anlage": anlage}
+
+
+@frappe.whitelist()
+def liste(anlage: str) -> list[dict]:
+	"""Komponenten einer Anlage, gruppiert nach Typ sortiert."""
+	doc = frappe.get_doc("PV Anlage", anlage)
+	doc.check_permission("read")
+
+	return sorted(
+		(
+			{
+				"komponententyp": k.komponententyp,
+				"seriennummer": k.seriennummer,
+				"item": k.item,
+				"serial_no": k.serial_no,
+				"position": k.position,
+				"hersteller": k.hersteller,
+				"eingebaut_am": str(k.eingebaut_am) if k.eingebaut_am else None,
+				"garantie_bis": str(k.garantie_bis) if k.garantie_bis else None,
+				"foto": k.foto,
+				"bemerkung": k.bemerkung,
+			}
+			for k in doc.komponenten
+		),
+		key=lambda k: (k["komponententyp"] or "", k["position"] or "", k["seriennummer"]),
+	)
+
+
+def garantien_pruefen():
+	"""Scheduler: Komponenten, deren Garantie in 60 Tagen ablaeuft."""
+	from frappe.utils import add_days
+
+	grenze = add_days(today(), 60)
+	ablaufend = frappe.get_all(
+		"Anlagenkomponente",
+		filters={
+			"parenttype": "PV Anlage",
+			"garantie_bis": ["between", [today(), grenze]],
+		},
+		fields=["parent", "komponententyp", "seriennummer", "garantie_bis"],
+		limit_page_length=0,
+	)
+	if not ablaufend:
+		return
+
+	frappe.logger("baudoku").info(
+		f"{len(ablaufend)} Komponenten mit auslaufender Garantie in den naechsten 60 Tagen"
+	)
+	return ablaufend

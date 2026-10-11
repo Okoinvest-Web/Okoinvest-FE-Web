@@ -1,0 +1,835 @@
+import "server-only";
+
+import { alle, eine, skalar } from "../db/verbindung.ts";
+import { messStempel, verschiebeTage } from "../datum.ts";
+import { anteiligerSollwert } from "../pv/ertragsprofil.ts";
+import {
+  gewichteteVerfuegbarkeit,
+  medianVon,
+  performanceRatio,
+  performanceRatioKorrigiert,
+  vergleicheStraenge,
+  type Messpunkt,
+  type StrangBefund,
+} from "../pv/kennzahlen.ts";
+
+/**
+ * Auswertungen der technischen Betriebsführung.
+ *
+ * Gerechnet wird so weit wie möglich in der Datenbank. Eine Anlage
+ * erzeugt je Quartal rund 8.700 Viertelstundenwerte je Strang; diese
+ * Mengen in die Anwendung zu laden, nur um sie dort zu summieren, wäre
+ * Verschwendung. Nur dort, wo eine Kennzahl eine eigene Formel braucht
+ * - Performance Ratio, Strangvergleich -, werden Einzelwerte geholt.
+ */
+
+export interface AnlagenStamm {
+  id: string;
+  bezeichnung: string;
+  ort: string | null;
+  leistung_kwp: number;
+  speicher_kwh: number | null;
+  status: string;
+  inbetriebnahme: string | null;
+  soll_ertrag_kwh: number | null;
+  latitude: number | null;
+  longitude: number | null;
+  ausrichtung: string | null;
+  neigung: number | null;
+  wechselrichter_typ: string | null;
+  modul_typ: string | null;
+  modul_anzahl: number | null;
+}
+
+export function ladeAnlagen(): AnlagenStamm[] {
+  return alle<AnlagenStamm>(
+    `SELECT id, bezeichnung, ort, leistung_kwp, speicher_kwh, status,
+            inbetriebnahme, soll_ertrag_kwh, latitude, longitude,
+            ausrichtung, neigung, wechselrichter_typ, modul_typ, modul_anzahl
+       FROM anlage
+      ORDER BY leistung_kwp DESC`,
+  );
+}
+
+export function ladeAnlage(id: string): AnlagenStamm | null {
+  return eine<AnlagenStamm>(
+    `SELECT id, bezeichnung, ort, leistung_kwp, speicher_kwh, status,
+            inbetriebnahme, soll_ertrag_kwh, latitude, longitude,
+            ausrichtung, neigung, wechselrichter_typ, modul_typ, modul_anzahl
+       FROM anlage WHERE id = ?`,
+    id,
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Zeitraum                                                            */
+/* ------------------------------------------------------------------ */
+
+export interface Zeitfenster {
+  /** Untergrenze als UTC-Messstempel, einschließlich. */
+  von: string;
+  /** Obergrenze als UTC-Messstempel, ausschließlich. */
+  bis: string;
+  tage: number;
+  /**
+   * Erster und letzter Kalendertag des Zeitraums in Ortszeit.
+   *
+   * Für alles, was auf Kalendermonate schaut - etwa die Verteilung
+   * eines Jahressollwerts über das Jahr. Die UTC-Stempel taugen dafür
+   * nicht: Der 1. Juli beginnt in Wien um 22:00 UTC des Vortags.
+   */
+  vonTag: Date;
+  bisTag: Date;
+}
+
+/** Zeitfenster der letzten `tage` Tage, als UTC-Messstempel. */
+export function letzteTage(tage: number): Zeitfenster {
+  const heute = new Date();
+  heute.setHours(23, 59, 59, 999);
+  const start = verschiebeTage(heute, -tage + 1);
+  start.setHours(0, 0, 0, 0);
+
+  return {
+    von: messStempel(start),
+    bis: messStempel(new Date(heute.getTime() + 1)),
+    tage,
+    vonTag: new Date(start),
+    bisTag: new Date(heute),
+  };
+}
+
+/* ------------------------------------------------------------------ */
+/* Kennzahlen je Anlage                                                */
+/* ------------------------------------------------------------------ */
+
+export interface AnlagenKennzahlen {
+  ertragKwh: number;
+  spezifisch: number | null;
+  performanceRatio: number | null;
+  performanceRatioKorrigiert: number | null;
+  /**
+   * Technische Verfügbarkeit, nach Geräteleistung gewichtet, 0 bis 1.
+   * `null`, wenn im Zeitraum keine ertragsfähige Zeit lag.
+   */
+  verfuegbarkeit: number | null;
+  einstrahlungKwhM2: number;
+  hoechstleistungKw: number;
+  offeneAlarme: number;
+  ausfallKwh: number;
+}
+
+/**
+ * Kennzahlen einer Anlage über ein Zeitfenster.
+ *
+ * Die Performance Ratio braucht Einzelwerte, weil Ertrag und
+ * Einstrahlung je Intervall zueinander ins Verhältnis gesetzt werden -
+ * eine Summe über beide Größen ergäbe einen anderen Wert.
+ */
+export function ladeKennzahlen(
+  anlageId: string,
+  fenster: Zeitfenster,
+  nennleistungKwp: number,
+): AnlagenKennzahlen {
+  const punkte = alle<{
+    leistung: number;
+    einstrahlung: number;
+    modultemperatur: number | null;
+  }>(
+    /*
+       Die Wechselrichter werden einmal je Zeitpunkt zusammengefasst
+       und danach an die Sensorik gehaengt. Als Verbund ueber alle
+       Geraete mit anschliessendem GROUP BY geschrieben entstanden auf
+       der groessten Anlage dreissigtausend Zwischenzeilen - dieselbe
+       Zahl, dreimal so lange.
+    */
+    `SELECT COALESCE(g.leistung, 0) AS leistung,
+            s.einstrahlung_w_m2     AS einstrahlung,
+            s.modultemperatur       AS modultemperatur
+       FROM sensor_messwert s
+       LEFT JOIN (
+         SELECT w.zeitpunkt, SUM(w.leistung_kw) AS leistung
+           FROM wr_messwert w
+           JOIN wechselrichter wr ON wr.id = w.wechselrichter_id
+          WHERE wr.anlage_id = ? AND w.zeitpunkt >= ? AND w.zeitpunkt < ?
+          GROUP BY w.zeitpunkt
+       ) g ON g.zeitpunkt = s.zeitpunkt
+      WHERE s.anlage_id = ? AND s.zeitpunkt >= ? AND s.zeitpunkt < ?
+      ORDER BY s.zeitpunkt`,
+    anlageId,
+    fenster.von,
+    fenster.bis,
+    anlageId,
+    fenster.von,
+    fenster.bis,
+  );
+
+  const messpunkte: Messpunkt[] = punkte.map((p) => ({
+    // Leistung in kW über eine Viertelstunde ergibt kWh.
+    ertragKwh: p.leistung * 0.25,
+    einstrahlung: p.einstrahlung ?? 0,
+    modultemperatur: p.modultemperatur ?? undefined,
+  }));
+
+  const ertragKwh = messpunkte.reduce((s, p) => s + p.ertragKwh, 0);
+  const einstrahlung = messpunkte.reduce(
+    (s, p) => s + (p.einstrahlung / 1000) * 0.25,
+    0,
+  );
+  const hoechstleistung = punkte.reduce((m, p) => Math.max(m, p.leistung), 0);
+
+  // Verfügbarkeit wird je Gerät ermittelt, nicht an der Summenleistung
+  // der Anlage: Steht ein Wechselrichter still, während die übrigen
+  // liefern, bleibt die Summe über null - der Ausfall wäre unsichtbar.
+  // Fehlt zu einem Zeitpunkt überhaupt ein Messwert, ist das Gerät
+  // nicht erreichbar und zählt ebenfalls als nicht verfügbar.
+  const geraete = alle<{
+    gewicht: number;
+    ertragsfaehig: number;
+    verfuegbar: number;
+  }>(
+    `SELECT wr.modulleistung_kwp AS gewicht,
+            COUNT(*)             AS ertragsfaehig,
+            SUM(CASE WHEN m.leistung_kw > 0.01 AND m.zustand <> 'Stoerung'
+                     THEN 1 ELSE 0 END) AS verfuegbar
+       FROM wechselrichter wr
+       JOIN sensor_messwert s ON s.anlage_id = wr.anlage_id
+       LEFT JOIN wr_messwert m
+              ON m.wechselrichter_id = wr.id AND m.zeitpunkt = s.zeitpunkt
+      WHERE wr.anlage_id = ?
+        AND s.zeitpunkt >= ? AND s.zeitpunkt < ?
+        AND s.einstrahlung_w_m2 > 100
+      GROUP BY wr.id`,
+    anlageId,
+    fenster.von,
+    fenster.bis,
+  );
+
+  const offeneAlarme =
+    skalar<number>(
+      `SELECT COUNT(*) FROM alarm
+        WHERE anlage_id = ? AND status IN ('Offen','Quittiert')`,
+      anlageId,
+    ) ?? 0;
+
+  const ausfall =
+    skalar<number>(
+      `SELECT COALESCE(SUM(ausfall_kwh), 0) FROM alarm
+        WHERE anlage_id = ? AND ausgeloest_am >= ?`,
+      anlageId,
+      fenster.von,
+    ) ?? 0;
+
+  return {
+    ertragKwh: Number(ertragKwh.toFixed(1)),
+    spezifisch:
+      nennleistungKwp > 0 ? Number((ertragKwh / nennleistungKwp).toFixed(1)) : null,
+    performanceRatio: performanceRatio(messpunkte, nennleistungKwp),
+    performanceRatioKorrigiert: performanceRatioKorrigiert(
+      messpunkte,
+      nennleistungKwp,
+    ),
+    verfuegbarkeit: gewichteteVerfuegbarkeit(geraete),
+    einstrahlungKwhM2: Number(einstrahlung.toFixed(1)),
+    hoechstleistungKw: Number(hoechstleistung.toFixed(1)),
+    offeneAlarme,
+    ausfallKwh: Number(ausfall.toFixed(1)),
+  };
+}
+
+/* ------------------------------------------------------------------ */
+/* Wechselrichter                                                      */
+/* ------------------------------------------------------------------ */
+
+export interface WrZeile {
+  id: string;
+  bezeichnung: string;
+  hersteller: string | null;
+  modell: string | null;
+  seriennummer: string | null;
+  firmware: string | null;
+  nennleistung_kw: number;
+  modulleistung_kwp: number;
+  ip_adresse: string | null;
+  /** Ertrag im Zeitfenster, kWh. */
+  ertrag_kwh: number;
+  /** Spezifischer Ertrag, kWh je kWp. */
+  spezifisch: number;
+  hoechstleistung_kw: number;
+  /** Anteil der Intervalle im Störungszustand. */
+  stoerungsanteil: number;
+  abregelungsanteil: number;
+  straenge: number;
+}
+
+export function ladeWechselrichter(
+  anlageId: string,
+  fenster: Zeitfenster,
+): WrZeile[] {
+  const zeilen = alle<WrZeile>(
+    `SELECT wr.id, wr.bezeichnung, wr.hersteller, wr.modell, wr.seriennummer,
+            wr.firmware, wr.nennleistung_kw, wr.modulleistung_kwp, wr.ip_adresse,
+            ROUND(COALESCE(SUM(m.leistung_kw) * 0.25, 0), 1)   AS ertrag_kwh,
+            ROUND(COALESCE(MAX(m.leistung_kw), 0), 1)          AS hoechstleistung_kw,
+            COALESCE(AVG(CASE WHEN m.zustand = 'Stoerung' THEN 1.0 ELSE 0 END), 0)
+              AS stoerungsanteil,
+            COALESCE(AVG(CASE WHEN m.zustand = 'Abgeregelt' THEN 1.0 ELSE 0 END), 0)
+              AS abregelungsanteil,
+            (SELECT COUNT(*) FROM strang s WHERE s.wechselrichter_id = wr.id)
+              AS straenge,
+            0 AS spezifisch
+       FROM wechselrichter wr
+       LEFT JOIN wr_messwert m
+              ON m.wechselrichter_id = wr.id
+             AND m.zeitpunkt >= ? AND m.zeitpunkt < ?
+      WHERE wr.anlage_id = ?
+      GROUP BY wr.id
+      -- Nach Kennung sortiert, nicht nach Bezeichnung: Sonst stuende
+      -- "WR 10" zwischen "WR 1" und "WR 2", weil SQLite Text
+      -- zeichenweise vergleicht. Die Kennungen sind fortlaufend in
+      -- der Reihenfolge des Aufbaus vergeben.
+      ORDER BY wr.id`,
+    fenster.von,
+    fenster.bis,
+    anlageId,
+  );
+
+  return zeilen.map((z) => ({
+    ...z,
+    spezifisch:
+      z.modulleistung_kwp > 0
+        ? Number((z.ertrag_kwh / z.modulleistung_kwp).toFixed(1))
+        : 0,
+  }));
+}
+
+/* ------------------------------------------------------------------ */
+/* Strangvergleich                                                     */
+/* ------------------------------------------------------------------ */
+
+export interface StrangGruppe {
+  wechselrichterId: string;
+  wechselrichter: string;
+  befunde: StrangBefund[];
+}
+
+/**
+ * Strangvergleich je Wechselrichter.
+ *
+ * Verglichen wird ausschließlich innerhalb eines Wechselrichters: Ein
+ * Strang am Ostfeld liefert vormittags zwangsläufig mehr als einer am
+ * Westfeld, ohne dass einer davon schadhaft wäre. Nur Stränge an
+ * derselben Fläche sind unmittelbar vergleichbar.
+ *
+ * Ausgewertet werden nur Zeitpunkte mit kräftiger Einstrahlung - bei
+ * diffusem Licht streuen die Ströme so stark, dass jeder Vergleich
+ * Fehlbefunde erzeugt.
+ */
+export function ladeStrangvergleich(
+  anlageId: string,
+  fenster: Zeitfenster,
+  schwelleProzent = 8,
+): StrangGruppe[] {
+  const zeilen = alle<{
+    wechselrichter_id: string;
+    wechselrichter: string;
+    strang_id: string;
+    bezeichnung: string;
+    leistung_kwp: number;
+    mittel_strom: number;
+  }>(
+    `WITH hell AS (
+       SELECT zeitpunkt FROM sensor_messwert
+        WHERE anlage_id = ?
+          AND zeitpunkt >= ? AND zeitpunkt < ?
+          AND einstrahlung_w_m2 > 400
+     )
+     SELECT wr.id            AS wechselrichter_id,
+            wr.bezeichnung   AS wechselrichter,
+            s.id             AS strang_id,
+            s.bezeichnung    AS bezeichnung,
+            s.leistung_kwp   AS leistung_kwp,
+            COALESCE(AVG(m.strom_a), 0) AS mittel_strom
+       FROM strang s
+       JOIN wechselrichter wr ON wr.id = s.wechselrichter_id
+       /*
+          Nur Werte aus hellen Viertelstunden - bei schwacher Sonne
+          liegen alle Straenge nahe null, und ein Vergleich daraus
+          erzeugt Befunde, die es nicht gibt.
+
+          Die hellen Zeitpunkte werden einmal ermittelt und dann
+          angehaengt. Als EXISTS je Messwert geschrieben kostete
+          dasselbe auf der groessten Anlage fast eine Sekunde: Die
+          Bedingung lief 170.000 Mal.
+       */
+       LEFT JOIN strang_messwert m
+              ON m.strang_id = s.id
+             AND m.zeitpunkt >= ? AND m.zeitpunkt < ?
+             AND m.strom_a > 0
+             AND m.zeitpunkt IN (SELECT zeitpunkt FROM hell)
+      WHERE wr.anlage_id = ?
+      GROUP BY s.id
+      -- Siehe ladeWechselrichter: Textsortierung reiht "WR 10" falsch ein.
+      ORDER BY wr.id, s.id`,
+    anlageId,
+    fenster.von,
+    fenster.bis,
+    fenster.von,
+    fenster.bis,
+    anlageId,
+  );
+
+  const gruppen = new Map<string, StrangGruppe>();
+
+  for (const zeile of zeilen) {
+    const gruppe = gruppen.get(zeile.wechselrichter_id) ?? {
+      wechselrichterId: zeile.wechselrichter_id,
+      wechselrichter: zeile.wechselrichter,
+      befunde: [],
+    };
+    gruppen.set(zeile.wechselrichter_id, gruppe);
+  }
+
+  for (const gruppe of gruppen.values()) {
+    const eigene = zeilen.filter(
+      (z) => z.wechselrichter_id === gruppe.wechselrichterId,
+    );
+
+    gruppe.befunde = vergleicheStraenge(
+      eigene.map((z) => ({
+        strangId: z.strang_id,
+        bezeichnung: z.bezeichnung,
+        mittelStrom: z.mittel_strom,
+        leistungKwp: z.leistung_kwp,
+      })),
+      schwelleProzent,
+    );
+  }
+
+  return [...gruppen.values()];
+}
+
+/* ------------------------------------------------------------------ */
+/* Tagesverlauf                                                        */
+/* ------------------------------------------------------------------ */
+
+export interface VerlaufsPunkt {
+  zeitpunkt: string;
+  leistung: number;
+  erwartet: number;
+  einstrahlung: number;
+  modultemperatur: number | null;
+}
+
+/**
+ * Tagesverlauf mit Erwartungswert.
+ *
+ * Der Erwartungswert aus Einstrahlung und Modultemperatur ist der
+ * eigentliche Mehrwert: Eine Leistungskurve allein sagt nichts darüber,
+ * ob die Anlage gut läuft. Erst die zweite Kurve daneben macht sichtbar,
+ * ob eine Delle vom Wetter oder von der Anlage kommt.
+ */
+export function ladeTagesverlauf(
+  anlageId: string,
+  tag: Date,
+  nennleistungKwp: number,
+  systemwirkungsgrad = 0.86,
+): VerlaufsPunkt[] {
+  const beginn = new Date(tag);
+  beginn.setHours(0, 0, 0, 0);
+  const ende = verschiebeTage(beginn, 1);
+
+  const zeilen = alle<{
+    zeitpunkt: string;
+    leistung: number;
+    einstrahlung: number;
+    modultemperatur: number | null;
+  }>(
+    `SELECT s.zeitpunkt,
+            COALESCE(SUM(w.leistung_kw), 0) AS leistung,
+            s.einstrahlung_w_m2             AS einstrahlung,
+            s.modultemperatur               AS modultemperatur
+       FROM sensor_messwert s
+       LEFT JOIN wechselrichter wr ON wr.anlage_id = s.anlage_id
+       LEFT JOIN wr_messwert w
+              ON w.wechselrichter_id = wr.id AND w.zeitpunkt = s.zeitpunkt
+      WHERE s.anlage_id = ? AND s.zeitpunkt >= ? AND s.zeitpunkt < ?
+      GROUP BY s.zeitpunkt
+      ORDER BY s.zeitpunkt`,
+    anlageId,
+    messStempel(beginn),
+    messStempel(ende),
+  );
+
+  return zeilen.map((z) => {
+    const temperatur = z.modultemperatur ?? 25;
+    const temperaturfaktor = 1 + (-0.35 / 100) * (temperatur - 25);
+
+    return {
+      zeitpunkt: z.zeitpunkt,
+      leistung: Number(z.leistung.toFixed(2)),
+      erwartet: Number(
+        (
+          nennleistungKwp *
+          ((z.einstrahlung ?? 0) / 1000) *
+          temperaturfaktor *
+          systemwirkungsgrad
+        ).toFixed(2),
+      ),
+      einstrahlung: Number((z.einstrahlung ?? 0).toFixed(0)),
+      modultemperatur: z.modultemperatur,
+    };
+  });
+}
+
+/** Der jüngste Tag, für den Messdaten vorliegen. */
+export function juengsterMesstag(anlageId: string): Date | null {
+  const wert = skalar<string>(
+    "SELECT MAX(zeitpunkt) FROM sensor_messwert WHERE anlage_id = ?",
+    anlageId,
+  );
+  return wert ? new Date(wert) : null;
+}
+
+/* ------------------------------------------------------------------ */
+/* Alarme                                                              */
+/* ------------------------------------------------------------------ */
+
+export interface AlarmZeile {
+  id: string;
+  anlage_id: string;
+  wechselrichter_id: string | null;
+  strang_id: string | null;
+  anlage: string;
+  wechselrichter: string | null;
+  strang: string | null;
+  art: string;
+  schweregrad: string;
+  titel: string;
+  beschreibung: string | null;
+  ist_wert: number | null;
+  soll_wert: number | null;
+  status: string;
+  ausfall_kwh: number;
+  ausfall_eur: number;
+  ausgeloest_am: string;
+  beendet_am: string | null;
+  quittiert_am: string | null;
+  quittiert_von: string | null;
+  notiz: string | null;
+  regel: string | null;
+  /**
+   * Dauer in Stunden, in der Datenbank berechnet.
+   * Nicht beim Rendern: Ein Renderdurchlauf muss bei gleichen Eingaben
+   * dasselbe Ergebnis liefern, `Date.now()` tut das nicht.
+   */
+  dauer_stunden: number;
+}
+
+export function ladeAlarme(filter?: {
+  anlageId?: string;
+  nurOffene?: boolean;
+  grenze?: number;
+}): AlarmZeile[] {
+  const bedingungen: string[] = [];
+  const werte: (string | number)[] = [];
+
+  if (filter?.anlageId) {
+    bedingungen.push("a.anlage_id = ?");
+    werte.push(filter.anlageId);
+  }
+  if (filter?.nurOffene) {
+    bedingungen.push("a.status IN ('Offen','Quittiert')");
+  }
+
+  const wo = bedingungen.length ? `WHERE ${bedingungen.join(" AND ")}` : "";
+
+  return alle<AlarmZeile>(
+    `SELECT a.*, anl.bezeichnung AS anlage,
+            -- Siehe ladeAlarm: Geraet notfalls ueber den Strang.
+            COALESCE(wr.bezeichnung, wrs.bezeichnung) AS wechselrichter,
+            s.bezeichnung  AS strang,
+            r.bezeichnung  AS regel,
+            ROUND((julianday(COALESCE(a.beendet_am, 'now')) -
+                   julianday(a.ausgeloest_am)) * 24, 2) AS dauer_stunden
+       FROM alarm a
+       JOIN anlage anl ON anl.id = a.anlage_id
+       LEFT JOIN wechselrichter wr ON wr.id = a.wechselrichter_id
+       LEFT JOIN strang s          ON s.id = a.strang_id
+       LEFT JOIN wechselrichter wrs ON wrs.id = s.wechselrichter_id
+       LEFT JOIN alarmregel r      ON r.id = a.regel_id
+       ${wo}
+      ORDER BY
+        CASE a.status WHEN 'Offen' THEN 0 WHEN 'Quittiert' THEN 1 ELSE 2 END,
+        CASE a.schweregrad
+          WHEN 'Kritisch' THEN 0 WHEN 'Hoch' THEN 1 WHEN 'Mittel' THEN 2
+          WHEN 'Niedrig' THEN 3 ELSE 4 END,
+        a.ausgeloest_am DESC
+      LIMIT ?`,
+    ...werte,
+    filter?.grenze ?? 100,
+  );
+}
+
+export function ladeAlarm(id: string): AlarmZeile | null {
+  return (
+    alle<AlarmZeile>(
+      `SELECT a.*, anl.bezeichnung AS anlage,
+              -- Ein Strang haengt immer an einem Geraet. Traegt die
+              -- Meldung selbst keines, wird es ueber den Strang
+              -- bestimmt - sonst steht auf der Seite "an demselben
+              -- Geraet", ohne dass dort je eines genannt wurde.
+              COALESCE(wr.bezeichnung, wrs.bezeichnung) AS wechselrichter,
+              s.bezeichnung  AS strang,
+              r.bezeichnung  AS regel,
+              ROUND((julianday(COALESCE(a.beendet_am, 'now')) -
+                     julianday(a.ausgeloest_am)) * 24, 2) AS dauer_stunden
+         FROM alarm a
+         JOIN anlage anl ON anl.id = a.anlage_id
+         LEFT JOIN wechselrichter wr ON wr.id = a.wechselrichter_id
+         LEFT JOIN strang s          ON s.id = a.strang_id
+         LEFT JOIN wechselrichter wrs ON wrs.id = s.wechselrichter_id
+         LEFT JOIN alarmregel r      ON r.id = a.regel_id
+        WHERE a.id = ?`,
+      id,
+    )[0] ?? null
+  );
+}
+
+export interface AlarmRegelZeile {
+  id: string;
+  bezeichnung: string;
+  art: string;
+  schweregrad: string;
+  schwellwert: number | null;
+  dauer_minuten: number;
+  nur_tagsueber: number;
+  min_einstrahlung: number | null;
+  aktiv: number;
+  beschreibung: string | null;
+  /** Wie oft diese Regel bereits ausgelöst hat. */
+  ausloesungen: number;
+}
+
+export function ladeAlarmregeln(): AlarmRegelZeile[] {
+  return alle<AlarmRegelZeile>(
+    `SELECT r.*,
+            (SELECT COUNT(*) FROM alarm a WHERE a.regel_id = r.id) AS ausloesungen
+       FROM alarmregel r
+      ORDER BY
+        CASE r.schweregrad
+          WHEN 'Kritisch' THEN 0 WHEN 'Hoch' THEN 1 WHEN 'Mittel' THEN 2
+          WHEN 'Niedrig' THEN 3 ELSE 4 END`,
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Wirtschaftlichkeit                                                  */
+/* ------------------------------------------------------------------ */
+
+export interface VerguetungsZeile {
+  id: string;
+  anlage_id: string;
+  art: string;
+  ct_kwh: number;
+  gueltig_von: string;
+  gueltig_bis: string | null;
+  bemerkung: string | null;
+}
+
+export function ladeVerguetung(anlageId: string): VerguetungsZeile[] {
+  return alle<VerguetungsZeile>(
+    `SELECT * FROM verguetung
+      WHERE anlage_id = ? AND (gueltig_bis IS NULL OR gueltig_bis >= date('now'))
+      ORDER BY ct_kwh DESC`,
+    anlageId,
+  );
+}
+
+export function ladeBetriebskosten(anlageId: string) {
+  return alle<{ id: string; art: string; betrag_jahr: number; bemerkung: string | null }>(
+    "SELECT id, art, betrag_jahr, bemerkung FROM betriebskosten WHERE anlage_id = ?",
+    anlageId,
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Strangverlauf für eine Strangmeldung                                */
+/* ------------------------------------------------------------------ */
+
+export interface StrangVerlaufsPunkt {
+  zeitpunkt: string;
+  /** Spezifischer Strom des betroffenen Strangs, A je kWp. */
+  betroffen: number;
+  /** Median der übrigen Stränge am selben Gerät, A je kWp. */
+  vergleich: number;
+}
+
+/**
+ * Tagesverlauf eines Strangs gegen seine Nachbarn am selben Gerät.
+ *
+ * Bei einer Strangmeldung ist der Verlauf der ganzen Anlage
+ * unbrauchbar: Ein Strang trägt bei einem großen Dach unter zwei
+ * Prozent zur Gesamtleistung bei - ein Verlust von zwanzig Prozent an
+ * ihm bleibt in der Summenkurve unter dem Rauschen. Aussagekräftig ist
+ * nur der Vergleich mit den Strängen daneben, die dieselbe
+ * Einstrahlung, dieselbe Ausrichtung und dasselbe Gerät haben.
+ *
+ * Verglichen wird der auf die Strangleistung bezogene Strom, weil
+ * Stränge unterschiedlich viele Module tragen können.
+ */
+export function ladeStrangTagesverlauf(
+  strangId: string,
+  tag: Date,
+): StrangVerlaufsPunkt[] {
+  const beginn = new Date(tag);
+  beginn.setHours(0, 0, 0, 0);
+  const ende = verschiebeTage(beginn, 1);
+
+  const zeilen = alle<{
+    zeitpunkt: string;
+    strang_id: string;
+    strom_a: number;
+    leistung_kwp: number;
+  }>(
+    `SELECT m.zeitpunkt, m.strang_id, m.strom_a, s.leistung_kwp
+       FROM strang_messwert m
+       JOIN strang s ON s.id = m.strang_id
+      WHERE s.wechselrichter_id = (SELECT wechselrichter_id
+                                     FROM strang WHERE id = ?)
+        AND m.zeitpunkt >= ? AND m.zeitpunkt < ?
+      ORDER BY m.zeitpunkt`,
+    strangId,
+    messStempel(beginn),
+    messStempel(ende),
+  );
+
+  const jeZeitpunkt = new Map<
+    string,
+    { betroffen: number | null; uebrige: number[] }
+  >();
+
+  for (const z of zeilen) {
+    const eintrag = jeZeitpunkt.get(z.zeitpunkt) ?? {
+      betroffen: null,
+      uebrige: [],
+    };
+    const spezifisch = z.leistung_kwp > 0 ? z.strom_a / z.leistung_kwp : 0;
+
+    if (z.strang_id === strangId) {
+      eintrag.betroffen = spezifisch;
+    } else {
+      eintrag.uebrige.push(spezifisch);
+    }
+    jeZeitpunkt.set(z.zeitpunkt, eintrag);
+  }
+
+  return [...jeZeitpunkt.entries()].map(([zeitpunkt, e]) => ({
+    zeitpunkt,
+    betroffen: Number((e.betroffen ?? 0).toFixed(3)),
+    vergleich: Number(medianVon(e.uebrige).toFixed(3)),
+  }));
+}
+
+/* ------------------------------------------------------------------ */
+/* Portfolio: alle Anlagen nebeneinander                               */
+/* ------------------------------------------------------------------ */
+
+export interface PortfolioZeile extends AnlagenStamm {
+  /** Erster Zählpunkt der Anlage, für die Netzsicht. */
+  zaehlpunkt: string | null;
+  netzebene: number | null;
+  anzahlWechselrichter: number;
+  kennzahlen: AnlagenKennzahlen;
+  /** Tagesertrag der letzten Tage, kWh - für den Verlaufsstrich. */
+  tagesreihe: number[];
+  /**
+   * Anteil am anteiligen Jahresziel, 1 = Ziel erreicht.
+   *
+   * `null`, wenn für die Anlage kein Sollertrag hinterlegt ist. Ohne
+   * Sollwert lässt sich nicht sagen, ob ein Ertrag gut ist - dieselbe
+   * Anlage liefert im Juni das Dreifache des Dezembers.
+   */
+  zielerreichung: number | null;
+}
+
+/**
+ * Kennzahlen aller Anlagen für die Portfolioansicht.
+ *
+ * Verglichen werden Anlagen über den spezifischen Ertrag und die
+ * Performance Ratio, nie über die absolute Erzeugung: Die größte
+ * Anlage liefert immer am meisten, auch wenn sie am schlechtesten
+ * läuft. Erst der Bezug auf die installierte Leistung macht ein
+ * Carport mit 186 kWp und eine Halle mit 1,2 MWp vergleichbar.
+ */
+export function ladePortfolio(fenster: Zeitfenster): PortfolioZeile[] {
+  const anlagen = ladeAnlagen();
+
+  // Tageserträge für alle Anlagen in einem Zug.
+  //
+  // Die Messstempel stehen in UTC. Für eine Tagessumme ist das in
+  // Österreich unkritisch: Die Verschiebung beträgt höchstens zwei
+  // Stunden und fällt in die Nacht, in der ohnehin nichts erzeugt wird.
+  const tage = alle<{ anlage_id: string; tag: string; kwh: number }>(
+    `SELECT wr.anlage_id,
+            substr(m.zeitpunkt, 1, 10)   AS tag,
+            SUM(m.leistung_kw) * 0.25    AS kwh
+       FROM wr_messwert m
+       JOIN wechselrichter wr ON wr.id = m.wechselrichter_id
+      WHERE m.zeitpunkt >= ? AND m.zeitpunkt < ?
+      GROUP BY wr.anlage_id, tag
+      ORDER BY tag`,
+    fenster.von,
+    fenster.bis,
+  );
+
+  const reihen = new Map<string, number[]>();
+  for (const t of tage) {
+    const liste = reihen.get(t.anlage_id) ?? [];
+    liste.push(Number(t.kwh.toFixed(1)));
+    reihen.set(t.anlage_id, liste);
+  }
+
+  const netz = alle<{
+    anlage_id: string;
+    bezeichnung: string;
+    netzebene: number | null;
+  }>(
+    `SELECT anlage_id, bezeichnung, netzebene
+       FROM zaehlpunkt
+      WHERE anlage_id IS NOT NULL AND art IN ('Erzeugung', 'Kombiniert')
+      ORDER BY bezeichnung`,
+  );
+
+  const geraete = alle<{ anlage_id: string; anzahl: number }>(
+    `SELECT anlage_id, COUNT(*) AS anzahl FROM wechselrichter
+      GROUP BY anlage_id`,
+  );
+  const geraeteJeAnlage = new Map(geraete.map((g) => [g.anlage_id, g.anzahl]));
+
+  return anlagen.map((anlage) => {
+    const kennzahlen = ladeKennzahlen(anlage.id, fenster, anlage.leistung_kwp);
+    const zp = netz.find((n) => n.anlage_id === anlage.id);
+
+    // Jahresziel über das Ertragsprofil auf den Zeitraum verteilen,
+    // nicht gleichmäßig über die Tage: Ein Julitag trägt rund das
+    // Sechsfache eines Dezembertags bei.
+    const anteiligesZiel = anteiligerSollwert(
+      anlage.soll_ertrag_kwh,
+      fenster.vonTag,
+      fenster.bisTag,
+    );
+
+    return {
+      ...anlage,
+      zaehlpunkt: zp?.bezeichnung ?? null,
+      netzebene: zp?.netzebene ?? null,
+      anzahlWechselrichter: geraeteJeAnlage.get(anlage.id) ?? 0,
+      kennzahlen,
+      tagesreihe: reihen.get(anlage.id) ?? [],
+      zielerreichung:
+        anteiligesZiel && anteiligesZiel > 0
+          ? Number((kennzahlen.ertragKwh / anteiligesZiel).toFixed(3))
+          : null,
+    };
+  });
+}

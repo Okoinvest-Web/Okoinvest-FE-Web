@@ -1,0 +1,101 @@
+import Link from "next/link";
+
+import type { Aufgabe, Dringlichkeit } from "@/lib/daten/aufgaben";
+
+import { STATUS_FARBEN } from "./ui";
+
+/**
+ * Was heute zu tun ist.
+ *
+ * Die wichtigste Liste der Anwendung, und die einzige, die alle
+ * Bereiche zusammenführt. Drei Entscheidungen halten sie brauchbar:
+ *
+ * - Dringlichkeit als Farbe *und* als Wort. Farbe allein trägt keine
+ *   Aussage, und ein roter Punkt neben acht anderen roten Punkten
+ *   trägt erst recht keine.
+ * - Jeder Eintrag ist ein Verweis auf die Stelle, an der er erledigt
+ *   wird. Ein Hinweis ohne Weg dorthin ist eine Belästigung.
+ * - Keine Erledigt-Zeilen. Eine Liste, die zur Hälfte aus Erledigtem
+ *   besteht, liest nach zwei Wochen niemand mehr.
+ */
+
+const TON: Record<Dringlichkeit, "kritisch" | "hinweis" | "neutral"> = {
+  sofort: "kritisch",
+  diese_woche: "hinweis",
+  wenn_zeit: "neutral",
+};
+
+const WORT: Record<Dringlichkeit, string> = {
+  sofort: "sofort",
+  diese_woche: "diese Woche",
+  wenn_zeit: "wenn Zeit ist",
+};
+
+export function Aufgabenliste({ aufgaben }: { aufgaben: Aufgabe[] }) {
+  if (aufgaben.length === 0) {
+    return (
+      <p className="t-mikro leading-relaxed">
+        Nichts offen. Kein Lauf im Entwurf, keine Anfrage unbeantwortet,
+        keine Sperre, keine überschrittene Frist.
+      </p>
+    );
+  }
+
+  return (
+    /*
+      Zwei Spalten, sobald Platz ist. Das Raster fuellt zeilenweise -
+      die Reihenfolge nach Dringlichkeit bleibt also erhalten, die
+      Liste wird nur halb so hoch. Auf einem breiten Schirm stand
+      rechts neben jedem Eintrag ein Drittel Leere.
+    */
+    <ul className="a-staffel grid gap-2 xl:grid-cols-2">
+      {aufgaben.map((aufgabe) => {
+        const farben = STATUS_FARBEN[TON[aufgabe.dringlichkeit]];
+
+        return (
+          <li key={aufgabe.id}>
+            <Link
+              href={aufgabe.pfad}
+              className={`tafel-tastbar flex items-start gap-3 rounded-sm border px-3.5 ${aufgabe.dringlichkeit === "wenn_zeit" ? "py-2" : "py-2.5"}`}
+              style={{
+                borderColor: "var(--linie)",
+                borderLeftWidth: "3px",
+                borderLeftColor: farben.text,
+              }}
+            >
+              <span className="min-w-0 flex-1">
+                <span
+                  className="block text-[0.875rem] font-medium"
+                  style={{ color: "var(--t-stark)" }}
+                >
+                  {aufgabe.titel}
+                </span>
+                {/*
+                  Die Begründung steht nur dort, wo sie gebraucht wird.
+                  Was Zeit hat, bekommt eine Zeile - sonst füllt die
+                  Liste den halben Bildschirm mit Dingen, die niemand
+                  heute tut, und das Dringende rutscht nach unten.
+                */}
+                {aufgabe.dringlichkeit !== "wenn_zeit" && (
+                  <span className="t-mikro block leading-relaxed">
+                    {aufgabe.zusatz}
+                  </span>
+                )}
+              </span>
+
+              <span className="shrink-0 text-right">
+                <span
+                  className="block text-[0.6875rem] font-semibold"
+                  style={{ color: farben.text }}
+                >
+                  {WORT[aufgabe.dringlichkeit]}
+                </span>
+                <span className="t-mikro block">{aufgabe.bereich}</span>
+              </span>
+            </Link>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}

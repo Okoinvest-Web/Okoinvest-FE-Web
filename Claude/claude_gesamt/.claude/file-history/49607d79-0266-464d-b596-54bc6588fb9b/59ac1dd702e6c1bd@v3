@@ -1,0 +1,267 @@
+import { beforeEach, describe, expect, it } from 'vitest'
+import { mockRequest, resetMockData } from '@/api/mock/server.js'
+import { seedAuditLog } from '@/api/mock/seed-audit.js'
+
+const ruf = (url, params) => mockRequest({ url, params })
+
+beforeEach(() => {
+  resetMockData()
+  seedAuditLog()
+})
+
+describe('netops.api.cloud.cloud_overview', () => {
+  it('erkennt einen offenen Verwaltungsport als kritisch', async () => {
+    const cloud = await ruf('netops.api.cloud.cloud_overview', {})
+    const staging = cloud.servers.find((s) => s.server_name === 'shop-staging')
+    expect(staging.level).toBe('critical')
+    expect(staging.reasons.join(' ')).toMatch(/Port 22/)
+    expect(cloud.summary.management_ports_open).toBe(1)
+  })
+
+  it('verbindet Cloud-Firewallregel und Server', async () => {
+    // Die Regel steht in Cloudflare-fremden Daten; erst die Zusammenführung
+    // macht den Widerspruch zum Tunnel sichtbar.
+    const cloud = await ruf('netops.api.cloud.cloud_overview', {})
+    const staging = cloud.servers.find((s) => s.server_name === 'shop-staging')
+    expect(staging.ssh_via_tunnel).toBe(0)
+    expect(staging.reasons.some((g) => g.includes('CFW-'))).toBe(true)
+  })
+
+  it('meldet einen Server ohne Sicherung', async () => {
+    const cloud = await ruf('netops.api.cloud.cloud_overview', {})
+    expect(cloud.summary.without_backup).toBe(1)
+  })
+
+  it('meldet einen veralteten Snapshot, aber nicht als kritisch', async () => {
+    const cloud = await ruf('netops.api.cloud.cloud_overview', {})
+    const de = cloud.servers.find((s) => s.server_name === 'web-de-01')
+    expect(de.level).toBe('warning')
+    expect(de.reasons.join(' ')).toMatch(/Snapshot/)
+  })
+
+  it('bewertet eine Anwendung ohne WARP-Pflicht und mit langer Sitzung', async () => {
+    const cloud = await ruf('netops.api.cloud.cloud_overview', {})
+    const admin = cloud.applications.find((a) => a.app_name === 'admin-shop')
+    expect(admin.level).toBe('warning')
+    expect(admin.reasons.join(' ')).toMatch(/WARP/)
+    expect(admin.reasons.join(' ')).toMatch(/Sitzungsdauer/)
+  })
+
+  it('stuft einen getrennten Tunnel als kritisch ein', async () => {
+    const cloud = await ruf('netops.api.cloud.cloud_overview', {})
+    const de = cloud.applications.find((a) => a.tunnel_state === 'down')
+    expect(de.level).toBe('critical')
+    expect(cloud.summary.tunnels_down).toBe(1)
+  })
+
+  it('summiert die Kosten', async () => {
+    const cloud = await ruf('netops.api.cloud.cloud_overview', {})
+    const summe = cloud.servers.reduce((s, srv) => s + srv.cost_per_month, 0)
+    expect(cloud.summary.cost_per_month).toBeCloseTo(summe, 2)
+  })
+})
+
+describe('netops.api.identity.identity_overview', () => {
+  it('rechnet die MFA-Abdeckung nur über Personenkonten', async () => {
+    const id = await ruf('netops.api.identity.identity_overview', {})
+    const personen = id.accounts.filter((k) => k.account_kind === 'person')
+    const mitMfa = personen.filter((k) => k.mfa_kind !== 'none')
+    expect(id.summary.persons).toBe(personen.length)
+    expect(id.summary.mfa_coverage_pct).toBeCloseTo((mitMfa.length / personen.length) * 100, 1)
+  })
+
+  it('wertet Notfallzugänge nicht als auffällig', async () => {
+    // Sie sind bewusst unbenutzt - ein Befund wäre hier falsch.
+    const id = await ruf('netops.api.identity.identity_overview', {})
+    const notfall = id.accounts.filter((k) => k.account_kind === 'break_glass')
+    expect(notfall).toHaveLength(2)
+    expect(notfall.every((k) => k.level === 'ok')).toBe(true)
+  })
+
+  it('meldet ein Personenkonto ohne zweiten Faktor als kritisch', async () => {
+    const id = await ruf('netops.api.identity.identity_overview', {})
+    const ohne = id.accounts.find((k) => k.account_name === 'jakob.pichler@oekovolt.test')
+    expect(ohne.level).toBe('critical')
+    expect(ohne.reasons.join(' ')).toMatch(/zweiter Faktor|Kein zweiter/)
+  })
+
+  it('meldet ein lange ungenutztes Konto', async () => {
+    const id = await ruf('netops.api.identity.identity_overview', {})
+    const alt = id.accounts.find((k) => k.account_name === 'sabine.gruber@oekovolt.test')
+    expect(alt.last_login_days).toBeGreaterThan(90)
+    expect(id.summary.stale_accounts).toBe(1)
+  })
+
+  it('erkennt ein abgelaufenes Token', async () => {
+    const id = await ruf('netops.api.identity.identity_overview', {})
+    const hetzner = id.tokens.find((t) => t.token_label.includes('Hetzner'))
+    expect(hetzner.level).toBe('critical')
+    expect(hetzner.reasons.join(' ')).toMatch(/Abgelaufen/)
+    expect(id.summary.tokens_expired).toBe(1)
+  })
+
+  it('führt schreibende API-Token getrennt', async () => {
+    const id = await ruf('netops.api.identity.identity_overview', {})
+    expect(id.summary.tokens_write).toBe(1)
+    const lesend = id.tokens.filter((t) => t.token_kind === 'api' && t.read_only)
+    expect(lesend.length).toBeGreaterThan(1)
+  })
+})
+
+describe('netops.api.exposure.exposure_overview', () => {
+  it('stellt nicht dokumentierte Dienste nach vorne', async () => {
+    const aussen = await ruf('netops.api.exposure.exposure_overview', {})
+    expect(aussen.services[0].documented).toBe(0)
+    expect(aussen.summary.undocumented).toBe(2)
+  })
+
+  it('erkennt ein abgelaufenes Zertifikat und eine unbekannte Subdomain', async () => {
+    const aussen = await ruf('netops.api.exposure.exposure_overview', {})
+    const abgelaufen = aussen.certificates.find((z) => z.common_name === 'netzwerk.oekovolt.test')
+    expect(abgelaufen.level).toBe('critical')
+
+    const unbekannt = aussen.certificates.find((z) => z.common_name === 'alt.oekovolt.test')
+    expect(unbekannt.reasons.join(' ')).toMatch(/DNS-Doku/)
+  })
+
+  it('markiert IoC-Treffer im eigenen Netz', async () => {
+    const aussen = await ruf('netops.api.exposure.exposure_overview', {})
+    expect(aussen.summary.indicators_matched).toBe(3)
+    expect(aussen.indicators[0].matched).toBe(1)
+  })
+
+  it('beanstandet ein aggressives Scanprofil auf einem OT-Netz', async () => {
+    const aussen = await ruf('netops.api.exposure.exposure_overview', {})
+    const scada = aussen.scan_windows.find((f) => f.window_name === 'SCADA-Server')
+    expect(scada.level).toBe('critical')
+    expect(scada.reasons.join(' ')).toMatch(/OT-Netz/)
+    expect(scada.reasons.join(' ')).toMatch(/Wachhund/)
+  })
+
+  it('lässt ein schonendes OT-Fenster durchgehen', async () => {
+    const aussen = await ruf('netops.api.exposure.exposure_overview', {})
+    const feld = aussen.scan_windows.find((f) => f.window_name === 'OT-Feldgeräte')
+    expect(feld.gentle_profile).toBe(1)
+    expect(feld.level).toBe('ok')
+  })
+})
+
+describe('netops.api.change', () => {
+  it('erlaubt nur die Übergänge des Ablaufs', async () => {
+    // Von "draft" geht es nicht direkt zu "approved".
+    await expect(
+      ruf('netops.api.change.set_change_state', { name: 'CHG-00004', state: 'approved' }),
+    ).rejects.toThrow(/nur review, rejected/)
+  })
+
+  it('verlangt vor der Prüfung die Pflichtangaben', async () => {
+    // CHG-00004 hat kein Wartungsfenster bei hohem Risiko.
+    await expect(
+      ruf('netops.api.change.set_change_state', { name: 'CHG-00004', state: 'review' }),
+    ).rejects.toThrow(/Wartungsfenster/)
+  })
+
+  it('lässt den Antragsteller nicht selbst freigeben', async () => {
+    await expect(
+      ruf('netops.api.change.set_change_state', {
+        name: 'CHG-00002',
+        state: 'approved',
+        actor: 'benny.hoefler@oekovolt.test',
+      }),
+    ).rejects.toThrow(/eigenen Antrag/)
+  })
+
+  it('verlangt bei hohem Risiko zwei verschiedene Freigebende', async () => {
+    const erste = await ruf('netops.api.change.set_change_state', {
+      name: 'CHG-00002',
+      state: 'approved',
+      actor: 'erste.freigabe@oekovolt.test',
+    })
+    // CHG-00002 hat mittleres Risiko und ist damit nach einer Freigabe durch.
+    expect(erste.change_state).toBe('approved')
+
+    // Ein Antrag mit hohem Risiko bleibt nach der ersten Unterschrift offen.
+    const hoch = await ruf('netops.api.change.change_list', {})
+    const risikoreich = hoch.find((c) => c.risk === 'high' && c.change_state === 'draft')
+    expect(risikoreich.needs_second_approver).toBe(true)
+  })
+
+  it('protokolliert jeden Zustandswechsel in der Hash-Kette', async () => {
+    const vorher = (await ruf('netops.api.audit.verify_chain', {})).length
+
+    await ruf('netops.api.change.set_change_state', {
+      name: 'CHG-00001',
+      state: 'implemented',
+      actor: 'zweite.person@oekovolt.test',
+    })
+
+    const kette = await ruf('netops.api.audit.verify_chain', {})
+    expect(kette.length).toBe(vorher + 1)
+    expect(kette.ok).toBe(true)
+
+    const log = await ruf('netops.api.audit.audit_log', { limit: 1 })
+    expect(log[0].action).toBe('change_implemented')
+  })
+
+  it('kennzeichnet Perimeter-Änderungen', async () => {
+    const liste = await ruf('netops.api.change.change_list', {})
+    const perimeter = liste.filter((c) => c.perimeter)
+    expect(perimeter.length).toBeGreaterThan(0)
+    expect(perimeter[0].note).toMatch(/manuell/)
+  })
+
+  it('nennt fehlende Pflichtangaben', async () => {
+    const liste = await ruf('netops.api.change.change_list', {})
+    const unvollstaendig = liste.find((c) => c.missing.length)
+    expect(unvollstaendig.missing).toContain('Wartungsfenster')
+  })
+})
+
+describe('netops.api.compliance.compliance_report', () => {
+  it('zieht jeden Nachweis aus den echten Daten', async () => {
+    const bericht = await ruf('netops.api.compliance.compliance_report', {})
+    expect(bericht.controls).toHaveLength(10)
+    // Kein Punkt ohne Nachweis oder Begründung der Lücke.
+    for (const punkt of bericht.controls) {
+      expect(punkt.evidence || punkt.gap, punkt.control_key).toBeTruthy()
+    }
+  })
+
+  it('meldet die Backup-Lücke als nicht erfüllt', async () => {
+    const bericht = await ruf('netops.api.compliance.compliance_report', {})
+    const backup = bericht.controls.find((c) => c.control_key === 'nis2-backup')
+    expect(backup.status).toBe('failed')
+    expect(backup.gap).toMatch(/kritisch/)
+    expect(backup.link).toBe('/backup')
+  })
+
+  it('belegt die Audit-Kette, solange sie unversehrt ist', async () => {
+    const bericht = await ruf('netops.api.compliance.compliance_report', {})
+    const audit = bericht.controls.find((c) => c.control_key === 'nis2-audit')
+    expect(audit.status).toBe('met')
+    expect(audit.evidence).toMatch(/unversehrt/)
+  })
+
+  it('schlägt um, wenn die Kette bricht', async () => {
+    const { table } = await import('@/api/mock/db.js')
+    table('Audit Entry')[3].object_name = 'MANIPULIERT'
+
+    const bericht = await ruf('netops.api.compliance.compliance_report', {})
+    const audit = bericht.controls.find((c) => c.control_key === 'nis2-audit')
+    expect(audit.status).toBe('failed')
+    expect(audit.gap).toMatch(/Bruch/)
+  })
+
+  it('rechnet den Erfüllungsgrad aus den belegten Punkten', async () => {
+    const bericht = await ruf('netops.api.compliance.compliance_report', {})
+    const z = bericht.summary
+    expect(z.met + z.partial + z.failed).toBeLessThanOrEqual(z.total)
+    expect(z.coverage_pct).toBeCloseTo((z.met / z.total) * 100, 1)
+  })
+
+  it('nennt in der Zusammenfassung die schwersten Lücken', async () => {
+    const z = await ruf('netops.api.compliance.compliance_summary', {})
+    expect(z.worst.length).toBeGreaterThan(0)
+    expect(z.worst.length).toBeLessThanOrEqual(3)
+  })
+})

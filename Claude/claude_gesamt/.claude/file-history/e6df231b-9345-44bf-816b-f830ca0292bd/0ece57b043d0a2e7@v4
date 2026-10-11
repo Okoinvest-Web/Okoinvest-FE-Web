@@ -1,0 +1,120 @@
+app_name = "oekovolt_baudoku"
+app_title = "OEKOVOLT Baudoku"
+app_publisher = "OEKOVOLT Solartechnik GmbH"
+app_description = "Baustellendokumentation, Pruefprotokolle und Maengelmanagement fuer PV, Speicher und Ladestationen"
+app_email = "it@oekovolt.at"
+app_license = "proprietary"
+required_apps = ["frappe/erpnext"]
+
+# ----------------------------------------------------------------------------
+# Installation
+# ----------------------------------------------------------------------------
+
+after_install = "oekovolt_baudoku.setup.install.after_install"
+after_migrate = "oekovolt_baudoku.setup.install.after_migrate"
+
+# ----------------------------------------------------------------------------
+# Vue-SPA
+#
+# Die App wird unter /baudoku ausgeliefert. `bench build` erzeugt aus
+# `frontend/` das Bundle nach `oekovolt_baudoku/public/frontend` und die
+# Einstiegsseite `www/baudoku.html`.
+# ----------------------------------------------------------------------------
+
+website_route_rules = [
+	{"from_route": "/baudoku/<path:app_path>", "to_route": "baudoku"},
+]
+
+# Die SPA nutzt ausschliesslich /api — kein Frappe-Desk-Bundle laden.
+app_include_js = []
+app_include_css = []
+
+# ----------------------------------------------------------------------------
+# Dokument-Ereignisse
+# ----------------------------------------------------------------------------
+
+doc_events = {
+	"Pruefprotokoll": {
+		"before_insert": "oekovolt_baudoku.api.protokoll.vor_anlage",
+		"on_update": "oekovolt_baudoku.api.pdf.pdf_bei_abschluss",
+	},
+	"Tagesbericht": {
+		"on_update": "oekovolt_baudoku.api.pdf.pdf_bei_genehmigung",
+	},
+}
+
+# ----------------------------------------------------------------------------
+# Zeitgesteuerte Jobs
+# ----------------------------------------------------------------------------
+
+scheduler_events = {
+	"daily": [
+		"oekovolt_baudoku.baudoku.doctype.mangel.mangel.taeglich_eskalieren",
+		"oekovolt_baudoku.baudoku.doctype.tagesbericht.tagesbericht.erinnerung_fehlende_berichte",
+		"oekovolt_baudoku.api.komponenten.garantien_pruefen",
+		# Subunternehmerportal
+		"oekovolt_baudoku.baudoku.doctype.subunternehmerauftrag.subunternehmerauftrag.fristen_nachziehen",
+		"oekovolt_baudoku.baudoku.doctype.personalmeldung.personalmeldung.fehlende_meldungen_pruefen",
+		"oekovolt_baudoku.baudoku.doctype.subunternehmer_mitarbeiter.subunternehmer_mitarbeiter.ablaufende_nachweise_pruefen",
+	],
+}
+
+# ----------------------------------------------------------------------------
+# Fixtures
+# ----------------------------------------------------------------------------
+
+fixtures = [
+	{
+		"dt": "Role",
+		"filters": [["name", "like", "Baudoku %"]],
+	},
+	{
+		"dt": "Mangel Schweregrad",
+	},
+	{
+		"dt": "Mangelkategorie",
+	},
+]
+
+# ----------------------------------------------------------------------------
+# Berechtigungen
+# ----------------------------------------------------------------------------
+
+permission_query_conditions = {
+	"Pruefprotokoll": "oekovolt_baudoku.api.berechtigung.protokoll_query",
+	"Mangel": "oekovolt_baudoku.api.berechtigung.mangel_query",
+	"Tagesbericht": "oekovolt_baudoku.api.berechtigung.tagesbericht_query",
+	"PV Anlage": "oekovolt_baudoku.api.berechtigung.anlage_query",
+	# Subunternehmerportal
+	"Subunternehmerauftrag": "oekovolt_baudoku.api.berechtigung.auftrag_query",
+	"Stempelung": "oekovolt_baudoku.api.berechtigung.stempelung_query",
+	"Arbeitstag": "oekovolt_baudoku.api.berechtigung.arbeitstag_query",
+	"Personalmeldung": "oekovolt_baudoku.api.berechtigung.personalmeldung_query",
+	"Materialanforderung": "oekovolt_baudoku.api.berechtigung.materialanforderung_query",
+	"Bauvertragsmeldung": "oekovolt_baudoku.api.berechtigung.bauvertragsmeldung_query",
+	"Subunternehmer Mitarbeiter": "oekovolt_baudoku.api.berechtigung.subu_mitarbeiter_query",
+}
+
+has_permission = {
+	"Pruefprotokoll": "oekovolt_baudoku.api.berechtigung.protokoll_permission",
+	"Tagesbericht": "oekovolt_baudoku.api.berechtigung.tagesbericht_permission",
+	"Subunternehmerauftrag": "oekovolt_baudoku.api.berechtigung.subu_dokument_permission",
+	"Stempelung": "oekovolt_baudoku.api.berechtigung.subu_dokument_permission",
+	"Arbeitstag": "oekovolt_baudoku.api.berechtigung.subu_dokument_permission",
+	"Personalmeldung": "oekovolt_baudoku.api.berechtigung.subu_dokument_permission",
+	"Materialanforderung": "oekovolt_baudoku.api.berechtigung.subu_dokument_permission",
+	"Bauvertragsmeldung": "oekovolt_baudoku.api.berechtigung.subu_dokument_permission",
+}
+
+# ----------------------------------------------------------------------------
+# Jinja-Erweiterungen fuer Print Formats
+# ----------------------------------------------------------------------------
+
+jinja = {
+	"methods": [
+		"oekovolt_baudoku.utils.jinja.status_farbe",
+		"oekovolt_baudoku.utils.jinja.gruppiere_ergebnisse",
+		"oekovolt_baudoku.utils.jinja.formatiere_gps",
+		"oekovolt_baudoku.utils.jinja.bild_daten",
+	],
+}

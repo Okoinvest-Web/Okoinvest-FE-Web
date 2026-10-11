@@ -1,0 +1,159 @@
+/** Typen und Endpunkte des Subunternehmerportals. */
+
+import { methode } from './api'
+
+export type AuftragStatus =
+  | 'Geplant'
+  | 'Angenommen'
+  | 'In Arbeit'
+  | 'Fertiggemeldet'
+  | 'Abgenommen'
+  | 'Abgelehnt'
+  | 'Storniert'
+
+export type Stempelrichtung = 'Ein' | 'Aus' | 'Pause Beginn' | 'Pause Ende'
+
+export interface Baustelle {
+  name: string
+  anlage_name: string
+  adresse?: string
+  plz?: string
+  ort?: string
+  gps_lat?: number
+  gps_lng?: number
+}
+
+export interface Kolonnenmitglied {
+  name: string
+  vollname: string
+  drittstaat: 0 | 1
+  ist_polier: 0 | 1
+  qualifikation?: string
+  ausweis_gueltig_bis?: string
+  bewilligung_gueltig_bis?: string
+}
+
+export interface Auftrag {
+  name: string
+  titel: string
+  anlage: string
+  status: AuftragStatus
+  prioritaet?: string
+  termin_von: string
+  termin_bis: string
+  frist?: string
+  tage_bis_frist?: number
+  fristwarnung_aktiv?: 0 | 1
+  verzug?: 0 | 1
+  fortschritt_prozent?: number
+  herkunft?: 'Planung' | 'Mangel' | 'Nachtrag'
+  gewaehrleistung?: 0 | 1
+  aufgabe?: string
+  baustelle?: Baustelle | null
+}
+
+export interface PortalBootstrap {
+  supplier: string
+  firmenname: string
+  ich: { name: string; vollname: string; ist_polier: 0 | 1 } | null
+  ist_polier: boolean
+  kolonne: Kolonnenmitglied[]
+  meldepflicht: { pflichtig: boolean; drittstaat_personen?: number; grund: string }
+  baustellen: Baustelle[]
+  einstellungen: {
+    geofence_radius_m: number
+    geofence_erzwingen: boolean
+    fristwarnung_tage: number
+  }
+  server_zeit: string
+}
+
+export interface Tagesuebersicht {
+  auftraege_heute: Auftrag[]
+  fristwarnungen: { name: string; titel: string; anlage: string; frist: string; tage_bis_frist: number }[]
+  im_verzug: { name: string; titel: string; anlage: string; frist: string; tage_bis_frist: number }[]
+  personalmeldung: {
+    pflichtig: boolean
+    grund: string
+    abgegeben: boolean
+    meldung: Record<string, unknown> | null
+  }
+  offene_materialanforderungen: number
+  offene_meldungen: number
+}
+
+export interface Stempelergebnis {
+  name: string
+  zeitpunkt: string
+  innerhalb_geofence: boolean
+  entfernung_m: number | null
+  ortung_verweigert: boolean
+  dublette: boolean
+}
+
+export interface Arbeitstag {
+  name: string
+  mitarbeiter: string
+  datum: string
+  anlage?: string
+  beginn?: string
+  ende?: string
+  arbeitszeit_stunden?: number
+  pause_minuten?: number
+  status: string
+  hinweise?: string
+  beanstandung?: string
+  pause_ausreichend?: 0 | 1
+  ueber_tagesgrenze?: 0 | 1
+  ueber_wochengrenze?: 0 | 1
+  supplier?: string
+}
+
+export interface Subunternehmer {
+  name: string
+  supplier_name: string
+  personal_hinterlegt: 0 | 1
+}
+
+const P = 'oekovolt_baudoku.api.subunternehmer.'
+const S = 'oekovolt_baudoku.baudoku.doctype.stempelung.stempelung.'
+const A = 'oekovolt_baudoku.baudoku.doctype.arbeitstag.arbeitstag.'
+const PM = 'oekovolt_baudoku.baudoku.doctype.personalmeldung.personalmeldung.'
+const SA = 'oekovolt_baudoku.baudoku.doctype.subunternehmerauftrag.subunternehmerauftrag.'
+
+export const portal = {
+  bootstrap: () => methode<PortalBootstrap>(`${P}portal_bootstrap`, {}, 'GET'),
+  tagesuebersicht: (anlage?: string) =>
+    methode<Tagesuebersicht>(`${P}tagesuebersicht`, { anlage }, 'GET'),
+  auftraege: (parameter: Record<string, unknown> = {}) =>
+    methode<Auftrag[]>(`${P}meine_auftraege`, parameter, 'GET'),
+  kalender: (von?: string, bis?: string) => methode<Auftrag[]>(`${P}kalender`, { von, bis }, 'GET'),
+  fortschrittMelden: (auftrag: string, fortschritt: number, bemerkung?: string) =>
+    methode(`${P}fortschritt_melden`, { auftrag, fortschritt, bemerkung }),
+  arbeitszeiten: (von?: string, bis?: string) =>
+    methode<Arbeitstag[]>(`${P}arbeitszeiten`, { von, bis }, 'GET'),
+
+  stempeln: (parameter: Record<string, unknown>) => methode<Stempelergebnis>(`${S}stempeln`, parameter),
+  stempelStatus: (mitarbeiter: string) =>
+    methode<{ eingestempelt: boolean; in_pause: boolean; seit?: string; anlage?: string }>(
+      `${S}offener_status`,
+      { mitarbeiter },
+      'GET',
+    ),
+  stempelungKorrigieren: (stempelung: string, neuer_zeitpunkt: string, begruendung: string) =>
+    methode(`${S}korrigieren`, { stempelung, neuer_zeitpunkt, begruendung }),
+
+  zeitenZurFreigabe: (parameter: Record<string, unknown> = {}) =>
+    methode<Arbeitstag[]>(`${A}zur_freigabe`, parameter, 'GET'),
+  zeitenFreigeben: (namen: string[]) => methode(`${A}sammelfreigabe`, { namen }),
+
+  meldepflicht: (supplier: string) =>
+    methode<{ pflichtig: boolean; grund: string }>(`${PM}meldepflicht`, { supplier }, 'GET'),
+  heutigeMeldung: (supplier: string, anlage: string) =>
+    methode<Record<string, unknown> | null>(`${PM}heutige_meldung`, { supplier, anlage }, 'GET'),
+
+  auftragAusMangel: (parameter: Record<string, unknown>) =>
+    methode<string>(`${SA}auftrag_aus_mangel`, parameter),
+  /** Auswahlliste der Subunternehmer — nur fuer die Bauleitung. */
+  subunternehmer: () => methode<Subunternehmer[]>(`${P}subunternehmer_liste`, {}, 'GET'),
+}

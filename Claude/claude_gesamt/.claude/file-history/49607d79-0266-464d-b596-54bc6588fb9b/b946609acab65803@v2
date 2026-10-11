@@ -1,0 +1,73 @@
+# -*- coding: utf-8 -*-
+"""Ergaenzt die API-Verbindungsfelder am Connector-DocType."""
+import io
+
+p = 'src/api/mock/fixtures-ops.js'
+s = io.open(p, encoding='utf-8').read()
+
+alt = """    // Verweis nach Passbolt - niemals das Geheimnis selbst
+    // (CLAUDE.md Abschnitt 3).
+    'access_reference',
+    'scope_note',
+    'write_reason',
+  ],"""
+neu = """    // --- Verbindung zur API
+    'base_url',
+    'port',
+    'api_path',
+    // Benutzername und Token-KENNUNG sind keine Geheimnisse - das Geheimnis
+    // ist das Token selbst, und das liegt in Passbolt.
+    'username',
+    'token_id',
+    'verify_tls',
+    'ca_fingerprint',
+    'timeout_seconds',
+    'proxy_url',
+    // Verweis nach Passbolt - niemals das Geheimnis selbst
+    // (CLAUDE.md Abschnitt 3).
+    'access_reference',
+    'scope_note',
+    'write_reason',
+  ],"""
+assert alt in s, 'Connector-Felder nicht gefunden'
+s = s.replace(alt, neu, 1)
+
+# Seed-Konnektoren mit realistischen Verbindungsdaten
+verbindungen = {
+    "connector_name: 'opnsense-fw-os-01',": """      base_url: 'https://fw-os-01.oekovolt.test',
+      port: 443,
+      api_path: '/api',
+      username: 'netops-reader',
+      token_id: 'opn-ro-2026-01',
+      verify_tls: 1,
+      ca_fingerprint: 'SHA256:9f2c4a1e8b73d05f6a2e9c1b4d78e0f3a5c6b9d2e4f70a8c1b3d5e7f9a0c2b4d',
+      timeout_seconds: 20,""",
+    "connector_name: 'proxmox-ve-cluster',": """      base_url: 'https://srv-pve-01.oekovolt.test',
+      port: 8006,
+      api_path: '/api2/json',
+      username: 'netops@pve',
+      token_id: 'readonly',
+      verify_tls: 1,
+      timeout_seconds: 30,""",
+    "connector_name: 'pbs-srv-pbs-01',": """      base_url: 'https://srv-pbs-01.oekovolt.test',
+      port: 8007,
+      api_path: '/api2/json',
+      username: 'netops@pbs',
+      token_id: 'audit-ro',
+      verify_tls: 1,
+      timeout_seconds: 60,""",
+    "connector_name: 'truenas-nas-tn-01',": """      base_url: 'https://nas-tn-01.oekovolt.test',
+      port: 443,
+      api_path: '/api/v2.0',
+      username: 'netops',
+      token_id: 'tn-ro-01',
+      verify_tls: 0,
+      timeout_seconds: 30,""",
+}
+
+for anker, block in verbindungen.items():
+    assert anker in s, anker
+    s = s.replace(anker, anker + '\n' + block, 1)
+
+io.open(p, 'w', encoding='utf-8').write(s)
+print('API-Felder ergaenzt')

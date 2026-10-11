@@ -1,0 +1,70 @@
+import sys, os
+os.chdir(r"C:\Users\SALEADMIN\Downloads\crm-develop\crm-next")
+
+def edit(p, pairs):
+    s = open(p, encoding="utf-8").read()
+    for a, b in pairs:
+        if a not in s:
+            sys.exit(f"{p}: fehlt {a[:80]!r}")
+        s = s.replace(a, b, 1)
+    open(p, "w", encoding="utf-8", newline="\n").write(s)
+
+edit("src/components/Sidebar.tsx", [
+    ('{source === "mock" ? "Demo-Daten" : "ERPNext verbunden"}',
+     '{user.role === "manager" ? "Vertriebsleitung" : "Handelsvertreter"} · {source === "mock" ? "Demo" : "ERPNext"}'),
+])
+
+edit("src/app/(crm)/opportunities/page.tsx", [
+    ('import { requireUser } from "@/lib/auth";', 'import { isManager, requireUser } from "@/lib/auth";'),
+    ('''            <div className="flex gap-0.5 rounded-md bg-gray-100 p-0.5">
+              {seg(!mine, qs(view, false), "Alle")}
+              {seg(mine, qs(view, true), "Meine")}
+            </div>''', '''            {/* Vertreter sehen ohnehin nur Eigenes – Filter nur für die Vertriebsleitung */}
+            {isManager(user) && (
+              <div className="flex gap-0.5 rounded-md bg-gray-100 p-0.5">
+                {seg(!mine, qs(view, false), "Alle")}
+                {seg(mine, qs(view, true), "Meine")}
+              </div>
+            )}'''),
+])
+
+edit("src/app/(crm)/todos/page.tsx", [
+    ('import { requireUser } from "@/lib/auth";', 'import { isManager, requireUser } from "@/lib/auth";'),
+    ('''        actions={
+          <div className="flex gap-0.5 rounded-md bg-gray-100 p-0.5">
+            {seg(!mine, href({ mine: false }), "Alle")}
+            {seg(mine, href({ mine: true }), "Nur meine")}
+          </div>
+        }''', '''        actions={
+          isManager(user) && (
+            <div className="flex gap-0.5 rounded-md bg-gray-100 p-0.5">
+              {seg(!mine, href({ mine: false }), "Alle")}
+              {seg(mine, href({ mine: true }), "Nur meine")}
+            </div>
+          )
+        }'''),
+])
+
+edit("src/app/login/page.tsx", [
+    ('''            Testzugänge: <span className="font-mono text-gray-900">max@firma.example</span> oder <span className="font-mono text-gray-900">lisa@firma.example</span>, Passwort{" "}
+            <span className="font-mono text-gray-900">demo</span>''',
+     '''            <div className="mb-1 font-medium text-gray-900">Testzugänge · Passwort <span className="font-mono">demo</span></div>
+            <div>
+              <span className="font-mono text-gray-900">max@firma.example</span> · <span className="font-mono text-gray-900">lisa@firma.example</span> – Handelsvertreter
+            </div>
+            <div>
+              <span className="font-mono text-gray-900">leitung@firma.example</span> – Vertriebsleitung
+            </div>'''),
+])
+
+# Auswertung: Vertreter sehen nur ihre eigene Zeile (Daten sind ohnehin gefiltert), Überschrift anpassen
+edit("src/app/(crm)/reports/page.tsx", [
+    ('import { db } from "@/lib/data";', 'import { db } from "@/lib/data";\nimport { isManager, requireUser } from "@/lib/auth";'),
+    ('''  await connection();
+''', '''  await connection();
+  const user = await requireUser();
+'''),
+    ('<PageHeader title="Auswertung" subtitle="Berater und Lead-Quellen im Vergleich" />',
+     '<PageHeader title="Auswertung" subtitle={isManager(user) ? "Berater und Lead-Quellen im Vergleich" : "Deine Zahlen und Lead-Quellen"} />'),
+])
+print("ok")

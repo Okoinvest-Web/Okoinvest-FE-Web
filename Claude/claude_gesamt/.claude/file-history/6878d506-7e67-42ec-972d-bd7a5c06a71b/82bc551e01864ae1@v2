@@ -1,0 +1,103 @@
+// E-Mail-Vorlagen für den Außendienst (wie Frappe CRM "Email Templates").
+// Platzhalter: {name}, {vorname}, {kwp}, {berater}, {berater_email}, {titel}
+// Anrede bewusst neutral ("Guten Tag Vorname Nachname") – aus dem Namen lässt sich keine Anrede ableiten.
+
+export type EmailTemplate = {
+  id: string;
+  label: string;
+  hint: string;
+  marketing: boolean; // Werbung → nur mit Einwilligung (bei Privatkunden)
+  subject: string;
+  body: string;
+};
+
+export const EMAIL_TEMPLATES: EmailTemplate[] = [
+  {
+    id: "erstkontakt",
+    label: "Erstkontakt nach Anfrage",
+    hint: "Antwort auf die Website-Anfrage",
+    marketing: false,
+    subject: "Ihre Photovoltaik-Anfrage bei Ökovolt",
+    body: `Guten Tag {name},
+
+vielen Dank für Ihre Anfrage{kwp_satz}. Ich bin Ihr persönlicher Ansprechpartner bei Ökovolt und melde mich, um die nächsten Schritte mit Ihnen abzustimmen.
+
+Für eine erste Einschätzung helfen mir:
+• Ihr Jahresstromverbrauch (letzte Stromrechnung)
+• ein paar Fotos Ihres Daches und des Zählerschranks
+
+Gerne vereinbaren wir anschließend einen unverbindlichen Vor-Ort-Termin. Wann erreiche ich Sie am besten telefonisch?
+
+Mit sonnigen Grüßen
+{berater}
+{berater_email}`,
+  },
+  {
+    id: "unterlagen",
+    label: "Unterlagen anfordern",
+    hint: "Stromrechnung, Dach- und Zählerfotos",
+    marketing: false,
+    subject: "Unterlagen für Ihr PV-Angebot",
+    body: `Guten Tag {name},
+
+damit ich Ihnen ein passendes Angebot erstellen kann, benötige ich noch:
+
+1. Ihre letzte Jahresstromrechnung (Verbrauch in kWh)
+2. Fotos der Dachflächen (möglichst Süd-, Ost- und Westseite)
+3. ein Foto des geöffneten Zählerschranks
+4. falls vorhanden: Grundriss oder Bauplan mit Dachmaßen
+
+Sie können mir die Unterlagen einfach als Antwort auf diese E-Mail senden.
+
+Mit sonnigen Grüßen
+{berater}`,
+  },
+  {
+    id: "termin",
+    label: "Vor-Ort-Termin bestätigen",
+    hint: "Besichtigung von Dach und Zählerschrank",
+    marketing: false,
+    subject: "Terminbestätigung: Vor-Ort-Besichtigung",
+    body: `Guten Tag {name},
+
+hiermit bestätige ich unseren Termin zur Vor-Ort-Besichtigung am [Datum] um [Uhrzeit].
+
+Die Besichtigung dauert etwa 60 Minuten. Ich sehe mir Dach, Zählerschrank und den möglichen Standort für Wechselrichter und Speicher an. Bitte halten Sie, wenn möglich, Ihre letzte Stromrechnung bereit.
+
+Sollte der Termin nicht passen, geben Sie mir bitte kurz Bescheid.
+
+Mit sonnigen Grüßen
+{berater}`,
+  },
+  {
+    id: "nachfassen",
+    label: "Angebot nachfassen",
+    hint: "Rückfragen zum versendeten Angebot",
+    marketing: true,
+    subject: "Ihr Angebot: {titel}",
+    body: `Guten Tag {name},
+
+vor einigen Tagen haben Sie unser Angebot „{titel}“ erhalten. Haben sich dazu Fragen ergeben – etwa zu Speichergröße, Finanzierung oder Montagetermin?
+
+Gerne gehe ich das Angebot mit Ihnen telefonisch oder bei einem kurzen Termin durch.
+
+Mit sonnigen Grüßen
+{berater}`,
+  },
+];
+
+export type TemplateContext = { name: string; kwp?: number; advisor: string; advisorEmail: string; title?: string };
+
+export function fillTemplate(t: EmailTemplate, c: TemplateContext) {
+  const vars: Record<string, string> = {
+    name: c.name,
+    vorname: c.name.split(" ")[0],
+    kwp: c.kwp ? `${c.kwp.toLocaleString("de-DE")} kWp` : "",
+    kwp_satz: c.kwp ? ` für eine Photovoltaikanlage mit rund ${c.kwp.toLocaleString("de-DE")} kWp` : "",
+    berater: c.advisor,
+    berater_email: c.advisorEmail,
+    titel: c.title ?? "Ihre Photovoltaikanlage",
+  };
+  const fill = (s: string) => s.replace(/\{(\w+)\}/g, (_, k: string) => vars[k] ?? "");
+  return { subject: fill(t.subject), body: fill(t.body) };
+}

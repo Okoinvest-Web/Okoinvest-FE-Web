@@ -1,0 +1,103 @@
+/**
+ * Gemeinsame Abbildungen für die Bewertungsstufen.
+ *
+ * Diese Zuordnungen lagen vorher als Kopie in jeder Seite. Eine Kopie
+ * abzuändern und die übrigen zu vergessen ist die wahrscheinlichste
+ * Fehlerquelle bei so etwas - deshalb steht es jetzt einmal hier.
+ *
+ * Die Farbwerte selbst stehen als CSS-Token in src/index.css. Grundregel
+ * bleibt: Farbe trägt Zustand, Text trägt Identität, und eine Statusfarbe
+ * erscheint nie ohne Beschriftung (siehe StatusDot.vue).
+ */
+
+/** Stufen in aufsteigender Dringlichkeit. */
+export const STUFEN = ['ok', 'neutral', 'info', 'warning', 'serious', 'critical']
+
+/** Schweregrad eines Alarms, Vorfalls oder Tickets auf eine Stufe abbilden. */
+export function schweregradStufe(wert) {
+  return (
+    { critical: 'critical', high: 'serious', medium: 'warning', low: 'neutral' }[wert] || 'neutral'
+  )
+}
+
+/** Kritikalität eines Geschäftsdienstes. Gleiche Skala wie beim Schweregrad. */
+export const kritikalitaetStufe = schweregradStufe
+
+/** Risiko eines Change-Antrags. */
+export function risikoStufe(wert) {
+  return { high: 'critical', medium: 'warning', low: 'neutral' }[wert] || 'neutral'
+}
+
+/**
+ * Farbe eines Balkens.
+ *
+ * Ohne Stufe ist es eine reine Größenordnung und bekommt die sequenzielle
+ * Hue. Mit Stufe kommt die Statusfarbe - dann steht daneben immer auch ein
+ * Wort, sonst wäre die Regel verletzt.
+ */
+export function balkenFarbe(stufe) {
+  switch (stufe) {
+    case 'critical':
+      return 'var(--viz-critical)'
+    case 'serious':
+      return 'var(--viz-serious)'
+    case 'warning':
+      return 'var(--viz-warning)'
+    case 'ok':
+      return 'var(--viz-good)'
+    default:
+      return 'var(--viz-seq-400)'
+  }
+}
+
+/** Schwellenbewertung für Auslastungen in Prozent. */
+export function auslastungStufe(prozent) {
+  if (prozent >= 90) return 'critical'
+  if (prozent >= 70) return 'warning'
+  return null
+}
+
+/** Benennung der Schwelle – die Farbe warnt nie allein. */
+export function auslastungText(prozent) {
+  return { critical: 'kritisch', warning: 'hoch' }[auslastungStufe(prozent)] || null
+}
+
+const STUFEN_TEXT = {
+  ok: 'in Ordnung',
+  neutral: '–',
+  info: 'Hinweis',
+  warning: 'prüfen',
+  serious: 'dringend',
+  critical: 'kritisch',
+}
+
+/** Deutsche Benennung einer Stufe, wenn kein eigener Text vorliegt. */
+export function stufenText(stufe) {
+  return STUFEN_TEXT[stufe] || stufe
+}
+
+/**
+ * Macht aus einer Fehlermeldung des Servers einen Satz für Menschen.
+ *
+ * Frappe wirft Ausnahmen mit vorangestelltem Klassennamen
+ * ("DoesNotExistError: ..."). Der gehört ins Protokoll, nicht auf den
+ * Bildschirm - für die Person davor zählt, was zu tun ist.
+ */
+export function fehlerText(fehler) {
+  if (!fehler) return ''
+  const roh = String(fehler.message || fehler)
+
+  const treffer = /^(\w+Error):\s*(.*)$/s.exec(roh)
+  if (!treffer) return roh
+
+  const [, typ, rest] = treffer
+  const einleitung = {
+    DoesNotExistError: 'Nicht gefunden',
+    PermissionError: 'Nicht erlaubt',
+    ValidationError: 'Eingabe unvollständig',
+    DuplicateEntryError: 'Schon vorhanden',
+    MethodNotFound: 'Funktion fehlt',
+  }[typ]
+
+  return einleitung ? einleitung + ': ' + rest : rest
+}

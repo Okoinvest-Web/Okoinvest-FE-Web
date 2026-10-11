@@ -1,0 +1,105 @@
+import os, sys
+os.chdir(r"C:\Users\SALEADMIN\Downloads\crm-develop\crm-next\src\components")
+
+def edit(p, pairs):
+    s = open(p, encoding="utf-8").read()
+    for a, b in pairs:
+        if a not in s:
+            sys.exit(f"{p}: nicht gefunden: {a[:70]!r}")
+        s = s.replace(a, b)
+    open(p, "w", encoding="utf-8", newline="\n").write(s)
+
+edit("Kanban.tsx", [
+('import type { Opportunity } from "@/lib/types";',
+ 'import type { Opportunity } from "@/lib/types";\nimport { Avatar, Progress } from "@/components/ui";\nimport { CalendarDays } from "lucide-react";\n\n// Farbiger Kopfstreifen je Phase: von grau (früh) zu grün (kurz vor Abschluss)\nconst STAGE_BAR = ["bg-gray-300", "bg-sky-400", "bg-violet-400", "bg-sun-400", "bg-brand-500"];'),
+('<div className="flex min-h-0 flex-1 gap-3 overflow-x-auto p-5">', '<div className="flex min-h-0 flex-1 gap-4 overflow-x-auto px-6 py-6 lg:px-8">'),
+('{stages.map((stage) => {', '{stages.map((stage, idx) => {'),
+('className={`flex w-72 shrink-0 flex-col rounded-lg p-2 transition-colors ${over === stage ? "bg-gray-200" : "bg-gray-50"}`}',
+ 'className={`flex w-[288px] shrink-0 flex-col rounded-xl border p-2 transition-colors ${over === stage ? "border-brand-300 bg-brand-50" : "border-gray-200/70 bg-gray-100/60"}`}'),
+('''            <div className="flex items-baseline justify-between px-1.5 pb-2">
+              <h2 className="font-medium text-gray-900">
+                {STAGE_LABEL[stage] ?? stage} <span className="ml-1 text-gray-400">{col.length}</span>
+              </h2>
+              <span className="text-xs text-gray-500">{money(sum)}</span>
+            </div>''', '''            <div className="px-2 pb-3 pt-1.5">
+              <div className={`mb-2.5 h-1 rounded-full ${STAGE_BAR[idx % STAGE_BAR.length]}`} />
+              <div className="flex items-center justify-between">
+                <h2 className="font-semibold text-gray-900">{STAGE_LABEL[stage] ?? stage}</h2>
+                <span className="rounded-full bg-white px-2 py-0.5 text-xs font-medium text-gray-600 ring-1 ring-gray-200">{col.length}</span>
+              </div>
+              <div className="mt-0.5 text-xs font-medium tabular-nums text-gray-500">{money(sum)}</div>
+            </div>'''),
+('<div className="flex flex-col gap-2">', '<div className="flex min-h-24 flex-col gap-2">'),
+('''                  className="cursor-grab rounded-md border border-gray-200 bg-white p-3 shadow-sm hover:border-gray-300 active:cursor-grabbing"
+                >
+                  <div className="font-medium text-gray-900">{o.title ?? o.name}</div>
+                  <div className="mt-0.5 text-xs text-gray-500">{o.customer_name ?? o.party_name}</div>
+                  <div className="mt-3 flex items-center justify-between text-xs">
+                    <span className="font-medium text-gray-900">{money(o.opportunity_amount, o.currency)}</span>
+                    <span className="text-gray-500">
+                      {o.probability} % · {date(o.expected_closing)}
+                    </span>
+                  </div>''', '''                  className="group cursor-grab rounded-lg border border-gray-200/80 bg-white p-3.5 shadow-card transition hover:-translate-y-px hover:border-brand-300 hover:shadow-md active:cursor-grabbing"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="font-medium leading-snug text-gray-900 group-hover:text-brand-800">{o.title ?? o.name}</div>
+                      <div className="mt-0.5 truncate text-xs text-gray-500">{o.customer_name ?? o.party_name}</div>
+                    </div>
+                    {o.opportunity_owner && <Avatar name={o.opportunity_owner} />}
+                  </div>
+                  <div className="mt-3 text-base font-semibold tabular-nums text-gray-900">{money(o.opportunity_amount, o.currency)}</div>
+                  <div className="mt-2 flex items-center gap-2">
+                    <Progress value={o.probability} className="flex-1" />
+                    <span className="w-9 text-right text-xs font-medium tabular-nums text-gray-600">{o.probability} %</span>
+                  </div>
+                  <div className="mt-2.5 flex items-center gap-1.5 text-xs text-gray-500">
+                    <CalendarDays className="size-3.5" /> {date(o.expected_closing)}
+                  </div>'''),
+])
+
+edit("ListToolbar.tsx", [
+('<div className="flex items-center gap-2 border-b border-gray-200 px-5 py-2.5">', '<div className="flex flex-wrap items-center gap-2 border-b border-gray-100 px-4 py-3">'),
+('className="h-8 w-64 rounded-md bg-gray-100 pl-8 pr-3 outline-none placeholder:text-gray-400 focus:bg-white focus:ring-1 focus:ring-gray-300"',
+ 'className="h-9 w-72 rounded-lg border border-gray-200 bg-gray-50 pl-8 pr-3 outline-none transition placeholder:text-gray-400 focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/15"'),
+('className="h-8 rounded-md bg-gray-100 px-2 outline-none focus:ring-1 focus:ring-gray-300"',
+ 'className="h-9 rounded-lg border border-gray-200 bg-white px-2.5 outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"'),
+('<span className={`ml-auto text-xs text-gray-500 ${pending ? "opacity-50" : ""}`}>{count} Einträge</span>',
+ '<span className={`ml-auto rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium tabular-nums text-gray-600 ${pending ? "opacity-50" : ""}`}>{count} Einträge</span>'),
+])
+
+edit("CommandPalette.tsx", [
+('bg-black/20 p-4 pt-[12vh]', 'bg-brand-950/30 p-4 pt-[12vh] backdrop-blur-[2px]'),
+('className="w-full max-w-lg overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl"', 'className="w-full max-w-xl overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-pop"'),
+('<Search className="size-4 text-gray-400" />', '<Search className="size-5 text-brand-600" />'),
+('className="h-12 flex-1 outline-none placeholder:text-gray-400"', 'className="h-14 flex-1 text-[15px] outline-none placeholder:text-gray-400"'),
+('<ul className="max-h-80 overflow-y-auto py-1">', '<ul className="max-h-96 overflow-y-auto p-2">'),
+('className={`flex w-full items-center gap-3 px-4 py-2 text-left ${i === active ? "bg-gray-100" : ""}`}', 'className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left ${i === active ? "bg-brand-50" : ""}`}'),
+('<Icon className="size-4 shrink-0 text-gray-400" strokeWidth={1.75} />',
+ '''<span className={`flex size-8 shrink-0 items-center justify-center rounded-md ${i === active ? "bg-brand-100 text-brand-700" : "bg-gray-100 text-gray-500"}`}>
+                    <Icon className="size-4" strokeWidth={1.75} />
+                  </span>'''),
+('<span className="ml-auto shrink-0 text-xs text-gray-400">{h.type}</span>', '<span className="ml-auto shrink-0 rounded bg-gray-100 px-1.5 py-0.5 text-[11px] font-medium text-gray-500">{h.type}</span>'),
+])
+
+edit("Timeline.tsx", [
+('import { Avatar } from "@/components/ui";', 'import { MessageSquareText } from "lucide-react";\nimport { Avatar, Card, CardHeader } from "@/components/ui";'),
+('''    <section className="mt-6">
+      <h3 className="mb-2 font-medium">Notizen</h3>
+      <NoteComposer doctype={doctype} name={name} />
+      <ol className="mt-4 flex flex-col gap-4">''', '''    <Card>
+      <CardHeader title="Aktivitäten & Notizen" icon={MessageSquareText} sub={`${notes.length} Einträge`} />
+      <div className="p-5">
+        <NoteComposer doctype={doctype} name={name} />
+        <ol className="relative mt-6 flex flex-col gap-5 before:absolute before:bottom-2 before:left-[13px] before:top-2 before:w-px before:bg-gray-200">'''),
+('<li key={n.name} className="flex gap-3">', '<li key={n.name} className="relative flex gap-3">'),
+('<p className="mt-1 whitespace-pre-wrap rounded-md bg-gray-50 px-3 py-2 text-gray-800">{n.content}</p>',
+ '<p className="mt-1.5 whitespace-pre-wrap rounded-lg border border-gray-100 bg-gray-50/80 px-3.5 py-2.5 leading-relaxed text-gray-800">{n.content}</p>'),
+('''        {notes.length === 0 && <li className="text-gray-500">Noch keine Notizen.</li>}
+      </ol>
+    </section>''', '''        {notes.length === 0 && <li className="pl-10 text-gray-500">Noch keine Notizen.</li>}
+        </ol>
+      </div>
+    </Card>'''),
+])
+print("ok")

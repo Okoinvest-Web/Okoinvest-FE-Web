@@ -1,0 +1,334 @@
+/**
+ * Das Protokoll durchsuchbar und nachweisbar machen.
+ *
+ * ## Warum ein Hash ohne Gegenprobe Zierrat ist
+ *
+ * Das Audit speichert von jeder Nutzlast **nur den SHA-256-Hash** – das ist
+ * richtig, denn ein Protokoll, das Pfade, Gründe und Werte im Klartext
+ * führt, wird selbst zur Beute.
+ *
+ * Nur: ein Hash, den niemand prüfen kann, beweist nichts. Er sieht aus wie
+ * Sorgfalt. Erst `audit_verify_payload` macht ihn zu dem, wofür er da ist:
+ * jemand legt vor, was seiner Meinung nach passiert ist, und bekommt eine
+ * Antwort – passt das zu dem, was damals aufgeschrieben wurde, oder nicht.
+ *
+ * Das ist der Unterschied zwischen einem Protokoll und einem Nachweis.
+ *
+ * ## Der Kettenbruch braucht einen Ort
+ *
+ * `verify_chain` sagt, dass die Kette gebrochen ist, und bei welchem
+ * Eintrag. Für die Frage „was ist da passiert" reicht das nicht – man
+ * braucht die Einträge davor und danach. Ohne Umgebung sieht ein Bruch aus
+ * wie ein Programmfehler; mit Umgebung sieht man, was fehlt.
+ *
+ * ## Für die Portierung
+ *
+ * In Python gehört vor jede Methode `frappe.has_permission`. Das Audit ist
+ * ein Ziel: wer die Kette schreiben kann, kann sie fälschen. In Frappe
+ * gehört die Tabelle auf `read only` und der Schreibweg ausschließlich über
+ * `protokolliere`.
+ */
+import { table } from '../db.js'
+import { kanonisch, sha256 } from '../sha256.js'
+import { alterStunden } from '../zeit.js'
+import { GENESIS_HASH, berechneHash } from './audit.js'
+
+/**
+ * Aktionen nach Bereich.
+ *
+ * Damit sich das Protokoll nach der Frage filtern lässt, die man hat –
+ * „wer hat an Sicherungen gedreht" statt „zeig mir 400 Zeilen".
+ */
+export const BEREICHE = {
+  backup: {
+    label: 'Sicherung',
+    muster: /^(backup_|tape_|workflow_)/,
+    doctypes: /^(Backup |Tape )/,
+  },
+  connector: { label: 'Konnektoren', muster: /^connector_/, doctypes: /^Connector$/ },
+  drift: { label: 'Abweichungen', muster: /^drift_/, doctypes: /^Drift Finding$/ },
+  change: { label: 'Changes', muster: /^change_/, doctypes: /^Change Request$/ },
+  ticket: { label: 'Tickets', muster: /^ticket_/, doctypes: /^Ticket$/ },
+  network: {
+    label: 'Netz',
+    muster: /^(vlan_|prefix_|rule_)/,
+    doctypes: /^(Network Device|Device Interface|IP Prefix|IP Address|VLAN|Firewall Rule|Cable)$/,
+  },
+  inventory: {
+    label: 'Inventar',
+    muster: /^(asset_|issue_|return_|stocktake_|disposal_)/,
+    doctypes: /^(Asset|Consumable|Stocktake|Reservation)/,
+  },
+  identity: {
+    label: 'Zugänge',
+    muster: /^(account_|access_|offboard)/,
+    doctypes: /^(Identity Account|Access Grant|Access Reference)$/,
+  },
+}
+
+/**
+ * Bereich eines Eintrags.
+ *
+ * Erst über die Aktion - die ist eindeutig, wenn es eine Fachaktion ist.
+ * Frappes eigene Aktionen (`insert`, `set_value`) sagen nichts über den
+ * Bereich; dort entscheidet der DocType. Ohne diesen zweiten Weg landete
+ * die halbe Historie in „Sonstiges", und der Filter wäre nutzlos.
+ */
+function bereichVon(aktion, doctype) {
+  for (const [schluessel, b] of Object.entries(BEREICHE)) {
+    if (b.muster.test(aktion)) return schluessel
+  }
+  for (const [schluessel, b] of Object.entries(BEREICHE)) {
+    if (doctype && b.doctypes?.test(doctype)) return schluessel
+  }
+  return 'sonstiges'
+}
+
+// --- Suchen ------------------------------------------------------------------
+
+/**
+ * Das Protokoll mit Filtern, die zu den Fragen passen.
+ *
+ * Bewusst ohne Freitextsuche über die Nutzlast – die gibt es nicht im
+ * Klartext, und eine Suche, die nichts findet, weil nichts da ist, sieht
+ * aus wie ein Fehler.
+ */
+export function audit_search({
+  area = null,
+  action = null,
+  object_type = null,
+  object_name = null,
+  user = null,
+  since_hours = null,
+  search = null,
+  limit = 200,
+} = {}) {
+  const begriff = search ? String(search).toLowerCase() : null
+
+  const alle = table('Audit Entry')
+    .map((e, i) => ({ ...e, index: i }))
+    .filter((e) => !action || e.action === action)
+    .filter((e) => !area || bereichVon(e.action, e.object_type) === area)
+    .filter((e) => !object_type || e.object_type === object_type)
+    .filter((e) => !object_name || e.object_name === object_name)
+    .filter((e) => !user || e.user === user)
+    .filter((e) => since_hours === null || alterStunden(e.timestamp) <= Number(since_hours))
+    .filter(
+      (e) =>
+        !begriff ||
+        String(e.object_name || '')
+          .toLowerCase()
+          .includes(begriff) ||
+        String(e.action).toLowerCase().includes(begriff) ||
+        String(e.user || '')
+          .toLowerCase()
+          .includes(begriff),
+    )
+
+  const zeilen = alle
+    .map((e) => ({
+      ...e,
+      area: bereichVon(e.action, e.object_type),
+      area_label: BEREICHE[bereichVon(e.action, e.object_type)]?.label || 'Sonstiges',
+      age_hours: Math.round(alterStunden(e.timestamp) * 10) / 10,
+      entry_hash_short: e.entry_hash.slice(0, 12),
+      prev_hash_short: e.prev_hash.slice(0, 12),
+      // Ob eine Nutzlast dranhing, ist ohne ihren Inhalt trotzdem eine
+      // Auskunft: es gibt etwas zu prüfen.
+      has_payload: !!e.payload_hash,
+    }))
+    .reverse()
+
+  return {
+    summary: {
+      total: table('Audit Entry').length,
+      matched: zeilen.length,
+      shown: Math.min(zeilen.length, limit),
+      users: [...new Set(zeilen.map((z) => z.user).filter(Boolean))],
+      actions: [...new Set(zeilen.map((z) => z.action))].sort(),
+      areas: [...new Set(zeilen.map((z) => z.area))],
+      with_payload: zeilen.filter((z) => z.has_payload).length,
+      oldest: zeilen.at(-1)?.timestamp || null,
+      newest: zeilen[0]?.timestamp || null,
+    },
+    rows: zeilen.slice(0, limit),
+  }
+}
+
+/**
+ * Alles, was mit einem Objekt passiert ist – in der richtigen Reihenfolge.
+ *
+ * Die Frage vor jeder Störungssuche: was wurde hier zuletzt gemacht.
+ */
+export function audit_object_history({ object_name = null, object_type = null, limit = 100 } = {}) {
+  const treffer = audit_search({ object_name, object_type, limit })
+
+  return {
+    summary: {
+      object_name,
+      entries: treffer.summary.matched,
+      first: treffer.rows.at(-1)?.timestamp || null,
+      last: treffer.rows[0]?.timestamp || null,
+      users: treffer.summary.users,
+      actions: treffer.summary.actions,
+      // Ein Objekt, an dem seit Monaten niemand etwas getan hat, ist
+      // entweder stabil oder vergessen. Die Zahl sagt nicht welches,
+      // aber sie stellt die Frage.
+      quiet_days: treffer.rows[0] ? Math.round(alterStunden(treffer.rows[0].timestamp) / 24) : null,
+    },
+    rows: treffer.rows,
+  }
+}
+
+// --- Nachweisen --------------------------------------------------------------
+
+/**
+ * Eine behauptete Nutzlast gegen den gespeicherten Hash prüfen.
+ *
+ * **Das ist der Zweck der ganzen Hash-Speicherung.** Jemand legt vor, was
+ * damals übergeben worden sein soll; die Methode sagt, ob das zu dem passt,
+ * was aufgeschrieben wurde.
+ *
+ * Gibt die Nutzlast nicht zurück und verrät auch bei Nichtübereinstimmung
+ * nichts über den tatsächlichen Inhalt – sonst ließe sich der Wert durch
+ * Raten rekonstruieren.
+ */
+export function audit_verify_payload({ entry = null, payload = null } = {}) {
+  const e = table('Audit Entry').find((x) => x.name === entry)
+  if (!e) {
+    return { ok: false, entry, reason: `Eintrag ${entry} existiert nicht` }
+  }
+  if (!e.payload_hash) {
+    return {
+      ok: false,
+      entry,
+      reason: 'Zu diesem Eintrag wurde keine Nutzlast gespeichert – es gibt nichts zu vergleichen.',
+    }
+  }
+
+  const berechnet = sha256(kanonisch(payload))
+  const passt = berechnet === e.payload_hash
+
+  return {
+    ok: passt,
+    entry,
+    action: e.action,
+    object_name: e.object_name,
+    timestamp: e.timestamp,
+    // Beide Hashes dürfen raus: aus einem SHA-256 lässt sich die Nutzlast
+    // nicht zurückrechnen, und ohne sie ist die Antwort nicht prüfbar.
+    stored_hash: e.payload_hash,
+    computed_hash: berechnet,
+    note: passt
+      ? 'Die vorgelegte Nutzlast ist genau die, die damals protokolliert wurde.'
+      : 'Die vorgelegte Nutzlast passt nicht zum Protokoll. Was tatsächlich übergeben ' +
+        'wurde, steht hier nicht – der Hash lässt sich nicht zurückrechnen.',
+  }
+}
+
+/**
+ * Kettenprüfung mit Fundort.
+ *
+ * `verify_chain` sagt, dass und wo es bricht. Hier kommen die Einträge
+ * davor und danach dazu: ohne Umgebung sieht ein Bruch aus wie ein
+ * Programmfehler, mit Umgebung sieht man, was fehlt.
+ */
+export function audit_chain_report({ window = 3 } = {}) {
+  const eintraege = table('Audit Entry')
+  let erwartet = GENESIS_HASH
+  let bruchIndex = -1
+  let grund = null
+
+  for (const [i, e] of eintraege.entries()) {
+    if (e.prev_hash !== erwartet) {
+      bruchIndex = i
+      grund = 'Vorgängerhash passt nicht – ein Eintrag wurde entfernt oder umgehängt'
+      break
+    }
+    if (berechneHash(e) !== e.entry_hash) {
+      bruchIndex = i
+      grund = 'Inhalt passt nicht zum gespeicherten Hash – der Eintrag wurde verändert'
+      break
+    }
+    erwartet = e.entry_hash
+  }
+
+  const umfeld =
+    bruchIndex < 0
+      ? []
+      : eintraege.slice(Math.max(0, bruchIndex - window), bruchIndex + window + 1).map((e, i) => ({
+          ...e,
+          index: Math.max(0, bruchIndex - window) + i,
+          is_break: e.name === eintraege[bruchIndex].name,
+          entry_hash_short: e.entry_hash.slice(0, 12),
+          prev_hash_short: e.prev_hash.slice(0, 12),
+        }))
+
+  return {
+    ok: bruchIndex < 0,
+    length: eintraege.length,
+    checked_until: bruchIndex < 0 ? eintraege.length : bruchIndex,
+    broken_at: bruchIndex < 0 ? null : eintraege[bruchIndex].name,
+    broken_index: bruchIndex < 0 ? null : bruchIndex,
+    reason: grund,
+    context: umfeld,
+    note:
+      bruchIndex < 0
+        ? `${eintraege.length} Einträge geprüft, jeder Hash passt zu seinem Vorgänger. ` +
+          'Das beweist nicht, dass alles Richtige protokolliert wurde – nur, dass am ' +
+          'Protokollierten nichts geändert wurde.'
+        : `Die Kette hält bis Eintrag ${bruchIndex}. Alles davor ist unverändert, alles ` +
+          'danach ist ohne Aussage.',
+  }
+}
+
+/**
+ * Wer hat was getan – über einen Zeitraum.
+ *
+ * Nicht als Leistungsmessung. Der Zweck ist die Ausnahme: eine Aktion, die
+ * sonst niemand macht, oder eine Person, die plötzlich in einem Bereich
+ * auftaucht, in dem sie sonst nicht vorkommt.
+ */
+export function audit_activity({ days = 30 } = {}) {
+  const alle = table('Audit Entry').filter((e) => alterStunden(e.timestamp) <= days * 24)
+
+  const nachPerson = new Map()
+  for (const e of alle) {
+    const p = e.user || '(unbekannt)'
+    if (!nachPerson.has(p)) nachPerson.set(p, { user: p, entries: [], areas: new Set() })
+    nachPerson.get(p).entries.push(e)
+    nachPerson.get(p).areas.add(bereichVon(e.action, e.object_type))
+  }
+
+  const nachBereich = new Map()
+  for (const e of alle) {
+    const b = bereichVon(e.action, e.object_type)
+    nachBereich.set(b, (nachBereich.get(b) || 0) + 1)
+  }
+
+  return {
+    summary: {
+      days,
+      entries: alle.length,
+      people: nachPerson.size,
+      areas: [...nachBereich.entries()]
+        .map(([area, count]) => ({ area, label: BEREICHE[area]?.label || 'Sonstiges', count }))
+        .sort((a, b) => b.count - a.count),
+    },
+    rows: [...nachPerson.values()]
+      .map((p) => ({
+        user: p.user,
+        entries: p.entries.length,
+        areas: [...p.areas].map((a) => BEREICHE[a]?.label || 'Sonstiges'),
+        last: p.entries
+          .map((e) => e.timestamp)
+          .sort()
+          .at(-1),
+        // Eine Aktion, die nur diese Person gemacht hat.
+        unique_actions: [...new Set(p.entries.map((e) => e.action))].filter(
+          (a) => !alle.some((e) => e.action === a && (e.user || '(unbekannt)') !== p.user),
+        ),
+      }))
+      .sort((a, b) => b.entries - a.entries),
+  }
+}

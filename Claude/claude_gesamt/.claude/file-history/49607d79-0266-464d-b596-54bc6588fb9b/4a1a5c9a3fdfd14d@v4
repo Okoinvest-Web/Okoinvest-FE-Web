@@ -1,0 +1,247 @@
+import { createRouter, createWebHistory } from 'vue-router'
+
+const routes = [
+  // Betrieb
+  {
+    path: '/',
+    name: 'Dashboard',
+    component: () => import('@/pages/Dashboard.vue'),
+    meta: { title: 'Lage' },
+  },
+  {
+    path: '/alerts',
+    name: 'Alerts',
+    component: () => import('@/pages/AlertList.vue'),
+    meta: { title: 'Alarme' },
+  },
+  {
+    path: '/drift',
+    name: 'Drift',
+    component: () => import('@/pages/DriftView.vue'),
+    meta: { title: 'Drift' },
+  },
+  {
+    path: '/backup',
+    name: 'Backup',
+    component: () => import('@/pages/BackupView.vue'),
+    meta: { title: 'Backup' },
+  },
+  {
+    path: '/audit',
+    name: 'Audit',
+    component: () => import('@/pages/AuditView.vue'),
+    meta: { title: 'Audit' },
+  },
+
+  {
+    path: '/services',
+    name: 'Services',
+    component: () => import('@/pages/ServiceView.vue'),
+    meta: { title: 'Dienste' },
+  },
+  {
+    path: '/virtualization',
+    name: 'Virtualization',
+    component: () => import('@/pages/VirtualizationView.vue'),
+    meta: { title: 'Virtualisierung' },
+  },
+  {
+    path: '/mail',
+    name: 'Mail',
+    component: () => import('@/pages/MailView.vue'),
+    meta: { title: 'E-Mail-Sicherheit' },
+  },
+  {
+    path: '/cloud',
+    name: 'Cloud',
+    component: () => import('@/pages/CloudView.vue'),
+    meta: { title: 'Cloud' },
+  },
+  {
+    path: '/changes',
+    name: 'Changes',
+    component: () => import('@/pages/ChangeView.vue'),
+    meta: { title: 'Changes' },
+  },
+  {
+    path: '/identities',
+    name: 'Identities',
+    component: () => import('@/pages/IdentityView.vue'),
+    meta: { title: 'Identitäten' },
+  },
+  {
+    path: '/exposure',
+    name: 'Exposure',
+    component: () => import('@/pages/ExposureView.vue'),
+    meta: { title: 'Angriffsfläche' },
+  },
+  {
+    path: '/compliance',
+    name: 'Compliance',
+    component: () => import('@/pages/ComplianceView.vue'),
+    meta: { title: 'Compliance' },
+  },
+  {
+    path: '/power',
+    name: 'Power',
+    component: () => import('@/pages/PowerView.vue'),
+    meta: { title: 'Strompfad' },
+  },
+  {
+    path: '/netservices',
+    name: 'NetServices',
+    component: () => import('@/pages/NetServicesView.vue'),
+    meta: { title: 'Netzdienste' },
+  },
+  {
+    path: '/floorplan',
+    name: 'FloorPlan',
+    component: () => import('@/pages/FloorPlanView.vue'),
+    meta: { title: 'Grundrisse' },
+  },
+  {
+    path: '/tickets',
+    name: 'Tickets',
+    component: () => import('@/pages/TicketView.vue'),
+    meta: { title: 'Tickets' },
+  },
+  {
+    path: '/remote',
+    name: 'Remote',
+    component: () => import('@/pages/RemoteView.vue'),
+    meta: { title: 'Fernwartung' },
+  },
+
+  // DCIM
+  {
+    path: '/devices',
+    name: 'DeviceList',
+    component: () => import('@/pages/DeviceList.vue'),
+    meta: { title: 'Geräte' },
+  },
+  {
+    path: '/devices/:name',
+    name: 'DeviceDetail',
+    component: () => import('@/pages/DeviceDetail.vue'),
+    props: true,
+    meta: { title: 'Gerät' },
+  },
+  {
+    path: '/racks',
+    name: 'Racks',
+    component: () => import('@/pages/RackView.vue'),
+    meta: { title: 'Racks' },
+  },
+  {
+    path: '/cables',
+    name: 'Cables',
+    component: () => import('@/pages/CableList.vue'),
+    meta: { title: 'Verkabelung' },
+  },
+  {
+    path: '/topology',
+    name: 'Topology',
+    component: () => import('@/pages/TopologyView.vue'),
+    meta: { title: 'Topologie' },
+  },
+
+  // IPAM und Firewall
+  {
+    path: '/ipam',
+    name: 'Ipam',
+    component: () => import('@/pages/IpamTree.vue'),
+    meta: { title: 'IPAM' },
+  },
+  {
+    path: '/vlans',
+    name: 'Vlans',
+    component: () => import('@/pages/VlanList.vue'),
+    meta: { title: 'VLANs' },
+  },
+  {
+    path: '/path',
+    name: 'PathAnalysis',
+    component: () => import('@/pages/PathAnalysis.vue'),
+    meta: { title: 'Pfadanalyse' },
+  },
+  {
+    path: '/firewall',
+    name: 'FirewallRules',
+    component: () => import('@/pages/FirewallRules.vue'),
+    meta: { title: 'Regelwerk' },
+  },
+  {
+    path: '/matrix',
+    name: 'Matrix',
+    component: () => import('@/pages/MatrixView.vue'),
+    meta: { title: 'Kommunikationsmatrix' },
+  },
+
+  // Dokumentation
+  {
+    path: '/documents',
+    name: 'Documents',
+    component: () => import('@/pages/DocumentList.vue'),
+    meta: { title: 'Dokumente' },
+  },
+  {
+    path: '/checklists',
+    name: 'Checklists',
+    component: () => import('@/pages/ChecklistView.vue'),
+    meta: { title: 'Checklisten' },
+  },
+  {
+    path: '/contracts',
+    name: 'Contracts',
+    component: () => import('@/pages/ContractList.vue'),
+    meta: { title: 'Verträge' },
+  },
+
+  // Security
+  {
+    path: '/vulnerabilities',
+    name: 'Vulnerabilities',
+    component: () => import('@/pages/VulnerabilityList.vue'),
+    meta: { title: 'Schwachstellen' },
+  },
+  {
+    path: '/incidents',
+    name: 'Incidents',
+    component: () => import('@/pages/IncidentList.vue'),
+    meta: { title: 'Vorfälle' },
+  },
+  {
+    path: '/control-room',
+    name: 'ControlRoom',
+    component: () => import('@/pages/ControlRoom.vue'),
+    meta: { title: 'Leitstand' },
+  },
+
+  // Leitstand-Anzeige: ohne Seitenleiste, für die TV-Wand
+  {
+    path: '/screen/:nummer',
+    name: 'Screen',
+    component: () => import('@/pages/ScreenView.vue'),
+    props: true,
+    meta: { title: 'Screen', fullscreen: true },
+  },
+
+  {
+    path: '/:pathMatch(.*)*',
+    name: 'NotFound',
+    component: () => import('@/pages/NotFound.vue'),
+    meta: { title: 'Nicht gefunden' },
+  },
+]
+
+const router = createRouter({
+  // Wird in vite.config.js gesetzt: '/' im Dev-Server, '/netops' in Frappe.
+  history: createWebHistory(__FRONTEND_ROUTE__),
+  routes,
+})
+
+router.afterEach((to) => {
+  document.title = to.meta.title ? to.meta.title + ' · NetOps' : 'NetOps'
+})
+
+export default router

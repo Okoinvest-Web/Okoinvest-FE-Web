@@ -1,0 +1,104 @@
+import sys, os
+os.chdir(r"C:\Users\SALEADMIN\Downloads\crm-develop\crm-next")
+p = "src/lib/data/erpnext.ts"
+s = open(p, encoding="utf-8").read()
+
+def rep(a, b):
+    global s
+    if a not in s:
+        sys.exit("fehlt: " + a[:90])
+    s = s.replace(a, b, 1)
+
+rep('import type { Contact, Customer, Item, Lead, ListOptions, Note, Opportunity, Quotation, Role, SalesInvoice, SalesOrder, ToDo } from "@/lib/types";',
+    'import type { Contact, Customer, Item, Lead, LeadCharge, ListOptions, Note, Opportunity, PoolLead, Quotation, Role, SalesInvoice, SalesOrder, ToDo } from "@/lib/types";\nimport { getUser } from "@/lib/auth";\nimport { interestsOf, leadPrice } from "@/lib/leadprice";')
+rep('import { getErpSid } from "@/lib/auth";\n', 'import { getErpSid } from "@/lib/auth";\n')
+
+rep('''// Angewandten Steuersatz aus den Summen ableiten''', '''// Dienstkonto nur für die Lead-Börse: Vertreter dürfen freie Leads über ihre eigenen Rechte nicht sehen.
+// Es liest ausschließlich Vorschaufelder und bucht die Freischaltung – nie Kontaktdaten an den Browser.
+const SERVICE = process.env.ERPNEXT_SERVICE_KEY && process.env.ERPNEXT_SERVICE_SECRET
+  ? `token ${process.env.ERPNEXT_SERVICE_KEY}:${process.env.ERPNEXT_SERVICE_SECRET}`
+  : undefined;
+const CHARGE_DOCTYPE = "CRM Lead Charge";
+
+// Angewandten Steuersatz aus den Summen ableiten''')
+
+rep('''    listNotes: async (doctype, name) => {''', '''    // ---------- Lead-Börse ----------
+    listPoolLeads: async () => {
+      if (!SERVICE) return [];
+      const qs = new URLSearchParams({
+        fields: JSON.stringify(["name", "territory", "country", "custom_kwp", "company_name", "notes", "source", "creation"]),
+        filters: JSON.stringify([["lead_owner", "is", "not set"], ["status", "=", "Lead"], ["source", "=", "Website"]]),
+        order_by: "creation desc",
+        limit_page_length: "200",
+      });
+      const rows = await service<(Pick<Lead, "name" | "territory" | "country" | "custom_kwp" | "company_name" | "notes" | "source" | "creation">)[]>(`/api/resource/Lead?${qs}`);
+      // Firmenname und Anfragetext verlassen den Server nicht – nur daraus abgeleitete Merkmale
+      return rows.map(
+        (l): PoolLead => ({
+          name: l.name,
+          territory: l.territory,
+          country: l.country === "Austria" ? "Austria" : "Germany",
+          kwp: l.custom_kwp,
+          is_business: !!l.company_name,
+          interests: interestsOf(l.notes),
+          source: l.source,
+          creation: l.creation,
+          price: leadPrice(l.custom_kwp, !!l.company_name),
+        }),
+      );
+    },
+    unlockLead: async (n) => {
+      if (!SERVICE) throw new Error("Lead-Börse ist nicht eingerichtet (Dienstkonto fehlt).");
+      const user = await getUser();
+      if (!user) redirect("/login");
+      const l = await service<Lead>(`/api/resource/Lead/${encodeURIComponent(n)}`);
+      if (l.lead_owner || l.status !== "Lead" || l.source !== "Website") throw new Error("Dieser Lead ist nicht mehr verfügbar.");
+      const amount = leadPrice(l.custom_kwp, !!l.company_name);
+      await service(`/api/resource/Lead/${encodeURIComponent(n)}`, { method: "PUT", body: JSON.stringify({ lead_owner: user.user }) });
+      return service<LeadCharge>(`/api/resource/${encodeURIComponent(CHARGE_DOCTYPE)}`, {
+        method: "POST",
+        body: JSON.stringify({
+          lead: n,
+          lead_name: l.lead_name,
+          agent: user.user,
+          amount,
+          kwp: l.custom_kwp,
+          posting_date: new Date().toISOString().slice(0, 10),
+          status: "Offen",
+        }),
+      });
+    },
+    // Buchungen über das Dienstkonto, gefiltert auf den Vertreter (Leitung: alle)
+    listLeadCharges: async (o) => {
+      if (!SERVICE) return [];
+      const user = await getUser();
+      if (!user) redirect("/login");
+      const filters: [string, string, string][] = [];
+      for (const [k, v] of Object.entries(o?.filters ?? {})) if (v) filters.push([k, "=", v]);
+      if (user.role !== "manager") filters.push(["agent", "=", user.user]);
+      const qs = new URLSearchParams({
+        fields: JSON.stringify(["name", "lead", "lead_name", "agent", "amount", "kwp", "posting_date", "status", "creation", "modified"]),
+        filters: JSON.stringify(filters),
+        order_by: "posting_date desc",
+        limit_page_length: String(o?.limit ?? 1000),
+      });
+      return service<LeadCharge[]>(`/api/resource/${encodeURIComponent(CHARGE_DOCTYPE)}?${qs}`);
+    },
+
+    listNotes: async (doctype, name) => {''')
+
+rep('''  async function call<T>(path: string, init?: RequestInit): Promise<T> {''', '''  // Aufruf mit dem Dienstkonto der Lead-Börse
+  async function service<T>(path: string, init?: RequestInit): Promise<T> {
+    const res = await fetch(`${base}${path}`, {
+      ...init,
+      headers: { Authorization: SERVICE!, Accept: "application/json", "Content-Type": "application/json", ...init?.headers },
+      cache: "no-store",
+      signal: AbortSignal.timeout(15_000),
+    });
+    if (!res.ok) throw new Error(`ERPNext ${init?.method ?? "GET"} ${path.split("?")[0]} → ${res.status}`);
+    return ((await res.json()) as { data: T }).data;
+  }
+
+  async function call<T>(path: string, init?: RequestInit): Promise<T> {''')
+open(p, "w", encoding="utf-8", newline="\n").write(s)
+print("ok")

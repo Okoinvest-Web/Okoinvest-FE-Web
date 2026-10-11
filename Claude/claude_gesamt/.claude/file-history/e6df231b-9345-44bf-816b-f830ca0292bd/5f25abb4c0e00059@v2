@@ -1,0 +1,533 @@
+/**
+ * Zustand der laufenden Protokollausführung (Kapitel 6.2).
+ *
+ * Der Store arbeitet ausschließlich gegen IndexedDB. Der Sync-Motor überträgt
+ * im Hintergrund — die Bedienung im Feld ist dadurch unabhängig vom Netz.
+ */
+
+import { defineStore } from 'pinia'
+import { computed, ref } from 'vue'
+
+import { baudoku } from '@/lib/api'
+import { db, einreihen, neueId, stammdatenLesen, stammdatenSchreiben } from '@/lib/db'
+import { frappeDatetime, isoDatum } from '@/lib/format'
+import { formatiere, positionEinmalig } from '@/lib/geo'
+import {
+  istMangelBewertung,
+  pruefeString,
+  pruefeZahlenwert,
+  schweregradAusBewertung,
+} from '@/lib/plausibilitaet'
+import { speichernUndSynchronisieren } from '@/lib/sync'
+import type { Ergebnis, Messzeile, Protokoll, Pruefpunkt, Unterschrift, Vorlage } from '@/lib/typen'
+
+import { useStammdaten } from './stammdaten'
+
+export const useProtokoll = defineStore('protokoll', () => {
+  const stammdaten = useStammdaten()
+
+  const aktuell = ref<Protokoll | null>(null)
+  const vorlage = ref<Vorlage | null>(null)
+  const index = ref(0)
+  const laedt = ref(false)
+
+  // --- Ableitungen ---------------------------------------------------------
+
+  /** Flache Liste aller sichtbaren Prüfpunkte (bedingte Sichtbarkeit, FA-015). */
+  const sichtbarePunkte = computed<Ergebnis[]>(() => {
+    const zeilen = aktuell.value?.ergebnisse ?? []
+    return zeilen.filter((zeile) => sichtbar(zeile))
+  })
+
+  const aktuellerPunkt = computed<Ergebnis | null>(() => sichtbarePunkte.value[index.value] ?? null)
+
+  const aktuellePruefpunktDefinition = computed<Pruefpunkt | null>(() => {
+    const key = aktuellerPunkt.value?.pruefpunkt_key
+    if (!key) return null
+    return definitionen.value.get(key) ?? null
+  })
+
+  const definitionen = computed(() => {
+    const karte = new Map<string, Pruefpunkt>()
+    for (const sektion of vorlage.value?.sektionen ?? []) {
+      for (const punkt of sektion.pruefpunkte) karte.set(punkt.pruefpunkt_key, punkt)
+    }
+    return karte
+  })
+
+  const anzahlErledigt = computed(
+    () => sichtbarePunkte.value.filter((zeile) => befuellt(zeile)).length,
+  )
+
+  const fortschritt = computed(() => {
+    const gesamt = sichtbarePunkte.value.length
+    return gesamt ? Math.round((anzahlErledigt.value / gesamt) * 100) : 0
+  })
+
+  const sektionen = computed(() => {
+    const gruppen: { name: string; von: number; anzahl: number; erledigt: number }[] = []
+    sichtbarePunkte.value.forEach((zeile, i) => {
+      const letzte = gruppen[gruppen.length - 1]
+      if (!letzte || letzte.name !== zeile.sektion) {
+        gruppen.push({ name: zeile.sektion, von: i, anzahl: 1, erledigt: befuellt(zeile) ? 1 : 0 })
+      } else {
+        letzte.anzahl += 1
+        if (befuellt(zeile)) letzte.erledigt += 1
+      }
+    })
+    return gruppen
+  })
+
+  /** Offene Pflichtangaben — blockieren den Abschluss (FA-041). */
+  const offenePflichten = computed(() => {
+    const offen: { nummer?: string; titel: string; grund: string }[] = []
+    for (const zeile of sichtbarePunkte.value) {
+      const punkt = definitionen.value.get(zeile.pruefpunkt_key)
+      if (!punkt) continue
+      if (punkt.pflichtfeld && !befuellt(zeile)) {
+        offen.push({ nummer: zeile.nummer, titel: zeile.titel, grund: 'Pflichtfeld leer' })
+      } else if (punkt.foto_erforderlich && !(zeile.fotos ?? []).length) {
+        offen.push({ nummer: zeile.nummer, titel: zeile.titel, grund: 'Foto fehlt' })
+      }
+    }
+    return offen
+  })
+
+  const maengelImProtokoll = computed(() =>
+    (aktuell.value?.ergebnisse ?? []).filter((zeile) => istMangelBewertung(zeile.bewertung)),
+  )
+
+  // --- Hilfsfunktionen -----------------------------------------------------
+
+  function befuellt(zeile: Ergebnis): boolean {
+    return Boolean(
+      zeile.bewertung ||
+        zeile.wert_text ||
+        zeile.wert_datum ||
+        zeile.wert_ja_nein ||
+        (zeile.wert_zahl !== null && zeile.wert_zahl !== undefined) ||
+        (zeile.fotos ?? []).length,
+    )
+  }
+
+  /**
+   * Wertet `sichtbar_wenn` aus: "<Nummer> <Operator> <Wert>",
+   * z. B. `3.1 == Mangel schwer` oder `6.1 > 0`.
+   */
+  function sichtbar(zeile: Ergebnis): boolean {
+    const bedingung = definitionen.value.get(zeile.pruefpunkt_key)?.sichtbar_wenn?.trim()
+    if (!bedingung) return true
+
+    const treffer = bedingung.match(/^(\S+)\s*(==|!=|>=|<=|>|<)\s*(.+)$/)
+    if (!treffer) return true
+    const [, nummer, operator, sollText] = treffer
+
+    const referenz = (aktuell.value?.ergebnisse ?? []).find((z) => z.nummer === nummer)
+    if (!referenz) return true
+
+    const istText = (referenz.bewertung ?? referenz.wert_text ?? '').trim()
+    const istZahl = referenz.wert_zahl ?? Number.NaN
+    const sollZahl = Number(sollText)
+
+    switch (operator) {
+      case '==':
+        return istText.toLowerCase() === sollText.trim().toLowerCase()
+      case '!=':
+        return istText.toLowerCase() !== sollText.trim().toLowerCase()
+      case '>':
+        return istZahl > sollZahl
+      case '<':
+        return istZahl < sollZahl
+      case '>=':
+        return istZahl >= sollZahl
+      case '<=':
+        return istZahl <= sollZahl
+      default:
+        return true
+    }
+  }
+
+  // --- Vorlagen ------------------------------------------------------------
+
+  /** Vollständige Vorlage: aus dem Offline-Cache, sonst vom Server (NFA-015). */
+  async function vorlageLaden(name: string): Promise<Vorlage> {
+    const cacheSchluessel = `vorlage:${name}`
+    try {
+      const daten = (await baudoku.vorlageKomplett(name)) as Vorlage
+      await stammdatenSchreiben(cacheSchluessel, daten)
+      return daten
+    } catch (fehler) {
+      const cache = await stammdatenLesen<Vorlage>(cacheSchluessel)
+      if (cache) return cache
+      throw fehler
+    }
+  }
+
+  /** Lädt alle veröffentlichten Vorlagen in den Offline-Cache (vor Fahrtantritt). */
+  async function vorlagenVorladen(): Promise<number> {
+    let geladen = 0
+    for (const eintrag of stammdaten.vorlagen) {
+      try {
+        await vorlageLaden(eintrag.name)
+        geladen += 1
+      } catch {
+        /* einzelne Vorlage überspringen */
+      }
+    }
+    return geladen
+  }
+
+  // --- Protokoll starten und laden ----------------------------------------
+
+  async function starten(anlageName: string, vorlageName: string): Promise<Protokoll> {
+    laedt.value = true
+    try {
+      const vorlagenDoc = await vorlageLaden(vorlageName)
+      const anlage = stammdaten.anlage(anlageName)
+      const position = await positionEinmalig().catch(() => null)
+
+      const ergebnisse: Ergebnis[] = []
+      for (const sektion of [...(vorlagenDoc.sektionen ?? [])].sort(
+        (a, b) => (a.sortierung ?? 0) - (b.sortierung ?? 0),
+      )) {
+        if (
+          sektion.nur_fuer_anlagen_typ &&
+          anlage &&
+          sektion.nur_fuer_anlagen_typ !== anlage.anlagen_typ &&
+          sektion.nur_fuer_anlagen_typ !== 'Alle'
+        ) {
+          continue
+        }
+        for (const punkt of sektion.pruefpunkte) {
+          if (punkt.feldtyp === 'Ueberschrift') continue
+          ergebnisse.push({
+            sektion: sektion.sektion_name,
+            nummer: punkt.nummer,
+            titel: punkt.titel,
+            feldtyp: punkt.feldtyp,
+            pruefpunkt_key: punkt.pruefpunkt_key,
+            einheit: punkt.einheit,
+            status: 'Offen',
+            fotos: [],
+          })
+        }
+      }
+
+      const messdaten: Messzeile[] = Array.from(
+        { length: anlage?.anzahl_strings ?? 0 },
+        (_, i) => ({ string_nr: String(i + 1), anzahl_module: 0, status: 'Offen' }),
+      )
+
+      const protokoll: Protokoll = {
+        lokale_id: neueId(),
+        anlage: anlageName,
+        vorlage: vorlageName,
+        vorlage_revision: vorlagenDoc.revision,
+        vorlage_typ: vorlagenDoc.vorlage_typ,
+        status: 'In Arbeit',
+        pruefer: stammdaten.mitarbeiter,
+        pruef_datum: frappeDatetime(),
+        gps_koordinaten: formatiere(position),
+        ergebnisse,
+        messdaten,
+        unterschriften: [],
+      }
+
+      await db.protokolle.put(protokoll)
+      await einreihen('Pruefprotokoll', protokoll.lokale_id, alsServerDokument(protokoll), 'create')
+
+      aktuell.value = protokoll
+      vorlage.value = vorlagenDoc
+      index.value = 0
+      return protokoll
+    } finally {
+      laedt.value = false
+    }
+  }
+
+  async function oeffnen(lokaleId: string): Promise<void> {
+    laedt.value = true
+    try {
+      const protokoll = await db.protokolle.get(lokaleId)
+      if (!protokoll) throw new Error('Protokoll wurde lokal nicht gefunden.')
+      aktuell.value = protokoll
+      vorlage.value = await vorlageLaden(protokoll.vorlage)
+      index.value = Math.max(
+        0,
+        (protokoll.ergebnisse ?? []).findIndex((zeile) => !befuellt(zeile)),
+      )
+    } finally {
+      laedt.value = false
+    }
+  }
+
+  /** Holt ein Serverprotokoll in den lokalen Speicher (z. B. zum Verifizieren). */
+  async function vomServerHolen(name: string): Promise<Protokoll> {
+    const doc = (await baudoku.dokumentMethode('Pruefprotokoll', name, 'as_dict')) as Protokoll
+    const lokale_id = doc.lokale_id || neueId()
+    const protokoll = { ...doc, lokale_id }
+    await db.protokolle.put(protokoll)
+    return protokoll
+  }
+
+  // --- Erfassen ------------------------------------------------------------
+
+  /** Schreibt einen Wert, prüft die Plausibilität und speichert lokal (FA-037). */
+  async function wertSetzen(pruefpunktKey: string, werte: Partial<Ergebnis>): Promise<Ergebnis | null> {
+    const protokoll = aktuell.value
+    if (!protokoll) return null
+
+    const zeile = protokoll.ergebnisse.find((z) => z.pruefpunkt_key === pruefpunktKey)
+    if (!zeile) return null
+
+    Object.assign(zeile, werte)
+    zeile.erfasst_am = frappeDatetime()
+
+    const punkt = definitionen.value.get(pruefpunktKey)
+    if (zeile.feldtyp === 'Zahlenwert' && punkt) {
+      const befund = pruefeZahlenwert(zeile.wert_zahl, punkt.min_wert, punkt.max_wert, punkt.einheit)
+      zeile.plausi_meldung = befund.meldung
+      zeile.status = zeile.uebersteuert && befund.status !== 'OK' ? 'OK' : befund.status
+    } else if (zeile.feldtyp === 'Bewertung' && zeile.bewertung) {
+      zeile.status = istMangelBewertung(zeile.bewertung) ? 'Fehler' : 'OK'
+      zeile.plausi_meldung = ''
+    } else if (befuellt(zeile)) {
+      zeile.status = 'OK'
+    }
+
+    protokoll.status = protokoll.status === 'Entwurf' ? 'In Arbeit' : protokoll.status
+    await speichern()
+    return zeile
+  }
+
+  /** Setzt eine Messzeile und prüft gegen das Moduldatenblatt (FA-050 bis FA-054). */
+  async function messwertSetzen(stringNr: string, werte: Partial<Messzeile>): Promise<void> {
+    const protokoll = aktuell.value
+    if (!protokoll) return
+    const zeile = protokoll.messdaten.find((m) => m.string_nr === stringNr)
+    if (!zeile) return
+
+    Object.assign(zeile, werte)
+    const anlage = stammdaten.anlage(protokoll.anlage)
+    const befund = pruefeString({
+      uoc: zeile.uoc,
+      isc: zeile.isc,
+      riso: zeile.riso,
+      anzahl_module: zeile.anzahl_module,
+      modul_uoc: anlage?.modul_uoc,
+      modul_isc: anlage?.modul_isc,
+      grenzwerte: stammdaten.einstellungen,
+    })
+    zeile.plausi_meldung = befund.meldung
+    zeile.status = zeile.uebersteuert && befund.status !== 'OK' ? 'OK' : befund.status
+    await speichern()
+  }
+
+  function messzeileHinzufuegen(): void {
+    const protokoll = aktuell.value
+    if (!protokoll) return
+    protokoll.messdaten.push({
+      string_nr: String(protokoll.messdaten.length + 1),
+      anzahl_module: protokoll.messdaten.at(-1)?.anzahl_module ?? 0,
+      status: 'Offen',
+    })
+    void speichern()
+  }
+
+  async function messzeileEntfernen(stringNr: string): Promise<void> {
+    const protokoll = aktuell.value
+    if (!protokoll) return
+    protokoll.messdaten = protokoll.messdaten.filter((m) => m.string_nr !== stringNr)
+    await speichern()
+  }
+
+  async function unterschreiben(unterschrift: Omit<Unterschrift, 'unterzeichnet_am'>): Promise<void> {
+    const protokoll = aktuell.value
+    if (!protokoll) return
+    const position = await positionEinmalig().catch(() => null)
+    protokoll.unterschriften = [
+      ...protokoll.unterschriften.filter((u) => u.rolle !== unterschrift.rolle),
+      { ...unterschrift, unterzeichnet_am: frappeDatetime(), gps: formatiere(position) },
+    ]
+    await speichern()
+  }
+
+  /** Legt aus einem Prüfpunkt heraus einen Mangel an (FA-036). */
+  async function mangelAnlegen(
+    pruefpunktKey: string,
+    daten: { titel?: string; beschreibung: string; kategorie: string; schweregrad?: string },
+  ): Promise<string> {
+    const protokoll = aktuell.value
+    if (!protokoll) throw new Error('Kein Protokoll geöffnet.')
+    const zeile = protokoll.ergebnisse.find((z) => z.pruefpunkt_key === pruefpunktKey)
+    if (!zeile) throw new Error('Prüfpunkt gehört nicht zu diesem Protokoll.')
+
+    const lokale_id = neueId()
+    const schweregrad = daten.schweregrad ?? schweregradAusBewertung(zeile.bewertung)
+    const sla = stammdaten.schweregrad(schweregrad)?.sla_tage ?? 14
+    const faellig = new Date(Date.now() + sla * 86_400_000)
+
+    const mangel = {
+      lokale_id,
+      titel: (daten.titel ?? `${zeile.nummer ?? ''} ${zeile.titel}`).trim().slice(0, 140),
+      anlage: protokoll.anlage,
+      kategorie: daten.kategorie,
+      schweregrad,
+      status: 'Offen' as const,
+      beschreibung: daten.beschreibung,
+      pruefprotokoll: protokoll.name ?? null,
+      pruefpunkt_ref: `${zeile.sektion} / ${zeile.nummer ?? ''} ${zeile.titel}`.trim(),
+      gemeldet_am: isoDatum(),
+      faellig_am: isoDatum(faellig),
+      zugewiesen_an: protokoll.pruefer,
+      fotos: [...(zeile.fotos ?? [])],
+    }
+
+    await db.maengel.put(mangel)
+    await einreihen('Mangel', lokale_id, mangel, 'create')
+    zeile.mangel = lokale_id
+    await speichern()
+    return lokale_id
+  }
+
+  // --- Navigation ----------------------------------------------------------
+
+  function weiter(): void {
+    if (index.value < sichtbarePunkte.value.length - 1) index.value += 1
+  }
+
+  function zurueck(): void {
+    if (index.value > 0) index.value -= 1
+  }
+
+  function springeZu(neuerIndex: number): void {
+    index.value = Math.min(Math.max(0, neuerIndex), Math.max(0, sichtbarePunkte.value.length - 1))
+  }
+
+  function springeZuSektion(name: string): void {
+    const treffer = sektionen.value.find((s) => s.name === name)
+    if (treffer) index.value = treffer.von
+  }
+
+  // --- Speichern und Abschluss --------------------------------------------
+
+  /** Reduziert das lokale Dokument auf die Felder, die der Server kennt. */
+  function alsServerDokument(protokoll: Protokoll): Record<string, unknown> {
+    return {
+      doctype: 'Pruefprotokoll',
+      anlage: protokoll.anlage,
+      vorlage: protokoll.vorlage,
+      vorlage_revision: protokoll.vorlage_revision,
+      status: protokoll.status,
+      pruefer: protokoll.pruefer,
+      pruef_datum: protokoll.pruef_datum,
+      abschluss_datum: protokoll.abschluss_datum,
+      anwesende_personen: protokoll.anwesende_personen,
+      wetter: protokoll.wetter,
+      temperatur: protokoll.temperatur,
+      gps_koordinaten: protokoll.gps_koordinaten,
+      messmittel: protokoll.messmittel,
+      gesamtbewertung: protokoll.gesamtbewertung,
+      zusammenfassung: protokoll.zusammenfassung,
+      ergebnisse: protokoll.ergebnisse.map((zeile) => ({
+        ...zeile,
+        fotos: (zeile.fotos ?? []).map(({ vorschau: _vorschau, ...foto }) => foto),
+      })),
+      messdaten: protokoll.messdaten,
+      unterschriften: protokoll.unterschriften,
+      modified: protokoll.modified,
+    }
+  }
+
+  async function speichern(): Promise<void> {
+    const protokoll = aktuell.value
+    if (!protokoll) return
+    protokoll.fortschritt = fortschritt.value
+    protokoll.anzahl_pruefpunkte = sichtbarePunkte.value.length
+    protokoll.anzahl_erledigt = anzahlErledigt.value
+    await speichernUndSynchronisieren(
+      'Pruefprotokoll',
+      protokoll.lokale_id,
+      alsServerDokument(protokoll),
+      protokoll.name ? 'update' : 'create',
+    )
+  }
+
+  /** Abschluss: Pflichtangaben und Unterschrift prüfen, dann Status setzen. */
+  async function abschliessen(
+    gesamtbewertung: Protokoll['gesamtbewertung'],
+    zusammenfassung?: string,
+  ): Promise<void> {
+    const protokoll = aktuell.value
+    if (!protokoll) return
+
+    if (offenePflichten.value.length) {
+      throw new Error(
+        `${offenePflichten.value.length} Pflichtangaben fehlen: ` +
+          offenePflichten.value
+            .slice(0, 3)
+            .map((o) => `${o.nummer ?? ''} ${o.titel} (${o.grund})`)
+            .join(', '),
+      )
+    }
+    if (!protokoll.unterschriften.some((u) => u.rolle === 'Techniker' || u.rolle === 'Pruefer')) {
+      throw new Error('Die Unterschrift des Technikers fehlt.')
+    }
+    const schwer = maengelImProtokoll.value.filter(
+      (zeile) => !zeile.bewertung?.toLowerCase().includes('leicht'),
+    )
+    if (gesamtbewertung === 'Bestanden' && schwer.length) {
+      throw new Error(
+        `Das Protokoll enthält ${schwer.length} schwere Mängel und kann nicht mit "Bestanden" ` +
+          'bewertet werden.',
+      )
+    }
+
+    protokoll.gesamtbewertung = gesamtbewertung
+    protokoll.zusammenfassung = zusammenfassung
+    protokoll.abschluss_datum = frappeDatetime()
+    protokoll.status = 'Abgeschlossen'
+    await speichern()
+  }
+
+  function schliessen(): void {
+    aktuell.value = null
+    vorlage.value = null
+    index.value = 0
+  }
+
+  return {
+    aktuell,
+    vorlage,
+    index,
+    laedt,
+    sichtbarePunkte,
+    aktuellerPunkt,
+    aktuellePruefpunktDefinition,
+    definitionen,
+    sektionen,
+    fortschritt,
+    anzahlErledigt,
+    offenePflichten,
+    maengelImProtokoll,
+    befuellt,
+    vorlageLaden,
+    vorlagenVorladen,
+    starten,
+    oeffnen,
+    vomServerHolen,
+    wertSetzen,
+    messwertSetzen,
+    messzeileHinzufuegen,
+    messzeileEntfernen,
+    unterschreiben,
+    mangelAnlegen,
+    weiter,
+    zurueck,
+    springeZu,
+    springeZuSektion,
+    speichern,
+    abschliessen,
+    schliessen,
+  }
+})

@@ -1,0 +1,62 @@
+import pathlib
+
+P = pathlib.Path(r"C:\Users\SALEADMIN\Documents\Servicetechniker APP\docs\anforderungsabdeckung.md")
+
+ABSCHNITT = """## Subunternehmerportal (Erweiterung über das Pflichtenheft hinaus)
+
+Nachträglich beauftragt, nicht Teil von v1.0 des Pflichtenhefts. Die Nummern
+SU-xx sind hier vergeben, damit die Abnahme daran anknüpfen kann.
+
+| Nr. | Anforderung | Stand | Umsetzung |
+|---|---|---|---|
+| SU-01 | Subunternehmer sieht ausschließlich zugeteilte Aufträge | ✔ | `auftrag_query` u. a. in `api/berechtigung.py`; Filter in `api/subunternehmer.py`; E2E-Gegenprobe „führt nicht ins Anlagenverzeichnis" |
+| SU-02 | Auftrag wird von ÖKOVOLT vorgegeben (Termin, Aufgabe, Frist) | ✔ | `Subunternehmerauftrag`; `statuswechsel_pruefen()` in `validate()` — Abnahme, Ablehnung, Storno nur Bauleitung |
+| SU-03 | Mangel wird sofort zum offenen Auftrag | ✔ | `auftrag_aus_mangel()`; Schaltfläche im Mangelformular des Bauleiters |
+| SU-04 | Kalender: wann, wo, welche Aufgabe | ✔ | `PortalAuftraegeView` (4 Wochen); `kalender()` |
+| SU-05 | Fristende sichtbar, Vorwarnung „noch 3 Tage" | ✔ | `fristen_berechnen()`, Scheduler `fristen_nachziehen()`, `fristwarnung_tage` (Standard 3) |
+| SU-06 | Ein- und Ausstempeln mit GPS-Abgleich | ✔ | `Stempelung`, `utils/geofence.py`; Punktortung, keine Bewegungsspur |
+| SU-07 | Zeiten als Abrechnungsgrundlage | ✔ | `Arbeitstag` mit Freigabe durch den Bauleiter (`ZeitfreigabeView`) |
+| SU-08 | Anwesenheits- und Zutrittsnachweis | ✔ | Stempelungen unveränderlich; Korrektur entwertet und ersetzt |
+| SU-09 | Arbeitszeitaufzeichnung nach AZG | ◑ | `utils/arbeitszeit.py` wertet Tages-, Wochengrenze und Ruhepause aus; **Grenzwerte vor Produktivbetrieb arbeitsrechtlich prüfen** |
+| SU-10 | Tägliche Personalmeldung nur bei Drittstaatsangehörigen | ✔ | `drittstaat` aus der Staatsangehörigkeit; `meldepflicht()`; nicht gemeldete Person kann nicht stempeln |
+| SU-11 | Ablaufende Ausweise und Bewilligungen | ✔ | `ablaufende_nachweise_pruefen()` täglich; Hinweis in der Personalmeldung |
+| SU-12 | Materialanfrage, keine Bestellung | ✔ | `Materialanforderung`; `uebernehmen()` erzeugt den ERPNext `Material Request` auf ÖKOVOLT-Seite |
+| SU-13 | Probleme melden (Montage u. a.) | ✔ | `Bauvertragsmeldung`, Formalkategorien nach ÖNORM B 2110 |
+| SU-14 | ÖNORM B 2110: Behinderung, Bedenken, Mehrkosten | ✔ | `gemeldet_am` serverseitig, `verzoegerung_stunden`, Sperre nach Entscheidung, `frist_verlaengern()` |
+| SU-15 | Zugänge: Firmenkonto plus Poliere | ✔ | `Portal User` am `Supplier` bzw. `Subunternehmer Mitarbeiter.benutzer`; Rolle `Baudoku Polier` |
+| SU-16 | Portal auf Handy, Tablet und Desktop | ✔ | E2E in allen drei Profilen |
+| SU-17 | Portal offline nutzbar | ○ | bewusst zurückgestellt: Stempelung und Rückmeldung brauchen Verbindung |
+
+---
+
+"""
+
+ABNAHME_ZUSATZ = """| AK-10 | ERPNext-Integration sichtbar | ◑ | Verknüpfungen umgesetzt; Datenabgleich an einer Bench offen |
+| SU-AK-1 | Tagesablauf des Poliers durchspielbar | ✔ | `e2e/portal.spec.ts`: Personal melden, stempeln, Auftrag annehmen und fertigmelden, Fristwarnung ablesen |
+| SU-AK-2 | Zeitfreigabe durch den Bauleiter | ✔ | `e2e/feldablauf.spec.ts`: auffällige Tage hervorgehoben, Sammelfreigabe |
+| SU-AK-3 | Arbeitsrechtliche Prüfung der Grenzwerte | ○ | vor Produktivbetrieb, gemeinsam mit der Rechtsberatung |"""
+
+s = P.read_text(encoding="utf-8")
+
+alt = "## Abnahmekriterien"
+assert alt in s
+s = s.replace(alt, ABSCHNITT + alt, 1)
+
+alt2 = "| AK-10 | ERPNext-Integration sichtbar | ◑ | Verknüpfungen umgesetzt; Datenabgleich an einer Bench offen |"
+assert alt2 in s
+s = s.replace(alt2, ABNAHME_ZUSATZ, 1)
+
+alt3 = """Ebenfalls noch offen: konfigurierbare Dashboards (FA-096) und Mehrsprachigkeit
+(FA-018)"""
+neu3 = """Beim Subunternehmerportal steht die arbeitsrechtliche Prüfung der AZG-Grenzwerte
+aus (SU-09, SU-AK-3): Die App wertet aus und kennzeichnet, sperrt aber nicht —
+Kollektivvertrag, Gleitzeit- und Durchrechnungsregelungen können von den
+Standardwerten in den Baudoku Settings abweichen.
+
+Ebenfalls noch offen: konfigurierbare Dashboards (FA-096) und Mehrsprachigkeit
+(FA-018)"""
+assert alt3 in s
+s = s.replace(alt3, neu3, 1)
+
+P.write_text(s, encoding="utf-8")
+print("ok anforderungsabdeckung.md")

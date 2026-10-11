@@ -1,0 +1,139 @@
+/**
+ * Tests für die Dienste-Auswertung.
+ *
+ * `impact_analysis` beantwortet „was fällt aus, wenn **dieses** Objekt
+ * ausfällt" – die richtige Frage im Störungsfall. Vorher braucht man die
+ * andere Richtung: **welches Objekt sollten wir redundant auslegen?**
+ *
+ * Und ein Ergebnis dieser Rechnung ist ein Vorbehalt: der
+ * Abhängigkeitsgraph kennt keine Redundanz. Zwei WAN-Leitungen, die sich
+ * vertreten sollen, sehen darin aus wie zwei einzelne Ausfallpunkte. Das
+ * gehört gesagt – eine Rangfolge, die auf nicht modellierter Redundanz
+ * beruht, ist erfundene Genauigkeit.
+ */
+import { beforeEach, describe, expect, it } from 'vitest'
+import { mockRequest, resetMockData } from '@/api/mock/server.js'
+
+const ruf = (url, params) => mockRequest({ url, params })
+const deckung = (p = {}) => ruf('netops.api.services.service_assurance', p)
+const objekte = (p = {}) => ruf('netops.api.services.service_risk_objects', p)
+const verlauf = (p) => ruf('netops.api.services.service_timeline', p)
+
+beforeEach(() => {
+  resetMockData()
+})
+
+describe('Deckungslücken je Dienst', () => {
+  it('meldet eine fehlgeschlagene Sicherungsprüfung', async () => {
+    const z = (await deckung()).rows.find((r) => r.backup_verify === 'failed')
+    expect(z.gaps.join(' ')).toMatch(/Prüfung nicht bestanden/)
+  })
+
+  it('meldet eine Wiederherstellung, die länger dauert als zugesagt', async () => {
+    // Eine Zusage, die die eigene Kette nicht hergibt, ist keine Zusage.
+    const z = (await deckung()).rows.find((r) => r.gaps.some((g) => /zugesagt sind/.test(g)))
+    expect(z).toBeTruthy()
+    expect(z.rto_hours).toBeGreaterThan(0)
+  })
+
+  it('wiegt eine Lücke bei einem kritischen Dienst schwerer', async () => {
+    for (const z of (await deckung()).rows) {
+      if (z.criticality === 'critical' && z.gaps.length) expect(z.level).toBe('critical')
+      else if (z.gaps.length) expect(z.level).toBe('warning')
+      else expect(z.level).toBe('ok')
+    }
+  })
+
+  it('führt die kritischen Dienste oben', async () => {
+    const rang = { critical: 0, high: 1, medium: 2, low: 3 }
+    const r = (await deckung()).rows
+    for (let i = 1; i < r.length; i++) {
+      expect(rang[r[i - 1].criticality] <= rang[r[i].criticality]).toBe(true)
+    }
+  })
+
+  it('benennt den guten Fall genauso wie den schlechten', async () => {
+    const s = (await deckung()).summary
+    expect(s.note).toBeTruthy()
+    expect(s.critical_with_gaps).toBeLessThanOrEqual(s.critical)
+  })
+})
+
+describe('Welches Objekt trägt wie viel', () => {
+  it('gewichtet kritische Dienste stärker', async () => {
+    // Sonst gewinnt in der Liste, wer viele unwichtige Dienste trägt.
+    for (const z of (await objekte()).rows) {
+      expect(z.load).toBeGreaterThanOrEqual(z.services)
+    }
+  })
+
+  it('sortiert nach Last, nicht nach Anzahl', async () => {
+    const r = (await objekte()).rows
+    for (let i = 1; i < r.length; i++) expect(r[i - 1].load >= r[i].load).toBe(true)
+  })
+
+  it('stuft ein Objekt mit mehreren kritischen Diensten als kritisch ein', async () => {
+    for (const z of (await objekte()).rows) {
+      if (z.critical_services > 1) expect(z.level).toBe('critical')
+    }
+  })
+
+  it('nennt die betroffenen Dienste beim Namen', async () => {
+    for (const z of (await objekte()).rows) {
+      expect(Array.isArray(z.service_names)).toBe(true)
+      if (z.services) expect(z.service_names.length).toBeGreaterThan(0)
+    }
+  })
+})
+
+describe('Der Vorbehalt zur Redundanz', () => {
+  it('sagt, wenn mehrere Objekte rechnerisch gleichauf liegen', async () => {
+    // Zwei Leitungen, die sich vertreten, sehen im Graphen aus wie zwei
+    // einzelne Ausfallpunkte. Wer das nicht dazusagt, verkauft eine
+    // Rangfolge, die keine ist.
+    const s = (await objekte()).summary
+    expect(s.tied_at_top).toBeGreaterThan(2)
+    expect(s.redundancy_unknown).toBe(true)
+    expect(s.caveat).toMatch(/keine Redundanz hinterlegt/)
+  })
+
+  it('formuliert den Haupttext entsprechend vorsichtig', async () => {
+    const s = (await objekte()).summary
+    expect(s.note).toMatch(/Solange die Kette keine Redundanz kennt/)
+    // Kein Satz, der ein einzelnes Objekt zum Gewinner erklärt.
+    expect(s.note).not.toMatch(/bringt Redundanz am meisten/)
+  })
+})
+
+describe('Was ist am Dienst passiert', () => {
+  it('führt Abweichungen, Changes und Tickets zusammen', async () => {
+    const dienste = (await deckung()).rows
+    const mitKette = dienste.find((d) => d.dependency_count > 0)
+    const v = await verlauf({ service: mitKette.name, hours: 24 * 60 })
+    expect(v.summary.objects).toBeGreaterThan(0)
+    for (const e of v.rows) {
+      expect(['drift', 'change', 'ticket']).toContain(e.kind)
+      expect(e.text).toBeTruthy()
+    }
+  })
+
+  it('sortiert neueste zuerst', async () => {
+    const mitKette = (await deckung()).rows.find((d) => d.dependency_count > 0)
+    const r = (await verlauf({ service: mitKette.name, hours: 24 * 60 })).rows
+    for (let i = 1; i < r.length; i++) {
+      expect(String(r[i - 1].at) >= String(r[i].at)).toBe(true)
+    }
+  })
+
+  it('sagt auch, wenn nichts war', async () => {
+    const mitKette = (await deckung()).rows.find((d) => d.dependency_count > 0)
+    const v = await verlauf({ service: mitKette.name, hours: 1 })
+    if (!v.rows.length) expect(v.summary.note).toMatch(/nichts/)
+  })
+
+  it('gibt bei unbekanntem Dienst eine leere Antwort statt einer Ausnahme', async () => {
+    const v = await verlauf({ service: 'gibtsnicht' })
+    expect(v.rows).toEqual([])
+    expect(v.summary.events).toBe(0)
+  })
+})

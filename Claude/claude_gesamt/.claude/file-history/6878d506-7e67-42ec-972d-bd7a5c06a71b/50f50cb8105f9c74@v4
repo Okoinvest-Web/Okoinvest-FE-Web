@@ -1,0 +1,40 @@
+import { db } from "@/lib/data";
+import { LoginForm } from "@/components/forms";
+import { LogoMark } from "@/components/ui";
+
+export const metadata = { title: "Anmelden" };
+
+export default async function LoginPage({ searchParams }: PageProps<"/login">) {
+  const next = (await searchParams).next;
+  const demo = db().kind === "mock";
+  return (
+    <div className="relative flex min-h-full flex-col items-center justify-center bg-white px-6 py-12">
+      {/* dezenter Lichtschein oben – einziger Schmuck */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-[radial-gradient(60%_100%_at_50%_0%,var(--color-brand-50),transparent)]" />
+
+      <div className="relative w-full max-w-[340px]">
+        <LogoMark className="mx-auto size-10" />
+        <h1 className="mt-6 text-center text-[20px] font-semibold tracking-[-0.02em] text-gray-900">Bei Ökovolt Vertrieb anmelden</h1>
+        <p className="mt-1.5 text-center text-gray-500">{demo ? "Demo-Umgebung mit Beispieldaten" : "Mit deinem ERPNext-Benutzer"}</p>
+
+        <div className="mt-8">
+          <LoginForm next={typeof next === "string" ? next : undefined} demo={demo} />
+        </div>
+
+        {demo && (
+          <div className="mt-5 rounded-lg border border-gray-200 bg-gray-50 px-3.5 py-3 text-[12px] leading-relaxed text-gray-600">
+            <div className="mb-1 font-medium text-gray-900">Testzugänge · Passwort <span className="font-mono">demo</span></div>
+            <div>
+              <span className="font-mono text-gray-900">max@firma.example</span> · <span className="font-mono text-gray-900">lisa@firma.example</span> – Handelsvertreter
+            </div>
+            <div>
+              <span className="font-mono text-gray-900">leitung@firma.example</span> – Vertriebsleitung
+            </div>
+          </div>
+        )}
+      </div>
+
+      <p className="absolute bottom-6 text-[12px] text-gray-400">Ökovolt Solartechnik · Ihr Dach. Ihr Kraftwerk.</p>
+    </div>
+  );
+}

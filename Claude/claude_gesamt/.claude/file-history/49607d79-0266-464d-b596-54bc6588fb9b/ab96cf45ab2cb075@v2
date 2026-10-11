@@ -1,0 +1,130 @@
+# -*- coding: utf-8 -*-
+"""Dokumentiert das Anlegen von Konnektoren."""
+import io
+
+README = """### Konnektoren anlegen
+
+Konnektoren sind API-Zugänge zu fremden Systemen. Genau deshalb sind die
+Regeln aus CLAUDE.md Abschnitt 6 hier **strukturell** durchgesetzt und nicht
+nur dokumentiert – `src/api/mock/methods/konnektoren.js`.
+
+#### Eine Positivliste, keine Sperrliste
+
+Die Methode nimmt nur Felder an, die ausdrücklich vorgesehen sind. Alles
+andere wird abgewiesen, egal wie es heißt.
+
+Der erste Entwurf hatte eine Sperrliste auf Feldnamen („alles mit `token`
+raus"). Die hat zwei Fehler: sie lehnt legitime Angaben ab – `token_id` ist
+eine Kennung, kein Geheimnis – und sie übersieht jedes Geheimnis, das anders
+benannt ist. Die Positivliste kennt beide Probleme nicht.
+
+| Erlaubt | Ausgeschlossen |
+| ------- | -------------- |
+| `base_url`, `port`, `api_path`, `timeout_seconds`, `proxy_url` | jedes Passwort |
+| `username`, `token_id` (Bezeichner) | jedes Token, jeder private Schlüssel |
+| `verify_tls`, `ca_fingerprint` | alles, was nicht auf der Liste steht |
+| `access_reference` (Passbolt-ID) | |
+
+#### Was beim Anlegen geprüft wird
+
+- **Der Perimeter bleibt lesend.** Ein schreibender Konnektor auf die
+  Perimeter-Firewall lässt sich nicht anlegen – und ein bestehender nicht
+  nachträglich umstellen. Erkannt wird der Perimeter an
+  `Firewall Instance.layer`, nicht am Gerätenamen.
+- **Backup-Konnektoren nie schreibend.** Ein PBS-Token mit Prune-Rechten
+  kann die Sicherung vernichten, die es überwachen soll.
+- **Schreibzugriff braucht eine Begründung**, die ins Protokoll geht.
+- **Ohne Zugangsverweis kein Konnektor.** Ein Verweis, der ins Leere zeigt,
+  ist schlimmer als keiner – er täuscht Sicherheit vor.
+- **Kein http.** Über Klartext gingen die Zugangsdaten mit über das Netz.
+  Wer kein TLS hat, stellt einen Proxy davor.
+- **TLS-Prüfung ist die Voreinstellung.** Wer sie abschaltet, muss es
+  ausdrücklich tun und bekommt das Feld für den Zertifikats-Fingerabdruck.
+- Port 1–65535, API-Pfad mit führendem Schrägstrich, Zeitlimit 1–300 s,
+  Takt unter fünf Minuten nur bei Alarmquellen.
+
+#### Abschalten statt löschen
+
+Ein gelöschter Konnektor nimmt seine Historie mit – und die Frage „seit wann
+kommt von dort nichts mehr?" lässt sich dann nicht mehr beantworten. Deshalb
+gibt es nur Abschalten, mit Pflicht-Begründung.
+
+Die Sperren im Formular sind Bequemlichkeit. Verlassen kann man sich auf die
+Prüfung in der Server-Methode – eine Regel, die nur die Oberfläche kennt,
+gilt beim nächsten API-Aufruf nicht mehr.
+
+"""
+
+p = 'README.md'
+s = io.open(p, encoding='utf-8').read()
+marke = '### Sicherung'
+assert marke in s, 'README-Marke fehlt'
+s = s.replace(marke, README + marke, 1)
+s = s.replace('npm test         # 444 Tests', 'npm test         # 483 Tests')
+s = s.replace(
+    "| `backup-pruefung.test.js` | 3-2-1 je Teil, Testfristen nach Kritikalität, RPO/RTO gegen Zusage, Aufbewahrungsfristen, abgestufte Verfehlung |",
+    "| `backup-pruefung.test.js` | 3-2-1 je Teil, Testfristen nach Kritikalität, RPO/RTO gegen Zusage, Aufbewahrungsfristen, abgestufte Verfehlung |\n"
+    "| `konnektoren.test.js` | Positivliste statt Sperrliste, Perimeter bleibt lesend (auch nachträglich), PBS nie schreibend, Zugangsverweis, http-Verbot, Portbereich |")
+io.open(p, 'w', encoding='utf-8').write(s)
+print('README')
+
+CHANGELOG = """# Änderungsverlauf
+
+## 2026-09-19 (5) – Konnektoren anlegen
+
+Konnektoren ließen sich bisher nur ansehen. Jetzt lassen sie sich anlegen,
+ändern und abschalten – auf der Drift-Seite.
+
+### API-Zugang vollständig erfassbar
+
+Adresse, Port, API-Pfad, Benutzername, Token-Kennung, TLS-Prüfung,
+Zertifikats-Fingerabdruck, Zeitlimit und Proxy. Was fehlt und bewusst fehlt:
+ein Feld für das Geheimnis selbst.
+
+### Positivliste statt Sperrliste
+
+Der erste Entwurf prüfte Feldnamen gegen ein Muster („alles mit `token`
+raus"). Das lehnte `token_id` ab – eine Kennung, kein Geheimnis – und hätte
+jedes anders benannte Geheimnis durchgelassen. Jetzt nimmt die Methode nur
+ausdrücklich vorgesehene Felder an; alles andere wird abgewiesen, mit einer
+Meldung, die den richtigen Weg nennt.
+
+### Die Regeln aus CLAUDE.md greifen jetzt
+
+- Perimeter-Firewall: kein Schreibzugriff, auch nicht nachträglich (6.2)
+- PBS und alle reinen Lesequellen: Schreiben gar nicht einschaltbar (6.3)
+- Kein Geheimnis in DocType, Formular oder Protokoll (6.4, Abschnitt 3)
+- Schreibzugriff nur mit Begründung, die protokolliert wird
+- Kein http – Zugangsdaten gingen im Klartext über das Netz
+
+### Ein Fehler, den ein Test gefunden hätte
+
+Die erste Fassung der Perimeter-Erkennung fragte ein Feld `perimeter` an
+`Firewall Instance` ab. Das Feld gehört aber zu `Change Request` – die
+Prüfung lief also immer ins Leere, und **ein schreibender Konnektor auf die
+Perimeter-Firewall ließ sich anlegen**. Aufgefallen ist das erst beim
+Durchprobieren der Regeln von Hand. Die Erkennung läuft jetzt über
+`Firewall Instance.layer`, und der Test dazu steht in
+`tests/konnektoren.test.js`.
+
+### Nebenbei behoben
+
+Die vorhandenen Konnektoren liefen ohne hinterlegten Zugangsverweis – ein
+Widerspruch, denn einmal abgeschaltet hätten sie sich nicht wieder
+einschalten lassen. Sie sind jetzt mit ihren Passbolt-Einträgen verknüpft.
+
+### Geprüft
+
+- 483 Tests (39 neue), ESLint und Prettier sauber
+- Formular im Browser: alle Felder vorhanden, **kein** Passwortfeld,
+  Schreibzugriff bei reinen Lesequellen gesperrt
+
+"""
+
+p = 'CHANGELOG.md'
+s = io.open(p, encoding='utf-8').read()
+alt = '# Änderungsverlauf\n\n'
+assert s.startswith(alt)
+s = CHANGELOG + s[len(alt):]
+io.open(p, 'w', encoding='utf-8').write(s)
+print('CHANGELOG')

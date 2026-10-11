@@ -1,0 +1,97 @@
+/**
+ * Prueft die Pruefung.
+ *
+ * In eine echte Portalseite werden absichtliche Fehler eingebaut -
+ * ein Knopf ohne Beschriftung, ein Bild ohne Textalternative, eine
+ * doppelte Kennung. Findet die Pruefung sie nicht, meldet sie auch in
+ * der taeglichen Anwendung nichts, und ihr "keine Auffaelligkeiten"
+ * waere eine Beruhigung ohne Grundlage.
+ *
+ * Aufruf:  node werkzeuge/bedienbarkeit-selbsttest.mjs
+ */
+
+import { chromium } from "playwright";
+
+import { pruefeImBrowser } from "./bedienbarkeit-pruefer.mjs";
+
+const BASIS = process.env.PORTAL_URL ?? "http://localhost:3000";
+
+const SITZUNG = [
+  { name: "sid", value: "demo-session" },
+  { name: "frappe_user", value: "m.steiner@steiner-holzbau.at" },
+  { name: "frappe_full_name", value: "Markus Steiner" },
+  { name: "portal_rolle", value: "geschaeftsfuehrung" },
+].map((c) => ({ ...c, domain: "localhost", path: "/" }));
+
+/** Was eingebaut wird und woran es erkannt werden muss. */
+const FAELLE = [
+  {
+    name: "Knopf ohne Beschriftung",
+    markup: "<button></button>",
+    muster: /ohne zugänglichen Namen/,
+  },
+  {
+    name: "Eingabefeld ohne Beschriftung",
+    markup: '<input type="text">',
+    muster: /ohne zugänglichen Namen/,
+  },
+  {
+    name: "Bild ohne Textalternative",
+    markup: '<img src="beispiel.png">',
+    muster: /Bild ohne alt/,
+  },
+  {
+    name: "doppelte Kennung",
+    markup: '<span id="zweimal"></span><span id="zweimal"></span>',
+    muster: /doppelte id/,
+  },
+  {
+    name: "Tabelle ohne Kopfzellen",
+    markup: "<table><tbody><tr><td>x</td></tr></tbody></table>",
+    muster: /Tabelle ohne Kopfzellen/,
+  },
+  {
+    name: "Sprung in der Überschriftenordnung",
+    // Die Seite endet mit h2/h3; ein h6 dahinter ist ein Sprung.
+    markup: "<h6>Zu tief</h6>",
+    muster: /Sprung von h/,
+  },
+];
+
+const browser = await chromium.launch();
+const kontext = await browser.newContext({ locale: "de-AT" });
+await kontext.addCookies(SITZUNG);
+const seite = await kontext.newPage();
+
+let fehler = 0;
+
+for (const fall of FAELLE) {
+  await seite.goto(`${BASIS}/portal/anlagen`, { waitUntil: "networkidle" });
+
+  const vorher = await seite.evaluate(pruefeImBrowser);
+
+  await seite.evaluate((markup) => {
+    const traeger = document.createElement("div");
+    traeger.innerHTML = markup;
+    document.body.append(traeger);
+  }, fall.markup);
+
+  const nachher = await seite.evaluate(pruefeImBrowser);
+  const neu = nachher.filter((b) => !vorher.includes(b));
+
+  const gefunden = neu.some((b) => fall.muster.test(b));
+
+  console.log(
+    `${gefunden ? "gefunden " : "ÜBERSEHEN"}  ${fall.name}${gefunden ? "" : ` (neu: ${JSON.stringify(neu)})`}`,
+  );
+  if (!gefunden) fehler += 1;
+}
+
+console.log(
+  fehler === 0
+    ? "\nDie Pruefung findet jeden eingebauten Fehler."
+    : `\n${fehler} eingebaute Fehler wurden nicht gefunden.`,
+);
+
+await browser.close();
+process.exit(fehler === 0 ? 0 : 1);

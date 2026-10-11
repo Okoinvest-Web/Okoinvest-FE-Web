@@ -1,0 +1,214 @@
+import type { Metadata } from "next";
+
+import { Tabelle, Zeile, Zelle } from "@/components/tabelle";
+import {
+  Tafel,
+  Kennzahl,
+  LeerZustand,
+  Seitenkopf,
+  Status,
+} from "@/components/ui";
+import { DEMO_KUNDE } from "@/lib/demo/stammdaten";
+import { formatDatum, formatDateigroesse, formatGeld, formatZahl } from "@/lib/format";
+import { frappeUrl } from "@/lib/frappe";
+import { istDemoModus } from "@/lib/demo/modus";
+import {
+  ladeDokumente,
+  ladeLieferscheine,
+  ladeRechnungen,
+} from "@/lib/portal-daten";
+import { requireRecht } from "@/lib/session";
+
+export const metadata: Metadata = { title: "Belege" };
+
+function rechnungTon(status: string | undefined) {
+  switch (status) {
+    case "Bezahlt":
+    case "Paid":
+      return "gut" as const;
+    case "Überfällig":
+    case "Overdue":
+      return "kritisch" as const;
+    case "Offen":
+    case "Unpaid":
+      return "hinweis" as const;
+    default:
+      return "neutral" as const;
+  }
+}
+
+export default async function BelegeSeite() {
+  await requireRecht("belege.lesen");
+
+  const [rechnungen, lieferscheine, dokumente] = await Promise.all([
+    ladeRechnungen(),
+    ladeLieferscheine(),
+    ladeDokumente(),
+  ]);
+
+  const offen = rechnungen.reduce((s, r) => s + (r.outstanding_amount ?? 0), 0);
+  const ueberfaellig = rechnungen
+    .filter((r) => r.status === "Überfällig")
+    .reduce((s, r) => s + (r.outstanding_amount ?? 0), 0);
+  const jahresumsatz = rechnungen.reduce((s, r) => s + (r.grand_total ?? 0), 0);
+
+  // Im Demonstrationsbetrieb gibt es keine erreichbare Frappe-Instanz,
+  // aus der sich Dateien laden liessen.
+  const demo = istDemoModus();
+  const basis = demo ? "" : frappeUrl();
+
+  return (
+    <div className="space-y-6">
+      <Seitenkopf
+        titel="Belege"
+        hinweis={`Rechnungen, Lieferscheine und Dokumente · ${DEMO_KUNDE.firma}`}
+      />
+
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Kennzahl
+          label="Offener Betrag"
+          wert={formatGeld(offen)}
+          hinweis={`${rechnungen.filter((r) => (r.outstanding_amount ?? 0) > 0).length} Rechnungen`}
+        />
+        <Kennzahl
+          label="Davon überfällig"
+          wert={formatGeld(ueberfaellig)}
+        />
+        <Kennzahl
+          label="Umsatz gesamt"
+          wert={formatGeld(jahresumsatz)}
+          hinweis="alle erfassten Rechnungen"
+        />
+        <Kennzahl
+          label="Dokumente"
+          wert={formatZahl(dokumente.length, 0)}
+          hinweis="Verträge, Befunde, Nachweise"
+        />
+      </div>
+
+      <Tafel titel="Rechnungen">
+        {rechnungen.length === 0 ? (
+          <LeerZustand text="Es liegen keine Rechnungen vor." />
+        ) : (
+          <Tabelle
+            spalten={[{ titel: "Nummer" }, { titel: "Datum" }, { titel: "Fällig" }, { titel: "Betrag", zahl: true }, { titel: "Offen", zahl: true }, { titel: "Status" }]}
+          >
+            {rechnungen.map((rechnung) => (
+              <Zeile
+                key={rechnung.name}
+                hervorgehoben={rechnung.status === "Überfällig"}
+              >
+                <Zelle>
+                  <span className="font-mono text-sm font-medium">
+                    {rechnung.name}
+                  </span>
+                </Zelle>
+                <Zelle zahl leise>
+                  {formatDatum(rechnung.posting_date)}
+                </Zelle>
+                <Zelle zahl leise>
+                  {formatDatum(rechnung.due_date)}
+                </Zelle>
+                <Zelle zahl>
+                  {formatGeld(rechnung.grand_total, rechnung.currency)}
+                </Zelle>
+                <Zelle zahl>
+                  {(rechnung.outstanding_amount ?? 0) > 0 ? (
+                    <span className="font-medium">
+                      {formatGeld(rechnung.outstanding_amount, rechnung.currency)}
+                    </span>
+                  ) : (
+                    <span className="text-slate-400">–</span>
+                  )}
+                </Zelle>
+                <Zelle>
+                  <Status ton={rechnungTon(rechnung.status)}>
+                    {rechnung.status ?? "–"}
+                  </Status>
+                </Zelle>
+              </Zeile>
+            ))}
+          </Tabelle>
+        )}
+      </Tafel>
+
+      <Tafel titel="Lieferscheine">
+        {lieferscheine.length === 0 ? (
+          <LeerZustand text="Es liegen keine Lieferscheine vor." />
+        ) : (
+          <Tabelle
+            spalten={[{ titel: "Nummer" }, { titel: "Datum" }, { titel: "Warenwert", zahl: true }, { titel: "Status" }]}
+          >
+            {lieferscheine.map((schein) => (
+              <Zeile key={schein.name}>
+                <Zelle>
+                  <span className="font-mono text-sm font-medium">
+                    {schein.name}
+                  </span>
+                </Zelle>
+                <Zelle zahl leise>
+                  {formatDatum(schein.posting_date)}
+                </Zelle>
+                <Zelle zahl>
+                  {formatGeld(schein.grand_total, schein.currency)}
+                </Zelle>
+                <Zelle>
+                  <Status
+                    ton={schein.status === "Zugestellt" ? "gut" : "hinweis"}
+                  >
+                    {schein.status ?? "–"}
+                  </Status>
+                </Zelle>
+              </Zeile>
+            ))}
+          </Tabelle>
+        )}
+      </Tafel>
+
+      <Tafel
+        titel="Dokumente"
+        hinweis="Verträge, Prüfbefunde, Förderzusagen und Nachweise"
+      >
+        {dokumente.length === 0 ? (
+          <LeerZustand text="Es sind keine Dokumente hinterlegt." />
+        ) : (
+          <Tabelle
+            spalten={[{ titel: "Datei" }, { titel: "Zugeordnet zu" }, { titel: "Größe", zahl: true }, { titel: "Hochgeladen", zahl: true }]}
+          >
+            {dokumente.map((datei) => (
+              <Zeile key={datei.name}>
+                <Zelle>
+                  {datei.file_url && !demo ? (
+                    <a
+                      href={`${basis}${datei.file_url}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="font-medium text-emerald-700 hover:underline dark:text-emerald-400"
+                    >
+                      {datei.file_name}
+                    </a>
+                  ) : (
+                    <span className="font-medium">{datei.file_name}</span>
+                  )}
+                </Zelle>
+                <Zelle leise>{datei.attached_to_name ?? "–"}</Zelle>
+                <Zelle zahl leise>
+                  {formatDateigroesse(datei.file_size)}
+                </Zelle>
+                <Zelle zahl leise>
+                  {formatDatum(datei.creation)}
+                </Zelle>
+              </Zeile>
+            ))}
+          </Tabelle>
+        )}
+
+        <p className="mt-4 text-xs text-slate-500 dark:text-slate-400">
+          {demo
+            ? "Im Demonstrationsbetrieb sind die Dateien nicht hinterlegt – im Regelbetrieb öffnen sie sich direkt aus Frappe."
+            : "Private Dateien öffnen sich nur, solange Ihre Sitzung in Frappe gültig ist."}
+        </p>
+      </Tafel>
+    </div>
+  );
+}

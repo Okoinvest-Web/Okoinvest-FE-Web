@@ -1,0 +1,207 @@
+# -*- coding: utf-8 -*-
+"""Baut das Konnektor-Formular in die Drift-Seite ein."""
+import io
+
+p = 'src/pages/DriftView.vue'
+s = io.open(p, encoding='utf-8').read()
+
+# --- 1. Kopfzeile mit Umschalter
+alt = '''    <PageHeader title="Drift" subtitle="Soll aus NetOps, Ist aus den Konnektoren" />'''
+neu = '''    <PageHeader title="Drift" :subtitle="untertitel">
+      <template #actions>
+        <Button v-if="!formularOffen" variant="solid" @click="neuAnlegen">
+          Konnektor anlegen
+        </Button>
+      </template>
+    </PageHeader>'''
+assert alt in s, 'PageHeader nicht gefunden'
+s = s.replace(alt, neu, 1)
+
+# --- 2. Formular + Kartenaktionen
+alt2 = '''      <section class="mb-8">
+        <h2 class="mb-3 text-base font-semibold text-ink-gray-8">Konnektoren</h2>'''
+neu2 = '''      <!-- Anlegen und Bearbeiten -->
+      <section
+        v-if="formularOffen"
+        class="mb-8 rounded-lg border border-outline-gray-2 bg-surface-white p-4"
+      >
+        <h2 class="mb-1 text-base font-semibold text-ink-gray-8">
+          {{ bearbeitet ? 'Konnektor bearbeiten' : 'Neuer Konnektor' }}
+        </h2>
+        <p class="mb-4 text-sm text-ink-gray-6">
+          Zugangsdaten gehören nach Passbolt. Dieses Formular nimmt nur den Verweis darauf
+          entgegen – und die Server-Methode lehnt jedes Feld ab, das nach einem Geheimnis
+          aussieht.
+        </p>
+        <div class="max-w-xl">
+          <ConnectorForm
+            :optionen="optionen.data"
+            :vorhanden="bearbeitet"
+            @gespeichert="nachSpeichern"
+            @abbrechen="formularZu"
+          />
+        </div>
+      </section>
+
+      <section class="mb-8">
+        <h2 class="mb-3 text-base font-semibold text-ink-gray-8">Konnektoren</h2>'''
+assert alt2 in s, 'Konnektor-Abschnitt nicht gefunden'
+s = s.replace(alt2, neu2, 1)
+
+# --- 3. Aktionen je Konnektorkarte
+alt3 = '''              <div class="flex justify-between gap-2">
+                <dt>Offene Befunde</dt>
+                <dd class="tabular-nums">{{ k.open_findings }}</dd>
+              </div>
+            </dl>
+          </div>'''
+neu3 = '''              <div class="flex justify-between gap-2">
+                <dt>Offene Befunde</dt>
+                <dd class="tabular-nums">{{ k.open_findings }}</dd>
+              </div>
+              <div v-if="k.scope_note" class="pt-1 text-sm text-ink-gray-5">
+                Liest: {{ k.scope_note }}
+              </div>
+              <div v-if="!k.read_only" class="pt-1">
+                <StatusDot level="warning" :text="'Schreibend: ' + (k.write_reason || 'ohne Grund')" klein />
+              </div>
+            </dl>
+
+            <div class="mt-3 flex flex-wrap gap-2 border-t border-outline-gray-2 pt-3">
+              <Button size="sm" @click="bearbeiten(k)">Bearbeiten</Button>
+              <Button v-if="k.enabled" size="sm" variant="subtle" @click="abschaltenFragen(k)">
+                Abschalten
+              </Button>
+              <Button v-else size="sm" @click="einschalten(k)">Einschalten</Button>
+            </div>
+          </div>'''
+assert alt3 in s, 'Konnektorkarte nicht gefunden'
+s = s.replace(alt3, neu3, 1)
+
+# --- 4. Skriptteil
+alt4 = """import { ref, watch } from 'vue'
+import { Badge, Button, FormControl, createResource, toast } from 'frappe-ui'
+import PageHeader from '@/components/PageHeader.vue'
+import DataTable from '@/components/DataTable.vue'
+import StatusDot from '@/components/StatusDot.vue'"""
+neu4 = """import { computed, ref, watch } from 'vue'
+import { Badge, Button, Dialog, FormControl, createResource, toast } from 'frappe-ui'
+import PageHeader from '@/components/PageHeader.vue'
+import DataTable from '@/components/DataTable.vue'
+import StatusDot from '@/components/StatusDot.vue'
+import ConnectorForm from '@/components/ConnectorForm.vue'
+import { fehlerText, mengeText } from '@/viz'"""
+assert alt4 in s
+s = s.replace(alt4, neu4, 1)
+
+alt5 = """const konnektoren = createResource({ url: 'netops.api.ops.connector_status', auto: true })"""
+neu5 = """const konnektoren = createResource({ url: 'netops.api.ops.connector_status', auto: true })
+const optionen = createResource({ url: 'netops.api.ops.connector_options', auto: true })
+
+const formularOffen = ref(false)
+const bearbeitet = ref(null)
+const abschaltDialog = ref(false)
+const abzuschalten = ref(null)
+const abschaltGrund = ref('')
+
+const abschalten = createResource({ url: 'netops.api.ops.disable_connector' })
+const anschalten = createResource({ url: 'netops.api.ops.enable_connector' })
+
+const untertitel = computed(() => {
+  const k = konnektoren.data || []
+  const still = k.filter((x) => x.overdue && x.enabled).length
+  const schreibend = k.filter((x) => !x.read_only).length
+  return (
+    mengeText(k.length, 'Konnektor', 'Konnektoren') +
+    (still ? ' · ' + still + ' überfällig' : '') +
+    (schreibend ? ' · ' + schreibend + ' schreibend' : ' · alle nur lesend')
+  )
+})
+
+function neuAnlegen() {
+  bearbeitet.value = null
+  formularOffen.value = true
+}
+
+function bearbeiten(k) {
+  bearbeitet.value = k
+  formularOffen.value = true
+}
+
+function formularZu() {
+  formularOffen.value = false
+  bearbeitet.value = null
+}
+
+async function nachSpeichern() {
+  toast.create({ message: bearbeitet.value ? 'Gespeichert' : 'Konnektor angelegt', type: 'success' })
+  formularZu()
+  await konnektoren.fetch()
+}
+
+function abschaltenFragen(k) {
+  abzuschalten.value = k
+  abschaltGrund.value = ''
+  abschaltDialog.value = true
+}
+
+async function abschaltenAusfuehren() {
+  try {
+    await abschalten.submit({ name: abzuschalten.value.name, reason: abschaltGrund.value })
+    toast.create({ message: 'Abgeschaltet', type: 'success' })
+    abschaltDialog.value = false
+    await konnektoren.fetch()
+  } catch (fehler) {
+    toast.create({ message: fehlerText(fehler), type: 'error' })
+  }
+}
+
+async function einschalten(k) {
+  try {
+    await anschalten.submit({ name: k.name })
+    toast.create({ message: 'Eingeschaltet', type: 'success' })
+    await konnektoren.fetch()
+  } catch (fehler) {
+    toast.create({ message: fehlerText(fehler), type: 'error' })
+  }
+}"""
+assert alt5 in s
+s = s.replace(alt5, neu5, 1)
+
+# --- 5. Dialog fuer das Abschalten
+alt6 = """    </div>
+  </div>
+</template>"""
+neu6 = """    </div>
+
+    <!--
+      Abschalten statt Loeschen: ein geloeschter Konnektor nimmt seine
+      Historie mit, und die Frage "seit wann kommt von dort nichts mehr?"
+      laesst sich dann nicht mehr beantworten.
+    -->
+    <Dialog v-model="abschaltDialog" :options="{ title: 'Konnektor abschalten' }">
+      <template #body-content>
+        <p class="mb-3 text-sm text-ink-gray-6">
+          {{ abzuschalten?.connector_name }} liefert danach keine Daten mehr. Der Datensatz bleibt
+          erhalten – gelöscht wird nichts.
+        </p>
+        <FormControl
+          v-model="abschaltGrund"
+          label="Grund (kommt ins Protokoll)"
+          type="text"
+          placeholder="Quelle wird abgelöst"
+        />
+      </template>
+      <template #actions>
+        <Button variant="solid" :disabled="!abschaltGrund" @click="abschaltenAusfuehren">
+          Abschalten
+        </Button>
+      </template>
+    </Dialog>
+  </div>
+</template>"""
+assert alt6 in s
+s = s.replace(alt6, neu6, 1)
+
+io.open(p, 'w', encoding='utf-8').write(s)
+print('DriftView erweitert')

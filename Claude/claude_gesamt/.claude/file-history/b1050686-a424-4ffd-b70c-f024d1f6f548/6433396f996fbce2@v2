@@ -1,0 +1,276 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+
+import { eine, imBlock, schreibe, skalar } from "@/lib/db/verbindung";
+import { frist, slaFuer } from "@/lib/service/frist";
+import { protokolliere } from "@/lib/sicherheit/audit";
+import { requireRecht } from "@/lib/session";
+
+export interface MeldungsErgebnis {
+  ok: boolean;
+  meldung: string;
+  /** Kennung der angelegten Meldung, für den Verweis auf das Ticket. */
+  id?: string;
+  nummer?: string;
+}
+
+const KATEGORIEN = [
+  "Wechselrichter",
+  "Module und Stränge",
+  "Kommunikation",
+  "Ladeinfrastruktur",
+  "Zähler und Messung",
+  "Abrechnung",
+  "Auslegung",
+  "Benutzerverwaltung",
+  "Sonstiges",
+];
+
+const PRIORITAETEN = ["Niedrig", "Mittel", "Hoch", "Kritisch"];
+
+/** Nächste freie Kennung und Servicenummer. */
+function naechsteKennung(jahr: number): { id: string; nummer: string } {
+  const hoechste =
+    skalar<number>(
+      `SELECT COALESCE(MAX(CAST(substr(id, 6) AS INTEGER)), 0)
+         FROM stoerung WHERE id LIKE 'STOE-%'`,
+    ) ?? 0;
+
+  const nummer = hoechste + 1;
+  return {
+    id: `STOE-${String(nummer).padStart(4, "0")}`,
+    nummer: `SR-${jahr}-${String(nummer).padStart(4, "0")}`,
+  };
+}
+
+/**
+ * Legt eine Servicemeldung an.
+ *
+ * Die Fristen werden hier einmal gerechnet und mitgeschrieben, nicht
+ * bei jeder Anzeige neu ermittelt: Ändert sich später die vereinbarte
+ * Reaktionszeit, darf das die Bewertung bestehender Meldungen nicht
+ * rückwirkend verschieben. Ein einmal eingehaltener Termin bleibt
+ * eingehalten.
+ */
+export async function meldeStoerung(
+  _vorher: MeldungsErgebnis | null,
+  formular: FormData,
+): Promise<MeldungsErgebnis> {
+  const benutzer = await requireRecht("support.melden");
+
+  const betreff = String(formular.get("betreff") ?? "").trim();
+  const beschreibung = String(formular.get("beschreibung") ?? "").trim();
+  const anlage = String(formular.get("anlage") ?? "").trim();
+  const prioritaet = String(formular.get("prioritaet") ?? "Mittel");
+  const kategorie = String(formular.get("kategorie") ?? "Sonstiges");
+
+  if (betreff.length < 5) {
+    return {
+      ok: false,
+      meldung: "Bitte geben Sie einen aussagekräftigen Betreff an.",
+    };
+  }
+
+  // Die Auswahlfelder kommen aus dem Formular und damit vom Client.
+  // Ein abweichender Wert würde entweder die Fristenrechnung ins Leere
+  // laufen lassen oder an der Einschränkung der Tabelle scheitern.
+  if (!PRIORITAETEN.includes(prioritaet)) {
+    return { ok: false, meldung: "Unbekannte Dringlichkeit." };
+  }
+  if (!KATEGORIEN.includes(kategorie)) {
+    return { ok: false, meldung: "Unbekannte Kategorie." };
+  }
+
+  if (anlage) {
+    const vorhanden = eine<{ id: string }>(
+      "SELECT id FROM anlage WHERE id = ?",
+      anlage,
+    );
+    if (!vorhanden) {
+      return { ok: false, meldung: "Die gewählte Anlage ist nicht bekannt." };
+    }
+  }
+
+  const jetzt = new Date();
+  const sla = slaFuer(prioritaet);
+  const { id, nummer } = naechsteKennung(jetzt.getFullYear());
+
+  try {
+    imBlock(() => {
+      schreibe(
+        `INSERT INTO stoerung
+           (id, anlage_id, betreff, beschreibung, status, prioritaet,
+            gemeldet_von, gemeldet_am, nummer, kategorie, kanal,
+            reaktion_bis, loesung_bis, servicezeit)
+         VALUES (?, ?, ?, ?, 'Offen', ?, ?, ?, ?, ?, 'Portal', ?, ?, 'Werktags')`,
+        id,
+        anlage || null,
+        betreff,
+        beschreibung || null,
+        prioritaet,
+        benutzer.id,
+        jetzt.toISOString(),
+        nummer,
+        kategorie,
+        frist(jetzt, sla.reaktionStunden).toISOString(),
+        frist(jetzt, sla.loesungStunden).toISOString(),
+      );
+
+      if (beschreibung) {
+        schreibe(
+          `INSERT INTO stoerung_eintrag
+             (id, stoerung_id, verfasser, intern, text, erstellt_am)
+           VALUES (?, ?, ?, 0, ?, ?)`,
+          `${id}-E001`,
+          id,
+          benutzer.vollname,
+          beschreibung,
+          jetzt.toISOString(),
+        );
+      }
+    });
+  } catch {
+    return {
+      ok: false,
+      meldung:
+        "Die Meldung konnte nicht gespeichert werden. Bitte versuchen Sie es erneut oder rufen Sie uns an.",
+    };
+  }
+
+  await protokolliere({
+    kategorie: "sicherheitsvorfall",
+    aktion: `Servicemeldung ${nummer} angelegt: ${betreff}`,
+    ergebnis: "erfolg",
+    objekt: anlage || undefined,
+    begruendung: `Dringlichkeit ${prioritaet}, gemeldet von ${benutzer.vollname}`,
+  });
+
+  revalidatePath("/portal/support");
+  revalidatePath("/portal");
+
+  return {
+    ok: true,
+    id,
+    nummer,
+    meldung: `Ihre Meldung ${nummer} ist eingegangen. Zugesagte Rückmeldung innerhalb von ${sla.reaktionStunden} Arbeitsstunden, Behebung innerhalb von ${sla.loesungStunden}.`,
+  };
+}
+
+/**
+ * Fügt einem Ticket einen Eintrag hinzu.
+ *
+ * Die erste Rückmeldung eines Bearbeiters setzt zugleich den
+ * Reaktionszeitpunkt - nicht ein Statuswechsel. Wer einen Status
+ * umstellt, hat dem Melder noch nichts gesagt.
+ */
+export async function antworte(
+  _vorher: MeldungsErgebnis | null,
+  formular: FormData,
+): Promise<MeldungsErgebnis> {
+  const benutzer = await requireRecht("support.melden");
+
+  const stoerungId = String(formular.get("stoerung") ?? "").trim();
+  const text = String(formular.get("text") ?? "").trim();
+  const intern = formular.get("intern") === "ja";
+
+  if (text.length < 3) {
+    return { ok: false, meldung: "Bitte geben Sie einen Text ein." };
+  }
+
+  const meldung = eine<{ id: string; reaktion_am: string | null }>(
+    "SELECT id, reaktion_am FROM stoerung WHERE id = ?",
+    stoerungId,
+  );
+  if (!meldung) {
+    return { ok: false, meldung: "Diese Meldung ist nicht vorhanden." };
+  }
+
+  const jetzt = new Date().toISOString();
+  const anzahl =
+    skalar<number>(
+      "SELECT COUNT(*) FROM stoerung_eintrag WHERE stoerung_id = ?",
+      stoerungId,
+    ) ?? 0;
+
+  imBlock(() => {
+    schreibe(
+      `INSERT INTO stoerung_eintrag
+         (id, stoerung_id, verfasser, intern, text, erstellt_am)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      `${stoerungId}-E${String(anzahl + 1).padStart(3, "0")}`,
+      stoerungId,
+      benutzer.vollname,
+      intern ? 1 : 0,
+      text,
+      jetzt,
+    );
+
+    // Eine interne Notiz ist keine Rückmeldung an den Melder und
+    // beendet die Reaktionsfrist deshalb nicht.
+    if (!intern && !meldung.reaktion_am) {
+      schreibe(
+        "UPDATE stoerung SET reaktion_am = ? WHERE id = ?",
+        jetzt,
+        stoerungId,
+      );
+    }
+  });
+
+  revalidatePath(`/portal/support/${stoerungId}`);
+  revalidatePath("/portal/support");
+
+  return { ok: true, meldung: "Eintrag gespeichert.", id: stoerungId };
+}
+
+/** Setzt den Status einer Meldung. */
+export async function setzeStatus(
+  _vorher: MeldungsErgebnis | null,
+  formular: FormData,
+): Promise<MeldungsErgebnis> {
+  const benutzer = await requireRecht("support.melden");
+
+  const stoerungId = String(formular.get("stoerung") ?? "").trim();
+  const status = String(formular.get("status") ?? "").trim();
+
+  const erlaubt = ["Offen", "In Bearbeitung", "Warten auf Kunde", "Geschlossen"];
+  if (!erlaubt.includes(status)) {
+    return { ok: false, meldung: "Unbekannter Status." };
+  }
+
+  const meldung = eine<{ id: string; nummer: string | null }>(
+    "SELECT id, nummer FROM stoerung WHERE id = ?",
+    stoerungId,
+  );
+  if (!meldung) {
+    return { ok: false, meldung: "Diese Meldung ist nicht vorhanden." };
+  }
+
+  const jetzt = new Date().toISOString();
+
+  schreibe(
+    `UPDATE stoerung
+        SET status = ?,
+            behoben_am = CASE WHEN ? = 'Geschlossen' THEN ? ELSE NULL END,
+            techniker = COALESCE(techniker, ?)
+      WHERE id = ?`,
+    status,
+    status,
+    jetzt,
+    benutzer.vollname,
+    stoerungId,
+  );
+
+  await protokolliere({
+    kategorie: "sicherheitsvorfall",
+    aktion: `Servicemeldung ${meldung.nummer ?? stoerungId}: Status ${status}`,
+    ergebnis: "erfolg",
+    objekt: stoerungId,
+    begruendung: `Gesetzt von ${benutzer.vollname}`,
+  });
+
+  revalidatePath(`/portal/support/${stoerungId}`);
+  revalidatePath("/portal/support");
+
+  return { ok: true, meldung: `Status auf „${status}" gesetzt.` };
+}

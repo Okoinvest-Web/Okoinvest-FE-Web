@@ -1,0 +1,945 @@
+import "server-only";
+
+import { createSign, generateKeyPairSync } from "node:crypto";
+
+import { db, imBlock, schreibe, skalar } from "./verbindung.ts";
+import { messStempel, tagesSchluessel, verschiebeTage } from "../datum.ts";
+import { startwertAus, zufallsfolge } from "../demo/generator.ts";
+import { sonnenposition } from "../pv/sonnenstand.ts";
+import {
+  legeLadelaufAn,
+  rechneLadelauf,
+  schreibeLadelaufFest,
+} from "../laden/lauf.ts";
+
+/**
+ * Ladeinfrastruktur eines Gewerbebetriebs.
+ *
+ * Die Vorgänge werden nicht gleichverteilt gestreut, sondern folgen
+ * dem Betriebsablauf: Vor Arbeitsbeginn stecken die Firmenfahrzeuge
+ * an, mittags laden die Mitarbeiter, am späten Nachmittag kommen die
+ * Lieferwagen zurück. Erst dieses Muster macht die Auswertungen
+ * aussagekräftig - eine Gleichverteilung zeigt weder Lastspitzen noch
+ * den Nutzen einer Steuerung.
+ */
+
+/** Zeitraum, über den Ladevorgänge erzeugt werden. */
+const TAGE = 120;
+
+interface LadepunktVorlage {
+  id: string;
+  anlageId: string;
+  bezeichnung: string;
+  evse: string;
+  hersteller: string;
+  modell: string;
+  leistungKw: number;
+  stromArt: "AC" | "DC";
+  steckertyp: string;
+  standort: string;
+  eichrecht: boolean;
+  status?: string;
+}
+
+const LADEPUNKTE: LadepunktVorlage[] = [
+  // --- Carport Fuhrpark Krems: der Schwerpunkt des Fuhrparks ---
+  ...Array.from({ length: 8 }, (_, i) => ({
+    id: `LP-${String(i + 1).padStart(4, "0")}`,
+    anlageId: "ANL-0005",
+    bezeichnung: `Carport ${i + 1}`,
+    evse: `AT*OKV*E0005*${i + 1}`,
+    hersteller: "ABL",
+    modell: "eMH3 Twin",
+    leistungKw: 22,
+    stromArt: "AC" as const,
+    steckertyp: "Typ 2",
+    standort: "Carport Krems, Stellplatz " + (i + 1),
+    eichrecht: true,
+  })),
+  {
+    id: "LP-0009",
+    anlageId: "ANL-0005",
+    bezeichnung: "Schnelllader Hof",
+    evse: "AT*OKV*E0005*9",
+    hersteller: "Alpitronic",
+    modell: "Hypercharger HYC50",
+    leistungKw: 50,
+    stromArt: "DC",
+    steckertyp: "CCS",
+    standort: "Krems, Hofeinfahrt",
+    eichrecht: true,
+  },
+
+  // --- Produktionshalle St. Pölten: Werkstatt und Lieferverkehr ---
+  ...Array.from({ length: 4 }, (_, i) => ({
+    id: `LP-${String(i + 10).padStart(4, "0")}`,
+    anlageId: "ANL-0001",
+    bezeichnung: `Halle Nord ${i + 1}`,
+    evse: `AT*OKV*E0001*${i + 1}`,
+    hersteller: "Keba",
+    modell: "KeContact P30 x-series",
+    leistungKw: 22,
+    stromArt: "AC" as const,
+    steckertyp: "Typ 2",
+    standort: "St. Pölten, Nordseite Halle",
+    eichrecht: true,
+  })),
+
+  // --- Bürogebäude St. Pölten: Besucher und Geschäftsführung ---
+  {
+    id: "LP-0014",
+    anlageId: "ANL-0004",
+    bezeichnung: "Büro Besucher 1",
+    evse: "AT*OKV*E0004*1",
+    hersteller: "Keba",
+    modell: "KeContact P30 c-series",
+    leistungKw: 11,
+    stromArt: "AC",
+    steckertyp: "Typ 2",
+    standort: "St. Pölten, Besucherparkplatz",
+    eichrecht: false,
+  },
+  {
+    id: "LP-0015",
+    anlageId: "ANL-0004",
+    bezeichnung: "Büro Besucher 2",
+    evse: "AT*OKV*E0004*2",
+    hersteller: "Keba",
+    modell: "KeContact P30 c-series",
+    leistungKw: 11,
+    stromArt: "AC",
+    steckertyp: "Typ 2",
+    standort: "St. Pölten, Besucherparkplatz",
+    eichrecht: false,
+    // Ein defekter Ladepunkt gehört zum Bestand jedes Betriebs.
+    status: "Gestoert",
+  },
+];
+
+interface TarifVorlage {
+  id: string;
+  bezeichnung: string;
+  beschreibung: string;
+  ctKwh: number;
+  ctKwhPv: number | null;
+  ctMinute: number;
+  blockingAbMinute: number | null;
+  ctMinuteBlocking: number;
+  blockingHoechstEur: number | null;
+  grundpreisMonatEur: number;
+}
+
+const TARIFE: TarifVorlage[] = [
+  {
+    id: "TAR-0001",
+    bezeichnung: "Mitarbeiter",
+    beschreibung:
+      "Laden privat genutzter Fahrzeuge am Betriebsgelände. Der Anteil aus der eigenen Anlage ist ermäßigt; die Standgebühr hält die Plätze frei.",
+    ctKwh: 42,
+    ctKwhPv: 24,
+    ctMinute: 0,
+    blockingAbMinute: 60,
+    ctMinuteBlocking: 10,
+    blockingHoechstEur: 12,
+    grundpreisMonatEur: 0,
+  },
+  {
+    id: "TAR-0002",
+    bezeichnung: "Firmenfahrzeug",
+    beschreibung:
+      "Interne Kostenumlage auf die Kostenstelle des Fahrzeugs. Keine Standgebühr - der Stellplatz gehört zum Fahrzeug.",
+    ctKwh: 34,
+    ctKwhPv: 18,
+    ctMinute: 0,
+    blockingAbMinute: null,
+    ctMinuteBlocking: 0,
+    blockingHoechstEur: null,
+    grundpreisMonatEur: 0,
+  },
+  {
+    id: "TAR-0003",
+    bezeichnung: "Gast",
+    beschreibung:
+      "Besucher und Fremdfahrzeuge. Höherer Arbeitspreis, längere Karenzzeit vor der Standgebühr.",
+    ctKwh: 59,
+    ctKwhPv: null,
+    ctMinute: 0,
+    blockingAbMinute: 120,
+    ctMinuteBlocking: 15,
+    blockingHoechstEur: 20,
+    grundpreisMonatEur: 0,
+  },
+  {
+    id: "TAR-0004",
+    bezeichnung: "Werkstatt und Lieferverkehr",
+    beschreibung:
+      "Lieferwagen und Werkstattfahrzeuge. Diese laden planbar über Nacht, deshalb ohne Standgebühr und zum niedrigsten Satz.",
+    ctKwh: 30,
+    ctKwhPv: 16,
+    ctMinute: 0,
+    blockingAbMinute: null,
+    ctMinuteBlocking: 0,
+    blockingHoechstEur: null,
+    grundpreisMonatEur: 0,
+  },
+];
+
+interface KarteVorlage {
+  id: string;
+  kennung: string;
+  bezeichnung: string;
+  inhaber: string | null;
+  kennzeichen: string | null;
+  fahrzeug: string | null;
+  kostenstelle: string;
+  tarif: string;
+  art: string;
+  sachbezugCtKwh: number | null;
+  /** Erwartete Vorgänge je Woche - steuert die Erzeugung. */
+  proWoche: number;
+  /** Bevorzugte Ladepunkte. */
+  punkte: string[];
+  /** Übliche Startstunde. */
+  startstunde: number;
+  /** Typische Lademenge in kWh. */
+  menge: number;
+  aktiv?: boolean;
+}
+
+const KARTEN: KarteVorlage[] = [
+  {
+    id: "KTE-0001",
+    kennung: "04A7F2B19C6180",
+    bezeichnung: "Fuhrpark 1",
+    inhaber: "Steiner Holzbau GmbH",
+    kennzeichen: "KR-412ST",
+    fahrzeug: "VW ID. Buzz Cargo",
+    kostenstelle: "Fuhrpark",
+    tarif: "TAR-0002",
+    art: "Firmenfahrzeug",
+    sachbezugCtKwh: null,
+    proWoche: 4,
+    punkte: ["LP-0001", "LP-0002", "LP-0003"],
+    startstunde: 17,
+    menge: 42,
+  },
+  {
+    id: "KTE-0002",
+    kennung: "04B3E8C24A7281",
+    bezeichnung: "Fuhrpark 2",
+    inhaber: "Steiner Holzbau GmbH",
+    kennzeichen: "KR-518ST",
+    fahrzeug: "Ford E-Transit",
+    kostenstelle: "Fuhrpark",
+    tarif: "TAR-0002",
+    art: "Firmenfahrzeug",
+    sachbezugCtKwh: null,
+    proWoche: 4,
+    punkte: ["LP-0003", "LP-0004"],
+    startstunde: 18,
+    menge: 55,
+  },
+  {
+    id: "KTE-0003",
+    kennung: "04C1D7A38B9382",
+    bezeichnung: "Montage Ost",
+    inhaber: "Steiner Holzbau GmbH",
+    kennzeichen: "KR-733ST",
+    fahrzeug: "Mercedes eSprinter",
+    kostenstelle: "Montage",
+    tarif: "TAR-0004",
+    art: "Werkstatt",
+    sachbezugCtKwh: null,
+    proWoche: 5,
+    punkte: ["LP-0010", "LP-0011"],
+    startstunde: 16,
+    menge: 62,
+  },
+  {
+    id: "KTE-0004",
+    kennung: "04D9B6E45C0483",
+    bezeichnung: "Montage West",
+    inhaber: "Steiner Holzbau GmbH",
+    kennzeichen: "KR-734ST",
+    fahrzeug: "Mercedes eSprinter",
+    kostenstelle: "Montage",
+    tarif: "TAR-0004",
+    art: "Werkstatt",
+    sachbezugCtKwh: null,
+    proWoche: 5,
+    punkte: ["LP-0011", "LP-0012"],
+    startstunde: 17,
+    menge: 58,
+  },
+  {
+    id: "KTE-0005",
+    kennung: "04E4C5F56D1584",
+    bezeichnung: "Werkstattstapler",
+    inhaber: "Steiner Holzbau GmbH",
+    kennzeichen: null,
+    fahrzeug: "Linde E20 Elektrostapler",
+    kostenstelle: "Werkstatt",
+    tarif: "TAR-0004",
+    art: "Werkstatt",
+    sachbezugCtKwh: null,
+    proWoche: 6,
+    punkte: ["LP-0013"],
+    startstunde: 19,
+    menge: 24,
+  },
+  {
+    id: "KTE-0006",
+    kennung: "04F2A4067E2685",
+    bezeichnung: "M. Hofbauer",
+    inhaber: "Michael Hofbauer",
+    kennzeichen: "P-9021AB",
+    fahrzeug: "Škoda Enyaq",
+    kostenstelle: "Technik",
+    tarif: "TAR-0001",
+    art: "Mitarbeiter",
+    sachbezugCtKwh: 22.5,
+    proWoche: 3,
+    punkte: ["LP-0005", "LP-0006"],
+    startstunde: 7,
+    menge: 34,
+  },
+  {
+    id: "KTE-0007",
+    kennung: "0403938178379A",
+    bezeichnung: "A. Berger",
+    inhaber: "Anna Berger",
+    kennzeichen: "P-4417CD",
+    fahrzeug: "Tesla Model 3",
+    kostenstelle: "Vertrieb",
+    tarif: "TAR-0001",
+    art: "Mitarbeiter",
+    sachbezugCtKwh: 22.5,
+    proWoche: 3,
+    punkte: ["LP-0006", "LP-0007"],
+    startstunde: 8,
+    menge: 30,
+  },
+  {
+    id: "KTE-0008",
+    kennung: "0414827289488B",
+    bezeichnung: "T. Reiter",
+    inhaber: "Thomas Reiter",
+    kennzeichen: "P-2288EF",
+    fahrzeug: "Hyundai Ioniq 5",
+    kostenstelle: "Vertrieb",
+    tarif: "TAR-0001",
+    art: "Mitarbeiter",
+    sachbezugCtKwh: 22.5,
+    proWoche: 2,
+    punkte: ["LP-0007", "LP-0008"],
+    startstunde: 8,
+    menge: 38,
+  },
+  {
+    id: "KTE-0009",
+    kennung: "042571639A599C",
+    bezeichnung: "Geschäftsführung",
+    inhaber: "Karin Steiner",
+    kennzeichen: "KR-1ST",
+    fahrzeug: "BMW i5 Touring",
+    kostenstelle: "Geschäftsführung",
+    tarif: "TAR-0002",
+    art: "Firmenfahrzeug",
+    sachbezugCtKwh: null,
+    proWoche: 3,
+    punkte: ["LP-0014"],
+    startstunde: 9,
+    menge: 44,
+  },
+  {
+    id: "KTE-0010",
+    kennung: "043660549B6A8D",
+    bezeichnung: "Besucherkarte 1",
+    inhaber: null,
+    kennzeichen: null,
+    fahrzeug: null,
+    kostenstelle: "Gäste",
+    tarif: "TAR-0003",
+    art: "Gast",
+    sachbezugCtKwh: null,
+    proWoche: 2,
+    punkte: ["LP-0014"],
+    startstunde: 10,
+    menge: 18,
+  },
+  {
+    id: "KTE-0011",
+    kennung: "04475F45AC7B8E",
+    bezeichnung: "Fremdanbieter Ladenetz",
+    inhaber: "Roaming-Partner",
+    kennzeichen: null,
+    fahrzeug: null,
+    kostenstelle: "Gäste",
+    tarif: "TAR-0003",
+    art: "Fremdanbieter",
+    sachbezugCtKwh: null,
+    proWoche: 1,
+    punkte: ["LP-0009"],
+    startstunde: 13,
+    menge: 32,
+  },
+  {
+    id: "KTE-0012",
+    kennung: "0458443ABD8C8F",
+    bezeichnung: "S. Pucher (ausgeschieden)",
+    inhaber: "Stefan Pucher",
+    kennzeichen: "P-7712GH",
+    fahrzeug: "Renault Zoe",
+    kostenstelle: "Montage",
+    tarif: "TAR-0001",
+    art: "Mitarbeiter",
+    sachbezugCtKwh: 22.5,
+    proWoche: 0,
+    punkte: ["LP-0005"],
+    startstunde: 8,
+    menge: 22,
+    // Gesperrte Karten müssen im Bestand bleiben: An ihnen hängen
+    // Vorgänge vergangener Abrechnungszeiträume.
+    aktiv: false,
+  },
+];
+
+/** Standort der Anlagen für die Sonnenstandsrechnung. */
+const STANDORT: Record<string, { breite: number; laenge: number }> = {
+  "ANL-0001": { breite: 48.204, laenge: 15.624 },
+  "ANL-0004": { breite: 48.204, laenge: 15.624 },
+  "ANL-0005": { breite: 48.41, laenge: 15.61 },
+};
+
+export interface LadeErgebnis {
+  ladepunkte: number;
+  tarife: number;
+  karten: number;
+  vorgaenge: number;
+  dauerMs: number;
+}
+
+export function befuelleLaden(erzwingen = false): LadeErgebnis {
+  const start = Date.now();
+
+  const vorhanden = skalar<number>("SELECT COUNT(*) FROM ladepunkt") ?? 0;
+  if (vorhanden > 0 && !erzwingen) {
+    return { ladepunkte: 0, tarife: 0, karten: 0, vorgaenge: 0, dauerMs: 0 };
+  }
+
+  let vorgaenge = 0;
+
+  imBlock(() => {
+    if (erzwingen) {
+      for (const tabelle of [
+        "ladebeleg",
+        "ladeabrechnung",
+        "ladevorgang",
+        "ladekarte",
+        "ladetarif",
+        "ladepunkt",
+      ]) {
+        schreibe(`DELETE FROM ${tabelle}`);
+      }
+    }
+
+    for (const t of TARIFE) {
+      schreibe(
+        `INSERT INTO ladetarif
+           (id, bezeichnung, beschreibung, ct_kwh, ct_kwh_pv, ct_minute,
+            blocking_ab_minute, ct_minute_blocking, blocking_hoechst_eur,
+            grundpreis_monat_eur, ust_satz, gueltig_ab, aktiv)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 20, '2024-01-01', 1)`,
+        t.id,
+        t.bezeichnung,
+        t.beschreibung,
+        t.ctKwh,
+        t.ctKwhPv,
+        t.ctMinute,
+        t.blockingAbMinute,
+        t.ctMinuteBlocking,
+        t.blockingHoechstEur,
+        t.grundpreisMonatEur,
+      );
+    }
+
+    for (const p of LADEPUNKTE) {
+      schreibe(
+        `INSERT INTO ladepunkt
+           (id, anlage_id, bezeichnung, evse_id, ocpp_id, hersteller, modell,
+            seriennummer, firmware, leistung_kw, strom_art, steckertyp,
+            standort, eichrecht, max_anteil, status, inbetriebnahme)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                 (SELECT inbetriebnahme FROM anlage WHERE id = ?))`,
+        p.id,
+        p.anlageId,
+        p.bezeichnung,
+        p.evse,
+        p.id.toLowerCase().replace("-", ""),
+        p.hersteller,
+        p.modell,
+        `SN-${p.id.slice(3)}-${startwertAus(p.id) % 100000}`,
+        "1.14.2",
+        p.leistungKw,
+        p.stromArt,
+        p.steckertyp,
+        p.standort,
+        p.eichrecht ? 1 : 0,
+        p.stromArt === "DC" ? 1 : 0.35,
+        p.status ?? "Verfuegbar",
+        p.anlageId,
+      );
+    }
+
+    for (const k of KARTEN) {
+      schreibe(
+        `INSERT INTO ladekarte
+           (id, kennung, bezeichnung, inhaber, kennzeichen, fahrzeug,
+            kostenstelle, tarif_id, art, sachbezug_ct_kwh, aktiv)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        k.id,
+        k.kennung,
+        k.bezeichnung,
+        k.inhaber,
+        k.kennzeichen,
+        k.fahrzeug,
+        k.kostenstelle,
+        k.tarif,
+        k.art,
+        k.sachbezugCtKwh,
+        k.aktiv === false ? 0 : 1,
+      );
+    }
+
+    vorgaenge = erzeugeVorgaenge();
+  });
+
+  return {
+    ladepunkte: LADEPUNKTE.length,
+    tarife: TARIFE.length,
+    karten: KARTEN.length,
+    vorgaenge,
+    dauerMs: Date.now() - start,
+  };
+}
+
+/**
+ * Erzeugt die Ladevorgänge über den Betrachtungszeitraum.
+ *
+ * Der PV-Anteil wird aus dem Sonnenstand am Standort abgeleitet: Wer
+ * nachts lädt, lädt aus dem Netz - daran ändert auch die größte Anlage
+ * nichts. Genau diese Unterscheidung trägt später die ermäßigten
+ * Arbeitspreise und macht sichtbar, was eine Ladesteuerung brächte.
+ */
+/**
+ * Ein Schluesselpaar je eichrechtskonformem Ladepunkt.
+ *
+ * Im Betrieb erzeugt der Zaehler sein Paar selbst und gibt nur den
+ * oeffentlichen Teil heraus - der private verlaesst ihn nie. Genau
+ * darauf beruht der Nachweis: Ein Portal, das signieren koennte,
+ * koennte auch faelschen.
+ *
+ * Fuer den Demonstrationsbestand muss jemand die Rolle des Zaehlers
+ * uebernehmen. Das geschieht hier, einmal beim Befuellen; der private
+ * Teil wird nirgends abgelegt.
+ */
+/**
+ * Tage, an denen ein Fehlerbild eingebaut wird.
+ *
+ * Beide liegen in Monaten, die festgeschrieben und damit abgerechnet
+ * sind - dort, wo die Pruefung im Betrieb wirklich zaehlt.
+ */
+const UNSYNCHRONER_TAG = "2026-06-17";
+const VERFAELSCHTER_TAG = "2026-08-12";
+
+function erzeugeZaehlerschluessel(): Map<
+  string,
+  { privat: string; oeffentlich: string }
+> {
+  const paare = new Map<string, { privat: string; oeffentlich: string }>();
+
+  for (const p of LADEPUNKTE) {
+    if (!p.eichrecht) continue;
+
+    const { privateKey, publicKey } = generateKeyPairSync("ec", {
+      namedCurve: "prime256v1",
+      publicKeyEncoding: { type: "spki", format: "pem" },
+      privateKeyEncoding: { type: "pkcs8", format: "pem" },
+    });
+
+    paare.set(p.id, { privat: privateKey, oeffentlich: publicKey });
+  }
+
+  return paare;
+}
+
+/**
+ * Zeitstempel in der Schreibweise des Open Charge Metering Format.
+ *
+ * Mit Komma als Dezimaltrenner der Sekunden, mit Zonenversatz und mit
+ * dem Synchronitaetskennzeichen dahinter. Das "S" steht fuer eine
+ * gegen eine Referenz gestellte Uhr - ohne das ist der Datensatz
+ * eichrechtlich wertlos, und deshalb steht es nicht nebenbei da.
+ */
+function ocmfZeit(zeitpunkt: Date, kennzeichen = "S"): string {
+  const z = (n: number, stellen = 2) => String(n).padStart(stellen, "0");
+  const versatz = -zeitpunkt.getTimezoneOffset();
+  const vorzeichen = versatz >= 0 ? "+" : "-";
+  const stunden = z(Math.floor(Math.abs(versatz) / 60));
+  const minuten = z(Math.abs(versatz) % 60);
+
+  return (
+    `${zeitpunkt.getFullYear()}-${z(zeitpunkt.getMonth() + 1)}-${z(zeitpunkt.getDate())}` +
+    `T${z(zeitpunkt.getHours())}:${z(zeitpunkt.getMinutes())}:${z(zeitpunkt.getSeconds())}` +
+    `,${z(zeitpunkt.getMilliseconds(), 3)}${vorzeichen}${stunden}${minuten} ${kennzeichen}`
+  );
+}
+
+/**
+ * Baut den signierten Messwert eines Ladevorgangs.
+ *
+ * Signiert wird der Nutzlastteil als Bytefolge - genau der, der
+ * uebertragen wird. Wer ihn vorher noch einmal durch JSON schickt,
+ * signiert etwas anderes, als spaeter geprueft wird.
+ */
+function baueOcmf(
+  angaben: {
+    ladepunkt: { id: string; evse: string; hersteller: string; modell: string };
+    transaktion: string;
+    karte: string | null;
+    beginn: Date;
+    ende: Date;
+    standStart: number;
+    standEnde: number;
+    zeitKennzeichen?: string;
+  },
+  privaterSchluessel: string,
+): string {
+  const nutzlast = {
+    FV: "1.0",
+    GI: `${angaben.ladepunkt.hersteller} ${angaben.ladepunkt.modell}`,
+    GS: angaben.ladepunkt.evse,
+    GV: "1.14.2",
+    PG: angaben.transaktion,
+    MV: "EMH metering",
+    MM: "eHZ-IW8E2A5L0EK2P",
+    MS: `SN-${angaben.ladepunkt.id.slice(3)}`,
+    IS: angaben.karte !== null,
+    IT: angaben.karte ? "ISO14443" : "NONE",
+    ID: angaben.karte ?? "",
+    RD: [
+      {
+        TM: ocmfZeit(angaben.beginn, angaben.zeitKennzeichen),
+        TX: "B",
+        RV: angaben.standStart,
+        RI: "1-b:1.8.0",
+        RU: "kWh",
+        RT: "B",
+        EF: "",
+        ST: "G",
+      },
+      {
+        TM: ocmfZeit(angaben.ende, angaben.zeitKennzeichen),
+        TX: "E",
+        RV: angaben.standEnde,
+        RI: "1-b:1.8.0",
+        RU: "kWh",
+        RT: "E",
+        EF: "",
+        ST: "G",
+      },
+    ],
+  };
+
+  const text = JSON.stringify(nutzlast);
+
+  const signierer = createSign("SHA256");
+  signierer.update(text, "utf8");
+  signierer.end();
+
+  const signatur = {
+    SA: "ECDSA-secp256r1-SHA256",
+    SE: "hex",
+    SM: "application/x-der",
+    SD: signierer.sign(privaterSchluessel).toString("hex"),
+  };
+
+  return `OCMF|${text}|${JSON.stringify(signatur)}`;
+}
+
+function erzeugeVorgaenge(): number {
+  const heute = new Date();
+  heute.setHours(0, 0, 0, 0);
+
+  const punkte = new Map(LADEPUNKTE.map((p) => [p.id, p]));
+
+  const einfuegen = db().prepare(
+    `INSERT INTO ladevorgang
+       (id, ladepunkt_id, karte_id, transaktion, beginn, ende, ladeende,
+        zaehler_start, zaehler_ende, energie_kwh, pv_kwh,
+        hoechstleistung_kw, status, ocmf)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  );
+
+  const schluessel = erzeugeZaehlerschluessel();
+
+  const bereitsUnsynchron = new Set<string>();
+  const bereitsVerfaelscht = new Set<string>();
+
+  // Der oeffentliche Teil kommt an den Ladepunkt; nur er wird abgelegt.
+  for (const [punktId, paar] of schluessel) {
+    schreibe(
+      "UPDATE ladepunkt SET zaehler_schluessel = ? WHERE id = ?",
+      paar.oeffentlich,
+      punktId,
+    );
+  }
+
+  // Zählerstände laufen je Ladepunkt fort - eine Rechnung gegenüber
+  // Dritten muss sich auf Anfangs- und Endstand berufen können.
+  const zaehlerstand = new Map<string, number>(
+    LADEPUNKTE.map((p) => [p.id, 1000 + (startwertAus(p.id) % 9000)]),
+  );
+
+  let nummer = 0;
+
+  for (let tag = TAGE - 1; tag >= 0; tag--) {
+    const datum = verschiebeTage(heute, -tag);
+    const wochentag = datum.getDay();
+
+    for (const karte of KARTEN) {
+      if (karte.proWoche <= 0) continue;
+
+      const zufall = zufallsfolge(
+        startwertAus(`${karte.id}:${datum.toDateString()}`),
+      );
+
+      // Wahrscheinlichkeit, dass diese Karte heute lädt. Am Wochenende
+      // fahren Montagefahrzeuge nicht, Mitarbeiter kommen nicht ins
+      // Büro - der Betrieb steht.
+      const werktags = wochentag >= 1 && wochentag <= 5;
+      const chance = werktags
+        ? karte.proWoche / 5
+        : karte.art === "Gast"
+          ? 0.05
+          : 0.02;
+
+      if (zufall() > chance) continue;
+
+      const punkt = punkte.get(
+        karte.punkte[Math.floor(zufall() * karte.punkte.length)],
+      );
+      if (!punkt || punkt.status === "Gestoert") continue;
+
+      // Startzeit um die übliche Stunde herum, mit anderthalb Stunden
+      // Streuung nach beiden Seiten. Ohne diese Streuung lägen alle
+      // Vorgänge einer Karte auf derselben vollen Stunde, und jede
+      // Lastganggrafik zeigte Blöcke statt eines Tagesverlaufs.
+      const beginn = new Date(datum);
+      const versatz = Math.round((zufall() - 0.5) * 180);
+      beginn.setHours(karte.startstunde, versatz, 0, 0);
+
+      const energie = Number(
+        (karte.menge * (0.65 + zufall() * 0.7)).toFixed(2),
+      );
+
+      // Ladeleistung: der Ladepunkt begrenzt, das Fahrzeug meist auch.
+      const fahrzeugGrenze = punkt.stromArt === "DC" ? 50 : 11;
+      const leistung = Math.min(punkt.leistungKw, fahrzeugGrenze);
+      const ladeMinuten = Math.max(12, (energie / leistung) * 60);
+
+      const ladeende = new Date(beginn.getTime() + ladeMinuten * 60000);
+
+      // Stehzeit nach dem Laden. Wer morgens ansteckt, bleibt bis zum
+      // Feierabend; wer abends ansteckt, bis zum nächsten Morgen.
+      const stehMinuten =
+        karte.startstunde <= 9
+          ? 240 + zufall() * 300
+          : karte.startstunde >= 16
+            ? 480 + zufall() * 240
+            : 20 + zufall() * 90;
+
+      const ende = new Date(ladeende.getTime() + stehMinuten * 60000);
+
+      // PV-Anteil über die Ladedauer aus dem Sonnenstand mitteln.
+      const pvAnteil = pvAnteilUeber(
+        punkt.anlageId,
+        beginn,
+        ladeende,
+        zufall,
+      );
+
+      const start = zaehlerstand.get(punkt.id) ?? 0;
+      const neu = Number((start + energie).toFixed(2));
+      zaehlerstand.set(punkt.id, neu);
+
+      nummer += 1;
+      const transaktion = `TX-${String(100000 + nummer)}`;
+      const paar = schluessel.get(punkt.id);
+
+      /*
+       * Zwei absichtliche Fehlerbilder im Bestand.
+       *
+       * Ein Bestand, in dem jeder Datensatz verwertbar ist, zeigt
+       * nicht, ob die Pruefung taugt. Beide Faelle sehen aus wie
+       * jeder andere Vorgang und sind genau das, was niemand von
+       * Hand findet:
+       *
+       * - eine unsynchronisierte Uhr: die Menge stimmt, der
+       *   Datensatz ist eichrechtlich trotzdem wertlos;
+       * - ein nachtraeglich veraenderter Zaehlerstand: die Signatur
+       *   passt dann nicht mehr, und nur deshalb faellt es auf.
+       *
+       * Beide liegen bewusst auf Tagen, die in einer festgeschriebenen
+       * Abrechnung landen - sonst waere der wichtigste Zustand der
+       * Pruefung im Demonstrationsbestand nie zu sehen.
+       */
+      const tagesname = tagesSchluessel(datum);
+      const unsynchron =
+        tagesname === UNSYNCHRONER_TAG && !bereitsUnsynchron.has(tagesname);
+      const verfaelscht =
+        tagesname === VERFAELSCHTER_TAG && !bereitsVerfaelscht.has(tagesname);
+
+      if (unsynchron) bereitsUnsynchron.add(tagesname);
+      if (verfaelscht) bereitsVerfaelscht.add(tagesname);
+
+      const ocmf = paar
+        ? baueOcmf(
+            {
+              ladepunkt: {
+                id: punkt.id,
+                evse: punkt.evse,
+                hersteller: punkt.hersteller,
+                modell: punkt.modell,
+              },
+              transaktion,
+              karte: karte.kennung,
+              beginn,
+              ende: ladeende,
+              standStart: start,
+              standEnde: neu,
+              zeitKennzeichen: unsynchron ? "I" : "S",
+            },
+            paar.privat,
+          )
+        : null;
+
+      /*
+       * Der veraenderte Datensatz.
+       *
+       * Jemand korrigiert den Endstand von Hand - im Backend, nach der
+       * Signatur. Die Zahl sieht plausibel aus, die Signatur steht
+       * unveraendert daneben und passt nicht mehr dazu. Ohne Pruefung
+       * faellt das nie auf.
+       */
+      const abgelegtesOcmf =
+        verfaelscht && ocmf
+          ? ocmf.replace(`"RV":${neu}`, `"RV":${Number((neu + 4.5).toFixed(2))}`)
+          : ocmf;
+
+      einfuegen.run(
+        `LV-${String(nummer).padStart(5, "0")}`,
+        punkt.id,
+        karte.id,
+        transaktion,
+        messStempel(beginn),
+        messStempel(ende),
+        messStempel(ladeende),
+        start,
+        neu,
+        energie,
+        Number((energie * pvAnteil).toFixed(2)),
+        Number((leistung * (0.9 + zufall() * 0.1)).toFixed(1)),
+        "Beendet",
+        abgelegtesOcmf,
+      );
+    }
+  }
+
+  return nummer;
+}
+
+/**
+ * Mittlerer Anteil der eigenen Erzeugung über einen Ladezeitraum.
+ *
+ * Abgetastet wird in Zehn-Minuten-Schritten über die Sonnenhöhe. Das
+ * ist bewusst einfach gehalten: Für eine belastbare Zuordnung bräuchte
+ * es die tatsächliche Erzeugung und den übrigen Verbrauch der Anlage
+ * zur selben Viertelstunde. Was hier entsteht, ist ein plausibler
+ * Demonstrationswert, keine Abrechnungsgrundlage.
+ */
+function pvAnteilUeber(
+  anlageId: string,
+  von: Date,
+  bis: Date,
+  zufall: () => number,
+): number {
+  const ort = STANDORT[anlageId] ?? { breite: 48.2, laenge: 15.6 };
+
+  // Bewölkung des Tages - über den ganzen Vorgang gleich.
+  const wetter = 0.45 + zufall() * 0.5;
+
+  let summe = 0;
+  let schritte = 0;
+
+  for (
+    let t = von.getTime();
+    t <= bis.getTime();
+    t += 10 * 60 * 1000
+  ) {
+    const hoehe = sonnenposition(new Date(t), ort.breite, ort.laenge).hoehe;
+    // Unter fünf Grad trägt die Anlage praktisch nichts bei.
+    summe += hoehe > 5 ? Math.min(1, Math.sin((hoehe * Math.PI) / 180) * 1.6) : 0;
+    schritte += 1;
+  }
+
+  if (schritte === 0) return 0;
+  return Math.min(0.95, (summe / schritte) * wetter);
+}
+
+/**
+ * Legt die Abrechnungsläufe der zurückliegenden Monate an.
+ *
+ * Bewusst außerhalb von `befuelleLaden`: Jeder Lauf führt seine eigene
+ * Schreibklammer, und eine Klammer innerhalb einer anderen kennt die
+ * Datenbankschicht nicht.
+ *
+ * Die abgeschlossenen Monate werden festgeschrieben, der laufende
+ * bleibt Entwurf - so zeigt die Oberfläche beide Zustände, und der
+ * Unterschied zwischen "gerechnet" und "gebucht" wird sichtbar.
+ */
+export function befuelleLadeabrechnungen(): {
+  laeufe: number;
+  belege: number;
+  brutto: number;
+} {
+  const heute = new Date();
+  let laeufe = 0;
+  let belege = 0;
+  let brutto = 0;
+
+  // Die drei abgeschlossenen Monate vor dem laufenden, dann der
+  // laufende Monat als Entwurf.
+  for (let zurueck = 3; zurueck >= 0; zurueck--) {
+    const stichtag = new Date(
+      heute.getFullYear(),
+      heute.getMonth() - zurueck,
+      1,
+    );
+    const jahr = stichtag.getFullYear();
+    const monat = stichtag.getMonth() + 1;
+
+    const id = legeLadelaufAn(jahr, monat);
+    const ergebnis = rechneLadelauf(id, "Automatischer Lauf");
+
+    if (ergebnis.belege === 0) continue;
+
+    laeufe += 1;
+    belege += ergebnis.belege;
+    brutto += ergebnis.brutto;
+
+    if (zurueck > 0) schreibeLadelaufFest(id);
+  }
+
+  return { laeufe, belege, brutto: Number(brutto.toFixed(2)) };
+}

@@ -1,0 +1,227 @@
+"use client";
+
+import { useState } from "react";
+
+import type { StrangBefund } from "@/lib/pv/kennzahlen";
+
+/**
+ * Strangkarte.
+ *
+ * Jede Kachel ist ein Strang, eingefärbt nach seiner Abweichung vom
+ * Median der Vergleichsgruppe. Ein schwacher Strang fällt in dieser
+ * Darstellung sofort auf, während er in einer Tabelle mit sechzig
+ * Zeilen untergeht.
+ *
+ * Die Farbskala läuft von neutral nach rot und ist bewusst NICHT
+ * zweiseitig: Ein Strang, der mehr liefert als der Median, ist kein
+ * Befund. Ihn grün einzufärben würde suggerieren, er sei besonders gut
+ * - tatsächlich ist er nur der Bezugspunkt.
+ *
+ * Die Abweichung steht zusätzlich als Zahl in der Kachel. Die Farbe
+ * allein darf die Aussage nie tragen.
+ */
+
+export interface StrangGruppeAnzeige {
+  wechselrichterId: string;
+  wechselrichter: string;
+  befunde: StrangBefund[];
+}
+
+/** Färbung nach Abweichung: je stärker negativ, desto kräftiger. */
+/**
+ * Zahl mit Vorzeichen, gerundet.
+ *
+ * Das Vorzeichen richtet sich nach dem gerundeten Wert, nicht nach dem
+ * rohen: Sonst erscheinen Abweichungen knapp neben der Null als
+ * "+0 %" oder "−0 %" - beides liest sich wie ein Messfehler, obwohl
+ * der Strang schlicht unauffällig ist.
+ */
+function mitVorzeichen(wert: number, stellen: number): string {
+  const faktor = 10 ** stellen;
+  const gerundet = Math.round(wert * faktor) / faktor;
+  if (gerundet === 0) return (0).toFixed(stellen);
+  const betrag = Math.abs(gerundet).toFixed(stellen);
+  return gerundet > 0 ? `+${betrag}` : `−${betrag}`;
+}
+
+function einfaerbung(abweichung: number): { flaeche: string; text: string } {
+  if (abweichung >= -3) {
+    return { flaeche: "var(--f-belegt)", text: "var(--t-leise)" };
+  }
+
+  // Von leicht auffällig bis deutlich: die Sättigung wächst mit der
+  // Abweichung, gedeckelt bei 30 Prozent.
+  const staerke = Math.min(1, (Math.abs(abweichung) - 3) / 27);
+
+  return {
+    flaeche: `color-mix(in oklch, oklch(0.58 0.2 25), transparent ${Math.round(
+      92 - staerke * 62,
+    )}%)`,
+    text: staerke > 0.45 ? "oklch(0.35 0.16 25)" : "var(--t-normal)",
+  };
+}
+
+export function Strangkarte({
+  gruppen,
+  schwelle = 8,
+}: {
+  gruppen: StrangGruppeAnzeige[];
+  schwelle?: number;
+}) {
+  const [gewaehlt, setGewaehlt] = useState<string | null>(null);
+
+  const alleBefunde = gruppen.flatMap((g) => g.befunde);
+  const auffaellige = alleBefunde.filter((b) => b.auffaellig);
+
+  const aktiv = gewaehlt
+    ? alleBefunde.find((b) => b.strangId === gewaehlt)
+    : null;
+  const aktiveGruppe = gewaehlt
+    ? gruppen.find((g) => g.befunde.some((b) => b.strangId === gewaehlt))
+    : null;
+
+  return (
+    <div>
+      <div className="space-y-4">
+        {gruppen.map((gruppe) => (
+          <div key={gruppe.wechselrichterId}>
+            <div className="mb-1.5 flex items-baseline justify-between gap-3">
+              <p className="t-mikro">{gruppe.wechselrichter}</p>
+              {gruppe.befunde.some((b) => b.auffaellig) && (
+                <p className="t-mikro" style={{ color: "oklch(0.52 0.19 25)" }}>
+                  {gruppe.befunde.filter((b) => b.auffaellig).length} auffällig
+                </p>
+              )}
+            </div>
+
+            <div className="flex flex-wrap gap-1.5">
+              {gruppe.befunde.map((befund) => {
+                const farben = einfaerbung(befund.abweichung);
+                const ausgewaehlt = gewaehlt === befund.strangId;
+
+                return (
+                  <button
+                    key={befund.strangId}
+                    type="button"
+                    onClick={() =>
+                      setGewaehlt(ausgewaehlt ? null : befund.strangId)
+                    }
+                    className="flex h-14 w-[4.5rem] shrink-0 flex-col items-center justify-center rounded-sm border transition-all"
+                    style={{
+                      background: farben.flaeche,
+                      borderColor: ausgewaehlt
+                        ? "var(--akzent)"
+                        : befund.auffaellig
+                          ? "color-mix(in oklch, oklch(0.58 0.2 25), transparent 60%)"
+                          : "var(--linie)",
+                      borderWidth: ausgewaehlt ? 2 : 1,
+                      color: farben.text,
+                    }}
+                    aria-label={`${befund.bezeichnung}: ${befund.abweichung.toFixed(1)} Prozent Abweichung`}
+                  >
+                    <span className="text-[0.625rem] leading-tight opacity-70">
+                      {befund.bezeichnung.replace("Strang ", "S")}
+                    </span>
+                    <span className="zahl text-[0.8125rem] font-semibold">
+                      {mitVorzeichen(befund.abweichung, 0)}
+                      <span className="text-[0.625rem] font-normal"> %</span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Erläuterung der Skala */}
+      <div
+        className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 border-t pt-3"
+        style={{ borderColor: "var(--linie-zart)" }}
+      >
+        <span className="t-mikro">Abweichung vom Median:</span>
+        {[
+          { text: "unauffällig", wert: 0 },
+          { text: `unter −${schwelle} %`, wert: -12 },
+          { text: "deutlich", wert: -25 },
+        ].map((stufe) => (
+          <span key={stufe.text} className="t-mikro flex items-center gap-1.5">
+            <span
+              aria-hidden
+              className="h-3 w-5 rounded-[3px] border"
+              style={{
+                background: einfaerbung(stufe.wert).flaeche,
+                borderColor: "var(--linie)",
+              }}
+            />
+            {stufe.text}
+          </span>
+        ))}
+      </div>
+
+      {aktiv && (
+        <div
+          className="a-einblenden mt-3 rounded-sm border p-3.5"
+          style={{
+            borderColor: "var(--linie)",
+            background: "var(--f-vertieft)",
+          }}
+        >
+          <p className="t-abschnitt">
+            {aktiveGruppe?.wechselrichter} · {aktiv.bezeichnung}
+          </p>
+          <dl className="mt-2 grid gap-x-6 gap-y-1 sm:grid-cols-3">
+            <Wert label="Leistung" wert={`${aktiv.leistungKwp.toFixed(1)} kWp`} />
+            <Wert
+              label="Mittlerer Strom"
+              wert={`${aktiv.mittelStrom.toFixed(2)} A`}
+            />
+            <Wert
+              label="Abweichung"
+              wert={`${mitVorzeichen(aktiv.abweichung, 1)} %`}
+              hervor={aktiv.auffaellig}
+            />
+          </dl>
+
+          {aktiv.auffaellig && (
+            <p className="t-mikro mt-2.5 leading-relaxed">
+              Dieser Strang liefert deutlich weniger als die übrigen am selben
+              Wechselrichter. Häufige Ursachen sind Verschattung durch Bewuchs,
+              Verschmutzung, eine schadhafte Steckverbindung oder ein
+              defektes Modul. Nimmt die Abweichung über Wochen zu, spricht das
+              für Bewuchs; ein plötzlicher Sprung eher für einen Defekt.
+            </p>
+          )}
+        </div>
+      )}
+
+      {auffaellige.length === 0 && (
+        <p className="t-mikro mt-3">
+          Alle Stränge liegen innerhalb der Toleranz von {schwelle} Prozent.
+        </p>
+      )}
+    </div>
+  );
+}
+
+function Wert({
+  label,
+  wert,
+  hervor = false,
+}: {
+  label: string;
+  wert: string;
+  hervor?: boolean;
+}) {
+  return (
+    <div>
+      <dt className="t-mikro">{label}</dt>
+      <dd
+        className="t-zahl-klein"
+        style={hervor ? { color: "oklch(0.52 0.19 25)" } : undefined}
+      >
+        {wert}
+      </dd>
+    </div>
+  );
+}

@@ -1,0 +1,69 @@
+import pathlib
+
+ROOT = pathlib.Path(r"C:\Users\SALEADMIN\Documents\Servicetechniker APP")
+
+
+def patch(pfad, paare):
+    p = ROOT / pfad
+    s = p.read_text(encoding="utf-8")
+    for alt, neu in paare:
+        if alt not in s:
+            raise SystemExit(f"NICHT GEFUNDEN in {pfad}:\n---\n{alt[:200]}\n---")
+        s = s.replace(alt, neu, 1)
+    p.write_text(s, encoding="utf-8")
+    print("ok", pfad)
+
+
+patch(
+    "docs/anforderungsabdeckung.md",
+    [
+        (
+            "| FA-084 | QR-Code je Anlage | SOLL | ✔ | Deep-Link `qr_ziel`, lokal erzeugtes SVG in `QrCode.vue` (offlinefähig) |",
+            "| FA-084 | QR-Code je Anlage | SOLL | ✔ | Erzeugen in `QrCode.vue` (lokal, offlinefähig) **und** Scannen in `CodeScanner.vue` — öffnet die Anlage direkt |",
+        ),
+        (
+            "| FA-060 | Mangel erfassen mit allen Feldern | MUSS | ✔ | `MangelFormularView.vue` |",
+            "| FA-060 | Mangel erfassen mit allen Feldern | MUSS | ✔ | `MangelFormularView.vue`; Schnellerfassung startet direkt mit der Kamera (Kapitel 6.1) |",
+        ),
+        (
+            "| FA-063 | Statusworkflow Offen → … → Verifiziert | MUSS | ✔ | `Mangel.status_pruefen` |",
+            "| FA-063 | Statusworkflow Offen → … → Verifiziert | MUSS | ✔ | `Mangel.status_pruefen`; Sammelbearbeitung für Bauleiter über `api/mangel.sammelaktion` |",
+        ),
+        (
+            "| FA-082 | Suche und Filterung | MUSS | ✔ | `anlagenSuche` im Stammdaten-Store |",
+            "| FA-082 | Suche und Filterung | MUSS | ✔ | `anlagenSuche` im Stammdaten-Store; Filter stehen in der URL und sind teilbar; Sortierung nach Entfernung zum Standort |",
+        ),
+    ],
+)
+
+patch(
+    "README.md",
+    [
+        (
+            """* **Pfeiltasten** blättern am Desktop, für Bauleiter beim Durchsehen
+* Fotos lassen sich antippen und im Vollbild prüfen""",
+            """* **Pfeiltasten** blättern am Desktop, für Bauleiter beim Durchsehen
+* Fotos lassen sich antippen und im Vollbild prüfen
+* **QR-Aufkleber scannen** springt direkt zur Anlage — beim Protokollstart und
+  in der Anlagenliste
+* **„In der Nähe"** sortiert die Anlagen nach Luftlinie zum aktuellen Standort
+* **Mangel mit Foto** öffnet aus der Schnellaktion heraus sofort die Kamera""",
+        ),
+        (
+            """| Techniker | Protokolle ausführen, Mängel erfassen, Tagesberichte erstellen |
+| Bauleiter | zusätzlich: Protokolle verifizieren, Berichte genehmigen, Mängel zuweisen |""",
+            """| Techniker | Protokolle ausführen, Mängel erfassen, Tagesberichte erstellen |
+| Bauleiter | zusätzlich: Protokolle verifizieren, Berichte genehmigen, Mängel einzeln und im Sammelvorgang zuweisen |""",
+        ),
+        (
+            """```bash
+python -m pytest tests/          # 33 Tests
+cd frontend && npm test          # 31 Tests — Plausibilität und Sichtbarkeit
+```""",
+            """```bash
+python -m pytest tests/          # 33 Tests
+cd frontend && npm test          # 37 Tests — Plausibilität, Sichtbarkeit, Codeauswertung
+```""",
+        ),
+    ],
+)

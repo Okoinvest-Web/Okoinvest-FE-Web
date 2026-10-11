@@ -1,0 +1,16 @@
+import "server-only";
+import type { DataSource } from "./source";
+import { mockSource } from "./mock";
+import { createErpNextSource } from "./erpnext";
+
+let cached: DataSource | undefined;
+
+// ERPNEXT_URL gesetzt → echte API, sonst Mock-Daten.
+export function db(): DataSource {
+  if (cached) return cached;
+  const url = process.env.ERPNEXT_URL;
+  const key = process.env.ERPNEXT_API_KEY;
+  const secret = process.env.ERPNEXT_API_SECRET;
+  cached = url && key && secret ? createErpNextSource({ url, key, secret }) : mockSource;
+  return cached;
+}

@@ -1,0 +1,256 @@
+/**
+ * Deutsche Beschriftungen fuer die englischen DocType-, Feld- und Werte-Namen
+ * (CLAUDE.md Abschnitt 3: "intern englisch, Labels und UI deutsch").
+ *
+ * Provisorium: Sobald die Frappe-App steht, kommen diese Texte aus den
+ * Uebersetzungsdateien der App (`netops/translations/de.csv`) und diese Datei
+ * entfaellt. Bis dahin ist sie die einzige Stelle mit Anzeigetexten fuer
+ * Datenfelder - im Template steht nie ein fest verdrahtetes Feldlabel.
+ */
+
+const DOCTYPES = {
+  Tenant: 'Mandant',
+  Site: 'Standort',
+  Manufacturer: 'Hersteller',
+  'Device Type': 'Gerätetyp',
+  'Device Role': 'Geräterolle',
+  Rack: 'Rack',
+  'Network Device': 'Gerät',
+  'Device Interface': 'Schnittstelle',
+  'Wall Outlet': 'Dose',
+  Cable: 'Kabel',
+  'Security Zone': 'Schutzzone',
+  VRF: 'VRF',
+  VLAN: 'VLAN',
+  'IP Prefix': 'Präfix',
+  'IP Address': 'IP-Adresse',
+  'Firewall Instance': 'Firewall',
+  'Firewall Rule': 'Regel',
+  Connector: 'Konnektor',
+  'Connector Run': 'Konnektorlauf',
+  'Drift Finding': 'Abweichung',
+  Alert: 'Alarm',
+  'Backup Object': 'Sicherung',
+  'Backup Datastore': 'Datastore',
+  Vulnerability: 'Schwachstelle',
+  Incident: 'Vorfall',
+  'NetOps Document': 'Dokument',
+  'Object Relation': 'Beziehung',
+  'Checklist Template': 'Checklisten-Vorlage',
+  'Checklist Run': 'Checkliste',
+  Contract: 'Vertrag',
+  License: 'Lizenz',
+  'Access Reference': 'Zugangsverweis',
+  Screen: 'Screen',
+  'Screen Pairing Request': 'Screen-Freigabe',
+  'Audit Entry': 'Audit-Eintrag',
+  Cluster: 'Cluster',
+  'Virtual Machine': 'VM',
+  'Storage Pool': 'Speicherpool',
+  'Storage Dataset': 'Dataset',
+  'Business Service': 'Geschäftsdienst',
+  'Provider Link': 'Providerleitung',
+  'Mail Gateway': 'Mail-Gateway',
+  'Mail Incident': 'Mail-Vorfall',
+  'Mail Domain': 'Mail-Domain',
+  'Mail Flow Stat': 'Mailvolumen',
+}
+
+const FELDER = {
+  hostname: 'Hostname',
+  device_type: 'Gerätetyp',
+  device_role: 'Rolle',
+  site: 'Standort',
+  site_name: 'Standort',
+  rack: 'Rack',
+  rack_name: 'Rack',
+  position_u: 'Position (HE)',
+  rack_face: 'Seite',
+  serial: 'Seriennummer',
+  asset_tag: 'Asset-Nr.',
+  firmware: 'Firmware',
+  warranty_end: 'Garantie bis',
+  support_end: 'Support bis',
+  management_ip: 'Management-IP',
+  responsible_user: 'Verantwortlich',
+  lifecycle_status: 'Lebenszyklus',
+  passbolt_reference: 'Passbolt-Verweis',
+  interface_name: 'Schnittstelle',
+  interface_type: 'Typ',
+  mac_address: 'MAC-Adresse',
+  speed_mbps: 'Geschwindigkeit',
+  mode: 'Modus',
+  untagged_vlan: 'Untagged-VLAN',
+  lag_parent: 'LAG',
+  poe_enabled: 'PoE',
+  enabled: 'Aktiv',
+  address: 'Adresse',
+  dns_name: 'DNS-Name',
+  address_role: 'Rolle',
+  assigned_object: 'Zugewiesen an',
+  prefix: 'Präfix',
+  prefix_role: 'Rolle',
+  is_pool: 'Pool',
+  vrf: 'VRF',
+  vlan: 'VLAN',
+  vid: 'VID',
+  vlan_name: 'Name',
+  security_zone: 'Schutzzone',
+  trust_level: 'Vertrauensstufe',
+  outlet_label: 'Dose',
+  room: 'Raum',
+  label: 'Label',
+  cable_type: 'Kabeltyp',
+  color: 'Farbe',
+  length_m: 'Länge (m)',
+  tenant: 'Mandant',
+  status: 'Status',
+  description: 'Beschreibung',
+  model: 'Modell',
+  manufacturer: 'Hersteller',
+  height_u: 'Höhe (HE)',
+  country: 'Land',
+  domains: 'Domains',
+  site_kind: 'Art',
+  parent_site: 'Übergeordnet',
+  modified: 'Geändert',
+  owner: 'Angelegt von',
+  rule_name: 'Regel',
+  rule_index: 'Reihenfolge',
+  justification: 'Begründung',
+  ticket: 'Ticket',
+  review_date: 'Review',
+  hit_count: 'Treffer',
+  cve: 'CVE',
+  cvss: 'CVSS',
+  severity: 'Schweregrad',
+  source: 'Quelle',
+  contract_name: 'Vertrag',
+  provider: 'Anbieter',
+  end_date: 'Ende',
+  notice_period_days: 'Kündigungsfrist',
+  cost_per_year: 'Kosten pro Jahr',
+  verify_status: 'Verify',
+  last_backup: 'Letzte Sicherung',
+  document_type: 'Typ',
+  approval_state: 'Freigabe',
+  version: 'Version',
+}
+
+const WERTE = {
+  status: {
+    active: 'Aktiv',
+    planned: 'Geplant',
+    staged: 'Vorbereitet',
+    offline: 'Offline',
+    deprecated: 'Abgekündigt',
+  },
+  lifecycle_status: {
+    production: 'Produktiv',
+    spare: 'Ersatz',
+    testing: 'Test',
+    retired: 'Ausgemustert',
+  },
+  mode: {
+    access: 'Access',
+    tagged: 'Tagged',
+    'tagged-all': 'Tagged (alle)',
+  },
+  rack_face: {
+    front: 'Vorderseite',
+    rear: 'Rückseite',
+  },
+  site_kind: {
+    campus: 'Campus',
+    building: 'Gebäude',
+    room: 'Raum',
+  },
+  prefix_role: {
+    container: 'Container',
+    management: 'Management',
+    server: 'Server',
+    client: 'Clients',
+    wlan: 'WLAN',
+    leitstand: 'Leitstand',
+    backup: 'Backup',
+    storage: 'Speicher',
+    ot: 'OT',
+    voip: 'Telefonie',
+    guest: 'Gäste',
+    dmz: 'DMZ',
+    soc: 'SOC',
+    print: 'Drucker',
+    camera: 'Video',
+    building: 'Gebäudetechnik',
+    lab: 'Testumgebung',
+    transfer: 'Transfer',
+  },
+  address_role: {
+    gateway: 'Gateway',
+    management: 'Management',
+    service: 'Dienst',
+    leitstand: 'Leitstand',
+    backup: 'Backup',
+    storage: 'Speicher',
+    ot: 'OT',
+  },
+  security_zone: {
+    management: 'Management',
+    internal: 'Intern',
+    dmz: 'DMZ',
+    ot: 'OT',
+    soc: 'SOC',
+    guest: 'Gast',
+  },
+}
+
+/** Deutsche Bezeichnung eines DocType. */
+export function doctypeLabel(doctype) {
+  return DOCTYPES[doctype] || doctype
+}
+
+/** Deutsche Bezeichnung eines Feldes. */
+export function fieldLabel(fieldname) {
+  return FELDER[fieldname] || fieldname
+}
+
+/** Deutsche Bezeichnung eines Feldwertes, z. B. status="active" -> "Aktiv". */
+export function valueLabel(fieldname, value) {
+  if (value === null || value === undefined || value === '') return '–'
+  return WERTE[fieldname]?.[value] ?? String(value)
+}
+
+/** Farbthema fuer Badges, abgeleitet vom Wert. */
+export function statusTheme(value) {
+  switch (value) {
+    case 'active':
+    case 'production':
+      return 'green'
+    case 'planned':
+    case 'staged':
+    case 'testing':
+      return 'blue'
+    case 'offline':
+    case 'deprecated':
+    case 'retired':
+      return 'red'
+    default:
+      return 'gray'
+  }
+}
+
+/** Zonen werden nach Schutzbedarf eingefaerbt. */
+export function zoneTheme(zone) {
+  switch (zone) {
+    case 'ot':
+    case 'soc':
+      return 'orange'
+    case 'management':
+      return 'violet'
+    case 'dmz':
+    case 'guest':
+      return 'red'
+    default:
+      return 'gray'
+  }
+}

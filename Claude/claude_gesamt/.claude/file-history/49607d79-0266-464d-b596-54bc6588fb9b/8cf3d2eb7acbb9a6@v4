@@ -1,0 +1,405 @@
+/**
+ * DocType-Definitionen und Testdaten fuer Phase 1 (CLAUDE.md Abschnitt 4).
+ *
+ * WICHTIG: Alle Daten hier sind frei erfunden. Laut CLAUDE.md Abschnitt 6.1
+ * wird ausschliesslich mit Testdaten gearbeitet - keine Produktivdaten,
+ * keine echten Seriennummern, keine echten Adressen, keine Geheimnisse.
+ * `passbolt_reference` enthaelt bewusst nur eine Referenz, niemals ein Passwort.
+ *
+ * DocType- und Feldnamen sind englisch, die Oberflaeche ist deutsch
+ * (siehe src/labels.js).
+ */
+import { defineDoctype } from './db.js'
+import { buildInterfaces } from './portlayout.js'
+
+const AT = 'TEN-0001'
+const DE = 'TEN-0002'
+
+// --- Organisation ----------------------------------------------------------
+
+defineDoctype('Tenant', {
+  naming: (doc, i) => 'TEN-' + String(i).padStart(4, '0'),
+  titleField: 'tenant_name',
+  fields: ['tenant_name', 'country', 'domains'],
+  seed: [
+    { tenant_name: 'Ökovolt Solartechnik GmbH', country: 'AT', domains: 'oekovolt.test', tenant: AT },
+    { tenant_name: 'Ökovolt GmbH Solartechnik', country: 'DE', domains: 'oekovolt-de.test', tenant: DE },
+  ],
+})
+
+defineDoctype('Site', {
+  naming: (doc, i) => 'SITE-' + String(i).padStart(4, '0'),
+  titleField: 'site_name',
+  fields: ['site_name', 'parent_site', 'site_kind', 'address'],
+  seed: [
+    { name: 'SITE-0001', site_name: 'Zentrale Linz', site_kind: 'campus', address: 'Teststraße 1, 4020 Linz', tenant: AT },
+    { name: 'SITE-0002', site_name: 'Gebäude A', parent_site: 'SITE-0001', site_kind: 'building', tenant: AT },
+    { name: 'SITE-0003', site_name: 'Serverraum A.01', parent_site: 'SITE-0002', site_kind: 'room', tenant: AT },
+    { name: 'SITE-0004', site_name: 'Leitstand A.02', parent_site: 'SITE-0002', site_kind: 'room', tenant: AT },
+    { name: 'SITE-0005', site_name: 'Werk Passau', site_kind: 'campus', address: 'Musterweg 7, 94032 Passau', tenant: DE },
+  ],
+})
+
+// --- DCIM ------------------------------------------------------------------
+
+defineDoctype('Manufacturer', {
+  naming: (doc) => doc.manufacturer_name,
+  titleField: 'manufacturer_name',
+  fields: ['manufacturer_name'],
+  seed: [
+    { manufacturer_name: 'Dell', tenant: AT },
+    { manufacturer_name: 'Teltonika', tenant: AT },
+    { manufacturer_name: 'Deciso', tenant: AT },
+    { manufacturer_name: 'TrueNAS', tenant: AT },
+    { manufacturer_name: 'Ubiquiti', tenant: AT },
+  ],
+})
+
+defineDoctype('Device Type', {
+  naming: (doc) => doc.manufacturer + ' ' + doc.model,
+  titleField: 'model',
+  fields: ['manufacturer', 'model', 'height_u', 'is_full_depth'],
+  seed: [
+    { manufacturer: 'Dell', model: 'PowerEdge R740', height_u: 2, is_full_depth: 1, tenant: AT },
+    { manufacturer: 'Teltonika', model: 'TSW202', height_u: 1, is_full_depth: 0, tenant: AT },
+    { manufacturer: 'Deciso', model: 'DEC2750', height_u: 1, is_full_depth: 1, tenant: AT },
+    { manufacturer: 'TrueNAS', model: 'Mini R', height_u: 2, is_full_depth: 1, tenant: AT },
+    { manufacturer: 'Ubiquiti', model: 'U6 Pro', height_u: 0, is_full_depth: 0, tenant: AT },
+  ],
+})
+
+defineDoctype('Device Role', {
+  naming: (doc) => doc.role_name,
+  titleField: 'role_name',
+  fields: ['role_name', 'color'],
+  seed: [
+    { role_name: 'Firewall', color: 'red', tenant: AT },
+    { role_name: 'Core Switch', color: 'blue', tenant: AT },
+    { role_name: 'Access Switch', color: 'teal', tenant: AT },
+    { role_name: 'Hypervisor', color: 'violet', tenant: AT },
+    { role_name: 'Backup Server', color: 'amber', tenant: AT },
+    { role_name: 'Storage', color: 'gray', tenant: AT },
+    { role_name: 'Access Point', color: 'green', tenant: AT },
+  ],
+})
+
+defineDoctype('Rack', {
+  naming: (doc, i) => 'RACK-' + String(i).padStart(4, '0'),
+  titleField: 'rack_name',
+  fields: ['rack_name', 'site', 'height_u', 'max_weight_kg'],
+  seed: [
+    { name: 'RACK-0001', rack_name: 'A.01-R1', site: 'SITE-0003', height_u: 42, max_weight_kg: 800, tenant: AT },
+    { name: 'RACK-0002', rack_name: 'A.01-R2', site: 'SITE-0003', height_u: 42, max_weight_kg: 800, tenant: AT },
+  ],
+})
+
+// Geraete stehen in einer eigenen Konstante, weil die Schnittstellen weiter
+// unten aus ihnen erzeugt werden.
+const GERAETE = [
+    {
+      hostname: 'FW-OS-01', device_type: 'Deciso DEC2750', device_role: 'Firewall',
+      site: 'SITE-0003', rack: 'RACK-0001', position_u: 40, rack_face: 'front',
+      serial: 'TEST-DEC-0001', asset_tag: 'OV-AT-0001', firmware: 'OPNsense 24.7.11',
+      warranty_end: '2027-06-30', support_end: '2028-06-30',
+      management_ip: '10.10.10.1', responsible_user: 'benny.hoefler@oekovolt.test',
+      lifecycle_status: 'production', passbolt_reference: 'passbolt://res/0000-test-fw',
+      tenant: AT, description: 'Perimeter-Firewall. Plattform hat ausschließlich Lesezugriff.',
+    },
+    {
+      hostname: 'SW-CORE-01', device_type: 'Teltonika TSW202', device_role: 'Core Switch',
+      site: 'SITE-0003', rack: 'RACK-0001', position_u: 38, rack_face: 'front',
+      serial: 'TEST-TSW-0001', asset_tag: 'OV-AT-0002', firmware: 'TSW 1.4.2',
+      warranty_end: '2028-01-31', support_end: '2028-01-31',
+      management_ip: '10.10.10.2', responsible_user: 'benny.hoefler@oekovolt.test',
+      lifecycle_status: 'production', tenant: AT,
+    },
+    {
+      hostname: 'SW-ACC-01', device_type: 'Teltonika TSW202', device_role: 'Access Switch',
+      site: 'SITE-0003', rack: 'RACK-0002', position_u: 36, rack_face: 'front',
+      serial: 'TEST-TSW-0002', asset_tag: 'OV-AT-0003', firmware: 'TSW 1.4.2',
+      management_ip: '10.10.10.3', responsible_user: 'benny.hoefler@oekovolt.test',
+      lifecycle_status: 'production', tenant: AT,
+    },
+    {
+      hostname: 'SRV-PVE-01', device_type: 'Dell PowerEdge R740', device_role: 'Hypervisor',
+      site: 'SITE-0003', rack: 'RACK-0001', position_u: 30, rack_face: 'front',
+      serial: 'TEST-R740-0001', asset_tag: 'OV-AT-0010', firmware: 'iDRAC 7.10.30',
+      warranty_end: '2026-11-30', support_end: '2027-11-30',
+      management_ip: '10.10.10.11', responsible_user: 'benny.hoefler@oekovolt.test',
+      lifecycle_status: 'production', tenant: AT,
+    },
+    {
+      hostname: 'SRV-PVE-02', device_type: 'Dell PowerEdge R740', device_role: 'Hypervisor',
+      site: 'SITE-0003', rack: 'RACK-0001', position_u: 28, rack_face: 'front',
+      serial: 'TEST-R740-0002', asset_tag: 'OV-AT-0011', firmware: 'iDRAC 7.10.30',
+      warranty_end: '2026-11-30', support_end: '2027-11-30',
+      management_ip: '10.10.10.12', responsible_user: 'benny.hoefler@oekovolt.test',
+      lifecycle_status: 'production', tenant: AT,
+    },
+    {
+      hostname: 'SRV-PBS-01', device_type: 'Dell PowerEdge R740', device_role: 'Backup Server',
+      site: 'SITE-0003', rack: 'RACK-0002', position_u: 30, rack_face: 'front',
+      serial: 'TEST-R740-0003', asset_tag: 'OV-AT-0012', firmware: 'PBS 3.2',
+      warranty_end: '2026-03-31', support_end: '2026-03-31',
+      management_ip: '10.10.10.21', responsible_user: 'benny.hoefler@oekovolt.test',
+      lifecycle_status: 'production', tenant: AT,
+      description: 'Token der Plattform ohne Lösch- und Prune-Rechte.',
+    },
+    {
+      hostname: 'NAS-TN-01', device_type: 'TrueNAS Mini R', device_role: 'Storage',
+      site: 'SITE-0003', rack: 'RACK-0002', position_u: 26, rack_face: 'front',
+      serial: 'TEST-TN-0001', asset_tag: 'OV-AT-0020', firmware: 'SCALE 24.04',
+      management_ip: '10.10.10.31', responsible_user: 'benny.hoefler@oekovolt.test',
+      lifecycle_status: 'production', tenant: AT,
+    },
+    {
+      hostname: 'AP-A02-01', device_type: 'Ubiquiti U6 Pro', device_role: 'Access Point',
+      site: 'SITE-0004', serial: 'TEST-U6-0001', asset_tag: 'OV-AT-0030',
+      firmware: '6.6.65', management_ip: '10.10.50.11',
+      responsible_user: 'benny.hoefler@oekovolt.test', lifecycle_status: 'production', tenant: AT,
+    },
+    {
+      hostname: 'SW-ACC-PA-01', device_type: 'Teltonika TSW202', device_role: 'Access Switch',
+      site: 'SITE-0005', serial: 'TEST-TSW-0003', asset_tag: 'OV-DE-0001',
+      firmware: 'TSW 1.3.9', management_ip: '10.20.10.3',
+      responsible_user: 'benny.hoefler@oekovolt.test', lifecycle_status: 'production', tenant: DE,
+      description: 'Firmware-Stand älter als im Standard – Update offen.',
+    },
+]
+
+defineDoctype('Network Device', {
+  naming: (doc) => doc.hostname,
+  titleField: 'hostname',
+  fields: [
+    'hostname', 'device_type', 'device_role', 'site', 'rack', 'position_u', 'rack_face',
+    'serial', 'asset_tag', 'firmware', 'warranty_end', 'support_end',
+    'management_ip', 'responsible_user', 'lifecycle_status', 'passbolt_reference',
+  ],
+  seed: GERAETE,
+})
+
+// Die Schnittstellen entstehen aus den Portvorlagen des Gerätetyps
+// (src/api/mock/portlayout.js). Hier stehen nur die Abweichungen je Port:
+// belegtes VLAN, Modus, abgeschaltete Ports, Beschreibung.
+const V = (vid) => 'VLAN-' + String(vid).padStart(4, '0')
+
+const PORT_BELEGUNG = {
+  'FW-OS-01': {
+    igb0: { mode: 'access', description: 'WAN 1 – Provider Magenta (Testleitung)' },
+    igb3: { enabled: 0, description: 'Reserve, administrativ abgeschaltet' },
+    ix0: { mode: 'tagged-all', description: 'LAN-Uplink zum Core' },
+  },
+  'SW-CORE-01': {
+    'Port 1': { mode: 'tagged-all', description: 'Uplink SW-ACC-01' },
+    'Port 2': { mode: 'access', untagged_vlan: V(10), description: 'Management' },
+    'Port 3': { mode: 'access', untagged_vlan: V(20) },
+    'Port 4': { mode: 'access', untagged_vlan: V(20) },
+    'Port 5': { mode: 'access', untagged_vlan: V(160) },
+    'Port 8': { enabled: 0, description: 'Gesperrt bis Klärung' },
+    'SFP 1': { mode: 'tagged-all', description: 'Uplink Firewall' },
+    'SFP 2': { mode: 'access', untagged_vlan: V(170), description: 'Speichernetz NAS' },
+  },
+  'SW-ACC-01': {
+    'Port 1': { mode: 'tagged-all', description: 'Uplink Core' },
+    'Port 5': { mode: 'access', untagged_vlan: V(30), description: 'Dose A02-D14' },
+    'Port 6': { mode: 'access', untagged_vlan: V(90), description: 'Dose A02-D15 – Leitstand' },
+    'Port 7': { mode: 'tagged-all', description: 'Access Point A.02' },
+    'Port 8': { enabled: 0 },
+  },
+  'SRV-PVE-01': {
+    eno1: { mode: 'access', untagged_vlan: V(20) },
+    idrac1: { mode: 'access', untagged_vlan: V(10) },
+  },
+  'SRV-PVE-02': {
+    eno1: { mode: 'access', untagged_vlan: V(20) },
+    idrac1: { mode: 'access', untagged_vlan: V(10) },
+  },
+  'SRV-PBS-01': {
+    eno1: { mode: 'access', untagged_vlan: V(160) },
+    idrac1: { mode: 'access', untagged_vlan: V(10) },
+  },
+  'NAS-TN-01': {
+    eth0: { mode: 'access', untagged_vlan: V(170) },
+    ipmi1: { mode: 'access', untagged_vlan: V(10) },
+  },
+  'AP-A02-01': {
+    eth0: { mode: 'tagged-all', description: 'WLAN-VLANs 50 und 60' },
+  },
+  'SW-ACC-PA-01': {
+    'Port 1': { mode: 'tagged-all', description: 'Uplink Werk Passau' },
+  },
+}
+
+const SCHNITTSTELLEN = GERAETE.flatMap((geraet) =>
+  buildInterfaces(geraet, PORT_BELEGUNG[geraet.hostname] || {}),
+)
+
+/** Dokumentname einer Schnittstelle über Gerät und Portbezeichnung. */
+const IF = (device, port) => {
+  const treffer = SCHNITTSTELLEN.find((i) => i.device === device && i.interface_name === port)
+  if (!treffer) throw new Error('Unbekannter Port: ' + device + ' / ' + port)
+  return treffer.name
+}
+
+defineDoctype('Device Interface', {
+  naming: (doc, i) => 'IF-' + String(i).padStart(5, '0'),
+  titleField: 'interface_name',
+  fields: [
+    'device', 'interface_name', 'interface_type', 'mac_address', 'speed_mbps',
+    'mode', 'untagged_vlan', 'lag_parent', 'poe_enabled', 'enabled',
+    'panel_block', 'panel_row', 'panel_position', 'panel_staggered',
+  ],
+  seed: SCHNITTSTELLEN,
+})
+
+defineDoctype('Wall Outlet', {
+  naming: (doc) => doc.outlet_label,
+  titleField: 'outlet_label',
+  fields: ['outlet_label', 'site', 'room'],
+  seed: [
+    { outlet_label: 'A02-D14', site: 'SITE-0004', room: 'Leitstand A.02', tenant: AT },
+    { outlet_label: 'A02-D15', site: 'SITE-0004', room: 'Leitstand A.02', tenant: AT },
+    { outlet_label: 'A01-D01', site: 'SITE-0003', room: 'Serverraum A.01', tenant: AT },
+  ],
+})
+
+defineDoctype('Cable', {
+  naming: (doc, i) => 'CAB-' + String(i).padStart(4, '0'),
+  titleField: 'label',
+  fields: [
+    'label', 'a_endpoint_type', 'a_endpoint', 'b_endpoint_type', 'b_endpoint',
+    'cable_type', 'color', 'length_m',
+  ],
+  seed: [
+    { label: 'P-0001', a_endpoint_type: 'Device Interface', a_endpoint: IF('FW-OS-01', 'ix0'), b_endpoint_type: 'Device Interface', b_endpoint: IF('SW-CORE-01', 'SFP 1'), cable_type: 'smf-os2', color: 'yellow', length_m: 3, tenant: AT },
+    { label: 'P-0002', a_endpoint_type: 'Device Interface', a_endpoint: IF('SW-CORE-01', 'Port 1'), b_endpoint_type: 'Device Interface', b_endpoint: IF('SW-ACC-01', 'Port 1'), cable_type: 'cat6a', color: 'blue', length_m: 5, tenant: AT },
+    { label: 'P-0003', a_endpoint_type: 'Device Interface', a_endpoint: IF('SW-CORE-01', 'Port 3'), b_endpoint_type: 'Device Interface', b_endpoint: IF('SRV-PVE-01', 'eno1'), cable_type: 'cat6a', color: 'blue', length_m: 2, tenant: AT },
+    { label: 'P-0004', a_endpoint_type: 'Device Interface', a_endpoint: IF('SW-CORE-01', 'Port 4'), b_endpoint_type: 'Device Interface', b_endpoint: IF('SRV-PVE-02', 'eno1'), cable_type: 'cat6a', color: 'blue', length_m: 2, tenant: AT },
+    { label: 'P-0005', a_endpoint_type: 'Device Interface', a_endpoint: IF('SW-CORE-01', 'Port 5'), b_endpoint_type: 'Device Interface', b_endpoint: IF('SRV-PBS-01', 'eno1'), cable_type: 'cat6a', color: 'grey', length_m: 2, tenant: AT },
+    { label: 'P-0006', a_endpoint_type: 'Device Interface', a_endpoint: IF('SW-CORE-01', 'SFP 2'), b_endpoint_type: 'Device Interface', b_endpoint: IF('NAS-TN-01', 'eth0'), cable_type: 'dac', color: 'black', length_m: 2, tenant: AT },
+    { label: 'P-0007', a_endpoint_type: 'Device Interface', a_endpoint: IF('SW-ACC-01', 'Port 5'), b_endpoint_type: 'Wall Outlet', b_endpoint: 'A02-D14', cable_type: 'cat6a', color: 'green', length_m: 25, tenant: AT },
+    { label: 'P-0008', a_endpoint_type: 'Device Interface', a_endpoint: IF('SW-ACC-01', 'Port 7'), b_endpoint_type: 'Device Interface', b_endpoint: IF('AP-A02-01', 'eth0'), cable_type: 'cat6a', color: 'white', length_m: 18, tenant: AT },
+    { label: 'P-0009', a_endpoint_type: 'Device Interface', a_endpoint: IF('SW-CORE-01', 'Port 2'), b_endpoint_type: 'Wall Outlet', b_endpoint: 'A01-D01', cable_type: 'cat6a', color: 'grey', length_m: 4, tenant: AT },
+  ],
+})
+
+// --- IPAM ------------------------------------------------------------------
+
+defineDoctype('Security Zone', {
+  naming: (doc) => doc.zone_name,
+  titleField: 'zone_name',
+  fields: ['zone_name', 'trust_level'],
+  seed: [
+    { zone_name: 'management', trust_level: 90, tenant: AT },
+    { zone_name: 'internal', trust_level: 70, tenant: AT },
+    { zone_name: 'dmz', trust_level: 30, tenant: AT },
+    { zone_name: 'ot', trust_level: 80, tenant: AT },
+    { zone_name: 'soc', trust_level: 95, tenant: AT },
+    { zone_name: 'guest', trust_level: 10, tenant: AT },
+  ],
+})
+
+defineDoctype('VRF', {
+  naming: (doc) => doc.vrf_name,
+  titleField: 'vrf_name',
+  fields: ['vrf_name', 'rd', 'enforce_unique'],
+  seed: [
+    { vrf_name: 'default', rd: '', enforce_unique: 1, tenant: AT },
+    { vrf_name: 'ot', rd: '65000:100', enforce_unique: 1, tenant: AT },
+  ],
+})
+
+const VLANS = [
+  [10, 'MGMT', 'management', 'Management-Netz Netzwerkgeräte'],
+  [20, 'SERVER', 'internal', 'Serverdienste'],
+  [30, 'CLIENTS', 'internal', 'Arbeitsplätze'],
+  [40, 'VOIP', 'internal', 'Telefonie'],
+  [50, 'WLAN-CORP', 'internal', 'WLAN Mitarbeiter'],
+  [60, 'WLAN-GUEST', 'guest', 'WLAN Gäste'],
+  [70, 'DMZ', 'dmz', 'Extern erreichbare Dienste'],
+  [80, 'SECSOC', 'soc', 'Security-Werkzeuge'],
+  [90, 'LEITSTAND', 'soc', 'Anzeigegeräte Leitstand'],
+  [100, 'OT-FIELD', 'ot', 'Feldgeräte – keine aggressiven Scans'],
+  [110, 'SRVSCADA', 'ot', 'SCADA-Server – keine aggressiven Scans'],
+  [120, 'PRINT', 'internal', 'Drucker'],
+  [130, 'CAM', 'internal', 'Videoüberwachung'],
+  [140, 'BUILDING', 'internal', 'Gebäudetechnik'],
+  [150, 'LAB', 'internal', 'Testumgebung'],
+  [160, 'BACKUP', 'management', 'Backup-Verkehr'],
+  [170, 'STORAGE', 'management', 'Speichernetz'],
+  [180, 'TRANSFER', 'internal', 'Transfernetze'],
+]
+
+defineDoctype('VLAN', {
+  naming: (doc) => 'VLAN-' + String(doc.vid).padStart(4, '0'),
+  titleField: 'vlan_name',
+  fields: ['vid', 'vlan_name', 'security_zone', 'site'],
+  seed: VLANS.map(([vid, vlan_name, security_zone, description]) => ({
+    vid,
+    vlan_name,
+    security_zone,
+    description,
+    site: 'SITE-0001',
+    tenant: AT,
+  })),
+})
+
+defineDoctype('IP Prefix', {
+  naming: (doc) => doc.prefix,
+  titleField: 'prefix',
+  fields: ['prefix', 'vrf', 'vlan', 'site', 'prefix_role', 'is_pool'],
+  seed: [
+    { prefix: '10.10.0.0/16', vrf: 'default', site: 'SITE-0001', prefix_role: 'container', is_pool: 0, description: 'Zentrale Linz', tenant: AT },
+    { prefix: '10.10.10.0/24', vrf: 'default', vlan: 'VLAN-0010', site: 'SITE-0001', prefix_role: 'management', is_pool: 0, tenant: AT },
+    { prefix: '10.10.20.0/24', vrf: 'default', vlan: 'VLAN-0020', site: 'SITE-0001', prefix_role: 'server', is_pool: 0, tenant: AT },
+    { prefix: '10.10.30.0/23', vrf: 'default', vlan: 'VLAN-0030', site: 'SITE-0001', prefix_role: 'client', is_pool: 1, tenant: AT },
+    { prefix: '10.10.50.0/24', vrf: 'default', vlan: 'VLAN-0050', site: 'SITE-0001', prefix_role: 'wlan', is_pool: 1, tenant: AT },
+    { prefix: '10.10.90.0/24', vrf: 'default', vlan: 'VLAN-0090', site: 'SITE-0001', prefix_role: 'leitstand', is_pool: 0, tenant: AT },
+    { prefix: '10.10.40.0/24', vrf: 'default', vlan: 'VLAN-0040', site: 'SITE-0001', prefix_role: 'voip', is_pool: 1, tenant: AT },
+    { prefix: '10.10.60.0/24', vrf: 'default', vlan: 'VLAN-0060', site: 'SITE-0001', prefix_role: 'guest', is_pool: 1, tenant: AT },
+    { prefix: '10.10.70.0/24', vrf: 'default', vlan: 'VLAN-0070', site: 'SITE-0001', prefix_role: 'dmz', is_pool: 0, tenant: AT },
+    { prefix: '10.10.80.0/24', vrf: 'default', vlan: 'VLAN-0080', site: 'SITE-0001', prefix_role: 'soc', is_pool: 0, tenant: AT },
+    { prefix: '10.10.120.0/24', vrf: 'default', vlan: 'VLAN-0120', site: 'SITE-0001', prefix_role: 'print', is_pool: 1, tenant: AT },
+    { prefix: '10.10.150.0/24', vrf: 'default', vlan: 'VLAN-0150', site: 'SITE-0001', prefix_role: 'lab', is_pool: 1, tenant: AT, description: 'Testumgebung – von der Perimeterregel 50 noch erlaubt.' },
+    { prefix: '10.10.160.0/24', vrf: 'default', vlan: 'VLAN-0160', site: 'SITE-0001', prefix_role: 'backup', is_pool: 0, tenant: AT },
+    { prefix: '10.10.170.0/24', vrf: 'default', vlan: 'VLAN-0170', site: 'SITE-0001', prefix_role: 'storage', is_pool: 0, tenant: AT },
+    { prefix: '10.10.180.0/24', vrf: 'default', vlan: 'VLAN-0180', site: 'SITE-0001', prefix_role: 'transfer', is_pool: 0, tenant: AT },
+    { prefix: '10.100.0.0/16', vrf: 'ot', site: 'SITE-0001', prefix_role: 'container', is_pool: 0, description: 'OT – getrennter VRF', tenant: AT },
+    { prefix: '10.100.100.0/24', vrf: 'ot', vlan: 'VLAN-0100', site: 'SITE-0001', prefix_role: 'ot', is_pool: 0, tenant: AT },
+    { prefix: '10.100.110.0/24', vrf: 'ot', vlan: 'VLAN-0110', site: 'SITE-0001', prefix_role: 'ot', is_pool: 0, tenant: AT, description: 'SRVSCADA – nur schonende Scanprofile.' },
+    { prefix: '10.20.0.0/16', vrf: 'default', site: 'SITE-0005', prefix_role: 'container', is_pool: 0, description: 'Werk Passau', tenant: DE },
+    { prefix: '10.20.10.0/24', vrf: 'default', site: 'SITE-0005', prefix_role: 'management', is_pool: 0, tenant: DE },
+  ],
+})
+
+defineDoctype('IP Address', {
+  naming: (doc) => doc.address,
+  titleField: 'address',
+  fields: ['address', 'vrf', 'assigned_object_type', 'assigned_object', 'dns_name', 'address_role'],
+  seed: [
+    { address: '10.10.10.1/24', vrf: 'default', assigned_object_type: 'Device Interface', assigned_object: IF('FW-OS-01', 'ix0'), dns_name: 'fw-os-01.oekovolt.test', address_role: 'gateway', tenant: AT },
+    { address: '10.10.10.2/24', vrf: 'default', assigned_object_type: 'Device Interface', assigned_object: IF('SW-CORE-01', 'Port 2'), dns_name: 'sw-core-01.oekovolt.test', address_role: 'management', tenant: AT },
+    { address: '10.10.10.3/24', vrf: 'default', assigned_object_type: 'Device Interface', assigned_object: IF('SW-ACC-01', 'Port 1'), dns_name: 'sw-acc-01.oekovolt.test', address_role: 'management', tenant: AT },
+    { address: '10.10.10.11/24', vrf: 'default', assigned_object_type: 'Device Interface', assigned_object: IF('SRV-PVE-01', 'idrac1'), dns_name: 'srv-pve-01-idrac.oekovolt.test', address_role: 'management', tenant: AT },
+    { address: '10.10.10.12/24', vrf: 'default', assigned_object_type: 'Device Interface', assigned_object: IF('SRV-PVE-02', 'idrac1'), dns_name: 'srv-pve-02-idrac.oekovolt.test', address_role: 'management', tenant: AT },
+    { address: '10.10.10.21/24', vrf: 'default', assigned_object_type: 'Device Interface', assigned_object: IF('SRV-PBS-01', 'idrac1'), dns_name: 'srv-pbs-01-idrac.oekovolt.test', address_role: 'management', tenant: AT },
+    { address: '10.10.10.31/24', vrf: 'default', assigned_object_type: 'Device Interface', assigned_object: IF('NAS-TN-01', 'ipmi1'), dns_name: 'nas-tn-01-ipmi.oekovolt.test', address_role: 'management', tenant: AT },
+    { address: '10.10.20.10/24', vrf: 'default', assigned_object_type: 'Device Interface', assigned_object: IF('SRV-PVE-01', 'eno1'), dns_name: 'srv-pve-01.oekovolt.test', address_role: 'service', tenant: AT },
+    { address: '10.10.20.11/24', vrf: 'default', assigned_object_type: 'Device Interface', assigned_object: IF('SRV-PVE-02', 'eno1'), dns_name: 'srv-pve-02.oekovolt.test', address_role: 'service', tenant: AT },
+    { address: '10.10.20.12/24', vrf: 'default', dns_name: 'dc01.oekovolt.test', address_role: 'service', tenant: AT },
+    { address: '10.10.20.13/24', vrf: 'default', dns_name: 'erp.oekovolt.test', address_role: 'service', tenant: AT },
+    { address: '10.10.80.10/24', vrf: 'default', dns_name: 'netzwerk.oekovolt.test', address_role: 'service', tenant: AT, description: 'NetOps-Plattform, nur über Split-DNS intern auflösbar.' },
+    { address: '10.10.80.20/24', vrf: 'default', dns_name: 'zabbix.oekovolt.test', address_role: 'service', tenant: AT },
+    { address: '10.10.80.21/24', vrf: 'default', dns_name: 'graylog.oekovolt.test', address_role: 'service', tenant: AT },
+    { address: '10.10.70.11/24', vrf: 'default', dns_name: 'mailrelay.oekovolt.test', address_role: 'service', tenant: AT },
+    { address: '10.10.20.14/24', vrf: 'default', dns_name: 'bmd01.oekovolt.test', address_role: 'service', tenant: AT },
+    { address: '10.10.90.11/24', vrf: 'default', dns_name: 'screen1.oekovolt.test', address_role: 'leitstand', tenant: AT },
+    { address: '10.10.90.12/24', vrf: 'default', dns_name: 'screen2.oekovolt.test', address_role: 'leitstand', tenant: AT },
+    { address: '10.10.160.21/24', vrf: 'default', assigned_object_type: 'Device Interface', assigned_object: IF('SRV-PBS-01', 'eno1'), dns_name: 'pbs-backup.oekovolt.test', address_role: 'backup', tenant: AT },
+    { address: '10.10.170.31/24', vrf: 'default', assigned_object_type: 'Device Interface', assigned_object: IF('NAS-TN-01', 'eth0'), dns_name: 'nas-storage.oekovolt.test', address_role: 'storage', tenant: AT },
+    { address: '10.10.50.11/24', vrf: 'default', assigned_object_type: 'Device Interface', assigned_object: IF('AP-A02-01', 'eth0'), dns_name: 'ap-a02-01.oekovolt.test', address_role: 'management', tenant: AT },
+    { address: '10.100.100.5/24', vrf: 'ot', dns_name: 'plc-01.ot.oekovolt.test', address_role: 'ot', tenant: AT },
+    { address: '10.100.100.6/24', vrf: 'ot', dns_name: 'plc-02.ot.oekovolt.test', address_role: 'ot', tenant: AT },
+    { address: '10.20.10.3/24', vrf: 'default', assigned_object_type: 'Device Interface', assigned_object: IF('SW-ACC-PA-01', 'Port 1'), dns_name: 'sw-acc-pa-01.oekovolt-de.test', address_role: 'management', tenant: DE },
+  ],
+})

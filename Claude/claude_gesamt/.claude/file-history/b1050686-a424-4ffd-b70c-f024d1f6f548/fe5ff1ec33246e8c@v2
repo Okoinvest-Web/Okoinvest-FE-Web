@@ -1,0 +1,168 @@
+"use client";
+
+import { useState } from "react";
+
+import { formatZahl } from "@/lib/format";
+
+/**
+ * Ringdiagramm fuer Anteile, etwa die Aufteilung der Erzeugung in
+ * Eigenverbrauch und Einspeisung.
+ *
+ * Ein Ring eignet sich nur fuer wenige Abschnitte, die zusammen ein
+ * sinnvolles Ganzes ergeben. Bei mehr als vier Abschnitten oder wenn
+ * die Abschnitte verglichen werden sollen, sind Balken die bessere Wahl.
+ *
+ * In der Mitte steht die Gesamtsumme - die Zahl, die am haeufigsten
+ * gesucht wird.
+ */
+
+export interface RingAbschnitt {
+  label: string;
+  wert: number;
+  farbe: string;
+}
+
+export function Ringdiagramm({
+  abschnitte,
+  mitteWert,
+  mitteEinheit,
+  mitteLabel,
+  nachkommastellen = 0,
+  einheit,
+  groesse = 200,
+}: {
+  abschnitte: RingAbschnitt[];
+  mitteWert: string;
+  mitteEinheit?: string;
+  mitteLabel: string;
+  /** Nachkommastellen; keine Funktion, da Client-Komponente. */
+  nachkommastellen?: 0 | 1 | 2;
+  einheit: string;
+  groesse?: number;
+}) {
+  const [aktiv, setAktiv] = useState<number | null>(null);
+
+  const formatWert = (wert: number) => formatZahl(wert, nachkommastellen);
+
+  const summe = abschnitte.reduce((s, a) => s + a.wert, 0);
+  const radius = 42;
+  const umfang = 2 * Math.PI * radius;
+  // Luecke zwischen den Abschnitten, damit sie sich optisch trennen.
+  const luecke = abschnitte.length > 1 ? 2 : 0;
+
+  // Die Startwinkel vorab bestimmen. Eine laufende Summe waehrend des
+  // Renderns waere eine Mutation im Renderdurchlauf - React darf einen
+  // Durchlauf verwerfen und erneut starten, dann stimmten die Winkel nicht.
+  const bogen = abschnitte.map((abschnitt) => {
+    const anteil = summe > 0 ? abschnitt.wert / summe : 0;
+    return { anteil, laenge: Math.max(0, anteil * umfang - luecke) };
+  });
+
+  const versaetze = bogen.reduce<number[]>((liste, eintrag, i) => {
+    liste.push(i === 0 ? 0 : liste[i - 1] + bogen[i - 1].anteil * umfang);
+    return liste;
+  }, []);
+
+  return (
+    <div className="flex flex-wrap items-center justify-center gap-6">
+      <div className="relative shrink-0" style={{ width: groesse, height: groesse }}>
+        <svg
+          viewBox="0 0 100 100"
+          className="h-full w-full -rotate-90"
+          role="img"
+          aria-label={`Aufteilung: ${abschnitte
+            .map((a) => `${a.label} ${formatWert(a.wert)} ${einheit}`)
+            .join(", ")}`}
+        >
+          <circle
+            cx="50"
+            cy="50"
+            r={radius}
+            fill="none"
+            className="stroke-slate-100 dark:stroke-slate-800"
+            strokeWidth="12"
+          />
+
+          {abschnitte.map((abschnitt, i) => {
+            const { laenge } = bogen[i];
+            const dieserVersatz = versaetze[i];
+
+            return (
+              <circle
+                key={abschnitt.label}
+                cx="50"
+                cy="50"
+                r={radius}
+                fill="none"
+                stroke={abschnitt.farbe}
+                strokeWidth={aktiv === i ? 15 : 12}
+                strokeDasharray={`${laenge} ${umfang - laenge}`}
+                strokeDashoffset={-dieserVersatz}
+                strokeLinecap="butt"
+                className="cursor-default transition-[stroke-width] duration-200"
+                style={{
+                  animation: `linieZeichnen .8s var(--ease-ruhig) ${i * 120}ms backwards`,
+                  ["--laenge" as string]: umfang,
+                }}
+                onPointerEnter={() => setAktiv(i)}
+                onPointerLeave={() => setAktiv(null)}
+              />
+            );
+          })}
+        </svg>
+
+        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
+          <span className="text-2xl font-semibold tracking-tight text-slate-900 tabular-nums dark:text-slate-50">
+            {mitteWert}
+            {mitteEinheit && (
+              <span className="ml-0.5 text-sm font-normal text-slate-400">
+                {mitteEinheit}
+              </span>
+            )}
+          </span>
+          <span className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+            {mitteLabel}
+          </span>
+        </div>
+      </div>
+
+      {/* Direkte Beschriftung - die Farbe allein traegt nie die Information. */}
+      <ul className="min-w-[11rem] space-y-2">
+        {abschnitte.map((abschnitt, i) => {
+          const anteil = summe > 0 ? (abschnitt.wert / summe) * 100 : 0;
+
+          return (
+            <li
+              key={abschnitt.label}
+              className={`flex items-center justify-between gap-4 rounded-md px-2 py-1 transition-colors ${
+                aktiv === i ? "bg-slate-100 dark:bg-slate-800" : ""
+              }`}
+              onPointerEnter={() => setAktiv(i)}
+              onPointerLeave={() => setAktiv(null)}
+            >
+              <span className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                <span
+                  aria-hidden
+                  className="h-2.5 w-2.5 shrink-0 rounded-[2px]"
+                  style={{ background: abschnitt.farbe }}
+                />
+                {abschnitt.label}
+              </span>
+              <span className="text-right">
+                <span className="block text-sm font-medium text-slate-900 tabular-nums dark:text-slate-100">
+                  {formatWert(abschnitt.wert)}
+                  <span className="ml-0.5 text-xs font-normal text-slate-400">
+                    {einheit}
+                  </span>
+                </span>
+                <span className="block text-xs text-slate-400 tabular-nums">
+                  {anteil.toLocaleString("de-AT", { maximumFractionDigits: 1 })} %
+                </span>
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}

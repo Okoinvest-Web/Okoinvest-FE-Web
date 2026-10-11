@@ -1,0 +1,281 @@
+/**
+ * Schmaler Frappe-Client.
+ *
+ * Bewusst ohne zusätzliche Abhängigkeit: Die App spricht ausschließlich
+ * `/api/method` (Whitelisted-Methoden) und `/api/resource` (Doctype-CRUD) an.
+ * Authentifiziert wird über das Session-Cookie der Frappe-Site; der CSRF-Token
+ * kommt aus `window.csrf_token`, das die Website-Page `www/baudoku.py` setzt.
+ */
+
+import { demoAktiv, demoAntwort, demoDokument, demoListe } from './demo'
+
+export class ApiFehler extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+    readonly exception?: string,
+    readonly rohtext?: string,
+  ) {
+    super(message)
+    this.name = 'ApiFehler'
+  }
+
+  /** Netzwerkausfall statt inhaltlichem Fehler — der Sync darf es später erneut versuchen. */
+  get istNetzfehler(): boolean {
+    return this.status === 0
+  }
+
+  get istAnmeldefehler(): boolean {
+    return this.status === 401 || this.status === 403
+  }
+}
+
+declare global {
+  interface Window {
+    csrf_token?: string
+    frappe_boot?: Record<string, unknown>
+  }
+}
+
+function csrfToken(): string {
+  return window.csrf_token ?? ''
+}
+
+function kopfzeilen(): HeadersInit {
+  const kopf: Record<string, string> = {
+    Accept: 'application/json',
+    'Content-Type': 'application/json',
+    'X-Requested-With': 'XMLHttpRequest',
+  }
+  const token = csrfToken()
+  if (token) kopf['X-Frappe-CSRF-Token'] = token
+  return kopf
+}
+
+/** Entpackt Frappe-Fehlermeldungen (`_server_messages`, `exc_type`) in lesbaren Text. */
+function fehlertext(daten: unknown, rohtext: string, status: number): string {
+  if (daten && typeof daten === 'object') {
+    const d = daten as Record<string, unknown>
+    const messages = d._server_messages
+    if (typeof messages === 'string') {
+      try {
+        const liste = JSON.parse(messages) as string[]
+        const texte = liste.map((eintrag) => {
+          try {
+            const objekt = JSON.parse(eintrag) as { message?: string; title?: string }
+            return objekt.message ?? objekt.title ?? eintrag
+          } catch {
+            return eintrag
+          }
+        })
+        if (texte.length) return texte.join('\n').replace(/<[^>]+>/g, '')
+      } catch {
+        /* weiter unten */
+      }
+    }
+    if (typeof d.message === 'string') return d.message
+    if (typeof d.exc_type === 'string') return d.exc_type
+  }
+  if (rohtext && rohtext.length < 400) return rohtext.replace(/<[^>]+>/g, '').trim()
+  return `Serverfehler (HTTP ${status})`
+}
+
+async function anfrage<T>(pfad: string, optionen: RequestInit = {}): Promise<T> {
+  let antwort: Response
+  try {
+    antwort = await fetch(pfad, {
+      credentials: 'same-origin',
+      headers: kopfzeilen(),
+      ...optionen,
+    })
+  } catch (fehler) {
+    throw new ApiFehler(
+      'Keine Verbindung zum Server. Die Daten bleiben lokal gespeichert.',
+      0,
+      (fehler as Error)?.message,
+    )
+  }
+
+  const rohtext = await antwort.text()
+  let daten: unknown = null
+  if (rohtext) {
+    try {
+      daten = JSON.parse(rohtext)
+    } catch {
+      daten = null
+    }
+  }
+
+  if (!antwort.ok) {
+    const exception = (daten as { exc_type?: string } | null)?.exc_type
+    throw new ApiFehler(fehlertext(daten, rohtext, antwort.status), antwort.status, exception, rohtext)
+  }
+
+  const inhalt = daten as { message?: T; data?: T } | null
+  if (inhalt && 'message' in inhalt) return inhalt.message as T
+  if (inhalt && 'data' in inhalt) return inhalt.data as T
+  return daten as T
+}
+
+/** Ruft eine whitelisted Servermethode auf. */
+export function methode<T = unknown>(
+  name: string,
+  parameter: Record<string, unknown> = {},
+  methodeHttp: 'GET' | 'POST' = 'POST',
+): Promise<T> {
+  if (demoAktiv()) {
+    const antwort = demoAntwort(name, parameter)
+    if (antwort !== undefined) return Promise.resolve(antwort as T)
+  }
+  const pfad = `/api/method/${name}`
+  if (methodeHttp === 'GET') {
+    const query = new URLSearchParams()
+    for (const [schluessel, wert] of Object.entries(parameter)) {
+      if (wert === undefined || wert === null) continue
+      query.set(schluessel, typeof wert === 'object' ? JSON.stringify(wert) : String(wert))
+    }
+    const suffix = query.toString()
+    return anfrage<T>(suffix ? `${pfad}?${suffix}` : pfad, { method: 'GET' })
+  }
+  return anfrage<T>(pfad, { method: 'POST', body: JSON.stringify(parameter) })
+}
+
+export interface ListenOptionen {
+  filters?: unknown
+  or_filters?: unknown
+  fields?: string[]
+  order_by?: string
+  limit_start?: number
+  limit_page_length?: number
+  parent?: string
+}
+
+export const resource = {
+  liste<T = Record<string, unknown>>(doctype: string, optionen: ListenOptionen = {}): Promise<T[]> {
+    if (demoAktiv()) return Promise.resolve(demoListe(doctype) as T[])
+    const query = new URLSearchParams()
+    if (optionen.fields) query.set('fields', JSON.stringify(optionen.fields))
+    if (optionen.filters) query.set('filters', JSON.stringify(optionen.filters))
+    if (optionen.or_filters) query.set('or_filters', JSON.stringify(optionen.or_filters))
+    if (optionen.order_by) query.set('order_by', optionen.order_by)
+    query.set('limit_start', String(optionen.limit_start ?? 0))
+    query.set('limit_page_length', String(optionen.limit_page_length ?? 50))
+    return anfrage<T[]>(`/api/resource/${encodeURIComponent(doctype)}?${query}`, { method: 'GET' })
+  },
+
+  lesen<T = Record<string, unknown>>(doctype: string, name: string): Promise<T> {
+    if (demoAktiv()) {
+      const treffer = demoDokument(doctype, name)
+      if (treffer) return Promise.resolve(treffer as T)
+      return Promise.reject(new ApiFehler(`${doctype} ${name} nicht gefunden`, 404))
+    }
+    return anfrage<T>(`/api/resource/${encodeURIComponent(doctype)}/${encodeURIComponent(name)}`, {
+      method: 'GET',
+    })
+  },
+
+  anlegen<T = Record<string, unknown>>(doctype: string, daten: Record<string, unknown>): Promise<T> {
+    return anfrage<T>(`/api/resource/${encodeURIComponent(doctype)}`, {
+      method: 'POST',
+      body: JSON.stringify(daten),
+    })
+  },
+
+  aktualisieren<T = Record<string, unknown>>(
+    doctype: string,
+    name: string,
+    daten: Record<string, unknown>,
+  ): Promise<T> {
+    return anfrage<T>(`/api/resource/${encodeURIComponent(doctype)}/${encodeURIComponent(name)}`, {
+      method: 'PUT',
+      body: JSON.stringify(daten),
+    })
+  },
+
+  loeschen(doctype: string, name: string): Promise<unknown> {
+    return anfrage(`/api/resource/${encodeURIComponent(doctype)}/${encodeURIComponent(name)}`, {
+      method: 'DELETE',
+    })
+  },
+
+  anzahl(doctype: string, filters?: unknown): Promise<number> {
+    return methode<number>(
+      'frappe.client.get_count',
+      { doctype, filters: filters ?? {} },
+      'GET',
+    )
+  },
+}
+
+/** Kurznamen für die Servermethoden dieser App. */
+export const baudoku = {
+  bootstrap: () => methode('oekovolt_baudoku.api.sync.bootstrap', {}, 'GET'),
+  syncStatus: () => methode('oekovolt_baudoku.api.sync.sync_status', {}, 'GET'),
+  push: (operationen: unknown[], client_version: string) =>
+    methode('oekovolt_baudoku.api.sync.push', { operationen, client_version }),
+  pull: (seit?: string) => methode('oekovolt_baudoku.api.sync.pull', { seit }),
+  fotoHochladen: (nutzlast: Record<string, unknown>) =>
+    methode('oekovolt_baudoku.api.sync.foto_hochladen', nutzlast),
+
+  kennzahlen: () => methode('oekovolt_baudoku.api.dashboard.kennzahlen', {}, 'GET'),
+  mangelDashboard: (parameter: Record<string, unknown> = {}) =>
+    methode('oekovolt_baudoku.api.dashboard.mangel_dashboard', parameter, 'GET'),
+  baufortschritt: (tage = 60) =>
+    methode('oekovolt_baudoku.api.dashboard.baufortschritt', { tage }, 'GET'),
+  protokollStatistik: (jahr?: number) =>
+    methode('oekovolt_baudoku.api.dashboard.protokoll_statistik', { jahr }, 'GET'),
+
+  vorlagenFuerAnlage: (anlage: string) =>
+    methode('oekovolt_baudoku.api.protokoll.vorlagen_fuer_anlage', { anlage }, 'GET'),
+  vorlageKomplett: (vorlage: string) =>
+    methode('oekovolt_baudoku.api.protokoll.vorlage_komplett', { vorlage }, 'GET'),
+  protokollStarten: (parameter: Record<string, unknown>) =>
+    methode('oekovolt_baudoku.api.protokoll.protokoll_starten', parameter),
+  ergebnisSpeichern: (protokoll: string, pruefpunkt_key: string, werte: unknown) =>
+    methode('oekovolt_baudoku.api.protokoll.ergebnis_speichern', { protokoll, pruefpunkt_key, werte }),
+  unterschreiben: (parameter: Record<string, unknown>) =>
+    methode('oekovolt_baudoku.api.protokoll.unterschreiben', parameter),
+  mangelAusPruefpunkt: (parameter: Record<string, unknown>) =>
+    methode('oekovolt_baudoku.api.protokoll.mangel_aus_pruefpunkt', parameter),
+  meineOffenenProtokolle: () =>
+    methode('oekovolt_baudoku.api.protokoll.meine_offenen_protokolle', {}, 'GET'),
+  zuVerifizieren: () => methode('oekovolt_baudoku.api.protokoll.zu_verifizieren', {}, 'GET'),
+  messdatenTrend: (anlage: string, string_nr?: string) =>
+    methode('oekovolt_baudoku.api.protokoll.messdaten_trend', { anlage, string_nr }, 'GET'),
+
+  anlagenKarte: (parameter: Record<string, unknown> = {}) =>
+    methode('oekovolt_baudoku.baudoku.doctype.pv_anlage.pv_anlage.karte', parameter, 'GET'),
+  anlagenUebersicht: (anlage: string) =>
+    methode('run_doc_method', { dt: 'PV Anlage', dn: anlage, method: 'uebersicht' }, 'GET'),
+  anstehendeWartungen: (tage = 30) =>
+    methode(
+      'oekovolt_baudoku.baudoku.doctype.pv_anlage.pv_anlage.anstehende_wartungen',
+      { tage },
+      'GET',
+    ),
+  ausProjektAnlegen: (project: string) =>
+    methode('oekovolt_baudoku.baudoku.doctype.pv_anlage.pv_anlage.aus_projekt_anlegen', { project }),
+
+  mangelSammelaktion: (namen: string[], felder: Record<string, unknown>) =>
+    methode('oekovolt_baudoku.api.mangel.sammelaktion', { namen, felder }),
+  zustaendige: () => methode('oekovolt_baudoku.api.mangel.zustaendige', {}, 'GET'),
+  meineAufgaben: () => methode('oekovolt_baudoku.api.mangel.meine_aufgaben', {}, 'GET'),
+
+  offeneFreigaben: () =>
+    methode('oekovolt_baudoku.baudoku.doctype.tagesbericht.tagesbericht.offene_freigaben', {}, 'GET'),
+  fortschrittsTimeline: (anlage: string) =>
+    methode(
+      'oekovolt_baudoku.baudoku.doctype.tagesbericht.tagesbericht.fortschritts_timeline',
+      { anlage },
+      'GET',
+    ),
+
+  pdfErzeugen: (doctype: string, docname: string) =>
+    methode('oekovolt_baudoku.api.pdf.erzeuge_pdf', { doctype, docname }),
+  vorlagenVorschau: (vorlage: string) =>
+    methode<string>('oekovolt_baudoku.api.pdf.vorschau_html', { vorlage }, 'GET'),
+
+  /** Ruft eine Methode auf einem Dokument auf (z. B. `abschliessen`, `verifizieren`). */
+  dokumentMethode: <T = unknown>(dt: string, dn: string, method: string, args: Record<string, unknown> = {}) =>
+    methode<T>('run_doc_method', { dt, dn, method, args: JSON.stringify(args) }),
+}

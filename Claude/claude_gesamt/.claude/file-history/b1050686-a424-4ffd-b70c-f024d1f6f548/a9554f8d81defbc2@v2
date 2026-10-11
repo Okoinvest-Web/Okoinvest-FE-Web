@@ -1,0 +1,167 @@
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+
+import {
+  bewerteGueltigkeit,
+  fasseDossier,
+  fasseDossierZusammen,
+  GRUPPEN,
+  GRUPPENNAMEN,
+  ordneDossier,
+  VORLAUF_TAGE,
+  type Unterlage,
+} from "./unterlagen.ts";
+
+const HEUTE = new Date(2026, 8, 14);
+
+function unterlage(teile: Partial<Unterlage> = {}): Unterlage {
+  return {
+    id: "DOK-1",
+    gruppe: "Technisch",
+    art: "Strangplan",
+    bezeichnung: "Strangplan",
+    pflicht: true,
+    gueltigBis: null,
+    syncStand: "Aktuell",
+    ...teile,
+  };
+}
+
+describe("Gültigkeit", () => {
+  it("führt eine Unterlage ohne Ablauf als unbefristet, nicht als gültig", () => {
+    // Der Unterschied traegt: Unbefristet braucht keine Erinnerung.
+    assert.equal(bewerteGueltigkeit(null, HEUTE).stand, "unbefristet");
+  });
+
+  it("erkennt eine abgelaufene Unterlage", () => {
+    const g = bewerteGueltigkeit(new Date(2026, 6, 1), HEUTE);
+
+    assert.equal(g.stand, "abgelaufen");
+    assert.equal(g.tage, -75);
+  });
+
+  it("warnt im Vorlauf", () => {
+    const g = bewerteGueltigkeit(new Date(2026, 9, 1), HEUTE);
+
+    assert.equal(g.stand, "laeuft_ab");
+    assert.ok(g.tage > 0 && g.tage <= VORLAUF_TAGE);
+  });
+
+  it("gilt am Tag des Ablaufs noch", () => {
+    const g = bewerteGueltigkeit(new Date(2026, 8, 14), HEUTE);
+
+    assert.equal(g.tage, 0);
+    assert.equal(g.stand, "laeuft_ab");
+  });
+
+  it("lässt eine weit entfernte Frist in Ruhe", () => {
+    assert.equal(bewerteGueltigkeit(new Date(2028, 0, 1), HEUTE).stand, "gueltig");
+  });
+
+  it("kommt mit einem ungültigen Datum zurecht", () => {
+    assert.equal(
+      bewerteGueltigkeit(new Date("Unsinn"), HEUTE).stand,
+      "unbefristet",
+    );
+  });
+});
+
+describe("Dossier ordnen", () => {
+  it("benennt jede Gruppe", () => {
+    for (const g of GRUPPEN) {
+      assert.ok(GRUPPENNAMEN[g].length > 5, g);
+    }
+  });
+
+  it("lässt leere Gruppen weg", () => {
+    const gruppen = ordneDossier([unterlage()], HEUTE);
+
+    assert.equal(gruppen.length, 1);
+    assert.equal(gruppen[0]!.gruppe, "Technisch");
+  });
+
+  it("stellt Abgelaufenes an den Anfang", () => {
+    const gruppen = ordneDossier(
+      [
+        unterlage({ id: "A", bezeichnung: "A", gueltigBis: null }),
+        unterlage({ id: "B", bezeichnung: "B", gueltigBis: new Date(2026, 0, 1) }),
+        unterlage({ id: "C", bezeichnung: "C", gueltigBis: new Date(2026, 9, 1) }),
+      ],
+      HEUTE,
+    );
+
+    assert.deepEqual(
+      gruppen[0]!.unterlagen.map((u) => u.id),
+      ["B", "C", "A"],
+    );
+  });
+
+  it("reiht bei gleichem Stand die Pflicht vor die Kür", () => {
+    const gruppen = ordneDossier(
+      [
+        unterlage({ id: "frei", bezeichnung: "Z", pflicht: false }),
+        unterlage({ id: "pflicht", bezeichnung: "A", pflicht: true }),
+      ],
+      HEUTE,
+    );
+
+    assert.equal(gruppen[0]!.unterlagen[0]!.id, "pflicht");
+  });
+
+  it("hält die Reihenfolge der Gruppen ein", () => {
+    const gruppen = ordneDossier(
+      [
+        unterlage({ id: "1", gruppe: "Garantie" }),
+        unterlage({ id: "2", gruppe: "Rechtlich" }),
+        unterlage({ id: "3", gruppe: "Technisch" }),
+      ],
+      HEUTE,
+    );
+
+    assert.deepEqual(
+      gruppen.map((g) => g.gruppe),
+      ["Rechtlich", "Technisch", "Garantie"],
+    );
+  });
+});
+
+describe("Stand des Dossiers", () => {
+  const bestand = [
+    unterlage({ id: "1", gueltigBis: new Date(2026, 0, 1) }),
+    unterlage({ id: "2", gueltigBis: new Date(2026, 9, 1) }),
+    unterlage({ id: "3", gueltigBis: null, pflicht: false }),
+    unterlage({ id: "4", gueltigBis: null, syncStand: "Fehler" }),
+  ];
+
+  it("zählt Abgelaufenes, Ablaufendes und Pflicht", () => {
+    const s = fasseDossier(bestand, HEUTE);
+
+    assert.equal(s.gesamt, 4);
+    assert.equal(s.pflicht, 3);
+    assert.equal(s.abgelaufen, 1);
+    assert.equal(s.laeuftAb, 1);
+    assert.equal(s.nichtUebernommen, 1);
+  });
+
+  it("nennt das Abgelaufene zuerst", () => {
+    const satz = fasseDossierZusammen(fasseDossier(bestand, HEUTE));
+
+    assert.ok(satz.startsWith("1 Unterlage ist abgelaufen"), satz);
+    assert.match(satz, /4 Unterlagen abgelegt, davon 3 verpflichtend/);
+  });
+
+  it("meldet Ruhe, wenn alles gilt", () => {
+    const satz = fasseDossierZusammen(
+      fasseDossier([unterlage({ gueltigBis: new Date(2029, 0, 1) })], HEUTE),
+    );
+
+    assert.match(satz, /Alle Unterlagen sind gültig und übernommen/);
+  });
+
+  it("sagt es, wenn nichts abgelegt ist", () => {
+    assert.match(
+      fasseDossierZusammen(fasseDossier([], HEUTE)),
+      /keine Unterlage abgelegt/,
+    );
+  });
+});

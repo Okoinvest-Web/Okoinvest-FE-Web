@@ -1,0 +1,354 @@
+<template>
+  <div>
+    <!-- Ansichtssteuerung: Status ist die Grundansicht, VLAN hebt genau
+         ein Netz hervor. Ein Regenbogen über alle VLANs wäre bei sechs
+         Schutzzonen nicht mehr farbfehlsichtigkeitssicher. -->
+    <div class="mb-3 flex flex-wrap items-center gap-2">
+      <span class="text-sm text-ink-gray-5">VLAN hervorheben:</span>
+      <button
+        class="rounded border px-2 py-1 text-sm"
+        :class="
+          hervorgehoben === null
+            ? 'border-outline-gray-4 bg-surface-gray-3 font-medium text-ink-gray-9'
+            : 'border-outline-gray-2 text-ink-gray-6 hover:bg-surface-gray-2'
+        "
+        @click="hervorgehoben = null"
+      >
+        keines
+      </button>
+      <button
+        v-for="vlan in panel.vlans"
+        :key="vlan.name"
+        class="rounded border px-2 py-1 text-sm"
+        :class="
+          hervorgehoben === vlan.name
+            ? 'border-outline-gray-4 bg-surface-gray-3 font-medium text-ink-gray-9'
+            : 'border-outline-gray-2 text-ink-gray-6 hover:bg-surface-gray-2'
+        "
+        @click="hervorgehoben = hervorgehoben === vlan.name ? null : vlan.name"
+      >
+        {{ vlan.vid }} · {{ vlan.vlan_name }}
+        <span class="text-ink-gray-4">{{ vlan.port_count }}</span>
+      </button>
+    </div>
+
+    <div class="overflow-x-auto rounded-lg border border-outline-gray-2 bg-surface-white p-4">
+      <!-- Feste Skalierung statt width:100% – sonst zieht der Browser die
+           Platte auf die Containerbreite und zentriert sie mittendrin. -->
+      <svg
+        :viewBox="`0 0 ${masse.breite} ${masse.hoehe}`"
+        :width="masse.breite * SKALIERUNG"
+        :height="masse.hoehe * SKALIERUNG"
+        preserveAspectRatio="xMinYMin meet"
+        role="img"
+        :aria-label="`Frontplatte ${panel.hostname}: ${panel.summary.up} von ${panel.summary.total} Ports belegt`"
+      >
+        <!-- Gehäuse -->
+        <rect
+          x="0.5"
+          y="0.5"
+          :width="masse.breite - 1"
+          :height="masse.hoehe - 1"
+          rx="6"
+          fill="var(--viz-chassis)"
+          stroke="var(--viz-chassis-line)"
+        />
+        <text :x="14" :y="22" font-size="12" font-weight="600" fill="var(--viz-ink)">
+          {{ panel.hostname }}
+        </text>
+        <text :x="14" :y="38" font-size="11" fill="var(--viz-ink-muted)">
+          {{ panel.device_type }}
+        </text>
+
+        <g v-for="block in geometrie" :key="block.row">
+          <text
+            :x="block.x"
+            :y="OBEN - 8"
+            font-size="10"
+            font-weight="500"
+            fill="var(--viz-ink-muted)"
+          >
+            {{ block.block }}
+          </text>
+
+          <g v-for="port in block.ports" :key="port.name">
+            <!-- Buchse. 2px Abstand zwischen den Flächen, damit benachbarte
+                 Ports nicht verschmelzen. -->
+            <rect
+              :x="port.x"
+              :y="port.y"
+              :width="port.w"
+              :height="port.h"
+              :rx="port.form_factor === 'sfp' ? 2 : 3"
+              :fill="fuellung(port)"
+              :stroke="rahmen(port)"
+              stroke-width="1.5"
+              :opacity="abgeblendet(port) ? 0.25 : 1"
+            />
+
+            <!-- RJ45-Nase bzw. SFP-Käfigschlitz: die Bauform ist an der
+                 Silhouette erkennbar, nicht nur an der Farbe. -->
+            <rect
+              v-if="port.form_factor === 'copper'"
+              :x="port.x + port.w / 2 - 4"
+              :y="port.y + port.h - 5"
+              width="8"
+              height="5"
+              fill="var(--viz-chassis)"
+              :opacity="abgeblendet(port) ? 0.25 : 0.9"
+            />
+            <line
+              v-else
+              :x1="port.x + 4"
+              :y1="port.y + port.h / 2"
+              :x2="port.x + port.w - 4"
+              :y2="port.y + port.h / 2"
+              stroke="var(--viz-chassis)"
+              stroke-width="2"
+              :opacity="abgeblendet(port) ? 0.25 : 0.9"
+            />
+
+            <!-- Abgeschaltete Ports bekommen zusätzlich einen Schrägstrich:
+                 Zustand nie allein über Farbe. -->
+            <line
+              v-if="port.port_status === 'disabled'"
+              :x1="port.x + 3"
+              :y1="port.y + port.h - 3"
+              :x2="port.x + port.w - 3"
+              :y2="port.y + 3"
+              stroke="var(--viz-ink)"
+              stroke-width="1.5"
+              opacity="0.55"
+            />
+
+            <!-- PoE-Kennzeichen -->
+            <circle
+              v-if="port.poe_enabled"
+              :cx="port.x + port.w - 5"
+              :cy="port.y + 5"
+              r="2.5"
+              fill="var(--viz-ink)"
+              opacity="0.45"
+            />
+
+            <!-- Portnummer und VLAN als Text – das ist die Identität. -->
+            <text
+              :x="port.x + port.w / 2"
+              :y="port.y + port.h + 12"
+              font-size="9"
+              text-anchor="middle"
+              fill="var(--viz-ink-muted)"
+            >
+              {{ port.kurzname }}
+            </text>
+            <text
+              v-if="port.vid"
+              :x="port.x + port.w / 2"
+              :y="port.y + port.h + 22"
+              font-size="9"
+              font-weight="600"
+              text-anchor="middle"
+              fill="var(--viz-ink)"
+              :opacity="abgeblendet(port) ? 0.3 : 1"
+            >
+              {{ port.vid }}
+            </text>
+
+            <!-- Vergrößerte Trefferfläche für Maus und Touch -->
+            <rect
+              :x="port.x - 2"
+              :y="port.y - 2"
+              :width="port.w + 4"
+              :height="port.h + BESCHRIFTUNG"
+              fill="transparent"
+              class="cursor-pointer"
+              @mousemove="zeige(port, $event)"
+              @mouseleave="aktiv = null"
+              @click="$emit('select', port)"
+            />
+          </g>
+        </g>
+      </svg>
+    </div>
+
+    <!-- Legende: Statusfarben immer mit Beschriftung -->
+    <div class="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-ink-gray-6">
+      <span class="flex items-center gap-1.5">
+        <span class="inline-block size-3 rounded-sm" style="background: var(--viz-good)" />
+        belegt ({{ panel.summary.up }})
+      </span>
+      <span class="flex items-center gap-1.5">
+        <span
+          class="inline-block size-3 rounded-sm border"
+          style="background: var(--viz-neutral-soft); border-color: var(--viz-neutral)"
+        />
+        frei ({{ panel.summary.free }})
+      </span>
+      <span class="flex items-center gap-1.5">
+        <span class="inline-block size-3 rounded-sm" style="background: var(--viz-warning)" />
+        abgeschaltet ({{ panel.summary.disabled }})
+      </span>
+      <span class="flex items-center gap-1.5">
+        <span class="inline-block size-2 rounded-full bg-ink-gray-5" />
+        PoE ({{ panel.summary.poe }})
+      </span>
+    </div>
+
+    <!-- Tooltip: folgt der Maus, damit er nie unter dem Cursor klemmt -->
+    <div
+      v-if="aktiv"
+      class="pointer-events-none fixed z-50 max-w-xs rounded-lg border border-outline-gray-2 bg-surface-white p-3 text-sm shadow-lg"
+      :style="{ left: maus.x + 14 + 'px', top: maus.y + 14 + 'px' }"
+    >
+      <p class="font-medium text-ink-gray-9">{{ aktiv.interface_name }}</p>
+      <dl class="mt-1 space-y-0.5 text-ink-gray-7">
+        <div class="flex gap-2">
+          <dt class="w-20 shrink-0 text-ink-gray-5">Zustand</dt>
+          <dd>{{ ZUSTAND[aktiv.port_status] }}</dd>
+        </div>
+        <div class="flex gap-2">
+          <dt class="w-20 shrink-0 text-ink-gray-5">Typ</dt>
+          <dd>{{ aktiv.interface_type }} · {{ tempo(aktiv.speed_mbps) }}</dd>
+        </div>
+        <div class="flex gap-2">
+          <dt class="w-20 shrink-0 text-ink-gray-5">Modus</dt>
+          <dd>{{ valueLabel('mode', aktiv.mode) }}</dd>
+        </div>
+        <div v-if="aktiv.vlan_label" class="flex gap-2">
+          <dt class="w-20 shrink-0 text-ink-gray-5">VLAN</dt>
+          <dd>{{ aktiv.vlan_label }}</dd>
+        </div>
+        <div v-if="aktiv.ip_addresses.length" class="flex gap-2">
+          <dt class="w-20 shrink-0 text-ink-gray-5">IP</dt>
+          <dd>{{ aktiv.ip_addresses.join(', ') }}</dd>
+        </div>
+        <div v-if="aktiv.peer" class="flex gap-2">
+          <dt class="w-20 shrink-0 text-ink-gray-5">Gegenstelle</dt>
+          <dd>
+            {{ aktiv.peer.device || aktiv.peer.name }}
+            <span v-if="aktiv.peer.device"> · {{ aktiv.peer.interface_name }}</span>
+          </dd>
+        </div>
+        <div v-if="aktiv.cable" class="flex gap-2">
+          <dt class="w-20 shrink-0 text-ink-gray-5">Kabel</dt>
+          <dd>{{ aktiv.cable }} · {{ aktiv.cable_type }}</dd>
+        </div>
+        <div class="flex gap-2">
+          <dt class="w-20 shrink-0 text-ink-gray-5">MAC</dt>
+          <dd class="font-mono text-xs">{{ aktiv.mac_address }}</dd>
+        </div>
+        <div v-if="aktiv.description" class="flex gap-2">
+          <dt class="w-20 shrink-0 text-ink-gray-5">Notiz</dt>
+          <dd>{{ aktiv.description }}</dd>
+        </div>
+      </dl>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed, ref } from 'vue'
+import { valueLabel } from '@/labels'
+
+const props = defineProps({
+  panel: { type: Object, required: true },
+})
+defineEmits(['select'])
+
+const ZUSTAND = {
+  up: 'belegt – Kabel dokumentiert',
+  free: 'frei',
+  disabled: 'administrativ abgeschaltet',
+}
+
+// Maße in SVG-Einheiten
+const OBEN = 70
+const RAND = 16
+const BLOCK_ABSTAND = 30
+const PORT_B = 40
+const PORT_H = 32
+const PORT_LUECKE = 4 // 2px Fläche je Seite – Ports verschmelzen nicht
+const BESCHRIFTUNG = 26 // Platz unter jedem Port für Nummer und VLAN
+// Zeilenabstand muss die Beschriftung der oberen Reihe einschließen, sonst
+// läuft sie in die Buchsen der unteren Reihe.
+const ZEILEN_ABSTAND = PORT_H + BESCHRIFTUNG + 6
+const SKALIERUNG = 1.5
+
+const hervorgehoben = ref(null)
+const aktiv = ref(null)
+const maus = ref({ x: 0, y: 0 })
+
+/** Rechnet die Portblöcke in Koordinaten um. */
+const geometrie = computed(() => {
+  let x = RAND
+  return props.panel.blocks.map((block) => {
+    const spalten = block.staggered ? Math.ceil(block.ports.length / 2) : block.ports.length
+    const startX = x
+
+    const ports = block.ports.map((port, i) => {
+      const spalte = block.staggered ? Math.floor(i / 2) : i
+      const zeile = block.staggered ? i % 2 : 0
+      return {
+        ...port,
+        kurzname: kurz(port.interface_name),
+        x: startX + spalte * (PORT_B + PORT_LUECKE),
+        y: OBEN + zeile * ZEILEN_ABSTAND,
+        w: PORT_B,
+        h: PORT_H,
+      }
+    })
+
+    x = startX + spalten * (PORT_B + PORT_LUECKE) + BLOCK_ABSTAND
+    return { ...block, x: startX, ports }
+  })
+})
+
+const masse = computed(() => {
+  const alle = geometrie.value.flatMap((b) => b.ports)
+  if (!alle.length) return { breite: 240, hoehe: 110 }
+  const breite = Math.max(...alle.map((p) => p.x + p.w)) + RAND
+  const hoehe = Math.max(...alle.map((p) => p.y + p.h)) + BESCHRIFTUNG + 8
+  return { breite, hoehe }
+})
+
+/** Farbe trägt ausschließlich den Zustand. */
+function fuellung(port) {
+  if (istHervorgehoben(port)) return 'var(--viz-series-1)'
+  switch (port.port_status) {
+    case 'up':
+      return 'var(--viz-good)'
+    case 'disabled':
+      return 'var(--viz-warning)'
+    default:
+      return 'var(--viz-neutral-soft)'
+  }
+}
+
+function rahmen(port) {
+  if (istHervorgehoben(port)) return 'var(--viz-seq-550)'
+  return port.port_status === 'free' ? 'var(--viz-neutral)' : 'var(--viz-chassis-line)'
+}
+
+function istHervorgehoben(port) {
+  return hervorgehoben.value !== null && port.vlan === hervorgehoben.value
+}
+
+function abgeblendet(port) {
+  return hervorgehoben.value !== null && port.vlan !== hervorgehoben.value
+}
+
+function zeige(port, event) {
+  aktiv.value = port
+  maus.value = { x: event.clientX, y: event.clientY }
+}
+
+/** "Port 3" -> "3", "ens1f0" bleibt stehen. */
+function kurz(name) {
+  const treffer = /^(Port|SFP)\s+(\d+)$/.exec(name)
+  return treffer ? treffer[2] : name
+}
+
+function tempo(mbps) {
+  return mbps >= 1000 ? mbps / 1000 + ' Gbit/s' : mbps + ' Mbit/s'
+}
+</script>

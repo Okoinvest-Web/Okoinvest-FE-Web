@@ -1,0 +1,73 @@
+import re, sys
+p = r"C:\Users\SALEADMIN\Downloads\crm-develop\crm-next\src\lib\data\mock.ts"
+s = open(p, encoding="utf-8").read()
+
+start = s.index("  const leads: Lead[] = [")
+end = s.index("  return { leads, customers, opportunities, contacts, todos, notes, counter: 100 };")
+
+new = r'''  const leads: Lead[] = [
+    { name: "CRM-LEAD-2026-00001", first_name: "Anna", last_name: "Berger", lead_name: "Anna Berger", email_id: "anna.berger@mail.example", mobile_no: "+49 170 1234567", status: "Open", source: "Website", territory: "Unterallgäu", lead_owner: "max@firma.example", notes: "Einfamilienhaus, Süddach ca. 60 m², Verbrauch 5.200 kWh/Jahr. Interesse an PV mit Speicher, E-Auto ab Frühjahr geplant.", creation: d(12), modified: d(1) },
+    { name: "CRM-LEAD-2026-00002", first_name: "Jonas", last_name: "Keller", lead_name: "Jonas Keller", company_name: "Keller Logistik GmbH", email_id: "j.keller@keller-logistik.example", mobile_no: "+49 8331 55512", status: "Replied", source: "Messe", territory: "Memmingen", lead_owner: "lisa@firma.example", notes: "Hallendach 2.400 m², Lastprofil liegt vor. Fuhrpark soll bis 2028 elektrisch fahren.", creation: d(20), modified: d(3) },
+    { name: "CRM-LEAD-2026-00003", first_name: "Fatma", last_name: "Yilmaz", lead_name: "Fatma Yilmaz", email_id: "f.yilmaz@mail.example", mobile_no: "+49 151 9988776", status: "Lead", source: "Empfehlung", territory: "Augsburg", lead_owner: "max@firma.example", notes: "Empfehlung von Familie Fischer. Doppelhaushälfte, möchte Wärmepumpe und PV kombinieren.", creation: d(2), modified: d(2) },
+    { name: "CRM-LEAD-2026-00004", first_name: "Lukas", last_name: "Huber", lead_name: "Lukas Huber", company_name: "Hof Huber GbR", email_id: "info@hof-huber.example", mobile_no: "+49 160 7788990", status: "Interested", source: "Kaltakquise", territory: "Ostallgäu", lead_owner: "lisa@firma.example", notes: "Milchviehbetrieb, zwei Stalldächer, hoher Tagesverbrauch durch Melk- und Kühltechnik.", creation: d(30), modified: d(5) },
+    { name: "CRM-LEAD-2026-00005", first_name: "Sophie", last_name: "Wagner", lead_name: "Sophie Wagner", company_name: "Wagner & Söhne Schreinerei", email_id: "sophie@wagner-schreinerei.example", mobile_no: "+49 8245 90123", status: "Opportunity", source: "Website", territory: "Unterallgäu", lead_owner: "max@firma.example", creation: d(45), modified: d(7) },
+    { name: "CRM-LEAD-2026-00006", first_name: "Marco", last_name: "Rossi", lead_name: "Marco Rossi", email_id: "m.rossi@mail.example", status: "Do Not Contact", source: "Messe", territory: "Kaufbeuren", creation: d(60), modified: d(40) },
+    { name: "CRM-LEAD-2026-00007", first_name: "Elena", last_name: "Novak", lead_name: "Elena Novak", email_id: "elena.novak@mail.example", mobile_no: "+49 151 2233445", status: "Open", source: "LinkedIn", territory: "Augsburg", lead_owner: "lisa@firma.example", notes: "Bestehende PV (2012, 6 kWp) läuft aus der EEG-Förderung. Wunsch: Speicher nachrüsten + Wallbox.", creation: d(4), modified: d(0) },
+    { name: "CRM-LEAD-2026-00008", first_name: "Stefan", last_name: "Maier", lead_name: "Stefan Maier", email_id: "stefan.maier@mail.example", mobile_no: "+49 176 44556677", status: "Lead", source: "Website", territory: "Unterallgäu", lead_owner: "max@firma.example", notes: "Solarrechner ausgefüllt: 11 kWp, Speicher 10 kWh.", creation: d(1), modified: d(1) },
+  ];
+
+  const customers: Customer[] = [
+    { name: "Gemeinde Bad Wörishofen", customer_name: "Gemeinde Bad Wörishofen", customer_type: "Company", customer_group: "Öffentlich", territory: "Unterallgäu", email_id: "bauamt@gemeinde.example", website: "https://gemeinde.example", disabled: 0, creation: d(400), modified: d(10) },
+    { name: "Allgäuer Käserei Hartmann", customer_name: "Allgäuer Käserei Hartmann", customer_type: "Company", customer_group: "Gewerblich", territory: "Ostallgäu", email_id: "technik@kaeserei-hartmann.example", mobile_no: "+49 8341 555000", disabled: 0, creation: d(300), modified: d(15) },
+    { name: "Wagner & Söhne Schreinerei", customer_name: "Wagner & Söhne Schreinerei", customer_type: "Company", customer_group: "Gewerblich", territory: "Unterallgäu", email_id: "info@wagner-schreinerei.example", disabled: 0, creation: d(40), modified: d(7) },
+    { name: "Klara Fischer", customer_name: "Klara Fischer", customer_type: "Individual", customer_group: "Privat", territory: "Augsburg", email_id: "klara.fischer@mail.example", mobile_no: "+49 171 3344556", disabled: 0, creation: d(90), modified: d(60) },
+    { name: "Thomas Brandl", customer_name: "Thomas Brandl", customer_type: "Individual", customer_group: "Privat", territory: "Memmingen", email_id: "t.brandl@mail.example", disabled: 0, creation: d(210), modified: d(30) },
+  ];
+
+  const opportunities: Opportunity[] = [
+    { name: "CRM-OPP-2026-00001", opportunity_from: "Customer", party_name: "Gemeinde Bad Wörishofen", customer_name: "Gemeinde Bad Wörishofen", title: "PV Schulzentrum 180 kWp", status: "Open", sales_stage: "Needs Analysis", opportunity_amount: 198000, currency: "EUR", probability: 40, expected_closing: day(45), opportunity_owner: "max@firma.example", creation: d(25), modified: d(2) },
+    { name: "CRM-OPP-2026-00002", opportunity_from: "Customer", party_name: "Allgäuer Käserei Hartmann", customer_name: "Allgäuer Käserei Hartmann", title: "Gewerbe-PV 99 kWp + Speicher 100 kWh", status: "Quotation", sales_stage: "Proposal/Price Quote", opportunity_amount: 142000, currency: "EUR", probability: 65, expected_closing: day(20), opportunity_owner: "lisa@firma.example", creation: d(35), modified: d(4) },
+    { name: "CRM-OPP-2026-00003", opportunity_from: "Lead", party_name: "CRM-LEAD-2026-00005", customer_name: "Wagner & Söhne Schreinerei", title: "PV Hallendach 60 kWp", status: "Open", sales_stage: "Negotiation/Review", opportunity_amount: 71500, currency: "EUR", probability: 80, expected_closing: day(10), opportunity_owner: "max@firma.example", creation: d(15), modified: d(1) },
+    { name: "CRM-OPP-2026-00004", opportunity_from: "Lead", party_name: "CRM-LEAD-2026-00004", customer_name: "Hof Huber GbR", title: "Stalldach-PV 120 kWp", status: "Open", sales_stage: "Qualification", opportunity_amount: 118000, currency: "EUR", probability: 25, expected_closing: day(90), opportunity_owner: "lisa@firma.example", creation: d(8), modified: d(3) },
+    { name: "CRM-OPP-2026-00005", opportunity_from: "Lead", party_name: "CRM-LEAD-2026-00002", customer_name: "Keller Logistik GmbH", title: "Ladeinfrastruktur Fuhrpark (8 Ladepunkte)", status: "Open", sales_stage: "Prospecting", opportunity_amount: 46000, currency: "EUR", probability: 10, expected_closing: day(120), opportunity_owner: "lisa@firma.example", creation: d(3), modified: d(3) },
+    { name: "CRM-OPP-2026-00006", opportunity_from: "Customer", party_name: "Klara Fischer", customer_name: "Klara Fischer", title: "PV 9,9 kWp + Speicher + Wallbox", status: "Converted", sales_stage: "Negotiation/Review", opportunity_amount: 24800, currency: "EUR", probability: 100, expected_closing: day(-5), opportunity_owner: "max@firma.example", creation: d(50), modified: d(5) },
+    { name: "CRM-OPP-2026-00007", opportunity_from: "Lead", party_name: "CRM-LEAD-2026-00001", customer_name: "Anna Berger", title: "PV 12,4 kWp + Speicher 10 kWh", status: "Open", sales_stage: "Proposal/Price Quote", opportunity_amount: 27900, currency: "EUR", probability: 55, expected_closing: day(14), opportunity_owner: "max@firma.example", creation: d(9), modified: d(1) },
+    { name: "CRM-OPP-2026-00008", opportunity_from: "Lead", party_name: "CRM-LEAD-2026-00007", customer_name: "Elena Novak", title: "Speicher-Nachrüstung 7,7 kWh + Wallbox", status: "Open", sales_stage: "Qualification", opportunity_amount: 9800, currency: "EUR", probability: 35, expected_closing: day(30), opportunity_owner: "lisa@firma.example", creation: d(3), modified: d(0) },
+    { name: "CRM-OPP-2026-00009", opportunity_from: "Customer", party_name: "Thomas Brandl", customer_name: "Thomas Brandl", title: "Wärmepumpe 9 kW zur bestehenden PV", status: "Open", sales_stage: "Needs Analysis", opportunity_amount: 31500, currency: "EUR", probability: 45, expected_closing: day(35), opportunity_owner: "max@firma.example", creation: d(12), modified: d(4) },
+  ];
+
+  const contacts: Contact[] = [
+    { name: "Petra Lang-Gemeinde Bad Wörishofen", first_name: "Petra", last_name: "Lang", full_name: "Petra Lang", email_id: "p.lang@gemeinde.example", mobile_no: "+49 8247 55501", designation: "Leitung Bauamt", company_name: "Gemeinde Bad Wörishofen", links: [{ link_doctype: "Customer", link_name: "Gemeinde Bad Wörishofen" }], creation: d(380), modified: d(10) },
+    { name: "Martin Hartmann-Allgäuer Käserei Hartmann", first_name: "Martin", last_name: "Hartmann", full_name: "Martin Hartmann", email_id: "m.hartmann@kaeserei-hartmann.example", mobile_no: "+49 160 1112233", designation: "Geschäftsführer", company_name: "Allgäuer Käserei Hartmann", links: [{ link_doctype: "Customer", link_name: "Allgäuer Käserei Hartmann" }], creation: d(290), modified: d(15) },
+    { name: "Sophie Wagner", first_name: "Sophie", last_name: "Wagner", full_name: "Sophie Wagner", email_id: "sophie@wagner-schreinerei.example", mobile_no: "+49 8245 90123", designation: "Geschäftsführerin", company_name: "Wagner & Söhne Schreinerei", links: [{ link_doctype: "Customer", link_name: "Wagner & Söhne Schreinerei" }, { link_doctype: "Lead", link_name: "CRM-LEAD-2026-00005" }], creation: d(45), modified: d(7) },
+    { name: "Klara Fischer", first_name: "Klara", last_name: "Fischer", full_name: "Klara Fischer", email_id: "klara.fischer@mail.example", mobile_no: "+49 171 3344556", designation: "Eigentümerin", company_name: "Klara Fischer", links: [{ link_doctype: "Customer", link_name: "Klara Fischer" }], creation: d(90), modified: d(60) },
+    { name: "Thomas Brandl", first_name: "Thomas", last_name: "Brandl", full_name: "Thomas Brandl", email_id: "t.brandl@mail.example", designation: "Eigentümer", company_name: "Thomas Brandl", links: [{ link_doctype: "Customer", link_name: "Thomas Brandl" }], creation: d(210), modified: d(30) },
+  ];
+
+  const todos: ToDo[] = [
+    { name: "TD-0001", description: "Angebot Käserei Hartmann nachfassen (Speichergröße klären)", status: "Open", priority: "High", date: day(1), allocated_to: "lisa@firma.example", reference_type: "Opportunity", reference_name: "CRM-OPP-2026-00002", creation: d(4), modified: d(4) },
+    { name: "TD-0002", description: "Rückruf Anna Berger – Stromrechnung und Dachfotos anfordern", status: "Open", priority: "Medium", date: day(0), allocated_to: "max@firma.example", reference_type: "Lead", reference_name: "CRM-LEAD-2026-00001", creation: d(1), modified: d(1) },
+    { name: "TD-0003", description: "Vor-Ort-Termin Schreinerei Wagner: Dachstatik & Zählerschrank", status: "Open", priority: "High", date: day(3), allocated_to: "max@firma.example", reference_type: "Opportunity", reference_name: "CRM-OPP-2026-00003", creation: d(2), modified: d(2) },
+    { name: "TD-0004", description: "Referenzanlagen Landwirtschaft an Hof Huber senden", status: "Closed", priority: "Low", date: day(-2), allocated_to: "lisa@firma.example", reference_type: "Lead", reference_name: "CRM-LEAD-2026-00004", creation: d(6), modified: d(2) },
+    { name: "TD-0005", description: "Erstberatung Elena Novak terminieren (Ü20-Anlage)", status: "Open", priority: "Medium", date: day(2), allocated_to: "lisa@firma.example", reference_type: "Lead", reference_name: "CRM-LEAD-2026-00007", creation: d(0), modified: d(0) },
+    { name: "TD-0006", description: "Netzanfrage beim Netzbetreiber für Schulzentrum stellen", status: "Open", priority: "High", date: day(-1), allocated_to: "max@firma.example", reference_type: "Opportunity", reference_name: "CRM-OPP-2026-00001", creation: d(5), modified: d(5) },
+    { name: "TD-0007", description: "Solarrechner-Anfrage Stefan Maier: Erstgespräch vereinbaren", status: "Open", priority: "Medium", date: day(1), allocated_to: "max@firma.example", reference_type: "Lead", reference_name: "CRM-LEAD-2026-00008", creation: d(1), modified: d(1) },
+  ];
+
+  const notes: Note[] = [
+    { name: "CMT-0001", reference_doctype: "Lead", reference_name: "CRM-LEAD-2026-00001", content: "Anfrage über Solarrechner auf der Website. Süddach, 35° Neigung, keine Verschattung laut Google-Luftbild.", comment_email: "max@firma.example", comment_by: "Max Mustermann", creation: d(12) },
+    { name: "CMT-0002", reference_doctype: "Lead", reference_name: "CRM-LEAD-2026-00001", content: "Telefonat: Angebot bis Monatsende gewünscht. Entscheidung gemeinsam mit Ehemann, Finanzierung über KfW möglich.", comment_email: "max@firma.example", comment_by: "Max Mustermann", creation: d(1) },
+    { name: "CMT-0003", reference_doctype: "Opportunity", reference_name: "CRM-OPP-2026-00003", content: "Dachstatik geprüft – passt. Preisverhandlung läuft, Kunde erwartet 5 % Nachlass bei Montage im Mai.", comment_email: "max@firma.example", comment_by: "Max Mustermann", creation: d(1) },
+    { name: "CMT-0004", reference_doctype: "Opportunity", reference_name: "CRM-OPP-2026-00002", content: "Lastgang ausgewertet: Grundlast Kühlung ca. 35 kW. Eigenverbrauchsquote mit 100-kWh-Speicher rund 78 %.", comment_email: "lisa@firma.example", comment_by: "Lisa Schmidt", creation: d(4) },
+  ];
+
+'''
+s = s[:start] + new + s[end:]
+s = s.replace("__crmMockV2", "__crmMockV3")
+open(p, "w", encoding="utf-8", newline="\n").write(s)
+
+f = r"C:\Users\SALEADMIN\Downloads\crm-develop\crm-next\src\components\forms.tsx"
+t = open(f, encoding="utf-8").read()
+t = t.replace('placeholder="z. B. Wartungsvertrag 2027"', 'placeholder="z. B. PV 12 kWp + Speicher 10 kWh"')
+open(f, "w", encoding="utf-8", newline="\n").write(t)
+print("ok")

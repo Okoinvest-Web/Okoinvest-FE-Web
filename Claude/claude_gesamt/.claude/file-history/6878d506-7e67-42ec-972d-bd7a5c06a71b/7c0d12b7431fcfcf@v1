@@ -1,0 +1,49 @@
+import Link from "next/link";
+import { Suspense } from "react";
+import { db } from "@/lib/data";
+import { Avatar, Empty, PageHeader, Table } from "@/components/ui";
+import { ListToolbar } from "@/components/ListToolbar";
+
+export const metadata = { title: "Kontakte" };
+
+export default async function ContactsPage({ searchParams }: PageProps<"/contacts">) {
+  const sp = await searchParams;
+  const contacts = await db().listContacts({ search: typeof sp.q === "string" ? sp.q : undefined });
+
+  return (
+    <>
+      <PageHeader title="Kontakte" />
+      <Suspense>
+        <ListToolbar count={contacts.length} />
+      </Suspense>
+      {contacts.length === 0 ? (
+        <Empty>Keine Kontakte gefunden.</Empty>
+      ) : (
+        <Table head={["Name", "Position", "Firma", "E-Mail", "Mobil"]}>
+          {contacts.map((c) => (
+            <tr key={c.name} className="hover:bg-gray-50">
+              <td className="px-5 py-2">
+                <span className="flex items-center gap-2 font-medium text-gray-900">
+                  <Avatar name={c.full_name} />
+                  {c.full_name}
+                </span>
+              </td>
+              <td className="px-5 py-2 text-gray-700">{c.designation ?? "–"}</td>
+              <td className="px-5 py-2 text-gray-700">
+                {c.company_name ? (
+                  <Link href={`/customers/${encodeURIComponent(c.company_name)}`} className="hover:underline">
+                    {c.company_name}
+                  </Link>
+                ) : (
+                  "–"
+                )}
+              </td>
+              <td className="px-5 py-2 text-gray-700">{c.email_id ? <a href={`mailto:${c.email_id}`} className="hover:underline">{c.email_id}</a> : "–"}</td>
+              <td className="whitespace-nowrap px-5 py-2 text-gray-700">{c.mobile_no ?? "–"}</td>
+            </tr>
+          ))}
+        </Table>
+      )}
+    </>
+  );
+}

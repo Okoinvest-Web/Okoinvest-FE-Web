@@ -1,0 +1,28 @@
+# CRM (Next.js + ERPNext)
+
+CRM-Oberfläche in Next.js, die Daten aus ERPNext liest (Lead, Opportunity, Customer, Contact, ToDo).
+
+## Starten
+
+```bash
+npm install
+npm run dev   # http://localhost:3000
+```
+
+Ohne Konfiguration läuft die App im **Demo-Modus** mit Beispieldaten im Speicher (Neustart setzt sie zurück).
+
+## Mit ERPNext verbinden
+
+1. In ERPNext: Benutzer → Einstellungen → API-Zugang → Schlüssel generieren.
+2. `.env.example` nach `.env.local` kopieren und `ERPNEXT_URL`, `ERPNEXT_API_KEY`, `ERPNEXT_API_SECRET` eintragen.
+3. Dev-Server neu starten. Unten in der Seitenleiste steht dann „Verbunden mit ERPNext“.
+
+Die Zugangsdaten werden nur serverseitig verwendet (`src/lib/data/erpnext.ts`) und gelangen nie in den Browser.
+
+## Aufbau
+
+- `src/lib/data/source.ts` – gemeinsame Schnittstelle
+- `src/lib/data/mock.ts` – Beispieldaten
+- `src/lib/data/erpnext.ts` – Frappe-REST-Client (`/api/resource/<DocType>`)
+- `src/lib/actions.ts` – Server Actions mit serverseitiger Prüfung
+- `src/app/(crm)/…` – Seiten

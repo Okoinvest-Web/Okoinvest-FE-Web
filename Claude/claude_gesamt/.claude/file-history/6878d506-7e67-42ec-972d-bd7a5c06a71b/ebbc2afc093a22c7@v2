@@ -1,0 +1,102 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { Building2, CheckSquare, Contact, Handshake, LayoutDashboard, LogOut, Search, Sun, Users } from "lucide-react";
+import { logoutAction } from "@/lib/actions";
+import { initials } from "@/lib/format";
+import type { SessionUser } from "@/lib/types";
+import { LogoMark } from "@/components/ui";
+
+const NAV = [
+  { group: "Vertrieb", items: [
+    { href: "/", label: "Übersicht", icon: LayoutDashboard },
+    { href: "/leads", label: "Leads", icon: Users },
+    { href: "/opportunities", label: "Chancen", icon: Handshake },
+    { href: "/todos", label: "Aufgaben", icon: CheckSquare },
+  ] },
+  { group: "Stammdaten", items: [
+    { href: "/customers", label: "Kunden", icon: Building2 },
+    { href: "/contacts", label: "Kontakte", icon: Contact },
+  ] },
+];
+
+export function Sidebar({ source, user }: { source: "mock" | "erpnext"; user: SessionUser }) {
+  const pathname = usePathname();
+
+  return (
+    <aside className="relative flex w-64 shrink-0 flex-col overflow-hidden bg-brand-950 text-brand-100">
+      {/* dezenter Sonnenschein oben */}
+      <div className="pointer-events-none absolute -left-16 -top-24 size-64 rounded-full bg-sun-400/10 blur-3xl" />
+
+      <div className="relative flex h-[72px] items-center gap-2.5 px-5">
+        <LogoMark className="size-9" />
+        <div className="leading-tight">
+          <div className="text-[15px] font-semibold tracking-tight text-white">Ökovolt</div>
+          <div className="text-[10.5px] font-medium uppercase tracking-[0.16em] text-brand-300">Vertrieb · CRM</div>
+        </div>
+      </div>
+
+      <div className="relative px-3">
+        <button
+          onClick={() => window.dispatchEvent(new Event("open-search"))}
+          className="flex w-full items-center gap-2.5 rounded-lg bg-white/[0.06] px-3 py-2 text-brand-200/80 ring-1 ring-white/10 transition hover:bg-white/10 hover:text-white"
+        >
+          <Search className="size-4" strokeWidth={1.75} />
+          Suchen
+          <kbd className="ml-auto rounded bg-white/10 px-1.5 py-0.5 font-sans text-[10px] text-brand-200">Strg K</kbd>
+        </button>
+      </div>
+
+      <nav className="relative mt-4 flex flex-col gap-5 px-3">
+        {NAV.map((g) => (
+          <div key={g.group}>
+            <div className="mb-1.5 px-3 text-[10.5px] font-semibold uppercase tracking-[0.14em] text-brand-400/80">{g.group}</div>
+            <div className="flex flex-col gap-0.5">
+              {g.items.map(({ href, label, icon: Icon }) => {
+                const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    className={`group relative flex items-center gap-3 rounded-lg px-3 py-2 transition-colors ${
+                      active ? "bg-white/10 font-medium text-white" : "text-brand-100/75 hover:bg-white/[0.05] hover:text-white"
+                    }`}
+                  >
+                    {active && <span className="absolute inset-y-2 left-0 w-[3px] rounded-r bg-sun-400" />}
+                    <Icon className={`size-[18px] ${active ? "text-sun-300" : "text-brand-300/70 group-hover:text-brand-200"}`} strokeWidth={1.75} />
+                    {label}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </nav>
+
+      <div className="relative mt-auto flex flex-col gap-3 p-3">
+        <div className="flex items-center gap-2 rounded-lg bg-white/[0.04] px-3 py-2 text-xs ring-1 ring-white/10">
+          <span className={`size-2 rounded-full ${source === "mock" ? "bg-sun-400" : "bg-brand-400"} shadow-[0_0_0_3px_rgb(255_255_255/0.06)]`} />
+          <span className="text-brand-200">{source === "mock" ? "Demo-Modus · Beispieldaten" : "Verbunden mit ERPNext"}</span>
+        </div>
+        <div className="flex items-center gap-3 rounded-lg px-2 py-1.5">
+          <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-sun-300 to-sun-500 text-xs font-semibold text-brand-950">
+            {initials(user.fullName)}
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-sm font-medium text-white">{user.fullName}</div>
+            <div className="truncate text-xs text-brand-300/80">{user.user}</div>
+          </div>
+          <form action={logoutAction}>
+            <button title="Abmelden" className="rounded-md p-2 text-brand-300 transition hover:bg-white/10 hover:text-white">
+              <LogOut className="size-4" />
+            </button>
+          </form>
+        </div>
+        <div className="flex items-center justify-center gap-1.5 pb-1 text-[10.5px] text-brand-400/70">
+          <Sun className="size-3" /> Ihr Dach. Ihr Kraftwerk.
+        </div>
+      </div>
+    </aside>
+  );
+}

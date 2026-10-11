@@ -1,0 +1,131 @@
+"use client";
+
+import { useActionState, useState } from "react";
+
+import { sendeAnfrage, type AnfrageErgebnis } from "./aktionen";
+
+/**
+ * Anfrage zu einer Leistung.
+ *
+ * Bewusst eine Anfrage und keine Bestellung: Die Leistungen brauchen
+ * fast alle einen Termin, eine Begehung oder eine technische Abklaerung.
+ * Ein Warenkorb mit Sofortkauf waere hier ein falsches Versprechen.
+ */
+export function AnfrageFormular({
+  artikel,
+  bezeichnung,
+  einheit,
+  anlagen,
+}: {
+  artikel: string;
+  bezeichnung: string;
+  einheit?: string;
+  anlagen: { name: string; label: string }[];
+}) {
+  const [offen, setOffen] = useState(false);
+  const [ergebnis, aktion, laeuft] = useActionState<
+    AnfrageErgebnis | null,
+    FormData
+  >(sendeAnfrage, null);
+
+  if (ergebnis?.ok) {
+    return (
+      <p
+        role="status"
+        className="rounded-lg bg-emerald-50 px-3 py-2 text-xs leading-relaxed text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
+      >
+        {ergebnis.meldung}
+      </p>
+    );
+  }
+
+  if (!offen) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOffen(true)}
+        className="w-full rounded-lg border border-emerald-300 px-3 py-2 text-sm font-medium text-emerald-700 transition hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-300 dark:hover:bg-emerald-950/40"
+      >
+        Anfrage stellen
+      </button>
+    );
+  }
+
+  return (
+    <form action={aktion} className="space-y-2.5">
+      <input type="hidden" name="artikel" value={artikel} />
+      <input type="hidden" name="bezeichnung" value={bezeichnung} />
+
+      <div className="flex gap-2">
+        <label className="flex-1">
+          <span className="mb-1 block text-xs text-slate-500 dark:text-slate-400">
+            Menge{einheit ? ` (${einheit})` : ""}
+          </span>
+          <input
+            name="menge"
+            type="number"
+            min="1"
+            step="any"
+            defaultValue="1"
+            required
+            className="w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm tabular-nums outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/30 dark:border-slate-700 dark:bg-slate-950"
+          />
+        </label>
+
+        <label className="flex-[2]">
+          <span className="mb-1 block text-xs text-slate-500 dark:text-slate-400">
+            Anlage
+          </span>
+          <select
+            name="anlage"
+            className="w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/30 dark:border-slate-700 dark:bg-slate-950"
+          >
+            <option value="">– alle / unspezifisch –</option>
+            {anlagen.map((anlage) => (
+              <option key={anlage.name} value={anlage.name}>
+                {anlage.label}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+
+      <label className="block">
+        <span className="mb-1 block text-xs text-slate-500 dark:text-slate-400">
+          Anmerkung (optional)
+        </span>
+        <textarea
+          name="anmerkung"
+          rows={2}
+          className="w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/30 dark:border-slate-700 dark:bg-slate-950"
+        />
+      </label>
+
+      {ergebnis && !ergebnis.ok && (
+        <p
+          role="alert"
+          className="rounded-md bg-rose-50 px-2.5 py-1.5 text-xs text-rose-800 dark:bg-rose-950/60 dark:text-rose-300"
+        >
+          {ergebnis.meldung}
+        </p>
+      )}
+
+      <div className="flex gap-2">
+        <button
+          type="submit"
+          disabled={laeuft}
+          className="flex-1 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-emerald-700 disabled:opacity-60"
+        >
+          {laeuft ? "Wird gesendet …" : "Absenden"}
+        </button>
+        <button
+          type="button"
+          onClick={() => setOffen(false)}
+          className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+        >
+          Abbrechen
+        </button>
+      </div>
+    </form>
+  );
+}

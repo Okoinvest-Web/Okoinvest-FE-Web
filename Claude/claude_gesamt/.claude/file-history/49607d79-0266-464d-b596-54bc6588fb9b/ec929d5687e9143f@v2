@@ -1,0 +1,140 @@
+# -*- coding: utf-8 -*-
+"""Zieht die README auf den Stand der Sicherungsverwaltung nach."""
+import io
+
+p = 'README.md'
+s = io.open(p, encoding='utf-8').read()
+
+# --- 1. Fixture-Tabelle
+alt = u"| `fixtures-backup.js` | Sicherungsziele, Wiederherstellungspunkte, Aufträge, Läufe, Dateien |"
+assert alt in s, 'Fixture-Zeile fehlt'
+s = s.replace(
+    alt,
+    alt + u"""
+| `fixtures-zielarten.js` | Zielarten – welches Sicherungssystem kann welche Aktion |
+| `fixtures-workflow.js` | Workflow, Zustände, Übergänge, Antragsdokument |
+| `fixtures-backup-logs.js` | Meldungen aus Aufgabenprotokollen und rsyslog |
+| `fixtures-band.js` | LTO-Bandarchiv: Sätze, Bänder, Wechselaufträge, Erinnerungen |""",
+    1,
+)
+
+# --- 2. Testtabelle
+alt = u"| `backup-steuerung.test.js` | Sicherungen lesen, Grenze der erlaubten Aktionen, Dateien, Download |"
+assert alt in s, 'Testzeile fehlt'
+s = s.replace(
+    alt,
+    alt + u"""
+| `backup-verwaltung.test.js` | Erklärt gegen gemessen, Ziele und Schutzobjekte anlegen, Wiederherstellungstest |
+| `workflow.test.js` | Zustandsmaschine, Rollen, Vier-Augen-Prinzip, Erreichbarkeit, Meldungen |
+| `band.test.js` | Etiketten, Auswerfen, Erinnerungsschleife, Quittung |""",
+    1,
+)
+
+# --- 3. Neuer Abschnitt nach der Sicherungssteuerung
+anker = u"""Beim Portieren nach Python gehört vor jede dieser Methoden
+`frappe.has_permission` und ein Mandantenfilter. Wichtiger noch: die
+tatsächlichen API-Aufrufe müssen mit Token laufen, die die verbotenen
+Aktionen **serverseitig im Zielsystem** nicht können. Ein PBS-Token mit
+Prune-Recht ist auch dann gefährlich, wenn diese Anwendung es nie benutzt."""
+assert anker in s, 'Anker im Sicherungsabschnitt fehlt'
+
+NEU = anker + u"""
+
+#### Erklärt gegen gemessen
+
+Die wichtigste Unterscheidung im Sicherungsdatenmodell. Jedes Feld gehört in
+genau eine der beiden Welten.
+
+**Erklärt** legt ein Mensch fest: wo Sicherungen liegen dürfen, was
+geschützt gehört, wie lange aufbewahrt. Das ist die **Zusage**.
+
+**Gemessen** liest ein Konnektor aus dem Zielsystem: wann zuletzt gesichert,
+wie viele Kopien, wie voll das Ziel, geprüft oder nicht. Das ist die
+**Wirklichkeit**.
+
+`backup_assurance` vergleicht die beiden – daraus bezieht die ganze Seite
+ihren Wert. Ließe sich „copies: 3" von Hand eintragen, wäre die Prüfung
+keine Prüfung mehr, sondern eine Selbstauskunft. Deshalb weisen
+`backup_target_save` und `backup_object_save` gemessene Felder **ausdrücklich
+ab**, statt sie still zu übernehmen.
+
+Die einzige Ausnahme ist der **Wiederherstellungstest**: den führt ein
+Mensch durch, also trägt ihn auch ein Mensch ein. Ohne diesen Weg bliebe der
+Befund „nie getestet" für immer stehen – und ein Befund, den niemand
+abarbeiten kann, wird ignoriert, mit ihm die daneben. `backup_restore_test`
+ist entsprechend streng: Ergebnis nur `ok` oder `failed`, bei Erfolg ist die
+gemessene Dauer Pflicht (sie *ist* der tatsächliche RTO), kein Datum in der
+Zukunft, und ein Fehlschlag überschreibt die bisherige Dauer nicht.
+
+#### Ein neues System anbinden
+
+Die Zielarten liegen in `Backup Target Kind`, nicht im Code. Wer einen
+Google Drive bucht, trägt eine Zielart ein, legt einen Konnektor der Art an
+(Adresse, Token-Kennung, Passbolt-Verweis) und darauf ein Ziel – ohne dass
+jemand eine Datei ändert.
+
+**Zwei Böden bleiben im Code**: die Liste `VERBOTEN` (Löschen, Prune,
+Forget, Aufbewahrung ändern, Auftrag löschen, Schutz aufheben) und der
+Verbkatalog. Stünde `VERBOTEN` in der Datenbank, trüge es sich irgendwann
+jemand als Zielart-Aktion ein; und ein Verb ohne Umsetzung wäre eine
+Schaltfläche, die nichts tut.
+
+#### Automatisierung: Scheduler und Workflow
+
+Die Automatisierung entsteht in Frappe, nicht im Frontend. Der **Scheduler**
+taktet die Konnektoren (`hooks.py` → `scheduler_events`); ein Browser, der
+zugeklappt wird, taktet nichts.
+
+Gesteuert wird über **Frappe Workflow**. Eine Aktion ist kein direkter
+Aufruf, sondern ein Dokument mit Zustand:
+
+```
+Entwurf → Beantragt → Genehmigt → Läuft → Erledigt / Fehlgeschlagen
+```
+
+Zustände, Übergänge und erlaubte Rollen stehen in `Workflow`,
+`Workflow Document State` und `Workflow Transition` – als **Daten**, nicht
+als `if`-Zweige. Wer will, dass ein Verify-Lauf ohne Genehmigung durchgeht,
+stellt das ein, statt Code zu ändern und dabei versehentlich die Sperre für
+`backup_now` mit abzubauen.
+
+Nachgebaut sind Rollenprüfung je Übergang, `allow_self_approval`
+(Vier-Augen-Prinzip), `condition` und `doc_status`. Die `condition` ist hier
+ein Name aus einer Positivliste statt eines Python-Ausdrucks – einen
+Ausdruck aus den Daten auszuwerten hieße `eval` auf Inhalten, die über die
+API hereinkommen.
+
+#### Erreichbarkeit und Meldungen
+
+`backup_health` geht vom **Konnektor** aus, nicht vom Ziel: ein Ziel kann
+tadellos aussehen, weil seit zwei Tagen niemand nachgesehen hat. Bleibt ein
+Konnektor hinter dem zweifachen Takt zurück, gilt er als nicht erreichbar,
+und der Bereich blendet über allen Unterseiten ein: *die Zahlen hier sind
+dort so alt wie die letzte Meldung.* Der gefährlichste Zustand einer
+Überwachung ist nicht der rote Punkt, sondern der grüne, der eingefroren
+ist.
+
+`backup_logs` führt zwei Quellen zusammen: das Aufgabenprotokoll des
+Systems und **rsyslog**. Das erste sagt, *dass* etwas schiefging, das zweite
+oft, *warum*. Ein Klick auf eine Meldung zeigt alles aus beiden Quellen im
+Umkreis von 30 Minuten.
+
+#### LTO-Bandarchiv
+
+Die Airgap-Sicherung – das einzige Ziel, das nicht über ein Netz erreichbar
+ist. Etiketten (Code 39, sechs Stellen plus `L9`), Scannen, Auswerfen mit
+Bedingungen, stündliche Erinnerung ab Fälligkeit und eine Quittung mit
+Lagerort. Der Ablauf im Detail steht in
+[`docs/bandarchiv-konzept.md`](docs/bandarchiv-konzept.md).
+
+> Ein ausgeworfenes Band, das im Serverraum liegen bleibt, ist kein Airgap –
+> es sieht nur so aus.
+
+#### Konzeptpapiere
+
+- [`docs/backup-konzept.md`](docs/backup-konzept.md)
+- [`docs/bandarchiv-konzept.md`](docs/bandarchiv-konzept.md)"""
+
+s = s.replace(anker, NEU, 1)
+io.open(p, 'w', encoding='utf-8').write(s)
+print('README ergaenzt')

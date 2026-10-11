@@ -1,0 +1,118 @@
+import sys, os, re
+os.chdir(r"C:\Users\SALEADMIN\Downloads\crm-develop\crm-next")
+p = "src/lib/data/mock.ts"
+s = open(p, encoding="utf-8").read()
+
+def rep(a, b):
+    global s
+    if a not in s:
+        sys.exit("fehlt: " + a[:90])
+    s = s.replace(a, b, 1)
+
+rep('import type { Contact, Customer, Lead, ListOptions, Note, Opportunity, Role, ToDo } from "@/lib/types";',
+    'import type { Contact, Customer, Lead, ListOptions, Note, Opportunity, Quotation, Role, SalesInvoice, SalesOrder, ToDo } from "@/lib/types";\nimport { lines, SALES_PARTNER, salesSeed } from "./mock-sales";\nimport { calcTotals } from "@/lib/tax";')
+
+rep("  return { leads, customers, opportunities, contacts, todos, notes, counter: 100 };",
+    "  return { leads, customers, opportunities, contacts, todos, notes, ...salesSeed({ d, day }), counter: 100 };")
+
+# Land für Leads: Standard Deutschland, zwei österreichische Beispiele
+rep('lead_name: "Lukas Huber", company_name: "Hof Huber GbR"', 'lead_name: "Lukas Huber", company_name: "Hof Huber GbR", country: "Germany"')
+
+rep('''  const todo = (t: ToDo) => all || t.allocated_to === me;''', '''  const todo = (t: ToDo) => all || t.allocated_to === me;
+  const partner = me ? SALES_PARTNER[me] : undefined;
+  const quote = (q: Quotation) => all || q.owner === me;
+  const order = (o: SalesOrder) => all || (!!partner && o.sales_partner === partner);
+  const invoice = (i: SalesInvoice) => all || (!!partner && i.sales_partner === partner);''')
+rep("  return { me, lead, opp, customer, contact, todo, doc };", "  return { me, lead, opp, customer, contact, todo, doc, quote, order, invoice };")
+
+rep('''  async listNotes(doctype, name) {''', '''  // ---------- Verkauf ----------
+  async listItems(o) {
+    await tick();
+    const rows = store.items.map((i) => ({ ...i, modified: "" }));
+    return applyList(rows, { ...o, limit: o?.limit ?? 500 }, ["item_name", "item_code", "item_group"]).map(({ modified: _m, ...i }) => i);
+  },
+  async listQuotations(o) {
+    await tick();
+    const v = await viewer();
+    return applyList(store.quotations.filter(v.quote), o, ["title", "customer_name", "name"]);
+  },
+  async getQuotation(n) {
+    await tick();
+    const v = await viewer();
+    return store.quotations.find((q) => q.name === n && v.quote(q)) ?? null;
+  },
+  async createQuotation(data, owner) {
+    await tick();
+    const v = await viewer();
+    if (!v.doc(data.quotation_to, data.party_name)) deny();
+    const party =
+      data.quotation_to === "Lead" ? store.leads.find((l) => l.name === data.party_name)?.lead_name : store.customers.find((c) => c.name === data.party_name)?.customer_name;
+    // Preise und Bezeichnungen aus dem Katalog; abweichende Preise (Rabatt) werden übernommen
+    const items = lines(data.items.map((i) => [i.item_code, i.qty])).map((l, idx) => {
+      const rate = data.items[idx].rate;
+      return { ...l, rate, amount: Math.round(l.qty * rate * 100) / 100 };
+    });
+    const t = calcTotals(items, data.tax_rate);
+    const ts = now();
+    const q: Quotation = {
+      ...data,
+      items,
+      name: nextId("SAL-QTN-2026-"),
+      customer_name: party ?? data.party_name,
+      transaction_date: ts.slice(0, 10),
+      status: "Draft",
+      currency: "EUR",
+      net_total: t.net,
+      total_taxes_and_charges: t.tax,
+      grand_total: t.gross,
+      owner,
+      creation: ts,
+      modified: ts,
+    };
+    store.quotations.push(q);
+    // Chance rückt ins Angebot, wie in ERPNext beim Angebot aus einer Opportunity
+    const opp = store.opportunities.find((x) => x.name === data.opportunity);
+    if (opp && opp.status === "Open") {
+      opp.status = "Quotation";
+      opp.modified = ts;
+    }
+    return q;
+  },
+  async listSalesOrders(o) {
+    await tick();
+    const v = await viewer();
+    return applyList(store.orders.filter(v.order), o, ["title", "customer_name", "name"]);
+  },
+  async listInvoices(o) {
+    await tick();
+    const v = await viewer();
+    return applyList(store.invoices.filter(v.invoice), { ...o, limit: o?.limit ?? 500 }, ["customer_name", "name"]);
+  },
+
+  async listNotes(doctype, name) {''')
+
+s = re.sub(r"__crmMockV\d+", "__crmMockV14", s)
+open(p, "w", encoding="utf-8", newline="\n").write(s)
+print("ok")
+
+# ---- Land und Einwilligung an den Demo-Leads ----
+s = open(p, encoding="utf-8").read()
+consent = {
+    "CRM-LEAD-2026-00001": 'custom_consent: "Ja", custom_consent_date: day(-12), custom_consent_source: "Solarrechner"',
+    "CRM-LEAD-2026-00003": 'custom_consent: "Nein"',
+    "CRM-LEAD-2026-00007": 'custom_consent: "Ja", custom_consent_date: day(-4), custom_consent_source: "Website-Formular"',
+    "CRM-LEAD-2026-00008": 'custom_consent: "Ja", custom_consent_date: day(-1), custom_consent_source: "Solarrechner"',
+}
+for lead_id, extra in consent.items():
+    marker = f'{{ name: "{lead_id}", '
+    i = s.index(marker) + len(marker)
+    s = s[:i] + extra + ", " + s[i:]
+# alle Leads ohne Land → Deutschland
+s = re.sub(r'(\{ name: "CRM-LEAD-2026-\d+", )(?![^}]*country:)', r'\1country: "Germany", ', s)
+# Österreichischer Lead (Tirol) für Lisa
+anchor = '  ];\n\n  const customers: Customer[] = ['
+assert anchor in s
+s = s.replace(anchor, '''    { name: "CRM-LEAD-2026-00009", country: "Austria", custom_consent: "Ja", custom_consent_date: day(-6), custom_consent_source: "Messe", first_name: "Johann", last_name: "Gruber", lead_name: "Johann Gruber", company_name: "Gasthof Gruber", email_id: "office@gasthof-gruber.example", mobile_no: "+43 664 1234567", status: "Interested", source: "Messe", territory: "Tirol", lead_owner: "lisa@firma.example", notes: "Gasthof mit 40 Betten, Dach 350 m² Süd-West. Interesse an PV 50 kWp mit Speicher, Warmwasser über Wärmepumpe.", creation: d(6), modified: d(2) },
+''' + anchor, 1)
+open(p, "w", encoding="utf-8", newline="\n").write(s)
+print("Leads mit Land:", len(re.findall(r'CRM-LEAD-2026-\d+", country', s)))

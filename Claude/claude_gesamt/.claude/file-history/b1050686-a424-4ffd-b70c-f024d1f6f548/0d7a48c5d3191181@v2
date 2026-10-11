@@ -1,0 +1,84 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+
+import { eine, schreibe } from "@/lib/db/verbindung";
+import { protokolliere } from "@/lib/sicherheit/audit";
+import { requireRecht } from "@/lib/session";
+
+/**
+ * Eine Meldung bestätigen.
+ *
+ * Das ist der eine Handgriff, um den sich das ganze Alarmierungssystem
+ * dreht: Eine zugestellte Nachricht ist keine Bestätigung. Erst wenn
+ * ein Mensch erklärt, dass er sich kümmert, endet die Eskalation -
+ * vorher ruft das System weiter, und zwar zu Recht.
+ *
+ * Deshalb schreibt diese Aktion drei Dinge und nicht eines: den
+ * Zeitpunkt, den Namen und einen Protokolleintrag. Eine Bestätigung
+ * ohne Namen wäre wertlos; im Nachhinein will man wissen, wer
+ * übernommen hat.
+ */
+
+export interface BestaetigungErgebnis {
+  ok: boolean;
+  meldung: string;
+}
+
+export async function meldungBestaetigen(
+  _vorher: BestaetigungErgebnis | null,
+  formular: FormData,
+): Promise<BestaetigungErgebnis> {
+  const benutzer = await requireRecht("anlagen.bearbeiten");
+
+  const id = String(formular.get("meldung") ?? "");
+
+  const bestand = eine<{
+    id: string;
+    betreff: string;
+    bestaetigt_am: string | null;
+    stufe: number;
+  }>(
+    "SELECT id, betreff, bestaetigt_am, stufe FROM benachrichtigung WHERE id = ?",
+    id,
+  );
+
+  if (!bestand) {
+    return { ok: false, meldung: "Diese Meldung gibt es nicht." };
+  }
+
+  if (bestand.bestaetigt_am) {
+    return {
+      ok: true,
+      meldung: "Die Meldung war bereits bestätigt. Die Eskalation läuft nicht.",
+    };
+  }
+
+  const jetzt = new Date().toISOString();
+
+  schreibe(
+    `UPDATE benachrichtigung
+        SET bestaetigt_am = ?, bestaetigt_von = ?, status = 'Bestaetigt'
+      WHERE id = ? AND bestaetigt_am IS NULL`,
+    jetzt,
+    benutzer.vollname,
+    id,
+  );
+
+  await protokolliere({
+    kategorie: "sicherheitsvorfall",
+    aktion: `Meldung bestätigt: ${bestand.betreff}`,
+    ergebnis: "erfolg",
+    objekt: id,
+    nachher: `Stufe ${bestand.stufe}`,
+    begruendung: `Übernommen durch ${benutzer.vollname}. Die Eskalation endet.`,
+  });
+
+  revalidatePath("/portal/alarme/meldewege");
+  revalidatePath("/portal/alarme");
+
+  return {
+    ok: true,
+    meldung: `Bestätigt durch ${benutzer.vollname}. Es wird nicht weiter eskaliert.`,
+  };
+}

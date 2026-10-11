@@ -1,0 +1,51 @@
+<script setup lang="ts">
+/**
+ * QR-Code für den Anlagenaufkleber (FA-084).
+ *
+ * Wird lokal erzeugt — im Feld gibt es keinen externen Generator. Die Bibliothek
+ * wird erst beim Öffnen des Dialogs geladen und landet nicht im Startbundle.
+ */
+import { computed, ref, watch } from 'vue'
+
+const props = withDefaults(defineProps<{ inhalt: string; groesse?: number }>(), { groesse: 280 })
+
+const svg = ref('')
+const fehler = ref('')
+
+/**
+ * Fehlerkorrektur M (~15 %) ist der übliche Kompromiss: Der Aufkleber am
+ * Wechselrichter verschmutzt, muss aber nicht unnötig groß werden.
+ */
+async function erzeugen() {
+  svg.value = ''
+  fehler.value = ''
+  if (!props.inhalt) return
+
+  try {
+    const { default: qrcode } = await import('qrcode-generator')
+    // Typnummer 0 = automatisch die kleinste passende Version wählen.
+    const code = qrcode(0, 'M')
+    code.addData(props.inhalt)
+    code.make()
+    svg.value = code.createSvgTag({ cellSize: 4, margin: 4, scalable: true })
+  } catch (ausnahme) {
+    fehler.value = (ausnahme as Error).message
+  }
+}
+
+watch(() => props.inhalt, erzeugen, { immediate: true })
+
+const stil = computed(() => ({ width: `${props.groesse}px`, height: `${props.groesse}px` }))
+</script>
+
+<template>
+  <div class="inline-block rounded-xl bg-white p-3" :style="stil">
+    <!-- Lokal aus dem Anlagen-Link erzeugtes SVG, kein Fremdinhalt. -->
+    <!-- eslint-disable-next-line vue/no-v-html -->
+    <div v-if="svg" class="h-full w-full [&>svg]:h-full [&>svg]:w-full" v-html="svg" />
+    <p v-else-if="fehler" class="p-4 text-center text-xs text-fehler">
+      QR-Code konnte nicht erzeugt werden: {{ fehler }}
+    </p>
+    <p v-else class="p-4 text-center text-xs text-slate-400">wird erzeugt …</p>
+  </div>
+</template>

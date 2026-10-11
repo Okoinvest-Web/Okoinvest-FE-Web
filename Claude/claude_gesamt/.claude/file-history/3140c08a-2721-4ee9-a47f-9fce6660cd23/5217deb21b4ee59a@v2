@@ -1,0 +1,97 @@
+// Live-Dashboard der Agenten-Armee: liest alle 8 s das Journal des neuesten Workflows und schreibt index.html
+// (lädt sich im Browser selbst neu). Geplante Agenten kommen aus roster.json, der Server-Status aus waechter.json.
+import { readFileSync, writeFileSync, readdirSync, statSync, existsSync } from "node:fs";
+import { join } from "node:path";
+
+const HIER = decodeURIComponent(new URL(".", import.meta.url).pathname).replace(/^\/([A-Za-z]:)/, "$1");
+const WF = "C:/Users/SALEADMIN/.claude/projects/c--Users-SALEADMIN-Downloads-Oekoinvest-Web/3140c08a-2721-4ee9-a47f-9fce6660cd23/subagents/workflows";
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+const lies = (p, f) => { try { return JSON.parse(readFileSync(p, "utf8")); } catch { return f; } };
+
+function neuesterWorkflow() {
+  const dirs = readdirSync(WF).filter((d) => d.startsWith("wf_")).map((d) => ({ d, t: statSync(join(WF, d)).mtimeMs }));
+  dirs.sort((a, b) => b.t - a.t);
+  return dirs[0] ? join(WF, dirs[0].d) : null;
+}
+function agentInfo(dir, id) {
+  const f = join(dir, `agent-${id}.jsonl`);
+  if (!existsSync(f)) return { schritte: 0, letzte: "", vor: null, tools: {} };
+  let schritte = 0, letzte = "", tools = {};
+  for (const ln of readFileSync(f, "utf8").split("\n")) {
+    try {
+      const c = JSON.parse(ln).message?.content;
+      if (!Array.isArray(c)) continue;
+      for (const b of c) if (b.type === "tool_use") {
+        schritte++; tools[b.name] = (tools[b.name] || 0) + 1;
+        letzte = String(b.input?.description || b.input?.query || b.input?.url || b.input?.file_path || b.input?.pattern || b.name).slice(0, 90);
+      }
+    } catch {}
+  }
+  return { schritte, letzte, vor: (Date.now() - statSync(f).mtimeMs) / 1000, tools };
+}
+const dauer = (s) => s == null ? "–" : s < 60 ? `${Math.round(s)} s` : s < 3600 ? `${Math.round(s / 60)} min` : `${(s / 3600).toFixed(1)} h`;
+
+function bauen() {
+  const dir = neuesterWorkflow();
+  const roster = lies(join(HIER, "roster.json"), { titel: "Agenten-Armee", agenten: [] });
+  const w = lies(join(HIER, "waechter.json"), null);
+  const agenten = new Map(roster.agenten.map((a) => [a.label, { ...a, status: "wartet", info: null }]));
+  let gestartet = 0, fertig = 0;
+  if (dir && existsSync(join(dir, "journal.jsonl"))) {
+    const J = readFileSync(join(dir, "journal.jsonl"), "utf8").trim().split("\n").map((l) => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean);
+    const done = new Set(J.filter((x) => x.type === "result").map((x) => x.key));
+    for (const s of J.filter((x) => x.type === "started")) {
+      const a = agenten.get(s.label) || { label: s.label, team: s.label.split(" · ")[0], rolle: s.label.split(" · ")[1] || s.label, auftrag: "" };
+      a.info = agentInfo(dir, s.agentId);
+      a.status = done.has(s.key) ? "fertig" : a.info.vor != null && a.info.vor > 900 ? "still" : "arbeitet";
+      agenten.set(s.label, a);
+      gestartet++; if (done.has(s.key)) fertig++;
+    }
+  }
+  const teams = new Map();
+  for (const a of agenten.values()) { const t = a.team || a.label.split(" · ")[0]; if (!teams.has(t)) teams.set(t, []); teams.get(t).push(a); }
+  const gesamt = agenten.size, arbeitet = [...agenten.values()].filter((a) => a.status === "arbeitet").length;
+  const pct = gesamt ? Math.round((fertig / gesamt) * 100) : 0;
+  const wOk = w && w.zustand === "läuft";
+  const karte = (a) => `<article class="karte ${a.status}">
+      <header><span class="punkt"></span><b>${esc(a.rolle || a.label)}</b><span class="st">${{ fertig: "fertig", arbeitet: "arbeitet", wartet: "wartet", still: "still?" }[a.status]}</span></header>
+      ${a.auftrag ? `<p class="auftrag">${esc(a.auftrag)}</p>` : ""}
+      ${a.info ? `<p class="jetzt">${a.status === "fertig" ? "✓ abgeschlossen" : "→ " + esc(a.info.letzte || "startet …")}</p>
+      <p class="meta">${a.info.schritte} Schritte · zuletzt vor ${dauer(a.info.vor)}${a.info.tools.WebSearch || a.info.tools.WebFetch ? ` · ${(a.info.tools.WebSearch || 0) + (a.info.tools.WebFetch || 0)} Web-Recherchen` : ""}${a.info.tools.Edit || a.info.tools.Write ? ` · ${(a.info.tools.Edit || 0) + (a.info.tools.Write || 0)} Änderungen` : ""}</p>` : ""}
+    </article>`;
+  const html = `<!doctype html><html lang="de"><head><meta charset="utf-8"><meta http-equiv="refresh" content="8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Agenten-Armee · Live</title><style>
+:root{--bg:#06121f;--fl:#0d1f33;--fl2:#132a44;--rand:#1f3a5a;--txt:#e6eef7;--leise:#8aa3bd;--gruen:#7cc243;--gelb:#f2c14e;--rot:#ef6b6b;--blau:#5fb0ff}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.45 system-ui,Segoe UI,sans-serif}
+.kopf{position:sticky;top:0;z-index:2;background:linear-gradient(180deg,#06121f,#06121fee);padding:18px 24px;border-bottom:1px solid var(--rand)}
+h1{margin:0;font-size:22px}h1 small{color:var(--leise);font-weight:500;font-size:13px;margin-left:8px}
+.kpis{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}.kpi{background:var(--fl);border:1px solid var(--rand);border-radius:12px;padding:8px 14px}.kpi b{font-size:20px;display:block}.kpi span{color:var(--leise);font-size:12px}
+.balken{height:6px;border-radius:9px;background:var(--fl2);margin-top:12px;overflow:hidden}.balken i{display:block;height:100%;width:${pct}%;background:linear-gradient(90deg,var(--gruen),#b5e07a)}
+.server{display:inline-flex;align-items:center;gap:8px}.server .punkt{width:10px;height:10px}
+main{padding:20px 24px;display:grid;gap:22px}
+.team h2{font-size:15px;margin:0 0 10px;color:var(--blau);letter-spacing:.04em;text-transform:uppercase}.team h2 small{color:var(--leise);text-transform:none;letter-spacing:0;margin-left:6px}
+.raster{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(270px,1fr))}
+.karte{background:var(--fl);border:1px solid var(--rand);border-radius:14px;padding:12px 14px}
+.karte header{display:flex;align-items:center;gap:8px}.karte .st{margin-left:auto;font-size:11px;padding:2px 8px;border-radius:99px;background:var(--fl2);color:var(--leise)}
+.punkt{width:9px;height:9px;border-radius:50%;background:var(--leise);flex:none}
+.arbeitet{border-color:#2f6a3a}.arbeitet .punkt{background:var(--gruen);box-shadow:0 0 0 0 var(--gruen);animation:puls 1.6s infinite}.arbeitet .st{background:#1d3f24;color:#bfe59a}
+.fertig .punkt{background:var(--blau)}.fertig .st{background:#163655;color:#a9d3ff}.fertig{opacity:.85}
+.still .punkt{background:var(--gelb)}.still .st{background:#4a3b12;color:var(--gelb)}
+.wartet{opacity:.55}
+.auftrag{margin:6px 0 0;color:var(--leise);font-size:12.5px}.jetzt{margin:8px 0 0;font-size:13px}.meta{margin:4px 0 0;color:var(--leise);font-size:11.5px}
+@keyframes puls{0%{box-shadow:0 0 0 0 #7cc24399}70%{box-shadow:0 0 0 8px #7cc24300}100%{box-shadow:0 0 0 0 #7cc24300}}
+@media (prefers-reduced-motion:reduce){.arbeitet .punkt{animation:none}}
+</style></head><body>
+<div class="kopf"><h1>${esc(roster.titel)}<small>aktualisiert ${new Date().toLocaleTimeString("de-AT")} · lädt alle 8 s neu</small></h1>
+<div class="kpis">
+<div class="kpi"><b>${gesamt}</b><span>Agenten geplant</span></div>
+<div class="kpi"><b>${arbeitet}</b><span>arbeiten gerade</span></div>
+<div class="kpi"><b>${fertig}</b><span>fertig</span></div>
+<div class="kpi"><b>${teams.size}</b><span>Teams</span></div>
+<div class="kpi server"><span class="punkt" style="background:${wOk ? "var(--gruen)" : "var(--rot)"}"></span><div><b style="font-size:14px">Dev-Server: ${esc(w ? w.zustand : "Wächter nicht aktiv")}</b><span>${w ? `Neustarts: ${w.neustarts}${w.antwortMs != null ? ` · Antwort ${w.antwortMs} ms` : ""} · Wächter prüft alle 20 s` : ""}</span></div></div>
+</div><div class="balken"><i></i></div></div>
+<main>${[...teams.entries()].map(([t, as]) => `<section class="team"><h2>${esc(t)}<small>${as.filter((a) => a.status === "fertig").length}/${as.length} fertig</small></h2><div class="raster">${as.map(karte).join("")}</div></section>`).join("")}</main>
+</body></html>`;
+  writeFileSync(join(HIER, "index.html"), html);
+}
+for (;;) { try { bauen(); } catch (e) { console.error(e); } await new Promise((r) => setTimeout(r, 8000)); }

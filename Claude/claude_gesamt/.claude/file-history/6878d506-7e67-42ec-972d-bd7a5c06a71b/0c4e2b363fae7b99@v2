@@ -1,0 +1,226 @@
+"use client";
+
+import { useOptimistic, useRef, useState, useTransition, type ReactNode } from "react";
+import { Pencil, RotateCcw, ThumbsDown, Trophy } from "lucide-react";
+import { setOpportunityOutcomeAction, setOpportunityStageAction, type FormState } from "@/lib/actions";
+import { LOST_REASONS, OPPORTUNITY_STAGES } from "@/lib/types";
+import { STAGE_LABEL } from "@/lib/format";
+import { BTN, INPUT } from "@/components/ui";
+import { toast } from "@/components/Toaster";
+
+// ---------- Inline-Bearbeitung ----------
+
+type InlineType = "text" | "email" | "tel" | "date" | "number" | "select" | "textarea";
+
+// Klick auf den Wert öffnet ein Eingabefeld; Enter/Verlassen speichert, Esc bricht ab.
+export function InlineField({
+  value,
+  display,
+  type = "text",
+  options,
+  placeholder,
+  action,
+}: {
+  value: string;
+  display?: ReactNode;
+  type?: InlineType;
+  options?: { value: string; label: string }[];
+  placeholder?: string;
+  action: (value: string) => Promise<FormState>;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [pending, start] = useTransition();
+  const [shown, setShown] = useOptimistic(value);
+  const done = useRef(false);
+
+  function save(next: string) {
+    if (done.current) return;
+    done.current = true;
+    setEditing(false);
+    if (next.trim() === value.trim()) return;
+    start(async () => {
+      setShown(next);
+      const res = await action(next);
+      if (res.error) toast(res.error, "error");
+      else toast("Gespeichert");
+    });
+  }
+
+  function open() {
+    done.current = false;
+    setEditing(true);
+  }
+
+  if (editing) {
+    const common = {
+      autoFocus: true,
+      defaultValue: value,
+      placeholder,
+      onBlur: (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => save(e.currentTarget.value),
+      onKeyDown: (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+        if (e.key === "Escape") {
+          e.stopPropagation();
+          done.current = true;
+          setEditing(false);
+        }
+        if (e.key === "Enter" && (type !== "textarea" || e.ctrlKey || e.metaKey)) {
+          e.preventDefault();
+          save(e.currentTarget.value);
+        }
+      },
+    };
+    if (type === "select")
+      return (
+        <select {...common} onChange={(e) => save(e.target.value)} className={`${INPUT} h-7 w-full`}>
+          <option value="">–</option>
+          {options?.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+      );
+    if (type === "textarea") return <textarea {...common} rows={5} className={`${INPUT} h-auto w-full py-2 leading-relaxed`} />;
+    return <input {...common} type={type} className={`${INPUT} h-7 w-full`} />;
+  }
+
+  const label = options?.find((o) => o.value === shown)?.label ?? shown;
+  return (
+    <button
+      type="button"
+      onClick={open}
+      disabled={pending}
+      title="Klicken zum Bearbeiten"
+      className={`group -mx-1.5 flex w-[calc(100%+12px)] min-w-0 items-center gap-2 rounded-md px-1.5 py-0.5 text-left transition-colors hover:bg-gray-100 ${
+        type === "textarea" ? "items-start" : ""
+      } ${pending ? "opacity-60" : ""}`}
+    >
+      <span className={`min-w-0 flex-1 ${type === "textarea" ? "whitespace-pre-wrap leading-relaxed" : "truncate"}`}>
+        {shown ? (shown === value && display ? display : label) : <span className="text-gray-300">{placeholder ?? "Leer"}</span>}
+      </span>
+      <Pencil className="size-3 shrink-0 text-gray-400 opacity-0 transition-opacity group-hover:opacity-100" />
+    </button>
+  );
+}
+
+// ---------- Phasenleiste ----------
+
+export function StageStepper({ name, stage, disabled }: { name: string; stage: string; disabled?: boolean }) {
+  const [pending, start] = useTransition();
+  const [current, setCurrent] = useOptimistic(stage);
+  const idx = OPPORTUNITY_STAGES.indexOf(current as (typeof OPPORTUNITY_STAGES)[number]);
+
+  return (
+    <ol className="grid grid-cols-5 gap-1.5" aria-label="Vertriebsphase">
+      {OPPORTUNITY_STAGES.map((s, i) => {
+        const reached = i <= idx;
+        const isCurrent = i === idx;
+        return (
+          <li key={s}>
+            <button
+              type="button"
+              disabled={disabled || pending || isCurrent}
+              title={disabled ? undefined : `Phase auf „${STAGE_LABEL[s]}“ setzen`}
+              onClick={() =>
+                start(async () => {
+                  setCurrent(s);
+                  try {
+                    await setOpportunityStageAction(name, s);
+                    toast(`Phase: ${STAGE_LABEL[s]}`);
+                  } catch (e) {
+                    toast(e instanceof Error ? e.message : "Fehler beim Speichern", "error");
+                  }
+                })
+              }
+              className="group block w-full text-left disabled:cursor-default"
+            >
+              <div
+                className={`h-1.5 rounded-full transition-colors ${
+                  reached ? "bg-brand-600" : "bg-gray-150 group-enabled:group-hover:bg-brand-200"
+                }`}
+              />
+              <div
+                className={`mt-2 truncate text-[12px] transition-colors ${
+                  isCurrent ? "font-semibold text-gray-900" : reached ? "text-gray-700" : "text-gray-400 group-enabled:group-hover:text-gray-700"
+                }`}
+              >
+                <span className="hidden sm:inline">{i + 1}. </span>
+                {STAGE_LABEL[s]}
+              </div>
+            </button>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
+// ---------- Gewonnen / Verloren ----------
+
+export function OutcomeActions({ name, status }: { name: string; status: string }) {
+  const [pending, start] = useTransition();
+  const dialog = useRef<HTMLDialogElement>(null);
+  const [reason, setReason] = useState("");
+
+  function run(outcome: "won" | "lost" | "open", r?: string) {
+    start(async () => {
+      const res = await setOpportunityOutcomeAction(name, outcome, r);
+      if (res.error) return toast(res.error, "error");
+      dialog.current?.close();
+      toast(outcome === "won" ? "Gewonnen – Glückwunsch!" : outcome === "lost" ? "Als verloren markiert" : "Chance wieder geöffnet");
+    });
+  }
+
+  if (status === "Converted" || status === "Lost")
+    return (
+      <button disabled={pending} onClick={() => run("open")} className={BTN.secondary}>
+        <RotateCcw /> <span className="hidden sm:inline">Wieder öffnen</span>
+      </button>
+    );
+
+  return (
+    <>
+      <button disabled={pending} onClick={() => dialog.current?.showModal()} className={BTN.secondary}>
+        <ThumbsDown /> <span className="hidden sm:inline">Verloren</span>
+      </button>
+      <button disabled={pending} onClick={() => run("won")} className={BTN.primary}>
+        <Trophy /> <span className="hidden sm:inline">Gewonnen</span>
+      </button>
+
+      <dialog
+        ref={dialog}
+        onClose={() => setReason("")}
+        className="fade-in m-auto w-[calc(100%-32px)] max-w-sm rounded-xl border border-gray-200 bg-white p-0 text-[13px] text-gray-900 shadow-pop backdrop:bg-gray-950/25"
+      >
+        <form
+          method="dialog"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (reason) run("lost", reason);
+          }}
+        >
+          <div className="px-5 pt-5">
+            <h2 className="text-[15px] font-semibold">Chance als verloren markieren</h2>
+            <p className="mt-1 text-gray-500">Woran lag es? Die Gründe fließen in die Auswertung auf der Übersicht ein.</p>
+          </div>
+          <fieldset className="mt-4 grid gap-0.5 px-3">
+            {LOST_REASONS.map((r) => (
+              <label key={r} className={`flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 ${reason === r ? "bg-gray-100" : "hover:bg-gray-50"}`}>
+                <input type="radio" name="reason" value={r} checked={reason === r} onChange={() => setReason(r)} className="accent-brand-600" />
+                {r}
+              </label>
+            ))}
+          </fieldset>
+          <div className="mt-4 flex justify-end gap-2 border-t border-gray-150 px-5 py-3">
+            <button type="button" onClick={() => dialog.current?.close()} className={BTN.secondary}>
+              Abbrechen
+            </button>
+            <button type="submit" disabled={!reason || pending} className={BTN.primary}>
+              Als verloren markieren
+            </button>
+          </div>
+        </form>
+      </dialog>
+    </>
+  );
+}

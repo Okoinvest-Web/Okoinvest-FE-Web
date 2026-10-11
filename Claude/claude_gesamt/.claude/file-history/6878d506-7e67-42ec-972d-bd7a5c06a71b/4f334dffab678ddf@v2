@@ -1,0 +1,135 @@
+import sys, os
+os.chdir(r"C:\Users\SALEADMIN\Downloads\crm-develop\crm-next")
+p = "src/lib/types.ts"
+s = open(p, encoding="utf-8").read()
+
+def rep(a, b):
+    global s
+    if a not in s:
+        sys.exit("fehlt: " + a[:80])
+    s = s.replace(a, b, 1)
+
+rep('''  lead_owner?: string;
+  notes?: string;
+  creation: string;
+  modified: string;
+};
+
+export const OPPORTUNITY_STAGES''', '''  lead_owner?: string;
+  notes?: string;
+  country?: Country;
+  // Einwilligung in Kontakt/Werbung (DSGVO, § 7 UWG / § 174 TKG 2021) – in ERPNext als Custom Fields anlegen
+  custom_consent?: "Ja" | "Nein";
+  custom_consent_date?: string;
+  custom_consent_source?: string;
+  creation: string;
+  modified: string;
+};
+
+// ERPNext speichert Länder mit englischem Namen
+export const COUNTRIES = ["Germany", "Austria"] as const;
+export type Country = (typeof COUNTRIES)[number];
+export const COUNTRY_LABEL: Record<Country, string> = { Germany: "Deutschland", Austria: "Österreich" };
+export const CONSENT_SOURCES = ["Website-Formular", "Solarrechner", "Messe", "Telefonisch mündlich", "Schriftlich", "Bestandskunde"];
+
+export const OPPORTUNITY_STAGES''')
+
+rep('''  "first_name" | "last_name" | "company_name" | "email_id" | "mobile_no" | "source" | "status"
+>;''', '''  "first_name" | "last_name" | "company_name" | "email_id" | "mobile_no" | "source" | "status" | "country" | "custom_consent" | "custom_consent_date" | "custom_consent_source"
+>;''')
+rep('''  Pick<Lead, "first_name" | "last_name" | "company_name" | "email_id" | "mobile_no" | "source" | "territory" | "notes">
+>;''', '''  Pick<
+    Lead,
+    | "first_name"
+    | "last_name"
+    | "company_name"
+    | "email_id"
+    | "mobile_no"
+    | "source"
+    | "territory"
+    | "notes"
+    | "country"
+    | "custom_consent"
+    | "custom_consent_date"
+    | "custom_consent_source"
+  >
+>;''')
+
+s += '''
+// ---------- Verkauf (ERPNext Selling) ----------
+
+export type Item = {
+  item_code: string;
+  item_name: string;
+  item_group: string; // z. B. Module, Wechselrichter, Speicher, Wallbox, Wärmepumpe, Montage
+  description?: string;
+  stock_uom: string;
+  rate: number; // Verkaufspreis netto aus der Standard-Preisliste
+  stock_qty?: number; // verfügbarer Lagerbestand (ERPNext Bin), undefined = nicht lagergeführt
+  kwp?: number; // Leistung je Einheit für PV-Module (für die Anlagengröße im Angebot)
+};
+
+export type QuoteItem = { item_code: string; item_name: string; qty: number; rate: number; amount: number; uom?: string };
+
+export type Quotation = {
+  name: string;
+  quotation_to: "Lead" | "Customer";
+  party_name: string;
+  customer_name?: string;
+  opportunity?: string;
+  title?: string;
+  transaction_date: string;
+  valid_till?: string;
+  status: "Draft" | "Open" | "Ordered" | "Lost" | "Expired" | "Cancelled";
+  currency: string;
+  net_total: number;
+  tax_rate: number; // angewandter USt-Satz in %
+  total_taxes_and_charges: number;
+  grand_total: number;
+  items: QuoteItem[];
+  owner?: string;
+  creation: string;
+  modified: string;
+};
+
+export type NewQuotation = Pick<Quotation, "quotation_to" | "party_name" | "opportunity" | "title" | "valid_till" | "tax_rate"> & {
+  items: Pick<QuoteItem, "item_code" | "qty" | "rate">[];
+};
+
+export type SalesOrder = {
+  name: string;
+  customer: string;
+  customer_name: string;
+  title?: string;
+  transaction_date: string;
+  delivery_date?: string; // geplanter Montagetermin
+  status: "Draft" | "To Deliver and Bill" | "To Bill" | "To Deliver" | "Completed" | "Cancelled" | "On Hold";
+  grand_total: number;
+  per_delivered: number;
+  per_billed: number;
+  sales_partner?: string;
+  currency: string;
+  creation: string;
+  modified: string;
+};
+
+export type SalesInvoice = {
+  name: string;
+  customer: string;
+  customer_name: string;
+  posting_date: string;
+  due_date: string;
+  status: "Draft" | "Unpaid" | "Partly Paid" | "Paid" | "Overdue" | "Cancelled" | "Return";
+  net_total: number;
+  grand_total: number;
+  outstanding_amount: number;
+  sales_partner?: string; // Handelsvertreter (ERPNext: Vertriebspartner)
+  commission_rate?: number; // Provision in %
+  total_commission?: number;
+  currency: string;
+  creation: string;
+  modified: string;
+};
+'''
+open(p, "w", encoding="utf-8", newline="\n").write(s)
+print("ok")

@@ -1,0 +1,785 @@
+#!/usr/bin/env python3
+"""Generiert die Frappe-Doctype-JSONs der App `oekovolt_baudoku`.
+
+Die JSONs sind Teil des Repositories (Frappe liest sie aus dem Dateisystem).
+Dieses Skript ist die *Quelle der Wahrheit* fuer das Datenmodell: Aenderungen
+hier vornehmen und anschliessend `python scripts/generate_doctypes.py` ausfuehren.
+"""
+
+from __future__ import annotations
+
+import json
+import pathlib
+
+ROOT = pathlib.Path(__file__).resolve().parent.parent
+MODULE_DIR = ROOT / "oekovolt_baudoku" / "baudoku" / "doctype"
+TS = "2026-09-15 08:00:00.000000"
+
+TECHNIKER = "Baudoku Techniker"
+BAULEITER = "Baudoku Bauleiter"
+PROJEKTLEITER = "Baudoku Projektleiter"
+ADMIN = "Baudoku Admin"
+SUBU = "Baudoku Subunternehmer"
+KUNDE = "Baudoku Kunde"
+
+
+def f(fieldname, fieldtype, label=None, **kw):
+    field = {"fieldname": fieldname, "fieldtype": fieldtype}
+    if label is not None:
+        field["label"] = label
+    field.update(kw)
+    return field
+
+
+def sb(fieldname, label=None):
+    return f(fieldname, "Section Break", label)
+
+
+def cb(fieldname):
+    return f(fieldname, "Column Break")
+
+
+def perm(role, level=0, **kw):
+    p = {
+        "role": role,
+        "permlevel": level,
+        "read": 1,
+        "write": 0,
+        "create": 0,
+        "delete": 0,
+        "report": 1,
+        "export": 0,
+        "share": 0,
+        "print": 1,
+        "email": 1,
+    }
+    p.update(kw)
+    return p
+
+
+RW = dict(write=1, create=1, export=1, share=1)
+FULL = dict(write=1, create=1, delete=1, export=1, share=1)
+
+
+def doctype(name, fields, *, module="Baudoku", istable=0, issingle=0, autoname=None,
+            title_field=None, search_fields=None, permissions=None, track_changes=1,
+            naming_rule=None, sort_field="modified", sort_order="DESC",
+            image_field=None):
+    doc = {
+        "actions": [],
+        "allow_rename": 1,
+        "creation": TS,
+        "doctype": "DocType",
+        "editable_grid": 1,
+        "engine": "InnoDB",
+        "field_order": [fld["fieldname"] for fld in fields],
+        "fields": fields,
+        "index_web_pages_for_search": 0,
+        "istable": istable,
+        "issingle": issingle,
+        "links": [],
+        "modified": TS,
+        "modified_by": "Administrator",
+        "module": module,
+        "name": name,
+        "owner": "Administrator",
+        "permissions": permissions or [],
+        "quick_entry": 0,
+        "sort_field": sort_field,
+        "sort_order": sort_order,
+        "states": [],
+        "track_changes": track_changes,
+    }
+    if autoname:
+        doc["autoname"] = autoname
+    if naming_rule:
+        doc["naming_rule"] = naming_rule
+    if title_field:
+        doc["title_field"] = title_field
+        doc["show_title_field_in_link"] = 1
+    if search_fields:
+        doc["search_fields"] = search_fields
+    if image_field:
+        doc["image_field"] = image_field
+    if istable or issingle:
+        doc.pop("allow_rename", None)
+    return doc
+
+
+ANLAGEN_TYPEN = "PV\nBatteriespeicher\nLadestation\nKombi"
+FELDTYPEN = "Bewertung\nZahlenwert\nText\nAuswahl\nFoto\nJa-Nein\nSignatur\nDatum\nUeberschrift"
+BEREICHE = ("Module\nUnterkonstruktion\nDC-Kabel\nAC-Kabel\nWechselrichter\nSpeicher\n"
+            "Wallbox\nErdung\nGeruest\nSonstiges")
+
+# ----------------------------------------------------------------------------------
+# Stammdaten / Konfiguration
+# ----------------------------------------------------------------------------------
+
+MANGELKATEGORIE = doctype(
+    "Mangelkategorie",
+    [
+        f("kategorie_name", "Data", "Kategorie", reqd=1, unique=1, in_list_view=1),
+        f("bereich", "Select", "Bereich", options=BEREICHE, reqd=1, in_list_view=1),
+        f("farbe", "Color", "Farbe"),
+        f("aktiv", "Check", "Aktiv", default="1", in_list_view=1),
+        f("beschreibung", "Small Text", "Beschreibung"),
+    ],
+    autoname="field:kategorie_name",
+    naming_rule="By fieldname",
+    permissions=[perm(ADMIN, **FULL), perm(PROJEKTLEITER, **RW), perm(BAULEITER), perm(TECHNIKER)],
+)
+
+MANGEL_SCHWEREGRAD = doctype(
+    "Mangel Schweregrad",
+    [
+        f("code", "Data", "Code", reqd=1, unique=1, in_list_view=1, description="A, B oder C"),
+        f("bezeichnung", "Data", "Bezeichnung", reqd=1, in_list_view=1),
+        f("farbe", "Color", "Farbe", in_list_view=1),
+        f("sla_tage", "Int", "SLA (Tage bis Behebung)", default="14", in_list_view=1,
+          description="Faelligkeitsdatum = Meldedatum + SLA."),
+        f("blockiert_abnahme", "Check", "Blockiert Abnahme",
+          description="Offene Maengel dieses Grades verhindern die Gesamtbewertung 'Bestanden'."),
+        f("sortierung", "Int", "Sortierung", default="0"),
+    ],
+    autoname="field:code",
+    naming_rule="By fieldname",
+    sort_field="sortierung",
+    sort_order="ASC",
+    permissions=[perm(ADMIN, **FULL), perm(PROJEKTLEITER, **RW), perm(BAULEITER), perm(TECHNIKER)],
+)
+
+MESSMITTELTYP = doctype(
+    "Messmitteltyp",
+    [
+        f("typ_name", "Data", "Bezeichnung", reqd=1, unique=1, in_list_view=1),
+        f("hersteller", "Data", "Hersteller", in_list_view=1),
+        f("kalibrierintervall_monate", "Int", "Kalibrierintervall (Monate)", default="12"),
+        f("messgroessen", "Small Text", "Messgroessen", description="z. B. Riso, Uoc, Isc"),
+    ],
+    autoname="field:typ_name",
+    naming_rule="By fieldname",
+    permissions=[perm(ADMIN, **FULL), perm(PROJEKTLEITER, **RW), perm(BAULEITER), perm(TECHNIKER)],
+)
+
+MESSMITTEL = doctype(
+    "Messmittel",
+    [
+        f("bezeichnung", "Data", "Bezeichnung", reqd=1, in_list_view=1),
+        f("messmitteltyp", "Link", "Messmitteltyp", options="Messmitteltyp", reqd=1, in_list_view=1),
+        f("seriennummer", "Data", "Seriennummer", reqd=1, unique=1, in_list_view=1),
+        cb("cb_mm"),
+        f("kalibriert_am", "Date", "Kalibriert am"),
+        f("kalibriert_bis", "Date", "Kalibriert bis", in_list_view=1),
+        f("kalibrierschein", "Attach", "Kalibrierschein"),
+        f("aktiv", "Check", "Aktiv", default="1"),
+    ],
+    autoname="format:MM-{seriennummer}",
+    naming_rule="Expression",
+    title_field="bezeichnung",
+    permissions=[perm(ADMIN, **FULL), perm(PROJEKTLEITER, **RW), perm(BAULEITER), perm(TECHNIKER)],
+)
+
+PDF_PROFIL = doctype(
+    "PDF Protokollprofil",
+    [
+        f("profil_name", "Data", "Profilname", reqd=1, unique=1, in_list_view=1),
+        f("dokumenttyp", "Select", "Dokumenttyp", options="Pruefprotokoll\nTagesbericht\nMangel",
+          reqd=1, in_list_view=1),
+        f("print_format", "Link", "Print Format", options="Print Format"),
+        sb("sb_branding", "Branding"),
+        f("logo", "Attach Image", "Logo"),
+        f("firmenname", "Data", "Firmenname", default="OEKOVOLT Solartechnik GmbH"),
+        f("firmenanschrift", "Small Text", "Firmenanschrift",
+          default="Gewerbegebiet 10, 5121 Ostermiething, Oesterreich"),
+        cb("cb_pdf"),
+        f("fusszeile", "Small Text", "Fusszeile"),
+        f("fotos_pro_zeile", "Int", "Fotos pro Zeile", default="3"),
+        f("mit_unterschriften", "Check", "Unterschriften drucken", default="1"),
+        f("mit_gps", "Check", "GPS-Koordinaten drucken", default="1"),
+        f("ist_standard", "Check", "Standardprofil", in_list_view=1),
+    ],
+    autoname="field:profil_name",
+    naming_rule="By fieldname",
+    permissions=[perm(ADMIN, **FULL), perm(PROJEKTLEITER, **RW), perm(BAULEITER), perm(TECHNIKER)],
+)
+
+SETTINGS = doctype(
+    "Baudoku Settings",
+    [
+        sb("sb_plausi", "Plausibilitaetspruefung (IEC 62446-1)"),
+        f("riso_pro_modul_kohm", "Float", "Riso-Grenzwert je Modul (kOhm)", default="40",
+          description="Mindestwert = Grenzwert x Anzahl Module (IEC 62446-1)."),
+        f("riso_minimum_kohm", "Float", "Riso-Absolutminimum (kOhm)", default="1000"),
+        f("uoc_toleranz_prozent", "Float", "Uoc-Toleranz (%)", default="10"),
+        cb("cb_plausi"),
+        f("isc_toleranz_prozent", "Float", "Isc-Toleranz (%)", default="15"),
+        f("uebersteuerung_erlaubt", "Check", "Uebersteuerung mit Begruendung erlaubt", default="1"),
+        f("uebersteuerung_rolle", "Link", "Rolle fuer Uebersteuerung", options="Role"),
+        sb("sb_mangel", "Maengelmanagement"),
+        f("todo_erzeugen", "Check", "ToDo je Mangel erzeugen", default="1"),
+        f("mail_bei_neuem_mangel", "Check", "E-Mail bei neuem Mangel", default="1"),
+        f("mail_bei_ueberfaellig", "Check", "E-Mail bei Fristueberschreitung", default="1"),
+        cb("cb_mangel"),
+        f("eskalation_an", "Link", "Eskalation an (Rolle)", options="Role"),
+        f("nachweisfoto_pflicht", "Check", "Nachweisfoto bei Behebung Pflicht", default="1"),
+        sb("sb_sync", "Offline & Sync"),
+        f("max_foto_mb", "Float", "Max. Fotogroesse nach Kompression (MB)", default="2"),
+        f("foto_max_kante_px", "Int", "Max. Bildkante (px)", default="2048"),
+        f("foto_hash", "Check", "SHA-256-Hash je Foto speichern", default="1"),
+        cb("cb_sync"),
+        f("sync_batch_groesse", "Int", "Sync-Batchgroesse", default="25"),
+        f("offline_puffer_mb", "Int", "Offline-Puffer (MB)", default="100"),
+        f("vorlagen_cache_tage", "Int", "Vorlagen-Cache (Tage)", default="30"),
+        sb("sb_pdf", "Ausgabe"),
+        f("standard_pdf_profil", "Link", "Standard-PDF-Profil", options="PDF Protokollprofil"),
+        f("pdf_an_projekt_anhaengen", "Check", "PDF an ERPNext-Projekt anhaengen", default="1"),
+    ],
+    issingle=1,
+    permissions=[perm(ADMIN, **FULL), perm(PROJEKTLEITER), perm(BAULEITER)],
+)
+
+# ----------------------------------------------------------------------------------
+# PV Anlage (Pruefobjekt)
+# ----------------------------------------------------------------------------------
+
+PV_ANLAGE = doctype(
+    "PV Anlage",
+    [
+        f("naming_series", "Select", "Nummernkreis", options="ANL-.YYYY.-", default="ANL-.YYYY.-",
+          hidden=1, no_copy=1, print_hide=1),
+        f("anlage_name", "Data", "Anlagenbezeichnung", reqd=1, in_list_view=1, in_standard_filter=1),
+        f("anlagen_typ", "Select", "Anlagentyp", options=ANLAGEN_TYPEN, reqd=1, default="PV",
+          in_list_view=1, in_standard_filter=1),
+        f("status", "Select", "Status", options="Geplant\nIn Bau\nIn Betrieb\nAusser Betrieb",
+          reqd=1, default="Geplant", in_list_view=1, in_standard_filter=1),
+        cb("cb_kopf"),
+        f("customer", "Link", "Auftraggeber", options="Customer", reqd=1, in_list_view=1,
+          in_standard_filter=1),
+        f("project", "Link", "ERPNext-Projekt", options="Project", in_standard_filter=1),
+        sb("sb_technik", "Technische Daten"),
+        f("kwp", "Float", "Nennleistung (kWp)", reqd=1, precision="3", in_list_view=1),
+        f("kwh_speicher", "Float", "Speicherkapazitaet (kWh)", precision="3",
+          depends_on="eval:['Batteriespeicher','Kombi'].includes(doc.anlagen_typ)"),
+        f("ladepunkte", "Int", "Anzahl Ladepunkte",
+          depends_on="eval:['Ladestation','Kombi'].includes(doc.anlagen_typ)"),
+        f("anzahl_strings", "Int", "Anzahl Strings"),
+        cb("cb_technik"),
+        f("modultyp", "Link", "Modultyp", options="Item"),
+        f("modul_uoc", "Float", "Uoc je Modul (V)", precision="2",
+          description="Aus Datenblatt - Basis der Uoc-Plausibilitaetspruefung."),
+        f("modul_isc", "Float", "Isc je Modul (A)", precision="2"),
+        f("wr_typ", "Link", "Wechselrichter-Typ", options="Item"),
+        f("speicher_typ", "Link", "Speicher-Typ", options="Item",
+          depends_on="eval:['Batteriespeicher','Kombi'].includes(doc.anlagen_typ)"),
+        sb("sb_standort", "Standort"),
+        f("adresse", "Data", "Adresse", reqd=1),
+        f("plz", "Data", "PLZ"),
+        f("ort", "Data", "Ort", in_standard_filter=1),
+        f("land", "Link", "Land", options="Country", default="Austria"),
+        cb("cb_standort"),
+        f("gps_lat", "Float", "Breitengrad", precision="6"),
+        f("gps_lng", "Float", "Laengengrad", precision="6"),
+        f("dachtyp", "Select", "Dachtyp",
+          options="\nFlachdach\nSchraegdach Ziegel\nSchraegdach Blech\nTrapezblech\nFreiflaeche\nCarport\nFassade"),
+        f("zugang_hinweis", "Small Text", "Zugang / Schluessel / Ansprechpartner"),
+        sb("sb_betrieb", "Betrieb"),
+        f("inbetriebnahme_datum", "Date", "Inbetriebnahme"),
+        f("naechste_wartung", "Date", "Naechste Wartung", in_list_view=1),
+        f("wartungsintervall_monate", "Int", "Wartungsintervall (Monate)", default="12"),
+        cb("cb_betrieb"),
+        f("offene_maengel", "Int", "Offene Maengel", read_only=1, default="0"),
+        f("letzte_pruefung", "Date", "Letzte Pruefung", read_only=1),
+        sb("sb_medien", "Medien & Notizen"),
+        f("bild", "Attach Image", "Anlagenfoto"),
+        f("notizen", "Text Editor", "Anmerkungen"),
+    ],
+    autoname="naming_series:",
+    title_field="anlage_name",
+    search_fields="anlage_name,customer,ort,anlagen_typ",
+    image_field="bild",
+    permissions=[
+        perm(ADMIN, **FULL),
+        perm(PROJEKTLEITER, **FULL),
+        perm(BAULEITER, **RW),
+        perm(TECHNIKER),
+        perm(SUBU),
+        perm(KUNDE),
+    ],
+)
+
+# ----------------------------------------------------------------------------------
+# Checklistenvorlage
+# ----------------------------------------------------------------------------------
+
+PRUEFPUNKT = doctype(
+    "Pruefpunkt",
+    [
+        f("nummer", "Data", "Nr.", in_list_view=1, columns=1),
+        f("titel", "Data", "Pruefpunkt", reqd=1, in_list_view=1, columns=4),
+        f("feldtyp", "Select", "Feldtyp", options=FELDTYPEN, reqd=1, default="Bewertung",
+          in_list_view=1, columns=2),
+        f("pflichtfeld", "Check", "Pflicht", in_list_view=1, columns=1),
+        f("foto_erforderlich", "Check", "Foto", in_list_view=1, columns=1),
+        sb("sb_pp_opt", "Optionen"),
+        f("bewertungsoptionen", "Small Text", "Bewertungsoptionen",
+          default="in Ordnung|Mangel leicht|Mangel schwer|nicht zutreffend",
+          depends_on="eval:doc.feldtyp=='Bewertung'",
+          description="Pipe-getrennt. Optionen mit 'Mangel' erzeugen automatisch einen Mangel-Entwurf."),
+        f("auswahloptionen", "Small Text", "Auswahloptionen",
+          depends_on="eval:doc.feldtyp=='Auswahl'", description="Pipe-getrennt."),
+        cb("cb_pp"),
+        f("einheit", "Data", "Einheit", depends_on="eval:doc.feldtyp=='Zahlenwert'"),
+        f("min_wert", "Float", "Min. Wert", precision="4", depends_on="eval:doc.feldtyp=='Zahlenwert'"),
+        f("max_wert", "Float", "Max. Wert", precision="4", depends_on="eval:doc.feldtyp=='Zahlenwert'"),
+        f("nachkommastellen", "Int", "Nachkommastellen", default="2",
+          depends_on="eval:doc.feldtyp=='Zahlenwert'"),
+        sb("sb_pp_hilfe", "Hilfe & Logik"),
+        f("hilfetext", "Small Text", "Hilfetext / Arbeitsanweisung"),
+        f("normverweis", "Data", "Normverweis", description="z. B. IEC 62446-1, OEVE/OENORM E 8001"),
+        cb("cb_pp2"),
+        f("sichtbar_wenn", "Data", "Sichtbar wenn",
+          description="Pruefpunkt-Nummer, Operator und Wert, z. B. '3.1 == Mangel schwer'"),
+        f("mangelkategorie", "Link", "Mangelkategorie (Vorgabe)", options="Mangelkategorie",
+          description="Wird bei automatischer Mangelanlage vorbelegt."),
+        f("pruefpunkt_key", "Data", "Schluessel", read_only=1, no_copy=1,
+          description="Stabile ID fuer die Zuordnung der Ergebnisse ueber Revisionen hinweg."),
+    ],
+    istable=1,
+)
+
+CHECKLISTENSEKTION = doctype(
+    "Checklistensektion",
+    [
+        f("sektion_name", "Data", "Sektion", reqd=1, in_list_view=1, columns=4),
+        f("sortierung", "Int", "Sortierung", in_list_view=1, columns=1),
+        f("nur_fuer_anlagen_typ", "Select", "Nur fuer Anlagentyp", options="\n" + ANLAGEN_TYPEN,
+          in_list_view=1, columns=2),
+        f("beschreibung", "Small Text", "Beschreibung"),
+        f("pruefpunkte", "Table", "Pruefpunkte", options="Pruefpunkt"),
+        f("sektion_key", "Data", "Schluessel", read_only=1, no_copy=1),
+    ],
+    istable=1,
+)
+
+CHECKLISTENVORLAGE = doctype(
+    "Checklistenvorlage",
+    [
+        f("naming_series", "Select", "Nummernkreis", options="CLV-.####", default="CLV-.####",
+          hidden=1, no_copy=1, print_hide=1),
+        f("titel", "Data", "Titel", reqd=1, in_list_view=1, in_standard_filter=1),
+        f("vorlage_typ", "Select", "Vorlagentyp",
+          options="IBN\nDC-Abnahme\nWartung\nSchadenaufnahme\nSonstige", reqd=1,
+          in_list_view=1, in_standard_filter=1),
+        f("anlagen_typ", "Select", "Anlagentyp", options=ANLAGEN_TYPEN + "\nAlle", reqd=1,
+          default="PV", in_list_view=1, in_standard_filter=1),
+        cb("cb_vorlage"),
+        f("status", "Select", "Status", options="Entwurf\nVeroeffentlicht\nDeaktiviert",
+          reqd=1, default="Entwurf", in_list_view=1, in_standard_filter=1),
+        f("revision", "Int", "Revision", default="1", read_only=1, in_list_view=1),
+        f("sprache", "Select", "Sprache", options="DE\nEN", default="DE"),
+        f("pdf_profil", "Link", "PDF-Profil", options="PDF Protokollprofil"),
+        sb("sb_v_meta", "Beschreibung"),
+        f("beschreibung", "Text Editor", "Beschreibung / Aenderungshistorie"),
+        sb("sb_v_sektionen", "Aufbau"),
+        f("sektionen", "Table", "Sektionen", options="Checklistensektion"),
+        sb("sb_v_rev", "Revisionierung"),
+        f("vorgaenger", "Link", "Vorgaenger-Revision", options="Checklistenvorlage", read_only=1),
+        f("veroeffentlicht_am", "Datetime", "Veroeffentlicht am", read_only=1),
+        cb("cb_v_rev"),
+        f("veroeffentlicht_von", "Link", "Veroeffentlicht von", options="User", read_only=1),
+        f("anzahl_pruefpunkte", "Int", "Anzahl Pruefpunkte", read_only=1),
+    ],
+    autoname="naming_series:",
+    title_field="titel",
+    search_fields="titel,vorlage_typ,anlagen_typ",
+    permissions=[
+        perm(ADMIN, **FULL),
+        perm(PROJEKTLEITER, **FULL),
+        perm(BAULEITER),
+        perm(TECHNIKER),
+        perm(SUBU),
+    ],
+)
+
+# ----------------------------------------------------------------------------------
+# Pruefprotokoll
+# ----------------------------------------------------------------------------------
+
+UNTERSCHRIFT = doctype(
+    "Digitale Unterschrift",
+    [
+        f("rolle", "Select", "Rolle",
+          options="Techniker\nAuftraggeber\nBauleiter\nSubunternehmer\nPruefer", reqd=1,
+          in_list_view=1, columns=2),
+        f("name_unterzeichner", "Data", "Name", reqd=1, in_list_view=1, columns=3),
+        f("signatur", "Long Text", "Signatur", reqd=1,
+          description="PNG als Data-URL (Touch-Eingabe)."),
+        f("unterzeichnet_am", "Datetime", "Zeitstempel", reqd=1, in_list_view=1, columns=2),
+        f("ip_adresse", "Data", "IP-Adresse", read_only=1),
+        f("geraet", "Small Text", "Geraet (User Agent)", read_only=1),
+        f("gps", "Data", "GPS"),
+        f("hash", "Data", "SHA-256", read_only=1),
+    ],
+    istable=1,
+)
+
+BAUDOKU_FOTO = doctype(
+    "Baudoku Foto",
+    [
+        f("bild", "Attach Image", "Foto", reqd=1, in_list_view=1, columns=2),
+        f("beschriftung", "Data", "Beschriftung", in_list_view=1, columns=4),
+        f("aufgenommen_am", "Datetime", "Aufgenommen am", in_list_view=1, columns=2),
+        f("gps_lat", "Float", "Breitengrad", precision="6"),
+        f("gps_lng", "Float", "Laengengrad", precision="6"),
+        f("hash", "Data", "SHA-256", read_only=1),
+        f("lokale_id", "Data", "Lokale ID", read_only=1, no_copy=1,
+          description="UUID aus der Offline-Warteschlange (Idempotenz beim Sync)."),
+    ],
+    istable=1,
+)
+
+PRUEFPUNKT_ERGEBNIS = doctype(
+    "Pruefpunkt Ergebnis",
+    [
+        f("sektion", "Data", "Sektion", in_list_view=1, columns=2, read_only=1),
+        f("nummer", "Data", "Nr.", in_list_view=1, columns=1, read_only=1),
+        f("titel", "Data", "Pruefpunkt", in_list_view=1, columns=3, read_only=1),
+        f("feldtyp", "Select", "Feldtyp", options=FELDTYPEN, read_only=1),
+        f("pruefpunkt_key", "Data", "Pruefpunkt-Schluessel", read_only=1),
+        sb("sb_erg", "Ergebnis"),
+        f("bewertung", "Data", "Bewertung", in_list_view=1, columns=2),
+        f("wert_zahl", "Float", "Zahlenwert", precision="4", in_list_view=1, columns=1),
+        f("einheit", "Data", "Einheit", read_only=1),
+        f("wert_text", "Small Text", "Text"),
+        f("wert_ja_nein", "Check", "Ja"),
+        f("wert_datum", "Date", "Datum"),
+        cb("cb_erg"),
+        f("status", "Select", "Status", options="Offen\nOK\nWarnung\nFehler\nUebersprungen",
+          default="Offen", in_list_view=1, columns=1),
+        f("plausi_meldung", "Small Text", "Plausibilitaetsmeldung", read_only=1),
+        f("uebersteuert", "Check", "Uebersteuert"),
+        f("uebersteuerung_grund", "Small Text", "Begruendung der Uebersteuerung",
+          depends_on="uebersteuert", mandatory_depends_on="uebersteuert"),
+        sb("sb_erg_media", "Fotos & Mangel"),
+        f("fotos", "Table", "Fotos", options="Baudoku Foto"),
+        f("mangel", "Link", "Erzeugter Mangel", options="Mangel", read_only=1),
+        f("mangel_lokal", "Data", "Mangel (lokale ID)", read_only=1, no_copy=1,
+          description="UUID des offline angelegten Mangels; wird beim Sync in 'mangel' aufgeloest."),
+        f("bemerkung", "Small Text", "Bemerkung"),
+        f("erfasst_am", "Datetime", "Erfasst am"),
+    ],
+    istable=1,
+)
+
+MESSDATEN_STRING = doctype(
+    "Messdaten String",
+    [
+        f("string_nr", "Data", "String", reqd=1, in_list_view=1, columns=1),
+        f("wechselrichter", "Data", "WR / MPPT", in_list_view=1, columns=2),
+        f("anzahl_module", "Int", "Module", reqd=1, in_list_view=1, columns=1),
+        f("uoc", "Float", "Uoc (V)", precision="2", in_list_view=1, columns=1),
+        f("isc", "Float", "Isc (A)", precision="2", in_list_view=1, columns=1),
+        f("riso", "Float", "Riso (kOhm)", precision="2", in_list_view=1, columns=1),
+        f("strangstrom", "Float", "Strangstrom (A)", precision="2"),
+        cb("cb_md"),
+        f("einstrahlung", "Float", "Einstrahlung (W/m2)", precision="0"),
+        f("modultemperatur", "Float", "Modultemperatur (C)", precision="1"),
+        f("status", "Select", "Status", options="Offen\nOK\nWarnung\nFehler", default="Offen",
+          in_list_view=1, columns=1, read_only=1),
+        f("plausi_meldung", "Small Text", "Plausibilitaetsmeldung", read_only=1),
+        f("uebersteuert", "Check", "Uebersteuert"),
+        f("uebersteuerung_grund", "Small Text", "Begruendung", depends_on="uebersteuert",
+          mandatory_depends_on="uebersteuert"),
+        f("bemerkung", "Small Text", "Bemerkung"),
+    ],
+    istable=1,
+)
+
+PRUEFPROTOKOLL = doctype(
+    "Pruefprotokoll",
+    [
+        f("naming_series", "Select", "Nummernkreis", options="PP-.YYYY.-", default="PP-.YYYY.-",
+          hidden=1, no_copy=1, print_hide=1),
+        f("anlage", "Link", "Anlage", options="PV Anlage", reqd=1, in_list_view=1,
+          in_standard_filter=1),
+        f("vorlage", "Link", "Checklistenvorlage", options="Checklistenvorlage", reqd=1,
+          in_list_view=1, in_standard_filter=1),
+        f("vorlage_revision", "Int", "Vorlagen-Revision", read_only=1),
+        f("vorlage_typ", "Select", "Typ",
+          options="IBN\nDC-Abnahme\nWartung\nSchadenaufnahme\nSonstige", read_only=1,
+          fetch_from="vorlage.vorlage_typ", in_list_view=1, in_standard_filter=1),
+        cb("cb_pp_kopf"),
+        f("status", "Select", "Status",
+          options="Entwurf\nIn Arbeit\nAbgeschlossen\nVerifiziert\nStorniert", default="Entwurf",
+          reqd=1, in_list_view=1, in_standard_filter=1),
+        f("pruefer", "Link", "Pruefer", options="Employee", reqd=1, in_list_view=1,
+          in_standard_filter=1),
+        f("customer", "Link", "Auftraggeber", options="Customer", fetch_from="anlage.customer",
+          read_only=1),
+        f("project", "Link", "Projekt", options="Project", fetch_from="anlage.project", read_only=1),
+        sb("sb_pp_zeit", "Durchfuehrung"),
+        f("pruef_datum", "Datetime", "Beginn", reqd=1, in_list_view=1),
+        f("abschluss_datum", "Datetime", "Ende", read_only=1),
+        f("dauer_minuten", "Int", "Dauer (min)", read_only=1),
+        f("anwesende_personen", "Small Text", "Anwesende Personen"),
+        cb("cb_pp_zeit"),
+        f("wetter", "Select", "Wetter",
+          options="\nSonnig\nLeicht bewoelkt\nBewoelkt\nBedeckt\nRegen\nSchnee\nWind"),
+        f("temperatur", "Float", "Temperatur (C)", precision="1"),
+        f("gps_koordinaten", "Data", "GPS bei Protokollstart", read_only=1),
+        f("messmittel", "Link", "Verwendetes Messmittel", options="Messmittel"),
+        sb("sb_pp_erg", "Pruefergebnisse"),
+        f("ergebnisse", "Table", "Ergebnisse", options="Pruefpunkt Ergebnis"),
+        sb("sb_pp_mess", "String-Messdaten"),
+        f("messdaten", "Table", "Messdaten", options="Messdaten String"),
+        sb("sb_pp_bewertung", "Gesamtbewertung"),
+        f("gesamtbewertung", "Select", "Gesamtbewertung",
+          options="\nBestanden\nBestanden mit Auflagen\nNicht bestanden", in_list_view=1,
+          in_standard_filter=1),
+        f("zusammenfassung", "Text Editor", "Zusammenfassung / Auflagen"),
+        cb("cb_pp_bew"),
+        f("anzahl_pruefpunkte", "Int", "Pruefpunkte gesamt", read_only=1),
+        f("anzahl_erledigt", "Int", "Davon erledigt", read_only=1),
+        f("fortschritt", "Percent", "Fortschritt", read_only=1, in_list_view=1),
+        f("anzahl_maengel", "Int", "Erzeugte Maengel", read_only=1),
+        sb("sb_pp_sig", "Unterschriften"),
+        f("unterschriften", "Table", "Unterschriften", options="Digitale Unterschrift"),
+        sb("sb_pp_sync", "Synchronisation"),
+        f("lokale_id", "Data", "Lokale ID", read_only=1, no_copy=1, unique=1,
+          description="UUID des Offline-Clients - verhindert Doppel-Uploads."),
+        f("offline_erstellt", "Check", "Offline erstellt", read_only=1),
+        cb("cb_pp_sync"),
+        f("synchronisiert_am", "Datetime", "Synchronisiert am", read_only=1),
+        f("client_version", "Data", "Client-Version", read_only=1),
+        sb("sb_pp_verif", "Verifizierung"),
+        f("verifiziert_von", "Link", "Verifiziert von", options="User", read_only=1),
+        f("verifiziert_am", "Datetime", "Verifiziert am", read_only=1),
+        cb("cb_pp_verif"),
+        f("pdf_datei", "Attach", "PDF-Protokoll", read_only=1),
+    ],
+    autoname="naming_series:",
+    search_fields="anlage,pruefer,vorlage_typ,status",
+    permissions=[
+        perm(ADMIN, **FULL),
+        perm(PROJEKTLEITER, **FULL),
+        perm(BAULEITER, **FULL),
+        perm(TECHNIKER, **RW),
+        perm(SUBU, if_owner=1),
+        perm(KUNDE),
+    ],
+)
+
+# ----------------------------------------------------------------------------------
+# Mangel
+# ----------------------------------------------------------------------------------
+
+MANGEL = doctype(
+    "Mangel",
+    [
+        f("naming_series", "Select", "Nummernkreis", options="MGL-.YYYY.-", default="MGL-.YYYY.-",
+          hidden=1, no_copy=1, print_hide=1),
+        f("titel", "Data", "Titel", reqd=1, in_list_view=1),
+        f("anlage", "Link", "Anlage", options="PV Anlage", reqd=1, in_list_view=1,
+          in_standard_filter=1),
+        f("kategorie", "Link", "Kategorie", options="Mangelkategorie", reqd=1, in_list_view=1,
+          in_standard_filter=1),
+        cb("cb_mgl_kopf"),
+        f("schweregrad", "Link", "Schweregrad", options="Mangel Schweregrad", reqd=1,
+          in_list_view=1, in_standard_filter=1),
+        f("status", "Select", "Status",
+          options="Offen\nIn Bearbeitung\nErledigt\nVerifiziert\nVerworfen",
+          default="Offen", reqd=1, in_list_view=1, in_standard_filter=1),
+        f("prioritaet", "Select", "Prioritaet", options="Niedrig\nMittel\nHoch\nKritisch",
+          default="Mittel"),
+        sb("sb_mgl_herkunft", "Herkunft"),
+        f("pruefprotokoll", "Link", "Pruefprotokoll", options="Pruefprotokoll", read_only=1),
+        f("pruefprotokoll_lokal", "Data", "Pruefprotokoll (lokale ID)", read_only=1, no_copy=1,
+          description="UUID des offline erstellten Protokolls; wird beim Sync aufgeloest."),
+        f("pruefpunkt_ref", "Data", "Pruefpunkt", read_only=1),
+        f("tagesbericht", "Link", "Tagesbericht", options="Tagesbericht", read_only=1),
+        cb("cb_mgl_herkunft"),
+        f("customer", "Link", "Auftraggeber", options="Customer", fetch_from="anlage.customer",
+          read_only=1),
+        f("project", "Link", "Projekt", options="Project", fetch_from="anlage.project", read_only=1),
+        f("komponente", "Data", "Betroffene Komponente"),
+        f("serial_no", "Link", "Seriennummer", options="Serial No"),
+        sb("sb_mgl_beschreibung", "Beschreibung"),
+        f("beschreibung", "Text Editor", "Beschreibung", reqd=1),
+        f("fotos", "Table", "Fotos", options="Baudoku Foto"),
+        sb("sb_mgl_zuweisung", "Zuweisung & Frist"),
+        f("zugewiesen_an", "Link", "Zugewiesen an", options="Employee", in_list_view=1,
+          in_standard_filter=1),
+        f("zugewiesen_an_user", "Data", "Benutzer", fetch_from="zugewiesen_an.user_id",
+          read_only=1, options="Email"),
+        f("supplier", "Link", "Subunternehmer", options="Supplier"),
+        cb("cb_mgl_zuweisung"),
+        f("gemeldet_am", "Date", "Gemeldet am", reqd=1),
+        f("faellig_am", "Date", "Faellig am", in_list_view=1, in_standard_filter=1),
+        f("ueberfaellig", "Check", "Ueberfaellig", read_only=1),
+        f("eskaliert_am", "Datetime", "Eskaliert am", read_only=1),
+        sb("sb_mgl_behebung", "Behebung"),
+        f("massnahme", "Text Editor", "Durchgefuehrte Massnahme",
+          depends_on="eval:['Erledigt','Verifiziert'].includes(doc.status)"),
+        f("erledigt_am", "Date", "Erledigt am", read_only=1),
+        f("erledigt_von", "Link", "Erledigt von", options="User", read_only=1),
+        cb("cb_mgl_behebung"),
+        f("erledigt_fotos", "Table", "Nachweisfotos", options="Baudoku Foto"),
+        f("verifiziert_von", "Link", "Verifiziert von", options="User", read_only=1),
+        f("verifiziert_am", "Datetime", "Verifiziert am", read_only=1),
+        sb("sb_mgl_sync", "Synchronisation"),
+        f("lokale_id", "Data", "Lokale ID", read_only=1, no_copy=1, unique=1),
+        f("gps_lat", "Float", "Breitengrad", precision="6"),
+        cb("cb_mgl_sync"),
+        f("gps_lng", "Float", "Laengengrad", precision="6"),
+        f("offline_erstellt", "Check", "Offline erstellt", read_only=1),
+    ],
+    autoname="naming_series:",
+    title_field="titel",
+    search_fields="titel,anlage,kategorie,status",
+    permissions=[
+        perm(ADMIN, **FULL),
+        perm(PROJEKTLEITER, **FULL),
+        perm(BAULEITER, **FULL),
+        perm(TECHNIKER, **RW),
+        perm(SUBU, write=1),
+        perm(KUNDE),
+    ],
+)
+
+# ----------------------------------------------------------------------------------
+# Tagesbericht
+# ----------------------------------------------------------------------------------
+
+TAGESBERICHT_POSITION = doctype(
+    "Tagesbericht Position",
+    [
+        f("beschreibung", "Data", "Taetigkeit", reqd=1, in_list_view=1, columns=3),
+        f("bereich", "Select", "Bereich", options=BEREICHE, reqd=1, in_list_view=1, columns=2),
+        f("menge", "Float", "Menge", precision="2", in_list_view=1, columns=1),
+        f("einheit", "Select", "Einheit", options="Stk\nm\nm2\nkWp\nh\npauschal", default="Stk",
+          in_list_view=1, columns=1),
+        f("fortschritt", "Percent", "Fortschritt", in_list_view=1, columns=2),
+        f("stunden", "Float", "Stunden", precision="2"),
+        cb("cb_tbp"),
+        f("foto", "Attach Image", "Foto"),
+        f("anmerkung", "Small Text", "Anmerkung"),
+    ],
+    istable=1,
+)
+
+TAGESBERICHT = doctype(
+    "Tagesbericht",
+    [
+        f("naming_series", "Select", "Nummernkreis", options="TB-.YYYY.-", default="TB-.YYYY.-",
+          hidden=1, no_copy=1, print_hide=1),
+        f("bericht_typ", "Select", "Berichtstyp", options="Bauleiter\nSubunternehmer", reqd=1,
+          default="Bauleiter", in_list_view=1, in_standard_filter=1),
+        f("anlage", "Link", "Baustelle / Anlage", options="PV Anlage", reqd=1, in_list_view=1,
+          in_standard_filter=1),
+        f("datum", "Date", "Berichtstag", reqd=1, in_list_view=1, in_standard_filter=1),
+        cb("cb_tb_kopf"),
+        f("status", "Select", "Status", options="Entwurf\nEingereicht\nGenehmigt\nAbgelehnt",
+          default="Entwurf", reqd=1, in_list_view=1, in_standard_filter=1),
+        f("ersteller", "Link", "Ersteller", options="Employee", reqd=1, in_list_view=1,
+          in_standard_filter=1),
+        f("supplier", "Link", "Subunternehmer", options="Supplier",
+          depends_on="eval:doc.bericht_typ=='Subunternehmer'",
+          mandatory_depends_on="eval:doc.bericht_typ=='Subunternehmer'", in_standard_filter=1),
+        f("project", "Link", "Projekt", options="Project", fetch_from="anlage.project", read_only=1),
+        sb("sb_tb_rahmen", "Rahmenbedingungen"),
+        f("wetter", "Select", "Wetter",
+          options="\nSonnig\nLeicht bewoelkt\nBewoelkt\nBedeckt\nRegen\nSchnee\nWind\nFrost"),
+        f("temperatur", "Float", "Temperatur (C)", precision="1"),
+        f("arbeitsbeginn", "Time", "Arbeitsbeginn"),
+        f("arbeitsende", "Time", "Arbeitsende"),
+        cb("cb_tb_rahmen"),
+        f("personal_anzahl", "Int", "Eingesetztes Personal"),
+        f("arbeitsstunden_gesamt", "Float", "Arbeitsstunden gesamt", precision="2", read_only=1),
+        f("witterungsbedingter_ausfall", "Check", "Witterungsbedingter Ausfall"),
+        f("ausfallstunden", "Float", "Ausfallstunden", precision="2",
+          depends_on="witterungsbedingter_ausfall"),
+        sb("sb_tb_positionen", "Leistungspositionen"),
+        f("positionen", "Table", "Positionen", options="Tagesbericht Position"),
+        f("fortschritt_prozent", "Percent", "Gesamtfortschritt Baustelle", in_list_view=1),
+        sb("sb_tb_vorkommnisse", "Besondere Vorkommnisse"),
+        f("besondere_vorkommnisse", "Text Editor", "Stoerungen, Verzoegerungen, Abweichungen"),
+        f("materiallieferungen", "Small Text", "Materiallieferungen"),
+        f("fotos", "Table", "Fortschrittsfotos", options="Baudoku Foto"),
+        sb("sb_tb_sig", "Unterschrift"),
+        f("unterschriften", "Table", "Unterschriften", options="Digitale Unterschrift"),
+        sb("sb_tb_freigabe", "Freigabe"),
+        f("eingereicht_am", "Datetime", "Eingereicht am", read_only=1),
+        f("genehmigt_von", "Link", "Genehmigt von", options="User", read_only=1),
+        f("genehmigt_am", "Datetime", "Genehmigt am", read_only=1),
+        cb("cb_tb_freigabe"),
+        f("ablehnungsgrund", "Small Text", "Ablehnungsgrund",
+          depends_on="eval:doc.status=='Abgelehnt'"),
+        f("pdf_datei", "Attach", "PDF-Bericht", read_only=1),
+        sb("sb_tb_sync", "Synchronisation"),
+        f("lokale_id", "Data", "Lokale ID", read_only=1, no_copy=1, unique=1),
+        f("offline_erstellt", "Check", "Offline erstellt", read_only=1),
+        cb("cb_tb_sync"),
+        f("gps_koordinaten", "Data", "GPS", read_only=1),
+        f("synchronisiert_am", "Datetime", "Synchronisiert am", read_only=1),
+    ],
+    autoname="naming_series:",
+    search_fields="anlage,datum,ersteller,bericht_typ",
+    permissions=[
+        perm(ADMIN, **FULL),
+        perm(PROJEKTLEITER, **FULL),
+        perm(BAULEITER, **FULL),
+        perm(TECHNIKER, **RW),
+        perm(SUBU, write=1, create=1, if_owner=1),
+    ],
+)
+
+SYNC_LOG = doctype(
+    "Baudoku Sync Log",
+    [
+        f("benutzer", "Link", "Benutzer", options="User", reqd=1, in_list_view=1),
+        f("zeitpunkt", "Datetime", "Zeitpunkt", reqd=1, in_list_view=1),
+        f("richtung", "Select", "Richtung", options="Push\nPull", reqd=1, in_list_view=1),
+        f("dokumenttyp", "Data", "Dokumenttyp", in_list_view=1),
+        cb("cb_sl"),
+        f("lokale_id", "Data", "Lokale ID"),
+        f("dokument", "Dynamic Link", "Dokument", options="dokumenttyp"),
+        f("ergebnis", "Select", "Ergebnis", options="Erfolg\nKonflikt\nFehler", reqd=1,
+          in_list_view=1, in_standard_filter=1),
+        f("meldung", "Small Text", "Meldung"),
+        f("client_version", "Data", "Client-Version"),
+        f("nutzlast", "Code", "Nutzlast", options="JSON"),
+    ],
+    autoname="hash",
+    track_changes=0,
+    permissions=[perm(ADMIN, **FULL), perm(PROJEKTLEITER), perm(BAULEITER),
+                 perm(TECHNIKER, if_owner=1), perm(SUBU, if_owner=1)],
+)
+
+DOCTYPES = [
+    MANGELKATEGORIE, MANGEL_SCHWEREGRAD, MESSMITTELTYP, MESSMITTEL, PDF_PROFIL, SETTINGS,
+    PV_ANLAGE, PRUEFPUNKT, CHECKLISTENSEKTION, CHECKLISTENVORLAGE,
+    UNTERSCHRIFT, BAUDOKU_FOTO, PRUEFPUNKT_ERGEBNIS, MESSDATEN_STRING, PRUEFPROTOKOLL,
+    MANGEL, TAGESBERICHT_POSITION, TAGESBERICHT, SYNC_LOG,
+]
+
+
+def scrub(name: str) -> str:
+    return name.lower().replace(" ", "_").replace("-", "_")
+
+
+def write_all():
+    for dt in DOCTYPES:
+        folder = MODULE_DIR / scrub(dt["name"])
+        folder.mkdir(parents=True, exist_ok=True)
+        init = folder / "__init__.py"
+        if not init.exists():
+            init.write_text("", encoding="utf-8")
+        target = folder / f"{scrub(dt['name'])}.json"
+        target.write_text(json.dumps(dt, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+        print(f"  {target.relative_to(ROOT)}")
+
+
+if __name__ == "__main__":
+    print(f"Schreibe {len(DOCTYPES)} Doctypes nach {MODULE_DIR.relative_to(ROOT)}:")
+    write_all()
+    print("Fertig.")

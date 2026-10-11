@@ -1,0 +1,22 @@
+<script setup lang="ts">
+import AppIcon from '@/components/AppIcon.vue'
+
+withDefaults(
+  defineProps<{ symbol?: string; titel: string; text?: string; aktionText?: string }>(),
+  { symbol: 'wolke', text: '', aktionText: '' },
+)
+
+defineEmits<{ (e: 'aktion'): void }>()
+</script>
+
+<template>
+  <div class="flex flex-col items-center justify-center rounded-xl border-2 border-dashed
+              border-slate-200 px-6 py-12 text-center dark:border-slate-800">
+    <AppIcon :name="symbol" :groesse="40" class="mb-3 text-slate-300 dark:text-slate-600" />
+    <p class="font-semibold text-slate-600 dark:text-slate-300">{{ titel }}</p>
+    <p v-if="text" class="mt-1 max-w-sm text-sm text-slate-500">{{ text }}</p>
+    <button v-if="aktionText" class="knopf-primaer mt-4 px-5" type="button" @click="$emit('aktion')">
+      {{ aktionText }}
+    </button>
+  </div>
+</template>

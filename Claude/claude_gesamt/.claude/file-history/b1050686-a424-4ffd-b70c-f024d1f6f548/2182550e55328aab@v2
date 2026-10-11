@@ -1,0 +1,54 @@
+/**
+ * Farbzuordnung der Energiedaten.
+ *
+ * Die Palette ist nicht nach Geschmack gewaehlt, sondern gerechnet und
+ * geprueft: Helligkeitsband, Buntheitsuntergrenze, Unterscheidbarkeit
+ * bei Farbfehlsichtigkeit (Protanopie, Deuteranopie, Tritanopie) und
+ * Kontrast gegen den Untergrund - in hellem und dunklem Erscheinungsbild.
+ *
+ * Ergebnis der Pruefung: alle Pruefpunkte bestanden. Zwei Punkte liegen
+ * im zulaessigen Grenzbereich:
+ *   - Erzeugung gegen Eigenverbrauch trennt bei Rotsehschwaeche nur mit
+ *     Delta E 7,4. Das ist zulaessig, solange eine zweite Kodierung
+ *     hinzukommt - deshalb tragen alle Diagramme Legende UND direkte
+ *     Beschriftung, und gestapelte Flaechen sind durch eine 2 px breite
+ *     Lueche getrennt.
+ *   - Speicher erreicht auf dunklem Grund 2,96:1 statt 3:1. Auch hier
+ *     traegt die Beschriftung die Information, nicht die Farbe allein.
+ *
+ * Wichtig: Eine Farbe bedeutet im gesamten Portal immer dasselbe. Sie
+ * folgt der Groesse, nie der Reihenfolge - ein Filter, der Serien
+ * ausblendet, faerbt die uebrigen nicht um.
+ */
+
+export const ENERGIE_FARBEN = {
+  erzeugung: "#d4771a",
+  eigenverbrauch: "#55751d",
+  einspeisung: "#008d9c",
+  netzbezug: "#3d5dcf",
+  speicher: "#8d4d8c",
+} as const;
+
+export type EnergieReihe = keyof typeof ENERGIE_FARBEN;
+
+export const ENERGIE_BESCHRIFTUNG: Record<EnergieReihe, string> = {
+  erzeugung: "Erzeugung",
+  eigenverbrauch: "Eigenverbrauch",
+  einspeisung: "Einspeisung",
+  netzbezug: "Netzbezug",
+  speicher: "Speicher",
+};
+
+/**
+ * Statusfarben sind reserviert und werden nie als weitere Datenreihe
+ * verwendet. Sie treten immer zusammen mit Text auf, nie allein.
+ */
+export const STATUS_FARBEN = {
+  gut: "#2f7d32",
+  hinweis: "#8a6100",
+  ernst: "#b4530c",
+  kritisch: "#b3261e",
+  neutral: "#5b6472",
+} as const;
+
+export type StatusTon = keyof typeof STATUS_FARBEN;

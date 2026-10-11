@@ -1,0 +1,214 @@
+"use client";
+
+import Link from "next/link";
+import { useActionState } from "react";
+
+import { meldeStoerung, type MeldungsErgebnis } from "./aktionen";
+
+/**
+ * Die Dringlichkeitsstufen mit ihren Folgen.
+ *
+ * Die zugesagten Fristen stehen direkt an der Auswahl. Ohne diese
+ * Angabe wählt im Zweifel jeder „Kritisch", und die Einstufung
+ * verliert ihren Sinn - wenn alles dringend ist, ist nichts dringend.
+ */
+const STUFEN = [
+  {
+    wert: "Niedrig",
+    label: "Niedrig",
+    folge: "Anfrage ohne Ertragsausfall · Rückmeldung binnen 24 Arbeitsstunden",
+  },
+  {
+    wert: "Mittel",
+    label: "Mittel",
+    folge: "Minderertrag, Anlage läuft weiter · Rückmeldung binnen 8 Arbeitsstunden",
+  },
+  {
+    wert: "Hoch",
+    label: "Hoch",
+    folge:
+      "Ein Wechselrichter oder die Datenverbindung steht · Rückmeldung binnen 4 Arbeitsstunden",
+  },
+  {
+    wert: "Kritisch",
+    label: "Kritisch",
+    folge:
+      "Anlage steht vollständig oder Gefahr im Verzug · Rückmeldung binnen 2 Arbeitsstunden",
+  },
+];
+
+const KATEGORIEN = [
+  "Wechselrichter",
+  "Module und Stränge",
+  "Kommunikation",
+  "Ladeinfrastruktur",
+  "Zähler und Messung",
+  "Abrechnung",
+  "Auslegung",
+  "Benutzerverwaltung",
+  "Sonstiges",
+];
+
+export function Meldeformular({
+  anlagen,
+}: {
+  anlagen: { id: string; bezeichnung: string }[];
+}) {
+  const [ergebnis, aktion, laeuft] = useActionState<
+    MeldungsErgebnis | null,
+    FormData
+  >(meldeStoerung, null);
+
+  if (ergebnis?.ok) {
+    return (
+      <div
+        role="status"
+        className="rounded-sm border p-4"
+        style={{
+          borderColor: "var(--linie)",
+          background: "var(--f-vertieft)",
+        }}
+      >
+        <p className="text-[0.875rem] leading-relaxed">{ergebnis.meldung}</p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {ergebnis.id && (
+            <Link
+              href={`/portal/support/${ergebnis.id}`}
+              className="knopf knopf-voll"
+            >
+              Meldung ansehen
+            </Link>
+          )}
+          <Link href="/portal/support" className="knopf knopf-rand">
+            Weitere Meldung erfassen
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <form action={aktion} className="space-y-4">
+      <div>
+        <label htmlFor="betreff" className="t-etikett block">
+          Was ist aufgefallen?
+        </label>
+        <input
+          id="betreff"
+          name="betreff"
+          required
+          minLength={5}
+          maxLength={140}
+          placeholder="z. B. Wechselrichter 3 zeigt seit gestern Fehlercode 301"
+          className="feld mt-1"
+        />
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label htmlFor="anlage" className="t-etikett block">
+            Betroffene Anlage
+          </label>
+          <select id="anlage" name="anlage" className="feld mt-1">
+            <option value="">– noch nicht zuordenbar –</option>
+            {anlagen.map((anlage) => (
+              <option key={anlage.id} value={anlage.id}>
+                {anlage.bezeichnung}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label htmlFor="kategorie" className="t-etikett block">
+            Betrifft
+          </label>
+          <select
+            id="kategorie"
+            name="kategorie"
+            defaultValue="Sonstiges"
+            className="feld mt-1"
+          >
+            {KATEGORIEN.map((k) => (
+              <option key={k} value={k}>
+                {k}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <fieldset>
+        <legend className="t-etikett">Dringlichkeit</legend>
+        <div className="mt-1.5 space-y-1.5">
+          {STUFEN.map((stufe) => (
+            <label
+              key={stufe.wert}
+              className="flex cursor-pointer items-start gap-2.5 rounded-sm border p-2.5 transition-colors"
+              style={{
+                borderColor: "var(--linie)",
+                background: "var(--f-ebene)",
+              }}
+            >
+              <input
+                type="radio"
+                name="prioritaet"
+                value={stufe.wert}
+                defaultChecked={stufe.wert === "Mittel"}
+                className="mt-0.5 shrink-0"
+              />
+              <span className="min-w-0">
+                <span className="block text-[0.8125rem] font-medium">
+                  {stufe.label}
+                </span>
+                <span className="t-mikro block leading-relaxed">
+                  {stufe.folge}
+                </span>
+              </span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+
+      <div>
+        <label htmlFor="beschreibung" className="t-etikett block">
+          Beschreibung
+        </label>
+        <textarea
+          id="beschreibung"
+          name="beschreibung"
+          rows={4}
+          placeholder="Seit wann tritt es auf? Gibt es einen Fehlercode? Was wurde bereits versucht?"
+          className="feld mt-1"
+        />
+        <p className="t-mikro mt-1">
+          Fehlercode und Zeitpunkt helfen, den Einsatz vorzubereiten – oft
+          erspart das eine Anfahrt.
+        </p>
+      </div>
+
+      {ergebnis && !ergebnis.ok && (
+        <p
+          role="alert"
+          className="rounded-sm px-3 py-2 text-[0.8125rem]"
+          style={{
+            background: "color-mix(in oklch, #b3261e, transparent 90%)",
+            color: "#b3261e",
+          }}
+        >
+          {ergebnis.meldung}
+        </p>
+      )}
+
+      <div className="flex flex-wrap items-center gap-3">
+        <button type="submit" disabled={laeuft} className="knopf knopf-voll">
+          {laeuft ? "Wird übermittelt …" : "Meldung absenden"}
+        </button>
+        <p className="t-mikro max-w-md leading-relaxed">
+          Bei Gefahr im Verzug – Brand, Rauch, beschädigte Leitungen – rufen
+          Sie bitte zuerst an und trennen Sie die Anlage nicht selbst.
+        </p>
+      </div>
+    </form>
+  );
+}

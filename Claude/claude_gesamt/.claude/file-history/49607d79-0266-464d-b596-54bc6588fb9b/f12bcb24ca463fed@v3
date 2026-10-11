@@ -1,0 +1,273 @@
+import { beforeEach, describe, expect, it } from 'vitest'
+import { mockRequest, resetMockData } from '@/api/mock/server.js'
+import { seedAuditLog } from '@/api/mock/seed-audit.js'
+
+const ruf = (url, params) => mockRequest({ url, params })
+
+beforeEach(() => {
+  resetMockData()
+  seedAuditLog()
+})
+
+describe('netops.api.security.vulnerability_list', () => {
+  it('stellt eine aktiv ausgenutzte Lücke nach vorne', async () => {
+    const liste = await ruf('netops.api.security.vulnerability_list', { state: 'open' })
+    expect(liste[0].kev).toBe(1)
+    expect(liste[0].cve).toBe('CVE-2026-1001')
+  })
+
+  it('leitet die Frist aus der Einstufung ab', async () => {
+    const liste = await ruf('netops.api.security.vulnerability_list', { state: 'open' })
+    const kev = liste.find((v) => v.kev)
+    const hoch = liste.find((v) => !v.kev && v.severity === 'high')
+    expect(kev.sla_days).toBe(3)
+    expect(hoch.sla_days).toBe(30)
+  })
+
+  it('stuft nach CVSS ein', async () => {
+    const liste = await ruf('netops.api.security.vulnerability_list', {})
+    expect(liste.find((v) => v.cve === 'CVE-2026-1001').severity).toBe('critical')
+    expect(liste.find((v) => v.cve === 'CVE-2026-1042').severity).toBe('high')
+    expect(liste.find((v) => v.cve === 'CVE-2025-5501').severity).toBe('medium')
+  })
+
+  it('markiert überschrittene Fristen nur bei offenen Einträgen', async () => {
+    const alle = await ruf('netops.api.security.vulnerability_list', {})
+    const ueberfaellig = alle.filter((v) => v.overdue)
+    expect(ueberfaellig).toHaveLength(1)
+    expect(ueberfaellig[0].cve).toBe('CVE-2025-9912')
+    // Behoben und Ausnahme haben ebenfalls alte Fristen, gelten aber nicht als überfällig.
+    expect(alle.find((v) => v.vuln_state === 'fixed').overdue).toBe(false)
+    expect(alle.find((v) => v.vuln_state === 'accepted_risk').overdue).toBe(false)
+  })
+
+  it('bewertet aktive Ausnutzung höher als reines CVSS', async () => {
+    const liste = await ruf('netops.api.security.vulnerability_list', {})
+    const kev = liste.find((v) => v.cve === 'CVE-2026-1001')
+    const hoehererCvssOhneKev = liste.find((v) => v.cve === 'CVE-2026-1042')
+    expect(kev.risk_score).toBeGreaterThan(hoehererCvssOhneKev.risk_score)
+  })
+})
+
+describe('netops.api.security.incident_list', () => {
+  it('stellt offene Vorfälle nach vorne', async () => {
+    const liste = await ruf('netops.api.security.incident_list', {})
+    expect(liste[0].open).toBe(true)
+    expect(liste[liste.length - 1].incident_state).toBe('closed')
+  })
+
+  it('rechnet die Meldefristen nur für offene Vorfälle', async () => {
+    const liste = await ruf('netops.api.security.incident_list', {})
+    const offen = liste.find((i) => i.open)
+    const geschlossen = liste.find((i) => !i.open)
+    expect(typeof offen.hours_to_early_warning).toBe('number')
+    expect(geschlossen.hours_to_early_warning).toBeNull()
+  })
+
+  it('kennt die DSGVO-Frist nur, wo sie gesetzt ist', async () => {
+    const liste = await ruf('netops.api.security.incident_list', {})
+    const phishing = liste.find((i) => i.title.includes('Phishing'))
+    const anmeldung = liste.find((i) => i.title.includes('Anmeldeversuche'))
+    expect(typeof phishing.hours_to_gdpr).toBe('number')
+    expect(anmeldung.hours_to_gdpr).toBeNull()
+  })
+})
+
+describe('netops.api.security.security_overview', () => {
+  it('fasst die Kennzahlen zusammen', async () => {
+    const z = await ruf('netops.api.security.security_overview', {})
+    expect(z.vulnerabilities_open).toBe(4)
+    expect(z.vulnerabilities_kev).toBe(1)
+    expect(z.vulnerabilities_overdue).toBe(1)
+    expect(z.incidents_open).toBe(2)
+    expect(typeof z.next_deadline_hours).toBe('number')
+  })
+})
+
+describe('netops.api.docs.document_list', () => {
+  it('stellt Dokumente mit überfälligem Review nach vorne', async () => {
+    const liste = await ruf('netops.api.docs.document_list', {})
+    expect(liste[0].review_overdue).toBe(true)
+    expect(liste[0].title).toMatch(/Notfallplan/)
+  })
+
+  it('löst die verknüpften Objekte auf', async () => {
+    const liste = await ruf('netops.api.docs.document_list', {})
+    const konfig = liste.find((d) => d.document_type === 'config_state')
+    expect(konfig.linked_objects.map((o) => o.name)).toContain('FW-OS-01')
+  })
+
+  it('filtert nach Typ', async () => {
+    const liste = await ruf('netops.api.docs.document_list', { document_type: 'runbook' })
+    expect(liste).toHaveLength(1)
+  })
+})
+
+describe('netops.api.docs.checklist_runs', () => {
+  it('rechnet den Fortschritt und nennt blockierende Pflichtpunkte', async () => {
+    const liste = await ruf('netops.api.docs.checklist_runs', {})
+    const offen = liste.find((c) => c.run_state === 'open')
+    expect(offen.total_items).toBe(7)
+    expect(offen.done_items).toBe(2)
+    expect(offen.progress).toBe(29)
+    expect(offen.can_finish).toBe(false)
+    expect(offen.blocking_items.length).toBe(4)
+  })
+
+  it('erlaubt den Abschluss, wenn alle Pflichtpunkte erledigt sind', async () => {
+    const liste = await ruf('netops.api.docs.checklist_runs', {})
+    const fertig = liste.find((c) => c.run_state === 'done')
+    expect(fertig.can_finish).toBe(true)
+    expect(fertig.blocking_items).toEqual([])
+  })
+})
+
+describe('netops.api.docs.contract_list', () => {
+  it('erkennt eine verstrichene Kündigungsfrist bei automatischer Verlängerung', async () => {
+    const daten = await ruf('netops.api.docs.contract_list', {})
+    const wan1 = daten.contracts.find((c) => c.contract_name === 'Internetanbindung WAN 1')
+    expect(wan1.notice_missed).toBe(true)
+    expect(wan1.level).toBe('critical')
+  })
+
+  it('rechnet den Kündigungsstichtag aus Ende minus Frist', async () => {
+    const daten = await ruf('netops.api.docs.contract_list', {})
+    const vertrag = daten.contracts.find((c) => c.contract_name === 'Hardwaresupport Server')
+    const ende = new Date(vertrag.end_date).getTime()
+    const stichtag = new Date(vertrag.notice_deadline).getTime()
+    expect(Math.round((ende - stichtag) / 86400000)).toBe(vertrag.notice_period_days)
+  })
+
+  it('markiert abgelaufene Lizenzen', async () => {
+    const daten = await ruf('netops.api.docs.contract_list', {})
+    const greenbone = daten.licenses.find((l) => l.product === 'Greenbone')
+    expect(greenbone.expired).toBe(true)
+    expect(greenbone.level).toBe('critical')
+  })
+
+  it('summiert die Jahreskosten', async () => {
+    const daten = await ruf('netops.api.docs.contract_list', {})
+    const summe = daten.contracts.reduce((s, c) => s + c.cost_per_year, 0)
+    expect(daten.yearly_cost).toBe(summe)
+  })
+})
+
+describe('netops.api.docs.object_dossier', () => {
+  it('trägt alles zu einem Gerät zusammen', async () => {
+    const dossier = await ruf('netops.api.docs.object_dossier', {
+      object_type: 'Network Device',
+      object_name: 'FW-OS-01',
+    })
+    expect(dossier.documents.length).toBeGreaterThan(0)
+    expect(dossier.access_references.length).toBeGreaterThan(0)
+    expect(dossier.alerts.length).toBeGreaterThan(0)
+    expect(dossier.vulnerabilities.length).toBeGreaterThan(0)
+    expect(dossier.drift.length).toBeGreaterThan(0)
+  })
+
+  it('gibt bei Zugangsverweisen niemals ein Geheimnis heraus', async () => {
+    const dossier = await ruf('netops.api.docs.object_dossier', {
+      object_type: 'Network Device',
+      object_name: 'FW-OS-01',
+    })
+    const alsText = JSON.stringify(dossier.access_references)
+    expect(alsText).toContain('passbolt://')
+    expect(alsText).not.toMatch(/password|secret|token_value/i)
+    for (const verweis of dossier.access_references) {
+      expect(Object.keys(verweis).sort()).toEqual(['access_kind', 'label', 'name', 'passbolt_url'])
+    }
+  })
+
+  it('kennt Beziehungen in beide Richtungen', async () => {
+    const nas = await ruf('netops.api.docs.object_dossier', {
+      object_type: 'Network Device',
+      object_name: 'NAS-TN-01',
+    })
+    expect(nas.relations_in.map((r) => r.name)).toContain('SRV-PVE-01')
+
+    const pve = await ruf('netops.api.docs.object_dossier', {
+      object_type: 'Network Device',
+      object_name: 'SRV-PVE-01',
+    })
+    expect(pve.relations_out.map((r) => r.name)).toContain('NAS-TN-01')
+  })
+})
+
+describe('Objektdossier mit Betriebskontext', () => {
+  it('führt Tickets und anstehende Änderungen am Gerät', async () => {
+    const dossier = await ruf('netops.api.docs.object_dossier', {
+      object_type: 'Network Device',
+      object_name: 'FW-OS-01',
+    })
+    expect(dossier.tickets.length).toBeGreaterThan(0)
+    expect(dossier.changes.length).toBeGreaterThan(0)
+    // Nur offene Vorgänge - abgeschlossene gehören nicht in die Arbeitsliste.
+    expect(dossier.tickets.every((t) => t.ticket_state !== 'closed')).toBe(true)
+    expect(dossier.changes.every((c) => !['verified', 'rejected'].includes(c.change_state))).toBe(true)
+  })
+
+  it('zeigt die Stromversorgung mit Redundanzaussage', async () => {
+    const redundant = await ruf('netops.api.docs.object_dossier', {
+      object_type: 'Network Device',
+      object_name: 'FW-OS-01',
+    })
+    expect(redundant.power.redundant).toBe(true)
+    expect(redundant.power.feeds).toEqual(['A', 'B'])
+
+    const ohne = await ruf('netops.api.docs.object_dossier', {
+      object_type: 'Network Device',
+      object_name: 'SRV-PVE-02',
+    })
+    expect(ohne.power.redundant).toBe(false)
+  })
+
+  it('zeigt den Fernwartungsagenten, wo es einen gibt', async () => {
+    const mit = await ruf('netops.api.docs.object_dossier', {
+      object_type: 'Network Device',
+      object_name: 'SRV-PVE-01',
+    })
+    expect(mit.remote_agent.online).toBe(1)
+
+    const ohne = await ruf('netops.api.docs.object_dossier', {
+      object_type: 'Network Device',
+      object_name: 'SW-CORE-01',
+    })
+    expect(ohne.remote_agent).toBeNull()
+  })
+
+  it('liefert Strom und Agent nur für Geräte', async () => {
+    const dossier = await ruf('netops.api.docs.object_dossier', {
+      object_type: 'NetOps Document',
+      object_name: 'DOC-00001',
+    })
+    expect(dossier.power).toBeNull()
+    expect(dossier.remote_agent).toBeNull()
+  })
+})
+
+describe('Leitstand-Kacheln', () => {
+  it('füllt alle Screens bis auf die nicht angebundene Deception-Plattform', async () => {
+    const offen = []
+    for (let i = 1; i <= 10; i++) {
+      const daten = await ruf('netops.api.screen.screen_data', { screen: 'screen' + i })
+      for (const kachel of daten.tiles.filter((t) => t.placeholder)) {
+        offen.push(kachel.kind)
+      }
+    }
+    expect(offen).toEqual(['honeypot'])
+  })
+
+  it('gruppiert Alarme nach ATT&CK-Technik', async () => {
+    const daten = await ruf('netops.api.screen.screen_data', { screen: 'screen4' })
+    const mitre = daten.tiles.find((t) => t.kind === 'mitre')
+    expect(mitre.rows.length).toBeGreaterThan(0)
+    expect(mitre.rows[0].title).toMatch(/^T\d+/)
+  })
+
+  it('zeigt den Zustand der Providerleitungen', async () => {
+    const daten = await ruf('netops.api.screen.screen_data', { screen: 'screen2' })
+    const uplinks = daten.tiles.find((t) => t.kind === 'uplinks')
+    expect(uplinks.rows).toHaveLength(3)
+    expect(uplinks.rows.some((r) => r.level === 'warning')).toBe(true)
+  })
+})

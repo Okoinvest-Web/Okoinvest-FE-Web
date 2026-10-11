@@ -1,0 +1,372 @@
+import pathlib
+
+FE = pathlib.Path(r"C:\Users\SALEADMIN\Documents\Servicetechniker APP\frontend")
+
+
+def patch(pfad, paare):
+    p = FE / pfad
+    s = p.read_text(encoding="utf-8")
+    for alt, neu in paare:
+        if alt not in s:
+            raise SystemExit(f"NICHT GEFUNDEN in {pfad}:\n---\n{alt[:300]}\n---")
+        s = s.replace(alt, neu, 1)
+    p.write_text(s, encoding="utf-8")
+    print("ok", pfad)
+
+
+# ============================================================= sync.ts: Pull
+SYNC_IMPORT_ALT = """import { db, einreihen, tabelleFuer, type Dokumenttyp, type WarteschlangeEintrag } from './db'"""
+SYNC_IMPORT_NEU = """import {
+  db,
+  einreihen,
+  neueId,
+  stammdatenLesen,
+  stammdatenSchreiben,
+  tabelleFuer,
+  type Dokumenttyp,
+  type WarteschlangeEintrag,
+} from './db'"""
+
+SYNC_ERGEBNIS_ALT = """export interface SyncErgebnis {
+  uebertragen: number
+  fehler: number
+  konflikte: number
+  fotos: number
+  meldung: string
+}"""
+
+SYNC_ERGEBNIS_NEU = """export interface SyncErgebnis {
+  uebertragen: number
+  fehler: number
+  konflikte: number
+  fotos: number
+  /** Vom Server übernommene Dokumente. */
+  empfangen: number
+  meldung: string
+}
+
+/** Wird nach einem Pull ausgelöst, damit Ansichten sich neu aufbauen können. */
+export const PULL_EREIGNIS = 'baudoku:pull'"""
+
+PULL_FUNKTION = '''
+// ---------------------------------------------------------------------------
+// Pull — die Gegenrichtung
+// ---------------------------------------------------------------------------
+
+const LETZTER_PULL = 'letzter_pull'
+
+interface PullAntwort {
+  daten: Record<string, Record<string, unknown>[]>
+  anlagen: Record<string, unknown>[]
+  server_zeit: string
+}
+
+/**
+ * Holt Serveränderungen und übernimmt sie in den lokalen Bestand.
+ *
+ * Ohne diesen Weg erfährt das Gerät nie, dass ein Bauleiter einen Mangel
+ * zugewiesen oder ein Protokoll verifiziert hat.
+ *
+ * Vorrangregel: Steht für ein Dokument noch eine Änderung in der
+ * Warteschlange, wird die Serverfassung **nicht** übernommen — sie würde die
+ * ungesendete Arbeit des Technikers überschreiben. Das Dokument geht im selben
+ * Lauf ohnehin hinaus; ist der Serverstand dann neuer, greift die reguläre
+ * Konflikterkennung und der Server gewinnt.
+ */
+export async function herunterladen(): Promise<{ empfangen: number; anlagen: Record<string, unknown>[] }> {
+  const seit = await stammdatenLesen<string>(LETZTER_PULL)
+  const antwort = (await baudoku.pull(seit)) as PullAntwort
+
+  const ausstehend = new Set((await db.warteschlange.toArray()).map((e) => e.lokale_id))
+  let empfangen = 0
+
+  for (const [doctype, dokumente] of Object.entries(antwort.daten ?? {})) {
+    if (!['Pruefprotokoll', 'Mangel', 'Tagesbericht'].includes(doctype)) continue
+    const tabelle = tabelleFuer(doctype as Dokumenttyp)
+
+    for (const dokument of dokumente) {
+      const serverId = dokument.lokale_id as string | undefined
+      const vorhanden = serverId
+        ? await tabelle.get(serverId)
+        : await tabelle.where('name').equals(dokument.name as string).first()
+
+      const lokale_id = serverId || vorhanden?.lokale_id || neueId()
+      if (ausstehend.has(lokale_id)) continue
+
+      await tabelle.put({ ...dokument, lokale_id } as never)
+      empfangen += 1
+    }
+  }
+
+  await stammdatenSchreiben(LETZTER_PULL, antwort.server_zeit)
+  if (empfangen) window.dispatchEvent(new CustomEvent(PULL_EREIGNIS))
+
+  return { empfangen, anlagen: antwort.anlagen ?? [] }
+}
+
+'''
+
+SYNC_HAUPT_ALT = """/** Überträgt Fotos und Warteschlange. Mehrfachaufrufe laufen nicht parallel. */
+export async function synchronisieren(): Promise<SyncErgebnis> {
+  if (laeuft) return { uebertragen: 0, fehler: 0, konflikte: 0, fotos: 0, meldung: 'Sync läuft bereits.' }
+
+  if (!(await istOnline(true))) {
+    melden('offline')
+    return { uebertragen: 0, fehler: 0, konflikte: 0, fotos: 0, meldung: 'Offline – wird später übertragen.' }
+  }
+
+  laeuft = true
+  melden('syncing')
+  let fotos = 0
+  let uebertragen = 0
+  let konflikte = 0
+  let fehler = 0
+
+  try {
+    fotos = await fotosHochladen()
+
+    const batchGroesse = 25
+    let rest = await db.warteschlange.filter((e) => e.versuche < MAX_VERSUCHE).toArray()
+    while (rest.length) {
+      const batch = rest.slice(0, batchGroesse)
+      const ergebnis = await batchSenden(batch)
+      uebertragen += ergebnis.erfolge
+      konflikte += ergebnis.konflikte
+      fehler += ergebnis.fehler
+      rest = rest.slice(batchGroesse)
+    }
+
+    const ergebnis: SyncErgebnis = {
+      uebertragen,
+      fehler,
+      konflikte,
+      fotos,
+      meldung: zusammenfassung(uebertragen, fotos, konflikte, fehler),
+    }
+    melden(fehler || konflikte ? 'fehler' : 'online', ergebnis)
+    return ergebnis
+  } catch (ausnahme) {
+    const netz = ausnahme instanceof ApiFehler && ausnahme.istNetzfehler
+    const ergebnis: SyncErgebnis = {
+      uebertragen,
+      fehler: fehler + 1,
+      konflikte,
+      fotos,
+      meldung: netz ? 'Verbindung abgebrochen – Sync wird fortgesetzt.' : String((ausnahme as Error).message),
+    }
+    melden(netz ? 'offline' : 'fehler', ergebnis)
+    return ergebnis
+  } finally {
+    laeuft = false
+  }
+}"""
+
+SYNC_HAUPT_NEU = """const LEER: SyncErgebnis = {
+  uebertragen: 0,
+  fehler: 0,
+  konflikte: 0,
+  fotos: 0,
+  empfangen: 0,
+  meldung: '',
+}
+
+/**
+ * Ein vollständiger Synchronisationslauf: Fotos, dann Dokumente hinaus,
+ * danach Serveränderungen herein. Mehrfachaufrufe laufen nicht parallel.
+ */
+export async function synchronisieren(): Promise<SyncErgebnis> {
+  if (laeuft) return { ...LEER, meldung: 'Sync läuft bereits.' }
+
+  if (!(await istOnline(true))) {
+    melden('offline')
+    return { ...LEER, meldung: 'Offline – wird später übertragen.' }
+  }
+
+  laeuft = true
+  melden('syncing')
+  let fotos = 0
+  let uebertragen = 0
+  let konflikte = 0
+  let fehler = 0
+  let empfangen = 0
+
+  try {
+    fotos = await fotosHochladen()
+
+    const batchGroesse = 25
+    let rest = await db.warteschlange.filter((e) => e.versuche < MAX_VERSUCHE).toArray()
+    while (rest.length) {
+      const batch = rest.slice(0, batchGroesse)
+      const ergebnis = await batchSenden(batch)
+      uebertragen += ergebnis.erfolge
+      konflikte += ergebnis.konflikte
+      fehler += ergebnis.fehler
+      rest = rest.slice(batchGroesse)
+    }
+
+    // Erst senden, dann empfangen: So sind die eigenen Änderungen bereits
+    // eingearbeitet und kommen nicht als vermeintlich fremde zurück.
+    try {
+      const pull = await herunterladen()
+      empfangen = pull.empfangen
+      anlagenEmpfaenger?.(pull.anlagen)
+    } catch (pullFehler) {
+      // Ein gescheiterter Pull darf den erfolgreichen Push nicht entwerten.
+      console.warn('Serveränderungen konnten nicht geholt werden:', pullFehler)
+    }
+
+    const ergebnis: SyncErgebnis = {
+      uebertragen,
+      fehler,
+      konflikte,
+      fotos,
+      empfangen,
+      meldung: zusammenfassung(uebertragen, fotos, konflikte, fehler, empfangen),
+    }
+    melden(fehler || konflikte ? 'fehler' : 'online', ergebnis)
+    return ergebnis
+  } catch (ausnahme) {
+    const netz = ausnahme instanceof ApiFehler && ausnahme.istNetzfehler
+    const ergebnis: SyncErgebnis = {
+      uebertragen,
+      fehler: fehler + 1,
+      konflikte,
+      fotos,
+      empfangen,
+      meldung: netz ? 'Verbindung abgebrochen – Sync wird fortgesetzt.' : String((ausnahme as Error).message),
+    }
+    melden(netz ? 'offline' : 'fehler', ergebnis)
+    return ergebnis
+  } finally {
+    laeuft = false
+  }
+}
+
+/**
+ * Empfänger für aktualisierte Anlagenstammdaten.
+ *
+ * Der Sync-Motor kennt den Pinia-Store bewusst nicht — sonst hinge die
+ * Offline-Logik an der Oberfläche und ließe sich nicht mehr allein testen.
+ */
+type AnlagenEmpfaenger = (anlagen: Record<string, unknown>[]) => void
+let anlagenEmpfaenger: AnlagenEmpfaenger | null = null
+
+export function anlagenEmpfaengerSetzen(empfaenger: AnlagenEmpfaenger): void {
+  anlagenEmpfaenger = empfaenger
+}"""
+
+ZUSAMMEN_ALT = """function zusammenfassung(uebertragen: number, fotos: number, konflikte: number, fehler: number): string {
+  if (!uebertragen && !fotos && !konflikte && !fehler) return 'Alles aktuell.'
+  const teile: string[] = []
+  if (uebertragen) teile.push(`${uebertragen} Dokument${uebertragen === 1 ? '' : 'e'}`)
+  if (fotos) teile.push(`${fotos} Foto${fotos === 1 ? '' : 's'}`)
+  let text = teile.length ? `${teile.join(' und ')} übertragen.` : ''
+  if (konflikte) text += ` ${konflikte} Konflikt${konflikte === 1 ? '' : 'e'} – Serverstand übernommen.`
+  if (fehler) text += ` ${fehler} Fehler.`
+  return text.trim()
+}"""
+
+ZUSAMMEN_NEU = """function zusammenfassung(
+  uebertragen: number,
+  fotos: number,
+  konflikte: number,
+  fehler: number,
+  empfangen = 0,
+): string {
+  if (!uebertragen && !fotos && !konflikte && !fehler && !empfangen) return 'Alles aktuell.'
+  const teile: string[] = []
+  if (uebertragen) teile.push(`${uebertragen} Dokument${uebertragen === 1 ? '' : 'e'}`)
+  if (fotos) teile.push(`${fotos} Foto${fotos === 1 ? '' : 's'}`)
+  let text = teile.length ? `${teile.join(' und ')} übertragen.` : ''
+  if (empfangen) text += ` ${empfangen} Änderung${empfangen === 1 ? '' : 'en'} empfangen.`
+  if (konflikte) text += ` ${konflikte} Konflikt${konflikte === 1 ? '' : 'e'} – Serverstand übernommen.`
+  if (fehler) text += ` ${fehler} Fehler.`
+  return text.trim()
+}"""
+
+patch(
+    "src/lib/sync.ts",
+    [
+        (SYNC_IMPORT_ALT, SYNC_IMPORT_NEU),
+        (SYNC_ERGEBNIS_ALT, SYNC_ERGEBNIS_NEU),
+        (SYNC_HAUPT_ALT, PULL_FUNKTION + SYNC_HAUPT_NEU),
+        (ZUSAMMEN_ALT, ZUSAMMEN_NEU),
+    ],
+)
+
+# ========================================== Stammdaten: Anlagen zusammenführen
+patch(
+    "src/stores/stammdaten.ts",
+    [
+        (
+            """  function anlage(name: string): Anlage | undefined {""",
+            """  /**
+   * Anlagen aus einem Sync-Lauf einarbeiten.
+   *
+   * Der Mängelzähler und der Wartungstermin ändern sich im Betrieb ständig;
+   * ohne diesen Weg stünde auf dem Gerät bis zum nächsten App-Start der Stand
+   * vom Morgen.
+   */
+  async function anlagenAktualisieren(neue: Anlage[]): Promise<void> {
+    if (!neue.length) return
+
+    const index = new Map(anlagen.value.map((a) => [a.name, a]))
+    for (const eintrag of neue) index.set(eintrag.name, { ...index.get(eintrag.name), ...eintrag })
+    anlagen.value = [...index.values()].sort((a, b) => a.anlage_name.localeCompare(b.anlage_name))
+
+    const cache = await stammdatenLesen<Bootstrap>('bootstrap')
+    if (cache) await stammdatenSchreiben('bootstrap', { ...cache, anlagen: anlagen.value })
+  }
+
+  function anlage(name: string): Anlage | undefined {""",
+        ),
+        (
+            """    laden,
+    anlage,""",
+            """    laden,
+    anlagenAktualisieren,
+    anlage,""",
+        ),
+    ],
+)
+
+# ============================================= Sync-Store: Empfänger anmelden
+patch(
+    "src/stores/sync.ts",
+    [
+        (
+            """import { db, fotoPufferMb, warteschlangeGroesse } from '@/lib/db'
+import { autoSyncStarten, beobachten, synchronisieren, type SyncZustand } from '@/lib/sync'
+
+export const useSync = defineStore('sync', () => {""",
+            """import { db, fotoPufferMb, warteschlangeGroesse } from '@/lib/db'
+import {
+  anlagenEmpfaengerSetzen,
+  autoSyncStarten,
+  beobachten,
+  synchronisieren,
+  type SyncZustand,
+} from '@/lib/sync'
+import type { Anlage } from '@/lib/typen'
+
+import { useStammdaten } from './stammdaten'
+
+export const useSync = defineStore('sync', () => {
+  const stammdaten = useStammdaten()""",
+        ),
+        (
+            """  function starten() {
+    if (abmelden) return
+    const stoppAuto = autoSyncStarten()""",
+            """  function starten() {
+    if (abmelden) return
+
+    // Anlagenänderungen aus dem Pull in die Stammdaten einarbeiten.
+    anlagenEmpfaengerSetzen((anlagen) => {
+      void stammdaten.anlagenAktualisieren(anlagen as unknown as Anlage[])
+    })
+
+    const stoppAuto = autoSyncStarten()""",
+        ),
+    ],
+)

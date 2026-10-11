@@ -1,0 +1,1 @@
+- [CRM ist eigenständig](crm-separate-from-netops.md) — crm-develop hat nichts mit NetOps zu tun; Ziel: Next.js-Frontend + Frappe/ERPNext-API

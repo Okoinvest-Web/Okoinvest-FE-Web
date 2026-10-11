@@ -1,0 +1,107 @@
+# Aktenanalyse 18 St 14/26m — Dokumentenübersicht
+
+Stand: 20.09.2026 · Beschuldigter Benjamin Höfler, geb. 22.05.1989
+
+---
+
+## A. ZUR EINBRINGUNG BESTIMMT
+
+| Datei | Adressat | Inhalt |
+|---|---|---|
+| **`SCHRIFTSATZ_18St14-26m_VOLLSTAENDIG.md`** | Staatsanwaltschaft Innsbruck | **Das Hauptdokument.** Die am 16.07.2026 zugesagte Stellungnahme, verbunden mit Akteneinsichtsantrag, Einstellungsantrag nach § 190 Z 1 und Z 2 StPO und 17 Beweisanträgen. 17 Beilagen. |
+| **`Aufsichtsbeschwerde_84_IO.md`** | Landesgericht Innsbruck, 7 S 50/24y | Beschwerde gegen den Masseverwalter nach § 84 IO. 15 Beanstandungen, 9 Anträge. Eigenes Verfahren, beeinflusst das Strafverfahren nicht. |
+
+**Beide erst nach Prüfung durch einen Strafverteidiger einbringen.**
+
+---
+
+## B. VERTRAULICH — NICHT VORLEGEN
+
+| Datei | Zweck |
+|---|---|
+| `VERTRAULICH_Verfahrensstrategie.md` | § 190 vs § 108 StPO, Fortführungsantrag § 195 StPO, Diversion §§ 198 ff StPO, Reihenfolge, Beschaffungsliste |
+| `VERTRAULICH_Risikoanalyse.md` | Die Ökovolt-Aussage vom 04.09.2025 und der Widerspruch zu den Angaben gegenüber dem Masseverwalter |
+| `Stellungnahmen_Bewertung_und_Handhabung.md` | Wie die Erklärungen Wegscheider/Messmer einzubringen sind, welche drei Fehler vorher zu beheben sind |
+| `DRINGEND_Kontooeffnung_Frist.md` | Kontenregister vs. Konteneinschau, Fristenprüfung |
+
+---
+
+## C. GRUNDLAGEN UND BEFUNDE
+
+| Datei | Inhalt |
+|---|---|
+| `Befund.md` | Sachverständigenförmiger Befund, 10 Abschnitte, nur Tatsachen ohne Bewertung. Abschnitt 10: konsolidierte Auswertung aller vier Konten |
+| `Beweismittelsichtung_Ergebnis.md` | Welche Beweismittel existieren, welche nicht. Korrigierte Fassung |
+| `Zahlungen_09052022_Schluesselbefund.md` | Die 132.194 € Gläubigerzahlungen und ihr Abgleich mit dem Exekutionsregister |
+| `Exekutionsabgleich.md` | 112 Registereinträge gegen die Kontobewegungen |
+| `Glaeubigerstruktur.md` | Aufgliederung der 689.035,82 € festgestellten Forderungen nach Gläubigerkreisen |
+| `Zeitliche_Zuordnung.md` | Wann die Forderungen entstanden sind — 47,2 % erst nach der Tat |
+| `Anfechtungsfristen_Pruefung.md` | §§ 27 ff, 43 Abs 2 IO — warum der Masseverwalter nichts mehr anfechten kann |
+| `Bargeld_Aufloesung.md` | Auflösung der Barbewegungen, einschließlich der offenen Position |
+
+---
+
+## D. ROHDATEN
+
+| Datei | Umfang |
+|---|---|
+| `Alle_Buchungen_1885.csv` | Sämtliche Buchungen aller vier Konten, chronologisch, mit vollem Buchungstext |
+| `Rohdaten_Alle_Konten.json` | Dieselben Daten nach Konten gegliedert |
+| `Rohdaten_Konto_Mikic.json` | 424 Buchungen AT94 5700 0300 5559 0335 |
+| `Rohdaten_Konto_Hoefler_9891.json` | 193 Buchungen AT12 5700 0300 5545 9891 |
+
+---
+
+## E. ÜBERHOLT — nur als Arbeitsstand
+
+| Datei | Grund |
+|---|---|
+| `Gesamtschriftsatz_18St14-26m.md` | ersetzt durch `SCHRIFTSATZ_…_VOLLSTAENDIG.md` |
+| `Einstellungsantrag_18St14-26m_aktenbasiert.md` | frühere, kürzere Fassung |
+| `Ergaenzender_Schriftsatz_Konteneinschau.md` | in den Gesamtschriftsatz integriert |
+| `VERTRAULICH_Aktenkenntnis_Strategie.md` | Grundannahme widerlegt — das Mikic-Konto ist geöffnet |
+| `Pruefbericht_Einstellungsantrag_Entwurf.md` | Prüfung des ursprünglichen KI-Entwurfs, historisch |
+| `Analyse_Gesamtakt_18St14-26m.md` | Stand 16.04.2026 |
+| `Systematische_Auswertung_Geldfluesse.md` | vor Auswertung aller vier Konten |
+
+---
+
+## F. DIE SECHS TRAGENDEN ARGUMENTE
+
+1. **Verjährung.** § 156 Abs 1 und § 147 Abs 2 StGB verjähren in fünf Jahren (§ 57 Abs 3 StGB). Verfahrenseinleitung 02.02.2026. Die Zahlungen vom 22.10.2020, 28.12.2020 und 04.01.2021 sind verjährt — über 200.000 € der beanstandeten Beträge.
+
+2. **Der Kaufvertrag adplac.es.** Die 90.000 € an die tyb Beteiligungs GmbH waren Kaufpreis, nicht Darlehen. Punkt II erklärt den Verwendungszweck „Darlehen" als Platzhalter; der Bankbeleg vom 22.07.2020 bestätigt ihn. Aktivtausch statt Vermögensverringerung.
+
+3. **Die Zahlungen vom 09.05.2022.** 132.194 € an Gläubiger, fünf Tage nach dem Wegscheider-Darlehen. Sie stehen auf den Aktenseiten 144–147, ON 2.11 — vorgelegt vom Anzeiger selbst. Das LKA hat in seinem Geldflussdiagramm vom 10.07.2026 insgesamt **161.832,11 €** Exekutionszahlungen festgestellt.
+
+4. **Kein Irrtum.** Wegscheider hat dem ermittelnden Beamten telefonisch erklärt, sich nicht als Betrugsopfer zu betrachten (2. Anlassbericht 30.04.2026, S. 3). Beide Hauptdarlehensgeber haben schriftlich das Totalverlustrisiko als bewusst übernommen bezeichnet.
+
+5. **Die Zeugin bestätigt die Einlassung.** Daniela Mikic, einvernommen am 28.04.2026: Überweisung an sie zur Behebung für ihn, weil er im Ausland war und Zahlungen wegen Preisvorteilen in bar abwickelte.
+
+6. **Der Gläubigerkreis.** 85,8 % der festgestellten Forderungen entfallen auf die drei Einverstandenen; 47,2 % entstanden erst nach der Tat. Es verbleiben 17.619,63 € bestehender, nicht einverstandener Forderungen — gegenüber 132.194 € Gläubigerzahlungen an einem Tag.
+
+---
+
+## G. WAS NOCH FEHLT
+
+| Unterlage | Bedeutung |
+|---|---|
+| **Vereinbarung vom 22.12.2020** (SM Immobilienverwaltungs GmbH) | Der Buchungstext der 250.000 € nennt sie. Wichtigstes fehlendes Dokument |
+| **Zustellnachweis** zur Anordnung vom 05.05.2026 | Belegt die Nichtausfolgung durch den Masseverwalter |
+| **Kontoverdichtung Mikic** | Am 16.07.2026 zugesagt, nie übermittelt |
+| **Kontoauszüge Generali Bank**, 15.06.2020 – 04.11.2021 | In ON 7.2 ausgewiesen, Inhalt unbekannt |
+| **Belege zur Barbehebung vom 11.01.2021** | 65.000 €, davon 21.500 € wieder eingelegt; Rest ohne Einzelnachweis |
+| **Unterfertigte Stellungnahmen** Wegscheider und Messmer | Wirken doppelt: gegen den Verdacht und gegen einen Fortführungsantrag nach § 195 StPO |
+
+---
+
+## H. OFFENE PUNKTE, DIE GEGEN DEN BESCHULDIGTEN WIRKEN
+
+Der Vollständigkeit halber, damit der Verteidiger nicht überrascht wird:
+
+- **65.000 € Barbehebung** vom 11.01.2021, netto 43.500 € nach Wiedereinlagen, ohne Einzelnachweis. Kein Kassabuch, keine Lohnquittungen.
+- **Vermögensverzeichnis** vom 20.02. und 21.03.2024: Erklärung, zahlungsfähig zu sein und nur rund 20.000 € weitere Gläubiger zu haben — dreieinhalb Monate vor einem Konkurs mit 1,12 Mio. € Anmeldungen. Tatbestand des § 292a StGB, bislang nicht Verfahrensgegenstand.
+- **Einkünfte von der Ökovolt** auf dem Konto AT25 5700 0300 5545 9948 ab 01.07.2022, festgestellt im 2. Anlassbericht — bei gleichzeitiger Angabe von 425 € Nettoeinkommen in der Vernehmung.
+- **Zeugenaussage vom 04.09.2025** in 3 St 70/25 m: „Ich bin IT Techniker bei der Fa. ÖKOVOLT Solartechnik … für die komplette IT-Technik in Österreich und Deutschland zuständig."
+
+Siehe `VERTRAULICH_Risikoanalyse.md`.

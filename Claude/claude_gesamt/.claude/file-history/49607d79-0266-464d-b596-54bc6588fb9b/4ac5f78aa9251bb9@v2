@@ -1,0 +1,404 @@
+/**
+ * Tests für das Anlegen und Ändern von Konnektoren.
+ *
+ * Diese Datei ist der Nachweis, dass die Regeln aus CLAUDE.md Abschnitt 6
+ * **greifen** und nicht nur dokumentiert sind. Eine Regel, die nur im
+ * Kommentar steht, hält niemanden auf.
+ *
+ * Beim Bauen ist genau das einmal passiert: die Perimeter-Erkennung fragte
+ * ein Feld ab, das es an `Firewall Instance` nicht gibt, und ein
+ * schreibender Konnektor auf die Perimeter-Firewall ließ sich anlegen. Der
+ * Test dazu steht unten und wäre ihn losgeworden.
+ */
+import { beforeEach, describe, expect, it } from 'vitest'
+import { mockRequest, resetMockData } from '@/api/mock/server.js'
+
+const ruf = (url, params) => mockRequest({ url, params })
+const anlegen = (params) => ruf('netops.api.ops.create_connector', params)
+
+/** Ein gültiger Aufruf, den die einzelnen Tests gezielt verbiegen. */
+const GUELTIG = {
+  connector_name: 'zabbix-test',
+  kind: 'zabbix',
+  target: 'SW-CORE-01',
+  access_reference: 'ACC-00002',
+}
+
+beforeEach(() => {
+  resetMockData()
+})
+
+describe('Geheimnisse (CLAUDE.md 6.4)', () => {
+  it('lehnt jedes Feld ab, das nach einem Zugangsdatum aussieht', async () => {
+    // Nicht stillschweigend verwerfen: wer ein Token mitschickt, hat einen
+    // Denkfehler im Aufruf und soll das merken.
+    for (const feld of ['password', 'api_token', 'secret', 'apiKey', 'bearer_token']) {
+      await expect(anlegen({ ...GUELTIG, [feld]: 'geheim' })).rejects.toThrow(
+        /Zugangsdaten gehören nach Passbolt/,
+      )
+    }
+  })
+
+  it('nennt im Fehler das beanstandete Feld und den richtigen Weg', async () => {
+    await expect(anlegen({ ...GUELTIG, api_token: 'x' })).rejects.toThrow(/api_token/)
+    await expect(anlegen({ ...GUELTIG, api_token: 'x' })).rejects.toThrow(/Passbolt/)
+  })
+
+  it('lehnt Geheimnisse auch beim Ändern ab', async () => {
+    // Sonst ließe sich die Regel durch Anlegen-und-dann-Ändern umgehen.
+    await expect(
+      ruf('netops.api.ops.update_connector', { name: 'zabbix-test', password: 'x' }),
+    ).rejects.toThrow(/Zugangsdaten gehören nach Passbolt/)
+  })
+
+  it('schreibt kein Geheimnis ins Protokoll', async () => {
+    await anlegen(GUELTIG)
+    const log = await ruf('netops.api.audit.audit_log', { limit: 50 })
+    const eintrag = log.find((e) => e.object_name === 'zabbix-test')
+    expect(JSON.stringify(eintrag)).not.toMatch(/geheim|token|passwor/i)
+  })
+})
+
+describe('Perimeter bleibt lesend (CLAUDE.md 6.2)', () => {
+  it('verweigert einen schreibenden Konnektor auf die Perimeter-Firewall', async () => {
+    await expect(
+      anlegen({
+        ...GUELTIG,
+        connector_name: 'opnsense-schreibend',
+        kind: 'opnsense',
+        target: 'FW-OS-01',
+        read_only: false,
+        write_reason: 'Regeln pflegen',
+        access_reference: 'ACC-00001',
+      }),
+    ).rejects.toThrow(/Perimeter/)
+  })
+
+  it('erlaubt denselben Konnektor lesend', async () => {
+    const e = await anlegen({
+      ...GUELTIG,
+      connector_name: 'opnsense-lesend',
+      kind: 'opnsense',
+      target: 'FW-OS-01',
+      access_reference: 'ACC-00001',
+    })
+    expect(e.ok).toBe(true)
+    expect(e.read_only).toBe(true)
+  })
+
+  it('lässt einen bestehenden Konnektor nicht nachträglich schreibend werden', async () => {
+    await expect(
+      ruf('netops.api.ops.update_connector', {
+        name: 'opnsense-fw-os-01',
+        read_only: false,
+        write_reason: 'doch schreiben',
+      }),
+    ).rejects.toThrow(/Perimeter/)
+  })
+
+  it('erkennt den Perimeter an der Firewall-Ebene, nicht am Namen', async () => {
+    // Eine Erkennung über „heißt FW-OS-01" würde beim nächsten Gerät
+    // stillschweigend versagen – bei der Regel, die am wenigsten versagen darf.
+    const o = await ruf('netops.api.ops.connector_options', {})
+    const perimeter = o.targets.filter((t) => t.perimeter).map((t) => t.value)
+    expect(perimeter).toContain('FW-OS-01')
+    expect(perimeter.length).toBeGreaterThan(0)
+  })
+})
+
+describe('Backup-Konnektoren (CLAUDE.md 6.3)', () => {
+  it('lässt einen PBS-Konnektor nicht schreibend anlegen', async () => {
+    await expect(
+      anlegen({
+        ...GUELTIG,
+        connector_name: 'pbs-schreibend',
+        kind: 'pbs',
+        target: 'SRV-PBS-01',
+        read_only: false,
+        write_reason: 'Aufräumen',
+        access_reference: 'ACC-00003',
+      }),
+    ).rejects.toThrow(/Sicherung vernichten/)
+  })
+
+  it('markiert alle reinen Lesequellen als erzwungen lesend', async () => {
+    const o = await ruf('netops.api.ops.connector_options', {})
+    const erzwungen = o.kinds.filter((k) => k.read_only_forced).map((k) => k.value)
+    for (const art of ['pbs', 'wazuh', 'zabbix', 'crowdsec', 'gravityzone']) {
+      expect(erzwungen).toContain(art)
+    }
+  })
+})
+
+describe('Schreibzugriff braucht eine Begründung', () => {
+  it('lehnt Schreibzugriff ohne Grund ab', async () => {
+    await expect(
+      anlegen({
+        ...GUELTIG,
+        connector_name: 'pve-ohne-grund',
+        kind: 'proxmox-ve',
+        target: 'SRV-PVE-01',
+        read_only: false,
+      }),
+    ).rejects.toThrow(/Begründung/)
+  })
+
+  it('nimmt Schreibzugriff mit Grund an und hält ihn fest', async () => {
+    const e = await anlegen({
+      ...GUELTIG,
+      connector_name: 'pve-mit-grund',
+      kind: 'proxmox-ve',
+      target: 'SRV-PVE-01',
+      read_only: false,
+      write_reason: 'VM-Tags aus NetOps zurückschreiben',
+    })
+    expect(e.read_only).toBe(false)
+
+    const k = await ruf('netops.api.ops.connector_status', {})
+    const angelegt = k.find((x) => x.name === 'pve-mit-grund')
+    expect(angelegt.write_reason).toBe('VM-Tags aus NetOps zurückschreiben')
+  })
+
+  it('legt ohne Angabe grundsätzlich nur lesend an', async () => {
+    // Die sichere Voreinstellung darf nicht die sein, die man vergisst.
+    const e = await anlegen(GUELTIG)
+    expect(e.read_only).toBe(true)
+  })
+})
+
+describe('Zugangsverweis', () => {
+  it('verlangt einen Verweis nach Passbolt', async () => {
+    const { access_reference, ...ohne } = GUELTIG
+    void access_reference
+    await expect(anlegen(ohne)).rejects.toThrow(/Zugangsverweis/)
+  })
+
+  it('weist einen Verweis ab, der ins Leere zeigt', async () => {
+    // Ein Verweis auf nichts ist schlimmer als keiner: er täuscht Sicherheit vor.
+    await expect(anlegen({ ...GUELTIG, access_reference: 'ACC-99999' })).rejects.toThrow(
+      /existiert nicht|keinen Zugangsverweis/,
+    )
+  })
+
+  it('nimmt auch die Passbolt-ID statt des Datensatznamens an', async () => {
+    const e = await anlegen({ ...GUELTIG, access_reference: '0000-test-pve' })
+    expect(e.ok).toBe(true)
+  })
+
+  it('lässt einen Konnektor ohne Verweis nicht einschalten', async () => {
+    // Alle Seed-Konnektoren haben inzwischen einen - dieser Test hält fest,
+    // dass die Regel trotzdem greift.
+    await ruf('netops.api.ops.disable_connector', {
+      name: 'truenas-nas-tn-01',
+      reason: 'Test',
+    })
+    await ruf('frappe.client.set_value', {
+      doctype: 'Connector',
+      name: 'truenas-nas-tn-01',
+      fieldname: 'access_reference',
+      value: null,
+    })
+    await expect(
+      ruf('netops.api.ops.enable_connector', { name: 'truenas-nas-tn-01' }),
+    ).rejects.toThrow(/Zugangsverweis/)
+  })
+})
+
+describe('Gültigkeit der Eingaben', () => {
+  it('erzwingt einen maschinenlesbaren Namen', async () => {
+    for (const name of ['Test-Groß', 'mit leerzeichen', 'mit_unterstrich', '']) {
+      await expect(anlegen({ ...GUELTIG, connector_name: name })).rejects.toThrow(/Kleinbuchstaben/)
+    }
+  })
+
+  it('lässt keinen doppelten Namen zu', async () => {
+    await expect(anlegen({ ...GUELTIG, connector_name: 'opnsense-fw-os-01' })).rejects.toThrow(
+      /existiert bereits/,
+    )
+  })
+
+  it('verlangt ein Ziel', async () => {
+    await expect(anlegen({ ...GUELTIG, target: null })).rejects.toThrow(/Ziel/)
+  })
+
+  it('lässt einen Takt unter fünf Minuten nur bei Alarmquellen zu', async () => {
+    await expect(
+      anlegen({
+        ...GUELTIG,
+        connector_name: 'pve-schnell',
+        kind: 'proxmox-ve',
+        target: 'SRV-PVE-01',
+        interval_minutes: 2,
+      }),
+    ).rejects.toThrow(/fünf Minuten/)
+
+    const e = await anlegen({
+      ...GUELTIG,
+      connector_name: 'wazuh-schnell',
+      kind: 'wazuh',
+      interval_minutes: 2,
+    })
+    expect(e.ok).toBe(true)
+  })
+
+  it('weist eine unbekannte Art ab und nennt die möglichen', async () => {
+    await expect(anlegen({ ...GUELTIG, kind: 'irgendwas' })).rejects.toThrow(/Unbekannte Art/)
+    await expect(anlegen({ ...GUELTIG, kind: 'irgendwas' })).rejects.toThrow(/zabbix/)
+  })
+
+  it('übernimmt den vorgeschlagenen Takt je Art', async () => {
+    const e = await anlegen({
+      ...GUELTIG,
+      connector_name: 'pbs-neu',
+      kind: 'pbs',
+      target: 'SRV-PBS-01',
+    })
+    void e
+    const k = await ruf('netops.api.ops.connector_status', {})
+    expect(k.find((x) => x.name === 'pbs-neu').interval_minutes).toBe(30)
+  })
+})
+
+describe('API-Verbindung', () => {
+  const basis = {
+    connector_name: 'verbindung-test',
+    kind: 'zabbix',
+    target: 'SW-CORE-01',
+    access_reference: 'ACC-00002',
+  }
+
+  it('nimmt Benutzername und Token-Kennung an – das sind Bezeichner', async () => {
+    // Eine Sperrliste auf Namen hätte `token_id` fälschlich abgelehnt.
+    const e = await anlegen({ ...basis, username: 'netops@pve', token_id: 'readonly' })
+    expect(e.ok).toBe(true)
+  })
+
+  it('lehnt jedes Feld ab, das nicht vorgesehen ist', async () => {
+    // Positivliste statt Sperrliste: was nicht draufsteht, kommt nicht durch -
+    // egal wie es heißt.
+    await expect(anlegen({ ...basis, irgendwas_neues: 'x' })).rejects.toThrow(
+      /Nicht vorgesehene Felder/,
+    )
+  })
+
+  it('verweigert http, weil Zugangsdaten sonst im Klartext gehen', async () => {
+    await expect(anlegen({ ...basis, base_url: 'http://sw.test' })).rejects.toThrow(/Klartext/)
+  })
+
+  it('verlangt eine vollständige Adresse', async () => {
+    await expect(anlegen({ ...basis, base_url: 'sw.test' })).rejects.toThrow(/vollständig/)
+  })
+
+  it('prüft den Portbereich', async () => {
+    await expect(anlegen({ ...basis, base_url: 'https://sw.test', port: 99999 })).rejects.toThrow(
+      /1 und 65535/,
+    )
+  })
+
+  it('verlangt einen Schrägstrich am API-Pfad', async () => {
+    await expect(
+      anlegen({ ...basis, base_url: 'https://sw.test', api_path: 'api/v2' }),
+    ).rejects.toThrow(/Schrägstrich/)
+  })
+
+  it('begrenzt das Zeitlimit', async () => {
+    await expect(
+      anlegen({ ...basis, base_url: 'https://sw.test', timeout_seconds: 500 }),
+    ).rejects.toThrow(/1 und 300/)
+  })
+
+  it('prüft TLS-Zertifikate, solange niemand es abschaltet', async () => {
+    // Die sichere Voreinstellung darf nicht die sein, die man vergisst.
+    await anlegen({ ...basis, base_url: 'https://sw.test' })
+    const k = await ruf('netops.api.ops.connector_status', {})
+    expect(k.find((x) => x.name === 'verbindung-test').verify_tls).toBe(1)
+  })
+
+  it('übernimmt die Verbindungsangaben vollständig', async () => {
+    await anlegen({
+      ...basis,
+      base_url: 'https://sw.test',
+      port: 8006,
+      api_path: '/api2/json',
+      username: 'netops@pve',
+      token_id: 'ro',
+      timeout_seconds: 25,
+    })
+    const k = await ruf('netops.api.ops.connector_status', {})
+    const doc = k.find((x) => x.name === 'verbindung-test')
+    expect(doc.base_url).toBe('https://sw.test')
+    expect(doc.port).toBe(8006)
+    expect(doc.api_path).toBe('/api2/json')
+    expect(doc.username).toBe('netops@pve')
+    expect(doc.timeout_seconds).toBe(25)
+  })
+
+  it('prüft die Verbindung auch beim Ändern', async () => {
+    await expect(
+      ruf('netops.api.ops.update_connector', {
+        name: 'opnsense-fw-os-01',
+        base_url: 'http://unsicher.test',
+      }),
+    ).rejects.toThrow(/Klartext/)
+  })
+
+  it('speichert kein Geheimnis am Datensatz', async () => {
+    const k = await ruf('netops.api.ops.connector_status', {})
+    const felder = new Set(k.flatMap((x) => Object.keys(x)))
+    for (const f of felder) {
+      expect(f).not.toMatch(/^(password|secret|api_key|private_key|passphrase|token)$/i)
+    }
+  })
+})
+
+describe('Abschalten statt löschen', () => {
+  it('verlangt einen Grund fürs Abschalten', async () => {
+    await expect(
+      ruf('netops.api.ops.disable_connector', { name: 'truenas-nas-tn-01' }),
+    ).rejects.toThrow(/Grund/)
+  })
+
+  it('behält den Datensatz, damit die Historie bleibt', async () => {
+    // Die Frage „seit wann kommt von dort nichts mehr?" lässt sich sonst
+    // nicht mehr beantworten.
+    await ruf('netops.api.ops.disable_connector', {
+      name: 'truenas-nas-tn-01',
+      reason: 'Quelle wird abgelöst',
+    })
+    const k = await ruf('netops.api.ops.connector_status', {})
+    const doc = k.find((x) => x.name === 'truenas-nas-tn-01')
+    expect(doc).toBeTruthy()
+    expect(doc.enabled).toBe(0)
+  })
+
+  it('protokolliert Abschalten mit Grund', async () => {
+    await ruf('netops.api.ops.disable_connector', {
+      name: 'truenas-nas-tn-01',
+      reason: 'Quelle wird abgelöst',
+    })
+    const log = await ruf('netops.api.audit.audit_log', { limit: 50 })
+    expect(log[0].action).toBe('connector_disabled')
+  })
+})
+
+describe('Optionen für die Maske', () => {
+  it('liefert nur Verweise, niemals Geheimnisse', async () => {
+    // Geprüft werden die Feld-NAMEN, nicht die Texte: ein Label wie
+    // „PBS API-Token (nur lesen)" enthält das Wort Token und ist trotzdem
+    // kein Geheimnis.
+    const o = await ruf('netops.api.ops.connector_options', {})
+    const felder = new Set(o.access_references.flatMap((a) => Object.keys(a)))
+    expect(felder.has('passbolt_id')).toBe(true)
+    for (const f of felder) {
+      expect(f).not.toMatch(/^(password|secret|api_key|private_key|passphrase)$/i)
+    }
+  })
+
+  it('nennt je Art den Vorschlagstakt und ob Schreiben gesperrt ist', async () => {
+    const o = await ruf('netops.api.ops.connector_options', {})
+    for (const k of o.kinds) {
+      expect(typeof k.read_only_forced).toBe('boolean')
+      expect(k.default_interval).toBeGreaterThan(0)
+    }
+  })
+})

@@ -1,0 +1,213 @@
+/**
+ * Virtualisierung und Speicher (Fachkonzept 2.5).
+ *
+ * Cluster → Host → VM/LXC sowie Pools, Datasets und Replikation. Die
+ * Bewertung folgt denselben Regeln wie bei der Backup-Ampel: was einen
+ * Zustand hat, bekommt eine Stufe und immer auch einen Grund im Klartext.
+ */
+import { FrappeMockError, table } from '../db.js'
+import { alterStunden } from '../zeit.js'
+
+/** Cluster mit Knoten, Auslastung und VM-Verteilung. */
+export function cluster_overview({ tenant = null } = {}) {
+  const vms = table('Virtual Machine')
+  const geraete = table('Network Device')
+
+  return table('Cluster')
+    .filter((c) => !tenant || c.tenant === tenant)
+    .map((cluster) => {
+      const eigeneVms = vms.filter((v) => v.cluster === cluster.name)
+      const knotenNamen = [...new Set(eigeneVms.map((v) => v.host))]
+
+      const knoten = knotenNamen.map((hostname) => {
+        const geraet = geraete.find((g) => g.name === hostname)
+        const daraufVms = eigeneVms.filter((v) => v.host === hostname)
+        return {
+          host: hostname,
+          device: geraet ? geraet.name : null,
+          site: geraet ? geraet.site : null,
+          vm_count: daraufVms.length,
+          running: daraufVms.filter((v) => v.vm_state === 'running').length,
+          vcpu_assigned: daraufVms.reduce((s, v) => s + (v.vcpu || 0), 0),
+          memory_assigned_gb: daraufVms.reduce((s, v) => s + (v.memory_gb || 0), 0),
+        }
+      })
+
+      // Zwei Knoten ohne Zeugen verlieren bei einem Ausfall das Quorum.
+      const quorumRisiko = cluster.node_count < 3
+
+      return {
+        ...cluster,
+        nodes: knoten.sort((a, b) => a.host.localeCompare(b.host)),
+        vm_total: eigeneVms.length,
+        vm_running: eigeneVms.filter((v) => v.vm_state === 'running').length,
+        vm_ha: eigeneVms.filter((v) => v.ha_managed).length,
+        vcpu_assigned: eigeneVms.reduce((s, v) => s + (v.vcpu || 0), 0),
+        memory_assigned_gb: eigeneVms.reduce((s, v) => s + (v.memory_gb || 0), 0),
+        quorum_risk: quorumRisiko,
+        level: !cluster.quorum_ok ? 'critical' : quorumRisiko ? 'warning' : 'ok',
+        reason: !cluster.quorum_ok
+          ? 'Kein Quorum'
+          : quorumRisiko
+            ? 'Nur ' + cluster.node_count + ' Knoten – bei einem Ausfall kein Quorum'
+            : null,
+      }
+    })
+}
+
+/** VMs mit Host, Netz, Backup-Stand und HA. */
+export function vm_list({ cluster = null, host = null, state = null, tenant = null } = {}) {
+  const sicherungen = table('Backup Object')
+  const vlans = new Map(table('VLAN').map((v) => [v.vid, v]))
+
+  let vms = table('Virtual Machine')
+  if (cluster) vms = vms.filter((v) => v.cluster === cluster)
+  if (host) vms = vms.filter((v) => v.host === host)
+  if (state) vms = vms.filter((v) => v.vm_state === state)
+  if (tenant) vms = vms.filter((v) => v.tenant === tenant)
+
+  return vms
+    .map((vm) => {
+      // Die Sicherung heisst wie die VM – das ist die Verbindung zwischen
+      // Virtualisierung und Backup-Ampel.
+      const sicherung = sicherungen.find((b) => b.backup_object.startsWith(vm.vmid))
+      const vlan = vlans.get(vm.vlan_tag)
+
+      return {
+        ...vm,
+        vlan_label: vlan ? vlan.vid + ' · ' + vlan.vlan_name : String(vm.vlan_tag ?? '–'),
+        security_zone: vlan ? vlan.security_zone : null,
+        backup_object: sicherung ? sicherung.name : null,
+        backup_verify: sicherung ? sicherung.verify_status : null,
+        backup_protected: sicherung ? sicherung.protected : 0,
+        // Eine laufende VM ohne Sicherung ist der Befund, der zählt.
+        level:
+          vm.vm_state === 'running' && !sicherung
+            ? 'critical'
+            : sicherung && sicherung.verify_status === 'failed'
+              ? 'critical'
+              : vm.vm_state === 'running' && !vm.ha_managed
+                ? 'warning'
+                : 'ok',
+        reason:
+          vm.vm_state === 'running' && !sicherung
+            ? 'Läuft ohne Sicherung'
+            : sicherung && sicherung.verify_status === 'failed'
+              ? 'Sicherung nicht verifiziert'
+              : vm.vm_state === 'running' && !vm.ha_managed
+                ? 'Nicht HA-verwaltet'
+                : null,
+      }
+    })
+    .sort((a, b) => a.vmid.localeCompare(b.vmid, 'de', { numeric: true }))
+}
+
+/** Pools und Datasets mit Gesundheit und Replikationsalter. */
+export function storage_overview({ tenant = null } = {}) {
+  const datasets = table('Storage Dataset')
+
+  const pools = table('Storage Pool')
+    .filter((p) => !tenant || p.tenant === tenant)
+    .map((pool) => {
+      const eigene = datasets.filter((d) => d.pool === pool.name)
+      const scrubAlterTage = pool.scrub_date
+        ? Math.round(alterStunden(pool.scrub_date + ' 00:00:00') / 24)
+        : null
+
+      const gruende = []
+      let stufe = 'ok'
+
+      if (pool.health !== 'ONLINE') {
+        stufe = 'critical'
+        gruende.push('Pool-Zustand ' + pool.health)
+      }
+      if (pool.disks_faulted > 0) {
+        stufe = 'critical'
+        gruende.push(pool.disks_faulted + ' Platte(n) ausgefallen')
+      }
+      if (pool.used_pct >= 90) {
+        stufe = 'critical'
+        gruende.push('Über 90 % belegt')
+      } else if (pool.used_pct >= 80) {
+        if (stufe === 'ok') stufe = 'warning'
+        gruende.push('Über 80 % belegt')
+      }
+      if (scrubAlterTage !== null && scrubAlterTage > 35) {
+        if (stufe === 'ok') stufe = 'warning'
+        gruende.push('Letzter Scrub vor ' + scrubAlterTage + ' Tagen')
+      }
+
+      return {
+        ...pool,
+        dataset_count: eigene.length,
+        used_tb: Math.round((pool.used_pct / 100) * pool.total_tb * 10) / 10,
+        scrub_age_days: scrubAlterTage,
+        level: stufe,
+        reasons: gruende,
+      }
+    })
+    .sort((a, b) => a.pool_name.localeCompare(b.pool_name))
+
+  const alleDatasets = datasets.map((dataset) => {
+    const gruende = []
+    let stufe = 'ok'
+
+    if (!dataset.replication_target) {
+      stufe = 'warning'
+      gruende.push('Keine Replikation eingerichtet')
+    } else if (dataset.replication_age_hours > 24) {
+      stufe = 'warning'
+      gruende.push('Replikation ' + dataset.replication_age_hours + ' Stunden alt')
+    }
+
+    const snapshotAlter = alterStunden(dataset.last_snapshot)
+    if (snapshotAlter === null) {
+      stufe = 'critical'
+      gruende.push('Kein Snapshot')
+    } else if (snapshotAlter > 48) {
+      if (stufe === 'ok') stufe = 'warning'
+      gruende.push('Letzter Snapshot vor ' + Math.round(snapshotAlter) + ' Stunden')
+    }
+
+    const auslastung = dataset.quota_gb ? (dataset.used_gb / dataset.quota_gb) * 100 : 0
+
+    return {
+      ...dataset,
+      quota_pct: Math.round(auslastung * 10) / 10,
+      snapshot_age_hours: snapshotAlter === null ? null : Math.round(snapshotAlter * 10) / 10,
+      level: stufe,
+      reasons: gruende,
+    }
+  })
+
+  return {
+    pools,
+    datasets: alleDatasets.sort((a, b) => a.dataset_path.localeCompare(b.dataset_path)),
+    summary: {
+      pools: pools.length,
+      pools_degraded: pools.filter((p) => p.level !== 'ok').length,
+      datasets: alleDatasets.length,
+      without_replication: alleDatasets.filter((d) => !d.replication_target).length,
+      total_tb: Math.round(pools.reduce((s, p) => s + p.total_tb, 0) * 10) / 10,
+      used_tb: Math.round(pools.reduce((s, p) => s + p.used_tb, 0) * 10) / 10,
+    },
+  }
+}
+
+/** Alles zu einem Host: VMs, Last, zugehörige Dienste. */
+export function host_detail({ host } = {}) {
+  const geraet = table('Network Device').find((g) => g.name === host)
+  if (!geraet) {
+    throw new FrappeMockError('DoesNotExistError: Network Device ' + host + ' existiert nicht', 404)
+  }
+
+  const vms = vm_list({ host })
+
+  return {
+    host: geraet,
+    vms,
+    vcpu_assigned: vms.reduce((s, v) => s + (v.vcpu || 0), 0),
+    memory_assigned_gb: vms.reduce((s, v) => s + (v.memory_gb || 0), 0),
+    disk_assigned_gb: vms.reduce((s, v) => s + (v.disk_gb || 0), 0),
+  }
+}

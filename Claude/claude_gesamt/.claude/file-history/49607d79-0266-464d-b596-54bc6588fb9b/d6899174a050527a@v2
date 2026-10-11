@@ -1,0 +1,38 @@
+<template>
+  <component
+    :is="to ? 'RouterLink' : 'div'"
+    :to="to || undefined"
+    class="block rounded-lg border border-outline-gray-2 bg-surface-white p-4"
+    :class="to ? 'hover:bg-surface-gray-1' : ''"
+  >
+    <!--
+      Kennzahlkachel. Lag vorher als Kopie in 23 Seiten - jede mit eigenen
+      kleinen Abweichungen im Markup.
+
+      Ist `to` gesetzt, wird die Kachel ein Link. Sonst bleibt sie ein
+      schlichter Block; ein Link ohne Ziel wäre für Tastatur und Screenreader
+      eine Falle.
+    -->
+    <p class="text-sm text-ink-gray-6">{{ label }}</p>
+    <!-- Proportionale Ziffern: tabular-nums bleibt Spalten vorbehalten,
+         die untereinander fluchten müssen. -->
+    <p class="mt-1 text-2xl font-semibold text-ink-gray-9">
+      <span v-if="wert === null || wert === undefined" class="text-ink-gray-4">–</span>
+      <span v-else>{{ wert }}</span>
+    </p>
+    <StatusDot v-if="hinweis" class="mt-1" :level="level" :text="hinweis" klein />
+  </component>
+</template>
+
+<script setup>
+import StatusDot from '@/components/StatusDot.vue'
+
+defineProps({
+  label: { type: String, required: true },
+  wert: { type: [Number, String], default: null },
+  /** Kurzer Zusatz unter der Zahl. Ohne ihn erscheint kein Farbpunkt. */
+  hinweis: { type: String, default: '' },
+  level: { type: String, default: 'neutral' },
+  to: { type: String, default: '' },
+})
+</script>

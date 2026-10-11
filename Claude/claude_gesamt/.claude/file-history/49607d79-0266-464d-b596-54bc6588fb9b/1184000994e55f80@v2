@@ -1,0 +1,131 @@
+<template>
+  <Dialog v-model="offen" :options="{ size: 'xl' }">
+    <template #body>
+      <div class="border-b border-outline-gray-2 px-4 py-3">
+        <input
+          ref="eingabe"
+          v-model="suchtext"
+          type="text"
+          placeholder="IP, MAC, Hostname, Seriennummer, Label, VLAN oder Dose …"
+          class="w-full border-0 bg-transparent p-0 text-lg text-ink-gray-9 placeholder-ink-gray-4 focus:ring-0"
+          @keydown.down.prevent="bewege(1)"
+          @keydown.up.prevent="bewege(-1)"
+          @keydown.enter.prevent="oeffneTreffer(treffer[markiert])"
+        />
+      </div>
+
+      <div class="max-h-96 overflow-y-auto p-2">
+        <p v-if="suchtext.length < 2" class="px-2 py-6 text-center text-sm text-ink-gray-5">
+          Mindestens zwei Zeichen eingeben.
+        </p>
+        <p
+          v-else-if="ergebnis.loading"
+          class="px-2 py-6 text-center text-sm text-ink-gray-5"
+        >
+          Wird gesucht …
+        </p>
+        <p
+          v-else-if="!treffer.length"
+          class="px-2 py-6 text-center text-sm text-ink-gray-5"
+        >
+          Kein Treffer für „{{ suchtext }}“.
+        </p>
+
+        <button
+          v-for="(eintrag, i) in treffer"
+          :key="eintrag.doctype + eintrag.name"
+          class="flex w-full items-center justify-between gap-3 rounded px-2 py-2 text-left disabled:cursor-default"
+          :class="i === markiert ? 'bg-surface-gray-3' : 'hover:bg-surface-gray-2'"
+          :disabled="!zielRoute(eintrag)"
+          :title="zielRoute(eintrag) ? '' : 'Für diesen Objekttyp gibt es noch keine Detailseite'"
+          @mouseenter="markiert = i"
+          @click="oeffneTreffer(eintrag)"
+        >
+          <span class="min-w-0">
+            <span class="block truncate text-base text-ink-gray-8">{{ eintrag.title }}</span>
+            <span class="block truncate text-sm text-ink-gray-5">
+              {{ eintrag.subtitle }}
+            </span>
+          </span>
+          <span class="flex shrink-0 items-center gap-2">
+            <span class="text-xs text-ink-gray-4">
+              {{ fieldLabel(eintrag.matched_field) }}
+            </span>
+            <Badge theme="gray">{{ doctypeLabel(eintrag.doctype) }}</Badge>
+          </span>
+        </button>
+      </div>
+    </template>
+  </Dialog>
+</template>
+
+<script setup>
+import { computed, nextTick, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
+import { Badge, Dialog, createResource } from 'frappe-ui'
+import { doctypeLabel, fieldLabel } from '@/labels'
+
+const router = useRouter()
+
+const offen = ref(false)
+const suchtext = ref('')
+const markiert = ref(0)
+const eingabe = ref(null)
+
+const ergebnis = createResource({
+  url: 'netops.api.search.global_search',
+  makeParams: () => ({ query: suchtext.value, limit: 25 }),
+})
+
+const treffer = computed(() => ergebnis.data || [])
+
+let entprellung = null
+watch(suchtext, (wert) => {
+  markiert.value = 0
+  clearTimeout(entprellung)
+  if (wert.trim().length < 2) {
+    ergebnis.reset()
+    return
+  }
+  entprellung = setTimeout(() => ergebnis.fetch(), 180)
+})
+
+function open() {
+  offen.value = true
+  nextTick(() => eingabe.value?.focus())
+}
+
+function bewege(richtung) {
+  if (!treffer.value.length) return
+  markiert.value = (markiert.value + richtung + treffer.value.length) % treffer.value.length
+}
+
+/**
+ * Welcher DocType auf welcher Seite landet. Fuer Objekte ohne eigene Seite
+ * springen wir auf die naechstgelegene vorhandene Ansicht.
+ */
+function zielRoute(eintrag) {
+  if (eintrag.context?.device) {
+    return { path: '/devices/' + encodeURIComponent(eintrag.context.device) }
+  }
+  switch (eintrag.doctype) {
+    case 'IP Prefix':
+    case 'IP Address':
+    case 'VLAN':
+      return { path: '/ipam', query: { q: eintrag.name } }
+    default:
+      return null
+  }
+}
+
+function oeffneTreffer(eintrag) {
+  if (!eintrag) return
+  const ziel = zielRoute(eintrag)
+  if (!ziel) return
+  router.push(ziel)
+  offen.value = false
+  suchtext.value = ''
+}
+
+defineExpose({ open })
+</script>

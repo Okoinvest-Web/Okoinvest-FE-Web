@@ -1,0 +1,194 @@
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+
+import {
+  bewerteRauschen,
+  GRENZEN,
+  MINDESTEINSTRAHLUNG,
+  pruefeAenderung,
+  SCHWEREGRADE,
+  type Regelaenderung,
+} from "./regelwerk.ts";
+
+function aenderung(teile: Partial<Regelaenderung> = {}): Regelaenderung {
+  return {
+    art: "Minderertrag",
+    schwellwert: 15,
+    dauerMinuten: 120,
+    schweregrad: "Mittel",
+    minEinstrahlung: 200,
+    nurTagsueber: true,
+    aktiv: true,
+    ...teile,
+  };
+}
+
+describe("Grenzen", () => {
+  it("nennt zu jeder Art einen Bereich und eine Begründung", () => {
+    for (const [art, g] of Object.entries(GRENZEN)) {
+      assert.ok(g.begruendung.length > 30, art);
+      assert.ok(g.dauerBis > g.dauerVon, art);
+      if (g.mitSchwelle) assert.ok(g.bis > g.von, art);
+    }
+  });
+
+  it("lässt Minderertrag nicht unter die Messunsicherheit", () => {
+    // Drei Prozent: darunter streuen Sensor und Zähler bereits.
+    assert.equal(GRENZEN.Minderertrag.von, 3);
+  });
+
+  it("lässt Strangabweichung nicht unter die Fertigungsstreuung", () => {
+    assert.equal(GRENZEN.Strangabweichung.von, 2.5);
+  });
+});
+
+describe("Änderung prüfen", () => {
+  it("lässt eine brauchbare Einstellung durch", () => {
+    const p = pruefeAenderung(aenderung());
+
+    assert.equal(p.ok, true, p.fehler.join(" | "));
+    assert.deepEqual(p.warnungen, []);
+  });
+
+  it("weist eine Schwelle unterhalb der Messunsicherheit ab", () => {
+    const p = pruefeAenderung(aenderung({ schwellwert: 1 }));
+
+    assert.equal(p.ok, false);
+    assert.match(p.fehler.join(" "), /Messunsicherheit/);
+  });
+
+  it("weist eine Schwelle oberhalb des Bereichs ab", () => {
+    assert.equal(pruefeAenderung(aenderung({ schwellwert: 80 })).ok, false);
+  });
+
+  it("verlangt bei einer Ertragsregel einen Schwellwert", () => {
+    const p = pruefeAenderung(aenderung({ schwellwert: null }));
+
+    assert.equal(p.ok, false);
+    assert.match(p.fehler.join(" "), /braucht einen Schwellwert/);
+  });
+
+  it("verlangt bei einer Zustandsregel keinen Schwellwert", () => {
+    const p = pruefeAenderung(
+      aenderung({
+        art: "Wechselrichterstoerung",
+        schwellwert: null,
+        dauerMinuten: 15,
+        minEinstrahlung: null,
+        nurTagsueber: false,
+      }),
+    );
+
+    assert.equal(p.ok, true, p.fehler.join(" | "));
+  });
+
+  it("weist eine zu kurze Mindestdauer ab", () => {
+    const p = pruefeAenderung(aenderung({ dauerMinuten: 5 }));
+
+    assert.equal(p.ok, false);
+    assert.match(p.fehler.join(" "), /Mindestdauer/);
+  });
+
+  it("weist eine gebrochene Mindestdauer ab", () => {
+    assert.equal(pruefeAenderung(aenderung({ dauerMinuten: 90.5 })).ok, false);
+  });
+
+  it("verlangt bei Ertragsregeln die Tageslichtbedingung", () => {
+    const p = pruefeAenderung(aenderung({ nurTagsueber: false }));
+
+    assert.equal(p.ok, false);
+    assert.match(p.fehler.join(" "), /jede Nacht/);
+  });
+
+  it("verlangt bei Ertragsregeln eine Mindesteinstrahlung", () => {
+    const p = pruefeAenderung(aenderung({ minEinstrahlung: 20 }));
+
+    assert.equal(p.ok, false);
+    assert.match(p.fehler.join(" "), new RegExp(String(MINDESTEINSTRAHLUNG)));
+  });
+
+  it("lässt eine Kommunikationsregel ohne Einstrahlung zu", () => {
+    const p = pruefeAenderung(
+      aenderung({
+        art: "Kommunikation",
+        schwellwert: 30,
+        dauerMinuten: 30,
+        minEinstrahlung: null,
+        nurTagsueber: false,
+      }),
+    );
+
+    assert.equal(p.ok, true, p.fehler.join(" | "));
+  });
+
+  it("weist eine unbekannte Schwere ab", () => {
+    const p = pruefeAenderung(
+      aenderung({ schweregrad: "Dringend" as never }),
+    );
+
+    assert.equal(p.ok, false);
+  });
+
+  it("warnt, wenn eine Abregelung die Bereitschaft weckt", () => {
+    const p = pruefeAenderung(
+      aenderung({ art: "Abregelung", schweregrad: "Kritisch", schwellwert: 10 }),
+    );
+
+    assert.equal(p.ok, true, p.fehler.join(" | "));
+    assert.match(p.warnungen.join(" "), /Bereitschaft/);
+  });
+
+  it("warnt beim Abschalten einer Regel, ohne es zu verhindern", () => {
+    const p = pruefeAenderung(aenderung({ aktiv: false }));
+
+    assert.equal(p.ok, true);
+    assert.match(p.warnungen.join(" "), /meldet nichts mehr/);
+  });
+
+  it("kennt jeden Schweregrad des Schemas", () => {
+    for (const grad of SCHWEREGRADE) {
+      assert.equal(pruefeAenderung(aenderung({ schweregrad: grad })).ok, true);
+    }
+  });
+});
+
+describe("Rückschau auf das Melden", () => {
+  it("nennt eine häufig meldende Regel laut", () => {
+    // 30 Meldungen in 90 Tagen auf zwei Anlagen: fünf je Monat und Anlage.
+    const b = bewerteRauschen(30, 90, 2);
+
+    assert.equal(b.urteil, "laut");
+    assert.match(b.text, /überlesen/);
+  });
+
+  it("nennt eine nie ausgelöste Regel stumm", () => {
+    const b = bewerteRauschen(0, 365, 5);
+
+    assert.equal(b.urteil, "stumm");
+    assert.match(b.text, /halben Jahr/);
+  });
+
+  it("hält eine gelegentliche Meldung für brauchbar", () => {
+    const b = bewerteRauschen(4, 180, 5);
+
+    assert.equal(b.urteil, "brauchbar");
+  });
+
+  it("nennt eine junge Regel ohne Auslösung nicht stumm", () => {
+    // Vier Wochen ohne Meldung sagen noch nichts.
+    const b = bewerteRauschen(0, 28, 5);
+
+    assert.equal(b.urteil, "brauchbar");
+    assert.match(b.text, /Noch nicht ausgelöst/);
+  });
+
+  it("rechnet je Anlage, nicht je Bestand", () => {
+    // Dieselbe Zahl auf zehn Anlagen ist kein Rauschen.
+    assert.equal(bewerteRauschen(30, 90, 10).urteil, "brauchbar");
+    assert.equal(bewerteRauschen(30, 90, 1).urteil, "laut");
+  });
+
+  it("kommt ohne Zeitraum zurecht", () => {
+    assert.equal(bewerteRauschen(5, 0, 1).urteil, "brauchbar");
+  });
+});

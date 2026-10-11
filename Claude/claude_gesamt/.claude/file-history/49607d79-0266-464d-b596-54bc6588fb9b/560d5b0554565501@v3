@@ -1,0 +1,107 @@
+<template>
+  <div>
+    <PageHeader title="Geräte" :subtitle="anzahlText" />
+
+    <div class="p-6">
+      <div class="mb-4 flex flex-wrap gap-2">
+        <FormControl
+          v-model="suchtext"
+          type="text"
+          placeholder="Hostname, Seriennummer, IP …"
+          class="w-72"
+        />
+        <FormControl v-model="rolle" type="select" :options="rollenOptionen" />
+        <FormControl v-model="mandant" type="select" :options="mandantenOptionen" />
+      </div>
+
+      <DataTable
+        :columns="spalten"
+        :rows="gefiltert"
+        :loading="geraete.loading"
+        empty-text="Kein Gerät gefunden."
+        :on-row-click="(zeile) => $router.push('/devices/' + zeile.name)"
+      >
+        <template #zelle-hostname="{ zeile }">
+          <span class="font-medium text-ink-gray-8">{{ zeile.hostname }}</span>
+        </template>
+        <template #zelle-site_name="{ zeile }">{{ zeile.site_name }}</template>
+        <template #zelle-lifecycle_status="{ zeile }">
+          <Badge :theme="statusTheme(zeile.lifecycle_status)">
+            {{ valueLabel('lifecycle_status', zeile.lifecycle_status) }}
+          </Badge>
+        </template>
+      </DataTable>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed, ref } from 'vue'
+import { Badge, FormControl, createResource } from 'frappe-ui'
+import PageHeader from '@/components/PageHeader.vue'
+import DataTable from '@/components/DataTable.vue'
+import { fieldLabel, statusTheme, valueLabel } from '@/labels'
+
+const spalten = [
+  { key: 'hostname', label: fieldLabel('hostname'), width: '200px' },
+  { key: 'device_role', label: fieldLabel('device_role'), muted: true, width: '150px' },
+  { key: 'model', label: fieldLabel('model'), muted: true, width: '150px' },
+  { key: 'site_name', label: fieldLabel('site'), muted: true, width: '170px' },
+  {
+    key: 'management_ip',
+    label: fieldLabel('management_ip'),
+    numeric: true,
+    muted: true,
+    width: '150px',
+  },
+  { key: 'lifecycle_status', label: fieldLabel('lifecycle_status'), width: '160px' },
+]
+
+const suchtext = ref('')
+const rolle = ref('')
+const mandant = ref('')
+
+const geraete = createResource({
+  url: 'netops.api.dcim.device_list',
+  auto: true,
+})
+
+const mandanten = createResource({
+  url: 'frappe.client.get_list',
+  params: { doctype: 'Tenant', fields: ['name', 'tenant_name'], limit_page_length: 0 },
+  auto: true,
+})
+
+// Die Liste ist klein genug, um lokal zu filtern. Sobald echte Datenmengen
+// dazukommen, wandert das in die Parameter von device_list.
+const gefiltert = computed(() => {
+  const text = suchtext.value.trim().toLowerCase()
+  return (geraete.data || []).filter((g) => {
+    if (rolle.value && g.device_role !== rolle.value) return false
+    if (mandant.value && g.tenant !== mandant.value) return false
+    if (!text) return true
+    return ['hostname', 'serial', 'asset_tag', 'management_ip', 'model'].some((f) =>
+      String(g[f] || '')
+        .toLowerCase()
+        .includes(text),
+    )
+  })
+})
+
+const rollenOptionen = computed(() => [
+  { label: 'Alle Rollen', value: '' },
+  ...[...new Set((geraete.data || []).map((g) => g.device_role))]
+    .sort()
+    .map((r) => ({ label: r, value: r })),
+])
+
+const mandantenOptionen = computed(() => [
+  { label: 'Alle Mandanten', value: '' },
+  ...(mandanten.data || []).map((m) => ({ label: m.tenant_name, value: m.name })),
+])
+
+const anzahlText = computed(() => {
+  const anzahl = gefiltert.value.length
+  return anzahl === 1 ? '1 Gerät' : anzahl + ' Geräte'
+})
+</script>

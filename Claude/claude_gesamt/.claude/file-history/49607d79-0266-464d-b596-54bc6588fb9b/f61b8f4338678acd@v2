@@ -1,0 +1,293 @@
+/**
+ * Netzdienste, Grundriss, Tickets und Fernwartung
+ * (Fachkonzept 2.3, 2.7, 2.11 und Kapitel 6).
+ */
+import { FrappeMockError, table } from '../db.js'
+import { alterStunden, heute } from '../zeit.js'
+
+/** Als schwach geltende Verfahren - sie gehören ersetzt, nicht dokumentiert. */
+const SCHWACHE_VERFAHREN = ['AES-128-CBC', 'SHA1', '3DES', 'MD5', 'wpa2-psk']
+
+export function network_services({ tenant = null } = {}) {
+  const tunnel = table('VPN Tunnel')
+    .filter((t) => !tenant || t.tenant === tenant)
+    .map((t) => {
+      const gruende = []
+      let stufe = 'ok'
+
+      if (t.tunnel_state !== 'up') {
+        stufe = 'critical'
+        gruende.push('Tunnel ist nicht verbunden')
+      }
+
+      const alter = alterStunden(t.last_handshake)
+      if (alter !== null && alter > t.rekey_hours * 3) {
+        stufe = stufe === 'critical' ? stufe : 'warning'
+        gruende.push('Letzter Handshake vor ' + Math.round(alter) + ' Stunden')
+      }
+
+      const schwach = SCHWACHE_VERFAHREN.filter((v) => (t.cipher || '').includes(v))
+      if (schwach.length) {
+        stufe = stufe === 'critical' ? stufe : 'warning'
+        gruende.push('Schwaches Verfahren: ' + schwach.join(', '))
+      }
+
+      return {
+        ...t,
+        handshake_age_hours: alter === null ? null : Math.round(alter * 10) / 10,
+        level: stufe,
+        reasons: gruende,
+      }
+    })
+    .sort((a, b) => a.tunnel_name.localeCompare(b.tunnel_name))
+
+  const vlans = new Map(table('VLAN').map((v) => [v.name, v]))
+  const wlan = table('Wireless Network')
+    .filter((w) => !tenant || w.tenant === tenant)
+    .map((netz) => {
+      const gruende = []
+      let stufe = 'ok'
+
+      if (netz.auth_kind === 'wpa2-psk' && !netz.guest_portal) {
+        stufe = 'warning'
+        gruende.push('Gemeinsames Kennwort statt Enterprise')
+      }
+      if (netz.hidden) {
+        // Häufiges Missverständnis: eine versteckte SSID ist keine Absicherung.
+        stufe = stufe === 'critical' ? stufe : 'warning'
+        gruende.push('Versteckte SSID ersetzt keine Absicherung')
+      }
+      if (!netz.vlan) {
+        stufe = 'critical'
+        gruende.push('Keinem VLAN zugeordnet')
+      }
+
+      const vlan = netz.vlan ? vlans.get(netz.vlan) : null
+
+      return {
+        ...netz,
+        vlan_label: vlan ? vlan.vid + ' · ' + vlan.vlan_name : '–',
+        security_zone: vlan ? vlan.security_zone : null,
+        level: stufe,
+        reasons: gruende,
+      }
+    })
+    .sort((a, b) => a.ssid.localeCompare(b.ssid))
+
+  // DNS gegen IPAM: ein Eintrag auf eine nicht vergebene Adresse ist eine
+  // Karteileiche oder ein Hinweis auf Schatten-IT.
+  const adressen = new Set(table('IP Address').map((a) => a.address.split('/')[0]))
+  const dns = table('DNS Record')
+    .filter((d) => !tenant || d.tenant === tenant)
+    .map((eintrag) => {
+      const gruende = []
+      let stufe = 'ok'
+
+      if (eintrag.record_type === 'A' && eintrag.zone_kind === 'internal') {
+        if (!adressen.has(eintrag.value)) {
+          stufe = 'warning'
+          gruende.push('Adresse im IPAM nicht vergeben')
+        }
+      }
+
+      return { ...eintrag, level: stufe, reasons: gruende }
+    })
+    .sort((a, b) => a.record_name.localeCompare(b.record_name))
+
+  const tunnelZustand = new Map(tunnel.map((t) => [t.tunnel_name, t.tunnel_state]))
+  const routen = table('Route Entry')
+    .filter((r) => !tenant || r.tenant === tenant)
+    .map((route) => {
+      const gruende = []
+      let stufe = 'ok'
+
+      // Eine Route über einen liegenden Tunnel führt ins Leere.
+      if (route.route_kind === 'vpn' && tunnelZustand.get(route.interface) === 'down') {
+        stufe = 'critical'
+        gruende.push('Tunnel ' + route.interface + ' ist nicht verbunden')
+      }
+
+      return { ...route, level: stufe, reasons: gruende }
+    })
+    .sort((a, b) => a.destination.localeCompare(b.destination))
+
+  return {
+    tunnels: tunnel,
+    wireless: wlan,
+    dns,
+    routes: routen,
+    summary: {
+      tunnels: tunnel.length,
+      tunnels_down: tunnel.filter((t) => t.tunnel_state !== 'up').length,
+      weak_crypto: tunnel.filter((t) => t.reasons.some((g) => g.startsWith('Schwaches'))).length,
+      ssids: wlan.length,
+      wifi_clients: wlan.reduce((s, w) => s + (w.client_count || 0), 0),
+      dns_records: dns.length,
+      dns_mismatch: dns.filter((d) => d.level !== 'ok').length,
+      routes: routen.length,
+      dead_routes: routen.filter((r) => r.level === 'critical').length,
+    },
+  }
+}
+
+/** Grundriss eines Raums mit allem, was darin verortet ist. */
+export function floor_plan({ site } = {}) {
+  const plan = table('Floor Plan').find((p) => p.site === site)
+  if (!plan) {
+    throw new FrappeMockError('DoesNotExistError: Für ' + site + ' ist kein Grundriss hinterlegt', 404)
+  }
+
+  const standort = table('Site').find((s) => s.name === site)
+  const dosen = new Map(table('Wall Outlet').map((d) => [d.name, d]))
+  const kabel = table('Cable')
+  const schnittstellen = new Map(table('Device Interface').map((i) => [i.name, i]))
+
+  const punkte = (plan.items || []).map((punkt) => {
+    if (punkt.kind === 'outlet') {
+      // An der Dose interessiert, worauf sie gepatcht ist.
+      const verbindung = kabel.find(
+        (c) =>
+          (c.a_endpoint_type === 'Wall Outlet' && c.a_endpoint === punkt.ref) ||
+          (c.b_endpoint_type === 'Wall Outlet' && c.b_endpoint === punkt.ref),
+      )
+      const gegenstelle = verbindung
+        ? schnittstellen.get(
+            verbindung.a_endpoint === punkt.ref ? verbindung.b_endpoint : verbindung.a_endpoint,
+          )
+        : null
+
+      return {
+        ...punkt,
+        connected: !!verbindung,
+        cable: verbindung ? verbindung.label : null,
+        peer_device: gegenstelle ? gegenstelle.device : null,
+        peer_port: gegenstelle ? gegenstelle.interface_name : null,
+        room: dosen.get(punkt.ref)?.room || null,
+      }
+    }
+    return { ...punkt }
+  })
+
+  return {
+    site,
+    site_name: standort ? standort.site_name : site,
+    plan_name: plan.plan_name,
+    width_m: plan.width_m,
+    height_m: plan.height_m,
+    description: plan.description,
+    items: punkte,
+  }
+}
+
+export function floor_plan_list() {
+  return table('Floor Plan').map((p) => ({ site: p.site, plan_name: p.plan_name }))
+}
+
+/** Tickets mit SLA-Bewertung. */
+export function ticket_list({ state = null, tenant = null } = {}) {
+  let tickets = table('Ticket')
+  if (state) tickets = tickets.filter((t) => t.ticket_state === state)
+  if (tenant) tickets = tickets.filter((t) => t.tenant === tenant)
+
+  const rang = { critical: 0, high: 1, medium: 2, low: 3 }
+
+  return [...tickets]
+    .map((ticket) => {
+      const offen = ticket.ticket_state !== 'closed'
+      const alter = alterStunden(ticket.opened)
+      const verbleibend = ticket.sla_hours !== null && alter !== null ? ticket.sla_hours - alter : null
+
+      return {
+        ...ticket,
+        open: offen,
+        age_hours: alter === null ? null : Math.round(alter),
+        sla_remaining_hours: offen && verbleibend !== null ? Math.round(verbleibend) : null,
+        sla_breached: !!(offen && verbleibend !== null && verbleibend < 0),
+        unassigned: offen && !ticket.assignee,
+      }
+    })
+    .sort(
+      (a, b) =>
+        Number(b.open) - Number(a.open) ||
+        Number(b.sla_breached) - Number(a.sla_breached) ||
+        (rang[a.priority] ?? 9) - (rang[b.priority] ?? 9),
+    )
+}
+
+/** Agenten und Sitzungen der Fernwartung. */
+export function remote_overview({ tenant = null } = {}) {
+  const sitzungen = table('Remote Session')
+
+  const agenten = table('Remote Agent')
+    .filter((a) => !tenant || a.tenant === tenant)
+    .map((agent) => {
+      const gruende = []
+      let stufe = 'ok'
+
+      if (!agent.online) {
+        stufe = 'warning'
+        const alter = alterStunden(agent.last_seen)
+        gruende.push(
+          alter === null ? 'Nie gesehen' : 'Seit ' + Math.round(alter / 24) + ' Tagen offline',
+        )
+      }
+
+      return {
+        ...agent,
+        last_seen_hours: agent.last_seen ? Math.round(alterStunden(agent.last_seen) * 10) / 10 : null,
+        session_count: sitzungen.filter((s) => s.agent === agent.name).length,
+        level: stufe,
+        reasons: gruende,
+      }
+    })
+    .sort((a, b) => a.agent_name.localeCompare(b.agent_name))
+
+  const alleSitzungen = sitzungen
+    .filter((s) => !tenant || s.tenant === tenant)
+    .map((sitzung) => {
+      const gruende = []
+      let stufe = 'ok'
+
+      // Jede Sitzung braucht Ticketbezug und Aufzeichnung (Fachkonzept 2.7).
+      if (!sitzung.ticket) {
+        stufe = 'warning'
+        gruende.push('Ohne Ticketbezug')
+      }
+      if (!sitzung.recorded) {
+        stufe = 'critical'
+        gruende.push('Nicht aufgezeichnet')
+      }
+      if (!sitzung.step_up_ok) {
+        stufe = 'critical'
+        gruende.push('Ohne Step-up gestartet')
+      }
+
+      const dauer =
+        sitzung.ended && sitzung.started
+          ? Math.round(((alterStunden(sitzung.started) ?? 0) - (alterStunden(sitzung.ended) ?? 0)) * 60)
+          : null
+
+      return {
+        ...sitzung,
+        running: !sitzung.ended,
+        duration_minutes: dauer,
+        level: stufe,
+        reasons: gruende,
+      }
+    })
+    .sort((a, b) => (a.started < b.started ? 1 : -1))
+
+  return {
+    agents: agenten,
+    sessions: alleSitzungen,
+    summary: {
+      agents: agenten.length,
+      online: agenten.filter((a) => a.online).length,
+      offline: agenten.filter((a) => !a.online).length,
+      sessions: alleSitzungen.length,
+      running: alleSitzungen.filter((s) => s.running).length,
+      without_ticket: alleSitzungen.filter((s) => !s.ticket).length,
+      today: alleSitzungen.filter((s) => String(s.started).startsWith(heute())).length,
+    },
+  }
+}

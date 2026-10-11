@@ -1,0 +1,3 @@
+- [Browser-Screenshots](browser-screenshots.md) — Playwright-Werkzeug ~/claude-browser/shot.mjs für visuelle UI-Prüfung
+- [Armee-Auftragsbuch](armee-auftragsbuch.md) — Kette: Masterplan → Website-Wellen → Plattform-Armee (sofort danach starten)
+- [Recht am Ende](recht-am-ende.md) — rechtliche Angaben direkt einarbeiten, Rechtsabteilung prüft gesamthaft

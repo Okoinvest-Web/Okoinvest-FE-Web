@@ -1,0 +1,425 @@
+<template>
+  <div>
+    <PageHeader :title="asset.data?.asset_name || tag" :subtitle="untertitel">
+      <template #actions>
+        <Button @click="$router.push('/inventory')">Zur Liste</Button>
+      </template>
+    </PageHeader>
+
+    <ErrorState
+      v-if="asset.error"
+      class="m-6"
+      :error="asset.error"
+      titel="Inventarobjekt nicht abrufbar"
+      :on-retry="() => asset.fetch()"
+    />
+
+    <p v-else-if="asset.loading" class="p-6 text-sm text-ink-gray-5">Wird geladen …</p>
+
+    <div v-else-if="asset.data" class="p-6">
+      <StatusDot
+        v-if="asset.data.reasons.length"
+        class="mb-4"
+        :level="asset.data.level"
+        :text="asset.data.reasons.join(' · ')"
+      />
+
+      <div class="grid grid-cols-1 gap-6 xl:grid-cols-3">
+        <!-- Stammdaten -->
+        <section class="rounded-lg border border-outline-gray-2 bg-surface-white p-4 xl:col-span-2">
+          <h2 class="mb-3 text-base font-semibold text-ink-gray-8">Stammdaten</h2>
+          <dl class="grid grid-cols-1 gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
+            <div v-for="feld in stammdaten" :key="feld.label">
+              <dt class="text-ink-gray-5">{{ feld.label }}</dt>
+              <dd class="text-ink-gray-8" :class="feld.mono ? 'font-mono' : ''">
+                <RouterLink
+                  v-if="feld.to"
+                  :to="feld.to"
+                  class="underline decoration-outline-gray-3 underline-offset-2"
+                >
+                  {{ feld.wert }}
+                </RouterLink>
+                <span v-else-if="leer(feld.wert)" class="text-ink-gray-4">–</span>
+                <span v-else>{{ feld.wert }}</span>
+              </dd>
+            </div>
+          </dl>
+        </section>
+
+        <!-- Etikett -->
+        <section class="rounded-lg border border-outline-gray-2 bg-surface-white p-4">
+          <h2 class="mb-3 text-base font-semibold text-ink-gray-8">Etikett</h2>
+          <div class="flex items-center gap-4">
+            <QrCode :value="asset.data.label.qr_content" :size="112" :alt="'QR-Code ' + tag" />
+            <div class="min-w-0">
+              <p class="font-mono text-base font-semibold text-ink-gray-9">
+                {{ asset.data.label.line_1 }}
+              </p>
+              <p class="truncate text-sm text-ink-gray-7">{{ asset.data.label.line_2 }}</p>
+              <p class="truncate text-sm text-ink-gray-5">{{ asset.data.label.line_3 }}</p>
+            </div>
+          </div>
+          <p class="mt-3 text-xs text-ink-gray-4">
+            Der Code führt auf diese Seite. Er enthält bewusst weder Seriennummer noch Namen – ein
+            Etikett hängt sichtbar am Gerät.
+          </p>
+        </section>
+      </div>
+
+      <!-- Abschreibung -->
+      <section class="mt-6 rounded-lg border border-outline-gray-2 bg-surface-white p-4">
+        <h2 class="mb-3 text-base font-semibold text-ink-gray-8">Abschreibung</h2>
+
+        <div v-if="!afa.rows.length" class="text-sm text-ink-gray-5">
+          {{ afa.reason || 'Keine Abschreibung gerechnet.' }}
+        </div>
+
+        <template v-else>
+          <div class="mb-4 flex flex-wrap items-end gap-x-8 gap-y-3">
+            <div>
+              <p class="text-sm text-ink-gray-6">Anschaffung</p>
+              <p class="text-xl font-semibold tabular-nums text-ink-gray-9">
+                {{ euro(afa.purchase_price_cents) }}
+              </p>
+            </div>
+            <div>
+              <p class="text-sm text-ink-gray-6">Restbuchwert heute</p>
+              <p class="text-xl font-semibold tabular-nums text-ink-gray-9">
+                {{ euro(afa.book_value_cents) }}
+              </p>
+            </div>
+            <div>
+              <p class="text-sm text-ink-gray-6">Verfahren</p>
+              <p class="text-base text-ink-gray-8">
+                {{ VERFAHREN[afa.method] }} über {{ afa.months }} Monate
+              </p>
+            </div>
+            <StatusDot
+              v-if="afa.fully_depreciated"
+              level="neutral"
+              text="vollständig abgeschrieben"
+              klein
+            />
+            <StatusDot v-else level="ok" :text="afa.months_remaining + ' Monate offen'" klein />
+          </div>
+
+          <!-- Buchwertverlauf: eine Größenordnung, also eine Hue hell nach
+               dunkel; das laufende Jahr trägt zusätzlich einen Text. -->
+          <div class="flex items-end gap-1" role="img" :aria-label="verlaufText">
+            <div
+              v-for="zeile in afa.rows"
+              :key="zeile.year"
+              class="flex-1"
+              :title="zeile.year + ': ' + euro(zeile.book_value_cents)"
+            >
+              <div
+                class="w-full rounded-t"
+                :style="{
+                  height: balkenHoehe(zeile) + 'px',
+                  background:
+                    zeile.year === aktuellesJahr ? 'var(--viz-series-1)' : 'var(--viz-seq-250)',
+                }"
+              />
+              <p class="mt-1 text-center text-xs tabular-nums text-ink-gray-7">
+                {{ euro(zeile.book_value_cents, { nachkomma: 0 }) }}
+              </p>
+              <p class="text-center text-xs tabular-nums text-ink-gray-5">{{ zeile.year }}</p>
+            </div>
+          </div>
+
+          <DataTable
+            tabellen-id="AssetDetail-1"
+            class="mt-4"
+            :columns="afaSpalten"
+            :rows="afa.rows"
+          >
+            <template #zelle-amount_cents="{ zeile }">{{ euro(zeile.amount_cents) }}</template>
+            <template #zelle-accumulated_cents="{ zeile }">
+              {{ euro(zeile.accumulated_cents) }}
+            </template>
+            <template #zelle-book_value_cents="{ zeile }">
+              {{ euro(zeile.book_value_cents) }}
+            </template>
+          </DataTable>
+        </template>
+      </section>
+
+      <!-- Lebenslauf -->
+      <section class="mt-6">
+        <h2 class="mb-3 text-base font-semibold text-ink-gray-8">
+          Lebenslauf ({{ ausgabenText }})
+        </h2>
+        <DataTable
+          tabellen-id="AssetDetail-2"
+          :columns="ausgabeSpalten"
+          :rows="asset.data.assignments"
+          empty-text="Noch nie ausgegeben."
+        >
+          <template #zelle-employee_name="{ zeile }">
+            <RouterLink
+              :to="'/people/' + zeile.employee"
+              class="text-ink-gray-8 underline decoration-outline-gray-3 underline-offset-2"
+            >
+              {{ zeile.employee_name }}
+            </RouterLink>
+            <StatusDot
+              v-if="zeile.employee_status && zeile.employee_status !== 'Active'"
+              class="mt-0.5"
+              level="critical"
+              text="ausgetreten"
+              klein
+            />
+          </template>
+          <template #zelle-zeitraum="{ zeile }">
+            {{ String(zeile.issued_on).slice(0, 10) }}
+            <span class="text-ink-gray-4">bis</span>
+            <span v-if="zeile.returned_on"> {{ String(zeile.returned_on).slice(0, 10) }}</span>
+            <span v-else class="text-ink-gray-6"> offen</span>
+          </template>
+          <template #zelle-befund="{ zeile }">
+            <StatusDot v-if="zeile.overdue" level="critical" text="Rückgabe überfällig" klein />
+            <StatusDot v-else-if="zeile.open" level="warning" text="läuft" klein />
+            <StatusDot v-else level="ok" :text="zeile.condition_in || 'zurück'" klein />
+          </template>
+        </DataTable>
+      </section>
+
+      <!-- Schäden, Reservierungen, Inventur, Entsorgung -->
+      <div class="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-2">
+        <section>
+          <h2 class="mb-3 text-base font-semibold text-ink-gray-8">Schäden</h2>
+          <DataTable
+            tabellen-id="AssetDetail-3"
+            :columns="schadenSpalten"
+            :rows="asset.data.damages"
+            empty-text="Kein Schaden gemeldet."
+          >
+            <template #zelle-severity="{ zeile }">
+              <StatusDot
+                :level="schweregradStufe(zeile.severity)"
+                :text="GRAD[zeile.severity]"
+                klein
+              />
+            </template>
+            <template #zelle-damage_state="{ zeile }">
+              <Badge :theme="schadenThema(zeile.damage_state)">
+                {{ SCHADEN[zeile.damage_state] || zeile.damage_state }}
+              </Badge>
+            </template>
+          </DataTable>
+        </section>
+
+        <section>
+          <h2 class="mb-3 text-base font-semibold text-ink-gray-8">Inventurtreffer</h2>
+          <DataTable
+            tabellen-id="AssetDetail-4"
+            :columns="zaehlSpalten"
+            :rows="asset.data.count_lines"
+            empty-text="In keiner Inventur erfasst."
+          >
+            <template #zelle-line_state="{ zeile }">
+              <StatusDot
+                :level="zeilenStufe(zeile.line_state)"
+                :text="ZEILE[zeile.line_state] || zeile.line_state"
+                klein
+              />
+            </template>
+          </DataTable>
+        </section>
+      </div>
+
+      <section
+        v-if="asset.data.disposal"
+        class="mt-6 rounded-lg border border-outline-gray-2 bg-surface-white p-4"
+      >
+        <h2 class="mb-3 text-base font-semibold text-ink-gray-8">Entsorgungsnachweis</h2>
+        <dl class="grid grid-cols-1 gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
+          <div>
+            <dt class="text-ink-gray-5">Entsorgt am</dt>
+            <dd class="tabular-nums text-ink-gray-8">{{ asset.data.disposal.disposed_on }}</dd>
+          </div>
+          <div>
+            <dt class="text-ink-gray-5">Verfahren</dt>
+            <dd class="text-ink-gray-8">
+              {{ ENTSORGUNG[asset.data.disposal.method] || asset.data.disposal.method }}
+            </dd>
+          </div>
+          <div>
+            <dt class="text-ink-gray-5">Übernehmer</dt>
+            <dd class="text-ink-gray-8">{{ asset.data.disposal.recipient || '–' }}</dd>
+          </div>
+          <div>
+            <dt class="text-ink-gray-5">Nachweisnummer</dt>
+            <dd class="font-mono text-ink-gray-8">
+              {{ asset.data.disposal.certificate_ref || '–' }}
+            </dd>
+          </div>
+          <div class="sm:col-span-2">
+            <dt class="text-ink-gray-5">Datenlöschung</dt>
+            <dd class="text-ink-gray-8">
+              <span v-if="!asset.data.disposal.data_carrier">kein Datenträger</span>
+              <span v-else>
+                {{ asset.data.disposal.erasure_method }}
+                <span class="text-ink-gray-5">
+                  · bestätigt am {{ asset.data.disposal.erasure_verified_on }}
+                </span>
+              </span>
+            </dd>
+          </div>
+        </dl>
+      </section>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed, watch } from 'vue'
+import { useRoute } from 'vue-router'
+import { Badge, Button, createResource } from 'frappe-ui'
+import PageHeader from '@/components/PageHeader.vue'
+import DataTable from '@/components/DataTable.vue'
+import StatusDot from '@/components/StatusDot.vue'
+import ErrorState from '@/components/ErrorState.vue'
+import QrCode from '@/components/QrCode.vue'
+import { euro, schweregradStufe } from '@/viz'
+
+const route = useRoute()
+const tag = computed(() => route.params.tag)
+
+const asset = createResource({
+  url: 'netops.api.inventar.asset_detail',
+  makeParams: () => ({ name: tag.value }),
+  auto: true,
+})
+
+watch(tag, () => asset.fetch())
+
+const VERFAHREN = { linear: 'Linear', degressive: 'Degressiv', none: 'Keine' }
+const ZUSTAND = {
+  in_stock: 'Im Lager',
+  issued: 'Ausgegeben',
+  reserved: 'Reserviert',
+  repair: 'In Reparatur',
+  retired: 'Ausgemustert',
+  disposed: 'Entsorgt',
+}
+const GRAD = { high: 'Schwer', medium: 'Mittel', low: 'Leicht' }
+const SCHADEN = {
+  new: 'Neu',
+  in_repair: 'In Reparatur',
+  repaired: 'Repariert',
+  accepted: 'Hingenommen',
+  written_off: 'Abgeschrieben',
+}
+const ZEILE = {
+  pending: 'noch nicht gezählt',
+  found: 'gefunden',
+  moved: 'an anderem Ort',
+  unexpected: 'unerwartet',
+}
+const ENTSORGUNG = {
+  recycled: 'Recycling',
+  shredded: 'Geschreddert',
+  sold: 'Verkauft',
+  returned: 'Zurückgegeben',
+  donated: 'Gespendet',
+}
+
+const afa = computed(() => asset.data?.depreciation || { rows: [] })
+
+const ausgabenText = computed(() => {
+  const n = asset.data?.assignments.length || 0
+  return n === 1 ? 'eine Ausgabe' : n + ' Ausgaben'
+})
+
+function leer(wert) {
+  return wert === null || wert === undefined || wert === ''
+}
+const aktuellesJahr = new Date().getFullYear()
+
+const untertitel = computed(() => {
+  const d = asset.data
+  if (!d) return ''
+  const teile = [d.asset_tag, ZUSTAND[d.asset_state] || d.asset_state]
+  if (d.holder_name) teile.push('bei ' + d.holder_name)
+  return teile.join(' · ')
+})
+
+const stammdaten = computed(() => {
+  const d = asset.data
+  if (!d) return []
+  return [
+    { label: 'Inventarnummer', wert: d.asset_tag, mono: true },
+    { label: 'Kategorie', wert: d.category },
+    { label: 'Hersteller', wert: d.manufacturer },
+    { label: 'Modell', wert: d.model },
+    { label: 'Seriennummer', wert: d.serial, mono: true },
+    { label: 'Standort', wert: [d.site_name, d.room].filter(Boolean).join(' · ') },
+    { label: 'Kostenstelle', wert: d.cost_center },
+    { label: 'Abteilung', wert: d.department },
+    { label: 'Besitz', wert: d.holder_name, to: d.holder ? '/people/' + d.holder : null },
+    { label: 'Lieferant', wert: d.supplier },
+    { label: 'Kaufdatum', wert: d.purchase_date },
+    { label: 'Beleg', wert: d.invoice_ref, mono: true },
+    { label: 'Garantie bis', wert: d.warranty_until },
+    { label: 'Nächste Prüfung', wert: d.next_inspection },
+    {
+      label: 'Technisches Gerät',
+      wert: d.linked_device,
+      to: d.linked_device ? '/devices/' + d.linked_device : null,
+    },
+  ]
+})
+
+const afaSpalten = [
+  { key: 'year', label: 'Jahr', numeric: true, width: '90px' },
+  { key: 'months', label: 'Monate', align: 'right', numeric: true, width: '90px' },
+  { key: 'amount_cents', label: 'Abschreibung', align: 'right', numeric: true, width: '150px' },
+  { key: 'accumulated_cents', label: 'Kumuliert', align: 'right', numeric: true, width: '150px' },
+  { key: 'book_value_cents', label: 'Restbuchwert', align: 'right', numeric: true, width: '150px' },
+]
+
+const ausgabeSpalten = [
+  { key: 'employee_name', label: 'Person', width: '220px' },
+  { key: 'zeitraum', label: 'Zeitraum', width: '230px' },
+  { key: 'purpose', label: 'Zweck', muted: true },
+  { key: 'days_held', label: 'Tage', align: 'right', numeric: true, width: '90px' },
+  { key: 'befund', label: 'Stand', width: '200px' },
+]
+
+const schadenSpalten = [
+  { key: 'reported_on', label: 'Gemeldet', numeric: true, muted: true, width: '150px' },
+  { key: 'summary', label: 'Schaden' },
+  { key: 'severity', label: 'Schwere', width: '120px' },
+  { key: 'damage_state', label: 'Stand', width: '140px' },
+]
+
+const zaehlSpalten = [
+  { key: 'count', label: 'Inventur', width: '130px' },
+  { key: 'line_state', label: 'Ergebnis', width: '180px' },
+  { key: 'found_room', label: 'Gefunden in', muted: true },
+]
+
+const verlaufText = computed(() =>
+  afa.value.rows.map((z) => z.year + ': ' + euro(z.book_value_cents)).join(', '),
+)
+
+function balkenHoehe(zeile) {
+  const hoechst = afa.value.purchase_price_cents || 1
+  return Math.max(2, Math.round((zeile.book_value_cents / hoechst) * 90))
+}
+
+function schadenThema(wert) {
+  return (
+    { new: 'orange', in_repair: 'orange', repaired: 'green', accepted: 'gray', written_off: 'red' }[
+      wert
+    ] || 'gray'
+  )
+}
+
+function zeilenStufe(wert) {
+  return (
+    { found: 'ok', moved: 'warning', unexpected: 'warning', pending: 'neutral' }[wert] || 'neutral'
+  )
+}
+</script>

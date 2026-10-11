@@ -1,0 +1,113 @@
+import io
+
+# ------------------------------------------------------------------
+# 1. Bankverbindung und Mandat am Kunden
+# ------------------------------------------------------------------
+p = "src/lib/db/schema.sql"
+s = io.open(p, encoding="utf-8").read()
+
+alt = """  -- Kleinunternehmer stellen keine Umsatzsteuer in Rechnung.
+  ust_pflichtig  INTEGER NOT NULL DEFAULT 1,"""
+neu = """  -- Kleinunternehmer stellen keine Umsatzsteuer in Rechnung.
+  ust_pflichtig  INTEGER NOT NULL DEFAULT 1,
+  -- Bankverbindung und SEPA-Lastschriftmandat.
+  --
+  -- Ohne Mandat kein Einzug: Eine Lastschrift ohne Mandat holt sich
+  -- der Zahler binnen acht Wochen zurueck, ohne Angabe von Gruenden.
+  -- Deshalb steht das Datum der Unterschrift daneben und nicht nur
+  -- ein Haken.
+  iban           TEXT,
+  bic            TEXT,
+  mandat         TEXT,
+  mandat_vom     TEXT,
+  -- Erst- oder Folgelastschrift. Beide duerfen nicht im selben
+  -- Zahlungsblock stehen, weil sie verschiedene Faelligkeiten haben.
+  mandat_sequenz TEXT NOT NULL DEFAULT 'FRST'
+                   CHECK (mandat_sequenz IN ('FRST','RCUR','OOFF','FNAL')),"""
+assert alt in s
+s = s.replace(alt, neu, 1)
+io.open(p, "w", encoding="utf-8").write(s)
+print("Schema: Bankverbindung")
+
+# ------------------------------------------------------------------
+# 2. Werte im Bestand
+# ------------------------------------------------------------------
+p = "src/lib/db/befuellen.ts"
+s = io.open(p, encoding="utf-8").read()
+
+alt = """    befuelleGemeinschaft(beginn);"""
+neu = """    befuelleGemeinschaft(beginn);
+    befuelleBankverbindungen();"""
+assert alt in s
+s = s.replace(alt, neu, 1)
+
+alt = """function befuelleGemeinschaft(beginn: Date): void {"""
+neu = '''/**
+ * Bankverbindung und Lastschriftmandat je Kunde.
+ *
+ * Die IBAN sind gueltig im Sinne der Pruefziffer, gehoeren aber zu
+ * niemandem: Sie entstehen aus einer festen Bankleitzahl und einer
+ * fortlaufenden Kontonummer, deren Pruefziffer hier gerechnet wird.
+ * Eine erfundene IBAN, die die Pruefung nicht besteht, waere fuer
+ * einen Demonstrationsbestand wertlos - der Lastschriftlauf wuerde
+ * sie zu Recht zurueckweisen und nie etwas zeigen.
+ */
+function befuelleBankverbindungen(): void {
+  const kunden = alle<{ id: string }>("SELECT id FROM kunde ORDER BY id");
+
+  for (const [i, kunde] of kunden.entries()) {
+    const konto = String(200000000 + i * 137).padStart(11, "0");
+    const iban = baueIban("AT", "19043", konto);
+
+    // Der aelteste Teilnehmer hat bereits eingezogen, die neueren
+    // nicht - daran zeigt sich, dass Erst- und Folgelastschrift
+    // getrennt gehoeren.
+    const sequenz = i < 3 ? "RCUR" : "FRST";
+    const jahr = 2024 + (i % 2);
+    const monat = String(1 + (i % 12)).padStart(2, "0");
+
+    schreibe(
+      `UPDATE kunde
+          SET iban = ?, bic = 'GIBAATWWXXX', mandat = ?, mandat_vom = ?,
+              mandat_sequenz = ?
+        WHERE id = ?`,
+      iban,
+      `MND-${kunde.id.replace("KD-", "")}`,
+      `${jahr}-${monat}-12`,
+      sequenz,
+      kunde.id,
+    );
+  }
+}
+
+/**
+ * Baut eine IBAN mit richtiger Pruefziffer.
+ *
+ * Nach ISO 7064 Modulo 97-10: Laenderkennung und zwei Nullen ans
+ * Ende, Buchstaben zu Zahlen, Rest der Division durch 97 - und die
+ * Pruefziffer ist 98 minus dieser Rest. Stueckweise gerechnet, weil
+ * die Zahl sonst die Genauigkeit einer Gleitkommazahl sprengt.
+ */
+function baueIban(land: string, bankleitzahl: string, konto: string): string {
+  const roh = `${bankleitzahl}${konto}${land}00`;
+
+  let rest = 0;
+  for (const zeichen of roh) {
+    const ziffern =
+      zeichen >= "A" && zeichen <= "Z"
+        ? String(zeichen.charCodeAt(0) - 55)
+        : zeichen;
+    for (const ziffer of ziffern) {
+      rest = (rest * 10 + Number(ziffer)) % 97;
+    }
+  }
+
+  const pruefziffer = String(98 - rest).padStart(2, "0");
+  return `${land}${pruefziffer}${bankleitzahl}${konto}`;
+}
+
+function befuelleGemeinschaft(beginn: Date): void {'''
+assert alt in s
+s = s.replace(alt, neu, 1)
+io.open(p, "w", encoding="utf-8").write(s)
+print("Befuellung: Bankverbindungen")

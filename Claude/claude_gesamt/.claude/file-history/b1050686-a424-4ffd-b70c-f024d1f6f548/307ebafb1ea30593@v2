@@ -1,0 +1,258 @@
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+
+import {
+  fasseFreigabenZusammen,
+  findePunkt,
+  FREIGABEPUNKTE,
+  MINDESTFIRMWARE,
+  pruefeFreigabe,
+  vergleicheVersion,
+  ZERTIFIKAT_VORLAUF_TAGE,
+  type Geraetestand,
+} from "./inbetriebnahme.ts";
+
+const HEUTE = new Date(2026, 8, 14);
+
+function geraet(teile: Partial<Geraetestand> = {}): Geraetestand {
+  return {
+    rolle: "Steuerung",
+    hersteller: "Tridium",
+    modell: "Niagara JACE 9000",
+    seriennummer: "JC9-2204-11873",
+    firmware: "4.14.0.156",
+    secureBoot: true,
+    vlanNummer: 20,
+    vlanZweck: "Betriebstechnik",
+    zertifikatBis: new Date(2027, 5, 30),
+    sollstandVersiegelt: true,
+    inProtokollkette: true,
+    fernzugang: "Zero-Trust",
+    ...teile,
+  };
+}
+
+function stand(befund: ReturnType<typeof pruefeFreigabe>, schluessel: string) {
+  return befund.punkte.find((p) => p.punkt.schluessel === schluessel);
+}
+
+describe("Versionsvergleich", () => {
+  it("vergleicht abschnittsweise als Zahl, nicht als Text", () => {
+    // Zeichenweise waere "7.9.1" groesser als "7.14.2".
+    assert.ok(vergleicheVersion("7.9.1", "7.14.2") < 0);
+    assert.ok(vergleicheVersion("7.14.2", "7.9.1") > 0);
+  });
+
+  it("erkennt Gleichstand", () => {
+    assert.equal(vergleicheVersion("4.14.0", "4.14.0"), 0);
+  });
+
+  it("kommt mit unterschiedlich vielen Abschnitten zurecht", () => {
+    assert.ok(vergleicheVersion("4.14.0.156", "4.14.0") > 0);
+    assert.equal(vergleicheVersion("1.6", "1.6.0"), 0);
+  });
+
+  it("übergeht Trennzeichen und Buchstaben", () => {
+    assert.equal(vergleicheVersion("7-14-2", "7.14.2"), 0);
+    assert.ok(vergleicheVersion("v2", "v3") < 0);
+  });
+});
+
+describe("Katalog der Freigabepunkte", () => {
+  it("nennt zu jedem Punkt Anforderung, Grundlage und Folge", () => {
+    for (const p of FREIGABEPUNKTE) {
+      assert.ok(p.anforderung.length > 30, p.schluessel);
+      assert.ok(p.grundlage.length > 4, p.schluessel);
+      assert.ok(p.folge.length > 30, p.schluessel);
+    }
+  });
+
+  it("vergibt jeden Schlüssel nur einmal", () => {
+    const s = FREIGABEPUNKTE.map((p) => p.schluessel);
+    assert.equal(new Set(s).size, s.length);
+  });
+
+  it("findet einen Punkt über seinen Schlüssel", () => {
+    assert.equal(findePunkt("zertifikat")?.verbindlich, true);
+    assert.equal(findePunkt("gibtsnicht"), undefined);
+  });
+});
+
+describe("Freigabe eines Geräts", () => {
+  it("erteilt die Freigabe bei einwandfreiem Gerät", () => {
+    const b = pruefeFreigabe(geraet(), HEUTE);
+
+    assert.equal(b.freigabe, "erteilt", b.begruendung);
+    assert.equal(b.punkte.length, FREIGABEPUNKTE.length);
+  });
+
+  it("verweigert sie bei veralteter Firmware", () => {
+    const b = pruefeFreigabe(geraet({ firmware: "4.10.0" }), HEUTE);
+
+    assert.equal(b.freigabe, "verweigert");
+    assert.equal(stand(b, "firmware")?.stand, "verletzt");
+    assert.match(b.begruendung, /Firmwarestand/);
+  });
+
+  it("hält einen unbekannten Gerätetyp für nicht beurteilbar, nicht für gut", () => {
+    const b = pruefeFreigabe(
+      geraet({ modell: "Irgendwas 500", firmware: "1.0.0" }),
+      HEUTE,
+    );
+
+    assert.equal(b.freigabe, "offen");
+    assert.equal(stand(b, "firmware")?.stand, "offen");
+  });
+
+  it("führt ein Gerät ohne Firmwareangabe als offen", () => {
+    const b = pruefeFreigabe(geraet({ firmware: null }), HEUTE);
+
+    assert.equal(stand(b, "firmware")?.stand, "offen");
+    assert.equal(b.freigabe, "offen");
+  });
+
+  it("verlangt Secure Boot bei Steuerung und Gateway", () => {
+    for (const rolle of ["Steuerung", "Gateway"] as const) {
+      const b = pruefeFreigabe(geraet({ rolle, secureBoot: false }), HEUTE);
+      assert.equal(b.freigabe, "verweigert", rolle);
+    }
+  });
+
+  it("verlangt Secure Boot bei einem Switch nicht", () => {
+    const b = pruefeFreigabe(
+      geraet({
+        rolle: "Switch",
+        modell: "TSW202",
+        firmware: "1.6.3",
+        secureBoot: false,
+        sollstandVersiegelt: false,
+      }),
+      HEUTE,
+    );
+
+    assert.equal(b.freigabe, "erteilt", b.begruendung);
+    // Der Punkt verschwindet nicht, er ist nur nicht verbindlich.
+    assert.equal(stand(b, "secure-boot")?.stand, "verletzt");
+    assert.equal(stand(b, "secure-boot")?.verbindlich, false);
+  });
+
+  it("weist ein Gerät im Büronetz ab", () => {
+    const b = pruefeFreigabe(
+      geraet({ vlanNummer: 1, vlanZweck: "Büro und Verwaltung" }),
+      HEUTE,
+    );
+
+    assert.equal(b.freigabe, "verweigert");
+    assert.equal(stand(b, "netzzone")?.stand, "verletzt");
+  });
+
+  it("führt ein Gerät ohne Netzzone als offen", () => {
+    const b = pruefeFreigabe(
+      geraet({ vlanNummer: null, vlanZweck: null }),
+      HEUTE,
+    );
+
+    assert.equal(stand(b, "netzzone")?.stand, "offen");
+  });
+
+  it("weist ein abgelaufenes Zertifikat ab", () => {
+    const b = pruefeFreigabe(
+      geraet({ zertifikatBis: new Date(2026, 7, 1) }),
+      HEUTE,
+    );
+
+    assert.equal(b.freigabe, "verweigert");
+    assert.match(stand(b, "zertifikat")!.befund, /Abgelaufen seit 44 Tagen/);
+  });
+
+  it("weist ein Zertifikat ab, das im ersten Monat abläuft", () => {
+    const knapp = new Date(2026, 8, 14 + ZERTIFIKAT_VORLAUF_TAGE - 1);
+    const b = pruefeFreigabe(geraet({ zertifikatBis: knapp }), HEUTE);
+
+    assert.equal(b.freigabe, "verweigert");
+  });
+
+  it("lässt ein Zertifikat knapp über der Vorlaufzeit durch", () => {
+    const gerade = new Date(2026, 8, 14 + ZERTIFIKAT_VORLAUF_TAGE + 1);
+    const b = pruefeFreigabe(geraet({ zertifikatBis: gerade }), HEUTE);
+
+    assert.equal(b.freigabe, "erteilt", b.begruendung);
+  });
+
+  it("verlangt den versiegelten Sollstand nur bei der Steuerung", () => {
+    const steuerung = pruefeFreigabe(
+      geraet({ sollstandVersiegelt: false }),
+      HEUTE,
+    );
+    const gateway = pruefeFreigabe(
+      geraet({
+        rolle: "Gateway",
+        modell: "RUT142",
+        firmware: "7.14.2",
+        sollstandVersiegelt: false,
+      }),
+      HEUTE,
+    );
+
+    assert.equal(steuerung.freigabe, "offen");
+    assert.equal(gateway.freigabe, "erteilt", gateway.begruendung);
+  });
+
+  it("weist eine Portweiterleitung ab", () => {
+    const b = pruefeFreigabe(geraet({ fernzugang: "Portweiterleitung" }), HEUTE);
+
+    assert.equal(b.freigabe, "verweigert");
+    assert.match(stand(b, "fernzugang")!.befund, /Portweiterleitung/);
+  });
+
+  it("lässt ein Gerät ohne Fernzugang zu", () => {
+    const b = pruefeFreigabe(geraet({ fernzugang: "keiner" }), HEUTE);
+
+    assert.equal(b.freigabe, "erteilt", b.begruendung);
+  });
+
+  it("wiegt eine Verletzung schwerer als eine fehlende Angabe", () => {
+    const b = pruefeFreigabe(
+      geraet({ firmware: "4.10.0", seriennummer: null }),
+      HEUTE,
+    );
+
+    assert.equal(b.freigabe, "verweigert");
+  });
+
+  it("nennt jeden Mindeststand zu einem Modell, das vorkommt", () => {
+    for (const [modell, version] of Object.entries(MINDESTFIRMWARE)) {
+      assert.ok(modell.length > 2);
+      assert.ok(vergleicheVersion(version, "0.0.0") > 0, modell);
+    }
+  });
+});
+
+describe("Zusammenfassung über den Bestand", () => {
+  const einwandfrei = { geraet: "EG-0001", befund: pruefeFreigabe(geraet(), HEUTE) };
+  const mitLuecke = {
+    geraet: "EG-0002",
+    befund: pruefeFreigabe(geraet({ seriennummer: null }), HEUTE),
+  };
+  const abgelehnt = {
+    geraet: "EG-0003",
+    befund: pruefeFreigabe(geraet({ fernzugang: "Portweiterleitung" }), HEUTE),
+  };
+
+  it("nennt zuerst, was nicht freigegeben ist", () => {
+    const satz = fasseFreigabenZusammen([einwandfrei, mitLuecke, abgelehnt]);
+
+    assert.match(satz, /1 von 3 Geräten erfüllen die Freigabe nicht/);
+  });
+
+  it("nennt fehlende Angaben, wenn nichts verletzt ist", () => {
+    assert.match(
+      fasseFreigabenZusammen([einwandfrei, mitLuecke]),
+      /Zu 1 von 2 Geräten fehlen Angaben/,
+    );
+  });
+
+  it("meldet Ruhe, wenn alles freigegeben ist", () => {
+    assert.match(fasseFreigabenZusammen([einwandfrei]), /Alle 1 Geräte sind/);
+  });
+});

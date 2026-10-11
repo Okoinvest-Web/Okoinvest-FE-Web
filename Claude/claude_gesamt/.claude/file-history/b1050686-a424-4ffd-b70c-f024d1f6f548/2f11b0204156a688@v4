@@ -1,0 +1,403 @@
+-- ====================================================================
+-- Datenmodell des Energieportals
+--
+-- Zentrale Einheit ist der ZÄHLPUNKT, nicht die Anlage. Das ist keine
+-- Formalie: Abgerechnet wird in Österreich je Zählpunkt, der
+-- Netzbetreiber liefert Messdaten je Zählpunkt, und ein Teilnehmer
+-- einer Energiegemeinschaft nimmt mit einem Zählpunkt teil - nicht mit
+-- einer Anlage. Wer das Datenmodell an der Anlage aufhängt, kann später
+-- keine korrekte Abrechnung erzeugen.
+--
+-- Lastgangdaten liegen in Viertelstundenwerten vor. Das ist die
+-- Abrechnungsauflösung im österreichischen Markt; gröbere Werte sind
+-- für eine Aufteilungsrechnung unbrauchbar.
+-- ====================================================================
+
+PRAGMA journal_mode = WAL;
+PRAGMA foreign_keys = ON;
+
+-- --------------------------------------------------------------------
+-- Stammdaten
+-- --------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS kunde (
+  id             TEXT PRIMARY KEY,
+  firma          TEXT NOT NULL,
+  uid            TEXT,
+  firmenbuch     TEXT,
+  strasse        TEXT,
+  plz            TEXT,
+  ort            TEXT,
+  bundesland     TEXT,
+  email          TEXT,
+  telefon        TEXT,
+  branche        TEXT,
+  -- Kleinunternehmer stellen keine Umsatzsteuer in Rechnung.
+  ust_pflichtig  INTEGER NOT NULL DEFAULT 1,
+  -- Bankverbindung und SEPA-Lastschriftmandat.
+  --
+  -- Ohne Mandat kein Einzug: Eine Lastschrift ohne Mandat holt sich
+  -- der Zahler binnen acht Wochen zurueck, ohne Angabe von Gruenden.
+  -- Deshalb steht das Datum der Unterschrift daneben und nicht nur
+  -- ein Haken.
+  iban           TEXT,
+  bic            TEXT,
+  mandat         TEXT,
+  mandat_vom     TEXT,
+  -- Erst- oder Folgelastschrift. Beide duerfen nicht im selben
+  -- Zahlungsblock stehen, weil sie verschiedene Faelligkeiten haben.
+  mandat_sequenz TEXT NOT NULL DEFAULT 'FRST'
+                   CHECK (mandat_sequenz IN ('FRST','RCUR','OOFF','FNAL')),
+  angelegt_am    TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS anlage (
+  id                 TEXT PRIMARY KEY,
+  kunde_id           TEXT NOT NULL REFERENCES kunde(id),
+  bezeichnung        TEXT NOT NULL,
+  standort           TEXT,
+  plz                TEXT,
+  ort                TEXT,
+  bundesland         TEXT,
+  leistung_kwp       REAL,
+  wechselrichter_kw  REAL,
+  speicher_kwh       REAL,
+  modul_typ          TEXT,
+  modul_anzahl       INTEGER,
+  wechselrichter_typ TEXT,
+  steuerung_typ      TEXT,
+  ausrichtung        TEXT,
+  neigung            REAL,
+  inbetriebnahme     TEXT,
+  status             TEXT NOT NULL DEFAULT 'Aktiv',
+  soll_ertrag_kwh    REAL,
+  latitude           REAL,
+  longitude          REAL,
+  angelegt_am        TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Zählpunkt: der Anknüpfungspunkt für Messdaten und Abrechnung.
+CREATE TABLE IF NOT EXISTS zaehlpunkt (
+  id                  TEXT PRIMARY KEY,
+  -- 33-stellige Zählpunktbezeichnung nach österreichischem Standard.
+  bezeichnung         TEXT NOT NULL UNIQUE,
+  kunde_id            TEXT REFERENCES kunde(id),
+  anlage_id           TEXT REFERENCES anlage(id),
+  -- Erzeugung, Verbrauch oder beides (bei Speichern/bidirektional).
+  art                 TEXT NOT NULL CHECK (art IN ('Erzeugung','Verbrauch','Kombiniert')),
+  netzbetreiber_kz    TEXT,
+  netzebene           INTEGER,
+  -- Vertraglich vereinbarte Anschlussleistung in kW.
+  anschlussleistung   REAL,
+  adresse             TEXT,
+  plz                 TEXT,
+  ort                 TEXT,
+  -- Smart Meter im Opt-In (viertelstündige Werte) oder Opt-Out.
+  messung             TEXT NOT NULL DEFAULT 'Viertelstunde'
+                        CHECK (messung IN ('Viertelstunde','Tageswerte','Keine')),
+  aktiv               INTEGER NOT NULL DEFAULT 1,
+  angelegt_am         TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_zp_kunde  ON zaehlpunkt(kunde_id);
+CREATE INDEX IF NOT EXISTS idx_zp_anlage ON zaehlpunkt(anlage_id);
+
+-- --------------------------------------------------------------------
+-- Lastgang
+--
+-- Ein Datensatz je Zählpunkt und Viertelstunde. Bei 20 Zählpunkten und
+-- einem Jahr sind das rund 700.000 Zeilen - deshalb ein schmales
+-- Schema und ein zusammengesetzter Primärschlüssel statt eines Index
+-- obendrauf.
+--
+-- `richtung` trennt Bezug und Einspeisung: Ein Zählpunkt kann in
+-- derselben Viertelstunde beides aufweisen (etwa bei Speicherbetrieb).
+-- --------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS lastgang (
+  zaehlpunkt_id  TEXT NOT NULL REFERENCES zaehlpunkt(id),
+  -- Beginn der Viertelstunde, ISO-8601 in Ortszeit mit Zonenangabe.
+  zeitpunkt      TEXT NOT NULL,
+  richtung       TEXT NOT NULL CHECK (richtung IN ('Bezug','Einspeisung')),
+  wert_kwh       REAL NOT NULL,
+  -- Herkunft und Güte: gemessen, ersetzt (Netzbetreiber-Ersatzwert)
+  -- oder geschätzt. Für die Abrechnung ist das relevant, weil
+  -- Ersatzwerte nachträglich korrigiert werden können.
+  qualitaet      TEXT NOT NULL DEFAULT 'Gemessen'
+                   CHECK (qualitaet IN ('Gemessen','Ersatzwert','Geschätzt')),
+  quelle         TEXT NOT NULL DEFAULT 'EDA',
+  erfasst_am     TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (zaehlpunkt_id, zeitpunkt, richtung)
+) WITHOUT ROWID;
+
+CREATE INDEX IF NOT EXISTS idx_lastgang_zeit ON lastgang(zeitpunkt);
+
+-- --------------------------------------------------------------------
+-- Energiegemeinschaft
+-- --------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS gemeinschaft (
+  id                TEXT PRIMARY KEY,
+  bezeichnung       TEXT NOT NULL,
+  art               TEXT NOT NULL CHECK (art IN ('EEG','BEG','GEA')),
+  rechtsform        TEXT,
+  -- Bestimmt den Netzentgeltrabatt: lokal 57 %, regional 28 % auf den
+  -- Arbeitspreis; BEG erhält keinen Rabatt.
+  reichweite        TEXT CHECK (reichweite IN ('Lokal','Regional','Bundesweit')),
+  netzbetreiber_kz  TEXT,
+  gegruendet_am     TEXT,
+  -- Standardmodell für neue Abrechnungsläufe.
+  aufteilungsmodell TEXT NOT NULL DEFAULT 'Dynamisch'
+                      CHECK (aufteilungsmodell IN ('Statisch','Dynamisch')),
+  status            TEXT NOT NULL DEFAULT 'Aktiv',
+  angelegt_am       TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Teilnahme eines Zählpunkts, zeitlich begrenzt.
+--
+-- Ein- und Austritte mitten im Abrechnungszeitraum sind der Normalfall,
+-- nicht die Ausnahme. Deshalb trägt die Teilnahme einen Gültigkeits-
+-- zeitraum; die Aufteilung berücksichtigt je Viertelstunde, wer zu
+-- diesem Zeitpunkt Mitglied war.
+CREATE TABLE IF NOT EXISTS teilnahme (
+  id              TEXT PRIMARY KEY,
+  gemeinschaft_id TEXT NOT NULL REFERENCES gemeinschaft(id),
+  zaehlpunkt_id   TEXT NOT NULL REFERENCES zaehlpunkt(id),
+  rolle           TEXT NOT NULL CHECK (rolle IN ('Erzeuger','Verbraucher','Beides')),
+  -- Anteil an der Erzeugung bei statischer Aufteilung, in Prozent.
+  anteil_prozent  REAL,
+  -- Obergrenze für den Bezug aus der Gemeinschaft, 0 bis 1.
+  -- Ein Teilnehmer kann seine Teilnahme drosseln, ohne auszutreten.
+  teilnahmefaktor REAL NOT NULL DEFAULT 1.0
+                    CHECK (teilnahmefaktor >= 0 AND teilnahmefaktor <= 1),
+  gueltig_von     TEXT NOT NULL,
+  gueltig_bis     TEXT,
+  angelegt_am     TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_teilnahme_gem ON teilnahme(gemeinschaft_id);
+CREATE INDEX IF NOT EXISTS idx_teilnahme_zp  ON teilnahme(zaehlpunkt_id);
+
+-- --------------------------------------------------------------------
+-- Aufteilung und Abrechnung
+-- --------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS abrechnungslauf (
+  id                TEXT PRIMARY KEY,
+  gemeinschaft_id   TEXT NOT NULL REFERENCES gemeinschaft(id),
+  zeitraum_von      TEXT NOT NULL,
+  zeitraum_bis      TEXT NOT NULL,
+  modell            TEXT NOT NULL CHECK (modell IN ('Statisch','Dynamisch')),
+  -- Entwurf → Berechnet → Festgeschrieben. Ein festgeschriebener Lauf
+  -- wird nie verändert; Korrekturen laufen über einen Storno und einen
+  -- neuen Lauf. Das ist Voraussetzung für nachvollziehbare Belege.
+  status            TEXT NOT NULL DEFAULT 'Entwurf'
+                      CHECK (status IN ('Entwurf','Berechnet','Festgeschrieben','Storniert')),
+  -- Preis je kWh, den Verbraucher für Gemeinschaftsstrom zahlen.
+  preis_ct_kwh      REAL NOT NULL DEFAULT 15.0,
+  -- Anteil, den der Erzeuger davon gutgeschrieben bekommt.
+  erzeuger_ct_kwh   REAL NOT NULL DEFAULT 12.0,
+  ust_satz          REAL NOT NULL DEFAULT 20.0,
+  berechnet_am      TEXT,
+  festgeschrieben_am TEXT,
+  storniert_am      TEXT,
+  storno_grund      TEXT,
+  angelegt_von      TEXT,
+  angelegt_am       TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_lauf_gem ON abrechnungslauf(gemeinschaft_id);
+
+-- Ergebnis der Aufteilung je Zählpunkt und Viertelstunde.
+--
+-- Bewusst in dieser Auflösung gespeichert: Nur so lässt sich später
+-- belegen, warum ein Teilnehmer genau diesen Betrag erhält. Wer nur
+-- Summen speichert, kann Rückfragen nicht beantworten.
+CREATE TABLE IF NOT EXISTS aufteilung (
+  lauf_id        TEXT NOT NULL REFERENCES abrechnungslauf(id) ON DELETE CASCADE,
+  zeitpunkt      TEXT NOT NULL,
+  zaehlpunkt_id  TEXT NOT NULL REFERENCES zaehlpunkt(id),
+  -- Aus der Gemeinschaft bezogene Menge (Verbraucher).
+  bezogen_kwh    REAL NOT NULL DEFAULT 0,
+  -- In die Gemeinschaft eingespeiste Menge (Erzeuger).
+  geliefert_kwh  REAL NOT NULL DEFAULT 0,
+  -- Verbleibender Netzbezug, den die Gemeinschaft nicht decken konnte.
+  rest_netz_kwh  REAL NOT NULL DEFAULT 0,
+  PRIMARY KEY (lauf_id, zeitpunkt, zaehlpunkt_id)
+) WITHOUT ROWID;
+
+CREATE TABLE IF NOT EXISTS beleg (
+  id                TEXT PRIMARY KEY,
+  lauf_id           TEXT NOT NULL REFERENCES abrechnungslauf(id),
+  zaehlpunkt_id     TEXT NOT NULL REFERENCES zaehlpunkt(id),
+  kunde_id          TEXT REFERENCES kunde(id),
+  art               TEXT NOT NULL CHECK (art IN ('Rechnung','Gutschrift')),
+  nummer            TEXT NOT NULL UNIQUE,
+  zeitraum_von      TEXT NOT NULL,
+  zeitraum_bis      TEXT NOT NULL,
+  menge_kwh         REAL NOT NULL,
+  netto             REAL NOT NULL,
+  ust_satz          REAL NOT NULL,
+  ust_betrag        REAL NOT NULL,
+  brutto            REAL NOT NULL,
+  -- Ersparnis beim Netznutzungsentgelt, nachrichtlich ausgewiesen.
+  netzentgelt_ersparnis REAL NOT NULL DEFAULT 0,
+  status            TEXT NOT NULL DEFAULT 'Offen'
+                      CHECK (status IN ('Offen','Bezahlt','Storniert')),
+  ausgestellt_am    TEXT NOT NULL DEFAULT (date('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_beleg_lauf  ON beleg(lauf_id);
+CREATE INDEX IF NOT EXISTS idx_beleg_kunde ON beleg(kunde_id);
+
+-- --------------------------------------------------------------------
+-- EDA - Energiewirtschaftlicher Datenaustausch
+--
+-- Der verbindliche Weg, über den eine Energiegemeinschaft in
+-- Österreich Zählpunkte anmeldet und Messdaten erhält. Jeder Vorgang
+-- durchläuft einen Status und braucht die Zustimmung des
+-- Zählpunktinhabers.
+-- --------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS eda_prozess (
+  id              TEXT PRIMARY KEY,
+  gemeinschaft_id TEXT REFERENCES gemeinschaft(id),
+  zaehlpunkt_id   TEXT NOT NULL REFERENCES zaehlpunkt(id),
+  -- CCMI: Anmeldung zur Gemeinschaft, CCMO: Abmeldung,
+  -- CMRQ: Anforderung historischer Messdaten.
+  art             TEXT NOT NULL CHECK (art IN ('CCMI','CCMO','CMRQ')),
+  status          TEXT NOT NULL DEFAULT 'Angelegt'
+                    CHECK (status IN ('Angelegt','Gesendet','Zustimmung offen',
+                                      'Angenommen','Abgelehnt','Storniert')),
+  -- Referenznummer des Netzbetreibers.
+  referenz        TEXT,
+  zeitraum_von    TEXT,
+  zeitraum_bis    TEXT,
+  ablehnungsgrund TEXT,
+  gesendet_am     TEXT,
+  beantwortet_am  TEXT,
+  angelegt_von    TEXT,
+  angelegt_am     TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_eda_zp ON eda_prozess(zaehlpunkt_id);
+
+-- --------------------------------------------------------------------
+-- Betrieb
+-- --------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS stoerung (
+  id            TEXT PRIMARY KEY,
+  anlage_id     TEXT REFERENCES anlage(id),
+  betreff       TEXT NOT NULL,
+  beschreibung  TEXT,
+  status        TEXT NOT NULL DEFAULT 'Offen'
+                  CHECK (status IN ('Offen','In Bearbeitung','Warten auf Kunde','Geschlossen')),
+  prioritaet    TEXT NOT NULL DEFAULT 'Mittel'
+                  CHECK (prioritaet IN ('Niedrig','Mittel','Hoch','Kritisch')),
+  fehlercode    TEXT,
+  ausfall_kwh   REAL,
+  techniker     TEXT,
+  gemeldet_von  TEXT,
+  gemeldet_am   TEXT NOT NULL DEFAULT (datetime('now')),
+  behoben_am    TEXT,
+  -- Fortlaufende Nummer, wie sie dem Kunden genannt wird.
+  nummer        TEXT UNIQUE,
+  kategorie     TEXT,
+  -- Auf welchem Weg die Meldung kam. Automatisch erzeugte Meldungen
+  -- stammen aus der Ueberwachung und tragen eine Alarmkennung.
+  kanal         TEXT NOT NULL DEFAULT 'Portal'
+                  CHECK (kanal IN ('Portal','Telefon','E-Mail','Automatisch')),
+  alarm_id      TEXT,
+  ladepunkt_id  TEXT,
+  wechselrichter_id TEXT,
+  -- Vertragliche Fristen, beim Anlegen ausgerechnet und danach
+  -- unveraendert: Aendert sich spaeter die vereinbarte Reaktionszeit,
+  -- darf das die Bewertung alter Meldungen nicht rueckwirkend
+  -- verschieben.
+  reaktion_bis  TEXT,
+  loesung_bis   TEXT,
+  -- Zeitpunkt der ersten Rueckmeldung an den Melder.
+  reaktion_am   TEXT,
+  -- Servicezeit, unter der die Fristen gerechnet wurden.
+  servicezeit   TEXT NOT NULL DEFAULT 'Werktags'
+                  CHECK (servicezeit IN ('Werktags','Durchgehend'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_stoerung_status ON stoerung(status);
+CREATE INDEX IF NOT EXISTS idx_stoerung_anlage ON stoerung(anlage_id);
+
+-- Verlauf einer Störung oder Anfrage - ohne Verlauf ist ein
+-- Ticketsystem nur eine Liste.
+CREATE TABLE IF NOT EXISTS stoerung_eintrag (
+  id           TEXT PRIMARY KEY,
+  stoerung_id  TEXT NOT NULL REFERENCES stoerung(id) ON DELETE CASCADE,
+  verfasser    TEXT NOT NULL,
+  -- Interne Notizen sieht der Kunde nicht.
+  intern       INTEGER NOT NULL DEFAULT 0,
+  text         TEXT NOT NULL,
+  erstellt_am  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_eintrag_stoerung ON stoerung_eintrag(stoerung_id);
+
+CREATE TABLE IF NOT EXISTS steuerwert (
+  anlage_id    TEXT NOT NULL REFERENCES anlage(id),
+  parameter    TEXT NOT NULL,
+  wert         TEXT NOT NULL,
+  quelle       TEXT NOT NULL DEFAULT 'Kunde'
+                 CHECK (quelle IN ('Kunde','Netzbetreiber','Errichter')),
+  geaendert_von TEXT,
+  geaendert_am TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (anlage_id, parameter)
+) WITHOUT ROWID;
+
+-- Jede Änderung an der Steuerung, auch die abgelehnte.
+CREATE TABLE IF NOT EXISTS steuerbefehl (
+  id            TEXT PRIMARY KEY,
+  anlage_id     TEXT NOT NULL REFERENCES anlage(id),
+  parameter     TEXT NOT NULL,
+  wert_vorher   TEXT,
+  wert_nachher  TEXT,
+  status        TEXT NOT NULL CHECK (status IN ('Angenommen','Abgelehnt','Übertragen','Bestätigt','Fehler')),
+  begruendung   TEXT,
+  benutzer      TEXT,
+  erstellt_am   TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- --------------------------------------------------------------------
+-- Protokoll
+-- --------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS audit (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  zeitpunkt    TEXT NOT NULL DEFAULT (datetime('now')),
+  benutzer     TEXT,
+  kategorie    TEXT NOT NULL,
+  aktion       TEXT NOT NULL,
+  ergebnis     TEXT NOT NULL CHECK (ergebnis IN ('erfolg','abgelehnt','fehler')),
+  objekt       TEXT,
+  wert_vorher  TEXT,
+  wert_nachher TEXT,
+  begruendung  TEXT,
+  ip_adresse   TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_audit_zeit ON audit(zeitpunkt DESC);
+
+-- --------------------------------------------------------------------
+-- Benutzer und Rechte
+-- --------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS benutzer (
+  id              TEXT PRIMARY KEY,
+  email           TEXT NOT NULL UNIQUE,
+  kunde_id        TEXT REFERENCES kunde(id),
+  vollname        TEXT NOT NULL,
+  rolle           TEXT NOT NULL,
+  telefon         TEXT,
+  aktiv           INTEGER NOT NULL DEFAULT 1,
+  mfa_aktiv       INTEGER NOT NULL DEFAULT 0,
+  letzte_anmeldung TEXT,
+  angelegt_am     TEXT NOT NULL DEFAULT (datetime('now'))
+);

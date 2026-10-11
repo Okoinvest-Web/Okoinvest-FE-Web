@@ -1,0 +1,303 @@
+"""Endpunkte fuer die Protokollausfuehrung im Feld (FA-030 bis FA-041)."""
+
+from __future__ import annotations
+
+import json
+
+import frappe
+from frappe import _
+from frappe.utils import now_datetime, today
+
+
+@frappe.whitelist()
+def vorlagen_fuer_anlage(anlage: str) -> list[dict]:
+	"""Nur zum Anlagentyp passende, veroeffentlichte Vorlagen anbieten (Schritt 2)."""
+	anlagen_typ = frappe.db.get_value("PV Anlage", anlage, "anlagen_typ")
+	return frappe.get_all(
+		"Checklistenvorlage",
+		filters={
+			"status": "Veroeffentlicht",
+			"anlagen_typ": ["in", [anlagen_typ, "Alle"]],
+		},
+		fields=["name", "titel", "vorlage_typ", "anlagen_typ", "revision", "anzahl_pruefpunkte"],
+		order_by="vorlage_typ asc, titel asc",
+	)
+
+
+@frappe.whitelist()
+def vorlage_komplett(vorlage: str) -> dict:
+	"""Vollstaendige Vorlage inkl. Sektionen und Pruefpunkten fuer den Offline-Cache (NFA-015)."""
+	doc = frappe.get_doc("Checklistenvorlage", vorlage)
+	doc.check_permission("read")
+	return {
+		"name": doc.name,
+		"titel": doc.titel,
+		"vorlage_typ": doc.vorlage_typ,
+		"anlagen_typ": doc.anlagen_typ,
+		"revision": doc.revision,
+		"status": doc.status,
+		"sprache": doc.sprache,
+		"beschreibung": doc.beschreibung,
+		"sektionen": [
+			{
+				"sektion_name": s.sektion_name,
+				"sektion_key": s.sektion_key,
+				"sortierung": s.sortierung,
+				"beschreibung": s.beschreibung,
+				"nur_fuer_anlagen_typ": s.nur_fuer_anlagen_typ,
+				"pruefpunkte": [
+					{
+						"pruefpunkt_key": p.pruefpunkt_key,
+						"nummer": p.nummer,
+						"titel": p.titel,
+						"feldtyp": p.feldtyp,
+						"bewertungsoptionen": p.bewertungsoptionen,
+						"auswahloptionen": p.auswahloptionen,
+						"einheit": p.einheit,
+						"min_wert": p.min_wert,
+						"max_wert": p.max_wert,
+						"nachkommastellen": p.nachkommastellen,
+						"pflichtfeld": p.pflichtfeld,
+						"foto_erforderlich": p.foto_erforderlich,
+						"hilfetext": p.hilfetext,
+						"normverweis": p.normverweis,
+						"sichtbar_wenn": p.sichtbar_wenn,
+						"mangelkategorie": p.mangelkategorie,
+					}
+					for p in s.pruefpunkte
+				],
+			}
+			for s in sorted(doc.sektionen, key=lambda s: s.sortierung or s.idx)
+		],
+	}
+
+
+@frappe.whitelist()
+def protokoll_starten(anlage: str, vorlage: str, pruefer: str | None = None,
+                      gps: str | None = None, lokale_id: str | None = None) -> dict:
+	"""Erzeugt ein Protokoll mit vorbefuellten Ergebniszeilen (FA-030, FA-039)."""
+	if lokale_id:
+		vorhanden = frappe.db.get_value("Pruefprotokoll", {"lokale_id": lokale_id}, "name")
+		if vorhanden:
+			return frappe.get_doc("Pruefprotokoll", vorhanden).as_dict()
+
+	pruefer = pruefer or aktueller_mitarbeiter()
+	if not pruefer:
+		frappe.throw(_("Zum angemeldeten Benutzer ist kein Mitarbeiter hinterlegt."))
+
+	doc = frappe.new_doc("Pruefprotokoll")
+	doc.update({
+		"anlage": anlage,
+		"vorlage": vorlage,
+		"pruefer": pruefer,
+		"status": "In Arbeit",
+		"pruef_datum": now_datetime(),
+		"gps_koordinaten": gps,
+		"lokale_id": lokale_id,
+	})
+	ergebniszeilen_anlegen(doc)
+	messzeilen_anlegen(doc)
+	doc.insert()
+	return doc.as_dict()
+
+
+def ergebniszeilen_anlegen(doc):
+	"""Spiegelt die Vorlagenstruktur als leere Ergebniszeilen in das Protokoll."""
+	anlagen_typ = frappe.db.get_value("PV Anlage", doc.anlage, "anlagen_typ")
+	vorlage = frappe.get_doc("Checklistenvorlage", doc.vorlage)
+	doc.vorlage_revision = vorlage.revision
+
+	for sektion in sorted(vorlage.sektionen, key=lambda s: s.sortierung or s.idx):
+		if sektion.nur_fuer_anlagen_typ and sektion.nur_fuer_anlagen_typ not in (anlagen_typ, "Alle"):
+			continue
+		for punkt in sektion.pruefpunkte:
+			if punkt.feldtyp == "Ueberschrift":
+				continue
+			doc.append("ergebnisse", {
+				"sektion": sektion.sektion_name,
+				"nummer": punkt.nummer,
+				"titel": punkt.titel,
+				"feldtyp": punkt.feldtyp,
+				"pruefpunkt_key": punkt.pruefpunkt_key,
+				"einheit": punkt.einheit,
+				"status": "Offen",
+			})
+
+
+def messzeilen_anlegen(doc):
+	"""Legt je bekanntem String eine Messzeile an (FA-050)."""
+	anzahl_strings = frappe.db.get_value("PV Anlage", doc.anlage, "anzahl_strings") or 0
+	for nr in range(1, int(anzahl_strings) + 1):
+		doc.append("messdaten", {"string_nr": str(nr), "status": "Offen"})
+
+
+def vor_anlage(doc, method=None):
+	"""doc_event: Idempotenz-Schutz gegen doppelte Offline-Uploads."""
+	if doc.lokale_id and frappe.db.exists("Pruefprotokoll", {"lokale_id": doc.lokale_id}):
+		frappe.throw(
+			_("Fuer die lokale ID {0} existiert bereits ein Protokoll.").format(doc.lokale_id),
+			frappe.DuplicateEntryError,
+		)
+	if not doc.pruef_datum:
+		doc.pruef_datum = now_datetime()
+
+
+@frappe.whitelist()
+def ergebnis_speichern(protokoll: str, pruefpunkt_key: str, werte: str | dict) -> dict:
+	"""Speichert ein Einzelergebnis (Teilspeicherung waehrend der Ausfuehrung, FA-037)."""
+	if isinstance(werte, str):
+		werte = json.loads(werte)
+
+	doc = frappe.get_doc("Pruefprotokoll", protokoll)
+	doc.check_permission("write")
+
+	zeile = next((z for z in doc.ergebnisse if z.pruefpunkt_key == pruefpunkt_key), None)
+	if not zeile:
+		frappe.throw(_("Pruefpunkt {0} gehoert nicht zu diesem Protokoll.").format(pruefpunkt_key))
+
+	erlaubt = {
+		"bewertung", "wert_zahl", "wert_text", "wert_ja_nein", "wert_datum",
+		"bemerkung", "uebersteuert", "uebersteuerung_grund",
+	}
+	zeile.update({k: v for k, v in werte.items() if k in erlaubt})
+	zeile.erfasst_am = now_datetime()
+
+	if werte.get("fotos"):
+		zeile.set("fotos", [])
+		for foto in werte["fotos"]:
+			zeile.append("fotos", foto)
+
+	if doc.status == "Entwurf":
+		doc.status = "In Arbeit"
+	doc.save()
+
+	return {
+		"status": zeile.status,
+		"plausi_meldung": zeile.plausi_meldung,
+		"fortschritt": doc.fortschritt,
+		"anzahl_erledigt": doc.anzahl_erledigt,
+		"modified": doc.modified,
+	}
+
+
+@frappe.whitelist()
+def unterschreiben(protokoll: str, rolle: str, name_unterzeichner: str,
+                   signatur: str, gps: str | None = None) -> str:
+	"""Digitale Unterschrift mit Zeitstempel und IP-Adresse (FA-040, NFA-045)."""
+	doc = frappe.get_doc("Pruefprotokoll", protokoll)
+	doc.check_permission("write")
+
+	import hashlib
+
+	doc.append("unterschriften", {
+		"rolle": rolle,
+		"name_unterzeichner": name_unterzeichner,
+		"signatur": signatur,
+		"unterzeichnet_am": now_datetime(),
+		"ip_adresse": frappe.local.request_ip,
+		"geraet": frappe.get_request_header("User-Agent"),
+		"gps": gps,
+		"hash": hashlib.sha256(signatur.encode("utf-8")).hexdigest(),
+	})
+	doc.save()
+	return doc.name
+
+
+@frappe.whitelist()
+def aktueller_mitarbeiter() -> str | None:
+	"""Employee-Datensatz des angemeldeten Benutzers."""
+	return frappe.db.get_value("Employee", {"user_id": frappe.session.user, "status": "Active"}, "name")
+
+
+@frappe.whitelist()
+def meine_offenen_protokolle() -> list[dict]:
+	"""Dashboard: angefangene Protokolle des Benutzers."""
+	mitarbeiter = aktueller_mitarbeiter()
+	if not mitarbeiter:
+		return []
+	return frappe.get_all(
+		"Pruefprotokoll",
+		filters={"pruefer": mitarbeiter, "status": ["in", ["Entwurf", "In Arbeit"]]},
+		fields=["name", "anlage", "vorlage_typ", "pruef_datum", "fortschritt", "status"],
+		order_by="modified desc",
+		limit_page_length=20,
+	)
+
+
+@frappe.whitelist()
+def zu_verifizieren() -> list[dict]:
+	"""Dashboard fuer Bauleiter: abgeschlossene Protokolle ohne Verifizierung."""
+	return frappe.get_all(
+		"Pruefprotokoll",
+		filters={"status": "Abgeschlossen"},
+		fields=["name", "anlage", "vorlage_typ", "pruefer", "abschluss_datum", "gesamtbewertung"],
+		order_by="abschluss_datum asc",
+		limit_page_length=50,
+	)
+
+
+@frappe.whitelist()
+def messdaten_trend(anlage: str, string_nr: str | None = None) -> list[dict]:
+	"""Messwerte ueber mehrere Wartungszyklen (FA-094)."""
+	filters = {"anlage": anlage, "status": ["in", ["Abgeschlossen", "Verifiziert"]]}
+	protokolle = frappe.get_all(
+		"Pruefprotokoll", filters=filters, fields=["name", "pruef_datum", "vorlage_typ"],
+		order_by="pruef_datum asc", limit_page_length=0,
+	)
+	if not protokolle:
+		return []
+
+	zeilen_filter = {"parent": ["in", [p.name for p in protokolle]]}
+	if string_nr:
+		zeilen_filter["string_nr"] = string_nr
+
+	messwerte = frappe.get_all(
+		"Messdaten String",
+		filters=zeilen_filter,
+		fields=["parent", "string_nr", "uoc", "isc", "riso", "anzahl_module",
+		        "einstrahlung", "modultemperatur", "status"],
+		limit_page_length=0,
+	)
+	datum = {p.name: str(p.pruef_datum) for p in protokolle}
+	for zeile in messwerte:
+		zeile["pruef_datum"] = datum.get(zeile["parent"])
+	return sorted(messwerte, key=lambda z: (z["string_nr"], z["pruef_datum"] or ""))
+
+
+@frappe.whitelist()
+def mangel_aus_pruefpunkt(protokoll: str, pruefpunkt_key: str, titel: str,
+                          beschreibung: str, schweregrad: str,
+                          kategorie: str | None = None, fotos: str | list | None = None) -> str:
+	"""Mangel direkt aus einem Pruefpunkt heraus anlegen (FA-036, FA-061)."""
+	doc = frappe.get_doc("Pruefprotokoll", protokoll)
+	doc.check_permission("write")
+	zeile = next((z for z in doc.ergebnisse if z.pruefpunkt_key == pruefpunkt_key), None)
+	if not zeile:
+		frappe.throw(_("Pruefpunkt {0} gehoert nicht zu diesem Protokoll.").format(pruefpunkt_key))
+	if zeile.mangel:
+		return zeile.mangel
+
+	if isinstance(fotos, str):
+		fotos = json.loads(fotos)
+
+	mangel = frappe.new_doc("Mangel")
+	mangel.update({
+		"titel": titel,
+		"anlage": doc.anlage,
+		"kategorie": kategorie or frappe.db.get_value("Mangelkategorie", {"aktiv": 1}, "name"),
+		"schweregrad": schweregrad,
+		"status": "Offen",
+		"pruefprotokoll": doc.name,
+		"pruefpunkt_ref": f"{zeile.sektion} / {zeile.nummer} {zeile.titel}",
+		"beschreibung": beschreibung,
+		"gemeldet_am": today(),
+		"zugewiesen_an": doc.pruefer,
+	})
+	for foto in fotos or []:
+		mangel.append("fotos", foto)
+	mangel.insert()
+
+	zeile.db_set("mangel", mangel.name, update_modified=False)
+	frappe.db.set_value("Pruefprotokoll", doc.name, "anzahl_maengel",
+	                    (doc.anzahl_maengel or 0) + 1, update_modified=False)
+	return mangel.name

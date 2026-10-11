@@ -1,0 +1,320 @@
+<script setup lang="ts">
+/**
+ * Ein Prüfpunkt pro Bildschirm (Kapitel 6.2, Schritt 4).
+ *
+ * Alle Bedienelemente sind mindestens 44 px hoch (NFA-023), Bewertungen liegen
+ * als große Flächen nebeneinander, damit sie mit Handschuhen treffbar sind.
+ */
+import { computed, ref, watch } from 'vue'
+
+import AppIcon from '@/components/AppIcon.vue'
+import FotoAufnahme from '@/components/FotoAufnahme.vue'
+import { istMangelBewertung } from '@/lib/plausibilitaet'
+import type { Ergebnis, Foto, Pruefpunkt } from '@/lib/typen'
+
+const props = defineProps<{
+  zeile: Ergebnis
+  punkt: Pruefpunkt | null
+  uebersteuerungErlaubt: boolean
+}>()
+
+const emit = defineEmits<{
+  (e: 'aendern', werte: Partial<Ergebnis>): void
+  (e: 'mangel-anlegen'): void
+}>()
+
+const zahlEingabe = ref<string>(
+  props.zeile.wert_zahl === null || props.zeile.wert_zahl === undefined
+    ? ''
+    : String(props.zeile.wert_zahl),
+)
+
+watch(
+  () => props.zeile.pruefpunkt_key,
+  () => {
+    zahlEingabe.value =
+      props.zeile.wert_zahl === null || props.zeile.wert_zahl === undefined
+        ? ''
+        : String(props.zeile.wert_zahl)
+  },
+)
+
+const bewertungsoptionen = computed(() =>
+  (props.punkt?.bewertungsoptionen ?? 'in Ordnung|Mangel leicht|Mangel schwer|nicht zutreffend')
+    .split('|')
+    .map((o) => o.trim())
+    .filter(Boolean),
+)
+
+const auswahloptionen = computed(() =>
+  (props.punkt?.auswahloptionen ?? '')
+    .split('|')
+    .map((o) => o.trim())
+    .filter(Boolean),
+)
+
+function optionStil(option: string, aktiv: boolean): string {
+  if (!aktiv) {
+    return 'border-slate-300 bg-white text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200'
+  }
+  const text = option.toLowerCase()
+  if (text.includes('schwer')) return 'border-fehler bg-fehler text-white'
+  if (text.includes('mangel')) return 'border-warnung bg-warnung text-slate-900'
+  if (text.includes('nicht zutreffend')) return 'border-slate-400 bg-slate-500 text-white'
+  return 'border-ok bg-ok text-white'
+}
+
+const grenzhinweis = computed(() => {
+  if (!props.punkt || props.punkt.feldtyp !== 'Zahlenwert') return ''
+  const { min_wert, max_wert, einheit } = props.punkt
+  if (min_wert !== null && min_wert !== undefined && max_wert !== null && max_wert !== undefined) {
+    return `Zulässig ${min_wert} bis ${max_wert} ${einheit ?? ''}`.trim()
+  }
+  if (min_wert !== null && min_wert !== undefined) return `Mindestens ${min_wert} ${einheit ?? ''}`.trim()
+  if (max_wert !== null && max_wert !== undefined) return `Höchstens ${max_wert} ${einheit ?? ''}`.trim()
+  return ''
+})
+
+const meldungsStil = computed(() => {
+  if (props.zeile.status === 'Fehler') {
+    return 'bg-red-50 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-200 dark:border-red-900'
+  }
+  if (props.zeile.status === 'Warnung') {
+    return 'bg-amber-50 text-amber-900 border-amber-200 dark:bg-amber-900/30 dark:text-amber-200 dark:border-amber-900'
+  }
+  return 'bg-slate-50 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
+})
+
+const zeigtMeldung = computed(
+  () => props.zeile.plausi_meldung && ['Warnung', 'Fehler'].includes(props.zeile.status),
+)
+
+/** Lokale UUID, solange der Mangel noch nicht synchronisiert ist. */
+const mangelReferenz = computed(() => props.zeile.mangel_lokal ?? props.zeile.mangel ?? '')
+
+const kannMangelAnlegen = computed(
+  () => istMangelBewertung(props.zeile.bewertung) && !mangelReferenz.value,
+)
+
+function zahlAendern(text: string) {
+  zahlEingabe.value = text
+  const normalisiert = text.replace(',', '.').trim()
+  emit('aendern', { wert_zahl: normalisiert === '' ? null : Number(normalisiert) })
+}
+
+function fotosAendern(fotos: Foto[]) {
+  emit('aendern', { fotos })
+}
+</script>
+
+<template>
+  <div class="space-y-5">
+    <!-- Kopf -->
+    <header>
+      <div class="mb-1 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+        <span>{{ zeile.sektion }}</span>
+        <span v-if="zeile.nummer">· {{ zeile.nummer }}</span>
+        <span v-if="punkt?.pflichtfeld" class="text-fehler">· Pflicht</span>
+      </div>
+      <h2 class="text-xl font-bold leading-snug tablet:text-2xl">{{ zeile.titel }}</h2>
+      <p v-if="punkt?.hilfetext" class="mt-2 text-sm text-slate-600 dark:text-slate-300">
+        {{ punkt.hilfetext }}
+      </p>
+      <p v-if="punkt?.normverweis" class="mt-1 text-xs text-slate-400">{{ punkt.normverweis }}</p>
+    </header>
+
+    <!-- Eingabe je Feldtyp -->
+    <section>
+      <!-- Bewertung (FA-032) -->
+      <div v-if="zeile.feldtyp === 'Bewertung'" class="grid gap-2 tablet:grid-cols-2">
+        <button
+          v-for="option in bewertungsoptionen"
+          :key="option"
+          type="button"
+          class="flex min-h-[56px] items-center justify-center rounded-xl border-2 px-4 text-base
+                 font-semibold transition active:scale-[0.98]"
+          :class="optionStil(option, zeile.bewertung === option)"
+          @click="emit('aendern', { bewertung: zeile.bewertung === option ? '' : option })"
+        >
+          {{ option }}
+        </button>
+      </div>
+
+      <!-- Zahlenwert (FA-033) -->
+      <div v-else-if="zeile.feldtyp === 'Zahlenwert'">
+        <div class="flex items-center gap-3">
+          <input
+            :value="zahlEingabe"
+            class="feld flex-1 text-2xl font-semibold tabular-nums"
+            type="text"
+            inputmode="decimal"
+            autocomplete="off"
+            placeholder="0"
+            @input="zahlAendern(($event.target as HTMLInputElement).value)"
+          />
+          <span v-if="punkt?.einheit" class="text-lg font-semibold text-slate-500">
+            {{ punkt.einheit }}
+          </span>
+        </div>
+        <p v-if="grenzhinweis" class="mt-1.5 text-xs text-slate-400">{{ grenzhinweis }}</p>
+      </div>
+
+      <!-- Ja/Nein -->
+      <div v-else-if="zeile.feldtyp === 'Ja-Nein'" class="grid grid-cols-2 gap-2">
+        <button
+          type="button"
+          class="min-h-[56px] rounded-xl border-2 text-base font-semibold"
+          :class="
+            zeile.wert_text === 'Ja'
+              ? 'border-ok bg-ok text-white'
+              : 'border-slate-300 bg-white text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200'
+          "
+          :aria-pressed="zeile.wert_text === 'Ja'"
+          @click="emit('aendern', { wert_ja_nein: 1, wert_text: 'Ja' })"
+        >
+          Ja
+        </button>
+        <button
+          type="button"
+          class="min-h-[56px] rounded-xl border-2 text-base font-semibold"
+          :class="
+            zeile.wert_text === 'Nein'
+              ? 'border-fehler bg-fehler text-white'
+              : 'border-slate-300 bg-white text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200'
+          "
+          :aria-pressed="zeile.wert_text === 'Nein'"
+          @click="emit('aendern', { wert_ja_nein: 0, wert_text: 'Nein' })"
+        >
+          Nein
+        </button>
+      </div>
+
+      <!-- Auswahl -->
+      <div v-else-if="zeile.feldtyp === 'Auswahl'" class="grid gap-2">
+        <button
+          v-for="option in auswahloptionen"
+          :key="option"
+          type="button"
+          class="min-h-[52px] rounded-xl border-2 px-4 text-left text-base font-medium"
+          :class="
+            zeile.wert_text === option
+              ? 'border-marke-600 bg-marke-50 text-marke-800 dark:bg-marke-900/40 dark:text-marke-200'
+              : 'border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-900'
+          "
+          @click="emit('aendern', { wert_text: option })"
+        >
+          {{ option }}
+        </button>
+      </div>
+
+      <!-- Datum -->
+      <input
+        v-else-if="zeile.feldtyp === 'Datum'"
+        :value="zeile.wert_datum"
+        class="feld text-lg"
+        type="date"
+        @change="emit('aendern', { wert_datum: ($event.target as HTMLInputElement).value })"
+      />
+
+      <!-- Freitext -->
+      <textarea
+        v-else-if="zeile.feldtyp === 'Text'"
+        :value="zeile.wert_text"
+        class="feld min-h-[120px] resize-y"
+        rows="4"
+        placeholder="Beobachtung eintragen …"
+        @change="emit('aendern', { wert_text: ($event.target as HTMLTextAreaElement).value })"
+      />
+
+      <p v-else-if="zeile.feldtyp === 'Foto'" class="text-sm text-slate-500">
+        Für diesen Prüfpunkt wird ausschließlich ein Foto erfasst.
+      </p>
+    </section>
+
+    <!-- Plausibilitätsmeldung (FA-033, FA-054) -->
+    <div
+      v-if="zeigtMeldung"
+      class="rounded-xl border px-4 py-3 text-sm"
+      :class="meldungsStil"
+      role="status"
+      aria-live="polite"
+    >
+      <div class="flex items-start gap-2">
+        <AppIcon name="warnung" :groesse="18" class="mt-0.5 shrink-0" />
+        <div class="flex-1">
+          <p class="font-medium">{{ zeile.plausi_meldung }}</p>
+
+          <label
+            v-if="uebersteuerungErlaubt"
+            class="mt-2 flex items-center gap-2 text-sm font-medium"
+          >
+            <input
+              type="checkbox"
+              class="h-5 w-5 rounded border-slate-400"
+              :checked="Boolean(zeile.uebersteuert)"
+              @change="
+                emit('aendern', {
+                  uebersteuert: ($event.target as HTMLInputElement).checked ? 1 : 0,
+                })
+              "
+            />
+            Messwert bewusst übernehmen
+          </label>
+          <input
+            v-if="zeile.uebersteuert"
+            :value="zeile.uebersteuerung_grund"
+            class="feld mt-2 text-sm"
+            placeholder="Begründung (Pflicht) …"
+            @change="emit('aendern', { uebersteuerung_grund: ($event.target as HTMLInputElement).value })"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- Fotos -->
+    <FotoAufnahme
+      :model-value="zeile.fotos ?? []"
+      :pflicht="Boolean(punkt?.foto_erforderlich)"
+      :gehoert-zu="zeile.pruefpunkt_key"
+      @update:model-value="fotosAendern"
+    />
+
+    <!-- Bemerkung -->
+    <div>
+      <label class="beschriftung" :for="`bemerkung-${zeile.pruefpunkt_key}`">Bemerkung</label>
+      <textarea
+        :id="`bemerkung-${zeile.pruefpunkt_key}`"
+        :value="zeile.bemerkung"
+        class="feld min-h-[72px] resize-y text-sm"
+        rows="2"
+        placeholder="Optionale Notiz zu diesem Prüfpunkt"
+        @change="emit('aendern', { bemerkung: ($event.target as HTMLTextAreaElement).value })"
+      />
+    </div>
+
+    <!-- Mangel aus Prüfpunkt (FA-036) -->
+    <div
+      v-if="kannMangelAnlegen"
+      class="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 p-3
+             dark:border-amber-900 dark:bg-amber-900/30"
+    >
+      <AppIcon name="mangel" :groesse="22" class="shrink-0 text-warnung" />
+      <p class="flex-1 text-sm text-amber-900 dark:text-amber-200">
+        Bewertung „{{ zeile.bewertung }}“ — dazu einen Mangel dokumentieren.
+      </p>
+      <button class="knopf-primaer shrink-0 px-3 text-sm" type="button" @click="emit('mangel-anlegen')">
+        Mangel anlegen
+      </button>
+    </div>
+
+    <RouterLink
+      v-else-if="mangelReferenz"
+      :to="{ name: 'mangel-detail', params: { lokaleId: mangelReferenz } }"
+      class="flex items-center gap-2 rounded-xl border border-slate-200 p-3 text-sm dark:border-slate-700"
+    >
+      <AppIcon name="mangel" :groesse="18" class="text-warnung" />
+      Mangel dokumentiert — öffnen
+      <AppIcon name="pfeilRechts" :groesse="16" class="ml-auto text-slate-400" />
+    </RouterLink>
+  </div>
+</template>

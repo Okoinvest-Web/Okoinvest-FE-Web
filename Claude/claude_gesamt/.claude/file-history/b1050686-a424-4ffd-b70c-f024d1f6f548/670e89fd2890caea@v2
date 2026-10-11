@@ -1,0 +1,180 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { useState } from "react";
+
+import { istAktiv, type NavGruppe } from "@/lib/navigation";
+
+/**
+ * Seitenleiste des Portals.
+ *
+ * Auf breiten Bildschirmen dauerhaft sichtbar, auf schmalen als
+ * einklappbare Schublade. Der Inhalt kommt fertig gefiltert vom Server -
+ * der Client entscheidet nicht darueber, was jemand sehen darf.
+ */
+export function PortalNav({
+  gruppen,
+  benutzer,
+  rollenBezeichnung,
+  firma,
+  demo,
+}: {
+  gruppen: NavGruppe[];
+  benutzer: string;
+  rollenBezeichnung: string;
+  firma: string;
+  demo: boolean;
+}) {
+  const pfad = usePathname();
+  const router = useRouter();
+  const [offen, setOffen] = useState(false);
+  const [meldetAb, setMeldetAb] = useState(false);
+
+  async function abmelden() {
+    setMeldetAb(true);
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.replace("/login");
+    router.refresh();
+  }
+
+  return (
+    <>
+      {/* Kopfzeile nur auf schmalen Bildschirmen */}
+      <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-slate-200 bg-white/90 px-4 py-3 backdrop-blur lg:hidden dark:border-slate-800 dark:bg-slate-900/90">
+        <button
+          type="button"
+          onClick={() => setOffen((o) => !o)}
+          aria-expanded={offen}
+          aria-controls="hauptnavigation"
+          className="rounded-lg border border-slate-300 px-2.5 py-1.5 text-slate-600 dark:border-slate-700 dark:text-slate-300"
+        >
+          <span aria-hidden>☰</span>
+          <span className="sr-only">Navigation {offen ? "schließen" : "öffnen"}</span>
+        </button>
+        <span className="font-semibold">Energieportal</span>
+      </header>
+
+      {offen && (
+        <div
+          className="animate-einblenden fixed inset-0 z-30 bg-slate-900/40 lg:hidden"
+          onClick={() => setOffen(false)}
+          aria-hidden
+        />
+      )}
+
+      {/*
+        Geschlossen wird die Leiste ausgeblendet, nicht nur zur Seite
+        geschoben. Eine verschobene Leiste zaehlt weiter zur Breite des
+        Dokuments und laesst die ganze Seite waagrecht scrollen.
+      */}
+      <nav
+        id="hauptnavigation"
+        className={`fixed inset-y-0 left-0 z-40 w-72 flex-col border-r border-slate-200 bg-white lg:flex dark:border-slate-800 dark:bg-slate-900 ${
+          offen ? "flex" : "hidden"
+        }`}
+        style={
+          offen
+            ? { animation: "schubladeAuf .3s var(--ease-ruhig)" }
+            : undefined
+        }
+      >
+        <div className="flex items-center gap-3 border-b border-slate-200 px-5 py-4 dark:border-slate-800">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-emerald-500 text-lg shadow-sm">
+            <span aria-hidden>☀</span>
+          </span>
+          <span className="min-w-0">
+            <span className="block truncate font-semibold text-slate-900 dark:text-slate-50">
+              Energieportal
+            </span>
+            <span className="block truncate text-xs text-slate-500 dark:text-slate-400">
+              {firma}
+            </span>
+          </span>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-3 py-4">
+          {gruppen.map((gruppe) => (
+            <div key={gruppe.titel} className="mb-5">
+              <p className="mb-1.5 px-2 text-[11px] font-semibold tracking-wider text-slate-400 uppercase">
+                {gruppe.titel}
+              </p>
+              <ul className="space-y-0.5">
+                {gruppe.eintraege.map((eintrag) => {
+                  const aktiv = istAktiv(eintrag, pfad);
+
+                  return (
+                    <li key={eintrag.pfad}>
+                      <Link
+                        href={eintrag.pfad}
+                        // Beim Wechsel die Schublade schliessen. Direkt am
+                        // Klick statt per Effect - so entsteht kein zweiter
+                        // Renderdurchlauf nach jedem Seitenwechsel.
+                        onClick={() => setOffen(false)}
+                        aria-current={aktiv ? "page" : undefined}
+                        className={`flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm transition-colors ${
+                          aktiv
+                            ? "bg-emerald-50 font-medium text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
+                            : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+                        }`}
+                      >
+                        <span
+                          aria-hidden
+                          className={`w-4 shrink-0 text-center ${
+                            aktiv ? "" : "text-slate-400"
+                          }`}
+                        >
+                          {eintrag.zeichen}
+                        </span>
+                        <span className="truncate">{eintrag.label}</span>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ))}
+        </div>
+
+        <div className="border-t border-slate-200 p-3 dark:border-slate-800">
+          {demo && (
+            <p className="mb-2 rounded-md bg-amber-50 px-2.5 py-1.5 text-[11px] text-amber-800 dark:bg-amber-950/50 dark:text-amber-300">
+              Demonstrationsbetrieb mit Beispieldaten
+            </p>
+          )}
+
+          <div className="flex items-center gap-2.5 px-1 py-1.5">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+              {initialen(benutzer)}
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-sm font-medium text-slate-900 dark:text-slate-100">
+                {benutzer}
+              </span>
+              <span className="block truncate text-xs text-slate-500 dark:text-slate-400">
+                {rollenBezeichnung}
+              </span>
+            </span>
+          </div>
+
+          <button
+            type="button"
+            onClick={abmelden}
+            disabled={meldetAb}
+            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-600 transition hover:bg-slate-100 disabled:opacity-60 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+          >
+            {meldetAb ? "Wird abgemeldet …" : "Abmelden"}
+          </button>
+        </div>
+      </nav>
+    </>
+  );
+}
+
+function initialen(name: string): string {
+  const teile = name.trim().split(/\s+/);
+  if (teile.length >= 2) {
+    return (teile[0][0] + teile[teile.length - 1][0]).toUpperCase();
+  }
+  return name.slice(0, 2).toUpperCase();
+}

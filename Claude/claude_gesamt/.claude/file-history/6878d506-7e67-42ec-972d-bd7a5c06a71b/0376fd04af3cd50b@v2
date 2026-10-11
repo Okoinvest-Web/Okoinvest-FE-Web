@@ -1,0 +1,18 @@
+# Ohne ERPNEXT_URL läuft die App mit Beispieldaten (Demo-Modus).
+# Kopieren nach .env.local und ausfüllen – .env.local wird nicht eingecheckt.
+
+# Adresse des ERPNext-Servers
+ERPNEXT_URL=https://erp.example.com
+
+# Pflicht im Produktivbetrieb: mindestens 32 zufällige Zeichen.
+# Verschlüsselt das Sitzungs-Cookie (enthält die ERPNext-Sitzung des Nutzers).
+# Erzeugen z. B. mit: node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
+SESSION_SECRET=
+
+# Standard: Jeder Nutzer meldet sich mit seinem eigenen ERPNext-Benutzer an, ERPNext setzt
+# Rollen und Benutzerberechtigungen durch (Handelsvertreter sehen nur Eigenes).
+# Nur für rein interne Teams ohne Datentrennung: ERPNEXT_AUTH=token plus API-Key/Secret
+# eines Dienstkontos – dann sehen ALLE Nutzer ALLE Daten.
+# ERPNEXT_AUTH=token
+# ERPNEXT_API_KEY=
+# ERPNEXT_API_SECRET=

@@ -1,0 +1,48 @@
+"use client";
+
+import { useEffect } from "react";
+
+import { Stoerbild } from "@/components/stoerbild";
+
+/**
+ * Fehler innerhalb des Portals.
+ *
+ * Die Navigation bleibt stehen: Wer auf der Abrechnungsseite in einen
+ * Fehler läuft, will nicht zurück zum Anmeldebildschirm, sondern zur
+ * nächsten Seite. Die Grenze liegt deshalb unter dem Portal-Layout.
+ *
+ * `retry` lädt genau diesen Abschnitt neu - Serverdaten eingeschlossen.
+ * Bei einem vorübergehenden Aussetzer, einer gesperrten Datei, einem
+ * Zeitüberlauf beim Netzbetreiber, ist die Sache damit erledigt.
+ */
+export default function PortalFehler({
+  error,
+  retry,
+}: {
+  error: Error & { digest?: string };
+  retry: () => void;
+}) {
+  useEffect(() => {
+    // In einem Betrieb ginge das an die Fehlerablage. Hier bleibt es
+    // in der Konsole - aber es verschwindet nicht stillschweigend.
+    console.error("Portalfehler:", error);
+  }, [error]);
+
+  return (
+    <Stoerbild
+      titel="Diese Seite lässt sich gerade nicht anzeigen"
+      text={
+        <>
+          Beim Laden der Daten ist etwas schiefgegangen. Ihre Anlagen laufen
+          davon unberührt weiter – betroffen ist nur die Anzeige.
+        </>
+      }
+      kennung={error.digest}
+      aktion={
+        <button type="button" className="knopf knopf-voll" onClick={() => retry()}>
+          Erneut versuchen
+        </button>
+      }
+    />
+  );
+}

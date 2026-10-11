@@ -1,0 +1,244 @@
+/**
+ * DocTypes für Cloud, Zero Trust, Identitäten, externe Angriffsfläche,
+ * Change-Workflow und Compliance
+ * (Fachkonzept 2.10, 2.12, 2.13, 2.14).
+ *
+ * Wie überall: englische Namen, deutsche Oberfläche, erfundene Testdaten.
+ * Öffentliche IPs stammen aus den Dokumentationsbereichen nach RFC 5737
+ * (192.0.2.0/24, 198.51.100.0/24, 203.0.113.0/24) - sie gehören niemandem.
+ */
+import { defineDoctype } from './db.js'
+import { stundenVersetzt, tageVersetzt } from './zeit.js'
+
+const AT = 'TEN-0001'
+const DE = 'TEN-0002'
+
+// --- Cloud-Server (Fachkonzept 2.14) ---------------------------------------
+
+defineDoctype('Cloud Server', {
+  naming: (doc) => doc.server_name,
+  titleField: 'server_name',
+  fields: [
+    'server_name', 'provider', 'project', 'server_type', 'location', 'image',
+    'ipv4', 'ipv6', 'power_state', 'backups_enabled', 'last_snapshot',
+    'cost_per_month', 'cpu_pct', 'ssh_via_tunnel',
+  ],
+  seed: [
+    { server_name: 'web-prod-01', provider: 'hetzner', project: 'oekovolt-web', server_type: 'cx41', location: 'nbg1', image: 'Debian 12', ipv4: '198.51.100.11', ipv6: '2001:db8:1::11', power_state: 'running', backups_enabled: 1, last_snapshot: stundenVersetzt(-20), cost_per_month: 25.2, cpu_pct: 18, ssh_via_tunnel: 1, tenant: AT },
+    { server_name: 'web-prod-02', provider: 'hetzner', project: 'oekovolt-web', server_type: 'cx41', location: 'nbg1', image: 'Debian 12', ipv4: '198.51.100.12', ipv6: '2001:db8:1::12', power_state: 'running', backups_enabled: 1, last_snapshot: stundenVersetzt(-20), cost_per_month: 25.2, cpu_pct: 22, ssh_via_tunnel: 1, tenant: AT },
+    { server_name: 'shop-staging', provider: 'hetzner', project: 'oekovolt-web', server_type: 'cx21', location: 'nbg1', image: 'Ubuntu 24.04', ipv4: '198.51.100.21', ipv6: '2001:db8:1::21', power_state: 'running', backups_enabled: 0, last_snapshot: null, cost_per_month: 8.9, cpu_pct: 4, ssh_via_tunnel: 0, tenant: AT, description: 'Ohne Backup, SSH nicht über den Tunnel – beides prüfen.' },
+    { server_name: 'web-de-01', provider: 'hetzner', project: 'oekovolt-de', server_type: 'cx21', location: 'fsn1', image: 'Debian 12', ipv4: '203.0.113.31', ipv6: '2001:db8:2::31', power_state: 'stopped', backups_enabled: 1, last_snapshot: stundenVersetzt(-400), cost_per_month: 8.9, cpu_pct: 0, ssh_via_tunnel: 1, tenant: DE },
+  ],
+})
+
+defineDoctype('Cloud Firewall Rule', {
+  naming: (doc, i) => 'CFW-' + String(i).padStart(4, '0'),
+  titleField: 'rule_name',
+  fields: ['rule_name', 'project', 'direction', 'protocol', 'port', 'source_ips', 'applied_to'],
+  seed: [
+    { rule_name: 'HTTPS aus dem Internet', project: 'oekovolt-web', direction: 'in', protocol: 'tcp', port: '443', source_ips: '0.0.0.0/0', applied_to: 'web-prod-01, web-prod-02', tenant: AT },
+    { rule_name: 'HTTP-Umleitung', project: 'oekovolt-web', direction: 'in', protocol: 'tcp', port: '80', source_ips: '0.0.0.0/0', applied_to: 'web-prod-01, web-prod-02', tenant: AT },
+    { rule_name: 'SSH offen', project: 'oekovolt-web', direction: 'in', protocol: 'tcp', port: '22', source_ips: '0.0.0.0/0', applied_to: 'shop-staging', tenant: AT, description: 'Port 22 offen im Internet – widerspricht dem Zero-Trust-Ansatz.' },
+    { rule_name: 'HTTPS DE', project: 'oekovolt-de', direction: 'in', protocol: 'tcp', port: '443', source_ips: '0.0.0.0/0', applied_to: 'web-de-01', tenant: DE },
+  ],
+})
+
+defineDoctype('Zero Trust Application', {
+  naming: (doc) => doc.app_name,
+  titleField: 'app_name',
+  fields: [
+    'app_name', 'app_kind', 'hostname', 'target_server', 'tunnel_state',
+    'policy', 'requires_warp', 'idp', 'session_minutes', 'last_access',
+  ],
+  seed: [
+    { app_name: 'ssh-web-prod-01', app_kind: 'ssh', hostname: 'ssh-web01.oekovolt.test', target_server: 'web-prod-01', tunnel_state: 'healthy', policy: 'Gruppe Web-Admin', requires_warp: 1, idp: 'Keycloak', session_minutes: 60, last_access: stundenVersetzt(-3), tenant: AT },
+    { app_name: 'ssh-web-prod-02', app_kind: 'ssh', hostname: 'ssh-web02.oekovolt.test', target_server: 'web-prod-02', tunnel_state: 'healthy', policy: 'Gruppe Web-Admin', requires_warp: 1, idp: 'Keycloak', session_minutes: 60, last_access: stundenVersetzt(-28), tenant: AT },
+    { app_name: 'admin-shop', app_kind: 'http', hostname: 'admin.shop.oekovolt.test', target_server: 'shop-staging', tunnel_state: 'degraded', policy: 'Gruppe Web-Admin', requires_warp: 0, idp: 'Keycloak', session_minutes: 480, last_access: stundenVersetzt(-70), tenant: AT, description: 'Ohne WARP-Pflicht und mit sehr langer Sitzungsdauer.' },
+    { app_name: 'ssh-web-de-01', app_kind: 'ssh', hostname: 'ssh-webde01.oekovolt-de.test', target_server: 'web-de-01', tunnel_state: 'down', policy: 'Gruppe Web-Admin', requires_warp: 1, idp: 'Keycloak', session_minutes: 60, last_access: stundenVersetzt(-400), tenant: DE },
+  ],
+})
+
+// --- Identitäten und Zugänge (Fachkonzept 2.13) ----------------------------
+
+defineDoctype('Identity Account', {
+  naming: (doc) => doc.account_name,
+  titleField: 'display_name',
+  fields: [
+    'account_name', 'display_name', 'account_kind', 'system', 'privileged',
+    'mfa_kind', 'last_login', 'enabled', 'owner_user',
+  ],
+  seed: [
+    { account_name: 'benny.hoefler@oekovolt.test', display_name: 'Benny Höfler', account_kind: 'person', system: 'Keycloak', privileged: 1, mfa_kind: 'fido2', last_login: stundenVersetzt(-1), enabled: 1, tenant: AT },
+    { account_name: 'admin@netops.test', display_name: 'NetOps Administrator', account_kind: 'person', system: 'NetOps', privileged: 1, mfa_kind: 'fido2', last_login: stundenVersetzt(-26), enabled: 1, tenant: AT },
+    { account_name: 'break-glass-1', display_name: 'Notfallzugang 1', account_kind: 'break_glass', system: 'Keycloak', privileged: 1, mfa_kind: 'fido2', last_login: null, enabled: 1, tenant: AT, description: 'Versiegelt im Tresor. Jede Nutzung löst Alarm aus.' },
+    { account_name: 'break-glass-2', display_name: 'Notfallzugang 2', account_kind: 'break_glass', system: 'Keycloak', privileged: 1, mfa_kind: 'fido2', last_login: null, enabled: 1, tenant: AT },
+    { account_name: 'svc-backup', display_name: 'Dienstkonto Backup', account_kind: 'service', system: 'Proxmox', privileged: 1, mfa_kind: 'none', last_login: stundenVersetzt(-2), enabled: 1, tenant: AT, description: 'Dienstkonto ohne MFA – nur über Vault erreichbar.' },
+    { account_name: 'svc-monitoring', display_name: 'Dienstkonto Monitoring', account_kind: 'service', system: 'Zabbix', privileged: 0, mfa_kind: 'none', last_login: stundenVersetzt(-1), enabled: 1, tenant: AT },
+    { account_name: 'm.bergmann@oekovolt.test', display_name: 'Marlene Bergmann', account_kind: 'person', system: 'M365', privileged: 0, mfa_kind: 'totp', last_login: stundenVersetzt(-5), enabled: 1, tenant: AT },
+    { account_name: 't.oezdemir@oekovolt.test', display_name: 'Tarek Özdemir', account_kind: 'person', system: 'M365', privileged: 0, mfa_kind: 'none', last_login: stundenVersetzt(-9), enabled: 1, tenant: AT, description: 'Ohne zweiten Faktor – nachziehen.' },
+    { account_name: 'j.krueger@oekovolt.test', display_name: 'Johanna Krüger', account_kind: 'person', system: 'M365', privileged: 0, mfa_kind: 'none', last_login: stundenVersetzt(-2200), enabled: 1, tenant: AT, description: 'Seit über drei Monaten nicht angemeldet.' },
+    { account_name: 'p.wendt@oekovolt-de.test', display_name: 'Paul Wendt', account_kind: 'person', system: 'M365', privileged: 0, mfa_kind: 'totp', last_login: stundenVersetzt(-30), enabled: 1, tenant: DE },
+  ],
+})
+
+defineDoctype('Auth Token', {
+  naming: (doc, i) => 'TOK-' + String(i).padStart(4, '0'),
+  titleField: 'token_label',
+  fields: [
+    'token_label', 'token_kind', 'account', 'system', 'scope', 'read_only',
+    'issued', 'expires', 'last_used', 'rotation_days',
+  ],
+  seed: [
+    { token_label: 'FIDO2 Yubikey 1', token_kind: 'fido2', account: 'benny.hoefler@oekovolt.test', system: 'privacyIDEA', scope: 'Anmeldung', read_only: 0, issued: tageVersetzt(-400), expires: null, last_used: stundenVersetzt(-1), rotation_days: null, tenant: AT },
+    { token_label: 'FIDO2 Yubikey 2 (Ersatz)', token_kind: 'fido2', account: 'benny.hoefler@oekovolt.test', system: 'privacyIDEA', scope: 'Anmeldung', read_only: 0, issued: tageVersetzt(-400), expires: null, last_used: stundenVersetzt(-2000), rotation_days: null, tenant: AT },
+    { token_label: 'OPNsense Lese-Token', token_kind: 'api', account: 'svc-monitoring', system: 'OPNsense', scope: 'nur lesen', read_only: 1, issued: tageVersetzt(-120), expires: tageVersetzt(245), last_used: stundenVersetzt(-0.3), rotation_days: 365, tenant: AT },
+    { token_label: 'PBS Lese-Token', token_kind: 'api', account: 'svc-backup', system: 'PBS', scope: 'nur lesen, ohne prune', read_only: 1, issued: tageVersetzt(-200), expires: tageVersetzt(165), last_used: stundenVersetzt(-1.2), rotation_days: 365, tenant: AT },
+    { token_label: 'Hetzner Schreib-Token', token_kind: 'api', account: 'svc-backup', system: 'Hetzner Cloud', scope: 'Power-Aktionen', read_only: 0, issued: tageVersetzt(-380), expires: tageVersetzt(-15), last_used: stundenVersetzt(-200), rotation_days: 365, tenant: AT, description: 'Abgelaufen und nicht rotiert.' },
+    { token_label: 'Proxmox Lese-Token', token_kind: 'api', account: 'svc-monitoring', system: 'Proxmox VE', scope: 'nur lesen', read_only: 1, issued: tageVersetzt(-90), expires: tageVersetzt(275), last_used: stundenVersetzt(-0.1), rotation_days: 365, tenant: AT },
+    { token_label: 'TOTP Marlene', token_kind: 'totp', account: 'm.bergmann@oekovolt.test', system: 'privacyIDEA', scope: 'Anmeldung', read_only: 0, issued: tageVersetzt(-220), expires: null, last_used: stundenVersetzt(-5), rotation_days: null, tenant: AT },
+  ],
+})
+
+// --- Externe Angriffsfläche und Threat Intel (Fachkonzept 2.13) ------------
+
+defineDoctype('Exposure Finding', {
+  naming: (doc, i) => 'EXP-' + String(i).padStart(5, '0'),
+  titleField: 'service_name',
+  fields: [
+    'public_ip', 'port', 'protocol', 'service_name', 'banner', 'source',
+    'documented', 'first_seen', 'last_seen', 'exposure_state',
+  ],
+  seed: [
+    { public_ip: '198.51.100.11', port: 443, protocol: 'tcp', service_name: 'HTTPS', banner: 'nginx', source: 'shodan', documented: 1, first_seen: tageVersetzt(-200), last_seen: tageVersetzt(0), exposure_state: 'expected', tenant: AT },
+    { public_ip: '198.51.100.12', port: 443, protocol: 'tcp', service_name: 'HTTPS', banner: 'nginx', source: 'shodan', documented: 1, first_seen: tageVersetzt(-200), last_seen: tageVersetzt(0), exposure_state: 'expected', tenant: AT },
+    { public_ip: '198.51.100.21', port: 22, protocol: 'tcp', service_name: 'SSH', banner: 'OpenSSH 9.2', source: 'shodan', documented: 0, first_seen: tageVersetzt(-6), last_seen: tageVersetzt(0), exposure_state: 'unexpected', tenant: AT, description: 'Nicht dokumentiert und widerspricht dem Zero-Trust-Ansatz.' },
+    { public_ip: '198.51.100.1', port: 500, protocol: 'udp', service_name: 'IPsec', banner: '', source: 'eigener Scan', documented: 1, first_seen: tageVersetzt(-300), last_seen: tageVersetzt(0), exposure_state: 'expected', tenant: AT },
+    { public_ip: '203.0.113.31', port: 8080, protocol: 'tcp', service_name: 'HTTP alternativ', banner: 'Apache 2.4', source: 'censys', documented: 0, first_seen: tageVersetzt(-15), last_seen: tageVersetzt(-1), exposure_state: 'unexpected', tenant: DE },
+  ],
+})
+
+defineDoctype('Certificate Record', {
+  naming: (doc) => doc.common_name,
+  titleField: 'common_name',
+  fields: ['common_name', 'issuer', 'not_after', 'source', 'in_dns_doc', 'san_count'],
+  seed: [
+    { common_name: 'www.oekovolt.test', issuer: "Let's Encrypt", not_after: tageVersetzt(52), source: 'ct-log', in_dns_doc: 1, san_count: 2, tenant: AT },
+    { common_name: 'shop.oekovolt.test', issuer: "Let's Encrypt", not_after: tageVersetzt(18), source: 'ct-log', in_dns_doc: 1, san_count: 1, tenant: AT },
+    { common_name: 'alt.oekovolt.test', issuer: "Let's Encrypt", not_after: tageVersetzt(70), source: 'ct-log', in_dns_doc: 0, san_count: 1, tenant: AT, description: 'Subdomain aus dem CT-Log, in der DNS-Doku nicht erfasst.' },
+    { common_name: 'netzwerk.oekovolt.test', issuer: 'ÖKOVOLT interne CA', not_after: tageVersetzt(-4), source: 'intern', in_dns_doc: 1, san_count: 3, tenant: AT, description: 'Abgelaufen.' },
+    { common_name: 'www.oekovolt-de.test', issuer: "Let's Encrypt", not_after: tageVersetzt(88), source: 'ct-log', in_dns_doc: 1, san_count: 2, tenant: DE },
+  ],
+})
+
+defineDoctype('Threat Indicator', {
+  naming: (doc, i) => 'IOC-' + String(i).padStart(5, '0'),
+  titleField: 'indicator',
+  fields: ['indicator', 'indicator_kind', 'source', 'confidence', 'matched', 'matched_object', 'first_seen'],
+  seed: [
+    { indicator: '198.51.100.244', indicator_kind: 'ip', source: 'abuse.ch', confidence: 90, matched: 1, matched_object: 'FW-OS-01', first_seen: stundenVersetzt(-8), tenant: AT },
+    { indicator: 'schadsoftware-test.example', indicator_kind: 'domain', source: 'OpenCTI', confidence: 75, matched: 1, matched_object: 'PMG-02', first_seen: stundenVersetzt(-20), tenant: AT },
+    { indicator: '9f2c4a7b1e08', indicator_kind: 'hash', source: 'IRONSCALES', confidence: 95, matched: 1, matched_object: 'MAIL-00001', first_seen: stundenVersetzt(-20), tenant: AT },
+    { indicator: '203.0.113.99', indicator_kind: 'ip', source: 'CrowdSec CTI', confidence: 60, matched: 0, matched_object: null, first_seen: stundenVersetzt(-50), tenant: AT },
+    { indicator: 'phishing-test.example', indicator_kind: 'domain', source: 'abuse.ch', confidence: 80, matched: 0, matched_object: null, first_seen: stundenVersetzt(-70), tenant: AT },
+  ],
+})
+
+/** Angemeldete Scanfenster (Fachkonzept 2.13, Scan-Governance). */
+defineDoctype('Scan Window', {
+  naming: (doc, i) => 'SCAN-' + String(i).padStart(4, '0'),
+  titleField: 'window_name',
+  fields: [
+    'window_name', 'scanner_ip', 'target_prefix', 'profile', 'weekday', 'start_time',
+    'duration_minutes', 'announced_to_watchdog', 'gentle_profile',
+  ],
+  seed: [
+    { window_name: 'Serverraum wöchentlich', scanner_ip: '10.10.80.30', target_prefix: '10.10.20.0/24', profile: 'Full and fast', weekday: 'Sonntag', start_time: '02:00', duration_minutes: 180, announced_to_watchdog: 1, gentle_profile: 0, tenant: AT },
+    { window_name: 'Clientnetz monatlich', scanner_ip: '10.10.80.30', target_prefix: '10.10.30.0/23', profile: 'Full and fast', weekday: 'Samstag', start_time: '03:00', duration_minutes: 240, announced_to_watchdog: 1, gentle_profile: 0, tenant: AT },
+    { window_name: 'OT-Feldgeräte', scanner_ip: '10.10.80.30', target_prefix: '10.100.100.0/24', profile: 'Discovery only', weekday: 'Sonntag', start_time: '05:00', duration_minutes: 60, announced_to_watchdog: 1, gentle_profile: 1, tenant: AT, description: 'Schonendes Profil – aggressive Scans bringen Feldgeräte zum Absturz.' },
+    { window_name: 'SCADA-Server', scanner_ip: '10.10.80.30', target_prefix: '10.100.110.0/24', profile: 'Full and fast', weekday: 'Sonntag', start_time: '06:00', duration_minutes: 90, announced_to_watchdog: 0, gentle_profile: 0, tenant: AT, description: 'Aggressives Profil auf SCADA und nicht angemeldet – beides unzulässig.' },
+  ],
+})
+
+// --- Change-Workflow (Fachkonzept 2.10) ------------------------------------
+
+defineDoctype('Change Request', {
+  naming: (doc, i) => 'CHG-' + String(i).padStart(5, '0'),
+  titleField: 'title',
+  fields: [
+    'title', 'change_kind', 'target_object', 'target_type', 'risk', 'change_state',
+    'requested_by', 'approved_by', 'second_approver', 'requested_on', 'window_start',
+    'window_end', 'rollback_plan', 'verification', 'ticket', 'perimeter',
+  ],
+  seed: [
+    {
+      title: 'Firmware FW-OS-01 auf 24.7.12',
+      change_kind: 'firmware', target_object: 'FW-OS-01', target_type: 'Network Device',
+      risk: 'high', change_state: 'approved', requested_by: 'benny.hoefler@oekovolt.test',
+      approved_by: 'benny.hoefler@oekovolt.test', second_approver: null,
+      requested_on: tageVersetzt(-3), window_start: tageVersetzt(2) + ' 22:00',
+      window_end: tageVersetzt(3) + ' 02:00',
+      rollback_plan: 'Konfiguration gesichert, Rückfall auf 24.7.11 per Boot-Environment.',
+      verification: 'Pfadanalyse für Client → ERP nach dem Update wiederholen.',
+      ticket: 'TCK-2201', perimeter: 1, tenant: AT,
+      description: 'Perimeter – Umsetzung ausschließlich manuell, kein Schreibzugriff der Plattform.',
+    },
+    {
+      title: 'Regel 50 (Altlast Testnetz) entfernen',
+      change_kind: 'firewall_rule', target_object: 'FWR-00005', target_type: 'Firewall Rule',
+      risk: 'medium', change_state: 'review', requested_by: 'benny.hoefler@oekovolt.test',
+      requested_on: tageVersetzt(-1), rollback_plan: 'Regel aus dem Konfigurationsstand wiederherstellen.',
+      verification: 'Regel-Hygiene erneut ausführen, Treffer bleiben bei 0.',
+      ticket: 'TCK-2202', perimeter: 1, tenant: AT,
+    },
+    {
+      title: 'Zweiten Verify-Auftrag auf PBS einrichten',
+      change_kind: 'config', target_object: 'SRV-PBS-01', target_type: 'Network Device',
+      risk: 'low', change_state: 'implemented', requested_by: 'benny.hoefler@oekovolt.test',
+      approved_by: 'benny.hoefler@oekovolt.test', requested_on: tageVersetzt(-12),
+      window_start: tageVersetzt(-8) + ' 20:00', window_end: tageVersetzt(-8) + ' 21:00',
+      rollback_plan: 'Auftrag wieder entfernen.', verification: 'Backup-Ampel zeigt Verify für alle Dienste.',
+      ticket: 'TCK-2180', perimeter: 0, tenant: AT,
+    },
+    {
+      title: 'SSH-Regel für shop-staging schließen',
+      change_kind: 'cloud_firewall', target_object: 'CFW-0003', target_type: 'Cloud Firewall Rule',
+      risk: 'high', change_state: 'draft', requested_by: 'benny.hoefler@oekovolt.test',
+      requested_on: tageVersetzt(0), rollback_plan: 'Regel erneut anlegen.',
+      verification: 'Externer Scan zeigt Port 22 geschlossen.',
+      ticket: 'TCK-2205', perimeter: 0, tenant: AT,
+    },
+    {
+      title: 'Switchport SW-CORE-01 Port 8 freigeben',
+      change_kind: 'switch_port', target_object: 'SW-CORE-01', target_type: 'Network Device',
+      risk: 'low', change_state: 'rejected', requested_by: 'benny.hoefler@oekovolt.test',
+      approved_by: 'benny.hoefler@oekovolt.test', requested_on: tageVersetzt(-20),
+      rollback_plan: 'Port wieder abschalten.', verification: 'Linkstatus prüfen.',
+      ticket: 'TCK-2150', perimeter: 0, tenant: AT,
+      description: 'Abgelehnt: kein dokumentierter Bedarf.',
+    },
+  ],
+})
+
+// --- Compliance (Fachkonzept 2.12) -----------------------------------------
+
+/**
+ * NIS2-Nachweise als prüfbare Punkte. Jeder Punkt nennt die Quelle, aus der
+ * sich der Nachweis in dieser Plattform ergibt - sonst ist es nur eine Liste.
+ */
+defineDoctype('Compliance Control', {
+  naming: (doc) => doc.control_key,
+  titleField: 'control_name',
+  fields: ['control_key', 'control_name', 'framework', 'category', 'evidence_source', 'manual_note'],
+  seed: [
+    { control_key: 'nis2-asset', control_name: 'Asset-Inventar vollständig und aktuell', framework: 'NIS2', category: 'Inventar', evidence_source: 'device_inventory', tenant: AT },
+    { control_key: 'nis2-segmentation', control_name: 'Netzsegmentierung dokumentiert', framework: 'NIS2', category: 'Architektur', evidence_source: 'segmentation', tenant: AT },
+    { control_key: 'nis2-change', control_name: 'Change-Management mit Freigabe', framework: 'NIS2', category: 'Betrieb', evidence_source: 'change_process', tenant: AT },
+    { control_key: 'nis2-backup', control_name: 'Sicherung und Wiederherstellung nachgewiesen', framework: 'NIS2', category: 'Resilienz', evidence_source: 'backup', tenant: AT },
+    { control_key: 'nis2-access', control_name: 'Zugriffskontrolle mit MFA', framework: 'NIS2', category: 'Identität', evidence_source: 'mfa', tenant: AT },
+    { control_key: 'nis2-vuln', control_name: 'Schwachstellen fristgerecht behoben', framework: 'NIS2', category: 'Betrieb', evidence_source: 'vulnerabilities', tenant: AT },
+    { control_key: 'nis2-audit', control_name: 'Änderungen nachvollziehbar protokolliert', framework: 'NIS2', category: 'Nachweis', evidence_source: 'audit_chain', tenant: AT },
+    { control_key: 'nis2-incident', control_name: 'Meldefristen eingehalten', framework: 'NIS2', category: 'Vorfall', evidence_source: 'incidents', tenant: AT },
+    { control_key: 'nis2-exposure', control_name: 'Externe Angriffsfläche bekannt', framework: 'NIS2', category: 'Architektur', evidence_source: 'exposure', tenant: AT },
+    { control_key: 'nis2-scan', control_name: 'Schwachstellenscans geregelt angekündigt', framework: 'NIS2', category: 'Betrieb', evidence_source: 'scan_governance', tenant: AT },
+  ],
+})

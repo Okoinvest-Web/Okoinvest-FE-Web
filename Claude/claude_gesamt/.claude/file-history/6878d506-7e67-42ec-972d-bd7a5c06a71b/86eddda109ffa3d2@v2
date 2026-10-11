@@ -1,0 +1,103 @@
+import sys, os, re
+os.chdir(r"C:\Users\SALEADMIN\Downloads\crm-develop\crm-next")
+p = "src/lib/data/mock.ts"
+s = open(p, encoding="utf-8").read()
+
+def rep(a, b):
+    global s
+    if a not in s:
+        sys.exit("fehlt: " + a[:90])
+    s = s.replace(a, b, 1)
+
+rep('import type { Contact, Customer, Lead, ListOptions, Note, Opportunity, Quotation, Role, SalesInvoice, SalesOrder, ToDo } from "@/lib/types";',
+    'import type { Contact, Customer, Lead, LeadCharge, ListOptions, Note, Opportunity, PoolLead, Quotation, Role, SalesInvoice, SalesOrder, ToDo } from "@/lib/types";\nimport { interestsOf, leadPrice } from "@/lib/leadprice";')
+
+# Freie Website-Leads (noch keinem Vertreter zugeordnet) + Anlagengröße an bestehenden Website-Leads
+rep('''    { name: "CRM-LEAD-2026-00009",''', '''    // ---- Lead-Börse: Website-Anfragen ohne Berater ----
+    { name: "CRM-LEAD-2026-00010", country: "Germany", custom_consent: "Ja", custom_consent_date: day(0), custom_consent_source: "Solarrechner", custom_kwp: 9.8, first_name: "Monika", last_name: "Seidl", lead_name: "Monika Seidl", email_id: "m.seidl@mail.example", mobile_no: "+49 171 5566778", status: "Lead", source: "Website", territory: "Unterallgäu", notes: "Solarrechner: Einfamilienhaus, 9,8 kWp, Speicher gewünscht.", creation: d(0), modified: d(0) },
+    { name: "CRM-LEAD-2026-00011", country: "Germany", custom_consent: "Ja", custom_consent_date: day(-1), custom_consent_source: "Website-Formular", custom_kwp: 14, first_name: "Daniel", last_name: "Roth", lead_name: "Daniel Roth", email_id: "daniel.roth@mail.example", mobile_no: "+49 160 9988112", status: "Lead", source: "Website", territory: "Augsburg", notes: "Neubau 2026, 14 kWp geplant, E-Auto vorhanden – Wallbox gewünscht.", creation: d(1), modified: d(1) },
+    { name: "CRM-LEAD-2026-00012", country: "Germany", custom_consent: "Ja", custom_consent_date: day(-2), custom_consent_source: "Website-Formular", custom_kwp: 85, first_name: "Karin", last_name: "Lechner", lead_name: "Karin Lechner", company_name: "Autohaus Lechner GmbH", email_id: "k.lechner@autohaus-lechner.example", mobile_no: "+49 8331 77880", status: "Lead", source: "Website", territory: "Memmingen", notes: "Showroom und Werkstattdach, ca. 85 kWp. Ladepunkte für Kundenfahrzeuge.", creation: d(2), modified: d(2) },
+    { name: "CRM-LEAD-2026-00013", country: "Austria", custom_consent: "Ja", custom_consent_date: day(-1), custom_consent_source: "Solarrechner", custom_kwp: 11, first_name: "Florian", last_name: "Pichler", lead_name: "Florian Pichler", email_id: "f.pichler@mail.example", mobile_no: "+43 660 3344556", status: "Lead", source: "Website", territory: "Salzburg", notes: "Einfamilienhaus, 11 kWp, Umstieg auf Wärmepumpe geplant.", creation: d(1), modified: d(1) },
+    { name: "CRM-LEAD-2026-00014", country: "Germany", custom_consent: "Ja", custom_consent_date: day(-3), custom_consent_source: "Website-Formular", custom_kwp: 140, first_name: "Georg", last_name: "Brugger", lead_name: "Georg Brugger", company_name: "Brugger Agrar KG", email_id: "info@brugger-agrar.example", mobile_no: "+49 8261 443322", status: "Lead", source: "Website", territory: "Unterallgäu", notes: "Maschinenhalle und Stall, 140 kWp, großer Speicher für Melktechnik.", creation: d(3), modified: d(3) },
+    { name: "CRM-LEAD-2026-00009",''')
+# vorhandene Website-Leads mit Anlagengröße (für die Kostenbuchung)
+for lid, kwp in [("CRM-LEAD-2026-00001", "12.4"), ("CRM-LEAD-2026-00008", "11"), ("CRM-LEAD-2026-00005", "60")]:
+    marker = f'{{ name: "{lid}", '
+    i = s.index(marker) + len(marker)
+    s = s[:i] + f"custom_kwp: {kwp}, " + s[i:]
+
+# Buchungen: bereits freigeschaltete Website-Leads
+rep("  return { leads, customers, opportunities, contacts, todos, notes, ...salesSeed({ d, day }), counter: 100 };", '''  const leadCharges: LeadCharge[] = [
+    { name: "LC-0001", lead: "CRM-LEAD-2026-00005", lead_name: "Sophie Wagner", agent: "max@firma.example", amount: 250, kwp: 60, posting_date: day(-45), status: "Verrechnet", creation: d(45), modified: d(30) },
+    { name: "LC-0002", lead: "CRM-LEAD-2026-00001", lead_name: "Anna Berger", agent: "max@firma.example", amount: 50, kwp: 12.4, posting_date: day(-12), status: "Offen", creation: d(12), modified: d(12) },
+    { name: "LC-0003", lead: "CRM-LEAD-2026-00008", lead_name: "Stefan Maier", agent: "max@firma.example", amount: 50, kwp: 11, posting_date: day(-1), status: "Offen", creation: d(1), modified: d(1) },
+  ];
+
+  return { leads, customers, opportunities, contacts, todos, notes, leadCharges, ...salesSeed({ d, day }), counter: 100 };''')
+
+rep('''  const invoice = (i: SalesInvoice) => all || (!!partner && i.sales_partner === partner);''', '''  const invoice = (i: SalesInvoice) => all || (!!partner && i.sales_partner === partner);
+  const charge = (c: LeadCharge) => all || c.agent === me;''')
+rep("  return { me, lead, opp, customer, contact, todo, doc, quote, order, invoice };", "  return { me, all, lead, opp, customer, contact, todo, doc, quote, order, invoice, charge };")
+
+rep('''  async listNotes(doctype, name) {''', '''  // ---------- Lead-Börse ----------
+  // Freie Website-Leads: nur Vorschau, keine Kontaktdaten
+  async listPoolLeads() {
+    await tick();
+    return store.leads
+      .filter(isPool)
+      .sort((a, b) => b.creation.localeCompare(a.creation))
+      .map(
+        (l): PoolLead => ({
+          name: l.name,
+          territory: l.territory,
+          country: l.country ?? "Germany",
+          kwp: l.custom_kwp,
+          is_business: !!l.company_name,
+          interests: interestsOf(l.notes),
+          source: l.source,
+          creation: l.creation,
+          price: leadPrice(l.custom_kwp, !!l.company_name),
+        }),
+      );
+  },
+  async unlockLead(n) {
+    await tick();
+    const v = await viewer();
+    if (!v.me) deny();
+    const l = store.leads.find((x) => x.name === n);
+    // Erneut prüfen: ein anderer Vertreter könnte den Lead gerade gekauft haben
+    if (!l || !isPool(l)) throw new Error("Dieser Lead ist nicht mehr verfügbar.");
+    const ts = now();
+    l.lead_owner = v.me;
+    l.modified = ts;
+    const c: LeadCharge = {
+      name: nextId("LC-"),
+      lead: l.name,
+      lead_name: l.lead_name,
+      agent: v.me,
+      amount: leadPrice(l.custom_kwp, !!l.company_name),
+      kwp: l.custom_kwp,
+      posting_date: ts.slice(0, 10),
+      status: "Offen",
+      creation: ts,
+      modified: ts,
+    };
+    store.leadCharges.push(c);
+    return c;
+  },
+  async listLeadCharges(o) {
+    await tick();
+    const v = await viewer();
+    return applyList(store.leadCharges.filter(v.charge), { ...o, limit: o?.limit ?? 1000 }, ["lead_name", "agent"]);
+  },
+
+  async listNotes(doctype, name) {''')
+
+rep('''function deny(): never {''', '''// In der Börse: Website-Anfrage, noch neu und keinem Vertreter zugeordnet
+const isPool = (l: Lead) => !l.lead_owner && l.status === "Lead" && l.source === "Website";
+
+function deny(): never {''')
+
+s = re.sub(r"__crmMockV\d+", "__crmMockV17", s)
+open(p, "w", encoding="utf-8", newline="\n").write(s)
+print("ok")

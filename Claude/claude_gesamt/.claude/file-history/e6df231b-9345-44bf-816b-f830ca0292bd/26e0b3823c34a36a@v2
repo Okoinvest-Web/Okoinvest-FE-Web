@@ -1,0 +1,304 @@
+import pathlib
+
+FE = pathlib.Path(r"C:\Users\SALEADMIN\Documents\Servicetechniker APP\frontend")
+
+
+def patch(pfad, paare):
+    p = FE / pfad
+    s = p.read_text(encoding="utf-8")
+    for alt, neu in paare:
+        if alt not in s:
+            raise SystemExit(f"NICHT GEFUNDEN in {pfad}:\n---\n{alt[:240]}\n---")
+        s = s.replace(alt, neu, 1)
+    p.write_text(s, encoding="utf-8")
+    print("ok", pfad)
+
+
+SKRIPT_ALT = """import { useDokumentenliste, type ListenZeile } from '@/composables/dokumentenliste'
+import { datum, tageBis } from '@/lib/format'
+import type { Mangel } from '@/lib/typen'
+import { useStammdaten } from '@/stores/stammdaten'
+"""
+
+SKRIPT_NEU = """import BasisDialog from '@/components/BasisDialog.vue'
+import { useDokumentenliste, type ListenZeile } from '@/composables/dokumentenliste'
+import { baudoku } from '@/lib/api'
+import { datum, isoDatum, tageBis } from '@/lib/format'
+import type { Mangel } from '@/lib/typen'
+import { useStammdaten } from '@/stores/stammdaten'
+import { useUi } from '@/stores/ui'
+"""
+
+STATE_ALT = """const router = useRouter()
+const stammdaten = useStammdaten()
+
+const { zeilen, laedt, nurLokalerBestand, laden } = useDokumentenliste<Mangelzeile>({"""
+
+STATE_NEU = """const router = useRouter()
+const stammdaten = useStammdaten()
+const ui = useUi()
+
+const { zeilen, laedt, nurLokalerBestand, laden } = useDokumentenliste<Mangelzeile>({"""
+
+LOGIK_ALT = """function fristText(zeile: Zeile): { text: string; klasse: string } {"""
+
+LOGIK_NEU = """// --- Sammelbearbeitung (Bauleiterwerkzeug) ---------------------------------
+
+const auswahl = ref<Set<string>>(new Set())
+const sammelDialogOffen = ref(false)
+const sammelLaeuft = ref(false)
+const zustaendige = ref<{ name: string; employee_name: string }[]>([])
+
+const sammelWerte = ref({ zugewiesen_an: '', status: '', faellig_am: '', prioritaet: '' })
+
+/** Nur synchronisierte Maengel: Die Sammelaktion laeuft auf dem Server. */
+const auswaehlbar = computed(() => gefiltert.value.filter((z) => z.name))
+
+const alleAusgewaehlt = computed(
+  () => auswaehlbar.value.length > 0 && auswahl.value.size === auswaehlbar.value.length,
+)
+
+function umschalten(name: string) {
+  const neu = new Set(auswahl.value)
+  if (neu.has(name)) neu.delete(name)
+  else neu.add(name)
+  auswahl.value = neu
+}
+
+function alleUmschalten() {
+  auswahl.value = alleAusgewaehlt.value
+    ? new Set()
+    : new Set(auswaehlbar.value.map((z) => z.name as string))
+}
+
+async function sammelDialogOeffnen() {
+  sammelWerte.value = { zugewiesen_an: '', status: '', faellig_am: '', prioritaet: '' }
+  sammelDialogOffen.value = true
+  if (zustaendige.value.length) return
+  try {
+    zustaendige.value = (await baudoku.zustaendige()) as typeof zustaendige.value
+  } catch {
+    // Ohne Mitarbeiterliste bleiben die uebrigen Felder nutzbar.
+  }
+}
+
+async function sammelSpeichern() {
+  const felder = Object.fromEntries(
+    Object.entries(sammelWerte.value).filter(([, wert]) => wert !== ''),
+  )
+  if (!Object.keys(felder).length) {
+    ui.warnung('Bitte mindestens eine Änderung angeben.')
+    return
+  }
+
+  sammelLaeuft.value = true
+  try {
+    const ergebnis = (await baudoku.mangelSammelaktion([...auswahl.value], felder)) as {
+      erfolgreich: string[]
+      fehlgeschlagen: { name: string; meldung: string }[]
+    }
+    if (ergebnis.fehlgeschlagen.length) {
+      ui.warnung(
+        `${ergebnis.erfolgreich.length} geändert, ${ergebnis.fehlgeschlagen.length} fehlgeschlagen: ` +
+          ergebnis.fehlgeschlagen[0].meldung,
+      )
+    } else {
+      ui.erfolg(`${ergebnis.erfolgreich.length} Mängel geändert.`)
+    }
+    sammelDialogOffen.value = false
+    auswahl.value = new Set()
+    await laden()
+  } catch (fehler) {
+    ui.fehler((fehler as Error).message)
+  } finally {
+    sammelLaeuft.value = false
+  }
+}
+
+/** Frist um eine Woche verlängern — der haeufigste Sammelfall nach einer Begehung. */
+function fristVorschlag(tage: number) {
+  sammelWerte.value.faellig_am = isoDatum(new Date(Date.now() + tage * 86_400_000))
+}
+
+function fristText(zeile: Zeile): { text: string; klasse: string } {"""
+
+# --- Werkzeugleiste fuer die Auswahl ---------------------------------------
+LEISTE_ALT = """    <p class="text-sm text-slate-500">
+      {{ statistik.gesamt }} Mängel
+      <span v-if="statistik.ueberfaellig" class="font-semibold text-fehler">
+        · {{ statistik.ueberfaellig }} überfällig
+      </span>
+    </p>"""
+
+LEISTE_NEU = """    <div class="flex flex-wrap items-center gap-3">
+      <p class="flex-1 text-sm text-slate-500">
+        {{ statistik.gesamt }} Mängel
+        <span v-if="statistik.ueberfaellig" class="font-semibold text-fehler">
+          · {{ statistik.ueberfaellig }} überfällig
+        </span>
+      </p>
+
+      <label
+        v-if="stammdaten.istBauleiter && auswaehlbar.length"
+        class="flex items-center gap-2 text-sm text-slate-500"
+      >
+        <input type="checkbox" class="h-5 w-5" :checked="alleAusgewaehlt" @change="alleUmschalten" />
+        alle auswählen
+      </label>
+    </div>
+
+    <!-- Sammelaktion: nach einer Begehung zwanzig Mängel auf drei Techniker verteilen -->
+    <div
+      v-if="auswahl.size"
+      class="sticky top-16 z-10 flex flex-wrap items-center gap-3 rounded-xl bg-marke-700 px-4 py-3
+             text-sm text-white shadow-karte"
+    >
+      <span class="flex-1 font-semibold">{{ auswahl.size }} ausgewählt</span>
+      <button class="rounded-lg px-3 py-1.5 text-xs font-semibold text-marke-100 hover:bg-marke-600"
+              @click="auswahl = new Set()">
+        Aufheben
+      </button>
+      <button class="rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-marke-700"
+              @click="sammelDialogOeffnen">
+        Bearbeiten
+      </button>
+    </div>"""
+
+# --- Auswahlfeld in der Zeile ----------------------------------------------
+ZEILE_ALT = """      <li v-for="zeile in gefiltert" :key="zeile.schluessel">
+        <RouterLink
+          :to="{ name: 'mangel-detail', params: { lokaleId: zeile.lokale_id ?? zeile.name } }"
+          class="karte flex items-center gap-3 p-3"
+        >
+          <StatusAbzeichen :wert="zeile.schweregrad" />"""
+
+ZEILE_NEU = """      <li v-for="zeile in gefiltert" :key="zeile.schluessel" class="flex items-center gap-2">
+        <input
+          v-if="stammdaten.istBauleiter && zeile.name"
+          type="checkbox"
+          class="h-5 w-5 shrink-0"
+          :checked="auswahl.has(zeile.name)"
+          :aria-label="`${zeile.titel} auswählen`"
+          @change="umschalten(zeile.name)"
+        />
+        <RouterLink
+          :to="{ name: 'mangel-detail', params: { lokaleId: zeile.lokale_id ?? zeile.name } }"
+          class="karte flex flex-1 items-center gap-3 p-3"
+        >
+          <StatusAbzeichen :wert="zeile.schweregrad" />"""
+
+# --- Dialog ------------------------------------------------------------------
+DIALOG_ALT = """          <StatusAbzeichen :wert="zeile.status" klein />
+        </RouterLink>
+      </li>
+    </ul>
+  </div>
+</template>"""
+
+DIALOG_NEU = """          <StatusAbzeichen :wert="zeile.status" klein />
+        </RouterLink>
+      </li>
+    </ul>
+
+    <BasisDialog
+      :offen="sammelDialogOffen"
+      :titel="`${auswahl.size} Mängel bearbeiten`"
+      @schliessen="sammelDialogOffen = false"
+    >
+      <div class="space-y-3">
+        <p class="text-sm text-slate-500">
+          Leer gelassene Felder bleiben unverändert.
+        </p>
+
+        <label>
+          <span class="beschriftung">Zuweisen an</span>
+          <select v-model="sammelWerte.zugewiesen_an" class="feld">
+            <option value="">unverändert</option>
+            <option v-for="person in zustaendige" :key="person.name" :value="person.name">
+              {{ person.employee_name }}
+            </option>
+          </select>
+        </label>
+
+        <label>
+          <span class="beschriftung">Status</span>
+          <select v-model="sammelWerte.status" class="feld">
+            <option value="">unverändert</option>
+            <option>Offen</option>
+            <option>In Bearbeitung</option>
+            <option>Verworfen</option>
+          </select>
+        </label>
+
+        <label>
+          <span class="beschriftung">Priorität</span>
+          <select v-model="sammelWerte.prioritaet" class="feld">
+            <option value="">unverändert</option>
+            <option>Niedrig</option>
+            <option>Mittel</option>
+            <option>Hoch</option>
+            <option>Kritisch</option>
+          </select>
+        </label>
+
+        <div>
+          <span class="beschriftung">Fällig am</span>
+          <input v-model="sammelWerte.faellig_am" class="feld" type="date" />
+          <div class="mt-2 flex gap-2">
+            <button class="knopf-geist px-3 text-xs" @click="fristVorschlag(7)">+1 Woche</button>
+            <button class="knopf-geist px-3 text-xs" @click="fristVorschlag(14)">+2 Wochen</button>
+            <button class="knopf-geist px-3 text-xs" @click="fristVorschlag(30)">+1 Monat</button>
+          </div>
+        </div>
+
+        <p class="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500 dark:bg-slate-800">
+          Erledigung und Verifizierung sind hier nicht wählbar: Beide verlangen
+          Maßnahme und Nachweisfoto je Einzelfall (FA-064).
+        </p>
+
+        <div class="flex gap-2 pt-1">
+          <button class="knopf-sekundaer flex-1" @click="sammelDialogOffen = false">Abbrechen</button>
+          <button class="knopf-primaer flex-[2]" :disabled="sammelLaeuft" @click="sammelSpeichern">
+            {{ sammelLaeuft ? 'Wird gespeichert …' : 'Übernehmen' }}
+          </button>
+        </div>
+      </div>
+    </BasisDialog>
+  </div>
+</template>"""
+
+patch(
+    "src/views/MaengelView.vue",
+    [
+        (SKRIPT_ALT, SKRIPT_NEU),
+        (STATE_ALT, STATE_NEU),
+        (LOGIK_ALT, LOGIK_NEU),
+        (LEISTE_ALT, LEISTE_NEU),
+        (ZEILE_ALT, ZEILE_NEU),
+        (DIALOG_ALT, DIALOG_NEU),
+    ],
+)
+
+# --- Demodaten fuer die neuen Endpunkte ------------------------------------
+patch(
+    "src/lib/demo.ts",
+    [
+        (
+            """    case 'oekovolt_baudoku.api.protokoll.messdaten_trend':""",
+            """    case 'oekovolt_baudoku.api.mangel.zustaendige':
+      return [
+        { name: 'HR-EMP-00007', employee_name: 'Demo Techniker', designation: 'Servicetechniker' },
+        { name: 'HR-EMP-00011', employee_name: 'Markus Aigner', designation: 'Monteur' },
+        { name: 'HR-EMP-00014', employee_name: 'Lena Brunner', designation: 'Bauleiterin' },
+      ]
+
+    case 'oekovolt_baudoku.api.mangel.sammelaktion':
+      return { erfolgreich: (parameter.namen as string[]) ?? [], fehlgeschlagen: [] }
+
+    case 'oekovolt_baudoku.api.mangel.meine_aufgaben':
+      return MAENGEL.filter((m) => m.zugewiesen_an === 'HR-EMP-00007')
+
+    case 'oekovolt_baudoku.api.protokoll.messdaten_trend':""",
+        )
+    ],
+)

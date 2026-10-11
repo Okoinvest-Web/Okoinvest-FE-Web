@@ -1,0 +1,371 @@
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+
+import {
+  fasseZusammen,
+  teileViertelstundeAuf,
+  type TeilnehmerWerte,
+} from "./aufteilung.ts";
+
+/**
+ * Die Aufteilungsrechnung bestimmt, welcher Betrag am Ende auf der
+ * Rechnung eines Teilnehmers steht. Ein Fehler hier faellt niemandem
+ * auf, bis jemand nachrechnet - deshalb wird sie hier so genau
+ * geprueft wie kein anderer Teil der Anwendung.
+ *
+ * Die wichtigste Zusage ist die Mengenerhaltung: Es darf keine
+ * Kilowattstunde entstehen oder verschwinden.
+ */
+
+function erzeuger(id: string, einspeisung: number): TeilnehmerWerte {
+  return {
+    zaehlpunktId: id,
+    einspeisung,
+    bezug: 0,
+    anteil: 0,
+    teilnahmefaktor: 1,
+  };
+}
+
+function verbraucher(
+  id: string,
+  bezug: number,
+  anteil = 0,
+  teilnahmefaktor = 1,
+): TeilnehmerWerte {
+  return { zaehlpunktId: id, einspeisung: 0, bezug, anteil, teilnahmefaktor };
+}
+
+/** Prueft, dass keine Menge entsteht oder verlorengeht. */
+function pruefeMengenerhaltung(teilnehmer: TeilnehmerWerte[], modell: "Statisch" | "Dynamisch") {
+  const ergebnis = teileViertelstundeAuf(teilnehmer, modell);
+
+  const erzeugung = teilnehmer.reduce((s, t) => s + Math.max(0, t.einspeisung), 0);
+  const bezugGesamt = teilnehmer.reduce((s, t) => s + Math.max(0, t.bezug), 0);
+
+  const summeBezogen = ergebnis.zuteilungen.reduce((s, z) => s + z.bezogen, 0);
+  const summeRest = ergebnis.zuteilungen.reduce((s, z) => s + z.restNetz, 0);
+  const summeGeliefert = ergebnis.zuteilungen.reduce((s, z) => s + z.geliefert, 0);
+
+  // Was zugeteilt wurde, entspricht der verteilten Menge.
+  assert.ok(
+    Math.abs(summeBezogen - ergebnis.verteilt) < 0.002,
+    `Zuteilungen (${summeBezogen}) weichen von verteilter Menge (${ergebnis.verteilt}) ab`,
+  );
+
+  // Verteilt plus Ueberschuss ergibt die Erzeugung.
+  assert.ok(
+    Math.abs(ergebnis.verteilt + ergebnis.ueberschuss - erzeugung) < 0.002,
+    `Verteilt + Ueberschuss (${ergebnis.verteilt + ergebnis.ueberschuss}) != Erzeugung (${erzeugung})`,
+  );
+
+  // Aus der Gemeinschaft bezogen plus Netzbezug ergibt den Gesamtbezug.
+  assert.ok(
+    Math.abs(summeBezogen + summeRest - bezugGesamt) < 0.002,
+    `Bezogen + Netzrest (${summeBezogen + summeRest}) != Gesamtbezug (${bezugGesamt})`,
+  );
+
+  // Die den Erzeugern zugerechnete Lieferung entspricht der verteilten Menge.
+  assert.ok(
+    Math.abs(summeGeliefert - ergebnis.verteilt) < 0.002,
+    `Geliefert (${summeGeliefert}) != verteilt (${ergebnis.verteilt})`,
+  );
+
+  // Niemand bekommt mehr, als er bezogen hat.
+  for (const zuteilung of ergebnis.zuteilungen) {
+    const t = teilnehmer.find((x) => x.zaehlpunktId === zuteilung.zaehlpunktId)!;
+    assert.ok(
+      zuteilung.bezogen <= Math.max(0, t.bezug) + 0.002,
+      `${zuteilung.zaehlpunktId} bekam ${zuteilung.bezogen} bei Bezug ${t.bezug}`,
+    );
+    assert.ok(zuteilung.bezogen >= -0.0001, "negative Zuteilung");
+    assert.ok(zuteilung.restNetz >= -0.0001, "negativer Netzrest");
+  }
+
+  return ergebnis;
+}
+
+describe("Dynamische Aufteilung", () => {
+  it("deckt allen Bedarf, wenn genug erzeugt wird", () => {
+    const ergebnis = pruefeMengenerhaltung(
+      [erzeuger("E1", 100), verbraucher("V1", 30), verbraucher("V2", 20)],
+      "Dynamisch",
+    );
+
+    assert.equal(ergebnis.verteilt, 50);
+    assert.equal(ergebnis.ueberschuss, 50);
+    assert.equal(ergebnis.ungedeckt, 0);
+
+    const v1 = ergebnis.zuteilungen.find((z) => z.zaehlpunktId === "V1")!;
+    assert.equal(v1.bezogen, 30);
+    assert.equal(v1.restNetz, 0);
+  });
+
+  it("kuerzt anteilig, wenn die Erzeugung nicht reicht", () => {
+    const ergebnis = pruefeMengenerhaltung(
+      [erzeuger("E1", 60), verbraucher("V1", 60), verbraucher("V2", 40)],
+      "Dynamisch",
+    );
+
+    // 60 kWh auf 100 kWh Bedarf: Quote 0,6
+    const v1 = ergebnis.zuteilungen.find((z) => z.zaehlpunktId === "V1")!;
+    const v2 = ergebnis.zuteilungen.find((z) => z.zaehlpunktId === "V2")!;
+
+    assert.ok(Math.abs(v1.bezogen - 36) < 0.01, `V1 bekam ${v1.bezogen}`);
+    assert.ok(Math.abs(v2.bezogen - 24) < 0.01, `V2 bekam ${v2.bezogen}`);
+    assert.ok(Math.abs(v1.restNetz - 24) < 0.01);
+    assert.equal(ergebnis.ueberschuss, 0);
+    assert.ok(Math.abs(ergebnis.ungedeckt - 40) < 0.01);
+  });
+
+  it("rechnet die Lieferung anteilig auf mehrere Erzeuger auf", () => {
+    const ergebnis = pruefeMengenerhaltung(
+      [
+        erzeuger("E1", 75),
+        erzeuger("E2", 25),
+        verbraucher("V1", 50),
+      ],
+      "Dynamisch",
+    );
+
+    // 50 von 100 kWh bleiben in der Gemeinschaft: Quote 0,5 fuer beide.
+    const e1 = ergebnis.zuteilungen.find((z) => z.zaehlpunktId === "E1")!;
+    const e2 = ergebnis.zuteilungen.find((z) => z.zaehlpunktId === "E2")!;
+
+    assert.ok(Math.abs(e1.geliefert - 37.5) < 0.01, `E1 lieferte ${e1.geliefert}`);
+    assert.ok(Math.abs(e2.geliefert - 12.5) < 0.01, `E2 lieferte ${e2.geliefert}`);
+  });
+});
+
+describe("Teilnahmefaktor", () => {
+  it("begrenzt den Bezug aus der Gemeinschaft", () => {
+    const ergebnis = pruefeMengenerhaltung(
+      [erzeuger("E1", 100), verbraucher("V1", 100, 0, 0.4)],
+      "Dynamisch",
+    );
+
+    const v1 = ergebnis.zuteilungen.find((z) => z.zaehlpunktId === "V1")!;
+    assert.ok(Math.abs(v1.bezogen - 40) < 0.01, `V1 bekam ${v1.bezogen} statt 40`);
+    assert.ok(Math.abs(v1.restNetz - 60) < 0.01, "Rest muss aus dem Netz kommen");
+    assert.ok(Math.abs(ergebnis.ueberschuss - 60) < 0.01);
+  });
+
+  it("schliesst bei Faktor 0 vollstaendig aus", () => {
+    const ergebnis = pruefeMengenerhaltung(
+      [erzeuger("E1", 100), verbraucher("V1", 50, 0, 0)],
+      "Dynamisch",
+    );
+
+    const v1 = ergebnis.zuteilungen.find((z) => z.zaehlpunktId === "V1")!;
+    assert.equal(v1.bezogen, 0);
+    assert.equal(v1.restNetz, 50);
+    assert.equal(ergebnis.verteilt, 0);
+  });
+
+  it("bevorzugt Teilnehmer ohne Drosselung", () => {
+    const ergebnis = pruefeMengenerhaltung(
+      [
+        erzeuger("E1", 50),
+        verbraucher("V1", 100, 0, 1.0),
+        verbraucher("V2", 100, 0, 0.5),
+      ],
+      "Dynamisch",
+    );
+
+    const v1 = ergebnis.zuteilungen.find((z) => z.zaehlpunktId === "V1")!;
+    const v2 = ergebnis.zuteilungen.find((z) => z.zaehlpunktId === "V2")!;
+
+    // Anrechenbar: V1 100, V2 50 - also 150. Quote 50/150 = 1/3.
+    assert.ok(v1.bezogen > v2.bezogen, "V1 ohne Drosselung muss mehr erhalten");
+    assert.ok(Math.abs(v1.bezogen - 33.333) < 0.01, `V1: ${v1.bezogen}`);
+    assert.ok(Math.abs(v2.bezogen - 16.667) < 0.01, `V2: ${v2.bezogen}`);
+  });
+});
+
+describe("Statische Aufteilung", () => {
+  it("verteilt nach vereinbarten Anteilen", () => {
+    const ergebnis = pruefeMengenerhaltung(
+      [
+        erzeuger("E1", 100),
+        verbraucher("V1", 80, 0.7),
+        verbraucher("V2", 80, 0.3),
+      ],
+      "Statisch",
+    );
+
+    const v1 = ergebnis.zuteilungen.find((z) => z.zaehlpunktId === "V1")!;
+    const v2 = ergebnis.zuteilungen.find((z) => z.zaehlpunktId === "V2")!;
+
+    assert.ok(Math.abs(v1.bezogen - 70) < 0.01, `V1 bekam ${v1.bezogen}`);
+    assert.ok(Math.abs(v2.bezogen - 30) < 0.01, `V2 bekam ${v2.bezogen}`);
+  });
+
+  it("verteilt den ungenutzten Anteil weiter, statt ihn verfallen zu lassen", () => {
+    // V1 hat 70 % Anteil, braucht aber nur 10 kWh. Die restlichen
+    // 60 kWh seines Anteils muessen an V2 gehen, der Bedarf hat.
+    const ergebnis = pruefeMengenerhaltung(
+      [
+        erzeuger("E1", 100),
+        verbraucher("V1", 10, 0.7),
+        verbraucher("V2", 200, 0.3),
+      ],
+      "Statisch",
+    );
+
+    const v1 = ergebnis.zuteilungen.find((z) => z.zaehlpunktId === "V1")!;
+    const v2 = ergebnis.zuteilungen.find((z) => z.zaehlpunktId === "V2")!;
+
+    assert.ok(Math.abs(v1.bezogen - 10) < 0.01, `V1 bekam ${v1.bezogen} statt 10`);
+    assert.ok(
+      Math.abs(v2.bezogen - 90) < 0.05,
+      `V2 haette 90 bekommen muessen, bekam ${v2.bezogen}`,
+    );
+    assert.ok(
+      ergebnis.ueberschuss < 0.05,
+      `Nichts haette ins Netz gehen duerfen, es waren ${ergebnis.ueberschuss}`,
+    );
+  });
+
+  it("laesst Ueberschuss, wenn niemand mehr Bedarf hat", () => {
+    const ergebnis = pruefeMengenerhaltung(
+      [
+        erzeuger("E1", 100),
+        verbraucher("V1", 10, 0.5),
+        verbraucher("V2", 15, 0.5),
+      ],
+      "Statisch",
+    );
+
+    assert.ok(Math.abs(ergebnis.verteilt - 25) < 0.01);
+    assert.ok(Math.abs(ergebnis.ueberschuss - 75) < 0.01);
+  });
+});
+
+describe("Randfaelle", () => {
+  it("kommt ohne Erzeugung zurecht", () => {
+    const ergebnis = pruefeMengenerhaltung(
+      [erzeuger("E1", 0), verbraucher("V1", 50)],
+      "Dynamisch",
+    );
+    assert.equal(ergebnis.verteilt, 0);
+    assert.equal(ergebnis.zuteilungen.find((z) => z.zaehlpunktId === "V1")!.restNetz, 50);
+  });
+
+  it("kommt ohne Bedarf zurecht", () => {
+    const ergebnis = pruefeMengenerhaltung([erzeuger("E1", 80)], "Dynamisch");
+    assert.equal(ergebnis.verteilt, 0);
+    assert.equal(ergebnis.ueberschuss, 80);
+  });
+
+  it("kommt mit leerer Gemeinschaft zurecht", () => {
+    const ergebnis = teileViertelstundeAuf([], "Dynamisch");
+    assert.equal(ergebnis.verteilt, 0);
+    assert.equal(ergebnis.zuteilungen.length, 0);
+  });
+
+  it("behandelt negative Werte wie null", () => {
+    const ergebnis = pruefeMengenerhaltung(
+      [erzeuger("E1", -5), verbraucher("V1", -10)],
+      "Dynamisch",
+    );
+    assert.equal(ergebnis.verteilt, 0);
+  });
+
+  it("haelt die Mengenerhaltung auch bei krummen Werten", () => {
+    // Werte, die sich nicht glatt teilen lassen - hier zeigen sich
+    // Rundungsfehler, wenn es welche gibt.
+    pruefeMengenerhaltung(
+      [
+        erzeuger("E1", 7.333),
+        erzeuger("E2", 2.667),
+        verbraucher("V1", 3.331, 0.333),
+        verbraucher("V2", 5.557, 0.333),
+        verbraucher("V3", 9.119, 0.334),
+      ],
+      "Dynamisch",
+    );
+
+    pruefeMengenerhaltung(
+      [
+        erzeuger("E1", 7.333),
+        erzeuger("E2", 2.667),
+        verbraucher("V1", 3.331, 0.333),
+        verbraucher("V2", 5.557, 0.333),
+        verbraucher("V3", 9.119, 0.334),
+      ],
+      "Statisch",
+    );
+  });
+
+  it("haelt die Mengenerhaltung ueber viele zufaellige Faelle", () => {
+    // Ein einfacher, reproduzierbarer Zufallsgenerator.
+    let zustand = 12345;
+    const zufall = () => {
+      zustand = (zustand * 1103515245 + 12345) & 0x7fffffff;
+      return zustand / 0x7fffffff;
+    };
+
+    for (let lauf = 0; lauf < 300; lauf++) {
+      const anzahlE = 1 + Math.floor(zufall() * 3);
+      const anzahlV = 1 + Math.floor(zufall() * 6);
+
+      const teilnehmer: TeilnehmerWerte[] = [];
+      for (let i = 0; i < anzahlE; i++) {
+        teilnehmer.push(erzeuger(`E${i}`, Math.round(zufall() * 50000) / 1000));
+      }
+      for (let i = 0; i < anzahlV; i++) {
+        teilnehmer.push(
+          verbraucher(
+            `V${i}`,
+            Math.round(zufall() * 30000) / 1000,
+            Math.round(zufall() * 1000) / 1000,
+            Math.round(zufall() * 1000) / 1000,
+          ),
+        );
+      }
+
+      pruefeMengenerhaltung(teilnehmer, lauf % 2 === 0 ? "Dynamisch" : "Statisch");
+    }
+  });
+});
+
+describe("Zusammenfassung ueber einen Zeitraum", () => {
+  it("summiert Viertelstunden korrekt auf", () => {
+    const stunden = [
+      teileViertelstundeAuf(
+        [erzeuger("E1", 10), verbraucher("V1", 4), verbraucher("V2", 6)],
+        "Dynamisch",
+      ),
+      teileViertelstundeAuf(
+        [erzeuger("E1", 8), verbraucher("V1", 5), verbraucher("V2", 5)],
+        "Dynamisch",
+      ),
+    ];
+
+    const summe = fasseZusammen(stunden);
+
+    assert.equal(summe.intervalle, 2);
+
+    // Viertelstunde 1: Erzeugung 10 deckt den Bedarf von 10 vollstaendig.
+    // Viertelstunde 2: Erzeugung 8 auf Bedarf 10, Quote 0,8.
+    // Verteilt also 10 + 8 = 18.
+    assert.ok(
+      Math.abs(summe.verteilt - 18) < 0.01,
+      `verteilt ${summe.verteilt} statt 18`,
+    );
+
+    const v1 = summe.jeZaehlpunkt.get("V1")!;
+    // 4 aus der ersten, 5 x 0,8 = 4 aus der zweiten Viertelstunde.
+    assert.ok(Math.abs(v1.bezogen - 8) < 0.01, `V1 gesamt ${v1.bezogen}`);
+
+    const e1 = summe.jeZaehlpunkt.get("E1")!;
+    assert.ok(Math.abs(e1.geliefert - 18) < 0.01, `E1 lieferte ${e1.geliefert}`);
+  });
+
+  it("liefert bei leerer Eingabe Nullwerte", () => {
+    const summe = fasseZusammen([]);
+    assert.equal(summe.intervalle, 0);
+    assert.equal(summe.verteilt, 0);
+    assert.equal(summe.jeZaehlpunkt.size, 0);
+  });
+});

@@ -1,0 +1,23 @@
+param([Parameter(Mandatory=$true)][string]$Path,[string]$Out)
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+$zip = [System.IO.Compression.ZipFile]::OpenRead($Path)
+$sb = New-Object System.Text.StringBuilder
+foreach ($name in @('word/document.xml','word/footnotes.xml','word/endnotes.xml')) {
+  $e = $zip.Entries | Where-Object { $_.FullName -eq $name }
+  if (-not $e) { continue }
+  $sr = New-Object System.IO.StreamReader($e.Open(), [System.Text.Encoding]::UTF8)
+  $xml = $sr.ReadToEnd(); $sr.Close()
+  $xml = $xml -replace '</w:p>', "</w:p>`n"
+  $xml = $xml -replace '<w:tab[^>]*/>', "`t"
+  $xml = $xml -replace '<w:br[^>]*/>', "`n"
+  $xml = $xml -replace '<[^>]+>', ''
+  $xml = [System.Net.WebUtility]::HtmlDecode($xml)
+  [void]$sb.AppendLine("===== $name =====")
+  [void]$sb.AppendLine($xml)
+}
+$zip.Dispose()
+$t = [regex]::Replace($sb.ToString(), '(\r?\n){3,}', "`r`n`r`n")
+if (-not $Out) { $Out = [System.IO.Path]::ChangeExtension($Path, '.txt') }
+$od = [System.IO.Path]::GetDirectoryName($Out); if ($od -and -not (Test-Path $od)) { New-Item -ItemType Directory -Force -Path $od | Out-Null }
+[System.IO.File]::WriteAllText($Out, $t, (New-Object System.Text.UTF8Encoding($false)))
+Write-Output "chars=$($t.Length) out=$Out"

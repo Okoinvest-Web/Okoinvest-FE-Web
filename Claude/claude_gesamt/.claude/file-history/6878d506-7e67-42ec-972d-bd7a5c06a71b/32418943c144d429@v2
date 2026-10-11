@@ -1,0 +1,71 @@
+import Link from "next/link";
+import { FileText } from "lucide-react";
+import { db } from "@/lib/data";
+import { date, daysUntil, money, QUOTE_STATUS_LABEL } from "@/lib/format";
+import { Badge, Empty, PageHeader, Table, TD } from "@/components/ui";
+
+export const metadata = { title: "Angebote" };
+
+// Versendete Angebote brauchen Nachfassen: nach 7 Tagen ohne Auftrag oder kurz vor Ablauf
+function followUp(q: { status: string; transaction_date: string; valid_till?: string }) {
+  if (q.status !== "Open") return null;
+  const left = daysUntil(q.valid_till);
+  if (left !== undefined && left < 0) return { text: "Abgelaufen – verlängern oder schließen", tone: "text-rose-600" };
+  if (left !== undefined && left <= 7) return { text: `Läuft in ${left} T ab – nachfassen`, tone: "text-amber-700" };
+  const age = -(daysUntil(q.transaction_date) ?? 0);
+  if (age >= 7) return { text: `Seit ${age} T versendet – nachfassen`, tone: "text-amber-700" };
+  return null;
+}
+
+export default async function QuotationsPage() {
+  const quotes = await db().listQuotations({ limit: 200 });
+  const open = quotes.filter((q) => q.status === "Open" || q.status === "Draft");
+  const openVolume = open.reduce((s, q) => s + q.net_total, 0);
+  const due = quotes.filter((q) => followUp(q)).length;
+
+  return (
+    <>
+      <PageHeader
+        title="Angebote"
+        subtitle={
+          <>
+            {open.length} offen · <span className="font-medium text-gray-700">{money(openVolume)}</span> netto
+            {due > 0 && <span className="font-medium text-amber-700"> · {due} nachfassen</span>}
+          </>
+        }
+      />
+      {quotes.length === 0 ? (
+        <Empty icon={FileText}>Noch keine Angebote. Angebote entstehen aus einer Chance über „Angebot erstellen“.</Empty>
+      ) : (
+        <Table head={["Angebot", "Status", "Datum", "Gültig bis", "Netto", "Brutto"]} align={{ 4: "right", 5: "right" }}>
+          {quotes.map((q) => {
+            const f = followUp(q);
+            return (
+              <tr key={q.name} className="hover:bg-gray-50">
+                <td className={TD}>
+                  <Link href={`/quotations/${encodeURIComponent(q.name)}`} className="group block">
+                    <div className="font-medium text-gray-900 group-hover:text-brand-700">{q.title ?? q.name}</div>
+                    <div className="text-[12px] text-gray-500">
+                      {q.customer_name} · {q.name}
+                    </div>
+                  </Link>
+                </td>
+                <td className={TD}>
+                  <Badge value={q.status} label={QUOTE_STATUS_LABEL[q.status] ?? q.status} />
+                  {f && <div className={`mt-1 text-[12px] ${f.tone}`}>{f.text}</div>}
+                </td>
+                <td className={`${TD} tnum whitespace-nowrap`}>{date(q.transaction_date)}</td>
+                <td className={`${TD} tnum whitespace-nowrap`}>{date(q.valid_till)}</td>
+                <td className={`${TD} tnum text-right font-medium text-gray-900`}>{money(q.net_total, q.currency)}</td>
+                <td className={`${TD} tnum text-right`}>
+                  {money(q.grand_total, q.currency)}
+                  <div className="text-[12px] text-gray-400">USt {q.tax_rate} %</div>
+                </td>
+              </tr>
+            );
+          })}
+        </Table>
+      )}
+    </>
+  );
+}

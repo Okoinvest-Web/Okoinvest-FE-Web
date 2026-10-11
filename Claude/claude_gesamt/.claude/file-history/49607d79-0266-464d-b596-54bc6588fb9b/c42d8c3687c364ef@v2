@@ -1,0 +1,298 @@
+/**
+ * Firewall-Ebenen, Pfadanalyse und Regel-Hygiene (Fachkonzept 2.4).
+ *
+ * Die Pfadanalyse rechnet eine Anfrage "Quelle → Ziel : Port" durch alle
+ * Ebenen in ihrer Reihenfolge und nennt je Ebene die Regel, die greift.
+ * Genau diese Auswertung ist der Grund, warum die Regelwerke normalisiert
+ * gespeichert werden - Aliase sind bereits aufgelöst.
+ *
+ * Auswertung wie bei paketfilternden Firewalls: erste passende Regel gewinnt.
+ */
+import { FrappeMockError, table } from '../db.js'
+import { istInPraefix, ipToInt, parsePrefix } from '../ip.js'
+import { heute } from '../zeit.js'
+
+/** Regeln einer Firewall in Auswertungsreihenfolge. */
+export function firewall_rules({ firewall = null } = {}) {
+  let regeln = table('Firewall Rule')
+  if (firewall) regeln = regeln.filter((r) => r.firewall === firewall)
+  return [...regeln].sort(
+    (a, b) => a.firewall.localeCompare(b.firewall) || a.rule_index - b.rule_index,
+  )
+}
+
+/** Firewall-Instanzen in Pfadreihenfolge, mit Regelanzahl. */
+export function firewall_instances({ tenant = null } = {}) {
+  const regeln = table('Firewall Rule')
+  return table('Firewall Instance')
+    .filter((f) => !tenant || f.tenant === tenant)
+    .map((f) => ({
+      ...f,
+      rule_count: regeln.filter((r) => r.firewall === f.name).length,
+    }))
+    .sort((a, b) => a.path_order - b.path_order)
+}
+
+/**
+ * Trifft die Regel auf die Anfrage zu?
+ * `any` bei Protokoll bedeutet: jedes Protokoll.
+ */
+function regelPasst(regel, anfrage) {
+  if (!regel.enabled) return false
+
+  if (!adressePasst(anfrage.source, regel.source_prefix)) return false
+  if (!adressePasst(anfrage.destination, regel.destination_prefix)) return false
+
+  if (regel.protocol !== 'any' && anfrage.protocol !== 'any' && regel.protocol !== anfrage.protocol) {
+    return false
+  }
+
+  // Bei ICMP und "any" spielt der Port keine Rolle.
+  if (anfrage.protocol === 'tcp' || anfrage.protocol === 'udp') {
+    const von = Number(regel.port_from ?? 0)
+    const bis = Number(regel.port_to ?? 65535)
+    if (anfrage.port < von || anfrage.port > bis) return false
+  }
+
+  return true
+}
+
+function adressePasst(adresse, praefix) {
+  if (!praefix || praefix === '0.0.0.0/0') return true
+  try {
+    return istInPraefix(adresse, praefix)
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Pfadanalyse über alle Ebenen.
+ *
+ * @param {{source: string, destination: string, port: number, protocol?: string}} args
+ * @returns {{allowed: boolean, blocked_at: string|null, hops: Array}}
+ */
+export function path_analysis({ source, destination, port = 443, protocol = 'tcp', tenant = null } = {}) {
+  if (!source || !destination) {
+    throw new FrappeMockError('ValidationError: Quelle und Ziel sind erforderlich')
+  }
+
+  // Frühe, klare Meldung statt stiller Fehlauswertung.
+  for (const [feld, wert] of [['Quelle', source], ['Ziel', destination]]) {
+    try {
+      ipToInt(String(wert).split('/')[0])
+    } catch {
+      throw new FrappeMockError('ValidationError: ' + feld + ' ist keine gültige IPv4-Adresse: ' + wert)
+    }
+  }
+
+  const anfrage = { source, destination, port: Number(port), protocol }
+  const instanzen = firewall_instances({ tenant })
+  const alleRegeln = table('Firewall Rule')
+
+  const hops = []
+  let erlaubt = true
+  let blockiertBei = null
+
+  for (const instanz of instanzen) {
+    // Eine Ebene wird nur bewertet, wenn sie überhaupt im Weg liegt. Sonst
+    // würde die Grundregel einer unbeteiligten Firewall Verkehr verwerfen,
+    // der nie durch sie hindurchläuft.
+    if (!liegtImPfad(instanz, anfrage)) {
+      hops.push({
+        firewall: instanz.name,
+        layer: instanz.layer,
+        path_order: instanz.path_order,
+        vendor: instanz.vendor,
+        device: instanz.device,
+        rule: null,
+        result: 'not_in_path',
+        reason: 'Diese Ebene liegt nicht zwischen Quelle und Ziel',
+      })
+      continue
+    }
+
+    const regeln = alleRegeln
+      .filter((r) => r.firewall === instanz.name)
+      .sort((a, b) => a.rule_index - b.rule_index)
+
+    const treffer = regeln.find((r) => regelPasst(r, anfrage))
+
+    const hop = {
+      firewall: instanz.name,
+      layer: instanz.layer,
+      path_order: instanz.path_order,
+      vendor: instanz.vendor,
+      device: instanz.device,
+      rule: treffer
+        ? {
+            name: treffer.name,
+            rule_index: treffer.rule_index,
+            rule_name: treffer.rule_name,
+            action: treffer.action,
+            source_prefix: treffer.source_prefix,
+            destination_prefix: treffer.destination_prefix,
+            protocol: treffer.protocol,
+            port_from: treffer.port_from,
+            port_to: treffer.port_to,
+            justification: treffer.justification,
+            ticket: treffer.ticket,
+            review_date: treffer.review_date,
+          }
+        : null,
+      // Keine passende Regel heißt in der Praxis: das Paket fällt durch und
+      // wird verworfen. Das ist kein "unbekannt", sondern ein Blocker.
+      result: treffer ? treffer.action : 'deny',
+      reason: treffer ? null : 'Keine passende Regel – implizites Verwerfen',
+    }
+
+    hops.push(hop)
+
+    if (hop.result !== 'allow') {
+      erlaubt = false
+      blockiertBei = instanz.name
+      break
+    }
+  }
+
+  const bewertet = hops.filter((h) => h.result !== 'not_in_path')
+
+  return {
+    request: { source, destination, port: Number(port), protocol },
+    // Ohne eine einzige beteiligte Ebene gibt es keine belastbare Aussage.
+    allowed: erlaubt && bewertet.length > 0,
+    undetermined: bewertet.length === 0,
+    blocked_at: blockiertBei,
+    hops,
+    // Ebenen, die wegen eines früheren Blockers nicht mehr geprüft wurden.
+    not_evaluated: instanzen.slice(hops.length).map((i) => i.name),
+  }
+}
+
+/** Liegt die Ebene zwischen Quelle und Ziel? */
+function liegtImPfad(instanz, anfrage) {
+  const bereiche = instanz.scope_prefixes || ['0.0.0.0/0']
+  if (bereiche.includes('0.0.0.0/0')) return true
+  return bereiche.some(
+    (bereich) => adressePasst(anfrage.source, bereich) || adressePasst(anfrage.destination, bereich),
+  )
+}
+
+/**
+ * Regel-Hygiene (Fachkonzept 2.4): ungenutzte, zu breite und
+ * unbegründete Regeln sowie abgelaufene Reviews.
+ */
+export function rule_hygiene({ firewall = null } = {}) {
+  const heuteDatum = heute()
+  const regeln = firewall_rules({ firewall })
+  const befunde = []
+
+  // Schattenregeln: eine frühere Regel deckt eine spätere vollständig ab.
+  const jeFirewall = new Map()
+  for (const regel of regeln) {
+    const liste = jeFirewall.get(regel.firewall) || []
+    liste.push(regel)
+    jeFirewall.set(regel.firewall, liste)
+  }
+
+  for (const [fw, liste] of jeFirewall) {
+    for (const [i, regel] of liste.entries()) {
+      const vorherige = liste.slice(0, i)
+      const beschattet = vorherige.find((v) => v.enabled && deckungsgleich(v, regel))
+      if (beschattet) {
+        befunde.push(befund(regel, 'shadowed', 'Wird bereits von Regel ' + beschattet.rule_index + ' abgedeckt', fw))
+      }
+    }
+  }
+
+  for (const regel of regeln) {
+    if (!regel.justification) {
+      befunde.push(befund(regel, 'no_justification', 'Ohne fachliche Begründung'))
+    }
+    if (!regel.responsible) {
+      befunde.push(befund(regel, 'no_owner', 'Ohne Verantwortlichen'))
+    }
+    if (!regel.ticket) {
+      befunde.push(befund(regel, 'no_ticket', 'Ohne Ticketbezug'))
+    }
+    if (!regel.review_date) {
+      befunde.push(befund(regel, 'no_review', 'Ohne Review-Datum'))
+    } else if (regel.review_date < heuteDatum) {
+      befunde.push(befund(regel, 'review_overdue', 'Review seit ' + regel.review_date + ' überfällig'))
+    }
+    if (regel.enabled && regel.hit_count === 0) {
+      befunde.push(befund(regel, 'unused', 'Keine Treffer seit Beginn der Zählung'))
+    }
+    if (
+      regel.action === 'allow' &&
+      regel.source_prefix === '0.0.0.0/0' &&
+      regel.destination_prefix === '0.0.0.0/0'
+    ) {
+      befunde.push(befund(regel, 'too_broad', 'Erlaubt alles von überall nach überall'))
+    } else if (regel.action === 'allow' && istSehrBreit(regel)) {
+      befunde.push(befund(regel, 'too_broad', 'Sehr weit gefasster Quell- oder Zielbereich über alle Ports'))
+    }
+  }
+
+  const gewichtung = { too_broad: 3, shadowed: 2, review_overdue: 2, no_justification: 2, unused: 1, no_owner: 1, no_ticket: 1, no_review: 1 }
+
+  return {
+    findings: befunde.sort(
+      (a, b) => (gewichtung[b.kind] || 0) - (gewichtung[a.kind] || 0) || a.rule_index - b.rule_index,
+    ),
+    summary: befunde.reduce((zaehler, b) => {
+      zaehler[b.kind] = (zaehler[b.kind] || 0) + 1
+      return zaehler
+    }, {}),
+    rules_checked: regeln.length,
+  }
+}
+
+function befund(regel, kind, message, firewall = null) {
+  return {
+    firewall: firewall || regel.firewall,
+    rule: regel.name,
+    rule_index: regel.rule_index,
+    rule_name: regel.rule_name,
+    kind,
+    message,
+    action: regel.action,
+  }
+}
+
+/** Deckt `breit` die Regel `eng` vollständig ab? */
+function deckungsgleich(breit, eng) {
+  if (breit.action !== eng.action) return false
+  if (!praefixDeckt(breit.source_prefix, eng.source_prefix)) return false
+  if (!praefixDeckt(breit.destination_prefix, eng.destination_prefix)) return false
+  if (breit.protocol !== 'any' && breit.protocol !== eng.protocol) return false
+
+  const breitVon = Number(breit.port_from ?? 0)
+  const breitBis = Number(breit.port_to ?? 65535)
+  const engVon = Number(eng.port_from ?? 0)
+  const engBis = Number(eng.port_to ?? 65535)
+  return breitVon <= engVon && breitBis >= engBis
+}
+
+function praefixDeckt(breit, eng) {
+  if (!breit || breit === '0.0.0.0/0') return true
+  if (!eng) return false
+  try {
+    const b = parsePrefix(breit)
+    const e = parsePrefix(eng)
+    return b.bits <= e.bits && istInPraefix(eng.split('/')[0], breit)
+  } catch {
+    return false
+  }
+}
+
+function istSehrBreit(regel) {
+  try {
+    const quelle = parsePrefix(regel.source_prefix)
+    const ziel = parsePrefix(regel.destination_prefix)
+    const allePorts = Number(regel.port_from ?? 0) === 0 && Number(regel.port_to ?? 65535) >= 65535
+    return allePorts && (quelle.bits <= 8 || ziel.bits <= 8)
+  } catch {
+    return false
+  }
+}

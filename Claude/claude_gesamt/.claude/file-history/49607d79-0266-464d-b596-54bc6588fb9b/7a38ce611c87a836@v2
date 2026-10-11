@@ -1,0 +1,208 @@
+<template>
+  <div>
+    <PageHeader title="Kommunikationsmatrix" :subtitle="untertitel">
+      <template #actions>
+        <FormControl v-model="ebene" type="select" :options="ebenenOptionen" />
+      </template>
+    </PageHeader>
+
+    <div class="p-6">
+      <div v-if="matrix.data" class="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <div
+          v-for="kachel in kacheln"
+          :key="kachel.label"
+          class="rounded-lg border border-outline-gray-2 bg-surface-white p-4"
+        >
+          <p class="text-sm text-ink-gray-6">{{ kachel.label }}</p>
+          <p class="mt-1 text-2xl font-semibold text-ink-gray-9">{{ kachel.wert }}</p>
+          <StatusDot v-if="kachel.hinweis" class="mt-1" :level="kachel.level" :text="kachel.hinweis" klein />
+        </div>
+      </div>
+
+      <!-- Die Matrix selbst. Eine Zelle ist keine Größenordnung, sondern
+           "erlaubt oder nicht" - deshalb kein Farbverlauf, sondern die
+           Dienste im Klartext. -->
+      <div
+        v-if="matrix.data"
+        class="overflow-x-auto rounded-lg border border-outline-gray-2 bg-surface-white"
+      >
+        <table class="w-full border-collapse text-left">
+          <thead>
+            <tr class="border-b border-outline-gray-2 bg-surface-gray-1 text-sm text-ink-gray-6">
+              <th class="sticky left-0 z-10 bg-surface-gray-1 px-4 py-2 font-medium">
+                von \ nach
+              </th>
+              <th
+                v-for="zone in matrix.data.zones"
+                :key="zone"
+                class="px-3 py-2 text-center font-medium"
+              >
+                {{ ZONE[zone] || zone }}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              v-for="von in matrix.data.zones"
+              :key="von"
+              class="border-b border-outline-gray-2 last:border-b-0"
+            >
+              <th
+                class="sticky left-0 z-10 bg-surface-white px-4 py-2 text-left text-base font-medium text-ink-gray-8"
+              >
+                {{ ZONE[von] || von }}
+              </th>
+              <td
+                v-for="nach in matrix.data.zones"
+                :key="nach"
+                class="border-l border-outline-gray-2 px-3 py-2 align-top"
+              >
+                <button
+                  v-if="zelle(von, nach)"
+                  class="w-full rounded px-2 py-1 text-left hover:bg-surface-gray-2"
+                  @click="gewaehlt = zelle(von, nach)"
+                >
+                  <span class="block text-sm text-ink-gray-8">
+                    {{ zelle(von, nach).services.join(', ') }}
+                  </span>
+                  <span class="mt-0.5 flex items-center gap-2 text-xs text-ink-gray-5">
+                    <span class="tabular-nums">{{ formatiere(zelle(von, nach).hit_count) }}</span>
+                    <StatusDot
+                      v-if="zelle(von, nach).undocumented"
+                      level="warning"
+                      text="ohne Begründung"
+                      klein
+                    />
+                    <StatusDot
+                      v-else-if="zelle(von, nach).hit_count === 0"
+                      level="warning"
+                      text="ungenutzt"
+                      klein
+                    />
+                  </span>
+                </button>
+                <span v-else class="block text-center text-sm text-ink-gray-3">–</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p v-if="matrix.loading" class="py-8 text-center text-sm text-ink-gray-5">Wird geladen …</p>
+
+      <!-- Regeln hinter einer Zelle -->
+      <section v-if="gewaehlt" class="mt-6">
+        <h2 class="mb-3 text-base font-semibold text-ink-gray-8">
+          {{ ZONE[gewaehlt.from_zone] || gewaehlt.from_zone }} →
+          {{ ZONE[gewaehlt.to_zone] || gewaehlt.to_zone }}
+          <span class="font-normal text-ink-gray-5">{{ gewaehlt.rules.length }} Regeln</span>
+        </h2>
+        <DataTable :columns="regelSpalten" :rows="gewaehlt.rules">
+          <template #zelle-rule_name="{ zeile }">
+            <span class="block text-ink-gray-9">{{ zeile.rule_name }}</span>
+            <span class="block text-sm text-ink-gray-5">
+              {{ zeile.firewall }} · Regel {{ zeile.rule_index }}
+            </span>
+          </template>
+          <template #zelle-justification="{ zeile }">
+            <span v-if="zeile.justification">{{ zeile.justification }}</span>
+            <StatusDot v-else level="warning" text="fehlt" klein />
+          </template>
+          <template #zelle-hit_count="{ zeile }">
+            {{ formatiere(zeile.hit_count) }}
+          </template>
+        </DataTable>
+      </section>
+
+      <p class="mt-6 text-xs text-ink-gray-4">
+        Erzeugt aus den Regelwerken, nicht von Hand gepflegt – sie ersetzt die
+        manuelle Matrix. Gezeigt wird, was das Regelwerk <strong>erlaubt</strong>;
+        die Trefferzahl daneben sagt, ob es auch genutzt wird. Zonen kommen über
+        das VLAN des jeweiligen Präfix; Regeln auf `0.0.0.0/0` laufen unter
+        „Internet“.
+      </p>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed, ref, watch } from 'vue'
+import { FormControl, createResource } from 'frappe-ui'
+import PageHeader from '@/components/PageHeader.vue'
+import DataTable from '@/components/DataTable.vue'
+import StatusDot from '@/components/StatusDot.vue'
+
+const ZONE = {
+  management: 'Management',
+  internal: 'Intern',
+  dmz: 'DMZ',
+  ot: 'OT',
+  soc: 'SOC',
+  guest: 'Gast',
+  internet: 'Internet',
+  unzugeordnet: 'ohne Zone',
+}
+
+const ebene = ref('')
+const gewaehlt = ref(null)
+
+const matrix = createResource({
+  url: 'netops.api.firewall.communication_matrix',
+  makeParams: () => ({ firewall: ebene.value || null }),
+  auto: true,
+})
+
+const ebenenOptionen = [
+  { label: 'Alle Ebenen', value: '' },
+  { label: 'Perimeter FW-OS-01', value: 'FW-OS-01' },
+  { label: 'Intern FW-NS-INT', value: 'FW-NS-INT' },
+  { label: 'Host FW-HOST-PVE', value: 'FW-HOST-PVE' },
+]
+
+watch(ebene, () => {
+  gewaehlt.value = null
+  matrix.fetch()
+})
+
+const regelSpalten = [
+  { key: 'rule_name', label: 'Regel', width: '300px' },
+  { key: 'service', label: 'Dienst', width: '140px' },
+  { key: 'hit_count', label: 'Treffer', align: 'right', numeric: true, width: '120px' },
+  { key: 'ticket', label: 'Ticket', muted: true, width: '120px' },
+  { key: 'justification', label: 'Begründung' },
+]
+
+const kacheln = computed(() => {
+  const z = matrix.data?.summary
+  if (!z) return []
+  return [
+    { label: 'Zonenpaare', wert: z.pairs },
+    { label: 'Regeln', wert: z.rules },
+    {
+      label: 'Ohne Begründung',
+      wert: z.undocumented_pairs,
+      level: 'warning',
+      hinweis: z.undocumented_pairs ? 'nachtragen' : null,
+    },
+    {
+      label: 'Aus dem Internet',
+      wert: z.from_internet,
+      level: 'warning',
+      hinweis: z.from_internet ? 'zuerst prüfen' : null,
+    },
+  ]
+})
+
+const untertitel = computed(() => {
+  const z = matrix.data?.summary
+  return z ? z.pairs + ' Zonenpaare aus ' + z.rules + ' Regeln erzeugt' : ''
+})
+
+function zelle(von, nach) {
+  return (matrix.data?.cells || []).find((z) => z.from_zone === von && z.to_zone === nach)
+}
+
+function formatiere(zahl) {
+  return (zahl || 0).toLocaleString('de-AT')
+}
+</script>

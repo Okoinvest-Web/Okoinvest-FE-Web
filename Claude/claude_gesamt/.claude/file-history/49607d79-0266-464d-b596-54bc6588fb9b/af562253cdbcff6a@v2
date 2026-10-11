@@ -1,0 +1,16 @@
+/**
+ * Der Mock speichert im localStorage und legt Hilfen auf `window` ab.
+ * In Node gibt es beides nicht - hier steht ein minimaler Ersatz.
+ */
+const speicher = new Map()
+
+globalThis.localStorage = {
+  getItem: (schluessel) => (speicher.has(schluessel) ? speicher.get(schluessel) : null),
+  setItem: (schluessel, wert) => speicher.set(schluessel, String(wert)),
+  removeItem: (schluessel) => speicher.delete(schluessel),
+  clear: () => speicher.clear(),
+}
+
+if (typeof globalThis.window === 'undefined') {
+  globalThis.window = globalThis
+}

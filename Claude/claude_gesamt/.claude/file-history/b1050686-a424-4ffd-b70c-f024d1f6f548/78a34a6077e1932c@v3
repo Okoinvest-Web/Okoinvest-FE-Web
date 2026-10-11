@@ -1,0 +1,44 @@
+import type { ReactNode } from "react";
+
+import { PortalNav } from "@/components/portal-nav";
+import { DEMO_KUNDE } from "@/lib/demo/stammdaten";
+import { NAVIGATION } from "@/lib/navigation";
+import { findeRolle } from "@/lib/sicherheit/rollen";
+import { aktuelleRechte, requireUser } from "@/lib/session";
+
+export default async function PortalLayout({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  // Serverseitige Absicherung - der Proxy prueft nur das Cookie.
+  const benutzer = await requireUser();
+  const rechte = await aktuelleRechte();
+
+  // Navigation serverseitig filtern: Der Client bekommt gar nicht erst
+  // zu sehen, was er nicht darf.
+  const gruppen = NAVIGATION.map((gruppe) => ({
+    ...gruppe,
+    eintraege: gruppe.eintraege.filter((e) => rechte.has(e.recht)),
+  })).filter((gruppe) => gruppe.eintraege.length > 0);
+
+  return (
+    <div className="min-h-screen">
+      <PortalNav
+        gruppen={gruppen}
+        benutzer={benutzer.vollname}
+        rollenBezeichnung={
+          findeRolle(benutzer.rolle)?.bezeichnung ?? "Betrachter"
+        }
+        firma={DEMO_KUNDE.firma}
+        demo={benutzer.demo}
+      />
+
+      <div className="lg:pl-64">
+        <main className="mx-auto max-w-[88rem] px-4 py-5 sm:px-6 lg:px-7">
+          {children}
+        </main>
+      </div>
+    </div>
+  );
+}

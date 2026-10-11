@@ -1,0 +1,571 @@
+import "server-only";
+
+import { frappeFetch } from "./frappe";
+
+export { DOCTYPE } from "./doctype-namen";
+
+/** Jeder Frappe-Datensatz traegt diese Felder. */
+export interface FrappeDoc {
+  /** Primaerschluessel in Frappe (der "name" eines Dokuments). */
+  name: string;
+  owner?: string;
+  creation?: string;
+  modified?: string;
+  docstatus?: 0 | 1 | 2;
+}
+
+// ---------------------------------------------------------------------
+// Anlagen
+// ---------------------------------------------------------------------
+
+export type AnlagenStatus =
+  | "Aktiv"
+  | "In Bau"
+  | "Gestört"
+  | "Wartung"
+  | "Außer Betrieb";
+
+export interface PvAnlage extends FrappeDoc {
+  anlagen_name: string;
+  kunde: string;
+  standort?: string;
+  plz?: string;
+  ort?: string;
+  bundesland?: string;
+  /** 33-stellige Zaehlpunktbezeichnung. */
+  zaehlpunkt?: string;
+  netzbetreiber?: string;
+  netzebene?: number;
+  /** TOR-Erzeuger-Typ A bis D, abhaengig von der Anschlussleistung. */
+  tor_typ?: "A" | "B" | "C" | "D";
+  leistung_kwp?: number;
+  wechselrichter_kw?: number;
+  speicher_kwh?: number;
+  inbetriebnahme?: string;
+  status?: AnlagenStatus;
+  ausrichtung?: string;
+  neigung?: number;
+  modul_typ?: string;
+  modul_anzahl?: number;
+  wechselrichter_typ?: string;
+  steuerung_typ?: string;
+  /** Erwarteter Jahresertrag laut Auslegung, fuer den Soll-Ist-Vergleich. */
+  soll_ertrag_kwh?: number;
+  latitude?: number;
+  longitude?: number;
+}
+
+export interface PvKomponente extends FrappeDoc {
+  anlage: string;
+  bezeichnung: string;
+  kategorie?:
+    | "Wechselrichter"
+    | "Modul"
+    | "Speicher"
+    | "Zähler"
+    | "Steuerung"
+    | "Router"
+    | "Sonstiges";
+  hersteller?: string;
+  modell?: string;
+  seriennummer?: string;
+  firmware?: string;
+  /** Fuer die Schwachstellenbewertung nach NIS2 relevant. */
+  firmware_aktuell?: 0 | 1;
+  eingebaut_am?: string;
+  garantie_bis?: string;
+  ip_adresse?: string;
+}
+
+export interface PvErtrag extends FrappeDoc {
+  anlage: string;
+  datum: string;
+  ertrag_kwh?: number;
+  eigenverbrauch_kwh?: number;
+  einspeisung_kwh?: number;
+  netzbezug_kwh?: number;
+  /** Spezifischer Ertrag kWh/kWp - macht Anlagen vergleichbar. */
+  spezifisch_kwh_kwp?: number;
+  /** Performance Ratio nach IEC 61724. */
+  performance_ratio?: number;
+  einstrahlung_kwh_m2?: number;
+}
+
+/** Viertelstundenwerte - die Abrechnungsaufloesung im oesterreichischen Markt. */
+export interface PvMesswert extends FrappeDoc {
+  anlage: string;
+  zeitpunkt: string;
+  erzeugung_kw?: number;
+  verbrauch_kw?: number;
+  einspeisung_kw?: number;
+  netzbezug_kw?: number;
+  speicher_kw?: number;
+  speicher_soc?: number;
+}
+
+export type StoerungStatus =
+  | "Offen"
+  | "In Bearbeitung"
+  | "Warten auf Kunde"
+  | "Geschlossen";
+
+export type Prioritaet = "Niedrig" | "Mittel" | "Hoch" | "Kritisch";
+
+export interface PvStoerung extends FrappeDoc {
+  betreff: string;
+  anlage?: string;
+  komponente?: string;
+  status?: StoerungStatus;
+  prioritaet?: Prioritaet;
+  beschreibung?: string;
+  gemeldet_am?: string;
+  behoben_am?: string;
+  fehlercode?: string;
+  techniker?: string;
+  /** Geschaetzter Ertragsausfall in kWh - Grundlage fuer die Priorisierung. */
+  ausfall_kwh?: number;
+}
+
+export interface PvWartung extends FrappeDoc {
+  anlage: string;
+  art?: "Sichtprüfung" | "Wiederkehrende Prüfung" | "Reinigung" | "Instandsetzung";
+  faellig_am?: string;
+  durchgefuehrt_am?: string;
+  techniker?: string;
+  ergebnis?: string;
+  naechste_faellig?: string;
+}
+
+// ---------------------------------------------------------------------
+// Dokumentation nach Norm
+// ---------------------------------------------------------------------
+
+export interface PvAnlagendoku extends FrappeDoc {
+  anlage: string;
+  kapitel: string;
+  norm?: string;
+  /** Pflichtdokument laut Norm oder nur empfohlen. */
+  pflicht?: 0 | 1;
+  vorhanden?: 0 | 1;
+  datei?: string;
+  geprueft_am?: string;
+  geprueft_von?: string;
+  bemerkung?: string;
+}
+
+export interface PvPruefbefund extends FrappeDoc {
+  anlage: string;
+  art?: "Erstprüfung" | "Außerordentliche Erstprüfung" | "Wiederkehrende Prüfung";
+  norm?: string;
+  geprueft_am?: string;
+  pruefer?: string;
+  befund?: "Mängelfrei" | "Geringe Mängel" | "Schwere Mängel";
+  naechste_pruefung?: string;
+  datei?: string;
+}
+
+// ---------------------------------------------------------------------
+// Steuerung
+// ---------------------------------------------------------------------
+
+export interface PvSteuerprofil extends FrappeDoc {
+  anlage: string;
+  parameter: string;
+  wert?: string;
+  einheit?: string;
+  /** Gesperrte Parameter stammen vom Netzbetreiber, nicht vom Kunden. */
+  gesperrt?: 0 | 1;
+  quelle?: "Kunde" | "Netzbetreiber" | "Errichter";
+  geaendert_am?: string;
+  geaendert_von?: string;
+}
+
+export interface PvSteuerbefehl extends FrappeDoc {
+  anlage: string;
+  parameter: string;
+  wert_vorher?: string;
+  wert_nachher?: string;
+  status?: "Angenommen" | "Abgelehnt" | "Übertragen" | "Bestätigt" | "Fehler";
+  begruendung?: string;
+  gesendet_am?: string;
+  bestaetigt_am?: string;
+  benutzer?: string;
+}
+
+// ---------------------------------------------------------------------
+// Fernwartung
+// ---------------------------------------------------------------------
+
+export interface Fernwartungszugang extends FrappeDoc {
+  anlage: string;
+  geraet?: string;
+  hersteller?: string;
+  modell?: string;
+  seriennummer?: string;
+  /** Zugriff laeuft ueber einen Zero-Trust-Tunnel, nie ueber offene Ports. */
+  zugangsart?: "Zero Trust Tunnel" | "VPN" | "Kein Fernzugriff";
+  aktiv?: 0 | 1;
+  letzte_verbindung?: string;
+  firmware?: string;
+}
+
+export interface Fernwartungssitzung extends FrappeDoc {
+  zugang: string;
+  anlage?: string;
+  techniker?: string;
+  firma?: string;
+  grund?: string;
+  status?: "Angefragt" | "Freigegeben" | "Aktiv" | "Beendet" | "Abgelehnt";
+  freigegeben_von?: string;
+  /** Zeitlich befristete Freigabe - laeuft automatisch ab. */
+  gueltig_bis?: string;
+  gestartet_am?: string;
+  beendet_am?: string;
+  protokoll?: string;
+}
+
+// ---------------------------------------------------------------------
+// Mobilitaet
+// ---------------------------------------------------------------------
+
+export interface Ladepunkt extends FrappeDoc {
+  bezeichnung: string;
+  anlage?: string;
+  standort?: string;
+  evse_id?: string;
+  leistung_kw?: number;
+  steckertyp?: string;
+  status?: "Frei" | "Lädt" | "Belegt" | "Störung" | "Offline";
+  ocpp_version?: string;
+  oeffentlich?: 0 | 1;
+  tarif_ct_kwh?: number;
+}
+
+export interface Ladevorgang extends FrappeDoc {
+  ladepunkt: string;
+  tankkarte?: string;
+  fahrzeug?: string;
+  fahrer?: string;
+  kostenstelle?: string;
+  start?: string;
+  ende?: string;
+  energie_kwh?: number;
+  /** Anteil, der direkt aus der PV-Anlage kam. */
+  pv_anteil_kwh?: number;
+  kosten?: number;
+  abgerechnet?: 0 | 1;
+}
+
+export interface Tankkarte extends FrappeDoc {
+  kartennummer: string;
+  inhaber?: string;
+  fahrzeug?: string;
+  kennzeichen?: string;
+  kostenstelle?: string;
+  status?: "Aktiv" | "Gesperrt" | "Verloren";
+  gueltig_bis?: string;
+  limit_kwh_monat?: number;
+  rfid_uid?: string;
+}
+
+// ---------------------------------------------------------------------
+// Zertifikate und Vollmacht
+// ---------------------------------------------------------------------
+
+export interface Co2Zertifikat extends FrappeDoc {
+  anlage?: string;
+  kunde?: string;
+  zeitraum_von?: string;
+  zeitraum_bis?: string;
+  erzeugung_kwh?: number;
+  co2_vermieden_kg?: number;
+  /** Menge in Tonnen, die handelbar ist. */
+  menge_t?: number;
+  status?: "Entwurf" | "Zertifiziert" | "Zum Handel freigegeben" | "Verkauft";
+  zertifikatsnummer?: string;
+  registriert_am?: string;
+}
+
+export interface Co2Handel extends FrappeDoc {
+  zertifikat: string;
+  menge_t?: number;
+  preis_je_t?: number;
+  erloes?: number;
+  handelspartner?: string;
+  status?: "Angeboten" | "Abgeschlossen" | "Storniert";
+  handelsdatum?: string;
+  abgerechnet?: 0 | 1;
+}
+
+export interface Vollmacht extends FrappeDoc {
+  kunde: string;
+  bevollmaechtigter: string;
+  zweck?: string;
+  umfang?: string;
+  status?: "Entwurf" | "Erteilt" | "Widerrufen" | "Abgelaufen";
+  erteilt_am?: string;
+  gueltig_bis?: string;
+  widerrufen_am?: string;
+  unterzeichner?: string;
+  dokument?: string;
+}
+
+// ---------------------------------------------------------------------
+// Energiegemeinschaft
+// ---------------------------------------------------------------------
+
+export type GemeinschaftsArt = "EEG" | "BEG" | "GEA";
+
+export interface Energiegemeinschaft extends FrappeDoc {
+  bezeichnung: string;
+  art?: GemeinschaftsArt;
+  rechtsform?: string;
+  /** Lokal oder regional - bestimmt den Netzentgeltrabatt. */
+  reichweite?: "Lokal" | "Regional" | "Bundesweit";
+  netzbetreiber?: string;
+  gegruendet_am?: string;
+  mitglieder_anzahl?: number;
+  erzeugung_kwp?: number;
+  status?: "In Gründung" | "Aktiv" | "Ruhend";
+}
+
+export interface EgMitglied extends FrappeDoc {
+  gemeinschaft: string;
+  mitglied: string;
+  zaehlpunkt?: string;
+  rolle?: "Erzeuger" | "Verbraucher" | "Erzeuger und Verbraucher";
+  beigetreten_am?: string;
+  /** Statischer Anteil in Prozent bei statischer Aufteilung. */
+  anteil_prozent?: number;
+  aktiv?: 0 | 1;
+}
+
+export interface EgAufteilung extends FrappeDoc {
+  gemeinschaft: string;
+  zeitraum_von?: string;
+  zeitraum_bis?: string;
+  modell?: "Statisch" | "Dynamisch";
+  erzeugung_kwh?: number;
+  verteilt_kwh?: number;
+  ueberschuss_kwh?: number;
+  ersparnis_netzentgelt?: number;
+}
+
+// ---------------------------------------------------------------------
+// Markt
+// ---------------------------------------------------------------------
+
+export interface Boersenpreis extends FrappeDoc {
+  zeitpunkt: string;
+  /** Day-Ahead-Preis in EUR/MWh, Marktgebiet AT. */
+  preis_eur_mwh?: number;
+  marktgebiet?: string;
+}
+
+// ---------------------------------------------------------------------
+// Sicherheit
+// ---------------------------------------------------------------------
+
+export interface AuditProtokoll extends FrappeDoc {
+  zeitpunkt?: string;
+  benutzer?: string;
+  kategorie?: string;
+  aktion?: string;
+  ergebnis?: "erfolg" | "abgelehnt" | "fehler";
+  objekt?: string;
+  wert_vorher?: string;
+  wert_nachher?: string;
+  begruendung?: string;
+  ip_adresse?: string;
+}
+
+export interface Sicherheitsvorfall extends FrappeDoc {
+  betreff: string;
+  anlage?: string;
+  kategorie?:
+    | "Unbefugter Zugriff"
+    | "Schadsoftware"
+    | "Ausfall"
+    | "Datenabfluss"
+    | "Manipulation"
+    | "Sonstiges";
+  schweregrad?: "Gering" | "Mittel" | "Hoch" | "Kritisch";
+  status?: "Erkannt" | "In Bearbeitung" | "Gemeldet" | "Behoben";
+  bekannt_seit?: string;
+  /** NIS2-Meldepflicht - loest die 24/72-Stunden-Fristen aus. */
+  meldepflichtig?: 0 | 1;
+  fruehwarnung_am?: string;
+  meldung_am?: string;
+  abschluss_am?: string;
+  beschreibung?: string;
+  massnahmen?: string;
+}
+
+export interface PortalBenutzer extends FrappeDoc {
+  benutzer: string;
+  kunde?: string;
+  vollname?: string;
+  rolle?: string;
+  telefon?: string;
+  aktiv?: 0 | 1;
+  mfa_aktiv?: 0 | 1;
+  letzte_anmeldung?: string;
+}
+
+// ---------------------------------------------------------------------
+// Belege, Shop, Support
+// ---------------------------------------------------------------------
+
+export interface SalesInvoice extends FrappeDoc {
+  customer: string;
+  posting_date?: string;
+  due_date?: string;
+  grand_total?: number;
+  outstanding_amount?: number;
+  currency?: string;
+  status?: string;
+}
+
+export interface DeliveryNote extends FrappeDoc {
+  customer: string;
+  posting_date?: string;
+  status?: string;
+  grand_total?: number;
+  currency?: string;
+}
+
+export interface Artikel extends FrappeDoc {
+  item_name: string;
+  item_group?: string;
+  description?: string;
+  image?: string;
+  standard_rate?: number;
+  stock_uom?: string;
+  disabled?: 0 | 1;
+}
+
+export interface Bestellung extends FrappeDoc {
+  customer: string;
+  transaction_date?: string;
+  delivery_date?: string;
+  grand_total?: number;
+  currency?: string;
+  status?: string;
+}
+
+export interface SupportTicket extends FrappeDoc {
+  betreff: string;
+  anlage?: string;
+  kategorie?: string;
+  status?: StoerungStatus;
+  prioritaet?: Prioritaet;
+  beschreibung?: string;
+  eroeffnet_am?: string;
+  geschlossen_am?: string;
+  bearbeiter?: string;
+  /** Zugesagte Reaktionszeit laut Wartungsvertrag. */
+  sla_reaktion_bis?: string;
+}
+
+export interface FrappeFile extends FrappeDoc {
+  file_name: string;
+  file_url?: string;
+  file_size?: number;
+  attached_to_doctype?: string;
+  attached_to_name?: string;
+  is_private?: 0 | 1;
+}
+
+// ---------------------------------------------------------------------
+// Zugriffsfunktionen
+// ---------------------------------------------------------------------
+
+/**
+ * Frappe-Filter im Listenformat, z.B. [["status", "=", "Aktiv"]].
+ * Frappe erwartet das als JSON-String im Query-Parameter.
+ */
+export type FrappeFilter = [field: string, operator: string, value: unknown];
+
+export interface ListOptions {
+  fields?: string[];
+  filters?: FrappeFilter[];
+  orderBy?: string;
+  limit?: number;
+  start?: number;
+}
+
+/** Liest eine Liste von Dokumenten eines DocTypes. */
+export async function getList<T extends FrappeDoc>(
+  doctype: string,
+  options: ListOptions = {},
+): Promise<T[]> {
+  const { fields = ["*"], filters, orderBy, limit = 20, start = 0 } = options;
+
+  const result = await frappeFetch<{ data: T[] }>(
+    `/api/resource/${encodeURIComponent(doctype)}`,
+    {
+      query: {
+        fields: JSON.stringify(fields),
+        filters: filters ? JSON.stringify(filters) : undefined,
+        order_by: orderBy,
+        limit_page_length: limit,
+        limit_start: start,
+      },
+    },
+  );
+
+  return result.data ?? [];
+}
+
+/** Liest ein einzelnes Dokument anhand seines Frappe-Namens. */
+export async function getDoc<T extends FrappeDoc>(
+  doctype: string,
+  name: string,
+): Promise<T> {
+  const result = await frappeFetch<{ data: T }>(
+    `/api/resource/${encodeURIComponent(doctype)}/${encodeURIComponent(name)}`,
+  );
+  return result.data;
+}
+
+/** Zaehlt Dokumente, ohne sie alle zu laden. */
+export async function getCount(
+  doctype: string,
+  filters?: FrappeFilter[],
+): Promise<number> {
+  const result = await frappeFetch<{ message: number }>(
+    "/api/method/frappe.client.get_count",
+    {
+      query: {
+        doctype,
+        filters: filters ? JSON.stringify(filters) : undefined,
+      },
+    },
+  );
+  return result.message ?? 0;
+}
+
+/** Legt ein neues Dokument an. */
+export async function createDoc<T extends FrappeDoc>(
+  doctype: string,
+  doc: Record<string, unknown>,
+): Promise<T> {
+  const result = await frappeFetch<{ data: T }>(
+    `/api/resource/${encodeURIComponent(doctype)}`,
+    { method: "POST", json: doc },
+  );
+  return result.data;
+}
+
+/** Aktualisiert Felder eines bestehenden Dokuments. */
+export async function updateDoc<T extends FrappeDoc>(
+  doctype: string,
+  name: string,
+  patch: Record<string, unknown>,
+): Promise<T> {
+  const result = await frappeFetch<{ data: T }>(
+    `/api/resource/${encodeURIComponent(doctype)}/${encodeURIComponent(name)}`,
+    { method: "PUT", json: patch },
+  );
+  return result.data;
+}

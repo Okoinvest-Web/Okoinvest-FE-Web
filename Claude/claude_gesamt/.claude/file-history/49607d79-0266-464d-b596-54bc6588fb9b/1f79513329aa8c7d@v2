@@ -1,0 +1,245 @@
+/**
+ * Tests für das Lagebild.
+ *
+ * Die Gefahr bei einer Übersichtsseite ist nicht, dass sie abstürzt -
+ * sondern dass sie etwas Falsches beruhigend darstellt. Deshalb prüfen
+ * diese Tests vor allem, dass Stufen stimmen, dass nichts Kritisches
+ * unterschlagen wird und dass jede Ampel eine Begründung trägt.
+ */
+import { beforeEach, describe, expect, it } from 'vitest'
+import { mockRequest, resetMockData } from '@/api/mock/server.js'
+
+const ruf = (url, params) => mockRequest({ url, params })
+const lage = (params = {}) => ruf('netops.api.ops.situation_overview', params)
+
+beforeEach(() => {
+  resetMockData()
+})
+
+describe('Gesamtlage', () => {
+  it('nimmt die schlimmste Bereichsstufe als Gesamtstufe', async () => {
+    const l = await lage()
+    const stufen = l.areas.map((a) => a.level)
+    expect(l.overall.level).toBe(stufen.includes('critical') ? 'critical' : 'warning')
+  })
+
+  it('nennt die kritischen Bereiche beim Namen', async () => {
+    const l = await lage()
+    const kritisch = l.areas.filter((a) => a.level === 'critical').map((a) => a.label)
+    expect(l.overall.critical_areas).toEqual(kritisch)
+  })
+
+  it('formuliert die Lage als Satz, nicht als Farbe', async () => {
+    const l = await lage()
+    expect(l.overall.text.length).toBeGreaterThan(10)
+  })
+})
+
+describe('Bereichsampeln', () => {
+  it('begründet jede Ampel, die nicht grün ist', async () => {
+    // Eine Ampel ohne Begründung sagt niemandem, was zu tun ist.
+    const l = await lage()
+    for (const a of l.areas) {
+      if (a.level !== 'ok') expect(a.reasons.length).toBeGreaterThan(0)
+    }
+  })
+
+  it('führt von jeder Ampel dorthin, wo man sie abarbeitet', async () => {
+    const l = await lage()
+    for (const a of l.areas) {
+      expect(a.to.startsWith('/')).toBe(true)
+      expect(a.icon).toBeTruthy()
+    }
+  })
+
+  it('sortiert kritische Bereiche nach vorn', async () => {
+    const l = await lage()
+    const rang = { critical: 3, warning: 2, ok: 1, neutral: 0 }
+    const werte = l.areas.map((a) => rang[a.level])
+    expect([...werte].sort((x, y) => y - x)).toEqual(werte)
+  })
+
+  it('deckt alle acht Domänen ab', async () => {
+    const l = await lage()
+    const schluessel = l.areas.map((a) => a.key).sort()
+    expect(schluessel).toEqual([
+      'backup',
+      'betrieb',
+      'compliance',
+      'fristen',
+      'inventar',
+      'netz',
+      'security',
+      'strom',
+    ])
+  })
+
+  it('macht die Fristen-Ampel nur rot, wenn etwas den Betrieb sperrt', async () => {
+    // Eine abgelaufene Garantie kostet Geld, eine überfällige Prüfung
+    // sperrt ein Gerät. Dieselbe Abstufung wie in der Glocke.
+    const l = await lage()
+    const fristen = l.areas.find((a) => a.key === 'fristen')
+    const alle = await ruf('netops.api.inventar.deadline_overview', { days: 30 })
+    const sperrend = alle.entries.filter(
+      (f) => f.days < 0 && ['inspection', 'certificate', 'license'].includes(f.kind),
+    )
+    expect(fristen.level).toBe(sperrend.length ? 'critical' : 'warning')
+    if (sperrend.length) expect(fristen.reasons[0]).toMatch(/sperrt Betrieb/)
+  })
+})
+
+describe('Was zuerst', () => {
+  it('führt jeden Brennpunkt auf eine Seite, die ihn zeigt', async () => {
+    const l = await lage()
+    for (const p of l.hotspots) {
+      expect(p.to.startsWith('/')).toBe(true)
+      expect(p.bereich).toBeTruthy()
+      expect(p.title).toBeTruthy()
+    }
+  })
+
+  it('stellt Kritisches vor Nachrangiges', async () => {
+    const l = await lage()
+    const raenge = l.hotspots.map((p) => p.rang)
+    expect([...raenge].sort((a, b) => a - b)).toEqual(raenge)
+  })
+
+  it('nimmt einen offenen Vorfall mit NIS2-Frist auf', async () => {
+    const l = await lage()
+    expect(l.hotspots.some((p) => p.bereich === 'Security')).toBe(true)
+  })
+
+  it('führt ein SLA-überschrittenes Ticket auf', async () => {
+    const l = await lage()
+    const tickets = await ruf('netops.api.netsvc.ticket_list', {})
+    if (tickets.some((t) => t.sla_breached)) {
+      expect(l.hotspots.some((p) => p.bereich === 'Tickets')).toBe(true)
+    }
+  })
+})
+
+describe('Kapazität', () => {
+  it('zeigt nur, was tatsächlich eng wird', async () => {
+    // Eine Liste der vollsten Ressourcen ist wertlos, wenn alles leer ist.
+    const l = await lage()
+    for (const z of l.capacity.rows) expect(z.level).not.toBe('ok')
+  })
+
+  it('nennt je Art einen Bezugspunkt, damit die Lage einordbar bleibt', async () => {
+    const l = await lage()
+    const arten = l.capacity.peaks.map((z) => z.art).sort()
+    expect(arten).toEqual(['Präfix', 'Rack', 'Speicher', 'Strom'])
+  })
+
+  it('nimmt Pools und Container aus der Präfixrechnung heraus', async () => {
+    // Dort ist hohe Belegung der Zweck, kein Befund.
+    const l = await lage()
+    const praefixe = await ruf('netops.api.ipam.prefix_list', {})
+    const gezaehlt = praefixe.filter((p) => !p.is_pool && !p.has_children && p.usable).length
+    const imBild = [...l.capacity.rows, ...l.capacity.peaks].filter((z) => z.art === 'Präfix')
+    expect(imBild.length).toBeLessThanOrEqual(gezaehlt)
+  })
+
+  it('sagt, wie viel geprüft wurde – nicht nur, was auffiel', async () => {
+    const l = await lage()
+    expect(l.capacity.checked).toBeGreaterThan(l.capacity.rows.length)
+  })
+
+  it('wendet je Art eigene Schwellen an', async () => {
+    // Ein Rack auf 85 % ist normal, ein Präfix auf 85 % ist ein Problem.
+    const l = await lage()
+    for (const z of [...l.capacity.rows, ...l.capacity.peaks]) {
+      if (z.art === 'Präfix' && z.prozent >= 90) expect(z.level).toBe('critical')
+      if (z.art === 'Rack' && z.prozent < 80) expect(z.level).toBe('ok')
+    }
+  })
+})
+
+describe('Abdeckung', () => {
+  it('meldet Geräte ohne Inventarnummer, Agent, Dokument und Einspeisung', async () => {
+    const l = await lage()
+    expect(l.coverage.map((a) => a.key).sort()).toEqual(['agent', 'doku', 'inventory', 'strom'])
+  })
+
+  it('rechnet den Abdeckungsgrad passend zur Fehlmenge', async () => {
+    const l = await lage()
+    for (const a of l.coverage) {
+      const erwartet = Math.round(((a.gesamt - a.fehlend) / a.gesamt) * 100)
+      expect(a.prozent).toBe(erwartet)
+    }
+  })
+
+  it('nennt Beispiele, damit die Zahl greifbar wird', async () => {
+    const l = await lage()
+    for (const a of l.coverage) {
+      if (a.fehlend) expect(a.beispiele.length).toBeGreaterThan(0)
+      expect(a.beispiele.length).toBeLessThanOrEqual(4)
+    }
+  })
+
+  it('stuft kritisch, wenn mehr als die Hälfte fehlt', async () => {
+    const l = await lage()
+    for (const a of l.coverage) {
+      if (a.fehlend > a.gesamt / 2) expect(a.level).toBe('critical')
+      if (!a.fehlend) expect(a.level).toBe('ok')
+    }
+  })
+})
+
+describe('Verlauf', () => {
+  it('liefert für jeden Tag im Fenster einen Punkt', async () => {
+    const l = await lage({ days: 14 })
+    expect(l.timeline).toHaveLength(14)
+  })
+
+  it('endet heute und beginnt am Anfang des Fensters', async () => {
+    const l = await lage({ days: 30 })
+    const heute = new Date().toLocaleDateString('sv-SE')
+    expect(l.timeline.at(-1).tag).toBe(heute)
+    expect(l.timeline[0].tag < l.timeline.at(-1).tag).toBe(true)
+  })
+
+  it('zählt keinen Alarm doppelt', async () => {
+    const l = await lage({ days: 90 })
+    const alarme = await ruf('netops.api.ops.alert_list', { limit: 500 })
+    const imFenster = alarme.filter((a) =>
+      l.timeline.some((t) => t.tag === String(a.first_seen).slice(0, 10)),
+    )
+    expect(l.timeline.reduce((s, t) => s + t.alarme, 0)).toBe(imFenster.length)
+  })
+
+  it('zählt kritische Alarme als Teilmenge der Alarme', async () => {
+    const l = await lage({ days: 90 })
+    for (const t of l.timeline) expect(t.kritisch).toBeLessThanOrEqual(t.alarme)
+  })
+})
+
+describe('Mandantenfilter', () => {
+  it('rechnet das Lagebild je Mandant getrennt', async () => {
+    const alle = await lage()
+    const at = await lage({ tenant: 'TEN-0001' })
+    const de = await lage({ tenant: 'TEN-0002' })
+
+    const geraete = (l) => l.coverage[0].gesamt
+    expect(geraete(at) + geraete(de)).toBe(geraete(alle))
+  })
+
+  it('lässt die Bereichsstruktur unverändert, auch wenn ein Mandant leer ist', async () => {
+    const de = await lage({ tenant: 'TEN-0002' })
+    expect(de.areas).toHaveLength(8)
+  })
+})
+
+describe('Ein Aufruf statt zwölf', () => {
+  it('liefert alles, was die Seite braucht, in einer Antwort', async () => {
+    const l = await lage()
+    for (const feld of ['overall', 'areas', 'hotspots', 'capacity', 'coverage', 'timeline']) {
+      expect(l[feld]).toBeDefined()
+    }
+  })
+
+  it('nennt die Länge der Audit-Kette als Vertrauensgrundlage', async () => {
+    const l = await lage()
+    expect(l.overall.audit_entries).toBeGreaterThan(0)
+  })
+})

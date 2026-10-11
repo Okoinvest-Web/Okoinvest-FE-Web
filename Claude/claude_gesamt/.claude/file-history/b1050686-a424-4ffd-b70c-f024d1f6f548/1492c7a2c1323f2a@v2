@@ -1,0 +1,113 @@
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+
+import { lohntZaehlen, setzeZahl, zerlegeZahl } from "./zaehlwerk.ts";
+
+describe("Zahl herauslesen", () => {
+  it("liest eine einfache Zahl", () => {
+    const fund = zerlegeZahl("42");
+
+    assert.equal(fund?.wert, 42);
+    assert.equal(fund?.nachkomma, 0);
+    assert.equal(fund?.vorn, "");
+    assert.equal(fund?.hinten, "");
+  });
+
+  it("liest das Komma als Dezimalzeichen", () => {
+    assert.equal(zerlegeZahl("1483,1")?.wert, 1483.1);
+    assert.equal(zerlegeZahl("1483,1")?.nachkomma, 1);
+  });
+
+  it("liest den Punkt als Tausendertrennung", () => {
+    assert.equal(zerlegeZahl("24.480.000")?.wert, 24480000);
+  });
+
+  it("liest das schmale Leerzeichen als Tausendertrennung", () => {
+    // So setzt es Intl in de-AT.
+    assert.equal(zerlegeZahl("1 483,1")?.wert, 1483.1);
+    assert.equal(zerlegeZahl("412 000")?.wert, 412000);
+  });
+
+  it("behält den Text vor der Zahl", () => {
+    const fund = zerlegeZahl("€ 11.953,56");
+
+    assert.equal(fund?.vorn, "€ ");
+    assert.equal(fund?.wert, 11953.56);
+    assert.equal(fund?.nachkomma, 2);
+  });
+
+  it("behält den Text nach der Zahl", () => {
+    const fund = zerlegeZahl("57,0 %");
+
+    assert.equal(fund?.hinten, " %");
+    assert.equal(fund?.wert, 57);
+  });
+
+  it("liest ein Minus mit", () => {
+    // Ein Trend nach unten zählt nach unten.
+    assert.equal(zerlegeZahl("-3,2 %")?.wert, -3.2);
+  });
+
+  it("gibt bei Text ohne Zahl nichts zurück", () => {
+    assert.equal(zerlegeZahl("Geprüft"), null);
+    assert.equal(zerlegeZahl("–"), null);
+    assert.equal(zerlegeZahl(""), null);
+  });
+});
+
+describe("Zwischenwert setzen", () => {
+  const text = "€ 11.953,56";
+  const fund = zerlegeZahl(text)!;
+
+  it("gibt am Ende genau den Ausgangstext zurück", () => {
+    // Darauf verlässt sich die Animation: Nach dem letzten Bild darf
+    // nichts springen.
+    assert.equal(setzeZahl(fund, 1, text), text);
+    assert.equal(setzeZahl(fund, 1.5, text), text);
+  });
+
+  it("behält Vor- und Nachtext", () => {
+    const halb = setzeZahl(fund, 0.5, text);
+
+    assert.ok(halb.startsWith("€ "), halb);
+    assert.equal(zerlegeZahl(halb)?.nachkomma, 2);
+  });
+
+  it("zählt von null aus", () => {
+    assert.equal(zerlegeZahl(setzeZahl(fund, 0, text))?.wert, 0);
+  });
+
+  it("liegt in der Mitte bei der Hälfte", () => {
+    assert.equal(zerlegeZahl(setzeZahl(fund, 0.5, text))?.wert, 5976.78);
+  });
+
+  it("behält die Einheit hinter der Zahl", () => {
+    const prozent = "57,0 %";
+    const p = zerlegeZahl(prozent)!;
+
+    assert.ok(setzeZahl(p, 0.5, prozent).endsWith(" %"));
+  });
+});
+
+describe("Lohnt das Zählen", () => {
+  it("zählt eine große Zahl", () => {
+    assert.equal(lohntZaehlen(zerlegeZahl("1.240,5")), true);
+  });
+
+  it("zählt eine kleine Zahl nicht", () => {
+    // Von 0 auf 4 zu zählen ist ein Flackern, keine Bewegung.
+    assert.equal(lohntZaehlen(zerlegeZahl("4")), false);
+  });
+
+  it("zählt bei drei Nachkommastellen nicht", () => {
+    assert.equal(lohntZaehlen(zerlegeZahl("17,742")), false);
+  });
+
+  it("zählt nichts, wo keine Zahl ist", () => {
+    assert.equal(lohntZaehlen(zerlegeZahl("Freigegeben")), false);
+  });
+
+  it("zählt auch nach unten", () => {
+    assert.equal(lohntZaehlen(zerlegeZahl("-84,0 %")), true);
+  });
+});

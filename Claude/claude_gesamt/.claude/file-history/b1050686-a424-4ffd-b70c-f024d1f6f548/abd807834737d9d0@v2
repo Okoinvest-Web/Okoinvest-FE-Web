@@ -1,0 +1,136 @@
+"use client";
+
+import { useSyncExternalStore } from "react";
+
+import { THEMA_SCHLUESSEL, type Thema } from "@/lib/thema";
+
+/**
+ * Umschalter für hell, dunkel und Systemvorgabe.
+ *
+ * Drei Zustände, nicht zwei. Ein Schalter, der nur zwischen hell und
+ * dunkel kippt, kann die Systemvorgabe nicht mehr annehmen - wer
+ * abends automatisch dunkel haben will, bekommt es nie wieder, sobald
+ * er einmal geschaltet hat.
+ *
+ * Gespeichert wird im Browser des Anwenders, nicht am Server: Die
+ * Wahl gehört zum Gerät, nicht zum Konto. Wer tagsüber am hellen
+ * Schreibtisch und abends am Telefon arbeitet, will nicht dieselbe
+ * Einstellung an beiden Stellen.
+ */
+
+/* ------------------------------------------------------------------ */
+/* Der Speicher hinter dem Schalter                                    */
+/* ------------------------------------------------------------------ */
+
+/*
+ * Bewusst kein `useEffect`, der nach dem Aufbau den Zustand nachzieht.
+ * Das erzeugt einen zweiten Durchlauf, und für einen Bildaufbau steht
+ * der falsche Knopf hervorgehoben. `useSyncExternalStore` ist für
+ * genau diesen Fall da: ein Wert, der außerhalb von React liegt.
+ *
+ * Nebenwirkung, die keine ist, sondern der Grund: Über das
+ * `storage`-Ereignis zieht ein zweiter Tab mit. Wer die Anwendung in
+ * zwei Fenstern offen hat, stellt nicht zweimal um.
+ */
+const horcher = new Set<() => void>();
+
+function melde(): void {
+  for (const h of horcher) h();
+}
+
+function abonniere(rueckruf: () => void): () => void {
+  horcher.add(rueckruf);
+  window.addEventListener("storage", melde);
+  return () => {
+    horcher.delete(rueckruf);
+    if (horcher.size === 0) window.removeEventListener("storage", melde);
+  };
+}
+
+function lies(): Thema {
+  try {
+    const wert = localStorage.getItem(THEMA_SCHLUESSEL);
+    return wert === "hell" || wert === "dunkel" ? wert : "system";
+  } catch {
+    return "system";
+  }
+}
+
+/** Am Server ist die Wahl des Anwenders nicht bekannt. */
+function liesAmServer(): Thema {
+  return "system";
+}
+
+export function setzeThema(thema: Thema): void {
+  const wurzel = document.documentElement;
+  if (thema === "system") {
+    wurzel.removeAttribute("data-thema");
+  } else {
+    wurzel.setAttribute("data-thema", thema);
+  }
+
+  try {
+    if (thema === "system") {
+      localStorage.removeItem(THEMA_SCHLUESSEL);
+    } else {
+      localStorage.setItem(THEMA_SCHLUESSEL, thema);
+    }
+  } catch {
+    /* Ohne Speicher gilt die Wahl nur für diese Sitzung. */
+  }
+
+  melde();
+}
+
+export function useThema(): Thema {
+  return useSyncExternalStore(abonniere, lies, liesAmServer);
+}
+
+/* ------------------------------------------------------------------ */
+/* Der Schalter                                                        */
+/* ------------------------------------------------------------------ */
+
+const STUFEN: { wert: Thema; titel: string; kurz: string; zeichen: string }[] = [
+  { wert: "hell", titel: "Helle Ansicht", kurz: "Hell", zeichen: "☀" },
+  { wert: "system", titel: "Wie das System", kurz: "Auto", zeichen: "◐" },
+  { wert: "dunkel", titel: "Dunkle Ansicht", kurz: "Dunkel", zeichen: "☾" },
+];
+
+export function ThemaSchalter() {
+  const thema = useThema();
+
+  return (
+    <div
+      role="radiogroup"
+      aria-label="Erscheinungsbild"
+      className="flex items-center gap-0.5 rounded-full border p-0.5"
+      style={{ borderColor: "var(--linie)", background: "var(--f-vertieft)" }}
+    >
+      {STUFEN.map((stufe) => {
+        const aktiv = stufe.wert === thema;
+
+        return (
+          <button
+            key={stufe.wert}
+            type="button"
+            role="radio"
+            aria-checked={aktiv}
+            title={stufe.titel}
+            onClick={() => setzeThema(stufe.wert)}
+            className="rounded-full px-2 py-1 text-[0.6875rem] font-medium transition-colors duration-300"
+            style={{
+              background: aktiv ? "var(--f-ebene)" : undefined,
+              color: aktiv ? "var(--t-stark)" : "var(--t-zart)",
+              boxShadow: aktiv ? "var(--schatten-ruhe)" : undefined,
+            }}
+          >
+            <span aria-hidden className="mr-1">
+              {stufe.zeichen}
+            </span>
+            {stufe.kurz}
+          </button>
+        );
+      })}
+    </div>
+  );
+}

@@ -1,0 +1,27 @@
+// Aktivitäten (Anruf, Termin, E-Mail, Notiz) werden als ERPNext-Kommentar gespeichert.
+// Art und Ergebnis stehen als Präfix im Text, z. B. "[Anruf · Erreicht] Angebot besprochen",
+// damit sie auch in der ERPNext-Oberfläche lesbar bleiben.
+
+export const ACTIVITY_KINDS = {
+  note: { label: "Notiz", outcomes: [] as string[] },
+  call: { label: "Anruf", outcomes: ["Erreicht", "Nicht erreicht", "Rückruf vereinbart", "Mailbox"] },
+  visit: { label: "Vor-Ort-Termin", outcomes: ["Durchgeführt", "Verschoben", "Abgesagt"] },
+  mail: { label: "E-Mail", outcomes: ["Gesendet", "Antwort erhalten"] },
+} as const;
+
+export type ActivityKind = keyof typeof ACTIVITY_KINDS;
+
+export function encodeActivity(kind: ActivityKind, outcome: string | undefined, text: string) {
+  if (kind === "note") return text;
+  const head = [ACTIVITY_KINDS[kind].label, outcome].filter(Boolean).join(" · ");
+  return `[${head}] ${text}`.trim();
+}
+
+export function decodeActivity(content: string): { kind: ActivityKind; outcome?: string; text: string } {
+  const m = content.match(/^\[([^\]·]+?)(?:\s·\s([^\]]+))?\]\s?([\s\S]*)$/);
+  if (m) {
+    const kind = (Object.keys(ACTIVITY_KINDS) as ActivityKind[]).find((k) => ACTIVITY_KINDS[k].label === m[1].trim());
+    if (kind) return { kind, outcome: m[2]?.trim(), text: m[3] };
+  }
+  return { kind: "note", text: content };
+}

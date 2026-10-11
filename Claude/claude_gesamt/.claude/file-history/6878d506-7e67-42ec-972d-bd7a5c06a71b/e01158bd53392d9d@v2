@@ -1,0 +1,153 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { CheckSquare, FileText, Handshake, Mail, MapPin, Pencil, Phone, Plus } from "lucide-react";
+import { db } from "@/lib/data";
+import { date, LEAD_STATUS_LABEL, money, STAGE_LABEL } from "@/lib/format";
+import { Avatar, Badge, BTN, Card, CardHeader, Field, PageBody, PageHeader, Progress } from "@/components/ui";
+import { LeadStatusSelect } from "@/components/interactive";
+import { ConvertLeadButton, ToDoForm } from "@/components/forms";
+import { Timeline } from "@/components/Timeline";
+import { TodoList } from "@/components/TodoList";
+import { NextSteps, ScoreCard } from "@/components/Insights";
+import { PvCalculator } from "@/components/PvCalculator";
+import { leadHints, parsePv, scoreLead } from "@/lib/insights";
+
+export async function generateMetadata({ params }: PageProps<"/leads/[name]">) {
+  const lead = await db().getLead(decodeURIComponent((await params).name));
+  return { title: lead?.lead_name ?? "Lead" };
+}
+
+export default async function LeadPage({ params }: PageProps<"/leads/[name]">) {
+  const name = decodeURIComponent((await params).name);
+  const lead = await db().getLead(name);
+  if (!lead) notFound();
+
+  const [opps, todos] = await Promise.all([
+    db().listOpportunities({ filters: { party_name: lead.name } }),
+    db().listToDos({ filters: { reference_name: lead.name } }),
+  ]);
+  const score = scoreLead(lead);
+  const hints = leadHints(lead, opps, todos);
+  const pv = parsePv([lead.notes, ...opps.map((o) => o.title)].join(" "));
+
+  return (
+    <>
+      <PageHeader
+        title={lead.lead_name}
+        crumbs={[{ href: "/leads", label: "Leads" }]}
+        actions={
+          <>
+            {lead.status !== "Converted" && <ConvertLeadButton name={lead.name} label={lead.lead_name} />}
+            <Link href={`/leads/${encodeURIComponent(lead.name)}/edit`} className={BTN.secondary}>
+              <Pencil className="size-3.5" /> Bearbeiten
+            </Link>
+            <LeadStatusSelect name={lead.name} status={lead.status} />
+          </>
+        }
+      />
+      <PageBody className="grid items-start gap-6 xl:grid-cols-[1fr_340px]">
+        <div className="grid min-w-0 gap-6">
+          {/* Kopfkarte */}
+          <Card className="overflow-hidden">
+            <div className="h-16 bg-linear-to-r from-brand-700 via-brand-600 to-brand-500" />
+            <div className="-mt-8 flex flex-wrap items-end gap-4 px-6 pb-5">
+              <span className="rounded-full ring-4 ring-white">
+                <Avatar name={lead.lead_name} size="lg" />
+              </span>
+              <div className="min-w-0 flex-1 pb-1">
+                <h2 className="text-lg font-semibold text-gray-900">{lead.lead_name}</h2>
+                <p className="flex flex-wrap items-center gap-x-3 text-sm text-gray-500">
+                  {lead.company_name && <span>{lead.company_name}</span>}
+                  {lead.territory && (
+                    <span className="inline-flex items-center gap-1">
+                      <MapPin className="size-3.5" /> {lead.territory}
+                    </span>
+                  )}
+                </p>
+              </div>
+              <div className="flex gap-2 pb-1">
+                {lead.email_id && (
+                  <a href={`mailto:${lead.email_id}`} className={BTN.secondary}>
+                    <Mail className="size-4 text-brand-600" /> E-Mail
+                  </a>
+                )}
+                {lead.mobile_no && (
+                  <a href={`tel:${lead.mobile_no.replace(/\s/g, "")}`} className={BTN.primary}>
+                    <Phone className="size-4" /> Anrufen
+                  </a>
+                )}
+              </div>
+            </div>
+            {lead.notes && <p className="whitespace-pre-wrap border-t border-gray-100 px-6 py-4 leading-relaxed text-gray-700">{lead.notes}</p>}
+          </Card>
+
+          {hints.length > 0 && <NextSteps hints={hints} />}
+
+          <Card>
+            <CardHeader
+              title="Chancen"
+              icon={Handshake}
+              action={
+                <Link href={`/opportunities/new?from=Lead&party=${encodeURIComponent(lead.name)}`} className={BTN.ghost}>
+                  <Plus className="size-3.5" /> Neue Chance
+                </Link>
+              }
+            />
+            {opps.length === 0 ? (
+              <p className="px-5 py-8 text-center text-gray-500">Noch keine Chance zu diesem Lead.</p>
+            ) : (
+              <ul className="divide-y divide-gray-100">
+                {opps.map((o) => (
+                  <li key={o.name}>
+                    <Link href={`/opportunities/${encodeURIComponent(o.name)}`} className="flex items-center gap-4 px-5 py-3 transition-colors hover:bg-gray-50/70">
+                      <div className="min-w-0 flex-1">
+                        <div className="font-medium text-gray-900">{o.title}</div>
+                        <div className="text-xs text-gray-500">{STAGE_LABEL[o.sales_stage]}</div>
+                      </div>
+                      <Progress value={o.probability} className="hidden w-24 sm:block" />
+                      <span className="w-28 text-right font-semibold tabular-nums">{money(o.opportunity_amount, o.currency)}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+
+          <Card>
+            <CardHeader title="Aufgaben" icon={CheckSquare} sub={`${todos.filter((t) => t.status === "Open").length} offen`} />
+            <div className="border-b border-gray-100 px-5 py-3">
+              <ToDoForm referenceType="Lead" referenceName={lead.name} compact />
+            </div>
+            <TodoList todos={todos} />
+          </Card>
+
+          <PvCalculator kwp={pv.kwp} storage={pv.storage} invest={opps[0]?.opportunity_amount} />
+
+          <Timeline doctype="Lead" name={lead.name} />
+        </div>
+
+        <div className="grid gap-6">
+        <ScoreCard s={score} />
+        <Card>
+          <CardHeader title="Details" icon={FileText} />
+          <dl className="px-5 py-2">
+            <Field label="Status">
+              <Badge value={lead.status} label={LEAD_STATUS_LABEL[lead.status]} />
+            </Field>
+            <Field label="E-Mail">{lead.email_id}</Field>
+            <Field label="Mobil">{lead.mobile_no}</Field>
+            <Field label="Quelle">{lead.source}</Field>
+            <Field label="Region">{lead.territory}</Field>
+            <Field label="Berater">{lead.lead_owner}</Field>
+            <Field label="Angelegt">{date(lead.creation)}</Field>
+            <Field label="Geändert">{date(lead.modified)}</Field>
+            <Field label="ID">
+              <span className="font-mono text-xs">{lead.name}</span>
+            </Field>
+          </dl>
+        </Card>
+        </div>
+      </PageBody>
+    </>
+  );
+}

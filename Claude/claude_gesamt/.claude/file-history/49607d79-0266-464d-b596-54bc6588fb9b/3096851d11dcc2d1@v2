@@ -1,0 +1,326 @@
+<template>
+  <div>
+    <PageHeader title="Ausgabe und Rücknahme" :subtitle="untertitel" />
+
+    <div class="p-6">
+      <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
+        <!-- Erfassen -->
+        <div>
+          <CodeScanner titel="Gegenstand erfassen" @code="waehle" />
+
+          <div
+            v-if="gewaehlt"
+            class="mt-4 rounded-lg border border-outline-gray-2 bg-surface-white p-4"
+          >
+            <div class="flex flex-wrap items-start justify-between gap-3">
+              <div class="min-w-0">
+                <RouterLink
+                  :to="'/inventory/' + gewaehlt.asset_tag"
+                  class="text-base font-medium text-ink-gray-9 underline decoration-outline-gray-3 underline-offset-2"
+                >
+                  {{ gewaehlt.asset_name }}
+                </RouterLink>
+                <p class="mt-0.5 font-mono text-sm text-ink-gray-6">{{ gewaehlt.asset_tag }}</p>
+                <p class="mt-0.5 text-sm text-ink-gray-6">
+                  {{ gewaehlt.category }} · {{ gewaehlt.site_name }}
+                </p>
+              </div>
+              <Badge :theme="zustandThema(gewaehlt.asset_state)">
+                {{ ZUSTAND[gewaehlt.asset_state] }}
+              </Badge>
+            </div>
+
+            <StatusDot
+              v-if="gewaehlt.reasons.length"
+              class="mt-3"
+              :level="gewaehlt.level"
+              :text="gewaehlt.reasons.join(' · ')"
+              klein
+            />
+
+            <!-- Ausgabe -->
+            <form
+              v-if="gewaehlt.asset_state === 'in_stock'"
+              class="mt-4"
+              @submit.prevent="ausgeben"
+            >
+              <h3 class="mb-2 text-sm font-medium text-ink-gray-7">Ausgeben an</h3>
+              <div class="flex flex-wrap items-end gap-3">
+                <FormControl
+                  v-model="person"
+                  label="Person"
+                  type="select"
+                  :options="personOptionen"
+                />
+                <FormControl v-model="rueckgabeBis" label="Rückgabe bis" type="date" />
+                <FormControl
+                  v-model="zweck"
+                  label="Zweck"
+                  type="text"
+                  placeholder="Montageeinsatz"
+                />
+                <Button
+                  variant="solid"
+                  type="submit"
+                  :loading="ausgabe.loading"
+                  :disabled="!person"
+                >
+                  Ausgeben
+                </Button>
+              </div>
+            </form>
+
+            <!-- Rücknahme -->
+            <form
+              v-else-if="gewaehlt.asset_state === 'issued'"
+              class="mt-4"
+              @submit.prevent="zuruecknehmen"
+            >
+              <h3 class="mb-2 text-sm font-medium text-ink-gray-7">
+                Zurücknehmen von {{ gewaehlt.holder_name }}
+              </h3>
+              <div class="flex flex-wrap items-end gap-3">
+                <FormControl
+                  v-model="zustandEin"
+                  label="Zustand"
+                  type="text"
+                  placeholder="ohne Beanstandung"
+                />
+                <div class="pb-2">
+                  <label class="flex items-center gap-2 text-sm text-ink-gray-7">
+                    <input v-model="beschaedigt" type="checkbox" class="size-4" />
+                    Schaden melden
+                  </label>
+                </div>
+                <FormControl
+                  v-if="beschaedigt"
+                  v-model="schadenText"
+                  label="Was ist beschädigt?"
+                  type="text"
+                />
+                <FormControl
+                  v-if="beschaedigt"
+                  v-model="schadenGrad"
+                  label="Schwere"
+                  type="select"
+                  :options="gradOptionen"
+                />
+                <Button variant="solid" type="submit" :loading="ruecknahme.loading">
+                  Zurücknehmen
+                </Button>
+              </div>
+              <p v-if="beschaedigt" class="mt-2 text-xs text-ink-gray-5">
+                Mit Schadensmeldung geht der Gegenstand in Reparatur statt ins Lager – sonst gibt
+                ihn jemand weiter aus.
+              </p>
+            </form>
+
+            <p v-else class="mt-4 text-sm text-ink-gray-6">
+              In diesem Zustand ist weder Ausgabe noch Rücknahme möglich.
+            </p>
+          </div>
+
+          <!-- Hindernisse -->
+          <div
+            v-if="hindernisse.length"
+            role="alert"
+            class="mt-4 rounded-lg border border-outline-red-2 bg-surface-red-1 p-4"
+          >
+            <StatusDot level="critical" text="Ausgabe nicht möglich" />
+            <ul class="mt-2 space-y-1">
+              <li v-for="(h, i) in hindernisse" :key="i" class="text-sm text-ink-gray-7">
+                {{ h.text }}
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Was gerade draußen ist -->
+        <div>
+          <h2 class="mb-3 text-base font-semibold text-ink-gray-8">Derzeit ausgegeben</h2>
+          <DataTable
+            :columns="spalten"
+            :rows="ausgegeben"
+            :loading="bestand.loading"
+            empty-text="Nichts ausgegeben."
+            :on-row-click="(zeile) => waehle(zeile.asset_tag)"
+          >
+            <template #zelle-asset_tag="{ zeile }">
+              <span class="font-mono text-sm text-ink-gray-9">{{ zeile.asset_tag }}</span>
+            </template>
+            <template #zelle-holder_name="{ zeile }">
+              <StatusDot
+                v-if="zeile.holder_active === false"
+                level="critical"
+                :text="zeile.holder_name + ' (ausgetreten)'"
+                klein
+              />
+              <span v-else class="text-sm">{{ zeile.holder_name }}</span>
+            </template>
+          </DataTable>
+        </div>
+      </div>
+
+      <p class="mt-6 text-xs text-ink-gray-4">
+        Die Regeln stehen in der Server-Methode, nicht im Formular: ein Messgerät mit überfälliger
+        Kalibrierung lässt sich nicht ausgeben, auch nicht mit Nachdruck. Wer damit eine Anlage
+        abnimmt, unterschreibt eine Messung, die nicht gilt.
+      </p>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed, onMounted, ref } from 'vue'
+import { useRoute } from 'vue-router'
+import { Badge, Button, FormControl, createResource, toast } from 'frappe-ui'
+import PageHeader from '@/components/PageHeader.vue'
+import DataTable from '@/components/DataTable.vue'
+import StatusDot from '@/components/StatusDot.vue'
+import CodeScanner from '@/components/CodeScanner.vue'
+import { fehlerText } from '@/viz'
+
+const ZUSTAND = {
+  in_stock: 'Im Lager',
+  issued: 'Ausgegeben',
+  reserved: 'Reserviert',
+  repair: 'In Reparatur',
+  retired: 'Ausgemustert',
+  disposed: 'Entsorgt',
+}
+
+const route = useRoute()
+
+const gewaehltName = ref('')
+const person = ref('')
+const rueckgabeBis = ref('')
+const zweck = ref('')
+const zustandEin = ref('')
+const beschaedigt = ref(false)
+const schadenText = ref('')
+const schadenGrad = ref('medium')
+const hindernisse = ref([])
+
+const bestand = createResource({ url: 'netops.api.inventar.asset_list', auto: true })
+const personen = createResource({
+  url: 'netops.api.personal.employee_list',
+  params: { status: 'Active' },
+  auto: true,
+})
+const ausgabe = createResource({ url: 'netops.api.inventar.assign_asset' })
+const ruecknahme = createResource({ url: 'netops.api.inventar.return_asset' })
+
+onMounted(() => {
+  if (route.query.asset) gewaehltName.value = String(route.query.asset)
+})
+
+const gewaehlt = computed(
+  () =>
+    (bestand.data || []).find(
+      (a) => a.name === gewaehltName.value || a.asset_tag === gewaehltName.value,
+    ) || null,
+)
+
+const ausgegeben = computed(() => (bestand.data || []).filter((a) => a.asset_state === 'issued'))
+
+const personOptionen = computed(() => [
+  { label: 'Person wählen …', value: '' },
+  ...(personen.data || []).map((p) => ({
+    label: p.employee_name + ' · ' + (p.department || ''),
+    value: p.name,
+  })),
+])
+
+const gradOptionen = [
+  { label: 'Leicht', value: 'low' },
+  { label: 'Mittel', value: 'medium' },
+  { label: 'Schwer', value: 'high' },
+]
+
+const spalten = [
+  { key: 'asset_tag', label: 'Nummer', width: '130px' },
+  { key: 'asset_name', label: 'Gegenstand' },
+  { key: 'holder_name', label: 'Bei', width: '210px' },
+]
+
+const untertitel = computed(() => {
+  const liste = bestand.data || []
+  return (
+    liste.filter((a) => a.asset_state === 'issued').length +
+    ' ausgegeben · ' +
+    liste.filter((a) => a.asset_state === 'in_stock').length +
+    ' im Lager'
+  )
+})
+
+/** Nimmt eine Inventarnummer oder eine gescannte QR-URL. */
+function waehle(wert) {
+  hindernisse.value = []
+  const roh = String(wert).trim()
+  gewaehltName.value = roh.includes('/') ? decodeURIComponent(roh.split('/').pop()) : roh
+  if (!gewaehlt.value) {
+    toast.create({
+      message: `Zu "${gewaehltName.value}" gibt es kein Inventarobjekt`,
+      type: 'error',
+    })
+  }
+}
+
+async function ausgeben() {
+  hindernisse.value = []
+  try {
+    const ergebnis = await ausgabe.submit({
+      asset: gewaehlt.value.name,
+      employee: person.value,
+      due_on: rueckgabeBis.value || null,
+      purpose: zweck.value || null,
+    })
+    if (!ergebnis.ok) {
+      hindernisse.value = ergebnis.blocked
+      return
+    }
+    toast.create({ message: 'Ausgegeben', type: 'success' })
+    person.value = ''
+    rueckgabeBis.value = ''
+    zweck.value = ''
+    await bestand.fetch()
+  } catch (fehler) {
+    toast.create({ message: fehlerText(fehler), type: 'error' })
+  }
+}
+
+async function zuruecknehmen() {
+  try {
+    await ruecknahme.submit({
+      asset: gewaehlt.value.name,
+      condition_in: zustandEin.value || null,
+      damaged: beschaedigt.value,
+      damage_summary: schadenText.value || null,
+      damage_severity: schadenGrad.value,
+    })
+    toast.create({
+      message: beschaedigt.value ? 'Zurückgenommen, Schaden erfasst' : 'Zurückgenommen',
+      type: 'success',
+    })
+    zustandEin.value = ''
+    beschaedigt.value = false
+    schadenText.value = ''
+    await bestand.fetch()
+  } catch (fehler) {
+    toast.create({ message: fehlerText(fehler), type: 'error' })
+  }
+}
+
+function zustandThema(wert) {
+  return (
+    {
+      in_stock: 'green',
+      issued: 'blue',
+      reserved: 'orange',
+      repair: 'orange',
+      retired: 'gray',
+      disposed: 'gray',
+    }[wert] || 'gray'
+  )
+}
+</script>

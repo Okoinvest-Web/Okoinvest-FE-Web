@@ -1,0 +1,1035 @@
+145292 []
+# DATENREKONSTRUKTION nach Cyberangriff – Fahrtenbuch 2025
+
+**Ivan Kovacevic, ÖKOVOLT Solartechnik GmbH. Fahrzeuge: GM-718IW (bis 17.01.2025 lt. Stammdaten) und GM-297IW (ab 17.01.2025). Stand: 01.10.2026.**
+
+> Das ist **kein Original-Fahrtenbuch**, sondern eine nachträgliche Rekonstruktion aus Tankkarten-Sammelrechnungen, Aufwandsabrechnungen, Werkstatt- und Mietbelegen. Kilometerstände werden unverändert aus den Belegen übernommen. Eine Fahrt gilt nur dann als betrieblich BELEGT, wenn ein Zweck-Beleg vorliegt. **Für 2025 liegt kein einziger Zweck-Beleg vor.** Alle Dienstreise-Zeilen sind MODELL (Hypothese) oder ANGABE (Aussage des Auftraggebers). Sie müssen mit E-Mails, Kalendereinträgen oder Rechnungen bestätigt werden. Die 6.000-km-Grenze hat die Modellbildung nicht gesteuert; das Privat-km-Ergebnis wurde erst danach berechnet.
+
+**Statuslegende:** BELEGT = steht so auf einem Beleg · ANGABE = Aussage des Auftraggebers, Nachweis ausstehend · MODELL = rechnerische Hypothese (violett), nicht bestätigt · ABGELEITET = Rechenwert mit Rechenweg · OFFEN = nicht feststellbar oder nicht zugeordnet · INDIZ = Hinweis ohne Beweiskraft.
+
+## Kurzergebnis
+
+| Kennzahl 2025 | Wert | Status |
+|---|---|---|
+| Belegte km-Differenzen (GM-718IW 08.01.–19.01.: 2.250; GM-297IW 24.01.–19.12.: 41.348) | **43.598 km** | BELEGT (Differenz der Beleg-km) |
+| Basis-Gesamt-km (zusätzlich GM-718IW 01.01.–08.01. zeitanteilig 1.494 km) | **45.092 km** | ABGELEITET |
+| Zusätzlich 19.12.–31.12. (Fortschreibung 83,4 km/Tag) | ca. 1.039 km | ABGELEITET |
+| Zusätzlich GM-297IW vor dem 24.01. (Übernahme-km fehlt) | 0–1.456 km | OFFEN |
+| Spanne Jahres-km | 45.092 – 47.588 km | ABGELEITET |
+| Betriebliche km mit Zweck-Beleg | **0 km** | BELEGT |
+| Szenario A (Dienstort Ostermiething), Privat-km | 45.092 km (bzw. 44.287 km, wenn die Lochau-ANGABEN 805 km anerkannt werden) | ABGELEITET |
+| Szenario B (Dienstort Tirol), betrieblich = 43 vereinbare Wochen (39 volle Fahrten + 4 Rundreise-Anteile) 14.712,3 km MODELL + Lochau 805,0 km ANGABE + Brenner 0 + INDIZ 0 | **15.517,3 km** | MODELL/ANGABE |
+| Szenario B, Privat-km (45.092 − 15.517) | **29.575 km** (mit Dezember-Rest ca. 30.614 km) | ABGELEITET |
+| Fehlende betriebliche km für den halben Sachbezug (≤ 6.000 km privat) | **ca. 23.575 km** (mit Dezember-Rest ca. 24.614 km) | ABGELEITET |
+| Variante B-Formel (43 × 357,9 + 805) | 16.194,7 km betrieblich, Privat 28.897 km, Fehlbetrag 22.897 km | ABGELEITET |
+| Variante B-streng (nur 12 Wochen mit Wahrscheinlichkeit hoch/mittel: 3.617,4 + 805) | 4.422,4 km betrieblich, Privat 40.670 km, Fehlbetrag 34.670 km | ABGELEITET |
+| Monate mit höchstens 500 km privat (Szenario B) | **0 von 12** | ABGELEITET |
+| Nicht zugeordnete km in Tirol-Abschnitten (außerhalb der Ostermiething-Fahrten) | 17.778 km | OFFEN |
+| Wochentest | 43 vereinbar (davon 4 nur als Rundreise), 6 NICHT vereinbar, 4 nicht prüfbar | ABGELEITET |
+| Abschnittstest | 11 von 44 Hall-Raum-Abschnitten treffen ±60 km. Zufallserwartung ca. 14,8, also kein Beleg für ein Wochenmuster. | ABGELEITET |
+
+**Gewichtung (ABGELEITET, keine Zielrechnung):** Selbst wenn man alle 17.778 nicht zugeordneten Tirol-km und alle 5.781 km Fernfahrten mit Ortsanker (Frankfurt, Wien, Wels, Buchloe, Steinfeld, Gleinalm, Linz) betrieblich wertete, blieben in Szenario B noch ca. 6.016 km nicht zugeordnet. Dazu kämen der Dezember-Rest (ca. 1.039 km) und die OFFENEN km vor dem 24.01. Der halbe Sachbezug wäre also nur erreichbar, wenn praktisch jeder gefahrene Kilometer betrieblich und belegt wäre. Das ist ohne Belege nicht darstellbar.
+
+**Wichtigste Widersprüche:**
+- Die Angabe „immer einmal pro Woche“ scheitert in 6 Wochen an den km-Ankern: KW15, KW18, KW25 (oder KW24), KW26, KW49 und KW51.
+- Am 02.12. liegt die Arlberg-Maut 54 Minuten nach der Tankung in Hall. Das erfordert ca. 132 km/h im Schnitt.
+- Zwischen Salzburg (13.11.) und Innsbruck (16.11.) liegen laut km-Belegen 26 km, die Mindeststrecke beträgt aber 184,6 km.
+- Gleinalm (14:29) → Salzburg (16:58) ist zeitlich kaum fahrbar.
+- GM-718IW war über den Wechseltag 17.01. hinaus in Betrieb.
+- Karte ...0161 wurde bis 24.01. mit km-Werten des neuen Fahrzeugs verwendet.
+
+---
+
+## 0. Methodik, Quellen und Angabe-Historie
+
+**Quellen:**
+- eni-Multicard-Sammelrechnungen der Karten ...0161 (GM 718IW) und ...0302 (GM 297IW), mit Datei und Seite in jeder Zeile.
+- Aufwandsabrechnungen BU_092025, BU_342025 und BU_462025.
+- Mietrechnungen ROAD Lifestyle/BR Mobility.
+- Vorjahresanker ER_00051685_31.12.2024.
+
+**Routen:**
+- Routenplaner OSRM laut Recherche vom 01.10.2026.
+- Ergänzende OSRM-Abfragen vom 01.10.2026 für Strecken, die in der Recherche fehlten: Hall–Lochau 198,7 km, über Arlberg 203,8 km; Lochau–Hall 198,7 km; Hall–Brenner 42,9 km; Hall–Frankfurt 562,6 km; Frankfurt–Schondra–Hall 635,2 km; Schondra–Ostermiething 458,1 km; Wels–Buchloe 292,5 km; Buchloe–Hall 157,7 km; Gleinalm–Salzburg 246,8 km in 208 min; Hall–Ostermiething–Wien 490,1 km; Wien–Ostermiething–Hall 491,6 km; Linz–Ostermiething–Hall 328,4 km; Ostermiething–Kiefersfelden 114,3 km; Hall–Ostermiething–Wels 297,2 km.
+- Werte, die die Recherche nur in eine Richtung angibt, werden für beide Richtungen verwendet (ABGELEITET).
+- Die Ersatzpunkte der Koordinaten haben eine Unschärfe von etwa ±2 km (Wohnung) bzw. ±10 km (Mautstellen).
+
+**Hall–Ostermiething–Hall:** 178,4 + 179,5 = 357,9 km, Fahrzeit laut Modell 2 × 2 h 18 min.
+
+**Rückfahrt-Regel:**
+- Jede Modell- oder Angabe-Fahrt hat im Fahrtenbuch eine eigene Rückfahrt-Zeile.
+- Ausnahmen sind Rundreisen mit belegtem Weiterfahrt-Anker (Wels, Wien, Linz, Kiefersfelden, Salzburg-Liefering) und belegte Übernachtungen (Frankfurt 08./09.04., Wien 10./11.07.).
+- Bei Rundreisen zählt als betrieblicher MODELL-Anteil nur die Teilstrecke Hall→Ostermiething bzw. Ostermiething→Hall. Die Weiterfahrt bleibt OFFEN, bis ihr Zweck belegt ist.
+
+**Angabe-Historie (neutral dokumentiert):**
+- (1) Frühere Angabe: Kunden in Tirol und Vorarlberg werden nur etwa einmal pro Jahr besucht.
+- (2) Angabe vom 01.10.2026: Der Dienstort ist Tirol. Die Fahrt nach Ostermiething findet „immer einmal pro Woche“ statt, mit Hin- und Rückfahrt (ANGABE, Nachweis Dienstvertrag/Dienstzettel ausstehend).
+- (3) Angabe vom 01.10.2026: Brenner-Fahrten sind Vertriebsmeetings mit M. Ultmar.
+- (4) Angabe vom 01.10.2026: Vorarlberg-Fahrten gehen zur Zweigniederlassung Lochau (Projektbesprechungen, mehrmals im Jahr möglich). Der Kunde „MW Immobilien“ in Lochau wird höchstens einmal pro Jahr besucht. Das präzisiert Angabe (1), denn diese betrifft Kunden und nicht die Zweigniederlassung. Es ist **kein Widerspruch**.
+- (5) Angabe vom 01.10.2026: Die Tirol-Tage „müssen Tirol-Kunden sein“. Das ist eine Vermutung ohne Kunden- oder Datumsbezug und steht in Spannung zu (1). Tirol ist außerdem der Wohnort. Die Tirol-Tage werden deshalb **nicht** pauschal betrieblich gewertet, sondern in eine Prüfliste übernommen (Abschnitt 8.6).
+
+**Kundenliste IK (INDIZ):**
+- Die Datei kundenorte_IK.json enthält nur 533 Kunden: Bayern 310, Tirol 125, Vorarlberg 98. Die genannte Zahl von 960 und die 180 Kunden in Baden-Württemberg sind darin **nicht** enthalten (OFFEN).
+- 64 der als „Tirol“ geführten Kunden haben Vorarlberger Postleitzahlen (67xx/68xx: Bludenz, Feldkirch, Dornbirn, Lustenau u. a.). Die Bundesland-Zuordnung der Liste ist also fehlerhaft.
+- Die Liste enthält keine Besuchsdaten. Für OÖ, Salzburg, Wien, NÖ, Steiermark, Kärnten und Hessen enthält sie keine IK-Kundenorte.
+
+---
+
+## 1. Chronologisches Ereignisprotokoll 2025 (alle Belegpositionen)
+
+| # | Datum | Tag | KW | Zeit | Kz | Ort | Produkt | Liter Diesel | EUR brutto | km-Stand (Beleg) | Quelle | Bemerkung |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | 08.01.2025 | Mi | KW02 | 18:03 | 718 | Mils b. Hall | Diesel | 38,26 | 63,09 | 52.635 | ER_00006771_28.02.2025 S.2 (Bel. 00000119) | nachverrechnet |
+| 2 | 11.01.2025 | Sa | KW02 | 11:46 | 718 | Hall, Pfannhausstr. | Diesel | 30,88 | 49,99 | 53.330 | ER_00002357_31.01.2025 S.2 (Bel. 01014990) | F, Sa |
+| 3 | 11.01.2025 | Sa | KW02 | 11:46 | 718 | Hall, Pfannhausstr. | Autowäsche | – | 12,90 | 53.330 | ER_00002357 S.2 (Bel. 01014990) | F, Sa |
+| 4 | 14.01.2025 | Di | KW03 | 13:16 | 718 | Wels (OÖ) | Diesel | 51,56 | 89,66 | 53.825 | ER_00002357 S.2 (Bel. 00437843) | – |
+| 5 | 17.01.2025 | Fr | KW03 | 16:23 | 718 | Buchloe (DE) | Diesel | 56,16 | 94,85 | 54.650 | ER_217686218_31.01.2025 S.2; identisch ER_99180457_21.05.2025 S.4 (+2x Kredit S.2/S.3) | nur 1x gezählt; Tag Kz-Wechsel lt. Stammdaten |
+| 6 | 19.01.2025 | So | KW03 | 14:21 | 718 | Hall (Tst. 1109) | Wäsche | – | 8,90 | 54.885 | ER_00002357 S.2 (Bel. 89888801) | F, So; Fahrzeugzuordnung mittel |
+| 7 | 20.01.2025 | Mo | KW04 | 09:05 | unklar | Wels (OÖ) | Diesel | 45,23 | 72,64 | 10 (unverwertbar) | ER_00002357 S.2 (Bel. 00440142) | Karte 0161; km-Wert nicht verwertbar |
+| 8 | 22.01.2025 | Mi | KW04 | 16:49 | unklar | Hall, Pfannhausstr. | Diesel | 47,88 | 82,31 | 4770 (unplausibel) | ER_00002357 S.2 (Bel. 01016797) | Karte 0161; km-Wert nicht verwertbar |
+| 9 | 24.01.2025 | Fr | KW04 | 17:06 | unklar (297?) | Hall, Pfannhausstr. | Diesel | 48,49 | 81,90 | 1.456 | ER_00002357 S.2 (Bel. 01017115) | Karte 0161; km passt zur Reihe 297IW |
+| 10 | 24.01.2025 | Fr | KW04 | 17:06 | unklar (297?) | Hall, Pfannhausstr. | Autowäsche | – | 12,90 | 1.456 | ER_00002357 S.2 (Bel. 01017115) | – |
+| 11 | 01.02.2025 | Sa | KW05 | 13:29 | 297 | Hall, Pfannhausstr. | Diesel | 39,61 | 64,13 | 2.001 | ER_00006771 S.4 (Bel. 01018453) | F, Sa; 1. Tx Karte 0302 |
+| 12 | 01.02.2025 | Sa | KW05 | 13:29 | 297 | Hall, Pfannhausstr. | Autowäsche | – | 9,90 | 2.001 | ER_00006771 S.4 (Bel. 01018453) | F, Sa |
+| 13 | 10.02.2025 | Mo | KW07 | 09:46 | 297 | Hall (Tst. 1109) | Diesel | 46,82 | 75,57 | 2.664 | ER_00006771 S.4 (Bel. 90788401) | – |
+| 14 | 14.02.2025 | Fr | KW07 | 14:51 | 297 | Wiesing (T) | Diesel | 56,56 | 97,68 | 3.534 | ER_00006771 S.4 (Bel. 31750701) | – |
+| 15 | 16.02.2025 | So | KW07 | 12:05 | 297 | Hall (Tst. 1109) | Wäsche | – | 8,90 | 3.651 | ER_00006771 S.4 (Bel. 91022801) | F, So |
+| 16 | 27.02.2025 | Do | KW09 | 19:48 | 297 | Kiefersfelden (DE) | Diesel | 9,36 | 20,02 | 4.358 | ER_001012653_28.02.2025 S.2 (Bel. 00163770) | Kleinmenge |
+| 17 | 28.02.2025 | Fr | KW09 | 13:55 | 297 | Hall, Pfannhausstr. 14 | Diesel | 52,31 | 87,83 | 4.434 | ER_00011190_31.03.2025 S.4 (Bel. 01012852) | nachverrechnet |
+| 18 | 07.03.2025 | Fr | KW10 | 23:17 | 297 | Hall (Tst. 1109) | Diesel | 55,68 | 91,98 | 5.218 | ER_00011190 S.4 (Bel. 90391701) | Nachtzeit |
+| 19 | 13.03.2025 | Do | KW11 | 13:41 | 297 | Mils (bei Hall? bei Imst? OFFEN) | Diesel | 14,94 | 24,34 | 5.407 | ER_00020064_31.05.2025 S.2 (Bel. 00000982) | nachverrechnet |
+| 20 | 17.03.2025 | Mo | KW12 | 16:35 | 297 | Salzburg-Liefering | Diesel | 43,86 | 67,41 | 7.624 | ER_00011190 S.4 (Bel. 00036601) | – |
+| 21 | 26.03.2025 | Mi | KW13 | 09:25 | 297 | Schwaz (T) | Diesel | 56,80 | 90,26 | 8.430 | ER_00011190 S.4 (Bel. 00025630) | – |
+| 22 | 01.04.2025 | Di | KW14 | 16:45 | 297 | Hall, Pfannhausstr. 14 | Diesel | 47,57 | 78,44 | 9.113 | ER_00015623_30.04.2025 S.4 (Bel. 01018023) | – |
+| 23 | 04.04.2025 | Fr | KW14 | 14:01 | 297 | Hall, Pfannhausstr. 14 | Diesel | 48,37 | 79,28 | 9.847 | ER_00015623 S.4 (Bel. 01018519) | – |
+| 24 | 04.04.2025 | Fr | KW14 | 14:01 | 297 | Hall, Pfannhausstr. 14 | Autowäsche | – | 12,90 | 9.847 | ER_00015623 S.4 (Bel. 01018519) | – |
+| 25 | 07.04.2025 | Mo | KW15 | 22:42 | 297 | Hall (Tst. 1109) | Diesel | 12,26 | 19,05 | 10.015 | ER_00015623 S.4 (Bel. 91649601) | Nachtzeit |
+| 26 | 08.04.2025 | Di | KW15 | 12:44 | 297 (lt. Parkbeleg GN297IW) | Frankfurt, Parkhaus Messeturm (Einfahrt) | Parken | – | 45,00 | nicht erfasst | BU_092025_30.04.2025 (APCOA) | Ausfahrt 09.04. 10:16 = Übernachtung; priv. Karte ...5773 |
+| 27 | 09.04.2025 | Mi | KW15 | 13:59 | kein Kz | Schondra, BAB A7 (DE) | Diesel | 54,20 | 111,06 | nicht erfasst | BU_092025_30.04.2025 (BAT Rhön West) | priv. Karte ...1564 |
+| 28 | 11.04.2025 | Fr | KW15 | 14:27 | 297 | Innsbruck (Tst. 1135) | Wäsche | – | 9,40 | 11.254 | ER_00015623 S.4 (Bel. 61809602) | – |
+| 29 | 11.04.2025 | Fr | KW15 | 14:27 | 297 | Innsbruck (Tst. 1135) | Diesel | 38,28 | 60,94 | 11.254 | ER_00015623 S.4 (Bel. 61809601) | – |
+| 30 | 16.04.2025 | Mi | KW16 | 14:51 | 297 | Wien, Wienerbergstr. 29 | Diesel | 43,27 | 73,08 | 11.883 | ER_00015623 S.4 (Bel. 02020866) | – |
+| 31 | 18.04.2025 | Fr | KW16 | 11:41 | 297 | Hall, Pfannhausstr. 14 | Diesel | 37,08 | 57,07 | 12.443 | ER_00015623 S.4 (Bel. 01010881) | Karfreitag |
+| 32 | 27.04.2025 | So | KW17 | 20:33 | 297 | Hall (Tst. 1109) | Wäsche | – | 8,90 | 14.650 | ER_00015623 S.4 (Bel. 92472601) | F, So |
+| 33 | 04.05.2025 | So | KW18 | 15:27 | 297 | Mils (bei Hall? OFFEN) | Diesel | 52,57 | 78,80 | 14.983 | ER_00020064 S.2 (Bel. 00001714) | F, So |
+| 34 | 09.05.2025 | Fr | KW19 | 14:34 | 297 | Innsbruck (Tst. 1028) | Diesel | 37,98 | 59,51 | 15.425 | ER_00020064 S.2 (Bel. 00011001) | – |
+| 35 | 13.05.2025 | Di | KW20 | 18:43 | 297 | Hall (Tst. 1109) | Diesel | 46,75 | 74,89 | 16.615 | ER_00020064 S.2 (Bel. 93309401) | – |
+| 36 | 13.05.2025 | Di | KW20 | 18:43 | 297 | Hall (Tst. 1109) | Wäsche | – | 11,90 | 16.615 | ER_00020064 S.2 (Bel. 93309402) | – |
+| 37 | 24.05.2025 | Sa | KW21 | 16:10 | 297 | Innsbruck (Tst. 5652) | Autowäsche | – | 7,99 | 17.329 | ER_00020064 S.2 (Bel. 00332202) | F, Sa |
+| 38 | 24.05.2025 | Sa | KW21 | 16:10 | 297 | Innsbruck (Tst. 5652) | Diesel | 47,94 | 76,18 | 17.329 | ER_00020064 S.2 (Bel. 00332202) | F, Sa |
+| 39 | 01.06.2025 | So | KW22 | 13:43 | 297 | Hall (Tst. 1109) | Diesel | 50,33 | 73,38 | 18.106 | ER_00024517_30.06.2025 S.3 (Bel. 94087901) | F, So |
+| 40 | 01.06.2025 | So | KW22 | 13:43 | 297 | Hall (Tst. 1109) | Wäsche | – | 7,56 | 18.106 | ER_00024517 S.3 (Bel. 94087902) | F, So |
+| 41 | 06.06.2025 | Fr | KW23 | 16:04 | 297 | Hall (Tst. 5594) | Autowäsche | – | 7,99 | 18.579 | ER_00024517 S.3 (Bel. 00287598) | – |
+| 42 | 10.06.2025 | Di | KW24 | 17:19 | 297 | Hall (Tst. 5594) | Diesel | 40,33 | 61,26 | 18.666 | ER_00024517 S.3 (Bel. 00289394) | – |
+| 43 | 17.06.2025 | Di | KW25 | 17:23 | 297 | Hall, Pfannhausstr. 14 | Autowäsche | – | 9,90 | 19.222 | ER_00024517 S.3 (Bel. 01010371) | – |
+| 44 | 30.06.2025 | Mo | KW27 | 09:21 | 297 | Innsbruck, Amraser Seestr. 10 | Diesel | 56,45 | 88,57 | 19.440 | ER_00024517 S.3 (Bel. 01013854) | – |
+| 45 | 07.07.2025 | Mo | KW28 | 17:40 | 297 | Hall (Tst. 1109) | Diesel | 40,07 | 63,59 | 20.065 | ER_00028953_31.07.2025 S.3 (Bel. 97364001) | – |
+| 46 | 10.07.2025 | Do | KW28 | 12:29 | kein Kz | Euro Plaza Geb. G (vermutl. Wien 12, unverifiziert) | Parken | – | 15,50 | nicht erfasst | BU_342025_22.09.2025 (Thermobeleg verblasst) | Zahlung 16:51 |
+| 47 | 11.07.2025 | Fr | KW28 | 10:24 | 297 | Wien, Wienerbergstr. 29 | Diesel | 53,10 | 89,16 | 20.968 | ER_00028953 S.3 (Bel. 02029534) | – |
+| 48 | 12.07.2025 | Sa | KW28 | 20:39 | 297 | Hall (Tst. 1109) | Wäsche | – | 7,56 | 21.500 | ER_00028953 S.3 (Bel. 97580701) | F, Sa |
+| 49 | 16.07.2025 | Mi | KW29 | 22:06 | 297 | Hall (Tst. 1109) | Diesel | 43,60 | 69,98 | 21.632 | ER_00028953 S.3 (Bel. 97757801) | Nachtzeit |
+| 50 | 22.07.2025 | Di | KW30 | 19:44 | 297 | Hall (Tst. 1109) | AdBlue 15,74 l | – | 21,28 | 22.120 | ER_00028953 S.3 (Bel. 96314902) | – |
+| 51 | 22.07.2025 | Di | KW30 | 19:44 | 297 | Hall (Tst. 1109) | Wäsche | – | 7,56 | 22.120 | ER_00028953 S.3 (Bel. 96314903) | – |
+| 52 | 22.07.2025 | Di | KW30 | 19:44 | 297 | Hall (Tst. 1109) | Diesel | 37,93 | 56,78 | 22.120 | ER_00028953 S.3 (Bel. 96314901) | – |
+| 53 | 31.07.2025 | Do | KW31 | 18:16 | 297 | Hall, Pfannhausstr. | Diesel | 48,55 | 81,52 | 22.855 | ER_00028953 S.3 (Bel. 01012062) | – |
+| 54 | 24.08.2025 | So | KW34 | 17:13 | 297 | Hall (Tst. 5594) | Diesel | 48,45 | 76,99 | 26.498 | ER_00033372_31.08.2025 S.3 (Bel. 00322574) | F, So |
+| 55 | 24.08.2025 | So | KW34 | 17:13 | 297 | Hall (Tst. 5594) | Autowäsche | – | 7,99 | 26.498 | ER_00033372 S.3 (Bel. 00322574) | F, So |
+| 56 | 28.08.2025 | Do | KW35 | 20:41 | kein Kz | Walserberg N., Wals (Sbg, A1) | Diesel | 15,03 | 30,04 | nicht erfasst | BU_342025_22.09.2025 (Shell) | priv. Karte ...1564 |
+| 57 | 30.08.2025 | Sa | KW35 | 10:46 | 297 | Hall, Pfannhausstr. | Diesel | 56,11 | 92,53 | 27.665 | ER_00033372 S.3 (Bel. 01016770) | F, Sa |
+| 58 | 06.09.2025 | Sa | KW36 | 13:01 | 297 | Hall (Tst. 1109) | Wäsche | – | 7,56 | 28.232 | ER_00576824_30.09.2025 S.2 (Bel. 00003001) | F, Sa |
+| 59 | 12.09.2025 | Fr | KW37 | 06:19 | 297 | Hall (Tst. 1109) | Diesel | 49,05 | 77,85 | 29.160 | ER_00576824 S.2 (Bel. 98375801) | früh |
+| 60 | 17.09.2025 | Mi | KW38 | 16:49 | 297 | Hall (Tst. 1109) | Diesel | 33,74 | 53,54 | 29.642 | ER_00576824 S.2 (Bel. 98572801) | – |
+| 61 | 19.09.2025 | Fr | KW38 | 12:23 | 297 | Hall (Tst. 1109) | Diesel | 33,51 | 52,51 | 30.149 | ER_00576824 S.2 (Bel. 98649601) | – |
+| 62 | 19.09.2025 | Fr | KW38 | 12:23 | 297 | Hall (Tst. 1109) | Wäsche | – | 7,56 | 30.149 | ER_00576824 S.2 (Bel. 98649602) | – |
+| 63 | 25.09.2025 | Do | KW39 | 08:51 | 297 | Hall, Pfannhausstr. | Diesel | 45,47 | 75,89 | 30.371 | ER_00576824 S.2 (Bel. 01011056) | – |
+| 64 | 27.09.2025 | Sa | KW39 | 15:26 | 297 | Hall (Tst. 5594) | Autowäsche | – | 11,99 | 31.134 | ER_00576824 S.2 (Bel. 00337635) | F, Sa |
+| 65 | 30.09.2025 | Di | KW40 | 19:03 | 297 | Hall (Tst. 1109) | Diesel | 36,41 | 57,05 | 31.225 | ER_00576824 S.2 (Bel. 99190001) | – |
+| 66 | 06.10.2025 | Mo | KW41 | 19:49 | 297 | Hall (Tst. 1109) | Diesel | 47,23 | 74,48 | 31.880 | ER_00042254_31.10.2025 S.4 (Bel. 99440401) | – |
+| 67 | 08.10.2025 | Mi | KW41 | 10:52 | 297 | Hall, Pfannhausstr. | Diesel | 53,36 | 85,85 | 32.692 | ER_00042254 S.4 (Bel. 01013070) | – |
+| 68 | 12.10.2025 | So | KW41 | 18:09 | 297 | Hall (Tst. 1109) | Diesel | 56,35 | 86,05 | 33.573 | ER_00042254 S.4 (Bel. 01621301) | F, So |
+| 69 | 18.10.2025 | Sa | KW42 | 14:19 | 297 | Hall, Pfannhausstr. | Diesel | 47,37 | 73,85 | 34.245 | ER_00042254 S.4 (Bel. 01014757) | F, Sa |
+| 70 | 18.10.2025 | Sa | KW42 | 14:19 | 297 | Hall, Pfannhausstr. | Autowäsche | – | 12,90 | 34.245 | ER_00042254 S.4 (Bel. 01014757) | F, Sa |
+| 71 | 21.10.2025 | Di | KW43 | 11:41 | 297 | S16 Arlberg West (Maut) | Maut | – | 12,50 | nicht erfasst | ER_00042254 S.4 (Bel. 0750106) | km 0 = nicht erfasst |
+| 72 | 21.10.2025 | Di | KW43 | 11:41 | 297 | Maut-Service | Servicegebühr | – | 0,37 | nicht erfasst | ER_00042254 S.4 (Bel. 0750106) | keine Fahrt |
+| 73 | 24.10.2025 | Fr | KW43 | 14:57 | 297 | Hall, Pfannhausstr. | Diesel | 60,04 | 98,41 | 35.516 | ER_00042254 S.4 (Bel. 01015691) | – |
+| 74 | 28.10.2025 | Di | KW44 | 20:48 | 297 | Kiefersfelden (DE) | Diesel | 7,52 | 15,03 | 36.018 | ER_3951_31.10.2025 S.2 (Bel. 00230078) | Kleinmenge |
+| 75 | 30.10.2025 | Do | KW44 | 15:08 | 297 | Innsbruck, Amraser See-Str. | Diesel | 59,30 | 93,04 | 36.160 | ER_00042254 S.4 (Bel. 01017091) | – |
+| 76 | 03.11.2025 | Mo | KW45 | 16:51 | 297 | Steinfeld (Tst. 4134, Bundesland OFFEN) | Diesel | 54,48 | 83,46 | 38.101 | ER_00046666_29.11.2025 S.3 (Bel. 27685301) | – |
+| 77 | 09.11.2025 | So | KW45 | 19:06 | 297 | Hall (Tst. 1109) | Diesel | 52,36 | 79,43 | 38.860 | ER_00046666 S.3 (Bel. 02739701) | F, So |
+| 78 | 13.11.2025 | Do | KW46 | 14:29 | 297 | A9 Gleinalm Nord (Maut) | Maut | – | 18,50 | nicht erfasst | ER_00046666 S.3 (Bel. 0706137) | km nicht erfasst |
+| 79 | 13.11.2025 | Do | KW46 | 14:29 | 297 | Maut-Service | Servicegebühr | – | 0,55 | nicht erfasst | ER_00046666 S.3 (Bel. 0706137) | keine Fahrt |
+| 80 | 13.11.2025 | Do | KW46 | 16:58 | 297 | Salzburg Stadt (Tst. 4546) | Diesel | 59,63 | 98,93 | 39.744 | ER_00046666 S.3 (Bel. 00489711) | – |
+| 81 | 16.11.2025 | So | KW46 | 12:23 | 297 | Innsbruck, Hallerstr. (0G978) | Autowäsche | – | 13,40 | 39.770 | ER_00046666 S.3 (Bel. 02023569) | F, So |
+| 82 | 23.11.2025 | So | KW47 | 18:34 | 297 | Hall (Tst. 1109) | Diesel | 30,67 | 46,53 | 40.142 | ER_00046666 S.3 (Bel. 01117001) | F, So |
+| 83 | 27.11.2025 | Do | KW48 | 17:53 | 297 | Wien (Tst. 7526) | Diesel | 35,11 | 57,20 | 40.690 | ER_00046666 S.3 (Bel. 00416313) | – |
+| 84 | 30.11.2025 | So | KW48 | 10:58 | 297 | Hall (Tst. 1109) | Wäsche | – | 7,56 | 41.212 | ER_00046666 S.3 (Bel. 03641002) | F, So |
+| 85 | 30.11.2025 | So | KW48 | 10:58 | 297 | Hall (Tst. 1109) | AdBlue 15,95 l | – | 21,56 | 41.212 | ER_00046666 S.3 (Bel. 03641001) | F, So |
+| 86 | 02.12.2025 | Di | KW49 | 11:24 | 297 | Hall (Tst. 5594) | Diesel | 42,34 | 67,70 | 41.250 | ER_00051079_31.12.2025 S.3 (Bel. 00363139) | – |
+| 87 | 02.12.2025 | Di | KW49 | 12:18 | 297 | S16 Arlberg West (Maut) | Maut | – | 12,50 | nicht erfasst | ER_00051079 S.3 (Bel. 0750101) | 54 min nach Tankung Hall |
+| 88 | 02.12.2025 | Di | KW49 | 12:18 | 297 | Maut-Service | Servicegebühr | – | 0,37 | nicht erfasst | ER_00051079 S.3 (Bel. 0750101) | keine Fahrt |
+| 89 | 09.12.2025 | Di | KW50 | 11:37 | 297 | Linz (Tst. 3717) | Diesel | 55,28 | 80,65 | 42.078 | ER_00051079 S.3 (Bel. 00417465) | – |
+| 90 | 12.12.2025 | Fr | KW50 | 11:35 | 297 | Hall (Tst. 1109) | Wäsche | – | 7,56 | 42.519 | ER_00051079 S.3 (Bel. 04139901) | – |
+| 91 | 16.12.2025 | Di | KW51 | --:-- | 297 | Rum, Lucky Car (Werkstatt) | Bremsen (Werkstatt) | – | 631,52 | 42.666 | BU_462025_18.12.2025 (AR2596105926) | Werkstatt-km; Barzahlung |
+| 92 | 19.12.2025 | Fr | KW51 | 13:00 | 297 | Hall, Pfannhausstr. | Autowäsche | – | 12,90 | 42.804 | ER_00051079 S.3 (Bel. 01014774) | – |
+| 93 | 19.12.2025 | Fr | KW51 | 13:00 | 297 | Hall, Pfannhausstr. | Diesel | 50,62 | 78,92 | 42.804 | ER_00051079 S.3 (Bel. 01014774) | letzte Tx 2025 |
+
+
+**Hinweise zum Ereignisprotokoll:**
+- Die Buchloe-Tankung vom 17.01. erscheint in zwei Rechnungen sowie zweimal als Kredit. Sie ist **einmal** erfasst.
+- Die km-Werte 10 (20.01.) und 4770 (22.01.) stehen so auf den Belegen. Als Ist-km-Stand sind sie nicht verwertbar.
+- Das Kennzeichen am 20., 22. und 24.01. ist unklar (Karte ...0161). Der km-Stand 1456 vom 24.01. passt zur Reihe von GM-297IW, die Zuordnung ist ABGELEITET.
+
+---
+
+## 2.–4. km-Kette (getrennt je Fahrzeug), Verbrauchsabgleich und km-Spannen aus Litern
+
+### 2a) GM-718IW (BMW 320d Touring, Fahrzeug ab 11/2023) – Kette 20.12.2024 bis 19.01.2025
+
+| Abschn. | von (Anker) | bis (Anker) | km von | km bis | Δ km (BELEGT-Diff.) | Tage | km/Tag | Liter Diesel im Abschn. (inkl. Privatkarten-Belege) | l/100 km (ABGEL.) | km-Spanne aus Litern (ABGEL.) | Prüfung |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | 20.12.24 09:35 Hall, Pfannhausstr. (V | 08.01.25 18:03 Mils | 48.905 | 52.635 | 3.730 | 19,4 | 193 | 38,3 | 1,0 | 510–797 | Auffällig: zu wenig Liter (Fremd-/Privatbetankung? Teilbetankung?); Liter 21.–31.12.2024 nicht im Datensatz |
+| 2 | 08.01.25 18:03 Mils | 11.01.25 11:46 Hall | 52.635 | 53.330 | 695 | 2,7 | 254 | 30,9 | 4,4 | 412–643 | Auffällig: zu wenig Liter (Fremd-/Privatbetankung? Teilbetankung?) |
+| 3 | 11.01.25 11:46 Hall | 14.01.25 13:16 Wels | 53.330 | 53.825 | 495 | 3,1 | 162 | 51,6 | 10,4 | 687–1.074 | Auffällig: zu viel Liter (Teilbetankung davor?) |
+| 4 | 14.01.25 13:16 Wels | 17.01.25 16:23 Buchloe (DE) | 53.825 | 54.650 | 825 | 3,1 | 264 | 56,2 | 6,8 | 749–1.170 | im Band 4,8–7,5 |
+| 5 | 17.01.25 16:23 Buchloe (DE) | 19.01.25 14:21 Hall | 54.650 | 54.885 | 235 | 1,9 | 123 | 0,0 | – | – | keine Diesel-Kartentankung im Abschnitt – Verbrauch nicht prüfbar |
+
+### 2b) GM-297IW (BMW 320XD) – Kette ab 24.01.2025 (Anker 1456, Karte ...0161, Zuordnung ABGELEITET)
+
+| Abschn. | von (Anker) | bis (Anker) | km von | km bis | Δ km (BELEGT-Diff.) | Tage | km/Tag | Liter Diesel im Abschn. (inkl. Privatkarten-Belege) | l/100 km (ABGEL.) | km-Spanne aus Litern (ABGEL.) | Prüfung |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | 24.01.25 17:06 Hall, Pfannhausstr. | 01.02.25 13:29 Hall, Pfannhausstr. | 1.456 | 2.001 | 545 | 7,8 | 69 | 39,6 | 7,3 | 528–825 | im Band 4,8–7,5 |
+| 2 | 01.02.25 13:29 Hall, Pfannhausstr. | 10.02.25 09:46 Hall (Tst. 1109) | 2.001 | 2.664 | 663 | 8,8 | 75 | 46,8 | 7,1 | 624–975 | im Band 4,8–7,5 |
+| 3 | 10.02.25 09:46 Hall (Tst. 1109) | 14.02.25 14:51 Wiesing (T) | 2.664 | 3.534 | 870 | 4,2 | 207 | 56,6 | 6,5 | 754–1.178 | im Band 4,8–7,5 |
+| 4 | 14.02.25 14:51 Wiesing (T) | 16.02.25 12:05 Hall (Tst. 1109) | 3.534 | 3.651 | 117 | 1,9 | 62 | 0,0 | – | – | keine Diesel-Kartentankung im Abschnitt – Verbrauch nicht prüfbar |
+| 5 | 16.02.25 12:05 Hall (Tst. 1109) | 27.02.25 19:48 Kiefersfelden (DE) | 3.651 | 4.358 | 707 | 11,3 | 62 | 9,4 | 1,3 | 125–195 | Auffällig: zu wenig Liter (Fremd-/Privatbetankung? Teilbetankung?) |
+| 6 | 27.02.25 19:48 Kiefersfelden (DE) | 28.02.25 13:55 Hall, Pfannhausstr. 14 | 4.358 | 4.434 | 76 | 0,8 | 101 | 52,3 | 68,8 | 697–1.090 | Auffällig: zu viel Liter (Teilbetankung davor?) |
+| 7 | 28.02.25 13:55 Hall, Pfannhausstr. 14 | 07.03.25 23:17 Hall (Tst. 1109) | 4.434 | 5.218 | 784 | 7,4 | 106 | 55,7 | 7,1 | 742–1.160 | im Band 4,8–7,5 |
+| 8 | 07.03.25 23:17 Hall (Tst. 1109) | 13.03.25 13:41 Mils (bei Hall? bei Im | 5.218 | 5.407 | 189 | 5,6 | 34 | 14,9 | 7,9 | 199–311 | Auffällig: zu viel Liter (Teilbetankung davor?) |
+| 9 | 13.03.25 13:41 Mils (bei Hall? bei Im | 17.03.25 16:35 Salzburg-Liefering | 5.407 | 7.624 | 2.217 | 4,1 | 538 | 43,9 | 2,0 | 585–914 | Auffällig: zu wenig Liter (Fremd-/Privatbetankung? Teilbetankung?) |
+| 10 | 17.03.25 16:35 Salzburg-Liefering | 26.03.25 09:25 Schwaz (T) | 7.624 | 8.430 | 806 | 8,7 | 93 | 56,8 | 7,0 | 757–1.183 | im Band 4,8–7,5 |
+| 11 | 26.03.25 09:25 Schwaz (T) | 01.04.25 16:45 Hall, Pfannhausstr. 14 | 8.430 | 9.113 | 683 | 6,3 | 108 | 47,6 | 7,0 | 634–991 | im Band 4,8–7,5 |
+| 12 | 01.04.25 16:45 Hall, Pfannhausstr. 14 | 04.04.25 14:01 Hall, Pfannhausstr. 14 | 9.113 | 9.847 | 734 | 2,9 | 254 | 48,4 | 6,6 | 645–1.008 | im Band 4,8–7,5 |
+| 13 | 04.04.25 14:01 Hall, Pfannhausstr. 14 | 07.04.25 22:42 Hall (Tst. 1109) | 9.847 | 10.015 | 168 | 3,4 | 50 | 12,3 | 7,3 | 163–255 | im Band 4,8–7,5 |
+| 14 | 07.04.25 22:42 Hall (Tst. 1109) | 11.04.25 14:27 Innsbruck (Tst. 1135) | 10.015 | 11.254 | 1.239 | 3,7 | 339 | 92,5 | 7,5 | 1.233–1.927 | im Band 4,8–7,5 |
+| 15 | 11.04.25 14:27 Innsbruck (Tst. 1135) | 16.04.25 14:51 Wien, Wienerbergstr. 2 | 11.254 | 11.883 | 629 | 5,0 | 125 | 43,3 | 6,9 | 577–901 | im Band 4,8–7,5 |
+| 16 | 16.04.25 14:51 Wien, Wienerbergstr. 2 | 18.04.25 11:41 Hall, Pfannhausstr. 14 | 11.883 | 12.443 | 560 | 1,9 | 300 | 37,1 | 6,6 | 494–772 | im Band 4,8–7,5 |
+| 17 | 18.04.25 11:41 Hall, Pfannhausstr. 14 | 27.04.25 20:33 Hall (Tst. 1109) | 12.443 | 14.650 | 2.207 | 9,4 | 236 | 0,0 | – | – | keine Diesel-Kartentankung im Abschnitt – Verbrauch nicht prüfbar |
+| 18 | 27.04.25 20:33 Hall (Tst. 1109) | 04.05.25 15:27 Mils (bei Hall? OFFEN) | 14.650 | 14.983 | 333 | 6,8 | 49 | 52,6 | 15,8 | 701–1.095 | Auffällig: zu viel Liter (Teilbetankung davor?) |
+| 19 | 04.05.25 15:27 Mils (bei Hall? OFFEN) | 09.05.25 14:34 Innsbruck (Tst. 1028) | 14.983 | 15.425 | 442 | 5,0 | 89 | 38,0 | 8,6 | 506–791 | Auffällig: zu viel Liter (Teilbetankung davor?) |
+| 20 | 09.05.25 14:34 Innsbruck (Tst. 1028) | 13.05.25 18:43 Hall (Tst. 1109) | 15.425 | 16.615 | 1.190 | 4,2 | 285 | 46,8 | 3,9 | 623–974 | Auffällig: zu wenig Liter (Fremd-/Privatbetankung? Teilbetankung?) |
+| 21 | 13.05.25 18:43 Hall (Tst. 1109) | 24.05.25 16:10 Innsbruck (Tst. 5652) | 16.615 | 17.329 | 714 | 10,9 | 66 | 47,9 | 6,7 | 639–999 | im Band 4,8–7,5 |
+| 22 | 24.05.25 16:10 Innsbruck (Tst. 5652) | 01.06.25 13:43 Hall (Tst. 1109) | 17.329 | 18.106 | 777 | 7,9 | 98 | 50,3 | 6,5 | 671–1.049 | im Band 4,8–7,5 |
+| 23 | 01.06.25 13:43 Hall (Tst. 1109) | 06.06.25 16:04 Hall (Tst. 5594) | 18.106 | 18.579 | 473 | 5,1 | 93 | 0,0 | – | – | keine Diesel-Kartentankung im Abschnitt – Verbrauch nicht prüfbar |
+| 24 | 06.06.25 16:04 Hall (Tst. 5594) | 10.06.25 17:19 Hall (Tst. 5594) | 18.579 | 18.666 | 87 | 4,1 | 21 | 40,3 | 46,4 | 538–840 | Auffällig: zu viel Liter (Teilbetankung davor?) |
+| 25 | 10.06.25 17:19 Hall (Tst. 5594) | 17.06.25 17:23 Hall, Pfannhausstr. 14 | 18.666 | 19.222 | 556 | 7,0 | 79 | 0,0 | – | – | keine Diesel-Kartentankung im Abschnitt – Verbrauch nicht prüfbar |
+| 26 | 17.06.25 17:23 Hall, Pfannhausstr. 14 | 30.06.25 09:21 Innsbruck, Amraser See | 19.222 | 19.440 | 218 | 12,7 | 17 | 56,5 | 25,9 | 753–1.176 | Auffällig: zu viel Liter (Teilbetankung davor?) |
+| 27 | 30.06.25 09:21 Innsbruck, Amraser See | 07.07.25 17:40 Hall (Tst. 1109) | 19.440 | 20.065 | 625 | 7,3 | 85 | 40,1 | 6,4 | 534–835 | im Band 4,8–7,5 |
+| 28 | 07.07.25 17:40 Hall (Tst. 1109) | 11.07.25 10:24 Wien, Wienerbergstr. 2 | 20.065 | 20.968 | 903 | 3,7 | 244 | 53,1 | 5,9 | 708–1.106 | im Band 4,8–7,5 |
+| 29 | 11.07.25 10:24 Wien, Wienerbergstr. 2 | 12.07.25 20:39 Hall (Tst. 1109) | 20.968 | 21.500 | 532 | 1,4 | 373 | 0,0 | – | – | keine Diesel-Kartentankung im Abschnitt – Verbrauch nicht prüfbar |
+| 30 | 12.07.25 20:39 Hall (Tst. 1109) | 16.07.25 22:06 Hall (Tst. 1109) | 21.500 | 21.632 | 132 | 4,1 | 33 | 43,6 | 33,0 | 581–908 | Auffällig: zu viel Liter (Teilbetankung davor?) |
+| 31 | 16.07.25 22:06 Hall (Tst. 1109) | 22.07.25 19:44 Hall (Tst. 1109) | 21.632 | 22.120 | 488 | 5,9 | 83 | 37,9 | 7,8 | 506–790 | Auffällig: zu viel Liter (Teilbetankung davor?) |
+| 32 | 22.07.25 19:44 Hall (Tst. 1109) | 31.07.25 18:16 Hall, Pfannhausstr. | 22.120 | 22.855 | 735 | 8,9 | 82 | 48,5 | 6,6 | 647–1.011 | im Band 4,8–7,5 |
+| 33 | 31.07.25 18:16 Hall, Pfannhausstr. | 24.08.25 17:13 Hall (Tst. 5594) | 22.855 | 26.498 | 3.643 | 24,0 | 152 | 48,5 | 1,3 | 646–1.009 | Auffällig: zu wenig Liter (Fremd-/Privatbetankung? Teilbetankung?) |
+| 34 | 24.08.25 17:13 Hall (Tst. 5594) | 30.08.25 10:46 Hall, Pfannhausstr. | 26.498 | 27.665 | 1.167 | 5,7 | 204 | 71,1 | 6,1 | 949–1.482 | im Band 4,8–7,5 |
+| 35 | 30.08.25 10:46 Hall, Pfannhausstr. | 06.09.25 13:01 Hall (Tst. 1109) | 27.665 | 28.232 | 567 | 7,1 | 80 | 0,0 | – | – | keine Diesel-Kartentankung im Abschnitt – Verbrauch nicht prüfbar |
+| 36 | 06.09.25 13:01 Hall (Tst. 1109) | 12.09.25 06:19 Hall (Tst. 1109) | 28.232 | 29.160 | 928 | 5,7 | 162 | 49,0 | 5,3 | 654–1.022 | im Band 4,8–7,5 |
+| 37 | 12.09.25 06:19 Hall (Tst. 1109) | 17.09.25 16:49 Hall (Tst. 1109) | 29.160 | 29.642 | 482 | 5,4 | 89 | 33,7 | 7,0 | 450–703 | im Band 4,8–7,5 |
+| 38 | 17.09.25 16:49 Hall (Tst. 1109) | 19.09.25 12:23 Hall (Tst. 1109) | 29.642 | 30.149 | 507 | 1,8 | 279 | 33,5 | 6,6 | 447–698 | im Band 4,8–7,5 |
+| 39 | 19.09.25 12:23 Hall (Tst. 1109) | 25.09.25 08:51 Hall, Pfannhausstr. | 30.149 | 30.371 | 222 | 5,9 | 38 | 45,5 | 20,5 | 606–947 | Auffällig: zu viel Liter (Teilbetankung davor?) |
+| 40 | 25.09.25 08:51 Hall, Pfannhausstr. | 27.09.25 15:26 Hall (Tst. 5594) | 30.371 | 31.134 | 763 | 2,3 | 335 | 0,0 | – | – | keine Diesel-Kartentankung im Abschnitt – Verbrauch nicht prüfbar |
+| 41 | 27.09.25 15:26 Hall (Tst. 5594) | 30.09.25 19:03 Hall (Tst. 1109) | 31.134 | 31.225 | 91 | 3,2 | 29 | 36,4 | 40,0 | 485–759 | Auffällig: zu viel Liter (Teilbetankung davor?) |
+| 42 | 30.09.25 19:03 Hall (Tst. 1109) | 06.10.25 19:49 Hall (Tst. 1109) | 31.225 | 31.880 | 655 | 6,0 | 109 | 47,2 | 7,2 | 630–984 | im Band 4,8–7,5 |
+| 43 | 06.10.25 19:49 Hall (Tst. 1109) | 08.10.25 10:52 Hall, Pfannhausstr. | 31.880 | 32.692 | 812 | 1,6 | 499 | 53,4 | 6,6 | 711–1.112 | im Band 4,8–7,5 |
+| 44 | 08.10.25 10:52 Hall, Pfannhausstr. | 12.10.25 18:09 Hall (Tst. 1109) | 32.692 | 33.573 | 881 | 4,3 | 205 | 56,4 | 6,4 | 751–1.174 | im Band 4,8–7,5 |
+| 45 | 12.10.25 18:09 Hall (Tst. 1109) | 18.10.25 14:19 Hall, Pfannhausstr. | 33.573 | 34.245 | 672 | 5,8 | 115 | 47,4 | 7,0 | 632–987 | im Band 4,8–7,5 |
+| 46 | 18.10.25 14:19 Hall, Pfannhausstr. | 24.10.25 14:57 Hall, Pfannhausstr. | 34.245 | 35.516 | 1.271 | 6,0 | 211 | 60,0 | 4,7 | 801–1.251 | Auffällig: zu wenig Liter (Fremd-/Privatbetankung? Teilbetankung?) |
+| 47 | 24.10.25 14:57 Hall, Pfannhausstr. | 28.10.25 20:48 Kiefersfelden (DE) | 35.516 | 36.018 | 502 | 4,2 | 118 | 7,5 | 1,5 | 100–157 | Auffällig: zu wenig Liter (Fremd-/Privatbetankung? Teilbetankung?) |
+| 48 | 28.10.25 20:48 Kiefersfelden (DE) | 30.10.25 15:08 Innsbruck, Amraser See | 36.018 | 36.160 | 142 | 1,8 | 81 | 59,3 | 41,8 | 791–1.235 | Auffällig: zu viel Liter (Teilbetankung davor?) |
+| 49 | 30.10.25 15:08 Innsbruck, Amraser See | 03.11.25 16:51 Steinfeld (Tst. 4134,  | 36.160 | 38.101 | 1.941 | 4,1 | 477 | 54,5 | 2,8 | 726–1.135 | Auffällig: zu wenig Liter (Fremd-/Privatbetankung? Teilbetankung?) |
+| 50 | 03.11.25 16:51 Steinfeld (Tst. 4134,  | 09.11.25 19:06 Hall (Tst. 1109) | 38.101 | 38.860 | 759 | 6,1 | 125 | 52,4 | 6,9 | 698–1.091 | im Band 4,8–7,5 |
+| 51 | 09.11.25 19:06 Hall (Tst. 1109) | 13.11.25 16:58 Salzburg Stadt (Tst. 4 | 38.860 | 39.744 | 884 | 3,9 | 226 | 59,6 | 6,7 | 795–1.242 | im Band 4,8–7,5 |
+| 52 | 13.11.25 16:58 Salzburg Stadt (Tst. 4 | 16.11.25 12:23 Innsbruck, Hallerstr.  | 39.744 | 39.770 | 26 | 2,8 | 9 | 0,0 | – | – | WIDERSPRUCH: 26 km für Salzburg→Innsbruck (Mindeststrecke 184,6 km) |
+| 53 | 16.11.25 12:23 Innsbruck, Hallerstr.  | 23.11.25 18:34 Hall (Tst. 1109) | 39.770 | 40.142 | 372 | 7,3 | 51 | 30,7 | 8,2 | 409–639 | Auffällig: zu viel Liter (Teilbetankung davor?) |
+| 54 | 23.11.25 18:34 Hall (Tst. 1109) | 27.11.25 17:53 Wien (Tst. 7526) | 40.142 | 40.690 | 548 | 4,0 | 138 | 35,1 | 6,4 | 468–731 | im Band 4,8–7,5 |
+| 55 | 27.11.25 17:53 Wien (Tst. 7526) | 30.11.25 10:58 Hall (Tst. 1109) | 40.690 | 41.212 | 522 | 2,7 | 192 | 0,0 | – | – | keine Diesel-Kartentankung im Abschnitt – Verbrauch nicht prüfbar |
+| 56 | 30.11.25 10:58 Hall (Tst. 1109) | 02.12.25 11:24 Hall (Tst. 5594) | 41.212 | 41.250 | 38 | 2,0 | 19 | 42,3 | 111,4 | 565–882 | Auffällig: zu viel Liter (Teilbetankung davor?) |
+| 57 | 02.12.25 11:24 Hall (Tst. 5594) | 09.12.25 11:37 Linz (Tst. 3717) | 41.250 | 42.078 | 828 | 7,0 | 118 | 55,3 | 6,7 | 737–1.152 | im Band 4,8–7,5 |
+| 58 | 09.12.25 11:37 Linz (Tst. 3717) | 12.12.25 11:35 Hall (Tst. 1109) | 42.078 | 42.519 | 441 | 3,0 | 147 | 0,0 | – | – | keine Diesel-Kartentankung im Abschnitt – Verbrauch nicht prüfbar |
+| 59 | 12.12.25 11:35 Hall (Tst. 1109) | 16.12.25 (o. Zeit) Rum, Lucky Car (Werkst | 42.519 | 42.666 | 147 | 4,0 | 37 | 0,0 | – | – | keine Diesel-Kartentankung im Abschnitt – Verbrauch nicht prüfbar |
+| 60 | 16.12.25 (o. Zeit) Rum, Lucky Car (Werkst | 19.12.25 13:00 Hall, Pfannhausstr. | 42.666 | 42.804 | 138 | 3,0 | 45 | 50,6 | 36,7 | 675–1.055 | Auffällig: zu viel Liter (Teilbetankung davor?) |
+
+Summen: GM-718IW 20.12.2024–19.01.2025: 5.980 km, Liter 176,9 (3,0 l/100 km). GM-297IW 24.01.–19.12.2025: 41.348 km, Liter 2242,0 (5,4 l/100 km).
+
+
+**Verbrauchsabgleich (Punkte 3 und 4):**
+- Die Verbrauchsbandbreite liegt bei 4,8–7,5 l/100 km für den BMW 320d. GM-297IW ist laut Lucky Car ein 320XD (xDrive). Der Allrad-Mehrverbrauch ist nicht recherchiert, die Bandbreite bleibt daher eine Näherung.
+- Einzelne Abschnitte streuen stark. Das ist typisch für Teilbetankungen: Wird bei einer Tankung nicht vollgetankt, wirkt der Abschnitt davor zu sparsam und der danach zu durstig.
+- **Über das ganze Jahr passt GM-297IW mit 5,4 l/100 km in das Band.** Die Tankkarte (plus Privatbelege Schondra und Walserberg) deckt die gefahrenen km also weitgehend ab. Ein großer Block an Fremdbetankung ist nicht erkennbar.
+- Die Abschnitte 13.03.–17.03. (2.217 km bei 43,9 l), 31.07.–24.08. (3.643 km bei 48,5 l) und 30.10.–03.11. (1.941 km bei 54,5 l) sind nur mit vorher vollem Tank **und** Tankungen außerhalb der Karte erklärbar. Das ist OFFEN, bitte Kreditkartenauszüge ...1564, ...1719 und ...5773 anfordern.
+- Bei GM-718IW sind die Liter vom 21.–31.12.2024 nicht im Datensatz. Der niedrige Wert von 3,0 l/100 km ist deshalb nicht aussagekräftig.
+- Die Januar-Liter der Karte ...0161 (20.01. 45,23 l, 22.01. 47,88 l, 24.01. 48,49 l) sind keinem Fahrzeug sicher zuzuordnen (OFFEN). Abgeleitete km-Spanne für 93,11 l (20.–22.01.): 1.241–1.940 km.
+- Für 19.12.–31.12. liegen keine Liter vor, eine km-Spanne ist daher nicht ableitbar (OFFEN).
+- **Monotonie:** In 2025 sinkt kein km-Stand. Die Ausnahmen sind die nicht verwertbaren Werte 10 und 4770 sowie der Vorjahreswert 49158 > 48905 (13./20.12.2024). Sie sind unverändert übernommen. **Physikalischer Widerspruch:** Abschnitt 52 (Salzburg → Innsbruck, 26 km).
+
+---
+
+## 5. Monatsübersicht (Szenario B)
+
+| Monat | belegte Orte (Tank/Maut/Park/Werkstatt) | km gesamt (ABGEL., Interpolation) | betriebl. BELEGT | Dienstreise Ost. (MODELL) | Lochau (ANGABE) | Brenner (ANGABE) | Fernfahrten mit Ortsanker, Zweck OFFEN | nicht zugeordnet (OFFEN) | davon Tirol-Abschnitte | Privat Szenario B | ≤ 500 km? |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| Jän | Mils b. Hall, Hall, Wels, Buchloe | 4.250 | 0 | 1.252 | 0 | 0 | 570 | 2.428 | 1.621 | 2.998 | nein |
+| Feb | Hall, Wiesing, Kiefersfelden | 2.517 | 0 | 1.439 | 0 | 0 | 0 | 1.078 | 1.018 | 1.078 | nein |
+| Mär | Hall, Mils, Salzburg-Liefering, Schwaz | 4.559 | 0 | 1.457 | 0 | 0 | 0 | 3.102 | 1.178 | 3.102 | nein |
+| Apr | Hall, Frankfurt, Schondra, Innsbruck, Wien | 5.767 | 0 | 894 | 0 | 0 | 1.971 | 2.902 | 2.623 | 4.873 | nein |
+| Mai | Mils, Innsbruck, Hall | 3.246 | 0 | 1.432 | 0 | 0 | 0 | 1.814 | 1.814 | 1.814 | nein |
+| Jun | Hall, Innsbruck | 1.442 | 0 | 716 | 0 | 0 | 0 | 726 | 726 | 726 | nein |
+| Jul | Hall, Euro Plaza Geb. G, Wien | 3.399 | 0 | 1.790 | 0 | 0 | 929 | 681 | 533 | 1.610 | nein |
+| Aug | Hall, Walserberg N. | 4.898 | 0 | 1.432 | 0 | 0 | 0 | 3.466 | 3.466 | 3.466 | nein |
+| Sep | Hall | 3.458 | 0 | 1.432 | 0 | 0 | 0 | 2.027 | 2.027 | 2.027 | nein |
+| Okt | Hall, S16 Arlberg West, Kiefersfelden, Innsbruck | 5.565 | 0 | 1.797 | 402 | 0 | 224 | 3.142 | 2.435 | 3.366 | nein |
+| Nov | Steinfeld, Hall, A9 Gleinalm Nord, Salzburg Stadt, Innsbruck, Wien | 4.409 | 0 | 894 | 0 | 0 | 1.633 | 1.882 | 24 | 3.515 | nein |
+| Dez | Hall, S16 Arlberg West, Linz, Rum | 1.582 | 0 | 180 | 402 | 0 | 454 | 545 | 313 | 1.000 | nein |
+| **Summe** |  | 45.092 | 0 | 14.712 | 805 | 0 | 5.781 | 23.793 | 17.778 | 29.575 | 0 von 12 Monaten ≤ 500 |
+
+Dezember: zusätzlich 19.12.–31.12. ca. 1.039 km ABGELEITET (Fortschreibung 83,4 km/Tag aus 30.11.–19.12.), nicht in der Tabelle enthalten. GM-297IW vor 24.01. (0–1.456 km) OFFEN, nicht enthalten.
+
+
+---
+
+## 6. Plausibilitätsauffälligkeiten (neutral)
+
+1. **Fahrzeugwechsel:**
+   - GM-718IW wird am 17.01. (Buchloe, 16:23) und am 19.01. (Hall, km 54.885) noch gefahren, obwohl der Wechsel laut Stammdaten am 17.01. war.
+   - Die Erstzulassung von GM-297IW war laut Lucky Car am 20.01.2025, die Mietabrechnung beginnt am 01.02.2025.
+   - Karte ...0161 („GM 718IW“) wird bis 24.01. mit km-Werten des neuen Fahrzeugs (10, 4770, 1456) verwendet.
+   - Rückgabe-km GM-718IW und Übernahme-km GM-297IW: OFFEN.
+2. **Tankorte fernab von Wohnung und Firma** (Zweck jeweils OFFEN):
+   - Wels (14.01., 20.01.), Buchloe/DE (17.01.), Frankfurt-Messeturm mit Übernachtung (08./09.04.), Schondra/A7 (09.04.).
+   - Wien (16.04., 10./11.07. mit Übernachtung, 27.11.), Arlberg-Maut (21.10., 02.12.).
+   - Steinfeld (03.11., Bundesland OFFEN), A9 Gleinalm (13.11.), Linz (09.12.).
+3. **Am Firmenstandort Ostermiething bzw. im Innviertel gibt es 2025 keine einzige Tankung.** Nächstgelegene Anker: Salzburg-Liefering 17.03., Salzburg-Stadt 13.11., Walserberg 28.08. (Privatkarte), Kiefersfelden 27.02. und 28.10., Wels 14.01. und 20.01.
+4. **Wochenend- und Feiertagstransaktionen (19 Tage):** 11.01. Sa, 19.01. So, 01.02. Sa, 16.02. So, 27.04. So, 04.05. So, 24.05. Sa, 01.06. So, 12.07. Sa, 24.08. So, 30.08. Sa, 06.09. Sa, 27.09. Sa, 12.10. So, 18.10. Sa, 09.11. So, 16.11. So, 23.11. So, 30.11. So. Die Bedeutung der Kennung „F“ ist OFFEN.
+5. **Nachttankungen (22–5 Uhr):** 07.03. 23:17, 07.04. 22:42, 16.07. 22:06 (alle Hall).
+6. **Mehrere Vorgänge am selben Tag bzw. Doppelbuchung:**
+   - 17.01. Buchloe: dieselbe Transaktion als Rechnung und als zwei Kredite.
+   - 13.11.: Gleinalm-Maut und Salzburg-Tankung.
+   - 02.12.: Tankung Hall und Arlberg-Maut (zeitlich widersprüchlich).
+   - Diesel und Wäsche auf einem Beleg: mehrfach, unauffällig.
+7. **Auslandstankungen:**
+   - Buchloe (DE).
+   - Kiefersfelden (DE), jeweils Kleinmengen von 9,36 l und 7,52 l am Abend.
+   - Schondra (DE), über Privatkarte ...1564.
+   - Kroatien kommt 2025 nicht vor.
+8. **Lange Abschnitte ohne Tankung:** 18.04.–27.04. (2.207 km), 31.07.–24.08. (3.643 km, 24 Tage ohne einen einzigen Anker), 30.10.–03.11. (1.941 km).
+9. **Sehr geringe Fahrleistungen:** 06.06.–10.06. (87 km), 17.06.–30.06. (218 km in 12,7 Tagen), 12.07.–16.07. (132 km), 27.09.–30.09. (91 km), 30.11.–02.12. (38 km). Das spricht gegen Wochenfahrten in diesen Zeiträumen.
+10. **Privat bezahlte und erstattete Positionen 2025 (BU_09, BU_34, BU_46):** Schondra-Diesel, Parkgebühren Frankfurt und Euro Plaza, Walserberg-Diesel, Bremsenreparatur Lucky Car (bar, Werkstatt-km 42.666). Eine Doppelerfassung mit Firmenkarte ist 2025 nicht erkennbar (anders als 2023).
+
+### 6.1 Bewegungsprofil-Prüfung
+
+| Datum | Anker | Strecke / verfügbare Zeit | nötige km/h | Tageslenkzeit (Anker + Modell) | Ergebnis |
+|---|---|---|---|---|---|
+| Di 14.01. | Hall Sa 11.01. 11:46 → Wels 13:16; Modell KW03 Hall→Ost→Wels | 297,9 km, Modell 3 h 48 min + Besprechung ca. 1 h | – | ca. 3,8 h (Abfahrt Hall spätestens ca. 06:30) | plausibel, früher Start nötig |
+| Fr 17.01. / So 19.01. | Buchloe 16:23 (718IW), Hall 14:21 (718IW, km 54.885) | Buchloe→Hall 157,7 km | – | – | **WIDERSPRUCH zu den Stammdaten** (Wechsel am 17.01.); Prüferfrage |
+| So 19.01. → Mo 20.01. | Hall 14:21 → Wels 09:05 | 280,2 km in 18,7 h | 15 | ca. 3,2 h | plausibel; Fahrzeug unklar |
+| Fr 14.02. | Wiesing 14:51 (Modell KW07 Rückweg) | Abfahrt Ostermiething ca. 12:45 nötig (151 km/114 min) | – | ca. 4,6 h | plausibel |
+| Do 27.02. | Hall → Ostermiething → Kiefersfelden 19:48 → Hall (Beleg 28.02. +76 km) | 365,1 km | – | ca. 4,9 h | plausibel; stützt KW09 (hoch) |
+| Fr 07.03. | Tankung Hall 23:17 | – | – | – | Nachtfahrt markiert |
+| Do 13.03. → Mo 17.03. | Mils 13:41 → Liefering 16:35 | 2.217 km in 98,9 h (ca. 538 km/Tag) | – | > 8 h an mindestens einem Tag nötig, wenn Fahrleistung auf Werktage fällt | knapp; 1.649 km ohne Zuordnung |
+| Mo 17.03. | Hall → Ostermiething → Liefering 16:35 → Hall | 383,0 km | – | ca. 5 h | plausibel; stützt KW12 (hoch) |
+| Mo 07.04. → Di 08.04. | Hall 22:42 → Frankfurt Einfahrt 12:44 | 562,6 km in 14 h (Modell 5 h 34 min) | 40 | ca. 5,6 h | plausibel; Nachttankung 22:42 markiert; Ruhezeit ≥ 8 h möglich |
+| Mi 09.04. | Frankfurt Ausfahrt 10:16 → Schondra 13:59 → Hall | 135,1 km in 3 h 43 min; danach 500 km (ca. 5 h) | 36 | ca. 7,1 h | plausibel (knapp unter 8 h); **schließt Modellfahrt KW15 aus** (km) |
+| Mi 16.04. | Hall → Ostermiething → Wien 14:51 (Rundreise KW16) | 486,7 km, Modell ca. 5 h 50 min + Besprechung | – | ca. 5,8 h (Abfahrt Hall spätestens ca. 07:00) | plausibel |
+| Do 10.07. / Fr 11.07. | Euro Plaza 12:29–16:51, Wien 10:24, Hall Sa 20:39 | – | – | – | plausibel; Übernachtung Wien |
+| Mi 16.07. | Tankung Hall 22:06 | – | – | – | Nachtfahrt markiert |
+| Di 07.10. | Hall Mo 19:49 → Hall Mi 10:52: 812 km | 812 km in 39 h | – | an einem Tag ca. 9–10 h; auf 2 Tage verteilt plausibel | knapp; Modell KW41 (4,6 h) + 454 km Rest |
+| Di 21.10. | Hall Sa 18.10. 14:19 → Arlberg West 11:41 (Lochau ANGABE) | Hall→Arlberg West 119 km / 89 min | – | Lochau Hin und Rück ca. 5 h + Besprechung | plausibel |
+| Di 28.10. | Hall → Ostermiething → Kiefersfelden 20:48 → Hall | 365,1 km | – | ca. 4,9 h | plausibel; stützt KW44 (hoch) |
+| Do 30.10. → Mo 03.11. | Innsbruck 15:08 → Steinfeld 16:51 | 1.941 km in 97,7 h; Route Kärnten 224 km bzw. NÖ 503 km | – | – | ca. 1.400–1.700 km ohne Zuordnung, OFFEN |
+| Do 13.11. | Gleinalm Nord 14:29 → Salzburg 16:58 | 246,8 km in 149 min (Modell 208 min) | **99,4** | Hall→Gleinalm→Salzburg ab 09.11. | **knapp / Prüferfrage**: 28 % schneller als Modellzeit |
+| Do 13.11. → So 16.11. | Salzburg 39.744 → Innsbruck 39.770 | 26 km belegt vs. 184,6 km Mindeststrecke | – | – | **WIDERSPRUCH (g)**: km-Eingabefehler oder Fremdnutzung der Karte |
+| Do 27.11. | Hall → Ostermiething → Wien 17:53 (Rundreise KW48) | 490,7 km | – | ca. 5,8 h (Abfahrt Hall spätestens ca. 11:00) | plausibel |
+| Di 02.12. | Hall 11:24 → Arlberg West 12:18 | 119,0 km in 54 min (St.-Anton-Variante 107 km) | **132** (bzw. 119) | – | **WIDERSPRUCH (a)/(g)**: zeitlich unmöglich; Maut-Zeitstempel ≠ Durchfahrt? Fremdnutzung? |
+| Di 09.12. – Do 11.12. | Linz 11:37 → Ostermiething → Hall (Rundreise KW50) | 328,6 km | – | ca. 4,1 h | plausibel |
+| alle Modell-Wochen | Hall–Ostermiething–Hall | 357,9 km, 2 × 2 h 18 min | ≤ 80 | ca. 4,6 h + Besprechung | plausibel; alle Fenster liegen Mo–Fr, nicht an Feiertagen; Ruhezeiten nicht verletzt, da Tagesfahrt |
+
+**Folgen für Wochentest und Modellfahrten:**
+- Ausgeschlossen sind KW15 (Frankfurt), KW18, KW25/KW24 (nur eine), KW26, KW49 und KW51 (km).
+- Nur als Rundreise zulässig sind KW03, KW16, KW48 und KW50.
+- Nicht prüfbar sind KW04, KW46 (km-Widerspruch), KW52 und KW01/26.
+- Keine Modellfahrt liegt an einem Wochenende oder Feiertag.
+
+### 6.2 Vorarlberg/Lochau-Prüfung (ANGABE)
+
+| Datum | Anker | km-Prüfung | Zeit-Prüfung | Ergebnis |
+|---|---|---|---|---|
+| Di 21.10. | Arlberg-Maut West 11:41 | Abschnitt 18.10.–24.10. = 1.271 km ≥ Hall–Lochau–Hall 402,5 km (+ KW43 357,9; Rest 511) | Abfahrt Hall bis ca. 10:10 nötig; Ankunft Lochau ca. 12:30 | Lochau rechnerisch erreichbar – ANGABE |
+| Di 02.12. | Hall 11:24, Arlberg-Maut West 12:18 | Abschnitt 02.12.–09.12. = 828 km ≥ 402,5 + Hall→Linz 305,3 (Rest 120) | 119 km in 54 min = 132 km/h | km möglich, **zeitlich WIDERSPRUCH** – ANGABE mit Prüferfrage |
+
+- Welche der beiden Fahrten ggf. dem Kunden „MW Immobilien“ galt (höchstens eine pro Jahr), ist aus den Belegen nicht bestimmbar.
+- Mögliche IK-Kundenorte (INDIZ): Lochau (32), Hörbranz (15), Bregenz (11), Hard (17), Dornbirn (18), Lustenau (15), Lauterach (8).
+
+### 6.3 Brenner (ANGABE Vertriebsmeetings M. Ultmar)
+
+**2025 gibt es keinen einzigen Brenner-, Wipptal- oder Südtirol-Anker** (keine A13-Maut, keine Tankung südlich von Innsbruck).
+- Liste der Brenner-Tage 2025: **keine**.
+- Brenner-km 2025: 0. Strecke zur Information: Hall–Brenner–Hall 2 × 42,9 = 85,8 km.
+- Brenner-Fahrten am Wochenende oder Feiertag: entfällt.
+
+---
+
+## 7. Benötigte zusätzliche Belege
+
+1. Dienstvertrag bzw. Dienstzettel mit Dienstort (Tirol oder Ostermiething) und Funktion „Key Account Manager“.
+2. Einladungen und Protokolle der wöchentlichen Dienstbesprechungen in Ostermiething 2025, Outlook-Kalender Ivan Kovacevic, Teilnehmerlisten.
+3. Firmenbuchauszug der Zweigniederlassung Lochau; Besprechungseinladungen und Protokolle vom 21.10. und 02.12.2025; für MW Immobilien Ausgangsrechnung bzw. Auftrag.
+4. Honorarnoten, Provisionsabrechnungen und Terminmails von Manuel Ultmar (2025 kein Brenner-Anker, nur zur Vollständigkeit).
+5. Kundenaufträge, Montageprojekte und Lieferscheine mit Datum für Wels, Buchloe/Allgäu, Frankfurt (Messe 08./09.04.?), Wien (16.04., 10./11.07., 27.11.), Steinfeld, Steiermark (Gleinalm 13.11.) und Linz (09.12.).
+6. Arbeitszeitaufzeichnungen, Urlaubs- und Krankenstandsliste 2025 (insbesondere August, Weihnachten/Jänner).
+7. Reisekosten- und Diätenabrechnungen 2025. Bisher sind keine Tagesgelder für etwa 43 Dienstreisen abgerechnet.
+8. Telematik- und Fahrzeugdaten vom Vermieter (ROAD Lifestyle/BR Mobility) bzw. BMW ConnectedDrive für GM-297IW; Übergabe- und Rückgabeprotokolle (km) für GM-718IW und GM-297IW.
+9. GO-Maut, Vignette und Streckenmaut-Auszüge (ASFINAG Video-/Digitalmaut), Park- und Hotelbelege.
+10. Kreditkartenauszüge ...1564, ...1719 und ...5773 (Tankungen außerhalb der Firmenkarte).
+11. eni-Stationsliste: Lage von Tst. 4134 „Steinfeld“ und Tst. 5600 „Mils“; Bedeutung der Kennung „F“.
+12. Klärung der km-Einträge vom 13.11. Salzburg (39.744) und 16.11. Innsbruck (39.770) sowie des Maut-Zeitstempels vom 02.12. 12:18.
+
+---
+
+## 8. Modellrekonstruktion (Szenario B: Dienstort Tirol)
+
+**Alle Zeilen sind Hypothesen.** Die Bestätigung durch E-Mail, Kalender oder Rechnung durch den Auftraggeber steht aus. Wahrscheinlichkeiten sind nur relativ zueinander zu lesen:
+- **hoch** = ein Ort-/Zeit-Anker liegt auf der Strecke und die km stimmen.
+- **mittel** = ein Zeitmuster oder ein Rundreise-Anker passt.
+- **niedrig** = nur die km-Kapazität reicht.
+
+### 8.1 Hypothesenliste
+
+| KW | Datum/Fenster | Reiseweg (Hin + Rück) | km Summe (Routenplaner) | Status | Wahrscheinlichkeit | Begründung (stützende/einschränkende Anker) |
+|---|---|---|---|---|---|---|
+| KW01 | 02.–03.01. | Hall – (A12/A93/A8) – Ostermiething – (A8/A93/A12) – Hall | 357,9 | MODELL | niedrig | keine Anker in der KW; Abschnitt 20.12.24–08.01.25 = 3.730 km; Feiertagsperiode, Urlaub OFFEN |
+| KW02 | 09.–10.01. | Hall – (A12/A93/A8) – Ostermiething – (A8/A93/A12) – Hall | 357,9 | MODELL | niedrig | Mils 08.01. 18:03 → Hall 11.01.: 695 km, Rest 337 |
+| KW03 | 13./14.01. | Hall – Ostermiething (RUNDREISE; Weiterfahrt Wels = Zweck OFFEN) | 178,4 | MODELL | mittel | Hall 11.01. → Wels 14.01.: 495 km; Hall→Ost→Wels 297,9 passt (Rest 197); getrennte Fahrt + Wels = 638 km > 495 → ausgeschlossen |
+| KW05 | 27.–31.01. | Hall – (A12/A93/A8) – Ostermiething – (A8/A93/A12) – Hall | 357,9 | MODELL | niedrig | Hall 24.01. → Hall 01.02.: 545 km, Rest 187 |
+| KW06 | 03.–07.02. | Hall – (A12/A93/A8) – Ostermiething – (A8/A93/A12) – Hall | 357,9 | MODELL | niedrig | 01.02. → 10.02.: 663 km, Rest 305 |
+| KW07 | 10.–14.02. | Hall – (A12/A93/A8) – Ostermiething – (A8/A93/A12) – Hall | 357,9 | MODELL | mittel | 870 km bis Wiesing; Wiesing liegt auf der Route (Umweg 2,9 km), Fr 14:51 passt zu Rückfahrt (Abfahrt Ost. ca. 12:45, ABGELEITET) |
+| KW08 | 17.–21.02. | Hall – (A12/A93/A8) – Ostermiething – (A8/A93/A12) – Hall | 357,9 | MODELL | niedrig | 16.02. → Kiefersfelden 27.02.: 707 km tragen KW08 (357,9) + KW09-Hinweg (292,7) → nur 56 km Lokalverkehr in 11 Tagen |
+| KW09 | 27.02. | Hall – Ostermiething – Kiefersfelden – Hall | 365,1 | MODELL | hoch | Kiefersfelden Do 19:48 auf dem Rückweg (Ost→Kief 114,3 km / 95 min); Kief→Hall: Beleg 76 km vs. Route 72,4 km |
+| KW10 | 03.–07.03. | Hall – (A12/A93/A8) – Ostermiething – (A8/A93/A12) – Hall | 357,9 | MODELL | niedrig | 28.02. → 07.03.: 784 km, Rest 426 |
+| KW11 | 13.03. (ab 13:41) / 14.03. | Hall – (A12/A93/A8) – Ostermiething – (A8/A93/A12) – Hall | 357,9 | MODELL | niedrig | 07.03. → 13.03. 13:41 nur 189 km (Mo–Do vormittag ausgeschlossen); 13.03. → 17.03.: 2.217 km |
+| KW12 | 17.03. | Hall – Ostermiething – Salzburg-Liefering – Hall | 383,0 | MODELL | hoch | Salzburg-Liefering Mo 16:35 auf Rückweg über Salzburg (Ost→Liefering 31,5 km); 19.03. Josef (Tirol) nur Hinweis |
+| KW13 | 24.–25.03. | Hall – (A12/A93/A8) – Ostermiething – (A8/A93/A12) – Hall | 357,9 | MODELL | niedrig | Liefering 17.03. → Schwaz 26.03.: 806 km; nach Rückfahrt-Teil 173,1 und 357,9 Rest 275 |
+| KW14 | 02.–04.04. | Hall – (A12/A93/A8) – Ostermiething – (A8/A93/A12) – Hall | 357,9 | MODELL | niedrig | 01.04. → 04.04.: 734 km, Rest 376 |
+| KW16 | 14.–16.04. | Hall – Ostermiething (RUNDREISE; Weiterfahrt Wien = Zweck OFFEN) | 178,4 | MODELL | mittel | Innsbruck 11.04. → Wien 16.04.: 629 km; Umweg über Ost. +22 km passt; getrennte Fahrt nicht (frei 153 km) |
+| KW17 | 22.–25.04. | Hall – (A12/A93/A8) – Ostermiething – (A8/A93/A12) – Hall | 357,9 | MODELL | niedrig | 18.04. → 27.04.: 2.207 km ohne Kartentankung |
+| KW19 | 05.–08.05. | Hall – (A12/A93/A8) – Ostermiething – (A8/A93/A12) – Hall | 357,9 | MODELL | niedrig | Mils 04.05. → Innsbruck 09.05.: 442 km, Rest 84 |
+| KW20 | 12.–13.05. | Hall – (A12/A93/A8) – Ostermiething – (A8/A93/A12) – Hall | 357,9 | MODELL | niedrig | Innsbruck 09.05. → Hall 13.05.: 1.190 km |
+| KW21 | 19.–23.05. | Hall – (A12/A93/A8) – Ostermiething – (A8/A93/A12) – Hall | 357,9 | MODELL | niedrig | 13.05. → 24.05.: 714 km, Rest 356 |
+| KW22 | 26.–28.05./30.05. | Hall – (A12/A93/A8) – Ostermiething – (A8/A93/A12) – Hall | 357,9 | MODELL | niedrig | 24.05. → 01.06.: 777 km |
+| KW23 | 02.–06.06. | Hall – (A12/A93/A8) – Ostermiething – (A8/A93/A12) – Hall | 357,9 | MODELL | niedrig | 01.06. → 06.06.: 473 km, Rest 115 |
+| KW24 | 11.–13.06. | Hall – (A12/A93/A8) – Ostermiething – (A8/A93/A12) – Hall | 357,9 | MODELL | niedrig | 06.06. → 10.06. nur 87 km; 10.06. → 17.06.: 556 km reichen nur für EINE Fahrt (KW24 ODER KW25) |
+| KW27 | 01.–04.07. (oder 30.06. ab 09:21) | Hall – (A12/A93/A8) – Ostermiething – (A8/A93/A12) – Hall | 357,9 | MODELL | niedrig | Innsbruck 30.06. → Hall 07.07.: 625 km, Rest 267 |
+| KW28 | 08.–09.07. | Hall – (A12/A93/A8) – Ostermiething – (A8/A93/A12) – Hall | 357,9 | MODELL | niedrig | 07.07. → Wien 11.07.: 903 km; Hall–Wien 464,6 + 357,9 = 822,5 → Rest 80; Übernachtung Wien 10./11.07. |
+| KW29 | 17.–18.07. | Hall – (A12/A93/A8) – Ostermiething – (A8/A93/A12) – Hall | 357,9 | MODELL | niedrig | 12.07. → 16.07. nur 132 km; 16.07. → 22.07.: 488 km, Rest 130 |
+| KW30 | 23.–25.07. | Hall – (A12/A93/A8) – Ostermiething – (A8/A93/A12) – Hall | 357,9 | MODELL | niedrig | 22.07. → 31.07.: 735 km tragen KW30 + KW31 → Rest 19 km |
+| KW31 | 28.–31.07. | Hall – (A12/A93/A8) – Ostermiething – (A8/A93/A12) – Hall | 357,9 | MODELL | niedrig | s. KW30 – nur 19 km Lokalverkehr in 9 Tagen |
+| KW32 | 04.–08.08. | Hall – (A12/A93/A8) – Ostermiething – (A8/A93/A12) – Hall | 357,9 | MODELL | niedrig | keine Anker 31.07.–24.08. (3.643 km/24 Tage); Urlaubszeit OFFEN |
+| KW33 | 11.–14.08. | Hall – (A12/A93/A8) – Ostermiething – (A8/A93/A12) – Hall | 357,9 | MODELL | niedrig | wie KW32 |
+| KW34 | 18.–22.08. | Hall – (A12/A93/A8) – Ostermiething – (A8/A93/A12) – Hall | 357,9 | MODELL | niedrig | wie KW32 |
+| KW35 | 25.–28.08. | Hall – (A12/A93/A8) – Ostermiething – (A8/A93/A12) – Hall | 357,9 | MODELL | mittel | 24.08. → 30.08.: 1.167 km; Walserberg Do 28.08. 20:41 (Privatkarte) = Indiz Rückweg aus Raum Salzburg |
+| KW36 | 01.–05.09. | Hall – (A12/A93/A8) – Ostermiething – (A8/A93/A12) – Hall | 357,9 | MODELL | niedrig | 30.08. → 06.09.: 567 km, Rest 209 |
+| KW37 | 12.09. (Abf. nach 06:19) | Hall – (A12/A93/A8) – Ostermiething – (A8/A93/A12) – Hall | 357,9 | MODELL | mittel | Frühtankung Hall Fr 06:19 = Abfahrts-Indiz (ABGELEITET); 12.09. → 17.09.: 482 km |
+| KW38 | 18.09. / 19.09. vor 12:23 | Hall – (A12/A93/A8) – Ostermiething – (A8/A93/A12) – Hall | 357,9 | MODELL | niedrig | 17.09. → 19.09.: 507 km in 1,8 Tagen |
+| KW39 | 25.09. (ab 08:51) / 26.09. | Hall – (A12/A93/A8) – Ostermiething – (A8/A93/A12) – Hall | 357,9 | MODELL | mittel | 19.09. → 25.09. nur 222 km (Mo–Mi ausgeschlossen); Tankung Do 08:51 = Abfahrts-Indiz; 25.09. → 27.09.: 763 km |
+| KW40 | 01.–03.10. | Hall – (A12/A93/A8) – Ostermiething – (A8/A93/A12) – Hall | 357,9 | MODELL | niedrig | 27.09. → 30.09. nur 91 km; 30.09. → 06.10.: 655 km |
+| KW41 | 07.10. | Hall – (A12/A93/A8) – Ostermiething – (A8/A93/A12) – Hall | 357,9 | MODELL | mittel | 06.10. 19:49 → 08.10. 10:52: 812 km in 39 h = langer Fahrtag (Indiz) |
+| KW42 | 13.–17.10. | Hall – (A12/A93/A8) – Ostermiething – (A8/A93/A12) – Hall | 357,9 | MODELL | niedrig | 12.10. → 18.10.: 672 km |
+| KW43 | 21.10. (Arlberg 11:41) | Hall – Landeck – S16 Arlberg – Lochau – Hall | 402,5 | ANGABE | ANGABE | Maut-Anker Arlberg; Angabe Auftraggeber 01.10.2026; km-Kette erlaubt Fahrt |
+| KW43 | 20.10. / 22.–24.10. | Hall – (A12/A93/A8) – Ostermiething – (A8/A93/A12) – Hall | 357,9 | MODELL | niedrig | 18.10. → 24.10.: 1.271 km; Lochau 21.10. (ANGABE, 402,5) + 357,9 → Rest 511 |
+| KW44 | 28.10. | Hall – Ostermiething – Kiefersfelden – Hall | 365,1 | MODELL | hoch | Kiefersfelden Di 20:48 auf Rückweg; Kief → Innsbruck 30.10.: 142 km (Route ca. 81) |
+| KW45 | 04.–07.11. | Hall – (A12/A93/A8) – Ostermiething – (A8/A93/A12) – Hall | 357,9 | MODELL | niedrig | Steinfeld 03.11. → Hall 09.11.: 759 km; Steinfeld/Kärnten: Rest 177; Steinfeld/NÖ: nur als Rundreise (+23 km) |
+| KW47 | 17.–21.11. | Hall – (A12/A93/A8) – Ostermiething – (A8/A93/A12) – Hall | 357,9 | MODELL | niedrig | Innsbruck 16.11. → Hall 23.11.: 372 km → nach 357,9 bleiben 14 km für 7 Tage |
+| KW48 | 24.–27.11. | Hall – Ostermiething (RUNDREISE; Weiterfahrt Wien = Zweck OFFEN) | 178,4 | MODELL | mittel | 23.11. → Wien 27.11.: 548 km, Hall–Wien 468,6 → frei 79; Umweg +22 passt; getrennte Fahrt ausgeschlossen |
+| KW49 | 02.12. (Arlberg 12:18 – Zeit-WIDERSPRUCH) | Hall – Landeck – S16 Arlberg – Lochau – Hall | 402,5 | ANGABE | ANGABE | Maut-Anker Arlberg; Angabe Auftraggeber 01.10.2026; km-Kette erlaubt Fahrt |
+| KW50 | 09.–11.12. | (Linz –) Ostermiething – Hall (RUNDREISE; Linz-Teil Zweck OFFEN) | 179,5 | MODELL | mittel | Linz 09.12. → Hall 12.12.: 441 km; Linz→Ost→Hall 328,6 passt (Rest 112) |
+
+
+**Summen MODELL:**
+- 39 volle Fahrten = 13.997,6 km. Darin enthalten sind KW09/KW44 über Kiefersfelden mit je 365,1 km und KW12 über Liefering mit 383,0 km.
+- Dazu 4 Rundreise-Anteile = 714,7 km.
+- Ergibt **14.712,3 km MODELL** (GM-718IW 894,2 km, GM-297IW 13.818,1 km).
+- **ANGABE Lochau: 805,0 km.**
+- Die Summe passt in jedem Abschnitt in die km-Kette. Die Rest-km stehen im Fahrtenbuch als OFFEN.
+
+### 8.2 Ausgeschlossene bzw. widersprechende Wochen (WIDERSPRUCH zur Angabe „immer einmal pro Woche“)
+
+| KW | Grund |
+|---|---|
+| KW15 (07.–13.04.) | Die belegte Frankfurt-Fahrt mit Übernachtung verbraucht 1.197,8 von 1.239 km. Für Hin- und Rückfahrt nach Ostermiething fehlen ca. 317 km. Eine Rundreise über Ostermiething wäre +137,6 km. |
+| KW18 (28.04.–04.05.) | Nur 333 km zwischen den Ankern (27.04. 20:33 → 04.05. 15:27) |
+| KW25 (16.–22.06.) – alternativ KW24 | 10.06.–17.06. (556 km) reicht nur für eine Fahrt; danach 218 km in 12,7 Tagen |
+| KW26 (23.–29.06.) | Nur 218 km im Abschnitt 17.06.–30.06. |
+| KW49 (01.–07.12.) | 38 km bis 02.12.; danach bleiben nach Lochau-ANGABE und Linz-Anfahrt nur 120 km |
+| KW51 (15.–21.12.) | 285 km bis Fr 19.12. 13:00; Restfenster ohne Anker |
+| nicht prüfbar: KW04, KW46, KW52, KW01/26 | Fahrzeugwechsel ohne verwertbare km; km-Widerspruch Salzburg–Innsbruck; keine Belege nach 19.12. |
+
+Außerdem sind in KW03, KW16, KW48 und KW50 getrennte Wochenfahrten ausgeschlossen. Dort ist nur eine Rundreise rechnerisch möglich.
+
+### 8.3 Abschnittstest
+
+
+| von | bis | Anker | Δ km | n (nächstes) | Rest zu n×357,9 | ±60-Treffer | n max (Kapazität) | Rest bei n max | Bewertung |
+|---|---|---|---|---|---|---|---|---|---|
+| 20.12. | 08.01. | Hall, Pfannhausstr → Mils | 3.730 | 10 | 151,0 | – | 10 | 151,0 | Kapazität für 10 Fahrt(en) |
+| 08.01. | 11.01. | Mils → Hall | 695 | 2 | -20,8 | Treffer ±60 | 1 | 337,1 | Kapazität für 1 Fahrt(en) |
+| 24.01. | 01.02. | Hall, Pfannhausstr → Hall, Pfannhausstr | 545 | 2 | -170,8 | – | 1 | 187,1 | Kapazität für 1 Fahrt(en) |
+| 01.02. | 10.02. | Hall, Pfannhausstr → Hall (Tst. 1109) | 663 | 2 | -52,8 | Treffer ±60 | 1 | 305,1 | Kapazität für 1 Fahrt(en) |
+| 10.02. | 14.02. | Hall (Tst. 1109) → Wiesing (T) | 870 | 2 | 154,2 | – | 2 | 154,2 | Kapazität für 2 Fahrt(en) |
+| 14.02. | 16.02. | Wiesing (T) → Hall (Tst. 1109) | 117 | 1 | -240,9 | – | 0 | 117,0 | nur Lokalverkehr möglich (<357,9) |
+| 28.02. | 07.03. | Hall, Pfannhausstr → Hall (Tst. 1109) | 784 | 2 | 68,2 | – | 2 | 68,2 | Kapazität für 2 Fahrt(en) |
+| 07.03. | 13.03. | Hall (Tst. 1109) → Mils (bei Hall? be | 189 | 1 | -168,9 | – | 0 | 189,0 | nur Lokalverkehr möglich (<357,9) |
+| 26.03. | 01.04. | Schwaz (T) → Hall, Pfannhausstr | 683 | 2 | -32,8 | Treffer ±60 | 1 | 325,1 | Kapazität für 1 Fahrt(en) |
+| 01.04. | 04.04. | Hall, Pfannhausstr → Hall, Pfannhausstr | 734 | 2 | 18,2 | Treffer ±60 | 2 | 18,2 | Kapazität für 2 Fahrt(en) |
+| 04.04. | 07.04. | Hall, Pfannhausstr → Hall (Tst. 1109) | 168 | 1 | -189,9 | – | 0 | 168,0 | nur Lokalverkehr möglich (<357,9) |
+| 07.04. | 11.04. | Hall (Tst. 1109) → Innsbruck (Tst. 11 | 1.239 | 3 | 165,3 | – | 3 | 165,3 | Kapazität für 3 Fahrt(en) |
+| 18.04. | 27.04. | Hall, Pfannhausstr → Hall (Tst. 1109) | 2.207 | 6 | 59,6 | Treffer ±60 | 6 | 59,6 | Kapazität für 6 Fahrt(en) |
+| 27.04. | 04.05. | Hall (Tst. 1109) → Mils (bei Hall? OF | 333 | 1 | -24,9 | Treffer ±60 | 0 | 333,0 | nur Lokalverkehr möglich (<357,9) |
+| 04.05. | 09.05. | Mils (bei Hall? OF → Innsbruck (Tst. 10 | 442 | 1 | 84,1 | – | 1 | 84,1 | Kapazität für 1 Fahrt(en) |
+| 09.05. | 13.05. | Innsbruck (Tst. 10 → Hall (Tst. 1109) | 1.190 | 3 | 116,3 | – | 3 | 116,3 | Kapazität für 3 Fahrt(en) |
+| 13.05. | 24.05. | Hall (Tst. 1109) → Innsbruck (Tst. 56 | 714 | 2 | -1,8 | Treffer ±60 | 1 | 356,1 | Kapazität für 1 Fahrt(en) |
+| 24.05. | 01.06. | Innsbruck (Tst. 56 → Hall (Tst. 1109) | 777 | 2 | 61,2 | – | 2 | 61,2 | Kapazität für 2 Fahrt(en) |
+| 01.06. | 06.06. | Hall (Tst. 1109) → Hall (Tst. 5594) | 473 | 1 | 115,1 | – | 1 | 115,1 | Kapazität für 1 Fahrt(en) |
+| 06.06. | 10.06. | Hall (Tst. 5594) → Hall (Tst. 5594) | 87 | 1 | -270,9 | – | 0 | 87,0 | nur Lokalverkehr möglich (<357,9) |
+| 10.06. | 17.06. | Hall (Tst. 5594) → Hall, Pfannhausstr | 556 | 2 | -159,8 | – | 1 | 198,1 | Kapazität für 1 Fahrt(en) |
+| 17.06. | 30.06. | Hall, Pfannhausstr → Innsbruck, Amraser | 218 | 1 | -139,9 | – | 0 | 218,0 | nur Lokalverkehr möglich (<357,9) |
+| 30.06. | 07.07. | Innsbruck, Amraser → Hall (Tst. 1109) | 625 | 2 | -90,8 | – | 1 | 267,1 | Kapazität für 1 Fahrt(en) |
+| 12.07. | 16.07. | Hall (Tst. 1109) → Hall (Tst. 1109) | 132 | 1 | -225,9 | – | 0 | 132,0 | nur Lokalverkehr möglich (<357,9) |
+| 16.07. | 22.07. | Hall (Tst. 1109) → Hall (Tst. 1109) | 488 | 1 | 130,1 | – | 1 | 130,1 | Kapazität für 1 Fahrt(en) |
+| 22.07. | 31.07. | Hall (Tst. 1109) → Hall, Pfannhausstr | 735 | 2 | 19,2 | Treffer ±60 | 2 | 19,2 | Kapazität für 2 Fahrt(en) |
+| 31.07. | 24.08. | Hall, Pfannhausstr → Hall (Tst. 5594) | 3.643 | 10 | 64,0 | – | 10 | 64,0 | Kapazität für 10 Fahrt(en) |
+| 24.08. | 30.08. | Hall (Tst. 5594) → Hall, Pfannhausstr | 1.167 | 3 | 93,3 | – | 3 | 93,3 | Kapazität für 3 Fahrt(en) |
+| 30.08. | 06.09. | Hall, Pfannhausstr → Hall (Tst. 1109) | 567 | 2 | -148,8 | – | 1 | 209,1 | Kapazität für 1 Fahrt(en) |
+| 06.09. | 12.09. | Hall (Tst. 1109) → Hall (Tst. 1109) | 928 | 3 | -145,7 | – | 2 | 212,2 | Kapazität für 2 Fahrt(en) |
+| 12.09. | 17.09. | Hall (Tst. 1109) → Hall (Tst. 1109) | 482 | 1 | 124,1 | – | 1 | 124,1 | Kapazität für 1 Fahrt(en) |
+| 17.09. | 19.09. | Hall (Tst. 1109) → Hall (Tst. 1109) | 507 | 1 | 149,1 | – | 1 | 149,1 | Kapazität für 1 Fahrt(en) |
+| 19.09. | 25.09. | Hall (Tst. 1109) → Hall, Pfannhausstr | 222 | 1 | -135,9 | – | 0 | 222,0 | nur Lokalverkehr möglich (<357,9) |
+| 25.09. | 27.09. | Hall, Pfannhausstr → Hall (Tst. 5594) | 763 | 2 | 47,2 | Treffer ±60 | 2 | 47,2 | Kapazität für 2 Fahrt(en) |
+| 27.09. | 30.09. | Hall (Tst. 5594) → Hall (Tst. 1109) | 91 | 1 | -266,9 | – | 0 | 91,0 | nur Lokalverkehr möglich (<357,9) |
+| 30.09. | 06.10. | Hall (Tst. 1109) → Hall (Tst. 1109) | 655 | 2 | -60,8 | – | 1 | 297,1 | Kapazität für 1 Fahrt(en) |
+| 06.10. | 08.10. | Hall (Tst. 1109) → Hall, Pfannhausstr | 812 | 2 | 96,2 | – | 2 | 96,2 | Kapazität für 2 Fahrt(en) |
+| 08.10. | 12.10. | Hall, Pfannhausstr → Hall (Tst. 1109) | 881 | 2 | 165,2 | – | 2 | 165,2 | Kapazität für 2 Fahrt(en) |
+| 12.10. | 18.10. | Hall (Tst. 1109) → Hall, Pfannhausstr | 672 | 2 | -43,8 | Treffer ±60 | 1 | 314,1 | Kapazität für 1 Fahrt(en) |
+| 18.10. | 24.10. | Hall, Pfannhausstr → Hall, Pfannhausstr | 1.271 | 4 | -160,6 | – | 3 | 197,3 | Kapazität für 3 Fahrt(en) |
+| 16.11. | 23.11. | Innsbruck, Hallers → Hall (Tst. 1109) | 372 | 1 | 14,1 | Treffer ±60 | 1 | 14,1 | Kapazität für 1 Fahrt(en) |
+| 30.11. | 02.12. | Hall (Tst. 1109) → Hall (Tst. 5594) | 38 | 1 | -319,9 | – | 0 | 38,0 | nur Lokalverkehr möglich (<357,9) |
+| 12.12. | 16.12. | Hall (Tst. 1109) → Rum, Lucky Car (We | 147 | 1 | -210,9 | – | 0 | 147,0 | nur Lokalverkehr möglich (<357,9) |
+| 16.12. | 19.12. | Rum, Lucky Car (We → Hall, Pfannhausstr | 138 | 1 | -219,9 | – | 0 | 138,0 | nur Lokalverkehr möglich (<357,9) |
+
+Ergebnis Abschnittstest 2025: 11 von 44 Hall-Raum-Abschnitten liegen innerhalb ±60 km um ein ganzzahliges Vielfaches von 357,9 km (Zufallserwartung bei gleichverteilten Resten: 120/357,9 = 33,5 % → ca. 14,8 Treffer). Die km-Muster allein bestätigen das Szenario daher NICHT; Bestätigung nur über Termine/Belege.
+
+
+### 8.4 Szenarien A und B, Jahr 2025
+
+| | Szenario A (Dienstort Ostermiething) | Szenario B (Dienstort Tirol, Fahrtenbuch-konsistent) | B-Formel (n × 357,9) | B-streng (nur hoch/mittel) |
+|---|---|---|---|---|
+| Gesamt-km (Basis, ABGELEITET) | 45.092 | 45.092 | 45.092 | 45.092 |
+| betrieblich BELEGT | 0 | 0 | 0 | 0 |
+| Dienstreisen Ostermiething (MODELL) | 0 (Wohnung–Arbeitsstätte = privat) | 14.712,3 | 15.389,7 | 3.617,4 |
+| Lochau (ANGABE) | 805,0 (nur mit Nachweis) | 805,0 | 805,0 | 805,0 |
+| Brenner (ANGABE) | 0 | 0 | 0 | 0 |
+| INDIZ-Fahrten | 0 | 0 | 0 | 0 |
+| **Privat-km** | **44.287 – 45.092** | **29.575** | **28.897** | **40.670** |
+| Grenze halber Sachbezug | 6.000 | 6.000 | 6.000 | 6.000 |
+| **fehlende betriebliche km** | **38.287 – 39.092** | **23.575** | **22.897** | **34.670** |
+| mit Dez-Rest ca. 1.039 km und 0–1.456 km vor 24.01. | +1.039 bis +2.495 | +1.039 bis +2.495 | +1.039 bis +2.495 | +1.039 bis +2.495 |
+
+**Je Fahrzeug (Szenario B, Basis):**
+- GM-718IW (01.01.–19.01.): 3.744 km gesamt, 894,2 betrieblich (MODELL), 2.850 privat. Anteilig zulässig wären bei 500 km/Monat etwa 300 km für 18 Tage.
+- GM-297IW (24.01.–19.12.): 41.348 km gesamt, 14.623,1 betrieblich (MODELL + ANGABE), 26.725 privat.
+
+**Gewicht der Tirol-Abschnitte:** 17.778 km nicht zugeordnete km liegen in Abschnitten mit Anfang und Ende im Raum Hall/Innsbruck/Schwaz/Wiesing. Das sind 39 % der Basis-km bzw. 60 % der Privat-km in Szenario B. Selbst wenn sie vollständig betrieblich wären, blieben 11.797 km privat. Das sind ca. 5.797 km mehr als erlaubt.
+
+### 8.5 Prüferfragen
+
+1. Gibt es einen Dienstvertrag oder Dienstzettel mit Dienstort Tirol? Seit wann? Wie wird die Funktion „Key Account Manager“ mit Gebiet West beschrieben?
+2. Warum wurden für etwa 43 (laut Angabe etwa 50) Dienstreisen Hall–Ostermiething–Hall im Jahr 2025 keine Reisekosten und Tagesgelder abgerechnet, obwohl jede Reise mehr als 3 h dauert?
+3. Gibt es Anwesenheitsnachweise, Besprechungsprotokolle oder Teilnehmerlisten für die wöchentlichen Dienstbesprechungen?
+4. Warum gibt es 2025 keine einzige Tankung im Raum Ostermiething/Innviertel, wenn 357,9 km pro Woche dorthin gefahren wurden? (Nächste Anker: Salzburg 17.03. und 13.11., Kiefersfelden 27.02. und 28.10., Walserberg 28.08. privat.)
+5. Wie erklären sich die 6 Wochen, in denen die km-Anker keine Wochenfahrt zulassen (KW15, 18, 25/24, 26, 49, 51)?
+6. Zweck der Fernfahrten: Wels (14.01./20.01.), Buchloe (17.01.; INDIZ: IK-Kundenorte Buchloe 20, Türkheim 52, Bad Wörishofen 16, Mindelheim 10), Frankfurt (08./09.04.), Wien (16.04., 10./11.07., 27.11.), Steinfeld (03.11.), Gleinalm/Steiermark (13.11.), Linz (09.12.)?
+7. 02.12.: Wie kann die Arlberg-Maut 54 min nach der Tankung in Hall (119 km) gebucht sein? Wer hat Fahrzeug und Karte genutzt?
+8. 13.11./16.11.: Wie erklären sich 26 km zwischen Salzburg und Innsbruck? Welcher km-Eintrag ist falsch? Wurde die Karte von jemand anderem benutzt?
+9. Fahrzeugwechsel: Wann wurde GM-718IW tatsächlich zurückgegeben (Nutzung 17.–19.01. belegt)? Mit welchem km-Stand wurde GM-297IW übernommen? Warum lief Karte ...0161 noch bis 24.01.?
+10. Was bedeuten die 19 Wochenend- und Feiertagstage mit Transaktionen sowie die drei Nachttankungen?
+11. Lochau: Welche Fahrt galt der Zweigniederlassung, welche ggf. MW Immobilien? Firmenbuchauszug der Zweigniederlassung?
+
+### 8.6 Prüfliste für den Auftraggeber (je Modell-/Angabe-Fahrt)
+
+| KW | Datum/Fenster | Modell-/Angabe-Fahrt | Wahrsch. | Suchbegriffe E-Mail/Kalender | Ergebnis | Beleg (Datei/Mail) | Anmerkung |
+|---|---|---|---|---|---|---|---|
+| KW01 | 02.–03.01. | Dienstreise Hall–Ostermiething–Hall | niedrig | Ostermiething, Besprechung, Dienstbesprechung, Termin, Einladung, KW01, Fenster 02.–03.01. ±2 Tage | ☐ bestätigt ☐ abweichend ☐ privat |  |  |
+| KW02 | 09.–10.01. | Dienstreise Hall–Ostermiething–Hall | niedrig | Ostermiething, Besprechung, Dienstbesprechung, Termin, Einladung, KW02, Fenster 09.–10.01. ±2 Tage | ☐ bestätigt ☐ abweichend ☐ privat |  |  |
+| KW03 | 13./14.01. | Dienstreise Hall–Ostermiething–Hall (Rundreise) | mittel | Ostermiething, Besprechung, Dienstbesprechung, Termin, Einladung, KW03, Fenster 13./14.01. ±2 Tage | ☐ bestätigt ☐ abweichend ☐ privat |  |  |
+| KW05 | 27.–31.01. | Dienstreise Hall–Ostermiething–Hall | niedrig | Ostermiething, Besprechung, Dienstbesprechung, Termin, Einladung, KW05, Fenster 27.–31.01. ±2 Tage | ☐ bestätigt ☐ abweichend ☐ privat |  |  |
+| KW06 | 03.–07.02. | Dienstreise Hall–Ostermiething–Hall | niedrig | Ostermiething, Besprechung, Dienstbesprechung, Termin, Einladung, KW06, Fenster 03.–07.02. ±2 Tage | ☐ bestätigt ☐ abweichend ☐ privat |  |  |
+| KW07 | 10.–14.02. | Dienstreise Hall–Ostermiething–Hall | mittel | Ostermiething, Besprechung, Dienstbesprechung, Termin, Einladung, KW07, Fenster 10.–14.02. ±2 Tage | ☐ bestätigt ☐ abweichend ☐ privat |  |  |
+| KW08 | 17.–21.02. | Dienstreise Hall–Ostermiething–Hall | niedrig | Ostermiething, Besprechung, Dienstbesprechung, Termin, Einladung, KW08, Fenster 17.–21.02. ±2 Tage | ☐ bestätigt ☐ abweichend ☐ privat |  |  |
+| KW09 | 27.02. | Dienstreise Hall–Ostermiething–Hall | hoch | Ostermiething, Besprechung, Dienstbesprechung, Termin, Einladung, KW09, Fenster 27.02. ±2 Tage | ☐ bestätigt ☐ abweichend ☐ privat |  |  |
+| KW10 | 03.–07.03. | Dienstreise Hall–Ostermiething–Hall | niedrig | Ostermiething, Besprechung, Dienstbesprechung, Termin, Einladung, KW10, Fenster 03.–07.03. ±2 Tage | ☐ bestätigt ☐ abweichend ☐ privat |  |  |
+| KW11 | 13.03. (ab 13:41) / 14.03. | Dienstreise Hall–Ostermiething–Hall | niedrig | Ostermiething, Besprechung, Dienstbesprechung, Termin, Einladung, KW11, Fenster 13.03. (ab 13:41) / 14.03. ±2 Tage | ☐ bestätigt ☐ abweichend ☐ privat |  |  |
+| KW12 | 17.03. | Dienstreise Hall–Ostermiething–Hall | hoch | Ostermiething, Besprechung, Dienstbesprechung, Termin, Einladung, KW12, Fenster 17.03. ±2 Tage | ☐ bestätigt ☐ abweichend ☐ privat |  |  |
+| KW13 | 24.–25.03. | Dienstreise Hall–Ostermiething–Hall | niedrig | Ostermiething, Besprechung, Dienstbesprechung, Termin, Einladung, KW13, Fenster 24.–25.03. ±2 Tage | ☐ bestätigt ☐ abweichend ☐ privat |  |  |
+| KW14 | 02.–04.04. | Dienstreise Hall–Ostermiething–Hall | niedrig | Ostermiething, Besprechung, Dienstbesprechung, Termin, Einladung, KW14, Fenster 02.–04.04. ±2 Tage | ☐ bestätigt ☐ abweichend ☐ privat |  |  |
+| KW16 | 14.–16.04. | Dienstreise Hall–Ostermiething–Hall (Rundreise) | mittel | Ostermiething, Besprechung, Dienstbesprechung, Termin, Einladung, KW16, Fenster 14.–16.04. ±2 Tage | ☐ bestätigt ☐ abweichend ☐ privat |  |  |
+| KW17 | 22.–25.04. | Dienstreise Hall–Ostermiething–Hall | niedrig | Ostermiething, Besprechung, Dienstbesprechung, Termin, Einladung, KW17, Fenster 22.–25.04. ±2 Tage | ☐ bestätigt ☐ abweichend ☐ privat |  |  |
+| KW19 | 05.–08.05. | Dienstreise Hall–Ostermiething–Hall | niedrig | Ostermiething, Besprechung, Dienstbesprechung, Termin, Einladung, KW19, Fenster 05.–08.05. ±2 Tage | ☐ bestätigt ☐ abweichend ☐ privat |  |  |
+| KW20 | 12.–13.05. | Dienstreise Hall–Ostermiething–Hall | niedrig | Ostermiething, Besprechung, Dienstbesprechung, Termin, Einladung, KW20, Fenster 12.–13.05. ±2 Tage | ☐ bestätigt ☐ abweichend ☐ privat |  |  |
+| KW21 | 19.–23.05. | Dienstreise Hall–Ostermiething–Hall | niedrig | Ostermiething, Besprechung, Dienstbesprechung, Termin, Einladung, KW21, Fenster 19.–23.05. ±2 Tage | ☐ bestätigt ☐ abweichend ☐ privat |  |  |
+| KW22 | 26.–28.05./30.05. | Dienstreise Hall–Ostermiething–Hall | niedrig | Ostermiething, Besprechung, Dienstbesprechung, Termin, Einladung, KW22, Fenster 26.–28.05./30.05. ±2 Tage | ☐ bestätigt ☐ abweichend ☐ privat |  |  |
+| KW23 | 02.–06.06. | Dienstreise Hall–Ostermiething–Hall | niedrig | Ostermiething, Besprechung, Dienstbesprechung, Termin, Einladung, KW23, Fenster 02.–06.06. ±2 Tage | ☐ bestätigt ☐ abweichend ☐ privat |  |  |
+| KW24 | 11.–13.06. | Dienstreise Hall–Ostermiething–Hall | niedrig | Ostermiething, Besprechung, Dienstbesprechung, Termin, Einladung, KW24, Fenster 11.–13.06. ±2 Tage | ☐ bestätigt ☐ abweichend ☐ privat |  |  |
+| KW27 | 01.–04.07. (oder 30.06. ab 09:21) | Dienstreise Hall–Ostermiething–Hall | niedrig | Ostermiething, Besprechung, Dienstbesprechung, Termin, Einladung, KW27, Fenster 01.–04.07. (oder 30.06. ab 09:21) ±2 Tage | ☐ bestätigt ☐ abweichend ☐ privat |  |  |
+| KW28 | 08.–09.07. | Dienstreise Hall–Ostermiething–Hall | niedrig | Ostermiething, Besprechung, Dienstbesprechung, Termin, Einladung, KW28, Fenster 08.–09.07. ±2 Tage | ☐ bestätigt ☐ abweichend ☐ privat |  |  |
+| KW29 | 17.–18.07. | Dienstreise Hall–Ostermiething–Hall | niedrig | Ostermiething, Besprechung, Dienstbesprechung, Termin, Einladung, KW29, Fenster 17.–18.07. ±2 Tage | ☐ bestätigt ☐ abweichend ☐ privat |  |  |
+| KW30 | 23.–25.07. | Dienstreise Hall–Ostermiething–Hall | niedrig | Ostermiething, Besprechung, Dienstbesprechung, Termin, Einladung, KW30, Fenster 23.–25.07. ±2 Tage | ☐ bestätigt ☐ abweichend ☐ privat |  |  |
+| KW31 | 28.–31.07. | Dienstreise Hall–Ostermiething–Hall | niedrig | Ostermiething, Besprechung, Dienstbesprechung, Termin, Einladung, KW31, Fenster 28.–31.07. ±2 Tage | ☐ bestätigt ☐ abweichend ☐ privat |  |  |
+| KW32 | 04.–08.08. | Dienstreise Hall–Ostermiething–Hall | niedrig | Ostermiething, Besprechung, Dienstbesprechung, Termin, Einladung, KW32, Fenster 04.–08.08. ±2 Tage | ☐ bestätigt ☐ abweichend ☐ privat |  |  |
+| KW33 | 11.–14.08. | Dienstreise Hall–Ostermiething–Hall | niedrig | Ostermiething, Besprechung, Dienstbesprechung, Termin, Einladung, KW33, Fenster 11.–14.08. ±2 Tage | ☐ bestätigt ☐ abweichend ☐ privat |  |  |
+| KW34 | 18.–22.08. | Dienstreise Hall–Ostermiething–Hall | niedrig | Ostermiething, Besprechung, Dienstbesprechung, Termin, Einladung, KW34, Fenster 18.–22.08. ±2 Tage | ☐ bestätigt ☐ abweichend ☐ privat |  |  |
+| KW35 | 25.–28.08. | Dienstreise Hall–Ostermiething–Hall | mittel | Ostermiething, Besprechung, Dienstbesprechung, Termin, Einladung, KW35, Fenster 25.–28.08. ±2 Tage | ☐ bestätigt ☐ abweichend ☐ privat |  |  |
+| KW36 | 01.–05.09. | Dienstreise Hall–Ostermiething–Hall | niedrig | Ostermiething, Besprechung, Dienstbesprechung, Termin, Einladung, KW36, Fenster 01.–05.09. ±2 Tage | ☐ bestätigt ☐ abweichend ☐ privat |  |  |
+| KW37 | 12.09. (Abf. nach 06:19) | Dienstreise Hall–Ostermiething–Hall | mittel | Ostermiething, Besprechung, Dienstbesprechung, Termin, Einladung, KW37, Fenster 12.09. (Abf. nach 06:19) ±2 Tage | ☐ bestätigt ☐ abweichend ☐ privat |  |  |
+| KW38 | 18.09. / 19.09. vor 12:23 | Dienstreise Hall–Ostermiething–Hall | niedrig | Ostermiething, Besprechung, Dienstbesprechung, Termin, Einladung, KW38, Fenster 18.09. / 19.09. vor 12:23 ±2 Tage | ☐ bestätigt ☐ abweichend ☐ privat |  |  |
+| KW39 | 25.09. (ab 08:51) / 26.09. | Dienstreise Hall–Ostermiething–Hall | mittel | Ostermiething, Besprechung, Dienstbesprechung, Termin, Einladung, KW39, Fenster 25.09. (ab 08:51) / 26.09. ±2 Tage | ☐ bestätigt ☐ abweichend ☐ privat |  |  |
+| KW40 | 01.–03.10. | Dienstreise Hall–Ostermiething–Hall | niedrig | Ostermiething, Besprechung, Dienstbesprechung, Termin, Einladung, KW40, Fenster 01.–03.10. ±2 Tage | ☐ bestätigt ☐ abweichend ☐ privat |  |  |
+| KW41 | 07.10. | Dienstreise Hall–Ostermiething–Hall | mittel | Ostermiething, Besprechung, Dienstbesprechung, Termin, Einladung, KW41, Fenster 07.10. ±2 Tage | ☐ bestätigt ☐ abweichend ☐ privat |  |  |
+| KW42 | 13.–17.10. | Dienstreise Hall–Ostermiething–Hall | niedrig | Ostermiething, Besprechung, Dienstbesprechung, Termin, Einladung, KW42, Fenster 13.–17.10. ±2 Tage | ☐ bestätigt ☐ abweichend ☐ privat |  |  |
+| KW43 | 21.10. (Arlberg 11:41) | Hall–Lochau–Hall (Projektbesprechung ZN Lochau / ggf. Kunde MW Immobilien) | ANGABE | Lochau, Zweigniederlassung, Projektbesprechung, MW Immobilien, Arlberg, Datum 21.10. ±2 Tage | ☐ bestätigt ☐ abweichend ☐ privat |  |  |
+| KW43 | 20.10. / 22.–24.10. | Dienstreise Hall–Ostermiething–Hall | niedrig | Ostermiething, Besprechung, Dienstbesprechung, Termin, Einladung, KW43, Fenster 20.10. / 22.–24.10. ±2 Tage | ☐ bestätigt ☐ abweichend ☐ privat |  |  |
+| KW44 | 28.10. | Dienstreise Hall–Ostermiething–Hall | hoch | Ostermiething, Besprechung, Dienstbesprechung, Termin, Einladung, KW44, Fenster 28.10. ±2 Tage | ☐ bestätigt ☐ abweichend ☐ privat |  |  |
+| KW45 | 04.–07.11. | Dienstreise Hall–Ostermiething–Hall | niedrig | Ostermiething, Besprechung, Dienstbesprechung, Termin, Einladung, KW45, Fenster 04.–07.11. ±2 Tage | ☐ bestätigt ☐ abweichend ☐ privat |  |  |
+| KW47 | 17.–21.11. | Dienstreise Hall–Ostermiething–Hall | niedrig | Ostermiething, Besprechung, Dienstbesprechung, Termin, Einladung, KW47, Fenster 17.–21.11. ±2 Tage | ☐ bestätigt ☐ abweichend ☐ privat |  |  |
+| KW48 | 24.–27.11. | Dienstreise Hall–Ostermiething–Hall (Rundreise) | mittel | Ostermiething, Besprechung, Dienstbesprechung, Termin, Einladung, KW48, Fenster 24.–27.11. ±2 Tage | ☐ bestätigt ☐ abweichend ☐ privat |  |  |
+| KW49 | 02.12. (Arlberg 12:18 – Zeit-WIDERSPRUCH) | Hall–Lochau–Hall (Projektbesprechung ZN Lochau / ggf. Kunde MW Immobilien) | ANGABE | Lochau, Zweigniederlassung, Projektbesprechung, MW Immobilien, Arlberg, Datum 02.12. ±2 Tage | ☐ bestätigt ☐ abweichend ☐ privat |  |  |
+| KW50 | 09.–11.12. | Dienstreise Hall–Ostermiething–Hall (Rundreise) | mittel | Ostermiething, Besprechung, Dienstbesprechung, Termin, Einladung, KW50, Fenster 09.–11.12. ±2 Tage | ☐ bestätigt ☐ abweichend ☐ privat |  |  |
+
+
+### 8.7 Prüfliste Tirol-Tage (Status OFFEN bis zur Ausfüllung durch den Auftraggeber; nicht pauschal betrieblich)
+
+Mögliche Kundenorte sind ein INDIZ aus der IK-Liste ohne Besuchsdatum. Eine Fahrt wird dadurch NICHT betrieblich.
+
+| Datum | Tag | Anker (Zeit/Ort) | mögliche IK-Kundenorte in der Nähe (INDIZ, Liste ohne Besuchsdatum) | Kunde | Ort | Zweck | Beleg | Status |
+|---|---|---|---|---|---|---|---|---|
+| 08.01.2025 | Mi | 18:03 Mils b. Hall | Rum (1), Innsbruck (6) |  |  |  |  | OFFEN |
+| 11.01.2025 | Sa | 11:46 Hall, Pfannhausstr. | Rum (1), Innsbruck (6) – Wohnort |  |  |  |  | OFFEN |
+| 19.01.2025 | So | 14:21 Hall | Rum (1), Innsbruck (6) – Wohnort |  |  |  |  | OFFEN |
+| 22.01.2025 | Mi | 16:49 Hall, Pfannhausstr. | Rum (1), Innsbruck (6) – Wohnort |  |  |  |  | OFFEN |
+| 24.01.2025 | Fr | 17:06 Hall, Pfannhausstr. | Rum (1), Innsbruck (6) – Wohnort |  |  |  |  | OFFEN |
+| 01.02.2025 | Sa | 13:29 Hall, Pfannhausstr. | Rum (1), Innsbruck (6) – Wohnort |  |  |  |  | OFFEN |
+| 10.02.2025 | Mo | 09:46 Hall | Rum (1), Innsbruck (6) – Wohnort |  |  |  |  | OFFEN |
+| 14.02.2025 | Fr | 14:51 Wiesing | Jenbach (1), Kramsach (1), Brixlegg (1), Reith i. A. (6), Alpbach (1), Kaltenbach (2) |  |  |  |  | OFFEN |
+| 16.02.2025 | So | 12:05 Hall | Rum (1), Innsbruck (6) – Wohnort |  |  |  |  | OFFEN |
+| 28.02.2025 | Fr | 13:55 Hall, Pfannhausstr. 14 | Rum (1), Innsbruck (6) – Wohnort |  |  |  |  | OFFEN |
+| 07.03.2025 | Fr | 23:17 Hall | Rum (1), Innsbruck (6) – Wohnort |  |  |  |  | OFFEN |
+| 13.03.2025 | Do | 13:41 Mils | Rum (1), Innsbruck (6) |  |  |  |  | OFFEN |
+| 26.03.2025 | Mi | 09:25 Schwaz | Jenbach (1), Kaltenbach (2), Aschau i. Z. (1) |  |  |  |  | OFFEN |
+| 01.04.2025 | Di | 16:45 Hall, Pfannhausstr. 14 | Rum (1), Innsbruck (6) – Wohnort |  |  |  |  | OFFEN |
+| 04.04.2025 | Fr | 14:01 Hall, Pfannhausstr. 14 | Rum (1), Innsbruck (6) – Wohnort |  |  |  |  | OFFEN |
+| 07.04.2025 | Mo | 22:42 Hall | Rum (1), Innsbruck (6) – Wohnort |  |  |  |  | OFFEN |
+| 11.04.2025 | Fr | 14:27 Innsbruck | Innsbruck (6), Rum (1), Kematen (2) |  |  |  |  | OFFEN |
+| 18.04.2025 | Fr | 11:41 Hall, Pfannhausstr. 14 | Rum (1), Innsbruck (6) – Wohnort |  |  |  |  | OFFEN |
+| 27.04.2025 | So | 20:33 Hall | Rum (1), Innsbruck (6) – Wohnort |  |  |  |  | OFFEN |
+| 04.05.2025 | So | 15:27 Mils | Rum (1), Innsbruck (6) |  |  |  |  | OFFEN |
+| 09.05.2025 | Fr | 14:34 Innsbruck | Innsbruck (6), Rum (1), Kematen (2) |  |  |  |  | OFFEN |
+| 13.05.2025 | Di | 18:43 Hall | Rum (1), Innsbruck (6) – Wohnort |  |  |  |  | OFFEN |
+| 24.05.2025 | Sa | 16:10 Innsbruck | Innsbruck (6), Rum (1), Kematen (2) |  |  |  |  | OFFEN |
+| 01.06.2025 | So | 13:43 Hall | Rum (1), Innsbruck (6) – Wohnort |  |  |  |  | OFFEN |
+| 06.06.2025 | Fr | 16:04 Hall | Rum (1), Innsbruck (6) – Wohnort |  |  |  |  | OFFEN |
+| 10.06.2025 | Di | 17:19 Hall | Rum (1), Innsbruck (6) – Wohnort |  |  |  |  | OFFEN |
+| 17.06.2025 | Di | 17:23 Hall, Pfannhausstr. 14 | Rum (1), Innsbruck (6) – Wohnort |  |  |  |  | OFFEN |
+| 30.06.2025 | Mo | 09:21 Innsbruck, Amraser Seestr. 10 | Innsbruck (6), Rum (1), Kematen (2) |  |  |  |  | OFFEN |
+| 07.07.2025 | Mo | 17:40 Hall | Rum (1), Innsbruck (6) – Wohnort |  |  |  |  | OFFEN |
+| 12.07.2025 | Sa | 20:39 Hall | Rum (1), Innsbruck (6) – Wohnort |  |  |  |  | OFFEN |
+| 16.07.2025 | Mi | 22:06 Hall | Rum (1), Innsbruck (6) – Wohnort |  |  |  |  | OFFEN |
+| 22.07.2025 | Di | 19:44 Hall | Rum (1), Innsbruck (6) – Wohnort |  |  |  |  | OFFEN |
+| 31.07.2025 | Do | 18:16 Hall, Pfannhausstr. | Rum (1), Innsbruck (6) – Wohnort |  |  |  |  | OFFEN |
+| 24.08.2025 | So | 17:13 Hall | Rum (1), Innsbruck (6) – Wohnort |  |  |  |  | OFFEN |
+| 30.08.2025 | Sa | 10:46 Hall, Pfannhausstr. | Rum (1), Innsbruck (6) – Wohnort |  |  |  |  | OFFEN |
+| 06.09.2025 | Sa | 13:01 Hall | Rum (1), Innsbruck (6) – Wohnort |  |  |  |  | OFFEN |
+| 12.09.2025 | Fr | 06:19 Hall | Rum (1), Innsbruck (6) – Wohnort |  |  |  |  | OFFEN |
+| 17.09.2025 | Mi | 16:49 Hall | Rum (1), Innsbruck (6) – Wohnort |  |  |  |  | OFFEN |
+| 19.09.2025 | Fr | 12:23 Hall | Rum (1), Innsbruck (6) – Wohnort |  |  |  |  | OFFEN |
+| 25.09.2025 | Do | 08:51 Hall, Pfannhausstr. | Rum (1), Innsbruck (6) – Wohnort |  |  |  |  | OFFEN |
+| 27.09.2025 | Sa | 15:26 Hall | Rum (1), Innsbruck (6) – Wohnort |  |  |  |  | OFFEN |
+| 30.09.2025 | Di | 19:03 Hall | Rum (1), Innsbruck (6) – Wohnort |  |  |  |  | OFFEN |
+| 06.10.2025 | Mo | 19:49 Hall | Rum (1), Innsbruck (6) – Wohnort |  |  |  |  | OFFEN |
+| 08.10.2025 | Mi | 10:52 Hall, Pfannhausstr. | Rum (1), Innsbruck (6) – Wohnort |  |  |  |  | OFFEN |
+| 12.10.2025 | So | 18:09 Hall | Rum (1), Innsbruck (6) – Wohnort |  |  |  |  | OFFEN |
+| 18.10.2025 | Sa | 14:19 Hall, Pfannhausstr. | Rum (1), Innsbruck (6) – Wohnort |  |  |  |  | OFFEN |
+| 24.10.2025 | Fr | 14:57 Hall, Pfannhausstr. | Rum (1), Innsbruck (6) – Wohnort |  |  |  |  | OFFEN |
+| 30.10.2025 | Do | 15:08 Innsbruck, Amraser See-Str. | Innsbruck (6), Rum (1), Kematen (2) |  |  |  |  | OFFEN |
+| 09.11.2025 | So | 19:06 Hall | Rum (1), Innsbruck (6) – Wohnort |  |  |  |  | OFFEN |
+| 16.11.2025 | So | 12:23 Innsbruck, Hallerstr. | Innsbruck (6), Rum (1), Kematen (2) |  |  |  |  | OFFEN |
+| 23.11.2025 | So | 18:34 Hall | Rum (1), Innsbruck (6) – Wohnort |  |  |  |  | OFFEN |
+| 30.11.2025 | So | 10:58 Hall | Rum (1), Innsbruck (6) – Wohnort |  |  |  |  | OFFEN |
+| 02.12.2025 | Di | 11:24 Hall | Rum (1), Innsbruck (6) – Wohnort |  |  |  |  | OFFEN |
+| 12.12.2025 | Fr | 11:35 Hall | Rum (1), Innsbruck (6) – Wohnort |  |  |  |  | OFFEN |
+| 16.12.2025 | Di | --:-- Rum, Lucky Car | Rum (1), Innsbruck (6) |  |  |  |  | OFFEN |
+| 19.12.2025 | Fr | 13:00 Hall, Pfannhausstr. | Rum (1), Innsbruck (6) – Wohnort |  |  |  |  | OFFEN |
+
+Anzahl Tirol-Tage mit Transaktionen 2025: 56.
+
+**Fernanker mit möglichen IK-Kundenorten (INDIZ, Prüfliste):**
+- Kiefersfelden 27.02./28.10.: Kufstein (2), Walchsee (4), Kössen (8), Söll (3), Wörgl (3).
+- Buchloe 17.01.: Buchloe (20), Türkheim (52), Bad Wörishofen (16), Mindelheim (10), Kaufering (6), Landsberg (3), Kaufbeuren (3).
+- Arlberg/Lochau 21.10./02.12.: s. 6.2.
+- Frankfurt/A7 08./09.04.: Würzburg (1), Gerbrunn (1) in Routennähe.
+- Wels, Wien, Linz, Steinfeld, Gleinalm, Salzburg und Walserberg: keine IK-Kundenorte in der Liste.
+
+---
+
+## 9. Vollständige Wochentabelle (Wochentest, Szenario B)
+
+km der Woche = lineare Interpolation zwischen km-Ankern (ABGELEITET); Spanne = belegte km zwischen Ankern innerhalb der Woche (Minimum) bis km zwischen letztem Anker davor und erstem Anker danach (Maximum). Wäschen/Servicegebühren sind in der Ankerspalte weggelassen (sie stehen im Ereignisprotokoll), Tank- und Maut-/Parkanker vollständig.
+
+| KW | Datum | km Woche (ABGEL.) | Spanne min–max | Anker (Tank/Maut/Park) | Ergebnis | möglicher Tag/Fenster | Wahrsch. | Begründung |
+|---|---|---|---|---|---|---|---|---|
+| KW01 | 01.01.–05.01. | 964 | 0–3.730 | – | vereinbar (nur rechnerisch) | Do 02.01./Fr 03.01. (01.01. Feiertag) | niedrig | keine Anker in der KW; Abschnitt 20.12.24–08.01.25 = 3.730 km; Feiertagsperiode, Urlaub OFFEN |
+| KW02 | 06.01.–12.01. | 1.469 | 695–4.920 | Mi 08.01. 18:03 Mils b. Hall; Sa 11.01. 11:46 Hall | vereinbar | Do 09.01./Fr 10.01. (06.01. Feiertag) | niedrig | Mils 08.01. 18:03 → Hall 11.01.: 695 km, Rest 337 |
+| KW03 | 13.01.–19.01. | 1.311 (bis 19.01. 14:21, GM-718IW) | 1.060–? | Di 14.01. 13:16 Wels; Fr 17.01. 16:23 Buchloe | vereinbar nur als RUNDREISE Hall–Ostermiething–Wels | Mo 13.01./Di 14.01. vormittags (Wels Di 13:16) | mittel | Hall 11.01. → Wels 14.01.: 495 km; Hall→Ost→Wels 297,9 passt (Rest 197); getrennte Fahrt + Wels = 638 km > 495 → ausgeschlossen |
+| KW04 | 20.01.–26.01. | – | – | Mo 20.01. 09:05 Wels; Mi 22.01. 16:49 Hall; Fr 24.01. 17:06 Hall | nicht prüfbar mangels km | (Wels Mo 20.01. 09:05 – Rundreise denkbar) | – | Fahrzeugwechsel; km 10 / 4770 unverwertbar; Kette 297IW erst ab Fr 24.01. 17:06 |
+| KW05 | 27.01.–02.02. | 494 | 0–1.208 | Sa 01.02. 13:29 Hall | vereinbar | Mo 27.–Fr 31.01. | niedrig | Hall 24.01. → Hall 01.02.: 545 km, Rest 187 |
+| KW06 | 03.02.–09.02. | 525 | 0–663 | – | vereinbar | Mo 03.–Fr 07.02. | niedrig | 01.02. → 10.02.: 663 km, Rest 305 |
+| KW07 | 10.02.–16.02. | 1.048 | 987–2.357 | Mo 10.02. 09:46 Hall; Fr 14.02. 14:51 Wiesing | vereinbar | Mo 10.02. (ab 09:46)–Fr 14.02. (Rückweg Wiesing 14:51) | mittel | 870 km bis Wiesing; Wiesing liegt auf der Route (Umweg 2,9 km), Fr 14:51 passt zu Rückfahrt (Abfahrt Ost. ca. 12:45, ABGELEITET) |
+| KW08 | 17.02.–23.02. | 437 | 0–707 | – | vereinbar (knapp) | Mo 17.–Fr 21.02. | niedrig | 16.02. → Kiefersfelden 27.02.: 707 km tragen KW08 (357,9) + KW09-Hinweg (292,7) → nur 56 km Lokalverkehr in 11 Tagen |
+| KW09 | 24.02.–02.03. | 572 | 76–1.567 | Do 27.02. 19:48 Kiefersfelden; Fr 28.02. 13:55 Hall | vereinbar | Do 27.02. (Abfahrt Hall ≤ ca. 14:00) | hoch | Kiefersfelden Do 19:48 auf dem Rückweg (Ost→Kief 114,3 km / 95 min); Kief→Hall: Beleg 76 km vs. Route 72,4 km |
+| KW10 | 03.03.–09.03. | 596 | 0–973 | Fr 07.03. 23:17 Hall | vereinbar | Mo 03.–Fr 07.03. | niedrig | 28.02. → 07.03.: 784 km, Rest 426 |
+| KW11 | 10.03.–16.03. | 1.965 | 0–2.406 | Do 13.03. 13:41 Mils | vereinbar | Do 13.03. (ab 13:41)/Fr 14.03. | niedrig | 07.03. → 13.03. 13:41 nur 189 km (Mo–Do vormittag ausgeschlossen); 13.03. → 17.03.: 2.217 km |
+| KW12 | 17.03.–23.03. | 956 | 0–3.023 | Mo 17.03. 16:35 Salzburg-Liefering | vereinbar | Mo 17.03. (Abfahrt Hall ≤ ca. 11:00) | hoch | Salzburg-Liefering Mo 16:35 auf Rückweg über Salzburg (Ost→Liefering 31,5 km); 19.03. Josef (Tirol) nur Hinweis |
+| KW13 | 24.03.–30.03. | 721 | 0–1.489 | Mi 26.03. 09:25 Schwaz | vereinbar | Mo 24./Di 25.03. | niedrig | Liefering 17.03. → Schwaz 26.03.: 806 km; nach Rückfahrt-Teil 173,1 und 357,9 Rest 275 |
+| KW14 | 31.03.–06.04. | 1.039 | 734–1.585 | Di 01.04. 16:45 Hall; Fr 04.04. 14:01 Hall | vereinbar | Mi 02.–Fr 04.04. (vor 14:01) | niedrig | 01.04. → 04.04.: 734 km, Rest 376 |
+| KW15 | 07.04.–13.04. | 1.587 | 1.239–2.036 | Mo 07.04. 22:42 Hall; Di 08.04. 12:44 Frankfurt; Mi 09.04. 13:59 Schondra; Fr 11.04. 14:27 Innsbruck | NICHT vereinbar | – | – | Frankfurt 08./09.04. (Übernachtung) = 1.197,8 von 1.239 km (07.04. 22:42 → 11.04.); Rest 41; Rundreise Schondra→Ost→Hall wäre +137,6 km; 04.04.–07.04. nur 168 km |
+| KW16 | 14.04.–20.04. | 1.480 | 560–3.396 | Mi 16.04. 14:51 Wien; Fr 18.04. 11:41 Hall | vereinbar nur als RUNDREISE Hall–Ostermiething–Wien | Mo 14.–Mi 16.04. (vor Wien 14:51) | mittel | Innsbruck 11.04. → Wien 16.04.: 629 km; Umweg über Ost. +22 km passt; getrennte Fahrt nicht (frei 153 km) |
+| KW17 | 21.04.–27.04. | 1.622 | 0–2.540 | – | vereinbar | Di 22.–Fr 25.04. (21.04. Ostermontag) | niedrig | 18.04. → 27.04.: 2.207 km ohne Kartentankung |
+| KW18 | 28.04.–04.05. | 358 | 0–775 | So 04.05. 15:27 Mils | NICHT vereinbar | – | – | Hall So 27.04. 20:33 → Mils So 04.05. 15:27 nur 333 km < 357,9; 01.05. Feiertag |
+| KW19 | 05.05.–11.05. | 1.093 | 0–1.632 | Fr 09.05. 14:34 Innsbruck | vereinbar | Mo 05.–Do 08.05. | niedrig | Mils 04.05. → Innsbruck 09.05.: 442 km, Rest 84 |
+| KW20 | 12.05.–18.05. | 850 | 0–1.904 | Di 13.05. 18:43 Hall | vereinbar | Mo 12./Di 13.05. (vor 18:43) | niedrig | Innsbruck 09.05. → Hall 13.05.: 1.190 km |
+| KW21 | 19.05.–25.05. | 502 | 0–1.491 | Sa 24.05. 16:10 Innsbruck | vereinbar | Mo 19.–Fr 23.05. | niedrig | 13.05. → 24.05.: 714 km, Rest 356 |
+| KW22 | 26.05.–01.06. | 686 | 0–1.250 | So 01.06. 13:43 Hall | vereinbar | Mo 26.–Mi 28.05./Fr 30.05. (29.05. Feiertag) | niedrig | 24.05. → 01.06.: 777 km |
+| KW23 | 02.06.–08.06. | 483 | 0–560 | – | vereinbar | Mo 02.–Fr 06.06. | niedrig | 01.06. → 06.06.: 473 km, Rest 115 |
+| KW24 | 09.06.–15.06. | 456 | 0–643 | Di 10.06. 17:19 Hall | vereinbar (alternativ zu KW25) | Mi 11.–Fr 13.06. (09.06. Pfingstmontag) | niedrig | 06.06. → 10.06. nur 87 km; 10.06. → 17.06.: 556 km reichen nur für EINE Fahrt (KW24 ODER KW25) |
+| KW25 | 16.06.–22.06. | 228 | 0–774 | – | NICHT vereinbar | – | – | 10.06.–17.06. (556 km) durch KW24 verbraucht (oder umgekehrt); 17.06. → 30.06. nur 218 km; 19.06. Fronleichnam |
+| KW26 | 23.06.–29.06. | 120 | 0–218 | – | NICHT vereinbar | – | – | 17.06. 17:23 → 30.06. 09:21 nur 218 km in 12,7 Tagen |
+| KW27 | 30.06.–06.07. | 569 | 0–843 | Mo 30.06. 09:21 Innsbruck | vereinbar | Di 01.–Fr 04.07. (oder Mo 30.06. ab 09:21) | niedrig | Innsbruck 30.06. → Hall 07.07.: 625 km, Rest 267 |
+| KW28 | 07.07.–13.07. | 1.535 | 1.435–2.192 | Mo 07.07. 17:40 Hall; Do 10.07. 12:29 Euro Plaza Geb. G; Fr 11.07. 10:24 Wien | vereinbar | Di 08./Mi 09.07. (vor der Wien-Fahrt) | niedrig | 07.07. → Wien 11.07.: 903 km; Hall–Wien 464,6 + 357,9 = 822,5 → Rest 80; Übernachtung Wien 10./11.07. |
+| KW29 | 14.07.–20.07. | 432 | 0–620 | Mi 16.07. 22:06 Hall | vereinbar | Do 17./Fr 18.07. | niedrig | 12.07. → 16.07. nur 132 km; 16.07. → 22.07.: 488 km, Rest 130 |
+| KW30 | 21.07.–27.07. | 576 | 0–1.223 | Di 22.07. 19:44 Hall | vereinbar | Mi 23.–Fr 25.07. | niedrig | 22.07. → 31.07.: 735 km tragen KW30 + KW31 → Rest 19 km |
+| KW31 | 28.07.–03.08. | 802 | 0–4.378 | Do 31.07. 18:16 Hall | vereinbar (knapp) | Mo 28.–Do 31.07. (vor 18:16) | niedrig | s. KW30 – nur 19 km Lokalverkehr in 9 Tagen |
+| KW32 | 04.08.–10.08. | 1.064 | 0–3.643 | – | vereinbar (nur rechnerisch) | Mo 04.–Fr 08.08. | niedrig | keine Anker 31.07.–24.08. (3.643 km/24 Tage); Urlaubszeit OFFEN |
+| KW33 | 11.08.–17.08. | 1.064 | 0–3.643 | – | vereinbar (nur rechnerisch) | Mo 11.–Do 14.08. (15.08. Feiertag) | niedrig | wie KW32 |
+| KW34 | 18.08.–24.08. | 1.079 | 0–4.810 | So 24.08. 17:13 Hall | vereinbar (nur rechnerisch) | Mo 18.–Fr 22.08. | niedrig | wie KW32 |
+| KW35 | 25.08.–31.08. | 1.233 | 0–1.734 | Do 28.08. 20:41 Walserberg N.; Sa 30.08. 10:46 Hall | vereinbar | Mo 25.–Do 28.08. | mittel | 24.08. → 30.08.: 1.167 km; Walserberg Do 28.08. 20:41 (Privatkarte) = Indiz Rückweg aus Raum Salzburg |
+| KW36 | 01.09.–07.09. | 679 | 0–1.495 | – | vereinbar | Mo 01.–Fr 05.09. | niedrig | 30.08. → 06.09.: 567 km, Rest 209 |
+| KW37 | 08.09.–14.09. | 934 | 0–1.410 | Fr 12.09. 06:19 Hall | vereinbar | Fr 12.09. (nach Tankung 06:19) | mittel | Frühtankung Hall Fr 06:19 = Abfahrts-Indiz (ABGELEITET); 12.09. → 17.09.: 482 km |
+| KW38 | 15.09.–21.09. | 841 | 507–1.211 | Mi 17.09. 16:49 Hall; Fr 19.09. 12:23 Hall | vereinbar | Do 18.09./Fr 19.09. (vor 12:23) | niedrig | 17.09. → 19.09.: 507 km in 1,8 Tagen |
+| KW39 | 22.09.–28.09. | 930 | 763–1.076 | Do 25.09. 08:51 Hall | vereinbar | Do 25.09. (ab 08:51)/Fr 26.09. | mittel | 19.09. → 25.09. nur 222 km (Mo–Mi ausgeschlossen); Tankung Do 08:51 = Abfahrts-Indiz; 25.09. → 27.09.: 763 km |
+| KW40 | 29.09.–05.10. | 617 | 0–746 | Di 30.09. 19:03 Hall | vereinbar | Mi 01.–Fr 03.10. | niedrig | 27.09. → 30.09. nur 91 km; 30.09. → 06.10.: 655 km |
+| KW41 | 06.10.–12.10. | 1.811 | 1.693–3.020 | Mo 06.10. 19:49 Hall; Mi 08.10. 10:52 Hall; So 12.10. 18:09 Hall | vereinbar | Di 07.10. | mittel | 06.10. 19:49 → 08.10. 10:52: 812 km in 39 h = langer Fahrtag (Indiz) |
+| KW42 | 13.10.–19.10. | 940 | 0–1.943 | Sa 18.10. 14:19 Hall | vereinbar | Mo 13.–Fr 17.10. | niedrig | 12.10. → 18.10.: 672 km |
+| KW43 | 20.10.–26.10. | 1.256 | 0–1.773 | Di 21.10. 11:41 S16 Arlberg West; Fr 24.10. 14:57 Hall | vereinbar | Mo 20.10./Mi 22.–Fr 24.10. | niedrig | 18.10. → 24.10.: 1.271 km; Lochau 21.10. (ANGABE, 402,5) + 357,9 → Rest 511 |
+| KW44 | 27.10.–02.11. | 1.969 | 142–2.585 | Di 28.10. 20:48 Kiefersfelden; Do 30.10. 15:08 Innsbruck | vereinbar | Di 28.10. (Abfahrt Hall ≤ ca. 15:00) | hoch | Kiefersfelden Di 20:48 auf Rückweg; Kief → Innsbruck 30.10.: 142 km (Route ca. 81) |
+| KW45 | 03.11.–09.11. | 1.140 | 759–3.584 | Mo 03.11. 16:51 Steinfeld; So 09.11. 19:06 Hall | vereinbar | Di 04.–Fr 07.11. | niedrig | Steinfeld 03.11. → Hall 09.11.: 759 km; Steinfeld/Kärnten: Rest 177; Steinfeld/NÖ: nur als Rundreise (+23 km) |
+| KW46 | 10.11.–16.11. | 889 | 26–1.282 | Do 13.11. 14:29 A9 Gleinalm Nord; Do 13.11. 16:58 Salzburg Stadt | nicht prüfbar (km-WIDERSPRUCH) | – | – | Salzburg 13.11. 39.744 → Innsbruck 16.11. 39.770 = 26 km bei Mindeststrecke 184,6 km; Gleinalm 14:29 → Salzburg 16:58 kaum fahrbar |
+| KW47 | 17.11.–23.11. | 378 | 0–920 | So 23.11. 18:34 Hall | vereinbar (rechnerisch, kaum plausibel) | Mo 17.–Fr 21.11. | niedrig | Innsbruck 16.11. → Hall 23.11.: 372 km → nach 357,9 bleiben 14 km für 7 Tage |
+| KW48 | 24.11.–30.11. | 1.049 | 522–1.108 | Do 27.11. 17:53 Wien; So 30.11. 10:58 Hall | vereinbar nur als RUNDREISE Hall–Ostermiething–Wien | Mo 24.–Do 27.11. (vor Wien 17:53) | mittel | 23.11. → Wien 27.11.: 548 km, Hall–Wien 468,6 → frei 79; Umweg +22 passt; getrennte Fahrt ausgeschlossen |
+| KW49 | 01.12.–07.12. | 680 | 0–866 | Di 02.12. 11:24 Hall; Di 02.12. 12:18 S16 Arlberg West | NICHT vereinbar | – | – | 30.11. → 02.12. nur 38 km; 02.12. → Linz 09.12.: 828 − Lochau 402,5 (ANGABE) − Hall→Linz 305,3 = 120 km frei |
+| KW50 | 08.12.–14.12. | 708 | 441–1.416 | Di 09.12. 11:37 Linz | vereinbar nur als RUNDREISE Linz–Ostermiething–Hall | Di 09.12. (nach Linz 11:37)–Do 11.12. (08.12. Feiertag) | mittel | Linz 09.12. → Hall 12.12.: 441 km; Linz→Ost→Hall 328,6 passt (Rest 112) |
+| KW51 | 15.12.–21.12. | 193 (bis 19.12. 13:00) | 138–? | Di 16.12. --:-- Rum; Fr 19.12. 13:00 Hall | NICHT vereinbar (bis Fr 19.12. 13:00) | (Fr 19.12. nach 13:00 ohne Anker – nicht prüfbar) | – | 12.12. 11:35 → 19.12. 13:00 nur 285 km |
+| KW52 | 22.12.–28.12. | – | – | – | nicht prüfbar mangels km | – | – | keine Belege nach 19.12.2025; 25./26.12. Feiertage |
+| KW01/26 | 29.12.–31.12. | – | – | – | nicht prüfbar mangels km | – | – | KW01/2026 (29.–31.12.2025), keine Belege |
+
+Zählung: vereinbar 43 (davon nur als Rundreise 4: KW03, KW16, KW48, KW50) | NICHT vereinbar 6 (KW15, KW18, KW25, KW26, KW49, KW51) | nicht prüfbar 4 (KW04, KW46, KW52, KW01/26).
+
+
+---
+
+## 10. Fahrtenbuch im WKO-Musterformat (Szenario B, mit Hin- und Rückfahrtzeilen)
+
+Format laut WKO-Infoblatt (Stand 01/2026), ergänzt um die Spalten Status und Quelle. Die km-Kette ist lückenlos: km-Stand bei Ankunft = km-Stand bei Abfahrt der nächsten Zeile. Pro Fahrzeug gibt es eine eigene Tabelle. Nicht zugeordnete km stehen bis zum Nachweis als PRIVAT.
+
+### 10a) Fahrtenbuch GM-718IW (01.01.–19.01.2025, Kette ab Vorjahresanker)
+
+**Nachträglich rekonstruiert am 01.10.2026 nach Cyberangriff; Methodik und Quellen siehe Bericht. DATENREKONSTRUKTION – kein Original-Fahrtenbuch. Szenario B (Dienstort Tirol, ANGABE). MODELL-Zeilen = Hypothese, Bestätigung durch E-Mail/Kalender/Rechnung durch Auftraggeber ausstehend.** km-Stände in MODELL/ABGELEITET-Zeilen sind Rechenwerte (Reihenfolge innerhalb des Abschnitts angenommen), nur Anker-Zeilen tragen BELEGTE km-Stände.
+
+| Datum | Zeit Abfahrt | Zeit Ankunft | Reiseweg (von – über – nach) | Zweck der Fahrt | km-Stand Abfahrt | km-Stand Ankunft | km betrieblich | km privat | Status | Quelle |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Übertrag: km-Stand 01.01.2025 nicht belegt (ABGELEITET ca. 51.141); Anker 13.12.2024 = 49158 > 48905 (nicht monoton, unverändert) | | | | | | | | | |  |
+| 20.12.2024 | 09:35 | – | Ankerpunkt Hall, Pfannhausstr. (Vorjahr) | Tank-/Ortsbeleg (keine Fahrt) | 48.905 | 48.905 | 0 | 0 | BELEGT | ER_00051685_31.12.2024 S.2 |
+| 20.12.–31.12.2024 | – | – | Hall → … (Vorjahr) | Vorjahresanteil, nicht zugeordnet (ABGELEITET, zeitanteilig) – nicht Teil 2025 | 48.905,0 | 51.140,9 | 0 | (2.235,9 Vorjahr) | ABGELEITET | Interpolation km-Anker |
+| 01.01.2025 | – | – | – | Jahresbeginn 2025 (km-Stand ABGELEITET, nicht belegt) | 51.140,9 | 51.140,9 | 0 | 0 | ABGELEITET | Interpolation |
+| 02.–03.01. | ABGEL.-Fenster 06-20 h | – | Hall – (A12/A93/A8) – Ostermiething | Dienstreise Hall–Ostermiething–Hall (Dienstbesprechung), KW01 – Hinfahrt | 51.140,9 | 51.319,3 | 178,4 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 02.–03.01. | ABGEL.-Fenster 06-20 h | – | Ostermiething – (A8/A93/A12) – Hall | Dienstreise KW01 – Rückfahrt | 51.319,3 | 51.498,8 | 179,5 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 01.01.–08.01. | – | – | Hall → … → Mils | nicht zugeordnete Fahrten – Zweck OFFEN (Tirol-Abschnitt) | 51.498,8 | 52.635 | 0 | 1.136,2 | OFFEN | Differenz km-Anker (ABGELEITET) |
+| 08.01.2025 | 18:03 | – | Ankerpunkt Mils | Tank-/Ortsbeleg (keine Fahrt) | 52.635 | 52.635 | 0 | 0 | BELEGT | ER_00006771 S.2 |
+| 09.–10.01. | ABGEL.-Fenster 06-20 h | – | Hall – (A12/A93/A8) – Ostermiething | Dienstreise Hall–Ostermiething–Hall (Dienstbesprechung), KW02 – Hinfahrt | 52.635,0 | 52.813,4 | 178,4 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 09.–10.01. | ABGEL.-Fenster 06-20 h | – | Ostermiething – (A8/A93/A12) – Hall | Dienstreise KW02 – Rückfahrt | 52.813,4 | 52.992,9 | 179,5 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 08.01.–11.01. | – | – | Mils → … → Hall | nicht zugeordnete Fahrten – Zweck OFFEN (Tirol-Abschnitt) | 52.992,9 | 53.330 | 0 | 337,1 | OFFEN | Differenz km-Anker (ABGELEITET) |
+| 11.01.2025 | 11:46 | – | Ankerpunkt Hall | Tank-/Ortsbeleg (keine Fahrt) | 53.330 | 53.330 | 0 | 0 | BELEGT | ER_00002357 S.2 |
+| 13./14.01. | Abf. ca. 06:30 (ABGEL.) | – | Hall – Ostermiething | Dienstreise KW03 als RUNDREISE (Weiterfahrt nach Wels) – Hinfahrt | 53.330,0 | 53.508,4 | 178,4 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 14.01. | ABGEL. | – | Ostermiething – Wels | Weiterfahrt Wels (Rundreise) – Zweck OFFEN | 53.508,4 | 53.627,9 | 0 | 119,5 | ABGELEITET | Routenplaner OSRM (Recherche 01.10.2026) |
+| 11.01.–14.01. | – | – | Hall → … → Wels | nicht zugeordnete Fahrten – Zweck OFFEN | 53.627,9 | 53.825 | 0 | 197,1 | OFFEN | Differenz km-Anker (ABGELEITET) |
+| 14.01.2025 | 13:16 | – | Ankerpunkt Wels | Tank-/Ortsbeleg (keine Fahrt) | 53.825 | 53.825 | 0 | 0 | BELEGT | ER_00002357 S.2 |
+| 14.–17.01. | ABGEL. | – | Wels – (München) – Buchloe | Fahrt zu belegtem Ortsanker – Zweck OFFEN | 53.825,0 | 54.117,5 | 0 | 292,5 | ABGELEITET | OSRM-Abfrage 01.10.2026 (ergänzend) |
+| 14.01.–17.01. | – | – | Wels → … → Buchloe (DE) | nicht zugeordnete Fahrten – Zweck OFFEN | 54.117,5 | 54.650 | 0 | 532,5 | OFFEN | Differenz km-Anker (ABGELEITET) |
+| 17.01.2025 | 16:23 | – | Ankerpunkt Buchloe (DE) | Tank-/Ortsbeleg (keine Fahrt) | 54.650 | 54.650 | 0 | 0 | BELEGT | ER_217686218 S.2 |
+| 17.–19.01. | ABGEL. | – | Buchloe – Hall | Fahrt zu belegtem Ortsanker – Zweck OFFEN | 54.650,0 | 54.807,7 | 0 | 157,7 | ABGELEITET | OSRM-Abfrage 01.10.2026 (ergänzend) |
+| 17.01.–19.01. | – | – | Buchloe (DE) → … → Hall | nicht zugeordnete Fahrten – Zweck OFFEN | 54.807,7 | 54.885 | 0 | 77,3 | OFFEN | Differenz km-Anker (ABGELEITET) |
+| 19.01.2025 | 14:21 | – | Ankerpunkt Hall | Tank-/Ortsbeleg (keine Fahrt) | 54.885 | 54.885 | 0 | 0 | BELEGT | ER_00002357 S.2 |
+| Nach 19.01.2025: Rückgabe GM-718IW, Rückgabe-km und -datum OFFEN (Übergabeprotokoll fehlt) | | | | | | | | | | |
+
+### 10b) Fahrtenbuch GM-297IW (24.01.–31.12.2025)
+
+**Nachträglich rekonstruiert am 01.10.2026 nach Cyberangriff; Methodik und Quellen siehe Bericht. DATENREKONSTRUKTION – kein Original-Fahrtenbuch. Szenario B (Dienstort Tirol, ANGABE). MODELL-Zeilen = Hypothese, Bestätigung durch E-Mail/Kalender/Rechnung durch Auftraggeber ausstehend.** km-Stände in MODELL/ABGELEITET-Zeilen sind Rechenwerte (Reihenfolge innerhalb des Abschnitts angenommen), nur Anker-Zeilen tragen BELEGTE km-Stände.
+
+| Datum | Zeit Abfahrt | Zeit Ankunft | Reiseweg (von – über – nach) | Zweck der Fahrt | km-Stand Abfahrt | km-Stand Ankunft | km betrieblich | km privat | Status | Quelle |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Übernahme 17.01./20.01.2025: Übernahme-km OFFEN; Tankungen 20.01. Wels (km 10) und 22.01. Hall (km 4770) mit Karte ...0161 – km unverwertbar, Fahrzeug unklar; km 0–1.456 vor 24.01. nicht zuordenbar | | | | | | | | | |  |
+| 24.01.2025 | 17:06 | – | Ankerpunkt Hall, Pfannhausstr. | Tank-/Ortsbeleg (keine Fahrt) | 1.456 | 1.456 | 0 | 0 | BELEGT | ER_00002357 S.2 |
+| 27.–31.01. | ABGEL.-Fenster 06-20 h | – | Hall – (A12/A93/A8) – Ostermiething | Dienstreise Hall–Ostermiething–Hall (Dienstbesprechung), KW05 – Hinfahrt | 1.456,0 | 1.634,4 | 178,4 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 27.–31.01. | ABGEL.-Fenster 06-20 h | – | Ostermiething – (A8/A93/A12) – Hall | Dienstreise KW05 – Rückfahrt | 1.634,4 | 1.813,9 | 179,5 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 24.01.–01.02. | – | – | Hall, Pfannhausstr. → … → Hall, Pfannhausstr. | nicht zugeordnete Fahrten – Zweck OFFEN (Tirol-Abschnitt) | 1.813,9 | 2.001 | 0 | 187,1 | OFFEN | Differenz km-Anker (ABGELEITET) |
+| 01.02.2025 | 13:29 | – | Ankerpunkt Hall, Pfannhausstr. | Tank-/Ortsbeleg (keine Fahrt) | 2.001 | 2.001 | 0 | 0 | BELEGT | ER_00006771 S.4 |
+| 03.–07.02. | ABGEL.-Fenster 06-20 h | – | Hall – (A12/A93/A8) – Ostermiething | Dienstreise Hall–Ostermiething–Hall (Dienstbesprechung), KW06 – Hinfahrt | 2.001,0 | 2.179,4 | 178,4 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 03.–07.02. | ABGEL.-Fenster 06-20 h | – | Ostermiething – (A8/A93/A12) – Hall | Dienstreise KW06 – Rückfahrt | 2.179,4 | 2.358,9 | 179,5 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 01.02.–10.02. | – | – | Hall, Pfannhausstr. → … → Hall (Tst. 1109) | nicht zugeordnete Fahrten – Zweck OFFEN (Tirol-Abschnitt) | 2.358,9 | 2.664 | 0 | 305,1 | OFFEN | Differenz km-Anker (ABGELEITET) |
+| 10.02.2025 | 09:46 | – | Ankerpunkt Hall (Tst. 1109) | Tank-/Ortsbeleg (keine Fahrt) | 2.664 | 2.664 | 0 | 0 | BELEGT | ER_00006771 S.4 |
+| 10.–14.02. | ABGEL.-Fenster 06-20 h | – | Hall – (A12/A93/A8) – Ostermiething | Dienstreise Hall–Ostermiething–Hall (Dienstbesprechung), KW07 – Hinfahrt (Wiesing Fr 14:51 auf der Route) | 2.664,0 | 2.842,4 | 178,4 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 10.–14.02. | ABGEL.-Fenster 06-20 h | – | Ostermiething – (A8/A93/A12) – Hall | Dienstreise KW07 – Rückfahrt | 2.842,4 | 3.021,9 | 179,5 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 10.02.–14.02. | – | – | Hall (Tst. 1109) → … → Wiesing (T) | nicht zugeordnete Fahrten – Zweck OFFEN (Tirol-Abschnitt) | 3.021,9 | 3.534 | 0 | 512,1 | OFFEN | Differenz km-Anker (ABGELEITET) |
+| 14.02.2025 | 14:51 | – | Ankerpunkt Wiesing (T) | Tank-/Ortsbeleg (keine Fahrt) | 3.534 | 3.534 | 0 | 0 | BELEGT | ER_00006771 S.4 |
+| 14.02.–16.02. | – | – | Wiesing (T) → … → Hall (Tst. 1109) | nicht zugeordnete Fahrten – Zweck OFFEN (Tirol-Abschnitt) | 3.534,0 | 3.651 | 0 | 117,0 | OFFEN | Differenz km-Anker (ABGELEITET) |
+| 16.02.2025 | 12:05 | – | Ankerpunkt Hall (Tst. 1109) | Tank-/Ortsbeleg (keine Fahrt) | 3.651 | 3.651 | 0 | 0 | BELEGT | ER_00006771 S.4 |
+| 17.–21.02. | ABGEL.-Fenster 06-20 h | – | Hall – (A12/A93/A8) – Ostermiething | Dienstreise Hall–Ostermiething–Hall (Dienstbesprechung), KW08 – Hinfahrt | 3.651,0 | 3.829,4 | 178,4 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 17.–21.02. | ABGEL.-Fenster 06-20 h | – | Ostermiething – (A8/A93/A12) – Hall | Dienstreise KW08 – Rückfahrt | 3.829,4 | 4.008,9 | 179,5 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 27.02. | ABGEL. Abf. Hall ≤ 14:00 | – | Hall – Ostermiething | Dienstreise KW09 – Hinfahrt | 4.008,9 | 4.187,3 | 178,4 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 27.02. | Ank. 19:48 (Beleg) | – | Ostermiething – Kiefersfelden | Dienstreise KW09 – Rückfahrt Teil 1 (bis Tankanker) | 4.187,3 | 4.301,6 | 114,3 | 0 | MODELL | OSRM-Abfrage 01.10.2026 (ergänzend) |
+| 16.02.–27.02. | – | – | Hall (Tst. 1109) → … → Kiefersfelden (DE) | nicht zugeordnete Fahrten – Zweck OFFEN | 4.301,6 | 4.358 | 0 | 56,4 | OFFEN | Differenz km-Anker (ABGELEITET) |
+| 27.02.2025 | 19:48 | – | Ankerpunkt Kiefersfelden (DE) | Tank-/Ortsbeleg (keine Fahrt) | 4.358 | 4.358 | 0 | 0 | BELEGT | ER_001012653_28.02.2025 S.2 |
+| 27.02. | ab 19:48 | – | Kiefersfelden – Hall | Dienstreise KW09 – Rückfahrt Teil 2 | 4.358,0 | 4.430,4 | 72,4 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 27.02.–28.02. | – | – | Kiefersfelden (DE) → … → Hall, Pfannhausstr. 14 | nicht zugeordnete Fahrten – Zweck OFFEN | 4.430,4 | 4.434 | 0 | 3,6 | OFFEN | Differenz km-Anker (ABGELEITET) |
+| 28.02.2025 | 13:55 | – | Ankerpunkt Hall, Pfannhausstr. 14 | Tank-/Ortsbeleg (keine Fahrt) | 4.434 | 4.434 | 0 | 0 | BELEGT | ER_00011190_31.03.2025 S.4 |
+| 03.–07.03. | ABGEL.-Fenster 06-20 h | – | Hall – (A12/A93/A8) – Ostermiething | Dienstreise Hall–Ostermiething–Hall (Dienstbesprechung), KW10 – Hinfahrt | 4.434,0 | 4.612,4 | 178,4 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 03.–07.03. | ABGEL.-Fenster 06-20 h | – | Ostermiething – (A8/A93/A12) – Hall | Dienstreise KW10 – Rückfahrt | 4.612,4 | 4.791,9 | 179,5 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 28.02.–07.03. | – | – | Hall, Pfannhausstr. 14 → … → Hall (Tst. 1109) | nicht zugeordnete Fahrten – Zweck OFFEN (Tirol-Abschnitt) | 4.791,9 | 5.218 | 0 | 426,1 | OFFEN | Differenz km-Anker (ABGELEITET) |
+| 07.03.2025 | 23:17 | – | Ankerpunkt Hall (Tst. 1109) | Tank-/Ortsbeleg (keine Fahrt) | 5.218 | 5.218 | 0 | 0 | BELEGT | ER_00011190 S.4 |
+| 07.03.–13.03. | – | – | Hall (Tst. 1109) → … → Mils (bei Hall? bei Imst? OFFEN) | nicht zugeordnete Fahrten – Zweck OFFEN (Tirol-Abschnitt) | 5.218,0 | 5.407 | 0 | 189,0 | OFFEN | Differenz km-Anker (ABGELEITET) |
+| 13.03.2025 | 13:41 | – | Ankerpunkt Mils (bei Hall? bei Imst? OFFEN) | Tank-/Ortsbeleg (keine Fahrt) | 5.407 | 5.407 | 0 | 0 | BELEGT | ER_00020064_31.05.2025 S.2 |
+| 13.03. (ab 13:41) / 14.03. | ABGEL.-Fenster 06-20 h | – | Hall – (A12/A93/A8) – Ostermiething | Dienstreise Hall–Ostermiething–Hall (Dienstbesprechung), KW11 – Hinfahrt | 5.407,0 | 5.585,4 | 178,4 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 13.03. (ab 13:41) / 14.03. | ABGEL.-Fenster 06-20 h | – | Ostermiething – (A8/A93/A12) – Hall | Dienstreise KW11 – Rückfahrt | 5.585,4 | 5.764,9 | 179,5 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 17.03. | ABGEL. Abf. Hall ≤ 11:00 | – | Hall – Ostermiething | Dienstreise KW12 – Hinfahrt | 5.764,9 | 5.943,3 | 178,4 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 17.03. | Ank. 16:35 (Beleg) | – | Ostermiething – Salzburg-Liefering | Dienstreise KW12 – Rückfahrt Teil 1 (über Salzburg) | 5.943,3 | 5.974,8 | 31,5 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 13.03.–17.03. | – | – | Mils (bei Hall? bei Imst? OFFEN) → … → Salzburg-Liefering | nicht zugeordnete Fahrten – Zweck OFFEN | 5.974,8 | 7.624 | 0 | 1.649,2 | OFFEN | Differenz km-Anker (ABGELEITET) |
+| 17.03.2025 | 16:35 | – | Ankerpunkt Salzburg-Liefering | Tank-/Ortsbeleg (keine Fahrt) | 7.624 | 7.624 | 0 | 0 | BELEGT | ER_00011190 S.4 |
+| 17.03. | ab 16:35 | – | Salzburg-Liefering – Hall | Dienstreise KW12 – Rückfahrt Teil 2 | 7.624,0 | 7.797,1 | 173,1 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 24.–25.03. | ABGEL.-Fenster 06-20 h | – | Hall – (A12/A93/A8) – Ostermiething | Dienstreise Hall–Ostermiething–Hall (Dienstbesprechung), KW13 – Hinfahrt | 7.797,1 | 7.975,5 | 178,4 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 24.–25.03. | ABGEL.-Fenster 06-20 h | – | Ostermiething – (A8/A93/A12) – Hall | Dienstreise KW13 – Rückfahrt | 7.975,5 | 8.155,0 | 179,5 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 17.03.–26.03. | – | – | Salzburg-Liefering → … → Schwaz (T) | nicht zugeordnete Fahrten – Zweck OFFEN | 8.155,0 | 8.430 | 0 | 275,0 | OFFEN | Differenz km-Anker (ABGELEITET) |
+| 26.03.2025 | 09:25 | – | Ankerpunkt Schwaz (T) | Tank-/Ortsbeleg (keine Fahrt) | 8.430 | 8.430 | 0 | 0 | BELEGT | ER_00011190 S.4 |
+| 26.03.–01.04. | – | – | Schwaz (T) → … → Hall, Pfannhausstr. 14 | nicht zugeordnete Fahrten – Zweck OFFEN (Tirol-Abschnitt) | 8.430,0 | 9.113 | 0 | 683,0 | OFFEN | Differenz km-Anker (ABGELEITET) |
+| 01.04.2025 | 16:45 | – | Ankerpunkt Hall, Pfannhausstr. 14 | Tank-/Ortsbeleg (keine Fahrt) | 9.113 | 9.113 | 0 | 0 | BELEGT | ER_00015623_30.04.2025 S.4 |
+| 02.–04.04. | ABGEL.-Fenster 06-20 h | – | Hall – (A12/A93/A8) – Ostermiething | Dienstreise Hall–Ostermiething–Hall (Dienstbesprechung), KW14 – Hinfahrt | 9.113,0 | 9.291,4 | 178,4 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 02.–04.04. | ABGEL.-Fenster 06-20 h | – | Ostermiething – (A8/A93/A12) – Hall | Dienstreise KW14 – Rückfahrt | 9.291,4 | 9.470,9 | 179,5 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 01.04.–04.04. | – | – | Hall, Pfannhausstr. 14 → … → Hall, Pfannhausstr. 14 | nicht zugeordnete Fahrten – Zweck OFFEN (Tirol-Abschnitt) | 9.470,9 | 9.847 | 0 | 376,1 | OFFEN | Differenz km-Anker (ABGELEITET) |
+| 04.04.2025 | 14:01 | – | Ankerpunkt Hall, Pfannhausstr. 14 | Tank-/Ortsbeleg (keine Fahrt) | 9.847 | 9.847 | 0 | 0 | BELEGT | ER_00015623 S.4 |
+| 04.04.–07.04. | – | – | Hall, Pfannhausstr. 14 → … → Hall (Tst. 1109) | nicht zugeordnete Fahrten – Zweck OFFEN (Tirol-Abschnitt) | 9.847,0 | 10.015 | 0 | 168,0 | OFFEN | Differenz km-Anker (ABGELEITET) |
+| 07.04.2025 | 22:42 | – | Ankerpunkt Hall (Tst. 1109) | Tank-/Ortsbeleg (keine Fahrt) | 10.015 | 10.015 | 0 | 0 | BELEGT | ER_00015623 S.4 |
+| 08.04. | Ank. vor 12:44 (Beleg) | – | Hall – Frankfurt/Main (Messeturm) | Fahrt Frankfurt (Parkbeleg, Übernachtung) – Zweck OFFEN | 10.015,0 | 10.577,6 | 0 | 562,6 | ABGELEITET | OSRM-Abfrage 01.10.2026 (ergänzend) |
+| 09.04. | Ausf. 10:16 / Schondra 13:59 (Beleg) | – | Frankfurt – A7 Schondra – Hall | Rückfahrt Frankfurt – Zweck OFFEN | 10.577,6 | 11.212,8 | 0 | 635,2 | ABGELEITET | OSRM-Abfrage 01.10.2026 (ergänzend) |
+| 07.04.–11.04. | – | – | Hall (Tst. 1109) → … → Innsbruck (Tst. 1135) | nicht zugeordnete Fahrten – Zweck OFFEN | 11.212,8 | 11.254 | 0 | 41,2 | OFFEN | Differenz km-Anker (ABGELEITET) |
+| 11.04.2025 | 14:27 | – | Ankerpunkt Innsbruck (Tst. 1135) | Tank-/Ortsbeleg (keine Fahrt) | 11.254 | 11.254 | 0 | 0 | BELEGT | ER_00015623 S.4 |
+| 14.–16.04. | ABGEL. | – | Hall – Ostermiething | Dienstreise KW16 als RUNDREISE (Weiterfahrt Wien) – Hinfahrt | 11.254,0 | 11.432,4 | 178,4 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| bis 16.04. | ABGEL. | – | Ostermiething – Wien | Weiterfahrt Wien (Rundreise) – Zweck OFFEN | 11.432,4 | 11.740,7 | 0 | 308,3 | ABGELEITET | Routenplaner OSRM (Recherche 01.10.2026) |
+| 11.04.–16.04. | – | – | Innsbruck (Tst. 1135) → … → Wien, Wienerbergstr. 29 | nicht zugeordnete Fahrten – Zweck OFFEN | 11.740,7 | 11.883 | 0 | 142,3 | OFFEN | Differenz km-Anker (ABGELEITET) |
+| 16.04.2025 | 14:51 | – | Ankerpunkt Wien, Wienerbergstr. 29 | Tank-/Ortsbeleg (keine Fahrt) | 11.883 | 11.883 | 0 | 0 | BELEGT | ER_00015623 S.4 |
+| 16.–18.04. | ABGEL. | – | Wien – Hall | Fahrt zu belegtem Ortsanker – Zweck OFFEN | 11.883,0 | 12.347,6 | 0 | 464,6 | ABGELEITET | Routenplaner OSRM (Recherche 01.10.2026) |
+| 16.04.–18.04. | – | – | Wien, Wienerbergstr. 29 → … → Hall, Pfannhausstr. 14 | nicht zugeordnete Fahrten – Zweck OFFEN | 12.347,6 | 12.443 | 0 | 95,4 | OFFEN | Differenz km-Anker (ABGELEITET) |
+| 18.04.2025 | 11:41 | – | Ankerpunkt Hall, Pfannhausstr. 14 | Tank-/Ortsbeleg (keine Fahrt) | 12.443 | 12.443 | 0 | 0 | BELEGT | ER_00015623 S.4 |
+| 22.–25.04. | ABGEL.-Fenster 06-20 h | – | Hall – (A12/A93/A8) – Ostermiething | Dienstreise Hall–Ostermiething–Hall (Dienstbesprechung), KW17 – Hinfahrt | 12.443,0 | 12.621,4 | 178,4 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 22.–25.04. | ABGEL.-Fenster 06-20 h | – | Ostermiething – (A8/A93/A12) – Hall | Dienstreise KW17 – Rückfahrt | 12.621,4 | 12.800,9 | 179,5 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 18.04.–27.04. | – | – | Hall, Pfannhausstr. 14 → … → Hall (Tst. 1109) | nicht zugeordnete Fahrten – Zweck OFFEN (Tirol-Abschnitt) | 12.800,9 | 14.650 | 0 | 1.849,1 | OFFEN | Differenz km-Anker (ABGELEITET) |
+| 27.04.2025 | 20:33 | – | Ankerpunkt Hall (Tst. 1109) | Tank-/Ortsbeleg (keine Fahrt) | 14.650 | 14.650 | 0 | 0 | BELEGT | ER_00015623 S.4 |
+| 27.04.–04.05. | – | – | Hall (Tst. 1109) → … → Mils (bei Hall? OFFEN) | nicht zugeordnete Fahrten – Zweck OFFEN (Tirol-Abschnitt) | 14.650,0 | 14.983 | 0 | 333,0 | OFFEN | Differenz km-Anker (ABGELEITET) |
+| 04.05.2025 | 15:27 | – | Ankerpunkt Mils (bei Hall? OFFEN) | Tank-/Ortsbeleg (keine Fahrt) | 14.983 | 14.983 | 0 | 0 | BELEGT | ER_00020064 S.2 |
+| 05.–08.05. | ABGEL.-Fenster 06-20 h | – | Hall – (A12/A93/A8) – Ostermiething | Dienstreise Hall–Ostermiething–Hall (Dienstbesprechung), KW19 – Hinfahrt | 14.983,0 | 15.161,4 | 178,4 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 05.–08.05. | ABGEL.-Fenster 06-20 h | – | Ostermiething – (A8/A93/A12) – Hall | Dienstreise KW19 – Rückfahrt | 15.161,4 | 15.340,9 | 179,5 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 04.05.–09.05. | – | – | Mils (bei Hall? OFFEN) → … → Innsbruck (Tst. 1028) | nicht zugeordnete Fahrten – Zweck OFFEN (Tirol-Abschnitt) | 15.340,9 | 15.425 | 0 | 84,1 | OFFEN | Differenz km-Anker (ABGELEITET) |
+| 09.05.2025 | 14:34 | – | Ankerpunkt Innsbruck (Tst. 1028) | Tank-/Ortsbeleg (keine Fahrt) | 15.425 | 15.425 | 0 | 0 | BELEGT | ER_00020064 S.2 |
+| 12.–13.05. | ABGEL.-Fenster 06-20 h | – | Hall – (A12/A93/A8) – Ostermiething | Dienstreise Hall–Ostermiething–Hall (Dienstbesprechung), KW20 – Hinfahrt | 15.425,0 | 15.603,4 | 178,4 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 12.–13.05. | ABGEL.-Fenster 06-20 h | – | Ostermiething – (A8/A93/A12) – Hall | Dienstreise KW20 – Rückfahrt | 15.603,4 | 15.782,9 | 179,5 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 09.05.–13.05. | – | – | Innsbruck (Tst. 1028) → … → Hall (Tst. 1109) | nicht zugeordnete Fahrten – Zweck OFFEN (Tirol-Abschnitt) | 15.782,9 | 16.615 | 0 | 832,1 | OFFEN | Differenz km-Anker (ABGELEITET) |
+| 13.05.2025 | 18:43 | – | Ankerpunkt Hall (Tst. 1109) | Tank-/Ortsbeleg (keine Fahrt) | 16.615 | 16.615 | 0 | 0 | BELEGT | ER_00020064 S.2 |
+| 19.–23.05. | ABGEL.-Fenster 06-20 h | – | Hall – (A12/A93/A8) – Ostermiething | Dienstreise Hall–Ostermiething–Hall (Dienstbesprechung), KW21 – Hinfahrt | 16.615,0 | 16.793,4 | 178,4 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 19.–23.05. | ABGEL.-Fenster 06-20 h | – | Ostermiething – (A8/A93/A12) – Hall | Dienstreise KW21 – Rückfahrt | 16.793,4 | 16.972,9 | 179,5 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 13.05.–24.05. | – | – | Hall (Tst. 1109) → … → Innsbruck (Tst. 5652) | nicht zugeordnete Fahrten – Zweck OFFEN (Tirol-Abschnitt) | 16.972,9 | 17.329 | 0 | 356,1 | OFFEN | Differenz km-Anker (ABGELEITET) |
+| 24.05.2025 | 16:10 | – | Ankerpunkt Innsbruck (Tst. 5652) | Tank-/Ortsbeleg (keine Fahrt) | 17.329 | 17.329 | 0 | 0 | BELEGT | ER_00020064 S.2 |
+| 26.–28.05./30.05. | ABGEL.-Fenster 06-20 h | – | Hall – (A12/A93/A8) – Ostermiething | Dienstreise Hall–Ostermiething–Hall (Dienstbesprechung), KW22 – Hinfahrt | 17.329,0 | 17.507,4 | 178,4 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 26.–28.05./30.05. | ABGEL.-Fenster 06-20 h | – | Ostermiething – (A8/A93/A12) – Hall | Dienstreise KW22 – Rückfahrt | 17.507,4 | 17.686,9 | 179,5 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 24.05.–01.06. | – | – | Innsbruck (Tst. 5652) → … → Hall (Tst. 1109) | nicht zugeordnete Fahrten – Zweck OFFEN (Tirol-Abschnitt) | 17.686,9 | 18.106 | 0 | 419,1 | OFFEN | Differenz km-Anker (ABGELEITET) |
+| 01.06.2025 | 13:43 | – | Ankerpunkt Hall (Tst. 1109) | Tank-/Ortsbeleg (keine Fahrt) | 18.106 | 18.106 | 0 | 0 | BELEGT | ER_00024517_30.06.2025 S.3 |
+| 02.–06.06. | ABGEL.-Fenster 06-20 h | – | Hall – (A12/A93/A8) – Ostermiething | Dienstreise Hall–Ostermiething–Hall (Dienstbesprechung), KW23 – Hinfahrt | 18.106,0 | 18.284,4 | 178,4 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 02.–06.06. | ABGEL.-Fenster 06-20 h | – | Ostermiething – (A8/A93/A12) – Hall | Dienstreise KW23 – Rückfahrt | 18.284,4 | 18.463,9 | 179,5 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 01.06.–06.06. | – | – | Hall (Tst. 1109) → … → Hall (Tst. 5594) | nicht zugeordnete Fahrten – Zweck OFFEN (Tirol-Abschnitt) | 18.463,9 | 18.579 | 0 | 115,1 | OFFEN | Differenz km-Anker (ABGELEITET) |
+| 06.06.2025 | 16:04 | – | Ankerpunkt Hall (Tst. 5594) | Tank-/Ortsbeleg (keine Fahrt) | 18.579 | 18.579 | 0 | 0 | BELEGT | ER_00024517 S.3 |
+| 06.06.–10.06. | – | – | Hall (Tst. 5594) → … → Hall (Tst. 5594) | nicht zugeordnete Fahrten – Zweck OFFEN (Tirol-Abschnitt) | 18.579,0 | 18.666 | 0 | 87,0 | OFFEN | Differenz km-Anker (ABGELEITET) |
+| 10.06.2025 | 17:19 | – | Ankerpunkt Hall (Tst. 5594) | Tank-/Ortsbeleg (keine Fahrt) | 18.666 | 18.666 | 0 | 0 | BELEGT | ER_00024517 S.3 |
+| 11.–13.06. | ABGEL.-Fenster 06-20 h | – | Hall – (A12/A93/A8) – Ostermiething | Dienstreise Hall–Ostermiething–Hall (Dienstbesprechung), KW24 – Hinfahrt | 18.666,0 | 18.844,4 | 178,4 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 11.–13.06. | ABGEL.-Fenster 06-20 h | – | Ostermiething – (A8/A93/A12) – Hall | Dienstreise KW24 – Rückfahrt | 18.844,4 | 19.023,9 | 179,5 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 10.06.–17.06. | – | – | Hall (Tst. 5594) → … → Hall, Pfannhausstr. 14 | nicht zugeordnete Fahrten – Zweck OFFEN (Tirol-Abschnitt) | 19.023,9 | 19.222 | 0 | 198,1 | OFFEN | Differenz km-Anker (ABGELEITET) |
+| 17.06.2025 | 17:23 | – | Ankerpunkt Hall, Pfannhausstr. 14 | Tank-/Ortsbeleg (keine Fahrt) | 19.222 | 19.222 | 0 | 0 | BELEGT | ER_00024517 S.3 |
+| 17.06.–30.06. | – | – | Hall, Pfannhausstr. 14 → … → Innsbruck, Amraser Seestr. 10 | nicht zugeordnete Fahrten – Zweck OFFEN (Tirol-Abschnitt) | 19.222,0 | 19.440 | 0 | 218,0 | OFFEN | Differenz km-Anker (ABGELEITET) |
+| 30.06.2025 | 09:21 | – | Ankerpunkt Innsbruck, Amraser Seestr. 10 | Tank-/Ortsbeleg (keine Fahrt) | 19.440 | 19.440 | 0 | 0 | BELEGT | ER_00024517 S.3 |
+| 01.–04.07. (oder 30.06. ab 09:21) | ABGEL.-Fenster 06-20 h | – | Hall – (A12/A93/A8) – Ostermiething | Dienstreise Hall–Ostermiething–Hall (Dienstbesprechung), KW27 – Hinfahrt | 19.440,0 | 19.618,4 | 178,4 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 01.–04.07. (oder 30.06. ab 09:21) | ABGEL.-Fenster 06-20 h | – | Ostermiething – (A8/A93/A12) – Hall | Dienstreise KW27 – Rückfahrt | 19.618,4 | 19.797,9 | 179,5 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 30.06.–07.07. | – | – | Innsbruck, Amraser Seestr. 10 → … → Hall (Tst. 1109) | nicht zugeordnete Fahrten – Zweck OFFEN (Tirol-Abschnitt) | 19.797,9 | 20.065 | 0 | 267,1 | OFFEN | Differenz km-Anker (ABGELEITET) |
+| 07.07.2025 | 17:40 | – | Ankerpunkt Hall (Tst. 1109) | Tank-/Ortsbeleg (keine Fahrt) | 20.065 | 20.065 | 0 | 0 | BELEGT | ER_00028953_31.07.2025 S.3 |
+| 08.–09.07. | ABGEL.-Fenster 06-20 h | – | Hall – (A12/A93/A8) – Ostermiething | Dienstreise Hall–Ostermiething–Hall (Dienstbesprechung), KW28 – Hinfahrt | 20.065,0 | 20.243,4 | 178,4 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 08.–09.07. | ABGEL.-Fenster 06-20 h | – | Ostermiething – (A8/A93/A12) – Hall | Dienstreise KW28 – Rückfahrt | 20.243,4 | 20.422,9 | 179,5 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 09./10.07. | ABGEL. | – | Hall – Wien (Euro Plaza 10.07. 12:29–16:51, Übernachtung) | Fahrt zu belegtem Ortsanker – Zweck OFFEN | 20.422,9 | 20.887,5 | 0 | 464,6 | ABGELEITET | Routenplaner OSRM (Recherche 01.10.2026) |
+| 07.07.–11.07. | – | – | Hall (Tst. 1109) → … → Wien, Wienerbergstr. 29 | nicht zugeordnete Fahrten – Zweck OFFEN | 20.887,5 | 20.968 | 0 | 80,5 | OFFEN | Differenz km-Anker (ABGELEITET) |
+| 11.07.2025 | 10:24 | – | Ankerpunkt Wien, Wienerbergstr. 29 | Tank-/Ortsbeleg (keine Fahrt) | 20.968 | 20.968 | 0 | 0 | BELEGT | ER_00028953 S.3 |
+| 11./12.07. | ABGEL. | – | Wien – Hall | Fahrt zu belegtem Ortsanker – Zweck OFFEN | 20.968,0 | 21.432,6 | 0 | 464,6 | ABGELEITET | Routenplaner OSRM (Recherche 01.10.2026) |
+| 11.07.–12.07. | – | – | Wien, Wienerbergstr. 29 → … → Hall (Tst. 1109) | nicht zugeordnete Fahrten – Zweck OFFEN | 21.432,6 | 21.500 | 0 | 67,4 | OFFEN | Differenz km-Anker (ABGELEITET) |
+| 12.07.2025 | 20:39 | – | Ankerpunkt Hall (Tst. 1109) | Tank-/Ortsbeleg (keine Fahrt) | 21.500 | 21.500 | 0 | 0 | BELEGT | ER_00028953 S.3 |
+| 12.07.–16.07. | – | – | Hall (Tst. 1109) → … → Hall (Tst. 1109) | nicht zugeordnete Fahrten – Zweck OFFEN (Tirol-Abschnitt) | 21.500,0 | 21.632 | 0 | 132,0 | OFFEN | Differenz km-Anker (ABGELEITET) |
+| 16.07.2025 | 22:06 | – | Ankerpunkt Hall (Tst. 1109) | Tank-/Ortsbeleg (keine Fahrt) | 21.632 | 21.632 | 0 | 0 | BELEGT | ER_00028953 S.3 |
+| 17.–18.07. | ABGEL.-Fenster 06-20 h | – | Hall – (A12/A93/A8) – Ostermiething | Dienstreise Hall–Ostermiething–Hall (Dienstbesprechung), KW29 – Hinfahrt | 21.632,0 | 21.810,4 | 178,4 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 17.–18.07. | ABGEL.-Fenster 06-20 h | – | Ostermiething – (A8/A93/A12) – Hall | Dienstreise KW29 – Rückfahrt | 21.810,4 | 21.989,9 | 179,5 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 16.07.–22.07. | – | – | Hall (Tst. 1109) → … → Hall (Tst. 1109) | nicht zugeordnete Fahrten – Zweck OFFEN (Tirol-Abschnitt) | 21.989,9 | 22.120 | 0 | 130,1 | OFFEN | Differenz km-Anker (ABGELEITET) |
+| 22.07.2025 | 19:44 | – | Ankerpunkt Hall (Tst. 1109) | Tank-/Ortsbeleg (keine Fahrt) | 22.120 | 22.120 | 0 | 0 | BELEGT | ER_00028953 S.3 |
+| 23.–25.07. | ABGEL.-Fenster 06-20 h | – | Hall – (A12/A93/A8) – Ostermiething | Dienstreise Hall–Ostermiething–Hall (Dienstbesprechung), KW30 – Hinfahrt | 22.120,0 | 22.298,4 | 178,4 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 23.–25.07. | ABGEL.-Fenster 06-20 h | – | Ostermiething – (A8/A93/A12) – Hall | Dienstreise KW30 – Rückfahrt | 22.298,4 | 22.477,9 | 179,5 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 28.–31.07. | ABGEL.-Fenster 06-20 h | – | Hall – (A12/A93/A8) – Ostermiething | Dienstreise Hall–Ostermiething–Hall (Dienstbesprechung), KW31 – Hinfahrt | 22.477,9 | 22.656,3 | 178,4 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 28.–31.07. | ABGEL.-Fenster 06-20 h | – | Ostermiething – (A8/A93/A12) – Hall | Dienstreise KW31 – Rückfahrt | 22.656,3 | 22.835,8 | 179,5 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 22.07.–31.07. | – | – | Hall (Tst. 1109) → … → Hall, Pfannhausstr. | nicht zugeordnete Fahrten – Zweck OFFEN (Tirol-Abschnitt) | 22.835,8 | 22.855 | 0 | 19,2 | OFFEN | Differenz km-Anker (ABGELEITET) |
+| 31.07.2025 | 18:16 | – | Ankerpunkt Hall, Pfannhausstr. | Tank-/Ortsbeleg (keine Fahrt) | 22.855 | 22.855 | 0 | 0 | BELEGT | ER_00028953 S.3 |
+| 04.–08.08. | ABGEL.-Fenster 06-20 h | – | Hall – (A12/A93/A8) – Ostermiething | Dienstreise Hall–Ostermiething–Hall (Dienstbesprechung), KW32 – Hinfahrt | 22.855,0 | 23.033,4 | 178,4 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 04.–08.08. | ABGEL.-Fenster 06-20 h | – | Ostermiething – (A8/A93/A12) – Hall | Dienstreise KW32 – Rückfahrt | 23.033,4 | 23.212,9 | 179,5 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 11.–14.08. | ABGEL.-Fenster 06-20 h | – | Hall – (A12/A93/A8) – Ostermiething | Dienstreise Hall–Ostermiething–Hall (Dienstbesprechung), KW33 – Hinfahrt | 23.212,9 | 23.391,3 | 178,4 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 11.–14.08. | ABGEL.-Fenster 06-20 h | – | Ostermiething – (A8/A93/A12) – Hall | Dienstreise KW33 – Rückfahrt | 23.391,3 | 23.570,8 | 179,5 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 18.–22.08. | ABGEL.-Fenster 06-20 h | – | Hall – (A12/A93/A8) – Ostermiething | Dienstreise Hall–Ostermiething–Hall (Dienstbesprechung), KW34 – Hinfahrt | 23.570,8 | 23.749,2 | 178,4 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 18.–22.08. | ABGEL.-Fenster 06-20 h | – | Ostermiething – (A8/A93/A12) – Hall | Dienstreise KW34 – Rückfahrt | 23.749,2 | 23.928,7 | 179,5 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 31.07.–24.08. | – | – | Hall, Pfannhausstr. → … → Hall (Tst. 5594) | nicht zugeordnete Fahrten – Zweck OFFEN (Tirol-Abschnitt) | 23.928,7 | 26.498 | 0 | 2.569,3 | OFFEN | Differenz km-Anker (ABGELEITET) |
+| 24.08.2025 | 17:13 | – | Ankerpunkt Hall (Tst. 5594) | Tank-/Ortsbeleg (keine Fahrt) | 26.498 | 26.498 | 0 | 0 | BELEGT | ER_00033372_31.08.2025 S.3 |
+| 25.–28.08. | ABGEL.-Fenster 06-20 h | – | Hall – (A12/A93/A8) – Ostermiething | Dienstreise Hall–Ostermiething–Hall (Dienstbesprechung), KW35 – Hinfahrt (Walserberg Do 28.08. 20:41 = Rückweg-Indiz) | 26.498,0 | 26.676,4 | 178,4 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 25.–28.08. | ABGEL.-Fenster 06-20 h | – | Ostermiething – (A8/A93/A12) – Hall | Dienstreise KW35 – Rückfahrt | 26.676,4 | 26.855,9 | 179,5 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 24.08.–30.08. | – | – | Hall (Tst. 5594) → … → Hall, Pfannhausstr. | nicht zugeordnete Fahrten – Zweck OFFEN (Tirol-Abschnitt) | 26.855,9 | 27.665 | 0 | 809,1 | OFFEN | Differenz km-Anker (ABGELEITET) |
+| 30.08.2025 | 10:46 | – | Ankerpunkt Hall, Pfannhausstr. | Tank-/Ortsbeleg (keine Fahrt) | 27.665 | 27.665 | 0 | 0 | BELEGT | ER_00033372 S.3 |
+| 01.–05.09. | ABGEL.-Fenster 06-20 h | – | Hall – (A12/A93/A8) – Ostermiething | Dienstreise Hall–Ostermiething–Hall (Dienstbesprechung), KW36 – Hinfahrt | 27.665,0 | 27.843,4 | 178,4 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 01.–05.09. | ABGEL.-Fenster 06-20 h | – | Ostermiething – (A8/A93/A12) – Hall | Dienstreise KW36 – Rückfahrt | 27.843,4 | 28.022,9 | 179,5 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 30.08.–06.09. | – | – | Hall, Pfannhausstr. → … → Hall (Tst. 1109) | nicht zugeordnete Fahrten – Zweck OFFEN (Tirol-Abschnitt) | 28.022,9 | 28.232 | 0 | 209,1 | OFFEN | Differenz km-Anker (ABGELEITET) |
+| 06.09.2025 | 13:01 | – | Ankerpunkt Hall (Tst. 1109) | Tank-/Ortsbeleg (keine Fahrt) | 28.232 | 28.232 | 0 | 0 | BELEGT | ER_00576824_30.09.2025 S.2 |
+| 06.09.–12.09. | – | – | Hall (Tst. 1109) → … → Hall (Tst. 1109) | nicht zugeordnete Fahrten – Zweck OFFEN (Tirol-Abschnitt) | 28.232,0 | 29.160 | 0 | 928,0 | OFFEN | Differenz km-Anker (ABGELEITET) |
+| 12.09.2025 | 06:19 | – | Ankerpunkt Hall (Tst. 1109) | Tank-/Ortsbeleg (keine Fahrt) | 29.160 | 29.160 | 0 | 0 | BELEGT | ER_00576824 S.2 |
+| 12.09. (Abf. nach 06:19) | ab 06:19 (Beleg) – ABGEL. | – | Hall – (A12/A93/A8) – Ostermiething | Dienstreise Hall–Ostermiething–Hall (Dienstbesprechung), KW37 – Hinfahrt | 29.160,0 | 29.338,4 | 178,4 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 12.09. (Abf. nach 06:19) | ab 06:19 (Beleg) – ABGEL. | – | Ostermiething – (A8/A93/A12) – Hall | Dienstreise KW37 – Rückfahrt | 29.338,4 | 29.517,9 | 179,5 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 12.09.–17.09. | – | – | Hall (Tst. 1109) → … → Hall (Tst. 1109) | nicht zugeordnete Fahrten – Zweck OFFEN (Tirol-Abschnitt) | 29.517,9 | 29.642 | 0 | 124,1 | OFFEN | Differenz km-Anker (ABGELEITET) |
+| 17.09.2025 | 16:49 | – | Ankerpunkt Hall (Tst. 1109) | Tank-/Ortsbeleg (keine Fahrt) | 29.642 | 29.642 | 0 | 0 | BELEGT | ER_00576824 S.2 |
+| 18.09. / 19.09. vor 12:23 | ABGEL.-Fenster 06-20 h | – | Hall – (A12/A93/A8) – Ostermiething | Dienstreise Hall–Ostermiething–Hall (Dienstbesprechung), KW38 – Hinfahrt | 29.642,0 | 29.820,4 | 178,4 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 18.09. / 19.09. vor 12:23 | ABGEL.-Fenster 06-20 h | – | Ostermiething – (A8/A93/A12) – Hall | Dienstreise KW38 – Rückfahrt | 29.820,4 | 29.999,9 | 179,5 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 17.09.–19.09. | – | – | Hall (Tst. 1109) → … → Hall (Tst. 1109) | nicht zugeordnete Fahrten – Zweck OFFEN (Tirol-Abschnitt) | 29.999,9 | 30.149 | 0 | 149,1 | OFFEN | Differenz km-Anker (ABGELEITET) |
+| 19.09.2025 | 12:23 | – | Ankerpunkt Hall (Tst. 1109) | Tank-/Ortsbeleg (keine Fahrt) | 30.149 | 30.149 | 0 | 0 | BELEGT | ER_00576824 S.2 |
+| 19.09.–25.09. | – | – | Hall (Tst. 1109) → … → Hall, Pfannhausstr. | nicht zugeordnete Fahrten – Zweck OFFEN (Tirol-Abschnitt) | 30.149,0 | 30.371 | 0 | 222,0 | OFFEN | Differenz km-Anker (ABGELEITET) |
+| 25.09.2025 | 08:51 | – | Ankerpunkt Hall, Pfannhausstr. | Tank-/Ortsbeleg (keine Fahrt) | 30.371 | 30.371 | 0 | 0 | BELEGT | ER_00576824 S.2 |
+| 25.09. (ab 08:51) / 26.09. | ABGEL.-Fenster 06-20 h | – | Hall – (A12/A93/A8) – Ostermiething | Dienstreise Hall–Ostermiething–Hall (Dienstbesprechung), KW39 – Hinfahrt | 30.371,0 | 30.549,4 | 178,4 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 25.09. (ab 08:51) / 26.09. | ABGEL.-Fenster 06-20 h | – | Ostermiething – (A8/A93/A12) – Hall | Dienstreise KW39 – Rückfahrt | 30.549,4 | 30.728,9 | 179,5 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 25.09.–27.09. | – | – | Hall, Pfannhausstr. → … → Hall (Tst. 5594) | nicht zugeordnete Fahrten – Zweck OFFEN (Tirol-Abschnitt) | 30.728,9 | 31.134 | 0 | 405,1 | OFFEN | Differenz km-Anker (ABGELEITET) |
+| 27.09.2025 | 15:26 | – | Ankerpunkt Hall (Tst. 5594) | Tank-/Ortsbeleg (keine Fahrt) | 31.134 | 31.134 | 0 | 0 | BELEGT | ER_00576824 S.2 |
+| 27.09.–30.09. | – | – | Hall (Tst. 5594) → … → Hall (Tst. 1109) | nicht zugeordnete Fahrten – Zweck OFFEN (Tirol-Abschnitt) | 31.134,0 | 31.225 | 0 | 91,0 | OFFEN | Differenz km-Anker (ABGELEITET) |
+| 30.09.2025 | 19:03 | – | Ankerpunkt Hall (Tst. 1109) | Tank-/Ortsbeleg (keine Fahrt) | 31.225 | 31.225 | 0 | 0 | BELEGT | ER_00576824 S.2 |
+| 01.–03.10. | ABGEL.-Fenster 06-20 h | – | Hall – (A12/A93/A8) – Ostermiething | Dienstreise Hall–Ostermiething–Hall (Dienstbesprechung), KW40 – Hinfahrt | 31.225,0 | 31.403,4 | 178,4 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 01.–03.10. | ABGEL.-Fenster 06-20 h | – | Ostermiething – (A8/A93/A12) – Hall | Dienstreise KW40 – Rückfahrt | 31.403,4 | 31.582,9 | 179,5 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 30.09.–06.10. | – | – | Hall (Tst. 1109) → … → Hall (Tst. 1109) | nicht zugeordnete Fahrten – Zweck OFFEN (Tirol-Abschnitt) | 31.582,9 | 31.880 | 0 | 297,1 | OFFEN | Differenz km-Anker (ABGELEITET) |
+| 06.10.2025 | 19:49 | – | Ankerpunkt Hall (Tst. 1109) | Tank-/Ortsbeleg (keine Fahrt) | 31.880 | 31.880 | 0 | 0 | BELEGT | ER_00042254_31.10.2025 S.4 |
+| 07.10. | ABGEL.-Fenster 06-20 h | – | Hall – (A12/A93/A8) – Ostermiething | Dienstreise Hall–Ostermiething–Hall (Dienstbesprechung), KW41 – Hinfahrt | 31.880,0 | 32.058,4 | 178,4 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 07.10. | ABGEL.-Fenster 06-20 h | – | Ostermiething – (A8/A93/A12) – Hall | Dienstreise KW41 – Rückfahrt | 32.058,4 | 32.237,9 | 179,5 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 06.10.–08.10. | – | – | Hall (Tst. 1109) → … → Hall, Pfannhausstr. | nicht zugeordnete Fahrten – Zweck OFFEN (Tirol-Abschnitt) | 32.237,9 | 32.692 | 0 | 454,1 | OFFEN | Differenz km-Anker (ABGELEITET) |
+| 08.10.2025 | 10:52 | – | Ankerpunkt Hall, Pfannhausstr. | Tank-/Ortsbeleg (keine Fahrt) | 32.692 | 32.692 | 0 | 0 | BELEGT | ER_00042254 S.4 |
+| 08.10.–12.10. | – | – | Hall, Pfannhausstr. → … → Hall (Tst. 1109) | nicht zugeordnete Fahrten – Zweck OFFEN (Tirol-Abschnitt) | 32.692,0 | 33.573 | 0 | 881,0 | OFFEN | Differenz km-Anker (ABGELEITET) |
+| 12.10.2025 | 18:09 | – | Ankerpunkt Hall (Tst. 1109) | Tank-/Ortsbeleg (keine Fahrt) | 33.573 | 33.573 | 0 | 0 | BELEGT | ER_00042254 S.4 |
+| 13.–17.10. | ABGEL.-Fenster 06-20 h | – | Hall – (A12/A93/A8) – Ostermiething | Dienstreise Hall–Ostermiething–Hall (Dienstbesprechung), KW42 – Hinfahrt | 33.573,0 | 33.751,4 | 178,4 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 13.–17.10. | ABGEL.-Fenster 06-20 h | – | Ostermiething – (A8/A93/A12) – Hall | Dienstreise KW42 – Rückfahrt | 33.751,4 | 33.930,9 | 179,5 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 12.10.–18.10. | – | – | Hall (Tst. 1109) → … → Hall, Pfannhausstr. | nicht zugeordnete Fahrten – Zweck OFFEN (Tirol-Abschnitt) | 33.930,9 | 34.245 | 0 | 314,1 | OFFEN | Differenz km-Anker (ABGELEITET) |
+| 18.10.2025 | 14:19 | – | Ankerpunkt Hall, Pfannhausstr. | Tank-/Ortsbeleg (keine Fahrt) | 34.245 | 34.245 | 0 | 0 | BELEGT | ER_00042254 S.4 |
+| 21.10. (Arlberg 11:41) | ABGEL. | – | Hall – Landeck – S16 Arlberg – Lochau | betrieblich – Projektbesprechung Zweigniederlassung Lochau (ANGABE, Nachweis ausstehend) – Hinfahrt | 34.245,0 | 34.448,8 | 203,8 | 0 | ANGABE | OSRM-Abfrage 01.10.2026 (ergänzend); Maut-Anker Arlberg |
+| 21.10. (Arlberg 11:41) | ABGEL. | – | Lochau – Hall | Projektbesprechung Lochau – Rückfahrt (ANGABE) | 34.448,8 | 34.647,5 | 198,7 | 0 | ANGABE | OSRM-Abfrage 01.10.2026 (ergänzend) |
+| 20.10. / 22.–24.10. | ABGEL.-Fenster 06-20 h | – | Hall – (A12/A93/A8) – Ostermiething | Dienstreise Hall–Ostermiething–Hall (Dienstbesprechung), KW43 – Hinfahrt | 34.647,5 | 34.825,9 | 178,4 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 20.10. / 22.–24.10. | ABGEL.-Fenster 06-20 h | – | Ostermiething – (A8/A93/A12) – Hall | Dienstreise KW43 – Rückfahrt | 34.825,9 | 35.005,4 | 179,5 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 18.10.–24.10. | – | – | Hall, Pfannhausstr. → … → Hall, Pfannhausstr. | nicht zugeordnete Fahrten – Zweck OFFEN (Tirol-Abschnitt) | 35.005,4 | 35.516 | 0 | 510,6 | OFFEN | Differenz km-Anker (ABGELEITET) |
+| 24.10.2025 | 14:57 | – | Ankerpunkt Hall, Pfannhausstr. | Tank-/Ortsbeleg (keine Fahrt) | 35.516 | 35.516 | 0 | 0 | BELEGT | ER_00042254 S.4 |
+| 28.10. | ABGEL. Abf. Hall ≤ 15:00 | – | Hall – Ostermiething | Dienstreise KW44 – Hinfahrt | 35.516,0 | 35.694,4 | 178,4 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 28.10. | Ank. 20:48 (Beleg) | – | Ostermiething – Kiefersfelden | Dienstreise KW44 – Rückfahrt Teil 1 (bis Tankanker) | 35.694,4 | 35.808,7 | 114,3 | 0 | MODELL | OSRM-Abfrage 01.10.2026 (ergänzend) |
+| 24.10.–28.10. | – | – | Hall, Pfannhausstr. → … → Kiefersfelden (DE) | nicht zugeordnete Fahrten – Zweck OFFEN | 35.808,7 | 36.018 | 0 | 209,3 | OFFEN | Differenz km-Anker (ABGELEITET) |
+| 28.10.2025 | 20:48 | – | Ankerpunkt Kiefersfelden (DE) | Tank-/Ortsbeleg (keine Fahrt) | 36.018 | 36.018 | 0 | 0 | BELEGT | ER_3951_31.10.2025 S.2 |
+| 28.10. | ab 20:48 | – | Kiefersfelden – Hall | Dienstreise KW44 – Rückfahrt Teil 2 | 36.018,0 | 36.090,4 | 72,4 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 28.10.–30.10. | – | – | Kiefersfelden (DE) → … → Innsbruck, Amraser See-Str. | nicht zugeordnete Fahrten – Zweck OFFEN | 36.090,4 | 36.160 | 0 | 69,6 | OFFEN | Differenz km-Anker (ABGELEITET) |
+| 30.10.2025 | 15:08 | – | Ankerpunkt Innsbruck, Amraser See-Str. | Tank-/Ortsbeleg (keine Fahrt) | 36.160 | 36.160 | 0 | 0 | BELEGT | ER_00042254 S.4 |
+| 30.10.–03.11. | ABGEL. | – | Hall – Steinfeld (Variante Kärnten, Bundesland OFFEN) | Fahrt zu belegtem Ortsanker – Zweck OFFEN | 36.160,0 | 36.384,4 | 0 | 224,4 | ABGELEITET | Routenplaner OSRM (Recherche 01.10.2026) |
+| 30.10.–03.11. | – | – | Innsbruck, Amraser See-Str. → … → Steinfeld (Tst. 4134, Bundesland OFFEN) | nicht zugeordnete Fahrten – Zweck OFFEN | 36.384,4 | 38.101 | 0 | 1.716,6 | OFFEN | Differenz km-Anker (ABGELEITET) |
+| 03.11.2025 | 16:51 | – | Ankerpunkt Steinfeld (Tst. 4134, Bundesland OFFEN) | Tank-/Ortsbeleg (keine Fahrt) | 38.101 | 38.101 | 0 | 0 | BELEGT | ER_00046666_29.11.2025 S.3 |
+| 03.–09.11. | ABGEL. | – | Steinfeld – Hall (Variante Kärnten) | Fahrt zu belegtem Ortsanker – Zweck OFFEN | 38.101,0 | 38.325,4 | 0 | 224,4 | ABGELEITET | Routenplaner OSRM (Recherche 01.10.2026) |
+| 04.–07.11. | ABGEL.-Fenster 06-20 h | – | Hall – (A12/A93/A8) – Ostermiething | Dienstreise Hall–Ostermiething–Hall (Dienstbesprechung), KW45 – Hinfahrt | 38.325,4 | 38.503,8 | 178,4 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 04.–07.11. | ABGEL.-Fenster 06-20 h | – | Ostermiething – (A8/A93/A12) – Hall | Dienstreise KW45 – Rückfahrt | 38.503,8 | 38.683,3 | 179,5 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 03.11.–09.11. | – | – | Steinfeld (Tst. 4134, Bundesland OFFEN) → … → Hall (Tst. 1109) | nicht zugeordnete Fahrten – Zweck OFFEN | 38.683,3 | 38.860 | 0 | 176,7 | OFFEN | Differenz km-Anker (ABGELEITET) |
+| 09.11.2025 | 19:06 | – | Ankerpunkt Hall (Tst. 1109) | Tank-/Ortsbeleg (keine Fahrt) | 38.860 | 38.860 | 0 | 0 | BELEGT | ER_00046666 S.3 |
+| bis 13.11. 14:29 | ABGEL. | – | Hall – A9 Gleinalm Nord | Fahrt zu belegtem Ortsanker – Zweck OFFEN | 38.860,0 | 39.240,9 | 0 | 380,9 | ABGELEITET | Routenplaner OSRM (Recherche 01.10.2026) |
+| 13.11. | 14:29–16:58 (Beleg) | – | Gleinalm – Salzburg | Fahrt zu belegtem Ortsanker – Zweck OFFEN | 39.240,9 | 39.487,7 | 0 | 246,8 | ABGELEITET | OSRM-Abfrage 01.10.2026 (ergänzend) |
+| 09.11.–13.11. | – | – | Hall (Tst. 1109) → … → Salzburg Stadt (Tst. 4546) | nicht zugeordnete Fahrten – Zweck OFFEN | 39.487,7 | 39.744 | 0 | 256,3 | OFFEN | Differenz km-Anker (ABGELEITET) |
+| 13.11.2025 | 16:58 | – | Ankerpunkt Salzburg Stadt (Tst. 4546) | Tank-/Ortsbeleg (keine Fahrt) | 39.744 | 39.744 | 0 | 0 | BELEGT | ER_00046666 S.3 |
+| 13.11.–16.11. | – | – | Salzburg → Innsbruck | **WIDERSPRUCH**: belegte Differenz 26 km < Mindeststrecke Salzburg–Innsbruck 184,6 km – km-Kette physikalisch nicht erfüllbar (Eingabefehler km / Fremdnutzung Karte?) – Zweck OFFEN | 39.744,0 | 39.770 | 0 | 26,0 | OFFEN | km-Anker ER_00046666 S.3 |
+| 16.11.2025 | 12:23 | – | Ankerpunkt Innsbruck, Hallerstr. (0G978) | Tank-/Ortsbeleg (keine Fahrt) | 39.770 | 39.770 | 0 | 0 | BELEGT | ER_00046666 S.3 |
+| 17.–21.11. | ABGEL.-Fenster 06-20 h | – | Hall – (A12/A93/A8) – Ostermiething | Dienstreise Hall–Ostermiething–Hall (Dienstbesprechung), KW47 – Hinfahrt | 39.770,0 | 39.948,4 | 178,4 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 17.–21.11. | ABGEL.-Fenster 06-20 h | – | Ostermiething – (A8/A93/A12) – Hall | Dienstreise KW47 – Rückfahrt | 39.948,4 | 40.127,9 | 179,5 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 16.11.–23.11. | – | – | Innsbruck, Hallerstr. (0G978) → … → Hall (Tst. 1109) | nicht zugeordnete Fahrten – Zweck OFFEN (Tirol-Abschnitt) | 40.127,9 | 40.142 | 0 | 14,1 | OFFEN | Differenz km-Anker (ABGELEITET) |
+| 23.11.2025 | 18:34 | – | Ankerpunkt Hall (Tst. 1109) | Tank-/Ortsbeleg (keine Fahrt) | 40.142 | 40.142 | 0 | 0 | BELEGT | ER_00046666 S.3 |
+| 24.–27.11. | ABGEL. | – | Hall – Ostermiething | Dienstreise KW48 als RUNDREISE (Weiterfahrt Wien) – Hinfahrt | 40.142,0 | 40.320,4 | 178,4 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| bis 27.11. | ABGEL. | – | Ostermiething – Wien | Weiterfahrt Wien (Rundreise) – Zweck OFFEN | 40.320,4 | 40.632,7 | 0 | 312,3 | ABGELEITET | Routenplaner OSRM (Recherche 01.10.2026) |
+| 23.11.–27.11. | – | – | Hall (Tst. 1109) → … → Wien (Tst. 7526) | nicht zugeordnete Fahrten – Zweck OFFEN | 40.632,7 | 40.690 | 0 | 57,3 | OFFEN | Differenz km-Anker (ABGELEITET) |
+| 27.11.2025 | 17:53 | – | Ankerpunkt Wien (Tst. 7526) | Tank-/Ortsbeleg (keine Fahrt) | 40.690 | 40.690 | 0 | 0 | BELEGT | ER_00046666 S.3 |
+| 27.–30.11. | ABGEL. | – | Wien – Hall | Fahrt zu belegtem Ortsanker – Zweck OFFEN | 40.690,0 | 41.158,6 | 0 | 468,6 | ABGELEITET | Routenplaner OSRM (Recherche 01.10.2026) |
+| 27.11.–30.11. | – | – | Wien (Tst. 7526) → … → Hall (Tst. 1109) | nicht zugeordnete Fahrten – Zweck OFFEN | 41.158,6 | 41.212 | 0 | 53,4 | OFFEN | Differenz km-Anker (ABGELEITET) |
+| 30.11.2025 | 10:58 | – | Ankerpunkt Hall (Tst. 1109) | Tank-/Ortsbeleg (keine Fahrt) | 41.212 | 41.212 | 0 | 0 | BELEGT | ER_00046666 S.3 |
+| 30.11.–02.12. | – | – | Hall (Tst. 1109) → … → Hall (Tst. 5594) | nicht zugeordnete Fahrten – Zweck OFFEN (Tirol-Abschnitt) | 41.212,0 | 41.250 | 0 | 38,0 | OFFEN | Differenz km-Anker (ABGELEITET) |
+| 02.12.2025 | 11:24 | – | Ankerpunkt Hall (Tst. 5594) | Tank-/Ortsbeleg (keine Fahrt) | 41.250 | 41.250 | 0 | 0 | BELEGT | ER_00051079_31.12.2025 S.3 |
+| 02.12. (Arlberg 12:18 – Zeit-WIDERSPRUCH) | ABGEL. | – | Hall – Landeck – S16 Arlberg – Lochau | betrieblich – Projektbesprechung Zweigniederlassung Lochau (ANGABE, Nachweis ausstehend) – Hinfahrt | 41.250,0 | 41.453,8 | 203,8 | 0 | ANGABE | OSRM-Abfrage 01.10.2026 (ergänzend); Maut-Anker Arlberg |
+| 02.12. (Arlberg 12:18 – Zeit-WIDERSPRUCH) | ABGEL. | – | Lochau – Hall | Projektbesprechung Lochau – Rückfahrt (ANGABE) | 41.453,8 | 41.652,5 | 198,7 | 0 | ANGABE | OSRM-Abfrage 01.10.2026 (ergänzend) |
+| bis 09.12. | ABGEL. | – | Hall – Linz | Fahrt zu belegtem Ortsanker – Zweck OFFEN | 41.652,5 | 41.957,8 | 0 | 305,3 | ABGELEITET | Routenplaner OSRM (Recherche 01.10.2026) |
+| 02.12.–09.12. | – | – | Hall (Tst. 5594) → … → Linz (Tst. 3717) | nicht zugeordnete Fahrten – Zweck OFFEN | 41.957,8 | 42.078 | 0 | 120,2 | OFFEN | Differenz km-Anker (ABGELEITET) |
+| 09.12.2025 | 11:37 | – | Ankerpunkt Linz (Tst. 3717) | Tank-/Ortsbeleg (keine Fahrt) | 42.078 | 42.078 | 0 | 0 | BELEGT | ER_00051079 S.3 |
+| 09.–11.12. | ABGEL. | – | Linz – Ostermiething | Rückweg Linz (Rundreise) – Zweck OFFEN | 42.078,0 | 42.227,1 | 0 | 149,1 | ABGELEITET | Routenplaner OSRM (Recherche 01.10.2026) |
+| 09.–11.12. | ABGEL. | – | Ostermiething – Hall | Dienstreise KW50 als RUNDREISE (Ostermiething auf Rückweg Linz) – Rückfahrt | 42.227,1 | 42.406,6 | 179,5 | 0 | MODELL | Routenplaner OSRM (Recherche 01.10.2026) |
+| 09.12.–12.12. | – | – | Linz (Tst. 3717) → … → Hall (Tst. 1109) | nicht zugeordnete Fahrten – Zweck OFFEN | 42.406,6 | 42.519 | 0 | 112,4 | OFFEN | Differenz km-Anker (ABGELEITET) |
+| 12.12.2025 | 11:35 | – | Ankerpunkt Hall (Tst. 1109) | Tank-/Ortsbeleg (keine Fahrt) | 42.519 | 42.519 | 0 | 0 | BELEGT | ER_00051079 S.3 |
+| 12.12.–16.12. | – | – | Hall (Tst. 1109) → … → Rum, Lucky Car (Werkstatt) | nicht zugeordnete Fahrten – Zweck OFFEN (Tirol-Abschnitt) | 42.519,0 | 42.666 | 0 | 147,0 | OFFEN | Differenz km-Anker (ABGELEITET) |
+| 16.12.2025 | – | – | Ankerpunkt Rum, Lucky Car (Werkstatt) | Tank-/Ortsbeleg (keine Fahrt) | 42.666 | 42.666 | 0 | 0 | BELEGT | BU_462025_18.12.2025 |
+| 16.12.–19.12. | – | – | Rum, Lucky Car (Werkstatt) → … → Hall, Pfannhausstr. | nicht zugeordnete Fahrten – Zweck OFFEN (Tirol-Abschnitt) | 42.666,0 | 42.804 | 0 | 138,0 | OFFEN | Differenz km-Anker (ABGELEITET) |
+| 19.12.2025 | 13:00 | – | Ankerpunkt Hall, Pfannhausstr. | Tank-/Ortsbeleg (keine Fahrt) | 42.804 | 42.804 | 0 | 0 | BELEGT | ER_00051079 S.3 |
+| 19.12.2025 13:00 – 31.12.2025: keine Belege, km OFFEN (ABGELEITET-Schätzwert ca. 1.039 km, nicht in Summen BELEGT) | | | | | | | | | | |
+
+
+### 10c) Summen betrieblich/privat je Monat und Jahr (Szenario B, beide Fahrzeuge, Basis ohne Dez-Rest)
+
+| Monat | km gesamt | betrieblich MODELL | betrieblich ANGABE | betrieblich gesamt | privat (inkl. OFFEN) | privat ≤ 500? |
+|---|---|---|---|---|---|---|
+| Jänner | 4.250,1 | 1.252,1 | 0,0 | 1.252,1 | 2.998,0 | nein |
+| Februar | 2.516,6 | 1.438,8 | 0,0 | 1.438,8 | 1.077,8 | nein |
+| März | 4.558,8 | 1.456,7 | 0,0 | 1.456,7 | 3.102,1 | nein |
+| April | 5.766,8 | 894,2 | 0,0 | 894,2 | 4.872,6 | nein |
+| Mai | 3.245,5 | 1.431,6 | 0,0 | 1.431,6 | 1.813,9 | nein |
+| Juni | 1.442,2 | 715,8 | 0,0 | 715,8 | 726,4 | nein |
+| Juli | 3.399,4 | 1.789,5 | 0,0 | 1.789,5 | 1.609,9 | nein |
+| August | 4.897,7 | 1.431,6 | 0,0 | 1.431,6 | 3.466,1 | nein |
+| September | 3.458,4 | 1.431,6 | 0,0 | 1.431,6 | 2.026,8 | nein |
+| Oktober | 5.565,5 | 1.796,7 | 402,5 | 2.199,2 | 3.366,3 | nein |
+| November | 4.409,4 | 894,2 | 0,0 | 894,2 | 3.515,2 | nein |
+| Dezember | 1.581,8 | 179,5 | 402,5 | 582,0 | 999,8 | nein |
+| **Jahr 2025** | **45.092,1** | **14.712,3** | **805,0** | **15.517,3** | **29.574,8** | Grenze 6.000 → überschritten um 23.574,8 km |
+
+Zusätzlich ABGELEITET: 19.12.–31.12.2025 ca. 1.039 km (Zweck OFFEN → privat) sowie GM-297IW vor 24.01. 0–1.456 km OFFEN. Die km-Werte der Monate sind zeitanteilig aus der km-Kette interpoliert (ABGELEITET). Betrieblich BELEGT: 0 km in allen Monaten.

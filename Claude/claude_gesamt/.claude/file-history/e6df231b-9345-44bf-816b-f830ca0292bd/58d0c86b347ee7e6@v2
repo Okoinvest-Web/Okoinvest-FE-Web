@@ -1,0 +1,466 @@
+<script setup lang="ts">
+/**
+ * Protokollausführung im Vollbild (Kapitel 6.2, Schritte 4 bis 7).
+ *
+ * Ein Prüfpunkt pro Bildschirm, Fortschrittsbalken oben, große Weiter-Taste
+ * unten. Nach dem letzten Prüfpunkt folgen Messdaten und Abschluss.
+ */
+import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
+
+import AppIcon from '@/components/AppIcon.vue'
+import BasisDialog from '@/components/BasisDialog.vue'
+import MessdatenTabelle from '@/components/MessdatenTabelle.vue'
+import PruefpunktKarte from '@/components/PruefpunktKarte.vue'
+import SignaturPad from '@/components/SignaturPad.vue'
+import StatusAbzeichen from '@/components/StatusAbzeichen.vue'
+import { prozent } from '@/lib/format'
+import { schweregradAusBewertung } from '@/lib/plausibilitaet'
+import type { Ergebnis } from '@/lib/typen'
+import { useProtokoll } from '@/stores/protokoll'
+import { useStammdaten } from '@/stores/stammdaten'
+import { useSync } from '@/stores/sync'
+import { useUi } from '@/stores/ui'
+
+const props = defineProps<{ lokaleId: string }>()
+
+const router = useRouter()
+const store = useProtokoll()
+const stammdaten = useStammdaten()
+const sync = useSync()
+const ui = useUi()
+
+type Phase = 'pruefpunkte' | 'messdaten' | 'abschluss'
+const phase = ref<Phase>('pruefpunkte')
+const uebersichtOffen = ref(false)
+const mangelOffen = ref(false)
+const signaturRolle = ref<'' | 'Techniker' | 'Auftraggeber'>('')
+const laedt = ref(true)
+
+const mangelEntwurf = ref({ titel: '', beschreibung: '', kategorie: '', schweregrad: 'B' })
+const gesamtbewertung = ref<'Bestanden' | 'Bestanden mit Auflagen' | 'Nicht bestanden' | ''>('')
+const zusammenfassung = ref('')
+const schliesstAb = ref(false)
+
+const anlage = computed(() =>
+  store.aktuell ? stammdaten.anlage(store.aktuell.anlage) : undefined,
+)
+
+const zeile = computed(() => store.aktuellerPunkt)
+const letzterPunkt = computed(() => store.index >= store.sichtbarePunkte.length - 1)
+
+const hatMessdaten = computed(
+  () => (store.aktuell?.messdaten.length ?? 0) > 0 || store.vorlage?.vorlage_typ !== 'Schadenaufnahme',
+)
+
+const unterschriftTechniker = computed(() =>
+  store.aktuell?.unterschriften.find((u) => u.rolle === 'Techniker'),
+)
+const unterschriftKunde = computed(() =>
+  store.aktuell?.unterschriften.find((u) => u.rolle === 'Auftraggeber'),
+)
+
+async function aendern(werte: Partial<Ergebnis>) {
+  if (!zeile.value) return
+  await store.wertSetzen(zeile.value.pruefpunkt_key, werte)
+}
+
+function weiter() {
+  if (letzterPunkt.value) {
+    phase.value = hatMessdaten.value ? 'messdaten' : 'abschluss'
+    return
+  }
+  store.weiter()
+}
+
+function zurueck() {
+  if (phase.value === 'abschluss') {
+    phase.value = hatMessdaten.value ? 'messdaten' : 'pruefpunkte'
+    return
+  }
+  if (phase.value === 'messdaten') {
+    phase.value = 'pruefpunkte'
+    return
+  }
+  store.zurueck()
+}
+
+function sektionOeffnen(name: string) {
+  store.springeZuSektion(name)
+  phase.value = 'pruefpunkte'
+  uebersichtOffen.value = false
+}
+
+function phaseOeffnen(neu: Phase) {
+  phase.value = neu
+  uebersichtOffen.value = false
+}
+
+function mangelDialogOeffnen() {
+  if (!zeile.value) return
+  mangelEntwurf.value = {
+    titel: `${zeile.value.nummer ?? ''} ${zeile.value.titel}`.trim(),
+    beschreibung: zeile.value.bemerkung ?? '',
+    kategorie:
+      store.aktuellePruefpunktDefinition?.mangelkategorie ??
+      stammdaten.kategorien[0]?.name ??
+      '',
+    schweregrad: schweregradAusBewertung(zeile.value.bewertung),
+  }
+  mangelOffen.value = true
+}
+
+async function mangelSpeichern() {
+  if (!zeile.value) return
+  try {
+    await store.mangelAnlegen(zeile.value.pruefpunkt_key, {
+      titel: mangelEntwurf.value.titel,
+      beschreibung: mangelEntwurf.value.beschreibung,
+      kategorie: mangelEntwurf.value.kategorie,
+      schweregrad: mangelEntwurf.value.schweregrad,
+    })
+    mangelOffen.value = false
+    ui.erfolg('Mangel angelegt und mit dem Prüfpunkt verknüpft.')
+  } catch (fehler) {
+    ui.fehler((fehler as Error).message)
+  }
+}
+
+async function signaturUebernehmen(nutzlast: { signatur: string; name_unterzeichner: string }) {
+  if (!signaturRolle.value) return
+  await store.unterschreiben({ rolle: signaturRolle.value, ...nutzlast })
+  ui.erfolg(`Unterschrift ${signaturRolle.value} erfasst.`)
+  signaturRolle.value = ''
+}
+
+async function abschliessen() {
+  if (!gesamtbewertung.value) {
+    ui.warnung('Bitte eine Gesamtbewertung wählen.')
+    return
+  }
+  schliesstAb.value = true
+  try {
+    await store.abschliessen(gesamtbewertung.value, zusammenfassung.value)
+    await sync.jetztSynchronisieren()
+    ui.erfolg('Protokoll abgeschlossen. Das PDF wird nach dem Sync erzeugt.')
+    store.schliessen()
+    await router.replace({ name: 'protokolle' })
+  } catch (fehler) {
+    ui.fehler((fehler as Error).message)
+  } finally {
+    schliesstAb.value = false
+  }
+}
+
+async function unterbrechen() {
+  await store.speichern()
+  ui.toast('Zwischenstand gespeichert.', 'erfolg')
+  store.schliessen()
+  await router.push({ name: 'dashboard' })
+}
+
+onMounted(async () => {
+  try {
+    await store.oeffnen(props.lokaleId)
+  } catch (fehler) {
+    ui.fehler((fehler as Error).message)
+    await router.replace({ name: 'protokolle' })
+  } finally {
+    laedt.value = false
+  }
+})
+</script>
+
+<template>
+  <div v-if="laedt" class="flex h-full items-center justify-center text-sm text-slate-500">
+    Protokoll wird geladen …
+  </div>
+
+  <div v-else-if="store.aktuell" class="flex h-full flex-col bg-white dark:bg-slate-950">
+    <!-- Kopfleiste mit Fortschritt (FA-031) -->
+    <header class="shrink-0 border-b border-slate-200 dark:border-slate-800">
+      <div class="flex items-center gap-2 px-3 py-2">
+        <button class="tap flex items-center justify-center rounded-lg text-slate-500
+                       hover:bg-slate-100 dark:hover:bg-slate-800"
+                aria-label="Unterbrechen" @click="unterbrechen">
+          <AppIcon name="pfeilLinks" />
+        </button>
+        <div class="min-w-0 flex-1">
+          <div class="truncate text-sm font-semibold">{{ anlage?.anlage_name }}</div>
+          <div class="truncate text-xs text-slate-500">{{ store.vorlage?.titel }}</div>
+        </div>
+        <button class="tap flex items-center gap-1 rounded-lg px-2 text-sm font-semibold text-slate-600
+                       hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+                @click="uebersichtOffen = true">
+          {{ prozent(store.fortschritt) }}
+          <AppIcon name="menu" :groesse="18" />
+        </button>
+      </div>
+      <div class="h-1 bg-slate-200 dark:bg-slate-800">
+        <div class="h-full bg-marke-500 transition-all" :style="{ width: `${store.fortschritt}%` }" />
+      </div>
+    </header>
+
+    <!-- Inhalt -->
+    <main class="min-h-0 flex-1 overflow-y-auto scrollbar-schmal">
+      <div class="mx-auto max-w-feld px-4 py-5">
+        <!-- Prüfpunkte -->
+        <template v-if="phase === 'pruefpunkte'">
+          <p class="mb-3 text-xs text-slate-400">
+            Prüfpunkt {{ store.index + 1 }} von {{ store.sichtbarePunkte.length }}
+          </p>
+          <PruefpunktKarte
+            v-if="zeile"
+            :key="zeile.pruefpunkt_key"
+            :zeile="zeile"
+            :punkt="store.aktuellePruefpunktDefinition"
+            :uebersteuerung-erlaubt="Boolean(stammdaten.einstellungen.uebersteuerung_erlaubt)"
+            @aendern="aendern"
+            @mangel-anlegen="mangelDialogOeffnen"
+          />
+        </template>
+
+        <!-- Messdaten -->
+        <MessdatenTabelle
+          v-else-if="phase === 'messdaten'"
+          :zeilen="store.aktuell.messdaten"
+          :anlage="anlage"
+          :uebersteuerung-erlaubt="Boolean(stammdaten.einstellungen.uebersteuerung_erlaubt)"
+          @aendern="(nr, werte) => store.messwertSetzen(nr, werte)"
+          @hinzufuegen="store.messzeileHinzufuegen()"
+          @entfernen="(nr) => store.messzeileEntfernen(nr)"
+        />
+
+        <!-- Abschluss -->
+        <div v-else class="space-y-5">
+          <h2 class="text-xl font-bold">Abschluss</h2>
+
+          <div v-if="store.offenePflichten.length"
+               class="rounded-xl border border-red-200 bg-red-50 p-4 text-sm dark:border-red-900 dark:bg-red-900/30">
+            <p class="font-semibold text-red-800 dark:text-red-200">
+              {{ store.offenePflichten.length }} Pflichtangaben fehlen
+            </p>
+            <ul class="mt-2 space-y-1 text-red-700 dark:text-red-300">
+              <li v-for="(eintrag, i) in store.offenePflichten.slice(0, 8)" :key="i">
+                {{ eintrag.nummer }} {{ eintrag.titel }} — {{ eintrag.grund }}
+              </li>
+            </ul>
+          </div>
+
+          <div v-if="store.maengelImProtokoll.length" class="karte p-4">
+            <h3 class="mb-2 font-semibold">Dokumentierte Mängel</h3>
+            <ul class="space-y-1 text-sm">
+              <li v-for="m in store.maengelImProtokoll" :key="m.pruefpunkt_key" class="flex items-center gap-2">
+                <StatusAbzeichen :wert="schweregradAusBewertung(m.bewertung)" klein />
+                <span class="flex-1 truncate">{{ m.nummer }} {{ m.titel }}</span>
+                <AppIcon v-if="m.mangel" name="check" :groesse="16" class="text-ok" />
+              </li>
+            </ul>
+          </div>
+
+          <!-- Unterschriften (FA-040) -->
+          <div class="grid gap-3 tablet:grid-cols-2">
+            <button
+              class="karte flex items-center gap-3 p-4 text-left"
+              @click="signaturRolle = 'Techniker'"
+            >
+              <AppIcon name="unterschrift" :groesse="22"
+                       :class="unterschriftTechniker ? 'text-ok' : 'text-slate-400'" />
+              <span class="flex-1">
+                <span class="block font-semibold">Techniker</span>
+                <span class="block text-xs text-slate-500">
+                  {{ unterschriftTechniker?.name_unterzeichner ?? 'noch nicht unterschrieben' }}
+                </span>
+              </span>
+              <AppIcon name="pfeilRechts" :groesse="18" class="text-slate-400" />
+            </button>
+
+            <button
+              class="karte flex items-center gap-3 p-4 text-left"
+              @click="signaturRolle = 'Auftraggeber'"
+            >
+              <AppIcon name="unterschrift" :groesse="22"
+                       :class="unterschriftKunde ? 'text-ok' : 'text-slate-400'" />
+              <span class="flex-1">
+                <span class="block font-semibold">Auftraggeber</span>
+                <span class="block text-xs text-slate-500">
+                  {{ unterschriftKunde?.name_unterzeichner ?? 'optional' }}
+                </span>
+              </span>
+              <AppIcon name="pfeilRechts" :groesse="18" class="text-slate-400" />
+            </button>
+          </div>
+
+          <!-- Gesamtbewertung -->
+          <div>
+            <span class="beschriftung">Gesamtbewertung</span>
+            <div class="grid gap-2">
+              <button
+                v-for="option in ['Bestanden', 'Bestanden mit Auflagen', 'Nicht bestanden']"
+                :key="option"
+                type="button"
+                class="min-h-[52px] rounded-xl border-2 px-4 text-base font-semibold"
+                :class="
+                  gesamtbewertung === option
+                    ? option === 'Bestanden'
+                      ? 'border-ok bg-ok text-white'
+                      : option === 'Nicht bestanden'
+                        ? 'border-fehler bg-fehler text-white'
+                        : 'border-warnung bg-warnung text-slate-900'
+                    : 'border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-900'
+                "
+                @click="gesamtbewertung = option as typeof gesamtbewertung"
+              >
+                {{ option }}
+              </button>
+            </div>
+          </div>
+
+          <label>
+            <span class="beschriftung">Zusammenfassung / Auflagen</span>
+            <textarea v-model="zusammenfassung" class="feld min-h-[96px]" rows="3"
+                      placeholder="Ergebnis, Auflagen und empfohlene nächste Schritte" />
+          </label>
+        </div>
+      </div>
+    </main>
+
+    <!-- Fußleiste -->
+    <footer class="shrink-0 border-t border-slate-200 bg-white px-3 py-2
+                   pb-[max(0.5rem,env(safe-area-inset-bottom))] dark:border-slate-800 dark:bg-slate-950">
+      <div class="mx-auto flex max-w-feld gap-2">
+        <button
+          class="knopf-sekundaer px-4"
+          :disabled="phase === 'pruefpunkte' && store.index === 0"
+          @click="zurueck"
+        >
+          <AppIcon name="pfeilLinks" :groesse="20" />
+          <span class="hidden tablet:inline">Zurück</span>
+        </button>
+
+        <button v-if="phase !== 'abschluss'" class="knopf-primaer flex-1" @click="weiter">
+          {{ letzterPunkt && phase === 'pruefpunkte' ? 'Zu den Messdaten' : 'Weiter' }}
+          <AppIcon name="pfeilRechts" :groesse="20" />
+        </button>
+
+        <button
+          v-else
+          class="knopf-primaer flex-1"
+          :disabled="schliesstAb || store.offenePflichten.length > 0"
+          @click="abschliessen"
+        >
+          <AppIcon name="check" :groesse="20" />
+          {{ schliesstAb ? 'Wird abgeschlossen …' : 'Protokoll abschließen' }}
+        </button>
+      </div>
+    </footer>
+
+    <!-- Sektionsübersicht -->
+    <BasisDialog :offen="uebersichtOffen" titel="Abschnitte" @schliessen="uebersichtOffen = false">
+      <ul class="space-y-2">
+        <li v-for="sektion in store.sektionen" :key="sektion.name">
+          <button
+            class="tap flex w-full items-center gap-3 rounded-xl border border-slate-200 p-3 text-left
+                   dark:border-slate-800"
+            @click="sektionOeffnen(sektion.name)"
+          >
+            <span class="min-w-0 flex-1">
+              <span class="block truncate font-semibold">{{ sektion.name }}</span>
+              <span class="block text-xs text-slate-500">
+                {{ sektion.erledigt }} von {{ sektion.anzahl }} erfasst
+              </span>
+            </span>
+            <span
+              class="h-2 w-16 shrink-0 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700"
+            >
+              <span
+                class="block h-full rounded-full bg-marke-500"
+                :style="{ width: `${(sektion.erledigt / sektion.anzahl) * 100}%` }"
+              />
+            </span>
+          </button>
+        </li>
+        <li>
+          <button
+            class="tap flex w-full items-center gap-3 rounded-xl border border-slate-200 p-3 text-left
+                   dark:border-slate-800"
+            @click="phaseOeffnen('messdaten')"
+          >
+            <span class="flex-1 font-semibold">String-Messdaten</span>
+            <AppIcon name="pfeilRechts" :groesse="18" class="text-slate-400" />
+          </button>
+        </li>
+        <li>
+          <button
+            class="tap flex w-full items-center gap-3 rounded-xl border border-slate-200 p-3 text-left
+                   dark:border-slate-800"
+            @click="phaseOeffnen('abschluss')"
+          >
+            <span class="flex-1 font-semibold">Abschluss und Unterschriften</span>
+            <AppIcon name="pfeilRechts" :groesse="18" class="text-slate-400" />
+          </button>
+        </li>
+      </ul>
+    </BasisDialog>
+
+    <!-- Mangel aus Prüfpunkt -->
+    <BasisDialog :offen="mangelOffen" titel="Mangel anlegen" @schliessen="mangelOffen = false">
+      <div class="space-y-3">
+        <label>
+          <span class="beschriftung">Titel</span>
+          <input v-model="mangelEntwurf.titel" class="feld" />
+        </label>
+        <label>
+          <span class="beschriftung">Beschreibung</span>
+          <textarea v-model="mangelEntwurf.beschreibung" class="feld min-h-[96px]" rows="3"
+                    placeholder="Was wurde festgestellt? Wo genau?" />
+        </label>
+        <div class="grid grid-cols-2 gap-3">
+          <label>
+            <span class="beschriftung">Kategorie</span>
+            <select v-model="mangelEntwurf.kategorie" class="feld">
+              <option v-for="k in stammdaten.kategorien" :key="k.name" :value="k.name">
+                {{ k.kategorie_name }}
+              </option>
+            </select>
+          </label>
+          <label>
+            <span class="beschriftung">Schweregrad</span>
+            <select v-model="mangelEntwurf.schweregrad" class="feld">
+              <option v-for="s in stammdaten.schweregrade" :key="s.code" :value="s.code">
+                {{ s.code }} – {{ s.bezeichnung }}
+              </option>
+            </select>
+          </label>
+        </div>
+        <p class="text-xs text-slate-500">
+          Die Fotos des Prüfpunkts werden automatisch übernommen. Die Frist ergibt sich aus dem
+          SLA des Schweregrads.
+        </p>
+        <div class="flex gap-2 pt-2">
+          <button class="knopf-sekundaer flex-1" @click="mangelOffen = false">Abbrechen</button>
+          <button class="knopf-primaer flex-1" :disabled="!mangelEntwurf.beschreibung"
+                  @click="mangelSpeichern">
+            Mangel anlegen
+          </button>
+        </div>
+      </div>
+    </BasisDialog>
+
+    <!-- Unterschrift -->
+    <BasisDialog
+      :offen="Boolean(signaturRolle)"
+      :titel="`Unterschrift ${signaturRolle}`"
+      breit
+      @schliessen="signaturRolle = ''"
+    >
+      <SignaturPad
+        v-if="signaturRolle"
+        :rolle="signaturRolle"
+        :name="signaturRolle === 'Techniker' ? (stammdaten.benutzer?.vollname ?? '') : ''"
+        @bestaetigt="signaturUebernehmen"
+        @abbrechen="signaturRolle = ''"
+      />
+    </BasisDialog>
+  </div>
+</template>

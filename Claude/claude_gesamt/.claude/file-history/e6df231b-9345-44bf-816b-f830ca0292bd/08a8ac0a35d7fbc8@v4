@@ -1,0 +1,408 @@
+/**
+ * Demo-Modus für Entwicklung und Abnahmetests ohne laufende Frappe-Bench.
+ *
+ * Aktivierung:
+ *   - `VITE_DEMO=1 npm run dev`, oder
+ *   - `?demo=1` an die URL hängen (wird in localStorage gemerkt), oder
+ *   - `localStorage.setItem('baudoku-demo', '1')`
+ *
+ * Im Demo-Modus beantwortet dieses Modul alle Servermethoden aus dem Speicher.
+ * Schreibende Aufrufe werden angenommen und quittiert; persistiert wird nur
+ * lokal in IndexedDB, genau wie im Offlinebetrieb.
+ */
+
+import type { Bootstrap, Vorlage } from './typen'
+
+/**
+ * Einmalig beim Laden ausgewertet: `demoAktiv()` läuft bei jedem API-Aufruf und
+ * darf weder die URL neu parsen noch localStorage anfassen.
+ */
+const AKTIV = (() => {
+  if (import.meta.env.VITE_DEMO === '1') return true
+  if (typeof window === 'undefined') return false
+
+  const parameter = new URLSearchParams(window.location.search)
+  if (parameter.get('demo') === '1') {
+    localStorage.setItem('baudoku-demo', '1')
+    return true
+  }
+  if (parameter.get('demo') === '0') {
+    localStorage.removeItem('baudoku-demo')
+    return false
+  }
+  return localStorage.getItem('baudoku-demo') === '1'
+})()
+
+export const demoAktiv = (): boolean => AKTIV
+
+const heute = new Date()
+const tage = (n: number) => new Date(heute.getTime() + n * 86_400_000).toISOString().slice(0, 10)
+
+const BOOTSTRAP: Bootstrap = {
+  benutzer: {
+    user: 'demo@oekovolt.at',
+    vollname: 'Demo Techniker',
+    rollen: ['Baudoku Techniker', 'Baudoku Bauleiter', 'Baudoku Projektleiter'],
+    mitarbeiter: { name: 'HR-EMP-00007', employee_name: 'Demo Techniker', designation: 'Servicetechniker' },
+    sprache: 'de',
+  },
+  einstellungen: {
+    riso_pro_modul_kohm: 40,
+    riso_minimum_kohm: 1000,
+    uoc_toleranz_prozent: 10,
+    isc_toleranz_prozent: 15,
+    uebersteuerung_erlaubt: 1,
+    nachweisfoto_pflicht: 1,
+    max_foto_mb: 2,
+    foto_max_kante_px: 2048,
+    sync_batch_groesse: 25,
+    offline_puffer_mb: 100,
+  },
+  mangelkategorien: [
+    { name: 'Modul', kategorie_name: 'Modul', bereich: 'Module', farbe: '#0ea5e9' },
+    { name: 'Unterkonstruktion', kategorie_name: 'Unterkonstruktion', bereich: 'Unterkonstruktion', farbe: '#8b5cf6' },
+    { name: 'DC-Verkabelung', kategorie_name: 'DC-Verkabelung', bereich: 'DC-Kabel', farbe: '#f97316' },
+    { name: 'Wechselrichter', kategorie_name: 'Wechselrichter', bereich: 'Wechselrichter', farbe: '#10b981' },
+    { name: 'Batteriespeicher', kategorie_name: 'Batteriespeicher', bereich: 'Speicher', farbe: '#14b8a6' },
+    { name: 'Wallbox / Ladestation', kategorie_name: 'Wallbox / Ladestation', bereich: 'Wallbox', farbe: '#6366f1' },
+    { name: 'Erdung und Blitzschutz', kategorie_name: 'Erdung und Blitzschutz', bereich: 'Erdung', farbe: '#64748b' },
+    { name: 'Sonstiges', kategorie_name: 'Sonstiges', bereich: 'Sonstiges', farbe: '#a3a3a3' },
+  ],
+  schweregrade: [
+    { name: 'A', code: 'A', bezeichnung: 'kritisch', farbe: '#dc2626', sla_tage: 3, blockiert_abnahme: 1 },
+    { name: 'B', code: 'B', bezeichnung: 'wesentlich', farbe: '#f59e0b', sla_tage: 14, blockiert_abnahme: 1 },
+    { name: 'C', code: 'C', bezeichnung: 'geringfügig', farbe: '#0284c7', sla_tage: 30, blockiert_abnahme: 0 },
+  ],
+  vorlagen: [
+    { name: 'CLV-0001', titel: 'Interne DC-Wartungscheckliste', vorlage_typ: 'Wartung', anlagen_typ: 'PV', revision: 2, anzahl_pruefpunkte: 18 },
+    { name: 'CLV-0002', titel: 'Inbetriebnahmeprotokoll PV / Speicher / Ladestation', vorlage_typ: 'IBN', anlagen_typ: 'Alle', revision: 1, anzahl_pruefpunkte: 14 },
+    { name: 'CLV-0003', titel: 'DC-Abnahmeprotokoll', vorlage_typ: 'DC-Abnahme', anlagen_typ: 'PV', revision: 1, anzahl_pruefpunkte: 12 },
+    { name: 'CLV-0004', titel: 'Schadenaufnahmeprotokoll', vorlage_typ: 'Schadenaufnahme', anlagen_typ: 'Alle', revision: 1, anzahl_pruefpunkte: 10 },
+  ],
+  anlagen: [
+    {
+      name: 'ANL-2026-00001', anlage_name: 'Aumayr GmbH Dachanlage', anlagen_typ: 'PV', status: 'In Betrieb',
+      customer: 'Aumayr GmbH', project: 'PRJ-0042', kwp: 249.6, anzahl_strings: 12, modul_uoc: 41.5,
+      modul_isc: 13.9, adresse: 'Industriestraße 4', plz: '5120', ort: 'St. Pantaleon',
+      gps_lat: 48.0201, gps_lng: 12.9402, offene_maengel: 3, letzte_pruefung: tage(-42), naechste_wartung: tage(18),
+    },
+    {
+      name: 'ANL-2026-00002', anlage_name: 'Wohnpark Ostermiething', anlagen_typ: 'Kombi', status: 'In Bau',
+      customer: 'Siedlungsgenossenschaft Salzach', project: 'PRJ-0051', kwp: 88.4, kwh_speicher: 60,
+      ladepunkte: 8, anzahl_strings: 6, modul_uoc: 37.8, modul_isc: 11.2, adresse: 'Salzachweg 12',
+      plz: '5121', ort: 'Ostermiething', gps_lat: 48.0655, gps_lng: 12.8452, offene_maengel: 5,
+      letzte_pruefung: null, naechste_wartung: null,
+    },
+    {
+      name: 'ANL-2026-00003', anlage_name: 'Sägewerk Huber Freifläche', anlagen_typ: 'PV', status: 'In Betrieb',
+      customer: 'Huber Holz KG', kwp: 512, anzahl_strings: 24, modul_uoc: 49.2, modul_isc: 14.1,
+      adresse: 'Am Sägewerk 1', plz: '5110', ort: 'Oberndorf', gps_lat: 47.9432, gps_lng: 12.9381,
+      offene_maengel: 0, letzte_pruefung: tage(-120), naechste_wartung: tage(-4),
+    },
+    {
+      name: 'ANL-2026-00004', anlage_name: 'Ladepark Autohaus Reiter', anlagen_typ: 'Ladestation',
+      status: 'In Betrieb', customer: 'Autohaus Reiter GmbH', kwp: 0, ladepunkte: 12,
+      adresse: 'Braunauer Straße 88', plz: '5280', ort: 'Braunau am Inn', gps_lat: 48.2554, gps_lng: 13.0335,
+      offene_maengel: 1, letzte_pruefung: tage(-15), naechste_wartung: tage(180),
+    },
+    {
+      name: 'ANL-2026-00005', anlage_name: 'Gemeindeamt Tarsdorf', anlagen_typ: 'Batteriespeicher',
+      status: 'Geplant', customer: 'Gemeinde Tarsdorf', kwp: 29.8, kwh_speicher: 40, anzahl_strings: 3,
+      modul_uoc: 41.5, modul_isc: 13.9, adresse: 'Hauptstraße 2', plz: '5121', ort: 'Tarsdorf',
+      gps_lat: 48.0389, gps_lng: 12.9046, offene_maengel: 0, letzte_pruefung: null, naechste_wartung: null,
+    },
+  ],
+  server_zeit: new Date().toISOString(),
+}
+
+/** Verkürzte DC-Wartungsvorlage, damit die Protokollausführung demonstrierbar ist. */
+const DEMO_VORLAGEN: Record<string, Vorlage> = {
+  'CLV-0001': {
+    name: 'CLV-0001',
+    titel: 'Interne DC-Wartungscheckliste',
+    vorlage_typ: 'Wartung',
+    anlagen_typ: 'PV',
+    revision: 2,
+    status: 'Veroeffentlicht',
+    beschreibung: 'Demo-Fassung der Wartungscheckliste V1.5.',
+    sektionen: [
+      {
+        sektion_name: 'Auftragsdaten', sektion_key: 'auftragsdaten', sortierung: 10,
+        pruefpunkte: [
+          { pruefpunkt_key: 'auftragsdaten::1_1', nummer: '1.1', titel: 'Ort der Anlage', feldtyp: 'Text', pflichtfeld: 1 },
+          { pruefpunkt_key: 'auftragsdaten::1_2', nummer: '1.2', titel: 'Datum der Wartung', feldtyp: 'Datum', pflichtfeld: 1 },
+          { pruefpunkt_key: 'auftragsdaten::1_5', nummer: '1.5', titel: 'Anwesende Personen', feldtyp: 'Text', hilfetext: 'Namen aller anwesenden Personen erfassen.' },
+        ],
+      },
+      {
+        sektion_name: 'Module', sektion_key: 'module', sortierung: 20,
+        pruefpunkte: [
+          { pruefpunkt_key: 'module::2_1', nummer: '2.1', titel: 'Sichtprüfung auf Modulbruch', feldtyp: 'Bewertung', foto_erforderlich: 1, hilfetext: 'Gesamte Modulfläche auf Glasbruch und Delamination prüfen.' },
+          { pruefpunkt_key: 'module::2_3', nummer: '2.3', titel: 'Wassereintritt in Anschlussdosen', feldtyp: 'Bewertung', normverweis: 'IEC 62446-1, Abschnitt 4.2' },
+          { pruefpunkt_key: 'module::2_4', nummer: '2.4', titel: 'Verschmutzungsgrad / Reinigungsempfehlung', feldtyp: 'Auswahl', auswahloptionen: 'keine Reinigung nötig|Reinigung empfohlen|Reinigung dringend' },
+        ],
+      },
+      {
+        sektion_name: 'Unterkonstruktion', sektion_key: 'unterkonstruktion', sortierung: 30,
+        pruefpunkte: [
+          { pruefpunkt_key: 'unterkonstruktion::3_1', nummer: '3.1', titel: 'Modulklemmen fest und korrekt positioniert', feldtyp: 'Bewertung', pflichtfeld: 1 },
+          { pruefpunkt_key: 'unterkonstruktion::3_6', nummer: '3.6', titel: 'Drehmoment stichprobenartig geprüft', feldtyp: 'Zahlenwert', einheit: 'Nm', min_wert: 8, max_wert: 30, hilfetext: 'Herstellerangabe beachten, Stichprobe von mindestens 5 Klemmen.' },
+        ],
+      },
+      {
+        sektion_name: 'DC-Kabelführung', sektion_key: 'dc_kabelfuehrung', sortierung: 40,
+        pruefpunkte: [
+          { pruefpunkt_key: 'dc_kabelfuehrung::4_1', nummer: '4.1', titel: 'Kabel am Dach ordnungsgemäß verlegt', feldtyp: 'Bewertung', foto_erforderlich: 1 },
+          { pruefpunkt_key: 'dc_kabelfuehrung::4_8', nummer: '4.8', titel: 'Dichtheit der Dachdurchführung', feldtyp: 'Bewertung', pflichtfeld: 1, foto_erforderlich: 1 },
+        ],
+      },
+      {
+        sektion_name: 'Wechselrichter', sektion_key: 'wechselrichter', sortierung: 50,
+        pruefpunkte: [
+          { pruefpunkt_key: 'wechselrichter::5_1', nummer: '5.1', titel: 'Display / Statusanzeige ohne Fehler', feldtyp: 'Bewertung', pflichtfeld: 1 },
+          { pruefpunkt_key: 'wechselrichter::5_3', nummer: '5.3', titel: 'Foto WR-Standort', feldtyp: 'Foto', pflichtfeld: 1, foto_erforderlich: 1 },
+        ],
+      },
+      {
+        sektion_name: 'Messungen', sektion_key: 'messungen', sortierung: 60,
+        pruefpunkte: [
+          { pruefpunkt_key: 'messungen::6_1', nummer: '6.1', titel: 'Anzahl gemessener Strings', feldtyp: 'Zahlenwert', einheit: 'Stk', min_wert: 1, max_wert: 200, pflichtfeld: 1 },
+          { pruefpunkt_key: 'messungen::6_2', nummer: '6.2', titel: 'Isolationswiderstand niedrigster Wert', feldtyp: 'Zahlenwert', einheit: 'kΩ', min_wert: 1000, pflichtfeld: 1, normverweis: 'IEC 62446-1, Tabelle 3', hilfetext: 'Detailwerte je String in der Messdatentabelle erfassen.' },
+          { pruefpunkt_key: 'messungen::6_6', nummer: '6.6', titel: 'Messmittel kalibriert', feldtyp: 'Ja-Nein', pflichtfeld: 1 },
+        ],
+      },
+      {
+        sektion_name: 'Weiteres', sektion_key: 'weiteres', sortierung: 70,
+        pruefpunkte: [
+          { pruefpunkt_key: 'weiteres::7_3', nummer: '7.3', titel: 'Haupterdung geprüft', feldtyp: 'Bewertung', pflichtfeld: 1, normverweis: 'ÖVE/ÖNORM E 8001-1' },
+          { pruefpunkt_key: 'weiteres::7_5', nummer: '7.5', titel: 'Allgemeine Anmerkungen', feldtyp: 'Text' },
+        ],
+      },
+    ],
+  },
+}
+
+const MAENGEL = [
+  { name: 'MGL-2026-00012', titel: '2.1 Modulbruch Feld B, Reihe 4', anlage: 'ANL-2026-00001', kategorie: 'Modul', schweregrad: 'A', status: 'Offen', faellig_am: tage(-2), ueberfaellig: 1, zugewiesen_an: 'HR-EMP-00007', gemeldet_am: tage(-5) },
+  { name: 'MGL-2026-00013', titel: '4.3 Kabelbinder spröde, Süddach', anlage: 'ANL-2026-00001', kategorie: 'DC-Verkabelung', schweregrad: 'C', status: 'In Bearbeitung', faellig_am: tage(12), ueberfaellig: 0, zugewiesen_an: 'HR-EMP-00007', gemeldet_am: tage(-8) },
+  { name: 'MGL-2026-00014', titel: '3.2 Ballastierung unvollständig', anlage: 'ANL-2026-00001', kategorie: 'Unterkonstruktion', schweregrad: 'B', status: 'Offen', faellig_am: tage(4), ueberfaellig: 0, zugewiesen_an: 'HR-EMP-00007', gemeldet_am: tage(-10) },
+  { name: 'MGL-2026-00015', titel: 'Wallbox 3 kommuniziert nicht mit Backend', anlage: 'ANL-2026-00004', kategorie: 'Wallbox / Ladestation', schweregrad: 'B', status: 'Offen', faellig_am: tage(6), ueberfaellig: 0, gemeldet_am: tage(-1) },
+  { name: 'MGL-2026-00016', titel: 'Erdungsleitung Speicherschrank fehlt', anlage: 'ANL-2026-00002', kategorie: 'Erdung und Blitzschutz', schweregrad: 'A', status: 'Offen', faellig_am: tage(1), ueberfaellig: 0, gemeldet_am: tage(-2) },
+]
+
+const PROTOKOLLE = [
+  { name: 'PP-2026-00031', anlage: 'ANL-2026-00001', vorlage: 'CLV-0001', vorlage_typ: 'Wartung', status: 'Abgeschlossen', pruefer: 'HR-EMP-00007', pruef_datum: `${tage(-42)} 08:15:00`, gesamtbewertung: 'Bestanden mit Auflagen', fortschritt: 100 },
+  { name: 'PP-2026-00034', anlage: 'ANL-2026-00004', vorlage: 'CLV-0002', vorlage_typ: 'IBN', status: 'Verifiziert', pruefer: 'HR-EMP-00007', pruef_datum: `${tage(-15)} 09:40:00`, gesamtbewertung: 'Bestanden', fortschritt: 100 },
+  { name: 'PP-2026-00037', anlage: 'ANL-2026-00003', vorlage: 'CLV-0001', vorlage_typ: 'Wartung', status: 'In Arbeit', pruefer: 'HR-EMP-00007', pruef_datum: `${tage(0)} 07:55:00`, gesamtbewertung: '', fortschritt: 45 },
+]
+
+const BERICHTE = [
+  { name: 'TB-2026-00088', anlage: 'ANL-2026-00002', datum: tage(-1), bericht_typ: 'Bauleiter', status: 'Eingereicht', ersteller: 'HR-EMP-00007', fortschritt_prozent: 62, personal_anzahl: 6, arbeitsstunden_gesamt: 51 },
+  { name: 'TB-2026-00089', anlage: 'ANL-2026-00002', datum: tage(-2), bericht_typ: 'Subunternehmer', status: 'Genehmigt', ersteller: 'HR-EMP-00011', supplier: 'Elektro Mayrhofer GmbH', fortschritt_prozent: 55, personal_anzahl: 3, arbeitsstunden_gesamt: 24 },
+  { name: 'TB-2026-00090', anlage: 'ANL-2026-00002', datum: tage(-3), bericht_typ: 'Bauleiter', status: 'Genehmigt', ersteller: 'HR-EMP-00007', fortschritt_prozent: 48, personal_anzahl: 6, arbeitsstunden_gesamt: 48 },
+]
+
+/**
+ * Vier Wartungszyklen mit leicht fallendem Isolationswiderstand — String 4
+ * nähert sich dem Grenzwert und zeigt, wofür die Trendansicht gut ist.
+ */
+const MESSDATEN_TREND = (() => {
+  const zyklen = [tage(-1080), tage(-720), tage(-360), tage(-42)]
+  const zeilen: Record<string, unknown>[] = []
+  for (let strang = 1; strang <= 6; strang += 1) {
+    zyklen.forEach((datum, i) => {
+      const verfall = strang === 4 ? i * 340 : i * 60
+      zeilen.push({
+        string_nr: String(strang),
+        anzahl_module: 20,
+        pruef_datum: `${datum} 09:00:00`,
+        riso: Math.round(2600 - verfall + strang * 35),
+        uoc: Number((830 + strang * 1.4 - i * 0.8).toFixed(1)),
+        isc: Number((13.6 + strang * 0.05 - i * 0.04).toFixed(2)),
+        status: 'OK',
+      })
+    })
+  }
+  return zeilen
+})()
+
+/** Beantwortet eine Servermethode aus den Demodaten. `undefined` = nicht abgedeckt. */
+export function demoAntwort(name: string, parameter: Record<string, unknown>): unknown {
+  switch (name) {
+    case 'oekovolt_baudoku.api.sync.bootstrap':
+      return { ...BOOTSTRAP, server_zeit: new Date().toISOString() }
+
+    case 'oekovolt_baudoku.api.sync.sync_status':
+      return { letzter_sync: new Date().toISOString(), fehler_gesamt: 0, server_zeit: new Date().toISOString() }
+
+    case 'oekovolt_baudoku.api.sync.push':
+      return {
+        ergebnisse: ((parameter.operationen as { lokale_id: string }[]) ?? []).map((op) => ({
+          lokale_id: op.lokale_id,
+          ergebnis: 'Erfolg',
+          name: `DEMO-${op.lokale_id.slice(0, 8)}`,
+          modified: new Date().toISOString(),
+        })),
+        server_zeit: new Date().toISOString(),
+      }
+
+    case 'oekovolt_baudoku.api.sync.foto_hochladen':
+      return { file_url: '', name: 'demo', hash: 'demo', groesse: 0, dublette: false }
+
+    case 'oekovolt_baudoku.api.protokoll.vorlage_komplett':
+      return DEMO_VORLAGEN[String(parameter.vorlage)] ?? DEMO_VORLAGEN['CLV-0001']
+
+    case 'oekovolt_baudoku.api.protokoll.vorlagen_fuer_anlage':
+      return BOOTSTRAP.vorlagen
+
+    case 'oekovolt_baudoku.api.mangel.zustaendige':
+      return [
+        { name: 'HR-EMP-00007', employee_name: 'Demo Techniker', designation: 'Servicetechniker' },
+        { name: 'HR-EMP-00011', employee_name: 'Markus Aigner', designation: 'Monteur' },
+        { name: 'HR-EMP-00014', employee_name: 'Lena Brunner', designation: 'Bauleiterin' },
+      ]
+
+    case 'oekovolt_baudoku.api.mangel.sammelaktion':
+      return { erfolgreich: (parameter.namen as string[]) ?? [], fehlgeschlagen: [] }
+
+    case 'oekovolt_baudoku.api.mangel.meine_aufgaben':
+      return MAENGEL.filter((m) => m.zugewiesen_an === 'HR-EMP-00007')
+
+    case 'oekovolt_baudoku.api.protokoll.messdaten_trend':
+      return MESSDATEN_TREND
+
+    case 'oekovolt_baudoku.api.protokoll.meine_offenen_protokolle':
+      return PROTOKOLLE.filter((p) => ['Entwurf', 'In Arbeit'].includes(p.status))
+
+    case 'oekovolt_baudoku.api.protokoll.zu_verifizieren':
+      return PROTOKOLLE.filter((p) => p.status === 'Abgeschlossen')
+
+    case 'oekovolt_baudoku.api.dashboard.kennzahlen':
+      return {
+        offene_maengel: MAENGEL.filter((m) => m.status !== 'Erledigt').length,
+        ueberfaellige_maengel: MAENGEL.filter((m) => m.ueberfaellig).length,
+        meine_maengel: 3,
+        protokolle_in_arbeit: 1,
+        protokolle_zu_verifizieren: 1,
+        berichte_zur_freigabe: 1,
+        anlagen_in_bau: 1,
+        anlagen_gesamt: BOOTSTRAP.anlagen.length,
+        wartungen_faellig: 2,
+      }
+
+    case 'oekovolt_baudoku.api.dashboard.mangel_dashboard':
+      return {
+        gesamt: MAENGEL.length,
+        ueberfaellig: MAENGEL.filter((m) => m.ueberfaellig).length,
+        nach_anlage: [
+          { label: 'ANL-2026-00001', wert: 3 },
+          { label: 'ANL-2026-00002', wert: 1 },
+          { label: 'ANL-2026-00004', wert: 1 },
+        ],
+        nach_kategorie: [
+          { label: 'Modul', wert: 1 },
+          { label: 'DC-Verkabelung', wert: 1 },
+          { label: 'Unterkonstruktion', wert: 1 },
+          { label: 'Wallbox / Ladestation', wert: 1 },
+          { label: 'Erdung und Blitzschutz', wert: 1 },
+        ],
+        nach_schweregrad: [
+          { label: 'A', wert: 2 },
+          { label: 'B', wert: 2 },
+          { label: 'C', wert: 1 },
+        ],
+        nach_zustaendigem: [
+          { label: 'HR-EMP-00007', wert: 3 },
+          { label: 'nicht zugewiesen', wert: 2 },
+        ],
+        aelteste: MAENGEL.slice(0, 3),
+      }
+
+    case 'oekovolt_baudoku.api.dashboard.baufortschritt':
+      return [
+        {
+          anlage: 'ANL-2026-00002', anlage_name: 'Wohnpark Ostermiething', berichte: 12, stunden: 412,
+          fortschritt: 62, letzter_bericht: tage(-1),
+          verlauf: [
+            { datum: tage(-12), wert: 18 }, { datum: tage(-9), wert: 27 }, { datum: tage(-6), wert: 39 },
+            { datum: tage(-3), wert: 48 }, { datum: tage(-2), wert: 55 }, { datum: tage(-1), wert: 62 },
+          ],
+        },
+      ]
+
+    case 'oekovolt_baudoku.api.dashboard.protokoll_statistik':
+      return {
+        jahr: heute.getFullYear(),
+        je_monat: Array.from({ length: 12 }, (_, i) => ({
+          monat: i + 1,
+          werte: { Wartung: (i * 3) % 7, IBN: (i * 2) % 5, 'DC-Abnahme': i % 4 },
+        })),
+        bewertungen: [
+          { label: 'Bestanden', wert: 42 },
+          { label: 'Bestanden mit Auflagen', wert: 17 },
+          { label: 'Nicht bestanden', wert: 3 },
+        ],
+        gesamt: 62,
+      }
+
+    case 'oekovolt_baudoku.baudoku.doctype.pv_anlage.pv_anlage.karte':
+      return BOOTSTRAP.anlagen
+
+    case 'oekovolt_baudoku.baudoku.doctype.pv_anlage.pv_anlage.anstehende_wartungen':
+      return BOOTSTRAP.anlagen.filter((a) => a.naechste_wartung)
+
+    case 'oekovolt_baudoku.baudoku.doctype.tagesbericht.tagesbericht.offene_freigaben':
+      return BERICHTE.filter((b) => b.status === 'Eingereicht')
+
+    case 'oekovolt_baudoku.baudoku.doctype.tagesbericht.tagesbericht.fortschritts_timeline':
+      return BERICHTE
+
+    case 'oekovolt_baudoku.api.pdf.erzeuge_pdf':
+      return { file_url: '', file_name: 'demo.pdf' }
+
+    case 'frappe.client.get_count':
+      return 0
+
+    case 'run_doc_method':
+      if (parameter.method === 'uebersicht') {
+        return {
+          protokolle: PROTOKOLLE.filter((p) => p.anlage === parameter.dn),
+          maengel: MAENGEL.filter((m) => m.anlage === parameter.dn),
+          tagesberichte: BERICHTE.filter((b) => b.anlage === parameter.dn),
+        }
+      }
+      return {}
+
+    default:
+      return undefined
+  }
+}
+
+/** Ersatz für den Einzelabruf `/api/resource/<doctype>/<name>` im Demo-Modus. */
+export function demoDokument(doctype: string, name: string): unknown | undefined {
+  const treffer = demoListe(doctype).find(
+    (eintrag) => (eintrag as { name?: string }).name === name,
+  )
+  if (!treffer) return undefined
+  return doctype === 'Mangel'
+    ? { ...treffer, beschreibung: 'Demo-Mangel aus der Serverfassung.', fotos: [], erledigt_fotos: [] }
+    : treffer
+}
+
+/** Ersatz für `/api/resource`-Listen im Demo-Modus. */
+export function demoListe(doctype: string): unknown[] {
+  switch (doctype) {
+    case 'Mangel':
+      return MAENGEL
+    case 'Pruefprotokoll':
+      return PROTOKOLLE
+    case 'Tagesbericht':
+      return BERICHTE
+    case 'PV Anlage':
+      return BOOTSTRAP.anlagen
+    case 'Checklistenvorlage':
+      return BOOTSTRAP.vorlagen
+    default:
+      return []
+  }
+}

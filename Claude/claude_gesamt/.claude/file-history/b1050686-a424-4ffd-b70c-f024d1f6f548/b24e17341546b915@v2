@@ -1,0 +1,143 @@
+import io
+
+# ------------------------------------------------------------------
+# 1. Zustandsfarben als Marken, mit eigener Fassung fuer den Dunkelmodus
+# ------------------------------------------------------------------
+
+css = io.open("src/app/globals.css", encoding="utf-8").read()
+
+block = '''
+/* ==================================================================
+ * Zustandsfarben
+ *
+ * Gut, Hinweis, Ernst, Kritisch - die vier Toene, mit denen die
+ * Oberflaeche einen Zustand faerbt.
+ *
+ * Sie brauchen eine eigene Fassung fuer den Dunkelmodus. Ein
+ * Dunkelgruen auf hellem Grund ist gut lesbar; dasselbe Dunkelgruen
+ * auf einer dunklen Flaeche ist es nicht. Wer die Toene nur einmal
+ * hell definiert und die Flaeche durchscheinen laesst, bekommt im
+ * Dunkeln Text, den man erahnen muss - und Zustand ist genau das,
+ * was man nicht erraten darf.
+ *
+ * Die Flaechen bleiben in beiden Faellen durchscheinende Mischungen:
+ * So tragen sie die Zeichnung der Ebene darunter mit und wirken nicht
+ * wie aufgeklebt.
+ * ================================================================== */
+
+:root {
+  --ton-gut: oklch(0.48 0.12 152);
+  --ton-gut-flaeche: color-mix(in oklch, oklch(0.55 0.14 152), transparent 90%);
+  --ton-gut-rand: color-mix(in oklch, oklch(0.55 0.14 152), transparent 72%);
+
+  --ton-hinweis: oklch(0.52 0.11 75);
+  --ton-hinweis-flaeche: color-mix(in oklch, oklch(0.65 0.14 75), transparent 88%);
+  --ton-hinweis-rand: color-mix(in oklch, oklch(0.65 0.14 75), transparent 70%);
+
+  --ton-ernst: oklch(0.54 0.15 45);
+  --ton-ernst-flaeche: color-mix(in oklch, oklch(0.62 0.17 45), transparent 89%);
+  --ton-ernst-rand: color-mix(in oklch, oklch(0.62 0.17 45), transparent 72%);
+
+  --ton-kritisch: oklch(0.52 0.19 25);
+  --ton-kritisch-flaeche: color-mix(in oklch, oklch(0.58 0.2 25), transparent 89%);
+  --ton-kritisch-rand: color-mix(in oklch, oklch(0.58 0.2 25), transparent 70%);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-thema="hell"]) {
+    --ton-gut: oklch(0.82 0.15 152);
+    --ton-gut-flaeche: color-mix(in oklch, oklch(0.62 0.14 152), transparent 86%);
+    --ton-gut-rand: color-mix(in oklch, oklch(0.68 0.14 152), transparent 66%);
+
+    --ton-hinweis: oklch(0.85 0.13 80);
+    --ton-hinweis-flaeche: color-mix(in oklch, oklch(0.7 0.13 75), transparent 86%);
+    --ton-hinweis-rand: color-mix(in oklch, oklch(0.75 0.13 75), transparent 66%);
+
+    --ton-ernst: oklch(0.8 0.15 48);
+    --ton-ernst-flaeche: color-mix(in oklch, oklch(0.66 0.16 45), transparent 86%);
+    --ton-ernst-rand: color-mix(in oklch, oklch(0.72 0.16 45), transparent 66%);
+
+    --ton-kritisch: oklch(0.78 0.17 25);
+    --ton-kritisch-flaeche: color-mix(in oklch, oklch(0.62 0.19 25), transparent 86%);
+    --ton-kritisch-rand: color-mix(in oklch, oklch(0.68 0.19 25), transparent 64%);
+  }
+}
+
+:root[data-thema="dunkel"] {
+  --ton-gut: oklch(0.82 0.15 152);
+  --ton-gut-flaeche: color-mix(in oklch, oklch(0.62 0.14 152), transparent 86%);
+  --ton-gut-rand: color-mix(in oklch, oklch(0.68 0.14 152), transparent 66%);
+
+  --ton-hinweis: oklch(0.85 0.13 80);
+  --ton-hinweis-flaeche: color-mix(in oklch, oklch(0.7 0.13 75), transparent 86%);
+  --ton-hinweis-rand: color-mix(in oklch, oklch(0.75 0.13 75), transparent 66%);
+
+  --ton-ernst: oklch(0.8 0.15 48);
+  --ton-ernst-flaeche: color-mix(in oklch, oklch(0.66 0.16 45), transparent 86%);
+  --ton-ernst-rand: color-mix(in oklch, oklch(0.72 0.16 45), transparent 66%);
+
+  --ton-kritisch: oklch(0.78 0.17 25);
+  --ton-kritisch-flaeche: color-mix(in oklch, oklch(0.62 0.19 25), transparent 86%);
+  --ton-kritisch-rand: color-mix(in oklch, oklch(0.68 0.19 25), transparent 64%);
+}
+'''
+
+assert "--ton-gut" not in css
+io.open("src/app/globals.css", "w", encoding="utf-8").write(css + block)
+
+# ------------------------------------------------------------------
+# 2. Die Tabelle in ui.tsx verweist auf die Marken
+# ------------------------------------------------------------------
+
+p = "src/components/ui.tsx"
+s = io.open(p, encoding="utf-8").read()
+
+anfang = s.index("export const STATUS_FARBEN: Record<")
+ende = s.index("/**\n * Statuskennzeichen.")
+
+neu = '''export const STATUS_FARBEN: Record<
+  StatusTon,
+  { text: string; flaeche: string; rand: string }
+> = {
+  gut: {
+    text: "var(--ton-gut)",
+    flaeche: "var(--ton-gut-flaeche)",
+    rand: "var(--ton-gut-rand)",
+  },
+  hinweis: {
+    text: "var(--ton-hinweis)",
+    flaeche: "var(--ton-hinweis-flaeche)",
+    rand: "var(--ton-hinweis-rand)",
+  },
+  ernst: {
+    text: "var(--ton-ernst)",
+    flaeche: "var(--ton-ernst-flaeche)",
+    rand: "var(--ton-ernst-rand)",
+  },
+  kritisch: {
+    text: "var(--ton-kritisch)",
+    flaeche: "var(--ton-kritisch-flaeche)",
+    rand: "var(--ton-kritisch-rand)",
+  },
+  neutral: {
+    text: "var(--t-leise)",
+    flaeche: "var(--f-belegt)",
+    rand: "var(--linie)",
+  },
+  akzent: {
+    text: "var(--akzent-text)",
+    flaeche: "color-mix(in oklch, var(--akzent), transparent 88%)",
+    rand: "color-mix(in oklch, var(--akzent), transparent 70%)",
+  },
+};
+
+'''
+
+s = s[:anfang] + neu + s[ende:]
+
+# Der Trendpfeil hat seine eigenen Farben - dieselbe Falle.
+s = s.replace('''        color: steigt ? "oklch(0.5 0.13 152)" : "oklch(0.55 0.16 45)",''',
+              '''        color: steigt ? "var(--ton-gut)" : "var(--ton-ernst)",''')
+
+io.open(p, "w", encoding="utf-8").write(s)
+print("Zustandsfarben als Marken")

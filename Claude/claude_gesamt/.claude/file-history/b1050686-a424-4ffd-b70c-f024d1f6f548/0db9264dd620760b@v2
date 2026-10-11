@@ -1,0 +1,92 @@
+# -*- coding: utf-8 -*-
+"""Setzt in den neu geschriebenen Dateien die Umlaute richtig.
+
+Beim Anlegen wurden Umschreibungen wie "Straenge" verwendet, um
+Probleme mit der Shell zu umgehen. In der Oberflaeche sieht das falsch
+aus, und "Module und Straenge" passte nicht mehr zur Kategorie
+"Module und Stränge" im Formular - der Filter waere ins Leere gelaufen.
+"""
+import io
+import os
+
+WOERTER = [
+    ("Vergleichsstraenge", "Vergleichssträngen"),
+    ("Suedkante", "Südkante"),
+    ("Module und Straenge", "Module und Stränge"),
+    ("Buero Besucher", "Büro Besucher"),
+    ("Schuetz", "Schütz"),
+    ("Suedfeld", "Südfeld"),
+    ("haeuft", "häuft"),
+    ("Zaehlerstand", "Zählerstand"),
+    ("Klaerung", "Klärung"),
+    ("Verfuegung", "Verfügung"),
+    ("Betriebsfuehrung", "Betriebsführung"),
+    ("benoetigt", "benötigt"),
+    ("Geraet ", "Gerät "),
+    ("Geraete", "Geräte"),
+    ("Stoerung und speiste", "Störung und speiste"),
+    ("laeuft", "läuft"),
+    ("geprueft", "geprüft"),
+    ("moegliche", "mögliche"),
+    ("ueber mehrere Stunden", "über mehrere Stunden"),
+    ("Zugang fuer neuen", "Zugang für neuen"),
+    ("Fuer die neue Kollegin", "Für die neue Kollegin"),
+    ("faellt", "fällt"),
+    ("Loesungsfrist", "Lösungsfrist"),
+    ("Rueckmeldung", "Rückmeldung"),
+    ("waere", "wäre"),
+    ("Aendert", "Ändert"),
+    ("spaetere", "spätere"),
+    ("rueckwirkend", "rückwirkend"),
+    ("Ueberschreitung", "Überschreitung"),
+    ("naechste", "nächste"),
+    ("Abhaengigkeiten", "Abhängigkeiten"),
+    ("laesst", "lässt"),
+    ("aendert", "ändert"),
+    ("Aenderung", "Änderung"),
+    ("gehoert", "gehört"),
+    ("vollstaendig", "vollständig"),
+    ("Loeschen", "Löschen"),
+    ("loeschen", "löschen"),
+    ("geloescht", "gelöscht"),
+    ("oeffnet", "öffnet"),
+    ("geoeffnet", "geöffnet"),
+    ("Ueberwachung", "Überwachung"),
+    ("stillschweigend", "stillschweigend"),
+    ("Systemkatalog", "Systemkatalog"),
+    ("Tabellenname", "Tabellenname"),
+    ("Bestueckung", "Bestückung"),
+    ("Straenge", "Stränge"),
+]
+
+DATEIEN = [
+    "src/lib/db/befuellen.ts",
+    "src/lib/db/befuellen-laden.ts",
+    "src/lib/db/verbindung.ts",
+    "src/lib/laden/lauf.ts",
+    "src/lib/daten/service.ts",
+    "src/lib/daten/laden.ts",
+]
+
+for pfad in DATEIEN:
+    if not os.path.exists(pfad):
+        print("fehlt:", pfad)
+        continue
+
+    text = io.open(pfad, encoding="utf-8").read()
+    original = text
+    treffer = []
+
+    for falsch, richtig in WOERTER:
+        if falsch in text:
+            anzahl = text.count(falsch)
+            text = text.replace(falsch, richtig)
+            treffer.append("%s->%s (%d)" % (falsch, richtig, anzahl))
+
+    if text != original:
+        io.open(pfad, "w", encoding="utf-8").write(text)
+        print(pfad)
+        for t in treffer:
+            print("   ", t)
+    else:
+        print(pfad, "- nichts zu tun")

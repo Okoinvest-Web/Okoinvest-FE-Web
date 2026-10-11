@@ -1,0 +1,501 @@
+   428 src/components/Navbar/navbar.js
+   167 src/components/Reusable/footer.js
+   475 src/app/page.js
+   172 src/app/landwirtschaft/page.js
+   152 src/app/gewerbe/page.js
+   424 src/components/Rechner/DynamischerTarifRechner.js
+   213 src/components/Rechner/RechnerSeite.js
+   365 src/components/Rechner/StromspeicherRechner.js
+   121 src/components/Rechner/ToolVorschau.js
+   360 src/components/Rechner/WaermepumpeRechner.js
+   291 src/components/Rechner/WallboxRechner.js
+   222 src/components/Rechner/bausteine.js
+    77 src/components/Rechner/tools.js
+    17 src/lib/rechner/angebot.js
+   104 src/lib/rechner/annahmen.js
+   163 src/lib/rechner/dynamischerTarif.js
+   290 src/lib/rechner/profile.js
+   131 src/lib/rechner/stromspeicher.js
+   112 src/lib/rechner/waermepumpe.js
+    81 src/lib/rechner/wallbox.js
+    87 src/components/Reusable/MobileCta.js
+    58 src/middleware.js
+    24 src/lib/apiBaseUrl.js
+    47 src/app/api/create_anfrage/route.js
+    34 src/lib/api/anfrage/create_anfrage.js
+  4615 total
+// src/app/page.js (Startseite)
+
+import { cache } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import {
+  Activity, ArrowRight, ArrowUpRight, BadgeEuro, BatteryCharging, Calculator, Check, ClipboardCheck,
+  Cpu, Handshake, HousePlug, Library, MapPin, PlugZap, Ruler, ShieldCheck, Sparkles, Sun, Thermometer, Wrench, Zap,
+} from "lucide-react";
+
+import { projektSlug } from "@/components/Project/projektDaten";
+import { API_BASE_URL, getApiHeaders, isApiConfigured } from "@/lib/apiBaseUrl";
+import { hreflangLanguages } from "@/lib/hreflang";
+import { getEnergySnapshot } from "@/lib/energy";
+
+import Section from "@/components/ui/Section";
+import SectionHeading, { Eyebrow } from "@/components/ui/SectionHeading";
+import Button from "@/components/ui/Button";
+import Reveal from "@/components/ui/Reveal";
+import CountUp from "@/components/ui/CountUp";
+import Steps from "@/components/ui/Steps";
+import Faq from "@/components/ui/Faq";
+import CtaBand from "@/components/ui/CtaBand";
+import FeaturedLogos from "@/components/photovoltaikanlage/partners";
+import HeroRechner from "@/components/Home2/HeroRechner";
+import HeroVideo from "@/components/Home2/HeroVideo";
+import HomeLive from "@/components/Home2/HomeLive";
+import { LiveDot } from "@/components/ui/LiveTicker";
+
+const BASE_URL = "https://www.oekovolt.de";
+const DATA_URL = `${API_BASE_URL}oekovoltdeutchland.primary_page.doctype.home_page.api.get_home_page`;
+const PROJEKTE_URL = `${API_BASE_URL}oekovolt_app.website_api.projekte.get_projekte`;
+
+async function apiGet(url) {
+  if (!isApiConfigured()) return null;
+  try {
+    const res = await fetch(url, { headers: getApiHeaders(), next: { revalidate: 600 } });
+    if (!res.ok) {
+      console.error(`API ${url} -> ${res.status}`);
+      return null;
+    }
+    return (await res.json()).message;
+  } catch (e) {
+    console.error("Fetch error:", e);
+    return null;
+  }
+}
+
+const getHomeData = cache(() => apiGet(DATA_URL));
+const getProjekte = cache(() => apiGet(PROJEKTE_URL));
+
+const META = {
+  title: "Photovoltaik mit Speicher vom Fachbetrieb | Ökovolt",
+  description:
+    "Solaranlage mit Speicher, Wallbox & Wärmepumpe aus einer Hand: über 5.000 Anlagen, 15+ Jahre Erfahrung. Ertrag live berechnen & kostenloses Angebot sichern!",
+};
+
+export async function generateMetadata() {
+  const data = await getHomeData();
+  const keywords = data?.keywords
+    ? data.keywords.split(/,\s*/)
+    : ["Photovoltaik", "Solaranlage mit Speicher", "Photovoltaik Anbieter", "Stromspeicher", "Wärmepumpe", "Wallbox", "Ökovolt", "PV Anlage Kosten"];
+  const bild = { url: `${BASE_URL}/og-image.jpg`, width: 1200, height: 630, alt: "Einfamilienhaus mit Photovoltaikanlage von Ökovolt" };
+  return {
+    title: META.title,
+    description: META.description,
+    keywords,
+    alternates: { canonical: BASE_URL, languages: hreflangLanguages(BASE_URL) },
+    robots: { index: true, follow: true, googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1 } },
+    openGraph: { type: "website", locale: "de_DE", url: BASE_URL, siteName: "Ökovolt Deutschland", title: META.title, description: META.description, images: [bild] },
+    twitter: { card: "summary_large_image", site: "@oekovolt", creator: "@oekovolt", title: META.title, description: META.description, images: [bild.url] },
+  };
+}
+
+const PRODUKTE = [
+  { titel: "Photovoltaikanlage", text: "Individuell geplant, sauber montiert, beim Netzbetreiber angemeldet.", href: "/produkte/photovoltaikanlage", bild: "/Images/Home/download-1.jpg", icon: Sun, gross: true },
+  { titel: "Stromspeicher", text: "Solarstrom abends und nachts nutzen.", href: "/produkte/stromspeicher", bild: "/Images/Dienstleistungen/Smartphone/Stronspeicher.jpg", icon: BatteryCharging },
+  { titel: "Wallbox", text: "Das E-Auto mit Sonne laden.", href: "/produkte/wallbox", bild: "/Images/Dienstleistungen/Smartphone/wallbox-scaled.jpg", icon: PlugZap },
+  { titel: "Wärmepumpe", text: "Heizen mit eigenem Solarstrom.", href: "/produkte/warmepumpe", bild: "/Images/Dienstleistungen/Smartphone/smart-guard-scaled.jpg", icon: Thermometer },
+  { titel: "Smart Energy Home", text: "Alles vernetzt, alles optimiert.", href: "/produkte/smartenergyhome", bild: "/Images/Dienstleistungen/Smartphone/smart-home-3920905_1280.jpg", icon: HousePlug },
+];
+
+const TOOLS = [
+  { titel: "Solarrechner", text: "Ertrag, Ersparnis, Amortisation", href: "/solarrechner", icon: Calculator },
+  { titel: "Speicher-Rechner", text: "Die passende Kapazität", href: "/rechner/stromspeicher", icon: BatteryCharging },
+  { titel: "Wärmepumpen-Rechner", text: "Heizkosten im Vergleich", href: "/rechner/waermepumpe", icon: Thermometer },
+  { titel: "E-Auto-Laderechner", text: "Solar laden statt tanken", href: "/rechner/wallbox", icon: PlugZap },
+  { titel: "Dynamischer Tarif", text: "Mit Live-Börsenpreisen", href: "/rechner/dynamischer-stromtarif", icon: Zap },
+  { titel: "Förder-Check", text: "Zuschüsse in 30 Sekunden", href: "/foerdercheck", icon: BadgeEuro },
+  { titel: "Energie live", text: "Strommarkt in Echtzeit", href: "/energie-live", icon: Activity },
+  { titel: "PV-Lexikon", text: "Fachbegriffe A–Z", href: "/wissen/lexikon", icon: Library },
+];
+
+const FAQ = [
+  { q: "Was kostet eine Photovoltaikanlage mit Speicher?", a: "Das hängt von Anlagengröße, Speicherkapazität, Dach und Montageaufwand ab. Als Orientierung liegen schlüsselfertige Anlagen für Einfamilienhäuser 2026 grob bei 1.000–1.450 € je kWp, Speicher zusätzlich bei einigen hundert Euro je kWh. Ihre konkrete Zahl zeigt der Solarrechner – das verbindliche Angebot erstellen wir nach Prüfung Ihres Dachs." },
+  { q: "Lohnt sich eine Solaranlage mit Speicher?", a: "In den meisten Fällen ja. Ohne Speicher nutzen Haushalte typischerweise rund 30 % ihres Solarstroms selbst, mit passend dimensioniertem Speicher deutlich mehr. Weil selbst genutzter Strom über 30 Cent Netzstrom ersetzt, eingespeister aber nur rund 7–8 Cent bringt, amortisieren sich viele Anlagen in etwa 10 bis 15 Jahren – bei 25 Jahren und mehr Lebensdauer." },
+  { q: "Wie lange dauert die Installation?", a: "Die Montage auf einem Einfamilienhaus dauert in der Regel 1 bis 3 Tage. Von der Auftragserteilung bis zur Inbetriebnahme inklusive Netzanmeldung vergehen je nach Region meist 6 bis 12 Wochen. Wir übernehmen den gesamten Prozess." },
+  { q: "Übernimmt Ökovolt auch Wartung und Service?", a: "Ja. Mit unserem KI-gestützten Monitoring Ökosys behalten wir Ihre Anlage im Blick, erkennen Leistungsabfälle frühzeitig und kümmern uns um Wartung und Service – über die gesamte Lebensdauer." },
+  { q: "Funktioniert der Speicher auch bei Stromausfall?", a: "Mit Notstrom- bzw. Ersatzstromfunktion, etwa über unsere Notstrombox, ja – dann versorgt der Speicher ausgewählte Stromkreise oder das Haus weiter. Eine Standardanlage ohne diese Funktion schaltet bei Netzausfall aus Sicherheitsgründen ab." },
+  { q: "Kann ich die Solaranlage mit Wärmepumpe und Wallbox kombinieren?", a: "Ja – das ist sogar besonders wirtschaftlich, weil Ihr eigener Solarstrom Heizung und E-Auto antreibt. Wir planen alle Komponenten aufeinander abgestimmt und binden sie in ein gemeinsames Energiemanagement ein." },
+];
+
+export default async function HomePage() {
+  const [data, projekteRoh, energie] = await Promise.all([getHomeData(), getProjekte(), getEnergySnapshot().catch(() => null)]);
+
+  // Neueste 4 Projekte – Felder und Sortierung wie im Portfolio (/referenzen/projekte: "Neueste")
+  const projekteListe = Array.isArray(projekteRoh) ? projekteRoh : projekteRoh?.projekte;
+  const projekte = (Array.isArray(projekteListe) ? projekteListe : [])
+    .filter((p) => p.projekt_website_name)
+    .map((p) => ({
+      title: p.projekt_name || p.projekt_website_name,
+      slug: projektSlug(p),
+      bild: p.bild_url ? encodeURI(p.bild_url) : null,
+      leistung: p.leistung_label,
+      jahr: Number(p.jahr) || 0,
+      kwp: Number(p.leistung) || 0,
+    }))
+    .sort((a, b) => b.jahr - a.jahr || b.kwp - a.kwp)
+    .slice(0, 4);
+
+  const kennzahlen = [
+    { value: Number(data?.pv_kraftwerke) || 5000, suffix: "+", label: "realisierte PV-Anlagen" },
+    { value: Number(data?.leistung) || 340000, suffix: " kWp", label: "installierte Leistung" },
+    { value: Number(data?.co2_einsparung) || 112000, suffix: " t", label: "CO₂-Einsparung" },
+    { value: 15, suffix: "+", label: "Jahre Erfahrung" },
+  ];
+
+  const vorteilKarten = (data?.cards || []).slice(0, 3);
+
+  const homePageSchema = {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "@id": `${BASE_URL}/#webpage`,
+    url: BASE_URL,
+    name: META.title,
+    description: META.description,
+    isPartOf: { "@id": `${BASE_URL}/#website` },
+    about: { "@id": `${BASE_URL}/#organization` },
+    primaryImageOfPage: `${BASE_URL}/Images/Home/download-1.jpg`,
+    dateModified: new Date().toISOString().split("T")[0],
+  };
+
+  const serviceListSchema = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: "Leistungen von Ökovolt",
+    itemListElement: [...PRODUKTE, { titel: "Photovoltaik Repowering", href: "/service/repowering" }, { titel: "Direktvermarktung", href: "/service/direktvermarktung" }].map((p, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      name: p.titel,
+      url: `${BASE_URL}${p.href}`,
+    })),
+  };
+
+  return (
+    <div>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(homePageSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(serviceListSchema) }} />
+
+      {/* ================= HERO ================= */}
+      <section className="relative isolate overflow-hidden bg-navy-950 text-white">
+        <Image
+          src="/Images/Home/download-1.jpg"
+          alt={data?.alt_text || "Einfamilienhaus mit Photovoltaikanlage von Ökovolt"}
+          fill
+          priority
+          sizes="100vw"
+          className="-z-30 object-cover"
+        />
+        <HeroVideo src="/Images/Navbar/intro.mp4" poster="/Images/Home/download-1.jpg" />
+        <div aria-hidden="true" className="absolute inset-0 -z-10 bg-gradient-to-r from-navy-950 via-navy-950/85 to-navy-950/30" />
+        <div aria-hidden="true" className="absolute inset-0 -z-10 bg-gradient-to-t from-navy-950 via-transparent to-navy-950/40" />
+        <div aria-hidden="true" className="absolute -left-40 bottom-0 -z-10 h-[520px] w-[520px] rounded-full bg-ov-500/20 blur-[140px]" />
+
+        <div className="ov-container grid items-center gap-12 pb-20 pt-14 md:pb-28 md:pt-20 lg:grid-cols-[1.25fr_1fr] lg:gap-16 lg:pb-32 lg:pt-24">
+          <div>
+            <div className="ov-hero-in">
+              <span className="ov-glass inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-[13px] font-medium text-white/90">
+                <MapPin aria-hidden="true" className="h-3.5 w-3.5 text-ov-300" />
+                Fachbetrieb aus Türkheim<span className="hidden sm:inline"> · über 15 Jahre Erfahrung</span>
+              </span>
+            </div>
+            <h1 className="ov-display ov-hero-in mt-7" style={{ "--ov-delay": "100ms" }}>
+              Ihr Dach.
+              <br />
+              Ihr <span className="ov-text-gradient-light">Kraftwerk.</span>
+            </h1>
+            <p className="ov-lead ov-hero-in mt-7 max-w-xl text-white/75" style={{ "--ov-delay": "180ms" }}>
+              {data?.title || "Photovoltaikanlagen mit Speicher für Ihr Zuhause"} – geplant, montiert und angemeldet aus einer Hand. Mit Speicher, Wallbox und Wärmepumpe zu Ihrer eigenen Energiewende.
+            </p>
+            <div className="ov-hero-in mt-9 flex flex-col gap-3 sm:flex-row" style={{ "--ov-delay": "260ms" }}>
+              <Button href="/angebot" size="lg" pfeil>Kostenloses Angebot</Button>
+              <Button href="/referenzen/projekte" size="lg" variant="outlineLight">Projekte ansehen</Button>
+            </div>
+            <ul className="ov-hero-in mt-10 flex flex-wrap gap-x-6 gap-y-3 text-[14px] text-white/75" style={{ "--ov-delay": "340ms" }}>
+              {["Planung, Montage & Anmeldung", "KI-Monitoring Ökosys", "Fester Ansprechpartner"].map((t) => (
+                <li key={t} className="flex items-center gap-2">
+                  <Check aria-hidden="true" className="h-4 w-4 text-ov-300" strokeWidth={3} />
+                  {t}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="ov-hero-in" style={{ "--ov-delay": "220ms" }}>
+            <HeroRechner />
+          </div>
+        </div>
+
+        {/* Kennzahlen */}
+        <div className="relative border-t border-white/10 bg-navy-950/60 backdrop-blur-md">
+          <dl className="ov-container grid grid-cols-2 gap-y-6 py-8 md:grid-cols-4 md:py-10">
+            {kennzahlen.map((k, i) => (
+              <div key={k.label} className={`px-2 md:px-6 ${i > 0 ? "md:border-l md:border-white/10" : ""}`}>
+                <dt className="sr-only">{k.label}</dt>
+                <dd className="font-display text-[clamp(1.6rem,1.2rem+1.5vw,2.5rem)] font-extrabold leading-none tracking-tight">
+                  <CountUp value={k.value} suffix={k.suffix} />
+                </dd>
+                <dd className="mt-2 text-[13.5px] text-white/55">{k.label}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      </section>
+
+      <FeaturedLogos titel={data?.partners_title || "Starke Partner für Ihre Photovoltaikanlage"} />
+
+      {/* ================= PRODUKTE BENTO ================= */}
+      <Section tone="white" space="lg">
+        <div className="mb-12 flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
+          <SectionHeading
+            eyebrow="Alles aus einer Hand"
+            title={<>Ein System. <span className="ov-text-gradient">Perfekt abgestimmt.</span></>}
+            lead={data?.photovoltaiklösungen_title || "Solaranlage, Speicher, Wallbox und Wärmepumpe – geplant als Gesamtsystem, damit jede Kilowattstunde vom Dach dort landet, wo sie am meisten bringt."}
+          />
+          <Reveal delay={100}>
+            <Button href="/produkte/photovoltaikanlage" variant="secondary" pfeil>Alle Produkte</Button>
+          </Reveal>
+        </div>
+
+        <div className="grid auto-rows-[210px] grid-cols-2 gap-3 sm:auto-rows-[260px] md:grid-cols-4 md:gap-4 md:auto-rows-[280px]">
+          {PRODUKTE.map((p, i) => (
+            <Reveal key={p.href} delay={i * 80} className={p.gross ? "col-span-2 row-span-2" : ""}>
+              <Link href={p.href} className="group relative flex h-full flex-col justify-end overflow-hidden rounded-3xl bg-ink-900 p-4 text-white sm:p-6 md:rounded-[2rem] md:p-8">
+                <Image src={p.bild} alt="" fill sizes={p.gross ? "(max-width: 768px) 100vw, 50vw" : "(max-width: 768px) 100vw, 25vw"} className="object-cover opacity-90 transition-transform duration-[1200ms] ease-out group-hover:scale-105" />
+                <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-navy-950/95 via-navy-950/35 to-transparent" />
+                <span className="ov-glass absolute left-4 top-4 flex h-10 w-10 items-center justify-center rounded-2xl sm:h-11 sm:w-11 md:left-6 md:top-6">
+                  <p.icon aria-hidden="true" className="h-5 w-5 text-ov-300" />
+                </span>
+                <span className="absolute right-5 top-5 flex h-10 w-10 items-center justify-center rounded-full bg-white text-ink-900 opacity-0 transition-all duration-300 group-hover:opacity-100 md:right-6 md:top-6">
+                  <ArrowUpRight aria-hidden="true" className="h-4 w-4" />
+                </span>
+                <div className="relative">
+                  <h3 className={`font-display font-extrabold tracking-tight ${p.gross ? "text-[clamp(1.75rem,1.3rem+1.6vw,2.75rem)]" : "text-[17px] sm:text-[22px]"}`}>{p.titel}</h3>
+                  <p className={`mt-2 text-white/75 ${p.gross ? "max-w-md text-[16.5px]" : "hidden text-[14.5px] sm:block"}`}>{p.text}</p>
+                  {p.gross && (
+                    <span className="mt-6 inline-flex items-center gap-2 text-[15px] font-semibold text-ov-300">
+                      Mehr erfahren <ArrowRight aria-hidden="true" className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                    </span>
+                  )}
+                </div>
+              </Link>
+            </Reveal>
+          ))}
+        </div>
+      </Section>
+
+      {/* ================= LIVE STROMMARKT ================= */}
+      {energie && (
+        <Section tone="navy" space="lg" className="ov-noise overflow-hidden">
+          <div aria-hidden="true" className="ov-grid-bg absolute inset-0" />
+          <div aria-hidden="true" className="absolute -right-32 -top-20 h-[460px] w-[460px] rounded-full bg-ov-500/20 blur-[130px]" />
+          <div className="relative">
+            <div className="mb-12 grid gap-6 lg:grid-cols-[1.2fr_1fr] lg:items-end">
+              <SectionHeading
+                dark
+                eyebrow="Strommarkt live"
+                title={<>Wann Strom billig ist, <span className="ov-text-gradient-light">sehen Sie hier.</span></>}
+              />
+              <Reveal delay={120}>
+                <p className="ov-lead text-white/65">
+                  Der Börsenstrompreis schwankt jede Viertelstunde – mittags sinkt er oft drastisch, weil Deutschlands Solaranlagen liefern. Mit Speicher, Wallbox und dynamischem Tarif machen Sie genau das zu Ihrem Vorteil.
+                </p>
+              </Reveal>
+            </div>
+            <Reveal dir="scale">
+              <HomeLive initial={{ stand: energie.stand, preis: energie.preis, erzeugung: { ...energie.erzeugung, zeiten: undefined, serien: undefined } }} />
+            </Reveal>
+            <p className="mt-5 text-[12px] text-white/40">Quelle: Fraunhofer ISE, Energy-Charts (CC BY 4.0). Börsenpreise netto, ohne Netzentgelte, Abgaben und Steuern.</p>
+          </div>
+        </Section>
+      )}
+
+      {/* ================= WARUM ÖKOVOLT ================= */}
+      <Section tone="sand" space="lg">
+        <div className="grid gap-12 lg:grid-cols-2 lg:gap-20">
+          <Reveal dir="left" className="relative">
+            {/* 15+ box sits inside the image frame, so it stays on the image's bottom-right corner */}
+            <div className="relative aspect-[4/5] rounded-[2rem] shadow-2xl sm:aspect-[5/4] lg:aspect-[4/5]">
+              <Image src="/Images/Kontakt/download-1.jpg" alt="Firmensitz der Ökovolt GmbH Solartechnik in Türkheim mit Servicefahrzeugen" fill sizes="(max-width: 1024px) 100vw, 50vw" className="rounded-[2rem] object-cover" />
+              <div className="absolute -bottom-6 right-4 max-w-[260px] rounded-2xl bg-white p-5 shadow-2xl ring-1 ring-ink-100 md:-right-6">
+                <p className="font-display text-[36px] font-extrabold leading-none tracking-tight text-ov-600">15+</p>
+                <p className="mt-2 text-[14px] leading-snug text-ink-600">Jahre Photovoltaik-Erfahrung – mit eigenem Montageteam aus Türkheim.</p>
+              </div>
+            </div>
+          </Reveal>
+          <div className="flex flex-col justify-center">
+            <SectionHeading
+              eyebrow={data?.first_card_title ? "Willkommen bei Ökovolt" : "Warum Ökovolt"}
+              title={data?.first_card_subtitle || "Ihr Photovoltaik-Anbieter mit über 15 Jahren Erfahrung."}
+              lead={data?.first_card_description}
+            />
+            <ul className="mt-10 space-y-4">
+              {(vorteilKarten.length ? vorteilKarten : [
+                { title: "Ökosys von Ökovolt", description: "KI-gestütztes Monitoring, das Leistungsabfälle sofort erkennt." },
+                { title: "Notstrombox", description: "Strom aus dem Speicher – auch bei Netzstörungen." },
+                { title: "Service & Wartung", description: "Regelmäßige Inspektionen und schnelle Hilfe." },
+              ]).map((k, i) => {
+                const Icon = [Cpu, Zap, Wrench][i % 3];
+                return (
+                  <Reveal as="li" key={k.title} delay={i * 90} className="flex gap-5 rounded-3xl bg-white p-6 ring-1 ring-ink-200/60">
+                    <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-ov-500 text-white">
+                      <Icon aria-hidden="true" className="h-6 w-6" />
+                    </span>
+                    <div>
+                      <h3 className="font-display text-[18px] font-bold text-ink-900">{k.title}</h3>
+                      <p className="mt-1.5 line-clamp-3 text-[15px] leading-relaxed text-ink-600">{k.description}</p>
+                    </div>
+                  </Reveal>
+                );
+              })}
+            </ul>
+          </div>
+        </div>
+      </Section>
+
+      {/* ================= TOOLS ================= */}
+      <Section tone="white" space="lg">
+        <SectionHeading
+          align="center"
+          eyebrow="Rechner & Tools"
+          title={<>Erst rechnen. <span className="ov-text-gradient">Dann entscheiden.</span></>}
+          lead="Acht kostenlose Werkzeuge, die Ihnen ehrliche Zahlen liefern – bevor Sie mit uns sprechen."
+          className="mb-14"
+        />
+        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {TOOLS.map((t, i) => (
+            <Reveal as="li" key={t.href} delay={i * 50} className="flex">
+              <Link href={t.href} className="group ov-card-hover relative flex w-full flex-col overflow-hidden rounded-3xl bg-sand-50 p-6 ring-1 ring-ink-200/60 hover:bg-white hover:ring-ov-200">
+                <div className="flex items-center justify-between">
+                  <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-ov-600 shadow-sm ring-1 ring-ink-100 transition-all duration-300 group-hover:bg-ov-500 group-hover:text-white group-hover:ring-ov-500">
+                    <t.icon aria-hidden="true" className="h-6 w-6" strokeWidth={1.8} />
+                  </span>
+                  {t.href === "/energie-live" && (
+                    <span className="flex items-center gap-1.5 rounded-full bg-navy-950 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-white"><LiveDot /> Live</span>
+                  )}
+                </div>
+                <h3 className="mt-6 font-display text-[18px] font-bold text-ink-900">{t.titel}</h3>
+                <p className="mt-1 text-[14.5px] text-ink-500">{t.text}</p>
+                <ArrowRight aria-hidden="true" className="mt-5 h-5 w-5 text-ink-300 transition-all duration-300 group-hover:translate-x-1 group-hover:text-ov-600" />
+              </Link>
+            </Reveal>
+          ))}
+        </ul>
+        <Reveal className="mt-10 text-center">
+          <Button href="/rechner" variant="secondary" pfeil>Alle Rechner & Tools</Button>
+        </Reveal>
+      </Section>
+
+      {/* ================= PROZESS ================= */}
+      <Section tone="green" space="lg">
+        <div className="mb-14 flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
+          <SectionHeading eyebrow="In vier Schritten" title="Vom ersten Gespräch zur eigenen Energie" lead="Wir übernehmen alles – Sie treffen nur die Entscheidungen." />
+          <Reveal delay={100}><Button href="/angebot" pfeil>Jetzt starten</Button></Reveal>
+        </div>
+        <Steps
+          items={[
+            { icon: Handshake, title: "Beratung", text: "Wir analysieren Verbrauch, Dach und Ziele – persönlich und herstellerunabhängig." },
+            { icon: Ruler, title: "Planung", text: "Exakte Auslegung von Modulen, Wechselrichter, Speicher und Energiemanagement." },
+            { icon: Wrench, title: "Montage", text: "Unser eigenes Team installiert in der Regel in 1–3 Tagen." },
+            { icon: ClipboardCheck, title: "Anmeldung & Service", text: "Netzbetreiber, Marktstammdatenregister, Monitoring – erledigt." },
+          ]}
+        />
+      </Section>
+
+      {/* ================= PROJEKTE ================= */}
+      {projekte.length > 0 && (
+        <Section tone="white" space="lg">
+          <div className="mb-12 flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
+            <SectionHeading eyebrow="Referenzen" title={data?.projekte_title || "Unsere neuesten Photovoltaik-Projekte"} />
+            <Reveal delay={100}><Button href="/referenzen/projekte" variant="secondary" pfeil>Alle Projekte</Button></Reveal>
+          </div>
+          <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {projekte.map((p, i) => (
+              <Reveal as="li" key={p.slug} delay={i * 80}>
+                <Link href={`/referenzen/projekte/${p.slug}`} className="group block">
+                  <div className="relative aspect-[4/5] overflow-hidden rounded-[1.75rem] bg-ink-100">
+                    <Image
+                      src={p.bild || "/Images/Referenzen/Projekte-1.jpg"}
+                      alt={`Photovoltaik-Projekt ${p.title}`}
+                      fill
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                      className="object-cover transition-transform duration-[1200ms] group-hover:scale-105"
+                    />
+                    <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-navy-950/80 via-transparent to-transparent" />
+                    {p.leistung && (
+                      <span className="absolute left-4 top-4 rounded-full bg-white/95 px-3 py-1.5 text-[13px] font-bold text-ink-900 shadow">
+                        <Sun aria-hidden="true" className="-mt-0.5 mr-1 inline h-3.5 w-3.5 text-sun-500" />
+                        {String(p.leistung).replace(/\s*kWp/i, "")} kWp
+                      </span>
+                    )}
+                    <p className="absolute inset-x-5 bottom-5 font-display text-[18px] font-bold leading-snug text-white">{p.title}</p>
+                  </div>
+                </Link>
+              </Reveal>
+            ))}
+          </ul>
+        </Section>
+      )}
+
+      {/* ================= FÖRDERUNG + WISSEN ================= */}
+      <Section tone="sand" space="lg">
+        <div className="grid gap-5 lg:grid-cols-3">
+          <Reveal dir="scale" className="lg:col-span-2">
+            <Link href="/foerdercheck" className="ov-noise group relative flex h-full min-h-[340px] flex-col justify-between overflow-hidden rounded-[2rem] bg-gradient-to-br from-ov-600 to-ov-800 p-8 text-white md:p-12">
+              <div aria-hidden="true" className="ov-grid-bg absolute inset-0" />
+              <div aria-hidden="true" className="absolute -right-10 -top-10 h-72 w-72 rounded-full bg-sun-300/25 blur-3xl transition-transform duration-700 group-hover:scale-125" />
+              <div className="relative">
+                <Eyebrow dark className="text-white/80">Förder-Check</Eyebrow>
+                <h2 className="ov-h2 mt-4 max-w-xl text-white">Welche Förderung bekommen Sie? In 30 Sekunden wissen Sie es.</h2>
+                <p className="mt-4 max-w-lg text-[16.5px] leading-relaxed text-white/80">Bundesland wählen, Vorhaben ankreuzen – wir zeigen passende Programme von Bund, Ländern und Kommunen.</p>
+              </div>
+              <span className="relative mt-8 inline-flex h-12 items-center gap-2 self-start rounded-full bg-white px-6 text-[15px] font-semibold text-ov-800 transition-transform group-hover:scale-[1.03]">
+                Förder-Check starten <ArrowRight aria-hidden="true" className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+              </span>
+            </Link>
+          </Reveal>
+          <div className="grid gap-5">
+            {[
+              { titel: "Solaranlage Kosten 2026", text: "Preise je kWp, Speicher & Montage im Überblick.", href: "/ratgeber/solaranlage-kosten", icon: Sparkles },
+              { titel: "Einspeisevergütung 2026", text: "Aktuelle Sätze und was sie für Sie bedeuten.", href: "/ratgeber/einspeiseverguetung-2026", icon: ShieldCheck },
+            ].map((w, i) => (
+              <Reveal key={w.href} delay={100 + i * 80}>
+                <Link href={w.href} className="group ov-card-hover flex h-full flex-col justify-between rounded-[2rem] bg-white p-7 ring-1 ring-ink-200/60">
+                  <w.icon aria-hidden="true" className="h-6 w-6 text-ov-600" />
+                  <div className="mt-6">
+                    <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-ink-500">Ratgeber</p>
+                    <h3 className="mt-1.5 font-display text-[20px] font-bold text-ink-900 group-hover:text-ov-700">{w.titel}</h3>
+                    <p className="mt-1.5 text-[14.5px] text-ink-500">{w.text}</p>
+                  </div>
+                </Link>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </Section>
+
+      {/* ================= FAQ ================= */}
+      <Section tone="white" space="lg">
+        <div className="grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:gap-20">
+          <div>
+            <SectionHeading eyebrow="Häufige Fragen" title="Photovoltaik mit Speicher – ehrlich beantwortet" lead="Noch Fragen? Unser Team berät Sie persönlich." />
+            <Reveal delay={120} className="mt-8 flex flex-wrap gap-3">
+              <Button href="/faqs" variant="secondary" size="sm" pfeil>Alle FAQs</Button>
+              <Button href="/wissen/lexikon" variant="ghost" size="sm">PV-Lexikon</Button>
+            </Reveal>
+          </div>
+          <Faq items={FAQ} />
+        </div>
+      </Section>
+
+      <CtaBand />
+    </div>
+  );
+}

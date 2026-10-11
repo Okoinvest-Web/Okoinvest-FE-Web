@@ -1,0 +1,266 @@
+/**
+ * EU-Taxonomie: eine Prüfung, die etwas zu zeigen hat.
+ *
+ * Die Zahlen bilden einen Holzbaubetrieb mit eigener Photovoltaik ab -
+ * und damit den Fall, an dem sich die Wesentlichkeitsschwelle erklärt:
+ * Die Stromerlöse sind gemessen am Gesamtumsatz klein, die Investition
+ * in die Anlage ist gemessen am Gesamt-CapEx groß. Beim Umsatz ist die
+ * Tätigkeit unwesentlich, beim CapEx wesentlich.
+ *
+ * Ein Kriterium bleibt bewusst offen: Für die Ladeinfrastruktur fehlt
+ * die Biodiversitätsprüfung. Damit steht auf der Seite ein "offen" und
+ * nicht überall grün - eine Prüfung, in der alles stimmt, zeigt nur,
+ * dass die Oberfläche grün darstellen kann.
+ */
+function befuelleTaxonomie(z: PlattformErgebnis): void {
+  const kunde = skalar<string>("SELECT id FROM kunde LIMIT 1");
+  if (!kunde) return;
+
+  const jahr = new Date().getFullYear() - 1;
+  const id = `TAX-${jahr}`;
+
+  schreibe(
+    `INSERT INTO taxonomie_pruefung
+       (id, kunde_id, jahr, bezeichnung, status, umsatz_gesamt,
+        capex_gesamt, opex_gesamt, bemerkung)
+     VALUES (?, ?, ?, ?, 'Geprueft', ?, ?, ?, ?)`,
+    id,
+    kunde,
+    jahr,
+    `EU-Taxonomie ${jahr}`,
+    24_480_000,
+    2_860_000,
+    940_000,
+    "Nenner aus dem Jahresabschluss zum 31.12., geprüft durch die Steuerberatung.",
+  );
+
+  const positionen: {
+    art: "Umsatz" | "CapEx" | "OpEx";
+    taetigkeit: string;
+    bezeichnung: string;
+    betrag: number;
+    herkunft: "ERP" | "Erfasst" | "Geschaetzt";
+    konto?: string;
+    bemerkung?: string;
+  }[] = [
+    {
+      art: "Umsatz",
+      taetigkeit: "4.1",
+      bezeichnung: "Stromerlöse aus Einspeisung und Direktvermarktung",
+      betrag: 412_800,
+      herkunft: "ERP",
+      konto: "4200",
+    },
+    {
+      art: "Umsatz",
+      taetigkeit: "4.1",
+      bezeichnung: "Erlöse aus der Energiegemeinschaft",
+      betrag: 47_900,
+      herkunft: "ERP",
+      konto: "4210",
+    },
+    {
+      art: "Umsatz",
+      taetigkeit: "6.15",
+      bezeichnung: "Ladeentgelte Fremdfahrzeuge",
+      betrag: 18_400,
+      herkunft: "ERP",
+      konto: "4230",
+    },
+    {
+      art: "Umsatz",
+      taetigkeit: "",
+      bezeichnung: "Holzbau, Zimmerei und Handel",
+      betrag: 24_000_900,
+      herkunft: "ERP",
+      konto: "4000",
+      bemerkung:
+        "Keiner Tätigkeit des Anhangs zuzuordnen und damit nicht taxonomiefähig.",
+    },
+    {
+      art: "CapEx",
+      taetigkeit: "4.1",
+      bezeichnung: "Zubau Photovoltaik Lagerhalle Krems",
+      betrag: 1_246_000,
+      herkunft: "ERP",
+      konto: "0400",
+    },
+    {
+      art: "CapEx",
+      taetigkeit: "4.10",
+      bezeichnung: "Batteriespeicher 1,18 MWh",
+      betrag: 384_000,
+      herkunft: "ERP",
+      konto: "0410",
+    },
+    {
+      art: "CapEx",
+      taetigkeit: "6.15",
+      bezeichnung: "Ladepunkte Betriebsgelände und Fuhrpark",
+      betrag: 176_500,
+      herkunft: "ERP",
+      konto: "0420",
+    },
+    {
+      art: "CapEx",
+      taetigkeit: "",
+      bezeichnung: "Hallenkran, Fuhrpark, Betriebsausstattung",
+      betrag: 1_053_500,
+      herkunft: "ERP",
+      konto: "0600",
+    },
+    {
+      art: "OpEx",
+      taetigkeit: "7.6",
+      bezeichnung: "Wartung und Instandhaltung der Photovoltaikanlagen",
+      betrag: 96_400,
+      herkunft: "ERP",
+      konto: "7200",
+    },
+    {
+      art: "OpEx",
+      taetigkeit: "4.1",
+      bezeichnung: "Versicherung und Monitoring der Erzeugungsanlagen",
+      betrag: 28_600,
+      herkunft: "ERP",
+      konto: "7210",
+    },
+    {
+      art: "OpEx",
+      taetigkeit: "",
+      bezeichnung: "Übrige Instandhaltung, kurzfristige Mieten, Forschung",
+      betrag: 815_000,
+      herkunft: "ERP",
+      konto: "7000",
+    },
+  ];
+
+  for (const [i, p] of positionen.entries()) {
+    schreibe(
+      `INSERT INTO taxonomie_position
+         (id, pruefung_id, art, taetigkeit, bezeichnung, betrag, herkunft,
+          konto, bemerkung)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `${id}-P${String(i + 1).padStart(3, "0")}`,
+      id,
+      p.art,
+      p.taetigkeit,
+      p.bezeichnung,
+      p.betrag,
+      p.herkunft,
+      p.konto ?? null,
+      p.bemerkung ?? null,
+    );
+    z.taxonomiePositionen += 1;
+  }
+
+  const nachweise: {
+    kriterium: string;
+    stand: "erfuellt" | "nicht_erfuellt" | "offen";
+    beleg?: string;
+    bemerkung?: string;
+  }[] = [
+    {
+      kriterium: "4.1-beitrag",
+      stand: "erfuellt",
+      beleg: "Anlagenverzeichnis, Inbetriebnahmemeldungen 2019–2025",
+    },
+    {
+      kriterium: "4.1-anpassung",
+      stand: "erfuellt",
+      beleg: "Klimarisikoanalyse 2024, Szenarien RCP 4.5 und 8.5",
+      bemerkung:
+        "Hagelrisiko als wesentlich eingestuft; Module der Hagelklasse HW5, Nachrüstung der Wechselrichterstandorte abgeschlossen.",
+    },
+    {
+      kriterium: "4.1-kreislauf",
+      stand: "erfuellt",
+      beleg: "Rücknahmevereinbarung PV Austria, Demontagekonzept",
+    },
+    {
+      kriterium: "4.1-biodiversitaet",
+      stand: "erfuellt",
+      beleg: "Feststellungsbescheid BH Krems: keine UVP-Pflicht (Dachanlage)",
+    },
+    {
+      kriterium: "4.10-beitrag",
+      stand: "erfuellt",
+      beleg: "Speicherstammdaten, Zyklenprotokoll 2025",
+    },
+    {
+      kriterium: "4.10-anpassung",
+      stand: "erfuellt",
+      beleg: "Klimarisikoanalyse 2024",
+    },
+    {
+      kriterium: "4.10-kreislauf",
+      stand: "erfuellt",
+      beleg: "Herstellerrücknahme nach VO (EU) 2023/1542",
+    },
+    {
+      kriterium: "4.10-verschmutzung",
+      stand: "erfuellt",
+      beleg: "Sicherheitsdatenblätter, Löschkonzept der Betriebsfeuerwehr",
+    },
+    {
+      kriterium: "6.15-beitrag",
+      stand: "erfuellt",
+      beleg: "Ladepunktverzeichnis, Eichnachweise",
+    },
+    {
+      kriterium: "6.15-anpassung",
+      stand: "erfuellt",
+      beleg: "Klimarisikoanalyse 2024",
+    },
+    {
+      kriterium: "6.15-biodiversitaet",
+      stand: "offen",
+      bemerkung:
+        "Standortbeurteilung für die Ladepunkte am Nordgrundstück ist beauftragt, der Bericht ist ausständig.",
+    },
+    {
+      kriterium: "7.6-beitrag",
+      stand: "erfuellt",
+      beleg: "Wartungsverträge, Leistungsverzeichnis",
+    },
+    {
+      kriterium: "7.6-anpassung",
+      stand: "erfuellt",
+      beleg: "Klimarisikoanalyse 2024",
+    },
+    {
+      kriterium: "ms-oecd",
+      stand: "erfuellt",
+      beleg: "Sorgfaltspflichtenbericht 2025, Beschwerdestelle eingerichtet",
+    },
+    {
+      kriterium: "ms-arbeit",
+      stand: "erfuellt",
+      beleg:
+        "Verhaltenskodex, Lieferantenerklärungen über 94 % des Einkaufsvolumens",
+    },
+    {
+      kriterium: "ms-steuern",
+      stand: "erfuellt",
+      beleg: "Bestätigung der Geschäftsführung, keine offenen Verfahren",
+    },
+  ];
+
+  for (const n of nachweise) {
+    schreibe(
+      `INSERT INTO taxonomie_nachweis
+         (pruefung_id, kriterium, stand, beleg, geprueft_am, geprueft_von, bemerkung)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      id,
+      n.kriterium,
+      n.stand,
+      n.beleg ?? null,
+      n.stand === "offen" ? null : `${jahr + 1}-03-18`,
+      n.stand === "offen"
+        ? null
+        : "Mag. C. Weinberger, Nachhaltigkeitsbeauftragte",
+      n.bemerkung ?? null,
+    );
+  }
+}
+

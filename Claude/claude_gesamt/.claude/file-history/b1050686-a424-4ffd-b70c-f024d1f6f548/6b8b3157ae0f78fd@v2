@@ -1,0 +1,161 @@
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+
+import {
+  PARAMETER,
+  findeParameter,
+  istGesperrt,
+  pruefeParameter,
+} from "./regelgrenzen.ts";
+
+/**
+ * Diese Tests sichern die wichtigste Zusage des Portals ab: dass
+ * netzrelevante Regelparameter nicht ueber die Anwendung veraendert
+ * werden koennen.
+ *
+ * Sie pruefen die Serverfunktion direkt - also genau den Weg, den auch
+ * jemand nehmen wuerde, der die Oberflaeche umgeht.
+ */
+
+const GESPERRTE_SCHLUESSEL = [
+  "einspeise_wirkleistungsgrenze",
+  "einspeise_parkregler_sollwert",
+  "einspeise_blindleistungskennlinie",
+  "netzschutz_spannung_grenzen",
+  "netzschutz_frequenz_grenzen",
+  "netzschutz_abschaltzeit",
+];
+
+describe("Gesetzlich vorgegebene Parameter", () => {
+  it("lehnt jeden gesperrten Parameter ab, unabhaengig vom Wert", () => {
+    for (const schluessel of GESPERRTE_SCHLUESSEL) {
+      for (const wert of [0, 100, -1, "70", "beliebig", null, undefined]) {
+        const ergebnis = pruefeParameter(schluessel, wert);
+        assert.equal(
+          ergebnis.erlaubt,
+          false,
+          `${schluessel} haette mit Wert ${String(wert)} abgelehnt werden muessen`,
+        );
+      }
+    }
+  });
+
+  it("nennt bei jeder Ablehnung eine Begruendung", () => {
+    for (const schluessel of GESPERRTE_SCHLUESSEL) {
+      const ergebnis = pruefeParameter(schluessel, 50);
+      assert.equal(ergebnis.erlaubt, false);
+      if (!ergebnis.erlaubt) {
+        assert.ok(
+          ergebnis.grund.length > 20,
+          `${schluessel} braucht eine verstaendliche Begruendung`,
+        );
+      }
+    }
+  });
+
+  it("hinterlegt zu jedem gesperrten Parameter eine Rechtsgrundlage", () => {
+    for (const parameter of PARAMETER.filter((p) => p.gesperrt)) {
+      assert.ok(
+        parameter.grundlage && parameter.grundlage.length > 20,
+        `${parameter.schluessel} braucht eine Rechtsgrundlage`,
+      );
+    }
+  });
+});
+
+describe("Unbekannte Parameter", () => {
+  it("werden abgelehnt - die Liste ist eine Positivliste", () => {
+    for (const schluessel of [
+      "",
+      "beliebig",
+      "einspeise_wirkleistungsgrenze_",
+      "__proto__",
+      "constructor",
+      "netzschutz",
+    ]) {
+      assert.equal(
+        pruefeParameter(schluessel, 1).erlaubt,
+        false,
+        `"${schluessel}" haette abgelehnt werden muessen`,
+      );
+    }
+  });
+
+  it("gelten im Zweifel als gesperrt", () => {
+    assert.equal(istGesperrt("gibt-es-nicht"), true);
+    assert.equal(istGesperrt("__proto__"), true);
+  });
+});
+
+describe("Freigegebene Parameter", () => {
+  it("nimmt einen Wert innerhalb der Grenzen an", () => {
+    const ergebnis = pruefeParameter("eigenverbrauch_ziel", 85);
+    assert.equal(ergebnis.erlaubt, true);
+    if (ergebnis.erlaubt) assert.equal(ergebnis.wert, 85);
+  });
+
+  it("wandelt Zeichenketten in Zahlen um", () => {
+    const ergebnis = pruefeParameter("speicher_reserve_soc", "20");
+    assert.equal(ergebnis.erlaubt, true);
+    if (ergebnis.erlaubt) assert.equal(ergebnis.wert, 20);
+  });
+
+  it("lehnt Werte ausserhalb der Grenzen ab", () => {
+    assert.equal(pruefeParameter("eigenverbrauch_ziel", 101).erlaubt, false);
+    assert.equal(pruefeParameter("eigenverbrauch_ziel", -1).erlaubt, false);
+    assert.equal(
+      pruefeParameter("lade_anschlussleistung_max", 100000).erlaubt,
+      false,
+    );
+  });
+
+  it("lehnt ungueltige Zahlen ab", () => {
+    for (const wert of ["abc", "", NaN, Infinity, {}, []]) {
+      assert.equal(
+        pruefeParameter("eigenverbrauch_ziel", wert).erlaubt,
+        false,
+        `${String(wert)} ist keine gueltige Zahl`,
+      );
+    }
+  });
+
+  it("laesst negative Boersenpreise zu - sie kommen real vor", () => {
+    const ergebnis = pruefeParameter("boerse_ladeschwelle", -12.5);
+    assert.equal(ergebnis.erlaubt, true);
+    if (ergebnis.erlaubt) assert.equal(ergebnis.wert, -12.5);
+  });
+
+  it("prueft Auswahlfelder gegen die erlaubten Optionen", () => {
+    assert.equal(
+      pruefeParameter("speicher_modus", "Lastspitzenkappung").erlaubt,
+      true,
+    );
+    assert.equal(pruefeParameter("speicher_modus", "Nulleinspeisung").erlaubt, false);
+    assert.equal(pruefeParameter("boerse_aktiv", "vielleicht").erlaubt, false);
+    assert.equal(pruefeParameter("boerse_aktiv", "ja").erlaubt, true);
+  });
+});
+
+describe("Katalog", () => {
+  it("verwendet keinen Schluessel doppelt", () => {
+    const schluessel = PARAMETER.map((p) => p.schluessel);
+    assert.equal(new Set(schluessel).size, schluessel.length);
+  });
+
+  it("gibt zu jedem freien Zahlenparameter Grenzen an", () => {
+    for (const p of PARAMETER) {
+      if (p.gesperrt || p.optionen) continue;
+      assert.ok(
+        p.min !== undefined && p.max !== undefined,
+        `${p.schluessel} braucht Grenzen, sonst ist jeder Wert zulaessig`,
+      );
+      assert.ok(p.min! < p.max!, `${p.schluessel}: min muss unter max liegen`);
+    }
+  });
+
+  it("findet jeden Parameter aus dem Katalog wieder", () => {
+    for (const p of PARAMETER) {
+      assert.equal(findeParameter(p.schluessel)?.schluessel, p.schluessel);
+    }
+  });
+});

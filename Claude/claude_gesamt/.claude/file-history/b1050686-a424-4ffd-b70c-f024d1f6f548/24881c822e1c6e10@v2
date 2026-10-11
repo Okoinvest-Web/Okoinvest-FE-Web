@@ -1,0 +1,222 @@
+import "server-only";
+
+import { alle, eine, skalar } from "../db/verbindung.ts";
+
+/**
+ * Servicemeldungen und ihre Fristen.
+ *
+ * Ob eine Frist überschritten ist, wird in der Datenbank entschieden
+ * und nicht beim Rendern: Ein Renderdurchlauf muss bei gleichen
+ * Eingaben dasselbe Ergebnis liefern, `Date.now()` tut das nicht.
+ *
+ * Die Zeitstempel stehen als ISO-Zeichenkette mit Millisekunden und
+ * abschließendem Z in der Datenbank - genau die Form, die
+ * `Date.toISOString()` erzeugt. `strftime('%Y-%m-%dT%H:%M:%fZ','now')`
+ * liefert dieselbe Form, deshalb ist der Vergleich als Zeichenkette
+ * zulässig. Mit SQLites Standardformat "YYYY-MM-DD HH:MM:SS" wäre er
+ * es nicht: Das Leerzeichen sortiert vor dem T, und jede Frist wäre
+ * scheinbar überschritten.
+ */
+const JETZT = "strftime('%Y-%m-%dT%H:%M:%fZ','now')";
+
+export interface MeldungZeile {
+  id: string;
+  nummer: string | null;
+  anlage_id: string | null;
+  anlage: string | null;
+  betreff: string;
+  beschreibung: string | null;
+  status: string;
+  prioritaet: string;
+  kategorie: string | null;
+  kanal: string;
+  ausfall_kwh: number | null;
+  techniker: string | null;
+  gemeldet_von: string | null;
+  gemeldet_am: string;
+  behoben_am: string | null;
+  reaktion_bis: string | null;
+  loesung_bis: string | null;
+  reaktion_am: string | null;
+  servicezeit: string;
+  /** Anzahl der Einträge im Verlauf, ohne interne Notizen. */
+  eintraege: number;
+  /** 1, wenn auf die Meldung zu spät reagiert wurde. */
+  reaktion_ueberschritten: number;
+  /** 1, wenn die Behebungsfrist überschritten ist. */
+  loesung_ueberschritten: number;
+  /** 1, wenn die Meldung abgeschlossen ist. */
+  erledigt: number;
+}
+
+const AUSWAHL = `
+  SELECT s.id, s.nummer, s.anlage_id, a.bezeichnung AS anlage, s.betreff,
+         s.beschreibung, s.status, s.prioritaet, s.kategorie, s.kanal,
+         s.ausfall_kwh, s.techniker, s.gemeldet_von, s.gemeldet_am,
+         s.behoben_am, s.reaktion_bis, s.loesung_bis, s.reaktion_am,
+         s.servicezeit,
+         (SELECT COUNT(*) FROM stoerung_eintrag e
+           WHERE e.stoerung_id = s.id AND e.intern = 0) AS eintraege,
+         CASE WHEN s.status = 'Geschlossen' THEN 1 ELSE 0 END AS erledigt,
+         -- Gemessen wird gegen den Zeitpunkt der Reaktion, sobald es
+         -- einen gibt; sonst gegen jetzt. Eine spät beantwortete
+         -- Meldung bleibt damit dauerhaft als Überschreitung sichtbar
+         -- und heilt nicht dadurch, dass sie später geschlossen wird.
+         CASE
+           WHEN s.reaktion_bis IS NULL THEN 0
+           WHEN COALESCE(s.reaktion_am, ${JETZT}) > s.reaktion_bis THEN 1
+           ELSE 0
+         END AS reaktion_ueberschritten,
+         CASE
+           WHEN s.loesung_bis IS NULL THEN 0
+           WHEN COALESCE(s.behoben_am, ${JETZT}) > s.loesung_bis THEN 1
+           ELSE 0
+         END AS loesung_ueberschritten
+    FROM stoerung s
+    LEFT JOIN anlage a ON a.id = s.anlage_id`;
+
+export function ladeMeldungen(optionen: {
+  nurOffene?: boolean;
+  anlageId?: string;
+  kategorie?: string;
+  grenze?: number;
+} = {}): MeldungZeile[] {
+  const bedingungen: string[] = [];
+  const werte: (string | number)[] = [];
+
+  if (optionen.nurOffene) {
+    bedingungen.push("s.status <> 'Geschlossen'");
+  }
+  if (optionen.anlageId) {
+    bedingungen.push("s.anlage_id = ?");
+    werte.push(optionen.anlageId);
+  }
+  if (optionen.kategorie) {
+    bedingungen.push("s.kategorie = ?");
+    werte.push(optionen.kategorie);
+  }
+
+  const wo = bedingungen.length ? `WHERE ${bedingungen.join(" AND ")}` : "";
+  werte.push(optionen.grenze ?? 100);
+
+  return alle<MeldungZeile>(
+    `${AUSWAHL}
+     ${wo}
+     ORDER BY
+       CASE s.status WHEN 'Offen' THEN 0
+                     WHEN 'In Bearbeitung' THEN 1
+                     WHEN 'Warten auf Kunde' THEN 2
+                     ELSE 3 END,
+       CASE s.prioritaet WHEN 'Kritisch' THEN 0 WHEN 'Hoch' THEN 1
+                         WHEN 'Mittel' THEN 2 ELSE 3 END,
+       s.gemeldet_am DESC
+     LIMIT ?`,
+    ...werte,
+  );
+}
+
+export function ladeMeldung(id: string): MeldungZeile | null {
+  return eine<MeldungZeile>(`${AUSWAHL} WHERE s.id = ?`, id);
+}
+
+export interface VerlaufsEintrag {
+  id: string;
+  stoerung_id: string;
+  verfasser: string;
+  intern: number;
+  text: string;
+  erstellt_am: string;
+}
+
+export function ladeVerlauf(
+  stoerungId: string,
+  mitInternen: boolean,
+): VerlaufsEintrag[] {
+  return alle<VerlaufsEintrag>(
+    `SELECT * FROM stoerung_eintrag
+      WHERE stoerung_id = ? ${mitInternen ? "" : "AND intern = 0"}
+      ORDER BY erstellt_am`,
+    stoerungId,
+  );
+}
+
+export interface ServiceKennzahlen {
+  offen: number;
+  inBearbeitung: number;
+  wartenAufKunde: number;
+  geschlossen: number;
+  /** Meldungen mit überschrittener Reaktionsfrist. */
+  reaktionVerfehlt: number;
+  /** Offene Meldungen mit überschrittener Behebungsfrist. */
+  loesungVerfehlt: number;
+  /** Anteil eingehaltener Reaktionsfristen, 0 bis 1. */
+  reaktionsquote: number | null;
+  /** Anteil eingehaltener Behebungsfristen bei geschlossenen Meldungen. */
+  loesungsquote: number | null;
+  ausfallKwh: number;
+}
+
+/**
+ * Kennzahlen des Servicebetriebs.
+ *
+ * Die Quoten beziehen sich nur auf Meldungen, bei denen das Ereignis
+ * schon eingetreten ist: Die Reaktionsquote auf beantwortete
+ * Meldungen, die Lösungsquote auf geschlossene. Eine offene Meldung,
+ * deren Frist noch läuft, gehört in keine der beiden Quoten - sonst
+ * verschlechterte sich die Bilanz in dem Moment, in dem jemand eine
+ * neue Meldung anlegt.
+ */
+export function ladeServiceKennzahlen(): ServiceKennzahlen {
+  const zaehle = (bedingung: string) =>
+    skalar<number>(`SELECT COUNT(*) FROM stoerung s WHERE ${bedingung}`) ?? 0;
+
+  const beantwortet = zaehle("s.reaktion_am IS NOT NULL");
+  const beantwortetPuenktlich = zaehle(
+    "s.reaktion_am IS NOT NULL AND s.reaktion_bis IS NOT NULL AND s.reaktion_am <= s.reaktion_bis",
+  );
+
+  const geschlossen = zaehle("s.status = 'Geschlossen'");
+  const geschlossenPuenktlich = zaehle(
+    "s.status = 'Geschlossen' AND s.behoben_am IS NOT NULL AND s.loesung_bis IS NOT NULL AND s.behoben_am <= s.loesung_bis",
+  );
+
+  return {
+    offen: zaehle("s.status = 'Offen'"),
+    inBearbeitung: zaehle("s.status = 'In Bearbeitung'"),
+    wartenAufKunde: zaehle("s.status = 'Warten auf Kunde'"),
+    geschlossen,
+    reaktionVerfehlt: zaehle(
+      `s.reaktion_bis IS NOT NULL AND COALESCE(s.reaktion_am, ${JETZT}) > s.reaktion_bis`,
+    ),
+    loesungVerfehlt: zaehle(
+      `s.status <> 'Geschlossen' AND s.loesung_bis IS NOT NULL AND ${JETZT} > s.loesung_bis`,
+    ),
+    reaktionsquote:
+      beantwortet > 0 ? beantwortetPuenktlich / beantwortet : null,
+    loesungsquote:
+      geschlossen > 0 ? geschlossenPuenktlich / geschlossen : null,
+    ausfallKwh:
+      skalar<number>(
+        "SELECT COALESCE(SUM(ausfall_kwh), 0) FROM stoerung",
+      ) ?? 0,
+  };
+}
+
+export interface KategorieAnteil {
+  kategorie: string;
+  anzahl: number;
+  offen: number;
+  ausfallKwh: number;
+}
+
+export function ladeKategorien(): KategorieAnteil[] {
+  return alle<KategorieAnteil>(
+    `SELECT COALESCE(kategorie, 'Ohne Zuordnung')             AS kategorie,
+            COUNT(*)                                          AS anzahl,
+            SUM(CASE WHEN status <> 'Geschlossen' THEN 1 ELSE 0 END) AS offen,
+            ROUND(COALESCE(SUM(ausfall_kwh), 0), 0)           AS ausfallKwh
+       FROM stoerung
+      GROUP BY COALESCE(kategorie, 'Ohne Zuordnung')
+      ORDER BY anzahl DESC`,
+  );
+}

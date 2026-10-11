@@ -1,0 +1,406 @@
+/**
+ * Beschäftigte im Blick von NetOps: Ausstattung, Eintritt, Austritt.
+ *
+ * Das ist die Stelle, an der diese App mehr leistet als eine reine
+ * Inventarsoftware. Wenn jemand geht, ist die Frage nie nur „welche Geräte
+ * fehlen noch". Sie lautet: welche Geräte, welche Konten, welche Zugänge,
+ * welche Lizenzen, welche Schlüssel - und wer bestätigt das.
+ *
+ * Genau diese Daten liegen in NetOps ohnehin nebeneinander:
+ * `Asset` (Inventar), `Identity Account` (Konten), `Access Reference`
+ * (Passbolt-Verweise), `License` (Lizenzen). Eine Inventarsoftware sieht
+ * davon ein Fünftel.
+ *
+ * WICHTIG für die Portierung: die Daten zu Beschäftigten stammen aus
+ * Frappe HR und unterliegen dort eigenen Rechten. Diese Methoden dürfen in
+ * Python NUR die hier verwendeten Felder lesen (`employee_name`, `status`,
+ * `department`, `company_email`, `user_id`) und müssen zusätzlich prüfen,
+ * ob die aufrufende Person überhaupt Personaldaten sehen darf. Ein
+ * Inventarverwalter braucht den Namen - nicht die Personalakte.
+ */
+import { FrappeMockError, table } from '../db.js'
+import { tageBis } from './inventar.js'
+
+function holeBeschaeftigten(name) {
+  const doc = table('Employee').find((e) => e.name === name)
+  if (!doc) {
+    throw new FrappeMockError(`DoesNotExistError: Employee ${name} existiert nicht`, 404)
+  }
+  return doc
+}
+
+/** Nur die Felder, die das Inventar braucht - nicht der ganze Datensatz. */
+function knapp(mitarbeitende) {
+  return {
+    name: mitarbeitende.name,
+    employee_name: mitarbeitende.employee_name,
+    status: mitarbeitende.status,
+    department: mitarbeitende.department,
+    designation: mitarbeitende.designation,
+    company_email: mitarbeitende.company_email,
+    user_id: mitarbeitende.user_id || null,
+    date_of_joining: mitarbeitende.date_of_joining,
+    relieving_date: mitarbeitende.relieving_date || null,
+    company: mitarbeitende.company,
+  }
+}
+
+// --- Übersicht über die Belegschaft ----------------------------------------
+
+export function employee_list({ department = null, status = null, tenant = null } = {}) {
+  const assets = table('Asset')
+  const konten = table('Identity Account')
+
+  let liste = table('Employee')
+  if (department) liste = liste.filter((e) => e.department === department)
+  if (status) liste = liste.filter((e) => e.status === status)
+  if (tenant) liste = liste.filter((e) => e.tenant === tenant)
+
+  return liste
+    .map((e) => {
+      const geraete = assets.filter((a) => a.holder === e.name && a.asset_state !== 'disposed')
+      const wert = geraete.reduce((s, a) => s + (a.purchase_price_cents || 0), 0)
+      const konto = e.user_id ? konten.find((k) => k.account_name === e.user_id) : null
+
+      const offenNachAustritt = e.status !== 'Active' && geraete.length > 0
+      const kontoOffen = e.status !== 'Active' && konto && konto.enabled
+
+      const gruende = []
+      if (offenNachAustritt) {
+        gruende.push(
+          `${geraete.length} ${geraete.length === 1 ? 'Gerät' : 'Geräte'} nicht zurückgegeben`,
+        )
+      }
+      if (kontoOffen) gruende.push('Konto noch aktiv')
+
+      return {
+        ...knapp(e),
+        asset_count: geraete.length,
+        asset_value_cents: wert,
+        account_enabled: konto ? !!konto.enabled : null,
+        open_after_exit: offenNachAustritt || !!kontoOffen,
+        level: offenNachAustritt || kontoOffen ? 'critical' : 'ok',
+        reasons: gruende,
+        tenant: e.tenant,
+      }
+    })
+    .sort(
+      (a, b) =>
+        Number(b.open_after_exit) - Number(a.open_after_exit) ||
+        a.employee_name.localeCompare(b.employee_name),
+    )
+}
+
+/**
+ * Was hat diese Person - Geräte, Konten, Zugänge, Lizenzen.
+ */
+export function employee_equipment({ employee = null } = {}) {
+  const person = holeBeschaeftigten(employee)
+  const orte = new Map(table('Site').map((s) => [s.name, s]))
+
+  const geraete = table('Asset')
+    .filter((a) => a.holder === person.name)
+    .map((a) => {
+      const ausgabe = table('Asset Assignment')
+        .filter((x) => x.asset === a.name && x.employee === person.name && !x.returned_on)
+        .sort((x, y) => String(y.issued_on).localeCompare(String(x.issued_on)))[0]
+      return {
+        asset: a.name,
+        asset_tag: a.asset_tag,
+        asset_name: a.asset_name,
+        category: a.category,
+        serial: a.serial,
+        site_name: orte.get(a.site)?.site_name || a.site,
+        asset_state: a.asset_state,
+        purchase_price_cents: a.purchase_price_cents || 0,
+        issued_on: ausgabe?.issued_on || null,
+        due_on: ausgabe?.due_on || null,
+        overdue: ausgabe?.due_on ? tageBis(ausgabe.due_on) < 0 : false,
+      }
+    })
+
+  const vergangen = table('Asset Assignment')
+    .filter((x) => x.employee === person.name && x.returned_on)
+    .map((x) => {
+      const a = table('Asset').find((y) => y.name === x.asset)
+      return {
+        asset: x.asset,
+        asset_name: a?.asset_name || x.asset,
+        issued_on: x.issued_on,
+        returned_on: x.returned_on,
+        condition_in: x.condition_in,
+      }
+    })
+    .sort((a, b) => String(b.returned_on).localeCompare(String(a.returned_on)))
+
+  const konten = person.user_id
+    ? table('Identity Account')
+        .filter((k) => k.account_name === person.user_id || k.owner_user === person.user_id)
+        .map((k) => ({
+          account: k.name,
+          account_name: k.account_name,
+          system: k.system,
+          privileged: !!k.privileged,
+          mfa_kind: k.mfa_kind,
+          enabled: !!k.enabled,
+          last_login: k.last_login,
+        }))
+    : []
+
+  // Zugangsverweise zeigen auf Passbolt - hier steht NUR der Verweis.
+  // Geheimnisse kommen niemals in diese Antwort (CLAUDE.md Abschnitt 3).
+  const zugaenge = table('Access Reference')
+    .filter((z) => z.object_type === 'Employee' && z.object_name === person.name)
+    .map((z) => ({
+      label: z.label,
+      passbolt_id: z.passbolt_id,
+      access_kind: z.access_kind,
+    }))
+
+  return {
+    employee: knapp(person),
+    assets: geraete.sort((a, b) => a.asset_tag.localeCompare(b.asset_tag)),
+    past_assignments: vergangen,
+    accounts: konten,
+    access_references: zugaenge,
+    summary: {
+      asset_count: geraete.length,
+      asset_value_cents: geraete.reduce((s, a) => s + a.purchase_price_cents, 0),
+      overdue_count: geraete.filter((a) => a.overdue).length,
+      account_count: konten.length,
+      privileged_accounts: konten.filter((k) => k.privileged).length,
+    },
+  }
+}
+
+// --- Austritt --------------------------------------------------------------
+
+/**
+ * Austrittsprüfung.
+ *
+ * Gibt eine Liste offener Punkte zurück, nicht nur eine Zahl. Jeder Punkt
+ * nennt, was zu tun ist und warum - eine Checkliste, die man abarbeiten
+ * kann, statt einer Warnung, die man wegklickt.
+ *
+ * Die Prüfung läuft auch für aktive Beschäftigte; dann ist sie eine
+ * Vorschau auf den Tag des Austritts.
+ */
+export function offboarding_check({ employee = null } = {}) {
+  const person = holeBeschaeftigten(employee)
+  const ausstattung = employee_equipment({ employee })
+
+  const punkte = []
+
+  for (const a of ausstattung.assets) {
+    punkte.push({
+      kind: 'asset_return',
+      level: 'critical',
+      title: `${a.asset_tag} – ${a.asset_name}`,
+      detail:
+        a.category === 'Schlüssel und Zutritt'
+          ? 'Zutrittsmittel einziehen und sperren'
+          : 'Rückgabe erfassen, Zustand dokumentieren',
+      object_type: 'Asset',
+      object_name: a.asset,
+      value_cents: a.purchase_price_cents,
+    })
+  }
+
+  for (const k of ausstattung.accounts) {
+    if (!k.enabled) continue
+    punkte.push({
+      kind: 'account_disable',
+      level: k.privileged ? 'critical' : 'warning',
+      title: k.account_name + (k.system ? ' (' + k.system + ')' : ''),
+      detail: k.privileged
+        ? 'Privilegiertes Konto – zuerst sperren, dann Rechte entziehen'
+        : 'Konto deaktivieren',
+      object_type: 'Identity Account',
+      object_name: k.account,
+    })
+  }
+
+  // Lizenzen sind Geld: ein Platz, den niemand nutzt, wird trotzdem
+  // bezahlt. Der Bezug läuft über die Anmeldeadresse.
+  if (person.user_id) {
+    for (const l of table('License')) {
+      const zugewiesen = String(l.assigned_to || '')
+      if (zugewiesen === person.user_id) {
+        punkte.push({
+          kind: 'license_seat',
+          level: 'warning',
+          title: l.license_name || l.name,
+          detail: 'Lizenzplatz freigeben oder umbuchen',
+          object_type: 'License',
+          object_name: l.name,
+        })
+      }
+    }
+  }
+
+  for (const z of ausstattung.access_references) {
+    punkte.push({
+      kind: 'access_reference',
+      level: 'warning',
+      title: z.label,
+      detail: 'Zugang in Passbolt entziehen und Geheimnis wechseln',
+      object_type: 'Access Reference',
+      object_name: z.passbolt_id,
+    })
+  }
+
+  // Offene Reservierungen laufen sonst ins Leere.
+  for (const r of table('Asset Reservation')) {
+    if (r.employee !== person.name) continue
+    if (!['confirmed', 'requested'].includes(r.reservation_state)) continue
+    if (tageBis(r.to_date) < 0) continue
+    punkte.push({
+      kind: 'reservation',
+      level: 'neutral',
+      title: r.asset + ' vom ' + r.from_date + ' bis ' + r.to_date,
+      detail: 'Reservierung auflösen oder übertragen',
+      object_type: 'Asset Reservation',
+      object_name: r.name,
+    })
+  }
+
+  const tageBisAustritt = person.relieving_date ? tageBis(person.relieving_date) : null
+
+  return {
+    employee: knapp(person),
+    leaving_in_days: tageBisAustritt,
+    already_left: person.status !== 'Active',
+    summary: {
+      open: punkte.length,
+      critical: punkte.filter((p) => p.level === 'critical').length,
+      warning: punkte.filter((p) => p.level === 'warning').length,
+      value_at_risk_cents: punkte.reduce((s, p) => s + (p.value_cents || 0), 0),
+      clear: punkte.length === 0,
+    },
+    items: punkte.sort(
+      (a, b) =>
+        ({ critical: 2, warning: 1, neutral: 0 })[b.level] -
+        { critical: 2, warning: 1, neutral: 0 }[a.level],
+    ),
+  }
+}
+
+/**
+ * Alle Austritte auf einen Blick - wer ist weg, was ist offen.
+ *
+ * Diese Liste ist der Grund, warum Geräte überhaupt verschwinden: ohne sie
+ * merkt es niemand, weil der Austritt in HR passiert und das Gerät in der
+ * IT liegt.
+ */
+export function offboarding_overview({ tenant = null } = {}) {
+  const alle = table('Employee').filter((e) => !tenant || e.tenant === tenant)
+
+  const betroffen = alle.filter(
+    (e) => e.status !== 'Active' || (e.relieving_date && tageBis(e.relieving_date) <= 30),
+  )
+
+  const zeilen = betroffen.map((e) => {
+    const pruefung = offboarding_check({ employee: e.name })
+    return {
+      ...knapp(e),
+      leaving_in_days: pruefung.leaving_in_days,
+      already_left: pruefung.already_left,
+      open: pruefung.summary.open,
+      critical: pruefung.summary.critical,
+      value_at_risk_cents: pruefung.summary.value_at_risk_cents,
+      level: pruefung.summary.critical ? 'critical' : pruefung.summary.open ? 'warning' : 'ok',
+      reason: pruefung.summary.clear
+        ? 'nichts offen'
+        : pruefung.summary.open === 1
+          ? 'ein offener Punkt'
+          : `${pruefung.summary.open} offene Punkte`,
+    }
+  })
+
+  return {
+    summary: {
+      people: zeilen.length,
+      with_open_items: zeilen.filter((z) => z.open > 0).length,
+      value_at_risk_cents: zeilen.reduce((s, z) => s + z.value_at_risk_cents, 0),
+      already_left_with_assets: zeilen.filter((z) => z.already_left && z.open > 0).length,
+    },
+    rows: zeilen.sort((a, b) => b.critical - a.critical || b.open - a.open),
+  }
+}
+
+// --- Eintritt --------------------------------------------------------------
+
+/**
+ * Erstausstattung planen.
+ *
+ * Nimmt ein Ausgabepaket und sagt für jede Position, ob es dafür ein
+ * verfügbares Gerät gibt. Was fehlt, fehlt sichtbar - mit Vorschlag, was
+ * zu tun ist.
+ */
+export function onboarding_plan({ bundle = null, employee = null } = {}) {
+  const paket = table('Issue Bundle').find((b) => b.name === bundle)
+  if (!paket) {
+    throw new FrappeMockError(`DoesNotExistError: Issue Bundle ${bundle} existiert nicht`, 404)
+  }
+  const person = employee ? holeBeschaeftigten(employee) : null
+
+  const zeilen = table('Issue Bundle Line').filter((z) => z.bundle === paket.name)
+  const assets = table('Asset')
+
+  const positionen = zeilen.map((z) => {
+    const verfuegbar = assets.filter(
+      (a) =>
+        a.category === z.category &&
+        a.asset_state === 'in_stock' &&
+        (!person || !a.tenant || a.tenant === person.tenant),
+    )
+
+    const gebraucht = z.qty || 1
+    const fehlt = Math.max(0, gebraucht - verfuegbar.length)
+
+    return {
+      category: z.category,
+      qty: gebraucht,
+      note: z.note || null,
+      available: verfuegbar.length,
+      missing: fehlt,
+      candidates: verfuegbar.slice(0, gebraucht).map((a) => ({
+        asset: a.name,
+        asset_tag: a.asset_tag,
+        asset_name: a.asset_name,
+        // Ein Gerät mit überfälliger Prüfung ist kein Kandidat.
+        inspection_ok: !(a.next_inspection && tageBis(a.next_inspection) < 0),
+      })),
+      level: fehlt ? 'critical' : 'ok',
+      reason: fehlt ? `${fehlt} ${fehlt === 1 ? 'fehlt' : 'fehlen'} im Bestand` : null,
+    }
+  })
+
+  return {
+    bundle: paket.name,
+    purpose: paket.purpose,
+    employee: person ? knapp(person) : null,
+    summary: {
+      positions: positionen.length,
+      complete: positionen.every((p) => !p.missing),
+      missing_positions: positionen.filter((p) => p.missing).length,
+    },
+    positions: positionen,
+  }
+}
+
+export function bundle_list({ tenant = null } = {}) {
+  const zeilen = table('Issue Bundle Line')
+  return table('Issue Bundle')
+    .filter((b) => !tenant || b.tenant === tenant)
+    .map((b) => {
+      const plan = onboarding_plan({ bundle: b.name })
+      return {
+        ...b,
+        line_count: zeilen.filter((z) => z.bundle === b.name).length,
+        complete: plan.summary.complete,
+        missing_positions: plan.summary.missing_positions,
+        level: plan.summary.complete ? 'ok' : 'warning',
+      }
+    })
+}

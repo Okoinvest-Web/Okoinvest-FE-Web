@@ -1,0 +1,72 @@
+import type { ReactNode } from "react";
+
+import { Inhaltswechsel } from "@/components/inhaltswechsel";
+import { Kopfleiste } from "@/components/kopfleiste";
+import { PortalNav } from "@/components/portal-nav";
+import { ladeSchnellziele } from "@/lib/daten/schnellzugriff";
+import { DEMO_KUNDE } from "@/lib/demo/stammdaten";
+import { NAVIGATION } from "@/lib/navigation";
+import { findeRolle } from "@/lib/sicherheit/rollen";
+import { aktuelleRechte, requireUser } from "@/lib/session";
+
+export default async function PortalLayout({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  // Serverseitige Absicherung - der Proxy prueft nur das Cookie.
+  const benutzer = await requireUser();
+  const rechte = await aktuelleRechte();
+
+  // Navigation serverseitig filtern: Der Client bekommt gar nicht erst
+  // zu sehen, was er nicht darf.
+  const gruppen = NAVIGATION.map((gruppe) => ({
+    ...gruppe,
+    eintraege: gruppe.eintraege.filter((e) => rechte.has(e.recht)),
+  })).filter((gruppe) => gruppe.eintraege.length > 0);
+
+  // Der Suchindex wird ebenfalls serverseitig gefiltert. Was jemand
+  // nicht sehen darf, soll er auch nicht finden - eine Suche, die
+  // Treffer nennt und beim Oeffnen abweist, verraet mehr als eine,
+  // die schweigt.
+  const ziele = ladeSchnellziele()
+    .filter((z) => rechte.has(z.recht as never))
+    .map((z) => ({
+      id: z.id,
+      titel: z.titel,
+      zusatz: z.zusatz,
+      pfad: z.pfad,
+      gruppe: z.gruppe,
+      stichworte: z.stichworte,
+    }));
+
+  const seiten = gruppen.flatMap((gruppe) =>
+    gruppe.eintraege.map((e) => ({
+      pfad: e.pfad,
+      label: e.label,
+      gruppe: gruppe.titel,
+      beschreibung: e.beschreibung,
+    })),
+  );
+
+  return (
+    <div className="min-h-screen">
+      <PortalNav
+        gruppen={gruppen}
+        benutzer={benutzer.vollname}
+        rollenBezeichnung={
+          findeRolle(benutzer.rolle)?.bezeichnung ?? "Betrachter"
+        }
+        firma={DEMO_KUNDE.firma}
+        demo={benutzer.demo}
+      />
+
+      <div className="lg:pl-64">
+        <main className="mx-auto max-w-[88rem] px-4 py-5 sm:px-6 lg:px-7">
+          <Kopfleiste ziele={ziele} seiten={seiten} />
+          <Inhaltswechsel>{children}</Inhaltswechsel>
+        </main>
+      </div>
+    </div>
+  );
+}

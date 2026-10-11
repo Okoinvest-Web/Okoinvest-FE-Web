@@ -1,0 +1,428 @@
+<template>
+  <div class="p-6">
+    <!--
+      Anträge zuerst: das ist die Liste, die etwas von jemandem will.
+      Aufträge und Läufe sind Bestand.
+    -->
+    <section class="mb-8">
+      <div class="mb-3 flex flex-wrap items-end justify-between gap-3">
+        <div class="max-w-3xl">
+          <h2 class="text-base font-semibold text-ink-gray-8">Anträge</h2>
+          <p class="text-sm text-ink-gray-6">
+            Ein Sicherungslauf ist kein Knopfdruck, sondern ein Vorgang mit Zustand. Zustände,
+            Übergänge und erlaubte Rollen stehen in der Workflow-Tabelle – wer den Ablauf ändern
+            will, stellt ihn dort ein.
+          </p>
+        </div>
+        <Button variant="subtle" @click="ablaufOffen = true">Ablauf ansehen</Button>
+      </div>
+
+      <DataTable
+        tabellen-id="BackupRequests"
+        :columns="antragSpalten"
+        :rows="antragZeilen"
+        :loading="antraege.loading"
+        empty-text="Kein Antrag."
+      >
+        <template #zelle-action="{ zeile }">
+          <span class="font-medium text-ink-gray-9">{{ zeile.label }}</span>
+          <span class="block font-mono text-sm text-ink-gray-5">{{ zeile.target }}</span>
+        </template>
+        <template #zelle-workflow_state="{ zeile }">
+          <StatusDot
+            :level="zustandStufe(zeile.workflow_state)"
+            :text="ZUSTAND[zeile.workflow_state] || zeile.workflow_state"
+            klein
+          />
+        </template>
+        <template #zelle-requested_by="{ zeile }">
+          <span class="text-sm text-ink-gray-8">{{ kurzName(zeile.requested_by) }}</span>
+          <span v-if="zeile.approved_by" class="block text-sm text-ink-gray-5">
+            genehmigt: {{ kurzName(zeile.approved_by) }}
+          </span>
+        </template>
+        <template #zelle-requested_on="{ zeile }">
+          <span class="tabular-nums">{{ String(zeile.requested_on || '').slice(0, 16) }}</span>
+        </template>
+        <template #zelle-aktion="{ zeile }">
+          <div class="flex flex-wrap gap-1">
+            <Button
+              v-for="a in zeile.actions"
+              :key="a.action"
+              size="sm"
+              :variant="a.action === 'Genehmigen' ? 'solid' : 'subtle'"
+              @click="uebergangFragen(zeile, a)"
+            >
+              {{ a.action }}
+            </Button>
+            <!--
+              Gesperrte Übergänge mit Grund. Eine Schaltfläche, die
+              kommentarlos fehlt, ist für die Person davor nicht von einem
+              Fehler zu unterscheiden.
+            -->
+            <StatusDot
+              v-for="b in zeile.blocked"
+              :key="b.action"
+              level="neutral"
+              :text="b.action + ': ' + b.reason"
+              klein
+            />
+          </div>
+        </template>
+      </DataTable>
+    </section>
+
+    <!-- Aufträge und Läufe aus dem alten Umschalter -->
+    <section>
+      <h2 class="mb-1 text-base font-semibold text-ink-gray-8">Aufträge</h2>
+      <p class="mb-3 text-sm text-ink-gray-6">
+        NetOps legt keine Aufträge an – es kennt die vorhandenen und kann sie anstoßen. Definiert
+        werden sie im jeweiligen System.
+      </p>
+
+      <DataTable
+        tabellen-id="BackupJobs"
+        :columns="auftragSpalten"
+        :rows="auftraege.data || []"
+        :loading="auftraege.loading"
+      >
+        <template #zelle-job_name="{ zeile }">
+          <span class="block font-medium text-ink-gray-9">{{ zeile.job_name }}</span>
+          <span class="block text-sm text-ink-gray-5">
+            {{ ART[zeile.job_kind] || zeile.job_kind }} · {{ zeile.schedule }}
+          </span>
+        </template>
+        <template #zelle-last_result="{ zeile }">
+          <StatusDot
+            :level="zeile.level"
+            :text="ERGEBNIS[zeile.last_result] || zeile.last_result || '–'"
+            klein
+          />
+          <span v-if="!zeile.enabled" class="block text-sm text-ink-gray-5">abgeschaltet</span>
+        </template>
+        <template #zelle-last_run_age_hours="{ zeile }">
+          <span v-if="zeile.last_run_age_hours === null" class="text-ink-gray-4">nie</span>
+          <span v-else class="tabular-nums">{{ zeile.last_run_age_hours }} h</span>
+        </template>
+        <template #zelle-avg_minutes="{ zeile }">
+          <span class="tabular-nums">{{ zeile.avg_minutes }} min</span>
+        </template>
+        <template #zelle-aktion="{ zeile }">
+          <Button
+            v-if="zeile.enabled && zeile.actions.length"
+            size="sm"
+            :disabled="zeile.running"
+            @click="auftragFragen(zeile)"
+          >
+            {{ zeile.running ? 'läuft' : 'Jetzt starten' }}
+          </Button>
+        </template>
+      </DataTable>
+
+      <h2 class="mb-1 mt-8 text-base font-semibold text-ink-gray-8">Letzte Läufe</h2>
+      <p class="mb-3 text-sm text-ink-gray-6">
+        Von Hand gestartete Läufe sind gekennzeichnet – sie tauchen sonst in der Lastkurve auf, ohne
+        dass jemand weiß warum.
+      </p>
+      <DataTable
+        tabellen-id="BackupRuns"
+        :columns="laufSpalten"
+        :rows="laeufe.data || []"
+        :loading="laeufe.loading"
+      >
+        <template #zelle-started_at="{ zeile }">
+          <span class="tabular-nums">{{ String(zeile.started_at || '').slice(0, 16) }}</span>
+        </template>
+        <template #zelle-triggered_by="{ zeile }">
+          <Badge :theme="zeile.manual ? 'orange' : 'gray'">
+            {{ zeile.manual ? 'von Hand' : 'geplant' }}
+          </Badge>
+          <span v-if="zeile.trigger_reason" class="block text-sm text-ink-gray-5">
+            {{ zeile.trigger_reason }}
+          </span>
+        </template>
+        <template #zelle-result="{ zeile }">
+          <StatusDot
+            :level="zeile.level"
+            :text="
+              zeile.run_state === 'running'
+                ? 'läuft'
+                : ERGEBNIS[zeile.result] || zeile.result || '–'
+            "
+            klein
+          />
+        </template>
+        <template #zelle-duration_minutes="{ zeile }">
+          <span v-if="zeile.duration_minutes === null" class="text-ink-gray-4">–</span>
+          <span v-else class="tabular-nums">{{ zeile.duration_minutes }} min</span>
+        </template>
+      </DataTable>
+    </section>
+
+    <!-- Übergang bestätigen -->
+    <Dialog v-model="uebergangOffen" :options="{ title: gewaehlteAktion?.action || '' }">
+      <template #body-content>
+        <p class="mb-3 text-sm text-ink-gray-6">
+          {{ VERB[gewaehlterAntrag?.action] || gewaehlterAntrag?.action }} auf
+          <span class="font-mono">{{ gewaehlterAntrag?.target }}</span
+          >. Grund des Antrags: „{{ gewaehlterAntrag?.reason }}"
+        </p>
+        <p class="mb-3 text-sm text-ink-gray-6">
+          Zustand wechselt nach <strong>{{ ZUSTAND[gewaehlteAktion?.next_state] }}</strong
+          >.
+        </p>
+        <FormControl v-model="kommentar" label="Anmerkung (freiwillig)" type="text" />
+      </template>
+      <template #actions>
+        <Button variant="solid" :loading="anwenden.loading" @click="uebergangAusfuehren">
+          {{ gewaehlteAktion?.action }}
+        </Button>
+      </template>
+    </Dialog>
+
+    <!-- Auftrag starten -->
+    <Dialog v-model="auftragOffen" :options="{ title: 'Auftrag starten' }">
+      <template #body-content>
+        <p class="mb-3 text-sm text-ink-gray-6">{{ auftragText }}</p>
+        <FormControl v-model="grund" label="Grund (kommt ins Protokoll)" type="text" />
+      </template>
+      <template #actions>
+        <Button
+          variant="solid"
+          :disabled="!grund"
+          :loading="aktion.loading"
+          @click="auftragStarten"
+        >
+          Starten
+        </Button>
+      </template>
+    </Dialog>
+
+    <!-- Der Ablauf selbst -->
+    <Dialog v-model="ablaufOffen" :options="{ title: 'Ablauf „Sicherungsaktion“', size: '2xl' }">
+      <template #body-content>
+        <p class="mb-3 text-sm text-ink-gray-6">
+          Das ist keine fest verdrahtete Logik, sondern eine Tabelle. In Frappe stehen diese Zeilen
+          in <span class="font-mono">Workflow Transition</span> und lassen sich im laufenden System
+          ändern.
+        </p>
+        <DataTable
+          :columns="ablaufSpalten"
+          :rows="ablauf.data?.transitions || []"
+          :seiten-groesse="0"
+        >
+          <template #zelle-state="{ zeile }">
+            <StatusDot :level="zustandStufe(zeile.state)" :text="ZUSTAND[zeile.state]" klein />
+          </template>
+          <template #zelle-next_state="{ zeile }">
+            <StatusDot
+              :level="zustandStufe(zeile.next_state)"
+              :text="ZUSTAND[zeile.next_state]"
+              klein
+            />
+          </template>
+          <template #zelle-allowed="{ zeile }">
+            <Badge theme="gray">{{ zeile.allowed || 'alle' }}</Badge>
+          </template>
+          <template #zelle-allow_self_approval="{ zeile }">
+            <StatusDot
+              :level="zeile.allow_self_approval ? 'neutral' : 'ok'"
+              :text="zeile.allow_self_approval ? 'selbst möglich' : 'vier Augen'"
+              klein
+            />
+          </template>
+          <template #zelle-condition="{ zeile }">
+            <span class="text-sm text-ink-gray-6">{{ BEDINGUNG[zeile.condition] || '–' }}</span>
+          </template>
+        </DataTable>
+      </template>
+    </Dialog>
+  </div>
+</template>
+
+<script setup>
+import { computed, ref } from 'vue'
+import { Badge, Button, Dialog, FormControl, createResource, toast } from 'frappe-ui'
+import DataTable from '@/components/DataTable.vue'
+import StatusDot from '@/components/StatusDot.vue'
+import { useUiStore } from '@/stores/ui'
+import { fehlerText } from '@/viz'
+
+const emit = defineEmits(['neu-laden'])
+const ui = useUiStore()
+
+const VERB = {
+  backup_now: 'Jetzt sichern',
+  verify_now: 'Jetzt prüfen',
+  sync_now: 'Jetzt abgleichen',
+  export_now: 'Jetzt exportieren',
+  archive_now: 'Jetzt archivieren',
+  protect: 'Punkt schützen',
+}
+const ZUSTAND = {
+  draft: 'Entwurf',
+  requested: 'Beantragt',
+  approved: 'Genehmigt',
+  rejected: 'Abgelehnt',
+  running: 'Läuft',
+  done: 'Erledigt',
+  failed: 'Fehlgeschlagen',
+}
+const BEDINGUNG = {
+  harmlos: 'nur wenn gelesen oder abgelegt wird',
+  eingreifend: 'nur wenn eingegriffen wird',
+}
+const ART = {
+  backup: 'Sicherung',
+  verify: 'Prüfung',
+  sync: 'Abgleich',
+  archive: 'Archiv',
+  export: 'Export',
+}
+const ERGEBNIS = { ok: 'in Ordnung', warning: 'mit Warnung', failed: 'fehlgeschlagen' }
+
+const antraege = createResource({
+  url: 'netops.api.backup.backup_requests',
+  makeParams: () => ({ tenant: ui.mandant || null }),
+  auto: true,
+})
+const auftraege = createResource({
+  url: 'netops.api.backup.backup_jobs',
+  makeParams: () => ({ tenant: ui.mandant || null }),
+  auto: true,
+})
+const laeufe = createResource({
+  url: 'netops.api.backup.backup_runs',
+  makeParams: () => ({ tenant: ui.mandant || null }),
+  auto: true,
+})
+const ablauf = createResource({
+  url: 'netops.api.workflow.workflow_definition',
+  makeParams: () => ({ doctype: 'Backup Action Request' }),
+  auto: true,
+})
+const anwenden = createResource({ url: 'netops.api.workflow.workflow_apply' })
+const aktion = createResource({ url: 'netops.api.backup.backup_action' })
+
+const uebergangOffen = ref(false)
+const auftragOffen = ref(false)
+const ablaufOffen = ref(false)
+const gewaehlterAntrag = ref(null)
+const gewaehlteAktion = ref(null)
+const gewaehlterAuftrag = ref(null)
+const kommentar = ref('')
+const grund = ref('')
+const auftragText = ref('')
+/**
+ * Welche Übergänge offenstehen, entscheidet der Server und liefert es
+ * gleich mit. Eine Regel, die nur das Frontend kennt, gilt beim nächsten
+ * API-Aufruf nicht mehr - und ein Aufruf je Zeile wären bei zwanzig
+ * Anträgen einundzwanzig.
+ */
+const antragZeilen = computed(() => antraege.data?.rows || [])
+
+const antragSpalten = [
+  { key: 'action', label: 'Aktion', width: '220px' },
+  { key: 'workflow_state', label: 'Zustand', width: '160px' },
+  { key: 'reason', label: 'Grund' },
+  { key: 'requested_by', label: 'Beantragt von', width: '200px' },
+  { key: 'requested_on', label: 'Wann', width: '160px' },
+  { key: 'aktion', label: '', width: '260px' },
+]
+
+const auftragSpalten = [
+  { key: 'job_name', label: 'Auftrag', width: '260px' },
+  { key: 'target', label: 'Ziel', muted: true, width: '170px' },
+  { key: 'last_result', label: 'Letztes Ergebnis', width: '180px' },
+  { key: 'last_run_age_hours', label: 'Vor', align: 'right', numeric: true, width: '90px' },
+  { key: 'avg_minutes', label: 'Ø Dauer', align: 'right', numeric: true, width: '110px' },
+  { key: 'aktion', label: '', width: '140px' },
+]
+
+const laufSpalten = [
+  { key: 'started_at', label: 'Start', width: '170px' },
+  { key: 'job', label: 'Auftrag', width: '230px' },
+  { key: 'triggered_by', label: 'Ausgelöst', width: '250px' },
+  { key: 'result', label: 'Ergebnis', width: '160px' },
+  { key: 'duration_minutes', label: 'Dauer', align: 'right', width: '100px' },
+  { key: 'message', label: 'Meldung' },
+]
+
+const ablaufSpalten = [
+  { key: 'state', label: 'Von', width: '170px' },
+  { key: 'action', label: 'Übergang', width: '210px' },
+  { key: 'next_state', label: 'Nach', width: '170px' },
+  { key: 'allowed', label: 'Rolle', width: '200px' },
+  { key: 'allow_self_approval', label: 'Selbstgenehmigung', width: '170px' },
+  { key: 'condition', label: 'Bedingung' },
+]
+
+function zustandStufe(z) {
+  return (
+    {
+      failed: 'critical',
+      rejected: 'critical',
+      requested: 'warning',
+      running: 'neutral',
+      done: 'ok',
+      approved: 'ok',
+    }[z] || 'neutral'
+  )
+}
+
+function kurzName(mail) {
+  return String(mail || '')
+    .split('@')[0]
+    .replace('.', ' ')
+}
+
+function uebergangFragen(antrag, a) {
+  gewaehlterAntrag.value = antrag
+  gewaehlteAktion.value = a
+  kommentar.value = ''
+  uebergangOffen.value = true
+}
+
+async function uebergangAusfuehren() {
+  try {
+    const e = await anwenden.submit({
+      doctype: 'Backup Action Request',
+      name: gewaehlterAntrag.value.name,
+      action: gewaehlteAktion.value.action,
+      comment: kommentar.value || null,
+    })
+    toast.create({ message: 'Jetzt: ' + (ZUSTAND[e.state] || e.state), type: 'success' })
+    uebergangOffen.value = false
+    antraege.fetch()
+    emit('neu-laden')
+  } catch (f) {
+    toast.create({ message: fehlerText(f), type: 'error' })
+  }
+}
+
+function auftragFragen(a) {
+  gewaehlterAuftrag.value = a
+  auftragText.value = `${a.job_name} jetzt starten. Geplant läuft er ${a.schedule}, Dauer im Mittel ${a.avg_minutes} Minuten.`
+  grund.value = ''
+  auftragOffen.value = true
+}
+
+async function auftragStarten() {
+  try {
+    const a = gewaehlterAuftrag.value
+    const e = await aktion.submit({
+      action: a.actions.includes('backup_now') ? 'backup_now' : a.actions[0],
+      target: a.target,
+      job: a.name,
+      reason: grund.value,
+    })
+    toast.create({ message: e.note || 'Angestoßen', type: 'success' })
+    auftragOffen.value = false
+    auftraege.fetch()
+    laeufe.fetch()
+    emit('neu-laden')
+  } catch (f) {
+    toast.create({ message: fehlerText(f), type: 'error' })
+  }
+}
+</script>

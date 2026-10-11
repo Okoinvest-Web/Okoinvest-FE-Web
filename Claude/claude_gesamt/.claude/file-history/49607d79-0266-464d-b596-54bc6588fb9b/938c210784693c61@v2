@@ -1,0 +1,37 @@
+/**
+ * Misst, wie lange die teuren Methoden wirklich brauchen.
+ * Direkter Import umgeht die kuenstliche Latenz des Mock-Servers.
+ */
+const store = new Map()
+globalThis.localStorage = {
+  getItem: (k) => (store.has(k) ? store.get(k) : null),
+  setItem: (k, v) => store.set(k, String(v)),
+  removeItem: (k) => store.delete(k),
+}
+globalThis.window = globalThis
+
+const BASIS = 'file:///C:/Users/SALEADMIN/Documents/Netzwerk-APP/src/api/mock/'
+
+await import(BASIS + 'server.js')
+const dienste = await import(BASIS + 'methods/services.js')
+const screens = await import(BASIS + 'methods/screens.js')
+const dcim = await import(BASIS + 'methods/dcim.js')
+const viz = await import(BASIS + 'methods/viz.js')
+
+function miss(name, fn, runden = 30) {
+  fn() // aufwaermen
+  const start = performance.now()
+  for (let i = 0; i < runden; i++) fn()
+  const dauer = (performance.now() - start) / runden
+  console.log(name.padEnd(44), dauer.toFixed(2).padStart(7) + ' ms')
+  return dauer
+}
+
+miss('services.service_list', () => dienste.service_list({}))
+miss('services.impact_analysis (NAS-TN-01)', () =>
+  dienste.impact_analysis({ object_type: 'Network Device', object_name: 'NAS-TN-01' }),
+)
+miss('screens.screen_data (screen1, 4 Kacheln)', () => screens.screen_data({ screen: 'screen1' }))
+miss('screens.screen_data (screen7, 2 Kacheln)', () => screens.screen_data({ screen: 'screen7' }))
+miss('dcim.device_detail', () => dcim.device_detail({ name: 'SW-CORE-01' }))
+miss('viz.topology', () => viz.topology({}))

@@ -1,0 +1,215 @@
+/**
+ * Sonnenstand.
+ *
+ * Klingt nach Beiwerk, ist aber die Voraussetzung für brauchbare
+ * Alarmierung: Ohne Sonnenstand meldet jede Ertragsregel jede Nacht
+ * "kein Ertrag". Nach der dritten Nacht liest niemand mehr die
+ * Meldungen - und dann fällt auch der echte Ausfall nicht mehr auf.
+ *
+ * Gerechnet wird nach dem Verfahren der NOAA (Solar Position
+ * Algorithm, vereinfachte Fassung). Die Genauigkeit liegt bei etwa
+ * einer Minute; für die Betriebsführung ist das mehr als ausreichend.
+ *
+ * Alle Winkel in Grad, Zeiten in UTC.
+ */
+
+const GRAD = Math.PI / 180;
+
+/** Julianisches Datum. */
+function julianischerTag(zeitpunkt: Date): number {
+  return zeitpunkt.getTime() / 86400000 + 2440587.5;
+}
+
+/** Julianisches Jahrhundert seit J2000.0. */
+function jahrhundert(jd: number): number {
+  return (jd - 2451545) / 36525;
+}
+
+/**
+ * Deklination der Sonne und Zeitgleichung.
+ *
+ * Die Deklination bestimmt, wie hoch die Sonne am Ort überhaupt steigen
+ * kann; die Zeitgleichung korrigiert die Abweichung zwischen wahrer und
+ * mittlerer Sonnenzeit - im November bis zu 16 Minuten.
+ */
+function sonnenParameter(jd: number): {
+  deklination: number;
+  zeitgleichung: number;
+} {
+  const t = jahrhundert(jd);
+
+  // Mittlere Länge und mittlere Anomalie.
+  const mittlereLaenge = (280.46646 + t * (36000.76983 + t * 0.0003032)) % 360;
+  const anomalie = 357.52911 + t * (35999.05029 - 0.0001537 * t);
+
+  // Mittelpunktsgleichung.
+  const mitte =
+    Math.sin(anomalie * GRAD) * (1.914602 - t * (0.004817 + 0.000014 * t)) +
+    Math.sin(2 * anomalie * GRAD) * (0.019993 - 0.000101 * t) +
+    Math.sin(3 * anomalie * GRAD) * 0.000289;
+
+  const wahreLaenge = mittlereLaenge + mitte;
+
+  // Scheinbare Länge, um die Nutation bereinigt.
+  const omega = 125.04 - 1934.136 * t;
+  const scheinbar = wahreLaenge - 0.00569 - 0.00478 * Math.sin(omega * GRAD);
+
+  // Schiefe der Ekliptik.
+  const schiefeMittel =
+    23 +
+    (26 + (21.448 - t * (46.815 + t * (0.00059 - t * 0.001813))) / 60) / 60;
+  const schiefe = schiefeMittel + 0.00256 * Math.cos(omega * GRAD);
+
+  const deklination =
+    Math.asin(Math.sin(schiefe * GRAD) * Math.sin(scheinbar * GRAD)) / GRAD;
+
+  // Zeitgleichung in Minuten.
+  const y = Math.tan((schiefe / 2) * GRAD) ** 2;
+  const exzentrizitaet = 0.016708634 - t * (0.000042037 + 0.0000001267 * t);
+
+  const zeitgleichung =
+    4 *
+    (y * Math.sin(2 * mittlereLaenge * GRAD) -
+      2 * exzentrizitaet * Math.sin(anomalie * GRAD) +
+      4 *
+        exzentrizitaet *
+        y *
+        Math.sin(anomalie * GRAD) *
+        Math.cos(2 * mittlereLaenge * GRAD) -
+      0.5 * y * y * Math.sin(4 * mittlereLaenge * GRAD) -
+      1.25 * exzentrizitaet * exzentrizitaet * Math.sin(2 * anomalie * GRAD)) /
+    GRAD;
+
+  return { deklination, zeitgleichung };
+}
+
+export interface SonnenPosition {
+  /** Höhe über dem Horizont in Grad; negativ bedeutet unter dem Horizont. */
+  hoehe: number;
+  /** Azimut in Grad, von Nord über Ost gezählt. */
+  azimut: number;
+}
+
+/** Position der Sonne zu einem Zeitpunkt an einem Ort. */
+export function sonnenposition(
+  zeitpunkt: Date,
+  breite: number,
+  laenge: number,
+): SonnenPosition {
+  const jd = julianischerTag(zeitpunkt);
+  const { deklination, zeitgleichung } = sonnenParameter(jd);
+
+  // Wahre Ortszeit in Minuten seit Mitternacht UTC.
+  const minutenUtc =
+    zeitpunkt.getUTCHours() * 60 +
+    zeitpunkt.getUTCMinutes() +
+    zeitpunkt.getUTCSeconds() / 60;
+
+  const wahreZeit = minutenUtc + zeitgleichung + 4 * laenge;
+  // Stundenwinkel: 0 Grad zum wahren Mittag, 15 Grad je Stunde.
+  const stundenwinkel = wahreZeit / 4 - 180;
+
+  const sinHoehe =
+    Math.sin(breite * GRAD) * Math.sin(deklination * GRAD) +
+    Math.cos(breite * GRAD) *
+      Math.cos(deklination * GRAD) *
+      Math.cos(stundenwinkel * GRAD);
+
+  const hoehe = Math.asin(Math.max(-1, Math.min(1, sinHoehe))) / GRAD;
+
+  const cosAzimut =
+    (Math.sin(deklination * GRAD) - Math.sin(hoehe * GRAD) * Math.sin(breite * GRAD)) /
+    (Math.cos(hoehe * GRAD) * Math.cos(breite * GRAD));
+
+  let azimut = Math.acos(Math.max(-1, Math.min(1, cosAzimut))) / GRAD;
+  if (stundenwinkel > 0) azimut = 360 - azimut;
+
+  return { hoehe, azimut };
+}
+
+/**
+ * Steht die Sonne über dem Horizont?
+ *
+ * `mindesthoehe` erlaubt es, die Dämmerung auszunehmen. Bei einer
+ * Sonnenhöhe unter etwa drei Grad liefert eine Anlage praktisch nichts;
+ * eine Ertragsregel dort auszuwerten, erzeugt nur Fehlmeldungen.
+ */
+export function istTag(
+  zeitpunkt: Date,
+  breite: number,
+  laenge: number,
+  mindesthoehe = 3,
+): boolean {
+  return sonnenposition(zeitpunkt, breite, laenge).hoehe >= mindesthoehe;
+}
+
+export interface Tageslicht {
+  aufgang: Date | null;
+  untergang: Date | null;
+  /** Dauer über der Mindesthöhe, in Stunden. */
+  stunden: number;
+}
+
+/**
+ * Sonnenauf- und -untergang eines Kalendertags.
+ *
+ * Ermittelt durch Abtasten in Minutenschritten statt durch Umkehrung
+ * der Positionsformel. Das ist unempfindlich gegen die Sonderfälle in
+ * hohen Breiten - Polartag und Polarnacht ergeben schlicht `null` -
+ * und schnell genug, weil es je Tag und Anlage einmal anfällt.
+ */
+export function tageslicht(
+  tag: Date,
+  breite: number,
+  laenge: number,
+  mindesthoehe = 3,
+): Tageslicht {
+  const beginn = new Date(tag);
+  beginn.setHours(0, 0, 0, 0);
+
+  let aufgang: Date | null = null;
+  let untergang: Date | null = null;
+  let minutenUeber = 0;
+  let vorherUeber = false;
+
+  for (let minute = 0; minute < 24 * 60; minute++) {
+    const zeitpunkt = new Date(beginn.getTime() + minute * 60000);
+    const ueber =
+      sonnenposition(zeitpunkt, breite, laenge).hoehe >= mindesthoehe;
+
+    if (ueber) minutenUeber++;
+    if (ueber && !vorherUeber && !aufgang) aufgang = zeitpunkt;
+    if (!ueber && vorherUeber) untergang = zeitpunkt;
+
+    vorherUeber = ueber;
+  }
+
+  return { aufgang, untergang, stunden: minutenUeber / 60 };
+}
+
+/**
+ * Einfallswinkel auf eine geneigte Fläche.
+ *
+ * Wird gebraucht, um die Einstrahlung in der Modulebene aus der
+ * Horizontaleinstrahlung zu schätzen - und um zu beurteilen, ob eine
+ * Ost-West-Anlage zur Tageszeit überhaupt Leistung bringen kann.
+ *
+ * Rückgabe ist der Kosinus des Einfallswinkels: 1 bedeutet senkrechter
+ * Einfall, 0 oder weniger bedeutet, dass die Fläche im Schatten liegt.
+ */
+export function einfallsfaktor(
+  position: SonnenPosition,
+  neigung: number,
+  ausrichtung: number,
+): number {
+  const hoehe = position.hoehe * GRAD;
+  const azimut = position.azimut * GRAD;
+  const n = neigung * GRAD;
+  const a = ausrichtung * GRAD;
+
+  const faktor =
+    Math.sin(hoehe) * Math.cos(n) +
+    Math.cos(hoehe) * Math.sin(n) * Math.cos(azimut - a);
+
+  return Math.max(0, faktor);
+}

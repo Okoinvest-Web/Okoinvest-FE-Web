@@ -1,0 +1,175 @@
+<template>
+  <div class="p-6">
+    <div class="mb-3 flex flex-wrap items-end justify-between gap-3">
+      <div class="max-w-3xl">
+        <h2 class="text-base font-semibold text-ink-gray-8">Meldungen der Systeme</h2>
+        <p class="text-sm text-ink-gray-6">
+          Zwei Quellen in einer Liste. Das Aufgabenprotokoll sagt, <em>dass</em> etwas schiefging;
+          das Syslog daneben oft, <em>warum</em>. Wer dafür zwei Fenster aufmachen muss, liest das
+          zweite nicht.
+        </p>
+      </div>
+      <div class="flex flex-wrap items-center gap-2">
+        <FormControl v-model="quelle" type="select" :options="quellen" />
+        <FormControl v-model="grad" type="select" :options="grade" />
+        <FormControl v-model="zeitraum" type="select" :options="zeitraeume" />
+        <FormControl v-model="suche" type="text" placeholder="Suchen …" />
+      </div>
+    </div>
+
+    <div v-if="logs.data" class="mb-4 flex flex-wrap gap-x-6 gap-y-2 text-sm">
+      <StatusDot
+        :level="logs.data.summary.errors ? 'critical' : 'ok'"
+        :text="logs.data.summary.errors + ' Fehler'"
+        klein
+      />
+      <StatusDot
+        :level="logs.data.summary.warnings ? 'warning' : 'ok'"
+        :text="logs.data.summary.warnings + ' Warnungen'"
+        klein
+      />
+      <span class="text-ink-gray-6">
+        {{ logs.data.summary.from_api }} aus Aufgabenprotokollen ·
+        {{ logs.data.summary.from_syslog }} aus Syslog
+      </span>
+      <span v-if="logs.data.summary.hosts.length" class="text-ink-gray-6">
+        Rechner: {{ logs.data.summary.hosts.join(', ') }}
+      </span>
+    </div>
+
+    <DataTable
+      tabellen-id="BackupLogs"
+      :columns="spalten"
+      :rows="logs.data?.rows || []"
+      :loading="logs.loading"
+      export-name="meldungen"
+      empty-text="Keine Meldung im gewählten Zeitraum."
+      :on-row-click="(z) => umfeldZeigen(z)"
+    >
+      <template #zelle-logged_at="{ zeile }">
+        <span class="tabular-nums">{{ String(zeile.logged_at).slice(0, 16) }}</span>
+        <span class="block text-sm text-ink-gray-5">vor {{ zeile.age_hours }} h</span>
+      </template>
+      <template #zelle-severity_label="{ zeile }">
+        <StatusDot :level="zeile.level" :text="zeile.severity_label" klein />
+      </template>
+      <template #zelle-source_label="{ zeile }">
+        <Badge :theme="zeile.source === 'syslog' ? 'orange' : 'gray'">
+          {{ zeile.source_label }}
+        </Badge>
+      </template>
+      <template #zelle-host="{ zeile }">
+        <span class="font-mono text-sm text-ink-gray-8">{{ zeile.host }}</span>
+        <span v-if="zeile.program" class="block font-mono text-sm text-ink-gray-5">
+          {{ zeile.program }}
+        </span>
+      </template>
+      <template #zelle-message="{ zeile }">
+        <span class="font-mono text-sm text-ink-gray-9">{{ zeile.message }}</span>
+        <span v-if="zeile.task_ref" class="block font-mono text-xs text-ink-gray-4">
+          {{ zeile.task_ref }}
+        </span>
+      </template>
+    </DataTable>
+
+    <!-- Was war sonst noch los in diesen Minuten? -->
+    <Dialog v-model="umfeldOffen" :options="{ title: 'Umfeld dieser Meldung', size: '3xl' }">
+      <template #body-content>
+        <p class="mb-3 text-sm text-ink-gray-6">
+          Alles aus beiden Quellen im Umkreis von 30 Minuten. Der erklärende Satz steht selten im
+          selben Protokoll wie der Fehler.
+        </p>
+        <ol class="space-y-2">
+          <li
+            v-for="z in umfeld.data?.rows || []"
+            :key="z.name"
+            class="rounded border p-2"
+            :class="
+              z.name === gewaehlt?.name
+                ? 'border-outline-gray-4 bg-surface-gray-1'
+                : 'border-outline-gray-2'
+            "
+          >
+            <div class="flex flex-wrap items-center gap-2">
+              <StatusDot :level="z.level" :text="z.severity_label" klein />
+              <span class="tabular-nums text-sm text-ink-gray-6">
+                {{ String(z.logged_at).slice(11, 16) }}
+              </span>
+              <span class="font-mono text-sm text-ink-gray-5">{{ z.host }} · {{ z.program }}</span>
+              <Badge :theme="z.source === 'syslog' ? 'orange' : 'gray'">
+                {{ z.source_label }}
+              </Badge>
+            </div>
+            <p class="mt-1 font-mono text-sm text-ink-gray-9">{{ z.message }}</p>
+          </li>
+        </ol>
+      </template>
+    </Dialog>
+  </div>
+</template>
+
+<script setup>
+import { ref, watch } from 'vue'
+import { Badge, Dialog, FormControl, createResource } from 'frappe-ui'
+import DataTable from '@/components/DataTable.vue'
+import StatusDot from '@/components/StatusDot.vue'
+import { useRoute } from 'vue-router'
+
+const route = useRoute()
+const quelle = ref('')
+const grad = ref('')
+const zeitraum = ref('168')
+const suche = ref('')
+const umfeldOffen = ref(false)
+const gewaehlt = ref(null)
+
+const quellen = [
+  { label: 'Beide Quellen', value: '' },
+  { label: 'Aufgabenprotokoll', value: 'api' },
+  { label: 'Syslog', value: 'syslog' },
+]
+// RFC 5424: kleiner ist schlimmer.
+const grade = [
+  { label: 'Alle Schweregrade', value: '' },
+  { label: 'Nur Fehler und schlimmer', value: '3' },
+  { label: 'Fehler und Warnungen', value: '4' },
+  { label: 'Ab Hinweis', value: '5' },
+]
+const zeitraeume = [
+  { label: 'Letzte 24 Stunden', value: '24' },
+  { label: 'Letzte 7 Tage', value: '168' },
+  { label: 'Letzte 30 Tage', value: '720' },
+  { label: 'Alles', value: '' },
+]
+
+const logs = createResource({
+  url: 'netops.api.backup.backup_logs',
+  makeParams: () => ({
+    connector: route.query.connector || null,
+    target: route.query.target || null,
+    source: quelle.value || null,
+    max_severity: grad.value || null,
+    since_hours: zeitraum.value || null,
+    search: suche.value || null,
+  }),
+  auto: true,
+})
+
+const umfeld = createResource({ url: 'netops.api.backup.backup_log_context' })
+
+watch([quelle, grad, zeitraum, suche, () => route.query.connector], () => logs.fetch())
+
+const spalten = [
+  { key: 'logged_at', label: 'Zeitpunkt', width: '160px' },
+  { key: 'severity_label', label: 'Grad', width: '130px' },
+  { key: 'source_label', label: 'Quelle', width: '170px' },
+  { key: 'host', label: 'Rechner', width: '200px' },
+  { key: 'message', label: 'Meldung' },
+]
+
+function umfeldZeigen(zeile) {
+  gewaehlt.value = zeile
+  umfeld.fetch({ at: zeile.logged_at, window_minutes: 30 })
+  umfeldOffen.value = true
+}
+</script>

@@ -1,0 +1,229 @@
+/**
+ * Aus einem Abrechnungslauf wird eine Messdatenmeldung.
+ *
+ * Die Aufteilung liegt viertelstundenscharf je Zählpunkt vor. Ein
+ * Marktpartner - Lieferant, Bilanzgruppenverantwortlicher, die
+ * Buchhaltung des Kunden - will dieselben Zahlen in dem Format, das
+ * seine Systeme lesen. Diese Datei ist die Übersetzung dazwischen und
+ * bewusst frei von Datenbank und Netz: Sie bekommt Zeilen und gibt
+ * Reihen zurück, und genau deshalb lässt sie sich prüfen.
+ *
+ * Zwei Dinge entscheiden über die Brauchbarkeit der Meldung:
+ *
+ * 1. *Die Richtung.* Bezug und Einspeisung tragen verschiedene
+ *    OBIS-Kennzahlen. Wer beides unter derselben Kennzahl meldet,
+ *    liefert dem Empfänger eine Bilanz, die doppelt so groß ist wie
+ *    die Wirklichkeit - und niemandem fällt es sofort auf.
+ * 2. *Die Vollständigkeit.* Eine Meldung mit Lücken wird angenommen
+ *    und dann anders verrechnet, als sie gemeint war. Deshalb wird die
+ *    Zahl der Intervalle gegen den Zeitraum gerechnet, bevor etwas das
+ *    Haus verlässt.
+ */
+
+import { ausMessStempel } from "../datum.ts";
+
+import type { Messwert, Zaehlpunktreihe } from "./mscons.ts";
+
+/** Wirkenergie Bezug, Viertelstundenwert. */
+export const OBIS_BEZUG = "1-1:1.29.0";
+
+/** Wirkenergie Einspeisung, Viertelstundenwert. */
+export const OBIS_EINSPEISUNG = "1-1:2.29.0";
+
+/** Länge eines Messintervalls in Minuten. */
+export const INTERVALL_MINUTEN = 15;
+
+/**
+ * Wie viele Nachkommastellen eine Menge trägt.
+ *
+ * Drei Stellen sind eine Wattstunde. Feiner zu melden täuscht eine
+ * Genauigkeit vor, die kein Zähler hat; gröber zu melden summiert
+ * sich bei 35.000 Intervallen im Jahr zu einem sichtbaren Fehlbetrag.
+ */
+export const NACHKOMMASTELLEN = 3;
+
+/** Eine Zeile der Aufteilung, wie sie aus der Ablage kommt. */
+export interface Aufteilungszeile {
+  /** 33-stellige Zählpunktbezeichnung. */
+  zaehlpunkt: string;
+  /** Beginn der Viertelstunde als Messstempel in UTC. */
+  zeitpunkt: string;
+  /** Aus der Gemeinschaft bezogen. */
+  bezogenKwh: number;
+  /** In die Gemeinschaft geliefert. */
+  geliefertKwh: number;
+  /**
+   * Güte des zugrunde liegenden Messwerts. Ein Ersatzwert des
+   * Netzbetreibers kann berichtigt werden und wird deshalb anders
+   * gekennzeichnet.
+   */
+  qualitaet?: string;
+}
+
+/** Das Ergebnis der Zusammenstellung, samt allem, was auffiel. */
+export interface Meldungsbestand {
+  reihen: Zaehlpunktreihe[];
+  /** Zahl der Messwerte über alle Reihen. */
+  werte: number;
+  /** Summe je Richtung, zum Abgleich mit der Abrechnung. */
+  summeBezugKwh: number;
+  summeEinspeisungKwh: number;
+  /** Was der Meldung fehlt oder an ihr auffällt. */
+  beanstandungen: string[];
+}
+
+function runde(wert: number): number {
+  const faktor = 10 ** NACHKOMMASTELLEN;
+  return Math.round(wert * faktor) / faktor;
+}
+
+/**
+ * Erwartete Zahl der Intervalle in einem Zeitraum.
+ *
+ * Gerechnet wird auf der UTC-Achse. Wäre hier Ortszeit im Spiel,
+ * hätte der Oktobertag mit der doppelten Stunde 100 Intervalle und
+ * der Märztag 92 - beide Zahlen sind richtig, und beide bekommt man
+ * nur, wenn man nicht in Ortszeit rechnet.
+ */
+export function erwarteteIntervalle(von: Date, bis: Date): number {
+  const spanne = bis.getTime() - von.getTime();
+  if (!Number.isFinite(spanne) || spanne <= 0) return 0;
+  return Math.round(spanne / (INTERVALL_MINUTEN * 60_000));
+}
+
+function messwert(zeile: Aufteilungszeile, menge: number): Messwert {
+  const von = ausMessStempel(zeile.zeitpunkt);
+  return {
+    von,
+    bis: new Date(von.getTime() + INTERVALL_MINUTEN * 60_000),
+    wertKwh: runde(menge),
+    gemessen: (zeile.qualitaet ?? "Gemessen") === "Gemessen",
+  };
+}
+
+/**
+ * Stellt die Reihen einer Meldung zusammen.
+ *
+ * Je Zählpunkt entstehen bis zu zwei Reihen - eine je Richtung -, und
+ * zwar nur dort, wo tatsächlich etwas geflossen ist. Ein Verbraucher
+ * bekommt keine leere Einspeisungsreihe angehängt; eine Reihe ohne
+ * Werte ist für den Empfänger nicht "null", sondern unklar.
+ */
+export function stelleMeldungZusammen(
+  zeilen: Aufteilungszeile[],
+  zeitraum: { von: Date; bis: Date },
+): Meldungsbestand {
+  const beanstandungen: string[] = [];
+
+  // Sortiert nach Zählpunkt und Zeit. EDIFACT schreibt keine
+  // Reihenfolge vor, aber ein Empfänger, der eine Datei von Hand
+  // ansieht, braucht sie - und wir selbst im Streitfall auch.
+  const geordnet = [...zeilen].sort(
+    (a, b) =>
+      a.zaehlpunkt.localeCompare(b.zaehlpunkt) ||
+      a.zeitpunkt.localeCompare(b.zeitpunkt),
+  );
+
+  const bezug = new Map<string, Messwert[]>();
+  const einspeisung = new Map<string, Messwert[]>();
+  const gesehen = new Map<string, Set<string>>();
+
+  let summeBezugKwh = 0;
+  let summeEinspeisungKwh = 0;
+
+  for (const zeile of geordnet) {
+    let zeitpunkte = gesehen.get(zeile.zaehlpunkt);
+    if (!zeitpunkte) {
+      zeitpunkte = new Set<string>();
+      gesehen.set(zeile.zaehlpunkt, zeitpunkte);
+    }
+    if (zeitpunkte.has(zeile.zeitpunkt)) {
+      beanstandungen.push(
+        `Zu ${zeile.zaehlpunkt} liegt der Zeitpunkt ${zeile.zeitpunkt} doppelt vor.`,
+      );
+      continue;
+    }
+    zeitpunkte.add(zeile.zeitpunkt);
+
+    if (zeile.bezogenKwh > 0) {
+      const werte = bezug.get(zeile.zaehlpunkt) ?? [];
+      const wert = messwert(zeile, zeile.bezogenKwh);
+      werte.push(wert);
+      bezug.set(zeile.zaehlpunkt, werte);
+      summeBezugKwh += wert.wertKwh;
+    }
+
+    if (zeile.geliefertKwh > 0) {
+      const werte = einspeisung.get(zeile.zaehlpunkt) ?? [];
+      const wert = messwert(zeile, zeile.geliefertKwh);
+      werte.push(wert);
+      einspeisung.set(zeile.zaehlpunkt, werte);
+      summeEinspeisungKwh += wert.wertKwh;
+    }
+  }
+
+  const reihen: Zaehlpunktreihe[] = [];
+
+  for (const zaehlpunkt of [...gesehen.keys()].sort()) {
+    const b = bezug.get(zaehlpunkt);
+    if (b && b.length > 0) {
+      reihen.push({ zaehlpunkt, obis: OBIS_BEZUG, werte: b });
+    }
+    const e = einspeisung.get(zaehlpunkt);
+    if (e && e.length > 0) {
+      reihen.push({ zaehlpunkt, obis: OBIS_EINSPEISUNG, werte: e });
+    }
+  }
+
+  // Vollständigkeit: je Zählpunkt gegen den Zeitraum gerechnet.
+  const erwartet = erwarteteIntervalle(zeitraum.von, zeitraum.bis);
+  if (erwartet > 0) {
+    for (const zaehlpunkt of [...gesehen.keys()].sort()) {
+      const zeitpunkte = gesehen.get(zaehlpunkt)!;
+      if (zeitpunkte.size < erwartet) {
+        beanstandungen.push(
+          `Zu ${zaehlpunkt} fehlen ${erwartet - zeitpunkte.size} von ${erwartet} Intervallen.`,
+        );
+      }
+    }
+  }
+
+  if (reihen.length === 0) {
+    beanstandungen.push("Im Zeitraum wurde nichts aufgeteilt.");
+  }
+
+  return {
+    reihen,
+    werte: reihen.reduce((summe, r) => summe + r.werte.length, 0),
+    summeBezugKwh: runde(summeBezugKwh),
+    summeEinspeisungKwh: runde(summeEinspeisungKwh),
+    beanstandungen,
+  };
+}
+
+/**
+ * Übertragungsreferenz für UNB.
+ *
+ * Höchstens 14 Stellen, und sie muss beim Empfänger eindeutig sein:
+ * Eine zweimal verwendete Referenz gilt als Wiederholung derselben
+ * Übertragung und wird verworfen. Deshalb steckt der Zeitpunkt der
+ * Erzeugung darin und nicht nur die Kennung des Laufs.
+ */
+export function uebertragungsreferenz(laufId: string, erzeugtAm: Date): string {
+  const stempel = erzeugtAm
+    .toISOString()
+    .replace(/[^0-9]/g, "")
+    .slice(2, 12);
+  const kern = laufId
+    .replace(/[^0-9A-Za-z]/g, "")
+    .slice(-4)
+    .toUpperCase();
+  return `${kern}${stempel}`.slice(0, 14);
+}
+
+/** Dateiname, unter dem die Meldung abgelegt oder versandt wird. */
+export function meldungsDateiname(laufId: string, erzeugtAm: Date): string {
+  const stempel = erzeugtAm.toISOString().replace(/[^0-9]/g, "").slice(0, 12);
+  const kern = laufId.replace(/[^0-9A-Za-z-]/g, "");
+  return `MSCONS_${kern}_${stempel}.edi`;
+}

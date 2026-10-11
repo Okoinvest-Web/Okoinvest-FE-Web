@@ -1,0 +1,442 @@
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+
+import { alsDatum, alsKomma } from "../zahl.ts";
+import {
+  alsUhrzeit,
+  erwarteterPunkt,
+  steigung,
+  untersucheTag,
+  untersucheVerlauf,
+  type Anlagenkontext,
+  type Tagespunkt,
+} from "./befund.ts";
+
+/**
+ * Geprüft wird nicht, ob die Anlage zu wenig liefert - das ist
+ * leicht. Geprüft wird, ob die genannte Ursache stimmt. Eine falsch
+ * benannte Ursache ist schlimmer als gar keine: Sie schickt jemanden
+ * aufs Dach, der den Netzbetreiber hätte anrufen sollen.
+ */
+
+/*
+ * Eine Anlage mit Gleichstromueberbau: 110 kWp auf 80 kW
+ * Wechselrichterleistung, ein Verhaeltnis von 1,4. Im Sueden
+ * Oesterreichs waere das viel, auf einem Ost-West-Dach ist es die
+ * uebliche Auslegung - und nur mit Ueberbau gibt es ueberhaupt
+ * Clipping zu erkennen.
+ */
+const ANLAGE: Anlagenkontext = {
+  kwp: 110,
+  wechselrichterKw: 80,
+  systemwirkungsgrad: 0.84,
+  intervallMinuten: 15,
+};
+
+/** Dieselbe Anlage ohne Ueberbau - sie deckelt nie. */
+const OHNE_UEBERBAU: Anlagenkontext = {
+  ...ANLAGE,
+  wechselrichterKw: ANLAGE.kwp,
+};
+
+/**
+ * Ein sauberer Sonnentag.
+ *
+ * Die Einstrahlung folgt einer Glockenkurve von 6 bis 20 Uhr, die
+ * Modultemperatur steigt mit ihr. Die Leistung ist genau das, was der
+ * Erwartungswert hergibt - eine Anlage ohne jeden Befund.
+ */
+function sonnentag(
+  kontext: Anlagenkontext = ANLAGE,
+  hoechsteEinstrahlung = 900,
+): Tagespunkt[] {
+  // Eine vereinbarte Einspeisegrenze deckelt vor dem Zaehler, also
+  // auch in den Messwerten.
+  const grenze = kontext.einspeisegrenzeKw ?? Infinity;
+
+  const punkte: Tagespunkt[] = [];
+
+  for (let minute = 6 * 60; minute <= 20 * 60; minute += 15) {
+    const anteil = Math.max(
+      0,
+      Math.sin(((minute - 6 * 60) / (14 * 60)) * Math.PI),
+    );
+    const einstrahlung = hoechsteEinstrahlung * anteil;
+    const modultemperatur = 20 + 20 * anteil;
+
+    const punkt: Tagespunkt = {
+      minute,
+      einstrahlung,
+      modultemperatur,
+      leistungKw: 0,
+    };
+    punkt.leistungKw = Math.min(erwarteterPunkt(punkt, kontext).acKw, grenze);
+    punkte.push(punkt);
+  }
+
+  return punkte;
+}
+
+function finde(befunde: ReturnType<typeof untersucheTag>, art: string) {
+  return befunde.find((b) => b.art === art);
+}
+
+describe("Erwartungswert", () => {
+  it("ist bei Nacht null", () => {
+    const p = erwarteterPunkt(
+      { minute: 0, einstrahlung: 0, modultemperatur: 10, leistungKw: 0 },
+      ANLAGE,
+    );
+
+    assert.equal(p.acKw, 0);
+  });
+
+  it("deckelt den Wechselstrom auf die Nennleistung", () => {
+    const p = erwarteterPunkt(
+      { minute: 720, einstrahlung: 1000, modultemperatur: 25, leistungKw: 0 },
+      ANLAGE,
+    );
+
+    assert.ok(p.dcKw > 80);
+    assert.equal(p.acKw, 80);
+  });
+
+  it("zieht die Temperatur ab", () => {
+    const kalt = erwarteterPunkt(
+      { minute: 720, einstrahlung: 500, modultemperatur: 25, leistungKw: 0 },
+      ANLAGE,
+    );
+    const warm = erwarteterPunkt(
+      { minute: 720, einstrahlung: 500, modultemperatur: 55, leistungKw: 0 },
+      ANLAGE,
+    );
+
+    // 30 Grad über Standard, 0,35 Prozent je Grad: gut 10 Prozent.
+    assert.ok(warm.dcKw < kalt.dcKw);
+    assert.ok(Math.abs(warm.dcKw / kalt.dcKw - 0.895) < 0.01);
+  });
+});
+
+describe("Ein Tag ohne Befund", () => {
+  it("meldet keinen Mangel", () => {
+    const befunde = untersucheTag(
+      sonnentag(OHNE_UEBERBAU, 700),
+      OHNE_UEBERBAU,
+    );
+
+    assert.ok(!befunde.some((b) => b.mangel), JSON.stringify(befunde));
+  });
+
+  it("sagt das auch ausdrücklich", () => {
+    const befunde = untersucheTag(
+      sonnentag(OHNE_UEBERBAU, 700),
+      OHNE_UEBERBAU,
+    );
+
+    assert.ok(befunde.length >= 1);
+  });
+});
+
+describe("Messung vor Anlage", () => {
+  it("meldet einen Sensorfehler, wenn Leistung ohne Einstrahlung kommt", () => {
+    const punkte = sonnentag();
+    // Der Sensor faellt mittags aus, die Anlage laeuft weiter.
+    for (const p of punkte) {
+      if (p.minute > 11 * 60 && p.minute < 13 * 60) p.einstrahlung = 0;
+    }
+
+    const befunde = untersucheTag(punkte, ANLAGE);
+
+    assert.equal(befunde[0]?.art, "sensorfehler");
+  });
+
+  it("hält danach den Mund über die Anlage", () => {
+    // Ohne verlaessliche Einstrahlung ist jede weitere Aussage geraten.
+    const punkte = sonnentag();
+    for (const p of punkte) {
+      if (p.minute > 11 * 60 && p.minute < 13 * 60) p.einstrahlung = 0;
+    }
+
+    const befunde = untersucheTag(punkte, ANLAGE);
+
+    assert.equal(befunde.length, 1);
+  });
+});
+
+describe("Stillstand", () => {
+  it("wird als Ausfall gemeldet, nicht als Minderertrag", () => {
+    const punkte = sonnentag();
+    for (const p of punkte) {
+      if (p.minute >= 10 * 60 && p.minute <= 14 * 60) p.leistungKw = 0;
+    }
+
+    const befunde = untersucheTag(punkte, ANLAGE);
+    const ausfall = finde(befunde, "ausfall");
+
+    assert.ok(ausfall);
+    assert.ok(ausfall.mangel);
+    assert.ok(ausfall.verlustKwh > 100);
+  });
+});
+
+describe("Deckelung", () => {
+  it("erkennt die Nennleistung des Wechselrichters", () => {
+    const befunde = untersucheTag(sonnentag(ANLAGE, 1000), ANLAGE);
+    const clip = finde(befunde, "wechselrichter_abregelung");
+
+    assert.ok(clip);
+    assert.ok(clip.verlustKwh > 0);
+  });
+
+  it("nennt das keinen Mangel", () => {
+    // Gleichstromueberbau ist Auslegung. Wer ihn als Fehler meldet,
+    // erzeugt eine Meldung, die niemand je abarbeiten kann.
+    const befunde = untersucheTag(sonnentag(ANLAGE, 1000), ANLAGE);
+
+    assert.equal(finde(befunde, "wechselrichter_abregelung")?.mangel, false);
+  });
+
+  it("unterscheidet die netzseitige Begrenzung davon", () => {
+    const mitGrenze: Anlagenkontext = {
+      ...ANLAGE,
+      einspeisegrenzeKw: 0.7 * ANLAGE.kwp,
+    };
+    const punkte = sonnentag(mitGrenze, 1000);
+
+    const befunde = untersucheTag(punkte, mitGrenze);
+
+    assert.ok(finde(befunde, "netz_abregelung"));
+    assert.ok(!finde(befunde, "wechselrichter_abregelung"));
+  });
+
+  it("nennt bei netzseitiger Begrenzung den Hebel", () => {
+    const mitGrenze: Anlagenkontext = {
+      ...ANLAGE,
+      einspeisegrenzeKw: 0.7 * ANLAGE.kwp,
+    };
+    const befund = finde(
+      untersucheTag(sonnentag(mitGrenze, 1000), mitGrenze),
+      "netz_abregelung",
+    );
+
+    assert.match(befund!.massnahme, /Eigenverbrauch|Speicher/);
+  });
+});
+
+describe("Verschattung", () => {
+  it("erkennt den Einbruch am Tagesrand", () => {
+    const punkte = sonnentag(OHNE_UEBERBAU, 700);
+    // Ein Baum am Morgen: scharfer Einbruch, danach Erholung.
+    for (const p of punkte) {
+      if (p.minute >= 8 * 60 && p.minute <= 9 * 60) p.leistungKw *= 0.3;
+    }
+
+    const befund = finde(untersucheTag(punkte, OHNE_UEBERBAU), "verschattung");
+
+    assert.ok(befund);
+    assert.match(befund.begruendung, /08:00/);
+  });
+
+  it("hält einen Einbruch ohne Erholung nicht für Schatten", () => {
+    const punkte = sonnentag(OHNE_UEBERBAU, 700);
+    // Ab 8 Uhr bricht es ein und bleibt unten - das ist ein Defekt.
+    for (const p of punkte) {
+      if (p.minute >= 8 * 60) p.leistungKw *= 0.3;
+    }
+
+    const befunde = untersucheTag(punkte, OHNE_UEBERBAU);
+
+    assert.ok(!finde(befunde, "verschattung"));
+  });
+
+  it("bewertet einen Mittagseinbruch vorsichtiger", () => {
+    const punkte = sonnentag(OHNE_UEBERBAU, 700);
+    for (const p of punkte) {
+      if (p.minute >= 12 * 60 && p.minute <= 13 * 60) p.leistungKw *= 0.3;
+    }
+
+    const befund = finde(untersucheTag(punkte, OHNE_UEBERBAU), "verschattung");
+
+    assert.ok(befund);
+    // Mittags steht die Sonne hoch - dort ist Schatten unwahrscheinlich.
+    assert.ok(befund.sicherheit < 0.7);
+    assert.ok(befund.mangel);
+  });
+});
+
+describe("Temperatur", () => {
+  it("erklärt den sommerlichen Rückgang, ohne ihn zum Mangel zu machen", () => {
+    const punkte = sonnentag(OHNE_UEBERBAU, 700);
+    for (const p of punkte) p.modultemperatur = 60;
+    // Leistung passend zur heissen Erwartung neu setzen.
+    for (const p of punkte) {
+      p.leistungKw = erwarteterPunkt(p, OHNE_UEBERBAU).acKw;
+    }
+
+    const befund = finde(untersucheTag(punkte, OHNE_UEBERBAU), "temperatur");
+
+    assert.ok(befund);
+    assert.equal(befund.mangel, false);
+    assert.ok(befund.verlustKwh > 0);
+  });
+});
+
+describe("Gleichmäßige Absenkung", () => {
+  it("erkennt eine über den Tag gleichmäßige Minderleistung", () => {
+    const punkte = sonnentag(OHNE_UEBERBAU, 700);
+    for (const p of punkte) p.leistungKw *= 0.88;
+
+    const befund = finde(untersucheTag(punkte, OHNE_UEBERBAU), "verschmutzung");
+
+    assert.ok(befund);
+    assert.ok(befund.mangel);
+  });
+
+  it("verwechselt sie nicht mit einem Einbruch", () => {
+    const punkte = sonnentag(OHNE_UEBERBAU, 700);
+    for (const p of punkte) {
+      if (p.minute >= 8 * 60 && p.minute <= 9 * 60) p.leistungKw *= 0.3;
+    }
+
+    const befunde = untersucheTag(punkte, OHNE_UEBERBAU);
+
+    assert.ok(!finde(befunde, "verschmutzung"));
+  });
+});
+
+describe("Steigung", () => {
+  it("ist bei einer waagrechten Reihe null", () => {
+    assert.equal(steigung([1, 1, 1, 1]), 0);
+  });
+
+  it("ist bei gleichmäßigem Anstieg die Schrittweite", () => {
+    assert.ok(Math.abs(steigung([0, 1, 2, 3]) - 1) < 1e-9);
+  });
+
+  it("ist bei Abstieg negativ", () => {
+    assert.ok(steigung([3, 2, 1, 0]) < 0);
+  });
+
+  it("kommt mit einem einzigen Wert zurecht", () => {
+    assert.equal(steigung([0.8]), 0);
+  });
+});
+
+describe("Verlauf über Wochen", () => {
+  function reihe(werte: number[], ab = 1): { tag: string; pr: number }[] {
+    return werte.map((pr, i) => ({
+      tag: `2026-06-${String(ab + i).padStart(2, "0")}`,
+      pr,
+    }));
+  }
+
+  it("verlangt mindestens eine Woche", () => {
+    const b = untersucheVerlauf(reihe([0.85, 0.84, 0.83]));
+
+    assert.equal(b.art, "unauffaellig");
+    assert.match(b.titel, /kurz/i);
+  });
+
+  it("erkennt Verschmutzung am Sprung nach oben", () => {
+    // Zehn Tage langsam abwaerts, dann Regen.
+    const b = untersucheVerlauf(
+      reihe([
+        0.86, 0.855, 0.85, 0.845, 0.84, 0.835, 0.83, 0.825, 0.82, 0.815, 0.86,
+        0.858,
+      ]),
+    );
+
+    assert.equal(b.art, "verschmutzung");
+    assert.equal(b.reinigungAm, "2026-06-11");
+  });
+
+  it("nennt bei Verschmutzung den Monatswert für den Reinigungsabstand", () => {
+    const b = untersucheVerlauf(
+      reihe([
+        0.86, 0.855, 0.85, 0.845, 0.84, 0.835, 0.83, 0.825, 0.82, 0.815, 0.86,
+        0.858,
+      ]),
+    );
+
+    assert.match(b.massnahme, /Monat/);
+  });
+
+  it("nennt einen Rückgang ohne Sprung Degradation", () => {
+    const b = untersucheVerlauf(
+      reihe([
+        0.86, 0.858, 0.856, 0.854, 0.852, 0.85, 0.848, 0.846, 0.844, 0.842,
+        0.84, 0.838,
+      ]),
+    );
+
+    assert.equal(b.art, "degradation");
+    assert.equal(b.reinigungAm, null);
+  });
+
+  it("verweist bei Degradation auf die Leistungsgarantie", () => {
+    const b = untersucheVerlauf(
+      reihe([
+        0.86, 0.858, 0.856, 0.854, 0.852, 0.85, 0.848, 0.846, 0.844, 0.842,
+        0.84, 0.838,
+      ]),
+    );
+
+    assert.match(b.massnahme, /Leistungsgarantie/);
+  });
+
+  it("meldet nichts, wenn die Ausbeute nur schwankt", () => {
+    const b = untersucheVerlauf(
+      reihe([0.85, 0.86, 0.84, 0.855, 0.845, 0.86, 0.85, 0.848]),
+    );
+
+    assert.equal(b.art, "unauffaellig");
+  });
+});
+
+describe("Uhrzeit", () => {
+  it("füllt auf zwei Stellen auf", () => {
+    assert.equal(alsUhrzeit(9 * 60 + 5), "09:05");
+  });
+
+  it("stellt Mitternacht dar", () => {
+    assert.equal(alsUhrzeit(0), "00:00");
+  });
+});
+
+describe("Deutsche Schreibweise", () => {
+  it("schreibt Zahlen mit Komma", () => {
+    // "6.3 Prozent" ist in einem deutschen Satz ein Fehler.
+    assert.equal(alsKomma(6.34), "6,3");
+    assert.equal(alsKomma(0.35, 2), "0,35");
+  });
+
+  it("rundet dabei", () => {
+    // 6,35 waere der interessante Fall, taugt aber nicht als Probe:
+    // Die Zahl ist binaer nicht darstellbar und liegt knapp darunter.
+    // Fuer eine Anzeige ist das ohne Belang - fuer eine Abrechnung
+    // waere es keines, und dort wird auch nicht so gerundet.
+    assert.equal(alsKomma(6.36, 1), "6,4");
+    assert.equal(alsKomma(99.6, 0), "100");
+  });
+
+  it("dreht ein ISO-Datum um", () => {
+    assert.equal(alsDatum("2026-09-06"), "06.09.2026");
+  });
+
+  it("lässt unlesbare Daten unverändert", () => {
+    assert.equal(alsDatum("heute"), "heute");
+  });
+
+  it("schreibt keine Punktzahl in eine Begründung", () => {
+    // Die Regel, um die es geht: kein Dezimalpunkt im Fließtext.
+    const b = untersucheVerlauf(
+      Array.from({ length: 12 }, (_, i) => ({
+        tag: `2026-06-${String(i + 1).padStart(2, "0")}`,
+        pr: 0.86 - i * 0.002,
+      })),
+    );
+
+    assert.ok(!/\d\.\d/.test(b.begruendung), b.begruendung);
+    assert.ok(!/\d{4}-\d{2}-\d{2}/.test(b.begruendung), b.begruendung);
+  });
+});

@@ -1,0 +1,346 @@
+<template>
+  <div>
+    <PageHeader title="Backup" :subtitle="untertitel">
+      <template #actions>
+        <FormControl v-model="ansicht" type="select" :options="ansichtOptionen" />
+      </template>
+    </PageHeader>
+
+    <div class="p-6">
+      <!-- Kennzahlen -->
+      <div v-if="pruefung.data" class="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6">
+        <StatCard
+          v-for="kachel in kacheln"
+          :key="kachel.label"
+          :label="kachel.label"
+          :wert="kachel.wert"
+          :hinweis="kachel.hinweis"
+          :level="kachel.level"
+        />
+      </div>
+
+      <!-- ============ Prüfung ============ -->
+      <section v-if="ansicht === 'pruefung' && pruefung.data">
+        <h2 class="mb-1 text-base font-semibold text-ink-gray-8">Kommen wir zurück?</h2>
+        <p class="mb-4 text-sm text-ink-gray-6">
+          „Läuft der Job?" ist die kleinere Hälfte. Hier steht die größere: drei Kopien auf zwei
+          Medien, eine außer Haus, ein bestandener Wiederherstellungstest – und ob die zugesagten
+          Wiederanlaufziele überhaupt gedeckt sind.
+        </p>
+
+        <div class="space-y-4">
+          <article
+            v-for="z in pruefung.data.rows"
+            :key="z.name"
+            class="rounded-lg border bg-surface-white p-4"
+            :class="z.level === 'critical' ? 'border-outline-red-2' : 'border-outline-gray-2'"
+          >
+            <div class="flex flex-wrap items-start justify-between gap-3">
+              <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-2">
+                  <StatusDot :level="z.level" :text="STUFE[z.level]" />
+                  <p class="font-medium text-ink-gray-9">{{ z.service_name || z.backup_object }}</p>
+                  <Badge v-if="z.criticality" :theme="kritThema(z.criticality)">
+                    {{ KRIT[z.criticality] }}
+                  </Badge>
+                  <Badge v-if="z.immutable" theme="green">unveränderlich</Badge>
+                  <Badge v-if="!z.encrypted" theme="red">unverschlüsselt</Badge>
+                </div>
+                <p class="mt-0.5 font-mono text-sm text-ink-gray-5">{{ z.backup_object }}</p>
+              </div>
+              <div class="shrink-0 text-right">
+                <p class="text-sm text-ink-gray-6">Wiederherstellung</p>
+                <p class="text-xl font-semibold tabular-nums text-ink-gray-9">
+                  {{ z.restore_minutes ? z.restore_minutes + ' min' : '–' }}
+                </p>
+              </div>
+            </div>
+
+            <!-- 3-2-1 als drei Einzelbefunde -->
+            <div class="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
+              <div
+                v-for="teil in z.rule_321.parts"
+                :key="teil.key"
+                class="rounded border px-3 py-2"
+                :class="teil.erfuellt ? 'border-outline-gray-2' : 'border-outline-red-2'"
+              >
+                <StatusDot
+                  :level="teil.erfuellt ? 'ok' : teil.key === 'offsite' ? 'critical' : 'warning'"
+                  :text="teil.label"
+                  klein
+                />
+                <p class="mt-0.5 text-sm text-ink-gray-7">{{ teil.ist }}</p>
+                <p v-if="!teil.erfuellt" class="text-sm text-ink-gray-5">{{ teil.abhilfe }}</p>
+              </div>
+            </div>
+
+            <!-- Test, Ziele, Aufbewahrung -->
+            <dl class="mt-4 grid grid-cols-1 gap-x-6 gap-y-3 text-sm sm:grid-cols-3">
+              <div>
+                <dt class="text-ink-gray-5">Wiederherstellungstest</dt>
+                <dd class="mt-0.5">
+                  <StatusDot
+                    :level="z.restore_test.level"
+                    :text="
+                      z.restore_test.never
+                        ? 'nie durchgeführt'
+                        : TEST[z.restore_test.result] +
+                          ', vor ' +
+                          z.restore_test.age_days +
+                          ' Tagen'
+                    "
+                    klein
+                  />
+                  <p class="mt-0.5 text-sm text-ink-gray-5">
+                    Frist: alle {{ z.restore_test.due_days }} Tage
+                  </p>
+                </dd>
+              </div>
+
+              <div v-if="z.objectives">
+                <dt class="text-ink-gray-5">Zugesagt gegen tatsächlich</dt>
+                <dd class="mt-0.5 space-y-0.5">
+                  <p class="tabular-nums text-ink-gray-8">
+                    RPO {{ z.objectives.rpo_hours }} h
+                    <span class="text-ink-gray-5">→ ist {{ z.objectives.rpo_actual_hours }} h</span>
+                  </p>
+                  <p class="tabular-nums text-ink-gray-8">
+                    RTO {{ z.objectives.rto_hours }} h
+                    <span class="text-ink-gray-5">
+                      → ist
+                      {{
+                        z.objectives.rto_unknown
+                          ? 'unbekannt'
+                          : z.objectives.rto_actual_hours + ' h'
+                      }}
+                    </span>
+                  </p>
+                </dd>
+              </div>
+
+              <div>
+                <dt class="text-ink-gray-5">Aufbewahrung</dt>
+                <dd class="mt-0.5">
+                  <StatusDot
+                    :level="z.retention.ok ? 'ok' : 'warning'"
+                    :text="z.retention.days + ' Tage'"
+                    klein
+                  />
+                  <p v-if="!z.retention.ok" class="mt-0.5 text-sm text-ink-gray-5">
+                    gefordert: {{ z.retention.required_days }} Tage
+                  </p>
+                </dd>
+              </div>
+            </dl>
+
+            <ul v-if="z.reasons.length" class="mt-3 border-t border-outline-gray-2 pt-3">
+              <li v-for="g in z.reasons" :key="g" class="text-sm text-ink-gray-6">· {{ g }}</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <!-- ============ Ampel ============ -->
+      <section v-else-if="ansicht === 'ampel' && ampel.data">
+        <h2 class="mb-3 text-base font-semibold text-ink-gray-8">Dienste</h2>
+        <DataTable
+          tabellen-id="BackupView"
+          :columns="spalten"
+          :rows="ampel.data.objects"
+          :loading="ampel.loading"
+          export-name="backup"
+        >
+          <template #zelle-level="{ zeile }">
+            <StatusDot :level="zeile.level" :text="STUFE[zeile.level]" />
+          </template>
+          <template #zelle-service="{ zeile }">
+            <span class="block font-medium text-ink-gray-9">{{ zeile.service }}</span>
+            <span class="block font-mono text-sm text-ink-gray-5">{{ zeile.backup_object }}</span>
+          </template>
+          <template #zelle-verify_status="{ zeile }">
+            <StatusDot
+              :level="
+                zeile.verify_status === 'ok'
+                  ? 'ok'
+                  : zeile.verify_status === 'failed'
+                    ? 'critical'
+                    : 'warning'
+              "
+              :text="VERIFY[zeile.verify_status] || zeile.verify_status"
+              klein
+            />
+          </template>
+          <template #zelle-protected="{ zeile }">
+            <Badge :theme="zeile.protected ? 'green' : 'gray'">
+              {{ zeile.protected ? 'geschützt' : 'nein' }}
+            </Badge>
+          </template>
+          <template #zelle-reasons="{ zeile }">
+            <span v-if="!zeile.reasons.length" class="text-ink-gray-4">–</span>
+            <ul v-else class="space-y-0.5">
+              <li v-for="grund in zeile.reasons" :key="grund" class="text-sm text-ink-gray-6">
+                {{ grund }}
+              </li>
+            </ul>
+          </template>
+        </DataTable>
+      </section>
+
+      <!-- ============ Speicher ============ -->
+      <section v-else-if="ampel.data">
+        <h2 class="mb-1 text-base font-semibold text-ink-gray-8">Speicher</h2>
+        <p class="mb-3 text-sm text-ink-gray-6">
+          „Voll am" ist eine Prognose aus dem täglichen Zuwachs, kein Versprechen.
+        </p>
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div
+            v-for="d in ampel.data.datastores"
+            :key="d.name"
+            class="rounded-lg border border-outline-gray-2 bg-surface-white p-4"
+          >
+            <div class="flex items-start justify-between gap-2">
+              <div>
+                <p class="font-medium text-ink-gray-9">{{ d.datastore_name }}</p>
+                <p class="text-sm text-ink-gray-6">
+                  {{ d.server }} · {{ d.total_tb }} TB · {{ d.namespaces }} Namensräume
+                </p>
+              </div>
+              <StatusDot :level="d.level" :text="Math.round(d.used_pct) + ' %'" klein />
+            </div>
+            <div class="mt-3 h-2.5 w-full" style="background: var(--viz-neutral-soft)">
+              <div
+                class="h-full rounded-r"
+                :style="{
+                  width: Math.min(100, d.used_pct) + '%',
+                  background: d.level === 'ok' ? 'var(--viz-seq-400)' : balkenFarbe(d.level),
+                }"
+              />
+            </div>
+            <p class="mt-2 text-sm text-ink-gray-6">
+              <span v-if="d.days_until_full === null">Kein Zuwachs erfasst</span>
+              <span v-else>
+                Voll in {{ d.days_until_full }} Tagen ({{ d.full_on }}) · +{{ d.growth_gb_per_day }}
+                GB/Tag
+              </span>
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <p class="mt-6 text-xs text-ink-gray-4">
+        Die 3-2-1-Regel ist der einzige Schutz gegen den Fall, dass eine Verschlüsselung auch die
+        Sicherung erwischt: drei Kopien, zwei verschiedene Medien, eine außer Haus. Die
+        Aufbewahrungsfrist für Buchhaltungsunterlagen sind sieben Jahre (§ 132 BAO, § 147 AO). Die
+        PBS-Token bleiben laut CLAUDE.md Abschnitt 6.3 ohne Lösch- und Prune-Rechte – diese Seite
+        liest ausschließlich.
+      </p>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed, ref } from 'vue'
+import { Badge, FormControl, createResource } from 'frappe-ui'
+import PageHeader from '@/components/PageHeader.vue'
+import DataTable from '@/components/DataTable.vue'
+import StatCard from '@/components/StatCard.vue'
+import StatusDot from '@/components/StatusDot.vue'
+import { useUiStore } from '@/stores/ui'
+import { balkenFarbe, mengeText } from '@/viz'
+
+const STUFE = { ok: 'in Ordnung', warning: 'Warnung', critical: 'kritisch', neutral: '–' }
+const VERIFY = { ok: 'verifiziert', failed: 'fehlgeschlagen', none: 'nicht verifiziert' }
+const TEST = { ok: 'bestanden', failed: 'fehlgeschlagen', none: 'nie' }
+const KRIT = { critical: 'Kritisch', high: 'Hoch', medium: 'Mittel', low: 'Niedrig' }
+
+const ui = useUiStore()
+const ansicht = ref('pruefung')
+
+const pruefung = createResource({
+  url: 'netops.api.backup.backup_assurance',
+  makeParams: () => ({ tenant: ui.mandant || null }),
+  auto: true,
+})
+
+const ampel = createResource({
+  url: 'netops.api.backup.backup_status',
+  makeParams: () => ({ tenant: ui.mandant || null }),
+  auto: true,
+})
+
+const ansichtOptionen = [
+  { label: 'Prüfung', value: 'pruefung' },
+  { label: 'Ampel', value: 'ampel' },
+  { label: 'Speicher', value: 'speicher' },
+]
+
+const spalten = [
+  { key: 'level', label: 'Ampel', width: '150px' },
+  { key: 'service', label: 'Dienst', width: '220px' },
+  { key: 'backup_age_hours', label: 'Alter (h)', align: 'right', numeric: true, width: '110px' },
+  { key: 'verify_status', label: 'Verify', width: '170px' },
+  { key: 'offsite_age_hours', label: 'Offsite (h)', align: 'right', numeric: true, width: '120px' },
+  { key: 'protected', label: 'Schutz', width: '120px' },
+  { key: 'reasons', label: 'Befund' },
+]
+
+const kacheln = computed(() => {
+  const z = pruefung.data?.summary
+  if (!z) return []
+  return [
+    {
+      label: '3-2-1 erfüllt',
+      wert: z.rule_321_ok + ' / ' + z.total,
+      hinweis: z.no_offsite ? z.no_offsite + ' ohne Kopie außer Haus' : 'alle außer Haus',
+      level: z.no_offsite ? 'critical' : z.rule_321_ok < z.total ? 'warning' : 'ok',
+    },
+    {
+      label: 'Nie getestet',
+      wert: z.never_tested,
+      hinweis: z.never_tested ? 'ungeprüfte Sicherung' : 'alle getestet',
+      level: z.never_tested ? 'critical' : 'ok',
+    },
+    {
+      label: 'Test fehlgeschlagen',
+      wert: z.test_failed,
+      hinweis: z.test_overdue ? z.test_overdue + ' überfällig' : 'keine Frist offen',
+      level: z.test_failed ? 'critical' : z.test_overdue ? 'warning' : 'ok',
+    },
+    {
+      label: 'Ziele verfehlt',
+      wert: z.objectives_missed,
+      hinweis: 'RPO oder RTO nicht gedeckt',
+      level: z.objectives_missed ? 'warning' : 'ok',
+    },
+    {
+      label: 'Aufbewahrung kurz',
+      wert: z.retention_short,
+      hinweis: z.unencrypted ? z.unencrypted + ' unverschlüsselt' : 'alle verschlüsselt',
+      level: z.retention_short || z.unencrypted ? 'warning' : 'ok',
+    },
+    {
+      label: 'Alles zurückholen',
+      wert: z.total_restore_hours + ' h',
+      hinweis: 'Summe aller Wiederherstellungen',
+      level: 'neutral',
+    },
+  ]
+})
+
+const untertitel = computed(() => {
+  const z = pruefung.data?.summary
+  if (!z) return ''
+  return (
+    mengeText(z.total, 'Sicherungsobjekt', 'Sicherungsobjekte') +
+    ' · ' +
+    z.critical +
+    ' kritisch · ' +
+    z.rule_321_ok +
+    ' erfüllen 3-2-1'
+  )
+})
+
+function kritThema(wert) {
+  return { critical: 'red', high: 'orange', medium: 'blue', low: 'gray' }[wert] || 'gray'
+}
+</script>

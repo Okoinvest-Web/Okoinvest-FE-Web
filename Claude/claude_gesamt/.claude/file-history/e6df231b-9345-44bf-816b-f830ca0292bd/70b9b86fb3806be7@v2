@@ -1,0 +1,278 @@
+"""Subunternehmerauftrag: was der Subunternehmer wo bis wann zu tun hat.
+
+Der Subunternehmer bestellt nichts und disponiert nichts — er bekommt den
+Auftrag vorgesetzt. Was er tun kann: annehmen, Fortschritt melden, fertigmelden.
+Abnahme und Ablehnung bleiben beim Bauleiter.
+
+Aus einem vom Bauleiter festgestellten Mangel entsteht auf Knopfdruck ein
+Auftrag; dann ist er als Gewaehrleistungsfall gekennzeichnet und loest keine
+Verguetung aus.
+"""
+
+from __future__ import annotations
+
+import frappe
+from frappe import _
+from frappe.model.document import Document
+from frappe.utils import flt, get_datetime, getdate, now_datetime, today
+
+BAULEITER_ROLLEN = {"Baudoku Bauleiter", "Baudoku Projektleiter", "Baudoku Admin", "System Manager"}
+
+# Was der Subunternehmer selbst setzen darf.
+SUBU_STATUS = {"Angenommen", "In Arbeit", "Fertiggemeldet"}
+
+
+class Subunternehmerauftrag(Document):
+	def validate(self):
+		self.termine_pruefen()
+		self.fristen_berechnen()
+		self.fortschritt_ableiten()
+		self.statuswechsel_pruefen()
+
+	def on_update(self):
+		if self.wechselt_zu("Abgenommen") and self.mangel:
+			self.mangel_erledigen()
+
+	# ---------------------------------------------------------------- Validate
+
+	def wechselt_zu(self, status: str) -> bool:
+		if self.status != status:
+			return False
+		vorher = self.get_doc_before_save()
+		return not vorher or vorher.status != status
+
+	def termine_pruefen(self):
+		if self.termin_von and self.termin_bis:
+			if get_datetime(self.termin_bis) <= get_datetime(self.termin_von):
+				frappe.throw(_("Das geplante Ende muss nach dem Beginn liegen."))
+		if self.frist and self.termin_von and getdate(self.frist) < getdate(self.termin_von):
+			frappe.throw(_("Die Fertigstellungsfrist liegt vor dem geplanten Beginn."))
+
+	def fristen_berechnen(self):
+		"""Tage bis zur Frist, Warnschwelle und Verzug.
+
+		Wird zusaetzlich taeglich vom Scheduler nachgezogen — ein Auftrag, den
+		niemand anfasst, laeuft sonst unbemerkt in den Verzug.
+		"""
+		settings = frappe.get_cached_doc("Baudoku Settings")
+		schwelle = settings.fristwarnung_tage or 3
+
+		if not self.frist:
+			self.tage_bis_frist = 0
+			self.fristwarnung_aktiv = 0
+			self.verzug = 0
+			return
+
+		self.tage_bis_frist = (getdate(self.frist) - getdate(today())).days
+		offen = self.status in ("Geplant", "Angenommen", "In Arbeit")
+		self.fristwarnung_aktiv = 1 if offen and 0 <= self.tage_bis_frist <= schwelle else 0
+		self.verzug = 1 if offen and self.tage_bis_frist < 0 else 0
+
+	def fortschritt_ableiten(self):
+		if self.status in ("Fertiggemeldet", "Abgenommen"):
+			self.fortschritt_prozent = 100
+			return
+		if self.fortschritt_prozent or not self.positionen:
+			return
+		werte = [flt(p.fortschritt) for p in self.positionen if p.fortschritt]
+		if werte:
+			self.fortschritt_prozent = round(sum(werte) / len(werte), 1)
+
+	def statuswechsel_pruefen(self):
+		"""Abnahme und Ablehnung sind dem Bauleiter vorbehalten."""
+		if self.wechselt_zu("Fertiggemeldet"):
+			if not self.fertiggemeldet_am:
+				self.fertiggemeldet_am = now_datetime()
+
+		if self.wechselt_zu("Abgenommen"):
+			self._bauleiter_berechtigung()
+			vorher = self.get_doc_before_save()
+			if vorher and vorher.status != "Fertiggemeldet":
+				frappe.throw(_("Nur fertiggemeldete Auftraege koennen abgenommen werden."))
+			self.abgenommen_am = now_datetime()
+			self.abgenommen_von = frappe.session.user
+
+		if self.wechselt_zu("Abgelehnt"):
+			self._bauleiter_berechtigung()
+			if not self.ablehnungsgrund:
+				frappe.throw(_("Bitte einen Ablehnungsgrund angeben."))
+
+		if self.wechselt_zu("Storniert"):
+			self._bauleiter_berechtigung()
+
+	def _bauleiter_berechtigung(self):
+		if not BAULEITER_ROLLEN & set(frappe.get_roles()):
+			frappe.throw(
+				_("Abnahme, Ablehnung und Stornierung sind dem Bauleiter vorbehalten."),
+				frappe.PermissionError,
+			)
+
+	# ----------------------------------------------------------------- Aktionen
+
+	def mangel_erledigen(self):
+		"""Abgenommener Mangelauftrag schliesst den Mangel — sonst bliebe er offen."""
+		mangel = frappe.get_doc("Mangel", self.mangel)
+		if mangel.status in ("Erledigt", "Verifiziert"):
+			return
+		mangel.status = "Erledigt"
+		mangel.massnahme = mangel.massnahme or _(
+			"Behoben durch Subunternehmerauftrag {0}."
+		).format(self.name)
+		for foto in self.fotos:
+			mangel.append("erledigt_fotos", {
+				"bild": foto.bild, "beschriftung": foto.beschriftung,
+				"aufgenommen_am": foto.aufgenommen_am, "hash": foto.hash,
+			})
+		mangel.save(ignore_permissions=True)
+
+	@frappe.whitelist()
+	def annehmen(self):
+		if self.status != "Geplant":
+			frappe.throw(_("Nur geplante Auftraege koennen angenommen werden."))
+		self.status = "Angenommen"
+		self.save()
+		return self.name
+
+	@frappe.whitelist()
+	def fertigmelden(self, bemerkung: str | None = None):
+		if self.status not in ("Angenommen", "In Arbeit"):
+			frappe.throw(_("Der Auftrag ist nicht in Arbeit."))
+		self.status = "Fertiggemeldet"
+		self.fertigmeldung_bemerkung = bemerkung
+		self.save()
+		self._bauleiter_benachrichtigen()
+		return self.name
+
+	@frappe.whitelist()
+	def abnehmen(self, bemerkung: str | None = None):
+		self.status = "Abgenommen"
+		self.abnahme_bemerkung = bemerkung
+		self.save()
+		return self.name
+
+	@frappe.whitelist()
+	def zurueckweisen(self, grund: str):
+		"""Nicht abgenommen: Der Auftrag geht zurueck in Arbeit."""
+		self._bauleiter_berechtigung()
+		if not grund:
+			frappe.throw(_("Bitte begruenden, was noch fehlt."))
+		self.status = "In Arbeit"
+		self.abnahme_bemerkung = grund
+		self.fertiggemeldet_am = None
+		self.save()
+		return self.name
+
+	def _bauleiter_benachrichtigen(self):
+		empfaenger = frappe.db.get_value("Employee", self.bauleiter, "user_id") if self.bauleiter else None
+		if not empfaenger:
+			return
+		frappe.sendmail(
+			recipients=[empfaenger],
+			subject=_("Fertigmeldung: {0}").format(self.titel),
+			message=_("{0} hat den Auftrag {1} fertiggemeldet.").format(self.supplier, self.name),
+			reference_doctype=self.doctype,
+			reference_name=self.name,
+		)
+
+
+@frappe.whitelist()
+def auftrag_aus_mangel(mangel: str, supplier: str, termin_von: str, termin_bis: str,
+                       frist: str | None = None, gewaehrleistung: int = 1) -> str:
+	"""Macht aus einem festgestellten Mangel sofort einen offenen Auftrag.
+
+	Der haeufigste Ablauf auf der Baustelle: Der Bauleiter geht durch, findet
+	etwas, und der Subunternehmer soll es noch in derselben Woche beheben.
+	"""
+	if not BAULEITER_ROLLEN & set(frappe.get_roles()):
+		frappe.throw(_("Auftraege erteilt der Bauleiter."), frappe.PermissionError)
+
+	doc = frappe.get_doc("Mangel", mangel)
+	vorhanden = frappe.db.get_value("Subunternehmerauftrag", {"mangel": mangel}, "name")
+	if vorhanden:
+		return vorhanden
+
+	auftrag = frappe.new_doc("Subunternehmerauftrag")
+	auftrag.update({
+		"titel": _("Mangelbehebung: {0}").format(doc.titel)[:140],
+		"supplier": supplier,
+		"anlage": doc.anlage,
+		"status": "Geplant",
+		"herkunft": "Mangel",
+		"mangel": mangel,
+		"gewaehrleistung": 1 if int(gewaehrleistung) else 0,
+		"prioritaet": {"A": "Kritisch", "B": "Hoch", "C": "Mittel"}.get(doc.schweregrad, "Mittel"),
+		"aufgabe": doc.beschreibung,
+		"termin_von": termin_von,
+		"termin_bis": termin_bis,
+		"frist": frist or doc.faellig_am,
+	})
+	for foto in doc.fotos:
+		auftrag.append("fotos", {
+			"bild": foto.bild, "beschriftung": foto.beschriftung,
+			"aufgenommen_am": foto.aufgenommen_am, "hash": foto.hash,
+		})
+	auftrag.insert()
+
+	frappe.db.set_value("Mangel", mangel, {
+		"status": "In Bearbeitung",
+		"supplier": supplier,
+	}, update_modified=False)
+
+	return auftrag.name
+
+
+def fristen_nachziehen():
+	"""Scheduler: Fristwarnung und Verzug taeglich neu bewerten.
+
+	Ohne diesen Lauf blieben die Kennzeichen auf dem Stand des letzten
+	Speicherns — ein Auftrag, den niemand anfasst, liefe unbemerkt ab.
+	"""
+	settings = frappe.get_cached_doc("Baudoku Settings")
+	schwelle = settings.fristwarnung_tage or 3
+	heute = getdate(today())
+
+	offene = frappe.get_all(
+		"Subunternehmerauftrag",
+		filters={"status": ["in", ["Geplant", "Angenommen", "In Arbeit"]], "frist": ["is", "set"]},
+		fields=["name", "frist", "supplier", "titel", "anlage", "fristwarnung_aktiv", "verzug"],
+		limit_page_length=0,
+	)
+
+	frisch_gewarnt = []
+	for auftrag in offene:
+		tage = (getdate(auftrag.frist) - heute).days
+		warnung = 1 if 0 <= tage <= schwelle else 0
+		verzug = 1 if tage < 0 else 0
+		if (warnung, verzug) == (auftrag.fristwarnung_aktiv, auftrag.verzug):
+			frappe.db.set_value("Subunternehmerauftrag", auftrag.name, "tage_bis_frist", tage,
+			                    update_modified=False)
+			continue
+
+		frappe.db.set_value("Subunternehmerauftrag", auftrag.name, {
+			"tage_bis_frist": tage,
+			"fristwarnung_aktiv": warnung,
+			"verzug": verzug,
+		}, update_modified=False)
+		if warnung and not auftrag.fristwarnung_aktiv:
+			frisch_gewarnt.append({**auftrag, "tage": tage})
+
+	for auftrag in frisch_gewarnt:
+		_fristwarnung_senden(auftrag)
+
+
+def _fristwarnung_senden(auftrag: dict):
+	empfaenger = frappe.get_all(
+		"Portal User", filters={"parenttype": "Supplier", "parent": auftrag["supplier"]},
+		pluck="user",
+	)
+	if not empfaenger:
+		return
+	frappe.sendmail(
+		recipients=empfaenger,
+		subject=_("Noch {0} Tage: {1}").format(auftrag["tage"], auftrag["titel"]),
+		message=_("Der Auftrag {0} auf der Baustelle {1} ist am {2} faellig.").format(
+			auftrag["name"], auftrag["anlage"], auftrag["frist"]
+		),
+		reference_doctype="Subunternehmerauftrag",
+		reference_name=auftrag["name"],
+	)

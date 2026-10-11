@@ -1,0 +1,261 @@
+/**
+ * Prueft die Ablaeufe, die aus mehreren Teilen bestehen.
+ *
+ * Die Tests in `src/lib` pruefen die Rechenkerne, die Bildaufnahmen
+ * pruefen die Darstellung. Dazwischen liegt das, was beides verbindet:
+ * ein Formular, das eine Serveraktion aufruft, die schreibt,
+ * protokolliert und die Seite neu rechnen laesst. Genau dort brechen
+ * Aenderungen, und genau dort merkt es niemand - die Seite sieht
+ * danach unveraendert aus.
+ *
+ * Dieses Werkzeug geht deshalb die Wege ab, die ein Mensch geht:
+ * anmelden, suchen, eine Schwelle stellen, eine Meldung uebernehmen,
+ * eine Datei abholen, einen Auftrag ausloesen - und einmal etwas
+ * versuchen, das verboten ist.
+ *
+ * Es veraendert dabei Daten. Mit `npm run daten -- --neu` steht der
+ * Ausgangszustand wieder.
+ *
+ * Aufruf:  node werkzeuge/ablaeufe.mjs
+ */
+
+import { chromium } from "playwright";
+
+const BASIS = process.env.PORTAL_URL ?? "http://localhost:3000";
+
+const SITZUNG = (rolle, email, name) =>
+  [
+    { name: "sid", value: "demo-session" },
+    { name: "frappe_user", value: email },
+    { name: "frappe_full_name", value: name },
+    { name: "portal_rolle", value: rolle },
+  ].map((c) => ({ ...c, domain: "localhost", path: "/" }));
+
+const GESCHAEFTSFUEHRUNG = SITZUNG(
+  "geschaeftsfuehrung",
+  "m.steiner@steiner-holzbau.at",
+  "Markus Steiner",
+);
+
+const FUHRPARK = SITZUNG(
+  "fuhrpark",
+  "t.leitner@steiner-holzbau.at",
+  "Thomas Leitner",
+);
+
+let fehler = 0;
+
+function pruefe(bedingung, name, zusatz = "") {
+  if (bedingung) {
+    console.log(`  ok       ${name}`);
+  } else {
+    fehler += 1;
+    console.log(`  FEHLER   ${name}${zusatz ? ` – ${zusatz}` : ""}`);
+  }
+}
+
+const browser = await chromium.launch();
+
+async function seite(kekse = GESCHAEFTSFUEHRUNG) {
+  const kontext = await browser.newContext({
+    viewport: { width: 1440, height: 1000 },
+    locale: "de-AT",
+    timezoneId: "Europe/Vienna",
+  });
+  if (kekse) await kontext.addCookies(kekse);
+
+  const s = await kontext.newPage();
+  s.on("pageerror", (e) => {
+    fehler += 1;
+    console.log("  FEHLER   Seitenfehler:", String(e).slice(0, 160));
+  });
+  return s;
+}
+
+/* ------------------------------------------------------------------ */
+
+console.log("\nAnmeldung über einen Demo-Zugang");
+{
+  const s = await seite(null);
+  await s.goto(`${BASIS}/login`, { waitUntil: "networkidle" });
+  await s.getByRole("button", { name: /Markus Steiner/ }).click();
+  await s.waitForURL(/\/portal/, { timeout: 20_000 }).catch(() => {});
+  pruefe(s.url().includes("/portal"), "landet im Portal", s.url());
+  pruefe(
+    (await s.locator("body").innerText()).includes("Markus"),
+    "der Name steht in der Leiste",
+  );
+  await s.context().close();
+}
+
+console.log("\nBefehlspalette");
+{
+  const s = await seite();
+  await s.goto(`${BASIS}/portal`, { waitUntil: "networkidle" });
+  await s.keyboard.press("Control+k");
+  await s.waitForTimeout(400);
+  pruefe(
+    await s.locator('[role="dialog"]').isVisible(),
+    "öffnet mit Strg+K",
+  );
+  await s.keyboard.type("Sägewerk");
+  await s.waitForTimeout(500);
+  await s.keyboard.press("Enter");
+  /*
+   * Auf die Adresse warten und nicht auf die Uhr: Im
+   * Entwicklungsbetrieb uebersetzt der Server die Zielseite erst beim
+   * ersten Aufruf, und das dauert laenger als jede feste Wartezeit.
+   */
+  await s.waitForURL(/\/portal\/anlagen\//, { timeout: 30_000 }).catch(() => {});
+  pruefe(
+    s.url().includes("/portal/anlagen/"),
+    "führt zur gesuchten Anlage",
+    s.url(),
+  );
+  await s.context().close();
+}
+
+console.log("\nMeldeschwelle stellen");
+{
+  const s = await seite();
+  await s.goto(`${BASIS}/portal/alarme`, { waitUntil: "networkidle" });
+  await s.waitForTimeout(600);
+
+  const knopf = s.getByRole("button", { name: "Schwelle stellen" });
+  pruefe((await knopf.count()) > 0, "Schwellen sind einstellbar");
+
+  await knopf.nth(1).click();
+  await s.waitForTimeout(300);
+
+  const dialog = s.locator('[role="dialog"]');
+  const feld = dialog.locator('input[name="schwellwert"]');
+  const vorher = await feld.inputValue();
+
+  await feld.fill("19");
+  await dialog.getByRole("button", { name: /Schwelle übernehmen/ }).click();
+  await s.waitForTimeout(2000);
+  pruefe(
+    (await dialog.innerText()).includes("geändert durch"),
+    "die Änderung wird übernommen",
+  );
+
+  // Zuruecksetzen, damit der Bestand bleibt, wie er war.
+  await feld.fill(vorher);
+  await dialog.getByRole("button", { name: /Schwelle übernehmen/ }).click();
+  await s.waitForTimeout(1500);
+  await s.context().close();
+}
+
+console.log("\nMeldung übernehmen");
+{
+  const s = await seite();
+  await s.goto(`${BASIS}/portal/alarme/meldewege`, { waitUntil: "networkidle" });
+  await s.waitForTimeout(600);
+
+  const offen = await s.getByRole("button", { name: "Ich übernehme" }).count();
+  if (offen === 0) {
+    console.log("  übersprungen: keine unbestätigte Meldung im Bestand");
+  } else {
+    await s.getByRole("button", { name: "Ich übernehme" }).first().click();
+    await s.waitForTimeout(2000);
+    pruefe(
+      (await s.getByRole("button", { name: "Ich übernehme" }).count()) ===
+        offen - 1,
+      "die Eskalation endet mit der Bestätigung",
+    );
+
+    await s.reload({ waitUntil: "networkidle" });
+    await s.waitForTimeout(600);
+    pruefe(
+      (await s.locator("main").innerText())
+        .toLowerCase()
+        .includes("bestätigt von"),
+      "die Bestätigung steht nach dem Neuladen da",
+    );
+  }
+  await s.context().close();
+}
+
+console.log("\nMSCONS abholen");
+{
+  const s = await seite();
+  const antwort = await s.request.get(
+    `${BASIS}/api/eeg/lauf/LAUF-2026Q2/mscons`,
+  );
+  pruefe(antwort.status() === 200, "die Nachricht wird ausgegeben", String(antwort.status()));
+
+  const kopf = antwort.headers();
+  pruefe(
+    (kopf["content-type"] ?? "").toLowerCase().includes("edifact"),
+    "als EDIFACT gekennzeichnet",
+    kopf["content-type"],
+  );
+
+  const inhalt = await antwort.text();
+  pruefe(inhalt.startsWith("UNA:+.? '"), "beginnt mit dem Dienstzeichensatz");
+  pruefe(/UNZ\+1\+/.test(inhalt), "endet mit dem Übertragungsende");
+  pruefe(Number(kopf["x-messwerte"] ?? 0) > 1000, "trägt die Zahl der Messwerte");
+  await s.context().close();
+}
+
+console.log("\nVom Prüfkalender zum Auftrag");
+{
+  const s = await seite();
+  await s.goto(`${BASIS}/portal/anlagen/ANL-0003`, { waitUntil: "networkidle" });
+  await s.waitForTimeout(800);
+
+  const link = s.getByRole("link", { name: "beauftragen" }).first();
+  pruefe((await link.count()) > 0, "überfällige Prüfungen lassen sich beauftragen");
+
+  const ziel = await link.getAttribute("href");
+  await s.goto(BASIS + ziel, { waitUntil: "networkidle" });
+  await s.waitForTimeout(800);
+
+  /*
+   * Kleingeschrieben verglichen: Die Tafelkoepfe stehen im Leitstand
+   * in Versalien, und `innerText` gibt zurueck, was zu sehen ist -
+   * nicht, was im Quelltext steht.
+   */
+  pruefe(
+    (await s.locator("main").innerText())
+      .toLowerCase()
+      .includes("aus dem prüfkalender"),
+    "die Leistungsseite nimmt den Auftrag auf",
+  );
+  pruefe(
+    (await s.locator("select[name=anlage]").first().inputValue()) === "ANL-0003",
+    "die Anlage ist vorbelegt",
+  );
+  await s.context().close();
+}
+
+console.log("\nRechte greifen serverseitig");
+{
+  const s = await seite(FUHRPARK);
+  await s.goto(`${BASIS}/portal/steuerung`, { waitUntil: "networkidle" });
+  await s.waitForTimeout(600);
+
+  pruefe(
+    !s.url().includes("/portal/steuerung"),
+    "die Steuerung bleibt der Fuhrparkleitung verschlossen",
+    s.url(),
+  );
+
+  const text = await s.locator("body").innerText();
+  pruefe(
+    !text.toLowerCase().includes("betriebsstrategie"),
+    "und ihr Inhalt wird nicht ausgeliefert",
+  );
+  await s.context().close();
+}
+
+/* ------------------------------------------------------------------ */
+
+console.log(
+  fehler === 0
+    ? "\nAlle Ablaeufe laufen durch."
+    : `\n${fehler} Ablaeufe sind gebrochen.`,
+);
+
+await browser.close();
+process.exit(fehler === 0 ? 0 : 1);

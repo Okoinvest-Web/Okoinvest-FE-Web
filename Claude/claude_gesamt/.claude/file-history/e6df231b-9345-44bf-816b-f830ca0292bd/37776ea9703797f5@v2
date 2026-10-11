@@ -1,0 +1,126 @@
+<script setup lang="ts">
+/**
+ * Kartenansicht aller Anlagen auf OpenStreetMap (FA-083).
+ *
+ * Leaflet wird dynamisch geladen, damit der Startbildschirm klein bleibt.
+ * Die Marker sind nach Status eingefärbt; offene Mängel erhalten einen Ring.
+ */
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
+
+import type { Anlage } from '@/lib/typen'
+
+const props = defineProps<{ anlagen: Anlage[]; hoehe?: string; aktiv?: string }>()
+const emit = defineEmits<{ (e: 'auswahl', anlage: Anlage): void }>()
+
+const behaelter = ref<HTMLElement | null>(null)
+let karte: import('leaflet').Map | null = null
+let markerGruppe: import('leaflet').LayerGroup | null = null
+let L: typeof import('leaflet') | null = null
+
+const STATUS_FARBE: Record<string, string> = {
+  Geplant: '#94a3b8',
+  'In Bau': '#f59e0b',
+  'In Betrieb': '#16a34a',
+  'Ausser Betrieb': '#64748b',
+}
+
+function markerSymbol(anlage: Anlage) {
+  const farbe = STATUS_FARBE[anlage.status] ?? '#0ea5e9'
+  const maengel = anlage.offene_maengel ?? 0
+  const ring = maengel ? '<circle cx="14" cy="14" r="13" fill="none" stroke="#dc2626" stroke-width="2"/>' : ''
+  const zahl = maengel
+    ? `<text x="23" y="9" font-size="10" font-weight="700" fill="#dc2626" text-anchor="middle">${
+        maengel > 9 ? '9+' : maengel
+      }</text>`
+    : ''
+  return L!.divIcon({
+    className: 'anlagen-marker',
+    html: `<svg width="28" height="28" viewBox="0 0 28 28">
+      ${ring}
+      <circle cx="14" cy="14" r="9" fill="${farbe}" stroke="white" stroke-width="2.5"/>
+      ${zahl}
+    </svg>`,
+    iconSize: [28, 28],
+    iconAnchor: [14, 14],
+  })
+}
+
+async function initialisieren() {
+  if (!behaelter.value || karte) return
+  L = await import('leaflet')
+  await import('leaflet/dist/leaflet.css')
+
+  karte = L.map(behaelter.value, { zoomControl: true, attributionControl: true }).setView(
+    [47.95, 12.95], // Ostermiething als Standardmitte
+    9,
+  )
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '© OpenStreetMap-Mitwirkende',
+  }).addTo(karte)
+  markerGruppe = L.layerGroup().addTo(karte)
+  zeichnen()
+}
+
+function zeichnen() {
+  if (!karte || !markerGruppe || !L) return
+  markerGruppe.clearLayers()
+
+  const mitKoordinaten = props.anlagen.filter((a) => a.gps_lat && a.gps_lng)
+  for (const anlage of mitKoordinaten) {
+    const marker = L.marker([anlage.gps_lat!, anlage.gps_lng!], { icon: markerSymbol(anlage) })
+    marker.bindPopup(
+      `<div style="min-width:180px">
+         <strong>${anlage.anlage_name}</strong><br>
+         ${anlage.anlagen_typ} · ${anlage.kwp} kWp<br>
+         ${anlage.ort ?? ''} ${anlage.adresse ?? ''}<br>
+         <span style="color:${anlage.offene_maengel ? '#dc2626' : '#64748b'}">
+           ${anlage.offene_maengel ?? 0} offene Mängel
+         </span>
+       </div>`,
+    )
+    marker.on('click', () => emit('auswahl', anlage))
+    markerGruppe.addLayer(marker)
+  }
+
+  if (mitKoordinaten.length) {
+    const grenzen = L.latLngBounds(mitKoordinaten.map((a) => [a.gps_lat!, a.gps_lng!] as [number, number]))
+    karte.fitBounds(grenzen, { padding: [40, 40], maxZoom: 14 })
+  }
+}
+
+watch(() => props.anlagen, zeichnen, { deep: false })
+
+watch(
+  () => props.aktiv,
+  (name) => {
+    const treffer = props.anlagen.find((a) => a.name === name)
+    if (treffer?.gps_lat && treffer.gps_lng && karte) {
+      karte.setView([treffer.gps_lat, treffer.gps_lng], 16)
+    }
+  },
+)
+
+onMounted(initialisieren)
+
+onBeforeUnmount(() => {
+  karte?.remove()
+  karte = null
+  markerGruppe = null
+})
+</script>
+
+<template>
+  <div class="relative">
+    <div ref="behaelter" :style="{ height: hoehe ?? '70vh' }" class="w-full rounded-xl" />
+    <div
+      class="pointer-events-none absolute bottom-3 left-3 z-[400] rounded-lg bg-white/90 px-3 py-2
+             text-xs shadow dark:bg-slate-900/90"
+    >
+      <div v-for="(farbe, status) in STATUS_FARBE" :key="status" class="flex items-center gap-2">
+        <span class="h-2.5 w-2.5 rounded-full" :style="{ background: farbe }" />
+        {{ status === 'Ausser Betrieb' ? 'Außer Betrieb' : status }}
+      </div>
+    </div>
+  </div>
+</template>

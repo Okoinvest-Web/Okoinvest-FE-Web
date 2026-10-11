@@ -1,0 +1,74 @@
+export const LEAD_STATUS_LABEL: Record<string, string> = {
+  Lead: "Neu",
+  Open: "Offen",
+  Replied: "Beantwortet",
+  Opportunity: "Chance",
+  Quotation: "Angebot",
+  Interested: "Interessiert",
+  Converted: "Konvertiert",
+  "Do Not Contact": "Nicht kontaktieren",
+  Lost: "Verloren",
+  Closed: "Geschlossen",
+  Cancelled: "Abgebrochen",
+};
+
+export const STAGE_LABEL: Record<string, string> = {
+  Prospecting: "Akquise",
+  Qualification: "Qualifizierung",
+  "Needs Analysis": "Bedarfsanalyse",
+  "Proposal/Price Quote": "Angebot",
+  "Negotiation/Review": "Verhandlung",
+};
+
+export const PRIORITY_LABEL: Record<string, string> = { Low: "Niedrig", Medium: "Mittel", High: "Hoch" };
+
+export type Tone = "gray" | "blue" | "green" | "amber" | "red" | "violet";
+
+export const STATUS_TONE: Record<string, Tone> = {
+  Lead: "gray",
+  Open: "blue",
+  Replied: "violet",
+  Opportunity: "amber",
+  Quotation: "amber",
+  Interested: "green",
+  Converted: "green",
+  "Do Not Contact": "red",
+  Lost: "red",
+  Closed: "gray",
+  Cancelled: "gray",
+  High: "red",
+  Medium: "amber",
+  Low: "gray",
+};
+
+export function money(amount: number, currency = "EUR") {
+  return new Intl.NumberFormat("de-DE", { style: "currency", currency, maximumFractionDigits: 0 }).format(amount);
+}
+
+export function date(iso?: string) {
+  if (!iso) return "–";
+  return new Intl.DateTimeFormat("de-DE", { dateStyle: "medium" }).format(new Date(iso));
+}
+
+export function relative(iso: string) {
+  const diff = (new Date(iso).getTime() - Date.now()) / 1000;
+  const rtf = new Intl.RelativeTimeFormat("de-DE", { numeric: "auto" });
+  const abs = Math.abs(diff);
+  if (abs < 3600) return rtf.format(Math.round(diff / 60), "minute");
+  if (abs < 86_400) return rtf.format(Math.round(diff / 3600), "hour");
+  if (abs < 86_400 * 30) return rtf.format(Math.round(diff / 86_400), "day");
+  return rtf.format(Math.round(diff / (86_400 * 30)), "month");
+}
+
+export function initials(name: string) {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p) => p[0]?.toUpperCase())
+    .join("");
+}
+
+export function isWithinDays(iso: string, days: number) {
+  return Date.now() - new Date(iso).getTime() < days * 86_400_000;
+}

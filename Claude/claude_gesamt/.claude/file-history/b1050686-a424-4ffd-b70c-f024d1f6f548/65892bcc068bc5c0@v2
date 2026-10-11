@@ -1,0 +1,48 @@
+import { ladeLastschriftlauf } from "@/lib/daten/lastschrift";
+import { requireRecht } from "@/lib/session";
+
+/**
+ * Die SEPA-Lastschriftdatei, wie sie erzeugt wurde.
+ *
+ * Ausgeliefert wird die abgelegte Datei und nicht eine neu gebaute.
+ * Nur so ist später belegbar, was tatsächlich eingereicht wurde - eine
+ * nachträglich erzeugte Datei könnte andere Daten enthalten, etwa
+ * weil sich eine Bankverbindung inzwischen geändert hat.
+ */
+export async function GET(
+  _request: Request,
+  { params }: { params: Promise<{ lauf: string }> },
+) {
+  await requireRecht("finanzen.lesen");
+
+  const { lauf: laufId } = await params;
+  const lauf = ladeLastschriftlauf(decodeURIComponent(laufId));
+
+  if (!lauf) {
+    return new Response("Lastschriftlauf nicht gefunden.", { status: 404 });
+  }
+
+  if (!lauf.datei) {
+    return new Response(
+      `Zu ${lauf.id} ist keine Datei abgelegt.`,
+      { status: 409, headers: { "Content-Type": "text/plain; charset=utf-8" } },
+    );
+  }
+
+  if (lauf.status === "Storniert") {
+    // Ein stornierter Sammler darf nicht versehentlich doch noch zur
+    // Bank gehen. Die Datei bleibt lesbar, aber nicht als Datei.
+    return new Response(
+      `${lauf.id} wurde storniert und darf nicht eingereicht werden.`,
+      { status: 409, headers: { "Content-Type": "text/plain; charset=utf-8" } },
+    );
+  }
+
+  return new Response(lauf.datei, {
+    headers: {
+      "Content-Type": "application/xml; charset=utf-8",
+      "Content-Disposition": `attachment; filename="${lauf.id}.xml"`,
+      "Cache-Control": "no-store",
+    },
+  });
+}

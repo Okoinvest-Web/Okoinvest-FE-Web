@@ -1,0 +1,79 @@
+import { ladeBuchungen, ladeStapelEinzeln } from "@/lib/daten/nachweise";
+import {
+  alsBmdDatei,
+  pruefeStapel,
+  type Buchungszeile,
+} from "@/lib/finanzen/bmd";
+import { requireRecht } from "@/lib/session";
+
+/**
+ * Buchungsstapel im Übergabeformat der Finanzbuchhaltung.
+ *
+ * Der Stapel wird vor der Ausgabe geprüft. Ein fehlerhafter Stapel
+ * wird von der Buchhaltung als Ganzes zurückgewiesen - ihn hier zu
+ * finden, ist deutlich billiger, als ihn dort zu finden.
+ */
+export async function GET(
+  _request: Request,
+  { params }: { params: Promise<{ stapel: string }> },
+) {
+  await requireRecht("finanzen.lesen");
+
+  const { stapel: stapelId } = await params;
+  const stapel = ladeStapelEinzeln(decodeURIComponent(stapelId));
+
+  if (!stapel) {
+    return new Response("Stapel nicht gefunden.", { status: 404 });
+  }
+
+  const buchungen = ladeBuchungen(stapel.id);
+
+  const zeilen: Buchungszeile[] = buchungen.map((b) => {
+    const netto = b.betrag;
+    const steuer = Math.round(((netto * b.steuersatz) / 100) * 100) / 100;
+
+    return {
+      belegdatum: new Date(b.belegdatum),
+      belegnummer: b.belegnummer,
+      konto: b.konto,
+      gegenkonto: b.gegenkonto,
+      buchungstext: b.text,
+      betragBrutto: Math.abs(Math.round((netto + steuer) * 100) / 100),
+      nettoEur: Math.abs(netto),
+      steuerEur: Math.abs(steuer),
+      steuersatz: b.steuersatz,
+      steuercode: b.steuercode ?? "",
+      kostenstelle: b.kostenstelle ?? "",
+      belegverweis: `${b.belegnummer}.pdf`,
+      sollHaben: netto >= 0 ? "S" : "H",
+      // Die Herkunft steht in der Datenbank als freier Text; für die
+      // Datei zählt nur das Konto, deshalb genügt hier ein Wert, der
+      // die Kontenzuordnung nicht verändert.
+      herkunft: "hardware",
+    };
+  });
+
+  const pruefung = pruefeStapel(zeilen);
+
+  if (!pruefung.gueltig) {
+    // Bewusst kein Teilexport: Ein Stapel geht vollständig oder gar
+    // nicht. Wer die Hälfte einspielt, hat eine Lücke in der
+    // Belegfolge und merkt es erst beim Abschluss.
+    return new Response(
+      `Der Stapel ${stapel.id} wurde nicht ausgegeben.\r\n\r\n` +
+        pruefung.beanstandungen.join("\r\n"),
+      {
+        status: 409,
+        headers: { "Content-Type": "text/plain; charset=utf-8" },
+      },
+    );
+  }
+
+  return new Response(alsBmdDatei(zeilen, { buchsymbol: "AR" }), {
+    headers: {
+      "Content-Type": "text/csv; charset=utf-8",
+      "Content-Disposition": `attachment; filename="${stapel.id}.csv"`,
+      "Cache-Control": "no-store",
+    },
+  });
+}

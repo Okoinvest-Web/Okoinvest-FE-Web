@@ -1,0 +1,244 @@
+# ÖKOVOLT NetOps – Vue-Frontend
+
+Vue-3-Frontend der Frappe-App `netops`. Es lässt sich **ohne laufendes
+Frappe-Backend** entwickeln: ein Mock im Browser beantwortet die Frappe-RPCs
+mit denselben Daten- und Fehlerformaten wie das echte Backend.
+
+Fachliche Grundlage: `CLAUDE.md` im Projektwurzelverzeichnis.
+
+## Loslegen
+
+```bash
+npm install
+npm run dev      # http://localhost:8080
+npm test         # 66 Tests auf Mock- und API-Logik
+```
+
+Es wird nichts weiter benötigt: keine Bench, kein Site, keine Datenbank.
+
+| Befehl            | Zweck                                       |
+| ----------------- | ------------------------------------------- |
+| `npm run dev`     | Entwicklungsserver mit Hot Reload           |
+| `npm run build`   | Produktionsbuild nach `dist/`               |
+| `npm run preview` | Gebautes Ergebnis lokal ausliefern          |
+| `npm test`        | Vitest-Suite einmal ausführen               |
+| `npm run test:watch` | Vitest im Beobachtungsmodus              |
+
+## Was schon da ist
+
+Umgesetzt ist Punkt 3 des MVP-Umfangs aus CLAUDE.md Abschnitt 7:
+
+- Layout mit Seitenleiste; noch nicht gebaute Bereiche stehen sichtbar als
+  „geplant“ in der Navigation statt als toter Link
+- Globale Suche **Strg+K** über IP, MAC, Hostname, Seriennummer, Asset-Nr.,
+  Kabel-Label, VLAN, Dose, Präfix und DNS-Name
+- Geräteliste mit Filter nach Rolle und Mandant
+- Gerätedetail mit Tabs: Übersicht, **Frontplatte**, Schnittstellen, VLANs,
+  IP-Adressen, Verkabelung – in der Übersicht steht das Rack mit dem
+  markierten Gerät daneben
+- **Frontplatte**: Portblöcke in physischer Anordnung, Zustand je Port,
+  VLAN, PoE, Gegenstelle und Kabel im Tooltip, VLAN-Hervorhebung
+- **Rack-Ansicht** mit HE-Belegung, Auslastung und Sprung ins Gerät
+- **Topologie** aus der dokumentierten Verkabelung, Ebene = Abstand vom
+  Perimeter, 10-Gbit-Strecken kräftiger gezeichnet
+- IPAM-Baum mit berechneter Auslastung je Präfix
+- Lage-Seite mit Bestandszahlen und auslaufendem Support
+
+**Noch nicht umgesetzt** (jeweils backendabhängig): Audit-Hash-Kette,
+Konnektoren und Drift-Ansicht, Backup-Ampel, Leitstand-Screens mit
+Freigabe-Ablauf, Offline-Export, Rollen und Rechte.
+
+## Wie der Mock funktioniert
+
+frappe-ui schickt jede Abfrage durch eine austauschbare Funktion, den
+`resourceFetcher`. [src/api/index.js](src/api/index.js) entscheidet beim Start,
+welche das ist:
+
+```
+VITE_USE_MOCK=true   ->  src/api/mock/server.js   (Standard, kein Backend)
+VITE_USE_MOCK=false  ->  frappeRequest            (echtes Frappe über Vite-Proxy)
+```
+
+Der Mock beantwortet:
+
+**Frappe-Standard** – `frappe.client.get_list` (beide Filterschreibweisen,
+Operatoren `= != > < >= <= like "not like" in "not in" between is`, `order_by`,
+Paginierung, Feldauswahl), `get_count`, `get`, `get_value`, `insert`,
+`set_value`, `delete`, `frappe.auth.get_logged_user`, `logout`.
+
+**NetOps-eigene Methoden** – gleiche Pfade wie später in Python:
+
+| Methode | Zweck |
+| ------- | ----- |
+| `netops.api.search.global_search` | Globale Suche über alle Kernobjekte |
+| `netops.api.ipam.prefix_tree` | Präfix-Hierarchie mit Auslastung |
+| `netops.api.ipam.prefix_list` | Derselbe Baum flach, für Tabellen |
+| `netops.api.ipam.prefix_addresses` | Adressen eines Präfix mit Gerätebezug |
+| `netops.api.dcim.device_list` | Geräteliste mit aufgelösten Bezügen |
+| `netops.api.dcim.device_detail` | Gerät samt aller Tabs in einem Aufruf |
+| `netops.api.dcim.dashboard_counters` | Bestandszahlen für die Lage-Seite |
+| `netops.api.dcim.device_front_panel` | Frontplatte: Portblöcke, Zustand, Gegenstelle |
+| `netops.api.dcim.rack_elevation` | Rack mit Belegung je Höheneinheit |
+| `netops.api.dcim.rack_list` | Alle Racks eines Standorts |
+| `netops.api.dcim.topology` | Knoten, Kanten und fertige Positionen |
+
+Die Daten liegen im `localStorage` und überstehen einen Reload. Die Schaltfläche
+unten links in der Seitenleiste – oder `__mock.resetMockData()` in der
+Browser-Konsole – stellt den Ausgangszustand wieder her.
+`__mock.getRegisteredMethods()` listet alle registrierten Methoden.
+
+### Warum die Logik im Mock liegt und nicht in den Komponenten
+
+CLAUDE.md Abschnitt 3 verlangt: keine Geschäftslogik im Frontend. Suche,
+Auslastungsberechnung und Aggregationen stehen deshalb in
+`src/api/mock/methods/` – das ist die Schicht, die später unverändert nach
+Python wandert. Die Vue-Komponenten rufen nur auf und stellen dar.
+
+**Bei der Portierung nicht vergessen:** Der Mock prüft **keine Rechte**. Jede
+Python-Entsprechung braucht eine explizite `frappe.has_permission`-Prüfung und
+einen Mandantenfilter (CLAUDE.md Abschnitt 3 und 7.2).
+
+### Eine eigene Backend-Methode ergänzen
+
+```js
+import { registerMethod } from '@/api/mock/server.js'
+
+registerMethod('netops.api.dcim.trace_path', ({ endpoint }) => {
+  return [{ hop: 1, device: 'SW-ACC-01', port: 'Port 5' }]
+})
+```
+
+Nicht registrierte Methoden werfen einen Fehler, der sagt, was fehlt – so wird
+früh sichtbar, was das echte Backend bereitstellen muss.
+
+## Datenmodell
+
+[src/api/mock/fixtures.js](src/api/mock/fixtures.js) definiert die Phase-1-DocTypes
+aus CLAUDE.md Abschnitt 4 (Auszug, soweit die Oberfläche sie braucht):
+
+`Tenant`, `Site`, `Manufacturer`, `Device Type`, `Device Role`, `Rack`,
+`Network Device`, `Device Interface`, `Wall Outlet`, `Cable`, `Security Zone`,
+`VRF`, `VLAN`, `IP Prefix`, `IP Address`.
+
+DocType- und Feldnamen sind **englisch**, die Oberfläche ist **deutsch**. Die
+Zuordnung steht in [src/labels.js](src/labels.js) und wird später durch die
+Übersetzungsdateien der Frappe-App ersetzt. `defineDoctype()` erzwingt an jedem
+DocType die Pflichtfelder `tenant`, `status` und `description`; ein Test
+prüft das.
+
+Zwei bewusste Abweichungen von CLAUDE.md Abschnitt 4:
+
+- „Verantwortlicher (User)“ heißt hier `responsible_user`, nicht `owner` –
+  `owner` ist in Frappe ein Standardfeld und wäre kollidiert.
+- `Tenant` trägt selbst ein `tenant`-Feld (auf sich selbst zeigend), damit die
+  Regel „jeder DocType hat `tenant`“ ohne Sonderfall gilt.
+
+### Ports und Frontplatten
+
+Die Schnittstellen entstehen nicht von Hand, sondern aus Portvorlagen je
+Gerätetyp ([src/api/mock/portlayout.js](src/api/mock/portlayout.js)) – das
+Gegenstück zu den Interface-Vorlagen als Child Table am `Device Type`. In
+`fixtures.js` steht je Gerät nur noch, was vom Standard abweicht: belegtes
+VLAN, Modus, abgeschaltete Ports. Ein TSW202 bekommt so seine 8 Kupferports
+plus 2 SFP-Käfige, ein R740 seine LOM-, SFP+- und iDRAC-Anschlüsse.
+
+## Farbregeln der grafischen Ansichten
+
+**Farbe trägt Zustand, Text trägt Identität.** Die Tokens stehen in
+[src/index.css](src/index.css).
+
+Der Grund ist nachgerechnet, nicht Geschmack: Ein Farbschema über die sechs
+Schutzzonen fällt im All-Pairs-Test durch – Grün gegen Orange liegt bei
+ΔE 3,2 unter Protanopie, Magenta gegen Orange bei ΔE 12,9 auch mit vollem
+Farbsehen (Grenzwert 15). Auf einer Frontplatte lässt sich jeder Port mit
+jedem anderen vergleichen, also gilt genau dieser strenge Maßstab.
+
+Daraus folgt:
+
+- Ports werden nach **Zustand** eingefärbt (belegt / frei / abgeschaltet) –
+  drei Werte aus der festen Statuspalette, jeder mit Beschriftung in der
+  Legende, der abgeschaltete zusätzlich mit Schrägstrich.
+- Das **VLAN steht als Zahl** am Port. Die VLAN-Ansicht hebt genau ein Netz
+  hervor statt alle einzufärben – das ist ein Zwei-Farben-Problem und damit
+  unkritisch, und für die Frage „welche Ports hängen in VLAN 90?“ auch das
+  nützlichere Werkzeug.
+- **Geräterollen** erscheinen als Text, nicht als Farbe – sieben Rollen wären
+  aus demselben Grund nicht sicher unterscheidbar.
+- **Auslastung** ist eine Größenordnung: eine Hue, hell nach dunkel. Über 70 %
+  bzw. 90 % kommt eine Statusfarbe dazu, immer zusammen mit dem Wort
+  „hoch“ oder „kritisch“.
+- **Bandbreite** in der Topologie steckt in der Strichstärke, nicht in einer
+  zweiten Farbskala.
+
+### Testdaten
+
+Alle Seed-Daten sind frei erfunden (CLAUDE.md Abschnitt 6.1: keine
+Produktivdaten). Seriennummern beginnen mit `TEST-`, Domains enden auf `.test`,
+`passbolt_reference` enthält nur eine Referenz – nie ein Geheimnis.
+
+## Umstieg auf ein echtes Frappe
+
+1. `VITE_USE_MOCK=false` in `.env` setzen, `VITE_FRAPPE_URL` auf die Site zeigen lassen.
+2. In [vite.config.js](vite.config.js) `build.outDir` auf `../netops/public/frontend`
+   ändern und die Plugin-Schalter `frappeProxy` / `jinjaBootData` / `buildConfig`
+   wieder einschalten.
+3. DocTypes im Backend so anlegen, dass Namen und Feldnamen zu
+   `src/api/mock/fixtures.js` passen.
+4. Die Methoden aus `src/api/mock/methods/` als whitelisted Python-Methoden
+   umsetzen – **mit** Rechteprüfung.
+5. `src/labels.js` durch `netops/translations/de.csv` ersetzen.
+
+Der Anwendungscode ändert sich dabei nicht: Er nutzt ausschließlich
+`createResource` / `createListResource` / `createDocumentResource`.
+
+## Aufbau
+
+```
+src/
+  api/
+    index.js              Auswahl des Fetchers (Mock oder echtes Frappe)
+    mock/
+      server.js           Frappe-Standardmethoden, Latenz, Fehlerformat
+      db.js               Dokumentspeicher, Pflichtfelder, Persistenz
+      query.js            Filter-, Sortier- und Feldauswahllogik
+      ip.js               IPv4-Rechnung für IPAM
+      portlayout.js       Portvorlagen je Gerätetyp
+      fixtures.js         DocType-Definitionen und Testdaten
+      methods/            NetOps-eigene Methoden (dcim, ipam, search, viz)
+  components/             Layout, Suche, Frontplatte, Rack, Topologie
+  pages/                  Eine Datei je Route
+  router/                 Routendefinition
+  stores/                 Pinia-Stores
+  labels.js               Deutsche Beschriftungen zu englischen Feldnamen
+tests/                    Vitest-Suite
+```
+
+## Tests
+
+`bench run-tests --app netops` aus CLAUDE.md Abschnitt 3 lässt sich hier nicht
+ausführen – es gibt keine Bench. `npm test` tritt an seine Stelle und deckt ab:
+
+- IPv4-Rechnung inklusive Grenzfällen (`/31`, `/32`, Adressen über 2^31)
+- Frappe-RPC-Verhalten: Filter, Sortierung, Paginierung, Schreiboperationen,
+  Fehlerformate
+- Pflichtfelder an jedem DocType
+- Globale Suche über alle in CLAUDE.md geforderten Felder
+- IPAM-Baum: Hierarchie, VRF-Trennung, beide Auslastungsarten
+- Gerätedetail: Anreicherung, physische Portsortierung, Fehlerfall
+- Frontplatte: Portblöcke, drei Zustände, Gegenstellen, fehlende Vorlage
+- Rack: Belegung über die Bauhöhe, Reihenfolge, Standortfilter
+- Topologie: Ebenen aus dem Kabelgraph, reproduzierbare Positionen und die
+  Zusicherung, dass keine Kante eine Ebene überspringt
+
+## Bekannte Grenzen des Mocks
+
+- Keine Berechtigungen, keine Rollen, keine serverseitigen Hooks
+- Keine Child-Tables; Link-Felder sind einfache Zeichenketten ohne Integritätsprüfung
+- Kein Realtime (`socketio` ist in [src/main.js](src/main.js) abgeschaltet)
+- Kein IPv6
+- Frontplatten nur für Gerätetypen mit hinterlegter Portvorlage; andere Geräte
+  zeigen den Tab gar nicht erst
+- Kein Dark Mode in der Oberfläche; die Farb-Token sind dafür aber schon
+  angelegt
+- Aggregatfelder wie `count(name) as anzahl` in `fields` werden ignoriert
+- Keine Audit-Hash-Kette – die gehört ins Backend

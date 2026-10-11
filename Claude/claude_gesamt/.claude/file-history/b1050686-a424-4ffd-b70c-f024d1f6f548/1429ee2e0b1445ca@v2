@@ -1,0 +1,67 @@
+/**
+ * CSV-Ausgabe für die Ladeabrechnung.
+ *
+ * Zielprogramm ist die Buchhaltung, und die läuft im deutschsprachigen
+ * Raum auf Excel mit deutschen Ländereinstellungen. Daraus folgt
+ * dreierlei, und jedes davon ist einmal schiefgegangen, bevor es
+ * jemand aufgeschrieben hat:
+ *
+ *   - Trennzeichen ist das Semikolon. Bei Komma als Trennzeichen
+ *     zerlegt Excel jede Dezimalzahl in zwei Spalten.
+ *   - Dezimaltrennzeichen ist das Komma, ohne Tausenderpunkt.
+ *   - Die Datei beginnt mit einer Byte-Order-Mark. Ohne sie liest
+ *     Excel UTF-8 als Windows-1252, und aus "Gebäude" wird "GebÃ¤ude".
+ */
+
+/** Byte-Order-Mark, damit Excel die Datei als UTF-8 erkennt. */
+export const BOM = "﻿";
+
+/**
+ * Maskiert ein einzelnes Feld.
+ *
+ * Führende Gleichheits-, Plus- und Minuszeichen sowie das @ werden
+ * entschärft: Excel und LibreOffice werten solche Felder als Formel
+ * aus. Ein Fahrzeugname wie "=E-Transit" würde sonst zu einer
+ * Fehlermeldung in der Zelle - im schlimmeren Fall zu einem Aufruf,
+ * den niemand beabsichtigt hat.
+ */
+export function feld(wert: string | number | null | undefined): string {
+  if (wert === null || wert === undefined) return "";
+
+  // Ganze Zahlen bleiben ganz: Eine Anzahl von Ladevorgaengen als
+  // "18,00" auszugeben, laesst sie wie einen Betrag aussehen.
+  let text =
+    typeof wert === "number"
+      ? Number.isInteger(wert)
+        ? String(wert)
+        : zahl(wert)
+      : String(wert);
+
+  if (/^[=+\-@]/.test(text)) text = `'${text}`;
+
+  if (/[";\r\n]/.test(text)) {
+    return `"${text.replace(/"/g, '""')}"`;
+  }
+  return text;
+}
+
+/** Zahl mit Komma als Dezimaltrennzeichen, ohne Tausenderpunkt. */
+export function zahl(wert: number, stellen = 2): string {
+  if (!Number.isFinite(wert)) return "";
+  return wert.toFixed(stellen).replace(".", ",");
+}
+
+/** Baut eine Zeile aus Feldern. */
+export function zeile(felder: (string | number | null | undefined)[]): string {
+  return felder.map(feld).join(";");
+}
+
+/**
+ * Setzt ein vollständiges Dokument zusammen.
+ *
+ * Zeilenende ist CRLF, weil RFC 4180 es so vorsieht und ältere
+ * Windows-Programme mit reinem LF alles in eine Zeile schreiben.
+ */
+export function dokument(zeilen: string[]): string {
+  return BOM + zeilen.join("\r\n") + "\r\n";
+}

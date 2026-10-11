@@ -1,0 +1,129 @@
+<template>
+  <div class="p-6">
+    <h2 class="mb-1 text-base font-semibold text-ink-gray-8">Erreichbarkeit</h2>
+    <p class="mb-4 max-w-3xl text-sm text-ink-gray-6">
+      Jede Zahl in diesem Bereich stammt aus dem, was ein Konnektor zuletzt gemeldet hat. Antwortet
+      ein System nicht mehr, bleiben die alten Werte stehen und sehen aus wie neue. Deshalb steht
+      hier das Alter der Meldung vor ihrem Inhalt.
+    </p>
+
+    <div v-if="daten" class="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <StatCard
+        label="Erreichbar"
+        :wert="daten.summary.reachable + ' / ' + daten.summary.systems"
+        :hinweis="
+          daten.summary.unreachable ? daten.summary.unreachable + ' ohne Antwort' : 'alle melden'
+        "
+        :level="daten.summary.unreachable ? 'critical' : 'ok'"
+      />
+      <StatCard
+        label="Fehler in 24 h"
+        :wert="daten.summary.errors_24h"
+        hinweis="aus Aufgabenprotokoll und Syslog"
+        :level="daten.summary.errors_24h ? 'critical' : 'ok'"
+      />
+      <StatCard
+        label="Warnungen in 24 h"
+        :wert="daten.summary.warnings_24h"
+        :level="daten.summary.warnings_24h ? 'warning' : 'ok'"
+      />
+      <StatCard
+        label="Bänder außer Haus"
+        :wert="baender.data?.summary?.offsite ?? '–'"
+        :hinweis="
+          baender.data?.summary?.not_yet_offsite
+            ? baender.data.summary.not_yet_offsite + ' noch im Haus'
+            : 'alle ausgelagert'
+        "
+        :level="baender.data?.summary?.not_yet_offsite ? 'warning' : 'ok'"
+      />
+    </div>
+
+    <div class="grid grid-cols-1 gap-4 xl:grid-cols-2">
+      <article
+        v-for="z in daten?.rows || []"
+        :key="z.connector"
+        class="rounded-lg border bg-surface-white p-4"
+        :class="z.level === 'critical' ? 'border-outline-red-2' : 'border-outline-gray-2'"
+      >
+        <div class="flex flex-wrap items-start justify-between gap-3">
+          <div class="min-w-0">
+            <div class="flex flex-wrap items-center gap-2">
+              <p class="font-medium text-ink-gray-9">{{ z.connector_name }}</p>
+              <Badge theme="gray">{{ z.label }}</Badge>
+              <Badge v-if="z.read_only" theme="blue">nur lesend</Badge>
+              <Badge v-if="!z.enabled" theme="gray">abgeschaltet</Badge>
+            </div>
+            <p class="mt-0.5 truncate font-mono text-sm text-ink-gray-5">{{ z.base_url }}</p>
+          </div>
+          <StatusDot
+            :level="z.level"
+            :text="z.reachable ? 'antwortet' : z.enabled ? 'keine Antwort' : 'aus'"
+          />
+        </div>
+
+        <dl class="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 text-sm sm:grid-cols-4">
+          <div>
+            <dt class="text-ink-gray-5">Letzte Meldung</dt>
+            <dd class="tabular-nums text-ink-gray-8">
+              {{ z.age_hours === null ? 'nie' : z.age_hours + ' h' }}
+            </dd>
+          </div>
+          <div>
+            <dt class="text-ink-gray-5">Takt</dt>
+            <dd class="tabular-nums text-ink-gray-8">{{ z.interval_minutes }} min</dd>
+          </div>
+          <div>
+            <dt class="text-ink-gray-5">Fehler 24 h</dt>
+            <dd class="tabular-nums" :class="z.errors_24h ? 'text-ink-red-3' : 'text-ink-gray-8'">
+              {{ z.errors_24h }}
+            </dd>
+          </div>
+          <div>
+            <dt class="text-ink-gray-5">Version</dt>
+            <dd class="text-ink-gray-8">{{ z.api_version || '–' }}</dd>
+          </div>
+        </dl>
+
+        <p v-if="z.targets.length" class="mt-2 text-sm text-ink-gray-6">
+          Bedient: <span class="font-mono">{{ z.targets.join(', ') }}</span>
+        </p>
+
+        <!-- Die jüngste Fehlermeldung gehört neben die Ampel, nicht drei Klicks weiter. -->
+        <p
+          v-if="z.latest_problem"
+          class="mt-2 rounded border border-outline-gray-2 bg-surface-gray-1 p-2 font-mono text-xs text-ink-gray-7"
+        >
+          {{ z.latest_problem }}
+        </p>
+
+        <ul v-if="z.reasons.length" class="mt-2">
+          <li v-for="g in z.reasons" :key="g" class="text-sm text-ink-gray-6">· {{ g }}</li>
+        </ul>
+
+        <div class="mt-3 border-t border-outline-gray-2 pt-3">
+          <RouterLink
+            :to="'/backup/meldungen?connector=' + z.connector"
+            class="text-sm font-medium text-ink-gray-8 underline"
+          >
+            Meldungen dieses Systems
+          </RouterLink>
+        </div>
+      </article>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed } from 'vue'
+import { Badge, createResource } from 'frappe-ui'
+import StatCard from '@/components/StatCard.vue'
+import StatusDot from '@/components/StatusDot.vue'
+
+const props = defineProps({
+  gesundheit: { type: Object, default: null },
+})
+
+const daten = computed(() => props.gesundheit?.data || null)
+const baender = createResource({ url: 'netops.api.tape.tape_inventory', auto: true })
+</script>

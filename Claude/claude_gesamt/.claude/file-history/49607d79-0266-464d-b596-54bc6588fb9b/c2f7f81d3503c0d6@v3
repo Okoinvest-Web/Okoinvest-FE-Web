@@ -1,0 +1,492 @@
+/**
+ * Leitstand-Screens und Freigabe-Ablauf (Fachkonzept 2.16).
+ *
+ * ACHTUNG BEI DER PORTIERUNG – hier bildet der Mock nur den Ablauf ab.
+ * Die eigentliche Absicherung gehört zwingend ins Backend und fehlt hier:
+ *
+ *   - Anfragen nur aus den konfigurierten Leitstand-Subnetzen, sonst 403
+ *     plus Audit-Eintrag
+ *   - Ratenbegrenzung je IP
+ *   - gerätegebundenes Token als HttpOnly/Secure/SameSite=Strict-Cookie,
+ *     niemals in der URL
+ *   - FIDO2-Step-up vor der Freigabe
+ *   - Widerruf wirkt sofort über ein Realtime-Ereignis
+ *
+ * Der Mock kann das nicht leisten: ein Browser-Mock hat weder die echte
+ * Client-IP noch eine Sitzung, die er absichern könnte. Was er zeigt, ist der
+ * Ablauf und die Datenform.
+ */
+import { FrappeMockError, SESSION_USER, table, touch } from '../db.js'
+import { protokolliere } from './audit.js'
+import { backup_status } from './backup.js'
+import { alert_list, ops_overview } from './ops.js'
+import { security_overview } from './security.js'
+import { dashboard_counters } from './dcim.js'
+import { mail_overview } from './mail.js'
+import { cluster_overview, storage_overview } from './virt.js'
+import { communication_matrix } from './matrix.js'
+import { rule_hygiene } from './firewall.js'
+import { exposure_overview } from './cloud.js'
+import { topology } from './viz.js'
+import { alterMinuten, jetzt as jetztText, parse } from '../zeit.js'
+
+/** Gültigkeit eines Bestätigungscodes laut Fachkonzept: 5 Minuten. */
+export const CODE_GUELTIGKEIT_MINUTEN = 5
+
+/** Subnetze, aus denen Anfragen überhaupt angenommen werden. */
+export const LEITSTAND_NETZE = ['10.10.90.0/24']
+
+export function screen_list() {
+  const freigaben = table('Screen Pairing Request')
+
+  return table('Screen')
+    .map((s) => {
+      const aktiv = freigaben.find((p) => p.screen === s.name && p.pairing_state === 'approved')
+      return {
+        ...s,
+        paired: !!aktiv,
+        pairing: aktiv ? { name: aktiv.name, client_ip: aktiv.client_ip, last_heartbeat: aktiv.last_heartbeat } : null,
+        // Ein Screen, der seit über zwei Minuten nichts meldet, gilt als still.
+        stale: aktiv ? alterMinuten(aktiv.last_heartbeat) > 2 : false,
+      }
+    })
+    .sort((a, b) => a.screen_no - b.screen_no)
+}
+
+export function screen_pairings({ state = null } = {}) {
+  const jetzt = Date.now()
+
+  let anfragen = table('Screen Pairing Request')
+  if (state) anfragen = anfragen.filter((p) => p.pairing_state === state)
+
+  return [...anfragen]
+    .map((p) => ({
+      ...p,
+      expired: !!(p.expires && parse(p.expires) && parse(p.expires).getTime() < jetzt),
+      heartbeat_age_minutes: p.last_heartbeat ? Math.round(alterMinuten(p.last_heartbeat) * 10) / 10 : null,
+      from_control_room: istImLeitstandNetz(p.client_ip),
+    }))
+    .sort((a, b) => (a.requested < b.requested ? 1 : -1))
+}
+
+/**
+ * Freigeben, ablehnen oder widerrufen.
+ *
+ * Im echten Backend hängt hier ein FIDO2-Step-up davor und die Rolle
+ * `NetOps Admin` wird geprüft.
+ */
+export function set_pairing_state({ name, state } = {}) {
+  const erlaubt = ['approved', 'rejected', 'revoked']
+  if (!erlaubt.includes(state)) {
+    throw new FrappeMockError('ValidationError: Zustand muss einer von ' + erlaubt.join(', ') + ' sein')
+  }
+
+  const anfrage = table('Screen Pairing Request').find((p) => p.name === name)
+  if (!anfrage) {
+    throw new FrappeMockError('DoesNotExistError: Screen Pairing Request ' + name + ' existiert nicht', 404)
+  }
+
+  if (state === 'approved') {
+    if (!istImLeitstandNetz(anfrage.client_ip)) {
+      throw new FrappeMockError(
+        'PermissionError: Anfrage stammt nicht aus einem Leitstand-Subnetz (' + anfrage.client_ip + ')',
+        403,
+      )
+    }
+    if (anfrage.expires && parse(anfrage.expires) && parse(anfrage.expires).getTime() < Date.now()) {
+      throw new FrappeMockError('ValidationError: Der Bestätigungscode ist abgelaufen')
+    }
+    anfrage.approved_by = SESSION_USER
+    anfrage.approved_on = jetztText()
+    anfrage.expires = null
+  }
+
+  if (state === 'revoked') {
+    anfrage.revoked_on = jetztText()
+  }
+
+  anfrage.pairing_state = state
+  touch(anfrage)
+  protokolliere({
+    action: 'screen_' + state,
+    object_type: 'Screen Pairing Request',
+    object_name: name,
+    payload: { screen: anfrage.screen, client_ip: anfrage.client_ip },
+  })
+
+  return { ...anfrage }
+}
+
+/**
+ * Inhalt eines Screens. Liefert nur Kennzahlen, niemals Geheimnisse -
+ * die Rolle `Leitstand Anzeige` darf ausschliesslich lesen.
+ */
+export function screen_data({ screen } = {}) {
+  const definition = table('Screen').find((s) => s.name === screen)
+  if (!definition) {
+    throw new FrappeMockError('DoesNotExistError: Screen ' + screen + ' existiert nicht', 404)
+  }
+
+  const kacheln = definition.tiles.map((kachel) => baueKachel(kachel))
+
+  return {
+    screen: definition.name,
+    screen_no: definition.screen_no,
+    screen_title: definition.screen_title,
+    generated_at: jetztText(),
+    tiles: kacheln,
+  }
+}
+
+function baueKachel(kachel) {
+  const betrieb = ops_overview({})
+  const sicherheit = security_overview({})
+
+  switch (kachel) {
+    case 'sites':
+      return { kind: kachel, title: 'Bestand', metrics: kennzahlenAusBestand() }
+    case 'critical_alerts':
+      return {
+        kind: kachel,
+        title: 'Kritische Alarme',
+        metrics: [
+          { label: 'Kritisch', value: betrieb.alerts_critical, level: betrieb.alerts_critical ? 'critical' : 'ok' },
+          { label: 'Hoch', value: betrieb.alerts_high, level: betrieb.alerts_high ? 'warning' : 'ok' },
+          { label: 'Offen gesamt', value: betrieb.alerts_open },
+        ],
+      }
+    case 'incidents':
+      return {
+        kind: kachel,
+        title: 'Vorfälle',
+        metrics: [
+          { label: 'Offen', value: sicherheit.incidents_open, level: sicherheit.incidents_open ? 'warning' : 'ok' },
+          {
+            label: 'Nächste Meldefrist',
+            value: sicherheit.next_deadline_hours === null ? '–' : sicherheit.next_deadline_hours + ' h',
+            level: sicherheit.next_deadline_hours !== null && sicherheit.next_deadline_hours < 24 ? 'critical' : 'ok',
+          },
+        ],
+      }
+    case 'connectors':
+      return {
+        kind: kachel,
+        title: 'Konnektoren',
+        metrics: [
+          { label: 'In Ordnung', value: betrieb.connectors_healthy, level: 'ok' },
+          {
+            label: 'Auffällig',
+            value: betrieb.connectors_attention,
+            level: betrieb.connectors_attention ? 'warning' : 'ok',
+          },
+          { label: 'Offene Drift', value: betrieb.drift_open, level: betrieb.drift_open ? 'warning' : 'ok' },
+        ],
+      }
+    case 'alert_feed':
+      return {
+        kind: kachel,
+        title: 'Alarme',
+        rows: alert_list({ limit: 8 }).map((a) => ({
+          title: a.title,
+          subtitle: a.source + ' · ' + a.object_name,
+          level: a.severity === 'critical' ? 'critical' : a.severity === 'high' ? 'warning' : 'ok',
+          badge: a.alert_state,
+        })),
+      }
+    case 'backup_traffic_light': {
+      const backup = backup_status({})
+      return {
+        kind: kachel,
+        title: 'Backup-Ampel',
+        metrics: [
+          { label: 'In Ordnung', value: backup.summary.ok, level: 'ok' },
+          { label: 'Warnung', value: backup.summary.warning, level: backup.summary.warning ? 'warning' : 'ok' },
+          { label: 'Kritisch', value: backup.summary.critical, level: backup.summary.critical ? 'critical' : 'ok' },
+        ],
+        rows: backup.objects
+          .filter((o) => o.level !== 'ok')
+          .slice(0, 6)
+          .map((o) => ({ title: o.service, subtitle: o.reasons[0] || '', level: o.level })),
+      }
+    }
+    case 'datastores': {
+      const backup = backup_status({})
+      return {
+        kind: kachel,
+        title: 'Datastores',
+        rows: backup.datastores.map((d) => ({
+          title: d.datastore_name,
+          subtitle: d.used_pct + ' % belegt · voll am ' + (d.full_on || 'unbekannt'),
+          level: d.level,
+        })),
+      }
+    }
+    case 'vuln_by_severity':
+      return {
+        kind: kachel,
+        title: 'Schwachstellen',
+        metrics: [
+          { label: 'Offen', value: sicherheit.vulnerabilities_open },
+          { label: 'Kritisch', value: sicherheit.vulnerabilities_critical, level: sicherheit.vulnerabilities_critical ? 'critical' : 'ok' },
+          { label: 'Frist überschritten', value: sicherheit.vulnerabilities_overdue, level: sicherheit.vulnerabilities_overdue ? 'critical' : 'ok' },
+        ],
+      }
+    case 'kev':
+      return {
+        kind: kachel,
+        title: 'Aktiv ausgenutzt (KEV)',
+        metrics: [
+          { label: 'Betroffen', value: sicherheit.vulnerabilities_kev, level: sicherheit.vulnerabilities_kev ? 'critical' : 'ok' },
+        ],
+        rows: sicherheit.highest_risk
+          ? [{ title: sicherheit.highest_risk.cve, subtitle: sicherheit.highest_risk.object_name, level: 'critical' }]
+          : [],
+      }
+    case 'mail_flow': {
+      const post = mail_overview({})
+      return {
+        kind: kachel,
+        title: 'Mailfluss',
+        metrics: [
+          { label: 'Stufen in Ordnung', value: post.summary.gateways_ok, level: post.summary.gateways_attention ? 'warning' : 'ok' },
+          { label: 'Spamanteil', value: post.flow.totals.spam_pct + ' %' },
+          { label: 'Warteschlange', value: post.summary.queue_total, level: post.summary.queue_total > 100 ? 'critical' : 'ok' },
+        ],
+      }
+    }
+    case 'quarantine': {
+      const post = mail_overview({})
+      return {
+        kind: kachel,
+        title: 'Postfach-Vorfälle',
+        metrics: [
+          { label: 'Durchgelassen', value: post.summary.passed_gateway, level: post.summary.passed_gateway ? 'critical' : 'ok' },
+          { label: 'Betroffene Postfächer', value: post.summary.affected_mailboxes, level: post.summary.affected_mailboxes ? 'warning' : 'ok' },
+        ],
+        rows: post.incidents
+          .filter((v) => v.classification !== 'false_positive')
+          .slice(0, 5)
+          .map((v) => ({ title: v.subject, subtitle: v.sender, level: v.level })),
+      }
+    }
+    case 'hypervisors': {
+      const cluster = cluster_overview({})
+      return {
+        kind: kachel,
+        title: 'Virtualisierung',
+        rows: cluster.map((c) => ({
+          title: c.cluster_name,
+          subtitle: c.vm_running + ' von ' + c.vm_total + ' Gästen · ' + (c.reason || 'Quorum in Ordnung'),
+          level: c.level,
+        })),
+      }
+    }
+    case 'storage': {
+      const speicher = storage_overview({})
+      return {
+        kind: kachel,
+        title: 'Speicher',
+        metrics: [
+          { label: 'Belegt', value: speicher.summary.used_tb + ' TB' },
+          { label: 'Gesamt', value: speicher.summary.total_tb + ' TB' },
+          {
+            label: 'Pools mit Befund',
+            value: speicher.summary.pools_degraded,
+            level: speicher.summary.pools_degraded ? 'critical' : 'ok',
+          },
+        ],
+        rows: speicher.pools
+          .filter((p) => p.level !== 'ok')
+          .map((p) => ({ title: p.pool_name, subtitle: p.reasons[0] || '', level: p.level })),
+      }
+    }
+    case 'blocks_by_layer': {
+      const matrix = communication_matrix({ include_deny: true })
+      return {
+        kind: kachel,
+        title: 'Regelwerk',
+        metrics: [
+          { label: 'Zonenpaare', value: matrix.summary.pairs },
+          {
+            label: 'Ohne Begründung',
+            value: matrix.summary.undocumented_pairs,
+            level: matrix.summary.undocumented_pairs ? 'warning' : 'ok',
+          },
+          {
+            label: 'Aus dem Internet',
+            value: matrix.summary.from_internet,
+            level: matrix.summary.from_internet ? 'warning' : 'ok',
+          },
+        ],
+      }
+    }
+    case 'top_sources': {
+      const hygiene = rule_hygiene({})
+      return {
+        kind: kachel,
+        title: 'Regel-Hygiene',
+        rows: hygiene.findings.slice(0, 6).map((f) => ({
+          title: f.rule_name,
+          subtitle: f.firewall + ' · ' + f.message,
+          level: f.kind === 'too_broad' ? 'critical' : 'warning',
+        })),
+      }
+    }
+    case 'topology': {
+      const graph = topology({})
+      return {
+        kind: kachel,
+        title: 'Topologie',
+        metrics: [
+          { label: 'Objekte', value: graph.nodes.length },
+          { label: 'Verbindungen', value: graph.edges.length },
+          {
+            label: 'Ohne Verkabelung',
+            value: graph.nodes.filter((n) => n.connected === false).length,
+            level: graph.nodes.some((n) => n.connected === false) ? 'warning' : 'ok',
+          },
+        ],
+      }
+    }
+    case 'uplinks': {
+      const leitungen = table('Provider Link')
+      return {
+        kind: kachel,
+        title: 'Uplinks',
+        rows: leitungen.map((l) => ({
+          title: l.link_name + ' · ' + l.provider,
+          subtitle: l.bandwidth_mbps + ' Mbit/s · ' + l.public_prefix,
+          level: l.link_state === 'up' ? 'ok' : l.link_state === 'degraded' ? 'warning' : 'critical',
+        })),
+      }
+    }
+    case 'mitre': {
+      // Alarme nach ATT&CK-Technik gruppiert - das ist die Sicht, die im
+      // Lagebild gebraucht wird.
+      const alarme = alert_list({ limit: 200 }).filter((a) => a.mitre_technique)
+      const jeTechnik = new Map()
+      for (const alarm of alarme) {
+        const bisher = jeTechnik.get(alarm.mitre_technique) || { anzahl: 0, schwer: 'low' }
+        bisher.anzahl += 1
+        if (alarm.severity === 'critical' || (alarm.severity === 'high' && bisher.schwer !== 'critical')) {
+          bisher.schwer = alarm.severity
+        }
+        jeTechnik.set(alarm.mitre_technique, bisher)
+      }
+
+      return {
+        kind: kachel,
+        title: 'MITRE ATT&CK',
+        metrics: [
+          { label: 'Techniken beobachtet', value: jeTechnik.size },
+          { label: 'Alarme mit Zuordnung', value: alarme.length },
+        ],
+        rows: [...jeTechnik.entries()]
+          .sort((a, b) => b[1].anzahl - a[1].anzahl)
+          .slice(0, 5)
+          .map(([technik, wert]) => ({
+            title: technik,
+            subtitle: wert.anzahl + ' Alarme',
+            level: wert.schwer === 'critical' ? 'critical' : wert.schwer === 'high' ? 'warning' : 'ok',
+          })),
+      }
+    }
+    case 'exposure': {
+      const aussen = exposure_overview({})
+      return {
+        kind: kachel,
+        title: 'Externe Angriffsfläche',
+        metrics: [
+          { label: 'Öffentliche Dienste', value: aussen.summary.services },
+          {
+            label: 'Nicht dokumentiert',
+            value: aussen.summary.undocumented,
+            level: aussen.summary.undocumented ? 'critical' : 'ok',
+          },
+          {
+            label: 'Zertifikate mit Befund',
+            value: aussen.summary.certificates_expiring,
+            level: aussen.summary.certificates_expiring ? 'warning' : 'ok',
+          },
+        ],
+        rows: aussen.services
+          .filter((d) => !d.documented)
+          .map((d) => ({ title: d.public_ip + ':' + d.port, subtitle: d.service_name, level: 'critical' })),
+      }
+    }
+    case 'threat_intel': {
+      const aussen = exposure_overview({})
+      return {
+        kind: kachel,
+        title: 'Threat Intel',
+        metrics: [
+          {
+            label: 'Treffer im Netz',
+            value: aussen.summary.indicators_matched,
+            level: aussen.summary.indicators_matched ? 'critical' : 'ok',
+          },
+          { label: 'Indikatoren beobachtet', value: aussen.indicators.length },
+        ],
+        rows: aussen.indicators
+          .filter((i) => i.matched)
+          .slice(0, 5)
+          .map((i) => ({ title: i.indicator, subtitle: i.source + ' → ' + i.matched_object, level: 'critical' })),
+      }
+    }
+    case 'watchdog': {
+      // Der Wachhund im Sinne des Fachkonzepts: was CrowdSec und Zenarmor
+      // entschieden haben.
+      const entscheidungen = alert_list({ limit: 200 }).filter((a) =>
+        ['crowdsec', 'zenarmor'].includes(a.source),
+      )
+      return {
+        kind: kachel,
+        title: 'Wachhund',
+        metrics: [
+          { label: 'Entscheidungen', value: entscheidungen.length },
+          {
+            label: 'Offen',
+            value: entscheidungen.filter((a) => a.alert_state !== 'closed').length,
+            level: entscheidungen.some((a) => a.alert_state === 'new') ? 'warning' : 'ok',
+          },
+        ],
+        rows: entscheidungen.slice(0, 5).map((a) => ({
+          title: a.title,
+          subtitle: a.source + ' · ' + a.object_name,
+          level: a.severity === 'critical' ? 'critical' : a.severity === 'high' ? 'warning' : 'ok',
+        })),
+      }
+    }
+    default:
+      // Kacheln, deren Datenquelle noch nicht angebunden ist, sagen das
+      // offen - ein leeres Feld sähe aus wie "alles ruhig".
+      return {
+        kind: kachel,
+        title: kachel,
+        placeholder: true,
+        note: 'Datenquelle noch nicht angebunden',
+      }
+  }
+}
+
+function kennzahlenAusBestand() {
+  const z = dashboard_counters({})
+  return [
+    { label: 'Standorte', value: z.sites },
+    { label: 'Geräte', value: z.devices },
+    { label: 'VLANs', value: z.vlans },
+    { label: 'Präfixe', value: z.prefixes },
+  ]
+}
+
+function istImLeitstandNetz(ip) {
+  if (!ip) return false
+  // Bewusst simpel: der echte Vergleich passiert serverseitig gegen die
+  // konfigurierten Subnetze.
+  return LEITSTAND_NETZE.some((netz) => {
+    const basis = netz.split('/')[0].split('.').slice(0, 3).join('.')
+    return String(ip).startsWith(basis + '.')
+  })
+}
+
+

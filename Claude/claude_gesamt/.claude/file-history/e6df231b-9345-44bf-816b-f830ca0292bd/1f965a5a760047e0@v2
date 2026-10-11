@@ -1,0 +1,63 @@
+<script setup lang="ts">
+/** Modal: auf dem Smartphone als Sheet von unten, ab Tablet zentriert. */
+import { onBeforeUnmount, onMounted } from 'vue'
+
+import AppIcon from '@/components/AppIcon.vue'
+
+const props = withDefaults(defineProps<{ offen: boolean; titel: string; breit?: boolean }>(), {
+  breit: false,
+})
+
+const emit = defineEmits<{ (e: 'schliessen'): void }>()
+
+function beiTaste(ereignis: KeyboardEvent) {
+  if (ereignis.key === 'Escape' && props.offen) emit('schliessen')
+}
+
+onMounted(() => window.addEventListener('keydown', beiTaste))
+onBeforeUnmount(() => window.removeEventListener('keydown', beiTaste))
+</script>
+
+<template>
+  <Teleport to="body">
+    <Transition
+      enter-active-class="transition duration-150"
+      enter-from-class="opacity-0"
+      leave-active-class="transition duration-100"
+      leave-to-class="opacity-0"
+    >
+      <div
+        v-if="offen"
+        class="fixed inset-0 z-40 flex items-end justify-center bg-slate-900/50 p-0 backdrop-blur-sm
+               tablet:items-center tablet:p-6"
+        role="dialog"
+        aria-modal="true"
+        @click.self="emit('schliessen')"
+      >
+        <div
+          class="max-h-[92vh] w-full overflow-y-auto rounded-t-2xl bg-white shadow-xl
+                 scrollbar-schmal tablet:rounded-2xl dark:bg-slate-900"
+          :class="breit ? 'tablet:max-w-3xl' : 'tablet:max-w-lg'"
+        >
+          <header
+            class="sticky top-0 flex items-center gap-3 border-b border-slate-200 bg-white px-4 py-3
+                   dark:border-slate-800 dark:bg-slate-900"
+          >
+            <h2 class="flex-1 text-lg font-bold">{{ titel }}</h2>
+            <button
+              class="tap flex items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100
+                     dark:hover:bg-slate-800"
+              aria-label="Schließen"
+              @click="emit('schliessen')"
+            >
+              <AppIcon name="kreuz" :groesse="20" />
+            </button>
+          </header>
+          <div class="p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+            <slot />
+          </div>
+        </div>
+      </div>
+    </Transition>
+  </Teleport>
+</template>

@@ -1,0 +1,197 @@
+/**
+ * Deterministischer Generator fuer Demonstrationsdaten.
+ *
+ * Warum deterministisch: Server und Client muessen dieselben Werte
+ * sehen, sonst meldet React einen Hydration-Fehler. Ein fester Startwert
+ * liefert bei jedem Aufruf dieselbe Zahlenfolge - die Daten wirken
+ * zufaellig, sind aber reproduzierbar.
+ *
+ * Die Ertragsmodellierung bildet den oesterreichischen Jahresgang ab:
+ * rund 1.000 bis 1.150 kWh je kWp und Jahr, mit einem Maximum im Juni
+ * und einem ausgepraegten Minimum im Dezember.
+ */
+
+import { tagesSchluessel } from "../datum.ts";
+
+/** Kleiner, schneller PRNG mit 32-Bit-Zustand (mulberry32). */
+export function zufallsfolge(startwert: number): () => number {
+  let a = startwert >>> 0;
+  return function naechste() {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/** Erzeugt aus einer Zeichenkette einen stabilen Startwert. */
+export function startwertAus(text: string): number {
+  let hash = 2166136261;
+  for (let i = 0; i < text.length; i++) {
+    hash ^= text.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+}
+
+/** Tag des Jahres, 1 bis 366. */
+export function tagImJahr(datum: Date): number {
+  const jahresbeginn = Date.UTC(datum.getUTCFullYear(), 0, 0);
+  return Math.floor((datum.getTime() - jahresbeginn) / 86400000);
+}
+
+/**
+ * Relativer Ertragsfaktor eines Tages im Jahresverlauf (0 bis 1).
+ *
+ * Modelliert ueber einen Kosinus mit Maximum am Tag 172 (21. Juni).
+ * Der Sockel von 0,18 bildet ab, dass auch im Dezember Ertrag anfaellt.
+ */
+export function jahresgang(datum: Date): number {
+  const tag = tagImJahr(datum);
+  const phase = ((tag - 172) / 365) * 2 * Math.PI;
+  return 0.18 + 0.82 * ((Math.cos(phase) + 1) / 2);
+}
+
+/** Sonnenaufgang und -untergang in Stunden, grob fuer 48 Grad Nord. */
+export function sonnenfenster(datum: Date): { auf: number; unter: number } {
+  const faktor = jahresgang(datum);
+  // Im Juni rund 16 Stunden Tageslicht, im Dezember rund 8,5.
+  const laenge = 8.5 + 7.5 * faktor;
+  const mittag = 13.1;
+  return { auf: mittag - laenge / 2, unter: mittag + laenge / 2 };
+}
+
+/**
+ * Momentane Erzeugungsleistung in kW.
+ *
+ * Ueberlagert drei Effekte: Jahresgang, Tagesgang (Sinus zwischen
+ * Sonnenauf- und -untergang) und Wetter (langsam veraenderliche
+ * Bewoelkung plus kurzfristige Schwankung durch Wolkenzug).
+ */
+export function erzeugungKw(
+  leistungKwp: number,
+  zeitpunkt: Date,
+  zufall: () => number,
+  bewoelkung: number,
+): number {
+  const { auf, unter } = sonnenfenster(zeitpunkt);
+  const stunde = zeitpunkt.getHours() + zeitpunkt.getMinutes() / 60;
+
+  if (stunde <= auf || stunde >= unter) return 0;
+
+  const anteil = (stunde - auf) / (unter - auf);
+  const tagesgang = Math.sin(anteil * Math.PI);
+
+  // Wolkenzug: kurzfristige Einbrueche, wie sie reale Kurven zeigen.
+  const flackern = 1 - bewoelkung * (0.35 + 0.45 * zufall());
+
+  // Anlagenwirkungsgrad einschliesslich aller Verluste: Wechselrichter,
+  // Leitungen, Verschmutzung, Temperatur und Abweichung von der
+  // Idealausrichtung. Der Wert ist so gewaehlt, dass ueber das Jahr rund
+  // 1 080 kWh je kWp zusammenkommen - der fuer Ostoesterreich uebliche
+  // Bereich liegt bei 1 000 bis 1 150. `generator.test.ts` haelt das fest.
+  const anlagenwirkungsgrad = 0.658;
+
+  const leistung =
+    leistungKwp *
+    jahresgang(zeitpunkt) *
+    tagesgang *
+    flackern *
+    anlagenwirkungsgrad;
+
+  return Math.max(0, Number(leistung.toFixed(2)));
+}
+
+/**
+ * Bewoelkungsgrad eines Tages (0 = klar, 1 = bedeckt).
+ * Aus dem Datum abgeleitet, damit derselbe Tag immer dasselbe Wetter hat.
+ */
+export function bewoelkungAmTag(datum: Date, anlage: string): number {
+  const zufall = zufallsfolge(
+    startwertAus(`${anlage}-${tagesSchluessel(datum)}`),
+  );
+  const wert = zufall();
+  // Verteilung zugunsten mittlerer Bewoelkung verschieben.
+  return Number((wert * wert * 0.85).toFixed(3));
+}
+
+/** Tagesertrag in kWh, aus dem Viertelstundenprofil aufsummiert. */
+export function tagesertragKwh(
+  leistungKwp: number,
+  datum: Date,
+  anlage: string,
+): number {
+  const bewoelkung = bewoelkungAmTag(datum, anlage);
+  const zufall = zufallsfolge(
+    startwertAus(`${anlage}-ertrag-${tagesSchluessel(datum)}`),
+  );
+
+  let summe = 0;
+  for (let viertel = 0; viertel < 96; viertel++) {
+    const zeit = new Date(datum);
+    zeit.setHours(0, viertel * 15, 0, 0);
+    summe += erzeugungKw(leistungKwp, zeit, zufall, bewoelkung) * 0.25;
+  }
+  return Number(summe.toFixed(1));
+}
+
+/**
+ * Lastprofil eines Gewerbebetriebs in kW.
+ *
+ * Werktags Grundlast plus Produktionsspitze zwischen 7 und 17 Uhr,
+ * am Wochenende nur Grundlast. Das erzeugt den fuer Gewerbe typischen
+ * hohen Eigenverbrauchsanteil.
+ */
+export function verbrauchKw(
+  grundlastKw: number,
+  spitzenlastKw: number,
+  zeitpunkt: Date,
+  zufall: () => number,
+): number {
+  const wochentag = zeitpunkt.getDay();
+  const stunde = zeitpunkt.getHours() + zeitpunkt.getMinutes() / 60;
+  const istWerktag = wochentag >= 1 && wochentag <= 5;
+
+  let last = grundlastKw * (0.85 + 0.3 * zufall());
+
+  if (istWerktag && stunde >= 6.5 && stunde <= 17.5) {
+    const anteil = (stunde - 6.5) / 11;
+    // Zwei Spitzen: Vormittag und Nachmittag, Mittagspause dazwischen.
+    const profil =
+      Math.sin(anteil * Math.PI) * (1 - 0.25 * Math.sin(anteil * 2 * Math.PI));
+    last += spitzenlastKw * profil * (0.8 + 0.4 * zufall());
+  }
+
+  return Number(Math.max(0, last).toFixed(2));
+}
+
+/**
+ * Day-Ahead-Boersenpreis in EUR/MWh fuer das Marktgebiet Oesterreich.
+ *
+ * Bildet das typische Doppelhoecker-Profil ab: teure Morgen- und
+ * Abendstunden, guenstige Mittagsstunden durch die PV-Einspeisung.
+ * Negative Preise sind moeglich und kommen an sonnigen Wochenenden vor.
+ */
+export function boersenpreisEurMwh(zeitpunkt: Date): number {
+  const zufall = zufallsfolge(
+    startwertAus(`preis-${zeitpunkt.toISOString().slice(0, 13)}`),
+  );
+  const stunde = zeitpunkt.getHours();
+  const wochentag = zeitpunkt.getDay();
+  const istWochenende = wochentag === 0 || wochentag === 6;
+
+  const basis = 78 + 22 * jahresgang(zeitpunkt) * -1 + 18 * zufall();
+
+  // Morgenspitze 7-9 Uhr, Abendspitze 18-20 Uhr.
+  const morgen = 42 * Math.exp(-((stunde - 8) ** 2) / 3.5);
+  const abend = 55 * Math.exp(-((stunde - 19) ** 2) / 4.5);
+  // Mittagsdelle durch Photovoltaik im Netz.
+  const mittagsdelle =
+    -62 * Math.exp(-((stunde - 13) ** 2) / 6) * jahresgang(zeitpunkt);
+
+  let preis = basis + morgen + abend + mittagsdelle;
+  if (istWochenende) preis -= 22;
+
+  return Number(preis.toFixed(2));
+}

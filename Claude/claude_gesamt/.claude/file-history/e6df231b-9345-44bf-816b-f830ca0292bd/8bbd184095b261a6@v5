@@ -1,0 +1,235 @@
+# ÖKOVOLT Baudoku
+
+Baustellendokumentation, Prüfprotokolle und Mängelmanagement für Photovoltaik,
+Batteriespeicher und Ladestationen — als Frappe-Custom-App mit eigenständigem
+Vue-3-Frontend (PWA, offline-fähig).
+
+Umsetzung des Pflichtenhefts *Baustellendokumentation & Prüfprotokoll-App* v1.0
+(ÖKOVOLT Solartechnik GmbH, 15.09.2026). Ersetzt die bisherige Nutzung von Testify.
+
+---
+
+## Aufbau
+
+```
+oekovolt_baudoku/          Frappe-App (Python)
+├── baudoku/doctype/       19 Doctypes (Datenmodell, Kapitel 3)
+├── baudoku/print_format/  PDF-Layouts für Protokoll und Tagesbericht
+├── api/                   REST-Endpunkte: sync, protokoll, dashboard, pdf, berechtigung
+├── setup/                 Rollen, Stammdaten, mitgelieferte Checklistenvorlagen
+├── utils/                 Plausibilitätsprüfung (IEC 62446-1), Jinja-Helfer
+└── www/baudoku.py         Einstiegspunkt der SPA unter /baudoku
+
+frontend/                  Vue 3 + Vite + Tailwind (PWA)
+├── src/lib/               API-Client, IndexedDB, Sync-Motor, Kamera, GPS, Plausibilität
+├── src/stores/            Pinia: Stammdaten, Sync, Protokollausführung, UI
+├── src/components/        Prüfpunktkarte, Signaturpad, Fotoaufnahme, Karte, Messdaten
+└── src/views/             17 Ansichten (Dashboard bis Vorlageneditor)
+
+scripts/                   Generatoren für Doctype- und Print-Format-JSONs
+tests/                     Python-Tests (Spiegel der Frontend-Tests)
+docs/                      Pflichtenheft-Abdeckung
+```
+
+Das Frontend ist eine **eigenständige SPA** — es lädt kein Frappe-Desk-Bundle und
+spricht ausschließlich `/api/method` und `/api/resource`.
+
+---
+
+## Schnellstart ohne Bench (Demo-Modus)
+
+Zum Ansehen und für UI-Arbeit genügt das Frontend allein:
+
+```bash
+cd frontend
+npm install
+VITE_DEMO=1 npm run dev        # Windows PowerShell: $env:VITE_DEMO='1'; npm run dev
+```
+
+→ http://localhost:8080 — die App läuft mit Demodaten (5 Anlagen, 4 Vorlagen,
+Mängel, Tagesberichte). Auch per `?demo=1` an der URL aktivierbar.
+
+Im Demo-Modus werden Servermethoden aus `src/lib/demo.ts` beantwortet;
+Schreibvorgänge landen real in IndexedDB — der Offline-Ablauf ist also echt.
+
+---
+
+## Installation in eine bestehende Bench
+
+Voraussetzung: Frappe v15 + ERPNext v15.
+
+```bash
+cd ~/frappe-bench
+bench get-app oekovolt_baudoku <Repository-URL>
+bench --site <site> install-app oekovolt_baudoku
+bench build --app oekovolt_baudoku
+bench --site <site> clear-cache
+```
+
+`after_install` legt an:
+
+* Rollen `Baudoku Techniker | Bauleiter | Projektleiter | Admin | Subunternehmer | Kunde`
+* Schweregrade A/B/C mit SLA (3 / 14 / 30 Tage)
+* zehn Mangelkategorien, zwei PDF-Profile, Standardeinstellungen
+* die vier Checklistenvorlagen aus Kapitel 4.2, veröffentlicht
+
+Aufruf: `https://<site>/baudoku`
+
+### Entwicklung gegen eine laufende Bench
+
+```bash
+bench start                    # Frappe auf :8000
+cd apps/oekovolt_baudoku/frontend
+npm run dev                    # Vite auf :8080, proxyt /api, /files, /assets nach :8000
+```
+
+Die Session kommt aus dem Cookie der Bench — einmal unter `localhost:8000/login`
+anmelden, dann funktioniert `localhost:8080`.
+
+---
+
+## Datenmodell
+
+Das Datenmodell wird von `scripts/generate_doctypes.py` erzeugt. Änderungen dort
+vornehmen und neu generieren, nicht die JSONs von Hand bearbeiten:
+
+```bash
+python scripts/generate_doctypes.py
+python scripts/generate_print_formats.py
+bench --site <site> migrate
+```
+
+**Doctype-Namen sind ASCII** (`Pruefprotokoll`, nicht `Prüfprotokoll`) — Frappe
+leitet daraus Tabellen- und Modulnamen ab. Die Labels sind deutsch.
+
+Kern-Doctypes:
+
+| Doctype | Zweck |
+|---|---|
+| `PV Anlage` | Prüfobjekt: Anlage, Baustelle, Standort, Moduldaten |
+| `Checklistenvorlage` | Vorlage mit Sektionen und Prüfpunkten, revisioniert |
+| `Pruefprotokoll` | ausgefüllte Checkliste inkl. Messdaten und Unterschriften |
+| `Mangel` | Mangel mit Schweregrad, Frist, Fotos, Nachweis |
+| `Tagesbericht` | Bauleiter- und Subunternehmerbericht mit Genehmigung |
+
+---
+
+## Offline-Betrieb
+
+Der Feldablauf ist netzunabhängig:
+
+0. **Installieren**: Die App meldet sich als PWA. Der Service Worker hält die
+   App-Shell vor; eine neue Fassung übernimmt **nicht** von selbst, sondern
+   fragt — ein Reload mitten im Protokoll wäre im Feld unzumutbar.
+1. **Vorladen** vor Fahrtantritt (Einstellungen → *Für Offline vorladen*): Stammdaten
+   und alle veröffentlichten Vorlagen landen in IndexedDB.
+2. **Erfassen**: Protokolle, Mängel und Berichte werden lokal geschrieben, Fotos
+   auf max. 2 MB komprimiert, mit Zeitstempel, GPS und SHA-256 versehen gepuffert.
+3. **Übertragen**: Bei Verbindung laufen erst die Fotos, dann die Dokumente in
+   Batches; jede Operation trägt eine lokale UUID und ist damit idempotent.
+4. **Konflikt**: Wurde ein Dokument zwischenzeitlich am Server geändert, **gewinnt
+   der Server**. Die lokale Fassung wird nicht verworfen, sondern in der Tabelle
+   `konflikte` gesichert und in den Einstellungen angezeigt.
+
+### Verweise zwischen offline erzeugten Dokumenten
+
+Ein offline aus einem Prüfpunkt angelegter Mangel kennt den Servernamen seines
+Protokolls noch nicht — und umgekehrt. Beide Seiten tragen deshalb die lokale
+UUID der jeweils anderen (`mangel_lokal`, `pruefprotokoll_lokal`); die echten
+Link-Felder bleiben leer. Sobald eine Seite synchronisiert ist, löst der Server
+**beide Richtungen** auf, unabhängig von der Reihenfolge (Abnahmekriterium AK-05).
+
+Link-Felder in Kindtabellen nimmt der Sync vom Client grundsätzlich nicht an:
+Dort stünde nur eine UUID, die keiner Server-Referenz entspricht.
+
+Die Erreichbarkeitsprüfung stützt sich nicht auf `navigator.onLine` allein —
+im Baustellen-WLAN meldet der Browser oft „online“, obwohl kein Uplink besteht.
+Ein Heartbeat gegen `sync_status` entscheidet.
+
+## Plausibilitätsprüfung
+
+`utils/plausibilitaet.py` und `frontend/src/lib/plausibilitaet.ts` implementieren
+dieselben Regeln, damit die Warnung sofort auf dem Gerät erscheint:
+
+* **Uoc** gegen `Anzahl Module × Uoc_Modul` ± 10 % (Warnung), ± 20 % (Fehler)
+* **Isc** gegen `Isc_Modul` ± 15 % (Warnung), ± 30 % (Fehler)
+* **Riso** gegen `max(40 kΩ × Module, 1000 kΩ)` — darunter Fehler,
+  bis 125 % davon Warnung (IEC 62446-1)
+
+Maßgeblich bleibt der Server: beim Speichern überschreibt er Status und Meldung.
+Warnungen und Fehler kann der Prüfer mit Begründung übersteuern (FA-054).
+
+Beide Implementierungen teilen sich die Testfälle:
+
+```bash
+python -m pytest tests/          # 33 Tests
+cd frontend && npm test          # 37 Tests — Plausibilität, Sichtbarkeit, Codeauswertung
+```
+
+Plausibilitätsprüfung und bedingte Sichtbarkeit sind auf beiden Seiten
+implementiert und teilen sich die Testfälle Zeile für Zeile. Weicht eine Seite
+ab, fordert der Server beim Abschluss eine Angabe ein, die der Techniker nie
+gesehen hat — oder er lässt eine fehlende Pflichtangabe durch.
+
+---
+
+## Rollen
+
+| Rolle | Rechte |
+|---|---|
+| Techniker | Protokolle ausführen, Mängel erfassen, Tagesberichte erstellen |
+| Bauleiter | zusätzlich: Protokolle verifizieren, Berichte genehmigen, Mängel einzeln und im Sammelvorgang zuweisen |
+| Projektleiter | zusätzlich: Anlagen anlegen, Vorlagen erstellen, Analysen |
+| Admin | Vollzugriff und Konfiguration |
+| Subunternehmer | nur eigene Berichte und Mängel (kein Desk-Zugang) |
+| Kunde | abgeschlossene Protokolle der eigenen Anlagen, lesend |
+
+Die Zeilensichtbarkeit steuert `api/berechtigung.py` über
+`permission_query_conditions` und `has_permission`.
+
+---
+
+## Bedienung im Feld
+
+* **Ein Prüfpunkt pro Bildschirm**, Fortschrittsbalken oben, große Weiter-Taste unten
+* **Wischen** blättert zwischen Prüfpunkten — nur horizontal und ab 60 px, damit
+  Scrollen und Blättern nicht verwechselt werden
+* **Touch-Ziele ≥ 44 × 44 px** — bedienbar mit Arbeitshandschuhen
+* **Dark Mode** gegen Blendung bei Dacharbeiten
+* **max. 3 Taps** vom Start bis zur Protokollausführung (Schnellaktionsknopf)
+* **Pfeiltasten** blättern am Desktop, für Bauleiter beim Durchsehen
+* Fotos lassen sich antippen und im Vollbild prüfen
+* **QR-Aufkleber scannen** springt direkt zur Anlage — beim Protokollstart und
+  in der Anlagenliste
+* **„In der Nähe"** sortiert die Anlagen nach Luftlinie zum aktuellen Standort
+* **Mangel mit Foto** öffnet aus der Schnellaktion heraus sofort die Kamera
+* Bewertung „Mangel …“ bietet direkt die Mangelanlage an; Fotos und Kontext
+  werden übernommen
+* Bedingte Sichtbarkeit blendet im Zweifel **ein**: Ein zu viel gezeigter
+  Prüfpunkt kostet einen Wisch, ein zu Unrecht ausgeblendeter Pflichtpunkt fehlt
+  im Protokoll
+
+---
+
+## Tests und Qualitätssicherung
+
+```bash
+python -m pytest tests/              # Plausibilitätslogik Server
+cd frontend
+npm run typecheck                    # vue-tsc, strikt
+npm test                             # Plausibilitätslogik Client
+npm run lint
+npm run build                        # Produktionsbundle nach ../oekovolt_baudoku/public/frontend
+```
+
+---
+
+## Bekannte Grenzen
+
+* Der Vorlageneditor benötigt eine Serververbindung (kein Offline-Entwurf).
+* Mehrsprachigkeit (DE/EN) ist im Datenmodell vorgesehen, die Oberfläche ist
+  derzeit deutsch (KANN-Anforderung FA-018, Phase 5).
+* Frei konfigurierbare Analyse-Dashboards (FA-096, KANN) gibt es nicht; die
+  Auswertungen sind fest verdrahtet.
+* Die Performancekriterien NFA-030/032/033 sind Messungen auf dem Referenzgerät
+  und noch nicht belegt.

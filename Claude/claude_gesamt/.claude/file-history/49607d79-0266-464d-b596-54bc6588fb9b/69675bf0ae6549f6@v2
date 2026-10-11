@@ -1,0 +1,329 @@
+/**
+ * Tests für Alarmkorrelation, Rauscherkennung, Stummschaltung und
+ * Bearbeitung.
+ *
+ * Der Wert dieser Seite liegt darin, was sie *nicht* zeigt. Genau das ist
+ * schwer zu prüfen und deshalb hier festgehalten: dass Korrelation
+ * zusammenfasst, ohne Kritisches zu verstecken; dass Rauschen an der Rate
+ * erkannt wird und nicht an der Menge; dass eine Stummschaltung endet.
+ */
+import { beforeEach, describe, expect, it } from 'vitest'
+import { mockRequest, resetMockData } from '@/api/mock/server.js'
+
+const ruf = (url, params) => mockRequest({ url, params })
+
+beforeEach(() => {
+  resetMockData()
+})
+
+describe('Korrelation', () => {
+  it('fasst Meldungen mit gleichem Schlüssel zu einer Gruppe zusammen', async () => {
+    const g = await ruf('netops.api.ops.alert_groups', {})
+    const ueberlast = g.find((x) => x.key === 'host-ueberlast-SRV-PVE-02')
+    expect(ueberlast.count).toBe(5)
+    expect(ueberlast.correlated).toBe(true)
+  })
+
+  it('reduziert die Zahl der Zeilen, ohne Alarme zu verlieren', async () => {
+    const g = await ruf('netops.api.ops.alert_groups', {})
+    const offen = (await ruf('netops.api.ops.alert_list_v2', {})).filter((a) => a.open)
+    expect(g.reduce((s, x) => s + x.count, 0)).toBe(offen.length)
+    expect(g.length).toBeLessThan(offen.length)
+  })
+
+  it('gibt der Gruppe die höchste Schwere ihrer Mitglieder', async () => {
+    // Sonst versteckt sich ein kritischer Alarm hinter vier harmlosen.
+    const g = await ruf('netops.api.ops.alert_groups', {})
+    const RANG = { critical: 0, high: 1, medium: 2, low: 3 }
+    for (const gruppe of g) {
+      const schlimmste = Math.min(...gruppe.members.map((m) => RANG[m.severity]))
+      expect(RANG[gruppe.severity]).toBe(schlimmste)
+    }
+  })
+
+  it('gruppiert ohne Schlüssel nach Objekt', async () => {
+    const g = await ruf('netops.api.ops.alert_groups', {})
+    const ohneSchluessel = g.filter((x) => !x.correlated)
+    for (const x of ohneSchluessel) expect(x.key).toContain(x.object_name)
+  })
+
+  it('fasst auch Meldungen verschiedener Quellen zusammen', async () => {
+    // FW-OS-01 meldet über crowdsec und wazuh - ein Objekt, zwei Quellen.
+    const g = await ruf('netops.api.ops.alert_groups', {})
+    const mehrquellig = g.find((x) => x.sources.length > 1)
+    expect(mehrquellig).toBeTruthy()
+  })
+
+  it('sortiert kritische Gruppen nach vorn', async () => {
+    const g = await ruf('netops.api.ops.alert_groups', {})
+    const RANG = { critical: 0, high: 1, medium: 2, low: 3 }
+    const werte = g.map((x) => RANG[x.severity])
+    expect([...werte].sort((a, b) => a - b)).toEqual(werte)
+  })
+})
+
+describe('Rauscherkennung', () => {
+  it('erkennt Dauerfeuer an der Rate, nicht an der Menge', async () => {
+    // 214 Meldungen über 26 Stunden sind Rauschen; eine einzelne Meldung
+    // mit hoher Zahl über ein Jahr wäre es nicht.
+    const alle = await ruf('netops.api.ops.alert_list_v2', { include_silenced: true })
+    const flapp = alle.find((a) => a.title === 'Port flappt')
+    expect(flapp.noisy).toBe(true)
+    expect(flapp.rate_per_hour).toBeGreaterThan(2)
+  })
+
+  it('hält einen kurzen Ausschlag nicht für Rauschen', async () => {
+    const alle = await ruf('netops.api.ops.alert_list_v2', { include_silenced: true })
+    for (const a of alle) {
+      if (a.duration_hours < 6) expect(a.noisy).toBe(false)
+    }
+  })
+
+  it('nennt die Lärmquellen mit Rate und Dauer, nicht nur mit Namen', async () => {
+    const o = await ruf('netops.api.ops.alert_overview', {})
+    expect(o.noise.length).toBeGreaterThan(0)
+    for (const n of o.noise) {
+      expect(n.rate_per_hour).toBeGreaterThan(0)
+      expect(n.duration_hours).toBeGreaterThan(0)
+    }
+  })
+
+  it('zählt geschlossene Alarme nicht als Rauschen', async () => {
+    const alle = await ruf('netops.api.ops.alert_list_v2', { include_silenced: true })
+    for (const a of alle) if (!a.open) expect(a.noisy).toBe(false)
+  })
+})
+
+describe('Stummschaltung', () => {
+  it('blendet einen stummgeschalteten Alarm aus der Liste aus', async () => {
+    const ohne = await ruf('netops.api.ops.alert_list_v2', { include_silenced: false })
+    const mit = await ruf('netops.api.ops.alert_list_v2', { include_silenced: true })
+    expect(mit.length).toBeGreaterThan(ohne.length)
+    expect(ohne.every((a) => !a.silenced)).toBe(true)
+  })
+
+  it('lässt eine abgelaufene Stummschaltung nicht mehr greifen', async () => {
+    // Die pmg-Stummschaltung im Seed ist abgelaufen.
+    const alle = await ruf('netops.api.ops.alert_list_v2', { include_silenced: true })
+    const pmg = alle.filter((a) => a.source === 'pmg')
+    expect(pmg.every((a) => !a.silenced)).toBe(true)
+  })
+
+  it('verlangt eine Begründung', async () => {
+    await expect(
+      ruf('netops.api.ops.create_silence', {
+        match_kind: 'object',
+        match_value: 'SW-ACC-01',
+        hours: 4,
+      }),
+    ).rejects.toThrow(/Begründung/)
+  })
+
+  it('verlangt ein Ziel', async () => {
+    await expect(
+      ruf('netops.api.ops.create_silence', { match_kind: 'object', reason: 'Test', hours: 4 }),
+    ).rejects.toThrow(/Ziel/)
+  })
+
+  it('begrenzt die Dauer auf 30 Tage', async () => {
+    // Eine Stummschaltung ohne Ende ist eine Abschaltung mit besserem Namen.
+    await expect(
+      ruf('netops.api.ops.create_silence', {
+        match_kind: 'object',
+        match_value: 'SW-ACC-01',
+        hours: 800,
+        reason: 'Test',
+      }),
+    ).rejects.toThrow(/30 Tage/)
+  })
+
+  it('schaltet nach Korrelationsschlüssel eine ganze Gruppe stumm', async () => {
+    await ruf('netops.api.ops.create_silence', {
+      match_kind: 'correlation',
+      match_value: 'host-ueberlast-SRV-PVE-02',
+      hours: 4,
+      reason: 'Wartung am Host',
+    })
+    const sichtbar = await ruf('netops.api.ops.alert_list_v2', {})
+    expect(sichtbar.some((a) => a.correlation_key === 'host-ueberlast-SRV-PVE-02')).toBe(false)
+  })
+
+  it('macht eine beendete Stummschaltung sofort unwirksam', async () => {
+    const e = await ruf('netops.api.ops.create_silence', {
+      match_kind: 'object',
+      match_value: 'SW-ACC-01',
+      hours: 4,
+      reason: 'Test',
+    })
+    await ruf('netops.api.ops.end_silence', { name: e.silence })
+    const sichtbar = await ruf('netops.api.ops.alert_list_v2', {})
+    expect(sichtbar.some((a) => a.object_name === 'SW-ACC-01')).toBe(true)
+  })
+
+  it('protokolliert jede Stummschaltung', async () => {
+    const vorher = await ruf('netops.api.audit.audit_log', { limit: 500 })
+    await ruf('netops.api.ops.create_silence', {
+      match_kind: 'source',
+      match_value: 'zabbix',
+      hours: 2,
+      reason: 'Umbau',
+    })
+    const nachher = await ruf('netops.api.audit.audit_log', { limit: 500 })
+    expect(nachher.length).toBe(vorher.length + 1)
+    expect(nachher[0].action).toBe('alert_silenced')
+  })
+})
+
+describe('Bearbeitung', () => {
+  it('setzt beim Annehmen Zeitpunkt und Person', async () => {
+    const offen = (await ruf('netops.api.ops.alert_list_v2', {})).find(
+      (a) => a.open && !a.acknowledged,
+    )
+    await ruf('netops.api.ops.set_alert_state', {
+      name: offen.name,
+      state: 'ack',
+      actor: 'HR-EMP-00002',
+    })
+    const d = await ruf('netops.api.ops.alert_detail', { name: offen.name })
+    expect(d.acknowledged).toBe(true)
+    expect(d.acknowledged_by).toBe('HR-EMP-00002')
+  })
+
+  it('verlangt zum Schließen eine Notiz', async () => {
+    // Ohne sie verliert man genau die Information, die beim nächsten Mal hilft.
+    const offen = (await ruf('netops.api.ops.alert_list_v2', {})).find((a) => a.open)
+    await expect(
+      ruf('netops.api.ops.set_alert_state', { name: offen.name, state: 'closed' }),
+    ).rejects.toThrow(/Notiz/)
+  })
+
+  it('nimmt einen direkt geschlossenen Alarm auch als gesehen an', async () => {
+    const offen = (await ruf('netops.api.ops.alert_list_v2', {})).find(
+      (a) => a.open && !a.acknowledged,
+    )
+    await ruf('netops.api.ops.set_alert_state', {
+      name: offen.name,
+      state: 'closed',
+      resolution: 'Ursache behoben',
+      actor: 'HR-EMP-00001',
+    })
+    const d = await ruf('netops.api.ops.alert_detail', { name: offen.name })
+    expect(d.acknowledged).toBe(true)
+    expect(d.resolve_hours).not.toBeNull()
+  })
+
+  it('bricht eine Sammelaktion nicht beim ersten Fehler ab', async () => {
+    // Sonst bliebe die Liste halb bearbeitet zurück.
+    const offen = (await ruf('netops.api.ops.alert_list_v2', {}))
+      .filter((a) => a.open)
+      .slice(0, 3)
+      .map((a) => a.name)
+
+    const e = await ruf('netops.api.ops.bulk_alert_action', {
+      names: [...offen, 'ALR-999999'],
+      state: 'ack',
+    })
+    expect(e.done).toBe(3)
+    expect(e.failed).toHaveLength(1)
+    expect(e.ok).toBe(false)
+  })
+
+  it('weist eine leere Sammelaktion ab', async () => {
+    await expect(
+      ruf('netops.api.ops.bulk_alert_action', { names: [], state: 'ack' }),
+    ).rejects.toThrow(/Auswahl/)
+  })
+
+  it('protokolliert jeden Zustandswechsel', async () => {
+    const offen = (await ruf('netops.api.ops.alert_list_v2', {})).find((a) => a.open)
+    await ruf('netops.api.ops.set_alert_state', { name: offen.name, state: 'ack' })
+    const d = await ruf('netops.api.ops.alert_detail', { name: offen.name })
+    expect(d.history.some((h) => h.action === 'alert_ack')).toBe(true)
+  })
+})
+
+describe('Kennzahlen', () => {
+  it('unterscheidet Alarme von Einzelmeldungen', async () => {
+    // Der Unterschied zwischen 14 Alarmen und 681 Meldungen ist der Grund,
+    // warum Korrelation nötig ist.
+    const o = await ruf('netops.api.ops.alert_overview', {})
+    expect(o.summary.occurrences_open).toBeGreaterThan(o.summary.open * 5)
+  })
+
+  it('rechnet MTTA und MTTR nur aus bearbeiteten Alarmen', async () => {
+    // Ein Mittelwert über unbearbeitete wäre geschönt.
+    const o = await ruf('netops.api.ops.alert_overview', {})
+    expect(o.summary.mtta_hours).toBeGreaterThan(0)
+    expect(o.summary.mttr_hours).toBeGreaterThan(o.summary.mtta_hours)
+  })
+
+  it('misst „unbeachtet" ab dem ersten Auftreten, nicht ab der letzten Meldung', async () => {
+    // Ein Alarm, der seit 26 Stunden läuft und vor fünf Minuten zuletzt
+    // meldete, ist frisch im einen und überfällig im anderen Sinn.
+    const alle = await ruf('netops.api.ops.alert_list_v2', { include_silenced: true })
+    const langlaeufer = alle.find((a) => a.open && a.duration_hours > 24 && !a.acknowledged)
+    expect(langlaeufer.unattended_hours).toBeGreaterThan(24)
+    expect(langlaeufer.age_hours).toBeLessThan(langlaeufer.unattended_hours)
+  })
+
+  it('setzt unattended_hours auf null, sobald jemand hingesehen hat', async () => {
+    const offen = (await ruf('netops.api.ops.alert_list_v2', {})).find(
+      (a) => a.open && !a.acknowledged,
+    )
+    await ruf('netops.api.ops.set_alert_state', { name: offen.name, state: 'ack' })
+    const d = await ruf('netops.api.ops.alert_detail', { name: offen.name })
+    expect(d.unattended_hours).toBeNull()
+  })
+
+  it('liefert für jede Stunde im Fenster einen Punkt', async () => {
+    const o = await ruf('netops.api.ops.alert_overview', { hours: 24 })
+    expect(o.timeline).toHaveLength(24)
+  })
+
+  it('zählt kritische als Teilmenge der Alarme je Stunde', async () => {
+    const o = await ruf('netops.api.ops.alert_overview', {})
+    for (const s of o.timeline) expect(s.kritisch).toBeLessThanOrEqual(s.anzahl)
+  })
+})
+
+describe('Kontext zum einzelnen Alarm', () => {
+  it('nennt, was am betroffenen Objekt hängt', async () => {
+    const alle = await ruf('netops.api.ops.alert_list_v2', {})
+    const mitBezug = alle.find((a) => a.object_type === 'Network Device')
+    const d = await ruf('netops.api.ops.alert_detail', { name: mitBezug.name })
+    expect(Array.isArray(d.impacted)).toBe(true)
+  })
+
+  it('zeigt, wie derselbe Alarm beim letzten Mal gelöst wurde', async () => {
+    // SW-CORE-01 hatte schon einmal einen Uplink-Ausfall, abgeschlossen mit
+    // Notiz. Genau die soll beim nächsten Mal auftauchen.
+    const alle = await ruf('netops.api.ops.alert_list_v2', { include_silenced: true })
+    const link = alle.find((a) => a.correlation_key === 'link-SW-CORE-01' && a.open)
+    const d = await ruf('netops.api.ops.alert_detail', { name: link.name })
+    expect(d.similar_past.length).toBeGreaterThan(0)
+    expect(d.similar_past[0].resolution).toBeTruthy()
+  })
+
+  it('führt die Geschwister derselben Korrelationsgruppe auf', async () => {
+    const alle = await ruf('netops.api.ops.alert_list_v2', {})
+    const teil = alle.find((a) => a.correlation_key === 'host-ueberlast-SRV-PVE-02')
+    const d = await ruf('netops.api.ops.alert_detail', { name: teil.name })
+    expect(d.group_members).toHaveLength(4)
+  })
+
+  it('meldet einen unbekannten Alarm verständlich', async () => {
+    await expect(ruf('netops.api.ops.alert_detail', { name: 'ALR-999999' })).rejects.toThrow(
+      /existiert nicht/,
+    )
+  })
+})
+
+describe('Mandantenfilter', () => {
+  it('trennt Alarme je Mandant', async () => {
+    const at = await ruf('netops.api.ops.alert_list_v2', { tenant: 'TEN-0001' })
+    const de = await ruf('netops.api.ops.alert_list_v2', { tenant: 'TEN-0002' })
+    expect(at.every((a) => a.tenant === 'TEN-0001')).toBe(true)
+    expect(de.every((a) => a.tenant === 'TEN-0002')).toBe(true)
+    expect(de.length).toBeGreaterThan(0)
+  })
+})

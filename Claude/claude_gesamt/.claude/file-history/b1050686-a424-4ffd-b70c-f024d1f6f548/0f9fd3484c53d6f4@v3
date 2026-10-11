@@ -1,0 +1,599 @@
+import "server-only";
+
+import { alle, eine, skalar } from "../db/verbindung.ts";
+import { messStempel, verschiebeTage } from "../datum.ts";
+
+/**
+ * Auswertungen der Ladeinfrastruktur.
+ *
+ * Gerechnet wird in der Datenbank. Ein Betrieb mit fünfzehn
+ * Ladepunkten sammelt im Jahr einige tausend Vorgänge; sie in die
+ * Anwendung zu laden, um sie dort zu summieren, wäre Verschwendung.
+ */
+
+export interface LadeZeitfenster {
+  von: string;
+  bis: string;
+  tage: number;
+}
+
+export function letzteTageLaden(tage: number): LadeZeitfenster {
+  const heute = new Date();
+  heute.setHours(23, 59, 59, 999);
+  const start = verschiebeTage(heute, -tage + 1);
+  start.setHours(0, 0, 0, 0);
+
+  return {
+    von: messStempel(start),
+    bis: messStempel(new Date(heute.getTime() + 1)),
+    tage,
+  };
+}
+
+/* ------------------------------------------------------------------ */
+/* Ladepunkte                                                          */
+/* ------------------------------------------------------------------ */
+
+export interface LadepunktZeile {
+  id: string;
+  anlage_id: string | null;
+  anlage: string | null;
+  bezeichnung: string;
+  evse_id: string | null;
+  hersteller: string | null;
+  modell: string | null;
+  firmware: string | null;
+  leistung_kw: number;
+  strom_art: string;
+  steckertyp: string | null;
+  standort: string | null;
+  eichrecht: number;
+  status: string;
+  /** Vorgänge im Zeitfenster. */
+  vorgaenge: number;
+  energie_kwh: number;
+  pv_kwh: number;
+  /** Summe der Belegungsstunden im Zeitfenster. */
+  belegt_stunden: number;
+  /** Summe der reinen Ladestunden im Zeitfenster. */
+  ladestunden: number;
+}
+
+/**
+ * Ladepunkte mit ihrer Nutzung im Zeitraum.
+ *
+ * Belegungszeit und Ladezeit werden getrennt geführt. Der Unterschied
+ * ist die eigentliche Kennzahl der Ladeinfrastruktur: Ein Ladepunkt,
+ * der zehn Stunden belegt ist und zwei Stunden lädt, ist nicht
+ * ausgelastet, sondern blockiert. Wer nur auf die Belegung schaut,
+ * baut den nächsten Ladepunkt, obwohl er keinen braucht.
+ */
+export function ladeLadepunkte(fenster: LadeZeitfenster): LadepunktZeile[] {
+  return alle<LadepunktZeile>(
+    `SELECT p.id, p.anlage_id, a.bezeichnung AS anlage, p.bezeichnung,
+            p.evse_id, p.hersteller, p.modell, p.firmware, p.leistung_kw,
+            p.strom_art, p.steckertyp, p.standort, p.eichrecht, p.status,
+            COUNT(v.id)                                    AS vorgaenge,
+            ROUND(COALESCE(SUM(v.energie_kwh), 0), 1)      AS energie_kwh,
+            ROUND(COALESCE(SUM(v.pv_kwh), 0), 1)          AS pv_kwh,
+            ROUND(COALESCE(SUM(
+              (julianday(v.ende) - julianday(v.beginn)) * 24), 0), 1)
+                                                           AS belegt_stunden,
+            ROUND(COALESCE(SUM(
+              (julianday(COALESCE(v.ladeende, v.ende)) - julianday(v.beginn)) * 24), 0), 1)
+                                                           AS ladestunden
+       FROM ladepunkt p
+       LEFT JOIN anlage a ON a.id = p.anlage_id
+       LEFT JOIN ladevorgang v
+              ON v.ladepunkt_id = p.id
+             AND v.beginn >= ? AND v.beginn < ?
+             AND v.status = 'Beendet'
+      GROUP BY p.id
+      ORDER BY p.id`,
+    fenster.von,
+    fenster.bis,
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Karten                                                              */
+/* ------------------------------------------------------------------ */
+
+export interface LadekarteZeile {
+  id: string;
+  kennung: string;
+  bezeichnung: string;
+  inhaber: string | null;
+  kennzeichen: string | null;
+  fahrzeug: string | null;
+  kostenstelle: string;
+  art: string;
+  aktiv: number;
+  sachbezug_ct_kwh: number | null;
+  tarif_id: string | null;
+  tarif: string | null;
+  ct_kwh: number | null;
+  vorgaenge: number;
+  energie_kwh: number;
+  pv_kwh: number;
+  /** Letzter Ladevorgang, für die Erkennung stiller Karten. */
+  zuletzt: string | null;
+  /**
+   * Tage seit dem letzten Ladevorgang, in der Datenbank gerechnet.
+   *
+   * Nicht beim Rendern: Ein Renderdurchlauf muss bei gleichen Eingaben
+   * dasselbe Ergebnis liefern, `Date.now()` tut das nicht. `null`
+   * heißt: mit dieser Karte wurde noch nie geladen.
+   */
+  tage_ohne_nutzung: number | null;
+}
+
+export function ladeLadekarten(fenster: LadeZeitfenster): LadekarteZeile[] {
+  return alle<LadekarteZeile>(
+    `SELECT k.id, k.kennung, k.bezeichnung, k.inhaber, k.kennzeichen,
+            k.fahrzeug, k.kostenstelle, k.art, k.aktiv, k.sachbezug_ct_kwh,
+            k.tarif_id, t.bezeichnung AS tarif, t.ct_kwh,
+            COUNT(v.id)                               AS vorgaenge,
+            ROUND(COALESCE(SUM(v.energie_kwh), 0), 1) AS energie_kwh,
+            ROUND(COALESCE(SUM(v.pv_kwh), 0), 1)      AS pv_kwh,
+            (SELECT MAX(beginn) FROM ladevorgang WHERE karte_id = k.id)
+                                                      AS zuletzt,
+            CAST(julianday('now') -
+                 julianday((SELECT MAX(beginn) FROM ladevorgang
+                             WHERE karte_id = k.id)) AS INTEGER)
+                                                      AS tage_ohne_nutzung
+       FROM ladekarte k
+       LEFT JOIN ladetarif t ON t.id = k.tarif_id
+       LEFT JOIN ladevorgang v
+              ON v.karte_id = k.id
+             AND v.beginn >= ? AND v.beginn < ?
+             AND v.status = 'Beendet'
+      GROUP BY k.id
+      ORDER BY k.kostenstelle, k.bezeichnung`,
+    fenster.von,
+    fenster.bis,
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Tarife                                                              */
+/* ------------------------------------------------------------------ */
+
+export interface TarifZeile {
+  id: string;
+  bezeichnung: string;
+  beschreibung: string | null;
+  ct_kwh: number;
+  ct_kwh_pv: number | null;
+  ct_minute: number;
+  blocking_ab_minute: number | null;
+  ct_minute_blocking: number;
+  blocking_hoechst_eur: number | null;
+  grundpreis_monat_eur: number;
+  ust_satz: number;
+  aktiv: number;
+  karten: number;
+}
+
+export function ladeTarife(): TarifZeile[] {
+  return alle<TarifZeile>(
+    `SELECT t.*, (SELECT COUNT(*) FROM ladekarte k WHERE k.tarif_id = t.id)
+              AS karten
+       FROM ladetarif t
+      ORDER BY t.ct_kwh DESC`,
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Vorgänge                                                            */
+/* ------------------------------------------------------------------ */
+
+export interface VorgangZeile {
+  id: string;
+  beginn: string;
+  ende: string | null;
+  ladeende: string | null;
+  ladepunkt: string;
+  ladepunkt_id: string;
+  karte: string | null;
+  kostenstelle: string | null;
+  fahrzeug: string | null;
+  art: string | null;
+  energie_kwh: number;
+  pv_kwh: number;
+  hoechstleistung_kw: number | null;
+  status: string;
+  abrechnung_id: string | null;
+  /** Belegungsdauer in Stunden, in der Datenbank gerechnet. */
+  dauer_stunden: number;
+  /** Standzeit nach Ladeende in Stunden. */
+  standzeit_stunden: number;
+}
+
+export function ladeVorgaenge(optionen: {
+  fenster?: LadeZeitfenster;
+  karteId?: string;
+  ladepunktId?: string;
+  abrechnungId?: string;
+  grenze?: number;
+}): VorgangZeile[] {
+  const bedingungen: string[] = [];
+  const werte: (string | number)[] = [];
+
+  if (optionen.fenster) {
+    bedingungen.push("v.beginn >= ? AND v.beginn < ?");
+    werte.push(optionen.fenster.von, optionen.fenster.bis);
+  }
+  if (optionen.karteId) {
+    bedingungen.push("v.karte_id = ?");
+    werte.push(optionen.karteId);
+  }
+  if (optionen.ladepunktId) {
+    bedingungen.push("v.ladepunkt_id = ?");
+    werte.push(optionen.ladepunktId);
+  }
+  if (optionen.abrechnungId) {
+    bedingungen.push("v.abrechnung_id = ?");
+    werte.push(optionen.abrechnungId);
+  }
+
+  const wo = bedingungen.length ? `WHERE ${bedingungen.join(" AND ")}` : "";
+  werte.push(optionen.grenze ?? 100);
+
+  return alle<VorgangZeile>(
+    `SELECT v.id, v.beginn, v.ende, v.ladeende, v.ladepunkt_id,
+            p.bezeichnung AS ladepunkt,
+            k.bezeichnung AS karte, k.kostenstelle, k.fahrzeug, k.art,
+            v.energie_kwh, v.pv_kwh, v.hoechstleistung_kw, v.status,
+            v.abrechnung_id,
+            ROUND((julianday(v.ende) - julianday(v.beginn)) * 24, 2)
+              AS dauer_stunden,
+            ROUND(MAX(0, (julianday(v.ende) - julianday(v.ladeende)) * 24), 2)
+              AS standzeit_stunden
+       FROM ladevorgang v
+       JOIN ladepunkt p ON p.id = v.ladepunkt_id
+       LEFT JOIN ladekarte k ON k.id = v.karte_id
+       ${wo}
+      ORDER BY v.beginn DESC
+      LIMIT ?`,
+    ...werte,
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Kennzahlen und Verteilungen                                         */
+/* ------------------------------------------------------------------ */
+
+export interface LadeKennzahlen {
+  vorgaenge: number;
+  energieKwh: number;
+  pvKwh: number;
+  pvAnteil: number;
+  /** Summe der Belegungsstunden. */
+  belegtStunden: number;
+  ladestunden: number;
+  /** Anteil der Ladezeit an der Belegungszeit. */
+  ladeanteil: number;
+  hoechstleistungKw: number;
+  aktiveKarten: number;
+  ladepunkte: number;
+  gestoerteLadepunkte: number;
+}
+
+export function ladeKennzahlenLaden(
+  fenster: LadeZeitfenster,
+): LadeKennzahlen {
+  const z = eine<{
+    vorgaenge: number;
+    energie: number;
+    pv: number;
+    belegt: number;
+    laden: number;
+    spitze: number;
+    karten: number;
+  }>(
+    `SELECT COUNT(*)                                   AS vorgaenge,
+            COALESCE(SUM(energie_kwh), 0)              AS energie,
+            COALESCE(SUM(pv_kwh), 0)                   AS pv,
+            COALESCE(SUM((julianday(ende) - julianday(beginn)) * 24), 0)
+                                                       AS belegt,
+            COALESCE(SUM((julianday(COALESCE(ladeende, ende)) -
+                          julianday(beginn)) * 24), 0) AS laden,
+            COALESCE(MAX(hoechstleistung_kw), 0)       AS spitze,
+            COUNT(DISTINCT karte_id)                   AS karten
+       FROM ladevorgang
+      WHERE beginn >= ? AND beginn < ? AND status = 'Beendet'`,
+    fenster.von,
+    fenster.bis,
+  );
+
+  const punkte =
+    skalar<number>("SELECT COUNT(*) FROM ladepunkt") ?? 0;
+  const gestoert =
+    skalar<number>(
+      "SELECT COUNT(*) FROM ladepunkt WHERE status IN ('Gestoert','Offline')",
+    ) ?? 0;
+
+  const energie = z?.energie ?? 0;
+  const belegt = z?.belegt ?? 0;
+  const laden = z?.laden ?? 0;
+
+  return {
+    vorgaenge: z?.vorgaenge ?? 0,
+    energieKwh: Number(energie.toFixed(1)),
+    pvKwh: Number((z?.pv ?? 0).toFixed(1)),
+    pvAnteil: energie > 0 ? (z?.pv ?? 0) / energie : 0,
+    belegtStunden: Number(belegt.toFixed(1)),
+    ladestunden: Number(laden.toFixed(1)),
+    ladeanteil: belegt > 0 ? laden / belegt : 0,
+    hoechstleistungKw: Number((z?.spitze ?? 0).toFixed(1)),
+    aktiveKarten: z?.karten ?? 0,
+    ladepunkte: punkte,
+    gestoerteLadepunkte: gestoert,
+  };
+}
+
+export interface StundenAnteil {
+  stunde: number;
+  energieKwh: number;
+  pvKwh: number;
+  vorgaenge: number;
+}
+
+/**
+ * Verteilung der geladenen Energie über den Tag.
+ *
+ * Die Energie wird der Stunde des Ladebeginns zugeschlagen. Das ist
+ * eine Vereinfachung - ein Vorgang über vier Stunden verteilt sich in
+ * Wirklichkeit über vier Stunden -, für die Frage "wann wird
+ * angesteckt" ist aber genau der Beginn die richtige Größe. Für ein
+ * echtes Lastprofil bräuchte es die Leistungswerte des Ladepunkts.
+ */
+export function ladeTagesverteilung(
+  fenster: LadeZeitfenster,
+): StundenAnteil[] {
+  // Die Messstempel stehen in UTC; für eine Aussage über den
+  // Arbeitstag muss auf Ortszeit umgerechnet werden.
+  const zeilen = alle<{
+    stunde: number;
+    energie: number;
+    pv: number;
+    anzahl: number;
+  }>(
+    `SELECT CAST(strftime('%H', beginn, 'localtime') AS INTEGER) AS stunde,
+            SUM(energie_kwh) AS energie,
+            SUM(pv_kwh)      AS pv,
+            COUNT(*)         AS anzahl
+       FROM ladevorgang
+      WHERE beginn >= ? AND beginn < ? AND status = 'Beendet'
+      GROUP BY stunde
+      ORDER BY stunde`,
+    fenster.von,
+    fenster.bis,
+  );
+
+  const karte = new Map(zeilen.map((z) => [z.stunde, z]));
+
+  return Array.from({ length: 24 }, (_, stunde) => {
+    const z = karte.get(stunde);
+    return {
+      stunde,
+      energieKwh: Number((z?.energie ?? 0).toFixed(1)),
+      pvKwh: Number((z?.pv ?? 0).toFixed(1)),
+      vorgaenge: z?.anzahl ?? 0,
+    };
+  });
+}
+
+export interface KostenstellenAnteil {
+  kostenstelle: string;
+  vorgaenge: number;
+  energieKwh: number;
+  pvKwh: number;
+  karten: number;
+}
+
+export function ladeKostenstellen(
+  fenster: LadeZeitfenster,
+): KostenstellenAnteil[] {
+  return alle<KostenstellenAnteil>(
+    `SELECT k.kostenstelle,
+            COUNT(v.id)                               AS vorgaenge,
+            ROUND(COALESCE(SUM(v.energie_kwh), 0), 1) AS energieKwh,
+            ROUND(COALESCE(SUM(v.pv_kwh), 0), 1)      AS pvKwh,
+            COUNT(DISTINCT k.id)                      AS karten
+       FROM ladekarte k
+       LEFT JOIN ladevorgang v
+              ON v.karte_id = k.id
+             AND v.beginn >= ? AND v.beginn < ?
+             AND v.status = 'Beendet'
+      GROUP BY k.kostenstelle
+      ORDER BY energieKwh DESC`,
+    fenster.von,
+    fenster.bis,
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Abrechnung                                                          */
+/* ------------------------------------------------------------------ */
+
+export interface AbrechnungZeile {
+  id: string;
+  bezeichnung: string;
+  zeitraum_von: string;
+  zeitraum_bis: string;
+  status: string;
+  anzahl_vorgaenge: number;
+  energie_kwh: number;
+  netto: number;
+  ust_betrag: number;
+  brutto: number;
+  angelegt_am: string;
+  festgeschrieben_am: string | null;
+  belege: number;
+}
+
+export function ladeAbrechnungen(grenze = 24): AbrechnungZeile[] {
+  return alle<AbrechnungZeile>(
+    `SELECT a.*, (SELECT COUNT(*) FROM ladebeleg b WHERE b.abrechnung_id = a.id)
+              AS belege
+       FROM ladeabrechnung a
+      ORDER BY a.zeitraum_von DESC
+      LIMIT ?`,
+    grenze,
+  );
+}
+
+export function ladeAbrechnung(id: string): AbrechnungZeile | null {
+  return eine<AbrechnungZeile>(
+    `SELECT a.*, (SELECT COUNT(*) FROM ladebeleg b WHERE b.abrechnung_id = a.id)
+              AS belege
+       FROM ladeabrechnung a
+      WHERE a.id = ?`,
+    id,
+  );
+}
+
+export interface LadebelegZeile {
+  id: string;
+  nummer: string;
+  karte_id: string | null;
+  karte: string | null;
+  fahrzeug: string | null;
+  inhaber: string | null;
+  kostenstelle: string;
+  art: string;
+  anzahl_vorgaenge: number;
+  energie_kwh: number;
+  pv_kwh: number;
+  arbeit_eur: number;
+  zeit_eur: number;
+  blocking_eur: number;
+  grundpreis_eur: number;
+  netto: number;
+  ust_satz: number;
+  ust_betrag: number;
+  brutto: number;
+  sachbezug_eur: number;
+  status: string;
+  tarif: string | null;
+}
+
+/**
+ * Belege eines Laufs, nach Kostenstelle geordnet.
+ *
+ * Sortiert wird in der Anwendung, nicht in der Abfrage: SQLite
+ * vergleicht Text zeichenweise, dabei landet "Gaeste" hinter
+ * "Geschaeftsfuehrung", weil der Umlaut einen hoeheren Codepunkt hat.
+ * Die Belegnummern wurden nach deutscher Sortierung vergeben - weichen
+ * beide Ordnungen voneinander ab, springen die Nummern in der Liste.
+ */
+export function ladeLadebelege(abrechnungId: string): LadebelegZeile[] {
+  const zeilen = alle<LadebelegZeile>(
+    `SELECT b.*, k.bezeichnung AS karte, k.fahrzeug, k.inhaber,
+            t.bezeichnung AS tarif
+       FROM ladebeleg b
+       LEFT JOIN ladekarte k  ON k.id = b.karte_id
+       LEFT JOIN ladetarif t  ON t.id = k.tarif_id
+      WHERE b.abrechnung_id = ?`,
+    abrechnungId,
+  );
+
+  return zeilen.sort(
+    (a, b) =>
+      a.kostenstelle.localeCompare(b.kostenstelle, "de-AT") ||
+      a.nummer.localeCompare(b.nummer, "de-AT"),
+  );
+}
+
+export interface AbrechenbarerMonat {
+  /** "2026-09" */
+  schluessel: string;
+  jahr: number;
+  monat: number;
+  /** Beendete Vorgänge, die noch keiner Abrechnung angehören. */
+  offen: number;
+  energie_kwh: number;
+  /** Vorhandener Lauf zu diesem Monat, falls es einen gibt. */
+  lauf_id: string | null;
+  lauf_status: string | null;
+}
+
+/**
+ * Monate, für die sich ein Abrechnungslauf lohnt.
+ *
+ * Gezählt werden nur beendete Vorgänge ohne Abrechnung. Ein laufender
+ * Vorgang gehört nicht dazu: Er hat noch keinen Endzählerstand, und
+ * eine Rechnung über einen unfertigen Vorgang ist im Streitfall
+ * wertlos.
+ *
+ * Die Monatsgrenze wird in Ortszeit gezogen. Ein Vorgang, der am
+ * 1. Oktober um 00:30 Uhr in Wien beginnt, steht in der Datenbank mit
+ * dem 30. September 22:30 Uhr UTC - ohne Umrechnung fiele er in den
+ * falschen Monat und damit auf die falsche Rechnung.
+ */
+export function ladeAbrechenbareMonate(grenze = 12): AbrechenbarerMonat[] {
+  const zeilen = alle<{
+    schluessel: string;
+    offen: number;
+    energie_kwh: number;
+  }>(
+    `SELECT strftime('%Y-%m', beginn, '+2 hours') AS schluessel,
+            COUNT(*)                             AS offen,
+            ROUND(SUM(energie_kwh), 1)           AS energie_kwh
+       FROM ladevorgang
+      WHERE status = 'Beendet' AND abrechnung_id IS NULL
+      GROUP BY schluessel
+      ORDER BY schluessel DESC
+      LIMIT ?`,
+    grenze,
+  );
+
+  const laeufe = new Map(
+    alle<{ id: string; status: string; schluessel: string }>(
+      `SELECT id, status,
+              strftime('%Y-%m', zeitraum_von, '+2 hours') AS schluessel
+         FROM ladeabrechnung`,
+    ).map((l) => [l.schluessel, l]),
+  );
+
+  const gesammelt = new Map<string, AbrechenbarerMonat>();
+
+  for (const z of zeilen) {
+    const [jahr, monat] = z.schluessel.split("-");
+    const lauf = laeufe.get(z.schluessel);
+
+    gesammelt.set(z.schluessel, {
+      schluessel: z.schluessel,
+      jahr: Number(jahr),
+      monat: Number(monat),
+      offen: z.offen,
+      energie_kwh: z.energie_kwh,
+      lauf_id: lauf?.id ?? null,
+      lauf_status: lauf?.status ?? null,
+    });
+  }
+
+  // Monate mit einem Lauf, aber ohne offene Vorgänge, gehören ebenfalls
+  // in die Liste: Wer einen Monat sucht und ihn nicht findet, weiß
+  // sonst nicht, ob nichts anfiel oder ob schon abgerechnet wurde.
+  for (const [schluessel, lauf] of laeufe) {
+    if (gesammelt.has(schluessel)) continue;
+
+    const [jahr, monat] = schluessel.split("-");
+    gesammelt.set(schluessel, {
+      schluessel,
+      jahr: Number(jahr),
+      monat: Number(monat),
+      offen: 0,
+      energie_kwh: 0,
+      lauf_id: lauf.id,
+      lauf_status: lauf.status,
+    });
+  }
+
+  return [...gesammelt.values()]
+    .sort((a, b) => b.schluessel.localeCompare(a.schluessel))
+    .slice(0, grenze);
+}

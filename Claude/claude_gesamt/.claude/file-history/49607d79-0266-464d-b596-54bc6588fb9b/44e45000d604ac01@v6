@@ -1,0 +1,225 @@
+import { beforeEach, describe, expect, it } from 'vitest'
+import { mockRequest, resetMockData } from '@/api/mock/server.js'
+
+const ruf = (url, params) => mockRequest({ url, params })
+
+beforeEach(() => {
+  resetMockData()
+})
+
+describe('netops.api.search.global_search', () => {
+  // CLAUDE.md Abschnitt 7.3: die globale Suche muss IP, MAC, Hostname,
+  // Seriennummer, Label, VLAN und Dose finden.
+  const faelle = [
+    ['Hostname', 'SRV-PVE-01', 'Network Device'],
+    ['IP-Adresse', '10.10.10.11', 'IP Address'],
+    ['MAC-Adresse', '02:46:08:BE:00:01', 'Device Interface'],
+    ['Seriennummer', 'TEST-R740-0001', 'Network Device'],
+    ['Kabel-Label', 'P-0003', 'Cable'],
+    ['VLAN-Name', 'OT-FIELD', 'VLAN'],
+    ['Dose', 'A02-D14', 'Wall Outlet'],
+    ['Präfix', '10.100.100.0/24', 'IP Prefix'],
+    ['DNS-Name', 'erp.oekovolt.test', 'IP Address'],
+    ['Asset-Nr.', 'OV-AT-0012', 'Network Device'],
+    ['Firewall-Regel', 'Clients → OT', 'Firewall Rule'],
+    ['Ticket', 'TCK-1003', 'Firewall Rule'],
+    ['CVE', 'CVE-2026-1001', 'Vulnerability'],
+    ['Alarmtitel', 'Backup-Verify', 'Alert'],
+    ['Dokument', 'Notfallplan', 'NetOps Document'],
+    ['Vertrag', 'Magenta', 'Contract'],
+    ['Dienst', 'ERPNext', 'Backup Object'],
+  ]
+
+  it.each(faelle)('findet über %s', async (_art, suchbegriff, erwarteterDoctype) => {
+    const treffer = await ruf('netops.api.search.global_search', { query: suchbegriff })
+    expect(treffer.length).toBeGreaterThan(0)
+    expect(treffer.some((t) => t.doctype === erwarteterDoctype)).toBe(true)
+  })
+
+  it('stellt den genauesten Treffer nach vorne', async () => {
+    const treffer = await ruf('netops.api.search.global_search', { query: 'SW-CORE-01' })
+    expect(treffer[0].doctype).toBe('Network Device')
+    expect(treffer[0].title).toBe('SW-CORE-01')
+  })
+
+  it('sucht erst ab zwei Zeichen', async () => {
+    expect(await ruf('netops.api.search.global_search', { query: 'S' })).toEqual([])
+    expect(await ruf('netops.api.search.global_search', { query: '' })).toEqual([])
+  })
+
+  it('liefert für Schnittstellen das zugehörige Gerät mit', async () => {
+    const treffer = await ruf('netops.api.search.global_search', { query: '02:46:08:BE:00:01' })
+    const schnittstelle = treffer.find((t) => t.doctype === 'Device Interface')
+    expect(schnittstelle.context.device).toBe('SRV-PVE-01')
+  })
+
+  it('kann auf einen Mandanten eingeschränkt werden', async () => {
+    const alle = await ruf('netops.api.search.global_search', { query: 'SW-' })
+    const nurDe = await ruf('netops.api.search.global_search', { query: 'SW-', tenant: 'TEN-0002' })
+    expect(nurDe.length).toBeLessThan(alle.length)
+    expect(nurDe.every((t) => t.tenant === 'TEN-0002')).toBe(true)
+  })
+})
+
+describe('netops.api.ipam.prefix_tree', () => {
+  it('hängt Teilnetze unter ihr nächstgelegenes Elternnetz', async () => {
+    const baum = await ruf('netops.api.ipam.prefix_tree', { vrf: 'default' })
+    const linz = baum.find((k) => k.prefix === '10.10.0.0/16')
+    expect(linz).toBeTruthy()
+    expect(linz.depth).toBe(0)
+    expect(linz.children.map((k) => k.prefix)).toContain('10.10.10.0/24')
+    expect(linz.children.every((k) => k.depth === 1)).toBe(true)
+  })
+
+  it('trennt VRFs voneinander', async () => {
+    const baum = await ruf('netops.api.ipam.prefix_tree', {})
+    const ot = baum.find((k) => k.prefix === '10.100.0.0/16')
+    expect(ot.vrf).toBe('ot')
+    // Die OT-Netze liegen im VRF ot und dürfen nicht unter einem default-Netz hängen.
+    expect(ot.children.map((k) => k.prefix)).toEqual(['10.100.100.0/24', '10.100.110.0/24'])
+    expect(ot.children.every((k) => k.vrf === 'ot')).toBe(true)
+  })
+
+  it('berechnet die Auslastung von Blattnetzen aus den Adressen', async () => {
+    const baum = await ruf('netops.api.ipam.prefix_tree', { vrf: 'default' })
+    const mgmt = baum
+      .find((k) => k.prefix === '10.10.0.0/16')
+      .children.find((k) => k.prefix === '10.10.10.0/24')
+
+    expect(mgmt.utilization_basis).toBe('addresses')
+    expect(mgmt.usable).toBe(254)
+    expect(mgmt.address_count).toBe(7)
+    expect(mgmt.utilization).toBeCloseTo(2.8, 1)
+  })
+
+  it('berechnet die Auslastung von Containern aus den Kind-Präfixen', async () => {
+    const baum = await ruf('netops.api.ipam.prefix_tree', { vrf: 'default' })
+    const linz = baum.find((k) => k.prefix === '10.10.0.0/16')
+
+    expect(linz.utilization_basis).toBe('children')
+    const summe = linz.children.reduce((s, k) => s + k.size, 0)
+    expect(linz.utilization).toBeCloseTo((summe / 65536) * 100, 1)
+  })
+
+  it('zählt eine Adresse nicht in einem fremden VRF', async () => {
+    const baum = await ruf('netops.api.ipam.prefix_tree', { vrf: 'ot' })
+    const ot = baum
+      .find((k) => k.prefix === '10.100.0.0/16')
+      .children.find((k) => k.prefix === '10.100.100.0/24')
+    expect(ot.address_count).toBe(2)
+  })
+
+  it('liefert als flache Liste dieselben Knoten in Baumreihenfolge', async () => {
+    const flach = await ruf('netops.api.ipam.prefix_list', { vrf: 'default' })
+    expect(flach[0].prefix).toBe('10.10.0.0/16')
+    expect(flach[0].has_children).toBe(true)
+    // Alle Segmente der Zentrale hängen unter 10.10.0.0/16.
+    expect(flach[0].child_count).toBe(14)
+    expect(flach[1].depth).toBe(1)
+  })
+})
+
+describe('netops.api.ipam.prefix_addresses', () => {
+  it('sortiert numerisch, nicht alphabetisch', async () => {
+    const adressen = await ruf('netops.api.ipam.prefix_addresses', {
+      prefix: '10.10.10.0/24',
+      vrf: 'default',
+    })
+    const letzteOktette = adressen.map((a) => Number(a.address.split('/')[0].split('.')[3]))
+    expect(letzteOktette).toEqual([...letzteOktette].sort((a, b) => a - b))
+    // Eine Textsortierung würde .11 vor .2 stellen.
+    expect(letzteOktette.slice(0, 4)).toEqual([1, 2, 3, 11])
+  })
+
+  it('löst die zugewiesene Schnittstelle auf', async () => {
+    const adressen = await ruf('netops.api.ipam.prefix_addresses', {
+      prefix: '10.10.10.0/24',
+      vrf: 'default',
+    })
+    const gateway = adressen.find((a) => a.address.startsWith('10.10.10.1/'))
+    expect(gateway.device).toBe('FW-OS-01')
+    expect(gateway.interface_name).toBe('ix0')
+  })
+})
+
+describe('netops.api.dcim.device_detail', () => {
+  it('liefert alle Tabs in einem Aufruf', async () => {
+    const detail = await ruf('netops.api.dcim.device_detail', { name: 'SW-CORE-01' })
+    expect(detail.device.hostname).toBe('SW-CORE-01')
+    expect(detail.device_type.model).toBe('TSW202')
+    expect(detail.site.site_name).toBe('Serverraum A.01')
+    expect(detail.rack.rack_name).toBe('A.01-R1')
+    // TSW202: 8 Kupferports plus 2 SFP laut Portvorlage
+    expect(detail.interfaces.length).toBe(10)
+    expect(detail.vlans.map((v) => v.vid).sort((a, b) => a - b)).toEqual([10, 20, 160, 170])
+  })
+
+  it('reichert Schnittstellen mit VLAN, IP und Kabel an', async () => {
+    const detail = await ruf('netops.api.dcim.device_detail', { name: 'FW-OS-01' })
+    const lan = detail.interfaces.find((i) => i.interface_name === 'ix0')
+    expect(lan.ip_addresses).toContain('10.10.10.1/24')
+    expect(lan.cable).toBe('P-0001')
+    expect(lan.cable_peer).toBe('IF-SW-CORE-01-09')
+  })
+
+  it('sortiert Ports in der physischen Reihenfolge der Frontplatte', async () => {
+    const switchDetail = await ruf('netops.api.dcim.device_detail', { name: 'SW-CORE-01' })
+    expect(switchDetail.interfaces.map((i) => i.interface_name)).toEqual([
+      'Port 1',
+      'Port 2',
+      'Port 3',
+      'Port 4',
+      'Port 5',
+      'Port 6',
+      'Port 7',
+      'Port 8',
+      'SFP 1',
+      'SFP 2',
+    ])
+
+    // Beim Server bestimmt die Reihenfolge der Portblöcke (LOM, SFP+, iDRAC)
+    // die Sortierung, nicht der Name.
+    const serverDetail = await ruf('netops.api.dcim.device_detail', { name: 'SRV-PVE-01' })
+    expect(serverDetail.interfaces.map((i) => i.interface_name)).toEqual([
+      'eno1',
+      'eno2',
+      'ens1f0',
+      'ens1f1',
+      'idrac1',
+    ])
+  })
+
+  it('meldet ein unbekanntes Gerät sauber', async () => {
+    await expect(ruf('netops.api.dcim.device_detail', { name: 'GIBTSNICHT' })).rejects.toThrow(
+      /DoesNotExistError/,
+    )
+  })
+})
+
+describe('netops.api.dcim.device_list', () => {
+  it('löst Modell und Standortnamen auf', async () => {
+    const liste = await ruf('netops.api.dcim.device_list', {})
+    const fw = liste.find((g) => g.hostname === 'FW-OS-01')
+    expect(fw.model).toBe('DEC2750')
+    expect(fw.site_name).toBe('Serverraum A.01')
+  })
+
+  it('filtert nach Mandant und Rolle', async () => {
+    const de = await ruf('netops.api.dcim.device_list', { tenant: 'TEN-0002' })
+    expect(de.map((g) => g.hostname)).toEqual(['SW-ACC-PA-01'])
+
+    const hypervisor = await ruf('netops.api.dcim.device_list', { device_role: 'Hypervisor' })
+    expect(hypervisor.length).toBe(2)
+  })
+})
+
+describe('netops.api.dcim.dashboard_counters', () => {
+  it('zählt Bestand und Support-Fristen', async () => {
+    const k = await ruf('netops.api.dcim.dashboard_counters', {})
+    expect(k.devices).toBe(9)
+    expect(k.interfaces).toBe(55)
+    expect(k.vlans).toBe(18)
+    expect(k.sites).toBe(5)
+    expect(k.support_expiring + k.support_expired).toBeGreaterThan(0)
+  })
+})

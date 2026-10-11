@@ -1,0 +1,96 @@
+import { Printer, Wallet } from "lucide-react";
+import { db } from "@/lib/data";
+import { isManager, requireUser } from "@/lib/auth";
+import { date, INVOICE_STATUS_LABEL, money2 } from "@/lib/format";
+import { commissionOf, monthKey, monthLabel } from "@/lib/tax";
+import { Badge, BTN, Empty, PageBody, PageHeader, Stat, StatBand } from "@/components/ui";
+
+export const metadata = { title: "Provisionen" };
+
+// Provisionen je Monat aus den Rechnungen mit Vertriebspartner (ERPNext: sales_partner, commission_rate)
+export default async function CommissionsPage() {
+  const user = await requireUser();
+  const [allInvoices, charges] = await Promise.all([db().listInvoices({ limit: 1000 }), db().listLeadCharges({ limit: 1000 })]);
+  const invoices = allInvoices.filter((i) => i.sales_partner && !["Draft", "Cancelled"].includes(i.status));
+  const leadCosts = charges.reduce((s, c) => s + c.amount, 0);
+  const costsIn = (m: string) => charges.filter((c) => monthKey(c.posting_date) === m).reduce((s, c) => s + c.amount, 0);
+  const rows = invoices.map((i) => ({ ...i, c: commissionOf(i) })).sort((a, b) => b.posting_date.localeCompare(a.posting_date));
+
+  const earned = rows.reduce((s, r) => s + r.c.earned, 0);
+  const pending = rows.reduce((s, r) => s + (r.c.amount - r.c.earned), 0);
+  const year = new Date().getFullYear().toString();
+  const earnedYear = rows.filter((r) => r.posting_date.startsWith(year)).reduce((s, r) => s + r.c.earned, 0);
+  const months = [...new Set([...rows.map((r) => monthKey(r.posting_date)), ...charges.map((c) => monthKey(c.posting_date))])].sort().reverse();
+  const partners = [...new Set(rows.map((r) => r.sales_partner!))];
+
+  return (
+    <>
+      <PageHeader title="Provisionen" subtitle={isManager(user) ? "Alle Handelsvertreter" : "Deine Provisionen aus bezahlten Rechnungen"} />
+      <PageBody className="grid grid-cols-1 gap-8">
+        <StatBand>
+          <Stat label="Verdient" value={money2(earned)} hint="Rechnungen bezahlt" />
+          <Stat label="Ausstehend" value={money2(pending)} hint="wird mit Zahlungseingang fällig" />
+          <Stat label={`Verdient ${year}`} value={money2(earnedYear)} hint="laufendes Jahr" />
+          <Stat
+            label="Nach Lead-Kosten"
+            value={<span className={earned - leadCosts < 0 ? "text-rose-600" : ""}>{money2(earned - leadCosts)}</span>}
+            hint={`abzgl. ${money2(leadCosts)} Lead-Kosten`}
+          />
+        </StatBand>
+
+        {rows.length === 0 && <Empty icon={Wallet}>Noch keine provisionspflichtigen Rechnungen.</Empty>}
+
+        {months.map((m) => {
+          const inMonth = rows.filter((r) => monthKey(r.posting_date) === m);
+          return (
+            <section key={m} className="overflow-hidden rounded-xl border border-gray-200">
+              <div className="flex flex-wrap items-center gap-3 border-b border-gray-150 px-4 py-2.5">
+                <h2 className="font-semibold text-gray-900">{monthLabel(m)}</h2>
+                <span className="tnum text-[12px] text-gray-500">
+                  verdient {money2(inMonth.reduce((s, r) => s + r.c.earned, 0))} · gesamt {money2(inMonth.reduce((s, r) => s + r.c.amount, 0))}
+                  {costsIn(m) > 0 && <> · Lead-Kosten −{money2(costsIn(m))}</>}
+                </span>
+                <div className="ml-auto flex gap-2">
+                  {[...new Set(inMonth.map((r) => r.sales_partner!))].map((p) => (
+                    <a
+                      key={p}
+                      href={`/druck/provision/${m}?partner=${encodeURIComponent(p)}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className={BTN.ghost}
+                      title={`Provisionsabrechnung ${monthLabel(m)} – ${p}`}
+                    >
+                      <Printer /> Abrechnung{partners.length > 1 ? ` ${p.split(" ")[0]}` : ""}
+                    </a>
+                  ))}
+                </div>
+              </div>
+              <ul className="divide-y divide-gray-100">
+                {inMonth.map((r) => (
+                  <li key={r.name} className="grid grid-cols-[1fr_auto] items-center gap-x-4 gap-y-1 px-4 py-2.5 sm:grid-cols-[1fr_120px_90px_110px_120px]">
+                    <div className="min-w-0">
+                      <div className="truncate font-medium text-gray-900">{r.customer_name}</div>
+                      <div className="text-[12px] text-gray-500">
+                        {r.name} · {date(r.posting_date)}
+                        {partners.length > 1 && ` · ${r.sales_partner}`}
+                      </div>
+                    </div>
+                    <span className="tnum text-right text-gray-600 max-sm:hidden">{money2(r.net_total)}</span>
+                    <span className="tnum text-right text-gray-500 max-sm:hidden">{(r.commission_rate ?? 0).toLocaleString("de-DE")} %</span>
+                    <span className="max-sm:hidden">
+                      <Badge value={r.status} label={INVOICE_STATUS_LABEL[r.status] ?? r.status} />
+                    </span>
+                    <span className="text-right">
+                      <span className={`tnum font-medium ${r.c.earned ? "text-brand-700" : "text-gray-500"}`}>{money2(r.c.amount)}</span>
+                      <span className="block text-[11px] text-gray-400">{r.c.earned === r.c.amount ? "verdient" : r.c.earned > 0 ? `${money2(r.c.earned)} verdient` : "ausstehend"}</span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          );
+        })}
+      </PageBody>
+    </>
+  );
+}

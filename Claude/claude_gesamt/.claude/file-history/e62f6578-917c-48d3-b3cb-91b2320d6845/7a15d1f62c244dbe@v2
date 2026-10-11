@@ -1,0 +1,182 @@
+"""
+Pressearchiv – Archivierungswerkzeug
+====================================
+Sichert Online-Artikel beweissicher und lesbar:
+  - artikel.pdf        Druckansicht der Originalseite (wie im Browser)
+  - screenshot.png     Ganzseiten-Screenshot
+  - original.html      Rohes HTML der Seite (wie vom Server geliefert, nach Rendering)
+  - artikel.md         Reiner Artikeltext (Titel, Datum, Autor, Text)
+  - meta.json          Metadaten inkl. Abrufzeitpunkt und SHA-256-Prüfsummen
+  - video/             Videos (falls vorhanden) via yt-dlp
+
+Aufruf:
+  python archivieren.py quellen.json            # alle Einträge
+  python archivieren.py quellen.json --nur ID   # einzelner Eintrag
+Danach:  python uebersicht.py   (erzeugt 00_UEBERSICHT.html + .csv)
+"""
+import hashlib
+import json
+import re
+import subprocess
+import sys
+import unicodedata
+from datetime import datetime, timezone
+from pathlib import Path
+
+import trafilatura
+from playwright.sync_api import sync_playwright
+
+BASIS = Path(__file__).resolve().parent.parent
+UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+      "(KHTML, like Gecko) Chrome/140.0 Safari/537.36")
+
+# Cookie-/Consent-Overlays werden NICHT akzeptiert, sondern nur für die
+# Druckansicht ausgeblendet.
+OVERLAY_JS = r"""
+() => {
+  const muster = /(sp_message|didomi|usercentrics|onetrust|consent|cookie|cmp)/i;
+  document.querySelectorAll('body *').forEach(el => {
+    const kennung = (el.id || '') + ' ' + (typeof el.className === 'string' ? el.className : '');
+    const st = getComputedStyle(el);
+    const ueberlagert = (st.position === 'fixed' || st.position === 'sticky')
+                        && parseInt(st.zIndex || '0') > 1000;
+    const enthaeltArtikel = el.querySelector && el.querySelector('article, main, h1');
+    if (muster.test(kennung) && !enthaeltArtikel) { el.remove(); return; }
+    // halbtransparente Vollbild-Hintergründe (Backdrops) entfernen
+    const r = el.getBoundingClientRect();
+    if (st.position === 'fixed' && !enthaeltArtikel && r.width >= innerWidth * 0.9
+        && r.height >= innerHeight * 0.9) { el.remove(); }
+  });
+  for (const el of [document.documentElement, document.body]) {
+    el.style.setProperty('overflow', 'visible', 'important');
+    el.style.setProperty('position', 'static', 'important');
+    el.classList.forEach(c => { if (muster.test(c)) el.classList.remove(c); });
+  }
+}
+"""
+
+
+def slug(text, maxlen=70):
+    text = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode()
+    text = re.sub(r"[^A-Za-z0-9]+", "-", text).strip("-")
+    return text[:maxlen].rstrip("-")
+
+
+def sha256(p: Path):
+    h = hashlib.sha256()
+    with open(p, "rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def meta_aus_html(html, url):
+    m = trafilatura.extract_metadata(html, default_url=url)
+    text = trafilatura.extract(html, url=url, include_comments=False,
+                               include_tables=True, favor_recall=True,
+                               output_format="markdown") or ""
+    return {
+        "titel": (m.title if m else None),
+        "autor": (m.author if m else None),
+        "datum": (m.date if m else None),
+        "beschreibung": (m.description if m else None),
+        "seitenname": (m.sitename if m else None),
+    }, text
+
+
+def artikel_sichern(e, page):
+    ordner = BASIS / e["ordner"]
+    ordner.mkdir(parents=True, exist_ok=True)
+    url = e["url"]
+    print(f"\n=== {e['id']}: {url}")
+    page.goto(url, wait_until="domcontentloaded", timeout=60000)
+    try:
+        page.wait_for_load_state("networkidle", timeout=15000)
+    except Exception:
+        pass
+    # Lazy-Loading auslösen
+    for _ in range(12):
+        page.mouse.wheel(0, 1500)
+        page.wait_for_timeout(250)
+    page.evaluate("window.scrollTo(0,0)")
+    html = page.content()  # Rohfassung vor jeder Bereinigung
+    page.evaluate(OVERLAY_JS)
+    page.wait_for_timeout(800)
+    (ordner / "original.html").write_text(html, encoding="utf-8")
+    page.screenshot(path=str(ordner / "screenshot.png"), full_page=True)
+    page.emulate_media(media="screen")
+    page.pdf(path=str(ordner / "artikel.pdf"), format="A4", print_background=True,
+             margin={"top": "10mm", "bottom": "10mm", "left": "8mm", "right": "8mm"})
+
+    meta, text = meta_aus_html(html, url)
+    # manuelle Angaben aus quellen.json haben Vorrang
+    for k in ("titel", "datum", "autor"):
+        if e.get(k):
+            meta[k] = e[k]
+    abruf = datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds")
+    kopf = (f"# {meta['titel']}\n\n"
+            f"- **Medium:** {e['medium']}\n"
+            f"- **Erschienen:** {meta['datum'] or 'unbekannt'}\n"
+            f"- **Autor:** {meta['autor'] or '–'}\n"
+            f"- **Quelle:** <{url}>\n"
+            f"- **Archiviert:** {abruf}\n\n---\n\n")
+    (ordner / "artikel.md").write_text(kopf + text, encoding="utf-8")
+    return meta, abruf, len(text)
+
+
+def video_sichern(e):
+    ordner = BASIS / e["ordner"] / "video"
+    ordner.mkdir(parents=True, exist_ok=True)
+    for vurl in e.get("videos", []):
+        print(f"  -> Video: {vurl}")
+        cmd = [sys.executable, "-m", "yt_dlp", "--no-playlist",
+               "-f", "bv*+ba/b", "--merge-output-format", "mp4",
+               "--write-info-json", "--write-thumbnail", "--write-subs",
+               "--sub-langs", "de.*,de", "--ffmpeg-location", ffmpeg_pfad(),
+               "-o", str(ordner / "%(upload_date>%Y-%m-%d)s_%(title).80B.%(ext)s"),
+               vurl]
+        subprocess.run(cmd, check=False)
+
+
+def ffmpeg_pfad():
+    import imageio_ffmpeg
+    return imageio_ffmpeg.get_ffmpeg_exe()
+
+
+def main():
+    quellen = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+    nur = sys.argv[sys.argv.index("--nur") + 1] if "--nur" in sys.argv else None
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        ctx = browser.new_context(user_agent=UA, locale="de-AT",
+                                  viewport={"width": 1280, "height": 1600})
+        page = ctx.new_page()
+        for e in quellen:
+            if nur and e["id"] != nur:
+                continue
+            ordner = BASIS / e["ordner"]
+            status = {}
+            if e.get("typ", "artikel") in ("artikel", "artikel+video"):
+                try:
+                    meta, abruf, n = artikel_sichern(e, page)
+                    status.update(meta, abruf=abruf, textlaenge=n)
+                except Exception as ex:
+                    print("  FEHLER Artikel:", ex)
+                    status["fehler"] = str(ex)
+            if e.get("videos"):
+                video_sichern(e)
+                status.setdefault("abruf", datetime.now().astimezone().isoformat(timespec="seconds"))
+            dateien = {str(f.relative_to(ordner)).replace("\\", "/"): sha256(f)
+                       for f in sorted(ordner.rglob("*")) if f.is_file() and f.name != "meta.json"}
+            info = {**e, **{k: v for k, v in status.items() if v is not None},
+                    "sha256": dateien}
+            for k in ("titel", "datum", "autor"):
+                if e.get(k):
+                    info[k] = e[k]
+            (ordner / "meta.json").write_text(json.dumps(info, ensure_ascii=False, indent=2),
+                                             encoding="utf-8")
+        browser.close()
+
+
+if __name__ == "__main__":
+    main()

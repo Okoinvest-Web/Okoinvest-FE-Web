@@ -1,0 +1,67 @@
+import type { SessionUser } from "@/lib/types";
+
+// Verschlüsseltes Session-Token (AES-256-GCM): "v2." + base64url(IV) + "." + base64url(Chiffrat).
+// GCM prüft zugleich die Echtheit – ein verändertes Token lässt sich nicht entschlüsseln.
+// Verschlüsselt statt nur signiert, weil das Token die ERPNext-Sitzung (sid) des Nutzers enthält.
+// Läuft im Proxy und serverseitig, daher nur Web Crypto.
+
+export const SESSION_COOKIE = "crm_session";
+export const SESSION_MAX_AGE = 8 * 60 * 60; // 8 Stunden
+
+// Vollständige Sitzung: nur serverseitig verwenden, sid nie an Client-Komponenten geben
+export type Session = SessionUser & { sid?: string };
+type Payload = Session & { exp: number };
+
+const DEV_SECRET = "dev-only-insecure-secret-change-me";
+
+function secret() {
+  const s = process.env.SESSION_SECRET;
+  if (s && s.length >= 32) return s;
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("SESSION_SECRET fehlt oder ist kürzer als 32 Zeichen");
+  }
+  return DEV_SECRET;
+}
+
+const enc = new TextEncoder();
+
+function b64url(bytes: Uint8Array) {
+  let s = "";
+  for (const b of bytes) s += String.fromCharCode(b);
+  return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+function fromB64url(s: string) {
+  const bin = atob(s.replace(/-/g, "+").replace(/_/g, "/"));
+  return Uint8Array.from(bin, (c) => c.charCodeAt(0));
+}
+
+let keyPromise: Promise<CryptoKey> | undefined;
+function aesKey() {
+  // Schlüssel = SHA-256(SESSION_SECRET); einmal je Prozess ableiten
+  keyPromise ??= crypto.subtle
+    .digest("SHA-256", enc.encode(secret()))
+    .then((raw) => crypto.subtle.importKey("raw", raw, { name: "AES-GCM" }, false, ["encrypt", "decrypt"]));
+  return keyPromise;
+}
+
+export async function signSession(session: Session): Promise<string> {
+  const payload: Payload = { ...session, exp: Math.floor(Date.now() / 1000) + SESSION_MAX_AGE };
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const data = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv }, await aesKey(), enc.encode(JSON.stringify(payload))));
+  return `v2.${b64url(iv)}.${b64url(data)}`;
+}
+
+export async function verifySession(token: string | undefined): Promise<Session | null> {
+  if (!token) return null;
+  const [version, iv, data] = token.split(".");
+  if (version !== "v2" || !iv || !data) return null;
+  try {
+    const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv: fromB64url(iv) }, await aesKey(), fromB64url(data));
+    const p = JSON.parse(new TextDecoder().decode(plain)) as Payload;
+    if (typeof p.exp !== "number" || p.exp < Date.now() / 1000) return null;
+    return { user: p.user, fullName: p.fullName, role: p.role === "manager" ? "manager" : "agent", sid: p.sid };
+  } catch {
+    return null;
+  }
+}

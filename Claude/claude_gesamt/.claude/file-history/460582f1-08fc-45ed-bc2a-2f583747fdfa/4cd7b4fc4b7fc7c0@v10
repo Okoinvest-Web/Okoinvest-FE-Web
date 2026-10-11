@@ -1,0 +1,408 @@
+import re
+from docx import Document
+from docx.shared import Pt, RGBColor, Cm
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+
+ACCENT = RGBColor(0x1F, 0x4E, 0x3D)
+GREY = RGBColor(0x5F, 0x5F, 0x5F)
+PH = RGBColor(0xC0, 0x00, 0x00)
+WHO = "[Name], [Funktion] der Ökovolt-Gruppe"
+
+
+def add(p, text, bold=False, size=None, color=None, italic=False):
+    for part in re.split(r"(\[[^\]]+\])", text):
+        if not part:
+            continue
+        r = p.add_run(part)
+        r.bold, r.italic = bold, italic
+        if size:
+            r.font.size = Pt(size)
+        if part.startswith("["):
+            r.font.color.rgb, r.bold = PH, True
+        elif color:
+            r.font.color.rgb = color
+    return p
+
+
+class Release:
+    def __init__(self, title, sub):
+        self.d = Document()
+        s = self.d.sections[0]
+        s.left_margin = s.right_margin = Cm(2.3)
+        s.top_margin = s.bottom_margin = Cm(1.8)
+        n = self.d.styles["Normal"]
+        n.font.name = "Calibri"
+        n.font.size = Pt(11)
+        n.paragraph_format.space_after = Pt(8)
+        n.paragraph_format.line_spacing = 1.18
+        add(self.d.add_paragraph(), "PRESSEINFORMATION  |  Ostermiething, [Datum]", bold=True, size=9, color=ACCENT)
+        p = add(self.d.add_paragraph(), title, bold=True, size=20)
+        p.paragraph_format.space_after = Pt(4)
+        p = add(self.d.add_paragraph(), sub, italic=True, size=11.5, color=GREY)
+        p.paragraph_format.space_after = Pt(12)
+
+    def lead(self, t):
+        self.para(t, bold=True)
+
+    def para(self, t, **kw):
+        p = add(self.d.add_paragraph(), t, **kw)
+        p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+        return p
+
+    def bullets(self, items):
+        for b in items:
+            add(self.d.add_paragraph(style="List Bullet"), b)
+
+    def quote(self, t):
+        p = self.d.add_paragraph()
+        p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+        add(p, f"„{t}“", bold=True, color=ACCENT)
+        add(p, f", sagt {WHO}.")
+
+    def questions(self, intro, qs):
+        self.para(intro, bold=True)
+        for i, q in enumerate(qs, start=1):
+            p = self.d.add_paragraph()
+            p.paragraph_format.left_indent = Cm(0.7)
+            p.paragraph_format.first_line_indent = Cm(-0.7)
+            add(p, f"{i}.  ", bold=True, color=ACCENT)
+            add(p, q, bold=True)
+
+    def footer(self, docs, fn, zaehler=True):
+        if zaehler:
+            p = self.d.add_paragraph()
+            p.paragraph_format.space_before = Pt(8)
+            add(p, "Die Eigentümer der Salzburg AG – Land Salzburg, Stadt Salzburg und Energie AG Oberösterreich – "
+                "sind seit 21. September 2026 mit Urteilen, Gutachten und forensischen Befunden umfassend informiert. "
+                "Eine Antwort steht seit [X] Tagen aus.", bold=True, size=10, color=ACCENT)
+        p = add(self.d.add_paragraph(), f"{docs} stellt Ökovolt Medienvertreterinnen und -vertretern auf Anfrage zur "
+                "Verfügung.", italic=True, size=9.5)
+        p.paragraph_format.space_before = Pt(10)
+        add(self.d.add_paragraph(), "Über Ökovolt: Die Ökovolt-Gruppe mit Sitz in Ostermiething (Bezirk Braunau) plant "
+            "und errichtet seit 2012 Photovoltaik-Großanlagen in Österreich und Deutschland und beschäftigt mehr als 30 "
+            "Mitarbeiterinnen und Mitarbeiter.", size=9, color=GREY)
+        add(self.d.add_paragraph(), "Rückfragen: [Name, Funktion] · Ökovolt Solartechnik GmbH · Gewerbegebiet 10, "
+            "5121 Ostermiething · [Telefon] · [E-Mail]", size=9, color=GREY)
+        self.d.save(fn)
+        print(f"{len(' '.join(p.text for p in self.d.paragraphs).split()):4d} Woerter  {fn}")
+
+
+UNSCHULD = "Zum Ermittlungsverfahren selbst äußert sich Ökovolt nicht; es gilt die Unschuldsvermutung."
+
+# =====================================================================
+# WELLE 2 – GENERALVERSAMMLUNG
+# =====================================================================
+r = Release("Schadenersatz gegen den Gründer ja, gegen die eigene Tochter nein: Salzburg AG verliert dreimal vor dem "
+            "Oberlandesgericht",
+            "Protokoll vorab geschrieben, im Flüsterton abgestimmt: Das OLG München nennt das Vorgehen der Salzburg AG "
+            "bei der Generalversammlung von Ökovolt „treuwidrig“.")
+r.lead("Die Salzburg AG hat vor dem Oberlandesgericht München alle drei Verfahren um ihre Beteiligung an der deutschen "
+       "Ökovolt-Gesellschaft verloren. Mit Urteilen vom 21. Mai 2026 wies der Senat ihre Berufungen zurück, im Juni "
+       "folgten ihre Rügen. Im Mittelpunkt steht eine Generalversammlung der österreichischen Ökovolt am 10. Oktober 2025.")
+r.para("Laut Urteil hatten die Vertreter der Salzburg AG das Versammlungsprotokoll samt Abstimmungsergebnissen bereits "
+       "vor der Versammlung verfasst. Sie eröffneten die Sitzung, während die Vertreter des Mehrheitsgesellschafters noch "
+       "auf dem Weg in den Saal waren, zogen die entscheidenden Tagesordnungspunkte vor und setzten die Versammlung nach "
+       "deren Eintreffen „im Flüsterton“ fort. Das Gericht wertet dieses Vorgehen als „treuwidrig“: Die Salzburg AG habe "
+       "„das vorgesehene Verfahren der Beschlussfassung ausgehebelt“. Vertreten ließ sie sich von einer der großen "
+       "deutschen Wirtschaftskanzleien – überzeugen konnte sie das Gericht in keinem der drei Verfahren.")
+r.para("Auch in Österreich hat dieselbe Versammlung Folgen: Das Firmenbuchgericht hat die Eintragung der dort gefassten "
+       "Beschlüsse ausgesetzt, bis die Vorwürfe rund um das Protokoll geklärt sind [Beleg: Beschluss, GZ, Datum]. Damit "
+       "haben Gerichte in zwei Ländern Bedenken gegen dieselbe Generalversammlung – in Deutschland wertete das "
+       "Oberlandesgericht sie als treuwidrig und sah darin einen wichtigen Grund für die Einziehung der Anteile der "
+       "Salzburg AG.")
+r.para("Bemerkenswert ist, was dabei auf dem Spiel stand. Das vorgefertigte Protokoll sah vor, Schadenersatzansprüche "
+       "gegen den Gründer und Mehrheitsgesellschafter von Ökovolt zu prüfen. Gleichzeitig verhinderte die Salzburg AG, "
+       "dass die Gesellschaft Ansprüche gegen die Salzburg AG selbst, gegen ihre Tochter one2zero und gegen den von ihr "
+       "nominierten früheren Geschäftsführer geltend macht [Beleg: GV-Protokoll, TOP …].")
+r.para("Die one2zero ist jene Tochter der Salzburg AG, die den Photovoltaik-Auftrag des Diskonters Hofer übernommen hat. "
+       "Genau dieser Hofer-Auftrag ist Gegenstand des Ermittlungsverfahrens, das die Wirtschafts- und "
+       "Korruptionsstaatsanwaltschaft (WKStA) auf Auftrag des Landesgerichts für Strafsachen Wien eingeleitet hat und über "
+       "das ORF, Radio und Zeitungen landesweit berichtet haben. Ansprüche im Zusammenhang mit diesem Auftrag wollte die "
+       "Salzburg AG in der Generalversammlung offenbar nicht zur Abstimmung kommen lassen. " + UNSCHULD)
+r.quote("Schadenersatz gegen den Gründer ja – gegen die eigene Tochter und den eigenen Mann nein. So sieht Aufklärung "
+        "bei der Salzburg AG aus")
+r.quote("Dreimal vor dem Oberlandesgericht verloren, die Eintragung im Firmenbuch gestoppt – und die Salzburg AG spricht "
+        "noch immer von einem Gesellschafterstreit. Treuwidrig ist kein Streit, das ist ein Befund")
+r.questions("Ökovolt fragt die Salzburg AG:", [
+    "Warum wurde das Protokoll der Generalversammlung vom 10. Oktober 2025 vor der Versammlung geschrieben?",
+    "Warum ließ die Salzburg AG Schadenersatz gegen den Gründer prüfen, blockierte aber Ansprüche gegen die eigene "
+    "Tochter und den eigenen Geschäftsführer?"])
+r.footer("Die Urteile des OLG München (14 U 3746/25, 14 U 3748/25, 14 U 295/26)",
+         "Presseaussendung_Welle2_Generalversammlung.docx")
+
+# =====================================================================
+# WELLE 2b – KOPIERT, EINGELADEN, ANGESTELLT
+# =====================================================================
+r = Release("Kopiert, eingeladen, angestellt: Was Forensiker beim Geschäftsführer der Salzburg AG fanden",
+            "Am selben Tag, an dem der Wechsel zur Salzburg-AG-Tochter eingeleitet wurde, wurden die Controlling-Daten "
+            "von Ökovolt kopiert. Danach wurde der Manager bei der Salzburg AG angestellt – bis heute.")
+r.lead("Der Geschäftsführer, den die Salzburg AG in die Ökovolt entsandt hatte, kopierte am 2. Dezember 2024 den gesamten "
+       "Controlling-Ordner des Unternehmens auf seinen Laptop. Am selben Tag wurde im Auftrag des Vorstands der Salzburg "
+       "AG sein Wechsel zur Tochter one2zero per 1. Jänner 2025 in die Wege geleitet. Nach seinem Ausscheiden bei Ökovolt "
+       "wurde er Angestellter der Salzburg AG. Das Oberlandesgericht München hält den Datenabzug für glaubhaft gemacht.")
+r.para("Grundlage sind die Befunde zweier österreichischer IT-Forensiker, die Ökovolt beauftragt hat. Sie werteten "
+       "Laptop, Mobiltelefon, Postfach und Serverprotokolle des früheren Geschäftsführers aus und stellten fest:")
+r.bullets([
+    "Am 2. Dezember 2024 wurde der gesamte Controlling-Ordner – rund 1.150 Dateien mit 4,3 Gigabyte an Geschäftsdaten – "
+    "auf seinen Laptop kopiert.",
+    "Bilanz- und Ergebnisdateien der Ökovolt lagen auf einem privaten externen Datenträger und wurden dort über Monate "
+    "hinweg geöffnet.",
+    "Planungs- und Buchhaltungsdateien wurden an eine private E-Mail-Adresse geschickt.",
+    "Vor dem Austritt wurden rund 7.000 E-Mails und über 2.000 Dateien gelöscht; die Forensiker konnten sie "
+    "wiederherstellen. 147 Dateien wurden verschlüsselt hinterlassen.",
+])
+r.para("Das Oberlandesgericht München hat diese Befunde seiner Würdigung zugrunde gelegt. Es hält für glaubhaft gemacht, "
+       "dass die Daten kopiert wurden, um sie für die Salzburg AG und/oder die one2zero zu verwenden, und hält fest: "
+       "„Dass [der Geschäftsführer] ohne Mitwirkung der Klägerin gehandelt hätte, ist zwar vorstellbar; es erscheint "
+       "jedoch deutlich weniger wahrscheinlich.“ Die Entscheidung erging im Eilverfahren. Ob Daten tatsächlich "
+       "weitergegeben wurden, werden die Gerichte klären.")
+r.quote("Am selben Tag, an dem die Salzburg AG ihn zur eigenen Tochter holen wollte, wurden unsere Controlling-Daten "
+        "kopiert. Forensiker haben es festgestellt, ein Oberlandesgericht hat es gewürdigt – und der Vorstand bestreitet "
+        "weiter")
+r.para("Der Geschäftsführer schied am 3. Februar 2025 bei Ökovolt aus. Unmittelbar darauf wurde er – nach den eigenen "
+       "Angaben der Salzburg AG vor dem Oberlandesgericht – Angestellter der Salzburg AG. Laut Urteil vom Mai 2026 ist er "
+       "das bis heute. Konsequenzen gab es keine. Trotz dieser Befundlage bestreitet die Salzburg AG jede Verantwortung. "
+       "Gegen den früheren Geschäftsführer ermittelt die Staatsanwaltschaft Memmingen; es gilt die Unschuldsvermutung.")
+r.quote("Andere Unternehmen trennen sich von Mitarbeitern, gegen die solche Befunde vorliegen. Die Salzburg AG hat ihn "
+        "angestellt")
+r.questions("Ökovolt fragt die Salzburg AG:", [
+    "Warum wurde der Wechsel des Geschäftsführers zur one2zero am selben Tag eingeleitet, an dem die Controlling-Daten "
+    "von Ökovolt kopiert wurden?",
+    "Warum hat die Salzburg AG ihn nach seinem Ausscheiden angestellt, statt die Vorgänge aufzuklären?"])
+r.footer("Das Urteil des OLG München (14 U 3746/25)", "Presseaussendung_Welle2b_Forensik.docx")
+
+# =====================================================================
+# WELLE 3 – OHNE GEWERBESCHEIN
+# =====================================================================
+r = Release("Ohne Gewerbeschein zum Millionenprojekt: Salzburger Elektrobranche zahlt die Rechnung",
+            "Die Salzburg-AG-Tochter one2zero besaß anfangs keine einzige Gewerbeberechtigung, jene für Elektrotechnik "
+            "erst ab August 2023. Ökovolt ruft die Bundeswettbewerbsbehörde an.")
+r.lead("In Salzburg braucht jeder Elektriker für jede Steckdose, die er montiert, eine Gewerbeberechtigung. Die one2zero "
+       "GmbH, eine hundertprozentige Tochter der Salzburg AG, trat dagegen als Anbieterin für Photovoltaik-Großprojekte "
+       "auf, bevor sie überhaupt eine Gewerbeberechtigung besaß. Das zeigen Firmenbuch und Gewerbeinformationssystem "
+       "Austria (GISA).")
+r.para("Die Daten: Gegründet wurde die one2zero am 18. Oktober 2021. Im Juni 2022 kündigte die Salzburg AG öffentlich an, "
+       "mit ihr eine große österreichische Handelskette mit Photovoltaik auszustatten. Die erste Gewerbeberechtigung – für "
+       "Unternehmensberatung – wurde am 28. November 2022 eingetragen. Die Berechtigung für Elektrotechnik, ohne die in "
+       "Österreich keine elektrische Anlage geplant werden darf, folgte erst am 2. August 2023. Errichtet wurden die "
+       "Anlagen von Subunternehmen.")
+r.quote("Jeder kleine Elektriker in Salzburg muss für jede Steckdose einen Gewerbeschein vorweisen. Die Tochter des "
+        "Landesversorgers hatte am Anfang gar keinen. Wenn das Schule macht, kann in Salzburg jeder Handwerksbetrieb "
+        "zusperren")
+r.para("Hunderte Salzburger Elektro- und Installationsbetriebe halten sich an diese Regeln, weisen Befähigung und "
+       "Referenzen nach und rechnen knapp. Aus Sicht von Ökovolt verschafft sich ein Landesunternehmen, das zu knapp drei "
+       "Vierteln Land und Stadt gehört, mit einer eigenen Tochter einen Vorteil, den kein privater Betrieb hätte: "
+       "Marktstellung, Kundenbeziehungen und das Geld aus den Stromrechnungen. Gegenüber der Bundeswettbewerbsbehörde gab "
+       "die Salzburg AG bei ihrem Einstieg bei Ökovolt an, selbst Photovoltaikanlagen nur „in einem verschwindend geringen "
+       "Ausmaß“ zu errichten [Beleg: Zusammenschlussanmeldung].")
+r.para("Ökovolt hat die Bundeswettbewerbsbehörde ersucht, das Vorgehen der Salzburg AG und ihrer Tochter zu prüfen "
+       "[Datum Eingabe], und die Landesinnung der Elektrotechniker in der Wirtschaftskammer Salzburg über den Sachverhalt "
+       "informiert.")
+r.quote("Das ist nicht nur unser Problem. Es geht um jeden Betrieb in Salzburg, der sich an die Regeln hält und sich "
+        "gegen ein Landesunternehmen behaupten muss")
+r.questions("Ökovolt fragt die Salzburg AG:", [
+    "Welche Aufträge hat die one2zero angenommen oder angeboten, bevor sie eine Gewerbeberechtigung besaß?",
+    "Wie passt die Angabe gegenüber der Bundeswettbewerbsbehörde zu einer eigenen Photovoltaik-Tochter, die "
+    "Großprojekte übernimmt?"])
+r.footer("GISA- und Firmenbuchauszüge", "Presseaussendung_Welle3_Gewerbeschein.docx")
+
+# =====================================================================
+# WELLE 4 – DAS GELD DER SALZBURGER
+# =====================================================================
+r = Release("Gewinn bekämpfen, Verlust finanzieren: Wie die Salzburg AG mit dem Geld der Salzburger umgeht",
+            "Ökovolt hat 2024 den Gewinn mehr als verdoppelt – die Salzburg AG prozessiert gegen ihre eigene Beteiligung "
+            "und finanziert eine Tochter mit Millionenverlusten.")
+r.lead("Die Salzburg AG hält 49 Prozent an Ökovolt. Das Unternehmen hat laut geprüftem Jahresabschluss 2024 einen "
+       "Jahresüberschuss von 1,14 Millionen Euro erzielt – mehr als doppelt so viel wie im Jahr davor. Statt diesen Wert "
+       "für ihre Eigentümer, Land und Stadt Salzburg, zu sichern, führt die Salzburg AG Verfahren gegen das eigene "
+       "Beteiligungsunternehmen.")
+r.para("Rechnerisch entfallen auf die Salzburg AG rund 560.000 Euro des Jahresgewinns 2024; am ausgewiesenen "
+       "Bilanzgewinn von 4,3 Millionen Euro hält sie einen Anteil von rund 2,1 Millionen Euro. Für ihren Einstieg hat sie "
+       "[Kaufpreis] bezahlt. Ihre Anteile an der deutschen Schwestergesellschaft hat sie bereits verloren – vor dem "
+       "Oberlandesgericht München scheiterte sie in allen drei Verfahren.")
+r.para("Zugleich finanziert die Salzburg AG ihre eigene Photovoltaik-Tochter one2zero. Laut Jahresabschluss schrieb diese "
+       "2024 einen Verlust von [1,87 Millionen Euro]; seit ihrer Gründung 2021 haben sich die Verluste auf "
+       "[5,16 Millionen Euro] summiert [Beleg: Jahresabschlüsse Firmenbuch]. Bereits im ersten Geschäftsjahr wies die "
+       "Gesellschaft ein negatives Eigenkapital aus.")
+r.quote("Die Salzburg AG hat eine Beteiligung, die Geld verdient, und eine Tochter, die Geld verbrennt. Sie bekämpft die "
+        "eine und füttert die andere. In Salzburg zahlt der Stromkunde, in Wien kassieren die Anwälte")
+r.para("Die Salzburg AG gehört zu 42,56 Prozent dem Land und zu 31,31 Prozent der Stadt Salzburg. Jeder Euro, den sie "
+       "für Verfahren und Verluste aufwendet, stammt letztlich aus den Stromrechnungen der Salzburgerinnen und Salzburger.")
+r.quote("Die Salzburger zahlen jeden Monat pünktlich ihre Stromrechnung. Sie haben ein Recht zu erfahren, ob ihr Geld in "
+        "billigeren Strom fließt oder in teure Anwälte")
+r.questions("Ökovolt fragt die Salzburg AG:", [
+    "Wie viel hat die Salzburg AG bisher für Anwälte und Verfahren gegen Ökovolt ausgegeben?",
+    "Warum führt die Salzburg AG Verfahren gegen eine Beteiligung, die Gewinn macht, und finanziert eine Tochter, die "
+    "seit Jahren Verluste schreibt?"])
+r.footer("Jahresabschlüsse von Ökovolt und Firmenbuchdaten der one2zero", "Presseaussendung_Welle4_Geld.docx")
+
+# =====================================================================
+# WELLE 5 – DIE EIGENTÜMER SCHWEIGEN
+# =====================================================================
+r = Release("Fünf Fragen, keine Antwort: Ökovolt fordert Land und Stadt zur unabhängigen Prüfung der Salzburg AG auf",
+            "Am 21. September hat Ökovolt die Eigentümer der Salzburg AG um eine unabhängige Aufarbeitung ersucht. Die "
+            "Frist ist verstrichen – eine Antwort gibt es bis heute nicht.")
+r.lead("Die Eigentümer der Salzburg AG haben seit dem 21. September Urteile, Gutachten und forensische Befunde auf dem "
+       "Tisch – und schweigen. An diesem Tag hat sich die Ökovolt-Gruppe schriftlich an die Landeshauptfrau, den "
+       "Bürgermeister der Stadt Salzburg und den Vorstand der Energie AG Oberösterreich gewandt und um eine unabhängige "
+       "Prüfung der Vorgänge rund um die Beteiligung an Ökovolt und den Hofer-Auftrag ersucht. Die gesetzte Frist endete "
+       "am 30. September. Eine Antwort ist bis heute, [X] Tage später, nicht eingelangt.")
+r.para("Was geprüft werden soll, ist inzwischen öffentlich bekannt: Die Salzburg AG gründete am Tag der Unterzeichnung "
+       "ihrer Partnerschaft mit Ökovolt eine eigene Konkurrentin. Den Hofer-Auftrag, für den sich Ökovolt zurückgezogen "
+       "hatte, bekam diese Tochter. Vor dem Oberlandesgericht München verlor die Salzburg AG alle drei Verfahren; das "
+       "Gericht nannte ihr Vorgehen „treuwidrig“. Die WKStA hat auf gerichtlichen Auftrag ein Ermittlungsverfahren zum "
+       "Hofer-Auftrag eingeleitet. " + UNSCHULD)
+r.quote("Wir erwarten keine Entschuldigung. Wir erwarten eine unabhängige Prüfung. Wer sie anordnet, zeigt Verantwortung")
+r.questions("Die fünf Fragen, auf die Ökovolt eine Antwort erwartet:", [
+    "Warum gründete die Salzburg AG am Tag der Vertragsunterzeichnung mit Ökovolt eine eigene Konkurrentin?",
+    "Warum ging der Hofer-Auftrag an diese Tochter und nicht an den vertraglich „bevorzugten Partner“?",
+    "Warum wurde das Protokoll der Generalversammlung vom 10. Oktober 2025 vor der Versammlung geschrieben?",
+    "Warum wurde der frühere Geschäftsführer, bei dem Forensiker die Kopie der Controlling-Daten festgestellt haben, "
+    "bei der Salzburg AG angestellt?",
+    "Wie viel haben die Verfahren gegen Ökovolt die Salzburg AG und damit die Stromkunden bisher gekostet?"])
+r.para("Ökovolt ersucht die Eigentümer und den Aufsichtsrat, eine unabhängige Prüfung zu veranlassen. Damit sie diesen "
+       "Namen verdient, muss sie aus Sicht von Ökovolt sechs Mindeststandards erfüllen:")
+r.bullets([
+    "Der Prüfer wird von einer unabhängigen Stelle bestellt – etwa dem Präsidenten des Landesgerichts oder dem "
+    "Sachverständigenverband –, nicht von der Salzburg AG.",
+    "Es prüft ein gerichtlich beeideter Sachverständiger, der nie für die Salzburg AG, Land, Stadt oder deren Kanzleien "
+    "tätig war.",
+    "Der Prüfauftrag wird vorab veröffentlicht; Ökovolt kann eigene Prüffragen einbringen.",
+    "Der Prüfer erhält vollen Zugang zu allen Unterlagen der Salzburg AG und der one2zero.",
+    "Ökovolt wird angehört.",
+    "Das Ergebnis wird zu einem festgelegten Termin veröffentlicht.",
+])
+r.para("Unabhängig davon stehen den Eigentümern Instrumente zur Verfügung, die sich jeder Einflussnahme entziehen: die "
+       "Befassung des Rechnungshofs, des Salzburger Landesrechnungshofs oder des Kontrollamts der Stadt Salzburg – und "
+       "eine gerichtlich bestellte Sonderprüfung nach dem Aktiengesetz, die schon eine Minderheit der Aktionäre "
+       "beantragen kann. Die Salzburg AG steht zu knapp drei Vierteln im Eigentum von Land und Stadt – die Aufklärung "
+       "liegt damit im Interesse aller Salzburgerinnen und Salzburger.")
+r.quote("Eine Prüfung, bei der die Salzburg AG den Prüfer aussucht, ist keine Prüfung. Wir wollen keine Gefälligkeit, "
+        "sondern Klarheit")
+r.quote("Wer nichts zu verbergen hat, klärt auf. Die Salzburg AG klagt. Einen Gewerbeschein kann man nachholen – "
+        "Glaubwürdigkeit nicht")
+r.footer("Die bisherigen Aussendungen, Urteile und Registerauszüge", "Presseaussendung_Welle5_Eigentuemer.docx",
+         zaehler=False)
+
+# =====================================================================
+# WELLE 6 (RESERVE) – HINWEISGEBER
+# =====================================================================
+r = Release("Wer Missstände meldet, wird entfernt: Salzburg-AG-Mann sperrt Ökovolt-Mitarbeitern den Weg zu den Aufsichtsstellen",
+            "Nach Hinweisen an Notariats- und Rechtsanwaltskammer erließ der von der Salzburg AG eingesetzte, nie im "
+            "Firmenbuch eingetragene Geschäftsführer eine Genehmigungspflicht für jede Auskunft nach außen. Kurz darauf "
+            "wurden Compliance-Verantwortliche und Rechtsabteilungsleiter entlassen – die Belegschaft gründete einen "
+            "Betriebsrat.")
+r.lead("Die Compliance- und die Rechtsabteilung der Ökovolt Solartechnik GmbH hatten im Herbst 2025 die Notariatskammer "
+       "und die Rechtsanwaltskammer über die Vorgänge rund um die Generalversammlung vom 10. Oktober 2025 informiert. Am "
+       "12. November 2025 ordnete daraufhin ein Mitarbeiter der Salzburg AG, der in eben dieser Versammlung zum "
+       "Geschäftsführer bestellt worden sein soll, schriftlich an, dass Informationen an externe Stellen nur noch mit "
+       "seiner persönlichen Genehmigung weitergegeben werden dürfen [Beleg: Dienstanweisung 12.11.2025].")
+r.para("Ausdrücklich erfasst waren die Notariatskammer Salzburg und das Landesgericht Ried im Innkreis – also genau jene "
+       "Stellen, die sich mit der rechtlichen Beurteilung der Vorgänge befassten. Kurz darauf wurden die "
+       "Compliance-Verantwortliche und der Leiter der Rechtsabteilung entlassen [Datum, Beleg].")
+r.para("Die Belegschaft reagierte: Im Dezember 2025 gründeten die Mitarbeiterinnen und Mitarbeiter der Ökovolt einen "
+       "Betriebsrat, um sich gegen diese Maßnahmen zu organisieren. Die entlassenen Mitarbeiter wurden "
+       "inzwischen wieder eingestellt [Datum]. Der Zentralbetriebsrat der Ökovolt bestätigt die Vorgänge und verurteilt "
+       "sie; aus Respekt vor den Betroffenen will er sich zu Einzelheiten nicht äußern.")
+r.quote("Was hier gegenüber unseren Mitarbeitern passiert ist, ist kein Gesellschafterstreit. Es sind aus unserer Sicht "
+        "klare Vergeltungsmaßnahmen gegen loyale Mitarbeiter des Unternehmens – gesetzt von einem Mitarbeiter der "
+        "Salzburg AG. Das sind Vorgänge abseits der Marketingbotschaften, die die Salzburg AG ihren Eigentümern und "
+        "Stromkunden präsentiert")
+r.para("Im Firmenbuch eingetragen wurde dieser Geschäftsführer nie: Das Firmenbuchgericht hat die Eintragung der "
+       "Beschlüsse vom 10. Oktober 2025 ausgesetzt, bis die Vorwürfe rund um das Protokoll geklärt sind [Beleg: Beschluss, "
+       "GZ, Datum]. Das Oberlandesgericht München hat dieselbe Versammlung als „treuwidrig“ gewertet. Es sind dieselben "
+       "Vorgänge, in deren Umfeld die WKStA auf gerichtlichen Auftrag ein Ermittlungsverfahren zum Hofer-Auftrag "
+       "eingeleitet hat. " + UNSCHULD)
+r.quote("Wer bei uns Missstände an die zuständigen Stellen meldet, wird entfernt. Bei wem Forensiker die Kopie unserer "
+        "Controlling-Daten gefunden haben, der wird bei der Salzburg AG angestellt. Das sagt alles über die Kultur, die "
+        "hier Einzug halten sollte")
+r.para("Seit 2023 schützt das HinweisgeberInnenschutzgesetz Beschäftigte, die Missstände melden, ausdrücklich vor "
+       "Vergeltungsmaßnahmen. Ob es hier greift, wird rechtlich geprüft [Stand der Schritte].")
+r.quote("Ein Landesunternehmen, das sich Compliance auf die Fahnen schreibt, sollte froh sein, wenn jemand hinschaut – "
+        "statt ihn zum Schweigen zu bringen")
+r.questions("Ökovolt fragt die Salzburg AG:", [
+    "War der Vorstand der Salzburg AG über die Dienstanweisung vom 12. November 2025 und die folgenden Personalmaßnahmen "
+    "informiert – und hat er sie gebilligt?",
+    "Hält es die Salzburg AG für zulässig, Beschäftigten die Kommunikation mit Kammern und Gerichten unter "
+    "Genehmigungsvorbehalt zu stellen?"])
+r.footer("Die Dienstanweisung vom 12. November 2025, der Beschluss des Firmenbuchgerichts und die Urteile des OLG München",
+         "Presseaussendung_Welle6_RESERVE_Hinweisgeber.docx")
+
+# =====================================================================
+# WELLE 7 (RESERVE, LETZTE ESKALATION) – NEUTRALE PRÜFUNG ABGELEHNT
+# =====================================================================
+r = Release("Neutrale Prüfung abgelehnt: „Dann würden bei uns Köpfe rollen“",
+            "Schon im September 2025 schlug Ökovolt der Salzburg AG einen gerichtlich beeideten Sachverständigen vor. "
+            "Der Vorstand lehnte ab – heute spricht er von einem Gesellschafterstreit und gescheiterten Vergleichen.")
+r.lead("Was Ökovolt heute von den Eigentümern der Salzburg AG fordert, hat das Unternehmen dem Vorstand bereits vor "
+       "einem Jahr angeboten. Am 3. September 2025 schlug die Rechtsabteilung der Ökovolt in einem Gespräch mit beiden "
+       "Vorständen der Salzburg AG vor, die Vorwürfe und den entstandenen Schaden durch einen neutralen, gerichtlich "
+       "beeideten Sachverständigen prüfen zu lassen. Der Vorschlag wurde abgelehnt.")
+r.para("Nach Darstellung der Teilnehmer auf Seiten von Ökovolt, die diese auch gegenüber der WKStA gemacht haben, "
+       "begründeten die Vorstände die Ablehnung damit, dass eine solche Untersuchung intern Konsequenzen hätte: „Dann "
+       "würden bei uns Köpfe rollen.“ Stattdessen habe man eine konkrete Zahl verlangt; es sei ja „nicht ihr Geld“ "
+       "[Beleg: eidesstattliche Erklärungen, SVD S. 38]. Die Salzburg AG wurde um eine Stellungnahme ersucht "
+       "[Datum, Antwort].")
+r.quote("Wir haben eine neutrale Prüfung angeboten, durch einen Sachverständigen, den kein Mensch der Parteilichkeit "
+        "verdächtigen kann. Die Antwort war, dann würden Köpfe rollen. Das schlägt dem Fass den Boden aus")
+r.para("Was danach geschah, ist dokumentiert: Einen Monat später, am 10. Oktober 2025, hielt die Salzburg AG jene "
+       "Generalversammlung ab, deren Protokoll schon vorher geschrieben war und die das Oberlandesgericht München als "
+       "„treuwidrig“ wertete; das Firmenbuchgericht setzte die Eintragung der Beschlüsse aus. Als die Compliance-Abteilung "
+       "der Ökovolt die Notariats- und die Rechtsanwaltskammer informierte, folgten im November eine "
+       "Genehmigungspflicht für jede Auskunft nach außen und die Entlassung der Compliance-Verantwortlichen und des "
+       "Leiters der Rechtsabteilung – beide sind inzwischen wieder eingestellt. Ökovolt brachte eine Sachverhaltsdarstellung "
+       "bei der WKStA ein [Datum]; im August 2026 trug das Landesgericht für Strafsachen Wien der WKStA die Einleitung "
+       "eines Ermittlungsverfahrens zum Hofer-Auftrag auf. " + UNSCHULD)
+r.quote("Erst wurde die neutrale Prüfung abgelehnt, dann kam der Versuch, das Unternehmen über eine Versammlung zu "
+        "übernehmen, dann traf es unsere Compliance. Wer heute von einem gescheiterten Vergleich spricht, verschweigt, "
+        "wie es dazu gekommen ist")
+r.questions("Ökovolt fragt die Salzburg AG:", [
+    "Warum hat der Vorstand im September 2025 die Prüfung durch einen neutralen, gerichtlich beeideten Sachverständigen "
+    "abgelehnt?",
+    "Ist der Vorstand heute bereit, einer solchen unabhängigen Prüfung zuzustimmen?"])
+r.quote("Das Angebot steht bis heute. Ein neutraler Sachverständiger, ein offenes Ergebnis. Wer nichts zu verbergen hat, "
+        "sagt Ja")
+r.footer("Die Urteile des OLG München und die Registerauszüge", "Presseaussendung_Welle7_RESERVE_Pruefung_abgelehnt.docx")
+
+# =====================================================================
+# WELLE 1b – DIE EIGENTÜMER WISSEN ES
+# =====================================================================
+r = Release("Die Eigentümer wissen es: Land, Stadt und Energie AG haben Urteile, Gutachten und forensische Befunde auf dem Tisch",
+            "Ökovolt hat die Eigentümer der Salzburg AG am 21. September umfassend informiert und um eine unabhängige "
+            "Prüfung ersucht. Die Frist ist verstrichen – eine Antwort gibt es nicht.")
+r.lead("Die Eigentümer der Salzburg AG haben seit dem 21. September Urteile, Gutachten und forensische Befunde auf dem "
+       "Tisch – und schweigen. An diesem Tag hat sich die Ökovolt-Gruppe schriftlich an die Landeshauptfrau, den "
+       "Bürgermeister der Stadt Salzburg und den Vorstand der Energie AG Oberösterreich gewandt. Sie halten gemeinsam alle "
+       "Anteile an der Salzburg AG. Die Frist für eine Antwort endete am 30. September. Eine Antwort liegt bis heute nicht vor.")
+r.para("Die Unterlagen, die den Eigentümern vorliegen, umfassen:")
+r.bullets([
+    "die Urteile des Oberlandesgerichts München, in denen die Salzburg AG alle drei Verfahren verloren hat und ihr "
+    "Vorgehen als „treuwidrig“ gewertet wurde;",
+    "den Syndikatsvertrag vom 18. Oktober 2021 mit dem Ziel der „Vermeidung von Wettbewerbssituationen“ – und die "
+    "Gründung der eigenen Konkurrentin one2zero am selben Tag;",
+    "Rechtsgutachten österreichischer Universitätsprofessoren zu den Pflichten der Salzburg AG als Gesellschafterin;",
+    "die Befunde zweier IT-Forensiker zum Abzug von Geschäftsdaten durch den von der Salzburg AG entsandten Geschäftsführer;",
+    "den Beschluss, mit dem das Landesgericht für Strafsachen Wien der WKStA die Einleitung eines Ermittlungsverfahrens "
+    "zum Hofer-Auftrag aufgetragen hat. " + UNSCHULD,
+])
+r.quote("Wir erwarten keine Entschuldigung. Wir erwarten eine unabhängige Prüfung. Die Eigentümer haben alles, was sie "
+        "dafür brauchen – seit dem 21. September")
+r.para("Ökovolt ersucht die Eigentümer, einen neutralen, gerichtlich beeideten Sachverständigen mit der Prüfung zu "
+       "beauftragen – bestellt von einer unabhängigen Stelle, nicht von der Salzburg AG – und das Ergebnis offenzulegen. Die Salzburg AG steht zu knapp drei Vierteln im Eigentum von Land und "
+       "Stadt Salzburg; die Verantwortung für die Aufklärung liegt damit bei den Vertreterinnen und Vertretern der "
+       "öffentlichen Hand – und beim Aufsichtsrat, der die Geschäftsführung des Vorstands zu überwachen hat.")
+r.quote("Ab dem 21. September kann niemand mehr sagen, er habe es nicht gewusst. Jetzt geht es nur noch darum, was man "
+        "mit diesem Wissen macht")
+r.para("Ob die Eigentümer das Kontrollamt der Stadt Salzburg oder den Salzburger Landesrechnungshof mit einer Prüfung "
+       "befasst haben, ist Ökovolt nicht bekannt. Ebenso wenig, ob die Unterlagen den gewählten Mandatarinnen und "
+       "Mandataren in Landtag und Gemeinderat vorliegen. Ökovolt vertraut darauf, dass die Abgeordneten und "
+       "Gemeinderäte aller Parteien ihrer Kontrollaufgabe nachkommen, sich selbst ein Bild machen und die nötigen "
+       "Schlüsse ziehen.")
+r.quote("Die Salzburg AG gehört den Salzburgerinnen und Salzburgern. Ihre gewählten Vertreter haben das Recht und die "
+        "Pflicht, genau hinzuschauen. Wir stellen jedem Mandatar, der fragt, die Unterlagen zur Verfügung")
+r.questions("Ökovolt fragt die Eigentümer der Salzburg AG:", [
+    "Wurden die Unterlagen vom 21. September dem Aufsichtsrat der Salzburg AG vorgelegt?",
+    "Werden Land, Stadt und Energie AG eine unabhängige Prüfung durch einen gerichtlich beeideten Sachverständigen veranlassen?",
+    "Wurden das Kontrollamt der Stadt Salzburg oder der Landesrechnungshof mit der Angelegenheit befasst?"])
+r.footer("Die Urteile des OLG München, der Syndikatsvertrag (Auszug) und die Registerauszüge",
+         "Presseaussendung_Welle1b_Eigentuemer_informiert.docx", zaehler=False)

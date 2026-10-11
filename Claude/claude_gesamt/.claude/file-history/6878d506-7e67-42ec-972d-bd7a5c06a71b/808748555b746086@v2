@@ -1,0 +1,117 @@
+import { connection } from "next/server";
+import { db } from "@/lib/data";
+import { isManager, requireUser } from "@/lib/auth";
+import { daysUntil, money, personName } from "@/lib/format";
+import { Avatar, Card, CardHeader, PageBody, PageHeader, Table, TD } from "@/components/ui";
+
+export const metadata = { title: "Auswertung" };
+
+const isOpen = (s: string) => s === "Open" || s === "Quotation";
+const pct = (a: number, b: number) => (b ? `${Math.round((a / b) * 100)} %` : "–");
+
+// Kennzahlen je Berater und je Lead-Quelle – Grundlage für Vertriebsrunde und Provision
+export default async function ReportsPage() {
+  await connection();
+  const user = await requireUser();
+  const [leads, opps, todos] = await Promise.all([db().listLeads({ limit: 1000 }), db().listOpportunities({ limit: 1000 }), db().listToDos({ limit: 1000 })]);
+
+  // ---- je Berater ----
+  const owners = [...new Set([...opps.map((o) => o.opportunity_owner), ...leads.map((l) => l.lead_owner)].filter(Boolean) as string[])];
+  const team = owners
+    .map((u) => {
+      const mine = opps.filter((o) => o.opportunity_owner === u);
+      const open = mine.filter((o) => isOpen(o.status));
+      const won = mine.filter((o) => o.status === "Converted");
+      const lost = mine.filter((o) => o.status === "Lost");
+      const myTodos = todos.filter((t) => t.allocated_to === u && t.status === "Open");
+      return {
+        user: u,
+        leads: leads.filter((l) => l.lead_owner === u && l.status !== "Converted").length,
+        open: open.length,
+        pipeline: open.reduce((s, o) => s + o.opportunity_amount, 0),
+        weighted: open.reduce((s, o) => s + (o.opportunity_amount * o.probability) / 100, 0),
+        won: won.length,
+        wonVolume: won.reduce((s, o) => s + o.opportunity_amount, 0),
+        lost: lost.length,
+        todos: myTodos.length,
+        overdue: myTodos.filter((t) => (daysUntil(t.date) ?? 1) < 0).length,
+      };
+    })
+    .sort((a, b) => b.wonVolume + b.weighted - (a.wonVolume + a.weighted));
+
+  // ---- je Quelle ----
+  // Chancen hängen am Lead (party_name); nach dem Umwandeln in einen Kunden geht die Quelle verloren
+  const bySource = new Map<string, { leads: number; withOpp: number; converted: number; pipeline: number; won: number }>();
+  for (const l of leads) {
+    const key = l.source || "Ohne Angabe";
+    const row = bySource.get(key) ?? { leads: 0, withOpp: 0, converted: 0, pipeline: 0, won: 0 };
+    const leadOpps = opps.filter((o) => o.opportunity_from === "Lead" && o.party_name === l.name);
+    row.leads++;
+    if (leadOpps.length || l.status === "Opportunity" || l.status === "Converted") row.withOpp++;
+    if (l.status === "Converted") row.converted++;
+    row.pipeline += leadOpps.filter((o) => isOpen(o.status)).reduce((s, o) => s + o.opportunity_amount, 0);
+    row.won += leadOpps.filter((o) => o.status === "Converted").reduce((s, o) => s + o.opportunity_amount, 0);
+    bySource.set(key, row);
+  }
+  const sources = [...bySource.entries()].sort((a, b) => b[1].leads - a[1].leads);
+  const maxLeads = Math.max(1, ...sources.map(([, r]) => r.leads));
+
+  return (
+    <>
+      <PageHeader title="Auswertung" subtitle={isManager(user) ? "Berater und Lead-Quellen im Vergleich" : "Deine Zahlen und Lead-Quellen"} />
+      <PageBody className="grid grid-cols-1 gap-8">
+        <Card className="overflow-hidden">
+          <CardHeader title="Berater" sub="Offene Pipeline, Abschlüsse und Aufgaben je Person" />
+          <Table head={["Berater", "Leads", "Offene Chancen", "Pipeline", "Gewichtet", "Gewonnen", "Gewinnquote", "Aufgaben"]} align={{ 1: "right", 2: "right", 3: "right", 4: "right", 5: "right", 6: "right", 7: "right" }}>
+            {team.map((r) => (
+              <tr key={r.user} className="hover:bg-gray-50">
+                <td className={TD}>
+                  <span className="flex items-center gap-2.5">
+                    <Avatar name={r.user} />
+                    <span className="font-medium text-gray-900">{personName(r.user)}</span>
+                  </span>
+                </td>
+                <td className={`${TD} tnum text-right`}>{r.leads}</td>
+                <td className={`${TD} tnum text-right`}>{r.open}</td>
+                <td className={`${TD} tnum text-right`}>{money(r.pipeline)}</td>
+                <td className={`${TD} tnum text-right font-medium text-gray-900`}>{money(r.weighted)}</td>
+                <td className={`${TD} tnum text-right`}>
+                  {money(r.wonVolume)} <span className="text-[12px] text-gray-400">({r.won})</span>
+                </td>
+                <td className={`${TD} tnum text-right`}>{pct(r.won, r.won + r.lost)}</td>
+                <td className={`${TD} tnum text-right`}>
+                  {r.todos}
+                  {r.overdue > 0 && <span className="ml-1.5 text-[12px] text-rose-600">{r.overdue} überfällig</span>}
+                </td>
+              </tr>
+            ))}
+          </Table>
+        </Card>
+
+        <Card className="overflow-hidden">
+          <CardHeader title="Lead-Quellen" sub="Welche Quelle bringt Chancen und Umsatz?" />
+          <Table head={["Quelle", "Leads", "Anteil", "Mit Chance", "Quote", "Offene Pipeline", "Gewonnen"]} align={{ 1: "right", 3: "right", 4: "right", 5: "right", 6: "right" }}>
+            {sources.map(([src, r]) => (
+              <tr key={src} className="hover:bg-gray-50">
+                <td className={`${TD} font-medium text-gray-900`}>{src}</td>
+                <td className={`${TD} tnum text-right`}>{r.leads}</td>
+                <td className={TD}>
+                  <div className="h-1.5 w-32 rounded-full bg-gray-100" title={`${r.leads} Leads`}>
+                    <div className="h-full rounded-full bg-brand-500" style={{ width: `${(r.leads / maxLeads) * 100}%` }} />
+                  </div>
+                </td>
+                <td className={`${TD} tnum text-right`}>{r.withOpp}</td>
+                <td className={`${TD} tnum text-right`}>{pct(r.withOpp, r.leads)}</td>
+                <td className={`${TD} tnum text-right`}>{money(r.pipeline)}</td>
+                <td className={`${TD} tnum text-right`}>{money(r.won)}</td>
+              </tr>
+            ))}
+          </Table>
+          <p className="border-t border-gray-150 px-4 py-2.5 text-[12px] text-gray-500 sm:px-6">
+            Hinweis: Nach dem Umwandeln eines Leads in einen Kunden werden weitere Chancen dem Kunden zugeordnet und hier nicht mehr der Quelle zugerechnet.
+          </p>
+        </Card>
+      </PageBody>
+    </>
+  );
+}

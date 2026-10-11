@@ -1,0 +1,524 @@
+import Link from "next/link";
+import type { Metadata } from "next";
+
+import { Verlauf } from "@/components/diagramme/verlauf";
+import { Tabelle, Zeile, Zelle, ZelleMitZusatz } from "@/components/tabelle";
+import {
+  Balken,
+  Hinweis,
+  Kennzahl,
+  Kennzahlenleiste,
+  LeerZustand,
+  Seitenkopf,
+  Status,
+  Tafel,
+} from "@/components/ui";
+import {
+  ladeBelegung,
+  ladeFahrplaene,
+  ladeFahrplanSchritte,
+  ladeHandelKennzahlen,
+  ladeRegelleistung,
+  ladeSpeicher,
+} from "@/lib/daten/handel";
+import { ENERGIE_FARBEN, STATUS_FARBEN } from "@/lib/farben";
+import {
+  formatDatum,
+  formatGeld,
+  formatProzent,
+  formatZahl,
+  formatZeit,
+} from "@/lib/format";
+import { requireRecht } from "@/lib/session";
+
+export const metadata: Metadata = { title: "Speichervermarktung" };
+
+/** Farbe und Klartext je Belegungsstufe. */
+const STUFEN: Record<string, { label: string; farbe: string; text: string }> = {
+  spitzenkappung: {
+    label: "Lastspitzenkappung",
+    farbe: ENERGIE_FARBEN.netzbezug,
+    text: "Schützt den Leistungspreis. Eine einzige überschrittene Viertelstunde bestimmt ihn für zwölf Monate.",
+  },
+  eigenverbrauch: {
+    label: "Eigenverbrauch",
+    farbe: ENERGIE_FARBEN.eigenverbrauch,
+    text: "Vermeidet Netzbezug zum vollen Arbeitspreis. Solange eigene Last da ist, schlägt das jeden Börsenpreis.",
+  },
+  handel: {
+    label: "Börsenhandel",
+    farbe: ENERGIE_FARBEN.erzeugung,
+    text: "Nutzt, was danach übrig bleibt. Lohnt sich vor allem mit eigenem Überschuss – auf Netzbezug kommt das Netzentgelt.",
+  },
+  ruht: {
+    label: "Ruht",
+    farbe: ENERGIE_FARBEN.speicher,
+    text: "Keine Bewegung. Ein Zyklus, der sich nicht rechnet, wird nicht gefahren.",
+  },
+};
+
+function statusTon(status: string) {
+  switch (status) {
+    case "Gefahren":
+      return "gut" as const;
+    case "Freigegeben":
+      return "akzent" as const;
+    case "Entwurf":
+      return "hinweis" as const;
+    default:
+      return "neutral" as const;
+  }
+}
+
+export default async function HandelSeite({
+  searchParams,
+}: {
+  searchParams: Promise<{ plan?: string }>;
+}) {
+  await requireRecht("handel.lesen");
+
+  const { plan: gewaehlt } = await searchParams;
+
+  const kennzahlen = ladeHandelKennzahlen();
+  const speicher = ladeSpeicher();
+  const plaene = ladeFahrplaene(20);
+  const regelleistung = ladeRegelleistung();
+
+  // Ohne Auswahl der jüngste Plan - das ist der, der als Nächstes
+  // gefahren wird.
+  const aktiverPlan =
+    plaene.find((p) => p.id === gewaehlt) ??
+    plaene.find((p) => p.status === "Entwurf") ??
+    plaene[0];
+
+  const schritte = aktiverPlan ? ladeFahrplanSchritte(aktiverPlan.id) : [];
+  const belegung = aktiverPlan ? ladeBelegung(aktiverPlan.id) : [];
+
+  const gesamtErgebnis = belegung.reduce(
+    (s, b) => s + Math.max(0, b.ergebnisEur),
+    0,
+  );
+
+  return (
+    <div className="space-y-5">
+      <Seitenkopf
+        titel="Speichervermarktung"
+        hinweis={`${kennzahlen.speicher} Speicher · ${formatZahl(kennzahlen.kapazitaetKwh, 0)} kWh · ${formatZahl(kennzahlen.leistungKw, 0)} kW`}
+      />
+
+      {kennzahlen.negativeStunden > 0 && (
+        <Hinweis ton="hinweis" titel="Negative Börsenpreise am Folgetag">
+          Über {formatZahl(kennzahlen.negativeStunden, 1)} Stunden liegt der
+          Day-Ahead-Preis unter null. Der Fahrplan legt die Ladevorgänge
+          dorthin, soweit Kapazität frei ist. Ein negativer Preis allein
+          genügt allerdings nicht: Auf jede aus dem Netz bezogene
+          Kilowattstunde kommt das Netzentgelt, und das macht den Einkauf
+          meist teurer als den späteren Erlös.
+        </Hinweis>
+      )}
+
+      <Kennzahlenleiste>
+        <Kennzahl
+          label="Ergebnis gefahren"
+          wert={formatGeld(kennzahlen.ergebnisGefahren)}
+          hinweis="abgeschlossene Fahrpläne"
+        />
+        <Kennzahl
+          label="Ergebnis geplant"
+          wert={formatGeld(kennzahlen.ergebnisGeplant)}
+          hinweis="heute und morgen"
+          akzent
+        />
+        <Kennzahl
+          label="Durchsatz"
+          wert={formatZahl(kennzahlen.durchsatzKwh, 0)}
+          einheit="kWh"
+          hinweis={`${formatGeld(kennzahlen.zykluskostenEur)} Alterung`}
+        />
+        <Kennzahl
+          label="Regelleistung"
+          wert={formatZahl(kennzahlen.vorhaltungKw, 0)}
+          einheit="kW"
+          hinweis="vorgehalten, nicht handelbar"
+        />
+      </Kennzahlenleiste>
+
+      {/* ---------------- Woher das Ergebnis kommt ---------------- */}
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[2fr_1fr]">
+        <Tafel
+          titel={
+            aktiverPlan
+              ? `Fahrplan ${formatDatum(aktiverPlan.tag)}`
+              : "Fahrplan"
+          }
+          hinweis={
+            aktiverPlan
+              ? `${aktiverPlan.speicher} · ${aktiverPlan.anlage} · ${aktiverPlan.status}`
+              : undefined
+          }
+          fusszeile={
+            <p className="t-mikro leading-relaxed">
+              Oben der Börsenpreis, unten der Ladestand – bewusst zwei
+              Bilder mit je einer Skala. Der Zusammenhang liegt in der Form:
+              Der Speicher füllt sich, wenn der Preis unten liegt oder die
+              eigene Anlage mehr liefert, als der Betrieb braucht, und leert
+              sich zur Abendspitze oder in die Lastspitze der Produktion.
+            </p>
+          }
+        >
+          {schritte.length === 0 ? (
+            <LeerZustand text="Für diesen Tag liegt kein Fahrplan vor." />
+          ) : (
+            <div className="space-y-4">
+              {/*
+                Zwei Diagramme statt einer zweiten Achse. Preis und
+                Ladestand haben verschiedene Einheiten; sie in ein Bild
+                mit zwei Skalen zu legen, lädt zu Schlüssen ein, die
+                die Daten nicht hergeben - je nach Skalierung lässt
+                sich dort jeder Zusammenhang erzeugen.
+              */}
+              <Verlauf
+                beschriftungen={schritte.map((s) => formatZeit(s.zeitpunkt))}
+                einheit="€/MWh"
+                achsenSchritte={8}
+                hoehe={150}
+                nachkommastellen={0}
+                reihen={[
+                  {
+                    schluessel: "preis",
+                    label: "Day-Ahead-Preis EPEX Spot AT",
+                    farbe: ENERGIE_FARBEN.netzbezug,
+                    werte: schritte.map((s) => s.preis_eur_mwh),
+                  },
+                ]}
+              />
+
+              <Verlauf
+                beschriftungen={schritte.map((s) => formatZeit(s.zeitpunkt))}
+                einheit="kWh"
+                achsenSchritte={8}
+                hoehe={190}
+                nachkommastellen={0}
+                reihen={[
+                  {
+                    schluessel: "ladestand",
+                    label: "Ladestand",
+                    farbe: ENERGIE_FARBEN.speicher,
+                    werte: schritte.map((s) => s.ladestand_kwh),
+                    gefuellt: true,
+                  },
+                ]}
+              />
+            </div>
+          )}
+        </Tafel>
+
+        <Tafel
+          titel="Woher das Ergebnis kommt"
+          hinweis="Anteil der Stufen am Tagesergebnis"
+          fusszeile={
+            <p className="t-mikro leading-relaxed">
+              Die Stufen werden der Reihe nach abgearbeitet. Jede belegt
+              Leistung und Kapazität, die der nächsten nicht mehr zur
+              Verfügung steht – deshalb lässt sich für jede Viertelstunde
+              sagen, welche Regel sie belegt hat.
+            </p>
+          }
+        >
+          {belegung.length === 0 ? (
+            <LeerZustand text="Kein Fahrplan gewählt." />
+          ) : (
+            <div className="space-y-3">
+              {belegung
+                .filter((b) => b.belegung !== "ruht")
+                .map((b) => {
+                  const stufe = STUFEN[b.belegung] ?? STUFEN.ruht;
+
+                  return (
+                    <div key={b.belegung}>
+                      <Balken
+                        label={stufe.label}
+                        anteil={
+                          gesamtErgebnis > 0
+                            ? (Math.max(0, b.ergebnisEur) / gesamtErgebnis) *
+                              100
+                            : 0
+                        }
+                        wertText={formatGeld(b.ergebnisEur)}
+                        farbe={stufe.farbe}
+                      />
+                      <p className="t-mikro mt-1 leading-relaxed">
+                        {b.intervalle} Viertelstunden ·{" "}
+                        {formatZahl(b.entladenKwh, 0)} kWh entladen ·{" "}
+                        {formatZahl(b.ladenKwh, 0)} kWh geladen
+                      </p>
+                    </div>
+                  );
+                })}
+
+              {aktiverPlan && (
+                <div
+                  className="mt-3 space-y-1.5 border-t pt-3"
+                  style={{ borderColor: "var(--linie-zart)" }}
+                >
+                  <p className="t-mikro leading-relaxed">
+                    Lastspitze ohne Speicher{" "}
+                    {formatZahl(aktiverPlan.spitze_ohne_kw ?? 0, 0)} kW, mit
+                    Speicher {formatZahl(aktiverPlan.spitze_mit_kw ?? 0, 0)} kW.
+                  </p>
+                  <p className="t-mikro leading-relaxed">
+                    {formatZahl(aktiverPlan.vollzyklen, 2)} Vollzyklen, bewertet
+                    mit {formatGeld(Math.abs(aktiverPlan.zykluskosten_eur))}{" "}
+                    Alterung.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+        </Tafel>
+      </div>
+
+      {/* ---------------- Fahrpläne ---------------- */}
+      <Tafel
+        titel="Fahrpläne"
+        hinweis="Gerechnet, freigegeben, gefahren"
+        dicht
+      >
+        <Tabelle
+          spalten={[
+            { titel: "Tag" },
+            { titel: "Speicher", schmalAusblenden: true },
+            { titel: "Eigenverbrauch", zahl: true, schmalAusblenden: true },
+            { titel: "Handel", zahl: true },
+            { titel: "Spitzenkappung", zahl: true },
+            { titel: "Alterung", zahl: true, schmalAusblenden: true },
+            { titel: "Ergebnis", zahl: true },
+            { titel: "Status" },
+          ]}
+          mindestbreite="68rem"
+        >
+          {plaene.map((p) => (
+            <Zeile key={p.id} hervorgehoben={p.id === aktiverPlan?.id}>
+              <ZelleMitZusatz
+                haupt={
+                  <Link
+                    href={`/portal/handel?plan=${p.id}`}
+                    className="hover:underline"
+                  >
+                    {formatDatum(p.tag)}
+                  </Link>
+                }
+                zusatz={p.anlage}
+              />
+              <Zelle leise schmalAusblenden>
+                {p.speicher}
+              </Zelle>
+              <Zelle zahl leise schmalAusblenden>
+                {formatGeld(p.eigenverbrauch_eur)}
+              </Zelle>
+              <Zelle zahl leise>
+                {p.handel_eur !== 0 ? (
+                  formatGeld(p.handel_eur)
+                ) : (
+                  <span style={{ color: "var(--t-zart)" }}>–</span>
+                )}
+              </Zelle>
+              <Zelle zahl leise>
+                {p.spitzenkappung_eur !== 0 ? (
+                  formatGeld(p.spitzenkappung_eur)
+                ) : (
+                  <span style={{ color: "var(--t-zart)" }}>–</span>
+                )}
+              </Zelle>
+              <Zelle zahl leise schmalAusblenden>
+                <span style={{ color: STATUS_FARBEN.ernst }}>
+                  {formatGeld(p.zykluskosten_eur)}
+                </span>
+              </Zelle>
+              <Zelle zahl>{formatGeld(p.gesamt_eur)}</Zelle>
+              <Zelle>
+                <Status ton={statusTon(p.status)}>{p.status}</Status>
+              </Zelle>
+            </Zeile>
+          ))}
+        </Tabelle>
+      </Tafel>
+
+      {/* ---------------- Speicher und Regelleistung ---------------- */}
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+        <Tafel
+          titel="Speicher"
+          hinweis="Technische Grenzen und Alterung"
+          dicht
+          fusszeile={
+            <p className="t-mikro leading-relaxed">
+              Die Zykluskosten sind der wichtigste kaufmännische Posten. Ohne
+              sie handelt der Speicher jede Preisdifferenz über null mit und
+              verbraucht Zyklen, die mehr kosten als der Gewinn.
+            </p>
+          }
+        >
+          <Tabelle
+            spalten={[
+              { titel: "Speicher" },
+              { titel: "Kapazität", zahl: true },
+              { titel: "Leistung", zahl: true },
+              { titel: "Zyklen", zahl: true },
+            ]}
+            mindestbreite="40rem"
+          >
+            {speicher.map((s) => (
+              <Zeile key={s.id}>
+                <ZelleMitZusatz
+                  haupt={s.bezeichnung}
+                  zusatz={`${s.hersteller ?? ""} ${s.modell ?? ""} · ${s.anlage}`}
+                />
+                <Zelle zahl>
+                  {formatZahl(s.kapazitaet_kwh, 0)}
+                  <span className="t-mikro"> kWh</span>
+                  <span className="t-mikro block">
+                    {formatProzent(s.notstrom_reserve * 100, 0)} Reserve
+                  </span>
+                </Zelle>
+                <Zelle zahl leise>
+                  {formatZahl(s.entladeleistung_kw, 0)}
+                  <span className="t-mikro"> kW</span>
+                  {s.vorhaltung_kw > 0 && (
+                    <span className="t-mikro block">
+                      davon {formatZahl(s.vorhaltung_kw, 0)} kW vorgehalten
+                    </span>
+                  )}
+                </Zelle>
+                <Zelle zahl leise>
+                  {formatZahl(s.zyklen_verbraucht, 0)}
+                  {s.zyklen_garantie && (
+                    <span className="t-mikro block">
+                      von {formatZahl(s.zyklen_garantie, 0)}
+                    </span>
+                  )}
+                </Zelle>
+              </Zeile>
+            ))}
+          </Tabelle>
+        </Tafel>
+
+        <Tafel
+          titel="Regelleistung"
+          hinweis="Vorhaltung für das virtuelle Kraftwerk"
+          dicht
+          fusszeile={
+            <p className="t-mikro leading-relaxed">
+              Zugesagte Regelleistung muss jederzeit abrufbar sein. Sie wird
+              deshalb aus der handelbaren Leistung herausgenommen – in beide
+              Richtungen, weil ein Abruf sowohl Einspeisung als auch Bezug
+              verlangen kann. Ohne diesen Abzug verplante der Fahrplan
+              dieselbe Leistung zweimal, und es fiele erst beim Abruf auf.
+            </p>
+          }
+        >
+          {regelleistung.length === 0 ? (
+            <div className="p-4">
+              <LeerZustand text="Es ist keine Regelleistung vermarktet." />
+            </div>
+          ) : (
+            <Tabelle
+              spalten={[
+                { titel: "Produkt" },
+                { titel: "Leistung", zahl: true },
+                { titel: "Status" },
+              ]}
+            >
+              {regelleistung.map((r) => (
+                <Zeile key={r.id}>
+                  <ZelleMitZusatz
+                    haupt={r.produkt}
+                    zusatz={`${
+                      r.produkt === "FCR"
+                        ? "Primärregelleistung, sekundenschnell"
+                        : "Sekundärregelleistung, minütlich abrufbar"
+                    } · ${formatDatum(r.von)} bis ${formatDatum(r.bis)}`}
+                  />
+                  <Zelle zahl>
+                    {formatZahl(r.leistung_kw, 0)}
+                    <span className="t-mikro"> kW</span>
+                    {r.preis_eur_mw_h !== null && (
+                      <span className="t-mikro block">
+                        {formatZahl(r.preis_eur_mw_h, 2)} €/MW·h
+                      </span>
+                    )}
+                  </Zelle>
+                  <Zelle>
+                    <Status
+                      ton={r.status === "Bezuschlagt" ? "gut" : "neutral"}
+                    >
+                      {r.status}
+                    </Status>
+                  </Zelle>
+                </Zeile>
+              ))}
+            </Tabelle>
+          )}
+        </Tafel>
+      </div>
+
+      {/* ---------------- Rangfolge ---------------- */}
+      <Tafel
+        titel="Rangfolge der Ziele"
+        hinweis="Warum nicht einfach das Gesamtoptimum gesucht wird"
+      >
+        <ol className="space-y-3">
+          <li className="flex gap-3">
+            <span
+              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[0.6875rem] font-medium"
+              style={{ background: "var(--f-belegt)", color: "var(--t-normal)" }}
+              aria-hidden
+            >
+              0
+            </span>
+            <span className="min-w-0">
+              <span className="block text-[0.8125rem] font-medium">
+                Netzschutz
+              </span>
+              <span className="t-mikro block leading-relaxed">
+                Anschlussleistung, Einspeisegrenze und die versiegelten
+                Schutzparameter. Keine Stufe, sondern Nebenbedingung jeder
+                einzelnen Bewegung – eine Stufe kann leer ausgehen, eine
+                Anschlussgrenze darf das nie.
+              </span>
+            </span>
+          </li>
+
+          {["spitzenkappung", "eigenverbrauch", "handel"].map((k, i) => {
+            const stufe = STUFEN[k];
+            return (
+              <li key={k} className="flex gap-3">
+                <span
+                  className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[0.6875rem] font-medium text-white"
+                  style={{ background: stufe.farbe }}
+                  aria-hidden
+                >
+                  {i + 1}
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-[0.8125rem] font-medium">
+                    {stufe.label}
+                  </span>
+                  <span className="t-mikro block leading-relaxed">
+                    {stufe.text}
+                  </span>
+                </span>
+              </li>
+            );
+          })}
+        </ol>
+
+        <p className="t-mikro mt-4 leading-relaxed">
+          Eine gemeinsame Optimierung über alle Ziele fände hier und da eine
+          um wenige Euro bessere Lösung. Sie wäre aber nicht mehr
+          nachvollziehbar, und ein Fahrplan, den niemand nachrechnen kann,
+          wird im Betrieb nicht eingeschaltet.
+        </p>
+      </Tafel>
+    </div>
+  );
+}

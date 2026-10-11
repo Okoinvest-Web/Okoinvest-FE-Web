@@ -1,0 +1,141 @@
+/**
+ * E-Mail-Sicherheit (Fachkonzept 2.15).
+ *
+ * Zwei Schutzschichten in einer Ansicht: die PMG-Kaskade vor der Zustellung
+ * und IRONSCALES im Postfach. Die interessante Kennzahl ist nicht die Summe
+ * beider, sondern die Differenz - was die Kaskade durchgelassen hat und erst
+ * im Postfach aufgefallen ist.
+ */
+import { table } from '../db.js'
+import { alterStunden } from '../zeit.js'
+
+/** Die Kaskade in Reihenfolge, mit Zustand je Stufe. */
+export function gateway_status({ tenant = null } = {}) {
+  return table('Mail Gateway')
+    .filter((g) => !tenant || g.tenant === tenant)
+    .map((gateway) => {
+      const gruende = []
+      let stufe = 'ok'
+
+      if (gateway.clamav_age_hours !== null && gateway.clamav_age_hours > 24) {
+        stufe = 'warning'
+        gruende.push('ClamAV-Signaturen ' + gateway.clamav_age_hours + ' Stunden alt')
+      }
+      if (gateway.spamassassin_age_hours !== null && gateway.spamassassin_age_hours > 24) {
+        stufe = 'warning'
+        gruende.push('SpamAssassin-Regeln ' + gateway.spamassassin_age_hours + ' Stunden alt')
+      }
+      if (gateway.queue_size > 100) {
+        stufe = 'critical'
+        gruende.push('Warteschlange bei ' + gateway.queue_size + ' Nachrichten')
+      }
+      if (gateway.cluster_state !== 'synced' && gateway.cluster_state !== 'n/a') {
+        stufe = 'critical'
+        gruende.push('Cluster nicht synchron')
+      }
+
+      return { ...gateway, level: stufe, reasons: gruende }
+    })
+    .sort((a, b) => a.stage - b.stage)
+}
+
+/** Mailvolumen der letzten Tage. */
+export function flow_stats({ tenant = null } = {}) {
+  const tage = table('Mail Flow Stat')
+    .filter((s) => !tenant || s.tenant === tenant)
+    .sort((a, b) => (a.day < b.day ? -1 : 1))
+    .map((tag) => ({
+      ...tag,
+      spam_pct: tag.total ? Math.round((tag.spam / tag.total) * 1000) / 10 : 0,
+    }))
+
+  const summe = (feld) => tage.reduce((s, t) => s + (t[feld] || 0), 0)
+
+  return {
+    days: tage,
+    totals: {
+      total: summe('total'),
+      spam: summe('spam'),
+      virus: summe('virus'),
+      rejected: summe('rejected'),
+      delivered: summe('delivered'),
+      spam_pct: summe('total') ? Math.round((summe('spam') / summe('total')) * 1000) / 10 : 0,
+    },
+  }
+}
+
+/** Vorfälle im Postfach, mit Abgleich gegen die Kaskade. */
+export function mail_incidents({ classification = null, tenant = null } = {}) {
+  let vorfaelle = table('Mail Incident')
+  if (classification) vorfaelle = vorfaelle.filter((v) => v.classification === classification)
+  if (tenant) vorfaelle = vorfaelle.filter((v) => v.tenant === tenant)
+
+  return [...vorfaelle]
+    .map((vorfall) => ({
+      ...vorfall,
+      age_hours: Math.round((alterStunden(vorfall.detected) ?? 0) * 10) / 10,
+      // Reaktionszeit zwischen Erkennung und Entfernung aus dem Postfach.
+      response_minutes:
+        vorfall.mitigated && vorfall.detected
+          ? Math.round(
+              ((alterStunden(vorfall.detected) ?? 0) - (alterStunden(vorfall.mitigated) ?? 0)) * 60,
+            )
+          : null,
+      level:
+        vorfall.classification === 'false_positive'
+          ? 'ok'
+          : vorfall.passed_gateway
+            ? 'critical'
+            : 'warning',
+    }))
+    .sort((a, b) => (a.detected < b.detected ? 1 : -1))
+}
+
+/** SPF, DKIM und DMARC im Soll/Ist-Vergleich. */
+export function domain_check({ tenant = null } = {}) {
+  return table('Mail Domain')
+    .filter((d) => !tenant || d.tenant === tenant)
+    .map((domain) => {
+      const befunde = []
+      if (domain.spf_soll !== domain.spf_ist) befunde.push('SPF weicht vom Soll ab')
+      if (!domain.dkim_ok) befunde.push('DKIM nicht gültig')
+      if (domain.dmarc_soll !== domain.dmarc_ist) befunde.push('DMARC weicht vom Soll ab')
+      if (!domain.mx_ok) befunde.push('MX-Eintrag stimmt nicht')
+
+      return {
+        ...domain,
+        findings: befunde,
+        // DMARC auf p=none schützt nicht - das ist mehr als eine Abweichung.
+        level: befunde.length === 0 ? 'ok' : domain.dmarc_ist?.includes('p=none') ? 'critical' : 'warning',
+      }
+    })
+    .sort((a, b) => a.domain_name.localeCompare(b.domain_name))
+}
+
+/** Gesamtbild für Seite und Leitstand-Screen. */
+export function mail_overview({ tenant = null } = {}) {
+  const gateways = gateway_status({ tenant })
+  const vorfaelle = mail_incidents({ tenant })
+  const domains = domain_check({ tenant })
+  const fluss = flow_stats({ tenant })
+
+  const durchgerutscht = vorfaelle.filter((v) => v.passed_gateway && v.classification !== 'false_positive')
+
+  return {
+    gateways,
+    domains,
+    flow: fluss,
+    incidents: vorfaelle,
+    summary: {
+      gateways_ok: gateways.filter((g) => g.level === 'ok').length,
+      gateways_attention: gateways.filter((g) => g.level !== 'ok').length,
+      incidents_total: vorfaelle.length,
+      // Die Kennzahl, die Regelvorschläge für die Kaskade auslöst.
+      passed_gateway: durchgerutscht.length,
+      reported_by_staff: vorfaelle.filter((v) => v.reported_by === 'mitarbeiter').length,
+      affected_mailboxes: vorfaelle.reduce((s, v) => s + (v.affected_mailboxes || 0), 0),
+      domains_with_findings: domains.filter((d) => d.findings.length).length,
+      queue_total: gateways.reduce((s, g) => s + (g.queue_size || 0), 0),
+    },
+  }
+}

@@ -1,0 +1,92 @@
+import pathlib
+
+FE = pathlib.Path(r"C:\Users\SALEADMIN\Documents\Servicetechniker APP\frontend")
+
+
+def patch(pfad, paare):
+    p = FE / pfad
+    s = p.read_text(encoding="utf-8")
+    for alt, neu in paare:
+        if alt not in s:
+            raise SystemExit(f"NICHT GEFUNDEN in {pfad}:\n---\n{alt[:300]}\n---")
+        s = s.replace(alt, neu, 1)
+    p.write_text(s, encoding="utf-8")
+    print("ok", pfad)
+
+
+patch(
+    "vite.config.ts",
+    [
+        (
+            """      workbox: {
+        // App-Shell offline vorhalten (NFA-010)
+        globPatterns: ['**/*.{js,css,html,svg,woff2}'],
+        navigateFallback: '/baudoku',
+        navigateFallbackDenylist: [/^\\/api/, /^\\/app/, /^\\/assets\\/frappe/, /^\\/files/],""",
+            """      workbox: {
+        // App-Shell offline vorhalten (NFA-010)
+        globPatterns: ['**/*.{js,css,html,svg,woff2}'],
+        // Der Service Worker liegt im Wurzelpfad (siehe `frappeWebsitePage`),
+        // die Assets unter `/assets/...`. Ohne diesen Präfix zeigten die
+        // Precache-Einträge relativ zum Worker — also ins Leere.
+        modifyURLPrefix: { '': BASE },
+        // Muss auf einen *präcachten* Eintrag zeigen; `/baudoku` selbst wird von
+        // Frappe gerendert und liegt nicht im Cache.
+        navigateFallback: `${BASE}index.html`,
+        navigateFallbackDenylist: [/^\\/api/, /^\\/app/, /^\\/assets\\/frappe/, /^\\/files/],""",
+        )
+    ],
+)
+
+# ------------------------------- CSRF-Token nachladen, wenn er fehlt
+patch(
+    "src/lib/api.ts",
+    [
+        (
+            """function csrfToken(): string {
+  return window.csrf_token ?? ''
+}""",
+            """function csrfToken(): string {
+  return window.csrf_token ?? ''
+}
+
+/**
+ * Holt den CSRF-Token nach, wenn die App aus dem Offline-Cache gestartet wurde.
+ *
+ * Frappe setzt den Token beim Rendern der Seite. Startet die App ohne Netz,
+ * liefert der Service Worker die gecachte Hülle ohne Token — sobald die
+ * Verbindung zurück ist, würde jeder Schreibvorgang mit 400 scheitern. Diese
+ * Funktion lädt die gerenderte Seite einmal nach und liest den Token heraus.
+ */
+export async function csrfNachladen(): Promise<boolean> {
+  try {
+    const antwort = await fetch('/baudoku', { credentials: 'same-origin', cache: 'no-store' })
+    if (!antwort.ok) return false
+    const treffer = (await antwort.text()).match(/csrf_token\\s*=\\s*['"]([^'"]+)['"]/)
+    if (!treffer || treffer[1].includes('{{')) return false
+    window.csrf_token = treffer[1]
+    return true
+  } catch {
+    return false
+  }
+}""",
+        ),
+        (
+            """  if (!antwort.ok) {
+    const exception = (daten as { exc_type?: string } | null)?.exc_type
+    if (antwort.status === 401) {""",
+            """  if (!antwort.ok) {
+    const exception = (daten as { exc_type?: string } | null)?.exc_type
+    // Fehlender oder veralteter CSRF-Token: einmal nachladen und wiederholen.
+    if (
+      (antwort.status === 400 || antwort.status === 417) &&
+      /csrf/i.test(rohtext) &&
+      !optionen.headers &&
+      (await csrfNachladen())
+    ) {
+      return anfrage<T>(pfad, optionen)
+    }
+    if (antwort.status === 401) {""",
+        ),
+    ],
+)

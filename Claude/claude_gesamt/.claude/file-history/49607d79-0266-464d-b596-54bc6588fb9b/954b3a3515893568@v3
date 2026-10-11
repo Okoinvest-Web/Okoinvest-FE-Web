@@ -1,0 +1,142 @@
+/**
+ * Audit-Protokoll mit Hash-Kette (CLAUDE.md Abschnitt 4 und 7 Punkt 2).
+ *
+ * Jeder Eintrag enthält den Hash seines Vorgängers. Wird ein Eintrag
+ * nachträglich verändert oder entfernt, bricht die Kette an dieser Stelle -
+ * und `verify_chain()` sagt genau, wo.
+ *
+ * `Audit Entry` ist append-only: der Mock-Server verweigert set_value und
+ * delete für diesen DocType, so wie es der Controller im echten Frappe tun
+ * muss.
+ */
+import { SESSION_USER, table } from '../db.js'
+import { kanonisch, sha256 } from '../sha256.js'
+import { jetzt } from '../zeit.js'
+
+/** Hash des Genesis-Eintrags - 64 Nullen, wie in der Zustellnachweis-Logik. */
+export const GENESIS_HASH = '0'.repeat(64)
+
+/**
+ * Berechnet den Hash eines Eintrags aus Vorgängerhash und Inhalt.
+ * Die Feldauswahl ist bewusst explizit: was hier fehlt, ist nicht geschützt.
+ */
+export function berechneHash(eintrag) {
+  const inhalt = {
+    timestamp: eintrag.timestamp,
+    user: eintrag.user,
+    action: eintrag.action,
+    object_type: eintrag.object_type,
+    object_name: eintrag.object_name,
+    payload_hash: eintrag.payload_hash,
+  }
+  return sha256(eintrag.prev_hash + kanonisch(inhalt))
+}
+
+/**
+ * Hängt einen Eintrag an die Kette. Wird von den schreibenden
+ * Standardmethoden aufgerufen - nicht von der Oberfläche.
+ */
+export function protokolliere({
+  action,
+  object_type,
+  object_name,
+  payload = null,
+  user = SESSION_USER,
+} = {}) {
+  const eintraege = table('Audit Entry')
+  const vorgaenger = eintraege[eintraege.length - 1]
+
+  const eintrag = {
+    doctype: 'Audit Entry',
+    name: 'AUD-' + String(eintraege.length + 1).padStart(6, '0'),
+    timestamp: jetzt(),
+    user,
+    action,
+    object_type,
+    object_name,
+    // Nur der Hash der Nutzlast, nie die Nutzlast selbst: im Audit dürfen
+    // keine Inhalte landen, die anderswo geschützt sind.
+    payload_hash: payload === null ? '' : sha256(kanonisch(payload)),
+    prev_hash: vorgaenger ? vorgaenger.entry_hash : GENESIS_HASH,
+    owner: user,
+    creation: jetzt(),
+    modified: jetzt(),
+    modified_by: user,
+    docstatus: 0,
+    idx: eintraege.length + 1,
+    tenant: null,
+    status: 'active',
+    description: '',
+  }
+
+  eintrag.entry_hash = berechneHash(eintrag)
+  eintraege.push(eintrag)
+  return eintrag
+}
+
+/**
+ * Prüft die gesamte Kette.
+ *
+ * @returns {{ok: boolean, length: number, broken_at: string|null, reason: string|null, checked_until: number}}
+ */
+export function verify_chain() {
+  const eintraege = table('Audit Entry')
+  let erwarteterVorgaenger = GENESIS_HASH
+
+  for (const [index, eintrag] of eintraege.entries()) {
+    if (eintrag.prev_hash !== erwarteterVorgaenger) {
+      return {
+        ok: false,
+        length: eintraege.length,
+        broken_at: eintrag.name,
+        reason: 'Vorgängerhash passt nicht – ein Eintrag wurde entfernt oder umgehängt',
+        checked_until: index,
+      }
+    }
+
+    const neuBerechnet = berechneHash(eintrag)
+    if (neuBerechnet !== eintrag.entry_hash) {
+      return {
+        ok: false,
+        length: eintraege.length,
+        broken_at: eintrag.name,
+        reason: 'Inhalt passt nicht zum gespeicherten Hash – der Eintrag wurde verändert',
+        checked_until: index,
+      }
+    }
+
+    erwarteterVorgaenger = eintrag.entry_hash
+  }
+
+  return {
+    ok: true,
+    length: eintraege.length,
+    broken_at: null,
+    reason: null,
+    checked_until: eintraege.length,
+  }
+}
+
+/** Einträge für die Anzeige, neueste zuerst. */
+export function audit_log({
+  limit = 100,
+  object_type = null,
+  object_name = null,
+  action = null,
+} = {}) {
+  let eintraege = [...table('Audit Entry')]
+
+  if (object_type) eintraege = eintraege.filter((e) => e.object_type === object_type)
+  if (object_name) eintraege = eintraege.filter((e) => e.object_name === object_name)
+  if (action) eintraege = eintraege.filter((e) => e.action === action)
+
+  return eintraege
+    .reverse()
+    .slice(0, limit)
+    .map((e) => ({
+      ...e,
+      // Für die Anzeige reichen die ersten Zeichen des Hashes.
+      entry_hash_short: e.entry_hash.slice(0, 12),
+      prev_hash_short: e.prev_hash.slice(0, 12),
+    }))
+}

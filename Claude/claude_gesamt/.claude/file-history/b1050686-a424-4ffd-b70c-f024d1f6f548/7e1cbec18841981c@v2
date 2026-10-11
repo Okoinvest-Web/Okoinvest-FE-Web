@@ -1,0 +1,477 @@
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+
+import {
+  bewerteAusfall,
+  erwarteteLeistung,
+  performanceRatio,
+  performanceRatioKorrigiert,
+  spezifischerErtrag,
+  vergleicheStraenge,
+  verfuegbarkeit,
+  gewichteteVerfuegbarkeit,
+  type Messpunkt,
+} from "./kennzahlen.ts";
+
+/**
+ * Diese Kennzahlen entscheiden, ob ein Betriebsführer eingreift oder
+ * nicht - und ob eine vertraglich zugesagte Verfügbarkeit als erfüllt
+ * gilt. Entsprechend genau werden sie geprüft.
+ */
+
+/** Erzeugt einen Tag mit gleichmäßiger Einstrahlung. */
+function tagesPunkte(
+  intervalle: number,
+  einstrahlung: number,
+  ertragJeIntervall: number,
+  temperatur?: number,
+): Messpunkt[] {
+  return Array.from({ length: intervalle }, () => ({
+    ertragKwh: ertragJeIntervall,
+    einstrahlung,
+    modultemperatur: temperatur,
+  }));
+}
+
+describe("Performance Ratio", () => {
+  it("ergibt eins, wenn die Anlage die volle Nennleistung erreicht", () => {
+    // 100 kWp bei 1000 W/m² über vier Viertelstunden: theoretisch
+    // 100 kWh, tatsächlich 100 kWh -> PR = 1.
+    const pr = performanceRatio(tagesPunkte(4, 1000, 25), 100);
+    assert.ok(pr !== null);
+    assert.ok(Math.abs(pr! - 1) < 0.001, `PR ${pr} statt 1`);
+  });
+
+  it("liegt im üblichen Bereich bei realistischen Verlusten", () => {
+    // 84 Prozent Systemwirkungsgrad.
+    const pr = performanceRatio(tagesPunkte(4, 1000, 21), 100);
+    assert.ok(pr !== null);
+    assert.ok(
+      Math.abs(pr! - 0.84) < 0.001,
+      `PR ${pr?.toFixed(3)} statt 0,84`,
+    );
+  });
+
+  it("ist unabhängig von der Einstrahlungshöhe", () => {
+    // Dieselbe Anlagengüte bei schwacher und starker Einstrahlung muss
+    // dieselbe PR ergeben - das ist der Sinn der Kennzahl.
+    const hell = performanceRatio(tagesPunkte(4, 1000, 21), 100);
+    const truebe = performanceRatio(tagesPunkte(4, 400, 8.4), 100);
+
+    assert.ok(hell !== null && truebe !== null);
+    assert.ok(
+      Math.abs(hell! - truebe!) < 0.005,
+      `PR hell ${hell?.toFixed(3)} vs. trüb ${truebe?.toFixed(3)}`,
+    );
+  });
+
+  it("lässt Zeitpunkte ohne Einstrahlung außer Betracht", () => {
+    const mitNacht: Messpunkt[] = [
+      ...tagesPunkte(4, 1000, 21),
+      // Nachtstunden: keine Einstrahlung, kein Ertrag.
+      ...tagesPunkte(40, 0, 0),
+    ];
+
+    const pr = performanceRatio(mitNacht, 100);
+    assert.ok(pr !== null);
+    assert.ok(
+      Math.abs(pr! - 0.84) < 0.001,
+      `Nachtwerte dürfen die PR nicht verwässern, ergab ${pr?.toFixed(3)}`,
+    );
+  });
+
+  it("liefert null, wenn keine verwertbare Einstrahlung vorliegt", () => {
+    assert.equal(performanceRatio(tagesPunkte(96, 0, 0), 100), null);
+    assert.equal(performanceRatio([], 100), null);
+  });
+
+  it("liefert null bei fehlender Nennleistung", () => {
+    assert.equal(performanceRatio(tagesPunkte(4, 1000, 25), 0), null);
+  });
+});
+
+describe("Temperaturkorrigierte Performance Ratio", () => {
+  it("hebt die PR eines heißen Tages an", () => {
+    // Bei 60 Grad Modultemperatur sind rund zwölf Prozent Verlust
+    // physikalisch bedingt und kein Mangel.
+    const roh = performanceRatio(tagesPunkte(4, 1000, 18.5, 60), 100);
+    const korrigiert = performanceRatioKorrigiert(
+      tagesPunkte(4, 1000, 18.5, 60),
+      100,
+    );
+
+    assert.ok(roh !== null && korrigiert !== null);
+    assert.ok(
+      korrigiert! > roh!,
+      `korrigiert ${korrigiert?.toFixed(3)} muss über roh ${roh?.toFixed(3)} liegen`,
+    );
+    // Die Korrektur soll den temperaturbedingten Anteil herausrechnen.
+    assert.ok(
+      Math.abs(korrigiert! - 0.21) < 0.02 || korrigiert! > roh! * 1.1,
+      "Die Korrektur muss spürbar wirken",
+    );
+  });
+
+  it("ändert bei Standardtemperatur nichts", () => {
+    const roh = performanceRatio(tagesPunkte(4, 1000, 21, 25), 100);
+    const korrigiert = performanceRatioKorrigiert(
+      tagesPunkte(4, 1000, 21, 25),
+      100,
+    );
+
+    assert.ok(roh !== null && korrigiert !== null);
+    assert.ok(Math.abs(roh! - korrigiert!) < 0.001);
+  });
+
+  it("macht Sommer und Winter vergleichbar", () => {
+    /*
+     * Zwei Tage mit derselben Anlagengüte, aber sehr verschiedener
+     * Modultemperatur. Die Erträge werden aus der Güte hergeleitet,
+     * nicht geschätzt: Bei 60 Grad kann die Anlage physikalisch
+     * weniger, bei 5 Grad mehr als unter Standardbedingungen.
+     *
+     * Nach der Temperaturkorrektur müssen beide Tage dieselbe
+     * Performance Ratio ergeben - genau das ist ihr Zweck.
+     */
+    const guete = 0.84;
+    const kwp = 100;
+    const intervalle = 4;
+
+    const ertragJeIntervall = (temperatur: number) => {
+      const faktor = 1 + (-0.35 / 100) * (temperatur - 25);
+      return (guete * kwp * 0.25 * faktor);
+    };
+
+    const sommer = performanceRatioKorrigiert(
+      tagesPunkte(intervalle, 1000, ertragJeIntervall(60), 60),
+      kwp,
+    );
+    const winter = performanceRatioKorrigiert(
+      tagesPunkte(intervalle, 1000, ertragJeIntervall(5), 5),
+      kwp,
+    );
+
+    assert.ok(sommer !== null && winter !== null);
+    assert.ok(
+      Math.abs(sommer! - guete) < 0.001,
+      `Sommer ${sommer?.toFixed(4)} statt ${guete}`,
+    );
+    assert.ok(
+      Math.abs(winter! - guete) < 0.001,
+      `Winter ${winter?.toFixed(4)} statt ${guete}`,
+    );
+  });
+
+  it("zeigt ohne Korrektur den scheinbaren Sommereinbruch", () => {
+    // Derselbe Datensatz ohne Temperaturkorrektur: Der Sommertag sieht
+    // deutlich schlechter aus, obwohl die Anlage gleich gut arbeitet.
+    // Wer das nicht herausrechnet, sucht im Juli nach einem Defekt.
+    const ertragJeIntervall = (temperatur: number) =>
+      0.84 * 100 * 0.25 * (1 + (-0.35 / 100) * (temperatur - 25));
+
+    const sommerRoh = performanceRatio(
+      tagesPunkte(4, 1000, ertragJeIntervall(60), 60),
+      100,
+    );
+    const winterRoh = performanceRatio(
+      tagesPunkte(4, 1000, ertragJeIntervall(5), 5),
+      100,
+    );
+
+    assert.ok(sommerRoh !== null && winterRoh !== null);
+    assert.ok(
+      winterRoh! - sommerRoh! > 0.1,
+      `Ohne Korrektur muss der Unterschied deutlich sein: Sommer ${sommerRoh?.toFixed(3)}, Winter ${winterRoh?.toFixed(3)}`,
+    );
+  });
+});
+
+describe("Spezifischer Ertrag", () => {
+  it("teilt den Ertrag durch die Nennleistung", () => {
+    assert.equal(spezifischerErtrag(108_000, 100), 1080);
+  });
+
+  it("liefert null ohne Nennleistung", () => {
+    assert.equal(spezifischerErtrag(1000, 0), null);
+  });
+});
+
+describe("Verfügbarkeit", () => {
+  it("zählt nur ertragsfähige Zeit", () => {
+    const punkte = [
+      // Nacht: nicht verfügbar, aber auch nicht ertragsfähig.
+      ...Array.from({ length: 40 }, () => ({
+        verfuegbar: false,
+        ertragsfaehig: false,
+      })),
+      // Tag: durchgehend verfügbar.
+      ...Array.from({ length: 40 }, () => ({
+        verfuegbar: true,
+        ertragsfaehig: true,
+      })),
+    ];
+
+    const ergebnis = verfuegbarkeit(punkte, 500);
+    assert.equal(
+      ergebnis.technisch,
+      1,
+      "Ein nächtlicher Ausfall darf die Verfügbarkeit nicht mindern",
+    );
+  });
+
+  it("rechnet einen Tagesausfall korrekt an", () => {
+    const punkte = [
+      ...Array.from({ length: 90 }, () => ({
+        verfuegbar: true,
+        ertragsfaehig: true,
+      })),
+      ...Array.from({ length: 10 }, () => ({
+        verfuegbar: false,
+        ertragsfaehig: true,
+        ausfallKwh: 5,
+      })),
+    ];
+
+    const ergebnis = verfuegbarkeit(punkte, 450);
+
+    assert.ok(Math.abs(ergebnis.technisch - 0.9) < 0.001);
+    assert.equal(ergebnis.ausfallKwh, 50);
+    assert.equal(ergebnis.ausfallIntervalle, 10);
+    // Energetisch: 450 von 500 möglichen.
+    assert.ok(Math.abs((ergebnis.energetisch ?? 0) - 0.9) < 0.001);
+  });
+
+  it("unterscheidet technische und energetische Verfügbarkeit", () => {
+    // Kurzer Ausfall zur Mittagszeit: zeitlich wenig, energetisch viel.
+    const punkte = [
+      ...Array.from({ length: 96 }, () => ({
+        verfuegbar: true,
+        ertragsfaehig: true,
+      })),
+      ...Array.from({ length: 4 }, () => ({
+        verfuegbar: false,
+        ertragsfaehig: true,
+        ausfallKwh: 50,
+      })),
+    ];
+
+    const ergebnis = verfuegbarkeit(punkte, 400);
+
+    assert.ok(ergebnis.technisch > 0.95, "zeitlich nur ein kleiner Ausfall");
+    assert.ok(
+      (ergebnis.energetisch ?? 1) < 0.7,
+      "energetisch fällt der Mittagsausfall stark ins Gewicht",
+    );
+  });
+
+  it("gilt ohne ertragsfähige Zeit als voll verfügbar", () => {
+    const ergebnis = verfuegbarkeit(
+      Array.from({ length: 96 }, () => ({
+        verfuegbar: false,
+        ertragsfaehig: false,
+      })),
+      0,
+    );
+    assert.equal(ergebnis.technisch, 1);
+  });
+});
+
+describe("Strangvergleich", () => {
+  const gleich = [
+    { strangId: "S1", bezeichnung: "Strang 1", mittelStrom: 8.0, leistungKwp: 10 },
+    { strangId: "S2", bezeichnung: "Strang 2", mittelStrom: 8.1, leistungKwp: 10 },
+    { strangId: "S3", bezeichnung: "Strang 3", mittelStrom: 7.9, leistungKwp: 10 },
+    { strangId: "S4", bezeichnung: "Strang 4", mittelStrom: 8.0, leistungKwp: 10 },
+  ];
+
+  it("meldet nichts, wenn alle Stränge gleich liefern", () => {
+    const befunde = vergleicheStraenge(gleich);
+    assert.ok(befunde.every((b) => !b.auffaellig));
+  });
+
+  it("erkennt einen schwachen Strang", () => {
+    const mitSchwachem = [
+      ...gleich,
+      { strangId: "S5", bezeichnung: "Strang 5", mittelStrom: 6.4, leistungKwp: 10 },
+    ];
+
+    const befunde = vergleicheStraenge(mitSchwachem);
+    const schwach = befunde.find((b) => b.strangId === "S5")!;
+
+    assert.ok(schwach.auffaellig, "Strang 5 muss auffallen");
+    assert.ok(
+      schwach.abweichung < -15,
+      `Abweichung ${schwach.abweichung} sollte deutlich negativ sein`,
+    );
+    assert.ok(
+      befunde.filter((b) => b.auffaellig).length === 1,
+      "Nur der schwache Strang darf auffallen",
+    );
+  });
+
+  it("lässt sich von einem Totalausfall nicht täuschen", () => {
+    // Hier zeigt sich, warum der Median und nicht der Mittelwert
+    // verwendet wird: Ein Strang bei null zöge den Mittelwert so weit
+    // herunter, dass die übrigen zu gut dastünden.
+    const mitAusfall = [
+      ...gleich,
+      { strangId: "S5", bezeichnung: "Strang 5", mittelStrom: 0, leistungKwp: 10 },
+    ];
+
+    const befunde = vergleicheStraenge(mitAusfall);
+    const auffaellige = befunde.filter((b) => b.auffaellig);
+
+    assert.equal(
+      auffaellige.length,
+      1,
+      "Nur der ausgefallene Strang darf auffallen",
+    );
+    assert.equal(auffaellige[0].strangId, "S5");
+  });
+
+  it("meldet Stränge mit Mehrertrag nicht", () => {
+    const mitStarkem = [
+      ...gleich,
+      { strangId: "S5", bezeichnung: "Strang 5", mittelStrom: 9.6, leistungKwp: 10 },
+    ];
+
+    const befunde = vergleicheStraenge(mitStarkem);
+    const stark = befunde.find((b) => b.strangId === "S5")!;
+
+    assert.ok(stark.abweichung > 0);
+    assert.ok(!stark.auffaellig, "Mehrertrag ist kein Mangel");
+  });
+
+  it("rechnet unterschiedlich große Stränge auf kWp um", () => {
+    const ungleich = [
+      { strangId: "S1", bezeichnung: "groß", mittelStrom: 16, leistungKwp: 20 },
+      { strangId: "S2", bezeichnung: "klein", mittelStrom: 8, leistungKwp: 10 },
+    ];
+
+    const befunde = vergleicheStraenge(ungleich);
+    assert.ok(
+      befunde.every((b) => !b.auffaellig),
+      "Gleiche spezifische Leistung darf nicht auffallen",
+    );
+  });
+
+  it("kommt mit leerer Eingabe zurecht", () => {
+    assert.deepEqual(vergleicheStraenge([]), []);
+  });
+});
+
+describe("Bewertung des Ausfalls", () => {
+  it("bewertet Eigenverbrauch höher als Einspeisung", () => {
+    const hoherEigenverbrauch = bewerteAusfall(1000, 0.8, 22, 8);
+    const reineEinspeisung = bewerteAusfall(1000, 0, 22, 8);
+
+    assert.ok(
+      hoherEigenverbrauch > reineEinspeisung,
+      "Eine eigenverbrauchte Kilowattstunde ist mehr wert",
+    );
+    // 1000 kWh x 0,8 x 22 ct + 1000 x 0,2 x 8 ct = 192 Euro.
+    assert.ok(Math.abs(hoherEigenverbrauch - 192) < 0.01);
+    // 1000 kWh x 8 ct = 80 Euro.
+    assert.ok(Math.abs(reineEinspeisung - 80) < 0.01);
+  });
+
+  it("begrenzt die Quote auf null bis eins", () => {
+    assert.equal(bewerteAusfall(100, 5, 20, 10), bewerteAusfall(100, 1, 20, 10));
+    assert.equal(bewerteAusfall(100, -3, 20, 10), bewerteAusfall(100, 0, 20, 10));
+  });
+});
+
+describe("Erwartete Leistung", () => {
+  it("ist bei Standardbedingungen die Nennleistung mal Wirkungsgrad", () => {
+    const leistung = erwarteteLeistung(100, 1000, 25, 0.84);
+    assert.ok(Math.abs(leistung - 84) < 0.01);
+  });
+
+  it("sinkt mit steigender Modultemperatur", () => {
+    const kuehl = erwarteteLeistung(100, 1000, 25);
+    const heiss = erwarteteLeistung(100, 1000, 60);
+
+    assert.ok(heiss < kuehl, "Wärmere Module leisten weniger");
+    // 35 Kelvin über Standard, 0,35 Prozent je Kelvin: rund zwölf Prozent.
+    assert.ok(
+      Math.abs(heiss / kuehl - 0.8775) < 0.005,
+      `Verhältnis ${(heiss / kuehl).toFixed(4)}`,
+    );
+  });
+
+  it("ist ohne Einstrahlung null", () => {
+    assert.equal(erwarteteLeistung(100, 0), 0);
+    assert.equal(erwarteteLeistung(100, -50), 0);
+  });
+
+  it("verläuft linear zur Einstrahlung", () => {
+    const halb = erwarteteLeistung(100, 500, 25);
+    const voll = erwarteteLeistung(100, 1000, 25);
+    assert.ok(Math.abs(voll / halb - 2) < 0.001);
+  });
+});
+
+describe("gewichteteVerfuegbarkeit", () => {
+  it("meldet volle Verfügbarkeit, wenn kein Gerät ausfiel", () => {
+    const wert = gewichteteVerfuegbarkeit([
+      { gewicht: 124, ertragsfaehig: 1000, verfuegbar: 1000 },
+      { gewicht: 124, ertragsfaehig: 1000, verfuegbar: 1000 },
+    ]);
+    assert.equal(wert, 1);
+  });
+
+  it("gewichtet den Ausfall nach Geräteleistung", () => {
+    // Zehn gleich große Geräte, eines steht die Hälfte der Zeit.
+    const geraete = Array.from({ length: 10 }, (_, i) => ({
+      gewicht: 124,
+      ertragsfaehig: 1000,
+      verfuegbar: i === 0 ? 500 : 1000,
+    }));
+    // 9500 von 10000 gewichteten Intervallen.
+    assert.equal(gewichteteVerfuegbarkeit(geraete), 0.95);
+  });
+
+  it("lässt ein großes Gerät schwerer wiegen als ein kleines", () => {
+    const grossFaellt = gewichteteVerfuegbarkeit([
+      { gewicht: 250, ertragsfaehig: 100, verfuegbar: 0 },
+      { gewicht: 50, ertragsfaehig: 100, verfuegbar: 100 },
+    ]);
+    const kleinFaellt = gewichteteVerfuegbarkeit([
+      { gewicht: 250, ertragsfaehig: 100, verfuegbar: 100 },
+      { gewicht: 50, ertragsfaehig: 100, verfuegbar: 0 },
+    ]);
+
+    assert.ok(grossFaellt !== null && kleinFaellt !== null);
+    assert.ok(grossFaellt < kleinFaellt);
+    // 50 von 300 beziehungsweise 250 von 300.
+    assert.ok(Math.abs(grossFaellt - 1 / 6) < 1e-9);
+    assert.ok(Math.abs(kleinFaellt - 5 / 6) < 1e-9);
+  });
+
+  it("gibt ohne ertragsfähige Zeit null zurück statt null Prozent", () => {
+    assert.equal(
+      gewichteteVerfuegbarkeit([
+        { gewicht: 124, ertragsfaehig: 0, verfuegbar: 0 },
+      ]),
+      null,
+    );
+    assert.equal(gewichteteVerfuegbarkeit([]), null);
+  });
+
+  it("übergeht Geräte ohne Leistungsangabe", () => {
+    // Ein Gerät ohne hinterlegte Modulleistung darf das Ergebnis
+    // weder verbessern noch verschlechtern.
+    const wert = gewichteteVerfuegbarkeit([
+      { gewicht: 100, ertragsfaehig: 100, verfuegbar: 80 },
+      { gewicht: 0, ertragsfaehig: 100, verfuegbar: 0 },
+    ]);
+    assert.equal(wert, 0.8);
+  });
+
+  it("lässt mehr verfügbare als ertragsfähige Intervalle nicht über 100 Prozent steigen", () => {
+    const wert = gewichteteVerfuegbarkeit([
+      { gewicht: 100, ertragsfaehig: 100, verfuegbar: 140 },
+    ]);
+    assert.equal(wert, 1);
+  });
+});

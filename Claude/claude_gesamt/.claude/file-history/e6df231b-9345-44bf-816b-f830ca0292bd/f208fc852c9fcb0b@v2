@@ -1,0 +1,87 @@
+"""Standortpruefung beim Stempeln.
+
+Spiegel zu `entfernung()` in `frontend/src/lib/geo.ts` — Client und Server
+muessen dieselbe Entfernung errechnen, sonst weist der Server eine Stempelung
+zurueck, die das Geraet als zulaessig angezeigt hat.
+
+**Datenschutz:** Erfasst wird ausschliesslich der Standort im Augenblick des
+Stempelns, nicht laufend. Gespeichert werden Koordinate, Entfernung und das
+Ergebnis der Pruefung — keine Bewegungsspur.
+"""
+
+from __future__ import annotations
+
+import math
+from dataclasses import dataclass
+
+ERDRADIUS_M = 6_371_000
+
+
+@dataclass
+class Standortpruefung:
+	entfernung_m: int | None
+	innerhalb: bool
+	ortung_verweigert: bool
+	meldung: str
+
+
+def entfernung_m(
+	lat_a: float, lng_a: float, lat_b: float, lng_b: float
+) -> int:
+	"""Luftlinie in Metern (Haversine)."""
+	bogen = math.radians
+	d_lat = bogen(lat_b - lat_a)
+	d_lng = bogen(lng_b - lng_a)
+	h = (
+		math.sin(d_lat / 2) ** 2
+		+ math.cos(bogen(lat_a)) * math.cos(bogen(lat_b)) * math.sin(d_lng / 2) ** 2
+	)
+	return round(2 * ERDRADIUS_M * math.asin(math.sqrt(h)))
+
+
+def pruefe(
+	*,
+	gps_lat: float | None,
+	gps_lng: float | None,
+	anlage_lat: float | None,
+	anlage_lng: float | None,
+	radius_m: int = 300,
+) -> Standortpruefung:
+	"""Prueft, ob die Stempelung am Ort der Baustelle erfolgt ist.
+
+	Fehlt die Ortung, wird die Stempelung **nicht** abgelehnt, sondern
+	gekennzeichnet: In einer Halle oder einem Kellerverteiler gibt es keinen
+	GPS-Empfang, und ein Arbeitsbeginn darf daran nicht scheitern.
+
+	Fehlen die Koordinaten der Baustelle, ist keine Pruefung moeglich — auch das
+	ist kein Grund zur Ablehnung, sondern ein Pflegehinweis an die Stammdaten.
+	"""
+	if gps_lat is None or gps_lng is None:
+		return Standortpruefung(
+			entfernung_m=None,
+			innerhalb=False,
+			ortung_verweigert=True,
+			meldung="Ohne Ortung gestempelt.",
+		)
+
+	if not anlage_lat or not anlage_lng:
+		return Standortpruefung(
+			entfernung_m=None,
+			innerhalb=True,
+			ortung_verweigert=False,
+			meldung="Baustelle ohne Koordinaten — Standort nicht pruefbar.",
+		)
+
+	abstand = entfernung_m(gps_lat, gps_lng, anlage_lat, anlage_lng)
+	innerhalb = abstand <= radius_m
+	if innerhalb:
+		meldung = f"Auf der Baustelle ({abstand} m)."
+	else:
+		meldung = f"{abstand} m von der Baustelle entfernt (zulaessig {radius_m} m)."
+
+	return Standortpruefung(
+		entfernung_m=abstand,
+		innerhalb=innerhalb,
+		ortung_verweigert=False,
+		meldung=meldung,
+	)

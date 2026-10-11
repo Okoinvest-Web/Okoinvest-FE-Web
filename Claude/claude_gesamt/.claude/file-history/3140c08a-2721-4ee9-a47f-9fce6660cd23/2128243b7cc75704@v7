@@ -1,0 +1,82 @@
+{
+  "titel": "ÖkoInvest · Welle 1 „Eindämmung“",
+  "agenten": [
+    {
+      "label": "Welle 1 · Paket A1: JSON-LD-Komponente (Tag 1)",
+      "team": "Welle 1 · Umsetzung",
+      "rolle": "Paket A1: JSON-LD-Komponente (Tag 1)",
+      "auftrag": "laut docs/MASTERPLAN-DACH.md Abschnitt 11",
+      "art": "welle"
+    },
+    {
+      "label": "Welle 1 · Paket F: Sicherheitsnetz & Prüf-Gate",
+      "team": "Welle 1 · Umsetzung",
+      "rolle": "Paket F: Sicherheitsnetz & Prüf-Gate",
+      "auftrag": "laut docs/MASTERPLAN-DACH.md Abschnitt 11",
+      "art": "welle"
+    },
+    {
+      "label": "Welle 1 · Paket A: Sicherheit",
+      "team": "Welle 1 · Umsetzung",
+      "rolle": "Paket A: Sicherheit",
+      "auftrag": "laut docs/MASTERPLAN-DACH.md Abschnitt 11",
+      "art": "welle"
+    },
+    {
+      "label": "Welle 1 · Paket B: Datenschutz & Messung",
+      "team": "Welle 1 · Umsetzung",
+      "rolle": "Paket B: Datenschutz & Messung",
+      "auftrag": "laut docs/MASTERPLAN-DACH.md Abschnitt 11",
+      "art": "welle"
+    },
+    {
+      "label": "Welle 1 · Paket C: Lead-Lecks",
+      "team": "Welle 1 · Umsetzung",
+      "rolle": "Paket C: Lead-Lecks",
+      "auftrag": "laut docs/MASTERPLAN-DACH.md Abschnitt 11",
+      "art": "welle"
+    },
+    {
+      "label": "Welle 1 · Paket D: Ehrlichkeit & Claims",
+      "team": "Welle 1 · Umsetzung",
+      "rolle": "Paket D: Ehrlichkeit & Claims",
+      "auftrag": "laut docs/MASTERPLAN-DACH.md Abschnitt 11",
+      "art": "welle"
+    },
+    {
+      "label": "Welle 1 · Paket E: Zahlen-Sofortkorrektur",
+      "team": "Welle 1 · Umsetzung",
+      "rolle": "Paket E: Zahlen-Sofortkorrektur",
+      "auftrag": "laut docs/MASTERPLAN-DACH.md Abschnitt 11",
+      "art": "welle"
+    },
+    {
+      "label": "Welle 1 · Paket G: Recht-Text-Fixes",
+      "team": "Welle 1 · Umsetzung",
+      "rolle": "Paket G: Recht-Text-Fixes",
+      "auftrag": "laut docs/MASTERPLAN-DACH.md Abschnitt 11",
+      "art": "welle"
+    },
+    {
+      "label": "Welle 1 · Paket I: Indexsteuerung & Altcode",
+      "team": "Welle 1 · Umsetzung",
+      "rolle": "Paket I: Indexsteuerung & Altcode",
+      "auftrag": "laut docs/MASTERPLAN-DACH.md Abschnitt 11",
+      "art": "welle"
+    },
+    {
+      "label": "Welle 1 · Paket R: Rechtstexte (Entwürfe)",
+      "team": "Welle 1 · Umsetzung",
+      "rolle": "Paket R: Rechtstexte (Entwürfe)",
+      "auftrag": "laut docs/MASTERPLAN-DACH.md Abschnitt 11",
+      "art": "welle"
+    },
+    {
+      "label": "Welle 1 · Qualitätsmanager",
+      "team": "Welle 1 · Abnahme",
+      "rolle": "Qualitätsmanager",
+      "auftrag": "npm run verify, alle Seiten, Paketgrenzen, Abnahmekriterien",
+      "art": "welle"
+    }
+  ]
+}

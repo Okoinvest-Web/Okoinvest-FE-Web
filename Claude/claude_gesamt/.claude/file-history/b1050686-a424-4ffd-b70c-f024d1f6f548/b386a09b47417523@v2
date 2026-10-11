@@ -1,0 +1,341 @@
+/**
+ * Aufteilungsrechnung einer Energiegemeinschaft.
+ *
+ * Das ist der fachliche Kern: Je Viertelstunde wird die Erzeugung der
+ * teilnehmenden Erzeugungszaehlpunkte auf die Verbrauchszaehlpunkte
+ * verteilt. Was nicht gedeckt werden kann, bleibt Netzbezug; was nicht
+ * gebraucht wird, geht als Ueberschuss ins Netz.
+ *
+ * Bewusst eine reine Funktion ohne Datenbankzugriff: Die Rechnung muss
+ * fuer sich testbar sein. Eine fehlerhafte Aufteilung faellt sonst erst
+ * auf, wenn Teilnehmer falsche Rechnungen in der Hand halten.
+ *
+ * ---------------------------------------------------------------------
+ * Zwei Modelle, wie sie in Oesterreich verwendet werden
+ *
+ *   DYNAMISCH - Verteilung nach tatsaechlichem Bedarf. Wer in dieser
+ *   Viertelstunde mehr verbraucht, bekommt mehr zugeteilt. Reicht die
+ *   Erzeugung nicht, wird anteilig gekuerzt. Das ist das gaengige
+ *   Modell, weil es den Eigenverbrauch der Gemeinschaft maximiert.
+ *
+ *   STATISCH - Verteilung nach fest vereinbarten Anteilen. Braucht ein
+ *   Teilnehmer seinen Anteil nicht, verfaellt dieser nicht, sondern
+ *   wird in einem zweiten Durchgang auf die uebrigen verteilt. Ohne
+ *   diese Restverteilung bliebe Strom ungenutzt, obwohl Bedarf besteht.
+ *
+ * ---------------------------------------------------------------------
+ * Der Teilnahmefaktor
+ *
+ * Begrenzt, welcher Anteil des eigenen Bedarfs hoechstens aus der
+ * Gemeinschaft gedeckt wird (0 bis 1). Er erlaubt es, die Teilnahme zu
+ * drosseln, ohne auszutreten - etwa wenn ein Betrieb einen guenstigen
+ * Liefervertrag hat und die Gemeinschaft nur ergaenzend nutzt.
+ */
+
+/** Ein Teilnehmer in einer einzelnen Viertelstunde. */
+export interface TeilnehmerWerte {
+  zaehlpunktId: string;
+  /** Eingespeiste Menge dieser Viertelstunde in kWh. */
+  einspeisung: number;
+  /** Bezogene Menge dieser Viertelstunde in kWh. */
+  bezug: number;
+  /** Anteil bei statischer Aufteilung, 0 bis 1. */
+  anteil: number;
+  /** Obergrenze fuer den Bezug aus der Gemeinschaft, 0 bis 1. */
+  teilnahmefaktor: number;
+}
+
+export interface ZuteilungJeZaehlpunkt {
+  zaehlpunktId: string;
+  /** Aus der Gemeinschaft gedeckter Bezug in kWh. */
+  bezogen: number;
+  /** In die Gemeinschaft gelieferte Menge in kWh. */
+  geliefert: number;
+  /** Verbleibender Bezug aus dem Netz in kWh. */
+  restNetz: number;
+}
+
+export interface ViertelstundenErgebnis {
+  zuteilungen: ZuteilungJeZaehlpunkt[];
+  /** Gesamte in der Gemeinschaft genutzte Menge in kWh. */
+  verteilt: number;
+  /** Erzeugung, die niemand gebraucht hat - geht ins Netz. */
+  ueberschuss: number;
+  /** Bedarf, den die Gemeinschaft nicht decken konnte. */
+  ungedeckt: number;
+}
+
+export type Aufteilungsmodell = "Statisch" | "Dynamisch";
+
+/**
+ * Rundung auf Wattstunden.
+ *
+ * Lastgangwerte kommen in kWh mit drei Nachkommastellen. Ohne feste
+ * Rundung sammeln sich ueber 35.040 Viertelstunden je Jahr
+ * Gleitkommafehler an, und die Summe der Einzelzuteilungen weicht von
+ * der verteilten Menge ab - was in der Abrechnung auffaellt.
+ */
+function runde(wert: number): number {
+  return Math.round(wert * 1000) / 1000;
+}
+
+/**
+ * Verteilt die Erzeugung einer Viertelstunde auf die Teilnehmer.
+ *
+ * Die Mengenerhaltung ist die wichtigste Zusage dieser Funktion:
+ * Die Summe aller Zuteilungen entspricht exakt der verteilten Menge,
+ * und verteilte Menge plus Ueberschuss ergibt die Gesamterzeugung.
+ */
+export function teileViertelstundeAuf(
+  teilnehmer: TeilnehmerWerte[],
+  modell: Aufteilungsmodell,
+): ViertelstundenErgebnis {
+  const erzeugungGesamt = runde(
+    teilnehmer.reduce((s, t) => s + Math.max(0, t.einspeisung), 0),
+  );
+
+  /**
+   * Der anrechenbare Bedarf ist durch den Teilnahmefaktor begrenzt.
+   * Was darueber liegt, bezieht der Teilnehmer in jedem Fall aus dem
+   * Netz - auch wenn die Gemeinschaft genug Strom haette.
+   */
+  const bedarf = teilnehmer.map((t) => {
+    const gesamt = Math.max(0, t.bezug);
+    const anrechenbar = runde(gesamt * t.teilnahmefaktor);
+    return { teilnehmer: t, gesamt, anrechenbar, zugeteilt: 0 };
+  });
+
+  const bedarfGesamt = runde(bedarf.reduce((s, b) => s + b.anrechenbar, 0));
+
+  // Ohne Erzeugung oder ohne Bedarf gibt es nichts zu verteilen.
+  if (erzeugungGesamt <= 0 || bedarfGesamt <= 0) {
+    return ergebnisAus(bedarf, teilnehmer, 0, erzeugungGesamt, bedarfGesamt);
+  }
+
+  if (modell === "Dynamisch") {
+    verteileDynamisch(bedarf, erzeugungGesamt, bedarfGesamt);
+  } else {
+    verteileStatisch(bedarf, erzeugungGesamt);
+  }
+
+  const verteilt = runde(bedarf.reduce((s, b) => s + b.zugeteilt, 0));
+
+  return ergebnisAus(bedarf, teilnehmer, verteilt, erzeugungGesamt, bedarfGesamt);
+}
+
+interface BedarfsPosten {
+  teilnehmer: TeilnehmerWerte;
+  gesamt: number;
+  anrechenbar: number;
+  zugeteilt: number;
+}
+
+/**
+ * Dynamisch: anteilig nach Bedarf.
+ *
+ * Deckt die Erzeugung den gesamten Bedarf, bekommt jeder seinen vollen
+ * anrechenbaren Bedarf. Sonst wird im Verhaeltnis der Bedarfe gekuerzt.
+ */
+function verteileDynamisch(
+  bedarf: BedarfsPosten[],
+  erzeugungGesamt: number,
+  bedarfGesamt: number,
+): void {
+  if (erzeugungGesamt >= bedarfGesamt) {
+    for (const posten of bedarf) posten.zugeteilt = posten.anrechenbar;
+    return;
+  }
+
+  const quote = erzeugungGesamt / bedarfGesamt;
+
+  for (const posten of bedarf) {
+    posten.zugeteilt = runde(posten.anrechenbar * quote);
+  }
+
+  gleicheRundungAus(bedarf, erzeugungGesamt);
+}
+
+/**
+ * Statisch: nach vereinbarten Anteilen, mit Restverteilung.
+ *
+ * Erster Durchgang: Jeder erhaelt seinen Anteil an der Erzeugung,
+ * hoechstens aber seinen anrechenbaren Bedarf.
+ *
+ * Weitere Durchgaenge: Was uebrig bleibt, weil jemand seinen Anteil
+ * nicht ausschoepft, wird auf die Teilnehmer mit offenem Bedarf
+ * verteilt - anteilig nach deren Restbedarf. Ohne diesen Schritt ginge
+ * Strom ins Netz, obwohl in der Gemeinschaft Bedarf besteht.
+ */
+function verteileStatisch(
+  bedarf: BedarfsPosten[],
+  erzeugungGesamt: number,
+): void {
+  const anteilSumme = bedarf.reduce(
+    (s, b) => s + Math.max(0, b.teilnehmer.anteil),
+    0,
+  );
+
+  if (anteilSumme > 0) {
+    for (const posten of bedarf) {
+      const anteil = Math.max(0, posten.teilnehmer.anteil) / anteilSumme;
+      posten.zugeteilt = Math.min(
+        posten.anrechenbar,
+        runde(erzeugungGesamt * anteil),
+      );
+    }
+  }
+
+  // Restverteilung, bis nichts mehr uebrig ist oder kein Bedarf besteht.
+  // Die Schleifengrenze verhindert ein Festlaufen bei Rundungsresten.
+  for (let durchgang = 0; durchgang < 8; durchgang++) {
+    const verteilt = bedarf.reduce((s, b) => s + b.zugeteilt, 0);
+    const rest = runde(erzeugungGesamt - verteilt);
+    if (rest <= 0.0005) break;
+
+    const offen = bedarf.filter((b) => b.zugeteilt < b.anrechenbar - 0.0005);
+    if (offen.length === 0) break;
+
+    const offenerBedarf = offen.reduce(
+      (s, b) => s + (b.anrechenbar - b.zugeteilt),
+      0,
+    );
+    if (offenerBedarf <= 0) break;
+
+    const quote = Math.min(1, rest / offenerBedarf);
+
+    for (const posten of offen) {
+      const zusatz = (posten.anrechenbar - posten.zugeteilt) * quote;
+      posten.zugeteilt = runde(
+        Math.min(posten.anrechenbar, posten.zugeteilt + zusatz),
+      );
+    }
+  }
+
+  gleicheRundungAus(bedarf, erzeugungGesamt);
+}
+
+/**
+ * Gleicht Rundungsreste aus.
+ *
+ * Nach dem Runden der Einzelwerte kann die Summe um wenige Wattstunden
+ * von der zu verteilenden Menge abweichen. Die Differenz bekommt der
+ * groesste Posten - er traegt sie relativ am wenigsten sichtbar, und
+ * die Mengenerhaltung bleibt exakt.
+ */
+function gleicheRundungAus(
+  bedarf: BedarfsPosten[],
+  erzeugungGesamt: number,
+): void {
+  const verteilt = runde(bedarf.reduce((s, b) => s + b.zugeteilt, 0));
+  const differenz = runde(Math.min(erzeugungGesamt, verteilt) - verteilt);
+
+  if (Math.abs(differenz) < 0.0005) return;
+
+  const groesster = [...bedarf].sort((a, b) => b.zugeteilt - a.zugeteilt)[0];
+  if (!groesster) return;
+
+  groesster.zugeteilt = runde(
+    Math.max(0, Math.min(groesster.anrechenbar, groesster.zugeteilt + differenz)),
+  );
+}
+
+function ergebnisAus(
+  bedarf: BedarfsPosten[],
+  teilnehmer: TeilnehmerWerte[],
+  verteilt: number,
+  erzeugungGesamt: number,
+  bedarfGesamt: number,
+): ViertelstundenErgebnis {
+  /**
+   * Die Gutschrift des Erzeugers richtet sich danach, wie viel von
+   * seiner Einspeisung tatsaechlich in der Gemeinschaft geblieben ist.
+   * Speisen mehrere Erzeuger ein, wird anteilig zugerechnet - sonst
+   * bekaeme einer die volle Gutschrift und ein anderer keine, obwohl
+   * beide gleichermassen beigetragen haben.
+   */
+  const lieferQuote = erzeugungGesamt > 0 ? verteilt / erzeugungGesamt : 0;
+
+  const zuteilungen: ZuteilungJeZaehlpunkt[] = teilnehmer.map((t) => {
+    const posten = bedarf.find((b) => b.teilnehmer.zaehlpunktId === t.zaehlpunktId);
+    const bezogen = posten?.zugeteilt ?? 0;
+    const gesamtBezug = posten?.gesamt ?? Math.max(0, t.bezug);
+
+    return {
+      zaehlpunktId: t.zaehlpunktId,
+      bezogen: runde(bezogen),
+      geliefert: runde(Math.max(0, t.einspeisung) * lieferQuote),
+      restNetz: runde(Math.max(0, gesamtBezug - bezogen)),
+    };
+  });
+
+  return {
+    zuteilungen,
+    verteilt: runde(verteilt),
+    ueberschuss: runde(Math.max(0, erzeugungGesamt - verteilt)),
+    ungedeckt: runde(Math.max(0, bedarfGesamt - verteilt)),
+  };
+}
+
+/* ------------------------------------------------------------------ */
+/* Summen ueber einen Zeitraum                                         */
+/* ------------------------------------------------------------------ */
+
+export interface ZaehlpunktSumme {
+  zaehlpunktId: string;
+  bezogen: number;
+  geliefert: number;
+  restNetz: number;
+}
+
+export interface ZeitraumErgebnis {
+  jeZaehlpunkt: Map<string, ZaehlpunktSumme>;
+  verteilt: number;
+  ueberschuss: number;
+  ungedeckt: number;
+  /** Anzahl der gerechneten Viertelstunden. */
+  intervalle: number;
+}
+
+/** Summiert die Ergebnisse vieler Viertelstunden auf. */
+export function fasseZusammen(
+  ergebnisse: ViertelstundenErgebnis[],
+): ZeitraumErgebnis {
+  const jeZaehlpunkt = new Map<string, ZaehlpunktSumme>();
+  let verteilt = 0;
+  let ueberschuss = 0;
+  let ungedeckt = 0;
+
+  for (const ergebnis of ergebnisse) {
+    verteilt += ergebnis.verteilt;
+    ueberschuss += ergebnis.ueberschuss;
+    ungedeckt += ergebnis.ungedeckt;
+
+    for (const zuteilung of ergebnis.zuteilungen) {
+      const vorher = jeZaehlpunkt.get(zuteilung.zaehlpunktId) ?? {
+        zaehlpunktId: zuteilung.zaehlpunktId,
+        bezogen: 0,
+        geliefert: 0,
+        restNetz: 0,
+      };
+
+      vorher.bezogen += zuteilung.bezogen;
+      vorher.geliefert += zuteilung.geliefert;
+      vorher.restNetz += zuteilung.restNetz;
+      jeZaehlpunkt.set(zuteilung.zaehlpunktId, vorher);
+    }
+  }
+
+  for (const summe of jeZaehlpunkt.values()) {
+    summe.bezogen = runde(summe.bezogen);
+    summe.geliefert = runde(summe.geliefert);
+    summe.restNetz = runde(summe.restNetz);
+  }
+
+  return {
+    jeZaehlpunkt,
+    verteilt: runde(verteilt),
+    ueberschuss: runde(ueberschuss),
+    ungedeckt: runde(ungedeckt),
+    intervalle: ergebnisse.length,
+  };
+}

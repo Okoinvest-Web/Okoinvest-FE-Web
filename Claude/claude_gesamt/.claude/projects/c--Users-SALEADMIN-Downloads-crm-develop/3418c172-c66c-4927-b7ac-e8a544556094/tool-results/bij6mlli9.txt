@@ -1,0 +1,921 @@
+total 109
+drwxr-xr-x 1 SALEADMIN 197121     0 Sep 27 21:21 .
+drwxr-xr-x 1 SALEADMIN 197121     0 Sep 27 21:20 ..
+drwxr-xr-x 1 SALEADMIN 197121     0 Sep 27 21:20 .devcontainer
+drwxr-xr-x 1 SALEADMIN 197121     0 Sep 27 21:20 .github
+-rw-r--r-- 1 SALEADMIN 197121   321 Sep 27 21:20 .gitignore
+-rw-r--r-- 1 SALEADMIN 197121    85 Sep 27 21:20 .gitmodules
+-rw-r--r-- 1 SALEADMIN 197121  1875 Sep 27 21:20 .mergify.yml
+drwxr-xr-x 1 SALEADMIN 197121     0 Sep 27 21:20 .pi
+-rw-r--r-- 1 SALEADMIN 197121  2074 Sep 27 21:20 .pre-commit-config.yaml
+-rw-r--r-- 1 SALEADMIN 197121   481 Sep 27 21:20 .releaserc
+drwxr-xr-x 1 SALEADMIN 197121     0 Sep 27 21:20 .vscode
+-rw-r--r-- 1 SALEADMIN 197121  3853 Sep 27 21:20 AGENTS.md
+-rw-r--r-- 1 SALEADMIN 197121 34522 Sep 27 21:20 LICENSE
+-rw-r--r-- 1 SALEADMIN 197121  9063 Sep 27 21:20 README.md
+-rw-r--r-- 1 SALEADMIN 197121   367 Sep 27 21:20 codecov.yml
+-rw-r--r-- 1 SALEADMIN 197121   525 Sep 27 21:20 commitlint.config.cjs
+drwxr-xr-x 1 SALEADMIN 197121     0 Sep 27 21:20 crm
+-rw-r--r-- 1 SALEADMIN 197121   265 Sep 27 21:20 crowdin.yml
+drwxr-xr-x 1 SALEADMIN 197121     0 Sep 27 21:20 docker
+drwxr-xr-x 1 SALEADMIN 197121     0 Sep 27 21:20 docs
+drwxr-xr-x 1 SALEADMIN 197121     0 Sep 27 21:20 e2e
+drwxr-xr-x 1 SALEADMIN 197121     0 Sep 27 10:27 frappe-ui
+drwxr-xr-x 1 SALEADMIN 197121     0 Sep 27 21:21 frontend
+-rw-r--r-- 1 SALEADMIN 197121   913 Sep 27 21:20 package.json
+-rw-r--r-- 1 SALEADMIN 197121  1257 Sep 27 21:20 playwright.config.ts
+-rw-r--r-- 1 SALEADMIN 197121  2722 Sep 27 21:20 pyproject.toml
+drwxr-xr-x 1 SALEADMIN 197121     0 Sep 27 21:21 scripts
+-rw-r--r-- 1 SALEADMIN 197121  1871 Sep 27 21:20 yarn.lock
+{
+	"private": true,
+	"type": "module",
+	"name": "crm",
+	"description": "Frappe CRM helps you work, not slow you down. Open-source, intuitive, and free from extra costs.",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/frappe/crm.git"
+	},
+	"homepage": "https://frappe.io/crm",
+	"author": "Frappe Technologies Pvt. Ltd.",
+	"license": "GPL-3.0",
+	"bugs": {
+		"url": "https://github.com/frappe/crm/issues"
+	},
+	"scripts": {
+		"postinstall": "cd frontend && yarn install --check-files",
+		"dev": "cd frontend && yarn dev",
+		"build": "cd frontend && yarn build",
+		"upgrade-frappeui": "cd frontend && yarn add frappe-ui@latest && cd ..",
+		"test:e2e": "playwright test",
+		"test:e2e:ui": "playwright test --ui",
+		"test:e2e:headed": "playwright test --headed",
+		"test:e2e:debug": "playwright test --debug"
+	},
+	"devDependencies": {
+		"@playwright/test": "^1.49.0",
+		"@types/node": "^22.0.0"
+	}
+}
+README.md
+eslint.config.mjs
+index.html
+package.json
+postcss.config.js
+public
+src
+tailwind.config.js
+tailwind.email.config.js
+tests
+vite.config.js
+vitest.config.js
+yarn.lock
+{
+  "name": "crm-ui",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build --base=/assets/crm/frontend/ && yarn copy-html-entry",
+    "copy-html-entry": "cp ../crm/public/frontend/index.html ../crm/www/crm.html",
+    "serve": "vite preview",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@framework/ui": "link:../../frappe/ui",
+    "@tiptap/core": "^3.26.0",
+    "@tiptap/extension-paragraph": "^3.26.0",
+    "@twilio/voice-sdk": "^2.10.2",
+    "@vitejs/plugin-vue": "^6.0.8",
+    "@vitejs/plugin-vue-jsx": "^5.1.6",
+    "@vue-flow/background": "^1.3.2",
+    "@vue-flow/controls": "^1.1.3",
+    "@vue-flow/core": "^1.48.2",
+    "@vueuse/integrations": "^10.3.0",
+    "dompurify": "^3.3.3",
+    "frappe-ui": "1.0.0-beta.29",
+00000 DOK-CB-05_Antwortentwurf.html
+000222 DOK-CB-03_Gesamtdossier.html
+006_01.PDF
+00_Anschreiben_Eigentuemer (1).docx
+00_Anschreiben_Eigentuemer.docx
+00_Anschreiben_Eigentuemer.pdf
+00_Schriftsatz_StN_1_HK_O_1771_25_20260812 (003).pdf
+01-20260920T231342Z-1-001.zip
+01pruefungbmdapp.ps1
+02 SEO-Diagnose oekovolt.de.html
+02 SEO-Diagnose oekovolt.de_files
+02_Beilage_Sachverhaltsdarstellung.pdf
+02zonengpo.ps1
+03 - Mylitta Dating-20260918T231844Z-1-001.zip
+03 DOKCB03_Gesamtdossier.html
+03 SEO-Diagnose oekovolt.de.html
+03 SEO-Diagnose oekovolt.de_files
+03schnelltestclient.ps1
+09_Anlage_Anlage_K53 (1).pdf
+09_Anlage_Anlage_K53 (2).pdf
+09_Anlage_Anlage_K53.pdf
+106z_01.PDF
+119m_01 (1).PDF
+119m_01 (2).PDF
+119m_01.PDF
+132_01.PDF
+132_07.PDF
+133_07.PDF
+14_U_295_26_e_begl_Abschrift_Beschluss_v_18_06_2026 (1).pdf
+14_U_295_26_e_begl_Abschrift_Beschluss_v_18_06_2026.pdf
+14_U_3746_25_e_begl_Abschrift_Beschluss_v_18_06_2026 (1).pdf
+14_U_3746_25_e_begl_Abschrift_Beschluss_v_18_06_2026.pdf
+14_U_3748_25_e_begl_Abschrift_Beschluss_v_18_06_2026 (1).pdf
+14_U_3748_25_e_begl_Abschrift_Beschluss_v_18_06_2026.pdf
+1_oQMwg8Q5yXL6lNrcYWgyvw.webp
+20.06.2016 Meeting.docx
+20160530_Meeting.docx
+20160607_Meeting.docx
+20160822.docx
+20161024_Meeting.docx
+20161121_Meeting.docx
+20210129_ökovolt_board_executives_preisband_draft.pptx.pdf
+20210316102953 (1).pdf
+20210316103002 (2).pdf
+2021_MA_Code-of-Conduct.pdf
+2025-08-13 - ON 8.1 - Schriftsatz - Antrag auf Akteneinsicht-1.pdf
+20250801_Schreiben Wegscheider (1).pdf
+2026-03-16 Forensischer Zwischenbericht Ökovolt Solartechnik GmbH final_signed (2) (1).pdf
+2026-03-16 Forensischer Zwischenbericht Ökovolt Solartechnik GmbH final_signed (3) (1).pdf
+2026-03-16 Forensischer Zwischenbericht Ökovolt Solartechnik GmbH final_signed (3).pdf
+2026-04-16 - Gesamtakt - Gesamtakt (2) - Benni Strafakt.pdf
+2026-04-23.png
+2026-04-30 Digitalforensischer Zwischenbericht samt Anhang_signed.pdf
+20260521 Endurteil 14 U 295-26 - Zurückweisung Berufung.pdf
+20260521 Endurteil 14 U 3746-25.pdf
+20260521 Endurteil 14 U 3748-25 - Zurückweisung Berufung.pdf
+20260615_Strafanzeige_Staatsanwaltschaft_Memmingen (1).docx
+20260615_Strafanzeige_Staatsanwaltschaft_Memmingen.docx
+20260618 von StA Memmingen_Mitteilung Eingang Strafanzeige und Aktenzeichen.pdf
+210012 Kontoblätter Personenkonten 2018.PDF
+250808_Schreiben_Wegscheider_Vergleichsgespräche (1).pdf
+260611_Protokoll VH 28.5.2026 (1).pdf
+260611_Protokoll VH 28.5.2026.pdf
+26100.32230.260111-0550.lt_release_svc_refresh_SERVER_EVAL_x64FRE_de-de.iso
+3 - DN-20260920T231109Z-1-001.zip
+444 DOK-CB-03_Gesamtdossier (1).html
+444 DOK-CB-03_Gesamtdossier.html
+4fd4079c-f6a1-44c4-8fac-5677774c7886.pdf
+5537.pdf
+6 - Auswertungen-20260920T231308Z-1-001.zip
+6252a34e-67b8-49ad-85fd-b8ab16a310fd.pdf
+798156_marco-riebler_metadaten_1F0ttF_sI0bmU.jpg
+9622.pdf
+99 - Buchhaltung-20260920T153904Z-1-001.zip
+9f18e3b8-eb62-4233-8de9-cf3d84c557a7 (1).pdf
+9f18e3b8-eb62-4233-8de9-cf3d84c557a7.pdf
+ACFrOgBPGZFtsE_Lv5IjRx3t5EqDRdVHp5-B6CS1eCBjPFR906D-mjrCr_0L8rSY6tUQbibCBxJEGZnrD8wd9Vzom8-7gQ8F8RawOGPis5WiqGtf6OtL3NdrQTiiXvWTnZctMi10ZfvHaeW47blA.pdf
+AGB in der Fassung vom 11.07.2018.docx
+APP
+Alexander Neumüller_Landgericht Memmingen Abteilung für Zivilsachen.pdf
+Angebot adplac.es.pdf
+Anlage AG 24 - Gutachten EY (1).pdf
+Anlage AG 24 - Gutachten EY.pdf
+Anlage AG 25 Gutachten Nowotny.pdf
+Anlage AG 27 - Gutachten Schopper.pdf
+Anlage B 8 - Anmeldung Zusammenschluss SAG & ÖV 27.10.21.pdf
+Anlage_AS_11_pdf.pdf
+Anlagen_53_54_Beschlussentwuerfe_Urkundenspiegel.docx
+Anlagen_53_55 neu.docx
+Anlagen_53_55.docx
+Anlagen_53_55.pdf
+Anschauungsbehelf_Motorschaden.html
+Anschauungsbehelf_Motorschaden_1.html
+Anschauungsbehelf_Motorschaden_TV.zip
+Anschreiben Eigentümervertreter Salzburg AG.docx
+Antwortschreiben Adreas Wegscheider (1).docx
+Antwortschreiben Adreas Wegscheider (2).docx
+Antwortschreiben Adreas Wegscheider (3).docx
+Antwortschreiben Adreas Wegscheider (4).docx
+Antwortschreiben Adreas Wegscheider.docx
+Antwortschreiben Andreas.docx
+Anwaltsliste (1).docx
+Anwaltsliste (2).docx
+Anwaltsliste.docx
+AnyDesk (1).exe
+AnyDesk (2).exe
+AnyDesk (3).exe
+AnyDesk (4).exe
+AnyDesk.exe
+Application-20260918T231730Z-1-001.zip
+Art 10 DSGVO.pdf
+Art 6 DSGVO.pdf
+Art 83 DSGVO.pdf
+Auflistung Forderungen PV-GmbH an Ökovolt bekannte Fälle.xlsx
+Austria Server.pdf
+BEU_OPS_Backbone_Security_Whitepaper_V4.1_20260206 1.pdf
+BMD-Arbeitsplatz-Einrichten (1).cmd
+BMD-Arbeitsplatz-Einrichten (1).ps1
+BMD-Arbeitsplatz-Einrichten.cmd
+BMD-Arbeitsplatz-Einrichten.ps1
+BMD-Cloud-AT_Installation_und_Einrichtung_Checkpoint_mobile_vpn_auf_Android.pdf
+BMD-Cloud-AT_VPN_mit_Windows_integriertem_L2TP_Client_herstellen.pdf
+BMD-Cloud-DE-Umstellung-VPN-Client.pdf
+BMDArbeitsplatzEinrichten (1).cmd
+BMDArbeitsplatzEinrichten (1).ps1
+BMDArbeitsplatzEinrichten (2).cmd
+BMDArbeitsplatzEinrichten (2).ps1
+BMDArbeitsplatzEinrichten (3).cmd
+BMDArbeitsplatzEinrichten (3).ps1
+BMDArbeitsplatzeinrichten.cmd
+BMDArbeitsplatzeinrichten.ps1
+BMDExcelAddIn.msi
+BMDExcelAddInAdmin.msi
+BMDISS_Uebergabe_Checkliste.md (1).docx
+BMDISS_Uebergabe_Checkliste.md.docx
+BMDOutlookAddIn.msi
+BMDOutlookAddInAdmin.msi
+BMDPowerPointAddIn.msi
+BMDPowerPointAddInAdmin.msi
+BMDWordAddIn.msi
+BMDWordAddInAdmin.msi
+BMD_Uebergabe_an_BMD.md (1).docx
+BMD_Uebergabe_an_BMD.md (2).docx
+BMD_Uebergabe_an_BMD.md.docx
+Befundbericht_Metadaten_K53.pdf
+Beilage, E-Mail des Schuldners vom 11_11_2024, 13_E-Mail des Schuldners vom 11_11_2024_pdf.pdf
+Beilage, E-Mail des Schuldners vom 17_10_2024, 11_E-Mail des Schuldners vom 17_10_2024_pdf.pdf
+Beilage, ON 10 - Nachträgliches Anerkenntnis, 6_ON 10 - Nachträgliches Anerkenntnis_PDF.PDF
+Beilage, ON 11 - Nachträgliches Anerkenntnis, 7_ON 11 - Nachträgliches Anerkenntnis_PDF.PDF
+Beilage, ON 12 - Nachträgliches Anerkenntnis, 8_ON 12 - Nachträgliches Anerkenntnis_PDF.PDF
+Beilage, ON 6 - Nachträgliches Anerkenntnis, 5_ON 6 - nachträgiches Anerkenntnis_PDF.PDF
+Beilage, Schreiben des Massevewalters vom 25_10_2024, 9_Brief per E-Mail an Höfler Benjamin-1_PDF.PDF
+Beilage_18_Bargeldbewegungen.xlsx
+Benjamin Höfler_Landgericht Memmingen Abteilung für Zivilsachen.pdf
+Beschwerde 2024-08-12.pdf
+Beweissicherungsprotokoll.docx
+Bildschirmfoto_12-8-2026_1374_socradar.io.jpeg
+Bildschirmfoto_12-8-2026_1375_socradar.io.jpeg
+Bildschirmfoto_12-8-2026_1380_www.breachsense.com.jpeg
+Bildschirmfoto_12-8-2026_13952_www.galaxywarden.com.jpeg
+Bildschirmfoto_12-8-2026_14114_www.halcyon.ai.jpeg
+Bildschirmfoto_12-8-2026_14248_www.halcyon.ai.jpeg
+Bildschirmfoto_12-8-2026_15010_www.hookphish.com.jpeg
+Bildschirmfoto_12-8-2026_15110_undercodenews.com.jpeg
+Bildschirmfoto_12-8-2026_15145_darkfield.orizon.one.jpeg
+Bildschirmfoto_12-8-2026_15236_www.security-incidents.de.jpeg
+Brand Identity Okovolt -.pdf
+Brief an Eigentümer (1).docx
+Brief an Eigentümer (1).pdf
+Brief an Eigentümer (2).docx
+Brief an Eigentümer (2).pdf
+Brief an Eigentümer.docx
+Brief an Eigentümer.pdf
+Brief_DIN5008_land.docx (1).pdf
+Brief_DIN5008_land.docx.pdf
+Brief_DIN5008_land_v13_Eigentuemer_sauber.docx
+Brief_DIN5008_land_v18_Eigentuemer_sauber.docx
+Briefpapier Kopf Fußzeile Vorlage.docx
+CHSH-#2657848-v1-Sonstige_Erledigung__Sonstiges__ON_12_2 (2) (1).PDF
+CHSH-#2744723-v4-Sonstige_Erledigung__Beschluss__ON_20 (1).PDF
+CHSH-#2744723-v4-Sonstige_Erledigung__Beschluss__ON_20.PDF
+CLAUDE.md
+ChatGPT Image 18. Sept. 2026, 18_29_42.png
+ChatGPT Image 18. Sept. 2026, 18_31_41.png
+CheckPointVPN_manuelle_Einrichtung.msi
+Citytech-20260918T231656Z-1-001.zip
+Claude Setup.exe
+Cloudflare Audit oekovolt.at.html
+Cloudflare Audit oekovolt.at_files
+Compliance-Bericht_Patent_Lizenzanalogie_Schadenersatz.docx
+Compliance-Untersuchung_Hoefler_Oekovolt-Gruppe.html
+Compliance-Untersuchung_Hoefler_Oekovolt-Gruppe_1.html
+Compliance-Untersuchung_Hoefler_Oekovolt-Gruppe_10.html
+Compliance-Untersuchung_Hoefler_Oekovolt-Gruppe_11.html
+Compliance-Untersuchung_Hoefler_Oekovolt-Gruppe_12.html
+Compliance-Untersuchung_Hoefler_Oekovolt-Gruppe_13.html
+Compliance-Untersuchung_Hoefler_Oekovolt-Gruppe_14.html
+Compliance-Untersuchung_Hoefler_Oekovolt-Gruppe_15.html
+Compliance-Untersuchung_Hoefler_Oekovolt-Gruppe_16.html
+Compliance-Untersuchung_Hoefler_Oekovolt-Gruppe_17.html
+Compliance-Untersuchung_Hoefler_Oekovolt-Gruppe_18.html
+Compliance-Untersuchung_Hoefler_Oekovolt-Gruppe_2.html
+Compliance-Untersuchung_Hoefler_Oekovolt-Gruppe_3.html
+Compliance-Untersuchung_Hoefler_Oekovolt-Gruppe_4.html
+Compliance-Untersuchung_Hoefler_Oekovolt-Gruppe_5.html
+Compliance-Untersuchung_Hoefler_Oekovolt-Gruppe_6.html
+Compliance-Untersuchung_Hoefler_Oekovolt-Gruppe_7.html
+Compliance-Untersuchung_Hoefler_Oekovolt-Gruppe_8.html
+Compliance-Untersuchung_Hoefler_Oekovolt-Gruppe_9.html
+Compliance-Untersuchung_Hoefler_Oekovolt-Gruppe__24_rechtlich-geprueft.html
+D I S Z I P L I N A R A N Z E I G E - 04.10.2025 (2).pdf
+D I S Z I P L I N A R A N Z E I G E - 04.10.2025 (3).pdf
+DE-Vorlagen-DB-WP.zip
+DOK-CB-01_Premium.html
+DOK-CB-01_Premium_1.html
+DOK-CB-03_Konsolidierte_Schadensaufstellung.docx
+DOK-FW-01 Firewall FW-OS-01.html
+DOK-FW-01 Firewall FW-OS-01_files
+DOK-OOB-01-iDRAC-Verwaltung.docx
+DOK-OOB-01-iDRAC-Verwaltung.html
+DOK-OOB-01-iDRAC-Verwaltung.pdf
+DOK-PVE-01 · Virtualisierung PVE-25-AT · ÖKOVOLT.html
+DOK-PVE-01 · Virtualisierung PVE-25-AT · ÖKOVOLT_files
+DOK-PVE-01-Proxmox-Setup-Oesterreich.docx
+DOK-PVE-01-Proxmox-Setup-Oesterreich.html
+DOK-PVE-01-Proxmox-Setup-Oesterreich_1.html
+DOK-SRV-01-Server-Oesterreich.docx
+DOK-SRV-01-Server-Oesterreich.html
+DOK-SRV-01-Server-Oesterreich_1.html
+DOK-SRV-DE-01-Server-Deutschland.html
+DOK-SRV-DE-01-Server-Deutschland_1.html
+DOK-SRV-DE-01-Server-Deutschland_2.html
+DOK-VOIP-01_VLAN260-VoIP-Segment (1).docx
+DOK-VOIP-01_VLAN260-VoIP-Segment (1).pdf
+DOK-VOIP-01_VLAN260-VoIP-Segment.docx
+DOK-VOIP-01_VLAN260-VoIP-Segment.pdf
+DOK2FA01_Konzept_ZweiFaktorAuthentisierung (1).pdf
+DOK2FA01_Konzept_ZweiFaktorAuthentisierung.pdf
+DOKARCH01_Zielarchitektur_Server_und_Netz (1).html
+DOKARCH01_Zielarchitektur_Server_und_Netz (1).pdf
+DOKARCH01_Zielarchitektur_Server_und_Netz (2).pdf
+DOKARCH01_Zielarchitektur_Server_und_Netz (3).pdf
+DOKARCH01_Zielarchitektur_Server_und_Netz (4).pdf
+DOKARCH01_Zielarchitektur_Server_und_Netz (5).pdf
+DOKARCH01_Zielarchitektur_Server_und_Netz (6).pdf
+DOKARCH01_Zielarchitektur_Server_und_Netz.html
+DOKARCH01_Zielarchitektur_Server_und_Netz.pdf
+DOKBMD01_BMDWelt_Gesamtuebersicht.html
+DOKBMD01_BMDWelt_Gesamtuebersicht.pdf
+DOKBMD01_BMD_NTCS_Gesamtsystem.html
+DOKBMD01_BMD_NTCS_Gesamtsystem.pdf
+DOKBMD02_BMDAPP_Applikationsserver.html
+DOKBMD02_BMDAPP_Applikationsserver.pdf
+DOKBMD03_BMDSQL_Datenbankserver.html
+DOKBMD03_BMDSQL_Datenbankserver.pdf
+DOKBMD04_BMDISS_Webserver.html
+DOKBMD04_BMDISS_Webserver.pdf
+DOKBMD05_BMD_ArbeitsplatzRollout.html
+DOKBMD05_BMD_ArbeitsplatzRollout.pdf
+DOKCB01_Compliance_Bericht (1) (1).pdf
+DOKCB01_Compliance_Bericht (1).pdf
+DOKCB01_Compliance_Bericht (2).pdf
+DOKCB01_Compliance_Bericht.pdf
+DOKCB02_Schadenssummen_Lizenzanalogie (1).pdf
+DOKCB02_Schadenssummen_Lizenzanalogie.pdf
+DOKCB03_Gesamtdossier.html
+DOKFW01_Firewall_FWOS01 (1).pdf
+DOKFW01_Firewall_FWOS01.html
+DOKFW01_Firewall_FWOS01.pdf
+DOKFWINT01_Interne_Firewall.html
+DOKFWINT01_Interne_Firewall.pdf
+DOKNETHSEC01_BMDGrenzfirewall (1).html
+DOKNETHSEC01_BMDGrenzfirewall.html
+DOKNETHSEC01_BMDGrenzfirewall.pdf
+DOKPKI01_Zertifikatsdienste_PKI (1).pdf
+DOKPKI01_Zertifikatsdienste_PKI.html
+DOKPKI01_Zertifikatsdienste_PKI.pdf
+DOKPKI02_ADCSROOT_StammCA.html
+DOKPKI02_ADCSROOT_StammCA.pdf
+DOKPKI03_ADCSSUB_AusstellendeCA.html
+DOKPKI03_ADCSSUB_AusstellendeCA.pdf
+DOKPVE01_Virtualisierung_PVE25AT (1).pdf
+DOKPVE01_Virtualisierung_PVE25AT (2).pdf
+DOKPVE01_Virtualisierung_PVE25AT (3).pdf
+DOKPVE01_Virtualisierung_PVE25AT.html
+DOKPVE01_Virtualisierung_PVE25AT.pdf
+DOKSW01_CoreSwitch_coresw01 (1).pdf
+DOKSW01_CoreSwitch_coresw01.html
+DOKSW01_CoreSwitch_coresw01.pdf
+DOKSW02_CoreSwitch_coresw02.html
+DOKSW02_CoreSwitch_coresw02.pdf
+DOKSW03_CoreSwitch_coresw03 (1).pdf
+DOKSW03_CoreSwitch_coresw03.html
+DOKSW03_CoreSwitch_coresw03.pdf
+DOKSW13_ZugangsSwitch_swacc01 (1).html
+DOKSW13_ZugangsSwitch_swacc01.html
+DOKSW13_ZugangsSwitch_swacc01.pdf
+DOKSW14_ZugangsSwitch_swacc02 (1).html
+DOKSW14_ZugangsSwitch_swacc02.html
+DOKSW14_ZugangsSwitch_swacc02.pdf
+DOKSW15_ZugangsSwitch_swot01.html
+DOKSW15_ZugangsSwitch_swot01.pdf
+DOKSW16_ZugangsSwitch_sw193001.html
+DOKSW16_ZugangsSwitch_sw193001.pdf
+DOKSW17_ZugangsSwitch_sw193002 (1).pdf
+DOKSW17_ZugangsSwitch_sw193002 (2).pdf
+DOKSW17_ZugangsSwitch_sw193002.html
+DOKSW17_ZugangsSwitch_sw193002.pdf
+DOKSW19_FeldSwitch_AC01LagerTSW202 (1).html
+DOKSW19_FeldSwitch_AC01LagerTSW202 (1).pdf
+DOKSW19_FeldSwitch_AC01LagerTSW202 (2).html
+DOKSW19_FeldSwitch_AC01LagerTSW202 (2).pdf
+DOKSW19_FeldSwitch_AC01LagerTSW202 (3).html
+DOKSW19_FeldSwitch_AC01LagerTSW202.html
+DOKSW19_FeldSwitch_AC01LagerTSW202.pdf
+DOKSW20_FeldSwitch_AC02GartenTSW202.html
+DOKSW20_FeldSwitch_AC02GartenTSW202.pdf
+DOKSW21_FeldSwitch_SV01KellerTSW202.html
+DOKSW21_FeldSwitch_SV01KellerTSW202.pdf
+DOKXX01_Pruefdruck.pdf
+DOKZT01_CloudflareZeroTrust.html
+DOKZT01_CloudflareZeroTrust.pdf
+DZ, Beilage, SALZ-ÖKOVO, Einladung Generalversammlung Ökovolt GmbH Solartechnik.pdf
+DZ, Beilage, SALZ-ÖKOVO, Protokoll des Vertreters der Salzburg AG zur Generalversammlung vom 7_3_2025.pdf
+DZ, Beilage, SALZ-ÖKOVO, Schreiben vom 13_2_2025 betreffend Tagesordnung.pdf
+DZ, Beilage, SALZ-ÖKOVO, __X.pdf
+Das Doppelbestrafungsverbot Ne bis in idem (= nicht zweimal in derselben Sache).pdf
+Datenschutzerklärung in der Fassung vom 11.7.2018.docx
+Der Einspruch wegen Rechtsverletzungen im Ermittlungsverfahren iSd  106ff StPO.pdf
+Der Schaden bei Betrug und Untreue.pdf
+Designs-20260918T231728Z-1-001.zip
+Die Betrügerische Krida - ein reformbedürftiges Delikt.pdf
+Einschreiben 22.10.2025 Landgericht Ried im Innkreis.pdf
+Einschreiben Landgericht Memmingen 1 HKO 1771 25 (1).pdf
+Einschreiben Landgericht Memmingen 1 HKO 1771 25 (2).pdf
+Erwin Buttinger_Landgericht Memmingen Abteilung für Zivilsachen.pdf
+Eskalationsschreiben_Eigentuemer_Aufsichtsrat_SalzburgAG_v5.md
+Eskalationsschreiben_SalzburgAG_Knowledge.md
+FIB_210012_201701_JB TE.fib
+FIB_210012_201801_JB TE.fib
+FIB_210012_201901_JB TE.fib
+FIB_210012_202001_JB TE.fib
+FIB_210012_202201_JB TE.fib
+FN_375708_m_-_469_016_Fr_5567-25_f_-_4_-_UB-Anhang.pdf
+FWINT_Umstellungsplan.md (1).docx
+FWINT_Umstellungsplan.md (2).docx
+FWINT_Umstellungsplan.md (3).docx
+FWINT_Umstellungsplan.md.docx
+Flavomed Übersicht.pdf
+Forensisches_Gutachten_Textidentitaet.pdf
+Förderung-20260918T231722Z-1-001.zip
+GPO_Rollout_FINALE_DIAGNOSE.md.docx
+Gefion Präsentation neu 28.04.2021.pdf
+Gemini_Generated_Image_16ww9716ww9716ww.jpg
+Gemini_Generated_Image_3s3oet3s3oet3s3o.jpg
+Gemini_Generated_Image_4cswyz4cswyz4csw (1).jpg
+Gemini_Generated_Image_4cswyz4cswyz4csw.jpg
+Gemini_Generated_Image_5ah5ck5ah5ck5ah5 (1).jpg
+Gemini_Generated_Image_5ah5ck5ah5ck5ah5.jpg
+Gemini_Generated_Image_7pmyvz7pmyvz7pmy.jpg
+Gemini_Generated_Image_fnihvifnihvifnih.jpg
+Gemini_Generated_Image_fvchzlfvchzlfvch.jpg
+Gemini_Generated_Image_og37jog37jog37jo.jpg
+Gemini_Generated_Image_wt9zhgwt9zhgwt9z.jpg
+GeschaeftsverteilungSpS_20150429_FA_Linz.pdf
+Git-2.55.0.5-64-bit.exe
+Global Administrator.jpeg
+Gmail - Vergleich – Ökovolt Solartechnik GmbH │ ÖKOVOLT GmbH Solartechnik 11.09.2026.pdf
+Green energy 01.wav
+Green energy 02.mp3.mpeg
+Greenshot-INSTALLER-1.3.315-RELEASE.exe
+HAUSSTILSPEZIFIKATION_OEKOVOLT.md (1).docx
+HAUSSTILSPEZIFIKATION_OEKOVOLT.md.docx
+HSAuftragsbearbeitung.rdp
+Handbuch PV-20260920T231852Z-1-001.zip
+Handlungsempfehlungen für Leitungsorgane von Kreditinstituten im Zusammenhang mit Cash Pooling.pdf
+IP-Adressen Überwachungssystem Ökovolt Ostermiething (1).docx
+IP-Adressen Überwachungssystem Ökovolt Ostermiething.docx
+Ideensammlung.docx
+Idrac (1).pdf
+Idrac (2).pdf
+Idrac (3).pdf
+Idrac.pdf
+JB, Abmeldung.pdf
+JB, Abrechnunge 1019.pdf
+Jahresabschluss_2020 (2).pdf
+Jahresabschluss_2021 (5).pdf
+Jahresabschluss_2022 (4).pdf
+Jahresabschluss_2023 (2).pdf
+Jahresabschluss_2024 (5).pdf
+Kabelplan Topology.pdf
+Konkursverfahren Benjamin Höfler 7 S 50_24y LG Innsbruck [ID_HöflBe_Konkurs_1637662] (1).eml
+Konkursverfahren Benjamin Höfler 7 S 50_24y LG Innsbruck [ID_HöflBe_Konkurs_1637662] (10).eml
+Konkursverfahren Benjamin Höfler 7 S 50_24y LG Innsbruck [ID_HöflBe_Konkurs_1637662] (2).eml
+Konkursverfahren Benjamin Höfler 7 S 50_24y LG Innsbruck [ID_HöflBe_Konkurs_1637662] (3).eml
+Konkursverfahren Benjamin Höfler 7 S 50_24y LG Innsbruck [ID_HöflBe_Konkurs_1637662] (4).eml
+Konkursverfahren Benjamin Höfler 7 S 50_24y LG Innsbruck [ID_HöflBe_Konkurs_1637662] (5).eml
+Konkursverfahren Benjamin Höfler 7 S 50_24y LG Innsbruck [ID_HöflBe_Konkurs_1637662] (6).eml
+Konkursverfahren Benjamin Höfler 7 S 50_24y LG Innsbruck [ID_HöflBe_Konkurs_1637662] (7).eml
+Konkursverfahren Benjamin Höfler 7 S 50_24y LG Innsbruck [ID_HöflBe_Konkurs_1637662] (8).eml
+Konkursverfahren Benjamin Höfler 7 S 50_24y LG Innsbruck [ID_HöflBe_Konkurs_1637662] (9).eml
+Konkursverfahren Benjamin Höfler 7 S 50_24y LG Innsbruck [ID_HöflBe_Konkurs_1637662].eml
+Kontaktdaten_alle Kunden.xlsx
+Konto 7206 EDV-Aufwand 2025.zip
+Kopie Salzburg AG .docx
+Kopie von Gefion Gesellschaftsstruktur stand 07-03-2021.pdf
+Lagebericht_OEKOVOLT_AT_2025.docx
+Lagebericht_OEKOVOLT_AT_2025.pdf
+Logo-Oekovolt-Gruen-mit-Weiss.webp
+Lohnzettel JB Technology GmbH 106z_07 (1).PDF
+Lohnzettel JB Technology GmbH 106z_07.PDF
+Maileinstellungen und Einrichtung eines SMTP-Systems (1).pdf
+Maileinstellungen und Einrichtung eines SMTP-Systems.pdf
+Mailmigration mit powershell.xlsx
+Meeting 01.11.2016.docx
+Meeting 04.07.2016.docx
+Meeting-20260918T231726Z-1-001.zip
+Microsoft.Services.Store.winmd
+Mitteilung AR (1).docx
+Mitteilung AR.docx
+Mytoni Content und Todo.docx
+NTCS_Technik_und_Systemadministration (1).pdf
+NTCS_Technik_und_Systemadministration.pdf
+Nachgewiesener Datenschutzverstoß und drohende Konsequenzen (1).docx
+Nachgewiesener Datenschutzverstoß und drohende Konsequenzen (2).docx
+Nachgewiesener Datenschutzverstoß und drohende Konsequenzen (2).docx.pdf
+Nachgewiesener Datenschutzverstoß und drohende Konsequenzen (3).docx
+Nachgewiesener Datenschutzverstoß und drohende Konsequenzen.docx
+Netzwerkdokumentation-Vorlage.doc
+Netzwerktopologie_HQ_Rev1.0.drawio
+Neu DOKCB03_Gesamtdossier.html
+OEKOVOLT_Dokumentation_Stand_20260824.zip
+OEKOVOLT_Wissensuebergabe_20260826.zip
+OP-Liste 220329.PDF
+Oekovolt-PV-Analyse-PVA-2026-978172.pdf
+Oekovolt-PV-Analyse-PVA-2026-BBF80B.pdf
+Oekovolt-PV-Analyse-PVA-2026-C678E1.pdf
+PBSRansomwareKonzeptA4 (1).pdf
+PBSRansomwareKonzeptA4 (2).pdf
+PBSRansomwareKonzeptA4 (3).pdf
+PBSRansomwareKonzeptA4.pdf
+PD_myclub.docx
+PROJEKTHANDBUCH_NetzwerkDokumentation_OEKOVOLT (1).md
+PROJEKTHANDBUCH_NetzwerkDokumentation_OEKOVOLT.md
+PROJEKTHANDBUCH_NetzwerkDokumentation_OEKOVOLT.md (1).docx
+PROJEKTHANDBUCH_NetzwerkDokumentation_OEKOVOLT.md (2).docx
+PROJEKTHANDBUCH_NetzwerkDokumentation_OEKOVOLT.md (3).docx
+PROJEKTHANDBUCH_NetzwerkDokumentation_OEKOVOLT.md (4).docx
+PROJEKTHANDBUCH_NetzwerkDokumentation_OEKOVOLT.md (5).docx
+PROJEKTHANDBUCH_NetzwerkDokumentation_OEKOVOLT.md.docx
+PROJEKTHANDBUCH_NetzwerkDokumentation_OEKOVOLT.md.pdf
+Pruefvermerk_Textuebereinstimmung.docx
+Python Install Manager Installer.exe
+Quellcode-Dokumentation (1).pdf
+Quellcode-Dokumentation.pdf
+RAID Austria.pdf
+RBI-_0000s_0005_LeChase-ESL.jpg
+Raid Settings (1).pdf
+Raid Settings (2).pdf
+Raid Settings (3).pdf
+Raid Settings.pdf
+Rechnung Moosegg 1 Verwaltung.pdf
+SAG Beweise-20260919T165205Z-1-001
+SAG Beweise-20260919T165205Z-1-001.zip
+SAG Beweise-20260919T165205Z-1-002.zip
+SCHRIFTSATZ_18St14-26m_FASSUNG_4.md
+SCHRIFTSATZ_18St14-26m_FASSUNG_8.docx
+SEO-Diagnose oekovolt.de.html
+SEO-Diagnose oekovolt.de_files
+SMBAliasFreischalten (1).cmd
+SMBAliasFreischalten.cmd
+SMBAliasFreischalten.ps1
+Sachverhalt-20260919T165150Z-1-001
+Sachverhalt-20260919T165150Z-1-001.zip
+Sachverhaltsdarstellung WkStA - Hoefler (1).pdf
+Sachverhaltsdarstellung WkStA - Hoefler (2).pdf
+Salzburg AG ÖKOVOLT – unabhängige Aufarbeitung und Gesamtbereinigung.pdf
+Scheingeschäft, verdeckte Ermittlung und Observation in Sicherheitspolizeigesetz und Strafprozessordnung - ein Vergleich.pdf
+Schreiben Eigentümer
+Schreiben Finanzamt 03.06.2024.zip
+Schreiben PV-GmbH Kündigung HV Vertrag.docx
+Schreiben an RA Schobesberger 12-4-24.pdf
+Schreiben von Andreas an die Eigentümer.docx
+Schreiben von Andreas an die Eigentümer.docx.pdf
+Schreiben_Aufsichtsrat_Salzburg_AG_Rev2.docx
+Schreiben_Netze_NOE_EZA-Regler.docx
+Schreiben_PV-GmbH_Geltendmachung_Kuendigung_HART_v2.docx
+Schriftsatz, I_ Dritter Bericht II_ Stellungnahme III_ Urkundenvorlage IV_ Antrag, 15_I_ Dritter Bericht II_ Stellungnahme III_ Urkundenvorlage IV_ Antrag_PDF.PDF
+Schriftsatz_Nebenintervenientin_V2.md
+Schriftsatz_Nebenintervenientin_V2_1.md
+Schriftsatz_Nebenintervenientin_V2_1.md.docx
+Sicherheitsdokumentation – Netzwerk-Traffic-Monitoring & Angriffserkennung.docx
+Spielervertrag.docx
+Standard_200-4_BCM_Anforderungskatalog.xlsx
+Stecher Elektrotechnik GmbH Logo 2021.eps
+Stecher Elektrotechnik GmbH Logo 2021.pdf
+Stellungnahme Benjamin Höfler.docx
+Straf benni-20260920T194457Z-1-001
+Straf benni-20260920T194457Z-1-001.zip
+SupportAssistLauncher.exe
+Syndikatsvertrag.pdf
+TD SYNNEX Produktdatenblatt - Adapter, Dual M.2 to SATA, 2.5_ Bay RAID(S322M225R).pdf.PDF
+Tanja Schweighart_Landgericht Memmingen Abteilung für Zivilsachen.pdf
+TestFeedback.docx
+Testfeedback 10.08.2018.docx
+Testing Feedback 1.docx
+TrueNAS-SCALE-25.10.7.iso
+UPDPCL6Win_3913100MU
+UPDPCL6Win_3913100MU.zip
+Umsatzliste_Höfler (1).pdf
+Umsatzliste_Höfler (2).pdf
+Umsatzliste_Höfler.pdf
+Umsatzliste_Höfler_Teil 2 (1).pdf
+Umsatzliste_Höfler_Teil 2 (2).pdf
+Umsatzliste_Höfler_Teil 2.pdf
+VLAN-Kommunikationsmatrix_FW-OS-01 (1).xlsx
+VLAN-Kommunikationsmatrix_FW-OS-01 (2).xlsx
+VLAN-Kommunikationsmatrix_FW-OS-01 (3).xlsx
+VLAN-Kommunikationsmatrix_FW-OS-01 (4).xlsx
+VLAN-Kommunikationsmatrix_FW-OS-01.xlsx
+VSCodeUserSetup-x64-1.137.0 (1).exe
+VSCodeUserSetup-x64-1.137.0.exe
+Verträge-20260918T231709Z-1-001.zip
+VfGH-Erkenntnis vom 16.12.2010 zum Einspruch wegen Rechtsverletzung gem.  106 StPO.pdf
+Vorbereitungsmeeting.docx
+WKSTA-20260919T165239Z-1-001
+WKSTA-20260919T165239Z-1-001.zip
+WhatsApp Image 2026-08-03 at 14.00.03.jpeg
+WhatsApp Image 2026-08-04 at 02.04.53.jpeg
+WhatsApp Image 2026-08-09 at 19.34.13 (1).jpeg
+WhatsApp Image 2026-08-09 at 19.34.13 (2).jpeg
+WhatsApp Image 2026-08-09 at 19.34.13.jpeg
+WhatsApp Image 2026-08-09 at 19.34.14 (1).jpeg
+WhatsApp Image 2026-08-09 at 19.34.14.jpeg
+WhatsApp Image 2026-08-09 at 19.34.15 (1).jpeg
+WhatsApp Image 2026-08-09 at 19.34.15.jpeg
+WhatsApp Image 2026-08-09 at 19.34.16.jpeg
+WhatsApp Image 2026-08-09 at 19.34.17 (1).jpeg
+WhatsApp Image 2026-08-09 at 19.34.17 (2).jpeg
+WhatsApp Image 2026-08-09 at 19.34.17 (3).jpeg
+WhatsApp Image 2026-08-09 at 19.34.17.jpeg
+WhatsApp Image 2026-08-09 at 19.34.18 (1).jpeg
+WhatsApp Image 2026-08-09 at 19.34.18 (2).jpeg
+WhatsApp Image 2026-08-09 at 19.34.18 (3).jpeg
+WhatsApp Image 2026-08-09 at 19.34.18.jpeg
+WhatsApp Image 2026-08-09 at 19.34.19 (1).jpeg
+WhatsApp Image 2026-08-09 at 19.34.19.jpeg
+WhatsApp Image 2026-08-10 at 05.16.39.jpeg
+WhatsApp Image 2026-08-11 at 02.09.30 (1).jpeg
+WhatsApp Image 2026-08-11 at 02.09.30 (2).jpeg
+WhatsApp Image 2026-08-11 at 02.09.30.jpeg
+WhatsApp Image 2026-08-11 at 02.09.31 (1).jpeg
+WhatsApp Image 2026-08-11 at 02.09.31 (2).jpeg
+WhatsApp Image 2026-08-11 at 02.09.31 (3).jpeg
+WhatsApp Image 2026-08-11 at 02.09.31 (4).jpeg
+WhatsApp Image 2026-08-11 at 02.09.31.jpeg
+WhatsApp Image 2026-08-11 at 02.09.32 (1).jpeg
+WhatsApp Image 2026-08-11 at 02.09.32 (2).jpeg
+WhatsApp Image 2026-08-11 at 02.09.32 (3).jpeg
+WhatsApp Image 2026-08-11 at 02.09.32 (4).jpeg
+WhatsApp Image 2026-08-11 at 02.09.32.jpeg
+WhatsApp Image 2026-08-13 at 05.20.07.jpeg
+WhatsApp Image 2026-08-13 at 05.20.08 (1).jpeg
+WhatsApp Image 2026-08-13 at 05.20.08.jpeg
+WhatsApp Image 2026-08-13 at 05.20.09 (1).jpeg
+WhatsApp Image 2026-08-13 at 05.20.09.jpeg
+WhatsApp Image 2026-08-17 at 03.07.49.jpeg
+WhatsApp Image 2026-08-17 at 03.07.50 (1).jpeg
+WhatsApp Image 2026-08-17 at 03.07.50 (2).jpeg
+WhatsApp Image 2026-08-17 at 03.07.50 (3).jpeg
+WhatsApp Image 2026-08-17 at 03.07.50.jpeg
+WhatsApp Image 2026-08-17 at 03.07.51.jpeg
+WhatsApp Image 2026-08-17 at 12.28.24.jpeg
+WhatsApp Image 2026-08-17 at 13.33.54.jpeg
+WhatsApp Image 2026-08-25 at 14.58.01.jpeg
+WhatsApp Image 2026-08-27 at 13.18.32 (1).jpeg
+WhatsApp Image 2026-08-27 at 13.18.32.jpeg
+WhatsApp Image 2026-08-27 at 13.56.47.jpeg
+WhatsApp Image 2026-08-27 at 14.14.00.jpeg
+WhatsApp Image 2026-08-27 at 14.16.07.jpeg
+WhatsApp Image 2026-08-27 at 16.32.23.jpeg
+WhatsApp Image 2026-09-02 at 10.38.38 (1).jpeg
+WhatsApp Image 2026-09-02 at 10.38.38 (2).jpeg
+WhatsApp Image 2026-09-02 at 10.38.38 (3).jpeg
+WhatsApp Image 2026-09-02 at 10.38.38 (4).jpeg
+WhatsApp Image 2026-09-02 at 10.38.38.jpeg
+WhatsApp Image 2026-09-08 at 16.21.38.jpeg
+WhatsApp Image 2026-09-10 at 13.04.21.jpeg
+WhatsApp Image 2026-09-14 at 18.24.31 (1).jpeg
+WhatsApp Image 2026-09-14 at 18.24.31 (2).jpeg
+WhatsApp Image 2026-09-14 at 18.24.31 (3).jpeg
+WhatsApp Image 2026-09-14 at 18.24.31 (4).jpeg
+WhatsApp Image 2026-09-14 at 18.24.31 (5).jpeg
+WhatsApp Image 2026-09-14 at 18.24.31.jpeg
+WhatsApp Image 2026-09-14 at 18.24.32 (1).jpeg
+WhatsApp Image 2026-09-14 at 18.24.32.jpeg
+WhatsApp Image 2026-09-23 at 23.07.34.jpeg
+WhatsApp Unknown 2026-09-22 at 03.54.43
+WhatsApp Unknown 2026-09-22 at 03.54.43.zip
+Win11_25H2_German_x64_v2.iso
+WordPad - Texteditor für Windows 11 - CHIP Installer _Qaw0T.exe
+Zielarchitektur_PVE25AT.md (1).docx
+Zielarchitektur_PVE25AT.md (10).docx
+Zielarchitektur_PVE25AT.md (11).docx
+Zielarchitektur_PVE25AT.md (12).docx
+Zielarchitektur_PVE25AT.md (13).docx
+Zielarchitektur_PVE25AT.md (14).docx
+Zielarchitektur_PVE25AT.md (2).docx
+Zielarchitektur_PVE25AT.md (3).docx
+Zielarchitektur_PVE25AT.md (4).docx
+Zielarchitektur_PVE25AT.md (5).docx
+Zielarchitektur_PVE25AT.md (6).docx
+Zielarchitektur_PVE25AT.md (7).docx
+Zielarchitektur_PVE25AT.md (8).docx
+Zielarchitektur_PVE25AT.md (9).docx
+Zielarchitektur_PVE25AT.md.docx
+Zielarchitektur_PVE25AT.md.pdf
+Zip_Datei_Edition_2023.zip
+a-blitz-weiss-rund-32.png
+ab_aktualisieren (1).pdf
+admin-sign-laptop-icon-stock-vector-166205404.webp
+auszug (1).pdf
+auszug (2).pdf
+auszug.pdf
+außenansicht.png
+b-blitz-gelb-512.png
+b-blitz.jpg
+backup-AC01-TSW202-2026-09-04.tar.gz
+belegfluss-v2.html
+bmd-55-administratoren-handbuch.pdf
+business-user-shield_78370-7029.avif
+clever_administrieren_basis_fuer_interne_edv_betreuerInnen (1).pdf
+clever_administrieren_basis_fuer_interne_edv_betreuerInnen.pdf
+crm-develop
+crm-develop.zip
+d9dec6b1-d217-4efd-a298-168ea7993553.png
+dell-drac7-command-line.pdf
+desktop.ini
+download_rules (1).csv
+download_rules.csv
+dreier-kette-architektur.html
+drive-download-20260920T163350Z-1-001.zip
+drive-download-20260920T163455Z-1-001.zip
+drive-download-20260920T163905Z-1-001.zip
+drive-download-20260920T163920Z-1-001.zip
+drive-download-20260920T163935Z-1-001.zip
+drive-download-20260920T163948Z-1-001.zip
+drive-download-20260920T164009Z-1-001.zip
+drive-download-20260920T175222Z-1-001.zip
+drive-download-20260920T180013Z-1-001.zip
+drive-download-20260920T225354Z-1-001
+drive-download-20260920T225354Z-1-001.zip
+drive-download-20260920T230647Z-1-001.zip
+ds115_de_schutzkonzept_fuer_pv_anlagen_auf_wohngebaeuden_0.pdf
+einstellblatt-raid-oesterreich.html
+export_zone_oekovolt.de.txt
+favicon.png
+finanz_dashboard.jpg
+finanz_dashboard_with_menu.jpg
+firewall-audit.html
+flugblatt_05_2026_op.pdf
+flugblatt_07_2026_hg.pdf
+flugblatt_09_2026_hw.pdf
+fw-assessment.html
+fw-regeln-oekovolt.drawio
+geman Green energy.wav
+gemini-code-1787824708680.txt
+idrac Konfigurationsblatt (1).pdf
+idrac Konfigurationsblatt (2).pdf
+idrac Konfigurationsblatt (3).pdf
+idrac Konfigurationsblatt.pdf
+idrac final (1).pdf
+idrac final (2).pdf
+idrac final (3).pdf
+idrac final.pdf
+idrac vlan (1).pdf
+idrac vlan (2).pdf
+idrac vlan (3).pdf
+idrac vlan.pdf
+idrac-einstellblatt-f2.html
+idrac-oob-vlan230-konfiguration (1).html
+idrac-oob-vlan230-konfiguration.html
+idrac-proxmox-r740.html
+image002.jpg
+image003.jpg
+image2019-05-03-100622.pdf
+images (1).jpg
+images (2).jpg
+images.jpg
+ipfirefwinthaertung.md.docx
+issue_reset_pwd.mov
+knowledgemarkets-20260918T231724Z-1-001.zip
+legal_contracts_overview.jpg
+legal_contracts_overview_with_menu.jpg
+login (1).html
+login (2).html
+login.html
+logo.avif
+logo.png
+multi-firewall-audit (1).html
+multi-firewall-audit.html
+netzwerkdokufwos01 (1).html
+netzwerkdokufwos01.html
+notebooklm-skill-main.zip
+oekovolt-bg (1).jpg
+oekovolt-bg.jpg
+oekovolt-content-plan.md
+oekovolt-doorway-strategie.md
+oekovolt-einspeiseverguetung-2026.md
+oekovolt-firewall-doku (1).pdf
+oekovolt-firewall-doku (2).pdf
+oekovolt-firewall-doku (3).pdf
+oekovolt-firewall-doku.pdf
+oekovolt-foerderung-bayern.md
+oekovolt-forensik-v11.html
+oekovolt-gravityzone-doku (1).pdf
+oekovolt-gravityzone-doku (2).pdf
+oekovolt-gravityzone-doku.pdf
+oekovolt-keyword-strategie (1).md
+oekovolt-keyword-strategie.md
+oekovolt-konzept (1).md
+oekovolt-konzept.md
+oekovolt-login.html
+oekovolt-redesign.html
+oekovolt-repowering-photovoltaik.md
+oekovolt-security-stack.html
+oekovolt-segmentierungsplan (1).pdf
+oekovolt-segmentierungsplan (2).pdf
+oekovolt-segmentierungsplan.pdf
+oekovolt-solaranlage-kosten.md
+oekovolt-verkabelungsplan (1).pdf
+oekovolt-verkabelungsplan (2).pdf
+oekovolt-verkabelungsplan.pdf
+oekovolt-wallbox-installation.md
+oekovolt.png
+oekovoltAustria.avif
+oekovoltdashboard (1).html
+oekovoltdashboard.html
+oekovoltstilreferenz (1).html
+oekovoltstilreferenz (2).html
+oekovoltstilreferenz.html
+org_mitglieder_bernd.jpg
+org_mitglieder_bernd_with_menu.jpg
+p4000m_cwp_tps_rev1_2_FD880605-9711-455A-B29A-9D78DC29BA12.zip
+pflichtenheft_oekovolt_baustellendoku.docx
+photovoltaik-systeme-schuetzen-ds109_0.pdf
+photovoltaik-wpx029-de.pdf
+proxmoxablegen.sh
+putty-64bit-0.84-installer (1).msi
+putty-64bit-0.84-installer.msi
+pve-admin-guide-8.2 (1).pdf
+pve-admin-guide-8.2.pdf
+python-manager-26.3.msix
+ransomware-hardening.html
+responsive.40000.40000.noborder.5dca811be64e70af.jpg
+rufus-4.15 (1).exe
+rufus-4.15.exe
+runbookbmddnsad.md (1).docx
+runbookbmddnsad.md.docx
+rustdesk-1.4.9-x86_64 (1).exe
+rustdesk-1.4.9-x86_64.exe
+salzburg-ag-netzwerk.html
+salzburg-ag-netzwerk_1.html
+salzburg-ag-netzwerk_2.html
+server_cabinet_documentation_template.pdf
+setupdownloader_[aHR0cHM6Ly9jbG91ZGd6LWVjcy5ncmF2aXR5em9uZS5iaXRkZWZlbmRlci5jb20vUGFja2FnZXMvQlNUV0lOLzAvZ0JScHRDL2luc3RhbGxlci54bWw-bGFuZz1kZS1ERQ==] (2).exe
+speicherauslegung-oesterreich-bmd.html
+speicherauslegung-raid-vm-stack (1) (1).html
+speicherauslegung-raid-vm-stack (1) (2).html
+speicherauslegung-raid-vm-stack (1) (3).html
+speicherauslegung-raid-vm-stack (1).html
+speicherauslegung-raid-vm-stack.html
+ss1_ransomware_live.jpg
+stecher-flyer-v7.html
+stecher-flyer.html
+stecher-flyer_1.html
+systemschein_p4304xxmuxx_shop-gb_20260909115008.pdf
+systemschein_p4304xxmuxx_shop-gb_20260909115024.pdf
+systemschein_r7435613_shop-gb_20260909115318.pdf
+t5ev6eoec7751.png
+thinkpad_universal_usb_c_dock_fw_v3.0.57.exe
+threat-assessment.html
+truescreen-forensic-browser.exe
+uebernahmebestätigung_2020-07-20_16-15-39.pdf
+uebernahmebestätigung_2020-12-07_14-47-20.pdf
+umsaetze-girokonto_AT125700030055459891_EUR_2021-05-21_11-27-40.pdf
+umsaetze-girokonto_AT125700030055459891_EUR_2021-05-21_11-30-17.pdf
+umsaetze-girokonto_AT255700030055459948_EUR_2021-05-21_11-28-36.pdf
+umsaetze-girokonto_AT255700030055459948_EUR_2021-05-21_11-30-31.pdf
+umsaetze-girokonto_AT265700030055423846_EUR_2021-05-21_11-28-13.pdf
+umsaetze-girokonto_AT265700030055423846_EUR_2021-05-21_11-30-03.pdf
+umsaetze-girokonto_AT945700030055590335_EUR_2021-05-21_11-28-56 (1).pdf
+umsaetze-girokonto_AT945700030055590335_EUR_2021-05-21_11-28-56.pdf
+umsaetze-girokonto_AT945700030055590335_EUR_2021-05-21_11-30-47.pdf
+vektor-illustration-des-erste-hilfe-kits_1186366-85301.jpg
+virtio-win-0.1.285.iso
+vlanmatrix (1).html
+vlanmatrix (2).html
+vlanmatrix (3).html
+vlanmatrix.html
+vorlagepruefdruck.html
+vorläufig Compliance Richtlinie V1 OK.pdf
+vorläufige Digitale Vertragsentwurf Mappe V1 OK.pdf
+web_feature_20161024.png
+website oekovoltredesign.html
+website-20260918T231732Z-1-001.zip
+zielboard-dc (1).html
+zielboard-dc.html
+§ 63 DSG.pdf
+Äußerung.pdf
+ÖV DE-Staatsanwaltschaft Hamburg-Strafanzeige_16.08.2024 unterzeichnet.pdf
+Ökovolt
+Ökovolt-Fähnchen.png
+Ökovolt.zip
+Ökovolt_AT_Einladung ÖV AT_Gesellschaft_07032025.pdf
+Ökovolt_DE_Einladung ÖV DE_Gesellschaft_070325.pdf
+Ökovolt_DE_Einladung ÖV DE_Wegscheider_070325.pdf
+Übermittlung Beschwerde vom 12_08_2024.pdf
+ökovolt — Physischer Verkabelungsplan.html

@@ -1,0 +1,81 @@
+"""Bedingte Sichtbarkeit von Pruefpunkten (FA-015).
+
+Spiegel zu `frontend/src/lib/bedingung.ts`. Client und Server muessen
+uebereinstimmen: Blendet der Client einen Pflichtpruefpunkt aus, darf der Server
+ihn beim Abschluss nicht einfordern — sonst scheitert der Sync an einer Angabe,
+die der Techniker nie zu Gesicht bekommen hat.
+
+Im Zweifelsfall wird **angezeigt**: Ein zu viel gezeigter Pruefpunkt kostet einen
+Wisch, ein zu Unrecht ausgeblendeter Pflichtpunkt fehlt im Protokoll.
+"""
+
+from __future__ import annotations
+
+import re
+from collections.abc import Callable
+from dataclasses import dataclass
+
+MUSTER = re.compile(r"^(\S+)\s*(==|!=|>=|<=|>|<)\s*(.+)$")
+
+
+@dataclass
+class Bedingung:
+	nummer: str
+	operator: str
+	wert: str
+
+
+@dataclass
+class Bezugswert:
+	text: str | None = None
+	zahl: float | None = None
+
+
+def bedingung_lesen(ausdruck: str | None) -> Bedingung | None:
+	"""Zerlegt ``<Nummer> <Operator> <Wert>``; ``None`` bei unbrauchbarer Syntax."""
+	if not ausdruck:
+		return None
+	treffer = MUSTER.match(ausdruck.strip())
+	if not treffer:
+		return None
+	return Bedingung(nummer=treffer.group(1), operator=treffer.group(2), wert=treffer.group(3).strip())
+
+
+def bedingung_erfuellt(bedingung: Bedingung, bezug: Bezugswert | None) -> bool:
+	if bezug is None:
+		return True
+
+	ist_text = (bezug.text or "").strip().lower()
+	soll_text = bedingung.wert.lower()
+
+	if bedingung.operator == "==":
+		return ist_text == soll_text
+	if bedingung.operator == "!=":
+		return ist_text != soll_text
+
+	try:
+		soll_zahl = float(bedingung.wert)
+	except (TypeError, ValueError):
+		return True
+	if bezug.zahl is None:
+		return False
+
+	if bedingung.operator == ">":
+		return bezug.zahl > soll_zahl
+	if bedingung.operator == "<":
+		return bezug.zahl < soll_zahl
+	if bedingung.operator == ">=":
+		return bezug.zahl >= soll_zahl
+	if bedingung.operator == "<=":
+		return bezug.zahl <= soll_zahl
+	return True
+
+
+def ist_sichtbar(ausdruck: str | None, bezug_lesen: Callable[[str], Bezugswert | None]) -> bool:
+	"""Kurzform: Ausdruck lesen und auswerten. Ohne Ausdruck immer sichtbar."""
+	if not ausdruck or not ausdruck.strip():
+		return True
+	bedingung = bedingung_lesen(ausdruck)
+	if not bedingung:
+		return True
+	return bedingung_erfuellt(bedingung, bezug_lesen(bedingung.nummer))

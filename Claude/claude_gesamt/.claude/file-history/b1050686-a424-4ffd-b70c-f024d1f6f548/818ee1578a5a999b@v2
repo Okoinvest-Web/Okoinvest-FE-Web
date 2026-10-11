@@ -1,0 +1,264 @@
+"use client";
+
+import { useActionState, useState } from "react";
+
+import { IconHaken, IconSupport } from "@/components/icon";
+import { Hinweis } from "@/components/ui";
+
+import {
+  behebe,
+  erzeugeTicket,
+  quittiere,
+  type AlarmErgebnis,
+} from "../aktionen";
+
+/**
+ * Handlungen an einer Meldung.
+ *
+ * Jede verlangt eine Notiz. Das ist keine Schikane: Ein quittierter
+ * Alarm ohne Begründung sagt niemandem, ob er geprüft oder nur
+ * weggeklickt wurde - und drei Monate später erinnert sich niemand.
+ */
+export function Massnahmen({
+  alarmId,
+  anlageId,
+  titel,
+  status,
+  hatTicket,
+}: {
+  alarmId: string;
+  anlageId: string;
+  titel: string;
+  status: string;
+  hatTicket: boolean;
+}) {
+  const [dialog, setDialog] = useState<"quittieren" | "beheben" | "ticket" | null>(
+    null,
+  );
+
+  const offen = status === "Offen";
+  const laufend = status === "Offen" || status === "Quittiert";
+
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap gap-2">
+        {offen && (
+          <button
+            type="button"
+            className="knopf knopf-rand"
+            onClick={() => setDialog(dialog === "quittieren" ? null : "quittieren")}
+          >
+            Quittieren
+          </button>
+        )}
+
+        {laufend && (
+          <button
+            type="button"
+            className="knopf knopf-voll"
+            onClick={() => setDialog(dialog === "beheben" ? null : "beheben")}
+          >
+            <IconHaken groesse={15} />
+            Als behoben schließen
+          </button>
+        )}
+
+        {!hatTicket && (
+          <button
+            type="button"
+            className="knopf knopf-rand"
+            onClick={() => setDialog(dialog === "ticket" ? null : "ticket")}
+          >
+            <IconSupport groesse={15} />
+            Serviceticket erstellen
+          </button>
+        )}
+      </div>
+
+      {dialog === "quittieren" && (
+        <NotizFormular
+          alarmId={alarmId}
+          aktion={quittiere}
+          knopfText="Quittieren"
+          hinweis="Quittieren heißt: gesehen und eingeschätzt, aber noch nicht behoben. Die Meldung bleibt in der Liste, zeigt aber, dass sie bearbeitet wird."
+          platzhalter="z. B. Techniker informiert, Termin für Freitag vereinbart"
+          schliessen={() => setDialog(null)}
+        />
+      )}
+
+      {dialog === "beheben" && (
+        <NotizFormular
+          alarmId={alarmId}
+          aktion={behebe}
+          knopfText="Als behoben schließen"
+          hinweis="Halten Sie fest, was die Ursache war und was getan wurde. Diese Notiz ist später die einzige Quelle dafür."
+          platzhalter="z. B. Steckverbinder an Modul 18 getauscht, Strangstrom wieder im Normbereich"
+          schliessen={() => setDialog(null)}
+        />
+      )}
+
+      {dialog === "ticket" && (
+        <TicketFormular
+          alarmId={alarmId}
+          anlageId={anlageId}
+          titel={titel}
+          schliessen={() => setDialog(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+function NotizFormular({
+  alarmId,
+  aktion,
+  knopfText,
+  hinweis,
+  platzhalter,
+  schliessen,
+}: {
+  alarmId: string;
+  aktion: (
+    vorher: AlarmErgebnis | null,
+    formular: FormData,
+  ) => Promise<AlarmErgebnis>;
+  knopfText: string;
+  hinweis: string;
+  platzhalter: string;
+  schliessen: () => void;
+}) {
+  const [ergebnis, absenden, laeuft] = useActionState<
+    AlarmErgebnis | null,
+    FormData
+  >(aktion, null);
+
+  if (ergebnis?.ok) {
+    return <Hinweis ton="gut">{ergebnis.meldung}</Hinweis>;
+  }
+
+  return (
+    <form
+      action={absenden}
+      className="rounded-lg border p-3.5"
+      style={{ borderColor: "var(--linie)", background: "var(--f-vertieft)" }}
+    >
+      <input type="hidden" name="alarm" value={alarmId} />
+
+      <p className="t-leise leading-relaxed">{hinweis}</p>
+
+      <label className="mt-2.5 block">
+        <span className="t-mikro mb-1 block">Notiz</span>
+        <textarea
+          name="notiz"
+          rows={2}
+          required
+          minLength={5}
+          placeholder={platzhalter}
+          className="feld"
+        />
+      </label>
+
+      {ergebnis && !ergebnis.ok && (
+        <p
+          className="t-mikro mt-2"
+          style={{ color: "oklch(0.52 0.19 25)" }}
+          role="alert"
+        >
+          {ergebnis.meldung}
+        </p>
+      )}
+
+      <div className="mt-3 flex gap-2">
+        <button type="submit" className="knopf knopf-voll" disabled={laeuft}>
+          {laeuft ? "…" : knopfText}
+        </button>
+        <button type="button" className="knopf knopf-rand" onClick={schliessen}>
+          Abbrechen
+        </button>
+      </div>
+    </form>
+  );
+}
+
+function TicketFormular({
+  alarmId,
+  anlageId,
+  titel,
+  schliessen,
+}: {
+  alarmId: string;
+  anlageId: string;
+  titel: string;
+  schliessen: () => void;
+}) {
+  const [ergebnis, absenden, laeuft] = useActionState<
+    AlarmErgebnis | null,
+    FormData
+  >(erzeugeTicket, null);
+
+  if (ergebnis?.ok) {
+    return <Hinweis ton="gut">{ergebnis.meldung}</Hinweis>;
+  }
+
+  return (
+    <form
+      action={absenden}
+      className="rounded-lg border p-3.5"
+      style={{ borderColor: "var(--linie)", background: "var(--f-vertieft)" }}
+    >
+      <input type="hidden" name="alarm" value={alarmId} />
+      <input type="hidden" name="anlage" value={anlageId} />
+
+      <p className="t-leise leading-relaxed">
+        Aus der Meldung wird ein Serviceticket. Es erscheint im Support und
+        bleibt mit dieser Meldung verknüpft.
+      </p>
+
+      <div className="mt-2.5 grid gap-2.5 sm:grid-cols-[2fr_1fr]">
+        <label className="block">
+          <span className="t-mikro mb-1 block">Betreff</span>
+          <input name="betreff" className="feld" defaultValue={titel} required />
+        </label>
+
+        <label className="block">
+          <span className="t-mikro mb-1 block">Dringlichkeit</span>
+          <select name="prioritaet" className="feld" defaultValue="Hoch">
+            <option>Niedrig</option>
+            <option>Mittel</option>
+            <option>Hoch</option>
+            <option>Kritisch</option>
+          </select>
+        </label>
+      </div>
+
+      <label className="mt-2.5 block">
+        <span className="t-mikro mb-1 block">Anmerkung für den Techniker</span>
+        <textarea
+          name="beschreibung"
+          rows={2}
+          className="feld"
+          placeholder="z. B. Zugang über Werkstor, Schlüssel beim Portier"
+        />
+      </label>
+
+      {ergebnis && !ergebnis.ok && (
+        <p
+          className="t-mikro mt-2"
+          style={{ color: "oklch(0.52 0.19 25)" }}
+          role="alert"
+        >
+          {ergebnis.meldung}
+        </p>
+      )}
+
+      <div className="mt-3 flex gap-2">
+        <button type="submit" className="knopf knopf-voll" disabled={laeuft}>
+          {laeuft ? "Wird erstellt …" : "Ticket erstellen"}
+        </button>
+        <button type="button" className="knopf knopf-rand" onClick={schliessen}>
+          Abbrechen
+        </button>
+      </div>
+    </form>
+  );
+}

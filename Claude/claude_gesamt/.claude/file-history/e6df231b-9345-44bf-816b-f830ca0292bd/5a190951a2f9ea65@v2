@@ -1,0 +1,41 @@
+"""Jinja-Helfer fuer die Print Formats (in hooks.py registriert)."""
+
+from __future__ import annotations
+
+FARBEN = {
+	"OK": "#16a34a",
+	"Warnung": "#f59e0b",
+	"Fehler": "#dc2626",
+	"Offen": "#94a3b8",
+	"Uebersprungen": "#64748b",
+	"Bestanden": "#16a34a",
+	"Bestanden mit Auflagen": "#f59e0b",
+	"Nicht bestanden": "#dc2626",
+	"A": "#dc2626",
+	"B": "#f59e0b",
+	"C": "#0284c7",
+}
+
+
+def status_farbe(status: str | None) -> str:
+	"""Hex-Farbe zu einem Status- oder Schweregradwert."""
+	return FARBEN.get(status or "", "#475569")
+
+
+def gruppiere_ergebnisse(ergebnisse) -> list[dict]:
+	"""Fasst die flache Ergebnisliste wieder nach Sektionen zusammen."""
+	gruppen: list[dict] = []
+	for zeile in ergebnisse:
+		if not gruppen or gruppen[-1]["sektion"] != zeile.sektion:
+			gruppen.append({"sektion": zeile.sektion, "zeilen": []})
+		gruppen[-1]["zeilen"].append(zeile)
+	return gruppen
+
+
+def formatiere_gps(wert: str | None, lat: float | None = None, lng: float | None = None) -> str:
+	"""GPS als lesbare Koordinate mit Kartenlink."""
+	if lat and lng:
+		wert = f"{lat:.6f}, {lng:.6f}"
+	if not wert:
+		return "-"
+	return wert

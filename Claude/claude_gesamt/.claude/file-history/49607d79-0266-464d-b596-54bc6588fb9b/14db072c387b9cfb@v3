@@ -1,0 +1,328 @@
+/**
+ * Tests für das Lesen und Steuern von Sicherungen.
+ *
+ * Der Schwerpunkt liegt nicht auf den Lesefunktionen – die sind leicht
+ * richtig zu bekommen –, sondern auf der Grenze: Diese Plattform darf
+ * Sicherungen anstoßen und nichts wegnehmen. Eine Backup-Oberfläche mit
+ * Löschrecht ist ein Angriffswerkzeug, und die Tests hier stehen dafür,
+ * dass beim nächsten Umbau niemand eine Aktion „der Vollständigkeit
+ * halber" nachrüstet.
+ */
+import { beforeEach, describe, expect, it } from 'vitest'
+import { mockRequest, resetMockData } from '@/api/mock/server.js'
+import { VERBOTEN, zielarten } from '@/api/mock/methods/backup-steuerung.js'
+
+const ruf = (url, params) => mockRequest({ url, params })
+const ziele = (p = {}) => ruf('netops.api.backup.backup_targets', p)
+const punkte = (p = {}) => ruf('netops.api.backup.backup_snapshots', p)
+const bestand = (p = {}) => ruf('netops.api.backup.backup_inventory', p)
+const auftraege = (p = {}) => ruf('netops.api.backup.backup_jobs', p)
+const laeufe = (p = {}) => ruf('netops.api.backup.backup_runs', p)
+const dateien = (p = {}) => ruf('netops.api.backup.backup_files', p)
+const download = (p = {}) => ruf('netops.api.backup.backup_download_url', p)
+const aktion = (p = {}) => ruf('netops.api.backup.backup_action', p)
+const koennen = (p = {}) => ruf('netops.api.backup.backup_capabilities', p)
+
+beforeEach(() => {
+  resetMockData()
+})
+
+describe('Die Sicherheitsgrenze', () => {
+  it('kennt keine einzige löschende Aktion – auf keinem Ziel', async () => {
+    // Die eigentliche Zusage der Seite. Sie steht als Test da, weil eine
+    // Zusage im Kommentar niemanden aufhält.
+    const alle = new Set(Object.values(zielarten()).flatMap((a) => a.erlaubt))
+    for (const verboten of Object.keys(VERBOTEN)) {
+      expect(alle.has(verboten)).toBe(false)
+    }
+  })
+
+  it('weist jede verbotene Aktion ab und nennt den Grund', async () => {
+    for (const verboten of Object.keys(VERBOTEN)) {
+      await expect(
+        aktion({ action: verboten, target: 'pbs-ds-main', reason: 'Aufräumen' }),
+      ).rejects.toThrow(/gibt es hier nicht/)
+    }
+  })
+
+  it('lehnt ab, bevor es das Ziel überhaupt nachschlägt', async () => {
+    // Sonst hinge die Absage an einem gültigen Zielnamen – ein Tippfehler
+    // im Ziel dürfte nie der Grund sein, warum ein Löschversuch scheitert.
+    await expect(aktion({ action: 'prune', target: 'GIBTSNICHT', reason: 'x' })).rejects.toThrow(
+      /gibt es hier nicht/,
+    )
+  })
+
+  it('kennt protect, aber kein unprotect', () => {
+    // Die Richtung, die Daten rettet, ist leicht. Die andere braucht den
+    // Weg über das Ursprungssystem.
+    expect(zielarten().pbs.erlaubt).toContain('protect')
+    expect(Object.keys(VERBOTEN)).toContain('unprotect')
+  })
+
+  it('nennt in den Fähigkeiten auch, was bewusst fehlt', async () => {
+    const k = await koennen({ target: 'pbs-ds-main' })
+    expect(k.withheld.map((w) => w.action).sort()).toEqual(Object.keys(VERBOTEN).sort())
+    expect(k.withheld_reason).toMatch(/nicht löschen/)
+  })
+})
+
+describe('Was welches System kann', () => {
+  it('bietet auf S3 keinen Verify-Lauf an', async () => {
+    await expect(
+      aktion({ action: 'verify_now', target: 's3-archiv-eu', reason: 'Prüfen' }),
+    ).rejects.toThrow(/kennt die Aktion/)
+  })
+
+  it('bietet auf Frappe Drive keinen Sicherungslauf an', async () => {
+    await expect(
+      aktion({ action: 'backup_now', target: 'drive-betriebsdoku', reason: 'Sichern' }),
+    ).rejects.toThrow(/kennt die Aktion/)
+  })
+
+  it('nennt in der Absage, was stattdessen ginge', async () => {
+    // Eine Fehlermeldung, die nur „nein" sagt, kostet eine Runde Nachfragen.
+    await expect(
+      aktion({ action: 'backup_now', target: 's3-archiv-eu', reason: 'x' }),
+    ).rejects.toThrow(/archive_now/)
+  })
+
+  it('liefert je Ziel genau die Aktionen, die es kennt', async () => {
+    const z = await ziele()
+    for (const ziel of z) {
+      expect(ziel.actions).toEqual(zielarten()[ziel.kind].erlaubt)
+    }
+  })
+})
+
+describe('Ein Lauf von Hand', () => {
+  it('braucht einen Grund', async () => {
+    await expect(aktion({ action: 'backup_now', target: 'pbs-ds-main' })).rejects.toThrow(
+      /braucht einen Grund/,
+    )
+  })
+
+  it('legt einen Lauf an, der als „von Hand" erkennbar bleibt', async () => {
+    // Sonst taucht er später in der Lastkurve auf und niemand weiß warum.
+    const e = await aktion({
+      action: 'backup_now',
+      target: 'pbs-ds-main',
+      reason: 'Vor dem Update auf 2026.1',
+    })
+    const l = await laeufe()
+    const meiner = l.find((r) => r.name === e.run)
+    expect(meiner.manual).toBe(true)
+    expect(meiner.trigger_reason).toBe('Vor dem Update auf 2026.1')
+    expect(meiner.run_state).toBe('running')
+  })
+
+  it('sagt, dass ausgeführt wird und wie lange es dauert', async () => {
+    const e = await aktion({ action: 'verify_now', target: 'pbs-ds-main', reason: 'Stichprobe' })
+    expect(e.estimated_minutes).toBe(zielarten().pbs.dauer_minuten.verify_now)
+    expect(e.note).toMatch(/führt aus/)
+  })
+
+  it('startet nichts an einem Ziel, das nicht erreichbar ist', async () => {
+    const z = (await ziele()).find((x) => x.target_state !== 'online')
+    if (!z) return
+    await expect(
+      aktion({ action: z.actions[0], target: z.name, reason: 'Versuch' }),
+    ).rejects.toThrow(/erst die Verbindung klären/)
+  })
+
+  it('startet einen Auftrag nicht doppelt', async () => {
+    const a = (await auftraege()).find((x) => x.target === 'pbs-ds-main' && x.enabled)
+    await aktion({ action: 'backup_now', target: 'pbs-ds-main', job: a.name, reason: 'erster' })
+    await expect(
+      aktion({ action: 'backup_now', target: 'pbs-ds-main', job: a.name, reason: 'zweiter' }),
+    ).rejects.toThrow(/läuft bereits/)
+  })
+
+  it('weist einen Auftrag ab, der zu einem anderen Ziel gehört', async () => {
+    const a = (await auftraege()).find((x) => x.target !== 'pbs-ds-main')
+    await expect(
+      aktion({ action: 'backup_now', target: 'pbs-ds-main', job: a.name, reason: 'x' }),
+    ).rejects.toThrow(/gehört zu/)
+  })
+})
+
+describe('Schutz setzen', () => {
+  it('setzt den Schutz und sagt, dass der Rückweg woanders liegt', async () => {
+    const p = (await punkte()).rows.find((s) => !s.protected && s.target_kind === 'pbs')
+    const e = await aktion({
+      action: 'protect',
+      target: p.target,
+      backup_object: p.name,
+      reason: 'Beweissicherung Vorfall 2026-014',
+    })
+    expect(e.note).toMatch(/nicht wieder aufheben/)
+    const danach = (await punkte()).rows.find((s) => s.name === p.name)
+    expect(danach.protected).toBe(1)
+  })
+
+  it('verlangt, dass klar ist, welcher Punkt geschützt wird', async () => {
+    await expect(aktion({ action: 'protect', target: 'pbs-ds-main', reason: 'x' })).rejects.toThrow(
+      /nicht klar, was geschützt wird/,
+    )
+  })
+})
+
+describe('Wiederherstellungspunkte', () => {
+  it('beantwortet Anzahl, Spanne und Größe in einem Zug', async () => {
+    // Genau die drei Fragen, die vor einer Wiederherstellung anstehen.
+    const d = await punkte({ backup_object: (await bestand()).rows[0].backup_object })
+    expect(d.summary.count).toBeGreaterThan(0)
+    expect(d.summary.span_days).toBeGreaterThanOrEqual(0)
+    expect(d.summary.total_label).toMatch(/(GB|TB)$/)
+    expect(d.summary.newest >= d.summary.oldest).toBe(true)
+  })
+
+  it('sortiert neueste zuerst', async () => {
+    const r = (await punkte()).rows
+    for (let i = 1; i < r.length; i++) {
+      expect(String(r[i - 1].taken_at) >= String(r[i].taken_at)).toBe(true)
+    }
+  })
+
+  it('behält die Kennung des Ursprungssystems', async () => {
+    // Ohne source_ref lässt sich im Zielsystem nichts wiederherstellen.
+    for (const s of (await punkte()).rows) expect(s.source_ref).toBeTruthy()
+  })
+
+  it('stuft einen fehlgeschlagenen Verify härter ein als einen fehlenden', async () => {
+    const r = (await punkte()).rows
+    const fehler = r.find((s) => s.verify_status === 'failed')
+    const ohne = r.find((s) => s.verify_status === 'none')
+    if (fehler) expect(fehler.level).toBe('critical')
+    if (ohne) expect(ohne.level).toBe('warning')
+  })
+
+  it('zählt voll und inkrementell getrennt', async () => {
+    const s = (await punkte()).summary
+    expect(s.full_count + s.incremental_count).toBe(s.count)
+  })
+})
+
+describe('Bestand über alle Systeme', () => {
+  it('meldet ein System ohne Kopie außer Haus als kritisch', async () => {
+    for (const z of (await bestand()).rows) {
+      if (!z.offsite_count) expect(z.level).toBe('critical')
+    }
+  })
+
+  it('nennt zu jedem Befund einen Grund im Klartext', async () => {
+    for (const z of (await bestand()).rows) {
+      if (z.level !== 'ok') expect(z.reasons.length).toBeGreaterThan(0)
+    }
+  })
+
+  it('stellt die kritischen Systeme nach oben', async () => {
+    const rang = { critical: 3, warning: 2, ok: 1 }
+    const r = (await bestand()).rows
+    for (let i = 1; i < r.length; i++) {
+      expect(rang[r[i - 1].level] >= rang[r[i].level]).toBe(true)
+    }
+  })
+})
+
+describe('Dateien ansehen', () => {
+  it('lässt Frappe Drive und S3 durchsehen', async () => {
+    for (const ziel of ['drive-betriebsdoku', 's3-archiv-eu']) {
+      const d = await dateien({ target: ziel })
+      expect(d.rows.length).toBeGreaterThan(0)
+    }
+  })
+
+  it('sagt bei einem Sicherungsserver, warum es dort keine Dateiliste gibt', async () => {
+    // „Keine Dateien gefunden" wäre gelogen – es gibt sie, nur nicht als Ordner.
+    await expect(dateien({ target: 'pbs-ds-main' })).rejects.toThrow(/keine durchsuchbaren Dateien/)
+  })
+
+  it('erklärt bei einer nicht herunterladbaren Datei, woran es liegt', async () => {
+    const f = (await dateien({ target: 's3-archiv-eu' })).rows.find((x) => !x.downloadable)
+    expect(f.download_hint).toMatch(/Passbolt/)
+  })
+})
+
+describe('Herunterladen', () => {
+  it('braucht einen Grund', async () => {
+    const f = (await dateien({ target: 'drive-betriebsdoku' })).rows.find((x) => x.downloadable)
+    await expect(download({ file: f.name })).rejects.toThrow(/braucht einen Grund/)
+  })
+
+  it('gibt eine Adresse mit Ablauf statt eines Dauerlinks', async () => {
+    const f = (await dateien({ target: 'drive-betriebsdoku' })).rows.find((x) => x.downloadable)
+    const e = await download({ file: f.name, reason: 'Wiederherstellung Poststelle' })
+    expect(e.expires_in_minutes).toBe(15)
+    expect(e.expires_at).toBeTruthy()
+  })
+
+  it('liefert kein Geheimnis in der Adresse zurück', async () => {
+    // Signatur und Token bleiben Platzhalter; echte Werte gehörten weder
+    // ins Protokoll noch in eine Fehlermeldung.
+    const f = (await dateien({ target: 'drive-betriebsdoku' })).rows.find((x) => x.downloadable)
+    const e = await download({ file: f.name, reason: 'Prüfung' })
+    expect(e.url).toContain('…')
+  })
+
+  it('schreibt den Download ins Protokoll – aber ohne den Pfad preiszugeben', async () => {
+    // Das Protokoll haelt fest, dass jemand die Datei geholt hat. Den
+    // Inhalt der Nutzlast speichert es nur als Hash: ein Protokoll, das
+    // Pfade und Gruende im Klartext fuehrt, wird selbst zur Beute.
+    const f = (await dateien({ target: 'drive-betriebsdoku' })).rows.find((x) => x.downloadable)
+    await download({ file: f.name, reason: 'Revision 2026' })
+
+    const log = await ruf('netops.api.audit.audit_log', { action: 'backup_file_download' })
+    expect(log.length).toBe(1)
+    expect(log[0].object_type).toBe('Backup File')
+    expect(log[0].object_name).toBe(f.name)
+    expect(log[0].payload_hash).toMatch(/^[0-9a-f]{64}$/)
+    expect(JSON.stringify(log[0])).not.toContain('Revision 2026')
+  })
+
+  it('verweigert ein verschlüsseltes Archiv auch mit Grund', async () => {
+    const f = (await dateien({ target: 's3-archiv-eu' })).rows.find((x) => !x.downloadable)
+    await expect(download({ file: f.name, reason: 'brauche ich' })).rejects.toThrow(/Passbolt/)
+  })
+})
+
+describe('Ziele', () => {
+  it('lässt die Kapazität bei Objektspeicher offen statt sie zu erfinden', async () => {
+    // S3 hat keine feste Größe. Eine Belegung in Prozent auszurechnen
+    // hieße, sich eine Obergrenze auszudenken.
+    const s3 = (await ziele()).find((z) => z.kind === 's3')
+    expect(s3.used_pct).toBeNull()
+  })
+
+  it('rechnet die Belegung dort aus, wo es eine Grenze gibt', async () => {
+    const pbs = (await ziele()).find((z) => z.name === 'pbs-ds-main')
+    expect(pbs.used_pct).toBeCloseTo(Math.round((25.4 / 40) * 1000) / 10, 1)
+  })
+
+  it('meldet ein fast volles Ziel', async () => {
+    for (const z of await ziele()) {
+      if (z.used_pct !== null && z.used_pct >= 92) expect(z.level).toBe('critical')
+    }
+  })
+})
+
+describe('Aufträge und Läufe', () => {
+  it('rechnet die Dauer aus Start und Ende statt sie zu speichern', async () => {
+    for (const r of await laeufe()) {
+      if (r.run_state === 'running') expect(r.duration_minutes).toBeNull()
+      else expect(r.duration_minutes).toBeGreaterThanOrEqual(0)
+    }
+  })
+
+  it('stuft einen abgeschalteten Auftrag als Warnung ein', async () => {
+    for (const a of await auftraege()) {
+      if (!a.enabled && a.last_result !== 'failed') expect(a.level).toBe('warning')
+    }
+  })
+
+  it('gibt zu jedem Auftrag die Aktionen seines Ziels mit', async () => {
+    for (const a of await auftraege()) {
+      expect(Array.isArray(a.actions)).toBe(true)
+    }
+  })
+})

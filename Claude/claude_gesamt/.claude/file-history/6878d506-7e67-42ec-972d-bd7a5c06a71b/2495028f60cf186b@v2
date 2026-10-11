@@ -1,0 +1,109 @@
+import "server-only";
+import type { Item, Quotation, QuoteItem, SalesInvoice, SalesOrder } from "@/lib/types";
+import { calcTotals } from "@/lib/tax";
+
+// Demo: Handelsvertreter ↔ ERPNext-Vertriebspartner (Sales Partner)
+export const SALES_PARTNER: Record<string, string> = {
+  "max@firma.example": "Max Mustermann",
+  "lisa@firma.example": "Lisa Schmidt",
+};
+
+// Katalog mit Netto-Richtpreisen (Demo)
+export const ITEMS: Item[] = [
+  { item_code: "MOD-440", item_name: "PV-Modul 440 Wp Glas-Glas", item_group: "Module", stock_uom: "Stk", rate: 115, stock_qty: 820, kwp: 0.44 },
+  { item_code: "MOD-450-BLK", item_name: "PV-Modul 450 Wp Full Black", item_group: "Module", stock_uom: "Stk", rate: 135, stock_qty: 260, kwp: 0.45 },
+  { item_code: "WR-10H", item_name: "Hybrid-Wechselrichter 10 kW", item_group: "Wechselrichter", stock_uom: "Stk", rate: 1890, stock_qty: 14 },
+  { item_code: "WR-20", item_name: "Wechselrichter 20 kW (Gewerbe)", item_group: "Wechselrichter", stock_uom: "Stk", rate: 2650, stock_qty: 6 },
+  { item_code: "SP-10", item_name: "Batteriespeicher 10 kWh", item_group: "Speicher", stock_uom: "Stk", rate: 4200, stock_qty: 9 },
+  { item_code: "SP-15", item_name: "Batteriespeicher 15 kWh", item_group: "Speicher", stock_uom: "Stk", rate: 5900, stock_qty: 2 },
+  { item_code: "SP-100", item_name: "Gewerbespeicher 100 kWh", item_group: "Speicher", stock_uom: "Stk", rate: 38500, stock_qty: 0 },
+  { item_code: "WB-11", item_name: "Wallbox 11 kW mit PV-Überschussladen", item_group: "Wallbox", stock_uom: "Stk", rate: 890, stock_qty: 25 },
+  { item_code: "WP-9", item_name: "Luft-Wasser-Wärmepumpe 9 kW", item_group: "Wärmepumpe", stock_uom: "Stk", rate: 11900, stock_qty: 3 },
+  { item_code: "MON-UK", item_name: "Unterkonstruktion Schrägdach", item_group: "Montage", stock_uom: "kWp", rate: 95 },
+  { item_code: "MON-DC", item_name: "Montage und DC-Installation", item_group: "Montage", stock_uom: "kWp", rate: 290 },
+  { item_code: "MON-AC", item_name: "AC-Anschluss, Zählerschrank, Netzanmeldung", item_group: "Montage", stock_uom: "Pauschal", rate: 1450 },
+  { item_code: "SV-MON", item_name: "Anlagen-Monitoring 12 Monate", item_group: "Service", stock_uom: "Stk", rate: 120 },
+];
+
+const itemOf = (code: string) => ITEMS.find((i) => i.item_code === code)!;
+
+export function lines(spec: [string, number][]): QuoteItem[] {
+  return spec.map(([code, qty]) => {
+    const it = itemOf(code);
+    return { item_code: code, item_name: it.item_name, qty, rate: it.rate, amount: Math.round(qty * it.rate * 100) / 100, uom: it.stock_uom };
+  });
+}
+
+type Dates = { d: (daysAgo: number) => string; day: (daysAhead: number) => string };
+
+function quote(q: Omit<Quotation, "net_total" | "total_taxes_and_charges" | "grand_total" | "currency">): Quotation {
+  const t = calcTotals(q.items, q.tax_rate);
+  return { ...q, currency: "EUR", net_total: t.net, total_taxes_and_charges: t.tax, grand_total: t.gross };
+}
+
+export function salesSeed({ d, day }: Dates) {
+  const quotations: Quotation[] = [
+    quote({
+      name: "SAL-QTN-2026-00001", quotation_to: "Lead", party_name: "CRM-LEAD-2026-00001", customer_name: "Anna Berger", opportunity: "CRM-OPP-2026-00007",
+      title: "PV 12,3 kWp + Speicher 10 kWh", transaction_date: day(-3), valid_till: day(27), status: "Open", tax_rate: 0,
+      items: lines([["MOD-440", 28], ["WR-10H", 1], ["SP-10", 1], ["MON-UK", 12.3], ["MON-DC", 12.3], ["MON-AC", 1], ["SV-MON", 1]]),
+      owner: "max@firma.example", creation: d(3), modified: d(3),
+    }),
+    quote({
+      name: "SAL-QTN-2026-00002", quotation_to: "Customer", party_name: "Allgäuer Käserei Hartmann", customer_name: "Allgäuer Käserei Hartmann", opportunity: "CRM-OPP-2026-00002",
+      title: "Gewerbe-PV 99 kWp + Speicher 100 kWh", transaction_date: day(-6), valid_till: day(24), status: "Open", tax_rate: 19,
+      items: lines([["MOD-440", 225], ["WR-20", 5], ["SP-100", 1], ["MON-UK", 99], ["MON-DC", 99], ["MON-AC", 1]]),
+      owner: "lisa@firma.example", creation: d(6), modified: d(4),
+    }),
+    quote({
+      name: "SAL-QTN-2026-00003", quotation_to: "Customer", party_name: "Klara Fischer", customer_name: "Klara Fischer", opportunity: "CRM-OPP-2026-00006",
+      title: "PV 9,9 kWp + Speicher + Wallbox", transaction_date: day(-40), valid_till: day(-10), status: "Ordered", tax_rate: 0,
+      items: lines([["MOD-450-BLK", 22], ["WR-10H", 1], ["SP-10", 1], ["WB-11", 1], ["MON-UK", 9.9], ["MON-DC", 9.9], ["MON-AC", 1]]),
+      owner: "max@firma.example", creation: d(40), modified: d(5),
+    }),
+  ];
+
+  const orders: SalesOrder[] = [
+    {
+      name: "SAL-ORD-2026-00001", customer: "Klara Fischer", customer_name: "Klara Fischer", title: "PV 9,9 kWp + Speicher + Wallbox",
+      transaction_date: day(-5), delivery_date: day(19), status: "To Deliver and Bill", grand_total: quotations[2].grand_total,
+      per_delivered: 0, per_billed: 30, sales_partner: "Max Mustermann", currency: "EUR", creation: d(5), modified: d(2),
+    },
+    {
+      name: "SAL-ORD-2026-00002", customer: "Gemeinde Bad Wörishofen", customer_name: "Gemeinde Bad Wörishofen", title: "PV Bauhof 45 kWp",
+      transaction_date: day(-35), delivery_date: day(-12), status: "Completed", grand_total: 61880, per_delivered: 100, per_billed: 100,
+      sales_partner: "Max Mustermann", currency: "EUR", creation: d(35), modified: d(10),
+    },
+    {
+      name: "SAL-ORD-2026-00003", customer: "Allgäuer Käserei Hartmann", customer_name: "Allgäuer Käserei Hartmann", title: "Wartungsvertrag PV-Bestandsanlage 2026",
+      transaction_date: day(-70), delivery_date: day(-60), status: "Completed", grand_total: 2856, per_delivered: 100, per_billed: 100,
+      sales_partner: "Lisa Schmidt", currency: "EUR", creation: d(70), modified: d(55),
+    },
+  ];
+
+  const invoices: SalesInvoice[] = [
+    {
+      name: "ACC-SINV-2026-00011", customer: "Gemeinde Bad Wörishofen", customer_name: "Gemeinde Bad Wörishofen", posting_date: day(-12), due_date: day(2),
+      status: "Paid", net_total: 52000, grand_total: 61880, outstanding_amount: 0, sales_partner: "Max Mustermann", commission_rate: 5, total_commission: 2600,
+      currency: "EUR", creation: d(12), modified: d(3),
+    },
+    {
+      name: "ACC-SINV-2026-00014", customer: "Klara Fischer", customer_name: "Klara Fischer", posting_date: day(-2), due_date: day(12),
+      status: "Unpaid", net_total: Math.round(quotations[2].net_total * 0.3), grand_total: Math.round(quotations[2].grand_total * 0.3),
+      outstanding_amount: Math.round(quotations[2].grand_total * 0.3), sales_partner: "Max Mustermann", commission_rate: 6,
+      currency: "EUR", creation: d(2), modified: d(2),
+    },
+    {
+      name: "ACC-SINV-2026-00007", customer: "Thomas Brandl", customer_name: "Thomas Brandl", posting_date: day(-45), due_date: day(-31),
+      status: "Overdue", net_total: 1450, grand_total: 1725.5, outstanding_amount: 1725.5, sales_partner: "Max Mustermann", commission_rate: 6,
+      currency: "EUR", creation: d(45), modified: d(31),
+    },
+    {
+      name: "ACC-SINV-2026-00004", customer: "Allgäuer Käserei Hartmann", customer_name: "Allgäuer Käserei Hartmann", posting_date: day(-60), due_date: day(-46),
+      status: "Paid", net_total: 2400, grand_total: 2856, outstanding_amount: 0, sales_partner: "Lisa Schmidt", commission_rate: 8, total_commission: 192,
+      currency: "EUR", creation: d(60), modified: d(48),
+    },
+  ];
+
+  return { items: ITEMS, quotations, orders, invoices };
+}

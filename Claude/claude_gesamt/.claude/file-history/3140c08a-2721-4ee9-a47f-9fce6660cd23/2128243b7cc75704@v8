@@ -1,0 +1,19 @@
+{
+  "titel": "ÖkoInvest · Welle 2 „Fundament“",
+  "agenten": [
+    {
+      "label": "Welle 2 · Welle-2-Planer",
+      "team": "Welle 2 · Planung",
+      "rolle": "Welle-2-Planer",
+      "auftrag": "Welle 2 in konfliktfreie Pakete schneiden",
+      "art": "welle"
+    },
+    {
+      "label": "Welle 2 · Qualitätsmanager",
+      "team": "Welle 2 · Abnahme",
+      "rolle": "Qualitätsmanager",
+      "auftrag": "verify, alle Seiten, Abnahmekriterien, Commit-Vorschlag",
+      "art": "welle"
+    }
+  ]
+}

@@ -1,0 +1,403 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+
+import { IconPfeilLinks } from "@/components/icon";
+import {
+  Summenzeile,
+  Tabelle,
+  Zeile,
+  Zelle,
+  ZelleMitZusatz,
+} from "@/components/tabelle";
+import {
+  Angabe,
+  Balken,
+  Hinweis,
+  Kennzahl,
+  Kennzahlenleiste,
+  LeerZustand,
+  Seitenkopf,
+  Status,
+  Tafel,
+} from "@/components/ui";
+import {
+  ladeAbrechnung,
+  ladeLadebelege,
+  ladeVorgaenge,
+} from "@/lib/daten/laden";
+import {
+  formatDatum,
+  formatDatumZeit,
+  formatGeld,
+  formatProzent,
+  formatZahl,
+} from "@/lib/format";
+import { ENERGIE_FARBEN } from "@/lib/farben";
+import { requireRecht } from "@/lib/session";
+
+/**
+ * Eine Ladeabrechnung mit ihren Belegen.
+ *
+ * Die Belege sind nach Kostenstelle gruppiert, weil genau so weiter
+ * gebucht wird: Was auf eine Abteilung entfällt, wird umgelegt; was auf
+ * einen Mitarbeiter entfällt, wird ihm in Rechnung gestellt. Die
+ * Trennung entscheidet über die steuerliche Behandlung und darf nicht
+ * erst in der Buchhaltung nachvollzogen werden müssen.
+ */
+export default async function LadeabrechnungSeite({
+  params,
+}: {
+  params: Promise<{ lauf: string }>;
+}) {
+  await requireRecht("mobilitaet.lesen");
+
+  const { lauf: laufId } = await params;
+  const lauf = ladeAbrechnung(decodeURIComponent(laufId));
+  if (!lauf) notFound();
+
+  const belege = ladeLadebelege(lauf.id);
+  const vorgaenge = ladeVorgaenge({ abrechnungId: lauf.id, grenze: 25 });
+
+  const rechnungen = belege.filter((b) => b.art === "Rechnung");
+  const umlagen = belege.filter((b) => b.art === "Kostenumlage");
+
+  const summe = (auswahl: (b: (typeof belege)[number]) => number) =>
+    belege.reduce((s, b) => s + auswahl(b), 0);
+
+  const sachbezug = summe((b) => b.sachbezug_eur);
+  const pvKwh = summe((b) => b.pv_kwh);
+  const energie = summe((b) => b.energie_kwh);
+  const blocking = summe((b) => b.blocking_eur);
+
+  // Kostenstellen für die Gliederung.
+  const kostenstellen = [...new Set(belege.map((b) => b.kostenstelle))].sort(
+    (a, b) => a.localeCompare(b, "de-AT"),
+  );
+
+  return (
+    <div className="space-y-5">
+      <Seitenkopf
+        titel={lauf.bezeichnung}
+        hinweis={`${formatDatum(lauf.zeitraum_von)} bis ${formatDatum(lauf.zeitraum_bis)} · ${lauf.anzahl_vorgaenge} Ladevorgänge auf ${belege.length} Belegen`}
+        zurueck={
+          <Link
+            href="/portal/mobilitaet"
+            className="t-leise inline-flex items-center gap-1.5 hover:underline"
+          >
+            <IconPfeilLinks groesse={14} />
+            Ladeinfrastruktur
+          </Link>
+        }
+        aktion={
+          <>
+            <Status
+              ton={
+                lauf.status === "Festgeschrieben"
+                  ? "gut"
+                  : lauf.status === "Storniert"
+                    ? "neutral"
+                    : "hinweis"
+              }
+            >
+              {lauf.status}
+            </Status>
+            <a
+              href={`/api/laden/abrechnung/${lauf.id}/csv`}
+              className="knopf knopf-rand text-[0.75rem]"
+            >
+              Als CSV
+            </a>
+          </>
+        }
+      />
+
+      {lauf.status === "Entwurf" && (
+        <Hinweis ton="hinweis" titel="Entwurf">
+          Dieser Lauf ist noch nicht festgeschrieben. Solange er Entwurf
+          ist, kann er neu gerechnet werden – die Belegnummern werden
+          dabei neu vergeben. Nach dem Festschreiben ist er unveränderlich.
+        </Hinweis>
+      )}
+
+      <Kennzahlenleiste>
+        <Kennzahl
+          label="Energie"
+          wert={formatZahl(energie, 0)}
+          einheit="kWh"
+          hinweis={`${formatProzent(energie > 0 ? (pvKwh / energie) * 100 : 0, 0)} aus eigener Erzeugung`}
+        />
+        <Kennzahl
+          label="Netto"
+          wert={formatGeld(lauf.netto)}
+          hinweis={`zuzüglich ${formatGeld(lauf.ust_betrag)} Umsatzsteuer`}
+        />
+        <Kennzahl
+          label="Brutto"
+          wert={formatGeld(lauf.brutto)}
+          hinweis={`${rechnungen.length} Rechnungen, ${umlagen.length} Umlagen`}
+          akzent
+        />
+        <Kennzahl
+          label="Sachbezug"
+          wert={formatGeld(sachbezug)}
+          hinweis="geldwerter Vorteil, nachrichtlich"
+        />
+      </Kennzahlenleiste>
+
+      {/* ---------------- Belege ---------------- */}
+      {kostenstellen.map((kostenstelle) => {
+        const gruppe = belege.filter((b) => b.kostenstelle === kostenstelle);
+        const gruppenNetto = gruppe.reduce((s, b) => s + b.netto, 0);
+        const gruppenBrutto = gruppe.reduce((s, b) => s + b.brutto, 0);
+        const gruppenKwh = gruppe.reduce((s, b) => s + b.energie_kwh, 0);
+
+        return (
+          <Tafel
+            key={kostenstelle}
+            titel={kostenstelle}
+            hinweis={`${gruppe.length} Beleg${gruppe.length > 1 ? "e" : ""} · ${formatZahl(gruppenKwh, 0)} kWh · ${formatGeld(gruppenBrutto)} brutto`}
+            dicht
+          >
+            <Tabelle
+              spalten={[
+                { titel: "Beleg" },
+                { titel: "Vorgänge", zahl: true, schmalAusblenden: true },
+                { titel: "Energie", zahl: true },
+                { titel: "Arbeit", zahl: true, schmalAusblenden: true },
+                { titel: "Standzeit", zahl: true, schmalAusblenden: true },
+                { titel: "Netto", zahl: true },
+                { titel: "Brutto", zahl: true },
+                { titel: "Art" },
+              ]}
+              mindestbreite="56rem"
+            >
+              {gruppe.map((b) => (
+                <Zeile key={b.id} gedaempft={b.status === "Storniert"}>
+                  <ZelleMitZusatz
+                    haupt={b.karte ?? "ohne Karte"}
+                    zusatz={`${b.nummer}${b.fahrzeug ? ` · ${b.fahrzeug}` : ""}${b.tarif ? ` · ${b.tarif}` : ""}`}
+                  />
+                  <Zelle zahl leise schmalAusblenden>
+                    {b.anzahl_vorgaenge}
+                  </Zelle>
+                  <Zelle zahl>
+                    {formatZahl(b.energie_kwh, 0)}
+                    <span className="t-mikro"> kWh</span>
+                    {b.pv_kwh > 0 && (
+                      <span className="t-mikro block">
+                        {formatProzent((b.pv_kwh / b.energie_kwh) * 100, 0)} PV
+                      </span>
+                    )}
+                  </Zelle>
+                  <Zelle zahl leise schmalAusblenden>
+                    {formatGeld(b.arbeit_eur)}
+                  </Zelle>
+                  <Zelle zahl leise schmalAusblenden>
+                    {b.blocking_eur > 0 ? (
+                      formatGeld(b.blocking_eur)
+                    ) : (
+                      <span style={{ color: "var(--t-zart)" }}>–</span>
+                    )}
+                  </Zelle>
+                  <Zelle zahl leise>
+                    {formatGeld(b.netto)}
+                  </Zelle>
+                  <Zelle zahl>
+                    {formatGeld(b.brutto)}
+                    {b.sachbezug_eur > 0 && (
+                      <span className="t-mikro block">
+                        SB {formatGeld(b.sachbezug_eur)}
+                      </span>
+                    )}
+                  </Zelle>
+                  <Zelle>
+                    <Status
+                      ton={b.art === "Rechnung" ? "akzent" : "neutral"}
+                      punkt={false}
+                    >
+                      {b.art}
+                    </Status>
+                  </Zelle>
+                </Zeile>
+              ))}
+              <Summenzeile>
+  <Zelle>Summe {kostenstelle}</Zelle>
+                  <Zelle zahl schmalAusblenden>
+                    {gruppe.reduce((s, b) => s + b.anzahl_vorgaenge, 0)}
+                  </Zelle>
+                  <Zelle zahl>{formatZahl(gruppenKwh, 0)} kWh</Zelle>
+                  <Zelle zahl schmalAusblenden>
+                    {formatGeld(gruppe.reduce((s, b) => s + b.arbeit_eur, 0))}
+                  </Zelle>
+                  <Zelle zahl schmalAusblenden>
+                    {formatGeld(gruppe.reduce((s, b) => s + b.blocking_eur, 0))}
+                  </Zelle>
+                  <Zelle zahl>{formatGeld(gruppenNetto)}</Zelle>
+                  <Zelle zahl>{formatGeld(gruppenBrutto)}</Zelle>
+                  <Zelle>{""}</Zelle>
+              </Summenzeile>
+            </Tabelle>
+          </Tafel>
+        );
+      })}
+
+      {belege.length === 0 && (
+        <Tafel>
+          <LeerZustand
+            text="Dieser Lauf enthält keine Belege."
+            hinweis="Im Zeitraum lagen keine abrechenbaren Ladevorgänge – oder sie hängen an Karten ohne hinterlegten Tarif."
+          />
+        </Tafel>
+      )}
+
+      {/* ---------------- Einordnung ---------------- */}
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+        <Tafel titel="Lauf">
+          <dl className="space-y-0.5">
+            <Angabe label="Kennung">{lauf.id}</Angabe>
+            <Angabe label="Zeitraum">
+              {formatDatum(lauf.zeitraum_von)} bis{" "}
+              {formatDatum(lauf.zeitraum_bis)}
+            </Angabe>
+            <Angabe label="Angelegt">{formatDatumZeit(lauf.angelegt_am)}</Angabe>
+            {lauf.festgeschrieben_am && (
+              <Angabe label="Festgeschrieben">
+                {formatDatumZeit(lauf.festgeschrieben_am)}
+              </Angabe>
+            )}
+            <Angabe label="Belege">
+              {rechnungen.length} Rechnungen, {umlagen.length} Kostenumlagen
+            </Angabe>
+          </dl>
+
+          <p className="t-mikro mt-3 leading-relaxed">
+            Eine Rechnung geht an jemanden, der dem Unternehmen
+            gegenübersteht – einen Mitarbeiter mit privat genutztem
+            Fahrzeug, einen Gast, einen Roaming-Partner. Was auf ein
+            Firmenfahrzeug entfällt, wird nicht in Rechnung gestellt,
+            sondern auf die Kostenstelle umgelegt.
+          </p>
+        </Tafel>
+
+        {/* ---------------- Zusammensetzung ---------------- */}
+        <Tafel titel="Zusammensetzung" hinweis="Woraus sich das Netto ergibt">
+          <div className="space-y-2.5">
+            {[
+              {
+                label: "Arbeitspreis",
+                betrag: summe((b) => b.arbeit_eur),
+                farbe: ENERGIE_FARBEN.erzeugung,
+              },
+              {
+                label: "Zeitpreis",
+                betrag: summe((b) => b.zeit_eur),
+                farbe: ENERGIE_FARBEN.einspeisung,
+              },
+              {
+                label: "Standgebühren",
+                betrag: blocking,
+                farbe: ENERGIE_FARBEN.netzbezug,
+              },
+              {
+                label: "Grundpreise",
+                betrag: summe((b) => b.grundpreis_eur),
+                farbe: ENERGIE_FARBEN.speicher,
+              },
+            ].map((teil) => (
+              <Balken
+                key={teil.label}
+                label={teil.label}
+                anteil={lauf.netto > 0 ? (teil.betrag / lauf.netto) * 100 : 0}
+                wertText={formatGeld(teil.betrag)}
+                farbe={teil.farbe}
+              />
+            ))}
+          </div>
+
+          <dl
+            className="mt-4 space-y-0.5 border-t pt-3"
+            style={{ borderColor: "var(--linie-zart)" }}
+          >
+            <Angabe label="Netto">{formatGeld(lauf.netto)}</Angabe>
+            <Angabe label="Umsatzsteuer">{formatGeld(lauf.ust_betrag)}</Angabe>
+            <Angabe label="Brutto">{formatGeld(lauf.brutto)}</Angabe>
+          </dl>
+
+          <p className="t-mikro mt-3 leading-relaxed">
+            Die Umsatzsteuer wird je Beleg auf die Summe gerechnet, nicht
+            je Ladevorgang aufaddiert. Bei dreißig Vorgängen im Monat
+            wichen die gerundeten Einzelbeträge sonst um einige Cent von
+            der Steuer auf den Rechnungsbetrag ab – und eine Rechnung,
+            deren Steuer nicht zum Netto passt, beanstandet jede Prüfung.
+          </p>
+        </Tafel>
+      </div>
+
+      {/* ---------------- Vorgänge ---------------- */}
+      <Tafel
+        titel="Enthaltene Ladevorgänge"
+        hinweis={
+          vorgaenge.length < lauf.anzahl_vorgaenge
+            ? `die ${vorgaenge.length} jüngsten von ${lauf.anzahl_vorgaenge}`
+            : `alle ${lauf.anzahl_vorgaenge}`
+        }
+        dicht
+      >
+        {vorgaenge.length === 0 ? (
+          <div className="p-4">
+            <LeerZustand text="Keine Vorgänge zugeordnet." />
+          </div>
+        ) : (
+          <Tabelle
+            spalten={[
+              { titel: "Beginn" },
+              { titel: "Ladepunkt", schmalAusblenden: true },
+              { titel: "Karte" },
+              { titel: "Kostenstelle", schmalAusblenden: true },
+              { titel: "Energie", zahl: true },
+              { titel: "Dauer", zahl: true, schmalAusblenden: true },
+              { titel: "Standzeit", zahl: true },
+            ]}
+            mindestbreite="58rem"
+          >
+            {vorgaenge.map((v) => (
+              <Zeile key={v.id}>
+                <ZelleMitZusatz haupt={formatDatumZeit(v.beginn)} zusatz={v.id} />
+                <Zelle leise schmalAusblenden>
+                  {v.ladepunkt}
+                </Zelle>
+                <Zelle leise>{v.karte ?? "–"}</Zelle>
+                <Zelle leise schmalAusblenden>
+                  {v.kostenstelle ?? "–"}
+                </Zelle>
+                <Zelle zahl>
+                  {formatZahl(v.energie_kwh, 1)}
+                  <span className="t-mikro"> kWh</span>
+                  {v.pv_kwh > 0 && (
+                    <span className="t-mikro block">
+                      {formatProzent((v.pv_kwh / v.energie_kwh) * 100, 0)} PV
+                    </span>
+                  )}
+                </Zelle>
+                <Zelle zahl leise schmalAusblenden>
+                  {formatZahl(v.dauer_stunden, 1)}
+                  <span className="t-mikro"> h</span>
+                </Zelle>
+                <Zelle zahl leise>
+                  {v.standzeit_stunden > 0 ? (
+                    <>
+                      {formatZahl(v.standzeit_stunden, 1)}
+                      <span className="t-mikro"> h</span>
+                    </>
+                  ) : (
+                    <span style={{ color: "var(--t-zart)" }}>–</span>
+                  )}
+                </Zelle>
+              </Zeile>
+            ))}
+          </Tabelle>
+        )}
+      </Tafel>
+    </div>
+  );
+}

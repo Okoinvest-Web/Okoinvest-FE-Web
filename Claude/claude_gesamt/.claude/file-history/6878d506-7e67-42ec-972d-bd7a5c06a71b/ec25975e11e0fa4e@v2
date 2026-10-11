@@ -1,0 +1,94 @@
+// Funktionstest über Chrome DevTools Protocol: klickt echte Abläufe durch und prüft das Ergebnis
+import { spawn } from "node:child_process";
+import { readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+
+const dir = new URL(".", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1");
+const token = readFileSync(join(dir, "token.txt"), "utf8").trim();
+const BASE = "http://localhost:3000";
+const chrome = spawn("C:/Program Files/Google/Chrome/Application/chrome.exe", [
+  "--headless=new", "--remote-debugging-port=9334", `--user-data-dir=${join(dir, "prof-" + Date.now())}`, "--window-size=1440,900", "about:blank",
+]);
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+let ws;
+for (let i = 0; i < 40 && !ws; i++) {
+  try {
+    const p = (await (await fetch("http://127.0.0.1:9334/json")).json()).find((x) => x.type === "page");
+    if (p) ws = new WebSocket(p.webSocketDebuggerUrl);
+  } catch {}
+  await sleep(250);
+}
+if (ws.readyState !== 1) await new Promise((r) => ws.addEventListener("open", r));
+let id = 0;
+const pending = new Map();
+const errors = [];
+ws.addEventListener("message", (e) => {
+  const m = JSON.parse(e.data);
+  if (m.id && pending.has(m.id)) { pending.get(m.id)(m); pending.delete(m.id); }
+  if (m.method === "Runtime.exceptionThrown") errors.push(m.params.exceptionDetails?.exception?.description?.split("\n")[0]);
+});
+const send = (method, params = {}) => new Promise((r) => { const i = ++id; pending.set(i, r); ws.send(JSON.stringify({ id: i, method, params })); });
+const js = async (expr) => (await send("Runtime.evaluate", { expression: expr, awaitPromise: true, returnByValue: true })).result?.result?.value;
+const go = async (path) => { await send("Page.navigate", { url: BASE + path }); await sleep(3500); };
+const text = () => js("document.body.innerText");
+// Klick auf Button/Link mit sichtbarem Text
+const click = (label) => js(`(() => { const el = [...document.querySelectorAll('button,a,label')].find(e => e.innerText.trim() === ${JSON.stringify(label)} || e.getAttribute('title') === ${JSON.stringify(label)}); if (!el) return false; el.click(); return true; })()`);
+const results = [];
+const check = (name, ok, info = "") => { results.push({ name, ok, info }); console.log(`${ok ? "OK  " : "FAIL"} ${name}${info ? " – " + info : ""}`); };
+
+await send("Network.enable");
+await send("Runtime.enable");
+await send("Page.enable");
+await send("Network.setCookie", { name: "crm_session", value: token, domain: "localhost", path: "/" });
+
+
+// A) Anruf protokollieren mit Wiedervorlage – neuer Lead (Fatma, Status "Neu") wird "Offen"
+await go("/leads/CRM-LEAD-2026-00003?tab=aktivitaet");
+check("Reiter Anruf", await click("Anruf"));
+await sleep(300);
+await js(`(() => { const r=[...document.querySelectorAll('input[name=outcome]')].find(i=>i.value==='Erreicht'); r.click();
+  const t=document.querySelector('textarea[name=content]'); Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set.call(t,'Termin für Dachbesichtigung vereinbart'); t.dispatchEvent(new Event('input',{bubbles:true}));
+  const f=document.querySelector('select[name=followup]'); Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(f,'3'); f.dispatchEvent(new Event('change',{bubbles:true}));
+  t.form.requestSubmit(); })()`);
+// Toast ist nur kurz sichtbar: bis zu 4 s alle 200 ms nachsehen
+let toastSeen = false;
+for (let i = 0; i < 20 && !toastSeen; i++) { await sleep(200); toastSeen = (await text()).includes("Anruf gespeichert"); }
+let t = await text();
+check("Toast Anruf gespeichert", toastSeen);
+await go("/leads/CRM-LEAD-2026-00003?tab=aktivitaet");
+t = await text();
+check("Anruf in Timeline mit Ergebnis", t.includes("hat telefoniert") && t.includes("Erreicht") && t.includes("Termin für Dachbesichtigung"));
+check("Lead automatisch auf Offen", (await js(`[...document.querySelectorAll('dt')].find(d=>d.innerText==='Status')?.nextElementSibling?.innerText`)) === "Offen");
+await go("/todos");
+t = await text();
+check("Wiedervorlage als Aufgabe", t.includes("Wiedervorlage nach Anruf (Erreicht)"));
+
+// B) Dubletten-Warnung
+await go("/leads/new");
+await js(`(() => { const i=document.querySelector('input[name=email_id]'); i.focus(); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(i,'anna.berger@mail.example'); i.dispatchEvent(new Event('input',{bubbles:true})); i.dispatchEvent(new FocusEvent('focusout',{bubbles:true})); })()`);
+await sleep(2500);
+t = await text();
+check("Dubletten-Warnung", t.includes("Möglicherweise schon vorhanden") && t.includes("Lead: Anna Berger"));
+
+// C) Kundenblatt mit Werten aus dem Rechner
+await go("/kundenblatt/chance/CRM-OPP-2026-00007?kwp=12.4&storage=10&use=5200&price=35&feed=7.9&invest=27900");
+t = await text();
+check("Kundenblatt", t.includes("Wirtschaftlichkeits-Übersicht") && t.includes("Anna Berger") && /13\.020 kWh/.test(t) && t.includes("bezahlt gemacht"));
+
+// D) Auswertung
+await go("/reports");
+t = await text();
+check("Auswertung Berater", t.includes("Max") && t.includes("Lisa") && t.includes("Gewinnquote"));
+check("Auswertung Quellen", t.includes("Empfehlung") && t.includes("Website"));
+
+// E) Kürzel G R
+await go("/");
+await js(`['g','r'].forEach(k => window.dispatchEvent(new KeyboardEvent('keydown', {key:k, bubbles:true})))`);
+await sleep(2500);
+check("Kürzel G R", (await js("location.pathname")) === "/reports");
+
+console.log("JS-Fehler im Browser:", errors.length ? errors : "keine");
+writeFileSync(join(dir, "functest2.json"), JSON.stringify(results, null, 2));
+ws.close();
+chrome.kill();
+process.exit(results.every((r) => r.ok) ? 0 : 1);

@@ -1,0 +1,343 @@
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+
+import {
+  STANDARDREGELN,
+  werteRegelAus,
+  type Alarmregel,
+  type Anlagenstamm,
+  type Zeitpunktwerte,
+} from "./alarme.ts";
+import { sonnenposition } from "./sonnenstand.ts";
+
+/**
+ * Die wichtigste Prüfung ist nicht, ob das Regelwerk Fehler findet -
+ * das tut jede Schwellwertabfrage. Entscheidend ist, ob es schweigt,
+ * wenn nichts vorliegt: nachts, bei diffusem Licht und bei einer
+ * einzelnen Wolke. Ein System, das täglich Fehlmeldungen erzeugt, wird
+ * nach einer Woche ignoriert - und ist dann schlechter als keines.
+ */
+
+const ANLAGE: Anlagenstamm = {
+  id: "ANL-TEST",
+  bezeichnung: "Prüfanlage",
+  nennleistungKwp: 100,
+  breite: 48.2047,
+  laenge: 15.6256,
+  systemwirkungsgrad: 0.84,
+};
+
+const regel = (art: string, aenderungen: Partial<Alarmregel> = {}): Alarmregel => {
+  const basis = STANDARDREGELN.find((r) => r.art === art)!;
+  return { ...basis, ...aenderungen };
+};
+
+/**
+ * Erzeugt eine Zeitreihe ab einem Startzeitpunkt.
+ * `leistung` wird je Intervall aus der Einstrahlung berechnet.
+ */
+function reihe(
+  start: Date,
+  intervalle: number,
+  bauer: (index: number, zeitpunkt: Date) => Partial<Zeitpunktwerte>,
+): Zeitpunktwerte[] {
+  return Array.from({ length: intervalle }, (_, i) => {
+    const zeitpunkt = new Date(start.getTime() + i * 15 * 60000);
+    return {
+      zeitpunkt,
+      leistungKw: 0,
+      einstrahlung: 0,
+      ...bauer(i, zeitpunkt),
+    };
+  });
+}
+
+/** Ein Sommertag zur Mittagszeit - die Sonne steht hoch. */
+function mittag(): Date {
+  return new Date(Date.UTC(2026, 5, 21, 10, 0));
+}
+
+/** Mitternacht - die Sonne steht weit unter dem Horizont. */
+function nacht(): Date {
+  return new Date(Date.UTC(2026, 5, 21, 23, 0));
+}
+
+describe("Ruhe bei fehlender Grundlage", () => {
+  it("meldet nachts keinen Nullertrag", () => {
+    // Der Klassiker: Die Anlage liefert nichts, weil es Nacht ist.
+    // Ohne Sonnenstandsprüfung meldet jede Anlage jede Nacht.
+    const nachts = reihe(nacht(), 20, () => ({
+      leistungKw: 0,
+      // Selbst wenn ein defekter Sensor Einstrahlung meldet, darf die
+      // Regel nachts nicht greifen.
+      einstrahlung: 200,
+    }));
+
+    const befunde = werteRegelAus(regel("Nullertrag"), nachts, ANLAGE);
+    assert.equal(befunde.length, 0, "Nachts darf kein Ertragsalarm entstehen");
+  });
+
+  it("prüft die Nachtruhe wirklich gegen den Sonnenstand", () => {
+    // Gegenprobe: Zur selben Uhrzeit im Testaufbau steht die Sonne
+    // tatsächlich unter dem Horizont.
+    const hoehe = sonnenposition(nacht(), ANLAGE.breite, ANLAGE.laenge).hoehe;
+    assert.ok(hoehe < 0, `Sonnenhöhe ${hoehe.toFixed(1)} sollte negativ sein`);
+  });
+
+  it("meldet bei diffusem Licht keinen Minderertrag", () => {
+    // 80 W/m² an einem trüben Wintertag: Abweichungen sind hier normal
+    // und ohne Aussagekraft.
+    const truebe = reihe(mittag(), 20, () => ({
+      leistungKw: 1,
+      einstrahlung: 80,
+    }));
+
+    const befunde = werteRegelAus(regel("Minderertrag"), truebe, ANLAGE);
+    assert.equal(befunde.length, 0, "Unter der Mindesteinstrahlung keine Meldung");
+  });
+
+  it("meldet eine einzelne Wolke nicht", () => {
+    // Zwei Viertelstunden Einbruch, danach wieder normal. Bei einer
+    // Mindestdauer von zwei Stunden darf daraus nichts werden.
+    const mitWolke = reihe(mittag(), 20, (i) => ({
+      einstrahlung: 900,
+      leistungKw: i === 8 || i === 9 ? 20 : 75.6,
+    }));
+
+    const befunde = werteRegelAus(regel("Minderertrag"), mitWolke, ANLAGE);
+    assert.equal(befunde.length, 0, "Kurze Einbrüche sind keine Störung");
+  });
+
+  it("meldet nicht, wenn die Anlage normal läuft", () => {
+    const normal = reihe(mittag(), 40, () => ({
+      einstrahlung: 900,
+      leistungKw: 75.6,
+    }));
+
+    for (const art of [
+      "Nullertrag",
+      "Minderertrag",
+      "Wechselrichterstoerung",
+      "Kommunikation",
+    ]) {
+      const befunde = werteRegelAus(regel(art), normal, ANLAGE);
+      assert.equal(befunde.length, 0, `${art} hätte nicht melden dürfen`);
+    }
+  });
+});
+
+describe("Erkennung echter Störungen", () => {
+  it("meldet einen anhaltenden Nullertrag am Tag", () => {
+    const ausfall = reihe(mittag(), 20, () => ({
+      einstrahlung: 900,
+      leistungKw: 0,
+    }));
+
+    const befunde = werteRegelAus(regel("Nullertrag"), ausfall, ANLAGE);
+
+    assert.equal(befunde.length, 1, "Der Ausfall muss genau einmal gemeldet werden");
+    assert.equal(befunde[0].schweregrad, "Kritisch");
+    assert.ok(befunde[0].ausfallKwh > 300, `Ausfall ${befunde[0].ausfallKwh} kWh`);
+    assert.ok(befunde[0].sollWert > 70, "Der Erwartungswert muss benannt sein");
+  });
+
+  it("fasst zusammenhängende Intervalle zu einem Befund zusammen", () => {
+    // Fünf Stunden Ausfall ergeben einen Befund, nicht zwanzig.
+    const ausfall = reihe(mittag(), 20, () => ({
+      einstrahlung: 900,
+      leistungKw: 0,
+    }));
+
+    const befunde = werteRegelAus(regel("Nullertrag"), ausfall, ANLAGE);
+    assert.equal(befunde.length, 1);
+
+    const dauerMinuten =
+      (befunde[0].bis.getTime() - befunde[0].von.getTime()) / 60000;
+    assert.ok(dauerMinuten >= 270, `Dauer ${dauerMinuten} Minuten`);
+  });
+
+  it("meldet einen deutlichen Minderertrag", () => {
+    // 50 Prozent der erwarteten Leistung über mehrere Stunden.
+    const schwach = reihe(mittag(), 20, () => ({
+      einstrahlung: 900,
+      leistungKw: 37.8,
+    }));
+
+    const befunde = werteRegelAus(regel("Minderertrag"), schwach, ANLAGE);
+
+    assert.equal(befunde.length, 1);
+    assert.ok(
+      befunde[0].beschreibung.includes("Abweichung"),
+      "Die Meldung muss die Abweichung beziffern",
+    );
+  });
+
+  it("erkennt einen gestörten Wechselrichter und benennt ihn", () => {
+    const gestoert = reihe(mittag(), 10, () => ({
+      einstrahlung: 900,
+      leistungKw: 50,
+      wechselrichter: [
+        { id: "WR-1", bezeichnung: "WR 1", leistungKw: 25, zustand: "Normal" },
+        { id: "WR-2", bezeichnung: "WR 2", leistungKw: 25, zustand: "Normal" },
+        { id: "WR-3", bezeichnung: "WR 3", leistungKw: 0, zustand: "Stoerung" },
+      ],
+    }));
+
+    const befunde = werteRegelAus(regel("Wechselrichterstoerung"), gestoert, ANLAGE);
+
+    assert.equal(befunde.length, 1);
+    assert.equal(befunde[0].wechselrichterId, "WR-3");
+    assert.ok(
+      befunde[0].titel.includes("WR 3"),
+      `Titel "${befunde[0].titel}" muss den Wechselrichter benennen`,
+    );
+  });
+
+  it("erkennt einen schwachen Strang", () => {
+    const straenge = [
+      { strangId: "S1", bezeichnung: "Strang 1", mittelStrom: 8.0, leistungKwp: 10 },
+      { strangId: "S2", bezeichnung: "Strang 2", mittelStrom: 8.1, leistungKwp: 10 },
+      { strangId: "S3", bezeichnung: "Strang 3", mittelStrom: 7.9, leistungKwp: 10 },
+      { strangId: "S4", bezeichnung: "Strang 4", mittelStrom: 5.6, leistungKwp: 10 },
+    ];
+
+    const mitSchwachem = reihe(mittag(), 16, () => ({
+      einstrahlung: 900,
+      leistungKw: 70,
+      straenge,
+    }));
+
+    const befunde = werteRegelAus(regel("Strangabweichung"), mitSchwachem, ANLAGE);
+
+    assert.equal(befunde.length, 1);
+    assert.equal(befunde[0].strangId, "S4");
+    assert.ok(
+      befunde[0].beschreibung.includes("Verschattung"),
+      "Die Meldung sollte mögliche Ursachen nennen",
+    );
+  });
+
+  it("meldet einen Kommunikationsabbruch auch nachts", () => {
+    // Anders als Ertragsregeln gilt diese rund um die Uhr: Der Abbruch
+    // besteht unabhängig von der Tageszeit.
+    const stumm = reihe(nacht(), 20, () => ({
+      datenEmpfangen: false,
+    }));
+
+    const befunde = werteRegelAus(regel("Kommunikation"), stumm, ANLAGE);
+    assert.equal(befunde.length, 1, "Kommunikationsausfall gilt auch nachts");
+  });
+
+  it("meldet Übertemperatur am Wechselrichter", () => {
+    const heiss = reihe(mittag(), 8, () => ({
+      einstrahlung: 950,
+      leistungKw: 78,
+      wechselrichter: [
+        { id: "WR-1", bezeichnung: "WR 1", leistungKw: 78, zustand: "Normal", temperatur: 78 },
+      ],
+    }));
+
+    const befunde = werteRegelAus(regel("Temperatur"), heiss, ANLAGE);
+
+    assert.equal(befunde.length, 1);
+    assert.equal(befunde[0].schweregrad, "Niedrig");
+    assert.ok(befunde[0].istWert > 70);
+  });
+});
+
+describe("Abgrenzung und Zuordnung", () => {
+  it("trennt Befunde, wenn eine andere Komponente betroffen ist", () => {
+    // Erst ist WR 1 gestört, dann WR 2. Das sind zwei Vorgänge, nicht
+    // einer - sonst wäre der Befund nicht zuzuordnen.
+    const wechselnd = reihe(mittag(), 16, (i) => ({
+      einstrahlung: 900,
+      leistungKw: 40,
+      wechselrichter: [
+        {
+          id: "WR-1",
+          bezeichnung: "WR 1",
+          leistungKw: i < 8 ? 0 : 40,
+          zustand: i < 8 ? "Stoerung" : "Normal",
+        },
+        {
+          id: "WR-2",
+          bezeichnung: "WR 2",
+          leistungKw: i < 8 ? 40 : 0,
+          zustand: i < 8 ? "Normal" : "Stoerung",
+        },
+      ],
+    }));
+
+    const befunde = werteRegelAus(
+      regel("Wechselrichterstoerung", { dauerMinuten: 30 }),
+      wechselnd,
+      ANLAGE,
+    );
+
+    assert.equal(befunde.length, 2, "Zwei Komponenten, zwei Befunde");
+    assert.equal(befunde[0].wechselrichterId, "WR-1");
+    assert.equal(befunde[1].wechselrichterId, "WR-2");
+  });
+
+  it("beendet einen Befund, wenn die Störung endet", () => {
+    const zeitweise = reihe(mittag(), 24, (i) => ({
+      einstrahlung: 900,
+      // Erst vier Stunden Ausfall, dann wieder Normalbetrieb.
+      leistungKw: i < 16 ? 0 : 75.6,
+    }));
+
+    const befunde = werteRegelAus(regel("Nullertrag"), zeitweise, ANLAGE);
+
+    assert.equal(befunde.length, 1);
+    const dauer = (befunde[0].bis.getTime() - befunde[0].von.getTime()) / 60000;
+    assert.ok(
+      dauer < 240,
+      `Der Befund darf nicht über das Störungsende hinausreichen (${dauer} min)`,
+    );
+  });
+
+  it("schweigt bei abgeschalteter Regel", () => {
+    const ausfall = reihe(mittag(), 20, () => ({
+      einstrahlung: 900,
+      leistungKw: 0,
+    }));
+
+    const befunde = werteRegelAus(
+      regel("Nullertrag", { aktiv: false }),
+      ausfall,
+      ANLAGE,
+    );
+    assert.equal(befunde.length, 0);
+  });
+
+  it("kommt mit leerer Zeitreihe zurecht", () => {
+    assert.deepEqual(werteRegelAus(regel("Nullertrag"), [], ANLAGE), []);
+  });
+});
+
+describe("Standardregelwerk", () => {
+  it("prüft Ertragsregeln nur bei Tageslicht", () => {
+    for (const r of STANDARDREGELN) {
+      if (r.art === "Kommunikation") continue;
+      assert.equal(
+        r.nurTagsueber,
+        true,
+        `Regel "${r.bezeichnung}" muss an den Sonnenstand gebunden sein`,
+      );
+    }
+  });
+
+  it("gibt jeder Regel eine Mindestdauer", () => {
+    for (const r of STANDARDREGELN) {
+      assert.ok(
+        r.dauerMinuten >= 30,
+        `Regel "${r.bezeichnung}" braucht eine Mindestdauer gegen Fehlmeldungen`,
+      );
+    }
+  });
+
+  it("verwendet keine Kennung doppelt", () => {
+    const ids = STANDARDREGELN.map((r) => r.id);
+    assert.equal(new Set(ids).size, ids.length);
+  });
+});

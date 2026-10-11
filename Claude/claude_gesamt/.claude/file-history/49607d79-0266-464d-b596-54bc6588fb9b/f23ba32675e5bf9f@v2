@@ -1,0 +1,118 @@
+/**
+ * Globale Suche (Strg+K) - serverseitig.
+ *
+ * Gesucht wird laut CLAUDE.md Abschnitt 7.3 nach IP, MAC, Hostname,
+ * Seriennummer, Label, VLAN und Dose. Die Suche laeuft ueber die Felder,
+ * nicht ueber eine Volltextspalte, damit sie spaeter 1:1 als
+ * `netops.api.search.global_search` in Python entstehen kann.
+ */
+import { table } from '../db.js'
+
+/**
+ * Welche DocTypes mit welchen Feldern durchsucht werden.
+ * `title` und `subtitle` bestimmen die Darstellung im Suchfenster.
+ */
+const SUCHRAUM = [
+  {
+    doctype: 'Network Device',
+    fields: ['hostname', 'serial', 'asset_tag', 'management_ip', 'firmware'],
+    title: (d) => d.hostname,
+    subtitle: (d) => [d.device_role, d.management_ip].filter(Boolean).join(' · '),
+    context: (d) => ({ device: d.name }),
+  },
+  {
+    doctype: 'IP Address',
+    fields: ['address', 'dns_name'],
+    title: (d) => d.address,
+    subtitle: (d) => [d.dns_name, 'VRF ' + d.vrf].filter(Boolean).join(' · '),
+  },
+  {
+    doctype: 'Device Interface',
+    fields: ['mac_address', 'interface_name'],
+    title: (d) => d.device + ' · ' + d.interface_name,
+    subtitle: (d) => d.mac_address,
+    context: (d) => ({ device: d.device }),
+  },
+  {
+    doctype: 'VLAN',
+    fields: ['vid', 'vlan_name'],
+    title: (d) => 'VLAN ' + d.vid + ' · ' + d.vlan_name,
+    subtitle: (d) => d.description,
+  },
+  {
+    doctype: 'IP Prefix',
+    fields: ['prefix'],
+    title: (d) => d.prefix,
+    subtitle: (d) => [d.prefix_role, 'VRF ' + d.vrf].filter(Boolean).join(' · '),
+  },
+  {
+    doctype: 'Wall Outlet',
+    fields: ['outlet_label', 'room'],
+    title: (d) => d.outlet_label,
+    subtitle: (d) => d.room,
+  },
+  {
+    doctype: 'Cable',
+    fields: ['label'],
+    title: (d) => 'Kabel ' + d.label,
+    subtitle: (d) => d.a_endpoint + ' ↔ ' + d.b_endpoint,
+  },
+  {
+    doctype: 'Rack',
+    fields: ['rack_name'],
+    title: (d) => d.rack_name,
+    subtitle: (d) => d.site,
+  },
+  {
+    doctype: 'Site',
+    fields: ['site_name', 'address'],
+    title: (d) => d.site_name,
+    subtitle: (d) => d.site_kind,
+  },
+]
+
+/**
+ * @param {{ query: string, limit?: number, tenant?: string }} args
+ * @returns {Array<{doctype: string, name: string, title: string, subtitle: string, matched_field: string}>}
+ */
+export function global_search({ query, limit = 20, tenant = null } = {}) {
+  const suchtext = String(query || '').trim().toLowerCase()
+  if (suchtext.length < 2) return []
+
+  const treffer = []
+
+  for (const bereich of SUCHRAUM) {
+    for (const doc of table(bereich.doctype)) {
+      if (tenant && doc.tenant !== tenant) continue
+
+      const feld = bereich.fields.find((f) => {
+        const wert = doc[f]
+        return wert !== null && wert !== undefined && String(wert).toLowerCase().includes(suchtext)
+      })
+      if (!feld) continue
+
+      treffer.push({
+        doctype: bereich.doctype,
+        name: doc.name,
+        title: bereich.title(doc),
+        subtitle: bereich.subtitle(doc) || '',
+        matched_field: feld,
+        matched_value: String(doc[feld]),
+        tenant: doc.tenant,
+        // Zusatzbezuege, damit die Oberflaeche ohne eigene Nachfrage
+        // zum richtigen Objekt springen kann.
+        context: bereich.context ? bereich.context(doc) : {},
+        // Exakte Treffer und Treffer am Wortanfang zuerst.
+        rang: bewerte(String(doc[feld]).toLowerCase(), suchtext),
+      })
+    }
+  }
+
+  return treffer.sort((a, b) => a.rang - b.rang || a.title.localeCompare(b.title)).slice(0, limit)
+}
+
+function bewerte(wert, suchtext) {
+  if (wert === suchtext) return 0
+  if (wert.startsWith(suchtext)) return 1
+  return 2
+}

@@ -1,0 +1,198 @@
+<template>
+  <div>
+    <PageHeader title="Cloud & Zero Trust" :subtitle="untertitel" />
+
+    <div class="p-6">
+      <div v-if="cloud.data" class="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <StatCard
+          v-for="kachel in kacheln"
+          :key="kachel.label"
+          :label="kachel.label"
+          :wert="kachel.wert"
+          :hinweis="kachel.hinweis"
+          :level="kachel.level"
+        />
+      </div>
+
+      <section class="mb-8">
+        <h2 class="mb-3 text-base font-semibold text-ink-gray-8">Server</h2>
+        <DataTable
+          :columns="serverSpalten"
+          :rows="cloud.data?.servers || []"
+          :loading="cloud.loading"
+        >
+          <template #zelle-server_name="{ zeile }">
+            <span class="block font-medium text-ink-gray-9">{{ zeile.server_name }}</span>
+            <span class="block text-sm text-ink-gray-5">
+              {{ zeile.provider }} · {{ zeile.project }} · {{ zeile.location }}
+            </span>
+          </template>
+          <template #zelle-power_state="{ zeile }">
+            <StatusDot
+              :level="zeile.power_state === 'running' ? 'ok' : 'neutral'"
+              :text="zeile.power_state === 'running' ? 'läuft' : 'gestoppt'"
+              klein
+            />
+          </template>
+          <template #zelle-ssh_via_tunnel="{ zeile }">
+            <StatusDot
+              :level="zeile.ssh_via_tunnel ? 'ok' : 'critical'"
+              :text="zeile.ssh_via_tunnel ? 'über Tunnel' : 'direkt'"
+              klein
+            />
+          </template>
+          <template #zelle-cost_per_month="{ zeile }">{{ zeile.cost_per_month }} €</template>
+          <template #zelle-befund="{ zeile }">
+            <StatusDot v-if="!zeile.reasons.length" level="ok" text="in Ordnung" klein />
+            <ul v-else class="space-y-0.5">
+              <li v-for="grund in zeile.reasons" :key="grund" class="text-sm text-ink-gray-6">
+                {{ grund }}
+              </li>
+            </ul>
+          </template>
+        </DataTable>
+      </section>
+
+      <section class="mb-8">
+        <h2 class="mb-3 text-base font-semibold text-ink-gray-8">Zero-Trust-Anwendungen</h2>
+        <DataTable :columns="appSpalten" :rows="cloud.data?.applications || []">
+          <template #zelle-app_name="{ zeile }">
+            <span class="block font-medium text-ink-gray-9">{{ zeile.app_name }}</span>
+            <span class="block font-mono text-sm text-ink-gray-5">{{ zeile.hostname }}</span>
+          </template>
+          <template #zelle-tunnel_state="{ zeile }">
+            <StatusDot
+              :level="
+                zeile.tunnel_state === 'healthy'
+                  ? 'ok'
+                  : zeile.tunnel_state === 'down'
+                    ? 'critical'
+                    : 'warning'
+              "
+              :text="TUNNEL[zeile.tunnel_state] || zeile.tunnel_state"
+              klein
+            />
+          </template>
+          <template #zelle-requires_warp="{ zeile }">
+            <StatusDot
+              :level="zeile.requires_warp ? 'ok' : 'warning'"
+              :text="zeile.requires_warp ? 'Pflicht' : 'nicht verlangt'"
+              klein
+            />
+          </template>
+          <template #zelle-session_minutes="{ zeile }"> {{ zeile.session_minutes }} min </template>
+          <template #zelle-befund="{ zeile }">
+            <StatusDot v-if="!zeile.reasons.length" level="ok" text="in Ordnung" klein />
+            <ul v-else class="space-y-0.5">
+              <li v-for="grund in zeile.reasons" :key="grund" class="text-sm text-ink-gray-6">
+                {{ grund }}
+              </li>
+            </ul>
+          </template>
+        </DataTable>
+      </section>
+
+      <section>
+        <h2 class="mb-3 text-base font-semibold text-ink-gray-8">Cloud-Firewall</h2>
+        <DataTable :columns="regelSpalten" :rows="cloud.data?.firewall_rules || []">
+          <template #zelle-rule_name="{ zeile }">
+            <span class="block text-ink-gray-9">{{ zeile.rule_name }}</span>
+            <span class="block text-sm text-ink-gray-5">{{ zeile.applied_to }}</span>
+          </template>
+          <template #zelle-befund="{ zeile }">
+            <StatusDot
+              v-if="zeile.level === 'critical'"
+              level="critical"
+              text="Verwaltungsport aus dem Internet"
+              klein
+            />
+            <StatusDot v-else level="ok" text="erwartet" klein />
+          </template>
+        </DataTable>
+      </section>
+
+      <p class="mt-6 text-xs text-ink-gray-4">
+        Nach Fachkonzept 2.14 läuft SSH ausschließlich über den Cloudflare-Tunnel; Port 22 bleibt in
+        der Cloud-Firewall geschlossen. Ein Server ohne Tunnel oder mit offenem Verwaltungsport
+        widerspricht dem. Power-Aktionen (Einschalten, Herunterfahren, Snapshot) fehlen hier bewusst
+        – sie verlangen FIDO2-Step-up, Ticketbezug und Audit-Eintrag und damit ein Backend. Löschen
+        und Neuaufsetzen bleiben ohnehin in der Hetzner-Konsole.
+      </p>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed } from 'vue'
+import { createResource } from 'frappe-ui'
+import PageHeader from '@/components/PageHeader.vue'
+import DataTable from '@/components/DataTable.vue'
+import StatCard from '@/components/StatCard.vue'
+
+const TUNNEL = { healthy: 'verbunden', degraded: 'beeinträchtigt', down: 'getrennt' }
+
+const cloud = createResource({ url: 'netops.api.cloud.cloud_overview', auto: true })
+
+const serverSpalten = [
+  { key: 'server_name', label: 'Server', width: '240px' },
+  { key: 'server_type', label: 'Typ', muted: true, width: '90px' },
+  { key: 'power_state', label: 'Zustand', width: '120px' },
+  { key: 'ipv4', label: 'IPv4', numeric: true, width: '140px' },
+  { key: 'ssh_via_tunnel', label: 'SSH', width: '140px' },
+  { key: 'cost_per_month', label: 'Kosten/Monat', align: 'right', numeric: true, width: '130px' },
+  { key: 'befund', label: 'Befund' },
+]
+
+const appSpalten = [
+  { key: 'app_name', label: 'Anwendung', width: '260px' },
+  { key: 'app_kind', label: 'Art', muted: true, width: '80px' },
+  { key: 'tunnel_state', label: 'Tunnel', width: '150px' },
+  { key: 'policy', label: 'Richtlinie', width: '160px' },
+  { key: 'requires_warp', label: 'WARP', width: '150px' },
+  { key: 'session_minutes', label: 'Sitzung', align: 'right', numeric: true, width: '100px' },
+  { key: 'befund', label: 'Befund' },
+]
+
+const regelSpalten = [
+  { key: 'rule_name', label: 'Regel', width: '300px' },
+  { key: 'direction', label: 'Richtung', muted: true, width: '100px' },
+  { key: 'protocol', label: 'Protokoll', muted: true, width: '100px' },
+  { key: 'port', label: 'Port', numeric: true, width: '90px' },
+  { key: 'source_ips', label: 'Quelle', numeric: true, width: '150px' },
+  { key: 'befund', label: 'Befund' },
+]
+
+const kacheln = computed(() => {
+  const z = cloud.data?.summary
+  if (!z) return []
+  return [
+    { label: 'Server', wert: z.servers, level: 'ok', hinweis: z.running + ' laufen' },
+    {
+      label: 'Ohne Tunnel',
+      wert: z.without_tunnel,
+      level: 'critical',
+      hinweis: z.without_tunnel ? 'Zero Trust umgangen' : null,
+    },
+    {
+      label: 'Verwaltungsports offen',
+      wert: z.management_ports_open,
+      level: 'critical',
+      hinweis: z.management_ports_open ? 'sofort schließen' : null,
+    },
+    { label: 'Kosten pro Monat', wert: z.cost_per_month + ' €' },
+  ]
+})
+
+const untertitel = computed(() => {
+  const z = cloud.data?.summary
+  if (!z) return ''
+  return (
+    z.servers +
+    ' Server · ' +
+    z.with_findings +
+    ' mit Befund · ' +
+    z.tunnels_down +
+    ' Tunnel getrennt'
+  )
+})
+</script>

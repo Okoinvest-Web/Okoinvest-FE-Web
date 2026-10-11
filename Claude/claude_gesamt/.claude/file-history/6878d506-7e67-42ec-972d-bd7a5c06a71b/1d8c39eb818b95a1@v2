@@ -1,0 +1,106 @@
+import Link from "next/link";
+import { AlertTriangle, ArrowRight, CheckCircle2, Flame, Lightbulb, Snowflake, Sparkles, ThermometerSun } from "lucide-react";
+import type { DealHealth, Hint, LeadScore, Level } from "@/lib/insights";
+import { Card, CardHeader } from "@/components/ui";
+
+const GRADE = {
+  Heiß: { cls: "bg-rose-50 text-rose-700 ring-rose-200", icon: Flame, bar: "bg-rose-500" },
+  Warm: { cls: "bg-amber-50 text-amber-800 ring-amber-200", icon: ThermometerSun, bar: "bg-sun-400" },
+  Kalt: { cls: "bg-sky-50 text-sky-700 ring-sky-200", icon: Snowflake, bar: "bg-sky-300" },
+};
+
+export function ScoreBadge({ s, withValue = true }: { s: LeadScore; withValue?: boolean }) {
+  const g = GRADE[s.grade];
+  return (
+    <span title={s.reasons.join("\n")} className={`inline-flex cursor-help items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold ring-1 ring-inset ${g.cls}`}>
+      <g.icon className="size-3.5" />
+      {s.grade}
+      {withValue && <span className="font-medium opacity-70 tabular-nums">{s.score}</span>}
+    </span>
+  );
+}
+
+export function ScoreCard({ s }: { s: LeadScore }) {
+  const g = GRADE[s.grade];
+  return (
+    <Card>
+      <CardHeader title="Lead-Score" icon={Sparkles} sub="Automatisch aus Quelle, Stand und Aktivität" action={<ScoreBadge s={s} withValue={false} />} />
+      <div className="px-5 py-4">
+        <div className="flex items-end gap-2">
+          <span className="text-3xl font-semibold tabular-nums tracking-tight">{s.score}</span>
+          <span className="pb-1 text-sm text-gray-500">/ 100</span>
+        </div>
+        <div className="mt-2 h-2 overflow-hidden rounded-full bg-gray-100">
+          <div className={`h-full rounded-full ${g.bar}`} style={{ width: `${s.score}%` }} />
+        </div>
+        <ul className="mt-4 grid gap-1 text-xs text-gray-600">
+          {s.reasons.map((r) => (
+            <li key={r} className="flex gap-2">
+              <span className={`w-7 shrink-0 text-right font-semibold tabular-nums ${r.startsWith("−") ? "text-rose-600" : "text-brand-700"}`}>{r.split(" ")[0]}</span>
+              <span>{r.split(" ").slice(1).join(" ")}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </Card>
+  );
+}
+
+const LEVEL = {
+  risk: { icon: AlertTriangle, cls: "text-rose-600", bg: "bg-rose-50" },
+  warn: { icon: Lightbulb, cls: "text-amber-600", bg: "bg-amber-50" },
+  good: { icon: CheckCircle2, cls: "text-brand-600", bg: "bg-brand-50" },
+};
+
+export function HintList({ hints }: { hints: Hint[] }) {
+  return (
+    <ul className="divide-y divide-gray-100">
+      {hints.map((h) => {
+        const l = LEVEL[h.level];
+        return (
+          <li key={h.text} className="flex items-start gap-3 px-5 py-3">
+            <span className={`mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-md ${l.bg}`}>
+              <l.icon className={`size-3.5 ${l.cls}`} />
+            </span>
+            <span className="flex-1 text-gray-700">{h.text}</span>
+            {h.action && (
+              <Link href={h.action.href} className="inline-flex shrink-0 items-center gap-1 text-sm font-medium text-brand-700 hover:text-brand-800">
+                {h.action.label} <ArrowRight className="size-3.5" />
+              </Link>
+            )}
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+export function NextSteps({ hints, title = "Nächste beste Aktion" }: { hints: Hint[]; title?: string }) {
+  return (
+    <Card className="overflow-hidden">
+      <CardHeader title={title} icon={Sparkles} sub={hints.length ? `${hints.length} Empfehlungen` : "Alles im grünen Bereich"} />
+      {hints.length === 0 ? (
+        <div className="flex items-center gap-3 px-5 py-4 text-brand-700">
+          <CheckCircle2 className="size-5" /> Keine offenen Punkte – weiter so.
+        </div>
+      ) : (
+        <HintList hints={hints} />
+      )}
+    </Card>
+  );
+}
+
+const DOT: Record<Level, string> = { good: "bg-brand-500", warn: "bg-sun-400", risk: "bg-rose-500" };
+const HEALTH_LABEL: Record<Level, string> = { good: "Auf Kurs", warn: "Beobachten", risk: "Gefährdet" };
+
+export function HealthDot({ h }: { h: DealHealth }) {
+  return (
+    <span
+      title={`${HEALTH_LABEL[h.level]}${h.hints.length ? "\n• " + h.hints.map((x) => x.text).join("\n• ") : ""}`}
+      className="inline-flex cursor-help items-center gap-1.5 text-xs font-medium text-gray-600"
+    >
+      <span className={`size-2 rounded-full ${DOT[h.level]} ${h.level === "risk" ? "animate-pulse" : ""}`} />
+      {HEALTH_LABEL[h.level]}
+    </span>
+  );
+}

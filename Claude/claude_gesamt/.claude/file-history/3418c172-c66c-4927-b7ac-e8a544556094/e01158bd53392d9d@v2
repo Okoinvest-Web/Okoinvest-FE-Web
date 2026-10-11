@@ -1,0 +1,110 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { Mail, Phone } from "lucide-react";
+import { db } from "@/lib/data";
+import { date, money, PRIORITY_LABEL, STAGE_LABEL } from "@/lib/format";
+import { Avatar, Badge, Field, PageHeader } from "@/components/ui";
+import { LeadStatusSelect, ToDoCheck } from "@/components/interactive";
+
+export async function generateMetadata({ params }: PageProps<"/leads/[name]">) {
+  const lead = await db().getLead(decodeURIComponent((await params).name));
+  return { title: lead?.lead_name ?? "Lead" };
+}
+
+export default async function LeadPage({ params }: PageProps<"/leads/[name]">) {
+  const name = decodeURIComponent((await params).name);
+  const lead = await db().getLead(name);
+  if (!lead) notFound();
+
+  const [opps, todos] = await Promise.all([
+    db().listOpportunities({ filters: { party_name: lead.name } }),
+    db().listToDos({ filters: { reference_name: lead.name } }),
+  ]);
+
+  return (
+    <>
+      <PageHeader title={lead.lead_name} crumbs={[{ href: "/leads", label: "Leads" }]} actions={<LeadStatusSelect name={lead.name} status={lead.status} />} />
+      <div className="grid min-h-0 flex-1 lg:grid-cols-[1fr_360px]">
+        <div className="min-w-0 p-5">
+          <div className="flex items-center gap-4">
+            <Avatar name={lead.lead_name} size="lg" />
+            <div>
+              <h2 className="text-lg font-semibold">{lead.lead_name}</h2>
+              <p className="text-gray-500">{lead.company_name}</p>
+            </div>
+          </div>
+          <div className="mt-4 flex gap-2">
+            {lead.email_id && (
+              <a href={`mailto:${lead.email_id}`} className="inline-flex h-8 items-center gap-1.5 rounded-md border border-gray-200 px-3 hover:bg-gray-50">
+                <Mail className="size-4" /> E-Mail
+              </a>
+            )}
+            {lead.mobile_no && (
+              <a href={`tel:${lead.mobile_no.replace(/\s/g, "")}`} className="inline-flex h-8 items-center gap-1.5 rounded-md border border-gray-200 px-3 hover:bg-gray-50">
+                <Phone className="size-4" /> Anrufen
+              </a>
+            )}
+          </div>
+
+          {lead.notes && (
+            <section className="mt-6">
+              <h3 className="mb-2 font-medium">Notizen</h3>
+              <p className="rounded-md bg-gray-50 p-3 text-gray-700">{lead.notes}</p>
+            </section>
+          )}
+
+          <section className="mt-6">
+            <h3 className="mb-2 font-medium">Chancen</h3>
+            {opps.length === 0 ? (
+              <p className="text-gray-500">Noch keine Chance zu diesem Lead.</p>
+            ) : (
+              <ul className="divide-y divide-gray-100 rounded-md border border-gray-200">
+                {opps.map((o) => (
+                  <li key={o.name}>
+                    <Link href={`/opportunities/${encodeURIComponent(o.name)}`} className="flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50">
+                      <span className="font-medium">{o.title}</span>
+                      <span className="text-gray-500">{STAGE_LABEL[o.sales_stage]}</span>
+                      <span className="ml-auto tabular-nums">{money(o.opportunity_amount, o.currency)}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
+          <section className="mt-6">
+            <h3 className="mb-2 font-medium">Aufgaben</h3>
+            {todos.length === 0 ? (
+              <p className="text-gray-500">Keine Aufgaben.</p>
+            ) : (
+              <ul className="divide-y divide-gray-100 rounded-md border border-gray-200">
+                {todos.map((t) => (
+                  <li key={t.name} className="flex items-center gap-3 px-3 py-2.5">
+                    <ToDoCheck name={t.name} done={t.status === "Closed"} />
+                    <span className={`flex-1 ${t.status === "Closed" ? "text-gray-400 line-through" : ""}`}>{t.description}</span>
+                    <Badge value={t.priority} label={PRIORITY_LABEL[t.priority]} />
+                    <span className="text-xs text-gray-500">{date(t.date)}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        </div>
+
+        <aside className="border-l border-gray-200 p-5">
+          <h3 className="mb-2 font-medium">Details</h3>
+          <dl>
+            <Field label="ID">{lead.name}</Field>
+            <Field label="E-Mail">{lead.email_id}</Field>
+            <Field label="Mobil">{lead.mobile_no}</Field>
+            <Field label="Quelle">{lead.source}</Field>
+            <Field label="Gebiet">{lead.territory}</Field>
+            <Field label="Verantwortlich">{lead.lead_owner}</Field>
+            <Field label="Angelegt">{date(lead.creation)}</Field>
+            <Field label="Geändert">{date(lead.modified)}</Field>
+          </dl>
+        </aside>
+      </div>
+    </>
+  );
+}

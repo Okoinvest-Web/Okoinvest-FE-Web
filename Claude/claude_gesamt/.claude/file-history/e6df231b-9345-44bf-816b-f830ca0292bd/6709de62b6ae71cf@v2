@@ -1,0 +1,157 @@
+<script setup lang="ts">
+/**
+ * QR- und Barcode-Scanner (FA-084, Seriennummernerfassung).
+ *
+ * Nutzt die native `BarcodeDetector`-API — auf Android-Chrome, dem verbreiteten
+ * Baustellengerät, ist sie vorhanden und braucht keine Bibliothek. Fehlt sie
+ * (iOS Safari, Firefox), bleibt die manuelle Eingabe; ohne sie wäre der Dialog
+ * auf genau den Geräten nutzlos, auf denen man ihn am dringendsten braucht.
+ */
+import { onBeforeUnmount, onMounted, ref } from 'vue'
+
+import AppIcon from '@/components/AppIcon.vue'
+
+const props = withDefaults(
+  defineProps<{
+    /** Erwartete Codearten; QR für Anlagen, die übrigen für Seriennummern. */
+    formate?: string[]
+    hinweis?: string
+  }>(),
+  {
+    formate: () => ['qr_code', 'code_128', 'code_39', 'ean_13', 'data_matrix'],
+    hinweis: 'Code in den Rahmen halten',
+  },
+)
+
+const emit = defineEmits<{
+  (e: 'erkannt', wert: string): void
+  (e: 'abbrechen'): void
+}>()
+
+interface ErkannterCode {
+  rawValue: string
+}
+
+interface BarcodeDetectorTyp {
+  detect(quelle: CanvasImageSource): Promise<ErkannterCode[]>
+}
+
+type BarcodeDetectorKonstruktor = new (optionen?: { formats?: string[] }) => BarcodeDetectorTyp
+
+const video = ref<HTMLVideoElement | null>(null)
+const fehler = ref('')
+const scannerVerfuegbar = ref(false)
+const laeuft = ref(false)
+const manuell = ref('')
+
+let stream: MediaStream | null = null
+let animation = 0
+
+function detektorKlasse(): BarcodeDetectorKonstruktor | null {
+  const global = window as unknown as { BarcodeDetector?: BarcodeDetectorKonstruktor }
+  return global.BarcodeDetector ?? null
+}
+
+async function starten() {
+  const Detector = detektorKlasse()
+  scannerVerfuegbar.value = Boolean(Detector && navigator.mediaDevices?.getUserMedia)
+
+  if (!scannerVerfuegbar.value) {
+    fehler.value = 'Dieses Gerät kann keine Codes lesen — bitte die Nummer eintippen.'
+    return
+  }
+
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment' },
+      audio: false,
+    })
+    if (!video.value) return
+    video.value.srcObject = stream
+    await video.value.play()
+    laeuft.value = true
+
+    const detektor = new Detector!({ formats: props.formate })
+    const suchen = async () => {
+      if (!laeuft.value || !video.value) return
+      try {
+        const treffer = await detektor.detect(video.value)
+        const wert = treffer[0]?.rawValue?.trim()
+        if (wert) {
+          beenden()
+          emit('erkannt', wert)
+          return
+        }
+      } catch {
+        // Einzelne Frames dürfen scheitern (Fokus, Belichtung) — weitersuchen.
+      }
+      animation = requestAnimationFrame(() => void suchen())
+    }
+    void suchen()
+  } catch (ausnahme) {
+    const name = (ausnahme as DOMException)?.name
+    fehler.value =
+      name === 'NotAllowedError'
+        ? 'Kamerazugriff verweigert — bitte die Nummer eintippen.'
+        : `Kamera nicht verfügbar: ${(ausnahme as Error).message}`
+    scannerVerfuegbar.value = false
+  }
+}
+
+function beenden() {
+  laeuft.value = false
+  if (animation) cancelAnimationFrame(animation)
+  stream?.getTracks().forEach((spur) => spur.stop())
+  stream = null
+}
+
+function manuellUebernehmen() {
+  const wert = manuell.value.trim()
+  if (!wert) return
+  beenden()
+  emit('erkannt', wert)
+}
+
+onMounted(starten)
+onBeforeUnmount(beenden)
+</script>
+
+<template>
+  <div class="space-y-3">
+    <div v-if="scannerVerfuegbar" class="relative overflow-hidden rounded-xl bg-black">
+      <video ref="video" class="aspect-[4/3] w-full object-cover" playsinline muted />
+      <!-- Zielrahmen: gibt dem Benutzer einen Anhaltspunkt, wohin er halten soll -->
+      <div class="pointer-events-none absolute inset-0 flex items-center justify-center">
+        <div class="h-2/3 w-2/3 rounded-xl border-4 border-white/70" />
+      </div>
+      <p class="absolute inset-x-0 bottom-2 text-center text-xs text-white/80">{{ hinweis }}</p>
+    </div>
+
+    <p
+      v-if="fehler"
+      class="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:bg-amber-900/30 dark:text-amber-200"
+    >
+      {{ fehler }}
+    </p>
+
+    <div>
+      <label class="beschriftung" for="code-manuell">Manuell eingeben</label>
+      <div class="flex gap-2">
+        <input
+          id="code-manuell"
+          v-model="manuell"
+          class="feld flex-1"
+          autocomplete="off"
+          placeholder="Anlagennummer oder Seriennummer"
+          @keyup.enter="manuellUebernehmen"
+        />
+        <button class="knopf-primaer px-4" type="button" :disabled="!manuell.trim()"
+                @click="manuellUebernehmen">
+          <AppIcon name="check" :groesse="18" />
+        </button>
+      </div>
+    </div>
+
+    <button class="knopf-sekundaer w-full" type="button" @click="emit('abbrechen')">Abbrechen</button>
+  </div>
+</template>

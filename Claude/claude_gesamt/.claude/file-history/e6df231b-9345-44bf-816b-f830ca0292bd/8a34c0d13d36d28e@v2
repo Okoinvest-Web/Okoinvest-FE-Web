@@ -1,0 +1,128 @@
+"""Bedingte Sichtbarkeit (FA-015) — Spiegel zu `frontend/src/lib/bedingung.test.ts`.
+
+Client und Server muessen dieselben Pruefpunkte aus- und einblenden. Weicht eine
+Seite ab, fordert der Server beim Abschluss eine Angabe ein, die der Techniker
+nie gesehen hat — oder er laesst eine fehlende Pflichtangabe durch.
+"""
+
+from __future__ import annotations
+
+import pathlib
+import sys
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
+
+from oekovolt_baudoku.utils.bedingung import (
+    Bezugswert,
+    bedingung_lesen,
+    ist_sichtbar,
+)
+from oekovolt_baudoku.utils.plausibilitaet import ist_mangel_bewertung, schweregrad_code
+
+
+def bezug(werte: dict[str, Bezugswert]):
+    return lambda nummer: werte.get(nummer)
+
+
+WERTE = bezug({
+    "3.1": Bezugswert(text="Mangel schwer"),
+    "6.1": Bezugswert(zahl=12),
+    "2.4": Bezugswert(text="Reinigung empfohlen"),
+})
+
+
+# ------------------------------------------------------------- bedingung_lesen
+
+def test_liest_nummer_operator_und_wert():
+    bedingung = bedingung_lesen("3.1 == Mangel schwer")
+    assert bedingung is not None
+    assert (bedingung.nummer, bedingung.operator, bedingung.wert) == ("3.1", "==", "Mangel schwer")
+
+
+def test_kommt_ohne_leerzeichen_aus():
+    bedingung = bedingung_lesen("6.1>0")
+    assert bedingung is not None
+    assert (bedingung.nummer, bedingung.operator, bedingung.wert) == ("6.1", ">", "0")
+
+
+def test_erkennt_groesser_gleich_vor_groesser():
+    bedingung = bedingung_lesen("2.2 >= 5")
+    assert bedingung is not None
+    assert bedingung.operator == ">="
+
+
+def test_liefert_none_bei_unbrauchbarer_syntax():
+    assert bedingung_lesen("irgendwas") is None
+    assert bedingung_lesen("") is None
+    assert bedingung_lesen(None) is None
+
+
+# ---------------------------------------------------------------- ist_sichtbar
+
+def test_zeigt_pruefpunkte_ohne_bedingung():
+    assert ist_sichtbar(None, WERTE) is True
+    assert ist_sichtbar("   ", WERTE) is True
+
+
+def test_vergleicht_text_ohne_ruecksicht_auf_gross_und_kleinschreibung():
+    assert ist_sichtbar("3.1 == mangel schwer", WERTE) is True
+    assert ist_sichtbar("3.1 == Mangel leicht", WERTE) is False
+
+
+def test_wertet_ungleichheit_aus():
+    assert ist_sichtbar("2.4 != keine Reinigung noetig", WERTE) is True
+
+
+def test_vergleicht_zahlen():
+    assert ist_sichtbar("6.1 > 10", WERTE) is True
+    assert ist_sichtbar("6.1 > 20", WERTE) is False
+    assert ist_sichtbar("6.1 >= 12", WERTE) is True
+    assert ist_sichtbar("6.1 <= 11", WERTE) is False
+
+
+# Sicherheitsverhalten: lieber ein Pruefpunkt zu viel als ein fehlender Pflichtpunkt
+def test_zeigt_an_wenn_bezugspunkt_fehlt():
+    assert ist_sichtbar("9.9 == irgendwas", WERTE) is True
+
+
+def test_zeigt_an_wenn_bedingung_unlesbar_ist():
+    assert ist_sichtbar("kaputt", WERTE) is True
+
+
+def test_zeigt_an_wenn_sollwert_eines_zahlenvergleichs_keine_zahl_ist():
+    assert ist_sichtbar("6.1 > abc", WERTE) is True
+
+
+def test_blendet_aus_wenn_bezugspunkt_keine_zahl_traegt():
+    assert ist_sichtbar("3.1 > 5", WERTE) is False
+
+
+def test_zeigt_an_wenn_bezugswert_noch_leer_ist():
+    leer = bezug({"3.1": Bezugswert(text="")})
+    assert ist_sichtbar("3.1 != Mangel schwer", leer) is True
+
+
+def test_blendet_aus_solange_leerer_bezugswert_nicht_passt():
+    leer = bezug({"3.1": Bezugswert(text="")})
+    assert ist_sichtbar("3.1 == Mangel schwer", leer) is False
+
+
+# ------------------------------------------------------------ Schweregradlogik
+
+def test_schwere_maengel_werden_grad_a():
+    assert schweregrad_code("Mangel schwer") == "A"
+
+
+def test_leichte_maengel_werden_grad_c():
+    assert schweregrad_code("Mangel leicht") == "C"
+
+
+def test_b_ist_der_rueckfallwert():
+    assert schweregrad_code("Mangel") == "B"
+    assert schweregrad_code(None) == "B"
+
+
+def test_mangelbewertung_wird_erkannt():
+    assert ist_mangel_bewertung("Mangel leicht") is True
+    assert ist_mangel_bewertung("in Ordnung") is False
+    assert ist_mangel_bewertung(None) is False

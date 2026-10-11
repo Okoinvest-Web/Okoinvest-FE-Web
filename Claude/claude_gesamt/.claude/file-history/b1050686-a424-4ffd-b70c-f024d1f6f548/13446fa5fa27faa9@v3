@@ -1,0 +1,234 @@
+import type { Metadata } from "next";
+
+import { Balkendiagramm } from "@/components/diagramme/balken";
+import { Tabelle, Zeile, Zelle } from "@/components/tabelle";
+import {
+  Angabe,
+  Tafel,
+  Kennzahl,
+  LeerZustand,
+  Seitenkopf,
+  Status,
+} from "@/components/ui";
+import { CO2_FAKTOR_KG_PRO_KWH, imZeitraum, letzteTage, summiere } from "@/lib/auswertung";
+import { ENERGIE_FARBEN } from "@/lib/farben";
+import { formatCo2, formatDatum, formatEnergie, formatGeld, formatZahl } from "@/lib/format";
+import { hatRecht } from "@/lib/sicherheit/rollen";
+import { ladeErtraege, ladeVollmachten, ladeZertifikate } from "@/lib/portal-daten";
+import { requireRecht } from "@/lib/session";
+
+import { VollmachtFormular } from "./vollmacht-formular";
+
+export const metadata: Metadata = { title: "CO₂-Zertifikate" };
+
+/** Angenommener Marktpreis je Tonne - fuer die Hochrechnung. */
+const PREIS_JE_TONNE = 42;
+
+function zertifikatTon(status: string | undefined) {
+  switch (status) {
+    case "Verkauft":
+      return "gut" as const;
+    case "Zum Handel freigegeben":
+      return "hinweis" as const;
+    case "Zertifiziert":
+      return "gut" as const;
+    default:
+      return "neutral" as const;
+  }
+}
+
+export default async function ZertifikateSeite() {
+  const benutzer = await requireRecht("zertifikate.lesen");
+  const darfVollmacht = hatRecht([benutzer.rolle], "vollmacht.erteilen");
+
+  const [zertifikate, vollmachten, ertraege] = await Promise.all([
+    ladeZertifikate(),
+    ladeVollmachten(),
+    ladeErtraege(undefined, 400),
+  ]);
+
+  const jahr = letzteTage(365);
+  const summeJahr = summiere(ertraege.filter((e) => imZeitraum(e, jahr)));
+
+  const gesamtMenge = zertifikate.reduce((s, z) => s + (z.menge_t ?? 0), 0);
+  const verkauft = zertifikate
+    .filter((z) => z.status === "Verkauft")
+    .reduce((s, z) => s + (z.menge_t ?? 0), 0);
+  const handelbar = zertifikate
+    .filter((z) => z.status === "Zum Handel freigegeben")
+    .reduce((s, z) => s + (z.menge_t ?? 0), 0);
+
+  const co2Jahr = formatCo2(summeJahr.erzeugung * CO2_FAKTOR_KG_PRO_KWH);
+  const ertragJahr = formatEnergie(summeJahr.erzeugung);
+
+  const nachZeitraum = [...zertifikate]
+    .filter((z) => z.zeitraum_von)
+    .sort((a, b) => (a.zeitraum_von! < b.zeitraum_von! ? -1 : 1));
+
+  const vollmacht = vollmachten[0];
+
+  return (
+    <div className="space-y-6">
+      <Seitenkopf
+        titel="CO₂-Zertifikate"
+        hinweis="Zertifizierung und Vermarktung der vermiedenen Emissionen"
+      />
+
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Kennzahl
+          label="CO₂ vermieden"
+          wert={co2Jahr.wert}
+          einheit={co2Jahr.einheit}
+          hinweis={`aus ${ertragJahr.wert} ${ertragJahr.einheit} in 12 Monaten`}
+        />
+        <Kennzahl
+          label="Zertifiziert gesamt"
+          wert={formatZahl(gesamtMenge, 0)}
+          einheit="t"
+        />
+        <Kennzahl
+          label="Zum Handel freigegeben"
+          wert={formatZahl(handelbar, 0)}
+          einheit="t"
+          hinweis={`Marktwert rund ${formatGeld(handelbar * PREIS_JE_TONNE)}`}
+        />
+        <Kennzahl
+          label="Bereits verkauft"
+          wert={formatZahl(verkauft, 0)}
+          einheit="t"
+          hinweis={`Erlös rund ${formatGeld(verkauft * PREIS_JE_TONNE)}`}
+        />
+      </div>
+
+      <Tafel
+        titel="Vollmacht zur Vermarktung"
+        hinweis="Wer in Ihrem Namen Zertifikate handeln darf"
+      >
+        {vollmacht ? (
+          <div className="space-y-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <dl className="min-w-[16rem] flex-1 space-y-2">
+                <Angabe label="Bevollmächtigter">
+                  {vollmacht.bevollmaechtigter}
+                </Angabe>
+                <Angabe label="Zweck">{vollmacht.zweck ?? "–"}</Angabe>
+                <Angabe label="Erteilt am">
+                  {formatDatum(vollmacht.erteilt_am)}
+                </Angabe>
+                <Angabe label="Gültig bis">
+                  {formatDatum(vollmacht.gueltig_bis)}
+                </Angabe>
+                <Angabe label="Unterzeichner">
+                  {vollmacht.unterzeichner ?? "–"}
+                </Angabe>
+              </dl>
+              <Status ton={vollmacht.status === "Erteilt" ? "gut" : "neutral"}>
+                {vollmacht.status ?? "–"}
+              </Status>
+            </div>
+
+            <p className="rounded-lg bg-slate-50 px-3 py-2.5 text-xs leading-relaxed text-slate-600 dark:bg-slate-800/50 dark:text-slate-300">
+              <strong className="font-medium">Umfang:</strong>{" "}
+              {vollmacht.umfang}
+            </p>
+
+            <VollmachtFormular
+              vollmacht={vollmacht.name}
+              bevollmaechtigter={vollmacht.bevollmaechtigter}
+              erteilt={vollmacht.status === "Erteilt"}
+              darfAendern={darfVollmacht}
+            />
+          </div>
+        ) : (
+          <LeerZustand
+            text="Es besteht derzeit keine Vollmacht zur Vermarktung."
+            hinweis="Ohne Vollmacht können Zertifikate nur selbst gehandelt werden."
+          />
+        )}
+      </Tafel>
+
+      <Tafel
+        titel="Zertifizierte Mengen je Quartal"
+        hinweis="Grundlage ist die erzeugte Energie und der österreichische Strommix"
+      >
+        <Balkendiagramm
+          beschriftungen={nachZeitraum.map((z) => {
+            const monat = Number(z.zeitraum_von!.slice(5, 7));
+            return `Q${Math.ceil(monat / 3)}/${z.zeitraum_von!.slice(2, 4)}`;
+          })}
+          einheit="t"
+          hoehe={200}
+          reihen={[
+            {
+              schluessel: "menge",
+              label: "Zertifizierte Menge",
+              farbe: ENERGIE_FARBEN.eigenverbrauch,
+              werte: nachZeitraum.map((z) => z.menge_t ?? 0),
+            },
+          ]}
+        />
+      </Tafel>
+
+      <Tafel titel="Zertifikate">
+        <Tabelle
+          spalten={[{ titel: "Zeitraum" }, { titel: "Zertifikatsnummer" }, { titel: "Erzeugung", zahl: true }, { titel: "Menge", zahl: true }, { titel: "Marktwert", zahl: true }, { titel: "Status" }]}
+        >
+          {[...zertifikate]
+            .sort((a, b) => (a.zeitraum_von! < b.zeitraum_von! ? 1 : -1))
+            .map((zertifikat) => {
+              const erzeugung = formatEnergie(zertifikat.erzeugung_kwh ?? 0);
+
+              return (
+                <Zeile key={zertifikat.name}>
+                  <Zelle>
+                    <span className="font-medium">
+                      {formatDatum(zertifikat.zeitraum_von)} –{" "}
+                      {formatDatum(zertifikat.zeitraum_bis)}
+                    </span>
+                    {zertifikat.registriert_am && (
+                      <span className="block text-xs text-slate-500 dark:text-slate-400">
+                        registriert am {formatDatum(zertifikat.registriert_am)}
+                      </span>
+                    )}
+                  </Zelle>
+                  <Zelle leise>
+                    <span className="font-mono text-xs">
+                      {zertifikat.zertifikatsnummer ?? "noch nicht vergeben"}
+                    </span>
+                  </Zelle>
+                  <Zelle zahl>
+                    {erzeugung.wert}
+                    <span className="text-xs text-slate-400">
+                      {" "}
+                      {erzeugung.einheit}
+                    </span>
+                  </Zelle>
+                  <Zelle zahl>
+                    {formatZahl(zertifikat.menge_t, 0)}
+                    <span className="text-xs text-slate-400"> t</span>
+                  </Zelle>
+                  <Zelle zahl>
+                    {formatGeld((zertifikat.menge_t ?? 0) * PREIS_JE_TONNE)}
+                  </Zelle>
+                  <Zelle>
+                    <Status ton={zertifikatTon(zertifikat.status)}>
+                      {zertifikat.status ?? "–"}
+                    </Status>
+                  </Zelle>
+                </Zeile>
+              );
+            })}
+        </Tabelle>
+
+        <p className="mt-4 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+          Die Umrechnung erfolgt mit {CO2_FAKTOR_KG_PRO_KWH} kg CO₂ je kWh
+          – dem Emissionsfaktor des österreichischen Strommixes. Er liegt
+          deutlich unter dem deutschen, weil Wasserkraft einen großen Anteil
+          trägt. Der angesetzte Marktwert von{" "}
+          {formatGeld(PREIS_JE_TONNE)} je Tonne ist ein Richtwert; der
+          tatsächliche Erlös ergibt sich aus dem Abschluss.
+        </p>
+      </Tafel>
+    </div>
+  );
+}

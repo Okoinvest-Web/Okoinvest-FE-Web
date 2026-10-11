@@ -1,0 +1,330 @@
+import os, re
+from docx import Document
+from docx.shared import Pt, RGBColor, Cm
+from docx.oxml.ns import qn
+from docx.oxml import OxmlElement
+from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill, Alignment
+from openpyxl.worksheet.datavalidation import DataValidation
+
+ROOT = r"C:\Users\SALEADMIN\Desktop\Presse"
+MV = os.path.join(ROOT, "6_Medienversand")
+os.makedirs(MV, exist_ok=True)
+GREEN = RGBColor(0x1F, 0x4E, 0x3D)
+BLUE = RGBColor(0x1F, 0x3A, 0x5F)
+GREY = RGBColor(0x5F, 0x5F, 0x5F)
+RED = RGBColor(0xB0, 0x00, 0x00)
+PH = RGBColor(0xC0, 0x00, 0x00)
+WHITE = RGBColor(0xFF, 0xFF, 0xFF)
+LINK = "[Link zur Faktenseite]"
+
+
+def add(p, text, bold=False, size=None, color=None, italic=False):
+    for part in re.split(r"(\[[^\]]+\])", text):
+        if not part:
+            continue
+        r = p.add_run(part)
+        r.bold, r.italic = bold, italic
+        if size:
+            r.font.size = Pt(size)
+        if part.startswith("["):
+            r.font.color.rgb, r.bold = PH, True
+        elif color:
+            r.font.color.rgb = color
+    return p
+
+
+def shade(c, hexcolor):
+    tcPr = c._tc.get_or_add_tcPr()
+    sh = OxmlElement("w:shd")
+    sh.set(qn("w:val"), "clear")
+    sh.set(qn("w:fill"), hexcolor)
+    tcPr.append(sh)
+
+
+def new_doc():
+    d = Document()
+    s = d.sections[0]
+    s.left_margin = s.right_margin = Cm(2.0)
+    s.top_margin = s.bottom_margin = Cm(1.6)
+    n = d.styles["Normal"]
+    n.font.name = "Calibri"
+    n.font.size = Pt(10.5)
+    n.paragraph_format.space_after = Pt(4)
+    return d
+
+
+def h(d, t, size=13, color=GREEN, before=10):
+    p = add(d.add_paragraph(), t, bold=True, size=size, color=color)
+    p.paragraph_format.space_before = Pt(before)
+    p.paragraph_format.keep_with_next = True
+
+
+def mailbox(d, betreff, text, color):
+    t = d.add_table(rows=2, cols=1)
+    t.style = "Table Grid"
+    c0, c1 = t.rows[0].cells[0], t.rows[1].cells[0]
+    shade(c0, "E9EEF0")
+    c0.paragraphs[0].text = ""
+    add(c0.paragraphs[0], "Betreff: ", bold=True, color=color, size=10)
+    add(c0.paragraphs[0], betreff, bold=True, size=10)
+    c1.paragraphs[0].text = ""
+    for i, line in enumerate(text.strip("\n").split("\n")):
+        p = c1.paragraphs[0] if i == 0 else c1.add_paragraph()
+        add(p, line, size=10)
+        p.paragraph_format.space_after = Pt(1)
+    d.add_paragraph()
+
+
+def table(d, header, rows, widths, color="1F4E3D", size=9.5):
+    t = d.add_table(rows=len(rows) + 1, cols=len(header))
+    t.style = "Table Grid"
+    for j, hd in enumerate(header):
+        c = t.rows[0].cells[j]
+        c.paragraphs[0].text = ""
+        add(c.paragraphs[0], hd, bold=True, size=size, color=WHITE)
+        shade(c, color)
+    for i, r in enumerate(rows, start=1):
+        for j, txt in enumerate(r):
+            c = t.rows[i].cells[j]
+            c.paragraphs[0].text = ""
+            add(c.paragraphs[0], txt, size=size, bold=(j == 0))
+            if i % 2 == 0:
+                shade(c, "EEF3F1")
+    for row in t.rows:
+        for j, w in enumerate(widths):
+            row.cells[j].width = Cm(w)
+    d.add_paragraph()
+
+
+SIG_AT = "Mit freundlichen Grüßen\n[Name]\n[Funktion], Ökovolt Solartechnik GmbH\n[Telefon] · [E-Mail]"
+SIG_DE = "Mit freundlichen Grüßen\n[Name]\n[Funktion], ÖKOVOLT GmbH Solartechnik, Türkheim\n[Telefon] · [E-Mail]"
+
+# =====================================================================
+# 1) MAILVORLAGEN
+# =====================================================================
+d = new_doc()
+add(d.add_paragraph(), "INTERN – Vorlagen, jede Mail einzeln und persönlich versenden", bold=True, size=9, color=RED)
+add(d.add_paragraph(), "Mailvorlagen für Journalistinnen und Journalisten", bold=True, size=20, color=GREEN)
+add(d.add_paragraph(), "Österreich und Deutschland – zugeschnitten auf das jeweilige Medium", italic=True, size=11, color=GREY)
+
+h(d, "Regeln für den Versand")
+for r in [
+    "Jede Mail einzeln an eine Person – nie mehrere Empfänger im An- oder Cc-Feld, keine Massenmail.",
+    "Persönliche Anrede und ein Bezug auf den eigenen Bericht des Journalisten in der ersten Zeile.",
+    "Kein Anhang – nur der Link zur Faktenseite. Unterlagen erst auf Nachfrage schicken.",
+    "Versand vom Postfach der sprechenden Person, nicht von info@ oder presse@.",
+    "Hintergrund-Mails (Vorab mit Sperrfrist) nur an 3–4 Journalisten, die zugesagt haben, die Sperrfrist einzuhalten.",
+    "Nachfassen höchstens einmal, nach 2–3 Tagen, nur bei fehlender Reaktion.",
+    "Keine Aussagen über Beschuldigte, keine Namen von Mitarbeitern, nichts aus Vergleichsgesprächen.",
+]:
+    add(d.add_paragraph(style="List Bullet"), r)
+
+h(d, "A) Vorab-Mail mit Sperrfrist (Tag −2 bis −1)", size=14)
+mailbox(d, "Vertraulich vorab, Sperrfrist [Datum, 9:00 Uhr]: Belege zur Salzburg AG / Hofer-Auftrag",
+f"""Sehr geehrte/r [Name],
+
+danke für das Gespräch [am Datum]. Wie besprochen schicke ich Ihnen vorab den Link zu unserer Seite, die am [Datum] um 9:00 Uhr online geht. Bitte behandeln Sie den Inhalt bis dahin vertraulich.
+
+{LINK}
+
+Das Wichtigste in Kürze:
+– Am 18.10.2021 beteiligte sich die Salzburg AG an Ökovolt, mit dem vertraglichen Ziel, Wettbewerb zu vermeiden. Am selben Tag gründete sie die eigene Tochter one2zero.
+– Eine E-Mail der Salzburg-AG-Seite vom 10.06.2021: „Es ist das vereinbarte Ziel … Ökovolt als Errichtungspartner bevorzugt einzusetzen.“ Den Hofer-Bau bekam die eigene Tochter.
+– Das OLG München hat die Salzburg AG in drei Verfahren abgewiesen und ihr Vorgehen als „treuwidrig“ gewertet.
+
+Urteile, Registerauszüge und E-Mails stelle ich Ihnen gern vollständig zur Verfügung.
+
+{SIG_AT}""", GREEN)
+
+h(d, "B) Österreich – Starttag, 9:15 Uhr", size=14)
+AT = [
+    ("ORF Salzburg (TV/Radio/Online)", "Nach Ihrem Bericht zur Salzburg AG: die Belege, öffentlich einsehbar",
+     "Sie haben am 24.09. in „Salzburg heute“ bzw. auf salzburg.ORF.at über die Ermittlungen der WKStA gegen die Salzburg AG berichtet. Wir haben heute alle Belege öffentlich gemacht – mit Original-E-Mails, Urteilen und Registerdaten.",
+     "Für einen Dreh stehen wir gern zur Verfügung – auf einer unserer Baustellen oder in Ostermiething, mit Geschäftsführung und Team."),
+    ("Salzburger Nachrichten", "Salzburg AG / one2zero: Gründung am Tag der Partnerschaft – die Dokumente",
+     "Die SN haben am 24.09. über den Konflikt zwischen der Salzburg AG und Ökovolt berichtet. Wir legen heute die Dokumente offen, auf die sich unsere Position stützt.",
+     "Besonders relevant für Salzburg: Die Salzburg AG gehört zu knapp drei Vierteln Land und Stadt. Seit 21.09. haben die Eigentümer alle Unterlagen – eine Antwort steht aus."),
+    ("Der Standard", "Salzburg AG: „vereinbartes Ziel … Ökovolt bevorzugt einzusetzen“ – E-Mails und Urteile",
+     "Sie haben über die Ermittlungen der WKStA wegen des Photovoltaik-Auftrags berichtet. Wir haben heute die zugrundeliegenden Dokumente öffentlich gemacht.",
+     "Für eine vertiefte Recherche stellen wir Ihnen gern die vollständigen Urteile des OLG München und die Korrespondenz zur Verfügung."),
+    ("Oberösterreichische Nachrichten", "Innviertler Betrieb gegen Salzburger Landesversorger: die Belege",
+     "Sie haben am 25.09. über die Ermittlungen gegen die Salzburg AG berichtet. Ökovolt hat seinen Sitz in Ostermiething – wir haben heute alle Belege öffentlich gemacht.",
+     "Für Oberösterreich relevant: Die Energie AG Oberösterreich hält 26 % an der Salzburg AG und ist seit 21.09. über alle Vorgänge informiert."),
+    ("Krone Salzburg / OÖ", "30 Monteure gegen einen Landeskonzern: Was Ökovolt heute offenlegt",
+     "Die Salzburg AG sagt, die Vorwürfe hätten keine Grundlage. Wir zeigen heute die Grundlage: E-Mails, Urteile, Registerdaten.",
+     "Gern kommen Sie auf eine Baustelle – unsere Monteurinnen und Monteure erzählen Ihnen, wie es sich anfühlt, einem Partner vertraut zu haben."),
+    ("Salzburg24 / MeinBezirk", "Salzburg AG: Die Dokumente zum Hofer-Auftrag sind jetzt öffentlich",
+     "Sie haben am 25.09. über die schweren Vorwürfe gegen die Salzburg AG berichtet. Ab heute sind alle Belege auf einer Seite nachzulesen.",
+     "Bilder und Grafiken (Zeitstrahl, E-Mail-Ausschnitte) stellen wir Ihnen gern zur Verfügung."),
+]
+for medium, betreff, einstieg, zusatz in AT:
+    h(d, medium, size=11.5)
+    mailbox(d, betreff, f"""Sehr geehrte/r [Name],
+
+{einstieg}
+
+{LINK}
+
+Sie finden dort unter anderem:
+– die E-Mail der Salzburg-AG-Seite vom Juni 2021: „vereinbarte Ziel … Ökovolt als Errichtungspartner bevorzugt einzusetzen“,
+– die Gründung der eigenen Tochter one2zero am Tag der Partnerschaft mit Ökovolt,
+– die Urteile des OLG München, das das Vorgehen der Salzburg AG als „treuwidrig“ wertet.
+
+{zusatz}
+
+{SIG_AT}""", GREEN)
+
+h(d, "C) Deutschland – Starttag der deutschen Welle D1", size=14, color=BLUE)
+DE = [
+    ("Allgäuer Zeitung / Mindelheimer Zeitung", "Türkheimer Solarunternehmen setzt sich vor dem OLG München gegen österreichischen Landesversorger durch",
+     "ein Familienunternehmen aus dem Unterallgäu hat vor dem Oberlandesgericht München dreimal gegen die Salzburg AG gewonnen, einen Energieversorger im Eigentum von Land und Stadt Salzburg.",
+     "Gern laden wir Sie nach Türkheim ein – zu einem Gespräch mit Geschäftsführung und Team."),
+    ("BR – BR24 / Schwaben", "Unterallgäu gegen Staatskonzern: Hauptverhandlung in Memmingen am [Datum]",
+     "das Landgericht Memmingen verhandelt am [Datum] über die Anteile eines österreichischen Landesversorgers an einem Allgäuer Solarunternehmen. Das OLG München hat die Salzburg AG zuvor in drei Eilverfahren abgewiesen.",
+     "Für einen Dreh vor Ort oder O-Töne vor dem Landgericht stehen wir zur Verfügung."),
+    ("Süddeutsche Zeitung (Bayern/Wirtschaft)", "Partner auf dem Papier: Wie ein österreichischer Staatskonzern am Tag der Beteiligung seine eigene Konkurrenz gründete",
+     "am 18.10.2021 stieg die Salzburg AG bei der ÖKOVOLT GmbH Solartechnik in Türkheim ein – mit dem vertraglichen Ziel, Wettbewerb zu vermeiden. Am selben Tag gründete sie ihre eigene Photovoltaik-Tochter.",
+     "Die vollständigen Urteile und den Auszug aus dem Syndikatsvertrag stellen wir Ihnen für die Recherche gern zur Verfügung."),
+    ("Handelsblatt / FAZ / WirtschaftsWoche", "Governance-Fall: Staatlich kontrollierter Versorger unterliegt Mittelständler vor dem OLG München",
+     "ein öffentlicher Energieversorger aus Österreich hat vor dem OLG München drei Verfahren gegen seine eigene Beteiligung verloren; das Gericht wertete sein Vorgehen als „treuwidrig“.",
+     "Der Fall zeigt, was Mittelständler bei strategischen Investoren aus der öffentlichen Hand beachten sollten."),
+    ("JUVE / Legal Tribune Online", "OLG München (14 U 3746/25 u. a.): Salzburg AG scheitert mit Eilanträgen gegen Einziehung",
+     "der 14. Zivilsenat des OLG München hat am 21.05.2026 drei Berufungen der Salzburg AG zurückgewiesen und am 18.06.2026 ihre Anhörungsrügen verworfen – die angeblich übergangenen Schriftsätze lagen der Akte nicht vor.",
+     "Die Entscheidungen stellen wir Ihnen in anonymisierter Form zur Verfügung."),
+    ("pv magazine / energate", "Was Solar-Mittelständler aus dem Fall ÖKOVOLT ./. Salzburg AG lernen können",
+     "ein Solarunternehmen aus dem Unterallgäu hat erlebt, was bei der Beteiligung eines öffentlichen Versorgers schiefgehen kann – und vor dem OLG München recht bekommen.",
+     "Gern stellen wir unsere drei Lehren für Mittelständler als Gastbeitrag zur Verfügung."),
+]
+for medium, betreff, einstieg, zusatz in DE:
+    h(d, medium, size=11.5, color=BLUE)
+    mailbox(d, betreff, f"""Sehr geehrte/r [Name],
+
+{einstieg}
+
+Alle Belege finden Sie hier: [Link zur Faktenseite]
+
+{zusatz}
+
+{SIG_DE}""", BLUE)
+
+h(d, "D) Nachfassen (2–3 Tage später, einmalig)", size=14)
+mailbox(d, "Kurze Nachfrage: Salzburg AG / Ökovolt",
+"""Sehr geehrte/r [Name],
+
+ich wollte kurz nachfragen, ob Sie meine Nachricht vom [Datum] erreicht hat. Seither hat sich [Neuigkeit, z. B.: noch immer keine Antwort der Eigentümer / eine neue Entscheidung] ergeben.
+
+Wenn Sie Unterlagen oder ein Gespräch wünschen, melden Sie sich gern jederzeit.
+
+[Name] · [Telefon]""", GREEN)
+d.save(os.path.join(MV, "Mailvorlagen_Journalisten_AT_DE.docx"))
+
+# =====================================================================
+# 2) VERTEILER (Excel)
+# =====================================================================
+wb = Workbook()
+ws = wb.active
+ws.title = "Verteiler"
+cols = ["Land", "Medium", "Ressort", "Vorname", "Nachname", "E-Mail", "Telefon", "Hat bereits berichtet (Datum/Titel)",
+        "Welle", "Art (Vorab/Start/Nachfassen)", "Gesendet am", "Reaktion", "Nächster Schritt", "Notizen"]
+ws.append(cols)
+seed = [("AT", "ORF Salzburg", "Chronik/Wirtschaft"), ("AT", "ORF ZIB", "Innenpolitik/Wirtschaft"),
+        ("AT", "Salzburger Nachrichten", "Wirtschaft"), ("AT", "Salzburger Nachrichten", "Lokales"),
+        ("AT", "Der Standard", "Wirtschaft"), ("AT", "Oberösterreichische Nachrichten", "Wirtschaft"),
+        ("AT", "Krone Salzburg", "Lokales"), ("AT", "Krone OÖ", "Lokales"), ("AT", "Salzburg24", "News"),
+        ("AT", "MeinBezirk Flachgau/Braunau", "Regional"), ("AT", "profil", "Investigativ"), ("AT", "Kurier", "Wirtschaft"),
+        ("AT", "APA", "Wirtschaft"),
+        ("DE", "Allgäuer Zeitung", "Lokales Unterallgäu"), ("DE", "Mindelheimer Zeitung", "Lokales"),
+        ("DE", "Augsburger Allgemeine", "Wirtschaft Bayern"), ("DE", "BR24 / BR Schwaben", "Regional"),
+        ("DE", "dpa Landesdienst Bayern", "Wirtschaft"), ("DE", "Süddeutsche Zeitung", "Bayern/Wirtschaft"),
+        ("DE", "Handelsblatt", "Unternehmen"), ("DE", "JUVE", "Gesellschaftsrecht"), ("DE", "Legal Tribune Online", "Recht"),
+        ("DE", "pv magazine", "Branche"), ("DE", "energate messenger", "Branche")]
+for land, med, res in seed:
+    ws.append([land, med, res] + [""] * (len(cols) - 3))
+hdr_fill = PatternFill("solid", fgColor="1F4E3D")
+for c in ws[1]:
+    c.font = Font(bold=True, color="FFFFFF")
+    c.fill = hdr_fill
+    c.alignment = Alignment(wrap_text=True, vertical="center")
+widths = [6, 28, 22, 14, 16, 30, 16, 34, 8, 20, 13, 30, 24, 30]
+for i, w in enumerate(widths, start=1):
+    ws.column_dimensions[ws.cell(row=1, column=i).column_letter].width = w
+ws.freeze_panes = "C2"
+ws.auto_filter.ref = ws.dimensions
+dv1 = DataValidation(type="list", formula1='"Vorab,Start,Nachfassen"', allow_blank=True)
+dv2 = DataValidation(type="list", formula1='"1,1b,2,2b,3,4,5,6,7,D1,D2,D3,D4,D5"', allow_blank=True)
+dv3 = DataValidation(type="list", formula1='"keine,Rückfrage,Interesse,Bericht erschienen,Absage"', allow_blank=True)
+ws.add_data_validation(dv1); ws.add_data_validation(dv2); ws.add_data_validation(dv3)
+dv1.add("J2:J300"); dv2.add("I2:I300"); dv3.add("L2:L300")
+ws2 = wb.create_sheet("Hinweise")
+for r in ["Diese Liste ist intern und enthält personenbezogene Daten – nur Ökovolt und Anwalt.",
+          "Kontakte nur aus öffentlichen Impressen/Redaktionsseiten oder aus persönlichem Kontakt eintragen.",
+          "Jede Mail einzeln versenden. Spalte 'Gesendet am' und 'Reaktion' sofort pflegen.",
+          "Wer um Löschung bittet, wird sofort gelöscht (DSGVO)."]:
+    ws2.append([r])
+ws2.column_dimensions["A"].width = 110
+wb.save(os.path.join(MV, "Verteiler_Medien_VORLAGE.xlsx"))
+
+# =====================================================================
+# 3) ÜBERSICHT + STARTCHECKLISTE
+# =====================================================================
+d = new_doc()
+add(d.add_paragraph(), "INTERN – VERTRAULICH", bold=True, size=9, color=RED)
+add(d.add_paragraph(), "Kampagnenpaket Ökovolt – Übersicht und Startcheckliste", bold=True, size=20, color=GREEN)
+add(d.add_paragraph(), "Was wo liegt, was noch fehlt und was an welchem Tag passiert", italic=True, size=11, color=GREY)
+
+h(d, "1. Was in diesem Ordner liegt")
+table(d, ["Ordner", "Inhalt", "Für wen"], [
+    ("1_Oesterreich_Wellen", "Presseaussendungen Welle 1, 1b, 2, 2b, 3, 4, 5; Reserven 6 (Hinweisgeber) und 7 (Prüfung abgelehnt)", "Versand über APA-OTS / Mail"),
+    ("2_Deutschland_Wellen", "Pressemitteilungen D1–D4, D5a (Termin), D5b/D5c (Vorlagen je nach Urteil)", "Versand Deutschland"),
+    ("3_Strategie_INTERN", "Kampagnenplan, Medienstrategie-Playbook, Medienplan Deutschland, Antworten auf Journalistenfragen", "nur intern + Anwalt"),
+    ("4_Social_Media", "Posts je Welle (LinkedIn, Facebook, Instagram, X), Reel-Drehbücher, Kommentar-Antworten", "Social-Media-Betreuung"),
+    ("5_Website", "Faktenseite fakten.html mit Bildern (img) und Videoordner (video)", "Webentwickler"),
+    ("6_Medienversand", "Mailvorlagen je Medium (AT/DE), Verteiler-Vorlage (Excel)", "Sprecher / Presse"),
+    ("9_Archiv_NICHT_VERWENDEN", "veraltete Entwürfe, Erhebungsbericht", "nicht verwenden"),
+], [4.2, 9.5, 3.8])
+
+h(d, "2. Was vor dem Start noch fehlt")
+table(d, ["Nr.", "Offener Punkt", "Wo", "Erledigt"], [
+    ("1", "Sprecher/in festlegen (Name, Funktion) – einheitlich mit ORF-Bericht", "alle Aussendungen, Website, Mails", "☐"),
+    ("2", "Kontaktdaten (Telefon, E-Mail) eintragen", "alle Dokumente", "☐"),
+    ("3", "Firmenbuchauszug one2zero mit historischen Daten (Gründung, GF seit Gründung)", "Website, Welle 1", "☐"),
+    ("4", "Beschluss Firmenbuchgericht (GZ, Datum) zur Aussetzung der Eintragung", "Website, Welle 2", "☐"),
+    ("5", "GV-Protokoll 10.10.2025: TOP und Abstimmung zu den blockierten Ansprüchen", "Welle 2", "☐"),
+    ("6", "Termin Hauptverhandlung LG Memmingen prüfen (12.12.2026 ist ein Samstag)", "Website, D1–D5", "☐"),
+    ("7", "Datum der WKStA-Sachverhaltsdarstellung", "Website", "☐"),
+    ("8", "Verluste one2zero lt. Jahresabschlüssen im Firmenbuch", "Website-Rechner, Welle 4", "☐"),
+    ("9", "Wortlaut Anwaltsschreiben März 2025 („ausdrücklich untersagt“, Beilage ./18) bestätigen", "Website (Welle 5)", "☐"),
+    ("10", "Link zur Stellungnahme der Salzburg AG", "Website", "☐"),
+    ("11", "Kennzahlen der deutschen GmbH (Gründung, Mitarbeiter)", "D1–D5", "☐"),
+    ("12", "Anwaltliche Freigabe: Welle 1, 1b, Faktenseite (inkl. E-Mail-Ausschnitte)", "—", "☐"),
+    ("13", "Schriftliche Nutzungserlaubnis ORF für Videos", "Website-Videothek", "☐"),
+    ("14", "Freigaben Zentralbetriebsrat + betroffene Mitarbeiter schriftlich ablegen", "Welle 6", "☐"),
+], [1.0, 9.8, 4.5, 1.8])
+
+h(d, "3. Startablauf")
+table(d, ["Wann", "Was", "Wer"], [
+    ("bis 30.09.", "Frist der Eigentümer abwarten; Ergebnis Aufsichtsratssitzung 25.09. in Erfahrung bringen", "GF"),
+    ("Tag −3", "Offene Punkte 1–12 abschließen; Anwalt gibt frei", "GF, Anwalt"),
+    ("Tag −2 / −1", "Hintergrundgespräche mit 3–4 Journalisten; Vorab-Mail mit Sperrfrist (Vorlage A)", "Sprecher/in"),
+    ("Tag −1", "Faktenseite technisch fertig (Welle-1-Stand, spätere Abschnitte ausgeblendet); Handy-Test", "Webentwickler"),
+    ("Tag 0, 9:00", "Faktenseite online + Welle 1 über APA-OTS", "Presse"),
+    ("Tag 0, 9:15", "Persönliche Mails an Medien (Vorlagen B), Verteiler pflegen", "Sprecher/in"),
+    ("Tag 0, 9:00–18:00", "Social Media nach Rhythmus (X, LinkedIn, Facebook, Instagram)", "Social Media"),
+    ("Tag 0–2", "Sprecher erreichbar; Anwalt erreichbar für Reaktion der Salzburg AG", "Sprecher/in, Anwalt"),
+    ("Tag 2–3", "Welle 1b; Nachfassen (Vorlage D)", "Presse"),
+    ("Tag 5–8", "Welle 2 (ideal um den 10.10.); danach Welle 2b", "Presse"),
+    ("laufend", "Antwortstatus auf der Website am selben Tag aktualisieren; Änderungsverlauf ergänzen", "Webentwickler"),
+    ("Woche 2–5", "Wellen 3, 4, 5 gemäß Kampagnenplan; Deutschland D1–D4 parallel", "Presse"),
+    ("bei Gesprächsbereitschaft", "Keine weiteren Wellen; Vergleich nur über Anwälte; Reserven bleiben in der Schublade", "GF, Anwalt"),
+], [3.4, 11.0, 3.0])
+
+h(d, "4. Die fünf Regeln, die immer gelten")
+for r in ["Jede Aussage belegt. Was nicht belegt ist, wird nicht gesagt.",
+          "Keine Namen von Beschuldigten oder Mitarbeitern – Kritik richtet sich an Entscheidungen der Salzburg AG.",
+          "Nie Kampagne, Veröffentlichung oder Anzeige mit Geld oder Verhandlung verknüpfen (Nötigungs-/Erpressungsfalle).",
+          "Vergleichsgespräche nur über Anwälte, getrennt von der Öffentlichkeitsarbeit.",
+          "Die Tür bleibt offen: unabhängige Prüfung durch einen neutralen Sachverständigen."]:
+    add(d.add_paragraph(style="List Number"), r, bold=True)
+d.save(os.path.join(ROOT, "0_UEBERSICHT_und_Startcheckliste.docx"))
+print("ok")

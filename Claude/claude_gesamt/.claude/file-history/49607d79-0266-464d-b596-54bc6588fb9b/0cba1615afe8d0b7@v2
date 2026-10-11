@@ -1,0 +1,107 @@
+<template>
+  <div>
+    <PageHeader title="Alarme" :subtitle="untertitel">
+      <template #actions>
+        <FormControl v-model="zustand" type="select" :options="zustandOptionen" />
+        <FormControl v-model="schweregrad" type="select" :options="gradOptionen" />
+      </template>
+    </PageHeader>
+
+    <div class="p-6">
+      <DataTable
+        :columns="spalten"
+        :rows="alarme.data || []"
+        :loading="alarme.loading"
+        empty-text="Kein Alarm mit diesem Filter."
+      >
+        <template #zelle-severity="{ zeile }">
+          <StatusDot :level="gradStufe(zeile.severity)" :text="GRAD[zeile.severity] || zeile.severity" />
+        </template>
+        <template #zelle-title="{ zeile }">
+          <span class="font-medium text-ink-gray-9">{{ zeile.title }}</span>
+          <span v-if="zeile.mitre_technique" class="ml-2 text-sm text-ink-gray-5">
+            {{ zeile.mitre_technique }}
+          </span>
+        </template>
+        <template #zelle-object_name="{ zeile }">
+          <RouterLink
+            v-if="zeile.object_type === 'Network Device'"
+            :to="'/devices/' + zeile.object_name"
+            class="text-ink-gray-8 underline decoration-outline-gray-3 underline-offset-2"
+          >
+            {{ zeile.object_name }}
+          </RouterLink>
+          <span v-else>{{ zeile.object_name }}</span>
+        </template>
+        <template #zelle-alert_state="{ zeile }">
+          <Badge :theme="zeile.alert_state === 'new' ? 'orange' : zeile.alert_state === 'ack' ? 'blue' : 'gray'">
+            {{ ZUSTAND[zeile.alert_state] || zeile.alert_state }}
+          </Badge>
+        </template>
+      </DataTable>
+
+      <p class="mt-3 text-xs text-ink-gray-4">
+        Quellen laut Fachkonzept 2.8: Wazuh, CrowdSec, Zabbix, GravityZone,
+        Zenarmor, PMG und IRONSCALES. Die Anbindung erfolgt über die Konnektoren –
+        hier stehen Testdaten.
+      </p>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed, ref, watch } from 'vue'
+import { Badge, FormControl, createResource } from 'frappe-ui'
+import PageHeader from '@/components/PageHeader.vue'
+import DataTable from '@/components/DataTable.vue'
+import StatusDot from '@/components/StatusDot.vue'
+
+const GRAD = { critical: 'Kritisch', high: 'Hoch', medium: 'Mittel', low: 'Niedrig' }
+const ZUSTAND = { new: 'Neu', ack: 'Angenommen', closed: 'Geschlossen' }
+
+const zustand = ref('')
+const schweregrad = ref('')
+
+const alarme = createResource({
+  url: 'netops.api.ops.alert_list',
+  makeParams: () => ({ state: zustand.value || null, severity: schweregrad.value || null }),
+  auto: true,
+})
+
+watch([zustand, schweregrad], () => alarme.fetch())
+
+const zustandOptionen = [
+  { label: 'Alle Zustände', value: '' },
+  { label: 'Neu', value: 'new' },
+  { label: 'Angenommen', value: 'ack' },
+  { label: 'Geschlossen', value: 'closed' },
+]
+
+const gradOptionen = [
+  { label: 'Alle Schweregrade', value: '' },
+  { label: 'Kritisch', value: 'critical' },
+  { label: 'Hoch', value: 'high' },
+  { label: 'Mittel', value: 'medium' },
+  { label: 'Niedrig', value: 'low' },
+]
+
+const spalten = [
+  { key: 'severity', label: 'Schweregrad', width: '140px' },
+  { key: 'title', label: 'Alarm' },
+  { key: 'source', label: 'Quelle', muted: true, width: '120px' },
+  { key: 'object_name', label: 'Objekt', width: '160px' },
+  { key: 'occurrences', label: 'Anzahl', align: 'right', numeric: true, width: '90px' },
+  { key: 'last_seen', label: 'Zuletzt', muted: true, numeric: true, width: '170px' },
+  { key: 'alert_state', label: 'Zustand', width: '130px' },
+]
+
+const untertitel = computed(() => {
+  const liste = alarme.data || []
+  const offen = liste.filter((a) => a.alert_state !== 'closed').length
+  return liste.length + ' Alarme · ' + offen + ' offen'
+})
+
+function gradStufe(grad) {
+  return { critical: 'critical', high: 'serious', medium: 'warning', low: 'neutral' }[grad] || 'neutral'
+}
+</script>

@@ -1,0 +1,132 @@
+/**
+ * Endgueltige Suche.
+ *
+ * Die Farbtoene sind fuer hell und dunkel GLEICH - nur so bleibt eine
+ * Serie in beiden Darstellungen wiedererkennbar. Variiert werden je
+ * Modus nur Helligkeit und Buntheit.
+ *
+ * Das dunkle Band ist mit L 0.48-0.67 deutlich enger als das helle.
+ * Fuenf Serien darin zu trennen gelingt nur, wenn die Farbtoene
+ * annaehernd gleichmaessig ueber den Farbkreis verteilt sind.
+ */
+import { validate } from "file:///C:/Users/SALEAD~1/AppData/Local/Temp/claude/bundled-skills/2.1.270/49d628d1d9a56340540cbfbb3ca64951/dataviz/scripts/validate_palette.js";
+import { oklchToHex } from "./palette.mjs";
+
+const NAMEN = [
+  "erzeugung",
+  "eigenverbrauch",
+  "einspeisung",
+  "netzbezug",
+  "speicher",
+];
+
+// Kandidaten je Slot, ungefaehr gleichmaessig verteilt und semantisch passend.
+const HUE_KANDIDATEN = [
+  [50, 58, 66, 74], // Bernstein
+  [125, 135, 145, 155], // Gruen
+  [190, 200, 210, 220], // Cyan-Blau
+  [258, 266, 274, 282], // Blau-Violett
+  [318, 326, 334, 342], // Magenta
+];
+
+const L_HELL = [0.5, 0.54, 0.58, 0.62, 0.66, 0.7, 0.74];
+const L_DUNKEL = [0.5, 0.54, 0.58, 0.62, 0.66];
+const C_WERTE = [0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.22];
+
+const OBERFLAECHE = { light: "#fcfcfb", dark: "#1a1a19" };
+
+function punkte(hex, modus) {
+  const r = validate(hex, { mode: modus, surface: OBERFLAECHE[modus] });
+  let fail = 0;
+  let warn = 0;
+  for (const [, status] of r.report) {
+    if (status === false || status === "fail") fail++;
+    else if (status === "warn" || status === "relief" || status === "floor")
+      warn++;
+  }
+  return { fail, warn, r };
+}
+
+/** Beste L/C-Kombination fuer einen gegebenen Farbton-Satz und Modus. */
+function optimiereModus(hues, modus, lWerte) {
+  let zustand = hues.map(() => ({ L: lWerte[Math.floor(lWerte.length / 2)], C: 0.14 }));
+  const alsHex = (z) => z.map((s, i) => oklchToHex(s.L, s.C, hues[i]));
+  let beste = punkte(alsHex(zustand), modus);
+
+  for (let runde = 0; runde < 8; runde++) {
+    let verbessert = false;
+    for (let i = 0; i < hues.length; i++) {
+      for (const L of lWerte) {
+        for (const C of C_WERTE) {
+          const kandidat = zustand.map((s, idx) => (idx === i ? { L, C } : s));
+          const e = punkte(alsHex(kandidat), modus);
+          if (
+            e.fail < beste.fail ||
+            (e.fail === beste.fail && e.warn < beste.warn)
+          ) {
+            zustand[i] = { L, C };
+            beste = e;
+            verbessert = true;
+          }
+        }
+      }
+    }
+    if (!verbessert) break;
+  }
+  return { zustand, hex: alsHex(zustand), bewertung: beste };
+}
+
+// Farbtoene gemeinsam waehlen: bewertet wird die Summe beider Modi.
+let hues = HUE_KANDIDATEN.map((k) => k[1]);
+let besteGesamt = null;
+
+for (let runde = 0; runde < 4; runde++) {
+  let verbessert = false;
+
+  for (let i = 0; i < NAMEN.length; i++) {
+    for (const hue of HUE_KANDIDATEN[i]) {
+      const kandidatHues = hues.map((h, idx) => (idx === i ? hue : h));
+
+      const hell = optimiereModus(kandidatHues, "light", L_HELL);
+      const dunkel = optimiereModus(kandidatHues, "dark", L_DUNKEL);
+
+      const fail = hell.bewertung.fail + dunkel.bewertung.fail;
+      const warn = hell.bewertung.warn + dunkel.bewertung.warn;
+
+      if (
+        !besteGesamt ||
+        fail < besteGesamt.fail ||
+        (fail === besteGesamt.fail && warn < besteGesamt.warn)
+      ) {
+        besteGesamt = { fail, warn, hues: kandidatHues, hell, dunkel };
+        hues = kandidatHues;
+        verbessert = true;
+      }
+    }
+  }
+  if (!verbessert) break;
+}
+
+const { hell, dunkel } = besteGesamt;
+
+console.log("\n================ ERGEBNIS ================");
+console.log(`harte Fehler: ${besteGesamt.fail}   Warnungen: ${besteGesamt.warn}\n`);
+
+NAMEN.forEach((name, i) => {
+  const h = besteGesamt.hues[i];
+  console.log(
+    `${name.padEnd(16)} hue ${String(h).padStart(3)}  ` +
+      `hell oklch(${hell.zustand[i].L} ${hell.zustand[i].C} ${h}) ${hell.hex[i]}   ` +
+      `dunkel oklch(${dunkel.zustand[i].L} ${dunkel.zustand[i].C} ${h}) ${dunkel.hex[i]}`,
+  );
+});
+
+for (const [modus, ergebnis] of [
+  ["HELL", hell],
+  ["DUNKEL", dunkel],
+]) {
+  console.log(`\n--- ${modus} ---  ${ergebnis.hex.join(",")}`);
+  for (const zeile of ergebnis.bewertung.r.report) {
+    console.log("   " + JSON.stringify(zeile));
+  }
+}

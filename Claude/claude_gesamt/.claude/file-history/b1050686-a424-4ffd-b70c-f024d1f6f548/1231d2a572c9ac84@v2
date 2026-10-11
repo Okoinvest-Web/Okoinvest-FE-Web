@@ -1,0 +1,275 @@
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+
+import {
+  bewerteVorgang,
+  fasseKarteZusammen,
+  sachbezug,
+  type Ladetarif,
+  type Ladevorgang,
+} from "./tarif.ts";
+
+/**
+ * Aus diesen Zahlen entstehen Rechnungen an Mitarbeiter und
+ * Kostenumlagen an Abteilungen. Ein Rundungsfehler fällt hier nicht
+ * auf, sondern erst beim Jahresabschluss.
+ */
+
+const STANDARD: Ladetarif = {
+  id: "TAR-0001",
+  bezeichnung: "Standard",
+  ctKwh: 42,
+  ctKwhPv: 24,
+  ctMinute: 0,
+  blockingAbMinute: 60,
+  ctMinuteBlocking: 10,
+  blockingHoechstEur: 12,
+  ustSatz: 20,
+};
+
+/** 1. Juli 2025, Ortszeit. */
+function zeit(stunde: number, minute = 0): Date {
+  return new Date(2025, 6, 1, stunde, minute, 0, 0);
+}
+
+describe("bewerteVorgang", () => {
+  it("rechnet einen einfachen Vorgang nach Arbeitspreis ab", () => {
+    const v: Ladevorgang = {
+      id: "LV-1",
+      beginn: zeit(8),
+      ladeende: zeit(10),
+      ende: zeit(10),
+      energieKwh: 20,
+      pvKwh: 0,
+    };
+
+    const b = bewerteVorgang(v, { ...STANDARD, ctKwhPv: null });
+
+    // 20 kWh zu 42 Cent = 8,40 Euro.
+    assert.equal(b.arbeitEur, 8.4);
+    assert.equal(b.zeitEur, 0);
+    assert.equal(b.blockingEur, 0);
+    assert.equal(b.nettoEur, 8.4);
+    assert.equal(b.ustEur, 1.68);
+    assert.equal(b.bruttoEur, 10.08);
+    assert.equal(b.mittlereLeistungKw, 10);
+  });
+
+  it("bewertet den PV-Anteil zum ermäßigten Satz", () => {
+    const b = bewerteVorgang(
+      {
+        id: "LV-2",
+        beginn: zeit(11),
+        ladeende: zeit(13),
+        ende: zeit(13),
+        energieKwh: 20,
+        pvKwh: 15,
+      },
+      STANDARD,
+    );
+
+    // 5 kWh Netz zu 42 ct = 2,10; 15 kWh PV zu 24 ct = 3,60.
+    assert.equal(b.netzKwh, 5);
+    assert.equal(b.pvKwh, 15);
+    assert.equal(b.arbeitEur, 5.7);
+  });
+
+  it("verrechnet nie mehr PV-Anteil als überhaupt geladen wurde", () => {
+    // So eine Zuordnung kann aus einer groben Viertelstundenrechnung
+    // entstehen. Sie darf niemandem einen Rabatt auf Energie geben,
+    // die nie geflossen ist.
+    const b = bewerteVorgang(
+      {
+        id: "LV-3",
+        beginn: zeit(11),
+        ende: zeit(12),
+        energieKwh: 10,
+        pvKwh: 14,
+      },
+      STANDARD,
+    );
+
+    assert.equal(b.pvKwh, 10);
+    assert.equal(b.netzKwh, 0);
+    assert.equal(b.arbeitEur, 2.4);
+  });
+
+  it("berechnet die Standgebühr erst nach der Karenzzeit", () => {
+    // Geladen bis 10:00, abgesteckt um 12:00. Zwei Stunden Standzeit,
+    // davon 60 Minuten frei, 60 Minuten zu 10 Cent = 6 Euro.
+    const b = bewerteVorgang(
+      {
+        id: "LV-4",
+        beginn: zeit(8),
+        ladeende: zeit(10),
+        ende: zeit(12),
+        energieKwh: 20,
+      },
+      STANDARD,
+    );
+
+    assert.equal(b.blockingMinuten, 60);
+    assert.equal(b.blockingEur, 6);
+  });
+
+  it("erhebt innerhalb der Karenzzeit keine Standgebühr", () => {
+    const b = bewerteVorgang(
+      {
+        id: "LV-5",
+        beginn: zeit(8),
+        ladeende: zeit(10),
+        ende: zeit(10, 45),
+        energieKwh: 20,
+      },
+      STANDARD,
+    );
+
+    assert.equal(b.blockingMinuten, 0);
+    assert.equal(b.blockingEur, 0);
+  });
+
+  it("begrenzt die Standgebühr auf den Höchstbetrag", () => {
+    // Über Nacht stehen geblieben: ohne Deckel wären es über 70 Euro.
+    const b = bewerteVorgang(
+      {
+        id: "LV-6",
+        beginn: zeit(16),
+        ladeende: zeit(18),
+        ende: new Date(2025, 6, 2, 8, 0),
+        energieKwh: 30,
+      },
+      STANDARD,
+    );
+
+    assert.ok(b.blockingMinuten > 700);
+    assert.equal(b.blockingEur, 12);
+  });
+
+  it("erhebt ohne bekanntes Ladeende keine Standgebühr", () => {
+    // Ältere Ladepunkte melden nur Beginn und Ende der Belegung. Dann
+    // ist nicht feststellbar, ab wann das Fahrzeug nur noch stand.
+    const b = bewerteVorgang(
+      {
+        id: "LV-7",
+        beginn: zeit(8),
+        ende: zeit(18),
+        energieKwh: 20,
+      },
+      STANDARD,
+    );
+
+    assert.equal(b.blockingMinuten, 0);
+    assert.equal(b.blockingEur, 0);
+  });
+
+  it("rechnet einen Zeitpreis über die gesamte Belegung", () => {
+    const b = bewerteVorgang(
+      {
+        id: "LV-8",
+        beginn: zeit(8),
+        ladeende: zeit(9),
+        ende: zeit(10),
+        energieKwh: 10,
+      },
+      {
+        ...STANDARD,
+        ctKwh: 0,
+        ctKwhPv: null,
+        ctMinute: 5,
+        blockingAbMinute: null,
+      },
+    );
+
+    // 120 Minuten zu 5 Cent.
+    assert.equal(b.zeitEur, 6);
+    assert.equal(b.arbeitEur, 0);
+  });
+
+  it("kommt mit einem laufenden Vorgang ohne Ende zurecht", () => {
+    const b = bewerteVorgang(
+      { id: "LV-9", beginn: zeit(8), ende: null, energieKwh: 4 },
+      STANDARD,
+    );
+
+    assert.equal(b.dauerMinuten, 0);
+    assert.equal(b.arbeitEur, 1.68);
+    assert.equal(b.mittlereLeistungKw, 0);
+  });
+
+  it("bleibt bei negativen Eingaben bei null", () => {
+    const b = bewerteVorgang(
+      {
+        id: "LV-10",
+        beginn: zeit(10),
+        ende: zeit(8),
+        energieKwh: -5,
+        pvKwh: -2,
+      },
+      STANDARD,
+    );
+
+    assert.equal(b.dauerMinuten, 0);
+    assert.equal(b.energieKwh, 0);
+    assert.equal(b.pvKwh, 0);
+    assert.equal(b.nettoEur, 0);
+  });
+});
+
+describe("fasseKarteZusammen", () => {
+  it("rechnet die Steuer auf die Summe, nicht je Vorgang", () => {
+    // Drei Vorgänge, deren Einzelsteuern sich aufgerundet von der
+    // Steuer auf die Summe unterscheiden würden.
+    const vorgaenge = [7.77, 3.33, 1.11].map((netto, i) => ({
+      vorgangId: `LV-${i}`,
+      dauerMinuten: 60,
+      ladedauerMinuten: 60,
+      blockingMinuten: 0,
+      energieKwh: 10,
+      pvKwh: 0,
+      netzKwh: 10,
+      arbeitEur: netto,
+      zeitEur: 0,
+      blockingEur: 0,
+      nettoEur: netto,
+      ustEur: Math.round(netto * 20) / 100,
+      bruttoEur: 0,
+      mittlereLeistungKw: 10,
+    }));
+
+    const zeile = fasseKarteZusammen(
+      "KTE-1",
+      "Vertrieb",
+      vorgaenge,
+      STANDARD,
+    );
+
+    assert.equal(zeile.anzahlVorgaenge, 3);
+    assert.equal(zeile.nettoEur, 12.21);
+    // 20 Prozent von 12,21 sind 2,442 -> 2,44.
+    assert.equal(zeile.ustEur, 2.44);
+    assert.equal(zeile.bruttoEur, 14.65);
+    assert.equal(zeile.energieKwh, 30);
+  });
+
+  it("schlägt den Grundpreis auf das Netto, vor der Steuer", () => {
+    const zeile = fasseKarteZusammen("KTE-2", "Fuhrpark", [], STANDARD, 4.9);
+
+    assert.equal(zeile.anzahlVorgaenge, 0);
+    assert.equal(zeile.grundpreisEur, 4.9);
+    assert.equal(zeile.nettoEur, 4.9);
+    assert.equal(zeile.ustEur, 0.98);
+    assert.equal(zeile.bruttoEur, 5.88);
+  });
+});
+
+describe("sachbezug", () => {
+  it("bewertet geladene Energie mit dem hinterlegten Satz", () => {
+    assert.equal(sachbezug(100, 22.5), 22.5);
+  });
+
+  it("bleibt ohne hinterlegten Satz bei null", () => {
+    assert.equal(sachbezug(100, null), 0);
+    assert.equal(sachbezug(100, 0), 0);
+    assert.equal(sachbezug(0, 22.5), 0);
+  });
+});

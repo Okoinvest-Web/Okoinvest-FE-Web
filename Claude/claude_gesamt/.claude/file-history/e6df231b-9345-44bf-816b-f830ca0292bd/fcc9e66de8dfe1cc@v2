@@ -1,0 +1,149 @@
+<script setup lang="ts">
+/**
+ * Digitale Unterschrift per Touch/Stift (FA-040, NFA-045).
+ *
+ * Zeichnet auf einem Canvas in Geräteauflösung und liefert eine PNG-Data-URL.
+ * Die Metadaten (Zeitstempel, IP, Gerät) ergänzt der Server beim Speichern.
+ */
+import { onBeforeUnmount, onMounted, ref } from 'vue'
+
+import AppIcon from '@/components/AppIcon.vue'
+
+const props = withDefaults(
+  defineProps<{ rolle: string; name?: string; hoehe?: number }>(),
+  { name: '', hoehe: 180 },
+)
+
+const emit = defineEmits<{
+  (e: 'bestaetigt', nutzlast: { signatur: string; name_unterzeichner: string }): void
+  (e: 'abbrechen'): void
+}>()
+
+const flaeche = ref<HTMLCanvasElement | null>(null)
+const unterzeichner = ref(props.name)
+const hatStriche = ref(false)
+let kontext: CanvasRenderingContext2D | null = null
+let zeichnet = false
+
+function groesseSetzen() {
+  const canvas = flaeche.value
+  if (!canvas) return
+  const verhaeltnis = window.devicePixelRatio || 1
+  const breite = canvas.clientWidth
+  canvas.width = breite * verhaeltnis
+  canvas.height = props.hoehe * verhaeltnis
+
+  kontext = canvas.getContext('2d')
+  if (!kontext) return
+  kontext.scale(verhaeltnis, verhaeltnis)
+  kontext.lineWidth = 2.4
+  kontext.lineCap = 'round'
+  kontext.lineJoin = 'round'
+  kontext.strokeStyle = '#0f172a'
+}
+
+function punkt(ereignis: PointerEvent) {
+  const rechteck = flaeche.value!.getBoundingClientRect()
+  return { x: ereignis.clientX - rechteck.left, y: ereignis.clientY - rechteck.top }
+}
+
+function start(ereignis: PointerEvent) {
+  if (!kontext) return
+  zeichnet = true
+  hatStriche.value = true
+  flaeche.value?.setPointerCapture(ereignis.pointerId)
+  const { x, y } = punkt(ereignis)
+  kontext.beginPath()
+  kontext.moveTo(x, y)
+}
+
+function ziehen(ereignis: PointerEvent) {
+  if (!zeichnet || !kontext) return
+  ereignis.preventDefault()
+  const { x, y } = punkt(ereignis)
+  kontext.lineTo(x, y)
+  kontext.stroke()
+}
+
+function ende(ereignis: PointerEvent) {
+  zeichnet = false
+  flaeche.value?.releasePointerCapture?.(ereignis.pointerId)
+}
+
+function leeren() {
+  const canvas = flaeche.value
+  if (!canvas || !kontext) return
+  kontext.clearRect(0, 0, canvas.width, canvas.height)
+  hatStriche.value = false
+}
+
+function bestaetigen() {
+  const canvas = flaeche.value
+  if (!canvas || !hatStriche.value || !unterzeichner.value.trim()) return
+  emit('bestaetigt', {
+    signatur: canvas.toDataURL('image/png'),
+    name_unterzeichner: unterzeichner.value.trim(),
+  })
+}
+
+onMounted(() => {
+  groesseSetzen()
+  window.addEventListener('resize', groesseSetzen)
+})
+
+onBeforeUnmount(() => window.removeEventListener('resize', groesseSetzen))
+</script>
+
+<template>
+  <div class="karte p-4">
+    <div class="mb-3 flex items-center gap-2">
+      <AppIcon name="unterschrift" :groesse="20" class="text-marke-600" />
+      <h3 class="font-semibold">Unterschrift {{ rolle }}</h3>
+    </div>
+
+    <label class="beschriftung" :for="`unterzeichner-${rolle}`">Name in Druckbuchstaben</label>
+    <input
+      :id="`unterzeichner-${rolle}`"
+      v-model="unterzeichner"
+      class="feld mb-3"
+      type="text"
+      autocomplete="name"
+      placeholder="Vor- und Nachname"
+    />
+
+    <div class="relative rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700">
+      <canvas
+        ref="flaeche"
+        class="block w-full touch-none rounded-xl bg-white"
+        :style="{ height: `${hoehe}px` }"
+        @pointerdown="start"
+        @pointermove="ziehen"
+        @pointerup="ende"
+        @pointercancel="ende"
+      />
+      <p
+        v-if="!hatStriche"
+        class="pointer-events-none absolute inset-0 flex items-center justify-center text-sm text-slate-400"
+      >
+        Hier mit dem Finger oder Stift unterschreiben
+      </p>
+    </div>
+
+    <div class="mt-3 flex gap-2">
+      <button class="knopf-sekundaer flex-1" type="button" @click="leeren">
+        <AppIcon name="muell" :groesse="18" /> Löschen
+      </button>
+      <button class="knopf-sekundaer flex-1" type="button" @click="emit('abbrechen')">
+        Abbrechen
+      </button>
+      <button
+        class="knopf-primaer flex-[2]"
+        type="button"
+        :disabled="!hatStriche || !unterzeichner.trim()"
+        @click="bestaetigen"
+      >
+        <AppIcon name="check" :groesse="18" /> Übernehmen
+      </button>
+    </div>
+  </div>
+</template>

@@ -1,0 +1,114 @@
+"use client";
+
+import { useEffect, useRef, type RefObject } from "react";
+
+/**
+ * Das, was jeder Dialog braucht und was fast jeder vergisst.
+ *
+ * Vier Dinge, und alle vier fallen erst auf, wenn sie fehlen:
+ *
+ * 1. Esc schließt. Ein Dialog, der Esc nicht annimmt, sperrt jemanden
+ *    aus, der gerade keine Maus in der Hand hat.
+ * 2. Der Fokus wandert hinein und bleibt drin. Ohne Falle läuft die
+ *    Tabulatortaste hinter den Dialog, und man bedient blind
+ *    Schaltflächen, die man nicht sieht.
+ * 3. Der Fokus kehrt zurück, wohin er gehörte. Sonst steht er nach
+ *    dem Schließen am Seitenanfang, und wer mit der Tastatur
+ *    arbeitet, sucht seine Stelle wieder.
+ * 4. Die Seite dahinter scrollt nicht mit. Ein Rad im Dialog, das die
+ *    Liste dahinter verschiebt, ist der sichere Weg, die Stelle zu
+ *    verlieren, an der man gerade war.
+ */
+
+const FOKUSSIERBAR = [
+  "a[href]",
+  "button:not([disabled])",
+  "input:not([disabled])",
+  "select:not([disabled])",
+  "textarea:not([disabled])",
+  '[tabindex]:not([tabindex="-1"])',
+].join(",");
+
+export function useDialog({
+  offen,
+  schliessen,
+  behaelter,
+}: {
+  offen: boolean;
+  schliessen: () => void;
+  behaelter: RefObject<HTMLElement | null>;
+}): void {
+  const vorheriger = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (!offen) return;
+
+    vorheriger.current = document.activeElement as HTMLElement | null;
+
+    const koerper = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    function taste(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        schliessen();
+        return;
+      }
+
+      if (e.key !== "Tab") return;
+
+      const wurzel = behaelter.current;
+      if (!wurzel) return;
+
+      const ziele = [...wurzel.querySelectorAll<HTMLElement>(FOKUSSIERBAR)]
+        .filter((el) => el.offsetParent !== null || el === document.activeElement);
+
+      if (ziele.length === 0) return;
+
+      const erster = ziele[0]!;
+      const letzter = ziele[ziele.length - 1]!;
+
+      // Am Rand umlaufen statt hinauszulaufen.
+      if (e.shiftKey && document.activeElement === erster) {
+        e.preventDefault();
+        letzter.focus();
+      } else if (!e.shiftKey && document.activeElement === letzter) {
+        e.preventDefault();
+        erster.focus();
+      }
+    }
+
+    window.addEventListener("keydown", taste, true);
+
+    return () => {
+      window.removeEventListener("keydown", taste, true);
+      document.body.style.overflow = koerper;
+      // Zurück, wo er herkam - aber nur, wenn das Element noch da ist.
+      const zurueck = vorheriger.current;
+      if (zurueck && document.contains(zurueck)) zurueck.focus();
+    };
+  }, [offen, schliessen, behaelter]);
+}
+
+/**
+ * Die Fläche hinter einem Dialog.
+ *
+ * Ein Knopf und kein `div`: Wer darauf klickt, will schließen, und
+ * das muss auch ohne Maus gehen. Ein `div` mit `onClick` ist für
+ * Tastatur und Vorlesesoftware nicht vorhanden.
+ */
+export function Dialogflaeche({ beiKlick }: { beiKlick: () => void }) {
+  return (
+    <button
+      type="button"
+      aria-label="Schließen"
+      tabIndex={-1}
+      onClick={beiKlick}
+      className="a-einblenden absolute inset-0 cursor-default"
+      style={{
+        background: "var(--f-schleier)",
+        backdropFilter: "blur(3px)",
+      }}
+    />
+  );
+}

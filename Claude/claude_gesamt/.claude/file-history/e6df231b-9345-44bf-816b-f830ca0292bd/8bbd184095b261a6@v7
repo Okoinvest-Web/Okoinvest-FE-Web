@@ -1,0 +1,413 @@
+# ÖKOVOLT Baudoku
+
+Baustellendokumentation, Prüfprotokolle und Mängelmanagement für Photovoltaik,
+Batteriespeicher und Ladestationen — als Frappe-Custom-App mit eigenständigem
+Vue-3-Frontend (PWA, offline-fähig).
+
+Umsetzung des Pflichtenhefts *Baustellendokumentation & Prüfprotokoll-App* v1.0
+(ÖKOVOLT Solartechnik GmbH, 15.09.2026). Ersetzt die bisherige Nutzung von Testify.
+
+---
+
+## Aufbau
+
+```
+oekovolt_baudoku/          Frappe-App (Python)
+├── baudoku/doctype/       30 Doctypes (Datenmodell Kapitel 3 + Subunternehmerportal)
+├── baudoku/print_format/  PDF-Layouts für Protokoll und Tagesbericht
+├── api/                   REST-Endpunkte: sync, protokoll, dashboard, pdf,
+│                          berechtigung, komponenten, mangel, subunternehmer
+├── setup/                 Rollen, Stammdaten, mitgelieferte Checklistenvorlagen
+├── utils/                 Plausibilität (IEC 62446-1), Arbeitszeit, Geofence, Jinja
+└── www/baudoku.py         Einstiegspunkt der SPA unter /baudoku
+
+frontend/                  Vue 3 + Vite + Tailwind (PWA)
+├── src/lib/               API-Client, IndexedDB, Sync-Motor, Kamera, GPS, Plausibilität
+├── src/stores/            Pinia: Stammdaten, Sync, Protokollausführung, UI
+├── src/components/        Prüfpunktkarte, Signaturpad, Fotoaufnahme, Karte, Stempeluhr
+└── src/views/             25 Ansichten (ÖKOVOLT-Oberfläche und Subunternehmerportal)
+
+scripts/                   Generatoren für Doctype- und Print-Format-JSONs
+tests/                     Python-Tests (Spiegel der Frontend-Tests)
+docs/                      Pflichtenheft-Abdeckung
+```
+
+Das Frontend ist eine **eigenständige SPA** — es lädt kein Frappe-Desk-Bundle und
+spricht ausschließlich `/api/method` und `/api/resource`.
+
+---
+
+## Schnellstart ohne Bench (Demo-Modus)
+
+Zum Ansehen und für UI-Arbeit genügt das Frontend allein:
+
+```bash
+cd frontend
+npm install
+VITE_DEMO=1 npm run dev        # Windows PowerShell: $env:VITE_DEMO='1'; npm run dev
+```
+
+→ http://localhost:8080 — die App läuft mit Demodaten (5 Anlagen, 4 Vorlagen,
+Mängel, Tagesberichte). Auch per `?demo=1` an der URL aktivierbar.
+
+Das **Subunternehmerportal** zeigt `?rolle=subu`:
+
+```
+http://localhost:8080/baudoku/portal?rolle=subu
+```
+
+→ Rolle Polier einer Firma mit vier Mann, davon zwei aus einem Drittstaat, drei
+laufenden Aufträgen (einer in Verzug, einer mit Fristwarnung) und offener
+Personalmeldung.
+
+Im Demo-Modus werden Servermethoden aus `src/lib/demo.ts` beantwortet;
+Schreibvorgänge landen real in IndexedDB — der Offline-Ablauf ist also echt.
+
+---
+
+## Installation in eine bestehende Bench
+
+Voraussetzung: Frappe v15 + ERPNext v15.
+
+```bash
+cd ~/frappe-bench
+bench get-app oekovolt_baudoku <Repository-URL>
+bench --site <site> install-app oekovolt_baudoku
+bench build --app oekovolt_baudoku
+bench --site <site> clear-cache
+```
+
+`after_install` legt an:
+
+* Rollen `Baudoku Techniker | Bauleiter | Projektleiter | Admin | Subunternehmer | Kunde`
+* Schweregrade A/B/C mit SLA (3 / 14 / 30 Tage)
+* zehn Mangelkategorien, zwei PDF-Profile, Standardeinstellungen
+* die vier Checklistenvorlagen aus Kapitel 4.2, veröffentlicht
+
+Aufruf: `https://<site>/baudoku`
+
+### Entwicklung gegen eine laufende Bench
+
+```bash
+bench start                    # Frappe auf :8000
+cd apps/oekovolt_baudoku/frontend
+npm run dev                    # Vite auf :8080, proxyt /api, /files, /assets nach :8000
+```
+
+Die Session kommt aus dem Cookie der Bench — einmal unter `localhost:8000/login`
+anmelden, dann funktioniert `localhost:8080`.
+
+---
+
+## Datenmodell
+
+Das Datenmodell wird von `scripts/generate_doctypes.py` erzeugt. Änderungen dort
+vornehmen und neu generieren, nicht die JSONs von Hand bearbeiten:
+
+```bash
+python scripts/generate_doctypes.py
+python scripts/generate_print_formats.py
+bench --site <site> migrate
+```
+
+**Doctype-Namen sind ASCII** (`Pruefprotokoll`, nicht `Prüfprotokoll`) — Frappe
+leitet daraus Tabellen- und Modulnamen ab. Die Labels sind deutsch.
+
+Kern-Doctypes:
+
+| Doctype | Zweck |
+|---|---|
+| `PV Anlage` | Prüfobjekt: Anlage, Baustelle, Standort, Moduldaten |
+| `Checklistenvorlage` | Vorlage mit Sektionen und Prüfpunkten, revisioniert |
+| `Pruefprotokoll` | ausgefüllte Checkliste inkl. Messdaten und Unterschriften |
+| `Mangel` | Mangel mit Schweregrad, Frist, Fotos, Nachweis |
+| `Tagesbericht` | Bauleiter- und Subunternehmerbericht mit Genehmigung |
+
+Subunternehmerportal:
+
+| Doctype | Zweck |
+|---|---|
+| `Subunternehmerauftrag` | zugeteilter Auftrag mit Termin, Aufgabe, Frist, Herkunft |
+| `Subunternehmer Mitarbeiter` | Person mit Ausweis, Bewilligung, Drittstaatskennzeichen |
+| `Stempelung` | einzelnes Zeitereignis mit Standort — unveränderlich |
+| `Arbeitstag` | daraus abgeleiteter Tag mit AZG-Prüfung und Freigabe |
+| `Personalmeldung` | tägliche Meldung der eingesetzten Personen |
+| `Materialanforderung` | Anforderung an ÖKOVOLT, wird zum ERPNext `Material Request` |
+| `Bauvertragsmeldung` | Behinderung, Bedenken, Mehrkosten nach ÖNORM B 2110 |
+
+---
+
+## Offline-Betrieb
+
+Der Feldablauf ist netzunabhängig:
+
+0. **Installieren**: Die App meldet sich als PWA. Der Service Worker hält die
+   App-Shell vor; eine neue Fassung übernimmt **nicht** von selbst, sondern
+   fragt — ein Reload mitten im Protokoll wäre im Feld unzumutbar.
+
+   Der Worker wird beim Build zusätzlich nach `www/sw.js` gelegt und von dort
+   registriert. Das ist keine Kosmetik: Ein Service Worker kontrolliert nur
+   Seiten **unterhalb seines eigenen Pfades**. Aus
+   `/assets/oekovolt_baudoku/frontend/` heraus registriert, erreichte er die App
+   unter `/baudoku` nie. Aus demselben Grund lautet der Geltungsbereich
+   `/baudoku` ohne Schrägstrich — mit `/baudoku/` läge die Einstiegsadresse
+   selbst außerhalb.
+1. **Vorladen** vor Fahrtantritt (Einstellungen → *Für Offline vorladen*): Stammdaten
+   und alle veröffentlichten Vorlagen landen in IndexedDB.
+2. **Erfassen**: Protokolle, Mängel und Berichte werden lokal geschrieben, Fotos
+   auf max. 2 MB komprimiert, mit Zeitstempel, GPS und SHA-256 versehen gepuffert.
+3. **Übertragen**: Bei Verbindung laufen erst die Fotos, dann die Dokumente in
+   Batches; jede Operation trägt eine lokale UUID und ist damit idempotent.
+4. **Konflikt**: Wurde ein Dokument zwischenzeitlich am Server geändert, **gewinnt
+   der Server**. Die lokale Fassung wird nicht verworfen, sondern in der Tabelle
+   `konflikte` gesichert und in den Einstellungen angezeigt.
+
+### Verweise zwischen offline erzeugten Dokumenten
+
+Ein offline aus einem Prüfpunkt angelegter Mangel kennt den Servernamen seines
+Protokolls noch nicht — und umgekehrt. Beide Seiten tragen deshalb die lokale
+UUID der jeweils anderen (`mangel_lokal`, `pruefprotokoll_lokal`); die echten
+Link-Felder bleiben leer. Sobald eine Seite synchronisiert ist, löst der Server
+**beide Richtungen** auf, unabhängig von der Reihenfolge (Abnahmekriterium AK-05).
+
+Link-Felder in Kindtabellen nimmt der Sync vom Client grundsätzlich nicht an:
+Dort stünde nur eine UUID, die keiner Server-Referenz entspricht.
+
+Die Erreichbarkeitsprüfung stützt sich nicht auf `navigator.onLine` allein —
+im Baustellen-WLAN meldet der Browser oft „online“, obwohl kein Uplink besteht.
+Ein Heartbeat gegen `sync_status` entscheidet.
+
+## Plausibilitätsprüfung
+
+`utils/plausibilitaet.py` und `frontend/src/lib/plausibilitaet.ts` implementieren
+dieselben Regeln, damit die Warnung sofort auf dem Gerät erscheint:
+
+* **Uoc** gegen `Anzahl Module × Uoc_Modul` ± 10 % (Warnung), ± 20 % (Fehler)
+* **Isc** gegen `Isc_Modul` ± 15 % (Warnung), ± 30 % (Fehler)
+* **Riso** gegen `max(40 kΩ × Module, 1000 kΩ)` — darunter Fehler,
+  bis 125 % davon Warnung (IEC 62446-1)
+
+Maßgeblich bleibt der Server: beim Speichern überschreibt er Status und Meldung.
+Warnungen und Fehler kann der Prüfer mit Begründung übersteuern (FA-054).
+
+Beide Implementierungen teilen sich die Testfälle:
+
+```bash
+python -m pytest tests/          # 33 Tests
+cd frontend && npm test          # 37 Tests — Plausibilität, Sichtbarkeit, Codeauswertung
+```
+
+Plausibilitätsprüfung und bedingte Sichtbarkeit sind auf beiden Seiten
+implementiert und teilen sich die Testfälle Zeile für Zeile. Weicht eine Seite
+ab, fordert der Server beim Abschluss eine Angabe ein, die der Techniker nie
+gesehen hat — oder er lässt eine fehlende Pflichtangabe durch.
+
+---
+
+## Rollen
+
+| Rolle | Rechte |
+|---|---|
+| Techniker | Protokolle ausführen, Mängel erfassen, Tagesberichte erstellen |
+| Bauleiter | zusätzlich: Protokolle verifizieren, Berichte genehmigen, Mängel einzeln und im Sammelvorgang zuweisen |
+| Projektleiter | zusätzlich: Anlagen anlegen, Vorlagen erstellen, Analysen |
+| Admin | Vollzugriff und Konfiguration |
+| Subunternehmer | Portal: nur eigene Aufträge, Zeiten, Meldungen (kein Desk-Zugang) |
+| Polier | wie Subunternehmer, zusätzlich: für die eigene Kolonne stempeln und melden |
+| Kunde | abgeschlossene Protokolle der eigenen Anlagen, lesend |
+
+Die Zeilensichtbarkeit steuert `api/berechtigung.py` über
+`permission_query_conditions` und `has_permission`.
+
+---
+
+## Bedienung im Feld
+
+* **Ein Prüfpunkt pro Bildschirm**, Fortschrittsbalken oben, große Weiter-Taste unten
+* **Wischen** blättert zwischen Prüfpunkten — nur horizontal und ab 60 px, damit
+  Scrollen und Blättern nicht verwechselt werden
+* **Touch-Ziele ≥ 44 × 44 px** — bedienbar mit Arbeitshandschuhen
+* **Dark Mode** gegen Blendung bei Dacharbeiten
+* **max. 3 Taps** vom Start bis zur Protokollausführung (Schnellaktionsknopf)
+* **Pfeiltasten** blättern am Desktop, für Bauleiter beim Durchsehen
+* Fotos lassen sich antippen und im Vollbild prüfen
+* **QR-Aufkleber scannen** springt direkt zur Anlage — beim Protokollstart und
+  in der Anlagenliste
+* **„In der Nähe"** sortiert die Anlagen nach Luftlinie zum aktuellen Standort
+* **Mangel mit Foto** öffnet aus der Schnellaktion heraus sofort die Kamera
+* Bewertung „Mangel …“ bietet direkt die Mangelanlage an; Fotos und Kontext
+  werden übernommen
+* Bedingte Sichtbarkeit blendet im Zweifel **ein**: Ein zu viel gezeigter
+  Prüfpunkt kostet einen Wisch, ein zu Unrecht ausgeblendeter Pflichtpunkt fehlt
+  im Protokoll
+
+---
+
+## Tests und Qualitätssicherung
+
+```bash
+python -m pytest tests/              # Plausibilität, bedingte Sichtbarkeit
+cd frontend
+npm run typecheck                    # vue-tsc, strikt
+npm test                             # Einheitentests
+npm run test:e2e                     # Feldablauf und Offline-Betrieb
+npm run lint
+npm run build                        # Produktionsbundle nach ../oekovolt_baudoku/public/frontend
+```
+
+### Integrationstests am Server
+
+Die heikelsten Stellen — Abschlussprüfung, Rollenbindung der Verifizierung und
+die Auflösung der lokalen UUIDs — brauchen eine laufende Bench:
+
+```bash
+bench --site <site> run-tests --app oekovolt_baudoku
+```
+
+### E2E-Tests
+
+`npm run test:e2e` startet zwei Server und braucht kein Frappe:
+
+* **Feldablauf und Portal** gegen den Dev-Server im Demo-Modus, auf Tablet-,
+  Smartphone- und Desktop-Profil (AK-02). Das Portal wird als Polier
+  durchgespielt: Personal melden, stempeln, Auftrag annehmen und fertigmelden,
+  Fristwarnung ablesen — und die Gegenprobe, dass das Anlagenverzeichnis nicht
+  erreichbar ist.
+* **Offline** gegen einen Demo-*Produktionsbuild*, ausgeliefert wie von Frappe
+  (AK-04). Der Dev-Server taugt dafür nicht: Erst im Produktionsbuild gibt es
+  Precache und die Pfadtrennung zwischen `/assets/…` und dem Wurzelpfad — und
+  genau dort entscheidet sich, ob der Service Worker die App erreicht.
+
+---
+
+---
+
+## Subunternehmerportal
+
+Subunternehmer sind vertraglich zur Nutzung verpflichtet. Sie arbeiten in
+derselben App, sehen aber eine eigene Oberfläche — und **nur, was ihnen zugeteilt
+ist**: kein Anlagenverzeichnis, keine fremden Aufträge, keine Preise. Die
+Einschränkung liegt nicht in der Navigation, sondern in
+`api/berechtigung.py` und in den Filtern von `api/subunternehmer.py`.
+
+Zugänge gibt es zwei Arten: ein **Firmenkonto** (als `Portal User` am `Supplier`)
+und **Konten für Poliere** (als `Subunternehmer Mitarbeiter` mit hinterlegtem
+Benutzer). Der Polier stempelt für seine ganze Kolonne, das Firmenkonto sieht
+alles Eigene.
+
+### Was der Subunternehmer kann
+
+| Funktion | Ansicht | Bemerkung |
+|---|---|---|
+| Aufträge sehen, annehmen, Fortschritt melden, fertigmelden | `PortalAuftraegeView`, `PortalAuftragView` | Termin, Aufgabe und Frist gibt ÖKOVOLT vor |
+| Kalender: wann, wo, welche Aufgabe | `PortalAuftraegeView` (4 Wochen) | gelb = Frist läuft ab, rot = überschritten |
+| Ein- und ausstempeln, Pause | `StempelUhr` | eine große Fläche je Aktion |
+| Tägliche Personalmeldung | `PortalPersonalmeldungView` | nur bei Drittstaatsangehörigen |
+| Material **anfordern** | `PortalMaterialView` | keine Bestellung — ÖKOVOLT stellt das Material |
+| Behinderung, Bedenken, Mehrkosten melden | `PortalMeldungView` | Formalkategorien nach ÖNORM B 2110 |
+| Eigene Arbeitszeiten einsehen | `PortalZeitenView` | Stand der Freigabe, Beanstandungen |
+
+Was er **nicht** kann, ist ebenso festgelegt: Termine ändern, abnehmen,
+stornieren, Material bestellen. Dafür gibt es keine Schaltfläche — und der
+Server ließe es auch über den Sync-Weg nicht zu (`statuswechsel_pruefen()` in
+`validate()`, nicht nur in den whitelisted Methoden).
+
+### Mangel → sofort offener Auftrag
+
+Der häufigste Ablauf auf der Baustelle: Der Bauleiter geht durch, findet etwas,
+und der Verursacher soll es noch in derselben Woche beheben. Aus dem
+Mangelformular heraus erteilt der Bauleiter deshalb direkt einen Auftrag
+(`auftrag_aus_mangel`): Schweregrad wird zur Priorität, die Mangelfrist zur
+Auftragsfrist, die Fotos gehen mit. Der Auftrag liegt binnen Sekunden im Portal
+des Subunternehmers.
+
+### Fristen
+
+`fristen_nachziehen()` läuft täglich und bewertet Warnung und Verzug neu — ohne
+diesen Lauf bliebe ein Auftrag, den niemand anfasst, auf dem Stand des letzten
+Speicherns. Die Vorwarnzeit steht in den Baudoku Settings
+(`fristwarnung_tage`, Standard **3**). Im Portal steht dann nicht „Frist
+16.09.2026", sondern „noch 3 Tage" — und in Rot, sobald sie überschritten ist.
+
+### Zeiterfassung: GPS, Unveränderlichkeit, Freigabe
+
+Die Stempelungen dienen drei Zwecken zugleich: Abrechnungsgrundlage,
+Anwesenheitsnachweis und Arbeitszeitaufzeichnung der Subunternehmer-Mitarbeiter.
+Entsprechend sind sie **unveränderlich**: `Stempelung` lässt sich nach dem
+Anlegen nicht mehr bearbeiten und nicht löschen; eine Korrektur entwertet den
+alten Eintrag (`ungueltig`) und legt einen neuen mit Begründung an.
+
+Der Standort wird **nur im Augenblick des Stempelns** abgefragt, nie laufend —
+eine Bewegungsspur entsteht nicht (DSGVO, Art. 5 Abs. 1 lit. c). Liegt der Punkt
+außerhalb des Geofence (`geofence_radius_m`, Standard 300 m), wird die
+Stempelung **gekennzeichnet, nicht abgelehnt**. Fehlt GPS ganz, ebenso: In einer
+Halle gibt es keinen Empfang, und der Arbeitsbeginn darf daran nicht scheitern.
+Wer es strenger will, setzt `geofence_erzwingen`.
+
+Aus den Stempelungen leitet `Arbeitstag` Beginn, Ende, Pausen und Arbeitszeit ab
+und prüft gegen die Grenzwerte in den Settings:
+
+| Einstellung | Standard | Bedeutung |
+|---|---|---|
+| `azg_tag_minuten` | 600 | Tageshöchstarbeitszeit |
+| `azg_woche_minuten` | 3000 | Wochenhöchstarbeitszeit |
+| `pause_ab_minuten` | 360 | ab dieser Arbeitszeit ist eine Ruhepause fällig |
+| `pause_mindestens_minuten` | 30 | Mindestdauer der Ruhepause |
+
+> Die Standardwerte folgen dem AZG in seiner Grundform. Kollektivvertrag,
+> Gleitzeit- und Durchrechnungsregelungen können davon abweichen — **vor dem
+> Produktivbetrieb arbeitsrechtlich prüfen** und in den Settings anpassen. Die
+> App wertet aus und kennzeichnet; sie sperrt nicht.
+
+Auffällige Tage sind im `ZeitfreigabeView` des Bauleiters hervorgehoben, aber
+nicht gesperrt: Die Bewertung bleibt beim Menschen, die Kennzeichnung soll nur
+verhindern, dass sie ungeprüft durchlaufen. Erst die Freigabe macht aus einer
+Stempelung eine Abrechnungsgrundlage.
+
+### Personalmeldung — nur bei Drittstaatsangehörigen
+
+`Subunternehmer Mitarbeiter` leitet aus der Staatsangehörigkeit ab, ob jemand
+Drittstaatsangehöriger ist (EU/EWR/CH → nein). Beschäftigt eine Firma
+mindestens eine solche Person, ist die tägliche Meldung Pflicht
+(`personalmeldung_pflicht_drittstaat`); bei rein inländischen Kolonnen
+erscheint sie gar nicht erst.
+
+Die Meldung geht der Arbeit voraus: **Wer nicht gemeldet ist, kann nicht
+eingestempelt werden.** Ablaufende Ausweise und Bewilligungen meldet
+`ablaufende_nachweise_pruefen()` täglich, bevor sie bei einer Kontrolle
+auffallen.
+
+### ÖNORM B 2110
+
+`Bauvertragsmeldung` bildet die förmlichen Erklärungen des Auftragnehmers ab:
+
+| Art | Wirkung |
+|---|---|
+| Behinderungsanzeige | unverzüglich zu erstatten; Verzögerung wird in Stunden festgehalten |
+| Bedenkenanmeldung (Warnpflicht) | unverzüglich; dokumentiert die Enthaftung |
+| Mehrkostenankündigung dem Grunde nach | Anspruch bleibt gewahrt |
+| Leistungsänderung / Sonstiges | Nachweis im Schriftverkehr |
+
+Zeitpunkt des Eintritts und Zeitpunkt der Meldung erfasst der Server selbst
+(`gemeldet_am`), nicht der Meldende; nach der Entscheidung ist der Vorgang
+gesperrt. Anerkannte Behinderungen verlängern die Auftragsfrist über
+`frist_verlaengern()`. Damit ist im Streitfall belegbar, **wann** gemeldet
+wurde — worauf es bei „unverzüglich" allein ankommt.
+
+---
+
+## Bekannte Grenzen
+
+* Der Vorlageneditor benötigt eine Serververbindung (kein Offline-Entwurf).
+* Mehrsprachigkeit (DE/EN) ist im Datenmodell vorgesehen, die Oberfläche ist
+  derzeit deutsch (KANN-Anforderung FA-018, Phase 5).
+* Frei konfigurierbare Analyse-Dashboards (FA-096, KANN) gibt es nicht; die
+  Auswertungen sind fest verdrahtet.
+* Die Performancekriterien NFA-030/032/033 sind Messungen auf dem Referenzgerät
+  und noch nicht belegt.
+* Die App ist noch nie gegen eine laufende Bench gelaufen. Die
+  Frappe-Integrationstests sind geschrieben, aber nicht ausgeführt.
+* Die AZG-Grenzwerte sind Standardwerte und **vor dem Produktivbetrieb
+  arbeitsrechtlich zu prüfen** (Kollektivvertrag, Gleitzeit, Durchrechnung).
+* Das Portal ist online-gebunden: Stempelung und Auftragsrückmeldung brauchen
+  Verbindung. Der Offline-Puffer deckt bisher nur die ÖKOVOLT-Seite ab.

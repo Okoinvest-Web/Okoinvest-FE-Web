@@ -1,0 +1,70 @@
+param(
+  [Parameter(Mandatory=$true)][string]$Path,
+  [string]$Out
+)
+
+Add-Type -AssemblyName System.IO.Compression -ErrorAction SilentlyContinue
+
+function Inflate-Bytes {
+  param([byte[]]$Data)
+  # try zlib (skip 2 byte header) then raw deflate
+  foreach ($skip in 2,0,1) {
+    try {
+      if ($Data.Length -le $skip) { continue }
+      $ms = New-Object System.IO.MemoryStream(,$Data[$skip..($Data.Length-1)])
+      $ds = New-Object System.IO.Compression.DeflateStream($ms, [System.IO.Compression.CompressionMode]::Decompress)
+      $outMs = New-Object System.IO.MemoryStream
+      $buf = New-Object byte[] 65536
+      while (($n = $ds.Read($buf,0,$buf.Length)) -gt 0) { $outMs.Write($buf,0,$n) }
+      $ds.Dispose(); $ms.Dispose()
+      $res = $outMs.ToArray(); $outMs.Dispose()
+      if ($res.Length -gt 0) { return $res }
+    } catch {
+      if ($outMs -and $outMs.Length -gt 0) { return $outMs.ToArray() }
+    }
+  }
+  return $null
+}
+
+$bytes = [System.IO.File]::ReadAllBytes($Path)
+$latin = [System.Text.Encoding]::GetEncoding(28591)
+$raw = $latin.GetString($bytes)
+
+$sb = New-Object System.Text.StringBuilder
+$streamCount = 0
+$inflatedCount = 0
+
+$idx = 0
+while ($true) {
+  $s = $raw.IndexOf("stream", $idx)
+  if ($s -lt 0) { break }
+  $dictStart = [Math]::Max(0, $s - 1200)
+  $dict = $raw.Substring($dictStart, $s - $dictStart)
+  # advance past EOL after 'stream'
+  $p = $s + 6
+  if ($p -lt $raw.Length -and $raw[$p] -eq "`r") { $p++ }
+  if ($p -lt $raw.Length -and $raw[$p] -eq "`n") { $p++ }
+  $e = $raw.IndexOf("endstream", $p)
+  if ($e -lt 0) { break }
+  $idx = $e + 9
+  $streamCount++
+
+  if ($dict -notmatch 'FlateDecode') { continue }
+  if ($dict -match '/Subtype\s*/Image' -or $dict -match '/Image') { continue }
+
+  $len = $e - $p
+  if ($len -le 0) { continue }
+  $chunk = New-Object byte[] $len
+  [Array]::Copy($bytes, $p, $chunk, 0, $len)
+  $inf = Inflate-Bytes $chunk
+  if ($inf -eq $null) { continue }
+  $inflatedCount++
+  $txt = $latin.GetString($inf)
+  [void]$sb.AppendLine("<<<STREAM $inflatedCount>>>")
+  [void]$sb.AppendLine($txt)
+}
+
+$all = $sb.ToString()
+if (-not $Out) { $Out = [System.IO.Path]::ChangeExtension($Path, ".rawstreams.txt") }
+[System.IO.File]::WriteAllText($Out, $all, [System.Text.Encoding]::UTF8)
+Write-Output "streams=$streamCount inflated=$inflatedCount outLen=$($all.Length) out=$Out"

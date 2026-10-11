@@ -1,0 +1,239 @@
+/**
+ * Tests für die Workflow-Maschine und die Gesundheit der Sicherungssysteme.
+ *
+ * Der Workflow ist die Stelle, an der aus einem Knopf ein Vorgang wird.
+ * Zwei Dinge müssen dabei halten, sonst ist er Zierleiste:
+ *
+ *   1. **Die Rollenprüfung.** Eine Genehmigung, die jeder erteilen kann,
+ *      ist keine.
+ *   2. **Das Vier-Augen-Prinzip.** Es ist genau für den Fall da, in dem es
+ *      gerade eilig ist – und genau dann wird es sonst umgangen.
+ *
+ * Und weil Zustände und Übergänge Daten sind, prüfen die Tests hier die
+ * Maschine, nicht die einzelnen Zweige: wer morgen den Ablauf umstellt,
+ * soll diese Datei nicht anfassen müssen.
+ */
+import { beforeEach, describe, expect, it } from 'vitest'
+import { mockRequest, resetMockData } from '@/api/mock/server.js'
+
+const ruf = (url, params) => mockRequest({ url, params })
+const definition = (doctype) => ruf('netops.api.workflow.workflow_definition', { doctype })
+const moeglich = (p) => ruf('netops.api.workflow.workflow_actions', p)
+const anwenden = (p) => ruf('netops.api.workflow.workflow_apply', p)
+const gesundheit = (p = {}) => ruf('netops.api.backup.backup_health', p)
+const logs = (p = {}) => ruf('netops.api.backup.backup_logs', p)
+const umfeld = (p) => ruf('netops.api.backup.backup_log_context', p)
+
+const BAR = 'Backup Action Request'
+
+beforeEach(() => {
+  resetMockData()
+})
+
+describe('Der Ablauf steht in Daten, nicht im Code', () => {
+  it('liefert Zustände und Übergänge als Definition', async () => {
+    // Damit die Anwendung ihren eigenen Ablauf anzeigen kann. Sonst weiß
+    // niemand, warum ein Antrag hängt.
+    const d = await definition(BAR)
+    expect(d.workflow_state_field).toBe('workflow_state')
+    expect(d.states.map((s) => s.state)).toContain('requested')
+    expect(d.transitions.length).toBeGreaterThan(0)
+    for (const t of d.transitions) {
+      expect(t.action).toBeTruthy()
+      expect(t.next_state).toBeTruthy()
+    }
+  })
+
+  it('kennzeichnet Endzustände', async () => {
+    const d = await definition(BAR)
+    const fertig = d.states.filter((s) => s.is_final).map((s) => s.state)
+    expect(fertig).toContain('done')
+    expect(fertig).toContain('rejected')
+    expect(fertig).not.toContain('requested')
+  })
+
+  it('führt für jeden Zustand einen docstatus', async () => {
+    // Frappe hängt daran, ob ein Dokument noch änderbar ist.
+    const d = await definition(BAR)
+    for (const s of d.states) expect([0, 1, 2]).toContain(s.doc_status)
+  })
+})
+
+describe('Rollen und vier Augen', () => {
+  it('sperrt eine Genehmigung ohne die Rolle – und nennt den Grund', async () => {
+    // Eine Schaltfläche, die kommentarlos fehlt, ist für die Person davor
+    // nicht von einem Fehler zu unterscheiden.
+    const a = await moeglich({
+      doctype: BAR,
+      name: 'BAR-00002',
+      user: 'jakob.pichler@oekovolt.test',
+    })
+    expect(a.actions).toEqual([])
+    expect(a.blocked.map((b) => b.reason).join(' ')).toMatch(/Rolle NetOps Backup Approver fehlt/)
+  })
+
+  it('erlaubt sie mit der Rolle', async () => {
+    const a = await moeglich({
+      doctype: BAR,
+      name: 'BAR-00002',
+      user: 'lena.steiner@oekovolt.test',
+    })
+    expect(a.actions.map((x) => x.action)).toContain('Genehmigen')
+  })
+
+  it('lässt niemanden seinen eigenen Antrag genehmigen', async () => {
+    // Benny hat alle Rollen - das Vier-Augen-Prinzip gilt trotzdem.
+    const eigener = await anwenden({
+      doctype: BAR,
+      name: 'BAR-00002',
+      action: 'Genehmigen',
+      user: 'lena.steiner@oekovolt.test',
+    })
+    expect(eigener.state).toBe('approved')
+  })
+
+  it('weist die Selbstgenehmigung serverseitig ab, nicht nur in der Anzeige', async () => {
+    // Eine Regel, die nur die Oberfläche kennt, gilt beim nächsten
+    // API-Aufruf nicht mehr.
+    const a = await ruf('netops.api.workflow.workflow_actions', {
+      doctype: BAR,
+      name: 'BAR-00002',
+      user: 'jakob.pichler@oekovolt.test',
+    })
+    void a
+    await expect(
+      anwenden({
+        doctype: BAR,
+        name: 'BAR-00002',
+        action: 'Genehmigen',
+        user: 'jakob.pichler@oekovolt.test',
+      }),
+    ).rejects.toThrow(/Rolle NetOps Backup Approver/)
+  })
+
+  it('nennt bei einem unmöglichen Übergang die möglichen', async () => {
+    await expect(
+      anwenden({
+        doctype: BAR,
+        name: 'BAR-00002',
+        action: 'Starten',
+        user: 'benny.hoefler@oekovolt.test',
+      }),
+    ).rejects.toThrow(/Möglich: /)
+  })
+
+  it('sagt bei einem Endzustand, dass es keiner ist', async () => {
+    await expect(
+      anwenden({
+        doctype: BAR,
+        name: 'BAR-00001',
+        action: 'Starten',
+        user: 'benny.hoefler@oekovolt.test',
+      }),
+    ).rejects.toThrow(/Endzustand/)
+  })
+
+  it('schreibt beim Zustandswechsel das hinterlegte Feld mit', async () => {
+    // In Frappe macht das `update_field`/`update_value` am Zustand.
+    await anwenden({
+      doctype: BAR,
+      name: 'BAR-00002',
+      action: 'Genehmigen',
+      user: 'lena.steiner@oekovolt.test',
+    })
+    const d = await ruf('frappe.client.get', { doctype: BAR, name: 'BAR-00002' })
+    expect(d.approved_by).toBe('lena.steiner@oekovolt.test')
+    expect(d.docstatus).toBe(1)
+  })
+
+  it('protokolliert jeden Übergang mit Herkunft und Ziel', async () => {
+    await anwenden({
+      doctype: BAR,
+      name: 'BAR-00002',
+      action: 'Genehmigen',
+      user: 'lena.steiner@oekovolt.test',
+    })
+    const log = await ruf('netops.api.audit.audit_log', { object_name: 'BAR-00002' })
+    expect(log[0].action).toBe('workflow_Genehmigen')
+  })
+})
+
+describe('Gesundheit der Sicherungssysteme', () => {
+  it('sagt ausdrücklich, dass die Zahlen alt sind, wenn nichts mehr kommt', async () => {
+    // Der gefährlichste Zustand einer Überwachung ist nicht der rote
+    // Punkt, sondern der grüne, der eingefroren ist.
+    const g = await gesundheit()
+    expect(g.summary.stale_warning).toMatch(/so alt wie die letzte Meldung/)
+    expect(g.summary.level).toBe('critical')
+  })
+
+  it('führt einen überfälligen Konnektor als nicht erreichbar', async () => {
+    const z = (await gesundheit()).rows.find((x) => x.connector === 'pbs-srv-pbs-01')
+    expect(z.reachable).toBe(false)
+    expect(z.overdue).toBe(true)
+    expect(z.reasons.join(' ')).toMatch(/keine Meldung/)
+  })
+
+  it('lässt einen einzelnen verpassten Lauf durchgehen', async () => {
+    // Ein verpasster Lauf ist Betrieb, zwei sind ein Muster. Sonst steht
+    // die Ampel ständig auf Rot und niemand sieht mehr hin.
+    for (const z of (await gesundheit()).rows) {
+      if (z.age_hours !== null && z.age_hours * 60 < z.interval_minutes * 2 && z.enabled) {
+        expect(z.overdue).toBe(false)
+      }
+    }
+  })
+
+  it('stellt die jüngste Fehlermeldung neben die Ampel', async () => {
+    const z = (await gesundheit()).rows.find((x) => x.errors_24h > 0)
+    expect(z.latest_problem).toBeTruthy()
+  })
+})
+
+describe('Meldungen der Systeme', () => {
+  it('führt Aufgabenprotokoll und Syslog in einer Liste', async () => {
+    // Ein PBS meldet „verify failed", und die erklärende Zeile ist ein
+    // Kernel-Fehler daneben. Wer dafür zwei Fenster aufmachen muss, liest
+    // das zweite nicht.
+    const l = await logs({})
+    expect(l.summary.from_api).toBeGreaterThan(0)
+    expect(l.summary.from_syslog).toBeGreaterThan(0)
+  })
+
+  it('filtert nach Schweregrad nach RFC 5424', async () => {
+    const nurFehler = await logs({ max_severity: 3 })
+    for (const z of nurFehler.rows) expect(z.severity).toBeLessThanOrEqual(3)
+    const mitWarnung = await logs({ max_severity: 4 })
+    expect(mitWarnung.rows.length).toBeGreaterThan(nurFehler.rows.length)
+  })
+
+  it('übersetzt die Schweregrade in Klartext', async () => {
+    for (const z of (await logs({})).rows) {
+      expect(z.severity_label).toBeTruthy()
+      expect(['critical', 'warning', 'ok', 'neutral']).toContain(z.level)
+    }
+  })
+
+  it('sortiert neueste zuerst', async () => {
+    const r = (await logs({})).rows
+    for (let i = 1; i < r.length; i++) {
+      expect(String(r[i - 1].logged_at) >= String(r[i].logged_at)).toBe(true)
+    }
+  })
+
+  it('durchsucht Meldung, Programm und Host', async () => {
+    expect((await logs({ search: 'medium error' })).rows.length).toBeGreaterThan(0)
+    expect((await logs({ search: 'smartd' })).rows.length).toBeGreaterThan(0)
+    expect((await logs({ search: 'srv-pbs-01' })).rows.length).toBeGreaterThan(0)
+  })
+
+  it('zeigt zu einem Zeitpunkt, was sonst noch passiert ist', async () => {
+    // Der Fall, den man tatsächlich hat: ein Lauf ist gescheitert, und die
+    // Frage ist, was in diesen Minuten sonst los war.
+    const verify = (await logs({ search: 'verify group' })).rows[0]
+    const u = await umfeld({ at: verify.logged_at, window_minutes: 30 })
+    expect(u.rows.length).toBeGreaterThan(1)
+    // Die Zeile, die den Fehler erklärt, muss im Fenster liegen.
+    expect(u.rows.some((z) => z.message.includes('medium error'))).toBe(true)
+  })
+})

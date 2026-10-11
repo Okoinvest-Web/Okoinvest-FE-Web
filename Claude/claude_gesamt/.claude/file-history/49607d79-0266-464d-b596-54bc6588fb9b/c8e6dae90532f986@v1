@@ -1,0 +1,112 @@
+# Netzwerk – Vue-Frontend für eine Frappe-App
+
+Vue-3-Frontend im Zuschnitt einer Frappe-App, das **ohne laufendes Frappe-Backend**
+entwickelt werden kann. Statt echter HTTP-Aufrufe beantwortet ein Mock im Browser
+die Frappe-RPCs – mit denselben Daten- und Fehlerformaten wie das echte Backend.
+
+## Loslegen
+
+```bash
+npm install
+npm run dev      # http://localhost:8080
+```
+
+Es wird nichts weiter benötigt: keine Bench, kein Site, keine Datenbank.
+
+| Befehl            | Zweck                                      |
+| ----------------- | ------------------------------------------ |
+| `npm run dev`     | Entwicklungsserver mit Hot Reload          |
+| `npm run build`   | Produktionsbuild nach `dist/`              |
+| `npm run preview` | Gebautes Ergebnis lokal ausliefern         |
+
+## Wie der Mock funktioniert
+
+frappe-ui schickt jede Abfrage durch eine austauschbare Funktion, den
+`resourceFetcher`. [src/api/index.js](src/api/index.js) entscheidet beim Start,
+welche das ist:
+
+```
+VITE_USE_MOCK=true   ->  src/api/mock/server.js   (Standard, kein Backend)
+VITE_USE_MOCK=false  ->  frappeRequest            (echtes Frappe über Vite-Proxy)
+```
+
+Der Mock in [src/api/mock/server.js](src/api/mock/server.js) implementiert die
+üblichen Whitelisted-Methoden:
+
+- `frappe.client.get_list` – inklusive `filters`, `or_filters`, `order_by`,
+  `limit_start` / `limit_page_length` und Feldauswahl
+- `frappe.client.get_count`, `frappe.client.get`, `frappe.client.get_value`
+- `frappe.client.insert`, `frappe.client.set_value`, `frappe.client.delete`
+- `frappe.auth.get_logged_user`, `logout`
+
+Unterstützt werden beide Frappe-Filterschreibweisen und die Operatoren
+`= != > < >= <= like "not like" in "not in" between is`.
+
+Die Daten liegen im `localStorage` und überstehen einen Reload. Über die
+Schaltfläche unten links in der Seitenleiste – oder `__mock.resetMockData()`
+in der Browser-Konsole – lässt sich der Ausgangszustand wiederherstellen.
+
+### Eine eigene Backend-Methode ergänzen
+
+```js
+import { registerMethod } from '@/api/mock/server.js'
+
+registerMethod('netzwerk.api.kennzahlen', ({ zeitraum }) => {
+  return { offen: 12, erledigt: 34, zeitraum }
+})
+```
+
+In der Komponente danach ganz normal:
+
+```js
+const kennzahlen = createResource({
+  url: 'netzwerk.api.kennzahlen',
+  params: { zeitraum: 'monat' },
+  auto: true,
+})
+```
+
+Nicht registrierte Methoden werfen einen Fehler, der sagt, was fehlt – so
+fällt früh auf, was das echte Backend später bereitstellen muss.
+
+## Datenmodell
+
+[src/api/mock/fixtures.js](src/api/mock/fixtures.js) enthält ein **Platzhalter-Modell**
+(`Organisation`, `Kontakt`, `Verbindung`), damit die App von Anfang an mit
+echten Listen und Formularen läuft. Sobald die tatsächlichen Doctypes feststehen,
+wird nur diese Datei ersetzt.
+
+## Umstieg auf ein echtes Frappe
+
+1. `VITE_USE_MOCK=false` in `.env` setzen und `VITE_FRAPPE_URL` auf die Site zeigen lassen.
+2. In [vite.config.js](vite.config.js) `APP_NAME` auf den Namen der Frappe-App setzen,
+   `build.outDir` auf `../<app>/public/frontend` ändern und die Plugin-Schalter
+   `frappeProxy` / `jinjaBootData` / `buildConfig` wieder einschalten.
+3. Die Doctypes im Backend so anlegen, dass Namen und Feldnamen zum Mock passen.
+
+Der Anwendungscode selbst ändert sich dabei nicht: Er nutzt ausschließlich
+`createResource` / `createListResource` / `createDocumentResource`.
+
+## Aufbau
+
+```
+src/
+  api/
+    index.js            Auswahl des Fetchers (Mock oder echtes Frappe)
+    mock/
+      server.js         RPC-Methoden, Latenz, Fehlerformat
+      db.js             Dokumentspeicher, Standardfelder, Persistenz
+      query.js          Filter-, Sortier- und Feldauswahllogik
+      fixtures.js       Doctype-Definitionen und Startdaten
+  components/           Layout und wiederverwendete Bausteine
+  pages/                Eine Datei je Route
+  router/               Routendefinition
+  stores/               Pinia-Stores
+```
+
+## Bekannte Grenzen des Mocks
+
+- Keine Berechtigungen, keine Validierung serverseitiger Hooks
+- Keine Child-Tables, keine verknüpften Doctypes (Link-Felder sind reine Strings)
+- Kein Realtime (`socketio` ist in [src/main.js](src/main.js) abgeschaltet)
+- Aggregatfelder wie `count(name) as anzahl` in `fields` werden ignoriert

@@ -1,0 +1,64 @@
+import type { Metadata } from "next";
+import { IBM_Plex_Mono, Inter } from "next/font/google";
+
+import { THEMA_SKRIPT } from "@/lib/thema";
+
+import "./globals.css";
+
+/**
+ * Zwei Schriften mit klarer Aufgabenteilung.
+ *
+ * Inter für alles, was gelesen wird - sie ist für Bildschirmgrößen
+ * gezeichnet und hält bei 12 Pixeln noch zusammen.
+ *
+ * IBM Plex Mono für alles, was gerechnet wird: Messwerte, Beträge,
+ * Zählpunkte, Kennungen. Der Grund ist nicht Geschmack, sondern die
+ * gleiche Ziffernbreite. In einer Spalte mit fünfzig Strangwerten
+ * stehen Komma und Nachkommastellen dadurch übereinander - ein
+ * Ausreißer fällt auf, ohne dass man ihn sucht. Eine
+ * Proportionalschrift verschiebt jede Zeile um ein paar Pixel, und
+ * genau das macht Vergleichen zur Arbeit.
+ */
+const inter = Inter({
+  variable: "--font-inter",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const plexMono = IBM_Plex_Mono({
+  variable: "--font-mono-plex",
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  display: "swap",
+});
+
+export const metadata: Metadata = {
+  title: {
+    default: "Ökovolt Energieportal",
+    template: "%s · Ökovolt",
+  },
+  description:
+    "Betriebsführung, Vermarktung und Nachweise für gewerbliche Photovoltaikanlagen",
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{ children: React.ReactNode }>) {
+  return (
+    <html lang="de" suppressHydrationWarning>
+      <head>
+        {/*
+          Laeuft vor dem ersten Anstrich und setzt die gespeicherte
+          Wahl. Ohne dieses Skript blitzt bei jedem Seitenaufruf die
+          helle Oberflaeche auf, bevor die dunkle greift - auf einem
+          Telefon im Dunkeln ist das kein Schoenheitsfehler, sondern
+          blendet.
+        */}
+        <script dangerouslySetInnerHTML={{ __html: THEMA_SKRIPT }} />
+      </head>
+      <body className={`${inter.variable} ${plexMono.variable} antialiased`}>
+        {children}
+      </body>
+    </html>
+  );
+}

@@ -1,0 +1,199 @@
+import pathlib
+
+ROOT = pathlib.Path(r"C:\Users\SALEADMIN\Documents\Servicetechniker APP")
+
+
+def patch(pfad, paare):
+    p = ROOT / pfad
+    s = p.read_text(encoding="utf-8")
+    for alt, neu in paare:
+        if alt not in s:
+            raise SystemExit(f"NICHT GEFUNDEN in {pfad}:\n---\n{alt[:300]}\n---")
+        s = s.replace(alt, neu, 1)
+    p.write_text(s, encoding="utf-8")
+    print("ok", pfad)
+
+
+# ============================================================ Berechtigungen
+RECHTE_NEU = '''
+
+# ----------------------------------------------------------------------------
+# Subunternehmerportal
+#
+# Der Subunternehmer sieht ausschliesslich, was seiner Firma zugeteilt ist.
+# Der Riegel liegt hier und nicht in der Oberflaeche: Auch ein direkter
+# API-Aufruf liefert nichts anderes.
+# ----------------------------------------------------------------------------
+
+
+def _eigener_supplier() -> str | None:
+	"""Firma des angemeldeten Benutzers — Portalkonto oder Polier."""
+	cache = getattr(frappe.local, "baudoku_subu_cache", None)
+	if cache is not None:
+		return cache
+
+	supplier = _portal_zuordnung("Supplier") or frappe.db.get_value(
+		"Subunternehmer Mitarbeiter", {"benutzer": frappe.session.user}, "supplier"
+	)
+	frappe.local.baudoku_subu_cache = supplier
+	return supplier
+
+
+def _nur_eigene_firma(tabelle: str, feld: str = "supplier") -> str:
+	if _hat_vollzugriff():
+		return ""
+	supplier = _eigener_supplier()
+	if not supplier:
+		return _q("1 = 0")
+	return _q(f"`tab{tabelle}`.{feld} = {frappe.db.escape(supplier)}")
+
+
+def auftrag_query(user: str | None = None) -> str:
+	return _nur_eigene_firma("Subunternehmerauftrag")
+
+
+def stempelung_query(user: str | None = None) -> str:
+	return _nur_eigene_firma("Stempelung")
+
+
+def arbeitstag_query(user: str | None = None) -> str:
+	return _nur_eigene_firma("Arbeitstag")
+
+
+def personalmeldung_query(user: str | None = None) -> str:
+	return _nur_eigene_firma("Personalmeldung")
+
+
+def materialanforderung_query(user: str | None = None) -> str:
+	return _nur_eigene_firma("Materialanforderung")
+
+
+def bauvertragsmeldung_query(user: str | None = None) -> str:
+	return _nur_eigene_firma("Bauvertragsmeldung")
+
+
+def subu_mitarbeiter_query(user: str | None = None) -> str:
+	return _nur_eigene_firma("Subunternehmer Mitarbeiter")
+
+
+def subu_dokument_permission(doc, user: str | None = None, permission_type: str | None = None) -> bool:
+	"""Einzeldokumentpruefung fuer alle Portalobjekte."""
+	if _hat_vollzugriff():
+		return True
+	supplier = _eigener_supplier()
+	if not supplier or doc.get("supplier") != supplier:
+		return False
+
+	# Was der Subunternehmer nicht mehr aendern darf, sobald es entschieden ist.
+	if permission_type in ("write", "delete"):
+		gesperrt = {
+			"Subunternehmerauftrag": ("Abgenommen", "Storniert", "Abgelehnt"),
+			"Materialanforderung": ("Bestellt", "Geliefert", "Abgelehnt"),
+			"Personalmeldung": ("Gemeldet",),
+			"Arbeitstag": ("Freigegeben", "Abgerechnet"),
+		}.get(doc.doctype, ())
+		if doc.get("status") in gesperrt:
+			return False
+		if doc.doctype == "Bauvertragsmeldung" and doc.get("gesperrt"):
+			return False
+
+	return True
+'''
+
+p = ROOT / "oekovolt_baudoku/api/berechtigung.py"
+s = p.read_text(encoding="utf-8")
+assert "def tagesbericht_permission" in s
+s = s.rstrip() + "\n" + RECHTE_NEU
+p.write_text(s, encoding="utf-8")
+print("ok oekovolt_baudoku/api/berechtigung.py")
+
+# ==================================================================== hooks
+patch(
+    "oekovolt_baudoku/hooks.py",
+    [
+        (
+            """permission_query_conditions = {
+	"Pruefprotokoll": "oekovolt_baudoku.api.berechtigung.protokoll_query",
+	"Mangel": "oekovolt_baudoku.api.berechtigung.mangel_query",
+	"Tagesbericht": "oekovolt_baudoku.api.berechtigung.tagesbericht_query",
+	"PV Anlage": "oekovolt_baudoku.api.berechtigung.anlage_query",
+}
+
+has_permission = {
+	"Pruefprotokoll": "oekovolt_baudoku.api.berechtigung.protokoll_permission",
+	"Tagesbericht": "oekovolt_baudoku.api.berechtigung.tagesbericht_permission",
+}""",
+            """permission_query_conditions = {
+	"Pruefprotokoll": "oekovolt_baudoku.api.berechtigung.protokoll_query",
+	"Mangel": "oekovolt_baudoku.api.berechtigung.mangel_query",
+	"Tagesbericht": "oekovolt_baudoku.api.berechtigung.tagesbericht_query",
+	"PV Anlage": "oekovolt_baudoku.api.berechtigung.anlage_query",
+	# Subunternehmerportal
+	"Subunternehmerauftrag": "oekovolt_baudoku.api.berechtigung.auftrag_query",
+	"Stempelung": "oekovolt_baudoku.api.berechtigung.stempelung_query",
+	"Arbeitstag": "oekovolt_baudoku.api.berechtigung.arbeitstag_query",
+	"Personalmeldung": "oekovolt_baudoku.api.berechtigung.personalmeldung_query",
+	"Materialanforderung": "oekovolt_baudoku.api.berechtigung.materialanforderung_query",
+	"Bauvertragsmeldung": "oekovolt_baudoku.api.berechtigung.bauvertragsmeldung_query",
+	"Subunternehmer Mitarbeiter": "oekovolt_baudoku.api.berechtigung.subu_mitarbeiter_query",
+}
+
+has_permission = {
+	"Pruefprotokoll": "oekovolt_baudoku.api.berechtigung.protokoll_permission",
+	"Tagesbericht": "oekovolt_baudoku.api.berechtigung.tagesbericht_permission",
+	"Subunternehmerauftrag": "oekovolt_baudoku.api.berechtigung.subu_dokument_permission",
+	"Stempelung": "oekovolt_baudoku.api.berechtigung.subu_dokument_permission",
+	"Arbeitstag": "oekovolt_baudoku.api.berechtigung.subu_dokument_permission",
+	"Personalmeldung": "oekovolt_baudoku.api.berechtigung.subu_dokument_permission",
+	"Materialanforderung": "oekovolt_baudoku.api.berechtigung.subu_dokument_permission",
+	"Bauvertragsmeldung": "oekovolt_baudoku.api.berechtigung.subu_dokument_permission",
+}""",
+        ),
+        (
+            """	"daily": [
+		"oekovolt_baudoku.baudoku.doctype.mangel.mangel.taeglich_eskalieren",
+		"oekovolt_baudoku.baudoku.doctype.tagesbericht.tagesbericht.erinnerung_fehlende_berichte",
+		"oekovolt_baudoku.api.komponenten.garantien_pruefen",
+	],""",
+            """	"daily": [
+		"oekovolt_baudoku.baudoku.doctype.mangel.mangel.taeglich_eskalieren",
+		"oekovolt_baudoku.baudoku.doctype.tagesbericht.tagesbericht.erinnerung_fehlende_berichte",
+		"oekovolt_baudoku.api.komponenten.garantien_pruefen",
+		# Subunternehmerportal
+		"oekovolt_baudoku.baudoku.doctype.subunternehmerauftrag.subunternehmerauftrag.fristen_nachziehen",
+		"oekovolt_baudoku.baudoku.doctype.personalmeldung.personalmeldung.fehlende_meldungen_pruefen",
+		"oekovolt_baudoku.baudoku.doctype.subunternehmer_mitarbeiter.subunternehmer_mitarbeiter.ablaufende_nachweise_pruefen",
+	],""",
+        ),
+    ],
+)
+
+# ============================================== Rollen: Polier ergaenzen
+patch(
+    "oekovolt_baudoku/setup/install.py",
+    [
+        (
+            """	("Baudoku Subunternehmer", 1),
+	("Baudoku Kunde", 1),
+]""",
+            """	("Baudoku Subunternehmer", 1),
+	("Baudoku Polier", 1),
+	("Baudoku Kunde", 1),
+]""",
+        ),
+        (
+            """	settings.update({
+		"riso_pro_modul_kohm": 40,""",
+            """	settings.update({
+		"geofence_radius_m": 300,
+		"geofence_erzwingen": 0,
+		"fristwarnung_tage": 3,
+		"personalmeldung_pflicht_drittstaat": 1,
+		"azg_tag_minuten": 600,
+		"azg_woche_minuten": 3000,
+		"pause_ab_minuten": 360,
+		"pause_mindestens_minuten": 30,
+		"riso_pro_modul_kohm": 40,""",
+        ),
+    ],
+)

@@ -1,0 +1,105 @@
+import { describe, expect, it } from 'vitest'
+
+import { pruefeString, pruefeZahlenwert, schweregradAusBewertung } from './plausibilitaet'
+
+/**
+ * Diese Fälle sind identisch zu `tests/test_plausibilitaet.py`.
+ * Client und Server müssen dieselbe Bewertung liefern, sonst springt der Status
+ * nach dem Sync um und der Techniker verliert das Vertrauen in die Anzeige.
+ */
+
+const MODUL = { modul_uoc: 41.5, modul_isc: 13.9 }
+
+describe('pruefeString – Uoc', () => {
+  it('akzeptiert einen Wert im Sollbereich', () => {
+    const befund = pruefeString({ uoc: 830, anzahl_module: 20, riso: 2000, ...MODUL })
+    expect(befund.status).toBe('OK')
+  })
+
+  it('warnt bei leichter Abweichung', () => {
+    // Soll 830 V, Toleranz ±10 % → 747…913; 930 liegt knapp darüber
+    const befund = pruefeString({ uoc: 930, anzahl_module: 20, riso: 2000, ...MODUL })
+    expect(befund.status).toBe('Warnung')
+    expect(befund.meldung).toContain('Uoc')
+  })
+
+  it('meldet einen Fehler bei starker Abweichung', () => {
+    // mehr als doppelte Toleranz → Fehler (z. B. ein String zu wenig angeschlossen)
+    const befund = pruefeString({ uoc: 600, anzahl_module: 20, riso: 2000, ...MODUL })
+    expect(befund.status).toBe('Fehler')
+  })
+
+  it('warnt, wenn das Moduldatenblatt fehlt', () => {
+    const befund = pruefeString({ uoc: 830, anzahl_module: 20, riso: 2000 })
+    expect(befund.status).toBe('Warnung')
+    expect(befund.meldung).toContain('Uoc je Modul')
+  })
+})
+
+describe('pruefeString – Riso nach IEC 62446-1', () => {
+  it('meldet einen Fehler unter dem Grenzwert', () => {
+    // 30 Module × 40 kΩ = 1200 kΩ Grenzwert
+    const befund = pruefeString({ riso: 900, anzahl_module: 30, ...MODUL })
+    expect(befund.status).toBe('Fehler')
+    expect(befund.meldung).toContain('IEC 62446-1')
+  })
+
+  it('warnt knapp über dem Grenzwert', () => {
+    const befund = pruefeString({ riso: 1300, anzahl_module: 30, ...MODUL })
+    expect(befund.status).toBe('Warnung')
+  })
+
+  it('akzeptiert deutlich darüber', () => {
+    const befund = pruefeString({ riso: 5000, anzahl_module: 30, ...MODUL })
+    expect(befund.status).toBe('OK')
+  })
+
+  it('nutzt das Absolutminimum, wenn die Modulzahl fehlt', () => {
+    expect(pruefeString({ riso: 800 }).status).toBe('Fehler')
+    expect(pruefeString({ riso: 5000 }).status).toBe('OK')
+  })
+})
+
+describe('pruefeString – Isc', () => {
+  it('warnt bei Abweichung über 15 %', () => {
+    const befund = pruefeString({ isc: 11.5, riso: 5000, anzahl_module: 20, ...MODUL })
+    expect(befund.status).toBe('Warnung')
+  })
+
+  it('akzeptiert innerhalb der Toleranz', () => {
+    const befund = pruefeString({ isc: 13.0, riso: 5000, anzahl_module: 20, ...MODUL })
+    expect(befund.status).toBe('OK')
+  })
+})
+
+describe('pruefeZahlenwert', () => {
+  it('ist ohne Wert neutral', () => {
+    expect(pruefeZahlenwert(null, 8, 30).status).toBe('OK')
+  })
+
+  it('warnt knapp unter dem Minimum', () => {
+    expect(pruefeZahlenwert(7.5, 8, 30, 'Nm').status).toBe('Warnung')
+  })
+
+  it('meldet einen Fehler deutlich unter dem Minimum', () => {
+    expect(pruefeZahlenwert(2, 8, 30, 'Nm').status).toBe('Fehler')
+  })
+
+  it('meldet einen Fehler deutlich über dem Maximum', () => {
+    expect(pruefeZahlenwert(60, 8, 30, 'Nm').status).toBe('Fehler')
+  })
+})
+
+describe('schweregradAusBewertung', () => {
+  it('ordnet schwere Mängel dem Grad A zu', () => {
+    expect(schweregradAusBewertung('Mangel schwer')).toBe('A')
+  })
+
+  it('ordnet leichte Mängel dem Grad C zu', () => {
+    expect(schweregradAusBewertung('Mangel leicht')).toBe('C')
+  })
+
+  it('nutzt B als Rückfallwert', () => {
+    expect(schweregradAusBewertung('Mangel')).toBe('B')
+  })
+})

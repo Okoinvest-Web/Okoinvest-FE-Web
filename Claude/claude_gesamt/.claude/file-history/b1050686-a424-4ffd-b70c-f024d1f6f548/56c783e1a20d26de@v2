@@ -1,0 +1,133 @@
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+
+import {
+  MONATSANTEILE,
+  anteiligerSollwert,
+  jahresanteil,
+} from "./ertragsprofil.ts";
+
+/**
+ * Die Zielerreichung entscheidet, ob jemand eine Anlage für gestört
+ * hält. Eine falsche Bezugsgröße erzeugt Meldungen ohne Anlass oder
+ * verdeckt einen echten Rückstand - beides teuer.
+ */
+describe("MONATSANTEILE", () => {
+  it("deckt zwölf Monate ab und ergibt in Summe genau 100 Prozent", () => {
+    assert.equal(MONATSANTEILE.length, 12);
+
+    const summe = MONATSANTEILE.reduce((s, m) => s + m, 0);
+    assert.ok(
+      Math.abs(summe - 100) < 1e-9,
+      `Summe ist ${summe}, erwartet 100`,
+    );
+  });
+
+  it("bildet den Sommer deutlich stärker ab als den Winter", () => {
+    const sommer = MONATSANTEILE[5] + MONATSANTEILE[6]; // Juni, Juli
+    const winter = MONATSANTEILE[11] + MONATSANTEILE[0]; // Dezember, Jänner
+
+    // In Ostösterreich liegt das Verhältnis bei rund fünf zu eins.
+    assert.ok(sommer / winter > 4, `Verhältnis nur ${sommer / winter}`);
+  });
+});
+
+describe("jahresanteil", () => {
+  it("ergibt über ein volles Jahr genau eins", () => {
+    const anteil = jahresanteil(
+      new Date(2025, 0, 1),
+      new Date(2025, 11, 31),
+    );
+    assert.ok(Math.abs(anteil - 1) < 1e-9, `Anteil ${anteil}`);
+  });
+
+  it("ergibt über ein volles Schaltjahr ebenfalls eins", () => {
+    // 2024 hat 366 Tage. Weil je Monat durch dessen echte Tageszahl
+    // geteilt wird, darf der zusätzliche Februartag nichts verschieben.
+    const anteil = jahresanteil(
+      new Date(2024, 0, 1),
+      new Date(2024, 11, 31),
+    );
+    assert.ok(Math.abs(anteil - 1) < 1e-9, `Anteil ${anteil}`);
+  });
+
+  it("gibt einem ganzen Monat genau seinen Monatsanteil", () => {
+    const juli = jahresanteil(new Date(2025, 6, 1), new Date(2025, 6, 31));
+    assert.ok(Math.abs(juli - MONATSANTEILE[6] / 100) < 1e-9);
+
+    const dezember = jahresanteil(
+      new Date(2025, 11, 1),
+      new Date(2025, 11, 31),
+    );
+    assert.ok(Math.abs(dezember - MONATSANTEILE[11] / 100) < 1e-9);
+  });
+
+  it("bewertet dreißig Sommertage weit höher als dreißig Wintertage", () => {
+    const sommer = jahresanteil(new Date(2025, 6, 1), new Date(2025, 6, 30));
+    const winter = jahresanteil(new Date(2025, 11, 1), new Date(2025, 11, 30));
+
+    assert.ok(sommer > winter * 4, `Sommer ${sommer}, Winter ${winter}`);
+  });
+
+  it("zählt den letzten Tag mit", () => {
+    const einTag = jahresanteil(new Date(2025, 6, 15), new Date(2025, 6, 15));
+    assert.ok(einTag > 0);
+    // Ein Julitag ist der einunddreißigste Teil des Julianteils.
+    assert.ok(Math.abs(einTag - MONATSANTEILE[6] / 100 / 31) < 1e-12);
+  });
+
+  it("läuft über den Jahreswechsel", () => {
+    const anteil = jahresanteil(
+      new Date(2025, 11, 25),
+      new Date(2026, 0, 5),
+    );
+    const dezember = (MONATSANTEILE[11] / 100 / 31) * 7;
+    const jaenner = (MONATSANTEILE[0] / 100 / 31) * 5;
+
+    assert.ok(Math.abs(anteil - (dezember + jaenner)) < 1e-12);
+  });
+
+  it("gibt für einen verkehrten Zeitraum null zurück", () => {
+    assert.equal(
+      jahresanteil(new Date(2025, 6, 20), new Date(2025, 6, 10)),
+      0,
+    );
+  });
+});
+
+describe("anteiligerSollwert", () => {
+  it("rechnet den Jahreswert auf den Zeitraum herunter", () => {
+    // 1.000.000 kWh im Jahr, der Juli trägt 13,7 Prozent.
+    const wert = anteiligerSollwert(
+      1_000_000,
+      new Date(2025, 6, 1),
+      new Date(2025, 6, 31),
+    );
+    assert.ok(wert !== null);
+    assert.ok(Math.abs(wert - 137_000) < 1e-6, `Wert ${wert}`);
+  });
+
+  it("ergibt im Sommer einen deutlich höheren Wert als linear verteilt", () => {
+    const linear = (1_000_000 * 30) / 365;
+    const echt = anteiligerSollwert(
+      1_000_000,
+      new Date(2025, 6, 1),
+      new Date(2025, 6, 30),
+    );
+
+    assert.ok(echt !== null);
+    // Genau dieser Unterschied ließ zuvor jede Anlage im Sommer
+    // scheinbar 150 Prozent des Ziels erreichen.
+    assert.ok(echt > linear * 1.5, `echt ${echt}, linear ${linear}`);
+  });
+
+  it("gibt ohne hinterlegten Jahreswert null zurück", () => {
+    const von = new Date(2025, 6, 1);
+    const bis = new Date(2025, 6, 31);
+
+    assert.equal(anteiligerSollwert(null, von, bis), null);
+    assert.equal(anteiligerSollwert(undefined, von, bis), null);
+    assert.equal(anteiligerSollwert(0, von, bis), null);
+    assert.equal(anteiligerSollwert(Number.NaN, von, bis), null);
+  });
+});

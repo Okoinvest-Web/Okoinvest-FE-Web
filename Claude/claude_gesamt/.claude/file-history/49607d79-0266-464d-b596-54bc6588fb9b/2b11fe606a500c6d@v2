@@ -1,0 +1,149 @@
+<template>
+  <div>
+    <PageHeader title="Compliance" :subtitle="untertitel">
+      <template #actions>
+        <Button :loading="bericht.loading" @click="bericht.fetch()">Bericht neu erzeugen</Button>
+      </template>
+    </PageHeader>
+
+    <div class="p-6">
+      <div v-if="bericht.data" class="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <div
+          v-for="kachel in kacheln"
+          :key="kachel.label"
+          class="rounded-lg border border-outline-gray-2 bg-surface-white p-4"
+        >
+          <p class="text-sm text-ink-gray-6">{{ kachel.label }}</p>
+          <p class="mt-1 text-2xl font-semibold text-ink-gray-9">{{ kachel.wert }}</p>
+          <StatusDot v-if="kachel.hinweis" class="mt-1" :level="kachel.level" :text="kachel.hinweis" klein />
+        </div>
+      </div>
+
+      <!-- Erfüllungsgrad als Größenordnung -->
+      <div
+        v-if="bericht.data"
+        class="mb-6 rounded-lg border border-outline-gray-2 bg-surface-white p-4"
+      >
+        <div class="flex items-center gap-3">
+          <div class="h-3 flex-1" style="background: var(--viz-neutral-soft)">
+            <div
+              class="h-full"
+              :style="{
+                width: bericht.data.summary.coverage_pct + '%',
+                background: balkenFarbe(bericht.data.summary.coverage_pct),
+                borderTopRightRadius: '4px',
+                borderBottomRightRadius: '4px',
+              }"
+            />
+          </div>
+          <span class="w-16 shrink-0 text-right text-base tabular-nums text-ink-gray-8">
+            {{ bericht.data.summary.coverage_pct }} %
+          </span>
+        </div>
+        <p class="mt-2 text-sm text-ink-gray-6">
+          {{ bericht.data.summary.met }} von {{ bericht.data.summary.total }} Punkten belegt ·
+          Stand {{ bericht.data.generated_at }}
+        </p>
+      </div>
+
+      <div class="space-y-3">
+        <article
+          v-for="punkt in bericht.data?.controls || []"
+          :key="punkt.control_key"
+          class="rounded-lg border border-outline-gray-2 bg-surface-white p-4"
+        >
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <div class="min-w-0">
+              <p class="text-base font-medium text-ink-gray-9">{{ punkt.control_name }}</p>
+              <p class="mt-0.5 text-sm text-ink-gray-5">
+                {{ punkt.framework }} · {{ punkt.category }} ·
+                <span class="font-mono">{{ punkt.control_key }}</span>
+              </p>
+            </div>
+            <StatusDot :level="statusStufe(punkt.status)" :text="STATUS[punkt.status]" />
+          </div>
+
+          <div class="mt-3 flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-outline-gray-2 pt-3 text-sm">
+            <span v-if="punkt.evidence" class="text-ink-gray-7">
+              <span class="text-ink-gray-5">Nachweis:</span> {{ punkt.evidence }}
+            </span>
+            <span v-if="punkt.gap" class="text-ink-gray-7">
+              <span class="text-ink-gray-5">Lücke:</span> {{ punkt.gap }}
+            </span>
+            <RouterLink
+              v-if="punkt.link"
+              :to="punkt.link"
+              class="ml-auto text-sm text-ink-gray-6 underline decoration-outline-gray-3 underline-offset-2"
+            >
+              Zur Quelle
+            </RouterLink>
+          </div>
+        </article>
+      </div>
+
+      <p v-if="bericht.loading" class="py-8 text-center text-sm text-ink-gray-5">
+        Wird erzeugt …
+      </p>
+
+      <p class="mt-6 text-xs text-ink-gray-4">
+        Jeder Punkt zieht seinen Nachweis aus den vorhandenen Daten dieser
+        Plattform – nicht aus einer gepflegten Liste. Was sich nicht belegen
+        lässt, steht als „nicht belegbar“ da und nicht als erfüllt. Für den
+        Export als Auditbericht je Mandant fehlt das Backend.
+      </p>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed } from 'vue'
+import { Button, createResource } from 'frappe-ui'
+import PageHeader from '@/components/PageHeader.vue'
+import StatusDot from '@/components/StatusDot.vue'
+
+const STATUS = {
+  met: 'Belegt',
+  partial: 'Teilweise',
+  failed: 'Nicht erfüllt',
+  unknown: 'Nicht belegbar',
+}
+
+const bericht = createResource({ url: 'netops.api.compliance.compliance_report', auto: true })
+
+const kacheln = computed(() => {
+  const z = bericht.data?.summary
+  if (!z) return []
+  return [
+    { label: 'Belegt', wert: z.met, level: 'ok', hinweis: 'nachgewiesen' },
+    {
+      label: 'Teilweise',
+      wert: z.partial,
+      level: 'warning',
+      hinweis: z.partial ? 'Lücke schließen' : null,
+    },
+    {
+      label: 'Nicht erfüllt',
+      wert: z.failed,
+      level: 'critical',
+      hinweis: z.failed ? 'Handlungsbedarf' : null,
+    },
+    { label: 'Erfüllungsgrad', wert: z.coverage_pct + ' %' },
+  ]
+})
+
+const untertitel = computed(() => {
+  const d = bericht.data
+  if (!d) return ''
+  return d.framework + ' · ' + d.summary.total + ' Punkte geprüft'
+})
+
+function statusStufe(status) {
+  return { met: 'ok', partial: 'warning', failed: 'critical', unknown: 'neutral' }[status] || 'neutral'
+}
+
+function balkenFarbe(prozent) {
+  if (prozent >= 80) return 'var(--viz-good)'
+  if (prozent >= 50) return 'var(--viz-warning)'
+  return 'var(--viz-critical)'
+}
+</script>

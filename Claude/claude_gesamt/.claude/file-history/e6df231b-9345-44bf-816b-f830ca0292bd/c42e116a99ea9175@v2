@@ -1,0 +1,146 @@
+<script setup lang="ts">
+/**
+ * Eigene Arbeitszeiten im Portal.
+ *
+ * Der Subunternehmer sieht, was erfasst wurde, was freigegeben ist und was
+ * beanstandet wurde — Transparenz vor der Abrechnung verhindert den Streit
+ * hinterher.
+ */
+import { computed, onMounted, ref } from 'vue'
+
+import AppIcon from '@/components/AppIcon.vue'
+import StatusAbzeichen from '@/components/StatusAbzeichen.vue'
+import { datum, datumZeit, isoDatum } from '@/lib/format'
+import { portal, type Arbeitstag } from '@/lib/portal'
+import { usePortal } from '@/stores/portal'
+
+const store = usePortal()
+
+const tage = ref<Arbeitstag[]>([])
+const laedt = ref(true)
+const von = ref(isoDatum(new Date(Date.now() - 29 * 86_400_000)))
+const bis = ref(isoDatum())
+
+const nachPerson = computed(() => {
+  const gruppen = new Map<string, Arbeitstag[]>()
+  for (const tag of tage.value) {
+    const liste = gruppen.get(tag.mitarbeiter) ?? []
+    liste.push(tag)
+    gruppen.set(tag.mitarbeiter, liste)
+  }
+  return [...gruppen.entries()].map(([mitarbeiter, eintraege]) => ({
+    mitarbeiter,
+    name: store.kolonne.find((k) => k.name === mitarbeiter)?.vollname ?? mitarbeiter,
+    eintraege: eintraege.sort((a, b) => b.datum.localeCompare(a.datum)),
+    summe: eintraege.reduce((s, t) => s + (t.arbeitszeit_stunden ?? 0), 0),
+    freigegeben: eintraege
+      .filter((t) => ['Freigegeben', 'Abgerechnet'].includes(t.status))
+      .reduce((s, t) => s + (t.arbeitszeit_stunden ?? 0), 0),
+  }))
+})
+
+const gesamt = computed(() => ({
+  erfasst: nachPerson.value.reduce((s, p) => s + p.summe, 0),
+  freigegeben: nachPerson.value.reduce((s, p) => s + p.freigegeben, 0),
+}))
+
+function uhrzeit(wert?: string) {
+  return wert ? datumZeit(wert).slice(-5) : '–'
+}
+
+async function laden() {
+  laedt.value = true
+  try {
+    tage.value = await portal.arbeitszeiten(von.value, bis.value)
+  } finally {
+    laedt.value = false
+  }
+}
+
+onMounted(async () => {
+  if (!store.geladen) await store.laden()
+  await laden()
+})
+</script>
+
+<template>
+  <div class="space-y-4">
+    <header>
+      <h2 class="text-xl font-bold">Arbeitszeiten</h2>
+      <p class="text-sm text-slate-500">
+        Abgerechnet wird, was der Bauleiter freigegeben hat.
+      </p>
+    </header>
+
+    <div class="flex flex-wrap items-end gap-2">
+      <label class="flex-1">
+        <span class="beschriftung">Von</span>
+        <input v-model="von" class="feld" type="date" @change="laden" />
+      </label>
+      <label class="flex-1">
+        <span class="beschriftung">Bis</span>
+        <input v-model="bis" class="feld" type="date" @change="laden" />
+      </label>
+    </div>
+
+    <div class="grid grid-cols-2 gap-3">
+      <div class="karte p-4">
+        <div class="text-2xl font-bold tabular-nums">{{ gesamt.erfasst.toFixed(1) }} h</div>
+        <div class="text-sm text-slate-500">erfasst</div>
+      </div>
+      <div class="karte p-4">
+        <div class="text-2xl font-bold tabular-nums text-ok">
+          {{ gesamt.freigegeben.toFixed(1) }} h
+        </div>
+        <div class="text-sm text-slate-500">freigegeben</div>
+      </div>
+    </div>
+
+    <p v-if="laedt" class="py-8 text-center text-sm text-slate-500">Wird geladen …</p>
+
+    <p v-else-if="!tage.length" class="karte p-6 text-center text-sm text-slate-500">
+      Für diesen Zeitraum wurden keine Zeiten erfasst.
+    </p>
+
+    <section v-for="person in nachPerson" v-else :key="person.mitarbeiter" class="karte overflow-hidden">
+      <header class="flex items-center gap-2 border-b border-slate-200 px-4 py-3 dark:border-slate-800">
+        <span class="flex-1 font-semibold">{{ person.name }}</span>
+        <span class="text-sm tabular-nums text-slate-500">
+          {{ person.summe.toFixed(1) }} h
+        </span>
+      </header>
+
+      <ul>
+        <li v-for="tag in person.eintraege" :key="tag.name"
+            class="flex items-center gap-3 border-b border-slate-100 px-4 py-2 text-sm
+                   last:border-0 dark:border-slate-800/60">
+          <div class="w-24 shrink-0">
+            <div class="font-medium">{{ datum(tag.datum) }}</div>
+            <div class="text-xs text-slate-400">{{ uhrzeit(tag.beginn) }}–{{ uhrzeit(tag.ende) }}</div>
+          </div>
+          <div class="min-w-0 flex-1">
+            <div class="tabular-nums">
+              {{ (tag.arbeitszeit_stunden ?? 0).toFixed(2) }} h
+              <span v-if="tag.pause_minuten" class="text-xs text-slate-400">
+                (Pause {{ tag.pause_minuten }} min)
+              </span>
+            </div>
+            <div v-if="tag.beanstandung" class="text-xs font-medium text-fehler">
+              {{ tag.beanstandung }}
+            </div>
+            <div v-else-if="tag.hinweise && tag.hinweise !== 'Ohne Beanstandung.'"
+                 class="text-xs text-slate-400">
+              {{ tag.hinweise }}
+            </div>
+          </div>
+          <StatusAbzeichen :wert="tag.status === 'Vollstaendig' ? 'Eingereicht' : tag.status" klein />
+        </li>
+      </ul>
+    </section>
+
+    <p class="pb-4 text-xs text-slate-400">
+      <AppIcon name="warnung" :groesse="14" class="inline" />
+      Korrekturen erfasst der Bauleiter; die ursprüngliche Stempelung bleibt dabei erhalten.
+    </p>
+  </div>
+</template>

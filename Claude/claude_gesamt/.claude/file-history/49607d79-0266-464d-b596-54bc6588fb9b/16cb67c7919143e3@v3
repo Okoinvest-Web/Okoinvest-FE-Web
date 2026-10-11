@@ -1,0 +1,311 @@
+/**
+ * Cloud-Server und Zero-Trust-Zugriff (Fachkonzept 2.14).
+ *
+ * Zwei Dinge macht diese Schicht sichtbar, die in der Hetzner-Konsole und in
+ * Cloudflare getrennt liegen:
+ *   - ein Server, dessen SSH nicht über den Tunnel läuft
+ *   - eine Cloud-Firewallregel, die Port 22 ins Internet öffnet
+ * Beides widerspricht dem Zero-Trust-Ansatz und gehört zusammen betrachtet.
+ *
+ * Die Power-Aktionen aus dem Fachkonzept (Einschalten, Herunterfahren,
+ * Snapshot) fehlen hier bewusst: sie verlangen FIDO2-Step-up, Ticketbezug
+ * und Audit-Eintrag und damit ein Backend.
+ */
+import { table } from '../db.js'
+import { alterStunden } from '../zeit.js'
+
+export function cloud_overview({ tenant = null } = {}) {
+  const regeln = table('Cloud Firewall Rule')
+  const apps = table('Zero Trust Application')
+
+  const server = table('Cloud Server')
+    .filter((s) => !tenant || s.tenant === tenant)
+    .map((srv) => {
+      const gruende = []
+      let stufe = 'ok'
+
+      // Eine Regel, die Port 22 aus dem Internet erlaubt und auf diesen
+      // Server zeigt, hebelt den Tunnel aus.
+      const offenesSsh = regeln.find(
+        (r) =>
+          r.port === '22' &&
+          r.source_ips === '0.0.0.0/0' &&
+          String(r.applied_to || '').includes(srv.name),
+      )
+      if (offenesSsh) {
+        stufe = 'critical'
+        gruende.push('Port 22 aus dem Internet offen (' + offenesSsh.name + ')')
+      }
+
+      if (!srv.ssh_via_tunnel) {
+        stufe = stufe === 'critical' ? stufe : 'warning'
+        gruende.push('SSH läuft nicht über den Cloudflare-Tunnel')
+      }
+
+      if (!srv.backups_enabled) {
+        stufe = stufe === 'critical' ? stufe : 'warning'
+        gruende.push('Keine Sicherung aktiviert')
+      } else {
+        const alter = alterStunden(srv.last_snapshot)
+        if (alter === null) {
+          stufe = stufe === 'critical' ? stufe : 'warning'
+          gruende.push('Sicherung aktiviert, aber kein Snapshot vorhanden')
+        } else if (alter > 48) {
+          stufe = stufe === 'critical' ? stufe : 'warning'
+          gruende.push('Letzter Snapshot vor ' + Math.round(alter) + ' Stunden')
+        }
+      }
+
+      const zugehoerigeApps = apps.filter((a) => a.target_server === srv.name)
+
+      return {
+        ...srv,
+        snapshot_age_hours: srv.last_snapshot ? Math.round(alterStunden(srv.last_snapshot)) : null,
+        zero_trust_apps: zugehoerigeApps.map((a) => a.name),
+        tunnel_states: [...new Set(zugehoerigeApps.map((a) => a.tunnel_state))],
+        level: stufe,
+        reasons: gruende,
+      }
+    })
+    .sort((a, b) => a.server_name.localeCompare(b.server_name))
+
+  const anwendungen = apps
+    .filter((a) => !tenant || a.tenant === tenant)
+    .map((app) => {
+      const gruende = []
+      let stufe = 'ok'
+
+      if (app.tunnel_state === 'down') {
+        stufe = 'critical'
+        gruende.push('Tunnel nicht verbunden')
+      } else if (app.tunnel_state !== 'healthy') {
+        stufe = 'warning'
+        gruende.push('Tunnel beeinträchtigt')
+      }
+      if (!app.requires_warp) {
+        stufe = stufe === 'critical' ? stufe : 'warning'
+        gruende.push('Ohne Pflicht zum verwalteten Gerät (WARP)')
+      }
+      // Acht Stunden Sitzungsdauer heisst: ein übernommenes Gerät bleibt
+      // einen ganzen Arbeitstag drin.
+      if (app.session_minutes > 240) {
+        stufe = stufe === 'critical' ? stufe : 'warning'
+        gruende.push('Sitzungsdauer ' + app.session_minutes + ' Minuten')
+      }
+
+      return {
+        ...app,
+        last_access_hours: app.last_access ? Math.round(alterStunden(app.last_access)) : null,
+        level: stufe,
+        reasons: gruende,
+      }
+    })
+    .sort((a, b) => a.app_name.localeCompare(b.app_name))
+
+  const offeneRegeln = regeln
+    .filter((r) => !tenant || r.tenant === tenant)
+    .map((r) => ({
+      ...r,
+      // Verwaltungsports aus dem Internet sind das, was zuerst weg muss.
+      level:
+        r.source_ips === '0.0.0.0/0' && ['22', '3389', '8006'].includes(String(r.port))
+          ? 'critical'
+          : 'ok',
+    }))
+    .sort((a, b) => a.rule_name.localeCompare(b.rule_name))
+
+  return {
+    servers: server,
+    applications: anwendungen,
+    firewall_rules: offeneRegeln,
+    summary: {
+      servers: server.length,
+      running: server.filter((s) => s.power_state === 'running').length,
+      with_findings: server.filter((s) => s.level !== 'ok').length,
+      without_tunnel: server.filter((s) => !s.ssh_via_tunnel).length,
+      without_backup: server.filter((s) => !s.backups_enabled).length,
+      cost_per_month:
+        Math.round(server.reduce((s, srv) => s + (srv.cost_per_month || 0), 0) * 100) / 100,
+      management_ports_open: offeneRegeln.filter((r) => r.level === 'critical').length,
+      tunnels_down: anwendungen.filter((a) => a.tunnel_state === 'down').length,
+    },
+  }
+}
+
+/** Identitäten, MFA-Abdeckung und Token-Inventar (Fachkonzept 2.13). */
+export function identity_overview({ tenant = null } = {}) {
+  const konten = table('Identity Account')
+    .filter((k) => !tenant || k.tenant === tenant)
+    .map((konto) => {
+      const gruende = []
+      let stufe = 'ok'
+
+      // Break-Glass-Konten sind bewusst unbenutzt - kein Befund.
+      if (konto.account_kind === 'break_glass') {
+        return {
+          ...konto,
+          level: 'ok',
+          reasons: ['Versiegelt, Nutzung löst Alarm aus'],
+          last_login_days: null,
+        }
+      }
+
+      if (konto.privileged && konto.mfa_kind !== 'fido2' && konto.account_kind === 'person') {
+        stufe = 'critical'
+        gruende.push('Privilegiert ohne FIDO2')
+      }
+      if (konto.account_kind === 'person' && konto.mfa_kind === 'none') {
+        stufe = 'critical'
+        gruende.push('Kein zweiter Faktor')
+      }
+
+      const alterTage = konto.last_login ? Math.round(alterStunden(konto.last_login) / 24) : null
+      if (konto.account_kind === 'person' && alterTage !== null && alterTage > 90) {
+        stufe = stufe === 'critical' ? stufe : 'warning'
+        gruende.push('Seit ' + alterTage + ' Tagen nicht angemeldet')
+      }
+      if (konto.account_kind === 'service' && konto.privileged) {
+        stufe = stufe === 'critical' ? stufe : 'warning'
+        gruende.push('Privilegiertes Dienstkonto – Zugang nur über Vault')
+      }
+
+      return { ...konto, last_login_days: alterTage, level: stufe, reasons: gruende }
+    })
+    .sort((a, b) => a.display_name.localeCompare(b.display_name))
+
+  const heute = new Date().toISOString().slice(0, 10)
+
+  const tokens = table('Auth Token')
+    .filter((t) => !tenant || t.tenant === tenant)
+    .map((token) => {
+      const gruende = []
+      let stufe = 'ok'
+
+      if (token.expires && token.expires < heute) {
+        stufe = 'critical'
+        gruende.push('Abgelaufen am ' + token.expires)
+      }
+      if (!token.read_only && token.token_kind === 'api') {
+        stufe = stufe === 'critical' ? stufe : 'warning'
+        gruende.push('Schreibender API-Zugang')
+      }
+      const nutzungTage = token.last_used ? Math.round(alterStunden(token.last_used) / 24) : null
+      if (nutzungTage !== null && nutzungTage > 60 && token.token_kind === 'api') {
+        stufe = stufe === 'critical' ? stufe : 'warning'
+        gruende.push('Seit ' + nutzungTage + ' Tagen ungenutzt')
+      }
+
+      return { ...token, last_used_days: nutzungTage, level: stufe, reasons: gruende }
+    })
+    .sort((a, b) => a.token_label.localeCompare(b.token_label))
+
+  const personen = konten.filter((k) => k.account_kind === 'person')
+  const mitMfa = personen.filter((k) => k.mfa_kind !== 'none')
+
+  return {
+    accounts: konten,
+    tokens,
+    summary: {
+      accounts: konten.length,
+      persons: personen.length,
+      // Die Kennzahl aus dem Fachkonzept: MFA-Abdeckung.
+      mfa_coverage_pct: personen.length
+        ? Math.round((mitMfa.length / personen.length) * 1000) / 10
+        : 100,
+      without_mfa: personen.filter((k) => k.mfa_kind === 'none').length,
+      privileged: konten.filter((k) => k.privileged).length,
+      service_accounts: konten.filter((k) => k.account_kind === 'service').length,
+      break_glass: konten.filter((k) => k.account_kind === 'break_glass').length,
+      tokens: tokens.length,
+      tokens_expired: tokens.filter((t) => t.reasons.some((g) => g.startsWith('Abgelaufen')))
+        .length,
+      tokens_write: tokens.filter((t) => t.token_kind === 'api' && !t.read_only).length,
+      stale_accounts: personen.filter((k) => k.last_login_days !== null && k.last_login_days > 90)
+        .length,
+    },
+  }
+}
+
+/** Externe Angriffsfläche, Zertifikate und Threat Intel (Fachkonzept 2.13). */
+export function exposure_overview({ tenant = null } = {}) {
+  const heute = new Date().toISOString().slice(0, 10)
+
+  const dienste = table('Exposure Finding')
+    .filter((e) => !tenant || e.tenant === tenant)
+    .map((fund) => ({
+      ...fund,
+      level: fund.documented ? 'ok' : 'critical',
+      reason: fund.documented ? null : 'Nicht in den dokumentierten Freigaben',
+    }))
+    .sort(
+      (a, b) =>
+        Number(a.documented) - Number(b.documented) || a.public_ip.localeCompare(b.public_ip),
+    )
+
+  const zertifikate = table('Certificate Record')
+    .filter((z) => !tenant || z.tenant === tenant)
+    .map((zert) => {
+      const gruende = []
+      let stufe = 'ok'
+
+      if (zert.not_after < heute) {
+        stufe = 'critical'
+        gruende.push('Abgelaufen am ' + zert.not_after)
+      } else {
+        const tage = Math.round(
+          (new Date(zert.not_after + 'T00:00:00').getTime() - Date.now()) / 86400000,
+        )
+        if (tage <= 30) {
+          stufe = 'warning'
+          gruende.push('Läuft in ' + tage + ' Tagen ab')
+        }
+      }
+      if (!zert.in_dns_doc) {
+        stufe = stufe === 'critical' ? stufe : 'warning'
+        gruende.push('Subdomain nicht in der DNS-Doku')
+      }
+
+      return { ...zert, level: stufe, reasons: gruende }
+    })
+    .sort((a, b) => a.not_after.localeCompare(b.not_after))
+
+  const indikatoren = table('Threat Indicator')
+    .filter((i) => !tenant || i.tenant === tenant)
+    .map((ioc) => ({ ...ioc, level: ioc.matched ? 'critical' : 'ok' }))
+    .sort((a, b) => Number(b.matched) - Number(a.matched) || b.confidence - a.confidence)
+
+  const fenster = table('Scan Window')
+    .filter((f) => !tenant || f.tenant === tenant)
+    .map((fenster) => {
+      const gruende = []
+      let stufe = 'ok'
+
+      if (!fenster.announced_to_watchdog) {
+        stufe = 'critical'
+        gruende.push('Nicht beim Wachhund angemeldet')
+      }
+      // OT und SCADA vertragen keine aggressiven Profile.
+      const istOt = fenster.target_prefix.startsWith('10.100.')
+      if (istOt && !fenster.gentle_profile) {
+        stufe = 'critical'
+        gruende.push('Aggressives Profil auf OT-Netz')
+      }
+
+      return { ...fenster, level: stufe, reasons: gruende }
+    })
+    .sort((a, b) => a.window_name.localeCompare(b.window_name))
+
+  return {
+    services: dienste,
+    certificates: zertifikate,
+    indicators: indikatoren,
+    scan_windows: fenster,
+    summary: {
+      services: dienste.length,
+      undocumented: dienste.filter((d) => !d.documented).length,
+      certificates_expiring: zertifikate.filter((z) => z.level !== 'ok').length,
+      indicators_matched: indikatoren.filter((i) => i.matched).length,
+      scan_windows_problematic: fenster.filter((f) => f.level !== 'ok').length,
+    },
+  }
+}

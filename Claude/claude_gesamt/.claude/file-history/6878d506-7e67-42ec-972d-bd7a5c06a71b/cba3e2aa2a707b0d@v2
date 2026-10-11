@@ -1,0 +1,49 @@
+import { notFound } from "next/navigation";
+import { db } from "@/lib/data";
+import type { Country } from "@/lib/types";
+import { PageBody, PageHeader } from "@/components/ui";
+import { QuoteBuilder } from "@/components/QuoteBuilder";
+
+export const metadata = { title: "Neues Angebot" };
+
+// Angebot wird immer aus einer Chance erstellt (wie in ERPNext: Opportunity → Quotation)
+export default async function NewQuotationPage({ searchParams }: PageProps<"/quotations/new">) {
+  const opp = await db().getOpportunity(String((await searchParams).opp ?? ""));
+  if (!opp) notFound();
+
+  // Land und Privat/Gewerbe bestimmen den Steuervorschlag
+  let country: Country = "Germany";
+  let isPrivate = true;
+  if (opp.opportunity_from === "Lead") {
+    const lead = await db().getLead(opp.party_name);
+    country = lead?.country ?? "Germany";
+    isPrivate = !lead?.company_name;
+  } else {
+    const c = await db().getCustomer(opp.party_name);
+    isPrivate = c?.customer_type === "Individual";
+  }
+  const items = await db().listItems({ limit: 500 });
+
+  return (
+    <>
+      <PageHeader
+        title="Neues Angebot"
+        crumbs={[
+          { href: "/opportunities", label: "Chancen" },
+          { href: `/opportunities/${encodeURIComponent(opp.name)}`, label: opp.title ?? opp.name },
+        ]}
+        subtitle={`für ${opp.customer_name ?? opp.party_name}`}
+      />
+      <PageBody>
+        <QuoteBuilder
+          opportunity={opp.name}
+          title={opp.title ?? ""}
+          customerName={opp.customer_name ?? opp.party_name}
+          items={items}
+          country={country}
+          isPrivate={isPrivate}
+        />
+      </PageBody>
+    </>
+  );
+}

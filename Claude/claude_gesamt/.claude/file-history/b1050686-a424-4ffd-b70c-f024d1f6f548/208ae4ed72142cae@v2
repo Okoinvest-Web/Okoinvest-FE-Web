@@ -1,0 +1,40 @@
+"use client";
+
+import { useActionState } from "react";
+
+import { Meldung } from "@/components/ui";
+
+import { meldungBestaetigen, type BestaetigungErgebnis } from "./aktionen";
+
+/**
+ * Der Knopf, der die Eskalation beendet.
+ *
+ * Ohne Rückfrage und ohne Dialog: Wer bestätigt, sitzt möglicherweise
+ * im Auto und hat eine Hand frei. Eine Sicherheitsabfrage wäre hier
+ * die falsche Vorsicht - eine versehentliche Bestätigung lässt sich
+ * am Ticket erkennen und korrigieren, eine verzögerte Reaktion nicht.
+ */
+export function Bestaetigung({ meldung }: { meldung: string }) {
+  const [ergebnis, aktion, laeuft] = useActionState<
+    BestaetigungErgebnis | null,
+    FormData
+  >(meldungBestaetigen, null);
+
+  if (ergebnis?.ok) {
+    return <Meldung ton="gut">{ergebnis.meldung}</Meldung>;
+  }
+
+  return (
+    <form action={aktion} className="mt-2">
+      <input type="hidden" name="meldung" value={meldung} />
+      <button type="submit" className="knopf knopf-rand" disabled={laeuft}>
+        {laeuft ? "Wird bestätigt …" : "Ich übernehme"}
+      </button>
+      {ergebnis && !ergebnis.ok && (
+        <div className="mt-2">
+          <Meldung ton="kritisch">{ergebnis.meldung}</Meldung>
+        </div>
+      )}
+    </form>
+  );
+}

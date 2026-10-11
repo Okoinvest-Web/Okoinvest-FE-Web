@@ -1,0 +1,767 @@
+import Link from "next/link";
+import type { Metadata } from "next";
+
+import { Tabelle, Zeile, Zelle, ZelleMitZusatz } from "@/components/tabelle";
+import {
+  Hinweis,
+  Kennzahl,
+  Kennzahlenleiste,
+  LeerZustand,
+  Seitenkopf,
+  Status,
+  Tafel,
+} from "@/components/ui";
+import { ladeAnlagen } from "@/lib/daten/monitoring";
+import {
+  ladeDriftbefunde,
+  ladeDriftlaeufe,
+  ladeGeraete,
+  ladeGeraetefreigaben,
+  ladeNetzKennzahlen,
+  ladeProtokoll,
+  ladeZugriffe,
+  ladeZonen,
+  ladeZonenregeln,
+  pruefeProtokollkette,
+} from "@/lib/daten/netz";
+import { formatDatumZeit, formatZahl } from "@/lib/format";
+import { fasseFreigabenZusammen } from "@/lib/ot/inbetriebnahme";
+import { aktuelleRechte, requireRecht } from "@/lib/session";
+
+import { Sperraufhebung, Zugriffsfreigabe } from "./zugriff-steuerung";
+
+export const metadata: Metadata = { title: "Netz & Geräte" };
+
+function geraetTon(status: string) {
+  switch (status) {
+    case "Online":
+      return "gut" as const;
+    case "Wartung":
+      return "hinweis" as const;
+    case "Gestoert":
+    case "Offline":
+      return "kritisch" as const;
+    default:
+      return "neutral" as const;
+  }
+}
+
+function schwereTon(schwere: string) {
+  switch (schwere) {
+    case "kritisch":
+      return "kritisch" as const;
+    case "hoch":
+      return "ernst" as const;
+    case "mittel":
+      return "hinweis" as const;
+    default:
+      return "neutral" as const;
+  }
+}
+
+export default async function NetzSeite({
+  searchParams,
+}: {
+  searchParams: Promise<{ anlage?: string }>;
+}) {
+  await requireRecht("netz.lesen");
+
+  const rechte = await aktuelleRechte();
+  const darfFreigeben = rechte.has("fernwartung.freigeben");
+  const darfVerwalten = rechte.has("sicherheit.verwalten");
+
+  const { anlage: gewaehlt } = await searchParams;
+
+  const anlagen = ladeAnlagen();
+  const anlageId = gewaehlt ?? anlagen[0]?.id;
+
+  const kennzahlen = ladeNetzKennzahlen();
+  const geraete = ladeGeraete();
+  const freigaben = ladeGeraetefreigaben();
+  const zonen = anlageId ? ladeZonen(anlageId) : [];
+  const regeln = anlageId ? ladeZonenregeln(anlageId) : [];
+  const laeufe = ladeDriftlaeufe(10);
+  const befunde = ladeDriftbefunde(20);
+  const protokoll = ladeProtokoll(20);
+  const zugriffe = ladeZugriffe(12);
+  const kette = pruefeProtokollkette();
+
+  const gesperrt = laeufe.filter((l) => l.gesperrt === 1);
+  const offeneFreigaben = freigaben.filter((f) => f.befund.freigabe !== "erteilt");
+  const aktuelleAnlage = anlagen.find((a) => a.id === anlageId);
+
+  return (
+    <div className="space-y-5">
+      <Seitenkopf
+        titel="Netz & Geräte"
+        hinweis={`${kennzahlen.geraete} Geräte an ${anlagen.length} Standorten · ${kennzahlen.versiegelteParameter} versiegelte Schutzparameter`}
+      />
+
+      {gesperrt.length > 0 && (
+        <Hinweis
+          ton="kritisch"
+          titel={`${gesperrt.length} Anlage${gesperrt.length > 1 ? "n" : ""} gesperrt`}
+        >
+          {gesperrt.map((l) => l.anlage).join(", ")}: Ein versiegelter
+          Schutzparameter weicht vom hinterlegten Stand ab. Die steuerbaren
+          Betriebsmittel hinter dem Übergabepunkt wurden in einen sicheren
+          Zustand gefahren. Die Freigabe erfolgt erst, wenn der Wert wieder
+          stimmt und der Vorgang geprüft ist.
+        </Hinweis>
+      )}
+
+      {gesperrt.map((l) => (
+        <Tafel
+          key={`sperre-${l.id}`}
+          titel={`Sperre aufheben: ${l.anlage}`}
+          hinweis="Erst prüfen, dann freigeben"
+        >
+          <Sperraufhebung
+            anlageId={l.anlage_id}
+            anlage={l.anlage}
+            darfVerwalten={darfVerwalten}
+          />
+        </Tafel>
+      ))}
+
+      {!kette.gueltig && (
+        <Hinweis ton="kritisch" titel="Protokollkette gebrochen">
+          {kette.begruendung} Das Protokoll ist als Nachweis nicht mehr
+          verwendbar, bis der Vorgang geklärt ist.
+        </Hinweis>
+      )}
+
+      <Kennzahlenleiste>
+        <Kennzahl
+          label="Geräte erreichbar"
+          wert={`${kennzahlen.geraeteOnline}`}
+          hinweis={`von ${kennzahlen.geraete}`}
+          akzent={kennzahlen.geraeteOnline < kennzahlen.geraete}
+        />
+        <Kennzahl
+          label="Offene Abweichungen"
+          wert={formatZahl(kennzahlen.offeneBefunde, 0)}
+          hinweis={
+            kennzahlen.anlagenGesperrt > 0
+              ? `${kennzahlen.anlagenGesperrt} Anlage gesperrt`
+              : "keine Sperre"
+          }
+          akzent={kennzahlen.offeneBefunde > 0}
+        />
+        <Kennzahl
+          label="Versiegelte Parameter"
+          wert={formatZahl(kennzahlen.versiegelteParameter, 0)}
+          hinweis="nur lesbar, nicht änderbar"
+        />
+        <Kennzahl
+          label="Protokollkette"
+          wert={kennzahlen.ketteGueltig ? "unverändert" : "gebrochen"}
+          hinweis={`${kennzahlen.protokollEintraege} Einträge geprüft`}
+        />
+      </Kennzahlenleiste>
+
+      {/* ---------------- Konfigurationsabgleich ---------------- */}
+      <Tafel
+        titel="Konfigurationsabgleich"
+        hinweis="Fingerabdruck des Sollstands gegen den ausgelesenen Zustand"
+        dicht
+        fusszeile={
+          <p className="t-mikro leading-relaxed">
+            Der Fingerabdruck verdichtet alle Parameter einer Anlage zu einem
+            Wert. Stimmen Soll und Ist überein, hat sich nichts geändert –
+            das lässt sich mit einem Vergleich feststellen, ohne jeden Wert
+            einzeln gegenüberzustellen. Weicht er ab, sagen die Befunde
+            darunter, welcher Wert es ist.
+          </p>
+        }
+      >
+        <Tabelle
+          spalten={[
+            { titel: "Anlage" },
+            { titel: "Geprüft", zahl: true, schmalAusblenden: true },
+            { titel: "Fingerabdruck Soll", schmalAusblenden: true },
+            { titel: "Fingerabdruck Ist", schmalAusblenden: true },
+            { titel: "Befunde", zahl: true },
+            { titel: "Ergebnis" },
+          ]}
+          mindestbreite="58rem"
+        >
+          {laeufe.map((l) => (
+            <Zeile key={l.id} hervorgehoben={l.gesperrt === 1}>
+              <ZelleMitZusatz
+                haupt={l.anlage}
+                zusatz={`${formatDatumZeit(l.gelaufen_am)} · ${l.ausloeser} · ${l.dauer_ms ?? 0} ms`}
+              />
+              <Zelle zahl leise schmalAusblenden>
+                {l.geprueft}
+              </Zelle>
+              <Zelle leise schmalAusblenden>
+                <span className="font-mono text-[0.6875rem]">
+                  {l.soll_hash.slice(0, 16)}
+                </span>
+              </Zelle>
+              <Zelle leise schmalAusblenden>
+                <span
+                  className="font-mono text-[0.6875rem]"
+                  style={{
+                    color: l.unveraendert ? undefined : "var(--akzent-text)",
+                    fontWeight: l.unveraendert ? undefined : 500,
+                  }}
+                >
+                  {l.ist_hash.slice(0, 16)}
+                </span>
+              </Zelle>
+              <Zelle zahl>{l.befunde}</Zelle>
+              <Zelle>
+                {l.gesperrt ? (
+                  <Status ton="kritisch">gesperrt</Status>
+                ) : l.befunde > 0 ? (
+                  <Status ton="ernst">{l.hoechste_schwere}</Status>
+                ) : (
+                  <Status ton="gut">unverändert</Status>
+                )}
+              </Zelle>
+            </Zeile>
+          ))}
+        </Tabelle>
+      </Tafel>
+
+      {befunde.length > 0 && (
+        <Tafel titel="Abweichungen" hinweis="Was genau nicht stimmt" dicht>
+          <Tabelle
+            spalten={[
+              { titel: "Parameter" },
+              { titel: "Anlage", schmalAusblenden: true },
+              { titel: "Soll", zahl: true },
+              { titel: "Ist", zahl: true },
+              { titel: "Maßnahme" },
+            ]}
+            mindestbreite="52rem"
+          >
+            {befunde.map((b) => (
+              <Zeile key={b.id} hervorgehoben={b.massnahme === "sperren"}>
+                <ZelleMitZusatz
+                  haupt={b.bezeichnung}
+                  zusatz={`Register ${b.register ?? "–"} · ${b.begruendung}`}
+                />
+                <Zelle leise schmalAusblenden>
+                  {b.anlage}
+                </Zelle>
+                <Zelle zahl leise>
+                  {b.sollwert !== null ? formatZahl(b.sollwert, 2) : "–"}
+                  <span className="t-mikro"> {b.einheit}</span>
+                </Zelle>
+                <Zelle zahl>
+                  {b.istwert !== null ? formatZahl(b.istwert, 2) : "–"}
+                  <span className="t-mikro"> {b.einheit}</span>
+                </Zelle>
+                <Zelle>
+                  <Status ton={schwereTon(b.schwere)}>
+                    {b.massnahme === "sperren"
+                      ? "Anlage gesperrt"
+                      : b.massnahme === "melden"
+                        ? "gemeldet"
+                        : "beobachtet"}
+                  </Status>
+                  {b.versiegelt === 1 && (
+                    <span className="t-mikro block">versiegelt</span>
+                  )}
+                </Zelle>
+              </Zeile>
+            ))}
+          </Tabelle>
+        </Tafel>
+      )}
+
+      {/* ---------------- Freigabe zur Inbetriebnahme ---------------- */}
+      <Tafel
+        titel="Freigabe zur Inbetriebnahme"
+        hinweis="Was erfüllt sein muss, bevor ein Gerät in Betrieb geht"
+        fusszeile={
+          <p className="t-mikro leading-relaxed">
+            Die Punkte gelten nicht für jedes Gerät gleich: Ein Switch führt
+            keinen versiegelten Sollstand, und viele Industrie-Switches können
+            kein Secure Boot. Solche Punkte werden geführt, aber nicht als
+            verbindlich gewertet – rote Zeilen, die immer dastehen, liest
+            niemand.
+          </p>
+        }
+      >
+        <p className="t-mikro mb-3 leading-relaxed">
+          {fasseFreigabenZusammen(
+            freigaben.map((f) => ({ geraet: f.geraet, befund: f.befund })),
+          )}{" "}
+          Geprüft wird gegen Firmware-Mindeststand, Netzzone, Zertifikat,
+          versiegelten Sollstand, Protokollkette und die Art des Fernzugangs.
+        </p>
+
+        {offeneFreigaben.length === 0 ? (
+          <LeerZustand
+            text="Alle Geräte sind freigegeben."
+            hinweis="Sobald ein Zertifikat abläuft oder eine Firmware unter den Mindeststand fällt, steht das Gerät hier."
+          />
+        ) : (
+          <ul className="space-y-3">
+            {offeneFreigaben.map((f) => (
+              <li
+                key={f.geraet}
+                className="rounded-lg px-3.5 py-3"
+                style={{ background: "var(--f-vertieft)" }}
+              >
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p
+                      className="text-[0.875rem] font-medium"
+                      style={{ color: "var(--t-stark)" }}
+                    >
+                      {f.geraet} · {f.bezeichnung}
+                    </p>
+                    <p className="t-mikro">
+                      {f.rolle} · {f.anlage}
+                    </p>
+                  </div>
+                  <Status
+                    ton={f.befund.freigabe === "verweigert" ? "kritisch" : "hinweis"}
+                  >
+                    {f.befund.freigabe === "verweigert"
+                      ? "nicht freigegeben"
+                      : "Angaben fehlen"}
+                  </Status>
+                </div>
+
+                <ul className="mt-2 space-y-1.5">
+                  {f.befund.punkte
+                    .filter((p) => p.verbindlich && p.stand !== "erfuellt")
+                    .map((p) => (
+                      <li key={p.punkt.schluessel} className="leading-relaxed">
+                        <span
+                          className="text-[0.8125rem] font-medium"
+                          style={{ color: "var(--t-stark)" }}
+                        >
+                          {p.punkt.titel}
+                        </span>
+                        <span className="t-mikro"> · {p.punkt.grundlage}</span>
+                        <span
+                          className="block text-[0.8125rem]"
+                          style={{ color: "var(--t-normal)" }}
+                        >
+                          {p.befund}
+                        </span>
+                        <span className="t-mikro block">{p.punkt.folge}</span>
+                      </li>
+                    ))}
+                </ul>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Tafel>
+
+      {/* ---------------- Geräte ---------------- */}
+      <Tafel
+        titel="Edge-Geräte"
+        hinweis="Steuerung, Gateway und Switch je Standort"
+        dicht
+        fusszeile={
+          <p className="t-mikro leading-relaxed">
+            Das Gateway kommt in zwei Bauformen. Wo bauseitig Breitband
+            anliegt, genügt der leitungsgebundene RUT142. Trafostationen und
+            Dachstandorte ohne Anschluss bekommen den TRB256 mit zwei
+            SIM-Karten und eigenen Klemmen für Tür- und Brandmeldekontakte –
+            dort steht sonst niemand, der etwas bemerken würde.
+          </p>
+        }
+      >
+        <Tabelle
+          spalten={[
+            { titel: "Gerät" },
+            { titel: "Standort", schmalAusblenden: true },
+            { titel: "Ausstattung", schmalAusblenden: true },
+            { titel: "Netz" },
+            { titel: "Schnittstellen", zahl: true, schmalAusblenden: true },
+            { titel: "Zustand" },
+          ]}
+          mindestbreite="66rem"
+        >
+          {geraete.map((g) => (
+            <Zeile key={g.id} gedaempft={g.status === "Wartung"}>
+              <ZelleMitZusatz
+                haupt={`${g.hersteller} ${g.modell}`}
+                zusatz={`${g.rolle} · ${g.seriennummer ?? g.id} · Firmware ${g.firmware ?? "–"}`}
+              />
+              <Zelle leise schmalAusblenden>
+                {g.anlage}
+              </Zelle>
+              <Zelle leise schmalAusblenden>
+                {g.prozessor ? (
+                  <>
+                    <span className="t-mikro block">{g.prozessor}</span>
+                    <span className="t-mikro block">
+                      {[g.arbeitsspeicher, g.datenspeicher]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </span>
+                  </>
+                ) : (
+                  <span style={{ color: "var(--t-zart)" }}>–</span>
+                )}
+                {g.temperatur_von !== null && (
+                  <span className="t-mikro block">
+                    {g.temperatur_von} bis {g.temperatur_bis} °C
+                    {g.batterielos === 1 ? ", batterielos" : ""}
+                  </span>
+                )}
+              </Zelle>
+              <Zelle leise>
+                <span className="font-mono text-[0.6875rem]">
+                  {g.ip_adresse ?? "–"}
+                </span>
+                <span className="t-mikro block">
+                  VLAN {g.vlan_nummer ?? "–"}
+                </span>
+                {g.mobilfunk_technik && (
+                  <span className="t-mikro block">{g.mobilfunk_technik}</span>
+                )}
+                {g.sim_sekundaer && (
+                  <span className="t-mikro block">
+                    SIM 1 {g.sim_primaer} · SIM 2 {g.sim_sekundaer}
+                  </span>
+                )}
+              </Zelle>
+              <Zelle zahl leise schmalAusblenden>
+                {g.schnittstellen}
+                <span className="t-mikro block">
+                  {g.schnittstellen_frei} frei
+                </span>
+              </Zelle>
+              <Zelle>
+                <Status ton={geraetTon(g.status)}>{g.status}</Status>
+                {g.secure_boot === 1 && (
+                  <span className="t-mikro block">gesicherter Start</span>
+                )}
+                {g.stille_minuten !== null && g.stille_minuten > 10 && (
+                  <span className="t-mikro block">
+                    seit {g.stille_minuten} min still
+                  </span>
+                )}
+              </Zelle>
+            </Zeile>
+          ))}
+        </Tabelle>
+      </Tafel>
+
+      {/* ---------------- Segmentierung ---------------- */}
+      <Tafel
+        titel="Netzsegmentierung"
+        hinweis={aktuelleAnlage?.bezeichnung ?? "Standort wählen"}
+        aktion={
+          <div className="flex flex-wrap gap-1.5">
+            {anlagen.map((a) => (
+              <Link
+                key={a.id}
+                href={`/portal/netz?anlage=${a.id}`}
+                className="rounded-md border px-2 py-1 text-[0.6875rem] transition-colors"
+                style={{
+                  borderColor:
+                    a.id === anlageId ? "var(--akzent)" : "var(--linie)",
+                  color:
+                    a.id === anlageId
+                      ? "var(--akzent-text)"
+                      : "var(--t-leise)",
+                }}
+              >
+                {a.bezeichnung}
+              </Link>
+            ))}
+          </div>
+        }
+        fusszeile={
+          <p className="t-mikro leading-relaxed">
+            Die wichtigste Regel ist eine Sperre: Aus der Feldebene führt kein
+            Weg ins Internet. Ein Wechselrichter mit Firmware von 2019 gehört
+            nicht ans offene Netz – und er braucht es auch nicht, der
+            Steuerrechner holt seine Daten und reicht sie weiter. Fest
+            gekennzeichnete Regeln lassen sich im Portal nicht ändern.
+          </p>
+        }
+      >
+        {zonen.length === 0 ? (
+          <LeerZustand text="Für diesen Standort ist keine Segmentierung hinterlegt." />
+        ) : (
+          <div className="space-y-4">
+            <div className="grid gap-2.5 sm:grid-cols-3">
+              {zonen.map((zone) => (
+                <div
+                  key={zone.id}
+                  className="rounded-lg border p-3"
+                  style={{
+                    borderColor: "var(--linie)",
+                    background: "var(--f-vertieft)",
+                  }}
+                >
+                  <div className="flex items-baseline justify-between gap-2">
+                    <span className="text-[0.8125rem] font-medium">
+                      VLAN {zone.nummer}
+                    </span>
+                    <Status
+                      ton={zone.internet === 1 ? "hinweis" : "gut"}
+                      punkt={false}
+                    >
+                      {zone.internet === 1 ? "mit Internet" : "abgeschottet"}
+                    </Status>
+                  </div>
+                  <p className="t-mikro mt-1">{zone.bezeichnung}</p>
+                  <p className="t-mikro mt-1.5 leading-relaxed">{zone.zweck}</p>
+                  <p className="t-mikro mt-1.5 font-mono">{zone.subnetz}</p>
+                  <p className="t-mikro mt-1">{zone.geraete} Geräte</p>
+                </div>
+              ))}
+            </div>
+
+            <Tabelle
+              spalten={[
+                { titel: "Von" },
+                { titel: "Nach" },
+                { titel: "Dienste", schmalAusblenden: true },
+                { titel: "Begründung", schmalAusblenden: true },
+                { titel: "Regel" },
+              ]}
+              mindestbreite="56rem"
+            >
+              {regeln.map((r) => (
+                <Zeile key={r.id} hervorgehoben={r.erlaubt === 0}>
+                  <Zelle>VLAN {r.von_vlan}</Zelle>
+                  <Zelle>VLAN {r.nach_vlan}</Zelle>
+                  <Zelle leise schmalAusblenden>
+                    {r.dienste ?? "–"}
+                  </Zelle>
+                  <Zelle leise schmalAusblenden>
+                    <span className="t-mikro">{r.begruendung}</span>
+                  </Zelle>
+                  <Zelle>
+                    <Status ton={r.erlaubt === 1 ? "gut" : "kritisch"}>
+                      {r.erlaubt === 1 ? "erlaubt" : "gesperrt"}
+                    </Status>
+                    {r.fest === 1 && (
+                      <span className="t-mikro block">nicht änderbar</span>
+                    )}
+                  </Zelle>
+                </Zeile>
+              ))}
+            </Tabelle>
+          </div>
+        )}
+      </Tafel>
+
+      {/* ---------------- Fernwartung auf Zeit ---------------- */}
+      <Tafel
+        titel="Fernwartungszugänge"
+        hinweis="Jede Sitzung einzeln freigegeben, mit hartem Zeitfenster"
+        dicht
+        fusszeile={
+          <p className="t-mikro leading-relaxed">
+            Es gibt keinen dauerhaften Fernzugang und keine offene
+            Portweiterleitung. Der Tunnel wird vom Standort aus nach außen
+            aufgebaut; der Techniker erreicht darüber genau ein Gerät, nach
+            geprüfter Identität und mit zweitem Faktor. Läuft das Fenster
+            ab, erlischt der Zugang von selbst – niemand muss daran denken,
+            ihn zu schließen.
+          </p>
+        }
+      >
+        {zugriffe.length === 0 ? (
+          <div className="p-5">
+            <LeerZustand text="Es liegen keine Zugriffsanfragen vor." />
+          </div>
+        ) : (
+          <Tabelle
+            spalten={[
+              { titel: "Techniker" },
+              { titel: "Ziel", schmalAusblenden: true },
+              { titel: "Zweck", schmalAusblenden: true },
+              { titel: "Fenster" },
+              { titel: "Zustand" },
+              { titel: "Freigabe" },
+            ]}
+            mindestbreite="72rem"
+          >
+            {zugriffe.map((z) => (
+              <Zeile
+                key={z.id}
+                hervorgehoben={z.status === "Angefragt"}
+                gedaempft={
+                  z.status === "Beendet" || z.status === "Abgelehnt"
+                }
+              >
+                <ZelleMitZusatz
+                  haupt={z.techniker}
+                  zusatz={`${z.techniker_firma ?? ""}${z.erp_ticket ? ` · ${z.erp_ticket}` : ""}`}
+                />
+                <Zelle leise schmalAusblenden>
+                  {z.anlage}
+                  <span className="t-mikro block">
+                    {z.geraet ?? "gesamte Anlage"}
+                  </span>
+                </Zelle>
+                <Zelle leise schmalAusblenden>
+                  <span className="t-mikro">{z.zweck}</span>
+                </Zelle>
+                <Zelle leise>
+                  {z.gueltig_bis ? (
+                    <>
+                      bis {formatDatumZeit(z.gueltig_bis)}
+                      {z.rest_minuten !== null && (
+                        <span className="t-mikro block">
+                          {z.rest_minuten > 0
+                            ? `noch ${z.rest_minuten} min`
+                            : "abgelaufen"}
+                        </span>
+                      )}
+                    </>
+                  ) : (
+                    <span style={{ color: "var(--t-zart)" }}>
+                      noch nicht freigegeben
+                    </span>
+                  )}
+                </Zelle>
+                <Zelle>
+                  <Status
+                    ton={
+                      z.status === "Aktiv"
+                        ? "ernst"
+                        : z.status === "Freigegeben"
+                          ? "akzent"
+                          : z.status === "Angefragt"
+                            ? "hinweis"
+                            : z.status === "Abgelehnt"
+                              ? "kritisch"
+                              : "gut"
+                    }
+                  >
+                    {z.status}
+                  </Status>
+                  {z.mfa_verfahren && (
+                    <span className="t-mikro block">{z.mfa_verfahren}</span>
+                  )}
+                </Zelle>
+                <Zelle>
+                  <Zugriffsfreigabe
+                    sitzungId={z.id}
+                    status={z.status}
+                    darfFreigeben={darfFreigeben}
+                  />
+                </Zelle>
+              </Zeile>
+            ))}
+          </Tabelle>
+        )}
+      </Tafel>
+
+      {/* ---------------- Protokollkette ---------------- */}
+      <Tafel
+        titel="Protokollkette"
+        hinweis={kette.begruendung}
+        dicht
+        fusszeile={
+          <p className="t-mikro leading-relaxed">
+            Jeder Eintrag trägt den Hash seines Vorgängers. Wer einen Eintrag
+            nachträglich ändert oder entfernt, bricht die Kette ab dieser
+            Stelle, und die Prüfung sagt genau, wo. Das ersetzt keine
+            Signatur – wer Schreibrechte auf die ganze Tabelle hat, kann sie
+            neu aufbauen. Es macht aber jede punktuelle Änderung sichtbar, und
+            das ist der Fall, um den es geht.
+          </p>
+        }
+      >
+        {protokoll.length === 0 ? (
+          <div className="p-4">
+            <LeerZustand text="Es wurde noch nichts protokolliert." />
+          </div>
+        ) : (
+          <Tabelle
+            spalten={[
+              { titel: "Nr.", zahl: true },
+              { titel: "Ereignis" },
+              { titel: "Anlage", schmalAusblenden: true },
+              { titel: "Herkunft", schmalAusblenden: true },
+              { titel: "Hash", schmalAusblenden: true },
+            ]}
+            mindestbreite="60rem"
+          >
+            {protokoll.map((p) => (
+              <Zeile key={p.folge}>
+                <Zelle zahl leise>
+                  {p.folge}
+                </Zelle>
+                <ZelleMitZusatz
+                  haupt={p.ereignis}
+                  zusatz={`${formatDatumZeit(p.zeitpunkt)} · ${p.inhalt}`}
+                />
+                <Zelle leise schmalAusblenden>
+                  {p.anlage ?? "–"}
+                </Zelle>
+                <Zelle leise schmalAusblenden>
+                  {p.urheber}
+                  <span className="t-mikro block">{p.herkunft}</span>
+                </Zelle>
+                <Zelle leise schmalAusblenden>
+                  <span className="font-mono text-[0.625rem]">
+                    {p.hash.slice(0, 12)}
+                  </span>
+                  <span className="t-mikro block font-mono">
+                    ← {p.vorgaenger.slice(0, 12)}
+                  </span>
+                </Zelle>
+              </Zeile>
+            ))}
+          </Tabelle>
+        )}
+      </Tafel>
+
+      <Tafel
+        titel="Wie die Sperre wirkt"
+        hinweis="Vier Ebenen, die unabhängig voneinander greifen"
+      >
+        <ol className="space-y-3">
+          {[
+            {
+              stufe: "Im Gerät",
+              text: "Die versiegelten Werte liegen in einem schreibgeschützten Bereich des Steuerrechners. Sie überstehen ein Firmwareupdate und lassen sich ohne signierten Freigabeschlüssel nicht überschreiben.",
+            },
+            {
+              stufe: "Vor Ort",
+              text: "Der Steuerrechner setzt die Grenzen auf der Feldbusebene gegenüber Wechselrichtern und Schutzrelais durch. Wer sie am Bedienfeld zu ändern versucht, bekommt den Befehl verworfen – nicht eine Warnung, sondern eine Ablehnung.",
+            },
+            {
+              stufe: "Aus der Ferne",
+              text: "Ein Abgleich liest die aktiven Register über den verschlüsselten Tunnel und vergleicht sie mit dem hinterlegten Stand. Der Fingerabdruck macht daraus einen einzigen Vergleich.",
+            },
+            {
+              stufe: "Bei Abweichung",
+              text: "Die steuerbaren Betriebsmittel hinter dem Übergabepunkt gehen in einen sicheren Zustand, der Vorgang wird in die Protokollkette geschrieben, und die Bereitschaft wird über mehrere Wege gleichzeitig alarmiert.",
+            },
+          ].map((e, i) => (
+            <li key={e.stufe} className="flex gap-3">
+              <span
+                className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[0.6875rem] font-medium"
+                style={{
+                  background: "var(--f-belegt)",
+                  color: "var(--t-normal)",
+                }}
+                aria-hidden
+              >
+                {i + 1}
+              </span>
+              <span className="min-w-0">
+                <span className="block text-[0.8125rem] font-medium">
+                  {e.stufe}
+                </span>
+                <span className="t-mikro block leading-relaxed">{e.text}</span>
+              </span>
+            </li>
+          ))}
+        </ol>
+      </Tafel>
+    </div>
+  );
+}

@@ -1,0 +1,395 @@
+import type { ReactNode } from "react";
+
+import { STATUS_FARBEN, type StatusTon } from "@/lib/farben";
+
+/* ------------------------------------------------------------------ */
+/* Flaechen                                                            */
+/* ------------------------------------------------------------------ */
+
+export function Karte({
+  titel,
+  beschreibung,
+  aktion,
+  children,
+  klasse = "",
+  verzoegerung,
+}: {
+  titel?: string;
+  beschreibung?: string;
+  aktion?: ReactNode;
+  children: ReactNode;
+  klasse?: string;
+  /** Staffelt das Einblenden mehrerer Karten. */
+  verzoegerung?: number;
+}) {
+  return (
+    <section
+      // min-w-0: Ohne das waechst die Karte im Raster mit ihrem Inhalt
+      // statt ihn scrollen zu lassen - ein breites Diagramm zoege dann
+      // die ganze Seite in die Breite.
+      className={`animate-aufsteigen min-w-0 rounded-xl border border-slate-200/80 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 ${klasse}`}
+      style={
+        verzoegerung ? { animationDelay: `${verzoegerung}ms` } : undefined
+      }
+    >
+      {(titel || aktion) && (
+        <header className="mb-4 flex items-start justify-between gap-3">
+          <div>
+            {titel && (
+              <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                {titel}
+              </h2>
+            )}
+            {beschreibung && (
+              <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                {beschreibung}
+              </p>
+            )}
+          </div>
+          {aktion && <div className="shrink-0">{aktion}</div>}
+        </header>
+      )}
+      {children}
+    </section>
+  );
+}
+
+export function Seitenkopf({
+  titel,
+  beschreibung,
+  aktion,
+}: {
+  titel: string;
+  beschreibung?: string;
+  aktion?: ReactNode;
+}) {
+  return (
+    <div className="flex flex-wrap items-end justify-between gap-4">
+      <div className="animate-hereinziehen">
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-50">
+          {titel}
+        </h1>
+        {beschreibung && (
+          <p className="mt-1 text-slate-500 dark:text-slate-400">
+            {beschreibung}
+          </p>
+        )}
+      </div>
+      {aktion}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Kennzahlen                                                          */
+/* ------------------------------------------------------------------ */
+
+export function Kennzahl({
+  label,
+  wert,
+  einheit,
+  hinweis,
+  farbe,
+  trend,
+  verzoegerung,
+}: {
+  label: string;
+  wert: string;
+  einheit?: string;
+  hinweis?: string;
+  /** Farbpunkt, der die Kennzahl einer Datenreihe zuordnet. */
+  farbe?: string;
+  /** Veraenderung in Prozent gegenueber der Vergleichsperiode. */
+  trend?: { wert: number; text: string };
+  verzoegerung?: number;
+}) {
+  return (
+    <div
+      className="animate-aufsteigen rounded-xl border border-slate-200/80 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+      style={verzoegerung ? { animationDelay: `${verzoegerung}ms` } : undefined}
+    >
+      <div className="flex items-center gap-2">
+        {farbe && (
+          <span
+            aria-hidden
+            className="h-2.5 w-2.5 shrink-0 rounded-full"
+            style={{ background: farbe }}
+          />
+        )}
+        <p className="text-sm text-slate-500 dark:text-slate-400">{label}</p>
+      </div>
+
+      {/*
+        Lange Textwerte wie "Lastspitzenkappung" sprengen die Kachel in
+        grosser Schrift. Zahlen bleiben gross - sie sind die Kernaussage -,
+        laengere Woerter werden kleiner gesetzt und duerfen umbrechen.
+      */}
+      <p
+        className={`mt-2 font-semibold tracking-tight break-words text-slate-900 tabular-nums dark:text-slate-50 ${
+          wert.length > 11 ? "text-xl" : "text-3xl"
+        }`}
+      >
+        {wert}
+        {einheit && (
+          <span className="ml-1 text-lg font-normal text-slate-400">
+            {einheit}
+          </span>
+        )}
+      </p>
+
+      <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+        {trend && <Trend wert={trend.wert} text={trend.text} />}
+        {hinweis && (
+          <p className="text-xs text-slate-400 dark:text-slate-500">{hinweis}</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Trend({ wert, text }: { wert: number; text: string }) {
+  const steigt = wert >= 0;
+  const farbe = steigt ? STATUS_FARBEN.gut : STATUS_FARBEN.ernst;
+
+  return (
+    <span
+      className="inline-flex items-center gap-1 text-xs font-medium tabular-nums"
+      style={{ color: farbe }}
+    >
+      {/* Pfeil trägt die Richtung zusätzlich zur Farbe. */}
+      <span aria-hidden>{steigt ? "▲" : "▼"}</span>
+      {steigt ? "+" : ""}
+      {wert.toLocaleString("de-AT", { maximumFractionDigits: 1 })} %
+      <span className="font-normal text-slate-400">{text}</span>
+    </span>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Status                                                              */
+/* ------------------------------------------------------------------ */
+
+const TON_KLASSE: Record<StatusTon, string> = {
+  gut: "bg-emerald-50 text-emerald-800 ring-emerald-600/20 dark:bg-emerald-950/60 dark:text-emerald-300 dark:ring-emerald-500/30",
+  hinweis:
+    "bg-amber-50 text-amber-800 ring-amber-600/20 dark:bg-amber-950/60 dark:text-amber-300 dark:ring-amber-500/30",
+  ernst:
+    "bg-orange-50 text-orange-800 ring-orange-600/20 dark:bg-orange-950/60 dark:text-orange-300 dark:ring-orange-500/30",
+  kritisch:
+    "bg-rose-50 text-rose-800 ring-rose-600/20 dark:bg-rose-950/60 dark:text-rose-300 dark:ring-rose-500/30",
+  neutral:
+    "bg-slate-100 text-slate-700 ring-slate-500/20 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-400/20",
+};
+
+/** Zeichen je Status - die Information haengt nie an der Farbe allein. */
+const TON_ZEICHEN: Record<StatusTon, string> = {
+  gut: "●",
+  hinweis: "▲",
+  ernst: "▲",
+  kritisch: "■",
+  neutral: "○",
+};
+
+export function Status({
+  ton = "neutral",
+  children,
+  mitZeichen = true,
+}: {
+  ton?: StatusTon;
+  children: ReactNode;
+  mitZeichen?: boolean;
+}) {
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset whitespace-nowrap ${TON_KLASSE[ton]}`}
+    >
+      {mitZeichen && (
+        <span aria-hidden className="text-[0.65em] leading-none">
+          {TON_ZEICHEN[ton]}
+        </span>
+      )}
+      {children}
+    </span>
+  );
+}
+
+/** Kleiner Punkt, der eine laufende Verbindung anzeigt. */
+export function LivePunkt({ aktiv = true }: { aktiv?: boolean }) {
+  return (
+    <span className="relative flex h-2 w-2" aria-hidden>
+      {aktiv && (
+        <span className="animate-pulsieren absolute inline-flex h-full w-full rounded-full bg-emerald-500" />
+      )}
+      <span
+        className={`relative inline-flex h-2 w-2 rounded-full ${
+          aktiv ? "bg-emerald-500" : "bg-slate-400"
+        }`}
+      />
+    </span>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Fortschritt                                                         */
+/* ------------------------------------------------------------------ */
+
+export function Balken({
+  anteil,
+  farbe,
+  label,
+  wertText,
+}: {
+  /** 0 bis 100. */
+  anteil: number;
+  farbe: string;
+  label: string;
+  wertText: string;
+}) {
+  const begrenzt = Math.max(0, Math.min(100, anteil));
+
+  return (
+    <div>
+      <div className="mb-1 flex items-baseline justify-between gap-3 text-sm">
+        <span className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
+          <span
+            aria-hidden
+            className="h-2.5 w-2.5 shrink-0 rounded-full"
+            style={{ background: farbe }}
+          />
+          {label}
+        </span>
+        <span className="font-medium text-slate-900 tabular-nums dark:text-slate-100">
+          {wertText}
+        </span>
+      </div>
+      <div
+        className="h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800"
+        role="img"
+        aria-label={`${label}: ${wertText}`}
+      >
+        <div
+          className="h-full rounded-full transition-[width] duration-700 ease-out"
+          style={{ width: `${begrenzt}%`, background: farbe }}
+        />
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Zustaende                                                           */
+/* ------------------------------------------------------------------ */
+
+export function LeerZustand({
+  text,
+  hinweis,
+}: {
+  text: string;
+  hinweis?: string;
+}) {
+  return (
+    <div className="rounded-lg border border-dashed border-slate-300 px-4 py-10 text-center dark:border-slate-700">
+      <p className="text-sm text-slate-500 dark:text-slate-400">{text}</p>
+      {hinweis && (
+        <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
+          {hinweis}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Fehlerhinweis fuer Seiten, deren Datenabruf fehlgeschlagen ist.
+ * Zeigt bewusst die Klartextmeldung - im Portal sehen sie nur
+ * angemeldete Benutzer, und beim Einrichten hilft sie weiter.
+ */
+export function Fehlerhinweis({
+  meldung,
+  titel = "Daten konnten nicht geladen werden",
+}: {
+  meldung: string;
+  titel?: string;
+}) {
+  return (
+    <div className="animate-einblenden rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-800/70 dark:bg-amber-950/50 dark:text-amber-200">
+      <p className="flex items-center gap-2 font-medium">
+        <span aria-hidden>▲</span>
+        {titel}
+      </p>
+      <p className="mt-1 pl-6 text-amber-800 dark:text-amber-300/90">
+        {meldung}
+      </p>
+    </div>
+  );
+}
+
+/** Ladeflaeche in der Form des erwarteten Inhalts. */
+export function Skelett({ klasse = "h-4 w-full" }: { klasse?: string }) {
+  return <div className={`skelett rounded ${klasse}`} aria-hidden />;
+}
+
+/* ------------------------------------------------------------------ */
+/* Beschriftung                                                        */
+/* ------------------------------------------------------------------ */
+
+/** Beschriftetes Wertepaar, wie es in Stammdatenlisten vorkommt. */
+export function Angabe({
+  label,
+  children,
+  einspaltig = false,
+}: {
+  label: string;
+  children: ReactNode;
+  einspaltig?: boolean;
+}) {
+  if (einspaltig) {
+    return (
+      <div>
+        <dt className="text-xs text-slate-500 dark:text-slate-400">{label}</dt>
+        <dd className="mt-0.5 font-medium text-slate-900 dark:text-slate-100">
+          {children}
+        </dd>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-baseline justify-between gap-4 text-sm">
+      <dt className="shrink-0 text-slate-500 dark:text-slate-400">{label}</dt>
+      <dd className="text-right font-medium text-slate-900 dark:text-slate-100">
+        {children}
+      </dd>
+    </div>
+  );
+}
+
+/** Legende fuer Diagramme - ab zwei Reihen immer vorhanden. */
+export function Legende({
+  eintraege,
+}: {
+  eintraege: { farbe: string; label: string; wert?: string }[];
+}) {
+  return (
+    <ul className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+      {eintraege.map((eintrag) => (
+        <li
+          key={eintrag.label}
+          className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300"
+        >
+          <span
+            aria-hidden
+            className="h-2.5 w-2.5 shrink-0 rounded-[2px]"
+            style={{ background: eintrag.farbe }}
+          />
+          {eintrag.label}
+          {eintrag.wert && (
+            <span className="font-medium text-slate-900 tabular-nums dark:text-slate-100">
+              {eintrag.wert}
+            </span>
+          )}
+        </li>
+      ))}
+    </ul>
+  );
+}

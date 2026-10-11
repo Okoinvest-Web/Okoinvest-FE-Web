@@ -1,0 +1,148 @@
+<template>
+  <div>
+    <PageHeader title="Sicherung" :subtitle="untertitel" />
+    <SubNav :eintraege="reiter" titel="Sicherungsbereiche" />
+
+    <!--
+      Die Gesundheitsleiste steht über allem und auf jeder Unterseite.
+
+      Grund: sämtliche Zahlen dieses Bereichs stammen aus dem, was die
+      Konnektoren zuletzt gemeldet haben. Antwortet ein System nicht mehr,
+      zeigen die Seiten weiter die alten Werte - und sehen dabei genauso
+      aus wie vorher. Diese Zeile ist der einzige Ort, an dem das auffällt.
+    -->
+    <div
+      v-if="gesundheit.data?.summary?.stale_warning"
+      class="flex flex-wrap items-start gap-2 border-b border-outline-red-2 bg-surface-red-1 px-6 py-2.5"
+      role="status"
+    >
+      <StatusDot level="critical" text="Veraltete Zahlen" klein />
+      <p class="text-sm text-ink-gray-7">{{ gesundheit.data.summary.stale_warning }}</p>
+      <RouterLink to="/backup/systeme" class="text-sm font-medium text-ink-gray-8 underline">
+        Systeme ansehen
+      </RouterLink>
+    </div>
+
+    <RouterView v-slot="{ Component }">
+      <component :is="Component" :gesundheit="gesundheit" @neu-laden="allesLaden" />
+    </RouterView>
+  </div>
+</template>
+
+<script setup>
+import { computed, watch } from 'vue'
+import { createResource } from 'frappe-ui'
+import PageHeader from '@/components/PageHeader.vue'
+import SubNav from '@/components/SubNav.vue'
+import StatusDot from '@/components/StatusDot.vue'
+import { useUiStore } from '@/stores/ui'
+import { mengeText } from '@/viz'
+
+const ui = useUiStore()
+
+const gesundheit = createResource({
+  url: 'netops.api.backup.backup_health',
+  makeParams: () => ({ tenant: ui.mandant || null }),
+  auto: true,
+})
+const bestand = createResource({
+  url: 'netops.api.backup.backup_inventory',
+  makeParams: () => ({ tenant: ui.mandant || null }),
+  auto: true,
+})
+const pruefung = createResource({
+  url: 'netops.api.backup.backup_assurance',
+  makeParams: () => ({ tenant: ui.mandant || null }),
+  auto: true,
+})
+const baender = createResource({ url: 'netops.api.tape.tape_inventory', auto: true })
+const wechsel = createResource({
+  url: 'netops.api.tape.tape_change_requests',
+  makeParams: () => ({ open_only: true }),
+  auto: true,
+})
+const meldungen = createResource({
+  url: 'netops.api.backup.backup_logs',
+  makeParams: () => ({ max_severity: 4, since_hours: 24 }),
+  auto: true,
+})
+
+function allesLaden() {
+  for (const r of [gesundheit, bestand, pruefung, baender, wechsel, meldungen]) r.fetch()
+}
+watch(() => ui.mandant, allesLaden)
+
+const untertitel = computed(() => {
+  const b = bestand.data?.summary
+  const t = baender.data?.summary
+  if (!b) return ''
+  return (
+    mengeText(b.snapshots, 'Wiederherstellungspunkt', 'Wiederherstellungspunkte') +
+    ' über ' +
+    b.objects +
+    ' Systeme' +
+    (t ? ` · ${mengeText(t.tapes, 'Band', 'Bänder')} im Archiv` : '')
+  )
+})
+
+/**
+ * Die Zahl am Reiter ist das, was dort zu tun ist - nicht, was dort
+ * steht. „7" an den Meldungen hieße sonst nur, dass es Meldungen gibt.
+ */
+const reiter = computed(() => {
+  const g = gesundheit.data?.summary
+  const p = pruefung.data?.summary
+  const t = baender.data?.summary
+  const w = (wechsel.data || []).filter((x) => x.open)
+  const m = meldungen.data?.summary
+
+  return [
+    { label: 'Übersicht', to: '/backup' },
+    {
+      label: 'Systeme',
+      to: '/backup/systeme',
+      zahl: g?.unreachable || 0,
+      level: 'critical',
+      hinweis: 'Nicht erreichbar',
+    },
+    {
+      label: 'Prüfung',
+      to: '/backup/pruefung',
+      zahl: p ? p.total - p.rule_321_ok : 0,
+      level: 'warning',
+      hinweis: '3-2-1 nicht erfüllt',
+    },
+    { label: 'Ziele', to: '/backup/ziele' },
+    { label: 'Punkte', to: '/backup/punkte' },
+    { label: 'Dateien', to: '/backup/dateien' },
+    {
+      label: 'Aufträge',
+      to: '/backup/auftraege',
+      zahl: antraegeOffen.value,
+      level: 'warning',
+      hinweis: 'Anträge offen',
+    },
+    {
+      label: 'Band',
+      to: '/backup/band',
+      zahl: w.length || t?.not_yet_offsite || 0,
+      level: w.some((x) => x.level === 'critical') ? 'critical' : 'warning',
+      hinweis: 'Offener Wechsel',
+    },
+    {
+      label: 'Meldungen',
+      to: '/backup/meldungen',
+      zahl: m?.errors || 0,
+      level: 'critical',
+      hinweis: 'Fehler in 24 h',
+    },
+  ]
+})
+
+const antraege = createResource({
+  url: 'netops.api.backup.backup_requests',
+  makeParams: () => ({}),
+  auto: true,
+})
+const antraegeOffen = computed(() => antraege.data?.summary?.waiting_approval || 0)
+</script>

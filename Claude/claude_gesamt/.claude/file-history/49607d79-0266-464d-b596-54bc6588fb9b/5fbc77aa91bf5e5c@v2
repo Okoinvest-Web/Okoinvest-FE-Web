@@ -1,0 +1,264 @@
+<template>
+  <div>
+    <PageHeader title="Ausmusterung und Entsorgung" :subtitle="untertitel" />
+
+    <div class="p-6">
+      <div class="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <StatCard
+          v-for="kachel in kacheln"
+          :key="kachel.label"
+          :label="kachel.label"
+          :wert="kachel.wert"
+          :hinweis="kachel.hinweis"
+          :level="kachel.level"
+        />
+      </div>
+
+      <div class="grid grid-cols-1 gap-6 xl:grid-cols-3">
+        <!-- Erfassen -->
+        <section class="rounded-lg border border-outline-gray-2 bg-surface-white p-4">
+          <h2 class="mb-3 text-base font-semibold text-ink-gray-8">Entsorgung erfassen</h2>
+          <form class="space-y-3" @submit.prevent="entsorgen">
+            <FormControl
+              v-model="asset"
+              label="Gegenstand"
+              type="select"
+              :options="assetOptionen"
+            />
+            <FormControl
+              v-model="verfahren"
+              label="Verfahren"
+              type="select"
+              :options="verfahrenOptionen"
+            />
+            <FormControl
+              v-model="uebernehmer"
+              label="Übernehmer"
+              type="text"
+              placeholder="Recyclinghof"
+            />
+            <FormControl
+              v-model="nachweis"
+              label="Nachweisnummer"
+              type="text"
+              placeholder="ERO-2026-8841"
+            />
+
+            <label class="flex items-center gap-2 text-sm text-ink-gray-7">
+              <input v-model="datentraeger" type="checkbox" class="size-4" />
+              Enthält einen Datenträger
+            </label>
+
+            <template v-if="datentraeger">
+              <FormControl
+                v-model="loeschung"
+                label="Löschverfahren"
+                type="text"
+                placeholder="Überschreiben nach BSI TL-03423"
+              />
+              <FormControl v-model="loeschDatum" label="Löschung bestätigt am" type="date" />
+              <p class="text-xs text-ink-gray-5">
+                Beides ist Pflicht. Artikel 17 DSGVO verlangt den Nachweis der Löschung – der
+                Nachweis ist genau dieser Datensatz.
+              </p>
+            </template>
+
+            <Button
+              variant="solid"
+              type="submit"
+              class="w-full"
+              :loading="vorgang.loading"
+              :disabled="!asset"
+            >
+              Erfassen
+            </Button>
+          </form>
+        </section>
+
+        <!-- Nachweise -->
+        <div class="xl:col-span-2">
+          <h2 class="mb-3 text-base font-semibold text-ink-gray-8">Nachweise</h2>
+          <DataTable
+            :columns="spalten"
+            :rows="nachweise.data || []"
+            :loading="nachweise.loading"
+            empty-text="Noch nichts entsorgt."
+          >
+            <template #zelle-asset_tag="{ zeile }">
+              <RouterLink
+                :to="'/inventory/' + zeile.asset_tag"
+                class="font-mono text-sm text-ink-gray-9 underline decoration-outline-gray-3 underline-offset-2"
+              >
+                {{ zeile.asset_tag }}
+              </RouterLink>
+            </template>
+            <template #zelle-method="{ zeile }">
+              <Badge theme="gray">{{ VERFAHREN[zeile.method] || zeile.method }}</Badge>
+            </template>
+            <template #zelle-loeschung="{ zeile }">
+              <span v-if="!zeile.data_carrier" class="text-sm text-ink-gray-5">
+                kein Datenträger
+              </span>
+              <StatusDot
+                v-else-if="zeile.complete"
+                level="ok"
+                :text="'gelöscht, bestätigt ' + zeile.erasure_verified_on"
+                klein
+              />
+              <StatusDot v-else level="critical" text="Löschnachweis fehlt" klein />
+            </template>
+          </DataTable>
+
+          <p class="mt-3 text-xs text-ink-gray-4">
+            Ein entsorgtes Gerät bleibt im Bestand stehen statt gelöscht zu werden. Das ist Absicht:
+            Artikel 17 DSGVO verlangt den Nachweis der Löschung, nicht das Verschwinden des Belegs.
+          </p>
+        </div>
+      </div>
+
+      <!-- Kandidaten -->
+      <section class="mt-8">
+        <h2 class="mb-3 text-base font-semibold text-ink-gray-8">
+          Kandidaten für die Ausmusterung
+        </h2>
+        <DataTable
+          :columns="kandidatSpalten"
+          :rows="kandidaten"
+          empty-text="Nichts vollständig abgeschrieben."
+        >
+          <template #zelle-asset_tag="{ zeile }">
+            <RouterLink
+              :to="'/inventory/' + zeile.asset_tag"
+              class="font-mono text-sm text-ink-gray-9 underline decoration-outline-gray-3 underline-offset-2"
+            >
+              {{ zeile.asset_tag }}
+            </RouterLink>
+          </template>
+          <template #zelle-befund="{ zeile }">
+            <StatusDot level="neutral" :text="zeile.reasons[0] || 'abgeschrieben'" klein />
+          </template>
+        </DataTable>
+        <p class="mt-3 text-xs text-ink-gray-4">
+          Vollständig abgeschrieben und seit mehr als der Nutzungsdauer im Haus. Das ist ein
+          Hinweis, keine Anweisung – ein Gerät, das noch arbeitet, ist nicht wertlos, nur weil es
+          bilanziell aufgebraucht ist.
+        </p>
+      </section>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed, ref } from 'vue'
+import { Badge, Button, FormControl, createResource, toast } from 'frappe-ui'
+import PageHeader from '@/components/PageHeader.vue'
+import DataTable from '@/components/DataTable.vue'
+import StatCard from '@/components/StatCard.vue'
+import StatusDot from '@/components/StatusDot.vue'
+import { euro, fehlerText } from '@/viz'
+
+const VERFAHREN = {
+  recycled: 'Recycling',
+  shredded: 'Geschreddert',
+  sold: 'Verkauft',
+  returned: 'Zurückgegeben',
+  donated: 'Gespendet',
+}
+
+const asset = ref('')
+const verfahren = ref('recycled')
+const uebernehmer = ref('')
+const nachweis = ref('')
+const datentraeger = ref(false)
+const loeschung = ref('')
+const loeschDatum = ref('')
+
+const bestand = createResource({ url: 'netops.api.inventar.asset_list', auto: true })
+const nachweise = createResource({ url: 'netops.api.inventar.disposal_list', auto: true })
+const vorgang = createResource({ url: 'netops.api.inventar.dispose_asset' })
+
+const verfahrenOptionen = Object.entries(VERFAHREN).map(([value, label]) => ({ label, value }))
+
+const assetOptionen = computed(() => [
+  { label: 'Gegenstand wählen …', value: '' },
+  ...(bestand.data || [])
+    .filter((a) => !['disposed', 'issued'].includes(a.asset_state))
+    .map((a) => ({ label: a.asset_tag + ' – ' + a.asset_name, value: a.name })),
+])
+
+const kandidaten = computed(() =>
+  (bestand.data || []).filter(
+    (a) => a.fully_depreciated && !['disposed', 'retired'].includes(a.asset_state),
+  ),
+)
+
+const spalten = [
+  { key: 'asset_tag', label: 'Nummer', width: '130px' },
+  { key: 'asset_name', label: 'Gegenstand', width: '240px' },
+  { key: 'disposed_on', label: 'Entsorgt am', numeric: true, muted: true, width: '130px' },
+  { key: 'method', label: 'Verfahren', width: '140px' },
+  { key: 'recipient', label: 'Übernehmer', muted: true, width: '220px' },
+  { key: 'loeschung', label: 'Datenlöschung', width: '260px' },
+]
+
+const kandidatSpalten = [
+  { key: 'asset_tag', label: 'Nummer', width: '130px' },
+  { key: 'asset_name', label: 'Gegenstand', width: '260px' },
+  { key: 'category', label: 'Kategorie', muted: true, width: '160px' },
+  { key: 'purchase_date', label: 'Gekauft', numeric: true, muted: true, width: '130px' },
+  { key: 'asset_state', label: 'Zustand', muted: true, width: '130px' },
+  { key: 'befund', label: 'Hinweis', width: '240px' },
+]
+
+const kacheln = computed(() => {
+  const n = nachweise.data || []
+  const unvollstaendig = n.filter((e) => !e.complete)
+  const erloes = n.reduce((s, e) => s + (e.proceeds_cents || 0), 0)
+  return [
+    { label: 'Nachweise', wert: n.length, level: 'neutral' },
+    {
+      label: 'Ohne Löschnachweis',
+      wert: unvollstaendig.length,
+      hinweis: unvollstaendig.length ? 'DSGVO-Lücke' : 'keine',
+      level: unvollstaendig.length ? 'critical' : 'ok',
+    },
+    {
+      label: 'Ausmusterungskandidaten',
+      wert: kandidaten.value.length,
+      hinweis: 'vollständig abgeschrieben',
+      level: 'neutral',
+    },
+    { label: 'Erlöse', wert: euro(erloes), level: 'neutral' },
+  ]
+})
+
+const untertitel = computed(() => {
+  const n = nachweise.data || []
+  const fehlend = n.filter((e) => !e.complete).length
+  return n.length + ' Nachweise' + (fehlend ? ' · ' + fehlend + ' ohne Löschnachweis' : '')
+})
+
+async function entsorgen() {
+  try {
+    await vorgang.submit({
+      asset: asset.value,
+      method: verfahren.value,
+      recipient: uebernehmer.value || null,
+      certificate_ref: nachweis.value || null,
+      data_carrier: datentraeger.value,
+      erasure_method: loeschung.value || null,
+      erasure_verified_on: loeschDatum.value || null,
+    })
+    toast.create({ message: 'Entsorgung erfasst', type: 'success' })
+    asset.value = ''
+    uebernehmer.value = ''
+    nachweis.value = ''
+    datentraeger.value = false
+    loeschung.value = ''
+    loeschDatum.value = ''
+    await Promise.all([bestand.fetch(), nachweise.fetch()])
+  } catch (fehler) {
+    toast.create({ message: fehlerText(fehler), type: 'error' })
+  }
+}
+</script>

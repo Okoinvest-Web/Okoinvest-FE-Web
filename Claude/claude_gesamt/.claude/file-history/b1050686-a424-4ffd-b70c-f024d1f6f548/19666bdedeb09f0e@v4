@@ -1,0 +1,110 @@
+import { Suspense } from "react";
+import type { Metadata } from "next";
+
+import { DEMO_KONTEN, DEMO_PASSWORT, istDemoModus } from "@/lib/demo/modus";
+
+import { LoginForm } from "./login-form";
+
+export const metadata: Metadata = {
+  title: "Anmelden",
+};
+
+/**
+ * Die Anmeldung.
+ *
+ * Kein Lichthof, kein Verlauf, keine schwebende Karte: Wer sich an
+ * einem Leitstand anmeldet, soll sehen, woran er sich anmeldet. Das
+ * Bild ist deshalb dasselbe wie drinnen - Rasterlinien, ein
+ * gerahmtes Feld, Versalien in der Kopfzeile.
+ *
+ * Das feine Raster im Hintergrund ist die einzige Zutat. Es kostet
+ * zwei Verläufe und keine Datei, und es sagt in einem Bild, worum es
+ * geht: eine Fläche, auf der Werte ihren Platz haben.
+ */
+export default function LoginSeite() {
+  const demo = istDemoModus();
+
+  return (
+    <main
+      className="relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-10"
+      style={{ background: "var(--f-grund)" }}
+    >
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          backgroundImage:
+            "linear-gradient(to right, var(--linie-zart) 1px, transparent 1px), linear-gradient(to bottom, var(--linie-zart) 1px, transparent 1px)",
+          backgroundSize: "48px 48px",
+          maskImage:
+            "radial-gradient(ellipse 80% 60% at 50% 40%, black 30%, transparent 100%)",
+          WebkitMaskImage:
+            "radial-gradient(ellipse 80% 60% at 50% 40%, black 30%, transparent 100%)",
+        }}
+      />
+
+      <div className="a-erscheinen relative w-full max-w-sm">
+        <div className="mb-5 flex items-center gap-2.5">
+          <span
+            className="flex h-8 w-8 shrink-0 items-center justify-center"
+            style={{
+              background: "var(--akzent)",
+              color: "var(--akzent-knopf-text)",
+              borderRadius: "var(--radius-feld)",
+            }}
+            aria-hidden
+          >
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="4.2" fill="currentColor" />
+              <path
+                d="M12 2.4v2.6M12 19v2.6M4.2 4.2l1.9 1.9M17.9 17.9l1.9 1.9M2.4 12H5M19 12h2.6M4.2 19.8l1.9-1.9M17.9 6.1l1.9-1.9"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+              />
+            </svg>
+          </span>
+          <span className="min-w-0">
+            <span
+              className="block text-[0.9375rem] font-semibold tracking-[0.14em] uppercase"
+              style={{ color: "var(--t-stark)" }}
+            >
+              Ökovolt
+            </span>
+            <span className="t-mikro block">
+              Energieportal · Betriebsführung
+            </span>
+          </span>
+        </div>
+
+        <div className="tafel">
+          <div
+            className="border-b px-4 py-2"
+            style={{
+              borderColor: "var(--linie)",
+              background: "var(--f-vertieft)",
+            }}
+          >
+            <p className="t-etikett">Anmeldung</p>
+          </div>
+
+          <div className="p-4">
+            {/* useSearchParams verlangt eine Suspense-Grenze beim Prerendern. */}
+            <Suspense fallback={null}>
+              <LoginForm
+                demoKonten={demo ? DEMO_KONTEN : []}
+                demoPasswort={DEMO_PASSWORT}
+              />
+            </Suspense>
+          </div>
+        </div>
+
+        <p className="t-mikro mt-4">
+          {demo
+            ? "Demonstrationsbetrieb mit Beispieldaten"
+            : "Anmeldung über Ihr ERPNext-Benutzerkonto"}
+        </p>
+      </div>
+    </main>
+  );
+}

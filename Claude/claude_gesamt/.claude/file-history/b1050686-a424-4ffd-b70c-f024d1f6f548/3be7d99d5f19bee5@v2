@@ -1,0 +1,258 @@
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+
+import {
+  AKTION_ZU_ART,
+  istPrivat,
+  lieseNetzbereich,
+  pruefeRegel,
+  regelsatz,
+  type Regelentwurf,
+} from "./regel.ts";
+
+/**
+ * Eine Firewallregel kann in zwei Richtungen katastrophal falsch
+ * sein: Sie sperrt den Betrieb aus, oder sie öffnet ihn. Beides muss
+ * hier hängen bleiben und nicht am Gateway.
+ */
+
+function entwurf(teil: Partial<Regelentwurf> = {}): Regelentwurf {
+  return {
+    art: "Geosperre",
+    bezeichnung: "Sperre Herkunftsland",
+    wert: "CN",
+    ...teil,
+  };
+}
+
+describe("Netzbereiche lesen", () => {
+  it("liest eine saubere Netzangabe", () => {
+    const b = lieseNetzbereich("193.154.0.0/16");
+
+    assert.deepEqual(b?.oktette, [193, 154, 0, 0]);
+    assert.equal(b?.praefix, 16);
+    assert.equal(b?.adressen, 65536);
+    assert.equal(b?.gekuerzt, false);
+  });
+
+  it("streicht den Hostanteil und meldet es", () => {
+    const b = lieseNetzbereich("10.20.30.40/16");
+
+    assert.equal(b?.text, "10.20.0.0/16");
+    assert.equal(b?.gekuerzt, true);
+  });
+
+  it("rechnet eine einzelne Adresse als /32", () => {
+    const b = lieseNetzbereich("81.223.14.7/32");
+
+    assert.equal(b?.adressen, 1);
+    assert.equal(b?.gekuerzt, false);
+  });
+
+  it("weist ein Oktett über 255 zurück", () => {
+    assert.equal(lieseNetzbereich("256.0.0.0/8"), null);
+  });
+
+  it("weist eine Präfixlänge über 32 zurück", () => {
+    assert.equal(lieseNetzbereich("10.0.0.0/33"), null);
+  });
+
+  it("weist eine Angabe ohne Präfix zurück", () => {
+    assert.equal(lieseNetzbereich("10.0.0.1"), null);
+  });
+
+  it("weist Buchstaben zurück", () => {
+    assert.equal(lieseNetzbereich("zehn.0.0.0/8"), null);
+  });
+
+  it("erkennt die privaten Bereiche nach RFC 1918", () => {
+    assert.ok(istPrivat(lieseNetzbereich("10.0.0.0/16")!));
+    assert.ok(istPrivat(lieseNetzbereich("192.168.1.0/24")!));
+    assert.ok(istPrivat(lieseNetzbereich("172.20.0.0/16")!));
+    assert.ok(!istPrivat(lieseNetzbereich("172.15.0.0/16")!));
+    assert.ok(!istPrivat(lieseNetzbereich("193.154.0.0/16")!));
+  });
+});
+
+describe("Geosperre", () => {
+  it("lässt ein hinterlegtes Land durch", () => {
+    const p = pruefeRegel(entwurf({ wert: "CN" }));
+
+    assert.ok(p.gueltig);
+    assert.equal(p.aktion, "blockieren");
+  });
+
+  it("nimmt den Ländercode auch klein geschrieben an", () => {
+    const p = pruefeRegel(entwurf({ wert: "cn" }));
+
+    assert.ok(p.gueltig);
+    assert.equal(p.wert, "CN");
+  });
+
+  it("verweigert die Sperre des eigenen Landes", () => {
+    // Sonst sperrt sich der Betrieb aus seiner eigenen Anlage aus.
+    const p = pruefeRegel(entwurf({ wert: "AT" }));
+
+    assert.equal(p.gueltig, false);
+    assert.match(p.beanstandungen.join(" "), /eigene Land/);
+  });
+
+  it("weist einen unbekannten Code zurück, statt ihn zu übernehmen", () => {
+    const p = pruefeRegel(entwurf({ wert: "XX" }));
+
+    assert.equal(p.gueltig, false);
+  });
+
+  it("warnt bei Nachbarländern, ohne zu blockieren", () => {
+    const p = pruefeRegel(entwurf({ wert: "DE" }));
+
+    assert.ok(p.gueltig);
+    assert.equal(p.warnungen.length, 1);
+  });
+});
+
+describe("Ratenbegrenzung", () => {
+  it("nimmt eine übliche Rate an", () => {
+    const p = pruefeRegel(
+      entwurf({ art: "Ratenbegrenzung", wert: "120", bezeichnung: "API" }),
+    );
+
+    assert.ok(p.gueltig);
+    assert.equal(p.aktion, "begrenzen");
+    assert.equal(p.warnungen.length, 0);
+  });
+
+  it("warnt, wenn die Rate den eigenen Betrieb trifft", () => {
+    const p = pruefeRegel(
+      entwurf({ art: "Ratenbegrenzung", wert: "5", bezeichnung: "API" }),
+    );
+
+    assert.ok(p.gueltig);
+    assert.match(p.warnungen.join(" "), /knapp/);
+  });
+
+  it("weist null zurück - das wäre eine Sperre", () => {
+    const p = pruefeRegel(
+      entwurf({ art: "Ratenbegrenzung", wert: "0", bezeichnung: "API" }),
+    );
+
+    assert.equal(p.gueltig, false);
+  });
+
+  it("weist Kommazahlen zurück", () => {
+    const p = pruefeRegel(
+      entwurf({ art: "Ratenbegrenzung", wert: "12.5", bezeichnung: "API" }),
+    );
+
+    assert.equal(p.gueltig, false);
+  });
+
+  it("weist eine Rate zurück, die nichts mehr begrenzt", () => {
+    const p = pruefeRegel(
+      entwurf({ art: "Ratenbegrenzung", wert: "50000", bezeichnung: "API" }),
+    );
+
+    assert.equal(p.gueltig, false);
+  });
+});
+
+describe("Subnetzfreigabe", () => {
+  it("nimmt eine enge Freigabe an", () => {
+    const p = pruefeRegel(
+      entwurf({
+        art: "Subnetzfreigabe",
+        wert: "193.154.12.0/24",
+        bezeichnung: "Technikbüro",
+      }),
+    );
+
+    assert.ok(p.gueltig);
+    assert.equal(p.aktion, "erlauben");
+    assert.equal(p.warnungen.length, 0);
+  });
+
+  it("verweigert eine zu weite Freigabe", () => {
+    // /8 sind 16,7 Millionen Adressen. Das ist keine Freigabe mehr,
+    // das ist eine offene Tür.
+    const p = pruefeRegel(
+      entwurf({
+        art: "Subnetzfreigabe",
+        wert: "10.0.0.0/8",
+        bezeichnung: "Weit",
+      }),
+    );
+
+    assert.equal(p.gueltig, false);
+    assert.match(p.beanstandungen.join(" "), /ab \/16/);
+  });
+
+  it("normalisiert die Netzadresse und meldet die Kürzung", () => {
+    const p = pruefeRegel(
+      entwurf({
+        art: "Subnetzfreigabe",
+        wert: "81.223.14.7/24",
+        bezeichnung: "Büro",
+      }),
+    );
+
+    assert.ok(p.gueltig);
+    assert.equal(p.wert, "81.223.14.0/24");
+    assert.match(p.warnungen.join(" "), /Hostanteil/);
+  });
+
+  it("warnt bei einem privaten Bereich", () => {
+    const p = pruefeRegel(
+      entwurf({
+        art: "Subnetzfreigabe",
+        wert: "192.168.1.0/24",
+        bezeichnung: "Intern",
+      }),
+    );
+
+    assert.ok(p.gueltig);
+    assert.match(p.warnungen.join(" "), /privater Adressbereich/);
+  });
+
+  it("weist Unsinn zurück", () => {
+    const p = pruefeRegel(
+      entwurf({
+        art: "Subnetzfreigabe",
+        wert: "kein Netz",
+        bezeichnung: "Test",
+      }),
+    );
+
+    assert.equal(p.gueltig, false);
+  });
+});
+
+describe("Bezeichnung", () => {
+  it("verlangt eine Bezeichnung", () => {
+    const p = pruefeRegel(entwurf({ bezeichnung: "x" }));
+
+    assert.equal(p.gueltig, false);
+    assert.match(p.beanstandungen.join(" "), /Bezeichnung/);
+  });
+});
+
+describe("Aktion folgt der Art", () => {
+  it("ordnet jeder Art genau eine Aktion zu", () => {
+    assert.equal(AKTION_ZU_ART.Geosperre, "blockieren");
+    assert.equal(AKTION_ZU_ART.Ratenbegrenzung, "begrenzen");
+    assert.equal(AKTION_ZU_ART.Subnetzfreigabe, "erlauben");
+  });
+});
+
+describe("Klartext", () => {
+  it("beschreibt eine Geosperre mit dem Landesnamen", () => {
+    assert.match(regelsatz("Geosperre", "CN"), /China/);
+  });
+
+  it("nennt bei einer Freigabe die Zahl der Adressen", () => {
+    assert.match(regelsatz("Subnetzfreigabe", "193.154.12.0/24"), /256/);
+  });
+
+  it("bleibt lesbar, wenn der Wert nicht deutbar ist", () => {
+    assert.equal(regelsatz("Unbekannt", "irgendwas"), "irgendwas");
+  });
+});

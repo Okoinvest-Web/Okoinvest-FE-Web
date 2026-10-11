@@ -6,6 +6,7 @@
 import Link from "@/components/Land/Link";
 import RechnerSeite, { rechnerMetadata, rechnerMetadataEn } from "@/components/Rechner/RechnerSeite";
 import NetzanschlussRechner from "@/components/Rechner/NetzanschlussRechner";
+import NetzanschlussBegleiter from "@/components/Rechner/NetzanschlussBegleiter";
 import { FREIFLAECHE, SPEICHER } from "@/lib/invest/markt";
 import { CLUSTER_ANTEIL, SPANNE } from "@/lib/rechner/netzanschluss";
 import { fmt } from "@/lib/rechner/annahmen";
@@ -107,11 +108,11 @@ const DE = {
     </>
   ),
   lead: "Größe, Entfernung, Spannungsebene und Netzkapazität eingeben: Sie erhalten grobe Kosten für Trasse, Stationen und Umspannwerk, einen Zeitrahmen, die wichtigsten Risiken und konkrete Tipps – inklusive Überbauung und Speicher.",
-  chips: ["Kosten mit Spanne", "Zeitrahmen", "Überbauung & Speicher", "§ 8 EEG-Tipps"],
+  chips: ["Kosten mit Spanne", "Zeitrahmen", "Überbauung & Speicher", "Ablauf-Begleiter DE · AT · CH"],
   app: {
     name: "Netzanschluss-Check Solarpark",
     description: "Grobe Kosten- und Zeitschätzung für den Netzanschluss eines Solarparks nach Größe, Entfernung, Spannungsebene und Netzkapazität – mit Überbauung, Speicher, Clusterung, Risiken und Tipps.",
-    featureList: ["Kostenbausteine Kabel, Stationen, Umspannwerk", "Automatische Wahl der Spannungsebene", "Überbauung mit Abregelungsverlust", "Speicher und Baukostenzuschuss", "Zeitrahmen und Risiken", "Tipps zu § 8 und § 8a EEG"],
+    featureList: ["Kostenbausteine Kabel, Stationen, Umspannwerk", "Automatische Wahl der Spannungsebene", "Überbauung mit Abregelungsverlust", "Speicher und Baukostenzuschuss", "Zeitrahmen und Risiken", "Tipps zu § 8 und § 8a EEG", "Ablauf-Begleiter mit Dokumenten-Checkliste je Land (DE, AT, CH)", "Typische Ablehnungsgründe und Gegenmittel"],
   },
   annahmen: [
     ["MS-Kabeltrasse", `${fmt(FREIFLAECHE.kabelProMeter)} €/m`],
@@ -155,11 +156,11 @@ const EN = {
     </>
   ),
   lead: "Enter size, distance, voltage level and grid capacity: you get rough costs for the cable route, stations and substation, a time frame, the main risks and concrete tips – including overbuilding and storage.",
-  chips: ["Costs with range", "Time frame", "Overbuilding & storage", "§ 8 EEG tips"],
+  chips: ["Costs with range", "Time frame", "Overbuilding & storage", "Process companion DE · AT · CH"],
   app: {
     name: "Solar park grid connection check",
     description: "Rough cost and time estimate for a solar park’s grid connection by size, distance, voltage level and grid capacity – with overbuilding, storage, clustering, risks and tips.",
-    featureList: ["Cost components: cable, stations, substation", "Automatic choice of voltage level", "Overbuilding with curtailment loss", "Storage and construction cost contribution", "Time frame and risks", "Tips on § 8 and § 8a EEG"],
+    featureList: ["Cost components: cable, stations, substation", "Automatic choice of voltage level", "Overbuilding with curtailment loss", "Storage and construction cost contribution", "Time frame and risks", "Tips on § 8 and § 8a EEG", "Process companion with document checklist per country (DE, AT, CH)", "Typical rejection reasons and remedies"],
   },
   annahmen: [
     ["MV cable route", e.eur(FREIFLAECHE.kabelProMeter, "/m")],
@@ -204,7 +205,14 @@ export default async function Page({ params }) {
       lead={t.lead}
       chips={t.chips}
       app={t.app}
-      rechner={<NetzanschlussRechner />}
+      rechner={
+        <>
+          <NetzanschlussRechner />
+          {/* Netzanschluss 2.0 (Welle 4, Paket NETZ2): Ablauf-Begleiter je Land – auch für AT/CH,
+              deshalb außerhalb der Länder-Sperre des Rechners */}
+          <NetzanschlussBegleiter />
+        </>
+      }
       erklaerung={
         <NurDEBlock land={land} thema="Rechenwerte und Annahmen" themaEn="Figures and assumptions">
           {en ? (

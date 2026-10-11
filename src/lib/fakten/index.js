@@ -26,8 +26,12 @@ import gewerbestromDe from "./daten/gewerbestrom-de.js";
 import egAt from "./daten/eg-at.js";
 // Paket B8 (Kommunal 2.0: Landesgesetze zur Gemeindebeteiligung DE)
 import kommuneLaender from "./daten/kommune-laender.js";
+// Paket GEBAEUDE (Welle 4: Gebäudestrom – Rechtsrahmen je Land und Rechenannahmen, keine Geldwerte)
+import gebaeudestrom from "./daten/gebaeudestrom.js";
+// Paket ATSNE (Welle 4: AT-Gewerbestrom – Struktur SNE-V 2018, Elektrizitätsabgabe, EAG-Förderbeitrag; keine Entgeltwerte vor der SNE-VO 2027)
+import gewerbestromAt from "./daten/gewerbestrom-at.js";
 
-export const DATENMODULE = [de, at, ch, termineDe, termineAt, termineCh, umlagenDe, umlagenAt, umlagenCh, netzentgelteDe, netzentgelteAt, netzentgelteCh, gewerbestromDe, egAt, kommuneLaender];
+export const DATENMODULE = [de, at, ch, termineDe, termineAt, termineCh, umlagenDe, umlagenAt, umlagenCh, netzentgelteDe, netzentgelteAt, netzentgelteCh, gewerbestromDe, egAt, kommuneLaender, gebaeudestrom, gewerbestromAt];
 
 export const REGISTER = erstelleRegister(DATENMODULE);
 

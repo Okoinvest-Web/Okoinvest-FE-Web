@@ -82,6 +82,8 @@ export const UEBERSETZT = Object.freeze({
   // /newsroom/[slug] bleibt „nicht übersetzt“ (Meldungen deutsch)
   "/newsletter": Object.freeze({ stand: "2026-10-09", grundlage: "Seite und Newsletter-Baustein mit englischen Texten (Paket NL); Einwilligungswortlaut englisch mit eigenem Hash", pruefer: "TODO-E6 + Rechtsabteilung", index: false }),
   "/newsroom": Object.freeze({ stand: "2026-10-09", grundlage: "Seite mit englischen Texten (Paket NL); Kurzprofil aus src/data/site.js", pruefer: "TODO-E6", index: false }),
+  // Welle 4, Paket WIDGETS: Inhalt englisch (Seite und Widget-Texte), noindex wie die deutsche Fassung (Prüfung E6/Rechtsabteilung offen)
+  "/partner/widgets": Object.freeze({ stand: "2026-10-11", grundlage: "Seite und Widget-Texte englisch (Paket WIDGETS, src/lib/widgets); Rechenlogik unverändert", pruefer: "TODO-E6", index: false }),
   "/warum-oekoinvest": VERMERK_EN_G1,
   "/prozess": VERMERK_EN_G1,
   // Gruppe 1 – Recht (noindex bis Freigabe Rechtsabteilung)
@@ -140,15 +142,28 @@ export const UEBERSETZT = Object.freeze({
   "/rechner/gewerbestrom-check": Object.freeze({ stand: "2026-10-09", grundlage: "Seite und Rechner über Wörterbücher übersetzt (Paket B5); Rechenlogik gemeinsam mit DE", pruefer: "TODO-E6", index: false }),
   // Welle 3, Paket B6: Flächenpass – Inhalt englisch, aber noindex wie die deutsche Fassung (Fachprüfung offen)
   "/rechner/flaechenpass": Object.freeze({ stand: "2026-10-09", grundlage: "Seite, Assistent und Texte englisch (Paket B6); Regionsdaten aus src/data/regionen/en; Bewertungslogik gemeinsam mit DE", pruefer: "TODO-E6", index: false }),
+  // Welle 4, Paket GEBAEUDE: Gebäudestrom – Inhalt englisch, aber noindex wie die deutschen Fassungen (Fachprüfung E6 offen)
+  "/gebaeudestrom": Object.freeze({ stand: "2026-10-11", grundlage: "Seite und Bausteine über Wörterbücher übersetzt (Paket GEBAEUDE); Rechtsbegriffe je Land mit erklärten Originalbegriffen", pruefer: "TODO-E6", index: false }),
+  "/rechner/gebaeudestrom": Object.freeze({ stand: "2026-10-11", grundlage: "Seite und Rechner über Wörterbücher übersetzt (Paket GEBAEUDE); Rechenlogik gemeinsam, nur Energiemengen", pruefer: "TODO-E6", index: false }),
+  // Welle 4, Parkplatz-Hub: Inhalt englisch, aber noindex wie die deutsche Fassung (Fachprüfung E6 offen)
+  "/parkplatz": Object.freeze({ stand: "2026-10-11", grundlage: "Seite und Schnell-Check über Wörterbücher übersetzt (Paket PARKPLATZ); Pflicht-Daten und Logik gemeinsam mit DE", pruefer: "TODO-E6", index: false }),
+  // Welle 4, Paket GLAESERN: Gläserner Solarpark – Inhalt englisch (Seite, Parkdaten, Demo-Ansicht),
+  // aber noindex wie die deutsche Fassung (Beispieldaten; echte Parkdaten und Fachprüfung E6 offen)
+  "/projekte/glaeserner-solarpark": Object.freeze({ stand: "2026-10-11", grundlage: "Seite, Parkdaten und Demo-Ansicht über Wörterbücher übersetzt (Paket GLAESERN); Zahlen aus dem Faktenregister, gekennzeichnete Beispielwerte", pruefer: "TODO-E6", index: false }),
   "/marktdaten": VERMERK_EN_G3,
   // Gruppe 3 – Wissen
   "/faq": VERMERK_EN_G3,
   "/wissen/lexikon": VERMERK_EN_G3,
+  // Welle 4, Paket FAKTEN: Oberfläche englisch, Fakten selbst bleiben deutsch (Hinweis auf der Seite);
+  // noindex wie die deutsche Fassung (Prüfung E6 und „alle Fakten geprüft“ offen)
+  "/quellen": Object.freeze({ stand: "2026-10-11", grundlage: "Seite und Suche über Wörterbücher englisch (Paket FAKTEN); Fakten deutsch mit EN-Hinweis", pruefer: "TODO-E6", index: false }),
   "/ratgeber": VERMERK_EN_G3,
   // Entwurf, Prüfung Rechtsabteilung offen: Inhalt englisch, aber nicht indexieren (wie die deutsche Fassung)
   "/marktdaten/fristen": Object.freeze({ ...VERMERK_EN_G3, index: false }),
   // Welle 3, Paket B9: Ausschreibungs-Monitor – Inhalt englisch, aber noindex bis zur Fachprüfung (wie die deutsche Fassung)
   "/marktdaten/ausschreibungen": Object.freeze({ stand: "2026-10-09", grundlage: "Seite und Monitor-Baustein mit englischen Texten (Paket B9); Daten unverändert", pruefer: "TODO-E6", index: false }),
+  // Welle 4, Paket CHATLAS: CH-Strompreis-Atlas – Inhalt englisch, aber noindex bis zur Fachprüfung (wie die deutsche Fassung)
+  "/marktdaten/strompreise-schweiz": Object.freeze({ stand: "2026-10-11", grundlage: "Seite und Atlas-Baustein mit englischen Texten (Paket CHATLAS); amtliche ElCom-Daten unverändert", pruefer: "TODO-E6", index: false }),
 });
 
 /**

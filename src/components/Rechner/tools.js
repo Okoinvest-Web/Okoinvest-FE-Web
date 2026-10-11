@@ -1,4 +1,4 @@
-import { Calculator, BatteryCharging, Cable, Car, Factory, Gauge, Warehouse, FileSearch, HandCoins, Handshake, Landmark, LineChart, MapPinned, Scale, Share2, Sprout, Users, Receipt, LandPlot, Repeat } from "lucide-react";
+import { Calculator, BatteryCharging, Building2, Cable, Car, Factory, Gauge, Warehouse, FileSearch, HandCoins, Handshake, Landmark, LineChart, MapPinned, Scale, Share2, Sprout, Users, Receipt, LandPlot, Repeat } from "lucide-react";
 import { pfad, schreibweiseFuer } from "@/lib/land";
 
 /**
@@ -29,7 +29,8 @@ export const TOOLS = [
   { id: "dachpacht", laender: DACH, href: pfad("/rechner/dachpacht"), titel: "Dachpacht-Rechner", kurz: "Pachtspanne und Ertrag Ihres Gewerbedachs", text: "Dachfläche, Dachart, Ausrichtung und Region eingeben – Leistung, Ertrag und Pachtspanne, dazu Dachpacht, Dachstrom-PPA und Eigeninvestition im Vergleich.", icon: Warehouse, zielgruppe: "Eigentümer", tag: "Neu" },
   { id: "bestandsanlage", laender: DACH, href: pfad("/rechner/bestandsanlage"), titel: "Bestandsanlagen-Bewertung", kurz: "Ertragswert laufender PV-Anlagen", text: "Förderrestlaufzeit, gemessener Ertrag, Betriebskosten, Pacht, Wechselrichtertausch und Marktpreis nach Förderende – Ertragswert mit Spanne, Wert je kWp und Sensitivität.", icon: Gauge, zielgruppe: "Investoren", tag: "Profi" },
   // Welle 3, Paket B5 – nur DE; AT (SNE-VO 2027) und CH zeigen den Länderhinweis der Seite
-  { id: "gewerbestrom-check", laender: ["DE"], href: pfad("/rechner/gewerbestrom-check"), titel: "Rechnungs-Check Gewerbestrom", kurz: "Stromrechnung zerlegen, Energiepreis einordnen", text: "Arbeitspreis, Grundpreis und Verbrauch eingeben – amtliche Umlagen, Steuern und Börsenwert (SMARD) gegen Ihren Energieanteil. Lastgang optional, wird nur im Browser ausgewertet.", icon: Receipt, zielgruppe: "Unternehmen", tag: "Neu" },
+  // Paket ATSNE (Welle 4): AT zeigt die Vorbereitungs-Maske (SNE-VO 2027), gerechnet wird in AT noch nichts
+  { id: "gewerbestrom-check", laender: ["DE", "AT"], href: pfad("/rechner/gewerbestrom-check"), titel: "Rechnungs-Check Gewerbestrom", kurz: "Stromrechnung zerlegen, Energiepreis einordnen", text: "Arbeitspreis, Grundpreis und Verbrauch eingeben – amtliche Umlagen, Steuern und Börsenwert (SMARD) gegen Ihren Energieanteil. Lastgang optional, wird nur im Browser ausgewertet.", icon: Receipt, zielgruppe: "Unternehmen", tag: "Neu" },
   // Welle 3, Paket B6 – Flächenpass Stufe 1 (DE, AT, CH; ohne Geldwerte)
   { id: "flaechenpass", laender: DACH, href: pfad("/rechner/flaechenpass"), titel: "Flächenpass", kurz: "Fläche einzeichnen, Eignung und Restriktionen", text: "Fläche auf der Karte einzeichnen oder Größe angeben – Hektar, Leistung, Stromertrag, grobe Eignung und die Restriktionen Ihres Bundeslandes mit Quellen.", icon: LandPlot, zielgruppe: "Eigentümer", tag: "Neu" },
   // Welle 3, Paket B7 – nur AT (EG-Software nach ElWG); DE und CH zeigen den Länderhinweis der Seite
@@ -37,6 +38,8 @@ export const TOOLS = [
   // Welle 3, Paket B8 – Kommunal 2.0: Ratsvorlage für DE und AT (CH: Länderhinweis der Seite), Widmungskit nur AT
   { id: "ratsvorlage", laender: ["DE", "AT"], href: pfad("/kommunen/ratsvorlage"), titel: "Ratsvorlage Solarpark", kurz: "Kommunal-Rechner 2.0 mit Landesrecht", text: "Einnahmen der Gemeinde, Beteiligungsgesetz Ihres Bundeslands mit Quelle – und eine druckfertige Ratsvorlage als Muster. Für Österreich mit den Widmungsschritten des Landes.", icon: Scale, zielgruppe: "Kommunen", tag: "Neu" },
   { id: "widmungskit", laender: ["AT"], href: pfad("/kommunen/widmungskit"), titel: "Widmungskit Österreich", kurz: "Umwidmung für PV je Bundesland", text: "Ablauf, beteiligte Stellen und Prüfpunkte der Widmung für eine PV-Freiflächenanlage – je Bundesland, mit Quelle zu jedem Punkt, zum Abhaken und Drucken.", icon: MapPinned, zielgruppe: "Kommunen", tag: "Neu" },
+  // Welle 4, Paket GEBAEUDE – DE, AT, CH (nur Energiemengen, keine Geldwerte)
+  { id: "gebaeudestrom", laender: DACH, href: pfad("/rechner/gebaeudestrom"), titel: "Gebäudestrom-Rechner", kurz: "PV auf dem Mehrparteienhaus: Wer nutzt wie viel?", text: "Einheiten, Verbrauch und Dachfläche eingeben – mögliche Anlagengröße, im Gebäude genutzter Solarstrom und Deckung je Modell: Mieterstrom und § 42b EnWG, GEA in Österreich, ZEV/vZEV in der Schweiz.", icon: Building2, zielgruppe: "Eigentümer", tag: "Neu" },
 ];
 
 // Englisch (Sprachmodell): Texte je Rechner-id – hrefs, Icons, Länder und Zielgruppen-Schlüssel
@@ -64,6 +67,7 @@ export const TOOLS_EN = {
   flaechenpass: { titel: "Land passport", kurz: "Draw your land, suitability and restrictions", text: "Draw your land on the map or enter its size – hectares, capacity, power yield, rough suitability and your federal state’s restrictions with sources." },
   ratsvorlage: { titel: "Council paper for solar parks", kurz: "Municipal calculator 2.0 with state law", text: "Municipal income, the participation law of your federal state with source – and a ready-to-print council paper template. For Austria with the state’s zoning steps." },
   widmungskit: { titel: "Zoning kit Austria", kurz: "Rezoning for PV per federal state", text: "Procedure, authorities involved and checkpoints for zoning a ground-mounted PV plant – per federal state, with a source for every point, to tick off and print." },
+  gebaeudestrom: { titel: "Building power calculator", kurz: "PV on an apartment building: who uses how much?", text: "Enter units, consumption and roof area – possible plant size, solar power used in the building and coverage per model: tenant electricity and § 42b EnWG, GEA in Austria, ZEV/vZEV in Switzerland." },
 };
 
 /** Zielgruppen und Markierungen auf Englisch (Schlüssel = deutscher Wert in TOOLS). */

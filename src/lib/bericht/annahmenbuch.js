@@ -17,8 +17,9 @@ import { annahmenFlaechencheck } from "@/lib/rechner/flaechencheck";
 import { annahmenKommune } from "@/lib/rechner/kommune";
 import { annahmenGewerbestrom } from "@/lib/rechner/gewerbestrom";
 import { annahmenFlaechenpass } from "./flaechenpass";
+import { annahmenParkplatz } from "./parkplatz";
 import { annahmenRatsvorlage } from "./ratsvorlage";
-import { QUELLEN, STAND, STAND_RECHENLOGIK, AGRI, BAUART } from "@/lib/invest/markt";
+import { QUELLEN, STAND, STAND_RECHENLOGIK, AGRI, BAUART, CARPORT } from "@/lib/invest/markt";
 import { fmtFaktWert, STATUS_TEXT } from "@/lib/fakten";
 import { fmt } from "@/lib/rechner/annahmen";
 
@@ -93,7 +94,7 @@ export const BEZEICHNUNG = Object.freeze({
   "recht.eag.abschlagLandwirtschaft": "EAG: Abschlag auf landwirtschaftlichen Flächen (Österreich)",
 });
 
-const FUNKTION = { pacht: annahmenPacht, pachtangebot: annahmenPachtangebot, flaechencheck: annahmenFlaechencheck, kommune: annahmenKommune, gewerbestrom: annahmenGewerbestrom, flaechenpass: annahmenFlaechenpass, ratsvorlage: annahmenRatsvorlage };
+const FUNKTION = { pacht: annahmenPacht, pachtangebot: annahmenPachtangebot, flaechencheck: annahmenFlaechencheck, kommune: annahmenKommune, gewerbestrom: annahmenGewerbestrom, flaechenpass: annahmenFlaechenpass, ratsvorlage: annahmenRatsvorlage, parkplatz: annahmenParkplatz };
 
 /** Konstanten, die (noch) nicht im Register stehen – je Rechner, mit Wert aus markt.js */
 function rechenlogikZeilen(rechner, eingaben = {}) {
@@ -120,8 +121,20 @@ function rechenlogikZeilen(rechner, eingaben = {}) {
       ? [z("solarpark.rechenlogik", "Investition, Betriebskosten und Finanzierung des Parks (Solarpark-Rechenlogik)", "siehe Rechenweg")]
       : [z("widmung.regionsdaten", "Widmungsschritte und Prüfpunkte des Bundeslands (Regionsdaten mit Quelle je Punkt)", "siehe Prüfpunkte")];
   }
+  // Welle 4, Paket NETZ2: Ablauf-Begleiter Netzanschluss – keine Geldwerte; Grundlage sind die
+  // Verfahrensschritte je Land (DE: § 8 EEG; AT: ElWOG/TOR; CH: Werkvorschriften), Quellen im Bericht
+  if (rechner === "netzanschluss") {
+    return [z("netzanschluss.ablauf", "Verfahrensschritte, Dokumentenlisten und Ablehnungsgründe je Land (DE: § 8 EEG; AT: ElWOG/TOR Erzeuger; CH: Werkvorschriften)", "siehe Ablauf im Bericht")];
+  }
   if (rechner === "pachtangebot") {
     return [z("pachtangebot.regeln", "Bewertungsregeln der Klauseln (marktüblich / prüfen / kritisch)", "siehe Klauseln")];
+  }
+  // Welle 4, Parkplatz-Hub: keine Geldwerte; Pflicht-Übersicht aus Landesrecht (Quellen im Bericht)
+  if (rechner === "parkplatz") {
+    return [
+      z("carport.kwpProStellplatz", "Leistung je vollständig überdachtem Stellplatz (2,5 × 5 m, Module ≈ 225 Wp/m²)", `${fmt(CARPORT.kwpProStellplatz, 1)} kWp`),
+      z("parkplatz.pflichtregeln", "Solarpflicht je Bundesland (Schwelle, Umfang, Rechtsgrundlage – eigene Zusammenstellung aus Landesrecht, Stand 09/2026)", "siehe Quellen im Bericht"),
+    ];
   }
   return [];
 }

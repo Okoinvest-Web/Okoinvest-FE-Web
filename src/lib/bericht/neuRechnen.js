@@ -27,6 +27,9 @@ import { pfad as seitenPfad } from "../land/index.js";
 import { regelnGewerbestrom, rechneGewerbestrom, zusammenfassungGewerbestrom } from "./gewerbestrom";
 import { landPruefenFlaechenpass, normalisierenFlaechenpass, rechneFlaechenpass, regelnFlaechenpass, zusammenfassungFlaechenpass } from "./flaechenpass";
 import { landPruefenRatsvorlage, normalisierenRatsvorlage, rechneRatsvorlage, regelnRatsvorlage, zusammenfassungRatsvorlage } from "./ratsvorlage";
+import { landPruefenGebaeudestrom, normalisierenGebaeudestrom, rechneGebaeudestromBericht, regelnGebaeudestrom, zusammenfassungGebaeudestrom } from "./gebaeudestrom";
+import { landPruefenNetzanschlussAblauf, normalisierenNetzanschlussAblauf, rechneNetzanschlussAblauf, regelnNetzanschlussAblauf, zusammenfassungNetzanschlussAblauf } from "./netzanschlussAblauf";
+import { landPruefenParkplatz, normalisierenParkplatz, rechneParkplatz, regelnParkplatz, zusammenfassungParkplatz } from "./parkplatz";
 
 export const LAENDER = Object.freeze(["DE", "AT", "CH"]);
 export const LAND_NAME = Object.freeze({ DE: "Deutschland", AT: "Österreich", CH: "Schweiz" });
@@ -401,6 +404,46 @@ export const RECHNER = Object.freeze({
     rechne: rechneRatsvorlage,
     zusammenfassen: zusammenfassungRatsvorlage,
     geldwerte: false, // Länder-Sperre selbst geregelt: AT ohne Geldwerte, CH 422
+  }),
+  // Welle 4, Paket NETZ2: Ablauf-Begleiter Netzanschluss – DE, AT, CH; ohne Geldwerte in jedem Land
+  // (src/lib/bericht/netzanschlussAblauf.js)
+  netzanschluss: Object.freeze({
+    titel: "Ablauf-Begleiter Netzanschluss",
+    pfad: seitenPfad("/rechner/netzanschluss"),
+    vorgangTyp: "flaeche",
+    regeln: regelnNetzanschlussAblauf({ mehrfach }),
+    landPruefen: landPruefenNetzanschlussAblauf,
+    normalisieren: normalisierenNetzanschlussAblauf,
+    rechne: rechneNetzanschlussAblauf,
+    zusammenfassen: zusammenfassungNetzanschlussAblauf,
+    geldwerte: false, // Ablauf ohne Kostenwerte: keine belegten Spannen im Faktenregister
+    ohneRegion: true,
+  }),
+  // Welle 4, Parkplatz-Hub: Schnell-Check Solarpflicht & Potenzial – DE je Bundesland mit Quelle,
+  // AT/CH ehrlich „unklar“; keine Geldwerte in keinem Land (src/lib/bericht/parkplatz.js)
+  parkplatz: Object.freeze({
+    titel: "Parkplatz-Schnell-Check",
+    pfad: seitenPfad("/parkplatz"),
+    vorgangTyp: "carport",
+    regeln: regelnParkplatz({ zahl, wahl }),
+    landPruefen: landPruefenParkplatz,
+    normalisieren: normalisierenParkplatz,
+    rechne: rechneParkplatz,
+    zusammenfassen: zusammenfassungParkplatz,
+    geldwerte: false,
+  }),
+  // Welle 4, Paket GEBAEUDE: Gebäudestrom – DE, AT, CH; nur Energiemengen, keine Geldwerte
+  // (src/lib/bericht/gebaeudestrom.js; Beträge je Land erst nach Fachprüfung E6)
+  gebaeudestrom: Object.freeze({
+    titel: "Gebäudestrom-Rechner",
+    pfad: seitenPfad("/rechner/gebaeudestrom"),
+    vorgangTyp: "dach",
+    regeln: regelnGebaeudestrom({ zahl, wahl, jaNein }),
+    landPruefen: landPruefenGebaeudestrom,
+    normalisieren: normalisierenGebaeudestrom,
+    rechne: rechneGebaeudestromBericht,
+    zusammenfassen: zusammenfassungGebaeudestrom,
+    geldwerte: false,
   }),
 });
 

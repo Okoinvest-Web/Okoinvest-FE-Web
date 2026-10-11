@@ -33,6 +33,8 @@ export const SEITEN = Object.freeze({
   "/freiflaeche": { titel: "Freiflächen-PV", prio: 0.9, freq: "monthly" },
   "/agri-pv": { titel: "Agri-PV", prio: 0.9, freq: "monthly" },
   "/solarcarport": { titel: "Solarcarports", prio: 0.8, freq: "monthly" },
+  // Welle 4, Parkplatz-Hub – noindex bis zur Fachprüfung (E6), nicht in der Sitemap
+  "/parkplatz": { titel: "Parkplatz-Hub", prio: 0.8, freq: "monthly", index: false },
   "/grossspeicher": { titel: "Großspeicher", prio: 0.8, freq: "monthly" },
   "/prozess": { titel: "Projektprozess", prio: 0.7, freq: "monthly" },
   "/warum-oekoinvest": { titel: "Warum ÖkoInvest", prio: 0.6, freq: "monthly" },
@@ -56,6 +58,9 @@ export const SEITEN = Object.freeze({
   // Welle 3, Paket B10: Neutralität der Börse – noindex bis zur Prüfung (Rechtsabteilung je Land, E6), nicht in der Sitemap
   "/projektboerse/neutralitaet": { titel: "Neutralität & Regeln", prio: 0.6, freq: "monthly", index: false },
   "/projektboerse/muster-nda": { titel: "Muster-NDA für Projektanbieter", prio: 0.3, freq: "yearly", index: false },
+  // Welle 4, Paket GLAESERN: Gläserner Solarpark (Beispielpark mit Demo-Daten) – noindex, bis echte
+  // Parkdaten freigegeben sind und die Fachprüfung (E6) erfolgt ist; nicht in der Sitemap
+  "/projekte/glaeserner-solarpark": { titel: "Gläserner Solarpark", prio: 0.7, freq: "weekly", index: false },
   // Strom & Gemeinschaft
   "/virtuelles-kraftwerk": { titel: "Virtuelles Kraftwerk", prio: 0.8, freq: "monthly" },
   "/reststrom": { titel: "Reststrom-Pool", prio: 0.8, freq: "monthly" },
@@ -90,14 +95,23 @@ export const SEITEN = Object.freeze({
   "/rechner/gewerbestrom-check": { titel: "Rechnungs-Check Gewerbestrom", prio: 0.8, freq: "monthly", index: false },
   // Welle 3, Paket B6: Flächenpass Stufe 1 – noindex bis zur Fachprüfung (E6), nicht in der Sitemap
   "/rechner/flaechenpass": { titel: "Flächenpass", prio: 0.8, freq: "monthly", index: false },
+  // Welle 4, Paket GEBAEUDE: Gebäudestrom – noindex bis zur Fachprüfung (E6), nicht in der Sitemap
+  "/gebaeudestrom": { titel: "Gebäudestrom", prio: 0.8, freq: "monthly", index: false },
+  "/rechner/gebaeudestrom": { titel: "Gebäudestrom-Rechner", prio: 0.8, freq: "monthly", index: false },
   // Markt & Wissen
   "/marktdaten": { titel: "Marktdaten Solar", prio: 0.8, freq: "weekly" },
   "/marktdaten/fristen": { titel: "Fristen und Termine", prio: 0.6, freq: "weekly", index: false },
   // Welle 3, Paket B9: noindex bis zur fachlichen Zweitprüfung (E6)
   "/marktdaten/ausschreibungen": { titel: "Ausschreibungs-Monitor", prio: 0.6, freq: "weekly", index: false },
+  // Welle 4, Paket CHATLAS: CH-Strompreis-Atlas (amtliche ElCom-Daten, Lizenz am Original geprüft) –
+  // noindex bis zur fachlichen Zweitprüfung (E6), nicht in der Sitemap
+  "/marktdaten/strompreise-schweiz": { titel: "Strompreis-Atlas Schweiz", prio: 0.6, freq: "yearly", index: false },
   "/ratgeber": { titel: "Ratgeber", prio: 0.8, freq: "weekly" },
   "/ratgeber/[slug]": { titel: "Ratgeber-Artikel", dynamisch: true, sitemap: false },
   "/wissen/lexikon": { titel: "Lexikon", prio: 0.7, freq: "monthly", lexikon: true },
+  // Welle 4, Paket FAKTEN: Fakten-Suche – noindex, bis ALLE gezeigten Fakten am Original geprüft sind
+  // (derzeit 116 von 159 „zu_pruefen“) und die Fachprüfung (E6) erfolgt ist; nicht in der Sitemap
+  "/quellen": { titel: "Fakten und Quellen", prio: 0.6, freq: "weekly", index: false },
   "/faq": { titel: "FAQ", prio: 0.6, freq: "monthly" },
   // Welle 3, Paket NL: Newsletter je Land – noindex bis Strang R die Texte freigibt und der Versand (B0) steht
   "/newsletter": { titel: "Newsletter", prio: 0.5, freq: "monthly", index: false },
@@ -107,6 +121,10 @@ export const SEITEN = Object.freeze({
   // Welle 3, Paket NL: Newsroom – keine Presse vor Freigabe durch den Inhaber (Masterplan Abschnitt 7): noindex, nicht in Navigation/Sitemap
   "/newsroom": { titel: "Newsroom", prio: 0.5, freq: "weekly", index: false },
   "/newsroom/[slug]": { titel: "Meldung", dynamisch: true, sitemap: false, index: false },
+  // Welle 4, Paket WIDGETS: Dokumentation der Partner-Widgets (Embed-Code) – noindex bis zur Prüfung
+  // (E6; Rechtsabteilung: Einbettungsbedingungen für Partner), nicht in der Sitemap. Die Embed-Routen
+  // selbst (/widgets/<name>) sind KEINE Seiten dieses Registers (eigene Route-Handler, immer noindex).
+  "/partner/widgets": { titel: "Partner-Widgets", prio: 0.4, freq: "monthly", index: false },
   "/kontakt": { titel: "Kontakt", prio: 0.6, freq: "yearly" },
   "/termin": { titel: "Termin", prio: 0.6, freq: "monthly" },
   // Rechtstexte (Entwürfe filtert die Sitemap über src/lib/indexsteuerung.js)

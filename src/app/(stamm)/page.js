@@ -240,7 +240,7 @@ const TEXTE = {
       karten: [
         { k: "Fläche", t: "Flächeneigentümer & Landwirte", x: "Pacht, Agri-PV oder Beteiligung" },
         { k: "Projekt", t: "Projektentwickler", x: "Projekte vermarkten über die Börse" },
-        { k: "Kapital", t: "Investoren", x: "Vorgeprüfte Projekte in jeder Phase" },
+        { k: "Kapital", t: "Investoren", x: "Auf Plausibilität vorgeprüfte Projekte" },
         { k: "Strom", t: "Unternehmen & Bürger", x: "Strom aus dem Pool, Genossenschaft" },
       ],
       unterschrift: "Pacht, Rendite und günstiger Strom fließen an die zurück, die etwas einbringen.",
@@ -349,7 +349,7 @@ const TEXTE = {
       karten: [
         { k: "Land", t: "Landowners & farmers", x: "Lease, agrivoltaics or participation" },
         { k: "Project", t: "Project developers", x: "Market projects via the exchange" },
-        { k: "Capital", t: "Investors", x: "Pre-checked projects in every phase" },
+        { k: "Capital", t: "Investors", x: "Projects pre-checked for plausibility" },
         { k: "Power", t: "Businesses & citizens", x: "Power from the pool, cooperative" },
       ],
       unterschrift: "Lease income, returns and affordable power flow back to those who contribute.",

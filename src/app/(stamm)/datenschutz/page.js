@@ -10,7 +10,9 @@
 // Bonität, Register, Flächenakquise (Geodaten, Grundbuch, Brief), Energie-
 // beschaffung, Finanzierung/Bank-Portal, Anlagen-Monitoring, Finanzen,
 // Projektentwicklung/Gutachter, Live-Strommarktdaten (Energy-Charts,
-// serverseitig), Cookie-Banner und Google Analytics 4 (nur nach Einwilligung,
+// serverseitig), Bericht-Baustein und Newsletter (je Double-Opt-in, Welle 2/3),
+// Karten im Flächenpass (Zwei-Klick, Welle 3), Partner-Widgets (ohne Cookies,
+// Welle 4), Cookie-Banner und Google Analytics 4 (nur nach Einwilligung,
 // siehe src/components/Statistik/GoogleAnalytics.js und src/components/Cookies).
 //
 // ENTWURF zur datenschutzrechtlichen Prüfung (Stand Ausbaustufe 5).
@@ -43,7 +45,7 @@ const BESCHREIBUNG =
   "Wie die ÖkoInvest GmbH personenbezogene Daten verarbeitet: Anfragen, Portal, Projektbörse, Signatur, Akquise, Energiebeschaffung, Finanzierung und Ihre Rechte.";
 
 /** Datum der letzten inhaltlichen Überarbeitung */
-const STAND = "30. September 2026";
+const STAND = "11. Oktober 2026";
 
 const metadata = {
   title: TITEL,
@@ -86,6 +88,9 @@ const G = GESELLSCHAFT;
 const FRISTEN = [
   ["Server-Logdaten", "in der Regel 14 Tage, bei Sicherheitsvorfällen bis zur Klärung"],
   ["Anfragen ohne Vertragsabschluss", "bis zu 3 Jahre nach der letzten Kommunikation, sofern Sie nicht früher die Löschung verlangen"],
+  ["Bericht-Anforderung ohne Bestätigung (Double-Opt-in)", "verfällt 48 Stunden nach der Anforderung"],
+  ["Bericht-Abruflink", "30 Tage, danach ist der Bericht nicht mehr abrufbar"],
+  ["Newsletter", "Anmeldung ohne Bestätigung verfällt nach 48 Stunden; aktive Abos bis zur Abmeldung; das Einwilligungs- und Abmeldeprotokoll (ohne Inhalte) behalten wir zum Nachweis zuzüglich der gesetzlichen Verjährungsfristen [Prüfung Rechtsabteilung]"],
   ["Portal-Konto", "für die Dauer der Registrierung; nach Löschung des Kontos Entfernung binnen 30 Tagen, soweit keine Aufbewahrungspflicht besteht"],
   ["Beendete Sitzungen und nicht angenommene Einladungen", "30 Tage"],
   ["Anmeldehistorie (erfolgreiche und fehlgeschlagene Anmeldungen)", "180 Tage"],
@@ -216,7 +221,9 @@ export default async function DatenschutzPage({ params }) {
         Bei jedem Aufruf speichert der Server automatisch technische Daten: IP-Adresse, Datum und Uhrzeit, aufgerufene Adresse, übertragene
         Datenmenge, Statuscode, verweisende Seite sowie Browser und Betriebssystem. Die Daten dienen der Auslieferung der Seiten, der
         Fehleranalyse und der Abwehr von Angriffen (Art. 6 Abs. 1 lit. f DSGVO). Sie werden nicht mit anderen Daten zusammengeführt und nach
-        kurzer Frist gelöscht (siehe Abschnitt 13).
+        kurzer Frist gelöscht (siehe Abschnitt 13). Das gilt auch, wenn Partner unsere <strong>Widgets</strong> (z. B. Fristen-Ticker oder
+        Sparrechner) auf ihren Seiten einbinden: Das Widget wird von unserem Server geladen, setzt keine Cookies, lädt keine Skripte und führt
+        kein Tracking aus; es fallen nur die genannten Server-Logdaten an. <em>[Entwurf · Prüfung Rechtsabteilung]</em>
       </p>
 
       <h2>5. Anfragen über Formulare (Flächencheck, Projekt, Investor, Reststrom u. a.)</h2>
@@ -240,6 +247,29 @@ export default async function DatenschutzPage({ params }) {
       <p>
         Senden Sie ein Formular von einer englischen Seite, speichern wir die Sprache des Ihnen angezeigten Wortlauts zusammen mit dem Hinweis
         und einer etwaigen Einwilligung, damit wir nachweisen können, welche Fassung Sie gesehen haben. <em>[Entwurf · Prüfung Rechtsabteilung]</em>
+      </p>
+
+      <h2>5a. Bericht per E-Mail aus Rechnern (Double-Opt-in)</h2>
+      <p>
+        Bei einzelnen Rechnern können Sie das Ergebnis als ausführlichen Bericht anfordern. Dafür verarbeiten wir Vorname, Nachname und
+        E-Mail-Adresse (Telefon nur, wenn Sie es freiwillig angeben), den gewählten Rechner, Ihre Eingaben und das Land sowie etwaige
+        freiwillige, getrennt anzuhakende Einwilligungen (z. B. Kontakt per Telefon). Wir senden Ihnen zunächst nur eine Bestätigungs-E-Mail;
+        erst wenn Sie den Link darin innerhalb von 48 Stunden bestätigen (<strong>Double-Opt-in</strong>), entsteht ein Vorgang (Abschnitt 5)
+        und der Bericht ist 30 Tage über einen persönlichen Link abrufbar. Bestätigen Sie nicht, verfallen Ihre Angaben. Zum Nachweis
+        protokollieren wir den Wortlaut der angezeigten Hinweise (als Prüfsumme), Zeitpunkt und Bestätigung; der Abruflink wird bei uns nur
+        als Prüfsumme (SHA-256) gespeichert. Rechtsgrundlage: Art. 6 Abs. 1 lit. b DSGVO (von Ihnen angeforderter Bericht); für die
+        freiwilligen Häkchen Ihre Einwilligung (lit. a), jederzeit widerrufbar. <em>[Entwurf · Prüfung Rechtsabteilung]</em>
+      </p>
+
+      <h2>5b. Newsletter (Double-Opt-in)</h2>
+      <p>
+        Für den Newsletter verarbeiten wir Ihre E-Mail-Adresse, das gewählte Land, Ihre Themen, die Sprache und die Stelle der Anmeldung
+        (z. B. Newsletter-Seite oder Marktdaten-Seite). Die Anmeldung wird erst aktiv, wenn Sie den Bestätigungslink in unserer E-Mail
+        innerhalb von 48 Stunden bestätigen (<strong>Double-Opt-in</strong>); ohne Bestätigung verfallen Ihre Angaben. Zum Nachweis
+        protokollieren wir den Wortlaut der Einwilligung (als Prüfsumme), Zeitpunkt, Bestätigung und eine etwaige Abmeldung; der Verwaltungs-
+        und Abmeldelink wird bei uns nur als Prüfsumme (SHA-256) gespeichert. Jede Ausgabe enthält einen Abmeldelink (ein Klick, auch über
+        die Abmeldefunktion Ihres Mailprogramms); nach der Abmeldung entfernen wir Ihre Personendaten aus dem Verteiler. Rechtsgrundlage:
+        Ihre Einwilligung (Art. 6 Abs. 1 lit. a DSGVO), jederzeit mit Wirkung für die Zukunft widerrufbar. <em>[Entwurf · Prüfung Rechtsabteilung]</em>
       </p>
 
       <h2 id="konto">6. Portal-Konto und Rollen</h2>
@@ -704,12 +734,23 @@ export default async function DatenschutzPage({ params }) {
         dafür keine Verbindung zu Energy-Charts auf; es werden keine personenbezogenen Daten von Ihnen an Fraunhofer ISE übermittelt.
       </p>
 
+      <h2>9a. Karten im Flächenpass (amtliche Kartendienste)</h2>
+      <p>
+        Im Werkzeug „Flächenpass“ können Sie Ihre Fläche auf einer Karte einzeichnen. Die Kartenkacheln laden wir direkt von amtlichen
+        Anbietern: für Deutschland vom Bundesamt für Kartographie und Geodäsie (BKG, TopPlusOpen), für Österreich von basemap.at und für die
+        Schweiz von swisstopo. Die Karte lädt <strong>erst, wenn Sie auf „Karte laden“ klicken</strong>; dabei wird Ihre IP-Adresse an den
+        jeweiligen Anbieter übermittelt (Art. 6 Abs. 1 lit. a DSGVO – Einwilligung durch Ihren Klick, sie gilt nur für den jeweiligen
+        Seitenaufruf, es wird kein Cookie gesetzt). Ohne Karte können Sie die Größe direkt angeben. Die gezeichnete Fläche bleibt in Ihrem
+        Browser, bis Sie einen Bericht anfordern (Abschnitt 5a). <em>[Entwurf · Prüfung Rechtsabteilung]</em>
+      </p>
+
       <h2>10. Cookies und Einwilligungsverwaltung</h2>
       <p>
         Technisch notwendige Cookies setzen wir ohne Einwilligung ein (§ 165 Abs. 3 Telekommunikationsgesetz 2021; Art. 6 Abs. 1 lit. f
         DSGVO) – etwa für die Anmeldung im Portal und um Ihre Auswahl im Cookie-Banner zu speichern (Cookie „cookieConsent“, Laufzeit 12
-        Monate). Alle anderen Dienste werden erst nach Ihrer Einwilligung geladen (Art. 6 Abs. 1 lit. a DSGVO). Sofern auf einzelnen Seiten
-        Kartendienste Dritter eingebunden sind, werden diese ebenfalls erst nach Einwilligung in die Kategorie „Funktional“ geladen.
+        Monate). Alle anderen Dienste werden erst nach Ihrer Einwilligung geladen (Art. 6 Abs. 1 lit. a DSGVO). Eine Kategorie „Funktional“
+        gibt es im Cookie-Banner nicht: Die amtlichen Karten im Flächenpass laden erst nach einem gesonderten Klick auf der jeweiligen Seite
+        (Abschnitt 9a) und setzen kein Cookie.
       </p>
       <p>Im Portal verwenden wir folgende technisch notwendige Cookies:</p>
       <ul>

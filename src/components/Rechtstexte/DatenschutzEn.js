@@ -18,6 +18,9 @@ const G = GESELLSCHAFT;
 const FRISTEN_EN = [
   ["Server log data", "usually 14 days; in the event of security incidents, until the matter has been resolved"],
   ["Enquiries that do not lead to a contract", "up to 3 years after the last communication, unless you request erasure earlier"],
+  ["Report request without confirmation (double opt-in)", "expires 48 hours after the request"],
+  ["Report retrieval link", "30 days, after which the report is no longer available"],
+  ["Newsletter", "a sign-up without confirmation expires after 48 hours; active subscriptions until you unsubscribe; we keep the consent and unsubscribe log (without content) as evidence plus the statutory limitation periods [pending legal review]"],
   ["Portal account", "for the duration of the registration; after the account has been deleted, removal within 30 days unless there is a retention obligation"],
   ["Ended sessions and invitations not accepted", "30 days"],
   ["Sign-in history (successful and failed sign-ins)", "180 days"],
@@ -144,7 +147,10 @@ export function datenschutzInhaltEn({ stand }) {
       <p>
         Each time the website is accessed, the server automatically stores technical data: IP address, date and time, address accessed, volume of data
         transferred, status code, referring page, and browser and operating system. The data is used to deliver the pages, analyse errors and fend off
-        attacks (Art. 6(1)(f) GDPR). It is not combined with other data and is deleted after a short period (see section 13).
+        attacks (Art. 6(1)(f) GDPR). It is not combined with other data and is deleted after a short period (see section 13). This also applies when
+        partners embed our <strong>widgets</strong> (e.g. deadline ticker or savings calculator) on their pages: the widget is loaded from our server,
+        sets no cookies, loads no scripts and performs no tracking; only the server log data mentioned above is generated.{" "}
+        <em>[Draft · pending legal review]</em>
       </p>
 
       <h2>5. Enquiries via forms (land check, project, investor, residual power, etc.)</h2>
@@ -167,6 +173,28 @@ export function datenschutzInhaltEn({ stand }) {
       <p>
         If you send a form from an English page, we store the language of the wording shown to you together with the notice and any consent, so that we
         can prove which version you saw. <em>[Draft · pending legal review]</em>
+      </p>
+
+      <h2>5a. Report by e-mail from calculators (double opt-in)</h2>
+      <p>
+        For some calculators you can request the result as a detailed report. For this we process your first name, surname and e-mail address
+        (phone only if you provide it voluntarily), the calculator chosen, your inputs and the country, as well as any voluntary, separately
+        ticked consents (e.g. contact by phone). We first send you only a confirmation e-mail; only once you confirm the link in it within
+        48 hours (<strong>double opt-in</strong>) is a case created (section 5) and the report available for 30 days via a personal link. If
+        you do not confirm, your details expire. As evidence, we log the wording of the notices shown (as a checksum), the time and the
+        confirmation; the retrieval link is stored on our side only as a checksum (SHA-256). Legal basis: Art. 6(1)(b) GDPR (report requested
+        by you); for the voluntary tick boxes, your consent (Art. 6(1)(a) GDPR), revocable at any time. <em>[Draft · pending legal review]</em>
+      </p>
+
+      <h2>5b. Newsletter (double opt-in)</h2>
+      <p>
+        For the newsletter we process your e-mail address, the country chosen, your topics, the language and the place of sign-up (e.g. the
+        newsletter page or a market data page). The subscription only becomes active once you confirm the link in our e-mail within 48 hours
+        (<strong>double opt-in</strong>); without confirmation, your details expire. As evidence, we log the wording of the consent (as a
+        checksum), the time, the confirmation and any unsubscribe; the management and unsubscribe link is stored on our side only as a
+        checksum (SHA-256). Every issue contains an unsubscribe link (one click, also via your e-mail program&apos;s unsubscribe function);
+        after you unsubscribe, we remove your personal data from the mailing list. Legal basis: your consent (Art. 6(1)(a) GDPR), revocable
+        at any time with effect for the future. <em>[Draft · pending legal review]</em>
       </p>
 
       <h2 id="konto">6. Portal account and roles</h2>
@@ -603,12 +631,21 @@ export function datenschutzInhaltEn({ stand }) {
         establish a connection to Energy-Charts for this; no personal data of yours is transmitted to Fraunhofer ISE.
       </p>
 
+      <h2>9a. Maps in the land passport (official map services)</h2>
+      <p>
+        In the “land passport” tool you can draw your land on a map. We load the map tiles directly from official providers: for Germany from
+        the Federal Agency for Cartography and Geodesy (BKG, TopPlusOpen), for Austria from basemap.at and for Switzerland from swisstopo. The
+        map only loads <strong>once you click “Load map”</strong>; your IP address is then transmitted to the respective provider
+        (Art. 6(1)(a) GDPR – consent through your click, valid only for that page view, no cookie is set). Without the map, you can enter the
+        size directly. The drawn land stays in your browser until you request a report (section 5a). <em>[Draft · pending legal review]</em>
+      </p>
+
       <h2>10. Cookies and consent management</h2>
       <p>
         We use technically necessary cookies without consent (§ 165(3) of the Austrian Telecommunications Act 2021 (TKG 2021); Art. 6(1)(f) GDPR) – for
         example for signing in to the portal and to store your selection in the cookie banner (cookie “cookieConsent”, lifetime 12 months). All other
-        services are only loaded after your consent (Art. 6(1)(a) GDPR). Where third-party map services are embedded on individual pages, these are also
-        only loaded after consent to the “Functional” category.
+        services are only loaded after your consent (Art. 6(1)(a) GDPR). There is no “Functional” category in the cookie banner: the official maps in
+        the land passport only load after a separate click on the respective page (section 9a) and do not set a cookie.
       </p>
       <p>In the portal, we use the following technically necessary cookies:</p>
       <ul>

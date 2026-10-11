@@ -1,0 +1,498 @@
+// src/app/(stamm)/parkplatz/page.js – Parkplatz-Hub (Welle 4)
+//
+// Hub für Parkplatzbetreiber, Händler, Logistik und Gemeinden auf Basis der Solarcarport-Seite:
+// Schnell-Check (Stellplätze, Standort → Pflicht ja/nein/unklar mit Quelle, Potenzial kWp, Laden),
+// Solarpflicht-Übersicht (Daten aus src/lib/rechner/parkplatz.js = geprüfter Ratgeber-Stand 09/2026),
+// Bericht → Lead (RECHNER.parkplatz), Anfrage über die bestehende Lead-Kette (typ "carport").
+// NUR DACH, AT/CH ehrlich ohne erfundene Regeln. noindex bis zur Fachprüfung (E6) –
+// src/lib/land/seiten.js index: false, englisch src/lib/sprache/seiten.js.
+//
+// Sprachmodell: feste Texte im Wörterbuch TEXTE (en nur Texte, Zahlen im englischen Format).
+import Link from "@/components/Land/Link";
+import { ArrowUpRight, BookOpen, Building2, Calculator, Car, ClipboardList, FileSearch, Handshake, Landmark, Leaf, PlugZap, ShieldCheck, ShoppingBag, Sun, Truck, Zap } from "lucide-react";
+
+import SeitenHero from "@/components/Energie/Seite/SeitenHero";
+import Faktenleiste from "@/components/Energie/Seite/Faktenleiste";
+import Kopf from "@/components/Energie/Seite/Kopf";
+import AnfrageBuehne from "@/components/Energie/Seite/AnfrageBuehne";
+import Weiterlesen from "@/components/Energie/Seite/Weiterlesen";
+import HeroBuehne from "@/components/Carport/Seite/HeroBuehne";
+import Solarpflicht from "@/components/Carport/Seite/Solarpflicht";
+import AuswahlAnfrage from "@/components/Carport/AuswahlAnfrage";
+import SchnellCheck from "@/components/Parkplatz/SchnellCheck";
+import Section from "@/components/ui/Section";
+import Button from "@/components/ui/Button";
+import Faq from "@/components/ui/Faq";
+import Reveal from "@/components/ui/Reveal";
+import { abs, SITE } from "@/data/site";
+import { CARPORT, STAND } from "@/lib/invest/markt";
+import { rechneCarport } from "@/lib/rechner/carport";
+import { PFLICHT_REGELN, PFLICHT_STAND } from "@/lib/rechner/parkplatz";
+import { fmt } from "@/lib/rechner/annahmen";
+import JsonLd from "@/components/JsonLd";
+import { pfad } from "@/lib/land";
+import { seitenLand, seitenMetadata, spracheDerAnfrage } from "@/lib/land/seite";
+import { GiltFuer } from "@/components/Land/LandHinweis";
+import { faqFuerLand, listeFuerLand, nurDeText } from "@/components/Land/Laenderteile";
+import { uebersetze } from "@/lib/sprache/woerterbuch";
+import { datumText, fmtZahl } from "@/lib/sprache/format";
+
+const PFAD = pfad("/parkplatz");
+const TITEL = "Parkplatz-PV: Solarpflicht-Check & Potenzial | ÖkoInvest";
+const BESCHREIBUNG =
+  "Der Hub für Parkplatzbetreiber, Handel, Logistik und Gemeinden: Solarpflicht je Bundesland im Schnell-Check, Potenzial in kWp, Ladepunkte nach GEIG – mit Quelle und Stand.";
+
+const metadata = {
+  title: TITEL,
+  description: BESCHREIBUNG,
+  keywords: ["Parkplatz Photovoltaik", "Solarpflicht Parkplatz Check", "Parkplatz PV Pflicht Bundesland", "Parkplatz überdachen Solar", "Ladepunkte Parkplatz GEIG", "Solarcarport Parkplatzbetreiber"],
+  alternates: { canonical: abs(PFAD) },
+  openGraph: { type: "website", url: abs(PFAD), siteName: "ÖkoInvest", title: TITEL, description: BESCHREIBUNG, images: [{ url: abs("/img/gewerbedach.jpg"), width: 1280, height: 852, alt: "Gewerbegebäude mit Photovoltaik" }] },
+};
+// Fachprüfung offen (Register index: false): auch die gemeinsame Seite trägt noindex
+metadata.robots = { index: false, follow: true };
+
+/* Übersicht Solarpflicht aus der geprüften Datengrundlage des Schnell-Checks ableiten (eine Quelle) */
+const MIT_PFLICHT = Object.values(PFLICHT_REGELN).filter((r) => !r.keine);
+const schwelleText = (r) => `${r.art === "ab" ? "ab" : "mehr als"} ${r.schwelle}${r.oeffentlichOhneSchwelle ? " (gewerblich), öffentliche Parkplätze" : ""}`;
+const PFLICHT = MIT_PFLICHT.map((r) => [r.name, schwelleText(r), r.umfang, r.seit]).sort((a, b) => a[0].localeCompare(b[0], "de"));
+const SCHWELLEN = MIT_PFLICHT.map((r) => ({ land: r.name, wert: r.schwelle, label: `${r.art === "ab" ? "ab " : "> "}${r.schwelle}` })).sort((a, b) => a.wert - b.wert || a.land.localeCompare(b.land, "de"));
+const OHNE = "Bayern, Berlin, Bremen, Mecklenburg-Vorpommern, Sachsen, Sachsen-Anhalt, Thüringen; in Brandenburg wurde die Parkplatzpflicht 2026 wieder aufgehoben";
+
+const beispiel = rechneCarport({ stellplaetze: 100, eigenverbrauch: 0.75, ac: 10, dc: 2 });
+
+const FAQ = [
+  {
+    q: "Gilt die Solarpflicht auch für meinen bestehenden Parkplatz?",
+    a: "In der Regel nicht: Die Landespflichten knüpfen an neue Parkplätze oder große Erweiterungen an. Ausnahmen sind Niedersachsen (auch bei Erneuerung von mindestens 50 % eines bestehenden Parkplatzes) und Schleswig-Holstein (grundlegende Sanierung). Maßgeblich ist der Gesetzestext zum Zeitpunkt des Bauantrags – der Schnell-Check oben zeigt die Regel Ihres Bundeslands mit Quelle.",
+    nurDE: "Solarpflichten für Parkplätze",
+  },
+  {
+    q: "Wie wird das Potenzial in kWp berechnet?",
+    a: `Mit einer offenen Annahme: rund ${fmt(CARPORT.kwpProStellplatz, 1)} kWp je vollständig überdachtem Stellplatz (2,5 × 5 m, Module ≈ 225 Wp/m²). Ein Parkplatz mit 100 Stellplätzen kommt so auf etwa ${fmt(Math.round(100 * CARPORT.kwpProStellplatz))} kWp. Fahrgassen, Bäume und Zufahrten mindern die nutzbare Fläche – das prüfen wir am Lageplan.`,
+  },
+  {
+    q: "Was gilt für Ladepunkte auf dem Parkplatz?",
+    a: "Das GEIG verlangt bei neuen Nichtwohngebäuden mit mehr als sechs Stellplätzen Leitungsinfrastruktur für mindestens jeden dritten Stellplatz und mindestens einen Ladepunkt; bei größeren Renovierungen mit mehr als zehn Stellplätzen für jeden fünften. Bestehende Nichtwohngebäude mit mehr als 20 Stellplätzen brauchen seit dem 1. Januar 2025 mindestens einen Ladepunkt. Beim Carport-Bau werden Leitungen gleich mitverlegt – das spart Tiefbau.",
+    nurDE: "Pflichten für Ladepunkte",
+    AT: { q: "Welche Pflichten gibt es für Ladepunkte auf Parkplätzen?", a: nurDeText("AT", "Pflichten für Ladepunkte") },
+    CH: { q: "Welche Pflichten gibt es für Ladepunkte auf Parkplätzen?", a: nurDeText("CH", "Pflichten für Ladepunkte") },
+  },
+  {
+    q: "Lohnt sich Parkplatz-PV auch ohne Pflicht?",
+    a: "Oft ja – wenn tagsüber Strom gebraucht wird: Produktion, Kühlung, Filialen, Laden von Flotten- und Kundenfahrzeugen. Dazu kommen Schatten im Sommer und ein sichtbares Zeichen auf der größten freien Fläche vieler Betriebe. Die Wirtschaftlichkeit rechnet der Solarcarport-Rechner mit Kauf und Contracting ehrlich durch.",
+  },
+  {
+    q: "Wie ist der Stand in Österreich und der Schweiz?",
+    a: "In Österreich regeln die Bundesländer Solarpflichten in ihren Bau- und Energiegesetzen unterschiedlich; eine flächendeckende Parkplatzpflicht wie in einigen deutschen Ländern ist uns nach aktuellem Stand nicht bekannt. In der Schweiz verlangen viele Kantone bei Neubauten Eigenstromerzeugung. Der Schnell-Check nennt für beide Länder deshalb bewusst keine Regel – wir prüfen Ihren Standort im Einzelfall.",
+  },
+  {
+    q: "Was kommt 2030 bundesweit?",
+    a: "Nach § 106 GModG (Nachfolger des GEG, Umsetzung der EU-Gebäuderichtlinie) müssen ab dem 1. Januar 2030 auf neuen überdachten Parkplätzen, die physisch an ein Gebäude angrenzen, Solaranlagen errichtet werden. Offene Parkplätze erfasst die Bundesregel nicht; strengere Landesregeln bleiben zulässig.",
+    nurDE: "Bundesregel ab 2030",
+  },
+];
+
+/* ------------------------------------------------------------------------------------------- */
+/* Englisch (Sprachmodell): inhaltlich identisch, Zahlen im englischen Format                    */
+/* ------------------------------------------------------------------------------------------- */
+const z = (n, stellen = 0) => fmtZahl(n, stellen, "en");
+
+const TITEL_EN = "Car park PV: solar obligation check & potential | ÖkoInvest";
+const BESCHREIBUNG_EN =
+  "The hub for car park operators, retail, logistics and municipalities: solar obligation by German federal state in a quick check, potential in kWp, charging points under the GEIG – with source and date.";
+
+const metadataEn = {
+  title: TITEL_EN,
+  description: BESCHREIBUNG_EN,
+  keywords: ["car park photovoltaics", "solar obligation car park check", "car park PV obligation German state", "cover car park with solar", "charging points car park GEIG", "solar carport car park operator"],
+  openGraph: { title: TITEL_EN, description: BESCHREIBUNG_EN, images: [{ alt: "Commercial building with photovoltaics" }] },
+};
+
+const LAND_EN = { "Baden-Württemberg": "Baden-Württemberg", Hamburg: "Hamburg", Hessen: "Hesse", Niedersachsen: "Lower Saxony", "Nordrhein-Westfalen": "North Rhine-Westphalia", "Rheinland-Pfalz": "Rhineland-Palatinate", Saarland: "Saarland", "Schleswig-Holstein": "Schleswig-Holstein" };
+const UMFANG_EN = {
+  "60 % der Eignungsfläche": "60 % of the suitable area",
+  "40 % der geeigneten Fläche": "40 % of the suitable area",
+  "Anlage über der Stellplatzfläche": "installation above the parking area",
+  "Solaranlage über der Stellplatzfläche": "solar installation above the parking area",
+  "30 % der geeigneten Fläche, alternativ ein Laubbaum je 5 Stellplätze": "30 % of the suitable area, alternatively one deciduous tree per 5 spaces",
+  "60 % der geeigneten Fläche": "60 % of the suitable area",
+  "Neubau und grundlegende Sanierung": "new construction and major renovation",
+};
+const SEIT_EN = (s) => s.replace("Bauantrag nach", "building applications after").replace("vorher mehr als", "previously more than").replace("öffentlich", "public").replace("Novelle 2025, Übergangsjahr", "2025 amendment, transition year");
+const PFLICHT_EN = PFLICHT.map(([land, schwelle, umfang, seit]) => [
+  LAND_EN[land] ?? land,
+  schwelle.replace("mehr als", "more than").replace("ab ", "from ").replace(" (gewerblich), öffentliche Parkplätze", " (commercial), public car parks"),
+  UMFANG_EN[umfang] ?? umfang,
+  SEIT_EN(seit),
+]);
+const SCHWELLEN_EN = SCHWELLEN.map((s) => ({ ...s, land: LAND_EN[s.land] ?? s.land, label: s.label.replace("ab ", "from ") }));
+const OHNE_EN = "Bavaria, Berlin, Bremen, Mecklenburg-Western Pomerania, Saxony, Saxony-Anhalt, Thuringia; in Brandenburg, the car park obligation was repealed again in 2026";
+
+const FAQ_EN = [
+  {
+    q: "Does the solar obligation also apply to my existing car park?",
+    a: "Generally not: the state obligations apply to new car parks or large extensions. The exceptions are Lower Saxony (also when at least 50 % of an existing car park is renewed) and Schleswig-Holstein (major renovation). The legal text at the time of the building application is authoritative – the quick check above shows your state's rule with its source.",
+    nurDE: "Solar obligations for car parks",
+  },
+  {
+    q: "How is the potential in kWp calculated?",
+    a: `With an open assumption: around ${z(CARPORT.kwpProStellplatz, 1)} kWp per fully covered parking space (2.5 × 5 m, modules ≈ 225 Wp/m²). A car park with 100 spaces thus reaches about ${z(Math.round(100 * CARPORT.kwpProStellplatz))} kWp. Driving lanes, trees and access routes reduce the usable area – we check this on the site plan.`,
+  },
+  {
+    q: "What applies to charging points on the car park?",
+    a: "The GEIG requires new non-residential buildings with more than six parking spaces to have cabling infrastructure for at least every third space and at least one charging point; for major renovations with more than ten spaces, for every fifth. Existing non-residential buildings with more than 20 spaces have needed at least one charging point since 1 January 2025. Cables are laid during carport construction – that saves civil works.",
+    nurDE: "Obligations for charging points",
+    AT: { q: "What obligations apply to charging points on car parks?", a: nurDeText("AT", "Obligations for charging points", "en") },
+    CH: { q: "What obligations apply to charging points on car parks?", a: nurDeText("CH", "Obligations for charging points", "en") },
+  },
+  {
+    q: "Is car park PV worthwhile even without an obligation?",
+    a: "Often yes – when power is needed during the day: production, cooling, stores, charging fleet and customer vehicles. Add shade in summer and a visible statement on the largest open area many businesses have. The solar carport calculator works out the economics honestly, for purchase and contracting.",
+  },
+  {
+    q: "What is the position in Austria and Switzerland?",
+    a: "In Austria, the federal states regulate solar obligations differently in their building and energy laws; as far as we know, there is currently no comprehensive car park obligation like in some German states. In Switzerland, many cantons require new buildings to generate their own electricity. The quick check therefore deliberately names no rule for either country – we assess your site case by case.",
+  },
+  {
+    q: "What is coming nationwide in 2030?",
+    a: "Under § 106 GModG (successor to the GEG, implementing the EU buildings directive), solar installations must be built on new covered car parks physically adjoining a building from 1 January 2030. The federal rule does not cover open car parks; stricter state rules remain permissible.",
+    nurDE: "Federal rule from 2030",
+  },
+];
+
+/** Feste Texte der Seite (en nur Texte; Listen je Index). */
+const TEXTE = {
+  de: {
+    pflicht: PFLICHT,
+    schwellen: SCHWELLEN,
+    ohne: OHNE,
+    faq: FAQ,
+    zielgruppen: [
+      { icon: Building2, title: "Parkplatzbetreiber", tag: "Mitarbeiter & Besucher", text: "Firmenparkplätze und Parkhäuser im Freien: Strom für den eigenen Betrieb, Laden für Dienstwagen – auf Fläche, die schon da ist." },
+      { icon: ShoppingBag, title: "Handel & Freizeit", tag: "Kundenparkplätze", text: "Kundenparkplätze mit Ladeangebot, Schatten im Sommer und Strom für Kühlung und Beleuchtung – sichtbar am Markt." },
+      { icon: Truck, title: "Logistik", tag: "Hof & Flotte", text: "Höfe, Trailer-Stellflächen und Pkw-Parkplätze an Hallen: Strom für Kühlung, Tore und die elektrische Flotte von morgen." },
+      { icon: Landmark, title: "Gemeinden", tag: "Rathaus, Schule, Bad", text: "Parkplätze an Rathaus, Schule, Bad und Bahnhof: Pflicht erfüllen, Ladeinfrastruktur schaffen, Haushalt entlasten.", href: pfad("/kommunen") },
+    ],
+    schema: { name: "Parkplatz-Photovoltaik: Pflicht-Check und Planung", serviceType: "Schnell-Check Solarpflicht, Planung, Bau, Finanzierung und Betrieb von Parkplatz-PV mit Ladeinfrastruktur", audience: "Parkplatzbetreiber, Handel, Logistik, Gemeinden", description: BESCHREIBUNG },
+    hero: {
+      brotkrumen: "Parkplatz",
+      pillDe: { marke: "Schnell-Check", text: "Solarpflicht je Bundesland in einer Minute prüfen", kurz: "Pflicht-Check je Bundesland" },
+      pillLand: { marke: "Schnell-Check", text: "Potenzial Ihres Parkplatzes in einer Minute", kurz: "Potenzial-Check" },
+      titelA: "Ihr Parkplatz kann ",
+      titelB: "mehr als parken.",
+      leadA: "Für Betreiber, Handel, Logistik und Gemeinden:",
+      leadB: " Stellplätze und Standort angeben – der Schnell-Check zeigt",
+      leadDe: ", ob die Solarpflicht greift (mit Quelle),",
+      leadC: " was an Leistung möglich ist und wie Laden dazu passt.",
+      primaer: "Schnell-Check starten",
+      sekundaer: "Carport-Rechner",
+      hinweis: "Kostenlos · Ergebnis sofort sichtbar, mit Rechtsgrundlage und Stand",
+      chips: ["Pflicht ja/nein/unklar mit Quelle", "Potenzial-Check in einer Minute", "Potenzial in kWp", "Ladepunkte nach GEIG", "Kauf oder Contracting"],
+      bildunterschrift: "Schematische Darstellung · Lastmanagement mit fiktiven Werten",
+    },
+    fakten: {
+      titel: "Parkplatz-PV in Zahlen",
+      liste: [
+        { einheit: "kWp je Stellplatz", text: "Leistung eines überdachten Stellplatzes" },
+        { einheit: "kWp bei 100 Stellplätzen", text: "Leistung eines Parkplatzes mit 100 Stellplätzen" },
+        { einheit: "MWh pro Jahr", text: "Ertrag bei 100 Stellplätzen in Süddeutschland" },
+        { einheit: "t CO₂ pro Jahr", text: "vermieden bei 100 Stellplätzen" },
+      ],
+      ersatz: { einheit: "Ladepunkte", text: "Laden mit Solarstrom, wenn Fahrzeuge tagsüber stehen" },
+      fussnote: `Beispielwerte aus dem Carport-Rechner, Stand ${STAND}.`,
+    },
+    zielKopf: { eyebrow: "Für wen", titel: "Überall, wo Stellplätze Fläche binden." },
+    checkKopf: {
+      eyebrow: "Schnell-Check",
+      titel: "Pflicht, Potenzial und Laden – in einer Minute.",
+      leadDe: `Stellplätze, Bundesland und Situation angeben. Der Check gleicht Ihre Angaben mit den Landesregeln ab (Stand ${PFLICHT_STAND}) und nennt immer die Quelle.`,
+      leadLand: "Stellplätze und Situation angeben. Der Check zeigt das Potenzial; zur Pflicht antworten wir ehrlich: Das prüfen wir für Ihren Standort im Einzelfall.",
+    },
+    faqKopf: {
+      eyebrow: "Häufige Fragen",
+      titel: "Parkplatz-PV – gut zu wissen",
+      leadDe: "Solarpflicht, GEIG, Potenzial und Wirtschaftlichkeit nach aktuellem Stand.",
+      leadLand: "Potenzial, Ladepunkte und Wirtschaftlichkeit nach aktuellem Stand.",
+      button: "Frage direkt stellen",
+    },
+    anfrage: {
+      titelA: "Ihr Parkplatz, ",
+      titelB: "unser Konzept.",
+      lead: "Ein paar Angaben genügen für eine erste Einschätzung. Lageplan und Lastgang können Sie später im Portal hochladen.",
+      zusagen: ["Unverbindlich anfragen", "Kauf oder Contracting", "Ladepunkte gleich mitplanen"],
+      ablauf: [
+        { titel: "Sie schildern kurz Ihren Parkplatz", text: "Stellplätze, Ladebedarf und Modell – Schätzungen genügen." },
+        { titel: "Sie erhalten eine Vorgangsnummer", text: "Direkt nach dem Absenden. Lageplan und Lastgang laden Sie später im Portal hoch." },
+        { titel: "Wir melden uns mit einer ersten Einschätzung", text: "Zu Pflicht, Größe, Ladepunkten und Netzanschluss – Kauf und Contracting als Varianten." },
+      ],
+      formText: "Pflicht sind nur Name, E-Mail und Ihre Einwilligung.",
+      button: "Parkplatz anfragen",
+      gruppen: [
+        { legende: "Stellplätze", optionen: [{ label: "bis 50" }, { label: "50–150" }, { label: "150–500" }, { label: "über 500" }] },
+        { legende: "Sie sind", optionen: [{ label: "Unternehmen" }, { label: "Handel" }, { label: "Logistik" }, { label: "Kommune" }, { label: "Sonstige" }] },
+        { legende: "Interesse an", optionen: [{ label: "Noch offen" }, { label: "Kauf" }, { label: "Contracting" }] },
+        { legende: "Ladepunkte", optionen: [{ label: "AC" }, { label: "DC-Schnellladen" }] },
+      ],
+    },
+    weiter: {
+      text: "Rechnen, vergleichen, vertiefen – in Ruhe nachlesen.",
+      items: [
+        { titel: "Carport-Rechner", text: "Leistung, Ertrag, Investition und Amortisation – Kauf vs. Contracting." },
+        { titel: "Solarcarports", text: "Bauarten, Ladepunkte, Finanzierung – die ganze Leistungsseite." },
+        { titel: "Ratgeber Solarpflicht", text: "Alle Bundesländer mit Rechtsgrundlage, Stichtag und Ausnahmen." },
+        { titel: "Reststrom-Pool", text: "Den Strom, den Sie trotz Parkplatz-PV noch kaufen, gebündelt günstiger beziehen." },
+      ],
+    },
+  },
+  en: {
+    pflicht: PFLICHT_EN,
+    schwellen: SCHWELLEN_EN,
+    ohne: OHNE_EN,
+    faq: FAQ_EN,
+    zielgruppen: [
+      { title: "Car park operators", tag: "Employees & visitors", text: "Company car parks and open-air decks: power for your own operations, charging for company cars – on space you already have." },
+      { title: "Retail & leisure", tag: "Customer car parks", text: "Customer car parks with charging, shade in summer and power for cooling and lighting – visible in the market." },
+      { title: "Logistics", tag: "Yard & fleet", text: "Yards, trailer areas and car parks at warehouses: power for cooling, gates and tomorrow's electric fleet." },
+      { title: "Municipalities", tag: "Town hall, school, pool", text: "Car parks at the town hall, school, pool and station: meet the obligation, create charging infrastructure, ease the budget." },
+    ],
+    schema: { name: "Car park photovoltaics: obligation check and planning", serviceType: "Quick solar obligation check, planning, construction, financing and operation of car park PV with charging infrastructure", audience: "Car park operators, retail, logistics, municipalities", description: BESCHREIBUNG_EN },
+    hero: {
+      brotkrumen: "Car park",
+      pillDe: { marke: "Quick check", text: "Check the solar obligation by federal state in one minute", kurz: "Obligation check by state" },
+      pillLand: { marke: "Quick check", text: "Your car park's potential in one minute", kurz: "Potential check" },
+      titelA: "Your car park can do ",
+      titelB: "more than parking.",
+      leadA: "For operators, retail, logistics and municipalities:",
+      leadB: " enter parking spaces and location – the quick check shows",
+      leadDe: " whether the solar obligation applies (with source),",
+      leadC: " what capacity is possible and how charging fits in.",
+      primaer: "Start the quick check",
+      sekundaer: "Carport calculator",
+      hinweis: "Free of charge · result visible immediately, with legal basis and date",
+      chips: ["Obligation yes/no/unclear with source", "Potential check in one minute", "Potential in kWp", "Charging points under the GEIG", "Purchase or contracting"],
+      bildunterschrift: "Schematic illustration · load management with fictitious values",
+    },
+    fakten: {
+      titel: "Car park PV in figures",
+      liste: [
+        { einheit: "kWp per parking space", text: "capacity of one covered parking space" },
+        { einheit: "kWp for 100 spaces", text: "capacity of a car park with 100 spaces" },
+        { einheit: "MWh per year", text: "yield for 100 spaces in southern Germany" },
+        { einheit: "t CO₂ per year", text: "avoided with 100 spaces" },
+      ],
+      ersatz: { einheit: "Charging points", text: "charging with solar power while vehicles are parked during the day" },
+      fussnote: `Example figures from the carport calculator, as of ${datumText(STAND, "en")}.`,
+    },
+    zielKopf: { eyebrow: "Who it is for", titel: "Wherever parking spaces tie up land." },
+    checkKopf: {
+      eyebrow: "Quick check",
+      titel: "Obligation, potential and charging – in one minute.",
+      leadDe: `Enter parking spaces, federal state and situation. The check compares your details with the state rules (as of ${PFLICHT_STAND}) and always names the source.`,
+      leadLand: "Enter parking spaces and situation. The check shows the potential; on the obligation we answer honestly: we assess that for your site case by case.",
+    },
+    faqKopf: {
+      eyebrow: "Frequently asked questions",
+      titel: "Car park PV – good to know",
+      leadDe: "Solar obligation, GEIG, potential and economics – current status.",
+      leadLand: "Potential, charging points and economics – current status.",
+      button: "Ask your question directly",
+    },
+    anfrage: {
+      titelA: "Your car park, ",
+      titelB: "our concept.",
+      lead: "A few details are enough for an initial assessment. You can upload the site plan and load profile later in the portal.",
+      zusagen: ["Enquire without obligation", "Purchase or contracting", "Plan charging points at the same time"],
+      ablauf: [
+        { titel: "You briefly describe your car park", text: "Parking spaces, charging demand and model – estimates are enough." },
+        { titel: "You receive a case number", text: "Immediately after submitting. You upload the site plan and load profile later in the portal." },
+        { titel: "We get back to you with an initial assessment", text: "On the obligation, size, charging points and grid connection – purchase and contracting as options." },
+      ],
+      formText: "Only name, email and your consent are required.",
+      button: "Enquire about your car park",
+      gruppen: [
+        { legende: "Parking spaces", optionen: [{ label: "up to 50" }, { label: "50–150" }, { label: "150–500" }, { label: "over 500" }] },
+        { legende: "You are", optionen: [{ label: "Business" }, { label: "Retail" }, { label: "Logistics" }, { label: "Municipality" }, { label: "Other" }] },
+        { legende: "Interested in", optionen: [{ label: "Not decided yet" }, { label: "Purchase" }, { label: "Contracting" }] },
+        { legende: "Charging points", optionen: [{ label: "AC" }, { label: "DC fast charging" }] },
+      ],
+    },
+    weiter: {
+      text: "Calculate, compare, go deeper – read up at your leisure.",
+      items: [
+        { titel: "Carport calculator", text: "Capacity, yield, investment and payback – purchase vs. contracting." },
+        { titel: "Solar carports", text: "Designs, charging points, financing – the full service page." },
+        { titel: "Solar obligation guide", text: "All federal states with legal basis, effective date and exemptions." },
+        { titel: "Residual power pool", text: "Buy the power you still need despite car park PV more cheaply as part of a pool." },
+      ],
+    },
+  },
+};
+
+export default async function ParkplatzSeite({ params }) {
+  const land = await seitenLand(params);
+  const sprache = spracheDerAnfrage();
+  const en = sprache === "en";
+  const w = uebersetze(TEXTE, sprache);
+  const f = en ? (n, s = 0) => z(n, s) : fmt;
+  const de = !land || land === "DE";
+  const schema = {
+    "@context": "https://schema.org",
+    "@type": "Service",
+    name: w.schema.name,
+    serviceType: w.schema.serviceType,
+    provider: { "@id": `${SITE.url}/#organization` },
+    areaServed: ["DE", "AT", "CH"],
+    audience: { "@type": "BusinessAudience", audienceType: w.schema.audience },
+    url: abs(PFAD),
+    description: w.schema.description,
+  };
+
+  return (
+    <div>
+      <JsonLd daten={schema} />
+
+      <SeitenHero
+        breadcrumbs={[{ name: w.hero.brotkrumen }]}
+        pill={de ? { ...w.hero.pillDe, href: "#check" } : { ...w.hero.pillLand, href: "#check" }}
+        titel={
+          <>
+            {w.hero.titelA}<span className="ov-text-gradient-light">{w.hero.titelB}</span>
+          </>
+        }
+        lead={
+          <>
+            <span className="font-medium text-white">{w.hero.leadA}</span>
+            {w.hero.leadB}
+            {de ? w.hero.leadDe : ""}
+            {w.hero.leadC}
+          </>
+        }
+        primaer={{ label: w.hero.primaer, href: "#check" }}
+        sekundaer={{ label: w.hero.sekundaer, href: pfad("/rechner/solarcarport"), icon: Calculator }}
+        hinweis={w.hero.hinweis}
+        chips={[de ? w.hero.chips[0] : w.hero.chips[1], w.hero.chips[2], w.hero.chips[3], w.hero.chips[4]]}
+        buehne={<HeroBuehne kwp={f(beispiel.kwp)} mwh={f(beispiel.ertrag / 1000)} />}
+        bildunterschrift={w.hero.bildunterschrift}
+      />
+
+      <Faktenleiste
+        titel={w.fakten.titel}
+        items={listeFuerLand(
+          [
+            { icon: Car, wert: `≈ ${f(CARPORT.kwpProStellplatz, 1)}`, zahl: { wert: CARPORT.kwpProStellplatz, nachkomma: 1, vor: "≈ " }, ...w.fakten.liste[0] },
+            { icon: Sun, wert: `≈ ${f(beispiel.kwp)}`, zahl: { wert: Math.round(beispiel.kwp), vor: "≈ " }, ...w.fakten.liste[1] },
+            { icon: Zap, wert: `≈ ${f(beispiel.ertrag / 1000)}`, zahl: { wert: Math.round(beispiel.ertrag / 1000), vor: "≈ " }, ...w.fakten.liste[2] },
+            { icon: Leaf, wert: `≈ ${f(beispiel.co2Tonnen)}`, zahl: { wert: Math.round(beispiel.co2Tonnen), vor: "≈ " }, ...w.fakten.liste[3], nurDE: true },
+          ],
+          land,
+          () => ({ icon: PlugZap, wert: "AC & DC", ...w.fakten.ersatz }),
+          (x) => ({ ...x, text: <>{x.text} <GiltFuer /></> })
+        )}
+        fussnote={w.fakten.fussnote}
+      />
+
+      {/* ---------------- Zielgruppen ---------------- */}
+      <Section tone="white" space="lg" data-abschnitt="zielgruppen" aria-labelledby="zielgruppen-titel">
+        <Kopf id="zielgruppen-titel" eyebrow={w.zielKopf.eyebrow} titel={w.zielKopf.titel} className="mb-12 md:mb-14" />
+        <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {w.zielgruppen.map((zg, i) => (
+            <Reveal as="li" key={i} delay={i * 70} className="ov-card-hover group relative flex flex-col rounded-[2rem] bg-sand-50 p-6 ring-1 ring-ink-200/70 focus-within:ring-2 focus-within:ring-ov-500 sm:p-7">
+              <div className="flex items-start justify-between gap-3">
+                <span aria-hidden="true" className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-ov-600 shadow-e2 ring-1 ring-ink-200/70 transition-colors duration-300 group-hover:bg-ov-600 group-hover:text-white">
+                  <zg.icon className="h-5 w-5" />
+                </span>
+                <span className="rounded-full bg-white px-2.5 py-1 text-[11.5px] font-semibold text-ink-600 ring-1 ring-ink-200/70">{zg.tag}</span>
+              </div>
+              <h3 className="mt-5 font-display text-[19px] font-bold text-ink-900">
+                {zg.href ? (
+                  <Link href={zg.href} className="inline-flex items-center gap-1.5 outline-none after:absolute after:inset-0 after:rounded-[2rem] after:content-['']">
+                    {zg.title}
+                    <ArrowUpRight aria-hidden="true" className="h-4 w-4 text-ov-600 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+                  </Link>
+                ) : (
+                  zg.title
+                )}
+              </h3>
+              <p className="mt-2 text-[14.5px] leading-relaxed text-ink-600">{zg.text}</p>
+            </Reveal>
+          ))}
+        </ul>
+      </Section>
+
+      {/* ---------------- Schnell-Check ---------------- */}
+      <Section tone="sand" space="lg" id="check" data-abschnitt="schnell-check" aria-labelledby="check-titel" className="scroll-mt-24">
+        <Kopf id="check-titel" eyebrow={w.checkKopf.eyebrow} titel={w.checkKopf.titel} lead={de ? w.checkKopf.leadDe : w.checkKopf.leadLand} className="mb-12 md:mb-14" />
+        <SchnellCheck land={land} />
+      </Section>
+
+      <Solarpflicht pflicht={w.pflicht} schwellen={w.schwellen} ohne={w.ohne} stand={en ? datumText(PFLICHT_STAND, "en") : PFLICHT_STAND} land={land} />
+
+      {/* ---------------- FAQ ---------------- */}
+      <Section tone="white" space="lg" data-abschnitt="faq" aria-labelledby="faq-titel">
+        <div className="grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:gap-20">
+          <div className="lg:sticky lg:top-28 lg:self-start">
+            <Kopf id="faq-titel" eyebrow={w.faqKopf.eyebrow} titel={w.faqKopf.titel} lead={de ? w.faqKopf.leadDe : w.faqKopf.leadLand} />
+            <Reveal className="mt-8">
+              <Button href="#anfrage" variant="secondary" pfeil>
+                {w.faqKopf.button}
+              </Button>
+            </Reveal>
+          </div>
+          <Faq items={faqFuerLand(w.faq, land, { sprache })} />
+        </div>
+      </Section>
+
+      {/* ---------------- Anfrage ---------------- */}
+      <AnfrageBuehne
+        titel={
+          <>
+            {w.anfrage.titelA}<span className="ov-text-gradient-light">{w.anfrage.titelB}</span>
+          </>
+        }
+        lead={w.anfrage.lead}
+        zusagen={[
+          { icon: ShieldCheck, text: w.anfrage.zusagen[0] },
+          { icon: Handshake, text: w.anfrage.zusagen[1] },
+          { icon: PlugZap, text: w.anfrage.zusagen[2] },
+        ]}
+        ablauf={[
+          { icon: ClipboardList, ...w.anfrage.ablauf[0] },
+          { icon: FileSearch, ...w.anfrage.ablauf[1] },
+          { icon: Handshake, ...w.anfrage.ablauf[2] },
+        ]}
+        formText={w.anfrage.formText}
+      >
+        <AuswahlAnfrage
+          typ="carport"
+          felder={["firma", "telefon", "plz", "ort", "nachricht"]}
+          button={w.anfrage.button}
+          gruppen={uebersetze(
+            {
+              de: [
+                { id: "stellplaetze", legende: "Stellplätze", optionen: [{ id: "bis50", label: "bis 50" }, { id: "50-150", label: "50–150" }, { id: "150-500", label: "150–500" }, { id: "ueber500", label: "über 500" }], start: "50-150" },
+                { id: "art", legende: "Sie sind", optionen: [{ id: "unternehmen", label: "Unternehmen" }, { id: "handel", label: "Handel" }, { id: "logistik", label: "Logistik" }, { id: "kommune", label: "Kommune" }, { id: "sonstige", label: "Sonstige" }] },
+                { id: "modell", legende: "Interesse an", optionen: [{ id: "offen", label: "Noch offen" }, { id: "kauf", label: "Kauf" }, { id: "contracting", label: "Contracting" }] },
+                { id: "laden", legende: "Ladepunkte", mehrfach: true, optionen: [{ id: "ac", label: "AC" }, { id: "dc", label: "DC-Schnellladen" }], start: ["ac"] },
+              ],
+              en: TEXTE.en.anfrage.gruppen,
+            },
+            sprache
+          )}
+        />
+      </AnfrageBuehne>
+
+      <Weiterlesen
+        text={w.weiter.text}
+        items={[
+          { href: pfad("/rechner/solarcarport"), icon: Calculator, ...w.weiter.items[0] },
+          { href: pfad("/solarcarport"), icon: Car, ...w.weiter.items[1] },
+          { href: "/ratgeber/parkplatz-solarpflicht-bundeslaender", icon: BookOpen, ...w.weiter.items[2] },
+          { href: pfad("/reststrom"), icon: Building2, ...w.weiter.items[3] },
+        ]}
+      />
+    </div>
+  );
+}
+
+export const generateMetadata = seitenMetadata("/parkplatz", metadata, { en: metadataEn });

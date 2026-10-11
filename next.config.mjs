@@ -10,6 +10,11 @@ const nextConfig = {
   compress: true,
   poweredByHeader: false,
 
+  // SEO-Finale (TEMPO): AVIF zusätzlich zu WebP anbieten – bei Fotos (Heros, Ratgeber)
+  // typischerweise 20–40 % kleinere Dateien bei gleicher Qualität. Browser ohne
+  // AVIF-Unterstützung erhalten weiter WebP/JPEG (Aushandlung über den Accept-Header).
+  images: { formats: ["image/avif", "image/webp"] },
+
   // Ländermodell: Welle-2-Adressen (/wissen/ratgeber, CH-Platzhalter) → 308 ohne Ketten
   // (Tabelle und Tests: src/lib/land/umzug.js). Keine IP-/Geo-Weiterleitung; die Weiterleitung
   // von „/“ auf das gewählte Land (nur mit Cookie) macht die Middleware.

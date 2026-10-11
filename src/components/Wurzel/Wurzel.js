@@ -15,7 +15,7 @@
 import GoogleAnalytics from "@/components/Statistik/GoogleAnalytics";
 import { Inter, Manrope } from "next/font/google";
 import LayoutWrapper from "@/components/Reusable/LayoutWrapper";
-import { GESELLSCHAFT, INDEXIERBAR, SITE } from "@/data/site";
+import { GESELLSCHAFT, INDEXIERBAR, KONTAKT, SITE } from "@/data/site";
 import JsonLd from "@/components/JsonLd";
 import { LandProvider } from "@/components/Land/LandKontext";
 import { SpracheProvider } from "@/components/Sprache/SpracheKontext";
@@ -26,11 +26,15 @@ export { LAND_AUS_PFAD };
 
 // Zwei Schriften wie auf oekovolt.de: Inter für Fließtext, Manrope für
 // Überschriften. next/font hostet beide selbst (keine Verbindung zu Google).
+// SEO-Finale (TEMPO): keine eigene `fallback`-Liste mehr – mit ihr erzeugte next/font
+// KEINE metrisch angepasste Ersatzschrift (kein size-adjust/ascent-override im CSS),
+// und beim Eintreffen von Inter/Manrope brachen Zeilen neu um (gemessen: CLS 0,11 auf
+// /dachflaeche-verpachten). `adjustFontFallback` (Standard) legt jetzt "Inter Fallback"/
+// "Manrope Fallback" auf Arial-Basis an – gleiche Zeilenumbrüche vor und nach dem Laden.
 const inter = Inter({
   subsets: ["latin", "latin-ext"],
   display: "swap",
   variable: "--font-inter",
-  fallback: ["system-ui", "Segoe UI", "Arial", "sans-serif"],
 });
 
 const manrope = Manrope({
@@ -38,7 +42,6 @@ const manrope = Manrope({
   weight: ["500", "600", "700", "800"],
   display: "swap",
   variable: "--font-manrope",
-  fallback: ["system-ui", "Segoe UI", "Arial", "sans-serif"],
 });
 
 const BASE_URL = SITE.url;
@@ -66,6 +69,17 @@ const siteSchema = (inLanguage) => ({
         addressCountry: "AT",
       },
       identifier: { "@type": "PropertyValue", propertyID: "Firmenbuchnummer", value: GESELLSCHAFT.register },
+      vatID: GESELLSCHAFT.uid,
+      telephone: KONTAKT.telefon,
+      email: KONTAKT.email,
+      contactPoint: {
+        "@type": "ContactPoint",
+        contactType: "customer service",
+        telephone: KONTAKT.telefon,
+        email: KONTAKT.email,
+        availableLanguage: ["de", "en"],
+        areaServed: ["DE", "AT", "CH"],
+      },
       parentOrganization: { "@type": "Organization", name: "ÖKOVOLT Gruppe", url: SITE.gruppeUrl },
       areaServed: [
         { "@type": "Country", name: "Deutschland" },
@@ -96,6 +110,13 @@ const siteSchema = (inLanguage) => ({
       name: "ÖkoInvest",
       inLanguage,
       publisher: { "@id": `${BASE_URL}/#organization` },
+      // Sitelinks-Suche: /quellen (Faktenregister) liest ?q= clientseitig
+      // (src/components/Quellen/FaktenSuche.js) und filtert damit die Fakten.
+      potentialAction: {
+        "@type": "SearchAction",
+        target: { "@type": "EntryPoint", urlTemplate: `${BASE_URL}/quellen?q={search_term_string}` },
+        "query-input": "required name=search_term_string",
+      },
     },
   ],
 });

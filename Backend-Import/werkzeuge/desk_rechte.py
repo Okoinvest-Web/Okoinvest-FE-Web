@@ -59,6 +59,10 @@ MATRIX = {
 	# Anfragen & Flächen
 	"Plattform Vorgang": {ADMIN: A, AKQUISE: S, TRANSAKTION: L, BUCHHALTUNG: L, **_KERN_LESEN},
 	"Plattform Flaeche": {ADMIN: A, AKQUISE: S, TRANSAKTION: L, **_KERN_LESEN},
+	# Lead-Kette Welle 2/3 (Rechner-Berichte): Pflege nur über die API; Personendaten und Einwilligungen eng halten
+	"Plattform Bericht": {ADMIN: L},  # Eingaben/Ergebnis der Rechner-Berichte
+	"Plattform Lead Person": {ADMIN: L, COMPLIANCE: L},  # Personendaten (Name, E-Mail, gekürzte IP)
+	"Plattform Einwilligung Protokoll": {ADMIN: L, COMPLIANCE: L},  # append-only Hash-Kette
 	# Projektbörse & Deals
 	"Plattform Projekt": {ADMIN: A, TRANSAKTION: S, AKQUISE: L, BUCHHALTUNG: L, **_KERN_LESEN},
 	"Plattform Interesse": {ADMIN: A, TRANSAKTION: S, BUCHHALTUNG: L, **_KERN_LESEN},

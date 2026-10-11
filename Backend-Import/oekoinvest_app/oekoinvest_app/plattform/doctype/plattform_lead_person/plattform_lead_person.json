@@ -95,7 +95,8 @@
    "fieldname": "email",
    "fieldtype": "Data",
    "label": "E-Mail",
-   "read_only": 1
+   "read_only": 1,
+   "search_index": 1
   },
   {
    "fieldname": "telefon",
@@ -108,7 +109,7 @@
  "index_web_pages_for_search": 0,
  "issingle": 0,
  "links": [],
- "modified": "2026-10-03 09:00:00.000000",
+ "modified": "2026-10-10 23:41:19.358981",
  "modified_by": "Administrator",
  "module": "Plattform",
  "name": "Plattform Lead Person",
@@ -132,7 +133,7 @@
    "delete": 0,
    "email": 0,
    "export": 0,
-   "print": 0,
+   "print": 1,
    "read": 1,
    "report": 1,
    "role": "ÖkoInvest Admin",
@@ -144,7 +145,7 @@
    "delete": 0,
    "email": 0,
    "export": 0,
-   "print": 0,
+   "print": 1,
    "read": 1,
    "report": 1,
    "role": "ÖkoInvest Compliance",

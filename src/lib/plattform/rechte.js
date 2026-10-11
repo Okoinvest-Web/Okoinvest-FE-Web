@@ -209,6 +209,9 @@ const API_BEREICH = {
   pachtakte: "pachtakte", // Pachtakte (Team 1)
   portfolio: "portfolio", // Investor-Portfolio
   eg: "eg", // Energiegemeinschaften ElWG (WP1–WP6): /api/admin/eg/**
+  leads: "vorgaenge", // Lead-Desk (Welle 2, B3) – wie die Seite /portal/admin/leads; die Routen setzen zusätzlich `recht`
+  kanaele: "berichte", // Kanal-Auswertung (Welle 2, GRP) – wie die Seite /portal/admin/kanaele
+  newsletter: "crm", // Newsletter-Backoffice (Plattform-Armee, MARKETING) – Export je Empfänger zusätzlich Bereich „export“ (Route)
 };
 
 /**
@@ -250,6 +253,7 @@ const SEITEN_BEREICH = {
   vorgaenge: "vorgaenge",
   leads: "vorgaenge", // Welle 2, Paket B3: Lead-Desk (wie /api/admin/leads)
   kanaele: "berichte", // Welle 2, Paket GRP: Kanal-Auswertung (wie /api/admin/kanaele)
+  newsletter: "crm", // Plattform-Armee, MARKETING: Newsletter-Backoffice (wie /api/admin/newsletter)
   flaechen: "flaechen",
   akquise: "akquise",
   projekte: "projekte",

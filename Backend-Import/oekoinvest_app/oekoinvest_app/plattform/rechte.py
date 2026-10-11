@@ -118,6 +118,11 @@ for _b, _z in _M.items():
 		_z.append(_EG.get(_b, 0))
 RECHTE_MATRIX = {b: dict(zip(BACKOFFICE_ROLLEN, s)) for b, s in _M.items()}
 STUFE_LABEL = ["–", "lesen", "schreiben"]
+# Anzeige-Labels der Unterrollen (wie rechte.js BACKOFFICE_ROLLEN[..].label) – für api/berichte.rechte u. a.
+ROLLEN_LABEL = {
+	"leitung": "Leitung", "akquise": "Akquise", "transaktion": "Transaktion", "buchhaltung": "Buchhaltung", "lesen": "Nur lesen",
+	"betrieb": "Betrieb", "compliance": "Compliance", "projektleitung": "Projektleitung", "energie": "Energie", "eg": "Energiegemeinschaften",
+}
 BEREICH_FUER_ART = {"vorgang": "vorgaenge", "flaeche": "flaechen", "projekt": "projekte", "interesse": "interessen", "provision": "provisionen"}
 
 

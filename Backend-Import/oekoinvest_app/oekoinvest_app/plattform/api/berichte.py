@@ -18,7 +18,7 @@ from oekoinvest_app.plattform.hashkette import doc_als_eintrag, verify_chain
 from oekoinvest_app.plattform.kern import aus_json, iso, jetzt, name_von, nicht_gefunden, nutzer, protokoll
 from oekoinvest_app.plattform.konstanten import LAENDER, PHASEN, PROVISION_MIN, VORGANG_TYPEN
 from oekoinvest_app.plattform.prozesse import PROZESSE, status_label
-from oekoinvest_app.plattform.rechte import BACKOFFICE_ROLLEN, BEREICHE, RECHTE_MATRIX, darf_lesen, recht_noetig, rollen_aus_feld, unterrollen
+from oekoinvest_app.plattform.rechte import BACKOFFICE_ROLLEN, BEREICHE, RECHTE_MATRIX, ROLLEN_LABEL, darf_lesen, recht_noetig, rollen_aus_feld, unterrollen
 
 WAHRSCHEINLICHKEIT = {
 	"pruefung": {"label": "In Prüfung", "p": 0.05},
@@ -222,7 +222,7 @@ def rechte(als_benutzer=None):
 			continue
 		r = rollen_aus_feld(k.backoffice_rollen)
 		konten.append({"id": k.name, "name": name_von(k.name), "email": k.email, "aktiv": bool(cint(k.aktiv)), "backofficeRollen": unterrollen(frappe._dict(rollen=["admin"], backofficeRollen=r)), "ausdruecklich": bool(r), "demo": False})
-	rollen = {r: {"label": {"leitung": "Leitung", "akquise": "Akquise", "transaktion": "Transaktion", "buchhaltung": "Buchhaltung", "lesen": "Nur lesen"}[r], "text": ""} for r in BACKOFFICE_ROLLEN}
+	rollen = {r: {"label": ROLLEN_LABEL.get(r, r), "text": ""} for r in BACKOFFICE_ROLLEN}  # KeyError-Fix: neue Unterrollen (betrieb … eg) haben hier kein hartes Label mehr
 	return {"rollen": rollen, "bereiche": BEREICHE, "matrix": RECHTE_MATRIX, "konten": konten}
 
 

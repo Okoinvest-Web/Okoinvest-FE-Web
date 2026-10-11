@@ -447,7 +447,13 @@ export async function passwortAendern(n, { alt, neu }) {
   v.pflicht(!pwFehler, pwFehler);
   const db0 = await lesen();
   const u0 = nutzerById(db0, n.id);
-  if (!(await passwortPruefen(String(alt || ""), u0?.passwortHash))) throw ungueltig("Das bisherige Passwort stimmt nicht.");
+  sperrePruefen(db0, u0?.email);
+  if (!(await passwortPruefen(String(alt || ""), u0?.passwortHash))) {
+    // Pen-Test-Befund S1 (Paket SECURITY): auch „Passwort ändern“ zählt zur Kontosperre – sonst ließe
+    // sich das alte Passwort aus einer gekaperten Sitzung im Takt des IP-Rate-Limits raten.
+    await aendern((db) => fehlversuchBuchen(db, { email: u0.email, nutzer: nutzerById(db, u0.id), grund: "passwort" }));
+    throw ungueltig("Das bisherige Passwort stimmt nicht.");
+  }
   const hash = await passwortHash(neu);
   return aendern((db) => {
     const u = nutzerById(db, n.id);
@@ -714,7 +720,7 @@ function flaecheDaten(daten, basis = {}) {
     bezeichnung: v.text(daten.bezeichnung, 120),
     land,
     bundesland: v.auswahl(daten.bundesland, BUNDESLAENDER[land], ""),
-    plz: v.plz(daten.plz),
+    plz: v.plzLand(daten.plz, land),
     ort: v.text(daten.ort, 80),
     gemarkung: v.text(daten.gemarkung, 80),
     flurstuecke,

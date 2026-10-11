@@ -75,6 +75,27 @@ def _passwort_ok(konto, passwort):
 		return False
 
 
+def _passwort_noetig(konto, passwort):
+	"""Passwort für eine sensible Aktion in der Sitzung prüfen (Pen-Test-Befund S1, Paket SECURITY):
+	Kontosperre gilt auch hier, jeder Fehlversuch zählt zum Backoff – sonst ließe sich das Passwort
+	aus einer gekaperten Sitzung heraus im Takt des IP-Rate-Limits raten."""
+	s.sperre_pruefen(konto.email, konto)
+	if not _passwort_ok(konto, passwort):
+		s.fehlversuch_buchen(konto.email, konto, grund="passwort")
+		s.festschreiben()  # Zähler bleibt trotz Fehler (Rollback) erhalten
+		ungueltig("Das Passwort stimmt nicht.")
+
+
+def _code_noetig(konto, z, code, wiederherstellung=True, fehlertext="Der Code ist ungültig."):
+	"""2FA-Code für eine sensible Aktion in der Sitzung prüfen – Fehlversuche zählen zur Kontosperre (wie zwei_faktor_pruefen)."""
+	r = _code_einloesen(z, code, wiederherstellung=wiederherstellung)
+	if not r:
+		s.fehlversuch_buchen(konto.email, konto, grund="2fa")
+		s.festschreiben()
+		ungueltig(fehlertext)
+	return r
+
+
 # ================================================================ Sitzungen & Geräte
 
 
@@ -396,13 +417,11 @@ def zwei_faktor_deaktivieren(passwort=None, code=None, als_benutzer=None):
 	konto = _konto(n)
 	if s.pflicht_fuer(n.rollen):
 		konflikt("Für Ihre Rolle ist die Zwei-Faktor-Anmeldung Pflicht und kann nicht abgeschaltet werden.")
-	if not _passwort_ok(konto, passwort):
-		ungueltig("Das Passwort stimmt nicht.")
+	_passwort_noetig(konto, passwort)
 	z = s.zf(n.id)
 	if not z or not cint(z.aktiv):
 		konflikt("Die Zwei-Faktor-Anmeldung ist nicht aktiv.")
-	if not _code_einloesen(z, code):
-		ungueltig("Der Code ist ungültig.")
+	_code_noetig(konto, z, code)
 	z.aktiv = 0
 	z.geheimnis = ""
 	z.codes = als_json([])
@@ -423,11 +442,12 @@ def zwei_faktor_deaktivieren(passwort=None, code=None, als_benutzer=None):
 def wiederherstellungscodes_neu(code=None, als_benutzer=None):
 	"""Neue Wiederherstellungscodes (alte werden ungültig) – nur mit aktuellem App-Code."""
 	n = nutzer(als_benutzer)
+	konto = _konto(n)
+	s.sperre_pruefen(konto.email, konto)
 	z = s.zf(n.id)
 	if not z or not cint(z.aktiv):
 		konflikt("Die Zwei-Faktor-Anmeldung ist nicht aktiv.")
-	if not _code_einloesen(z, code, wiederherstellung=False):
-		ungueltig("Bitte geben Sie den aktuellen Code aus Ihrer Authenticator-App ein.")
+	_code_noetig(konto, z, code, wiederherstellung=False, fehlertext="Bitte geben Sie den aktuellen Code aus Ihrer Authenticator-App ein.")
 	codes = _neue_codes(z)
 	z.save(ignore_permissions=True)
 	protokoll(n, "zwei_faktor", "nutzer", n.id, "Neue Wiederherstellungscodes erzeugt")
@@ -559,8 +579,7 @@ def email_aendern_anfordern(neu=None, passwort=None, basisUrl=None, als_benutzer
 	v.pflicht(e, "Bitte geben Sie eine gültige E-Mail-Adresse an.")
 	konto = _konto(n)
 	v.pflicht(e != konto.email, "Das ist bereits Ihre Anmeldeadresse.")
-	if not _passwort_ok(konto, passwort):
-		ungueltig("Das Passwort stimmt nicht.")
+	_passwort_noetig(konto, passwort)
 	if _email_vergeben(e):
 		konflikt("Für diese E-Mail-Adresse besteht bereits ein Konto.")
 	token = s.token_anlegen("email_neu", konto.name, 24 * 60, neue_email=e)
@@ -855,8 +874,7 @@ def konto_loeschen(passwort=None, bestaetigung=None, als_benutzer=None):
 	n = nutzer(als_benutzer)
 	v.pflicht(str(bestaetigung or "").strip().upper() in ("LÖSCHEN", "LOESCHEN"), "Bitte bestätigen Sie mit dem Wort LÖSCHEN.")
 	konto = _konto(n)
-	if not _passwort_ok(konto, passwort):
-		ungueltig("Das Passwort stimmt nicht.")
+	_passwort_noetig(konto, passwort)
 	kid = konto.name
 	admins = aktive_admins()
 	if "admin" in konto_rollen(konto) and len(admins) <= 1:

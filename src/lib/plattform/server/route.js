@@ -65,7 +65,7 @@ export async function jsonLesen(request, maxBytes = 64 * 1024) {
   const laenge = Number(request.headers.get("content-length") || 0);
   if (laenge > maxBytes) throw new PlattformFehler(413, "Anfrage zu groß.");
   const text = await request.text();
-  if (text.length > maxBytes) throw new PlattformFehler(413, "Anfrage zu groß.");
+  if (text.length > maxBytes || Buffer.byteLength(text, "utf8") > maxBytes) throw new PlattformFehler(413, "Anfrage zu groß."); // Bytes, nicht UTF-16-Einheiten (Umlaute/Emoji zählen mehrfach)
   let daten;
   try {
     daten = text ? JSON.parse(text) : {};

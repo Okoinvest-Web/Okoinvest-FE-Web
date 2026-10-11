@@ -449,18 +449,41 @@ function codeEinloesen(db, u, code, { wiederherstellung = true } = {}) {
   return { methode: "totp", codesUebrig: (z.codes || []).length };
 }
 
+/**
+ * Pen-Test-Befund S1 (Paket SECURITY): Falsche Passwörter und 2FA-Codes bei sensiblen Aktionen in der
+ * Sitzung (2FA abschalten, neue Wiederherstellungscodes, E-Mail ändern, Konto löschen) zählten NICHT zur
+ * Kontosperre – eine gekaperte Sitzung konnte Passwort bzw. TOTP-Code im Takt des IP-Rate-Limits raten.
+ * Jetzt: sperrePruefen vor der Prüfung, jeder Fehlversuch bucht den Backoff (wie bei der Anmeldung).
+ */
+async function fehlversuchInSitzung(u0, grund) {
+  await aendern((db) => fehlversuchBuchen(db, { email: u0.email, nutzer: nutzerById(sammlungen(db), u0.id), grund }));
+}
+
+/** Passwort einer angemeldeten Person für eine sensible Aktion prüfen (Fehlversuch → Kontosperre-Backoff) */
+async function passwortNoetig(db0, u0, passwort) {
+  sperrePruefen(db0, u0.email);
+  if (!(await passwortPruefen(String(passwort || ""), u0?.passwortHash))) {
+    await fehlversuchInSitzung(u0, "passwort");
+    throw ungueltig("Das Passwort stimmt nicht.");
+  }
+}
+
 export async function zweiFaktorDeaktivieren(n, { passwort, code } = {}) {
   if (!n) throw nichtAngemeldet();
   const db0 = sammlungen(await lesen());
   const u0 = nutzerById(db0, n.id);
   if (pflichtFuer(db0, u0)) throw konflikt("Für Ihre Rolle ist die Zwei-Faktor-Anmeldung Pflicht und kann nicht abgeschaltet werden.");
-  if (!(await passwortPruefen(String(passwort || ""), u0?.passwortHash))) throw ungueltig("Das Passwort stimmt nicht.");
-  return aendern((db) => {
+  await passwortNoetig(db0, u0, passwort);
+  const erg = await aendern((db) => {
     sammlungen(db);
     const u = nutzerById(db, n.id);
     const z = zf(db, u.id);
     if (!z?.aktiv) throw konflikt("Die Zwei-Faktor-Anmeldung ist nicht aktiv.");
-    if (!codeEinloesen(db, u, code)) throw ungueltig("Der Code ist ungültig.");
+    if (!codeEinloesen(db, u, code)) {
+      // kein Wurf hier: aendern speichert nur bei Erfolg – Fehlversuch muss erhalten bleiben
+      fehlversuchBuchen(db, { email: u.email, nutzer: u, grund: "2fa" });
+      return { fehlversuch: true };
+    }
     z.aktiv = false;
     z.geheimnis = null;
     z.codes = [];
@@ -474,21 +497,30 @@ export async function zweiFaktorDeaktivieren(n, { passwort, code } = {}) {
     internSicherheit.protokoll(db, u, "zwei_faktor", "nutzer", u.id, "Zwei-Faktor-Anmeldung abgeschaltet");
     return statusVon(db, u);
   });
+  if (erg?.fehlversuch) throw ungueltig("Der Code ist ungültig.");
+  return erg;
 }
 
 /** Neue Wiederherstellungscodes (alte werden ungültig) – nur mit aktuellem App-Code */
 export async function wiederherstellungscodesNeu(n, { code } = {}) {
   if (!n) throw nichtAngemeldet();
-  return aendern((db) => {
+  const db0 = sammlungen(await lesen());
+  sperrePruefen(db0, nutzerById(db0, n.id)?.email);
+  const erg = await aendern((db) => {
     sammlungen(db);
     const u = nutzerById(db, n.id);
     const z = zf(db, u.id);
     if (!z?.aktiv) throw konflikt("Die Zwei-Faktor-Anmeldung ist nicht aktiv.");
-    if (!codeEinloesen(db, u, code, { wiederherstellung: false })) throw ungueltig("Bitte geben Sie den aktuellen Code aus Ihrer Authenticator-App ein.");
+    if (!codeEinloesen(db, u, code, { wiederherstellung: false })) {
+      fehlversuchBuchen(db, { email: u.email, nutzer: u, grund: "2fa" });
+      return { fehlversuch: true };
+    }
     const codes = neueCodes(z);
     internSicherheit.protokoll(db, u, "zwei_faktor", "nutzer", u.id, "Neue Wiederherstellungscodes erzeugt");
     return { codes, status: statusVon(db, u) };
   });
+  if (erg?.fehlversuch) throw ungueltig("Bitte geben Sie den aktuellen Code aus Ihrer Authenticator-App ein.");
+  return erg;
 }
 
 /**
@@ -597,10 +629,10 @@ export async function emailAendernAnfordern(n, { neu, passwort, basisUrl } = {})
   if (!n) throw nichtAngemeldet();
   const e = v.email(neu);
   v.pflicht(e, "Bitte geben Sie eine gültige E-Mail-Adresse an.");
-  const db0 = await lesen();
+  const db0 = sammlungen(await lesen());
   const u0 = nutzerById(db0, n.id);
   v.pflicht(e !== u0.email, "Das ist bereits Ihre Anmeldeadresse.");
-  if (!(await passwortPruefen(String(passwort || ""), u0?.passwortHash))) throw ungueltig("Das Passwort stimmt nicht.");
+  await passwortNoetig(db0, u0, passwort);
   return aendern((db) => {
     sammlungen(db);
     if (db.nutzer.some((x) => x.email === e)) throw konflikt("Für diese E-Mail-Adresse besteht bereits ein Konto.");
@@ -741,9 +773,9 @@ export async function datenExport(n) {
 export async function kontoLoeschen(n, { passwort, bestaetigung } = {}) {
   if (!n) throw nichtAngemeldet();
   v.pflicht(["LÖSCHEN", "LOESCHEN"].includes(String(bestaetigung || "").trim().toUpperCase()), "Bitte bestätigen Sie mit dem Wort LÖSCHEN.");
-  const db0 = await lesen();
+  const db0 = sammlungen(await lesen());
   const u0 = nutzerById(db0, n.id);
-  if (!(await passwortPruefen(String(passwort || ""), u0?.passwortHash))) throw ungueltig("Das Passwort stimmt nicht.");
+  await passwortNoetig(db0, u0, passwort);
   return aendern((db) => {
     sammlungen(db);
     const u = nutzerById(db, n.id);

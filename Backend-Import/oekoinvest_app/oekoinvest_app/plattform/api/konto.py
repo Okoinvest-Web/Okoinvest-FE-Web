@@ -5,6 +5,7 @@ import frappe
 from frappe.utils import cint
 from frappe.utils.password import check_password, update_password
 
+from oekoinvest_app.plattform import sicherheit as s
 from oekoinvest_app.plattform import validierung as v
 from oekoinvest_app.plattform.kern import als_json, konto_json, nutzer, protokoll, rolle_noetig, ungueltig
 from oekoinvest_app.plattform.konstanten import LAENDER, PHASEN_IDS, PROJEKT_TYPEN, ROLLEN_IDS, SUCHPROFIL_SCHWELLE
@@ -16,9 +17,13 @@ def passwort_aendern(alt=None, neu=None, als_benutzer=None):
 	fehler = v.passwort_fehler(neu)
 	v.pflicht(not fehler, fehler)
 	konto = frappe.get_doc("Plattform Konto", n.id)
+	s.sperre_pruefen(konto.email, konto)
 	try:
 		check_password(konto.user, alt if isinstance(alt, str) else "")
 	except frappe.AuthenticationError:
+		# Pen-Test-Befund S1 (Paket SECURITY): auch „Passwort ändern“ zählt zur Kontosperre
+		s.fehlversuch_buchen(konto.email, konto, grund="passwort")
+		s.festschreiben()  # Zähler bleibt trotz Fehler (Rollback) erhalten
 		ungueltig("Das bisherige Passwort stimmt nicht.")
 	update_password(konto.user, neu)
 	konto.sitzung_version = cint(konto.sitzung_version) + 1

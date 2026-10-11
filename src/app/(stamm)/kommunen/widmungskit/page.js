@@ -22,18 +22,18 @@ const STAND_KIT = "9. Oktober 2026"; // = WIDMUNGSKIT_VERSION (src/lib/kommune/w
 
 const metadata = rechnerMetadata({
   pfad: PFAD,
-  title: "Widmungskit Photovoltaik: Umwidmung je Bundesland in Österreich | ÖkoInvest",
+  title: "Widmungskit: PV-Umwidmung je Bundesland (AT) | ÖkoInvest",
   description:
-    "Für Gemeinden in Österreich: Ablauf der Widmung für eine PV-Freiflächenanlage, beteiligte Stellen und Prüfpunkte je Bundesland – mit Quelle zu jedem Punkt, zum Abhaken und Drucken.",
+    "Ablauf der Widmung für eine PV-Freiflächenanlage in Österreich: Stellen und Prüfpunkte je Bundesland, jede Angabe mit Quelle. Jetzt Checkliste drucken.",
   keywords: ["Widmung Photovoltaik Gemeinde", "Grünland-Photovoltaik Widmung", "Umwidmung PV-Freiflächenanlage", "Flächenwidmungsplan Photovoltaik", "PV-Zonen Bundesland"],
 });
 // Fachprüfung offen (Register index: false): auch die gemeinsame Seite trägt noindex
 metadata.robots = { index: false, follow: true };
 
 const metadataEn = rechnerMetadataEn({
-  title: "Zoning kit for photovoltaics: rezoning per federal state in Austria | ÖkoInvest",
+  title: "Zoning kit: PV rezoning in Austria | ÖkoInvest",
   description:
-    "For municipalities in Austria: the zoning procedure for a ground-mounted PV plant, the authorities involved and the checkpoints per federal state – with a source for every point, to tick off and print.",
+    "The zoning procedure for ground-mounted PV in Austria: authorities and checkpoints per federal state, every point with a source. Print the checklist now.",
   keywords: ["zoning photovoltaics municipality Austria", "Grünland-Photovoltaik zoning", "rezoning ground-mounted PV", "zoning plan photovoltaics", "PV zones Austria"],
 });
 

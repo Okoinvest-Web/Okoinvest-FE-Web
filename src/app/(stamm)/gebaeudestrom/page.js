@@ -29,9 +29,9 @@ import { faqFuerLand } from "@/components/Land/Laenderteile";
 import { uebersetze } from "@/lib/sprache/woerterbuch";
 
 const PFAD = seitenPfad("/gebaeudestrom");
-const TITEL = "Gebäudestrom: Solarstrom vom Dach für alle im Haus | ÖkoInvest";
+const TITEL = "Gebäudestrom: Solarstrom für alle im Haus | ÖkoInvest";
 const BESCHREIBUNG =
-  "PV auf dem Mehrparteien- oder Gewerbegebäude: Mieterstrom und Gemeinschaftliche Gebäudeversorgung (DE), Gemeinschaftliche Erzeugungsanlage (AT), ZEV/vZEV (CH). Modelle, Ablauf und Einstiege für Hausverwaltungen und Wohnbaugesellschaften – ohne Renditeversprechen.";
+  "PV auf dem Mehrparteien- oder Gewerbegebäude: Mieterstrom, Gebäudeversorgung (DE), Gemeinschaftliche Erzeugungsanlage (AT), ZEV (CH). Jetzt Modelle vergleichen.";
 
 const metadata = {
   title: TITEL,
@@ -52,11 +52,11 @@ const metadata = {
 };
 
 const metadataEn = {
-  title: "Building power: rooftop solar for everyone in the building | ÖkoInvest",
+  title: "Building power: rooftop solar for all units | ÖkoInvest",
   description:
-    "PV on apartment and commercial buildings: tenant electricity and shared building supply (DE), jointly operated generation plant (AT), ZEV/vZEV (CH). Models, process and entry points for property managers and housing companies – no promised returns.",
+    "PV on apartment and commercial buildings: tenant electricity, shared building supply (DE), joint generation plant (AT), ZEV (CH). Compare the models now.",
   keywords: () => ["building power", "tenant electricity apartment building", "shared building supply EnWG", "jointly operated generation plant Austria", "ZEV Switzerland", "PV property management", "housing company photovoltaics"],
-  openGraph: { title: "Building power: rooftop solar for everyone in the building | ÖkoInvest", images: [{ alt: "Photovoltaic system on a building roof" }] },
+  openGraph: { title: "Building power: rooftop solar for all units | ÖkoInvest", images: [{ alt: "Photovoltaic system on a building roof" }] },
 };
 
 const FAQ = [

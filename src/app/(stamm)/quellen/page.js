@@ -33,16 +33,16 @@ export const revalidate = 3600;
 const PFAD = pfad("/quellen");
 
 const metadata = {
-  title: "Fakten und Quellen | ÖkoInvest",
-  description: "Das ÖkoInvest-Faktenregister zum Durchsuchen: Markt- und Rechtswerte zu Photovoltaik in Deutschland, Österreich und der Schweiz – jede Zahl mit Quelle, Abrufdatum, Prüfstand und zitierfähigem Link. Export als CSV und JSON (CC BY 4.0).",
+  title: "Faktenregister: PV-Zahlen mit Quellen | ÖkoInvest",
+  description: "Markt- und Rechtswerte zu Photovoltaik in DE, AT und CH – jede Zahl mit Quelle, Abrufdatum und zitierfähigem Link. Export als CSV und JSON (CC BY 4.0).",
   alternates: { canonical: abs(PFAD) },
   // Fachliche Zweitprüfung (E6) ausstehend; viele Fakten tragen „Prüfung ausstehend“ → nicht indexieren
   robots: { index: false, follow: true },
 };
 
 const metadataEn = {
-  title: "Facts and sources | ÖkoInvest",
-  description: "The ÖkoInvest fact register, searchable: market and legal values for photovoltaics in Germany, Austria and Switzerland – every figure with source, retrieval date, review status and a citable link. Export as CSV and JSON (CC BY 4.0).",
+  title: "Fact register: PV figures with sources | ÖkoInvest",
+  description: "Market and legal values for photovoltaics in DE, AT and CH – every figure with source, retrieval date and citable link. Export as CSV and JSON (CC BY 4.0).",
 };
 
 const TEXTE = {

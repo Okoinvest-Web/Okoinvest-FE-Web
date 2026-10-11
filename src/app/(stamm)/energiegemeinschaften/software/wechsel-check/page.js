@@ -23,7 +23,7 @@ const metadata = rechnerMetadata({
   pfad: PFAD,
   title: "Wechsel-Check Energiegemeinschaft Österreich | ÖkoInvest",
   description:
-    "Software-Anbieter der Energiegemeinschaft wechseln? Sieben Fragen: ob sich ein Wechsel lohnt, was vorher zu klären ist und was nach ElWG für alle Anbieter gilt – mit Quellen.",
+    "Software-Anbieter der Energiegemeinschaft wechseln? Sieben Fragen zeigen, ob sich der Wechsel lohnt und was vorher zu klären ist. Jetzt Check starten.",
   keywords: ["Energiegemeinschaft Anbieter wechseln", "EEG Software wechseln", "Energiegemeinschaft ElWG Wechsel", "Marktpartner-ID Energiegemeinschaft", "Energiegemeinschaft Betriebsführung"],
 });
 // Fachprüfung offen (Register index: false): auch die gemeinsame Seite trägt noindex
@@ -32,7 +32,7 @@ metadata.robots = { index: false, follow: true };
 const metadataEn = rechnerMetadataEn({
   title: "Energy community switch check for Austria | ÖkoInvest",
   description:
-    "Switch your energy community’s software provider? Seven questions: whether switching is worthwhile, what to clarify first and what applies to all providers under the ElWG – with sources.",
+    "Switch your energy community’s software provider? Seven questions show whether switching pays off and what to clarify first. Start the check now.",
   keywords: ["switch energy community provider Austria", "EEG software switch", "ElWG energy community", "market partner ID energy community", "energy community operational management"],
 });
 

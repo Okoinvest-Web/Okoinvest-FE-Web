@@ -40,7 +40,7 @@ import { datumText, fmtZahl } from "@/lib/sprache/format";
 const PFAD = pfad("/parkplatz");
 const TITEL = "Parkplatz-PV: Solarpflicht-Check & Potenzial | ÖkoInvest";
 const BESCHREIBUNG =
-  "Der Hub für Parkplatzbetreiber, Handel, Logistik und Gemeinden: Solarpflicht je Bundesland im Schnell-Check, Potenzial in kWp, Ladepunkte nach GEIG – mit Quelle und Stand.";
+  "Parkplatz-PV für Handel, Logistik und Gemeinden: Solarpflicht je Bundesland im Schnell-Check, Potenzial in kWp, Ladepunkte nach GEIG. Jetzt Parkplatz prüfen.";
 
 const metadata = {
   title: TITEL,
@@ -100,7 +100,7 @@ const z = (n, stellen = 0) => fmtZahl(n, stellen, "en");
 
 const TITEL_EN = "Car park PV: solar obligation check & potential | ÖkoInvest";
 const BESCHREIBUNG_EN =
-  "The hub for car park operators, retail, logistics and municipalities: solar obligation by German federal state in a quick check, potential in kWp, charging points under the GEIG – with source and date.";
+  "Car park PV for retail, logistics and municipalities: solar obligation by German state in a quick check, potential in kWp, GEIG charging points. Check now.";
 
 const metadataEn = {
   title: TITEL_EN,

@@ -30,7 +30,7 @@ import { schreibweiseBaum } from "@/components/Land/SchweizerSchreibweise";
 const SCHLUESSEL = "/projektboerse/neutralitaet";
 const TITEL = "Neutralität & Regeln der Projektbörse | ÖkoInvest";
 const BESCHREIBUNG =
-  "Wie die Projektbörse neutral bleibt, obwohl die ÖKOVOLT Gruppe selbst Solarparks entwickelt: Informationsbarriere, Kennzeichnung jedes Inserats, kein Vorkaufsrecht, gleiche Informationen für alle.";
+  "Wie die Projektbörse neutral bleibt, obwohl die ÖKOVOLT Gruppe selbst entwickelt: Informationsbarriere, Kennzeichnung jedes Inserats, kein Vorkaufsrecht.";
 
 const metadata = {
   title: TITEL,
@@ -48,10 +48,10 @@ const metadata = {
 
 const metadataEn = {
   title: "Neutrality & rules of the project exchange | ÖkoInvest",
-  description: "How the project exchange stays neutral although the ÖKOVOLT Group develops solar parks itself: information barrier, labelling of every listing, no right of first refusal, the same information for everyone.",
+  description: "How the project exchange stays neutral although the ÖKOVOLT Group develops projects itself: information barrier, labelled listings, no right of first refusal.",
   openGraph: {
     title: "Neutrality & rules of the project exchange | ÖkoInvest",
-    description: "How the project exchange stays neutral although the ÖKOVOLT Group develops solar parks itself: information barrier, labelling of every listing, no right of first refusal, the same information for everyone.",
+    description: "How the project exchange stays neutral although the ÖKOVOLT Group develops projects itself: information barrier, labelled listings, no right of first refusal.",
     images: [{ alt: "Rows of a solar park" }],
   },
 };

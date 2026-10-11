@@ -20,15 +20,15 @@ import { uebersetze } from "@/lib/sprache/woerterbuch";
 
 const metadata = {
   title: "Newsletter: Fristen und Marktdaten für Ihr Land | ÖkoInvest",
-  description: "Fristen und Förderung, Marktdaten, Flächen und Pacht, Energiegemeinschaften: der Newsletter für Deutschland, Österreich oder die Schweiz – Themen frei wählbar, Abmeldung mit einem Klick.",
+  description: "Fristen, Förderung, Marktdaten und Pacht für Ihr Land: der ÖkoInvest-Newsletter für DE, AT oder CH. Themen frei wählbar, Abmeldung mit einem Klick.",
   alternates: { canonical: abs("/newsletter") },
   // Texte in Prüfung (Strang R), Versand erst nach B0 → nicht indexieren
   robots: { index: false, follow: true },
 };
 
 const metadataEn = {
-  title: "Newsletter: deadlines and market data for your country | ÖkoInvest",
-  description: "Deadlines and funding, market data, land and leases, energy communities: the newsletter for Germany, Austria or Switzerland – choose your topics, unsubscribe with one click.",
+  title: "Newsletter: PV deadlines & market data | ÖkoInvest",
+  description: "Deadlines, funding, market data and leases for your country: the ÖkoInvest newsletter for DE, AT or CH. Choose your topics, unsubscribe in one click.",
 };
 
 const LAND_NAME = { de: { DE: "Deutschland", AT: "Österreich", CH: "die Schweiz" }, en: { DE: "Germany", AT: "Austria", CH: "Switzerland" } };

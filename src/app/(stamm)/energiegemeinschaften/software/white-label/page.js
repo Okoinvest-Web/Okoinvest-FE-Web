@@ -29,15 +29,15 @@ const PFAD = seitenPfad(SCHLUESSEL);
 
 const metadata = rechnerMetadata({
   pfad: PFAD,
-  title: "White-Label für Energiegemeinschaften – für Stadtwerke in Österreich | ÖkoInvest",
-  description: "Energiegemeinschaften unter Ihrer Marke: Plattform, EDA-Prozesse und Abrechnung für Stadtwerke, Gemeindewerke und regionale Energieversorger in Österreich – auf Wunsch mit Betriebsführung.",
+  title: "White-Label-Energiegemeinschaften für Stadtwerke | ÖkoInvest",
+  description: "Energiegemeinschaften unter Ihrer Marke: Plattform, EDA-Prozesse und Abrechnung für Stadtwerke und Regionalversorger in Österreich. Jetzt Gespräch anfragen.",
   keywords: ["White Label Energiegemeinschaft", "Energiegemeinschaft Software Stadtwerke", "EEG Plattform Energieversorger", "Energiegemeinschaft Gemeindewerk"],
 });
 metadata.robots = { index: false, follow: true }; // Fachprüfung offen (Register index: false)
 
 const metadataEn = rechnerMetadataEn({
-  title: "White label for energy communities – for municipal utilities in Austria | ÖkoInvest",
-  description: "Energy communities under your brand: platform, EDA processes and billing for municipal utilities and regional energy suppliers in Austria – with operational management if desired.",
+  title: "White-label energy communities for utilities | ÖkoInvest",
+  description: "Energy communities under your brand: platform, EDA processes and billing for municipal and regional utilities in Austria. Request a partner meeting now.",
   keywords: ["white label energy community Austria", "energy community software utilities", "EEG platform energy supplier"],
 });
 

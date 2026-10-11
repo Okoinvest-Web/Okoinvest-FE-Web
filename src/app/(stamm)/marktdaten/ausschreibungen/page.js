@@ -31,7 +31,7 @@ const DATEI = "/marktdaten/ausschreibungen/daten";
 
 const metadata = {
   title: "Ausschreibungs-Monitor Photovoltaik DACH | ÖkoInvest",
-  description: "Gebotstermine und Ergebnisse der PV-Ausschreibungen in Deutschland, Österreich und der Schweiz: Zuschlagswerte, Höchstwerte, Volumen – mit Quellen, als CSV und JSON.",
+  description: "Gebotstermine und Ergebnisse der PV-Ausschreibungen in DE, AT und CH: Zuschlagswerte, Höchstwerte, Volumen – mit Quellen, Export als CSV und JSON.",
   alternates: { canonical: abs(PFAD) },
   // Fachliche Zweitprüfung (E6) ausstehend → nicht indexieren
   robots: { index: false, follow: true },

@@ -78,14 +78,14 @@ const metadataFuer = (land, p) => {
   return en
     ? {
         ...basis,
-        title: "Ground-mounted PV in Switzerland: Art. 24ter RPG & permits | ÖkoInvest",
-        description: "Solar parks in Switzerland: when ground-mounted PV and agrivoltaics outside the building zone are site-bound (Art. 24ter RPG, Swiss Spatial Planning Act), permits, HEIV auction and Solarexpress.",
+        title: "Solar parks in Switzerland: Art. 24ter RPG | ÖkoInvest",
+        description: "When solar parks outside the building zone are site-bound in Switzerland: Art. 24ter RPG, permits, HEIV auction and Solarexpress. Check your parcel now.",
         openGraph: { ...basis.openGraph, title: "Ground-mounted PV in Switzerland | ÖkoInvest", description: "Art. 24ter RPG, permits from the municipality and canton, HEIV auction and Solarexpress at a glance." },
       }
     : {
         ...basis,
-        title: "Freiflächen-PV in der Schweiz: Art. 24ter RPG & Bewilligung | ÖkoInvest",
-        description: "Solarpark in der Schweiz: wann Freiflächen-PV und Agri-PV ausserhalb der Bauzone standortgebunden sind (Art. 24ter RPG), Bewilligung, HEIV-Auktion und Solarexpress.",
+        title: "Freiflächen-PV Schweiz: Bewilligung & Art. 24ter | ÖkoInvest",
+        description: "Wann Solarparks ausserhalb der Bauzone standortgebunden sind (Art. 24ter RPG): Bewilligung, HEIV-Auktion und Solarexpress. Jetzt Parzelle prüfen.",
         openGraph: { ...basis.openGraph, locale: "de_CH", title: "Freiflächen-PV in der Schweiz | ÖkoInvest", description: "Art. 24ter RPG, Bewilligung durch Gemeinde und Kanton, HEIV-Auktion und Solarexpress im Überblick." },
       };
 };

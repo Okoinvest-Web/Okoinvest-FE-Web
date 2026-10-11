@@ -27,7 +27,7 @@ const metadata = rechnerMetadata({
   pfad: PFAD,
   title: "Gewerbestrom-Rechnung prüfen: Rechnungs-Check | ÖkoInvest",
   description:
-    "Stromrechnung Ihres Betriebs zerlegen: amtliche Umlagen, Stromsteuer, Konzessionsabgabe und Börsenwert (SMARD) gegen Ihren Energieanteil. Lastgang optional, nur im Browser ausgewertet.",
+    "Stromrechnung Ihres Betriebs zerlegen: Umlagen, Stromsteuer, Konzessionsabgabe und Börsenwert (SMARD) gegen Ihren Energieanteil. Jetzt Rechnung prüfen.",
   keywords: ["Gewerbestrom Rechnung prüfen", "Strompreis Gewerbe zusammensetzung", "Umlagen 2026 Strom", "Konzessionsabgabe Sondervertragskunde", "Stromsteuer Entlastung § 9b", "Lastgang auswerten"],
 });
 
@@ -37,7 +37,7 @@ metadata.robots = { index: false, follow: true };
 const metadataEn = rechnerMetadataEn({
   title: "Check your commercial electricity bill | ÖkoInvest",
   description:
-    "Break down your business electricity bill: official levies, electricity tax, concession fee and exchange value (SMARD) against your energy component. Load profile optional, analysed in your browser only.",
+    "Break down your business electricity bill: levies, electricity tax, concession fee and exchange value (SMARD) vs your energy component. Check your bill now.",
   keywords: ["check commercial electricity bill Germany", "business electricity price breakdown", "German electricity levies 2026", "concession fee special contract", "electricity tax relief § 9b", "load profile analysis"],
 });
 

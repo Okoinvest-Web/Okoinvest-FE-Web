@@ -17,7 +17,7 @@ import { schreibweiseBaum } from "@/components/Land/SchweizerSchreibweise";
 
 const SCHLUESSEL = "/projektboerse/muster-nda";
 const TITEL = "Muster-NDA für Projektanbieter (Entwurf) | ÖkoInvest";
-const BESCHREIBUNG = "Entwurf einer Vertraulichkeitsvereinbarung zwischen Projektanbieter und ÖkoInvest als Betreiberin der Projektbörse – mit Informationsbarriere gegenüber der eigenen Projektentwicklung.";
+const BESCHREIBUNG = "Entwurf der Vertraulichkeitsvereinbarung zwischen Projektanbieter und ÖkoInvest als Börsenbetreiberin – mit Informationsbarriere. Jetzt Muster lesen.";
 
 const metadata = {
   title: TITEL,
@@ -27,8 +27,8 @@ const metadata = {
 };
 const metadataEn = {
   title: "Model NDA for project sellers (draft) | ÖkoInvest",
-  description: "Draft confidentiality agreement between a project seller and ÖkoInvest as operator of the project exchange – with an information barrier towards its own project development.",
-  openGraph: { title: "Model NDA for project sellers (draft) | ÖkoInvest", description: "Draft confidentiality agreement between a project seller and ÖkoInvest as operator of the project exchange – with an information barrier towards its own project development.", images: [{ alt: "Project planning on a tablet" }] },
+  description: "Draft confidentiality agreement between project seller and ÖkoInvest as exchange operator – with an information barrier. Read the model NDA now.",
+  openGraph: { title: "Model NDA for project sellers (draft) | ÖkoInvest", description: "Draft confidentiality agreement between project seller and ÖkoInvest as exchange operator – with an information barrier. Read the model NDA now.", images: [{ alt: "Project planning on a tablet" }] },
 };
 
 const G = GESELLSCHAFT;

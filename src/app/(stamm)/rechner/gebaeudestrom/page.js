@@ -23,9 +23,9 @@ const PFAD = seitenPfad("/rechner/gebaeudestrom");
 
 const metadata = rechnerMetadata({
   pfad: PFAD,
-  title: "Gebäudestrom-Rechner: PV auf dem Mehrparteienhaus | ÖkoInvest",
+  title: "Gebäudestrom-Rechner: PV im Mehrparteienhaus | ÖkoInvest",
   description:
-    "Wie viel Solarstrom vom eigenen Dach nutzen die Einheiten im Gebäude? Anlagengröße, Eigenverbrauchsanteil und Deckung – für Mieterstrom und § 42b EnWG (DE), die Gemeinschaftliche Erzeugungsanlage (AT) und ZEV/vZEV (CH). Ohne Renditeversprechen.",
+    "Wie viel Solarstrom vom Dach nutzen die Einheiten im Gebäude? Anlagengröße, Eigenverbrauch und Deckung für die Modelle in DE, AT und CH berechnen.",
   keywords: ["Mieterstrom Rechner", "Gemeinschaftliche Gebäudeversorgung 42b", "Gemeinschaftliche Erzeugungsanlage ElWOG", "ZEV Rechner", "PV Mehrfamilienhaus Eigenverbrauch", "Gebäudestrom"],
 });
 
@@ -33,9 +33,9 @@ const metadata = rechnerMetadata({
 metadata.robots = { index: false, follow: true };
 
 const metadataEn = rechnerMetadataEn({
-  title: "Building power calculator: PV on apartment buildings | ÖkoInvest",
+  title: "Building power calculator: apartment PV | ÖkoInvest",
   description:
-    "How much solar power from its own roof do the units in a building use? Plant size, self-consumption share and coverage – for tenant electricity and § 42b EnWG (DE), the jointly operated generation plant (AT) and ZEV/vZEV (CH). No promised returns.",
+    "How much rooftop solar do the units in a building use? Calculate plant size, self-consumption and coverage for DE, AT and CH building power models.",
   keywords: ["tenant electricity calculator Germany", "shared building supply 42b EnWG", "jointly operated generation plant Austria", "ZEV calculator Switzerland", "PV apartment building self-consumption"],
 });
 

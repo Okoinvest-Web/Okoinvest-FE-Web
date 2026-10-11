@@ -32,7 +32,7 @@ const TITEL = "PV-Projektbörse DACH: Solarparks & Projektrechte | ÖkoInvest";
 // „vorgeprüft“ statt „geprüft“: Das Backoffice prüft nur Vollständigkeit und Plausibilität
 // (siehe FAQ), keine Due Diligence (§ 5 UWG, Paket D).
 const BESCHREIBUNG =
-  "Solarparks, Agri-PV, Parkplatz-PV und Großspeicher im DACH-Raum: auf Plausibilität vorgeprüfte Projekte in allen Phasen, NDA per Klick, Datenraum – für Investoren kostenfrei, der Verkäufer zahlt die Provision.";
+  "Solarparks, Agri-PV und Speicher im DACH-Raum: auf Plausibilität vorgeprüfte Projekte, NDA per Klick, Datenraum. Für Investoren kostenfrei – jetzt ansehen.";
 
 const metadata = {
   title: TITEL,
@@ -75,10 +75,10 @@ const SPANNE_EN = `${fmtZahl(PROVISION.verkaeufer.min * 100, 1, "en")}–${fmtZa
 const PROVISION_EN = `${SPANNE_EN} of the purchase price, only on successful closing`;
 const metadataEn = {
   title: "PV project exchange DACH: solar parks & project rights | ÖkoInvest",
-  description: "Solar parks, agrivoltaics, car park PV and battery storage in the DACH region: projects pre-checked for plausibility at every stage, NDA in one click, data room – free of charge for investors, the seller pays the commission.",
+  description: "Solar parks, agrivoltaics and storage in the DACH region: plausibility pre-checked projects, NDA in one click, data room. Free for investors – browse now.",
   openGraph: {
     title: "PV project exchange DACH: solar parks & project rights | ÖkoInvest",
-    description: "Solar parks, agrivoltaics, car park PV and battery storage in the DACH region: projects pre-checked for plausibility at every stage, NDA in one click, data room – free of charge for investors, the seller pays the commission.",
+    description: "Solar parks, agrivoltaics and storage in the DACH region: plausibility pre-checked projects, NDA in one click, data room. Free for investors – browse now.",
     images: [{ alt: "Rows of a solar park" }],
   },
 };

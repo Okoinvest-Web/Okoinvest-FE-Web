@@ -47,8 +47,8 @@ const metadataFuerEn = (land) => {
   if (land === "AT")
     return {
       ...basis,
-      title: "Founding & supplying an energy community in Austria (EEG, BEG) | ÖkoInvest",
-      description: "Found a renewable energy community (EEG) or citizens’ energy community (BEG) in Austria, or supply one with park power – compared with energy sharing in Germany and the LEG in Switzerland.",
+      title: "Founding & supplying an energy community (AT) | ÖkoInvest",
+      description: "Found a renewable energy community (EEG) or citizens’ energy community (BEG) in Austria, or supply one with park power. Compare the models now.",
     };
   if (land === "CH") {
     const ch = uebersetze({ de: ENERGIEGEMEINSCHAFTEN_CH.metadata, en: ENERGIEGEMEINSCHAFTEN_CH_EN.metadata }, "en");
@@ -62,8 +62,8 @@ const metadataFuer = (land, p) =>
     : land === "AT"
     ? {
         ...metadata,
-        title: "Energiegemeinschaft in Österreich gründen & versorgen (EEG, BEG) | ÖkoInvest",
-        description: "Erneuerbare-Energie-Gemeinschaft oder Bürgerenergiegemeinschaft in Österreich gründen oder mit Parkstrom versorgen – mit Vergleich zu Energy Sharing in Deutschland und LEG in der Schweiz.",
+        title: "Energiegemeinschaft gründen & versorgen (AT) | ÖkoInvest",
+        description: "Erneuerbare-Energie-Gemeinschaft (EEG) oder Bürgerenergiegemeinschaft (BEG) in Österreich gründen oder mit Parkstrom versorgen. Jetzt Modell vergleichen.",
       }
     : land === "CH"
       ? { ...metadata, ...ENERGIEGEMEINSCHAFTEN_CH.metadata, openGraph: { ...metadata.openGraph, ...ENERGIEGEMEINSCHAFTEN_CH.metadata.openGraph } }

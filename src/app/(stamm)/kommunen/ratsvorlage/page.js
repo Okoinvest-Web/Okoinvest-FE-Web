@@ -26,18 +26,18 @@ const PFAD = seitenPfad("/kommunen/ratsvorlage");
 
 const metadata = rechnerMetadata({
   pfad: PFAD,
-  title: "Ratsvorlage Solarpark: Einnahmen und Landesrecht für den Gemeinderat | ÖkoInvest",
+  title: "Ratsvorlage Solarpark: Einnahmen & Landesrecht | ÖkoInvest",
   description:
-    "Kommunal-Rechner 2.0: Einnahmen der Gemeinde aus § 6 EEG, Gewerbesteuer und Pacht, dazu die Beteiligungsgesetze der Bundesländer – und eine druckfertige Ratsvorlage als Muster.",
+    "Einnahmen der Gemeinde aus § 6 EEG, Gewerbesteuer und Pacht plus Landesrecht – als druckfertige Ratsvorlage. Jetzt Muster für den Gemeinderat erstellen.",
   keywords: ["Ratsvorlage Solarpark", "Beschlussvorlage Freiflächen-PV", "Gemeindebeteiligung Landesgesetz", "§ 6 EEG Gemeinderat", "Widmung Photovoltaik Gemeinde"],
 });
 // Fachprüfung offen (Register index: false): auch die gemeinsame Seite trägt noindex
 metadata.robots = { index: false, follow: true };
 
 const metadataEn = rechnerMetadataEn({
-  title: "Council paper for solar parks: income and state law for the municipal council | ÖkoInvest",
+  title: "Solar park council paper: income & state law | ÖkoInvest",
   description:
-    "Municipal calculator 2.0: municipal income from § 6 EEG, trade tax and lease, plus the participation laws of the federal states – and a ready-to-print council paper template.",
+    "Municipal income from § 6 EEG, trade tax and lease, plus the states’ participation laws – as a print-ready council paper. Create your template now.",
   keywords: ["council paper solar park", "municipal resolution ground-mounted PV", "municipal participation state law", "§ 6 EEG municipal council", "zoning photovoltaics municipality Austria"],
 });
 

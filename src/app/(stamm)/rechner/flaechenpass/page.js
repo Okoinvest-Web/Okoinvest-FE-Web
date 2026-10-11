@@ -25,18 +25,18 @@ const PFAD = seitenPfad("/rechner/flaechenpass");
 
 const metadata = rechnerMetadata({
   pfad: PFAD,
-  title: "Flächenpass: Fläche einzeichnen, Eignung und Restriktionen | ÖkoInvest",
+  title: "Flächenpass: Eignung Ihrer Fläche prüfen | ÖkoInvest",
   description:
-    "Fläche auf der Karte einzeichnen oder Größe angeben: Hektar, mögliche Leistung, Stromertrag, grobe Eignung und die Restriktionen Ihres Bundeslandes mit Quellen – für Deutschland, Österreich und die Schweiz.",
+    "Fläche einzeichnen oder Größe angeben: Hektar, Leistung, Stromertrag, Eignung und Restriktionen je Region in DE, AT und CH – mit Quellen. Jetzt prüfen.",
   keywords: ["Flächenpass Solarpark", "Fläche einzeichnen Solarpark", "Eignung Fläche Freiflächen-PV", "EEG-Flächenkulisse prüfen", "PV-Zonen Widmung", "Art. 24ter RPG Solaranlage"],
 });
 // Fachprüfung offen (Register index: false): auch die gemeinsame Seite trägt noindex
 metadata.robots = { index: false, follow: true };
 
 const metadataEn = rechnerMetadataEn({
-  title: "Land passport: draw your land, suitability and restrictions | ÖkoInvest",
+  title: "Land passport: is your land suitable? | ÖkoInvest",
   description:
-    "Draw your land on the map or enter its size: hectares, possible capacity, power yield, rough suitability and the restrictions of your federal state with sources – for Germany, Austria and Switzerland.",
+    "Draw your land on the map or enter its size: hectares, capacity, yield, suitability and regional restrictions in DE, AT and CH – with sources. Check now.",
   keywords: ["land passport solar park", "draw land solar park", "suitability ground-mounted PV", "EEG land category", "PV zoning Austria", "Art. 24ter RPG solar"],
 });
 

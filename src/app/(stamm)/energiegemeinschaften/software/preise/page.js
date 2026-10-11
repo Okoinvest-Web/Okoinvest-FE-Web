@@ -30,15 +30,15 @@ const PFAD = seitenPfad(SCHLUESSEL);
 
 const metadata = rechnerMetadata({
   pfad: PFAD,
-  title: "Preisblatt Software für Energiegemeinschaften (Österreich) | ÖkoInvest",
-  description: "Was die Software für Energiegemeinschaften kostet: Einrichtung, Grundgebühr je Gemeinschaft und Betrag je Zählpunkt – offen aufgeschlüsselt für Software, Betriebsführung und Gründung.",
+  title: "Preise: Software für Energiegemeinschaften (AT) | ÖkoInvest",
+  description: "Was die Software für Energiegemeinschaften kostet: Einrichtung, Grundgebühr und Betrag je Zählpunkt – offen aufgeschlüsselt. Jetzt Angebot anfragen.",
   keywords: ["Energiegemeinschaft Software Preis", "EEG Abrechnung Kosten", "Energiegemeinschaft Kosten je Zählpunkt", "Betriebsführung Energiegemeinschaft Preis"],
 });
 metadata.robots = { index: false, follow: true }; // Fachprüfung und Preisfreigabe offen (Register index: false)
 
 const metadataEn = rechnerMetadataEn({
-  title: "Price sheet: software for energy communities (Austria) | ÖkoInvest",
-  description: "What the software for energy communities costs: set-up, base fee per community and amount per metering point – openly broken down for Software, Operational management and Founding.",
+  title: "Pricing: energy community software (Austria) | ÖkoInvest",
+  description: "What energy community software costs in Austria: set-up, base fee per community and amount per metering point – openly itemised. Request an offer now.",
   keywords: ["energy community software price Austria", "EEG billing costs", "cost per metering point energy community", "energy community operational management price"],
 });
 

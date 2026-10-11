@@ -55,7 +55,7 @@ const META = {
 };
 
 const META_EN = {
-  title: "Solar parks, agrivoltaics & project exchange in the DACH region | ÖkoInvest",
+  title: "Solar parks, agri-PV & project exchange DACH | ÖkoInvest",
   description:
     "Lease your land, implement agrivoltaics, buy or sell PV projects: ÖkoInvest develops solar parks in DE, AT and CH. Check your land free of charge now.",
 };

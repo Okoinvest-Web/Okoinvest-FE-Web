@@ -1,0 +1,86 @@
+# Rechtsprüfung Oktober 2026 – Berichte
+
+## IMPRESSUM-DSGVO
+
+RÜCKGABE – Paket Impressum/DSGVO
+
+**1) Geprüfte Seiten/Bereiche**
+- Gerendert im Dev-Server (HTTP 200 geprüft): /impressum, /at/impressum, /en/impressum, /datenschutz, /ch/datenschutz, /en/datenschutz, /barrierefreiheit, /en/barrierefreiheit; EN-Hinweis „nur informativ“ auf allen drei EN-Rechtstexten im HTML bestätigt.
+- Quellcode: Impressum, Datenschutzerklärung (DE+EN), Barrierefreiheitserklärung, Cookie-Banner (cookiecomponent.js), GoogleAnalytics.js/Einwilligungs-Lib, Flächenpass-Karte, Newsletter- und Bericht-APIs/-Dienste (Double-Opt-in), Widget-Routen, src/data/site.js, aufbewahrung.py (Löschkonzept), Masterplan Abschnitt 3 (S0/S1), UEBERGABE.md.
+- Abgleich Text ↔ Verhalten: Banner-Ablehnen gleichwertig (handleRejectAll), GA nur nach Einwilligung mit Positivliste, Karten-Zwei-Klick, DOI-Abläufe, Speicherfristen gegen aufbewahrung.py, Firmierung/UID/FN gegen site.js – alles konsistent.
+
+**2) Direkt behobene Punkte (Dateien)**
+- C:\Users\SALEADMIN\Downloads\Oekoinvest-Web\src\app\(stamm)\datenschutz\page.js – neue Abschnitte 5a (Bericht per E-Mail, Double-Opt-in), 5b (Newsletter, Double-Opt-in), 9a (Karten im Flächenpass BKG/basemap.at/swisstopo, Zwei-Klick), Widgets-Satz in Abschn. 4; falsche Aussage „Kartendienste … Kategorie Funktional“ in Abschn. 10 korrigiert (Kategorie existiert nicht); 3 neue Speicherfristen-Zeilen; STAND auf 11. Oktober 2026.
+- C:\Users\SALEADMIN\Downloads\Oekoinvest-Web\src\components\Rechtstexte\DatenschutzEn.js – identische EN-Spiegelung (Entwurfs-Markierung, „deutsch bindend“ via LegalShell).
+- C:\Users\SALEADMIN\Downloads\Oekoinvest-Web\src\app\(stamm)\barrierefreiheit\page.js – Geltungsbereich um Welle-3/4-Werkzeuge ergänzt (Gewerbestrom-Check, Flächenpass mit Karte, Gebäudestrom, Netzanschluss-Begleiter, Marktdaten/Quellenregister, Newsletter/Newsroom), DE+EN.
+- Prüfung: npx eslint auf alle drei Dateien grün; npm test grün (974/974); geänderte Seiten rendern (neue Abschnitte im HTML nachgewiesen). Keine Commits.
+
+**3) Anwaltsdossier**
+C:\Users\SALEADMIN\Downloads\Oekoinvest-Web\docs\strang-r\pruefung-2026-10\impressum-dsgvo.md – **hoch 3 · mittel 9 · niedrig 5 = 17 Punkte**, je mit Fundstelle, Risiko, Vorschlag, Rechtsgebiet und Land.
+
+**4) Die 5 wichtigsten Funde**
+1. Die Datenschutzerklärung deckte vier reale Verarbeitungen (Newsletter-DOI, Bericht-Baustein, Karten im Flächenpass, Partner-Widgets) gar nicht ab und behauptete eine nicht existierende Banner-Kategorie „Funktional“ für Karten – direkt behoben, Wortlaut-Freigabe durch Kanzlei offen (M7).
+2. Zahlreiche sichtbare Platzhalter (Hosting, ERP, Mail, Backup, Identitätsanbieter, Auskunfteien, Verrechnungsstellen) und fehlende AV-Verträge machen einen Livegang der Datenschutzerklärung derzeit unzulässig (H1).
+3. Ob ÖkoInvest GwG/FM-GwG-Verpflichtete ist, ist ungeklärt – davon hängen Rechtsgrundlage und 5-Jahres-Frist der gesamten KYC/KYB-Verarbeitung ab (H2).
+4. Die biometrische Online-Identifizierung (Art. 9 DSGVO) darf ohne geklärten Anbieter, Rollenverteilung und Einwilligungs-Flow nicht aktiviert werden (H3).
+5. Für die aktiv beworbene CH-Fassung fehlt jede revDSG-Erwähnung (inkl. möglicher Vertretungspflicht), und die ePrivacy-Zitate (TKG 2021 vs. § 25 TDDDG) sind nicht je Besucherland geklärt (M1/M2).
+
+## UWG-CLAIMS
+
+PRÜFBERICHT UWG-CLAIMS (Lauterkeitsrecht und Werbeaussagen)
+
+1) Geprüfte Seiten/Bereiche (gerendert im Browser, dazu Quelltext-Suchlauf über src/):
+/de, /en, /ch, /at/freiflaeche, /de/referenzen, /de/projektboerse, /de/projekte/glaeserner-solarpark, /de/rechner/gewerbestrom-check, /de/rechner/pachtangebot-check, /at/energiegemeinschaften/software/preise, /de/partner/widgets, /widgets/fristen, /de/kommunen/ratsvorlage, /de/projektboerse/muster-nda, /de/regionen/bayern (Stichprobe Regionen), /de/ratgeber/solarpark-investment-rendite (Stichprobe Ratgeber), /de/reststrom. Reizwort-Suchlauf (garantiert, klimaneutral, CO2-frei, grün, größte/beste, Nr. 1, Pionier, risikolos, sichere Pacht, kostenlos, geprüfte Projekte u. a.) und `npm run lint:claims` (128 Fehler/318 Hinweise, ausgewertet) dokumentiert im Dossier.
+
+2) Direkt behobene Punkte:
+- C:\Users\SALEADMIN\Downloads\Oekoinvest-Web\src\app\(stamm)\page.js – Startseiten-Kachel „Vorgeprüfte Projekte in jeder Phase“ → „Auf Plausibilität vorgeprüfte Projekte“ (DE) bzw. „Pre-checked projects in every phase“ → „Projects pre-checked for plausibility“ (EN), konsistent mit der eingeordneten Börsen-Formulierung („keine Due Diligence“). Im Browser verifiziert; npx eslint grün, npm test grün (974/974).
+Mehr war direkt nicht eindeutig korrigierbar – die Website ist in diesem Gebiet nach Wellen 0–4 bereits weitgehend sauber (Demo-/Entwurf-Kennzeichnungen, Risikohinweise, Quellenangaben vorhanden).
+
+3) Anwaltsdossier:
+C:\Users\SALEADMIN\Downloads\Oekoinvest-Web\docs\strang-r\pruefung-2026-10\uwg-claims.md – hoch 2, mittel 4, niedrig 5, 1 Verweis an Paket Vertragsrecht/AGB (Nutzungsbedingungen ENTWURF + Platzhalter), plus Abschnitt „Positiv geprüft“.
+
+4) Die 5 wichtigsten Funde:
+- H1: Die Kennzahl „3 Länder“ auf der Startseite und der Energiegemeinschafts-Hero („in allen drei Ländern … versorgen wir Gemeinschaften mit Strom aus unseren Parks“) können bei gestuftem CH-Start und nur DE/AT-Gesellschaften als Irreführung über den Tätigkeitsumfang wirken (§ 5 UWG DE / § 2 UWG AT / Art. 3 UWG CH).
+- H2: Der Pachtangebot-Check bewertet Angebote von Wettbewerbern, ohne offenzulegen, dass ÖkoInvest selbst als Projektierer Flächen pachtet (Verschleierung des Eigeninteresses, § 5a UWG; Masterplan-Punkt S0-16 weiterhin offen).
+- M1: Die Reststrom-Aussage „Solarstrom aus Parks der ÖKOVOLT Gruppe deckt per Liefervertrag (PPA) …“ (src/app/(stamm)/reststrom/page.js:59) ist laut Übergabe noch unbelegt und wäre ohne existierende PPA-Struktur eine unwahre Angebotsbehauptung.
+- M2: Die Startseiten-Kennzahl „~50 MWp pro Jahr neu in Entwicklung“ beruht nur auf einer „Vorgabe der Geschäftsführung“ (src/data/site.js:92) ohne dokumentierten Beleg, obwohl die Beweislast beim Unternehmen liegt.
+- N4: Der Claim-Lint endet trotz 128 Fehlern mit Exit 0 und mischt echte Funde mit Falsch-Positiven (negierte Garantie-Risikohinweise, „Hessen ist Pionier“, „Musterstadt“ als Formularbeispiel, „alle 5 Minuten“ ist tatsächlich der Polling-Takt) – Allowlist pflegen und Gate scharf schalten.
+
+Keine Umweltaussagen „grün/klimaneutral/CO2-frei“ auf der Website gefunden (einzige Umschreibung „sauberer Strom“ in der Irsingen-Projektbeschreibung, als Niedrig-Punkt N3 im Dossier). Keine Commits angelegt, Dev-Server läuft weiter.
+
+## FINANZ
+
+1) **Geprüfte Seiten/Bereiche** (im Browser gerendert, DE/AT/CH/EN): /projektboerse (+ /neutralitaet, /anbieten, /muster-nda), /investoren, /genossenschaft, /rechner/beteiligung, /rechner/solarpark, /rechner/projektbewertung, /rechner/bestandsanlage, /nutzungsbedingungen (§ 15), /unternehmen, /energie-live, /virtuelles-kraftwerk; dazu Quelltextsuche über src/ nach Nachrangdarlehen/Genussrecht/Tokenisierung/Entwicklungsbeteiligung, Bericht-Haftungstexte (src/lib/bericht/texte.js, Annahmenbuch) und Steuerquoten (src/lib/invest/markt.js). Befund: abgeschaltete Beteiligungsfunktion ist öffentlich nirgends sichtbar; Börsen-Negativabgrenzung je Land vorhanden und gerendert; Berichte tragen Haftungs-/Annahmenblock.
+
+2) **Direkt behoben:** C:\Users\SALEADMIN\Downloads\Oekoinvest-Web\src\components\Rechner\RechnerSeite.js – gemeinsamer Hinweis aller Rechner (Annahmenblock + Druckfuß) von „Orientierung, kein Angebot" auf „Orientierung, kein Angebot und keine Anlage-, Rechts- oder Steuerberatung" erweitert (EN entsprechend); damit tragen auch Solarpark-Rendite-, Bestandsanlagen-, Projektbewertungs-, Großspeicher- und PPA-Rechner den Anlageberatungs-Ausschluss. Im Browser DE+EN verifiziert; npx eslint auf die Datei grün, npm test grün (974/974). Keine Commits.
+
+3) **Anwaltsdossier:** C:\Users\SALEADMIN\Downloads\Oekoinvest-Web\docs\strang-r\pruefung-2026-10\finanz.md – 11 Punkte: hoch 3, mittel 5, niedrig 3.
+
+4) **Die 5 wichtigsten Funde:**
+- F-01 (hoch): Die entgeltliche Nachweis-/Vermittlungstätigkeit der Projektbörse (Erfolgsprovision 1,5–3 %, Selbstbeschreibung „vermittelt") braucht vor Livegang das in P-56 schon angelegte Erlaubnis-Gutachten je Land, besonders für Share Deals mit SPV-Anteilen (KWG/§ 34c GewO, WAG 2018, FIDLEG/FINIG).
+- F-02 (hoch): Die öffentlich beschriebene Entwicklungsbeteiligung/Co-Development an „Projekt oder Pipeline" auf /investoren kann als AIF (KAGB/AIFMG/KAG) qualifizieren und sollte bis zur Kanzleifreigabe ohne Konditionen bzw. hinter Professionellen-Schranke stehen.
+- F-03 (hoch): Die Vormerkung von Interesse an Anteilen der erst zu gründenden Genossenschaft (/genossenschaft, /rechner/beteiligung) ist je Land auf Prospekt- und Pre-Marketing-Zulässigkeit zu bestätigen (VermAnlG-Ausnahme DE, KMG/AltFG AT, FIDLEG/OR CH).
+- F-05 (mittel): Die Portal-Option „Nachrangdarlehen / Sparbrief" (src/lib/plattform/kommune.js) kann mit „Sparbrief" ein erlaubnispflichtiges Einlagengeschäft suggerieren und sollte umbenannt oder geklärt werden.
+- F-04 (mittel): Die Selbst-Einordnung „keine Börse im Sinne von BörsG/BörseG 2018/FinfraG" ist plausibel und als Entwurf gekennzeichnet, muss aber je Land anwaltlich abgesegnet und mit dem Ergebnis aus F-01 abgeglichen werden.
+
+## VERTRAEGE
+
+RÜCKGABE – Paket VERTRAEGE (Verträge, Muster, Bedingungen, Lizenzen)
+
+**1) Geprüfte Seiten/Bereiche** (gerendert im Browser/HTTP je Land und EN, plus Quellcode):
+/nutzungsbedingungen (auch /at, /ch, /en), /bedingungen/projektboerse|energiebeschaffung|lieferanten|banken (DE+EN), /projektboerse/muster-nda (gemeinsam, /ch, /en/at – Ländervarianten korrekt getrennt), /kommunen/ratsvorlage, /partner/widgets samt Embed-Routen /widgets/* (scriptfrei, Attribution fest), Klick-NDA/Provisionsvereinbarung im Portal (src/lib/plattform/konstanten.js, NdaAnfrage.js), Registrierungs-AGB-Haken (RegistrierFormular.js), Strang-R-Entwürfe (docs/strang-r/nutzungsbedingungen, bedingungen, PRUEFPUNKTE, ZUSTIMMUNGSPROTOKOLL), Lizenzangaben: SMARD/Energy-Charts, opendata.swiss/ElCom, BKG dl-de/by-2-0, basemap.at, swisstopo, OSM ODbL, eigene CC-BY-Downloads (/quellen, /marktdaten/ausschreibungen, /marktdaten/strompreise-schweiz), Bildbestand public/img. Alle Entwurfsseiten tragen sichtbaren Entwurfs-Hinweis und noindex; Werte (1,5–3 %, 24 Monate) sind zwischen Live, Entwürfen und markt.js konsistent.
+
+**2) Direkt behobene Punkte:**
+- C:\Users\SALEADMIN\Downloads\Oekoinvest-Web\src\app\(stamm)\bedingungen\banken\page.js – inkonsistente Firmierung „ÖkoInvest-Gruppe“/„ÖkoInvest group“ im Lead → „Finanzierungsanfragen von ÖkoInvest und ihren Projektgesellschaften“ (DE+EN, deckungsgleich mit § 1 der Bedingungen und § 4 NB; Gruppe heißt sonst durchgehend „ÖKOVOLT Gruppe“). ESLint grün, npm test grün (974/974). Mehr war nicht eindeutig korrigierbar – alles Übrige ist gestaltend und steht im Dossier.
+
+**3) Anwaltsdossier:**
+- C:\Users\SALEADMIN\Downloads\Oekoinvest-Web\docs\strang-r\pruefung-2026-10\vertraege.md – **hoch 6 · mittel 7 · niedrig 4 = 17 Punkte**
+- C:\Users\SALEADMIN\Downloads\Oekoinvest-Web\docs\strang-r\pruefung-2026-10\kanzlei-briefing.md – fertiges Briefing je Land (AT federführend, DE, CH) mit Prüfauftrag, Unterlagenliste und offenen Fragen
+
+**4) Die 5 wichtigsten Funde:**
+1. Die Registrierung erzwingt die verbindliche Annahme der Entwurfs-Nutzungsbedingungen per Pflicht-Haken, ohne dass Fassung und Zeitpunkt der Zustimmung gespeichert werden (ZUSTIMMUNGSPROTOKOLL.md nur Fachvorgabe, nicht umgesetzt) – V-H1.
+2. § 20 (Zustimmungsfiktion ohne Begrenzung) und § 16 Abs. 3 (pauschaler Haftungsausschluss für Verfügbarkeit/Datenverlust) der Nutzungsbedingungen sind voraussichtlich unwirksam und von der Kanzlei neu zu fassen – V-H2/V-H3.
+3. Live-Nutzungsbedingungen (Stand 30.09., ohne Länderteil, pauschale AT-Rechtswahl) und die aktuelleren Strang-R-Entwürfe (03.10., Fassungs-IDs, Länderteile DE/AT/CH) laufen auseinander – es muss eine führende Fassung bestimmt werden – V-H4.
+4. Aufsichts- und Maklerrecht der Projektbörse (WAG 2018/KMG/§ 34c GewO/FIDLEG, Umgehungsschutz, Investorenbindung, Vertragsstrafe) ist ungeklärt und blockiert den Börsen-Livegang – V-H5.
+5. Für die Partner-Widgets fehlen Einbettungsbedingungen (Haftung, Verfügbarkeit, Widerruf – nur unverbindliche „Spielregeln“ auf der Seite); ein Vertragsskelett liegt dem Dossier bei (V-M1); daneben bleiben 18 Bilder ohne Lizenznachweis (nur Bestand dokumentiert, V-H6) und der aWATTar-Fallback ohne dokumentierte Lizenz (V-M6).
+

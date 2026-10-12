@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+/* Archive und Sitzungsprotokolle nicht nach Klassen durchsuchen: Sie
+   enthalten fremde Code-Schnipsel, aus denen Tailwind kaputte Regeln
+   erzeugt (z. B. url(&#x27;data:…) bricht den Build). */
+@source not "../../Claude";
+@source not "../../uebergabe";
+
 /* ------------------------------------------------------------------
    DESIGN-TOKENS FÜR TAILWIND
    Gemessen standen auf der Startseite 9 verschiedene Schatten und
